@@ -6667,5 +6667,19 @@ implementation commit does not satisfy a producer task.
 - [x] Complete source/documentation and final quality reviews with **NO
   FINDINGS**, all nine gates PASS at uncapped `100/100`, and all required
   verification/count/hash gates PASS.
-- [ ] Freeze Task 264's exact property payload contract and preserve
+- [x] Freeze Task 264's exact property payload contract and preserve
   Task 259 separation plus all authority-limited semantic deferrals.
+- [x] Freeze Task 264 means/equals exact sources and hashes, 85/56-row ASTs,
+  resolver/property provenance, parameter/context, declared return lookup,
+  lower owners/fingerprints, means-only `it`, absent `assume` guard, five-table
+  ABI, obligations, Typed/Resolved ownership, tests, counts, deferrals, and
+  exit criteria in synchronized EN/JA.
+- [x] Classify the combined parameter/member source-type gap as separate lower
+  `source_drift` and freeze Task 249PI as the mandatory next prerequisite; do
+  not mix its implementation into Task 264.
+- [x] Repeat Task-264 specification/boundary/source-doc reviews to **NO
+  FINDINGS** and pass all nine docs-only hard gates at uncapped `100/100`.
+- [ ] Stage only the synchronized 32-document target, commit, and
+  fresh-inventory Task 249PI.
+- [ ] After Task-249PI docs/implementation commits, return automatically to
+  Task 264 implementation and complete its separate review/gate/commit loop.

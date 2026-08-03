@@ -4847,3 +4847,13 @@ property payloadをderiveしない。
 implementationはroute/helper/selector/assertion/result field/runner testを追加しない。
 Parser Task-48 property fixtureはいずれもactivateせず、全runner behaviorはTask 264まで
 byte-identicalである。
+
+## Checker Task 264 frozen private route
+
+Future routeはexact two loaded textsとfull Surface/resolver profileだけでselect
+する。Expectation/tag/diagnostic/trace IDでselectしない。Profile C、Task249PI、
+Task252+Task256 (Means)またはTask252+Task254 (Equals)をassembleし、syntax-free
+producerをcallする。Meansはtwo pending obligations/two owned `it`、Equalsはzero/
+zeroをassertする。Parser fixtures、inactive coherence、mixed gapをmatchせず、
+proof/discharge/acceptance/fact/IR/VCをpublishしない。Docs/Task249PIではharness
+bytes unchangedである。

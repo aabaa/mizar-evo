@@ -1591,3 +1591,12 @@ EN/JA agree that the completed checker implementation has zero runner, corpus,
 sidecar, expectation, trace, metadata, or CLI delta. Both preserve runner
 `528`, production `35/67939`, the frozen trace and CLI hashes, and defer the
 only bounded consumer to Task 264.
+
+## Checker Task 264 Frozen Consumer Synchronization
+
+EN/JA harness, plan, boundary, todo, and traceability records agree on the two
+exact source hashes, future sidecar names, single reciprocal requirement,
+85/56 Surface and `5/3/3/1` resolver profiles, four runner tests, projected
+`528 -> 532` and active-type `203 -> 205` counts, zero docs-time executable
+impact, inactive coherence/mixed-gap preservation, and mandatory Task-249PI
+ordering. No bilingual trace or consumer drift remains.

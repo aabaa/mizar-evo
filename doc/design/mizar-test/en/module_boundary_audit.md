@@ -12945,3 +12945,16 @@ The completed diff contains no `mizar-test` or corpus path. Runner production
 and its `35/67939` path/content inventory remain byte-identical, with library,
 lint, and metadata inventories still `528/14/137`. No facade, route, or module
 ownership changes before Task 264.
+
+## Checker Task 264 Frozen Runner Boundary
+
+Raw source, Surface AST, declaration shells, and resolver environments stay
+inside `mizar-test`. Only syntax-free input and existing lower handoffs cross
+to the new checker module. The new route is private under
+`runner/type_elaboration`; its tests live in one included leaf. Public corpus
+discovery and expectation schemas are unchanged.
+
+Task-249PI owns the missing lower type composition first. Task 264 may then add
+one route module plus facade/dispatch/count wiring, two fixture/sidecar pairs,
+and one trace row. It cannot change parser/resolver, Task-259 routes, proof
+runner ownership, or the inactive coherence case.

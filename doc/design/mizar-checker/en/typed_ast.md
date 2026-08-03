@@ -1337,6 +1337,22 @@ B3A/B3B installation orders fail without partial mutation and permit exact
 replay. The existing `InvalidSourceStatement` boundary and public API are
 unchanged.
 
+## Task 264 Frozen Typed Ownership
+
+Task 264 adds one private optional `SourcePropertyImplementationHandoff` to
+`TypedAst`, a read-only getter, and one consuming
+`with_source_property_implementation(projection)` transaction. It checks the
+current initial-obligation table against the projection baseline, installs the
+handoff and exact suffix together, rejects replacement/half-publication and a
+Task-259 handoff, and reports `InvalidSourcePropertyImplementation` atomically.
+
+Means installs exactly `PropertyImplementationExistence` then
+`PropertyImplementationUniqueness`; equals installs no row. Existing unrelated
+baseline rows retain bytes and IDs. `TypedAstParts` has no new public field.
+The complete handoff debug appears once; facts, coercions, diagnostics, types,
+proofs, acceptance, and IR remain unchanged. The docs prerequisite and lower
+Task 249PI add no Task-264 typed field.
+
 ## Task 248P Active Typed Ownership
 
 Complete Profile C now installs through the existing one-shot source-context

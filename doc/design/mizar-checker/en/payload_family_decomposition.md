@@ -1670,3 +1670,19 @@ applications/expressions/arguments/definition-returns/mode-RHS/members
 Task 263 still owns structure/member identity association, classification,
 inheritance, coverage, constructors/selectors, coherence requests, and the
 runner/corpus consumer; no semantic family crossed this boundary.
+
+## Task 264 Property-Implementation Family
+
+Task 264 is one five-table family: implementations, parameters, referenced
+property targets, definientia, and correctness. The target row owns resolver
+property provenance plus a Task-249PI declared-return row; it does not become a
+new resolver definition. Means consumes Task-256 and appends existence plus
+uniqueness; equals consumes Task-254 and appends none. There is intentionally
+no guard table because the source grammar uses the defining-mode parameter
+rather than an ad-hoc `assume`.
+
+Task-252 `it` remains a term occurrence, Task-254 remains the equals selector
+owner, Task-256 remains the means formula owner, and Task 264 only associates
+those immutable lower IDs. Coherence/overlap, proof, acceptance, fact, and VC
+families remain separate. Task 259 and Task 264 do not cross-fingerprint or
+co-install in this bounded task.

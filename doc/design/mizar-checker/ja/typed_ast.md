@@ -1697,3 +1697,12 @@ complete Profile Cはexisting one-shot source-context fieldへinstallされ、de
 replayする。exact item/declaration/binding/binding-context/local-context/context-link/
 provenance rowをrevalidateし、frozen testでは全type/fact/diagnostic/initial-obligation table
 がemptyである。typed owner field/installation APIは追加しない。
+
+## Task 264 frozen typed ownership
+
+TypedAstはprivate optional property handoff、getter、consuming one-shot
+`with_source_property_implementation`を追加する。Projection baselineとcurrent
+obligationsを照合し、Meansはproperty existence/uniqueness two rows、Equalsはzero
+をhandoffとatomic installする。Replacement/half publication/Task259 coexistenceを
+`InvalidSourcePropertyImplementation`でrejectする。TypedAstPartsへpublic fieldは
+追加せず、facts/coercions/diagnostics/types/proof/acceptance/IRは不変である。

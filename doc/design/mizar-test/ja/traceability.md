@@ -2222,7 +2222,15 @@ pass/fail fileはread-only lower oracle、overlap-coherence semantic seedはinac
 requirements/casesは`394/426`、type requirementsは`258 = 246 covered + 12 deferred`、
 trace SHA-256は
 `cf0ef6d28a132bcbafc8aa1214ded935a715fdffdb3421c37d66c35954f2a06c`のまま。
-後続Task 264のtrace decisionをここで先取りでauthorizeしない。
+
+## Checker Task 264 frozen trace intent
+
+Implementation時だけrequired covered row
+`spec.en.checker.type_elaboration.source_property_implementation_payload`を1件
+追加し、means/equals sidecarsだけをtests arrayへ置く。Each sidecarはこのrowだけを
+citeし、pass/type_elaboration/type_check、diagnostics/payload emptyである。Creditは
+transport+pending obligation intakeだけで、correctness/coherence/proof/discharge/
+acceptance/facts/use/IR/VCは含まない。DocsとTask249PIはtrace row/hashを変更しない。
 
 ## Checker Task 264R implementation traceability no-op
 

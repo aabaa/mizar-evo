@@ -1749,3 +1749,17 @@ The implemented source-context handoff remains owned through the existing
 `TypedAst` clone path. No final input, assembler branch, getter, replacement
 path, debug field, or semantic result was added; recovered Profile C still
 cannot reach final assembly.
+
+## Task 264 Frozen Final Ownership
+
+`ResolvedTypedAst` will expose one read-only
+`source_property_implementation()` getter. Final assembly accepts it only when
+the typed source/context/type/term and optional lower fingerprints replay
+exactly and the final obligation suffix matches style: two linked pending rows
+for means, zero for equals. Orphan/extra property kinds, a Task-259 handoff,
+or mismatched fingerprint fail as
+`ResolvedTypedAstError::InvalidSourcePropertyImplementation`.
+
+Final assembly clone-preserves transport only. It adds no expression metadata,
+checked formula, fact, proof, diagnostic, acceptance, property value, or IR/VC
+row. The docs prerequisite and Task 249PI add no final Task-264 owner.

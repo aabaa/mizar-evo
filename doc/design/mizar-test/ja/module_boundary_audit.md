@@ -11672,3 +11672,12 @@ library/lint/metadataは`528/14/137`のまま。later bounded module changeはTa
 completed diffに`mizar-test`/corpus pathはない。runner productionと`35/67939`のpath/
 content inventoryはbyte-identical、library/lint/metadata inventoryも`528/14/137`。
 Task 264前にfacade/route/module ownership changeはない。
+
+## Checker Task 264 frozen runner boundary
+
+Raw source/Surface/shell/resolverはmizar-test privateに残り、syntax-free inputと
+lower handoffだけがcheckerへcrossする。New routeはtype_elaboration private、tests
+はone include leafで、discovery/expectation schemaは不変である。Task249PIがlower
+compositionを先にownし、Task264だけがroute/facade/dispatch/count、two pairs、one
+trace rowを後で追加する。Parser/resolver/Task259/proof runner/inactive coherenceは
+変更しない。

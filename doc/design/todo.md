@@ -94,8 +94,8 @@ is its task 1). "Next work" points into the
 | mizar-parser | Grammar, Pratt parsing, syntax recovery, parse-only corpus | [x] Tasks 1-48 plus bounded `PARSER-RECOVERY-B1B1P-P1` complete; historical post-Task-46 score 99/100 | no inferred Task 49; human-owned P-265-47D remains separate | [todo](./mizar-parser/en/todo.md) |
 | mizar-frontend | Source loading and phase 1-3 orchestration | [x] prior milestone plus `PARSER-RECOVERY-B1B1P-P1-FE` regression complete | — | [todo](./mizar-frontend/en/todo.md) |
 | mizar-resolve | Module graph, namespaces, symbols, labels, signatures | [~] complete through task 29, Checker Task 263R, and Task 264R implementation | Preserve Task-264R shell/no-symbol boundary through Checker Tasks 248P/264 | [todo](./mizar-resolve/en/todo.md) |
-| mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] foundation complete through task 22; Tasks 265-268, Core-31, Checker consumers through Task 263, and Task-264 lower no-runner boundary are recorded | Preserve all runner/corpus/trace artifacts through Task 264R and Task 248P | [todo](./mizar-test/en/todo.md) |
-| mizar-checker | Type checking, cluster/registration resolution, overload resolution | [~] explicit-payload milestone and source producers through Task 263 complete; Task 264R is implemented and Task 264 remains gated by checker Task 248P | Complete Task 248P, then freeze Task 264 property payload only | [todo](./mizar-checker/en/todo.md) |
+| mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] foundation complete through task 22; Tasks 265-268, Core-31, Checker consumers through Task 263, and the frozen Task-264 sequence are recorded | Preserve the no-runner boundary through Task 249PI, then implement only the frozen Task-264 consumer | [todo](./mizar-test/en/todo.md) |
+| mizar-checker | Type checking, cluster/registration resolution, overload resolution | [~] explicit-payload milestone and source producers through Task 263 complete; Task 264R and Task 248P are implemented, and Task 264's frozen property payload is gated by checker Task 249PI | Complete Task 249PI, then implement only frozen Task 264 | [todo](./mizar-checker/en/todo.md) |
 | mizar-core | Elaboration, binder-normalized core logic, control-flow preparation | [x] core/control-flow milestone, tasks 27-32 complete | step-5 Tasks 33-53 under the Task-32 graph | [todo](./mizar-core/en/todo.md) |
 | mizar-vc | VC IR, VC generation, deterministic pre-ATP discharge | [x] exact source-derived contradiction VC integration complete through task 31 | dependency-paced VC Tasks 32-55; VC 40/53 and S1 gates remain explicit | [todo](./mizar-vc/en/todo.md) |
 | mizar-kernel | Trusted certificate parsing and checking | [x] SAT-backed kernel milestone complete | step 4 task 35 resolved; task 32 parked; tasks 30-34 resolved | [todo](./mizar-kernel/en/todo.md) |
@@ -4083,5 +4083,25 @@ or semantic owner changed. B3M2B2B remains next before B4.
 - [x] Complete source/docs and final quality reviews with **NO FINDINGS**, all
   nine hard gates PASS at uncapped `100/100`, and full verification/count/hash
   gates PASS.
-- [ ] Complete exact implementation commit and clean fresh inventory; then
+- [x] Complete exact implementation commit
+  `1637380d0def6472626366640603dadb5d5c5e50`, clean fresh inventory, and
   return automatically to Task 264.
+
+## Checker Task 264 Frozen Property-Implementation Sequence
+
+- [x] Fresh-inventory clean Task-248P closure, report-only origin divergence,
+  unchanged protected stash, canonical authorities, fixtures/trace, and public
+  APIs; select Task 264 docs prerequisite.
+- [x] Freeze exact means/equals sources and ASTs, parameter/context, no
+  `assume`, referenced-property return, lower definiens ownership/fingerprints,
+  means-only `it`, resolver provenance, initial obligations, Task-259
+  isolation, Typed/Resolved ownership, runner consumers, tests/counts/audit,
+  semantic deferrals, and exit criteria in EN/JA.
+- [x] Classify the combined parameter/member source-type gap as separate lower
+  `source_drift`; freeze Task 249PI as the mandatory next task.
+- [x] Complete findings-free Task-264 docs reviews and all nine hard gates at
+  uncapped `100/100`.
+- [ ] Complete the exact docs-only commit and fresh Task-249PI inventory.
+- [ ] Complete Task-249PI docs/implementation commits, return to Task 264,
+  implement only the frozen two-profile consumer, review/verify/commit, and
+  continue automatically to the next dependency-ready task.

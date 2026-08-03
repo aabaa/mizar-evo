@@ -5427,3 +5427,14 @@ Profile-C implementation/tests 2件でcloseした。specification/expectation/re
 metadata repairやexecutable coverage creditは追加しない。property identity/payload、
 return type、definiens、initial obligation、proof/acceptance/fact、real runner consumerは
 Task 264でexplicitly openのままである。
+
+## Task 264 frozen source/specification status
+
+Chapters5/7/13/16はbounded means/equals transport、means-only `it`、declared
+property return、existence+uniqueness対zero obligationをauthorizeする。Missing
+checker producer=`source_drift`、missing ABI=`design_drift`、two consumers=
+`test_gap`、Task249S composition=separate Task249PI `source_drift`で、blocking
+`spec_gap`はない。Shellからidentity、bodyからreturn、ad-hoc guard/FOL、inactive
+coherence、proof/acceptance/fact/IR/VCをinfer/publishするのは禁止boundaryである。
+Implementation後public inventoryはcanonical module docの5 IDs/tables、enums、
+handoff/projection/producer、typed/final getters、serializer literalsをexactに列挙する。

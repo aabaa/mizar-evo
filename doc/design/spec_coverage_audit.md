@@ -6329,3 +6329,21 @@ therefore remains partial. Task 264 still exclusively owns property payload,
 return type, means/equals, definiens/`it`, initial obligations/coherence,
 Typed/final semantic ownership, the bounded runner consumer, and all proof,
 acceptance, fact, IR, and VC deferrals.
+
+## Checker Task 264 Frozen Property-Implementation Coverage
+
+Task 264 freezes planned active source-transport coverage for Chapter 5's
+virtual property return, Chapter 7 §§7.4.1/7.8.2 means/equals and initial
+correctness distinction, Chapter 13's means-only `it`, and the corresponding
+Chapter 16 obligation families. The exact means/equals sources, two future
+sidecars, one future covered trace row, five-table checker API, and two pending
+property-obligation kinds are specified. Current coverage remains partial and
+unchanged because this is a documentation prerequisite.
+
+The plan does not credit property correctness, accepted implementation values,
+overlap/coherence, the inactive missing-coherence seed, proof/discharge,
+facts/axioms, use-site lookup, conditional definiens, inherited/imported or
+multiple implementations, or IR/VC. Task 249PI is recorded as a lower
+transport prerequisite only and will add no corpus/trace credit. Task 264
+implementation must update this audit from frozen intent to implemented exact
+transport and retain all listed deferrals.

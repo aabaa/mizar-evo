@@ -1527,3 +1527,18 @@ production remains 28 paths and is now 158,478 lines with path/content hashes
 `19a0dd0472f0e3b40c486ab9451322be03aab4322c53d30cff03ef5e6f8c8490`.
 No module, dependency, Cargo, lint-policy, runner, corpus, trace, diagnostic, or
 Task-264 semantic boundary changed.
+
+## Task 264 Frozen Module Boundary
+
+Task 264 will add only `source_property_implementation.rs` to the checker
+public source-transport layer. It consumes resolver identities and existing
+syntax-free lower handoffs; it imports no parser or syntax type. `lib.rs`
+exports the module, `TypedAst` owns one private optional handoff installed only
+by the projection transaction, and `ResolvedTypedAst` clone-preserves it after
+full revalidation. `TypedAstParts` and `ResolvedTypedAstInputs` receive no
+public construction field.
+
+The private runner owns raw-source/Surface selection. The new checker family
+cannot own Task-249PI lower construction, proof/acceptance/fact/IR/VC modules,
+or Task-259 behavior. The docs prerequisite changes no Rust boundary. Task
+249PI is the mandatory next lower owner before this boundary becomes active.

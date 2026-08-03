@@ -3238,4 +3238,13 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
   `528`、production `35/67939`、全hashを保存。
 - [x] Profile-C runner helperを追加せずchecker-only docs commit
   `1e3fa789ce335b900fca4ac6ef5ad56b40cb5f24`とimplementationを完了。
-- [ ] Task 264 bounded consumerだけをfresh-inventory/freezeする。
+- [x] Task 264 bounded consumerだけをfresh-inventory/freezeする。
+- [x] Task264 means/equals texts/hashes、85/56 AST、resolver/lower order、two
+  sidecars、one requirement、four runner tests、counts/isolation/no semantic
+  publicationをfreezeする。
+- [x] Docsではrunner/corpus/trace/count/hash zero changeを保存し、consumer前に
+  Task249PIをselectする。
+- [x] Task264 docs reviewを**NO FINDINGS**、all nine gates PASS、score capなし
+  `100/100`でcompleteし、runner pathを追加しない。
+- [ ] Exact synchronized docsだけをcommitし、Task249PIをfresh inventoryする。
+- [ ] Task249PI後frozen routeだけをimplement/review/verify/commitする。

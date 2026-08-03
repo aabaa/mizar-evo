@@ -1481,3 +1481,14 @@ implementation diffは`src/source_context.rs`だけを変更する。checker pro
 `19a0dd0472f0e3b40c486ab9451322be03aab4322c53d30cff03ef5e6f8c8490`。
 module/dependency/Cargo/lint-policy/runner/corpus/trace/diagnostic/Task-264 semantic
 boundaryは変更しない。
+
+## Task 264 frozen module boundary
+
+Task264はchecker source-transport layerへ
+`source_property_implementation.rs`だけをnew familyとして追加する。Parser/
+syntax typeをimportせず、resolver identityとsyntax-free lower handoffだけを
+consumeする。TypedAstはprojection-only private optional owner、ResolvedTypedAstは
+full revalidation後clone ownerで、TypedAstParts/ResolvedTypedAstInputsへpublic
+construction fieldを追加しない。Raw source/AST selectionはprivate runner、
+Task249PI lower constructionとproof/fact/IR/VCは別ownerである。Docs時点では
+Rust boundary change zeroである。

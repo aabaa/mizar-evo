@@ -5130,3 +5130,19 @@ derive a property payload before Task 264 freezes its exact consumer.
 The implementation adds no route, helper, selector, assertion, result field,
 or runner test. Neither Parser Task-48 property fixture is activated; all
 runner behavior remains byte-identical pending Task 264.
+
+## Checker Task 264 Frozen Private Route
+
+The future route matches only the two exact loaded source texts and their full
+normal Surface/resolver profiles. It assembles one Task-248P Profile-C context,
+the Task-249PI combined parameter/property-return type handoff, and bounded
+Task-252 plus Task-256 (means) or Task-254 (equals) handoffs before calling the
+syntax-free Task-264 producer. Selection never depends on expectation outcome,
+stage, tag, diagnostic payload, or trace ID.
+
+Means asserts two pending property obligations and exact two means-owned `it`
+terms. Equals asserts zero property obligation and zero `it`. The route runs
+before the generic extraction gap but matches no Parser Task-48 fixture,
+inactive coherence seed, mixed definition gap, or other active case. It emits
+no public diagnostic, proof/discharge/acceptance/fact/IR/VC output. The docs
+prerequisite and Task 249PI leave current harness bytes unchanged.

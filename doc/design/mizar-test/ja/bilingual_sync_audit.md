@@ -1529,3 +1529,10 @@ CLI deltaがないことで一致する。runner `528`、production `35/67939`�
 EN/JAはcompleted checker implementationにrunner/corpus/sidecar/expectation/trace/
 metadata/CLI deltaがないことで一致する。runner `528`、production `35/67939`、frozen
 trace/CLI hashを保存し、唯一のbounded consumerをTask 264へdeferする。
+
+## Checker Task 264 frozen consumer synchronization
+
+EN/JAはtwo source hashes、sidecar names、single reciprocal requirement、85/56
+AST、resolver `5/3/3/1`、four runner tests、`528 -> 532`、active type
+`203 -> 205`、docs-time zero impact、inactive coherence/mixed gaps、Task249PI
+orderingで一致する。

@@ -3462,4 +3462,15 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
 - [x] Complete checker-only docs commit
   `1e3fa789ce335b900fca4ac6ef5ad56b40cb5f24` and the implementation without
   adding a Profile-C runner helper.
-- [ ] Fresh-inventory and freeze only Task 264's bounded consumer.
+- [x] Fresh-inventory and freeze only Task 264's bounded consumer.
+- [x] Freeze Task-264 means/equals consumer texts/hashes, 85/56 AST and
+  resolver profiles, lower-owner order, exact two sidecar names, one reciprocal
+  requirement, four runner tests, projected counts, isolation, and semantic
+  non-publication.
+- [x] Preserve zero runner/corpus/trace/count/hash change in the Task-264 docs
+  prerequisite and select lower Task 249PI before any consumer implementation.
+- [x] Complete Task-264 docs reviews with **NO FINDINGS**, all nine gates PASS,
+  and uncapped `100/100` without adding any runner path.
+- [ ] Commit only the exact synchronized docs and fresh-inventory Task 249PI.
+- [ ] After Task-249PI commits, implement only the frozen two-profile route,
+  pass review/gates/count/hash verification, and commit Task 264 separately.

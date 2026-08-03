@@ -1676,3 +1676,12 @@ promoteできない。property payload/provenanceと全semantic resultはTask 26
 implemented source-context handoffはexisting `TypedAst` clone pathだけでownedされる。
 final input/assembler branch/getter/replacement path/debug field/semantic resultは追加せず、
 recovered Profile Cはfinal assemblyへ到達不能のままである。
+
+## Task 264 frozen final ownership
+
+ResolvedTypedAstはread-only `source_property_implementation()`だけを追加する。
+Finalは全lower fingerprintとstyle別obligation suffix（Means two、Equals zero）を
+revalidateし、orphan/extra/mismatch、Task259 coexistenceを
+`InvalidSourcePropertyImplementation`でrejectする。Transportをcloneするだけで
+expr metadata/checked formula/fact/proof/diagnostic/acceptance/property value/IR/VCを
+追加しない。DocsおよびTask249PI段階ではfinal ownerを追加しない。

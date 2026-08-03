@@ -2316,6 +2316,21 @@ the sidecar reciprocally cites only that row. Requirements/cases are
 `394/426`, type requirements are `258 = 246 covered + 12 deferred`, and the
 trace SHA-256 is
 `cf0ef6d28a132bcbafc8aa1214ded935a715fdffdb3421c37d66c35954f2a06c`.
+
+## Checker Task 264 Frozen Trace Intent
+
+Implementation will add exactly one required covered type-elaboration row:
+`spec.en.checker.type_elaboration.source_property_implementation_payload`.
+Its tests array contains exactly the means and equals sidecars named in the
+checker canonical design; each sidecar cites only this requirement. Both are
+pass/type_elaboration/type_check with empty diagnostic codes and payloads.
+
+The row credits syntax-free property-implementation transport and pending
+initial-obligation intake only. It does not credit correctness, coherence,
+proof, discharge, acceptance, facts, property lookup/use, or IR/VC. The docs
+prerequisite adds no row and preserves the current trace hash above. Task
+249PI also adds no corpus or trace row; Task 264 creates it only after returning
+from the lower prerequisite.
 No neighboring trace status, owner, or deferred rationale changed.
 
 ## Checker Task 264R Traceability No-Op

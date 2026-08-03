@@ -1595,3 +1595,12 @@ definition-returns/mode-RHS/members `0/4/0/0/0/4`としてactiveになった。
 structure/member identity association、classification、inheritance、
 coverage、constructor/selector、coherence request、runner/corpus consumerは
 Task 263に残り、semantic familyはこのboundaryをcrossしない。
+
+## Task 264 property-implementation family
+
+Five tablesはimplementations/parameters/targets/definientia/correctnessである。
+Targetはresolver property provenanceとTask249PI declared-return rowを所有するが
+new resolver definitionではない。MeansはTask256+two obligations、Equalsは
+Task254+zero obligationsである。Grammarにad-hoc assumeがないためguard tableは
+存在しない。Task252/254/256 lower identityをassociationするだけで、coherence/
+proof/acceptance/fact/VC familyやTask259 fingerprintとcrossしない。

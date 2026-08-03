@@ -5671,3 +5671,25 @@ There is no specification, expectation, or repository-metadata repair and no
 new executable coverage credit. Property identity/payload, return type,
 definiens, initial obligations, proof/acceptance/facts, and the real runner
 consumer remain explicitly open under Task 264.
+
+## Task 264 Frozen Source/Specification Status
+
+Canonical Chapters 5/7/13/16 authorize the exact means/equals transport,
+means-only `it`, declared property return, and existence/uniqueness versus
+zero-obligation distinction. The missing checker producer is `source_drift`,
+the absent frozen ABI is `design_drift`, and the two exact active consumers are
+`test_gap`. Current Task-249S composition is a separate lower `source_drift`
+assigned to Task 249PI. No canonical contradiction or blocking `spec_gap`
+exists.
+
+Task 264 must not infer property identity from its context-only shell, infer a
+return from the body, invent an `assume` guard or FOL composition, activate the
+coherence seed, or publish proof/acceptance/facts/IR/VC. Those are explicit
+`boundary_violation` guards. The docs prerequisite changes no source or active
+coverage status.
+
+Public-surface inventory after implementation must include the five dense IDs,
+five input/row/table families, style/target/correctness/recovery/error enums,
+immutable handoff, projection, producer, typed/final getters, and the two new
+obligation-kind serializer literals exactly as frozen in the canonical module
+design.

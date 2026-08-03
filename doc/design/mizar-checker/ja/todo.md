@@ -6356,5 +6356,15 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   test/implementation review付きseparate one-file/two-test implementationを完了。
 - [x] source/documentation/final quality reviewを**NO FINDINGS**、全9 gateをscore cap
   なし`100/100`、全required verification/count/hash gateをPASS。
-- [ ] Task 264 exact property payload contractをfreezeし、Task 259分離と
+- [x] Task 264 exact property payload contractをfreezeし、Task 259分離と
   authority-limited semantic deferralを保存。
+- [x] Task264 exact means/equals sources/hashes、85/56 AST、resolver provenance、
+  parameter/context/declared return、lower owners/fingerprints、means-only `it`、
+  no `assume`、five-table ABI、obligations、Typed/Resolved、tests/counts/deferrals/
+  exitをEN/JA同期freezeする。
+- [x] Combined parameter/member source-type gapをseparate lower `source_drift`と
+  classifyし、Task249PIをmandatory next prerequisiteとしてfreezeする。
+- [x] Specification/boundary/source-doc reviewをNO FINDINGSまでrepeatし、docs-only
+  all nine gatesをscore capなし`100/100`でcompleteする。
+- [ ] Exact 32-document stage/commitとfresh Task249PI selectionをcompleteする。
+- [ ] Task249PI docs/implementation後Task264 implementationへ自動復帰する。
