@@ -1585,3 +1585,21 @@ site、linkを独立にrecheckする。stale/duplicate siteはpartial handoffな
 Profile A installation/debug/recoveryと全type/fact/coercion/obligation/diagnostic
 tableはbyte-compatibleのまま。Task-259 installationはlater separate
 transactionである。
+
+## Task 260 Typed Functor-Definition Installation
+
+`TypedAst`はoptional `SourceFunctorDefinitionHandoff` 1件を追加します。one-shot
+installerは全lower handoff/fingerprintがexactで、initial-obligation tableがcaller
+baseline plus means rows 2件の場合だけproducer projectionをacceptし、handoffと
+complete obligation tableをatomic installします。
+
+Task-259/260はseparate optionalですがTask 260ではmutually exclusiveです。
+Task-260 installerはcurrent Task-259 handoffまたは
+`PredicatePropertyCorrectness` baselineをrejectし、final assemblyも両handoffを
+togetherにrejectします。cross-family install-order promiseもTask-259
+compatibility editもありません。Task-260 pathはTask-259 stateをreplaceせず
+fact/type/coercion/diagnostic/proof/acceptanceを作りません。
+
+producer/installerはpre-existing `FunctorExistence` / `FunctorUniqueness`
+baselineもrejectします。handoffありではlinked final row 2件だけを許可し、
+handoffなしではどちらのkindもorphanとしてfinal assemblyがrejectします。

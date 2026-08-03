@@ -46,6 +46,7 @@ task 33 で pair が同期済みであるとは、以下をすべて満たすこ
 | `source_atomic_formula.md` | `../ja/source_atomic_formula.md` | `../en/source_atomic_formula.md` | Task-256/257C1とTask-257C2/256C1 lower-compatibility authority/boundary、nine-table atomic-formula/segment/provenance/type/attribute/edge/request transport、Task-252/253/254/255 fingerprint association、base consumer 8件とexact C1 consumer、condition-container gate、exclusion、public enum policy | none |
 | `source_composite_formula.md` | `../ja/source_composite_formula.md` | `../en/source_composite_formula.md` | Task-257A authority/boundary、seven-table composite-formula/binder/type/edge/request transport、source-derived binding extension、exact consumer、exclusion、public enum policy | none |
 | `source_formula_composition.md` | `../ja/source_formula_composition.md` | `../en/source_formula_composition.md` | Task-257B1/B2/B3とfrozen Task-257C2 authority/boundary、composite-to-atomic/bound-use transport、dedicated condition-to-atomic transport、dependency fingerprint、atomic installation、exact consumer、exclusion、public enum policy | none |
+| `source_functor_definition.md` | `../ja/source_functor_definition.md` | `../en/source_functor_definition.md` | Task-260 authority/boundary、exact public definition/parameter/guard/definiens/correctness ABI/debug grammar、resolver provenance、Task-248--256 association、baseline-preserving initial-obligation append/orphan rejection、Task-259 mutual exclusion、TypedAst/ResolvedTypedAst installation、exact consumer/exclusion/public enum policy | none |
 | `source_predicate_definition.md` | `../ja/source_predicate_definition.md` | `../en/source_predicate_definition.md` | Task-259 authority/boundary、predicate-definition/parameter/guard/property/correctness table、resolver provenance、Task-248/249/252/256 association、baseline-preserving initial-obligation append、TypedAst/ResolvedTypedAst installation、exact consumer、exclusion、public enum policy | none |
 | `source_set_term.md` | `../ja/source_set_term.md` | `../en/source_set_term.md` | Task-255/255C1 authority/boundary、seven-table set/choice/qua/generator/type-site/condition/edge/request transport、Task-252/253/254 fingerprint association、exact/synthetic consumer、exclusion、public enum policy | none |
 | `source_structure.md` | `../ja/source_structure.md` | `../en/source_structure.md` | Task-254 authority/boundary、seven-table structure/member/FieldUpdate/edge/request transport、Task-252/253 fingerprint association、exact/synthetic consumer、exclusion、public enum policy | none |
@@ -1458,3 +1459,12 @@ five-file implementation scope、four-test matrix、projected runner
 `504 -> 508`、unchanged metadata/trace credit、separate commit orderを同期する。
 synchronization exceptionはない。両言語はfindings-free、nine-gate、
 score capなしのdocumentation quality `100/100`も記録する。
+
+## Task 260 Frozen-Contract Synchronization
+
+canonical EN/companion JAは262-byte source/hash、108-row AST、resolver profile、
+`2/2/1/2/2` table、lower fingerprint、equals/means/correctness association、
+Pending obligation kind 2件、exact API/debug/opaque key、serializer 3件、Task
+259とmutually exclusiveなTyped/Resolved ownership、runner consumer、exact
+test/write scope/count projection/semantic deferral/exit
+gateを同期します。synchronization exceptionはありません。

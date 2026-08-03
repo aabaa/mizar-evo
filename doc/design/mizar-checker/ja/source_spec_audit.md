@@ -2987,6 +2987,34 @@ declarationの`source_drift`、recursive public-input graphの
 `source_undocumented_behavior`、`test_expectation_drift`、
 `boundary_violation`、`repo_metadata_conflict`はない。
 
+## Task 260 Pre-Implementation Classification
+
+Chapter 10 §§10.1--10.6とChapter 16 §§16.6.1/16.7.2はequals/means intakeと
+Pending existence/uniqueness分類に十分です。missing producerはbounded
+`source_drift`、missing exact 262-byte consumerは`test_gap`です。previously
+absent exact API/ledger、inconsistent cross-family install-order claim、
+incomplete serializer scope、stale Task-259 post-commit stateは本prerequisiteで
+repairした`design_drift`です。
+
+blocking `spec_gap`はありません。guard/parameter/returnからgoalへのinternal
+compositionはfully specifiedでないためinventせずsemantic deferralにします。
+existing sourceにundocumented Task-260 semanticsはなく、expectationを変更しません。
+origin mismatchだけをreport-only `repo_metadata_conflict`としsafe fileはidentify
+可能です。
+
+repaired boundaryはexact public signature/debug/obligation key、serializer 3件、
+Task-259/260 mutual exclusionをfreezeします。Task-259 sourceは変更せずmixed
+coexistenceはdeferredのままです。
+
+`source_functor_definition.md`はfuture module owning specificationです。public
+surfaceはdense ID 5、input aggregate 6、immutable row/table各5、handoff、
+projection、producer、`#[non_exhaustive]` enum 5件（style/target/correctness/
+recovery/error）です。implementationはmoduleを`lib.rs`へ追加し、全literal
+declarationを本auditのmodule-spec/crate-export/public-surface inventoryへ追加します。
+同じlogical taskで`tests/lint_policy.rs`のdocumented-module/public-enum/
+source-spec-audit allowlist 3件へmoduleを追加します。existing production
+syntax-boundary scanにTask-specific exceptionは追加しません。
+
 ## Task 259 active public-surface result
 
 `source_predicate_definition`はexport済みで、上記public-surface inventoryは全

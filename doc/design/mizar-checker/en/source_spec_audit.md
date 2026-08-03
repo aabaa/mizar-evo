@@ -3164,6 +3164,37 @@ parentheses; no blocking `spec_gap` was found. There is no current
 `source_undocumented_behavior`, `test_expectation_drift`,
 `boundary_violation`, or `repo_metadata_conflict`.
 
+## Task 260 Pre-Implementation Classification
+
+Chapter 10 Sections 10.1--10.6 and Chapter 16 Sections 16.6.1/16.7.2 provide
+sufficient authority for syntax-free equals/means intake and pending
+existence/uniqueness classification. The missing Task-260 producer is bounded
+`source_drift`; the missing exact 262-byte consumer is `test_gap`. The
+previously absent exact API/ledger, inconsistent cross-family install-order
+claim, incomplete serializer scope, and stale Task-259 post-commit state were
+`design_drift` repaired by this prerequisite.
+
+There is no blocking `spec_gap`. The specification does not fully define the
+checker-internal guard/parameter/return-type-to-goal construction, so that is
+an explicit semantic deferral rather than invented behavior. Existing source
+implements no undocumented Task-260 semantics. Existing expectations are not
+changed. The measured origin mismatch is report-only
+`repo_metadata_conflict`; safe task files remain identifiable.
+
+The repaired boundary freezes exact public signatures/debug/obligation keys,
+all three enum serializers, and Task-259/260 mutual exclusion. It changes no
+Task-259 source and leaves mixed coexistence deferred.
+
+`source_functor_definition.md` is the owning future module specification. Its
+public surface is exactly five dense IDs, six input aggregates, five immutable
+rows and five tables, the handoff, projection, producer, and five
+`#[non_exhaustive]` enums (style, target, correctness kind, recovery, and
+error). Implementation must add the module to `lib.rs` and add every literal
+declaration to this audit's module-spec, crate-export, and public-surface
+inventories. In the same logical task, `tests/lint_policy.rs` must add the
+module to its documented-module, public-enum, and source/spec-audit allowlists.
+The existing production syntax-boundary scan needs no Task-specific exception.
+
 ## Task 259 Active Public-Surface Result
 
 `source_predicate_definition` is now exported and the public-surface inventory

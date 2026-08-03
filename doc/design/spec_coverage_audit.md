@@ -5850,3 +5850,54 @@ checker `24/147030`, runner `31/63248`, checker producer/support
 independent reviews ended with no findings, and all nine hard gates pass with
 an uncapped `100/100`. The task commit and post-commit inventory remain
 pending; this coverage ledger does not select the next task yet.
+
+## Checker Task 259 Post-Commit Closure And Task 260 Frozen Prerequisite
+
+Task 259 was committed as
+`b61be7e567b92d31b3544b86e5c7a68537625743`; its exact predicate-definition
+coverage and measured `422/390`, `229/193`, `101/7/199/1`, type `254/242`
+state are active. The stale pending-commit wording above is historical
+`design_drift` corrected by this closure. A fresh inventory selected Task 260
+as the next dependency-ready checker task.
+
+Task 260 freezes exact functor-definition transport from Chapter 10 sections
+10.1--10.6 and Chapter 16 definition-correctness/initial-obligation rules.
+The future route will cover only two functor definitions, two parameters, one
+guard, two definiens, two explicit correctness clauses, their existing lower
+owners, resolver provenance, and pending `FunctorExistence` /
+`FunctorUniqueness` obligations for the `means` definition. The `equals`
+definition adds no initial obligation. Task 259 and Task 260 have no
+cross-fingerprint or cross-consumption and are mutually exclusive in this
+task; mixed coexistence remains deferred to a separately frozen owner.
+
+This documentation prerequisite changes no traceability artifact or coverage
+count. The later implementation will add one pass fixture/sidecar and one
+sole-backlink requirement,
+`spec.en.checker.type_elaboration.source_functor_definition_payload`, moving
+the measured totals to `423/391`, `230/193`, `101/7/200/1`, and type
+`255/243`. Goal/guard FOL composition, computation proof, discharge,
+acceptance, facts/axioms, VC/IR, generic application/set/structure payloads,
+and predicate payload remain deferred and receive no Task-260 credit.
+
+The startup observation that `origin/main` now equals `HEAD`, rather than the
+reference ahead-one state, remains a report-only `repo_metadata_conflict`.
+The safe documentation commit target is identifiable, and protected
+`stash@{0}` remains untouched.
+
+## Checker Task 260 Documentation-Prerequisite Verification
+
+The specification, test-sufficiency, implementation-boundary, and
+source/documentation-consistency reviews ended with no findings. The
+documentation-only no-op gate preserves every canonical specification,
+fixture, sidecar, expectation, trace row/status/count, production source, and
+Cargo artifact. Focused lower-stage preflights, both affected crate suites,
+metadata `137`, formatting, warnings-denied Clippy, and full workspace tests
+pass. The five CLI counts/hashes, four library test-list counts/hashes, and
+production inventories reproduce the frozen Task-259 post-commit values.
+
+Accordingly this prerequisite changes documentation coverage ownership only:
+it freezes the future Task-260 backlink and deferrals but grants no current
+Chapter 10/16 executable coverage. The final independent read-only review
+reports no findings, all nine hard gates PASS, no score cap, and `100/100`.
+Exact staging, the dedicated documentation commit, and fresh implementation
+inventory remain pending.

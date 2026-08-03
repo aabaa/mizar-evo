@@ -1265,3 +1265,23 @@ runnerは`31/63248`、
 `a9abe9fcbc4a9b04e84fcb6402e13b95cdcd71e7ed2952dbf1a8fb2e1b551a9f`。
 final boundary reviewはno findingsで完了し、quality reviewは全9 hard gateを
 PASSしてscore capなしの`100/100`である。commit/post-commit gateは残る。
+
+## Task 260 Frozen Boundary
+
+Task 260はfuture checker-owned syntax-free functor-definition module 1件を追加します。
+raw source/Surface kind/node ID/sibling association/resolver selectionは
+`mizar-test` privateです。checkerはresolver identity、lower dense ID/fingerprint、
+typed site/range/context、style、return type、definiens target、correctness
+association、caller baseline obligationだけをconsumeします。
+
+Task 248はbinding/context、249はtype、252--256はdefiniens rootを所有し、Task
+260はassociationとPending existence/uniqueness appendだけを所有します。Task 259は
+independent siblingです。proof/acceptance/fact/VC/Task 261+はoutsideです。docs
+prerequisite中productionはchecker `24/147030`、runner `31/63248` unchangedです。
+
+enum extension boundaryは3箇所すべてのexhaustive
+`InitialObligationKind` serializer、`typed_ast.rs`、`type_checker.rs`、
+`registration_resolution.rs`を明示します。各fileはfrozen Task-260 debug name
+2件だけを追加します。Task 260はTask-259 validationを変更せず、Task-259 handoff/
+predicate-property baselineをrejectし、mixed coexistenceをseparate authorized
+ownerに残します。

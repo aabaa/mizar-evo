@@ -4553,7 +4553,7 @@ unchecked row below is one future nonempty logical task and one commit.
     - [ ] **Tasks 258B4-B5:** separately freeze composite theorem roots and
       broader imported/outer/inner visibility profiles. Do not absorb Tasks
       269-272 semantics.
-- [ ] **Task 259:** predicate-definition and initial-obligation intake producer.
+- [x] **Task 259:** predicate-definition and initial-obligation intake producer.
 - [ ] **Task 260:** functor-definition and initial-obligation intake producer.
 - [ ] **Task 261:** attribute-definition producer.
 - [ ] **Task 262:** mode-definition producer.
@@ -6394,7 +6394,25 @@ implementation commit does not satisfy a producer task.
 - [x] Complete the final independent test-sufficiency, implementation, and
   source/documentation-consistency reviews with no findings; pass all nine
   hard gates with an uncapped final quality score of `100/100`.
-- [ ] Stage only Task-259 files, create the dedicated implementation commit,
-  verify clean repository/protected-stash invariants, and fresh-inventory the
-  next dependency-ready task. Task 260 requires its own frozen-contract
-  documentation prerequisite if post-commit inventory confirms it next.
+- [x] Stage only Task-259 files, create dedicated implementation commit
+  `b61be7e567b92d31b3544b86e5c7a68537625743`, verify clean repository/
+  protected-stash invariants, and fresh-inventory Task 260 as next.
+
+## Checker Task 260 Frozen-Contract Documentation Prerequisite
+
+- [x] Select Task 260 from clean post-Task-259 inventory and classify the
+  origin reference mismatch as report-only `repo_metadata_conflict`.
+- [x] Freeze exact 262-byte source/hash, 108-row AST, three-shell/two-functor
+  resolver profile, two context parameters, one guard, two return types,
+  equals/means styles, and explicit existence/uniqueness association.
+- [x] Freeze five dense `2/2/1/2/2` tables, required Task-248/249/252 and
+  optional Task-253--256 fingerprints, and strict Task-259 sibling isolation.
+- [x] Freeze Pending `FunctorExistence`/`FunctorUniqueness`, empty assumptions,
+  opaque goal/provenance, and all proof/discharge/acceptance/fact/VC deferrals.
+- [x] Freeze exact Typed/Resolved atomic ownership, runner consumer, new pass
+  pair/trace intent, nine tests, write scope, projected counts, and exclusions.
+- [x] Repeat review-only specification audit to **NO FINDINGS**.
+- [x] Complete docs-only verification and pass all nine hard gates with no
+  score cap and final read-only quality `100/100`.
+- [ ] Complete exact staging, the dedicated documentation commit, and fresh
+  implementation preflight.

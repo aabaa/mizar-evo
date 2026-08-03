@@ -3307,6 +3307,22 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
 - [x] Fresh-measure final affected production/test-support inventories:
   checker `24/147030`, runner `31/63248`, checker producer/support
   `1794/1974`, and runner production/test leaves `1233/517`.
-- [ ] Stage only Task-259 files, create the dedicated implementation commit,
-  verify the repository/protected-stash invariants, and select the next
-  dependency-ready task only from post-commit fresh inventory.
+- [x] Stage only Task-259 files, create implementation commit
+  `b61be7e567b92d31b3544b86e5c7a68537625743`, verify repository/stash
+  invariants, and fresh-inventory Task 260.
+
+## Checker Task 260 Frozen Consumer Prerequisite
+
+- [x] Freeze exact source/hash/AST/resolver and lower Task-248/249/252/256
+  bundle before any active consumer edit.
+- [x] Freeze `2/2/1/2/2`, two Pending obligations, exact-source selection,
+  lower corruption, atomic install, deterministic replay, and Task-259/mixed
+  family isolation.
+- [x] Freeze one future pass pair/trace row, four runner tests, six mechanical
+  active-count assertions, projected counts, and empty semantic output.
+- [x] Keep all current fixtures, sidecars, expectations, trace rows/status,
+  production source, and Cargo metadata byte-unchanged in this prerequisite.
+- [x] Repeat all four reviews to no findings and complete docs-only
+  verification with all nine gates PASS and uncapped quality `100/100`.
+- [ ] Complete exact staging, the dedicated documentation commit, and
+  post-commit gates.

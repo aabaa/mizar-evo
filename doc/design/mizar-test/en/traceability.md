@@ -2134,3 +2134,27 @@ active parse/declaration/type/proof `101/7/199/1`, type requirements
 invariants pass in metadata test `137/137`. Final independent reviews ended
 with no findings, and all nine hard gates pass with an uncapped `100/100`;
 task commit and post-commit inventory remain pending.
+
+## Checker Task 260 Frozen Trace Intent
+
+The implementation will add exactly one requirement,
+`spec.en.checker.type_elaboration.source_functor_definition_payload`, sourced
+from `doc/design/mizar-checker/en/source_functor_definition.md`, section
+`Dedicated Consumer And Trace Intent`. It will be a required, covered
+`type_elaboration` pass requirement whose sole backlink is the new
+`tests/miz/pass/types/pass_type_elaboration_functor_definition_payload_001.expect.toml`;
+that sidecar will reciprocally name only this requirement.
+
+Credit is limited to exact functor-definition transport: table families
+`2/2/1/2/2`, explicit return/definiens lower-owner provenance, and two
+baseline-appended pending initial obligations for the `means` definition.
+The `equals` definition creates no existence/uniqueness obligation. Guard or
+goal FOL composition, computation proof, discharge, acceptance, facts/axioms,
+VC/IR, and predicate-definition transport receive no Task-260 backlink.
+
+This prerequisite adds no fixture, sidecar, expectation, row, backlink,
+status, or active credit. Current metadata stays cases/requirements
+`422/390`, pass/fail `229/193`, active parse/declaration/type/proof
+`101/7/199/1`, type requirements `254/242`, and warnings/errors `23/0`.
+Implementation projects `423/391`, `230/193`, `101/7/200/1`, and type
+`255/243`, with warnings/errors unchanged.

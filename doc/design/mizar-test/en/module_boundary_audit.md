@@ -12742,3 +12742,31 @@ runner is `31/63248`,
 `a9abe9fcbc4a9b04e84fcb6402e13b95cdcd71e7ed2952dbf1a8fb2e1b551a9f`.
 Final boundary review ended with no findings, and the quality review passed
 all nine hard gates with an uncapped `100/100`; commit/post-commit gates remain.
+
+## Checker Task 260 Frozen Consumer Boundary
+
+Task 260 will add one narrow private functor-definition transport route under
+`src/runner/type_elaboration/`. The runner owns exact source/surface/resolver
+authentication and composition of the already frozen lower-stage public APIs;
+the checker owns the syntax-free Task-260 extractor, table validation,
+fingerprints, pending initial obligations, and transactional installation.
+Raw syntax types remain private to the runner. The checker gains no syntax
+dependency and uses only its existing resolver/session dependencies.
+
+The implementation write boundary is limited to the Task-260 checker module
+and test support; `lib.rs`, typed/final owners, the `typed_ast.rs`,
+`type_checker.rs`, and `registration_resolution.rs` exhaustive serializers,
+and lint policy; the Task-260 runner leaf and declarations; one new pass
+fixture/sidecar; the reciprocal trace row; and six mechanical active-count
+consumers. Existing Task-259 predicate code and artifacts are read-only except
+for isolation tests. Proof/discharge/acceptance/fact/VC ownership and every
+computation-justification subtree remain excluded for a later owner.
+
+The current production inventories remain checker `24/147030` with
+path/content hashes
+`022586d6096dfa2eb05d6b0b9e91bf6dea71e5fc0a036f54a3bb462c7af16ac5` /
+`14ab798c611d954f9ea346367547240e58e9c5d0e04ec8a4ae68e2f20b71860b`
+and runner `31/63248` with hashes
+`0d6edf22a94efd3497423f427accaf34341d223f4339a0adf9c4a7a523271e89` /
+`a9abe9fcbc4a9b04e84fcb6402e13b95cdcd71e7ed2952dbf1a8fb2e1b551a9f`.
+This documentation prerequisite changes none of those values.

@@ -4730,3 +4730,39 @@ runner test 4件は
 PASSし、full runner library countは`512`である。adjacent active-count変更は
 source-statement selection test 2件のindependently reviewed `198 -> 199`だけで、
 empty-selection assertionは不変である。
+
+## Checker Task 260 frozen functor-definition route
+
+future private routeは
+`mizar-checker/en/source_functor_definition.md`でfreezeしたexact 262-byte
+sourceとcomplete normal 108-row/root-107 surface profileだけでselectする。
+definition block、ordered `x`/`y` parameter、one `assume` guard、`equals` /
+`means` functor definition、explicit return type、raw resolver provenance、
+explicit correctness clause 2件、指定されたexcluded descendantをauthenticate
+する。sidecar outcome、stage、tag、diagnostic、expectation dataはrouteをselect
+できない。
+
+selection後にone shared surface-indexed `TypedArena`を作成し、existing lower
+ownerだけをTask 248 Profile B `1/2/2/2/2/2/0`、Task 249 `4/4/0`、Task 252
+`5/5/0`、Task 256 `2/0/0/0/0/0/0/4/4`の順にcallする。frozen sourceでは
+Task 253-255はabsentのままである。Task 260はtable `2/2/1/2/2`をpublishし、
+input obligation baselineをpreserveして、`means` definitionだけにpending
+`FunctorExistence` / `FunctorUniqueness` rowをappendする。typed/final
+installationはall-or-nothingである。
+
+future runner test 4件は
+`task260_real_source_surface_resolver_and_lower_bundle_is_exact`、
+`task260_source_ast_resolver_and_lower_mutations_fail_at_the_owner`、
+`task260_expectation_selection_and_predicate_route_stay_isolated`、
+`task260_route_publishes_no_proof_fact_acceptance_or_vc`であり、runner library
+countを`512 -> 516`とprojectする。exact implementationはmechanical active-type
+consumer 6箇所も`199 -> 200`へ更新するが、goal composition、proof、discharge、
+acceptance、fact/axiom、VC/IR、Task-259 predicate payloadをpublishしない。
+
+test 1は全source byte/final LF/hash、108 Surface row/ordered child、root/sibling/
+subtree partition、resolver profile、lower bundle、final outputをassertします。
+test 2は各source/AST/resolver/lower familyとexcluded descendantをmutateしownerで
+停止させます。test 3はexpectation non-selection、Task-259/mixed isolation、
+metadata `137/137`と合わせたsole reciprocal backlinkをproveします。test 4は
+computation subtree、proof/discharge/acceptance/fact/VC output absenceとsix count
+consumerをauditします。

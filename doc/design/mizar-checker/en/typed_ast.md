@@ -1653,3 +1653,24 @@ ownership, item/declaration sites, and links. Any stale or duplicate site
 fails without a partial handoff. Profile A installation/debug/recovery and
 all type/fact/coercion/obligation/diagnostic tables remain byte-compatible.
 Task-259 installation is still a later, separate transaction.
+
+## Task 260 Typed Functor-Definition Installation
+
+`TypedAst` gains one optional `SourceFunctorDefinitionHandoff`. Its one-shot
+installer accepts the producer projection only when all lower handoffs are
+already present with exact fingerprints and the supplied initial-obligation
+table is precisely the caller baseline plus the two means rows. Handoff and
+complete obligation table install atomically.
+
+Task-259 and Task-260 handoffs remain separate optionals but are mutually
+exclusive in Task 260. The Task-260 installer rejects a current Task-259
+handoff or a baseline containing `PredicatePropertyCorrectness`; final
+assembly rejects both handoffs together. There is no cross-family install-
+order promise and no Task-259 compatibility edit. No Task-260 path may
+replace Task-259 state, create facts/types/coercions/diagnostics, or install
+proof/acceptance output.
+
+The producer and installer also reject a baseline already containing
+`FunctorExistence` or `FunctorUniqueness`. With the handoff installed, exactly
+the two final linked functor rows exist; without it, either functor kind is an
+orphan rejected by final assembly.

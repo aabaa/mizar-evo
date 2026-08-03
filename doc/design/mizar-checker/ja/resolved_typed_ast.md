@@ -1578,3 +1578,17 @@ exact `1/2/2/2/2/2/0` stateをretainしexisting handoff invariantをrevalidate�
 clone/debug order/bytesはdeterministicで、invalid Profile-B stateをrepairまたは
 partial publishできない。本lower profileはTask-249+、Task-259、fact、
 obligation、proof、semantic rowを作らない。
+
+## Task 260 Final Functor-Definition Ownership
+
+`ResolvedTypedAst`はtyped-owned finalization pathだけからcloneされるoptional
+immutable Task-260 handoff 1件を持ちます。five table、全lower fingerprint、
+baseline-plus-appended obligation table、Task-259 handoffと
+`PredicatePropertyCorrectness` baselineのrequired absenceをrevalidateします。
+second final obligation input/getterやresolver reconstructionはありません。
+clone/debug orderはdeterministicで、failureはrepair/renumber/partial publish
+できません。
+
+Task 260 absent時の`FunctorExistence` / `FunctorUniqueness`はorphanとして
+rejectします。present時はcorrectness tableがlinkするfinal row 2件だけをrequireし、
+additional functor-kind rowをrejectします。

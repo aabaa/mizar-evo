@@ -3087,6 +3087,20 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
 - [x] affected production/test-support inventoryをfresh final measurementし、checker
   `24/147030`、runner `31/63248`、checker producer/support `1794/1974`、
   runner production/test leaf `1233/517`をrecordする。
-- [ ] Task-259 fileだけをstageしてdedicated implementation commitを作成し、
-  repository/protected-stash invariantをverifyしてからpost-commit fresh
-  inventoryだけでnext dependency-ready taskを選ぶ。
+- [x] Task-259 fileだけをstageしimplementation commit
+  `b61be7e567b92d31b3544b86e5c7a68537625743`を作成、repository/stash
+  invariantをverifyしてTask 260をfresh inventoryする。
+
+## Checker Task 260 Frozen Consumer Prerequisite
+
+- [x] active consumer edit前にexact source/hash/AST/resolverとlower
+  Task-248/249/252/256 bundleをfreezeする。
+- [x] `2/2/1/2/2`、Pending obligation 2件、exact selection、lower corruption、
+  atomic install、replay、Task-259/mixed isolationをfreezeする。
+- [x] future pass pair/trace row 1、runner test 4、mechanical active-count assertion
+  6、count projection、empty semantic outputをfreezeする。
+- [x] prerequisite中current fixture/sidecar/expectation/trace row/status/
+  production/Cargoをbyte-unchangedに保つ。
+- [x] all four reviewをno findingsまでrepeatし、docs-only verificationを
+  all nine gates PASS、score capなしquality `100/100`でcompleteする。
+- [ ] exact staging、dedicated docs commit、post-commit gateをcompleteする。

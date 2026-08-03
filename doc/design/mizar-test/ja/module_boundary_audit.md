@@ -11482,3 +11482,30 @@ runnerは`31/63248`、
 `a9abe9fcbc4a9b04e84fcb6402e13b95cdcd71e7ed2952dbf1a8fb2e1b551a9f`である。
 final boundary reviewはno findingsで完了し、quality reviewは全9 hard gateを
 PASSしてscore capなしの`100/100`である。commit/post-commit gateは残る。
+
+## Checker Task 260 frozen consumer boundary
+
+Task 260は`src/runner/type_elaboration/`にone narrow private
+functor-definition transport routeを追加する。runnerはexact source/surface/
+resolver authenticationとalready frozen lower-stage public APIのcompositionを
+ownし、checkerはsyntax-free Task-260 extractor、table validation、fingerprint、
+pending initial obligation、transactional installationをownする。raw syntax/
+raw syntax typeはrunner privateのままで、checkerはsyntax dependencyを追加せず
+existing resolver/session dependencyだけを使う。
+
+implementation write boundaryはTask-260 checker module/test support、`lib.rs`、
+typed/final owner、`typed_ast.rs` / `type_checker.rs` /
+`registration_resolution.rs`のexhaustive serializer、lint policy、Task-260
+runner leaf/declaration、new pass fixture/sidecar 1件、new reciprocal trace row、
+mechanical active-count consumer 6箇所に限定する。existing Task-259 predicate
+code/artifactはisolation test以外read-onlyである。proof/discharge/acceptance/
+fact/VC ownershipと全computation-justification subtreeはlater owner向けにexclude
+する。
+
+current production inventoryはchecker `24/147030`、path/content hash
+`022586d6096dfa2eb05d6b0b9e91bf6dea71e5fc0a036f54a3bb462c7af16ac5` /
+`14ab798c611d954f9ea346367547240e58e9c5d0e04ec8a4ae68e2f20b71860b`、
+runner `31/63248`、hash
+`0d6edf22a94efd3497423f427accaf34341d223f4339a0adf9c4a7a523271e89` /
+`a9abe9fcbc4a9b04e84fcb6402e13b95cdcd71e7ed2952dbf1a8fb2e1b551a9f`
+のままである。このdocumentation prerequisiteはどの値も変更しない。

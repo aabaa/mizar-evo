@@ -5005,3 +5005,42 @@ The four runner tests are
 `4/4`; the full runner library count is `512`. The only adjacent active-count
 change is an independently reviewed `198 -> 199` in two source-statement
 selection tests, whose empty-selection assertions remain unchanged.
+
+## Checker Task 260 Frozen Functor-Definition Route
+
+The future private route is selected only by the exact 262-byte source and
+the complete normal 108-row/root-107 surface profile frozen in
+`mizar-checker/en/source_functor_definition.md`. It authenticates the
+definition block, ordered `x`/`y` parameters, one `assume` guard, the
+`equals` and `means` functor definitions, their explicit return types, raw
+resolver provenance, two explicit correctness clauses, and all specified
+excluded descendants. Sidecar outcome, stage, tags, diagnostics, and
+expectation data cannot select the route.
+
+After selection the route creates one shared surface-indexed `TypedArena` and
+calls only existing lower owners in order: Task 248 Profile B
+`1/2/2/2/2/2/0`, Task 249 `4/4/0`, Task 252 `5/5/0`, and Task 256
+`2/0/0/0/0/0/0/4/4`; Task 253 through 255 remain absent for the frozen
+source. Task 260 then publishes tables `2/2/1/2/2`, preserves the input
+obligation baseline, and appends pending `FunctorExistence` and
+`FunctorUniqueness` rows only for the `means` definition. Typed/final
+installation is all-or-nothing.
+
+The four future runner tests are
+`task260_real_source_surface_resolver_and_lower_bundle_is_exact`,
+`task260_source_ast_resolver_and_lower_mutations_fail_at_the_owner`,
+`task260_expectation_selection_and_predicate_route_stay_isolated`, and
+`task260_route_publishes_no_proof_fact_acceptance_or_vc`. They project the
+runner library count from `512` to `516`. The exact implementation also
+updates the six mechanical active-type consumers from `199` to `200`; it does
+not publish goal composition, proof, discharge, acceptance, facts/axioms,
+VC/IR, or Task-259 predicate payload.
+
+The first test asserts every source byte/final LF/hash, all 108 Surface rows
+and ordered children, the root/sibling/subtree partition, resolver profile,
+lower bundle, and final output. The second mutates each source/AST/resolver/
+lower family and every excluded descendant so failure stays at the owner. The
+third proves expectation non-selection, Task-259 and mixed-route isolation,
+and—together with metadata `137/137`—the sole reciprocal trace backlink. The
+fourth proves the computation subtrees and all proof/discharge/acceptance/
+fact/VC outputs remain absent and audits all six count consumers.

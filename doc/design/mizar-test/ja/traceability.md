@@ -2039,3 +2039,28 @@ active parse/declaration/type/proof `101/7/199/1`、type requirements
 reciprocal-sidecar invariantはmetadata test `137/137`でPASSする。final
 independent reviewは全件no findingsで完了し、全9 hard gateはPASS、score capなしの
 quality scoreは`100/100`である。task commitとpost-commit inventoryはpendingである。
+
+## Checker Task 260 frozen trace intent
+
+implementationはrequirement
+`spec.en.checker.type_elaboration.source_functor_definition_payload`をexactly
+1件追加する。sourceは
+`doc/design/mizar-checker/en/source_functor_definition.md`、sectionは
+`Dedicated Consumer And Trace Intent`であり、required/covered
+`type_elaboration` pass requirementとする。sole backlinkはnew
+`tests/miz/pass/types/pass_type_elaboration_functor_definition_payload_001.expect.toml`
+で、そのsidecarもreciprocalにこのrequirementだけを指す。
+
+creditはexact functor-definition transport、すなわちtable family
+`2/2/1/2/2`、explicit return/definiens lower-owner provenance、`means`
+definitionに対するbaseline-appended pending initial obligation 2件に限定する。
+`equals` definitionはexistence/uniqueness obligationを作らない。guard/goal
+FOL composition、computation proof、discharge、acceptance、fact/axiom、VC/IR、
+predicate-definition transportはTask-260 backlinkを得ない。
+
+このprerequisiteはfixture、sidecar、expectation、row、backlink、status、active
+creditを追加しない。current metadataはcases/requirements `422/390`、pass/fail
+`229/193`、active parse/declaration/type/proof `101/7/199/1`、type requirements
+`254/242`、warnings/errors `23/0`のままである。implementationは
+`423/391`、`230/193`、`101/7/200/1`、type `255/243`をprojectし、
+warnings/errorsは不変である。

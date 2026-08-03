@@ -1292,3 +1292,26 @@ runner is `31/63248` with
 `a9abe9fcbc4a9b04e84fcb6402e13b95cdcd71e7ed2952dbf1a8fb2e1b551a9f`.
 Final boundary review ended with no findings, and the quality review passed
 all nine hard gates with an uncapped `100/100`; commit/post-commit gates remain.
+
+## Task 260 Frozen Boundary
+
+Task 260 adds one future checker-owned syntax-free functor-definition module.
+Raw source bytes, Surface kinds and node IDs, sibling association, and resolver
+selection remain private to `mizar-test`. The checker consumes only resolver
+identities, lower dense IDs/fingerprints, typed sites/ranges/contexts, styles,
+return types, definiens targets, correctness associations, and a caller-owned
+baseline obligation table.
+
+Task 248 owns bindings/context; Task 249 owns written types; Tasks 252--256 own
+definiens roots; Task 260 only associates them with functor definitions and
+appends pending existence/uniqueness rows. Task 259 is an independent sibling.
+Proof/acceptance/fact/VC and Task 261+ remain outside the boundary. Current
+production remains checker `24/147030` and runner `31/63248` during the
+documentation prerequisite.
+
+The enum-extension boundary names all three exhaustive
+`InitialObligationKind` serializers: `typed_ast.rs`, `type_checker.rs`, and
+`registration_resolution.rs`. Each receives only the two frozen Task-260
+debug names. Task 260 does not edit Task-259 validation; instead it rejects a
+Task-259 handoff or predicate-property baseline and leaves mixed coexistence
+for a separately authorized owner.

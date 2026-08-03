@@ -1643,3 +1643,19 @@ separately replaceable runner input is added. Clone/debug order and bytes are
 deterministic, and invalid Profile-B state cannot be repaired or partially
 published. No Task-249+, Task-259, fact, obligation, proof, or semantic row is
 created by this lower profile.
+
+## Task 260 Final Functor-Definition Ownership
+
+`ResolvedTypedAst` gains one optional immutable Task-260 handoff cloned only
+through the typed-owned finalization path. It revalidates the five tables,
+all lower fingerprints, the exact baseline-plus-appended obligation table,
+and the required absence of a Task-259 handoff and
+`PredicatePropertyCorrectness` baseline row. There is no second final input/
+getter for obligations and no resolver-side reconstruction. Clone and debug
+order are deterministic; failure cannot repair, renumber, or partially
+publish either family.
+
+When Task 260 is absent, any `FunctorExistence` or `FunctorUniqueness` row is
+an orphan and final assembly rejects it. When Task 260 is present, final
+assembly requires exactly the two final rows linked by its correctness table
+and rejects any additional row of either functor kind.

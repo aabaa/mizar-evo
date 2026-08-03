@@ -4324,7 +4324,7 @@ criteriaは[payload_family_decomposition.md](./payload_family_decomposition.md)
     - [ ] **Tasks 258B4-B5:** composite theorem rootとbroader
       imported/outer/inner visibility profileをseparately freezeし、Tasks
       269-272 semanticsを吸収しない。
-- [ ] **Task 259:** predicate-definition/initial-obligation intake producer。
+- [x] **Task 259:** predicate-definition/initial-obligation intake producer。
 - [ ] **Task 260:** functor-definition/initial-obligation intake producer。
 - [ ] **Task 261:** attribute-definition producer。
 - [ ] **Task 262:** mode-definition producer。
@@ -6105,7 +6105,24 @@ runner、docs-only implementation commitはproducer taskを満たさない。
 - [x] final independent test-sufficiency、implementation、
   source/documentation-consistency reviewを全件no findingsで完了し、全9 hard
   gateをPASS、score capなしのfinal quality score `100/100`を得る。
-- [ ] Task-259 fileだけをstageしdedicated implementation commitを作成、
-  clean repository/protected-stash invariantをverifyしてnext dependency-ready
-  taskをfresh-inventoryする。post-commit inventoryがTask 260をnextと確認した
-  場合は、独立frozen-contract documentation prerequisiteを先に行う。
+- [x] Task-259 fileだけをstageしimplementation commit
+  `b61be7e567b92d31b3544b86e5c7a68537625743`を作成、clean repository/
+  protected-stash invariantをverifyしてTask 260をnextとしてfresh inventoryする。
+
+## Checker Task 260 Frozen-Contract Documentation Prerequisite
+
+- [x] clean post-Task-259 inventoryからTask 260をselectし、origin reference差を
+  report-only `repo_metadata_conflict`にclassifyする。
+- [x] exact 262-byte source/hash、108-row AST、three-shell/two-functor resolver、
+  parameter 2、guard 1、return type 2、equals/means、existence/uniqueness associationをfreeze。
+- [x] five dense `2/2/1/2/2` table、Task-248/249/252 requiredおよび
+  Task-253--256 optional fingerprint、Task-259 sibling isolationをfreeze。
+- [x] Pending `FunctorExistence`/`FunctorUniqueness`、empty assumptions、opaque
+  goal/provenance、proof/discharge/acceptance/fact/VC deferralをfreeze。
+- [x] Typed/Resolved atomic ownership、runner consumer、新規pass pair/trace intent、
+  test 9件、write scope、count projection、exclusionをfreeze。
+- [x] review-only specification auditを**NO FINDINGS**までrepeatする。
+- [x] docs-only verificationをcompleteし、all nine gates PASS、score capなし、
+  final read-only quality `100/100`を得る。
+- [ ] exact staging、dedicated docs commit、fresh implementation preflightを
+  completeする。

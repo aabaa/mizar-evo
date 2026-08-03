@@ -1427,3 +1427,20 @@ exact five-file/four-test implementation scope、runner `504 -> 508`
 projection、unchanged active metadata、separate documentation/implementation
 commitを同期する。両言語はfindings-free、nine-gate、score capなしの
 documentation quality `100/100`も記録する。exceptionはない。
+
+## Checker Task 260 frozen consumer synchronization
+
+canonical ENとcompanion JAはexact future 262-byte/nine-line pass fixtureと
+SHA-256
+`9bbf50016c72faf8b86342a9a65f8d59bf7747b85b43b6c5bc3c624c7212416a`、
+normal 108-row/root-107 surface identity、resolver shell 3件、functor
+projection 2件、Task-260 table family `2/2/1/2/2`、exact lower-owner
+compositionを同期する。new pending `FunctorExistence` / `FunctorUniqueness`
+obligation intent、strict predicate-route isolation、mutation/transaction/
+determinism test、projected runner count `512 -> 516`も同期する。
+
+両言語はこのprerequisiteがdocumentation-onlyであることを記録する。
+production、fixture、sidecar、expectation、trace row、active metadataは
+`422/390`、`229/193`、`101/7/199/1`、type `254/242`、warnings/errors
+`23/0`のまま不変である。future implementationがnew pass artifactとsole trace
+backlinkをownする。synchronization exceptionはない。

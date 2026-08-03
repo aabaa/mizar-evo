@@ -1540,3 +1540,16 @@ Attribute/Attribute property projectionをsemantic evidenceとしてconsume
 しない。Task 259はcomputation justificationをdescend/interpretせず、
 Task 272がfuture proof/justification ownershipを保持する。Task 260はmixed
 predicate-plus-functor gapをseparately retainする。
+
+## Task 260 Functor-Definition Family
+
+Task 260はdefinition/shared context parameter/shared guard/definiens/
+correctness associationのseparate five-table familyです。definiensはexisting
+Task-252/253/254/255/256 lower root 1件だけをpointし、rowをcopyしません。active
+sourceはdefinition/definiens各2、Primary equals target 1、AtomicFormula means
+target 1です。
+
+explicit means clauseだけから`FunctorExistence`/`FunctorUniqueness`をappendし、
+semantic goal/proof/acceptance/fact/VCを保存しません。Task 259/260は
+cross-fingerprint/reinterpretせずTask 260ではmutually exclusiveです。mixed
+coexistenceはseparate deferred ownerに残します。

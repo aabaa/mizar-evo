@@ -1478,3 +1478,21 @@ runner `504 -> 508` projection, unchanged active metadata, and separate
 documentation/implementation commits. Both record the findings-free,
 nine-gate, uncapped `100/100` documentation-quality result. There is no
 exception.
+
+## Checker Task 260 Frozen-Consumer Synchronization
+
+Canonical EN and companion JA synchronize the exact future 262-byte,
+nine-line pass fixture and SHA-256
+`9bbf50016c72faf8b86342a9a65f8d59bf7747b85b43b6c5bc3c624c7212416a`,
+its normal 108-row/root-107 surface identity, three resolver shells, two
+functor projections, five Task-260 table families `2/2/1/2/2`, and the exact
+lower-owner composition. They also synchronize the new pending
+`FunctorExistence` and `FunctorUniqueness` obligation intent, strict
+predicate-route isolation, mutation/transaction/determinism tests, and the
+projected runner count `512 -> 516`.
+
+Both languages record that this prerequisite is documentation-only. It keeps
+all production, fixtures, sidecars, expectations, trace rows, and active
+metadata unchanged at `422/390`, `229/193`, `101/7/199/1`, type `254/242`,
+and warnings/errors `23/0`. The future implementation owns the new pass
+artifact and sole trace backlink; no synchronization exception exists.

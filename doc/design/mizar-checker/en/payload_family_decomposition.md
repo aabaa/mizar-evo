@@ -1611,3 +1611,18 @@ Attribute/Attribute property projection is not consumed as semantic
 evidence. Task 259 does not descend into or interpret the computation
 justification; Task 272 retains that future proof/justification ownership.
 Task 260 separately retains the mixed predicate-plus-functor gap.
+
+## Task 260 Functor-Definition Family
+
+Task 260 is a separate five-table source family: definitions, shared context
+parameters, shared guards, definientia, and correctness associations. A
+definiens points to exactly one existing Task-252/253/254/255/256 lower root;
+it never copies the lower row. The active source installs two definitions and
+two definientia, one primary `equals` target and one atomic-formula `means`
+target.
+
+The family appends `FunctorExistence` and `FunctorUniqueness` only for the
+explicit means correctness clauses. It stores no semantic goal composition,
+proof, acceptance, fact, or VC. Task 259 and Task 260 do not cross-fingerprint
+or reinterpret one another and are mutually exclusive in Task 260; mixed
+coexistence remains a separate deferred owner.
