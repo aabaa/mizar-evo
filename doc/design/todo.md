@@ -94,8 +94,8 @@ is its task 1). "Next work" points into the
 | mizar-parser | Grammar, Pratt parsing, syntax recovery, parse-only corpus | [x] Tasks 1-48 plus bounded `PARSER-RECOVERY-B1B1P-P1` complete; historical post-Task-46 score 99/100 | no inferred Task 49; human-owned P-265-47D remains separate | [todo](./mizar-parser/en/todo.md) |
 | mizar-frontend | Source loading and phase 1-3 orchestration | [x] prior milestone plus `PARSER-RECOVERY-B1B1P-P1-FE` regression complete | — | [todo](./mizar-frontend/en/todo.md) |
 | mizar-resolve | Module graph, namespaces, symbols, labels, signatures | [~] complete through task 29, Checker Task 263R, and Task 264R implementation | Preserve Task-264R shell/no-symbol boundary through Checker Tasks 248P/264 | [todo](./mizar-resolve/en/todo.md) |
-| mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] foundation complete through task 22; Tasks 265-268, Core-31, and Checker consumers through Task 264 are implemented | Verify and commit Task 264, then fresh-inventory the next dependency-ready consumer | [todo](./mizar-test/en/todo.md) |
-| mizar-checker | Type checking, cluster/registration resolution, overload resolution | [~] explicit-payload milestone and source producers through Task 264 are implemented, including the frozen property transport | Verify and commit Task 264, then select the next dependency-ready checker task | [todo](./mizar-checker/en/todo.md) |
+| mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] foundation complete through task 22; Tasks 265-268, Core-31, and Checker consumers through committed Task 264 are implemented | Freeze Checker Task 269A's dormant named-witness binding consumer | [todo](./mizar-test/en/todo.md) |
+| mizar-checker | Type checking, cluster/registration resolution, overload resolution | [~] explicit-payload milestone and source producers through committed Task 264 are implemented | Complete Checker Task 269A's named-witness binding documentation prerequisite | [todo](./mizar-checker/en/todo.md) |
 | mizar-core | Elaboration, binder-normalized core logic, control-flow preparation | [x] core/control-flow milestone, tasks 27-32 complete | step-5 Tasks 33-53 under the Task-32 graph | [todo](./mizar-core/en/todo.md) |
 | mizar-vc | VC IR, VC generation, deterministic pre-ATP discharge | [x] exact source-derived contradiction VC integration complete through task 31 | dependency-paced VC Tasks 32-55; VC 40/53 and S1 gates remain explicit | [todo](./mizar-vc/en/todo.md) |
 | mizar-kernel | Trusted certificate parsing and checking | [x] SAT-backed kernel milestone complete | step 4 task 35 resolved; task 32 parked; tasks 30-34 resolved | [todo](./mizar-kernel/en/todo.md) |
@@ -4107,7 +4107,7 @@ or semantic owner changed. B3M2B2B remains next before B4.
   implement only the frozen two-profile consumer.
 - [x] Complete Task-264 review/verification and preserve its exact task-only
   target for the parent-owned commit.
-- [ ] After that commit, confirm clean fresh inventory and continue
+- [x] After that commit, confirm clean fresh inventory and continue
   automatically to the next dependency-ready task.
 
 ## Checker Task 249PI Property-Type Composition Prerequisite
@@ -4129,3 +4129,17 @@ or semantic owner changed. B3M2B2B remains next before B4.
 - [x] Commit the implementation as
   `73a34f94c7d46d7c0698b09a43ab3e1f00bb07a7` and return automatically to
   Task 264.
+
+## Checker Task 269A Named-Witness Local Binding
+
+- [x] Confirm Task-264 commit `52cf07be3c77d3aa2a797a7681ed9cbabf88295b`,
+  clean fresh inventory, report-only metadata conflict, unchanged protected
+  stash, and dependency readiness of the first Task-269 slice.
+- [x] Freeze exact Task-258B3N source/provenance, definition-site binding/RHS
+  linkage, post-binding environment, fingerprints, Typed/final ownership,
+  dormant runner consumer, tests, exclusions, deferrals, count/hash impact,
+  and exit criteria in paired EN/JA records.
+- [ ] Complete repeated docs reviews and all nine docs-only hard gates, then
+  create the separate documentation prerequisite commit.
+- [ ] Fresh-inventory and implement/review/verify/commit only Task 269A, then
+  continue automatically to the next dependency-ready Task-269 slice.

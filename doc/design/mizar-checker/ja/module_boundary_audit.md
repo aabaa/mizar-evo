@@ -1529,3 +1529,24 @@ new ownerは2460 line、external test supportは2004 line。`lib.rs`、`typed_as
 `source_term.rs`、`type_checker.rs`、`registration_resolution.rs`、
 `resolved_typed_ast.rs`、lint policyはそれぞれ50、5455、2263、13244、5897、7727、
 1931 lineである。
+
+## Task 269A frozen module boundary
+
+new checker production ownerはsyntax-free
+`src/source_proof_local_declaration.rs`だけ。`lib.rs`がexportし、`TypedAst`/
+`ResolvedTypedAst`はprivate optional handoffとread-only getterを1件ずつ追加
+するが、`TypedAstParts`/`ResolvedTypedAstInputs`は不変。checker binding/
+statement/term/typed typeとresolver `LocalTermBinding`へdependできるが、parser/
+syntax typeへdependしない。
+
+implementationは`tests/lint_policy.rs`も更新し、module-to-doc、public-API、
+enum-policy、module-export、source-layout guardへnew ownerを認識させる。これは
+guard maintenanceでありadditional test/semantic ownerではない。source/spec/
+module-layout inventoryはimplementation commitと同時にactiveになる。
+
+runnerはprivate dormant leafでexact raw-source/Surface authenticationを所有し
+public dispatchを追加しない。既存Task-258B3N node ownershipは
+`source_statement`に残り、新moduleはnode kind/role、Task-269B+、Tasks
+270--272、proof/fact/IR/VC、corpus artifactをownしない。docs時manifestは
+checker `29/162347`、runner `36/69417`不変。implementation後は各1 path増を
+含むline/path/content hashを再測定する。

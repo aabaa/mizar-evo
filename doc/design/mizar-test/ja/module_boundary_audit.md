@@ -11709,3 +11709,14 @@ complete production selectionは`36/69417`、path/content hashは
 Cargo edge、public route API、expectation-schema owner、proof runner、parser/resolver
 moduleは変更しない。raw-source/Surface consumerはこのrouteだけで、checkerへは
 syntax-free handoffだけを渡す。
+
+## Checker Task 269A frozen dormant runner boundary
+
+`runner/type_elaboration`下private leaf 1件とincluded test leaf 1件がrunnerの
+complete write scope。sibling Task-258B3N helperとresolver
+`LocalTermBinding`をreuseでき、checkerへ越えるのはsyntax-free handoffだけ。
+facade detail key、active dispatch branch、Cargo edge、expectation/trace owner、
+proof runner、parser/resolver変更はない。
+
+docsはrunner `532`/`36/69417`を保存する。implementationは`536`とproduction
+path +1をprojectし、exact line/hashを再測定する。

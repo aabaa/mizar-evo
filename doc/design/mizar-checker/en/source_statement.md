@@ -4014,3 +4014,16 @@ The runner independently validates env/module, module-derived namespace,
 exact one id-0 LocalSource contribution record/public `ast.source_id`, and
 each projection's module/namespace/contribution. Every field mutation is
 input-only and therefore cannot publish this DTO.
+
+## Task 269A Frozen Upper Consumer Boundary
+
+Task 269A consumes, but does not modify, the exact Task-258B3N
+`SourceStatementHandoff` and `SourceStatementWitnessHandoff`. Witness 0, name
+0, and RHS `Primary(2)` are immutable lower identities; their complete debug
+bytes are retained as upper fingerprints. The new handoff owns only the
+definition-site association and extended binding environment.
+
+The existing name node 13 remains `source.statement-witness.name`, witness
+node 36 remains `source.statement-witness.item`, and take node 37 remains
+`source.statement-witness.take`. No `source.proof-local.*` node is created.
+The existing Task-258B3N route/debug result remains a stable lower oracle.

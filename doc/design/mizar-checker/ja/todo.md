@@ -6373,7 +6373,7 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   transportだけを実装した。
 - [x] Task264 review、全9 gate、exact count/hash verificationを完了し、
   parent-owned commit用task-only targetを保存する。
-- [ ] commit後clean fresh inventoryを確認し、次のdependency-ready taskへ
+- [x] commit後clean fresh inventoryを確認し、次のdependency-ready taskへ
   自動継続する。
 
 ## Checker Task 249PI property-type composition prerequisite
@@ -6397,3 +6397,24 @@ runner、docs-only implementation commitはproducer taskを満たさない。
 - [x] reviewed checker-only Task249PI implementationを
   `73a34f94c7d46d7c0698b09a43ab3e1f00bb07a7`としてcommitし、Task249PIへ
   property semantics/runner/corpus/adjacent lower workを混ぜずTask264へ戻った。
+
+## Checker Task 269A named-witness binding slice
+
+- [x] committed Task 264、clean worktree、report-only origin divergence、
+  protected stash不変、canonical authority、広いgap fixture/trace、Tasks
+  248--258 public APIをfresh inventoryし、Task 269Aだけを選択する。
+- [x] exact 107-byte Task-258B3N source、51-node arena、resolver
+  `LocalTermBinding`、`2/1/0 -> 2/2/0` binding transition、witness/name/RHS
+  link、5 fingerprints、debug grammar、Typed/final ownership、private
+  dormant consumer、exclusion、exact 8 tests、count/hash impact、deferral、
+  exit criteriaをEN/JAへfreezeする。
+- [x] review-only specification/source-doc auditを**NO FINDINGS**まで反復し、
+  docs-only全9 hard gatesをscore capなし90/100以上でpassする。
+- [ ] Task-269A documentation prerequisiteだけをstage/commitし、production、
+  fixture、sidecar、expectation、trace、metadata、CLIが不変であることを確認
+  してfrozen implementationをfresh inventoryする。
+- [ ] frozen producer、one-shot Typed/final owner、private dormant consumer、
+  checker 4 + runner 4 testsだけを実装する。
+- [ ] test/implementation/source-doc/final quality reviewを**NO FINDINGS**まで
+  反復し、全verification/count/hash gate後に1 logical taskをcommitして
+  Task 269B+へ自動継続する。

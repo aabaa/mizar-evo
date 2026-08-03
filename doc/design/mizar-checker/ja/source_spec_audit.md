@@ -5517,3 +5517,16 @@ orphan-extra obligation/Task259 isolation gapをcloseする。Parameter declarat
 anchorとEquals selector-member ownershipの修正はderived designを既存frozen
 Task248P/254 public APIへ整合させる。`doc/spec`、existing `.miz`、existing
 expectation intentは変更せず、このbounded transactionにblocking `spec_gap`はない。
+
+## Task 269A frozen source/specification audit
+
+Chapter 4 §4.4.3とChapter 15 §15.4.4はnamed `take y = x`のlocal identifier
+を明記し、Chapter 16 §16.4がproof-local scopeを固定する。exact
+Task-258B3N lower transportはname/RHSを既に認証するがbindingを意図的に作ら
+ない。このauthorityはfrozen definition-site binding/link transitionには十分
+だが、それを越えるsemanticsには不十分である。blocking `spec_gap`はない。
+
+contractはone exact sourceの`source_drift`、`design_drift`、canonical-derived
+8-test `test_gap`だけを閉じる。module symbol作成、checker側parse、type inference、
+equality fact、existential/goal/proof behaviorは`boundary_violation`。既存
+`.miz`/expectation intentと広いdeferred proof-local fixtureは不変。

@@ -52,6 +52,7 @@ after this task.
 | `source_formula_composition.md` | `../ja/source_formula_composition.md` | `../en/source_formula_composition.md` | Task-257B1/B2/B3 plus frozen Task-257C2 authority/boundary, composite-to-atomic/bound-use transport, dedicated condition-to-atomic transport, dependency fingerprints, atomic installation, exact consumers, exclusions, public enum policy | none |
 | `source_functor_definition.md` | `../ja/source_functor_definition.md` | `../en/source_functor_definition.md` | Task-260 authority/boundary, exact public definition/parameter/guard/definiens/correctness ABI and debug grammar, resolver provenance, Task-248--256 association, baseline-preserving initial-obligation append and orphan rejection, Task-259 mutual exclusion, TypedAst/ResolvedTypedAst installation, exact consumer, exclusions, public enum policy | none |
 | `source_predicate_definition.md` | `../ja/source_predicate_definition.md` | `../en/source_predicate_definition.md` | Task-259 authority/boundary, predicate-definition/parameter/guard/property/correctness tables, resolver provenance, Task-248/249/252/256 association, baseline-preserving initial-obligation append, TypedAst/ResolvedTypedAst installation, exact consumer, exclusions, public enum policy | none |
+| `source_proof_local_declaration.md` | `../ja/source_proof_local_declaration.md` | `../en/source_proof_local_declaration.md` | Task-269A Chapters-4/15/16 authority, exact Task-258B3N source/AST/lower profile, resolver-local provenance, definition-site binding/RHS association, binding-environment transition, fingerprints/debug grammar, Typed/final ownership, dormant consumer, tests/counts/exclusions/public enum policy | none |
 | `source_property_implementation.md` | `../ja/source_property_implementation.md` | `../en/source_property_implementation.md` | Task-264 Chapters-5/7/13/16 authority, exact means/equals sources and 85/56-row ASTs, resolver property provenance, Task-248P/249PI/252/254/256 association, five-table public ABI, means-only `it`, declared return lookup, pending property obligations, Typed/Resolved ownership, Task-259 isolation, exact consumers/counts/exclusions/public enum policy | none |
 | `source_set_term.md` | `../ja/source_set_term.md` | `../en/source_set_term.md` | Task-255/255C1 authority/boundary, seven-table set/choice/qua/generator/type-site/condition/edge/request transport, Task-252/253/254 fingerprint association, exact and synthetic consumers, exclusions, public enum policy | none |
 | `source_structure.md` | `../ja/source_structure.md` | `../en/source_structure.md` | Task-254 authority/boundary, seven-table structure/member/FieldUpdate/edge/request transport, Task-252/253 fingerprint association, exact and synthetic consumers, exclusions, public enum policy | none |
@@ -1688,3 +1689,13 @@ Task-249PI sites, exact all-node arena ranges, means-only `it` failure rules,
 two pending obligations, Typed/final one-shot ownership, the four-test private
 consumer, two reciprocal pass sidecars, measured metadata, and unchanged
 semantic deferrals. The audit found no untranslated normative delta.
+
+## Task 269A Frozen-Contract Synchronization
+
+EN canonical `source_proof_local_declaration.md` and its JA companion agree on
+the exact 107-byte/51-node Task-258B3N source, resolver-local `y`, binding
+transition `2/1/0 -> 2/2/0`, witness/name/RHS links, five fingerprints, public
+API/debug grammar, zero node re-ownership, Typed/final transaction, private
+dormant runner, exactly eight tests, projected `482/536`, zero corpus/trace
+impact, semantic exclusions, and Task-269B+/270--272 deferrals. No
+untranslated normative delta remains before review.

@@ -3265,5 +3265,18 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
   `73a34f94c7d46d7c0698b09a43ab3e1f00bb07a7`としてcommitした。
 - [x] fresh inventory後already-frozen Task264 routeだけをselectした。
 - [x] selected Task264 routeをadjacent semanticsなしで実装した。
-- [x] selected Task264 routeをreview/verifyし、commit/post-commit inventoryは
-  parent-owned gateに残す。
+- [x] selected Task264 routeをreview/verifyし、implementation commit
+  `52cf07be3c77d3aa2a797a7681ed9cbabf88295b`、clean post-commit inventory、
+  automatic Task-269A selectionを完了した。
+
+## Checker Task 269A dormant consumer
+
+- [x] exact Task-258B3N source/AST、existing private route、広いproof-local gap
+  fixture/trace、active dispatch order、current `532` tests / `36/69417`
+  production baselineをfresh inventoryする。
+- [x] private exact-source leaf 1件、resolver-local provenance、lower/checker
+  ownership order、tests 4件、near-miss isolation、semantic emptiness、
+  `532 -> 536`、corpus/trace/CLI impact 0をEN/JAへfreezeする。
+- [ ] runner/corpus byteを変更せずdocs review/commitを完了する。
+- [ ] fresh inventory後dormant consumer/tests 4件だけをimplementation/reviewし、
+  production/test hashを再測定して全active corpus/metadata/CLI値を保存する。

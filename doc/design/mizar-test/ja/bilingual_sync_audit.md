@@ -1558,3 +1558,12 @@ tests 4件、reciprocal pass sidecars 2件、covered trace row 1件、metadata
 `428/395`、active stages `101/7/205/1`、transport-only creditで一致する。
 overlap/coherence seedはinactive、goal/guard/proof/discharge/acceptance/fact/
 Core/CFG/VCはすべてdeferredのままである。
+
+## Checker Task 269A frozen dormant-consumer synchronization
+
+EN/JAはexact B3N source/hash/51-node selector、resolver-local `y`、immutable
+lower route、private dormant leaf、runner tests 4件、projected `532 -> 536`、
+runner source path +1、active dispatchなし、fixture/sidecar/expectation/trace/
+metadata/diagnostic/CLI delta 0で一致する。witness typing、goal、proof、fact、
+acceptance、Core/CFG/VC semanticsはlater ownerへ残す。review前bilingual
+harness debtはない。

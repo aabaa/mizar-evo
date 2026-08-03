@@ -1789,3 +1789,17 @@ all Task-259--263 sibling coexistence with
 `InvalidSourcePropertyImplementation`. The read-only getter publishes
 transport only; expression metadata, checked formulas, facts, diagnostics,
 proof/acceptance state, property values, Core, CFG, and VC remain unchanged.
+
+## Task 269A Frozen Final Ownership
+
+Final assembly clone-preserves the typed
+`SourceProofLocalDeclarationHandoff` through one read-only getter and no
+`ResolvedTypedAstInputs` replacement field. It recomputes all lower/final
+fingerprints and the binding transition before publication. An orphan,
+half-installed, stale, or corrupt value fails as
+`InvalidSourceProofLocalDeclaration`.
+
+The final owner publishes only the definition-site association and extended
+binding environment. Expression metadata, overload/coercion/cluster tables,
+checked formulas, statement semantics, proofs/goals, obligations, diagnostics,
+facts, Core, CFG, and VC remain empty or unchanged.

@@ -4880,3 +4880,15 @@ pending obligation 2件、Equalsは双方zeroをrequireする。mutation matrix�
 Surface/shell/resolver/context/type/term/structure/formula/property/arena ownerでfailする。
 Parser Task48 case、inactive coherence seed、Task259 case、mixed predicate/functor gapを
 selectせず、transport以外のsemantic resultをpublishしない。
+
+## Checker Task 269A frozen dormant harness
+
+new helperはexisting named-witness extractorが全51 nodesを認証した後のexact
+`SOURCE_STATEMENT_B3N_TEXT`だけをmatchする。existing Task-258B3N routeを
+immutable lower oracleとして呼び、`LocalTermBinding("y", [0], 81..82, 1)`、
+Task 269A build/install、same empty final assemblerを順に実行する。checkerはraw
+source/Surface ASTを受け取らない。
+
+helperはdedicated testsからだけreachableで、active type-elaboration selector
+chainへ挿入しない。expectation、trace、metadata、diagnostic、CLIへ影響しない。
+exact/near-miss、mutation、route isolation、final replay testsは計4件。

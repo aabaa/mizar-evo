@@ -597,3 +597,15 @@ implemented routeはclassified structure-definition `source_drift`とcanonical�
 obligationをunchangedに保つ。Chapter 5/MC-G017/MC-G018はpartialのままで、acceptance、
 proof、fact、constructor/selector/update、property、nonidentical coherence、downstream
 IR meaningはすべてdeferredである。
+
+## Task 269A frozen semantic boundary
+
+Chapter-4/15 authorityが許すのはnamed-witness local `y`のcreation、scope、
+source order、definition-site associationだけ。rowは`LocalAbbreviation`/
+`BindingTypeSite::Missing`であり、type resultまたはaccepted abbreviation
+theoremではない。Chapter-16 proof effectはdeferredのまま。
+
+Task 269Aはequality fact、existential witness match、goal/guard composition、
+substitution、obligation、proof、discharge、acceptance、theorem fact、Core、CFG、
+VCを公開しない。Task 269B+がlater-use/capture replay、Tasks 270--272が明示
+されたqueued semantic familyを所有する。

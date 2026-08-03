@@ -736,3 +736,16 @@ implemented Profile Cはfrozen active definition-parameter binding/declaration c
 またはrecovered empty context + recovery diagnostic 1件だけをpublishする。
 `BindingEnv` type/constructor/lookup/semantic payloadは変更せず、Profile A/Bのprior byteと
 validation precedenceを保存する。
+
+## Task 269A frozen named-witness binding transition
+
+exact Task-258B3N base environment `2/1/0`はimmutable input。Task 269Aは
+context 1を`bindings=[1]`/`visible_bindings=[0,1]`として再構成し、exact
+`y` binding 1を`LocalAbbreviation`、resolver-local scope `[0]`、declaration
+`81..82`、visible-after 1、missing type site、active、empty capture/diagnostic、
+normal recoveryでappendする。context 0/binding 0はbyte-identical、diagnosticは
+emptyのまま。
+
+ordinal 1 lookupは`y`を見ず、同scopeのlater lookupはbinding 1を見る。この
+transitionはdefinition-site identityだけを記録する。later-use/capture replayは
+Task 269B+、witness typing/goal effectはTask 272が保持する。

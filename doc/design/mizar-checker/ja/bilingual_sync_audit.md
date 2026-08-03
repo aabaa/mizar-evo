@@ -51,6 +51,7 @@ task 33 で pair が同期済みであるとは、以下をすべて満たすこ
 | `source_formula_composition.md` | `../ja/source_formula_composition.md` | `../en/source_formula_composition.md` | Task-257B1/B2/B3とfrozen Task-257C2 authority/boundary、composite-to-atomic/bound-use transport、dedicated condition-to-atomic transport、dependency fingerprint、atomic installation、exact consumer、exclusion、public enum policy | none |
 | `source_functor_definition.md` | `../ja/source_functor_definition.md` | `../en/source_functor_definition.md` | Task-260 authority/boundary、exact public definition/parameter/guard/definiens/correctness ABI/debug grammar、resolver provenance、Task-248--256 association、baseline-preserving initial-obligation append/orphan rejection、Task-259 mutual exclusion、TypedAst/ResolvedTypedAst installation、exact consumer/exclusion/public enum policy | none |
 | `source_predicate_definition.md` | `../ja/source_predicate_definition.md` | `../en/source_predicate_definition.md` | Task-259 authority/boundary、predicate-definition/parameter/guard/property/correctness table、resolver provenance、Task-248/249/252/256 association、baseline-preserving initial-obligation append、TypedAst/ResolvedTypedAst installation、exact consumer、exclusion、public enum policy | none |
+| `source_proof_local_declaration.md` | `../ja/source_proof_local_declaration.md` | `../en/source_proof_local_declaration.md` | Task-269A Chapters-4/15/16 authority、exact Task-258B3N source/AST/lower profile、resolver-local provenance、definition-site binding/RHS association、binding-environment transition、fingerprint/debug grammar、Typed/final ownership、dormant consumer、test/count/exclusion/public enum policy | none |
 | `source_property_implementation.md` | `../ja/source_property_implementation.md` | `../en/source_property_implementation.md` | Task-264 Chapters-5/7/13/16 authority、exact means/equals sources/85/56-row AST、resolver property provenance、Task-248P/249PI/252/254/256 association、five-table public ABI、means-only `it`、declared return lookup、pending property obligations、Typed/Resolved ownership、Task-259 isolation、exact consumer/count/exclusion/public enum policy | none |
 | `source_set_term.md` | `../ja/source_set_term.md` | `../en/source_set_term.md` | Task-255/255C1 authority/boundary、seven-table set/choice/qua/generator/type-site/condition/edge/request transport、Task-252/253/254 fingerprint association、exact/synthetic consumer、exclusion、public enum policy | none |
 | `source_structure.md` | `../ja/source_structure.md` | `../en/source_structure.md` | Task-254 authority/boundary、seven-table structure/member/FieldUpdate/edge/request transport、Task-252/253 fingerprint association、exact/synthetic consumer、exclusion、public enum policy | none |
@@ -1614,3 +1615,12 @@ carrier/marker provenance、profile-specific Task-249PI sites、全nodeのexact 
 ranges、means-only `it` failure rules、pending obligations 2件、Typed/final one-shot
 ownership、private consumer tests 4件、reciprocal pass sidecars 2件、measured metadata、
 unchanged semantic deferralsで一致する。未翻訳normative deltaはない。
+
+## Task 269A frozen-contract synchronization
+
+EN canonical `source_proof_local_declaration.md`とJA companionはexact
+107-byte/51-node Task-258B3N source、resolver-local `y`、binding transition
+`2/1/0 -> 2/2/0`、witness/name/RHS link、5 fingerprints、public API/debug
+grammar、node再所有0、Typed/final transaction、private dormant runner、exact
+8 tests、projected `482/536`、corpus/trace impact 0、semantic exclusion、
+Task-269B+/270--272 deferralで一致する。review前に未翻訳normative deltaはない。

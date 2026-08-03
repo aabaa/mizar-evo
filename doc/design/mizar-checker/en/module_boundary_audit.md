@@ -1583,3 +1583,26 @@ The new owner is 2460 lines and its external test support is 2004 lines;
 `lib.rs`, `typed_ast.rs`, `source_term.rs`, `type_checker.rs`,
 `registration_resolution.rs`, `resolved_typed_ast.rs`, and lint policy are
 respectively 50, 5455, 2263, 13244, 5897, 7727, and 1931 lines.
+
+## Task 269A Frozen Module Boundary
+
+The only new checker production owner is syntax-free
+`src/source_proof_local_declaration.rs`. `lib.rs` exports it; `TypedAst` and
+`ResolvedTypedAst` each add one private optional handoff plus a read-only
+getter, while `TypedAstParts` and `ResolvedTypedAstInputs` remain unchanged.
+The module may depend on checker binding/statement/term/typed types and
+resolver `LocalTermBinding`, but not parser or syntax types.
+
+The implementation also updates `tests/lint_policy.rs` so the module-to-doc,
+public-API, enum-policy, module-export, and source-layout guards recognize the
+new owner. This is guard maintenance, not an additional test or semantic
+owner. Source/spec and module-layout inventories become active only with the
+implementation commit.
+
+The runner owns exact raw-source/Surface authentication in one private dormant
+leaf with no public dispatch. Existing Task-258B3N node ownership remains in
+`source_statement`; the new module adds no node kind/role and cannot own
+Task-269B+, Tasks 270--272, proof/fact/IR/VC behavior, or corpus artifacts.
+Docs-time production manifests remain checker `29/162347` and runner
+`36/69417`; implementation will add one source path to each and remeasure all
+line/path/content hashes.

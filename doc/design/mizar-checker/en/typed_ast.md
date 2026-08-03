@@ -1818,3 +1818,17 @@ existence then uniqueness rows, while equals appends none. Duplicate, orphan,
 extra, stale, half-published, or Task-259--263 sibling transactions fail as
 `InvalidSourcePropertyImplementation` without changing the input value. The
 private field is observable only through the documented read-only getter.
+
+## Task 269A Frozen Typed Ownership
+
+`TypedAst` will add one private optional
+`SourceProofLocalDeclarationHandoff`, read-only getter, and consuming
+`with_source_proof_local_declaration` installer. `TypedAstParts` stays
+unchanged. Installation is legal only over the exact Task-258B3N lower bundle
+and empty semantic tables; it replays all five fingerprints, all 51 existing
+nodes, the one declaration row, and the `2/1/0 -> 2/2/0` binding transition.
+
+Success appends the new debug block but changes no arena node. Duplicate,
+orphan, stale, same-length-corrupt, lower-hybrid, or semantic-table-bearing
+inputs fail transactionally as `InvalidSourceProofLocalDeclaration`. Existing
+Task-258B3N construction without the installer remains byte-identical.

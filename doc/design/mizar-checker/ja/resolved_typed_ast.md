@@ -1709,3 +1709,15 @@ orphan/extra property kindとTask259--263 sibling coexistenceを
 `InvalidSourcePropertyImplementation`でrejectする。read-only getterはtransportだけを
 publishし、expression metadata/checked formula/fact/diagnostic/proof/acceptance/
 property value/Core/CFG/VCは不変である。
+
+## Task 269A frozen final ownership
+
+final assemblyはtyped `SourceProofLocalDeclarationHandoff`をone read-only
+getter、`ResolvedTypedAstInputs` replacement fieldなしでclone-preserveする。
+publish前に全lower/final fingerprintとbinding transitionを再計算する。orphan、
+half-installed、stale、corrupt valueは`InvalidSourceProofLocalDeclaration`。
+
+final ownerが公開するのはdefinition-site associationとextended binding
+environmentだけ。expression metadata、overload/coercion/cluster、checked
+formula、statement semantics、proof/goal、obligation、diagnostic、fact、Core、
+CFG、VCはemptyまたは不変。

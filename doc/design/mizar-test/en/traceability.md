@@ -2397,3 +2397,16 @@ trace SHA-256 is
 `55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`.
 The row credits source transport and pending initial-obligation intake only;
 the advanced-semantics overlap/coherence seed remains inactive and unchanged.
+
+## Checker Task 269A Frozen Zero-Credit Trace Boundary
+
+Task 269A is a private dormant transport/test slice. It adds no requirement,
+backlink, fixture, sidecar, expectation, status, owner, metadata case, active
+outcome, or executable coverage credit. Requirements/cases remain `395/428`,
+type coverage remains `259 = 247 covered + 12 deferred`, and trace SHA-256
+remains
+`55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`.
+The existing broad proof-local diagnostic-gap rows remain covered and
+unchanged; they grant no credit to positive named-witness binding semantics,
+which remain deferred. Any later active Task-269 coverage requires a separate
+trace decision.

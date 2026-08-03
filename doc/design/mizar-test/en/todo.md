@@ -3489,5 +3489,19 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
   `73a34f94c7d46d7c0698b09a43ab3e1f00bb07a7`.
 - [x] Fresh-inventory and select only the already frozen Task-264 route.
 - [x] Implement the selected Task-264 route without adjacent semantics.
-- [x] Review and verify the selected Task-264 route; leave commit and
-  post-commit inventory to the parent-owned gates.
+- [x] Review and verify the selected Task-264 route; complete implementation
+  commit `52cf07be3c77d3aa2a797a7681ed9cbabf88295b`, clean post-commit inventory,
+  and automatic Task-269A selection.
+
+## Checker Task 269A Dormant Consumer
+
+- [x] Fresh-inventory exact Task-258B3N source/AST, existing private route,
+  broad proof-local gap fixture/trace, active dispatch order, and current
+  `532` test / `36/69417` production baseline.
+- [x] Freeze one private exact-source leaf, exact resolver-local provenance,
+  lower/checker ownership order, four tests, near-miss isolation, semantic
+  emptiness, `532 -> 536`, and zero corpus/trace/CLI impact in EN/JA.
+- [ ] Complete docs reviews/commit without changing runner or corpus bytes.
+- [ ] After fresh inventory, implement and review only the dormant consumer
+  and four tests; remeasure production/test hashes and preserve every active
+  corpus/metadata/CLI value.

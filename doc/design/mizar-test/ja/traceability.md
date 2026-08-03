@@ -2278,3 +2278,14 @@ sidecarはこのrequirementだけをreciprocal citeする。cases/requirements�
 `55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`である。
 Creditはsource transportとpending initial-obligation intakeだけで、advanced-semantics
 overlap/coherence seedはinactive/unchangedのままである。
+
+## Checker Task 269A frozen zero-credit trace boundary
+
+Task 269Aはprivate dormant transport/test slice。requirement、backlink、fixture、
+sidecar、expectation、status、owner、metadata case、active outcome、executable
+coverage creditを追加しない。requirements/cases `395/428`、type coverage
+`259 = 247 covered + 12 deferred`、trace SHA-256
+`55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`
+は不変。existing broad proof-local diagnostic-gap rowはcovered/unchangedの
+ままで、positive named-witness binding semanticsにはcreditを与えずdeferred
+のままにする。later active Task-269 coverageにはseparate trace decisionが必要。

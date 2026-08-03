@@ -1627,3 +1627,16 @@ propertyとdeclared return rowをassociateし、meansにpending property existen
 uniqueness rowだけをappendする。Typed/final installationはatomicでTasks 259--263と
 mutually exclusiveのまま。goal/guard composition、proof status、acceptance、fact/
 property value、overlap/coherence、Core、CFG、VC familyは追加していない。
+
+## Task 269A proof-local binding family
+
+Task 269Aはimmutable Task-258B3N statement/witness/primary-term handoff上へ
+declaration-to-binding association familyを1件追加する。sole rowはwitness
+0/name 0/RHS primary 2をnew dense binding 1へlinkし、exact base-to-final
+`BindingEnv` transitionをownする。name/witness/RHS arena nodeを再所有せず、
+lower fingerprintを変更しない。
+
+このfamilyはprimary-term use referenceと分離され、definition siteとfuture
+visibilityを記録するだけでlater use/expansionではない。Task-272 witness
+typing/goal effectおよびfact/proof/acceptance/IR/VC familyとも分離する。
+Task 269B+がlater-use/capture replayを所有する。

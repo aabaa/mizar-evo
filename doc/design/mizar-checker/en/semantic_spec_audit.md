@@ -643,3 +643,15 @@ mappings derive zero request rows and preserve obligations unchanged. Chapter
 5 and MC-G017/MC-G018 remain partial; every acceptance, proof, fact,
 constructor/selector/update, property, nonidentical-coherence, and downstream
 IR meaning remains deferred.
+
+## Task 269A Frozen Semantic Boundary
+
+The Chapter-4/15 authority supports only creation, scope, source ordering, and
+definition-site association of named-witness local `y`. The row is
+`LocalAbbreviation` with `BindingTypeSite::Missing`; this is not a type result
+or accepted abbreviation theorem. Chapter-16 proof effects remain deferred.
+
+Task 269A therefore publishes no equality fact, existential witness match,
+goal or guard composition, substitution, obligation, proof, discharge,
+acceptance, theorem fact, Core, CFG, or VC. Task 269B+ owns later-use/capture
+replay, while Tasks 270--272 own their explicitly queued semantic families.

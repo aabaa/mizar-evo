@@ -5174,3 +5174,16 @@ zero of each. The mutation matrix fails at byte/Surface/shell/resolver/context/
 type/term/structure/formula/property/arena owners. The route cannot select the
 Parser Task-48 cases, inactive coherence seed, Task-259 cases, or mixed
 predicate/functor gap, and it publishes no semantic result beyond transport.
+
+## Checker Task 269A Frozen Dormant Harness
+
+The new helper matches exact `SOURCE_STATEMENT_B3N_TEXT` only after the
+existing named-witness extractor authenticates all 51 nodes. It invokes the
+existing Task-258B3N route as an immutable lower oracle, supplies
+`LocalTermBinding("y", [0], 81..82, 1)`, builds/installs Task 269A, and runs the
+same empty final assembler. Checker code never sees raw source or Surface AST.
+
+This helper is reachable only by its dedicated tests. It is not inserted into
+the active type-elaboration selector chain and cannot affect expectations,
+trace, metadata, diagnostics, or CLIs. Exact/near-miss, mutation, route
+isolation, and final replay tests total four.

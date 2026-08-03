@@ -12914,6 +12914,17 @@ path/content hashes
 `4218936ff3ee3baaceb7c0723307ad266d722d0a2473e8b7f82e11c75aeb2b6e` /
 `a543608c5075ffed97141626ebbf8d952a847051a34d6782097329b44aa1d09e`.
 
+## Checker Task 269A Frozen Dormant Runner Boundary
+
+One private leaf under `runner/type_elaboration` and one included test leaf
+are the complete runner write scope. The leaf may reuse sibling Task-258B3N
+helpers and resolver `LocalTermBinding`; only syntax-free handoffs cross to
+`mizar-checker`. There is no facade detail key, active dispatch branch, Cargo
+edge, expectation/trace owner, proof runner, or parser/resolver modification.
+
+Docs preserve runner `532` and `36/69417`. Implementation projects `536` and
+one additional production path; exact lines and hashes are remeasured.
+
 ## Checker Task 264 Implemented Runner Module Boundary
 
 The runner adds exactly one private production leaf and one included test

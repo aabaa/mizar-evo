@@ -1712,3 +1712,16 @@ declared return row, and appends only pending property existence/uniqueness
 rows for means. Typed/final installation remains atomic and mutually exclusive
 from Tasks 259--263. No goal/guard composition, proof status, acceptance,
 fact/property value, overlap/coherence, Core, CFG, or VC family was added.
+
+## Task 269A Proof-Local Binding Family
+
+Task 269A adds one declaration-to-binding association family over immutable
+Task-258B3N statement, witness, and primary-term handoffs. Its sole row links
+witness 0/name 0/RHS primary 2 to newly dense binding 1 and owns the exact
+base-to-final `BindingEnv` transition. It does not re-own the name/witness/RHS
+arena nodes and does not mutate any lower fingerprint.
+
+This family is distinct from primary-term use references: it records a
+definition site and future visibility, not a later use or expansion. It is
+also distinct from Task-272 witness typing/goal effects and all fact, proof,
+acceptance, IR, and VC families. Task 269B+ owns later-use and capture replay.

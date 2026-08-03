@@ -1729,3 +1729,16 @@ Meansはexistence、uniquenessの順にexact two rowsをappendし、Equalsはzer
 duplicate/orphan/extra/stale/half-published/Task259--263 sibling transactionはinputを
 変更せず`InvalidSourcePropertyImplementation`でfailする。private fieldはdocumented
 read-only getterからだけobservableである。
+
+## Task 269A frozen typed ownership
+
+`TypedAst`はprivate optional `SourceProofLocalDeclarationHandoff`、read-only
+getter、consuming `with_source_proof_local_declaration` installerを追加する。
+`TypedAstParts`は不変。exact Task-258B3N lower bundleとempty semantic tables上
+だけで5 fingerprints、existing 51 nodes、one declaration row、
+`2/1/0 -> 2/2/0` binding transitionをreplayする。
+
+successはnew debug blockをappendするがarena nodeを変更しない。duplicate、
+orphan、stale、same-length corruption、lower hybrid、semantic-table-bearing
+inputは`InvalidSourceProofLocalDeclaration`でtransactionally failする。installer
+なしのexisting Task-258B3N constructionはbyte-identicalのまま。

@@ -763,3 +763,16 @@ definition-parameter binding and declaration context, or the recovered empty
 context plus one recovery diagnostic. No `BindingEnv` type, constructor,
 lookup, or semantic payload changed, and Profiles A/B retain their prior bytes
 and validation precedence.
+
+## Task 269A Frozen Named-Witness Binding Transition
+
+The exact Task-258B3N base environment `2/1/0` is immutable input. Task 269A
+reconstructs context 1 with `bindings=[1]` and `visible_bindings=[0,1]`, then
+appends exact `y` binding 1 as `LocalAbbreviation` with resolver-local scope
+`[0]`, declaration `81..82`, visible-after 1, missing type site, active status,
+empty captures/diagnostics, and normal recovery. Context 0 and binding 0 remain
+byte-identical; diagnostics remain empty.
+
+Lookup at ordinal 1 cannot see `y`; a later same-scope lookup sees binding 1.
+This transition records definition-site identity only. Later-use/capture replay
+is Task 269B+, and Task 272 retains witness typing and goal effects.

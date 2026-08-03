@@ -6386,3 +6386,23 @@ facts/axioms, calls/result typing, conditional/imported/multiple/inherited
 profiles, and Core/CFG/VC remain explicitly deferred. No coverage is granted
 to those semantics, and Task 259 remains a separate predicate-definition
 transaction.
+
+## Checker Task 269A Frozen Named-Witness Binding Boundary
+
+Task 269A freezes a zero-credit, private/dormant checker transport slice
+derived from Chapters 4 §4.4.3, 15 §15.4.4, and 16 §16.4. It reuses the exact
+Task-258B3N named `take y = x` source and plans only the definition-site
+witness/name/RHS-to-binding association plus post-declaration proof-context
+environment. No existing `.miz`, sidecar, expectation, trace row, status,
+backlink, metadata case, or active coverage changes in the documentation
+prerequisite or implementation.
+
+Chapter 15/16 coverage therefore remains partial. The existing broad
+proof-local diagnostic-gap rows remain covered and unchanged, but grant no
+credit to positive named-witness binding semantics. No credit is granted for
+later use/capture replay, `let`/`set`/`given`/`consider`,
+`deffunc`/`defpred`, `reconsider`, witness typing, existential matching, goal
+substitution, equality facts, proof/discharge/acceptance, theorem facts, or
+Core/CFG/VC. Corpus/requirements stay `428/395`, active type cases stay `205`,
+type coverage stays `259=247+12`, and trace hash stays
+`55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`.

@@ -6685,7 +6685,7 @@ implementation commit does not satisfy a producer task.
   Task 264 and implement only its frozen checker/runner transport.
 - [x] Complete Task-264 reviews, all nine gates, and exact count/hash
   verification; preserve the task-only target for the parent-owned commit.
-- [ ] After that commit, confirm clean fresh inventory and continue
+- [x] After that commit, confirm clean fresh inventory and continue
   automatically to the next dependency-ready task.
 
 ## Checker Task 249PI Property-Type Composition Prerequisite
@@ -6712,3 +6712,25 @@ implementation commit does not satisfy a producer task.
   `73a34f94c7d46d7c0698b09a43ab3e1f00bb07a7` and return automatically to
   frozen Task 264 without adding property
   semantics, runner/corpus changes, or adjacent lower work to Task 249PI.
+
+## Checker Task 269A Named-Witness Binding Slice
+
+- [x] Fresh-inventory committed Task 264, clean worktree, report-only origin
+  divergence, unchanged protected stash, canonical authorities, broad gap
+  fixture/trace, and Tasks 248--258 public APIs; select only Task 269A.
+- [x] Freeze the exact 107-byte Task-258B3N source, 51-node arena, resolver
+  `LocalTermBinding`, `2/1/0 -> 2/2/0` binding transition, witness/name/RHS
+  links, five fingerprints, debug grammar, Typed/final ownership, private
+  dormant consumer, exclusions, eight tests, count/hash impact, deferrals,
+  and exit criteria in synchronized EN/JA documents.
+- [x] Repeat review-only specification and source/documentation audits to
+  **NO FINDINGS** and pass all nine docs-only hard gates at uncapped 90/100 or
+  better.
+- [ ] Stage and commit only the Task-269A documentation prerequisite; verify
+  zero production, fixture, sidecar, expectation, trace, metadata, or CLI
+  change and fresh-inventory the frozen implementation.
+- [ ] Implement only the frozen producer, one-shot Typed/final owner, private
+  dormant consumer, and exact four checker plus four runner tests.
+- [ ] Repeat test, implementation, source/docs, and final quality reviews to
+  **NO FINDINGS**; pass all verification/count/hash gates, commit one logical
+  implementation task, and continue automatically to Task 269B+.

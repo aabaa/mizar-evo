@@ -1622,3 +1622,12 @@ bundle, exact four-test consumer oracle, two reciprocal pass sidecars, one
 covered trace row, `428/395` metadata, `101/7/205/1` active stages, and
 transport-only credit. Both keep the overlap/coherence seed inactive and every
 goal, guard, proof, discharge, acceptance, fact, Core/CFG/VC behavior deferred.
+
+## Checker Task 269A Frozen Dormant-Consumer Synchronization
+
+EN/JA agree on the exact B3N source/hash/51-node selector, resolver-local `y`,
+immutable lower route, private dormant leaf, four runner tests, projected
+`532 -> 536`, one runner source path, no active dispatch, and zero fixture,
+sidecar, expectation, trace, metadata, diagnostic, or CLI delta. Both retain
+all witness typing, goal, proof, fact, acceptance, Core/CFG/VC semantics for
+later owners. No bilingual harness debt remains before review.

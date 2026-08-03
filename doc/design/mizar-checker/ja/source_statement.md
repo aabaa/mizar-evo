@@ -3493,3 +3493,16 @@ runnerはenv/module、module-derived namespace、exact one id-0 LocalSource
 contribution record/public `ast.source_id`、各projection module/namespace/
 contributionをindependently validateする。全field mutationはinput-onlyで、
 このDTOをpublishできない。
+
+## Task 269A frozen upper consumer boundary
+
+Task 269Aはexact Task-258B3N `SourceStatementHandoff`/
+`SourceStatementWitnessHandoff`をconsumeするが変更しない。witness 0、name 0、
+RHS `Primary(2)`はimmutable lower identityであり、complete debug byteをupper
+fingerprintとして保持する。new handoffはdefinition-site associationとextended
+binding environmentだけをownする。
+
+existing name node 13は`source.statement-witness.name`、witness node 36は
+`source.statement-witness.item`、take node 37は
+`source.statement-witness.take`のまま。`source.proof-local.*` nodeは作らない。
+existing Task-258B3N route/debug resultはstable lower oracleとして残る。
