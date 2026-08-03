@@ -6138,5 +6138,25 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   semantic deferral、audit impact、exit criteriaをfreezeする。
 - [x] review-only specification auditを**NO FINDINGS**までrepeatし、executable/
   count/hash invariantとall nine hard gateを含むdocs-only verificationを行う。
-- [ ] synchronized Task-249R docsだけをcommitし、separate implementationを
-  fresh-inventoryしてからTask 260へ自動復帰する。
+- [x] synchronized Task-249R docsだけを
+  `b292b8002f9656c4ab2a6c3b606743b1bda7d551`としてcommitし、separate
+  implementationをfresh-inventoryする。
+
+## Checker Task 249R active implementation
+
+- [x] independent definition-return table/producerだけを`source_type.rs`へ
+  実装し、Task-249 application cardinalityとlegacy empty-table byteを保つ。
+- [x] frozen checker test exactly 4件を追加し、initial review gapをそのmatrix
+  内で閉じ、test-sufficiency/full implementation reviewを**NO FINDINGS**まで
+  repeatする。
+- [x] checker `439`、runner/resolver/syntax `512/144/59`、metadata `137`、
+  unchanged CLI 5本のcount/hash、checker production `24/148143`、fresh
+  checker test-list/content hashを再現する。
+- [x] focused/module/crate test、lint policy、formatting、full
+  warnings-denied Clippy、unconstrained full workspace test、diff checkをPASS。
+- [x] wording-only Medium/Low `design_drift`各1件をcorrectし、source/docs
+  consistency reviewを**NO FINDINGS**までrepeatする。
+- [x] final read-only qualityを**NO FINDINGS**、全9 hard gate PASS、score cap
+  なし、`100/100` (`20/20/15/15/10/10/5/5`)でcompleteする。
+- [ ] exact staging、dedicated implementation commit、clean/stash post-commit
+  inventory、Task 260への自動復帰をcompleteする。

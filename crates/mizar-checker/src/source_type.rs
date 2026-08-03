@@ -40,6 +40,7 @@ macro_rules! dense_id {
 dense_id!(SourceTypeApplicationId);
 dense_id!(SourceTypeExpressionId);
 dense_id!(SourceTypeArgumentId);
+dense_id!(SourceTypeDefinitionReturnId);
 
 /// Syntax-free inputs for one complete source type-expression transaction.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -49,6 +50,24 @@ pub struct SourceTypeHandoffInput {
     pub applications: Vec<SourceTypeApplicationInput>,
     pub expressions: Vec<SourceTypeExpressionInput>,
     pub arguments: Vec<SourceTypeArgumentInput>,
+}
+
+/// Syntax-free extension input for independently written definition return
+/// types.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceTypeDefinitionReturnExtensionInput {
+    pub source_id: SourceId,
+    pub module_id: ModuleId,
+    pub returns: Vec<SourceTypeDefinitionReturnInput>,
+}
+
+/// One definition owner linked to its independently written return type.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceTypeDefinitionReturnInput {
+    pub definition_site: TypedSiteRef,
+    pub definition_range: SourceRange,
+    pub source_ordinal: usize,
+    pub expression: SourceTypeExpressionInput,
 }
 
 /// One top-level binding-to-source-type application input.
@@ -138,6 +157,7 @@ pub struct SourceTypeApplicationHandoff {
     applications: SourceTypeApplicationTable,
     expressions: SourceTypeExpressionTable,
     arguments: SourceTypeArgumentTable,
+    definition_returns: SourceTypeDefinitionReturnTable,
 }
 
 impl SourceTypeApplicationHandoff {
@@ -161,6 +181,10 @@ impl SourceTypeApplicationHandoff {
         &self.arguments
     }
 
+    pub const fn definition_returns(&self) -> &SourceTypeDefinitionReturnTable {
+        &self.definition_returns
+    }
+
     pub fn debug_text(&self) -> String {
         let mut output = String::from("source-type-application-debug-v1\n");
         output.push_str("module: ");
@@ -175,6 +199,18 @@ impl SourceTypeApplicationHandoff {
                 application.source_ordinal,
                 application.root.index(),
             );
+        }
+        for (id, definition_return) in self.definition_returns.iter() {
+            let _ = write!(
+                output,
+                "definition-return#{} ordinal={} definition_range={}..{} definition_site=",
+                id.index(),
+                definition_return.source_ordinal,
+                definition_return.definition_range.start,
+                definition_return.definition_range.end,
+            );
+            write_definition_site(&mut output, &definition_return.definition_site);
+            let _ = writeln!(output, " root={}", definition_return.root.index());
         }
         for (id, expression) in self.expressions.iter() {
             let _ = write!(
@@ -226,6 +262,7 @@ impl SourceTypeApplicationHandoff {
         if self.source_id != source_id || &self.module_id != module_id {
             return Err(SourceTypeError::EnvironmentMismatch);
         }
+        validate_definition_return_extension(self, arena)?;
         for (id, expression) in self.expressions.iter() {
             validate_arena_site(
                 id,
@@ -301,6 +338,62 @@ impl SourceTypeApplication {
 
     pub const fn binding(&self) -> BindingId {
         self.binding
+    }
+
+    pub const fn source_ordinal(&self) -> usize {
+        self.source_ordinal
+    }
+
+    pub const fn root(&self) -> SourceTypeExpressionId {
+        self.root
+    }
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct SourceTypeDefinitionReturnTable {
+    entries: Vec<SourceTypeDefinitionReturn>,
+}
+
+impl SourceTypeDefinitionReturnTable {
+    pub fn get(&self, id: SourceTypeDefinitionReturnId) -> Option<&SourceTypeDefinitionReturn> {
+        self.entries.get(id.index())
+    }
+
+    pub fn iter(
+        &self,
+    ) -> impl Iterator<Item = (SourceTypeDefinitionReturnId, &SourceTypeDefinitionReturn)> {
+        self.entries.iter().map(|entry| (entry.id, entry))
+    }
+
+    pub const fn len(&self) -> usize {
+        self.entries.len()
+    }
+
+    pub const fn is_empty(&self) -> bool {
+        self.entries.is_empty()
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceTypeDefinitionReturn {
+    id: SourceTypeDefinitionReturnId,
+    definition_site: TypedSiteRef,
+    definition_range: SourceRange,
+    source_ordinal: usize,
+    root: SourceTypeExpressionId,
+}
+
+impl SourceTypeDefinitionReturn {
+    pub const fn id(&self) -> SourceTypeDefinitionReturnId {
+        self.id
+    }
+
+    pub const fn definition_site(&self) -> &TypedSiteRef {
+        &self.definition_site
+    }
+
+    pub const fn definition_range(&self) -> SourceRange {
+        self.definition_range
     }
 
     pub const fn source_ordinal(&self) -> usize {
@@ -511,7 +604,65 @@ impl SourceTypeProducer {
                     })
                     .collect(),
             },
+            definition_returns: SourceTypeDefinitionReturnTable::default(),
         })
+    }
+}
+
+/// Extends one exact Task-249 base with independently owned definition return
+/// types without fabricating binding-linked applications.
+pub struct SourceTypeDefinitionReturnProducer;
+
+impl SourceTypeDefinitionReturnProducer {
+    pub fn extend(
+        base: &SourceTypeApplicationHandoff,
+        input: SourceTypeDefinitionReturnExtensionInput,
+        arena: &TypedArena,
+    ) -> Result<SourceTypeApplicationHandoff, SourceTypeError> {
+        if !base.definition_returns.is_empty() {
+            return Err(SourceTypeError::DefinitionReturnsAlreadyPresent);
+        }
+        if input.returns.is_empty() {
+            return Err(SourceTypeError::EmptyDefinitionReturns);
+        }
+        if input.returns.len() != 2 {
+            return Err(SourceTypeError::DefinitionReturnCardinalityMismatch);
+        }
+        if input.source_id != base.source_id || input.module_id != base.module_id {
+            return Err(SourceTypeError::EnvironmentMismatch);
+        }
+        validate_definition_return_base(base, arena)?;
+
+        let mut handoff = base.clone();
+        for (index, input) in input.returns.into_iter().enumerate() {
+            let root = SourceTypeExpressionId::new(handoff.expressions.entries.len());
+            handoff
+                .definition_returns
+                .entries
+                .push(SourceTypeDefinitionReturn {
+                    id: SourceTypeDefinitionReturnId::new(index),
+                    definition_site: input.definition_site,
+                    definition_range: input.definition_range,
+                    source_ordinal: input.source_ordinal,
+                    root,
+                });
+            handoff.expressions.entries.push(SourceTypeExpression {
+                id: root,
+                source_id: input.expression.source_id,
+                module_id: input.expression.module_id,
+                site: input.expression.site,
+                source_range: input.expression.source_range,
+                spelling: input.expression.spelling,
+                head_site: input.expression.head_site,
+                head_range: input.expression.head_range,
+                head_spelling: input.expression.head_spelling,
+                form: input.expression.form,
+                head: input.expression.head,
+                recovery: input.expression.recovery,
+            });
+        }
+        validate_definition_return_extension(&handoff, arena)?;
+        Ok(handoff)
     }
 }
 
@@ -589,6 +740,22 @@ pub enum SourceTypeError {
     },
     OverlappingApplications {
         application: SourceTypeApplicationId,
+    },
+    EmptyDefinitionReturns,
+    DefinitionReturnCardinalityMismatch,
+    DefinitionReturnsAlreadyPresent,
+    InvalidDefinitionReturnBase,
+    InvalidDefinitionReturn {
+        definition_return: SourceTypeDefinitionReturnId,
+    },
+    InvalidDefinitionReturnSite {
+        definition_return: SourceTypeDefinitionReturnId,
+    },
+    UnsupportedDefinitionReturn {
+        definition_return: SourceTypeDefinitionReturnId,
+    },
+    OverlappingDefinitionReturns {
+        definition_return: SourceTypeDefinitionReturnId,
     },
 }
 
@@ -713,11 +880,269 @@ impl fmt::Display for SourceTypeError {
                 "source type application {} overlaps its predecessor",
                 application.index()
             ),
+            Self::EmptyDefinitionReturns => {
+                formatter.write_str("source type definition return input is empty")
+            }
+            Self::DefinitionReturnCardinalityMismatch => formatter
+                .write_str("source type definition return cardinality is not the frozen pair"),
+            Self::DefinitionReturnsAlreadyPresent => {
+                formatter.write_str("source type definition returns are already installed")
+            }
+            Self::InvalidDefinitionReturnBase => {
+                formatter.write_str("source type definition return base is invalid")
+            }
+            Self::InvalidDefinitionReturn { definition_return } => write!(
+                formatter,
+                "source type definition return {} is invalid",
+                definition_return.index()
+            ),
+            Self::InvalidDefinitionReturnSite { definition_return } => write!(
+                formatter,
+                "source type definition return {} has an invalid typed site",
+                definition_return.index()
+            ),
+            Self::UnsupportedDefinitionReturn { definition_return } => write!(
+                formatter,
+                "source type definition return {} has an unsupported expression",
+                definition_return.index()
+            ),
+            Self::OverlappingDefinitionReturns { definition_return } => write!(
+                formatter,
+                "source type definition return {} overlaps its predecessor",
+                definition_return.index()
+            ),
         }
     }
 }
 
 impl Error for SourceTypeError {}
+
+const TASK_249R_BASE_EXPRESSIONS: [(usize, usize, usize, usize); 2] =
+    [(63, 62, 22, 25), (67, 66, 38, 41)];
+const TASK_249R_DEFINITION_RETURNS: [(usize, usize, usize, usize, usize, usize); 2] =
+    [(84, 61, 118, 80, 79, 105), (95, 121, 179, 87, 86, 163)];
+
+fn validate_definition_return_base(
+    base: &SourceTypeApplicationHandoff,
+    arena: &TypedArena,
+) -> Result<(), SourceTypeError> {
+    if !base.definition_returns.is_empty()
+        || base.expressions.len() != 2
+        || !task_249r_base_shape_matches(base)
+        || base
+            .validate_installation(base.source_id, &base.module_id, arena)
+            .is_err()
+    {
+        return Err(SourceTypeError::InvalidDefinitionReturnBase);
+    }
+    Ok(())
+}
+
+fn task_249r_base_shape_matches(handoff: &SourceTypeApplicationHandoff) -> bool {
+    if handoff.applications.len() != 2
+        || handoff.expressions.len() < 2
+        || !handoff.arguments.is_empty()
+    {
+        return false;
+    }
+    for (index, (site, head_site, start, end)) in TASK_249R_BASE_EXPRESSIONS.into_iter().enumerate()
+    {
+        let Some(application) = handoff
+            .applications
+            .get(SourceTypeApplicationId::new(index))
+        else {
+            return false;
+        };
+        let Some(expression) = handoff.expressions.get(SourceTypeExpressionId::new(index)) else {
+            return false;
+        };
+        if application.id != SourceTypeApplicationId::new(index)
+            || application.binding != BindingId::new(index)
+            || application.source_ordinal != index
+            || application.root != SourceTypeExpressionId::new(index)
+            || expression.id != SourceTypeExpressionId::new(index)
+            || expression.source_id != handoff.source_id
+            || expression.module_id != handoff.module_id
+            || expression.source_range != task_249r_range(handoff.source_id, start, end)
+            || !is_node_site(&expression.site, site)
+            || expression.spelling != "set"
+            || !is_node_site(&expression.head_site, head_site)
+            || expression.head_range != task_249r_range(handoff.source_id, start, end)
+            || expression.head_spelling != "set"
+            || expression.form != SourceTypeApplicationForm::Bare
+            || !matches!(expression.head, SourceTypeHead::BuiltinSet)
+            || expression.recovery != NodeRecoveryState::Normal
+        {
+            return false;
+        }
+    }
+    true
+}
+
+fn validate_definition_return_extension(
+    handoff: &SourceTypeApplicationHandoff,
+    arena: &TypedArena,
+) -> Result<(), SourceTypeError> {
+    if handoff.definition_returns.is_empty() {
+        return Ok(());
+    }
+    if handoff.definition_returns.len() != 2 || handoff.expressions.len() != 4 {
+        return Err(SourceTypeError::DefinitionReturnCardinalityMismatch);
+    }
+    if !task_249r_base_shape_matches(handoff) {
+        return Err(SourceTypeError::InvalidDefinitionReturnBase);
+    }
+
+    let mut sites = BTreeSet::new();
+    for index in 0..2 {
+        let expression = handoff
+            .expressions
+            .get(SourceTypeExpressionId::new(index))
+            .expect("Task 249R base shape checked");
+        sites.insert(expression.site.clone());
+        sites.insert(expression.head_site.clone());
+    }
+
+    let mut previous_definition_range = None;
+    for (index, (definition_node, definition_start, definition_end, site, head_site, start)) in
+        TASK_249R_DEFINITION_RETURNS.into_iter().enumerate()
+    {
+        let id = SourceTypeDefinitionReturnId::new(index);
+        let Some(definition_return) = handoff.definition_returns.get(id) else {
+            return Err(SourceTypeError::InvalidDefinitionReturn {
+                definition_return: id,
+            });
+        };
+        let expected_root = SourceTypeExpressionId::new(index + 2);
+        let Some(expression) = handoff.expressions.get(expected_root) else {
+            return Err(SourceTypeError::InvalidDefinitionReturn {
+                definition_return: id,
+            });
+        };
+        if definition_return.id != id
+            || definition_return.source_ordinal != index
+            || definition_return.root != expected_root
+            || !valid_range(handoff.source_id, definition_return.definition_range)
+            || !range_contains(definition_return.definition_range, expression.source_range)
+        {
+            return Err(SourceTypeError::InvalidDefinitionReturn {
+                definition_return: id,
+            });
+        }
+        if previous_definition_range.is_some_and(|previous: SourceRange| {
+            previous.start >= definition_return.definition_range.start
+                || previous.end > definition_return.definition_range.start
+        }) {
+            return Err(SourceTypeError::OverlappingDefinitionReturns {
+                definition_return: id,
+            });
+        }
+        previous_definition_range = Some(definition_return.definition_range);
+
+        if definition_return.definition_range
+            != task_249r_range(handoff.source_id, definition_start, definition_end)
+        {
+            return Err(SourceTypeError::InvalidDefinitionReturn {
+                definition_return: id,
+            });
+        }
+        if !is_node_site(&definition_return.definition_site, definition_node)
+            || !sites.insert(definition_return.definition_site.clone())
+        {
+            return Err(SourceTypeError::InvalidDefinitionReturnSite {
+                definition_return: id,
+            });
+        }
+        validate_definition_owner_site(
+            id,
+            &definition_return.definition_site,
+            definition_return.definition_range,
+            arena,
+        )?;
+
+        let end = start + 3;
+        if expression.id != expected_root
+            || expression.source_id != handoff.source_id
+            || expression.module_id != handoff.module_id
+            || expression.source_range != task_249r_range(handoff.source_id, start, end)
+            || expression.head_range != task_249r_range(handoff.source_id, start, end)
+        {
+            return Err(SourceTypeError::InvalidDefinitionReturn {
+                definition_return: id,
+            });
+        }
+        if expression.form != SourceTypeApplicationForm::Bare
+            || !matches!(expression.head, SourceTypeHead::BuiltinSet)
+            || expression.spelling != "set"
+            || expression.head_spelling != "set"
+            || expression.recovery != NodeRecoveryState::Normal
+        {
+            return Err(SourceTypeError::UnsupportedDefinitionReturn {
+                definition_return: id,
+            });
+        }
+        if !is_node_site(&expression.site, site)
+            || !is_node_site(&expression.head_site, head_site)
+            || !sites.insert(expression.site.clone())
+            || !sites.insert(expression.head_site.clone())
+        {
+            return Err(SourceTypeError::InvalidDefinitionReturnSite {
+                definition_return: id,
+            });
+        }
+        validate_arena_site(
+            expected_root,
+            &expression.site,
+            expression.source_range,
+            expression.recovery,
+            arena,
+        )
+        .map_err(|_| SourceTypeError::InvalidDefinitionReturnSite {
+            definition_return: id,
+        })?;
+        validate_arena_site(
+            expected_root,
+            &expression.head_site,
+            expression.head_range,
+            expression.recovery,
+            arena,
+        )
+        .map_err(|_| SourceTypeError::InvalidDefinitionReturnSite {
+            definition_return: id,
+        })?;
+    }
+    Ok(())
+}
+
+fn validate_definition_owner_site(
+    definition_return: SourceTypeDefinitionReturnId,
+    site: &TypedSiteRef,
+    range: SourceRange,
+    arena: &TypedArena,
+) -> Result<(), SourceTypeError> {
+    let TypedSiteRef::Node(node_id) = site else {
+        return Err(SourceTypeError::InvalidDefinitionReturnSite { definition_return });
+    };
+    let Some(node) = arena.node(*node_id) else {
+        return Err(SourceTypeError::InvalidDefinitionReturnSite { definition_return });
+    };
+    if node.recovery != NodeRecoveryState::Normal || source_range(&node.anchor) != Some(range) {
+        return Err(SourceTypeError::InvalidDefinitionReturnSite { definition_return });
+    }
+    Ok(())
+}
+
+fn is_node_site(site: &TypedSiteRef, expected: usize) -> bool {
+    matches!(site, TypedSiteRef::Node(node) if node.index() == expected)
+}
+
+fn task_249r_range(source_id: SourceId, start: usize, end: usize) -> SourceRange {
+    SourceRange {
+        source_id,
+        start,
+        end,
+    }
+}
 
 fn validate_input(
     input: &SourceTypeHandoffInput,
@@ -1388,6 +1813,17 @@ fn write_site(output: &mut String, site: &TypedSiteRef) {
     }
 }
 
+fn write_definition_site(output: &mut String, site: &TypedSiteRef) {
+    match site {
+        TypedSiteRef::Node(node) => {
+            let _ = write!(output, "node#{}", node.index());
+        }
+        TypedSiteRef::Role { node, role } => {
+            let _ = write!(output, "node#{}:role:{:?}", node.index(), role.as_str());
+        }
+    }
+}
+
 fn write_head(output: &mut String, head: &SourceTypeHead) {
     match head {
         SourceTypeHead::BuiltinSet => output.push_str("builtin:set"),
@@ -1467,10 +1903,19 @@ mod tests {
             BindingDiagnosticTable, BindingDraft, BindingEnvParts, BindingTable,
             CapturedFreeVariables,
         },
+        cluster_trace::ClusterFactTable,
+        overload_resolution::{
+            CandidateViabilityInput, CandidateViabilityOutput, OverloadCandidateInput,
+            OverloadCollectionOutput, OverloadSelectionOutput, OverloadSiteInput,
+            OverloadSiteResolutionInput, SpecificityComparisonInput, SpecificityGraphOutput,
+            TemplateExpansionOutput,
+        },
+        resolved_typed_ast::{ResolvedTypedAst, ResolvedTypedAstInputs},
         type_checker::{SourceReserveBindingInput, SourceReserveDeclarationBridge, TypeHeadInput},
         typed_ast::{
             CoercionTable, InitialObligationTable, LocalTypeContextTable, TypeDiagnosticTable,
             TypeFactTable, TypeRole, TypeTable, TypedAst, TypedAstError, TypedAstParts, TypedNode,
+            TypedNodeId,
         },
     };
     use mizar_resolve::{
@@ -1490,6 +1935,15 @@ mod tests {
         bindings: BindingEnv,
         symbols: SymbolEnv,
         arena: TypedArena,
+    }
+
+    #[derive(Clone)]
+    struct Task249RFixture {
+        source: SourceId,
+        module: ModuleId,
+        base: SourceTypeApplicationHandoff,
+        arena: TypedArena,
+        extension: SourceTypeDefinitionReturnExtensionInput,
     }
 
     fn source_id() -> SourceId {
@@ -1805,6 +2259,191 @@ mod tests {
         fixture.input.arguments.clear();
         refresh(&mut fixture);
         fixture
+    }
+
+    fn task_249r_fixture() -> Task249RFixture {
+        let source = source_id_for("b8");
+        let module = module("task249r.functor_definition");
+        let input = SourceTypeHandoffInput {
+            source_id: source,
+            module_id: module.clone(),
+            applications: vec![
+                SourceTypeApplicationInput {
+                    binding: BindingId::new(0),
+                    source_ordinal: 0,
+                    root: SourceTypeExpressionId::new(0),
+                },
+                SourceTypeApplicationInput {
+                    binding: BindingId::new(1),
+                    source_ordinal: 1,
+                    root: SourceTypeExpressionId::new(1),
+                },
+            ],
+            expressions: vec![
+                task_249r_expression(source, &module, 63, 62, 22, 25),
+                task_249r_expression(source, &module, 67, 66, 38, 41),
+            ],
+            arguments: Vec::new(),
+        };
+        let arena = task_249r_arena(source, None);
+        let bindings = binding_env(
+            source,
+            &module,
+            &[range(source, 22, 25), range(source, 38, 41)],
+        );
+        let symbols = SymbolEnv::new(module.clone(), SymbolEnvIndexes::default());
+        let base = SourceTypeProducer::build(input, &bindings, &symbols, &arena)
+            .expect("exact Task 249 base");
+        let extension = SourceTypeDefinitionReturnExtensionInput {
+            source_id: source,
+            module_id: module.clone(),
+            returns: vec![
+                SourceTypeDefinitionReturnInput {
+                    definition_site: node_site(84),
+                    definition_range: range(source, 61, 118),
+                    source_ordinal: 0,
+                    expression: task_249r_expression(source, &module, 80, 79, 105, 108),
+                },
+                SourceTypeDefinitionReturnInput {
+                    definition_site: node_site(95),
+                    definition_range: range(source, 121, 179),
+                    source_ordinal: 1,
+                    expression: task_249r_expression(source, &module, 87, 86, 163, 166),
+                },
+            ],
+        };
+        Task249RFixture {
+            source,
+            module,
+            base,
+            arena,
+            extension,
+        }
+    }
+
+    fn task_249r_expression(
+        source: SourceId,
+        module: &ModuleId,
+        site: usize,
+        head_site: usize,
+        start: usize,
+        end: usize,
+    ) -> SourceTypeExpressionInput {
+        SourceTypeExpressionInput {
+            source_id: source,
+            module_id: module.clone(),
+            site: node_site(site),
+            source_range: range(source, start, end),
+            spelling: "set".to_owned(),
+            head_site: node_site(head_site),
+            head_range: range(source, start, end),
+            head_spelling: "set".to_owned(),
+            form: SourceTypeApplicationForm::Bare,
+            head: SourceTypeHead::BuiltinSet,
+            recovery: NodeRecoveryState::Normal,
+        }
+    }
+
+    fn node_site(index: usize) -> TypedSiteRef {
+        TypedSiteRef::Node(TypedNodeId::new(index))
+    }
+
+    fn task_249r_arena(
+        source: SourceId,
+        mutation: Option<(usize, SourceRange, NodeRecoveryState)>,
+    ) -> TypedArena {
+        let nodes = (0..=95)
+            .map(|index| {
+                let source_range = match index {
+                    62 | 63 => range(source, 22, 25),
+                    66 | 67 => range(source, 38, 41),
+                    79 | 80 => range(source, 105, 108),
+                    84 => range(source, 61, 118),
+                    86 | 87 => range(source, 163, 166),
+                    95 => range(source, 121, 179),
+                    _ => range(source, 0, 1),
+                };
+                let (source_range, recovery) = mutation
+                    .filter(|(node, _, _)| *node == index)
+                    .map(|(_, range, recovery)| (range, recovery))
+                    .unwrap_or((source_range, NodeRecoveryState::Normal));
+                TypedNode::new(
+                    format!("task249r-source-node-{index}"),
+                    SourceAnchor::Range(source_range),
+                )
+                .with_recovery(recovery)
+            })
+            .collect();
+        TypedArena::try_new(None, nodes).expect("Task 249R arena")
+    }
+
+    fn assemble_empty_resolved(typed: &TypedAst) -> ResolvedTypedAst {
+        let cluster_facts = ClusterFactTable::new();
+        let collection = OverloadCollectionOutput::collect(
+            Vec::<OverloadSiteInput>::new(),
+            Vec::<OverloadCandidateInput>::new(),
+        );
+        let expansion = TemplateExpansionOutput::expand(&collection);
+        let viability =
+            CandidateViabilityOutput::filter(&expansion, Vec::<CandidateViabilityInput>::new());
+        let specificity =
+            SpecificityGraphOutput::build(&viability, Vec::<SpecificityComparisonInput>::new());
+        let selection = OverloadSelectionOutput::resolve(
+            &specificity,
+            Vec::<OverloadSiteResolutionInput>::new(),
+        );
+        ResolvedTypedAst::assemble(ResolvedTypedAstInputs {
+            typed_ast: typed,
+            cluster_facts: &cluster_facts,
+            overload_collection: &collection,
+            template_expansion: &expansion,
+            viability: &viability,
+            specificity: &specificity,
+            overload_selection: &selection,
+            expressions: Vec::new(),
+            node_hints: Vec::new(),
+            statement_semantics: None,
+            statement_proofs: None,
+        })
+        .expect("empty final assembly")
+    }
+
+    fn task_249r_typed_ast(
+        source: SourceId,
+        module: ModuleId,
+        handoff: SourceTypeApplicationHandoff,
+        arena: TypedArena,
+    ) -> Result<TypedAst, TypedAstError> {
+        TypedAst::try_new(TypedAstParts {
+            source_id: source,
+            module_id: module,
+            resolved_root: None,
+            source_context: None,
+            source_type: Some(handoff),
+            source_attribute: None,
+            nodes: arena,
+            contexts: LocalTypeContextTable::new(),
+            types: TypeTable::new(),
+            facts: TypeFactTable::new(),
+            coercions: CoercionTable::new(),
+            initial_obligations: InitialObligationTable::new(),
+            diagnostics: TypeDiagnosticTable::new(),
+        })
+    }
+
+    fn assert_task_249r_extension_error(
+        fixture: &Task249RFixture,
+        input: SourceTypeDefinitionReturnExtensionInput,
+        arena: &TypedArena,
+        expected: SourceTypeError,
+    ) {
+        let baseline = fixture.base.clone();
+        assert_eq!(
+            SourceTypeDefinitionReturnProducer::extend(&fixture.base, input, arena),
+            Err(expected)
+        );
+        assert_eq!(fixture.base, baseline);
+        assert!(fixture.base.definition_returns().is_empty());
     }
 
     #[derive(Clone, Copy, Debug)]
@@ -3272,6 +3911,480 @@ mod tests {
             SourceTypeProducer::build(input, &bindings, &symbols, &arena),
             Err(SourceTypeError::InvalidBinding { .. })
         ));
+    }
+
+    #[test]
+    fn task_249r_exact_definition_return_extension_and_legacy_debug() {
+        let fixture = task_249r_fixture();
+        let legacy = concat!(
+            "source-type-application-debug-v1\n",
+            "module: task249r.functor_definition\n",
+            "application#0 binding=0 ordinal=0 root=0\n",
+            "application#1 binding=1 ordinal=1 root=1\n",
+            "expression#0 form=bare range=22..25 site=node:63 head=builtin:set head_range=22..25 head_site=node:62 recovery=normal spelling=\"set\" head_spelling=\"set\"\n",
+            "expression#1 form=bare range=38..41 site=node:67 head=builtin:set head_range=38..41 head_site=node:66 recovery=normal spelling=\"set\" head_spelling=\"set\"\n",
+        );
+        assert!(fixture.base.definition_returns().is_empty());
+        assert_eq!(fixture.base.debug_text(), legacy);
+
+        let extended = SourceTypeDefinitionReturnProducer::extend(
+            &fixture.base,
+            fixture.extension.clone(),
+            &fixture.arena,
+        )
+        .expect("exact definition-return extension");
+        assert!(fixture.base.definition_returns().is_empty());
+        assert_eq!(fixture.base.debug_text(), legacy);
+        assert_eq!(extended.applications().len(), 2);
+        assert_eq!(extended.expressions().len(), 4);
+        assert!(extended.arguments().is_empty());
+        assert_eq!(extended.definition_returns().len(), 2);
+        assert_eq!(
+            extended
+                .definition_returns()
+                .iter()
+                .map(|(id, row)| (
+                    id.index(),
+                    row.id().index(),
+                    row.source_ordinal(),
+                    row.root().index()
+                ))
+                .collect::<Vec<_>>(),
+            vec![(0, 0, 0, 2), (1, 1, 1, 3)]
+        );
+        let first = extended
+            .definition_returns()
+            .get(SourceTypeDefinitionReturnId::new(0))
+            .expect("first definition return");
+        assert_eq!(first.definition_site(), &node_site(84));
+        assert_eq!(first.definition_range(), range(fixture.source, 61, 118));
+        assert!(
+            extended
+                .definition_returns()
+                .get(SourceTypeDefinitionReturnId::new(2))
+                .is_none()
+        );
+
+        assert_eq!(
+            extended.debug_text(),
+            concat!(
+                "source-type-application-debug-v1\n",
+                "module: task249r.functor_definition\n",
+                "application#0 binding=0 ordinal=0 root=0\n",
+                "application#1 binding=1 ordinal=1 root=1\n",
+                "definition-return#0 ordinal=0 definition_range=61..118 definition_site=node#84 root=2\n",
+                "definition-return#1 ordinal=1 definition_range=121..179 definition_site=node#95 root=3\n",
+                "expression#0 form=bare range=22..25 site=node:63 head=builtin:set head_range=22..25 head_site=node:62 recovery=normal spelling=\"set\" head_spelling=\"set\"\n",
+                "expression#1 form=bare range=38..41 site=node:67 head=builtin:set head_range=38..41 head_site=node:66 recovery=normal spelling=\"set\" head_spelling=\"set\"\n",
+                "expression#2 form=bare range=105..108 site=node:80 head=builtin:set head_range=105..108 head_site=node:79 recovery=normal spelling=\"set\" head_spelling=\"set\"\n",
+                "expression#3 form=bare range=163..166 site=node:87 head=builtin:set head_range=163..166 head_site=node:86 recovery=normal spelling=\"set\" head_spelling=\"set\"\n",
+            )
+        );
+    }
+
+    #[test]
+    fn task_249r_independent_return_corruption_fails_atomically() {
+        let fixture = task_249r_fixture();
+        let baseline = fixture.base.clone();
+
+        let mut empty = fixture.extension.clone();
+        empty.returns.clear();
+        assert_eq!(
+            SourceTypeDefinitionReturnProducer::extend(&fixture.base, empty, &fixture.arena),
+            Err(SourceTypeError::EmptyDefinitionReturns)
+        );
+
+        let mut singleton = fixture.extension.clone();
+        singleton.returns.pop();
+        assert_eq!(
+            SourceTypeDefinitionReturnProducer::extend(&fixture.base, singleton, &fixture.arena),
+            Err(SourceTypeError::DefinitionReturnCardinalityMismatch)
+        );
+
+        let mut reordered = fixture.extension.clone();
+        reordered.returns[1].source_ordinal = 0;
+        assert!(matches!(
+            SourceTypeDefinitionReturnProducer::extend(&fixture.base, reordered, &fixture.arena),
+            Err(SourceTypeError::InvalidDefinitionReturn { definition_return })
+                if definition_return == SourceTypeDefinitionReturnId::new(1)
+        ));
+
+        let mut wrong_owner_range = fixture.extension.clone();
+        wrong_owner_range.returns[0].definition_range = range(fixture.source, 60, 118);
+        assert!(matches!(
+            SourceTypeDefinitionReturnProducer::extend(
+                &fixture.base,
+                wrong_owner_range,
+                &fixture.arena,
+            ),
+            Err(SourceTypeError::InvalidDefinitionReturn { definition_return })
+                if definition_return == SourceTypeDefinitionReturnId::new(0)
+        ));
+
+        for definition_range in [
+            range(other_source_id(), 61, 118),
+            range(fixture.source, 61, 61),
+            range(fixture.source, 105, 106),
+        ] {
+            let mut invalid = fixture.extension.clone();
+            invalid.returns[0].definition_range = definition_range;
+            assert_task_249r_extension_error(
+                &fixture,
+                invalid,
+                &fixture.arena,
+                SourceTypeError::InvalidDefinitionReturn {
+                    definition_return: SourceTypeDefinitionReturnId::new(0),
+                },
+            );
+        }
+
+        let mut role_owner = fixture.extension.clone();
+        role_owner.returns[0].definition_site = role(84, "definition-owner");
+        assert!(matches!(
+            SourceTypeDefinitionReturnProducer::extend(&fixture.base, role_owner, &fixture.arena),
+            Err(SourceTypeError::InvalidDefinitionReturnSite { definition_return })
+                if definition_return == SourceTypeDefinitionReturnId::new(0)
+        ));
+
+        let mut wrong_expression_source = fixture.extension.clone();
+        wrong_expression_source.returns[0].expression.source_id = other_source_id();
+        assert_task_249r_extension_error(
+            &fixture,
+            wrong_expression_source,
+            &fixture.arena,
+            SourceTypeError::InvalidDefinitionReturn {
+                definition_return: SourceTypeDefinitionReturnId::new(0),
+            },
+        );
+        let mut wrong_expression_module = fixture.extension.clone();
+        wrong_expression_module.returns[0].expression.module_id = module("task249r.other");
+        assert_task_249r_extension_error(
+            &fixture,
+            wrong_expression_module,
+            &fixture.arena,
+            SourceTypeError::InvalidDefinitionReturn {
+                definition_return: SourceTypeDefinitionReturnId::new(0),
+            },
+        );
+        for mutate in [
+            |input: &mut SourceTypeDefinitionReturnExtensionInput| {
+                input.returns[0].expression.source_range.start = 104;
+            },
+            |input: &mut SourceTypeDefinitionReturnExtensionInput| {
+                input.returns[0].expression.head_range.start = 104;
+            },
+        ] {
+            let mut invalid = fixture.extension.clone();
+            mutate(&mut invalid);
+            assert_task_249r_extension_error(
+                &fixture,
+                invalid,
+                &fixture.arena,
+                SourceTypeError::InvalidDefinitionReturn {
+                    definition_return: SourceTypeDefinitionReturnId::new(0),
+                },
+            );
+        }
+        for mutate in [
+            |input: &mut SourceTypeDefinitionReturnExtensionInput| {
+                input.returns[0].expression.site = role(80, "return-expression");
+            },
+            |input: &mut SourceTypeDefinitionReturnExtensionInput| {
+                input.returns[0].expression.head_site = role(79, "return-head");
+            },
+        ] {
+            let mut invalid = fixture.extension.clone();
+            mutate(&mut invalid);
+            assert_task_249r_extension_error(
+                &fixture,
+                invalid,
+                &fixture.arena,
+                SourceTypeError::InvalidDefinitionReturnSite {
+                    definition_return: SourceTypeDefinitionReturnId::new(0),
+                },
+            );
+        }
+
+        let mut unsupported = fixture.extension.clone();
+        unsupported.returns[0].expression.form = SourceTypeApplicationForm::Of;
+        assert!(matches!(
+            SourceTypeDefinitionReturnProducer::extend(&fixture.base, unsupported, &fixture.arena),
+            Err(SourceTypeError::UnsupportedDefinitionReturn { definition_return })
+                if definition_return == SourceTypeDefinitionReturnId::new(0)
+        ));
+        for mutate in [
+            |input: &mut SourceTypeDefinitionReturnExtensionInput| {
+                input.returns[0].expression.spelling = "Set".to_owned();
+            },
+            |input: &mut SourceTypeDefinitionReturnExtensionInput| {
+                input.returns[0].expression.head_spelling = "Set".to_owned();
+            },
+            |input: &mut SourceTypeDefinitionReturnExtensionInput| {
+                input.returns[0].expression.head = SourceTypeHead::BuiltinObject;
+            },
+            |input: &mut SourceTypeDefinitionReturnExtensionInput| {
+                input.returns[0].expression.recovery = NodeRecoveryState::Recovered;
+            },
+        ] {
+            let mut invalid = fixture.extension.clone();
+            mutate(&mut invalid);
+            assert_task_249r_extension_error(
+                &fixture,
+                invalid,
+                &fixture.arena,
+                SourceTypeError::UnsupportedDefinitionReturn {
+                    definition_return: SourceTypeDefinitionReturnId::new(0),
+                },
+            );
+        }
+
+        let mut duplicate_site = fixture.extension.clone();
+        duplicate_site.returns[0].expression.site = node_site(84);
+        assert!(matches!(
+            SourceTypeDefinitionReturnProducer::extend(
+                &fixture.base,
+                duplicate_site,
+                &fixture.arena,
+            ),
+            Err(SourceTypeError::InvalidDefinitionReturnSite { definition_return })
+                if definition_return == SourceTypeDefinitionReturnId::new(0)
+        ));
+
+        let mut overlapping = fixture.extension.clone();
+        overlapping.returns[1].definition_range = range(fixture.source, 110, 179);
+        assert!(matches!(
+            SourceTypeDefinitionReturnProducer::extend(&fixture.base, overlapping, &fixture.arena),
+            Err(SourceTypeError::OverlappingDefinitionReturns { definition_return })
+                if definition_return == SourceTypeDefinitionReturnId::new(1)
+        ));
+        let mut reordered_owner = fixture.extension.clone();
+        reordered_owner.returns[1].definition_range = range(fixture.source, 50, 179);
+        assert_task_249r_extension_error(
+            &fixture,
+            reordered_owner,
+            &fixture.arena,
+            SourceTypeError::OverlappingDefinitionReturns {
+                definition_return: SourceTypeDefinitionReturnId::new(1),
+            },
+        );
+
+        assert_eq!(fixture.base, baseline);
+        assert!(fixture.base.definition_returns().is_empty());
+    }
+
+    #[test]
+    fn task_249r_one_shot_base_environment_and_arena_drift_fail_closed() {
+        let fixture = task_249r_fixture();
+        let baseline = fixture.base.clone();
+        let extended = SourceTypeDefinitionReturnProducer::extend(
+            &fixture.base,
+            fixture.extension.clone(),
+            &fixture.arena,
+        )
+        .expect("first extension");
+        assert_eq!(
+            SourceTypeDefinitionReturnProducer::extend(
+                &extended,
+                fixture.extension.clone(),
+                &fixture.arena,
+            ),
+            Err(SourceTypeError::DefinitionReturnsAlreadyPresent)
+        );
+
+        let mut wrong_source = fixture.extension.clone();
+        wrong_source.source_id = other_source_id();
+        assert_eq!(
+            SourceTypeDefinitionReturnProducer::extend(&fixture.base, wrong_source, &fixture.arena,),
+            Err(SourceTypeError::EnvironmentMismatch)
+        );
+        let mut wrong_module = fixture.extension.clone();
+        wrong_module.module_id = module("task249r.wrong");
+        assert_eq!(
+            SourceTypeDefinitionReturnProducer::extend(&fixture.base, wrong_module, &fixture.arena,),
+            Err(SourceTypeError::EnvironmentMismatch)
+        );
+
+        let mut invalid_base = fixture.base.clone();
+        invalid_base.expressions.entries[0].spelling = "object".to_owned();
+        assert_eq!(
+            SourceTypeDefinitionReturnProducer::extend(
+                &invalid_base,
+                fixture.extension.clone(),
+                &fixture.arena,
+            ),
+            Err(SourceTypeError::InvalidDefinitionReturnBase)
+        );
+        let base_mutations: [fn(&mut SourceTypeApplicationHandoff); 17] = [
+            |base| base.applications.entries[0].id = SourceTypeApplicationId::new(1),
+            |base| base.applications.entries[0].binding = BindingId::new(1),
+            |base| base.applications.entries[0].source_ordinal = 1,
+            |base| base.applications.entries[0].root = SourceTypeExpressionId::new(1),
+            |base| base.expressions.entries[0].id = SourceTypeExpressionId::new(1),
+            |base| base.expressions.entries[0].source_id = other_source_id(),
+            |base| base.expressions.entries[0].module_id = module("task249r.other"),
+            |base| base.expressions.entries[0].source_range.start = 21,
+            |base| base.expressions.entries[0].site = node_site(64),
+            |base| base.expressions.entries[0].spelling = "Set".to_owned(),
+            |base| base.expressions.entries[0].head_site = node_site(61),
+            |base| base.expressions.entries[0].head_range.start = 21,
+            |base| base.expressions.entries[0].head_spelling = "Set".to_owned(),
+            |base| base.expressions.entries[0].form = SourceTypeApplicationForm::Of,
+            |base| base.expressions.entries[0].head = SourceTypeHead::BuiltinObject,
+            |base| base.expressions.entries[0].recovery = NodeRecoveryState::Recovered,
+            |base| {
+                base.arguments.entries.push(SourceTypeArgumentRow {
+                    id: SourceTypeArgumentId::new(0),
+                    parent: SourceTypeExpressionId::new(0),
+                    ordinal: 0,
+                    argument: SourceTypeArgument::TypeSite {
+                        expression: SourceTypeExpressionId::new(1),
+                    },
+                });
+            },
+        ];
+        for mutate in base_mutations {
+            let mut invalid = fixture.base.clone();
+            mutate(&mut invalid);
+            assert_eq!(
+                SourceTypeDefinitionReturnProducer::extend(
+                    &invalid,
+                    fixture.extension.clone(),
+                    &fixture.arena,
+                ),
+                Err(SourceTypeError::InvalidDefinitionReturnBase)
+            );
+        }
+        let empty_arena = TypedArena::try_new(None, Vec::new()).expect("empty arena");
+        assert_eq!(
+            SourceTypeDefinitionReturnProducer::extend(
+                &fixture.base,
+                fixture.extension.clone(),
+                &empty_arena,
+            ),
+            Err(SourceTypeError::InvalidDefinitionReturnBase)
+        );
+        let base_drift = task_249r_arena(
+            fixture.source,
+            Some((
+                63,
+                range(fixture.source, 22, 25),
+                NodeRecoveryState::Recovered,
+            )),
+        );
+        assert_eq!(
+            SourceTypeDefinitionReturnProducer::extend(
+                &fixture.base,
+                fixture.extension.clone(),
+                &base_drift,
+            ),
+            Err(SourceTypeError::InvalidDefinitionReturnBase)
+        );
+        let owner_drift = task_249r_arena(
+            fixture.source,
+            Some((
+                84,
+                range(fixture.source, 61, 117),
+                NodeRecoveryState::Normal,
+            )),
+        );
+        assert!(matches!(
+            SourceTypeDefinitionReturnProducer::extend(
+                &fixture.base,
+                fixture.extension.clone(),
+                &owner_drift,
+            ),
+            Err(SourceTypeError::InvalidDefinitionReturnSite { definition_return })
+                if definition_return == SourceTypeDefinitionReturnId::new(0)
+        ));
+        for node in [80, 79] {
+            let return_site_drift = task_249r_arena(
+                fixture.source,
+                Some((
+                    node,
+                    range(fixture.source, 105, 108),
+                    NodeRecoveryState::Recovered,
+                )),
+            );
+            assert!(matches!(
+                SourceTypeDefinitionReturnProducer::extend(
+                    &fixture.base,
+                    fixture.extension.clone(),
+                    &return_site_drift,
+                ),
+                Err(SourceTypeError::InvalidDefinitionReturnSite { definition_return })
+                    if definition_return == SourceTypeDefinitionReturnId::new(0)
+            ));
+        }
+        for (node, source_range, recovery) in [
+            (
+                84,
+                range(fixture.source, 61, 117),
+                NodeRecoveryState::Normal,
+            ),
+            (
+                80,
+                range(fixture.source, 105, 108),
+                NodeRecoveryState::Recovered,
+            ),
+            (
+                79,
+                range(fixture.source, 105, 108),
+                NodeRecoveryState::Recovered,
+            ),
+        ] {
+            let drifted_arena =
+                task_249r_arena(fixture.source, Some((node, source_range, recovery)));
+            assert_eq!(
+                task_249r_typed_ast(
+                    fixture.source,
+                    fixture.module.clone(),
+                    extended.clone(),
+                    drifted_arena,
+                ),
+                Err(TypedAstError::InvalidSourceType)
+            );
+        }
+        assert_eq!(fixture.base, baseline);
+        assert_eq!(extended.definition_returns().len(), 2);
+    }
+
+    #[test]
+    fn task_249r_typed_final_clone_replay_has_no_semantic_output() {
+        let fixture = task_249r_fixture();
+        let handoff = SourceTypeDefinitionReturnProducer::extend(
+            &fixture.base,
+            fixture.extension,
+            &fixture.arena,
+        )
+        .expect("definition returns");
+        let fingerprint = handoff.debug_text();
+        let typed = task_249r_typed_ast(
+            fixture.source,
+            fixture.module,
+            handoff.clone(),
+            fixture.arena,
+        )
+        .expect("typed Task 249R installation");
+        assert_eq!(typed.source_type(), Some(&handoff));
+        assert!(typed.types().is_empty());
+        assert!(typed.facts().is_empty());
+        assert!(typed.coercions().is_empty());
+        assert!(typed.initial_obligations().is_empty());
+        assert!(typed.diagnostics().is_empty());
+        let typed_debug = typed.debug_text();
+        assert_eq!(typed_debug.matches(fingerprint.as_str()).count(), 1);
+
+        let resolved = assemble_empty_resolved(&typed);
+        assert_eq!(resolved.source_type(), Some(&handoff));
+        assert!(resolved.expr_metadata().is_empty());
+        assert!(resolved.inserted_coercions().is_empty());
+        assert!(resolved.cluster_facts().is_empty());
+        assert!(resolved.diagnostics().is_empty());
+        assert!(resolved.checked_formulas().is_empty());
+        assert!(resolved.statement_semantics().is_empty());
+        assert!(resolved.checked_proofs().is_empty());
+        let resolved_debug = resolved.debug_text();
+        assert_eq!(resolved_debug.matches(fingerprint.as_str()).count(), 1);
     }
 
     #[test]

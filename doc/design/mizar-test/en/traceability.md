@@ -2164,5 +2164,7 @@ Implementation projects `423/391`, `230/193`, `101/7/200/1`, and type
 Task 249R changes representation coverage only and creates no corpus artifact,
 requirement row, backlink, status, or credit. Counts remain `422/390`,
 `229/193`, `101/7/199/1`, type `254/242`, warnings/errors `23/0`. The future
-Task-260 row and pass backlink remain frozen but inactive until Task 249R is
-committed and Task 260 is implemented.
+Task-260 row and pass backlink remain frozen and inactive. Fresh Task-249R
+implementation verification reproduces these exact counts and all five CLI
+hashes without editing `tests/coverage/spec_trace.toml` or any executable trace
+row, status, or credit; activation still waits for Task 260.

@@ -300,17 +300,21 @@ ownerに残る。legacy `type_checker::AttributeInput`は変更せず別のま�
 生成 public newtype:
 
 - `SourceTypeApplicationId`, `SourceTypeExpressionId`,
-  `SourceTypeArgumentId`
+  `SourceTypeArgumentId`, `SourceTypeDefinitionReturnId`
 
 literal top-level public item:
 
 - `SourceTypeHandoffInput`, `SourceTypeApplicationInput`,
+  `SourceTypeDefinitionReturnExtensionInput`,
+  `SourceTypeDefinitionReturnInput`,
   `SourceTypeExpressionInput`, `SourceTypeArgumentInput`,
   `SourceTypeApplicationForm`, `SourceTypeHead`, `SourceTypeArgument`,
   `SourceTypeApplicationHandoff`, `SourceTypeApplicationTable`,
   `SourceTypeApplication`, `SourceTypeExpressionTable`,
+  `SourceTypeDefinitionReturnTable`, `SourceTypeDefinitionReturn`,
   `SourceTypeExpression`, `SourceTypeArgumentTable`,
-  `SourceTypeArgumentRow`, `SourceTypeProducer`, `SourceTypeError`
+  `SourceTypeArgumentRow`, `SourceTypeProducer`,
+  `SourceTypeDefinitionReturnProducer`, `SourceTypeError`
 
 対応:
 
@@ -319,10 +323,12 @@ literal top-level public item:
 | syntax-free flat tableがouter binding link、recursive written type expression/head、ordered term/type/`qua` argumentを保持する。 | `SourceTypeHandoffInput`、dense id、`src/source_type.rs`のimmutable table 3件。 | exact broad 10/13/6 real runner oracle、Task-248 2/2/0 co-consumer。 | Task 249について実装済み。 |
 | bindingとreal `DeclarationShell` ownership、symbol/contribution import closure/visibility、arena site/range/recoveryをpublish前にauthenticateする。 | `SourceTypeProducer::build`とinstallation validation。 | producer corruption matrix、real local/imported head、import-target mismatch。 | transactionalに実装済み。 |
 | graph order/ownership/containment/non-overlapとdeterministic provenanceをfail closedにする。 | `SourceTypeError`、iterative graph/range/provenance validation、deterministic debug。 | dangling/cycle/multiple-parent/forward/duplicate/wrong-form/range/provenance/deep-chain test。 | sort/recursion/repairなしで実装済み。 |
+| independent definition return typeをbinding applicationを捏造せずexact two-binding baseへextendする。 | `SourceTypeDefinitionReturnProducer`、immutable owner row 2件、appended root 2/3、one-shot/install validation。 | exact Task-249R extension/corruption/arena/Typed-final test 4件。 | Task 249Rで実装済み。combined profileは`2/4/0/2`。 |
 | `TypedAst`がresultを所有し、`ResolvedTypedAst`はcloneだけする。 | optional `SourceTypeApplicationHandoff` fieldとborrowed getter。 | immutable final preservation/repeated-run assertion。 | 実装済み。legacy empty debug byteはconditionalに維持。 |
 | public enumはforward-compatible。 | public enumの`#[non_exhaustive]`。 | `checker_public_enums_are_forward_compatible_and_documented`。 | exhaustive exceptionなしでguard。 |
 
-bounded gap: Task 249がpublishするのはsource-type inputだけである。expansion、
+bounded gap: Tasks 249/249Rがpublishするのはsource-type inputとdefinition-return
+owner linkだけである。expansion、
 normalization、evidence、term/`qua` selection、accepted fact/declaration/proof、
 downstream IRはexplicit later ownerに残る。
 
@@ -2996,9 +3002,9 @@ binding捏造になるため禁止する。Task 249Rが追加するのは
 `definition_returns` getter、non-exhaustive error variant 8件、`source_type.md`
 のfrozen debug rowだけである。active profileはapplications/expressions/
 arguments/definition returns `2/4/0/2`。docsはbounded `design_drift`だけをclose
-し、missing executable transportは`source_drift`、implementation test 4件は
-`test_gap`としてseparate source commitまで残る。prerequisiteでtrace credit/
-language-semantic coverageは変更しない。
+した。separate implementationはrecorded `source_drift`とfour-test `test_gap`を
+closeした。trace credit/language-semantic coverageは変更せず、Task 249Rは
+representation provenanceだけをpublishし、Task 260がsole consumerである。
 
 ## Task 260 Pre-Implementation Classification
 

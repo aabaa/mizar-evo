@@ -2070,4 +2070,6 @@ warnings/errorsは不変である。
 Task 249Rはrepresentation coverageだけを変更し、corpus artifact/requirement row/
 backlink/status/creditを追加しない。countは`422/390`、`229/193`、
 `101/7/199/1`、type `254/242`、warnings/errors `23/0`。future Task-260 row/pass
-backlinkはfrozenだが、Task 249R commit後にTask 260をimplementするまでinactive。
+backlinkはfrozen/inactiveである。fresh Task-249R implementation verificationは
+`tests/coverage/spec_trace.toml`およびexecutable trace row/status/creditを
+変更せずexact countとCLI 5本のhashを再現し、activationはTask 260まで待つ。

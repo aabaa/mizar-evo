@@ -1502,4 +1502,6 @@ artifact and sole trace backlink; no synchronization exception exists.
 Paired runner plans, harnesses, todos, boundary audits, and trace ledgers
 record Task 249R as a checker-only prerequisite, the corrected `2/4/0/2`
 consumer profile, unchanged runner/corpus metadata, and deferred Task-260
-activation. English is canonical and no synchronization exception exists.
+activation. The implementation no-op closure synchronizes checker `439`,
+runner `512`, metadata `137`, and unchanged runner/CLI hashes. English is
+canonical and no synchronization exception exists.

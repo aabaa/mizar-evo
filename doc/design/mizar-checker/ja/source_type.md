@@ -192,3 +192,20 @@ docs prerequisiteはEN/JA sync、review-only **NO FINDINGS**、unchanged executa
 count/hash、all nine gates、quality 90+、dedicated docs commit、clean/stash
 invariantでexitする。separate implementationはfour tests、exact `2/4/0/2`、
 full verification/reviews/gates、dedicated commit後、Task 260へ自動復帰する。
+
+### Task 249R implementation closure
+
+checker implementationはfrozen additive ABIを`source_type.rs`に実装した。
+`SourceTypeProducer::build`はlegacy empty-table byteを保ち、
+`SourceTypeDefinitionReturnProducer::extend`はexact Task-249/Profile-B baseと
+exact two-row Task-260 return profileだけをacceptする。installationはowner/
+expression/headの全arena fieldを再validateし、final ownerは同じimmutable
+handoffをclone-preserveする。追加testはfrozen checker 4件だけであり、runner/
+resolver/syntax code、corpus artifact、trace row、diagnostic、fact、proof、
+acceptance、VC behaviorは追加しない。
+
+fresh executable inventoryはapplications/expressions/arguments/returns
+`2/4/0/2`、checker `439`、runner/resolver/syntax unchanged `512/144/59`。
+`source_type.rs`は`4407` lines、checker production manifestは`24/148143`で
+ある。metadata CLI 5本のoutput/hashは全て不変。Task 260がsole next consumerで
+あり、上記semantic deferralはすべて継続する。

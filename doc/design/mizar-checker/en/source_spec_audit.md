@@ -324,17 +324,21 @@ unchanged and separate.
 Generated public newtypes:
 
 - `SourceTypeApplicationId`, `SourceTypeExpressionId`,
-  `SourceTypeArgumentId`
+  `SourceTypeArgumentId`, `SourceTypeDefinitionReturnId`
 
 Literal top-level public items:
 
 - `SourceTypeHandoffInput`, `SourceTypeApplicationInput`,
+  `SourceTypeDefinitionReturnExtensionInput`,
+  `SourceTypeDefinitionReturnInput`,
   `SourceTypeExpressionInput`, `SourceTypeArgumentInput`,
   `SourceTypeApplicationForm`, `SourceTypeHead`, `SourceTypeArgument`,
   `SourceTypeApplicationHandoff`, `SourceTypeApplicationTable`,
   `SourceTypeApplication`, `SourceTypeExpressionTable`,
+  `SourceTypeDefinitionReturnTable`, `SourceTypeDefinitionReturn`,
   `SourceTypeExpression`, `SourceTypeArgumentTable`,
-  `SourceTypeArgumentRow`, `SourceTypeProducer`, `SourceTypeError`
+  `SourceTypeArgumentRow`, `SourceTypeProducer`,
+  `SourceTypeDefinitionReturnProducer`, `SourceTypeError`
 
 Correspondence:
 
@@ -343,10 +347,12 @@ Correspondence:
 | Syntax-free flat tables retain outer binding links, recursive written type expressions/heads, and ordered term/type/`qua` arguments. | `SourceTypeHandoffInput`, dense ids and three immutable tables in `src/source_type.rs`. | Exact broad 10/13/6 real runner oracle and Task-248 2/2/0 co-consumer. | Implemented for Task 249. |
 | Binding and real `DeclarationShell` ownership, symbol/contribution import closure/visibility, and arena site/range/recovery are authenticated before publication. | `SourceTypeProducer::build` and installation validation. | Producer corruption matrix plus real local/imported heads and import-target mismatch. | Implemented transactionally. |
 | Graph order, ownership, containment, non-overlap, and deterministic provenance are fail-closed. | `SourceTypeError`, iterative graph/range/provenance validation and deterministic debug rendering. | Dangling/cycle/multiple-parent/forward/duplicate/wrong-form/range/provenance and deep-chain tests. | Implemented without sorting, recursion, or repair. |
+| Independent definition return types extend the exact two-binding base without fabricating binding applications. | `SourceTypeDefinitionReturnProducer`, two immutable owner rows, appended roots 2/3, one-shot and installation validation. | Four exact Task-249R extension/corruption/arena/Typed-final tests. | Implemented for Task 249R; combined profile is `2/4/0/2`. |
 | `TypedAst` owns the result and `ResolvedTypedAst` only clones it. | Optional `SourceTypeApplicationHandoff` field and borrowed getters. | Immutable final-preservation and repeated-run assertions. | Implemented; empty legacy debug bytes remain conditional. |
 | Public enums are forward-compatible. | `#[non_exhaustive]` on public enums. | `checker_public_enums_are_forward_compatible_and_documented`. | Guarded; no exhaustive exception. |
 
-Bounded gaps: Task 249 publishes source-type inputs only. Expansion,
+Bounded gaps: Tasks 249/249R publish source-type inputs and definition-return
+owner links only. Expansion,
 normalization, evidence, term/`qua` selection, accepted facts/declarations/
 proofs, and downstream IR remain with their explicit later owners.
 
@@ -3173,10 +3179,11 @@ only `SourceTypeDefinitionReturnId`, its extension input/row/table/producer,
 the `definition_returns` handoff getter, eight non-exhaustive error variants,
 and the frozen debug row documented in `source_type.md`. Its exact active
 profile is applications/expressions/arguments/definition returns `2/4/0/2`.
-This documentation closes bounded `design_drift`; the missing executable
-transport remains `source_drift`, and the four implementation tests remain a
-`test_gap`, until the separate source commit. No trace credit or language-
-semantic coverage changes in the prerequisite.
+The documentation commit closed bounded `design_drift`; the separate
+implementation now closes the recorded `source_drift` and four-test
+`test_gap`. No trace credit or language-semantic coverage changes: Task 249R
+publishes representation provenance only, and Task 260 remains its sole
+consumer.
 
 ## Task 260 Pre-Implementation Classification
 

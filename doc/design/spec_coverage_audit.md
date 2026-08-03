@@ -5899,8 +5899,9 @@ Accordingly this prerequisite changes documentation coverage ownership only:
 it freezes the future Task-260 backlink and deferrals but grants no current
 Chapter 10/16 executable coverage. The final independent read-only review
 reports no findings, all nine hard gates PASS, no score cap, and `100/100`.
-Exact staging, the dedicated documentation commit, and fresh implementation
-inventory remain pending.
+Exact staging and the dedicated documentation commit completed as
+`b587038f12f84a77720f6441a000ddb84c7b996f`; fresh implementation inventory
+then selected the lower Task-249R prerequisite.
 
 ## Checker Task 249R Definition-Return Prerequisite Addendum
 
@@ -5933,6 +5934,17 @@ The documentation-only verification preserves every canonical specification,
 fixture, sidecar, expectation, trace row/status/count, executable source, and
 Cargo artifact. Repeated final read-only quality reviews, after correcting one
 central-dashboard `design_drift`, report no findings, all nine hard gates
-PASS, no score cap, and `100/100`. This prerequisite still grants no current
-coverage credit; exact staging, its dedicated commit, and fresh implementation
-inventory remain pending.
+PASS, no score cap, and `100/100`. This prerequisite grants no executable
+coverage credit and was committed as
+`b292b8002f9656c4ab2a6c3b606743b1bda7d551`.
+
+The separate Task-249R implementation now closes the recorded bounded
+`source_drift` and its four-test `test_gap`: the syntax-free checker owns two
+definition-return rows and appended roots 2/3 while retaining exactly two
+binding-linked applications. The public and arena-validation inventories are
+synchronized in the checker audits, and checker tests move `435 -> 439`.
+Runner/resolver/syntax source, corpus fixtures, sidecars, expectations, and
+`tests/coverage/spec_trace.toml` remain byte-unchanged, so this implementation
+does not add corpus trace credit or claim any deferred semantic coverage.
+The final independent read-only review reports no findings, all nine hard
+gates PASS, no score cap, and `100/100`.

@@ -1449,5 +1449,6 @@ backlinkをownする。synchronization exceptionはない。
 
 paired runner plan/harness/todo/boundary audit/trace ledgerはTask 249Rをchecker-
 only prerequisite、corrected `2/4/0/2` consumer profile、unchanged runner/corpus
-metadata、deferred Task-260 activationとして同期する。English canonicalでsync
-exceptionはない。
+metadata、deferred Task-260 activationとして同期する。implementation no-op
+closureもchecker `439`、runner `512`、metadata `137`、unchanged runner/CLI
+hashを同期する。English canonicalでsync exceptionはない。

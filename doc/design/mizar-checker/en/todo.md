@@ -6429,5 +6429,27 @@ implementation commit does not satisfy a producer task.
 - [x] Repeat review-only specification audit to **NO FINDINGS** and complete
   docs-only verification with executable/count/hash invariants and all nine
   hard gates.
-- [ ] Commit only the synchronized Task-249R documents, fresh-inventory the
-  separate implementation, then return automatically to Task 260.
+- [x] Commit only the synchronized Task-249R documents as
+  `b292b8002f9656c4ab2a6c3b606743b1bda7d551` and fresh-inventory the
+  separate implementation.
+
+## Checker Task 249R Active Implementation
+
+- [x] Implement only the independent definition-return table and producer in
+  `source_type.rs`, preserving Task-249 application cardinality and all legacy
+  empty-table bytes.
+- [x] Add exactly the four frozen checker tests and close the initial review
+  gaps within that matrix; repeat test-sufficiency and full implementation
+  review to **NO FINDINGS**.
+- [x] Reproduce checker `439`, runner/resolver/syntax `512/144/59`, metadata
+  `137`, all five unchanged CLI counts/hashes, checker production
+  `24/148143`, and the fresh checker test-list/content hashes.
+- [x] Pass focused/module/crate tests, lint policy, formatting, full
+  warnings-denied Clippy, unconstrained full workspace tests, and diff checks.
+- [x] Correct one Medium and one Low wording-only `design_drift` and repeat
+  source/documentation consistency review to **NO FINDINGS**.
+- [x] Complete final read-only quality with **NO FINDINGS**, all nine hard
+  gates PASS, no score cap, and `100/100`
+  (`20/20/15/15/10/10/5/5`).
+- [ ] Complete exact staging, the dedicated implementation commit, clean/stash
+  post-commit inventory, and automatic return to Task 260.

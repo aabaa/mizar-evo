@@ -1533,4 +1533,8 @@ The EN/JA `source_type.md`, crate plan, todo, source audit, ownership, payload,
 boundary, runner-consumer, central todo, and coverage-audit records synchronize
 the independent return-row ABI, `2/4/0/2` oracle, count correction, exclusions,
 and two-commit prerequisite sequence. English remains canonical and no
-synchronization exception is recorded.
+synchronization exception is recorded. The implementation closure synchronizes
+checker `439`, unchanged lower/runner counts, `source_type.rs` `4407`, checker
+production `24/148143`, the fresh checker hashes, the four-test scope, and all
+unchanged corpus/trace/CLI boundaries. Both languages record the findings-free,
+nine-gate, uncapped final quality result of `100/100`.

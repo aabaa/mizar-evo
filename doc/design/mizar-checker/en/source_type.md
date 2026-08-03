@@ -303,3 +303,21 @@ dedicated docs commit, and clean/stash-invariant fresh inventory. The separate
 implementation exits with the four tests, exact `2/4/0/2` profile, full
 verification/reviews/gates, one dedicated commit, and automatic return to Task
 260 implementation.
+
+### Task 249R Implementation Closure
+
+The checker implementation now realizes the frozen additive ABI in
+`source_type.rs`. `SourceTypeProducer::build` preserves the legacy empty-table
+bytes; `SourceTypeDefinitionReturnProducer::extend` accepts only the exact
+Task-249/Profile-B base and exact two-row Task-260 return profile; installation
+revalidates every owner, expression, and head arena field; and the final owner
+clone-preserves the same immutable handoff. The implementation adds only the
+four frozen checker tests. It adds no runner/resolver/syntax code, corpus
+artifact, trace row, diagnostic, fact, proof, acceptance, or VC behavior.
+
+The fresh executable inventory is applications/expressions/arguments/returns
+`2/4/0/2`, checker `439`, and unchanged runner/resolver/syntax
+`512/144/59`. `source_type.rs` is `4407` lines and the checker production
+manifest is `24/148143`. All five metadata CLI outputs and hashes remain
+unchanged. Task 260 remains the sole next consumer; every semantic deferral
+above remains in force.
