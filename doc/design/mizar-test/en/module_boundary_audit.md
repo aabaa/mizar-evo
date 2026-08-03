@@ -12826,3 +12826,23 @@ the node-44 mutation remains a Task-248 preflight failure. Runner production
 is `33/65952` with hashes recorded in the crate plan. The pass sidecar and
 trace row activate exact transport credit only; all semantic exclusions above
 remain unchanged.
+
+## Checker Task 262 Frozen Runner Boundary
+
+Task 262 will add one private production leaf at
+`runner/type_elaboration/source_mode_definition.rs` and one paired test leaf,
+plus bounded facade/root registration. The runner exclusively owns the exact
+141-byte source/final-LF check, literal 54-row Surface oracle, two-shell
+resolver authentication, raw-subtree exclusions, and post-prerequisite lower
+Task-248/249/249M composition. It passes only syntax-free IDs, associations, anchors, contexts,
+spellings, and fingerprints to the checker.
+
+The leaf cannot land until checker-only Task 249M adds and freezes the
+standalone mode-RHS row consumed through the Task-249 handoff. The runner does
+not implement that lower owner or fabricate a binding-linked application.
+
+The leaf is isolated from Tasks 259--261 and precedes, but does not supersede,
+the mixed mode/structure gap route. It cannot answer the RHS request, execute
+the computation justification, or publish acceptance, expansion/sethood facts,
+proof, Core, CFG, or VC. This prerequisite creates no production/test inventory
+row or measured line count; implementation must fresh-measure them.

@@ -5191,3 +5191,29 @@ exact producer、typed/final owner、private runnerがfrozen `source_drift`/`tes
 を閉じ、obligation row/semantic resultは追加しない。source/spec、public-enum、
 module-layout、syntax-boundary、adjacent allow-rationale lintがactive surfaceをguard
 する。prior `repo_metadata_conflict`はreport-onlyのままである。
+
+## Task 262 frozen future public-surface audit
+
+[`source_mode_definition.md`](./source_mode_definition.md)はfuture public
+`source_mode_definition` moduleをownする。dense ID 6個、input aggregate 7個、
+immutable row/table family 6個、handoff/projection/producer、recovery/request/
+property/error enumをfreezeする。future public enumはすべて
+`#[non_exhaustive]`で、implementationはmodule export、literal public
+inventory、enum policy、source-spec、syntax-boundary、module-layout、adjacent-
+allow lint inventoryを同期する。
+
+callerはderived origin/fingerprint/allocated ID/obligation ID/evidence
+response/acceptance/fact/proof/VCを供給できない。projectionがbaseline
+compare-and-swapとexisting-kind `Sethood` row 1個のappendをownし、RHS requestは
+unresolvedのままである。TypedAstだけがpublication pathで、final assemblyは
+clone-preserve/revalidateしmixed Tasks 259--262をrejectする。
+
+fresh inventoryはmissing upper contractを`design_drift`、absent Task-262
+moduleを`source_drift`、absent exact consumerを`test_gap`と分類する。
+specification reviewはadditional lower `source_drift`も発見した。Task 249に
+standalone mode-RHS ownerがなく、binding-linked application 3個目のfabricationは
+`boundary_violation`になる。canonical Chapter 7はchecker-only Task 249Mを別途
+freeze/implementするのに十分なためblocking `spec_gap`ではないが、Task 262
+implementationはprerequisite landまでblockedである。authority conflict、
+`source_undocumented_behavior`、`test_expectation_drift`はない。measured origin差は
+report-only `repo_metadata_conflict`でsafe task-only commit targetは識別可能である。

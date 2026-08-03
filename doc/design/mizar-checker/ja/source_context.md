@@ -452,3 +452,15 @@ raw AST/shell authenticationはrunner責務のままで、checkerはsyntax-free
 Profile-B handoffとexact site/range/context/spelling/fingerprintだけを見る。
 Task 261はnew source-context trace creditを追加せず、Task-248 count/hashを
 変更できない。
+
+## Task 262 Profile-B mode consumer
+
+Task 262はnode 50のexact definition blockにunchanged Profile-B contextを再利用
+する。direct `DefinitionParameter` row 37/41はcontext 1のbinding 0/1へmapし、
+mode application rowは同じparameter rowをorder `[0,1]`、pattern range
+`86..87`/`89..90`でlinkする。missing/duplicate/reordered/cross-context/
+stale-site/fingerprint-mismatched linkはfail closedする。
+
+pattern occurrenceはbinding/term rowをallocateしない。opaque resolver
+spelling、mode label、RHS、request、property、source textからcontextをinferしない。
+Task 262はTask-248 API/helper/table/debug/test/trace credit/count/hashを変更しない。

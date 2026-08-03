@@ -1373,3 +1373,27 @@ context ownership, four lower fingerprints, dense `1/2/1/1` rows, one-shot
 typed/final ownership, unchanged obligations, and Task-259/260 exclusion.
 Checker production is `26/152184`; exact manifest hashes are recorded in the
 crate plan. No proof, fact, acceptance, IR, or VC owner moved.
+
+## Task 262 Frozen Boundary
+
+Task 262 will add one documented syntax-free production module
+`src/source_mode_definition.rs` and one non-integration child test body. The
+production owner is limited to six dense `1/2/1/1/1/1` tables, resolver and
+post-prerequisite Task-248/249/249M fingerprint authentication, deterministic rendering, one
+unresolved RHS-inhabitation request, one baseline-appended pending `Sethood`
+row, and typed/final validation. Raw Surface/resolver selection remains in one
+private `mizar-test` route; checker production retains no syntax dependency.
+
+Task 262 implementation is blocked until a separate checker-only Task 249M
+adds one standalone mode-RHS row to the Task-249 handoff. Reusing a third
+binding-linked application is forbidden. Task 249M owns only that lower row,
+its extension API/fingerprint/debug rendering, and four checker tests; it
+lands in separate documentation and implementation commits before this
+module.
+
+The module owns no evidence response, base-shape decision, accepted mode,
+expansion/interface fact, ParamGuard/FOL composition, proof, discharge, Core,
+CFG, or VC. Public module/export/enum/source-spec allowlists and exact source/
+support line counts change only in the implementation commit. This prerequisite
+adds no production path and preserves checker production `26/152184` and both
+recorded hashes.

@@ -43,6 +43,7 @@ task 33 で pair が同期済みであるとは、以下をすべて満たすこ
 | `source_context.md` | `../ja/source_context.md` | `../en/source_context.md` | Task-248 authority/boundary、projection model、validation/recovery/atomicity、Task-258A bidirectional exclusion、determinism、coverage、public enum policy | none |
 | `source_attribute.md` | `../ja/source_attribute.md` | `../en/source_attribute.md` | Task-250 authority/boundary、flat chain/attribute/qualifier/group/actual model、environment/parent/arena/provenance validation、ownership、exact consumer、exclusion、public enum policy | none |
 | `source_attribute_definition.md` | `../ja/source_attribute_definition.md` | `../en/source_attribute_definition.md` | Task-261 authority/boundary、exact source/AST/resolver/lower profile、four-table public ABI、initial obligation不変、TypedAst/ResolvedTypedAst ownership、Task-259/260 isolation、exact consumer、test/count、exclusion、public enum policy | none |
+| `source_mode_definition.md` | `../ja/source_mode_definition.md` | `../en/source_mode_definition.md` | Task-262 Chapter-7/16 authority、exact source/54-row AST/resolver/lower profile、six-table public ABI、RHS inhabitation request、pending sethood obligation、TypedAst/ResolvedTypedAst ownership、Task-259--261 isolation、exact consumer、test/count、exclusion、public enum policy | none |
 | `source_application.md` | `../ja/source_application.md` | `../en/source_application.md` | Task-253 authority/boundary、five-table application/wrapper/candidate/argument/request transport、Task-252 fingerprint association、exact/synthetic consumer、exclusion、public enum policy | none |
 | `source_atomic_formula.md` | `../ja/source_atomic_formula.md` | `../en/source_atomic_formula.md` | Task-256/257C1とTask-257C2/256C1 lower-compatibility authority/boundary、nine-table atomic-formula/segment/provenance/type/attribute/edge/request transport、Task-252/253/254/255 fingerprint association、base consumer 8件とexact C1 consumer、condition-container gate、exclusion、public enum policy | none |
 | `source_composite_formula.md` | `../ja/source_composite_formula.md` | `../en/source_composite_formula.md` | Task-257A authority/boundary、seven-table composite-formula/binder/type/edge/request transport、source-derived binding extension、exact consumer、exclusion、public enum policy | none |
@@ -1480,3 +1481,16 @@ sequenceを同期する。implementation closureもchecker `439`、lower/runner 
 hash、four-test scope、unchanged corpus/trace/CLI boundary、findings-free/all
 nine-gate/score capなしのfinal quality `100/100`を同期する。English canonicalで
 sync exceptionはない。
+
+## Task 262 synchronization addendum
+
+EN/JA `source_mode_definition.md`、crate plan、TODO、source-context、source/
+public/module-boundary、runner-consumer、traceability、central TODO、coverage
+auditは141-byte source、literal 54-row oracle、two-shell resolver profile、
+`1/2/1/1/1/1` ABI、lower fingerprint 2個、mandatory standalone mode-RHS
+Task-249M prerequisite、post-prerequisite Task-249 base profile `2/3/0`と
+mode-RHS row 1個、unresolved RHS-inhabitation request 1個、existing kind
+`Sethood` のpending obligation 1個、sibling isolation、projected count、
+exclusion、upper-contract -> Task-249M docs -> Task-249M implementation ->
+Task-262 implementation sequenceを同期する。English canonicalで
+synchronization exceptionはない。

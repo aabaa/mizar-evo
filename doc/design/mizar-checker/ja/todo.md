@@ -4326,7 +4326,7 @@ criteriaは[payload_family_decomposition.md](./payload_family_decomposition.md)
       269-272 semanticsを吸収しない。
 - [x] **Task 259:** predicate-definition/initial-obligation intake producer。
 - [x] **Task 260:** functor-definition/initial-obligation intake producer。
-- [ ] **Task 261:** attribute-definition producer。
+- [x] **Task 261:** attribute-definition producer。
 - [ ] **Task 262:** mode-definition producer。
 - [ ] **Task 263:** structure/inheritance/constructor-definition producer。
 - [ ] **Task 264:** property-implementation producer。parser Task 48に依存。
@@ -6224,4 +6224,33 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   reproductionを含むfull shared verification matrixをPASSする。
 - [x] final hard gate 9件を**NO FINDINGS**、score capなし、quality
   `100/100`でPASSする。
-- [ ] exact stage/commit/post-commitとfresh Task 262+ selectionを完了する。
+- [x] exact stage/commit/post-commitを
+  `b1782bfc06388410229f07ee193a5febe0bf525e`として完了し、fresh Task 262を
+  selectする。
+
+## Checker Task 262 frozen-contract documentation prerequisite
+
+- [x] Chapter 7/16 authority、mode parser/resolver fixture、mixed gap/sidecar/
+  trace、public Tasks 248--261、全baseline、clean HEAD/origin delta、protected
+  stashをfresh-inventoryする。
+- [x] missing contractを`design_drift`、producerを`source_drift`、consumerを
+  `test_gap`、origin差をreport-only `repo_metadata_conflict`と分類し、blocking
+  `spec_gap`がないことを確認後、binding-linked Task-249 RHS mismatchをmandatory
+  lower `source_drift`、fabricated third bindingを`boundary_violation`と分類する。
+- [x] exact 141-byte source/hash、全54 AST row、two-shell resolver provenance、
+  parameter/context/application/RHS association、post-Task-249M lower profile
+  Task 248 `1/2/2/2/2/2/0`、Task-249 base `2/3/0`、standalone mode-RHS row
+  1個をfreezeする。
+- [x] dense table 6個を`1/2/1/1/1/1`、fingerprint 2個、unresolved RHS-
+  inhabitation request、pending existing-kind `Sethood` row 1個、exact
+  Typed/final ownership、Tasks-259--261 isolation、debug/failure orderをfreezeする。
+- [x] assume/equals/means/return/formula payload不在、ParamGuard/proof/
+  discharge/acceptance/fact/IR/VC deferral、subtree exclusion、test、projected
+  count、audit impact、write scope、exit criteriaをfreezeする。
+- [x] docs prerequisiteでproduction、existing fixture/sidecar/expectation、
+  trace count/status、CLI、list、manifest、hashを保つ。
+- [ ] specification reviewを**NO FINDINGS**まで反復し、全docs hard gateを
+  PASSし、本upper frozen-contract prerequisiteだけをcommitする。
+- [ ] Task 262 implementation前にTask 249Mをfresh-inventory/freeze/review/
+  implement/verifyしてseparate commitする。
+- [ ] Task 262だけへ戻ってimplementし、Task 263+へ継続する。

@@ -2220,3 +2220,30 @@ are `ffd4954aad628d7946aaf7afb1b472a6bdfca7bce5ba0cf09f5b284c9dda07bf`,
 and `77bbf19d0bb1d5c32af55ec7c98db85883fbc7cca0ce812058a1c212c1c31631`.
 Active metadata is `424/392`, `231/193`, `101/7/201/1`, type requirements
 `256/244`, and warnings/errors `23/0`. Credit remains exact transport only.
+
+## Checker Task 262 Frozen Trace Intent
+
+Implementation will add exactly one required covered type-elaboration row,
+`spec.en.checker.type_elaboration.source_mode_definition_payload`, sourced
+from `doc/design/mizar-checker/en/source_mode_definition.md`. Its sole backlink
+will be
+`tests/miz/pass/types/pass_type_elaboration_mode_definition_payload_001.expect.toml`,
+and that sidecar will reciprocally cite only this row.
+
+Credit is limited to exact `1/2/1/1/1/1` transport, post-prerequisite
+Tasks-248/249/249M provenance,
+one unresolved RHS-inhabitation request, one pending `Sethood` obligation, and
+transactional typed/final ownership. It grants no evidence response,
+ParamGuard/FOL composition, proof/discharge/acceptance, expansion/sethood fact,
+registration, Core, CFG, or VC credit. The mixed mode/structure gap receives no
+Task-262 backlink and remains unchanged for Task 263.
+
+This prerequisite adds no source, sidecar, trace row/status/backlink/count, or
+coverage. Current metadata remains `424/392`, `231/193`, `101/7/201/1`, type
+`256/244`, warnings/errors `23/0`; implementation projects `425/393`,
+`232/193`, `101/7/202/1`, and `257/245`.
+
+Task 249M lands first as a checker-only lower prerequisite. It adds no corpus
+case, sidecar, trace row, backlink, metadata count, or executable language
+credit; Task 262 remains the sole owner of the later one-case/one-requirement
+delta.

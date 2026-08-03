@@ -3375,5 +3375,22 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
   full verification, including exact count/hash reproduction.
 - [x] Pass all nine final hard gates with **NO FINDINGS**, no score cap, and
   quality `100/100`.
-- [ ] Complete exact staging/commit/post-commit, then return automatically to
-  Task 262+.
+- [x] Complete exact staging/commit/post-commit as
+  `b1782bfc06388410229f07ee193a5febe0bf525e`, then select Task 262.
+
+## Checker Task 262 Frozen Mode-Definition Consumer
+
+- [x] Freeze the exact 141-byte source/hash, 54-row Surface oracle, two-shell
+  resolver identity, lower Task-248/249 associations, and sibling isolation.
+- [x] Freeze the private runner/public checker boundary, six
+  `1/2/1/1/1/1` tables, unresolved RHS request, and one pending existing-kind
+  `Sethood` row without semantic acceptance.
+- [x] Freeze one future pass pair/sole trace row, five checker/four runner
+  tests, projected counts, hashes to remeasure, exclusions, and exit gates.
+- [x] Keep production, fixtures, sidecars, expectations, trace rows/status/
+  counts, and Cargo metadata unchanged in this documentation prerequisite.
+- [ ] Complete findings-free reviews, all nine docs gates, exact staging,
+  prerequisite commit, and clean post-commit inventory.
+- [ ] After the upper-contract commit, fresh-inventory, freeze, review,
+  implement, verify, and separately commit mandatory checker Task 249M.
+- [ ] Return to and implement only Task 262, then continue to Task 263+.

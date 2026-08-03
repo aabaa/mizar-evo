@@ -4555,7 +4555,7 @@ unchecked row below is one future nonempty logical task and one commit.
       269-272 semantics.
 - [x] **Task 259:** predicate-definition and initial-obligation intake producer.
 - [x] **Task 260:** functor-definition and initial-obligation intake producer.
-- [ ] **Task 261:** attribute-definition producer.
+- [x] **Task 261:** attribute-definition producer.
 - [ ] **Task 262:** mode-definition producer.
 - [ ] **Task 263:** structure/inheritance/constructor-definition producer.
 - [ ] **Task 264:** property-implementation producer; depends on parser Task 48.
@@ -6524,4 +6524,34 @@ implementation commit does not satisfy a producer task.
   shared verification matrix, including exact count/hash reproduction.
 - [x] Pass all nine final hard gates with **NO FINDINGS**, no score cap, and
   quality `100/100`.
-- [ ] Complete exact staging/commit/post-commit and fresh Task 262+ selection.
+- [x] Complete exact staging/commit/post-commit as
+  `b1782bfc06388410229f07ee193a5febe0bf525e` and fresh Task 262 selection.
+
+## Checker Task 262 Frozen-Contract Documentation Prerequisite
+
+- [x] Fresh-inventory Chapter 7 and Chapter 16 authority, mode parser/resolver
+  fixtures, mixed gap/sidecar/trace, public Tasks 248--261, all baselines,
+  clean HEAD/origin delta, and protected stash.
+- [x] Classify the missing contract as `design_drift`, producer as
+  `source_drift`, consumer as `test_gap`, and origin difference as report-only
+  `repo_metadata_conflict`; find no blocking `spec_gap`, then classify the
+  binding-linked Task-249 RHS mismatch as mandatory lower `source_drift` and
+  fabricated third binding as `boundary_violation`.
+- [x] Freeze exact 141-byte source/hash, all 54 AST rows, two-shell resolver
+  provenance, parameter/context/application/RHS association, and lower
+  post-Task-249M profiles Task 248 `1/2/2/2/2/2/0`, Task-249 base `2/3/0`,
+  and one standalone mode-RHS row.
+- [x] Freeze six dense tables at `1/2/1/1/1/1`, two fingerprints, unresolved
+  RHS-inhabitation request, one pending existing-kind `Sethood` row, exact
+  Typed/final ownership, Tasks-259--261 isolation, debug, and failure ordering.
+- [x] Freeze absence of assume/equals/means/return/formula payloads, all
+  ParamGuard/proof/discharge/acceptance/fact/IR/VC deferrals, subtree
+  exclusions, tests, projected counts, audit impact, write scope, and exit
+  criteria.
+- [x] Preserve production, all existing fixtures/sidecars/expectations, trace
+  count/status, CLIs, lists, manifests, and hashes in this docs prerequisite.
+- [ ] Repeat specification review to **NO FINDINGS**, pass all docs hard gates,
+  and commit only this upper frozen-contract prerequisite.
+- [ ] Fresh-inventory, freeze, review, implement, verify, and separately commit
+  Task 249M before Task 262 implementation.
+- [ ] Return to and implement only Task 262, then continue to Task 263+.

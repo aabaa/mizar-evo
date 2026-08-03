@@ -3153,4 +3153,22 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
   count/hash reproductionを含むfull verificationをPASSする。
 - [x] final hard gate 9件を**NO FINDINGS**、score capなし、quality
   `100/100`でPASSする。
-- [ ] exact stage/commit/post-commit後、Task 262+へ自動的に戻る。
+- [x] exact stage/commit/post-commitを
+  `b1782bfc06388410229f07ee193a5febe0bf525e`として完了し、Task 262をselectする。
+
+## Checker Task 262 frozen mode-definition consumer
+
+- [x] exact 141-byte source/hash、54-row Surface oracle、two-shell resolver
+  identity、lower Task-248/249 association、sibling isolationをfreezeする。
+- [x] private runner/public checker boundary、`1/2/1/1/1/1` table 6個、
+  unresolved RHS request、semantic acceptanceなしのpending existing-kind
+  `Sethood` row 1個をfreezeする。
+- [x] future pass pair/sole trace row 1個、checker 5/runner 4 test、projected
+  count、remeasure対象hash、exclusion、exit gateをfreezeする。
+- [x] documentation prerequisiteでproduction、fixture、sidecar、expectation、
+  trace row/status/count、Cargo metadataをunchangedに保つ。
+- [ ] findings-free review、全9 docs gate、exact staging、prerequisite commit、
+  clean post-commit inventoryを完了する。
+- [ ] upper-contract commit後にfresh-inventoryし、mandatory checker Task 249Mを
+  freeze/review/implement/verifyして別commitにする。
+- [ ] Task 262だけへ戻ってimplementし、Task 263+へ継続する。

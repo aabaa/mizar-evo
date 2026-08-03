@@ -2120,3 +2120,29 @@ coveredとなり、`pass_type_elaboration_attribute_definition_payload_001.expec
 `77bbf19d0bb1d5c32af55ec7c98db85883fbc7cca0ce812058a1c212c1c31631`。
 active metadataは`424/392`、`231/193`、`101/7/201/1`、type requirement
 `256/244`、warnings/errors `23/0`。creditはexact transportだけである。
+
+## Checker Task 262 frozen trace intent
+
+implementationはrequired covered type-elaboration row
+`spec.en.checker.type_elaboration.source_mode_definition_payload`をexact 1個、
+`doc/design/mizar-checker/en/source_mode_definition.md`由来で追加する。sole
+backlinkは
+`tests/miz/pass/types/pass_type_elaboration_mode_definition_payload_001.expect.toml`
+で、sidecarもこのrowだけをreciprocalにciteする。
+
+creditはexact `1/2/1/1/1/1` transport、post-prerequisite
+Tasks-248/249/249M provenance、unresolved
+RHS-inhabitation request 1個、pending `Sethood` obligation 1個、transactional
+typed/final ownershipに限定する。evidence response、ParamGuard/FOL
+composition、proof/discharge/acceptance、expansion/sethood fact、registration、
+Core/CFG/VC creditは与えない。mixed mode/structure gapはTask-262 backlinkを
+受けずTask 263向けにunchangedである。
+
+本prerequisiteはsource/sidecar/trace row/status/backlink/count/coverageを追加
+しない。current metadataは`424/392`、`231/193`、`101/7/201/1`、type
+`256/244`、warnings/errors `23/0`、implementationは`425/393`、`232/193`、
+`101/7/202/1`、`257/245`をprojectする。
+
+Task 249Mはchecker-only lower prerequisiteとして先にlandする。corpus case、
+sidecar、trace row、backlink、metadata count、executable language creditを追加せず、
+後続one-case/one-requirement deltaはTask 262だけがownする。

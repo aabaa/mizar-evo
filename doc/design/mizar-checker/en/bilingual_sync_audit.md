@@ -44,6 +44,7 @@ after this task.
 | `source_context.md` | `../ja/source_context.md` | `../en/source_context.md` | Task-248 authority/boundary, projection model, validation/recovery/atomicity, Task-258A bidirectional exclusion, determinism, coverage, public enum policy | none |
 | `source_attribute.md` | `../ja/source_attribute.md` | `../en/source_attribute.md` | Task-250 authority/boundary, flat chain/attribute/qualifier/group/actual model, environment/parent/arena/provenance validation, ownership, exact consumers, exclusions, public enum policy | none |
 | `source_attribute_definition.md` | `../ja/source_attribute_definition.md` | `../en/source_attribute_definition.md` | Task-261 authority/boundary, exact source/AST/resolver/lower profile, four-table public ABI, unchanged initial obligations, TypedAst/ResolvedTypedAst ownership, Task-259/260 isolation, exact consumer, tests/counts, exclusions, public enum policy | none |
+| `source_mode_definition.md` | `../ja/source_mode_definition.md` | `../en/source_mode_definition.md` | Task-262 Chapter-7/16 authority, exact source/54-row AST/resolver/lower profile, six-table public ABI, RHS inhabitation request, pending sethood obligation, TypedAst/ResolvedTypedAst ownership, Task-259--261 isolation, exact consumer, tests/counts, exclusions, public enum policy | none |
 | `source_application.md` | `../ja/source_application.md` | `../en/source_application.md` | Task-253 authority/boundary, five-table application/wrapper/candidate/argument/request transport, Task-252 fingerprint association, exact and synthetic consumers, exclusions, public enum policy | none |
 | `source_atomic_formula.md` | `../ja/source_atomic_formula.md` | `../en/source_atomic_formula.md` | Task-256/257C1 and Task-257C2/256C1 lower-compatibility authority and boundary, nine-table atomic-formula/segment/provenance/type/attribute/edge/request transport, Task-252/253/254/255 fingerprint association, eight base consumers plus exact C1 consumer, condition-container gate, exclusions, public enum policy | none |
 | `source_composite_formula.md` | `../ja/source_composite_formula.md` | `../en/source_composite_formula.md` | Task-257A authority/boundary, seven-table composite-formula/binder/type/edge/request transport, source-derived binding extension, exact consumer, exclusions, public enum policy | none |
@@ -1539,3 +1540,17 @@ checker `439`, unchanged lower/runner counts, `source_type.rs` `4407`, checker
 production `24/148143`, the fresh checker hashes, the four-test scope, and all
 unchanged corpus/trace/CLI boundaries. Both languages record the findings-free,
 nine-gate, uncapped final quality result of `100/100`.
+
+## Task 262 Synchronization Addendum
+
+The EN/JA `source_mode_definition.md`, crate plan, TODO, source-context,
+source/public/module-boundary, runner-consumer, traceability, central TODO, and
+coverage-audit records synchronize the 141-byte source, literal 54-row oracle,
+two-shell resolver profile, `1/2/1/1/1/1` ABI, two lower fingerprints, the
+mandatory standalone mode-RHS Task-249M prerequisite and post-prerequisite
+Task-249 base profile `2/3/0` plus one mode-RHS row, one
+unresolved RHS-inhabitation request, one pending existing-kind `Sethood`
+obligation, sibling isolation, projected counts, exclusions, and the upper-
+contract -> Task-249M docs -> Task-249M implementation -> Task-262
+implementation sequence. English remains canonical and no synchronization
+exception exists.

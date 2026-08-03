@@ -5414,3 +5414,32 @@ private runner close the frozen `source_drift` and `test_gap` without adding
 an obligation row or semantic result. Source/spec, public-enum, module-layout,
 syntax-boundary, and adjacent-allow-rationale lint policies guard the active
 surface. The prior `repo_metadata_conflict` remains report-only.
+
+## Task 262 Frozen Future Public-Surface Audit
+
+[`source_mode_definition.md`](./source_mode_definition.md) owns the future
+public `source_mode_definition` module. It freezes six dense IDs, seven input
+aggregates, six immutable row/table families, the handoff/projection/producer,
+and recovery/request/property/error enums. Every future public enum is
+`#[non_exhaustive]`; implementation must synchronize module exports, literal
+public inventory, enum policy, source-spec, syntax-boundary, module-layout, and
+adjacent-allow lint inventories.
+
+Callers cannot supply derived origins, fingerprints, allocated IDs, obligation
+IDs, evidence responses, acceptance, facts, proofs, or VCs. The projection
+owns baseline compare-and-swap and appends one existing-kind `Sethood` row;
+the RHS request remains unresolved. TypedAst is the only publication path and
+final assembly clone-preserves/revalidates it while rejecting mixed Tasks
+259--262.
+
+Fresh inventory classifies the missing upper contract as `design_drift`, the
+absent Task-262 module as `source_drift`, and the absent exact consumer as
+`test_gap`. Specification review additionally found a lower `source_drift`:
+Task 249 has no standalone mode-RHS owner, and fabricating a third binding-
+linked application would be a `boundary_violation`. Canonical Chapter 7 is
+sufficient to freeze and implement checker-only Task 249M separately, so this
+is not a blocking `spec_gap`; Task 262 implementation remains blocked until
+that prerequisite lands. No authority conflict, `source_undocumented_behavior`,
+or `test_expectation_drift` exists. The measured origin difference is report-
+only `repo_metadata_conflict` and the safe task-only commit target remains
+identifiable.

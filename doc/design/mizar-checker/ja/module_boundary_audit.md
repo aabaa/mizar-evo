@@ -1340,3 +1340,26 @@ leafに留まる。checkerはexact shell-41 context ownership、four lower finge
 dense `1/2/1/1` row、one-shot typed/final ownership、unchanged obligation、
 Task-259/260 exclusionをvalidateする。checker productionは`26/152184`で、exact
 manifest hashはcrate planにrecordする。proof/fact/acceptance/IR/VC ownerは移動しない。
+
+## Task 262 frozen boundary
+
+Task 262はdocumented syntax-free production module
+`src/source_mode_definition.rs`とnon-integration child test body 1個を追加する。
+production ownerはdense `1/2/1/1/1/1` table 6個、resolverとpost-prerequisite
+Task-248/249/249M
+fingerprint authentication、deterministic rendering、unresolved RHS-
+inhabitation request 1個、baseline-appended pending `Sethood` row 1個、
+typed/final validationに限定する。raw Surface/resolver selectionはprivate
+`mizar-test` route 1個に留まり、checker productionはsyntax dependencyを持たない。
+
+Task 262 implementationはseparate checker-only Task 249MがTask-249 handoffへ
+standalone mode-RHS row 1個を追加するまでblockedである。binding-linked
+application 3個目のreuseは禁止する。Task 249Mはそのlower row、extension API/
+fingerprint/debug rendering、checker test 4件だけをownし、本moduleより前に
+separate documentation/implementation commitとしてlandする。
+
+evidence response、base-shape decision、accepted mode、expansion/interface
+fact、ParamGuard/FOL composition、proof、discharge、Core、CFG、VCはownしない。
+public module/export/enum/source-spec allowlistとexact source/support line
+countはimplementation commitだけで変更する。本prerequisiteはproduction pathを
+追加せずchecker production `26/152184`とrecorded hash両方を保つ。

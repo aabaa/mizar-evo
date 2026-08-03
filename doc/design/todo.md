@@ -94,8 +94,8 @@ is its task 1). "Next work" points into the
 | mizar-parser | Grammar, Pratt parsing, syntax recovery, parse-only corpus | [x] Tasks 1-48 plus bounded `PARSER-RECOVERY-B1B1P-P1` complete; historical post-Task-46 score 99/100 | no inferred Task 49; human-owned P-265-47D remains separate | [todo](./mizar-parser/en/todo.md) |
 | mizar-frontend | Source loading and phase 1-3 orchestration | [x] prior milestone plus `PARSER-RECOVERY-B1B1P-P1-FE` regression complete | — | [todo](./mizar-frontend/en/todo.md) |
 | mizar-resolve | Module graph, namespaces, symbols, labels, signatures | [x] complete through task 29 | step 8 task 30; independent step-5 task 31 | [todo](./mizar-resolve/en/todo.md) |
-| mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] foundation complete through task 22; Tasks 265-268, Core-31, and Checker consumers through Task 258B5C complete; Task-248 Profile B and Checker Tasks 259/249R/260 consumers are committed | Freeze and implement the Task-261 attribute-definition consumer, then continue future `MT10-FS`/`MT10-AS` and Core-32 consumers in dependency order | [todo](./mizar-test/en/todo.md) |
-| mizar-checker | Type checking, cluster/registration resolution, overload resolution | [x] explicit-payload milestone, bridges through Task 246, Tasks 266-268 final handoff, Task 247 decomposition, source producers through Task 258B5C and Task-248 Profile B complete; Tasks 259, 249R, and 260 are committed | Complete the Task-261 frozen-contract prerequisite and implementation, then select Tasks 262-264/269-279 in dependency order; task 49 remains dependency-gated on blocked external slices | [todo](./mizar-checker/en/todo.md) |
+| mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] foundation complete through task 22; Tasks 265-268, Core-31, and Checker consumers through Task 258B5C complete; Task-248 Profile B and Checker Tasks 259--261 consumers are committed | Complete the Task-262 upper contract, then land checker-only Task-249M docs/implementation before implementing the Task-262 consumer; continue future `MT10-FS`/`MT10-AS` and Core-32 consumers in dependency order | [todo](./mizar-test/en/todo.md) |
+| mizar-checker | Type checking, cluster/registration resolution, overload resolution | [x] explicit-payload milestone, bridges through Task 246, Tasks 266-268 final handoff, Task 247 decomposition, source producers through Task 258B5C and Task-248 Profile B complete; Tasks 259--261 are committed | Complete the Task-262 upper frozen contract, separately freeze/implement Task 249M, then implement Task 262 and select Tasks 263-264/269-279 in dependency order; task 49 remains dependency-gated on blocked external slices | [todo](./mizar-checker/en/todo.md) |
 | mizar-core | Elaboration, binder-normalized core logic, control-flow preparation | [x] core/control-flow milestone, tasks 27-32 complete | step-5 Tasks 33-53 under the Task-32 graph | [todo](./mizar-core/en/todo.md) |
 | mizar-vc | VC IR, VC generation, deterministic pre-ATP discharge | [x] exact source-derived contradiction VC integration complete through task 31 | dependency-paced VC Tasks 32-55; VC 40/53 and S1 gates remain explicit | [todo](./mizar-vc/en/todo.md) |
 | mizar-kernel | Trusted certificate parsing and checking | [x] SAT-backed kernel milestone complete | step 4 task 35 resolved; task 32 parked; tasks 30-34 resolved | [todo](./mizar-kernel/en/todo.md) |
@@ -3956,5 +3956,27 @@ or semantic owner changed. B3M2B2B remains next before B4.
   verification, including exact count/hash reproduction.
 - [x] Pass all nine final hard gates with **NO FINDINGS**, no score cap, and
   quality `100/100`.
-- [ ] Complete exact staging/commit/post-commit, then fresh-inventory Task
-  262+.
+- [x] Complete exact staging/commit/post-commit as
+  `b1782bfc06388410229f07ee193a5febe0bf525e`, then fresh-inventory Task 262.
+
+## Checker Task 262 Frozen Mode-Definition Contract
+
+- [x] Fresh-inventory canonical Chapter 7/16 authority, mode parser/resolver
+  fixtures, the mixed gap/sidecar/trace, Tasks 248--261 public APIs, executable
+  baselines/hashes, clean HEAD/origin delta, and protected stash.
+- [x] Classify the missing contract as `design_drift`, producer as
+  `source_drift`, exact consumer as `test_gap`, and origin difference as
+  report-only `repo_metadata_conflict`; find no blocking authority gap.
+- [x] Freeze the 141-byte source/hash, literal 54-row AST, two-shell resolver,
+  post-Task-249M Task-248/249/249M profiles, six `1/2/1/1/1/1` tables, two
+  fingerprints, unresolved
+  RHS request, pending `Sethood` obligation, and sibling isolation.
+- [x] Freeze absence of assume/equals/means/return/formula payloads, all
+  semantic deferrals/exclusions, exact tests/consumer/trace intent, projected
+  counts, audit impact, implementation scope, and exit criteria in EN/JA.
+- [ ] Complete repeated findings-free prerequisite reviews, docs-only
+  verification, all nine gates at 90/100 or above, exact staging, dedicated
+  commit, and clean post-commit inventory.
+- [ ] After the upper-contract commit, fresh-inventory, freeze, review,
+  implement, verify, and separately commit mandatory checker Task 249M.
+- [ ] Return to and implement only Task 262, then continue to Task 263+.

@@ -6026,3 +6026,32 @@ redefinition/coherence, proof, CoreIr, ControlFlowIr, VC, mixed definition-
 family acceptance, and broader attribute-definition shapes remain explicitly
 deferred. No canonical `doc/spec`, existing `.miz`, or existing expectation
 was changed.
+
+## Checker Task 261 Post-Commit And Task 262 Frozen Coverage Intent
+
+Task 261 committed as `b1782bfc06388410229f07ee193a5febe0bf525e`; its
+Chapter-6 active counts/hashes and semantic exclusions above are final. Fresh
+inventory selected Task 262 as the next upper producer contract. Specification
+review found that its implementation is not yet dependency-ready: checker-only
+Task 249M must first add the standalone mode-RHS lower owner.
+
+The synchronized Task-262 prerequisite freezes an exact Chapter-7 mode-
+definition transport: two parameters and bracket application, one bare-set RHS
+expansion, one unresolved mandatory inhabitation request, one explicit sethood
+property, one pending existing-kind `Sethood` obligation, and post-prerequisite
+Task-248/249/249M provenance. It deliberately grants no base-shape response,
+mode acceptance,
+ParamGuard/FOL composition, proof/discharge, expansion/interface fact,
+registration activation, property implementation, Core/CFG/VC, or mixed
+definition-family semantics. Chapter 7 therefore remains partial.
+
+This documentation-only prerequisite changes design mapping and follow-up
+ownership, not executable coverage. It modifies no canonical specification,
+fixture, sidecar, expectation, trace row/status/backlink, production/test
+source, or active count. Current metadata remains `424/392`, `231/193`,
+`101/7/201/1`, type `256 = 244 covered + 12 deferred`, warnings/errors `23/0`.
+Task 249M first changes only checker representation coverage, adding no corpus
+case, sidecar, trace row, backlink, metadata count, or executable language
+credit. Only the later Task-262 implementation may add the frozen one-case/
+one-requirement delta after its independent hard gates pass; the mixed mode/
+structure gap remains unchanged for Task 263.

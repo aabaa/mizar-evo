@@ -481,3 +481,17 @@ source text. The runner remains responsible for raw AST/shell authentication;
 the checker sees only the syntax-free Profile-B handoff and exact sites,
 ranges, contexts, spellings, and fingerprints. Task 261 adds no new source-
 context trace credit and cannot alter the Task-248 counts or hashes.
+
+## Task 262 Profile-B Mode Consumer
+
+Task 262 reuses the unchanged Profile-B context for the exact definition block
+at node 50. Its two direct `DefinitionParameter` rows 37/41 map to bindings
+0/1 in context 1; the mode application row links those same parameter rows in
+order `[0,1]`, with pattern ranges `86..87` and `89..90`. Missing, duplicate,
+reordered, cross-context, stale-site, or fingerprint-mismatched links fail
+closed.
+
+Pattern occurrences do not allocate bindings or term rows. Context is not
+inferred from opaque resolver spelling, the mode label, RHS, request, property,
+or source text. Task 262 changes no Task-248 API, helper, table, debug output,
+test, trace credit, count, or hash.

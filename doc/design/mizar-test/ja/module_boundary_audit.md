@@ -11560,3 +11560,24 @@ syntax-free inputだけをreceiveする。valid-but-stale node-42 context mutati
 checker consumerまで到達し、node-44 mutationはTask-248 preflight failureのまま。
 runner productionは`33/65952`、hashはcrate planにrecordする。pass sidecar/trace
 rowはexact transport creditだけをactivateし、semantic exclusionはunchanged。
+
+## Checker Task 262 frozen runner boundary
+
+Task 262はprivate production leaf
+`runner/type_elaboration/source_mode_definition.rs`とpaired test leaf各1個、
+bounded facade/root registrationを追加する。runnerだけがexact 141-byte
+source/final-LF check、literal 54-row Surface oracle、two-shell resolver
+authentication、raw-subtree exclusion、post-prerequisite lower
+Task-248/249/249M compositionをownする。
+checkerへはsyntax-free ID/association/anchor/context/spelling/fingerprintだけを
+渡す。
+
+checker-only Task 249MがTask-249 handoff経由でconsumeするstandalone mode-RHS
+rowを追加/freezeするまでleafはlandできない。runnerはそのlower ownerをimplement
+せず、binding-linked applicationをfabricateしない。
+
+leafはTasks 259--261からisolatedで、mixed mode/structure gap routeより前だが
+supersedeしない。RHS requestへの回答、computation justification実行、
+acceptance/expansion/sethood fact/proof/Core/CFG/VC publishはできない。本
+prerequisiteはproduction/test inventory row/measured line countを作らず、
+implementationでfresh-measureする。
