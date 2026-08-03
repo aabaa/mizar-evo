@@ -800,7 +800,17 @@ Check the task off here once tests pass.
   metadata/lint/format/Clippy/CLI/count/hash/scope gates.
 - [x] Complete findings-free final read-only quality with all nine hard gates
   PASS, no score cap, and valid `100/100` (`20/20/15/15/10/10/5/5`).
-- [ ] Complete exact staging and a dedicated docs commit with post-commit
-  fresh inventory.
-- [ ] Fresh-inventory and implement only Task 263R in a separate commit, then
-  return to Checker Task 263.
+- [x] Complete exact staging and dedicated documentation commit
+  `34692ee222d5465750f061da82fe878566a1557c`, then confirm clean post-commit
+  inventory and the unchanged protected stash.
+- [x] Fresh-inventory and implement the frozen selector-owner partition in
+  exactly `src/symbols.rs` and `src/symbols/tests.rs`; add exactly the two
+  frozen tests and preserve every public and non-selector contract.
+- [x] Complete test-sufficiency and implementation reviews with
+  **NO FINDINGS**; pass focused resolver tests, resolver Clippy, formatting,
+  and both exact probes.
+- [x] Complete source/documentation consistency with **NO FINDINGS**, all full
+  verification gates, and independent final quality with all nine hard gates
+  PASS, no score cap, and valid `100/100` (`20/20/15/15/10/10/5/5`).
+- [ ] Complete exact staging, the dedicated implementation commit, and
+  post-commit fresh inventory; then return to Checker Task 263.

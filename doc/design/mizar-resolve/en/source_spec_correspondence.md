@@ -254,8 +254,8 @@ Canonical Chapter 5 owns per-structure field/property identity. Its examples
 legitimately repeat `carrier` in different structure declarations and require
 inherited members to retain a root declaration plus a path/view. The exact
 320-byte Task-263 probe parses without diagnostics and produces 75 Surface
-nodes, ten shells, eight projections, and eight symbols, but current
-`symbols.rs` groups its four selectors by module namespace alone and emits two
+nodes, ten shells, eight projections, and eight symbols, but preimplementation
+`symbols.rs` grouped its four selectors by module namespace alone and emitted two
 false duplicates. This is bounded `source_drift`; the matching design rule is
 `design_drift`, and the absent owner-sensitive regression is `test_gap`.
 
@@ -267,3 +267,26 @@ coverage changes in the documentation prerequisite or lower implementation.
 `spec_coverage_audit.md` records the corrected Chapter-5 lower owner but grants
 no corpus credit; Checker Task 263 remains the executable structure-intake
 owner after Task 263R commits.
+
+## Checker Task 263R Implemented Correspondence
+
+The two-file resolver implementation now agrees with Chapter 5 §§5.2-5.5:
+selector spelling is interpreted within the nearest structure declaration for
+duplicate classification, while selectors inside one structure still share
+one conflict domain. The exact Chapter-5-derived probe moves from two false
+resolver diagnostics to zero without changing its `75/10/8/8` lower profile;
+the exact same-owner control retains one deterministic diagnostic at
+`47..70`. The extractor-backed tests directly exercise the declaration-shell
+owner relation and reversed input order.
+
+This closes the classified `source_drift` and canonical-derived `test_gap`.
+The earlier documentation prerequisite already closed `design_drift`.
+Canonical specification, existing corpus artifacts, expectations, and trace
+metadata do not change, and no executable corpus credit is claimed. Chapter 5
+remains partial for inheritance, constructor/selector semantics, correctness
+obligations, and the future Task-263 checker consumer.
+
+Final source/documentation consistency reports **NO FINDINGS**. All full
+verification gates pass, and independent quality reports **NO FINDINGS**, all
+nine hard gates PASS, and uncapped `100/100`; this result does not add corpus
+or trace credit.

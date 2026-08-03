@@ -6108,8 +6108,8 @@ Fresh Task-263 preflight found a lower resolver defect before any checker or
 runner intake. The exact 320-byte Chapter-5-derived source has SHA-256
 `078eaee4b17341c9d8ebeb8a1f631ca984873bd07eb4e5d9c1a9486b39ac6671`.
 It parses with zero diagnostics and produces 75 Surface nodes, ten declaration
-shells, eight signature projections, and eight symbols, but the current
-module-level selector conflict partition emits two false
+shells, eight signature projections, and eight symbols, but the
+preimplementation module-level selector conflict partition emitted two false
 `DuplicateDeclaration` diagnostics for the `carrier` and `marker` names
 repeated in distinct structures.
 
@@ -6130,3 +6130,38 @@ credit. Active metadata therefore remains `425/393`, `232/193`,
 `23/0`. Chapter 5 remains partial, and Checker Task 263 retains ownership of
 the future structure-definition consumer after Task 263R completes in its own
 documentation and implementation commits.
+
+## Checker Task 263R Active Lower Coverage Result
+
+The dedicated documentation prerequisite committed as
+`34692ee222d5465750f061da82fe878566a1557c`. The subsequent bounded resolver
+implementation closes the recorded `source_drift` and canonical-derived
+resolver `test_gap`: selector duplicate classification now uses the nearest
+enclosing `StructureDefinition` shell while same-owner and ownerless selector
+collisions retain their frozen conservative behavior. The exact cross-owner
+probe is `75/10/8/8/0`; the exact same-owner control is `30/4/3/3/1` with its
+frozen deterministic diagnostic metadata. Resolver library tests become
+`146`, and resolver production becomes `15/18896` with unchanged path-set hash
+and measured content hash
+`4e3687afdc06f06eb06dd5a8ee9690e502e7341b708ccb00596993c6b2781283`.
+
+This is lower resolver representation/classification coverage only. It adds no
+fixture, sidecar, expectation, trace row or status, active case, runner route,
+checker source, metadata count, CLI output, inheritance/constructor semantics,
+correctness obligation, accepted fact, proof/discharge behavior, IR, or VC.
+`tests/coverage/spec_trace.toml` therefore remains byte-identical at
+`3f510f819f03a3fd2922275b37ab71070e41d4f8e2e0e9c0c94147076552626a`,
+and active metadata remains `425/393`, `232/193`, `101/7/202/1`, type
+`257 = 245 covered + 12 deferred`, warnings/errors `23/0`. Chapter 5 remains
+partial; Checker Task 263 still owns the future executable structure consumer
+after this lower implementation commits and fresh inventory passes.
+
+All specification, test-sufficiency, implementation, and source/documentation
+reviews finish with **NO FINDINGS**. Focused/package/workspace tests, metadata
+and lint policies, formatting, warnings-denied Clippy, Cargo metadata, all five
+CLIs, exact probes, count/hash checks, scope checks, and whitespace checks
+PASS. Independent final quality reports **NO FINDINGS**; all nine hard gates
+PASS without a cap at valid `100/100` (`20/20/15/15/10/10/5/5`). This review
+closure changes no trace row, status, backlink, count, owner, or coverage
+credit; only staging, the lower implementation commit, and clean fresh
+inventory remain.

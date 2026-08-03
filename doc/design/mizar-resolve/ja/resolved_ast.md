@@ -512,3 +512,10 @@ final qualityは**NO FINDINGS**、全9 hard gates PASS、score capなし、valid
 `100/100`。task-only cached-diff review、dedicated B5C commit
 `33ac57e96f048dc40559565f54369cac854409a7`、post-commit fresh inventoryは
 完了済み。
+
+### Checker Task 263R arena preservation
+
+later Task-263R implementationは`symbols`内でalready-collected declaration-shell
+parent relationを読み、`SurfaceResolvedArena`、id、validation、lowering、diagnostic、
+public APIを変更しない。new test 2件はexisting extractor outputを使い、dummy AST/
+arena idをfabricateせず、R-032A/R-032B/B5C contractはclosedのまま。

@@ -957,6 +957,7 @@ impl<'a> SymbolCollector<'a> {
 struct CollectedProjection<'a> {
     shell: &'a DeclarationShell,
     projection: &'a SymbolDeclarationProjection,
+    selector_owner: Option<DeclarationShellId>,
     symbol: SymbolId,
     origin: SemanticOrigin,
     signature: SignatureShell,
@@ -976,6 +977,7 @@ impl<'a> CollectedProjection<'a> {
         contribution: SourceContributionId,
     ) -> Self {
         let context = shell_context(shells, shell);
+        let selector_owner = selector_conflict_owner(shells, shell, projection.symbol_kind());
         let origin = shell_origin(source_id, module, shell, &context);
         let visibility = context.visibility;
         let export_status = shell_export_status(visibility, context.recovered);
@@ -991,6 +993,7 @@ impl<'a> CollectedProjection<'a> {
         Self {
             shell,
             projection,
+            selector_owner,
             symbol,
             origin,
             signature,
@@ -1006,6 +1009,7 @@ impl<'a> CollectedProjection<'a> {
             namespace: self.projection.namespace().clone(),
             spelling: self.projection.primary_spelling().to_owned(),
             kind: self.projection.symbol_kind(),
+            selector_owner: self.selector_owner,
         }
     }
 
@@ -1024,6 +1028,27 @@ struct ConflictKey {
     namespace: NamespacePath,
     spelling: String,
     kind: SymbolKind,
+    selector_owner: Option<DeclarationShellId>,
+}
+
+fn selector_conflict_owner(
+    shells: &DeclarationShellSet,
+    shell: &DeclarationShell,
+    kind: SymbolKind,
+) -> Option<DeclarationShellId> {
+    if kind != SymbolKind::Selector {
+        return None;
+    }
+
+    let mut current = shell.parent();
+    while let Some(id) = current {
+        let context = shells.declaration(id)?;
+        if context.kind() == DeclarationShellKind::StructureDefinition {
+            return Some(id);
+        }
+        current = context.parent();
+    }
+    None
 }
 
 #[derive(Debug, Clone)]

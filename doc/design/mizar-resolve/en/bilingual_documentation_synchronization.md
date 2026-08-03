@@ -234,3 +234,15 @@ scope, two-test intent, semantic exclusions, unchanged executable counts, and
 two-commit docs/implementation sequence. Both classify the lower defect as
 `source_drift` plus `design_drift` and `test_gap`, and treat origin divergence
 as report-only `repo_metadata_conflict`.
+
+## Checker Task 263R Implementation Synchronization
+
+EN and JA record the same implemented private nearest-structure selector
+owner, selector-only conflict-key partition, conservative `None` fallback,
+unchanged non-selector/public behavior, exact two-file scope, and exact two
+extractor-backed tests. Both record the cross-owner `75/10/8/8/0` result and
+same-owner `30/4/3/3/1` control, resolver tests `146`, production `15/18896`,
+the same hashes, and no corpus/trace/runner/checker/metadata coverage delta.
+Both record findings-free consistency/full verification and independent final
+quality at uncapped `100/100` with all nine hard gates PASS. Only the dedicated
+implementation commit and fresh inventory remain before returning to Task 263.

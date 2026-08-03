@@ -121,6 +121,155 @@ fn duplicate_detection_marks_represented_kind_families_in_order() {
 }
 
 #[test]
+fn selectors_in_distinct_structure_owners_do_not_conflict() {
+    let source_id = source_id();
+    let ast = task263_distinct_structure_ast(source_id);
+    let module = module_id();
+    let shells = DeclarationShellCollector::new(&ast, &module).collect();
+    let declarations = shells.declarations();
+
+    assert_eq!(declarations.len(), 7);
+    assert_eq!(
+        declarations[0].kind(),
+        DeclarationShellKind::DefinitionBlock
+    );
+    assert_eq!(
+        declarations[1].kind(),
+        DeclarationShellKind::StructureDefinition
+    );
+    assert_eq!(declarations[2].kind(), DeclarationShellKind::StructureField);
+    assert_eq!(
+        declarations[3].kind(),
+        DeclarationShellKind::StructureProperty
+    );
+    assert_eq!(
+        declarations[4].kind(),
+        DeclarationShellKind::StructureDefinition
+    );
+    assert_eq!(declarations[5].kind(), DeclarationShellKind::StructureField);
+    assert_eq!(
+        declarations[6].kind(),
+        DeclarationShellKind::StructureProperty
+    );
+    assert_eq!(declarations[2].parent(), Some(declarations[1].id()));
+    assert_eq!(declarations[3].parent(), Some(declarations[1].id()));
+    assert_eq!(declarations[5].parent(), Some(declarations[4].id()));
+    assert_eq!(declarations[6].parent(), Some(declarations[4].id()));
+
+    let namespace = NamespacePath::new("main");
+    let projections = SignatureProjectionExtractor::new(&ast, &shells, namespace.clone()).extract();
+    let reversed = projections.iter().rev().cloned().collect::<Vec<_>>();
+
+    assert_eq!(projections.len(), 6);
+    let result = collect(source_id, &shells, &projections);
+    let reordered = collect(source_id, &shells, &reversed);
+
+    assert!(result.diagnostics().is_empty());
+    assert_eq!(result.diagnostics(), reordered.diagnostics());
+    assert_eq!(result.env().symbols().len(), 6);
+    assert_eq!(reordered.env().symbols().len(), 6);
+    assert_eq!(
+        result
+            .env()
+            .symbols()
+            .iter()
+            .map(|entry| entry.symbol())
+            .collect::<Vec<_>>(),
+        reordered
+            .env()
+            .symbols()
+            .iter()
+            .map(|entry| entry.symbol())
+            .collect::<Vec<_>>()
+    );
+    assert_eq!(
+        result
+            .env()
+            .symbols()
+            .visible_candidates(&namespace, "carrier")
+            .len(),
+        2
+    );
+    assert_eq!(
+        result
+            .env()
+            .symbols()
+            .visible_candidates(&namespace, "marker")
+            .len(),
+        2
+    );
+    let conflicts = definition_conflicts(&result);
+    assert!(conflicts.iter().all(|(_, conflict)| conflict.is_none()));
+    assert_eq!(conflicts, definition_conflicts(&reordered));
+}
+
+#[test]
+fn field_and_property_in_same_structure_keep_duplicate_conflict() {
+    let source_id = source_id();
+    let ast = task263_same_structure_collision_ast(source_id);
+    let module = module_id();
+    let shells = DeclarationShellCollector::new(&ast, &module).collect();
+    let declarations = shells.declarations();
+
+    assert_eq!(declarations.len(), 4);
+    assert_eq!(
+        declarations[0].kind(),
+        DeclarationShellKind::DefinitionBlock
+    );
+    assert_eq!(
+        declarations[1].kind(),
+        DeclarationShellKind::StructureDefinition
+    );
+    assert_eq!(declarations[2].kind(), DeclarationShellKind::StructureField);
+    assert_eq!(
+        declarations[3].kind(),
+        DeclarationShellKind::StructureProperty
+    );
+    assert_eq!(declarations[2].parent(), Some(declarations[1].id()));
+    assert_eq!(declarations[3].parent(), Some(declarations[1].id()));
+    assert_eq!(declarations[2].range(), range(source_id, 47, 70));
+
+    let projections =
+        SignatureProjectionExtractor::new(&ast, &shells, NamespacePath::new("main")).extract();
+    let reversed = projections.iter().rev().cloned().collect::<Vec<_>>();
+
+    assert_eq!(projections.len(), 3);
+    let result = collect(source_id, &shells, &projections);
+    let reordered = collect(source_id, &shells, &reversed);
+
+    assert_eq!(result.diagnostics(), reordered.diagnostics());
+    assert_eq!(result.diagnostics().len(), 1);
+    assert_eq!(result.env().symbols().len(), 3);
+    let diagnostic = &result.diagnostics()[0];
+    assert_eq!(
+        diagnostic.class(),
+        SymbolDiagnosticClass::DuplicateDeclaration
+    );
+    assert_eq!(diagnostic.shell(), Some(declarations[2].id()));
+    assert_eq!(diagnostic.range(), range(source_id, 47, 70));
+    assert_eq!(diagnostic.spelling(), "duplicate");
+    assert_eq!(
+        candidate_source_ranges(&result, diagnostic.candidates()),
+        vec![range(source_id, 47, 70), range(source_id, 75, 101)]
+    );
+    assert_eq!(
+        result
+            .env()
+            .definitions()
+            .iter()
+            .filter(|definition| {
+                definition.conflict() == Some(&DeclarationConflictClass::DuplicateSpelling)
+            })
+            .count(),
+        2
+    );
+    assert_eq!(
+        definition_conflicts(&result),
+        definition_conflicts(&reordered)
+    );
+}
+
+#[test]
 fn overloadable_candidates_form_groups_and_illegal_groups_get_diagnostics() {
     let source_id = source_id();
     let shells = shells_for(
@@ -2211,6 +2360,146 @@ fn structure_item(
     )
 }
 
+#[derive(Debug, Clone, Copy)]
+struct Task263StructureShape {
+    structure_range: (usize, usize),
+    structure_name: (&'static str, usize),
+    field_range: (usize, usize),
+    field_name: (&'static str, usize),
+    property_range: (usize, usize),
+    property_name: (&'static str, usize),
+}
+
+fn task263_structure_item(
+    builder: &mut SurfaceAstBuilder,
+    source_id: SourceId,
+    shape: Task263StructureShape,
+) -> SurfaceBuilderNodeId {
+    let structure_name = builder.add_token(
+        SurfaceTokenKind::Identifier,
+        shape.structure_name.0,
+        range(
+            source_id,
+            shape.structure_name.1,
+            shape.structure_name.1 + shape.structure_name.0.len(),
+        ),
+    );
+    let pattern = node(
+        builder,
+        SurfaceNodeKind::StructurePattern,
+        source_id,
+        shape.structure_name.1,
+        shape.structure_name.1 + shape.structure_name.0.len(),
+        vec![structure_name],
+    );
+    let field_name = builder.add_token(
+        SurfaceTokenKind::Identifier,
+        shape.field_name.0,
+        range(
+            source_id,
+            shape.field_name.1,
+            shape.field_name.1 + shape.field_name.0.len(),
+        ),
+    );
+    let field = node(
+        builder,
+        SurfaceNodeKind::StructureField,
+        source_id,
+        shape.field_range.0,
+        shape.field_range.1,
+        vec![field_name],
+    );
+    let property_name = builder.add_token(
+        SurfaceTokenKind::Identifier,
+        shape.property_name.0,
+        range(
+            source_id,
+            shape.property_name.1,
+            shape.property_name.1 + shape.property_name.0.len(),
+        ),
+    );
+    let property = node(
+        builder,
+        SurfaceNodeKind::StructureProperty,
+        source_id,
+        shape.property_range.0,
+        shape.property_range.1,
+        vec![property_name],
+    );
+    node(
+        builder,
+        SurfaceNodeKind::StructureDefinition,
+        source_id,
+        shape.structure_range.0,
+        shape.structure_range.1,
+        vec![pattern, field, property],
+    )
+}
+
+fn task263_distinct_structure_ast(source_id: SourceId) -> mizar_syntax::SurfaceAst {
+    let mut builder = SurfaceAstBuilder::new(source_id);
+    let base = task263_structure_item(
+        &mut builder,
+        source_id,
+        Task263StructureShape {
+            structure_range: (13, 98),
+            structure_name: ("Task263Base", 20),
+            field_range: (42, 63),
+            field_name: ("carrier", 48),
+            property_range: (68, 91),
+            property_name: ("marker", 77),
+        },
+    );
+    let derived = task263_structure_item(
+        &mut builder,
+        source_id,
+        Task263StructureShape {
+            structure_range: (102, 190),
+            structure_name: ("Task263Derived", 109),
+            field_range: (134, 155),
+            field_name: ("carrier", 140),
+            property_range: (160, 183),
+            property_name: ("marker", 169),
+        },
+    );
+    let definition = node(
+        &mut builder,
+        SurfaceNodeKind::DefinitionBlockItem,
+        source_id,
+        0,
+        191,
+        vec![base, derived],
+    );
+    let root = finish_module(&mut builder, source_id, vec![definition]);
+    builder.finish(Some(root), None)
+}
+
+fn task263_same_structure_collision_ast(source_id: SourceId) -> mizar_syntax::SurfaceAst {
+    let mut builder = SurfaceAstBuilder::new(source_id);
+    let structure = task263_structure_item(
+        &mut builder,
+        source_id,
+        Task263StructureShape {
+            structure_range: (13, 108),
+            structure_name: ("Task263Collision", 20),
+            field_range: (47, 70),
+            field_name: ("duplicate", 53),
+            property_range: (75, 101),
+            property_name: ("duplicate", 84),
+        },
+    );
+    let definition = node(
+        &mut builder,
+        SurfaceNodeKind::DefinitionBlockItem,
+        source_id,
+        0,
+        113,
+        vec![structure],
+    );
+    let root = finish_module(&mut builder, source_id, vec![definition]);
+    builder.finish(Some(root), None)
+}
+
 fn algorithm_item(
     builder: &mut SurfaceAstBuilder,
     source_id: SourceId,
@@ -2342,6 +2631,17 @@ fn collect(
 ) -> SymbolCollectionResult {
     let module = module_id();
     SymbolCollector::new(source_id, &module, shells, projections).collect()
+}
+
+fn definition_conflicts(
+    result: &SymbolCollectionResult,
+) -> Vec<(SymbolId, Option<DeclarationConflictClass>)> {
+    result
+        .env()
+        .definitions()
+        .iter()
+        .map(|definition| (definition.symbol().clone(), definition.conflict().cloned()))
+        .collect()
 }
 
 fn candidate_source_ranges(

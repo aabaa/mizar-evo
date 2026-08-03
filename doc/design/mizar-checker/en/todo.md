@@ -6574,5 +6574,12 @@ implementation commit does not satisfy a producer task.
   resolver `source_drift`, with paired `design_drift` and `test_gap`.
 - [x] Freeze separate resolver Task 263R; change no checker source, corpus,
   trace status/count, or structure semantics in its docs prerequisite.
-- [ ] Complete Task-263R docs and implementation as separate commits with
-  fresh inventory between them, then return to freeze Task 263.
+- [x] Complete Task-263R documentation as separate commit
+  `34692ee222d5465750f061da82fe878566a1557c` with fresh inventory before the
+  lower implementation.
+- [x] Implement only the frozen resolver two-file correction and complete its
+  test-sufficiency and implementation reviews with **NO FINDINGS**.
+- [x] Complete its consistency/full/final gates with **NO FINDINGS**, all nine
+  hard gates PASS, no score cap, and valid `100/100`.
+- [ ] Complete the dedicated implementation commit and clean fresh inventory;
+  then return to freeze Task 263.

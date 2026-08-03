@@ -219,3 +219,14 @@ collision、two-file implementation scope、two-test intent、semantic exclusion
 unchanged executable count、docs/implementation two-commit sequenceをfreezeする。
 両言語はlower defectを`source_drift` + `design_drift` + `test_gap`と分類し、origin
 divergenceをreport-only `repo_metadata_conflict`として扱う。
+
+## Checker Task 263R implementation synchronization
+
+EN/JAは同じimplemented private nearest-structure selector owner、selector-only
+conflict-key partition、conservative `None` fallback、unchanged non-selector/public
+behavior、exact two-file scope、exact extractor-backed test 2件を記録する。両言語は
+cross-owner `75/10/8/8/0` result、same-owner `30/4/3/3/1` control、resolver test
+`146`、production `15/18896`、同じhash、corpus/trace/runner/checker/metadata
+coverage deltaなしを記録する。両言語はfindings-free consistency/full verificationと
+independent final quality全9 hard gate PASS、capなし`100/100`を記録する。Task 263へ
+戻る前にdedicated implementation commit、fresh inventoryだけを残す。

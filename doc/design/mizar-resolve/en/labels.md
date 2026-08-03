@@ -591,6 +591,13 @@ with no score cap at valid `100/100` (`20/20/15/15/10/10/5/5`). Task-only
 restaging/cached-diff review, commit, and post-commit invariant/fresh
 inventory are complete.
 
+### Checker Task 263R non-owner preservation
+
+The later Task-263R selector-owner correction changes only `symbols.rs` and
+its private tests. Labels, proof scopes, citation provenance, and every R-032B/
+B5C public or private contract are byte-for-byte outside its write scope.
+Resolver test growth `144 -> 146` comes only from the two `symbols` tests.
+
 No active fixture, expectation, sidecar, trace state, runner, public checker
 handoff, diagnostic code, Cargo metadata, or proof semantics changed in
 R-032B. The private B5C consumer and R-G007 deferral remain exactly as frozen, and

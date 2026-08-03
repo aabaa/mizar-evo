@@ -756,5 +756,16 @@ cargo test -p mizar-vc
   count/hash/scope gateをPASS。
 - [x] findings-free final read-only qualityを全9 hard gate PASS、score capなし、
   valid `100/100`（`20/20/15/15/10/10/5/5`）で完了。
-- [ ] exact staging、dedicated docs commit、post-commit fresh inventoryを完了。
-- [ ] fresh inventory後Task 263Rだけを別commitで実装しChecker Task 263へ戻る。
+- [x] exact staging、dedicated documentation commit
+  `34692ee222d5465750f061da82fe878566a1557c`、clean post-commit inventory、
+  protected stash不変を完了。
+- [x] fresh inventory後、frozen selector-owner partitionをexact
+  `src/symbols.rs`と`src/symbols/tests.rs`だけに実装し、exact test 2件を追加して
+  全public/non-selector contractを保持。
+- [x] test-sufficiency/implementation reviewを**NO FINDINGS**で完了し、focused
+  resolver test、resolver Clippy、formatting、exact probe 2件をPASS。
+- [x] source/documentation consistencyを**NO FINDINGS**、全full verification
+  gate、independent final qualityを全9 hard gate PASS、score capなし、valid
+  `100/100`（`20/20/15/15/10/10/5/5`）で完了。
+- [ ] exact staging、dedicated implementation commit、post-commit fresh
+  inventoryを完了してChecker Task 263へ戻る。

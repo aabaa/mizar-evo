@@ -208,3 +208,16 @@ or public APIs. No module split, dependency edge, resolver/checker ownership
 transfer, lint-policy decision, fixture, runner, or Cargo change is authorized.
 Task 263 consumes the corrected resolver result only after a dedicated lower
 commit and fresh inventory.
+
+## Checker Task 263R Implemented Boundary
+
+The implementation stays in the frozen existing `symbols` owner and changes
+exactly `src/symbols.rs` plus its private `src/symbols/tests.rs`. The new
+selector-owner field, parent walk, and conflict-key component are private.
+There is no module split, public surface change, dependency edge, lint-policy
+change, resolver/checker ownership transfer, runner route, corpus artifact,
+trace metadata, or Cargo change. Task 263 remains the only future production
+consumer after this lower commit and fresh inventory.
+
+The final boundary/consistency review reports **NO FINDINGS**, and all nine
+quality gates PASS at uncapped `100/100`; exact staging and commit remain.

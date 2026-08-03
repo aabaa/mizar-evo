@@ -367,3 +367,17 @@ complete. Independent final quality reports **NO FINDINGS**; all nine hard
 gates PASS with no score cap at valid `100/100`. Task-only cached-diff review,
 dedicated commit `33ac57e96f048dc40559565f54369cac854409a7`, and post-commit
 fresh inventory are complete.
+
+## Checker Task 263R Active Lower Exit Addendum
+
+Task 263R is a later bounded post-exit maintenance task and does not revise the
+historical crate-wide exit score. Its docs prerequisite is committed as
+`34692ee222d5465750f061da82fe878566a1557c`. The exact two-file `symbols`
+implementation and two tests close the frozen selector-owner `source_drift`
+and `test_gap`; focused tests, exact probes, and the test/implementation
+reviews pass with **NO FINDINGS**. Resolver tests are `146` and production is
+`15/18896`. Source/documentation review and all full verification gates pass;
+independent final quality is **NO FINDINGS**, nine hard gates PASS, uncapped
+`100/100`. Only the separate implementation commit and clean fresh inventory
+remain. No public API,
+corpus, trace, runner/checker, metadata, or semantic coverage credit changes.

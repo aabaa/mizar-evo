@@ -194,3 +194,15 @@ discriminatorはduplicate classificationだけが使うinternal declaration-shel
 public APIへ追加しない。module split、dependency edge、resolver/checker ownership
 transfer、lint-policy decision、fixture、runner、Cargo変更は禁止。Task 263はdedicated
 lower commitとfresh inventory後だけcorrected resolver resultをconsumeする。
+
+## Checker Task 263R implemented boundary
+
+implementationはfrozen existing `symbols` owner内に留まり、exact
+`src/symbols.rs`とprivate `src/symbols/tests.rs`だけを変更する。new selector-owner
+field、parent walk、conflict-key componentはprivateである。module split、public
+surface変更、dependency edge、lint-policy変更、resolver/checker ownership transfer、
+runner route、corpus artifact、trace metadata、Cargo変更はない。本lower commitと
+fresh inventory後もTask 263がsole future production consumerである。
+
+final boundary/consistency reviewは**NO FINDINGS**、全9 quality gateはcapなし
+`100/100`でPASS。exact staging/commitが残る。

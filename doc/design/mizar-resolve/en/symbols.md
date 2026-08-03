@@ -438,3 +438,23 @@ them. R-023 adds semantic `.miz` corpus cases and traceability metadata for the
 `declaration_symbol` stage. Existing `.miz`
 cases and expectations must not be rebaselined to match resolver
 implementation behavior.
+
+## Checker Task 263R Implemented Selector Partition
+
+The frozen correction is implemented without changing the public symbol
+model. Each collected selector privately records the nearest ancestor
+`StructureDefinition` shell, if one exists. Duplicate collection keys
+selectors by `(namespace, spelling, kind, selector owner)`; every other symbol
+kind continues to use the pre-existing `(namespace, spelling, kind)` key with
+the owner coordinate fixed to `None`, and ownerless selectors all use that
+same `None` owner partition. The owner is conflict-classification data only: it does not alter
+`SymbolId`, definition/signature shells, module summaries, lookup, provenance,
+overload/redefinition rules, or recovery.
+
+The cross-structure extractor test produces six definition symbols and no
+conflict in either projection order. The same-structure field/property test
+produces one stable `DuplicateDeclaration` and two `DuplicateSpelling`
+conflict marks in either order. The existing ownerless/non-selector duplicate
+matrix remains unchanged. This closes the frozen `source_drift` and resolver
+`test_gap`; structure inheritance, constructor selection, and checker
+semantics remain deferred to Task 263.

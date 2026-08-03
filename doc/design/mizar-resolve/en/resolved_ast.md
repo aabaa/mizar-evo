@@ -533,3 +533,11 @@ final quality reports **NO FINDINGS**; all nine hard gates PASS with no score
 cap at valid `100/100`. Task-only cached-diff review, dedicated B5C commit
 `33ac57e96f048dc40559565f54369cac854409a7`, and post-commit fresh inventory
 are complete.
+
+### Checker Task 263R arena preservation
+
+The later Task-263R implementation reads the already-collected declaration
+shell parent relation inside `symbols` and does not change
+`SurfaceResolvedArena`, its ids, validation, lowering, diagnostics, or public
+API. Both new tests use existing extractor output; no dummy AST or arena id is
+fabricated, and the R-032A/R-032B/B5C contracts remain closed.

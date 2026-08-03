@@ -402,3 +402,21 @@ parser-backed lexical-summary spelling fixture の resolver unit test を追加�
 R-023 は `declaration_symbol` stage 用の semantic `.miz` corpus case と traceability
 metadata を追加する。既存 `.miz` case と expectation は resolver implementation
 behavior に合わせる目的で rebaseline してはならない。
+
+## Checker Task 263R implemented selector partition
+
+frozen correctionはpublic symbol modelを変更せず実装された。各collected selectorは、
+存在する場合だけnearest ancestor `StructureDefinition` shellをprivateに記録する。
+duplicate collectionはselectorを`(namespace, spelling, kind, selector owner)`で
+keyし、他の全symbol kindはowner coordinateを`None`に固定した既存
+`(namespace, spelling, kind)` keyを使い続け、ownerless selectorも同じ`None`
+owner partitionを共有する。
+ownerはconflict-classification dataだけで、`SymbolId`、definition/signature shell、
+module summary、lookup、provenance、overload/redefinition rule、recoveryを変更しない。
+
+cross-structure extractor testはprojection orderの両方でdefinition symbol 6件、
+conflict 0件を生成する。same-structure field/property testは両orderでstableな
+`DuplicateDeclaration` 1件と`DuplicateSpelling` conflict mark 2件を生成する。
+existing ownerless/non-selector duplicate matrixは不変。本実装はfrozen
+`source_drift`とresolver `test_gap`を閉じるが、structure inheritance、constructor
+selection、checker semanticsはTask 263へdeferする。

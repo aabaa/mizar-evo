@@ -3188,5 +3188,11 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
   lower prerequisiteではcorpusへ追加しない。
 - [x] Task 263Rで全runner route、fixture、sidecar、expectation、trace row/
   status/count、active case、metadata assertion、CLI hashを不変にする。
-- [ ] separate Task-263R docs/implementation commit後、fresh inventoryして
-  Task-263 private consumer/corpus deltaをfreezeする。
+- [x] separate Task-263R documentation commitとlower implementation fresh
+  inventoryを`mizar-test`/corpus deltaなしで完了。
+- [x] implemented resolver two-file correctionがresolver test inventory
+  `144 -> 146`だけを変更し、exact probe/reviewをPASSすることを確認。
+- [x] 全full/final gateを**NO FINDINGS**、全9 hard gate PASS、score capなし、
+  valid `100/100`で完了。
+- [ ] separate implementation commit後にfresh inventoryし、Task-263 private
+  consumer/corpus deltaをfreezeする。

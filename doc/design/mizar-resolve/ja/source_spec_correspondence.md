@@ -244,8 +244,8 @@ canonical Chapter 5はper-structure field/property identityを所有する。exa
 異なるstructure declarationで`carrier`を正当に繰り返し、inherited memberへroot
 declarationとpath/viewの保持を要求する。exact 320-byte Task-263 probeはdiagnostic
 なしでparseし、Surface node 75、shell 10、projection 8、symbol 8を生成するが、
-current `symbols.rs`はselector 4件をmodule namespaceだけでgroup化してfalse
-duplicate 2件を出す。これはbounded `source_drift`、対応design ruleは
+preimplementation `symbols.rs`はselector 4件をmodule namespaceだけでgroup化して
+false duplicate 2件を出していた。これはbounded `source_drift`、対応design ruleは
 `design_drift`、owner-sensitive regression欠落は`test_gap`。
 
 frozen repairはselector conflict classification用nearest `StructureDefinition`
@@ -255,3 +255,23 @@ implementationのいずれも既存fixture、sidecar、expectation、trace row/s
 active coverageを変更しない。`spec_coverage_audit.md`はcorrected Chapter-5 lower
 ownerを記録するがcorpus creditを与えず、Task 263R commit後のexecutable
 structure-intake ownerはChecker Task 263のまま。
+
+## Checker Task 263R implemented correspondence
+
+two-file resolver implementationはChapter 5 §§5.2-5.5と一致する。duplicate
+classificationではselector spellingをnearest structure declaration内で解釈し、
+同一structure内のselectorは引き続きone conflict domainを共有する。exact
+Chapter-5-derived probeはlower profile `75/10/8/8`を変えずfalse resolver
+diagnostic 2件から0件へ移り、exact same-owner controlは`47..70`のdeterministic
+diagnostic 1件を維持する。extractor-backed testはdeclaration-shell owner relationと
+reversed input orderを直接検証する。
+
+これによりclassified `source_drift`とcanonical-derived `test_gap`を閉じる。
+earlier documentation prerequisiteが`design_drift`を既に閉じた。canonical spec、
+existing corpus artifact、expectation、trace metadataは変更せず、executable corpus
+creditを主張しない。Chapter 5はinheritance、constructor/selector semantics、
+correctness obligation、future Task-263 checker consumerについてpartialのまま。
+
+final source/documentation consistencyは**NO FINDINGS**。全full verification
+gateはPASSし、independent qualityも**NO FINDINGS**、全9 hard gate PASS、capなし
+`100/100`。この結果はcorpus/trace creditを追加しない。

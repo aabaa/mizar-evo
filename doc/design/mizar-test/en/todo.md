@@ -3408,5 +3408,11 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
   without adding it to the corpus in the lower prerequisite.
 - [x] Preserve every runner route, fixture, sidecar, expectation, trace row/
   status/count, active case, metadata assertion, and CLI hash in Task 263R.
-- [ ] After separate Task-263R docs/implementation commits, fresh-inventory and
-  freeze the Task-263 private consumer and corpus delta.
+- [x] Complete the separate Task-263R documentation commit and fresh-inventory
+  the lower implementation with no `mizar-test` or corpus delta.
+- [x] Confirm the implemented two-file resolver correction changes only the
+  resolver test inventory `144 -> 146` and passes its exact probes/reviews.
+- [x] Complete all full/final gates with **NO FINDINGS**, all nine hard gates
+  PASS, no score cap, and valid `100/100`.
+- [ ] After the separate implementation commit, fresh-inventory and freeze the
+  Task-263 private consumer and corpus delta.

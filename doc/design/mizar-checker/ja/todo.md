@@ -6273,5 +6273,12 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   `source_drift`、paired `design_drift`/`test_gap`と分類。
 - [x] separate resolver Task 263Rをfreezeし、そのdocs prerequisiteではchecker
   source、corpus、trace status/count、structure semanticsを変更しない。
-- [ ] Task-263R docs/implementationをfresh inventory付きseparate commitで完了し、
-  Task 263 freezeへ戻る。
+- [x] Task-263R documentationをseparate commit
+  `34692ee222d5465750f061da82fe878566a1557c`で完了し、lower implementation前に
+  fresh inventoryを実行。
+- [x] frozen resolver two-file correctionだけを実装し、test-sufficiency/
+  implementation reviewを**NO FINDINGS**で完了。
+- [x] consistency/full/final gateを**NO FINDINGS**、全9 hard gate PASS、score
+  capなし、valid `100/100`で完了。
+- [ ] dedicated implementation commit/clean fresh inventory後、Task 263
+  freezeへ戻る。

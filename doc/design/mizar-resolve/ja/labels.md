@@ -524,3 +524,10 @@ qualityは**NO FINDINGS**、全9 hard gates PASS、score capなし、valid
 `100/100`。task-only cached-diff review、dedicated commit
 `33ac57e96f048dc40559565f54369cac854409a7`、post-commit fresh inventoryは
 完了済み。
+
+### Checker Task 263R non-owner preservation
+
+later Task-263R selector-owner correctionは`symbols.rs`とそのprivate testだけを
+変更する。label、proof scope、citation provenance、全R-032B/B5C public/private
+contractはwrite scope外でbyte-for-byte不変。resolver test `144 -> 146`の増加は
+`symbols` test 2件だけによる。
