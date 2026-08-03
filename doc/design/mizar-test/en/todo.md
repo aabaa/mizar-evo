@@ -3473,8 +3473,9 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
   and uncapped `100/100` without adding any runner path.
 - [x] Commit only the exact synchronized docs as
   `4c3f74b053d31cae45b8af3fc478498b4a112768` and fresh-inventory Task 249PI.
-- [ ] After Task-249PI commits, implement only the frozen two-profile route,
-  pass review/gates/count/hash verification, and commit Task 264 separately.
+- [x] After Task-249PI commits, implement only the frozen two-profile route.
+- [x] Pass Task-264 review/gates/count/hash verification and preserve the exact
+  target for the separate parent-owned commit.
 
 ## Checker Task 249PI No-Runner Prerequisite
 
@@ -3484,5 +3485,9 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
   trace rows/statuses, counts, and hashes during docs and implementation.
 - [x] Commit Task-249PI docs as `7e194bb3d7dd01454958b8d319b8c48cf478896a`
   and verify the implementation has no `mizar-test` source or artifact delta.
-- [ ] Commit the reviewed checker-only Task-249PI implementation.
-- [ ] Fresh-inventory and implement only the already frozen Task-264 route.
+- [x] Commit the reviewed checker-only Task-249PI implementation as
+  `73a34f94c7d46d7c0698b09a43ab3e1f00bb07a7`.
+- [x] Fresh-inventory and select only the already frozen Task-264 route.
+- [x] Implement the selected Task-264 route without adjacent semantics.
+- [x] Review and verify the selected Task-264 route; leave commit and
+  post-commit inventory to the parent-owned gates.

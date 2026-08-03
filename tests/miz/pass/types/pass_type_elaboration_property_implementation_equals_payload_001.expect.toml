@@ -1,0 +1,14 @@
+schema_version = 1
+id = "pass_type_elaboration_property_implementation_equals_payload_001"
+kind = "pass"
+stage = "type_elaboration"
+domain = "checker.type_elaboration"
+source = "pass_type_elaboration_property_implementation_equals_payload_001.miz"
+expected_outcome = "pass"
+expected_phase = "type_check"
+diagnostic_codes = []
+diagnostic_payloads = []
+tags = ["active_type_elaboration"]
+spec_refs = [
+  "spec.en.checker.type_elaboration.source_property_implementation_payload",
+]

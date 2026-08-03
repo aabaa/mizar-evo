@@ -32,6 +32,7 @@ use crate::{
         SourceModeDefinitionHandoff, validate_source_mode_definition_absence,
     },
     source_predicate_definition::SourcePredicateDefinitionHandoff,
+    source_property_implementation::SourcePropertyImplementationHandoff,
     source_set_term::SourceSetTermHandoff,
     source_statement::{
         SourceStatementHandoff, SourceStatementReferenceHandoff, SourceStatementWitnessHandoff,
@@ -133,6 +134,7 @@ pub struct ResolvedTypedAst {
     source_atomic_formula: Option<SourceAtomicFormulaHandoff>,
     source_attribute_definition: Option<SourceAttributeDefinitionHandoff>,
     source_functor_definition: Option<SourceFunctorDefinitionHandoff>,
+    source_property_implementation: Option<SourcePropertyImplementationHandoff>,
     source_mode_definition: Option<SourceModeDefinitionHandoff>,
     source_structure_definition: Option<SourceStructureDefinitionHandoff>,
     source_predicate_definition: Option<SourcePredicateDefinitionHandoff>,
@@ -222,6 +224,12 @@ impl ResolvedTypedAst {
 
     pub const fn source_functor_definition(&self) -> Option<&SourceFunctorDefinitionHandoff> {
         self.source_functor_definition.as_ref()
+    }
+
+    pub const fn source_property_implementation(
+        &self,
+    ) -> Option<&SourcePropertyImplementationHandoff> {
+        self.source_property_implementation.as_ref()
     }
 
     pub const fn source_mode_definition(&self) -> Option<&SourceModeDefinitionHandoff> {
@@ -347,7 +355,23 @@ impl ResolvedTypedAst {
                 ))
         );
         debug_assert!(
+            self.source_property_implementation.is_some()
+                || self.initial_obligations.iter().all(|(_, row)| !matches!(
+                    row.kind,
+                    InitialObligationKind::PropertyImplementationExistence
+                        | InitialObligationKind::PropertyImplementationUniqueness
+                ))
+        );
+        debug_assert!(
             self.source_functor_definition.is_none() || self.source_predicate_definition.is_none()
+        );
+        debug_assert!(
+            self.source_property_implementation.is_none()
+                || (self.source_predicate_definition.is_none()
+                    && self.source_functor_definition.is_none()
+                    && self.source_attribute_definition.is_none()
+                    && self.source_mode_definition.is_none()
+                    && self.source_structure_definition.is_none())
         );
         debug_assert!(
             self.source_attribute_definition.is_none()
@@ -403,6 +427,9 @@ impl ResolvedTypedAst {
         }
         if let Some(source_functor_definition) = &self.source_functor_definition {
             output.push_str(&source_functor_definition.debug_text());
+        }
+        if let Some(source_property_implementation) = &self.source_property_implementation {
+            output.push_str(&source_property_implementation.debug_text());
         }
         if let Some(source_mode_definition) = &self.source_mode_definition {
             output.push_str(&source_mode_definition.debug_text());
@@ -1384,6 +1411,7 @@ pub enum ResolvedTypedAstError {
     InvalidSourceAtomicFormula,
     InvalidSourceAttributeDefinition,
     InvalidSourceFunctorDefinition,
+    InvalidSourcePropertyImplementation,
     InvalidSourceModeDefinition,
     InvalidSourceStructureDefinition,
     InvalidSourcePredicateDefinition,
@@ -1484,6 +1512,9 @@ impl fmt::Display for ResolvedTypedAstError {
             ),
             Self::InvalidSourceFunctorDefinition => formatter
                 .write_str("resolved typed AST source functor-definition handoff is inconsistent"),
+            Self::InvalidSourcePropertyImplementation => formatter.write_str(
+                "resolved typed AST source property-implementation handoff is inconsistent",
+            ),
             Self::InvalidSourceModeDefinition => formatter
                 .write_str("resolved typed AST source mode-definition handoff is inconsistent"),
             Self::InvalidSourceStructureDefinition => formatter.write_str(
@@ -1795,6 +1826,11 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
         let source_attribute_definition =
             self.inputs.typed_ast.source_attribute_definition().cloned();
         let source_functor_definition = self.inputs.typed_ast.source_functor_definition().cloned();
+        let source_property_implementation = self
+            .inputs
+            .typed_ast
+            .source_property_implementation()
+            .cloned();
         let source_predicate_definition =
             self.inputs.typed_ast.source_predicate_definition().cloned();
         let source_mode_definition = self.inputs.typed_ast.source_mode_definition().cloned();
@@ -1804,24 +1840,39 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
             && (source_attribute_definition.is_some()
                 || source_functor_definition.is_some()
                 || source_predicate_definition.is_some()
-                || source_mode_definition.is_some())
+                || source_mode_definition.is_some()
+                || source_property_implementation.is_some())
         {
             return Err(ResolvedTypedAstError::InvalidSourceStructureDefinition);
         }
         if source_attribute_definition.is_some()
             && (source_functor_definition.is_some()
                 || source_predicate_definition.is_some()
-                || source_mode_definition.is_some())
+                || source_mode_definition.is_some()
+                || source_property_implementation.is_some())
         {
             return Err(ResolvedTypedAstError::InvalidSourceAttributeDefinition);
         }
         if source_functor_definition.is_some()
-            && (source_predicate_definition.is_some() || source_mode_definition.is_some())
+            && (source_predicate_definition.is_some()
+                || source_mode_definition.is_some()
+                || source_property_implementation.is_some())
         {
             return Err(ResolvedTypedAstError::InvalidSourceFunctorDefinition);
         }
-        if source_predicate_definition.is_some() && source_mode_definition.is_some() {
+        if source_predicate_definition.is_some()
+            && (source_mode_definition.is_some() || source_property_implementation.is_some())
+        {
             return Err(ResolvedTypedAstError::InvalidSourcePredicateDefinition);
+        }
+        if source_property_implementation.is_some()
+            && (source_attribute_definition.is_some()
+                || source_functor_definition.is_some()
+                || source_predicate_definition.is_some()
+                || source_mode_definition.is_some()
+                || source_structure_definition.is_some())
+        {
+            return Err(ResolvedTypedAstError::InvalidSourcePropertyImplementation);
         }
         if let Some(source_attribute_definition) = &source_attribute_definition {
             let source_context = self
@@ -1892,6 +1943,46 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
             )
         }) {
             return Err(ResolvedTypedAstError::InvalidSourceFunctorDefinition);
+        }
+        if let Some(source_property_implementation) = &source_property_implementation {
+            let source_context = self
+                .inputs
+                .typed_ast
+                .source_context()
+                .ok_or(ResolvedTypedAstError::InvalidSourcePropertyImplementation)?;
+            let source_type = self
+                .inputs
+                .typed_ast
+                .source_type()
+                .ok_or(ResolvedTypedAstError::InvalidSourcePropertyImplementation)?;
+            let source_term = self
+                .inputs
+                .typed_ast
+                .source_term()
+                .ok_or(ResolvedTypedAstError::InvalidSourcePropertyImplementation)?;
+            source_property_implementation
+                .validate_installation(
+                    source_id,
+                    &module_id,
+                    source_context,
+                    source_type,
+                    source_term,
+                    source_application.as_ref(),
+                    source_structure.as_ref(),
+                    source_set_term.as_ref(),
+                    source_atomic_formula.as_ref(),
+                    &initial_obligations,
+                    self.inputs.typed_ast.nodes(),
+                )
+                .map_err(|_| ResolvedTypedAstError::InvalidSourcePropertyImplementation)?;
+        } else if initial_obligations.iter().any(|(_, row)| {
+            matches!(
+                row.kind,
+                InitialObligationKind::PropertyImplementationExistence
+                    | InitialObligationKind::PropertyImplementationUniqueness
+            )
+        }) {
+            return Err(ResolvedTypedAstError::InvalidSourcePropertyImplementation);
         }
         if let Some(source_predicate_definition) = &source_predicate_definition {
             let source_context = self
@@ -2296,6 +2387,7 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
             source_atomic_formula,
             source_attribute_definition,
             source_functor_definition,
+            source_property_implementation,
             source_mode_definition,
             source_structure_definition,
             source_predicate_definition,

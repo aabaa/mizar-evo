@@ -1,0 +1,11 @@
+definition
+  struct Task264Carrier where
+    field carrier -> set;
+    property marker -> set;
+  end;
+end;
+
+definition
+  let M be Task264Carrier;
+  property M.marker equals M.carrier;
+end;

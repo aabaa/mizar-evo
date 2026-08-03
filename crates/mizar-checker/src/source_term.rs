@@ -217,6 +217,51 @@ impl SourcePrimaryTermHandoff {
             row.use_ordinal = use_ordinal;
         }
     }
+
+    #[cfg(test)]
+    pub(crate) fn corrupt_for_test(&mut self, corruption: SourcePrimaryTermCorruptionForTest) {
+        match corruption {
+            SourcePrimaryTermCorruptionForTest::Truncate(len) => self.terms.rows.truncate(len),
+            SourcePrimaryTermCorruptionForTest::Duplicate(term) => {
+                if let Some(mut row) = self.terms.rows.get(term.index()).cloned() {
+                    row.source_ordinal = self.terms.rows.len();
+                    self.terms.rows.push(row);
+                }
+            }
+            SourcePrimaryTermCorruptionForTest::Rewrite {
+                term,
+                site_and_range,
+                spelling,
+                kind_and_role,
+            } => {
+                if let Some(row) = self.terms.rows.get_mut(term.index()) {
+                    if let Some((site, source_range)) = site_and_range {
+                        row.site = site;
+                        row.source_range = source_range;
+                    }
+                    if let Some(spelling) = spelling {
+                        row.spelling = spelling;
+                    }
+                    if let Some((kind, role)) = kind_and_role {
+                        row.kind = kind;
+                        row.role = role;
+                    }
+                }
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+pub(crate) enum SourcePrimaryTermCorruptionForTest {
+    Truncate(usize),
+    Duplicate(SourcePrimaryTermId),
+    Rewrite {
+        term: SourcePrimaryTermId,
+        site_and_range: Option<(TypedSiteRef, SourceRange)>,
+        spelling: Option<String>,
+        kind_and_role: Option<(SourcePrimaryTermKind, SourcePrimaryTermRole)>,
+    },
 }
 
 /// Dense immutable primary-term table.

@@ -2385,3 +2385,15 @@ Implementation adds only two checker-local unit tests. There is no requirement
 row, backlink, status, fixture, expectation, active runner outcome, or coverage
 credit delta; trace SHA-256 remains
 `cf0ef6d28a132bcbafc8aa1214ded935a715fdffdb3421c37d66c35954f2a06c`.
+
+## Checker Task 264 Active Trace Result
+
+`spec.en.checker.type_elaboration.source_property_implementation_payload` is
+required/covered/pass with exactly two ordered backlinks: equals, then means.
+Each new sidecar reciprocally cites only that requirement. Cases/requirements
+are `428/395`, pass/fail are `235/193`, active stages are `101/7/205/1`, type
+coverage is `259 = 247 covered + 12 deferred`, warnings/errors are `23/0`, and
+trace SHA-256 is
+`55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`.
+The row credits source transport and pending initial-obligation intake only;
+the advanced-semantics overlap/coherence seed remains inactive and unchanged.

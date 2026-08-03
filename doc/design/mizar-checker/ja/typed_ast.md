@@ -1720,3 +1720,12 @@ IRは不変。Task264がseparate frozen handoffからlower fingerprint/member ID
 existing one-shot source-type installationがexact combined handoffをown/revalidateし、
 orphan-memberをfail closedでrejectする。typed field/installer/getter/fact/obligation/
 diagnostic/semantic resultは追加しない。
+
+## Task 264 active typed ownership
+
+`TypedAst::with_source_property_implementation`はfrozen handoffとobligation suffixを
+atomic installする。全lower fingerprint/row/arena ownership/baseline byteをrevalidateし、
+Meansはexistence、uniquenessの順にexact two rowsをappendし、Equalsはzero。
+duplicate/orphan/extra/stale/half-published/Task259--263 sibling transactionはinputを
+変更せず`InvalidSourcePropertyImplementation`でfailする。private fieldはdocumented
+read-only getterからだけobservableである。

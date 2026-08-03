@@ -1779,3 +1779,13 @@ remain absent until their separately frozen owners.
 Final assembly clone-preserves the exact combined source-type handoff and
 rejects the repaired orphan-member installation shape. No final field, getter,
 semantic result, or Task-259/264 ownership was added.
+
+## Task 264 Active Final Ownership
+
+Final assembly now clone-preserves the typed property-implementation handoff
+only after replaying every frozen lower fingerprint, row, arena identity, and
+style-specific obligation suffix. It rejects orphan/extra property kinds and
+all Task-259--263 sibling coexistence with
+`InvalidSourcePropertyImplementation`. The read-only getter publishes
+transport only; expression metadata, checked formulas, facts, diagnostics,
+proof/acceptance state, property values, Core, CFG, and VC remain unchanged.

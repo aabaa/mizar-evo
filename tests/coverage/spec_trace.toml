@@ -5242,6 +5242,20 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.checker.type_elaboration.source_property_implementation_payload"
+source = "doc/design/mizar-checker/en/source_property_implementation.md"
+section = "Dedicated Consumers, Tests, And Write Scope"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/types/pass_type_elaboration_property_implementation_equals_payload_001.expect.toml",
+  "tests/miz/pass/types/pass_type_elaboration_property_implementation_means_payload_001.expect.toml",
+]
+notes = "Checker Task 264 covers only immutable five-table source transport for the exact equals/means struct-property implementations and appends Pending PropertyImplementationExistence/Uniqueness rows only for the means profile. The route authenticates complete source/Surface/resolver provenance and the Task-248P/249PI/252/254/256 lower bundle while keeping parameter, target, declared return row, definiens, correctness clauses, and obligations separate. It grants no parameter/domain/return-type goal or guard, substitution of `it`, overlap/coherence detection, proof or justification verification, discharge, acceptance, property value, fact or axiom, call/result typing, CoreIr, ControlFlowIr, or VC credit."
+
+[[requirement]]
 id = "spec.en.checker.type_elaboration.source_quantifier_bound_use_payload"
 source = "doc/design/mizar-checker/en/source_formula_composition.md"
 section = "Exact Real Consumer; Cross-Family Transaction; Validation And Final Ownership"

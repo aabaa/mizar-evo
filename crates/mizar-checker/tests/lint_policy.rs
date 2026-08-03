@@ -253,6 +253,10 @@ fn checker_public_enums_are_forward_compatible_and_documented() {
             "src/source_functor_definition.rs",
             "source_functor_definition.md",
         ),
+        (
+            "src/source_property_implementation.rs",
+            "source_property_implementation.md",
+        ),
         ("src/source_mode_definition.rs", "source_mode_definition.md"),
         ("src/source_set_term.rs", "source_set_term.md"),
         ("src/source_statement.rs", "source_statement.md"),
@@ -400,6 +404,10 @@ fn checker_source_spec_audit_covers_public_surface_and_gaps() {
         (
             "src/source_functor_definition.rs",
             "source_functor_definition",
+        ),
+        (
+            "src/source_property_implementation.rs",
+            "source_property_implementation",
         ),
         ("src/source_mode_definition.rs", "source_mode_definition"),
         ("src/source_set_term.rs", "source_set_term"),
@@ -914,6 +922,7 @@ fn public_checker_api_is_documented(root: &Path, path: &Path, line: &str) -> boo
             || path == Path::new("src/source_formula_composition.rs")
             || path == Path::new("src/source_predicate_definition.rs")
             || path == Path::new("src/source_functor_definition.rs")
+            || path == Path::new("src/source_property_implementation.rs")
             || path == Path::new("src/source_mode_definition.rs")
             || path == Path::new("src/source_set_term.rs")
             || path == Path::new("src/source_statement.rs")
@@ -944,6 +953,7 @@ fn public_checker_api_is_documented(root: &Path, path: &Path, line: &str) -> boo
                 | "pub mod source_formula_composition;"
                 | "pub mod source_predicate_definition;"
                 | "pub mod source_functor_definition;"
+                | "pub mod source_property_implementation;"
                 | "pub mod source_mode_definition;"
                 | "pub mod source_set_term;"
                 | "pub mod source_statement;"

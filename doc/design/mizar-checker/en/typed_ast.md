@@ -1808,3 +1808,13 @@ requires byte-equal baseline/current/final obligation tables, revalidates every
 frozen dependency and row, and rejects all Task-259--262 definition-family
 owners in both installation orders. Failure leaves the original typed value
 unchanged.
+
+## Task 264 Active Typed Ownership
+
+`TypedAst::with_source_property_implementation` now installs the frozen
+handoff and obligation suffix atomically. It revalidates all lower
+fingerprints, rows, arena ownership, and baseline bytes; means appends exact
+existence then uniqueness rows, while equals appends none. Duplicate, orphan,
+extra, stale, half-published, or Task-259--263 sibling transactions fail as
+`InvalidSourcePropertyImplementation` without changing the input value. The
+private field is observable only through the documented read-only getter.

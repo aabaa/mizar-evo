@@ -1700,3 +1700,12 @@ association/initial obligation/diagnostic/fact/proof/acceptance/Task259 dataはs
 final assemblyはexact combined source-type handoffをclone-preserveし、修正した
 orphan-member installation shapeをrejectする。final field/getter/semantic result/
 Task259/264 ownershipは追加しない。
+
+## Task 264 active final ownership
+
+final assemblyは全frozen lower fingerprint/row/arena identity/style-specific obligation
+suffixをreplayした後だけtyped property-implementation handoffをclone-preserveする。
+orphan/extra property kindとTask259--263 sibling coexistenceを
+`InvalidSourcePropertyImplementation`でrejectする。read-only getterはtransportだけを
+publishし、expression metadata/checked formula/fact/diagnostic/proof/acceptance/
+property value/Core/CFG/VCは不変である。

@@ -5162,3 +5162,15 @@ rows or fingerprint text.
 Implementation adds no harness source, selector, route, test, fixture,
 sidecar, expectation, diagnostic, or output byte. Runner remains `528`; the
 five CLIs reproduce their frozen counts and hashes exactly.
+
+## Checker Task 264 Implemented Private Route
+
+The frozen selector and route are now present under
+`runner/type_elaboration/source_property_implementation.rs`. Raw source,
+Surface rows, shells, and resolver environments remain private to the runner;
+only syntax-free lower handoffs cross into `mizar-checker`. Means requires two
+owned `it` terms and publishes two pending obligations, while equals requires
+zero of each. The mutation matrix fails at byte/Surface/shell/resolver/context/
+type/term/structure/formula/property/arena owners. The route cannot select the
+Parser Task-48 cases, inactive coherence seed, Task-259 cases, or mixed
+predicate/functor gap, and it publishes no semantic result beyond transport.

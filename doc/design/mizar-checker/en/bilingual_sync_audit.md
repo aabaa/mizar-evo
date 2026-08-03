@@ -1679,3 +1679,12 @@ semantic exclusions, and two-commit exit. No bilingual normative debt remains.
 EN/JA now agree on the implemented one-file API, four tests, checker `473`,
 production `28/159648`, unchanged runner/corpus/trace state, repaired review
 findings, and return to Task 264. No implementation-time bilingual debt remains.
+
+## Task 264 Active Implementation Synchronization
+
+EN/JA now agree on the exact five-table public ABI, complete lower
+fingerprints, resolver-backed carrier and marker provenance, profile-specific
+Task-249PI sites, exact all-node arena ranges, means-only `it` failure rules,
+two pending obligations, Typed/final one-shot ownership, the four-test private
+consumer, two reciprocal pass sidecars, measured metadata, and unchanged
+semantic deferrals. The audit found no untranslated normative delta.

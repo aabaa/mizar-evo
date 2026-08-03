@@ -76,7 +76,11 @@ Resolverは各source exactly shells/symbols/definitions/contributions
 `5/3/3/1`、diagnostics zeroです。shell 4だけがparentless context-only
 PropertyImplementationです。`marker`はdefinition 2、contribution 0、origin
 `71..94/[4,0,11,0,19,1]`のlocal exported Selectorです。shell 4にはsymbol/
-definition/signature projection/semantic originがありません。
+definition/signature projection/semantic originがありません。definition 0とその
+symbolはnormal local structure origin `13..101/[4,0,11,0]`を共有し、Task-249PI
+parameter headはtask-local fixed FQNではなくこのexact resolver identityを参照します。
+`carrier` symbol/definitionはnormal local sibling origin
+`45..66/[4,0,11,0,18,0]`を共有します。
 
 Lower bundleはMeansがTask-248P Profile C、Task-249PI `1/3/2`、Task-252
 `2/0/0`、Task-256 `1/.../2/2`で、EqualsはProfile C、Task-249PI、Task-252
@@ -252,12 +256,17 @@ Task264-owned/direct lower typed kindはMeansで54/57/64
 `source.definition.property-implementation`、84 `source.module`です。Equalsは
 36/39/46 `source.type.head`、37/40/45 `source.type.expression`、38/41
 `source.definition.structure.member`、42 `source.definition.structure`、47
-`source.definition.property-implementation.parameter`、48
+`source.definition.property-implementation.parameter`です。さらにEquals node
+31は`source.term.structure.member.selector`、48は
 `source.term.variable-reference`、49 `source.term.structure.selector`、51
 `source.definition.property-implementation.definiens`、52
 `source.definition.property-implementation`、55 `source.module`です。Other nodesは
 `source.surface.unowned`、wrong kindはpublication前
-`InvalidArenaOwnership`です。
+`InvalidArenaOwnership`です。Parameter ownership node 65/47だけはfrozen
+Task248P context contractに従いdeclaration anchor `125..126`を使い、parameter
+payload row自体はsource range `121..145`、declaration range `125..126`を保持します。
+Other owned nodesはexact Surface range、全nodeは`TypingState::Unknown`、
+`NodeRecoveryState::Normal`、lower-authenticated context linkです。
 
 Meansだけがformula targetとdefiniens内exact two
 `It/CurrentDefinitionResult`をadmitします。One/three/zero `it`、means外
@@ -292,6 +301,10 @@ exact rows/debug/obligations、independent corruption、resolver/return/lower/
 obligation corruption、transaction、final/Task259 isolationをcoverします。
 Runnerはboth exact sources、all owner mutations、two-case trace selection、
 inactive coherence/mixed isolation、no semantic publicationをcoverします。
+Frozen impossible-state `it` validationをexerciseするため、`source_term.rs`には
+generic `#[cfg(test)]` raw-term corruption seamをexactly 1件だけ許可します。この
+seamはproduction behavior/public APIを追加せず、他のunrelated lower producer変更は
+禁止です。
 
 Task249PIはchecker-local lower tests exactly four、runner zeroを追加して
 `469 -> 473`へrebaselineします。Task264 projected countsはchecker
@@ -312,3 +325,48 @@ Docs exitはEN/JA sync、repeated **NO FINDINGS**、all nine gates PASS、uncapp
 90+、docs-only stage/commit、clean/stash invariant、fresh Task249PI selectionです。
 Task249PI docs/implementation後Task264へ自動復帰し、Task264も同じreviews/gates、
 exact count/hash、one logical commitを満たします。
+
+## Public Enum Policy
+
+| Public enum | compatibility policy |
+| --- | --- |
+| `SourcePropertyImplementationStyle` | `#[non_exhaustive]`。callerはlater explicitly-frozen implementation styleを許容する。 |
+| `SourcePropertyDefiniensTarget` | `#[non_exhaustive]`。callerはlater explicitly-frozen lower-root targetを許容する。 |
+| `SourcePropertyCorrectnessKind` | `#[non_exhaustive]`。callerはlater explicitly-frozen correctness kindを許容する。 |
+| `SourcePropertyImplementationRecovery` | `#[non_exhaustive]`。callerはlater recovery classを許容する。 |
+| `SourcePropertyImplementationError` | `#[non_exhaustive]`。callerはvalidation failureをexhaustive matchしない。 |
+
+この module が所有する exhaustive public enum exception はない。
+
+## Implemented Task 264 result
+
+frozen contractをcanonical spec、既存fixture、既存expectationを変更せず実装した。
+checker productionは`29` path / `162347` line、path/content hashは
+`37b91c2c419b83fa63150fe65d09b56c474dfa3d61134ba84056009dcdb923c1` /
+`450abc3b7407f206c27b04613737716cf2192fb46c8960c8e167fcf0900fa143`。
+checker library testは`478`、raw/normalized hashは
+`b3d0b2e398899adac6b94c7bbaba93d89fdc2067452e6b3c16efb60783401b8d` /
+`4d9c7f9821182f08aa37686c7fecc1374d3857fdb7fdd64c83520dd05988d500`。
+
+runner productionは`36` path / `69417` line、path/content hashは
+`38a20909d1f89aa2a4c325fb47126cc911bb943b7fe1190dc668713f64ad49e2` /
+`72cc9036654639dff5933dced07e79ec6132696b5f92eca5e0149085f4651d91`。
+runner library testは`532`、raw/normalized hashは
+`8122a53fddb8ee98cf1225f43c4f6966f3f7b5718673f55218601ca3464ca293` /
+`fbd9e691357c14cd413df7ffd46677e34914bbacffca4dc2fe25a856d3b9434a`。
+
+source/sidecar hashはequals
+`175135aaf40b9eab1a28e73ca1aae9f250e66278410d50575cdd279f6d7a2784` /
+`c491d7ea65e1c096d869af4666a06a053a5a0b213d9e79483d13e5ec91b75b6e`、
+means
+`cc90659f10cae4ef68890624df9b8b9d3f0e830dae5e20cc195dc8b263c5fa2b` /
+`bced77302602f43f3237424aa2963e5522c1458e879e606c68d1a516cd737c3a`。
+trace hashは`55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`。
+metadataは`428/395`、pass/fail `235/193`、active stage `101/7/205/1`、type
+coverage `259 = 247 + 12`、warnings/errors `23/0`。plan/parse/declaration/type/proof
+stdout hashは
+`700f4bf503783742cefd8004fa095675b7476d46e9a3a6dd439916d237eb6718`、
+`a8a7aa639d2ebc65eddc923c7e9369ea5637d50e935f808600f446da1bfbda56`、
+`71e83ba0b20d4015e07b3bd2c0c4db2837b6151d1251812caed7954530d53c74`、
+`4b2c7bd5ec3cc56e5672fb351126126230ec84fba9bd2bd9049a516d378fab7f`、
+`ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`。

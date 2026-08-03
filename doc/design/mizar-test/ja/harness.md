@@ -4870,3 +4870,13 @@ runnerはrow/fingerprint textをreconstructしない。
 
 implementationはharness source/selector/route/test/fixture/sidecar/expectation/
 diagnostic/output byteを追加しない。runnerは`528`、CLI 5件はfrozen count/hashを再現する。
+
+## Checker Task 264 implemented private route
+
+frozen selector/routeを`runner/type_elaboration/source_property_implementation.rs`
+に実装した。Raw source/Surface row/shell/resolver envはrunner privateのままで、
+syntax-free lower handoffだけが`mizar-checker`へcrossする。Meansはowned `it` 2件と
+pending obligation 2件、Equalsは双方zeroをrequireする。mutation matrixはbyte/
+Surface/shell/resolver/context/type/term/structure/formula/property/arena ownerでfailする。
+Parser Task48 case、inactive coherence seed、Task259 case、mixed predicate/functor gapを
+selectせず、transport以外のsemantic resultをpublishしない。

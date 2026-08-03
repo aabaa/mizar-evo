@@ -12913,6 +12913,21 @@ their route behavior is unchanged. Runner production is `35/67939` with
 path/content hashes
 `4218936ff3ee3baaceb7c0723307ad266d722d0a2473e8b7f82e11c75aeb2b6e` /
 `a543608c5075ffed97141626ebbf8d952a847051a34d6782097329b44aa1d09e`.
+
+## Checker Task 264 Implemented Runner Module Boundary
+
+The runner adds exactly one private production leaf and one included test
+leaf. Current affected sizes are `runner.rs` 2717,
+`runner/type_elaboration.rs` 881,
+`runner/type_elaboration/source_property_implementation.rs` 1460,
+`runner/tests.rs` 59, and
+`runner/tests/type_elaboration/source_property_implementation.rs` 236 lines.
+The complete production selection is `36/69417`, with path/content hashes
+`38a20909d1f89aa2a4c325fb47126cc911bb943b7fe1190dc668713f64ad49e2` /
+`72cc9036654639dff5933dced07e79ec6132696b5f92eca5e0149085f4651d91`.
+No Cargo edge, public route API, expectation-schema owner, proof runner, or
+parser/resolver module changed. The route remains the sole raw-source/Surface
+consumer and passes only syntax-free handoffs into the checker.
 The generic mixed gap and sibling production routes are unchanged.
 
 ## Checker Task 264R No-Runner Module Boundary

@@ -3249,7 +3249,9 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
 - [x] Exact synchronized docsだけを
   `4c3f74b053d31cae45b8af3fc478498b4a112768`としてcommitし、Task249PIをfresh
   inventoryする。
-- [ ] Task249PI後frozen routeだけをimplement/review/verify/commitする。
+- [x] Task249PI後frozen routeだけを実装した。
+- [x] Task264 routeをreview/verifyし、commit/post-commit inventoryは
+  parent-owned gateに残す。
 
 ## Checker Task 249PI no-runner prerequisite
 
@@ -3259,5 +3261,9 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
   row/status/count/hashを全てpreserveする。
 - [x] Task249PI docsを`7e194bb3d7dd01454958b8d319b8c48cf478896a`としてcommitし、
   implementationに`mizar-test` source/artifact deltaがないことをverifyした。
-- [ ] reviewed checker-only Task249PI implementationをcommitする。
-- [ ] fresh inventory後already-frozen Task264 routeだけをimplementする。
+- [x] reviewed checker-only Task249PI implementationを
+  `73a34f94c7d46d7c0698b09a43ab3e1f00bb07a7`としてcommitした。
+- [x] fresh inventory後already-frozen Task264 routeだけをselectした。
+- [x] selected Task264 routeをadjacent semanticsなしで実装した。
+- [x] selected Task264 routeをreview/verifyし、commit/post-commit inventoryは
+  parent-owned gateに残す。

@@ -2267,3 +2267,14 @@ consumerのtrace decisionはTask 264がseparateに行う。
 implementationはchecker-local unit tests 2件だけを追加する。requirement row/backlink/
 status/fixture/expectation/active runner outcome/coverage credit deltaはなく、trace SHA-256は
 `cf0ef6d28a132bcbafc8aa1214ded935a715fdffdb3421c37d66c35954f2a06c`のまま。
+
+## Checker Task 264 active trace result
+
+`spec.en.checker.type_elaboration.source_property_implementation_payload`は
+required/covered/passで、equals、meansの順にexactly 2 backlinksを持つ。各new
+sidecarはこのrequirementだけをreciprocal citeする。cases/requirementsは
+`428/395`、pass/failは`235/193`、active stagesは`101/7/205/1`、type coverageは
+`259 = 247 covered + 12 deferred`、warnings/errorsは`23/0`、trace SHA-256は
+`55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`である。
+Creditはsource transportとpending initial-obligation intakeだけで、advanced-semantics
+overlap/coherence seedはinactive/unchangedのままである。

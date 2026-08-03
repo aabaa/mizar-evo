@@ -1613,3 +1613,12 @@ route, and property semantics to Task 264. No bilingual harness debt remains.
 
 EN/JA agree that checker is `473` and every runner, corpus, metadata, CLI, and
 trace byte remains unchanged. No implementation-time bilingual debt exists.
+
+## Checker Task 264 Active Consumer Synchronization
+
+EN/JA agree on the two exact sources, 85/56 Surface profiles, complete
+structure/carrier/marker resolver provenance, Task-248P/249PI/252/254/256
+bundle, exact four-test consumer oracle, two reciprocal pass sidecars, one
+covered trace row, `428/395` metadata, `101/7/205/1` active stages, and
+transport-only credit. Both keep the overlap/coherence seed inactive and every
+goal, guard, proof, discharge, acceptance, fact, Core/CFG/VC behavior deferred.

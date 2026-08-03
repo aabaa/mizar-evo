@@ -11695,3 +11695,17 @@ lower handoffだけがcheckerへcrossする。New routeはtype_elaboration priva
 compositionを先にownし、Task264だけがroute/facade/dispatch/count、two pairs、one
 trace rowを後で追加する。Parser/resolver/Task259/proof runner/inactive coherenceは
 変更しない。
+
+## Checker Task 264 implemented runner module boundary
+
+runnerはprivate production leaf 1件とincluded test leaf 1件だけを追加する。current
+affected sizeは`runner.rs` 2717、`runner/type_elaboration.rs` 881、
+`runner/type_elaboration/source_property_implementation.rs` 1460、
+`runner/tests.rs` 59、
+`runner/tests/type_elaboration/source_property_implementation.rs` 236 line。
+complete production selectionは`36/69417`、path/content hashは
+`38a20909d1f89aa2a4c325fb47126cc911bb943b7fe1190dc668713f64ad49e2` /
+`72cc9036654639dff5933dced07e79ec6132696b5f92eca5e0149085f4651d91`。
+Cargo edge、public route API、expectation-schema owner、proof runner、parser/resolver
+moduleは変更しない。raw-source/Surface consumerはこのrouteだけで、checkerへは
+syntax-free handoffだけを渡す。

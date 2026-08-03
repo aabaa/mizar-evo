@@ -1549,3 +1549,12 @@ harness debtはない。
 
 EN/JAはchecker `473`とrunner/corpus/metadata/CLI/trace byte全不変で一致する。
 implementation-time bilingual debtはない。
+
+## Checker Task 264 active consumer synchronization
+
+EN/JAはexact sources 2件、Surface `85/56` profiles、complete structure/carrier/
+marker resolver provenance、Task-248P/249PI/252/254/256 bundle、exact consumer
+tests 4件、reciprocal pass sidecars 2件、covered trace row 1件、metadata
+`428/395`、active stages `101/7/205/1`、transport-only creditで一致する。
+overlap/coherence seedはinactive、goal/guard/proof/discharge/acceptance/fact/
+Core/CFG/VCはすべてdeferredのままである。

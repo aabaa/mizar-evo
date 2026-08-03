@@ -1606,3 +1606,11 @@ two-commit exitで一致する。bilingual normative debtはない。
 EN/JAはimplemented one-file API、test 4件、checker `473`、production
 `28/159648`、runner/corpus/trace不変、review finding修正、Task264復帰で一致する。
 implementation-time bilingual debtはない。
+
+## Task 264 active implementation synchronization
+
+EN/JAはexact five-table public ABI、complete lower fingerprints、resolver-backed
+carrier/marker provenance、profile-specific Task-249PI sites、全nodeのexact arena
+ranges、means-only `it` failure rules、pending obligations 2件、Typed/final one-shot
+ownership、private consumer tests 4件、reciprocal pass sidecars 2件、measured metadata、
+unchanged semantic deferralsで一致する。未翻訳normative deltaはない。

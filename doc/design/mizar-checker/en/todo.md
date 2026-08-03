@@ -4558,7 +4558,7 @@ unchecked row below is one future nonempty logical task and one commit.
 - [x] **Task 261:** attribute-definition producer.
 - [x] **Task 262:** mode-definition producer.
 - [x] **Task 263:** structure/inheritance/constructor-definition producer.
-- [ ] **Task 264:** property-implementation producer; depends on parser Task 48.
+- [x] **Task 264:** property-implementation producer; depends on parser Task 48.
 - [ ] **Task 269:** proof-local declaration/binding producer.
 - [ ] **Task 270:** inline-definition closure/capture/substitution-request producer.
 - [ ] **Task 271:** `reconsider` intent/coercion/evidence-request producer;
@@ -6681,8 +6681,12 @@ implementation commit does not satisfy a producer task.
   FINDINGS** and pass all nine docs-only hard gates at uncapped `100/100`.
 - [x] Stage only the synchronized 32-document target, commit it as
   `4c3f74b053d31cae45b8af3fc478498b4a112768`, and fresh-inventory Task 249PI.
-- [ ] After Task-249PI docs/implementation commits, return automatically to
-  Task 264 implementation and complete its separate review/gate/commit loop.
+- [x] After Task-249PI docs/implementation commits, return automatically to
+  Task 264 and implement only its frozen checker/runner transport.
+- [x] Complete Task-264 reviews, all nine gates, and exact count/hash
+  verification; preserve the task-only target for the parent-owned commit.
+- [ ] After that commit, confirm clean fresh inventory and continue
+  automatically to the next dependency-ready task.
 
 ## Checker Task 249PI Property-Type Composition Prerequisite
 
@@ -6704,5 +6708,7 @@ implementation commit does not satisfy a producer task.
   verification passes after synchronizing the measured module inventory.
 - [x] Complete source/documentation review with **NO FINDINGS** and final
   quality with all nine hard gates PASS, no score cap, and `100/100`.
-- [ ] Return automatically to frozen Task 264 without adding property
+- [x] Commit the reviewed checker-only Task-249PI implementation as
+  `73a34f94c7d46d7c0698b09a43ab3e1f00bb07a7` and return automatically to
+  frozen Task 264 without adding property
   semantics, runner/corpus changes, or adjacent lower work to Task 249PI.

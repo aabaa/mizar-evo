@@ -18,6 +18,7 @@ mod source_formula_composition;
 mod source_functor_definition;
 mod source_mode_definition;
 mod source_predicate_definition;
+mod source_property_implementation;
 mod source_reserve;
 mod source_set_term;
 mod source_statement;
@@ -435,6 +436,13 @@ pub(super) use source_predicate_definition::source_predicate_definition_transpor
 pub(super) use source_predicate_definition::{
     SOURCE_PREDICATE_DEFINITION_TEXT, SourcePredicateDefinitionRouteMutation,
     source_predicate_definition_output, source_predicate_definition_output_with_mutation,
+};
+pub(super) use source_property_implementation::source_property_implementation_transport_detail_keys;
+#[cfg(test)]
+pub(super) use source_property_implementation::{
+    SOURCE_PROPERTY_IMPLEMENTATION_EQUALS_TEXT, SOURCE_PROPERTY_IMPLEMENTATION_MEANS_TEXT,
+    SourcePropertyImplementationRouteMutation, SourcePropertyImplementationRouteOutput,
+    source_property_implementation_output, source_property_implementation_output_with_mutation,
 };
 pub(super) use source_reserve::extract_builtin_source_reserve_declarations;
 #[cfg(test)]

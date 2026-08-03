@@ -123,11 +123,15 @@ one local-source contribution, and zero resolver diagnostics:
   for means and `52/108..188` for equals;
 - definition 0 is structure `Task264Carrier`, definition 1 is selector
   `carrier`, and definition 2 is selector `marker`;
+- definition 0 and its symbol share the normal local structure origin
+  `13..101/[4,0,11,0]`, and the Task-249PI parameter head must name that
+  exact resolver identity rather than a task-local hard-coded FQN;
 - target `marker` is `SymbolKind::Selector` / `DefinitionKind::Selector`,
   contribution 0, normal exported local origin `71..94` with structural path
   `[4,0,11,0,19,1]`; and
-- `carrier` has the sibling selector origin `45..66`; it is consumed only by
-  the equals lower structure-selector handoff.
+- `carrier` has the normal local sibling selector origin
+  `45..66/[4,0,11,0,18,0]`, shared by its symbol and definition; it is
+  consumed only by the equals lower structure-selector handoff.
 
 The property-implementation shell has no signature projection, symbol,
 definition, contribution, or semantic origin. Task 264 validates shell 4 only
@@ -541,14 +545,19 @@ kind literals at all Task-264-owned or directly consumed sites are:
 | equals | 38, 41 | `source.definition.structure.member` |
 | equals | 42 | `source.definition.structure` |
 | equals | 47 | `source.definition.property-implementation.parameter` |
+| equals | 31 | `source.term.structure.member.selector` |
 | equals | 48 | `source.term.variable-reference` |
 | equals | 49 | `source.term.structure.selector` |
 | equals | 51 | `source.definition.property-implementation.definiens` |
 | equals | 52 | `source.definition.property-implementation` |
 | equals | 55 | `source.module` |
 
-All unlisted nodes remain `source.surface.unowned`. Every node uses its exact
-Surface range, `TypingState::Unknown`, `NodeRecoveryState::Normal`, and the
+All unlisted nodes remain `source.surface.unowned`. Every node except the
+parameter ownership nodes uses its exact Surface range. Nodes 65/47 use the
+parameter declaration anchor `125..126` required by the frozen Task-248P
+context contract while the parameter payload row retains source range
+`121..145` and declaration range `125..126`. Every node has
+`TypingState::Unknown`, `NodeRecoveryState::Normal`, and the
 lower-authenticated context link; role site validation also authenticates the
 base node's kind. Any wrong kind returns `InvalidArenaOwnership` before row
 publication.
@@ -693,7 +702,10 @@ After Task 249PI, Task 264 may change only the new checker module, checker
 crate export, typed/final one-shot owners and exhaustive serializers, lint
 policy, the new private runner route and parent facades, one runner test leaf,
 mechanical active-count assertions, the two new fixture/sidecar pairs, one
-trace row, and synchronized derived EN/JA records. Parser, resolver, Cargo,
+trace row, one `#[cfg(test)]`-only generic raw-term corruption seam required to
+exercise the frozen impossible-state `it` validation, and synchronized derived
+EN/JA records. The seam adds no production behavior or public API. Parser,
+resolver, Cargo,
 canonical specs, existing `.miz`, existing sidecars/expectations, existing
 trace rows, Task-259 validation, and unrelated lower producers are forbidden.
 
@@ -728,3 +740,50 @@ inventory selecting Task 249PI. Task 249PI then commits docs and implementation
 separately and returns automatically to Task 264. Task 264 implementation has
 the same reviews and hard gates plus the projected executable counts, exact
 count/hash verification, and one dedicated logical-task commit.
+
+## Public Enum Policy
+
+| Public enum | Compatibility policy |
+| --- | --- |
+| `SourcePropertyImplementationStyle` | `#[non_exhaustive]`; callers must tolerate later explicitly frozen implementation styles. |
+| `SourcePropertyDefiniensTarget` | `#[non_exhaustive]`; callers must tolerate later explicitly frozen lower-root targets. |
+| `SourcePropertyCorrectnessKind` | `#[non_exhaustive]`; callers must tolerate later explicitly frozen correctness kinds. |
+| `SourcePropertyImplementationRecovery` | `#[non_exhaustive]`; callers must tolerate later recovery classes. |
+| `SourcePropertyImplementationError` | `#[non_exhaustive]`; callers must not exhaustively match validation failures. |
+
+No exhaustive public enum exceptions are owned by this module.
+
+## Implemented Task 264 Result
+
+The frozen contract is implemented without changing canonical specifications,
+pre-existing fixtures, or pre-existing expectations. Checker production is
+`29` paths / `162347` lines, with path/content hashes
+`37b91c2c419b83fa63150fe65d09b56c474dfa3d61134ba84056009dcdb923c1` /
+`450abc3b7407f206c27b04613737716cf2192fb46c8960c8e167fcf0900fa143`.
+Checker library tests are `478`, with raw/normalized hashes
+`b3d0b2e398899adac6b94c7bbaba93d89fdc2067452e6b3c16efb60783401b8d` /
+`4d9c7f9821182f08aa37686c7fecc1374d3857fdb7fdd64c83520dd05988d500`.
+
+Runner production is `36` paths / `69417` lines, with path/content hashes
+`38a20909d1f89aa2a4c325fb47126cc911bb943b7fe1190dc668713f64ad49e2` /
+`72cc9036654639dff5933dced07e79ec6132696b5f92eca5e0149085f4651d91`.
+Runner library tests are `532`, with raw/normalized hashes
+`8122a53fddb8ee98cf1225f43c4f6966f3f7b5718673f55218601ca3464ca293` /
+`fbd9e691357c14cd413df7ffd46677e34914bbacffca4dc2fe25a856d3b9434a`.
+
+The two source/sidecar hashes are equals
+`175135aaf40b9eab1a28e73ca1aae9f250e66278410d50575cdd279f6d7a2784` /
+`c491d7ea65e1c096d869af4666a06a053a5a0b213d9e79483d13e5ec91b75b6e`
+and means
+`cc90659f10cae4ef68890624df9b8b9d3f0e830dae5e20cc195dc8b263c5fa2b` /
+`bced77302602f43f3237424aa2963e5522c1458e879e606c68d1a516cd737c3a`.
+Trace hash is
+`55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`.
+Metadata is `428/395`, pass/fail `235/193`, active stages
+`101/7/205/1`, type coverage `259 = 247 + 12`, and warnings/errors `23/0`.
+Plan/parse/declaration/type/proof stdout hashes are
+`700f4bf503783742cefd8004fa095675b7476d46e9a3a6dd439916d237eb6718`,
+`a8a7aa639d2ebc65eddc923c7e9369ea5637d50e935f808600f446da1bfbda56`,
+`71e83ba0b20d4015e07b3bd2c0c4db2837b6151d1251812caed7954530d53c74`,
+`4b2c7bd5ec3cc56e5672fb351126126230ec84fba9bd2bd9049a516d378fab7f`,
+and `ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`.

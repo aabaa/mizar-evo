@@ -720,6 +720,7 @@ use type_elaboration::{
     source_parenthesized_reserved_variable_membership_detail_keys,
     source_parenthesized_two_edge_local_mode_reserved_variable_equality_detail_keys,
     source_predicate_definition_transport_detail_keys,
+    source_property_implementation_transport_detail_keys,
     source_reserved_object_variable_equality_detail_keys,
     source_reserved_object_variable_inequality_detail_keys,
     source_reserved_object_variable_type_assertion_detail_keys,
@@ -1719,6 +1720,15 @@ fn type_elaboration_detail_keys(
         return keys;
     }
     if let Some(keys) = source_functor_definition_transport_detail_keys(
+        &ast,
+        resolver.module.clone(),
+        &resolver.shells,
+        &symbols,
+        &source_text,
+    ) {
+        return keys;
+    }
+    if let Some(keys) = source_property_implementation_transport_detail_keys(
         &ast,
         resolver.module.clone(),
         &resolver.shells,

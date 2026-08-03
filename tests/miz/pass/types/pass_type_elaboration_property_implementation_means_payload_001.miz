@@ -1,0 +1,13 @@
+definition
+  struct Task264Carrier where
+    field carrier -> set;
+    property marker -> set;
+  end;
+end;
+
+definition
+  let M be Task264Carrier;
+  property M.marker means it = it;
+  existence by computation(steps: 1);
+  uniqueness by computation(steps: 1);
+end;

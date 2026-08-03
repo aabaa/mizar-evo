@@ -4329,7 +4329,7 @@ criteriaは[payload_family_decomposition.md](./payload_family_decomposition.md)
 - [x] **Task 261:** attribute-definition producer。
 - [x] **Task 262:** mode-definition producer。
 - [x] **Task 263:** structure/inheritance/constructor-definition producer。
-- [ ] **Task 264:** property-implementation producer。parser Task 48に依存。
+- [x] **Task 264:** property-implementation producer。parser Task 48に依存。
 - [ ] **Task 269:** proof-local declaration/binding producer。
 - [ ] **Task 270:** inline-definition closure/capture/substitution-request producer。
 - [ ] **Task 271:** `reconsider` intent/coercion/evidence-request producer。
@@ -6369,7 +6369,12 @@ runner、docs-only implementation commitはproducer taskを満たさない。
 - [x] Exact 32-document targetを
   `4c3f74b053d31cae45b8af3fc478498b4a112768`としてcommitし、fresh Task249PI
   selectionをcompleteする。
-- [ ] Task249PI docs/implementation後Task264 implementationへ自動復帰する。
+- [x] Task249PI docs/implementation後Task264へ自動復帰し、frozen checker/runner
+  transportだけを実装した。
+- [x] Task264 review、全9 gate、exact count/hash verificationを完了し、
+  parent-owned commit用task-only targetを保存する。
+- [ ] commit後clean fresh inventoryを確認し、次のdependency-ready taskへ
+  自動継続する。
 
 ## Checker Task 249PI property-type composition prerequisite
 
@@ -6389,4 +6394,6 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   verificationはPASSした。
 - [x] source/doc reviewは**NO FINDINGS**、final qualityはhard gate 9件PASS、score
   capなし`100/100`。
-- [ ] Task249PIへproperty semantics/runner/corpus/adjacent lower workを混ぜずTask264へ戻る。
+- [x] reviewed checker-only Task249PI implementationを
+  `73a34f94c7d46d7c0698b09a43ab3e1f00bb07a7`としてcommitし、Task249PIへ
+  property semantics/runner/corpus/adjacent lower workを混ぜずTask264へ戻った。

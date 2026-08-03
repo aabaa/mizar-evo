@@ -24,6 +24,7 @@ public method は、module spec が table、builder、output API として記述
 - [source_atomic_formula.md](./source_atomic_formula.md)
 - [source_attribute_definition.md](./source_attribute_definition.md)
 - [source_functor_definition.md](./source_functor_definition.md)
+- [source_property_implementation.md](./source_property_implementation.md)
 - [source_mode_definition.md](./source_mode_definition.md)
 - [source_predicate_definition.md](./source_predicate_definition.md)
 - [source_structure_definition.md](./source_structure_definition.md)
@@ -143,6 +144,7 @@ ControlFlowIr、VC payload、proof evidence の AST-wide source-to-checker gap �
 - `source_composite_formula`
 - `source_formula_composition`
 - `source_functor_definition`
+- `source_property_implementation`
 - `source_mode_definition`
 - `source_predicate_definition`
 - `source_context`
@@ -576,6 +578,46 @@ bounded gap: parameter/guard/return-type goal composition、FOL correctness、
 proof/justification verification、discharge、definition acceptance、activation、
 fact/axiom、call/overload、conditional definiens、mixed predicate/functor
 acceptance、Core/CFG/VCは本module外である。
+
+### `source_property_implementation`
+
+generated public newtype:
+
+- `SourcePropertyImplementationId`、`SourcePropertyParameterId`、
+  `SourcePropertyTargetId`、`SourcePropertyDefiniensId`、
+  `SourcePropertyCorrectnessId`
+
+literal top-level public item:
+
+- `SourcePropertyImplementationHandoffInput`、
+  `SourcePropertyImplementationInput`、`SourcePropertyParameterInput`、
+  `SourcePropertyTargetInput`、`SourcePropertyDefiniensInput`、
+  `SourcePropertyCorrectnessInput`
+- `SourcePropertyImplementationStyle`、`SourcePropertyDefiniensTarget`、
+  `SourcePropertyCorrectnessKind`、`SourcePropertyImplementationRecovery`
+- `SourcePropertyImplementation`、`SourcePropertyParameter`、
+  `SourcePropertyTarget`、`SourcePropertyDefiniens`、`SourcePropertyCorrectness`
+- `SourcePropertyImplementationTable`、`SourcePropertyParameterTable`、
+  `SourcePropertyTargetTable`、`SourcePropertyDefiniensTable`、
+  `SourcePropertyCorrectnessTable`
+- `SourcePropertyImplementationHandoff`、
+  `SourcePropertyImplementationProjection`、
+  `SourcePropertyImplementationError`、
+  `SourcePropertyImplementationProducer`
+
+対応:
+
+| spec promise | source evidence | test evidence | status |
+|---|---|---|---|
+| immutable syntax-free table 5個がexact struct-property implementation、parameter、resolver-backed target、definiens、profile-dependent correctness rowを保持する。 | `src/source_property_implementation.rs`のpublic input/row/dense ID/table/getter。 | exact equals/means checker testとreal-source runner consumer 2件。 | means `1/1/1/1/2`、equals `1/1/1/1/0`としてimplemented。 |
+| producerはTask248P/249PI/252/254/256 lower owner、resolver provenance、declared return row、typed arena、complete fingerprintをauthenticateする。 | `SourcePropertyImplementationProducer::build`、replay validation、fail-closed error。 | independent row/lower/resolver/return/fingerprint/arena corruption test。 | syntax parsing/semantic goal compositionなしでimplemented。 |
+| Meansはretained baselineへPending existence/uniquenessをappendしEqualsはzero、Typed/final ownerはatomic install/replayする。 | projection、`TypedAst::with_source_property_implementation`、final getter。 | nonempty-baseline transaction、orphan/extra rejection、deterministic replay、Task259 isolation。 | mutually exclusive Task264 ownership。 |
+| public surface/enumはdocumented/forward-compatibleである。 | 上記5 ID、6 input、4 data enum、5 row/table、handoff、projection、error、producer。全public enumはnon-exhaustive。 | public-enum/source-spec-audit lint policy。 | production syntax-dependency exceptionなしでguard。 |
+
+bounded gap: goal/guard/return/definiens composition、`it` substitution、proof/
+justification verification、discharge、acceptance、fact/axiom、property-value
+lookup、overlap/coherence、call/result typing、conditional profile、Core/CFG/VCは
+本module外である。
 
 ### `source_mode_definition`
 
@@ -5459,3 +5501,19 @@ classified lower `source_drift`、paired `design_drift`、4-test `test_gap`はex
 frozen transportでclosed。bounded test gapとorphan-installation gap修正後、test/
 implementation再reviewは**NO FINDINGS**。spec/corpus/trace/semantic creditは変えず、
 Task264が全frozen semantic responsibilityを保持する。
+
+## Task 264 implemented source/specification audit
+
+public syntax-free `source_property_implementation` moduleはfrozen five-table
+equals/means transport、exact resolver targetとdeclared return-row association、
+complete lower fingerprint、means-only Pending existence/uniqueness intakeを
+実装する。Typed/final ownerはTasks 259--263とmutually exclusiveで、proof、
+discharge、acceptance、fact、formula result、diagnostic、Core IR、control-flow IR、
+VCをpublishしない。
+
+canonical由来pass fixture 2件とcovered trace row 1件がTask264 `test_gap`をcloseし、
+exact checker testsがconstruction/corruption/transactional installation/replay/
+orphan-extra obligation/Task259 isolation gapをcloseする。Parameter declaration
+anchorとEquals selector-member ownershipの修正はderived designを既存frozen
+Task248P/254 public APIへ整合させる。`doc/spec`、existing `.miz`、existing
+expectation intentは変更せず、このbounded transactionにblocking `spec_gap`はない。
