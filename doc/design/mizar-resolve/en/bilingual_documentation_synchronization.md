@@ -246,3 +246,15 @@ the same hashes, and no corpus/trace/runner/checker/metadata coverage delta.
 Both record findings-free consistency/full verification and independent final
 quality at uncapped `100/100` with all nine hard gates PASS. Only the dedicated
 implementation commit and fresh inventory remain before returning to Task 263.
+
+## Checker Task 264R Frozen Synchronization
+
+The English and Japanese resolver plan, TODO, declarations, symbols, source/
+specification correspondence, and module-boundary records freeze the same
+context-only `PropertyImplementation` shell. Both record Chapter 7 placement,
+Chapter 13's means-only `it` restriction, canonical absence of ad-hoc `assume`,
+referenced-property return-type lookup as later work, append-only enum/code/key,
+semantic-sibling and `LocalSource` anchor stability, exact fixture hashes and
+profiles, four implementation files, two future tests, `146 -> 148`, and zero
+corpus/checker/runner/trace/Cargo credit. Any change to one language requires
+the matching logical update before review can pass.

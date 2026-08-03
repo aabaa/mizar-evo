@@ -767,5 +767,26 @@ cargo test -p mizar-vc
 - [x] source/documentation consistencyを**NO FINDINGS**、全full verification
   gate、independent final qualityを全9 hard gate PASS、score capなし、valid
   `100/100`（`20/20/15/15/10/10/5/5`）で完了。
-- [ ] exact staging、dedicated implementation commit、post-commit fresh
+- [x] exact staging、dedicated implementation commit
+  `997457dd3189030aa3b137b568ce82fed456fe1e`、post-commit fresh
   inventoryを完了してChecker Task 263へ戻る。
+
+## Checker Task 264R property-implementation shell prerequisite
+
+- [x] Chapter 7、Parser Task 48 pass/recovery fixture、declaration/symbol public API、
+  source behavior、count/hash、origin delta、protected stashをfresh inventory。
+- [x] dropped represented shellを`source_drift`、context-only/no-symbol contract欠落を
+  `design_drift`、regression欠落を`test_gap`、identity流用を
+  `boundary_violation`、origin divergenceをreport-only `repo_metadata_conflict`と分類。
+- [x] parentless source-order shell intake、range/recovery provenance、no projection/identity/
+  property-owned contribution effect、existing `LocalSource` contribution/anchorとsibling
+  fingerprintの保存、exact test 2件、pass/recovery profile/hash、implementation scope、count
+  impact、禁止範囲、exit criteriaをEN/JA同期文書にfreeze。
+- [x] review-only specification/boundary auditを**NO FINDINGS**まで反復し、docs-only
+  verificationと全9 final-quality gateをuncapped `100/100`でPASS。
+- [ ] 同期文書のみstage/commitし、clean inventoryとprotected stash不変を確認。
+- [ ] fresh inventory後exact resolver file 4件だけをimplementし、exact test 2件と
+  resolver library count `146 -> 148`だけを追加。corpus/checker/runner/trace/Cargoは不変。
+- [ ] test-sufficiency/implementation/source-docs/final qualityを全てfindings-freeとし、
+  full verification、exact staging、implementation commit、clean fresh inventory後Checker
+  Task 248Pを選択。

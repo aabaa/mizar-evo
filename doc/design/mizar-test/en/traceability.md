@@ -2317,3 +2317,14 @@ the sidecar reciprocally cites only that row. Requirements/cases are
 trace SHA-256 is
 `cf0ef6d28a132bcbafc8aa1214ded935a715fdffdb3421c37d66c35954f2a06c`.
 No neighboring trace status, owner, or deferred rationale changed.
+
+## Checker Task 264R Traceability No-Op
+
+Task 264R adds no `spec_trace.toml` row, status, test backlink, fixture,
+expectation, or executable coverage credit. The existing Parser Task 48
+property-implementation row and its pass/fail files are read-only lower
+oracles; the overlap-coherence semantic seed remains inactive. Requirements/
+cases stay `394/426`, type requirements stay `258 = 246 covered + 12 deferred`,
+and trace SHA-256 remains
+`cf0ef6d28a132bcbafc8aa1214ded935a715fdffdb3421c37d66c35954f2a06c`.
+The later Task 264 trace decision is not pre-authorized here.

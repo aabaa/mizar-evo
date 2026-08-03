@@ -1552,3 +1552,11 @@ transaction、private baseline snapshot、exact consumer、sole pass/trace pair�
 unchanged semantic deferralを同期する。checker/runner tests `467/528`、metadata
 `426/394`、active type `203`、production `28/157908`と`35/67939`、同じ
 path/content・test-list・CLI・trace hashを記録し、bilingual driftはない。
+
+## Task 264R lower-prerequisite synchronization
+
+EN/JA checker recordはTask 264がresolver Task 264R、次にchecker Task 248Pにgateされる
+ことで一致する。Task 264Rはcontext shell、append-only lower fingerprint、resolver test
+2件だけをownし、checker source/countを変えない。両languageはexact property payloadを
+deferしつつ、canonical no-`assume`、referenced-property return-type lookup、means-only/
+no-equals `it`、Task-259分離、proof/acceptance/fact/VCを発明しないことを同期する。

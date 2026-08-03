@@ -11645,3 +11645,10 @@ behaviorは不変である。runner productionは`35/67939`、path/content hash�
 `4218936ff3ee3baaceb7c0723307ad266d722d0a2473e8b7f82e11c75aeb2b6e` /
 `a543608c5075ffed97141626ebbf8d952a847051a34d6782097329b44aa1d09e`。
 generic mixed gap/sibling production routeは不変である。
+
+## Checker Task 264R no-runner module boundary
+
+`mizar-test` source/test/manifest/Cargo targetは変更しない。resolver unit-test-only deltaは
+runner facade/private routeを越えない。runner productionは`35/67939`と上記hash、
+metadata/lint inventoryは`137`/`14`のまま。Task 248Pも別にfreezeされない限り
+no-runnerとし、後続bounded consumerはChecker Task 264のみが追加できる。

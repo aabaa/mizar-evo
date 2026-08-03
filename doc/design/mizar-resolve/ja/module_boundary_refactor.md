@@ -206,3 +206,12 @@ fresh inventory後もTask 263がsole future production consumerである。
 
 final boundary/consistency reviewは**NO FINDINGS**、全9 quality gateはcapなし
 `100/100`でPASS。exact staging/commitが残る。
+
+## Checker Task 264R frozen boundary
+
+lower correctionは既存module内に留める。enum/mapping/shell testは
+`declarations.rs` / `declarations/tests.rs`、no-projection、stable sibling/anchor
+fingerprint、append-only code/key、symbol testは`symbols.rs` / `symbols/tests.rs`。
+new module/dependency/Cargo target/public semantic identity/diagnostic classは追加しない。
+public ABI deltaはnon-exhaustive append-only shell variantだけ。Checker Task 248P/264は
+separate consumerのままで、module split/line-count threshold decisionを変えない。

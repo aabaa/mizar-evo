@@ -221,3 +221,13 @@ consumer after this lower commit and fresh inventory.
 
 The final boundary/consistency review reports **NO FINDINGS**, and all nine
 quality gates PASS at uncapped `100/100`; exact staging and commit remain.
+
+## Checker Task 264R Frozen Boundary
+
+The lower correction remains inside existing modules: enum/mapping and shell
+tests in `declarations.rs` / `declarations/tests.rs`, plus no-projection,
+stable sibling/anchor fingerprints, append-only code/key, and symbol tests in
+`symbols.rs` / `symbols/tests.rs`. It adds no module, dependency, Cargo target,
+public semantic identity, or diagnostic class. The only public ABI delta is the
+non-exhaustive append-only shell variant. Checker Task 248P and Task 264 remain
+separate consumers; no module split or line-count threshold decision changes.

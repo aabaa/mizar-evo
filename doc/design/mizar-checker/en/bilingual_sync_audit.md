@@ -1618,3 +1618,12 @@ exact consumer, sole pass/trace pair, and unchanged semantic deferrals. Both
 record checker/runner tests `467/528`, metadata `426/394`, active type `203`,
 production `28/157908` and `35/67939`, and the same path/content, test-list,
 CLI, and trace hashes. No bilingual ownership or count drift remains.
+
+## Task 264R Lower-Prerequisite Synchronization
+
+EN/JA checker records agree that Task 264 is gated first by resolver Task 264R
+and then checker Task 248P. Task 264R owns only the context shell, append-only
+lower fingerprints, and two resolver tests; it changes no checker source or
+counts. Both languages defer the exact property payload while pinning canonical
+no-`assume`, referenced-property return-type lookup, means-only/no-equals `it`,
+Task-259 separation, and no invented proof/acceptance/fact/VC behavior.

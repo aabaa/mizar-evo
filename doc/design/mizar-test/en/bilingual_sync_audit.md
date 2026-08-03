@@ -1559,3 +1559,12 @@ profile, checker `2/4/1/2/0`, four runner tests, sole pass/trace pair, and all
 semantic exclusions. They agree on runner `528`, production `35/67939`,
 metadata `426/394`, active type `203`, warnings/errors `23/0`, and all measured
 production, test-list, CLI, corpus, sidecar, and trace hashes.
+
+## Checker Task 264R No-Runner Synchronization
+
+EN/JA agree that resolver Task 264R reuses the Parser Task 48 pass/recovery
+fixtures only as read-only probes and keeps the inactive coherence seed
+byte-identical. It adds no runner route, corpus artifact, expectation, trace
+row/status/backlink, metadata assertion, diagnostic key/code, or CLI output.
+All post-Task-263 counts and hashes remain synchronized; a future runner
+consumer belongs only to Checker Task 264 after Task 264R and Task 248P.

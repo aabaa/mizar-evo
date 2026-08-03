@@ -6639,5 +6639,22 @@ implementation commit does not satisfy a producer task.
   implementation audits.
 - [x] Complete test-sufficiency, implementation, source/documentation, and final
   quality reviews with **NO FINDINGS**; all nine gates PASS with no score cap
-  at `100/100`, and all verification passes. Preserve exact Task-263 commit
-  readiness for parent-owned staging, then continue automatically to Task 264+.
+  at `100/100`, and all verification passes. Complete Task-263 implementation
+  commit `f11a517e91433b461447522eff06cd85e6187063` and clean fresh inventory,
+  then continue automatically to Task 264+.
+
+## Checker Task 264 Lower-Prerequisite Sequence
+
+- [x] Fresh-inventory Task 264 and classify the dropped parser-represented
+  property-implementation shell as lower `source_drift`, missing contracts as
+  `design_drift`, regressions as `test_gap`, and identity fabrication as
+  `boundary_violation`; confirm no blocking `spec_gap`.
+- [x] Freeze resolver Task 264R as a docs-first, context-only shell intake with
+  exact four-file/two-test scope and no checker/corpus/trace impact.
+- [ ] Complete and commit Task 264R docs and implementation, with fresh
+  inventory after each commit.
+- [ ] Fresh-inventory and freeze separate checker Task 248P binding-context
+  admission; complete its docs and implementation commits without property
+  semantics or runner credit.
+- [ ] Only then freeze Task 264's exact property payload contract and preserve
+  Task 259 separation plus all authority-limited semantic deferrals.

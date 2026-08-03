@@ -6259,3 +6259,28 @@ multiple-edge/diamond/cycle/rename/narrowing and nonidentical coherence
 profiles remain outside Task 263; property implementation remains Task 264.
 Constructor/selector/update semantics, definition acceptance, facts, proofs,
 and downstream IR remain explicitly deferred.
+
+## Checker Task 264R Frozen Lower Representation Coverage
+
+Fresh post-Task-263 inventory confirms that Chapter 7 §7.4.1 and Parser Task
+48 already represent property implementations as top-level Surface nodes, but
+`mizar-resolve::declarations` drops those nodes. Task 264R assigns only the
+missing context-shell representation to `mizar-resolve`: one non-exhaustive
+shell kind, source-order/range/recovery provenance, and no signature projection
+or semantic identity. The matching `source_drift`, `design_drift`, and
+canonical-derived `test_gap` are bounded by the Parser Task 48 pass and recovery
+oracles. Fabricating selector, definition, redefinition, property-clause, or
+registration identity remains a `boundary_violation`.
+
+This documentation prerequisite changes no fixture, sidecar, expectation,
+trace row/backlink/status/count, active runner, metadata, diagnostic, CLI, or
+coverage credit. The inactive overlap-without-coherence seed remains unchanged.
+Task 264R implementation may add exactly two resolver unit tests and change
+only resolver library count `146 -> 148`. Chapter 7 remains partial: Checker
+Task 248P must first admit the shell to source binding context, then Checker
+Task 264 must separately own property provenance, parameters/defining-mode
+context, `means`/`equals`, the absence of an ad-hoc `assume` source subtree,
+Chapter 13's means-only/no-equals `it` restriction, referenced-property
+return-type lookup, definiens transport, initial-obligation
+interaction, Typed/Resolved ownership, runner coverage, and all authority-
+bounded semantic deferrals. No proof, acceptance, fact, or VC credit is granted.

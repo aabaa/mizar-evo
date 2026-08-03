@@ -420,3 +420,21 @@ conflict 0件を生成する。same-structure field/property testは両orderでs
 existing ownerless/non-selector duplicate matrixは不変。本実装はfrozen
 `source_drift`とresolver `test_gap`を閉じるが、structure inheritance、constructor
 selection、checker semanticsはTask 263へdeferする。
+
+## Checker Task 264R context-only symbol boundary
+
+`DeclarationShellKind::PropertyImplementation`はTask 264Rでcontext-onlyである。
+`SignatureProjectionExtractor`はprojectionを返さず、normal symbol collectionは
+property-owned `SymbolId`、`DefinitionId`、`RegistrationId`、overload/redefinition
+relation、lexical summary、dependency、contribution effect、diagnosticを作らない。
+existing one-per-source `LocalSource` contributionは保存し、anchorはproperty-
+implementation shellを無視し、represented semantic shellがなければ`Point(0)`のまま。
+context-only property shellはsemantic sibling ordinalに寄与せず、既存siblingの
+structural path、`SymbolId`、origin、definition、contribution effectを変えない。
+existing enum order/code/keyは不変とし、new variantは`VisibilityWrapper`の後ろに
+append-onlyでcode `28`、key `property-implementation`とする。caller-fabricated
+projectionはidentityを受けず、既存`ContextOnlyShell` guard/diagnosticを維持する。
+`Selector`、`PropertyClause`、`PropertyRedefinition`、
+`RegistrationKind::Property`として表現しない。既存siblingのidentity/orderは
+exactに保存する。property reference/provenance、implementation domain、return type、
+definiens payloadはresolver symbol tableではなく後続checker source producerがownする。

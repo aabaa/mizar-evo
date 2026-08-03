@@ -2213,3 +2213,13 @@ covered/passとなり、new pass sidecarへのbacklinkをexactly 1件持つ。si
 `258 = 246 covered + 12 deferred`、trace SHA-256は
 `cf0ef6d28a132bcbafc8aa1214ded935a715fdffdb3421c37d66c35954f2a06c`。
 neighbor trace status/owner/deferred rationaleは変更しない。
+
+## Checker Task 264R traceability no-op
+
+Task 264Rは`spec_trace.toml` row/status/test backlink/fixture/expectation/executable
+coverage creditを追加しない。existing Parser Task 48 property-implementation rowと
+pass/fail fileはread-only lower oracle、overlap-coherence semantic seedはinactiveのまま。
+requirements/casesは`394/426`、type requirementsは`258 = 246 covered + 12 deferred`、
+trace SHA-256は
+`cf0ef6d28a132bcbafc8aa1214ded935a715fdffdb3421c37d66c35954f2a06c`のまま。
+後続Task 264のtrace decisionをここで先取りでauthorizeしない。

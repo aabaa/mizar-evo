@@ -57,6 +57,7 @@ collector は、次の表現済み parser node kind に対して declaration she
 | `PredicateDefinition` | `PredicateDefinition` | type/signature checking は行わない。 |
 | `FunctorDefinition` | `FunctorDefinition` | type/signature checking は行わない。 |
 | `ModeDefinition` | `ModeDefinition` | type/signature checking は行わない。 |
+| `PropertyImplementation` | `PropertyImplementation` | context-only source shell。property identity、signature、body semanticsは持たない。 |
 | `StructureDefinition` | `StructureDefinition` | field typing や inheritance validation は行わない。 |
 | `AlgorithmDefinition` | `AlgorithmDefinition` | contract/body lowering は行わない。 |
 | `AttributeRedefinition` | `AttributeRedefinition` | compatibility checking は行わない。 |
@@ -147,3 +148,32 @@ task R-026 は frontend task 25 の public-enum decision procedure をこの mod
 この module は exhaustive な公開 enum 例外を所有しない。下流 consumer は wildcard
 または fallback arm を持たなければならない。resolver 内部の match は、仕様化済みの
 挙動を実装する範囲で、現在表現されている variant に対して exhaustive でよい。
+
+## Checker Task 264R property-implementation shell intake
+
+Chapter 7 §7.4.1はproperty implementationを独自のparameter/contextと
+`means`/`equals` definiensを持つ表現済みtop-level declarationとする。
+Parser Task 48はこれを既に`SurfaceNodeKind::PropertyImplementation`として
+exposeしており、declaration-shell collectionから落とす現状は
+lower-stage `source_drift`である。
+
+Task 264Rはexact `#[non_exhaustive]`
+`DeclarationShellKind::PropertyImplementation` variantを1つ追加し、表現済み
+Surface nodeをparentless/source-ordered shellにmapする。shellが保持するのは
+range、source-node provenance、recoveryだけである。parameter、defining-mode context、
+property reference、style/definiens、correctness condition、proof subtreeは
+transparent/excluded descendantのままとする。grammarにad-hoc `assume` subtreeと
+implementation-owned return typeを持たず、後続consumerはreferenced property declarationから
+return typeを得なければならない。Chapter 13の`it` descendantはここでは
+uninterpretedで、後続`means` consumerにだけ許可し`equals`には許可しない。
+property name/ownerの導出、definiens
+lowering、signature projection、symbol/definition/registration identity、diagnosticは作らない。
+
+parser pass fixtureはAST node 194、property implementation 4、parameter 4、
+formula definiens 2、term definiens 2、correctness condition 6、mode definition 1、
+signature projection/symbol/definition `1/1/1`、resolver diagnostic 0を不変とし、shellだけ
+`2 -> 6`にする。parser recovery fixtureはnode 109、property implementation 3、
+frontend diagnostic 13、parameter 3、formula/term definiens `1/2`、correctness condition 5、
+mode definition 1、projection/symbol/definition `2/2/2`、resolver diagnostic 0、後続theorem
+shellを保存し、shellだけ`3 -> 6`にする。inactive overlap/coherence seedは
+byte-identicalのままでexecutable creditを与えない。

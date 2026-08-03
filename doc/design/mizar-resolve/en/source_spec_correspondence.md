@@ -290,3 +290,19 @@ Final source/documentation consistency reports **NO FINDINGS**. All full
 verification gates pass, and independent quality reports **NO FINDINGS**, all
 nine hard gates PASS, and uncapped `100/100`; this result does not add corpus
 or trace credit.
+
+## Checker Task 264R Source/Specification Correspondence
+
+Chapter 7 §7.4.1 and Parser Task 48 establish property implementations as
+represented top-level declarations. The parser nodes currently disappearing
+before resolver shells are `source_drift`; the missing context-only shell and
+no-symbol contract is `design_drift`; the absent pass/recovery regressions are
+`test_gap`. There is no blocking `spec_gap`. Reusing selector, property-clause,
+redefinition, or registration identities would be a `boundary_violation`.
+
+Task 264R corrects only lower representation. It changes no canonical spec,
+existing `.miz` source, sidecar, expectation, trace metadata, checker/runner
+source, or coverage status. `spec_coverage_audit.md` records the future lower
+owner and keeps the Chapter-7 semantic and executable gaps open. Checker Task
+248P must separately admit the new shell to source binding context before
+Checker Task 264 may freeze and implement its property payload producer.

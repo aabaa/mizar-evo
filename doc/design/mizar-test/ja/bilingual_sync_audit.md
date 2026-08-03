@@ -1501,3 +1501,11 @@ grammar assertion、nonempty/same-length baseline mutationのchecker-local owner
 `2/4/1/2/0`、runner test 4件、sole pass/trace pair、全semantic exclusionを同期する。
 runner `528`、production `35/67939`、metadata `426/394`、active type `203`、
 warnings/errors `23/0`、全production/test-list/CLI/corpus/sidecar/trace hashが一致する。
+
+## Checker Task 264R no-runner synchronization
+
+EN/JAはresolver Task 264RがParser Task 48 pass/recovery fixtureをread-only probeとして
+reuseし、inactive coherence seedをbyte-identicalに保つことで一致する。runner route、
+corpus artifact、expectation、trace row/status/backlink、metadata assertion、diagnostic
+key/code、CLI outputは追加しない。post-Task-263 count/hashは全て同期し、future
+runner consumerはTask 264R/Task 248P後のChecker Task 264だけがownする。

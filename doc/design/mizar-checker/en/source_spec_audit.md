@@ -5628,3 +5628,15 @@ above, five checker tests, and exact private consumer close the frozen
 module export, source/spec, module-layout, syntax-boundary, and allow-rationale
 lint inventories are active. The profile is exactly `2/4/1/2/0`, with no
 undocumented semantic or diagnostic surface.
+
+## Task 264R Source/Specification Audit
+
+Canonical Chapters 5, 7, and 13 plus Parser Task 48 authorize a represented
+property-implementation context shell but no resolver identity or checker
+payload. The dropped shell is lower `source_drift`; absent shell/identity-
+stability design is `design_drift`; two resolver regressions are `test_gap`;
+reusing selector/property-clause/redefinition/registration identity is a
+`boundary_violation`. Chapter 16 supplies no new lower proof semantics. The
+frozen correction preserves existing semantic sibling paths, contribution
+anchor/effects, and all checker/corpus/trace state. Task 248P and Task 264 remain
+open, so there is no undocumented checker semantic surface or coverage credit.

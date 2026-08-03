@@ -5390,3 +5390,13 @@ checker test 5件、exact private consumerがfrozen `source_drift`/`test_gap`を
 public enum 4件はnon-exhaustiveで、module export/source-spec/module-layout/syntax-
 boundary/allow-rationale lint inventoryはactive。profileはexact `2/4/1/2/0`で、
 undocumented semantic/diagnostic surfaceはない。
+
+## Task 264R source/specification audit
+
+canonical Chapters 5/7/13とParser Task 48はrepresented property-implementation context
+shellをauthorizeするが、resolver identity/checker payloadは認可しない。dropped shellは
+lower `source_drift`、shell/identity-stability design欠落は`design_drift`、resolver
+regression 2件は`test_gap`、selector/property-clause/redefinition/registration identity流用は
+`boundary_violation`。Chapter 16はnew lower proof semanticsを与えない。frozen correctionは
+existing semantic sibling path、contribution anchor/effect、checker/corpus/trace stateを保存する。
+Task 248P/264はopenのままで、undocumented checker semantic surface/coverage creditはない。

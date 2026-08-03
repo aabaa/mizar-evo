@@ -1449,3 +1449,10 @@ lint inventoryへのbounded changeはsyntax-free production boundaryを保つ。
 checker productionは`28/157908`、path/content hashは
 `6e4bc96ef04cb5f011d53c651bb93549992e3c7fd0e7595b851d7181c8a65dcd` /
 `8f0d26afe33ac1c2d570c7704371b8b4e86357b59fb0cccab22ac820dacf990e`。
+
+## Task 264R no-checker-source boundary
+
+Task 264Rはchecker module/public APIを変更しない。owner fileはfrozen resolver production/
+test 4件。`binding_env.rs`は不変で、separate Task 248Pまでnew shellをadmitせず、
+property payload ownershipはさらにseparate Task 264とする。checker productionは
+`28/157908`と上記hashを保存し、module split/dependency/lint inventory/size decisionを変えない。

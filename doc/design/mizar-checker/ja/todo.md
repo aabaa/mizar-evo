@@ -6333,5 +6333,18 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   runner/pass pair/trace/auditsだけを実装する。
 - [x] test/implementation/source-doc/final reviewsを**NO FINDINGS**で完了し、
   全9 gatesをscore capなしの`100/100`でPASSし、全verificationもPASSする。
-  parent-owned staging用exact Task-263 commit readinessを保ち、その後Task 264+
-  へ自動継続する。
+  Task-263 implementation commit `f11a517e91433b461447522eff06cd85e6187063`とclean
+  fresh inventoryを完了し、その後Task 264+へ自動継続する。
+
+## Checker Task 264 lower-prerequisite sequence
+
+- [x] Task 264をfresh inventoryし、parser-represented property-implementation shell欠落を
+  lower `source_drift`、contract欠落を`design_drift`、regression欠落を`test_gap`、
+  identity fabricationを`boundary_violation`と分類し、blocking `spec_gap`なしを確認。
+- [x] resolver Task 264Rをdocs-first/context-only shell intakeとして、exact
+  file 4/test 2 scopeとchecker/corpus/trace無影響をfreeze。
+- [ ] Task 264R docs/implementationをcommitし、各commit後fresh inventory。
+- [ ] separate checker Task 248P binding-context admissionをfresh inventory/freezeし、property
+  semantics/runner creditなしでdocs/implementation commitを完了。
+- [ ] その後だけTask 264 exact property payload contractをfreezeし、Task 259分離と
+  authority-limited semantic deferralを保存。

@@ -61,6 +61,7 @@ kinds:
 | `PredicateDefinition` | `PredicateDefinition` | No type/signature checking. |
 | `FunctorDefinition` | `FunctorDefinition` | No type/signature checking. |
 | `ModeDefinition` | `ModeDefinition` | No type/signature checking. |
+| `PropertyImplementation` | `PropertyImplementation` | Context-only source shell; no property identity, signature, or body semantics. |
 | `StructureDefinition` | `StructureDefinition` | No field typing or inheritance validation. |
 | `AlgorithmDefinition` | `AlgorithmDefinition` | No contract/body lowering. |
 | `AttributeRedefinition` | `AttributeRedefinition` | No compatibility checking. |
@@ -153,3 +154,36 @@ No exhaustive public enum exceptions are owned by this module. Downstream
 consumers must keep wildcard or fallback arms; resolver-internal matches may
 remain exhaustive over the currently represented variants when implementing the
 specified behavior.
+
+## Checker Task 264R Property-Implementation Shell Intake
+
+Chapter 7 §7.4.1 makes a property implementation a represented top-level
+declaration with its own parameter/context and `means` or `equals` definiens.
+Parser Task 48 already exposes that declaration as
+`SurfaceNodeKind::PropertyImplementation`; dropping it from declaration-shell
+collection is therefore lower-stage `source_drift`.
+
+Task 264R adds exactly one `#[non_exhaustive]`
+`DeclarationShellKind::PropertyImplementation` variant and maps the represented
+Surface node to a parentless, source-ordered shell. The shell retains range,
+source-node provenance, and recovery only. Its parameter, defining-mode
+context, property reference, style/definiens, correctness conditions, and
+proof subtrees remain transparent/excluded descendants. The grammar has no
+ad-hoc `assume` subtree and no implementation-owned return type; a later
+consumer must obtain the return type from the referenced property declaration.
+Chapter 13's `it` descendant remains uninterpreted here and is available only
+to a later `means` consumer, never `equals`. The task does not derive a
+property name or owner, lower the definiens, create a signature projection,
+assign any symbol/definition/registration identity, or publish diagnostics.
+
+The parser pass fixture must move from two to six declaration shells without
+changing its 194-node AST, four property implementations, four parameters, two
+formula definientia, two term definientia, six correctness conditions, one mode
+definition, one signature projection, one symbol, one definition, or zero
+resolver diagnostics. The parser recovery fixture must move from three to six
+shells while retaining its 109 nodes, three property implementations, thirteen
+frontend diagnostics, three parameters, one formula definiens, two term
+definientia, five correctness conditions, one mode definition, two projections,
+two symbols, two definitions, zero resolver diagnostics, and the following
+theorem shell. The inactive overlap/coherence seed remains byte-identical and
+receives no executable credit.

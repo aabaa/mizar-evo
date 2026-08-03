@@ -812,5 +812,33 @@ Check the task off here once tests pass.
 - [x] Complete source/documentation consistency with **NO FINDINGS**, all full
   verification gates, and independent final quality with all nine hard gates
   PASS, no score cap, and valid `100/100` (`20/20/15/15/10/10/5/5`).
-- [ ] Complete exact staging, the dedicated implementation commit, and
-  post-commit fresh inventory; then return to Checker Task 263.
+- [x] Complete exact staging, the dedicated implementation commit
+  `997457dd3189030aa3b137b568ce82fed456fe1e`, and post-commit fresh
+  inventory; then return to Checker Task 263.
+
+## Checker Task 264R Property-Implementation Shell Prerequisite
+
+- [x] Fresh-inventory Chapter 7, Parser Task 48 pass/recovery fixtures,
+  declaration/symbol public APIs, source behavior, counts/hashes, origin delta,
+  and protected stash.
+- [x] Classify dropped represented shells as `source_drift`, the missing
+  context-only/no-symbol contract as `design_drift`, absent regressions as
+  `test_gap`, identity reuse as `boundary_violation`, and origin divergence as
+  report-only `repo_metadata_conflict`.
+- [x] Freeze parentless source-ordered shell intake, range/recovery provenance,
+  no projection/identity/property-owned contribution effect, preservation of
+  the existing `LocalSource` contribution/anchor and sibling fingerprints,
+  exact two tests, pass/recovery
+  profiles and hashes, implementation scope, count impact, exclusions, and
+  exit criteria in synchronized EN/JA documentation.
+- [x] Repeat review-only specification and boundary audits to **NO FINDINGS**;
+  pass docs-only verification and all nine final-quality gates at uncapped
+  `100/100`.
+- [ ] Stage and commit only the synchronized documentation prerequisite;
+  confirm clean inventory and protected-stash invariance.
+- [ ] Fresh-inventory and implement exactly the four frozen resolver files,
+  adding exactly two tests and changing the resolver library count `146 ->
+  148` with no corpus/checker/runner/trace/Cargo delta.
+- [ ] Complete findings-free test-sufficiency, implementation, source/docs,
+  and final quality reviews, full verification, exact staging, implementation
+  commit, and clean fresh inventory; then select Checker Task 248P.

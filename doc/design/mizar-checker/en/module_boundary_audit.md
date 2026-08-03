@@ -1491,3 +1491,12 @@ preserve the syntax-free production boundary. Checker production is
 `28/157908` with path/content
 hashes `6e4bc96ef04cb5f011d53c651bb93549992e3c7fd0e7595b851d7181c8a65dcd` /
 `8f0d26afe33ac1c2d570c7704371b8b4e86357b59fb0cccab22ac820dacf990e`.
+
+## Task 264R No-Checker-Source Boundary
+
+Task 264R modifies no checker module or public API. Its owner files are the four
+frozen resolver production/test files. `binding_env.rs` remains unchanged and
+cannot admit the new shell until separate Task 248P; property payload ownership
+then remains separate Task 264. Checker production stays `28/157908` with the
+hashes above, and no module split, dependency, lint inventory, or size decision
+changes in this documentation prerequisite.

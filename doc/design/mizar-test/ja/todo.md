@@ -3220,5 +3220,13 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
 - [x] docs commit後のfresh inventoryからexact route/tests/pass/traceだけを実装し、
   active audit/count/hashを同期する。
 - [x] 全review/verificationを**NO FINDINGS**、全9 hard gatesをscore capなしの
-  `100/100`でPASSし、parent-owned staging用にChecker Task 263と同じexact
-  logical implementation commit targetを保つ。
+  `100/100`でPASSし、Checker Task 263 implementation commit
+  `f11a517e91433b461447522eff06cd85e6187063`とclean fresh inventoryを完了する。
+
+## Checker Task 264R no-runner prerequisite
+
+- [x] runner/corpus/sidecar/expectation/trace/metadata/CLI影響ゼロをfreeze。
+- [x] Parser Task 48 fixture 2件をread-only lower probeとし、inactive coherence seedを
+  byte-identical/inactiveに保存。
+- [ ] docs/lower implementation commitを通じpost-Task-263 count/hashを再確認し、
+  Checker Task 264前にrunner consumerを追加しない。

@@ -275,3 +275,18 @@ correctness obligation、future Task-263 checker consumerについてpartialの�
 final source/documentation consistencyは**NO FINDINGS**。全full verification
 gateはPASSし、independent qualityも**NO FINDINGS**、全9 hard gate PASS、capなし
 `100/100`。この結果はcorpus/trace creditを追加しない。
+
+## Checker Task 264R source/specification correspondence
+
+Chapter 7 §7.4.1とParser Task 48はproperty implementationを表現済みtop-level
+declarationとして固定する。parser nodeがresolver shellの前で消える現状は
+`source_drift`、context-only shell/no-symbol contractの欠落は`design_drift`、
+pass/recovery regressionの欠落は`test_gap`である。blocking `spec_gap`はない。
+selector、property clause、redefinition、registration identityの流用は
+`boundary_violation`となる。
+
+Task 264Rはlower representationのみを修正する。canonical spec、既存`.miz`、
+sidecar、expectation、trace metadata、checker/runner source、coverage statusは変更しない。
+`spec_coverage_audit.md`はfuture lower ownerを記録するだけで、Chapter-7 semantic/
+executable gapをopenに保つ。Checker Task 264がproperty payload producerをfreeze/
+implementする前に、Checker Task 248Pがnew shellをsource binding contextへ別途admitする。

@@ -458,3 +458,24 @@ conflict marks in either order. The existing ownerless/non-selector duplicate
 matrix remains unchanged. This closes the frozen `source_drift` and resolver
 `test_gap`; structure inheritance, constructor selection, and checker
 semantics remain deferred to Task 263.
+
+## Checker Task 264R Context-Only Symbol Boundary
+
+`DeclarationShellKind::PropertyImplementation` is context-only in Task 264R.
+`SignatureProjectionExtractor` returns no projection for it, and normal symbol
+collection must create no property-owned `SymbolId`, `DefinitionId`,
+`RegistrationId`, overload/redefinition relation, lexical summary, dependency,
+contribution effect, or diagnostic. The existing one-per-source `LocalSource`
+contribution remains; its anchor ignores property-implementation shells and
+falls back to `Point(0)` when no represented semantic shell exists. Context-only
+property shells do not contribute to semantic sibling ordinals, so inserting
+them cannot change an existing sibling's structural path, `SymbolId`, origin,
+definition, or contribution effects. Existing enum order and kind codes/keys
+remain stable; the new variant is append-only after `VisibilityWrapper`, with
+code `28` and key `property-implementation`. A caller-fabricated projection
+retains the existing `ContextOnlyShell` guard/diagnostic rather than receiving
+an identity. It must not be represented as `Selector`, `PropertyClause`,
+`PropertyRedefinition`, or `RegistrationKind::Property`. Existing siblings keep
+their exact identities and order. The later checker source producer, not the
+resolver symbol table, owns property reference/provenance, implementation
+domain, return-type and definiens payloads.

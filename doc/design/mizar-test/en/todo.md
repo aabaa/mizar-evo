@@ -3441,5 +3441,13 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
 - [x] After the docs commit and fresh inventory, implement only the exact
   route/tests/pass/trace and synchronize active audits/counts/hashes.
 - [x] Pass all reviews and verification with **NO FINDINGS**, all nine hard
-  gates at uncapped `100/100`, and preserve the exact Checker Task-263
-  implementation commit target for parent-owned staging.
+  gates at uncapped `100/100`; complete Checker Task-263 implementation commit
+  `f11a517e91433b461447522eff06cd85e6187063` and clean fresh inventory.
+
+## Checker Task 264R No-Runner Prerequisite
+
+- [x] Freeze zero runner/corpus/sidecar/expectation/trace/metadata/CLI impact.
+- [x] Treat the two existing Parser Task 48 fixtures as read-only lower probes;
+  keep the inactive coherence seed byte-identical and inactive.
+- [ ] Reconfirm all post-Task-263 counts and hashes through the docs and lower
+  implementation commits; add no runner consumer before Checker Task 264.

@@ -230,3 +230,13 @@ cross-owner `75/10/8/8/0` result、same-owner `30/4/3/3/1` control、resolver te
 coverage deltaなしを記録する。両言語はfindings-free consistency/full verificationと
 independent final quality全9 hard gate PASS、capなし`100/100`を記録する。Task 263へ
 戻る前にdedicated implementation commit、fresh inventoryだけを残す。
+
+## Checker Task 264R frozen synchronization
+
+EN/JAのresolver plan、TODO、declarations、symbols、source/spec correspondence、
+module-boundary recordは同じcontext-only `PropertyImplementation` shellをfreezeする。
+両languageはChapter 7 placement、Chapter 13 means-only `it`、ad-hoc `assume`不在、
+referenced-property return-type lookupのlater ownership、append-only enum/code/key、semantic-
+sibling/`LocalSource` anchor stability、exact fixture hash/profile、implementation file 4件、
+future test 2件、`146 -> 148`、corpus/checker/runner/trace/Cargo creditゼロを同期する。
+一方の変更はreview PASS前に同じlogical updateをもう一方へ必要とする。
