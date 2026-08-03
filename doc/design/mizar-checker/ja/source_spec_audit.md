@@ -5287,3 +5287,16 @@ unresolved inhabitation request 1件、linked Pending `Sethood` row 1件がactiv
 ある。public enum/source-spec/documentation/syntax-boundary lint inventoryはmoduleを
 含む。syntax dependency、evidence result、proof、acceptance、fact、IR、VC、
 structure-definition creditは導入しない。
+## Task 249S frozen future public-surface audit
+
+fresh Task-263 preflightはstandalone structure-member type owner欠落を
+`source_drift`、canonical由来corruption/ownership test 4件を`test_gap`、
+fabricated bindingまたはdefinition-return/mode-RHS family reuseを
+`boundary_violation`に分類する。Chapter 5は十分でblocking `spec_gap`はない。
+
+Task 249Sは`source_type.md`でfreezeしたpublic dense ID、input、immutable
+row/table、handoff getter、producer、non-exhaustive error 5件を追加する。exact
+profileは`0/4/0/0/0/4`。new public enum type、syntax dependency、normalized type、
+diagnostic、obligation、semantic result、runner、corpus、trace creditは追加せず、
+existing non-exhaustive public `SourceTypeError`へvariant 5件をappendする。
+implementation時にliteral public/source-spec lint inventoryを同期する。

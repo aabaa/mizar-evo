@@ -2276,3 +2276,10 @@ and `3f510f819f03a3fd2922275b37ab71070e41d4f8e2e0e9c0c94147076552626a`.
 Active metadata is `425/393`, `232/193`, `101/7/202/1`, type `257/245`, and
 warnings/errors `23/0`. Credit remains exact transport and pending-obligation
 ownership only; the mixed structure gap and all semantic deferrals are intact.
+## Checker Task 249S Frozen Traceability No-Op
+
+Task 249S changes representation coverage only. It adds no corpus source,
+sidecar, expectation, or `spec_trace.toml` row/status/count. The existing mixed
+structure/mode gap remains active and unchanged. Chapter-5 structure-definition
+coverage stays partial until Task 263 adds one distinct spec-derived pass pair,
+sole covered backlink, metadata case, and real consumer.

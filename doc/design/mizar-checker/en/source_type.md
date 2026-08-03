@@ -546,3 +546,203 @@ Production is `26/153116`, with path/content hashes
 Runner/resolver/syntax and all corpus/trace/CLI/metadata values remain at the
 frozen baselines. Task 262 remains the sole next consumer and a separate
 logical task.
+## Task 249S Frozen Standalone Structure-Member Type Intake
+
+### Selection, authority, and classification
+
+Fresh Checker Task-263 preflight confirms that the exact 320-byte structure
+source has no parameter binding and has four independently written member type
+expressions. `SourceTypeProducer` deliberately requires one nonempty
+`SourceTypeApplicationInput` per authenticated `BindingId`; fabricating four
+bindings is a `boundary_violation`. Reusing Task-249R definition-return rows or
+the Task-249M mode-RHS row would also assign the wrong owner semantics. The
+missing standalone member-type owner is `source_drift`; this frozen lower
+contract repairs the corresponding `design_drift`. There is no blocking
+`spec_gap`: Chapter 5 §§5.1--5.3 explicitly give every field and property a
+written type, while §5.2 keeps property values out of constructor arguments.
+
+Task 249S is the mandatory checker-only lower prerequisite for Task 263. Its
+canonical source is exactly 320 bytes with a final LF and SHA-256
+`078eaee4b17341c9d8ebeb8a1f631ca984873bd07eb4e5d9c1a9486b39ac6671`:
+
+```mizar
+definition
+  struct Task263Base where
+    field carrier -> set;
+    property marker -> set;
+  end;
+
+  struct Task263Derived where
+    field carrier -> set;
+    property marker -> set;
+  end;
+
+  inherit Task263Derived extends Task263Base where
+    field carrier from carrier;
+    property marker from marker;
+  end;
+end;
+```
+
+Only the four declaration-member type expressions cross this lower boundary.
+Structure-definition nodes, structure and selector symbols, member kind,
+parent/root/path/view identity, inheritance targets and redefinitions, field
+coverage, constructor/selector declarations, coherence, and obligations remain
+Task-263 inputs or outputs.
+
+### Exact additive public ABI
+
+Task 249S adds the following public syntax-free types in this existing module.
+No new public enum type is added; five variants append to the existing
+non-exhaustive public `SourceTypeError` below.
+
+```rust
+pub struct SourceTypeStructureMemberId(usize);
+
+pub struct SourceTypeStructureMemberHandoffInput {
+    pub source_id: SourceId,
+    pub module_id: ModuleId,
+    pub members: Vec<SourceTypeStructureMemberInput>,
+}
+
+pub struct SourceTypeStructureMemberInput {
+    pub member_site: TypedSiteRef,
+    pub member_range: SourceRange,
+    pub source_ordinal: usize,
+    pub expression: SourceTypeExpressionInput,
+}
+
+pub struct SourceTypeStructureMemberTable { /* private entries */ }
+
+pub struct SourceTypeStructureMember {
+    /* private id, member_site, member_range, source_ordinal, root */
+}
+
+pub struct SourceTypeStructureMemberProducer;
+```
+
+The ID derives `Debug + Clone + Copy + PartialEq + Eq + PartialOrd + Ord +
+Hash`; both inputs and the immutable row derive `Debug + Clone + PartialEq +
+Eq`; the table additionally derives `Default`. The exact read-only surface is:
+
+```rust
+impl SourceTypeStructureMemberId {
+    pub const fn new(index: usize) -> Self;
+    pub const fn index(self) -> usize;
+}
+
+impl SourceTypeStructureMemberTable {
+    pub fn get(
+        &self,
+        id: SourceTypeStructureMemberId,
+    ) -> Option<&SourceTypeStructureMember>;
+    pub fn iter(
+        &self,
+    ) -> impl Iterator<Item = (SourceTypeStructureMemberId, &SourceTypeStructureMember)>;
+    pub const fn len(&self) -> usize;
+    pub const fn is_empty(&self) -> bool;
+}
+
+impl SourceTypeStructureMember {
+    pub const fn id(&self) -> SourceTypeStructureMemberId;
+    pub const fn member_site(&self) -> &TypedSiteRef;
+    pub const fn member_range(&self) -> SourceRange;
+    pub const fn source_ordinal(&self) -> usize;
+    pub const fn root(&self) -> SourceTypeExpressionId;
+}
+
+impl SourceTypeApplicationHandoff {
+    pub const fn structure_members(&self) -> &SourceTypeStructureMemberTable;
+}
+
+impl SourceTypeStructureMemberProducer {
+    pub fn build(
+        input: SourceTypeStructureMemberHandoffInput,
+        arena: &TypedArena,
+    ) -> Result<SourceTypeApplicationHandoff, SourceTypeError>;
+}
+```
+
+`SourceTypeProducer::build` initializes the new table empty, and the Task-249R
+and Task-249M producers preserve that empty table. The standalone producer
+transactionally constructs a new immutable handoff; it neither accepts nor
+fabricates a base. `SourceTypeError` gains the non-exhaustive variants
+`EmptyStructureMembers`, `StructureMemberCardinalityMismatch`,
+`InvalidStructureMember { structure_member: SourceTypeStructureMemberId }`,
+`InvalidStructureMemberSite { structure_member:
+SourceTypeStructureMemberId }`, and `UnsupportedStructureMember {
+structure_member: SourceTypeStructureMemberId }`.
+
+### Exact Task-263 lower profile and validation
+
+The successful handoff has applications/expressions/arguments/definition
+returns/mode RHS/structure members `0/4/0/0/0/4`:
+
+| Row | Member owner | Type expression/head | Root |
+| ---: | --- | --- | ---: |
+| 0 | node 53, `42..63`, ordinal 0 | nodes 52/51, `59..62`, `Bare`, builtin `set`, normal | 0 |
+| 1 | node 56, `68..91`, ordinal 1 | nodes 55/54, `87..90`, `Bare`, builtin `set`, normal | 1 |
+| 2 | node 61, `134..155`, ordinal 2 | nodes 60/59, `151..154`, `Bare`, builtin `set`, normal | 2 |
+| 3 | node 64, `160..183`, ordinal 3 | nodes 63/62, `179..182`, `Bare`, builtin `set`, normal | 3 |
+
+Exactly four rows are admitted. Dense ID, source ordinal, and root equal
+vector order. Every row and expression has the input source/module identity;
+each nonempty same-source member range is the exact normal arena-node range
+and contains its expression. Member, expression, and head sites are distinct
+exact `TypedSiteRef::Node` identities; role sites and duplicate sites are
+rejected. Expression/head ranges and recovery are revalidated against the
+arena. Every expression is argument-free, bare, normal builtin `set`, with
+both spellings exactly `set`. The failure order is empty, non-four
+cardinality, row/environment/range identity, site/arena identity, then
+unsupported expression shape.
+
+The handoff validator recognizes this profile while keeping it mutually
+exclusive with binding applications, arguments, definition returns, and mode
+RHS rows. `TypedAst` remains the sole owner through its existing optional
+`source_type` field and installation path; `ResolvedTypedAst` only
+clone-preserves the handoff. No second owner or installer is added.
+
+When the member table is empty, every existing debug byte remains unchanged.
+When present, member rows occur after mode-RHS rows and before expression rows:
+
+```text
+structure-member#<id> ordinal=<n> member_range=<start>..<end> member_site=node#<id> root=<expression-id>
+```
+
+The complete deterministic debug text is the Task-263 lower fingerprint.
+Task 263 refers to roots only through `SourceTypeStructureMemberId`, never
+through a fabricated `SourceTypeApplicationId`.
+
+### Tests, exclusions, audit impact, and exit
+
+Implementation adds exactly four checker library tests:
+
+1. `task_249s_exact_structure_member_build_and_legacy_debug`;
+2. `task_249s_member_corruption_fails_atomically`;
+3. `task_249s_arena_and_installation_drift_fail_closed`; and
+4. `task_249s_typed_final_replay_and_sibling_isolation`.
+
+They own exact API/profile/debug and legacy stability; row/environment/range/
+site/shape corruption and error precedence; arena plus installation
+revalidation; and deterministic replay, Typed/final clone preservation, and
+Task-249R/249M isolation. Checker library count projects `458 -> 462`;
+runner/resolver/syntax stay `524/146/59`. This prerequisite adds no runner,
+corpus source, sidecar, expectation, trace row/status/count, diagnostic,
+obligation, or metadata case.
+
+Forbidden and deferred are artificial bindings/applications; generalized
+structure-member type graphs; parameters/context; field/property
+classification; structure/member/resolver identity association; inheritance
+parents, roots, paths, views, coverage, constructors, selectors, or
+redefinitions; type equality/subtyping/inhabitation; coherence; goal/guard
+composition; proof/discharge/acceptance/facts/axioms/Core/CFG/VC; public
+diagnostics; and all Task-263 producer/runner/corpus work.
+
+The documentation prerequisite changes no production, fixture, sidecar,
+expectation, trace, test-list, CLI, manifest, or executable hash. It exits only
+after synchronized EN/JA documents, repeated review-only **NO FINDINGS**, all
+nine hard gates with uncapped quality at least 90, a dedicated docs commit,
+clean post-commit inventory, unchanged origin classification, and protected
+stash invariance. The separate implementation exits only after the exact four
+tests, `0/4/0/0/0/4` profile, full reviews and verification, a dedicated
+commit, and automatic return to Task 263.

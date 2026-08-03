@@ -2175,3 +2175,10 @@ reciprocalに同requirementだけをnameする。source/sidecar/trace hashは
 active metadataは`425/393`、`232/193`、`101/7/202/1`、type `257/245`、
 warnings/errors `23/0`である。creditはexact transport/Pending obligation owner
 だけで、mixed structure gapと全semantic deferralは不変である。
+## Checker Task 249S frozen traceability no-op
+
+Task 249Sはrepresentation coverageだけを変更する。corpus source、sidecar、
+expectation、`spec_trace.toml` row/status/countは追加しない。existing mixed
+structure/mode gapはactive/unchanged。Chapter-5 structure-definition coverageは
+Task 263がdistinct spec-derived pass pair 1件、sole covered backlink、metadata
+case、real consumerを追加するまでpartialのまま。

@@ -3414,5 +3414,14 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
   resolver test inventory `144 -> 146` and passes its exact probes/reviews.
 - [x] Complete all full/final gates with **NO FINDINGS**, all nine hard gates
   PASS, no score cap, and valid `100/100`.
-- [ ] After the separate implementation commit, fresh-inventory and freeze the
-  Task-263 private consumer and corpus delta.
+- [x] After implementation commit
+  `997457dd3189030aa3b137b568ce82fed456fe1e`, fresh-inventory the Task-263
+  boundary; checker Task 249S supersedes the direct consumer freeze as the
+  remaining lower prerequisite.
+
+## Checker Task 249S No-Runner Prerequisite
+
+- [x] Freeze exact checker-only `0/4/0/0/0/4` member-type intake and four local
+  tests without changing runner, corpus, trace, metadata, or CLI artifacts.
+- [ ] Keep the no-op boundary through the separate implementation commit, then
+  let Task 263 alone add its exact private consumer and pass/trace pair.

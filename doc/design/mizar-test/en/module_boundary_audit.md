@@ -12874,3 +12874,9 @@ selector. Runner production is `34/67087`; path/content hashes are
 Raw syntax/resolver objects remain wholly private; only syntax-free inputs
 cross into the checker. No proof, acceptance, fact, IR, VC, or Task-263
 structure owner moved.
+## Checker Task 249S No-Runner Boundary
+
+The prerequisite changes only checker `source_type.rs` in its later
+implementation commit plus synchronized design documents. No `mizar-test`
+production file, Cargo target, route, or fixture moves. Task-263 implementation
+will separately own its private exact consumer and corpus pair.

@@ -1472,3 +1472,8 @@ paired EN/JA runner recordはexact source/AST/resolver/lower consumer、test 4�
 sole pass backlink、runner library `524`、metadata `425/393`、production/
 test-list/CLI/corpus hash、unchanged mixed-gap/semantic deferralを同期する。
 bilingual synchronization exceptionはない。
+## Checker Task 249S synchronization addendum
+
+EN/JAはTask 249Sがchecker-only、exact lower profile `0/4/0/0/0/4`、checker
+test 4件、runner/corpus/trace/metadata/CLI artifact変更なしであることを同期する。
+future executable/trace workはTask 263に残る。

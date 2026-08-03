@@ -1432,3 +1432,12 @@ ordered content hash
 The cfg(test)-only Task-261 fixture export exists solely to prove reverse
 mixed-family rejection and adds no release API or dependency edge. All proof,
 acceptance, fact, IR, VC, and Task-263 structure ownership stays outside.
+## Task 249S Frozen Module Boundary
+
+Task 249S remains inside the existing syntax-free `src/source_type.rs` owner.
+Its standalone producer adds one immutable member-owner table and four local
+tests; it does not weaken the binding-owned producer or reuse Task-249R/249M.
+The future Task-263 upper producer belongs in a new dedicated module and is
+explicitly out of this prerequisite. No runner, parser, resolver, Cargo, or
+corpus file moves or splits here. Current `source_type.rs` remains 5,339 lines
+until the separate implementation commit.

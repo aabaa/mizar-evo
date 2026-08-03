@@ -6280,5 +6280,26 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   implementation reviewを**NO FINDINGS**で完了。
 - [x] consistency/full/final gateを**NO FINDINGS**、全9 hard gate PASS、score
   capなし、valid `100/100`で完了。
-- [ ] dedicated implementation commit/clean fresh inventory後、Task 263
+- [x] dedicated implementation commit/clean fresh inventory後、Task 263
   freezeへ戻る。
+  commitは`997457dd3189030aa3b137b568ce82fed456fe1e`。clean fresh inventory、
+  `origin/main...HEAD = 0/7`、protected stash不変を確認済み。
+
+## Checker Task 249S standalone structure-member type prerequisite
+
+- [x] Task-263R後にTask 263をfresh inventoryし、missing member-type ownerを
+  `source_drift`、contractを`design_drift`、testを`test_gap`、fabricated/reused
+  ownerを`boundary_violation`に分類する。
+- [x] Chapter-5 authority、exact 320-byte source/hash、member/type/head row 4件、
+  standalone `0/4/0/0/0/4` profileをfreezeする。
+- [x] additive public ABI、error 5件/precedence、debug、Typed/final ownership、
+  sibling isolation、tests/counts/exclusions/audit impact/two-commit exitをEN/JA
+  syncする。
+- [x] specification reviewを**NO FINDINGS**まで反復し、docs-only format、
+  Clippy、full workspace test、5 CLI、count/hash、scope、whitespace verificationを
+  PASSする。
+- [x] final read-only qualityを**NO FINDINGS**、全9 hard gates PASS、score cap
+  なし、valid `100/100`で完了する。
+- [ ] 同期文書だけをstage/commitし、clean post-commit inventoryを確認する。
+- [ ] fresh inventory後Task 249Sとchecker test 4件だけを実装し、reviews/hard
+  gatesをclose、別commit後Task 263へ戻る。

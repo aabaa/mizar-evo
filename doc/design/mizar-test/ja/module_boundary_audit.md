@@ -11608,3 +11608,9 @@ path/content hashは
 `18e9921fd68c2401869334223de100549ed92ed0a806e37cd0da5f7110c015bf`。
 raw syntax/resolver objectはprivateのままで、syntax-free inputだけがcheckerを
 crossする。proof/acceptance/fact/IR/VC/Task-263 structure ownerは移動しない。
+## Checker Task 249S no-runner boundary
+
+prerequisiteはlater implementation commitでchecker `source_type.rs`だけを変更し、
+ほかは同期design文書だけである。`mizar-test` production/Cargo target/route/fixture
+のmoveはない。Task-263 implementationがprivate exact consumer/corpus pairを別途
+所有する。

@@ -96,7 +96,7 @@ expectation rebaseline、Steps 6/7昇格を禁止する。
 | 260 | `equals`/`means`、parameter、guard、result type、definiens、property/correctness-condition identity、`InitialObligationId`、source anchor input、declaration provenanceを持つfunctor definition。Specs 10/16.6。 | Tasks 248-259、Task-10 definition consumer。 | existence/uniqueness proof、obligation discharge、`VcId`、recursive unfolding、accepted result、overload winnerなし。 |
 | 261 | subject/parameter、positive/negative definiens、guard、radix/qualification、correctness obligation requestを持つattribute definition。Specs 06/09/16.6。 | Tasks 248-260、Task-10 attribute-definition consumer。 | attribute truth、cluster fact、existential evidence、accepted proof、redefinition selectionなし。 |
 | 262 | parameter、mode application、expansion/RHS、definiens、sethood/existence obligation request、declaration contextを持つmode definition。Specs 07/16.6。 | Tasks 248-261、Task-10 mode-definition consumer。 | property implementationはTask 264。accepted existence、expansion fact、registration activationなし。 |
-| 263 | parameter、parent、root+path/view member identity、field coverage/type、constructor/selector declaration、coherence obligation requestを持つstructure definition/inheritance。Specs 05/13.3/16.6/19.2.2。 | Tasks 248-262、Task-10 structure-definition consumer。 | property-valued constructor argument、member identity、accepted coherence、chosen upcastを捏造しない。 |
+| 263 | parameter、parent、root+path/view member identity、field coverage/type、constructor/selector declaration、coherence obligation requestを持つstructure definition/inheritance。Specs 05/13.3/16.6/19.2.2。 | Tasks 248-262とlower prerequisites Task 263R/Task 249S、Task-10 structure-definition consumer。 | property-valued constructor argument、member identity、accepted coherence、chosen upcastを捏造しない。 |
 | 264 | owner/property identity、local parameter、`means`/`equals` definiens、overlap domain、correctness-condition identity、`InitialObligationId`、existence/uniqueness/coherenceのsource anchor inputを持つmode property implementation。Specs 07.4.1/07.8.2/16.6。 | Parser Task 48、Tasks 248-263、Task-10 property consumer。 | parser grammar ownership、overlap acceptance、constructor property source、`VcId`、obligation discharge、proof acceptanceなし。 |
 | 269 | `let`/`set`/`given`/`consider`/named `take`等のproof-local declaration/bindingとfirst-order local-term abbreviation payload。context transition、source-order closure、definition-site binding/RHS link、later term reference用capture-by-resolved-binding replayを含む。Specs 04/15.2-15.4/16.4。 | Tasks 248-258、準備済み`MT10-FS` consumer。 | `deffunc`/`defpred` closureはTask 270、`reconsider` coercionはTask 271、existential-binder matching/witness type obligation/goal substitutionはTask 272。proof search、accepted witnessなし。 |
 | 270 | formal identity、captured free variable、body graph、guard、substitution request、capture-avoidance provenanceを持つproof-local `deffunc`/`defpred` closure。Specs 04.4.3/10.11.3/15.2.3-15.2.4、architecture 16。 | Tasks 248-269、existing advanced-semantics trace row用の`MT10-AS` capture consumer。同producerは`MT10-FS`にもproof-local declaration dataを供給できるが、trace-row ownershipは移らない。 | explicit replay evidenceなしのsubstitution result、runnerでのcapture修復、accepted local theoremなし。 |
@@ -1577,3 +1577,12 @@ distinct standalone owner-link familyはfrozen contractどおり実装済みで�
 active handoffは`SourceTypeModeRhsId(0)` row 1件/root 2を持ち、Task-249R
 definition-return familyとmutually exclusiveで、request/evidence/semantic/fact/
 proof/IR/VC rowをpublishしない。
+## Task 249S structure-member type lower family
+
+Task 249Sはexisting immutable source-type handoff内のdistinct standalone
+owner-link familyである。declaration-member owner site 4件がbare-set expression
+root 4件を指し、binding application、definition-return row、mode-RHS rowなしに
+`0/4/0/0/0/4`を作る。sole consumerはTask 263。member kind/identity、structure
+parent/root/path/view、inheritance coverage、constructor/selector declaration、
+coherence、request/evidence/semantics/fact/proof/IR/VC rowはこのlower boundaryを
+crossしない。

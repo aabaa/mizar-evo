@@ -1528,3 +1528,8 @@ consumer, four-test matrix, sole pass backlink, `524` runner library,
 `425/393` metadata, production/test-list/CLI and corpus hashes, and unchanged
 mixed-gap and semantic deferrals. No bilingual synchronization exception
 exists.
+## Checker Task 249S Synchronization Addendum
+
+EN/JA synchronize that Task 249S is checker-only, has exact lower profile
+`0/4/0/0/0/4`, adds four checker tests, and changes no runner/corpus/trace/
+metadata/CLI artifact. Task 263 retains the future executable and trace work.

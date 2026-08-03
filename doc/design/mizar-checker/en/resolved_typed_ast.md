@@ -1697,3 +1697,10 @@ goal or provenance in the `source.definition.mode` domain is an orphan and is
 rejected, while unrelated existing-kind `Sethood` rows remain permitted. Final
 assembly does not answer the inhabitation request or publish acceptance,
 expansion/sethood facts, proof, Core, control flow, or VC output.
+## Task 249S Standalone Member-Type Clone Addendum
+
+Task 249S adds no final field or semantic route. `ResolvedTypedAst` clone-
+preserves the already validated `SourceTypeApplicationHandoff` through its
+existing `source_type` field. Final assembly creates no expression metadata,
+candidate, coercion, fact, diagnostic, formula, statement, proof, obligation,
+acceptance, or Task-263 structure result from the four lower owner rows.

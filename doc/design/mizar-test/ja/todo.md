@@ -3194,5 +3194,14 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
   `144 -> 146`だけを変更し、exact probe/reviewをPASSすることを確認。
 - [x] 全full/final gateを**NO FINDINGS**、全9 hard gate PASS、score capなし、
   valid `100/100`で完了。
-- [ ] separate implementation commit後にfresh inventoryし、Task-263 private
-  consumer/corpus deltaをfreezeする。
+- [x] implementation commit
+  `997457dd3189030aa3b137b568ce82fed456fe1e`後にTask-263 boundaryをfresh
+  inventoryし、direct consumer freezeに先立つremaining lower prerequisiteをchecker
+  Task 249Sへ更新する。
+
+## Checker Task 249S no-runner prerequisite
+
+- [x] exact checker-only `0/4/0/0/0/4` member-type intake/checker local test
+  4件をfreezeし、runner/corpus/trace/metadata/CLI artifactを変更しない。
+- [ ] separate implementation commitまでno-op boundaryを保ち、その後Task 263
+  だけがexact private consumer/pass+trace pairを追加する。

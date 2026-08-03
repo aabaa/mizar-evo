@@ -4003,5 +4003,22 @@ or semantic owner changed. B3M2B2B remains next before B4.
 - [x] Complete source/docs consistency, workspace verification, and final
   read-only quality with **NO FINDINGS**, all nine hard gates PASS, no cap, and
   valid `100/100` (`20/20/15/15/10/10/5/5`).
-- [ ] Complete exact staging, the dedicated implementation commit, and clean
+- [x] Complete exact staging, the dedicated implementation commit, and clean
   post-commit inventory; then resume Checker Task 263.
+  Commit `997457dd3189030aa3b137b568ce82fed456fe1e`; clean inventory and protected
+  stash invariance are confirmed.
+
+## Checker Task 249S Structure-Member Type Lower Prerequisite
+
+- [x] Fresh-inventory Task 263 and split the Chapter-5 standalone member-type
+  `source_drift`/`design_drift`/`test_gap` from the upper consumer.
+- [x] Freeze exact `0/4/0/0/0/4` ABI/profile, row oracle, debug, ownership,
+  tests, exclusions, audit/no-corpus impact, and exit in EN/JA.
+- [x] Complete findings-free specification review and docs-only formatting,
+  Clippy, full workspace test, five-CLI, count/hash, scope, and whitespace
+  verification.
+- [x] Complete final read-only quality with **NO FINDINGS**, all nine hard
+  gates PASS, no score cap, and valid `100/100`.
+- [ ] Complete exact staging, dedicated docs commit, and clean inventory.
+- [ ] Implement and separately commit the four-test checker-only prerequisite,
+  then fresh-inventory and resume Checker Task 263.

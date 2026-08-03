@@ -1641,3 +1641,11 @@ stale lower fingerprint、`source.definition.mode` domainのorphan goal/provenan
 をrejectする。unrelated baseline `Sethood` rowはbyte-preserveする。pending rowと
 unresolved RHS-inhabitation requestはgoal/guard composition、proof、discharge、
 acceptance、fact、IR、VC semanticsを与えない。
+## Task 249S standalone member-type ownership addendum
+
+Task 249Sは`TypedAstParts` field/install pathを追加しない。existing optional
+`source_type: Option<SourceTypeApplicationHandoff>`がexact standalone
+`0/4/0/0/0/4` valueを所有する。installationはmember owner/expression/head site
+4件を`TypedArena`へ再照合し、欠落/corruptionは`InvalidSourceType`でfailする。
+type/fact/coercion/initial obligation/diagnostic/contextと全Task-263 upper fieldは
+empty/absentのまま。

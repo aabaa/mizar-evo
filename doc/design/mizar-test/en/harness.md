@@ -5075,3 +5075,9 @@ all Tasks-259--261 sibling routes, and justification/semantic descendants.
 Exactly four runner tests are added, moving the library from `520` to `524`;
 metadata tests remain `137`. The five metadata-mode CLIs pass at
 `425/393`, `232/193`, `101/7/202/1`, type `257/245`, warnings/errors `23/0`.
+## Checker Task 249S No-Consumer Harness Boundary
+
+Task 249S has no harness route or production consumer. Its four checker-local
+tests freeze the standalone structure-member type handoff. The exact
+Task-263 runner, pass source, sidecar, covered trace row, diagnostic behavior,
+and all structure/inheritance semantics remain deferred to Task 263.

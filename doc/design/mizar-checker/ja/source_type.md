@@ -421,3 +421,96 @@ productionは`26/153116`、path/content hashは
 `3c85673ebb527cb33bb4b042b1b1194bda34a5348b4b6b20142617db47bde2f2`。
 runner/resolver/syntax/corpus/trace/CLI/metadataはfrozen baseline不変。Task 262は
 sole next consumerかつseparate logical taskである。
+## Task 249S standalone structure-member type intake frozen contract
+
+### 選択、authority、分類
+
+Checker Task 263のfresh preflightで、exact 320-byte structure sourceはparameter
+binding 0件に対しindependently written member type expressionを4件持つことを
+確認した。`SourceTypeProducer`はnonempty `SourceTypeApplicationInput`と
+authenticated `BindingId`の一対一対応を意図的に要求するため、binding 4件を
+捏造することは`boundary_violation`である。Task-249R definition-return rowや
+Task-249M mode-RHS rowのreuseもowner semanticsが異なる。standalone member-type
+ownerの欠落は`source_drift`、このlower contractの欠落は`design_drift`である。
+blocking `spec_gap`はない。canonical Chapter 5 §§5.1--5.3は各field/propertyに
+written typeを明示し、§5.2はproperty valueをconstructor argumentから除外する。
+
+Task 249SはTask 263のmandatory checker-only lower prerequisiteである。canonical
+sourceはfinal LF込みexact 320 bytes、SHA-256
+`078eaee4b17341c9d8ebeb8a1f631ca984873bd07eb4e5d9c1a9486b39ac6671`であり、
+canonical EN sectionのcode blockと同一である。このlower boundaryをcrossするのは
+declaration member type expression 4件だけである。structure-definition node、
+structure/selector symbol、member kind、parent/root/path/view identity、inheritance
+target/redefinition、field coverage、constructor/selector declaration、coherence、
+obligationはTask 263に残す。
+
+### exact additive public ABI
+
+Task 249Sはexisting syntax-free moduleへcanonical ENで定義した
+`SourceTypeStructureMemberId`、`SourceTypeStructureMemberHandoffInput`、
+`SourceTypeStructureMemberInput`、immutable table/row、handoff getter、
+`SourceTypeStructureMemberProducer`をexact field/name/order/type/signatureで追加する。
+new public enum typeは追加せず、existing non-exhaustive public
+`SourceTypeError`へ下記variant 5件をappendする。derive、dense ID/table/row getterのconstness、iterator
+item shape、producer `build(input, arena) -> Result<SourceTypeApplicationHandoff,
+SourceTypeError>`はcanonical EN code blockどおりである。
+
+`SourceTypeProducer::build`はnew tableをempty initializeし、Task-249R/249M
+producerはempty tableを保持する。standalone producerはbaseを受けず捏造せず、
+transactionalにnew immutable handoffを返す。non-exhaustive errorは
+`EmptyStructureMembers`、`StructureMemberCardinalityMismatch`、
+`InvalidStructureMember`、`InvalidStructureMemberSite`、
+`UnsupportedStructureMember`をcanonical ENのID fieldで追加する。
+
+### exact Task-263 lower profile / validation
+
+successful profileはapplications/expressions/arguments/definition returns/mode
+RHS/structure members `0/4/0/0/0/4`である。
+
+| Row | member owner | type expression/head | Root |
+| ---: | --- | --- | ---: |
+| 0 | node 53、`42..63`、ordinal 0 | nodes 52/51、`59..62`、`Bare` builtin `set` normal | 0 |
+| 1 | node 56、`68..91`、ordinal 1 | nodes 55/54、`87..90`、同上 | 1 |
+| 2 | node 61、`134..155`、ordinal 2 | nodes 60/59、`151..154`、同上 | 2 |
+| 3 | node 64、`160..183`、ordinal 3 | nodes 63/62、`179..182`、同上 | 3 |
+
+exactly 4 rowsだけをadmitし、dense ID/source ordinal/rootはvector order。
+row/expressionのsource/module identity、nonempty same-source exact normal arena
+member range、expression containmentをvalidateする。member/expression/head siteは
+相互にdistinctなexact `TypedSiteRef::Node`で、role/duplicateをrejectする。
+expression/head range/recoveryをarenaへ再照合し、全expressionはargument-free、
+bare、normal builtin `set`、両spelling exact `set`である。failure precedenceは
+empty、non-four cardinality、row/environment/range、site/arena、unsupported shape。
+
+handoff validationはこのprofileを認識し、binding application/argument/
+definition-return/mode-RHSとmutually exclusiveにする。`TypedAst`はexisting
+optional `source_type` field/install pathだけでsole ownerとなり、
+`ResolvedTypedAst`はclone-preserveだけを行う。second owner/installerは追加しない。
+
+member table empty時はexisting debug byteが完全に不変。present時はmode-RHS row後、
+expression row前にcanonical ENの`structure-member#...` lineを出力する。complete
+debug textがTask-263 lower fingerprintとなり、Task 263はfabricated application ID
+ではなく`SourceTypeStructureMemberId`を参照する。
+
+### test、禁止範囲、audit impact、exit
+
+implementationはcanonical ENで命名したchecker test exactly 4件を追加し、exact
+API/profile/debug/legacy stability、corruption/error precedence、arena/install
+revalidation、replay/Typed-final clone/sibling isolationを所有する。checkerは
+`458 -> 462`、runner/resolver/syntaxは`524/146/59` unchanged。runner/corpus/
+sidecar/expectation/trace row/status/count/diagnostic/obligation/metadata caseは
+追加しない。
+
+artificial binding/application、generalized member type graph、parameter/context、
+field/property classification、structure/member/resolver identity association、
+inheritance parent/root/path/view/coverage/constructor/selector/redefinition、type
+equality/subtyping/inhabitation、coherence、goal/guard composition、proof/discharge/
+acceptance/fact/axiom/Core/CFG/VC、public diagnostic、Task-263 producer/runner/corpus
+workはforbidden/deferredである。
+
+docs prerequisiteはproduction/fixture/sidecar/expectation/trace/test-list/CLI/
+manifest/executable hashを変更せず、EN/JA sync、repeated review-only **NO
+FINDINGS**、all nine gates、uncapped quality 90+、dedicated docs commit、clean
+inventory、origin classification/stash invarianceでexitする。separate
+implementationはexact four tests、`0/4/0/0/0/4`、full reviews/verification、
+dedicated commit後にTask 263へ自動復帰する。

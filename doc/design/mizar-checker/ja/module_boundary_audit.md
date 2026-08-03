@@ -1397,3 +1397,11 @@ content hashは
 cfg(test)-only Task-261 fixture exportはreverse mixed-family rejectionの証明だけに
 存在し、release API/dependency edgeを追加しない。proof/acceptance/fact/IR/VCと
 Task-263 structure ownershipは全てscope外に残る。
+## Task 249S frozen module boundary
+
+Task 249Sはexisting syntax-free `src/source_type.rs` owner内に留まる。
+standalone producerはimmutable member-owner table 1個とlocal test 4件だけを追加し、
+binding-owned producerを弱めずTask-249R/249Mをreuseしない。future Task-263 upper
+producerはnew dedicated moduleに属し、このprerequisiteの範囲外。runner/parser/
+resolver/Cargo/corpus fileのmove/splitはない。separate implementation commit前の
+`source_type.rs`は5,339 linesのままである。

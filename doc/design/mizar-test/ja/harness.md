@@ -4795,3 +4795,9 @@ semantic descendantをrejectする。runner testはexact 4件追加されlibrary
 `520 -> 524`、metadata testは`137`のままである。metadata-mode CLI 5本は
 `425/393`、`232/193`、`101/7/202/1`、type `257/245`、warnings/errors
 `23/0`でpassする。
+## Checker Task 249S no-consumer harness boundary
+
+Task 249Sはharness route/production consumerを持たない。checker-local test 4件が
+standalone structure-member type handoffをfreezeする。exact Task-263 runner、
+pass source/sidecar/covered trace row、diagnostic behavior、全structure/inheritance
+semanticsはTask 263へdeferする。

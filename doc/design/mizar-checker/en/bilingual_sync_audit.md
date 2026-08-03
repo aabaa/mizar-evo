@@ -1577,3 +1577,11 @@ ABI, exact source/resolver/lower fingerprints, unresolved RHS request, linked
 Pending `Sethood` suffix, Typed/final isolation, nine-test matrix, active
 `458/524` libraries and `425/393` metadata, manifest/test-list/CLI hashes, and
 all unchanged semantic deferrals. No synchronization exception exists.
+## Task 249S Frozen-Contract Synchronization
+
+The canonical EN and JA companion documents synchronize the Task-263R closure,
+Task-249S classification, exact 320-byte source/hash, `0/4/0/0/0/4` public
+handoff, four row/site/range/root oracles, five error variants, debug order,
+Typed/final ownership, four tests, count impact, exclusions, and two-commit
+exit. English remains authoritative. No executable or corpus artifact changes
+in this documentation prerequisite.

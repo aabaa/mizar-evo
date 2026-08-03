@@ -1516,3 +1516,10 @@ resolver/lower fingerprint、unresolved RHS request、linked Pending `Sethood`
 suffix、Typed/final isolation、test 9件、active `458/524` libraryと`425/393`
 metadata、manifest/test-list/CLI hash、全てのunchanged semantic deferralを同期する。
 synchronization exceptionはない。
+## Task 249S frozen-contract synchronization
+
+canonical ENとJA companionはTask-263R closure、Task-249S classification、exact
+320-byte source/hash、`0/4/0/0/0/4` public handoff、row/site/range/root oracle
+4件、error variant 5件、debug order、Typed/final ownership、test 4件、count impact、
+exclusion、two-commit exitを同期する。Englishがauthority。docs prerequisiteで
+executable/corpus artifactは変更しない。

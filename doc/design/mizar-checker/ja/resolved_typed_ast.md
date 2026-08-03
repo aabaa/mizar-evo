@@ -1629,3 +1629,10 @@ Task-259/260/261/262 stateをrejectする。handoffなしでは
 existing-kind `Sethood` rowは許可する。final assemblyはinhabitation requestへ
 answerせず、acceptance、expansion/sethood fact、proof、Core、control flow、VCを
 publishしない。
+## Task 249S standalone member-type clone addendum
+
+Task 249Sはfinal field/semantic routeを追加しない。`ResolvedTypedAst`はexisting
+`source_type` fieldでvalidated `SourceTypeApplicationHandoff`をclone-preserveする
+だけである。final assemblyはlower owner row 4件からexpression metadata、
+candidate、coercion、fact、diagnostic、formula、statement、proof、obligation、
+acceptance、Task-263 structure resultを生成しない。

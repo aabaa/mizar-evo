@@ -6581,5 +6581,27 @@ implementation commit does not satisfy a producer task.
   test-sufficiency and implementation reviews with **NO FINDINGS**.
 - [x] Complete its consistency/full/final gates with **NO FINDINGS**, all nine
   hard gates PASS, no score cap, and valid `100/100`.
-- [ ] Complete the dedicated implementation commit and clean fresh inventory;
+- [x] Complete the dedicated implementation commit and clean fresh inventory;
   then return to freeze Task 263.
+  Commit `997457dd3189030aa3b137b568ce82fed456fe1e`; fresh inventory confirmed
+  `origin/main...HEAD = 0/7` and protected-stash invariance.
+
+## Checker Task 249S Standalone Structure-Member Type Prerequisite
+
+- [x] Fresh-inventory Task 263 after Task-263R and classify the missing
+  member-type owner as `source_drift`, the contract as `design_drift`, tests as
+  `test_gap`, and fabricated/reused owners as `boundary_violation`.
+- [x] Freeze Chapter-5 authority, the exact 320-byte source/hash, four
+  member/type/head rows, and standalone `0/4/0/0/0/4` profile.
+- [x] Freeze the additive public ABI, five errors and precedence, debug bytes,
+  Typed/final ownership, sibling isolation, tests, counts, exclusions, audit
+  impact, and two-commit exit in synchronized EN/JA documents.
+- [x] Repeat specification review to **NO FINDINGS** and pass docs-only
+  formatting, Clippy, full workspace test, five-CLI, count/hash, scope, and
+  whitespace verification.
+- [x] Complete final read-only quality with **NO FINDINGS**, all nine hard
+  gates PASS, no score cap, and valid `100/100`.
+- [ ] Stage only synchronized documents, commit, and verify clean post-commit
+  inventory.
+- [ ] Fresh-inventory, implement exactly Task 249S and its four checker tests,
+  close all reviews/hard gates, commit separately, then resume Task 263.

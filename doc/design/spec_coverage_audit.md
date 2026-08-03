@@ -6153,8 +6153,9 @@ correctness obligation, accepted fact, proof/discharge behavior, IR, or VC.
 `3f510f819f03a3fd2922275b37ab71070e41d4f8e2e0e9c0c94147076552626a`,
 and active metadata remains `425/393`, `232/193`, `101/7/202/1`, type
 `257 = 245 covered + 12 deferred`, warnings/errors `23/0`. Chapter 5 remains
-partial; Checker Task 263 still owns the future executable structure consumer
-after this lower implementation commits and fresh inventory passes.
+partial; the committed Task-263R lower change and clean fresh inventory leave
+Checker Task 249S as the only current prerequisite before Task 263 owns the
+future executable structure consumer.
 
 All specification, test-sufficiency, implementation, and source/documentation
 reviews finish with **NO FINDINGS**. Focused/package/workspace tests, metadata
@@ -6163,5 +6164,24 @@ CLIs, exact probes, count/hash checks, scope checks, and whitespace checks
 PASS. Independent final quality reports **NO FINDINGS**; all nine hard gates
 PASS without a cap at valid `100/100` (`20/20/15/15/10/10/5/5`). This review
 closure changes no trace row, status, backlink, count, owner, or coverage
-credit; only staging, the lower implementation commit, and clean fresh
-inventory remain.
+credit. The lower implementation is committed as
+`997457dd3189030aa3b137b568ce82fed456fe1e`, and clean fresh inventory passes;
+Task 249S is the remaining lower representation prerequisite for Task 263.
+
+## Checker Task 249S Frozen Representation-Coverage Intent
+
+Fresh post-Task-263R inventory classifies the missing standalone Chapter-5
+field/property type owner as checker `source_drift`. Task 249S is a bounded
+representation prerequisite: four exact declaration-member sites own four
+bare builtin-set roots in one `0/4/0/0/0/4` source-type handoff. It changes no
+canonical specification, existing `.miz`, sidecar, expectation, trace row or
+status, diagnostic, obligation, or semantic coverage credit.
+
+MC-G017/MC-G018 and Chapter 5 remain partial. Task 263 retains structure and
+member identity, field/property classification, parents, root/path/view,
+inheritance mapping and exact coverage, constructor/selector declarations,
+coherence requests, consumer activation, and the sole future pass/trace pair.
+The current docs-only prerequisite preserves corpus `425/393`, pass/fail
+`232/193`, type `257/245+12`, active stages `101/7/202/1`, warnings/errors
+`23/0`, and the trace file hash. Implementation first closes only this lower
+representation gap and projects checker `458 -> 462`.

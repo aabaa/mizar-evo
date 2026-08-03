@@ -5517,3 +5517,18 @@ Pending `Sethood` row are active. Public enum, source-spec, documentation, and
 syntax-boundary lint inventories include the module. No syntax dependency,
 evidence result, proof, acceptance, fact, IR, VC, or structure-definition
 credit is introduced.
+## Task 249S Frozen Future Public-Surface Audit
+
+Fresh Task-263 preflight classifies the absent standalone structure-member
+type owner as `source_drift`, its four corruption/ownership tests as a
+canonical-derived `test_gap`, and every fabricated binding or reuse of the
+definition-return/mode-RHS families as `boundary_violation`. Chapter 5 is
+sufficient, so there is no blocking `spec_gap`.
+
+Task 249S will add the public dense ID, input, immutable row/table, handoff
+getter, producer, and five non-exhaustive error variants frozen in
+`source_type.md`. The exact profile is `0/4/0/0/0/4`. No new public enum type,
+syntax dependency, normalized type, diagnostic, obligation, semantic result,
+runner, corpus, or trace credit is added; five variants append to the existing
+non-exhaustive public `SourceTypeError`. The literal public/source-spec lint
+inventories must be synchronized when implementation lands.

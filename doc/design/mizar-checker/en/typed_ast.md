@@ -1715,3 +1715,11 @@ the `source.definition.mode` domain. Unrelated baseline `Sethood` rows remain
 valid and byte-preserved. The pending row and unresolved RHS-inhabitation
 request grant no goal/guard composition, proof, discharge, acceptance, fact,
 IR, or VC semantics.
+## Task 249S Standalone Member-Type Ownership Addendum
+
+Task 249S adds no `TypedAstParts` field or installation path. The existing
+optional `source_type: Option<SourceTypeApplicationHandoff>` owns the exact
+standalone `0/4/0/0/0/4` value. Installation revalidates all four member owner,
+expression, and head sites against `TypedArena`; missing or corrupt values fail
+as `InvalidSourceType`. Types, facts, coercions, initial obligations,
+diagnostics, context, and every Task-263 upper field remain empty/absent.
