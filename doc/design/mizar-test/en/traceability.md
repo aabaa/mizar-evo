@@ -2107,3 +2107,30 @@ exercised only by focused Rust tests until the later Task-259 pass case lands.
 `tests/coverage/spec_trace.toml` therefore remains byte-unchanged, current
 metadata remains `421/389` and type `253/241`, and the future Task-259 delta
 remains owned by its existing frozen trace intent.
+
+## Checker Task 259 Active Trace Result
+
+The implementation adds exactly one requirement:
+`spec.en.checker.type_elaboration.source_predicate_definition_payload`.
+Its source is
+`doc/design/mizar-checker/en/source_predicate_definition.md`, section
+`Dedicated Consumer And Trace Intent`; stage is `type_elaboration`, status is
+`covered`, `required = true`, and `coverage = "pass"`. Its complete backlink
+set contains only
+`tests/miz/pass/types/pass_type_elaboration_predicate_definition_payload_001.expect.toml`.
+That sidecar reciprocally names only this requirement.
+
+The active credit is limited to exact predicate-definition transport:
+definition/parameter/guard/property/correctness tables `1/2/1/1/1` and one
+baseline-appended pending property-correctness obligation. Guard-conditioned
+FOL construction, justification proof, discharge, acceptance, facts/axioms,
+VC/IR, and the mixed Task-260 family remain deferred and receive no backlink.
+No existing row, fixture, sidecar, expectation, status, or test list is
+rebaselined.
+
+Measured metadata is cases/requirements `422/390`, pass/fail `229/193`,
+active parse/declaration/type/proof `101/7/199/1`, type requirements
+`254/242`, and warnings/errors `23/0`. The sole-backlink and reciprocal-sidecar
+invariants pass in metadata test `137/137`. Final independent reviews ended
+with no findings, and all nine hard gates pass with an uncapped `100/100`;
+task commit and post-commit inventory remain pending.

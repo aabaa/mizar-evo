@@ -5176,6 +5176,18 @@ tests = [
 notes = "Checker Task 257C1 covers only immutable syntax-free source transport for the exact imported two-segment predicate-chain consumer. The runner composes Task-252 `3/0/3` numeral roots with Task-256 `1/0/2/2/2/0/0/3/2` formula/wrapper/segment/head/candidate/type/attribute/edge/request rows in one typed arena. Both heads preserve the same imported `parser.type_fixtures::divides` resolver symbol and ImportedSource contribution, the second segment preserves direct `does not` token provenance, and the middle numeral owns exactly one shared PredicateChainBoundary edge. This row grants no predicate applicability, overload ranking or winner selection, predicate or chain truth, negation truth, formula result or fact, theorem ownership or acceptance, proof, CoreIr, ControlFlowIr, VC, conditioned comprehension, or broader predicate-chain credit."
 
 [[requirement]]
+id = "spec.en.checker.type_elaboration.source_predicate_definition_payload"
+source = "doc/design/mizar-checker/en/source_predicate_definition.md"
+section = "Dedicated Consumer And Trace Intent"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/types/pass_type_elaboration_predicate_definition_payload_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.checker.type_elaboration.source_primary_term_payload"
 source = "doc/design/mizar-checker/en/00.crate_plan.md"
 section = "Task 252 Frozen Primary-Term Producer Contract"

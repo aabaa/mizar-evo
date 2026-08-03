@@ -4978,3 +4978,30 @@ stale or duplicate sites, and any attempt to treat excluded descendants as
 bindings. The existing Profile-A selector/output/recovery/debug and active
 fixture remain byte-compatible. No expectation field can select the dormant
 helper, and no diagnostic detail key is added.
+
+## Checker Task 259 Active Predicate-Definition Route
+
+The private route is selected only by byte-exact source plus the complete
+normal 71-row/root-70 surface profile. It authenticates the definition block,
+ordered `x`/`y` parameters, guard, predicate pattern/definiens, symmetry
+property, raw predicate resolver entry, same-block siblings, and exclusion of
+pattern/label/justification descendants. The sidecar outcome, stage, tags,
+diagnostics, and expectation data cannot select the route.
+
+After selection the route creates one shared surface-indexed `TypedArena` and
+calls the existing owners in the exact order Task 248, Task 249 `2/2/0`, Task
+252 `4/4/0`, Task 256 `2/0/0/0/0/0/0/4/4`, and Task 259 `1/2/1/1/1`. Task
+259 preserves the input obligation baseline and appends one `Pending`
+`PredicatePropertyCorrectness` row with empty assumptions; typed/final
+installation remains all-or-nothing. The route publishes no property proof,
+fact, axiom, VC, acceptance, public diagnostic, or Task-260 mixed-family
+payload.
+
+The four runner tests are
+`task259_real_source_surface_resolver_and_lower_bundle_is_exact`,
+`task259_source_ast_resolver_and_lower_mutations_fail_at_the_owner`,
+`task259_expectation_selection_and_mixed_definition_route_stay_isolated`, and
+`task259_route_publishes_no_property_proof_fact_or_acceptance`. They pass
+`4/4`; the full runner library count is `512`. The only adjacent active-count
+change is an independently reviewed `198 -> 199` in two source-statement
+selection tests, whose empty-selection assertions remain unchanged.

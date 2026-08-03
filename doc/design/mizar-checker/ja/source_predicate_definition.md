@@ -3,11 +3,10 @@
 > 正規言語は英語です。英語版:
 > [../en/source_predicate_definition.md](../en/source_predicate_definition.md)。
 
-状態: Checker Task 259 frozen contract plus post-Task-248 contract correction
-prerequisite。本書は将来の実装境界を凍結するものであり、producer の実装、
-fixture/sidecar の追加、traceability/coverage credit の変更は行いません。
-separately committed Task-248 Profile-B dependency は completed current
-state として下記に記録します。
+状態: Checker Task 259 implemented contract plus post-Task-248 contract
+correction。以下のfrozen boundaryはsyntax-free producer、exact real consumer、
+covered trace backlink 1件によって実装済みです。separately committed
+Task-248 Profile-B dependencyはcompleted current stateのままです。
 
 ## Authority、scope、finding
 
@@ -771,3 +770,45 @@ EN/JA同期、findingsなしになるまでのrepeated review、docs-only verifi
 exact staging、専用documentation commit 1件、protected stash不変かつcleanな
 post-commit inventory後にのみexitします。次taskはTask-259 production
 implementationです。
+
+## Task 259 implementation result
+
+implementationはfrozen APIをwidenせず実現します。public moduleはdense id 5個、
+input aggregate 6個、data enum 2個、immutable row/table各5個、handoff、
+projection、non-exhaustive error、producerを公開します。exact outputは
+`1/2/1/1/1`で、projectionはauthenticated baselineを保持し、empty assumptionsと
+frozen opaque goal/provenanceを持つ`Pending`
+`PredicatePropertyCorrectness` obligationをexactly 1件appendします。
+
+`TypedAst::with_source_predicate_definition`はhandoffとcomplete obligation tableを
+atomicにinstallします。final assemblyはsecond Task-259 inputを受けず、complete
+tableをprivateにclone-preserveし、five tableとTask-248/249/252/256 fingerprintを
+revalidateしてhandoffをonceだけrenderします。fact、proof、VC、axiom、accepted
+definition、public diagnosticは生成しません。
+
+private runnerはSHA-256
+`91bdb5f51c0ea5f07bdd831700cb9803f2aa57e005921c7e4e1798ecbbf2bd9f`
+のexact 165-byte/final-LF artifactをauthenticateし、Task 248、Task 249
+`2/2/0`、Task 252 `4/4/0`、Task 256 `2/0/0/0/0/0/0/4/4`、Task 259を
+composeします。**Frozen Tests**で命名したchecker 5件/runner 4件はPASSします。
+test-only checker bodyは
+`tests/support/source_predicate_definition_unit.rs`に置きます。
+既存dev-dependencyを使うprivate child moduleのままなので、physical production
+sourceはsyntax-freeで、lint exception/public resolver test APIを追加しません。
+existing source-statement isolation test 2件はreview済みmechanical active-count
+correction `198 -> 199`だけを受け、empty-selection assertionは不変です。
+
+measured executable metadataはcases/requirements `422/390`、pass/fail
+`229/193`、active parse/declaration/type/proof `101/7/199/1`、type coverage
+`254/242`、warnings/errors `23/0`です。exact new trace requirementはsame-stem
+sidecar backlink 1件だけを持ちます。guard-to-property FOL construction、
+justification proof、discharge、acceptance、fact/axiom、mixed Task-260 routeは
+deferredのままです。
+
+完了済みverificationはfocused checker `5/5`、focused runner `4/4`、checker
+library `435/435`、runner library `512/512`、resolver library `144/144`、syntax
+library `59/59`、metadata `137/137`、両lint policy、`cargo fmt --all --check`、
+workspace warnings-denied Clippy、workspace `cargo test`、全5 CLI/count/hash
+gateです。independent review 4件はno findingsで完了し、全9 hard gateはPASS、
+score capなしのquality scoreは`100/100`です。task commitとpost-commit fresh
+inventoryはpendingです。

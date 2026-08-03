@@ -24,6 +24,7 @@ Module specifications audited:
 - [binding_env.md](./binding_env.md)
 - [source_context.md](./source_context.md)
 - [source_atomic_formula.md](./source_atomic_formula.md)
+- [source_predicate_definition.md](./source_predicate_definition.md)
 - [source_attribute.md](./source_attribute.md)
 - [source_evidence.md](./source_evidence.md)
 - [source_application.md](./source_application.md)
@@ -158,6 +159,7 @@ rejection.
 - `source_atomic_formula`
 - `source_composite_formula`
 - `source_formula_composition`
+- `source_predicate_definition`
 - `source_context`
 - `source_attribute`
 - `source_evidence`
@@ -171,10 +173,11 @@ rejection.
 - `typed_ast`
 
 Evidence: `tests/lint_policy.rs` checks this list through
-`checker_public_semantic_api_matches_documented_modules`, keeps production
-source off direct `mizar-syntax` imports, permits only the Task-258B1
-`#[cfg(test)]` parser-fixture import plus test-only dev-dependency, and
-preserves resolver/session dependency boundaries.
+`checker_public_semantic_api_matches_documented_modules`, keeps every physical
+production source file off direct `mizar-syntax` imports, confines the
+Task-259 syntax fixture to a non-integration test-support child module using
+the existing test-only dependency, and preserves resolver/session dependency
+boundaries without a Task-259 lint exception.
 
 ## Public Surface Inventory
 
@@ -505,6 +508,44 @@ Bounded gaps: predicate-chain and formula-operator ownership stays with Task
 257; overload selection, asserted-type reachability, attribute admissibility
 and truth, formula facts/results, theorem acceptance, proofs, and downstream
 IR remain outside this module.
+
+### `source_predicate_definition`
+
+Generated public newtypes:
+
+- `SourcePredicateDefinitionId`, `SourcePredicateParameterId`,
+  `SourcePredicateGuardId`, `SourcePredicatePropertyId`,
+  `SourcePredicateCorrectnessId`
+
+Literal top-level public items:
+
+- `SourcePredicateDefinitionHandoffInput`,
+  `SourcePredicateDefinitionInput`, `SourcePredicateParameterInput`,
+  `SourcePredicateGuardInput`, `SourcePredicatePropertyInput`,
+  `SourcePredicateCorrectnessInput`
+- `SourcePredicatePropertyKind`, `SourcePredicateDefinitionRecovery`
+- `SourcePredicateDefinition`, `SourcePredicateParameter`,
+  `SourcePredicateGuard`, `SourcePredicateProperty`,
+  `SourcePredicateCorrectness`
+- `SourcePredicateDefinitionTable`, `SourcePredicateParameterTable`,
+  `SourcePredicateGuardTable`, `SourcePredicatePropertyTable`,
+  `SourcePredicateCorrectnessTable`
+- `SourcePredicateDefinitionHandoff`,
+  `SourcePredicateDefinitionProjection`,
+  `SourcePredicateDefinitionError`, `SourcePredicateDefinitionProducer`
+
+Correspondence:
+
+| Specification promise | Source evidence | Test evidence | Status |
+|---|---|---|---|
+| Five syntax-free immutable tables retain one predicate, two ordered parameters, one guard, one symmetry property, and one correctness link. | Public inputs, rows, dense ids, tables, and getters in `src/source_predicate_definition.rs`. | `task_259_exact_predicate_definition_payload_and_pending_obligation`, independent row/field corruption coverage. | Implemented as exact `1/2/1/1/1`. |
+| The producer authenticates resolver identity and exact Task-248/249/252/256 fingerprints while appending one pending correctness obligation to a retained baseline. | `SourcePredicateDefinitionProducer::build`, `SourcePredicateDefinitionProjection`, and fail-closed error categories. | Dependency/obligation corruption and nonempty-baseline transactional tests. | Implemented without sorting, repair, or partial publication. |
+| Typed and final owners publish and clone-preserve the handoff plus complete obligation table atomically. | `TypedAst::with_source_predicate_definition` and `ResolvedTypedAst::source_predicate_definition`. | Transactional installation and final clone/debug/family-isolation tests. | Implemented with no second input or public final obligation-table getter. |
+| The public surface and enums remain documented and forward-compatible. | Five dense ids, six input aggregates, two data enums, five rows/tables, handoff, projection, error, and producer above; all public enums are non-exhaustive. | `checker_public_enums_are_forward_compatible_and_documented`, `checker_source_spec_audit_covers_public_surface_and_gaps`. | Guarded with no Task-259 lint exception. |
+
+Bounded gaps: guard-to-symmetry FOL construction, justification proof,
+discharge, facts/axioms, accepted definitions, VC/IR, and the mixed Task-260
+functor-definition route remain outside this module.
 
 ### `source_composite_formula`
 
@@ -3123,6 +3164,37 @@ parentheses; no blocking `spec_gap` was found. There is no current
 `source_undocumented_behavior`, `test_expectation_drift`,
 `boundary_violation`, or `repo_metadata_conflict`.
 
+## Task 259 Active Public-Surface Result
+
+`source_predicate_definition` is now exported and the public-surface inventory
+above enumerates every generated dense id and literal public declaration. All
+three public enums are `#[non_exhaustive]`; immutable rows expose getters but
+no caller-supplied derived origin, fingerprint, or allocated obligation id.
+`tests/lint_policy.rs` covers the owning module spec, crate export, public
+enum policy, exact source-spec declarations, and the production no-syntax
+boundary without a Task-specific exception.
+
+The owning module produces exact definition/parameter/guard/property/
+correctness cardinalities `1/2/1/1/1`, validates the Task-248/249/252/256
+dependencies, and appends one pending property-correctness obligation to a
+retained baseline. Typed installation is one-shot and transactional; final
+assembly accepts no second input and publishes no obligation-table, fact,
+proof, VC, axiom, or acceptance getter.
+
+The previously expected `source_drift`, `test_gap`, and public-policy
+`design_drift` are closed in implementation. The test-only syntax consumer is
+confined to an external non-integration child support module, closing the
+candidate `boundary_violation`. Two stale `198 -> 199` active-count consumers
+are bounded `test_expectation_drift` plus write-scope `design_drift`; their
+semantic selection intent is unchanged. The later `origin/main` movement is
+a report-only `repo_metadata_conflict`, not a source/spec disagreement.
+
+Guard-conditioned FOL construction, proof/discharge, acceptance, facts,
+axioms, VC/IR, Task 272 justification ownership, and mixed Task-260 routing
+remain explicitly deferred. Final source/documentation review ended with no
+findings, and the quality review passed all nine hard gates with an uncapped
+`100/100`; commit/post-commit gates remain.
+
 The paired crate plan freezes the public three-table source-only model and the
 exact existing numeral-equality, reserved-variable-equality, and
 parenthesized-reserved-variable-equality consumers. Their aggregate future
@@ -5137,8 +5209,8 @@ follow-up ownership narratively but grants no executable coverage and leaves
 ## Task 259 Corrected Future Public-Surface Audit
 
 `source_predicate_definition.md` is the owning future module specification
-for public `source_predicate_definition`. It freezes five dense IDs, five
-input rows, five immutable output rows/tables, the handoff and projection,
+for public `source_predicate_definition`. It freezes five dense IDs, six
+input aggregates, five immutable output rows/tables, the handoff and projection,
 the producer, and three `#[non_exhaustive]` enums. Its `Public Enum Policy`
 classifies `SourcePredicatePropertyKind`,
 `SourcePredicateDefinitionRecovery`, and

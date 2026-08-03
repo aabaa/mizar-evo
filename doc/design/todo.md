@@ -94,8 +94,8 @@ is its task 1). "Next work" points into the
 | mizar-parser | Grammar, Pratt parsing, syntax recovery, parse-only corpus | [x] Tasks 1-48 plus bounded `PARSER-RECOVERY-B1B1P-P1` complete; historical post-Task-46 score 99/100 | no inferred Task 49; human-owned P-265-47D remains separate | [todo](./mizar-parser/en/todo.md) |
 | mizar-frontend | Source loading and phase 1-3 orchestration | [x] prior milestone plus `PARSER-RECOVERY-B1B1P-P1-FE` regression complete | — | [todo](./mizar-frontend/en/todo.md) |
 | mizar-resolve | Module graph, namespaces, symbols, labels, signatures | [x] complete through task 29 | step 8 task 30; independent step-5 task 31 | [todo](./mizar-resolve/en/todo.md) |
-| mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] foundation complete through task 22; Tasks 265-268, Core-31, and Checker consumers through Task 258B5C complete; Task-259 future consumer frozen | Task-248 two-parameter prerequisite pair, then Checker Task-259 consumer, future `MT10-FS`/`MT10-AS`, and five Core-32 consumer increments | [todo](./mizar-test/en/todo.md) |
-| mizar-checker | Type checking, cluster/registration resolution, overload resolution | [x] explicit-payload milestone, bridges through Task 246, Tasks 266-268 final handoff, Task 247 decomposition, source producers through Task 258B5C complete, and Task-259 contract frozen | Task-248 two-parameter profile-extension prerequisite pair, then Task 259 implementation and Tasks 260-264/269-279 in dependency order; task 49 dependency-gated on blocked external slices | [todo](./mizar-checker/en/todo.md) |
+| mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] foundation complete through task 22; Tasks 265-268, Core-31, and Checker consumers through Task 258B5C complete; Task-248 Profile B complete and Task-259 consumer verified, awaiting its dedicated commit/fresh inventory | Finish Task-259 commit/fresh inventory, then future `MT10-FS`/`MT10-AS` and five Core-32 consumer increments in dependency order | [todo](./mizar-test/en/todo.md) |
+| mizar-checker | Type checking, cluster/registration resolution, overload resolution | [x] explicit-payload milestone, bridges through Task 246, Tasks 266-268 final handoff, Task 247 decomposition, source producers through Task 258B5C and Task-248 Profile B complete, and Task-259 implementation verified, awaiting its dedicated commit/fresh inventory | Finish Task 259 commit/fresh inventory, then select Tasks 260-264/269-279 in dependency order; task 49 remains dependency-gated on blocked external slices | [todo](./mizar-checker/en/todo.md) |
 | mizar-core | Elaboration, binder-normalized core logic, control-flow preparation | [x] core/control-flow milestone, tasks 27-32 complete | step-5 Tasks 33-53 under the Task-32 graph | [todo](./mizar-core/en/todo.md) |
 | mizar-vc | VC IR, VC generation, deterministic pre-ATP discharge | [x] exact source-derived contradiction VC integration complete through task 31 | dependency-paced VC Tasks 32-55; VC 40/53 and S1 gates remain explicit | [todo](./mizar-vc/en/todo.md) |
 | mizar-kernel | Trusted certificate parsing and checking | [x] SAT-backed kernel milestone complete | step 4 task 35 resolved; task 32 parked; tasks 30-34 resolved | [todo](./mizar-kernel/en/todo.md) |
@@ -3833,7 +3833,37 @@ or semantic owner changed. B3M2B2B remains next before B4.
 - [x] Complete independent final quality with **NO FINDINGS**, all nine hard
   gates PASS, no score cap, and valid `100/100`
   (`20/20/15/15/10/10/5/5`).
-- [ ] Complete staging, the documentation commit, and post-commit invariant
-  gates.
-- [ ] Fresh-inventory the separate Task-248 implementation, commit it, then
-  return automatically to Task 259 implementation.
+- [x] Complete staging and documentation commit
+  `f9b47375acc18acebf56a69f5d8a7edec539c2be`, then pass the post-commit
+  invariant gates.
+- [x] Fresh-inventory and complete the separate Task-248 implementation as
+  `ca54135f36c9fecfc02c2b8120ec4e63e8c6ca36`, then return automatically to
+  Task 259 implementation.
+
+## Checker Task 259 Frozen-Contract Correction And Active Implementation
+
+- [x] Complete the findings-free correction prerequisite and commit it as
+  `e202dd70bf4e97ddb53c1275b49e667b6a77f7a0`; retain its historical clean
+  post-commit record that `main` was one commit ahead of `origin/main`.
+- [x] Report, but do not repair, the later external movement of
+  `origin/main` to the same commit as `HEAD` as `repo_metadata_conflict`;
+  the safe Task-259 commit target remains identifiable and the protected
+  stash remains unchanged.
+- [x] Implement only the exact predicate-definition transport contract:
+  five `1/2/1/1/1` tables, one baseline-appended pending correctness
+  obligation, private Task 248 -> 249 -> 252 -> 256 -> 259 runner route, one
+  exact pass artifact/sidecar, and one sole trace backlink.
+- [x] Add the five checker and four runner tests, preserve Task-260 isolation,
+  and independently review the two `198 -> 199` source-statement count
+  consumers plus the external child test-support syntax boundary.
+- [x] Reproduce `422/390`, `229/193`, `101/7/199/1`, type `254/242`,
+  warnings/errors `23/0`, metadata `137`, checker `435`, runner `512`,
+  resolver `144`, and syntax `59`.
+- [x] Fresh-measure affected production/support inventories as checker
+  `24/147030`, runner `31/63248`, checker producer/support `1794/1974`, and
+  runner production/test leaves `1233/517` with recorded path/content hashes.
+- [x] Finish the separate final reviews with no findings and pass all nine
+  hard gates with an uncapped quality score of `100/100`.
+- [ ] Stage only Task-259 files, create one dedicated implementation commit,
+  verify clean repository/protected-stash invariants, and select the next
+  task only from fresh post-commit authority/API inventory.

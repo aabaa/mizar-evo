@@ -6075,6 +6075,37 @@ runner、docs-only implementation commitはproducer taskを満たさない。
 - [x] specification/documentation reviewをfindingsなしまでrepeatし、
   production source、fixture、sidecar、expectation、trace status/count、
   Cargo metadataを変更せずdocs-only verificationをcompleteする。
-- [ ] correction documentだけをstageしてdedicated commit 1件を作り、
-  clean/stash-invariant post-commit stateをverifyし、Task-259
+- [x] correction documentだけをstageし、dedicated commit
+  `e202dd70bf4e97ddb53c1275b49e667b6a77f7a0`を作成する。そのclean
+  post-commit state、`main`が`origin/main`より1 commit ahead、protected stash
+  `f65cf4a13752ec380710814a9ac6392ccb9d75d4`不変をverifyしてからTask-259
   implementationをfresh-inventoryする。
+
+## Checker Task 259 active implementation
+
+- [x] exact public predicate-definition module、five dense `1/2/1/1/1`
+  table、baseline-preserving projection、pending
+  `PredicatePropertyCorrectness` obligation 1件をimplementする。
+- [x] typed/final ownerでhandoffとcomplete obligation tableをatomicにinstallし、
+  second final input/getter、fact、proof、VC、acceptance、Task-260 ownershipを
+  追加しない。
+- [x] private Task-248 -> 249 -> 252 -> 256 -> 259 runner routeを通じてexact
+  165-byte pass artifact、same-stem sidecar、covered trace backlink各1件だけを
+  activateする。
+- [x] checker unit-test 5件をprivate non-integration test
+  supportへ移し、lint policyを弱めずpublic resolver test APIも追加せず、
+  production checker sourceをsyntax-freeに保つ。
+- [x] independently discovered source-statement active-count assertion 2件だけを
+  bounded `test_expectation_drift` plus `design_drift`としてclassify/correctし、
+  empty-selection isolation assertion 2件をpreserveする。
+- [x] focused checker `5/5`、focused runner `4/4`、checker `435`、runner
+  `512`、resolver `144`、syntax `59`、metadata `137`、formatting、
+  checker/runner Clippy、`422/390`、`229/193`、`101/7/199/1`、type
+  `254/242`、warnings/errors `23/0`をreproduceする。
+- [x] final independent test-sufficiency、implementation、
+  source/documentation-consistency reviewを全件no findingsで完了し、全9 hard
+  gateをPASS、score capなしのfinal quality score `100/100`を得る。
+- [ ] Task-259 fileだけをstageしdedicated implementation commitを作成、
+  clean repository/protected-stash invariantをverifyしてnext dependency-ready
+  taskをfresh-inventoryする。post-commit inventoryがTask 260をnextと確認した
+  場合は、独立frozen-contract documentation prerequisiteを先に行う。

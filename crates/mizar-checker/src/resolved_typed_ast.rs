@@ -26,6 +26,7 @@ use crate::{
         SourceConditionFormulaCompositionHandoff, SourceFormulaCompositionHandoff,
         SourcePredicateChainCompositionHandoff,
     },
+    source_predicate_definition::SourcePredicateDefinitionHandoff,
     source_set_term::SourceSetTermHandoff,
     source_statement::{
         SourceStatementHandoff, SourceStatementReferenceHandoff, SourceStatementWitnessHandoff,
@@ -38,9 +39,9 @@ use crate::{
         FormulaStatus, TermFormulaInferenceOutput, Visibility,
     },
     typed_ast::{
-        LocalTypeContextId, NodeRecoveryState, NormalizedTypeId, TypeDiagnosticId,
-        TypeDiagnosticSeverity, TypeDiagnosticTable, TypeEntryActual, TypeFactId, TypedAst,
-        TypedNodeId, TypedSiteRef, TypingState,
+        InitialObligationKind, InitialObligationTable, LocalTypeContextId, NodeRecoveryState,
+        NormalizedTypeId, TypeDiagnosticId, TypeDiagnosticSeverity, TypeDiagnosticTable,
+        TypeEntryActual, TypeFactId, TypedAst, TypedNodeId, TypedSiteRef, TypingState,
     },
 };
 use mizar_resolve::resolved_ast::{ModuleId, SemanticOrigin, SymbolId};
@@ -124,6 +125,7 @@ pub struct ResolvedTypedAst {
     source_structure: Option<SourceStructureHandoff>,
     source_set_term: Option<SourceSetTermHandoff>,
     source_atomic_formula: Option<SourceAtomicFormulaHandoff>,
+    source_predicate_definition: Option<SourcePredicateDefinitionHandoff>,
     source_composite_formula: Option<SourceCompositeFormulaHandoff>,
     source_formula_composition: Option<SourceFormulaCompositionHandoff>,
     source_condition_formula_composition: Option<SourceConditionFormulaCompositionHandoff>,
@@ -148,6 +150,7 @@ pub struct ResolvedTypedAst {
     checked_proofs: CheckedProofTable,
     checked_proof_nodes: CheckedProofNodeTable,
     checked_terminal_goals: CheckedTerminalGoalTable,
+    initial_obligations: InitialObligationTable,
 }
 
 impl ResolvedTypedAst {
@@ -197,6 +200,10 @@ impl ResolvedTypedAst {
 
     pub const fn source_atomic_formula(&self) -> Option<&SourceAtomicFormulaHandoff> {
         self.source_atomic_formula.as_ref()
+    }
+
+    pub const fn source_predicate_definition(&self) -> Option<&SourcePredicateDefinitionHandoff> {
+        self.source_predicate_definition.as_ref()
     }
 
     pub const fn source_composite_formula(&self) -> Option<&SourceCompositeFormulaHandoff> {
@@ -300,6 +307,11 @@ impl ResolvedTypedAst {
     }
 
     pub fn debug_text(&self) -> String {
+        debug_assert!(
+            self.source_predicate_definition.is_some()
+                || self.initial_obligations.iter().all(|(_, row)| row.kind
+                    != InitialObligationKind::PredicatePropertyCorrectness)
+        );
         let mut output = String::from("resolved-typed-ast-debug-v1\n");
         output.push_str("module: ");
         write_module_id(&mut output, &self.module_id);
@@ -333,6 +345,9 @@ impl ResolvedTypedAst {
         }
         if let Some(source_atomic_formula) = &self.source_atomic_formula {
             output.push_str(&source_atomic_formula.debug_text());
+        }
+        if let Some(source_predicate_definition) = &self.source_predicate_definition {
+            output.push_str(&source_predicate_definition.debug_text());
         }
         if let Some(source_composite_formula) = &self.source_composite_formula {
             output.push_str(&source_composite_formula.debug_text());
@@ -1306,6 +1321,7 @@ pub enum ResolvedTypedAstError {
     InvalidSourceStructure,
     InvalidSourceSetTerm,
     InvalidSourceAtomicFormula,
+    InvalidSourcePredicateDefinition,
     InvalidSourceCompositeFormula,
     InvalidSourceFormulaComposition,
     InvalidSourceConditionFormulaComposition,
@@ -1398,6 +1414,8 @@ impl fmt::Display for ResolvedTypedAstError {
                 .write_str("resolved typed AST source set-term handoff is inconsistent"),
             Self::InvalidSourceAtomicFormula => formatter
                 .write_str("resolved typed AST source atomic-formula handoff is inconsistent"),
+            Self::InvalidSourcePredicateDefinition => formatter
+                .write_str("resolved typed AST source predicate-definition handoff is inconsistent"),
             Self::InvalidSourceCompositeFormula => formatter
                 .write_str("resolved typed AST source composite-formula handoff is inconsistent"),
             Self::InvalidSourceFormulaComposition => formatter.write_str(
@@ -1697,6 +1715,46 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
                         ResolvedTypedAstError::InvalidSourceAtomicFormula
                     }
                 })?;
+        }
+        let initial_obligations = self.inputs.typed_ast.initial_obligations().clone();
+        let source_predicate_definition =
+            self.inputs.typed_ast.source_predicate_definition().cloned();
+        if let Some(source_predicate_definition) = &source_predicate_definition {
+            let source_context = self
+                .inputs
+                .typed_ast
+                .source_context()
+                .ok_or(ResolvedTypedAstError::InvalidSourcePredicateDefinition)?;
+            let source_type = self
+                .inputs
+                .typed_ast
+                .source_type()
+                .ok_or(ResolvedTypedAstError::InvalidSourcePredicateDefinition)?;
+            let source_term = self
+                .inputs
+                .typed_ast
+                .source_term()
+                .ok_or(ResolvedTypedAstError::InvalidSourcePredicateDefinition)?;
+            let source_atomic_formula = source_atomic_formula
+                .as_ref()
+                .ok_or(ResolvedTypedAstError::InvalidSourcePredicateDefinition)?;
+            source_predicate_definition
+                .validate_installation(
+                    source_id,
+                    &module_id,
+                    source_context,
+                    source_type,
+                    source_term,
+                    source_atomic_formula,
+                    &initial_obligations,
+                    self.inputs.typed_ast.nodes(),
+                )
+                .map_err(|_| ResolvedTypedAstError::InvalidSourcePredicateDefinition)?;
+        } else if initial_obligations
+            .iter()
+            .any(|(_, row)| row.kind == InitialObligationKind::PredicatePropertyCorrectness)
+        {
+            return Err(ResolvedTypedAstError::InvalidSourcePredicateDefinition);
         }
         let source_composite_formula = self.inputs.typed_ast.source_composite_formula().cloned();
         if let Some(source_composite_formula) = &source_composite_formula {
@@ -2021,6 +2079,7 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
             source_structure,
             source_set_term,
             source_atomic_formula,
+            source_predicate_definition,
             source_composite_formula,
             source_formula_composition,
             source_condition_formula_composition,
@@ -2045,6 +2104,7 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
             checked_proofs,
             checked_proof_nodes,
             checked_terminal_goals,
+            initial_obligations,
         })
     }
 }

@@ -6364,6 +6364,37 @@ implementation commit does not satisfy a producer task.
 - [x] Repeat specification/documentation review to no findings and complete
   docs-only verification without changing production source, fixtures,
   sidecars, expectations, trace status/count, or Cargo metadata.
-- [ ] Stage only the correction documents, create one dedicated commit,
-  verify clean/stash-invariant post-commit state, and fresh-inventory
-  Task-259 implementation.
+- [x] Stage only the correction documents, create dedicated commit
+  `e202dd70bf4e97ddb53c1275b49e667b6a77f7a0`, and verify its clean
+  post-commit state, `main` one commit ahead of `origin/main`, and unchanged
+  protected stash `f65cf4a13752ec380710814a9ac6392ccb9d75d4` before
+  fresh-inventorying Task-259 implementation.
+
+## Checker Task 259 Active Implementation
+
+- [x] Implement the exact public predicate-definition module, five dense
+  `1/2/1/1/1` tables, baseline-preserving projection, and one pending
+  `PredicatePropertyCorrectness` obligation.
+- [x] Install the handoff and complete obligation table atomically in typed and
+  final owners, with no second final input/getter and no fact, proof, VC,
+  acceptance, or Task-260 ownership.
+- [x] Activate only the exact 165-byte pass artifact, same-stem sidecar, and
+  one covered trace backlink through the private
+  Task-248 -> 249 -> 252 -> 256 -> 259 runner route.
+- [x] Keep production checker source syntax-free by placing the five named
+  unit tests in private non-integration test support, without weakening
+  lint policy or adding a public resolver test API.
+- [x] Classify and correct only two independently discovered source-statement
+  active-count assertions as bounded `test_expectation_drift` plus
+  `design_drift`; preserve both empty-selection isolation assertions.
+- [x] Reproduce focused checker `5/5`, focused runner `4/4`, checker `435`,
+  runner `512`, resolver `144`, syntax `59`, metadata `137`, formatting,
+  checker/runner Clippy, `422/390`, `229/193`, `101/7/199/1`, type `254/242`,
+  and warnings/errors `23/0`.
+- [x] Complete the final independent test-sufficiency, implementation, and
+  source/documentation-consistency reviews with no findings; pass all nine
+  hard gates with an uncapped final quality score of `100/100`.
+- [ ] Stage only Task-259 files, create the dedicated implementation commit,
+  verify clean repository/protected-stash invariants, and fresh-inventory the
+  next dependency-ready task. Task 260 requires its own frozen-contract
+  documentation prerequisite if post-commit inventory confirms it next.

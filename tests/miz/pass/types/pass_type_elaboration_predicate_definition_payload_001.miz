@@ -1,0 +1,7 @@
+definition
+  let x be set;
+  let y be set;
+  assume x = x;
+  pred Task259PredicateDefinition: x task259_rel y means x = y;
+  symmetry by computation(steps: 1);
+end;

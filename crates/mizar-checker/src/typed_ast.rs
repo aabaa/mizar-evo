@@ -11,6 +11,9 @@ use crate::{
         SourceConditionFormulaCompositionHandoff, SourceFormulaCompositionHandoff,
         SourcePredicateChainCompositionHandoff,
     },
+    source_predicate_definition::{
+        SourcePredicateDefinitionHandoff, SourcePredicateDefinitionProjection,
+    },
     source_set_term::SourceSetTermHandoff,
     source_statement::{
         SourceStatementHandoff, SourceStatementReferenceHandoff, SourceStatementWitnessHandoff,
@@ -107,6 +110,7 @@ pub struct TypedAst {
     source_structure: Option<SourceStructureHandoff>,
     source_set_term: Option<SourceSetTermHandoff>,
     source_atomic_formula: Option<SourceAtomicFormulaHandoff>,
+    source_predicate_definition: Option<SourcePredicateDefinitionHandoff>,
     source_composite_formula: Option<SourceCompositeFormulaHandoff>,
     source_formula_composition: Option<SourceFormulaCompositionHandoff>,
     source_condition_formula_composition: Option<SourceConditionFormulaCompositionHandoff>,
@@ -150,6 +154,7 @@ impl TypedAst {
             source_structure: None,
             source_set_term: None,
             source_atomic_formula: None,
+            source_predicate_definition: None,
             source_composite_formula: None,
             source_formula_composition: None,
             source_condition_formula_composition: None,
@@ -213,6 +218,10 @@ impl TypedAst {
 
     pub const fn source_atomic_formula(&self) -> Option<&SourceAtomicFormulaHandoff> {
         self.source_atomic_formula.as_ref()
+    }
+
+    pub const fn source_predicate_definition(&self) -> Option<&SourcePredicateDefinitionHandoff> {
+        self.source_predicate_definition.as_ref()
     }
 
     pub const fn source_composite_formula(&self) -> Option<&SourceCompositeFormulaHandoff> {
@@ -666,6 +675,50 @@ impl TypedAst {
             )
             .map_err(|_| TypedAstError::InvalidSourceAtomicFormula)?;
         self.source_atomic_formula = Some(handoff);
+        Ok(self)
+    }
+
+    pub fn with_source_predicate_definition(
+        mut self,
+        projection: SourcePredicateDefinitionProjection,
+    ) -> Result<Self, TypedAstError> {
+        if self.source_predicate_definition.is_some() {
+            return Err(TypedAstError::InvalidSourcePredicateDefinition);
+        }
+        let source_context = self
+            .source_context
+            .as_ref()
+            .ok_or(TypedAstError::InvalidSourcePredicateDefinition)?;
+        let source_type = self
+            .source_type
+            .as_ref()
+            .ok_or(TypedAstError::InvalidSourcePredicateDefinition)?;
+        let source_term = self
+            .source_term
+            .as_ref()
+            .ok_or(TypedAstError::InvalidSourcePredicateDefinition)?;
+        let source_atomic_formula = self
+            .source_atomic_formula
+            .as_ref()
+            .ok_or(TypedAstError::InvalidSourcePredicateDefinition)?;
+        let (base_initial_obligations, handoff, initial_obligations) = projection.into_parts();
+        if self.initial_obligations != base_initial_obligations {
+            return Err(TypedAstError::InvalidSourcePredicateDefinition);
+        }
+        handoff
+            .validate_installation(
+                self.source_id,
+                &self.module_id,
+                source_context,
+                source_type,
+                source_term,
+                source_atomic_formula,
+                &initial_obligations,
+                &self.nodes,
+            )
+            .map_err(|_| TypedAstError::InvalidSourcePredicateDefinition)?;
+        self.source_predicate_definition = Some(handoff);
+        self.initial_obligations = initial_obligations;
         Ok(self)
     }
 
@@ -1388,6 +1441,9 @@ impl TypedAst {
         }
         if let Some(source_atomic_formula) = &self.source_atomic_formula {
             output.push_str(&source_atomic_formula.debug_text());
+        }
+        if let Some(source_predicate_definition) = &self.source_predicate_definition {
+            output.push_str(&source_predicate_definition.debug_text());
         }
         if let Some(source_composite_formula) = &self.source_composite_formula {
             output.push_str(&source_composite_formula.debug_text());
@@ -2136,6 +2192,7 @@ pub enum InitialObligationKind {
     NonEmptiness,
     Narrowing,
     RegistrationCorrectness,
+    PredicatePropertyCorrectness,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -2295,6 +2352,7 @@ pub enum TypedAstError {
     InvalidSourceStructure,
     InvalidSourceSetTerm,
     InvalidSourceAtomicFormula,
+    InvalidSourcePredicateDefinition,
     InvalidSourceCompositeFormula,
     InvalidSourceFormulaComposition,
     InvalidSourceConditionFormulaComposition,
@@ -2433,6 +2491,9 @@ impl fmt::Display for TypedAstError {
             }
             Self::InvalidSourceAtomicFormula => {
                 formatter.write_str("typed AST source atomic-formula handoff is inconsistent")
+            }
+            Self::InvalidSourcePredicateDefinition => {
+                formatter.write_str("typed AST source predicate-definition handoff is inconsistent")
             }
             Self::InvalidSourceCompositeFormula => {
                 formatter.write_str("typed AST source composite-formula handoff is inconsistent")
@@ -2651,6 +2712,13 @@ fn validate_typed_ast(parts: &TypedAstParts) -> Result<(), TypedAstError> {
     validate_facts(parts)?;
     validate_coercions(parts)?;
     validate_initial_obligations(parts)?;
+    if parts
+        .initial_obligations
+        .iter()
+        .any(|(_, row)| row.kind == InitialObligationKind::PredicatePropertyCorrectness)
+    {
+        return Err(TypedAstError::InvalidSourcePredicateDefinition);
+    }
     validate_diagnostics(parts)?;
     Ok(())
 }
@@ -3773,6 +3841,7 @@ fn initial_obligation_kind_name(kind: InitialObligationKind) -> &'static str {
         InitialObligationKind::NonEmptiness => "non_emptiness",
         InitialObligationKind::Narrowing => "narrowing",
         InitialObligationKind::RegistrationCorrectness => "registration_correctness",
+        InitialObligationKind::PredicatePropertyCorrectness => "predicate_property_correctness",
     }
 }
 

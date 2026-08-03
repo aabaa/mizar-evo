@@ -4705,3 +4705,28 @@ recovery、wrong shell/module/range/type/token/local identity、stale/duplicate
 site、excluded descendantをbindingとして扱う試みをrejectする。existing Profile-A
 selector/output/recovery/debugとactive fixtureはbyte-compatible。expectation fieldは
 dormant helperをselectできずdiagnostic detail keyも追加しない。
+
+## Checker Task 259 active predicate-definition route
+
+private routeはbyte-exact sourceとcomplete normal 71-row/root-70 surface profile
+だけでselectする。definition block、ordered `x`/`y` parameter、guard、
+predicate pattern/definiens、symmetry property、raw predicate resolver entry、
+same-block sibling、pattern/label/justification descendant exclusionをauthenticateする。
+sidecar outcome、stage、tag、diagnostic、expectation dataはrouteをselectできない。
+
+selection後にone shared surface-indexed `TypedArena`を作成し、existing ownerを
+Task 248、Task 249 `2/2/0`、Task 252 `4/4/0`、Task 256
+`2/0/0/0/0/0/0/4/4`、Task 259 `1/2/1/1/1`のexact orderでcallする。
+Task 259はinput obligation baselineをpreserveし、empty assumptionを持つ
+`Pending` `PredicatePropertyCorrectness` row 1件をappendする。typed/final
+installationはall-or-nothingのまま。routeはproperty proof、fact、axiom、
+VC、acceptance、public diagnostic、Task-260 mixed-family payloadをpublishしない。
+
+runner test 4件は
+`task259_real_source_surface_resolver_and_lower_bundle_is_exact`、
+`task259_source_ast_resolver_and_lower_mutations_fail_at_the_owner`、
+`task259_expectation_selection_and_mixed_definition_route_stay_isolated`、
+`task259_route_publishes_no_property_proof_fact_or_acceptance`である。`4/4`を
+PASSし、full runner library countは`512`である。adjacent active-count変更は
+source-statement selection test 2件のindependently reviewed `198 -> 199`だけで、
+empty-selection assertionは不変である。

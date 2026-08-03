@@ -2013,3 +2013,29 @@ Task-259 pass caseがlandするまでfocused Rust testだけでexerciseする。
 `tests/coverage/spec_trace.toml`はbyte-unchanged、current metadataは
 `421/389`/type `253/241`、future Task-259 deltaはexisting frozen trace intentの
 ownershipに残る。
+
+## Checker Task 259 active trace result
+
+implementationはrequirement
+`spec.en.checker.type_elaboration.source_predicate_definition_payload`をexactly
+1件追加する。sourceは
+`doc/design/mizar-checker/en/source_predicate_definition.md`、sectionは
+`Dedicated Consumer And Trace Intent`、stageは`type_elaboration`、statusは
+`covered`、`required = true`、`coverage = "pass"`である。complete backlink
+setは
+`tests/miz/pass/types/pass_type_elaboration_predicate_definition_payload_001.expect.toml`
+だけを含み、そのsidecarもreciprocalにこのrequirementだけを指す。
+
+active creditはexact predicate-definition transport、すなわち
+definition/parameter/guard/property/correctness table `1/2/1/1/1`とone
+baseline-appended pending property-correctness obligationに限定する。
+guard-conditioned FOL construction、justification proof、discharge、acceptance、
+fact/axiom、VC/IR、mixed Task-260 familyはdeferredのままbacklinkを得ない。
+existing row、fixture、sidecar、expectation、status、test listはrebaselineしない。
+
+measured metadataはcases/requirements `422/390`、pass/fail `229/193`、
+active parse/declaration/type/proof `101/7/199/1`、type requirements
+`254/242`、warnings/errors `23/0`である。sole-backlink/
+reciprocal-sidecar invariantはmetadata test `137/137`でPASSする。final
+independent reviewは全件no findingsで完了し、全9 hard gateはPASS、score capなしの
+quality scoreは`100/100`である。task commitとpost-commit inventoryはpendingである。

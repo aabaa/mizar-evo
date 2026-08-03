@@ -22,6 +22,7 @@ public method は、module spec が table、builder、output API として記述
 - [binding_env.md](./binding_env.md)
 - [source_context.md](./source_context.md)
 - [source_atomic_formula.md](./source_atomic_formula.md)
+- [source_predicate_definition.md](./source_predicate_definition.md)
 - [source_attribute.md](./source_attribute.md)
 - [source_evidence.md](./source_evidence.md)
 - [source_application.md](./source_application.md)
@@ -136,6 +137,7 @@ ControlFlowIr、VC payload、proof evidence の AST-wide source-to-checker gap �
 - `source_atomic_formula`
 - `source_composite_formula`
 - `source_formula_composition`
+- `source_predicate_definition`
 - `source_context`
 - `source_attribute`
 - `source_evidence`
@@ -150,9 +152,10 @@ ControlFlowIr、VC payload、proof evidence の AST-wide source-to-checker gap �
 
 根拠: `tests/lint_policy.rs` の
 `checker_public_semantic_api_matches_documented_modules` がこの list を検査し、
-production source が direct `mizar-syntax` import を持たないこと、Task-258B1
-の `#[cfg(test)]` parser-fixture import と test-only dev-dependency だけを
-許可すること、resolver/session dependency boundary を保つことも guard している。
+全physical production source fileがdirect `mizar-syntax` importを持たないこと、
+Task-259 syntax fixtureを既存test-only dependencyを使うnon-integration
+test-support child moduleへ限定すること、Task-259 lint exceptionなしで
+resolver/session dependency boundaryを保つこともguardしている。
 
 ## Public Surface Inventory
 
@@ -478,6 +481,44 @@ literal top-level public item:
 bounded gap: predicate-chain/formula-operator ownershipはTask 257、overload
 selection、asserted-type reachability、attribute admissibility/truth、formula
 fact/result、theorem acceptance、proof、downstream IRは本module外である。
+
+### `source_predicate_definition`
+
+generated public newtype:
+
+- `SourcePredicateDefinitionId`、`SourcePredicateParameterId`、
+  `SourcePredicateGuardId`、`SourcePredicatePropertyId`、
+  `SourcePredicateCorrectnessId`
+
+literal top-level public item:
+
+- `SourcePredicateDefinitionHandoffInput`、
+  `SourcePredicateDefinitionInput`、`SourcePredicateParameterInput`、
+  `SourcePredicateGuardInput`、`SourcePredicatePropertyInput`、
+  `SourcePredicateCorrectnessInput`
+- `SourcePredicatePropertyKind`、`SourcePredicateDefinitionRecovery`
+- `SourcePredicateDefinition`、`SourcePredicateParameter`、
+  `SourcePredicateGuard`、`SourcePredicateProperty`、
+  `SourcePredicateCorrectness`
+- `SourcePredicateDefinitionTable`、`SourcePredicateParameterTable`、
+  `SourcePredicateGuardTable`、`SourcePredicatePropertyTable`、
+  `SourcePredicateCorrectnessTable`
+- `SourcePredicateDefinitionHandoff`、
+  `SourcePredicateDefinitionProjection`、
+  `SourcePredicateDefinitionError`、`SourcePredicateDefinitionProducer`
+
+対応:
+
+| spec promise | source evidence | test evidence | status |
+|---|---|---|---|
+| syntax-free immutable table 5個がpredicate 1件、ordered parameter 2件、guard 1件、symmetry property 1件、correctness link 1件を保持する。 | `src/source_predicate_definition.rs`のpublic input、row、dense id、table、getter。 | `task_259_exact_predicate_definition_payload_and_pending_obligation`、independent row/field corruption coverage。 | exact `1/2/1/1/1`としてimplemented。 |
+| producerはresolver identityとexact Task-248/249/252/256 fingerprintをauthenticateし、retained baselineへpending correctness obligation 1件をappendする。 | `SourcePredicateDefinitionProducer::build`、`SourcePredicateDefinitionProjection`、fail-closed error category。 | dependency/obligation corruption、nonempty-baseline transactional test。 | sorting、repair、partial publicationなしでimplemented。 |
+| typed/final ownerはhandoffとcomplete obligation tableをatomicにpublishしclone-preserveする。 | `TypedAst::with_source_predicate_definition`と`ResolvedTypedAst::source_predicate_definition`。 | transactional installation、final clone/debug/family-isolation test。 | second input/public final obligation-table getterなしでimplemented。 |
+| public surfaceとenumはdocumented/forward-compatibleである。 | 上記5 dense id、6 input aggregate、2 data enum、5 row/table、handoff、projection、error、producer。全public enumはnon-exhaustive。 | `checker_public_enums_are_forward_compatible_and_documented`、`checker_source_spec_audit_covers_public_surface_and_gaps`。 | Task-259 lint exceptionなしでguard。 |
+
+bounded gap: guard-to-symmetry FOL construction、justification proof、
+discharge、fact/axiom、accepted definition、VC/IR、mixed Task-260
+functor-definition routeは本module外である。
 
 ### `source_composite_formula`
 
@@ -2946,6 +2987,35 @@ declarationの`source_drift`、recursive public-input graphの
 `source_undocumented_behavior`、`test_expectation_drift`、
 `boundary_violation`、`repo_metadata_conflict`はない。
 
+## Task 259 active public-surface result
+
+`source_predicate_definition`はexport済みで、上記public-surface inventoryは全
+generated dense id/literal public declarationをenumerateする。public enum 3個は全て
+`#[non_exhaustive]`で、immutable rowはgetterをexposeするがcaller-supplied
+derived origin/fingerprint/allocated obligation idは公開しない。
+`tests/lint_policy.rs`はowning module spec、crate export、public enum policy、
+exact source-spec declaration、production no-syntax boundaryをTask-specific exceptionなしで
+coverする。
+
+owning moduleはexact definition/parameter/guard/property/correctness cardinality
+`1/2/1/1/1`をproduceし、Task-248/249/252/256 dependencyをvalidateしてretained
+baselineへpending property-correctness obligation 1件をappendする。typed installationは
+one-shot/transactional、final assemblyはsecond inputを受けず、obligation-table、
+fact、proof、VC、axiom、acceptance getterをpublishしない。
+
+previous expected `source_drift`、`test_gap`、public-policy `design_drift`は
+implementationでcloseした。test-only syntax consumerはexternal non-integration child
+support moduleにconfineし、candidate `boundary_violation`をcloseした。stale
+active-count consumer 2件の`198 -> 199`はbounded `test_expectation_drift`
+plus write-scope `design_drift`で、semantic selection intentは不変である。later
+`origin/main` movementはreport-only `repo_metadata_conflict`であり、
+source/spec disagreementではない。
+
+guard-conditioned FOL construction、proof/discharge、acceptance、fact、axiom、
+VC/IR、Task 272 justification ownership、mixed Task-260 routingはexplicitly deferredの
+まま。final source/documentation reviewはno findingsで完了し、quality reviewは
+全9 hard gateをPASSしてscore capなしの`100/100`である。commit/post-commit gateは残る。
+
 ## Task 250 frozen-contract audit addendum
 
 fresh inventoryはnext executable raw source-attribute sliceをChapters
@@ -4927,7 +4997,7 @@ excludeする。本docs-only taskはdesign mapping/follow-up ownershipをnarrati
 
 `source_predicate_definition.md`はfuture public
 `source_predicate_definition`のowning module specificationである。five dense
-ID、five input row、five immutable output row/table、handoff/projection、
+ID、six input aggregate、five immutable output row/table、handoff/projection、
 producer、three `#[non_exhaustive]` enumをfreezeする。その`Public Enum
 Policy`は`SourcePredicatePropertyKind`、
 `SourcePredicateDefinitionRecovery`、

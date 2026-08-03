@@ -3279,7 +3279,34 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
   and one trace row as exact future consumers.
 - [x] Keep `BindingEnv`, all lower handoffs, and Task-259 tables checker-owned;
   keep raw AST/sibling/subtree authentication private to the runner.
-- [ ] Repeat specification/consumer review to no findings and complete
+- [x] Repeat specification/consumer review to no findings and complete
   docs-only verification with every executable artifact byte-unchanged.
-- [ ] Commit only the correction documents, verify clean/stash-invariant
+- [x] Commit only the correction documents as
+  `e202dd70bf4e97ddb53c1275b49e667b6a77f7a0`, verify clean/stash-invariant
   state, and fresh-inventory Task-259 implementation.
+
+## Checker Task 259 Active Consumer Implementation
+
+- [x] Add the exact 165-byte pass fixture/sidecar and sole covered trace
+  backlink without changing the existing mixed Task-260 fixture family.
+- [x] Implement the private Task 248 -> 249 -> 252 -> 256 -> 259 route with
+  exact lower profiles and a final `1/2/1/1/1` handoff plus one `Pending`
+  `PredicatePropertyCorrectness` obligation.
+- [x] Add the four frozen runner tests and keep raw AST, sibling, resolver,
+  subtree-exclusion, and exact-source authentication runner-private.
+- [x] Independently review and update only the two stale source-statement
+  active-type count consumers from `198` to `199`; preserve their empty
+  selection assertions and keep the other two mechanical metadata assertions
+  aligned.
+- [x] Reproduce executable metadata `422/390`, `229/193`,
+  `101/7/199/1`, type `254/242`, warnings/errors `23/0`, metadata `137`,
+  checker `435`, runner `512`, resolver `144`, and syntax `59`.
+- [x] Complete final independent test-sufficiency, implementation, and
+  source/documentation-consistency reviews with no findings; pass all nine
+  hard gates with an uncapped final quality score of `100/100`.
+- [x] Fresh-measure final affected production/test-support inventories:
+  checker `24/147030`, runner `31/63248`, checker producer/support
+  `1794/1974`, and runner production/test leaves `1233/517`.
+- [ ] Stage only Task-259 files, create the dedicated implementation commit,
+  verify the repository/protected-stash invariants, and select the next
+  dependency-ready task only from post-commit fresh inventory.

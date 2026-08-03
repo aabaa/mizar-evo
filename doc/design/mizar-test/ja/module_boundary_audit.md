@@ -11444,3 +11444,41 @@ checker-ownedのままである。
 consumerで、public runner API、CLI schema、diagnostic、expectation selectionは
 変更しない。new sidecar 1件はnormal source routeでselectされ、expected outcome
 では選択されない。mixed Task 260とproof Task 272 ownershipは不変である。
+
+## Checker Task 259 active consumer boundary
+
+`src/runner/type_elaboration/source_predicate_definition.rs`はsole new
+private runner ownerである。exact 165-byte source、dense 71-row surface
+profile、direct definition-block sibling、raw predicate resolver identity、excluded
+pattern/label/justification descendantをauthenticateする。その後one
+caller-owned arena上でexisting Task-248 Profile-B projection、Task 249
+`2/2/0`、Task 252 `4/4/0`、Task 256 `2/0/0/0/0/0/0/4/4`、Task 259
+`1/2/1/1/1` plus one pending obligationをcomposeする。checker-owned
+`BindingEnv`をreconstructせず、semantic predicate/property proof decisionや
+mixed Task-260 route dispatchをownしない。
+
+`src/runner/type_elaboration.rs`はchildをdeclareし、`src/runner.rs`はgeneric
+type-gap fallbackの前にそのnarrow transport selectorをinvokeし、
+`src/runner/tests.rs`はone four-test leafをincludeする。そのleaf外のexisting
+test editはindependently reviewed source-statement selection test 2件のactive-type
+count `198 -> 199`だけで、両方のempty-selection checkは不変である。
+fixture/sidecar/trace additionはmetadata ownershipであり、new semantic
+ownershipではない。
+
+checker unit-test bodyはexternal non-integration `tests/support` child moduleに置く。
+このtest-only boundaryはopaque resolver shell構築のためalready declared
+syntax dev-dependencyを使えるが、physical production import、lint exception、
+public resolver helper、runner-owned semantic identityは追加しない。これにより
+candidate `boundary_violation`はcloseし、current implementation scopeに
+unresolved boundary findingはない。
+
+fresh final source-review valueはchecker producer/test-support `1794`/`1974`
+lines、runner production/test leaf `1233`/`517`である。checker productionは
+`24/147030`、path/content
+`022586d6096dfa2eb05d6b0b9e91bf6dea71e5fc0a036f54a3bb462c7af16ac5` /
+`14ab798c611d954f9ea346367547240e58e9c5d0e04ec8a4ae68e2f20b71860b`、
+runnerは`31/63248`、
+`0d6edf22a94efd3497423f427accaf34341d223f4339a0adf9c4a7a523271e89` /
+`a9abe9fcbc4a9b04e84fcb6402e13b95cdcd71e7ed2952dbf1a8fb2e1b551a9f`である。
+final boundary reviewはno findingsで完了し、quality reviewは全9 hard gateを
+PASSしてscore capなしの`100/100`である。commit/post-commit gateは残る。

@@ -241,6 +241,10 @@ fn checker_public_enums_are_forward_compatible_and_documented() {
             "src/source_formula_composition.rs",
             "source_formula_composition.md",
         ),
+        (
+            "src/source_predicate_definition.rs",
+            "source_predicate_definition.md",
+        ),
         ("src/source_set_term.rs", "source_set_term.md"),
         ("src/source_statement.rs", "source_statement.md"),
         ("src/source_structure.rs", "source_structure.md"),
@@ -372,6 +376,10 @@ fn checker_source_spec_audit_covers_public_surface_and_gaps() {
         ("src/source_attribute.rs", "source_attribute"),
         ("src/source_application.rs", "source_application"),
         ("src/source_atomic_formula.rs", "source_atomic_formula"),
+        (
+            "src/source_predicate_definition.rs",
+            "source_predicate_definition",
+        ),
         ("src/source_set_term.rs", "source_set_term"),
         ("src/source_structure.rs", "source_structure"),
         ("src/source_term.rs", "source_term"),
@@ -877,6 +885,7 @@ fn public_checker_api_is_documented(root: &Path, path: &Path, line: &str) -> boo
             || path == Path::new("src/source_atomic_formula.rs")
             || path == Path::new("src/source_composite_formula.rs")
             || path == Path::new("src/source_formula_composition.rs")
+            || path == Path::new("src/source_predicate_definition.rs")
             || path == Path::new("src/source_set_term.rs")
             || path == Path::new("src/source_statement.rs")
             || path == Path::new("src/source_structure.rs")
@@ -902,6 +911,7 @@ fn public_checker_api_is_documented(root: &Path, path: &Path, line: &str) -> boo
                 | "pub mod source_atomic_formula;"
                 | "pub mod source_composite_formula;"
                 | "pub mod source_formula_composition;"
+                | "pub mod source_predicate_definition;"
                 | "pub mod source_set_term;"
                 | "pub mod source_statement;"
                 | "pub mod source_structure;"

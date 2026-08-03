@@ -3059,7 +3059,34 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
   1件をexact future consumerとしてfreezeする。
 - [x] `BindingEnv`、全lower handoff、Task-259 tableをchecker-ownedに保ち、
   raw AST/sibling/subtree authenticationをrunner privateに保つ。
-- [ ] specification/consumer reviewをfindingsなしまでrepeatし、全executable
+- [x] specification/consumer reviewをfindingsなしまでrepeatし、全executable
   artifact byte-unchangedでdocs-only verificationをcompleteする。
-- [ ] correction documentだけをcommitし、clean/stash-invariant stateをverifyし、
-  Task-259 implementationをfresh-inventoryする。
+- [x] correction documentだけを
+  `e202dd70bf4e97ddb53c1275b49e667b6a77f7a0`としてcommitし、
+  clean/stash-invariant stateをverifyし、Task-259 implementationを
+  fresh-inventoryする。
+
+## Checker Task 259 active consumer implementation
+
+- [x] exact 165-byte pass fixture/sidecarとsole covered trace backlinkを追加し、
+  existing mixed Task-260 fixture familyは変更しない。
+- [x] exact lower profileを持つprivate Task 248 -> 249 -> 252 -> 256 ->
+  259 routeと、final `1/2/1/1/1` handoff plus one `Pending`
+  `PredicatePropertyCorrectness` obligationをimplementする。
+- [x] frozen runner test 4件を追加し、raw AST、sibling、resolver、
+  subtree exclusion、exact-source authenticationをrunner-privateに保つ。
+- [x] stale source-statement active-type count consumer 2件だけを
+  `198`から`199`へindependently review/updateし、empty selection assertionを
+  preserveして他のmechanical metadata assertion 2件もalignする。
+- [x] executable metadata `422/390`、`229/193`、`101/7/199/1`、type
+  `254/242`、warnings/errors `23/0`、metadata `137`、checker `435`、
+  runner `512`、resolver `144`、syntax `59`をreproduceする。
+- [x] final independent test-sufficiency、implementation、
+  source/documentation-consistency reviewを全件no findingsで完了し、全9 hard
+  gateをPASS、score capなしのfinal quality score `100/100`を得る。
+- [x] affected production/test-support inventoryをfresh final measurementし、checker
+  `24/147030`、runner `31/63248`、checker producer/support `1794/1974`、
+  runner production/test leaf `1233/517`をrecordする。
+- [ ] Task-259 fileだけをstageしてdedicated implementation commitを作成し、
+  repository/protected-stash invariantをverifyしてからpost-commit fresh
+  inventoryだけでnext dependency-ready taskを選ぶ。

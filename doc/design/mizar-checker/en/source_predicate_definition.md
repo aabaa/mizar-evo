@@ -3,11 +3,11 @@
 > Canonical language: English. Japanese companion:
 > [../ja/source_predicate_definition.md](../ja/source_predicate_definition.md).
 
-Status: Checker Task 259 frozen contract plus post-Task-248 contract
-correction prerequisite. This document freezes a future implementation
-boundary; it does not implement the producer, add a fixture or sidecar, or
-change traceability or coverage credit. The separately committed Task-248
-Profile-B dependency is recorded below as completed current state.
+Status: Checker Task 259 implemented contract plus post-Task-248 contract
+correction. The frozen boundary below is now implemented by the syntax-free
+producer, its exact real consumer, and one covered trace backlink. The
+separately committed Task-248 Profile-B dependency remains completed current
+state.
 
 ## Authority, Scope, And Findings
 
@@ -794,3 +794,47 @@ after EN/JA synchronization, repeated review with no findings, docs-only
 verification, exact staging, one dedicated documentation commit, and clean
 post-commit inventory with the protected stash unchanged. Its next task is
 Task-259 production implementation.
+
+## Task 259 Implementation Result
+
+The implementation realizes the frozen API without widening it. The public
+module exposes the five dense ids; six input aggregates; two data enums; five
+immutable rows and five source-ordered tables; the handoff, projection,
+non-exhaustive error, and producer. The exact output is `1/2/1/1/1`, and the
+projection retains the authenticated baseline while appending exactly one
+`Pending` `PredicatePropertyCorrectness` obligation with empty assumptions and
+the frozen opaque goal/provenance.
+
+`TypedAst::with_source_predicate_definition` installs the handoff and complete
+obligation table atomically. Final assembly accepts no second Task-259 input,
+privately clone-preserves the complete table, revalidates the five tables and
+Task-248/249/252/256 fingerprints, and renders the handoff once. No fact,
+proof, VC, axiom, accepted definition, or public diagnostic is produced.
+
+The private runner authenticates the exact 165-byte/final-LF artifact whose
+SHA-256 is
+`91bdb5f51c0ea5f07bdd831700cb9803f2aa57e005921c7e4e1798ecbbf2bd9f`,
+then composes Task 248, Task 249 `2/2/0`, Task 252 `4/4/0`, Task 256
+`2/0/0/0/0/0/0/4/4`, and Task 259. The five checker tests and four runner
+tests named under **Frozen Tests** pass. The test-only checker body resides in
+`tests/support/source_predicate_definition_unit.rs`; it remains a private
+child module using the existing dev-dependency, so physical production source
+is syntax-free and no lint exception or public resolver test API was added.
+Two existing source-statement isolation tests received only the reviewed
+mechanical active-count correction `198 -> 199`; their empty-selection
+assertions remain unchanged.
+
+Measured executable metadata is cases/requirements `422/390`, pass/fail
+`229/193`, active parse/declaration/type/proof `101/7/199/1`, type coverage
+`254/242`, and warnings/errors `23/0`. The exact new trace requirement has the
+single same-stem sidecar backlink. Guard-to-property FOL construction,
+justification proof, discharge, acceptance, facts/axioms, and the mixed
+Task-260 route remain deferred.
+
+Completed verification is focused checker `5/5`, focused runner `4/4`,
+checker library `435/435`, runner library `512/512`, resolver library
+`144/144`, syntax library `59/59`, metadata `137/137`, both lint policies,
+`cargo fmt --all --check`, workspace warnings-denied Clippy, workspace
+`cargo test`, and all five CLI/count/hash gates. The four independent reviews
+ended with no findings, and all nine hard gates pass with an uncapped
+`100/100`. The task commit and post-commit fresh inventory remain pending.

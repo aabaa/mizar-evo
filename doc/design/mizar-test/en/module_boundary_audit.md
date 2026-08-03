@@ -12703,3 +12703,42 @@ mechanical consumers; the public runner API, CLI schema, diagnostics, and
 expectation selection do not change. The one new sidecar selects by normal
 source route, never by expected outcome. Mixed Task 260 and proof Task 272
 ownership remain unchanged.
+
+## Checker Task 259 Active Consumer Boundary
+
+`src/runner/type_elaboration/source_predicate_definition.rs` is the sole new
+private runner owner. It authenticates the exact 165-byte source, dense
+71-row surface profile, direct definition-block siblings, raw predicate
+resolver identity, and excluded pattern/label/justification descendants. It
+then composes, over one caller-owned arena, the existing Task-248 Profile-B
+projection, Task 249 `2/2/0`, Task 252 `4/4/0`, Task 256
+`2/0/0/0/0/0/0/4/4`, and Task 259 `1/2/1/1/1` plus one pending obligation.
+It does not reconstruct checker-owned `BindingEnv` data, own semantic
+predicate/property proof decisions, or dispatch the mixed Task-260 route.
+
+`src/runner/type_elaboration.rs` declares the child, `src/runner.rs` invokes
+its narrow transport selector before the generic type-gap fallback, and
+`src/runner/tests.rs` includes the one four-test leaf. The only existing test
+edit outside that leaf is the independently reviewed `198 -> 199` active-type
+count in two source-statement selection tests; both empty-selection checks
+are unchanged. The fixture/sidecar/trace addition is metadata ownership, not
+new semantic ownership.
+
+The checker unit-test body lives under an external non-integration
+`tests/support` child module. That test-only boundary may use the already
+declared syntax dev-dependency to construct opaque resolver shells; it adds
+no physical production import, lint exception, public resolver helper, or
+runner-owned semantic identity. This closes the candidate
+`boundary_violation`; no unresolved boundary finding remains in the current
+implementation scope.
+
+Fresh final source-review values are checker producer/test-support
+`1794`/`1974` lines and runner production/test leaves `1233`/`517`. Checker
+production is `24/147030`, path/content
+`022586d6096dfa2eb05d6b0b9e91bf6dea71e5fc0a036f54a3bb462c7af16ac5` /
+`14ab798c611d954f9ea346367547240e58e9c5d0e04ec8a4ae68e2f20b71860b`;
+runner is `31/63248`,
+`0d6edf22a94efd3497423f427accaf34341d223f4339a0adf9c4a7a523271e89` /
+`a9abe9fcbc4a9b04e84fcb6402e13b95cdcd71e7ed2952dbf1a8fb2e1b551a9f`.
+Final boundary review ended with no findings, and the quality review passed
+all nine hard gates with an uncapped `100/100`; commit/post-commit gates remain.
