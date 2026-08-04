@@ -2477,3 +2477,12 @@ backlink, status, diagnostic, or active outcome. It only projects four unit
 tests (`544 -> 548`) for the exact source-type composite. Cases/requirements
 remain `428/395`, active stages `101/7/205/1`, type coverage `259=247+12`, and
 the trace hash remains byte-identical.
+
+## Checker Task 269CT Implemented Zero-Credit Consumer
+
+The four checker and four runner tests close only the bounded dormant
+composition `test_gap`. No fixture, expectation, trace row/backlink/status,
+active dispatch, diagnostic, or result owner changes. Cases/requirements stay
+`428/395`, pass/fail `235/193`, active stages `101/7/205/1`, type coverage
+`259=247+12`, warnings/errors `23/0`, and trace SHA-256 remains
+`55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`.

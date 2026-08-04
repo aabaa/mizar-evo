@@ -808,3 +808,10 @@ typed overlayを作り、binding 0はSource `14..17`、proof-local binding 1だ�
 `76..79`となる。context/identity/lookup/capture/diagnostic/non-type fieldは不変。
 overlayはnew compositeからだけ参照し、use/capture、guard、fact、goal、proof、obligationを
 publishしない。
+
+## Task 269CT implemented overlay
+
+implementationはdependency environmentをsorting/repairなしでexact reconstructする。context、
+binding 2件、identity、lookup field、capture、diagnostic、recoveryは、binding 1のtype site
+`Missing -> Source(76..79)`だけを除きTask 269Cとequal。validation/testはcomplete
+`2/2/0` payloadをauthenticateし、binding corruptionをsource-type/availabilityより先にfail。

@@ -656,3 +656,10 @@ semanticsのclaimを引き続き禁止する。
 new compositeはwritten bare-`set` source typeとbinding type-site overlayだけをauthenticate。
 canonical type assumption、current goal/proof-skeleton matching、initial obligation、discharge /
 acceptance、fact、IR/VCをmaterializeしない。semantic tableはempty、coverage creditはzero。
+
+## Task 269CT implemented semantic deferral
+
+Typed/resolved testはfrozen source siblingとsemantic-result ownerを全てemptyとして列挙し、
+final assemblyはnonempty semantic inputをpublication前にrejectする。implementationが閉じるのは
+bounded source composition driftだけで、assumption/guard、goal、obligation、fact、proof/
+discharge/acceptance、IR/VCはzero creditのままdefer。

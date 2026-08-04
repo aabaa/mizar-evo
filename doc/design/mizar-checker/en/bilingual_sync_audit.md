@@ -178,15 +178,6 @@ module-boundary pair is updated because public checker enum/profile surfaces
 and the existing private runner leaf changed. No Task-257B2 bilingual debt
 remains.
 
-## Task 269CT synchronization
-
-The frozen proof-`let` type-composition contract is synchronized in EN/JA:
-authority, Task-269CP/C dependency, `2/2/0` typed binding overlay,
-`2/2/0/0/0/0` source-type profile, three-node arena, public API/errors,
-fingerprints, boxed Typed/final owner, seven-file implementation scope, eight
-tests, zero-credit audit impact, unchanged corpus/trace/CLI, and semantic
-deferrals agree. No bilingual debt is accepted.
-
 ## Task 257C3 Frozen-Contract Synchronization
 
 The EN canonical and JA companion now freeze the same 107-byte consumer,
@@ -1749,6 +1740,15 @@ output, four-test guard matrix, no checker owner, and the measured runner
 inventory agree in both languages. No implementation-time bilingual debt
 remains.
 
+## Task 269CT synchronization
+
+The frozen proof-`let` type-composition contract is synchronized in EN/JA:
+authority, Task-269CP/C dependency, `2/2/0` typed binding overlay,
+`2/2/0/0/0/0` source-type profile, three-node arena, public API/errors,
+fingerprints, boxed Typed/final owner, seven-file implementation scope, eight
+tests, zero-credit audit impact, unchanged corpus/trace/CLI, and semantic
+deferrals agree. No bilingual debt is accepted.
+
 ## Task 269C frozen synchronization result
 
 EN/JA now agree on canonical authority, the complete Rust signatures, one
@@ -1771,3 +1771,11 @@ private dormant consumer, eight tests, measured `486/544` libraries and
 `30/167058` / `37/71412` production, unchanged active/trace/CLI state, and
 the separate source-type deferral. No implementation-time bilingual debt
 remains.
+
+## Task 269CT implementation synchronization
+
+EN/JA now describe the implemented seven-file composite, dedicated all-node-
+hint final-input rejection, four checker/four runner tests, libraries
+`490/548`, production `30/168322` / `37/71647`, and exact test-list/content
+hashes consistently. Public Enum Policy adds the implemented non-exhaustive
+`SourceProofLocalLetTypeError` row. No bilingual debt remains.

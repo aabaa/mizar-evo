@@ -1796,3 +1796,10 @@ one-shot installerを追加する。exact ownerは3-node arenaとotherwise-empty
 要求し、legacy direct `source_type` / `source_proof_local_let_binding`はempty。wrong dependency /
 fingerprint/arena、duplicate、occupied sibling、nonempty semanticsは
 `InvalidSourceProofLocalLetType`でatomic fail。
+
+## Task 269CT implemented Typed ownership
+
+`TypedAst`はboxed composite 1件とexact 3-node arenaをownする。installationはpublication前に
+dependency、overlay、source type、fingerprint、arena、empty semantic table、全sibling source
+ownerをrevalidateする。duplicate、direct Task-269C/source-type sibling、stale payload、occupied
+ownerは`InvalidSourceProofLocalLetType`でatomic fail。

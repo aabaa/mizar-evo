@@ -1688,3 +1688,10 @@ EN/JA agree on the dormant exact Task-269C consumer, inherited type ranges,
 three-node arena, two type rows, four runner tests, `544 -> 548` projection,
 four-file runner scope, unchanged production path count, zero dispatch/trace
 credit, and all semantic exclusions. No bilingual debt is accepted.
+
+## Checker Task 269CT implementation synchronization
+
+EN/JA now record the implemented four-file dormant runner consumer, four
+passing compound tests, runner `548`, production `37/71647`, exact list/content
+hashes, and unchanged dispatch/corpus/trace/semantic state. No bilingual debt
+remains.

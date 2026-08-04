@@ -1776,3 +1776,11 @@ authenticated typed ownerからだけcloneする。exact typed node 3件をsourc
 `source.proof-local.let.type`でone-for-one replayし、direct source-type/Task-269C fieldと
 resolved semantic tableはempty。malformed/duplicate/occupied/semantic-nonempty profileは
 `InvalidSourceProofLocalLetType`。
+
+## Task 269CT implemented final replay
+
+final assemblyはarena construct前にcompositeをclone/revalidateし、exact 3-node Typed profileと
+otherwise empty source/semantic/overload stateを要求する。Task-specific predicateは
+`node_hints.is_empty()`を要求し、3 node全てを`source.proof-local.let.type`へone-for-one map。
+statement-transport hint/nonempty expression metadataは
+`InvalidSourceProofLocalLetType`でatomic fail。

@@ -6806,6 +6806,10 @@ implementation commit does not satisfy a producer task.
   frozen contract and verification ledgers.
 - [x] Complete independent source/docs and final quality review with **NO
   FINDINGS**, all nine hard gates PASS, and an uncapped `100/100` score.
-- [~] Stage and commit only the documentation prerequisite.
-- [ ] Fresh-preflight and implement only Task 269CT; repeat all reviews and
-  verification, commit the exact task, then continue fresh inventory.
+- [x] Stage and commit only the documentation prerequisite as
+  `b1c91b1b42391ca205b709b47444f3f2e748a799`.
+- [x] Fresh-preflight and implement only Task 269CT in the frozen seven Rust
+  files; repeat test-sufficiency and implementation review to **NO FINDINGS**.
+- [x] Complete source/docs and final quality review with **NO FINDINGS**, all
+  nine gates uncapped at `100/100`, and full verification.
+- [~] Create the exact implementation commit, then continue fresh inventory.

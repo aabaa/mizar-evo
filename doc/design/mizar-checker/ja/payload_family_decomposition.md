@@ -1688,3 +1688,10 @@ separate prerequisiteをunchanged Task-269C binding snapshot、typed `BindingEnv
 Task-249 source-type familyのexact compositeとしてfreezeする。bare builtin-`set`
 application 2件だけをownし、新binding、use/capture、assumption/guard、goal、fact、proof、
 obligation、IR、active coverage familyは追加しない。Task 269C/generic Task 249は不変。
+
+## Task 269CT implemented family
+
+composite familyをfrozen syntax-free boundaryで実装した。immutable Task-269C dependency、
+separate typed binding overlay、bare builtin-`set` type application 2件、
+source-preserved node 3件だけをownする。generic Task 249はproof-local `LetBinding`をrejectし、
+semantic family/active coverage ownerは追加しない。

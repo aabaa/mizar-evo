@@ -5264,3 +5264,11 @@ three-node checker arena and two bare builtin-`set` type rows, and installs the
 new composite. It has no dispatch selector or detail key and cannot affect an
 active artifact. Four compound tests cover exact output, corrupt dependencies,
 near misses/isolation, final replay, and empty semantic state.
+
+## Checker Task 269CT Implemented Dormant Consumer
+
+The exact route is implemented but remains private and unreachable from
+`run_case`. Its four tests validate all two-row payload fields, the complete
+three-node arena, dependency/input/arena failure, owner replay, Task-269C and
+active-route isolation, and exhaustive semantic emptiness. Runner library is
+548; no case, requirement, result, detail key, warning, or error changes.

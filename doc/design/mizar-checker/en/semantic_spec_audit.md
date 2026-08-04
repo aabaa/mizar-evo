@@ -711,3 +711,11 @@ binding type-site overlay. It does not materialize the canonical type
 assumption, match the current goal/proof skeleton, create an initial
 obligation, discharge or accept anything, record a fact, or produce IR/VC.
 All semantic tables remain empty and coverage credit remains zero.
+
+## Task 269CT Implemented Semantic Deferral
+
+Typed and resolved tests enumerate every frozen source sibling and semantic-
+result owner as empty. Final assembly rejects nonempty semantic input before
+publication. The implementation closes only bounded source composition drift;
+assumptions/guards, goals, obligations, facts, proof/discharge/acceptance, IR,
+and VC remain deferred with zero credit.

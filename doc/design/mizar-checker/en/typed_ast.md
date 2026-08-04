@@ -1896,3 +1896,11 @@ diagnostic payloads empty.
 The optional handoff uses private boxed storage to keep `TypedAst` stack size
 stable; the frozen public by-value installer and `Option<&Handoff>` getter are
 unchanged.
+
+## Task 269CT Implemented Typed Ownership
+
+`TypedAst` owns one boxed composite and exact three-node arena. Installation
+revalidates dependency, overlay, source type, fingerprints, arena, empty
+semantic tables, and all sibling source owners before publication. Duplicate,
+direct Task-269C sibling, direct source-type sibling, stale payload, or any
+occupied owner fails atomically with `InvalidSourceProofLocalLetType`.

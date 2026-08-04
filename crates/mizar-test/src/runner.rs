@@ -627,12 +627,14 @@ use type_elaboration::{
     SourceProofLocalLetBindingRouteOutput, SourceProofLocalLetLowerMutation,
     SourceProofLocalLetLowerOutput, SourceProofLocalLetResolverProfileMutation,
     SourceProofLocalLetShellMutation, SourceProofLocalLetSurfaceMutation,
+    SourceProofLocalLetTypeRouteMutation, SourceProofLocalLetTypeRouteOutput,
     source_proof_local_let_binding_output, source_proof_local_let_binding_output_with_mutation,
     source_proof_local_let_lower_output, source_proof_local_let_lower_output_with_mutation,
     source_proof_local_let_lower_output_with_resolver_mutation,
     source_proof_local_let_lower_output_with_resolver_profile_mutation,
     source_proof_local_let_lower_output_with_shell_mutation,
-    source_proof_local_let_lower_output_with_surface_mutation,
+    source_proof_local_let_lower_output_with_surface_mutation, source_proof_local_let_type_output,
+    source_proof_local_let_type_output_with_mutation,
 };
 use type_elaboration::{
     assemble_source_reserve_checker_handoff, assert_source_reserve_core_context_readiness,

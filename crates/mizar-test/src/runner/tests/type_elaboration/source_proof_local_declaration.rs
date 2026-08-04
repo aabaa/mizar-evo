@@ -11,12 +11,14 @@ use super::{
     SourceProofLocalLetBindingRouteOutput, SourceProofLocalLetLowerMutation,
     SourceProofLocalLetLowerOutput, SourceProofLocalLetResolverProfileMutation,
     SourceProofLocalLetShellMutation, SourceProofLocalLetSurfaceMutation,
+    SourceProofLocalLetTypeRouteMutation, SourceProofLocalLetTypeRouteOutput,
     source_proof_local_let_binding_output, source_proof_local_let_binding_output_with_mutation,
     source_proof_local_let_lower_output, source_proof_local_let_lower_output_with_mutation,
     source_proof_local_let_lower_output_with_resolver_mutation,
     source_proof_local_let_lower_output_with_resolver_profile_mutation,
     source_proof_local_let_lower_output_with_shell_mutation,
     source_proof_local_let_lower_output_with_surface_mutation,
+    source_proof_local_let_type_output, source_proof_local_let_type_output_with_mutation,
 };
 
 #[test]
@@ -2187,4 +2189,444 @@ fn task269c_near_miss_neighbor_and_active_routes_remain_isolated() {
         None
     );
     assert_eq!(shells.declarations().len(), 2);
+}
+
+#[test]
+fn task269ct_exact_type_composition_fingerprints_and_replay_are_stable() {
+    let (ast, module, shells, symbols) =
+        task253_ast_from_source_text(SOURCE_PROOF_LOCAL_LET_TEXT, 269_700);
+    let SourceProofLocalLetTypeRouteOutput {
+        typed_ast,
+        resolved,
+    } = source_proof_local_let_type_output(
+        &ast,
+        module.clone(),
+        &shells,
+        &symbols,
+        SOURCE_PROOF_LOCAL_LET_TEXT,
+    )
+    .expect("Task269CT exact private selector")
+    .expect("Task269CT exact type composition");
+    let handoff = typed_ast
+        .source_proof_local_let_type()
+        .expect("Task269CT typed owner");
+    assert_eq!(handoff.source_id(), ast.source_id);
+    assert_eq!(handoff.module_id(), &module);
+    assert_eq!(
+        handoff.dependency_fingerprint(),
+        handoff.dependency().debug_text()
+    );
+    assert_eq!(
+        handoff.binding_fingerprint(),
+        handoff.binding_env().debug_text()
+    );
+    assert_eq!(
+        handoff.source_type_fingerprint(),
+        handoff.source_type().debug_text()
+    );
+    assert_eq!(
+        (
+            handoff.binding_env().contexts().len(),
+            handoff.binding_env().bindings().len(),
+            handoff.binding_env().diagnostics().len(),
+        ),
+        (2, 2, 0)
+    );
+    assert_eq!(
+        handoff.binding_env().contexts(),
+        handoff.dependency().binding_env().contexts()
+    );
+    assert_eq!(
+        handoff.binding_env().diagnostics(),
+        handoff.dependency().binding_env().diagnostics()
+    );
+    assert_eq!(
+        handoff
+            .binding_env()
+            .bindings()
+            .get(mizar_checker::binding_env::BindingId::new(0)),
+        handoff
+            .dependency()
+            .binding_env()
+            .bindings()
+            .get(mizar_checker::binding_env::BindingId::new(0))
+    );
+    assert_eq!(
+        handoff
+            .dependency()
+            .binding_env()
+            .bindings()
+            .get(mizar_checker::binding_env::BindingId::new(1))
+            .expect("Task269CT dependency binding")
+            .type_site,
+        mizar_checker::binding_env::BindingTypeSite::Missing
+    );
+    assert_eq!(
+        handoff
+            .binding_env()
+            .bindings()
+            .get(mizar_checker::binding_env::BindingId::new(1))
+            .expect("Task269CT typed binding")
+            .type_site,
+        mizar_checker::binding_env::BindingTypeSite::Source(SourceRange {
+            source_id: ast.source_id,
+            start: 76,
+            end: 79,
+        })
+    );
+    assert_eq!(
+        (
+            handoff.source_type().applications().len(),
+            handoff.source_type().expressions().len(),
+            handoff.source_type().arguments().len(),
+            handoff.source_type().definition_returns().len(),
+            handoff.source_type().mode_rhs().len(),
+            handoff.source_type().structure_members().len(),
+        ),
+        (2, 2, 0, 0, 0, 0)
+    );
+    for (index, (start, end)) in [(14, 17), (76, 79)].into_iter().enumerate() {
+        let application = handoff
+            .source_type()
+            .applications()
+            .get(mizar_checker::source_type::SourceTypeApplicationId::new(index))
+            .expect("Task269CT source type application");
+        assert_eq!(
+            application.id(),
+            mizar_checker::source_type::SourceTypeApplicationId::new(index)
+        );
+        assert_eq!(
+            application.binding(),
+            mizar_checker::binding_env::BindingId::new(index)
+        );
+        assert_eq!(application.source_ordinal(), index);
+        assert_eq!(
+            application.root(),
+            mizar_checker::source_type::SourceTypeExpressionId::new(index)
+        );
+
+        let expression = handoff
+            .source_type()
+            .expressions()
+            .get(mizar_checker::source_type::SourceTypeExpressionId::new(index))
+            .expect("Task269CT source type expression");
+        assert_eq!(
+            expression.id(),
+            mizar_checker::source_type::SourceTypeExpressionId::new(index)
+        );
+        assert_eq!(expression.source_id(), ast.source_id);
+        assert_eq!(expression.module_id(), &module);
+        assert!(matches!(
+            expression.site(),
+            mizar_checker::typed_ast::TypedSiteRef::Role { node, role }
+                if *node == mizar_checker::typed_ast::TypedNodeId::new(index)
+                    && role.as_str() == "source.type.expression"
+        ));
+        assert_eq!(
+            expression.source_range(),
+            SourceRange {
+                source_id: ast.source_id,
+                start,
+                end,
+            }
+        );
+        assert_eq!(expression.spelling(), "set");
+        assert!(matches!(
+            expression.head_site(),
+            mizar_checker::typed_ast::TypedSiteRef::Role { node, role }
+                if *node == mizar_checker::typed_ast::TypedNodeId::new(index)
+                    && role.as_str() == "source.type.head"
+        ));
+        assert_eq!(
+            expression.head_range(),
+            SourceRange {
+                source_id: ast.source_id,
+                start,
+                end,
+            }
+        );
+        assert_eq!(expression.head_spelling(), "set");
+        assert_eq!(
+            expression.form(),
+            mizar_checker::source_type::SourceTypeApplicationForm::Bare
+        );
+        assert_eq!(
+            expression.head(),
+            &mizar_checker::source_type::SourceTypeHead::BuiltinSet
+        );
+        assert_eq!(
+            expression.recovery(),
+            mizar_checker::typed_ast::NodeRecoveryState::Normal
+        );
+    }
+    assert_eq!(
+        typed_ast.nodes().root(),
+        Some(mizar_checker::typed_ast::TypedNodeId::new(2))
+    );
+    for (index, (kind, start, end, children)) in [
+        ("source.proof-local.let.reserve-type", 14, 17, Vec::new()),
+        ("source.proof-local.let.type", 76, 79, Vec::new()),
+        (
+            "source.proof-local.let.type-root",
+            0,
+            99,
+            vec![
+                mizar_checker::typed_ast::TypedNodeId::new(0),
+                mizar_checker::typed_ast::TypedNodeId::new(1),
+            ],
+        ),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let node = typed_ast
+            .nodes()
+            .node(mizar_checker::typed_ast::TypedNodeId::new(index))
+            .expect("Task269CT typed node");
+        assert_eq!(node.kind.as_str(), kind);
+        assert!(node.resolved_node.is_none());
+        assert_eq!(
+            node.anchor,
+            mizar_session::SourceAnchor::Range(SourceRange {
+                source_id: ast.source_id,
+                start,
+                end,
+            })
+        );
+        assert_eq!(node.children, children);
+        assert_eq!(node.typing, mizar_checker::typed_ast::TypingState::Unknown);
+        assert_eq!(
+            node.recovery,
+            mizar_checker::typed_ast::NodeRecoveryState::Normal
+        );
+        assert_eq!(
+            node.links,
+            mizar_checker::typed_ast::TypedNodeLinks::default()
+        );
+    }
+    assert!(
+        handoff
+            .debug_text()
+            .starts_with("source-proof-local-let-type-debug-v1\n")
+    );
+    assert_eq!(resolved.source_proof_local_let_type(), Some(handoff));
+    assert!(typed_ast.source_proof_local_let_binding().is_none());
+    assert!(typed_ast.source_type().is_none());
+    assert!(resolved.source_proof_local_let_binding().is_none());
+    assert!(resolved.source_type().is_none());
+    assert_eq!(resolved.nodes().len(), 3);
+    for (index, node) in resolved.nodes().iter() {
+        assert!(matches!(
+            &node.kind,
+            mizar_checker::resolved_typed_ast::ResolvedTypedNodeKind::SourcePreserved { role }
+                if role.as_str() == "source.proof-local.let.type"
+        ));
+        assert_eq!(node.id, index);
+        assert_eq!(node.typed_node.index(), index.index());
+        assert!(node.final_type.is_none());
+        assert!(node.metadata.is_none());
+        assert!(node.diagnostics.is_empty());
+        assert_eq!(
+            node.recovery,
+            mizar_checker::resolved_typed_ast::ResolvedNodeRecovery::Normal
+        );
+    }
+}
+
+#[test]
+fn task269ct_dependency_input_and_arena_corruption_fail_closed() {
+    let cases = [
+        (
+            SourceProofLocalLetTypeRouteMutation::WrongDependencyModule,
+            "source proof-local let type dependency is invalid",
+        ),
+        (
+            SourceProofLocalLetTypeRouteMutation::WrongTypeRange,
+            "source proof-local let source type is invalid",
+        ),
+        (
+            SourceProofLocalLetTypeRouteMutation::WrongArenaRoot,
+            "source proof-local let source type is invalid",
+        ),
+        (
+            SourceProofLocalLetTypeRouteMutation::WrongArenaKind,
+            "source proof-local let source type is invalid",
+        ),
+    ];
+    for (ordinal, (mutation, expected)) in cases.into_iter().enumerate() {
+        let (ast, module, shells, symbols) =
+            task253_ast_from_source_text(SOURCE_PROOF_LOCAL_LET_TEXT, 269_710 + ordinal);
+        assert_eq!(
+            source_proof_local_let_type_output_with_mutation(
+                &ast,
+                module,
+                &shells,
+                &symbols,
+                SOURCE_PROOF_LOCAL_LET_TEXT,
+                mutation,
+            )
+            .expect("Task269CT exact selector under corruption"),
+            Err(expected.to_owned()),
+            "Task269CT mutation {mutation:?}",
+        );
+    }
+}
+
+#[test]
+fn task269ct_typed_and_resolved_owners_are_one_shot_and_semantically_empty() {
+    let (ast, module, shells, symbols) =
+        task253_ast_from_source_text(SOURCE_PROOF_LOCAL_LET_TEXT, 269_730);
+    let output = source_proof_local_let_type_output(
+        &ast,
+        module,
+        &shells,
+        &symbols,
+        SOURCE_PROOF_LOCAL_LET_TEXT,
+    )
+    .expect("Task269CT exact selector")
+    .expect("Task269CT owners");
+    let handoff = output
+        .typed_ast
+        .source_proof_local_let_type()
+        .expect("Task269CT typed owner")
+        .clone();
+    assert_eq!(
+        output
+            .typed_ast
+            .clone()
+            .with_source_proof_local_let_type(handoff),
+        Err(mizar_checker::typed_ast::TypedAstError::InvalidSourceProofLocalLetType)
+    );
+    assert_eq!(output.typed_ast.nodes().len(), 3);
+    assert!(output.typed_ast.contexts().is_empty());
+    assert!(output.typed_ast.types().is_empty());
+    assert!(output.typed_ast.facts().is_empty());
+    assert!(output.typed_ast.coercions().is_empty());
+    assert!(output.typed_ast.initial_obligations().is_empty());
+    assert!(output.typed_ast.diagnostics().is_empty());
+    assert!(output.resolved.source_context().is_none());
+    assert!(output.resolved.source_type().is_none());
+    assert!(output.resolved.source_attribute().is_none());
+    assert!(output.resolved.source_evidence().is_none());
+    assert!(output.resolved.source_term().is_none());
+    assert!(output.resolved.source_application().is_none());
+    assert!(output.resolved.source_structure().is_none());
+    assert!(output.resolved.source_set_term().is_none());
+    assert!(output.resolved.source_atomic_formula().is_none());
+    assert!(output.resolved.source_attribute_definition().is_none());
+    assert!(output.resolved.source_functor_definition().is_none());
+    assert!(output.resolved.source_property_implementation().is_none());
+    assert!(output.resolved.source_mode_definition().is_none());
+    assert!(output.resolved.source_structure_definition().is_none());
+    assert!(output.resolved.source_predicate_definition().is_none());
+    assert!(output.resolved.source_composite_formula().is_none());
+    assert!(output.resolved.source_formula_composition().is_none());
+    assert!(
+        output
+            .resolved
+            .source_condition_formula_composition()
+            .is_none()
+    );
+    assert!(
+        output
+            .resolved
+            .source_predicate_chain_composition()
+            .is_none()
+    );
+    assert!(output.resolved.source_statement().is_none());
+    assert!(output.resolved.source_statement_references().is_none());
+    assert!(output.resolved.source_statement_witnesses().is_none());
+    assert!(output.resolved.source_proof_local_declaration().is_none());
+    assert!(output.resolved.source_proof_local_let_binding().is_none());
+    assert!(output.resolved.expr_metadata().is_empty());
+    assert!(output.resolved.collection_candidates().is_empty());
+    assert!(output.resolved.expanded_candidates().is_empty());
+    assert!(output.resolved.template_expansions().is_empty());
+    assert!(output.resolved.viable_candidates().is_empty());
+    assert!(output.resolved.viability_decisions().is_empty());
+    assert!(output.resolved.specificity_graphs().is_empty());
+    assert!(output.resolved.resolved_overloads().is_empty());
+    assert!(output.resolved.inserted_coercions().is_empty());
+    assert!(output.resolved.cluster_facts().is_empty());
+    assert!(output.resolved.checked_formulas().is_empty());
+    assert!(output.resolved.statement_semantics().is_empty());
+    assert!(output.resolved.checked_proofs().is_empty());
+    assert!(output.resolved.checked_proof_nodes().is_empty());
+    assert!(output.resolved.checked_terminal_goals().is_empty());
+    assert!(output.resolved.diagnostics().is_empty());
+    for forbidden in [
+        "initial-obligation#",
+        "fact#",
+        "terminal-goal#",
+        "accepted",
+        "discharged",
+        "verification-condition",
+    ] {
+        assert!(!output.resolved.debug_text().contains(forbidden));
+    }
+}
+
+#[test]
+fn task269ct_near_miss_task269c_and_active_routes_remain_isolated() {
+    let near_misses = [
+        SOURCE_PROOF_LOCAL_LET_TEXT.replace("let y be set;", "let z be set;"),
+        SOURCE_PROOF_LOCAL_LET_TEXT.replace("let y be set;", "let y, z be set;"),
+        SOURCE_PROOF_LOCAL_LET_TEXT.replace(
+            "let y be set;",
+            "let y be set such that x = x;",
+        ),
+        SOURCE_PROOF_LOCAL_LET_TEXT.replace("let y be set;", "let y be set by A;"),
+        SOURCE_PROOF_LOCAL_LET_TEXT.replace("thus x = x;", "thus y = y;"),
+    ];
+    for (ordinal, source) in near_misses.into_iter().enumerate() {
+        let (ast, module, shells, symbols) =
+            task253_ast_from_source_text(&source, 269_740 + ordinal);
+        assert!(
+            source_proof_local_let_type_output(&ast, module, &shells, &symbols, &source).is_none(),
+            "Task269CT selected near miss {ordinal}",
+        );
+    }
+    for (ordinal, source) in [TASK269A_SOURCE_TEXT, TASK269B_SOURCE_TEXT]
+        .into_iter()
+        .enumerate()
+    {
+        let (ast, module, shells, symbols) =
+            task253_ast_from_source_text(source, 269_750 + ordinal);
+        assert!(
+            source_proof_local_let_type_output(&ast, module, &shells, &symbols, source).is_none(),
+            "Task269CT selected Task269A/B family {ordinal}",
+        );
+    }
+    let (ast, module, shells, symbols) =
+        task253_ast_from_source_text(SOURCE_PROOF_LOCAL_LET_TEXT, 269_760);
+    let task269c = source_proof_local_let_binding_output(
+        &ast,
+        module.clone(),
+        &shells,
+        &symbols,
+        SOURCE_PROOF_LOCAL_LET_TEXT,
+    )
+    .expect("Task269C remains selected")
+    .expect("Task269C remains valid");
+    assert_eq!(
+        task269c
+            .typed_ast
+            .source_proof_local_let_binding()
+            .expect("Task269C direct owner")
+            .binding_env()
+            .bindings()
+            .get(mizar_checker::binding_env::BindingId::new(1))
+            .expect("Task269C local binding")
+            .type_site,
+        mizar_checker::binding_env::BindingTypeSite::Missing
+    );
+    assert!(
+        source_proof_local_declaration_output(
+            &ast,
+            module,
+            &symbols,
+            SOURCE_PROOF_LOCAL_LET_TEXT,
+        )
+        .is_none()
+    );
 }

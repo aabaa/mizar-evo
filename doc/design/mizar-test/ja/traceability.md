@@ -2347,3 +2347,11 @@ dormant consumerはfixture/sidecar/expectation/trace row/backlink/status/diagnos
 追加しない。exact source-type compositeのunit test 4件だけを`544 -> 548`へprojectする。
 cases/requirements `428/395`、active `101/7/205/1`、type `259=247+12`、trace hashは
 byte-identical。
+
+## Checker Task 269CT implemented zero-credit consumer
+
+checker/runner test 4/4はbounded dormant composition `test_gap`だけを閉じる。fixture、
+expectation、trace row/backlink/status、active dispatch、diagnostic、result owner変更なし。
+cases/requirements `428/395`、pass/fail `235/193`、active `101/7/205/1`、type
+`259=247+12`、warnings/errors `23/0`、trace SHA-256は
+`55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`のまま。

@@ -13081,3 +13081,11 @@ Later implementation owns exactly
 leaf. Production remains 37 paths and projects only four new dormant tests.
 Dispatch, metadata, artifacts, parser/resolver, Cargo, and all semantic owners
 remain outside the boundary.
+
+## Checker Task 269CT Implemented Runner Boundary
+
+Only the four frozen runner files change. Production stays 37 paths and now
+measures 71,647 lines with path/content hashes
+`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d` /
+`0f8f5926b9bee23c92d1f05e9cc9e85b4c0561b543e9e0a1e4c825f43b6c5798`.
+The route remains private and dormant; all excluded owners remain unchanged.

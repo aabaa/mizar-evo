@@ -1779,3 +1779,11 @@ unchanged Task-269C binding snapshot, a typed `BindingEnv` overlay, and the
 Task-249 source-type family. It owns two bare builtin-`set` applications and no
 new binding, use/capture, assumption/guard, goal, fact, proof, obligation, IR,
 or active-coverage family. Task 269C and generic Task 249 remain unchanged.
+
+## Task 269CT Implemented Family
+
+The composite family is now implemented at exactly the frozen syntax-free
+boundary: immutable Task-269C dependency, separate typed binding overlay,
+two bare builtin-`set` type applications, and three source-preserved nodes.
+Generic Task 249 rejects the proof-local `LetBinding`; no semantic family or
+active coverage owner was added.

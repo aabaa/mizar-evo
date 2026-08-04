@@ -72,6 +72,7 @@ Core/CFG/VCはTask 249外である。
 | `SourceTypeHead` | `#[non_exhaustive]`。callerはlater authenticated head kindを許容する。 |
 | `SourceTypeArgument` | `#[non_exhaustive]`。callerはlater syntax-free argument shapeを許容する。 |
 | `SourceTypeError` | `#[non_exhaustive]`。callerはvalidation failureをexhaustive matchしない。 |
+| `SourceProofLocalLetTypeError` | `#[non_exhaustive]`。callerはTask-269CT dependency、overlay、source-type、installation failureをexhaustive matchしない。 |
 
 この module が所有する exhaustive public enum exception はない。
 
@@ -904,3 +905,35 @@ Cargo metadata、warnings-denied workspace Clippy、full workspace tests、white
 executable/canonical artifactを変更せずPASS。source/docs reviewとfinal quality reviewは
 **NO FINDINGS**、hard gate 9件はscore capなしで全PASS、valid `100/100`。task-only
 staging/commit、fresh implementation preflightがremainingである。
+
+### Task 269CT implementation verification
+
+frozen APIをexact実装した。producerはTask 269Cをby-value consumeし、binding 1の
+`Source(76..79)` overlayだけをreconstructし、generic Task 249をbroadenせずexact proof-local
+bare builtin-`set` row 2件をadmitし、complete 3-node arenaをauthenticateしてfingerprint 3件を
+含むimmutable composite 1件をpublishする。validation precedenceはdependency、binding
+environment、source type/arena、availability。
+
+checker/runner test exactly 4/4は全overlay field、application/expression 2 row、全node
+anchor/children/link/typing/recovery、actual payload corruption、complete precedence、one-shot/
+cross-family final failure、generic isolation、near miss、semantic emptiness全件をcoverする。
+implementation reviewはshared statement node hintを許した`boundary_violation` 1件を検出。
+Task-specific final predicateをempty hint必須へ修正し、repeated test/implementation reviewは
+**NO FINDINGS**。
+
+libraryは`490/548`、productionは`30/168322` / `37/71647`、content hashは
+`4d0c793a47dac672e5f395c9c2b9e7c9274b5d776b54870888ba5c918f751dc2` /
+`0f8f5926b9bee23c92d1f05e9cc9e85b4c0561b543e9e0a1e4c825f43b6c5798`。
+path hashはfrozen値不変。checker raw/normalized test-list hashは
+`10e1f56783a472b63a0473893196d68b54a7a7aa3a3aff4f66e74ac42b4a2ad2` /
+`21d65f467319e2e7ac463344902b10dfce5716a96c41a87e879326c293ff36e0`、runnerは
+`cd47be81d6e0987a4461191b700c442c3182fb9f35fe6ab6e2d216ba122fd841` /
+`e24bc08e3c8207ba96b6df3de995a3b489e333f8599233c1eded9f81fe696a77`。
+canonical fixture/expectation/trace/metadata/count/dispatchと全semantic deferralはunchanged。
+
+focused/crate/workspace test、lint `15/14`、metadata `137`、format、warnings-denied
+Clippy、Cargo metadata、CLI hash 5件、exact count/list/production/fixture/trace hash、
+whitespaceはPASS。
+
+repeated source/docs consistency/final quality reviewは**NO FINDINGS**。hard gate 9件は
+score capなし`100/100`で全PASS。

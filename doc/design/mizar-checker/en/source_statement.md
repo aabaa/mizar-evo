@@ -4087,3 +4087,11 @@ The source-type prerequisite reuses Task-269CP theorem/proof/let provenance
 and Task-269C binding ownership without publishing a statement row, current
 goal, thesis transition, proof-skeleton node, conclusion, fact, or acceptance.
 All statement APIs, fingerprints, and tests remain unchanged.
+
+## Task 269CT Implemented No-Statement Boundary
+
+The final composite maps only its three exact source-type nodes. A regression
+proves that even a complete three-row `source.statement.transport` hint set is
+rejected with `InvalidSourceProofLocalLetType`; it cannot be silently consumed
+or overridden. Statement handoffs, semantics, proofs, and fingerprints remain
+empty/unchanged.

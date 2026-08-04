@@ -1337,3 +1337,11 @@ The separate source-type composite owns the typed overlay and type handoff;
 this module gains no API or source change. Syntax rescanning, later-use/
 capture, assumptions, goals, facts, proof behavior, and active routing remain
 outside the boundary.
+
+## Task 269CT Implemented Consumer Boundary
+
+`source_type.rs` now consumes the Task-269C handoff by value and stores an
+unchanged dependency plus its byte-exact fingerprint inside the composite.
+Task-269C's direct owner and missing type site remain unchanged and empty in
+the composite Typed/final profiles. This module has no source/API/test change;
+later use/capture and all proof semantics remain deferred.

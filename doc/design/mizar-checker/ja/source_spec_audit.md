@@ -333,7 +333,8 @@ literal top-level public item:
   `SourceTypeExpression`, `SourceTypeArgumentTable`,
   `SourceTypeArgumentRow`, `SourceTypeProducer`,
   `SourceTypeDefinitionReturnProducer`, `SourceTypeModeRhsProducer`,
-  `SourceTypeStructureMemberProducer`,
+  `SourceTypeStructureMemberProducer`, `SourceProofLocalLetTypeHandoff`,
+  `SourceProofLocalLetTypeProducer`, `SourceProofLocalLetTypeError`,
   `SourceTypeError`
 
 対応:
@@ -346,6 +347,7 @@ literal top-level public item:
 | independent definition return typeをbinding applicationを捏造せずexact two-binding baseへextendする。 | `SourceTypeDefinitionReturnProducer`、immutable owner row 2件、appended root 2/3、one-shot/install validation。 | exact Task-249R extension/corruption/arena/Typed-final test 4件。 | Task 249Rで実装済み。combined profileは`2/4/0/2`。 |
 | standalone mode RHSをthird applicationの捻造やdefinition-return semanticsのreuseなしにexact two-binding baseへextendする。 | `SourceTypeModeRhsProducer`、immutable owner row 1件、appended root 2、frozen precedence、one-shot/install validation。 | exact Task-249M extension/corruption/arena/Typed-final test 4件。 | Task 249Mで実装済み。combined profileは`2/3/0/0/1`。 |
 | standalone structure-member typeをfabricated binding applicationやreturn/RHS family reuseなしにbuildする。 | `SourceTypeStructureMemberProducer`、immutable owner row/root 4件、exact precedence、arena/install validation。 | exact Task-249S profile/corruption/arena/Typed-final test 4件。 | Task 249Sで実装済み。standalone profileは`0/4/0/0/0/4`。 |
+| exact proof-local `let` composition 1件がTask-269C missing type siteだけをupgradeしdependencyをunchanged preserveする。 | `SourceProofLocalLetTypeHandoff`、`SourceProofLocalLetTypeProducer`、`SourceProofLocalLetTypeError`。 | checker 4件/runner dormant 4件のexact/corruption/ownership/isolation test。 | Task 269CTで実装済み、active/semantic credit zero。 |
 | `TypedAst`がresultを所有し、`ResolvedTypedAst`はcloneだけする。 | optional `SourceTypeApplicationHandoff` fieldとborrowed getter。 | immutable final preservation/repeated-run assertion。 | 実装済み。legacy empty debug byteはconditionalに維持。 |
 | public enumはforward-compatible。 | public enumの`#[non_exhaustive]`。 | `checker_public_enums_are_forward_compatible_and_documented`。 | exhaustive exceptionなしでguard。 |
 
@@ -5625,3 +5627,11 @@ canonical Chapters 4/8/15/16がexact written proof-`let` type transportをauthor
 new public ownerは`SourceProofLocalLetTypeHandoff` / `Producer` / non-exhaustive `Error`と
 boxed Typed/final getter/installer。generic `SourceTypeProducer`とTask-269C API behaviorは不変。
 implementation/test gap 8件はbounded `source_drift` / `test_gap`、semantic/active coverageはdefer。
+
+## Task 269CT implemented source/API audit
+
+bounded `source_drift`とtest 8件の`test_gap`をfrozen Rust 7 filesだけで閉じた。public
+additionはdocumented struct field order、producer signature、non-exhaustive error 4 variant/
+display order、Typed/final getter/installerに一致。generic Task-249 behaviorとTask-269C bytesは
+unchanged。final-input review findingは`boundary_violation`で、Task-specific empty-node-hint
+predicate/regression修正後**NO FINDINGS**。canonical/active artifact変更なし。

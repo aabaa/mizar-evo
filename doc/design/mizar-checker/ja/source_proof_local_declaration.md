@@ -1206,3 +1206,10 @@ inventoryだけがparent-owned gateとして残る。
 snapshotとdependency fingerprintを不変にpreserveする。separate source-type compositeがtyped
 overlay/type handoffをownし、このmoduleはAPI/source変更なし。syntax rescan、later use/capture、
 assumption、goal、fact、proof behavior、active routeはscope外。
+
+## Task 269CT implemented consumer boundary
+
+`source_type.rs`はTask-269C handoffをby-value consumeし、unchanged dependencyとbyte-exact
+fingerprintをcompositeへstoreする。Task-269C direct owner/missing type siteはunchangedで、
+composite Typed/final profileではempty。このmoduleのsource/API/test変更はなく、later
+use/captureと全proof semanticsはdefer。

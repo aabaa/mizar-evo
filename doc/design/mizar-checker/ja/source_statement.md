@@ -3558,3 +3558,10 @@ implemented transactionもこのboundaryを維持する。context owner tagはpr
 source-type prerequisiteはTask-269CP theorem/proof/let provenanceとTask-269C bindingをreuseするが、
 statement row、current goal、thesis transition、proof-skeleton node、conclusion、fact、acceptanceを
 publishしない。statement API/fingerprint/testは不変。
+
+## Task 269CT implemented no-statement boundary
+
+final compositeはexact source-type node 3件だけをmapする。complete 3-row
+`source.statement.transport` hint setでも`InvalidSourceProofLocalLetType`としてrejectし、
+silent consume/overrideできないことをregressionで固定した。statement handoff/semantics/
+proof/fingerprintはempty/unchanged。

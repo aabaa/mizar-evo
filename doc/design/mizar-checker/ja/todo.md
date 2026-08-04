@@ -6483,6 +6483,10 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   ledgerを同期。
 - [x] independent source/docs/final quality reviewを**NO FINDINGS**、hard gate 9件
   PASS、score capなし`100/100`で完了。
-- [~] documentation prerequisiteだけをstage/commit。
-- [ ] fresh preflight後269CTだけを実装し、全review/verification、exact commit後にfresh
-  inventoryを継続。
+- [x] documentation prerequisiteだけを
+  `b1c91b1b42391ca205b709b47444f3f2e748a799`としてstage/commit。
+- [x] fresh preflight後frozen seven Rust filesだけへ269CTを実装し、test-sufficiency/
+  implementation reviewを**NO FINDINGS**までrepeat。
+- [x] source/docs/final qualityを**NO FINDINGS**、hard gate 9件capなし`100/100`で
+  完了し、full verificationをPASS。
+- [~] exact implementation commit後、fresh inventoryを継続。

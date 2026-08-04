@@ -3335,5 +3335,10 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
   test 4件、`544 -> 548`、dispatch/trace credit zero、artifact/count/hash不変、exclusionをfreeze。
 - [x] synchronized specification reviewとverification-ledger updateを**NO FINDINGS**で完了。
 - [x] source/docs/final quality gateを**NO FINDINGS**、score capなし`100/100`で完了。
-- [~] docs-only commitだけをstage/create。
-- [ ] fresh preflight後269CTだけをimplement/review/verify/commitし、次dependencyへ継続。
+- [x] docs-only commitだけを
+  `b1c91b1b42391ca205b709b47444f3f2e748a799`としてstage/create。
+- [x] fresh preflight後frozen runner 4 filesだけへ269CTをimplementし、focused test/
+  implementation reviewを**NO FINDINGS**で完了。
+- [x] full verificationとsource/docs/final qualityを**NO FINDINGS**、hard gate 9件
+  capなし`100/100`で完了。
+- [~] exact commit後、次dependencyへ継続。

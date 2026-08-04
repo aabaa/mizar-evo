@@ -1865,3 +1865,12 @@ one-for-one with source-preserved role `source.proof-local.let.type`; direct
 source-type/Task-269C fields and every resolved semantic table remain empty.
 Malformed, duplicate, occupied, or semantically nonempty profiles fail with
 `InvalidSourceProofLocalLetType`.
+
+## Task 269CT Implemented Final Replay
+
+Final assembly clones and revalidates the composite before arena construction,
+requires the exact three-node Typed profile and otherwise empty source/
+semantic/overload state, and uses a Task-specific predicate that requires
+`node_hints.is_empty()`. All three nodes map one-for-one to role
+`source.proof-local.let.type`. Statement-transport hints and nonempty expression
+metadata fail atomically with `InvalidSourceProofLocalLetType`.

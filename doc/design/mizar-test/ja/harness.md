@@ -4959,3 +4959,10 @@ test-only routeはexact Task-269C routeを呼び、frozen checker arena 3 node�
 type row 2件を構築してnew compositeをinstallする。dispatch selector/detail keyはなくactive
 artifactへ影響しない。compound test 4件がexact output、corrupt dependency、near miss/isolation、
 final replay、empty semanticsをcover。
+
+## Checker Task 269CT implemented dormant consumer
+
+exact routeを実装したがprivateで`run_case`からunreachableのまま。test 4件はtype row 2件の
+全payload field、complete 3-node arena、dependency/input/arena failure、owner replay、
+Task-269C/active-route isolation、semantic emptiness全件をvalidateする。runner libraryは548、
+case/requirement/result/detail key/warning/error変更なし。

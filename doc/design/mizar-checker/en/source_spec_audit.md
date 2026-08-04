@@ -357,7 +357,8 @@ Literal top-level public items:
   `SourceTypeExpression`, `SourceTypeArgumentTable`,
   `SourceTypeArgumentRow`, `SourceTypeProducer`,
   `SourceTypeDefinitionReturnProducer`, `SourceTypeModeRhsProducer`,
-  `SourceTypeStructureMemberProducer`,
+  `SourceTypeStructureMemberProducer`, `SourceProofLocalLetTypeHandoff`,
+  `SourceProofLocalLetTypeProducer`, `SourceProofLocalLetTypeError`,
   `SourceTypeError`
 
 Correspondence:
@@ -370,6 +371,7 @@ Correspondence:
 | Independent definition return types extend the exact two-binding base without fabricating binding applications. | `SourceTypeDefinitionReturnProducer`, two immutable owner rows, appended roots 2/3, one-shot and installation validation. | Four exact Task-249R extension/corruption/arena/Typed-final tests. | Implemented for Task 249R; combined profile is `2/4/0/2`. |
 | A standalone mode RHS extends its exact two-binding base without fabricating a third application or reusing definition-return semantics. | `SourceTypeModeRhsProducer`, one immutable owner row, appended root 2, frozen precedence, one-shot and installation validation. | Four exact Task-249M extension/corruption/arena/Typed-final tests. | Implemented for Task 249M; combined profile is `2/3/0/0/1`. |
 | Standalone structure-member types build without fabricated binding applications or reuse of the return/RHS families. | `SourceTypeStructureMemberProducer`, four immutable owner rows/roots, exact precedence, arena and installation validation. | Four exact Task-249S profile/corruption/arena/Typed-final tests. | Implemented for Task 249S; standalone profile is `0/4/0/0/0/4`. |
+| One exact proof-local `let` composition upgrades only the Task-269C missing type site and preserves its dependency unchanged. | `SourceProofLocalLetTypeHandoff`, `SourceProofLocalLetTypeProducer`, and `SourceProofLocalLetTypeError`. | Four checker and four dormant-runner exact/corruption/ownership/isolation tests. | Implemented for Task 269CT with zero active/semantic credit. |
 | `TypedAst` owns the result and `ResolvedTypedAst` only clones it. | Optional `SourceTypeApplicationHandoff` field and borrowed getters. | Immutable final-preservation and repeated-run assertions. | Implemented; empty legacy debug bytes remain conditional. |
 | Public enums are forward-compatible. | `#[non_exhaustive]` on public enums. | `checker_public_enums_are_forward_compatible_and_documented`. | Guarded; no exhaustive exception. |
 
@@ -5899,3 +5901,13 @@ transport. New public owners are `SourceProofLocalLetTypeHandoff`,
 Generic `SourceTypeProducer` and Task-269C APIs remain behaviorally unchanged.
 The implementation gap and eight-test gap are bounded `source_drift` and
 `test_gap`; semantic and active coverage remain deferred.
+
+## Task 269CT Implemented Source/API Audit
+
+The bounded `source_drift` and eight-test `test_gap` are closed in exactly the
+frozen seven Rust files. Public additions match the documented struct field
+order, producer signature, non-exhaustive four-variant error/display order,
+and Typed/final getters/installer. Generic Task-249 behavior and Task-269C
+bytes remain unchanged. The final-input review finding was a
+`boundary_violation`; its Task-specific empty-node-hint predicate and regression
+are now reviewed **NO FINDINGS**. No canonical or active artifact changed.

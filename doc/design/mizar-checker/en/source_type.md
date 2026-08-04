@@ -77,6 +77,7 @@ outside Task 249.
 | `SourceTypeHead` | `#[non_exhaustive]`; callers must tolerate later authenticated head kinds. |
 | `SourceTypeArgument` | `#[non_exhaustive]`; callers must tolerate later syntax-free argument shapes. |
 | `SourceTypeError` | `#[non_exhaustive]`; callers must not exhaustively match validation failures. |
+| `SourceProofLocalLetTypeError` | `#[non_exhaustive]`; callers must not exhaustively match Task-269CT dependency, overlay, source-type, or installation failures. |
 
 No exhaustive public enum exceptions are owned by this module.
 
@@ -1262,3 +1263,42 @@ whitespace pass without changing any executable or canonical artifact.
 Source/docs and final quality reviews report **NO FINDINGS**; all nine hard
 gates PASS without a score cap at a valid `100/100`. Task-only staging,
 commit, and fresh implementation preflight remain.
+
+### Task 269CT implementation verification
+
+The frozen API is implemented exactly. The producer consumes Task 269C by
+value, reconstructs only binding 1's `Source(76..79)` overlay, admits the exact
+two proof-local bare builtin-`set` rows without broadening generic Task 249,
+authenticates the complete three-node arena, and publishes one immutable
+composite with three byte-exact fingerprints. Validation precedence is
+dependency, binding environment, source type/arena, then availability.
+
+Exactly four checker and four runner tests now cover every overlay field, both
+application/expression rows, all node anchors/children/links/typing/recovery,
+actual payload corruption, complete precedence, one-shot/cross-family final
+failure, generic isolation, near misses, and exhaustive semantic emptiness.
+The implementation review found one cross-family `boundary_violation`: shared
+statement node hints were too permissive. The repaired Task-specific final
+predicate requires empty hints, and repeated test/implementation reviews end
+**NO FINDINGS**.
+
+Libraries are `490/548`; production is `30/168322` and `37/71647`, with
+content hashes
+`4d0c793a47dac672e5f395c9c2b9e7c9274b5d776b54870888ba5c918f751dc2` /
+`0f8f5926b9bee23c92d1f05e9cc9e85b4c0561b543e9e0a1e4c825f43b6c5798`.
+The path hashes remain the frozen values. Checker raw/normalized test-list
+hashes are
+`10e1f56783a472b63a0473893196d68b54a7a7aa3a3aff4f66e74ac42b4a2ad2` /
+`21d65f467319e2e7ac463344902b10dfce5716a96c41a87e879326c293ff36e0`;
+runner hashes are
+`cd47be81d6e0987a4461191b700c442c3182fb9f35fe6ab6e2d216ba122fd841` /
+`e24bc08e3c8207ba96b6df3de995a3b489e333f8599233c1eded9f81fe696a77`.
+Canonical fixtures, expectations, trace, metadata, counts, dispatch, and all
+semantic deferrals remain unchanged.
+
+Focused/crate/workspace tests, lint `15/14`, metadata `137`, format, warnings-
+denied Clippy, Cargo metadata, all five CLI hashes, exact count/list/production/
+fixture/trace hashes, and whitespace pass.
+
+Repeated source/docs consistency and final quality reviews report **NO
+FINDINGS**. All nine hard gates PASS uncapped at `100/100`.

@@ -840,3 +840,12 @@ only proof-local `LetBinding` 1 becomes source `76..79`. Contexts, identities,
 lookup, captures, diagnostics, and all non-type fields are unchanged. The
 overlay is accessible only through the new composite; no use/capture, guard,
 fact, goal, proof, or obligation is published.
+
+## Task 269CT Implemented Overlay
+
+The implementation reconstructs the exact dependency environment without
+sorting or repair. Contexts, both bindings, identities, lookup fields,
+captures, diagnostics, and recovery compare equal to Task 269C except solely
+for binding 1's `Missing -> Source(76..79)` type-site overlay. Validation and
+tests authenticate the complete `2/2/0` payload and fail binding corruption
+before source-type or availability errors.

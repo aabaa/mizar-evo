@@ -11791,3 +11791,11 @@ later implementationは`runner/type_elaboration/source_proof_local_declaration.r
 `runner/type_elaboration.rs`、`runner.rs`、existing proof-local test leafだけをown。
 production path 37、dormant test 4件だけ追加。dispatch、metadata、artifact、parser/resolver、
 Cargo、semantic ownerはscope外。
+
+## Checker Task 269CT implemented runner boundary
+
+frozen runner 4 filesだけを変更する。productionは37 paths / 71,647 lines、path/
+content hashは
+`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d` /
+`0f8f5926b9bee23c92d1f05e9cc9e85b4c0561b543e9e0a1e4c825f43b6c5798`。
+routeはprivate/dormantのままで、全excluded ownerはunchanged。
