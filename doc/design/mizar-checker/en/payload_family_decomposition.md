@@ -1771,3 +1771,11 @@ capture, formula/goal/fact/proof/obligation families, and active coverage.
 The family is now implemented with exactly one declaration row and no sibling
 payload. Typed/final replay and the dormant runner preserve that decomposition;
 the separate source-type prerequisite remains unimplemented.
+
+## Task 269CT Proof-`let` Source-Type Composition Family
+
+The separate prerequisite is now frozen as one exact composite of the
+unchanged Task-269C binding snapshot, a typed `BindingEnv` overlay, and the
+Task-249 source-type family. It owns two bare builtin-`set` applications and no
+new binding, use/capture, assumption/guard, goal, fact, proof, obligation, IR,
+or active-coverage family. Task 269C and generic Task 249 remain unchanged.

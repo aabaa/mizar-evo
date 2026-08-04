@@ -1199,3 +1199,10 @@ final production/test-list/trace hashも上記recordを再現。independent fina
 **NO FINDINGS**、全9 hard gate PASS、score capなし、valid `100/100`
 （`20/20/15/15/10/10/5/5`）。task-only stage/commitとclean post-commit fresh
 inventoryだけがparent-owned gateとして残る。
+
+## Task 269CT immutable dependency boundary
+
+269CTは`SourceProofLocalLetBindingHandoff`をby-value consumeし、missing-type `2/2/0`
+snapshotとdependency fingerprintを不変にpreserveする。separate source-type compositeがtyped
+overlay/type handoffをownし、このmoduleはAPI/source変更なし。syntax rescan、later use/capture、
+assumption、goal、fact、proof behavior、active routeはscope外。

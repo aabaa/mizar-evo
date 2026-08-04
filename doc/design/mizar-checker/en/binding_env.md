@@ -831,3 +831,12 @@ The implemented producer and both installers now enforce this exact
 transition and both lookup oracles. Corruption of either environment, context,
 binding, declaration link, or fingerprint fails transactionally; the final
 binding still has a missing type and no real use/capture or semantic effect.
+
+## Task 269CT Typed Binding Overlay
+
+Task 269C remains the immutable missing-type dependency. Task 269CT constructs
+a separate exact `2/2/0` typed overlay: binding 0 remains source `14..17` and
+only proof-local `LetBinding` 1 becomes source `76..79`. Contexts, identities,
+lookup, captures, diagnostics, and all non-type fields are unchanged. The
+overlay is accessible only through the new composite; no use/capture, guard,
+fact, goal, proof, or obligation is published.

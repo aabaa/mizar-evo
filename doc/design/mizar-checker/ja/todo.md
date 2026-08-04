@@ -6468,5 +6468,21 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   implementation preflight。
 - [x] fresh preflight後exact 7-file binding transactionだけをimplementし、source-type
   admission/use-captureを分離。
-- [~] independent test/implementation/source-doc/final review、verification、final gate
-  9件、task-only commit、fresh next-task inventoryを自動継続。
+- [x] independent test/implementation/source-doc/final review、verification、final gate
+  9件、task-only commit `399dc44b2a4400f9eeb1b651d1ddd0bbc7a09f6a`、fresh inventoryを完了。
+
+## Checker Task 269CT proof-`let` source-type prerequisite
+
+- [x] Task-269CP/C profile、canonical Chapters 4/8/15/16、Task-249 API、ownership、
+  corpus/trace、count/hash、origin/protected stashをfresh inventoryし、later use/captureより
+  先に269CTだけをselect。
+- [x] two-binding type overlay、source-type `2/2/0/0/0/0`、3-node arena、API/error/
+  debug/fingerprint、Typed/final owner、dormant runner、7-file scope、test 8件、zero-credit
+  audit impact、exclusion、projected count、exitをEN/JAでfreeze。
+- [x] specification reviewを**NO FINDINGS**まで反復し、frozen contractとverification
+  ledgerを同期。
+- [x] independent source/docs/final quality reviewを**NO FINDINGS**、hard gate 9件
+  PASS、score capなし`100/100`で完了。
+- [~] documentation prerequisiteだけをstage/commit。
+- [ ] fresh preflight後269CTだけを実装し、全review/verification、exact commit後にfresh
+  inventoryを継続。

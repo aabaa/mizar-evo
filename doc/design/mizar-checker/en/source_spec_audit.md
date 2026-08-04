@@ -5889,3 +5889,13 @@ Implementation closes exactly the classified binding `source_drift` and its
 eight-test `test_gap`. Canonical artifacts remain byte-identical; source-type,
 real use/capture, and all proof/diagnostic semantics remain open rather than
 being inferred from the new source behavior.
+
+## Task 269CT Source/API Audit
+
+Canonical Chapters 4/8/15/16 authorize the exact written proof-`let` type
+transport. New public owners are `SourceProofLocalLetTypeHandoff`,
+`SourceProofLocalLetTypeProducer`, and non-exhaustive
+`SourceProofLocalLetTypeError`, plus boxed Typed/final getters and installer.
+Generic `SourceTypeProducer` and Task-269C APIs remain behaviorally unchanged.
+The implementation gap and eight-test gap are bounded `source_drift` and
+`test_gap`; semantic and active coverage remain deferred.

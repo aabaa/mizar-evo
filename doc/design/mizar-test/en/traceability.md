@@ -2469,3 +2469,11 @@ The implementation preserves this no-credit contract exactly: no corpus or
 trace artifact changed, counts remain `428/395`, active stages remain
 `101/7/205/1`, and the trace hash remains byte-identical. Only dormant unit
 test inventory moves to `544`.
+
+## Checker Task 269CT Zero-Credit Consumer
+
+The dormant consumer adds no fixture, sidecar, expectation, trace row,
+backlink, status, diagnostic, or active outcome. It only projects four unit
+tests (`544 -> 548`) for the exact source-type composite. Cases/requirements
+remain `428/395`, active stages `101/7/205/1`, type coverage `259=247+12`, and
+the trace hash remains byte-identical.

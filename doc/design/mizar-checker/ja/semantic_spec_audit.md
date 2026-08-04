@@ -650,3 +650,9 @@ lookup ordinal2をsource useとして扱うのはboundary violation。
 implementationもzero-semantic boundaryを維持する。Typed/finalの全semantic tableは
 empty、active routeは追加せず、missing type siteによりsource-type/goal/proof
 semanticsのclaimを引き続き禁止する。
+
+## Task 269CT semantic deferral
+
+new compositeはwritten bare-`set` source typeとbinding type-site overlayだけをauthenticate。
+canonical type assumption、current goal/proof-skeleton matching、initial obligation、discharge /
+acceptance、fact、IR/VCをmaterializeしない。semantic tableはempty、coverage creditはzero。

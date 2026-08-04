@@ -4952,3 +4952,10 @@ private routeはexact compositionを実装した。tests 4件はnormal transacti
 freeze済みcorruption/near-miss profileをrejectする。routeはproduction dispatchに
 存在せず、diagnostic/fixture/trace/type/proof/fact/downstream semantic resultを
 publishしない。
+
+## Checker Task 269CT dormant type consumer
+
+test-only routeはexact Task-269C routeを呼び、frozen checker arena 3 nodeとbare builtin-`set`
+type row 2件を構築してnew compositeをinstallする。dispatch selector/detail keyはなくactive
+artifactへ影響しない。compound test 4件がexact output、corrupt dependency、near miss/isolation、
+final replay、empty semanticsをcover。

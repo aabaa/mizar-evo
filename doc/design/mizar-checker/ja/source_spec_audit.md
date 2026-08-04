@@ -5618,3 +5618,10 @@ diagnostic、proof/semantic intentは不変でbroad diagnostic fixtureへpositiv
 implementationはclassified binding `source_drift`と8-test `test_gap`だけをcloseする。
 canonical artifactはbyte-identicalで、source-type、real use/capture、全proof/
 diagnostic semanticsはnew source behaviorから推測せずopenのまま。
+
+## Task 269CT source/API audit
+
+canonical Chapters 4/8/15/16がexact written proof-`let` type transportをauthorizeする。
+new public ownerは`SourceProofLocalLetTypeHandoff` / `Producer` / non-exhaustive `Error`と
+boxed Typed/final getter/installer。generic `SourceTypeProducer`とTask-269C API behaviorは不変。
+implementation/test gap 8件はbounded `source_drift` / `test_gap`、semantic/active coverageはdefer。

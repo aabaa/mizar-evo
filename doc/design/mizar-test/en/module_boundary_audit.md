@@ -13072,3 +13072,12 @@ The library is `544`, with raw/normalized hashes
 `fa69bfaa53fb75a2a6ec62b1ac7faf8fc5e5a12693a3840e0e31439eafa156db` /
 `717a16f30326b9878949c7158be81eff5f7769c32ceeb19e23de0e569eb7ab4c`.
 All excluded ownership and active boundaries remain unchanged.
+
+## Checker Task 269CT Frozen Runner Boundary
+
+Later implementation owns exactly
+`runner/type_elaboration/source_proof_local_declaration.rs`,
+`runner/type_elaboration.rs`, `runner.rs`, and the existing proof-local test
+leaf. Production remains 37 paths and projects only four new dormant tests.
+Dispatch, metadata, artifacts, parser/resolver, Cargo, and all semantic owners
+remain outside the boundary.

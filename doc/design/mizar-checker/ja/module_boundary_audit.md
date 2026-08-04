@@ -1606,3 +1606,10 @@ implementationはfreeze済み7 Rust source fileだけを変更し、path/module/
 public runner routeを追加しない。productionは30/37 paths、`167058/71412` lines、
 path hash不変、content hash `d5d6c3bf...` / `bf8c5a24...`。parser/resolver、
 source-type、Cargo、active corpus/trace、semantic ownerはscope外のまま。
+
+## Task 269CT frozen boundary
+
+docs prerequisiteはdesign recordだけを変更する。later implementationはchecker
+`source_type.rs` / `typed_ast.rs` / `resolved_typed_ast.rs`とexisting dormant runner/
+facade/test 4 fileだけをown。production path `30/37`。parser/resolver、fixture、
+expectation、trace、metadata、Cargo、diagnostic code、public dispatch、semantic ownerはexclude。

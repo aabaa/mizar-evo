@@ -1768,3 +1768,11 @@ handoffとempty semantic profileをpreserveする。
 
 final optional handoffはstack-size stabilityのためprivate boxed storageとし、
 freeze済みgetter/debug/clone/replay behaviorを維持する。
+
+## Task 269CT final composite replay
+
+`ResolvedTypedAst`はboxed optional `SourceProofLocalLetTypeHandoff`とconst getterを追加し、
+authenticated typed ownerからだけcloneする。exact typed node 3件をsource-preserved role
+`source.proof-local.let.type`でone-for-one replayし、direct source-type/Task-269C fieldと
+resolved semantic tableはempty。malformed/duplicate/occupied/semantic-nonempty profileは
+`InvalidSourceProofLocalLetType`。

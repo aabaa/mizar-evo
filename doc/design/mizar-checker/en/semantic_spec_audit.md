@@ -703,3 +703,11 @@ boundary violation.
 Implementation preserves this zero-semantic boundary: every typed/final
 semantic table remains empty, no active route is added, and the missing type
 site continues to block any claim of source-type, goal, or proof semantics.
+
+## Task 269CT Semantic Deferral
+
+The new composite authenticates only written bare-`set` source types and a
+binding type-site overlay. It does not materialize the canonical type
+assumption, match the current goal/proof skeleton, create an initial
+obligation, discharge or accept anything, record a fact, or produce IR/VC.
+All semantic tables remain empty and coverage credit remains zero.

@@ -1788,3 +1788,11 @@ fact/proof/obligation/diagnostic payloadをemptyに保つ。
 
 optional handoffは`TypedAst` stack sizeを安定させるprivate boxed storageを使う。
 freeze済みpublic by-value installerと`Option<&Handoff>` getterは不変。
+
+## Task 269CT typed composite ownership
+
+`TypedAst`はprivate boxed optional `SourceProofLocalLetTypeHandoff`、const getter、by-value
+one-shot installerを追加する。exact ownerは3-node arenaとotherwise-empty sibling/semantic stateを
+要求し、legacy direct `source_type` / `source_proof_local_let_binding`はempty。wrong dependency /
+fingerprint/arena、duplicate、occupied sibling、nonempty semanticsは
+`InvalidSourceProofLocalLetType`でatomic fail。

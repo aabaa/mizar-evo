@@ -1004,3 +1004,261 @@ workspace Clippy, full workspace tests, five CLIs, and `git diff --check`
 pass. Source/documentation consistency also ends **NO FINDINGS**; independent
 quality passes all nine hard gates without score cap at `100/100`. Staging,
 commit, and fresh Task-264 inventory remain the final parent-owned gates.
+
+## Task 269CT Frozen Proof-`let` Source-Type Composition
+
+### Selection, authority, and classification
+
+Fresh inventory after Task-269C commit
+`399dc44b2a4400f9eeb1b651d1ddd0bbc7a09f6a` selects Task 269CT as the
+separately owned source-type prerequisite for the exact dormant
+`FormulaStatementLetSmoke` proof. Canonical authority is Chapter 4 sections
+4.1--4.2, Chapter 8 sections 8.1/8.3, Chapter 15 sections
+15.2.1/15.10/15.11.1, and Chapter 16 sections 16.3.1/16.3.3/16.4.1--16.4.2.
+They establish that proof-local `let y be set;` introduces one scoped
+arbitrary value with a written type and corresponding type assumption. They
+do not authorize this prerequisite to construct the assumption, update a goal
+or `thesis`, decompose a proof skeleton, emit an obligation, discharge a
+condition, record a fact, or accept a proof.
+
+There is no blocking `spec_gap`: Task 269CP authenticates the exact
+source/Surface/resolver type sites, Task 269C authenticates the definition-site
+binding, and Task 249 supplies the syntax-free type model. The absent contract,
+producer, and eight tests are respectively `design_drift`, `source_drift`, and
+`test_gap`. Task 269C's deliberate `BindingTypeSite::Missing` is an immutable
+prerequisite snapshot, not drift. No `source_undocumented_behavior`,
+`test_expectation_drift`, or current `boundary_violation` is observed. Origin
+divergence is report-only `repo_metadata_conflict` and is not repaired.
+
+### Exact dependency and lower profile
+
+The source remains exactly 100 bytes with one final LF and SHA-256
+`7860a3fe5af89063ac6a2b9a4465cac36d26f6d64e892ba6e2c89bcbaaf9763a`.
+Task 269CP remains the sole source/Surface/resolver lower owner: 51 normal
+unrecovered nodes, root 50, Surface SHA-256
+`1fc35ec18db82efc0968b2f42b08cfaae678184983210cd26f060d45354c7f68`,
+reserve type/head `14..17`, theorem/proof/let/segment/name
+`19..99`/`59..98`/`67..80`/`71..79`/`71..72`, proof-`let` type/head
+`76..79`, source ordinal 1, scope `[0]`, and local `y`. Its two shells and
+theorem symbol/definition/contribution provenance remain exact. Task 269CT
+consumes the Task-269C handoff and opaque debug fingerprint; it does not rescan
+syntax, reconstruct resolver identities, or modify either lower producer.
+
+The dependency preserves exact base/final binding environments
+`1/1/0 -> 2/2/0`. Binding 0 is reserved `x` with source type site `14..17`.
+Binding 1 is active proof-context `LetBinding` `y`, context 1, resolver-local
+scope `[0]`, declaration `71..72`, visible-after/source ordinal 1, normal,
+uncaptured, diagnostic-free, and still `BindingTypeSite::Missing` inside the
+immutable Task-269C snapshot.
+
+### Exact additive public API and atomic model
+
+Task 269CT adds these syntax-free public siblings in `source_type.rs`:
+
+```rust
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceProofLocalLetTypeHandoff {
+    source_id: SourceId,
+    module_id: ModuleId,
+    dependency: SourceProofLocalLetBindingHandoff,
+    dependency_fingerprint: String,
+    binding_env: BindingEnv,
+    binding_fingerprint: String,
+    source_type: SourceTypeApplicationHandoff,
+    source_type_fingerprint: String,
+}
+pub struct SourceProofLocalLetTypeProducer;
+
+impl SourceProofLocalLetTypeProducer {
+    pub fn build(
+        dependency: SourceProofLocalLetBindingHandoff,
+        input: SourceTypeHandoffInput,
+        symbols: &SymbolEnv,
+        arena: &TypedArena,
+    ) -> Result<SourceProofLocalLetTypeHandoff, SourceProofLocalLetTypeError>;
+}
+
+impl SourceProofLocalLetTypeHandoff {
+    pub const fn source_id(&self) -> SourceId;
+    pub const fn module_id(&self) -> &ModuleId;
+    pub const fn dependency(&self) -> &SourceProofLocalLetBindingHandoff;
+    pub const fn binding_env(&self) -> &BindingEnv;
+    pub fn dependency_fingerprint(&self) -> &str;
+    pub fn binding_fingerprint(&self) -> &str;
+    pub const fn source_type(&self) -> &SourceTypeApplicationHandoff;
+    pub fn source_type_fingerprint(&self) -> &str;
+    pub fn debug_text(&self) -> String;
+
+    pub(crate) fn validate_installation(
+        &self,
+        source_id: SourceId,
+        module_id: &ModuleId,
+        arena: &TypedArena,
+    ) -> Result<(), SourceProofLocalLetTypeError>;
+    pub(crate) fn validate_complete_installation(
+        &self,
+        source_id: SourceId,
+        module_id: &ModuleId,
+        arena: &TypedArena,
+        installation_available: bool,
+    ) -> Result<(), SourceProofLocalLetTypeError>;
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum SourceProofLocalLetTypeError {
+    InvalidDependency,
+    InvalidBindingEnvironment,
+    InvalidSourceType,
+    InvalidInstallation,
+}
+```
+
+The exact display strings, in variant order, are
+`source proof-local let type dependency is invalid`,
+`source proof-local let typed binding environment is invalid`,
+`source proof-local let source type is invalid`, and
+`source proof-local let type installation is invalid`. Failure precedence is
+dependency, upgraded binding environment, source-type input/arena/symbols,
+then one-shot installation. No partial handoff is published.
+The earlier source-backed Public Enum Policy table deliberately remains
+unchanged in this docs-only prerequisite so its lint guard describes current
+source; the implementation commit adds the new non-exhaustive error row
+together with the enum.
+
+The producer consumes Task 269C by value and preserves it unchanged as
+`dependency()`. It reconstructs, without sorting or repair, one immutable
+typed binding environment with the same contexts, bindings, identities,
+lookup behavior, diagnostics, and non-type fields. Only binding 1's overlay
+changes from `Missing` to `Source(76..79)`; binding 0 remains `Source(14..17)`
+and cardinality remains `2/2/0`. Task-269C fingerprints remain unchanged and
+the upgraded environment receives its own exact debug fingerprint.
+
+The embedded `SourceTypeApplicationHandoff` is exactly applications /
+expressions / arguments / definition-returns / mode-RHS / structure-members
+`2/2/0/0/0/0`. Application 0 is binding 0, source ordinal 0, root 0;
+application 1 is binding 1, source ordinal 1, root 1. Both expressions are
+normal, argument-free, `Bare`, builtin `set`, with exact written/head spelling
+`set` and ranges `14..17` and `76..79`. No resolver mode/structure head,
+argument, attribute, type result, normalization, inhabitation, subtyping,
+coercion, evidence, or semantic assumption is inferred.
+
+Generic `SourceTypeProducer::build` retains its existing admitted binding
+kinds and behavior. Only `SourceProofLocalLetTypeProducer` admits the exact
+Task-269C `LetBinding`; it cannot silently broaden all proof-local bindings or
+treat the Task-269C missing site as already typed.
+
+### Arena, fingerprints, and Typed/final ownership
+
+The exact checker `TypedArena` has three normal, untyped, unlinked nodes and
+root 2. Node 0 is `source.proof-local.let.reserve-type` at `14..17`; node 1 is
+`source.proof-local.let.type` at `76..79`; node 2 is
+`source.proof-local.let.type-root` at `0..99` with children `[0,1]`. All
+resolved-node links are absent. Each expression and head uses a distinct
+`TypedSiteRef::Role` on its node with roles `source.type.expression` and
+`source.type.head`. Producer and installation validation authenticate the
+exact node/site/range/recovery profile.
+
+The handoff freezes `dependency.debug_text()`, upgraded
+`BindingEnv::debug_text()`, and embedded
+`SourceTypeApplicationHandoff::debug_text()` as byte-exact fingerprints. Its
+debug text is exactly the following grammar with one terminal LF and no extra
+line; each `{:?}` is Rust debug formatting of the complete fingerprint string:
+
+```text
+source-proof-local-let-type-debug-v1
+module: {package}::{module_path}
+dependency-fingerprint: {dependency_fingerprint:?}
+binding-fingerprint: {binding_fingerprint:?}
+source-type-fingerprint: {source_type_fingerprint:?}
+```
+
+The private field order is exactly the declaration above; the unit producer
+has no derive requirement. `validate_installation` authenticates dependency,
+the upgraded environment, all three fingerprints, the embedded type handoff,
+and arena. `validate_complete_installation` calls it first and checks
+`installation_available` last. Typed installation and resolved assembly both
+pass the exact typed arena; no independently reconstructed final arena is an
+input. Existing empty and Task-249/269C bytes remain unchanged.
+
+`TypedAst` and `ResolvedTypedAst` add one boxed optional
+`source_proof_local_let_type` owner and exactly these public methods:
+
+```rust
+impl TypedAst {
+    pub const fn source_proof_local_let_type(
+        &self,
+    ) -> Option<&SourceProofLocalLetTypeHandoff>;
+    pub fn with_source_proof_local_let_type(
+        self,
+        handoff: SourceProofLocalLetTypeHandoff,
+    ) -> Result<Self, TypedAstError>;
+}
+
+impl ResolvedTypedAst {
+    pub const fn source_proof_local_let_type(
+        &self,
+    ) -> Option<&SourceProofLocalLetTypeHandoff>;
+}
+```
+
+`TypedAstError` and `ResolvedTypedAstError` each append
+`InvalidSourceProofLocalLetType`; their display strings are respectively
+`source proof-local let type handoff is invalid` and
+`resolved typed AST source proof-local let type handoff is invalid`.
+The exact profile owns
+only this composite and the three-node arena. Legacy direct `source_type` and
+`source_proof_local_let_binding` fields remain empty; consumers reach both
+dependencies through the composite. Final assembly clones the composite and
+maps the three nodes one-for-one with source-preserved role
+`source.proof-local.let.type`. Every semantic table remains empty. Duplicate
+installation, wrong dependency/fingerprint/arena/site/root, occupied sibling,
+or nonempty semantic state fails atomically.
+
+### Runner, tests, exclusions, and exit
+
+The dormant runner first calls unchanged Task 269C, then uses only its handoff
+and Task-269CP-authenticated type ranges to build the exact arena/input. It
+never enters public dispatch. Implementation ownership is exactly seven
+existing Rust files: checker `source_type.rs`, `typed_ast.rs`, and
+`resolved_typed_ast.rs`; runner
+`type_elaboration/source_proof_local_declaration.rs`, its two existing
+test-only facade hops, and the existing proof-local test leaf. Parser,
+resolver, canonical fixtures, sidecars, expectations, trace, metadata, Cargo,
+diagnostic codes, and dispatch do not change.
+
+Four checker and four runner tests cover the exact transaction/fingerprints;
+dependency/binding/input/arena corruption and precedence; Typed/final
+one-shot/cross-family atomicity; near misses, unchanged Task 269C, generic
+producer isolation, and empty semantic publication. Libraries project
+`486/544 -> 490/548`; resolver/syntax remain `148/59`, and checker/runner
+production paths remain `30/37`. Lines and content hashes are remeasured.
+
+Corpus/requirements remain `428/395`, pass/fail `235/193`, active stages
+`101/7/205/1`, type coverage `259=247+12`, warnings/errors `23/0`, trace hash
+`55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`,
+and all five CLI hashes remain exact. The coverage audit records only bounded
+zero-credit composition ownership.
+
+Task 269CT excludes use/capture, type assumption/guard publication, goal or
+`thesis` composition, proof-skeleton matching, initial obligations,
+proof/discharge/acceptance, facts, overload/normalization, Core/CFG/VC, other
+proof-local forms, and active credit. Exit requires all repeated reviews with
+no findings, all nine hard gates without a score cap at 90/100 or higher,
+full verification/count/hash reproduction, one docs-only prerequisite commit,
+fresh preflight, and one exact implementation commit before fresh selection of
+later-use/capture work.
+
+### Documentation-prerequisite verification
+
+The initial specification review's three findings were repaired by freezing
+the complete debug grammar, exact private validation contract, and current
+global task status. Repeated and independent specification reviews report
+**NO FINDINGS**. Preflight authenticates the unchanged Task-269C and
+Task-269CP/C lower transactions, `486/544` library baselines, all five CLI
+hashes, and trace hash. Format, both repository lint policies, metadata, Cargo
+metadata, warnings-denied workspace Clippy, full workspace tests, and
+whitespace pass without changing any executable or canonical artifact.
+Source/docs and final quality reviews report **NO FINDINGS**; all nine hard
+gates PASS without a score cap at a valid `100/100`. Task-only staging,
+commit, and fresh implementation preflight remain.

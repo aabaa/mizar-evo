@@ -6462,3 +6462,19 @@ the trace hash remains
 Source-type admission is still the next separately selected prerequisite;
 real use/capture, goal/guard, facts, proof/discharge/acceptance, obligations,
 Core, CFG, and VC remain deferred with zero new credit.
+
+## Checker Task 269CT Frozen Zero-Credit Type Composition
+
+Task 269CT freezes only the private dormant composition of the unchanged
+Task-269C missing-type binding snapshot with two authenticated bare builtin
+`set` source-type rows. The composite contains a separate typed binding
+overlay, three-node typed arena, and Typed/final replay, but it does not run a
+canonical fixture or publish a type assumption, goal/guard, proof-skeleton
+transition, obligation, fact, acceptance, or IR/VC.
+
+No requirement, backlink, trace owner/status, fixture, sidecar, expectation,
+diagnostic, active result, or executable coverage credit changes. Corpus/
+requirements remain `428/395`, active stages remain `101/7/205/1`, type
+coverage remains `259=247+12`, and trace hash remains
+`55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`.
+Later use/capture and every semantic owner remain separate follow-ups.

@@ -6789,6 +6789,23 @@ implementation commit does not satisfy a producer task.
   preflight.
 - [x] Fresh-preflight and implement only the exact seven-file binding
   transaction; keep source-type admission and use/capture separate.
-- [~] Complete independent test/implementation/source-doc/final reviews,
-  verification, all nine final gates, task-only commit, and fresh next-task
-  inventory automatically.
+- [x] Complete independent test/implementation/source-doc/final reviews,
+  verification, all nine final gates, task-only commit
+  `399dc44b2a4400f9eeb1b651d1ddd0bbc7a09f6a`, and fresh inventory.
+
+## Checker Task 269CT Proof-`let` Source-Type Prerequisite
+
+- [x] Fresh-inventory Task-269CP/C profiles, canonical Chapters 4/8/15/16,
+  Task-249 APIs, ownership, corpus/trace, counts/hashes, origin, and protected
+  stash; select only Task 269CT before later use/capture.
+- [x] Freeze the two-binding type overlay, source-type `2/2/0/0/0/0`,
+  three-node arena, API/error/debug/fingerprints, Typed/final owner, dormant
+  runner, seven-file scope, eight tests, zero-credit audit impact, exclusions,
+  projected counts, and exit criteria in EN/JA.
+- [x] Repeat specification review to **NO FINDINGS** and synchronize the
+  frozen contract and verification ledgers.
+- [x] Complete independent source/docs and final quality review with **NO
+  FINDINGS**, all nine hard gates PASS, and an uncapped `100/100` score.
+- [~] Stage and commit only the documentation prerequisite.
+- [ ] Fresh-preflight and implement only Task 269CT; repeat all reviews and
+  verification, commit the exact task, then continue fresh inventory.

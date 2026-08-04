@@ -1610,3 +1610,9 @@ corpus/trace/CLI不変、separate source-type/use-capture ownerで一致する�
 EN/JAはimplemented private route、exact checker transaction、4-test matrix、runner
 `544`、production `37/71412`、raw/normalized hash、public/active/corpus/trace/CLI
 不変、全semantic deferralで一致する。implementation-time bilingual debtはない。
+
+## Checker Task 269CT synchronization
+
+EN/JAはdormant exact Task-269C consumer、inherited type range、3-node arena、type row 2件、
+runner test 4件、`544 -> 548`、runner 4-file scope、production path不変、dispatch/trace
+credit zero、semantic exclusionで一致する。bilingual debtは許容しない。

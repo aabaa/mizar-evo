@@ -94,8 +94,8 @@ is its task 1). "Next work" points into the
 | mizar-parser | Grammar, Pratt parsing, syntax recovery, parse-only corpus | [x] Tasks 1-48 plus bounded `PARSER-RECOVERY-B1B1P-P1` complete; historical post-Task-46 score 99/100 | no inferred Task 49; human-owned P-265-47D remains separate | [todo](./mizar-parser/en/todo.md) |
 | mizar-frontend | Source loading and phase 1-3 orchestration | [x] prior milestone plus `PARSER-RECOVERY-B1B1P-P1-FE` regression complete | — | [todo](./mizar-frontend/en/todo.md) |
 | mizar-resolve | Module graph, namespaces, symbols, labels, signatures | [~] complete through task 29, Checker Task 263R, and Task 264R implementation | Preserve Task-264R shell/no-symbol boundary through Checker Tasks 248P/264 | [todo](./mizar-resolve/en/todo.md) |
-| mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] foundation complete through task 22; Tasks 265-268, Core-31, and Checker consumers through implemented Task 269C are complete | Fresh-inventory the separate proof-`let` source-type prerequisite; keep use/capture and checker semantics separate | [todo](./mizar-test/en/todo.md) |
-| mizar-checker | Type checking, cluster/registration resolution, overload resolution | [~] explicit-payload milestone and source producers/consumers through implemented Task 269C are complete | Fresh-inventory the separate proof-`let` source-type prerequisite; keep later-use/capture and goal/proof semantics separate | [todo](./mizar-checker/en/todo.md) |
+| mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] foundation complete through task 22; Tasks 265-268, Core-31, and Checker consumers through implemented Task 269C are complete | Complete frozen Task 269CT docs/implementation; keep its dormant consumer out of dispatch and preserve zero trace credit | [todo](./mizar-test/en/todo.md) |
+| mizar-checker | Type checking, cluster/registration resolution, overload resolution | [~] explicit-payload milestone and source producers/consumers through implemented Task 269C are complete | Complete frozen Task 269CT source-type composition; keep later use/capture and all goal/proof semantics separate | [todo](./mizar-checker/en/todo.md) |
 | mizar-core | Elaboration, binder-normalized core logic, control-flow preparation | [x] core/control-flow milestone, tasks 27-32 complete | step-5 Tasks 33-53 under the Task-32 graph | [todo](./mizar-core/en/todo.md) |
 | mizar-vc | VC IR, VC generation, deterministic pre-ATP discharge | [x] exact source-derived contradiction VC integration complete through task 31 | dependency-paced VC Tasks 32-55; VC 40/53 and S1 gates remain explicit | [todo](./mizar-vc/en/todo.md) |
 | mizar-kernel | Trusted certificate parsing and checking | [x] SAT-backed kernel milestone complete | step 4 task 35 resolved; task 32 parked; tasks 30-34 resolved | [todo](./mizar-kernel/en/todo.md) |
@@ -4182,6 +4182,23 @@ or semantic owner changed. B3M2B2B remains next before B4.
 - [x] Create the exact docs-only commit
   `e3bc93c36577e7e250efab8cfc11d9b9695c3953` and run post-commit fresh
   implementation preflight.
-- [~] Implement/review/verify/commit exactly Task 269C, then fresh-inventory the
+- [x] Implement/review/verify/commit exactly Task 269C as
+  `399dc44b2a4400f9eeb1b651d1ddd0bbc7a09f6a`, then fresh-inventory the
   separately owned source-type prerequisite without absorbing use/capture or
   goal/proof semantics.
+
+## Checker Task 269CT Frozen Cross-Crate Prerequisite
+
+- [x] Close Task 269C at commit
+  `399dc44b2a4400f9eeb1b651d1ddd0bbc7a09f6a` and fresh-select only its exact
+  source-type composition prerequisite.
+- [x] Freeze synchronized checker/test boundaries: typed `2/2/0` overlay,
+  source-type `2/2/0/0/0/0`, three-node arena, boxed Typed/final ownership,
+  seven Rust files, eight tests, zero active/trace credit, and semantic
+  deferrals.
+- [x] Complete repeated and independent Task-269CT specification review with
+  **NO FINDINGS** and synchronize its verification ledgers.
+- [x] Complete source/docs and final quality gates with **NO FINDINGS**, all
+  nine gates PASS, and an uncapped `100/100` score.
+- [~] Stage and create only the documentation commit; then fresh-preflight
+  implementation and continue automatically.

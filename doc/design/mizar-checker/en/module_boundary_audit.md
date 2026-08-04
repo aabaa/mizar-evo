@@ -1669,3 +1669,12 @@ path, module, dependency, or public runner route. Production remains 30/37
 paths and measures `167058/71412` lines with unchanged path hashes and content
 hashes `d5d6c3bf...` / `bf8c5a24...`. Parser/resolver, source-type, Cargo,
 active corpus/trace, and semantic owners remain outside the boundary.
+
+## Task 269CT Frozen Boundary
+
+The documentation prerequisite changes design records only. Later
+implementation owns exactly checker `source_type.rs`, `typed_ast.rs`, and
+`resolved_typed_ast.rs`, plus four existing dormant-runner/facade/test files.
+Production paths stay `30/37`; parser, resolver, fixtures, expectations,
+trace, metadata, Cargo, diagnostic codes, public dispatch, and semantic owners
+are excluded.

@@ -800,3 +800,11 @@ implemented producerとinstaller 2段はこのexact transitionとlookup oracle 2
 enforceする。environment/context/binding/declaration link/fingerprintのcorruptionは
 transactional failし、final bindingはmissing typeのままでreal use/captureまたは
 semantic effectを持たない。
+
+## Task 269CT typed binding overlay
+
+Task 269Cはimmutable missing-type dependencyのまま。269CTはseparate exact `2/2/0`
+typed overlayを作り、binding 0はSource `14..17`、proof-local binding 1だけSource
+`76..79`となる。context/identity/lookup/capture/diagnostic/non-type fieldは不変。
+overlayはnew compositeからだけ参照し、use/capture、guard、fact、goal、proof、obligationを
+publishしない。

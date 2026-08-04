@@ -1855,3 +1855,13 @@ profile.
 
 The final optional handoff is privately boxed for stack-size stability while
 preserving the frozen getter, debug, clone, and replay behavior.
+
+## Task 269CT Final Composite Replay
+
+`ResolvedTypedAst` adds one boxed optional
+`SourceProofLocalLetTypeHandoff`, exposed by a const getter and cloned only
+from the authenticated typed owner. The exact three typed nodes replay
+one-for-one with source-preserved role `source.proof-local.let.type`; direct
+source-type/Task-269C fields and every resolved semantic table remain empty.
+Malformed, duplicate, occupied, or semantically nonempty profiles fail with
+`InvalidSourceProofLocalLetType`.

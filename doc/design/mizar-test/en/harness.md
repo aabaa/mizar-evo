@@ -5256,3 +5256,11 @@ The private route now implements that exact composition. Its four tests pass
 the normal transaction and reject all frozen corruption/near-miss profiles;
 the route remains absent from production dispatch and publishes no diagnostic,
 fixture, trace, type, proof, fact, or downstream semantic result.
+
+## Checker Task 269CT Dormant Type Consumer
+
+The test-only route calls the exact Task-269C route, constructs the frozen
+three-node checker arena and two bare builtin-`set` type rows, and installs the
+new composite. It has no dispatch selector or detail key and cannot affect an
+active artifact. Four compound tests cover exact output, corrupt dependencies,
+near misses/isolation, final replay, and empty semantic state.

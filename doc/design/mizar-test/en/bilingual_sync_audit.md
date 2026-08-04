@@ -1681,3 +1681,10 @@ EN/JA agree on the implemented private route, exact checker transaction,
 four-test matrix, runner `544`, production `37/71412`, raw/normalized hashes,
 unchanged public/active/corpus/trace/CLI behavior, and all semantic deferrals.
 No implementation-time bilingual debt remains.
+
+## Checker Task 269CT synchronization
+
+EN/JA agree on the dormant exact Task-269C consumer, inherited type ranges,
+three-node arena, two type rows, four runner tests, `544 -> 548` projection,
+four-file runner scope, unchanged production path count, zero dispatch/trace
+credit, and all semantic exclusions. No bilingual debt is accepted.

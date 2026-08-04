@@ -1328,3 +1328,12 @@ hashes reproduce the values recorded above. Independent final quality reports
 **NO FINDINGS**: all nine hard gates PASS, no score cap applies, and the valid
 score is `100/100` (`20/20/15/15/10/10/5/5`). Only task-only staging/commit
 and clean post-commit fresh inventory remain parent-owned gates.
+
+## Task 269CT Immutable Dependency Boundary
+
+Task 269CT consumes `SourceProofLocalLetBindingHandoff` by value and preserves
+its missing-type `2/2/0` snapshot and all dependency fingerprints unchanged.
+The separate source-type composite owns the typed overlay and type handoff;
+this module gains no API or source change. Syntax rescanning, later-use/
+capture, assumptions, goals, facts, proof behavior, and active routing remain
+outside the boundary.

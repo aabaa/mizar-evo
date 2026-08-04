@@ -11784,3 +11784,10 @@ libraryは`544`、raw/normalized hashは
 `fa69bfaa53fb75a2a6ec62b1ac7faf8fc5e5a12693a3840e0e31439eafa156db` /
 `717a16f30326b9878949c7158be81eff5f7769c32ceeb19e23de0e569eb7ab4c`。
 全excluded owner/active boundaryは不変。
+
+## Checker Task 269CT frozen runner boundary
+
+later implementationは`runner/type_elaboration/source_proof_local_declaration.rs`、
+`runner/type_elaboration.rs`、`runner.rs`、existing proof-local test leafだけをown。
+production path 37、dormant test 4件だけ追加。dispatch、metadata、artifact、parser/resolver、
+Cargo、semantic ownerはscope外。

@@ -1681,3 +1681,10 @@ actual use/capture、formula/goal/fact/proof/obligation family、active coverage
 このfamilyはexact declaration row 1件だけでimplementedとなりsibling payloadは0。
 Typed/final replayとdormant runnerはdecompositionを保ち、separate source-type
 prerequisiteは未実装のまま。
+
+## Task 269CT proof-`let` source-type composition family
+
+separate prerequisiteをunchanged Task-269C binding snapshot、typed `BindingEnv` overlay、
+Task-249 source-type familyのexact compositeとしてfreezeする。bare builtin-`set`
+application 2件だけをownし、新binding、use/capture、assumption/guard、goal、fact、proof、
+obligation、IR、active coverage familyは追加しない。Task 269C/generic Task 249は不変。

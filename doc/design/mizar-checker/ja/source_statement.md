@@ -3552,3 +3552,9 @@ goal/thesis/conclusion ownershipはdeferred。
 
 implemented transactionもこのboundaryを維持する。context owner tagはprovenance
 としてだけvalidateし、statement/formula/thesis/conclusion/fact/proof rowをemitしない。
+
+## Task 269CT no-statement boundary
+
+source-type prerequisiteはTask-269CP theorem/proof/let provenanceとTask-269C bindingをreuseするが、
+statement row、current goal、thesis transition、proof-skeleton node、conclusion、fact、acceptanceを
+publishしない。statement API/fingerprint/testは不変。

@@ -1337,6 +1337,16 @@ B3A/B3B installation orders fail without partial mutation and permit exact
 replay. The existing `InvalidSourceStatement` boundary and public API are
 unchanged.
 
+## Task 269CT Typed Composite Ownership
+
+`TypedAst` adds one privately boxed optional
+`SourceProofLocalLetTypeHandoff`, a const getter, and the by-value one-shot
+`with_source_proof_local_let_type` installer. The exact owner requires the
+three-node arena and otherwise empty sibling/semantic state. Legacy direct
+`source_type` and `source_proof_local_let_binding` fields remain empty. Wrong
+dependency, fingerprint, arena, duplicate owner, occupied sibling, or nonempty
+semantic state yields `InvalidSourceProofLocalLetType` atomically.
+
 ## Task 249PI Implemented Typed Ownership
 
 The existing one-shot source-type installation owns and revalidates the exact

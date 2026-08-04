@@ -2340,3 +2340,10 @@ coverage auditはprivate binding ownerとseparate source-type prerequisiteだけ
 implementationもno-credit contractをexactに維持する。corpus/trace artifactは不変、
 countは`428/395`、active stageは`101/7/205/1`、trace hashはbyte-identical。
 dormant unit-test inventoryだけが`544`へ移る。
+
+## Checker Task 269CT zero-credit consumer
+
+dormant consumerはfixture/sidecar/expectation/trace row/backlink/status/diagnostic/active outcomeを
+追加しない。exact source-type compositeのunit test 4件だけを`544 -> 548`へprojectする。
+cases/requirements `428/395`、active `101/7/205/1`、type `259=247+12`、trace hashは
+byte-identical。

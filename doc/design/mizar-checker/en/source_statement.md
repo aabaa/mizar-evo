@@ -4080,3 +4080,10 @@ deferred.
 The implemented transaction preserves this boundary: its context owner tag is
 validated as provenance only and no statement, formula, thesis, conclusion,
 fact, or proof row is emitted.
+
+## Task 269CT No-Statement Boundary
+
+The source-type prerequisite reuses Task-269CP theorem/proof/let provenance
+and Task-269C binding ownership without publishing a statement row, current
+goal, thesis transition, proof-skeleton node, conclusion, fact, or acceptance.
+All statement APIs, fingerprints, and tests remain unchanged.

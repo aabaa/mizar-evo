@@ -1660,6 +1660,13 @@ signature、full resolver provenance、syntax-free output、tests 4件のguard m
 checker ownerなし、measured runner inventoryがEN/JAで一致する。implementation-time
 bilingual debtはない。
 
+## Task 269CT synchronization
+
+frozen proof-`let` type-composition contractはEN/JAでauthority、Task-269CP/C dependency、
+`2/2/0` typed binding overlay、`2/2/0/0/0/0` source-type、3-node arena、public
+API/error、fingerprint、boxed Typed/final owner、Rust 7 file/test 8件、zero-credit、
+corpus/trace/CLI不変、semantic deferralが一致する。bilingual debtは許容しない。
+
 ## Task 269C frozen synchronization result
 
 EN/JAはcanonical authority、complete Rust signature、independent source/Surface/type checker
