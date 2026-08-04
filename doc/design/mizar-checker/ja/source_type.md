@@ -1243,3 +1243,155 @@ byte-identical。Task269GUPTだけがnew GUP binding handoffをby-value consume�
 凍結済みの6ファイル transactionとchecker/runner各4件の正確なtestを実装した。libraryは`502/564`、checker/runner productionは`30/172531`と`37/74826`で、path hashは不変、content hashは`e0342952a01a0b379cf7b06ad243cd40a1656e940480196323cf43fbe7d8f7c5` / `8fe7c8c0b7e855e5113f3830873e133f42c8048a3272055e2fddd5ebd9cbb1bc`である。
 
 閉じるのはdormant private lexical-binding evidenceだけで、active corpus、trace、type、term/use、condition/fact、goal/proof、obligation、diagnostic、CLIのcreditは0のままである。次はTask 269GUPTであり、Task 269GU、capture、Task 270は引き続きdeferする。
+
+## Task 269GUPT frozen proof-`given` use-profile source type
+
+### 選択、authority、分類
+
+clean HEAD `076c142598e563be0f0bd2ac785c2643fc3a5b75`のfresh inventoryで
+Task 269GUPTだけをselectする。canonical authorityはChapter 3 §§3.1--3.4、
+Chapter 4 §§4.1/4.6、Chapter 8 §§8.1/8.3、Chapter 15 §§15.3.3/15.10/15.11.4、
+Chapter 16 §§16.4.1--16.4.2である。exact sourceの`given y being set`はwritten
+builtin-`set` typeとenclosing block残部のscopeを定めるが、condition fact、type
+guard/assumption、existential/Skolem semantics、later term occurrence、capture、goal、
+initial obligation、proof/discharge/acceptance、Core/CFG/VCをこのprerequisiteに
+authorizeしない。
+
+blocking `spec_gap`なし。implemented Task 269GUPはtype siteが意図的に`Missing`の
+distinct validated binding handoffを供給し、lower dependencyはexact written type rangeと
+source/resolver provenanceを保持する。GUPT composite、Typed/final owner、focused testsの
+不在は`source_drift`/`test_gap`、stale next-task statusはこのdocs prerequisiteで直す
+`design_drift`である。old 269G/GTを変更・再利用すること、`source_type.rs`でbindingを
+reconstructすること、later `y` termまたはsemantic tableをpublishすることは
+`boundary_violation`。`source_undocumented_behavior`/`test_expectation_drift`なし。
+origin `0 behind / 7 ahead`はreport-only `repo_metadata_conflict`で、stash
+`f65cf4a13752ec380710814a9ac6392ccb9d75d4`は触らない。
+
+### exact dependency、overlay、public API
+
+sourceはone-final-LFのexact 128 bytes、SHA
+`ec15ded78ae96022840a8419a85d74643de3b37337e9a202cbda77ee97aa7c01`。
+normal 54-node Surfaceはroot 53、SHA
+`c64297ce72e380a2e4146276966e085d780f8b38f2528d5abaa440a50c67db6d`。
+reserve type/head `14..17`、theorem/proof/given/segment/name
+`19..127`/`62..126`/`70..108`/`76..87`/`76..77`、given type/head `84..87`、
+later identifier leaves `116..117`/`120..121`は不変。GUPTはpublic
+`SourceProofLocalGivenUseBindingHandoff`をby-value consumeし、existing lowerは
+authenticated type rangeだけに使う。syntax rescan/resolver identity reconstructionなし。
+
+immutable dependencyは`1/1/0 -> 2/2/0`。binding 0はreserved `x`の
+`Source(14..17)`、binding 1はproof context 1所有、resolver identity
+`([0],1,76..77)`、visible-after/source ordinal 1、active/normal/uncaptured/
+diagnostic-free `GivenWitness` `y`でtype siteは`Missing`。copied environmentでbinding 1
+だけを`Source(84..87)`へ変え、context/identity/lookup/diagnostic/全non-type fieldを
+byte-identicalに保つ。cardinalityは`2/2/0`。
+
+`source_type.rs`に追加できるsyntax-free public siblingは次だけである。
+
+```rust
+pub struct SourceProofLocalGivenUseTypeHandoff {
+    source_id: SourceId,
+    module_id: ModuleId,
+    dependency: SourceProofLocalGivenUseBindingHandoff,
+    dependency_fingerprint: String,
+    binding_env: BindingEnv,
+    binding_fingerprint: String,
+    source_type: SourceTypeApplicationHandoff,
+    source_type_fingerprint: String,
+}
+pub struct SourceProofLocalGivenUseTypeProducer;
+pub enum SourceProofLocalGivenUseTypeError {
+    InvalidDependency,
+    InvalidBindingEnvironment,
+    InvalidSourceType,
+    InvalidInstallation,
+}
+```
+
+handoffはEN canonical記載順のgetter、`debug_text`、`validate_installation`、
+`validate_complete_installation`を持ち、producer `build`はGUP handoffをby-value、
+`SourceTypeHandoffInput`、`SymbolEnv`、`TypedArena`を受ける。errorは
+`Debug, Clone, PartialEq, Eq`、`#[non_exhaustive]`、`Display`、
+`std::error::Error`を実装する。exact stringsは順に
+`source proof-local given-use type dependency is invalid`、
+`source proof-local given-use typed binding environment is invalid`、
+`source proof-local given-use source type is invalid`、
+`source proof-local given-use type installation is invalid`。precedenceはdependency、
+copied typed binding env、exact source-type input/symbol/arena、one-shot installation。
+
+embedded source typeはapplications/expressions/arguments/definition-returns/mode-RHS/
+structure-members `2/2/0/0/0/0`。rowsは`(binding,ordinal,root)`が`(0,0,0)`と
+`(1,1,1)`。両expressionはnormal、argument-free `Bare` builtin `set`、rolesは
+`source.type.expression`/`source.type.head`、spelling `set`、rangesは`14..17`と
+`84..87`。existing private `SourceTypeBindingProfile::ProofLocalGiven`だけをreuseし、
+Generic/ProofLocalLetをbroadenしない。argument/attribute/normalized type/inhabitation/
+subtyping/coercion/evidence/guard/condition/obligationなし。
+
+### arena、fingerprint、Typed/final、runner
+
+exact `TypedArena`はnormal/Unknown/unlinkedの3 nodes、root 2。node 0は
+`source.proof-local.given-use.reserve-type` `14..17`、node 1は
+`source.proof-local.given-use.type` `84..87`、node 2は
+`source.proof-local.given-use.type-root` `0..127` children `[0,1]`。resolved linkなし。
+dependency/binding/source-typeの完全debug textをfingerprintとし、exact debug headerは
+`source-proof-local-given-use-type-debug-v1`、moduleと3 fingerprintをEN記載順で出力し、
+terminal LFは1件。
+
+`TypedAst`/`ResolvedTypedAst`はold Given-type slot直後にboxed optional
+`source_proof_local_given_use_type`だけを追加し、両方にgetter、Typed側に
+`with_source_proof_local_given_use_type`を追加する。error variantは両方
+`InvalidSourceProofLocalGivenUseType`、stringは
+`source proof-local given-use type handoff is invalid`と
+`resolved typed AST source proof-local given-use type handoff is invalid`。全old owner/
+nonempty semantic tableとのboth-order共存をrejectする。final node roleは全3件
+`source.proof-local.given-use.type`。direct source-type/binding/term/use/statement/proof/
+fact/obligation/diagnostic ownerはempty。
+
+runner private outputは`typed_ast`、`resolved`順。mutation enumは`None`、
+`WrongDependencyModule`、`WrongTypeRange`、`WrongArenaRoot`、`WrongArenaKind`。
+`source_proof_local_given_use_type_output`とcfg-test `_with_mutation`はGUP routeと同じ
+5 source argsを持ち、test seamだけmutationを追加する。selector mismatchは`None`、
+selected failureは`Some(Err(_))`。route-local stringは
+`Task269GUPT reserve type range is missing`だけ。existing GUP binding/lowerを呼び、
+dependencyをby-value consumeし、exact input/arenaをbuild、empty TypedAstへinstallして
+ResolvedTypedAstをassembleする。active dispatchには入らない。
+
+### scope、tests、impact、deferral、exit
+
+implementationはexact 7 existing Rust files: checker `source_type.rs`、`typed_ast.rs`、
+`resolved_typed_ast.rs`; runner `type_elaboration/source_proof_local_declaration.rs`、
+`type_elaboration.rs`、`runner.rs`、existing proof-local test leaf。
+checker `source_proof_local_declaration.rs`/`binding_env.rs`/`source_term.rs`、runner
+`source_statement.rs`、parser/resolver、canonical spec、fixture/sidecar/expectation/trace/
+metadata/Cargo/diagnostic/public dispatch/CLI/active resultは変更禁止。
+
+checker exact testsは`task269gupt_exact_transaction_fingerprints_and_overlay_are_stable`、
+`task269gupt_dependency_binding_source_type_and_precedence_fail_closed`、
+`task269gupt_typed_and_resolved_ownership_is_atomic`、
+`task269gupt_prior_and_neighbor_routes_remain_isolated`。runner exact testsは
+`task269gupt_exact_type_composition_fingerprints_and_replay_are_stable`、
+`task269gupt_dependency_input_and_arena_corruption_fail_closed`、
+`task269gupt_typed_and_resolved_owners_are_one_shot_and_semantically_empty`、
+`task269gupt_near_miss_task269gup_and_active_routes_remain_isolated`。
+
+docs-only scopeはchecker paired 26、runner paired 12、global ledger 2のexact 40 Markdown。
+baselineはlibraries `502/564`、parser/resolver/syntax `226/148/59`、production
+`30/172531`と`37/74826`、path hash `c89f43f...bad5`/`1f9e2c...a73d`、content hash
+`e0342952...f7c5`/`8fe7c8c0...b1bc`、raw/normalized test-list checker
+`059c34f7...d93`/`ba08b3db...de8`、runner `f43b3223...0fe`/`0083d9c0...990`。
+implementationは`506/568`をprojectし、line/content/test-list hashをremeasureする。
+
+cases/requirements `428/395`、pass/fail `235/193`、warnings/errors `23/0`、active
+`101/7/205/1`、type coverage `259=247+12`、trace SHA `55b754c8...ca2b3`、5 CLI hash、
+canonical fixture/sidecarは不変。exact CLI hashesはplan/parse/declaration/type/proof
+`700f4bf5...718`/`a8a7aa63...a56`/`71e83ba0...3c74`/`4b2c7bd5...ab7f`/
+`ccf3d2d4...8450`、parser source/sidecarは`bd9a2d47...7234`/`7361b50b...0f17`、
+broad gap source/sidecarは`5fc4849a...ecd9`/`8e2c73b1...fa43`。active type/trace
+creditは0。later occurrence、condition/
+fact、existential/Skolem、guard/assumption、capture/export、goal/proof/acceptance、initial
+obligation、IRはdefer。
+
+EN/JA review **NO FINDINGS**、docs-only hard gate 9件capなし`>=90/100`、docs commit、
+fresh lower-stage preflight、exact 7-file/8-test implementation、3 review **NO FINDINGS**、
+full verification/count/hash、separate implementation commit、clean/origin/stash auditでexit。
+次はTask 269GU。captureとTask 270はdeferする。

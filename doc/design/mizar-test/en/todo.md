@@ -3663,3 +3663,11 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
 The exact 128-byte/54-node selector, lower row, reserve-base composition, direct checker handoff, and four runner tests are implemented inside the frozen private boundary. Libraries measure checker/runner `502/564`; production is `30/172531` and `37/74826`, with unchanged path hashes and content hashes `e0342952a01a0b379cf7b06ad243cd40a1656e940480196323cf43fbe7d8f7c5` / `8fe7c8c0b7e855e5113f3830873e133f42c8048a3272055e2fddd5ebd9cbb1bc`.
 
 No dispatch, fixture, sidecar, expectation, trace, metadata, diagnostic, CLI, active result, Typed/final, source-type, term/use, fact/proof, or obligation owner changed. Task 269GUPT is the next consumer; Task 269GU, capture, and Task 270 remain deferred.
+
+## Checker Task 269GUPT Dormant Source-Type Consumer
+
+- [x] Freeze reuse of the exact GUP source/lower/direct-binding route and prohibit dispatch or artifact changes.
+- [x] Freeze private output, five mutation variants, both selectors, exact two-row input, distinct three-node arena, four runner files, four runner tests, `564 -> 568`, and zero semantic credit.
+- [x] Documentation reviews are **NO FINDINGS** and docs-only hard gates pass `9/9` at an uncapped `100/100`.
+- [x] Make the exact 40-file prerequisite commit.
+- [ ] Implement and review only the dormant GUPT route; preserve all fixtures, expectations, trace, metadata, diagnostics, CLI bytes, and active results. Fresh-inventory Task 269GU after the separate implementation commit.

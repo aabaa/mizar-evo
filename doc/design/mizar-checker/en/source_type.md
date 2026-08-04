@@ -1669,3 +1669,285 @@ remains later still.
 The frozen six-file transaction and its exact four checker/four runner tests are implemented. Libraries measure `502/564`; checker/runner production is `30/172531` and `37/74826`, with unchanged path hashes and content hashes `e0342952a01a0b379cf7b06ad243cd40a1656e940480196323cf43fbe7d8f7c5` / `8fe7c8c0b7e855e5113f3830873e133f42c8048a3272055e2fddd5ebd9cbb1bc`.
 
 This closes only dormant private lexical-binding evidence and grants zero active corpus, trace, type, term/use, condition/fact, goal/proof, obligation, diagnostic, or CLI credit. Task 269GUPT is next; Task 269GU, capture, and Task 270 remain deferred.
+
+## Task 269GUPT Frozen Proof-`given` Use-profile Source Type
+
+### Selection, authority, and disagreement classification
+
+Fresh clean inventory at
+`076c142598e563be0f0bd2ac785c2643fc3a5b75` selects only Task 269GUPT.
+Canonical authority is Chapter 3 Sections 3.1--3.4, Chapter 4 Sections 4.1
+and 4.6, Chapter 8 Sections 8.1 and 8.3, Chapter 15 Sections 15.3.3,
+15.10, and 15.11.4, and Chapter 16 Sections 16.4.1--16.4.2. The exact
+source writes `given y being set`; therefore the declared witness has the
+written builtin-`set` source type and remains visible for the rest of its
+enclosing block. These authorities do not make this source-type prerequisite
+an owner for a condition fact, a type guard or assumption, existential or
+Skolem meaning, a later term occurrence, capture, goal transition, initial
+obligation, proof/discharge/acceptance state, Core, CFG, or VC.
+
+There is no blocking `spec_gap`. Implemented Task 269GUP supplies a distinct,
+validated source-local binding handoff whose witness type site is deliberately
+`Missing`; the exact written type range and source/resolver provenance remain
+available from its implemented lower dependency. The absent GUPT composite,
+Typed/final owner, and focused tests are `source_drift` and `test_gap` against
+the canonical declared type. The stale post-GUP next-task status is
+`design_drift` repaired by this documentation prerequisite. Reusing or
+mutating the old Task-269G/GT transaction, reconstructing the binding in
+`source_type.rs`, publishing the later `y` terms, or adding any semantic table
+would be `boundary_violation`. No `source_undocumented_behavior` or
+`test_expectation_drift` is accepted. Origin divergence `0 behind / 7 ahead`
+is report-only `repo_metadata_conflict`; protected stash
+`f65cf4a13752ec380710814a9ac6392ccb9d75d4` remains untouched.
+
+### Exact dependency, overlay, and public API
+
+The source is the unchanged 128-byte, one-final-LF Task-269GUP profile with
+SHA-256 `ec15ded78ae96022840a8419a85d74643de3b37337e9a202cbda77ee97aa7c01`.
+Its unchanged normal 54-node Surface tree has root 53 and SHA-256
+`c64297ce72e380a2e4146276966e085d780f8b38f2528d5abaa440a50c67db6d`.
+Ranges remain reserve type/head `14..17`, theorem/proof/given/segment/name
+`19..127`/`62..126`/`70..108`/`76..87`/`76..77`, proof-`given` type/head
+`84..87`, and later identifier leaves `116..117` and `120..121`. GUPT
+consumes the public `SourceProofLocalGivenUseBindingHandoff` by value and uses
+the existing lower handoff only for the authenticated type range. It does not
+rescan syntax or reconstruct resolver identity.
+
+The immutable dependency stays exactly `1/1/0 -> 2/2/0`. Binding 0 is
+reserved `x` with `Source(14..17)`. Binding 1 is active, normal, uncaptured,
+diagnostic-free `GivenWitness` `y`, owned by proof context 1 with resolver
+identity `([0], 1, 76..77)`, visible-after/source ordinal 1, and
+`BindingTypeSite::Missing`. The new composite copies this environment without
+sorting or repair and changes only copied binding 1 to `Source(84..87)`;
+contexts, identities, lookup behavior, diagnostics, and every other field are
+byte-for-byte equal to the dependency. Cardinality remains `2/2/0`.
+
+Task 269GUPT adds only these syntax-free public siblings to `source_type.rs`:
+
+```rust
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceProofLocalGivenUseTypeHandoff {
+    source_id: SourceId,
+    module_id: ModuleId,
+    dependency: SourceProofLocalGivenUseBindingHandoff,
+    dependency_fingerprint: String,
+    binding_env: BindingEnv,
+    binding_fingerprint: String,
+    source_type: SourceTypeApplicationHandoff,
+    source_type_fingerprint: String,
+}
+
+pub struct SourceProofLocalGivenUseTypeProducer;
+
+impl SourceProofLocalGivenUseTypeProducer {
+    pub fn build(
+        dependency: SourceProofLocalGivenUseBindingHandoff,
+        input: SourceTypeHandoffInput,
+        symbols: &SymbolEnv,
+        arena: &TypedArena,
+    ) -> Result<SourceProofLocalGivenUseTypeHandoff,
+                SourceProofLocalGivenUseTypeError>;
+}
+
+impl SourceProofLocalGivenUseTypeHandoff {
+    pub const fn source_id(&self) -> SourceId;
+    pub const fn module_id(&self) -> &ModuleId;
+    pub const fn dependency(&self) -> &SourceProofLocalGivenUseBindingHandoff;
+    pub fn dependency_fingerprint(&self) -> &str;
+    pub const fn binding_env(&self) -> &BindingEnv;
+    pub fn binding_fingerprint(&self) -> &str;
+    pub const fn source_type(&self) -> &SourceTypeApplicationHandoff;
+    pub fn source_type_fingerprint(&self) -> &str;
+    pub fn debug_text(&self) -> String;
+    pub(crate) fn validate_installation(
+        &self,
+        source_id: SourceId,
+        module_id: &ModuleId,
+        arena: &TypedArena,
+    ) -> Result<(), SourceProofLocalGivenUseTypeError>;
+    pub(crate) fn validate_complete_installation(
+        &self,
+        source_id: SourceId,
+        module_id: &ModuleId,
+        arena: &TypedArena,
+        installation_available: bool,
+    ) -> Result<(), SourceProofLocalGivenUseTypeError>;
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum SourceProofLocalGivenUseTypeError {
+    InvalidDependency,
+    InvalidBindingEnvironment,
+    InvalidSourceType,
+    InvalidInstallation,
+}
+
+impl std::error::Error for SourceProofLocalGivenUseTypeError {}
+```
+
+The exact display strings, in variant order, are
+`source proof-local given-use type dependency is invalid`,
+`source proof-local given-use typed binding environment is invalid`,
+`source proof-local given-use source type is invalid`, and
+`source proof-local given-use type installation is invalid`. Validation
+precedence is dependency, copied typed binding environment, exact source-type
+input/symbols/arena, then one-shot installation. No partial output is
+published.
+
+The embedded `SourceTypeApplicationHandoff` is exactly applications /
+expressions / arguments / definition-returns / mode-RHS / structure-members
+`2/2/0/0/0/0`. Application `(binding, source ordinal, root)` rows are
+`(0,0,0)` and `(1,1,1)`. Both expressions are normal, argument-free `Bare`
+builtin `set` with exact expression/head roles `source.type.expression` and
+`source.type.head`, spelling `set`, and ranges `14..17` and `84..87`.
+The existing private `SourceTypeBindingProfile::ProofLocalGiven` validation
+is reused without broadening Generic or ProofLocalLet admission. No resolver
+mode/structure head, argument, attribute, normalized type, inhabitation,
+subtyping, coercion, evidence, guard, condition, or obligation is inferred.
+
+### Arena, fingerprints, Typed/final owner, and runner
+
+The exact `TypedArena` has three normal, unknown-typing, unlinked nodes and
+root 2. Node 0 is `source.proof-local.given-use.reserve-type` at `14..17`;
+node 1 is `source.proof-local.given-use.type` at `84..87`; node 2 is
+`source.proof-local.given-use.type-root` at `0..127` with children `[0,1]`.
+All resolved-node links are absent. The handoff freezes complete
+`dependency.debug_text()`, copied `BindingEnv::debug_text()`, and
+`SourceTypeApplicationHandoff::debug_text()` fingerprints. Its exact debug
+grammar has one terminal LF:
+
+```text
+source-proof-local-given-use-type-debug-v1
+module: {package}::{module_path}
+dependency-fingerprint: {dependency_fingerprint:?}
+binding-fingerprint: {binding_fingerprint:?}
+source-type-fingerprint: {source_type_fingerprint:?}
+```
+
+`TypedAst` and `ResolvedTypedAst` add one boxed optional
+`source_proof_local_given_use_type` immediately after the old Given-type slot.
+The exact public methods are:
+
+```rust
+impl TypedAst {
+    pub const fn source_proof_local_given_use_type(
+        &self,
+    ) -> Option<&SourceProofLocalGivenUseTypeHandoff>;
+    pub fn with_source_proof_local_given_use_type(
+        self,
+        handoff: SourceProofLocalGivenUseTypeHandoff,
+    ) -> Result<Self, TypedAstError>;
+}
+
+impl ResolvedTypedAst {
+    pub const fn source_proof_local_given_use_type(
+        &self,
+    ) -> Option<&SourceProofLocalGivenUseTypeHandoff>;
+}
+```
+
+`TypedAstError` and `ResolvedTypedAstError` append
+`InvalidSourceProofLocalGivenUseType`; their exact strings are
+`source proof-local given-use type handoff is invalid` and
+`resolved typed AST source proof-local given-use type handoff is invalid`.
+Installation excludes every old binding/type owner and every nonempty
+semantic table in both orders. Resolved assembly clones the composite and
+maps all three nodes one-for-one as source-preserved role
+`source.proof-local.given-use.type`. Direct source-type, binding, term/use,
+statement, proof, fact, obligation, and diagnostic owners stay empty.
+
+The dormant runner adds private `SourceProofLocalGivenUseTypeRouteOutput`,
+containing `typed_ast` then `resolved`, and
+`SourceProofLocalGivenUseTypeRouteMutation` with exact variants `None`,
+`WrongDependencyModule`, `WrongTypeRange`, `WrongArenaRoot`, and
+`WrongArenaKind`. The production-private selector
+`source_proof_local_given_use_type_output` and cfg-test
+`source_proof_local_given_use_type_output_with_mutation` have the same five
+source arguments as the GUP binding route; the latter appends the mutation.
+A source mismatch is `None`; selected dependency/lower/producer/installation
+failure is `Some(Err(_))`. The only route-local error is
+`Task269GUPT reserve type range is missing`; all other strings come from the
+already frozen GUP lower/binding or the new public error. The route calls the
+existing GUP binding and lower seams, consumes the binding handoff by value,
+builds the exact two-row input and three-node arena, installs the composite in
+an otherwise empty TypedAst, then assembles ResolvedTypedAst. It never enters
+active dispatch.
+
+### Exact scope, tests, impact, deferrals, and exit
+
+Implementation ownership is exactly seven existing Rust files:
+`crates/mizar-checker/src/source_type.rs`,
+`crates/mizar-checker/src/typed_ast.rs`,
+`crates/mizar-checker/src/resolved_typed_ast.rs`,
+`crates/mizar-test/src/runner/type_elaboration/source_proof_local_declaration.rs`,
+`crates/mizar-test/src/runner/type_elaboration.rs`,
+`crates/mizar-test/src/runner.rs`, and
+`crates/mizar-test/src/runner/tests/type_elaboration/source_proof_local_declaration.rs`.
+The facade re-exports in `type_elaboration.rs` and `runner.rs` remain
+test-only. Checker
+`source_proof_local_declaration.rs`, `binding_env.rs`, and `source_term.rs`,
+runner `source_statement.rs`, parser, resolver, canonical specification,
+fixtures, sidecars, expectations, trace, metadata, Cargo, diagnostics, public
+dispatch, CLI, and active results must not change.
+
+The exact checker tests are
+`task269gupt_exact_transaction_fingerprints_and_overlay_are_stable`,
+`task269gupt_dependency_binding_source_type_and_precedence_fail_closed`,
+`task269gupt_typed_and_resolved_ownership_is_atomic`, and
+`task269gupt_prior_and_neighbor_routes_remain_isolated`. The exact runner
+tests are
+`task269gupt_exact_type_composition_fingerprints_and_replay_are_stable`,
+`task269gupt_dependency_input_and_arena_corruption_fail_closed`,
+`task269gupt_typed_and_resolved_owners_are_one_shot_and_semantically_empty`,
+and `task269gupt_near_miss_task269gup_and_active_routes_remain_isolated`.
+They cover complete payload/fingerprints, every dependency/environment/input/
+arena field and precedence, one-shot and both-order cross-family ownership,
+Generic/Let/old-Given/GUP binding/type isolation, exact selector near misses,
+clone replay, and exhaustive zero semantic publication.
+
+Documentation changes exactly 40 existing Markdown files: 26 paired checker
+plan/todo/audit/owner documents, 12 paired runner documents, and the two
+global ledgers. The docs baseline is checker/runner libraries `502/564`,
+parser/resolver/syntax `226/148/59`, production `30/172531` and `37/74826`,
+path hashes `c89f43f6abebf7ebeb3ac9394ecd8ea3186ad28934c75526d2cc0b85a66ebad5`
+and `1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d`,
+content hashes `e0342952a01a0b379cf7b06ad243cd40a1656e940480196323cf43fbe7d8f7c5`
+and `8fe7c8c0b7e855e5113f3830873e133f42c8048a3272055e2fddd5ebd9cbb1bc`.
+Raw/normalized test-list hashes are checker
+`059c34f7a84921cf495e6fab102a0e713cdd1ac54f4e0fd3276072def2a02d93` /
+`ba08b3db68539c650b67568f2b083bedc0af577a230d61911f41a1e3f2923de8`
+and runner
+`f43b322391cd94f638b8cde715d89c39a76ec3761d32eb3c606a54e267bec0fe` /
+`0083d9c0fd0968bc1260ef49cfbf6931d17e160c92badf7fd70e9cdd53e40990`.
+Implementation projects `506/568`; production lines/content and test-list
+hashes are remeasured, while the 30/37 path hashes remain fixed.
+
+Cases/requirements stay `428/395`, pass/fail `235/193`, warnings/errors
+`23/0`, active stages `101/7/205/1`, type coverage `259=247+12`, trace SHA-256
+`55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`,
+and CLI hashes plan/parse/declaration/type/proof
+`700f4bf503783742cefd8004fa095675b7476d46e9a3a6dd439916d237eb6718` /
+`a8a7aa639d2ebc65eddc923c7e9369ea5637d50e935f808600f446da1bfbda56` /
+`71e83ba0b20d4015e07b3bd2c0c4db2837b6151d1251812caed7954530d53c74` /
+`4b2c7bd5ec3cc56e5672fb351126126230ec84fba9bd2bd9049a516d378fab7f` /
+`ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`
+remain unchanged. Parser source/sidecar hashes stay
+`bd9a2d473fa84012afb36dab8d0f9c11063dd5618df5a31791d57cba2c027234` /
+`7361b50bc564d900e1852deaeaaf804544ad9c8ad0a3321a67c1e31bbaa80f17`;
+broad proof-local gap source/sidecar hashes stay
+`5fc4849a77eced7a93d65e0cae000c87b1730070c74aef116d6ca62be896ecd9` /
+`8e2c73b1661a37c35887b08af01b42fc886199e7a3fb07db8c1412c69f62fa43`.
+GUPT
+earns zero active type or trace credit because later occurrence transport,
+condition/fact, existential/Skolem, guard/assumption, capture/export,
+goal/proof/acceptance, initial obligations, and downstream IR remain absent.
+
+Task 269GUPT exits only after EN/JA frozen-contract review reaches **NO
+FINDINGS**, the documentation prerequisite alone passes all nine hard gates
+uncapped at `>=90/100` and is committed, fresh lower-stage preflight passes,
+the exact seven-file implementation and eight tests reach all three
+implementation reviews **NO FINDINGS**, full verification/count/hash gates
+pass, and the separate task-only implementation commit leaves a clean tree
+with origin divergence reported and the protected stash unchanged. Fresh
+inventory then selects Task 269GU. Capture and Task 270 remain deferred.

@@ -876,3 +876,7 @@ shadow restorationをtest。
 凍結済みの6ファイル transactionとchecker/runner各4件の正確なtestを実装した。libraryは`502/564`、checker/runner productionは`30/172531`と`37/74826`で、path hashは不変、content hashは`e0342952a01a0b379cf7b06ad243cd40a1656e940480196323cf43fbe7d8f7c5` / `8fe7c8c0b7e855e5113f3830873e133f42c8048a3272055e2fddd5ebd9cbb1bc`である。
 
 閉じるのはdormant private lexical-binding evidenceだけで、active corpus、trace、type、term/use、condition/fact、goal/proof、obligation、diagnostic、CLIのcreditは0のままである。次はTask 269GUPTであり、Task 269GU、capture、Task 270は引き続きdeferする。
+
+## Task 269GUPT frozen binding overlay boundary
+
+immutable GUP handoffのexact `2/2/0` envをcopyし、binding 1だけを`Missing -> Source(84..87)`へ変更、binding 0は`Source(14..17)`を保持する。context/identity/lookup lifetime/capture/diagnostic/全non-type fieldは不変で、dependencyとold G/GT envをmutateしない。occurrence/guard/fact/capture/semantic binding stateは追加しない。

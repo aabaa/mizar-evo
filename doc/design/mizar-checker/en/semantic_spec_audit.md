@@ -779,3 +779,7 @@ acceptance, export, capture, substitution, diagnostic, or IR payload.
 The frozen six-file transaction and its exact four checker/four runner tests are implemented. Libraries measure `502/564`; checker/runner production is `30/172531` and `37/74826`, with unchanged path hashes and content hashes `e0342952a01a0b379cf7b06ad243cd40a1656e940480196323cf43fbe7d8f7c5` / `8fe7c8c0b7e855e5113f3830873e133f42c8048a3272055e2fddd5ebd9cbb1bc`.
 
 This closes only dormant private lexical-binding evidence and grants zero active corpus, trace, type, term/use, condition/fact, goal/proof, obligation, diagnostic, or CLI credit. Task 269GUPT is next; Task 269GU, capture, and Task 270 remain deferred.
+
+## Task 269GUPT Semantic Deferral Audit
+
+Canonical `given y being set` authorizes the written source type and block scope. GUPT freezes only syntax-backed type transport. It deliberately grants zero condition/label fact, type guard/assumption, existential/Skolem, later-use, capture/export, goal, initial-obligation, proof/discharge/acceptance, Core, CFG, or VC ownership. Those deferrals prevent source-type evidence from being mistaken for proved semantics.

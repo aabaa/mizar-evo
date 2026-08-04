@@ -6592,3 +6592,12 @@ runner、docs-only implementation commitはproducer taskを満たさない。
 凍結済みの6ファイル transactionとchecker/runner各4件の正確なtestを実装した。libraryは`502/564`、checker/runner productionは`30/172531`と`37/74826`で、path hashは不変、content hashは`e0342952a01a0b379cf7b06ad243cd40a1656e940480196323cf43fbe7d8f7c5` / `8fe7c8c0b7e855e5113f3830873e133f42c8048a3272055e2fddd5ebd9cbb1bc`である。
 
 閉じるのはdormant private lexical-binding evidenceだけで、active corpus、trace、type、term/use、condition/fact、goal/proof、obligation、diagnostic、CLIのcreditは0のままである。次はTask 269GUPTであり、Task 269GU、capture、Task 270は引き続きdeferする。
+
+## Checker Task 269GUPT source-type prerequisite
+
+- [x] clean GUP commit、canonical Chapters 3/4/8/15/16、exact lower/GUP handoff、old GT pattern、baseline、origin/stashをfresh inventory。
+- [x] absent composite/testを`source_drift`/`test_gap`、stale statusを`design_drift`、binding reconstruction/semantic publicationを`boundary_violation`、origin `0/7`をreport-only `repo_metadata_conflict`と分類。blocking `spec_gap`なし。
+- [x] by-value dependency、binding 1 `Source(84..87)`、`2/2/0/0/0/0`、distinct arena、public ABI/error/debug、Typed/Resolved、runner、7-file/8-test、40 docs、zero credit、baseline/deferral/exitをfreeze。
+- [x] specおよびsource/docs review **NO FINDINGS**、docs-only hard gate `9/9`、capなし`100/100`。
+- [x] exact 40 Markdownをstageしdocs commitする。
+- [ ] fresh preflight後GUPTだけをimplementし、3 review **NO FINDINGS**、全gate、single commit後269GUをfresh inventory。capture/270はdefer。

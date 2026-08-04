@@ -1755,3 +1755,7 @@ fixed while changed production content is remeasured after implementation.
 The frozen six-file transaction and its exact four checker/four runner tests are implemented. Libraries measure `502/564`; checker/runner production is `30/172531` and `37/74826`, with unchanged path hashes and content hashes `e0342952a01a0b379cf7b06ad243cd40a1656e940480196323cf43fbe7d8f7c5` / `8fe7c8c0b7e855e5113f3830873e133f42c8048a3272055e2fddd5ebd9cbb1bc`.
 
 This closes only dormant private lexical-binding evidence and grants zero active corpus, trace, type, term/use, condition/fact, goal/proof, obligation, diagnostic, or CLI credit. Task 269GUPT is next; Task 269GU, capture, and Task 270 remain deferred.
+
+## Task 269GUPT Frozen Module Boundary
+
+The implementation boundary is exactly checker `source_type.rs`, `typed_ast.rs`, `resolved_typed_ast.rs` and runner `type_elaboration/source_proof_local_declaration.rs`, `type_elaboration.rs`, `runner.rs`, and the existing proof-local test leaf. Checker `source_proof_local_declaration.rs`, `binding_env.rs`, `source_term.rs`, runner `source_statement.rs`, parser/resolver, public dispatch, canonical artifacts, trace, metadata, Cargo, and diagnostics are excluded. Production path counts remain `30/37`; docs-only baseline lines are `172531/74826`.

@@ -6931,3 +6931,12 @@ implementation commit does not satisfy a producer task.
 The frozen six-file transaction and its exact four checker/four runner tests are implemented. Libraries measure `502/564`; checker/runner production is `30/172531` and `37/74826`, with unchanged path hashes and content hashes `e0342952a01a0b379cf7b06ad243cd40a1656e940480196323cf43fbe7d8f7c5` / `8fe7c8c0b7e855e5113f3830873e133f42c8048a3272055e2fddd5ebd9cbb1bc`.
 
 This closes only dormant private lexical-binding evidence and grants zero active corpus, trace, type, term/use, condition/fact, goal/proof, obligation, diagnostic, or CLI credit. Task 269GUPT is next; Task 269GU, capture, and Task 270 remain deferred.
+
+## Checker Task 269GUPT Source-Type Prerequisite
+
+- [x] Fresh-inventory clean GUP commit, canonical Chapters 3/4/8/15/16, exact 128-byte/54-node lower profile, public GUP binding handoff, old GT type pattern, baselines, origin divergence, and protected stash.
+- [x] Classify absent composite/tests as `source_drift`/`test_gap`, stale task status as `design_drift`, prohibited binding reconstruction or semantic publication as `boundary_violation`, and origin `0/7` as report-only `repo_metadata_conflict`; no blocking `spec_gap`.
+- [x] Freeze exact by-value dependency, binding-1 `Source(84..87)` overlay, `2/2/0/0/0/0` source type, distinct three-node arena, public ABI/errors/debug, Typed/Resolved ownership, private runner, seven-file/eight-test scope, 40 docs, zero credit, baselines, deferrals, and exit.
+- [x] Specification and source/docs reviews are **NO FINDINGS** and docs-only hard gates pass `9/9` at an uncapped `100/100`.
+- [x] Stage exactly 40 Markdown files and commit the documentation prerequisite.
+- [ ] Fresh-preflight and implement only Task 269GUPT; repeat test, implementation, and source/docs reviews to **NO FINDINGS**, pass all gates, commit once, then fresh-inventory Task 269GU. Capture and Task 270 remain deferred.

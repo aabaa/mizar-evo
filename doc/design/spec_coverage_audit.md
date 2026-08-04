@@ -6654,3 +6654,7 @@ SHA-256 stays
 ### Task 269GUP implementation audit
 
 Task 269GUP implements the frozen six-file dormant binding profile with exact checker/runner libraries `502/564`, production `30/172531` and `37/74826`, and eight focused tests. It closes only private evidence for the user-confirmed `given` block lifetime: remainder of the corresponding block and descendants, with shadow/restoration, and no parent/sibling visibility. It receives zero active `.miz`, trace, type, term/use, condition/fact, proof, obligation, diagnostic, or CLI coverage credit. No trace row/status/backlink changes; Task 269GUPT owns the next use-type consumer, while Task 269GU, capture, and Task 270 remain deferred.
+
+## Task 269GUPT Frozen Coverage Status
+
+Task 269GUPT is selected as a documentation-first, zero-credit source-type prerequisite. Canonical Chapters 3/4/8/15/16 and the exact GUP source/lower/binding artifacts authorize only the written builtin-`set` overlay on copied binding 1. The frozen implementation will add a distinct public composite plus four checker/four private runner tests, but no `.miz`, expectation, trace row/status/backlink, metadata, active stage, diagnostic, or CLI behavior. Counts stay `428/395`, `235/193`, `23/0`, `101/7/205/1`, and type coverage `259=247+12`; trace SHA stays `55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`. GUPT owns source type only; Task 269GU owns later occurrences, while capture/export, condition/fact, proof/acceptance, obligations, and Task 270 remain explicitly deferred.

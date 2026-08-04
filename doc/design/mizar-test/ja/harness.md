@@ -5027,3 +5027,7 @@ absentをtest。
 凍結済みの128-byte/54-node selector、lower row、reserve base composition、checker handoff直接返却、runner test 4件をprivate boundary内に実装した。libraryはchecker/runner `502/564`、productionは`30/172531`と`37/74826`で、path hashは不変、content hashは`e0342952a01a0b379cf7b06ad243cd40a1656e940480196323cf43fbe7d8f7c5` / `8fe7c8c0b7e855e5113f3830873e133f42c8048a3272055e2fddd5ebd9cbb1bc`である。
 
 dispatch、fixture、sidecar、expectation、trace、metadata、diagnostic、CLI、active result、Typed/final、source type、term/use、fact/proof、obligation ownerは変わらない。次のconsumerはTask 269GUPTであり、Task 269GU、capture、Task 270は引き続きdeferする。
+
+## Task 269GUPT frozen private harness route
+
+`source_proof_local_given_use_type_output`はSurface/module/shell/symbol/exact textを受け、cfg-test seamは`None`/`WrongDependencyModule`/`WrongTypeRange`/`WrongArenaRoot`/`WrongArenaKind`を追加。mismatchは`None`、selected failureは`Some(Err(_))`、route-local stringは`Task269GUPT reserve type range is missing`だけ。successは`typed_ast`、`resolved`順でGUPT compositeだけをownしpublic dispatchから到達不能。
