@@ -6919,9 +6919,15 @@ implementation commit does not satisfy a producer task.
   new-source binding identity and `1/1/0 -> 2/2/0` transition, lookup matrix,
   public binding ABI/errors/debug, exact six-file scope, eight tests,
   zero-credit impact, exclusions, the 42-file docs stage set, and exit gates.
-- [~] Specification review is **NO FINDINGS** and the docs-only verification
-  and hard gates are complete; parent-owned exact staging of the 42 synchronized
-  Markdown files and the dedicated documentation-prerequisite commit remain.
-- [ ] Fresh-preflight and implement only Task 269GUP; repeat all reviews to
-  **NO FINDINGS**, pass all nine hard gates, commit once, then fresh-inventory
-  Task 269GUPT. Source type, term/use, Typed/final, and capture remain absent.
+- [x] Specification review is **NO FINDINGS**, the docs-only verification and
+  hard gates are complete, and the 42 synchronized Markdown files are committed
+  as documentation prerequisite `ae03ae0772fe98532dbd68164c8a1fc4f4172e7e`.
+- [x] Task 269GUP and all exact reviews are complete with **NO FINDINGS**;
+  all nine hard gates pass uncapped at `100/100`. Finish exact staging and the
+  single implementation commit, then fresh-inventory Task 269GUPT. Source
+  type, term/use, Typed/final, and capture remain absent.
+### Task 269GUP implemented binding profile
+
+The frozen six-file transaction and its exact four checker/four runner tests are implemented. Libraries measure `502/564`; checker/runner production is `30/172531` and `37/74826`, with unchanged path hashes and content hashes `e0342952a01a0b379cf7b06ad243cd40a1656e940480196323cf43fbe7d8f7c5` / `8fe7c8c0b7e855e5113f3830873e133f42c8048a3272055e2fddd5ebd9cbb1bc`.
+
+This closes only dormant private lexical-binding evidence and grants zero active corpus, trace, type, term/use, condition/fact, goal/proof, obligation, diagnostic, or CLI credit. Task 269GUPT is next; Task 269GU, capture, and Task 270 remain deferred.

@@ -3653,6 +3653,13 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
   `c64297ce72e380a2e4146276966e085d780f8b38f2528d5abaa440a50c67db6d`,
   exact lower/binding rows, old/new isolation, four runner tests, projected
   library `560 -> 564`, and zero corpus/trace/semantic credit.
-- [ ] Implement only the frozen private lower-to-binding route and test leaf.
-  Both later `y` leaves and the equality/conclusion/proof subtrees remain
-  selector-only; no type, term/reference, Typed/final, or semantic payload.
+- [x] The frozen private lower-to-binding route and test leaf are implemented;
+  all reviews are **NO FINDINGS** and all nine hard gates pass uncapped at
+  `100/100`. Finish exact staging and the implementation commit. Both later
+  `y` leaves and the equality/conclusion/proof subtrees stay selector-only;
+  no type, term/reference, Typed/final, or semantic payload.
+### Task 269GUP implemented dormant runner
+
+The exact 128-byte/54-node selector, lower row, reserve-base composition, direct checker handoff, and four runner tests are implemented inside the frozen private boundary. Libraries measure checker/runner `502/564`; production is `30/172531` and `37/74826`, with unchanged path hashes and content hashes `e0342952a01a0b379cf7b06ad243cd40a1656e940480196323cf43fbe7d8f7c5` / `8fe7c8c0b7e855e5113f3830873e133f42c8048a3272055e2fddd5ebd9cbb1bc`.
+
+No dispatch, fixture, sidecar, expectation, trace, metadata, diagnostic, CLI, active result, Typed/final, source-type, term/use, fact/proof, or obligation owner changed. Task 269GUPT is the next consumer; Task 269GU, capture, and Task 270 remain deferred.

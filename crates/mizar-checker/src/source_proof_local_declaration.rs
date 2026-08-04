@@ -2528,6 +2528,576 @@ fn exact_task269g_lookup_behavior(binding_env: &BindingEnv) -> bool {
     ) && binding_env.lookup(&later) == Ok(BindingLookupResult::Local(BindingId::new(1)))
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceProofLocalGivenUseBindingHandoffInput {
+    pub source_id: SourceId,
+    pub module_id: ModuleId,
+    pub lower_fingerprint: String,
+    pub theorem_symbol: SymbolId,
+    pub theorem_definition: DefinitionId,
+    pub contribution: SourceContributionId,
+    pub theorem_range: SourceRange,
+    pub proof_range: SourceRange,
+    pub given_range: SourceRange,
+    pub segment_range: SourceRange,
+    pub name_range: SourceRange,
+    pub source_ordinal: usize,
+    pub local: LocalTermBinding,
+    pub recovery: SourceProofLocalGivenBindingRecovery,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceProofLocalGivenUseBindingHandoff {
+    source_id: SourceId,
+    module_id: ModuleId,
+    lower_fingerprint: String,
+    theorem_symbol: SymbolId,
+    theorem_definition: DefinitionId,
+    contribution: SourceContributionId,
+    theorem_range: SourceRange,
+    proof_range: SourceRange,
+    given_range: SourceRange,
+    segment_range: SourceRange,
+    name_range: SourceRange,
+    base_binding_env: BindingEnv,
+    base_binding_fingerprint: String,
+    binding_env: BindingEnv,
+    final_binding_fingerprint: String,
+    bindings: SourceProofLocalGivenBindingTable,
+}
+
+// Rationale: Task 269GUP exposes this validator for the separate Task-269GUPT consumer.
+#[cfg_attr(not(test), allow(dead_code))]
+impl SourceProofLocalGivenUseBindingHandoff {
+    pub const fn source_id(&self) -> SourceId {
+        self.source_id
+    }
+
+    pub const fn module_id(&self) -> &ModuleId {
+        &self.module_id
+    }
+
+    pub fn lower_fingerprint(&self) -> &str {
+        &self.lower_fingerprint
+    }
+
+    pub const fn theorem_symbol(&self) -> &SymbolId {
+        &self.theorem_symbol
+    }
+
+    pub const fn theorem_definition(&self) -> DefinitionId {
+        self.theorem_definition
+    }
+
+    pub const fn contribution(&self) -> SourceContributionId {
+        self.contribution
+    }
+
+    pub const fn theorem_range(&self) -> SourceRange {
+        self.theorem_range
+    }
+
+    pub const fn proof_range(&self) -> SourceRange {
+        self.proof_range
+    }
+
+    pub const fn given_range(&self) -> SourceRange {
+        self.given_range
+    }
+
+    pub const fn segment_range(&self) -> SourceRange {
+        self.segment_range
+    }
+
+    pub const fn name_range(&self) -> SourceRange {
+        self.name_range
+    }
+
+    pub const fn base_binding_env(&self) -> &BindingEnv {
+        &self.base_binding_env
+    }
+
+    pub fn base_binding_fingerprint(&self) -> &str {
+        &self.base_binding_fingerprint
+    }
+
+    pub const fn binding_env(&self) -> &BindingEnv {
+        &self.binding_env
+    }
+
+    pub fn final_binding_fingerprint(&self) -> &str {
+        &self.final_binding_fingerprint
+    }
+
+    pub const fn bindings(&self) -> &SourceProofLocalGivenBindingTable {
+        &self.bindings
+    }
+
+    pub fn debug_text(&self) -> String {
+        let binding = self
+            .bindings
+            .get(SourceProofLocalGivenBindingId::new(0))
+            .expect("validated Task269GUP handoff has one dense row");
+        format!(
+            concat!(
+                "source-proof-local-given-use-binding-debug-v1\n",
+                "module: {}::{}\n",
+                "lower-fingerprint: {:?}\n",
+                "theorem symbol={:?} definition={} contribution={} range={}..{} proof={}..{}\n",
+                "given range={}..{} segment={}..{} name={}..{} source_ordinal={}\n",
+                "base-binding-fingerprint: {:?}\n",
+                "binding#0 binding={} context={} source_ordinal={} visible_after={} recovery={}\n",
+                "final-binding-fingerprint: {:?}\n",
+            ),
+            self.module_id.package().as_str(),
+            self.module_id.path().as_str(),
+            self.lower_fingerprint,
+            self.theorem_symbol.fqn().as_str(),
+            self.theorem_definition.index(),
+            self.contribution.index(),
+            self.theorem_range.start,
+            self.theorem_range.end,
+            self.proof_range.start,
+            self.proof_range.end,
+            self.given_range.start,
+            self.given_range.end,
+            self.segment_range.start,
+            self.segment_range.end,
+            self.name_range.start,
+            self.name_range.end,
+            binding.source_ordinal,
+            self.base_binding_fingerprint,
+            binding.binding.index(),
+            binding.binding_context.index(),
+            binding.source_ordinal,
+            binding.visible_after_ordinal,
+            given_binding_recovery_key(binding.recovery),
+            self.final_binding_fingerprint,
+        )
+    }
+
+    pub(crate) fn validate_installation(
+        &self,
+        source_id: SourceId,
+        module_id: &ModuleId,
+    ) -> Result<(), SourceProofLocalGivenUseBindingError> {
+        if self.source_id != source_id
+            || &self.module_id != module_id
+            || self.base_binding_env.source_id() != source_id
+            || self.base_binding_env.module_id() != module_id
+            || self.binding_env.source_id() != source_id
+            || self.binding_env.module_id() != module_id
+        {
+            return Err(SourceProofLocalGivenUseBindingError::InvalidTransaction);
+        }
+        validate_task269gup_dependency(Task269gupDependency {
+            source_id: self.source_id,
+            module_id: &self.module_id,
+            lower_fingerprint: &self.lower_fingerprint,
+            theorem_symbol: &self.theorem_symbol,
+            theorem_definition: self.theorem_definition,
+            contribution: self.contribution,
+            theorem_range: self.theorem_range,
+            proof_range: self.proof_range,
+            given_range: self.given_range,
+            segment_range: self.segment_range,
+            name_range: self.name_range,
+        })?;
+        if !exact_task269c_base_binding_env(&self.base_binding_env)
+            || self.base_binding_fingerprint != self.base_binding_env.debug_text()
+        {
+            return Err(SourceProofLocalGivenUseBindingError::InvalidBaseBindingEnvironment);
+        }
+        if self.bindings.len() != 1 {
+            return Err(SourceProofLocalGivenUseBindingError::InvalidAggregate);
+        }
+        let id = SourceProofLocalGivenBindingId::new(0);
+        let binding = self
+            .bindings
+            .get(id)
+            .ok_or(SourceProofLocalGivenUseBindingError::InvalidDeclaration { binding: id })?;
+        if !exact_task269gup_output_binding(binding)
+            || !exact_task269gup_declaration_binding(&self.binding_env, self.source_id)
+        {
+            return Err(SourceProofLocalGivenUseBindingError::InvalidDeclaration { binding: id });
+        }
+        let expected = extend_task269gup_binding_env(&self.base_binding_env)?;
+        if self.binding_env != expected
+            || !exact_task269gup_local_binding(&self.binding_env, self.source_id)
+            || !exact_task269gup_lookup_behavior(&self.binding_env)
+            || self.final_binding_fingerprint != self.binding_env.debug_text()
+        {
+            return Err(SourceProofLocalGivenUseBindingError::InvalidBindingEnvironment);
+        }
+        Ok(())
+    }
+
+    #[cfg(test)]
+    pub(crate) fn set_lower_fingerprint_for_task269gup_test(&mut self, value: impl Into<String>) {
+        self.lower_fingerprint = value.into();
+    }
+
+    #[cfg(test)]
+    pub(crate) fn set_base_binding_fingerprint_for_task269gup_test(
+        &mut self,
+        value: impl Into<String>,
+    ) {
+        self.base_binding_fingerprint = value.into();
+    }
+
+    #[cfg(test)]
+    pub(crate) fn truncate_task269gup_bindings_for_test(&mut self) {
+        self.bindings.rows.clear();
+    }
+
+    #[cfg(test)]
+    pub(crate) fn corrupt_task269gup_binding_row_for_test(&mut self) {
+        if let Some(binding) = self.bindings.rows.first_mut() {
+            binding.source_ordinal += 1;
+        }
+    }
+
+    #[cfg(test)]
+    pub(crate) fn set_final_binding_fingerprint_for_task269gup_test(
+        &mut self,
+        value: impl Into<String>,
+    ) {
+        self.final_binding_fingerprint = value.into();
+    }
+}
+
+#[derive(Debug, Clone, Copy, Default)]
+pub struct SourceProofLocalGivenUseBindingProducer;
+
+impl SourceProofLocalGivenUseBindingProducer {
+    pub fn build(
+        input: SourceProofLocalGivenUseBindingHandoffInput,
+        base_binding_env: &BindingEnv,
+    ) -> Result<SourceProofLocalGivenUseBindingHandoff, SourceProofLocalGivenUseBindingError> {
+        if input.source_id != base_binding_env.source_id()
+            || &input.module_id != base_binding_env.module_id()
+        {
+            return Err(SourceProofLocalGivenUseBindingError::InvalidTransaction);
+        }
+        validate_task269gup_dependency(Task269gupDependency {
+            source_id: input.source_id,
+            module_id: &input.module_id,
+            lower_fingerprint: &input.lower_fingerprint,
+            theorem_symbol: &input.theorem_symbol,
+            theorem_definition: input.theorem_definition,
+            contribution: input.contribution,
+            theorem_range: input.theorem_range,
+            proof_range: input.proof_range,
+            given_range: input.given_range,
+            segment_range: input.segment_range,
+            name_range: input.name_range,
+        })?;
+        if !exact_task269c_base_binding_env(base_binding_env) {
+            return Err(SourceProofLocalGivenUseBindingError::InvalidBaseBindingEnvironment);
+        }
+        if !exact_task269gup_input_declaration(&input) {
+            return Err(SourceProofLocalGivenUseBindingError::InvalidDeclaration {
+                binding: SourceProofLocalGivenBindingId::new(0),
+            });
+        }
+        let binding_env = extend_task269gup_binding_env(base_binding_env)?;
+        if !exact_task269gup_lookup_behavior(&binding_env) {
+            return Err(SourceProofLocalGivenUseBindingError::InvalidBindingEnvironment);
+        }
+        let base_binding_fingerprint = base_binding_env.debug_text();
+        let final_binding_fingerprint = binding_env.debug_text();
+        Ok(SourceProofLocalGivenUseBindingHandoff {
+            source_id: input.source_id,
+            module_id: input.module_id,
+            lower_fingerprint: input.lower_fingerprint,
+            theorem_symbol: input.theorem_symbol,
+            theorem_definition: input.theorem_definition,
+            contribution: input.contribution,
+            theorem_range: input.theorem_range,
+            proof_range: input.proof_range,
+            given_range: input.given_range,
+            segment_range: input.segment_range,
+            name_range: input.name_range,
+            base_binding_env: base_binding_env.clone(),
+            base_binding_fingerprint,
+            binding_env,
+            final_binding_fingerprint,
+            bindings: SourceProofLocalGivenBindingTable {
+                rows: vec![SourceProofLocalGivenBinding {
+                    binding: BindingId::new(1),
+                    binding_context: BindingContextId::new(1),
+                    source_ordinal: input.source_ordinal,
+                    visible_after_ordinal: input.local.visible_after_ordinal(),
+                    recovery: input.recovery,
+                }],
+            },
+        })
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum SourceProofLocalGivenUseBindingError {
+    InvalidTransaction,
+    DependencyMismatch,
+    InvalidBaseBindingEnvironment,
+    InvalidAggregate,
+    InvalidDeclaration {
+        binding: SourceProofLocalGivenBindingId,
+    },
+    InvalidBindingEnvironment,
+}
+
+impl fmt::Display for SourceProofLocalGivenUseBindingError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::InvalidTransaction => {
+                formatter.write_str("source proof-local given-use binding transaction is invalid")
+            }
+            Self::DependencyMismatch => {
+                formatter.write_str("source proof-local given-use binding dependency mismatch")
+            }
+            Self::InvalidBaseBindingEnvironment => formatter.write_str(
+                "source proof-local given-use binding base binding environment is invalid",
+            ),
+            Self::InvalidAggregate => {
+                formatter.write_str("source proof-local given-use binding aggregate is invalid")
+            }
+            Self::InvalidDeclaration { binding } => write!(
+                formatter,
+                "source proof-local given-use binding {} is invalid",
+                binding.index()
+            ),
+            Self::InvalidBindingEnvironment => formatter
+                .write_str("source proof-local given-use binding binding environment is invalid"),
+        }
+    }
+}
+
+impl Error for SourceProofLocalGivenUseBindingError {}
+
+#[derive(Debug, Clone, Copy)]
+struct Task269gupDependency<'a> {
+    source_id: SourceId,
+    module_id: &'a ModuleId,
+    lower_fingerprint: &'a str,
+    theorem_symbol: &'a SymbolId,
+    theorem_definition: DefinitionId,
+    contribution: SourceContributionId,
+    theorem_range: SourceRange,
+    proof_range: SourceRange,
+    given_range: SourceRange,
+    segment_range: SourceRange,
+    name_range: SourceRange,
+}
+
+fn validate_task269gup_dependency(
+    dependency: Task269gupDependency<'_>,
+) -> Result<(), SourceProofLocalGivenUseBindingError> {
+    let expected_prefix = format!(
+        "{}::{}::",
+        dependency.module_id.package().as_str(),
+        dependency.module_id.path().as_str()
+    );
+    let expected_local = format!(
+        concat!(
+            "contribution=0:namespace={}:owner=theorem#1:shell=theorem:kind=theorem:",
+            "name=FormulaStatementGivenSmoke:notation=_:arity=_:definition=theorem:",
+            "registration=_:policy=non-overloadable:slot=non-overloadable:_:theorem:_"
+        ),
+        escape_task269c_symbol_component(dependency.module_id.path().as_str()),
+    );
+    let exact_symbol_identity = dependency.theorem_symbol.module() == dependency.module_id
+        && dependency.theorem_symbol.local().as_str() == expected_local
+        && dependency.theorem_symbol.fqn().as_str() == format!("{expected_prefix}{expected_local}");
+    if !exact_symbol_identity
+        || dependency.theorem_definition.index() != 0
+        || dependency.contribution.index() != 0
+        || dependency.theorem_range != range(dependency.source_id, 19, 127)
+        || dependency.proof_range != range(dependency.source_id, 62, 126)
+        || dependency.given_range != range(dependency.source_id, 70, 108)
+        || dependency.segment_range != range(dependency.source_id, 76, 87)
+        || dependency.name_range != range(dependency.source_id, 76, 77)
+        || dependency.lower_fingerprint != exact_task269gup_lower_fingerprint(dependency)
+    {
+        return Err(SourceProofLocalGivenUseBindingError::DependencyMismatch);
+    }
+    Ok(())
+}
+
+fn exact_task269gup_lower_fingerprint(dependency: Task269gupDependency<'_>) -> String {
+    format!(
+        concat!(
+            "source-proof-local-given-use-lower-debug-v1\n",
+            "module: {}::{}\n",
+            "source-fingerprint: \"ec15ded78ae96022840a8419a85d74643de3b37337e9a202cbda77ee97aa7c01\"\n",
+            "surface-fingerprint: \"c64297ce72e380a2e4146276966e085d780f8b38f2528d5abaa440a50c67db6d\"\n",
+            "theorem symbol={:?} definition=0 contribution=0 range=19..127 proof=62..126\n",
+            "given range=70..108 segment=76..87 source_ordinal=1\n",
+            "name range=76..77 spelling=\"y\"\n",
+            "type range=84..87 head=84..87 spelling=\"set\" form=bare\n",
+        ),
+        dependency.module_id.package().as_str(),
+        dependency.module_id.path().as_str(),
+        dependency.theorem_symbol.fqn().as_str(),
+    )
+}
+
+fn exact_task269gup_input_declaration(input: &SourceProofLocalGivenUseBindingHandoffInput) -> bool {
+    input.source_ordinal == 1
+        && input.local.spelling() == "y"
+        && input.local.scope().path() == [0]
+        && input.local.declaration_range() == input.name_range
+        && input.local.visible_after_ordinal() == 1
+        && input.recovery == SourceProofLocalGivenBindingRecovery::Normal
+}
+
+// Rationale: Task 269GUP keeps final-row replay private until Task 269GUPT consumes it.
+#[cfg_attr(not(test), allow(dead_code))]
+fn exact_task269gup_output_binding(binding: &SourceProofLocalGivenBinding) -> bool {
+    binding.binding == BindingId::new(1)
+        && binding.binding_context == BindingContextId::new(1)
+        && binding.source_ordinal == 1
+        && binding.visible_after_ordinal == 1
+        && binding.recovery == SourceProofLocalGivenBindingRecovery::Normal
+}
+
+// Rationale: Task 269GUP keeps final-environment replay private until Task 269GUPT.
+#[cfg_attr(not(test), allow(dead_code))]
+fn exact_task269gup_local_binding(binding_env: &BindingEnv, source_id: SourceId) -> bool {
+    let Some(context) = binding_env.contexts().get(BindingContextId::new(1)) else {
+        return false;
+    };
+    let Some(binding) = binding_env.bindings().get(BindingId::new(1)) else {
+        return false;
+    };
+    context.id == BindingContextId::new(1)
+        && context.owner
+            == BindingContextOwner::SourceStatement {
+                source_range: range(source_id, 62, 126),
+            }
+        && context.parent == Some(BindingContextId::new(0))
+        && context.layer == BindingContextLayer::Proof
+        && context
+            .lexical_scope
+            .as_ref()
+            .is_some_and(|scope| scope.path() == [0])
+        && context.bindings == [BindingId::new(1)]
+        && context.visible_bindings == [BindingId::new(0), BindingId::new(1)]
+        && context.recovery == BindingContextRecovery::Normal
+        && binding.id == BindingId::new(1)
+        && binding.spelling == "y"
+        && binding.kind == BindingKind::GivenWitness
+        && matches!(
+            &binding.identity,
+            BinderIdentity::ResolverLocal {
+                scope,
+                ordinal: 1,
+                declaration_range,
+            } if scope.path() == [0]
+                && *declaration_range == range(source_id, 76, 77)
+        )
+        && binding.owner_context == BindingContextId::new(1)
+        && binding.declaration_range == range(source_id, 76, 77)
+        && binding.visible_after_ordinal == 1
+        && binding.type_site == BindingTypeSite::Missing
+        && binding.status == BindingStatus::Active
+        && binding.captured.identities().is_empty()
+        && binding.diagnostics.is_empty()
+        && binding.recovery == BindingRecoveryState::Normal
+}
+
+// Rationale: Task 269GUP keeps declaration replay private until Task 269GUPT.
+#[cfg_attr(not(test), allow(dead_code))]
+fn exact_task269gup_declaration_binding(binding_env: &BindingEnv, source_id: SourceId) -> bool {
+    binding_env
+        .bindings()
+        .get(BindingId::new(1))
+        .is_some_and(|binding| {
+            binding.id == BindingId::new(1)
+                && binding.spelling == "y"
+                && matches!(
+                    &binding.identity,
+                    BinderIdentity::ResolverLocal {
+                        scope,
+                        ordinal: 1,
+                        declaration_range,
+                    } if scope.path() == [0]
+                        && *declaration_range == range(source_id, 76, 77)
+                )
+                && binding.owner_context == BindingContextId::new(1)
+                && binding.declaration_range == range(source_id, 76, 77)
+                && binding.visible_after_ordinal == 1
+                && binding.recovery == BindingRecoveryState::Normal
+        })
+}
+
+fn extend_task269gup_binding_env(
+    base: &BindingEnv,
+) -> Result<BindingEnv, SourceProofLocalGivenUseBindingError> {
+    if !exact_task269c_base_binding_env(base) {
+        return Err(SourceProofLocalGivenUseBindingError::InvalidBaseBindingEnvironment);
+    }
+    let local = LocalTermBinding::new(
+        "y",
+        LocalTermScope::new(vec![0]),
+        range(base.source_id(), 76, 77),
+        1,
+    );
+    let mut bindings = base.bindings().clone();
+    let binding = bindings.insert(BindingDraft::from_local_term(
+        BindingContextId::new(1),
+        BindingKind::GivenWitness,
+        &local,
+    ));
+    if binding != BindingId::new(1) {
+        return Err(SourceProofLocalGivenUseBindingError::InvalidBindingEnvironment);
+    }
+    let mut contexts = base.contexts().clone();
+    let context = contexts.insert(BindingContextDraft {
+        owner: BindingContextOwner::SourceStatement {
+            source_range: range(base.source_id(), 62, 126),
+        },
+        parent: Some(BindingContextId::new(0)),
+        layer: BindingContextLayer::Proof,
+        lexical_scope: Some(LocalTermScope::new(vec![0])),
+        bindings: vec![binding],
+        visible_bindings: vec![BindingId::new(0), binding],
+        recovery: BindingContextRecovery::Normal,
+    });
+    if context != BindingContextId::new(1) {
+        return Err(SourceProofLocalGivenUseBindingError::InvalidBindingEnvironment);
+    }
+    BindingEnv::try_new(BindingEnvParts {
+        source_id: base.source_id(),
+        module_id: base.module_id().clone(),
+        contexts,
+        bindings,
+        diagnostics: base.diagnostics().clone(),
+    })
+    .map_err(|_| SourceProofLocalGivenUseBindingError::InvalidBindingEnvironment)
+}
+
+fn exact_task269gup_lookup_behavior(binding_env: &BindingEnv) -> bool {
+    let definition = BindingLookupSite::new(
+        "y",
+        BindingContextId::new(1),
+        Some(LocalTermScope::new(vec![0])),
+        1,
+    );
+    let later = BindingLookupSite::new(
+        "y",
+        BindingContextId::new(1),
+        Some(LocalTermScope::new(vec![0])),
+        2,
+    );
+    matches!(
+        binding_env.lookup(&definition),
+        Ok(BindingLookupResult::ForwardReference { candidates, .. })
+            if candidates == [BindingId::new(1)]
+    ) && binding_env.lookup(&later) == Ok(BindingLookupResult::Local(BindingId::new(1)))
+}
+
 const fn given_binding_recovery_key(
     recovery: SourceProofLocalGivenBindingRecovery,
 ) -> &'static str {
@@ -3547,6 +4117,584 @@ mod task269c_tests {
         ] {
             assert!(!resolved.debug_text().contains(forbidden));
         }
+    }
+
+    #[test]
+    fn source_proof_local_given_use_binding_is_exact_and_new_source_local() {
+        let fixture = given_use_fixture();
+        let handoff =
+            SourceProofLocalGivenUseBindingProducer::build(fixture.input.clone(), &fixture.base)
+                .expect("Task269GUP exact checker handoff");
+        handoff
+            .validate_installation(fixture.source, &fixture.module)
+            .expect("Task269GUP exact installation");
+
+        assert_eq!(handoff.source_id(), fixture.source);
+        assert_eq!(handoff.module_id(), &fixture.module);
+        assert_eq!(handoff.lower_fingerprint(), fixture.input.lower_fingerprint);
+        assert_eq!(handoff.theorem_symbol(), &fixture.input.theorem_symbol);
+        assert_eq!(
+            handoff.theorem_definition(),
+            fixture.input.theorem_definition
+        );
+        assert_eq!(handoff.contribution(), fixture.input.contribution);
+        assert_eq!(handoff.theorem_range(), range(fixture.source, 19, 127));
+        assert_eq!(handoff.proof_range(), range(fixture.source, 62, 126));
+        assert_eq!(handoff.given_range(), range(fixture.source, 70, 108));
+        assert_eq!(handoff.segment_range(), range(fixture.source, 76, 87));
+        assert_eq!(handoff.name_range(), range(fixture.source, 76, 77));
+        assert_eq!(handoff.base_binding_env(), &fixture.base);
+        assert_eq!(
+            handoff.base_binding_fingerprint(),
+            fixture.base.debug_text()
+        );
+        assert_eq!(handoff.binding_env().contexts().len(), 2);
+        assert_eq!(handoff.binding_env().bindings().len(), 2);
+        assert!(handoff.binding_env().diagnostics().is_empty());
+        assert_eq!(
+            handoff.final_binding_fingerprint(),
+            handoff.binding_env().debug_text()
+        );
+        let row = handoff
+            .bindings()
+            .get(SourceProofLocalGivenBindingId::new(0))
+            .expect("Task269GUP dense binding row");
+        assert!(exact_task269gup_output_binding(row));
+        assert_eq!(
+            handoff.bindings().iter().collect::<Vec<_>>(),
+            [(SourceProofLocalGivenBindingId::new(0), row)]
+        );
+        assert!(exact_task269gup_local_binding(
+            handoff.binding_env(),
+            fixture.source
+        ));
+        assert!(exact_task269gup_lookup_behavior(handoff.binding_env()));
+        let expected_debug = format!(
+            concat!(
+                "source-proof-local-given-use-binding-debug-v1\n",
+                "module: {}::{}\n",
+                "lower-fingerprint: {:?}\n",
+                "theorem symbol={:?} definition=0 contribution=0 range=19..127 proof=62..126\n",
+                "given range=70..108 segment=76..87 name=76..77 source_ordinal=1\n",
+                "base-binding-fingerprint: {:?}\n",
+                "binding#0 binding=1 context=1 source_ordinal=1 visible_after=1 recovery=normal\n",
+                "final-binding-fingerprint: {:?}\n",
+            ),
+            fixture.module.package().as_str(),
+            fixture.module.path().as_str(),
+            fixture.input.lower_fingerprint,
+            fixture.input.theorem_symbol.fqn().as_str(),
+            handoff.base_binding_fingerprint(),
+            handoff.final_binding_fingerprint(),
+        );
+        assert_eq!(handoff.debug_text(), expected_debug);
+        assert_eq!(handoff.debug_text(), handoff.clone().debug_text());
+        assert!(handoff.debug_text().ends_with('\n'));
+        assert!(!handoff.debug_text().ends_with("\n\n"));
+
+        let old = given_fixture();
+        assert_ne!(fixture.source, other_source_id());
+        assert_ne!(fixture.input.lower_fingerprint, old.input.lower_fingerprint);
+        assert_ne!(
+            fixture.input.theorem_range, old.input.theorem_range,
+            "Task269GUP must retain its distinct 128-byte source transaction"
+        );
+    }
+
+    #[test]
+    fn source_proof_local_given_use_binding_rejects_every_corruption_in_precedence() {
+        let fixture = given_use_fixture();
+
+        let mut wrong_source = fixture.input.clone();
+        wrong_source.source_id = other_source_id();
+        assert_eq!(
+            SourceProofLocalGivenUseBindingProducer::build(wrong_source, &fixture.base),
+            Err(SourceProofLocalGivenUseBindingError::InvalidTransaction)
+        );
+        let mut wrong_module = fixture.input.clone();
+        wrong_module.module_id = ModuleId::new(PackageId::new("pkg"), ModulePath::new("wrong"));
+        assert_eq!(
+            SourceProofLocalGivenUseBindingProducer::build(wrong_module, &fixture.base),
+            Err(SourceProofLocalGivenUseBindingError::InvalidTransaction)
+        );
+
+        let mut dependency_inputs = Vec::new();
+        let mut input = fixture.input.clone();
+        input.lower_fingerprint.push('!');
+        dependency_inputs.push(input);
+        let mut input = fixture.input.clone();
+        input.theorem_symbol = SymbolId::new(
+            input.module_id.clone(),
+            LocalSymbolId::new("wrong"),
+            FullyQualifiedName::new("pkg::task269gup::wrong"),
+        );
+        dependency_inputs.push(input);
+        let mut input = fixture.input.clone();
+        input.theorem_definition = fixture.other_definition;
+        dependency_inputs.push(input);
+        let mut input = fixture.input.clone();
+        input.contribution = fixture.other_contribution;
+        dependency_inputs.push(input);
+        for select in 0..5 {
+            let mut input = fixture.input.clone();
+            match select {
+                0 => input.theorem_range.end += 1,
+                1 => input.proof_range.end += 1,
+                2 => input.given_range.end += 1,
+                3 => input.segment_range.end += 1,
+                4 => input.name_range.end += 1,
+                _ => unreachable!(),
+            }
+            dependency_inputs.push(input);
+        }
+        for input in dependency_inputs {
+            assert_eq!(
+                SourceProofLocalGivenUseBindingProducer::build(input, &fixture.base),
+                Err(SourceProofLocalGivenUseBindingError::DependencyMismatch)
+            );
+        }
+
+        assert_eq!(
+            SourceProofLocalGivenUseBindingProducer::build(
+                fixture.input.clone(),
+                &empty_given_use_base(&fixture),
+            ),
+            Err(SourceProofLocalGivenUseBindingError::InvalidBaseBindingEnvironment)
+        );
+        for local in [
+            LocalTermBinding::new(
+                "z",
+                LocalTermScope::new(vec![0]),
+                range(fixture.source, 76, 77),
+                1,
+            ),
+            LocalTermBinding::new(
+                "y",
+                LocalTermScope::new(vec![1]),
+                range(fixture.source, 76, 77),
+                1,
+            ),
+            LocalTermBinding::new(
+                "y",
+                LocalTermScope::new(vec![0]),
+                range(fixture.source, 75, 77),
+                1,
+            ),
+            LocalTermBinding::new(
+                "y",
+                LocalTermScope::new(vec![0]),
+                range(fixture.source, 76, 77),
+                2,
+            ),
+        ] {
+            let mut input = fixture.input.clone();
+            input.local = local;
+            assert_eq!(
+                SourceProofLocalGivenUseBindingProducer::build(input, &fixture.base),
+                Err(SourceProofLocalGivenUseBindingError::InvalidDeclaration {
+                    binding: SourceProofLocalGivenBindingId::new(0),
+                })
+            );
+        }
+        let mut input = fixture.input.clone();
+        input.source_ordinal = 2;
+        assert_eq!(
+            SourceProofLocalGivenUseBindingProducer::build(input, &fixture.base),
+            Err(SourceProofLocalGivenUseBindingError::InvalidDeclaration {
+                binding: SourceProofLocalGivenBindingId::new(0),
+            })
+        );
+
+        let mut wrong_transaction_and_dependency = fixture.input.clone();
+        wrong_transaction_and_dependency.source_id = other_source_id();
+        wrong_transaction_and_dependency.lower_fingerprint = "corrupt".to_owned();
+        assert_eq!(
+            SourceProofLocalGivenUseBindingProducer::build(
+                wrong_transaction_and_dependency,
+                &fixture.base,
+            ),
+            Err(SourceProofLocalGivenUseBindingError::InvalidTransaction)
+        );
+        let mut wrong_dependency_and_declaration = fixture.input.clone();
+        wrong_dependency_and_declaration.lower_fingerprint = "corrupt".to_owned();
+        wrong_dependency_and_declaration.source_ordinal = 2;
+        assert_eq!(
+            SourceProofLocalGivenUseBindingProducer::build(
+                wrong_dependency_and_declaration,
+                &empty_given_use_base(&fixture),
+            ),
+            Err(SourceProofLocalGivenUseBindingError::DependencyMismatch)
+        );
+        let mut wrong_base_and_declaration = fixture.input.clone();
+        wrong_base_and_declaration.source_ordinal = 2;
+        assert_eq!(
+            SourceProofLocalGivenUseBindingProducer::build(
+                wrong_base_and_declaration,
+                &empty_given_use_base(&fixture),
+            ),
+            Err(SourceProofLocalGivenUseBindingError::InvalidBaseBindingEnvironment)
+        );
+
+        let handoff =
+            SourceProofLocalGivenUseBindingProducer::build(fixture.input.clone(), &fixture.base)
+                .expect("Task269GUP checker handoff");
+        let mut transaction = handoff.clone();
+        transaction.source_id = other_source_id();
+        transaction.set_lower_fingerprint_for_task269gup_test("corrupt");
+        assert_eq!(
+            transaction.validate_installation(fixture.source, &fixture.module),
+            Err(SourceProofLocalGivenUseBindingError::InvalidTransaction)
+        );
+        let mut dependency = handoff.clone();
+        dependency.set_lower_fingerprint_for_task269gup_test("corrupt");
+        dependency.set_base_binding_fingerprint_for_task269gup_test("corrupt");
+        assert_eq!(
+            dependency.validate_installation(fixture.source, &fixture.module),
+            Err(SourceProofLocalGivenUseBindingError::DependencyMismatch)
+        );
+        let mut base = handoff.clone();
+        base.set_base_binding_fingerprint_for_task269gup_test("corrupt");
+        base.truncate_task269gup_bindings_for_test();
+        assert_eq!(
+            base.validate_installation(fixture.source, &fixture.module),
+            Err(SourceProofLocalGivenUseBindingError::InvalidBaseBindingEnvironment)
+        );
+        let mut aggregate = handoff.clone();
+        aggregate.truncate_task269gup_bindings_for_test();
+        aggregate.set_final_binding_fingerprint_for_task269gup_test("corrupt");
+        assert_eq!(
+            aggregate.validate_installation(fixture.source, &fixture.module),
+            Err(SourceProofLocalGivenUseBindingError::InvalidAggregate)
+        );
+        let mut declaration = handoff.clone();
+        declaration.corrupt_task269gup_binding_row_for_test();
+        declaration.set_final_binding_fingerprint_for_task269gup_test("corrupt");
+        assert_eq!(
+            declaration.validate_installation(fixture.source, &fixture.module),
+            Err(SourceProofLocalGivenUseBindingError::InvalidDeclaration {
+                binding: SourceProofLocalGivenBindingId::new(0),
+            })
+        );
+        let mut environment = handoff;
+        environment.set_final_binding_fingerprint_for_task269gup_test("corrupt");
+        assert_eq!(
+            environment.validate_installation(fixture.source, &fixture.module),
+            Err(SourceProofLocalGivenUseBindingError::InvalidBindingEnvironment)
+        );
+        let mut contexts = BindingContextTable::new();
+        contexts.insert(BindingContextDraft {
+            owner: BindingContextOwner::Module,
+            parent: None,
+            layer: BindingContextLayer::Module,
+            lexical_scope: None,
+            bindings: vec![BindingId::new(0)],
+            visible_bindings: vec![BindingId::new(0)],
+            recovery: BindingContextRecovery::Normal,
+        });
+        contexts.insert(BindingContextDraft {
+            owner: BindingContextOwner::SourceStatement {
+                source_range: range(fixture.source, 62, 126),
+            },
+            parent: Some(BindingContextId::new(0)),
+            layer: BindingContextLayer::Proof,
+            lexical_scope: Some(LocalTermScope::new(vec![0])),
+            bindings: vec![BindingId::new(1)],
+            visible_bindings: vec![BindingId::new(0)],
+            recovery: BindingContextRecovery::Normal,
+        });
+        let mut lookup_environment = environment.clone();
+        lookup_environment.binding_env = BindingEnv::try_new(BindingEnvParts {
+            source_id: fixture.source,
+            module_id: fixture.module.clone(),
+            contexts,
+            bindings: environment.binding_env.bindings().clone(),
+            diagnostics: environment.binding_env.diagnostics().clone(),
+        })
+        .expect("Task269GUP structurally valid lookup corruption");
+        lookup_environment.final_binding_fingerprint = lookup_environment.binding_env.debug_text();
+        assert_eq!(
+            lookup_environment.validate_installation(fixture.source, &fixture.module),
+            Err(SourceProofLocalGivenUseBindingError::InvalidBindingEnvironment)
+        );
+
+        for (error, expected) in [
+            (
+                SourceProofLocalGivenUseBindingError::InvalidTransaction,
+                "source proof-local given-use binding transaction is invalid".to_owned(),
+            ),
+            (
+                SourceProofLocalGivenUseBindingError::DependencyMismatch,
+                "source proof-local given-use binding dependency mismatch".to_owned(),
+            ),
+            (
+                SourceProofLocalGivenUseBindingError::InvalidBaseBindingEnvironment,
+                "source proof-local given-use binding base binding environment is invalid"
+                    .to_owned(),
+            ),
+            (
+                SourceProofLocalGivenUseBindingError::InvalidAggregate,
+                "source proof-local given-use binding aggregate is invalid".to_owned(),
+            ),
+            (
+                SourceProofLocalGivenUseBindingError::InvalidDeclaration {
+                    binding: SourceProofLocalGivenBindingId::new(0),
+                },
+                "source proof-local given-use binding 0 is invalid".to_owned(),
+            ),
+            (
+                SourceProofLocalGivenUseBindingError::InvalidBindingEnvironment,
+                "source proof-local given-use binding binding environment is invalid".to_owned(),
+            ),
+        ] {
+            assert_eq!(error.to_string(), expected);
+        }
+    }
+
+    #[test]
+    fn source_proof_local_given_use_binding_inherits_shadows_restores_and_excludes() {
+        let fixture = given_use_fixture();
+        let handoff = SourceProofLocalGivenUseBindingProducer::build(fixture.input, &fixture.base)
+            .expect("Task269GUP checker handoff");
+        let mut bindings = handoff.binding_env().bindings().clone();
+        let shadow = bindings.insert(BindingDraft {
+            spelling: "y".to_owned(),
+            kind: BindingKind::GivenWitness,
+            identity: BinderIdentity::ResolverLocal {
+                scope: LocalTermScope::new(vec![0, 1]),
+                ordinal: 2,
+                declaration_range: range(fixture.source, 109, 110),
+            },
+            owner_context: BindingContextId::new(3),
+            declaration_range: range(fixture.source, 109, 110),
+            visible_after_ordinal: 2,
+            type_site: BindingTypeSite::Missing,
+            status: BindingStatus::Active,
+            captured: CapturedFreeVariables::default(),
+            diagnostics: Vec::new(),
+            recovery: BindingRecoveryState::Normal,
+        });
+        assert_eq!(shadow, BindingId::new(2));
+        let mut contexts = handoff.binding_env().contexts().clone();
+        let child = contexts.insert(BindingContextDraft {
+            owner: BindingContextOwner::Generated("task269gup-child".to_owned()),
+            parent: Some(BindingContextId::new(1)),
+            layer: BindingContextLayer::Block,
+            lexical_scope: Some(LocalTermScope::new(vec![0, 0])),
+            bindings: Vec::new(),
+            visible_bindings: vec![BindingId::new(0), BindingId::new(1)],
+            recovery: BindingContextRecovery::Normal,
+        });
+        let shadow_child = contexts.insert(BindingContextDraft {
+            owner: BindingContextOwner::Generated("task269gup-shadow".to_owned()),
+            parent: Some(BindingContextId::new(1)),
+            layer: BindingContextLayer::Block,
+            lexical_scope: Some(LocalTermScope::new(vec![0, 1])),
+            bindings: vec![shadow],
+            visible_bindings: vec![BindingId::new(0), BindingId::new(1), shadow],
+            recovery: BindingContextRecovery::Normal,
+        });
+        let sibling = contexts.insert(BindingContextDraft {
+            owner: BindingContextOwner::Generated("task269gup-sibling".to_owned()),
+            parent: Some(BindingContextId::new(0)),
+            layer: BindingContextLayer::Block,
+            lexical_scope: Some(LocalTermScope::new(vec![1])),
+            bindings: Vec::new(),
+            visible_bindings: vec![BindingId::new(0)],
+            recovery: BindingContextRecovery::Normal,
+        });
+        let matrix = BindingEnv::try_new(BindingEnvParts {
+            source_id: fixture.source,
+            module_id: fixture.module,
+            contexts,
+            bindings,
+            diagnostics: handoff.binding_env().diagnostics().clone(),
+        })
+        .expect("Task269GUP synthetic scope matrix");
+        assert_eq!(
+            matrix.lookup(&BindingLookupSite::new(
+                "y",
+                child,
+                Some(LocalTermScope::new(vec![0, 0])),
+                2,
+            )),
+            Ok(BindingLookupResult::Local(BindingId::new(1)))
+        );
+        assert_eq!(
+            matrix.lookup(&BindingLookupSite::new(
+                "y",
+                shadow_child,
+                Some(LocalTermScope::new(vec![0, 1])),
+                3,
+            )),
+            Ok(BindingLookupResult::Local(BindingId::new(2)))
+        );
+        assert_eq!(
+            matrix.lookup(&BindingLookupSite::new(
+                "y",
+                BindingContextId::new(1),
+                Some(LocalTermScope::new(vec![0])),
+                3,
+            )),
+            Ok(BindingLookupResult::Local(BindingId::new(1)))
+        );
+        for (context, scope) in [
+            (BindingContextId::new(0), LocalTermScope::new(Vec::new())),
+            (sibling, LocalTermScope::new(vec![1])),
+        ] {
+            assert_eq!(
+                matrix.lookup(&BindingLookupSite::new("y", context, Some(scope), 2)),
+                Ok(BindingLookupResult::Unresolved)
+            );
+        }
+    }
+
+    #[test]
+    fn source_proof_local_given_use_binding_has_no_type_term_or_semantic_owner() {
+        let fixture = given_use_fixture();
+        let handoff = SourceProofLocalGivenUseBindingProducer::build(fixture.input, &fixture.base)
+            .expect("Task269GUP checker handoff");
+        let binding = handoff
+            .binding_env()
+            .bindings()
+            .get(BindingId::new(1))
+            .expect("Task269GUP witness binding");
+        assert_eq!(binding.type_site, BindingTypeSite::Missing);
+        assert!(binding.captured.identities().is_empty());
+        assert!(binding.diagnostics.is_empty());
+        assert!(handoff.binding_env().diagnostics().is_empty());
+        for forbidden in [
+            "term-reference",
+            "checked-formula",
+            "condition-fact",
+            "initial-obligation",
+            "terminal-goal",
+            "accepted",
+            "discharged",
+        ] {
+            assert!(!handoff.debug_text().contains(forbidden));
+        }
+    }
+
+    struct GivenUseFixture {
+        source: SourceId,
+        module: ModuleId,
+        input: SourceProofLocalGivenUseBindingHandoffInput,
+        base: BindingEnv,
+        other_definition: DefinitionId,
+        other_contribution: SourceContributionId,
+    }
+
+    fn given_use_fixture() -> GivenUseFixture {
+        let source = source_id();
+        let module = ModuleId::new(PackageId::new("pkg"), ModulePath::new("task269gup"));
+        let local = concat!(
+            "contribution=0:namespace=task269gup:owner=theorem#1:shell=theorem:",
+            "kind=theorem:name=FormulaStatementGivenSmoke:notation=_:arity=_:",
+            "definition=theorem:registration=_:policy=non-overloadable:",
+            "slot=non-overloadable:_:theorem:_"
+        );
+        let theorem_symbol = SymbolId::new(
+            module.clone(),
+            LocalSymbolId::new(local),
+            FullyQualifiedName::new(format!("pkg::task269gup::{local}")),
+        );
+        let mut contributions = SourceContributionIndex::new();
+        let contribution = contributions.insert(
+            module.clone(),
+            ContributionKind::LocalSource { source_id: source },
+            SourceAnchor::Range(range(source, 0, 18)),
+        );
+        let other_contribution = contributions.insert(
+            module.clone(),
+            ContributionKind::LocalSource { source_id: source },
+            SourceAnchor::Range(range(source, 0, 18)),
+        );
+        let mut definitions = DefinitionIndex::new();
+        let theorem_definition = definitions.insert(DefinitionShell::new(
+            theorem_symbol.clone(),
+            DefinitionKind::Theorem,
+            SemanticOrigin::new(
+                source,
+                module.clone(),
+                SourceAnchor::Range(range(source, 19, 127)),
+                vec![2, 1],
+            ),
+            contribution,
+        ));
+        let other_definition = definitions.insert(DefinitionShell::new(
+            theorem_symbol.clone(),
+            DefinitionKind::Theorem,
+            SemanticOrigin::new(
+                source,
+                module.clone(),
+                SourceAnchor::Range(range(source, 19, 127)),
+                vec![2, 1],
+            ),
+            contribution,
+        ));
+        let mut input = SourceProofLocalGivenUseBindingHandoffInput {
+            source_id: source,
+            module_id: module.clone(),
+            lower_fingerprint: String::new(),
+            theorem_symbol,
+            theorem_definition,
+            contribution,
+            theorem_range: range(source, 19, 127),
+            proof_range: range(source, 62, 126),
+            given_range: range(source, 70, 108),
+            segment_range: range(source, 76, 87),
+            name_range: range(source, 76, 77),
+            source_ordinal: 1,
+            local: LocalTermBinding::new(
+                "y",
+                LocalTermScope::new(vec![0]),
+                range(source, 76, 77),
+                1,
+            ),
+            recovery: SourceProofLocalGivenBindingRecovery::Normal,
+        };
+        input.lower_fingerprint = exact_task269gup_lower_fingerprint(Task269gupDependency {
+            source_id: input.source_id,
+            module_id: &input.module_id,
+            lower_fingerprint: "",
+            theorem_symbol: &input.theorem_symbol,
+            theorem_definition: input.theorem_definition,
+            contribution: input.contribution,
+            theorem_range: input.theorem_range,
+            proof_range: input.proof_range,
+            given_range: input.given_range,
+            segment_range: input.segment_range,
+            name_range: input.name_range,
+        });
+        GivenUseFixture {
+            source,
+            module: module.clone(),
+            input,
+            base: exact_base(source, module),
+            other_definition,
+            other_contribution,
+        }
+    }
+
+    fn empty_given_use_base(fixture: &GivenUseFixture) -> BindingEnv {
+        let mut contexts = BindingContextTable::new();
+        contexts.insert(BindingContextDraft {
+            owner: BindingContextOwner::Module,
+            parent: None,
+            layer: BindingContextLayer::Module,
+            lexical_scope: None,
+            bindings: Vec::new(),
+            visible_bindings: Vec::new(),
+            recovery: BindingContextRecovery::Normal,
+        });
+        BindingEnv::try_new(BindingEnvParts {
+            source_id: fixture.source,
+            module_id: fixture.module.clone(),
+            contexts,
+            bindings: BindingTable::new(),
+            diagnostics: BindingDiagnosticTable::new(),
+        })
+        .expect("Task269GUP valid but inexact empty base")
     }
 
     struct GivenFixture {

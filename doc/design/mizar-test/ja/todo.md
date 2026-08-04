@@ -3412,5 +3412,12 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
 - [x] source SHA `ec15ded78ae96022840a8419a85d74643de3b37337e9a202cbda77ee97aa7c01`、
   54-node Surface SHA `c64297ce72e380a2e4146276966e085d780f8b38f2528d5abaa440a50c67db6d`、
   exact lower/binding row、old/new isolation、runner 4 tests、`560 -> 564`、zero creditをfreeze。
-- [ ] private lower-to-binding route/testだけを実装。両later `y`とequality/conclusion/proofは
-  selector-onlyで、type/term/reference/Typed/final/semanticsなし。
+- [x] private lower-to-binding route/testは実装済みで、全reviewは
+  **NO FINDINGS**、hard gate 9件はcapなし`100/100`でPASS。exact stagingと
+  implementation commitを完了する。両later `y`とequality/conclusion/proofは
+  selector-onlyのままで、type/term/reference/Typed/final/semanticsなし。
+### Task 269GUP dormant runner 実装状況
+
+凍結済みの128-byte/54-node selector、lower row、reserve base composition、checker handoff直接返却、runner test 4件をprivate boundary内に実装した。libraryはchecker/runner `502/564`、productionは`30/172531`と`37/74826`で、path hashは不変、content hashは`e0342952a01a0b379cf7b06ad243cd40a1656e940480196323cf43fbe7d8f7c5` / `8fe7c8c0b7e855e5113f3830873e133f42c8048a3272055e2fddd5ebd9cbb1bc`である。
+
+dispatch、fixture、sidecar、expectation、trace、metadata、diagnostic、CLI、active result、Typed/final、source type、term/use、fact/proof、obligation ownerは変わらない。次のconsumerはTask 269GUPTであり、Task 269GU、capture、Task 270は引き続きdeferする。

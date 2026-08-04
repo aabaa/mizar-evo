@@ -94,8 +94,8 @@ is its task 1). "Next work" points into the
 | mizar-parser | Grammar, Pratt parsing, syntax recovery, parse-only corpus | [x] Tasks 1-48 plus bounded `PARSER-RECOVERY-B1B1P-P1` complete; historical post-Task-46 score 99/100 | no inferred Task 49; human-owned P-265-47D remains separate | [todo](./mizar-parser/en/todo.md) |
 | mizar-frontend | Source loading and phase 1-3 orchestration | [x] prior milestone plus `PARSER-RECOVERY-B1B1P-P1-FE` regression complete | — | [todo](./mizar-frontend/en/todo.md) |
 | mizar-resolve | Module graph, namespaces, symbols, labels, signatures | [~] complete through task 29, Checker Task 263R, and Task 264R implementation | Preserve Task-264R shell/no-symbol boundary through Checker Tasks 248P/264 | [todo](./mizar-resolve/en/todo.md) |
-| mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] foundation complete through task 22; Tasks 265-268, Core-31, and Checker consumers through implemented Task 269GT are complete; Task 269GUP contract and docs gates are complete | Commit the Task-269GUP binding-profile prerequisite, then implement its exact dormant consumer | [todo](./mizar-test/en/todo.md) |
-| mizar-checker | Type checking, cluster/registration resolution, overload resolution | [~] explicit-payload milestone and source producers/consumers through implemented source-type-only Task 269GT are complete; Task 269GUP contract and docs gates are complete | Commit and implement Task 269GUP; GUPT, GU, capture, and Task 270 remain separate | [todo](./mizar-checker/en/todo.md) |
+| mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] foundation complete through task 22; Tasks 265-268, Core-31, and Checker consumers through Task 269GUP pass all gates at 100/100 | Commit Task 269GUP, then fresh-inventory GUPT | [todo](./mizar-test/en/todo.md) |
+| mizar-checker | Type checking, cluster/registration resolution, overload resolution | [~] explicit-payload milestone and source producers/consumers through Task 269GUP pass all gates at 100/100 | Commit Task 269GUP; GUPT, GU, capture, and Task 270 remain separate | [todo](./mizar-checker/en/todo.md) |
 | mizar-core | Elaboration, binder-normalized core logic, control-flow preparation | [x] core/control-flow milestone, tasks 27-32 complete | step-5 Tasks 33-53 under the Task-32 graph | [todo](./mizar-core/en/todo.md) |
 | mizar-vc | VC IR, VC generation, deterministic pre-ATP discharge | [x] exact source-derived contradiction VC integration complete through task 31 | dependency-paced VC Tasks 32-55; VC 40/53 and S1 gates remain explicit | [todo](./mizar-vc/en/todo.md) |
 | mizar-kernel | Trusted certificate parsing and checking | [x] SAT-backed kernel milestone complete | step 4 task 35 resolved; task 32 parked; tasks 30-34 resolved | [todo](./mizar-kernel/en/todo.md) |
@@ -4305,6 +4305,12 @@ or semantic owner changed. B3M2B2B remains next before B4.
 - [x] Freeze the complete public binding ABI, private lower profile, exact
   six-file/eight-test implementation and 42-file documentation scopes, zero
   active/trace/semantic credit, exclusions, and all exit gates.
-- [~] GUP docs reviews, verification, and hard gates are complete; commit the
-  docs and implementation separately, then select GUPT source-type overlay and
-  GU occurrence transport. Capture and Task 270 remain dependency-gated.
+- [x] GUP docs are committed as prerequisite
+  `ae03ae0772fe98532dbd68164c8a1fc4f4172e7e`; implementation and exact reviews
+  are complete with **NO FINDINGS**, and all nine hard gates pass uncapped at
+  `100/100`. Finish exact staging and the separate implementation commit before
+  selecting GUPT source-type overlay and GU occurrence transport. Capture and
+  Task 270 remain dependency-gated.
+### Checker Task 269GUP implementation status
+
+Complete in the frozen six Rust files with four checker and four runner tests. Libraries are `502/564`; production is `30/172531` and `37/74826`, with unchanged path hashes and content hashes `e0342952a01a0b379cf7b06ad243cd40a1656e940480196323cf43fbe7d8f7c5` / `8fe7c8c0b7e855e5113f3830873e133f42c8048a3272055e2fddd5ebd9cbb1bc`. The direct handoff proves only the new source-local binding environment and confirmed block lifetime; all use/type/term/fact/proof/obligation semantics remain absent. Next: Task 269GUPT; then Task 269GU, capture, and Task 270 remain dependency-ordered follow-ups.

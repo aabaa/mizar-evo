@@ -885,6 +885,10 @@ literal top-level public item:
   `SourceProofLocalGivenBindingRecovery`、`SourceProofLocalGivenBinding`、
   `SourceProofLocalGivenBindingTable`、`SourceProofLocalGivenBindingHandoff`、
   `SourceProofLocalGivenBindingProducer`、`SourceProofLocalGivenBindingError`
+- `SourceProofLocalGivenUseBindingHandoffInput`、
+  `SourceProofLocalGivenUseBindingHandoff`、
+  `SourceProofLocalGivenUseBindingProducer`、
+  `SourceProofLocalGivenUseBindingError`
 
 対応:
 
@@ -896,6 +900,7 @@ literal top-level public item:
 | public enumはforward-compatible。 | kind/recovery/errorの`#[non_exhaustive]`。 | public-enum/source-spec-audit lint policy。 | exhaustive exceptionなしでguard。 |
 | exact proof-`let` profileはreserve-only baseへmissing-type `LetBinding` 1件をappendし、semantic publicationなしでatomic preserveする。 | public `SourceProofLocalLetBinding*` input/row/table/handoff/producer/error typeとTyped/final ownership。 | checker 4件とprivate runner 4件のTask-269C tests。 | zero-credit binding transportとしてimplemented。 |
 | exact proof-`given` profileはreserve-only baseへmissing-type `GivenWitness` 1件をappendし、canonical block-local lookupを保ち、semantic publicationなしでatomic preserveする。 | public `SourceProofLocalGivenBinding*` input/row/table/handoff/producer/error type、`BindingKind::GivenWitness`、Typed/final ownership。 | inherited/shadowed/restored/parent-excluded/sibling-excluded lookupを含むchecker 4件とprivate runner 4件のTask-269G tests。 | zero-credit binding transportとしてimplemented。source-type admissionはTask 269GTに残る。 |
+| distinct proof-`given` later-use sourceは、occurrence/semantic rowをpublishせず、自身のtransactionで同じblock-local binding lifetimeを再構築する。 | public `SourceProofLocalGivenUseBindingHandoffInput`、`SourceProofLocalGivenUseBindingHandoff`、`SourceProofLocalGivenUseBindingProducer`、`SourceProofLocalGivenUseBindingError`と再利用するdense Given row/table/recovery ABI。 | exact source identity、corruption precedence、lookup inheritance/shadow/restoration/exclusion、zero semantic effectを覆うchecker 4件・private runner 4件のTask-269GUP tests。 | Task 269GUPT向けzero-credit dormant binding prerequisiteとしてimplemented。 |
 
 bounded gap: later-use resolution/capture replay、他のproof-local declaration
 form、witness typing、existential matching、goal substitution、proof/discharge/
@@ -5699,3 +5704,8 @@ blocking `spec_gap`なし。exact sibling binding profileは`test_gap`、private
 family不在は`source_drift`、stale owner/statusは`design_drift`。`source_type.rs`でのbinding再構築/
 resolver-use tableは`boundary_violation`。lower/public binding family/8 testsだけをfreezeし、
 direct GP/G/GT不変、GUPT/GU absent。
+### Task 269GUP binding profile 実装状況
+
+凍結済みの6ファイル transactionとchecker/runner各4件の正確なtestを実装した。libraryは`502/564`、checker/runner productionは`30/172531`と`37/74826`で、path hashは不変、content hashは`e0342952a01a0b379cf7b06ad243cd40a1656e940480196323cf43fbe7d8f7c5` / `8fe7c8c0b7e855e5113f3830873e133f42c8048a3272055e2fddd5ebd9cbb1bc`である。
+
+閉じるのはdormant private lexical-binding evidenceだけで、active corpus、trace、type、term/use、condition/fact、goal/proof、obligation、diagnostic、CLIのcreditは0のままである。次はTask 269GUPTであり、Task 269GU、capture、Task 270は引き続きdeferする。

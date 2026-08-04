@@ -11855,3 +11855,8 @@ frozen proof-local runner leaf、test-only facade 2件、existing test leafだ�
 exact scopeは`source_statement.rs`、`source_proof_local_declaration.rs`、test facade 2、test leaf 1。
 前者がlower profile、後者がreserve-to-bindingをownし`source_term.rs`はexcluded。new file/module/
 Cargo/parser/resolver/dispatch/active edgeなし。baseline `37/73351`、path/module fixed、content再測定。
+### Task 269GUP dormant runner 実装状況
+
+凍結済みの128-byte/54-node selector、lower row、reserve base composition、checker handoff直接返却、runner test 4件をprivate boundary内に実装した。libraryはchecker/runner `502/564`、productionは`30/172531`と`37/74826`で、path hashは不変、content hashは`e0342952a01a0b379cf7b06ad243cd40a1656e940480196323cf43fbe7d8f7c5` / `8fe7c8c0b7e855e5113f3830873e133f42c8048a3272055e2fddd5ebd9cbb1bc`である。
+
+dispatch、fixture、sidecar、expectation、trace、metadata、diagnostic、CLI、active result、Typed/final、source type、term/use、fact/proof、obligation ownerは変わらない。次のconsumerはTask 269GUPTであり、Task 269GU、capture、Task 270は引き続きdeferする。

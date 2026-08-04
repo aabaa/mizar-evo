@@ -6581,8 +6581,14 @@ runner、docs-only implementation commitはproducer taskを満たさない。
 - [x] exact 128-byte/54-node profile、unique lower output、new-source identity、
   `1/1/0 -> 2/2/0`、lookup matrix、public ABI/error/debug、exact 6-file/8-test scope、
   zero credit、exclusion、42-file docs stage、exitをfreeze。
-- [~] specification reviewは**NO FINDINGS**、docs-only verification/hard gateは完了。
-  parent-owned exact stagingで42 synchronized Markdownだけをstageし、dedicated prerequisite
-  commitを作成する作業が残る。
-- [ ] fresh preflight後269GUPだけを実装/review/verify/commitし269GUPTをfresh inventory。
-  source type、term/use、Typed/final、captureはabsent。
+- [x] specification reviewは**NO FINDINGS**、docs-only verification/hard gateは完了し、
+  42 synchronized Markdownはdocumentation prerequisite
+  `ae03ae0772fe98532dbd68164c8a1fc4f4172e7e`としてcommit済み。
+- [x] Task 269GUPと全exact reviewは**NO FINDINGS**で完了し、hard gate 9件は
+  capなし`100/100`でPASS。exact stagingとsingle implementation commit後に
+  Task 269GUPTをfresh inventoryする。source type、term/use、Typed/final、captureはabsent。
+### Task 269GUP binding profile 実装状況
+
+凍結済みの6ファイル transactionとchecker/runner各4件の正確なtestを実装した。libraryは`502/564`、checker/runner productionは`30/172531`と`37/74826`で、path hashは不変、content hashは`e0342952a01a0b379cf7b06ad243cd40a1656e940480196323cf43fbe7d8f7c5` / `8fe7c8c0b7e855e5113f3830873e133f42c8048a3272055e2fddd5ebd9cbb1bc`である。
+
+閉じるのはdormant private lexical-binding evidenceだけで、active corpus、trace、type、term/use、condition/fact、goal/proof、obligation、diagnostic、CLIのcreditは0のままである。次はTask 269GUPTであり、Task 269GU、capture、Task 270は引き続きdeferする。

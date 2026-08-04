@@ -13156,3 +13156,8 @@ reserve-to-binding composition. `source_term.rs` is excluded. No file/module/
 Cargo/parser/resolver/public-dispatch/active edge is added. Production baseline
 is `37/73351`; path/module inventory stays fixed and changed content is
 remeasured after implementation.
+### Task 269GUP implemented dormant runner
+
+The exact 128-byte/54-node selector, lower row, reserve-base composition, direct checker handoff, and four runner tests are implemented inside the frozen private boundary. Libraries measure checker/runner `502/564`; production is `30/172531` and `37/74826`, with unchanged path hashes and content hashes `e0342952a01a0b379cf7b06ad243cd40a1656e940480196323cf43fbe7d8f7c5` / `8fe7c8c0b7e855e5113f3830873e133f42c8048a3272055e2fddd5ebd9cbb1bc`.
+
+No dispatch, fixture, sidecar, expectation, trace, metadata, diagnostic, CLI, active result, Typed/final, source-type, term/use, fact/proof, or obligation owner changed. Task 269GUPT is the next consumer; Task 269GU, capture, and Task 270 remain deferred.

@@ -6651,3 +6651,6 @@ corpus bytes remain unchanged. Counts stay `428/395`, pass/fail `235/193`,
 warnings/errors `23/0`, stages `101/7/205/1`, type `259=247+12`, and trace
 SHA-256 stays
 `55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`.
+### Task 269GUP implementation audit
+
+Task 269GUP implements the frozen six-file dormant binding profile with exact checker/runner libraries `502/564`, production `30/172531` and `37/74826`, and eight focused tests. It closes only private evidence for the user-confirmed `given` block lifetime: remainder of the corresponding block and descendants, with shadow/restoration, and no parent/sibling visibility. It receives zero active `.miz`, trace, type, term/use, condition/fact, proof, obligation, diagnostic, or CLI coverage credit. No trace row/status/backlink changes; Task 269GUPT owns the next use-type consumer, while Task 269GU, capture, and Task 270 remain deferred.

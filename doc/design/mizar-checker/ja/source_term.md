@@ -222,3 +222,8 @@ source/test/debug byteを変更しない。
 GUPはexact sibling binding envだけを作る。checker/runner source-term、Task252 allowlist、
 term/reference/request table/testはbyte-identical。`116..117`/`120..121`はselector-only。
 GUPT後のTask269GUだけがfuture GivenWitness Variable admission/occurrenceをownする。
+### Task 269GUP binding profile 実装状況
+
+凍結済みの6ファイル transactionとchecker/runner各4件の正確なtestを実装した。libraryは`502/564`、checker/runner productionは`30/172531`と`37/74826`で、path hashは不変、content hashは`e0342952a01a0b379cf7b06ad243cd40a1656e940480196323cf43fbe7d8f7c5` / `8fe7c8c0b7e855e5113f3830873e133f42c8048a3272055e2fddd5ebd9cbb1bc`である。
+
+閉じるのはdormant private lexical-binding evidenceだけで、active corpus、trace、type、term/use、condition/fact、goal/proof、obligation、diagnostic、CLIのcreditは0のままである。次はTask 269GUPTであり、Task 269GU、capture、Task 270は引き続きdeferする。

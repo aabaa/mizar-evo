@@ -917,6 +917,10 @@ Literal top-level public items:
   `SourceProofLocalGivenBindingRecovery`, `SourceProofLocalGivenBinding`,
   `SourceProofLocalGivenBindingTable`, `SourceProofLocalGivenBindingHandoff`,
   `SourceProofLocalGivenBindingProducer`, `SourceProofLocalGivenBindingError`
+- `SourceProofLocalGivenUseBindingHandoffInput`,
+  `SourceProofLocalGivenUseBindingHandoff`,
+  `SourceProofLocalGivenUseBindingProducer`,
+  `SourceProofLocalGivenUseBindingError`
 
 Correspondence:
 
@@ -928,6 +932,7 @@ Correspondence:
 | Public enums remain forward-compatible. | `#[non_exhaustive]` on kind, recovery, and error. | Public-enum and source/spec-audit lint policies. | Guarded; no exhaustive exception. |
 | The exact proof-`let` profile appends one missing-type `LetBinding` over the reserve-only base and is preserved atomically without semantic publication. | Public `SourceProofLocalLetBinding*` input/row/table/handoff/producer/error types and Typed/final ownership. | Four checker and four private runner Task-269C tests. | Implemented as zero-credit binding transport. |
 | The exact proof-`given` profile appends one missing-type `GivenWitness` over the reserve-only base, preserves canonical block-local lookup behavior, and is carried atomically without semantic publication. | Public `SourceProofLocalGivenBinding*` input/row/table/handoff/producer/error types, `BindingKind::GivenWitness`, and Typed/final ownership. | Four checker and four private runner Task-269G tests, including inherited, shadowed, restored, parent-excluded, and sibling-excluded lookup. | Implemented as zero-credit binding transport; source-type admission remains Task 269GT. |
+| The distinct proof-`given` later-use source rebuilds the same block-local binding lifetime in its own transaction without publishing any occurrence or semantic row. | Public `SourceProofLocalGivenUseBindingHandoffInput`, `SourceProofLocalGivenUseBindingHandoff`, `SourceProofLocalGivenUseBindingProducer`, and `SourceProofLocalGivenUseBindingError`; reused dense Given row/table/recovery ABI. | Four checker and four private runner Task-269GUP tests cover exact source identity, corruption precedence, lookup inheritance/shadow/restoration/exclusion, and zero semantic effect. | Implemented as zero-credit dormant binding prerequisite for Task 269GUPT. |
 
 Bounded gaps: later-use resolution and capture replay, other proof-local
 declaration forms, witness typing, existential matching, goal substitution,
@@ -5988,3 +5993,8 @@ stale ownership/status is `design_drift`. Reconstructing the binding in
 The frozen lower route, public binding input/handoff/producer/error, and eight
 tests will close only GUP when implemented. Direct GP/G/GT APIs remain unchanged;
 GUPT/GU are absent.
+### Task 269GUP implemented binding profile
+
+The frozen six-file transaction and its exact four checker/four runner tests are implemented. Libraries measure `502/564`; checker/runner production is `30/172531` and `37/74826`, with unchanged path hashes and content hashes `e0342952a01a0b379cf7b06ad243cd40a1656e940480196323cf43fbe7d8f7c5` / `8fe7c8c0b7e855e5113f3830873e133f42c8048a3272055e2fddd5ebd9cbb1bc`.
+
+This closes only dormant private lexical-binding evidence and grants zero active corpus, trace, type, term/use, condition/fact, goal/proof, obligation, diagnostic, or CLI credit. Task 269GUPT is next; Task 269GU, capture, and Task 270 remain deferred.

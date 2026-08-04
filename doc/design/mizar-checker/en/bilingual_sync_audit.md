@@ -1846,3 +1846,8 @@ All paired records synchronize the enclosing-block rule, exact
 `1/1/0 -> 2/2/0`, public binding ABI/error/debug, six-file/eight-test and
 42-file docs scopes, zero credit, GUPT/GU deferrals, boundaries, baselines, and
 exit gates. English is canonical; no bilingual exception exists.
+### Task 269GUP implemented binding profile
+
+The frozen six-file transaction and its exact four checker/four runner tests are implemented. Libraries measure `502/564`; checker/runner production is `30/172531` and `37/74826`, with unchanged path hashes and content hashes `e0342952a01a0b379cf7b06ad243cd40a1656e940480196323cf43fbe7d8f7c5` / `8fe7c8c0b7e855e5113f3830873e133f42c8048a3272055e2fddd5ebd9cbb1bc`.
+
+This closes only dormant private lexical-binding evidence and grants zero active corpus, trace, type, term/use, condition/fact, goal/proof, obligation, diagnostic, or CLI credit. Task 269GUPT is next; Task 269GU, capture, and Task 270 remain deferred.
