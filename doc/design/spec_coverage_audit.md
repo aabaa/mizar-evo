@@ -6431,3 +6431,21 @@ Chapter-15/16 coverage remains partial and all recorded counts, statuses,
 backlinks, and the trace hash above remain unchanged. The dependency-ready
 follow-up is Task 269C's binding-only missing-type-site contract. Source-type
 admission and resolver-wide later-use/capture remain separately deferred.
+
+## Checker Task 269C Frozen Zero-Credit Binding Ownership
+
+Task 269C freezes one private dormant checker/runner transaction for the exact
+Task-269CP proof-local `let y be set;` source. It authenticates the existing
+reserve-only base `BindingEnv` and adds one scoped `LetBinding` while retaining
+`BindingTypeSite::Missing`. This is source binding transport only: it does not
+execute the broad proof-local fixture, admit the `set` source type, create a
+type guard, resolve a real later use/capture, change a goal, record a fact,
+accept a proof, or produce an obligation/IR/VC.
+
+Accordingly, no requirement, backlink, status, owner in `spec_trace.toml`,
+fixture, sidecar, expectation, active outcome, or executable coverage credit
+changes. Chapters 4/15/16 and the checker extraction rows remain at their
+existing partial/diagnostic coverage. The trace manifest stays byte-identical;
+this audit records only bounded private binding ownership and the separately
+deferred source-type prerequisite. Later-use/capture remains a distinct
+resolver/source payload gap.

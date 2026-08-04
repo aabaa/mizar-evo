@@ -689,3 +689,13 @@ shape but do not make this runner-private prerequisite a semantic consumer.
 Type guards, universal encoding, goal/thesis change, discharge, later-use,
 capture, facts, proof acceptance, and downstream IR remain deferred. The task
 adds no semantic table and closes no semantic requirement.
+
+## Task 269C semantic boundary audit
+
+Canonical authority permits the proof-local binding and lexical scope. Task
+269C publishes only that binding transaction with a missing type site. It does
+not encode the universal type guard, update `thesis`, create or discharge an
+obligation, record a fact, resolve a real later use/capture, or accept a proof.
+All semantic/proof/IR tables stay empty; source-type admission is a separate
+prerequisite. Treating synthetic lookup ordinal 2 as a source use would be a
+boundary violation.

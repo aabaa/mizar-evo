@@ -1836,3 +1836,12 @@ Task 269CP creates no `TypedAst` or `ResolvedTypedAst` field, getter,
 installer, debug section, replay phase, or final clone. Its lower output stays
 inside `mizar-test`. Task 269C must separately freeze any final owner and may
 not infer one from this prerequisite.
+
+## Task 269C frozen final owner
+
+`ResolvedTypedAst` clone-preserves the new binding-only handoff after complete
+revalidation against the empty node/semantic profile. It exposes a read-only
+getter and appends the handoff's deterministic debug section. It adds no
+expression, candidate, formula, statement-semantic, proof, goal, obligation,
+fact, or diagnostic row. Orphan, cross-family, stale, or semantic-coexistence
+input is rejected; Task-269A/B final bytes remain unchanged.

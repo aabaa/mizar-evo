@@ -1759,3 +1759,11 @@ ranges, and local provenance. Future Task 269C owns a separate checker
 let-binding family. Named-witness A/B,
 later-use/capture, source-type admission, goal/proof semantics, and all active
 coverage remain disjoint.
+
+## Task 269C isolated proof-`let` binding family
+
+The new checker sibling owns one `LetBinding` row and the exact `BindingEnv`
+transition only. It consumes Task-269CP provenance without importing syntax,
+retains a missing type site, and is one-shot preserved by Typed/final owners.
+It is disjoint from named-witness A/B, source-type application, actual use/
+capture, formula/goal/fact/proof/obligation families, and active coverage.

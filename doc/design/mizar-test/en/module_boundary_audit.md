@@ -13049,3 +13049,14 @@ production inventory is 37 paths / 71,194 lines with path/content SHA-256
 The library is 540 tests with raw/normalized list SHA-256
 `8b9a2b9ea4aad3c6ed0b6eae32a0285d6a9fe1b5389dcc31ebc7adb872317522` /
 `a8955748da86930f3e2165637e170d68c77756cbc03f3ff38b3f8de0d21cbc50`.
+
+## Checker Task 269C frozen runner boundary
+
+The existing proof-local production/test leaves and two test-only facades are
+the entire runner scope. No module or production path is added; production
+stays `37/71194` before implementation with path/content hashes
+`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d` /
+`4dcfc69a867dea5c12457d94825493a8a48e4fd5ac7b91d86412371ac25f6b03`.
+Library tests project `540 -> 544`. Raw syntax remains runner-private and only
+the frozen syntax-free binding input crosses to checker; active dispatch,
+Cargo, corpus, trace, parser/resolver, and source-type ownership do not change.

@@ -4174,3 +4174,13 @@ or semantic owner changed. B3M2B2B remains next before B4.
   and full verification authorizes the exact task-only commit. Continue after
   that commit to binding-only Task 269C with a missing type site; source-type
   admission remains a separately selected prerequisite.
+- [~] Fresh-inventory and freeze Checker Task 269C as the exact binding-only
+  proof-`let` transaction: base/final `1/1/0 -> 2/2/0`, one missing-type
+  `LetBinding`, one-shot Typed/final ownership, no active/semantic credit.
+- [x] Complete the Task-269C documentation prerequisite review with **NO
+  FINDINGS** and all nine hard gates uncapped at `100/100`.
+- [ ] Create the exact docs-only commit and run post-commit fresh
+  implementation preflight.
+- [ ] Implement/review/verify/commit exactly Task 269C, then fresh-inventory the
+  separately owned source-type prerequisite without absorbing use/capture or
+  goal/proof semantics.

@@ -2327,3 +2327,12 @@ implementationはselected runner-private `source_drift`とtests 4件の`test_gap
 closeし、上のexecutable-credit inventoryを変更しない。Task 269Cはmissing type
 siteを持つ次のbinding-only owner。source-type admissionとlater-use/captureは
 separately deferredのまま。
+
+## Checker Task 269C traceability no-credit contract
+
+`.miz`、sidecar、expectation、requirement、trace row/status/backlink、metadata case、active
+outcome、coverage creditを追加しない。broad proof-local diagnostic rowはexisting fail
+fixtureでcoveredのままでpositive binding/proof acceptanceではない。cases/requirements
+`428/395`、type coverage `259=247+12`、trace SHA-256
+`55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`は不変。
+coverage auditはprivate binding ownerとseparate source-type prerequisiteだけを記録。

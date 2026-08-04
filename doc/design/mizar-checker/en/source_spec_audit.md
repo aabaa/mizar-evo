@@ -5868,3 +5868,13 @@ no-op. Later-use/capture is not ready and remains an external source-
 payload gap. Existing specifications, fixtures, expectations, and trace
 metadata stay read-only; the coverage audit changes follow-up ownership only
 and grants no executable credit.
+
+## Task 269C source/spec classification
+
+Chapters 4, 15, and 16 authorize exactly the selected proof-local binding and
+scope. The frozen syntax-free checker/runner transaction closes bounded
+`source_drift`; four checker and four runner tests close its bounded
+`test_gap`. Missing source-type admission and resolver-wide later-use/capture
+remain separately classified `source_drift`. No `doc/spec`, `.miz`,
+expectation, trace status, diagnostic, proof, or semantic intent changes, and
+the broad diagnostic fixture receives no positive credit.

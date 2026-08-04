@@ -812,3 +812,15 @@ The isolated proof-`let` prerequisite authenticates a resolver-shaped local
 publish a proof/block context. Those checker-owned decisions remain Task
 269C. Treating the private lower projection as an active binding would be a
 boundary violation.
+
+## Task 269C frozen `LetBinding` transaction
+
+The checker consumes the Task-269CP syntax-free projection plus the existing
+reserve bridge's exact base `1/1/0` environment. It validates reserved `x`
+binding 0 and appends proof context 1 plus binding 1 only. The result is exact
+`2/2/0`: `y`, `LetBinding`, resolver-local scope `[0]`, range `71..72`,
+visible-after 1, missing type site, active, uncaptured, diagnostic-free, and
+normal. Context 1 is `SourceStatement(59..98)`, proof-layer, parent 0, owned
+`[1]`, visible `[0,1]`. Definition-site ordinal 1 remains forward; synthetic
+ordinal 2 resolves binding 1. No actual use/capture row or source type is
+claimed. Every base/final row and debug fingerprint fails closed.

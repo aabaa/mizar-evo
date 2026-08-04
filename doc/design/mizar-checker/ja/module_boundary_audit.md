@@ -1587,3 +1587,15 @@ libraryは540 tests、raw/normalized test-list SHA-256
 `8b9a2b9ea4aad3c6ed0b6eae32a0285d6a9fe1b5389dcc31ebc7adb872317522` /
 `a8955748da86930f3e2165637e170d68c77756cbc03f3ff38b3f8de0d21cbc50`。
 new checker moduleやparser/resolver editはscope外のまま。
+
+## Checker Task 269C frozen module boundary
+
+new module/path/dependencyは追加しない。exact source scopeはexisting checker
+`source_proof_local_declaration.rs`、`typed_ast.rs`、`resolved_typed_ast.rs`と、existing
+runner proof-local leaf、test-only facade 2件、proof-local test leaf。raw source/Surface/
+resolver selectionは`mizar-test`内で、frozen syntax-free input/public BindingEnvだけが
+checkerへcrossする。production pathsはchecker/runner `30/37`、baseline lines
+`165219/71194`、path hash
+`c89f43f6abebf7ebeb3ac9394ecd8ea3186ad28934c75526d2cc0b85a66ebad5` /
+`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d`不変。
+parser/resolver、Cargo、active dispatch、fixture/trace、source-type ownerはscope外。

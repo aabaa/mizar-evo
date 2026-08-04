@@ -1865,3 +1865,13 @@ No `TypedAst` field, installer, source type, binding, node link, or semantic
 table is added by the lower prerequisite. The exact 51-node Surface profile is
 authenticated privately by the runner and is not claimed as typed ownership.
 Task 269C must freeze any typed/final projection independently.
+
+## Task 269C frozen typed owner
+
+`TypedAst` adds a sibling optional `source_proof_local_let_binding` handoff,
+getter, and one-shot installer. Its admitted base has no node/root, other
+source handoff, or semantic table. Installation validates the exact binding
+handoff and adds no type, node link, fact, coercion, initial obligation, or
+diagnostic. Duplicate, stale, partial, Task-269A/B cross-family, and semantic-
+coexistence inputs fail transactionally. The binding remains
+`BindingTypeSite::Missing`.

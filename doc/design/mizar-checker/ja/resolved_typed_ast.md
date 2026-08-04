@@ -1751,3 +1751,11 @@ stale/partialはexisting dedicated errorでreject。field/error/node role/semant
 Task 269CPは`TypedAst`/`ResolvedTypedAst` field、getter、installer、debug、replay
 phase、final cloneを追加しない。lower outputは`mizar-test`内に留まる。Task 269Cは
 final ownerをseparately freezeし、このprerequisiteから推測してはならない。
+
+## Task 269C frozen final owner
+
+`ResolvedTypedAst`はempty node/semantic profileに対するcomplete revalidation後だけnew
+binding-only handoffをclone-preserveする。read-only getterとdeterministic debug sectionを
+追加するがexpression/candidate/formula/statement-semantic/proof/goal/obligation/fact/
+diagnostic rowは追加しない。orphan/cross-family/stale/semantic-coexistenceをrejectし、
+Task-269A/B final byteは不変。

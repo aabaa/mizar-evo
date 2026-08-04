@@ -1667,3 +1667,10 @@ Implementation records are likewise synchronized: both companions state the
 same exact side-table/signature guards, four-file scope, four tests,
 `37/71194` production inventory, 540-test hashes, review result, and zero
 semantic/coverage delta. No bilingual implementation debt remains.
+
+## Checker Task 269C frozen synchronization result
+
+EN/JA agree on the exact private lower-to-reserve-to-checker composition,
+missing-type `LetBinding`, empty Typed/final semantics, four-file/four-test
+runner scope, `540 -> 544`, unchanged production/active/corpus/trace/CLI, and
+the separate source-type/use-capture owners. English remains canonical.

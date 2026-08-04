@@ -5238,3 +5238,14 @@ synthetic all-field profile mutations, including a matching present-but-
 corrupt symbol/definition signature. Neutral reconstruction proves those
 mutation helpers before corruption. Focused and full crate tests pass without
 adding a fifth test or an active dispatch edge.
+
+## Checker Task 269C frozen dormant harness
+
+The proof-local leaf selects exact `SOURCE_PROOF_LOCAL_LET_TEXT`, requires the
+unchanged Task-269CP output/debug, obtains base binding state only from the
+existing reserve bridge, and passes the frozen syntax-free binding input to
+the checker. Success is exact final `2/2/0`, binding 1 `y` as `LetBinding` with
+missing type, one Typed/final handoff, no nodes, and every semantic table
+empty. Four tests cover exact output/debug/lookup, lower/base/checker
+corruption, near-miss and adjacent-family/public-route isolation, and zero
+active or semantic effect. Production dispatch never calls the leaf.

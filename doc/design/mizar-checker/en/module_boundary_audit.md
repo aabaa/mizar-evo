@@ -1647,3 +1647,17 @@ Its library is 540 tests with raw/normalized test-list SHA-256
 `8b9a2b9ea4aad3c6ed0b6eae32a0285d6a9fe1b5389dcc31ebc7adb872317522` /
 `a8955748da86930f3e2165637e170d68c77756cbc03f3ff38b3f8de0d21cbc50`.
 A new checker module or parser/resolver edit remains outside 269CP.
+
+## Checker Task 269C frozen module boundary
+
+No new module/path or dependency is added. The exact source scope is existing
+checker `source_proof_local_declaration.rs`, `typed_ast.rs`, and
+`resolved_typed_ast.rs`; existing runner proof-local leaf, two test-only
+facades, and proof-local test leaf. Raw source/Surface/resolver selection stays
+in `mizar-test`; only the frozen syntax-free input and public BindingEnv cross
+to checker. Production paths remain checker/runner `30/37`, baseline lines
+`165219/71194`, and path hashes remain
+`c89f43f6abebf7ebeb3ac9394ecd8ea3186ad28934c75526d2cc0b85a66ebad5` /
+`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d`.
+Parser/resolver, Cargo, active dispatch, fixture/trace, and source-type owners
+are excluded.

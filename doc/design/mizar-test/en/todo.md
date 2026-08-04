@@ -3540,3 +3540,17 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
   hard gates without a score cap at `100/100`, authorize the exact task-only
   commit, and then fresh-inventory Task 269C automatically as a binding-only
   consumer with source-type admission still separate.
+
+## Checker Task 269C Dormant Binding-Only Consumer
+
+- [x] Fresh-inventory Task-269CP lower, reserve bridge, checker BindingEnv and
+  Typed/final owners; select only binding-only 269C.
+- [x] Freeze the exact private translation, four runner files/tests, `540 ->
+  544`, unchanged production/dispatch/corpus/trace/CLI, semantic exclusions,
+  and exit in synchronized EN/JA.
+- [x] Review the synchronized documentation prerequisite to **NO FINDINGS**
+  and pass all nine hard gates uncapped at `100/100`.
+- [ ] Stage and commit the synchronized documentation prerequisite alone.
+- [ ] Fresh-preflight and implement only the private binding consumer.
+- [ ] Repeat all reviews/verification, task-only commit, and automatic fresh
+  next-task inventory with source-type admission still separate.

@@ -5600,3 +5600,11 @@ source/Surface/shell/resolver/local projectionだけをauthenticateし、checker
 effectは0。later-use/captureはreadyでなく
 external source-payload gapのまま。existing spec/fixture/expectation/traceはread-only
 で、coverage auditはownershipだけを変更しcreditは0。
+
+## Task 269C source/spec classification
+
+Chapters 4/15/16はselected proof-local binding/scopeだけをauthorizeする。frozen syntax-
+free checker/runner transactionがbounded `source_drift`を、checker/runner tests各4件が
+bounded `test_gap`をcloseする。missing source-type admissionとresolver-wide later-use/
+captureはseparate `source_drift`。`doc/spec`、`.miz`、expectation、trace status、
+diagnostic、proof/semantic intentは不変でbroad diagnostic fixtureへpositive creditは0。

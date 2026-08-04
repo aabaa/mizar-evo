@@ -6453,3 +6453,18 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   9件をscore capなしの`100/100`でPASSする。exact task-only commitをauthorizeし、
   その後missing type siteを維持してsource-type admissionを分離したbinding-only
   Task 269Cをfresh inventoryする。
+
+## Checker Task 269C binding-only proof-`let` transaction
+
+- [x] canonical Chapters 4/15/16、broad proof-local gap、Task-269CP lower、reserve
+  bridge、BindingEnv、Typed/final APIをfresh inventoryしbinding-only 269Cだけをselect。
+- [x] exact syntax-free input/output、base `1/1/0`、final `2/2/0`、missing typeの
+  `LetBinding` 1行、lookup/debug/fingerprint、7-file scope、tests 8件、exclusion、
+  count/hash、audit impact、exitをEN/JAでfreeze。
+- [x] specification reviewを**NO FINDINGS**までrepeatし、docs-only hard gate 9件を
+  score capなしの`100/100`でPASS。
+- [ ] documentation prerequisiteだけをstage/commitし、fresh implementation preflight。
+- [ ] fresh preflight後exact 7-file binding transactionだけをimplementし、source-type
+  admission/use-captureを分離。
+- [ ] independent test/implementation/source-doc/final review、verification、final gate
+  9件、task-only commit、fresh next-task inventoryを自動継続。

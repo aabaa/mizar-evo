@@ -3542,3 +3542,10 @@ Surface snapshot内のrole anchorとしてauthenticateする。runnerはroot nod
 absent expression root、token nodes 0..23、および全nodeのsource identity、range、
 recovery、ordered childrenもauthenticateする。Task-258/269A/B debug/profileは
 不変で、checker statement edgeにはlater frozen contractが必要。
+
+## Task 269C no-statement binding boundary
+
+binding-only transactionはTask-269CP theorem/proof/let rangeをconsumeするが、
+`SourceStatementKind`、statement context/fact/candidate row、formula edge、statement
+semanticを追加しない。`SourceStatement(59..98)`はbinding-context owner tagだけ。
+goal/thesis/conclusion ownershipはdeferred。

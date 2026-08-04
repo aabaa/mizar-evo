@@ -3313,3 +3313,16 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
 - [x] 全reviewを**NO FINDINGS**まで完了し、verificationとhard gate 9件をscore
   capなしの`100/100`でPASSしてexact task-only commitをauthorizeする。その後
   source-type admissionを分離したbinding-only Task 269Cをfresh inventoryする。
+
+## Checker Task 269C dormant binding-only consumer
+
+- [x] Task-269CP lower、reserve bridge、checker BindingEnv/Typed/final ownerをfresh
+  inventoryしbinding-only 269Cだけをselect。
+- [x] exact private translation、runner files/tests 4件、`540 -> 544`、production/
+  dispatch/corpus/trace/CLI不変、semantic exclusion、exitをEN/JAでfreeze。
+- [x] synchronized documentation prerequisiteを**NO FINDINGS**までreviewし、hard
+  gate 9件をcapなしの`100/100`でPASS。
+- [ ] synchronized documentation prerequisiteだけをstage/commit。
+- [ ] fresh preflight後private binding consumerだけをimplement。
+- [ ] 全review/verification後task-only commitし、source-type admissionを分離した
+  fresh next-task inventoryへ自動継続。

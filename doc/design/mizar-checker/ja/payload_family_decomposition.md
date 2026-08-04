@@ -1670,3 +1670,10 @@ symbol/definition/contribution、source ordinal、role-specific range、local pr
 retainする。future Task 269Cがseparate checker let-binding familyをownする。
 named-witness A/B、later-use/capture、source-type admission、goal/proof semantics、
 active coverageはdisjoint。
+
+## Task 269C isolated proof-`let` binding family
+
+new checker siblingは`LetBinding` 1行とexact `BindingEnv` transitionだけをownする。
+syntaxをimportせずTask-269CP provenanceをconsumeし、missing type siteをretainして
+Typed/final ownerがone-shot preserveする。named-witness A/B、source-type application、
+actual use/capture、formula/goal/fact/proof/obligation family、active coverageとはdisjoint。

@@ -4935,3 +4935,13 @@ payloadも固定する。real rebuilt-AST/resolver corruptionとsynthetic all-fi
 profile mutationを併用し、matching present-but-corrupt symbol/definition signatureも
 rejectする。neutral reconstructionでcorruption前のmutation helperを検証する。
 focused/full crate testはPASSし、5件目のtestやactive dispatch edgeは追加しない。
+
+## Checker Task 269C frozen dormant harness
+
+proof-local leafはexact `SOURCE_PROOF_LOCAL_LET_TEXT`をselectし、unchanged Task-269CP
+output/debugをrequire、existing reserve bridgeだけからbase binding stateを得てfrozen
+syntax-free binding inputをcheckerへ渡す。successはexact final `2/2/0`、binding1 `y`を
+missing typeの`LetBinding`、Typed/final handoff 1件、nodeなし、全semantic table empty。
+tests 4件はexact output/debug/lookup、lower/base/checker corruption、near-miss/adjacent-
+family/public-route isolation、active/semantic effect 0をcover。production dispatchはleafを
+callしない。

@@ -1771,3 +1771,11 @@ lower prerequisiteは`TypedAst` field、installer、source type、binding、node
 semantic tableを追加しない。exact 51-node Surface profileはrunner-privateに
 authenticateされtyped ownershipとしてcreditしない。Task 269Cがtyped/final
 projectionをindependently freezeする。
+
+## Task 269C frozen typed owner
+
+`TypedAst`はsibling optional `source_proof_local_let_binding` handoff、getter、one-shot
+installerを追加する。admitted baseはnode/root、other source handoff、semantic tableが
+empty。exact binding handoffをvalidateしtype/node link/fact/coercion/initial obligation/
+diagnosticを追加しない。duplicate/stale/partial/Task-269A/B cross-family/semantic-
+coexistenceはtransactional reject。bindingは`BindingTypeSite::Missing`のまま。

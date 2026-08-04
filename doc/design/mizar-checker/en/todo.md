@@ -6772,3 +6772,22 @@ implementation commit does not satisfy a producer task.
   task-only commit and then fresh-inventory binding-only Task 269C
   automatically, retaining a missing type site and separate source-type
   admission.
+
+## Checker Task 269C Binding-Only Proof-`let` Transaction
+
+- [x] Fresh-inventory canonical Chapters 4/15/16, broad proof-local gap,
+  Task-269CP lower output, reserve bridge, BindingEnv, and Typed/final APIs;
+  select only binding-only 269C.
+- [x] Freeze exact syntax-free input/output, base `1/1/0`, final `2/2/0`, one
+  `LetBinding` row with missing type, lookup/debug/fingerprint ownership,
+  seven-file scope, eight tests, exclusions, counts/hashes, audit impact, and
+  exit in synchronized EN/JA.
+- [x] Repeat specification review to **NO FINDINGS** and pass all nine docs-
+  only hard gates without a score cap at `100/100`.
+- [ ] Stage and commit only the documentation prerequisite, then run fresh
+  implementation preflight.
+- [ ] Fresh-preflight and implement only the exact seven-file binding
+  transaction; keep source-type admission and use/capture separate.
+- [ ] Complete independent test/implementation/source-doc/final reviews,
+  verification, all nine final gates, task-only commit, and fresh next-task
+  inventory automatically.

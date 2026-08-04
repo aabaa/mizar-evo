@@ -5,15 +5,15 @@
 
 ## 状態と authority
 
-この文書はqueue Task 269の最初の3つのdependency-minimal sliceである
-**Checker Tasks 269A--269CP**をfreezeする。英語版がcanonicalであり、同じlogical
+この文書はqueue Task 269の最初の4つのdependency-minimal sliceである
+**Checker Tasks 269A--269C**をfreezeする。英語版がcanonicalであり、同じlogical
 task内で本JA companionを同期する。
 
 normative authorityは次の順である。
 
-1. `doc/spec/en/04.variables_and_constants.md` §§4.1、4.4.3、4.6。
-2. `doc/spec/en/15.statements.md` §15.4.4。
-3. `doc/spec/en/16.theorems_and_proofs.md` §16.4。
+1. `doc/spec/en/04.variables_and_constants.md` §§4.1、4.2、4.4.3、4.6。
+2. `doc/spec/en/15.statements.md` §§15.2.1、15.4.4、15.10。
+3. `doc/spec/en/16.theorems_and_proofs.md` §§16.3.3、16.4。
 4. 実装済みTask-258B3Nのexact source/statement/witness/term transportと
    parser/resolver provenance。
 5. Tasks 248--258の公開API、特に`LocalTermBinding`、`BindingEnv`、
@@ -662,8 +662,11 @@ symbol/definition/contribution、theorem/proof/let/segment/name/type/type-head�
 role-specific range、ordinal1、local binding、deterministic debug textをretainedする。
 raw `SurfaceAst`/node id/kind/token/source textはexisting private
 `mizar-test::runner::type_elaboration::source_statement` leaf内に留める。
-source/snapshot hashはselector fingerprintでchecker payloadではない。特に上の
-Surface tableのnode番号はselector-internal factとしてだけauthenticateし、
+source/snapshot hashはselector fingerprintで、checkerのindependent typed fieldではない。
+Task 269Cがcopyできるのはcomplete byte-exact `debug_text()` string 1件だけで、opaque
+syntax-free authentication fingerprintとして扱う。embedded source/snapshot hashとtype
+rangeはselector evidenceのまま、checkerはtyped siteへparseせずindependent fieldも
+acceptしない。特に上のSurface tableのnode番号はrunner boundaryをcrossせず、
 `TypedSiteRef`へlaunderせずtyped ownershipとしてもpublishしない。
 
 private data shapeはexact fields `source_id`、`module_id`、
@@ -754,3 +757,386 @@ guard、exact rejection precedence、near-miss/family/fixture isolation、checke
 semantic effect 0をcoverする。test-sufficiency/implementation再reviewは
 **NO FINDINGS**。checker ABI、source type、Typed/Resolved owner、binding transaction、
 goal/fact/proof/acceptance/discharge/downstream IRはactivateしない。
+
+## Checker Task 269C frozen binding-only proof-`let` transaction
+
+### 選択、authority、分類
+
+Task-269CP implementation commit
+`4431211d64e0030180852a5d8055edc202a629ba`後のfresh inventoryはTask 269Cだけを
+selectする。Chapter 4 Sections 4.1/4.2/4.6はproof-local `let`がenclosing proof
+scopeにfresh free-variable binding 1件をintroduceすることを要求する。Chapter 15
+Sections 15.2.1/15.10はproof-block localityを要求しsame-scope duplicateを禁止する。
+Chapter 16 Sections 16.3.3/16.4.1/16.4.2はproof-block ownerとlocal visibilityを
+定める。このauthorityがauthorizeするのはbinding row/scopeだけで、type guard構築、
+`thesis`変更、obligation discharge、proof acceptanceではない。
+
+Task 269CPはexact runner-private source/Surface/resolver/local projectionを供給する。
+existing reserve bridgeはexact module-level base `BindingEnv`をindependentにprepareでき、
+checkerには`BindingDraft::from_local_term`、`BindingKind::LetBinding`、
+`BindingTypeSite::Missing`、lexical lookup、one-shot Typed/final ownership patternがある。
+missing binding transactionはbounded `source_drift`、focused fail-closed coverageはbounded
+`test_gap`。欠けている`LetBinding` source-type admissionとresolver-wide use/capture payloadは
+separate `source_drift`で、269Cへmergeすれば`boundary_violation`。worktree clean/protected
+stash不変。`origin/main`差はexact commit targetを隠さないreport-only
+`repo_metadata_conflict`。
+
+### Exact syntax-free checker ABI
+
+existing checker module `source_proof_local_declaration`へnamed-witness transactionの
+extensionではない次のpublic sibling contractを追加する。private fieldにはunchecked
+constructor/mutable accessorを置かない。
+
+```rust
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceProofLocalLetBindingHandoffInput {
+    pub source_id: SourceId,
+    pub module_id: ModuleId,
+    pub lower_fingerprint: String,
+    pub theorem_symbol: SymbolId,
+    pub theorem_definition: DefinitionId,
+    pub contribution: SourceContributionId,
+    pub theorem_range: SourceRange,
+    pub proof_range: SourceRange,
+    pub let_range: SourceRange,
+    pub segment_range: SourceRange,
+    pub name_range: SourceRange,
+    pub source_ordinal: usize,
+    pub local: LocalTermBinding,
+    pub recovery: SourceProofLocalLetBindingRecovery,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct SourceProofLocalLetBindingId(usize);
+
+impl SourceProofLocalLetBindingId {
+    pub const fn new(index: usize) -> Self;
+    pub const fn index(self) -> usize;
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum SourceProofLocalLetBindingRecovery {
+    Normal,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceProofLocalLetBinding {
+    binding: BindingId,
+    binding_context: BindingContextId,
+    source_ordinal: usize,
+    visible_after_ordinal: usize,
+    recovery: SourceProofLocalLetBindingRecovery,
+}
+
+impl SourceProofLocalLetBinding {
+    pub const fn binding(&self) -> BindingId;
+    pub const fn binding_context(&self) -> BindingContextId;
+    pub const fn source_ordinal(&self) -> usize;
+    pub const fn visible_after_ordinal(&self) -> usize;
+    pub const fn recovery(&self) -> SourceProofLocalLetBindingRecovery;
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceProofLocalLetBindingTable {
+    rows: Vec<SourceProofLocalLetBinding>,
+}
+
+impl SourceProofLocalLetBindingTable {
+    pub fn get(
+        &self,
+        id: SourceProofLocalLetBindingId,
+    ) -> Option<&SourceProofLocalLetBinding>;
+    pub fn iter(
+        &self,
+    ) -> impl Iterator<
+        Item = (SourceProofLocalLetBindingId, &SourceProofLocalLetBinding),
+    >;
+    pub const fn len(&self) -> usize;
+    pub const fn is_empty(&self) -> bool;
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceProofLocalLetBindingHandoff {
+    source_id: SourceId,
+    module_id: ModuleId,
+    lower_fingerprint: String,
+    theorem_symbol: SymbolId,
+    theorem_definition: DefinitionId,
+    contribution: SourceContributionId,
+    theorem_range: SourceRange,
+    proof_range: SourceRange,
+    let_range: SourceRange,
+    segment_range: SourceRange,
+    name_range: SourceRange,
+    base_binding_env: BindingEnv,
+    base_binding_fingerprint: String,
+    binding_env: BindingEnv,
+    final_binding_fingerprint: String,
+    bindings: SourceProofLocalLetBindingTable,
+}
+
+impl SourceProofLocalLetBindingHandoff {
+    pub const fn source_id(&self) -> SourceId;
+    pub const fn module_id(&self) -> &ModuleId;
+    pub fn lower_fingerprint(&self) -> &str;
+    pub const fn theorem_symbol(&self) -> &SymbolId;
+    pub const fn theorem_definition(&self) -> DefinitionId;
+    pub const fn contribution(&self) -> SourceContributionId;
+    pub const fn theorem_range(&self) -> SourceRange;
+    pub const fn proof_range(&self) -> SourceRange;
+    pub const fn let_range(&self) -> SourceRange;
+    pub const fn segment_range(&self) -> SourceRange;
+    pub const fn name_range(&self) -> SourceRange;
+    pub const fn base_binding_env(&self) -> &BindingEnv;
+    pub fn base_binding_fingerprint(&self) -> &str;
+    pub const fn binding_env(&self) -> &BindingEnv;
+    pub fn final_binding_fingerprint(&self) -> &str;
+    pub const fn bindings(&self) -> &SourceProofLocalLetBindingTable;
+    pub fn debug_text(&self) -> String;
+
+    pub(crate) fn validate_installation(
+        &self,
+        source_id: SourceId,
+        module_id: &ModuleId,
+    ) -> Result<(), SourceProofLocalLetBindingError>;
+
+    pub(crate) fn validate_complete_installation(
+        &self,
+        source_id: SourceId,
+        module_id: &ModuleId,
+        installation_available: bool,
+    ) -> Result<(), SourceProofLocalLetBindingError>;
+}
+
+#[derive(Debug, Clone, Copy, Default)]
+pub struct SourceProofLocalLetBindingProducer;
+
+impl SourceProofLocalLetBindingProducer {
+    pub fn build(
+        input: SourceProofLocalLetBindingHandoffInput,
+        base_binding_env: &BindingEnv,
+    ) -> Result<
+        SourceProofLocalLetBindingHandoff,
+        SourceProofLocalLetBindingError,
+    >;
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum SourceProofLocalLetBindingError {
+    InvalidTransaction,
+    DependencyMismatch,
+    InvalidBaseBindingEnvironment,
+    InvalidAggregate,
+    InvalidDeclaration {
+        binding: SourceProofLocalLetBindingId,
+    },
+    InvalidBindingEnvironment,
+    InvalidInstallation,
+}
+```
+
+`SourceId`、`SourceRange`、`ModuleId`、`SymbolId`、`DefinitionId`、
+`SourceContributionId`、`LocalTermBinding`、`BindingId`、`BindingContextId`、
+`BindingEnv`はexisting owner-module typeで、siblingはaliasを定義しない。raw
+`SurfaceAst`、syntax node、declaration shell、`SymbolEnv`、source text、type-expression
+row、formula、goal、fact、proof、obligationはABIをcrossしない。checker inputには
+independent source/Surface fingerprint、type range、type-head fieldを意図的に置かない。
+唯一のlower tokenはTask 269CPでfreezeしたcomplete byte-exact
+`source-proof-local-let-lower-debug-v1` stringである。このopaque stringはsource/Surface
+SHA-256
+`7860a3fe5af89063ac6a2b9a4465cac36d26f6d64e892ba6e2c89bcbaaf9763a` /
+`1fc35ec18db82efc0968b2f42b08cfaae678184983210cd26f060d45354c7f68`と
+`76..79` type evidenceをembedするが、いずれもseparate admitted checker ownershipには
+ならない。
+
+exact fail-closed provenanceはtheorem `19..99`、proof `59..98`、`let` `67..80`、
+segment `71..79`、name `71..72`、source ordinal1、theorem definition/contribution
+index `0/0`、local `y`、scope `[0]`、declaration `71..72`、visible-after1。theorem
+symbolはsupplied module所属でTask-269CP identityをretainする。sibling theorem、second
+declaration/segment/name、implicit declaration、`such that`、trailing `by`、nested
+proof、recovered node、adjacent 269A/B profileをacceptしない。
+
+### Base、transition、lookup、output
+
+runnerはexisting `extract_builtin_source_reserve_declarations_after_node_guard`と
+`SourceReserveDeclarationBridge::prepare_binding_env`からbaseを得て、checker bindingを
+source textからfabricate/rescanしない。checkerはexact normal base `1/1/0`を
+authenticateする。context0はmodule context、parent/scopeなし、reserved binding0を
+own/exposeする。binding0は`x`、`ReservedVariable`、module-owned、declaration/identity
+range `8..9`、visible-after0、source type site `14..17`、reserved、uncaptured、
+diagnostic-free、normal。source/module identityは一致しdiagnosticはempty。
+
+atomic transitionはexact `1/1/0 -> 2/2/0`。proof context1をowner
+`SourceStatement(59..98)`、parent0、proof layer、scope `[0]`、owned `[1]`、visible
+`[0,1]`、normalでappendする。binding1は`y`、kind `LetBinding`、
+`ResolverLocal([0], ordinal=1, range=71..72)`、owner1、declaration `71..72`、
+visible-after1、`BindingTypeSite::Missing`、active、capture/diagnostic empty、normal。
+single handoff rowはrow0 -> binding1/context1/source ordinal1/visible-after1/normal。
+context0/binding0はbyte-identical。
+
+synthetic same-scope lookup ordinal1はbinding1のexisting forward-reference result、ordinal2は
+local binding1を返す。これはtable visibilityだけをvalidateし、source use ordinal2や
+use-site/capture rowをclaimしない。handoffはexact base/final binding debug fingerprintを
+retainする。deterministic `source-proof-local-let-binding-debug-v1`はcomplete frozen
+transactionをprintし、全fieldをpublish前validationへ含める。
+
+validationはtransactionalで、first failure classは次のstable orderで決まる。(1)
+source/module transaction identity、(2) byte-exact lower tokenとtheorem
+symbol/module/FQN、definition/contribution `0/0`、全5 range、(3) exact base
+`BindingEnv`、(4) dense output row 1件、(5) local spelling/scope/ordinal/range/recoveryと
+row link、(6) reconstructed final `BindingEnv`、binding fingerprint 2件、lookup result
+2件、(7) Typed/final owner availability。errorは順に`InvalidTransaction`、
+`DependencyMismatch`、`InvalidBaseBindingEnvironment`、`InvalidAggregate`、
+`InvalidDeclaration { binding: SourceProofLocalLetBindingId(0) }`、
+`InvalidBindingEnvironment`、`InvalidInstallation`。`build`はphase 1--6を実行する。
+public inputはsingularなのでaggregate corruptionはreplay時だけ可能。
+
+exact `Display` textは次の通り。
+
+| variant | exact text |
+|---|---|
+| `InvalidTransaction` | `source proof-local let-binding transaction is invalid` |
+| `DependencyMismatch` | `source proof-local let-binding dependency mismatch` |
+| `InvalidBaseBindingEnvironment` | `source proof-local let-binding base binding environment is invalid` |
+| `InvalidAggregate` | `source proof-local let-binding aggregate is invalid` |
+| `InvalidDeclaration { binding }` | `source proof-local let-binding <binding.index()> is invalid` |
+| `InvalidBindingEnvironment` | `source proof-local let-binding binding environment is invalid` |
+| `InvalidInstallation` | `source proof-local let-binding installation is invalid` |
+
+errorは`std::error::Error`をimplementする。failureはpartial context/binding/table row/
+fingerprint/Typed owner/final ownerをpublishしない。
+
+exact stable debug grammarは次の通り。
+
+```text
+source-proof-local-let-binding-debug-v1
+module: <package>::<path>
+lower-fingerprint: <quoted Task-269CP debug bytes>
+theorem symbol=<quoted-fqn> definition=0 contribution=0 range=19..99 proof=59..98
+let range=67..80 segment=71..79 name=71..72 source_ordinal=1
+base-binding-fingerprint: <quoted BindingEnv debug bytes>
+binding#0 binding=1 context=1 source_ordinal=1 visible_after=1 recovery=normal
+final-binding-fingerprint: <quoted BindingEnv debug bytes>
+```
+
+rowはdense-ID order、recovery spellingは`normal`だけ。lower/binding fingerprintはRust
+string `Debug`（`{:?}`）を使い、double quoteとLF/quote/backslash/control characterの
+standard escapeを含む。symbol FQNも`{:?}`を使う。lineはshown order、blank lineなし、
+final LF 1件。existing Task-269A/B/empty debug byteは不変。
+
+### Typed/final ownershipとexclusion
+
+`TypedAst`はprivate optional `source_proof_local_let_binding` fieldと次のmethodsだけを
+追加し、`TypedAstParts`にはreplacement fieldを追加しない。
+
+```rust
+pub const fn source_proof_local_let_binding(
+    &self,
+) -> Option<&SourceProofLocalLetBindingHandoff>;
+
+pub fn with_source_proof_local_let_binding(
+    self,
+    handoff: SourceProofLocalLetBindingHandoff,
+) -> Result<Self, TypedAstError>;
+```
+
+`TypedAstError`はunit variant `InvalidSourceProofLocalLetBinding`だけを追加し、exact textは
+`typed AST source proof-local let-binding handoff is inconsistent`。admitted baseは
+otherwise-empty `TypedAst`: resolved root/typed node/existing source handoff全family
+（Task-269A/Bを含む）なし、context/type/fact/coercion/initial-obligation/diagnostic table
+empty。installationはphase 1--7をreplayし、node/link/source type/fact/coercion/
+obligation/diagnosticを追加せず1回だけpublishする。duplicate/orphan/stale/cross-family/
+partial/semantic-coexistenceはnew AST errorへmapしinput valueは不変。
+
+`ResolvedTypedAst`はsame exact read-only getter signatureを追加し、same empty semantic/node
+profileへのvalidation replay後だけhandoffをclone-preserveする。`ResolvedTypedAstInputs`に
+replacement pathを追加しない。`ResolvedTypedAstError`はunit variant
+`InvalidSourceProofLocalLetBinding`だけを追加し、exact textは
+`resolved typed AST source proof-local let-binding handoff is inconsistent`。deterministic
+debugはexisting Task-269A/B slotの後のproof-local handoff slotにnew blockをappendし、mutual
+exclusionによりnonemptyは1件だけ。expression metadata/candidate/overload/cluster/formula/
+statement semantic/proof/terminal goal/initial obligation/diagnostic rowは追加しない。
+existing Task-269A/B/empty debug byteは不変。
+
+269Cは`LetBinding` source-type admission、bare-`set` type checking、type guard/FOL
+relativization、`such that`/`by`、same-scope duplicate diagnostic、actual later-use/capture
+extraction、formula/thesis/goal transition、fact、proof/discharge/acceptance、Core/CFG/VC/ATP、
+active corpus dispatchをexcludeする。type siteを`Missing`から変更する前にseparate
+documentation prerequisiteでmissing source-type ownerをfreezeする。
+
+### Implementation/test scope、measurement、audit impact、exit
+
+later implementationが変更できるexisting Rust fileはexactly 7件。
+
+1. `crates/mizar-checker/src/source_proof_local_declaration.rs`
+2. `crates/mizar-checker/src/typed_ast.rs`
+3. `crates/mizar-checker/src/resolved_typed_ast.rs`
+4. `crates/mizar-test/src/runner/type_elaboration/source_proof_local_declaration.rs`
+5. `crates/mizar-test/src/runner/type_elaboration.rs`（test-only facade）
+6. `crates/mizar-test/src/runner.rs`（test-only root facade）
+7. `crates/mizar-test/src/runner/tests/type_elaboration/source_proof_local_declaration.rs`
+
+new module/path、active dispatch、public runner route、checker syntax dependency、parser/resolver
+source、Cargo、fixture、sidecar、expectation、trace metadata、diagnostic mappingは禁止。
+checker tests 4件はexact producer/output/debug/lookup、complete input/base/output corruption/
+error precedence、Typed/final one-shot/cross-family/rollback/replay、missing-type/empty-semantic
+preservationをcover。runner tests 4件はexact Task-269CP-to-checker transaction、lower/base/
+checker corruption、near-miss/family/public-route isolation、active/semantic effect 0をcover。
+Task-269CP testsとTask-269A/B byteは不変。
+
+docs baselineはchecker/runner library `482/540`。raw/normalized test-list SHA-256はchecker
+`c89028b747ba4a551d74a2f6cc9c79e3520cc79ad0f019e18a2a4c123d52288c` /
+`da1022d491be404da68e41c77b800f7d0ca65765e397d28489e40d961ab453a2`、runner
+`8b9a2b9ea4aad3c6ed0b6eae32a0285d6a9fe1b5389dcc31ebc7adb872317522` /
+`a8955748da86930f3e2165637e170d68c77756cbc03f3ff38b3f8de0d21cbc50`。
+implementationは`486/544`をproject。checker productionは30 paths/165,219 lines、
+path/content hash
+`c89f43f6abebf7ebeb3ac9394ecd8ea3186ad28934c75526d2cc0b85a66ebad5` /
+`1fb5ea739c810ff66ed551b359ffa7cbb26265c0057fa18f5128ee5966bad958`。
+runnerは37 paths/71,194 lines、
+`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d` /
+`4dcfc69a867dea5c12457d94825493a8a48e4fd5ac7b91d86412371ac25f6b03`。
+implementation後lines/content hashを再測定しpath hashは不変でなければならない。
+
+broad `.miz`/expectation/covered diagnostic rowはprivate dormant sliceがbroad caseを
+execute/acceptしないため不変。`spec_coverage_audit.md`はTask 269Cをzero-credit binding
+ownerとして記録しseparate source-type prerequisiteをnameする。trace manifestはbyte-
+identical。exitはEN/JA sync、spec review **NO FINDINGS**、docs-only hard gate 9件とuncapped
+`>=90/100`、exact docs-only stage/commit、fresh preflight、exact 7-file implementation、
+separate test/implementation/source-doc review **NO FINDINGS**、full verification/count/hash、
+final hard gate 9件とuncapped `>=90/100`、task-only commit、clean post-commit、protected
+stash不変後のnext dependency-ready task選択を要求する。
+
+### Documentation prerequisite review / verification
+
+first read-only specification reviewはhigh `design_drift` 2件を報告した。claimed exact
+checker APIがunderspecifiedで、Task-269CP selector-fingerprint boundaryとproposed checker
+fieldが矛盾していた。contractは全Rust field/signature、validation/error/debug byte、
+Typed/final owner APIをfreezeし、runner boundaryをcrossできるのをopaque complete lower
+debug fingerprint 1件だけへ限定した。re-reviewは**NO FINDINGS**、blocking `spec_gap`
+なし、remaining `boundary_violation`なし。
+
+diffは`doc/design` 38 filesだけ。checker/runner lint policy `15/15` / `14/14`、metadata
+`137/137`、`cargo fmt --all --check`、warnings-denied workspace Clippy、full `cargo test`、
+Cargo metadata、`git diff --check`はPASS。libraryはchecker/runner `482/540`、raw/
+normalized test-list hashは
+`c89028b747ba4a551d74a2f6cc9c79e3520cc79ad0f019e18a2a4c123d52288c` /
+`da1022d491be404da68e41c77b800f7d0ca65765e397d28489e40d961ab453a2`と
+`8b9a2b9ea4aad3c6ed0b6eae32a0285d6a9fe1b5389dcc31ebc7adb872317522` /
+`a8955748da86930f3e2165637e170d68c77756cbc03f3ff38b3f8de0d21cbc50`のまま。
+productionはfrozen path/content hashのchecker `30/165219`、runner `37/71194`不変。
+
+CLI 5件のplan/parse/declaration/type/proof stdout hashは
+`700f4bf503783742cefd8004fa095675b7476d46e9a3a6dd439916d237eb6718` /
+`a8a7aa639d2ebc65eddc923c7e9369ea5637d50e935f808600f446da1bfbda56` /
+`71e83ba0b20d4015e07b3bd2c0c4db2837b6151d1251812caed7954530d53c74` /
+`4b2c7bd5ec3cc56e5672fb351126126230ec84fba9bd2bd9049a516d378fab7f` /
+`ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`を再現。
+corpus/requirements `428/395`、pass/fail `235/193`、active `101/7/205/1`、type
+coverage `259=247+12`、warnings/errors `23/0`、trace SHA-256
+`55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`は不変。
+independent final quality reviewは**NO FINDINGS**、hard gate 9件PASS、score capなし、valid
+`100/100`（`20/20/15/15/10/10/5/5`）。exact staging/docs-only commitはparent-owned
+next step。

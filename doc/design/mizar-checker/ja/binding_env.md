@@ -782,3 +782,14 @@ isolated proof-`let` prerequisiteはresolver-shaped local
 `LetBinding`をallocateせず、type siteやproof/block contextを選ばない。これらは
 Task 269C ownerで、private lower projectionをactive bindingと扱うのは
 boundary violationである。
+
+## Task 269C frozen `LetBinding` transaction
+
+checkerはTask-269CP syntax-free projectionとexisting reserve bridgeのexact base
+`1/1/0`をconsumeする。reserved `x` binding0をvalidateしproof context1とbinding1だけを
+appendする。resultはexact `2/2/0`。`y`、`LetBinding`、resolver-local scope `[0]`、
+range `71..72`、visible-after1、missing type、active、uncaptured、diagnostic-free、normal。
+context1は`SourceStatement(59..98)`、proof layer、parent0、owned `[1]`、visible
+`[0,1]`。definition-site ordinal1はforward、synthetic ordinal2はbinding1をresolveする。
+actual use/capture row/source typeはclaimせず、全base/final row/debug fingerprintをfail
+closedにvalidateする。

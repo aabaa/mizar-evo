@@ -2453,3 +2453,14 @@ Implementation closes only the selected runner-private `source_drift` and
 four-test `test_gap`; it does not alter those executable-credit inventories.
 Task 269C remains the next binding-only owner with a missing type site, while
 source-type admission and later-use/capture stay separately deferred.
+
+## Checker Task 269C traceability no-credit contract
+
+Task 269C adds no `.miz`, sidecar, expectation, requirement, trace row/status/
+backlink, metadata case, active outcome, or coverage credit. The broad proof-
+local diagnostic rows remain covered by the existing failing fixture and are
+not positive binding/proof acceptance. Cases/requirements stay `428/395`, type
+coverage stays `259=247+12`, and trace SHA-256 stays
+`55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`.
+The coverage audit records only the private binding owner and the separate
+source-type prerequisite.

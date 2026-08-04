@@ -5,15 +5,15 @@
 
 ## Status and authority
 
-This document freezes **Checker Tasks 269A--269CP**, the first three
+This document freezes **Checker Tasks 269A--269C**, the first four
 dependency-minimal slices of queue Task 269. English is canonical. The matching Japanese document
 must remain synchronized in the same logical task.
 
 The normative authority is:
 
-1. `doc/spec/en/04.variables_and_constants.md` §§4.1, 4.4.3, and 4.6;
-2. `doc/spec/en/15.statements.md` §15.4.4;
-3. `doc/spec/en/16.theorems_and_proofs.md` §16.4;
+1. `doc/spec/en/04.variables_and_constants.md` §§4.1, 4.2, 4.4.3, and 4.6;
+2. `doc/spec/en/15.statements.md` §§15.2.1, 15.4.4, and 15.10;
+3. `doc/spec/en/16.theorems_and_proofs.md` §§16.3.3 and 16.4;
 4. the exact already-implemented Task-258B3N source/statement/witness/term
    transport and its parser/resolver provenance;
 5. Tasks 248--258 public APIs, especially `LocalTermBinding`, `BindingEnv`,
@@ -732,10 +732,14 @@ declaration ordinal 1; the local binding; and deterministic debug text. Raw
 `SurfaceAst`, `SurfaceNodeId`, node kinds, tokens, and source text remain
 inside the existing private
 `mizar-test::runner::type_elaboration::source_statement` leaf. Source and
-snapshot hashes are selector fingerprints, not checker payloads. In
-particular, the node numbers in the Surface table above are authenticated
-selector-internal facts and are never laundered into `TypedSiteRef` values or
-otherwise published as typed ownership.
+snapshot hashes are selector fingerprints, not separately typed checker
+fields. Task 269C may copy only the complete byte-exact `debug_text()` string
+as one opaque syntax-free authentication fingerprint. Its embedded source/
+snapshot hashes and type ranges remain selector evidence: the checker neither
+parses them into typed sites nor accepts independent fields for them. In
+particular, the node numbers in the Surface table above never cross the runner
+boundary, are never laundered into `TypedSiteRef` values, and are never
+published as typed ownership.
 
 The private data shape is frozen as these fields: `source_id`, `module_id`,
 `source_fingerprint`, `surface_fingerprint`, `theorem_symbol`,
@@ -838,3 +842,424 @@ and family/fixture isolation; and zero checker/active semantic effect.
 Test-sufficiency and implementation re-reviews report **NO FINDINGS**. No
 checker ABI, source type, Typed/Resolved owner, binding transaction, goal,
 fact, proof, acceptance, discharge, or downstream IR is activated.
+
+## Checker Task 269C Frozen Binding-Only Proof-`let` Transaction
+
+### Selection, authority, and classification
+
+Fresh inventory after Task-269CP implementation commit
+`4431211d64e0030180852a5d8055edc202a629ba` selects only Task 269C. Chapter 4
+Sections 4.1, 4.2, and 4.6 require a proof-local `let` to introduce one fresh
+free-variable binding in the enclosing proof scope. Chapter 15 Sections
+15.2.1 and 15.10 require proof-block locality and prohibit same-scope
+duplicates. Chapter 16 Sections 16.3.3, 16.4.1, and 16.4.2 establish the
+proof-block owner and local visibility. These authorities justify only the
+binding row and scope; they do not authorize this task to construct the type
+guard, change `thesis`, discharge an obligation, or accept the proof.
+
+Task 269CP supplies the exact runner-private source/Surface/resolver/local
+projection. The existing reserve bridge can independently prepare the exact
+module-level base `BindingEnv`, and the checker already exposes
+`BindingDraft::from_local_term`, `BindingKind::LetBinding`,
+`BindingTypeSite::Missing`, lexical lookup, and one-shot Typed/final ownership
+patterns. The missing binding transaction is bounded `source_drift`; focused
+fail-closed coverage is a bounded `test_gap`. Missing `LetBinding` source-type
+admission and resolver-wide use/capture payload remain separate
+`source_drift`; merging either into 269C would be a `boundary_violation`.
+The worktree is clean and the protected stash is unchanged. `origin/main`
+divergence is a report-only `repo_metadata_conflict` that does not obscure the
+exact commit target.
+
+### Exact syntax-free checker ABI
+
+The existing checker module `source_proof_local_declaration` adds the following
+public sibling contract, not an extension of the named-witness transaction.
+Private fields have no unchecked constructor or mutable accessor.
+
+```rust
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceProofLocalLetBindingHandoffInput {
+    pub source_id: SourceId,
+    pub module_id: ModuleId,
+    pub lower_fingerprint: String,
+    pub theorem_symbol: SymbolId,
+    pub theorem_definition: DefinitionId,
+    pub contribution: SourceContributionId,
+    pub theorem_range: SourceRange,
+    pub proof_range: SourceRange,
+    pub let_range: SourceRange,
+    pub segment_range: SourceRange,
+    pub name_range: SourceRange,
+    pub source_ordinal: usize,
+    pub local: LocalTermBinding,
+    pub recovery: SourceProofLocalLetBindingRecovery,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct SourceProofLocalLetBindingId(usize);
+
+impl SourceProofLocalLetBindingId {
+    pub const fn new(index: usize) -> Self;
+    pub const fn index(self) -> usize;
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum SourceProofLocalLetBindingRecovery {
+    Normal,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceProofLocalLetBinding {
+    binding: BindingId,
+    binding_context: BindingContextId,
+    source_ordinal: usize,
+    visible_after_ordinal: usize,
+    recovery: SourceProofLocalLetBindingRecovery,
+}
+
+impl SourceProofLocalLetBinding {
+    pub const fn binding(&self) -> BindingId;
+    pub const fn binding_context(&self) -> BindingContextId;
+    pub const fn source_ordinal(&self) -> usize;
+    pub const fn visible_after_ordinal(&self) -> usize;
+    pub const fn recovery(&self) -> SourceProofLocalLetBindingRecovery;
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceProofLocalLetBindingTable {
+    rows: Vec<SourceProofLocalLetBinding>,
+}
+
+impl SourceProofLocalLetBindingTable {
+    pub fn get(
+        &self,
+        id: SourceProofLocalLetBindingId,
+    ) -> Option<&SourceProofLocalLetBinding>;
+    pub fn iter(
+        &self,
+    ) -> impl Iterator<
+        Item = (SourceProofLocalLetBindingId, &SourceProofLocalLetBinding),
+    >;
+    pub const fn len(&self) -> usize;
+    pub const fn is_empty(&self) -> bool;
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceProofLocalLetBindingHandoff {
+    source_id: SourceId,
+    module_id: ModuleId,
+    lower_fingerprint: String,
+    theorem_symbol: SymbolId,
+    theorem_definition: DefinitionId,
+    contribution: SourceContributionId,
+    theorem_range: SourceRange,
+    proof_range: SourceRange,
+    let_range: SourceRange,
+    segment_range: SourceRange,
+    name_range: SourceRange,
+    base_binding_env: BindingEnv,
+    base_binding_fingerprint: String,
+    binding_env: BindingEnv,
+    final_binding_fingerprint: String,
+    bindings: SourceProofLocalLetBindingTable,
+}
+
+impl SourceProofLocalLetBindingHandoff {
+    pub const fn source_id(&self) -> SourceId;
+    pub const fn module_id(&self) -> &ModuleId;
+    pub fn lower_fingerprint(&self) -> &str;
+    pub const fn theorem_symbol(&self) -> &SymbolId;
+    pub const fn theorem_definition(&self) -> DefinitionId;
+    pub const fn contribution(&self) -> SourceContributionId;
+    pub const fn theorem_range(&self) -> SourceRange;
+    pub const fn proof_range(&self) -> SourceRange;
+    pub const fn let_range(&self) -> SourceRange;
+    pub const fn segment_range(&self) -> SourceRange;
+    pub const fn name_range(&self) -> SourceRange;
+    pub const fn base_binding_env(&self) -> &BindingEnv;
+    pub fn base_binding_fingerprint(&self) -> &str;
+    pub const fn binding_env(&self) -> &BindingEnv;
+    pub fn final_binding_fingerprint(&self) -> &str;
+    pub const fn bindings(&self) -> &SourceProofLocalLetBindingTable;
+    pub fn debug_text(&self) -> String;
+
+    pub(crate) fn validate_installation(
+        &self,
+        source_id: SourceId,
+        module_id: &ModuleId,
+    ) -> Result<(), SourceProofLocalLetBindingError>;
+
+    pub(crate) fn validate_complete_installation(
+        &self,
+        source_id: SourceId,
+        module_id: &ModuleId,
+        installation_available: bool,
+    ) -> Result<(), SourceProofLocalLetBindingError>;
+}
+
+#[derive(Debug, Clone, Copy, Default)]
+pub struct SourceProofLocalLetBindingProducer;
+
+impl SourceProofLocalLetBindingProducer {
+    pub fn build(
+        input: SourceProofLocalLetBindingHandoffInput,
+        base_binding_env: &BindingEnv,
+    ) -> Result<
+        SourceProofLocalLetBindingHandoff,
+        SourceProofLocalLetBindingError,
+    >;
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum SourceProofLocalLetBindingError {
+    InvalidTransaction,
+    DependencyMismatch,
+    InvalidBaseBindingEnvironment,
+    InvalidAggregate,
+    InvalidDeclaration {
+        binding: SourceProofLocalLetBindingId,
+    },
+    InvalidBindingEnvironment,
+    InvalidInstallation,
+}
+```
+
+`SourceId`, `SourceRange`, `ModuleId`, `SymbolId`, `DefinitionId`,
+`SourceContributionId`, `LocalTermBinding`, `BindingId`, `BindingContextId`,
+and `BindingEnv` are their existing owner-module types; the sibling defines no
+aliases. No raw `SurfaceAst`, syntax node, declaration shell, `SymbolEnv`,
+source text, type-expression row, formula, goal, fact, proof, or obligation
+crosses this ABI. The checker input deliberately has no independent source or
+Surface fingerprint, type range, or type-head field. Its sole lower token is
+the complete byte-exact `source-proof-local-let-lower-debug-v1` string frozen
+by Task 269CP. That opaque string embeds source/Surface SHA-256
+`7860a3fe5af89063ac6a2b9a4465cac36d26f6d64e892ba6e2c89bcbaaf9763a` /
+`1fc35ec18db82efc0968b2f42b08cfaae678184983210cd26f060d45354c7f68`
+and the `76..79` type evidence, but none becomes separately admitted checker
+ownership.
+
+The exact fail-closed provenance is theorem range `19..99`, proof range
+`59..98`, `let` range `67..80`, segment range `71..79`, name range `71..72`,
+source ordinal 1, theorem definition/contribution indices `0/0`, and local
+`y`, scope `[0]`, declaration `71..72`, visible-after ordinal 1. The theorem
+symbol must belong to the supplied module and retain the Task-269CP identity.
+No sibling theorem, second declaration/segment/name, implicit declaration,
+`such that`, trailing `by`, nested proof, recovered node, or adjacent 269A/B
+profile is accepted.
+
+### Base, transition, lookup, and output
+
+The runner obtains the base through existing
+`extract_builtin_source_reserve_declarations_after_node_guard` and
+`SourceReserveDeclarationBridge::prepare_binding_env`; it does not fabricate
+or rescan a checker binding from source text. The checker authenticates exact
+normal base profile `1/1/0`: context 0 is the module context, has no parent or
+scope, and owns/exposes reserved binding 0. Binding 0 is `x`,
+`ReservedVariable`, module-owned, declaration/identity range `8..9`,
+visible-after 0, source type site `14..17`, reserved, uncaptured,
+diagnostic-free, and normal. Source/module identities match and diagnostics
+are empty.
+
+The atomic transition is exactly `1/1/0 -> 2/2/0`. It appends proof context 1
+with owner `SourceStatement(59..98)`, parent 0, proof layer, scope `[0]`, owned
+bindings `[1]`, visible bindings `[0,1]`, and normal recovery. It appends
+binding 1 with spelling `y`, kind `LetBinding`,
+`ResolverLocal([0], ordinal=1, range=71..72)`, owner context 1, declaration
+range `71..72`, visible-after 1, `BindingTypeSite::Missing`, active status,
+empty captures/diagnostics, and normal recovery. The single handoff row is row
+0 -> binding 1/context 1/source ordinal 1/visible-after 1/normal. Context 0 and
+binding 0 remain byte-identical.
+
+A synthetic same-scope lookup at ordinal 1 returns the existing forward-
+reference result for binding 1; ordinal 2 returns local binding 1. This
+validates table visibility only: Task 269C claims no source use at ordinal 2
+and creates no use-site or capture row. The handoff retains exact base/final
+binding debug fingerprints. Deterministic
+`source-proof-local-let-binding-debug-v1` prints the complete frozen transaction.
+Every field participates in validation before publication.
+
+Validation is transactional and the first failing class wins in this stable
+order: (1) source/module transaction identity; (2) byte-exact lower token plus
+theorem symbol/module/FQN, definition/contribution `0/0`, and all five ranges;
+(3) exact base `BindingEnv`; (4) one dense output row; (5) local spelling,
+scope, ordinal, range, recovery, and row links; (6) reconstructed final
+`BindingEnv`, both binding fingerprints, and the two lookup results; and (7)
+Typed/final owner availability. The respective errors are
+`InvalidTransaction`, `DependencyMismatch`, `InvalidBaseBindingEnvironment`,
+`InvalidAggregate`, `InvalidDeclaration { binding:
+SourceProofLocalLetBindingId(0) }`, `InvalidBindingEnvironment`, and
+`InvalidInstallation`. `build` performs phases 1--6; aggregate corruption is
+possible only during replay because the public input is singular.
+
+Exact `Display` text is:
+
+| variant | exact text |
+|---|---|
+| `InvalidTransaction` | `source proof-local let-binding transaction is invalid` |
+| `DependencyMismatch` | `source proof-local let-binding dependency mismatch` |
+| `InvalidBaseBindingEnvironment` | `source proof-local let-binding base binding environment is invalid` |
+| `InvalidAggregate` | `source proof-local let-binding aggregate is invalid` |
+| `InvalidDeclaration { binding }` | `source proof-local let-binding <binding.index()> is invalid` |
+| `InvalidBindingEnvironment` | `source proof-local let-binding binding environment is invalid` |
+| `InvalidInstallation` | `source proof-local let-binding installation is invalid` |
+
+The error implements `std::error::Error`. Failure publishes no partial
+context, binding, table row, fingerprint, Typed owner, or final owner.
+
+The exact stable debug grammar is:
+
+```text
+source-proof-local-let-binding-debug-v1
+module: <package>::<path>
+lower-fingerprint: <quoted Task-269CP debug bytes>
+theorem symbol=<quoted-fqn> definition=0 contribution=0 range=19..99 proof=59..98
+let range=67..80 segment=71..79 name=71..72 source_ordinal=1
+base-binding-fingerprint: <quoted BindingEnv debug bytes>
+binding#0 binding=1 context=1 source_ordinal=1 visible_after=1 recovery=normal
+final-binding-fingerprint: <quoted BindingEnv debug bytes>
+```
+
+Rows are dense-ID ordered. `normal` is the only recovery spelling. The lower
+and binding fingerprint values use Rust string `Debug` (`{:?}`), including
+double quotes and standard escapes for LF, quotes, backslashes, and control
+characters. The symbol FQN also uses `{:?}`. Lines occur exactly in the shown
+order, there are no blank lines, and the block has one final LF. Existing
+Task-269A/B and empty debug bytes are unchanged.
+
+### Typed/final ownership and exclusions
+
+`TypedAst` adds one private optional `source_proof_local_let_binding` field and
+exactly these methods; `TypedAstParts` receives no replacement field:
+
+```rust
+pub const fn source_proof_local_let_binding(
+    &self,
+) -> Option<&SourceProofLocalLetBindingHandoff>;
+
+pub fn with_source_proof_local_let_binding(
+    self,
+    handoff: SourceProofLocalLetBindingHandoff,
+) -> Result<Self, TypedAstError>;
+```
+
+`TypedAstError` adds exactly the unit variant
+`InvalidSourceProofLocalLetBinding`, whose exact text is
+`typed AST source proof-local let-binding handoff is inconsistent`. The
+admitted base is an otherwise-empty `TypedAst`: no resolved root, typed node,
+or existing source handoff of any family (including Task-269A/B), and empty
+context/type/fact/coercion/initial-obligation/diagnostic tables. Installation
+replays phases 1--7 and publishes once without adding a node, link, source
+type, fact, coercion, obligation, or diagnostic. Duplicate, orphan, stale,
+cross-family, partial, or semantic-coexisting installation maps to the new
+AST error and leaves the input value unchanged.
+
+`ResolvedTypedAst` adds the same exact read-only getter signature and clone-
+preserves the handoff only after replaying validation against the same empty
+semantic/node profile. `ResolvedTypedAstInputs` receives no replacement path.
+`ResolvedTypedAstError` adds exactly the unit variant
+`InvalidSourceProofLocalLetBinding`, with exact text
+`resolved typed AST source proof-local let-binding handoff is inconsistent`.
+Its deterministic debug appends the new block in the proof-local handoff slot,
+after the existing Task-269A/B slot; mutual exclusion makes only one nonempty.
+It adds no expression metadata, candidate, overload, cluster, formula,
+statement-semantic, proof, terminal-goal, initial-obligation, or diagnostic
+row. Existing Task-269A/B and empty debug bytes remain unchanged.
+
+Task 269C excludes source-type admission for `LetBinding`, bare-`set` type
+checking, type guards or FOL relativization, `such that`/`by`, same-scope
+duplicate diagnostics, actual later-use/capture extraction, formula/thesis or
+goal transitions, facts, proof/discharge/acceptance, Core/CFG/VC/ATP, and
+active corpus dispatch. A separate documentation prerequisite must freeze the
+missing source-type owner before any type site changes from `Missing`.
+
+### Implementation/test scope, measurements, audit impact, and exit
+
+The later implementation may change exactly seven existing Rust files:
+
+1. `crates/mizar-checker/src/source_proof_local_declaration.rs`;
+2. `crates/mizar-checker/src/typed_ast.rs`;
+3. `crates/mizar-checker/src/resolved_typed_ast.rs`;
+4. `crates/mizar-test/src/runner/type_elaboration/source_proof_local_declaration.rs`;
+5. `crates/mizar-test/src/runner/type_elaboration.rs` (test-only facade);
+6. `crates/mizar-test/src/runner.rs` (test-only root facade);
+7. `crates/mizar-test/src/runner/tests/type_elaboration/source_proof_local_declaration.rs`.
+
+No new module/path, active dispatch, public runner route, checker syntax
+dependency, parser/resolver source, Cargo file, fixture, sidecar, expectation,
+trace metadata, or diagnostic mapping is permitted. Four checker unit tests
+cover exact producer/output/debug/lookup, complete input/base/output
+corruption and error precedence, Typed/final one-shot/cross-family/rollback/
+replay, and missing-type/empty-semantic preservation. Four runner tests cover
+the exact Task-269CP-to-checker transaction, lower/base/checker corruption,
+near-miss/family/public-route isolation, and zero active/semantic effect.
+Existing Task-269CP tests and every Task-269A/B byte remain unchanged.
+
+The docs baseline is checker/runner libraries `482/540`. Raw/normalized
+test-list SHA-256 values are checker
+`c89028b747ba4a551d74a2f6cc9c79e3520cc79ad0f019e18a2a4c123d52288c` /
+`da1022d491be404da68e41c77b800f7d0ca65765e397d28489e40d961ab453a2`
+and runner
+`8b9a2b9ea4aad3c6ed0b6eae32a0285d6a9fe1b5389dcc31ebc7adb872317522` /
+`a8955748da86930f3e2165637e170d68c77756cbc03f3ff38b3f8de0d21cbc50`.
+Implementation projects `486/544`. Checker production remains 30 paths /
+165,219 lines with path/content hashes
+`c89f43f6abebf7ebeb3ac9394ecd8ea3186ad28934c75526d2cc0b85a66ebad5` /
+`1fb5ea739c810ff66ed551b359ffa7cbb26265c0057fa18f5128ee5966bad958`;
+runner remains 37 paths / 71,194 lines with
+`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d` /
+`4dcfc69a867dea5c12457d94825493a8a48e4fd5ac7b91d86412371ac25f6b03`.
+Lines and content hashes are remeasured after implementation; path hashes must
+remain unchanged.
+
+The broad `.miz`, expectation, and covered diagnostic rows stay unchanged
+because this private dormant slice neither executes nor accepts that broad
+case. `spec_coverage_audit.md` records Task 269C as a zero-credit binding owner
+and names the separate source-type prerequisite; the trace manifest remains
+byte-identical. Exit requires synchronized EN/JA, repeated specification
+review with **NO FINDINGS**, all nine docs-only hard gates and uncapped quality
+`>=90/100`, exact docs-only staging/commit, fresh preflight, the exact seven-
+file implementation, separate no-findings test/implementation/source-doc
+reviews, full verification/count/hash reproduction, all nine final gates and
+uncapped `>=90/100`, task-only commit, clean post-commit inventory, and
+unchanged protected stash before selecting the next dependency-ready task.
+
+### Documentation-prerequisite review and verification
+
+The first read-only specification review found two high `design_drift`
+issues: the claimed exact checker API was underspecified, and the Task-269CP
+selector-fingerprint boundary contradicted the proposed checker fields. The
+contract now freezes every Rust field/signature, validation/error/debug byte,
+and Typed/final owner API, while permitting only one opaque complete lower
+debug fingerprint across the runner boundary. Re-review reports **NO
+FINDINGS**, no blocking `spec_gap`, and no remaining `boundary_violation`.
+
+The diff remains 38 `doc/design` files only. Checker/runner lint policies pass
+`15/15` and `14/14`, metadata passes `137/137`, and `cargo fmt --all --check`,
+warnings-denied workspace Clippy, full `cargo test`, Cargo metadata, and
+`git diff --check` pass. Libraries remain checker/runner `482/540`; their
+raw/normalized test-list hashes remain
+`c89028b747ba4a551d74a2f6cc9c79e3520cc79ad0f019e18a2a4c123d52288c` /
+`da1022d491be404da68e41c77b800f7d0ca65765e397d28489e40d961ab453a2`
+and
+`8b9a2b9ea4aad3c6ed0b6eae32a0285d6a9fe1b5389dcc31ebc7adb872317522` /
+`a8955748da86930f3e2165637e170d68c77756cbc03f3ff38b3f8de0d21cbc50`.
+Production remains checker `30/165219` and runner `37/71194` with the frozen
+path/content hashes above.
+
+All five CLI commands reproduce unchanged plan/parse/declaration/type/proof
+stdout hashes
+`700f4bf503783742cefd8004fa095675b7476d46e9a3a6dd439916d237eb6718` /
+`a8a7aa639d2ebc65eddc923c7e9369ea5637d50e935f808600f446da1bfbda56` /
+`71e83ba0b20d4015e07b3bd2c0c4db2837b6151d1251812caed7954530d53c74` /
+`4b2c7bd5ec3cc56e5672fb351126126230ec84fba9bd2bd9049a516d378fab7f` /
+`ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`.
+Corpus/requirements stay `428/395`, pass/fail `235/193`, active stages
+`101/7/205/1`, type coverage `259=247+12`, warnings/errors `23/0`, and trace
+SHA-256 remains
+`55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`.
+Independent final quality review reports **NO FINDINGS**: all nine hard gates
+PASS, no score cap applies, and the valid score is `100/100`
+(`20/20/15/15/10/10/5/5`). Exact staging and the docs-only commit remain
+parent-owned next steps.

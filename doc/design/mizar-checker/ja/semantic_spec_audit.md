@@ -638,3 +638,11 @@ canonical Chapters 4/15/16はexact proof-local declaration shapeをauthorizeす�
 runner-private prerequisiteをsemantic consumerにはしない。type guard、universal
 encoding、goal/thesis change、discharge、later-use、capture、fact、proof acceptance、
 downstream IRはdeferred。semantic tableとsemantic requirement creditは0。
+
+## Task 269C semantic boundary audit
+
+canonical authorityはproof-local bindingとlexical scopeをpermitする。269Cはmissing type
+siteのbinding transactionだけをpublishし、universal type guard encoding、`thesis` update、
+obligation create/discharge、fact、real later use/capture、proof acceptanceを行わない。
+semantic/proof/IR tableはempty、source-type admissionはseparate prerequisite。synthetic
+lookup ordinal2をsource useとして扱うのはboundary violation。

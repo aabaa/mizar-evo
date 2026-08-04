@@ -4068,3 +4068,11 @@ runner also authenticates root node 50, absent expression root, token nodes
 0 through 23, and every node's source identity, range, recovery, and ordered
 children. Existing Task-258 and Task-269A/B debug bytes and profiles remain
 unchanged; a checker statement edge requires a later frozen contract.
+
+## Task 269C no-statement binding boundary
+
+The binding-only transaction consumes the Task-269CP theorem/proof/let ranges
+but adds no `SourceStatementKind`, statement context/fact/candidate row,
+formula edge, or statement semantic. `SourceStatement(59..98)` is solely the
+binding-context owner tag. Goal/thesis and conclusion ownership remain
+deferred.
