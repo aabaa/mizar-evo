@@ -3532,3 +3532,11 @@ implemented upper consumerはB3M1 lower row、node、range、ordinal、debug byt
 primary2だけをassociate、unnamed row1がchecker bindingをallocateしないことを
 直接検証する。all-node/isolated cross-profile testsはadjacent private testsの
 ままで、lower APIやsemantic meaningを追加しない。
+
+## Task 269CP lower statement boundary
+
+runner-private exact sourceはtheorem ordinal0、proof-local let ordinal1、conclusion
+ordinal2を持つが、269CPは`SourceStatementKind`、generalization table、statement
+handoffを追加しない。nodes 47/46/37/36/13/35/34とresolver theorem provenance
+だけをauthenticateする。Task-258/269A/B debug/profileは不変で、checker statement
+edgeにはlater frozen contractが必要。

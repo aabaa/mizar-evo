@@ -13031,3 +13031,12 @@ The implementation changes no `mizar-test` file or module. Runner production
 remains `35/67939`, with path/content hashes
 `4218936ff3ee3baaceb7c0723307ad266d722d0a2473e8b7f82e11c75aeb2b6e` /
 `a543608c5075ffed97141626ebbf8d952a847051a34d6782097329b44aa1d09e`.
+
+## Checker Task 269CP Frozen Boundary
+
+No module or production path is added. The only permitted implementation
+files are the existing source-statement production leaf, `runner.rs` facade,
+and proof-local runner test file. Production remains 37 paths; line/content
+hashes are remeasured. Four tests project library count `536 -> 540`. No
+checker, parser, resolver, fixture, metadata, trace, or Cargo file is in the
+implementation target.

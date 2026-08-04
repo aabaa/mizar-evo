@@ -1747,3 +1747,13 @@ The existing family now accepts the second exact profile with the same one-row
 shape. Direct final-environment and context assertions prove that the unnamed
 sibling remains lower-only. No payload family, later-use edge, capture, type,
 goal, fact, proof, or coverage owner was added.
+
+## Task 269CP isolated proof-`let` lower family
+
+This prerequisite adds no checker payload family. It freezes one
+runner-private source/Surface/resolver projection whose selector authenticates
+exact theorem, proof, let, segment, name, and bare-set Surface nodes but whose
+output retains only role-specific ranges plus local provenance. Future Task
+269C owns a separate checker let-binding family. Named-witness A/B,
+later-use/capture, source-type admission, goal/proof semantics, and all active
+coverage remain disjoint.

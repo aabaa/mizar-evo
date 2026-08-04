@@ -1660,3 +1660,12 @@ existing familyはsame one-row shapeで2件目のexact profileをacceptする。
 final-environment/context assertionによりunnamed siblingがlower-onlyであることを
 証明する。payload family、later-use edge、capture、type、goal、fact、proof、
 coverage ownerは追加していない。
+
+## Task 269CP isolated proof-`let` lower family
+
+checker payload familyは追加しない。runner-private source/Surface/resolver
+projection 1件のselectorがtheorem/proof/let/segment/name/bare-set Surface nodeを
+authenticateするが、outputはrole-specific rangeとlocal provenanceだけをretainする。
+future Task 269Cがseparate checker let-binding familyをownする。
+named-witness A/B、later-use/capture、source-type admission、goal/proof semantics、
+active coverageはdisjoint。

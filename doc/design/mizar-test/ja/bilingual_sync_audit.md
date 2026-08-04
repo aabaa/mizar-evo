@@ -1587,3 +1587,10 @@ EN/JAはimplemented post-B3N private branch、direct unnamed-row non-binding、
 all-field lower-arena mutation coverage、runner tests 4件/`536` count不変、
 measured production `37/69872`、dormant dispatch、trace/audit no-op、semantic
 exclusionで一致する。implementation-time harness debtはない。
+
+## Checker Task 269CP documentation synchronization
+
+EN/JAはexact source/Surface fingerprint、resolver/local provenance、crate-private
+lower output、tests 4件、`536 -> 540` projection、37-path invariant、dormant
+dispatch、family isolation、checker/semantic/coverage effect 0、Task-269C follow-upで
+一致する。committed Task-269B ledgerも両言語でcloseする。

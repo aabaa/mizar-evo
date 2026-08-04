@@ -1631,3 +1631,12 @@ is `30/165219` with path/content hashes
 runner production is `37/69872` with
 `1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d` /
 `1cdc1720e687890e9007664a2140a10194b7637add9b8eb589ee92d9cce3a771`.
+
+## Checker Task 269CP frozen module boundary
+
+The documentation prerequisite changes no module. The implementation target
+is limited to the existing `mizar-test` source-statement production leaf,
+runner facade, and proof-local runner test file. `mizar-checker` stays at
+30 production paths and 482 tests; runner production stays at 37 paths while
+its line/content hash and `536 -> 540` test-list hash are remeasured. A new
+checker module or parser/resolver edit is outside 269CP.

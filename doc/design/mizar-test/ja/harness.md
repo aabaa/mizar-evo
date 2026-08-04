@@ -4913,3 +4913,18 @@ selector testsはwitness 2行とdirect `2/2/0`/context/no-binding-2 resultを
 authenticateし、private lower mutation testsは両profileのcardinality、root、
 kind、anchor、children、resolved node、recovery、typing、linksをreplayする。
 runnerは536 tests不変で、corpus-facing byte/semantic outputは変更しない。
+
+## Checker Task 269CP private proof-`let` lower route
+
+existing type-elaboration source-statement leafは100-byte final-LF
+`FormulaStatementLetSmoke`用non-dispatched exact selectorを追加する。full
+51-node/root-50 normal Surface、theorem/proof/let/segment/name/bare-set sites、
+reserve/theorem shells、sole public/exported theorem symbol/definition/LocalSource
+contribution、visible module symbol `y` absence、scope `[0]`、ordinal1、resolver-
+shaped `y@71..72`をrequireする。
+
+crate-private outputはsyntax-free source/module/theorem identity、role-specific
+range、provenance、local row、debugだけ。Surface node number/raw ASTはleaf外へ
+出さない。tests 4件はexact output、parser/resolver/local/all-node
+mutation、near-miss/B3N/B3M1/mixed isolation、checker/active effect 0をcoverする。
+production corpus dispatchはselectorをcallしない。

@@ -4056,3 +4056,12 @@ ordinal, and debug byte unchanged. It fingerprints the two-row witness handoff,
 associates only named row 0/name 0/RHS primary 2, and explicitly verifies that
 unnamed row 1 allocates no checker binding. All-node and isolated cross-profile
 tests remain adjacent private tests and add no lower API or semantic meaning.
+
+## Task 269CP lower statement boundary
+
+The runner-private exact source contains theorem ordinal 0, proof-local let
+ordinal 1, and conclusion ordinal 2, but 269CP publishes no new
+`SourceStatementKind`, statement/generalization table, or statement handoff.
+It authenticates nodes 47/46/37/36/13/35/34 and resolver theorem provenance
+only. Existing Task-258 and Task-269A/B debug bytes and profiles remain
+unchanged; a checker statement edge requires a later frozen contract.

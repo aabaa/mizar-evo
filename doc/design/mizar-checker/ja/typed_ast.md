@@ -1764,3 +1764,10 @@ existing installer allowlistはB3Nに加えてexact B3M1をadmitし、field/meth
 変更しない。56-node arenaとempty semantic tablesをpreserveし、one binding
 transactionを一度だけpublishし、duplicate/partial/cross-profile/corrupt-arena/
 stale-fingerprint/semantic-coexistence inputをtransactionalにrejectする。
+
+## Task 269CP typed-owner exclusion
+
+lower prerequisiteは`TypedAst` field、installer、source type、binding、node link、
+semantic tableを追加しない。exact 51-node Surface profileはrunner-privateに
+authenticateされtyped ownershipとしてcreditしない。Task 269Cがtyped/final
+projectionをindependently freezeする。

@@ -681,3 +681,11 @@ and explicitly proves the unnamed row has no binding effect. All semantic
 tables remain empty, and no existential matching, typing, goal/guard,
 substitution, fact, proof, discharge, acceptance, Core, CFG, or VC behavior is
 inferred or activated.
+
+## Task 269CP semantic no-op audit
+
+Canonical Chapters 4, 15, and 16 authorize the exact proof-local declaration
+shape but do not make this runner-private prerequisite a semantic consumer.
+Type guards, universal encoding, goal/thesis change, discharge, later-use,
+capture, facts, proof acceptance, and downstream IR remain deferred. The task
+adds no semantic table and closes no semantic requirement.

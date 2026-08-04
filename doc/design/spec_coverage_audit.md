@@ -6406,3 +6406,21 @@ substitution, equality facts, proof/discharge/acceptance, theorem facts, or
 Core/CFG/VC. Corpus/requirements stay `428/395`, active type cases stay `205`,
 type coverage stays `259=247+12`, and trace hash stays
 `55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`.
+
+## Checker Task 269CP Follow-up Ownership
+
+Post-Task-269B inventory refines the generic Chapter-15/16 proof-local
+declaration follow-up to the explicit dependency chain `Task 269CP -> Task
+269C`. Task 269CP owns only a runner-private exact source/Surface/resolver
+lower projection for one proof-local `let y be set;`; Task 269C retains only
+the future binding-only checker let-binding ABI with
+`BindingTypeSite::Missing`. A later separately selected prerequisite retains
+source-type admission. Later-use/capture remains behind the missing
+resolver-wide local use/capture payload.
+
+This ownership refinement grants no executable specification credit. The
+broad mixed proof-local fixture, sidecar, trace rows/statuses/backlinks, and
+all Chapter-15/16 partial/deferred classifications remain unchanged. Corpus/
+requirements stay `428/395`, active type cases stay `205`, type coverage stays
+`259=247+12`, and the trace hash remains
+`55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`.

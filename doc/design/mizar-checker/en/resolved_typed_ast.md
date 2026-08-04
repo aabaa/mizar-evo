@@ -1829,3 +1829,10 @@ through the existing getter and seven phases. Valid replay is deterministic;
 all orphan, partial, stale, cross-profile, and arena-corrupt inputs fail with
 the existing proof-local error. Every proof, goal, fact, obligation, diagnostic,
 and downstream semantic table remains empty or unchanged.
+
+## Task 269CP final-owner exclusion
+
+Task 269CP creates no `TypedAst` or `ResolvedTypedAst` field, getter,
+installer, debug section, replay phase, or final clone. Its lower output stays
+inside `mizar-test`. Task 269C must separately freeze any final owner and may
+not infer one from this prerequisite.

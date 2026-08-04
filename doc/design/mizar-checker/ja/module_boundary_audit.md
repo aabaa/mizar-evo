@@ -1573,3 +1573,11 @@ path/content hashは
 runner productionは`37/69872`、
 `1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d` /
 `1cdc1720e687890e9007664a2140a10194b7637add9b8eb589ee92d9cce3a771`である。
+
+## Checker Task 269CP frozen module boundary
+
+docs prerequisiteはmoduleを変更しない。implementation targetはexisting
+`mizar-test` source-statement production leaf、runner facade、proof-local runner
+test fileだけ。checkerはproduction paths 30/tests 482、runner productionはpaths
+37を保持し、line/content hashと`536 -> 540` test-list hashを再測定する。new
+checker moduleやparser/resolver editはscope外。

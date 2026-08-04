@@ -1647,3 +1647,10 @@ EN/JAはexact named-only binding、explicit unnamed-row non-binding、fingerprin
 Typed/final ownership、dormant runner、test count `482/536`不変、measured
 production `30/165219` / `37/69872`、corpus/trace/CLI/audit impact 0、全semantic
 deferralで一致する。implementation-time bilingual debtはない。
+
+## Checker Task 269CP documentation synchronization
+
+EN/JAは100-byte proof-`let` source、source/snapshot hash、51-node/root-50
+profile、resolver provenance、private lower-output fields、tests 4件、checker/
+active effect 0、exclusion、semantic deferral、`269CP -> 269C` ownershipで一致する。
+両言語でcommitted Task-269B ledgerもcloseする。bilingual exceptionはない。

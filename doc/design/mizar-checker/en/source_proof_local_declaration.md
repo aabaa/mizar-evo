@@ -5,7 +5,7 @@
 
 ## Status and authority
 
-This document freezes **Checker Tasks 269A--269B**, the first two
+This document freezes **Checker Tasks 269A--269CP**, the first three
 dependency-minimal slices of queue Task 269. English is canonical. The matching Japanese document
 must remain synchronized in the same logical task.
 
@@ -649,3 +649,171 @@ declaration 0 and binding 1. Direct tests prove final `2/2/0`, context-1
 kind plus representative cardinality/root/anchor/children/resolved/recovery/
 typing/links corruption, and isolated B3N arena/statement/witness/primary
 mixes, fail closed. No deferred semantic owner was activated.
+
+## Checker Task 269CP Frozen Isolated Proof-`let` Lower Prerequisite
+
+### Selection, authority, and classification
+
+Fresh inventory after Task-269B implementation commit
+`afd54a37ce4022929bdaf60be519ac4adbdd9b8e` selects only Task 269CP. The
+canonical authority is Chapter 4 Sections 4.2 and 4.6, Chapter 15 Sections
+15.2.1, 15.10, and 15.11.1, and Chapter 16 Sections 16.3.3 and 16.4. The
+existing parser simple-statement fixture and tests establish the normal
+`LetStatement -> QualifiedVariableSegment -> TypeExpression` shape. The
+mixed active fixture
+`fail_type_elaboration_proof_local_declaration_gap_001.miz`, its sidecar, and
+its trace backlinks remain read-only boundary evidence.
+
+The absent isolated lower contract is `design_drift`; the absent private
+extractor is bounded `source_drift`; and its missing mutation/isolation tests
+are a canonical-derived `test_gap`. There is no blocking `spec_gap`.
+Later-use/capture is not dependency-ready because the resolver publishes no
+AST-wide local-use/capture table; reconstructing it from checker-side syntax
+would be a `boundary_violation`. The local origin/main difference remains a
+report-only `repo_metadata_conflict` and does not obscure the exact target.
+
+Task 269CP is a runner-private lower prerequisite for future Task 269C. It
+does not extend the checker ABI frozen above, create a checker binding, or
+install any Typed/Resolved proof-local handoff. Direct Task-269C selection is
+authorized only for a binding-only transaction that retains
+`BindingTypeSite::Missing`; it cannot call or extend `SourceTypeProducer`.
+
+### Exact source, Surface profile, and fingerprints
+
+The sole accepted source is the following private final-LF text:
+
+```mizar
+reserve x for set;
+theorem FormulaStatementLetSmoke: x = x proof
+  let y be set;
+  thus x = x;
+end;
+```
+
+It is exactly 100 bytes including one final LF. Its source SHA-256 is
+`7860a3fe5af89063ac6a2b9a4465cac36d26f6d64e892ba6e2c89bcbaaf9763a`.
+The normal Surface snapshot has SHA-256
+`1fc35ec18db82efc0968b2f42b08cfaae678184983210cd26f060d45354c7f68`,
+51 nodes, root 50, root range `0..99`, and no recovery or frontend
+diagnostic. Exact structural rows are:
+
+| node | kind | range | children |
+| ---: | --- | --- | --- |
+| 27 | `ReserveItem` | `0..18` | `[0,26,4]` |
+| 34 | `TypeHead` | `76..79` | `[15]` |
+| 35 | `TypeExpression` | `76..79` | `[34]` |
+| 36 | `QualifiedVariableSegment` | `71..79` | `[13,14,35]` |
+| 37 | `LetStatement` | `67..80` | `[12,36,16]` |
+| 45 | `ConclusionStatement` | `83..94` | `[17,44,21]` |
+| 46 | `ProofBlock` | `59..98` | `[11,37,45,22]` |
+| 47 | `TheoremItem` | `19..99` | `[5,6,7,33,46,23]` |
+| 48/49/50 | `ItemList` / `CompilationUnit` / `Root` | `0..99` | `[27,47]` / `[48]` / tokens `0..23` plus `[49]` |
+
+Name token 13 is exactly `y@71..72`; token 14 is `be@73..75`; type-head
+token 15 is `set@76..79`. The declaration ordinal is 1 between theorem
+ordinal 0 and conclusion ordinal 2. The proof lexical scope is `[0]`.
+
+### Resolver provenance and private lower output
+
+Resolver preflight has exactly two normal shells: reserve shell 0 at node
+27/range `0..18` and theorem shell 1 at node 47/range `19..99`. It produces
+one public/exported theorem projection and symbol, definition 0, contribution
+0 of kind `LocalSource`, origin path `[2,1]`, and no import, label, overload,
+registration, or visible module symbol named `y`. The private extractor may
+construct exactly
+`LocalTermBinding::new("y", LocalTermScope::new(vec![0]), 71..72, 1)` only
+after authenticating that complete provenance.
+
+The implementation owns one crate-private, syntax-free
+`SourceProofLocalLetLowerOutput`. It retains source/module identity; the
+theorem symbol, definition, and contribution; role-specific ranges for the
+theorem, proof, let, segment, name, type expression, and type head;
+declaration ordinal 1; the local binding; and deterministic debug text. Raw
+`SurfaceAst`, `SurfaceNodeId`, node kinds, tokens, and source text remain
+inside the existing private
+`mizar-test::runner::type_elaboration::source_statement` leaf. Source and
+snapshot hashes are selector fingerprints, not checker payloads. In
+particular, the node numbers in the Surface table above are authenticated
+selector-internal facts and are never laundered into `TypedSiteRef` values or
+otherwise published as typed ownership.
+
+The private data shape is frozen as these fields: `source_id`, `module_id`,
+`source_fingerprint`, `surface_fingerprint`, `theorem_symbol`,
+`theorem_definition`, `contribution`, `theorem_range`, `proof_range`,
+`let_range`, `segment_range`, `name_range`, `type_range`, `type_head_range`,
+`source_ordinal`, and `local`. The field names themselves provide the seven
+source roles; there is no generic site id. It derives `Debug`, `Clone`,
+`PartialEq`, and `Eq`; read-only crate-private getters and `debug_text()` are
+the only access. No constructor is exposed outside the leaf.
+
+The complete debug grammar is:
+
+```text
+source-proof-local-let-lower-debug-v1
+module: <package>::<module>
+source-fingerprint: "7860a3fe5af89063ac6a2b9a4465cac36d26f6d64e892ba6e2c89bcbaaf9763a"
+surface-fingerprint: "1fc35ec18db82efc0968b2f42b08cfaae678184983210cd26f060d45354c7f68"
+theorem symbol=<quoted-fqn> definition=0 contribution=0 range=19..99 proof=59..98
+let range=67..80 segment=71..79 source_ordinal=1
+name range=71..72 spelling="y" scope=[0] visible_after=1
+type range=76..79 head=76..79 spelling="set" form=bare
+```
+
+Only `<package>`, `<module>`, and `<quoted-fqn>` are validated runtime values;
+every other byte and line order is literal, including one trailing LF.
+
+### Ownership, exclusions, and semantic deferrals
+
+Task 269CP owns only exact extraction and provenance authentication. It
+publishes no `SourceStatementHandoff`, `SourceTypeApplicationHandoff`,
+`BindingEnv` mutation, `LetBinding`, source proof-local handoff, TypedAst or
+ResolvedTypedAst owner, type result, assumption, fact, obligation, diagnostic,
+goal, theorem status, proof, Core, CFG, or VC row. Future Task 269C must freeze
+its checker let-binding ABI separately and keep the binding type site missing.
+The already observed absence of source-type admission for
+`BindingKind::LetBinding` does not block that binding-only transaction, but a
+later typed-source owner must be selected and frozen as a separate
+prerequisite; neither Task 269CP nor Task 269C may absorb it.
+
+The selector rejects every byte change; absent/duplicate/reordered/recovered
+nodes; wrong root, range, child, token, shell, symbol, definition,
+contribution, module, namespace, origin, scope, ordinal, or local field;
+multiple or implicit variables; multiple typed segments; attributes;
+`such that`; trailing `by`; nested proof shapes; later use of `y`; and
+`given`, `consider`, `take`, `set`, `reconsider`, `deffunc`, or `defpred`
+substitution. Task-269A/B private sources and the mixed active gap fixture are
+explicit no-match families.
+
+The Chapter-15 universal encoding, type guard, well-formedness discharge,
+goal/thesis transformation, universal closure, shadow behavior beyond this
+single definition site, later-use resolution, capture, typing, proof
+acceptance, and all semantic effects remain deferred. No rule is inferred
+from current implementation behavior.
+
+### Tests, impact, audit, and exit
+
+Implementation is limited to the existing runner production leaf and facade
+plus the existing proof-local runner test file: respectively
+`crates/mizar-test/src/runner/type_elaboration/source_statement.rs`,
+`crates/mizar-test/src/runner.rs`, and
+`crates/mizar-test/src/runner/tests/type_elaboration/source_proof_local_declaration.rs`.
+Exactly four new runner tests
+cover the full exact output/debug oracle, parser/resolver/local/all-node
+mutation matrix, near-miss and B3N/B3M1/mixed-family isolation, and zero
+checker/active semantic effect. Checker tests remain `482`; runner tests are
+projected `536 -> 540`. Runner production paths remain 37; line count and
+raw/normalized test-list plus production-content hashes are remeasured.
+
+No `.miz`, sidecar, expectation, trace row/status/backlink, metadata, Cargo,
+public diagnostic, corpus case, requirement, pass/fail, active-stage count,
+type-coverage count, or CLI output may change. The coverage audit records the
+explicit `269CP -> 269C` follow-up but grants no executable coverage; Chapters
+15/16 remain partial and the existing trace hash remains unchanged.
+
+Exit requires synchronized EN/JA records, repeated specification review with
+**NO FINDINGS**, docs-only verification and commit, fresh parser/resolver/
+count/hash preflight, the exact runner-private implementation, independent
+test/implementation/source-doc reviews with **NO FINDINGS**, all nine final
+hard gates PASS at uncapped 90/100 or better, task-only staging/commit, clean
+post-commit inventory, unchanged protected stash, and automatic Task-269C
+selection limited to the binding-only contract above.

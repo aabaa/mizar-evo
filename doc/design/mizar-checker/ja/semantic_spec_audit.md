@@ -631,3 +631,10 @@ implementationはfrozen named definition-site bindingだけをpublishし、unnam
 rowにbinding effectがないことを直接証明する。semantic tableはすべてemptyで、
 existential matching、typing、goal/guard、substitution、fact、proof、discharge、
 acceptance、Core、CFG、VC behaviorを推論またはactivateしない。
+
+## Task 269CP semantic no-op audit
+
+canonical Chapters 4/15/16はexact proof-local declaration shapeをauthorizeするが、
+runner-private prerequisiteをsemantic consumerにはしない。type guard、universal
+encoding、goal/thesis change、discharge、later-use、capture、fact、proof acceptance、
+downstream IRはdeferred。semantic tableとsemantic requirement creditは0。

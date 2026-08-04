@@ -1745,3 +1745,9 @@ final assemblyはsame getter/phase 7件でexact B3M1 bundleをreplayする。top
 term/atomic/statement/witnessを要求しstatement referenceを禁止する。cross-profile/
 stale/partialはexisting dedicated errorでreject。field/error/node role/semantic tableは
 追加しない。
+
+## Task 269CP final-owner exclusion
+
+Task 269CPは`TypedAst`/`ResolvedTypedAst` field、getter、installer、debug、replay
+phase、final cloneを追加しない。lower outputは`mizar-test`内に留まる。Task 269Cは
+final ownerをseparately freezeし、このprerequisiteから推測してはならない。

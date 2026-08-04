@@ -1654,3 +1654,11 @@ non-binding result, all-field lower-arena mutation coverage, unchanged four
 runner tests and `536` count, measured `37/69872` production inventory,
 dormant dispatch, trace/audit no-op, and semantic exclusions. No
 implementation-time harness debt remains.
+
+## Checker Task 269CP documentation synchronization
+
+EN/JA agree on the exact source and Surface fingerprints, resolver/local
+provenance, crate-private lower output, four tests, `536 -> 540` projection,
+37-path invariant, dormant dispatch, family isolation, zero checker/semantic/
+coverage effect, and automatic Task-269C follow-up. The committed Task-269B
+ledger is closed in both languages.

@@ -11747,3 +11747,10 @@ corpus owner、trace ownerは追加しない。runner productionは`37/69872`、
 content hashは
 `1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d` /
 `1cdc1720e687890e9007664a2140a10194b7637add9b8eb589ee92d9cce3a771`。
+
+## Checker Task 269CP frozen boundary
+
+module/production pathは追加しない。implementation filesはexisting source-
+statement production leaf、`runner.rs` facade、proof-local runner test fileだけ。
+production pathsは37、line/content hashを再測定し、testsは`536 -> 540`。
+checker/parser/resolver/fixture/metadata/trace/Cargo fileはtarget外。

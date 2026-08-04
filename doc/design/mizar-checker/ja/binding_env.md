@@ -774,3 +774,11 @@ context1はbinding1だけをownし`[0,1]`をvisibleにし、binding2は存在し
 unnamed siblingにbinding effectがない。ordinal1 lookupはforward、ordinal2は
 binding1をresolveする。rowは`BindingTypeSite::Missing`を保持してtypeをinferせず、
 captureはempty、fact、obligation、proof/goal effectはabsentのまま。
+
+## Task 269CP no-binding lower boundary
+
+isolated proof-`let` prerequisiteはresolver-shaped local
+`y@[0],71..72,visible-after=1`をauthenticateするが、`BindingEnv`をmutateせず、
+`LetBinding`をallocateせず、type siteやproof/block contextを選ばない。これらは
+Task 269C ownerで、private lower projectionをactive bindingと扱うのは
+boundary violationである。

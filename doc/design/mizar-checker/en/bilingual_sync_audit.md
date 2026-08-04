@@ -1725,3 +1725,11 @@ cross-profile rejection, Typed/final ownership, dormant runner behavior,
 unchanged `482/536` test counts, measured `30/165219` and `37/69872`
 production inventories, zero corpus/trace/CLI/audit impact, and every semantic
 deferral. No implementation-time bilingual debt remains.
+
+## Checker Task 269CP documentation synchronization
+
+EN/JA freeze the same 100-byte proof-`let` source, source/snapshot hashes,
+51-node/root-50 profile, resolver provenance, private lower-output fields,
+four-test plan, zero checker/active effect, exclusions, semantic deferrals,
+and `269CP -> 269C` ownership. Both languages also close the committed
+Task-269B ledger. No bilingual exception or delayed companion is permitted.

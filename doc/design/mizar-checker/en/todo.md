@@ -6749,5 +6749,24 @@ implementation commit does not satisfy a producer task.
 - [x] Fresh-preflight and implement only the frozen B3M1 increment, including
   direct unnamed-row non-binding assertions and all-field/cross-profile
   fail-closed coverage within the existing eight compound tests.
-- [ ] Complete all reviews/hard gates/verification, commit, and continue to the
-  next dependency-ready Task-269 slice.
+- [x] Complete all reviews/hard gates/verification and commit Task 269B as
+  `afd54a37ce4022929bdaf60be519ac4adbdd9b8e`; post-commit inventory is clean,
+  origin divergence is report-only, and the protected stash is unchanged.
+
+## Checker Task 269CP Isolated Proof-`let` Lower Prerequisite
+
+- [x] Fresh-inventory canonical authority, broad read-only gap artifacts,
+  parser/resolver shape, Task-269A/B APIs, repository metadata, and select only
+  269CP before later-use/capture or checker let binding.
+- [x] Freeze the exact 100-byte source/hash, 51-node/root-50 Surface profile,
+  resolver theorem provenance, let/segment/name/bare-set sites, scope/ordinal/
+  local row, fingerprints, exclusions, four tests, zero-credit impact, and
+  exit criteria in synchronized EN/JA.
+- [x] Repeat specification review to **NO FINDINGS**, pass all nine docs-only
+  gates, and commit only the documentation prerequisite.
+- [ ] Fresh-preflight and implement only the runner-private lower projection;
+  checker/public API, BindingEnv, Typed/final owners, corpus, and trace remain
+  unchanged.
+- [ ] Complete independent reviews, verification, all nine final gates,
+  task-only commit, and fresh-inventory binding-only Task 269C automatically;
+  retain a missing type site and leave source-type admission separate.

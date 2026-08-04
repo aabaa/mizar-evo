@@ -5590,3 +5590,12 @@ fingerprint 5件、all-field arena replay、isolated profile rejectionはcanonic
 contractと一致する。`doc/spec`、`.miz`、expectation、trace、diagnostic、public
 API、semantic intentは不変で、新規`spec_gap`、`boundary_violation`、coverage-
 audit deltaはない。
+
+## Task 269CP source/spec classification
+
+synchronized exact isolated proof-`let` lower contractは`design_drift`をcloseする。
+later runner-private implementationがbounded `source_drift`を、canonical-derived
+tests 4件がselected `test_gap`をcloseする予定であり、このdocumentation
+prerequisiteはimplementation closureをclaimしない。later-use/captureはreadyでなく
+external source-payload gapのまま。existing spec/fixture/expectation/traceはread-only
+で、coverage auditはownershipだけを変更しcreditは0。

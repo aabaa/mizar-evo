@@ -2313,3 +2313,12 @@ post-implementation inventoryでもrequirements/casesは`395/428`、type coverag
 `55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`
 不変。compound unit tests 8件はexecutable trace creditを追加せず、
 `spec_coverage_audit.md`はbyte-identicalのまま。
+
+## Checker Task 269CP traceability no-credit contract
+
+case、requirement、fixture、sidecar、expectation、trace row/status/backlink、active
+routeを追加しない。existing broad proof-local gapがcurrent diagnostic-boundary
+creditを保持する。`spec_coverage_audit.md`はfollow-up ownerを`269CP -> 269C`へ
+refineするだけでexecutable creditは0。cases/requirements `428/395`、type coverage
+`259=247+12`、trace SHA-256
+`55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`は不変。

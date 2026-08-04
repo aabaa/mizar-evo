@@ -5,8 +5,8 @@
 
 ## 状態と authority
 
-この文書はqueue Task 269の最初の2つのdependency-minimal sliceである
-**Checker Tasks 269A--269B**をfreezeする。英語版がcanonicalであり、同じlogical
+この文書はqueue Task 269の最初の3つのdependency-minimal sliceである
+**Checker Tasks 269A--269CP**をfreezeする。英語版がcanonicalであり、同じlogical
 task内で本JA companionを同期する。
 
 normative authorityは次の順である。
@@ -586,3 +586,153 @@ authenticateしてdeclaration0/binding1だけを生成する。direct testsはfi
 証明する。全node kind、代表cardinality/root/anchor/children/resolved/recovery/
 typing/links corruption、isolated B3N arena/statement/witness/primary mixはfail
 closed。deferred semantic ownerはactivateしていない。
+
+## Checker Task 269CP frozen isolated proof-`let` lower prerequisite
+
+### 選択、authority、分類
+
+Task-269B implementation commit
+`afd54a37ce4022929bdaf60be519ac4adbdd9b8e`直後のfresh inventoryはTask
+269CPだけをselectする。canonical authorityはChapter 4 Sections 4.2/4.6、
+Chapter 15 Sections 15.2.1/15.10/15.11.1、Chapter 16 Sections 16.3.3/16.4
+である。existing parser simple-statement fixture/testsはnormal
+`LetStatement -> QualifiedVariableSegment -> TypeExpression` shapeを与える。
+mixed active fixture
+`fail_type_elaboration_proof_local_declaration_gap_001.miz`、sidecar、trace
+backlinkはread-only boundary evidenceのままである。
+
+isolated lower contract不在は`design_drift`、private extractor不在はbounded
+`source_drift`、mutation/isolation tests不在はcanonical-derived `test_gap`で、
+blocking `spec_gap`はない。resolverにAST-wide local-use/capture tableがないため、
+later-use/captureはdependency-readyでない。checker-side syntax reconstructionは
+`boundary_violation`になる。origin/main差はreport-only
+`repo_metadata_conflict`でありexact targetを隠さない。
+
+Task 269CPはfuture Task 269Cのrunner-private lower prerequisiteである。上で
+freezeしたchecker ABIをextendせず、checker bindingやTyped/Resolved proof-local
+handoffをinstallしない。Task-269C直接選択は`BindingTypeSite::Missing`を維持する
+binding-only transactionに限り、`SourceTypeProducer`をcall/extendしてはならない。
+
+### Exact source、Surface profile、fingerprint
+
+sole admitted sourceは次のprivate final-LF textである。
+
+```mizar
+reserve x for set;
+theorem FormulaStatementLetSmoke: x = x proof
+  let y be set;
+  thus x = x;
+end;
+```
+
+final LF 1個込みでexactly 100 bytes、source SHA-256は
+`7860a3fe5af89063ac6a2b9a4465cac36d26f6d64e892ba6e2c89bcbaaf9763a`。
+normal Surface snapshot SHA-256は
+`1fc35ec18db82efc0968b2f42b08cfaae678184983210cd26f060d45354c7f68`、
+51 nodes/root 50/root range `0..99`でrecovery/frontend diagnosticは0である。
+
+| node | kind | range | children |
+| ---: | --- | --- | --- |
+| 27 | `ReserveItem` | `0..18` | `[0,26,4]` |
+| 34 | `TypeHead` | `76..79` | `[15]` |
+| 35 | `TypeExpression` | `76..79` | `[34]` |
+| 36 | `QualifiedVariableSegment` | `71..79` | `[13,14,35]` |
+| 37 | `LetStatement` | `67..80` | `[12,36,16]` |
+| 45 | `ConclusionStatement` | `83..94` | `[17,44,21]` |
+| 46 | `ProofBlock` | `59..98` | `[11,37,45,22]` |
+| 47 | `TheoremItem` | `19..99` | `[5,6,7,33,46,23]` |
+| 48/49/50 | `ItemList` / `CompilationUnit` / `Root` | `0..99` | `[27,47]` / `[48]` / tokens `0..23` plus `[49]` |
+
+name token 13は`y@71..72`、token 14は`be@73..75`、type-head token 15は
+`set@76..79`。declaration ordinalはtheorem 0とconclusion 2の間の1、proof
+lexical scopeは`[0]`である。
+
+### Resolver provenanceとprivate lower output
+
+resolverはnormal shell 2件だけを持つ: reserve shell0/node27/`0..18`と
+theorem shell1/node47/`19..99`。public/exported theorem projection/symbol 1件、
+definition0、`LocalSource` contribution0、origin path `[2,1]`を生成し、import、
+label、overload、registration、visible module symbol `y`はない。private extractorは
+complete provenance認証後だけ
+`LocalTermBinding::new("y", LocalTermScope::new(vec![0]), 71..72, 1)`を構成する。
+
+implementationはcrate-private syntax-free
+`SourceProofLocalLetLowerOutput` 1件だけをownする。source/module identity、theorem
+symbol/definition/contribution、theorem/proof/let/segment/name/type/type-headの
+role-specific range、ordinal1、local binding、deterministic debug textをretainedする。
+raw `SurfaceAst`/node id/kind/token/source textはexisting private
+`mizar-test::runner::type_elaboration::source_statement` leaf内に留める。
+source/snapshot hashはselector fingerprintでchecker payloadではない。特に上の
+Surface tableのnode番号はselector-internal factとしてだけauthenticateし、
+`TypedSiteRef`へlaunderせずtyped ownershipとしてもpublishしない。
+
+private data shapeはexact fields `source_id`、`module_id`、
+`source_fingerprint`、`surface_fingerprint`、`theorem_symbol`、
+`theorem_definition`、`contribution`、`theorem_range`、`proof_range`、
+`let_range`、`segment_range`、`name_range`、`type_range`、`type_head_range`、
+`source_ordinal`、`local`を持つ。field name自体がsource roleを表し、generic site
+idはない。deriveは`Debug`、`Clone`、`PartialEq`、`Eq`。read-only crate-private
+getterと`debug_text()`だけを公開し、leaf外constructorはない。
+
+complete debug grammarは次である。
+
+```text
+source-proof-local-let-lower-debug-v1
+module: <package>::<module>
+source-fingerprint: "7860a3fe5af89063ac6a2b9a4465cac36d26f6d64e892ba6e2c89bcbaaf9763a"
+surface-fingerprint: "1fc35ec18db82efc0968b2f42b08cfaae678184983210cd26f060d45354c7f68"
+theorem symbol=<quoted-fqn> definition=0 contribution=0 range=19..99 proof=59..98
+let range=67..80 segment=71..79 source_ordinal=1
+name range=71..72 spelling="y" scope=[0] visible_after=1
+type range=76..79 head=76..79 spelling="set" form=bare
+```
+
+`<package>`、`<module>`、`<quoted-fqn>`だけがvalidated runtime valueで、残りの
+全byte/line orderとtrailing LF 1個はliteralである。
+
+### Ownership、exclusion、semantic deferral
+
+269CPはexact extraction/provenance authenticationだけをownする。
+`SourceStatementHandoff`、`SourceTypeApplicationHandoff`、`BindingEnv` mutation、
+`LetBinding`、source proof-local handoff、Typed/Resolved owner、type result、assumption、
+fact、obligation、diagnostic、goal、theorem status、proof、Core/CFG/VCをpublishしない。
+future Task 269Cはchecker let-binding ABIを別途freezeし、binding type siteをmissing
+のままにする。`LetBinding` source-type admissionの不在はこのbinding-only transaction
+をblockしないが、later typed-source ownerは別prerequisiteとしてselect/freezeする。
+Task 269CP/269Cのどちらにも混在させない。
+
+selectorはbyte差、node/root/range/child/token/recovery差、shell/symbol/definition/
+contribution/module/namespace/origin/scope/ordinal/local-field差、multiple/implicit
+variable、multiple segment、attribute、`such that`、trailing `by`、nested proof、
+later `y` use、`given`/`consider`/`take`/`set`/`reconsider`/`deffunc`/`defpred`
+substitutionをrejectする。Task-269A/B sourceとmixed active gap fixtureはexact
+no-match familyである。
+
+Chapter-15 universal encoding、type guard、well-formedness discharge、goal/thesis
+transformation、universal closure、単一definition siteを超えるshadow behavior、
+later-use、capture、typing、proof acceptance、全semantic effectはdeferredである。
+現実装からruleを推測しない。
+
+### Tests、impact、audit、exit
+
+implementation scopeはexisting runner production leaf/facadeとexisting
+proof-local runner test file、すなわち
+`crates/mizar-test/src/runner/type_elaboration/source_statement.rs`、
+`crates/mizar-test/src/runner.rs`、
+`crates/mizar-test/src/runner/tests/type_elaboration/source_proof_local_declaration.rs`
+だけ。new runner tests exact 4件がfull output/debug、
+parser/resolver/local/all-node mutation、near-missとB3N/B3M1/mixed isolation、
+checker/active semantic effect 0をcoverする。checker testsは`482`、runnerは
+`536 -> 540` projected。runner production pathsは37のままline/test-list/
+content hashを再測定する。
+
+`.miz`、sidecar、expectation、trace row/status/backlink、metadata、Cargo、public
+diagnostic、case、requirement、pass/fail、active-stage、type-coverage、CLI outputは
+変更しない。coverage auditは`269CP -> 269C` ownershipだけを記録しcreditは0、
+Chapters 15/16はpartial、existing trace hashは不変。
+
+exitはsynchronized EN/JA、specification review **NO FINDINGS**、docs-only
+verification/commit、fresh preflight、exact private implementation、independent
+test/implementation/source-doc review **NO FINDINGS**、uncapped 90/100以上でhard
+gate 9件PASS、task-only staging/commit、clean post-commit、protected stash不変、
+上のbinding-only contractに限定したTask-269C自動選択を要求する。

@@ -5212,3 +5212,21 @@ dispatch. Exact selector tests authenticate the two witness rows and direct
 cardinality, root, kind, anchor, children, resolved node, recovery, typing, and
 links for both profiles. Runner remains `536` tests and no corpus-facing byte
 or semantic output changed.
+
+## Checker Task 269CP private proof-`let` lower route
+
+The existing type-elaboration source-statement leaf gains one non-dispatched
+exact selector for the 100-byte final-LF `FormulaStatementLetSmoke` text. It
+requires the full 51-node/root-50 normal Surface oracle; theorem/proof/let/
+segment/name/bare-set sites; reserve/theorem shells; sole public/exported
+theorem symbol, definition, and LocalSource contribution; absent visible
+module symbol `y`; scope `[0]`; ordinal 1; and resolver-shaped local
+`y@71..72`.
+
+The crate-private output contains only syntax-free source/module/theorem
+identities, role-specific ranges, provenance, the local row, and deterministic
+debug text. Surface node numbers and raw AST types do not cross the leaf. Four
+tests cover exact output, all relevant
+parser/resolver/local/node mutations, near-miss and B3N/B3M1/mixed-fixture
+isolation, and zero checker/active effect. The selector is never called by
+production corpus dispatch.

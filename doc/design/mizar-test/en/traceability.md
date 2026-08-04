@@ -2437,3 +2437,13 @@ remains
 `55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`.
 The eight compound unit tests add no executable trace credit and
 `spec_coverage_audit.md` remains byte-identical.
+
+## Checker Task 269CP traceability no-credit contract
+
+Task 269CP adds no case, requirement, fixture, sidecar, expectation, trace
+row/status/backlink, or active route. The existing broad proof-local gap keeps
+all current diagnostic-boundary credit. `spec_coverage_audit.md` changes only
+the follow-up owner to `269CP -> 269C`; it grants no executable credit.
+Cases/requirements remain `428/395`, type coverage remains `259=247+12`, and
+the trace SHA-256 remains
+`55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`.

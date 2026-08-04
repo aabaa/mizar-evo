@@ -1858,3 +1858,10 @@ no field or method. It preserves the 56-node arena and empty semantic tables,
 publishes the one binding transaction once, and rejects duplicate, partial,
 cross-profile, corrupt-arena, stale-fingerprint, or semantic-coexistence input
 transactionally.
+
+## Task 269CP typed-owner exclusion
+
+No `TypedAst` field, installer, source type, binding, node link, or semantic
+table is added by the lower prerequisite. The exact 51-node Surface profile is
+authenticated privately by the runner and is not claimed as typed ownership.
+Task 269C must freeze any typed/final projection independently.

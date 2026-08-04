@@ -6433,5 +6433,22 @@ runner、docs-only implementation commitはproducer taskを満たさない。
 - [x] fresh preflight後frozen B3M1 incrementだけを実装し、existing 8 compound
   tests内でunnamed row non-bindingの直接assertionとall-field/cross-profile
   fail-closed coverageを追加した。
-- [ ] 全review/hard gate/verification後commitし、次のdependency-ready
-  Task-269 sliceへ継続する。
+- [x] 全review/hard gate/verification後Task 269Bを
+  `afd54a37ce4022929bdaf60be519ac4adbdd9b8e`としてcommitした。post-commitは
+  clean、origin差はreport-only、protected stashは不変。
+
+## Checker Task 269CP isolated proof-`let` lower prerequisite
+
+- [x] canonical authority、broad read-only gap artifacts、parser/resolver shape、
+  Task-269A/B APIs、metadataをfresh inventoryし、later-use/captureまたはchecker
+  let bindingより前に269CPだけをselectする。
+- [x] exact 100-byte source/hash、51-node/root-50 Surface、resolver theorem
+  provenance、let/segment/name/bare-set sites、scope/ordinal/local row、fingerprint、
+  exclusion、tests 4件、credit 0、exitをEN/JAでfreezeする。
+- [x] specification reviewを**NO FINDINGS**までrepeatし、docs-only gate 9件を
+  PASSしてdocumentation prerequisiteだけをcommitする。
+- [ ] fresh preflight後runner-private lower projectionだけをimplementする。
+  checker/public API、BindingEnv、Typed/final owner、corpus、traceは不変。
+- [ ] independent review、verification、final gate 9件、task-only commitを完了し、
+  missing type siteを維持してsource-type admissionを分離したbinding-only
+  Task 269Cをfresh inventoryする。

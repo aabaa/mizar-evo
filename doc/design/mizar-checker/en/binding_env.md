@@ -803,3 +803,12 @@ exist, proving the unnamed sibling has no binding effect. Ordinal-1 lookup is
 forward and ordinal-2 lookup resolves binding 1. The row retains
 `BindingTypeSite::Missing`; no type is inferred, captures remain empty, and
 facts, obligations, and proof/goal effects remain absent.
+
+## Task 269CP no-binding lower boundary
+
+The isolated proof-`let` prerequisite authenticates a resolver-shaped local
+`y@[0],71..72,visible-after=1` but deliberately does not mutate a
+`BindingEnv`, allocate `BindingKind::LetBinding`, choose a type site, or
+publish a proof/block context. Those checker-owned decisions remain Task
+269C. Treating the private lower projection as an active binding would be a
+boundary violation.

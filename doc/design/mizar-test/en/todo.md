@@ -3520,5 +3520,21 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
   nine docs-only hard gates PASS at an uncapped `100/100`.
 - [x] Fresh-preflight and implement the exact B3M1 private selector/test
   increment without changing public dispatch or test count.
-- [ ] Finish source/docs and final quality reviews, verification, commit, and
-  continue automatically.
+- [x] Finish source/docs and final quality reviews, verification, and commit
+  Task 269B as `afd54a37ce4022929bdaf60be519ac4adbdd9b8e`.
+
+## Checker Task 269CP Dormant Proof-`let` Lower Projection
+
+- [x] Fresh-inventory exact canonical authority, broad read-only fixture,
+  parser/resolver/public APIs, clean worktree, report-only origin difference,
+  and protected stash; select only 269CP.
+- [x] Freeze the 100-byte source/hash, 51-node/root-50 oracle, exact sites,
+  theorem provenance, local scope/ordinal, four tests, module scope, zero
+  active/trace impact, exclusions, deferrals, and exit.
+- [x] Review/commit synchronized docs alone with all nine gates PASS at an
+  uncapped `100/100`.
+- [ ] Fresh-preflight and implement only the existing-leaf/facade/test-file
+  scope, projecting `536 -> 540` and retaining 37 production paths.
+- [ ] Repeat all reviews and verification, commit, and fresh-inventory Task
+  269C automatically as a binding-only consumer with source-type admission
+  still separate.
