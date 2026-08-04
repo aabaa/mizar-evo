@@ -6076,5 +6076,18 @@ specifications, `.miz`, sidecars, expectations, trace, metadata, diagnostics,
 dispatch, and active credit remain unchanged. GCT and GCU retain the written
 type and declaration-condition occurrence owners. Source/docs final review is
 **NO FINDINGS** and all parent workspace verification gates pass. Independent
-final quality is also **NO FINDINGS** with all
-nine gates uncapped at `100/100`; only staging/commit and GCT inventory remain.
+final quality is also **NO FINDINGS** with all nine gates uncapped at
+`100/100`; commit `8181ae8fc8af0c7028254ad30147b417fbf84611` is complete and
+the GCT mapping follows below.
+
+## Task 269GCT Frozen Source/Specification Mapping
+
+Canonical soft typing and `given` rules map the exact written `set@90..93` to
+witness binding 1 while preserving GC's block-local identity and lookup.
+`SourceProofLocalGivenConditionType{Handoff,Producer,Error}` plus the common
+source-type tables, Typed/final boxed owners, and eight focused Rust tests are
+the only derived consumers. Existing `.miz`, sidecars, expectations, trace,
+metadata, diagnostics, public dispatch, and active credit remain unchanged.
+The absent family/tests are classified `source_drift`/`test_gap`; this frozen
+mapping repairs `design_drift`. Condition occurrences and all semantic effects
+remain GCU-or-later work; there is no blocking `spec_gap`.

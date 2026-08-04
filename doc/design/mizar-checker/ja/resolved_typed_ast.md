@@ -1881,3 +1881,24 @@ revalidateしてclone-preserveし、node hint/role/formula/semantic table/input 
 boxed binding-only owner/getter/exact error/full replay/clone preserveを実装。
 checker/runner各4 testsがduplicate/cross-family atomic rejectionとsemantic emptyを
 検証。node hint/role/formula/table/input pathは不変で、GCT/GCUはlater composite。
+
+## Task 269GCT frozen final ownership
+
+`ResolvedTypedAst`はboxed optional
+`source_proof_local_given_condition_type`、getter、
+`InvalidSourceProofLocalGivenConditionType`だけ。source/module/three-node arena、
+exact GCT Typed profile、otherwise-empty public semantic tablesをrevalidateして
+clone-preserve。duplicate/cross-family replayはatomic reject。node hint/role/
+formula/fact/obligation/diagnostic/input table rowなし、GCUはlater exclusive owner。
+
+final 3 nodesは全てone exact source-preserved role
+`source.proof-local.given-condition.type`。input kindごとのpublic final roleは
+作らない。caller node-kind hint/expression metadata/other semantic inputはwhole
+assemblyをreject。GCT slotはdirect GC、old G/GT、GUP/GUPT/GU、全proof-local
+`let` family、全existing optional Typed/Resolved source compositeとboth-order
+mutual exclusion。
+
+exact `ResolvedTypedAstError::InvalidSourceProofLocalGivenConditionType`
+Displayは`resolved typed AST source proof-local given-condition type handoff is
+invalid`。final getterは`Option<&SourceProofLocalGivenConditionTypeHandoff>`、
+final ownershipはassembly-derivedなのでpublic installerなし。

@@ -3656,3 +3656,10 @@ conclusion/proof-state/acceptance rowなし。condition occurrenceはGCT後GCU o
 authenticated rangeだけでbinding handoffを実装。`source_statement` payload、
 condition/label fact、assume、conclusion、proof state、acceptance rowは不変。
 condition occurrenceはopaqueのままGCT後GCU owner。
+
+## Task 269GCT frozen statement exclusion
+
+GCP/GC statementはsource/type dependencyとしてだけauthenticate。statement
+handoff/proposition/condition list/label/fact/assume/conclusion/proof state/
+acceptance rowなし。condition equalityとwitness 2 occurrencesはopaque/GCU owner。
+`source_statement.rs`変更は禁止。

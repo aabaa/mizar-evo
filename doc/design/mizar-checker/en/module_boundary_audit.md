@@ -1821,3 +1821,14 @@ and content hash
 `6efd7b0ecf2f94b6440b910cef62796e5093d8618ffe196d17ce99bd2245619f`.
 No excluded syntax, artifact, dispatch, diagnostic, Cargo, or semantic owner
 crossed the frozen boundary.
+
+## Task 269GCT Frozen Module Boundary
+
+Checker `source_type.rs` exclusively validates the by-value GC dependency,
+creates the type-site overlay, validates the common source-type input/arena,
+and owns the immutable composite. `typed_ast.rs` and `resolved_typed_ast.rs`
+only install/replay it. The proof-local runner reads GC/GCP getters and creates
+syntax-free input; it never owns validation or exposes the composite publicly.
+No parser/resolver/lower module, `binding_env.rs`, active dispatcher, artifact,
+metadata, diagnostic, Cargo file, condition occurrence, semantic table, or
+downstream IR crosses this boundary.

@@ -94,8 +94,8 @@ is its task 1). "Next work" points into the
 | mizar-parser | Grammar, Pratt parsing, syntax recovery, parse-only corpus | [x] Tasks 1-48 plus bounded `PARSER-RECOVERY-B1B1P-P1` complete; historical post-Task-46 score 99/100 | no inferred Task 49; human-owned P-265-47D remains separate | [todo](./mizar-parser/en/todo.md) |
 | mizar-frontend | Source loading and phase 1-3 orchestration | [x] prior milestone plus `PARSER-RECOVERY-B1B1P-P1-FE` regression complete | — | [todo](./mizar-frontend/en/todo.md) |
 | mizar-resolve | Module graph, namespaces, symbols, labels, signatures | [~] complete through task 29, Checker Task 263R, and Task 264R implementation | Preserve Task-264R shell/no-symbol boundary through Checker Tasks 248P/264 | [todo](./mizar-resolve/en/todo.md) |
-| mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] foundation complete through task 22; Tasks 265-268, Core-31, and Checker consumers through committed Task 269GCP are complete; Task 269GC private binding route is implemented | Complete GC final reviews/gates/commit, then fresh-inventory GCT | [todo](./mizar-test/en/todo.md) |
-| mizar-checker | Type checking, cluster/registration resolution, overload resolution | [~] explicit-payload milestone and source producers/consumers through committed Task 269GCP are complete; Task 269GC binding prerequisite is implemented | Complete GC final reviews/gates/commit; GCT/GCU precede descendant/capture and Task 270 | [todo](./mizar-checker/en/todo.md) |
+| mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] foundation complete through task 22; Tasks 265-268, Core-31, and Checker consumers through committed Task 269GC are complete; Task 269GCT private source-type contract is frozen | Commit frozen GCT docs, implement GCT, then fresh-inventory GCU | [todo](./mizar-test/en/todo.md) |
+| mizar-checker | Type checking, cluster/registration resolution, overload resolution | [~] explicit-payload milestone and source producers/consumers through committed Task 269GC are complete; Task 269GCT source-type contract is frozen | Commit frozen GCT docs, implement GCT; GCU precedes descendant/capture and Task 270 | [todo](./mizar-checker/en/todo.md) |
 | mizar-core | Elaboration, binder-normalized core logic, control-flow preparation | [x] core/control-flow milestone, tasks 27-32 complete | step-5 Tasks 33-53 under the Task-32 graph | [todo](./mizar-core/en/todo.md) |
 | mizar-vc | VC IR, VC generation, deterministic pre-ATP discharge | [x] exact source-derived contradiction VC integration complete through task 31 | dependency-paced VC Tasks 32-55; VC 40/53 and S1 gates remain explicit | [todo](./mizar-vc/en/todo.md) |
 | mizar-kernel | Trusted certificate parsing and checking | [x] SAT-backed kernel milestone complete | step 4 task 35 resolved; task 32 parked; tasks 30-34 resolved | [todo](./mizar-kernel/en/todo.md) |
@@ -4408,6 +4408,33 @@ artifacts, trace, metadata, corpus/CLI behavior, diagnostics, public dispatch,
 active results, and semantic credit remain unchanged. Specification,
 test-sufficiency, implementation, and source/documentation reviews end **NO
 FINDINGS**. Workspace-wide final verification passes. Independent final
-quality is **NO FINDINGS** with all nine hard gates
-uncapped at `100/100`; only exact staging/commit and the Task 269GCT fresh
-inventory remain.
+quality is **NO FINDINGS** with all nine hard gates uncapped at `100/100`.
+Commit `8181ae8fc8af0c7028254ad30147b417fbf84611` is complete and Task 269GCT
+fresh inventory follows below.
+
+### Checker Task 269GC committed status
+
+The exact implementation is committed as
+`8181ae8fc8af0c7028254ad30147b417fbf84611`; post-commit worktree is clean,
+origin is `0/15`, and protected stash identity is unchanged. Fresh inventory
+selects Task 269GCT only.
+
+## Checker Task 269GCT Frozen Source-Type Composition
+
+Task 269GCT consumes the exact GC handoff by value and changes only witness
+binding 1 from missing type to `Source(90..93)`. It freezes two dense builtin-
+`set` source-type rows, a three-node arena, retained dependency/binding/type
+fingerprints, boxed Typed/Resolved ownership, a private runner route, exact
+seven files/eight tests, zero active credit, and GCU ownership of both
+condition occurrences. Complete review-only specification audit to **NO
+FINDINGS**, docs-only gates/commit, fresh preflight, implementation reviews/full
+gates/separate commit, then continue automatically with Task 269GCU.
+
+### Checker Task 269GCT documentation verification status
+
+Specification review is **NO FINDINGS** and every measured docs-only
+verification gate passes for the exact 42 Markdown files. Final read-only
+quality is also **NO FINDINGS** with all nine hard gates PASS, no score cap,
+and valid `100/100` (`20/20/15/15/10/10/5/5`). Exact staging/cached-diff audit
+and the dedicated prerequisite commit remain before the fresh implementation
+preflight.

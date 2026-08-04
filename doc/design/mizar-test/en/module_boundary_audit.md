@@ -13225,3 +13225,13 @@ and content hash is
 `6efd7b0ecf2f94b6440b910cef62796e5093d8618ffe196d17ce99bd2245619f`.
 No GCP lower owner, public dispatch, artifact, metadata, Cargo, diagnostic, or
 sibling route changed.
+
+## Task 269GCT Frozen Runner Boundary
+
+Only the existing proof-local runner leaf, its two private re-export facades,
+and the existing proof-local test leaf may change. The leaf reads immutable
+GC/GCP getters, constructs syntax-free source-type input/arena, and invokes
+checker-owned validation; it does not inspect condition subtrees or recreate
+binding identity. Output remains `pub(in crate::runner)` and absent from public
+dispatch. `source_statement.rs`, fixtures, sidecars, expectations, trace,
+metadata, Cargo, diagnostics, and every sibling route are immutable.

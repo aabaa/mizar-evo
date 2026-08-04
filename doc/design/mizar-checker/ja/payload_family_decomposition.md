@@ -1795,3 +1795,10 @@ generalizeしない。
 distinct GCP-by-value binding composite、dense Given row、final `BindingEnv`
 fingerprint、Typed/Resolved replayをfrozenどおり実装。source type、occurrence/
 reference、condition/fact、proof、obligation、IR payloadは追加せず、GCT/GCUはseparate。
+
+## Task 269GCT source-type-family decomposition
+
+complete GC dependency/fingerprint、copy+overlay binding env/fingerprint、exact
+common source-type handoff/fingerprintだけのdistinct composite。GC rowをextendせず
+old GT/GUPTをreuseせず、condition occurrence/formula/fact/proof/obligation/IRなし。
+Typed/Resolvedはsame compositeをatomic box/replayしGCUはseparate later family。

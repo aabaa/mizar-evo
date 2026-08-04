@@ -763,3 +763,11 @@ behaviorからinferせず、empty semantic successとしてもencodeしない。
 canonical lexical-binding `source_drift`とfocused `test_gap`だけをclose。
 existential/Skolem、condition/fact/label、guard、goal、obligation、proof/
 acceptance、capture/export、downstream IRはabsent/deferred、active creditは0。
+
+## Task 269GCT zero-semantic type boundary
+
+source-written type transportとprivate binding type-site updateだけ。type membership/
+normalization/constraint/coercion/fact、condition truth/label、existential/Skolem、
+assume/guard、goal/initial obligation/proof/discharge/acceptance、capture/export、
+Core/CFG/VC/ATPはinferしない。empty semantic tableはsuccess evidenceでなくexclusion
+invariant。non-type behaviorはGCU/later owner。

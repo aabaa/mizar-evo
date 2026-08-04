@@ -2613,3 +2613,14 @@ type coverage remains `259=247+12`, and trace SHA remains
 `55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`.
 Statuses, backlinks, metadata, corpus/CLI results, and active semantic credit
 are unchanged; GCT/GCU retain follow-up ownership.
+
+## Task 269GCT Frozen Zero-credit Trace Status
+
+GCT adds only four checker and four private runner unit tests for source-type
+transport and ownership. It adds or changes no `spec_trace.toml` row, status,
+backlink, `.miz`, sidecar, expectation, metadata case, active stage, or
+semantic credit. Cases/requirements remain `428/395`, pass/fail `235/193`,
+warnings/errors `23/0`, stages `101/7/205/1`, type coverage `259=247+12`, and
+trace SHA-256 remains
+`55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`.
+GCU retains condition-occurrence follow-up ownership.

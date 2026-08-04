@@ -4196,3 +4196,11 @@ The binding handoff is implemented using only authenticated ranges. No
 `source_statement` payload, condition/label fact, assumption, conclusion,
 proof state, or acceptance row changed. The condition occurrences remain
 opaque and GCU-owned after GCT.
+
+## Task 269GCT Frozen Statement Exclusion
+
+GCT authenticates the GCP/GC statement only as a source/type dependency. It
+adds no statement handoff, proposition, condition list, label, fact,
+assumption, conclusion, proof state, or acceptance row. The condition equality
+and both witness occurrences remain opaque and GCU-owned. No change to
+`source_statement.rs` is permitted.

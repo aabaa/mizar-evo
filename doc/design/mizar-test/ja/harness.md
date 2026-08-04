@@ -5082,3 +5082,29 @@ runner-private selector、exact reserve composition、cfg-test mutation seam、
 immutable Typed/Resolved outputを実装。runner test 4件がsuccess/debug/lookup、全
 frozen corruption tier/precedence、one-shot ownership、near miss/neighbor isolation、
 legacy active routeをcover。helperは`TestCase`/public production dispatchにない。
+
+## Task 269GCT frozen dormant harness
+
+runner-private `source_proof_local_given_condition_type_output`とcfg-test mutation
+seamだけ。unchanged GC/GCPへdelegateしexact 2-row input/3-node arenaをbuild、
+immutable Typed/Resolvedを返す。mismatch `None`、selected failure `Some(Err(_))`。
+TestCase/dispatch/fixture/expectation/diagnostic/serialized outputなし。exact 4 testsは
+stable composition、corruption/precedence、atomic empty semantics、isolationをcover。
+
+private ABIはexact
+`SourceProofLocalGivenConditionTypeRouteOutput { typed_ast, resolved }`とborrowed
+`typed_ast()`/`resolved()` getter、5 variantsの
+`SourceProofLocalGivenConditionTypeRouteMutation`、
+`source_proof_local_given_condition_type_output`、cfg-test-only
+`source_proof_local_given_condition_type_output_with_mutation`。全て
+`pub(in crate::runner)`。dormant output/enum/normal wrapperはinline-rationale
+dead-code justified、mutation wrapper/non-`None` branchはcfg-test/test-only。
+
+exact derives/attributes/signaturesはEN canonical code blockに同期する。outputは
+`#[derive(Debug, PartialEq, Eq)]`とinline-rationale `#[allow(dead_code)]`、private
+ordered fields `TypedAst`/`ResolvedTypedAst`、両const borrowed getter。mutationは
+`Debug, Clone, Copy, PartialEq, Eq`と同allow。normal functionは`&SurfaceAst`、
+`ModuleId`、`&DeclarationShellSet`、`&SymbolEnv`、`&str`の順、mutation functionは
+末尾にexact enumを追加し`#[cfg(test)]`。両方
+`Option<Result<SourceProofLocalGivenConditionTypeRouteOutput, String>>`を返す。
+non-test wrapperは常に`None` mutationをselectし、broader allowは禁止。

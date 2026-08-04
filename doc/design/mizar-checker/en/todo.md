@@ -7009,6 +7009,28 @@ This closes only dormant private lexical-binding evidence and grants zero active
   `dd053c86dab322508a15823de1c4afd268c2d35a`.
 - [x] Fresh-preflight and implement only the frozen seven-file/eight-test GC;
   test-sufficiency and implementation reviews end **NO FINDINGS**.
-- [ ] Finish source/docs consistency and final-quality reviews, workspace-wide
-  final gates, exact implementation staging/commit, and fresh-inventory Task
+- [x] Finish source/docs consistency and final-quality reviews, workspace-wide
+  final gates, exact implementation commit
+  `8181ae8fc8af0c7028254ad30147b417fbf84611`, and fresh-inventory Task
   269GCT automatically.
+
+## Checker Task 269GCT Given-condition Source-Type Consumer
+
+- [x] Fresh-inventory clean GC commit, canonical typed-witness authority, exact
+  GC/GCP dependencies, GT/GUPT public patterns, baselines, origin divergence,
+  and protected stash; select only GCT.
+- [x] Classify missing type family/tests as `source_drift`/`test_gap`, absent
+  contract and stale GC status as `design_drift`, forbidden semantic/artifact/
+  runner ownership as `boundary_violation`, and origin `0/15` as report-only
+  `repo_metadata_conflict`; no blocking `spec_gap`.
+- [x] Freeze the distinct by-value public composite, exact `2/2/0` type overlay,
+  two source-type rows, three-node arena, fingerprints, Typed/Resolved/private
+  runner owners, seven files/eight tests, zero credit, deferrals, and exit in
+  synchronized EN/JA.
+- [x] Repeat specification review to **NO FINDINGS**, pass all measured
+  docs-only verification gates, and complete uncapped final quality with all
+  nine gates PASS at `100/100`; exact staging/commit remain.
+- [ ] Fresh-preflight and implement only GCT; repeat test-sufficiency,
+  implementation, source/docs, and final-quality reviews to **NO FINDINGS**,
+  pass full verification/all nine gates, commit separately, and fresh-inventory
+  Task 269GCU automatically.

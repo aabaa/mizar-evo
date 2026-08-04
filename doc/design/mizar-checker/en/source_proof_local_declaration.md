@@ -3416,6 +3416,70 @@ diagnostics, dispatch, and active credit remain unchanged. The implementation
 publishes no type or declaration-condition occurrence; GCT/GCU and every
 frozen semantic deferral remain separate. Source/documentation consistency is
 **NO FINDINGS** and every parent workspace verification gate passes.
-Independent final quality is **NO FINDINGS**; all nine
-hard gates PASS uncapped at `100/100`, leaving only exact staging/commit and
-fresh GCT inventory.
+Independent final quality is **NO FINDINGS** and all nine hard gates PASS
+uncapped at `100/100`. Commit
+`8181ae8fc8af0c7028254ad30147b417fbf84611` is complete and the GCT inventory
+follows below.
+
+## Task 269GCT Frozen Given-condition Type Consumer
+
+Fresh inventory selects GCT only after GC implementation commit
+`8181ae8fc8af0c7028254ad30147b417fbf84611`. The immutable dependency is the
+complete `SourceProofLocalGivenConditionBindingHandoff`: exact 134-byte source,
+54-node/root-53 Surface identity, theorem/proof/Given/segment/name ranges
+`19..133`, `68..132`, `76..113`, `82..93`, `82..83`, independently validated
+resolver provenance, complete GCP lower fingerprint, reserve base, final
+`2/2/0` binding environment, one dense Given row, and all dependency/debug
+fingerprints. GCT may not reconstruct or weaken any of these fields.
+
+The runner additionally reads only the unchanged GCP `type_range` and
+`type_head_range`, both exactly `90..93`, spelling `set`, `Bare`. It constructs
+the two-row source-type input and three-node arena frozen in `source_type.md`,
+then transfers the GC handoff by value to the checker-owned GCT producer.
+`set@90..93` is the only newly published declaration site. The condition label,
+the two `y` occurrences at `107..108` and `111..112`, equality/formula tree,
+`thus` subtree, and proof close are strict subtree exclusions.
+
+Missing distinct type producer/owners/tests are `source_drift` and `test_gap`;
+the absent GCT contract and stale GC handoff wording are `design_drift`.
+Changing canonical artifacts or expectations toward current source, adding
+condition/fact/proof/obligation behavior, reusing the older G/GT or GUP/GUPT
+composite, or moving binding/type construction into the runner is a
+`boundary_violation`. Origin `0/15` is report-only
+`repo_metadata_conflict`. No blocking `spec_gap` remains.
+
+The exact four checker tests are
+`task269gct_exact_condition_type_composition_is_stable`,
+`task269gct_dependency_binding_input_and_arena_corruption_fail_closed`,
+`task269gct_typed_and_resolved_ownership_is_atomic`, and
+`task269gct_generic_neighbor_and_condition_use_routes_remain_isolated`. The
+exact four runner tests use the corresponding names
+`task269gct_exact_condition_type_route_is_stable`,
+`task269gct_dependency_input_and_arena_corruption_fail_closed`,
+`task269gct_typed_and_resolved_owners_are_one_shot_and_semantically_empty`, and
+`task269gct_near_miss_neighbor_and_active_routes_remain_isolated`.
+
+The corruption matrix is exhaustive at the frozen boundary. Dependency tests
+cover wrong source/module, stale dependency fingerprint, every GC dependency
+validation class, and coherent nested mutation. Binding tests cover wrong
+type site, stale fingerprint, and a non-type field on both rows. Common input
+tests cover application count/binding/ordinal/root; expression count/source/
+module/site/range/spelling; head site/range/spelling; form/head/recovery; and a
+non-empty argument. Arena tests cover wrong root and, for every node, kind,
+resolved node, anchor, children, typing, recovery, and links. Post-build tests
+cover source-type shape/fingerprint and the four-tier error precedence.
+Ownership tests cover duplicate and every sibling in both orders, rollback,
+clone replay, exact final role, all public semantic tables empty, and rejection
+of node hints/expression metadata. Isolation covers wrong label/name/type,
+missing final LF, old G/GT and GUP/GUPT/GU, proof-`let`, generic source type,
+GCP/GC replay, and all existing active runner routes.
+
+The checker files are exactly `source_type.rs`, `typed_ast.rs`, and
+`resolved_typed_ast.rs`; the runner files are exactly
+`runner/type_elaboration/source_proof_local_declaration.rs`,
+`runner/type_elaboration.rs`, `runner.rs`, and the proof-local runner test leaf.
+No lower selector, fixture, sidecar, expectation, trace, metadata, Cargo,
+diagnostic, dispatch, CLI, corpus result, or active coverage changes. GCT ends
+at written source-type transport; GCU retains the declaration-condition
+occurrences, and all semantic, descendant, capture/export, and Task-270 work is
+deferred.

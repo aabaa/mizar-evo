@@ -3471,5 +3471,18 @@ dispatch、fixture、sidecar、expectation、trace、metadata、diagnostic、CLI
   `dd053c86dab322508a15823de1c4afd268c2d35a`を完了。
 - [x] fresh preflight後frozen GCだけを実装し、test-sufficiency/implementation
   reviewは**NO FINDINGS**。
-- [ ] source-doc consistency/final-quality、workspace final gate、exact
-  implementation commit後Task269GCTをautomatic inventory。
+- [x] source-doc consistency/final-quality、workspace final gate、exact
+  implementation commit `8181ae8fc8af0c7028254ad30147b417fbf84611`後
+  Task269GCTをautomatic inventory。
+
+## Task 269GCT Given-condition source-type route
+
+- [x] exact GC/GCP、canonical type authority、runner/checker pattern、baseline、
+  origin/stashをfresh inventoryしGCTだけをselect。
+- [x] by-value composition、2 type rows、3-node arena、private mutation/output、
+  Typed/Resolved、7 files、checker/runner各4 tests、zero credit、GCU successorを
+  EN/JAでfreeze。
+- [x] spec review **NO FINDINGS**、measured docs-only gates全PASS、final quality
+  も全9 gates PASS・capなしの`100/100`。exact stage/Markdown commitはremaining。
+- [ ] fresh preflight、GCTだけ実装、全review/full gates、separate commit後GCUへ
+  automatic continue。

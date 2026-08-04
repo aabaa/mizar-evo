@@ -376,3 +376,9 @@ composite後GCUだけがtransport可、descendant useはlater。
 
 term/reference/use-site/Typed-final term ownerは追加しない。opaque condition
 leaf 2件、descendant occurrence、use-site resolver provenanceはexact GCT後GCUへdefer。
+
+## Task 269GCT frozen term deferral
+
+written typeにterm argumentがないためsource-type argument tableはempty。term/
+occurrence/reference/use-site resolver/equality operand/Typed-final term nodeなし。
+condition leaf `107..108`/`111..112`はexcludedでexact GCT後GCUだけがtransport可。

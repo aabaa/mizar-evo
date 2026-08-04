@@ -928,3 +928,11 @@ exact `1/1/0 -> 2/2/0` transactionとcomplete lexical lookup matrixをfrozen
 checker ownerへ実装し、`binding_env.rs`は不変。checker/runner各4 testsがown-
 condition、subsequent、inheritance、shadow/restore、parent/sibling boundaryを
 cover。type/occurrence/fact/capture/diagnostic/semantic creditはfrozenどおりdefer。
+
+## Task 269GCT frozen type overlay
+
+validated GC `2/2/0` envをcloneしbinding 1のtype siteだけ`Missing ->
+Source(90..93)`、binding 0は`Source(14..17)`。context/visible order/lookup、
+identity/kind/status/range/ordinal/scope/capture/recovery/empty diagnosticは不変で
+binding/context追加なし。`binding_env.rs`変更、fact/condition/guard/capture/
+obligation semanticsなし。

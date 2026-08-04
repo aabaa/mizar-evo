@@ -1900,3 +1900,19 @@ coercion/initial obligation/diagnostic/`TypedAstParts`はempty/不変。laterは
 boxed optional owner/getter/consuming one-shot installer/exact errorをcomplete
 mutual exclusion/rollback test付きで実装。node/context/type/fact/coercion/initial
 obligation/diagnostic/`TypedAstParts`は不変、later compositeはGCT/GCU owner。
+
+## Task 269GCT frozen Typed ownership
+
+`TypedAst`はboxed optional `source_proof_local_given_condition_type`、getter、
+consuming one-shot installer、`InvalidSourceProofLocalGivenConditionType`だけ。
+by-value dependency/overlay/source-type rows/three-node arenaをvalidateし、全existing
+ownerとboth-order reject/rollback。arenaだけがnon-empty `TypedAstParts` inputで、
+resolved root/source context/generic source type/context/type/fact/coercion/initial
+obligation/diagnosticはempty。GCUはlater owner。
+
+installer/getterはexact
+`with_source_proof_local_given_condition_type(self, Handoff) -> Result<Self,
+TypedAstError>` / `Option<&Handoff>`。exact
+`InvalidSourceProofLocalGivenConditionType` Displayは
+`source proof-local given-condition type handoff is invalid`。test-only injectionは
+corruption/reverse-order oracleだけでpublicではない。

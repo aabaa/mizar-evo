@@ -5411,3 +5411,73 @@ and immutable Typed/Resolved output are implemented. Four runner tests cover
 success/debug/lookup, every frozen corruption tier and precedence, one-shot
 ownership, near misses, neighbor isolation, and legacy active routes. The
 helper remains absent from `TestCase` and public production dispatch.
+
+## Task 269GCT Frozen Dormant Harness
+
+The harness exposes only runner-private
+`source_proof_local_given_condition_type_output` and its cfg-test mutation
+seam. It delegates selection to unchanged GC/GCP routes, builds the exact
+two-row source-type input and three-node arena, and returns immutable
+Typed/Resolved owners. Mismatch remains `None`; selected failure is
+`Some(Err(_))`. No `TestCase`, production-stage branch, fixture, expectation,
+diagnostic, or serialized output is added. Four exact tests cover stable
+composition, corruption/precedence, atomic empty-semantics ownership, and
+near-miss/neighbor/active-route isolation.
+
+The private ABI is exactly
+`SourceProofLocalGivenConditionTypeRouteOutput { typed_ast, resolved }` with
+borrowed `typed_ast()` / `resolved()` getters,
+`SourceProofLocalGivenConditionTypeRouteMutation` with the five frozen
+variants, `source_proof_local_given_condition_type_output`, and cfg-test-only
+`source_proof_local_given_condition_type_output_with_mutation`. The output,
+enum, and functions are `pub(in crate::runner)`. The dormant output, enum, and
+normal wrapper are inline-rationale dead-code justified; the mutation wrapper
+and non-`None` branches are cfg-test/test-only.
+
+The exact declarations are:
+
+```rust
+#[derive(Debug, PartialEq, Eq)]
+#[allow(dead_code)]
+pub(in crate::runner) struct SourceProofLocalGivenConditionTypeRouteOutput {
+    typed_ast: TypedAst,
+    resolved: ResolvedTypedAst,
+}
+
+impl SourceProofLocalGivenConditionTypeRouteOutput {
+    pub(in crate::runner) const fn typed_ast(&self) -> &TypedAst;
+    pub(in crate::runner) const fn resolved(&self) -> &ResolvedTypedAst;
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[allow(dead_code)]
+pub(in crate::runner) enum SourceProofLocalGivenConditionTypeRouteMutation {
+    None,
+    WrongDependencyModule,
+    WrongTypeRange,
+    WrongArenaRoot,
+    WrongArenaKind,
+}
+
+#[allow(dead_code)]
+pub(in crate::runner) fn source_proof_local_given_condition_type_output(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    shells: &DeclarationShellSet,
+    symbols: &SymbolEnv,
+    source_text: &str,
+) -> Option<Result<SourceProofLocalGivenConditionTypeRouteOutput, String>>;
+
+#[cfg(test)]
+pub(in crate::runner) fn source_proof_local_given_condition_type_output_with_mutation(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    shells: &DeclarationShellSet,
+    symbols: &SymbolEnv,
+    source_text: &str,
+    mutation: SourceProofLocalGivenConditionTypeRouteMutation,
+) -> Option<Result<SourceProofLocalGivenConditionTypeRouteOutput, String>>;
+```
+
+Each `allow(dead_code)` carries an inline Task-269GCT dormant-route rationale;
+no broader allow is permitted. The non-test wrapper always selects `None`.

@@ -3720,5 +3720,22 @@ No dispatch, fixture, sidecar, expectation, trace, metadata, diagnostic, CLI, ac
   `dd053c86dab322508a15823de1c4afd268c2d35a`.
 - [x] Fresh-preflight and implement only the frozen GC route; test-sufficiency
   and implementation reviews end **NO FINDINGS**.
-- [ ] Finish source-doc consistency/final-quality review, workspace-wide final
-  gates, exact implementation commit, then automatically inventory Task 269GCT.
+- [x] Finish source-doc consistency/final-quality review, workspace-wide final
+  gates, exact implementation commit
+  `8181ae8fc8af0c7028254ad30147b417fbf84611`, then automatically inventory
+  Task 269GCT.
+
+## Task 269GCT Given-condition Source-Type Route
+
+- [x] Fresh-inventory exact GC/GCP dependencies, canonical type authority,
+  private runner/public checker patterns, baselines, origin/stash, and select
+  GCT only.
+- [x] Freeze by-value composition, two type rows, three-node arena, private
+  mutations/output, Typed/Resolved ownership, seven files, four checker/four
+  runner tests, zero credit, exclusions, and GCU successor in EN/JA.
+- [x] Complete spec review to **NO FINDINGS**, all measured docs-only gates,
+  and uncapped final quality with all nine gates PASS at `100/100`; exact
+  staging/prerequisite commit remain.
+- [ ] Fresh-preflight, implement GCT only, repeat all reviews and full gates,
+  create the separate implementation commit, and continue automatically with
+  Task 269GCU.

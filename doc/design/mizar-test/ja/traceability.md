@@ -2462,3 +2462,12 @@ checker/runner合計Rust test 8件だけを追加しcanonical artifact/trace row
 case/requirement `428/395`、type `259=247+12`、trace SHA
 `55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`
 不変。status/backlink/metadata/corpus/CLI/active credit不変、GCT/GCUがfollow-up owner。
+
+## Task 269GCT frozen zero-credit trace status
+
+source-type transport/ownershipのchecker 4 + private runner 4 unit testsだけ。
+`spec_trace.toml` row/status/backlink、`.miz`/sidecar/expectation/metadata/stage/
+creditは不変。case/requirement `428/395`、pass/fail `235/193`、warning/error
+`23/0`、stage `101/7/205/1`、type `259=247+12`、trace SHA
+`55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`。
+condition occurrence follow-upはGCU owner。

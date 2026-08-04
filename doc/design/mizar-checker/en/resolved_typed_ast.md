@@ -1988,3 +1988,29 @@ clone preservation are implemented. Four checker and four runner tests verify
 atomic duplicate/cross-family rejection and semantic emptiness. No node hint,
 role, checked formula, semantic table, or input path changed; GCT/GCU remain
 later mutually exclusive composites.
+
+## Task 269GCT Frozen Final Ownership
+
+`ResolvedTypedAst` adds only boxed optional
+`source_proof_local_given_condition_type`, its read-only getter, and
+`InvalidSourceProofLocalGivenConditionType`. Assembly revalidates the exact GCT
+handoff against source/module and the three-node arena, requires the exact GCT
+Typed profile and otherwise-empty public semantic tables, clone-preserves the
+handoff, and rejects duplicate/cross-family replay atomically. No node hint,
+role, checked formula, fact, obligation, diagnostic, or input-table row is
+added. GCU remains a later mutually exclusive owner.
+
+All three final nodes are source-preserved with the one exact final role
+`source.proof-local.given-condition.type`; no per-input kind is promoted into a
+new public final role. Any caller-supplied node-kind hint, expression metadata,
+or other semantic input rejects the whole GCT assembly. The GCT slot is
+mutually exclusive in both installation orders with the direct GC owner, the
+older G/GT, GUP/GUPT/GU families, every proof-local `let` family, and every
+other existing optional Typed/Resolved source composite.
+
+The exact `ResolvedTypedAstError::InvalidSourceProofLocalGivenConditionType`
+display text is
+`resolved typed AST source proof-local given-condition type handoff is invalid`.
+The final getter returns
+`Option<&SourceProofLocalGivenConditionTypeHandoff>`; no public final installer
+is added because final ownership is assembly-derived.

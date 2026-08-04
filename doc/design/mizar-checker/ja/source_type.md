@@ -1468,3 +1468,59 @@ GC handoffをby-value consumeしてexact written typeをoverlay可。
 installed witnessはmissing-type、exact `set@90..93` source typeはunpublished。
 application/overlay/normalization/constraint/guard/obligationは不変で、GCTがsole
 next by-value type owner。
+
+## Task 269GCT frozen Given-condition source-type composition
+
+GCTはexact GC handoffをby value consumeするdistinct immutable composite。
+validated `2/2/0` envをcopyしcontext/identity/status/capture/diagnostic/lookupを
+変えず、binding 1だけ`Source(90..93)`へoverlay、binding 0は`Source(14..17)`。
+
+common inputはdense application/expression各2、application `i`はbinding/
+ordinal/root `i`、expressionは`set@14..17`/`set@90..93`、node 0/1の
+`source.type.expression`/`source.type.head` role、same ranges/spelling、`Bare`、
+`BuiltinSet`、`Normal`。argument/definition-return/mode-RHS/structure-memberは
+empty。arena kind/rangeは
+`source.proof-local.given-condition.reserve-type@14..17`、
+`source.proof-local.given-condition.type@90..93`、
+`source.proof-local.given-condition.type-root@0..133` children `[0,1]`、root 2。
+
+public familyは`SourceProofLocalGivenConditionTypeHandoff`、`Producer`、
+non-exhaustive `Error::{InvalidDependency,InvalidBindingEnvironment,
+InvalidSourceType,InvalidInstallation}`。dependency/env/source-typeと各fingerprint、
+read-only getter、`source-proof-local-given-condition-type-debug-v1` replayを
+ownerする。generic admission/normalization/constraint/coercion/fact/guard/
+obligation/condition occurrence/acceptanceは禁止。exact GCUだけがnext consumer。
+
+handoff field orderは`source_id`、`module_id`、by-value
+`SourceProofLocalGivenConditionBindingHandoff`、`dependency_fingerprint`、
+`binding_env`、`binding_fingerprint`、`source_type`、
+`source_type_fingerprint`。public read-only APIはEN canonical記載どおり
+`source_id`/`module_id`/`dependency`/`dependency_fingerprint`/`binding_env`/
+`binding_fingerprint`/`source_type`/`source_type_fingerprint`/`debug_text`のexact
+getterだけ。
+
+handoffは`#[derive(Debug, Clone, PartialEq, Eq)]`。crate-private
+`validate_installation(&self, SourceId, &ModuleId, &TypedArena) -> Result<(),
+SourceProofLocalGivenConditionTypeError>`と、末尾に`installation_available:
+bool`を追加した`validate_complete_installation`をexactに持つ。unit-like public
+`SourceProofLocalGivenConditionTypeProducer`の`build`はby-value GC dependency、
+`SourceTypeHandoffInput`、`&SymbolEnv`、`&TypedArena`をこの順で受け、GCT handoff
+またはGCT errorを返す。Errorは`#[derive(Debug, Clone, PartialEq, Eq)]`かつ
+`#[non_exhaustive]`のexact 4 variantsで、`fmt::Display`と`std::error::Error`を実装。
+
+debug grammarはheader
+`source-proof-local-given-condition-type-debug-v1`、`module:`、Rust-debug quoted
+complete GC `dependency-fingerprint:`、complete overlaid env
+`binding-fingerprint:`、complete source-type `source-type-fingerprint:`の5行。
+全行はlast fingerprintを含めexact LF 1個で終わり、blank/extra terminal lineなし。
+nested fingerprintはembedded `\n`を含むretained bytesのRust `Debug` quote。
+error Displayは順に
+`source proof-local given-condition type dependency is invalid`、
+`source proof-local given-condition typed binding environment is invalid`、
+`source proof-local given-condition source type is invalid`、
+`source proof-local given-condition type installation is invalid`。
+
+producer/installation precedenceはGC dependency validation/identity/fingerprint、
+exact overlay/fingerprint、complete input+arenaとcommon `validate_input`の
+`ProofLocalGiven` profile、source-type shape/fingerprint/common install、最後にslot
+availability。この4-tier precedenceをmulti-corruption testで固定する。

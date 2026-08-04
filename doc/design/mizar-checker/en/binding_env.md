@@ -983,3 +983,13 @@ All four checker and four runner tests pass the own-condition, subsequent,
 inheritance, shadow/restoration, and parent/sibling boundaries. Type,
 occurrence, fact, capture, diagnostic, and semantic-credit ownership remains
 deferred exactly as frozen.
+
+## Task 269GCT Frozen Type Overlay
+
+GCT clones the validated GC `2/2/0` environment and changes only binding 1's
+type site from `Missing` to `Source(90..93)`. Contexts, visible-binding order,
+lookup behavior, binder identity/kind/status, declaration range, ordinal,
+scope, capture set, recovery, and empty diagnostics remain byte-for-byte
+equivalent; binding 0 retains `Source(14..17)`. No new binding or context is
+inserted. GCT adds no `binding_env.rs` source and grants no fact, condition,
+guard, capture, or obligation semantics.

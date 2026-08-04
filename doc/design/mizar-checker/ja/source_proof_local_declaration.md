@@ -1964,5 +1964,52 @@ protected parser/broad/mixed artifact、trace、corpus/CLI count/hash、diagnost
 dispatch、active creditは不変。type/condition occurrenceはpublishせず、GCT/GCUと
 全semantic deferralはseparate。source/docs consistencyは**NO FINDINGS**、parent
 workspace verification gateは全PASS。independent final qualityも**NO
-FINDINGS**、9 hard gateはcapなし`100/100`。exact stage/commitとGCT inventory
-だけが残る。
+FINDINGS**、9 hard gateはcapなし`100/100`。commit
+`8181ae8fc8af0c7028254ad30147b417fbf84611`は完了しGCT inventoryを以下に記録。
+
+## Task 269GCT frozen Given-condition type consumer
+
+GC implementation commit `8181ae8fc8af0c7028254ad30147b417fbf84611`後の
+fresh inventoryはGCTだけをselect。immutable dependencyはcomplete GC handoff：
+134-byte/54-node/root-53 identity、range `19..133`/`68..132`/`76..113`/
+`82..93`/`82..83`、independent resolver provenance、complete GCP lower
+fingerprint、reserve base、final `2/2/0` env、dense Given row 1件、全fingerprint。
+GCTは再構築/relax不可。
+
+runnerが追加で読むのはunchanged GCPのtype/head `90..93`、spelling `set`、
+`Bare`だけ。frozen two-row input/three-node arenaを構築しGCをby value checkerへ
+transferする。new published declaration siteは`set@90..93`だけ。label、condition
+`y@107..108`/`111..112`、equality/formula、`thus`、proof closeはstrict subtree
+exclusion。
+
+missing producer/owner/testは`source_drift`/`test_gap`、missing contract/stale GC
+statusは`design_drift`。canonical artifact変更、condition/fact/proof/obligation、
+old GT/GUPT reuse、runner-side ownershipは`boundary_violation`。origin `0/15`は
+report-only `repo_metadata_conflict`、blocking `spec_gap`なし。
+
+checker exact testsは
+`task269gct_exact_condition_type_composition_is_stable`、
+`task269gct_dependency_binding_input_and_arena_corruption_fail_closed`、
+`task269gct_typed_and_resolved_ownership_is_atomic`、
+`task269gct_generic_neighbor_and_condition_use_routes_remain_isolated`。
+runner exact testsは
+`task269gct_exact_condition_type_route_is_stable`、
+`task269gct_dependency_input_and_arena_corruption_fail_closed`、
+`task269gct_typed_and_resolved_owners_are_one_shot_and_semantically_empty`、
+`task269gct_near_miss_neighbor_and_active_routes_remain_isolated`。
+
+corruption matrixはwrong source/module、stale dependency fingerprint、全GC error
+class/coherent nested mutation、binding wrong type/stale fingerprint/both-row non-
+type field、input application count/binding/ordinal/root、expression count/source/
+module/site/range/spelling、head site/range/spelling、form/head/recovery/non-empty
+argument、arena wrong rootと各nodeのkind/resolved/anchor/children/typing/recovery/
+links、post-build source-type shape/fingerprint、4-tier precedenceをcover。
+ownershipはduplicate/全sibling both order/rollback/clone/exact final role/public
+semantic table empty/node hint・expression metadata rejection。isolationはwrong
+label/name/type、missing final LF、old G/GT/GUP/GUPT/GU、proof-let、generic type、
+GCP/GC、全active runner routeをcover。
+
+checker 3 filesとproof-local runner leaf/facade 2/test leafのexact 7 filesだけ。
+lower selector、fixture/sidecar/expectation/trace/metadata/Cargo/diagnostic/dispatch/
+CLI/result/creditは不変。GCTはwritten typeで終了、condition occurrenceはGCU、
+semantic/descendant/capture/export/Task270はdefer。

@@ -11917,3 +11917,11 @@ productionは`37/76863`、path hash
 content hashは
 `6efd7b0ecf2f94b6440b910cef62796e5093d8618ffe196d17ce99bd2245619f`。
 GCP lower owner/public dispatch/artifact/metadata/Cargo/diagnostic/sibling routeは不変。
+
+## Task 269GCT frozen runner boundary
+
+existing proof-local runner leaf、private re-export facades 2、existing test leafだけ。
+leafはGC/GCP getterを読みsyntax-free input/arenaを作りchecker validationをinvoke、
+condition subtree/identityを再構築しない。outputは`pub(in crate::runner)`、public
+dispatchなし。`source_statement.rs`/fixture/sidecar/expectation/trace/metadata/
+Cargo/diagnostic/sibling routeはimmutable。

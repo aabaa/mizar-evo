@@ -1899,3 +1899,12 @@ The distinct GCP-by-value binding composite, dense Given row, final
 `BindingEnv` fingerprints, and Typed/Resolved replay are implemented exactly
 as frozen. The implementation adds no source type, occurrence/reference,
 condition/fact, proof, obligation, or IR payload; GCT and GCU remain separate.
+
+## Task 269GCT Source-Type-family Decomposition
+
+GCT is one distinct composite node: the complete GC dependency and fingerprint,
+the copied-and-overlaid binding environment and fingerprint, and the exact
+common source-type handoff and fingerprint. It does not extend the GC binding
+row, reuse the older GT/GUPT owners, or include condition occurrences,
+formula/fact, proof, obligation, or IR payload. Typed and Resolved box/replay
+the same composite atomically. GCU remains a separate later payload family.

@@ -1739,3 +1739,12 @@ runner productionは`37/76863`、path hash
 content hash
 `6efd7b0ecf2f94b6440b910cef62796e5093d8618ffe196d17ce99bd2245619f`。
 excluded syntax/artifact/dispatch/diagnostic/Cargo/semantic ownerはboundaryをcrossしない。
+
+## Task 269GCT frozen module boundary
+
+checker `source_type.rs`だけがGC by-value dependency、type-site overlay、common
+input/arenaをvalidateしimmutable compositeをowner。`typed_ast.rs`/resolvedは
+install/replayだけ。runnerはGC/GCP getterからsyntax-free inputを作るがvalidation
+ownerでもpublic exposureでもない。parser/resolver/lower、`binding_env.rs`、active
+dispatch、artifact/metadata/diagnostic/Cargo/condition occurrence/semantic table/IRは
+boundaryをcrossしない。

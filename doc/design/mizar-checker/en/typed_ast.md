@@ -2013,3 +2013,22 @@ The boxed optional owner, getter, consuming one-shot installer, and exact error
 are implemented with complete mutual exclusion and rollback tests. Nodes,
 contexts, types, facts, coercions, initial obligations, diagnostics, and
 `TypedAstParts` remain unchanged; GCT/GCU retain later composite ownership.
+
+## Task 269GCT Frozen Typed Ownership
+
+`TypedAst` adds only boxed optional
+`source_proof_local_given_condition_type`, its getter, consuming one-shot
+installer, and `InvalidSourceProofLocalGivenConditionType`. Installation
+validates the by-value dependency, exact overlay, source-type rows, and
+three-node arena, rejects every existing owner in both orders, and rolls back
+on failure. The arena is the only non-empty `TypedAstParts` input; resolved
+root, source context, generic source type, contexts, types, facts, coercions,
+initial obligations, and diagnostics remain empty. GCU remains a later owner.
+
+The installer is exactly
+`with_source_proof_local_given_condition_type(self,
+SourceProofLocalGivenConditionTypeHandoff) -> Result<Self, TypedAstError>` and
+the getter returns `Option<&SourceProofLocalGivenConditionTypeHandoff>`. The
+exact `TypedAstError::InvalidSourceProofLocalGivenConditionType` display text is
+`source proof-local given-condition type handoff is invalid`. Test-only
+injection supports corruption or reverse-order oracles only and is not public.

@@ -6658,5 +6658,22 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   `dd053c86dab322508a15823de1c4afd268c2d35a`を完了。
 - [x] fresh preflight後frozen 7-file/8-test GCだけをimplementし、test-sufficiency/
   implementation reviewは**NO FINDINGS**。
-- [ ] source-doc consistency/final-quality review、workspace-wide final gate、
-  exact implementation stage/commit後Task269GCTをautomatic inventory。
+- [x] source-doc consistency/final-quality review、workspace-wide final gate、
+  exact implementation commit `8181ae8fc8af0c7028254ad30147b417fbf84611`後
+  Task269GCTをautomatic inventory。
+
+## Checker Task 269GCT Given-condition source-type consumer
+
+- [x] clean GC、canonical type authority、GC/GCP、GT/GUPT pattern、baseline、
+  origin/stashをfresh inventoryしGCTだけをselect。
+- [x] missing family/test=`source_drift`/`test_gap`、contract/stale status=
+  `design_drift`、forbidden semantics/artifact/runner owner=`boundary_violation`、
+  origin `0/15`=`repo_metadata_conflict`、blocking `spec_gap`なし。
+- [x] by-value composite、`2/2/0` overlay、2 type rows、3-node arena、fingerprint、
+  Typed/Resolved/private runner、7 files/8 tests、zero credit、deferral/exitを
+  EN/JAでfreeze。
+- [x] spec reviewを**NO FINDINGS**までrepeatしmeasured docs-only verification
+  gateを全PASS。final qualityも**NO FINDINGS**、全9 gates PASS、capなしの
+  `100/100`。exact stage/commitはremaining。
+- [ ] fresh preflight、GCTだけ実装、全review/verification/9 gates、separate
+  commit後Task269GCUをautomatic inventory。

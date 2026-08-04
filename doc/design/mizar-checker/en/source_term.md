@@ -546,3 +546,11 @@ after consuming the exact GCT composite; descendant uses remain later.
 No term/reference/use-site or Typed/final term owner was added. Both opaque
 condition leaves, descendant occurrences, and all resolver-at-use provenance
 remain deferred to GCU after the exact GCT dependency.
+
+## Task 269GCT Frozen Term Deferral
+
+The written type contains no term arguments, so the source-type argument table
+is empty. GCT publishes no term, occurrence, reference, resolver use
+provenance, equality operand, or Typed/final term node. The condition leaves
+`107..108` and `111..112` remain excluded; only GCU may transport them after
+consuming the exact GCT composite.

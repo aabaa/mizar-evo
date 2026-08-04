@@ -835,3 +835,13 @@ Implementation closes only the canonical lexical-binding `source_drift` and
 focused `test_gap`. Existential/Skolem, condition/fact/label, guard, goal,
 obligation, proof/acceptance, capture/export, and downstream IR remain absent
 and explicitly deferred. Active semantic credit stays zero.
+
+## Task 269GCT Zero-semantic Type Boundary
+
+GCT transports only the source-written type and updates the private binding
+type site. It does not infer type membership, normalization, constraints,
+coercions, type facts, condition truth, labels, existential/Skolem state,
+assumption/guard composition, goals, initial obligations, proof/discharge/
+acceptance, capture/export, or Core/CFG/VC/ATP meaning. Empty semantic tables
+are an exclusion invariant, not evidence of semantic success. GCU and later
+owners retain all non-type behavior.

@@ -5778,5 +5778,14 @@ exact public 4-item GC family、canonical block-scope transaction、focused test
 expectation、trace、metadata、diagnostic、dispatch、active creditは不変。written
 type/condition occurrenceはGCT/GCU owner。source-doc final reviewは**NO FINDINGS**、
 parent workspace verification gateは全PASS。independent final qualityも**NO
-FINDINGS**、9 gateはcapなし`100/100`。stage/
-commitとGCT inventoryだけが残る。
+FINDINGS**、9 gateはcapなし`100/100`。commit
+`8181ae8fc8af0c7028254ad30147b417fbf84611`は完了しGCT mappingを以下に記録。
+
+## Task 269GCT frozen source/spec mapping
+
+canonical soft typing/`given` ruleをexact `set@90..93`からwitness binding 1へmapし
+GC identity/lookupを保持。distinct public family、common source-type table、
+Typed/final boxed owner、focused Rust tests 8件だけがderived consumer。existing
+`.miz`/sidecar/expectation/trace/metadata/diagnostic/dispatch/creditは不変。missing
+family/testは`source_drift`/`test_gap`、frozen mappingが`design_drift`をrepair。
+condition occurrence/semanticsはGCU/later、blocking `spec_gap`なし。

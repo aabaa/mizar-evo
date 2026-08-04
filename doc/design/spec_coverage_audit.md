@@ -6774,6 +6774,40 @@ Specification, test-sufficiency, and implementation reviews end **NO
 FINDINGS**. GCT/GCU, descendants, capture/export, facts, goals, proofs,
 obligations, acceptance, downstream IR, and Task 270 remain explicit
 zero-credit follow-ups. Source/docs consistency is **NO FINDINGS** and
-workspace-wide final verification passes. Independent final quality is **NO FINDINGS**
-with all nine gates uncapped at `100/100`; only staging/commit and the zero-
-credit GCT fresh inventory remain.
+workspace-wide final verification passes. Independent final quality is **NO
+FINDINGS** with all nine gates uncapped at `100/100`; commit
+`8181ae8fc8af0c7028254ad30147b417fbf84611` is complete and the zero-credit GCT
+inventory follows below.
+
+## Checker Task 269GCT Frozen Zero-credit Source-Type Boundary
+
+Fresh clean GC commit `8181ae8fc8af0c7028254ad30147b417fbf84611`
+makes GCT dependency-ready. Canonical Chapters 3/4/15/16 and the exact
+GCP/GC artifacts authorize only the declared witness's written builtin-`set`
+type. The frozen composite consumes GC by value, retains its complete
+fingerprint, overlays binding 1 with `Source(90..93)`, and publishes exactly
+two dense source-type applications/expressions plus the exact three-node arena.
+
+The documentation prerequisite changes exactly 42 synchronized design/audit
+Markdown files and no Rust or canonical test artifact. Implementation may add the
+distinct public type family, boxed Typed/Resolved owners, private runner route,
+and four checker/four runner tests. It earns no active specification coverage:
+no `.miz`, expectation, trace row/status/backlink, metadata, stage, diagnostic,
+dispatch, CLI, or result changes. Cases/requirements stay `428/395`, pass/fail
+`235/193`, warnings/errors `23/0`, stages `101/7/205/1`, type coverage
+`259=247+12`, and trace SHA-256 remains
+`55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`.
+
+GCT receives dormant written-source-type transport credit only. Condition
+occurrences/formula/fact/label semantics, existential/Skolem state, guards,
+goals, proofs, obligations, acceptance, descendant/export/capture behavior,
+downstream IR, and Task 270 remain deferred. Task 269GCU is the exact next
+condition-occurrence consumer.
+
+The documentation specification review is **NO FINDINGS**. The exact 42-file
+Markdown diff passes lint, metadata, format, Clippy, full workspace, CLI,
+count/hash, protected-artifact, and whitespace verification without changing
+active credit. Final read-only quality is also **NO FINDINGS**: all nine hard
+gates PASS without a score cap at valid `100/100`
+(`20/20/15/15/10/10/5/5`). Staging and the dedicated docs commit remain
+parent-owned gates.

@@ -2029,3 +2029,134 @@ may consume the GC handoff by value and overlay that exact written type.
 The installed witness remains missing-type and the exact `set@90..93` source
 type remains unpublished. No application, overlay, normalization, constraint,
 guard, or obligation changed. GCT is still the sole next by-value type owner.
+
+## Task 269GCT Frozen Given-condition Source-Type Composition
+
+GCT consumes the exact GC handoff by value and publishes one distinct immutable
+source-type composite. It copies the authenticated `2/2/0` binding environment
+without changing contexts, identity, status, capture, diagnostics, or lookup,
+then overlays only binding 1 with `BindingTypeSite::Source(90..93)`; binding 0
+retains `Source(14..17)`.
+
+`SourceTypeHandoffInput` is exactly two application rows and two expression
+rows, in dense order. Application `i` uses binding `i`, source ordinal `i`, and
+root expression `i`. Expressions are `set@14..17` and `set@90..93`, with
+`source.type.expression` / `source.type.head` sites on typed nodes 0 and 1,
+identical expression/head ranges and spelling `set`, `Bare`, `BuiltinSet`, and
+`Normal`. Arguments, definition returns, mode RHS, and structure members are
+empty. The three-node arena is
+`source.proof-local.given-condition.reserve-type@14..17`,
+`source.proof-local.given-condition.type@90..93`, and
+`source.proof-local.given-condition.type-root@0..133` with children `[0,1]`;
+all nodes are unresolved, unknown-typed, normal, and link-free, with root 2.
+
+The public family is
+`SourceProofLocalGivenConditionTypeHandoff`,
+`SourceProofLocalGivenConditionTypeProducer`, and non-exhaustive
+`SourceProofLocalGivenConditionTypeError::{InvalidDependency,
+InvalidBindingEnvironment, InvalidSourceType, InvalidInstallation}`. The
+handoff retains and fingerprints the exact GC dependency, overlaid environment,
+and source-type handoff and provides read-only getters plus
+`source-proof-local-given-condition-type-debug-v1` replay. Generic source-type
+admission, normalization, constraints, coercions, facts, guards, obligations,
+condition occurrences, and semantic acceptance are forbidden. GCU alone may
+consume this exact composite next.
+
+The handoff field order and public read-only API are frozen exactly as follows:
+
+```rust
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceProofLocalGivenConditionTypeHandoff {
+    source_id: SourceId,
+    module_id: ModuleId,
+    dependency: SourceProofLocalGivenConditionBindingHandoff,
+    dependency_fingerprint: String,
+    binding_env: BindingEnv,
+    binding_fingerprint: String,
+    source_type: SourceTypeApplicationHandoff,
+    source_type_fingerprint: String,
+}
+
+impl SourceProofLocalGivenConditionTypeHandoff {
+    pub const fn source_id(&self) -> SourceId;
+    pub const fn module_id(&self) -> &ModuleId;
+    pub const fn dependency(&self) -> &SourceProofLocalGivenConditionBindingHandoff;
+    pub fn dependency_fingerprint(&self) -> &str;
+    pub const fn binding_env(&self) -> &BindingEnv;
+    pub fn binding_fingerprint(&self) -> &str;
+    pub const fn source_type(&self) -> &SourceTypeApplicationHandoff;
+    pub fn source_type_fingerprint(&self) -> &str;
+    pub fn debug_text(&self) -> String;
+
+    pub(crate) fn validate_installation(
+        &self,
+        source_id: SourceId,
+        module_id: &ModuleId,
+        arena: &TypedArena,
+    ) -> Result<(), SourceProofLocalGivenConditionTypeError>;
+
+    pub(crate) fn validate_complete_installation(
+        &self,
+        source_id: SourceId,
+        module_id: &ModuleId,
+        arena: &TypedArena,
+        installation_available: bool,
+    ) -> Result<(), SourceProofLocalGivenConditionTypeError>;
+}
+
+pub struct SourceProofLocalGivenConditionTypeProducer;
+
+impl SourceProofLocalGivenConditionTypeProducer {
+    pub fn build(
+        dependency: SourceProofLocalGivenConditionBindingHandoff,
+        input: SourceTypeHandoffInput,
+        symbols: &SymbolEnv,
+        arena: &TypedArena,
+    ) -> Result<
+        SourceProofLocalGivenConditionTypeHandoff,
+        SourceProofLocalGivenConditionTypeError,
+    >;
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum SourceProofLocalGivenConditionTypeError {
+    InvalidDependency,
+    InvalidBindingEnvironment,
+    InvalidSourceType,
+    InvalidInstallation,
+}
+```
+
+The enum implements `fmt::Display` and `std::error::Error`; it has no source or
+additional public methods.
+
+The exact debug grammar is:
+
+```text
+source-proof-local-given-condition-type-debug-v1
+module: {package}::{module}
+dependency-fingerprint: {Rust-debug-quoted complete GC debug text}
+binding-fingerprint: {Rust-debug-quoted complete overlaid BindingEnv debug text}
+source-type-fingerprint: {Rust-debug-quoted complete source-type debug text}
+```
+
+Every line, including the last fingerprint line, ends in exactly one LF; there
+is no blank or extra terminal line. The nested fingerprints are rendered with
+Rust `Debug` quoting exactly as retained, including their embedded `\n` bytes.
+
+The four exact `Display` strings are respectively
+`source proof-local given-condition type dependency is invalid`,
+`source proof-local given-condition typed binding environment is invalid`,
+`source proof-local given-condition source type is invalid`, and
+`source proof-local given-condition type installation is invalid`.
+
+Producer validation first revalidates the GC dependency, then retains its
+fingerprint and creates the exact overlay. It next checks the complete input
+and arena and invokes common `validate_input` with
+`SourceTypeBindingProfile::ProofLocalGiven`; only then does it build and
+fingerprint the source-type handoff. Installation revalidates dependency
+identity/fingerprint before binding environment/fingerprint, then source-type
+shape/fingerprint/common installation and arena, and finally slot
+availability. Multi-corruption tests must observe that exact four-tier error
+precedence.
