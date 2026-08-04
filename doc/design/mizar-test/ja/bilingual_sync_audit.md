@@ -1594,3 +1594,7 @@ EN/JAはexact source/Surface fingerprint、resolver/local provenance、crate-pri
 lower output、tests 4件、`536 -> 540` projection、37-path invariant、dormant
 dispatch、family isolation、checker/semantic/coverage effect 0、Task-269C follow-upで
 一致する。committed Task-269B ledgerも両言語でcloseする。
+
+implementation recordも同期する。EN/JAはexact side-table/signature guard、files
+4件、tests 4件、production `37/71194`、540-test hash、review result、semantic/
+coverage delta 0で一致する。bilingual implementation debtはない。

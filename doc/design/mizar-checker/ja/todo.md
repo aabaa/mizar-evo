@@ -6447,8 +6447,9 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   exclusion、tests 4件、credit 0、exitをEN/JAでfreezeする。
 - [x] specification reviewを**NO FINDINGS**までrepeatし、docs-only gate 9件を
   PASSしてdocumentation prerequisiteだけをcommitする。
-- [ ] fresh preflight後runner-private lower projectionだけをimplementする。
+- [x] fresh preflight後runner-private lower projectionだけをimplementする。
   checker/public API、BindingEnv、Typed/final owner、corpus、traceは不変。
-- [ ] independent review、verification、final gate 9件、task-only commitを完了し、
-  missing type siteを維持してsource-type admissionを分離したbinding-only
+- [x] independent reviewを**NO FINDINGS**まで完了し、verificationとfinal gate
+  9件をscore capなしの`100/100`でPASSする。exact task-only commitをauthorizeし、
+  その後missing type siteを維持してsource-type admissionを分離したbinding-only
   Task 269Cをfresh inventoryする。

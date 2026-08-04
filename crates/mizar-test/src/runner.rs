@@ -621,6 +621,17 @@ use type_elaboration::{
     unwrapped_imported_source_application_handoff_for_test,
     wrapped_imported_source_application_handoff_for_test,
 };
+#[cfg(test)]
+use type_elaboration::{
+    SOURCE_PROOF_LOCAL_LET_TEXT, SourceProofLocalLetLowerMutation, SourceProofLocalLetLowerOutput,
+    SourceProofLocalLetResolverProfileMutation, SourceProofLocalLetShellMutation,
+    SourceProofLocalLetSurfaceMutation, source_proof_local_let_lower_output,
+    source_proof_local_let_lower_output_with_mutation,
+    source_proof_local_let_lower_output_with_resolver_mutation,
+    source_proof_local_let_lower_output_with_resolver_profile_mutation,
+    source_proof_local_let_lower_output_with_shell_mutation,
+    source_proof_local_let_lower_output_with_surface_mutation,
+};
 use type_elaboration::{
     assemble_source_reserve_checker_handoff, assert_source_reserve_core_context_readiness,
     assert_source_reserve_core_summary_readiness, assert_source_reserve_handoff,

@@ -67,19 +67,25 @@ use mizar_checker::{
     },
 };
 use mizar_resolve::{
+    declarations::{
+        DeclarationShell, DeclarationShellKind, DeclarationShellSet,
+        DeclarationShellVisibilityState,
+    },
     env::{
-        ContributionKind, ExportStatus, NamespacePath, SourceContributionId, SymbolEnv,
-        SymbolEnvIndexes, SymbolKind, Visibility,
+        ContributionKind, DefinitionId, DefinitionIndex, DefinitionKind, DefinitionShell,
+        ExportStatus, NamespacePath, SignatureShell, SourceContributionId, SourceContributionIndex,
+        SymbolEnv, SymbolEnvIndexes, SymbolKind, Visibility,
     },
     labels::{
         LabelProjection, LabelProjectionData, LabelReferenceCandidate, LabelResolver,
         LabelScopePath,
     },
-    names::LocalTermScope,
+    names::{LocalTermBinding, LocalTermScope},
     resolved_ast::{
-        ImportResolution, LabelKind, LabelOriginPath, ModuleId, NameRefTable, NodeReferenceKey,
-        NodeResolutionState, RecoveryState, ReferenceSite, ResolvedArena, ResolvedArenaBuilder,
-        ResolvedAst, ResolvedImport, ResolvedImports, ResolvedNode, SemanticOrigin, SymbolId,
+        FullyQualifiedName, ImportResolution, LabelKind, LabelOriginPath, LocalSymbolId, ModuleId,
+        NameRefTable, NodeReferenceKey, NodeResolutionState, RecoveryState, ReferenceSite,
+        ResolvedArena, ResolvedArenaBuilder, ResolvedAst, ResolvedImport, ResolvedImports,
+        ResolvedNode, SemanticOrigin, SymbolId,
     },
 };
 use mizar_session::{
@@ -173,6 +179,14 @@ pub(in crate::runner) const SOURCE_STATEMENT_B3N_TEXT: &str = concat!(
     "reserve x for set;\n",
     "theorem FormulaStatementNamedWitnessSmoke: x = x proof\n",
     "  take y = x;\n",
+    "  thus x = x;\n",
+    "end;\n",
+);
+
+pub(in crate::runner) const SOURCE_PROOF_LOCAL_LET_TEXT: &str = concat!(
+    "reserve x for set;\n",
+    "theorem FormulaStatementLetSmoke: x = x proof\n",
+    "  let y be set;\n",
     "  thus x = x;\n",
     "end;\n",
 );
@@ -7252,6 +7266,1295 @@ fn exact_multiple_witness_surface_profile(ast: &SurfaceAst) -> bool {
                         .eq(task258b3m1_surface_children(index).iter().copied())
             })
         })
+}
+
+const SOURCE_PROOF_LOCAL_LET_SOURCE_FINGERPRINT: &str =
+    "7860a3fe5af89063ac6a2b9a4465cac36d26f6d64e892ba6e2c89bcbaaf9763a";
+const SOURCE_PROOF_LOCAL_LET_SURFACE_FINGERPRINT: &str =
+    "1fc35ec18db82efc0968b2f42b08cfaae678184983210cd26f060d45354c7f68";
+const SOURCE_PROOF_LOCAL_LET_SIGNATURE_PAYLOAD: &str = concat!(
+    "node=TheoremItem;symbol=theorem;definition=theorem;",
+    "primary_tokens=theorem FormulaStatementLetSmoke : x = x proof let y be set ; ",
+    "thus x = x ; end ;;notation=_;arity=_;roles=FormulaExpression,ProofBlock",
+);
+const SOURCE_PROOF_LOCAL_LET_LABEL: &str = "FormulaStatementLetSmoke";
+
+// Rationale: Task 269CP freezes this dormant runner-private lower payload before its Task-269C consumer.
+#[cfg_attr(not(test), allow(dead_code))]
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(in crate::runner) struct SourceProofLocalLetLowerOutput {
+    source_id: SourceId,
+    module_id: ModuleId,
+    source_fingerprint: String,
+    surface_fingerprint: String,
+    theorem_symbol: SymbolId,
+    theorem_definition: DefinitionId,
+    contribution: SourceContributionId,
+    theorem_range: SourceRange,
+    proof_range: SourceRange,
+    let_range: SourceRange,
+    segment_range: SourceRange,
+    name_range: SourceRange,
+    type_range: SourceRange,
+    type_head_range: SourceRange,
+    source_ordinal: usize,
+    local: LocalTermBinding,
+}
+
+// Rationale: Task 269CP keeps the complete read-only payload API dormant until its Task-269C consumer.
+#[cfg_attr(not(test), allow(dead_code))]
+impl SourceProofLocalLetLowerOutput {
+    pub(in crate::runner) const fn source_id(&self) -> SourceId {
+        self.source_id
+    }
+
+    pub(in crate::runner) const fn module_id(&self) -> &ModuleId {
+        &self.module_id
+    }
+
+    pub(in crate::runner) fn source_fingerprint(&self) -> &str {
+        &self.source_fingerprint
+    }
+
+    pub(in crate::runner) fn surface_fingerprint(&self) -> &str {
+        &self.surface_fingerprint
+    }
+
+    pub(in crate::runner) const fn theorem_symbol(&self) -> &SymbolId {
+        &self.theorem_symbol
+    }
+
+    pub(in crate::runner) const fn theorem_definition(&self) -> DefinitionId {
+        self.theorem_definition
+    }
+
+    pub(in crate::runner) const fn contribution(&self) -> SourceContributionId {
+        self.contribution
+    }
+
+    pub(in crate::runner) const fn theorem_range(&self) -> SourceRange {
+        self.theorem_range
+    }
+
+    pub(in crate::runner) const fn proof_range(&self) -> SourceRange {
+        self.proof_range
+    }
+
+    pub(in crate::runner) const fn let_range(&self) -> SourceRange {
+        self.let_range
+    }
+
+    pub(in crate::runner) const fn segment_range(&self) -> SourceRange {
+        self.segment_range
+    }
+
+    pub(in crate::runner) const fn name_range(&self) -> SourceRange {
+        self.name_range
+    }
+
+    pub(in crate::runner) const fn type_range(&self) -> SourceRange {
+        self.type_range
+    }
+
+    pub(in crate::runner) const fn type_head_range(&self) -> SourceRange {
+        self.type_head_range
+    }
+
+    pub(in crate::runner) const fn source_ordinal(&self) -> usize {
+        self.source_ordinal
+    }
+
+    pub(in crate::runner) const fn local(&self) -> &LocalTermBinding {
+        &self.local
+    }
+
+    pub(in crate::runner) fn debug_text(&self) -> String {
+        format!(
+            concat!(
+                "source-proof-local-let-lower-debug-v1\n",
+                "module: {}::{}\n",
+                "source-fingerprint: {:?}\n",
+                "surface-fingerprint: {:?}\n",
+                "theorem symbol={:?} definition={} contribution={} range={}..{} proof={}..{}\n",
+                "let range={}..{} segment={}..{} source_ordinal={}\n",
+                "name range={}..{} spelling={:?} scope={:?} visible_after={}\n",
+                "type range={}..{} head={}..{} spelling=\"set\" form=bare\n",
+            ),
+            self.module_id.package().as_str(),
+            self.module_id.path().as_str(),
+            self.source_fingerprint,
+            self.surface_fingerprint,
+            self.theorem_symbol.fqn().as_str(),
+            self.theorem_definition.index(),
+            self.contribution.index(),
+            self.theorem_range.start,
+            self.theorem_range.end,
+            self.proof_range.start,
+            self.proof_range.end,
+            self.let_range.start,
+            self.let_range.end,
+            self.segment_range.start,
+            self.segment_range.end,
+            self.source_ordinal,
+            self.name_range.start,
+            self.name_range.end,
+            self.local.spelling(),
+            self.local.scope().path(),
+            self.local.visible_after_ordinal(),
+            self.type_range.start,
+            self.type_range.end,
+            self.type_head_range.start,
+            self.type_head_range.end,
+        )
+    }
+}
+
+// Rationale: Task 269CP keeps exhaustive Surface-profile corruption test-only and runner-private.
+#[cfg_attr(not(test), allow(dead_code))]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(in crate::runner) enum SourceProofLocalLetSurfaceMutation {
+    None,
+    ExpressionRoot,
+    TokenNode(usize),
+    TokenNodeCount,
+    NodeKind(usize),
+    NodeSourceId(usize),
+    NodeRange(usize),
+    NodeRecovery(usize),
+    NodeChildren(usize),
+    MissingRootIdentity,
+    WrongRootIdentity,
+}
+
+// Rationale: Task 269CP keeps output/local corruption test-only and runner-private.
+#[cfg_attr(not(test), allow(dead_code))]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(in crate::runner) enum SourceProofLocalLetLowerMutation {
+    None,
+    SourceId,
+    Module,
+    SourceFingerprint,
+    SurfaceFingerprint,
+    TheoremSymbol,
+    TheoremDefinition,
+    Contribution,
+    TheoremRange,
+    ProofRange,
+    LetRange,
+    SegmentRange,
+    NameRange,
+    TypeRange,
+    TypeHeadRange,
+    SourceOrdinal,
+    LocalSpelling,
+    LocalScope,
+    LocalRange,
+    LocalVisibleAfter,
+}
+
+// Rationale: Task 269CP keeps field-level declaration-shell corruption test-only and runner-private.
+#[cfg_attr(not(test), allow(dead_code))]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(in crate::runner) enum SourceProofLocalLetShellMutation {
+    None,
+    Id(usize),
+    Ordinal(usize),
+    Kind(usize),
+    Module(usize),
+    Node(usize),
+    Syntax(usize),
+    Range(usize),
+    Parent(usize),
+    VisibilityState(usize),
+    VisibilityMarker(usize),
+    VisibilitySpelling(usize),
+    Recovery(usize),
+}
+
+// Rationale: Task 269CP keeps exhaustive resolver-provenance guard coverage test-only and runner-private.
+#[cfg_attr(not(test), allow(dead_code))]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(in crate::runner) enum SourceProofLocalLetResolverProfileMutation {
+    None,
+    ResolverModule,
+    ImportIndex,
+    ExportIndex,
+    LabelIndex,
+    OverloadIndex,
+    RegistrationIndex,
+    LexicalSummaryIndex,
+    NamespaceGraph,
+    DeclarationDependencyIndex,
+    ModuleSummaryIndex,
+    SymbolModule,
+    SymbolNotation,
+    SymbolContribution,
+    SymbolRelations,
+    SymbolOriginSource,
+    SymbolOriginImport,
+    DefinitionId,
+    DefinitionParameters,
+    DefinitionBinders,
+    DefinitionNotation,
+    DefinitionDoc,
+    DefinitionContribution,
+    DefinitionConflict,
+    DefinitionDependencies,
+    ContributionLabelEffect,
+    ContributionOverloadEffect,
+    ContributionRegistrationEffect,
+    ContributionLexicalEffect,
+    ContributionNamespaceEffect,
+    ContributionDeclarationDependencyEffect,
+    ContributionImportEffect,
+    ContributionExportEffect,
+    ContributionDiagnosticEffect,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct SourceProofLocalLetMutations {
+    surface: SourceProofLocalLetSurfaceMutation,
+    lower: SourceProofLocalLetLowerMutation,
+    shell: SourceProofLocalLetShellMutation,
+    resolver: SourceProofLocalLetResolverProfileMutation,
+}
+
+impl SourceProofLocalLetMutations {
+    const NONE: Self = Self {
+        surface: SourceProofLocalLetSurfaceMutation::None,
+        lower: SourceProofLocalLetLowerMutation::None,
+        shell: SourceProofLocalLetShellMutation::None,
+        resolver: SourceProofLocalLetResolverProfileMutation::None,
+    };
+
+    #[cfg(test)]
+    const fn surface(surface: SourceProofLocalLetSurfaceMutation) -> Self {
+        Self {
+            surface,
+            ..Self::NONE
+        }
+    }
+
+    #[cfg(test)]
+    const fn lower(lower: SourceProofLocalLetLowerMutation) -> Self {
+        Self {
+            lower,
+            ..Self::NONE
+        }
+    }
+
+    #[cfg(test)]
+    const fn shell(shell: SourceProofLocalLetShellMutation) -> Self {
+        Self {
+            shell,
+            ..Self::NONE
+        }
+    }
+
+    #[cfg(test)]
+    const fn resolver(resolver: SourceProofLocalLetResolverProfileMutation) -> Self {
+        Self {
+            resolver,
+            ..Self::NONE
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct SourceProofLocalLetShellProfile {
+    ordinal: usize,
+    kind: DeclarationShellKind,
+    node_index: usize,
+    syntax_kind: SyntaxKind,
+    source_range: SourceRange,
+}
+
+fn exact_source_proof_local_let_surface_profile(ast: &SurfaceAst, source_text: &str) -> bool {
+    exact_source_proof_local_let_surface_profile_with_mutation(
+        ast,
+        source_text,
+        SourceProofLocalLetSurfaceMutation::None,
+    )
+}
+
+fn exact_source_proof_local_let_surface_profile_with_mutation(
+    ast: &SurfaceAst,
+    source_text: &str,
+    mutation: SourceProofLocalLetSurfaceMutation,
+) -> bool {
+    const KINDS: [&str; 51] = [
+        "Token(SurfaceToken { kind: ReservedWord, text: \"reserve\" })",
+        "Token(SurfaceToken { kind: Identifier, text: \"x\" })",
+        "Token(SurfaceToken { kind: ReservedWord, text: \"for\" })",
+        "Token(SurfaceToken { kind: ReservedWord, text: \"set\" })",
+        "Token(SurfaceToken { kind: ReservedSymbol, text: \";\" })",
+        "Token(SurfaceToken { kind: ReservedWord, text: \"theorem\" })",
+        "Token(SurfaceToken { kind: Identifier, text: \"FormulaStatementLetSmoke\" })",
+        "Token(SurfaceToken { kind: ReservedSymbol, text: \":\" })",
+        "Token(SurfaceToken { kind: Identifier, text: \"x\" })",
+        "Token(SurfaceToken { kind: ReservedSymbol, text: \"=\" })",
+        "Token(SurfaceToken { kind: Identifier, text: \"x\" })",
+        "Token(SurfaceToken { kind: ReservedWord, text: \"proof\" })",
+        "Token(SurfaceToken { kind: ReservedWord, text: \"let\" })",
+        "Token(SurfaceToken { kind: Identifier, text: \"y\" })",
+        "Token(SurfaceToken { kind: ReservedWord, text: \"be\" })",
+        "Token(SurfaceToken { kind: ReservedWord, text: \"set\" })",
+        "Token(SurfaceToken { kind: ReservedSymbol, text: \";\" })",
+        "Token(SurfaceToken { kind: ReservedWord, text: \"thus\" })",
+        "Token(SurfaceToken { kind: Identifier, text: \"x\" })",
+        "Token(SurfaceToken { kind: ReservedSymbol, text: \"=\" })",
+        "Token(SurfaceToken { kind: Identifier, text: \"x\" })",
+        "Token(SurfaceToken { kind: ReservedSymbol, text: \";\" })",
+        "Token(SurfaceToken { kind: ReservedWord, text: \"end\" })",
+        "Token(SurfaceToken { kind: ReservedSymbol, text: \";\" })",
+        "TypeHead",
+        "TypeExpression",
+        "ReserveSegment",
+        "ReserveItem",
+        "TermReference",
+        "TermExpression",
+        "TermReference",
+        "TermExpression",
+        "BuiltinPredicateApplication",
+        "FormulaExpression",
+        "TypeHead",
+        "TypeExpression",
+        "QualifiedVariableSegment",
+        "LetStatement",
+        "TermReference",
+        "TermExpression",
+        "TermReference",
+        "TermExpression",
+        "BuiltinPredicateApplication",
+        "FormulaExpression",
+        "Proposition",
+        "ConclusionStatement",
+        "ProofBlock",
+        "TheoremItem",
+        "ItemList",
+        "CompilationUnit",
+        "Root",
+    ];
+    const RANGES: [(usize, usize); 51] = [
+        (0, 7),
+        (8, 9),
+        (10, 13),
+        (14, 17),
+        (17, 18),
+        (19, 26),
+        (27, 51),
+        (51, 52),
+        (53, 54),
+        (55, 56),
+        (57, 58),
+        (59, 64),
+        (67, 70),
+        (71, 72),
+        (73, 75),
+        (76, 79),
+        (79, 80),
+        (83, 87),
+        (88, 89),
+        (90, 91),
+        (92, 93),
+        (93, 94),
+        (95, 98),
+        (98, 99),
+        (14, 17),
+        (14, 17),
+        (8, 17),
+        (0, 18),
+        (53, 54),
+        (53, 54),
+        (57, 58),
+        (57, 58),
+        (53, 58),
+        (53, 58),
+        (76, 79),
+        (76, 79),
+        (71, 79),
+        (67, 80),
+        (88, 89),
+        (88, 89),
+        (92, 93),
+        (92, 93),
+        (88, 93),
+        (88, 93),
+        (88, 93),
+        (83, 94),
+        (59, 98),
+        (19, 99),
+        (0, 99),
+        (0, 99),
+        (0, 99),
+    ];
+    const CHILDREN: [&[usize]; 51] = [
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        &[3],
+        &[24],
+        &[1, 2, 25],
+        &[0, 26, 4],
+        &[8],
+        &[28],
+        &[10],
+        &[30],
+        &[29, 9, 31],
+        &[32],
+        &[15],
+        &[34],
+        &[13, 14, 35],
+        &[12, 36, 16],
+        &[18],
+        &[38],
+        &[20],
+        &[40],
+        &[39, 19, 41],
+        &[42],
+        &[43],
+        &[17, 44, 21],
+        &[11, 37, 45, 22],
+        &[5, 6, 7, 33, 46, 23],
+        &[27, 47],
+        &[48],
+        &[
+            0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
+            49,
+        ],
+    ];
+    let mut kinds = KINDS
+        .iter()
+        .map(|kind| (*kind).to_owned())
+        .collect::<Vec<_>>();
+    let mut source_ids = [ast.source_id; 51];
+    let mut ranges = RANGES.to_vec();
+    let mut recoveries = [false; 51];
+    let mut children = CHILDREN
+        .iter()
+        .map(|children| children.to_vec())
+        .collect::<Vec<_>>();
+    let mut root = Some(50);
+    let mut expression_root = None;
+    let mut token_nodes = (0..24).collect::<Vec<_>>();
+    match mutation {
+        SourceProofLocalLetSurfaceMutation::None => {}
+        SourceProofLocalLetSurfaceMutation::ExpressionRoot => expression_root = Some(33),
+        SourceProofLocalLetSurfaceMutation::TokenNode(index) => {
+            if let Some(token_node) = token_nodes.get_mut(index) {
+                *token_node = (*token_node + 1) % 24;
+            }
+        }
+        SourceProofLocalLetSurfaceMutation::TokenNodeCount => {
+            token_nodes.pop();
+        }
+        SourceProofLocalLetSurfaceMutation::NodeKind(index) => {
+            if let Some(kind) = kinds.get_mut(index) {
+                kind.push('!');
+            }
+        }
+        SourceProofLocalLetSurfaceMutation::NodeSourceId(index) => {
+            if let Some(source_id) = source_ids.get_mut(index) {
+                *source_id = task258b3m2b2b3a_mutated_source_id(*source_id);
+            }
+        }
+        SourceProofLocalLetSurfaceMutation::NodeRange(index) => {
+            if let Some(range) = ranges.get_mut(index) {
+                range.1 = range.1.saturating_add(1);
+            }
+        }
+        SourceProofLocalLetSurfaceMutation::NodeRecovery(index) => {
+            if let Some(recovered) = recoveries.get_mut(index) {
+                *recovered = !*recovered;
+            }
+        }
+        SourceProofLocalLetSurfaceMutation::NodeChildren(index) => {
+            if let Some(node_children) = children.get_mut(index) {
+                if node_children.len() > 1 {
+                    node_children.rotate_left(1);
+                } else {
+                    node_children.push(index);
+                }
+            }
+        }
+        SourceProofLocalLetSurfaceMutation::MissingRootIdentity => root = None,
+        SourceProofLocalLetSurfaceMutation::WrongRootIdentity => root = Some(49),
+    }
+    source_text == SOURCE_PROOF_LOCAL_LET_TEXT
+        && source_text.len() == 100
+        && source_text.ends_with('\n')
+        && !source_text.ends_with("\n\n")
+        && ast.nodes().len() == 51
+        && ast.root().map(|root| root.index()) == root
+        && ast.expression_root().map(|root| root.index()) == expression_root
+        && ast
+            .token_nodes()
+            .iter()
+            .map(|token| token.index())
+            .eq(token_nodes)
+        && ast.nodes().iter().enumerate().all(|(index, node)| {
+            format!("{:?}", node.kind) == kinds[index]
+                && (node.range.start, node.range.end) == ranges[index]
+                && node.range.source_id == source_ids[index]
+                && node.recovered == recoveries[index]
+                && node
+                    .children
+                    .iter()
+                    .map(|child| child.index())
+                    .eq(children[index].iter().copied())
+        })
+}
+
+// Rationale: Task 269CP keeps this private lower producer dormant until its Task-269C consumer.
+#[cfg_attr(not(test), allow(dead_code))]
+pub(in crate::runner) fn source_proof_local_let_lower_output(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    shells: &DeclarationShellSet,
+    symbols: &SymbolEnv,
+    source_text: &str,
+) -> Option<Result<SourceProofLocalLetLowerOutput, String>> {
+    source_proof_local_let_lower_output_impl(
+        ast,
+        module,
+        shells,
+        symbols,
+        source_text,
+        SourceProofLocalLetMutations::NONE,
+    )
+}
+
+#[cfg(test)]
+pub(in crate::runner) fn source_proof_local_let_lower_output_with_surface_mutation(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    shells: &DeclarationShellSet,
+    symbols: &SymbolEnv,
+    source_text: &str,
+    mutation: SourceProofLocalLetSurfaceMutation,
+) -> Option<Result<SourceProofLocalLetLowerOutput, String>> {
+    source_proof_local_let_lower_output_impl(
+        ast,
+        module,
+        shells,
+        symbols,
+        source_text,
+        SourceProofLocalLetMutations::surface(mutation),
+    )
+}
+
+#[cfg(test)]
+pub(in crate::runner) fn source_proof_local_let_lower_output_with_mutation(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    shells: &DeclarationShellSet,
+    symbols: &SymbolEnv,
+    source_text: &str,
+    mutation: SourceProofLocalLetLowerMutation,
+) -> Option<Result<SourceProofLocalLetLowerOutput, String>> {
+    source_proof_local_let_lower_output_impl(
+        ast,
+        module,
+        shells,
+        symbols,
+        source_text,
+        SourceProofLocalLetMutations::lower(mutation),
+    )
+}
+
+#[cfg(test)]
+pub(in crate::runner) fn source_proof_local_let_lower_output_with_shell_mutation(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    shells: &DeclarationShellSet,
+    symbols: &SymbolEnv,
+    source_text: &str,
+    mutation: SourceProofLocalLetShellMutation,
+) -> Option<Result<SourceProofLocalLetLowerOutput, String>> {
+    source_proof_local_let_lower_output_impl(
+        ast,
+        module,
+        shells,
+        symbols,
+        source_text,
+        SourceProofLocalLetMutations::shell(mutation),
+    )
+}
+
+#[cfg(test)]
+pub(in crate::runner) fn source_proof_local_let_lower_output_with_resolver_profile_mutation(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    shells: &DeclarationShellSet,
+    symbols: &SymbolEnv,
+    source_text: &str,
+    mutation: SourceProofLocalLetResolverProfileMutation,
+) -> Option<Result<SourceProofLocalLetLowerOutput, String>> {
+    source_proof_local_let_lower_output_impl(
+        ast,
+        module,
+        shells,
+        symbols,
+        source_text,
+        SourceProofLocalLetMutations::resolver(mutation),
+    )
+}
+
+#[cfg(test)]
+pub(in crate::runner) fn source_proof_local_let_lower_output_with_resolver_mutation(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    shells: &DeclarationShellSet,
+    symbols: &SymbolEnv,
+    source_text: &str,
+    mutate: impl FnOnce(SymbolEnv) -> SymbolEnv,
+) -> Option<Result<SourceProofLocalLetLowerOutput, String>> {
+    let symbols = mutate(symbols.clone());
+    source_proof_local_let_lower_output_impl(
+        ast,
+        module,
+        shells,
+        &symbols,
+        source_text,
+        SourceProofLocalLetMutations::NONE,
+    )
+}
+
+fn source_proof_local_let_lower_output_impl(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    shells: &DeclarationShellSet,
+    symbols: &SymbolEnv,
+    source_text: &str,
+    mutations: SourceProofLocalLetMutations,
+) -> Option<Result<SourceProofLocalLetLowerOutput, String>> {
+    if !exact_source_proof_local_let_surface_profile_with_mutation(
+        ast,
+        source_text,
+        mutations.surface,
+    ) {
+        return None;
+    }
+    Some(build_source_proof_local_let_lower_output(
+        ast, module, shells, symbols, mutations,
+    ))
+}
+
+fn build_source_proof_local_let_lower_output(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    shells: &DeclarationShellSet,
+    symbols: &SymbolEnv,
+    mutations: SourceProofLocalLetMutations,
+) -> Result<SourceProofLocalLetLowerOutput, String> {
+    let SourceProofLocalLetMutations {
+        lower: mutation,
+        shell: shell_mutation,
+        resolver: resolver_mutation,
+        ..
+    } = mutations;
+    if !exact_source_proof_local_let_surface_profile(ast, SOURCE_PROOF_LOCAL_LET_TEXT) {
+        return Err("Task269CP exact Surface identity changed after selection".to_owned());
+    }
+    let [reserve_shell, theorem_shell] = shells.declarations() else {
+        return Err("Task269CP requires exactly two declaration shells".to_owned());
+    };
+    if !shells.exports().is_empty() {
+        return Err("Task269CP resolver shells unexpectedly export a path".to_owned());
+    }
+    validate_source_proof_local_let_shell(
+        &module,
+        reserve_shell,
+        SourceProofLocalLetShellProfile {
+            ordinal: 0,
+            kind: DeclarationShellKind::Reserve,
+            node_index: 27,
+            syntax_kind: SyntaxKind::ReserveItem,
+            source_range: range(ast.source_id, 0, 18),
+        },
+        shell_mutation,
+    )?;
+    validate_source_proof_local_let_shell(
+        &module,
+        theorem_shell,
+        SourceProofLocalLetShellProfile {
+            ordinal: 1,
+            kind: DeclarationShellKind::Theorem,
+            node_index: 47,
+            syntax_kind: SyntaxKind::TheoremItem,
+            source_range: range(ast.source_id, 19, 99),
+        },
+        shell_mutation,
+    )?;
+
+    if !source_proof_local_let_resolver_guard(
+        symbols.module_id() == &module,
+        resolver_mutation,
+        SourceProofLocalLetResolverProfileMutation::ResolverModule,
+    ) {
+        return Err("Task269CP raw resolver module mismatch".to_owned());
+    }
+    let namespace = NamespacePath::new(module.path().as_str());
+    if !symbols
+        .symbols()
+        .visible_candidates(&namespace, "y")
+        .is_empty()
+    {
+        return Err("Task269CP local y already resolves as a module symbol".to_owned());
+    }
+    if (
+        symbols.symbols().len(),
+        symbols.definitions().len(),
+        symbols.contributions().len(),
+    ) != (1, 1, 1)
+        || !source_proof_local_let_resolver_guard(
+            symbols.imports().is_empty(),
+            resolver_mutation,
+            SourceProofLocalLetResolverProfileMutation::ImportIndex,
+        )
+        || !source_proof_local_let_resolver_guard(
+            symbols.exports().is_empty(),
+            resolver_mutation,
+            SourceProofLocalLetResolverProfileMutation::ExportIndex,
+        )
+        || !source_proof_local_let_resolver_guard(
+            symbols.labels().is_empty(),
+            resolver_mutation,
+            SourceProofLocalLetResolverProfileMutation::LabelIndex,
+        )
+        || !source_proof_local_let_resolver_guard(
+            symbols.overloads().is_empty(),
+            resolver_mutation,
+            SourceProofLocalLetResolverProfileMutation::OverloadIndex,
+        )
+        || !source_proof_local_let_resolver_guard(
+            symbols.registrations().is_empty(),
+            resolver_mutation,
+            SourceProofLocalLetResolverProfileMutation::RegistrationIndex,
+        )
+        || !source_proof_local_let_resolver_guard(
+            symbols.lexical_summaries().is_empty(),
+            resolver_mutation,
+            SourceProofLocalLetResolverProfileMutation::LexicalSummaryIndex,
+        )
+        || !source_proof_local_let_resolver_guard(
+            symbols.namespace_graph().is_empty(),
+            resolver_mutation,
+            SourceProofLocalLetResolverProfileMutation::NamespaceGraph,
+        )
+        || !source_proof_local_let_resolver_guard(
+            symbols.declaration_dependencies().is_empty(),
+            resolver_mutation,
+            SourceProofLocalLetResolverProfileMutation::DeclarationDependencyIndex,
+        )
+        || !source_proof_local_let_resolver_guard(
+            symbols.module_summaries().is_empty(),
+            resolver_mutation,
+            SourceProofLocalLetResolverProfileMutation::ModuleSummaryIndex,
+        )
+    {
+        return Err("Task269CP raw resolver inventory mismatch".to_owned());
+    }
+    let owners = symbols
+        .symbols()
+        .visible_candidates(&namespace, SOURCE_PROOF_LOCAL_LET_LABEL)
+        .into_iter()
+        .filter(|entry| entry.kind() == SymbolKind::Theorem)
+        .collect::<Vec<_>>();
+    let [owner] = owners.as_slice() else {
+        return Err("Task269CP requires one exact theorem owner".to_owned());
+    };
+    let checked_owner = CheckedStatementOwner::validate_exact_local_theorem(
+        symbols,
+        owner.symbol().clone(),
+        ast.source_id,
+        &module,
+    )
+    .map_err(|error| error.to_string())?;
+    let definitions = symbols.definitions().by_contribution(owner.contribution());
+    let [definition] = definitions.as_slice() else {
+        return Err("Task269CP requires one exact theorem definition".to_owned());
+    };
+    let contribution = symbols
+        .contributions()
+        .get(owner.contribution())
+        .ok_or_else(|| "Task269CP theorem contribution is missing".to_owned())?;
+    if !source_proof_local_let_resolver_guard(
+        owner.symbol().module() == &module,
+        resolver_mutation,
+        SourceProofLocalLetResolverProfileMutation::SymbolModule,
+    ) || owner.primary_spelling() != SOURCE_PROOF_LOCAL_LET_LABEL
+        || !source_proof_local_let_resolver_guard(
+            owner.notation_spelling().is_none(),
+            resolver_mutation,
+            SourceProofLocalLetResolverProfileMutation::SymbolNotation,
+        )
+        || owner.namespace() != &namespace
+        || owner.visibility() != Visibility::Public
+        || owner.export_status() != ExportStatus::Exported
+        || !source_proof_local_let_resolver_guard(
+            owner.contribution().index() == 0,
+            resolver_mutation,
+            SourceProofLocalLetResolverProfileMutation::SymbolContribution,
+        )
+        || !matches!(
+            owner.signature(),
+            Some(SignatureShell::Opaque { schema, payload })
+                if schema == "parser-signature-v1"
+                    && payload == SOURCE_PROOF_LOCAL_LET_SIGNATURE_PAYLOAD
+        )
+        || !source_proof_local_let_resolver_guard(
+            owner.relations().is_empty(),
+            resolver_mutation,
+            SourceProofLocalLetResolverProfileMutation::SymbolRelations,
+        )
+        || checked_owner.source_range() != range(ast.source_id, 19, 99)
+        || checked_owner.origin() != owner.origin()
+        || owner.origin().module_id() != &module
+        || !source_proof_local_let_resolver_guard(
+            owner.origin().source_id() == ast.source_id,
+            resolver_mutation,
+            SourceProofLocalLetResolverProfileMutation::SymbolOriginSource,
+        )
+        || owner.origin().anchor() != &SourceAnchor::Range(range(ast.source_id, 19, 99))
+        || owner.origin().structural_path() != [2, 1]
+        || !source_proof_local_let_resolver_guard(
+            owner.origin().import_edge().is_none(),
+            resolver_mutation,
+            SourceProofLocalLetResolverProfileMutation::SymbolOriginImport,
+        )
+        || owner.origin().is_recovered()
+    {
+        return Err("Task269CP theorem symbol provenance mismatch".to_owned());
+    }
+    if !source_proof_local_let_resolver_guard(
+        definition.id().index() == 0,
+        resolver_mutation,
+        SourceProofLocalLetResolverProfileMutation::DefinitionId,
+    ) || definition.symbol() != owner.symbol()
+        || definition.kind() != DefinitionKind::Theorem
+        || definition.visibility() != Visibility::Public
+        || !source_proof_local_let_resolver_guard(
+            definition.parameters().is_empty(),
+            resolver_mutation,
+            SourceProofLocalLetResolverProfileMutation::DefinitionParameters,
+        )
+        || !source_proof_local_let_resolver_guard(
+            definition.binders().is_empty(),
+            resolver_mutation,
+            SourceProofLocalLetResolverProfileMutation::DefinitionBinders,
+        )
+        || definition.arity().is_some()
+        || !source_proof_local_let_resolver_guard(
+            definition.notation_shape().is_none(),
+            resolver_mutation,
+            SourceProofLocalLetResolverProfileMutation::DefinitionNotation,
+        )
+        || !source_proof_local_let_resolver_guard(
+            definition.doc_attachment().is_none(),
+            resolver_mutation,
+            SourceProofLocalLetResolverProfileMutation::DefinitionDoc,
+        )
+        || definition.origin() != owner.origin()
+        || !source_proof_local_let_resolver_guard(
+            definition.contribution() == owner.contribution(),
+            resolver_mutation,
+            SourceProofLocalLetResolverProfileMutation::DefinitionContribution,
+        )
+        || !source_proof_local_let_resolver_guard(
+            definition.conflict().is_none(),
+            resolver_mutation,
+            SourceProofLocalLetResolverProfileMutation::DefinitionConflict,
+        )
+        || !source_proof_local_let_resolver_guard(
+            definition.dependencies().is_empty(),
+            resolver_mutation,
+            SourceProofLocalLetResolverProfileMutation::DefinitionDependencies,
+        )
+        || definition.signature() != owner.signature()
+    {
+        return Err("Task269CP theorem definition provenance mismatch".to_owned());
+    }
+    if contribution.id().index() != 0
+        || contribution.module() != &module
+        || !matches!(
+            contribution.kind(),
+            ContributionKind::LocalSource { source_id } if *source_id == ast.source_id
+        )
+        || contribution.anchor() != &SourceAnchor::Range(range(ast.source_id, 0, 18))
+        || contribution.effects().symbols() != [owner.symbol().clone()]
+        || contribution.effects().definitions() != [definition.id()]
+        || !source_proof_local_let_resolver_guard(
+            contribution.effects().labels().is_empty(),
+            resolver_mutation,
+            SourceProofLocalLetResolverProfileMutation::ContributionLabelEffect,
+        )
+        || !source_proof_local_let_resolver_guard(
+            contribution.effects().overload_groups().is_empty(),
+            resolver_mutation,
+            SourceProofLocalLetResolverProfileMutation::ContributionOverloadEffect,
+        )
+        || !source_proof_local_let_resolver_guard(
+            contribution.effects().registrations().is_empty(),
+            resolver_mutation,
+            SourceProofLocalLetResolverProfileMutation::ContributionRegistrationEffect,
+        )
+        || !source_proof_local_let_resolver_guard(
+            contribution.effects().lexical_summaries().is_empty(),
+            resolver_mutation,
+            SourceProofLocalLetResolverProfileMutation::ContributionLexicalEffect,
+        )
+        || !source_proof_local_let_resolver_guard(
+            contribution.effects().namespace_edges().is_empty(),
+            resolver_mutation,
+            SourceProofLocalLetResolverProfileMutation::ContributionNamespaceEffect,
+        )
+        || !source_proof_local_let_resolver_guard(
+            contribution.effects().declaration_dependencies().is_empty(),
+            resolver_mutation,
+            SourceProofLocalLetResolverProfileMutation::ContributionDeclarationDependencyEffect,
+        )
+        || !source_proof_local_let_resolver_guard(
+            contribution.effects().imports().is_empty(),
+            resolver_mutation,
+            SourceProofLocalLetResolverProfileMutation::ContributionImportEffect,
+        )
+        || !source_proof_local_let_resolver_guard(
+            contribution.effects().exports().is_empty(),
+            resolver_mutation,
+            SourceProofLocalLetResolverProfileMutation::ContributionExportEffect,
+        )
+        || !source_proof_local_let_resolver_guard(
+            contribution.effects().diagnostics().is_empty(),
+            resolver_mutation,
+            SourceProofLocalLetResolverProfileMutation::ContributionDiagnosticEffect,
+        )
+    {
+        return Err("Task269CP theorem contribution provenance mismatch".to_owned());
+    }
+
+    let mut output = SourceProofLocalLetLowerOutput {
+        source_id: ast.source_id,
+        module_id: module.clone(),
+        source_fingerprint: SOURCE_PROOF_LOCAL_LET_SOURCE_FINGERPRINT.to_owned(),
+        surface_fingerprint: SOURCE_PROOF_LOCAL_LET_SURFACE_FINGERPRINT.to_owned(),
+        theorem_symbol: owner.symbol().clone(),
+        theorem_definition: definition.id(),
+        contribution: contribution.id(),
+        theorem_range: range(ast.source_id, 19, 99),
+        proof_range: range(ast.source_id, 59, 98),
+        let_range: range(ast.source_id, 67, 80),
+        segment_range: range(ast.source_id, 71, 79),
+        name_range: range(ast.source_id, 71, 72),
+        type_range: range(ast.source_id, 76, 79),
+        type_head_range: range(ast.source_id, 76, 79),
+        source_ordinal: 1,
+        local: LocalTermBinding::new(
+            "y",
+            LocalTermScope::new(vec![0]),
+            range(ast.source_id, 71, 72),
+            1,
+        ),
+    };
+    mutate_source_proof_local_let_lower_output(&mut output, mutation);
+    validate_source_proof_local_let_lower_output(
+        ast,
+        &module,
+        owner.symbol(),
+        definition.id(),
+        contribution.id(),
+        &output,
+    )?;
+    Ok(output)
+}
+
+fn source_proof_local_let_resolver_guard(
+    actual: bool,
+    mutation: SourceProofLocalLetResolverProfileMutation,
+    target: SourceProofLocalLetResolverProfileMutation,
+) -> bool {
+    if mutation == target { !actual } else { actual }
+}
+
+fn validate_source_proof_local_let_shell(
+    module: &ModuleId,
+    shell: &DeclarationShell,
+    profile: SourceProofLocalLetShellProfile,
+    mutation: SourceProofLocalLetShellMutation,
+) -> Result<(), String> {
+    let SourceProofLocalLetShellProfile {
+        ordinal,
+        kind,
+        node_index,
+        syntax_kind,
+        source_range,
+    } = profile;
+    let mut expected_id_index = ordinal;
+    let mut expected_ordinal = ordinal;
+    let mut expected_kind = kind;
+    let mut expected_module = module.clone();
+    let mut expected_node_index = node_index;
+    let mut expected_syntax_kind = syntax_kind;
+    let mut expected_range = source_range;
+    let mut expected_parent = false;
+    let mut expected_visibility_state = DeclarationShellVisibilityState::Unspecified;
+    let mut expected_visibility_marker = false;
+    let mut expected_visibility_spelling = false;
+    let mut expected_recovery = false;
+    match mutation {
+        SourceProofLocalLetShellMutation::None => {}
+        SourceProofLocalLetShellMutation::Id(target) if target == ordinal => {
+            expected_id_index += 1;
+        }
+        SourceProofLocalLetShellMutation::Ordinal(target) if target == ordinal => {
+            expected_ordinal += 1;
+        }
+        SourceProofLocalLetShellMutation::Kind(target) if target == ordinal => {
+            expected_kind = DeclarationShellKind::Placeholder;
+        }
+        SourceProofLocalLetShellMutation::Module(target) if target == ordinal => {
+            expected_module = task258b3m2b2b3a_mutated_module(module);
+        }
+        SourceProofLocalLetShellMutation::Node(target) if target == ordinal => {
+            expected_node_index += 1;
+        }
+        SourceProofLocalLetShellMutation::Syntax(target) if target == ordinal => {
+            expected_syntax_kind = SyntaxKind::PlaceholderItem;
+        }
+        SourceProofLocalLetShellMutation::Range(target) if target == ordinal => {
+            expected_range.end += 1;
+        }
+        SourceProofLocalLetShellMutation::Parent(target) if target == ordinal => {
+            expected_parent = true;
+        }
+        SourceProofLocalLetShellMutation::VisibilityState(target) if target == ordinal => {
+            expected_visibility_state = DeclarationShellVisibilityState::Public;
+        }
+        SourceProofLocalLetShellMutation::VisibilityMarker(target) if target == ordinal => {
+            expected_visibility_marker = true;
+        }
+        SourceProofLocalLetShellMutation::VisibilitySpelling(target) if target == ordinal => {
+            expected_visibility_spelling = true;
+        }
+        SourceProofLocalLetShellMutation::Recovery(target) if target == ordinal => {
+            expected_recovery = true;
+        }
+        SourceProofLocalLetShellMutation::Id(_)
+        | SourceProofLocalLetShellMutation::Ordinal(_)
+        | SourceProofLocalLetShellMutation::Kind(_)
+        | SourceProofLocalLetShellMutation::Module(_)
+        | SourceProofLocalLetShellMutation::Node(_)
+        | SourceProofLocalLetShellMutation::Syntax(_)
+        | SourceProofLocalLetShellMutation::Range(_)
+        | SourceProofLocalLetShellMutation::Parent(_)
+        | SourceProofLocalLetShellMutation::VisibilityState(_)
+        | SourceProofLocalLetShellMutation::VisibilityMarker(_)
+        | SourceProofLocalLetShellMutation::VisibilitySpelling(_)
+        | SourceProofLocalLetShellMutation::Recovery(_) => {}
+    }
+    if shell.id().index() != expected_id_index
+        || shell.ordinal() != expected_ordinal
+        || shell.kind() != expected_kind
+        || shell.module() != &expected_module
+        || shell.node_id().index() != expected_node_index
+        || shell.syntax_kind() != expected_syntax_kind
+        || shell.range() != expected_range
+        || shell.parent().is_some() != expected_parent
+        || shell.visibility().state() != expected_visibility_state
+        || shell.visibility().marker_range().is_some() != expected_visibility_marker
+        || shell.visibility().spelling().is_some() != expected_visibility_spelling
+        || shell.recovered() != expected_recovery
+    {
+        return Err(format!("Task269CP declaration shell {ordinal} mismatch"));
+    }
+    Ok(())
+}
+
+fn mutate_source_proof_local_let_lower_output(
+    output: &mut SourceProofLocalLetLowerOutput,
+    mutation: SourceProofLocalLetLowerMutation,
+) {
+    match mutation {
+        SourceProofLocalLetLowerMutation::None => {}
+        SourceProofLocalLetLowerMutation::SourceId => {
+            output.source_id = task258b3m2b2b3a_mutated_source_id(output.source_id);
+        }
+        SourceProofLocalLetLowerMutation::Module => {
+            output.module_id = ModuleId::new(
+                output.module_id.package().clone(),
+                ModulePath::new(format!("{}.mutated", output.module_id.path().as_str())),
+            );
+        }
+        SourceProofLocalLetLowerMutation::SourceFingerprint => {
+            output.source_fingerprint.push('!');
+        }
+        SourceProofLocalLetLowerMutation::SurfaceFingerprint => {
+            output.surface_fingerprint.push('!');
+        }
+        SourceProofLocalLetLowerMutation::TheoremSymbol => {
+            output.theorem_symbol = SymbolId::new(
+                output.theorem_symbol.module().clone(),
+                LocalSymbolId::new(format!("{}!", output.theorem_symbol.local().as_str())),
+                FullyQualifiedName::new(format!("{}!", output.theorem_symbol.fqn().as_str())),
+            );
+        }
+        SourceProofLocalLetLowerMutation::TheoremDefinition => {
+            let mut definitions = DefinitionIndex::new();
+            definitions.insert(DefinitionShell::new(
+                output.theorem_symbol.clone(),
+                DefinitionKind::Theorem,
+                SemanticOrigin::new(
+                    output.source_id,
+                    output.module_id.clone(),
+                    SourceAnchor::Range(output.theorem_range),
+                    vec![2, 1],
+                ),
+                output.contribution,
+            ));
+            output.theorem_definition = definitions.insert(DefinitionShell::new(
+                output.theorem_symbol.clone(),
+                DefinitionKind::Theorem,
+                SemanticOrigin::new(
+                    output.source_id,
+                    output.module_id.clone(),
+                    SourceAnchor::Range(output.theorem_range),
+                    vec![2, 1],
+                ),
+                output.contribution,
+            ));
+        }
+        SourceProofLocalLetLowerMutation::Contribution => {
+            let mut contributions = SourceContributionIndex::new();
+            contributions.insert(
+                output.module_id.clone(),
+                ContributionKind::LocalSource {
+                    source_id: output.source_id,
+                },
+                SourceAnchor::Range(range(output.source_id, 0, 18)),
+            );
+            output.contribution = contributions.insert(
+                output.module_id.clone(),
+                ContributionKind::LocalSource {
+                    source_id: output.source_id,
+                },
+                SourceAnchor::Range(range(output.source_id, 0, 18)),
+            );
+        }
+        SourceProofLocalLetLowerMutation::TheoremRange => output.theorem_range.end += 1,
+        SourceProofLocalLetLowerMutation::ProofRange => output.proof_range.end += 1,
+        SourceProofLocalLetLowerMutation::LetRange => output.let_range.end += 1,
+        SourceProofLocalLetLowerMutation::SegmentRange => output.segment_range.end += 1,
+        SourceProofLocalLetLowerMutation::NameRange => output.name_range.end += 1,
+        SourceProofLocalLetLowerMutation::TypeRange => output.type_range.end += 1,
+        SourceProofLocalLetLowerMutation::TypeHeadRange => output.type_head_range.end += 1,
+        SourceProofLocalLetLowerMutation::SourceOrdinal => output.source_ordinal += 1,
+        SourceProofLocalLetLowerMutation::LocalSpelling => {
+            output.local = LocalTermBinding::new(
+                "z",
+                output.local.scope().clone(),
+                output.local.declaration_range(),
+                output.local.visible_after_ordinal(),
+            );
+        }
+        SourceProofLocalLetLowerMutation::LocalScope => {
+            output.local = LocalTermBinding::new(
+                output.local.spelling(),
+                LocalTermScope::new(vec![1]),
+                output.local.declaration_range(),
+                output.local.visible_after_ordinal(),
+            );
+        }
+        SourceProofLocalLetLowerMutation::LocalRange => {
+            let mut source_range = output.local.declaration_range();
+            source_range.end += 1;
+            output.local = LocalTermBinding::new(
+                output.local.spelling(),
+                output.local.scope().clone(),
+                source_range,
+                output.local.visible_after_ordinal(),
+            );
+        }
+        SourceProofLocalLetLowerMutation::LocalVisibleAfter => {
+            output.local = LocalTermBinding::new(
+                output.local.spelling(),
+                output.local.scope().clone(),
+                output.local.declaration_range(),
+                output.local.visible_after_ordinal() + 1,
+            );
+        }
+    }
+}
+
+fn validate_source_proof_local_let_lower_output(
+    ast: &SurfaceAst,
+    module: &ModuleId,
+    theorem_symbol: &SymbolId,
+    theorem_definition: DefinitionId,
+    contribution: SourceContributionId,
+    output: &SourceProofLocalLetLowerOutput,
+) -> Result<(), String> {
+    if output.source_id != ast.source_id
+        || output.module_id != *module
+        || output.source_fingerprint != SOURCE_PROOF_LOCAL_LET_SOURCE_FINGERPRINT
+        || output.surface_fingerprint != SOURCE_PROOF_LOCAL_LET_SURFACE_FINGERPRINT
+        || output.theorem_symbol != *theorem_symbol
+        || output.theorem_definition != theorem_definition
+        || output.contribution != contribution
+        || output.theorem_range != range(ast.source_id, 19, 99)
+        || output.proof_range != range(ast.source_id, 59, 98)
+        || output.let_range != range(ast.source_id, 67, 80)
+        || output.segment_range != range(ast.source_id, 71, 79)
+        || output.name_range != range(ast.source_id, 71, 72)
+        || output.type_range != range(ast.source_id, 76, 79)
+        || output.type_head_range != range(ast.source_id, 76, 79)
+        || output.source_ordinal != 1
+        || output.local.spelling() != "y"
+        || output.local.scope().path() != [0]
+        || output.local.declaration_range() != output.name_range
+        || output.local.visible_after_ordinal() != 1
+    {
+        return Err("Task269CP private lower output mismatch".to_owned());
+    }
+    let expected_debug = format!(
+        concat!(
+            "source-proof-local-let-lower-debug-v1\n",
+            "module: {}::{}\n",
+            "source-fingerprint: \"7860a3fe5af89063ac6a2b9a4465cac36d26f6d64e892ba6e2c89bcbaaf9763a\"\n",
+            "surface-fingerprint: \"1fc35ec18db82efc0968b2f42b08cfaae678184983210cd26f060d45354c7f68\"\n",
+            "theorem symbol={:?} definition=0 contribution=0 range=19..99 proof=59..98\n",
+            "let range=67..80 segment=71..79 source_ordinal=1\n",
+            "name range=71..72 spelling=\"y\" scope=[0] visible_after=1\n",
+            "type range=76..79 head=76..79 spelling=\"set\" form=bare\n",
+        ),
+        module.package().as_str(),
+        module.path().as_str(),
+        theorem_symbol.fqn().as_str(),
+    );
+    if output.debug_text() != expected_debug {
+        return Err("Task269CP private lower debug grammar mismatch".to_owned());
+    }
+    Ok(())
 }
 
 fn exact_surface_node(

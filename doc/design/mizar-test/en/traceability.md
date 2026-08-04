@@ -2395,6 +2395,7 @@ are `428/395`, pass/fail are `235/193`, active stages are `101/7/205/1`, type
 coverage is `259 = 247 covered + 12 deferred`, warnings/errors are `23/0`, and
 trace SHA-256 is
 `55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`.
+
 The row credits source transport and pending initial-obligation intake only;
 the advanced-semantics overlap/coherence seed remains inactive and unchanged.
 
@@ -2447,3 +2448,8 @@ the follow-up owner to `269CP -> 269C`; it grants no executable credit.
 Cases/requirements remain `428/395`, type coverage remains `259=247+12`, and
 the trace SHA-256 remains
 `55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`.
+
+Implementation closes only the selected runner-private `source_drift` and
+four-test `test_gap`; it does not alter those executable-credit inventories.
+Task 269C remains the next binding-only owner with a missing type site, while
+source-type admission and later-use/capture stay separately deferred.

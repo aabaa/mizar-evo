@@ -2322,3 +2322,8 @@ creditを保持する。`spec_coverage_audit.md`はfollow-up ownerを`269CP -> 2
 refineするだけでexecutable creditは0。cases/requirements `428/395`、type coverage
 `259=247+12`、trace SHA-256
 `55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`は不変。
+
+implementationはselected runner-private `source_drift`とtests 4件の`test_gap`だけを
+closeし、上のexecutable-credit inventoryを変更しない。Task 269Cはmissing type
+siteを持つ次のbinding-only owner。source-type admissionとlater-use/captureは
+separately deferredのまま。

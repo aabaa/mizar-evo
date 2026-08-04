@@ -1662,3 +1662,8 @@ provenance, crate-private lower output, four tests, `536 -> 540` projection,
 37-path invariant, dormant dispatch, family isolation, zero checker/semantic/
 coverage effect, and automatic Task-269C follow-up. The committed Task-269B
 ledger is closed in both languages.
+
+Implementation records are likewise synchronized: both companions state the
+same exact side-table/signature guards, four-file scope, four tests,
+`37/71194` production inventory, 540-test hashes, review result, and zero
+semantic/coverage delta. No bilingual implementation debt remains.

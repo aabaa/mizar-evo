@@ -3537,6 +3537,8 @@ primary2だけをassociate、unnamed row1がchecker bindingをallocateしない�
 
 runner-private exact sourceはtheorem ordinal0、proof-local let ordinal1、conclusion
 ordinal2を持つが、269CPは`SourceStatementKind`、generalization table、statement
-handoffを追加しない。nodes 47/46/37/36/13/35/34とresolver theorem provenance
-だけをauthenticateする。Task-258/269A/B debug/profileは不変で、checker statement
-edgeにはlater frozen contractが必要。
+handoffを追加しない。nodes 47/46/37/36/13/35/34はcomplete normal 51-node
+Surface snapshot内のrole anchorとしてauthenticateする。runnerはroot node 50、
+absent expression root、token nodes 0..23、および全nodeのsource identity、range、
+recovery、ordered childrenもauthenticateする。Task-258/269A/B debug/profileは
+不変で、checker statement edgeにはlater frozen contractが必要。

@@ -13041,3 +13041,11 @@ re-export facade `type_elaboration.rs`, the test-only root facade import in
 hashes are remeasured. Four tests project library count `536 -> 540`. No
 checker, parser, resolver, fixture, metadata, trace, or Cargo file is in the
 implementation target.
+
+The completed four-file implementation adds no module or path. The exact
+production inventory is 37 paths / 71,194 lines with path/content SHA-256
+`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d` /
+`4dcfc69a867dea5c12457d94825493a8a48e4fd5ac7b91d86412371ac25f6b03`.
+The library is 540 tests with raw/normalized list SHA-256
+`8b9a2b9ea4aad3c6ed0b6eae32a0285d6a9fe1b5389dcc31ebc7adb872317522` /
+`a8955748da86930f3e2165637e170d68c77756cbc03f3ff38b3f8de0d21cbc50`.

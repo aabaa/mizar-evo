@@ -739,3 +739,18 @@ verification/commit、fresh preflight、exact private implementation、independe
 test/implementation/source-doc review **NO FINDINGS**、uncapped 90/100以上でhard
 gate 9件PASS、task-only staging/commit、clean post-commit、protected stash不変、
 上のbinding-only contractに限定したTask-269C自動選択を要求する。
+
+### Implementation closure
+
+runner-private producerはこのprerequisiteだけを実装し、later semantic ownerを
+activateしない。frozen node/range/child/recovery全rowに加え、expression root absent、
+token side table `0..23`、reserve/theorem shell全field、exact
+`parser-signature-v1` theorem payload、definition/contribution provenance、visible
+module `y` absenceをauthenticateする。outputはfrozen syntax-free identity、range、
+ordinal、local row、fingerprint、debug grammarだけをretainする。
+
+adjacent tests 4件はexact success、全node/side-table/shell/resolver/output/local
+guard、exact rejection precedence、near-miss/family/fixture isolation、checker/active
+semantic effect 0をcoverする。test-sufficiency/implementation再reviewは
+**NO FINDINGS**。checker ABI、source type、Typed/Resolved owner、binding transaction、
+goal/fact/proof/acceptance/discharge/downstream IRはactivateしない。

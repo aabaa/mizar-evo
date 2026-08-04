@@ -1733,3 +1733,9 @@ EN/JA freeze the same 100-byte proof-`let` source, source/snapshot hashes,
 four-test plan, zero checker/active effect, exclusions, semantic deferrals,
 and `269CP -> 269C` ownership. Both languages also close the committed
 Task-269B ledger. No bilingual exception or delayed companion is permitted.
+
+The implementation closure is also synchronized: exact expression/token
+side tables and theorem signature, full resolver provenance, syntax-free
+output, four-test guard matrix, no checker owner, and the measured runner
+inventory agree in both languages. No implementation-time bilingual debt
+remains.

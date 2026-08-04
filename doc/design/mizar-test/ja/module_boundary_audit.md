@@ -11755,3 +11755,11 @@ statement production leaf、test-only re-export facade `type_elaboration.rs`、`
 test-only root facade import、proof-local runner test fileだけ。
 production pathsは37、line/content hashを再測定し、testsは`536 -> 540`。
 checker/parser/resolver/fixture/metadata/trace/Cargo fileはtarget外。
+
+completed four-file implementationはmodule/pathを追加しない。exact production
+inventoryはpaths/lines `37/71194`、path/content SHA-256
+`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d` /
+`4dcfc69a867dea5c12457d94825493a8a48e4fd5ac7b91d86412371ac25f6b03`。
+libraryは540 tests、raw/normalized list SHA-256
+`8b9a2b9ea4aad3c6ed0b6eae32a0285d6a9fe1b5389dcc31ebc7adb872317522` /
+`a8955748da86930f3e2165637e170d68c77756cbc03f3ff38b3f8de0d21cbc50`。

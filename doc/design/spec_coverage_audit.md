@@ -6424,3 +6424,10 @@ all Chapter-15/16 partial/deferred classifications remain unchanged. Corpus/
 requirements stay `428/395`, active type cases stay `205`, type coverage stays
 `259=247+12`, and the trace hash remains
 `55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`.
+
+Task 269CP is now implemented at this no-credit runner-private boundary. It
+closes only its bounded `source_drift` and adjacent four-test `test_gap`;
+Chapter-15/16 coverage remains partial and all recorded counts, statuses,
+backlinks, and the trace hash above remain unchanged. The dependency-ready
+follow-up is Task 269C's binding-only missing-type-site contract. Source-type
+admission and resolver-wide later-use/capture remain separately deferred.

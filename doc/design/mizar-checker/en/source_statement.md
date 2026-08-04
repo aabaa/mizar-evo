@@ -4063,5 +4063,8 @@ The runner-private exact source contains theorem ordinal 0, proof-local let
 ordinal 1, and conclusion ordinal 2, but 269CP publishes no new
 `SourceStatementKind`, statement/generalization table, or statement handoff.
 It authenticates nodes 47/46/37/36/13/35/34 and resolver theorem provenance
-only. Existing Task-258 and Task-269A/B debug bytes and profiles remain
+as role anchors within the complete 51-node normal Surface snapshot. The
+runner also authenticates root node 50, absent expression root, token nodes
+0 through 23, and every node's source identity, range, recovery, and ordered
+children. Existing Task-258 and Task-269A/B debug bytes and profiles remain
 unchanged; a checker statement edge requires a later frozen contract.

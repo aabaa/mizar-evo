@@ -5230,3 +5230,11 @@ tests cover exact output, all relevant
 parser/resolver/local/node mutations, near-miss and B3N/B3M1/mixed-fixture
 isolation, and zero checker/active effect. The selector is never called by
 production corpus dispatch.
+
+The implemented guard matrix also fixes the snapshot side tables
+(`expression_root=None`, token nodes `0..23`) and the exact normal parser
+signature payload. Real rebuilt-AST and resolver corruptions complement
+synthetic all-field profile mutations, including a matching present-but-
+corrupt symbol/definition signature. Neutral reconstruction proves those
+mutation helpers before corruption. Focused and full crate tests pass without
+adding a fifth test or an active dispatch edge.

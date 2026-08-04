@@ -1639,6 +1639,11 @@ is limited to the existing `mizar-test` source-statement production leaf, the
 existing test-only re-export facade `type_elaboration.rs`, the existing test-
 only root facade import in `runner.rs`, and the proof-local runner test file.
 `mizar-checker` stays at
-30 production paths and 482 tests; runner production stays at 37 paths while
-its line/content hash and `536 -> 540` test-list hash are remeasured. A new
-checker module or parser/resolver edit is outside 269CP.
+30 production paths and 482 tests. The implemented runner stays at 37
+production paths / 71,194 lines with path/content SHA-256
+`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d` /
+`4dcfc69a867dea5c12457d94825493a8a48e4fd5ac7b91d86412371ac25f6b03`.
+Its library is 540 tests with raw/normalized test-list SHA-256
+`8b9a2b9ea4aad3c6ed0b6eae32a0285d6a9fe1b5389dcc31ebc7adb872317522` /
+`a8955748da86930f3e2165637e170d68c77756cbc03f3ff38b3f8de0d21cbc50`.
+A new checker module or parser/resolver edit remains outside 269CP.

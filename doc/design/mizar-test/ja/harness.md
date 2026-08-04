@@ -4928,3 +4928,10 @@ range、provenance、local row、debugだけ。Surface node number/raw ASTはlea
 出さない。tests 4件はexact output、parser/resolver/local/all-node
 mutation、near-miss/B3N/B3M1/mixed isolation、checker/active effect 0をcoverする。
 production corpus dispatchはselectorをcallしない。
+
+implemented guard matrixはsnapshot side table
+(`expression_root=None`、token nodes `0..23`)とexact normal parser signature
+payloadも固定する。real rebuilt-AST/resolver corruptionとsynthetic all-field
+profile mutationを併用し、matching present-but-corrupt symbol/definition signatureも
+rejectする。neutral reconstructionでcorruption前のmutation helperを検証する。
+focused/full crate testはPASSし、5件目のtestやactive dispatch edgeは追加しない。

@@ -3307,8 +3307,9 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
   provenance、local scope/ordinal、tests 4件、module scope、active/trace impact 0、
   exclusion、deferral、exitをfreezeする。
 - [x] synchronized docsだけをreview/commitしgate 9件をuncapped `100/100`でPASSする。
-- [ ] fresh preflight後existing leaf、test-only facade 2段
+- [x] fresh preflight後existing leaf、test-only facade 2段
   (`type_elaboration.rs` / `runner.rs`)、test-file scopeだけをimplementし、
   `536 -> 540`、production paths 37を保持する。
-- [ ] 全review/verification後commitし、source-type admissionを分離したbinding-only
-  Task 269Cをfresh inventoryする。
+- [x] 全reviewを**NO FINDINGS**まで完了し、verificationとhard gate 9件をscore
+  capなしの`100/100`でPASSしてexact task-only commitをauthorizeする。その後
+  source-type admissionを分離したbinding-only Task 269Cをfresh inventoryする。

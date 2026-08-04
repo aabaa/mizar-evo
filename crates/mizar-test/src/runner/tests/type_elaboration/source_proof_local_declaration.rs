@@ -6,6 +6,17 @@ use super::type_elaboration::{
     source_statement_output_with_source as task269a_lower_output,
     source_statement_transport_detail_keys as task269a_legacy_detail_keys,
 };
+use super::{
+    SOURCE_PROOF_LOCAL_LET_TEXT, SourceProofLocalLetLowerMutation,
+    SourceProofLocalLetLowerOutput, SourceProofLocalLetResolverProfileMutation,
+    SourceProofLocalLetShellMutation,
+    SourceProofLocalLetSurfaceMutation,
+    source_proof_local_let_lower_output, source_proof_local_let_lower_output_with_mutation,
+    source_proof_local_let_lower_output_with_resolver_mutation,
+    source_proof_local_let_lower_output_with_resolver_profile_mutation,
+    source_proof_local_let_lower_output_with_shell_mutation,
+    source_proof_local_let_lower_output_with_surface_mutation,
+};
 
 #[test]
 fn task269a_exact_frontend_binding_transaction_and_debug_are_stable() {
@@ -857,4 +868,1097 @@ fn assert_task269b_typed_and_final_replay_preserve_empty_semantics() {
         assert!(!typed_ast.debug_text().contains(forbidden));
         assert!(!resolved.debug_text().contains(forbidden));
     }
+}
+
+#[test]
+fn task269cp_exact_source_surface_resolver_lower_output_and_debug_are_stable() {
+    assert_eq!(SOURCE_PROOF_LOCAL_LET_TEXT.len(), 100);
+    assert_eq!(
+        sha256_text(SOURCE_PROOF_LOCAL_LET_TEXT),
+        "7860a3fe5af89063ac6a2b9a4465cac36d26f6d64e892ba6e2c89bcbaaf9763a"
+    );
+    assert!(SOURCE_PROOF_LOCAL_LET_TEXT.ends_with('\n'));
+    assert!(!SOURCE_PROOF_LOCAL_LET_TEXT.ends_with("\n\n"));
+    let (ast, module, shells, symbols, diagnostics) =
+        task253_ast_from_source_text_with_diagnostic_count(SOURCE_PROOF_LOCAL_LET_TEXT, 269_500);
+    assert_eq!(diagnostics, 0);
+    assert_eq!(
+        (ast.nodes().len(), ast.root().map(|root| root.index())),
+        (51, Some(50))
+    );
+    assert!(ast.expression_root().is_none());
+    assert_eq!(
+        ast.token_nodes()
+            .iter()
+            .map(|token| token.index())
+            .collect::<Vec<_>>(),
+        (0..24).collect::<Vec<_>>()
+    );
+    assert_eq!(
+        sha256_text(&ast.snapshot_text()),
+        "1fc35ec18db82efc0968b2f42b08cfaae678184983210cd26f060d45354c7f68"
+    );
+
+    let output = source_proof_local_let_lower_output(
+        &ast,
+        module.clone(),
+        &shells,
+        &symbols,
+        SOURCE_PROOF_LOCAL_LET_TEXT,
+    )
+    .expect("Task269CP exact selector")
+    .expect("Task269CP exact lower output");
+    assert_task269cp_exact_lower_output(&ast, &module, &output);
+
+    assert_eq!((shells.declarations().len(), shells.exports().len()), (2, 0));
+    let [reserve_shell, theorem_shell] = shells.declarations() else {
+        panic!("Task269CP exact shells");
+    };
+    assert_eq!(
+        (
+            reserve_shell.id().index(),
+            reserve_shell.ordinal(),
+            reserve_shell.node_id().index(),
+            reserve_shell.range().start,
+            reserve_shell.range().end,
+            reserve_shell.recovered(),
+        ),
+        (0, 0, 27, 0, 18, false)
+    );
+    assert_eq!(
+        (
+            theorem_shell.id().index(),
+            theorem_shell.ordinal(),
+            theorem_shell.node_id().index(),
+            theorem_shell.range().start,
+            theorem_shell.range().end,
+            theorem_shell.recovered(),
+        ),
+        (1, 1, 47, 19, 99, false)
+    );
+    for (shell, kind, syntax) in [
+        (
+            reserve_shell,
+            mizar_resolve::declarations::DeclarationShellKind::Reserve,
+            mizar_syntax::SyntaxKind::ReserveItem,
+        ),
+        (
+            theorem_shell,
+            mizar_resolve::declarations::DeclarationShellKind::Theorem,
+            mizar_syntax::SyntaxKind::TheoremItem,
+        ),
+    ] {
+        assert_eq!(shell.kind(), kind);
+        assert_eq!(shell.module(), &module);
+        assert_eq!(shell.syntax_kind(), syntax);
+        assert!(shell.parent().is_none());
+        assert_eq!(
+            shell.visibility().state(),
+            mizar_resolve::declarations::DeclarationShellVisibilityState::Unspecified
+        );
+        assert!(shell.visibility().marker_range().is_none());
+        assert!(shell.visibility().spelling().is_none());
+    }
+    assert_eq!(
+        (
+            symbols.symbols().len(),
+            symbols.definitions().len(),
+            symbols.contributions().len(),
+            symbols.imports().len(),
+            symbols.exports().len(),
+            symbols.labels().len(),
+            symbols.overloads().len(),
+            symbols.registrations().len(),
+        ),
+        (1, 1, 1, 0, 0, 0, 0, 0)
+    );
+    let namespace = mizar_resolve::env::NamespacePath::new(module.path().as_str());
+    let owners = symbols
+        .symbols()
+        .visible_candidates(&namespace, "FormulaStatementLetSmoke");
+    let [owner] = owners.as_slice() else {
+        panic!("Task269CP exact theorem owner");
+    };
+    assert_eq!(owner.kind(), mizar_resolve::env::SymbolKind::Theorem);
+    assert_eq!(owner.symbol().module(), &module);
+    assert_eq!(owner.namespace(), &namespace);
+    assert_eq!(owner.primary_spelling(), "FormulaStatementLetSmoke");
+    assert!(owner.notation_spelling().is_none());
+    assert_eq!(owner.visibility(), mizar_resolve::env::Visibility::Public);
+    assert_eq!(
+        owner.export_status(),
+        mizar_resolve::env::ExportStatus::Exported
+    );
+    assert_eq!(owner.contribution().index(), 0);
+    assert!(matches!(
+        owner.signature(),
+        Some(mizar_resolve::env::SignatureShell::Opaque { schema, payload })
+            if schema == "parser-signature-v1"
+                && payload
+                    == "node=TheoremItem;symbol=theorem;definition=theorem;\
+primary_tokens=theorem FormulaStatementLetSmoke : x = x proof let y be set ; thus x = x ; end ;\
+;notation=_;arity=_;roles=FormulaExpression,ProofBlock"
+    ));
+    assert!(owner.relations().is_empty());
+    assert_eq!(owner.origin().source_id(), ast.source_id);
+    assert_eq!(owner.origin().module_id(), &module);
+    assert_eq!(
+        owner.origin().anchor(),
+        &mizar_session::SourceAnchor::Range(mizar_session::SourceRange {
+            source_id: ast.source_id,
+            start: 19,
+            end: 99,
+        })
+    );
+    assert_eq!(owner.origin().structural_path(), [2, 1]);
+    assert!(owner.origin().import_edge().is_none());
+    assert!(!owner.origin().is_recovered());
+    let definition = symbols
+        .definitions()
+        .by_symbol(owner.symbol())
+        .expect("Task269CP exact theorem definition");
+    assert_eq!(definition.id().index(), 0);
+    assert_eq!(definition.symbol(), owner.symbol());
+    assert_eq!(definition.kind(), mizar_resolve::env::DefinitionKind::Theorem);
+    assert_eq!(definition.visibility(), mizar_resolve::env::Visibility::Public);
+    assert!(definition.parameters().is_empty());
+    assert!(definition.binders().is_empty());
+    assert!(definition.arity().is_none());
+    assert!(definition.notation_shape().is_none());
+    assert!(definition.doc_attachment().is_none());
+    assert_eq!(definition.origin(), owner.origin());
+    assert_eq!(definition.contribution(), owner.contribution());
+    assert!(definition.conflict().is_none());
+    assert!(definition.dependencies().is_empty());
+    assert_eq!(definition.signature(), owner.signature());
+    let contribution = symbols
+        .contributions()
+        .get(owner.contribution())
+        .expect("Task269CP exact contribution");
+    assert_eq!(contribution.id().index(), 0);
+    assert_eq!(contribution.module(), &module);
+    assert!(matches!(
+        contribution.kind(),
+        mizar_resolve::env::ContributionKind::LocalSource { source_id }
+            if *source_id == ast.source_id
+    ));
+    assert_eq!(
+        contribution.anchor(),
+        &mizar_session::SourceAnchor::Range(mizar_session::SourceRange {
+            source_id: ast.source_id,
+            start: 0,
+            end: 18,
+        })
+    );
+    assert_eq!(contribution.effects().symbols(), [owner.symbol().clone()]);
+    assert_eq!(contribution.effects().definitions(), [definition.id()]);
+    assert!(contribution.effects().labels().is_empty());
+    assert!(contribution.effects().overload_groups().is_empty());
+    assert!(contribution.effects().registrations().is_empty());
+    assert!(contribution.effects().lexical_summaries().is_empty());
+    assert!(contribution.effects().namespace_edges().is_empty());
+    assert!(contribution.effects().declaration_dependencies().is_empty());
+    assert!(contribution.effects().imports().is_empty());
+    assert!(contribution.effects().exports().is_empty());
+    assert!(contribution.effects().diagnostics().is_empty());
+}
+
+fn assert_task269cp_exact_lower_output(
+    ast: &mizar_syntax::SurfaceAst,
+    module: &mizar_resolve::resolved_ast::ModuleId,
+    output: &SourceProofLocalLetLowerOutput,
+) {
+    assert_eq!(output.source_id(), ast.source_id);
+    assert_eq!(output.module_id(), module);
+    assert_eq!(
+        output.source_fingerprint(),
+        "7860a3fe5af89063ac6a2b9a4465cac36d26f6d64e892ba6e2c89bcbaaf9763a"
+    );
+    assert_eq!(
+        output.surface_fingerprint(),
+        "1fc35ec18db82efc0968b2f42b08cfaae678184983210cd26f060d45354c7f68"
+    );
+    assert_eq!(output.theorem_symbol().module(), module);
+    assert_eq!(output.theorem_definition().index(), 0);
+    assert_eq!(output.contribution().index(), 0);
+    assert_eq!(
+        task269cp_range_tuple(output.theorem_range()),
+        (ast.source_id, 19, 99)
+    );
+    assert_eq!(
+        task269cp_range_tuple(output.proof_range()),
+        (ast.source_id, 59, 98)
+    );
+    assert_eq!(
+        task269cp_range_tuple(output.let_range()),
+        (ast.source_id, 67, 80)
+    );
+    assert_eq!(
+        task269cp_range_tuple(output.segment_range()),
+        (ast.source_id, 71, 79)
+    );
+    assert_eq!(
+        task269cp_range_tuple(output.name_range()),
+        (ast.source_id, 71, 72)
+    );
+    assert_eq!(
+        task269cp_range_tuple(output.type_range()),
+        (ast.source_id, 76, 79)
+    );
+    assert_eq!(
+        task269cp_range_tuple(output.type_head_range()),
+        (ast.source_id, 76, 79)
+    );
+    assert_eq!(output.source_ordinal(), 1);
+    assert_eq!(output.local().spelling(), "y");
+    assert_eq!(output.local().scope().path(), [0]);
+    assert_eq!(output.local().declaration_range(), output.name_range());
+    assert_eq!(output.local().visible_after_ordinal(), 1);
+    let expected_debug = format!(
+        concat!(
+            "source-proof-local-let-lower-debug-v1\n",
+            "module: {}::{}\n",
+            "source-fingerprint: \"7860a3fe5af89063ac6a2b9a4465cac36d26f6d64e892ba6e2c89bcbaaf9763a\"\n",
+            "surface-fingerprint: \"1fc35ec18db82efc0968b2f42b08cfaae678184983210cd26f060d45354c7f68\"\n",
+            "theorem symbol={:?} definition=0 contribution=0 range=19..99 proof=59..98\n",
+            "let range=67..80 segment=71..79 source_ordinal=1\n",
+            "name range=71..72 spelling=\"y\" scope=[0] visible_after=1\n",
+            "type range=76..79 head=76..79 spelling=\"set\" form=bare\n",
+        ),
+        module.package().as_str(),
+        module.path().as_str(),
+        output.theorem_symbol().fqn().as_str(),
+    );
+    assert_eq!(output.debug_text(), expected_debug);
+}
+
+fn task269cp_range_tuple(
+    source_range: mizar_session::SourceRange,
+) -> (mizar_session::SourceId, usize, usize) {
+    (source_range.source_id, source_range.start, source_range.end)
+}
+
+fn task269cp_ast_with_expression_root(
+    ast: &mizar_syntax::SurfaceAst,
+) -> mizar_syntax::SurfaceAst {
+    let mut builder = mizar_syntax::SurfaceAstBuilder::new(ast.source_id);
+    let mut rebuilt = Vec::with_capacity(ast.nodes().len());
+    for node in ast.nodes() {
+        let children = node
+            .children
+            .iter()
+            .map(|child| rebuilt[child.index()])
+            .collect::<Vec<_>>();
+        let id = match &node.kind {
+            mizar_syntax::SurfaceNodeKind::Token(token) => {
+                builder.add_token(token.kind, token.text.clone(), node.range)
+            }
+            structural => builder.add_node(structural.clone(), node.range, children),
+        };
+        rebuilt.push(id);
+    }
+    builder.finish(
+        ast.root().map(|root| rebuilt[root.index()]),
+        Some(rebuilt[33]),
+    )
+}
+
+#[test]
+fn task269cp_surface_resolver_and_local_corruption_matrix_fails_closed() {
+    let (ast, module, shells, symbols) =
+        task253_ast_from_source_text(SOURCE_PROOF_LOCAL_LET_TEXT, 269_510);
+    for index in 0..51 {
+        for mutation in [
+            SourceProofLocalLetSurfaceMutation::NodeKind(index),
+            SourceProofLocalLetSurfaceMutation::NodeSourceId(index),
+            SourceProofLocalLetSurfaceMutation::NodeRange(index),
+            SourceProofLocalLetSurfaceMutation::NodeRecovery(index),
+            SourceProofLocalLetSurfaceMutation::NodeChildren(index),
+        ] {
+            assert!(
+                source_proof_local_let_lower_output_with_surface_mutation(
+                    &ast,
+                    module.clone(),
+                    &shells,
+                    &symbols,
+                    SOURCE_PROOF_LOCAL_LET_TEXT,
+                    mutation,
+                )
+                .is_none(),
+                "Task269CP Surface mutation {mutation:?} selected"
+            );
+        }
+    }
+    for index in 0..24 {
+        assert!(
+            source_proof_local_let_lower_output_with_surface_mutation(
+                &ast,
+                module.clone(),
+                &shells,
+                &symbols,
+                SOURCE_PROOF_LOCAL_LET_TEXT,
+                SourceProofLocalLetSurfaceMutation::TokenNode(index),
+            )
+            .is_none(),
+            "Task269CP token side-table mutation {index} selected"
+        );
+    }
+    for mutation in [
+        SourceProofLocalLetSurfaceMutation::ExpressionRoot,
+        SourceProofLocalLetSurfaceMutation::TokenNodeCount,
+    ] {
+        assert!(
+            source_proof_local_let_lower_output_with_surface_mutation(
+                &ast,
+                module.clone(),
+                &shells,
+                &symbols,
+                SOURCE_PROOF_LOCAL_LET_TEXT,
+                mutation,
+            )
+            .is_none(),
+            "Task269CP Surface side-table mutation {mutation:?} selected"
+        );
+    }
+    let expression_root_ast = task269cp_ast_with_expression_root(&ast);
+    assert!(
+        source_proof_local_let_lower_output(
+            &expression_root_ast,
+            module.clone(),
+            &shells,
+            &symbols,
+            SOURCE_PROOF_LOCAL_LET_TEXT,
+        )
+        .is_none()
+    );
+    assert!(
+        source_proof_local_let_lower_output_with_surface_mutation(
+            &ast,
+            module.clone(),
+            &shells,
+            &symbols,
+            SOURCE_PROOF_LOCAL_LET_TEXT,
+            SourceProofLocalLetSurfaceMutation::MissingRootIdentity,
+        )
+        .is_none()
+    );
+    assert!(
+        source_proof_local_let_lower_output_with_surface_mutation(
+            &ast,
+            module.clone(),
+            &shells,
+            &symbols,
+            SOURCE_PROOF_LOCAL_LET_TEXT,
+            SourceProofLocalLetSurfaceMutation::WrongRootIdentity,
+        )
+        .is_none()
+    );
+
+    for mutation in [
+        SourceProofLocalLetLowerMutation::SourceId,
+        SourceProofLocalLetLowerMutation::Module,
+        SourceProofLocalLetLowerMutation::SourceFingerprint,
+        SourceProofLocalLetLowerMutation::SurfaceFingerprint,
+        SourceProofLocalLetLowerMutation::TheoremSymbol,
+        SourceProofLocalLetLowerMutation::TheoremDefinition,
+        SourceProofLocalLetLowerMutation::Contribution,
+        SourceProofLocalLetLowerMutation::TheoremRange,
+        SourceProofLocalLetLowerMutation::ProofRange,
+        SourceProofLocalLetLowerMutation::LetRange,
+        SourceProofLocalLetLowerMutation::SegmentRange,
+        SourceProofLocalLetLowerMutation::NameRange,
+        SourceProofLocalLetLowerMutation::TypeRange,
+        SourceProofLocalLetLowerMutation::TypeHeadRange,
+        SourceProofLocalLetLowerMutation::SourceOrdinal,
+        SourceProofLocalLetLowerMutation::LocalSpelling,
+        SourceProofLocalLetLowerMutation::LocalScope,
+        SourceProofLocalLetLowerMutation::LocalRange,
+        SourceProofLocalLetLowerMutation::LocalVisibleAfter,
+    ] {
+        assert!(
+            source_proof_local_let_lower_output_with_mutation(
+                &ast,
+                module.clone(),
+                &shells,
+                &symbols,
+                SOURCE_PROOF_LOCAL_LET_TEXT,
+                mutation,
+            )
+            .expect("Task269CP exact selector under lower mutation")
+            .is_err(),
+            "Task269CP lower mutation {mutation:?} succeeded"
+        );
+    }
+
+    for shell in 0..2 {
+        for mutation in [
+            SourceProofLocalLetShellMutation::Id(shell),
+            SourceProofLocalLetShellMutation::Ordinal(shell),
+            SourceProofLocalLetShellMutation::Kind(shell),
+            SourceProofLocalLetShellMutation::Module(shell),
+            SourceProofLocalLetShellMutation::Node(shell),
+            SourceProofLocalLetShellMutation::Syntax(shell),
+            SourceProofLocalLetShellMutation::Range(shell),
+            SourceProofLocalLetShellMutation::Parent(shell),
+            SourceProofLocalLetShellMutation::VisibilityState(shell),
+            SourceProofLocalLetShellMutation::VisibilityMarker(shell),
+            SourceProofLocalLetShellMutation::VisibilitySpelling(shell),
+            SourceProofLocalLetShellMutation::Recovery(shell),
+        ] {
+            assert!(
+                source_proof_local_let_lower_output_with_shell_mutation(
+                    &ast,
+                    module.clone(),
+                    &shells,
+                    &symbols,
+                    SOURCE_PROOF_LOCAL_LET_TEXT,
+                    mutation,
+                )
+                .expect("Task269CP exact selector under shell mutation")
+                .is_err(),
+                "Task269CP shell mutation {mutation:?} succeeded"
+            );
+        }
+    }
+    for mutation in [
+        SourceProofLocalLetResolverProfileMutation::ResolverModule,
+        SourceProofLocalLetResolverProfileMutation::ImportIndex,
+        SourceProofLocalLetResolverProfileMutation::ExportIndex,
+        SourceProofLocalLetResolverProfileMutation::LabelIndex,
+        SourceProofLocalLetResolverProfileMutation::OverloadIndex,
+        SourceProofLocalLetResolverProfileMutation::RegistrationIndex,
+        SourceProofLocalLetResolverProfileMutation::LexicalSummaryIndex,
+        SourceProofLocalLetResolverProfileMutation::NamespaceGraph,
+        SourceProofLocalLetResolverProfileMutation::DeclarationDependencyIndex,
+        SourceProofLocalLetResolverProfileMutation::ModuleSummaryIndex,
+        SourceProofLocalLetResolverProfileMutation::SymbolModule,
+        SourceProofLocalLetResolverProfileMutation::SymbolNotation,
+        SourceProofLocalLetResolverProfileMutation::SymbolContribution,
+        SourceProofLocalLetResolverProfileMutation::SymbolRelations,
+        SourceProofLocalLetResolverProfileMutation::SymbolOriginSource,
+        SourceProofLocalLetResolverProfileMutation::SymbolOriginImport,
+        SourceProofLocalLetResolverProfileMutation::DefinitionId,
+        SourceProofLocalLetResolverProfileMutation::DefinitionParameters,
+        SourceProofLocalLetResolverProfileMutation::DefinitionBinders,
+        SourceProofLocalLetResolverProfileMutation::DefinitionNotation,
+        SourceProofLocalLetResolverProfileMutation::DefinitionDoc,
+        SourceProofLocalLetResolverProfileMutation::DefinitionContribution,
+        SourceProofLocalLetResolverProfileMutation::DefinitionConflict,
+        SourceProofLocalLetResolverProfileMutation::DefinitionDependencies,
+        SourceProofLocalLetResolverProfileMutation::ContributionLabelEffect,
+        SourceProofLocalLetResolverProfileMutation::ContributionOverloadEffect,
+        SourceProofLocalLetResolverProfileMutation::ContributionRegistrationEffect,
+        SourceProofLocalLetResolverProfileMutation::ContributionLexicalEffect,
+        SourceProofLocalLetResolverProfileMutation::ContributionNamespaceEffect,
+        SourceProofLocalLetResolverProfileMutation::ContributionDeclarationDependencyEffect,
+        SourceProofLocalLetResolverProfileMutation::ContributionImportEffect,
+        SourceProofLocalLetResolverProfileMutation::ContributionExportEffect,
+        SourceProofLocalLetResolverProfileMutation::ContributionDiagnosticEffect,
+    ] {
+        assert!(
+            source_proof_local_let_lower_output_with_resolver_profile_mutation(
+                &ast,
+                module.clone(),
+                &shells,
+                &symbols,
+                SOURCE_PROOF_LOCAL_LET_TEXT,
+                mutation,
+            )
+            .expect("Task269CP exact selector under resolver profile mutation")
+            .is_err(),
+            "Task269CP resolver profile mutation {mutation:?} succeeded"
+        );
+    }
+
+    let (_, _, wrong_shells, _) = task253_ast_from_source_text(TASK269A_SOURCE_TEXT, 269_511);
+    assert!(
+        source_proof_local_let_lower_output(
+            &ast,
+            module.clone(),
+            &wrong_shells,
+            &symbols,
+            SOURCE_PROOF_LOCAL_LET_TEXT,
+        )
+        .expect("Task269CP selector with wrong shells")
+        .is_err()
+    );
+    for (drop_symbols, drop_definitions, drop_contributions) in
+        [(true, false, false), (false, true, false), (false, false, true)]
+    {
+        let corrupted = task269cp_symbols_with_missing_index(
+            &symbols,
+            drop_symbols,
+            drop_definitions,
+            drop_contributions,
+        );
+        assert!(
+            source_proof_local_let_lower_output(
+                &ast,
+                module.clone(),
+                &shells,
+                &corrupted,
+                SOURCE_PROOF_LOCAL_LET_TEXT,
+            )
+            .expect("Task269CP selector with resolver index corruption")
+            .is_err()
+        );
+    }
+    let neutral_reconstruction = source_proof_local_let_lower_output_with_resolver_mutation(
+        &ast,
+        module.clone(),
+        &shells,
+        &symbols,
+        SOURCE_PROOF_LOCAL_LET_TEXT,
+        |symbols| task269cp_mutate_resolver(symbols, Task269cpResolverMutation::None),
+    )
+    .expect("Task269CP selector under neutral resolver reconstruction")
+    .expect("Task269CP neutral resolver reconstruction");
+    assert_task269cp_exact_lower_output(&ast, &module, &neutral_reconstruction);
+    for mutation in Task269cpResolverMutation::ALL {
+        assert!(
+            source_proof_local_let_lower_output_with_resolver_mutation(
+                &ast,
+                module.clone(),
+                &shells,
+                &symbols,
+                SOURCE_PROOF_LOCAL_LET_TEXT,
+                |symbols| task269cp_mutate_resolver(symbols, mutation),
+            )
+            .expect("Task269CP exact selector under resolver field mutation")
+            .is_err(),
+            "Task269CP resolver mutation {mutation:?} succeeded"
+        );
+    }
+    let visible_y = task269cp_symbols_with_visible_y(&symbols, ast.source_id);
+    assert_eq!(
+        source_proof_local_let_lower_output(
+            &ast,
+            module.clone(),
+            &shells,
+            &visible_y,
+            SOURCE_PROOF_LOCAL_LET_TEXT,
+        )
+        .expect("Task269CP selector with visible y"),
+        Err("Task269CP local y already resolves as a module symbol".to_owned())
+    );
+    let wrong_module = mizar_resolve::resolved_ast::ModuleId::new(
+        module.package().clone(),
+        mizar_session::ModulePath::new("tests.task269cp_wrong_module"),
+    );
+    assert!(
+        source_proof_local_let_lower_output(
+            &ast,
+            wrong_module,
+            &shells,
+            &symbols,
+            SOURCE_PROOF_LOCAL_LET_TEXT,
+        )
+        .expect("Task269CP selector with wrong module")
+        .is_err()
+    );
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Task269cpResolverMutation {
+    None,
+    SymbolKind,
+    SymbolNamespace,
+    SymbolSpelling,
+    SymbolVisibility,
+    SymbolExport,
+    SymbolOriginModule,
+    SymbolOriginAnchor,
+    SymbolOriginPath,
+    SymbolOriginRecovery,
+    SymbolSignature,
+    SymbolCorruptPresentSignature,
+    DefinitionSymbol,
+    DefinitionKind,
+    DefinitionVisibility,
+    DefinitionArity,
+    DefinitionOrigin,
+    DefinitionSignature,
+    ContributionModule,
+    ContributionKind,
+    ContributionAnchor,
+    ContributionSymbolEffect,
+    ContributionDefinitionEffect,
+}
+
+impl Task269cpResolverMutation {
+    const ALL: [Self; 22] = [
+        Self::SymbolKind,
+        Self::SymbolNamespace,
+        Self::SymbolSpelling,
+        Self::SymbolVisibility,
+        Self::SymbolExport,
+        Self::SymbolOriginModule,
+        Self::SymbolOriginAnchor,
+        Self::SymbolOriginPath,
+        Self::SymbolOriginRecovery,
+        Self::SymbolSignature,
+        Self::SymbolCorruptPresentSignature,
+        Self::DefinitionSymbol,
+        Self::DefinitionKind,
+        Self::DefinitionVisibility,
+        Self::DefinitionArity,
+        Self::DefinitionOrigin,
+        Self::DefinitionSignature,
+        Self::ContributionModule,
+        Self::ContributionKind,
+        Self::ContributionAnchor,
+        Self::ContributionSymbolEffect,
+        Self::ContributionDefinitionEffect,
+    ];
+}
+
+fn task269cp_mutate_resolver(
+    symbols: mizar_resolve::env::SymbolEnv,
+    mutation: Task269cpResolverMutation,
+) -> mizar_resolve::env::SymbolEnv {
+    let module = symbols.module_id().clone();
+    let owner = symbols
+        .symbols()
+        .iter()
+        .next()
+        .expect("Task269CP owner before mutation");
+    let definition = symbols
+        .definitions()
+        .by_symbol(owner.symbol())
+        .expect("Task269CP definition before mutation");
+    let contribution = symbols
+        .contributions()
+        .get(owner.contribution())
+        .expect("Task269CP contribution before mutation");
+    let wrong_module = mizar_resolve::resolved_ast::ModuleId::new(
+        module.package().clone(),
+        mizar_session::ModulePath::new(format!("{}.field-mutation", module.path().as_str())),
+    );
+    let theorem_range = mizar_session::SourceRange {
+        source_id: owner.origin().source_id(),
+        start: 19,
+        end: 99,
+    };
+    let symbol_origin = match mutation {
+        Task269cpResolverMutation::SymbolOriginModule => {
+            mizar_resolve::resolved_ast::SemanticOrigin::new(
+                owner.origin().source_id(),
+                wrong_module.clone(),
+                owner.origin().anchor().clone(),
+                owner.origin().structural_path().to_vec(),
+            )
+        }
+        Task269cpResolverMutation::SymbolOriginAnchor => {
+            mizar_resolve::resolved_ast::SemanticOrigin::new(
+                owner.origin().source_id(),
+                module.clone(),
+                mizar_session::SourceAnchor::Range(mizar_session::SourceRange {
+                    end: 98,
+                    ..theorem_range
+                }),
+                owner.origin().structural_path().to_vec(),
+            )
+        }
+        Task269cpResolverMutation::SymbolOriginPath => {
+            mizar_resolve::resolved_ast::SemanticOrigin::new(
+                owner.origin().source_id(),
+                module.clone(),
+                owner.origin().anchor().clone(),
+                vec![2, 2],
+            )
+        }
+        Task269cpResolverMutation::SymbolOriginRecovery => {
+            mizar_resolve::resolved_ast::SemanticOrigin::new(
+                owner.origin().source_id(),
+                module.clone(),
+                owner.origin().anchor().clone(),
+                owner.origin().structural_path().to_vec(),
+            )
+            .recovered()
+        }
+        _ => owner.origin().clone(),
+    };
+    let contribution_module = if mutation == Task269cpResolverMutation::ContributionModule {
+        wrong_module.clone()
+    } else {
+        contribution.module().clone()
+    };
+    let contribution_kind = if mutation == Task269cpResolverMutation::ContributionKind {
+        mizar_resolve::env::ContributionKind::ImportedSource {
+            source_id: owner.origin().source_id(),
+        }
+    } else {
+        contribution.kind().clone()
+    };
+    let contribution_anchor = if mutation == Task269cpResolverMutation::ContributionAnchor {
+        mizar_session::SourceAnchor::Range(mizar_session::SourceRange {
+            source_id: owner.origin().source_id(),
+            start: 0,
+            end: 17,
+        })
+    } else {
+        contribution.anchor().clone()
+    };
+    let mut contributions = mizar_resolve::env::SourceContributionIndex::new();
+    let contribution_id = contributions.insert(
+        contribution_module,
+        contribution_kind,
+        contribution_anchor,
+    );
+
+    let symbol_kind = if mutation == Task269cpResolverMutation::SymbolKind {
+        mizar_resolve::env::SymbolKind::Functor
+    } else {
+        owner.kind()
+    };
+    let symbol_namespace = if mutation == Task269cpResolverMutation::SymbolNamespace {
+        mizar_resolve::env::NamespacePath::new(format!("{}.wrong", module.path().as_str()))
+    } else {
+        owner.namespace().clone()
+    };
+    let symbol_spelling = if mutation == Task269cpResolverMutation::SymbolSpelling {
+        "FormulaStatementLetSmokeWrong"
+    } else {
+        owner.primary_spelling()
+    };
+    let symbol_visibility = if mutation == Task269cpResolverMutation::SymbolVisibility {
+        mizar_resolve::env::Visibility::Private
+    } else {
+        owner.visibility()
+    };
+    let symbol_export = if mutation == Task269cpResolverMutation::SymbolExport {
+        mizar_resolve::env::ExportStatus::LocalOnly
+    } else {
+        owner.export_status()
+    };
+    let mut symbol_entry = mizar_resolve::env::SymbolEntry::new(
+        owner.symbol().clone(),
+        symbol_kind,
+        symbol_namespace,
+        symbol_spelling,
+        symbol_origin,
+        contribution_id,
+    )
+    .with_visibility(symbol_visibility)
+    .with_export_status(symbol_export)
+    .with_relations(owner.relations().to_vec());
+    if let Some(spelling) = owner.notation_spelling() {
+        symbol_entry = symbol_entry.with_notation_spelling(spelling);
+    }
+    if mutation == Task269cpResolverMutation::SymbolCorruptPresentSignature {
+        symbol_entry =
+            symbol_entry.with_signature(mizar_resolve::env::SignatureShell::Malformed {
+                class: "Task269CP-corrupt-present".to_owned(),
+            });
+    } else if mutation != Task269cpResolverMutation::SymbolSignature
+        && let Some(signature) = owner.signature()
+    {
+        symbol_entry = symbol_entry.with_signature(signature.clone());
+    }
+    let mut symbol_index = mizar_resolve::env::SymbolIndex::new();
+    symbol_index.insert(symbol_entry);
+
+    let definition_symbol = if mutation == Task269cpResolverMutation::DefinitionSymbol {
+        mizar_resolve::resolved_ast::SymbolId::new(
+            module.clone(),
+            mizar_resolve::resolved_ast::LocalSymbolId::new("Task269CP/wrong-definition/0"),
+            mizar_resolve::resolved_ast::FullyQualifiedName::new(format!(
+                "{}::{}::Task269CP/wrong-definition/0",
+                module.package().as_str(),
+                module.path().as_str(),
+            )),
+        )
+    } else {
+        definition.symbol().clone()
+    };
+    let definition_kind = if mutation == Task269cpResolverMutation::DefinitionKind {
+        mizar_resolve::env::DefinitionKind::Functor
+    } else {
+        definition.kind()
+    };
+    let definition_origin = if mutation == Task269cpResolverMutation::DefinitionOrigin {
+        mizar_resolve::resolved_ast::SemanticOrigin::new(
+            definition.origin().source_id(),
+            module.clone(),
+            mizar_session::SourceAnchor::Range(mizar_session::SourceRange {
+                end: 98,
+                ..theorem_range
+            }),
+            definition.origin().structural_path().to_vec(),
+        )
+    } else {
+        definition.origin().clone()
+    };
+    let definition_visibility = if mutation == Task269cpResolverMutation::DefinitionVisibility {
+        mizar_resolve::env::Visibility::Private
+    } else {
+        definition.visibility()
+    };
+    let mut definition_shell = mizar_resolve::env::DefinitionShell::new(
+        definition_symbol,
+        definition_kind,
+        definition_origin,
+        contribution_id,
+    )
+    .with_visibility(definition_visibility);
+    if mutation == Task269cpResolverMutation::DefinitionArity {
+        definition_shell = definition_shell.with_arity(1);
+    }
+    if mutation == Task269cpResolverMutation::SymbolCorruptPresentSignature {
+        definition_shell =
+            definition_shell.with_signature(mizar_resolve::env::SignatureShell::Malformed {
+                class: "Task269CP-corrupt-present".to_owned(),
+            });
+    } else if mutation != Task269cpResolverMutation::DefinitionSignature
+        && let Some(signature) = definition.signature()
+    {
+        definition_shell = definition_shell.with_signature(signature.clone());
+    }
+    let mut definitions = mizar_resolve::env::DefinitionIndex::new();
+    let definition_id = definitions.insert(definition_shell);
+    if mutation != Task269cpResolverMutation::ContributionSymbolEffect {
+        contributions.add_symbol(contribution_id, owner.symbol().clone());
+    }
+    if mutation != Task269cpResolverMutation::ContributionDefinitionEffect {
+        contributions.add_definition(contribution_id, definition_id);
+    }
+
+    mizar_resolve::env::SymbolEnv::new(
+        module,
+        mizar_resolve::env::SymbolEnvIndexes {
+            imports: symbols.imports().clone(),
+            exports: symbols.exports().clone(),
+            symbols: symbol_index,
+            labels: symbols.labels().clone(),
+            definitions,
+            overloads: symbols.overloads().clone(),
+            registrations: symbols.registrations().clone(),
+            lexical_summaries: symbols.lexical_summaries().clone(),
+            namespace_graph: symbols.namespace_graph().clone(),
+            declaration_dependencies: symbols.declaration_dependencies().clone(),
+            contributions,
+            module_summaries: symbols.module_summaries().clone(),
+        },
+    )
+}
+
+fn task269cp_symbols_with_missing_index(
+    symbols: &mizar_resolve::env::SymbolEnv,
+    drop_symbols: bool,
+    drop_definitions: bool,
+    drop_contributions: bool,
+) -> mizar_resolve::env::SymbolEnv {
+    mizar_resolve::env::SymbolEnv::new(
+        symbols.module_id().clone(),
+        mizar_resolve::env::SymbolEnvIndexes {
+            imports: symbols.imports().clone(),
+            exports: symbols.exports().clone(),
+            symbols: if drop_symbols {
+                mizar_resolve::env::SymbolIndex::new()
+            } else {
+                symbols.symbols().clone()
+            },
+            labels: symbols.labels().clone(),
+            definitions: if drop_definitions {
+                mizar_resolve::env::DefinitionIndex::new()
+            } else {
+                symbols.definitions().clone()
+            },
+            overloads: symbols.overloads().clone(),
+            registrations: symbols.registrations().clone(),
+            lexical_summaries: symbols.lexical_summaries().clone(),
+            namespace_graph: symbols.namespace_graph().clone(),
+            declaration_dependencies: symbols.declaration_dependencies().clone(),
+            contributions: if drop_contributions {
+                mizar_resolve::env::SourceContributionIndex::new()
+            } else {
+                symbols.contributions().clone()
+            },
+            module_summaries: symbols.module_summaries().clone(),
+        },
+    )
+}
+
+fn task269cp_symbols_with_visible_y(
+    symbols: &mizar_resolve::env::SymbolEnv,
+    source_id: mizar_session::SourceId,
+) -> mizar_resolve::env::SymbolEnv {
+    let module = symbols.module_id().clone();
+    let contribution = symbols
+        .contributions()
+        .iter()
+        .next()
+        .expect("Task269CP contribution")
+        .id();
+    let mut symbol_index = symbols.symbols().clone();
+    let symbol = mizar_resolve::resolved_ast::SymbolId::new(
+        module.clone(),
+        mizar_resolve::resolved_ast::LocalSymbolId::new("Task269CP/y/0"),
+        mizar_resolve::resolved_ast::FullyQualifiedName::new(format!(
+            "{}::{}::Task269CP/y/0",
+            module.package().as_str(),
+            module.path().as_str(),
+        )),
+    );
+    symbol_index.insert(
+        mizar_resolve::env::SymbolEntry::new(
+            symbol,
+            mizar_resolve::env::SymbolKind::Functor,
+            mizar_resolve::env::NamespacePath::new(module.path().as_str()),
+            "y",
+            mizar_resolve::resolved_ast::SemanticOrigin::new(
+                source_id,
+                module.clone(),
+                mizar_session::SourceAnchor::Range(mizar_session::SourceRange {
+                    source_id,
+                    start: 71,
+                    end: 72,
+                }),
+                vec![269, 3],
+            ),
+            contribution,
+        )
+        .with_visibility(mizar_resolve::env::Visibility::Public)
+        .with_export_status(mizar_resolve::env::ExportStatus::Exported),
+    );
+    mizar_resolve::env::SymbolEnv::new(
+        module,
+        mizar_resolve::env::SymbolEnvIndexes {
+            imports: symbols.imports().clone(),
+            exports: symbols.exports().clone(),
+            symbols: symbol_index,
+            labels: symbols.labels().clone(),
+            definitions: symbols.definitions().clone(),
+            overloads: symbols.overloads().clone(),
+            registrations: symbols.registrations().clone(),
+            lexical_summaries: symbols.lexical_summaries().clone(),
+            namespace_graph: symbols.namespace_graph().clone(),
+            declaration_dependencies: symbols.declaration_dependencies().clone(),
+            contributions: symbols.contributions().clone(),
+            module_summaries: symbols.module_summaries().clone(),
+        },
+    )
+}
+
+#[test]
+fn task269cp_near_misses_and_neighbor_families_remain_isolated() {
+    let near_misses = [
+        SOURCE_PROOF_LOCAL_LET_TEXT.trim_end_matches('\n').to_owned(),
+        format!("{SOURCE_PROOF_LOCAL_LET_TEXT}\n"),
+        SOURCE_PROOF_LOCAL_LET_TEXT.replace("let y be set;", "let z be set;"),
+        SOURCE_PROOF_LOCAL_LET_TEXT.replace("let y be set;", "let y, z be set;"),
+        SOURCE_PROOF_LOCAL_LET_TEXT.replace("let y be set;", "let y be set, z be set;"),
+        SOURCE_PROOF_LOCAL_LET_TEXT.replace("let y be set;", "let y be empty set;"),
+        SOURCE_PROOF_LOCAL_LET_TEXT.replace("let y be set;", "let y be set such that x = x;"),
+        SOURCE_PROOF_LOCAL_LET_TEXT.replace("let y be set;", "let y be set by A;"),
+        SOURCE_PROOF_LOCAL_LET_TEXT.replace("let y be set;", "given y being set;"),
+        SOURCE_PROOF_LOCAL_LET_TEXT.replace("let y be set;", "consider y being set;"),
+        SOURCE_PROOF_LOCAL_LET_TEXT.replace("let y be set;", "take y = x;"),
+        SOURCE_PROOF_LOCAL_LET_TEXT.replace("let y be set;", "set y = x;"),
+        SOURCE_PROOF_LOCAL_LET_TEXT.replace("let y be set;", "reconsider y = x as set;"),
+        SOURCE_PROOF_LOCAL_LET_TEXT.replace("let y be set;", "deffunc y() = x;"),
+        SOURCE_PROOF_LOCAL_LET_TEXT.replace("let y be set;", "defpred y[] means x = x;"),
+        SOURCE_PROOF_LOCAL_LET_TEXT.replace("thus x = x;", "thus y = y;"),
+        SOURCE_PROOF_LOCAL_LET_TEXT.replace(
+            "let y be set;\n  thus x = x;",
+            "thus x = x proof\n    let y be set;\n    thus x = x;\n  end;",
+        ),
+    ];
+    for (ordinal, source) in near_misses.into_iter().enumerate() {
+        let (ast, module, shells, symbols) =
+            task253_ast_from_source_text(&source, 269_520 + ordinal);
+        assert!(
+            source_proof_local_let_lower_output(&ast, module, &shells, &symbols, &source).is_none(),
+            "Task269CP selected near miss {ordinal}"
+        );
+    }
+
+    for (ordinal, source) in [TASK269A_SOURCE_TEXT, TASK269B_SOURCE_TEXT]
+        .into_iter()
+        .enumerate()
+    {
+        let (ast, module, shells, symbols) =
+            task253_ast_from_source_text(source, 269_550 + ordinal);
+        assert!(
+            source_proof_local_let_lower_output(&ast, module, &shells, &symbols, source).is_none(),
+            "Task269CP selected Task269A/B family {ordinal}"
+        );
+    }
+
+    let workspace_root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .and_then(std::path::Path::parent)
+        .expect("mizar-test below workspace");
+    for (ordinal, path) in [
+        "tests/miz/fail/types/fail_type_elaboration_proof_local_declaration_gap_001.miz",
+        "tests/miz/pass/parser/pass_parser_simple_statements_001.miz",
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let source = std::fs::read_to_string(workspace_root.join(path))
+            .unwrap_or_else(|error| panic!("read Task269CP boundary {path}: {error}"));
+        let (ast, module, shells, symbols) =
+            task253_ast_from_source_text(&source, 269_560 + ordinal);
+        assert!(
+            source_proof_local_let_lower_output(&ast, module, &shells, &symbols, &source).is_none(),
+            "Task269CP selected broad boundary {path}"
+        );
+    }
+}
+
+#[test]
+fn task269cp_private_lower_route_has_zero_checker_and_active_semantic_effect() {
+    let (ast, module, shells, symbols) =
+        task253_ast_from_source_text(SOURCE_PROOF_LOCAL_LET_TEXT, 269_570);
+    let output = source_proof_local_let_lower_output(
+        &ast,
+        module.clone(),
+        &shells,
+        &symbols,
+        SOURCE_PROOF_LOCAL_LET_TEXT,
+    )
+    .expect("Task269CP exact selector")
+    .expect("Task269CP private lower output");
+    assert_task269cp_exact_lower_output(&ast, &module, &output);
+    for forbidden in [
+        "binding-env",
+        "typed-ast",
+        "resolved-typed-ast",
+        "initial-obligation",
+        "fact",
+        "goal",
+        "accepted",
+        "discharged",
+        "verification-condition",
+    ] {
+        assert!(!output.debug_text().contains(forbidden));
+    }
+    assert!(
+        source_proof_local_declaration_output(
+            &ast,
+            module.clone(),
+            &symbols,
+            SOURCE_PROOF_LOCAL_LET_TEXT,
+        )
+        .is_none()
+    );
+    assert!(
+        task269a_lower_output(
+            &ast,
+            module.clone(),
+            &symbols,
+            SOURCE_PROOF_LOCAL_LET_TEXT,
+        )
+        .is_none()
+    );
+    assert_eq!(
+        task269a_legacy_detail_keys(
+            &ast,
+            module,
+            &symbols,
+            SOURCE_PROOF_LOCAL_LET_TEXT,
+        ),
+        None
+    );
 }

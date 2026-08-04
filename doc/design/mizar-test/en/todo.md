@@ -3533,9 +3533,10 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
   active/trace impact, exclusions, deferrals, and exit.
 - [x] Review/commit synchronized docs alone with all nine gates PASS at an
   uncapped `100/100`.
-- [ ] Fresh-preflight and implement only the existing leaf, both test-only
+- [x] Fresh-preflight and implement only the existing leaf, both test-only
   facade hops (`type_elaboration.rs` and `runner.rs`), and test-file scope,
   projecting `536 -> 540` and retaining 37 production paths.
-- [ ] Repeat all reviews and verification, commit, and fresh-inventory Task
-  269C automatically as a binding-only consumer with source-type admission
-  still separate.
+- [x] Repeat all reviews to **NO FINDINGS**, pass verification and all nine
+  hard gates without a score cap at `100/100`, authorize the exact task-only
+  commit, and then fresh-inventory Task 269C automatically as a binding-only
+  consumer with source-type admission still separate.

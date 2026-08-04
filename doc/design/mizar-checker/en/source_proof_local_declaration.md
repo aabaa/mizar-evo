@@ -821,3 +821,20 @@ test/implementation/source-doc reviews with **NO FINDINGS**, all nine final
 hard gates PASS at uncapped 90/100 or better, task-only staging/commit, clean
 post-commit inventory, unchanged protected stash, and automatic Task-269C
 selection limited to the binding-only contract above.
+
+### Implementation closure
+
+The runner-private producer now realizes exactly this prerequisite and no
+later semantic owner. In addition to every frozen node/range/child/recovery
+row, selection authenticates the absent expression root, token side table
+`0..23`, exact reserve/theorem shell fields, exact
+`parser-signature-v1` theorem payload, definition/contribution provenance,
+and absent visible module `y`. The output retains only the frozen syntax-free
+identities, ranges, ordinal, local row, fingerprints, and debug grammar.
+
+Four adjacent tests cover exact success; every node, side-table, shell,
+resolver, output, and local guard; exact rejection precedence; near misses
+and family/fixture isolation; and zero checker/active semantic effect.
+Test-sufficiency and implementation re-reviews report **NO FINDINGS**. No
+checker ABI, source type, Typed/Resolved owner, binding transaction, goal,
+fact, proof, acceptance, discharge, or downstream IR is activated.

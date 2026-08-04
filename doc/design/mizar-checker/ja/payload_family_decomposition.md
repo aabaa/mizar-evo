@@ -1665,7 +1665,8 @@ coverage ownerは追加していない。
 
 checker payload familyは追加しない。runner-private source/Surface/resolver
 projection 1件のselectorがtheorem/proof/let/segment/name/bare-set Surface nodeを
-authenticateするが、outputはrole-specific rangeとlocal provenanceだけをretainする。
-future Task 269Cがseparate checker let-binding familyをownする。
+authenticateし、outputはsource/module identity、source/Surface fingerprint、theorem
+symbol/definition/contribution、source ordinal、role-specific range、local provenanceを
+retainする。future Task 269Cがseparate checker let-binding familyをownする。
 named-witness A/B、later-use/capture、source-type admission、goal/proof semantics、
 active coverageはdisjoint。

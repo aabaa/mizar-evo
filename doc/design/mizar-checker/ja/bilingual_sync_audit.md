@@ -1654,3 +1654,8 @@ EN/JAは100-byte proof-`let` source、source/snapshot hash、51-node/root-50
 profile、resolver provenance、private lower-output fields、tests 4件、checker/
 active effect 0、exclusion、semantic deferral、`269CP -> 269C` ownershipで一致する。
 両言語でcommitted Task-269B ledgerもcloseする。bilingual exceptionはない。
+
+implementation closureも同期する。exact expression/token side table/theorem
+signature、full resolver provenance、syntax-free output、tests 4件のguard matrix、
+checker ownerなし、measured runner inventoryがEN/JAで一致する。implementation-time
+bilingual debtはない。

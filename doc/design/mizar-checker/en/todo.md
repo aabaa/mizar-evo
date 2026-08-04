@@ -6764,9 +6764,11 @@ implementation commit does not satisfy a producer task.
   exit criteria in synchronized EN/JA.
 - [x] Repeat specification review to **NO FINDINGS**, pass all nine docs-only
   gates, and commit only the documentation prerequisite.
-- [ ] Fresh-preflight and implement only the runner-private lower projection;
+- [x] Fresh-preflight and implement only the runner-private lower projection;
   checker/public API, BindingEnv, Typed/final owners, corpus, and trace remain
   unchanged.
-- [ ] Complete independent reviews, verification, all nine final gates,
-  task-only commit, and fresh-inventory binding-only Task 269C automatically;
-  retain a missing type site and leave source-type admission separate.
+- [x] Complete independent reviews to **NO FINDINGS**, verification, and all
+  nine final gates without a score cap at `100/100`; authorize the exact
+  task-only commit and then fresh-inventory binding-only Task 269C
+  automatically, retaining a missing type site and separate source-type
+  admission.

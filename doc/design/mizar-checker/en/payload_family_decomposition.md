@@ -1753,7 +1753,9 @@ goal, fact, proof, or coverage owner was added.
 This prerequisite adds no checker payload family. It freezes one
 runner-private source/Surface/resolver projection whose selector authenticates
 exact theorem, proof, let, segment, name, and bare-set Surface nodes but whose
-output retains only role-specific ranges plus local provenance. Future Task
-269C owns a separate checker let-binding family. Named-witness A/B,
+output retains source/module identities, source and Surface fingerprints,
+the theorem symbol/definition/contribution, source ordinal, role-specific
+ranges, and local provenance. Future Task 269C owns a separate checker
+let-binding family. Named-witness A/B,
 later-use/capture, source-type admission, goal/proof semantics, and all active
 coverage remain disjoint.

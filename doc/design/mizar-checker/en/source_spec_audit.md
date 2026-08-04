@@ -5860,10 +5860,11 @@ there is no new `spec_gap`, `boundary_violation`, or coverage-audit delta.
 ## Task 269CP source/spec classification
 
 The synchronized exact isolated proof-`let` lower contract closes
-`design_drift`. Its later runner-private implementation will close the bounded
-`source_drift`, and its four canonical-derived tests will close the selected
-`test_gap`; neither implementation closure is claimed by this documentation
-prerequisite. Later-use/capture is not ready and remains an external source-
+`design_drift`. The bounded runner-private implementation closes the selected
+`source_drift`, and its four canonical-derived tests close the selected
+`test_gap`. The implementation authenticates the frozen exact
+source/Surface/shell/resolver/local projection and remains checker-semantic
+no-op. Later-use/capture is not ready and remains an external source-
 payload gap. Existing specifications, fixtures, expectations, and trace
 metadata stay read-only; the coverage audit changes follow-up ownership only
 and grants no executable credit.
