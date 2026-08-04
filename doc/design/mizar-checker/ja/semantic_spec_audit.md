@@ -718,3 +718,8 @@ fact/Skolem/guard/goal/obligation/proof/acceptance/export/capture/substitution/d
 ## Task 269GUPT semantic deferral audit
 
 canonical `given y being set`がauthorizeするのはwritten source typeとblock scope。GUPTはsyntax-backed type transportだけをfreezeし、condition/label fact、guard/assumption、existential/Skolem、later use、capture/export、goal/initial obligation、proof/discharge/acceptance、Core/CFG/VC creditは0。
+
+### Task 269GUPT implementation deferral status
+
+source-type transportを全frozen semantic table emptyで実装。condition/fact、guard、
+later use、capture、goal、obligation、proof、acceptance、Core/CFG/VCは発明・publishしない。

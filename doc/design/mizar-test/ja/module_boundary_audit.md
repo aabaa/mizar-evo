@@ -11864,3 +11864,9 @@ dispatch、fixture、sidecar、expectation、trace、metadata、diagnostic、CLI
 ## Task 269GUPT runner ownership boundary
 
 owned runner filesは`type_elaboration/source_proof_local_declaration.rs`、`type_elaboration.rs`、`runner.rs`、existing proof-local test leafだけ。`source_statement.rs`とactive runner/metadata/CLI ownerはexclude。facade 2 hopsはtest-onlyで、新module path/Cargo target/dispatch/public resultなし。
+
+### Task 269GUPT implemented runner boundary
+
+runner変更はexact 4 filesだけ。productionは37 paths/75,074 lines。
+`source_statement.rs`、public dispatch、Cargo、metadata、artifact、diagnostic、
+active resultは不変。

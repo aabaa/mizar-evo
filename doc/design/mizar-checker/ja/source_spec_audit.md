@@ -336,7 +336,8 @@ literal top-level public item:
   `SourceTypeStructureMemberProducer`, `SourceProofLocalLetTypeHandoff`,
   `SourceProofLocalLetTypeProducer`, `SourceProofLocalLetTypeError`,
   `SourceProofLocalGivenTypeHandoff`, `SourceProofLocalGivenTypeProducer`,
-  `SourceProofLocalGivenTypeError`,
+  `SourceProofLocalGivenTypeError`, `SourceProofLocalGivenUseTypeHandoff`,
+  `SourceProofLocalGivenUseTypeProducer`, `SourceProofLocalGivenUseTypeError`,
   `SourceTypeError`
 
 対応:
@@ -351,6 +352,7 @@ literal top-level public item:
 | standalone structure-member typeをfabricated binding applicationやreturn/RHS family reuseなしにbuildする。 | `SourceTypeStructureMemberProducer`、immutable owner row/root 4件、exact precedence、arena/install validation。 | exact Task-249S profile/corruption/arena/Typed-final test 4件。 | Task 249Sで実装済み。standalone profileは`0/4/0/0/0/4`。 |
 | exact proof-local `let` composition 1件がTask-269C missing type siteだけをupgradeしdependencyをunchanged preserveする。 | `SourceProofLocalLetTypeHandoff`、`SourceProofLocalLetTypeProducer`、`SourceProofLocalLetTypeError`。 | checker 4件/runner dormant 4件のexact/corruption/ownership/isolation test。 | Task 269CTで実装済み、active/semantic credit zero。 |
 | exact proof-local `given` composition 1件がTask-269G witness type siteだけをupgradeしdependencyをunchanged preserveする。 | `SourceProofLocalGivenTypeHandoff`、`SourceProofLocalGivenTypeProducer`、`SourceProofLocalGivenTypeError`。 | checker 4件/runner dormant 4件のexact/corruption/ownership/isolation test。 | Task 269GTで実装済み、active/semantic credit zero。 |
+| exact proof-local `given` use-profile composition 1件がTask-269GUP envをcopyしbinding 1のsource typeだけをupgradeしてdependencyをunchanged preserveする。 | `SourceProofLocalGivenUseTypeHandoff`、`SourceProofLocalGivenUseTypeProducer`、`SourceProofLocalGivenUseTypeError`。 | checker 4件/runner dormant 4件のexact/corruption/ownership/isolation test。 | Task 269GUPTで実装済み、active/semantic credit zero。 |
 | `TypedAst`がresultを所有し、`ResolvedTypedAst`はcloneだけする。 | optional `SourceTypeApplicationHandoff` fieldとborrowed getter。 | immutable final preservation/repeated-run assertion。 | 実装済み。legacy empty debug byteはconditionalに維持。 |
 | public enumはforward-compatible。 | public enumの`#[non_exhaustive]`。 | `checker_public_enums_are_forward_compatible_and_documented`。 | exhaustive exceptionなしでguard。 |
 
@@ -5713,3 +5715,10 @@ direct GP/G/GT不変、GUPT/GU absent。
 ## Task 269GUPT frozen source/spec mapping
 
 Chapter 3/4/8/15/16とexact GUP source/lower/bindingはdeclared `set` source typeだけをrequireし、semantic publicationはrequireしない。planned public coverageは`SourceProofLocalGivenUseTypeHandoff`/`Producer`/`Error`、checker/runner各4 tests。implementationまではfrozen `source_drift`/`test_gap`で、canonical spec、`.miz`、expectation、trace、active creditは変更しない。
+
+### Task 269GUPT implemented source/spec mapping
+
+frozen public familyと8 testsを実装し、bounded `source_drift`/`test_gap`をclose。
+canonical spec、`.miz`、expectation、trace、metadata、CLI、active coverageは
+変更しない。source typeはauthenticated source evidenceとしてのみtransportし、
+later occurrenceはTask 269GU、全semantic deferralは明示したまま。

@@ -1848,3 +1848,9 @@ This closes only dormant private lexical-binding evidence and grants zero active
 ## Task 269GUPT Frozen Payload Delta
 
 The only new family is one `SourceProofLocalGivenUseTypeHandoff`: unchanged GUP binding dependency, copied typed environment, exact `2/2/0/0/0/0` builtin-`set` source-type handoff, three fingerprints, and a distinct three-node arena. Typed/Resolved own that composite atomically. Term/reference/final-use composition belongs to Task 269GU; condition/fact, capture, goal/obligation, proof/acceptance, and downstream IR remain absent.
+
+### Task 269GUPT implemented payload
+
+The frozen composite is now implemented exactly and remains the sole new
+payload family. Typed/Resolved ownership is atomic and semantically empty;
+Task 269GU still owns the later term/reference composition.

@@ -2416,3 +2416,8 @@ dispatch、fixture、sidecar、expectation、trace、metadata、diagnostic、CLI
 ## Task 269GUPT zero-credit trace boundary
 
 private source-type contract/test incrementだけ。row/backlink/status/requirement/`.miz`/sidecar/expectation/metadata case/active stage/warning/error/CLIは変更なし。cases/requirements `428/395`、stages `101/7/205/1`、type coverage `259=247+12`、trace SHA `55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`。269GU/capture/active visibilityはdefer。
+
+### Task 269GUPT implemented zero-credit trace status
+
+Rust unit test 8件だけを追加し、canonical test artifact/trace rowは追加しない。
+count/status/backlink/type credit/trace SHA/metadata/active outcomeは上記frozen値不変。

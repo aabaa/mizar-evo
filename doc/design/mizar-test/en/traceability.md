@@ -2560,3 +2560,9 @@ No dispatch, fixture, sidecar, expectation, trace, metadata, diagnostic, CLI, ac
 ## Task 269GUPT Zero-Credit Trace Boundary
 
 GUPT is a private source-type contract/test increment only. It changes no row, backlink, status, requirement, `.miz`, sidecar, expectation, metadata case, active stage, warning, error, or CLI output. Cases/requirements remain `428/395`, stages `101/7/205/1`, type coverage `259=247+12`, and trace SHA-256 `55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`. Task 269GU, capture, and active visibility remain deferred.
+
+### Task 269GUPT implemented zero-credit trace status
+
+Implementation adds only eight Rust unit tests and no canonical test artifact
+or trace row. Counts, status, backlinks, type credit, trace SHA, metadata, and
+all active outcomes remain at the frozen values above.

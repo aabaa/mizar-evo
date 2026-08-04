@@ -79,6 +79,7 @@ outside Task 249.
 | `SourceTypeError` | `#[non_exhaustive]`; callers must not exhaustively match validation failures. |
 | `SourceProofLocalLetTypeError` | `#[non_exhaustive]`; callers must not exhaustively match Task-269CT dependency, overlay, source-type, or installation failures. |
 | `SourceProofLocalGivenTypeError` | `#[non_exhaustive]`; callers must not exhaustively match Task-269GT dependency, overlay, source-type, or installation failures. |
+| `SourceProofLocalGivenUseTypeError` | `#[non_exhaustive]`; callers must not exhaustively match Task-269GUPT dependency, copied overlay, source-type, or installation failures. |
 
 No exhaustive public enum exceptions are owned by this module.
 
@@ -1951,3 +1952,38 @@ implementation reviews **NO FINDINGS**, full verification/count/hash gates
 pass, and the separate task-only implementation commit leaves a clean tree
 with origin divergence reported and the protected stash unchanged. Fresh
 inventory then selects Task 269GU. Capture and Task 270 remain deferred.
+
+### Task 269GUPT implementation verification status
+
+The frozen public composite, copied binding overlay, exact `2/2/0/0/0/0`
+builtin-`set` source type, three-node `given-use` arena, boxed Typed/Resolved
+owner, final role, and dormant private runner consumer are implemented in the
+exact seven Rust files. The four checker and four runner tests cover payload
+and fingerprint replay, validation precedence and corruption, both-order
+same-identity family exclusion, one-shot ownership, route isolation, and zero
+semantic publication. Test-sufficiency and implementation reviews are **NO
+FINDINGS**.
+
+Libraries are checker/runner `506/568`. Production manifests are
+`30/174332` and `37/75074`; path hashes remain
+`c89f43f6abebf7ebeb3ac9394ecd8ea3186ad28934c75526d2cc0b85a66ebad5` /
+`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d`,
+with content hashes
+`fc85ad8c271614a4474cab3ef6a6d212b168546d1f76d1bc3edb9fa4354378b0` /
+`afef82f149a350314a9160685e094e4a1b580d772790cf1c9e2a7efd89d0c870`.
+Raw/normalized test-list hashes are checker
+`d9c3c7e10b836f1e5ab987bfc54b1c06eaf8af15e2d6f3532fad51a756fca140` /
+`9342b51b7e26745f5e04770fe254b8954524dccd45a01ced475b5f097d941cb1`
+and runner
+`30fce970d193edf3a0a84607b6015e017e91f8e6c8f35fc9b10be88e16fdff93` /
+`48261f74e202e4496db6e231c335f842942ab3049b61196884984b16cc997c99`.
+
+Corpus, fixtures, sidecars, expectations, trace, metadata, five CLI outputs,
+diagnostics, dispatch, and active outcomes remain unchanged. GUPT receives
+zero occurrence, condition/fact, guard, capture, goal/proof/acceptance,
+initial-obligation, or downstream-IR credit. Task 269GU is next; capture and
+Task 270 remain deferred.
+
+Source/documentation and final-quality reviews are **NO FINDINGS**. All nine
+hard gates pass uncapped at `100/100`; only exact staging and the separate
+implementation commit remain before fresh Task-269GU inventory.

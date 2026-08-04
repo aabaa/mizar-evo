@@ -2541,3 +2541,9 @@ This closes only dormant private lexical-binding evidence and grants zero active
 ## Task 269GUPT Frozen Dependency Consumer
 
 The public GUP binding handoff is consumed by value only by `SourceProofLocalGivenUseTypeProducer`. GUPT uses the unchanged private GUP lower seam solely to recover authenticated `84..87`; it does not alter the 128-byte selector, 54-node Surface profile, lower fingerprint, resolver provenance, binding rows, lookup lifetime, or GUP public ABI. The new type composite preserves the complete dependency debug text as its dependency fingerprint. Task 269GU remains the first permitted later-identifier consumer.
+
+### Task 269GUPT implemented dependency consumer
+
+The producer and private runner now consume the GUP handoff by value and
+preserve its complete authenticated snapshot. The lower owner and GUP public
+ABI are unchanged; later identifiers remain unconsumed until Task 269GU.

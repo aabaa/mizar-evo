@@ -3613,3 +3613,8 @@ condition/label/fact/proof/acceptance ownerなし。private lower/binding route�
 ## Task 269GUPT statement boundary
 
 already authenticated `given` declarationのwritten typeだけをownする。`such that G: thesis` condition/label、conclusion equality、later `y` leaves、proof goal/acceptanceはselector-onlyでstatement/fact/semantic rowなし。existing statement API/production dispatchはbyte-identical。
+
+### Task 269GUPT implemented statement boundary
+
+authenticated written source typeだけをtransport。statement API、condition/label/
+equality/later-use subtree、proof state、acceptance、production dispatchは不変。

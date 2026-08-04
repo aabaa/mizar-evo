@@ -6939,4 +6939,8 @@ This closes only dormant private lexical-binding evidence and grants zero active
 - [x] Freeze exact by-value dependency, binding-1 `Source(84..87)` overlay, `2/2/0/0/0/0` source type, distinct three-node arena, public ABI/errors/debug, Typed/Resolved ownership, private runner, seven-file/eight-test scope, 40 docs, zero credit, baselines, deferrals, and exit.
 - [x] Specification and source/docs reviews are **NO FINDINGS** and docs-only hard gates pass `9/9` at an uncapped `100/100`.
 - [x] Stage exactly 40 Markdown files and commit the documentation prerequisite.
-- [ ] Fresh-preflight and implement only Task 269GUPT; repeat test, implementation, and source/docs reviews to **NO FINDINGS**, pass all gates, commit once, then fresh-inventory Task 269GU. Capture and Task 270 remain deferred.
+- [x] Fresh-preflight and implementation of Task 269GUPT are complete; test,
+  implementation, and source/docs reviews are **NO FINDINGS**, and all nine
+  hard gates pass uncapped at `100/100`.
+- [~] Finish exact staging and the separate implementation commit, then
+  fresh-inventory Task 269GU. Capture and Task 270 remain deferred.

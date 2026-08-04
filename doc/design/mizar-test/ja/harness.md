@@ -5031,3 +5031,9 @@ dispatch、fixture、sidecar、expectation、trace、metadata、diagnostic、CLI
 ## Task 269GUPT frozen private harness route
 
 `source_proof_local_given_use_type_output`はSurface/module/shell/symbol/exact textを受け、cfg-test seamは`None`/`WrongDependencyModule`/`WrongTypeRange`/`WrongArenaRoot`/`WrongArenaKind`を追加。mismatchは`None`、selected failureは`Some(Err(_))`、route-local stringは`Task269GUPT reserve type range is missing`だけ。successは`typed_ast`、`resolved`順でGUPT compositeだけをownしpublic dispatchから到達不能。
+
+### Task 269GUPT implemented private harness
+
+frozen selector、5 mutations、exact input/arena、direct by-value checker handoff、
+Typed/final installation、4-test matrixを実装。routeはprivate/dormantのままで、
+public dispatch/semantic outputなし。

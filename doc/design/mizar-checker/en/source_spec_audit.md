@@ -360,7 +360,8 @@ Literal top-level public items:
   `SourceTypeStructureMemberProducer`, `SourceProofLocalLetTypeHandoff`,
   `SourceProofLocalLetTypeProducer`, `SourceProofLocalLetTypeError`,
   `SourceProofLocalGivenTypeHandoff`, `SourceProofLocalGivenTypeProducer`,
-  `SourceProofLocalGivenTypeError`,
+  `SourceProofLocalGivenTypeError`, `SourceProofLocalGivenUseTypeHandoff`,
+  `SourceProofLocalGivenUseTypeProducer`, `SourceProofLocalGivenUseTypeError`,
   `SourceTypeError`
 
 Correspondence:
@@ -375,6 +376,7 @@ Correspondence:
 | Standalone structure-member types build without fabricated binding applications or reuse of the return/RHS families. | `SourceTypeStructureMemberProducer`, four immutable owner rows/roots, exact precedence, arena and installation validation. | Four exact Task-249S profile/corruption/arena/Typed-final tests. | Implemented for Task 249S; standalone profile is `0/4/0/0/0/4`. |
 | One exact proof-local `let` composition upgrades only the Task-269C missing type site and preserves its dependency unchanged. | `SourceProofLocalLetTypeHandoff`, `SourceProofLocalLetTypeProducer`, and `SourceProofLocalLetTypeError`. | Four checker and four dormant-runner exact/corruption/ownership/isolation tests. | Implemented for Task 269CT with zero active/semantic credit. |
 | One exact proof-local `given` composition upgrades only the Task-269G witness type site and preserves its dependency unchanged. | `SourceProofLocalGivenTypeHandoff`, `SourceProofLocalGivenTypeProducer`, and `SourceProofLocalGivenTypeError`. | Four checker and four dormant-runner exact/corruption/ownership/isolation tests. | Implemented for Task 269GT with zero active/semantic credit. |
+| One exact proof-local `given` use-profile composition copies the Task-269GUP environment, upgrades only binding 1's source type, and preserves its dependency unchanged. | `SourceProofLocalGivenUseTypeHandoff`, `SourceProofLocalGivenUseTypeProducer`, and `SourceProofLocalGivenUseTypeError`. | Four checker and four dormant-runner exact/corruption/ownership/isolation tests. | Implemented for Task 269GUPT with zero active/semantic credit. |
 | `TypedAst` owns the result and `ResolvedTypedAst` only clones it. | Optional `SourceTypeApplicationHandoff` field and borrowed getters. | Immutable final-preservation and repeated-run assertions. | Implemented; empty legacy debug bytes remain conditional. |
 | Public enums are forward-compatible. | `#[non_exhaustive]` on public enums. | `checker_public_enums_are_forward_compatible_and_documented`. | Guarded; no exhaustive exception. |
 
@@ -6002,3 +6004,11 @@ This closes only dormant private lexical-binding evidence and grants zero active
 ## Task 269GUPT Frozen Source/Specification Mapping
 
 Chapters 3/4/8/15/16 plus the exact GUP source/lower/binding artifacts require the declared `set` source type but no semantic publication. Planned public coverage is `SourceProofLocalGivenUseTypeHandoff`, `SourceProofLocalGivenUseTypeProducer`, and `SourceProofLocalGivenUseTypeError`, with four checker and four private runner tests. Until implementation, this is a frozen `source_drift`/`test_gap` contract; it changes no canonical specification, `.miz`, expectation, trace row, or active coverage credit.
+
+### Task 269GUPT implemented source/spec mapping
+
+The frozen public family and all eight tests now exist, closing the bounded
+`source_drift` and `test_gap` without changing canonical specification, `.miz`,
+expectations, trace, metadata, CLI behavior, or active coverage. The source
+type is transported only as authenticated source evidence; Task 269GU still
+owns later occurrences and all semantic deferrals remain explicit.

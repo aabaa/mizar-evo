@@ -1855,3 +1855,8 @@ public binding handoffはGUPT dependencyで、existing source owner/semantic tab
 ## Task 269GUPT frozen Typed ownership
 
 `TypedAst`はold Given-type slot直後にboxed optional `source_proof_local_given_use_type`、getter、one-shot `with_source_proof_local_given_use_type`だけを追加。errorは`InvalidSourceProofLocalGivenUseType` / `source proof-local given-use type handoff is invalid`。exact composite/3-node arenaをauthenticateし、全existing owner/nonempty semantic tableとのboth-order共存をreject。direct binding/source-type ownerはinstallしない。
+
+### Task 269GUPT implemented Typed ownership
+
+boxed getter/installer/errorとexact availability checkを実装。one-shotと
+same-identity neighborのboth-order exclusionをtestし、semantic tableは全empty。

@@ -74,6 +74,7 @@ Core/CFG/VCはTask 249外である。
 | `SourceTypeError` | `#[non_exhaustive]`。callerはvalidation failureをexhaustive matchしない。 |
 | `SourceProofLocalLetTypeError` | `#[non_exhaustive]`。callerはTask-269CT dependency、overlay、source-type、installation failureをexhaustive matchしない。 |
 | `SourceProofLocalGivenTypeError` | `#[non_exhaustive]`。callerはTask-269GT dependency、overlay、source-type、installation failureをexhaustive matchしない。 |
+| `SourceProofLocalGivenUseTypeError` | `#[non_exhaustive]`。callerはTask-269GUPT dependency、copied overlay、source-type、installation failureをexhaustive matchしない。 |
 
 この module が所有する exhaustive public enum exception はない。
 
@@ -1395,3 +1396,35 @@ EN/JA review **NO FINDINGS**、docs-only hard gate 9件capなし`>=90/100`、doc
 fresh lower-stage preflight、exact 7-file/8-test implementation、3 review **NO FINDINGS**、
 full verification/count/hash、separate implementation commit、clean/origin/stash auditでexit。
 次はTask 269GU。captureとTask 270はdeferする。
+
+### Task 269GUPT implementation verification status
+
+frozen public composite、copied binding overlay、exact `2/2/0/0/0/0`
+builtin-`set` source type、3-node `given-use` arena、boxed Typed/Resolved owner、
+final role、dormant private runner consumerをexact 7 Rust filesに実装した。
+checker/runner各4 testsはpayload/fingerprint replay、validation precedence/
+corruption、same-identity familyのboth-order exclusion、one-shot ownership、
+route isolation、semantic publication zeroをcoverする。test sufficiencyと
+implementation reviewは**NO FINDINGS**。
+
+libraryはchecker/runner `506/568`。production manifestは`30/174332`と
+`37/75074`、path hashは
+`c89f43f6abebf7ebeb3ac9394ecd8ea3186ad28934c75526d2cc0b85a66ebad5` /
+`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d`
+のまま、content hashは
+`fc85ad8c271614a4474cab3ef6a6d212b168546d1f76d1bc3edb9fa4354378b0` /
+`afef82f149a350314a9160685e094e4a1b580d772790cf1c9e2a7efd89d0c870`。
+raw/normalized test-list hashはchecker
+`d9c3c7e10b836f1e5ab987bfc54b1c06eaf8af15e2d6f3532fad51a756fca140` /
+`9342b51b7e26745f5e04770fe254b8954524dccd45a01ced475b5f097d941cb1`、
+runner
+`30fce970d193edf3a0a84607b6015e017e91f8e6c8f35fc9b10be88e16fdff93` /
+`48261f74e202e4496db6e231c335f842942ab3049b61196884984b16cc997c99`。
+
+corpus/fixture/sidecar/expectation/trace/metadata/5 CLI/diagnostic/dispatch/
+active outcomeは不変。occurrence、condition/fact、guard、capture、goal/proof/
+acceptance、initial obligation、downstream IRのcreditは0。次はTask 269GU、
+captureとTask 270はdeferする。
+
+source/docs/final-quality reviewは**NO FINDINGS**。hard gate `9/9`、capなし
+`100/100`。exact stageとseparate implementation commit後に269GUをfresh inventory。

@@ -1748,3 +1748,9 @@ Typed/final/capture/formula/fact/goal/proof/downstream semanticsは空。
 ## Task 269GUPT frozen payload delta
 
 new familyは`SourceProofLocalGivenUseTypeHandoff` 1件だけ。unchanged GUP dependency、copied typed env、exact `2/2/0/0/0/0` builtin-set source type、3 fingerprints、distinct 3-node arenaをTyped/Resolvedがatomicにownする。term/reference/final-useは269GU、condition/fact/capture/goal/obligation/proof/acceptance/IRはabsent。
+
+### Task 269GUPT implemented payload
+
+frozen compositeをexactに実装し、new payload familyはこの1件だけ。
+Typed/Resolved ownershipはatomicかつsemantically emptyで、later term/referenceは
+269GUがownする。

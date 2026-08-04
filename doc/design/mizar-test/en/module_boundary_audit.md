@@ -13165,3 +13165,9 @@ No dispatch, fixture, sidecar, expectation, trace, metadata, diagnostic, CLI, ac
 ## Task 269GUPT Runner Ownership Boundary
 
 Owned runner files are exactly `type_elaboration/source_proof_local_declaration.rs`, `type_elaboration.rs`, `runner.rs`, and the existing proof-local test leaf. `source_statement.rs` and every active runner/metadata/CLI owner are excluded. The two facade hops are test-only; no new module path, Cargo target, dispatch branch, or public result field is permitted.
+
+### Task 269GUPT implemented runner boundary
+
+The exact four runner files are the only runner changes. Production remains 37
+paths and is now 75,074 lines; `source_statement.rs`, public dispatch, Cargo,
+metadata, artifacts, diagnostics, and active results are unchanged.

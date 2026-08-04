@@ -926,3 +926,10 @@ This closes only dormant private lexical-binding evidence and grants zero active
 ## Task 269GUPT Frozen Binding Overlay Boundary
 
 GUPT consumes the immutable GUP handoff and constructs a copy of its exact `2/2/0` environment. Contexts, identities, lookup lifetime, capture, diagnostics, and every non-type field are unchanged; only copied binding 1 changes from `Missing` to `Source(84..87)`, while binding 0 stays `Source(14..17)`. The GUP dependency and old G/GT environments are never mutated. No occurrence, guard, fact, capture, or semantic binding state is added.
+
+### Task 269GUPT implemented overlay
+
+The exact copied overlay is implemented and its corruption, replay, ownership,
+and same-identity cross-family matrix passes. The immutable GUP dependency and
+all non-type binding state remain unchanged; no semantic binding credit is
+claimed.

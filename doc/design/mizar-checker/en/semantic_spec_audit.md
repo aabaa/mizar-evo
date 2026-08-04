@@ -783,3 +783,9 @@ This closes only dormant private lexical-binding evidence and grants zero active
 ## Task 269GUPT Semantic Deferral Audit
 
 Canonical `given y being set` authorizes the written source type and block scope. GUPT freezes only syntax-backed type transport. It deliberately grants zero condition/label fact, type guard/assumption, existential/Skolem, later-use, capture/export, goal, initial-obligation, proof/discharge/acceptance, Core, CFG, or VC ownership. Those deferrals prevent source-type evidence from being mistaken for proved semantics.
+
+### Task 269GUPT implementation deferral status
+
+The source-type transport is implemented with every frozen semantic table
+empty. No condition/fact, guard, later-use, capture, goal, obligation, proof,
+acceptance, Core, CFG, or VC behavior is inferred or published.

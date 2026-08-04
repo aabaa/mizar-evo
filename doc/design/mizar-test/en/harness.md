@@ -5349,3 +5349,9 @@ No dispatch, fixture, sidecar, expectation, trace, metadata, diagnostic, CLI, ac
 ## Task 269GUPT Frozen Private Harness Route
 
 `source_proof_local_given_use_type_output` takes `SurfaceAst`, `ModuleId`, shells, symbols, and exact source text; cfg-test `_with_mutation` appends one of `None`, `WrongDependencyModule`, `WrongTypeRange`, `WrongArenaRoot`, or `WrongArenaKind`. Mismatch is `None`; selected failure is `Some(Err(_))`. The only route-local string is `Task269GUPT reserve type range is missing`. Success contains `typed_ast` then `resolved`, owns only the GUPT composite, and remains unreachable from public dispatch.
+
+### Task 269GUPT implemented private harness
+
+The frozen selector, five mutations, exact input/arena, direct by-value checker
+handoff, Typed/final installation, and four-test matrix are implemented. The
+route remains private and dormant with no public dispatch or semantic output.

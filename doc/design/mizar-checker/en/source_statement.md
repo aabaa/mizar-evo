@@ -4149,3 +4149,9 @@ This closes only dormant private lexical-binding evidence and grants zero active
 ## Task 269GUPT Statement Boundary
 
 GUPT owns only the written type on the already authenticated `given` declaration. The `such that G: thesis` condition, label, conclusion equality, later `y` leaves, proof goal, and acceptance remain selector-only with no statement/fact/semantic row. Existing statement APIs and production dispatch are byte-identical.
+
+### Task 269GUPT implemented statement boundary
+
+Only the authenticated written source type is transported. Statement APIs,
+the condition/label/equality/later-use subtrees, proof state, acceptance, and
+production dispatch remain unchanged.

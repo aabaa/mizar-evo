@@ -6600,4 +6600,7 @@ runner、docs-only implementation commitはproducer taskを満たさない。
 - [x] by-value dependency、binding 1 `Source(84..87)`、`2/2/0/0/0/0`、distinct arena、public ABI/error/debug、Typed/Resolved、runner、7-file/8-test、40 docs、zero credit、baseline/deferral/exitをfreeze。
 - [x] specおよびsource/docs review **NO FINDINGS**、docs-only hard gate `9/9`、capなし`100/100`。
 - [x] exact 40 Markdownをstageしdocs commitする。
-- [ ] fresh preflight後GUPTだけをimplementし、3 review **NO FINDINGS**、全gate、single commit後269GUをfresh inventory。capture/270はdefer。
+- [x] GUPTだけのfresh preflight/implementationは完了し、test/implementation/
+  source-docs reviewは**NO FINDINGS**、hard gate `9/9`、capなし`100/100`。
+- [~] exact stageとseparate implementation commit後に269GUをfresh inventory。
+  capture/270はdefer。

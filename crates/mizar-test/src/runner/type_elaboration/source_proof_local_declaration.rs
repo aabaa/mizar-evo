@@ -17,9 +17,9 @@ use mizar_checker::{
     },
     source_term::SourcePrimaryTermId,
     source_type::{
-        SourceProofLocalGivenTypeProducer, SourceProofLocalLetTypeProducer,
-        SourceTypeApplicationForm, SourceTypeApplicationInput, SourceTypeExpressionId,
-        SourceTypeExpressionInput, SourceTypeHandoffInput, SourceTypeHead,
+        SourceProofLocalGivenTypeProducer, SourceProofLocalGivenUseTypeProducer,
+        SourceProofLocalLetTypeProducer, SourceTypeApplicationForm, SourceTypeApplicationInput,
+        SourceTypeExpressionId, SourceTypeExpressionInput, SourceTypeHandoffInput, SourceTypeHead,
     },
     typed_ast::{
         CoercionTable, InitialObligationTable, LocalTypeContextTable, TypeDiagnosticTable,
@@ -1479,6 +1479,248 @@ fn task269gt_arena(
 }
 
 fn empty_task269gt_typed_ast(
+    source_id: mizar_session::SourceId,
+    module_id: ModuleId,
+    nodes: TypedArena,
+) -> Result<TypedAst, String> {
+    TypedAst::try_new(TypedAstParts {
+        source_id,
+        module_id,
+        resolved_root: None,
+        source_context: None,
+        source_type: None,
+        source_attribute: None,
+        nodes,
+        contexts: LocalTypeContextTable::new(),
+        types: TypeTable::new(),
+        facts: TypeFactTable::new(),
+        coercions: CoercionTable::new(),
+        initial_obligations: InitialObligationTable::new(),
+        diagnostics: TypeDiagnosticTable::new(),
+    })
+    .map_err(|error| error.to_string())
+}
+
+#[derive(Debug, PartialEq, Eq)]
+#[allow(dead_code)] // Rationale: Task 269GUPT is a private dormant runner consumer until activation.
+pub(in crate::runner) struct SourceProofLocalGivenUseTypeRouteOutput {
+    pub(in crate::runner) typed_ast: TypedAst,
+    pub(in crate::runner) resolved: ResolvedTypedAst,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[allow(dead_code)] // Rationale: production selects `None`; other variants are private corruption seams.
+pub(in crate::runner) enum SourceProofLocalGivenUseTypeRouteMutation {
+    None,
+    WrongDependencyModule,
+    WrongTypeRange,
+    WrongArenaRoot,
+    WrongArenaKind,
+}
+
+#[allow(dead_code)] // Rationale: Task 269GUPT deliberately leaves this exact private leaf dormant.
+pub(in crate::runner) fn source_proof_local_given_use_type_output(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    shells: &DeclarationShellSet,
+    symbols: &SymbolEnv,
+    source_text: &str,
+) -> Option<Result<SourceProofLocalGivenUseTypeRouteOutput, String>> {
+    source_proof_local_given_use_type_output_impl(
+        ast,
+        module,
+        shells,
+        symbols,
+        source_text,
+        SourceProofLocalGivenUseTypeRouteMutation::None,
+    )
+}
+
+#[cfg(test)]
+pub(in crate::runner) fn source_proof_local_given_use_type_output_with_mutation(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    shells: &DeclarationShellSet,
+    symbols: &SymbolEnv,
+    source_text: &str,
+    mutation: SourceProofLocalGivenUseTypeRouteMutation,
+) -> Option<Result<SourceProofLocalGivenUseTypeRouteOutput, String>> {
+    source_proof_local_given_use_type_output_impl(
+        ast,
+        module,
+        shells,
+        symbols,
+        source_text,
+        mutation,
+    )
+}
+
+fn source_proof_local_given_use_type_output_impl(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    shells: &DeclarationShellSet,
+    symbols: &SymbolEnv,
+    source_text: &str,
+    mutation: SourceProofLocalGivenUseTypeRouteMutation,
+) -> Option<Result<SourceProofLocalGivenUseTypeRouteOutput, String>> {
+    let binding = source_proof_local_given_use_binding_output(
+        ast,
+        module.clone(),
+        shells,
+        symbols,
+        source_text,
+    )?;
+    let lower = source_proof_local_given_use_lower_output(
+        ast,
+        module.clone(),
+        shells,
+        symbols,
+        source_text,
+    )?;
+    Some(binding.and_then(|dependency| {
+        lower.and_then(|lower| {
+            let reserve_range = match dependency
+                .binding_env()
+                .bindings()
+                .get(mizar_checker::binding_env::BindingId::new(0))
+                .map(|binding| &binding.type_site)
+            {
+                Some(mizar_checker::binding_env::BindingTypeSite::Source(source_range)) => {
+                    *source_range
+                }
+                _ => return Err("Task269GUPT reserve type range is missing".to_owned()),
+            };
+            let local_range = lower.type_range();
+            let arena = task269gupt_arena(ast.source_id, mutation)?;
+            let mut input =
+                task269gupt_type_input(ast.source_id, module.clone(), reserve_range, local_range);
+            if mutation == SourceProofLocalGivenUseTypeRouteMutation::WrongDependencyModule {
+                input.module_id = ModuleId::new(
+                    module.package().clone(),
+                    ModulePath::new("task269gupt.wrong"),
+                );
+                for expression in &mut input.expressions {
+                    expression.module_id = input.module_id.clone();
+                }
+            }
+            if mutation == SourceProofLocalGivenUseTypeRouteMutation::WrongTypeRange {
+                input.expressions[1].source_range.end += 1;
+            }
+            let handoff =
+                SourceProofLocalGivenUseTypeProducer::build(dependency, input, symbols, &arena)
+                    .map_err(|error| error.to_string())?;
+            let typed_ast = empty_task269gupt_typed_ast(ast.source_id, module, arena)?
+                .with_source_proof_local_given_use_type(handoff)
+                .map_err(|error| error.to_string())?;
+            let resolved = assemble_empty_resolved_typed_ast(&typed_ast, Vec::new())?;
+            Ok(SourceProofLocalGivenUseTypeRouteOutput {
+                typed_ast,
+                resolved,
+            })
+        })
+    }))
+}
+
+fn task269gupt_type_input(
+    source_id: mizar_session::SourceId,
+    module_id: ModuleId,
+    reserve_range: SourceRange,
+    local_range: SourceRange,
+) -> SourceTypeHandoffInput {
+    let ranges = [reserve_range, local_range];
+    SourceTypeHandoffInput {
+        source_id,
+        module_id: module_id.clone(),
+        applications: ranges
+            .iter()
+            .enumerate()
+            .map(|(index, _)| SourceTypeApplicationInput {
+                binding: mizar_checker::binding_env::BindingId::new(index),
+                source_ordinal: index,
+                root: SourceTypeExpressionId::new(index),
+            })
+            .collect(),
+        expressions: ranges
+            .into_iter()
+            .enumerate()
+            .map(|(index, source_range)| SourceTypeExpressionInput {
+                source_id,
+                module_id: module_id.clone(),
+                site: TypedSiteRef::Role {
+                    node: TypedNodeId::new(index),
+                    role: TypeRole::new("source.type.expression"),
+                },
+                source_range,
+                spelling: "set".to_owned(),
+                head_site: TypedSiteRef::Role {
+                    node: TypedNodeId::new(index),
+                    role: TypeRole::new("source.type.head"),
+                },
+                head_range: source_range,
+                head_spelling: "set".to_owned(),
+                form: SourceTypeApplicationForm::Bare,
+                head: SourceTypeHead::BuiltinSet,
+                recovery: mizar_checker::typed_ast::NodeRecoveryState::Normal,
+            })
+            .collect(),
+        arguments: Vec::new(),
+    }
+}
+
+fn task269gupt_arena(
+    source_id: mizar_session::SourceId,
+    mutation: SourceProofLocalGivenUseTypeRouteMutation,
+) -> Result<TypedArena, String> {
+    let mut builder = TypedArenaBuilder::new();
+    let reserve = builder
+        .push(TypedNode::new(
+            "source.proof-local.given-use.reserve-type",
+            SourceAnchor::Range(SourceRange {
+                source_id,
+                start: 14,
+                end: 17,
+            }),
+        ))
+        .map_err(|error| error.to_string())?;
+    let local = builder
+        .push(TypedNode::new(
+            if mutation == SourceProofLocalGivenUseTypeRouteMutation::WrongArenaKind {
+                "source.proof-local.given-use.type.wrong"
+            } else {
+                "source.proof-local.given-use.type"
+            },
+            SourceAnchor::Range(SourceRange {
+                source_id,
+                start: 84,
+                end: 87,
+            }),
+        ))
+        .map_err(|error| error.to_string())?;
+    let root = builder
+        .push(
+            TypedNode::new(
+                "source.proof-local.given-use.type-root",
+                SourceAnchor::Range(SourceRange {
+                    source_id,
+                    start: 0,
+                    end: 127,
+                }),
+            )
+            .with_children(vec![reserve, local]),
+        )
+        .map_err(|error| error.to_string())?;
+    builder
+        .finish(Some(
+            if mutation == SourceProofLocalGivenUseTypeRouteMutation::WrongArenaRoot {
+                local
+            } else {
+                root
+            },
+        ))
+        .map_err(|error| error.to_string())
+}
+
+fn empty_task269gupt_typed_ast(
     source_id: mizar_session::SourceId,
     module_id: ModuleId,
     nodes: TypedArena,

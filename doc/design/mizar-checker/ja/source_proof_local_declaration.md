@@ -1659,3 +1659,9 @@ commit後GUPTをfresh inventory。GU/capture/Task270はdefer。
 ## Task 269GUPT frozen dependency consumer
 
 public GUP binding handoffは`SourceProofLocalGivenUseTypeProducer`だけがby-value consumeする。unchanged lower seamはauthenticated `84..87`だけに使い、128-byte selector、54-node Surface、lower fingerprint、resolver provenance、binding rows/lookup/public ABIは変更しない。complete dependency debugをfingerprint化し、later identifierの最初のconsumerは269GUのまま。
+
+### Task 269GUPT implemented dependency consumer
+
+producer/private runnerがGUP handoffをby-value consumeし、complete authenticated
+snapshotを保持。lower owner/GUP public ABIは不変で、later identifierは269GUまで
+unconsumed。

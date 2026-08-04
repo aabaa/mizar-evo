@@ -1855,3 +1855,10 @@ This closes only dormant private lexical-binding evidence and grants zero active
 ## Task 269GUPT Frozen Source-Type Prerequisite
 
 English canonical and Japanese companion freeze the same GUPT transaction: exact GUP by-value dependency, copied binding-1 `Missing -> Source(84..87)` overlay, `2/2/0/0/0/0` source type, distinct three-node arena, public handoff/producer/error, boxed Typed/Resolved owner, exact seven-file/eight-test implementation, 40-file docs scope, zero active credit, exclusions, baselines, and exit. There is no synchronization exception. Task 269GU remains next; capture and Task 270 are deferred.
+
+### Task 269GUPT implementation synchronization
+
+Both languages record the implemented seven-file/eight-test transaction,
+`506/568` libraries, `30/174332` and `37/75074` production manifests, current
+content/test-list hashes, zero artifact/semantic credit, and Task 269GU as the
+next owner. No synchronization exception exists.

@@ -3670,4 +3670,9 @@ No dispatch, fixture, sidecar, expectation, trace, metadata, diagnostic, CLI, ac
 - [x] Freeze private output, five mutation variants, both selectors, exact two-row input, distinct three-node arena, four runner files, four runner tests, `564 -> 568`, and zero semantic credit.
 - [x] Documentation reviews are **NO FINDINGS** and docs-only hard gates pass `9/9` at an uncapped `100/100`.
 - [x] Make the exact 40-file prerequisite commit.
-- [ ] Implement and review only the dormant GUPT route; preserve all fixtures, expectations, trace, metadata, diagnostics, CLI bytes, and active results. Fresh-inventory Task 269GU after the separate implementation commit.
+- [x] The dormant GUPT route is implemented; test, implementation, and
+  source/docs reviews are **NO FINDINGS**, and all nine hard gates pass
+  uncapped at `100/100`. Fixtures, expectations, trace, metadata, diagnostics,
+  CLI bytes, and active results remain unchanged.
+- [~] Finish exact staging and the separate implementation commit, then
+  fresh-inventory Task 269GU.

@@ -1962,3 +1962,9 @@ This closes only dormant private lexical-binding evidence and grants zero active
 ## Task 269GUPT Frozen Typed Ownership
 
 `TypedAst` adds boxed optional `source_proof_local_given_use_type` after the old Given-type slot, its getter, and one-shot `with_source_proof_local_given_use_type`. `InvalidSourceProofLocalGivenUseType` renders `source proof-local given-use type handoff is invalid`. Installation authenticates the exact composite and three-node arena, rejects every existing proof-local/source/semantic owner in both orders, and retains empty contexts/types/facts/coercions/initial-obligations/diagnostics. No temporary direct binding or source-type owner is installed.
+
+### Task 269GUPT implemented Typed ownership
+
+The boxed getter/installer/error and exact availability checks are implemented.
+Tests cover one-shot installation and both-order same-identity neighbor
+exclusion while all semantic tables remain empty.

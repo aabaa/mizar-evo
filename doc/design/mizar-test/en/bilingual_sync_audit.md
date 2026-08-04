@@ -1769,3 +1769,10 @@ No dispatch, fixture, sidecar, expectation, trace, metadata, diagnostic, CLI, ac
 ## Task 269GUPT Runner Bilingual Freeze
 
 English canonical and Japanese companion synchronize the direct GUP dependency, exact source-type input/arena, private output/mutation/selectors, four runner tests, four owned runner files, zero dispatch/artifact/credit impact, baselines, exclusions, and Task-269GU handoff. No synchronization exception exists.
+
+### Task 269GUPT implementation synchronization
+
+Both languages record the implemented four-file private runner, four tests,
+`568` runner library tests, `37/75074` production manifest, current content/
+test-list hashes, zero dispatch/artifact/semantic credit, and Task 269GU next.
+No synchronization exception exists.

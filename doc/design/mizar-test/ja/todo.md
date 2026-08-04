@@ -3428,4 +3428,7 @@ dispatch、fixture、sidecar、expectation、trace、metadata、diagnostic、CLI
 - [x] private output、5 mutations、2 selectors、exact 2-row input、distinct 3-node arena、runner 4 files/tests、`564 -> 568`、zero creditをfreeze。
 - [x] docs reviewは**NO FINDINGS**、docs-only hard gateは`9/9`、capなし`100/100`。
 - [x] exact 40-file prerequisite commitを作成する。
-- [ ] dormant GUPTだけをimplement/reviewしfixture/expectation/trace/metadata/diagnostic/CLI/active resultを保持。separate commit後269GUをfresh inventory。
+- [x] dormant GUPTをimplementしtest/implementation/source-docs reviewは
+  **NO FINDINGS**、hard gate `9/9`、capなし`100/100`。fixture/expectation/
+  trace/metadata/diagnostic/CLI/active resultは不変。
+- [~] exact stageとseparate implementation commit後269GUをfresh inventory。

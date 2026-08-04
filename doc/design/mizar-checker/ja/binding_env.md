@@ -880,3 +880,9 @@ shadow restorationをtest。
 ## Task 269GUPT frozen binding overlay boundary
 
 immutable GUP handoffのexact `2/2/0` envをcopyし、binding 1だけを`Missing -> Source(84..87)`へ変更、binding 0は`Source(14..17)`を保持する。context/identity/lookup lifetime/capture/diagnostic/全non-type fieldは不変で、dependencyとold G/GT envをmutateしない。occurrence/guard/fact/capture/semantic binding stateは追加しない。
+
+### Task 269GUPT implemented overlay
+
+exact copied overlayとcorruption/replay/ownership/same-identity cross-family
+matrixを実装しpass。immutable GUP dependencyと全non-type binding stateは不変で、
+semantic binding creditなし。

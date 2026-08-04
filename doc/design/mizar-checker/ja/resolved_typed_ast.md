@@ -1837,3 +1837,8 @@ byte-identical。GUPT/GUはGUP dependencyを順にconsumeした後だけownerを
 ## Task 269GUPT frozen final ownership
 
 `ResolvedTypedAst`はold Given-type slot直後のboxed optional `source_proof_local_given_use_type`とgetterだけを追加。assemblyはexact Typed profileをrevalidate/cloneし、3 nodesをrole `source.proof-local.given-use.type`でsource-preserveする。errorは`InvalidSourceProofLocalGivenUseType` / `resolved typed AST source proof-local given-use type handoff is invalid`。semantic table/node hint/old owner/direct binding/typeはemptyかつ排他。
+
+### Task 269GUPT implemented final owner
+
+boxed owner、exact revalidation、3 source-preserved nodes、both-order exclusionを
+実装/test済み。final semantic tableとnode-hint inputはempty。
