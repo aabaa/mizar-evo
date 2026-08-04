@@ -3734,8 +3734,30 @@ No dispatch, fixture, sidecar, expectation, trace, metadata, diagnostic, CLI, ac
   mutations/output, Typed/Resolved ownership, seven files, four checker/four
   runner tests, zero credit, exclusions, and GCU successor in EN/JA.
 - [x] Complete spec review to **NO FINDINGS**, all measured docs-only gates,
-  and uncapped final quality with all nine gates PASS at `100/100`; exact
-  staging/prerequisite commit remain.
-- [ ] Fresh-preflight, implement GCT only, repeat all reviews and full gates,
-  create the separate implementation commit, and continue automatically with
-  Task 269GCU.
+  uncapped final quality with all nine gates PASS at `100/100`, and exact
+  prerequisite commit `b43081161b31fcc4bc23ac2fd42c5c42e772ab78`.
+- [x] Fresh-preflight and exact GCT implementation are present;
+  test-sufficiency, implementation, and source/docs reviews report **NO
+  FINDINGS**, and focused plus full gates pass.
+- [x] Complete final-quality review with **NO FINDINGS**, all nine gates PASS,
+  no score cap, and `100/100`.
+- [ ] Stage the exact task files, create the separate implementation commit,
+  and continue automatically with Task 269GCU.
+
+### Task 269GCT implemented private runner status
+
+After docs commit `b43081161b31fcc4bc23ac2fd42c5c42e772ab78`, the
+frozen private GC/GCP-to-GCT route and exactly four runner tests are present in
+the four owned runner files. Module sizes are proof-local production leaf
+`2506`, facade `946`, `runner.rs` `2778`, and proof-local test leaf `8049`.
+Runner production remains 37 paths / 77,159 lines with path/content hashes
+`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d` /
+`5b0e68f35d37fcf843f7cb64885f09bfa9dd5423c17506713e096811a5ddf689`;
+the library is `584` with raw/normalized hashes
+`d599bd69654d000f44858942cec771742d8c3c9e0d2ca459d7fecc84d76752c9` /
+`bc3cdabbc6424b0f01d817ed323dd823ff57d1d8d4261220dc3d9c37d9004a61`.
+No active dispatcher or protected artifact/count/hash changes. GCU remains
+the sole condition-occurrence successor. Test-sufficiency, implementation, source/documentation, and final-quality
+reviews report **NO FINDINGS**. All nine hard gates PASS without a score cap at
+`100/100`, and the focused plus full gates pass. Exact staging and the
+implementation commit remain; no commit claim is made.

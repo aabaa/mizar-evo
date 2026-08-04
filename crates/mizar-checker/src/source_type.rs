@@ -7,8 +7,8 @@ use crate::{
         BindingStatus, BindingTable, BindingTypeSite,
     },
     source_proof_local_declaration::{
-        SourceProofLocalGivenBindingHandoff, SourceProofLocalGivenUseBindingHandoff,
-        SourceProofLocalLetBindingHandoff,
+        SourceProofLocalGivenBindingHandoff, SourceProofLocalGivenConditionBindingHandoff,
+        SourceProofLocalGivenUseBindingHandoff, SourceProofLocalLetBindingHandoff,
     },
     typed_ast::{
         NodeRecoveryState, TypedArena, TypedNodeId, TypedNodeLinks, TypedSiteRef, TypingState,
@@ -1190,6 +1190,192 @@ impl fmt::Display for SourceProofLocalGivenTypeError {
 }
 
 impl std::error::Error for SourceProofLocalGivenTypeError {}
+
+/// Immutable exact Task-269GCT proof-local `given` condition type handoff.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceProofLocalGivenConditionTypeHandoff {
+    source_id: SourceId,
+    module_id: ModuleId,
+    dependency: SourceProofLocalGivenConditionBindingHandoff,
+    dependency_fingerprint: String,
+    binding_env: BindingEnv,
+    binding_fingerprint: String,
+    source_type: SourceTypeApplicationHandoff,
+    source_type_fingerprint: String,
+}
+
+impl SourceProofLocalGivenConditionTypeHandoff {
+    pub const fn source_id(&self) -> SourceId {
+        self.source_id
+    }
+
+    pub const fn module_id(&self) -> &ModuleId {
+        &self.module_id
+    }
+
+    pub const fn dependency(&self) -> &SourceProofLocalGivenConditionBindingHandoff {
+        &self.dependency
+    }
+
+    pub fn dependency_fingerprint(&self) -> &str {
+        &self.dependency_fingerprint
+    }
+
+    pub const fn binding_env(&self) -> &BindingEnv {
+        &self.binding_env
+    }
+
+    pub fn binding_fingerprint(&self) -> &str {
+        &self.binding_fingerprint
+    }
+
+    pub const fn source_type(&self) -> &SourceTypeApplicationHandoff {
+        &self.source_type
+    }
+
+    pub fn source_type_fingerprint(&self) -> &str {
+        &self.source_type_fingerprint
+    }
+
+    pub fn debug_text(&self) -> String {
+        format!(
+            concat!(
+                "source-proof-local-given-condition-type-debug-v1\n",
+                "module: {}::{}\n",
+                "dependency-fingerprint: {:?}\n",
+                "binding-fingerprint: {:?}\n",
+                "source-type-fingerprint: {:?}\n",
+            ),
+            self.module_id.package().as_str(),
+            self.module_id.path().as_str(),
+            self.dependency_fingerprint,
+            self.binding_fingerprint,
+            self.source_type_fingerprint,
+        )
+    }
+
+    pub(crate) fn validate_installation(
+        &self,
+        source_id: SourceId,
+        module_id: &ModuleId,
+        arena: &TypedArena,
+    ) -> Result<(), SourceProofLocalGivenConditionTypeError> {
+        self.dependency
+            .validate_installation(source_id, module_id)
+            .map_err(|_| SourceProofLocalGivenConditionTypeError::InvalidDependency)?;
+        if self.source_id != source_id
+            || &self.module_id != module_id
+            || self.dependency_fingerprint != self.dependency.debug_text()
+        {
+            return Err(SourceProofLocalGivenConditionTypeError::InvalidDependency);
+        }
+        let expected_binding = task269gct_binding_env(&self.dependency)?;
+        if self.binding_env != expected_binding
+            || self.binding_fingerprint != self.binding_env.debug_text()
+        {
+            return Err(SourceProofLocalGivenConditionTypeError::InvalidBindingEnvironment);
+        }
+        if !exact_task269gct_source_type(&self.source_type, source_id, module_id)
+            || self.source_type_fingerprint != self.source_type.debug_text()
+            || !exact_task269gct_arena(source_id, arena)
+            || self
+                .source_type
+                .validate_installation(source_id, module_id, arena)
+                .is_err()
+        {
+            return Err(SourceProofLocalGivenConditionTypeError::InvalidSourceType);
+        }
+        Ok(())
+    }
+
+    pub(crate) fn validate_complete_installation(
+        &self,
+        source_id: SourceId,
+        module_id: &ModuleId,
+        arena: &TypedArena,
+        installation_available: bool,
+    ) -> Result<(), SourceProofLocalGivenConditionTypeError> {
+        self.validate_installation(source_id, module_id, arena)?;
+        if !installation_available {
+            return Err(SourceProofLocalGivenConditionTypeError::InvalidInstallation);
+        }
+        Ok(())
+    }
+}
+
+/// Builds only the exact Task-269GCT proof-local `given` condition type.
+pub struct SourceProofLocalGivenConditionTypeProducer;
+
+impl SourceProofLocalGivenConditionTypeProducer {
+    pub fn build(
+        dependency: SourceProofLocalGivenConditionBindingHandoff,
+        input: SourceTypeHandoffInput,
+        symbols: &SymbolEnv,
+        arena: &TypedArena,
+    ) -> Result<SourceProofLocalGivenConditionTypeHandoff, SourceProofLocalGivenConditionTypeError>
+    {
+        dependency
+            .validate_installation(input.source_id, &input.module_id)
+            .map_err(|_| SourceProofLocalGivenConditionTypeError::InvalidDependency)?;
+        let dependency_fingerprint = dependency.debug_text();
+        let binding_env = task269gct_binding_env(&dependency)?;
+        if !exact_task269gct_input(&input) || !exact_task269gct_arena(input.source_id, arena) {
+            return Err(SourceProofLocalGivenConditionTypeError::InvalidSourceType);
+        }
+        validate_input(
+            &input,
+            &binding_env,
+            symbols,
+            arena,
+            SourceTypeBindingProfile::ProofLocalGiven,
+        )
+        .map_err(|_| SourceProofLocalGivenConditionTypeError::InvalidSourceType)?;
+        let binding_fingerprint = binding_env.debug_text();
+        let source_type = build_source_type_handoff(input);
+        let source_type_fingerprint = source_type.debug_text();
+        let handoff = SourceProofLocalGivenConditionTypeHandoff {
+            source_id: dependency.source_id(),
+            module_id: dependency.module_id().clone(),
+            dependency,
+            dependency_fingerprint,
+            binding_env,
+            binding_fingerprint,
+            source_type,
+            source_type_fingerprint,
+        };
+        handoff.validate_installation(handoff.source_id, &handoff.module_id, arena)?;
+        Ok(handoff)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum SourceProofLocalGivenConditionTypeError {
+    InvalidDependency,
+    InvalidBindingEnvironment,
+    InvalidSourceType,
+    InvalidInstallation,
+}
+
+impl fmt::Display for SourceProofLocalGivenConditionTypeError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::InvalidDependency => {
+                formatter.write_str("source proof-local given-condition type dependency is invalid")
+            }
+            Self::InvalidBindingEnvironment => formatter.write_str(
+                "source proof-local given-condition typed binding environment is invalid",
+            ),
+            Self::InvalidSourceType => {
+                formatter.write_str("source proof-local given-condition source type is invalid")
+            }
+            Self::InvalidInstallation => formatter
+                .write_str("source proof-local given-condition type installation is invalid"),
+        }
+    }
+}
+
+impl std::error::Error for SourceProofLocalGivenConditionTypeError {}
 
 /// Immutable exact Task-269GUPT proof-local `given` use-profile type handoff.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -3154,6 +3340,205 @@ fn task269gt_range(source_id: SourceId, start: usize, end: usize) -> SourceRange
     }
 }
 
+fn task269gct_binding_env(
+    dependency: &SourceProofLocalGivenConditionBindingHandoff,
+) -> Result<BindingEnv, SourceProofLocalGivenConditionTypeError> {
+    let mut bindings = BindingTable::new();
+    for (id, binding) in dependency.binding_env().bindings().iter() {
+        let inserted = bindings.insert(BindingDraft {
+            spelling: binding.spelling.clone(),
+            kind: binding.kind,
+            identity: binding.identity.clone(),
+            owner_context: binding.owner_context,
+            declaration_range: binding.declaration_range,
+            visible_after_ordinal: binding.visible_after_ordinal,
+            type_site: if id == BindingId::new(1) {
+                BindingTypeSite::Source(task269gct_range(dependency.source_id(), 90, 93))
+            } else {
+                binding.type_site.clone()
+            },
+            status: binding.status,
+            captured: binding.captured.clone(),
+            diagnostics: binding.diagnostics.clone(),
+            recovery: binding.recovery,
+        });
+        if inserted != id {
+            return Err(SourceProofLocalGivenConditionTypeError::InvalidBindingEnvironment);
+        }
+    }
+    let binding_env = BindingEnv::try_new(BindingEnvParts {
+        source_id: dependency.source_id(),
+        module_id: dependency.module_id().clone(),
+        contexts: dependency.binding_env().contexts().clone(),
+        bindings,
+        diagnostics: dependency.binding_env().diagnostics().clone(),
+    })
+    .map_err(|_| SourceProofLocalGivenConditionTypeError::InvalidBindingEnvironment)?;
+    let reserve = binding_env.bindings().get(BindingId::new(0));
+    let local = binding_env.bindings().get(BindingId::new(1));
+    if binding_env.contexts().len() != 2
+        || binding_env.bindings().len() != 2
+        || !binding_env.diagnostics().is_empty()
+        || reserve.is_none_or(|binding| {
+            binding.type_site
+                != BindingTypeSite::Source(task269gct_range(dependency.source_id(), 14, 17))
+        })
+        || local.is_none_or(|binding| {
+            binding.kind != BindingKind::GivenWitness
+                || binding.type_site
+                    != BindingTypeSite::Source(task269gct_range(dependency.source_id(), 90, 93))
+        })
+    {
+        return Err(SourceProofLocalGivenConditionTypeError::InvalidBindingEnvironment);
+    }
+    Ok(binding_env)
+}
+
+fn exact_task269gct_input(input: &SourceTypeHandoffInput) -> bool {
+    if input.applications.len() != 2 || input.expressions.len() != 2 || !input.arguments.is_empty()
+    {
+        return false;
+    }
+    for (index, (start, end)) in [(14, 17), (90, 93)].into_iter().enumerate() {
+        let application = &input.applications[index];
+        let expression = &input.expressions[index];
+        if application.binding != BindingId::new(index)
+            || application.source_ordinal != index
+            || application.root != SourceTypeExpressionId::new(index)
+            || expression.source_id != input.source_id
+            || expression.module_id != input.module_id
+            || !task269ct_role_matches(
+                &expression.site,
+                TypedNodeId::new(index),
+                "source.type.expression",
+            )
+            || expression.source_range != task269gct_range(input.source_id, start, end)
+            || expression.spelling != "set"
+            || !task269ct_role_matches(
+                &expression.head_site,
+                TypedNodeId::new(index),
+                "source.type.head",
+            )
+            || expression.head_range != task269gct_range(input.source_id, start, end)
+            || expression.head_spelling != "set"
+            || expression.form != SourceTypeApplicationForm::Bare
+            || expression.head != SourceTypeHead::BuiltinSet
+            || expression.recovery != NodeRecoveryState::Normal
+        {
+            return false;
+        }
+    }
+    true
+}
+
+fn exact_task269gct_source_type(
+    handoff: &SourceTypeApplicationHandoff,
+    source_id: SourceId,
+    module_id: &ModuleId,
+) -> bool {
+    if handoff.source_id() != source_id
+        || handoff.module_id() != module_id
+        || handoff.applications().len() != 2
+        || handoff.expressions().len() != 2
+        || !handoff.arguments().is_empty()
+        || !handoff.definition_returns().is_empty()
+        || !handoff.mode_rhs().is_empty()
+        || !handoff.structure_members().is_empty()
+    {
+        return false;
+    }
+    for (index, (start, end)) in [(14, 17), (90, 93)].into_iter().enumerate() {
+        let Some(application) = handoff
+            .applications()
+            .get(SourceTypeApplicationId::new(index))
+        else {
+            return false;
+        };
+        let Some(expression) = handoff
+            .expressions()
+            .get(SourceTypeExpressionId::new(index))
+        else {
+            return false;
+        };
+        if application.id() != SourceTypeApplicationId::new(index)
+            || application.binding() != BindingId::new(index)
+            || application.source_ordinal() != index
+            || application.root() != SourceTypeExpressionId::new(index)
+            || expression.id() != SourceTypeExpressionId::new(index)
+            || expression.source_id() != source_id
+            || expression.module_id() != module_id
+            || !task269ct_role_matches(
+                expression.site(),
+                TypedNodeId::new(index),
+                "source.type.expression",
+            )
+            || expression.source_range() != task269gct_range(source_id, start, end)
+            || expression.spelling() != "set"
+            || !task269ct_role_matches(
+                expression.head_site(),
+                TypedNodeId::new(index),
+                "source.type.head",
+            )
+            || expression.head_range() != task269gct_range(source_id, start, end)
+            || expression.head_spelling() != "set"
+            || expression.form() != SourceTypeApplicationForm::Bare
+            || expression.head() != &SourceTypeHead::BuiltinSet
+            || expression.recovery() != NodeRecoveryState::Normal
+        {
+            return false;
+        }
+    }
+    true
+}
+
+fn exact_task269gct_arena(source_id: SourceId, arena: &TypedArena) -> bool {
+    if arena.len() != 3 || arena.root() != Some(TypedNodeId::new(2)) {
+        return false;
+    }
+    let expected = [
+        (
+            "source.proof-local.given-condition.reserve-type",
+            14,
+            17,
+            Vec::new(),
+        ),
+        (
+            "source.proof-local.given-condition.type",
+            90,
+            93,
+            Vec::new(),
+        ),
+        (
+            "source.proof-local.given-condition.type-root",
+            0,
+            133,
+            vec![TypedNodeId::new(0), TypedNodeId::new(1)],
+        ),
+    ];
+    expected
+        .into_iter()
+        .enumerate()
+        .all(|(index, (kind, start, end, children))| {
+            arena.node(TypedNodeId::new(index)).is_some_and(|node| {
+                node.kind.as_str() == kind
+                    && node.resolved_node.is_none()
+                    && node.anchor == SourceAnchor::Range(task269gct_range(source_id, start, end))
+                    && node.children == children
+                    && node.typing == TypingState::Unknown
+                    && node.recovery == NodeRecoveryState::Normal
+                    && node.links == TypedNodeLinks::default()
+            })
+        })
+}
+
+fn task269gct_range(source_id: SourceId, start: usize, end: usize) -> SourceRange {
+    SourceRange {
+        source_id,
+        start,
+        end,
+    }
+}
+
 fn task269gupt_binding_env(
     dependency: &SourceProofLocalGivenUseBindingHandoff,
 ) -> Result<BindingEnv, SourceProofLocalGivenUseTypeError> {
@@ -4154,9 +4539,18 @@ mod tests {
         },
         source_proof_local_declaration::{
             SourceProofLocalGivenBindingHandoffInput, SourceProofLocalGivenBindingProducer,
-            SourceProofLocalGivenBindingRecovery, SourceProofLocalGivenUseBindingHandoffInput,
-            SourceProofLocalGivenUseBindingProducer, SourceProofLocalLetBindingHandoffInput,
-            SourceProofLocalLetBindingProducer, SourceProofLocalLetBindingRecovery,
+            SourceProofLocalGivenBindingRecovery,
+            SourceProofLocalGivenConditionBindingHandoffInput,
+            SourceProofLocalGivenConditionBindingProducer,
+            SourceProofLocalGivenUseBindingHandoffInput, SourceProofLocalGivenUseBindingProducer,
+            SourceProofLocalLetBindingHandoffInput, SourceProofLocalLetBindingProducer,
+            SourceProofLocalLetBindingRecovery,
+        },
+        source_term::{
+            SourcePrimaryTermHandoffInput, SourcePrimaryTermId, SourcePrimaryTermInput,
+            SourcePrimaryTermKind, SourcePrimaryTermRecovery, SourcePrimaryTermReferenceInput,
+            SourcePrimaryTermReferenceRole, SourcePrimaryTermRole,
+            SourceProofLocalGivenUseTermProducer,
         },
         type_checker::{SourceReserveBindingInput, SourceReserveDeclarationBridge, TypeHeadInput},
         typed_ast::{
@@ -4237,6 +4631,16 @@ mod tests {
         source: SourceId,
         module: ModuleId,
         dependency: SourceProofLocalGivenBindingHandoff,
+        input: SourceTypeHandoffInput,
+        symbols: SymbolEnv,
+        arena: TypedArena,
+    }
+
+    #[derive(Clone)]
+    struct Task269gctFixture {
+        source: SourceId,
+        module: ModuleId,
+        dependency: SourceProofLocalGivenConditionBindingHandoff,
         input: SourceTypeHandoffInput,
         symbols: SymbolEnv,
         arena: TypedArena,
@@ -9004,6 +9408,409 @@ mod tests {
             .expect("Task269GT typed arena")
     }
 
+    fn task269gct_fixture() -> Task269gctFixture {
+        let source = source_id_for("f7");
+        let module = module("task269gc");
+        let local = concat!(
+            "contribution=0:namespace=task269gc:owner=theorem#1:shell=theorem:",
+            "kind=theorem:name=ProofLocalGivenConditionUseSmoke:notation=_:arity=_:",
+            "definition=theorem:registration=_:policy=non-overloadable:",
+            "slot=non-overloadable:_:theorem:_"
+        );
+        let theorem_symbol = SymbolId::new(
+            module.clone(),
+            LocalSymbolId::new(local),
+            FullyQualifiedName::new(format!("pkg::task269gc::{local}")),
+        );
+        let mut contributions = SourceContributionIndex::new();
+        let contribution = contributions.insert(
+            module.clone(),
+            ContributionKind::LocalSource { source_id: source },
+            SourceAnchor::Range(range(source, 0, 18)),
+        );
+        let mut definitions = DefinitionIndex::new();
+        let theorem_definition = definitions.insert(DefinitionShell::new(
+            theorem_symbol.clone(),
+            DefinitionKind::Theorem,
+            SemanticOrigin::new(
+                source,
+                module.clone(),
+                SourceAnchor::Range(range(source, 19, 133)),
+                vec![2, 1],
+            ),
+            contribution,
+        ));
+        let lower_fingerprint = format!(
+            concat!(
+                "source-proof-local-given-condition-lower-debug-v1\n",
+                "module: {}::{}\n",
+                "source-fingerprint: \"2c2d767a0654670412b377bdcc6c5970ecec05b41c02aa754766320927bc6aad\"\n",
+                "surface-fingerprint: \"49d46d5f24338772e6e968f12c2216a8957b35242474132690db843b510b430f\"\n",
+                "theorem symbol={:?} definition=0 contribution=0 range=19..133 proof=68..132\n",
+                "given range=76..113 segment=82..93 source_ordinal=1\n",
+                "name range=82..83 spelling=\"y\"\n",
+                "type range=90..93 head=90..93 spelling=\"set\" form=bare\n",
+            ),
+            module.package().as_str(),
+            module.path().as_str(),
+            theorem_symbol.fqn().as_str(),
+        );
+        let dependency = SourceProofLocalGivenConditionBindingProducer::build(
+            SourceProofLocalGivenConditionBindingHandoffInput {
+                source_id: source,
+                module_id: module.clone(),
+                lower_fingerprint,
+                theorem_symbol,
+                theorem_definition,
+                contribution,
+                theorem_range: range(source, 19, 133),
+                proof_range: range(source, 68, 132),
+                given_range: range(source, 76, 113),
+                segment_range: range(source, 82, 93),
+                name_range: range(source, 82, 83),
+                source_ordinal: 1,
+                local: LocalTermBinding::new(
+                    "y",
+                    LocalTermScope::new(vec![0]),
+                    range(source, 82, 83),
+                    1,
+                ),
+                recovery: SourceProofLocalGivenBindingRecovery::Normal,
+            },
+            &task269ct_base_binding_env(source, module.clone()),
+        )
+        .expect("Task269GCT exact Task269GC dependency");
+        let input = task269gct_input(source, module.clone());
+        let symbols = SymbolEnv::new(module.clone(), SymbolEnvIndexes::default());
+        let arena = task269gct_test_arena(source, 2, false);
+        Task269gctFixture {
+            source,
+            module,
+            dependency,
+            input,
+            symbols,
+            arena,
+        }
+    }
+
+    fn task269gct_input(source: SourceId, module: ModuleId) -> SourceTypeHandoffInput {
+        SourceTypeHandoffInput {
+            source_id: source,
+            module_id: module.clone(),
+            applications: (0..2)
+                .map(|index| SourceTypeApplicationInput {
+                    binding: BindingId::new(index),
+                    source_ordinal: index,
+                    root: SourceTypeExpressionId::new(index),
+                })
+                .collect(),
+            expressions: [(14, 17), (90, 93)]
+                .into_iter()
+                .enumerate()
+                .map(|(index, (start, end))| SourceTypeExpressionInput {
+                    source_id: source,
+                    module_id: module.clone(),
+                    site: role(index, "source.type.expression"),
+                    source_range: range(source, start, end),
+                    spelling: "set".to_owned(),
+                    head_site: role(index, "source.type.head"),
+                    head_range: range(source, start, end),
+                    head_spelling: "set".to_owned(),
+                    form: SourceTypeApplicationForm::Bare,
+                    head: SourceTypeHead::BuiltinSet,
+                    recovery: NodeRecoveryState::Normal,
+                })
+                .collect(),
+            arguments: Vec::new(),
+        }
+    }
+
+    fn task269gct_test_arena(source: SourceId, root: usize, wrong_kind: bool) -> TypedArena {
+        let mut builder = TypedArenaBuilder::new();
+        let reserve = builder
+            .push(TypedNode::new(
+                "source.proof-local.given-condition.reserve-type",
+                SourceAnchor::Range(range(source, 14, 17)),
+            ))
+            .expect("Task269GCT reserve type node");
+        let local = builder
+            .push(TypedNode::new(
+                if wrong_kind {
+                    "source.proof-local.given-condition.type.wrong"
+                } else {
+                    "source.proof-local.given-condition.type"
+                },
+                SourceAnchor::Range(range(source, 90, 93)),
+            ))
+            .expect("Task269GCT local type node");
+        let type_root = builder
+            .push(
+                TypedNode::new(
+                    "source.proof-local.given-condition.type-root",
+                    SourceAnchor::Range(range(source, 0, 133)),
+                )
+                .with_children(vec![reserve, local]),
+            )
+            .expect("Task269GCT type root");
+        assert_eq!(type_root, TypedNodeId::new(2));
+        builder
+            .finish(Some(TypedNodeId::new(root)))
+            .expect("Task269GCT typed arena")
+    }
+
+    fn task269gct_given_use_term_input(
+        source: SourceId,
+        module_id: ModuleId,
+    ) -> SourcePrimaryTermHandoffInput {
+        SourcePrimaryTermHandoffInput {
+            source_id: source,
+            module_id,
+            terms: [(3, 116, 117), (4, 120, 121)]
+                .into_iter()
+                .enumerate()
+                .map(
+                    |(source_ordinal, (node, start, end))| SourcePrimaryTermInput {
+                        site: TypedSiteRef::Node(TypedNodeId::new(node)),
+                        source_range: range(source, start, end),
+                        source_ordinal,
+                        context: BindingContextId::new(1),
+                        recovery: SourcePrimaryTermRecovery::Normal,
+                        spelling: "y".to_owned(),
+                        kind: SourcePrimaryTermKind::VariableReference,
+                        role: SourcePrimaryTermRole::Value,
+                        parent: None,
+                    },
+                )
+                .collect(),
+            references: (0..2)
+                .map(|index| SourcePrimaryTermReferenceInput {
+                    term: SourcePrimaryTermId::new(index),
+                    binding: BindingId::new(1),
+                    role: SourcePrimaryTermReferenceRole::Variable,
+                })
+                .collect(),
+            numeric_type_requests: Vec::new(),
+        }
+    }
+
+    fn task269gct_given_use_term_arena(source: SourceId) -> TypedArena {
+        let mut builder = TypedArenaBuilder::new();
+        let reserve = builder
+            .push(TypedNode::new(
+                "source.proof-local.given-use.reserve-type",
+                SourceAnchor::Range(range(source, 14, 17)),
+            ))
+            .expect("Task269GCT GU reserve node");
+        let local = builder
+            .push(TypedNode::new(
+                "source.proof-local.given-use.type",
+                SourceAnchor::Range(range(source, 84, 87)),
+            ))
+            .expect("Task269GCT GU type node");
+        let type_root = builder
+            .push(
+                TypedNode::new(
+                    "source.proof-local.given-use.type-root",
+                    SourceAnchor::Range(range(source, 0, 127)),
+                )
+                .with_children(vec![reserve, local]),
+            )
+            .expect("Task269GCT GU type root");
+        let first = builder
+            .push(TypedNode::new(
+                "source.term.variable-reference",
+                SourceAnchor::Range(range(source, 116, 117)),
+            ))
+            .expect("Task269GCT GU first term");
+        let second = builder
+            .push(TypedNode::new(
+                "source.term.variable-reference",
+                SourceAnchor::Range(range(source, 120, 121)),
+            ))
+            .expect("Task269GCT GU second term");
+        let root = builder
+            .push(
+                TypedNode::new(
+                    "source.proof-local.given-use.term-root",
+                    SourceAnchor::Range(range(source, 0, 127)),
+                )
+                .with_children(vec![type_root, first, second]),
+            )
+            .expect("Task269GCT GU term root");
+        builder.finish(Some(root)).expect("Task269GCT GU arena")
+    }
+
+    #[derive(Debug, Clone, Copy)]
+    enum Task269gctInputMutation {
+        ApplicationCount,
+        ApplicationBinding,
+        ApplicationOrdinal,
+        ApplicationRoot,
+        ExpressionCount,
+        ExpressionSource,
+        ExpressionModule,
+        ExpressionSite,
+        ExpressionRange,
+        ExpressionSpelling,
+        HeadSite,
+        HeadRange,
+        HeadSpelling,
+        Form,
+        Head,
+        Recovery,
+        Argument,
+    }
+
+    fn mutated_task269gct_input(
+        source: SourceId,
+        module_id: ModuleId,
+        mutation: Task269gctInputMutation,
+    ) -> SourceTypeHandoffInput {
+        let mut input = task269gct_input(source, module_id);
+        match mutation {
+            Task269gctInputMutation::ApplicationCount => {
+                input.applications.pop();
+            }
+            Task269gctInputMutation::ApplicationBinding => {
+                input.applications[1].binding = BindingId::new(0);
+            }
+            Task269gctInputMutation::ApplicationOrdinal => {
+                input.applications[1].source_ordinal = 2;
+            }
+            Task269gctInputMutation::ApplicationRoot => {
+                input.applications[1].root = SourceTypeExpressionId::new(0);
+            }
+            Task269gctInputMutation::ExpressionCount => {
+                input.expressions.pop();
+            }
+            Task269gctInputMutation::ExpressionSource => {
+                input.expressions[1].source_id = other_source_id();
+            }
+            Task269gctInputMutation::ExpressionModule => {
+                input.expressions[1].module_id = module("task269gct.expression.wrong");
+            }
+            Task269gctInputMutation::ExpressionSite => {
+                input.expressions[1].site = role(1, "source.type.expression.wrong");
+            }
+            Task269gctInputMutation::ExpressionRange => {
+                input.expressions[1].source_range.end += 1;
+            }
+            Task269gctInputMutation::ExpressionSpelling => {
+                input.expressions[1].spelling = "object".to_owned();
+            }
+            Task269gctInputMutation::HeadSite => {
+                input.expressions[1].head_site = role(1, "source.type.head.wrong");
+            }
+            Task269gctInputMutation::HeadRange => {
+                input.expressions[1].head_range.end += 1;
+            }
+            Task269gctInputMutation::HeadSpelling => {
+                input.expressions[1].head_spelling = "object".to_owned();
+            }
+            Task269gctInputMutation::Form => {
+                input.expressions[1].form = SourceTypeApplicationForm::Of;
+            }
+            Task269gctInputMutation::Head => {
+                input.expressions[1].head = SourceTypeHead::BuiltinObject;
+            }
+            Task269gctInputMutation::Recovery => {
+                input.expressions[1].recovery = NodeRecoveryState::Recovered;
+            }
+            Task269gctInputMutation::Argument => {
+                input.arguments.push(SourceTypeArgumentInput {
+                    parent: SourceTypeExpressionId::new(1),
+                    ordinal: 0,
+                    argument: SourceTypeArgument::TypeSite {
+                        expression: SourceTypeExpressionId::new(0),
+                    },
+                });
+            }
+        }
+        input
+    }
+
+    #[derive(Debug, Clone, Copy)]
+    enum Task269gctArenaMutation {
+        Kind,
+        ResolvedNode,
+        Anchor,
+        Children,
+        Typing,
+        Recovery,
+        Links,
+    }
+
+    fn mutated_task269gct_arena(
+        source: SourceId,
+        node: usize,
+        mutation: Task269gctArenaMutation,
+    ) -> TypedArena {
+        let mut nodes = vec![
+            TypedNode::new(
+                "source.proof-local.given-condition.reserve-type",
+                SourceAnchor::Range(range(source, 14, 17)),
+            ),
+            TypedNode::new(
+                "source.proof-local.given-condition.type",
+                SourceAnchor::Range(range(source, 90, 93)),
+            ),
+            TypedNode::new(
+                "source.proof-local.given-condition.type-root",
+                SourceAnchor::Range(range(source, 0, 133)),
+            )
+            .with_children(vec![TypedNodeId::new(0), TypedNodeId::new(1)]),
+        ];
+        match mutation {
+            Task269gctArenaMutation::Kind => {
+                nodes[node].kind = "source.proof-local.given-condition.wrong".into();
+            }
+            Task269gctArenaMutation::ResolvedNode => {
+                use mizar_syntax as syntax;
+
+                let mut builder = mizar_resolve::resolved_ast::ResolvedArenaBuilder::new();
+                let resolved = builder
+                    .push(mizar_resolve::resolved_ast::ResolvedNode::new(
+                        syntax::SurfaceNodeKind::CompilationUnit,
+                        Vec::new(),
+                        SemanticOrigin::new(
+                            source,
+                            module("task269gct.resolved"),
+                            SourceAnchor::Range(range(source, 0, 133)),
+                            vec![node as u32],
+                        ),
+                    ))
+                    .expect("Task269GCT resolved-node mutation id");
+                nodes[node].resolved_node = Some(resolved);
+            }
+            Task269gctArenaMutation::Anchor => {
+                nodes[node].anchor = SourceAnchor::Range(range(source, 1, 2));
+            }
+            Task269gctArenaMutation::Children => {
+                nodes[node].children = if node == 2 {
+                    vec![TypedNodeId::new(1), TypedNodeId::new(0)]
+                } else if node == 0 {
+                    vec![TypedNodeId::new(1)]
+                } else {
+                    vec![TypedNodeId::new(0)]
+                };
+            }
+            Task269gctArenaMutation::Typing => {
+                nodes[node].typing = TypingState::Successful;
+            }
+            Task269gctArenaMutation::Recovery => {
+                nodes[node].recovery = NodeRecoveryState::Recovered;
+            }
+            Task269gctArenaMutation::Links => {
+                nodes[node]
+                    .links
+                    .facts
+                    .push(crate::typed_ast::TypeFactId::new(0));
+            }
+        }
+        TypedArena::try_new(Some(TypedNodeId::new(2)), nodes)
+            .expect("Task269GCT mutated arena remains structurally constructible")
+    }
+
     #[derive(Debug, Clone, Copy)]
     enum Task269gtInputMutation {
         ApplicationCount,
@@ -10677,6 +11484,836 @@ mod tests {
         assert!(resolved.source_proof_local_let_binding().is_none());
         assert!(resolved.source_proof_local_let_type().is_none());
         assert!(resolved.source_proof_local_given_binding().is_none());
+        assert!(resolved.expr_metadata().is_empty());
+        assert!(resolved.collection_candidates().is_empty());
+        assert!(resolved.expanded_candidates().is_empty());
+        assert!(resolved.template_expansions().is_empty());
+        assert!(resolved.viable_candidates().is_empty());
+        assert!(resolved.viability_decisions().is_empty());
+        assert!(resolved.specificity_graphs().is_empty());
+        assert!(resolved.resolved_overloads().is_empty());
+        assert!(resolved.inserted_coercions().is_empty());
+        assert!(resolved.cluster_facts().is_empty());
+        assert!(resolved.diagnostics().is_empty());
+        assert!(resolved.checked_formulas().is_empty());
+        assert!(resolved.statement_semantics().is_empty());
+        assert!(resolved.checked_proofs().is_empty());
+        assert!(resolved.checked_proof_nodes().is_empty());
+        assert!(resolved.checked_terminal_goals().is_empty());
+        assert!(!resolved.debug_text().contains("initial-obligation#"));
+    }
+
+    #[test]
+    fn task269gct_exact_condition_type_composition_is_stable() {
+        let fixture = task269gct_fixture();
+        let handoff = SourceProofLocalGivenConditionTypeProducer::build(
+            fixture.dependency.clone(),
+            fixture.input,
+            &fixture.symbols,
+            &fixture.arena,
+        )
+        .expect("Task269GCT exact checker transaction");
+        assert_eq!(handoff.source_id(), fixture.source);
+        assert_eq!(handoff.module_id(), &fixture.module);
+        assert_eq!(handoff.dependency(), &fixture.dependency);
+        assert_eq!(
+            handoff.dependency_fingerprint(),
+            fixture.dependency.debug_text()
+        );
+        assert_eq!(
+            handoff.binding_fingerprint(),
+            handoff.binding_env().debug_text()
+        );
+        assert_eq!(
+            handoff.source_type_fingerprint(),
+            handoff.source_type().debug_text()
+        );
+        assert_eq!(
+            (
+                handoff.binding_env().contexts().len(),
+                handoff.binding_env().bindings().len(),
+                handoff.binding_env().diagnostics().len(),
+            ),
+            (2, 2, 0)
+        );
+        assert_eq!(
+            handoff
+                .dependency()
+                .binding_env()
+                .bindings()
+                .get(BindingId::new(0))
+                .expect("Task269GCT dependency reserve")
+                .type_site,
+            BindingTypeSite::Source(range(fixture.source, 14, 17))
+        );
+        assert_eq!(
+            handoff
+                .dependency()
+                .binding_env()
+                .bindings()
+                .get(BindingId::new(1))
+                .expect("Task269GCT dependency witness")
+                .type_site,
+            BindingTypeSite::Missing
+        );
+        let mut expected_local = handoff
+            .dependency()
+            .binding_env()
+            .bindings()
+            .get(BindingId::new(1))
+            .expect("Task269GCT dependency local binding")
+            .clone();
+        expected_local.type_site = BindingTypeSite::Source(range(fixture.source, 90, 93));
+        assert_eq!(
+            handoff.binding_env().bindings().get(BindingId::new(1)),
+            Some(&expected_local)
+        );
+        assert_eq!(
+            (
+                handoff.source_type().applications().len(),
+                handoff.source_type().expressions().len(),
+                handoff.source_type().arguments().len(),
+                handoff.source_type().definition_returns().len(),
+                handoff.source_type().mode_rhs().len(),
+                handoff.source_type().structure_members().len(),
+            ),
+            (2, 2, 0, 0, 0, 0)
+        );
+        for (index, (start, end)) in [(14, 17), (90, 93)].into_iter().enumerate() {
+            let application = handoff
+                .source_type()
+                .applications()
+                .get(SourceTypeApplicationId::new(index))
+                .expect("Task269GCT source type application");
+            assert_eq!(
+                (
+                    application.id(),
+                    application.binding(),
+                    application.source_ordinal(),
+                    application.root(),
+                ),
+                (
+                    SourceTypeApplicationId::new(index),
+                    BindingId::new(index),
+                    index,
+                    SourceTypeExpressionId::new(index),
+                )
+            );
+            let expression = handoff
+                .source_type()
+                .expressions()
+                .get(SourceTypeExpressionId::new(index))
+                .expect("Task269GCT source type expression");
+            assert_eq!(expression.source_id(), fixture.source);
+            assert_eq!(expression.module_id(), &fixture.module);
+            assert!(task269ct_role_matches(
+                expression.site(),
+                TypedNodeId::new(index),
+                "source.type.expression",
+            ));
+            assert_eq!(expression.source_range(), range(fixture.source, start, end));
+            assert_eq!(expression.spelling(), "set");
+            assert!(task269ct_role_matches(
+                expression.head_site(),
+                TypedNodeId::new(index),
+                "source.type.head",
+            ));
+            assert_eq!(expression.head_range(), range(fixture.source, start, end));
+            assert_eq!(expression.head_spelling(), "set");
+            assert_eq!(expression.form(), SourceTypeApplicationForm::Bare);
+            assert_eq!(expression.head(), &SourceTypeHead::BuiltinSet);
+            assert_eq!(expression.recovery(), NodeRecoveryState::Normal);
+        }
+        assert!(exact_task269gct_arena(fixture.source, &fixture.arena));
+        assert_eq!(
+            handoff.debug_text(),
+            format!(
+                concat!(
+                    "source-proof-local-given-condition-type-debug-v1\n",
+                    "module: pkg::task269gc\n",
+                    "dependency-fingerprint: {:?}\n",
+                    "binding-fingerprint: {:?}\n",
+                    "source-type-fingerprint: {:?}\n",
+                ),
+                handoff.dependency_fingerprint(),
+                handoff.binding_fingerprint(),
+                handoff.source_type_fingerprint(),
+            )
+        );
+        assert!(handoff.debug_text().ends_with("\n"));
+    }
+
+    #[test]
+    fn task269gct_dependency_binding_input_and_arena_corruption_fail_closed() {
+        let fixture = task269gct_fixture();
+        let mut wrong_dependency = fixture.input.clone();
+        wrong_dependency.module_id = module("task269gct.wrong");
+        for expression in &mut wrong_dependency.expressions {
+            expression.module_id = wrong_dependency.module_id.clone();
+        }
+        assert_eq!(
+            SourceProofLocalGivenConditionTypeProducer::build(
+                fixture.dependency.clone(),
+                wrong_dependency,
+                &fixture.symbols,
+                &fixture.arena,
+            ),
+            Err(SourceProofLocalGivenConditionTypeError::InvalidDependency)
+        );
+        let mut wrong_source = fixture.input.clone();
+        wrong_source.source_id = other_source_id();
+        for expression in &mut wrong_source.expressions {
+            expression.source_id = wrong_source.source_id;
+            expression.source_range.source_id = wrong_source.source_id;
+            expression.head_range.source_id = wrong_source.source_id;
+        }
+        assert_eq!(
+            SourceProofLocalGivenConditionTypeProducer::build(
+                fixture.dependency.clone(),
+                wrong_source,
+                &fixture.symbols,
+                &fixture.arena,
+            ),
+            Err(SourceProofLocalGivenConditionTypeError::InvalidDependency)
+        );
+        for mutation in [
+            Task269gctInputMutation::ApplicationCount,
+            Task269gctInputMutation::ApplicationBinding,
+            Task269gctInputMutation::ApplicationOrdinal,
+            Task269gctInputMutation::ApplicationRoot,
+            Task269gctInputMutation::ExpressionCount,
+            Task269gctInputMutation::ExpressionSource,
+            Task269gctInputMutation::ExpressionModule,
+            Task269gctInputMutation::ExpressionSite,
+            Task269gctInputMutation::ExpressionRange,
+            Task269gctInputMutation::ExpressionSpelling,
+            Task269gctInputMutation::HeadSite,
+            Task269gctInputMutation::HeadRange,
+            Task269gctInputMutation::HeadSpelling,
+            Task269gctInputMutation::Form,
+            Task269gctInputMutation::Head,
+            Task269gctInputMutation::Recovery,
+            Task269gctInputMutation::Argument,
+        ] {
+            assert_eq!(
+                SourceProofLocalGivenConditionTypeProducer::build(
+                    fixture.dependency.clone(),
+                    mutated_task269gct_input(fixture.source, fixture.module.clone(), mutation),
+                    &fixture.symbols,
+                    &fixture.arena,
+                ),
+                Err(SourceProofLocalGivenConditionTypeError::InvalidSourceType),
+                "Task269GCT accepted input mutation {mutation:?}",
+            );
+        }
+        let mut wrong_input = fixture.input.clone();
+        wrong_input.applications[1].source_ordinal = 2;
+        assert_eq!(
+            SourceProofLocalGivenConditionTypeProducer::build(
+                fixture.dependency.clone(),
+                wrong_input,
+                &fixture.symbols,
+                &fixture.arena,
+            ),
+            Err(SourceProofLocalGivenConditionTypeError::InvalidSourceType)
+        );
+        let mut wrong_range = fixture.input.clone();
+        wrong_range.expressions[1].source_range.end += 1;
+        assert_eq!(
+            SourceProofLocalGivenConditionTypeProducer::build(
+                fixture.dependency.clone(),
+                wrong_range,
+                &fixture.symbols,
+                &fixture.arena,
+            ),
+            Err(SourceProofLocalGivenConditionTypeError::InvalidSourceType)
+        );
+        for arena in [
+            task269gct_test_arena(fixture.source, 1, false),
+            task269gct_test_arena(fixture.source, 2, true),
+        ] {
+            assert_eq!(
+                SourceProofLocalGivenConditionTypeProducer::build(
+                    fixture.dependency.clone(),
+                    fixture.input.clone(),
+                    &fixture.symbols,
+                    &arena,
+                ),
+                Err(SourceProofLocalGivenConditionTypeError::InvalidSourceType)
+            );
+        }
+        for node in 0..3 {
+            for mutation in [
+                Task269gctArenaMutation::Kind,
+                Task269gctArenaMutation::ResolvedNode,
+                Task269gctArenaMutation::Anchor,
+                Task269gctArenaMutation::Children,
+                Task269gctArenaMutation::Typing,
+                Task269gctArenaMutation::Recovery,
+                Task269gctArenaMutation::Links,
+            ] {
+                assert_eq!(
+                    SourceProofLocalGivenConditionTypeProducer::build(
+                        fixture.dependency.clone(),
+                        fixture.input.clone(),
+                        &fixture.symbols,
+                        &mutated_task269gct_arena(fixture.source, node, mutation),
+                    ),
+                    Err(SourceProofLocalGivenConditionTypeError::InvalidSourceType),
+                    "Task269GCT accepted arena node {node} mutation {mutation:?}",
+                );
+            }
+        }
+        let handoff = SourceProofLocalGivenConditionTypeProducer::build(
+            fixture.dependency.clone(),
+            fixture.input.clone(),
+            &fixture.symbols,
+            &fixture.arena,
+        )
+        .expect("Task269GCT valid handoff");
+        let mut stale_dependency_fingerprint = handoff.clone();
+        stale_dependency_fingerprint
+            .dependency_fingerprint
+            .push_str("corrupt");
+        assert_eq!(
+            stale_dependency_fingerprint.validate_installation(
+                fixture.source,
+                &fixture.module,
+                &fixture.arena,
+            ),
+            Err(SourceProofLocalGivenConditionTypeError::InvalidDependency)
+        );
+        let mut wrong_handoff_source = handoff.clone();
+        wrong_handoff_source.source_id = other_source_id();
+        assert_eq!(
+            wrong_handoff_source.validate_installation(
+                fixture.source,
+                &fixture.module,
+                &fixture.arena,
+            ),
+            Err(SourceProofLocalGivenConditionTypeError::InvalidDependency)
+        );
+        let mut wrong_handoff_module = handoff.clone();
+        wrong_handoff_module.module_id = module("task269gct.handoff.wrong");
+        assert_eq!(
+            wrong_handoff_module.validate_installation(
+                fixture.source,
+                &fixture.module,
+                &fixture.arena,
+            ),
+            Err(SourceProofLocalGivenConditionTypeError::InvalidDependency)
+        );
+        let mut dependency_corrupt = handoff.clone();
+        dependency_corrupt
+            .dependency
+            .set_lower_fingerprint_for_task269gc_test("corrupt");
+        dependency_corrupt.dependency_fingerprint = dependency_corrupt.dependency.debug_text();
+        dependency_corrupt.binding_fingerprint.push_str("corrupt");
+        dependency_corrupt
+            .source_type_fingerprint
+            .push_str("corrupt");
+        assert_eq!(
+            dependency_corrupt.validate_complete_installation(
+                fixture.source,
+                &fixture.module,
+                &fixture.arena,
+                false,
+            ),
+            Err(SourceProofLocalGivenConditionTypeError::InvalidDependency)
+        );
+        let mut base_fingerprint_corrupt = handoff.clone();
+        base_fingerprint_corrupt
+            .dependency
+            .set_base_binding_fingerprint_for_task269gc_test("corrupt");
+        base_fingerprint_corrupt.dependency_fingerprint =
+            base_fingerprint_corrupt.dependency.debug_text();
+        assert_eq!(
+            base_fingerprint_corrupt.validate_installation(
+                fixture.source,
+                &fixture.module,
+                &fixture.arena,
+            ),
+            Err(SourceProofLocalGivenConditionTypeError::InvalidDependency)
+        );
+        let mut aggregate_corrupt = handoff.clone();
+        aggregate_corrupt
+            .dependency
+            .truncate_task269gc_bindings_for_test();
+        assert_eq!(
+            aggregate_corrupt.validate_installation(
+                fixture.source,
+                &fixture.module,
+                &fixture.arena,
+            ),
+            Err(SourceProofLocalGivenConditionTypeError::InvalidDependency)
+        );
+        let mut declaration_corrupt = handoff.clone();
+        declaration_corrupt
+            .dependency
+            .corrupt_task269gc_binding_row_for_test();
+        declaration_corrupt.dependency_fingerprint = declaration_corrupt.dependency.debug_text();
+        assert_eq!(
+            declaration_corrupt.validate_installation(
+                fixture.source,
+                &fixture.module,
+                &fixture.arena,
+            ),
+            Err(SourceProofLocalGivenConditionTypeError::InvalidDependency)
+        );
+        let mut final_binding_corrupt = handoff.clone();
+        final_binding_corrupt
+            .dependency
+            .set_final_binding_fingerprint_for_task269gc_test("corrupt");
+        final_binding_corrupt.dependency_fingerprint =
+            final_binding_corrupt.dependency.debug_text();
+        assert_eq!(
+            final_binding_corrupt.validate_installation(
+                fixture.source,
+                &fixture.module,
+                &fixture.arena,
+            ),
+            Err(SourceProofLocalGivenConditionTypeError::InvalidDependency)
+        );
+        let mut stale_binding_fingerprint = handoff.clone();
+        stale_binding_fingerprint
+            .binding_fingerprint
+            .push_str("corrupt");
+        assert_eq!(
+            stale_binding_fingerprint.validate_installation(
+                fixture.source,
+                &fixture.module,
+                &fixture.arena,
+            ),
+            Err(SourceProofLocalGivenConditionTypeError::InvalidBindingEnvironment)
+        );
+        for binding in 0..2 {
+            let mut wrong_binding_type = handoff.clone();
+            wrong_binding_type
+                .binding_env
+                .binding_mut_for_test(BindingId::new(binding))
+                .expect("Task269GCT mutable binding")
+                .type_site = BindingTypeSite::Missing;
+            wrong_binding_type.binding_fingerprint = wrong_binding_type.binding_env.debug_text();
+            assert_eq!(
+                wrong_binding_type.validate_installation(
+                    fixture.source,
+                    &fixture.module,
+                    &fixture.arena,
+                ),
+                Err(SourceProofLocalGivenConditionTypeError::InvalidBindingEnvironment),
+                "Task269GCT accepted wrong type site on binding {binding}",
+            );
+
+            let mut wrong_binding_field = handoff.clone();
+            wrong_binding_field
+                .binding_env
+                .binding_mut_for_test(BindingId::new(binding))
+                .expect("Task269GCT mutable binding")
+                .spelling
+                .push_str("-wrong");
+            wrong_binding_field.binding_fingerprint = wrong_binding_field.binding_env.debug_text();
+            assert_eq!(
+                wrong_binding_field.validate_installation(
+                    fixture.source,
+                    &fixture.module,
+                    &fixture.arena,
+                ),
+                Err(SourceProofLocalGivenConditionTypeError::InvalidBindingEnvironment),
+                "Task269GCT accepted non-type mutation on binding {binding}",
+            );
+        }
+        let mut binding_corrupt = handoff.clone();
+        binding_corrupt
+            .binding_env
+            .binding_mut_for_test(BindingId::new(1))
+            .expect("Task269GCT mutable witness")
+            .type_site = BindingTypeSite::Missing;
+        binding_corrupt.binding_fingerprint = binding_corrupt.binding_env.debug_text();
+        binding_corrupt.source_type.expressions.entries[1]
+            .source_range
+            .end += 1;
+        binding_corrupt.source_type_fingerprint = binding_corrupt.source_type.debug_text();
+        assert_eq!(
+            binding_corrupt.validate_complete_installation(
+                fixture.source,
+                &fixture.module,
+                &fixture.arena,
+                false,
+            ),
+            Err(SourceProofLocalGivenConditionTypeError::InvalidBindingEnvironment)
+        );
+        let mut stale_source_type_fingerprint = handoff.clone();
+        stale_source_type_fingerprint
+            .source_type_fingerprint
+            .push_str("corrupt");
+        assert_eq!(
+            stale_source_type_fingerprint.validate_installation(
+                fixture.source,
+                &fixture.module,
+                &fixture.arena,
+            ),
+            Err(SourceProofLocalGivenConditionTypeError::InvalidSourceType)
+        );
+        let mut source_corrupt = handoff.clone();
+        source_corrupt.source_type.expressions.entries[1]
+            .source_range
+            .end += 1;
+        source_corrupt.source_type_fingerprint = source_corrupt.source_type.debug_text();
+        assert_eq!(
+            source_corrupt.validate_complete_installation(
+                fixture.source,
+                &fixture.module,
+                &fixture.arena,
+                false,
+            ),
+            Err(SourceProofLocalGivenConditionTypeError::InvalidSourceType)
+        );
+        assert_eq!(
+            handoff.validate_complete_installation(
+                fixture.source,
+                &fixture.module,
+                &fixture.arena,
+                false,
+            ),
+            Err(SourceProofLocalGivenConditionTypeError::InvalidInstallation)
+        );
+        assert_eq!(
+            SourceProofLocalGivenConditionTypeError::InvalidDependency.to_string(),
+            "source proof-local given-condition type dependency is invalid"
+        );
+        assert_eq!(
+            SourceProofLocalGivenConditionTypeError::InvalidBindingEnvironment.to_string(),
+            "source proof-local given-condition typed binding environment is invalid"
+        );
+        assert_eq!(
+            SourceProofLocalGivenConditionTypeError::InvalidSourceType.to_string(),
+            "source proof-local given-condition source type is invalid"
+        );
+        assert_eq!(
+            SourceProofLocalGivenConditionTypeError::InvalidInstallation.to_string(),
+            "source proof-local given-condition type installation is invalid"
+        );
+    }
+
+    #[test]
+    fn task269gct_typed_and_resolved_ownership_is_atomic() {
+        let fixture = task269gct_fixture();
+        let handoff = SourceProofLocalGivenConditionTypeProducer::build(
+            fixture.dependency.clone(),
+            fixture.input,
+            &fixture.symbols,
+            &fixture.arena,
+        )
+        .expect("Task269GCT handoff");
+        let typed = task269ct_empty_typed(
+            fixture.source,
+            fixture.module.clone(),
+            fixture.arena.clone(),
+        )
+        .with_source_proof_local_given_condition_type(handoff.clone())
+        .expect("Task269GCT typed installation");
+        assert_eq!(
+            typed.source_proof_local_given_condition_type(),
+            Some(&handoff)
+        );
+        assert!(typed.source_proof_local_given_condition_binding().is_none());
+        assert_eq!(
+            typed
+                .clone()
+                .with_source_proof_local_given_condition_type(handoff.clone()),
+            Err(TypedAstError::InvalidSourceProofLocalGivenConditionType)
+        );
+        macro_rules! assert_task269gct_sibling_both_orders {
+            (
+                $sibling:expr,
+                $inject:ident,
+                $install:ident,
+                $sibling_error:expr,
+                $source:expr,
+                $module:expr,
+                $arena:expr
+            ) => {{
+                let sibling = $sibling;
+                let mut sibling_first = task269ct_empty_typed(
+                    fixture.source,
+                    fixture.module.clone(),
+                    fixture.arena.clone(),
+                );
+                sibling_first.$inject(sibling.clone());
+                let sibling_first_before = sibling_first.debug_text();
+                assert_eq!(
+                    sibling_first
+                        .clone()
+                        .with_source_proof_local_given_condition_type(handoff.clone()),
+                    Err(TypedAstError::InvalidSourceProofLocalGivenConditionType),
+                );
+                assert_eq!(sibling_first.debug_text(), sibling_first_before);
+                assert!(
+                    sibling_first
+                        .source_proof_local_given_condition_type()
+                        .is_none()
+                );
+
+                let mut gct_first = task269ct_empty_typed($source, $module, $arena);
+                gct_first.inject_source_proof_local_given_condition_type_for_test(handoff.clone());
+                let gct_first_before = gct_first.debug_text();
+                assert_eq!(gct_first.clone().$install(sibling), Err($sibling_error),);
+                assert_eq!(gct_first.debug_text(), gct_first_before);
+                assert!(
+                    gct_first
+                        .source_proof_local_given_condition_type()
+                        .is_some()
+                );
+            }};
+        }
+
+        let let_fixture = task269ct_fixture();
+        let let_binding = let_fixture.dependency.clone();
+        let let_type = SourceProofLocalLetTypeProducer::build(
+            let_fixture.dependency,
+            let_fixture.input,
+            &let_fixture.symbols,
+            &let_fixture.arena,
+        )
+        .expect("Task269GCT let-type sibling");
+        assert_task269gct_sibling_both_orders!(
+            let_binding,
+            inject_source_proof_local_let_binding_for_test,
+            with_source_proof_local_let_binding,
+            TypedAstError::InvalidSourceProofLocalLetBinding,
+            let_fixture.source,
+            let_fixture.module.clone(),
+            TypedArena::try_new(None, Vec::new()).expect("Task269C binding arena")
+        );
+        assert_task269gct_sibling_both_orders!(
+            let_type,
+            inject_source_proof_local_let_type_for_test,
+            with_source_proof_local_let_type,
+            TypedAstError::InvalidSourceProofLocalLetType,
+            let_fixture.source,
+            let_fixture.module,
+            let_fixture.arena
+        );
+
+        let given_fixture = task269gt_fixture();
+        let given_binding = given_fixture.dependency.clone();
+        let given_type = SourceProofLocalGivenTypeProducer::build(
+            given_fixture.dependency,
+            given_fixture.input,
+            &given_fixture.symbols,
+            &given_fixture.arena,
+        )
+        .expect("Task269GCT given-type sibling");
+        assert_task269gct_sibling_both_orders!(
+            given_binding,
+            inject_source_proof_local_given_binding_for_test,
+            with_source_proof_local_given_binding,
+            TypedAstError::InvalidSourceProofLocalGivenBinding,
+            given_fixture.source,
+            given_fixture.module.clone(),
+            TypedArena::try_new(None, Vec::new()).expect("Task269G binding arena")
+        );
+        assert_task269gct_sibling_both_orders!(
+            given_type,
+            inject_source_proof_local_given_type_for_test,
+            with_source_proof_local_given_type,
+            TypedAstError::InvalidSourceProofLocalGivenType,
+            given_fixture.source,
+            given_fixture.module,
+            given_fixture.arena
+        );
+
+        let given_use_fixture = task269gupt_fixture();
+        let given_use_type = SourceProofLocalGivenUseTypeProducer::build(
+            given_use_fixture.dependency,
+            given_use_fixture.input,
+            &given_use_fixture.symbols,
+            &given_use_fixture.arena,
+        )
+        .expect("Task269GCT given-use-type sibling");
+        let given_use_term_arena = task269gct_given_use_term_arena(given_use_fixture.source);
+        let given_use_term = SourceProofLocalGivenUseTermProducer::build(
+            given_use_type.clone(),
+            task269gct_given_use_term_input(
+                given_use_fixture.source,
+                given_use_fixture.module.clone(),
+            ),
+            &given_use_term_arena,
+        )
+        .expect("Task269GCT given-use-term sibling");
+        let direct_source_term = given_use_term.source_term().clone();
+        let source_term_first = task269ct_empty_typed(
+            given_use_fixture.source,
+            given_use_fixture.module.clone(),
+            given_use_term_arena.clone(),
+        )
+        .with_source_term(direct_source_term.clone())
+        .expect("Task269GCT direct source-term neighbor");
+        let source_term_first_before = source_term_first.debug_text();
+        assert_eq!(
+            source_term_first
+                .clone()
+                .with_source_proof_local_given_condition_type(handoff.clone()),
+            Err(TypedAstError::InvalidSourceProofLocalGivenConditionType),
+        );
+        assert_eq!(source_term_first.debug_text(), source_term_first_before);
+        let gct_first_before = typed.debug_text();
+        assert_eq!(
+            typed.clone().with_source_term(direct_source_term),
+            Err(TypedAstError::InvalidSourceTerm),
+        );
+        assert_eq!(typed.debug_text(), gct_first_before);
+        assert_task269gct_sibling_both_orders!(
+            given_use_type,
+            inject_source_proof_local_given_use_type_for_test,
+            with_source_proof_local_given_use_type,
+            TypedAstError::InvalidSourceProofLocalGivenUseType,
+            given_use_fixture.source,
+            given_use_fixture.module.clone(),
+            given_use_fixture.arena
+        );
+        assert_task269gct_sibling_both_orders!(
+            given_use_term,
+            inject_source_proof_local_given_use_term_for_test,
+            with_source_proof_local_given_use_term,
+            TypedAstError::InvalidSourceProofLocalGivenUseTerm,
+            given_use_fixture.source,
+            given_use_fixture.module,
+            given_use_term_arena
+        );
+        assert_task269gct_sibling_both_orders!(
+            fixture.dependency.clone(),
+            inject_source_proof_local_given_condition_binding_for_test,
+            with_source_proof_local_given_condition_binding,
+            TypedAstError::InvalidSourceProofLocalGivenConditionBinding,
+            fixture.source,
+            fixture.module.clone(),
+            TypedArena::try_new(None, Vec::new()).expect("Task269GC binding arena")
+        );
+        assert_eq!(
+            typed
+                .clone()
+                .with_source_proof_local_given_condition_binding(fixture.dependency.clone()),
+            Err(TypedAstError::InvalidSourceProofLocalGivenConditionBinding)
+        );
+        let mut occupied_dependency = task269ct_empty_typed(
+            fixture.source,
+            fixture.module.clone(),
+            fixture.arena.clone(),
+        );
+        occupied_dependency
+            .inject_source_proof_local_given_condition_binding_for_test(fixture.dependency.clone());
+        assert_eq!(
+            occupied_dependency.with_source_proof_local_given_condition_type(handoff.clone()),
+            Err(TypedAstError::InvalidSourceProofLocalGivenConditionType)
+        );
+        let mut reverse_occupied = task269ct_empty_typed(
+            fixture.source,
+            fixture.module.clone(),
+            fixture.arena.clone(),
+        );
+        reverse_occupied
+            .inject_source_proof_local_given_condition_binding_for_test(fixture.dependency.clone());
+        reverse_occupied.inject_source_proof_local_given_condition_type_for_test(handoff.clone());
+        assert_eq!(
+            assemble_task269ct_resolved(&reverse_occupied, Vec::new(), Vec::new()),
+            Err(ResolvedTypedAstError::InvalidSourceProofLocalGivenConditionBinding)
+        );
+        let resolved = assemble_empty_resolved(&typed);
+        assert_eq!(
+            resolved.source_proof_local_given_condition_type(),
+            Some(&handoff)
+        );
+        assert!(
+            resolved
+                .source_proof_local_given_condition_binding()
+                .is_none()
+        );
+        assert_eq!(resolved.nodes().len(), 3);
+        for (_, node) in resolved.nodes().iter() {
+            assert!(matches!(
+                &node.kind,
+                crate::resolved_typed_ast::ResolvedTypedNodeKind::SourcePreserved { role }
+                    if role.as_str() == "source.proof-local.given-condition.type"
+            ));
+        }
+        let statement_hints = (0..3)
+            .map(|index| ResolvedNodeKindHint {
+                typed_node: TypedNodeId::new(index),
+                kind: ResolvedNodeKindHintKind::SourcePreserved {
+                    role: SourceNodeRole::new("source.statement.transport"),
+                },
+            })
+            .collect();
+        assert_eq!(
+            assemble_task269ct_resolved(&typed, Vec::new(), statement_hints),
+            Err(ResolvedTypedAstError::InvalidSourceProofLocalGivenConditionType)
+        );
+        assert_eq!(
+            assemble_task269ct_resolved(
+                &typed,
+                vec![ExpressionMetadataInput {
+                    expr: ExprId::new("task269gct.semantic-input"),
+                    typed_site: role(0, "source.type.expression"),
+                    local_context: None,
+                    cluster_facts: Vec::new(),
+                }],
+                Vec::new(),
+            ),
+            Err(ResolvedTypedAstError::InvalidSourceProofLocalGivenConditionType)
+        );
+    }
+
+    #[test]
+    fn task269gct_generic_neighbor_and_condition_use_routes_remain_isolated() {
+        let fixture = task269gct_fixture();
+        let handoff = SourceProofLocalGivenConditionTypeProducer::build(
+            fixture.dependency,
+            fixture.input.clone(),
+            &fixture.symbols,
+            &fixture.arena,
+        )
+        .expect("Task269GCT handoff");
+        assert_eq!(
+            SourceTypeProducer::build(
+                fixture.input,
+                handoff.binding_env(),
+                &fixture.symbols,
+                &fixture.arena,
+            ),
+            Err(SourceTypeError::InvalidBinding {
+                application: SourceTypeApplicationId::new(1),
+            })
+        );
+        let typed = task269ct_empty_typed(fixture.source, fixture.module, fixture.arena)
+            .with_source_proof_local_given_condition_type(handoff)
+            .expect("Task269GCT typed installation");
+        assert!(typed.source_proof_local_let_binding().is_none());
+        assert!(typed.source_proof_local_let_type().is_none());
+        assert!(typed.source_proof_local_given_binding().is_none());
+        assert!(typed.source_proof_local_given_type().is_none());
+        assert!(typed.source_proof_local_given_use_type().is_none());
+        assert!(typed.source_proof_local_given_use_term().is_none());
+        assert!(typed.contexts().is_empty());
+        assert!(typed.types().is_empty());
+        assert!(typed.facts().is_empty());
+        assert!(typed.coercions().is_empty());
+        assert!(typed.initial_obligations().is_empty());
+        assert!(typed.diagnostics().is_empty());
+        let resolved = assemble_empty_resolved(&typed);
+        assert!(resolved.source_context().is_none());
+        assert!(resolved.source_type().is_none());
+        assert!(resolved.source_attribute().is_none());
+        assert!(resolved.source_evidence().is_none());
+        assert!(resolved.source_term().is_none());
+        assert!(resolved.source_application().is_none());
+        assert!(resolved.source_structure().is_none());
+        assert!(resolved.source_set_term().is_none());
+        assert!(resolved.source_atomic_formula().is_none());
+        assert!(resolved.source_statement().is_none());
+        assert!(resolved.source_statement_references().is_none());
+        assert!(resolved.source_statement_witnesses().is_none());
+        assert!(resolved.source_proof_local_declaration().is_none());
         assert!(resolved.expr_metadata().is_empty());
         assert!(resolved.collection_candidates().is_empty());
         assert!(resolved.expanded_candidates().is_empty());

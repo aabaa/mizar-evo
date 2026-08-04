@@ -2032,3 +2032,35 @@ the getter returns `Option<&SourceProofLocalGivenConditionTypeHandoff>`. The
 exact `TypedAstError::InvalidSourceProofLocalGivenConditionType` display text is
 `source proof-local given-condition type handoff is invalid`. Test-only
 injection supports corruption or reverse-order oracles only and is not public.
+
+### Task 269GCT implementation status
+
+After documentation prerequisite `b43081161b31fcc4bc23ac2fd42c5c42e772ab78`,
+the exact seven-file implementation and four checker/four private runner tests
+are present. The new public checker family is
+`SourceProofLocalGivenConditionType{Handoff,Producer,Error}`; Typed and
+Resolved own the same boxed composite atomically. Libraries are `518/584`.
+Checker production is `30/179612`, with unchanged path hash
+`c89f43f6abebf7ebeb3ac9394ecd8ea3186ad28934c75526d2cc0b85a66ebad5`
+and content hash
+`8078ee6235c8ca52ce8cdba0be9a347231260d3421c54625a3fc96cf395c9718`.
+Runner production is `37/77159`, with unchanged path hash
+`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d`
+and content hash
+`5b0e68f35d37fcf843f7cb64885f09bfa9dd5423c17506713e096811a5ddf689`.
+Raw/normalized test-list hashes are checker
+`6d10b524115a209f198bc5085a726bc1fcc6f92dc3e25a8056e29975b708b656` /
+`502f7535a34b9d2224c67e6db15f4eaf45f05eec2a2fe4c914704ecf162d89b2`
+and runner
+`d599bd69654d000f44858942cec771742d8c3c9e0d2ca459d7fecc84d76752c9` /
+`bc3cdabbc6424b0f01d817ed323dd823ff57d1d8d4261220dc3d9c37d9004a61`.
+
+The implementation changes no canonical specification, `.miz`, fixture,
+sidecar, expectation, trace row/status/backlink, metadata, diagnostic, public
+dispatch, CLI byte, active result, or semantic credit. GCU still owns both
+condition occurrences and every wider semantic effect. Independent test-sufficiency, implementation, source/documentation, and
+final-quality reviews report **NO FINDINGS**. All nine hard gates PASS with no
+score cap at `100/100`; focused and crate suites, lint policies, formatting,
+Clippy, workspace tests, metadata, all five CLIs, count/hash oracles, and diff
+checks pass. Exact staging and the implementation commit remain; no commit
+claim is made.

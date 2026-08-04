@@ -338,6 +338,9 @@ literal top-level public item:
   `SourceProofLocalGivenTypeHandoff`, `SourceProofLocalGivenTypeProducer`,
   `SourceProofLocalGivenTypeError`, `SourceProofLocalGivenUseTypeHandoff`,
   `SourceProofLocalGivenUseTypeProducer`, `SourceProofLocalGivenUseTypeError`,
+  `SourceProofLocalGivenConditionTypeHandoff`,
+  `SourceProofLocalGivenConditionTypeProducer`,
+  `SourceProofLocalGivenConditionTypeError`,
   `SourceTypeError`
 
 対応:
@@ -5789,3 +5792,34 @@ Typed/final boxed owner、focused Rust tests 8件だけがderived consumer。exi
 `.miz`/sidecar/expectation/trace/metadata/diagnostic/dispatch/creditは不変。missing
 family/testは`source_drift`/`test_gap`、frozen mappingが`design_drift`をrepair。
 condition occurrence/semanticsはGCU/later、blocking `spec_gap`なし。
+
+### Task 269GCT implementation status
+
+documentation prerequisite `b43081161b31fcc4bc23ac2fd42c5c42e772ab78`後、
+exact 7-file implementationとchecker 4件/private runner 4件のtestを実装した。
+new public checker familyは
+`SourceProofLocalGivenConditionType{Handoff,Producer,Error}`で、Typed/Resolvedは
+same boxed compositeをatomicにownする。libraryは`518/584`。checker productionは
+`30/179612`、unchanged path hash
+`c89f43f6abebf7ebeb3ac9394ecd8ea3186ad28934c75526d2cc0b85a66ebad5`、
+content hash
+`8078ee6235c8ca52ce8cdba0be9a347231260d3421c54625a3fc96cf395c9718`。
+runner productionは`37/77159`、unchanged path hash
+`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d`、
+content hash
+`5b0e68f35d37fcf843f7cb64885f09bfa9dd5423c17506713e096811a5ddf689`。
+raw/normalized test-list hashはchecker
+`6d10b524115a209f198bc5085a726bc1fcc6f92dc3e25a8056e29975b708b656` /
+`502f7535a34b9d2224c67e6db15f4eaf45f05eec2a2fe4c914704ecf162d89b2`、
+runner
+`d599bd69654d000f44858942cec771742d8c3c9e0d2ca459d7fecc84d76752c9` /
+`bc3cdabbc6424b0f01d817ed323dd823ff57d1d8d4261220dc3d9c37d9004a61`。
+
+canonical spec、`.miz`、fixture/sidecar/expectation、trace row/status/backlink、
+metadata/diagnostic/public dispatch/CLI byte/active result/semantic creditは
+変更しない。condition occurrence 2件とwider semantic effectはGCU ownerのまま。
+test sufficiency、implementation、source/docs、final-qualityのindependent
+reviewは**NO FINDINGS**。全9 hard gatesはscore capなしの`100/100`でPASSし、
+focused/crate suite、lint policy、format、Clippy、workspace test、metadata、
+全5 CLI、count/hash oracle、diff checkもPASS。exact stageとimplementation
+commitがremainingで、commit完了はclaimしない。

@@ -1376,7 +1376,7 @@ production checker/detail consumer はすべて byte-for-byte 不変。
 `runner.rs` は14,320行、hash
 `7d347e8a932ec5a4115540a6e6822b0ee23a6e41e919300ec56c04e5511303e4`、
 24行 phase facade は hash
-`61b5b82055f4f726d3b5209e2e6b57a176d0acaac5fbef9e1614780460306270`、
+`61b5b82055f4f726d3b5209e2e6b57a176d0acaac5fbef9e1614780490306270`、
 423行 source-formula leaf は hash
 `a055d6e2220961f5445bbf4b5394b2ffc72738160dbd228af399e267241ec43d`。
 unchanged の147行 source-AST と1,474行 source-reserve leaf は hash
@@ -11925,3 +11925,21 @@ leafはGC/GCP getterを読みsyntax-free input/arenaを作りchecker validation�
 condition subtree/identityを再構築しない。outputは`pub(in crate::runner)`、public
 dispatchなし。`source_statement.rs`/fixture/sidecar/expectation/trace/metadata/
 Cargo/diagnostic/sibling routeはimmutable。
+
+### Task 269GCT implemented private runner status
+
+docs commit `b43081161b31fcc4bc23ac2fd42c5c42e772ab78`後、frozen
+private GC/GCP-to-GCT routeとexact runner test 4件をowned runner 4 filesに
+実装した。module sizeはproof-local production leaf `2506`、facade `946`、
+`runner.rs` `2778`、proof-local test leaf `8049`。runner productionは
+37 paths / 77,159 lines、path/content hashは
+`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d` /
+`5b0e68f35d37fcf843f7cb64885f09bfa9dd5423c17506713e096811a5ddf689`。
+libraryは`584`、raw/normalized hashは
+`d599bd69654d000f44858942cec771742d8c3c9e0d2ca459d7fecc84d76752c9` /
+`bc3cdabbc6424b0f01d817ed323dd823ff57d1d8d4261220dc3d9c37d9004a61`。
+active dispatch/protected artifact/count/hashは変更せず、condition occurrence
+successorはGCUだけ。test-sufficiency、implementation、source/docs、final-quality reviewは
+**NO FINDINGS**。全9 hard gatesはscore capなしの`100/100`でPASSし、
+focused/full gateもPASS。exact stageとimplementation commitがremainingで、
+commit完了はclaimしない。

@@ -1456,7 +1456,7 @@ consumer remain byte-for-byte unchanged.
 `runner.rs` is now 14,320 lines with hash
 `7d347e8a932ec5a4115540a6e6822b0ee23a6e41e919300ec56c04e5511303e4`;
 the 24-line phase facade has hash
-`61b5b82055f4f726d3b5209e2e6b57a176d0acaac5fbef9e1614780460306270`;
+`61b5b82055f4f726d3b5209e2e6b57a176d0acaac5fbef9e1614780490306270`;
 and the 423-line source-formula leaf has hash
 `a055d6e2220961f5445bbf4b5394b2ffc72738160dbd228af399e267241ec43d`.
 The unchanged 147-line source-AST and 1,474-line source-reserve leaves retain
@@ -13235,3 +13235,21 @@ checker-owned validation; it does not inspect condition subtrees or recreate
 binding identity. Output remains `pub(in crate::runner)` and absent from public
 dispatch. `source_statement.rs`, fixtures, sidecars, expectations, trace,
 metadata, Cargo, diagnostics, and every sibling route are immutable.
+
+### Task 269GCT implemented private runner status
+
+After docs commit `b43081161b31fcc4bc23ac2fd42c5c42e772ab78`, the
+frozen private GC/GCP-to-GCT route and exactly four runner tests are present in
+the four owned runner files. Module sizes are proof-local production leaf
+`2506`, facade `946`, `runner.rs` `2778`, and proof-local test leaf `8049`.
+Runner production remains 37 paths / 77,159 lines with path/content hashes
+`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d` /
+`5b0e68f35d37fcf843f7cb64885f09bfa9dd5423c17506713e096811a5ddf689`;
+the library is `584` with raw/normalized hashes
+`d599bd69654d000f44858942cec771742d8c3c9e0d2ca459d7fecc84d76752c9` /
+`bc3cdabbc6424b0f01d817ed323dd823ff57d1d8d4261220dc3d9c37d9004a61`.
+No active dispatcher or protected artifact/count/hash changes. GCU remains
+the sole condition-occurrence successor. Test-sufficiency, implementation, source/documentation, and final-quality
+reviews report **NO FINDINGS**. All nine hard gates PASS without a score cap at
+`100/100`, and the focused plus full gates pass. Exact staging and the
+implementation commit remain; no commit claim is made.
