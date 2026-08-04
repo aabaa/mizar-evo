@@ -4035,3 +4035,16 @@ Task-258B3N statement/witness/primary bundle. Four adjacent checker tests reuse
 the private B3N oracle without changing the lower public API, nodes, rows, or
 legacy debug bytes. All new binding ownership remains in
 `source_proof_local_declaration`.
+
+## Task 269B B3M1 lower-consumer boundary
+
+Task 269B consumes the already frozen Task-258B3M1 `2 witnesses / 1 name`
+profile byte-for-byte. Its complete 56-node authentication and replay preserve
+the existing distributed node ownership: source-statement owns the take,
+witness-item, witness-name, dense within-take order, and its witness/statement
+handoffs; Task 252 retains the RHS-reference nodes, and Task 256 retains the
+formula nodes. The fifth fingerprint authenticates the final binding
+environment rather than a lower source-statement input. The new binding
+increment may link only witness/name/RHS `0/0/2`; it must not alter or bind
+unnamed witness 1, change any lower API/debug byte, or assign left-to-right
+goal semantics.

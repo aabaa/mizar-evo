@@ -1646,3 +1646,10 @@ Task 269B+がlater-use/capture replayを所有する。
 one-row definition-site familyを実装しTyped/final ownershipまで保存する。private
 dormant consumerとunit test 8件はactive trace credit/later-use edgeを追加しない。
 Task 269B+/270/271/272 ownershipは不変。
+
+## Task 269B frozen B3M1 family increment
+
+existing declaration-to-binding familyが2件目のexact lower profileをacceptするだけで
+new payload familyではない。single rowはnamed witness0/name0/primary2をbinding1へ
+linkし、sibling unnamed witnessはlower witness tableだけに残る。later-use edge、
+capture、type/goal/fact/proof family、active coverage ownerは追加しない。

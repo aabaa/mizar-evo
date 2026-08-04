@@ -1841,3 +1841,12 @@ bundle, replays the frozen handoff, changes no node or semantic table, and
 rejects missing, duplicate, stale, same-length-corrupt, and sibling inputs
 atomically. Handoff phases 1--6 run before the crate-private phase-7 one-shot
 availability guard. The legacy lower debug bytes remain unchanged.
+
+## Task 269B frozen Typed ownership increment
+
+The same optional handoff and one-shot installer accept an exact B3M1
+transaction only when the complete statement/witness/primary/56-node bundle
+is already installed. No field or method changes. Cross-profile B3N/B3M1
+fingerprints, a bound unnamed witness, partial lower bundles, siblings, or
+semantic coexistence fail before publication; valid installation preserves
+all lower bytes and empty semantic tables.

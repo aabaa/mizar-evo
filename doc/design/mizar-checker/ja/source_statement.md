@@ -3513,3 +3513,14 @@ separate proof-local producerはunchanged Task-258B3N statement/witness/primary
 bundleをfingerprint/consumeする。adjacent checker test 4件はprivate B3N oracleを
 reuseするだけでlower public API/node/row/legacy debug byteを変更しない。new
 binding ownershipはすべて`source_proof_local_declaration`に残る。
+
+## Task 269B B3M1 lower-consumer boundary
+
+Task269Bはfrozen Task-258B3M1 `2 witnesses / 1 name` profileをbyte-for-byte
+consumeする。complete 56-node authentication/replayはexisting distributed node
+ownershipを維持する。source-statementがownするのはtake、witness-item、
+witness-name、dense within-take order、witness/statement handoffであり、RHS
+reference nodeはTask252、formula nodeはTask256が引き続きownする。5番目の
+fingerprintはlower source-statement inputではなくfinal binding environmentを
+authenticateする。binding incrementは`0/0/2`だけをlinkし、unnamed witness1の
+binding/lower API/debug byte/left-to-right goal semanticsを変更しない。

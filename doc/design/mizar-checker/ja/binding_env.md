@@ -758,3 +758,11 @@ provenance、row link、全51 node、final fingerprintがfail closedすること
 cfg(test)-only mutable-row seamはproduction APIを変えずinstalled
 spelling/scope/range/ordinal precedenceを検証する。later-use/capture/typing behaviorは
 追加しない。
+
+## Task 269B frozen B3M1 transition
+
+same transitionをTask-258B3M1のresolver-local `y`、scope `[0]`、range
+`84..85`、visible-after 1にもadmitする。named witness0だけをbinding1にlinkし、
+unnamed witness1はbindingを作らない。`2/1/0 -> 2/2/0`、definition-site
+forward、later same-scope binding1を保存する。later-use/capture executionと
+type/goal/proof effectはdeferする。

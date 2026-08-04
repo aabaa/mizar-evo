@@ -4898,3 +4898,10 @@ exact/near-miss、mutation、route isolation、final replay testsは計4件。
 frozen helper/test 4件をexactに実装しPASSする。active dispatchには入らず、runner
 test/production inventoryは`536`/`37/69729`、corpus/expectation/trace/metadata/
 diagnostic/CLI byteはすべて不変。
+
+## Task 269B frozen dormant B3M1 branch
+
+existing private leafはB3N branch後だけexact Task-258B3M1をselectし、existing
+lower、resolver-local `y@84..85`をcomposeしてwitness0だけをbindする。same runner
+tests4件をB3M1 exact/mutation/isolation/finalへexpandする。test function/path、public
+dispatch/detail key/corpus/metadata/diagnostic/CLIは追加しない。

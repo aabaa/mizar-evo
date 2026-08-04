@@ -11731,3 +11731,10 @@ production leaf 306 lines、`runner/tests.rs` 60 lines、new included test leaf
 routeはprivate/dormantのまま、raw syntax/resolver valueはrunner内に残り、
 syntax-free payloadだけがcheckerへcrossする。active dispatch、facade detail
 key、corpus artifact、trace/expectation owner、Cargo edge、proof runnerは不変。
+
+## Checker Task 269B module-boundary no-op
+
+current runner baselineは`37/69729`。Task269Bはexisting private proof-local leafと
+existing test includeだけを変更し、module/path/facade/Cargo/detail key/dispatch/
+corpus/trace ownerを追加しない。Surface authenticationはrunner、syntax-free
+handoffだけcheckerへ渡す。production path 37不変、line/contentはremeasure。

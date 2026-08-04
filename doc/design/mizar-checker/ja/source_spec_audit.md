@@ -5571,3 +5571,13 @@ source/arena byte、resolver-local provenance、fingerprint、binding-order beha
 canonical由来frozen contractに一致する。specification、existing test intent、trace
 credit、diagnostic、deferred typing/proof/goal/fact/IR behaviorは変更せず、blocking
 `spec_gap`/boundary violationを導入しない。
+
+### Task 269B frozen B3M1 source audit
+
+| specification promise | source evidence | test intent | status |
+|---|---|---|---|
+| exact mixed listのnamed witnessだけがlocal bindingを導入しunnamed siblingは導入しない。 | frozen Task-258B3M1 witness rows `0/1`上のexisting Task-269A API。 | existing checker/runner compound testsをB3M1/mutation/profile isolationへexpand。 | frozen、implementation pending。 |
+| goal semanticsなしでsource order/scopeをauthenticateする。 | resolver-local `y@[0],84..85,visible-after=1`、fingerprint5件、56-node replay。 | definition-site/later lookup、all-node/fingerprint/cross-profile reject。 | frozen、type/goal/proof/capture deferred。 |
+
+public API、spec/corpus/trace、coverage、diagnostic、audit ownerを変更しないため
+`spec_coverage_audit.md`はintentional no-op。

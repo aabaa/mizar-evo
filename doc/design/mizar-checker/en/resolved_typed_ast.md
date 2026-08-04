@@ -1813,3 +1813,11 @@ before legacy lower validators, so every half-installed injection fails with
 the dedicated final error. Orphan and same-length stale injections fail the
 same way; valid clone/replay is deterministic and every deferred semantic
 table remains empty.
+
+## Task 269B frozen final replay increment
+
+Final assembly reuses the same proof-local getter and seven-phase replay for
+the exact B3M1 bundle. The top preflight still requires term, atomic,
+statement, and witness ownership and forbids statement references. It then
+rejects cross-profile/stale/partial inputs through the existing dedicated
+error. No final field, error, node role, or semantic table is added.

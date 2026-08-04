@@ -12914,6 +12914,15 @@ path/content hashes
 `4218936ff3ee3baaceb7c0723307ad266d722d0a2473e8b7f82e11c75aeb2b6e` /
 `a543608c5075ffed97141626ebbf8d952a847051a34d6782097329b44aa1d09e`.
 
+## Checker Task 269B module-boundary no-op
+
+The current runner baseline is `37/69729`. Task 269B changes only the existing
+private proof-local leaf and its existing test include; it adds no module,
+path, facade symbol, Cargo edge, detail key, dispatch arm, or corpus/trace
+owner. Surface authentication remains private runner work and only the
+syntax-free handoff crosses into checker. Production path count remains 37;
+lines/content are remeasured after implementation.
+
 ## Checker Task 269A Frozen Dormant Runner Boundary
 
 One private leaf under `runner/type_elaboration` and one included test leaf

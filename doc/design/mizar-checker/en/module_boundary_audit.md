@@ -1607,3 +1607,13 @@ Task-269B+, Tasks 270--272, proof/fact/IR/VC behavior, or corpus artifacts.
 Docs-time production manifests remain checker `29/162347` and runner
 `36/69417`; implementation will add one source path to each and remeasure all
 line/path/content hashes.
+
+## Task 269B module-boundary no-op
+
+The committed Task-269A baseline is checker `30/164419` and runner
+`37/69729`. Task 269B adds no module, path, public surface, or dependency. The
+existing checker owner accepts one more private exact lower profile and the
+existing runner leaf adds one private selector branch. Parser/Surface
+authentication stays runner-owned; syntax-free transaction validation stays
+checker-owned. Path counts remain `30/37`, with lines/content remeasured only
+after implementation.

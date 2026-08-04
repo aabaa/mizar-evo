@@ -5836,3 +5836,14 @@ fingerprints, and binding-order behavior match the canonical-derived frozen
 contract. No specification, existing test intent, trace credit, diagnostic,
 or deferred typing/proof/goal/fact/IR behavior changed; no blocking `spec_gap`
 or boundary violation is introduced.
+
+### Task 269B frozen B3M1 source audit
+
+| Specification promise | Source evidence | Test intent | Status |
+|---|---|---|---|
+| A named witness in the exact mixed list introduces one local binding while the unnamed sibling does not. | Existing Task-269A input/row/table/handoff API over frozen Task-258B3M1 witness rows `0/1`. | Existing checker/runner compound tests expand to exact B3M1 plus mutation and profile-isolation matrices. | Frozen; implementation pending. |
+| Source order and scope are authenticated without goal semantics. | Resolver-local `y@[0],84..85,visible-after=1`, five fingerprints, and 56-node replay. | Definition-site forward/later lookup plus all-node/fingerprint/cross-profile rejection. | Frozen; typing, goal, proof, and capture deferred. |
+
+No public API, spec/corpus/trace artifact, coverage credit, diagnostic, or
+audit-owner status changes. `spec_coverage_audit.md` therefore remains a
+deliberate no-op.

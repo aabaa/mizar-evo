@@ -664,3 +664,12 @@ empty semantic tables, dormant runner ownership, and the zero-credit trace
 boundary are reproduced exactly. Chapter-16 proof effects and every deferred
 typing, goal, proof, fact, acceptance, and downstream-IR behavior remain open
 under Task 269B+ and Tasks 270–272.
+
+## Task 269B frozen semantic boundary
+
+Chapter 15's left-to-right rule freezes only the dense order of the two B3M1
+witness rows. Task 269B publishes the named definition-site binding and no
+effect for the unnamed row. It does not infer existential binder matching,
+witness types, remaining goals, substitutions, facts, proof acceptance, or
+downstream IR. Those deferrals and the dormant zero-credit boundary remain
+unchanged.

@@ -2419,3 +2419,12 @@ metadata case, active outcome, or coverage credit. Requirements/cases remain
 `395/428`, type coverage remains `259 = 247 covered + 12 deferred`, and the
 trace manifest remains byte-identical at SHA-256
 `55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`.
+
+## Checker Task 269B Traceability No-Op
+
+Task 269B remains private and dormant. It adds no `.miz`, sidecar,
+expectation, requirement row, backlink, status, stage, coverage credit,
+metadata case, or active outcome. The broad proof-local diagnostic rows remain
+covered for the same failure boundary and do not credit positive binding
+semantics. Counts and trace SHA-256 remain exactly the values above; the
+coverage audit is unchanged.

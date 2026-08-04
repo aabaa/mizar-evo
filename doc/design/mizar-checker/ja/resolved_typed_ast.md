@@ -1730,3 +1730,10 @@ atomic formula、statement、witness、forbidden referenceのpresenceをcheckす
 全half-installed injectionはdedicated final errorでfailする。orphan/same-length
 stale injectionも同じerrorでfailし、valid clone/replayはdeterministic、全deferred
 semantic tableはemptyのまま。
+
+## Task 269B frozen final replay increment
+
+final assemblyはsame getter/phase 7件でexact B3M1 bundleをreplayする。top preflightは
+term/atomic/statement/witnessを要求しstatement referenceを禁止する。cross-profile/
+stale/partialはexisting dedicated errorでreject。field/error/node role/semantic tableは
+追加しない。

@@ -1608,6 +1608,13 @@ EN/JAはimplemented one-file API、test 4件、checker `473`、production
 `28/159648`、runner/corpus/trace不変、review finding修正、Task264復帰で一致する。
 implementation-time bilingual debtはない。
 
+## Task 269B frozen-contract synchronization
+
+EN canonical/JA companionはexact 113-byte/56-node B3M1、lower witness2件上のnamed
+declaration1件、resolver `84..85`、API/fingerprint5件/phase7件不変、B3N
+compatibility、same compound tests8件、test/path/corpus/trace/CLI impact0、semantic
+deferral、audit no-opで一致する。review前のuntranslated normative deltaはない。
+
 ## Task 264 active implementation synchronization
 
 EN/JAはexact five-table public ABI、complete lower fingerprints、resolver-backed

@@ -1639,3 +1639,10 @@ runner library/production are `536`/`37/69729` with the remeasured hashes, the
 route remains absent from active dispatch, and every corpus/trace/metadata/CLI
 byte plus all proof/type/fact/acceptance/IR deferrals remain unchanged. No
 implementation-time bilingual harness debt remains.
+
+## Checker Task 269B frozen harness synchronization
+
+EN/JA agree on the exact B3M1 selector branch, resolver-local range, named-only
+binding, unchanged four-test/test-count/path contract, dormant dispatch,
+trace/audit no-op, and complete semantic exclusions. No untranslated harness
+delta remains.

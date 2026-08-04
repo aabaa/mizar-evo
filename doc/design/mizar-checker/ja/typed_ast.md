@@ -1750,3 +1750,10 @@ installerはcomplete Task-258B3N lower bundleをrequireしてfrozen handoffをre
 node/semantic tableを変更せず、missing/duplicate/stale/same-length corruption/
 sibling inputをatomicにrejectする。handoff phase 1--6の後にcrate-private
 phase-7 one-shot availability guardを評価する。legacy lower debug byteは不変。
+
+## Task 269B frozen Typed ownership increment
+
+same optional handoff/one-shot installerはcomplete statement/witness/primary/56-node
+B3M1 bundleがinstalledの場合だけacceptする。field/method変更なし。B3N/B3M1
+fingerprint hybrid、unnamed witness binding、partial lower、sibling、semantic
+coexistenceはpublish前にrejectし、valid installはlower byte/empty semanticsを保存。

@@ -1551,3 +1551,11 @@ public dispatchを追加しない。既存Task-258B3N node ownershipは
 270--272、proof/fact/IR/VC、corpus artifactをownしない。docs時manifestは
 checker `29/162347`、runner `36/69417`不変。implementation後は各1 path増を
 含むline/path/content hashを再測定する。
+
+## Task 269B module-boundary no-op
+
+committed baselineはchecker `30/164419`、runner `37/69729`。Task269Bはmodule、
+path、public surface、dependencyを追加しない。existing checker ownerがprivate
+exact profileを1件acceptし、existing runner leafがprivate branchを1件追加する。
+Surface authenticationはrunner、syntax-free validationはchecker。path countは
+`30/37`、line/contentはimplementation後remeasure。

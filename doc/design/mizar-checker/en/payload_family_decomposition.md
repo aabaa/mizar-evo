@@ -1732,3 +1732,11 @@ The one-row definition-site family is implemented and preserved through typed
 and final ownership. Its private dormant consumer and eight unit tests add no
 active trace credit or later-use edge. Task 269B+, 270, 271, and 272 ownership
 is unchanged.
+
+## Task 269B frozen B3M1 family increment
+
+The existing declaration-to-binding family accepts a second exact lower
+profile, not a new payload family. Its single row still links named witness 0,
+name 0, and primary 2 to binding 1; the sibling unnamed witness remains solely
+in the lower witness table. No later-use edge, capture set, type/goal/fact/
+proof family, or active coverage owner is introduced.

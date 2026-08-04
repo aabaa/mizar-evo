@@ -6732,6 +6732,20 @@ implementation commit does not satisfy a producer task.
   fresh-inventory the frozen implementation.
 - [x] Implement only the frozen producer, one-shot Typed/final owner, private
   dormant consumer, and exact four checker plus four runner tests.
-- [ ] Repeat test, implementation, source/docs, and final quality reviews to
-  **NO FINDINGS**; pass all verification/count/hash gates, commit one logical
-  implementation task, and continue automatically to Task 269B+.
+- [x] Repeat test, implementation, source/docs, and final quality reviews to
+  **NO FINDINGS**; pass all verification/count/hash gates and commit the
+  implementation as `f548ceb9f1acbeca72919809f2a1db84da213982`.
+
+## Checker Task 269B Mixed-Witness Binding Increment
+
+- [x] Fresh-inventory Task-258B3M1 lower/public APIs, canonical authority,
+  Task-269A commit, clean worktree, origin/stash state, and select only B3M1.
+- [x] Freeze the exact 113-byte/56-node source, `2/1/0 -> 2/2/0` transition,
+  one declaration over witness/name/RHS `0/0/2`, immutable unnamed witness 1,
+  five fingerprints, API no-op, tests, exclusions, impact, and exit criteria.
+- [x] Review and commit only the synchronized EN/JA documentation prerequisite;
+  the repeated specification review is NO FINDINGS and all nine docs-only hard
+  gates PASS without a score cap at `100/100`.
+- [ ] Fresh-preflight and implement only the frozen B3M1 increment.
+- [ ] Complete all reviews/hard gates/verification, commit, and continue to the
+  next dependency-ready Task-269 slice.

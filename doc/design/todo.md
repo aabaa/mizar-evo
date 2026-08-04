@@ -94,8 +94,8 @@ is its task 1). "Next work" points into the
 | mizar-parser | Grammar, Pratt parsing, syntax recovery, parse-only corpus | [x] Tasks 1-48 plus bounded `PARSER-RECOVERY-B1B1P-P1` complete; historical post-Task-46 score 99/100 | no inferred Task 49; human-owned P-265-47D remains separate | [todo](./mizar-parser/en/todo.md) |
 | mizar-frontend | Source loading and phase 1-3 orchestration | [x] prior milestone plus `PARSER-RECOVERY-B1B1P-P1-FE` regression complete | — | [todo](./mizar-frontend/en/todo.md) |
 | mizar-resolve | Module graph, namespaces, symbols, labels, signatures | [~] complete through task 29, Checker Task 263R, and Task 264R implementation | Preserve Task-264R shell/no-symbol boundary through Checker Tasks 248P/264 | [todo](./mizar-resolve/en/todo.md) |
-| mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] foundation complete through task 22; Tasks 265-268, Core-31, and Checker consumers through committed Task 264 are implemented | Freeze Checker Task 269A's dormant named-witness binding consumer | [todo](./mizar-test/en/todo.md) |
-| mizar-checker | Type checking, cluster/registration resolution, overload resolution | [~] explicit-payload milestone and source producers through committed Task 264 are implemented | Complete Checker Task 269A's named-witness binding documentation prerequisite | [todo](./mizar-checker/en/todo.md) |
+| mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] foundation complete through task 22; Tasks 265-268, Core-31, and Checker consumers through committed Task 269A are implemented | Freeze Checker Task 269B's dormant mixed-witness binding consumer | [todo](./mizar-test/en/todo.md) |
+| mizar-checker | Type checking, cluster/registration resolution, overload resolution | [~] explicit-payload milestone and source producers through committed Task 269A are implemented | Complete Checker Task 269B's mixed-witness binding documentation prerequisite | [todo](./mizar-checker/en/todo.md) |
 | mizar-core | Elaboration, binder-normalized core logic, control-flow preparation | [x] core/control-flow milestone, tasks 27-32 complete | step-5 Tasks 33-53 under the Task-32 graph | [todo](./mizar-core/en/todo.md) |
 | mizar-vc | VC IR, VC generation, deterministic pre-ATP discharge | [x] exact source-derived contradiction VC integration complete through task 31 | dependency-paced VC Tasks 32-55; VC 40/53 and S1 gates remain explicit | [todo](./mizar-vc/en/todo.md) |
 | mizar-kernel | Trusted certificate parsing and checking | [x] SAT-backed kernel milestone complete | step 4 task 35 resolved; task 32 parked; tasks 30-34 resolved | [todo](./mizar-kernel/en/todo.md) |
@@ -4139,7 +4139,26 @@ or semantic owner changed. B3M2B2B remains next before B4.
   linkage, post-binding environment, fingerprints, Typed/final ownership,
   dormant runner consumer, tests, exclusions, deferrals, count/hash impact,
   and exit criteria in paired EN/JA records.
-- [ ] Complete repeated docs reviews and all nine docs-only hard gates, then
-  create the separate documentation prerequisite commit.
-- [ ] Fresh-inventory and implement/review/verify/commit only Task 269A, then
+- [x] Complete repeated docs reviews and all nine docs-only hard gates, then
+  create the separate documentation prerequisite commit
+  `1360a9c0517eacbc67bbf2351db57e81eef03bfc`.
+- [x] Fresh-inventory and implement/review/verify/commit only Task 269A as
+  `f548ceb9f1acbeca72919809f2a1db84da213982`, with all reviews NO FINDINGS and
+  all nine hard gates PASS at an uncapped `100/100`, then continue
+  automatically to the next dependency-ready Task-269 slice.
+
+## Checker Task 269B Mixed-Witness Binding Increment
+
+- [x] Confirm committed Task 269A, clean fresh inventory, report-only metadata
+  conflict, unchanged protected stash, and dependency readiness of the
+  existing Task-258B3M1 lower profile before the later isolated `let` slice.
+- [x] Freeze the exact B3M1 source/AST, two-witness/one-name lower profiles,
+  named witness/name/RHS linkage, unnamed-witness exclusion, binding
+  transition, fingerprints, Typed/final ownership, dormant runner consumer,
+  tests, deferrals, count/hash impact, and exit criteria in paired EN/JA
+  records.
+- [x] Complete repeated docs reviews with NO FINDINGS and all nine docs-only
+  hard gates PASS at an uncapped `100/100`, then create the separate Task-269B
+  documentation prerequisite commit.
+- [ ] Fresh-inventory and implement/review/verify/commit only Task 269B, then
   continue automatically to the next dependency-ready Task-269 slice.

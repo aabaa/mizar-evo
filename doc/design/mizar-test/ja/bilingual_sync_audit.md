@@ -1574,3 +1574,9 @@ EN/JAはexact private leaf/test 4件を実装し、runner library/productionがr
 hashを持つ`536`/`37/69729`、routeはactive dispatchに入らず、全corpus/trace/
 metadata/CLI byteとproof/type/fact/acceptance/IR deferralが不変で一致する。
 implementation-time bilingual harness debtはない。
+
+## Checker Task 269B frozen harness synchronization
+
+EN/JAはexact B3M1 selector、resolver-local range、named-only binding、same 4 tests/
+count/path、dormant dispatch、trace/audit no-op、semantic exclusionで一致する。
+untranslated harness deltaはない。

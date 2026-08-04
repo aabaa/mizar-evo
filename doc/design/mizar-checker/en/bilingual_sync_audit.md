@@ -1707,3 +1707,12 @@ ordinal lookups, five-fingerprint/all-node replay, Typed/final ownership,
 private dormant consumer, eight tests, measured checker/runner `482/536`,
 production `30/164419` and `37/69729`, zero corpus/trace/CLI impact, and all
 semantic deferrals. No implementation-time bilingual debt remains.
+
+## Task 269B frozen-contract synchronization
+
+The EN canonical and JA companion agree on the exact 113-byte/56-node B3M1
+source, single named declaration over two lower witness rows, `84..85`
+resolver provenance, unchanged API/five fingerprints/seven phases, B3N
+compatibility, same eight compound tests, zero test/path/corpus/trace/CLI
+impact, semantic deferrals, and audit no-op. No untranslated normative delta
+remains before review.

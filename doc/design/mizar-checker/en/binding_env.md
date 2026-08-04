@@ -785,3 +785,12 @@ corruption matrices confirm that local provenance, row links, all 51 nodes,
 and final fingerprints fail closed. A cfg(test)-only mutable-row seam exercises
 installed spelling/scope/range/ordinal precedence without changing the
 production API. No later-use/capture or typing behavior is added.
+
+## Task 269B frozen B3M1 transition
+
+The same exact transition is admitted for Task-258B3M1 with resolver-local
+`y`, scope `[0]`, range `84..85`, and visible-after 1. Only named witness 0 is
+associated with binding 1; unnamed witness 1 does not create a binding. The
+base/final profile stays `2/1/0 -> 2/2/0`, definition-site lookup is forward,
+and later same-scope lookup resolves binding 1. Later-use/capture execution and
+all type/goal/proof effects remain deferred.

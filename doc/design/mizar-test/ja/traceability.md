@@ -2298,3 +2298,10 @@ outcome、coverage creditは追加しない。requirements/casesは`395/428`、t
 coverageは`259 = 247 covered + 12 deferred`、trace manifestはSHA-256
 `55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`
 でbyte-identicalのまま。
+
+## Checker Task 269B traceability no-op
+
+Task269Bはprivate dormantで、`.miz`、sidecar、expectation、requirement row、
+backlink/status/stage/coverage、metadata、active outcomeを追加しない。broad
+proof-local diagnostic rowはsame failure boundaryのcoveredのままでpositive
+binding creditではない。count/trace hashは上記不変、coverage auditも不変。

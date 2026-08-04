@@ -5194,3 +5194,12 @@ The frozen helper and four tests are implemented exactly and pass. It remains
 absent from active dispatch; runner test/production inventories are
 `536`/`37/69729`, while every corpus, expectation, trace, metadata, diagnostic,
 and CLI byte remains unchanged.
+
+## Task 269B frozen dormant B3M1 branch
+
+The existing private `source_proof_local_declaration` leaf selects the exact
+Task-258B3M1 bytes only after the B3N branch, consumes its existing lower
+output, supplies resolver-local `y@84..85`, and binds only witness 0. The same
+four runner tests expand to B3M1 exact/mutation/isolation/final cases. No test
+function, production path, public dispatch, detail key, corpus artifact,
+metadata case, diagnostic, or CLI output is added.

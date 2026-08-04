@@ -617,3 +617,10 @@ implementationがcloseするのはclassified definition-site binding
 semantic table、dormant runner ownership、zero-credit trace boundaryをexactに再現する。
 Chapter-16 proof effectとdeferred typing/goal/proof/fact/acceptance/downstream-IR
 behaviorはTask 269B+とTasks 270–272の下でopenのまま。
+
+## Task 269B frozen semantic boundary
+
+Chapter 15のleft-to-right ruleはB3M1 witness row 2件のdense orderだけをfreezeする。
+Task269Bはnamed definition-site bindingだけをpublishしunnamed rowのeffectはない。
+existential match、witness type、remaining goal、substitution、fact、acceptance、IRは
+推論せず、dormant zero-credit boundaryとdeferralは不変。

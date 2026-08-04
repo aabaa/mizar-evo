@@ -5,8 +5,8 @@
 
 ## Status and authority
 
-This document freezes **Checker Task 269A**, the first dependency-minimal
-slice of queue Task 269. English is canonical. The matching Japanese document
+This document freezes **Checker Tasks 269A--269B**, the first two
+dependency-minimal slices of queue Task 269. English is canonical. The matching Japanese document
 must remain synchronized in the same logical task.
 
 The normative authority is:
@@ -511,5 +511,130 @@ transition, ordinal lookup replay, Typed/final ownership, dormant runner leaf,
 and exact eight compound tests are implemented. Checker/runner libraries are
 `482/536`; production inventories are `30/164419` and `37/69729`. The exact
 fixture/corpus/trace/metadata/CLI no-op and all semantic deferrals are
-preserved. Independent reviews, full verification, exact commit, and fresh
-Task-269B+ inventory remain the completion gates.
+preserved. Independent reviews ended **NO FINDINGS**, all nine hard gates
+passed without a score cap at `100/100`, full verification passed, and
+implementation commit `f548ceb9f1acbeca72919809f2a1db84da213982` preserved a
+clean worktree, report-only origin divergence `21/0`, and the protected stash.
+Fresh inventory selected Task 269B below.
+
+## Task 269B Frozen Mixed-Witness Binding Increment
+
+### Selection, authority, and classification
+
+Task 269B is the next dependency-ready Task-269 slice because the complete
+Task-258B3M1 lower transport is already public and verified. Canonical
+authority is Chapter 4 §§4.4.3 and 4.6, Chapter 15 §15.4.4 including its
+left-to-right syntax-order note, Chapter 16 §16.3.3 item 5 and §16.4, the
+existing `pass_parser_simple_statements_001.miz` parser fixture, the frozen
+Task-258B3M1 source/AST/statement/witness contract, and the committed Task-269A
+API. The broad proof-local gap fixture, expectation, and trace rows remain
+read-only diagnostic authority and grant no positive coverage credit.
+
+The missing B3M1 binding transaction is `source_drift`; the previously
+open-ended Task-269B+ ownership is `design_drift`; absent exact-profile tests
+are a canonical-derived `test_gap`. There is no blocking `spec_gap` or lower-
+stage defect: parser diagnostics are zero, structural resolver lowering and
+private theorem-owner enrichment are stable, and Task-258B3M1 publishes every
+required lower handoff. Treating the unnamed second witness as a binding,
+assigning left-to-right existential goal effects, or adding typing/proof
+results would be a `boundary_violation`.
+
+Fresh selection inventory is HEAD
+`f548ceb9f1acbeca72919809f2a1db84da213982`, branch `main`, clean worktree,
+`origin/main...HEAD = 0/21`, and protected `stash@{0}`
+`f65cf4a13752ec380710814a9ac6392ccb9d75d4`. Origin divergence remains a
+report-only `repo_metadata_conflict`; it is not repaired.
+
+### Exact admitted source and lower transaction
+
+The second admitted source is exactly the existing 113-byte final-LF
+Task-258B3M1 text, SHA-256
+`412a6a7f8fddebd67418f3482855ea89a1e7da922b42ebb93463971d8e49c186`:
+
+```mizar
+reserve x for set;
+theorem FormulaStatementMultipleWitnessSmoke: x = x proof
+  take y = x, x;
+  thus x = x;
+end;
+```
+
+It has zero parser diagnostics, 56 unrecovered Surface/Typed nodes, root 55,
+one current-module theorem owner, and no import, citation, proof-step label,
+or witness-name symbol. Exact sites are name `13/84..85`, named witness
+`38/84..89`, take `42/79..93`, and RHS primary term 2 at `36/88..89`. Lower
+profiles are binding `2/1/0`, primary `6/6/0`, atomic
+`2/0/0/0/0/0/0/4/4`, statement `1/2/2/2/2`, and witness/name `2/1`.
+
+Witness 0 is `Named`, links name 0 and `Primary(2)`, has source/within-take
+ordinals `1/0`, and spelling `y = x`. Witness 1 is `Unnamed`, has no name,
+links `Primary(3)`, has ordinals `1/1`, and spelling `x`. Task 269B creates
+only the declaration for witness 0. Witness 1 remains immutable lower syntax
+and receives no checker binding.
+
+The runner supplies exact resolver-local `y`, scope `[0]`, declaration range
+`84..85`, and visible-after ordinal 1 after authenticating all source and lower
+bytes. The checker transaction remains declaration 0, witness/name/RHS
+`0/0/2`, proof context 1, source ordinal 1, `NamedWitness`, normal recovery.
+It changes only contexts/bindings/diagnostics `2/1/0 -> 2/2/0`: binding 1 is
+`LocalAbbreviation`, `ResolverLocal([0],1,84..85)`, missing type site, active,
+uncaptured, diagnostic-free, and context 1 becomes bindings `[1]`, visible
+bindings `[0,1]`. Definition-site ordinal 1 remains a forward reference and
+same-scope ordinal 2 resolves binding 1.
+
+### API, fingerprints, ownership, and validation
+
+Task 269B adds no public type, field, enum variant, error, method, installer,
+debug line, module, or source path. It reuses the complete Task-269A API and
+its five fingerprints: base `BindingEnv`, statement, witness, primary-term,
+and final `BindingEnv` debug bytes. The handoff carries no profile tag. Exact
+lower cardinalities, fingerprints, declaration range, and all-node replay
+jointly distinguish B3N from B3M1.
+
+The seven validation phases remain unchanged. Phase 2 accepts only a complete
+exact B3N or B3M1 lower profile; phase 3 still requires one proof-local
+declaration although B3M1 has two witness rows; phase 4 requires declaration 0
+to link only B3M1 `0/0/2` and exact resolver provenance; phase 5 replays all
+56 nodes; phase 6 reconstructs the exact final environment; phase 7 preserves
+Typed/final one-shot installation. Cross-profile source, arena, statement,
+witness, primary, or fingerprint mixtures fail atomically in the existing
+precedence. B3N output and all public/debug bytes remain unchanged.
+
+The existing private dormant runner leaf gains only an exact B3M1 selector
+branch after B3N. It calls the Task-258B3M1 lower route, constructs the
+authenticated local value, installs the same handoff, and reassembles empty
+semantics. Public dispatch, active corpus selection, metadata, diagnostics,
+and all CLI paths remain untouched.
+
+### Exclusions, tests, impact, and exit criteria
+
+Task 269B excludes later-use/capture replay, binding witness 1, additional
+named witnesses, other Task-258B3M2 profiles, `let`, `given`, `consider`,
+`set`, `deffunc`, `defpred`, `reconsider`, imported spellings, type inference,
+coercions, initial obligations, existential matching, goal/guard composition,
+substitution, facts, proof/discharge/acceptance, theorem facts, Core IR, CFG,
+and VC. The left-to-right rule authenticates dense witness syntax order only;
+Task 272 retains all goal effects.
+
+The existing four checker and four runner compound tests are expanded; no new
+test function is added. They cover exact B3M1 construction/debug/lookup, both
+witness rows with only row 0 bound, all five fingerprints, all 56 nodes,
+resolver/local/lower/cross-profile mutations, B3N compatibility, Typed/final
+replay, route isolation, and empty semantics. Library counts stay checker/
+runner `482/536`; resolver/syntax stay `148/59`. Production path counts stay
+`30/37`; lines and path/content/test-list hashes are remeasured after
+implementation.
+
+The docs prerequisite and implementation change no `doc/spec`, `.miz`,
+sidecar, expectation, trace row/status/count, coverage credit, metadata,
+diagnostic, Cargo manifest, public route, active outcome, or CLI output.
+Therefore `doc/design/spec_coverage_audit.md` remains unchanged. Corpus and
+CLI baselines remain the Task-269A values until remeasurement proves otherwise.
+
+Task 269B is complete only after the docs prerequisite is independently
+reviewed to **NO FINDINGS**, committed alone, and followed by fresh preflight;
+the exact increment is then implemented, all test/implementation/source-doc
+reviews end **NO FINDINGS**, all nine hard gates pass uncapped at 90/100 or
+better, all verification/count/hash/staging gates pass, one implementation
+commit is created, and fresh inventory selects the next dependency-ready
+Task-269 slice.

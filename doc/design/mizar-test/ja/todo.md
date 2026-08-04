@@ -3282,5 +3282,16 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
 - [x] fresh inventory後dormant consumer/tests 4件だけをimplementationし、
   runner `536`、production `37/69729`を再測定して全active corpus/metadata/CLI
   値を保存する。
-- [ ] implementation review、verification、exact staging/commit、fresh
-  Task-269B+ inventoryを完了する。
+- [x] implementation review、verification、exact staging、commit
+  `f548ceb9f1acbeca72919809f2a1db84da213982`、fresh Task-269B inventoryを完了。
+
+## Checker Task 269B dormant B3M1 increment
+
+- [x] exact Task-258B3M1 source/lower routeをfresh inventoryし、新規`let`
+  prerequisiteやlater-use/captureより先に選択する。
+- [x] existing private leafのB3M1 extension、existing tests 4件のexpand、public
+  dispatch/corpus/trace/CLI impact 0、exitをfreezeする。
+- [x] docs-only review/commitを完了する。specification reviewはNO FINDINGS、
+  docs-only hard gate 9件はscore capなし`100/100`ですべてPASSした。
+- [ ] fresh preflight、implementation、re-review/verification/commit後に
+  自動継続する。

@@ -5,8 +5,8 @@
 
 ## 状態と authority
 
-この文書はqueue Task 269の最初のdependency-minimal sliceである
-**Checker Task 269A**をfreezeする。英語版がcanonicalであり、同じlogical
+この文書はqueue Task 269の最初の2つのdependency-minimal sliceである
+**Checker Tasks 269A--269B**をfreezeする。英語版がcanonicalであり、同じlogical
 task内で本JA companionを同期する。
 
 normative authorityは次の順である。
@@ -484,3 +484,95 @@ test 8件を実装した。checker/runner libraryは`482/536`、production inven
 `30/164419`、`37/69729`。exact fixture/corpus/trace/metadata/CLI no-opと全semantic
 deferralを保存する。independent review、full verification、exact commit、fresh
 Task-269B+ inventoryがcompletion gateとして残る。
+
+その後independent reviewは全て**NO FINDINGS**、hard gate 9件はscore capなし
+`100/100`、full verificationはPASSし、implementation commit
+`f548ceb9f1acbeca72919809f2a1db84da213982`後worktree clean、origin divergence
+`21/0` report-only、protected stash不変を確認した。fresh inventoryは以下の
+Task 269Bを選択した。
+
+## Task 269B frozen mixed-witness binding increment
+
+### selection、authority、classification
+
+complete Task-258B3M1 lower transportが既にpublic/verifiedなため、Task 269Bは
+次のdependency-ready slice。canonical authorityはChapter 4 §§4.4.3/4.6、
+Chapter 15 §15.4.4のleft-to-right syntax-order note、Chapter 16 §16.3.3 item
+5/§16.4、existing `pass_parser_simple_statements_001.miz`、frozen
+Task-258B3M1 contract、committed Task-269A API。broad gap fixture/expectation/
+traceはread-only diagnostic authorityでpositive creditを与えない。
+
+missing B3M1 transactionは`source_drift`、open-ended ownershipは
+`design_drift`、exact-profile test不足はcanonical-derived `test_gap`。
+blocking `spec_gap`/lower defectはなく、parser diagnostic 0、structural resolver
+lowering、private theorem owner、全lower handoffはcomplete。unnamed witness1を
+bindingにする、goal effect/typing/proofを加えるのは`boundary_violation`。
+
+fresh inventoryはHEAD `f548ceb9f1acbeca72919809f2a1db84da213982`、`main`、
+clean、`origin/main...HEAD=0/21`、protected stash
+`f65cf4a13752ec380710814a9ac6392ccb9d75d4`。origin divergenceはreport-only
+`repo_metadata_conflict`で修復しない。
+
+### exact source/lower transaction
+
+admitted source 2件目はexisting final-LF 113-byte Task-258B3M1、SHA-256
+`412a6a7f8fddebd67418f3482855ea89a1e7da922b42ebb93463971d8e49c186`：
+
+```mizar
+reserve x for set;
+theorem FormulaStatementMultipleWitnessSmoke: x = x proof
+  take y = x, x;
+  thus x = x;
+end;
+```
+
+parser diagnostic 0、56 unrecovered nodes/root55、one current-module theorem
+owner、import/citation/proof-step label/witness-name symbolなし。exact siteはname
+`13/84..85`、named witness `38/84..89`、take `42/79..93`、RHS primary2
+`36/88..89`。lower profileはbinding `2/1/0`、primary `6/6/0`、atomic
+`2/0/0/0/0/0/0/4/4`、statement `1/2/2/2/2`、witness/name `2/1`。
+
+witness0は`Named`、name0/`Primary(2)`、ordinals `1/0`、`y = x`。witness1は
+`Unnamed`、nameなし、`Primary(3)`、`1/1`、`x`。Task269Bはwitness0の
+declarationだけを作りwitness1へchecker bindingを与えない。
+
+runnerはfull authentication後resolver-local `y`、scope `[0]`、range
+`84..85`、visible-after1を渡す。transactionはdeclaration0、witness/name/RHS
+`0/0/2`、context1、source ordinal1、`NamedWitness`、normal。base `x`を保存し
+`2/1/0 -> 2/2/0`だけを行う。binding1は`LocalAbbreviation`、
+`ResolverLocal([0],1,84..85)`、missing type、active、uncaptured、diagnosticなし。
+context1はbindings `[1]`/visible `[0,1]`。ordinal1はforward、ordinal2はbinding1。
+
+### API/fingerprint/ownership/validation
+
+public type/field/variant/error/method/installer/debug line/module/source pathを追加しない。
+Task-269A APIとbase BindingEnv/statement/witness/primary/final BindingEnvの5 exact
+fingerprintをreuseしprofile tagは追加しない。exact cardinality/fingerprint/range/
+all-node replayでB3N/B3M1を識別する。
+
+phase 7件は不変。phase2はexact B3N/B3M1、phase3はdeclaration exactly1、phase4は
+`0/0/2`/resolver provenance、phase5は56 nodes、phase6はfinal env、phase7は
+Typed/final one-shot。cross-profile hybridはexisting precedenceでatomic reject。
+B3N/public/debug byteは不変。private leafはexact B3M1 branchだけを追加し、public
+dispatch/corpus/metadata/diagnostic/CLIを触らない。
+
+### exclusion、test、impact、exit criteria
+
+later-use/capture、witness1 binding、additional named witness、他B3M2、`let`/
+`given`/`consider`/`set`/`deffunc`/`defpred`/`reconsider`、imported spelling、
+type/coercion/obligation、existential/goal/guard/substitution、fact/proof/
+acceptance、Core/CFG/VCをexclude。left-to-rightはsyntax orderだけでgoal effectは
+Task272。
+
+existing checker4+runner4 compound testsをexpandしfunctionは増やさない。B3M1、
+witness2件中row0だけbinding、fingerprint5件、56 nodes、mutation、B3N compatibility、
+Typed/final、route isolation、empty semanticsをcover。countsは`482/536`、
+resolver/syntax `148/59`、production paths `30/37`。line/hashはremeasure。
+
+`doc/spec`、`.miz`、sidecar、expectation、trace/coverage、metadata、diagnostic、
+Cargo、public route、active outcome、CLIは不変。よって
+`doc/design/spec_coverage_audit.md`はno-op。
+
+docs review **NO FINDINGS**/dedicated commit/fresh preflight後に実装し、全review
+**NO FINDINGS**、hard gate9件uncapped 90/100以上、verification/count/hash/staging、
+implementation commit、fresh next Task-269 selectionでcomplete。

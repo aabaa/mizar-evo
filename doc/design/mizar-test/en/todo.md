@@ -3507,5 +3507,16 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
 - [x] After fresh inventory, implement only the dormant consumer and four
   tests; remeasure runner `536` and production `37/69729` while preserving
   every active corpus/metadata/CLI value.
-- [ ] Complete implementation reviews, verification, exact staging/commit,
-  and fresh Task-269B+ inventory.
+- [x] Complete implementation reviews, verification, exact staging/commit
+  `f548ceb9f1acbeca72919809f2a1db84da213982`, and fresh Task-269B inventory.
+
+## Checker Task 269B Dormant B3M1 Increment
+
+- [x] Fresh-inventory the exact Task-258B3M1 source/lower route and select it
+  before any new `let` lower prerequisite or later-use/capture work.
+- [x] Freeze extension of the existing private leaf to B3M1, existing four-test
+  expansion, zero public dispatch/corpus/trace/CLI impact, and exact exits.
+- [x] Review/commit docs alone with a NO FINDINGS specification review and all
+  nine docs-only hard gates PASS at an uncapped `100/100`.
+- [ ] Fresh-preflight, implement, re-review/verify, commit the increment, and
+  continue automatically.
