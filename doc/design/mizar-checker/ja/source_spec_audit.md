@@ -34,6 +34,7 @@ public method は、module spec が table、builder、output API として記述
 - [source_set_term.md](./source_set_term.md)
 - [source_structure.md](./source_structure.md)
 - [source_statement.md](./source_statement.md)
+- [source_proof_local_declaration.md](./source_proof_local_declaration.md)
 - [source_term.md](./source_term.md)
 - [source_type.md](./source_type.md)
 - [type_checker.md](./type_checker.md)
@@ -153,6 +154,7 @@ ControlFlowIr、VC payload、proof evidence の AST-wide source-to-checker gap �
 - `source_application`
 - `source_set_term`
 - `source_statement`
+- `source_proof_local_declaration`
 - `source_structure`
 - `source_structure_definition`
 - `source_term`
@@ -852,6 +854,36 @@ literal top-level public item:
 
 bounded gap: broader statement/local citation/nested contextはTask 258B、
 acceptance/proof-local behavior/justification semanticsはTasks 269–272。
+
+### `source_proof_local_declaration`
+
+generated public newtype:
+
+- `SourceProofLocalDeclarationId`
+
+literal top-level public item:
+
+- `SourceProofLocalDeclarationHandoffInput`、
+  `SourceProofLocalDeclarationInput`、`SourceProofLocalDeclarationKind`、
+  `SourceProofLocalDeclarationRecovery`
+- `SourceProofLocalDeclaration`、`SourceProofLocalDeclarationTable`、
+  `SourceProofLocalDeclarationHandoff`、
+  `SourceProofLocalDeclarationProducer`、
+  `SourceProofLocalDeclarationError`
+
+対応:
+
+| specification promise | source evidence | test evidence | status |
+|---|---|---|---|
+| immutable syntax-free row 1件がexact Task-258B3N named witness、name、RHS primary term、proof context、resolver-local declaration、checker bindingをlinkする。 | `src/source_proof_local_declaration.rs`のpublic input/row/dense ID/table/handoff type。 | checker exact construction/lookup/debug testとprivate real-frontend runner test。 | `NamedWitness` row 1件としてimplemented。 |
+| producerはsource/module identity、Task-258B3N statement/witness/primary fingerprint、typed node全51件、complete base-to-final binding transitionをauthenticateする。 | `SourceProofLocalDeclarationProducer::build`、retained fingerprint 5件、fail-closed validation category。 | transaction/dependency/row/resolver/all-node/fingerprint corruption matrix。 | syntax parsingなしでtransactionalにimplemented。 |
+| Typed/final ownerはoptional handoffをatomicにpublish/replay/clone-preserveし、全semantic tableをemptyに保つ。 | `TypedAst::with_source_proof_local_declaration`とread-only ownership getter 2件。 | one-shot/orphan/stale/sibling/final-replay/empty-semantics checker/runner test。 | dormant Task-269A definition-site sliceとしてimplemented。 |
+| public enumはforward-compatible。 | kind/recovery/errorの`#[non_exhaustive]`。 | public-enum/source-spec-audit lint policy。 | exhaustive exceptionなしでguard。 |
+
+bounded gap: later-use resolution/capture replay、他のproof-local declaration
+form、witness typing、existential matching、goal substitution、proof/discharge/
+acceptance、fact、Core/CFG/VC、public runner activationはTask 269B+とTasks
+270–272に残る。
 
 ### `source_set_term`
 
@@ -5530,3 +5562,12 @@ contractはone exact sourceの`source_drift`、`design_drift`、canonical-derive
 8-test `test_gap`だけを閉じる。module symbol作成、checker側parse、type inference、
 equality fact、existential/goal/proof behaviorは`boundary_violation`。既存
 `.miz`/expectation intentと広いdeferred proof-local fixtureは不変。
+
+## Task 269A implemented source/specification audit
+
+public syntax-free module/private dormant consumerはclassified definition-site
+`source_drift`、`design_drift`、8-test gapだけをcloseする。全lower identity、
+source/arena byte、resolver-local provenance、fingerprint、binding-order behaviorは
+canonical由来frozen contractに一致する。specification、existing test intent、trace
+credit、diagnostic、deferred typing/proof/goal/fact/IR behaviorは変更せず、blocking
+`spec_gap`/boundary violationを導入しない。

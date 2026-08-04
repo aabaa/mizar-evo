@@ -1832,3 +1832,12 @@ Success appends the new debug block but changes no arena node. Duplicate,
 orphan, stale, same-length-corrupt, lower-hybrid, or semantic-table-bearing
 inputs fail transactionally as `InvalidSourceProofLocalDeclaration`. Existing
 Task-258B3N construction without the installer remains byte-identical.
+
+## Task 269A Active Typed Ownership
+
+The private optional field, read-only getter, and consuming installer are now
+implemented exactly. The installer requires the complete Task-258B3N lower
+bundle, replays the frozen handoff, changes no node or semantic table, and
+rejects missing, duplicate, stale, same-length-corrupt, and sibling inputs
+atomically. Handoff phases 1--6 run before the crate-private phase-7 one-shot
+availability guard. The legacy lower debug bytes remain unchanged.

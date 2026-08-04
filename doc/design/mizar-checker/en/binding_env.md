@@ -776,3 +776,12 @@ byte-identical; diagnostics remain empty.
 Lookup at ordinal 1 cannot see `y`; a later same-scope lookup sees binding 1.
 This transition records definition-site identity only. Later-use/capture replay
 is Task 269B+, and Task 272 retains witness typing and goal effects.
+
+## Task 269A Active Named-Witness Binding Transition
+
+The implemented producer reconstructs exactly `2/2/0` and replays both
+ordinal lookups during construction and installation. Checker and runner
+corruption matrices confirm that local provenance, row links, all 51 nodes,
+and final fingerprints fail closed. A cfg(test)-only mutable-row seam exercises
+installed spelling/scope/range/ordinal precedence without changing the
+production API. No later-use/capture or typing behavior is added.

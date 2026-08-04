@@ -4027,3 +4027,11 @@ The existing name node 13 remains `source.statement-witness.name`, witness
 node 36 remains `source.statement-witness.item`, and take node 37 remains
 `source.statement-witness.take`. No `source.proof-local.*` node is created.
 The existing Task-258B3N route/debug result remains a stable lower oracle.
+
+## Task 269A Active Upper Consumer Boundary
+
+The separate proof-local producer now fingerprints and consumes the unchanged
+Task-258B3N statement/witness/primary bundle. Four adjacent checker tests reuse
+the private B3N oracle without changing the lower public API, nodes, rows, or
+legacy debug bytes. All new binding ownership remains in
+`source_proof_local_declaration`.

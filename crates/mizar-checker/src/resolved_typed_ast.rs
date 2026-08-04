@@ -32,6 +32,7 @@ use crate::{
         SourceModeDefinitionHandoff, validate_source_mode_definition_absence,
     },
     source_predicate_definition::SourcePredicateDefinitionHandoff,
+    source_proof_local_declaration::SourceProofLocalDeclarationHandoff,
     source_property_implementation::SourcePropertyImplementationHandoff,
     source_set_term::SourceSetTermHandoff,
     source_statement::{
@@ -145,6 +146,7 @@ pub struct ResolvedTypedAst {
     source_statement: Option<SourceStatementHandoff>,
     source_statement_references: Option<SourceStatementReferenceHandoff>,
     source_statement_witnesses: Option<SourceStatementWitnessHandoff>,
+    source_proof_local_declaration: Option<SourceProofLocalDeclarationHandoff>,
     nodes: ResolvedTypedArena,
     expr_metadata: ExpressionMetadataTable,
     collection_candidates: OverloadCandidateSummaryTable,
@@ -270,6 +272,12 @@ impl ResolvedTypedAst {
 
     pub const fn source_statement_witnesses(&self) -> Option<&SourceStatementWitnessHandoff> {
         self.source_statement_witnesses.as_ref()
+    }
+
+    pub const fn source_proof_local_declaration(
+        &self,
+    ) -> Option<&SourceProofLocalDeclarationHandoff> {
+        self.source_proof_local_declaration.as_ref()
     }
 
     pub const fn nodes(&self) -> &ResolvedTypedArena {
@@ -456,6 +464,9 @@ impl ResolvedTypedAst {
         }
         if let Some(source_statement_witnesses) = &self.source_statement_witnesses {
             output.push_str(&source_statement_witnesses.debug_text());
+        }
+        if let Some(source_proof_local_declaration) = &self.source_proof_local_declaration {
+            output.push_str(&source_proof_local_declaration.debug_text());
         }
         if let Some(source_statement_references) = &self.source_statement_references {
             output.push_str(&source_statement_references.debug_text());
@@ -1420,6 +1431,7 @@ pub enum ResolvedTypedAstError {
     InvalidSourceConditionFormulaComposition,
     InvalidSourcePredicateChainComposition,
     InvalidSourceStatement,
+    InvalidSourceProofLocalDeclaration,
     StatementProofBundleMismatch,
     MissingStatementSemantic,
     NonSingletonStatementSemantic {
@@ -1536,6 +1548,9 @@ impl fmt::Display for ResolvedTypedAstError {
             Self::InvalidSourceStatement => {
                 formatter.write_str("resolved typed AST source statement handoff is inconsistent")
             }
+            Self::InvalidSourceProofLocalDeclaration => formatter.write_str(
+                "resolved typed AST source proof-local declaration handoff is inconsistent",
+            ),
             Self::StatementProofBundleMismatch => formatter.write_str(
                 "statement semantic and proof-intent bundles must be supplied together",
             ),
@@ -1685,6 +1700,23 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
     fn assemble(self) -> Result<ResolvedTypedAst, ResolvedTypedAstError> {
         let source_id = self.inputs.typed_ast.source_id();
         let module_id = self.inputs.typed_ast.module_id().clone();
+        if self
+            .inputs
+            .typed_ast
+            .source_proof_local_declaration()
+            .is_some()
+            && (self.inputs.typed_ast.source_term().is_none()
+                || self.inputs.typed_ast.source_atomic_formula().is_none()
+                || self.inputs.typed_ast.source_statement().is_none()
+                || self.inputs.typed_ast.source_statement_witnesses().is_none()
+                || self
+                    .inputs
+                    .typed_ast
+                    .source_statement_references()
+                    .is_some())
+        {
+            return Err(ResolvedTypedAstError::InvalidSourceProofLocalDeclaration);
+        }
         let has_task_258b4_statement =
             self.inputs
                 .typed_ast
@@ -2206,6 +2238,20 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
             self.inputs.typed_ast.source_statement_references().cloned();
         let source_statement_witnesses =
             self.inputs.typed_ast.source_statement_witnesses().cloned();
+        let source_proof_local_declaration = self
+            .inputs
+            .typed_ast
+            .source_proof_local_declaration()
+            .cloned();
+        if source_proof_local_declaration.is_some()
+            && (self.inputs.typed_ast.source_term().is_none()
+                || source_atomic_formula.is_none()
+                || source_statement.is_none()
+                || source_statement_witnesses.is_none()
+                || source_statement_references.is_some())
+        {
+            return Err(ResolvedTypedAstError::InvalidSourceProofLocalDeclaration);
+        }
         if let Some(source_statement) = &source_statement {
             let is_task_258b4 = source_statement.is_task_258b4a_profile()
                 || source_statement.is_task_258b4b_profile()
@@ -2372,6 +2418,33 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
         } else if source_statement_references.is_some() || source_statement_witnesses.is_some() {
             return Err(ResolvedTypedAstError::InvalidSourceStatement);
         }
+        if let Some(source_proof_local_declaration) = &source_proof_local_declaration {
+            if source_statement_references.is_some() {
+                return Err(ResolvedTypedAstError::InvalidSourceProofLocalDeclaration);
+            }
+            let source_term = self
+                .inputs
+                .typed_ast
+                .source_term()
+                .ok_or(ResolvedTypedAstError::InvalidSourceProofLocalDeclaration)?;
+            let source_statement = source_statement
+                .as_ref()
+                .ok_or(ResolvedTypedAstError::InvalidSourceProofLocalDeclaration)?;
+            let source_statement_witnesses = source_statement_witnesses
+                .as_ref()
+                .ok_or(ResolvedTypedAstError::InvalidSourceProofLocalDeclaration)?;
+            source_proof_local_declaration
+                .validate_complete_installation(
+                    source_id,
+                    &module_id,
+                    source_statement,
+                    source_statement_witnesses,
+                    source_term,
+                    self.inputs.typed_ast.nodes(),
+                    true,
+                )
+                .map_err(|_| ResolvedTypedAstError::InvalidSourceProofLocalDeclaration)?;
+        }
 
         Ok(ResolvedTypedAst {
             source_id,
@@ -2398,6 +2471,7 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
             source_statement,
             source_statement_references,
             source_statement_witnesses,
+            source_proof_local_declaration,
             nodes,
             expr_metadata,
             collection_candidates,

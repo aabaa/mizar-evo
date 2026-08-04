@@ -1725,3 +1725,10 @@ This family is distinct from primary-term use references: it records a
 definition site and future visibility, not a later use or expansion. It is
 also distinct from Task-272 witness typing/goal effects and all fact, proof,
 acceptance, IR, and VC families. Task 269B+ owns later-use and capture replay.
+
+## Task 269A Active Proof-Local Binding Family
+
+The one-row definition-site family is implemented and preserved through typed
+and final ownership. Its private dormant consumer and eight unit tests add no
+active trace credit or later-use edge. Task 269B+, 270, 271, and 272 ownership
+is unchanged.

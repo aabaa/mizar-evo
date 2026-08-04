@@ -2289,3 +2289,12 @@ coverage creditを追加しない。requirements/cases `395/428`、type coverage
 は不変。existing broad proof-local diagnostic-gap rowはcovered/unchangedの
 ままで、positive named-witness binding semanticsにはcreditを与えずdeferred
 のままにする。later active Task-269 coverageにはseparate trace decisionが必要。
+
+## Checker Task 269A implementation traceability no-op
+
+dormant implementationはchecker-local/runner-local unit testを各4件だけ追加する。
+`.miz`、sidecar、expectation、trace row/backlink/status、metadata case、active
+outcome、coverage creditは追加しない。requirements/casesは`395/428`、type
+coverageは`259 = 247 covered + 12 deferred`、trace manifestはSHA-256
+`55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`
+でbyte-identicalのまま。

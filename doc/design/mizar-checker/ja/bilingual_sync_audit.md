@@ -1624,3 +1624,11 @@ EN canonical `source_proof_local_declaration.md`とJA companionはexact
 grammar、node再所有0、Typed/final transaction、private dormant runner、exact
 8 tests、projected `482/536`、corpus/trace impact 0、semantic exclusion、
 Task-269B+/270--272 deferralで一致する。review前に未翻訳normative deltaはない。
+
+## Task 269A active implementation synchronization
+
+EN/JAはimplemented public ABI、exact `2/2/0` transition/ordinal lookup、
+5-fingerprint/all-node replay、Typed/final ownership、private dormant consumer、
+test 8件、measured checker/runner `482/536`、production `30/164419`/
+`37/69729`、corpus/trace/CLI impact 0、全semantic deferralで一致する。
+implementation-time bilingual debtはない。

@@ -1631,3 +1631,11 @@ immutable lower route, private dormant leaf, four runner tests, projected
 sidecar, expectation, trace, metadata, diagnostic, or CLI delta. Both retain
 all witness typing, goal, proof, fact, acceptance, Core/CFG/VC semantics for
 later owners. No bilingual harness debt remains before review.
+
+## Checker Task 269A Implemented Dormant-Consumer Synchronization
+
+EN/JA agree that the exact private leaf and four tests are implemented,
+runner library/production are `536`/`37/69729` with the remeasured hashes, the
+route remains absent from active dispatch, and every corpus/trace/metadata/CLI
+byte plus all proof/type/fact/acceptance/IR deferrals remain unchanged. No
+implementation-time bilingual harness debt remains.

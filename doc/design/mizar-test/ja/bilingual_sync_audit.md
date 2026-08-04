@@ -1567,3 +1567,10 @@ runner source path +1、active dispatchなし、fixture/sidecar/expectation/trac
 metadata/diagnostic/CLI delta 0で一致する。witness typing、goal、proof、fact、
 acceptance、Core/CFG/VC semanticsはlater ownerへ残す。review前bilingual
 harness debtはない。
+
+## Checker Task 269A implemented dormant-consumer synchronization
+
+EN/JAはexact private leaf/test 4件を実装し、runner library/productionがremeasured
+hashを持つ`536`/`37/69729`、routeはactive dispatchに入らず、全corpus/trace/
+metadata/CLI byteとproof/type/fact/acceptance/IR deferralが不変で一致する。
+implementation-time bilingual harness debtはない。

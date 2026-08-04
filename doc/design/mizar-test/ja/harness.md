@@ -4892,3 +4892,9 @@ source/Surface ASTを受け取らない。
 helperはdedicated testsからだけreachableで、active type-elaboration selector
 chainへ挿入しない。expectation、trace、metadata、diagnostic、CLIへ影響しない。
 exact/near-miss、mutation、route isolation、final replay testsは計4件。
+
+## Checker Task 269A implemented dormant harness
+
+frozen helper/test 4件をexactに実装しPASSする。active dispatchには入らず、runner
+test/production inventoryは`536`/`37/69729`、corpus/expectation/trace/metadata/
+diagnostic/CLI byteはすべて不変。

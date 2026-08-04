@@ -6410,10 +6410,11 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   exit criteriaをEN/JAへfreezeする。
 - [x] review-only specification/source-doc auditを**NO FINDINGS**まで反復し、
   docs-only全9 hard gatesをscore capなし90/100以上でpassする。
-- [ ] Task-269A documentation prerequisiteだけをstage/commitし、production、
-  fixture、sidecar、expectation、trace、metadata、CLIが不変であることを確認
-  してfrozen implementationをfresh inventoryする。
-- [ ] frozen producer、one-shot Typed/final owner、private dormant consumer、
+- [x] Task-269A documentation prerequisiteだけを
+  `1360a9c0517eacbc67bbf2351db57e81eef03bfc`としてstage/commitし、
+  production、fixture、sidecar、expectation、trace、metadata、CLIが不変で
+  あることを確認してfrozen implementationをfresh inventoryした。
+- [x] frozen producer、one-shot Typed/final owner、private dormant consumer、
   checker 4 + runner 4 testsだけを実装する。
 - [ ] test/implementation/source-doc/final quality reviewを**NO FINDINGS**まで
   反復し、全verification/count/hash gate後に1 logical taskをcommitして

@@ -1721,3 +1721,12 @@ final ownerが公開するのはdefinition-site associationとextended binding
 environmentだけ。expression metadata、overload/coercion/cluster、checked
 formula、statement semantics、proof/goal、obligation、diagnostic、fact、Core、
 CFG、VCはemptyまたは不変。
+
+## Task 269A active final ownership
+
+final assemblyはoptional handoffをclone-preserveし、publish前にexact lower/final
+transactionをreplayする。top-level preflightはlegacy lower validatorより前にterm、
+atomic formula、statement、witness、forbidden referenceのpresenceをcheckするため、
+全half-installed injectionはdedicated final errorでfailする。orphan/same-length
+stale injectionも同じerrorでfailし、valid clone/replayはdeterministic、全deferred
+semantic tableはemptyのまま。

@@ -2410,3 +2410,12 @@ The existing broad proof-local diagnostic-gap rows remain covered and
 unchanged; they grant no credit to positive named-witness binding semantics,
 which remain deferred. Any later active Task-269 coverage requires a separate
 trace decision.
+
+## Checker Task 269A Implementation Traceability No-Op
+
+The dormant implementation adds only four checker-local and four runner-local
+unit tests. It adds no `.miz`, sidecar, expectation, trace row/backlink/status,
+metadata case, active outcome, or coverage credit. Requirements/cases remain
+`395/428`, type coverage remains `259 = 247 covered + 12 deferred`, and the
+trace manifest remains byte-identical at SHA-256
+`55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`.

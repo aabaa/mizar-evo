@@ -224,6 +224,17 @@ impl SourceProofLocalDeclarationHandoff {
         primary_terms: &SourcePrimaryTermHandoff,
         arena: &TypedArena,
     ) -> Result<(), SourceProofLocalDeclarationError>;
+
+    pub(crate) fn validate_complete_installation(
+        &self,
+        source_id: SourceId,
+        module_id: &ModuleId,
+        statements: &SourceStatementHandoff,
+        witnesses: &SourceStatementWitnessHandoff,
+        primary_terms: &SourcePrimaryTermHandoff,
+        arena: &TypedArena,
+        installation_available: bool,
+    ) -> Result<(), SourceProofLocalDeclarationError>;
 }
 
 #[derive(Debug, Clone, Copy, Default)]
@@ -264,6 +275,10 @@ new moduleはalias/replacementを定義しない。
 
 parser/syntax typeはAPIを越えない。callerはfinal `BindingId`を指定できず、
 dense identityはcheckerがtransactionally割り当てる。
+`validate_complete_installation`はcrate-private integration surfaceである。
+`validate_installation`でphase 1--6をreplayした後、owner availabilityがfalseなら
+phase-7 `InvalidInstallation`へmapする。Typed/final ownerはこのinternal errorを
+dedicated AST errorへmapし、何もpublishしない。
 
 ## exact output transaction
 
@@ -460,3 +475,12 @@ Task 269Aは次をすべて満たした場合だけ完了する。
    全9 hard gatesがscore capなしでPASSし90/100以上。
 6. frozen Task-269A scopeだけを1 implementation commitにし、fresh inventory
    から次のdependency-ready Task-269 sliceへ自動継続する。
+
+## implementation result
+
+frozen module/API/producer、fingerprint 5件、`2/1/0 -> 2/2/0` transition、
+ordinal lookup replay、Typed/final ownership、dormant runner leaf、exact compound
+test 8件を実装した。checker/runner libraryは`482/536`、production inventoryは
+`30/164419`、`37/69729`。exact fixture/corpus/trace/metadata/CLI no-opと全semantic
+deferralを保存する。independent review、full verification、exact commit、fresh
+Task-269B+ inventoryがcompletion gateとして残る。

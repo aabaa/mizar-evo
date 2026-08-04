@@ -12925,6 +12925,19 @@ edge, expectation/trace owner, proof runner, or parser/resolver modification.
 Docs preserve runner `532` and `36/69417`. Implementation projects `536` and
 one additional production path; exact lines and hashes are remeasured.
 
+## Checker Task 269A Implemented Dormant Runner Boundary
+
+The implemented write scope is exactly `runner/type_elaboration.rs` 887 lines,
+the new private production leaf 306 lines, `runner/tests.rs` 60 lines, and the
+new included test leaf 517 lines. The production selection is `37/69729`, with
+path/content hashes
+`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d` /
+`69e29f18eef446981a5eb059ab2373a1a0df12a02f744f365b4ff6fe68b7cca7`.
+The route remains private and dormant; raw syntax/resolver values stay in the
+runner and only syntax-free payloads cross to the checker. No active dispatch,
+facade detail key, corpus artifact, trace/expectation owner, Cargo edge, or
+proof runner changed.
+
 ## Checker Task 264 Implemented Runner Module Boundary
 
 The runner adds exactly one private production leaf and one included test

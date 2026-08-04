@@ -260,6 +260,10 @@ fn checker_public_enums_are_forward_compatible_and_documented() {
         ("src/source_mode_definition.rs", "source_mode_definition.md"),
         ("src/source_set_term.rs", "source_set_term.md"),
         ("src/source_statement.rs", "source_statement.md"),
+        (
+            "src/source_proof_local_declaration.rs",
+            "source_proof_local_declaration.md",
+        ),
         ("src/source_structure.rs", "source_structure.md"),
         (
             "src/source_structure_definition.rs",
@@ -411,6 +415,10 @@ fn checker_source_spec_audit_covers_public_surface_and_gaps() {
         ),
         ("src/source_mode_definition.rs", "source_mode_definition"),
         ("src/source_set_term.rs", "source_set_term"),
+        (
+            "src/source_proof_local_declaration.rs",
+            "source_proof_local_declaration",
+        ),
         ("src/source_structure.rs", "source_structure"),
         (
             "src/source_structure_definition.rs",
@@ -926,6 +934,7 @@ fn public_checker_api_is_documented(root: &Path, path: &Path, line: &str) -> boo
             || path == Path::new("src/source_mode_definition.rs")
             || path == Path::new("src/source_set_term.rs")
             || path == Path::new("src/source_statement.rs")
+            || path == Path::new("src/source_proof_local_declaration.rs")
             || path == Path::new("src/source_structure.rs")
             || path == Path::new("src/source_structure_definition.rs")
             || path == Path::new("src/type_checker.rs")
@@ -957,6 +966,7 @@ fn public_checker_api_is_documented(root: &Path, path: &Path, line: &str) -> boo
                 | "pub mod source_mode_definition;"
                 | "pub mod source_set_term;"
                 | "pub mod source_statement;"
+                | "pub mod source_proof_local_declaration;"
                 | "pub mod source_structure;"
                 | "pub mod source_structure_definition;"
                 | "pub mod type_checker;"

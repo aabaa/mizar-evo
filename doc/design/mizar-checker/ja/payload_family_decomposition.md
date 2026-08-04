@@ -1640,3 +1640,9 @@ lower fingerprintを変更しない。
 visibilityを記録するだけでlater use/expansionではない。Task-272 witness
 typing/goal effectおよびfact/proof/acceptance/IR/VC familyとも分離する。
 Task 269B+がlater-use/capture replayを所有する。
+
+## Task 269A active proof-local binding family
+
+one-row definition-site familyを実装しTyped/final ownershipまで保存する。private
+dormant consumerとunit test 8件はactive trace credit/later-use edgeを追加しない。
+Task 269B+/270/271/272 ownershipは不変。

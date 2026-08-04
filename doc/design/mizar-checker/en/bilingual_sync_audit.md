@@ -1699,3 +1699,11 @@ API/debug grammar, zero node re-ownership, Typed/final transaction, private
 dormant runner, exactly eight tests, projected `482/536`, zero corpus/trace
 impact, semantic exclusions, and Task-269B+/270--272 deferrals. No
 untranslated normative delta remains before review.
+
+## Task 269A Active Implementation Synchronization
+
+EN/JA now agree on the implemented public ABI, exact `2/2/0` transition and
+ordinal lookups, five-fingerprint/all-node replay, Typed/final ownership,
+private dormant consumer, eight tests, measured checker/runner `482/536`,
+production `30/164419` and `37/69729`, zero corpus/trace/CLI impact, and all
+semantic deferrals. No implementation-time bilingual debt remains.

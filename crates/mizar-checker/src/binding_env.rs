@@ -83,6 +83,11 @@ impl BindingEnv {
         &self.bindings
     }
 
+    #[cfg(test)]
+    pub(crate) fn binding_mut_for_test(&mut self, id: BindingId) -> Option<&mut BindingEntry> {
+        self.bindings.get_mut_for_test(id)
+    }
+
     pub const fn diagnostics(&self) -> &BindingDiagnosticTable {
         &self.diagnostics
     }
@@ -373,6 +378,11 @@ impl BindingTable {
 
     pub fn get(&self, id: BindingId) -> Option<&BindingEntry> {
         self.bindings.get(id.index())
+    }
+
+    #[cfg(test)]
+    pub(crate) fn get_mut_for_test(&mut self, id: BindingId) -> Option<&mut BindingEntry> {
+        self.bindings.get_mut(id.index())
     }
 
     pub fn iter(&self) -> impl Iterator<Item = (BindingId, &BindingEntry)> {

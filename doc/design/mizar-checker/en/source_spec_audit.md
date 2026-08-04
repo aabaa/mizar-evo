@@ -36,6 +36,7 @@ Module specifications audited:
 - [source_set_term.md](./source_set_term.md)
 - [source_structure.md](./source_structure.md)
 - [source_statement.md](./source_statement.md)
+- [source_proof_local_declaration.md](./source_proof_local_declaration.md)
 - [source_term.md](./source_term.md)
 - [source_type.md](./source_type.md)
 - [type_checker.md](./type_checker.md)
@@ -175,6 +176,7 @@ rejection.
 - `source_application`
 - `source_set_term`
 - `source_statement`
+- `source_proof_local_declaration`
 - `source_structure`
 - `source_structure_definition`
 - `source_term`
@@ -884,6 +886,36 @@ Correspondence:
 Bounded gaps: broader statements, local citations and nested contexts remain
 Task 258B; acceptance, proof-local behavior, and justification semantics
 remain Tasks 269–272.
+
+### `source_proof_local_declaration`
+
+Generated public newtypes:
+
+- `SourceProofLocalDeclarationId`
+
+Literal top-level public items:
+
+- `SourceProofLocalDeclarationHandoffInput`,
+  `SourceProofLocalDeclarationInput`, `SourceProofLocalDeclarationKind`,
+  `SourceProofLocalDeclarationRecovery`
+- `SourceProofLocalDeclaration`, `SourceProofLocalDeclarationTable`,
+  `SourceProofLocalDeclarationHandoff`,
+  `SourceProofLocalDeclarationProducer`,
+  `SourceProofLocalDeclarationError`
+
+Correspondence:
+
+| Specification promise | Source evidence | Test evidence | Status |
+|---|---|---|---|
+| One immutable syntax-free row links the exact Task-258B3N named witness, name, RHS primary term, proof context, resolver-local declaration, and checker binding. | Public input, row, dense ID, table, and handoff types in `src/source_proof_local_declaration.rs`. | Exact checker construction/lookup/debug test and private real-frontend runner test. | Implemented as one `NamedWitness` row. |
+| The producer authenticates source/module identity, the Task-258B3N statement/witness/primary fingerprints, all 51 typed nodes, and the complete base-to-final binding transition. | `SourceProofLocalDeclarationProducer::build`, retained five fingerprints, and fail-closed validation categories. | Transaction/dependency/row/resolver/all-node/fingerprint corruption matrices. | Implemented transactionally without syntax parsing. |
+| Typed/final owners publish, replay, and clone-preserve the optional handoff atomically while all semantic tables remain empty. | `TypedAst::with_source_proof_local_declaration` and both read-only ownership getters. | One-shot/orphan/stale/sibling/final-replay and empty-semantics checker/runner tests. | Implemented as the dormant Task-269A definition-site slice. |
+| Public enums remain forward-compatible. | `#[non_exhaustive]` on kind, recovery, and error. | Public-enum and source/spec-audit lint policies. | Guarded; no exhaustive exception. |
+
+Bounded gaps: later-use resolution and capture replay, other proof-local
+declaration forms, witness typing, existential matching, goal substitution,
+proof/discharge/acceptance, facts, Core/CFG/VC, and public runner activation
+remain with Task 269B+ and Tasks 270–272.
 
 ### `source_set_term`
 
@@ -5794,3 +5826,13 @@ symbol, parsing the witness in checker code, inferring a type, emitting an
 equality fact, or implementing existential/goal/proof behavior is a guarded
 `boundary_violation`. Existing `.miz`/expectation intent and the broad deferred
 proof-local fixture remain unchanged.
+
+## Task 269A Implemented Source/Specification Audit
+
+The public syntax-free module and private dormant consumer close exactly the
+classified definition-site `source_drift`, `design_drift`, and eight-test gap.
+All lower identities, source/arena bytes, resolver-local provenance,
+fingerprints, and binding-order behavior match the canonical-derived frozen
+contract. No specification, existing test intent, trace credit, diagnostic,
+or deferred typing/proof/goal/fact/IR behavior changed; no blocking `spec_gap`
+or boundary violation is introduced.

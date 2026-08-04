@@ -655,3 +655,12 @@ Task 269A therefore publishes no equality fact, existential witness match,
 goal or guard composition, substitution, obligation, proof, discharge,
 acceptance, theorem fact, Core, CFG, or VC. Task 269B+ owns later-use/capture
 replay, while Tasks 270--272 own their explicitly queued semantic families.
+
+## Task 269A Active Semantic Boundary
+
+The implementation closes only the classified definition-site binding
+`source_drift` and canonical-derived unit-test gap. `BindingTypeSite::Missing`,
+empty semantic tables, dormant runner ownership, and the zero-credit trace
+boundary are reproduced exactly. Chapter-16 proof effects and every deferred
+typing, goal, proof, fact, acceptance, and downstream-IR behavior remain open
+under Task 269B+ and Tasks 270–272.

@@ -3506,3 +3506,10 @@ existing name node 13は`source.statement-witness.name`、witness node 36は
 `source.statement-witness.item`、take node 37は
 `source.statement-witness.take`のまま。`source.proof-local.*` nodeは作らない。
 existing Task-258B3N route/debug resultはstable lower oracleとして残る。
+
+## Task 269A active upper consumer boundary
+
+separate proof-local producerはunchanged Task-258B3N statement/witness/primary
+bundleをfingerprint/consumeする。adjacent checker test 4件はprivate B3N oracleを
+reuseするだけでlower public API/node/row/legacy debug byteを変更しない。new
+binding ownershipはすべて`source_proof_local_declaration`に残る。

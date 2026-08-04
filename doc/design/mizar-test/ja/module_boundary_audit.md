@@ -11720,3 +11720,14 @@ proof runner、parser/resolver変更はない。
 
 docsはrunner `532`/`36/69417`を保存する。implementationは`536`とproduction
 path +1をprojectし、exact line/hashを再測定する。
+
+## Checker Task 269A implemented dormant runner boundary
+
+implemented write scopeは`runner/type_elaboration.rs` 887 lines、new private
+production leaf 306 lines、`runner/tests.rs` 60 lines、new included test leaf
+517 linesだけ。production selectionは`37/69729`、path/content hashは
+`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d` /
+`69e29f18eef446981a5eb059ab2373a1a0df12a02f744f365b4ff6fe68b7cca7`。
+routeはprivate/dormantのまま、raw syntax/resolver valueはrunner内に残り、
+syntax-free payloadだけがcheckerへcrossする。active dispatch、facade detail
+key、corpus artifact、trace/expectation owner、Cargo edge、proof runnerは不変。

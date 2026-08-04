@@ -3277,6 +3277,10 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
 - [x] private exact-source leaf 1件、resolver-local provenance、lower/checker
   ownership order、tests 4件、near-miss isolation、semantic emptiness、
   `532 -> 536`、corpus/trace/CLI impact 0をEN/JAへfreezeする。
-- [ ] runner/corpus byteを変更せずdocs review/commitを完了する。
-- [ ] fresh inventory後dormant consumer/tests 4件だけをimplementation/reviewし、
-  production/test hashを再測定して全active corpus/metadata/CLI値を保存する。
+- [x] runner/corpus byteを変更せずdocs reviewとcommit
+  `1360a9c0517eacbc67bbf2351db57e81eef03bfc`を完了した。
+- [x] fresh inventory後dormant consumer/tests 4件だけをimplementationし、
+  runner `536`、production `37/69729`を再測定して全active corpus/metadata/CLI
+  値を保存する。
+- [ ] implementation review、verification、exact staging/commit、fresh
+  Task-269B+ inventoryを完了する。

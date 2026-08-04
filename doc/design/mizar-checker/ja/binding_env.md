@@ -749,3 +749,12 @@ emptyのまま。
 ordinal 1 lookupは`y`を見ず、同scopeのlater lookupはbinding 1を見る。この
 transitionはdefinition-site identityだけを記録する。later-use/capture replayは
 Task 269B+、witness typing/goal effectはTask 272が保持する。
+
+## Task 269A active named-witness binding transition
+
+implemented producerはexact `2/2/0`を再構成し、construction/installの両方で
+ordinal lookup 2件をreplayする。checker/runner corruption matrixはlocal
+provenance、row link、全51 node、final fingerprintがfail closedすることを確認する。
+cfg(test)-only mutable-row seamはproduction APIを変えずinstalled
+spelling/scope/range/ordinal precedenceを検証する。later-use/capture/typing behaviorは
+追加しない。

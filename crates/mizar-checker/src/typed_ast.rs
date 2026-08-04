@@ -22,6 +22,7 @@ use crate::{
     source_predicate_definition::{
         SourcePredicateDefinitionHandoff, SourcePredicateDefinitionProjection,
     },
+    source_proof_local_declaration::SourceProofLocalDeclarationHandoff,
     source_property_implementation::{
         SourcePropertyImplementationHandoff, SourcePropertyImplementationProjection,
     },
@@ -137,6 +138,7 @@ pub struct TypedAst {
     source_statement: Option<SourceStatementHandoff>,
     source_statement_references: Option<SourceStatementReferenceHandoff>,
     source_statement_witnesses: Option<SourceStatementWitnessHandoff>,
+    source_proof_local_declaration: Option<SourceProofLocalDeclarationHandoff>,
     nodes: TypedArena,
     contexts: LocalTypeContextTable,
     types: TypeTable,
@@ -186,6 +188,7 @@ impl TypedAst {
             source_statement: None,
             source_statement_references: None,
             source_statement_witnesses: None,
+            source_proof_local_declaration: None,
             nodes: parts.nodes,
             contexts: parts.contexts,
             types: parts.types,
@@ -300,6 +303,12 @@ impl TypedAst {
 
     pub const fn source_statement_witnesses(&self) -> Option<&SourceStatementWitnessHandoff> {
         self.source_statement_witnesses.as_ref()
+    }
+
+    pub const fn source_proof_local_declaration(
+        &self,
+    ) -> Option<&SourceProofLocalDeclarationHandoff> {
+        self.source_proof_local_declaration.as_ref()
     }
 
     #[cfg(test)]
@@ -420,6 +429,14 @@ impl TypedAst {
     }
 
     #[cfg(test)]
+    pub(crate) fn inject_source_proof_local_declaration_for_test(
+        &mut self,
+        handoff: SourceProofLocalDeclarationHandoff,
+    ) {
+        self.source_proof_local_declaration = Some(handoff);
+    }
+
+    #[cfg(test)]
     pub(crate) fn replace_source_set_term_and_atomic_formula_for_test(
         &mut self,
         set_term: SourceSetTermHandoff,
@@ -533,6 +550,11 @@ impl TypedAst {
     #[cfg(test)]
     pub(crate) fn remove_source_atomic_formula_for_test(&mut self) {
         self.source_atomic_formula = None;
+    }
+
+    #[cfg(test)]
+    pub(crate) fn remove_source_term_for_test(&mut self) {
+        self.source_term = None;
     }
 
     #[cfg(test)]
@@ -1427,6 +1449,79 @@ impl TypedAst {
         Ok(self)
     }
 
+    pub fn with_source_proof_local_declaration(
+        mut self,
+        handoff: SourceProofLocalDeclarationHandoff,
+    ) -> Result<Self, TypedAstError> {
+        let installation_available = !(self.source_proof_local_declaration.is_some()
+            || self.source_statement_references.is_some()
+            || self.resolved_root.is_some()
+            || self.source_context.is_some()
+            || self.source_type.is_some()
+            || self.source_attribute.is_some()
+            || self.source_evidence.is_some()
+            || self.source_application.is_some()
+            || self.source_structure.is_some()
+            || self.source_set_term.is_some()
+            || self.source_attribute_definition.is_some()
+            || self.source_functor_definition.is_some()
+            || self.source_property_implementation.is_some()
+            || self.source_mode_definition.is_some()
+            || self.source_structure_definition.is_some()
+            || self.source_predicate_definition.is_some()
+            || self.source_composite_formula.is_some()
+            || self.source_formula_composition.is_some()
+            || self.source_condition_formula_composition.is_some()
+            || self.source_predicate_chain_composition.is_some()
+            || !self.contexts.is_empty()
+            || !self.types.is_empty()
+            || !self.facts.is_empty()
+            || !self.coercions.is_empty()
+            || !self.initial_obligations.is_empty()
+            || !self.diagnostics.is_empty());
+        let source_term = self
+            .source_term
+            .as_ref()
+            .ok_or(TypedAstError::InvalidSourceProofLocalDeclaration)?;
+        let source_atomic_formula = self
+            .source_atomic_formula
+            .as_ref()
+            .ok_or(TypedAstError::InvalidSourceProofLocalDeclaration)?;
+        let statements = self
+            .source_statement
+            .as_ref()
+            .ok_or(TypedAstError::InvalidSourceProofLocalDeclaration)?;
+        let witnesses = self
+            .source_statement_witnesses
+            .as_ref()
+            .ok_or(TypedAstError::InvalidSourceProofLocalDeclaration)?;
+        statements
+            .validate_installation(
+                self.source_id,
+                &self.module_id,
+                source_term,
+                source_atomic_formula,
+                &self.nodes,
+            )
+            .map_err(|_| TypedAstError::InvalidSourceProofLocalDeclaration)?;
+        if !statements.is_task_258b3n_profile() {
+            return Err(TypedAstError::InvalidSourceProofLocalDeclaration);
+        }
+        handoff
+            .validate_complete_installation(
+                self.source_id,
+                &self.module_id,
+                statements,
+                witnesses,
+                source_term,
+                &self.nodes,
+                installation_available,
+            )
+            .map_err(|_| TypedAstError::InvalidSourceProofLocalDeclaration)?;
+        self.source_proof_local_declaration = Some(handoff);
+        Ok(self)
+    }
+
     pub fn with_source_application_statement_witnesses(
         mut self,
         application: SourceFunctorApplicationHandoff,
@@ -1792,6 +1887,9 @@ impl TypedAst {
         }
         if let Some(source_statement_witnesses) = &self.source_statement_witnesses {
             output.push_str(&source_statement_witnesses.debug_text());
+        }
+        if let Some(source_proof_local_declaration) = &self.source_proof_local_declaration {
+            output.push_str(&source_proof_local_declaration.debug_text());
         }
         if let Some(source_statement_references) = &self.source_statement_references {
             output.push_str(&source_statement_references.debug_text());
@@ -2695,6 +2793,7 @@ pub enum TypedAstError {
     InvalidSourceConditionFormulaComposition,
     InvalidSourcePredicateChainComposition,
     InvalidSourceStatement,
+    InvalidSourceProofLocalDeclaration,
     InvalidNodeContext {
         node: TypedNodeId,
         context: LocalTypeContextId,
@@ -2860,6 +2959,8 @@ impl fmt::Display for TypedAstError {
             Self::InvalidSourceStatement => {
                 formatter.write_str("typed AST source statement handoff is inconsistent")
             }
+            Self::InvalidSourceProofLocalDeclaration => formatter
+                .write_str("typed AST source proof-local declaration handoff is inconsistent"),
             Self::InvalidNodeContext { node, context } => write!(
                 formatter,
                 "typed node {} references missing context {}",

@@ -5187,3 +5187,10 @@ This helper is reachable only by its dedicated tests. It is not inserted into
 the active type-elaboration selector chain and cannot affect expectations,
 trace, metadata, diagnostics, or CLIs. Exact/near-miss, mutation, route
 isolation, and final replay tests total four.
+
+## Checker Task 269A Implemented Dormant Harness
+
+The frozen helper and four tests are implemented exactly and pass. It remains
+absent from active dispatch; runner test/production inventories are
+`536`/`37/69729`, while every corpus, expectation, trace, metadata, diagnostic,
+and CLI byte remains unchanged.

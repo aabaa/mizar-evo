@@ -230,6 +230,17 @@ impl SourceProofLocalDeclarationHandoff {
         primary_terms: &SourcePrimaryTermHandoff,
         arena: &TypedArena,
     ) -> Result<(), SourceProofLocalDeclarationError>;
+
+    pub(crate) fn validate_complete_installation(
+        &self,
+        source_id: SourceId,
+        module_id: &ModuleId,
+        statements: &SourceStatementHandoff,
+        witnesses: &SourceStatementWitnessHandoff,
+        primary_terms: &SourcePrimaryTermHandoff,
+        arena: &TypedArena,
+        installation_available: bool,
+    ) -> Result<(), SourceProofLocalDeclarationError>;
 }
 
 #[derive(Debug, Clone, Copy, Default)]
@@ -270,6 +281,10 @@ the new module defines no aliases or replacements for them.
 
 No parser or syntax type crosses this API. No caller can supply a final
 `BindingId`; dense identity is assigned transactionally by the checker.
+`validate_complete_installation` is crate-private integration surface: it
+replays phases 1--6 through `validate_installation`, then maps a false owner
+availability flag to phase-7 `InvalidInstallation`. Typed/final owners map
+that internal error to their dedicated AST error and publish nothing.
 
 ## Exact output transaction
 
@@ -488,3 +503,13 @@ Task 269A is complete only when:
 6. one implementation commit contains only the frozen Task-269A scope, then
    fresh inventory continues automatically to the next dependency-ready
    Task-269 slice.
+
+## Implementation result
+
+The frozen module, API, producer, five fingerprints, `2/1/0 -> 2/2/0`
+transition, ordinal lookup replay, Typed/final ownership, dormant runner leaf,
+and exact eight compound tests are implemented. Checker/runner libraries are
+`482/536`; production inventories are `30/164419` and `37/69729`. The exact
+fixture/corpus/trace/metadata/CLI no-op and all semantic deferrals are
+preserved. Independent reviews, full verification, exact commit, and fresh
+Task-269B+ inventory remain the completion gates.

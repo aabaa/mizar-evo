@@ -609,3 +609,11 @@ Task 269Aはequality fact、existential witness match、goal/guard composition�
 substitution、obligation、proof、discharge、acceptance、theorem fact、Core、CFG、
 VCを公開しない。Task 269B+がlater-use/capture replay、Tasks 270--272が明示
 されたqueued semantic familyを所有する。
+
+## Task 269A active semantic boundary
+
+implementationがcloseするのはclassified definition-site binding
+`source_drift`とcanonical由来unit-test gapだけ。`BindingTypeSite::Missing`、empty
+semantic table、dormant runner ownership、zero-credit trace boundaryをexactに再現する。
+Chapter-16 proof effectとdeferred typing/goal/proof/fact/acceptance/downstream-IR
+behaviorはTask 269B+とTasks 270–272の下でopenのまま。

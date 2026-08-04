@@ -6726,10 +6726,11 @@ implementation commit does not satisfy a producer task.
 - [x] Repeat review-only specification and source/documentation audits to
   **NO FINDINGS** and pass all nine docs-only hard gates at uncapped 90/100 or
   better.
-- [ ] Stage and commit only the Task-269A documentation prerequisite; verify
-  zero production, fixture, sidecar, expectation, trace, metadata, or CLI
-  change and fresh-inventory the frozen implementation.
-- [ ] Implement only the frozen producer, one-shot Typed/final owner, private
+- [x] Stage and commit only the Task-269A documentation prerequisite as
+  `1360a9c0517eacbc67bbf2351db57e81eef03bfc`; verify zero production,
+  fixture, sidecar, expectation, trace, metadata, or CLI change and
+  fresh-inventory the frozen implementation.
+- [x] Implement only the frozen producer, one-shot Typed/final owner, private
   dormant consumer, and exact four checker plus four runner tests.
 - [ ] Repeat test, implementation, source/docs, and final quality reviews to
   **NO FINDINGS**; pass all verification/count/hash gates, commit one logical

@@ -3501,7 +3501,11 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
 - [x] Freeze one private exact-source leaf, exact resolver-local provenance,
   lower/checker ownership order, four tests, near-miss isolation, semantic
   emptiness, `532 -> 536`, and zero corpus/trace/CLI impact in EN/JA.
-- [ ] Complete docs reviews/commit without changing runner or corpus bytes.
-- [ ] After fresh inventory, implement and review only the dormant consumer
-  and four tests; remeasure production/test hashes and preserve every active
-  corpus/metadata/CLI value.
+- [x] Complete docs reviews and commit
+  `1360a9c0517eacbc67bbf2351db57e81eef03bfc` without changing runner or
+  corpus bytes.
+- [x] After fresh inventory, implement only the dormant consumer and four
+  tests; remeasure runner `536` and production `37/69729` while preserving
+  every active corpus/metadata/CLI value.
+- [ ] Complete implementation reviews, verification, exact staging/commit,
+  and fresh Task-269B+ inventory.

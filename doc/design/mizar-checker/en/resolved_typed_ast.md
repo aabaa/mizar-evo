@@ -1803,3 +1803,13 @@ The final owner publishes only the definition-site association and extended
 binding environment. Expression metadata, overload/coercion/cluster tables,
 checked formulas, statement semantics, proofs/goals, obligations, diagnostics,
 facts, Core, CFG, and VC remain empty or unchanged.
+
+## Task 269A Active Final Ownership
+
+Final assembly now clone-preserves the optional handoff and replays the exact
+lower/final transaction before publishing it. A top-level preflight checks
+term, atomic formula, statement, witness, and forbidden-reference presence
+before legacy lower validators, so every half-installed injection fails with
+the dedicated final error. Orphan and same-length stale injections fail the
+same way; valid clone/replay is deterministic and every deferred semantic
+table remains empty.

@@ -1742,3 +1742,11 @@ successはnew debug blockをappendするがarena nodeを変更しない。duplic
 orphan、stale、same-length corruption、lower hybrid、semantic-table-bearing
 inputは`InvalidSourceProofLocalDeclaration`でtransactionally failする。installer
 なしのexisting Task-258B3N constructionはbyte-identicalのまま。
+
+## Task 269A active typed ownership
+
+private optional field、read-only getter、consuming installerをexactに実装した。
+installerはcomplete Task-258B3N lower bundleをrequireしてfrozen handoffをreplayし、
+node/semantic tableを変更せず、missing/duplicate/stale/same-length corruption/
+sibling inputをatomicにrejectする。handoff phase 1--6の後にcrate-private
+phase-7 one-shot availability guardを評価する。legacy lower debug byteは不変。
