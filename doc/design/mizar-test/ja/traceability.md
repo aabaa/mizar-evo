@@ -2470,6 +2470,7 @@ source-type transport/ownershipのchecker 4 + private runner 4 unit testsだけ�
 creditは不変。case/requirement `428/395`、pass/fail `235/193`、warning/error
 `23/0`、stage `101/7/205/1`、type `259=247+12`、trace SHA
 `55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`。
+
 condition occurrence follow-upはGCU owner。
 
 ### Task 269GCT implemented private runner status
@@ -2497,3 +2498,23 @@ identifier occurrence/reference用checker/runner unit各4件だけを追加予�
 active stage/creditは不変。countsは`428/395`、`235/193`、`23/0`、
 `101/7/205/1`、type `259=247+12`、trace SHAは
 `55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`。
+
+### Task 269GCU implemented private runner status
+
+docs commit `15f47a837bc2f52d4cd30e8a4dcb86c16f2961d3`の後、
+frozen private GCT-to-GCU routeとexactly four runner testsが4つのowned
+runner fileに存在する。module sizeはproof-local production leaf `2775`、
+facade `949`、`runner.rs` `2782`、proof-local test leaf `8606`。
+runner productionは37 paths / 77,435 lines、path/content hashは
+`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d` /
+`0651af8339c147d04f88be237f8f49fc716b7da3ff90238be50a9527e89992b7`、
+libraryは`588`、raw/normalized hashは
+`7a99bcbb35838b6c1df31dec7b7c70d9c569df86bdc6f5c68d72f41578be2a9e` /
+`e49dac17564f330ad5c73018538bf5736720e47f4833709c1b9d36622208888a`
+である。active dispatcherとprotected artifact/count/hashに変更はない。
+GCUが所有するのは2つのown-condition occurrenceだけであり、authoritative
+wider block scopeとdescendant use/capture implementationは別successorに残る。
+test-sufficiency、implementation、source/docsのindependent reviewは
+**NO FINDINGS**。final read-only qualityも**NO FINDINGS**で、全9 hard gatesは
+score capなしの`100/100`でPASS。focused/full measured gateもPASSし、exact
+stagingとimplementation commitが残る。

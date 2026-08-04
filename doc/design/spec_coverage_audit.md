@@ -6861,3 +6861,31 @@ docs-only verification gate. Independent final quality is **NO FINDINGS** with
 all nine hard gates PASS, no score cap, and valid `100/100`
 (`20/20/15/15/10/10/5/5`). Staging and the dedicated prerequisite commit
 remain parent-owned.
+
+### Checker Task 269GCU implementation audit status
+
+Documentation prerequisite `15f47a837bc2f52d4cd30e8a4dcb86c16f2961d3`
+is committed. The seven frozen Rust files, one `cfg(test)`-only predecessor
+ownership-sentinel support file, and eight focused tests are implemented;
+libraries are checker/runner `522/588`, production is `30/181154` and
+`37/77435`, and production path inventories remain unchanged. The support
+seam closes the review-discovered Task-269A both-order `test_gap` without
+changing production API or behavior. This closes only the bounded
+own-condition term/reference `source_drift` and focused `test_gap`;
+cases/requirements remain `428/395`,
+pass/fail `235/193`, warnings/errors `23/0`, stages `101/7/205/1`, type
+coverage `259=247+12`, and trace SHA-256 remains
+`55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`.
+Canonical artifacts, metadata, diagnostics, public dispatch, CLI bytes, and
+active credit are unchanged.
+
+The authoritative semantic decision is that a `given` binding is visible
+through the remainder of its innermost block and descendant blocks, subject to
+inner shadowing, and is invisible in its parent, siblings, and after the block.
+GCU implements only its own-condition occurrences; descendant-use/capture,
+formula/fact/guard, proof/obligation/acceptance, downstream IR, and Task 270
+remain successor-owned. Independent test-sufficiency, implementation, and
+source/documentation reviews report **NO FINDINGS**. Final read-only quality
+also reports **NO FINDINGS**: all nine hard gates PASS without a score cap at
+`100/100`. Focused and full measured gates pass. Exact staging and the
+implementation commit remain parent-owned.

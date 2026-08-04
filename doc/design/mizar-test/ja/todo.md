@@ -3517,7 +3517,30 @@ focused/full gateもPASS。dedicated implementation commit
 - [x] by-value GCT、2 term/reference、6-node arena、private ABI、runner 4
   files/tests、zero artifact/credit、exclusion/exitをEN/JAでfreeze。
 - [x] repeated spec/sync review **NO FINDINGS**、docs 9 gates capなし`100/100`。
-- [ ] exact 42 files stage/separate prerequisite commit。
-- [ ] fresh preflight後frozen routeだけ実装しtest/implementation reviews
-  **NO FINDINGS**。
-- [ ] source/docs/final-quality/full gates、task-only commit、next inventory。
+- [x] exact 42 filesをstageし、prerequisite commit
+  `15f47a837bc2f52d4cd30e8a4dcb86c16f2961d3`を作成。
+- [x] fresh preflight後frozen routeだけを実装。
+- [x] test/implementation reviewsを**NO FINDINGS**まで反復。
+- [x] source/docs reviewを**NO FINDINGS**まで反復。
+- [x] final-qualityは全9 gates PASS、score capなし`100/100`、full gates完了。
+- [ ] exact staging、task-only commit、next inventory。
+
+### Task 269GCU implemented private runner status
+
+docs commit `15f47a837bc2f52d4cd30e8a4dcb86c16f2961d3`の後、
+frozen private GCT-to-GCU routeとexactly four runner testsが4つのowned
+runner fileに存在する。module sizeはproof-local production leaf `2775`、
+facade `949`、`runner.rs` `2782`、proof-local test leaf `8606`。
+runner productionは37 paths / 77,435 lines、path/content hashは
+`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d` /
+`0651af8339c147d04f88be237f8f49fc716b7da3ff90238be50a9527e89992b7`、
+libraryは`588`、raw/normalized hashは
+`7a99bcbb35838b6c1df31dec7b7c70d9c569df86bdc6f5c68d72f41578be2a9e` /
+`e49dac17564f330ad5c73018538bf5736720e47f4833709c1b9d36622208888a`
+である。active dispatcherとprotected artifact/count/hashに変更はない。
+GCUが所有するのは2つのown-condition occurrenceだけであり、authoritative
+wider block scopeとdescendant use/capture implementationは別successorに残る。
+test-sufficiency、implementation、source/docsのindependent reviewは
+**NO FINDINGS**。final read-only qualityも**NO FINDINGS**で、全9 hard gatesは
+score capなしの`100/100`でPASS。focused/full measured gateもPASSし、exact
+stagingとimplementation commitが残る。

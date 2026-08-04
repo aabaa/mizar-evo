@@ -94,8 +94,8 @@ is its task 1). "Next work" points into the
 | mizar-parser | Grammar, Pratt parsing, syntax recovery, parse-only corpus | [x] Tasks 1-48 plus bounded `PARSER-RECOVERY-B1B1P-P1` complete; historical post-Task-46 score 99/100 | no inferred Task 49; human-owned P-265-47D remains separate | [todo](./mizar-parser/en/todo.md) |
 | mizar-frontend | Source loading and phase 1-3 orchestration | [x] prior milestone plus `PARSER-RECOVERY-B1B1P-P1-FE` regression complete | — | [todo](./mizar-frontend/en/todo.md) |
 | mizar-resolve | Module graph, namespaces, symbols, labels, signatures | [~] complete through task 29, Checker Task 263R, and Task 264R implementation | Preserve Task-264R shell/no-symbol boundary through Checker Tasks 248P/264 | [todo](./mizar-resolve/en/todo.md) |
-| mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] foundation complete through task 22; Tasks 265-268, Core-31, and Checker consumers through committed Task 269GCT are complete; Task 269GCU documentation prerequisite is in progress | Freeze and commit GCU docs, then implement its private runner route | [todo](./mizar-test/en/todo.md) |
-| mizar-checker | Type checking, cluster/registration resolution, overload resolution | [~] explicit-payload milestone and source producers/consumers through committed Task 269GCT are complete; Task 269GCU documentation prerequisite is in progress | Freeze/commit GCU, then implement it before descendant/capture and Task 270 | [todo](./mizar-checker/en/todo.md) |
+| mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] foundation complete through task 22; Tasks 265-268, Core-31, and Checker consumers through committed Task 269GCT are complete; Task 269GCU implementation is present, all reviews are clean, and all gates pass | Commit GCU, then fresh-inventory the scope-use successor | [todo](./mizar-test/en/todo.md) |
+| mizar-checker | Type checking, cluster/registration resolution, overload resolution | [~] explicit-payload milestone and source producers/consumers through committed Task 269GCT are complete; Task 269GCU implementation is present, all reviews are clean, and all gates pass | Commit GCU before fresh-inventorying descendant/capture and Task 270 ownership | [todo](./mizar-checker/en/todo.md) |
 | mizar-core | Elaboration, binder-normalized core logic, control-flow preparation | [x] core/control-flow milestone, tasks 27-32 complete | step-5 Tasks 33-53 under the Task-32 graph | [todo](./mizar-core/en/todo.md) |
 | mizar-vc | VC IR, VC generation, deterministic pre-ATP discharge | [x] exact source-derived contradiction VC integration complete through task 31 | dependency-paced VC Tasks 32-55; VC 40/53 and S1 gates remain explicit | [todo](./mizar-vc/en/todo.md) |
 | mizar-kernel | Trusted certificate parsing and checking | [x] SAT-backed kernel milestone complete | step 4 task 35 resolved; task 32 parked; tasks 30-34 resolved | [todo](./mizar-kernel/en/todo.md) |
@@ -4475,3 +4475,31 @@ Complete review-only specification audit to **NO FINDINGS**, all nine docs-only
 gates and score, exact 42-file prerequisite commit, fresh preflight, exact
 implementation/reviews/full gates, separate implementation commit, then
 fresh-inventory the next dependency-ready task automatically.
+
+### Checker Task 269GCU implementation audit status
+
+Documentation prerequisite `15f47a837bc2f52d4cd30e8a4dcb86c16f2961d3`
+is committed. The seven frozen Rust files, one `cfg(test)`-only predecessor
+ownership-sentinel support file, and eight focused tests are implemented;
+libraries are checker/runner `522/588`, production is `30/181154` and
+`37/77435`, and production path inventories remain unchanged. The support
+seam closes the review-discovered Task-269A both-order `test_gap` without
+changing production API or behavior. This closes only the bounded
+own-condition term/reference `source_drift` and focused `test_gap`;
+cases/requirements remain `428/395`,
+pass/fail `235/193`, warnings/errors `23/0`, stages `101/7/205/1`, type
+coverage `259=247+12`, and trace SHA-256 remains
+`55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`.
+Canonical artifacts, metadata, diagnostics, public dispatch, CLI bytes, and
+active credit are unchanged.
+
+The authoritative semantic decision is that a `given` binding is visible
+through the remainder of its innermost block and descendant blocks, subject to
+inner shadowing, and is invisible in its parent, siblings, and after the block.
+GCU implements only its own-condition occurrences; descendant-use/capture,
+formula/fact/guard, proof/obligation/acceptance, downstream IR, and Task 270
+remain successor-owned. Independent test-sufficiency, implementation, and
+source/documentation reviews report **NO FINDINGS**. Final read-only quality
+also reports **NO FINDINGS**: all nine hard gates PASS without a score cap at
+`100/100`. Focused and full measured gates pass. Exact staging and the
+implementation commit remain parent-owned.

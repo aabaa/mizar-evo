@@ -2652,3 +2652,23 @@ stage, or semantic credit. Cases/requirements remain `428/395`, pass/fail
 `235/193`, warnings/errors `23/0`, stages `101/7/205/1`, type coverage
 `259=247+12`, and trace SHA-256 remains
 `55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`.
+
+### Task 269GCU implemented private runner status
+
+After docs commit `15f47a837bc2f52d4cd30e8a4dcb86c16f2961d3`, the
+frozen private GCT-to-GCU route and exactly four runner tests are present in the
+four owned runner files. Module sizes are proof-local production leaf `2775`,
+facade `949`, `runner.rs` `2782`, and proof-local test leaf `8606`.
+Runner production remains 37 paths / 77,435 lines with path/content hashes
+`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d` /
+`0651af8339c147d04f88be237f8f49fc716b7da3ff90238be50a9527e89992b7`;
+the library is `588` with raw/normalized hashes
+`7a99bcbb35838b6c1df31dec7b7c70d9c569df86bdc6f5c68d72f41578be2a9e` /
+`e49dac17564f330ad5c73018538bf5736720e47f4833709c1b9d36622208888a`.
+No active dispatcher or protected artifact/count/hash changes. GCU owns only
+the two own-condition occurrences; the authoritative wider block scope and its
+descendant-use/capture implementation remain separate successor work.
+Test-sufficiency, implementation, and source/documentation reviews report
+**NO FINDINGS**. Final read-only quality also reports **NO FINDINGS**: all nine
+hard gates PASS without a score cap at `100/100`. Focused and full measured
+gates pass. Exact staging and the implementation commit remain.

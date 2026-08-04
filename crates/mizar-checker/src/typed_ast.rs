@@ -37,7 +37,10 @@ use crate::{
     source_structure_definition::{
         SourceStructureDefinitionHandoff, SourceStructureDefinitionProjection,
     },
-    source_term::{SourcePrimaryTermHandoff, SourceProofLocalGivenUseTermHandoff},
+    source_term::{
+        SourcePrimaryTermHandoff, SourceProofLocalGivenConditionUseTermHandoff,
+        SourceProofLocalGivenUseTermHandoff,
+    },
     source_type::{
         SourceProofLocalGivenConditionTypeHandoff, SourceProofLocalGivenTypeHandoff,
         SourceProofLocalGivenUseTypeHandoff, SourceProofLocalLetTypeHandoff,
@@ -155,6 +158,8 @@ pub struct TypedAst {
     source_proof_local_given_condition_binding:
         Option<Box<SourceProofLocalGivenConditionBindingHandoff>>,
     source_proof_local_given_condition_type: Option<Box<SourceProofLocalGivenConditionTypeHandoff>>,
+    source_proof_local_given_condition_use_term:
+        Option<Box<SourceProofLocalGivenConditionUseTermHandoff>>,
     nodes: TypedArena,
     contexts: LocalTypeContextTable,
     types: TypeTable,
@@ -213,6 +218,7 @@ impl TypedAst {
             source_proof_local_given_use_term: None,
             source_proof_local_given_condition_binding: None,
             source_proof_local_given_condition_type: None,
+            source_proof_local_given_condition_use_term: None,
             nodes: parts.nodes,
             contexts: parts.contexts,
             types: parts.types,
@@ -398,6 +404,15 @@ impl TypedAst {
         &self,
     ) -> Option<&SourceProofLocalGivenConditionTypeHandoff> {
         match self.source_proof_local_given_condition_type.as_ref() {
+            Some(handoff) => Some(handoff),
+            None => None,
+        }
+    }
+
+    pub const fn source_proof_local_given_condition_use_term(
+        &self,
+    ) -> Option<&SourceProofLocalGivenConditionUseTermHandoff> {
+        match self.source_proof_local_given_condition_use_term.as_ref() {
             Some(handoff) => Some(handoff),
             None => None,
         }
@@ -593,6 +608,14 @@ impl TypedAst {
     }
 
     #[cfg(test)]
+    pub(crate) fn inject_source_proof_local_given_condition_use_term_for_test(
+        &mut self,
+        handoff: SourceProofLocalGivenConditionUseTermHandoff,
+    ) {
+        self.source_proof_local_given_condition_use_term = Some(Box::new(handoff));
+    }
+
+    #[cfg(test)]
     pub(crate) fn replace_source_set_term_and_atomic_formula_for_test(
         &mut self,
         set_term: SourceSetTermHandoff,
@@ -755,7 +778,8 @@ impl TypedAst {
                 || self.source_proof_local_given_use_type.is_some()
                 || self.source_proof_local_given_use_term.is_some()
                 || self.source_proof_local_given_condition_binding.is_some()
-                || self.source_proof_local_given_condition_type.is_some()))
+                || self.source_proof_local_given_condition_type.is_some()
+                || self.source_proof_local_given_condition_use_term.is_some()))
             || self.source_proof_local_let_type.is_some()
             || self.source_evidence.is_some()
             || self.source_statement.is_some()
@@ -789,7 +813,8 @@ impl TypedAst {
                 || self.source_proof_local_given_use_type.is_some()
                 || self.source_proof_local_given_use_term.is_some()
                 || self.source_proof_local_given_condition_binding.is_some()
-                || self.source_proof_local_given_condition_type.is_some()))
+                || self.source_proof_local_given_condition_type.is_some()
+                || self.source_proof_local_given_condition_use_term.is_some()))
             || self.source_proof_local_let_type.is_some()
             || self.source_term.is_some()
         {
@@ -812,7 +837,8 @@ impl TypedAst {
                 || self.source_proof_local_given_use_type.is_some()
                 || self.source_proof_local_given_use_term.is_some()
                 || self.source_proof_local_given_condition_binding.is_some()
-                || self.source_proof_local_given_condition_type.is_some()))
+                || self.source_proof_local_given_condition_type.is_some()
+                || self.source_proof_local_given_condition_use_term.is_some()))
             || self.source_proof_local_let_type.is_some()
             || self.source_application.is_some()
             || self.source_statement.is_some()
@@ -876,7 +902,8 @@ impl TypedAst {
                 || self.source_proof_local_given_use_type.is_some()
                 || self.source_proof_local_given_use_term.is_some()
                 || self.source_proof_local_given_condition_binding.is_some()
-                || self.source_proof_local_given_condition_type.is_some()))
+                || self.source_proof_local_given_condition_type.is_some()
+                || self.source_proof_local_given_condition_use_term.is_some()))
             || self.source_proof_local_let_type.is_some()
             || self.source_structure.is_some()
             || self.source_statement.is_some()
@@ -935,7 +962,8 @@ impl TypedAst {
                 || self.source_proof_local_given_use_type.is_some()
                 || self.source_proof_local_given_use_term.is_some()
                 || self.source_proof_local_given_condition_binding.is_some()
-                || self.source_proof_local_given_condition_type.is_some()))
+                || self.source_proof_local_given_condition_type.is_some()
+                || self.source_proof_local_given_condition_use_term.is_some()))
             || self.source_proof_local_let_type.is_some()
             || self.source_set_term.is_some()
             || self.source_statement.is_some()
@@ -983,7 +1011,8 @@ impl TypedAst {
                 || self.source_proof_local_given_use_type.is_some()
                 || self.source_proof_local_given_use_term.is_some()
                 || self.source_proof_local_given_condition_binding.is_some()
-                || self.source_proof_local_given_condition_type.is_some()))
+                || self.source_proof_local_given_condition_type.is_some()
+                || self.source_proof_local_given_condition_use_term.is_some()))
             || self.source_proof_local_let_type.is_some()
             || self.source_atomic_formula.is_some()
         {
@@ -1018,7 +1047,8 @@ impl TypedAst {
                 || self.source_proof_local_given_use_type.is_some()
                 || self.source_proof_local_given_use_term.is_some()
                 || self.source_proof_local_given_condition_binding.is_some()
-                || self.source_proof_local_given_condition_type.is_some()))
+                || self.source_proof_local_given_condition_type.is_some()
+                || self.source_proof_local_given_condition_use_term.is_some()))
             || self.source_proof_local_let_type.is_some()
             || self.source_predicate_definition.is_some()
             || self.source_structure_definition.is_some()
@@ -1073,7 +1103,8 @@ impl TypedAst {
                 || self.source_proof_local_given_use_type.is_some()
                 || self.source_proof_local_given_use_term.is_some()
                 || self.source_proof_local_given_condition_binding.is_some()
-                || self.source_proof_local_given_condition_type.is_some()))
+                || self.source_proof_local_given_condition_type.is_some()
+                || self.source_proof_local_given_condition_use_term.is_some()))
             || self.source_proof_local_let_type.is_some()
             || self.source_attribute_definition.is_some()
             || self.source_functor_definition.is_some()
@@ -1124,7 +1155,8 @@ impl TypedAst {
                 || self.source_proof_local_given_use_type.is_some()
                 || self.source_proof_local_given_use_term.is_some()
                 || self.source_proof_local_given_condition_binding.is_some()
-                || self.source_proof_local_given_condition_type.is_some()))
+                || self.source_proof_local_given_condition_type.is_some()
+                || self.source_proof_local_given_condition_use_term.is_some()))
             || self.source_proof_local_let_type.is_some()
             || self.source_functor_definition.is_some()
             || self.source_predicate_definition.is_some()
@@ -1179,7 +1211,8 @@ impl TypedAst {
                 || self.source_proof_local_given_use_type.is_some()
                 || self.source_proof_local_given_use_term.is_some()
                 || self.source_proof_local_given_condition_binding.is_some()
-                || self.source_proof_local_given_condition_type.is_some()))
+                || self.source_proof_local_given_condition_type.is_some()
+                || self.source_proof_local_given_condition_use_term.is_some()))
             || self.source_proof_local_let_type.is_some()
             || self.source_property_implementation.is_some()
             || self.source_predicate_definition.is_some()
@@ -1236,7 +1269,8 @@ impl TypedAst {
                 || self.source_proof_local_given_use_type.is_some()
                 || self.source_proof_local_given_use_term.is_some()
                 || self.source_proof_local_given_condition_binding.is_some()
-                || self.source_proof_local_given_condition_type.is_some()))
+                || self.source_proof_local_given_condition_type.is_some()
+                || self.source_proof_local_given_condition_use_term.is_some()))
             || self.source_proof_local_let_type.is_some()
             || self.source_mode_definition.is_some()
             || self.source_attribute_definition.is_some()
@@ -1284,7 +1318,8 @@ impl TypedAst {
                 || self.source_proof_local_given_use_type.is_some()
                 || self.source_proof_local_given_use_term.is_some()
                 || self.source_proof_local_given_condition_binding.is_some()
-                || self.source_proof_local_given_condition_type.is_some()))
+                || self.source_proof_local_given_condition_type.is_some()
+                || self.source_proof_local_given_condition_use_term.is_some()))
             || self.source_proof_local_let_type.is_some()
             || self.source_structure_definition.is_some()
             || self.source_predicate_definition.is_some()
@@ -1329,7 +1364,8 @@ impl TypedAst {
                 || self.source_proof_local_given_use_type.is_some()
                 || self.source_proof_local_given_use_term.is_some()
                 || self.source_proof_local_given_condition_binding.is_some()
-                || self.source_proof_local_given_condition_type.is_some()))
+                || self.source_proof_local_given_condition_type.is_some()
+                || self.source_proof_local_given_condition_use_term.is_some()))
             || self.source_proof_local_let_type.is_some()
             || self.source_composite_formula.is_some()
             || self.source_formula_composition.is_some()
@@ -1359,7 +1395,8 @@ impl TypedAst {
                 || self.source_proof_local_given_use_type.is_some()
                 || self.source_proof_local_given_use_term.is_some()
                 || self.source_proof_local_given_condition_binding.is_some()
-                || self.source_proof_local_given_condition_type.is_some()))
+                || self.source_proof_local_given_condition_type.is_some()
+                || self.source_proof_local_given_condition_use_term.is_some()))
             || self.source_proof_local_let_type.is_some()
             || self.source_composite_formula.is_some()
             || self.source_formula_composition.is_some()
@@ -1411,7 +1448,8 @@ impl TypedAst {
                 || self.source_proof_local_given_use_type.is_some()
                 || self.source_proof_local_given_use_term.is_some()
                 || self.source_proof_local_given_condition_binding.is_some()
-                || self.source_proof_local_given_condition_type.is_some()))
+                || self.source_proof_local_given_condition_type.is_some()
+                || self.source_proof_local_given_condition_use_term.is_some()))
             || self.source_proof_local_let_type.is_some()
             || self.source_composite_formula.is_some()
             || self.source_formula_composition.is_some()
@@ -1488,7 +1526,8 @@ impl TypedAst {
                 || self.source_proof_local_given_use_type.is_some()
                 || self.source_proof_local_given_use_term.is_some()
                 || self.source_proof_local_given_condition_binding.is_some()
-                || self.source_proof_local_given_condition_type.is_some()))
+                || self.source_proof_local_given_condition_type.is_some()
+                || self.source_proof_local_given_condition_use_term.is_some()))
             || self.source_proof_local_let_type.is_some()
             || self.source_condition_formula_composition.is_some()
             || self.source_composite_formula.is_some()
@@ -1539,7 +1578,8 @@ impl TypedAst {
                 || self.source_proof_local_given_use_type.is_some()
                 || self.source_proof_local_given_use_term.is_some()
                 || self.source_proof_local_given_condition_binding.is_some()
-                || self.source_proof_local_given_condition_type.is_some()))
+                || self.source_proof_local_given_condition_type.is_some()
+                || self.source_proof_local_given_condition_use_term.is_some()))
             || self.source_proof_local_let_type.is_some()
             || self.source_predicate_chain_composition.is_some()
             || self.source_composite_formula.is_some()
@@ -1580,7 +1620,8 @@ impl TypedAst {
                 || self.source_proof_local_given_use_type.is_some()
                 || self.source_proof_local_given_use_term.is_some()
                 || self.source_proof_local_given_condition_binding.is_some()
-                || self.source_proof_local_given_condition_type.is_some()))
+                || self.source_proof_local_given_condition_type.is_some()
+                || self.source_proof_local_given_condition_use_term.is_some()))
             || self.source_proof_local_let_type.is_some()
             || self.source_statement.is_some()
             || self.source_statement_references.is_some()
@@ -1641,7 +1682,8 @@ impl TypedAst {
                 || self.source_proof_local_given_use_type.is_some()
                 || self.source_proof_local_given_use_term.is_some()
                 || self.source_proof_local_given_condition_binding.is_some()
-                || self.source_proof_local_given_condition_type.is_some()))
+                || self.source_proof_local_given_condition_type.is_some()
+                || self.source_proof_local_given_condition_use_term.is_some()))
             || self.source_proof_local_let_type.is_some()
             || self.source_statement.is_some()
             || self.source_statement_references.is_some()
@@ -1709,7 +1751,8 @@ impl TypedAst {
                 || self.source_proof_local_given_use_type.is_some()
                 || self.source_proof_local_given_use_term.is_some()
                 || self.source_proof_local_given_condition_binding.is_some()
-                || self.source_proof_local_given_condition_type.is_some()))
+                || self.source_proof_local_given_condition_type.is_some()
+                || self.source_proof_local_given_condition_use_term.is_some()))
             || self.source_proof_local_let_type.is_some()
             || self.source_statement.is_some()
             || self.source_statement_references.is_some()
@@ -1785,7 +1828,8 @@ impl TypedAst {
                 || self.source_proof_local_given_use_type.is_some()
                 || self.source_proof_local_given_use_term.is_some()
                 || self.source_proof_local_given_condition_binding.is_some()
-                || self.source_proof_local_given_condition_type.is_some()))
+                || self.source_proof_local_given_condition_type.is_some()
+                || self.source_proof_local_given_condition_use_term.is_some()))
             || self.source_proof_local_let_type.is_some()
         {
             return Err(TypedAstError::InvalidSourceProofLocalDeclaration);
@@ -1870,7 +1914,8 @@ impl TypedAst {
                 && self.source_proof_local_given_use_type.is_none()
                 && self.source_proof_local_given_use_term.is_none()
                 && self.source_proof_local_given_condition_binding.is_none()
-                && self.source_proof_local_given_condition_type.is_none())
+                && self.source_proof_local_given_condition_type.is_none()
+                && self.source_proof_local_given_condition_use_term.is_none())
             && self.resolved_root.is_none()
             && self.source_context.is_none()
             && self.source_type.is_none()
@@ -1920,7 +1965,8 @@ impl TypedAst {
                 && self.source_proof_local_given_use_type.is_none()
                 && self.source_proof_local_given_use_term.is_none()
                 && self.source_proof_local_given_condition_binding.is_none()
-                && self.source_proof_local_given_condition_type.is_none())
+                && self.source_proof_local_given_condition_type.is_none()
+                && self.source_proof_local_given_condition_use_term.is_none())
             && self.resolved_root.is_none()
             && self.source_context.is_none()
             && self.source_type.is_none()
@@ -1972,7 +2018,8 @@ impl TypedAst {
             && self.source_proof_local_given_use_type.is_none()
             && self.source_proof_local_given_use_term.is_none()
             && self.source_proof_local_given_condition_binding.is_none()
-            && self.source_proof_local_given_condition_type.is_none())
+            && self.source_proof_local_given_condition_type.is_none()
+            && self.source_proof_local_given_condition_use_term.is_none())
             && self.source_proof_local_let_binding.is_none()
             && self.source_proof_local_let_type.is_none()
             && self.resolved_root.is_none()
@@ -2022,6 +2069,7 @@ impl TypedAst {
             && self.source_proof_local_given_use_term.is_none()
             && self.source_proof_local_given_condition_binding.is_none()
             && self.source_proof_local_given_condition_type.is_none()
+            && self.source_proof_local_given_condition_use_term.is_none()
             && self.source_proof_local_given_binding.is_none()
             && self.source_proof_local_let_binding.is_none()
             && self.source_proof_local_let_type.is_none()
@@ -2075,6 +2123,7 @@ impl TypedAst {
             && self.source_proof_local_given_use_term.is_none()
             && self.source_proof_local_given_condition_binding.is_none()
             && self.source_proof_local_given_condition_type.is_none()
+            && self.source_proof_local_given_condition_use_term.is_none()
             && self.source_proof_local_given_type.is_none()
             && self.source_proof_local_given_binding.is_none()
             && self.source_proof_local_let_binding.is_none()
@@ -2128,6 +2177,7 @@ impl TypedAst {
         let installation_available = self.source_proof_local_given_use_term.is_none()
             && self.source_proof_local_given_condition_binding.is_none()
             && self.source_proof_local_given_condition_type.is_none()
+            && self.source_proof_local_given_condition_use_term.is_none()
             && self.source_proof_local_given_use_type.is_none()
             && self.source_proof_local_given_type.is_none()
             && self.source_proof_local_given_binding.is_none()
@@ -2181,6 +2231,7 @@ impl TypedAst {
     ) -> Result<Self, TypedAstError> {
         let installation_available = self.source_proof_local_given_condition_binding.is_none()
             && self.source_proof_local_given_condition_type.is_none()
+            && self.source_proof_local_given_condition_use_term.is_none()
             && self.source_proof_local_given_use_term.is_none()
             && self.source_proof_local_given_use_type.is_none()
             && self.source_proof_local_given_type.is_none()
@@ -2230,6 +2281,7 @@ impl TypedAst {
         handoff: SourceProofLocalGivenConditionTypeHandoff,
     ) -> Result<Self, TypedAstError> {
         let installation_available = self.source_proof_local_given_condition_type.is_none()
+            && self.source_proof_local_given_condition_use_term.is_none()
             && self.source_proof_local_given_condition_binding.is_none()
             && self.source_proof_local_given_use_term.is_none()
             && self.source_proof_local_given_use_type.is_none()
@@ -2279,6 +2331,61 @@ impl TypedAst {
         Ok(self)
     }
 
+    pub fn with_source_proof_local_given_condition_use_term(
+        mut self,
+        handoff: SourceProofLocalGivenConditionUseTermHandoff,
+    ) -> Result<Self, TypedAstError> {
+        let installation_available = self.source_proof_local_given_condition_use_term.is_none()
+            && self.source_proof_local_given_condition_type.is_none()
+            && self.source_proof_local_given_condition_binding.is_none()
+            && self.source_proof_local_given_use_term.is_none()
+            && self.source_proof_local_given_use_type.is_none()
+            && self.source_proof_local_given_type.is_none()
+            && self.source_proof_local_given_binding.is_none()
+            && self.source_proof_local_let_binding.is_none()
+            && self.source_proof_local_let_type.is_none()
+            && self.resolved_root.is_none()
+            && self.source_context.is_none()
+            && self.source_type.is_none()
+            && self.source_attribute.is_none()
+            && self.source_evidence.is_none()
+            && self.source_term.is_none()
+            && self.source_application.is_none()
+            && self.source_structure.is_none()
+            && self.source_set_term.is_none()
+            && self.source_atomic_formula.is_none()
+            && self.source_attribute_definition.is_none()
+            && self.source_functor_definition.is_none()
+            && self.source_property_implementation.is_none()
+            && self.source_mode_definition.is_none()
+            && self.source_structure_definition.is_none()
+            && self.source_predicate_definition.is_none()
+            && self.source_composite_formula.is_none()
+            && self.source_formula_composition.is_none()
+            && self.source_condition_formula_composition.is_none()
+            && self.source_predicate_chain_composition.is_none()
+            && self.source_statement.is_none()
+            && self.source_statement_references.is_none()
+            && self.source_statement_witnesses.is_none()
+            && self.source_proof_local_declaration.is_none()
+            && self.contexts.is_empty()
+            && self.types.is_empty()
+            && self.facts.is_empty()
+            && self.coercions.is_empty()
+            && self.initial_obligations.is_empty()
+            && self.diagnostics.is_empty();
+        handoff
+            .validate_complete_installation(
+                self.source_id,
+                &self.module_id,
+                &self.nodes,
+                installation_available,
+            )
+            .map_err(|_| TypedAstError::InvalidSourceProofLocalGivenConditionUseTerm)?;
+        self.source_proof_local_given_condition_use_term = Some(Box::new(handoff));
+        Ok(self)
+    }
+
     pub fn with_source_application_statement_witnesses(
         mut self,
         application: SourceFunctorApplicationHandoff,
@@ -2291,7 +2398,8 @@ impl TypedAst {
                 || self.source_proof_local_given_use_type.is_some()
                 || self.source_proof_local_given_use_term.is_some()
                 || self.source_proof_local_given_condition_binding.is_some()
-                || self.source_proof_local_given_condition_type.is_some()))
+                || self.source_proof_local_given_condition_type.is_some()
+                || self.source_proof_local_given_condition_use_term.is_some()))
             || self.source_proof_local_let_type.is_some()
             || self.source_statement.is_some()
             || self.source_statement_references.is_some()
@@ -2380,7 +2488,8 @@ impl TypedAst {
                 || self.source_proof_local_given_use_type.is_some()
                 || self.source_proof_local_given_use_term.is_some()
                 || self.source_proof_local_given_condition_binding.is_some()
-                || self.source_proof_local_given_condition_type.is_some()))
+                || self.source_proof_local_given_condition_type.is_some()
+                || self.source_proof_local_given_condition_use_term.is_some()))
             || self.source_proof_local_let_type.is_some()
             || self.source_statement.is_some()
             || self.source_statement_references.is_some()
@@ -2477,7 +2586,8 @@ impl TypedAst {
                 || self.source_proof_local_given_use_type.is_some()
                 || self.source_proof_local_given_use_term.is_some()
                 || self.source_proof_local_given_condition_binding.is_some()
-                || self.source_proof_local_given_condition_type.is_some()))
+                || self.source_proof_local_given_condition_type.is_some()
+                || self.source_proof_local_given_condition_use_term.is_some()))
             || self.source_proof_local_let_type.is_some()
             || self.source_statement.is_some()
             || self.source_statement_references.is_some()
@@ -2699,6 +2809,11 @@ impl TypedAst {
             &self.source_proof_local_given_condition_type
         {
             output.push_str(&source_proof_local_given_condition_type.debug_text());
+        }
+        if let Some(source_proof_local_given_condition_use_term) =
+            &self.source_proof_local_given_condition_use_term
+        {
+            output.push_str(&source_proof_local_given_condition_use_term.debug_text());
         }
         if let Some(source_statement_references) = &self.source_statement_references {
             output.push_str(&source_statement_references.debug_text());
@@ -3611,6 +3726,7 @@ pub enum TypedAstError {
     InvalidSourceProofLocalGivenUseTerm,
     InvalidSourceProofLocalGivenConditionBinding,
     InvalidSourceProofLocalGivenConditionType,
+    InvalidSourceProofLocalGivenConditionUseTerm,
     InvalidNodeContext {
         node: TypedNodeId,
         context: LocalTypeContextId,
@@ -3800,6 +3916,8 @@ impl fmt::Display for TypedAstError {
             Self::InvalidSourceProofLocalGivenConditionType => {
                 formatter.write_str("source proof-local given-condition type handoff is invalid")
             }
+            Self::InvalidSourceProofLocalGivenConditionUseTerm => formatter
+                .write_str("source proof-local given-condition-use term handoff is invalid"),
             Self::InvalidNodeContext { node, context } => write!(
                 formatter,
                 "typed node {} references missing context {}",

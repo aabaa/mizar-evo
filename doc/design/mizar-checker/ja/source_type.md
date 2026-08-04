@@ -1563,3 +1563,41 @@ complete GCTをby-value consumeし、2 builtin-`set` rows、binding1 overlay、
 fingerprint、arena nodes 0--2を不変保持。source-type/argument/normalization/
 constraint/coercion/type fact/obligationを追加しない。type validationがterm
 validationより先で、GCT再構築/緩和は禁止。
+
+### Task 269GCU implementation status
+
+documentation prerequisite `15f47a837bc2f52d4cd30e8a4dcb86c16f2961d3`
+の後、frozen implementation 7 files、`cfg(test)`-only predecessor
+ownership-sentinel support 1 file、checker/private runner各4 testが存在する。
+support seamはreviewで判明したTask-269A both-order `test_gap`だけを閉じ、
+production API/behaviorを変更しない。public familyは
+`SourceProofLocalGivenConditionUseTerm{Handoff,Producer,Error}`であり、Typedと
+Resolvedは同じboxed compositeをatomicに所有する。libraryは`522/588`。
+checker productionは`30/181154`、unchanged path hash
+`c89f43f6abebf7ebeb3ac9394ecd8ea3186ad28934c75526d2cc0b85a66ebad5`、
+content hash
+`f9901821c2242bfe66321c57982b54b78425c7940c5a7c47c93c43a8c2c035dc`。
+runner productionは`37/77435`、unchanged path hash
+`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d`、
+content hash
+`0651af8339c147d04f88be237f8f49fc716b7da3ff90238be50a9527e89992b7`。
+raw/normalized test-list hashはchecker
+`d453ca1e8a7cf9870f14a0f933451ca201c19cc8c8367d51767c40a941766f82` /
+`7cd84f6cd8e6d1070b39be9e5f1031512cc2c1b664829f10d337f1b67bcb74b3`、
+runner
+`7a99bcbb35838b6c1df31dec7b7c70d9c569df86bdc6f5c68d72f41578be2a9e` /
+`e49dac17564f330ad5c73018538bf5736720e47f4833709c1b9d36622208888a`
+である。
+
+implementationが閉じるのはfrozen own-condition内の2つの`y` term/reference
+occurrenceだけである。authoritative block-scope decisionにより`given`
+bindingはinnermost blockの残余とdescendant blockでinner shadowingを除き有効
+だが、descendant use/capture implementationは別successorに残る。canonical
+specification、`.miz`、fixture、sidecar、expectation、trace row/status/
+backlink、metadata、diagnostic、public dispatch、CLI byte、active result、
+semantic creditは変更しない。equality/formula/fact、guard、goal、proof/
+obligation/acceptance、export/capture enforcement、downstream IR、Task 270は
+deferredのままである。test-sufficiency、implementation、source/docsの
+independent reviewは**NO FINDINGS**。final read-only qualityも**NO FINDINGS**、
+全9 hard gatesはscore capなしの`100/100`でPASS。focused/full measured
+gateもPASSし、exact stagingとimplementation commitが残る。

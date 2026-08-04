@@ -169,6 +169,25 @@ pub struct SourceProofLocalDeclarationHandoff {
 }
 
 impl SourceProofLocalDeclarationHandoff {
+    #[cfg(test)]
+    pub(crate) fn ownership_sentinel_for_test(
+        source_id: SourceId,
+        module_id: ModuleId,
+        binding_env: BindingEnv,
+    ) -> Self {
+        Self {
+            source_id,
+            module_id,
+            base_binding_fingerprint: binding_env.debug_text(),
+            statement_fingerprint: String::new(),
+            witness_fingerprint: String::new(),
+            primary_term_fingerprint: String::new(),
+            final_binding_fingerprint: binding_env.debug_text(),
+            binding_env,
+            declarations: SourceProofLocalDeclarationTable { rows: Vec::new() },
+        }
+    }
+
     pub const fn source_id(&self) -> SourceId {
         self.source_id
     }

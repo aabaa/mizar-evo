@@ -21,7 +21,7 @@ use mizar_checker::{
         SourcePrimaryTermHandoffInput, SourcePrimaryTermId, SourcePrimaryTermInput,
         SourcePrimaryTermKind, SourcePrimaryTermRecovery, SourcePrimaryTermReferenceInput,
         SourcePrimaryTermReferenceRole, SourcePrimaryTermRole,
-        SourceProofLocalGivenUseTermProducer,
+        SourceProofLocalGivenConditionUseTermProducer, SourceProofLocalGivenUseTermProducer,
     },
     source_type::{
         SourceProofLocalGivenConditionTypeProducer, SourceProofLocalGivenTypeProducer,
@@ -1531,6 +1531,275 @@ fn task269gct_arena(
 }
 
 fn empty_task269gct_typed_ast(
+    source_id: mizar_session::SourceId,
+    module_id: ModuleId,
+    nodes: TypedArena,
+) -> Result<TypedAst, String> {
+    TypedAst::try_new(TypedAstParts {
+        source_id,
+        module_id,
+        resolved_root: None,
+        source_context: None,
+        source_type: None,
+        source_attribute: None,
+        nodes,
+        contexts: LocalTypeContextTable::new(),
+        types: TypeTable::new(),
+        facts: TypeFactTable::new(),
+        coercions: CoercionTable::new(),
+        initial_obligations: InitialObligationTable::new(),
+        diagnostics: TypeDiagnosticTable::new(),
+    })
+    .map_err(|error| error.to_string())
+}
+
+#[derive(Debug, PartialEq, Eq)]
+#[allow(dead_code)] // Rationale: Task 269GCU is a private dormant runner consumer until activation.
+pub(in crate::runner) struct SourceProofLocalGivenConditionUseTermRouteOutput {
+    typed_ast: TypedAst,
+    resolved: ResolvedTypedAst,
+}
+
+impl SourceProofLocalGivenConditionUseTermRouteOutput {
+    pub(in crate::runner) const fn typed_ast(&self) -> &TypedAst {
+        &self.typed_ast
+    }
+
+    pub(in crate::runner) const fn resolved(&self) -> &ResolvedTypedAst {
+        &self.resolved
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[allow(dead_code)] // Rationale: production selects `None`; other variants are private Task-269GCU corruption seams.
+pub(in crate::runner) enum SourceProofLocalGivenConditionUseTermRouteMutation {
+    None,
+    WrongDependencyModule,
+    WrongTermRange,
+    WrongReferenceBinding,
+    WrongArenaRoot,
+    WrongArenaKind,
+}
+
+#[allow(dead_code)] // Rationale: Task 269GCU deliberately leaves this exact private leaf dormant.
+pub(in crate::runner) fn source_proof_local_given_condition_use_term_output(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    shells: &DeclarationShellSet,
+    symbols: &SymbolEnv,
+    source_text: &str,
+) -> Option<Result<SourceProofLocalGivenConditionUseTermRouteOutput, String>> {
+    source_proof_local_given_condition_use_term_output_impl(
+        ast,
+        module,
+        shells,
+        symbols,
+        source_text,
+        SourceProofLocalGivenConditionUseTermRouteMutation::None,
+    )
+}
+
+#[cfg(test)]
+pub(in crate::runner) fn source_proof_local_given_condition_use_term_output_with_mutation(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    shells: &DeclarationShellSet,
+    symbols: &SymbolEnv,
+    source_text: &str,
+    mutation: SourceProofLocalGivenConditionUseTermRouteMutation,
+) -> Option<Result<SourceProofLocalGivenConditionUseTermRouteOutput, String>> {
+    source_proof_local_given_condition_use_term_output_impl(
+        ast,
+        module,
+        shells,
+        symbols,
+        source_text,
+        mutation,
+    )
+}
+
+fn source_proof_local_given_condition_use_term_output_impl(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    shells: &DeclarationShellSet,
+    symbols: &SymbolEnv,
+    source_text: &str,
+    mutation: SourceProofLocalGivenConditionUseTermRouteMutation,
+) -> Option<Result<SourceProofLocalGivenConditionUseTermRouteOutput, String>> {
+    let dependency = source_proof_local_given_condition_type_output(
+        ast,
+        module.clone(),
+        shells,
+        symbols,
+        source_text,
+    )?;
+    Some(dependency.and_then(|dependency| {
+        let dependency = dependency
+            .typed_ast()
+            .source_proof_local_given_condition_type()
+            .cloned()
+            .ok_or_else(|| "Task269GCU GCT dependency is missing".to_owned())?;
+        let arena = task269gcu_arena(ast.source_id, mutation)?;
+        let mut input = task269gcu_term_input(ast.source_id, module.clone());
+        match mutation {
+            SourceProofLocalGivenConditionUseTermRouteMutation::WrongDependencyModule => {
+                input.module_id = ModuleId::new(
+                    module.package().clone(),
+                    ModulePath::new("task269gcu.wrong"),
+                );
+            }
+            SourceProofLocalGivenConditionUseTermRouteMutation::WrongTermRange => {
+                input.terms[0].source_range.end += 1;
+            }
+            SourceProofLocalGivenConditionUseTermRouteMutation::WrongReferenceBinding => {
+                input.references[0].binding = mizar_checker::binding_env::BindingId::new(0);
+            }
+            SourceProofLocalGivenConditionUseTermRouteMutation::None
+            | SourceProofLocalGivenConditionUseTermRouteMutation::WrongArenaRoot
+            | SourceProofLocalGivenConditionUseTermRouteMutation::WrongArenaKind => {}
+        }
+        let handoff =
+            SourceProofLocalGivenConditionUseTermProducer::build(dependency, input, &arena)
+                .map_err(|error| error.to_string())?;
+        let typed_ast = empty_task269gcu_typed_ast(ast.source_id, module, arena)?
+            .with_source_proof_local_given_condition_use_term(handoff)
+            .map_err(|error| error.to_string())?;
+        let resolved = assemble_empty_resolved_typed_ast(&typed_ast, Vec::new())?;
+        let output = SourceProofLocalGivenConditionUseTermRouteOutput {
+            typed_ast,
+            resolved,
+        };
+        let _ = (output.typed_ast(), output.resolved());
+        Ok(output)
+    }))
+}
+
+fn task269gcu_term_input(
+    source_id: mizar_session::SourceId,
+    module_id: ModuleId,
+) -> SourcePrimaryTermHandoffInput {
+    SourcePrimaryTermHandoffInput {
+        source_id,
+        module_id,
+        terms: [(3, 107, 108), (4, 111, 112)]
+            .into_iter()
+            .enumerate()
+            .map(
+                |(source_ordinal, (node, start, end))| SourcePrimaryTermInput {
+                    site: TypedSiteRef::Node(TypedNodeId::new(node)),
+                    source_range: SourceRange {
+                        source_id,
+                        start,
+                        end,
+                    },
+                    source_ordinal,
+                    context: BindingContextId::new(1),
+                    recovery: SourcePrimaryTermRecovery::Normal,
+                    spelling: "y".to_owned(),
+                    kind: SourcePrimaryTermKind::VariableReference,
+                    role: SourcePrimaryTermRole::Value,
+                    parent: None,
+                },
+            )
+            .collect(),
+        references: (0..2)
+            .map(|index| SourcePrimaryTermReferenceInput {
+                term: SourcePrimaryTermId::new(index),
+                binding: mizar_checker::binding_env::BindingId::new(1),
+                role: SourcePrimaryTermReferenceRole::Variable,
+            })
+            .collect(),
+        numeric_type_requests: Vec::new(),
+    }
+}
+
+fn task269gcu_arena(
+    source_id: mizar_session::SourceId,
+    mutation: SourceProofLocalGivenConditionUseTermRouteMutation,
+) -> Result<TypedArena, String> {
+    let mut builder = TypedArenaBuilder::new();
+    let reserve = builder
+        .push(TypedNode::new(
+            "source.proof-local.given-condition.reserve-type",
+            SourceAnchor::Range(SourceRange {
+                source_id,
+                start: 14,
+                end: 17,
+            }),
+        ))
+        .map_err(|error| error.to_string())?;
+    let local = builder
+        .push(TypedNode::new(
+            "source.proof-local.given-condition.type",
+            SourceAnchor::Range(SourceRange {
+                source_id,
+                start: 90,
+                end: 93,
+            }),
+        ))
+        .map_err(|error| error.to_string())?;
+    let type_root = builder
+        .push(
+            TypedNode::new(
+                "source.proof-local.given-condition.type-root",
+                SourceAnchor::Range(SourceRange {
+                    source_id,
+                    start: 0,
+                    end: 133,
+                }),
+            )
+            .with_children(vec![reserve, local]),
+        )
+        .map_err(|error| error.to_string())?;
+    let first = builder
+        .push(TypedNode::new(
+            "source.term.variable-reference",
+            SourceAnchor::Range(SourceRange {
+                source_id,
+                start: 107,
+                end: 108,
+            }),
+        ))
+        .map_err(|error| error.to_string())?;
+    let second = builder
+        .push(TypedNode::new(
+            "source.term.variable-reference",
+            SourceAnchor::Range(SourceRange {
+                source_id,
+                start: 111,
+                end: 112,
+            }),
+        ))
+        .map_err(|error| error.to_string())?;
+    let root = builder
+        .push(
+            TypedNode::new(
+                if mutation == SourceProofLocalGivenConditionUseTermRouteMutation::WrongArenaKind {
+                    "source.proof-local.given-condition.term-root.wrong"
+                } else {
+                    "source.proof-local.given-condition.term-root"
+                },
+                SourceAnchor::Range(SourceRange {
+                    source_id,
+                    start: 0,
+                    end: 133,
+                }),
+            )
+            .with_children(vec![type_root, first, second]),
+        )
+        .map_err(|error| error.to_string())?;
+    builder
+        .finish(Some(
+            if mutation == SourceProofLocalGivenConditionUseTermRouteMutation::WrongArenaRoot {
+                second
+            } else {
+                root
+            },
+        ))
+        .map_err(|error| error.to_string())
+}
+
+fn empty_task269gcu_typed_ast(
     source_id: mizar_session::SourceId,
     module_id: ModuleId,
     nodes: TypedArena,

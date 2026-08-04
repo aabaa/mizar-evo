@@ -2,7 +2,7 @@
 
 use crate::{
     binding_env::{BindingEnv, BindingId, BindingKind, BindingLookupResult, BindingLookupSite},
-    source_type::SourceProofLocalGivenUseTypeHandoff,
+    source_type::{SourceProofLocalGivenConditionTypeHandoff, SourceProofLocalGivenUseTypeHandoff},
     typed_ast::{NodeRecoveryState, TypedArena, TypedNodeId, TypedSiteRef, TypingState},
 };
 use mizar_lexer::is_identifier;
@@ -694,10 +694,189 @@ impl fmt::Display for SourceProofLocalGivenUseTermError {
 
 impl Error for SourceProofLocalGivenUseTermError {}
 
+/// Immutable exact Task-269GCU proof-local `given` condition term handoff.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceProofLocalGivenConditionUseTermHandoff {
+    source_id: SourceId,
+    module_id: ModuleId,
+    dependency: SourceProofLocalGivenConditionTypeHandoff,
+    dependency_fingerprint: String,
+    source_term: SourcePrimaryTermHandoff,
+    source_term_fingerprint: String,
+}
+
+impl SourceProofLocalGivenConditionUseTermHandoff {
+    pub const fn source_id(&self) -> SourceId {
+        self.source_id
+    }
+
+    pub const fn module_id(&self) -> &ModuleId {
+        &self.module_id
+    }
+
+    pub const fn dependency(&self) -> &SourceProofLocalGivenConditionTypeHandoff {
+        &self.dependency
+    }
+
+    pub fn dependency_fingerprint(&self) -> &str {
+        &self.dependency_fingerprint
+    }
+
+    pub const fn source_term(&self) -> &SourcePrimaryTermHandoff {
+        &self.source_term
+    }
+
+    pub fn source_term_fingerprint(&self) -> &str {
+        &self.source_term_fingerprint
+    }
+
+    pub fn debug_text(&self) -> String {
+        format!(
+            concat!(
+                "source-proof-local-given-condition-use-term-debug-v1\n",
+                "module: {}::{}\n",
+                "dependency-fingerprint: {:?}\n",
+                "source-term-fingerprint: {:?}\n",
+            ),
+            self.module_id.package().as_str(),
+            self.module_id.path().as_str(),
+            self.dependency_fingerprint,
+            self.source_term_fingerprint,
+        )
+    }
+
+    pub(crate) fn validate_installation(
+        &self,
+        source_id: SourceId,
+        module_id: &ModuleId,
+        arena: &TypedArena,
+    ) -> Result<(), SourceProofLocalGivenConditionUseTermError> {
+        let dependency_arena = task269gcu_dependency_arena(arena)?;
+        self.dependency
+            .validate_installation(source_id, module_id, &dependency_arena)
+            .map_err(|_| SourceProofLocalGivenConditionUseTermError::InvalidDependency)?;
+        if self.source_id != source_id
+            || &self.module_id != module_id
+            || self.dependency_fingerprint != self.dependency.debug_text()
+        {
+            return Err(SourceProofLocalGivenConditionUseTermError::InvalidDependency);
+        }
+        let expected = SourcePrimaryTermProducer::build_with_profile(
+            task269gcu_input(source_id, module_id.clone()),
+            self.dependency.binding_env(),
+            arena,
+            SourcePrimaryTermBindingProfile::ProofLocalGivenConditionUse,
+        )
+        .map_err(|_| SourceProofLocalGivenConditionUseTermError::InvalidSourceTerm)?;
+        if self.source_term != expected
+            || self.source_term_fingerprint != self.source_term.debug_text()
+        {
+            return Err(SourceProofLocalGivenConditionUseTermError::InvalidSourceTerm);
+        }
+        if !exact_task269gcu_arena(source_id, arena) {
+            return Err(SourceProofLocalGivenConditionUseTermError::InvalidInstallation);
+        }
+        Ok(())
+    }
+
+    pub(crate) fn validate_complete_installation(
+        &self,
+        source_id: SourceId,
+        module_id: &ModuleId,
+        arena: &TypedArena,
+        installation_available: bool,
+    ) -> Result<(), SourceProofLocalGivenConditionUseTermError> {
+        self.validate_installation(source_id, module_id, arena)?;
+        if !installation_available {
+            return Err(SourceProofLocalGivenConditionUseTermError::InvalidInstallation);
+        }
+        Ok(())
+    }
+
+    #[cfg(test)]
+    pub(crate) fn set_dependency_fingerprint_for_test(&mut self, fingerprint: String) {
+        self.dependency_fingerprint = fingerprint;
+    }
+
+    #[cfg(test)]
+    pub(crate) fn source_term_mut_for_test(&mut self) -> &mut SourcePrimaryTermHandoff {
+        &mut self.source_term
+    }
+}
+
+/// Builds only the exact Task-269GCU proof-local `given` condition terms.
+pub struct SourceProofLocalGivenConditionUseTermProducer;
+
+impl SourceProofLocalGivenConditionUseTermProducer {
+    pub fn build(
+        dependency: SourceProofLocalGivenConditionTypeHandoff,
+        input: SourcePrimaryTermHandoffInput,
+        arena: &TypedArena,
+    ) -> Result<
+        SourceProofLocalGivenConditionUseTermHandoff,
+        SourceProofLocalGivenConditionUseTermError,
+    > {
+        let dependency_arena = task269gcu_dependency_arena(arena)?;
+        dependency
+            .validate_installation(input.source_id, &input.module_id, &dependency_arena)
+            .map_err(|_| SourceProofLocalGivenConditionUseTermError::InvalidDependency)?;
+        let dependency_fingerprint = dependency.debug_text();
+        if !exact_task269gcu_input(&input) {
+            return Err(SourceProofLocalGivenConditionUseTermError::InvalidSourceTerm);
+        }
+        let source_term = SourcePrimaryTermProducer::build_with_profile(
+            input,
+            dependency.binding_env(),
+            arena,
+            SourcePrimaryTermBindingProfile::ProofLocalGivenConditionUse,
+        )
+        .map_err(|_| SourceProofLocalGivenConditionUseTermError::InvalidSourceTerm)?;
+        let source_term_fingerprint = source_term.debug_text();
+        if !exact_task269gcu_arena(dependency.source_id(), arena) {
+            return Err(SourceProofLocalGivenConditionUseTermError::InvalidInstallation);
+        }
+        let handoff = SourceProofLocalGivenConditionUseTermHandoff {
+            source_id: dependency.source_id(),
+            module_id: dependency.module_id().clone(),
+            dependency,
+            dependency_fingerprint,
+            source_term,
+            source_term_fingerprint,
+        };
+        handoff.validate_installation(handoff.source_id, &handoff.module_id, arena)?;
+        Ok(handoff)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum SourceProofLocalGivenConditionUseTermError {
+    InvalidDependency,
+    InvalidSourceTerm,
+    InvalidInstallation,
+}
+
+impl fmt::Display for SourceProofLocalGivenConditionUseTermError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::InvalidDependency => formatter
+                .write_str("source proof-local given-condition-use term dependency is invalid"),
+            Self::InvalidSourceTerm => {
+                formatter.write_str("source proof-local given-condition-use source term is invalid")
+            }
+            Self::InvalidInstallation => formatter
+                .write_str("source proof-local given-condition-use term installation is invalid"),
+        }
+    }
+}
+
+impl Error for SourceProofLocalGivenConditionUseTermError {}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum SourcePrimaryTermBindingProfile {
     Generic,
     ProofLocalGivenUse,
+    ProofLocalGivenConditionUse,
 }
 
 #[derive(Debug, Clone, Copy, Default)]
@@ -1108,8 +1287,11 @@ fn valid_binding_role(
                     | BindingKind::LetBinding
                     | BindingKind::QuantifierBinder
                     | BindingKind::DefinitionParameter
-            ) || binding_profile == SourcePrimaryTermBindingProfile::ProofLocalGivenUse
-                && kind == BindingKind::GivenWitness
+            ) || matches!(
+                binding_profile,
+                SourcePrimaryTermBindingProfile::ProofLocalGivenUse
+                    | SourcePrimaryTermBindingProfile::ProofLocalGivenConditionUse
+            ) && kind == BindingKind::GivenWitness
         }
         SourcePrimaryTermReferenceRole::LocalConstant => kind == BindingKind::LocalAbbreviation,
     }
@@ -1214,6 +1396,117 @@ fn exact_task269gu_arena(source_id: SourceId, arena: &TypedArena) -> bool {
 }
 
 fn task269gu_range(source_id: SourceId, start: usize, end: usize) -> SourceRange {
+    SourceRange {
+        source_id,
+        start,
+        end,
+    }
+}
+
+fn task269gcu_dependency_arena(
+    arena: &TypedArena,
+) -> Result<TypedArena, SourceProofLocalGivenConditionUseTermError> {
+    let nodes = (0..3)
+        .map(|index| {
+            arena
+                .node(TypedNodeId::new(index))
+                .cloned()
+                .ok_or(SourceProofLocalGivenConditionUseTermError::InvalidDependency)
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    TypedArena::try_new(Some(TypedNodeId::new(2)), nodes)
+        .map_err(|_| SourceProofLocalGivenConditionUseTermError::InvalidDependency)
+}
+
+fn task269gcu_input(source_id: SourceId, module_id: ModuleId) -> SourcePrimaryTermHandoffInput {
+    SourcePrimaryTermHandoffInput {
+        source_id,
+        module_id,
+        terms: [(3, 107, 108), (4, 111, 112)]
+            .into_iter()
+            .enumerate()
+            .map(
+                |(source_ordinal, (node, start, end))| SourcePrimaryTermInput {
+                    site: TypedSiteRef::Node(TypedNodeId::new(node)),
+                    source_range: task269gcu_range(source_id, start, end),
+                    source_ordinal,
+                    context: crate::binding_env::BindingContextId::new(1),
+                    recovery: SourcePrimaryTermRecovery::Normal,
+                    spelling: "y".to_owned(),
+                    kind: SourcePrimaryTermKind::VariableReference,
+                    role: SourcePrimaryTermRole::Value,
+                    parent: None,
+                },
+            )
+            .collect(),
+        references: (0..2)
+            .map(|index| SourcePrimaryTermReferenceInput {
+                term: SourcePrimaryTermId::new(index),
+                binding: BindingId::new(1),
+                role: SourcePrimaryTermReferenceRole::Variable,
+            })
+            .collect(),
+        numeric_type_requests: Vec::new(),
+    }
+}
+
+fn exact_task269gcu_input(input: &SourcePrimaryTermHandoffInput) -> bool {
+    input == &task269gcu_input(input.source_id, input.module_id.clone())
+}
+
+fn exact_task269gcu_arena(source_id: SourceId, arena: &TypedArena) -> bool {
+    if arena.len() != 6 || arena.root() != Some(TypedNodeId::new(5)) {
+        return false;
+    }
+    let expected = [
+        (
+            "source.proof-local.given-condition.reserve-type",
+            14,
+            17,
+            Vec::new(),
+        ),
+        (
+            "source.proof-local.given-condition.type",
+            90,
+            93,
+            Vec::new(),
+        ),
+        (
+            "source.proof-local.given-condition.type-root",
+            0,
+            133,
+            vec![TypedNodeId::new(0), TypedNodeId::new(1)],
+        ),
+        ("source.term.variable-reference", 107, 108, Vec::new()),
+        ("source.term.variable-reference", 111, 112, Vec::new()),
+        (
+            "source.proof-local.given-condition.term-root",
+            0,
+            133,
+            vec![
+                TypedNodeId::new(2),
+                TypedNodeId::new(3),
+                TypedNodeId::new(4),
+            ],
+        ),
+    ];
+    expected
+        .into_iter()
+        .enumerate()
+        .all(|(index, (kind, start, end, children))| {
+            arena.node(TypedNodeId::new(index)).is_some_and(|node| {
+                node.kind.as_str() == kind
+                    && node.resolved_node.is_none()
+                    && node.anchor == SourceAnchor::Range(task269gcu_range(source_id, start, end))
+                    && node.children == children
+                    && node.typing == TypingState::Unknown
+                    && node.recovery == NodeRecoveryState::Normal
+                    && node.links == Default::default()
+            })
+        })
+}
+
+fn task269gcu_range(source_id: SourceId, start: usize, end: usize) -> SourceRange {
     SourceRange {
         source_id,
         start,
@@ -1349,21 +1642,26 @@ mod tests {
             TemplateExpansionOutput,
         },
         resolved_typed_ast::{
+            ExprId, ExpressionMetadataInput, ResolvedNodeKindHint, ResolvedNodeKindHintKind,
             ResolvedTypedAst, ResolvedTypedAstError, ResolvedTypedAstInputs, ResolvedTypedNodeKind,
+            SourceNodeRole,
         },
         source_proof_local_declaration::{
-            SourceProofLocalGivenBindingHandoff, SourceProofLocalGivenBindingHandoffInput,
-            SourceProofLocalGivenBindingProducer, SourceProofLocalGivenBindingRecovery,
+            SourceProofLocalDeclarationHandoff, SourceProofLocalGivenBindingHandoff,
+            SourceProofLocalGivenBindingHandoffInput, SourceProofLocalGivenBindingProducer,
+            SourceProofLocalGivenBindingRecovery,
+            SourceProofLocalGivenConditionBindingHandoffInput,
+            SourceProofLocalGivenConditionBindingProducer,
             SourceProofLocalGivenUseBindingHandoffInput, SourceProofLocalGivenUseBindingProducer,
             SourceProofLocalLetBindingHandoff, SourceProofLocalLetBindingHandoffInput,
             SourceProofLocalLetBindingProducer, SourceProofLocalLetBindingRecovery,
         },
         source_type::{
-            SourceProofLocalGivenTypeHandoff, SourceProofLocalGivenTypeProducer,
-            SourceProofLocalGivenUseTypeProducer, SourceProofLocalLetTypeHandoff,
-            SourceProofLocalLetTypeProducer, SourceTypeApplicationForm, SourceTypeApplicationInput,
-            SourceTypeExpressionId, SourceTypeExpressionInput, SourceTypeHandoffInput,
-            SourceTypeHead,
+            SourceProofLocalGivenConditionTypeProducer, SourceProofLocalGivenTypeHandoff,
+            SourceProofLocalGivenTypeProducer, SourceProofLocalGivenUseTypeProducer,
+            SourceProofLocalLetTypeHandoff, SourceProofLocalLetTypeProducer,
+            SourceTypeApplicationForm, SourceTypeApplicationInput, SourceTypeExpressionId,
+            SourceTypeExpressionInput, SourceTypeHandoffInput, SourceTypeHead,
         },
         typed_ast::{
             CoercionTable, InitialObligationTable, LocalTypeContextTable, TypeDiagnosticTable,
@@ -3149,6 +3447,1013 @@ mod tests {
 
         let generic = fixture();
         assert!(build(&generic).is_ok());
+    }
+
+    #[derive(Clone)]
+    struct Task269gcuFixture {
+        source: SourceId,
+        module: ModuleId,
+        dependency: SourceProofLocalGivenConditionTypeHandoff,
+        input: SourcePrimaryTermHandoffInput,
+        arena: TypedArena,
+    }
+
+    fn task269gcu_fixture() -> Task269gcuFixture {
+        let source = source_id_for("f7");
+        let module = module("task269gc");
+        let local = concat!(
+            "contribution=0:namespace=task269gc:owner=theorem#1:shell=theorem:",
+            "kind=theorem:name=ProofLocalGivenConditionUseSmoke:notation=_:arity=_:",
+            "definition=theorem:registration=_:policy=non-overloadable:",
+            "slot=non-overloadable:_:theorem:_"
+        );
+        let theorem_symbol = SymbolId::new(
+            module.clone(),
+            LocalSymbolId::new(local),
+            FullyQualifiedName::new(format!("pkg::task269gc::{local}")),
+        );
+        let mut contributions = SourceContributionIndex::new();
+        let contribution = contributions.insert(
+            module.clone(),
+            ContributionKind::LocalSource { source_id: source },
+            SourceAnchor::Range(range(source, 0, 18)),
+        );
+        let mut definitions = DefinitionIndex::new();
+        let theorem_definition = definitions.insert(DefinitionShell::new(
+            theorem_symbol.clone(),
+            DefinitionKind::Theorem,
+            SemanticOrigin::new(
+                source,
+                module.clone(),
+                SourceAnchor::Range(range(source, 19, 133)),
+                vec![2, 1],
+            ),
+            contribution,
+        ));
+        let lower_fingerprint = format!(
+            concat!(
+                "source-proof-local-given-condition-lower-debug-v1\n",
+                "module: {}::{}\n",
+                "source-fingerprint: \"2c2d767a0654670412b377bdcc6c5970ecec05b41c02aa754766320927bc6aad\"\n",
+                "surface-fingerprint: \"49d46d5f24338772e6e968f12c2216a8957b35242474132690db843b510b430f\"\n",
+                "theorem symbol={:?} definition=0 contribution=0 range=19..133 proof=68..132\n",
+                "given range=76..113 segment=82..93 source_ordinal=1\n",
+                "name range=82..83 spelling=\"y\"\n",
+                "type range=90..93 head=90..93 spelling=\"set\" form=bare\n",
+            ),
+            module.package().as_str(),
+            module.path().as_str(),
+            theorem_symbol.fqn().as_str(),
+        );
+        let binding = SourceProofLocalGivenConditionBindingProducer::build(
+            SourceProofLocalGivenConditionBindingHandoffInput {
+                source_id: source,
+                module_id: module.clone(),
+                lower_fingerprint,
+                theorem_symbol,
+                theorem_definition,
+                contribution,
+                theorem_range: range(source, 19, 133),
+                proof_range: range(source, 68, 132),
+                given_range: range(source, 76, 113),
+                segment_range: range(source, 82, 93),
+                name_range: range(source, 82, 83),
+                source_ordinal: 1,
+                local: LocalTermBinding::new(
+                    "y",
+                    LocalTermScope::new(vec![0]),
+                    range(source, 82, 83),
+                    1,
+                ),
+                recovery: SourceProofLocalGivenBindingRecovery::Normal,
+            },
+            &task269gu_base_binding_env(source, module.clone()),
+        )
+        .expect("Task269GCU exact GC dependency");
+        let symbols = SymbolEnv::new(module.clone(), SymbolEnvIndexes::default());
+        let type_arena = task269gcu_type_arena(source);
+        let dependency = SourceProofLocalGivenConditionTypeProducer::build(
+            binding,
+            task269gcu_type_input(source, module.clone()),
+            &symbols,
+            &type_arena,
+        )
+        .expect("Task269GCU exact GCT dependency");
+        Task269gcuFixture {
+            source,
+            module: module.clone(),
+            dependency,
+            input: task269gcu_input(source, module),
+            arena: task269gcu_test_arena(source),
+        }
+    }
+
+    fn task269gcu_type_input(source: SourceId, module: ModuleId) -> SourceTypeHandoffInput {
+        SourceTypeHandoffInput {
+            source_id: source,
+            module_id: module.clone(),
+            applications: (0..2)
+                .map(|index| SourceTypeApplicationInput {
+                    binding: BindingId::new(index),
+                    source_ordinal: index,
+                    root: SourceTypeExpressionId::new(index),
+                })
+                .collect(),
+            expressions: [(14, 17), (90, 93)]
+                .into_iter()
+                .enumerate()
+                .map(|(index, (start, end))| SourceTypeExpressionInput {
+                    source_id: source,
+                    module_id: module.clone(),
+                    site: TypedSiteRef::Role {
+                        node: TypedNodeId::new(index),
+                        role: TypeRole::new("source.type.expression"),
+                    },
+                    source_range: range(source, start, end),
+                    spelling: "set".to_owned(),
+                    head_site: TypedSiteRef::Role {
+                        node: TypedNodeId::new(index),
+                        role: TypeRole::new("source.type.head"),
+                    },
+                    head_range: range(source, start, end),
+                    head_spelling: "set".to_owned(),
+                    form: SourceTypeApplicationForm::Bare,
+                    head: SourceTypeHead::BuiltinSet,
+                    recovery: NodeRecoveryState::Normal,
+                })
+                .collect(),
+            arguments: Vec::new(),
+        }
+    }
+
+    fn task269gcu_type_arena(source: SourceId) -> TypedArena {
+        let mut builder = TypedArenaBuilder::new();
+        let reserve = builder
+            .push(TypedNode::new(
+                "source.proof-local.given-condition.reserve-type",
+                SourceAnchor::Range(range(source, 14, 17)),
+            ))
+            .expect("Task269GCU reserve type node");
+        let local = builder
+            .push(TypedNode::new(
+                "source.proof-local.given-condition.type",
+                SourceAnchor::Range(range(source, 90, 93)),
+            ))
+            .expect("Task269GCU local type node");
+        let root = builder
+            .push(
+                TypedNode::new(
+                    "source.proof-local.given-condition.type-root",
+                    SourceAnchor::Range(range(source, 0, 133)),
+                )
+                .with_children(vec![reserve, local]),
+            )
+            .expect("Task269GCU type root");
+        builder.finish(Some(root)).expect("Task269GCU type arena")
+    }
+
+    fn task269gcu_test_arena(source: SourceId) -> TypedArena {
+        let mut nodes = task269gcu_type_arena(source)
+            .iter()
+            .map(|(_, node)| node.clone())
+            .collect::<Vec<_>>();
+        nodes.push(TypedNode::new(
+            "source.term.variable-reference",
+            SourceAnchor::Range(range(source, 107, 108)),
+        ));
+        nodes.push(TypedNode::new(
+            "source.term.variable-reference",
+            SourceAnchor::Range(range(source, 111, 112)),
+        ));
+        nodes.push(
+            TypedNode::new(
+                "source.proof-local.given-condition.term-root",
+                SourceAnchor::Range(range(source, 0, 133)),
+            )
+            .with_children(vec![
+                TypedNodeId::new(2),
+                TypedNodeId::new(3),
+                TypedNodeId::new(4),
+            ]),
+        );
+        TypedArena::try_new(Some(TypedNodeId::new(5)), nodes).expect("Task269GCU term arena")
+    }
+
+    fn mutated_task269gcu_input(
+        fixture: &Task269gcuFixture,
+        mutation: Task269guInputMutation,
+    ) -> SourcePrimaryTermHandoffInput {
+        let mut input = fixture.input.clone();
+        match mutation {
+            Task269guInputMutation::TermCount => {
+                input.terms.pop();
+            }
+            Task269guInputMutation::TermSite => {
+                input.terms[1].site = TypedSiteRef::Node(TypedNodeId::new(3));
+            }
+            Task269guInputMutation::TermRange => {
+                input.terms[1].source_range.end += 1;
+            }
+            Task269guInputMutation::TermOrdinal => {
+                input.terms[1].source_ordinal = 2;
+            }
+            Task269guInputMutation::TermContext => {
+                input.terms[1].context = BindingContextId::new(0);
+            }
+            Task269guInputMutation::TermRecovery => {
+                input.terms[1].recovery = SourcePrimaryTermRecovery::Degraded;
+            }
+            Task269guInputMutation::TermSpelling => {
+                input.terms[1].spelling = "x".to_owned();
+            }
+            Task269guInputMutation::TermKind => {
+                input.terms[1].kind = SourcePrimaryTermKind::ConstantReference;
+            }
+            Task269guInputMutation::TermRole => {
+                input.terms[1].role = SourcePrimaryTermRole::CurrentDefinitionResult;
+            }
+            Task269guInputMutation::TermParent => {
+                input.terms[1].parent = Some(SourcePrimaryTermId::new(0));
+            }
+            Task269guInputMutation::ReferenceCount => {
+                input.references.pop();
+            }
+            Task269guInputMutation::ReferenceTerm => {
+                input.references[1].term = SourcePrimaryTermId::new(0);
+            }
+            Task269guInputMutation::ReferenceBinding => {
+                input.references[1].binding = BindingId::new(0);
+            }
+            Task269guInputMutation::ReferenceRole => {
+                input.references[1].role = SourcePrimaryTermReferenceRole::LocalConstant;
+            }
+            Task269guInputMutation::NumericRequest => {
+                input
+                    .numeric_type_requests
+                    .push(SourceNumericTypeRequestInput {
+                        term: SourcePrimaryTermId::new(0),
+                        owner: TypedSiteRef::Node(TypedNodeId::new(3)),
+                        source_range: range(fixture.source, 107, 108),
+                        spelling: "y".to_owned(),
+                        request_ordinal: 0,
+                    });
+            }
+        }
+        input
+    }
+
+    fn mutated_task269gcu_arena(
+        fixture: &Task269gcuFixture,
+        node: usize,
+        mutation: Task269guArenaMutation,
+    ) -> TypedArena {
+        let mut nodes = fixture
+            .arena
+            .iter()
+            .map(|(_, node)| node.clone())
+            .collect::<Vec<_>>();
+        match mutation {
+            Task269guArenaMutation::Kind => {
+                nodes[node].kind = "source.proof-local.given-condition.wrong".into();
+            }
+            Task269guArenaMutation::ResolvedNode => {
+                use mizar_syntax as syntax;
+
+                let mut builder = mizar_resolve::resolved_ast::ResolvedArenaBuilder::new();
+                let resolved = builder
+                    .push(mizar_resolve::resolved_ast::ResolvedNode::new(
+                        syntax::SurfaceNodeKind::CompilationUnit,
+                        Vec::new(),
+                        SemanticOrigin::new(
+                            fixture.source,
+                            module("task269gcu.resolved"),
+                            SourceAnchor::Range(range(fixture.source, 0, 133)),
+                            vec![node as u32],
+                        ),
+                    ))
+                    .expect("Task269GCU resolved-node mutation id");
+                nodes[node].resolved_node = Some(resolved);
+            }
+            Task269guArenaMutation::Anchor => {
+                nodes[node].anchor = SourceAnchor::Range(range(fixture.source, 1, 2));
+            }
+            Task269guArenaMutation::Children => {
+                nodes[node].children = match node {
+                    0 => vec![TypedNodeId::new(1)],
+                    1 => vec![TypedNodeId::new(0)],
+                    2 => vec![TypedNodeId::new(1), TypedNodeId::new(0)],
+                    3 => vec![TypedNodeId::new(4)],
+                    4 => vec![TypedNodeId::new(3)],
+                    5 => vec![
+                        TypedNodeId::new(4),
+                        TypedNodeId::new(3),
+                        TypedNodeId::new(2),
+                    ],
+                    _ => unreachable!("Task269GCU arena node is bounded"),
+                };
+            }
+            Task269guArenaMutation::Typing => {
+                nodes[node].typing = TypingState::Successful;
+            }
+            Task269guArenaMutation::Recovery => {
+                nodes[node].recovery = NodeRecoveryState::Recovered;
+            }
+            Task269guArenaMutation::Links => {
+                nodes[node].links.facts.push(TypeFactId::new(0));
+            }
+        }
+        TypedArena::try_new(Some(TypedNodeId::new(5)), nodes)
+            .expect("Task269GCU mutated arena remains structurally constructible")
+    }
+
+    fn task269gcu_arena_with_root(fixture: &Task269gcuFixture, root: usize) -> TypedArena {
+        TypedArena::try_new(
+            Some(TypedNodeId::new(root)),
+            fixture.arena.iter().map(|(_, node)| node.clone()).collect(),
+        )
+        .expect("Task269GCU alternate-root arena")
+    }
+
+    fn task269gcu_empty_typed(fixture: &Task269gcuFixture, arena: TypedArena) -> TypedAst {
+        task269gcu_empty_typed_for(fixture.source, fixture.module.clone(), arena)
+    }
+
+    fn task269gcu_empty_typed_for(
+        source: SourceId,
+        module: ModuleId,
+        arena: TypedArena,
+    ) -> TypedAst {
+        TypedAst::try_new(TypedAstParts {
+            source_id: source,
+            module_id: module,
+            resolved_root: None,
+            source_context: None,
+            source_type: None,
+            source_attribute: None,
+            nodes: arena,
+            contexts: LocalTypeContextTable::new(),
+            types: TypeTable::new(),
+            facts: TypeFactTable::new(),
+            coercions: CoercionTable::new(),
+            initial_obligations: InitialObligationTable::new(),
+            diagnostics: TypeDiagnosticTable::new(),
+        })
+        .expect("Task269GCU empty typed AST")
+    }
+
+    fn task269gcu_generic_neighbor(fixture: &Task269gcuFixture) -> SourcePrimaryTermHandoff {
+        SourcePrimaryTermProducer::build(
+            SourcePrimaryTermHandoffInput {
+                source_id: fixture.source,
+                module_id: fixture.module.clone(),
+                terms: vec![SourcePrimaryTermInput {
+                    site: TypedSiteRef::Node(TypedNodeId::new(3)),
+                    source_range: range(fixture.source, 107, 108),
+                    source_ordinal: 0,
+                    context: BindingContextId::new(1),
+                    recovery: SourcePrimaryTermRecovery::Normal,
+                    spelling: "x".to_owned(),
+                    kind: SourcePrimaryTermKind::VariableReference,
+                    role: SourcePrimaryTermRole::Value,
+                    parent: None,
+                }],
+                references: vec![SourcePrimaryTermReferenceInput {
+                    term: SourcePrimaryTermId::new(0),
+                    binding: BindingId::new(0),
+                    role: SourcePrimaryTermReferenceRole::Variable,
+                }],
+                numeric_type_requests: Vec::new(),
+            },
+            fixture.dependency.binding_env(),
+            &fixture.arena,
+        )
+        .expect("Task269GCU generic source-term neighbor")
+    }
+
+    fn task269gcu_resolved_result_with_inputs(
+        typed: &TypedAst,
+        expressions: Vec<ExpressionMetadataInput>,
+        node_hints: Vec<ResolvedNodeKindHint>,
+    ) -> Result<ResolvedTypedAst, ResolvedTypedAstError> {
+        let cluster_facts = ClusterFactTable::new();
+        let collection = OverloadCollectionOutput::collect(
+            Vec::<OverloadSiteInput>::new(),
+            Vec::<OverloadCandidateInput>::new(),
+        );
+        let expansion = TemplateExpansionOutput::expand(&collection);
+        let viability =
+            CandidateViabilityOutput::filter(&expansion, Vec::<CandidateViabilityInput>::new());
+        let specificity =
+            SpecificityGraphOutput::build(&viability, Vec::<SpecificityComparisonInput>::new());
+        let selection = OverloadSelectionOutput::resolve(
+            &specificity,
+            Vec::<OverloadSiteResolutionInput>::new(),
+        );
+        ResolvedTypedAst::assemble(ResolvedTypedAstInputs {
+            typed_ast: typed,
+            cluster_facts: &cluster_facts,
+            overload_collection: &collection,
+            template_expansion: &expansion,
+            viability: &viability,
+            specificity: &specificity,
+            overload_selection: &selection,
+            expressions,
+            node_hints,
+            statement_semantics: None,
+            statement_proofs: None,
+        })
+    }
+
+    #[test]
+    fn task269gcu_exact_occurrence_references_and_fingerprints_are_stable() {
+        let fixture = task269gcu_fixture();
+        let handoff = SourceProofLocalGivenConditionUseTermProducer::build(
+            fixture.dependency.clone(),
+            fixture.input.clone(),
+            &fixture.arena,
+        )
+        .expect("Task269GCU exact checker transaction");
+        assert_eq!(handoff.source_id(), fixture.source);
+        assert_eq!(handoff.module_id(), &fixture.module);
+        assert_eq!(handoff.dependency(), &fixture.dependency);
+        assert_eq!(
+            handoff.dependency_fingerprint(),
+            fixture.dependency.debug_text()
+        );
+        assert_eq!(
+            handoff.source_term_fingerprint(),
+            handoff.source_term().debug_text()
+        );
+        assert_eq!(
+            (
+                handoff.source_term().terms().len(),
+                handoff.source_term().references().len(),
+                handoff.source_term().numeric_type_requests().len(),
+            ),
+            (2, 2, 0)
+        );
+        for (index, (node, start, end)) in [(3, 107, 108), (4, 111, 112)].into_iter().enumerate() {
+            let term = handoff
+                .source_term()
+                .terms()
+                .get(SourcePrimaryTermId::new(index))
+                .expect("Task269GCU term row");
+            assert_eq!(term.site(), &TypedSiteRef::Node(TypedNodeId::new(node)));
+            assert_eq!(term.source_range(), range(fixture.source, start, end));
+            assert_eq!(term.source_ordinal(), index);
+            assert_eq!(term.context(), BindingContextId::new(1));
+            assert_eq!(term.spelling(), "y");
+            assert_eq!(term.kind(), SourcePrimaryTermKind::VariableReference);
+            assert_eq!(term.role(), SourcePrimaryTermRole::Value);
+            assert_eq!(term.parent(), None);
+            let reference = handoff
+                .source_term()
+                .references()
+                .get(SourcePrimaryTermReferenceId::new(index))
+                .expect("Task269GCU reference row");
+            assert_eq!(reference.term(), SourcePrimaryTermId::new(index));
+            assert_eq!(reference.binding(), BindingId::new(1));
+            assert_eq!(reference.role(), SourcePrimaryTermReferenceRole::Variable);
+            assert_eq!(reference.use_ordinal(), 2);
+            assert_eq!(
+                reference.lexical_scope().map(LocalTermScope::path),
+                Some(&[0][..])
+            );
+        }
+        assert_eq!(
+            handoff.debug_text(),
+            format!(
+                concat!(
+                    "source-proof-local-given-condition-use-term-debug-v1\n",
+                    "module: pkg::task269gc\n",
+                    "dependency-fingerprint: {:?}\n",
+                    "source-term-fingerprint: {:?}\n",
+                ),
+                handoff.dependency_fingerprint(),
+                handoff.source_term_fingerprint(),
+            )
+        );
+        let replay = SourceProofLocalGivenConditionUseTermProducer::build(
+            fixture.dependency,
+            fixture.input,
+            &fixture.arena,
+        )
+        .expect("Task269GCU replay");
+        assert_eq!(replay, handoff);
+    }
+
+    #[test]
+    fn task269gcu_dependency_term_input_and_arena_corruption_fail_closed() {
+        let fixture = task269gcu_fixture();
+        let mut wrong_source = fixture.input.clone();
+        wrong_source.source_id = other_source_id();
+        assert_eq!(
+            SourceProofLocalGivenConditionUseTermProducer::build(
+                fixture.dependency.clone(),
+                wrong_source,
+                &fixture.arena,
+            ),
+            Err(SourceProofLocalGivenConditionUseTermError::InvalidDependency)
+        );
+        let mut wrong_module = fixture.input.clone();
+        wrong_module.module_id = module("task269gcu.wrong");
+        assert_eq!(
+            SourceProofLocalGivenConditionUseTermProducer::build(
+                fixture.dependency.clone(),
+                wrong_module,
+                &fixture.arena,
+            ),
+            Err(SourceProofLocalGivenConditionUseTermError::InvalidDependency)
+        );
+        for mutation in [
+            Task269guInputMutation::TermCount,
+            Task269guInputMutation::TermSite,
+            Task269guInputMutation::TermRange,
+            Task269guInputMutation::TermOrdinal,
+            Task269guInputMutation::TermContext,
+            Task269guInputMutation::TermRecovery,
+            Task269guInputMutation::TermSpelling,
+            Task269guInputMutation::TermKind,
+            Task269guInputMutation::TermRole,
+            Task269guInputMutation::TermParent,
+            Task269guInputMutation::ReferenceCount,
+            Task269guInputMutation::ReferenceTerm,
+            Task269guInputMutation::ReferenceBinding,
+            Task269guInputMutation::ReferenceRole,
+            Task269guInputMutation::NumericRequest,
+        ] {
+            assert_eq!(
+                SourceProofLocalGivenConditionUseTermProducer::build(
+                    fixture.dependency.clone(),
+                    mutated_task269gcu_input(&fixture, mutation),
+                    &fixture.arena,
+                ),
+                Err(SourceProofLocalGivenConditionUseTermError::InvalidSourceTerm),
+                "Task269GCU input mutation {mutation:?}",
+            );
+        }
+        for node in 0..6 {
+            for mutation in [
+                Task269guArenaMutation::Kind,
+                Task269guArenaMutation::ResolvedNode,
+                Task269guArenaMutation::Anchor,
+                Task269guArenaMutation::Children,
+                Task269guArenaMutation::Typing,
+                Task269guArenaMutation::Recovery,
+                Task269guArenaMutation::Links,
+            ] {
+                let expected = if node < 3 {
+                    SourceProofLocalGivenConditionUseTermError::InvalidDependency
+                } else if node < 5
+                    && matches!(
+                        mutation,
+                        Task269guArenaMutation::Kind
+                            | Task269guArenaMutation::Anchor
+                            | Task269guArenaMutation::Recovery
+                    )
+                {
+                    SourceProofLocalGivenConditionUseTermError::InvalidSourceTerm
+                } else {
+                    SourceProofLocalGivenConditionUseTermError::InvalidInstallation
+                };
+                assert_eq!(
+                    SourceProofLocalGivenConditionUseTermProducer::build(
+                        fixture.dependency.clone(),
+                        fixture.input.clone(),
+                        &mutated_task269gcu_arena(&fixture, node, mutation),
+                    ),
+                    Err(expected),
+                    "Task269GCU arena node {node} mutation {mutation:?}",
+                );
+            }
+        }
+        assert_eq!(
+            SourceProofLocalGivenConditionUseTermProducer::build(
+                fixture.dependency.clone(),
+                fixture.input.clone(),
+                &task269gcu_arena_with_root(&fixture, 4),
+            ),
+            Err(SourceProofLocalGivenConditionUseTermError::InvalidInstallation)
+        );
+        let missing_root = TypedArena::try_new(
+            Some(TypedNodeId::new(4)),
+            fixture
+                .arena
+                .iter()
+                .take(5)
+                .map(|(_, node)| node.clone())
+                .collect(),
+        )
+        .expect("Task269GCU missing term-root arena");
+        assert_eq!(
+            SourceProofLocalGivenConditionUseTermProducer::build(
+                fixture.dependency.clone(),
+                fixture.input.clone(),
+                &missing_root,
+            ),
+            Err(SourceProofLocalGivenConditionUseTermError::InvalidInstallation)
+        );
+        let mut extra_nodes = fixture
+            .arena
+            .iter()
+            .map(|(_, node)| node.clone())
+            .collect::<Vec<_>>();
+        extra_nodes.push(TypedNode::new(
+            "source.proof-local.given-condition.extra",
+            SourceAnchor::Range(range(fixture.source, 0, 133)),
+        ));
+        let extra_arena = TypedArena::try_new(Some(TypedNodeId::new(5)), extra_nodes)
+            .expect("Task269GCU extra-node arena");
+        assert_eq!(
+            SourceProofLocalGivenConditionUseTermProducer::build(
+                fixture.dependency.clone(),
+                fixture.input.clone(),
+                &extra_arena,
+            ),
+            Err(SourceProofLocalGivenConditionUseTermError::InvalidInstallation)
+        );
+        let handoff = SourceProofLocalGivenConditionUseTermProducer::build(
+            fixture.dependency,
+            fixture.input,
+            &fixture.arena,
+        )
+        .expect("Task269GCU valid handoff");
+        let mut dependency_corrupt = handoff.clone();
+        dependency_corrupt.set_dependency_fingerprint_for_test("corrupt".to_owned());
+        assert_eq!(
+            dependency_corrupt.validate_installation(
+                fixture.source,
+                &fixture.module,
+                &fixture.arena,
+            ),
+            Err(SourceProofLocalGivenConditionUseTermError::InvalidDependency)
+        );
+        let mut term_corrupt = handoff.clone();
+        term_corrupt.source_term_mut_for_test().references.rows[0].binding = BindingId::new(0);
+        term_corrupt.source_term_fingerprint = term_corrupt.source_term().debug_text();
+        assert_eq!(
+            term_corrupt.validate_installation(fixture.source, &fixture.module, &fixture.arena),
+            Err(SourceProofLocalGivenConditionUseTermError::InvalidSourceTerm)
+        );
+        let mut source_fingerprint_corrupt = handoff.clone();
+        source_fingerprint_corrupt
+            .source_term_fingerprint
+            .push_str("corrupt");
+        assert_eq!(
+            source_fingerprint_corrupt.validate_installation(
+                fixture.source,
+                &fixture.module,
+                &fixture.arena,
+            ),
+            Err(SourceProofLocalGivenConditionUseTermError::InvalidSourceTerm)
+        );
+        let mut dependency_before_source = term_corrupt.clone();
+        dependency_before_source.set_dependency_fingerprint_for_test("corrupt".to_owned());
+        assert_eq!(
+            dependency_before_source.validate_complete_installation(
+                fixture.source,
+                &fixture.module,
+                &fixture.arena,
+                false,
+            ),
+            Err(SourceProofLocalGivenConditionUseTermError::InvalidDependency)
+        );
+        assert_eq!(
+            term_corrupt.validate_complete_installation(
+                fixture.source,
+                &fixture.module,
+                &fixture.arena,
+                false,
+            ),
+            Err(SourceProofLocalGivenConditionUseTermError::InvalidSourceTerm)
+        );
+        assert_eq!(
+            handoff.validate_complete_installation(
+                fixture.source,
+                &fixture.module,
+                &fixture.arena,
+                false,
+            ),
+            Err(SourceProofLocalGivenConditionUseTermError::InvalidInstallation)
+        );
+        for (error, text) in [
+            (
+                SourceProofLocalGivenConditionUseTermError::InvalidDependency,
+                "source proof-local given-condition-use term dependency is invalid",
+            ),
+            (
+                SourceProofLocalGivenConditionUseTermError::InvalidSourceTerm,
+                "source proof-local given-condition-use source term is invalid",
+            ),
+            (
+                SourceProofLocalGivenConditionUseTermError::InvalidInstallation,
+                "source proof-local given-condition-use term installation is invalid",
+            ),
+        ] {
+            assert_eq!(error.to_string(), text);
+            let _: &dyn std::error::Error = &error;
+        }
+    }
+
+    #[test]
+    fn task269gcu_typed_and_resolved_ownership_is_atomic() {
+        let fixture = task269gcu_fixture();
+        let handoff = SourceProofLocalGivenConditionUseTermProducer::build(
+            fixture.dependency.clone(),
+            fixture.input.clone(),
+            &fixture.arena,
+        )
+        .expect("Task269GCU handoff");
+        let typed = task269gcu_empty_typed(&fixture, fixture.arena.clone())
+            .with_source_proof_local_given_condition_use_term(handoff.clone())
+            .expect("Task269GCU typed installation");
+        assert_eq!(
+            typed.source_proof_local_given_condition_use_term(),
+            Some(&handoff)
+        );
+        assert!(typed.source_proof_local_given_condition_type().is_none());
+        assert_eq!(
+            typed
+                .clone()
+                .with_source_proof_local_given_condition_use_term(handoff.clone()),
+            Err(TypedAstError::InvalidSourceProofLocalGivenConditionUseTerm)
+        );
+        let generic = task269gcu_generic_neighbor(&fixture);
+        let generic_first = task269gcu_empty_typed(&fixture, fixture.arena.clone())
+            .with_source_term(generic.clone())
+            .expect("Task269GCU generic-first owner");
+        let generic_first_before = generic_first.debug_text();
+        assert_eq!(
+            generic_first
+                .clone()
+                .with_source_proof_local_given_condition_use_term(handoff.clone()),
+            Err(TypedAstError::InvalidSourceProofLocalGivenConditionUseTerm)
+        );
+        assert_eq!(generic_first.debug_text(), generic_first_before);
+        let typed_before_generic = typed.debug_text();
+        assert_eq!(
+            typed.clone().with_source_term(generic),
+            Err(TypedAstError::InvalidSourceTerm)
+        );
+        assert_eq!(typed.debug_text(), typed_before_generic);
+
+        macro_rules! assert_task269gcu_sibling_both_orders {
+            (
+                $sibling:expr,
+                $inject:ident,
+                $install:ident,
+                $sibling_error:expr,
+                $source:expr,
+                $module:expr,
+                $arena:expr
+            ) => {{
+                let sibling = $sibling;
+                let mut sibling_first = task269gcu_empty_typed(&fixture, fixture.arena.clone());
+                sibling_first.$inject(sibling.clone());
+                let sibling_first_before = sibling_first.debug_text();
+                assert_eq!(
+                    sibling_first
+                        .clone()
+                        .with_source_proof_local_given_condition_use_term(handoff.clone()),
+                    Err(TypedAstError::InvalidSourceProofLocalGivenConditionUseTerm),
+                );
+                assert_eq!(sibling_first.debug_text(), sibling_first_before);
+                assert!(
+                    sibling_first
+                        .source_proof_local_given_condition_use_term()
+                        .is_none()
+                );
+
+                let mut gcu_first = task269gcu_empty_typed_for($source, $module, $arena);
+                gcu_first
+                    .inject_source_proof_local_given_condition_use_term_for_test(handoff.clone());
+                let gcu_first_before = gcu_first.debug_text();
+                assert_eq!(gcu_first.clone().$install(sibling), Err($sibling_error),);
+                assert_eq!(gcu_first.debug_text(), gcu_first_before);
+                assert!(
+                    gcu_first
+                        .source_proof_local_given_condition_use_term()
+                        .is_some()
+                );
+            }};
+        }
+
+        let let_binding = task269gu_let_neighbor();
+        let declaration = SourceProofLocalDeclarationHandoff::ownership_sentinel_for_test(
+            fixture.source,
+            fixture.module.clone(),
+            fixture.dependency.binding_env().clone(),
+        );
+        assert_task269gcu_sibling_both_orders!(
+            declaration,
+            inject_source_proof_local_declaration_for_test,
+            with_source_proof_local_declaration,
+            TypedAstError::InvalidSourceProofLocalDeclaration,
+            fixture.source,
+            fixture.module.clone(),
+            fixture.arena.clone()
+        );
+        assert_task269gcu_sibling_both_orders!(
+            let_binding,
+            inject_source_proof_local_let_binding_for_test,
+            with_source_proof_local_let_binding,
+            TypedAstError::InvalidSourceProofLocalLetBinding,
+            source_id_for("f7"),
+            module("task269gup"),
+            TypedArena::try_new(None, Vec::new()).expect("Task269GCU Let-binding arena")
+        );
+        let (let_type, let_type_arena) = task269gu_let_type_neighbor();
+        assert_task269gcu_sibling_both_orders!(
+            let_type,
+            inject_source_proof_local_let_type_for_test,
+            with_source_proof_local_let_type,
+            TypedAstError::InvalidSourceProofLocalLetType,
+            source_id_for("f7"),
+            module("task269gup"),
+            let_type_arena
+        );
+        let given_binding = task269gu_given_neighbor();
+        assert_task269gcu_sibling_both_orders!(
+            given_binding,
+            inject_source_proof_local_given_binding_for_test,
+            with_source_proof_local_given_binding,
+            TypedAstError::InvalidSourceProofLocalGivenBinding,
+            source_id_for("f7"),
+            module("task269gup"),
+            TypedArena::try_new(None, Vec::new()).expect("Task269GCU Given-binding arena")
+        );
+        let (given_type, given_type_arena) = task269gu_given_type_neighbor();
+        assert_task269gcu_sibling_both_orders!(
+            given_type,
+            inject_source_proof_local_given_type_for_test,
+            with_source_proof_local_given_type,
+            TypedAstError::InvalidSourceProofLocalGivenType,
+            source_id_for("f7"),
+            module("task269gup"),
+            given_type_arena
+        );
+        let gu_fixture = task269gu_fixture();
+        let gu_type = gu_fixture.dependency.clone();
+        assert_task269gcu_sibling_both_orders!(
+            gu_type,
+            inject_source_proof_local_given_use_type_for_test,
+            with_source_proof_local_given_use_type,
+            TypedAstError::InvalidSourceProofLocalGivenUseType,
+            gu_fixture.source,
+            gu_fixture.module.clone(),
+            task269gupt_arena(gu_fixture.source)
+        );
+        let gu_term = SourceProofLocalGivenUseTermProducer::build(
+            gu_fixture.dependency,
+            gu_fixture.input,
+            &gu_fixture.arena,
+        )
+        .expect("Task269GCU GU-term sibling");
+        assert_task269gcu_sibling_both_orders!(
+            gu_term,
+            inject_source_proof_local_given_use_term_for_test,
+            with_source_proof_local_given_use_term,
+            TypedAstError::InvalidSourceProofLocalGivenUseTerm,
+            gu_fixture.source,
+            gu_fixture.module,
+            gu_fixture.arena
+        );
+        assert_task269gcu_sibling_both_orders!(
+            fixture.dependency.dependency().clone(),
+            inject_source_proof_local_given_condition_binding_for_test,
+            with_source_proof_local_given_condition_binding,
+            TypedAstError::InvalidSourceProofLocalGivenConditionBinding,
+            fixture.source,
+            fixture.module.clone(),
+            TypedArena::try_new(None, Vec::new()).expect("Task269GCU GC-binding arena")
+        );
+        assert_task269gcu_sibling_both_orders!(
+            fixture.dependency.clone(),
+            inject_source_proof_local_given_condition_type_for_test,
+            with_source_proof_local_given_condition_type,
+            TypedAstError::InvalidSourceProofLocalGivenConditionType,
+            fixture.source,
+            fixture.module.clone(),
+            task269gcu_type_arena(fixture.source)
+        );
+        assert_eq!(
+            TypedAstError::InvalidSourceProofLocalGivenConditionUseTerm.to_string(),
+            "source proof-local given-condition-use term handoff is invalid"
+        );
+        assert_eq!(
+            ResolvedTypedAstError::InvalidSourceProofLocalGivenConditionUseTerm.to_string(),
+            "resolved typed AST source proof-local given-condition-use term handoff is invalid"
+        );
+        let resolved = task269gu_resolved(&typed);
+        assert_eq!(
+            resolved.source_proof_local_given_condition_use_term(),
+            Some(&handoff)
+        );
+        assert_eq!(resolved.nodes().len(), 6);
+        for (_, node) in resolved.nodes().iter() {
+            assert!(matches!(
+                &node.kind,
+                ResolvedTypedNodeKind::SourcePreserved { role }
+                    if role.as_str() == "source.proof-local.given-condition.term"
+            ));
+        }
+        assert!(resolved.expr_metadata().is_empty());
+        assert!(resolved.collection_candidates().is_empty());
+        assert!(resolved.expanded_candidates().is_empty());
+        assert!(resolved.template_expansions().is_empty());
+        assert!(resolved.viable_candidates().is_empty());
+        assert!(resolved.viability_decisions().is_empty());
+        assert!(resolved.specificity_graphs().is_empty());
+        assert!(resolved.resolved_overloads().is_empty());
+        assert!(resolved.inserted_coercions().is_empty());
+        assert!(resolved.cluster_facts().is_empty());
+        assert!(resolved.checked_formulas().is_empty());
+        assert!(resolved.statement_semantics().is_empty());
+        assert!(resolved.checked_proofs().is_empty());
+        assert!(resolved.checked_proof_nodes().is_empty());
+        assert!(resolved.checked_terminal_goals().is_empty());
+        assert!(resolved.diagnostics().is_empty());
+        let mut conflicting = typed.clone();
+        conflicting
+            .inject_source_proof_local_given_condition_type_for_test(fixture.dependency.clone());
+        assert!(matches!(
+            task269gcu_resolved_result_with_inputs(&conflicting, Vec::new(), Vec::new()),
+            Err(ResolvedTypedAstError::InvalidSourceProofLocalGivenConditionType)
+                | Err(ResolvedTypedAstError::InvalidSourceProofLocalGivenConditionUseTerm)
+        ));
+        assert_eq!(
+            task269gcu_resolved_result_with_inputs(
+                &typed,
+                Vec::new(),
+                vec![ResolvedNodeKindHint {
+                    typed_node: TypedNodeId::new(0),
+                    kind: ResolvedNodeKindHintKind::SourcePreserved {
+                        role: SourceNodeRole::new("source.statement.transport"),
+                    },
+                }],
+            ),
+            Err(ResolvedTypedAstError::InvalidSourceProofLocalGivenConditionUseTerm)
+        );
+        assert_eq!(
+            task269gcu_resolved_result_with_inputs(
+                &typed,
+                vec![ExpressionMetadataInput {
+                    expr: ExprId::new("task269gcu.semantic-input"),
+                    typed_site: TypedSiteRef::Node(TypedNodeId::new(3)),
+                    local_context: None,
+                    cluster_facts: Vec::new(),
+                }],
+                Vec::new(),
+            ),
+            Err(ResolvedTypedAstError::InvalidSourceProofLocalGivenConditionUseTerm)
+        );
+        let mut injected = task269gcu_empty_typed(&fixture, fixture.arena.clone());
+        injected.inject_source_proof_local_given_condition_use_term_for_test(handoff);
+        assert_eq!(task269gu_resolved(&injected), resolved);
+    }
+
+    #[test]
+    fn task269gcu_generic_and_neighbor_routes_remain_isolated() {
+        let fixture = task269gcu_fixture();
+        assert!(matches!(
+            SourcePrimaryTermProducer::build(
+                fixture.input.clone(),
+                fixture.dependency.binding_env(),
+                &fixture.arena,
+            ),
+            Err(SourcePrimaryTermError::InvalidReference { .. })
+        ));
+        assert!(
+            SourceProofLocalGivenConditionUseTermProducer::build(
+                fixture.dependency.clone(),
+                fixture.input.clone(),
+                &fixture.arena,
+            )
+            .is_ok()
+        );
+        let mut parent_context = fixture.input.clone();
+        parent_context.terms[0].context = BindingContextId::new(0);
+        assert_eq!(
+            SourceProofLocalGivenConditionUseTermProducer::build(
+                fixture.dependency.clone(),
+                parent_context,
+                &fixture.arena,
+            ),
+            Err(SourceProofLocalGivenConditionUseTermError::InvalidSourceTerm)
+        );
+        let typed = task269gcu_empty_typed(&fixture, fixture.arena.clone())
+            .with_source_proof_local_given_condition_use_term(
+                SourceProofLocalGivenConditionUseTermProducer::build(
+                    fixture.dependency,
+                    fixture.input,
+                    &fixture.arena,
+                )
+                .expect("Task269GCU exact neighbor-isolation handoff"),
+            )
+            .expect("Task269GCU exact neighbor-isolation owner");
+        assert!(typed.source_proof_local_given_use_term().is_none());
+        assert!(typed.source_term().is_none());
+        assert!(build(&self::fixture()).is_ok());
     }
 
     #[test]

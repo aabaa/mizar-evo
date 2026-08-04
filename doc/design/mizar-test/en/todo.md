@@ -3771,8 +3771,32 @@ commit `d6fb0ed28ced4d4706a1793b3aedd2a20eea0749` is complete.
   exclusions, and exit criteria in EN/JA.
 - [x] Complete repeated spec/sync review with **NO FINDINGS** and all docs-only
   hard gates uncapped at `100/100`.
-- [ ] Stage the exact 42 files and create the separate prerequisite commit.
-- [ ] Fresh-preflight and implement only the frozen runner route; repeat test
-  sufficiency and implementation reviews to **NO FINDINGS**.
-- [ ] Complete source/docs and final-quality reviews, full gates, task-only
-  implementation commit, and automatic next-task inventory.
+- [x] Stage the exact 42 files and create prerequisite commit
+  `15f47a837bc2f52d4cd30e8a4dcb86c16f2961d3`.
+- [x] Fresh-preflight and implement only the frozen runner route.
+- [x] Repeat test-sufficiency and implementation reviews to **NO FINDINGS**.
+- [x] Complete source/docs review to **NO FINDINGS**.
+- [x] Complete final-quality review with all nine gates PASS, no score cap,
+  `100/100`, and full gates.
+- [ ] Complete exact staging, the task-only implementation commit, and
+  automatic next-task inventory.
+
+### Task 269GCU implemented private runner status
+
+After docs commit `15f47a837bc2f52d4cd30e8a4dcb86c16f2961d3`, the
+frozen private GCT-to-GCU route and exactly four runner tests are present in the
+four owned runner files. Module sizes are proof-local production leaf `2775`,
+facade `949`, `runner.rs` `2782`, and proof-local test leaf `8606`.
+Runner production remains 37 paths / 77,435 lines with path/content hashes
+`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d` /
+`0651af8339c147d04f88be237f8f49fc716b7da3ff90238be50a9527e89992b7`;
+the library is `588` with raw/normalized hashes
+`7a99bcbb35838b6c1df31dec7b7c70d9c569df86bdc6f5c68d72f41578be2a9e` /
+`e49dac17564f330ad5c73018538bf5736720e47f4833709c1b9d36622208888a`.
+No active dispatcher or protected artifact/count/hash changes. GCU owns only
+the two own-condition occurrences; the authoritative wider block scope and its
+descendant-use/capture implementation remain separate successor work.
+Test-sufficiency, implementation, and source/documentation reviews report
+**NO FINDINGS**. Final read-only quality also reports **NO FINDINGS**: all nine
+hard gates PASS without a score cap at `100/100`. Focused and full measured
+gates pass. Exact staging and the implementation commit remain.

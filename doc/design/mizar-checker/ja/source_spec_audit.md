@@ -419,7 +419,10 @@ literal top-level public item:
   `SourcePrimaryTermError`, `SourcePrimaryTermProducer`,
   `SourceProofLocalGivenUseTermHandoff`,
   `SourceProofLocalGivenUseTermProducer`,
-  `SourceProofLocalGivenUseTermError`
+  `SourceProofLocalGivenUseTermError`,
+  `SourceProofLocalGivenConditionUseTermHandoff`,
+  `SourceProofLocalGivenConditionUseTermProducer`,
+  `SourceProofLocalGivenConditionUseTermError`
 
 対応:
 
@@ -429,6 +432,7 @@ literal top-level public item:
 | typed site/range/kind/recovery、canonical lexer-identifier vocabulary/spelling、context、dense pre-order、parent closure、reference/request cardinality、numeric associationをfail closedにする。 | `SourcePrimaryTermProducer::build`がraw syntaxをimportせず`mizar_lexer::is_identifier`をreuseし、complete transactionを`TypedArena`と`BindingEnv`に対してvalidateする。 | site/range/kind/recovery/context、identifier shape/reserved-word rejection、graph、cardinality、request、corruption test。 | sort/repairなしでtransactionalに実装済み。 |
 | scopeとbinding-event ordinalはproducer-derivedであり、exact `BindingEnv::lookup` local winnerを要求する。 | reference constructionがcontext scopeをcloneし、preceding completed binding rowをcountし、exact duplicate-priority groupを保持し、すべてのnon-local resultをrejectする。 | shadow-winner、forward、ambiguous、missing-scope、unresolved、wrong-winner、ordinal test。 | `Resolver`をstructurally unreachableとして実装済み。 |
 | exact proof-local `given` use-profile composition 1件がauthenticated GUPT dependencyからlater `y` variable reference 2件だけをtransportする。 | `SourceProofLocalGivenUseTermHandoff`、`SourceProofLocalGivenUseTermProducer`、`SourceProofLocalGivenUseTermError`。 | checker 4件/runner dormant 4件のexact/corruption/ownership/isolation test。 | Task 269GUで実装済み、active/semantic credit zero。 |
+| exact proof-local `given` condition composition 1件がauthenticated GCT dependencyからown-conditionの`y` variable reference 2件だけをtransportする。 | `SourceProofLocalGivenConditionUseTermHandoff`、`SourceProofLocalGivenConditionUseTermProducer`、`SourceProofLocalGivenConditionUseTermError`。 | checker 4件/runner dormant 4件のexact/corruption/ownership/isolation test。 | Task 269GCUで実装済み、active/semantic credit zero。 |
 | `TypedAst`がimmutable handoffをownし、`ResolvedTypedAst`はclone-preserveだけを行う。 | optional `SourcePrimaryTermHandoff` field、validated installer、borrowed getter。 | production-runner ownership、replacement rejection、clone equality、deterministic replay assertion。 | 実装済み。semantic typed/fact/downstream tableは不変。 |
 | public enumはforward-compatible。 | public Task-252 enumすべての`#[non_exhaustive]`。 | `checker_public_enums_are_forward_compatible_and_documented`。 | exhaustive exceptionなしでguard。 |
 
@@ -5831,3 +5835,41 @@ Chapters 4/13/15/16は`y@107..108`/`y@111..112`をblock-local witness
 2 variable/reference rowsとownerだけを追加。missing family/testsは
 `source_drift`/`test_gap`、本docsは`design_drift`をcloseし、blocking
 `spec_gap`なし。全wider semantics/active creditはdefer。
+
+### Task 269GCU implementation status
+
+documentation prerequisite `15f47a837bc2f52d4cd30e8a4dcb86c16f2961d3`
+の後、frozen implementation 7 files、`cfg(test)`-only predecessor
+ownership-sentinel support 1 file、checker/private runner各4 testが存在する。
+support seamはreviewで判明したTask-269A both-order `test_gap`だけを閉じ、
+production API/behaviorを変更しない。public familyは
+`SourceProofLocalGivenConditionUseTerm{Handoff,Producer,Error}`であり、Typedと
+Resolvedは同じboxed compositeをatomicに所有する。libraryは`522/588`。
+checker productionは`30/181154`、unchanged path hash
+`c89f43f6abebf7ebeb3ac9394ecd8ea3186ad28934c75526d2cc0b85a66ebad5`、
+content hash
+`f9901821c2242bfe66321c57982b54b78425c7940c5a7c47c93c43a8c2c035dc`。
+runner productionは`37/77435`、unchanged path hash
+`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d`、
+content hash
+`0651af8339c147d04f88be237f8f49fc716b7da3ff90238be50a9527e89992b7`。
+raw/normalized test-list hashはchecker
+`d453ca1e8a7cf9870f14a0f933451ca201c19cc8c8367d51767c40a941766f82` /
+`7cd84f6cd8e6d1070b39be9e5f1031512cc2c1b664829f10d337f1b67bcb74b3`、
+runner
+`7a99bcbb35838b6c1df31dec7b7c70d9c569df86bdc6f5c68d72f41578be2a9e` /
+`e49dac17564f330ad5c73018538bf5736720e47f4833709c1b9d36622208888a`
+である。
+
+implementationが閉じるのはfrozen own-condition内の2つの`y` term/reference
+occurrenceだけである。authoritative block-scope decisionにより`given`
+bindingはinnermost blockの残余とdescendant blockでinner shadowingを除き有効
+だが、descendant use/capture implementationは別successorに残る。canonical
+specification、`.miz`、fixture、sidecar、expectation、trace row/status/
+backlink、metadata、diagnostic、public dispatch、CLI byte、active result、
+semantic creditは変更しない。equality/formula/fact、guard、goal、proof/
+obligation/acceptance、export/capture enforcement、downstream IR、Task 270は
+deferredのままである。test-sufficiency、implementation、source/docsの
+independent reviewは**NO FINDINGS**。final read-only qualityも**NO FINDINGS**、
+全9 hard gatesはscore capなしの`100/100`でPASS。focused/full measured
+gateもPASSし、exact stagingとimplementation commitが残る。

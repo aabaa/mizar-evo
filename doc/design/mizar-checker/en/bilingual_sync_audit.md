@@ -1962,3 +1962,41 @@ condition-use binding profile, six-node arena, public checker/private runner
 ownership, seven files/eight tests, zero active credit, exclusions, baselines,
 and exit criteria in the same logical task. No synchronization exception
 exists.
+
+### Task 269GCU implementation status
+
+After documentation prerequisite `15f47a837bc2f52d4cd30e8a4dcb86c16f2961d3`,
+the seven frozen implementation files, one `cfg(test)`-only predecessor
+ownership-sentinel support file, and four checker/four private runner tests are
+present. The support seam closes the review-discovered Task-269A both-order
+`test_gap` without changing production API or behavior. The public family is
+`SourceProofLocalGivenConditionUseTerm{Handoff,Producer,Error}`; Typed and
+Resolved own the same boxed composite atomically. Libraries are `522/588`.
+Checker production is `30/181154`, with unchanged path hash
+`c89f43f6abebf7ebeb3ac9394ecd8ea3186ad28934c75526d2cc0b85a66ebad5`
+and content hash
+`f9901821c2242bfe66321c57982b54b78425c7940c5a7c47c93c43a8c2c035dc`.
+Runner production is `37/77435`, with unchanged path hash
+`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d`
+and content hash
+`0651af8339c147d04f88be237f8f49fc716b7da3ff90238be50a9527e89992b7`.
+Raw/normalized test-list hashes are checker
+`d453ca1e8a7cf9870f14a0f933451ca201c19cc8c8367d51767c40a941766f82` /
+`7cd84f6cd8e6d1070b39be9e5f1031512cc2c1b664829f10d337f1b67bcb74b3`
+and runner
+`7a99bcbb35838b6c1df31dec7b7c70d9c569df86bdc6f5c68d72f41578be2a9e` /
+`e49dac17564f330ad5c73018538bf5736720e47f4833709c1b9d36622208888a`.
+
+The implementation closes only the two frozen own-condition `y` term/reference
+occurrences. The authoritative block-scope decision makes a `given` binding
+visible through the remainder of its innermost block and descendant blocks,
+subject to inner shadowing, but descendant-use/capture implementation remains
+a separate successor. No canonical specification, `.miz`, fixture, sidecar,
+expectation, trace row/status/backlink, metadata, diagnostic, public dispatch,
+CLI byte, active result, or semantic credit changed. Equality/formula/fact,
+guard, goal, proof/obligation/acceptance, export/capture enforcement,
+downstream IR, and Task 270 remain deferred. Independent test-sufficiency,
+implementation, and source/documentation reviews report **NO FINDINGS**.
+Final read-only quality reports **NO FINDINGS**: all nine hard gates PASS
+without a score cap at `100/100`. Focused and full measured gates pass.
+Exact staging and the implementation commit remain.
