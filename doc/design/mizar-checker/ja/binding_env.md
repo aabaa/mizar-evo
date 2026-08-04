@@ -821,3 +821,6 @@ binding 2件、identity、lookup field、capture、diagnostic、recoveryは、bi
 private lower outputは`y` token spelling/rangeだけをcarryし、resolver-shaped local
 identity、BindingEnv row、lookupを作らない。Chapter-4/16 `given` scope矛盾はhuman
 canonical reconciliationまで269G/269GTをblockする。
+
+implemented 269GPもこのboundaryを保持し、focused testsは全binding-shaped publicationを
+rejectする。existing binding environment APIは不変。

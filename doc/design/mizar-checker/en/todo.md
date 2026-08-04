@@ -6828,6 +6828,13 @@ implementation commit does not satisfy a producer task.
   verification with frozen counts/hashes.
 - [x] Complete source/docs and final-quality review with **NO FINDINGS** and
   pass all nine docs-only hard gates uncapped at `100/100`.
-- [ ] Stage exactly the 40 synchronized design files and commit only docs.
-- [ ] After fresh preflight implement/review/verify/commit only 269GP, then
-  report the human-owned scope contradiction instead of selecting 269G.
+- [x] Stage exactly the 40 synchronized design files and create docs commit
+  `97a75fd9bf6a791055f236b3e3b4bb07b8d3d7c3`.
+- [x] After fresh preflight implement only the four frozen runner files; fix
+  review findings and repeat test-sufficiency and implementation review to
+  **NO FINDINGS**.
+- [x] Complete source/docs and final-quality review with **NO FINDINGS**, full
+  verification, and all nine hard gates uncapped at `100/100`.
+- [x] Complete exact staging and the implementation commit; fresh inventory is
+  clean and reports the human-owned scope contradiction instead of selecting
+  269G.

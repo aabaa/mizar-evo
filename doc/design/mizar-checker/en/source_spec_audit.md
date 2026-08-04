@@ -5923,3 +5923,8 @@ No checker API, canonical test artifact, trace status, or active result
 changes. Task 269 remains open and Task 270 stays gated.
 Repeated source/docs and final-quality reviews report **NO FINDINGS**; the
 narrowed task passes all nine gates uncapped at `100/100`.
+
+The exact runner projection and four tests are now implemented, closing the
+bounded `source_drift` and `test_gap`. Canonical source/test intent and checker
+public API remain untouched. The scope contradiction is unchanged and still
+blocks only 269G/269GT after the 269GP implementation commit.

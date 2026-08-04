@@ -3584,7 +3584,12 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
 - [x] Finish specification review and docs-only verification/count/hash gates.
 - [x] Finish source/docs and final-quality review with **NO FINDINGS** and all
   nine gates uncapped at `100/100`.
-- [ ] Stage exactly the synchronized design files and create the dedicated
-  docs-only commit.
-- [ ] Fresh-preflight then implement/review/verify/commit only 269GP and report
-  the human-owned scope contradiction instead of starting 269G.
+- [x] Stage exactly the synchronized design files and create docs-only commit
+  `97a75fd9bf6a791055f236b3e3b4bb07b8d3d7c3`.
+- [x] Fresh-preflight and implement only the four frozen runner files; repeat
+  test-sufficiency and implementation review to **NO FINDINGS**.
+- [x] Finish consistency/final review with **NO FINDINGS**, full verification,
+  and all nine hard gates uncapped at `100/100`.
+- [x] Finish exact staging and the implementation commit; fresh inventory is
+  clean and reports the human-owned scope contradiction instead of starting
+  269G.

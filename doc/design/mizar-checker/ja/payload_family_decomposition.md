@@ -1703,3 +1703,6 @@ Chapter-4/16 scope矛盾はdirect binding/type consumerの269G/269GTだけをhum
 reconciliationまでblockする。その後の`given` condition/escape semanticsは新しい
 blocker classificationなしでseparately deferred。checker Task-269 familyとTask270
 dependencyを変更せず、active creditは0。
+
+implemented private lower rowはsyntax projection gapだけをcloseし、checker payload-
+family memberを追加しない。

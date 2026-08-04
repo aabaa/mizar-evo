@@ -4975,3 +4975,8 @@ resolver/debug authentication後にbinding scope/visibilityを持たないsyntax
 dispatchから到達不能。tests 4件がexact output、exhaustive corruption、near-miss/
 family isolation、zero checker/semantic effectをcoverし、runnerは`548 -> 552`。
 canonical scope矛盾はharnessで解決せず269G/269GTをblockする。
+
+dormant branchとtest 4件は実装済み。selection後Surface corruptionはfrozen Surface
+errorへ到達し、real source/selector near missは`None`のまま。後続validation stageも
+exact error/precedence assertionを持つ。runner libraryは552だが、`run_case`、metadata、
+result/detail schema、warnings/errors、active route countは不変。

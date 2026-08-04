@@ -1698,3 +1698,9 @@ dependencies, and public APIs remain unchanged. Production paths stay `30/37`
 and checker tests stay `490`; runner tests project `548 -> 552`.
 Repeated source/docs and final-quality reviews report **NO FINDINGS** and
 confirm this exact boundary.
+
+The implementation now occupies exactly those four existing runner files.
+No module/path/dependency/public-API change occurred. Runner tests measure
+`552` and production measures `37/72916`; checker production/tests remain
+`30/168322` and `490`. The bounded `source_drift` is closed without crossing
+the frozen boundary.

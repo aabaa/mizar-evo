@@ -1310,3 +1310,6 @@ range `84..87`; it does not invoke `SourceTypeProducer`, allocate a type
 id/node, or change Task-269CT. The canonical `given` scope contradiction
 blocks binding-only 269G and type admission 269GT. Type assumptions and guards
 remain semantic deferrals.
+
+The implemented syntax row records the spelling/range only; Task-269CT replay
+tests remain green and no checker source-type byte changed.

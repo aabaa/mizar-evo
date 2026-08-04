@@ -1787,3 +1787,9 @@ resolver/private-output fingerprints, exclusions, four-file/four-test scope,
 zero-credit impact, the canonical scope contradiction blocking 269G/269GT,
 and exit gates. English remains canonical and no delayed companion is
 accepted.
+
+Implementation synchronization is also exact: both companions record the
+four implemented runner files, four passing tests, library `490/552`, runner
+production `37/72916`, exact list/content hashes, unchanged semantic/public
+ownership, and all four reviews as **NO FINDINGS**. Full verification passes,
+all nine hard gates are uncapped at `100/100`, and no bilingual debt remains.

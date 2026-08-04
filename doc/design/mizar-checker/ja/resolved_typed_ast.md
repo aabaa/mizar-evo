@@ -1789,3 +1789,5 @@ statement-transport hint/nonempty expression metadataは
 
 269GPは`ResolvedTypedAst` sibling/node hintをpublishしない。existing 269C/CT replayと
 全final semantic exclusionはbyte-identical。
+
+implemented runner routeもfinal owner/serializer変更なしをconfirmする。

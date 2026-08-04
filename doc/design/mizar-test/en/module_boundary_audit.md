@@ -13099,3 +13099,8 @@ remains 37 paths. Checker/parser/resolver, public dispatch, fixtures, trace,
 metadata, Cargo, and semantic owners remain outside the boundary.
 Repeated source/docs and final-quality reviews report **NO FINDINGS** and
 confirm this exact boundary.
+
+Implementation is complete inside exactly those four files. No path was added;
+runner production is `37/72916` and the library is `552`. The two facade hops
+remain `#[cfg(test)]`, the producer remains runner-private and dormant, and
+all excluded modules and consumers remain byte- or behavior-unchanged.

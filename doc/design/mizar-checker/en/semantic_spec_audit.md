@@ -728,3 +728,7 @@ Skolem evidence, check witness escape, change thesis/goal, accept a proof, or
 emit an obligation/Core/CFG/VC row. These are explicit later owners; semantic
 tables and credit remain empty. Conflicting Chapter-4/16 scope statements are
 recorded as a human-owned `spec_gap`, not resolved here.
+
+The implementation preserves this no-op boundary: its only output is the
+authenticated syntax/range/provenance row, and focused negative tests reject
+binding-, condition-, label-, fact-, goal-, proof-, and VC-shaped effects.

@@ -1700,3 +1700,8 @@ EN/JAはselection、authority、classification、exact source/Surface/resolver/p
 fingerprint、binding-shaped field exclusion、4-file/test scope、zero credit、269G/269GTを
 blockするcanonical scope矛盾、exit gateで一致する。English canonical、delayed
 companionなし。
+
+implementation syncもexact。両言語はimplemented runner 4 files、passing tests 4件、
+libraries `490/552`、runner production `37/72916`、exact list/content hash、
+semantic/public owner不変、review 4種**NO FINDINGS**を記録する。full verificationは
+PASS、hard gate 9件はscore capなし`100/100`で、bilingual debtなし。

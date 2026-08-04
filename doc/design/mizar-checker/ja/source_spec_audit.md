@@ -5646,3 +5646,7 @@ canonical reviewがownする。checker API、canonical artifact、trace status�
 result変更なし。Task269は未完了でTask270はgated。
 repeated source/docs/final-quality reviewは**NO FINDINGS**、narrowed taskはhard gate
 9件をscore capなし`100/100`でPASS。
+
+exact runner projection/test 4件を実装し、bounded `source_drift`/`test_gap`をclose。
+canonical source/test intentとchecker public APIは不変。scope矛盾は未解決のままで、
+269GP implementation commit後も269G/269GTだけをblockする。

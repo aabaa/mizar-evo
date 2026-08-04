@@ -1808,3 +1808,6 @@ ownerは`InvalidSourceProofLocalLetType`でatomic fail。
 
 269GPはrunner-privateで`TypedAst` fieldをinstallしない。Task-269A/Bとboxed
 269C/CT ownership、one-shot validation、mutual exclusionは不変。
+
+implemented runner routeはtyped owner/install callを持たず、focused Task-269C/CT
+compatibility testsはunchanged PASS。

@@ -3572,3 +3572,6 @@ runnerは`GivenStatement(70..108)`をsyntax owner rangeとしてだけauthentica
 binding scope/visibilityをpublishしない。condition、
 proposition、label、thesis、conclusion、fact、statement context、proof rowはprivate lower
 outputからexclude。source-statement API/checker fingerprint変更なし。
+
+implemented runner-only projectionもexactlyこのexclusionを保持し、checker
+source-statement file/APIは変更なし。

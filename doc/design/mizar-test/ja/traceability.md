@@ -2365,3 +2365,6 @@ scope矛盾がblockするtest contractは269G/269GTのbinding/typeだけ。exist
 independently deferredで、ここでtest intentを推測しない。cases/
 requirements `428/395`、active `101/7/205/1`、type `259=247+12`、上記trace hashは
 byte-identicalのまま。
+
+Rust unit test 4件を実装してPASSし、private projectionの`test_gap`だけをclose。
+corpus/trace creditは意図的に0で、全count/status/backlink/trace hashはbyte-identical。

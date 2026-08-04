@@ -4103,3 +4103,6 @@ only and publishes no binding scope or visibility.
 Condition, proposition, label, thesis, conclusion, fact, statement context,
 and proof rows are excluded from `SourceProofLocalGivenLowerOutput`. No source-
 statement API or checker fingerprint changes.
+
+The implemented runner-only projection retains exactly this exclusion; no
+checker source-statement file or API changed.

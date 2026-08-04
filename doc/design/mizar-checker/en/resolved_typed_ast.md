@@ -1879,3 +1879,6 @@ metadata fail atomically with `InvalidSourceProofLocalLetType`.
 
 Task 269GP publishes no `ResolvedTypedAst` sibling or node hint. Existing
 Task-269C/CT replay and all final semantic exclusions remain byte-identical.
+
+The implemented runner route confirms this with no final owner or serializer
+change.

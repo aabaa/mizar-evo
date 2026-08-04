@@ -1366,3 +1366,20 @@ full verification/count/hash、docs-only staging、dedicated commit、fresh pref
 4-file implementationを開始する。implementationも4種review **NO FINDINGS**、全gate、
 exact commit後のfresh inventoryは269Gを開始せず、human-owned canonical scope
 contradictionをblockerとしてreportする。
+
+### Task 269GP implementation closure
+
+docs prerequisiteはcommit
+`97a75fd9bf6a791055f236b3e3b4bb07b8d3d7c3`。exact 4-file producer、test-only
+facade 2段、named test 4件を本contractどおり実装した。Surface seamはreal selector
+mismatchを`None`のまま保ち、selection後identity corruptionだけをfrozen
+`Some(Err(...))`へ送る。explicit `None` 4種、node 48行、token 25行、shell ordinal
+2件、resolver-profile variant全34種、lower fields、shell count/export、neutral
+reconstruction、missing/duplicate/wrong/cross-profile environment、stage precedenceを
+coverする。focused tests、fmt、package Clippy、whitespaceはPASSし、独立test/
+implementation reviewは**NO FINDINGS**。outputはsyntax-only/binding-freeのまま。
+full repository verificationと全frozen count/hash/no-op checkはPASS。repeated
+source/docs consistency/final quality reviewは**NO FINDINGS**で、hard gate 9件は
+score capなし`100/100`（`20/20/15/15/10/10/5/5`）。exact task-only stagingを
+auditし、本implementation commitでfrozen syntax-only prerequisiteをcloseする。
+fresh inventoryは269Gをselectせずscope矛盾をreportする。

@@ -671,3 +671,7 @@ condition assumption、label/fact/Skolem evidence、escape check、thesis/goal�
 acceptance、obligation/Core/CFG/VCを作らない。later ownerへ明示deferし、semantic table/
 creditはempty。Chapter-4/16 scope矛盾はhuman-owned `spec_gap`として記録し、ここでは
 解決しない。
+
+implementationもこのno-op boundaryを保持する。唯一のoutputはauthenticated
+syntax/range/provenance rowで、focused negative testsはbinding/condition/label/fact/
+goal/proof/VC-shaped effectをrejectする。

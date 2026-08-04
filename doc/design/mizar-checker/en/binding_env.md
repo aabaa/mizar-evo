@@ -856,3 +856,7 @@ The private lower output carries only the `y` token spelling/range and no
 resolver-shaped local identity; it neither creates a `BindingEnv` row nor
 performs lookup. The Chapter-4/16 `given` scope contradiction blocks future
 Task 269G/269GT pending human canonical reconciliation.
+
+Implemented 269GP preserves this boundary; focused tests reject every
+binding-shaped publication and leave the existing binding environment APIs
+unchanged.

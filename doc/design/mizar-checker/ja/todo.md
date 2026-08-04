@@ -6504,6 +6504,11 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   frozen count/hashをPASS。
 - [x] source/docs/final-quality reviewを**NO FINDINGS**で完了し、docs-only hard gate
   9件をscore capなし`100/100`でPASS。
-- [ ] synchronized design 40 filesだけをexact stageしてdocs commit。
-- [ ] fresh preflight後269GPだけをimplement/review/verify/commitし、269Gをselectせず
-  human-owned scope矛盾をreport。
+- [x] synchronized design 40 filesだけをexact stageし、docs commit
+  `97a75fd9bf6a791055f236b3e3b4bb07b8d3d7c3`を作成。
+- [x] fresh preflight後freeze済みrunner 4 filesだけへ269GPを実装し、finding修正後の
+  test-sufficiency/implementation再reviewを**NO FINDINGS**まで完了。
+- [x] source/docs/final-quality reviewを**NO FINDINGS**、full verification、hard gate
+  9件をscore capなし`100/100`で完了。
+- [x] exact staging/implementation commitを完了し、fresh inventoryはcleanで、269Gを
+  selectせずhuman-owned scope矛盾をreport。

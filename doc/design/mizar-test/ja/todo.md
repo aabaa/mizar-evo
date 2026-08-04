@@ -3352,6 +3352,11 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
 - [x] specification reviewとdocs-only verification/count/hash gateを完了。
 - [x] source/docs/final-quality reviewを**NO FINDINGS**、hard gate 9件をscore capなし
   `100/100`で完了。
-- [ ] synchronized design filesだけをexact stageしてdedicated docs-only commit。
-- [ ] fresh preflight後269GPだけをimplement/review/verify/commitし、269Gを開始せず
-  human-owned scope矛盾をreport。
+- [x] synchronized design filesだけをexact stageし、docs-only commit
+  `97a75fd9bf6a791055f236b3e3b4bb07b8d3d7c3`を作成。
+- [x] fresh preflight後freeze済みrunner 4 filesだけへ269GPを実装し、
+  test-sufficiency/implementation再reviewを**NO FINDINGS**まで完了。
+- [x] consistency/final reviewを**NO FINDINGS**、full verification、hard gate 9件を
+  score capなし`100/100`で完了。
+- [x] exact staging/implementation commitを完了し、fresh inventoryはcleanで、269Gを
+  開始せずhuman-owned scope矛盾をreport。

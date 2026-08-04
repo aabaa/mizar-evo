@@ -944,3 +944,6 @@ private lower rowはwritten bare builtin-`set` spelling/range `84..87`だけをr
 `SourceTypeProducer`、type id/node、Task-269CTを変更しない。canonical `given` scope
 矛盾はbinding-only 269Gとtype admission 269GTをblockする。type assumption/guardは
 semantic deferral。
+
+implemented syntax rowはspelling/rangeだけをrecordし、Task-269CT replay testはgreen、
+checker source-type byte変更なし。

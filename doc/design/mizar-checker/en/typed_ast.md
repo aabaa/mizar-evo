@@ -1910,3 +1910,6 @@ occupied owner fails atomically with `InvalidSourceProofLocalLetType`.
 Task 269GP is runner-private and installs no `TypedAst` field. All Task-269A/B
 and boxed Task-269C/CT ownership, one-shot validation, and mutual exclusions
 remain unchanged.
+
+The implemented runner route has no typed owner or installation call; focused
+Task-269C/CT compatibility tests pass unchanged.

@@ -2499,3 +2499,7 @@ contract; existential semantics remain independently deferred and receive no
 inferred test intent here. Cases/requirements
 remain `428/395`, active stages `101/7/205/1`, type coverage `259=247+12`, and
 the trace hash above remains byte-identical.
+
+The four Rust unit tests are implemented and pass, closing only the private
+projection `test_gap`. They intentionally create no corpus or trace credit;
+all counts, statuses, backlinks, and the trace hash remain byte-identical.

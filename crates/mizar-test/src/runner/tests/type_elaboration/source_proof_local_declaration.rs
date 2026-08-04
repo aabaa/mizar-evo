@@ -7,11 +7,20 @@ use super::type_elaboration::{
     source_statement_transport_detail_keys as task269a_legacy_detail_keys,
 };
 use super::{
-    SOURCE_PROOF_LOCAL_LET_TEXT, SourceProofLocalLetBindingRouteMutation,
+    SOURCE_PROOF_LOCAL_GIVEN_TEXT, SOURCE_PROOF_LOCAL_LET_TEXT,
+    SourceProofLocalGivenLowerMutation, SourceProofLocalGivenLowerOutput,
+    SourceProofLocalGivenResolverProfileMutation, SourceProofLocalGivenShellMutation,
+    SourceProofLocalGivenSurfaceMutation, SourceProofLocalLetBindingRouteMutation,
     SourceProofLocalLetBindingRouteOutput, SourceProofLocalLetLowerMutation,
     SourceProofLocalLetLowerOutput, SourceProofLocalLetResolverProfileMutation,
     SourceProofLocalLetShellMutation, SourceProofLocalLetSurfaceMutation,
     SourceProofLocalLetTypeRouteMutation, SourceProofLocalLetTypeRouteOutput,
+    source_proof_local_given_lower_output,
+    source_proof_local_given_lower_output_with_mutation,
+    source_proof_local_given_lower_output_with_resolver_mutation,
+    source_proof_local_given_lower_output_with_resolver_profile_mutation,
+    source_proof_local_given_lower_output_with_shell_mutation,
+    source_proof_local_given_lower_output_with_surface_mutation,
     source_proof_local_let_binding_output, source_proof_local_let_binding_output_with_mutation,
     source_proof_local_let_lower_output, source_proof_local_let_lower_output_with_mutation,
     source_proof_local_let_lower_output_with_resolver_mutation,
@@ -232,6 +241,7 @@ fn task269a_exact_frontend_binding_transaction_and_debug_are_stable() {
     );
     assert_task269b_exact_frontend_binding_transaction_and_debug();
 }
+
 
 fn assert_task269b_exact_frontend_binding_transaction_and_debug() {
     assert_eq!(TASK269B_SOURCE_TEXT.len(), 113);
@@ -1515,6 +1525,46 @@ impl Task269cpResolverMutation {
     ];
 }
 
+fn task269gp_resolver_mutation_error(mutation: Task269cpResolverMutation) -> &'static str {
+    match mutation {
+        Task269cpResolverMutation::None => {
+            unreachable!("neutral reconstruction is tested separately")
+        }
+        Task269cpResolverMutation::SymbolKind
+        | Task269cpResolverMutation::SymbolNamespace
+        | Task269cpResolverMutation::SymbolSpelling => {
+            "Task269GP requires one exact theorem owner"
+        }
+        Task269cpResolverMutation::SymbolVisibility
+        | Task269cpResolverMutation::SymbolExport
+        | Task269cpResolverMutation::SymbolOriginModule
+        | Task269cpResolverMutation::SymbolOriginAnchor
+        | Task269cpResolverMutation::SymbolOriginPath
+        | Task269cpResolverMutation::SymbolOriginRecovery
+        | Task269cpResolverMutation::DefinitionSymbol
+        | Task269cpResolverMutation::DefinitionKind
+        | Task269cpResolverMutation::DefinitionVisibility
+        | Task269cpResolverMutation::DefinitionOrigin
+        | Task269cpResolverMutation::ContributionModule
+        | Task269cpResolverMutation::ContributionKind => {
+            "Task269GP exact theorem owner provenance mismatch"
+        }
+        Task269cpResolverMutation::SymbolSignature
+        | Task269cpResolverMutation::SymbolCorruptPresentSignature => {
+            "Task269GP theorem symbol provenance mismatch"
+        }
+        Task269cpResolverMutation::DefinitionArity
+        | Task269cpResolverMutation::DefinitionSignature => {
+            "Task269GP theorem definition provenance mismatch"
+        }
+        Task269cpResolverMutation::ContributionAnchor
+        | Task269cpResolverMutation::ContributionSymbolEffect
+        | Task269cpResolverMutation::ContributionDefinitionEffect => {
+            "Task269GP theorem contribution provenance mismatch"
+        }
+    }
+}
+
 fn task269cp_mutate_resolver(
     symbols: mizar_resolve::env::SymbolEnv,
     mutation: Task269cpResolverMutation,
@@ -1963,6 +2013,995 @@ fn task269cp_private_lower_route_has_zero_checker_and_active_semantic_effect() {
             SOURCE_PROOF_LOCAL_LET_TEXT,
         ),
         None
+    );
+}
+
+#[test]
+fn source_proof_local_given_lower_projection_is_exact_and_private() {
+    assert_eq!(SOURCE_PROOF_LOCAL_GIVEN_TEXT.len(), 129);
+    assert_eq!(
+        sha256_text(SOURCE_PROOF_LOCAL_GIVEN_TEXT),
+        "04e54b8ada9af54fde9f937e1bb0f96bd8cf85002b2b57f4d348b11c8eb72a2f"
+    );
+    assert!(SOURCE_PROOF_LOCAL_GIVEN_TEXT.ends_with('\n'));
+    assert!(!SOURCE_PROOF_LOCAL_GIVEN_TEXT.ends_with("\n\n"));
+    let (ast, module, shells, symbols, diagnostics) =
+        task253_ast_from_source_text_with_diagnostic_count(
+            SOURCE_PROOF_LOCAL_GIVEN_TEXT,
+            269_580,
+        );
+    assert_eq!(diagnostics, 0);
+    assert_eq!(
+        (ast.nodes().len(), ast.root().map(|root| root.index())),
+        (48, Some(47))
+    );
+    assert!(ast.expression_root().is_none());
+    assert_eq!(
+        ast.token_nodes()
+            .iter()
+            .map(|token| token.index())
+            .collect::<Vec<_>>(),
+        (0..25).collect::<Vec<_>>()
+    );
+    assert_eq!(
+        sha256_text(&ast.snapshot_text()),
+        "58ac16a3c75860180a8bec5dc8e87ec8b269fe75715a6d8363f7ef064e3deea8"
+    );
+
+    let output = source_proof_local_given_lower_output(
+        &ast,
+        module.clone(),
+        &shells,
+        &symbols,
+        SOURCE_PROOF_LOCAL_GIVEN_TEXT,
+    )
+    .expect("Task269GP exact selector")
+    .expect("Task269GP exact lower output");
+    assert_task269gp_exact_lower_output(&ast, &module, &output);
+
+    assert_eq!((shells.declarations().len(), shells.exports().len()), (2, 0));
+    let [reserve_shell, theorem_shell] = shells.declarations() else {
+        panic!("Task269GP exact shells");
+    };
+    for (shell, ordinal, node, start, end, kind, syntax) in [
+        (
+            reserve_shell,
+            0,
+            28,
+            0,
+            18,
+            mizar_resolve::declarations::DeclarationShellKind::Reserve,
+            mizar_syntax::SyntaxKind::ReserveItem,
+        ),
+        (
+            theorem_shell,
+            1,
+            44,
+            19,
+            128,
+            mizar_resolve::declarations::DeclarationShellKind::Theorem,
+            mizar_syntax::SyntaxKind::TheoremItem,
+        ),
+    ] {
+        assert_eq!((shell.id().index(), shell.ordinal()), (ordinal, ordinal));
+        assert_eq!((shell.node_id().index(), shell.kind()), (node, kind));
+        assert_eq!((shell.range().start, shell.range().end), (start, end));
+        assert_eq!(shell.module(), &module);
+        assert_eq!(shell.syntax_kind(), syntax);
+        assert!(shell.parent().is_none());
+        assert_eq!(
+            shell.visibility().state(),
+            mizar_resolve::declarations::DeclarationShellVisibilityState::Unspecified
+        );
+        assert!(shell.visibility().marker_range().is_none());
+        assert!(shell.visibility().spelling().is_none());
+        assert!(!shell.recovered());
+    }
+
+    assert_eq!(
+        (
+            symbols.symbols().len(),
+            symbols.definitions().len(),
+            symbols.contributions().len(),
+            symbols.imports().len(),
+            symbols.exports().len(),
+            symbols.labels().len(),
+            symbols.overloads().len(),
+            symbols.registrations().len(),
+            symbols.lexical_summaries().len(),
+            usize::from(!symbols.namespace_graph().is_empty()),
+            symbols.declaration_dependencies().len(),
+            symbols.module_summaries().len(),
+        ),
+        (1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+    );
+    let namespace = mizar_resolve::env::NamespacePath::new(module.path().as_str());
+    assert!(symbols.symbols().visible_candidates(&namespace, "y").is_empty());
+    assert!(symbols.symbols().visible_candidates(&namespace, "G").is_empty());
+    assert!(symbols.labels().visible_candidates(&namespace, "G").is_empty());
+    let owners = symbols
+        .symbols()
+        .visible_candidates(&namespace, "FormulaStatementGivenSmoke");
+    let [owner] = owners.as_slice() else {
+        panic!("Task269GP exact theorem owner");
+    };
+    assert_eq!(owner.kind(), mizar_resolve::env::SymbolKind::Theorem);
+    assert_eq!(owner.symbol().module(), &module);
+    assert_eq!(owner.namespace(), &namespace);
+    assert_eq!(owner.primary_spelling(), "FormulaStatementGivenSmoke");
+    assert!(owner.notation_spelling().is_none());
+    assert_eq!(owner.visibility(), mizar_resolve::env::Visibility::Public);
+    assert_eq!(
+        owner.export_status(),
+        mizar_resolve::env::ExportStatus::Exported
+    );
+    assert_eq!(owner.contribution().index(), 0);
+    assert!(matches!(
+        owner.signature(),
+        Some(mizar_resolve::env::SignatureShell::Opaque { schema, payload })
+            if schema == "parser-signature-v1"
+                && payload == concat!(
+                    "node=TheoremItem;symbol=theorem;definition=theorem;",
+                    "primary_tokens=theorem FormulaStatementGivenSmoke : thesis proof given y ",
+                    "being set such that G : thesis ; thus thesis ; end ;;notation=_;arity=_;",
+                    "roles=FormulaExpression,ProofBlock",
+                )
+    ));
+    assert!(owner.relations().is_empty());
+    assert_eq!(owner.origin().source_id(), ast.source_id);
+    assert_eq!(owner.origin().module_id(), &module);
+    assert_eq!(
+        owner.origin().anchor(),
+        &mizar_session::SourceAnchor::Range(mizar_session::SourceRange {
+            source_id: ast.source_id,
+            start: 19,
+            end: 128,
+        })
+    );
+    assert_eq!(owner.origin().structural_path(), [2, 1]);
+    assert!(owner.origin().import_edge().is_none());
+    assert!(!owner.origin().is_recovered());
+    let definition = symbols
+        .definitions()
+        .by_symbol(owner.symbol())
+        .expect("Task269GP exact theorem definition");
+    assert_eq!(definition.id().index(), 0);
+    assert_eq!(definition.symbol(), owner.symbol());
+    assert_eq!(definition.kind(), mizar_resolve::env::DefinitionKind::Theorem);
+    assert_eq!(definition.visibility(), mizar_resolve::env::Visibility::Public);
+    assert!(definition.parameters().is_empty());
+    assert!(definition.binders().is_empty());
+    assert!(definition.arity().is_none());
+    assert!(definition.notation_shape().is_none());
+    assert!(definition.doc_attachment().is_none());
+    assert_eq!(definition.origin(), owner.origin());
+    assert_eq!(definition.contribution(), owner.contribution());
+    assert!(definition.conflict().is_none());
+    assert!(definition.dependencies().is_empty());
+    assert_eq!(definition.signature(), owner.signature());
+    let contribution = symbols
+        .contributions()
+        .get(owner.contribution())
+        .expect("Task269GP exact contribution");
+    assert_eq!((contribution.id().index(), contribution.module()), (0, &module));
+    assert!(matches!(
+        contribution.kind(),
+        mizar_resolve::env::ContributionKind::LocalSource { source_id }
+            if *source_id == ast.source_id
+    ));
+    assert_eq!(
+        contribution.anchor(),
+        &mizar_session::SourceAnchor::Range(mizar_session::SourceRange {
+            source_id: ast.source_id,
+            start: 0,
+            end: 18,
+        })
+    );
+    assert_eq!(contribution.effects().symbols(), [owner.symbol().clone()]);
+    assert_eq!(contribution.effects().definitions(), [definition.id()]);
+    assert!(contribution.effects().labels().is_empty());
+    assert!(contribution.effects().overload_groups().is_empty());
+    assert!(contribution.effects().registrations().is_empty());
+    assert!(contribution.effects().lexical_summaries().is_empty());
+    assert!(contribution.effects().namespace_edges().is_empty());
+    assert!(contribution.effects().declaration_dependencies().is_empty());
+    assert!(contribution.effects().imports().is_empty());
+    assert!(contribution.effects().exports().is_empty());
+    assert!(contribution.effects().diagnostics().is_empty());
+}
+
+fn assert_task269gp_exact_lower_output(
+    ast: &mizar_syntax::SurfaceAst,
+    module: &mizar_resolve::resolved_ast::ModuleId,
+    output: &SourceProofLocalGivenLowerOutput,
+) {
+    assert_eq!(output.source_id(), ast.source_id);
+    assert_eq!(output.module_id(), module);
+    assert_eq!(
+        output.source_fingerprint(),
+        "04e54b8ada9af54fde9f937e1bb0f96bd8cf85002b2b57f4d348b11c8eb72a2f"
+    );
+    assert_eq!(
+        output.surface_fingerprint(),
+        "58ac16a3c75860180a8bec5dc8e87ec8b269fe75715a6d8363f7ef064e3deea8"
+    );
+    assert_eq!(output.theorem_symbol().module(), module);
+    assert_eq!((output.theorem_definition().index(), output.contribution().index()), (0, 0));
+    assert_eq!(task269cp_range_tuple(output.theorem_range()), (ast.source_id, 19, 128));
+    assert_eq!(task269cp_range_tuple(output.proof_range()), (ast.source_id, 62, 127));
+    assert_eq!(task269cp_range_tuple(output.given_range()), (ast.source_id, 70, 108));
+    assert_eq!(task269cp_range_tuple(output.segment_range()), (ast.source_id, 76, 87));
+    assert_eq!(task269cp_range_tuple(output.name_range()), (ast.source_id, 76, 77));
+    assert_eq!(output.name_spelling(), "y");
+    assert_eq!(task269cp_range_tuple(output.type_range()), (ast.source_id, 84, 87));
+    assert_eq!(task269cp_range_tuple(output.type_head_range()), (ast.source_id, 84, 87));
+    assert_eq!(output.type_spelling(), "set");
+    assert_eq!(output.source_ordinal(), 1);
+    let expected_debug = format!(
+        concat!(
+            "source-proof-local-given-lower-debug-v1\n",
+            "module: {}::{}\n",
+            "source-fingerprint: \"04e54b8ada9af54fde9f937e1bb0f96bd8cf85002b2b57f4d348b11c8eb72a2f\"\n",
+            "surface-fingerprint: \"58ac16a3c75860180a8bec5dc8e87ec8b269fe75715a6d8363f7ef064e3deea8\"\n",
+            "theorem symbol={:?} definition=0 contribution=0 range=19..128 proof=62..127\n",
+            "given range=70..108 segment=76..87 source_ordinal=1\n",
+            "name range=76..77 spelling=\"y\"\n",
+            "type range=84..87 head=84..87 spelling=\"set\" form=bare\n",
+        ),
+        module.package().as_str(),
+        module.path().as_str(),
+        output.theorem_symbol().fqn().as_str(),
+    );
+    assert_eq!(output.debug_text(), expected_debug);
+    assert!(output.debug_text().ends_with('\n'));
+    assert!(!output.debug_text().ends_with("\n\n"));
+}
+
+#[test]
+fn source_proof_local_given_lower_rejects_every_corruption_with_frozen_precedence() {
+    let (ast, module, shells, symbols) =
+        task253_ast_from_source_text(SOURCE_PROOF_LOCAL_GIVEN_TEXT, 269_581);
+    let surface_none = source_proof_local_given_lower_output_with_surface_mutation(
+        &ast,
+        module.clone(),
+        &shells,
+        &symbols,
+        SOURCE_PROOF_LOCAL_GIVEN_TEXT,
+        SourceProofLocalGivenSurfaceMutation::None,
+    )
+    .expect("Task269GP selector under explicit Surface None")
+    .expect("Task269GP output under explicit Surface None");
+    assert_task269gp_exact_lower_output(&ast, &module, &surface_none);
+    let lower_none = source_proof_local_given_lower_output_with_mutation(
+        &ast,
+        module.clone(),
+        &shells,
+        &symbols,
+        SOURCE_PROOF_LOCAL_GIVEN_TEXT,
+        SourceProofLocalGivenLowerMutation::None,
+    )
+    .expect("Task269GP selector under explicit lower None")
+    .expect("Task269GP output under explicit lower None");
+    assert_task269gp_exact_lower_output(&ast, &module, &lower_none);
+    let shell_none = source_proof_local_given_lower_output_with_shell_mutation(
+        &ast,
+        module.clone(),
+        &shells,
+        &symbols,
+        SOURCE_PROOF_LOCAL_GIVEN_TEXT,
+        SourceProofLocalGivenShellMutation::None,
+    )
+    .expect("Task269GP selector under explicit shell None")
+    .expect("Task269GP output under explicit shell None");
+    assert_task269gp_exact_lower_output(&ast, &module, &shell_none);
+    let resolver_none = source_proof_local_given_lower_output_with_resolver_profile_mutation(
+        &ast,
+        module.clone(),
+        &shells,
+        &symbols,
+        SOURCE_PROOF_LOCAL_GIVEN_TEXT,
+        SourceProofLocalGivenResolverProfileMutation::None,
+    )
+    .expect("Task269GP selector under explicit resolver None")
+    .expect("Task269GP output under explicit resolver None");
+    assert_task269gp_exact_lower_output(&ast, &module, &resolver_none);
+
+    for index in 0..48 {
+        for mutation in [
+            SourceProofLocalGivenSurfaceMutation::NodeKind(index),
+            SourceProofLocalGivenSurfaceMutation::NodeSourceId(index),
+            SourceProofLocalGivenSurfaceMutation::NodeRange(index),
+            SourceProofLocalGivenSurfaceMutation::NodeRecovery(index),
+            SourceProofLocalGivenSurfaceMutation::NodeChildren(index),
+        ] {
+            assert_eq!(
+                source_proof_local_given_lower_output_with_surface_mutation(
+                    &ast,
+                    module.clone(),
+                    &shells,
+                    &symbols,
+                    SOURCE_PROOF_LOCAL_GIVEN_TEXT,
+                    mutation,
+                )
+                .expect("Task269GP selector under post-selection Surface mutation"),
+                Err("Task269GP exact Surface identity changed after selection".to_owned()),
+                "Task269GP Surface mutation {mutation:?} reached the wrong stage"
+            );
+        }
+    }
+    for index in 0..25 {
+        assert_eq!(
+            source_proof_local_given_lower_output_with_surface_mutation(
+                &ast,
+                module.clone(),
+                &shells,
+                &symbols,
+                SOURCE_PROOF_LOCAL_GIVEN_TEXT,
+                SourceProofLocalGivenSurfaceMutation::TokenNode(index),
+            )
+            .expect("Task269GP selector under post-selection token mutation"),
+            Err("Task269GP exact Surface identity changed after selection".to_owned()),
+            "Task269GP token side-table mutation {index} reached the wrong stage"
+        );
+    }
+    for mutation in [
+        SourceProofLocalGivenSurfaceMutation::ExpressionRoot,
+        SourceProofLocalGivenSurfaceMutation::TokenNodeCount,
+        SourceProofLocalGivenSurfaceMutation::MissingRootIdentity,
+        SourceProofLocalGivenSurfaceMutation::WrongRootIdentity,
+    ] {
+        assert_eq!(
+            source_proof_local_given_lower_output_with_surface_mutation(
+                &ast,
+                module.clone(),
+                &shells,
+                &symbols,
+                SOURCE_PROOF_LOCAL_GIVEN_TEXT,
+                mutation,
+            )
+            .expect("Task269GP selector under post-selection Surface side-table mutation"),
+            Err("Task269GP exact Surface identity changed after selection".to_owned()),
+            "Task269GP Surface side-table mutation {mutation:?} reached the wrong stage"
+        );
+    }
+    let expression_root_ast = task269cp_ast_with_expression_root(&ast);
+    assert!(
+        source_proof_local_given_lower_output(
+            &expression_root_ast,
+            module.clone(),
+            &shells,
+            &symbols,
+            SOURCE_PROOF_LOCAL_GIVEN_TEXT,
+        )
+        .is_none()
+    );
+
+    for mutation in [
+        SourceProofLocalGivenLowerMutation::SourceId,
+        SourceProofLocalGivenLowerMutation::Module,
+        SourceProofLocalGivenLowerMutation::SourceFingerprint,
+        SourceProofLocalGivenLowerMutation::SurfaceFingerprint,
+        SourceProofLocalGivenLowerMutation::TheoremSymbol,
+        SourceProofLocalGivenLowerMutation::TheoremDefinition,
+        SourceProofLocalGivenLowerMutation::Contribution,
+        SourceProofLocalGivenLowerMutation::TheoremRange,
+        SourceProofLocalGivenLowerMutation::ProofRange,
+        SourceProofLocalGivenLowerMutation::GivenRange,
+        SourceProofLocalGivenLowerMutation::SegmentRange,
+        SourceProofLocalGivenLowerMutation::NameRange,
+        SourceProofLocalGivenLowerMutation::NameSpelling,
+        SourceProofLocalGivenLowerMutation::TypeRange,
+        SourceProofLocalGivenLowerMutation::TypeHeadRange,
+        SourceProofLocalGivenLowerMutation::TypeSpelling,
+        SourceProofLocalGivenLowerMutation::SourceOrdinal,
+    ] {
+        assert_eq!(
+            source_proof_local_given_lower_output_with_mutation(
+                &ast,
+                module.clone(),
+                &shells,
+                &symbols,
+                SOURCE_PROOF_LOCAL_GIVEN_TEXT,
+                mutation,
+            )
+            .expect("Task269GP exact selector under lower mutation"),
+            Err("Task269GP private lower output mismatch".to_owned()),
+            "Task269GP lower mutation {mutation:?} reached the wrong stage"
+        );
+    }
+
+    for shell in 0..2 {
+        for mutation in [
+            SourceProofLocalGivenShellMutation::Id(shell),
+            SourceProofLocalGivenShellMutation::Ordinal(shell),
+            SourceProofLocalGivenShellMutation::Kind(shell),
+            SourceProofLocalGivenShellMutation::Module(shell),
+            SourceProofLocalGivenShellMutation::Node(shell),
+            SourceProofLocalGivenShellMutation::Syntax(shell),
+            SourceProofLocalGivenShellMutation::Range(shell),
+            SourceProofLocalGivenShellMutation::Parent(shell),
+            SourceProofLocalGivenShellMutation::VisibilityState(shell),
+            SourceProofLocalGivenShellMutation::VisibilityMarker(shell),
+            SourceProofLocalGivenShellMutation::VisibilitySpelling(shell),
+            SourceProofLocalGivenShellMutation::Recovery(shell),
+        ] {
+            assert_eq!(
+                source_proof_local_given_lower_output_with_shell_mutation(
+                    &ast,
+                    module.clone(),
+                    &shells,
+                    &symbols,
+                    SOURCE_PROOF_LOCAL_GIVEN_TEXT,
+                    mutation,
+                )
+                .expect("Task269GP exact selector under shell mutation"),
+                Err(format!("Task269GP declaration shell {shell} mismatch")),
+                "Task269GP shell mutation {mutation:?} reached the wrong stage"
+            );
+        }
+    }
+
+    for mutation in [
+        SourceProofLocalGivenResolverProfileMutation::ResolverModule,
+        SourceProofLocalGivenResolverProfileMutation::ImportIndex,
+        SourceProofLocalGivenResolverProfileMutation::ExportIndex,
+        SourceProofLocalGivenResolverProfileMutation::LabelIndex,
+        SourceProofLocalGivenResolverProfileMutation::OverloadIndex,
+        SourceProofLocalGivenResolverProfileMutation::RegistrationIndex,
+        SourceProofLocalGivenResolverProfileMutation::LexicalSummaryIndex,
+        SourceProofLocalGivenResolverProfileMutation::NamespaceGraph,
+        SourceProofLocalGivenResolverProfileMutation::DeclarationDependencyIndex,
+        SourceProofLocalGivenResolverProfileMutation::ModuleSummaryIndex,
+        SourceProofLocalGivenResolverProfileMutation::SymbolModule,
+        SourceProofLocalGivenResolverProfileMutation::SymbolNotation,
+        SourceProofLocalGivenResolverProfileMutation::SymbolContribution,
+        SourceProofLocalGivenResolverProfileMutation::SymbolRelations,
+        SourceProofLocalGivenResolverProfileMutation::SymbolOriginSource,
+        SourceProofLocalGivenResolverProfileMutation::SymbolOriginImport,
+        SourceProofLocalGivenResolverProfileMutation::DefinitionId,
+        SourceProofLocalGivenResolverProfileMutation::DefinitionParameters,
+        SourceProofLocalGivenResolverProfileMutation::DefinitionBinders,
+        SourceProofLocalGivenResolverProfileMutation::DefinitionNotation,
+        SourceProofLocalGivenResolverProfileMutation::DefinitionDoc,
+        SourceProofLocalGivenResolverProfileMutation::DefinitionContribution,
+        SourceProofLocalGivenResolverProfileMutation::DefinitionConflict,
+        SourceProofLocalGivenResolverProfileMutation::DefinitionDependencies,
+        SourceProofLocalGivenResolverProfileMutation::ContributionLabelEffect,
+        SourceProofLocalGivenResolverProfileMutation::ContributionOverloadEffect,
+        SourceProofLocalGivenResolverProfileMutation::ContributionRegistrationEffect,
+        SourceProofLocalGivenResolverProfileMutation::ContributionLexicalEffect,
+        SourceProofLocalGivenResolverProfileMutation::ContributionNamespaceEffect,
+        SourceProofLocalGivenResolverProfileMutation::ContributionDeclarationDependencyEffect,
+        SourceProofLocalGivenResolverProfileMutation::ContributionImportEffect,
+        SourceProofLocalGivenResolverProfileMutation::ContributionExportEffect,
+        SourceProofLocalGivenResolverProfileMutation::ContributionDiagnosticEffect,
+    ] {
+        let expected_error = match mutation {
+            SourceProofLocalGivenResolverProfileMutation::ResolverModule => {
+                "Task269GP raw resolver module mismatch"
+            }
+            SourceProofLocalGivenResolverProfileMutation::ImportIndex
+            | SourceProofLocalGivenResolverProfileMutation::ExportIndex
+            | SourceProofLocalGivenResolverProfileMutation::LabelIndex
+            | SourceProofLocalGivenResolverProfileMutation::OverloadIndex
+            | SourceProofLocalGivenResolverProfileMutation::RegistrationIndex
+            | SourceProofLocalGivenResolverProfileMutation::LexicalSummaryIndex
+            | SourceProofLocalGivenResolverProfileMutation::NamespaceGraph
+            | SourceProofLocalGivenResolverProfileMutation::DeclarationDependencyIndex
+            | SourceProofLocalGivenResolverProfileMutation::ModuleSummaryIndex => {
+                "Task269GP raw resolver inventory mismatch"
+            }
+            SourceProofLocalGivenResolverProfileMutation::SymbolModule
+            | SourceProofLocalGivenResolverProfileMutation::SymbolNotation
+            | SourceProofLocalGivenResolverProfileMutation::SymbolContribution
+            | SourceProofLocalGivenResolverProfileMutation::SymbolRelations
+            | SourceProofLocalGivenResolverProfileMutation::SymbolOriginSource
+            | SourceProofLocalGivenResolverProfileMutation::SymbolOriginImport => {
+                "Task269GP theorem symbol provenance mismatch"
+            }
+            SourceProofLocalGivenResolverProfileMutation::DefinitionId
+            | SourceProofLocalGivenResolverProfileMutation::DefinitionParameters
+            | SourceProofLocalGivenResolverProfileMutation::DefinitionBinders
+            | SourceProofLocalGivenResolverProfileMutation::DefinitionNotation
+            | SourceProofLocalGivenResolverProfileMutation::DefinitionDoc
+            | SourceProofLocalGivenResolverProfileMutation::DefinitionContribution
+            | SourceProofLocalGivenResolverProfileMutation::DefinitionConflict
+            | SourceProofLocalGivenResolverProfileMutation::DefinitionDependencies => {
+                "Task269GP theorem definition provenance mismatch"
+            }
+            SourceProofLocalGivenResolverProfileMutation::ContributionLabelEffect
+            | SourceProofLocalGivenResolverProfileMutation::ContributionOverloadEffect
+            | SourceProofLocalGivenResolverProfileMutation::ContributionRegistrationEffect
+            | SourceProofLocalGivenResolverProfileMutation::ContributionLexicalEffect
+            | SourceProofLocalGivenResolverProfileMutation::ContributionNamespaceEffect
+            | SourceProofLocalGivenResolverProfileMutation::ContributionDeclarationDependencyEffect
+            | SourceProofLocalGivenResolverProfileMutation::ContributionImportEffect
+            | SourceProofLocalGivenResolverProfileMutation::ContributionExportEffect
+            | SourceProofLocalGivenResolverProfileMutation::ContributionDiagnosticEffect => {
+                "Task269GP theorem contribution provenance mismatch"
+            }
+            SourceProofLocalGivenResolverProfileMutation::None => {
+                unreachable!("explicit None was tested separately")
+            }
+        };
+        assert_eq!(
+            source_proof_local_given_lower_output_with_resolver_profile_mutation(
+                &ast,
+                module.clone(),
+                &shells,
+                &symbols,
+                SOURCE_PROOF_LOCAL_GIVEN_TEXT,
+                mutation,
+            )
+            .expect("Task269GP exact selector under resolver profile mutation"),
+            Err(expected_error.to_owned()),
+            "Task269GP resolver profile mutation {mutation:?} reached the wrong stage"
+        );
+    }
+
+    let neutral_reconstruction = source_proof_local_given_lower_output_with_resolver_mutation(
+        &ast,
+        module.clone(),
+        &shells,
+        &symbols,
+        SOURCE_PROOF_LOCAL_GIVEN_TEXT,
+        |symbols| task269cp_mutate_resolver(symbols, Task269cpResolverMutation::None),
+    )
+    .expect("Task269GP selector under neutral resolver reconstruction")
+    .expect("Task269GP neutral resolver reconstruction");
+    assert_task269gp_exact_lower_output(&ast, &module, &neutral_reconstruction);
+    for mutation in Task269cpResolverMutation::ALL {
+        assert_eq!(
+            source_proof_local_given_lower_output_with_resolver_mutation(
+                &ast,
+                module.clone(),
+                &shells,
+                &symbols,
+                SOURCE_PROOF_LOCAL_GIVEN_TEXT,
+                |symbols| task269cp_mutate_resolver(symbols, mutation),
+            )
+            .expect("Task269GP exact selector under resolver field mutation"),
+            Err(task269gp_resolver_mutation_error(mutation).to_owned()),
+            "Task269GP resolver mutation {mutation:?} reached the wrong stage"
+        );
+    }
+
+    for (drop_symbols, drop_definitions, drop_contributions) in
+        [(true, false, false), (false, true, false), (false, false, true)]
+    {
+        let corrupted = task269cp_symbols_with_missing_index(
+            &symbols,
+            drop_symbols,
+            drop_definitions,
+            drop_contributions,
+        );
+        assert_eq!(
+            source_proof_local_given_lower_output(
+                &ast,
+                module.clone(),
+                &shells,
+                &corrupted,
+                SOURCE_PROOF_LOCAL_GIVEN_TEXT,
+            )
+            .expect("Task269GP selector with missing resolver index"),
+            Err("Task269GP raw resolver inventory mismatch".to_owned())
+        );
+    }
+    let duplicated = task269gp_symbols_with_duplicate_owner(&symbols);
+    assert_eq!(
+        source_proof_local_given_lower_output(
+            &ast,
+            module.clone(),
+            &shells,
+            &duplicated,
+            SOURCE_PROOF_LOCAL_GIVEN_TEXT,
+        )
+        .expect("Task269GP selector with duplicate owner"),
+        Err("Task269GP raw resolver inventory mismatch".to_owned())
+    );
+    let resolver_wrong_module = mizar_resolve::resolved_ast::ModuleId::new(
+        module.package().clone(),
+        mizar_session::ModulePath::new("tests.task269gp_resolver_wrong_module"),
+    );
+    let wrong_module_symbols = task269gp_symbols_with_module(&symbols, resolver_wrong_module);
+    assert_eq!(
+        source_proof_local_given_lower_output(
+            &ast,
+            module.clone(),
+            &shells,
+            &wrong_module_symbols,
+            SOURCE_PROOF_LOCAL_GIVEN_TEXT,
+        )
+        .expect("Task269GP selector with wrong resolver module"),
+        Err("Task269GP raw resolver module mismatch".to_owned())
+    );
+    let (_, cross_module, _, cross_symbols) =
+        task253_ast_from_source_text(SOURCE_PROOF_LOCAL_LET_TEXT, 269_581);
+    assert_eq!(cross_module, module);
+    assert_eq!(
+        source_proof_local_given_lower_output(
+            &ast,
+            module.clone(),
+            &shells,
+            &cross_symbols,
+            SOURCE_PROOF_LOCAL_GIVEN_TEXT,
+        )
+        .expect("Task269GP selector with cross-profile resolver"),
+        Err("Task269GP requires one exact theorem owner".to_owned())
+    );
+    let visible_y = task269cp_symbols_with_visible_y(&symbols, ast.source_id);
+    assert_eq!(
+        source_proof_local_given_lower_output(
+            &ast,
+            module.clone(),
+            &shells,
+            &visible_y,
+            SOURCE_PROOF_LOCAL_GIVEN_TEXT,
+        )
+        .expect("Task269GP selector with visible y"),
+        Err("Task269GP local y already resolves as a module symbol".to_owned())
+    );
+
+    let (_, one_shell_module, one_shells, _) =
+        task253_ast_from_source_text("reserve x for set;\n", 269_581);
+    assert_eq!(one_shell_module, module);
+    assert_eq!(
+        source_proof_local_given_lower_output(
+            &ast,
+            module.clone(),
+            &one_shells,
+            &symbols,
+            SOURCE_PROOF_LOCAL_GIVEN_TEXT,
+        )
+        .expect("Task269GP selector with one shell"),
+        Err("Task269GP requires exactly two declaration shells".to_owned())
+    );
+    let export_source = format!("export Demo;\n{SOURCE_PROOF_LOCAL_GIVEN_TEXT}");
+    let (_, export_module, export_shells, _) =
+        task253_ast_from_source_text(&export_source, 269_581);
+    assert_eq!(export_module, module);
+    assert_eq!(
+        (export_shells.declarations().len(), export_shells.exports().len()),
+        (2, 1)
+    );
+    assert_eq!(
+        source_proof_local_given_lower_output(
+            &ast,
+            module.clone(),
+            &export_shells,
+            &symbols,
+            SOURCE_PROOF_LOCAL_GIVEN_TEXT,
+        )
+        .expect("Task269GP selector with export shell"),
+        Err("Task269GP resolver shells unexpectedly export a path".to_owned())
+    );
+
+    let (_, _, wrong_shells, _) =
+        task253_ast_from_source_text(SOURCE_PROOF_LOCAL_LET_TEXT, 269_581);
+    let missing_symbols = task269cp_symbols_with_missing_index(&symbols, true, true, true);
+    assert_eq!(
+        source_proof_local_given_lower_output(
+            &ast,
+            module.clone(),
+            &wrong_shells,
+            &missing_symbols,
+            SOURCE_PROOF_LOCAL_GIVEN_TEXT,
+        )
+        .expect("Task269GP selector with shell and resolver corruption"),
+        Err("Task269GP declaration shell 0 mismatch".to_owned())
+    );
+    assert_eq!(
+        source_proof_local_given_lower_output_with_mutation(
+            &ast,
+            module,
+            &shells,
+            &symbols,
+            SOURCE_PROOF_LOCAL_GIVEN_TEXT,
+            SourceProofLocalGivenLowerMutation::NameSpelling,
+        )
+        .expect("Task269GP exact selector under final lower corruption"),
+        Err("Task269GP private lower output mismatch".to_owned())
+    );
+}
+
+fn task269gp_symbols_with_duplicate_owner(
+    symbols: &mizar_resolve::env::SymbolEnv,
+) -> mizar_resolve::env::SymbolEnv {
+    let module = symbols.module_id().clone();
+    let owner = symbols
+        .symbols()
+        .iter()
+        .next()
+        .expect("Task269GP owner before duplication");
+    let duplicate_symbol = mizar_resolve::resolved_ast::SymbolId::new(
+        module.clone(),
+        mizar_resolve::resolved_ast::LocalSymbolId::new("Task269GP/duplicate-theorem/0"),
+        mizar_resolve::resolved_ast::FullyQualifiedName::new(format!(
+            "{}::{}::Task269GP/duplicate-theorem/0",
+            module.package().as_str(),
+            module.path().as_str(),
+        )),
+    );
+    let mut duplicate = mizar_resolve::env::SymbolEntry::new(
+        duplicate_symbol,
+        owner.kind(),
+        owner.namespace().clone(),
+        owner.primary_spelling(),
+        owner.origin().clone(),
+        owner.contribution(),
+    )
+    .with_visibility(owner.visibility())
+    .with_export_status(owner.export_status())
+    .with_relations(owner.relations().to_vec());
+    if let Some(notation) = owner.notation_spelling() {
+        duplicate = duplicate.with_notation_spelling(notation);
+    }
+    if let Some(signature) = owner.signature() {
+        duplicate = duplicate.with_signature(signature.clone());
+    }
+    let mut symbol_index = symbols.symbols().clone();
+    symbol_index.insert(duplicate);
+    mizar_resolve::env::SymbolEnv::new(
+        module,
+        mizar_resolve::env::SymbolEnvIndexes {
+            imports: symbols.imports().clone(),
+            exports: symbols.exports().clone(),
+            symbols: symbol_index,
+            labels: symbols.labels().clone(),
+            definitions: symbols.definitions().clone(),
+            overloads: symbols.overloads().clone(),
+            registrations: symbols.registrations().clone(),
+            lexical_summaries: symbols.lexical_summaries().clone(),
+            namespace_graph: symbols.namespace_graph().clone(),
+            declaration_dependencies: symbols.declaration_dependencies().clone(),
+            contributions: symbols.contributions().clone(),
+            module_summaries: symbols.module_summaries().clone(),
+        },
+    )
+}
+
+fn task269gp_symbols_with_module(
+    symbols: &mizar_resolve::env::SymbolEnv,
+    module: mizar_resolve::resolved_ast::ModuleId,
+) -> mizar_resolve::env::SymbolEnv {
+    mizar_resolve::env::SymbolEnv::new(
+        module,
+        mizar_resolve::env::SymbolEnvIndexes {
+            imports: symbols.imports().clone(),
+            exports: symbols.exports().clone(),
+            symbols: symbols.symbols().clone(),
+            labels: symbols.labels().clone(),
+            definitions: symbols.definitions().clone(),
+            overloads: symbols.overloads().clone(),
+            registrations: symbols.registrations().clone(),
+            lexical_summaries: symbols.lexical_summaries().clone(),
+            namespace_graph: symbols.namespace_graph().clone(),
+            declaration_dependencies: symbols.declaration_dependencies().clone(),
+            contributions: symbols.contributions().clone(),
+            module_summaries: symbols.module_summaries().clone(),
+        },
+    )
+}
+
+#[test]
+fn source_proof_local_given_lower_excludes_near_misses_and_adjacent_families() {
+    let near_misses = [
+        SOURCE_PROOF_LOCAL_GIVEN_TEXT.trim_end_matches('\n').to_owned(),
+        format!("{SOURCE_PROOF_LOCAL_GIVEN_TEXT}\n"),
+        SOURCE_PROOF_LOCAL_GIVEN_TEXT.replace(
+            "FormulaStatementGivenSmoke",
+            "FormulaStatementGivenSmokeWrong",
+        ),
+        SOURCE_PROOF_LOCAL_GIVEN_TEXT.replace(": thesis proof", ": x = x proof"),
+        SOURCE_PROOF_LOCAL_GIVEN_TEXT.replace("given y being set", "given z being set"),
+        SOURCE_PROOF_LOCAL_GIVEN_TEXT.replace("given y being set", "given y, z being set"),
+        SOURCE_PROOF_LOCAL_GIVEN_TEXT.replace("given y being set", "given y being empty set"),
+        SOURCE_PROOF_LOCAL_GIVEN_TEXT.replace("such that G:", "such that H:"),
+        SOURCE_PROOF_LOCAL_GIVEN_TEXT.replace("G: thesis", "G: x = x"),
+        SOURCE_PROOF_LOCAL_GIVEN_TEXT.replace("thus thesis;", "thus x = x;"),
+        SOURCE_PROOF_LOCAL_GIVEN_TEXT.replace(
+            "given y being set such that G: thesis;",
+            "let y be set;",
+        ),
+        SOURCE_PROOF_LOCAL_GIVEN_TEXT.replace(
+            "given y being set such that G: thesis;",
+            "take y = x;",
+        ),
+        SOURCE_PROOF_LOCAL_GIVEN_TEXT.replace(
+            "given y being set such that G: thesis;",
+            "set y = x;",
+        ),
+        SOURCE_PROOF_LOCAL_GIVEN_TEXT.replace(
+            "given y being set such that G: thesis;",
+            "consider y being set such that thesis;",
+        ),
+        SOURCE_PROOF_LOCAL_GIVEN_TEXT.replace(
+            "given y being set such that G: thesis;",
+            "reconsider y = x as set;",
+        ),
+        SOURCE_PROOF_LOCAL_GIVEN_TEXT.replace(
+            "given y being set such that G: thesis;",
+            "deffunc y() = x;",
+        ),
+        SOURCE_PROOF_LOCAL_GIVEN_TEXT.replace(
+            "given y being set such that G: thesis;",
+            "defpred y[] means thesis;",
+        ),
+    ];
+    for (ordinal, source) in near_misses.into_iter().enumerate() {
+        let (ast, module, shells, symbols) =
+            task253_ast_from_source_text(&source, 269_590 + ordinal);
+        assert!(
+            source_proof_local_given_lower_output(&ast, module, &shells, &symbols, &source)
+                .is_none(),
+            "Task269GP selected near miss {ordinal}"
+        );
+    }
+
+    for (ordinal, source) in [
+        TASK269A_SOURCE_TEXT,
+        TASK269B_SOURCE_TEXT,
+        SOURCE_PROOF_LOCAL_LET_TEXT,
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let (ast, module, shells, symbols) =
+            task253_ast_from_source_text(source, 269_620 + ordinal);
+        assert!(
+            source_proof_local_given_lower_output(&ast, module, &shells, &symbols, source).is_none(),
+            "Task269GP selected Task269A/B/CP family {ordinal}"
+        );
+    }
+
+    let workspace_root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .and_then(std::path::Path::parent)
+        .expect("mizar-test below workspace");
+    for (ordinal, path) in [
+        "tests/miz/fail/types/fail_type_elaboration_predicate_functor_definition_gap_001.miz",
+        "tests/miz/fail/types/fail_type_elaboration_proof_local_declaration_gap_001.miz",
+        "tests/miz/pass/parser/pass_parser_functor_definitions_001.miz",
+        "tests/miz/pass/parser/pass_parser_simple_statements_001.miz",
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let source = std::fs::read_to_string(workspace_root.join(path))
+            .unwrap_or_else(|error| panic!("read Task269GP boundary {path}: {error}"));
+        let (ast, module, shells, symbols) =
+            task253_ast_from_source_text(&source, 269_630 + ordinal);
+        assert!(
+            source_proof_local_given_lower_output(&ast, module, &shells, &symbols, &source)
+                .is_none(),
+            "Task269GP selected fixture boundary {path}"
+        );
+    }
+}
+
+#[test]
+fn source_proof_local_given_lower_has_zero_checker_or_semantic_effect() {
+    let (ast, module, shells, symbols) =
+        task253_ast_from_source_text(SOURCE_PROOF_LOCAL_GIVEN_TEXT, 269_640);
+    let output = source_proof_local_given_lower_output(
+        &ast,
+        module.clone(),
+        &shells,
+        &symbols,
+        SOURCE_PROOF_LOCAL_GIVEN_TEXT,
+    )
+    .expect("Task269GP exact selector")
+    .expect("Task269GP private lower output");
+    assert_task269gp_exact_lower_output(&ast, &module, &output);
+    for forbidden in [
+        "scope=",
+        "visible_after",
+        "binding-env",
+        "typed-ast",
+        "resolved-typed-ast",
+        "statement-row",
+        "condition-row",
+        "label-row",
+        "initial-obligation",
+        "fact",
+        "goal",
+        "accepted",
+        "discharged",
+        "verification-condition",
+    ] {
+        assert!(!output.debug_text().contains(forbidden));
+    }
+    assert!(
+        source_proof_local_declaration_output(
+            &ast,
+            module.clone(),
+            &symbols,
+            SOURCE_PROOF_LOCAL_GIVEN_TEXT,
+        )
+        .is_none()
+    );
+    assert!(
+        task269a_lower_output(
+            &ast,
+            module.clone(),
+            &symbols,
+            SOURCE_PROOF_LOCAL_GIVEN_TEXT,
+        )
+        .is_none()
+    );
+    assert_eq!(
+        task269a_legacy_detail_keys(
+            &ast,
+            module.clone(),
+            &symbols,
+            SOURCE_PROOF_LOCAL_GIVEN_TEXT,
+        ),
+        None
+    );
+    assert!(
+        source_proof_local_let_lower_output(
+            &ast,
+            module.clone(),
+            &shells,
+            &symbols,
+            SOURCE_PROOF_LOCAL_GIVEN_TEXT,
+        )
+        .is_none()
+    );
+    assert!(
+        source_proof_local_let_binding_output(
+            &ast,
+            module.clone(),
+            &shells,
+            &symbols,
+            SOURCE_PROOF_LOCAL_GIVEN_TEXT,
+        )
+        .is_none()
+    );
+    assert!(
+        source_proof_local_let_type_output(
+            &ast,
+            module,
+            &shells,
+            &symbols,
+            SOURCE_PROOF_LOCAL_GIVEN_TEXT,
+        )
+        .is_none()
+    );
+
+    let (let_ast, let_module, let_shells, let_symbols) =
+        task253_ast_from_source_text(SOURCE_PROOF_LOCAL_LET_TEXT, 269_641);
+    let let_lower = source_proof_local_let_lower_output(
+        &let_ast,
+        let_module.clone(),
+        &let_shells,
+        &let_symbols,
+        SOURCE_PROOF_LOCAL_LET_TEXT,
+    )
+    .expect("Task269CP selector after Task269GP")
+    .expect("Task269CP output after Task269GP");
+    assert_task269cp_exact_lower_output(&let_ast, &let_module, &let_lower);
+    assert!(
+        source_proof_local_let_binding_output(
+            &let_ast,
+            let_module.clone(),
+            &let_shells,
+            &let_symbols,
+            SOURCE_PROOF_LOCAL_LET_TEXT,
+        )
+        .expect("Task269C selector after Task269GP")
+        .is_ok()
+    );
+    assert!(
+        source_proof_local_let_type_output(
+            &let_ast,
+            let_module,
+            &let_shells,
+            &let_symbols,
+            SOURCE_PROOF_LOCAL_LET_TEXT,
+        )
+        .expect("Task269CT selector after Task269GP")
+        .is_ok()
     );
 }
 

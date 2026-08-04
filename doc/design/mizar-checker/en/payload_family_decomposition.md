@@ -1796,3 +1796,6 @@ binding/type consumers 269G and 269GT pending human reconciliation. Later
 `given` condition/escape semantics remain separately deferred without a new
 blocker classification. This lower slice changes no Task-269 checker family
 or Task-270 dependency and grants no active credit.
+
+The implemented private lower row closes only its syntax projection gap and
+adds no checker payload-family member.

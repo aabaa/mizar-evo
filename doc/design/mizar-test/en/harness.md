@@ -5283,3 +5283,10 @@ cover exact output, exhaustive corruption, near-miss/family isolation, and
 zero checker/semantic effect. The broad proof-local case and active results
 remain unchanged; runner tests project `548 -> 552`. The canonical scope
 contradiction blocks 269G/269GT rather than being resolved in the harness.
+
+This dormant branch and all four tests are now implemented. Every post-
+selection Surface corruption reaches the frozen Surface error, while real
+source/selector near misses still return `None`; later validation stages have
+exact error/precedence assertions. The runner library is `552`, but `run_case`,
+metadata, result/detail schemas, warnings/errors, and active route counts are
+unchanged.
