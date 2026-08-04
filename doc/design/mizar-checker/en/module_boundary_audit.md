@@ -44,8 +44,8 @@ remain aligned with their owning specifications.
 | `src/source_predicate_definition.rs` | 1794 | syntax-free source predicate-definition producer | `source_predicate_definition.md` | no | no | Cohesive Task-259 five-table handoff, baseline-preserving pending-obligation projection, resolver/lower provenance validation, deterministic rendering, and typed/final installation checks; production source remains syntax-free. |
 | `src/source_property_implementation.rs` | 2460 | syntax-free source property-implementation producer | `source_property_implementation.md` | no | no | Cohesive Task-264 five-table equals/means handoff, resolver/return/lower/arena validation, baseline-preserving pending-obligation projection, deterministic rendering, and typed/final sibling isolation; production remains syntax-free. |
 | `src/source_set_term.rs` | 6806 | syntax-free source set-term producer | `source_set_term.md` | no | no | Cohesive Task-255/255C1 seven-table association, condition-subtree exclusion, cross-family ownership/fingerprint validation, deterministic rendering, install checks, and corruption tests; no split required. |
-| `src/source_statement.rs` | 51685 | syntax-free source statement producer | `source_statement.md` | no | no | Cohesive Task-258 statement/witness transactions and their corruption matrices; Task-269A adds only four adjacent checker tests that reuse the private exact B3N fixture, while production proof-local ownership remains in its dedicated module. |
-| `src/source_proof_local_declaration.rs` | 933 | syntax-free proof-local declaration producer | `source_proof_local_declaration.md` | no | no | Cohesive Task-269A input/row/table/handoff, exact lower and 51-node authentication, resolver-local binding transition and ordinal lookup replay, five fingerprints, deterministic rendering, phase-ordered replay, and crate-private phase-7 owner validation; no syntax or proof-semantic ownership. |
+| `src/source_statement.rs` | 52266 | syntax-free source statement producer | `source_statement.md` | no | no | Cohesive Task-258 statement/witness transactions and their corruption matrices; the same four Task-269 tests reuse the private exact B3N/B3M1 fixtures, including all-field arena and isolated cross-profile rejection, while production proof-local ownership remains in its dedicated module. |
+| `src/source_proof_local_declaration.rs` | 1152 | syntax-free proof-local declaration producer | `source_proof_local_declaration.md` | no | no | Cohesive Task-269A/B input/row/table/handoff, exact B3N/B3M1 lower and 51/56-node authentication, resolver-local binding transition and ordinal lookup replay, five fingerprints, deterministic rendering, phase-ordered replay, and crate-private phase-7 owner validation; no syntax or proof-semantic ownership. |
 | `src/source_structure.rs` | 5036 | syntax-free source structure-term producer | `source_structure.md` | no | no | Cohesive Task-254 term/wrapper/root/member/field-update/edge/request tables, written-partition and cross-family dependency/provenance validation, deterministic rendering, and corruption tests; no split required. |
 | `src/source_structure_definition.rs` | 1773 | syntax-free source structure-definition producer | `source_structure_definition.md` | no | no | Cohesive Task-263 definition/member/inheritance/mapping/coherence tables, private resolver/baseline snapshots, exact contribution-effect and own-domain obligation validation, deterministic rendering, and compound precedence tests; production remains syntax-free. |
 | `src/source_type.rs` | 7423 | syntax-free source-type application producer | `source_type.md` | no | no | Cohesive Task-249 flat tables plus Task-249R definition-return, Task-249M mode-RHS, Task-249S standalone structure-member types, and Task-249PI property-implementation composition, environment/arena/form/graph/provenance validation, deterministic rendering, exhaustive corruption tests, and one cfg(test)-only Task-263 lower-corruption seam; no split required. |
@@ -1617,3 +1617,17 @@ existing runner leaf adds one private selector branch. Parser/Surface
 authentication stays runner-owned; syntax-free transaction validation stays
 checker-owned. Path counts remain `30/37`, with lines/content remeasured only
 after implementation.
+
+## Task 269B implemented module boundary
+
+Implementation remains inside the existing owners: checker
+`source_proof_local_declaration.rs`, adjacent private tests in
+`source_statement.rs`, and the existing `TypedAst` installer allowlist; runner
+uses its existing private proof-local production/test leaves. No module,
+export, dependency, public surface, or active dispatch changed. Checker source
+is `30/165219` with path/content hashes
+`c89f43f6abebf7ebeb3ac9394ecd8ea3186ad28934c75526d2cc0b85a66ebad5` /
+`1fb5ea739c810ff66ed551b359ffa7cbb26265c0057fa18f5128ee5966bad958`;
+runner production is `37/69872` with
+`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d` /
+`1cdc1720e687890e9007664a2140a10194b7637add9b8eb589ee92d9cce3a771`.

@@ -576,3 +576,13 @@ Cargo、public route、active outcome、CLIは不変。よって
 docs review **NO FINDINGS**/dedicated commit/fresh preflight後に実装し、全review
 **NO FINDINGS**、hard gate9件uncapped 90/100以上、verification/count/hash/staging、
 implementation commit、fresh next Task-269 selectionでcomplete。
+
+## Task 269B active B3M1 binding contract
+
+existing APIはexact frozen B3M1 profileをacceptする。construction/installは
+fingerprint 5件、56-node arena、witness 2行、name 1件、exact local provenanceを
+authenticateしてdeclaration0/binding1だけを生成する。direct testsはfinal
+`2/2/0`、context1 `bindings=[1]`、`visible_bindings=[0,1]`、binding2不存在を
+証明する。全node kind、代表cardinality/root/anchor/children/resolved/recovery/
+typing/links corruption、isolated B3N arena/statement/witness/primary mixはfail
+closed。deferred semantic ownerはactivateしていない。

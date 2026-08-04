@@ -1653,3 +1653,10 @@ existing declaration-to-binding familyが2件目のexact lower profileをaccept�
 new payload familyではない。single rowはnamed witness0/name0/primary2をbinding1へ
 linkし、sibling unnamed witnessはlower witness tableだけに残る。later-use edge、
 capture、type/goal/fact/proof family、active coverage ownerは追加しない。
+
+## Task 269B active B3M1 family increment
+
+existing familyはsame one-row shapeで2件目のexact profileをacceptする。direct
+final-environment/context assertionによりunnamed siblingがlower-onlyであることを
+証明する。payload family、later-use edge、capture、type、goal、fact、proof、
+coverage ownerは追加していない。

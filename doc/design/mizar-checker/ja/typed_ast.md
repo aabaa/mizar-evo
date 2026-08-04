@@ -1757,3 +1757,10 @@ same optional handoff/one-shot installerはcomplete statement/witness/primary/56
 B3M1 bundleがinstalledの場合だけacceptする。field/method変更なし。B3N/B3M1
 fingerprint hybrid、unnamed witness binding、partial lower、sibling、semantic
 coexistenceはpublish前にrejectし、valid installはlower byte/empty semanticsを保存。
+
+## Task 269B active Typed ownership increment
+
+existing installer allowlistはB3Nに加えてexact B3M1をadmitし、field/methodを
+変更しない。56-node arenaとempty semantic tablesをpreserveし、one binding
+transactionを一度だけpublishし、duplicate/partial/cross-profile/corrupt-arena/
+stale-fingerprint/semantic-coexistence inputをtransactionalにrejectする。

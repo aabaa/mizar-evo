@@ -4160,5 +4160,7 @@ or semantic owner changed. B3M2B2B remains next before B4.
 - [x] Complete repeated docs reviews with NO FINDINGS and all nine docs-only
   hard gates PASS at an uncapped `100/100`, then create the separate Task-269B
   documentation prerequisite commit.
-- [ ] Fresh-inventory and implement/review/verify/commit only Task 269B, then
-  continue automatically to the next dependency-ready Task-269 slice.
+- [x] Fresh-inventory and implement only Task 269B with existing-test expansion
+  and no public/corpus/trace/CLI change.
+- [ ] Complete source/docs and final quality reviews, verify and commit only
+  Task 269B, then continue automatically to the next dependency-ready slice.

@@ -624,3 +624,10 @@ Chapter 15のleft-to-right ruleはB3M1 witness row 2件のdense orderだけをfr
 Task269Bはnamed definition-site bindingだけをpublishしunnamed rowのeffectはない。
 existential match、witness type、remaining goal、substitution、fact、acceptance、IRは
 推論せず、dormant zero-credit boundaryとdeferralは不変。
+
+## Task 269B active semantic boundary
+
+implementationはfrozen named definition-site bindingだけをpublishし、unnamed
+rowにbinding effectがないことを直接証明する。semantic tableはすべてemptyで、
+existential matching、typing、goal/guard、substitution、fact、proof、discharge、
+acceptance、Core、CFG、VC behaviorを推論またはactivateしない。

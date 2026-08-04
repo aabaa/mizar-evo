@@ -2305,3 +2305,11 @@ Task269Bはprivate dormantで、`.miz`、sidecar、expectation、requirement row
 backlink/status/stage/coverage、metadata、active outcomeを追加しない。broad
 proof-local diagnostic rowはsame failure boundaryのcoveredのままでpositive
 binding creditではない。count/trace hashは上記不変、coverage auditも不変。
+
+## Checker Task 269B implementation traceability no-op
+
+post-implementation inventoryでもrequirements/casesは`395/428`、type coverageは
+`259 = 247 + 12`、trace SHA-256は
+`55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`
+不変。compound unit tests 8件はexecutable trace creditを追加せず、
+`spec_coverage_audit.md`はbyte-identicalのまま。

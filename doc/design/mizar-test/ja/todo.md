@@ -3293,5 +3293,7 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
   dispatch/corpus/trace/CLI impact 0、exitをfreezeする。
 - [x] docs-only review/commitを完了する。specification reviewはNO FINDINGS、
   docs-only hard gate 9件はscore capなし`100/100`ですべてPASSした。
-- [ ] fresh preflight、implementation、re-review/verification/commit後に
+- [x] public dispatch/test countを変えずexact B3M1 private selector/test
+  incrementをfresh preflight後に実装した。
+- [ ] source/docsおよびfinal quality review、verification、commit後に
   自動継続する。

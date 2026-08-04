@@ -14634,6 +14634,43 @@ mod tests {
             .with_source_atomic_formula(self.atomic.clone())
             .expect("Task258B3M1 Task256")
         }
+
+        fn proof_local_input(&self) -> SourceProofLocalDeclarationHandoffInput {
+            SourceProofLocalDeclarationHandoffInput {
+                source_id: self.source,
+                module_id: self.module.clone(),
+                declarations: vec![SourceProofLocalDeclarationInput {
+                    witness: SourceStatementWitnessId::new(0),
+                    name: SourceStatementWitnessNameId::new(0),
+                    rhs: SourceStatementWitnessTermTarget::Primary(SourcePrimaryTermId::new(2)),
+                    binding_context: BindingContextId::new(1),
+                    source_ordinal: 1,
+                    local: LocalTermBinding::new(
+                        "y",
+                        LocalTermScope::new(vec![0]),
+                        range(self.source, 84, 85),
+                        1,
+                    ),
+                    kind: SourceProofLocalDeclarationKind::NamedWitness,
+                    recovery: SourceProofLocalDeclarationRecovery::Normal,
+                }],
+            }
+        }
+
+        fn proof_local(
+            &self,
+            statement: &SourceStatementHandoff,
+            witnesses: &SourceStatementWitnessHandoff,
+            input: SourceProofLocalDeclarationHandoffInput,
+        ) -> Result<SourceProofLocalDeclarationHandoff, SourceProofLocalDeclarationError> {
+            SourceProofLocalDeclarationProducer::build(
+                input,
+                statement,
+                witnesses,
+                &self.primary,
+                &self.arena,
+            )
+        }
     }
 
     #[derive(Clone)]
@@ -28259,6 +28296,7 @@ citation#0 statement=1 context=1 target=imported label_ref=0 scope=[0] range=136
                 handoff.binding_env().debug_text(),
             )
         );
+        assert_task269b_exact_mixed_witness_binding();
     }
 
     #[test]
@@ -28663,6 +28701,9 @@ citation#0 statement=1 context=1 target=imported label_ref=0 scope=[0] range=136
             SourceProofLocalDeclarationError::InvalidInstallation.to_string(),
             "source proof-local declaration installation is invalid"
         );
+        assert_task269b_mixed_witness_corruption_and_cross_profile_fail_closed(
+            &fixture, &statement, &witnesses,
+        );
     }
 
     #[test]
@@ -28744,6 +28785,7 @@ citation#0 statement=1 context=1 target=imported label_ref=0 scope=[0] range=136
             assemble_empty_resolved(&orphan),
             Err(ResolvedTypedAstError::InvalidSourceProofLocalDeclaration)
         );
+        assert_task269b_mixed_witness_typed_ownership();
     }
 
     #[test]
@@ -28862,6 +28904,456 @@ citation#0 statement=1 context=1 target=imported label_ref=0 scope=[0] range=136
             .expect("Task258B3 sibling");
         assert_eq!(
             sibling_base.with_source_proof_local_declaration(handoff),
+            Err(TypedAstError::InvalidSourceProofLocalDeclaration)
+        );
+        assert_task269b_mixed_witness_final_replay_and_deferrals();
+    }
+
+    fn assert_task269b_exact_mixed_witness_binding() {
+        let fixture = B3M1Fixture::new(160);
+        let statement = fixture.statement();
+        let witnesses = fixture
+            .witnesses(&statement, fixture.witness_input())
+            .expect("Task269B witnesses");
+        let handoff = fixture
+            .proof_local(&statement, &witnesses, fixture.proof_local_input())
+            .expect("Task269B handoff");
+
+        assert!(statement.is_task_258b3m1_profile());
+        assert_eq!(
+            (witnesses.witnesses().len(), witnesses.names().len()),
+            (2, 1)
+        );
+        let named = witnesses
+            .witnesses()
+            .get(SourceStatementWitnessId::new(0))
+            .expect("Task269B named witness");
+        let unnamed = witnesses
+            .witnesses()
+            .get(SourceStatementWitnessId::new(1))
+            .expect("Task269B unnamed witness");
+        assert_eq!(
+            (
+                named.name(),
+                named.term(),
+                named.source_ordinal(),
+                named.ordinal(),
+                named.kind(),
+            ),
+            (
+                Some(SourceStatementWitnessNameId::new(0)),
+                SourceStatementWitnessTermTarget::Primary(SourcePrimaryTermId::new(2)),
+                1,
+                0,
+                SourceStatementWitnessKind::Named,
+            )
+        );
+        assert_eq!(
+            (
+                unnamed.name(),
+                unnamed.term(),
+                unnamed.source_ordinal(),
+                unnamed.ordinal(),
+                unnamed.kind(),
+            ),
+            (
+                None,
+                SourceStatementWitnessTermTarget::Primary(SourcePrimaryTermId::new(3)),
+                1,
+                1,
+                SourceStatementWitnessKind::Unnamed,
+            )
+        );
+
+        assert_eq!(
+            handoff.base_binding_fingerprint(),
+            statement.binding_env().debug_text()
+        );
+        assert_eq!(handoff.statement_fingerprint(), statement.debug_text());
+        assert_eq!(handoff.witness_fingerprint(), witnesses.debug_text());
+        assert_eq!(
+            handoff.primary_term_fingerprint(),
+            fixture.primary.debug_text()
+        );
+        assert_eq!(
+            handoff.final_binding_fingerprint(),
+            handoff.binding_env().debug_text()
+        );
+        assert_eq!(handoff.declarations().len(), 1);
+        assert_eq!(
+            (
+                handoff.binding_env().contexts().len(),
+                handoff.binding_env().bindings().len(),
+                handoff.binding_env().diagnostics().len(),
+            ),
+            (2, 2, 0),
+        );
+        let proof_context = handoff
+            .binding_env()
+            .contexts()
+            .get(BindingContextId::new(1))
+            .expect("Task269B proof context");
+        assert_eq!(
+            proof_context
+                .bindings
+                .iter()
+                .map(|id| id.index())
+                .collect::<Vec<_>>(),
+            [1]
+        );
+        assert_eq!(
+            proof_context
+                .visible_bindings
+                .iter()
+                .map(|id| id.index())
+                .collect::<Vec<_>>(),
+            [0, 1]
+        );
+        assert!(
+            handoff
+                .binding_env()
+                .bindings()
+                .get(BindingId::new(2))
+                .is_none(),
+            "Task269B unnamed witness must not allocate a checker binding"
+        );
+        let declaration = handoff
+            .declarations()
+            .get(SourceProofLocalDeclarationId::new(0))
+            .expect("Task269B declaration");
+        assert_eq!(
+            (
+                declaration.witness(),
+                declaration.name(),
+                declaration.rhs(),
+                declaration.binding(),
+                declaration.binding_context(),
+                declaration.source_ordinal(),
+                declaration.visible_after_ordinal(),
+            ),
+            (
+                SourceStatementWitnessId::new(0),
+                SourceStatementWitnessNameId::new(0),
+                SourceStatementWitnessTermTarget::Primary(SourcePrimaryTermId::new(2)),
+                BindingId::new(1),
+                BindingContextId::new(1),
+                1,
+                1,
+            )
+        );
+        let binding = handoff
+            .binding_env()
+            .bindings()
+            .get(BindingId::new(1))
+            .expect("Task269B binding");
+        assert_eq!(binding.spelling, "y");
+        assert_eq!(binding.kind, BindingKind::LocalAbbreviation);
+        assert_eq!(binding.owner_context, BindingContextId::new(1));
+        assert_eq!(binding.declaration_range, range(fixture.source, 84, 85));
+        assert_eq!(binding.visible_after_ordinal, 1);
+        assert_eq!(binding.type_site, BindingTypeSite::Missing);
+        assert_eq!(binding.status, BindingStatus::Active);
+        assert!(binding.captured.identities().is_empty());
+        assert!(binding.diagnostics.is_empty());
+        assert_eq!(binding.recovery, BindingRecoveryState::Normal);
+        assert_eq!(
+            binding.identity,
+            BinderIdentity::ResolverLocal {
+                scope: LocalTermScope::new(vec![0]),
+                ordinal: 1,
+                declaration_range: range(fixture.source, 84, 85),
+            }
+        );
+        assert!(matches!(
+            handoff.binding_env().lookup(&BindingLookupSite::new(
+                "y",
+                BindingContextId::new(1),
+                Some(LocalTermScope::new(vec![0])),
+                1,
+            )),
+            Ok(BindingLookupResult::ForwardReference { candidates, .. })
+                if candidates == [BindingId::new(1)]
+        ));
+        assert_eq!(
+            handoff.binding_env().lookup(&BindingLookupSite::new(
+                "y",
+                BindingContextId::new(1),
+                Some(LocalTermScope::new(vec![0])),
+                2,
+            )),
+            Ok(BindingLookupResult::Local(BindingId::new(1)))
+        );
+        assert_eq!(
+            handoff.debug_text(),
+            format!(
+                "source-proof-local-declaration-debug-v1\nmodule: pkg::statement.fixture\nbase-binding-fingerprint: {:?}\nstatement-fingerprint: {:?}\nwitness-fingerprint: {:?}\nprimary-term-fingerprint: {:?}\ndeclaration#0 kind=named-witness witness=0 name=0 rhs=primary#2 binding=1 context=1 source_ordinal=1 visible_after=1 recovery=normal\nfinal-binding-fingerprint: {:?}\n",
+                statement.binding_env().debug_text(),
+                statement.debug_text(),
+                witnesses.debug_text(),
+                fixture.primary.debug_text(),
+                handoff.binding_env().debug_text(),
+            )
+        );
+    }
+
+    fn assert_task269b_mixed_witness_corruption_and_cross_profile_fail_closed(
+        b3n_fixture: &B3NFixture,
+        b3n_statement: &SourceStatementHandoff,
+        b3n_witnesses: &SourceStatementWitnessHandoff,
+    ) {
+        let fixture = B3M1Fixture::new(161);
+        let statement = fixture.statement();
+        let witnesses = fixture
+            .witnesses(&statement, fixture.witness_input())
+            .expect("Task269B witnesses");
+        let baseline = fixture
+            .proof_local(&statement, &witnesses, fixture.proof_local_input())
+            .expect("Task269B baseline");
+
+        let mut wrong_range = fixture.proof_local_input();
+        wrong_range.declarations[0].local = LocalTermBinding::new(
+            "y",
+            LocalTermScope::new(vec![0]),
+            range(fixture.source, 81, 82),
+            1,
+        );
+        assert_eq!(
+            fixture.proof_local(&statement, &witnesses, wrong_range),
+            Err(SourceProofLocalDeclarationError::InvalidDeclaration {
+                declaration: SourceProofLocalDeclarationId::new(0),
+            })
+        );
+
+        let mut invalid_unnamed = witnesses.clone();
+        invalid_unnamed.witnesses.rows[1].source_ordinal = 2;
+        assert_eq!(
+            fixture.proof_local(&statement, &invalid_unnamed, fixture.proof_local_input(),),
+            Err(SourceProofLocalDeclarationError::InvalidDeclaration {
+                declaration: SourceProofLocalDeclarationId::new(0),
+            })
+        );
+
+        for index in 0..TASK258B3M1_NODE_RANGES.len() {
+            assert_eq!(
+                SourceProofLocalDeclarationProducer::build(
+                    fixture.proof_local_input(),
+                    &statement,
+                    &witnesses,
+                    &fixture.primary,
+                    &b3m1_typed_arena_with_corrupt_kind(fixture.source, index),
+                ),
+                Err(SourceProofLocalDeclarationError::InvalidArena),
+                "Task269B node {index}"
+            );
+        }
+
+        for corruption in [
+            Task269AArenaCorruption::Cardinality,
+            Task269AArenaCorruption::Root,
+            Task269AArenaCorruption::Anchor,
+            Task269AArenaCorruption::Children,
+            Task269AArenaCorruption::ResolvedNode,
+            Task269AArenaCorruption::Recovery,
+            Task269AArenaCorruption::Typing,
+            Task269AArenaCorruption::Links,
+        ] {
+            assert_eq!(
+                SourceProofLocalDeclarationProducer::build(
+                    fixture.proof_local_input(),
+                    &statement,
+                    &witnesses,
+                    &fixture.primary,
+                    &b3m1_typed_arena_with_corruption(fixture.source, corruption),
+                ),
+                Err(SourceProofLocalDeclarationError::InvalidArena),
+                "Task269B representative {corruption:?}"
+            );
+        }
+
+        let mut stale_final = baseline.clone();
+        stale_final.set_final_binding_fingerprint_for_test("stale");
+        assert_eq!(
+            stale_final.validate_installation(
+                fixture.source,
+                &fixture.module,
+                &statement,
+                &witnesses,
+                &fixture.primary,
+                &fixture.arena,
+            ),
+            Err(SourceProofLocalDeclarationError::InvalidBindingEnvironment)
+        );
+
+        let b3m1_same_identity = B3M1Fixture::new(61);
+        let b3m1_statement = b3m1_same_identity.statement();
+        let b3m1_witnesses = b3m1_same_identity
+            .witnesses(&b3m1_statement, b3m1_same_identity.witness_input())
+            .expect("Task269B same-identity witnesses");
+        let b3m1_handoff = b3m1_same_identity
+            .proof_local(
+                &b3m1_statement,
+                &b3m1_witnesses,
+                b3m1_same_identity.proof_local_input(),
+            )
+            .expect("Task269B same-identity handoff");
+        assert_eq!(b3n_fixture.source, b3m1_same_identity.source);
+        assert_eq!(b3n_fixture.module, b3m1_same_identity.module);
+        assert_eq!(
+            b3m1_handoff.validate_installation(
+                b3m1_same_identity.source,
+                &b3m1_same_identity.module,
+                &b3m1_statement,
+                &b3m1_witnesses,
+                &b3m1_same_identity.primary,
+                &b3n_fixture.arena,
+            ),
+            Err(SourceProofLocalDeclarationError::InvalidArena),
+            "Task269B isolated B3N arena mix"
+        );
+        assert_eq!(
+            b3m1_handoff.validate_installation(
+                b3m1_same_identity.source,
+                &b3m1_same_identity.module,
+                b3n_statement,
+                &b3m1_witnesses,
+                &b3m1_same_identity.primary,
+                &b3m1_same_identity.arena,
+            ),
+            Err(SourceProofLocalDeclarationError::DependencyMismatch),
+            "Task269B isolated B3N statement mix"
+        );
+        assert_eq!(
+            b3m1_handoff.validate_installation(
+                b3m1_same_identity.source,
+                &b3m1_same_identity.module,
+                &b3m1_statement,
+                b3n_witnesses,
+                &b3m1_same_identity.primary,
+                &b3m1_same_identity.arena,
+            ),
+            Err(SourceProofLocalDeclarationError::DependencyMismatch),
+            "Task269B isolated B3N witness mix"
+        );
+        assert_eq!(
+            b3m1_handoff.validate_installation(
+                b3m1_same_identity.source,
+                &b3m1_same_identity.module,
+                &b3m1_statement,
+                &b3m1_witnesses,
+                &b3n_fixture.primary,
+                &b3m1_same_identity.arena,
+            ),
+            Err(SourceProofLocalDeclarationError::DependencyMismatch),
+            "Task269B isolated B3N primary mix"
+        );
+        assert_eq!(
+            b3m1_handoff.validate_installation(
+                b3n_fixture.source,
+                &b3n_fixture.module,
+                b3n_statement,
+                b3n_witnesses,
+                &b3n_fixture.primary,
+                &b3n_fixture.arena,
+            ),
+            Err(SourceProofLocalDeclarationError::DependencyMismatch)
+        );
+    }
+
+    fn assert_task269b_mixed_witness_typed_ownership() {
+        let fixture = B3M1Fixture::new(162);
+        let statement = fixture.statement();
+        let witnesses = fixture
+            .witnesses(&statement, fixture.witness_input())
+            .expect("Task269B witnesses");
+        let handoff = fixture
+            .proof_local(&statement, &witnesses, fixture.proof_local_input())
+            .expect("Task269B handoff");
+        let base = fixture
+            .empty_typed()
+            .with_source_statement_witnesses(statement, witnesses)
+            .expect("Task269B lower install");
+        let base_nodes = base.nodes().clone();
+        let typed = base
+            .clone()
+            .with_source_proof_local_declaration(handoff.clone())
+            .expect("Task269B typed install");
+        assert_eq!(typed.source_proof_local_declaration(), Some(&handoff));
+        assert_eq!(typed.nodes(), &base_nodes);
+        assert_eq!(
+            (typed.nodes().len(), typed.nodes().root()),
+            (56, Some(TypedNodeId::new(55)))
+        );
+        assert_eq!(
+            typed.with_source_proof_local_declaration(handoff.clone()),
+            Err(TypedAstError::InvalidSourceProofLocalDeclaration)
+        );
+        assert_eq!(
+            fixture
+                .empty_typed()
+                .with_source_proof_local_declaration(handoff),
+            Err(TypedAstError::InvalidSourceProofLocalDeclaration)
+        );
+    }
+
+    fn assert_task269b_mixed_witness_final_replay_and_deferrals() {
+        let fixture = B3M1Fixture::new(163);
+        let statement = fixture.statement();
+        let witnesses = fixture
+            .witnesses(&statement, fixture.witness_input())
+            .expect("Task269B witnesses");
+        let handoff = fixture
+            .proof_local(&statement, &witnesses, fixture.proof_local_input())
+            .expect("Task269B handoff");
+        let base = fixture
+            .empty_typed()
+            .with_source_statement_witnesses(statement, witnesses)
+            .expect("Task269B lower install");
+        let typed = base
+            .clone()
+            .with_source_proof_local_declaration(handoff.clone())
+            .expect("Task269B typed");
+        let resolved = assemble_empty_resolved(&typed).expect("Task269B resolved");
+        assert_eq!(resolved.source_proof_local_declaration(), Some(&handoff));
+        assert_eq!(
+            assemble_empty_resolved(&typed)
+                .expect("Task269B replay")
+                .debug_text(),
+            resolved.debug_text()
+        );
+        assert_eq!(
+            typed
+                .source_statement_witnesses()
+                .expect("Task269B lower witnesses")
+                .witnesses()
+                .len(),
+            2
+        );
+        assert_eq!(handoff.declarations().len(), 1);
+        assert!(typed.contexts().is_empty());
+        assert!(typed.types().is_empty());
+        assert!(typed.facts().is_empty());
+        assert!(typed.coercions().is_empty());
+        assert!(typed.initial_obligations().is_empty());
+        assert!(typed.diagnostics().is_empty());
+        assert!(resolved.expr_metadata().is_empty());
+        assert!(resolved.cluster_facts().is_empty());
+        assert!(resolved.diagnostics().is_empty());
+        assert!(resolved.checked_formulas().is_empty());
+        assert!(resolved.statement_semantics().is_empty());
+        assert!(resolved.checked_proofs().is_empty());
+        assert!(resolved.checked_proof_nodes().is_empty());
+        assert!(resolved.checked_terminal_goals().is_empty());
+
+        let b3n = B3NFixture::new(163);
+        let b3n_statement = b3n.statement();
+        let b3n_witnesses = b3n
+            .witnesses(&b3n_statement, b3n.witness_input())
+            .expect("Task269A sibling witnesses");
+        let b3n_handoff = b3n
+            .proof_local(&b3n_statement, &b3n_witnesses, b3n.proof_local_input())
+            .expect("Task269A sibling handoff");
+        assert_eq!(
+            base.with_source_proof_local_declaration(b3n_handoff),
             Err(TypedAstError::InvalidSourceProofLocalDeclaration)
         );
     }
@@ -39678,6 +40170,95 @@ citation#0 statement=1 context=1 target=imported label_ref=0 scope=[0] range=136
             ids.push(id);
         }
         builder.finish(Some(ids[55])).expect("Task258B3M1 arena")
+    }
+
+    fn b3m1_typed_arena_with_corrupt_kind(source: SourceId, corrupt_index: usize) -> TypedArena {
+        let arena = b3m1_typed_arena(source);
+        let mut nodes = arena
+            .iter()
+            .map(|(_, node)| node.clone())
+            .collect::<Vec<_>>();
+        nodes[corrupt_index].kind = "source.task269b.corrupt".into();
+        TypedArena::try_new(arena.root(), nodes)
+            .expect("Task269B kind corruption remains structurally valid")
+    }
+
+    fn b3m1_typed_arena_with_corruption(
+        source: SourceId,
+        corruption: Task269AArenaCorruption,
+    ) -> TypedArena {
+        let mut resolved_builder = ResolvedArenaBuilder::new();
+        let foreign_resolved_node = resolved_builder
+            .push(ResolvedNode::new(
+                syntax::SurfaceNodeKind::Root,
+                Vec::new(),
+                SemanticOrigin::new(
+                    source,
+                    ModuleId::new(PackageId::new("pkg"), ModulePath::new("statement.fixture")),
+                    SourceAnchor::Range(range(source, 0, 0)),
+                    vec![269, 2],
+                ),
+            ))
+            .expect("Task269B foreign resolved-node id");
+        let node_count = if matches!(corruption, Task269AArenaCorruption::Cardinality) {
+            55
+        } else {
+            TASK258B3M1_NODE_RANGES.len()
+        };
+        let mut builder = TypedArenaBuilder::new();
+        let mut ids = Vec::with_capacity(node_count);
+        for (index, (start, end)) in TASK258B3M1_NODE_RANGES
+            .iter()
+            .copied()
+            .take(node_count)
+            .enumerate()
+        {
+            let children = task258b3m1_node_children(index)
+                .iter()
+                .map(|child| ids[*child])
+                .collect();
+            let mut node = TypedNode::new(
+                task258b3m1_node_kind(index),
+                SourceAnchor::Range(range(source, start, end)),
+            )
+            .with_children(children);
+            match (corruption, index) {
+                (Task269AArenaCorruption::Anchor, 13) => {
+                    node.anchor = SourceAnchor::Range(range(source, 83, 85));
+                }
+                (Task269AArenaCorruption::Children, 42) => node.children.clear(),
+                (Task269AArenaCorruption::ResolvedNode, 13) => {
+                    node = node.with_resolved_node(foreign_resolved_node);
+                }
+                (Task269AArenaCorruption::Recovery, 13) => {
+                    node = node.with_recovery(NodeRecoveryState::Recovered);
+                }
+                (Task269AArenaCorruption::Typing, 13) => {
+                    node = node.with_typing(TypingState::Successful);
+                }
+                (Task269AArenaCorruption::Links, 13) => {
+                    node = node.with_links(TypedNodeLinks {
+                        context: Some(LocalTypeContextId::new(0)),
+                        ..TypedNodeLinks::default()
+                    });
+                }
+                _ => {}
+            }
+            let id = builder.push(node).expect("Task269B corrupt typed node");
+            assert_eq!(id.index(), index);
+            ids.push(id);
+        }
+        let root = if matches!(
+            corruption,
+            Task269AArenaCorruption::Cardinality | Task269AArenaCorruption::Root
+        ) {
+            ids[54]
+        } else {
+            ids[55]
+        };
+        builder
+            .finish(Some(root))
+            .expect("Task269B representative corrupt arena")
     }
 
     fn b3m2a_typed_arena(source: SourceId) -> TypedArena {

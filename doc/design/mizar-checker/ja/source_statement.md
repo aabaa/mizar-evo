@@ -3524,3 +3524,11 @@ reference nodeはTask252、formula nodeはTask256が引き続きownする。5番
 fingerprintはlower source-statement inputではなくfinal binding environmentを
 authenticateする。binding incrementは`0/0/2`だけをlinkし、unnamed witness1の
 binding/lower API/debug byte/left-to-right goal semanticsを変更しない。
+
+## Task 269B active B3M1 lower-consumer boundary
+
+implemented upper consumerはB3M1 lower row、node、range、ordinal、debug byteを
+すべて不変に保つ。two-row witness handoffをfingerprintし、named row0/name0/RHS
+primary2だけをassociate、unnamed row1がchecker bindingをallocateしないことを
+直接検証する。all-node/isolated cross-profile testsはadjacent private testsの
+ままで、lower APIやsemantic meaningを追加しない。

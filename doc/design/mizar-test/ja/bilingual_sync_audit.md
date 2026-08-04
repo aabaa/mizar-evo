@@ -1580,3 +1580,10 @@ implementation-time bilingual harness debtはない。
 EN/JAはexact B3M1 selector、resolver-local range、named-only binding、same 4 tests/
 count/path、dormant dispatch、trace/audit no-op、semantic exclusionで一致する。
 untranslated harness deltaはない。
+
+## Checker Task 269B implemented harness synchronization
+
+EN/JAはimplemented post-B3N private branch、direct unnamed-row non-binding、
+all-field lower-arena mutation coverage、runner tests 4件/`536` count不変、
+measured production `37/69872`、dormant dispatch、trace/audit no-op、semantic
+exclusionで一致する。implementation-time harness debtはない。

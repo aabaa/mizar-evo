@@ -3518,5 +3518,7 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
   expansion, zero public dispatch/corpus/trace/CLI impact, and exact exits.
 - [x] Review/commit docs alone with a NO FINDINGS specification review and all
   nine docs-only hard gates PASS at an uncapped `100/100`.
-- [ ] Fresh-preflight, implement, re-review/verify, commit the increment, and
+- [x] Fresh-preflight and implement the exact B3M1 private selector/test
+  increment without changing public dispatch or test count.
+- [ ] Finish source/docs and final quality reviews, verification, commit, and
   continue automatically.

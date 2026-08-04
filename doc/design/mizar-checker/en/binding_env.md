@@ -794,3 +794,12 @@ associated with binding 1; unnamed witness 1 does not create a binding. The
 base/final profile stays `2/1/0 -> 2/2/0`, definition-site lookup is forward,
 and later same-scope lookup resolves binding 1. Later-use/capture execution and
 all type/goal/proof effects remain deferred.
+
+## Task 269B active B3M1 transition
+
+The implemented transition reproduces exactly `2/1/0 -> 2/2/0` at range
+`84..85`. Context 1 owns only binding 1 and sees `[0,1]`; binding 2 does not
+exist, proving the unnamed sibling has no binding effect. Ordinal-1 lookup is
+forward and ordinal-2 lookup resolves binding 1. The row retains
+`BindingTypeSite::Missing`; no type is inferred, captures remain empty, and
+facts, obligations, and proof/goal effects remain absent.

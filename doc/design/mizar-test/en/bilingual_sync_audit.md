@@ -1646,3 +1646,11 @@ EN/JA agree on the exact B3M1 selector branch, resolver-local range, named-only
 binding, unchanged four-test/test-count/path contract, dormant dispatch,
 trace/audit no-op, and complete semantic exclusions. No untranslated harness
 delta remains.
+
+## Checker Task 269B implemented harness synchronization
+
+EN/JA agree on the implemented post-B3N private branch, direct unnamed-row
+non-binding result, all-field lower-arena mutation coverage, unchanged four
+runner tests and `536` count, measured `37/69872` production inventory,
+dormant dispatch, trace/audit no-op, and semantic exclusions. No
+implementation-time harness debt remains.

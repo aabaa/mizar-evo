@@ -1740,3 +1740,10 @@ profile, not a new payload family. Its single row still links named witness 0,
 name 0, and primary 2 to binding 1; the sibling unnamed witness remains solely
 in the lower witness table. No later-use edge, capture set, type/goal/fact/
 proof family, or active coverage owner is introduced.
+
+## Task 269B active B3M1 family increment
+
+The existing family now accepts the second exact profile with the same one-row
+shape. Direct final-environment and context assertions prove that the unnamed
+sibling remains lower-only. No payload family, later-use edge, capture, type,
+goal, fact, proof, or coverage owner was added.

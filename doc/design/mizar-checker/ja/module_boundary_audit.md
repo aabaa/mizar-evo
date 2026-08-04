@@ -43,8 +43,8 @@ note として記録する。
 | `src/source_predicate_definition.rs` | 1794 | syntax-free source predicate-definition producer | `source_predicate_definition.md` | no | no | cohesiveなTask-259 five-table handoff、baseline-preserving pending-obligation projection、resolver/lower provenance validation、deterministic rendering、typed/final installation checkを所有し、production sourceはsyntax-freeのまま。 |
 | `src/source_property_implementation.rs` | 2460 | syntax-free source property-implementation producer | `source_property_implementation.md` | no | no | cohesiveなTask264 five-table equals/means handoff、resolver/return/lower/arena validation、baseline-preserving pending-obligation projection、deterministic rendering、typed/final sibling isolation。productionはsyntax-free。 |
 | `src/source_set_term.rs` | 6806 | syntax-free source set-term producer | `source_set_term.md` | no | no | cohesiveなTask-255/255C1 seven-table association、condition-subtree exclusion、cross-family ownership/fingerprint validation、deterministic rendering、install check、corruption test。split不要。 |
-| `src/source_statement.rs` | 51685 | syntax-free source statement producer | `source_statement.md` | no | no | cohesiveなTask-258 statement/witness transactionとcorruption matrix。Task-269Aはprivate exact B3N fixtureをreuseするchecker test 4件だけを隣接追加し、production proof-local ownershipはdedicated moduleに置く。 |
-| `src/source_proof_local_declaration.rs` | 933 | syntax-free proof-local declaration producer | `source_proof_local_declaration.md` | no | no | cohesiveなTask-269A input/row/table/handoff、exact lower/51-node authentication、resolver-local binding transition/ordinal lookup replay、fingerprint 5件、deterministic rendering、phase-ordered replay、crate-private phase-7 owner validation。syntax/proof semantic ownershipなし。 |
+| `src/source_statement.rs` | 52266 | syntax-free source statement producer | `source_statement.md` | no | no | cohesiveなTask-258 statement/witness transactionとcorruption matrix。同じTask-269 test 4件がprivate exact B3N/B3M1 fixtureをreuseしてall-field arenaとisolated cross-profile rejectionを含め、production proof-local ownershipはdedicated moduleに置く。 |
+| `src/source_proof_local_declaration.rs` | 1152 | syntax-free proof-local declaration producer | `source_proof_local_declaration.md` | no | no | cohesiveなTask-269A/B input/row/table/handoff、exact B3N/B3M1 lower/51/56-node authentication、resolver-local binding transition/ordinal lookup replay、fingerprint 5件、deterministic rendering、phase-ordered replay、crate-private phase-7 owner validation。syntax/proof semantic ownershipなし。 |
 | `src/source_structure.rs` | 5036 | syntax-free source structure-term producer | `source_structure.md` | no | no | cohesiveなTask-254 term/wrapper/root/member/field-update/edge/request table、written-partition/cross-family dependency/provenance validation、deterministic rendering、corruption test。split不要。 |
 | `src/source_structure_definition.rs` | 1773 | syntax-free source structure-definition producer | `source_structure_definition.md` | no | no | cohesiveなTask-263 definition/member/inheritance/mapping/coherence table、private resolver/baseline snapshot、exact contribution-effect/own-domain obligation validation、deterministic rendering、compound precedence test。productionはsyntax-free。 |
 | `src/source_type.rs` | 7423 | syntax-free source-type application producer | `source_type.md` | no | no | cohesiveなTask-249 flat table、Task-249R definition-return、Task-249M mode-RHS、Task-249S standalone structure-member type family、Task-249PI property-implementation composition、environment/arena/form/graph/provenance validation、deterministic rendering、exhaustive corruption test、cfg(test)-only Task-263 lower-corruption seam。split不要。 |
@@ -1559,3 +1559,17 @@ path、public surface、dependencyを追加しない。existing checker ownerが
 exact profileを1件acceptし、existing runner leafがprivate branchを1件追加する。
 Surface authenticationはrunner、syntax-free validationはchecker。path countは
 `30/37`、line/contentはimplementation後remeasure。
+
+## Task 269B implemented module boundary
+
+implementationはexisting owner内に留まる。checkerは
+`source_proof_local_declaration.rs`、`source_statement.rs`内の隣接private
+tests、existing `TypedAst` installer allowlist、runnerはexisting private
+proof-local production/test leavesだけを変更した。module、export、dependency、
+public surface、active dispatchの変更はない。checker sourceは`30/165219`、
+path/content hashは
+`c89f43f6abebf7ebeb3ac9394ecd8ea3186ad28934c75526d2cc0b85a66ebad5` /
+`1fb5ea739c810ff66ed551b359ffa7cbb26265c0057fa18f5128ee5966bad958`、
+runner productionは`37/69872`、
+`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d` /
+`1cdc1720e687890e9007664a2140a10194b7637add9b8eb589ee92d9cce3a771`である。

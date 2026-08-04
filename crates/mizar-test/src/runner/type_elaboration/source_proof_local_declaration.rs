@@ -17,29 +17,47 @@ use mizar_checker::{
 #[cfg(test)]
 use mizar_checker::{
     source_term::{SourcePrimaryTermHandoffInput, SourcePrimaryTermProducer},
-    typed_ast::TypedArena,
+    typed_ast::{
+        LocalTypeContextId, NodeRecoveryState, TypedArena, TypedNodeId, TypedNodeLinks, TypingState,
+    },
 };
+#[cfg(test)]
+use mizar_resolve::resolved_ast::{ResolvedArenaBuilder, ResolvedNode, SemanticOrigin};
 use mizar_resolve::{
     env::SymbolEnv,
     names::{LocalTermBinding, LocalTermScope},
     resolved_ast::ModuleId,
 };
+#[cfg(test)]
+use mizar_session::SourceAnchor;
 use mizar_session::SourceRange;
 use mizar_syntax::SurfaceAst;
+#[cfg(test)]
+use mizar_syntax::SurfaceNodeKind;
 
 use super::{
     checker_handoff::assemble_empty_resolved_typed_ast,
     source_statement::{
-        SOURCE_STATEMENT_B3N_TEXT, SourceStatementRouteOutput,
-        extract_named_witness_source_statement, source_statement_output_with_source,
+        SOURCE_STATEMENT_B3M1_TEXT, SOURCE_STATEMENT_B3N_TEXT, SourceStatementRouteOutput,
+        extract_multiple_witness_source_statement, extract_named_witness_source_statement,
+        source_statement_output_with_source,
     },
 };
 
 #[cfg(test)]
-use super::source_statement::source_statement_b3n_output_with_mutation;
+use super::source_statement::{
+    SourceStatementB3RouteInputs, source_statement_b3m1_output_with_mutation,
+    source_statement_b3n_output_with_mutation,
+};
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum SourceProofLocalProfile {
+    Task258B3N,
+    Task258B3M1,
+}
 
 #[derive(Debug)]
-#[allow(dead_code)] // Rationale: Task 269A is a private dormant consumer until a later activation task.
+#[allow(dead_code)] // Rationale: Tasks 269A/B are private dormant consumers until a later activation task.
 pub(in crate::runner) struct SourceProofLocalDeclarationRouteOutput {
     pub(in crate::runner) typed_ast: TypedAst,
     pub(in crate::runner) resolved: ResolvedTypedAst,
@@ -61,10 +79,18 @@ pub(in crate::runner) enum SourceProofLocalDeclarationRouteMutation {
     WrongLowerStatement,
     WrongLowerWitness,
     WrongLowerPrimary,
-    WrongLowerArena,
+    WrongLowerArenaCardinality,
+    WrongLowerArenaRoot,
+    WrongLowerArenaKind,
+    WrongLowerArenaAnchor,
+    WrongLowerArenaChildren,
+    WrongLowerArenaResolvedNode,
+    WrongLowerArenaRecovery,
+    WrongLowerArenaTyping,
+    WrongLowerArenaLinks,
 }
 
-#[allow(dead_code)] // Rationale: Task 269A deliberately leaves this exact private leaf dormant.
+#[allow(dead_code)] // Rationale: Tasks 269A/B deliberately leave this exact private leaf dormant.
 pub(in crate::runner) fn source_proof_local_declaration_output(
     ast: &SurfaceAst,
     module: ModuleId,
@@ -98,27 +124,55 @@ fn source_proof_local_declaration_output_impl(
     source_text: &str,
     mutation: SourceProofLocalDeclarationRouteMutation,
 ) -> Option<Result<SourceProofLocalDeclarationRouteOutput, String>> {
-    let extracted = extract_named_witness_source_statement(ast, source_text)?;
-    if source_text != SOURCE_STATEMENT_B3N_TEXT
-        || extracted.name_site.node().index() != 13
-        || extracted.name_range.start != 81
-        || extracted.name_range.end != 82
-        || extracted.witness_site.node().index() != 36
-        || extracted.witness_range.start != 81
-        || extracted.witness_range.end != 86
-        || extracted.take_site.node().index() != 37
-        || extracted.take_range.start != 76
-        || extracted.take_range.end != 87
-        || extracted.term_sites[2].node().index() != 34
-        || extracted.term_ranges[2].start != 85
-        || extracted.term_ranges[2].end != 86
-    {
+    let (profile, name_range) = if source_text == SOURCE_STATEMENT_B3N_TEXT {
+        let extracted = extract_named_witness_source_statement(ast, source_text)?;
+        if extracted.name_site.node().index() != 13
+            || extracted.name_range.start != 81
+            || extracted.name_range.end != 82
+            || extracted.witness_site.node().index() != 36
+            || extracted.witness_range.start != 81
+            || extracted.witness_range.end != 86
+            || extracted.take_site.node().index() != 37
+            || extracted.take_range.start != 76
+            || extracted.take_range.end != 87
+            || extracted.term_sites[2].node().index() != 34
+            || extracted.term_ranges[2].start != 85
+            || extracted.term_ranges[2].end != 86
+        {
+            return None;
+        }
+        (SourceProofLocalProfile::Task258B3N, extracted.name_range)
+    } else if source_text == SOURCE_STATEMENT_B3M1_TEXT {
+        let extracted = extract_multiple_witness_source_statement(ast, source_text)?;
+        if extracted.name_site.node().index() != 13
+            || extracted.name_range.start != 84
+            || extracted.name_range.end != 85
+            || extracted.witness_sites[0].node().index() != 38
+            || extracted.witness_ranges[0].start != 84
+            || extracted.witness_ranges[0].end != 89
+            || extracted.witness_sites[1].node().index() != 41
+            || extracted.witness_ranges[1].start != 91
+            || extracted.witness_ranges[1].end != 92
+            || extracted.take_site.node().index() != 42
+            || extracted.take_range.start != 79
+            || extracted.take_range.end != 93
+            || extracted.term_sites[2].node().index() != 36
+            || extracted.term_ranges[2].start != 88
+            || extracted.term_ranges[2].end != 89
+            || extracted.term_sites[3].node().index() != 39
+            || extracted.term_ranges[3].start != 91
+            || extracted.term_ranges[3].end != 92
+        {
+            return None;
+        }
+        (SourceProofLocalProfile::Task258B3M1, extracted.name_range)
+    } else {
         return None;
-    }
+    };
 
-    let lower = lower_output(ast, module, symbols, source_text, mutation)?;
+    let lower = lower_output(ast, module, symbols, source_text, profile, mutation)?;
     Some(lower.and_then(|lower| {
-        build_source_proof_local_declaration_output(ast, extracted.name_range, lower, mutation)
+        build_source_proof_local_declaration_output(ast, name_range, lower, mutation)
     }))
 }
 
@@ -127,36 +181,40 @@ fn lower_output(
     module: ModuleId,
     symbols: &SymbolEnv,
     source_text: &str,
+    profile: SourceProofLocalProfile,
     mutation: SourceProofLocalDeclarationRouteMutation,
 ) -> Option<Result<SourceStatementRouteOutput, String>> {
     #[cfg(not(test))]
-    let _ = mutation;
+    let _ = (profile, mutation);
     #[cfg(test)]
     match mutation {
         SourceProofLocalDeclarationRouteMutation::WrongLowerStatement => {
-            return source_statement_b3n_output_with_mutation(
+            return lower_output_with_mutation(
                 ast,
                 module,
                 symbols,
                 source_text,
+                profile,
                 |input| input.statement.statements[1].source_ordinal = 3,
             );
         }
         SourceProofLocalDeclarationRouteMutation::WrongLowerWitness => {
-            return source_statement_b3n_output_with_mutation(
+            return lower_output_with_mutation(
                 ast,
                 module,
                 symbols,
                 source_text,
+                profile,
                 |input| input.witness.names[0].spelling = "z".to_owned(),
             );
         }
         SourceProofLocalDeclarationRouteMutation::WrongLowerPrimary => {
-            return source_statement_b3n_output_with_mutation(
+            return lower_output_with_mutation(
                 ast,
                 module,
                 symbols,
                 source_text,
+                profile,
                 |input| {
                     input.primary = SourcePrimaryTermProducer::build(
                         SourcePrimaryTermHandoffInput {
@@ -173,21 +231,87 @@ fn lower_output(
                 },
             );
         }
-        SourceProofLocalDeclarationRouteMutation::WrongLowerArena => {
-            return source_statement_b3n_output_with_mutation(
+        SourceProofLocalDeclarationRouteMutation::WrongLowerArenaCardinality
+        | SourceProofLocalDeclarationRouteMutation::WrongLowerArenaRoot
+        | SourceProofLocalDeclarationRouteMutation::WrongLowerArenaKind
+        | SourceProofLocalDeclarationRouteMutation::WrongLowerArenaAnchor
+        | SourceProofLocalDeclarationRouteMutation::WrongLowerArenaChildren
+        | SourceProofLocalDeclarationRouteMutation::WrongLowerArenaResolvedNode
+        | SourceProofLocalDeclarationRouteMutation::WrongLowerArenaRecovery
+        | SourceProofLocalDeclarationRouteMutation::WrongLowerArenaTyping
+        | SourceProofLocalDeclarationRouteMutation::WrongLowerArenaLinks => {
+            return lower_output_with_mutation(
                 ast,
                 module,
                 symbols,
                 source_text,
+                profile,
                 |input| {
                     let mut nodes = input
                         .arena
                         .iter()
                         .map(|(_, node)| node.clone())
                         .collect::<Vec<_>>();
-                    nodes[13].kind = "source.task269a.corrupt".into();
-                    input.arena = TypedArena::try_new(input.arena.root(), nodes)
-                        .expect("Task269A arena corruption remains structurally valid");
+                    let mut root = input.arena.root();
+                    match mutation {
+                        SourceProofLocalDeclarationRouteMutation::WrongLowerArenaCardinality => {
+                            nodes.pop().expect("Task269 arena is non-empty");
+                            root = Some(TypedNodeId::new(nodes.len() - 1));
+                        }
+                        SourceProofLocalDeclarationRouteMutation::WrongLowerArenaRoot => {
+                            let prior = root.expect("Task269 arena root").index() - 1;
+                            root = Some(TypedNodeId::new(prior));
+                        }
+                        SourceProofLocalDeclarationRouteMutation::WrongLowerArenaKind => {
+                            nodes[13].kind = "source.task269.corrupt".into();
+                        }
+                        SourceProofLocalDeclarationRouteMutation::WrongLowerArenaAnchor => {
+                            nodes[13].anchor = SourceAnchor::Range(SourceRange {
+                                source_id: input.binding_env.source_id(),
+                                start: 0,
+                                end: 0,
+                            });
+                        }
+                        SourceProofLocalDeclarationRouteMutation::WrongLowerArenaChildren => {
+                            let index = root.expect("Task269 arena root").index();
+                            nodes[index].children.clear();
+                        }
+                        SourceProofLocalDeclarationRouteMutation::WrongLowerArenaResolvedNode => {
+                            let mut builder = ResolvedArenaBuilder::new();
+                            let foreign = builder
+                                .push(ResolvedNode::new(
+                                    SurfaceNodeKind::Root,
+                                    Vec::new(),
+                                    SemanticOrigin::new(
+                                        input.binding_env.source_id(),
+                                        input.binding_env.module_id().clone(),
+                                        SourceAnchor::Range(SourceRange {
+                                            source_id: input.binding_env.source_id(),
+                                            start: 0,
+                                            end: 0,
+                                        }),
+                                        vec![269],
+                                    ),
+                                ))
+                                .expect("Task269 foreign resolved-node id");
+                            nodes[13].resolved_node = Some(foreign);
+                        }
+                        SourceProofLocalDeclarationRouteMutation::WrongLowerArenaRecovery => {
+                            nodes[13].recovery = NodeRecoveryState::Recovered;
+                        }
+                        SourceProofLocalDeclarationRouteMutation::WrongLowerArenaTyping => {
+                            nodes[13].typing = TypingState::Successful;
+                        }
+                        SourceProofLocalDeclarationRouteMutation::WrongLowerArenaLinks => {
+                            nodes[13].links = TypedNodeLinks {
+                                context: Some(LocalTypeContextId::new(0)),
+                                ..TypedNodeLinks::default()
+                            };
+                        }
+                        _ => unreachable!("Task269 lower arena mutation"),
+                    }
+                    input.arena = TypedArena::try_new(root, nodes)
+                        .expect("Task269 arena corruption remains structurally valid");
                 },
             );
         }
@@ -195,6 +319,25 @@ fn lower_output(
     }
 
     source_statement_output_with_source(ast, module, symbols, source_text)
+}
+
+#[cfg(test)]
+fn lower_output_with_mutation(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    symbols: &SymbolEnv,
+    source_text: &str,
+    profile: SourceProofLocalProfile,
+    mutate: impl FnOnce(&mut SourceStatementB3RouteInputs),
+) -> Option<Result<SourceStatementRouteOutput, String>> {
+    match profile {
+        SourceProofLocalProfile::Task258B3N => {
+            source_statement_b3n_output_with_mutation(ast, module, symbols, source_text, mutate)
+        }
+        SourceProofLocalProfile::Task258B3M1 => {
+            source_statement_b3m1_output_with_mutation(ast, module, symbols, source_text, mutate)
+        }
+    }
 }
 
 fn build_source_proof_local_declaration_output(

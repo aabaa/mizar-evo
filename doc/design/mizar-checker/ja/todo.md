@@ -6430,6 +6430,8 @@ runner、docs-only implementation commitはproducer taskを満たさない。
 - [x] synchronized EN/JA documentation prerequisiteだけをreview/commitする。
   repeated specification reviewはNO FINDINGS、docs-only hard gate 9件はscore
   capなし`100/100`ですべてPASSした。
-- [ ] fresh preflight後frozen B3M1 incrementだけを実装する。
+- [x] fresh preflight後frozen B3M1 incrementだけを実装し、existing 8 compound
+  tests内でunnamed row non-bindingの直接assertionとall-field/cross-profile
+  fail-closed coverageを追加した。
 - [ ] 全review/hard gate/verification後commitし、次のdependency-ready
   Task-269 sliceへ継続する。

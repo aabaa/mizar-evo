@@ -638,3 +638,14 @@ reviews end **NO FINDINGS**, all nine hard gates pass uncapped at 90/100 or
 better, all verification/count/hash/staging gates pass, one implementation
 commit is created, and fresh inventory selects the next dependency-ready
 Task-269 slice.
+
+## Task 269B active B3M1 binding contract
+
+The existing API now accepts the exact frozen B3M1 profile. Construction and
+installation authenticate all five fingerprints, the 56-node arena, both
+witness rows, one name, and exact local provenance before producing only
+declaration 0 and binding 1. Direct tests prove final `2/2/0`, context-1
+`bindings=[1]`, `visible_bindings=[0,1]`, and absence of binding 2. Every node
+kind plus representative cardinality/root/anchor/children/resolved/recovery/
+typing/links corruption, and isolated B3N arena/statement/witness/primary
+mixes, fail closed. No deferred semantic owner was activated.

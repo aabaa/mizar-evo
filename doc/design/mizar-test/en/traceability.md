@@ -2428,3 +2428,12 @@ metadata case, or active outcome. The broad proof-local diagnostic rows remain
 covered for the same failure boundary and do not credit positive binding
 semantics. Counts and trace SHA-256 remain exactly the values above; the
 coverage audit is unchanged.
+
+## Checker Task 269B implementation traceability no-op
+
+Post-implementation inventory confirms the frozen no-op: requirements/cases
+remain `395/428`, type coverage remains `259 = 247 + 12`, and trace SHA-256
+remains
+`55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`.
+The eight compound unit tests add no executable trace credit and
+`spec_coverage_audit.md` remains byte-identical.

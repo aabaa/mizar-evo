@@ -11738,3 +11738,12 @@ current runner baselineは`37/69729`。Task269Bはexisting private proof-local l
 existing test includeだけを変更し、module/path/facade/Cargo/detail key/dispatch/
 corpus/trace ownerを追加しない。Surface authenticationはrunner、syntax-free
 handoffだけcheckerへ渡す。production path 37不変、line/contentはremeasure。
+
+## Checker Task 269B implemented module-boundary no-op
+
+existing private proof-local production leafとincluded test leafだけを変更した。
+module、path、facade、export、dependency、Cargo entry、detail key、public dispatch、
+corpus owner、trace ownerは追加しない。runner productionは`37/69872`、path/
+content hashは
+`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d` /
+`1cdc1720e687890e9007664a2140a10194b7637add9b8eb589ee92d9cce3a771`。

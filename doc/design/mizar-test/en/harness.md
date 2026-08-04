@@ -5203,3 +5203,12 @@ output, supplies resolver-local `y@84..85`, and binds only witness 0. The same
 four runner tests expand to B3M1 exact/mutation/isolation/final cases. No test
 function, production path, public dispatch, detail key, corpus artifact,
 metadata case, diagnostic, or CLI output is added.
+
+## Task 269B implemented dormant B3M1 branch
+
+The branch is implemented after B3N and remains unreachable from production
+dispatch. Exact selector tests authenticate the two witness rows and direct
+`2/2/0`/context/no-binding-2 result; private lower mutation tests now replay
+cardinality, root, kind, anchor, children, resolved node, recovery, typing, and
+links for both profiles. Runner remains `536` tests and no corpus-facing byte
+or semantic output changed.

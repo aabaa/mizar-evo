@@ -6746,6 +6746,8 @@ implementation commit does not satisfy a producer task.
 - [x] Review and commit only the synchronized EN/JA documentation prerequisite;
   the repeated specification review is NO FINDINGS and all nine docs-only hard
   gates PASS without a score cap at `100/100`.
-- [ ] Fresh-preflight and implement only the frozen B3M1 increment.
+- [x] Fresh-preflight and implement only the frozen B3M1 increment, including
+  direct unnamed-row non-binding assertions and all-field/cross-profile
+  fail-closed coverage within the existing eight compound tests.
 - [ ] Complete all reviews/hard gates/verification, commit, and continue to the
   next dependency-ready Task-269 slice.

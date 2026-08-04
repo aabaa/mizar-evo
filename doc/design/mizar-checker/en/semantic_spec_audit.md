@@ -673,3 +673,11 @@ effect for the unnamed row. It does not infer existential binder matching,
 witness types, remaining goals, substitutions, facts, proof acceptance, or
 downstream IR. Those deferrals and the dormant zero-credit boundary remain
 unchanged.
+
+## Task 269B active semantic boundary
+
+The implementation publishes only the frozen named definition-site binding
+and explicitly proves the unnamed row has no binding effect. All semantic
+tables remain empty, and no existential matching, typing, goal/guard,
+substitution, fact, proof, discharge, acceptance, Core, CFG, or VC behavior is
+inferred or activated.

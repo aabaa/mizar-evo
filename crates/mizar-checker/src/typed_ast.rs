@@ -1504,7 +1504,7 @@ impl TypedAst {
                 &self.nodes,
             )
             .map_err(|_| TypedAstError::InvalidSourceProofLocalDeclaration)?;
-        if !statements.is_task_258b3n_profile() {
+        if !statements.is_task_258b3n_profile() && !statements.is_task_258b3m1_profile() {
             return Err(TypedAstError::InvalidSourceProofLocalDeclaration);
         }
         handoff

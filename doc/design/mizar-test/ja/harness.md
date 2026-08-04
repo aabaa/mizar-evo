@@ -4905,3 +4905,11 @@ existing private leafはB3N branch後だけexact Task-258B3M1をselectし、exis
 lower、resolver-local `y@84..85`をcomposeしてwitness0だけをbindする。same runner
 tests4件をB3M1 exact/mutation/isolation/finalへexpandする。test function/path、public
 dispatch/detail key/corpus/metadata/diagnostic/CLIは追加しない。
+
+## Task 269B implemented dormant B3M1 branch
+
+branchはB3N後に実装され、production dispatchからunreachableのまま。exact
+selector testsはwitness 2行とdirect `2/2/0`/context/no-binding-2 resultを
+authenticateし、private lower mutation testsは両profileのcardinality、root、
+kind、anchor、children、resolved node、recovery、typing、linksをreplayする。
+runnerは536 tests不変で、corpus-facing byte/semantic outputは変更しない。

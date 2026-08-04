@@ -1716,3 +1716,12 @@ resolver provenance, unchanged API/five fingerprints/seven phases, B3N
 compatibility, same eight compound tests, zero test/path/corpus/trace/CLI
 impact, semantic deferrals, and audit no-op. No untranslated normative delta
 remains before review.
+
+## Task 269B active implementation synchronization
+
+EN/JA agree on exact named-only binding, explicit unnamed-row non-binding,
+five-fingerprint and 56-node replay, representative all-field and isolated
+cross-profile rejection, Typed/final ownership, dormant runner behavior,
+unchanged `482/536` test counts, measured `30/165219` and `37/69872`
+production inventories, zero corpus/trace/CLI/audit impact, and every semantic
+deferral. No implementation-time bilingual debt remains.

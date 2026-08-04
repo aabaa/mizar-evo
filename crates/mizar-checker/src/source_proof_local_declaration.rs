@@ -277,14 +277,14 @@ impl SourceProofLocalDeclarationHandoff {
             return Err(SourceProofLocalDeclarationError::DependencyMismatch);
         }
 
-        let lower_failure = validate_lower_dependencies(
+        let lower = validate_lower_dependencies(
             self.source_id,
             &self.module_id,
             statements,
             witnesses,
             primary_terms,
         )?;
-        if self.declarations.len() != 1 || lower_failure == Some(LowerFailure::Aggregate) {
+        if self.declarations.len() != 1 || lower.failure == Some(LowerFailure::Aggregate) {
             return Err(SourceProofLocalDeclarationError::InvalidAggregate);
         }
         let id = SourceProofLocalDeclarationId::new(0);
@@ -292,17 +292,21 @@ impl SourceProofLocalDeclarationHandoff {
             .declarations
             .get(id)
             .ok_or(SourceProofLocalDeclarationError::InvalidDeclaration { declaration: id })?;
-        if lower_failure == Some(LowerFailure::Declaration)
+        if lower.failure == Some(LowerFailure::Declaration)
             || !exact_output_declaration(declaration)
-            || !exact_output_local_fields(&self.binding_env, self.source_id)
+            || !exact_output_local_fields(&self.binding_env, self.source_id, lower.profile)
         {
             return Err(SourceProofLocalDeclarationError::InvalidDeclaration { declaration: id });
         }
-        if !exact_task258b3n_arena(self.source_id, arena) {
+        if !exact_frozen_arena(lower.profile, self.source_id, arena) {
             return Err(SourceProofLocalDeclarationError::InvalidArena);
         }
 
-        let expected = extend_binding_env(statements.binding_env(), &exact_local(self.source_id))?;
+        let expected = extend_binding_env(
+            statements.binding_env(),
+            &exact_local(self.source_id, lower.profile),
+            lower.profile,
+        )?;
         if self.binding_env != expected
             || self.final_binding_fingerprint != self.binding_env.debug_text()
             || !exact_lookup_behavior(&self.binding_env)
@@ -394,32 +398,36 @@ impl SourceProofLocalDeclarationHandoff {
         let binding = self
             .binding_env
             .binding_mut_for_test(BindingId::new(1))
-            .expect("Task269A local binding");
+            .expect("Task269 local binding");
         match corruption {
             SourceProofLocalBindingCorruptionForTest::Spelling => {
                 binding.spelling = "z".to_owned();
             }
             SourceProofLocalBindingCorruptionForTest::Scope => {
                 let BinderIdentity::ResolverLocal { scope, .. } = &mut binding.identity else {
-                    panic!("Task269A resolver-local identity");
+                    panic!("Task269 resolver-local identity");
                 };
                 *scope = LocalTermScope::new(vec![1]);
             }
             SourceProofLocalBindingCorruptionForTest::Range => {
-                let corrupted = range(source_id, 80, 82);
+                let corrupted = range(
+                    source_id,
+                    binding.declaration_range.start.saturating_sub(1),
+                    binding.declaration_range.end,
+                );
                 binding.declaration_range = corrupted;
                 let BinderIdentity::ResolverLocal {
                     declaration_range, ..
                 } = &mut binding.identity
                 else {
-                    panic!("Task269A resolver-local identity");
+                    panic!("Task269 resolver-local identity");
                 };
                 *declaration_range = corrupted;
             }
             SourceProofLocalBindingCorruptionForTest::Ordinal => {
                 binding.visible_after_ordinal = 2;
                 let BinderIdentity::ResolverLocal { ordinal, .. } = &mut binding.identity else {
-                    panic!("Task269A resolver-local identity");
+                    panic!("Task269 resolver-local identity");
                 };
                 *ordinal = 2;
             }
@@ -454,28 +462,29 @@ impl SourceProofLocalDeclarationProducer {
             witnesses,
             primary_terms,
         )?;
-        let lower_failure = validate_lower_dependencies(
+        let lower = validate_lower_dependencies(
             input.source_id,
             &input.module_id,
             statements,
             witnesses,
             primary_terms,
         )?;
-        if input.declarations.len() != 1 || lower_failure == Some(LowerFailure::Aggregate) {
+        if input.declarations.len() != 1 || lower.failure == Some(LowerFailure::Aggregate) {
             return Err(SourceProofLocalDeclarationError::InvalidAggregate);
         }
         let id = SourceProofLocalDeclarationId::new(0);
         let declaration = &input.declarations[0];
-        if lower_failure == Some(LowerFailure::Declaration)
-            || !exact_input_declaration(declaration, witnesses)
+        if lower.failure == Some(LowerFailure::Declaration)
+            || !exact_input_declaration(declaration, witnesses, lower.profile)
         {
             return Err(SourceProofLocalDeclarationError::InvalidDeclaration { declaration: id });
         }
-        if !exact_task258b3n_arena(input.source_id, arena) {
+        if !exact_frozen_arena(lower.profile, input.source_id, arena) {
             return Err(SourceProofLocalDeclarationError::InvalidArena);
         }
 
-        let binding_env = extend_binding_env(statements.binding_env(), &declaration.local)?;
+        let binding_env =
+            extend_binding_env(statements.binding_env(), &declaration.local, lower.profile)?;
         if !exact_lookup_behavior(&binding_env) {
             return Err(SourceProofLocalDeclarationError::InvalidBindingEnvironment);
         }
@@ -558,6 +567,18 @@ enum LowerFailure {
     Declaration,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum FrozenProfile {
+    Task258B3N,
+    Task258B3M1,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct LowerValidation {
+    profile: FrozenProfile,
+    failure: Option<LowerFailure>,
+}
+
 fn validate_transaction_identity(
     source_id: SourceId,
     module_id: &ModuleId,
@@ -583,38 +604,46 @@ fn validate_lower_dependencies(
     statements: &SourceStatementHandoff,
     witnesses: &SourceStatementWitnessHandoff,
     primary_terms: &SourcePrimaryTermHandoff,
-) -> Result<Option<LowerFailure>, SourceProofLocalDeclarationError> {
-    if !statements.is_task_258b3n_profile()
-        || statements.binding_env().source_id() != source_id
+) -> Result<LowerValidation, SourceProofLocalDeclarationError> {
+    let profile = if statements.is_task_258b3n_profile() {
+        FrozenProfile::Task258B3N
+    } else if statements.is_task_258b3m1_profile() {
+        FrozenProfile::Task258B3M1
+    } else {
+        return Err(SourceProofLocalDeclarationError::DependencyMismatch);
+    };
+    if statements.binding_env().source_id() != source_id
         || statements.binding_env().module_id() != module_id
         || witnesses.statement_fingerprint() != statements.debug_text()
         || witnesses.primary_term_fingerprint() != primary_terms.debug_text()
     {
         return Err(SourceProofLocalDeclarationError::DependencyMismatch);
     }
-    let canonical_arena = task258b3n_canonical_arena(source_id);
-    match witnesses.validate_installation(
+    let canonical_arena = frozen_canonical_arena(profile, source_id);
+    let failure = match witnesses.validate_installation(
         source_id,
         module_id,
         statements,
         primary_terms,
         &canonical_arena,
     ) {
-        Ok(()) => Ok(None),
+        Ok(()) => None,
         Err(SourceStatementWitnessError::DependencyMismatch) => {
-            Err(SourceProofLocalDeclarationError::DependencyMismatch)
+            return Err(SourceProofLocalDeclarationError::DependencyMismatch);
         }
-        Err(SourceStatementWitnessError::InvalidAggregate) => Ok(Some(LowerFailure::Aggregate)),
+        Err(SourceStatementWitnessError::InvalidAggregate) => Some(LowerFailure::Aggregate),
         Err(
             SourceStatementWitnessError::InvalidWitness { .. }
             | SourceStatementWitnessError::InvalidName { .. },
-        ) => Ok(Some(LowerFailure::Declaration)),
-    }
+        ) => Some(LowerFailure::Declaration),
+    };
+    Ok(LowerValidation { profile, failure })
 }
 
 fn exact_input_declaration(
     declaration: &SourceProofLocalDeclarationInput,
     witnesses: &SourceStatementWitnessHandoff,
+    profile: FrozenProfile,
 ) -> bool {
     let witness = witnesses.witnesses().get(declaration.witness);
     let name = witnesses.names().get(declaration.name);
@@ -629,7 +658,7 @@ fn exact_input_declaration(
         && declaration.rhs == SourceStatementWitnessTermTarget::Primary(SourcePrimaryTermId::new(2))
         && declaration.binding_context == BindingContextId::new(1)
         && declaration.source_ordinal == 1
-        && exact_local_fields(&declaration.local)
+        && exact_local_fields(&declaration.local, profile)
         && declaration.local.declaration_range().source_id == witnesses.source_id()
         && declaration.kind == SourceProofLocalDeclarationKind::NamedWitness
         && declaration.recovery == SourceProofLocalDeclarationRecovery::Normal
@@ -647,7 +676,12 @@ fn exact_output_declaration(declaration: &SourceProofLocalDeclaration) -> bool {
         && declaration.recovery == SourceProofLocalDeclarationRecovery::Normal
 }
 
-fn exact_output_local_fields(binding_env: &BindingEnv, source_id: SourceId) -> bool {
+fn exact_output_local_fields(
+    binding_env: &BindingEnv,
+    source_id: SourceId,
+    profile: FrozenProfile,
+) -> bool {
+    let (start, end) = frozen_local_range(profile);
     binding_env
         .bindings()
         .get(BindingId::new(1))
@@ -655,7 +689,7 @@ fn exact_output_local_fields(binding_env: &BindingEnv, source_id: SourceId) -> b
             binding.spelling == "y"
                 && binding.kind == BindingKind::LocalAbbreviation
                 && binding.owner_context == BindingContextId::new(1)
-                && binding.declaration_range == range(source_id, 81, 82)
+                && binding.declaration_range == range(source_id, start, end)
                 && binding.visible_after_ordinal == 1
                 && matches!(
                     &binding.identity,
@@ -664,33 +698,45 @@ fn exact_output_local_fields(binding_env: &BindingEnv, source_id: SourceId) -> b
                         ordinal: 1,
                         declaration_range,
                     } if scope.path() == [0]
-                        && *declaration_range == range(source_id, 81, 82)
+                        && *declaration_range == range(source_id, start, end)
                 )
         })
 }
 
-fn exact_local_fields(local: &LocalTermBinding) -> bool {
+fn exact_local_fields(local: &LocalTermBinding, profile: FrozenProfile) -> bool {
+    let (start, end) = frozen_local_range(profile);
     local.spelling() == "y"
         && local.scope().path() == [0]
-        && local.declaration_range().start == 81
-        && local.declaration_range().end == 82
+        && local.declaration_range().start == start
+        && local.declaration_range().end == end
         && local.visible_after_ordinal() == 1
 }
 
-fn exact_local(source_id: SourceId) -> LocalTermBinding {
+fn exact_local(source_id: SourceId, profile: FrozenProfile) -> LocalTermBinding {
+    let (start, end) = frozen_local_range(profile);
     LocalTermBinding::new(
         "y",
         LocalTermScope::new(vec![0]),
-        range(source_id, 81, 82),
+        range(source_id, start, end),
         1,
     )
+}
+
+const fn frozen_local_range(profile: FrozenProfile) -> (usize, usize) {
+    match profile {
+        FrozenProfile::Task258B3N => (81, 82),
+        FrozenProfile::Task258B3M1 => (84, 85),
+    }
 }
 
 fn extend_binding_env(
     base: &BindingEnv,
     local: &LocalTermBinding,
+    profile: FrozenProfile,
 ) -> Result<BindingEnv, SourceProofLocalDeclarationError> {
-    if !exact_local_fields(local) || local.declaration_range().source_id != base.source_id() {
+    if !exact_local_fields(local, profile)
+        || local.declaration_range().source_id != base.source_id()
+    {
         return Err(SourceProofLocalDeclarationError::InvalidBindingEnvironment);
     }
     let mut bindings = base.bindings().clone();
@@ -835,6 +881,65 @@ const TASK258B3N_NODE_RANGES: [(usize, usize); 51] = [
     (0, 106),
 ];
 
+const TASK258B3M1_NODE_RANGES: [(usize, usize); 56] = [
+    (0, 7),
+    (8, 9),
+    (10, 13),
+    (14, 17),
+    (17, 18),
+    (19, 26),
+    (27, 63),
+    (63, 64),
+    (65, 66),
+    (67, 68),
+    (69, 70),
+    (71, 76),
+    (79, 83),
+    (84, 85),
+    (86, 87),
+    (88, 89),
+    (89, 90),
+    (91, 92),
+    (92, 93),
+    (96, 100),
+    (101, 102),
+    (103, 104),
+    (105, 106),
+    (106, 107),
+    (108, 111),
+    (111, 112),
+    (14, 17),
+    (14, 17),
+    (8, 17),
+    (0, 18),
+    (65, 66),
+    (65, 66),
+    (69, 70),
+    (69, 70),
+    (65, 70),
+    (65, 70),
+    (88, 89),
+    (88, 89),
+    (84, 89),
+    (91, 92),
+    (91, 92),
+    (91, 92),
+    (79, 93),
+    (101, 102),
+    (101, 102),
+    (105, 106),
+    (105, 106),
+    (101, 106),
+    (101, 106),
+    (101, 106),
+    (96, 107),
+    (71, 111),
+    (19, 112),
+    (0, 112),
+    (0, 112),
+    (0, 112),
+];
+
 fn task258b3n_node_children(index: usize) -> &'static [usize] {
     match index {
         24 => &[3],
@@ -884,6 +989,65 @@ fn task258b3n_node_kind(index: usize) -> &'static str {
     }
 }
 
+fn task258b3m1_node_children(index: usize) -> &'static [usize] {
+    match index {
+        26 => &[3],
+        27 => &[26],
+        28 => &[1, 2, 27],
+        29 => &[0, 28, 4],
+        30 => &[8],
+        31 => &[30],
+        32 => &[10],
+        33 => &[32],
+        34 => &[31, 9, 33],
+        35 => &[34],
+        36 => &[15],
+        37 => &[36],
+        38 => &[13, 14, 37],
+        39 => &[17],
+        40 => &[39],
+        41 => &[40],
+        42 => &[12, 38, 16, 41, 18],
+        43 => &[20],
+        44 => &[43],
+        45 => &[22],
+        46 => &[45],
+        47 => &[44, 21, 46],
+        48 => &[47],
+        49 => &[48],
+        50 => &[19, 49, 23],
+        51 => &[11, 42, 50, 24],
+        52 => &[5, 6, 7, 35, 51, 25],
+        53 => &[29, 52],
+        54 => &[53],
+        55 => &[
+            0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
+            24, 25, 54,
+        ],
+        _ => &[],
+    }
+}
+
+fn task258b3m1_node_kind(index: usize) -> &'static str {
+    match index {
+        30 | 32 | 36 | 39 | 43 | 45 => "source.term.variable-reference",
+        34 | 47 => "source.formula.atomic.equality",
+        13 => "source.statement-witness.name",
+        38 | 41 => "source.statement-witness.item",
+        42 => "source.statement-witness.take",
+        50 => "source.statement.conclusion",
+        52 => "source.statement.theorem",
+        _ => "source.surface.unowned",
+    }
+}
+
+fn exact_frozen_arena(profile: FrozenProfile, source_id: SourceId, arena: &TypedArena) -> bool {
+    match profile {
+        FrozenProfile::Task258B3N => exact_task258b3n_arena(source_id, arena),
+        FrozenProfile::Task258B3M1 => exact_task258b3m1_arena(source_id, arena),
+    }
+}
+
 fn exact_task258b3n_arena(source_id: SourceId, arena: &TypedArena) -> bool {
     arena.len() == TASK258B3N_NODE_RANGES.len()
         && arena.root() == Some(TypedNodeId::new(50))
@@ -908,6 +1072,37 @@ fn exact_task258b3n_arena(source_id: SourceId, arena: &TypedArena) -> bool {
             })
 }
 
+fn exact_task258b3m1_arena(source_id: SourceId, arena: &TypedArena) -> bool {
+    arena.len() == TASK258B3M1_NODE_RANGES.len()
+        && arena.root() == Some(TypedNodeId::new(55))
+        && TASK258B3M1_NODE_RANGES
+            .iter()
+            .copied()
+            .enumerate()
+            .all(|(index, (start, end))| {
+                arena.node(TypedNodeId::new(index)).is_some_and(|node| {
+                    node.anchor == SourceAnchor::Range(range(source_id, start, end))
+                        && node.kind.as_str() == task258b3m1_node_kind(index)
+                        && node.resolved_node.is_none()
+                        && node.recovery == NodeRecoveryState::Normal
+                        && node.typing == TypingState::Unknown
+                        && node.links == TypedNodeLinks::default()
+                        && node
+                            .children
+                            .iter()
+                            .map(|child| child.index())
+                            .eq(task258b3m1_node_children(index).iter().copied())
+                })
+            })
+}
+
+fn frozen_canonical_arena(profile: FrozenProfile, source_id: SourceId) -> TypedArena {
+    match profile {
+        FrozenProfile::Task258B3N => task258b3n_canonical_arena(source_id),
+        FrozenProfile::Task258B3M1 => task258b3m1_canonical_arena(source_id),
+    }
+}
+
 fn task258b3n_canonical_arena(source_id: SourceId) -> TypedArena {
     let mut builder = TypedArenaBuilder::new();
     let mut ids = Vec::with_capacity(TASK258B3N_NODE_RANGES.len());
@@ -930,4 +1125,28 @@ fn task258b3n_canonical_arena(source_id: SourceId) -> TypedArena {
     builder
         .finish(Some(ids[50]))
         .expect("frozen Task258B3N arena is valid")
+}
+
+fn task258b3m1_canonical_arena(source_id: SourceId) -> TypedArena {
+    let mut builder = TypedArenaBuilder::new();
+    let mut ids = Vec::with_capacity(TASK258B3M1_NODE_RANGES.len());
+    for (index, (start, end)) in TASK258B3M1_NODE_RANGES.iter().copied().enumerate() {
+        let children = task258b3m1_node_children(index)
+            .iter()
+            .map(|child| ids[*child])
+            .collect();
+        let id = builder
+            .push(
+                TypedNode::new(
+                    task258b3m1_node_kind(index),
+                    SourceAnchor::Range(range(source_id, start, end)),
+                )
+                .with_children(children),
+            )
+            .expect("frozen Task258B3M1 node graph is valid");
+        ids.push(id);
+    }
+    builder
+        .finish(Some(ids[55]))
+        .expect("frozen Task258B3M1 arena is valid")
 }
