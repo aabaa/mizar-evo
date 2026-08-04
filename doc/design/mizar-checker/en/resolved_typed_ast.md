@@ -1845,3 +1845,13 @@ getter and appends the handoff's deterministic debug section. It adds no
 expression, candidate, formula, statement-semantic, proof, goal, obligation,
 fact, or diagnostic row. Orphan, cross-family, stale, or semantic-coexistence
 input is rejected; Task-269A/B final bytes remain unchanged.
+
+## Task 269C Active Final Ownership
+
+Final assembly now performs that complete replay and clone-preservation.
+Dedicated tests reject orphan, stale, cross-family, and nonempty semantic
+inputs while valid cloning preserves the exact handoff and empty semantic
+profile.
+
+The final optional handoff is privately boxed for stack-size stability while
+preserving the frozen getter, debug, clone, and replay behavior.

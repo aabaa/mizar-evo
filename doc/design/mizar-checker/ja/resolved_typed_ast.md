@@ -1759,3 +1759,12 @@ binding-only handoffをclone-preserveする。read-only getterとdeterministic d
 追加するがexpression/candidate/formula/statement-semantic/proof/goal/obligation/fact/
 diagnostic rowは追加しない。orphan/cross-family/stale/semantic-coexistenceをrejectし、
 Task-269A/B final byteは不変。
+
+## Task 269C active final ownership
+
+final assemblyはcomplete replayとclone-preservationを実装した。dedicated testsは
+orphan/stale/cross-family/nonempty semantic inputをrejectし、valid cloneはexact
+handoffとempty semantic profileをpreserveする。
+
+final optional handoffはstack-size stabilityのためprivate boxed storageとし、
+freeze済みgetter/debug/clone/replay behaviorを維持する。

@@ -699,3 +699,7 @@ obligation, record a fact, resolve a real later use/capture, or accept a proof.
 All semantic/proof/IR tables stay empty; source-type admission is a separate
 prerequisite. Treating synthetic lookup ordinal 2 as a source use would be a
 boundary violation.
+
+Implementation preserves this zero-semantic boundary: every typed/final
+semantic table remains empty, no active route is added, and the missing type
+site continues to block any claim of source-type, goal, or proof semantics.

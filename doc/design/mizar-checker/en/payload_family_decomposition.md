@@ -1767,3 +1767,7 @@ transition only. It consumes Task-269CP provenance without importing syntax,
 retains a missing type site, and is one-shot preserved by Typed/final owners.
 It is disjoint from named-witness A/B, source-type application, actual use/
 capture, formula/goal/fact/proof/obligation families, and active coverage.
+
+The family is now implemented with exactly one declaration row and no sibling
+payload. Typed/final replay and the dormant runner preserve that decomposition;
+the separate source-type prerequisite remains unimplemented.

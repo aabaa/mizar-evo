@@ -646,3 +646,7 @@ siteのbinding transactionだけをpublishし、universal type guard encoding、
 obligation create/discharge、fact、real later use/capture、proof acceptanceを行わない。
 semantic/proof/IR tableはempty、source-type admissionはseparate prerequisite。synthetic
 lookup ordinal2をsource useとして扱うのはboundary violation。
+
+implementationもzero-semantic boundaryを維持する。Typed/finalの全semantic tableは
+empty、active routeは追加せず、missing type siteによりsource-type/goal/proof
+semanticsのclaimを引き続き禁止する。

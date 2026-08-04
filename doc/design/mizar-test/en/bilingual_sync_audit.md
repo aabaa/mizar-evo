@@ -1674,3 +1674,10 @@ EN/JA agree on the exact private lower-to-reserve-to-checker composition,
 missing-type `LetBinding`, empty Typed/final semantics, four-file/four-test
 runner scope, `540 -> 544`, unchanged production/active/corpus/trace/CLI, and
 the separate source-type/use-capture owners. English remains canonical.
+
+## Checker Task 269C Implementation Synchronization
+
+EN/JA agree on the implemented private route, exact checker transaction,
+four-test matrix, runner `544`, production `37/71412`, raw/normalized hashes,
+unchanged public/active/corpus/trace/CLI behavior, and all semantic deferrals.
+No implementation-time bilingual debt remains.

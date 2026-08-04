@@ -6,24 +6,27 @@ use mizar_checker::{
     source_proof_local_declaration::{
         SourceProofLocalDeclarationHandoffInput, SourceProofLocalDeclarationInput,
         SourceProofLocalDeclarationKind, SourceProofLocalDeclarationProducer,
-        SourceProofLocalDeclarationRecovery,
+        SourceProofLocalDeclarationRecovery, SourceProofLocalLetBindingHandoffInput,
+        SourceProofLocalLetBindingProducer, SourceProofLocalLetBindingRecovery,
     },
     source_statement::{
         SourceStatementWitnessId, SourceStatementWitnessNameId, SourceStatementWitnessTermTarget,
     },
     source_term::SourcePrimaryTermId,
-    typed_ast::TypedAst,
+    typed_ast::{
+        CoercionTable, InitialObligationTable, LocalTypeContextTable, TypeDiagnosticTable,
+        TypeFactTable, TypeTable, TypedArena, TypedAst, TypedAstParts,
+    },
 };
 #[cfg(test)]
 use mizar_checker::{
     source_term::{SourcePrimaryTermHandoffInput, SourcePrimaryTermProducer},
-    typed_ast::{
-        LocalTypeContextId, NodeRecoveryState, TypedArena, TypedNodeId, TypedNodeLinks, TypingState,
-    },
+    typed_ast::{LocalTypeContextId, NodeRecoveryState, TypedNodeId, TypedNodeLinks, TypingState},
 };
 #[cfg(test)]
 use mizar_resolve::resolved_ast::{ResolvedArenaBuilder, ResolvedNode, SemanticOrigin};
 use mizar_resolve::{
+    declarations::DeclarationShellSet,
     env::SymbolEnv,
     names::{LocalTermBinding, LocalTermScope},
     resolved_ast::ModuleId,
@@ -36,13 +39,15 @@ use mizar_syntax::SurfaceAst;
 use mizar_syntax::SurfaceNodeKind;
 
 use super::{
-    checker_handoff::assemble_empty_resolved_typed_ast,
+    checker_handoff::{assemble_empty_resolved_typed_ast, source_module_binding_env},
     source_statement::{
         SOURCE_STATEMENT_B3M1_TEXT, SOURCE_STATEMENT_B3N_TEXT, SourceStatementRouteOutput,
         extract_multiple_witness_source_statement, extract_named_witness_source_statement,
-        source_statement_output_with_source,
+        source_proof_local_let_lower_output, source_statement_output_with_source,
     },
 };
+
+use super::source_reserve::extract_builtin_source_reserve_declarations_after_node_guard;
 
 #[cfg(test)]
 use super::source_statement::{
@@ -446,4 +451,213 @@ fn build_source_proof_local_declaration_output(
         typed_ast,
         resolved,
     })
+}
+
+#[derive(Debug, PartialEq, Eq)]
+#[allow(dead_code)] // Rationale: Task 269C is a private dormant runner consumer until activation.
+pub(in crate::runner) struct SourceProofLocalLetBindingRouteOutput {
+    pub(in crate::runner) typed_ast: TypedAst,
+    pub(in crate::runner) resolved: ResolvedTypedAst,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[allow(dead_code)] // Rationale: production selects `None`; other variants are private corruption seams.
+pub(in crate::runner) enum SourceProofLocalLetBindingRouteMutation {
+    None,
+    WrongLowerFingerprint,
+    EmptyBase,
+    WrongTheoremRange,
+    WrongProofRange,
+    WrongLetRange,
+    WrongSegmentRange,
+    WrongNameRange,
+    WrongLocalSpelling,
+    WrongLocalScope,
+    WrongLocalRange,
+    WrongLocalVisibleAfter,
+    WrongSourceOrdinal,
+}
+
+#[allow(dead_code)] // Rationale: Task 269C deliberately leaves this exact private leaf dormant.
+pub(in crate::runner) fn source_proof_local_let_binding_output(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    shells: &DeclarationShellSet,
+    symbols: &SymbolEnv,
+    source_text: &str,
+) -> Option<Result<SourceProofLocalLetBindingRouteOutput, String>> {
+    source_proof_local_let_binding_output_impl(
+        ast,
+        module,
+        shells,
+        symbols,
+        source_text,
+        SourceProofLocalLetBindingRouteMutation::None,
+    )
+}
+
+#[cfg(test)]
+pub(in crate::runner) fn source_proof_local_let_binding_output_with_mutation(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    shells: &DeclarationShellSet,
+    symbols: &SymbolEnv,
+    source_text: &str,
+    mutation: SourceProofLocalLetBindingRouteMutation,
+) -> Option<Result<SourceProofLocalLetBindingRouteOutput, String>> {
+    source_proof_local_let_binding_output_impl(ast, module, shells, symbols, source_text, mutation)
+}
+
+fn source_proof_local_let_binding_output_impl(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    shells: &DeclarationShellSet,
+    symbols: &SymbolEnv,
+    source_text: &str,
+    mutation: SourceProofLocalLetBindingRouteMutation,
+) -> Option<Result<SourceProofLocalLetBindingRouteOutput, String>> {
+    let lower =
+        source_proof_local_let_lower_output(ast, module.clone(), shells, symbols, source_text)?;
+    Some(lower.and_then(|lower| {
+        let extraction = extract_builtin_source_reserve_declarations_after_node_guard(
+            ast,
+            module.clone(),
+            symbols,
+        )
+        .map_err(|()| "Task269C exact reserve base extraction failed".to_owned())?;
+        let exact_base = extraction
+            .bridge
+            .prepare_binding_env(symbols)
+            .map_err(|error| format!("Task269C exact reserve base failed: {error}"))?;
+        let base = if mutation == SourceProofLocalLetBindingRouteMutation::EmptyBase {
+            source_module_binding_env(ast, module.clone()).map_err(|error| error.to_string())?
+        } else {
+            exact_base
+        };
+
+        let mut lower_fingerprint = lower.debug_text();
+        if mutation == SourceProofLocalLetBindingRouteMutation::WrongLowerFingerprint {
+            lower_fingerprint.push_str("corrupt");
+        }
+        let theorem_range =
+            if mutation == SourceProofLocalLetBindingRouteMutation::WrongTheoremRange {
+                SourceRange {
+                    end: lower.theorem_range().end + 1,
+                    ..lower.theorem_range()
+                }
+            } else {
+                lower.theorem_range()
+            };
+        let proof_range = mutated_task269c_range(
+            lower.proof_range(),
+            mutation == SourceProofLocalLetBindingRouteMutation::WrongProofRange,
+        );
+        let let_range = mutated_task269c_range(
+            lower.let_range(),
+            mutation == SourceProofLocalLetBindingRouteMutation::WrongLetRange,
+        );
+        let segment_range = mutated_task269c_range(
+            lower.segment_range(),
+            mutation == SourceProofLocalLetBindingRouteMutation::WrongSegmentRange,
+        );
+        let name_range = mutated_task269c_range(
+            lower.name_range(),
+            mutation == SourceProofLocalLetBindingRouteMutation::WrongNameRange,
+        );
+        let local = match mutation {
+            SourceProofLocalLetBindingRouteMutation::WrongLocalSpelling => LocalTermBinding::new(
+                "z",
+                lower.local().scope().clone(),
+                lower.local().declaration_range(),
+                lower.local().visible_after_ordinal(),
+            ),
+            SourceProofLocalLetBindingRouteMutation::WrongLocalScope => LocalTermBinding::new(
+                lower.local().spelling(),
+                LocalTermScope::new(vec![1]),
+                lower.local().declaration_range(),
+                lower.local().visible_after_ordinal(),
+            ),
+            SourceProofLocalLetBindingRouteMutation::WrongLocalRange => LocalTermBinding::new(
+                lower.local().spelling(),
+                lower.local().scope().clone(),
+                SourceRange {
+                    start: lower.local().declaration_range().start - 1,
+                    ..lower.local().declaration_range()
+                },
+                lower.local().visible_after_ordinal(),
+            ),
+            SourceProofLocalLetBindingRouteMutation::WrongLocalVisibleAfter => {
+                LocalTermBinding::new(
+                    lower.local().spelling(),
+                    lower.local().scope().clone(),
+                    lower.local().declaration_range(),
+                    lower.local().visible_after_ordinal() + 1,
+                )
+            }
+            _ => lower.local().clone(),
+        };
+        let source_ordinal =
+            if mutation == SourceProofLocalLetBindingRouteMutation::WrongSourceOrdinal {
+                lower.source_ordinal() + 1
+            } else {
+                lower.source_ordinal()
+            };
+        let handoff = SourceProofLocalLetBindingProducer::build(
+            SourceProofLocalLetBindingHandoffInput {
+                source_id: lower.source_id(),
+                module_id: lower.module_id().clone(),
+                lower_fingerprint,
+                theorem_symbol: lower.theorem_symbol().clone(),
+                theorem_definition: lower.theorem_definition(),
+                contribution: lower.contribution(),
+                theorem_range,
+                proof_range,
+                let_range,
+                segment_range,
+                name_range,
+                source_ordinal,
+                local,
+                recovery: SourceProofLocalLetBindingRecovery::Normal,
+            },
+            &base,
+        )
+        .map_err(|error| error.to_string())?;
+        let typed_ast = empty_task269c_typed_ast(ast.source_id, module.clone())?
+            .with_source_proof_local_let_binding(handoff)
+            .map_err(|error| error.to_string())?;
+        let resolved = assemble_empty_resolved_typed_ast(&typed_ast, Vec::new())?;
+        Ok(SourceProofLocalLetBindingRouteOutput {
+            typed_ast,
+            resolved,
+        })
+    }))
+}
+
+fn mutated_task269c_range(mut source_range: SourceRange, mutate: bool) -> SourceRange {
+    if mutate {
+        source_range.end += 1;
+    }
+    source_range
+}
+
+fn empty_task269c_typed_ast(
+    source_id: mizar_session::SourceId,
+    module_id: ModuleId,
+) -> Result<TypedAst, String> {
+    TypedAst::try_new(TypedAstParts {
+        source_id,
+        module_id,
+        resolved_root: None,
+        source_context: None,
+        source_type: None,
+        source_attribute: None,
+        nodes: TypedArena::try_new(None, Vec::new()).map_err(|error| error.to_string())?,
+        contexts: LocalTypeContextTable::new(),
+        types: TypeTable::new(),
+        facts: TypeFactTable::new(),
+        coercions: CoercionTable::new(),
+        initial_obligations: InitialObligationTable::new(),
+        diagnostics: TypeDiagnosticTable::new(),
+    })
+    .map_err(|error| error.to_string())
 }

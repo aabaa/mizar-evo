@@ -3550,7 +3550,8 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
   and exit in synchronized EN/JA.
 - [x] Review the synchronized documentation prerequisite to **NO FINDINGS**
   and pass all nine hard gates uncapped at `100/100`.
-- [ ] Stage and commit the synchronized documentation prerequisite alone.
-- [ ] Fresh-preflight and implement only the private binding consumer.
-- [ ] Repeat all reviews/verification, task-only commit, and automatic fresh
+- [x] Stage and commit the synchronized documentation prerequisite alone as
+  `e3bc93c36577e7e250efab8cfc11d9b9695c3953`.
+- [x] Fresh-preflight and implement only the private binding consumer.
+- [~] Repeat all reviews/verification, task-only commit, and automatic fresh
   next-task inventory with source-type admission still separate.

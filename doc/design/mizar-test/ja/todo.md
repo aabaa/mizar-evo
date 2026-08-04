@@ -3322,7 +3322,8 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
   dispatch/corpus/trace/CLI不変、semantic exclusion、exitをEN/JAでfreeze。
 - [x] synchronized documentation prerequisiteを**NO FINDINGS**までreviewし、hard
   gate 9件をcapなしの`100/100`でPASS。
-- [ ] synchronized documentation prerequisiteだけをstage/commit。
-- [ ] fresh preflight後private binding consumerだけをimplement。
-- [ ] 全review/verification後task-only commitし、source-type admissionを分離した
+- [x] synchronized documentation prerequisiteだけを
+  `e3bc93c36577e7e250efab8cfc11d9b9695c3953`としてstage/commit。
+- [x] fresh preflight後private binding consumerだけをimplement。
+- [~] 全review/verification後task-only commitし、source-type admissionを分離した
   fresh next-task inventoryへ自動継続。

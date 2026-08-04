@@ -1779,3 +1779,12 @@ installerを追加する。admitted baseはnode/root、other source handoff、se
 empty。exact binding handoffをvalidateしtype/node link/fact/coercion/initial obligation/
 diagnosticを追加しない。duplicate/stale/partial/Task-269A/B cross-family/semantic-
 coexistenceはtransactional reject。bindingは`BindingTypeSite::Missing`のまま。
+
+## Task 269C active Typed ownership
+
+freeze済みfield/getter/installerを実装した。installerはmutation前にhandoff全体を
+validateし、全sibling familyについて両installation orderをrejectし、node/type/
+fact/proof/obligation/diagnostic payloadをemptyに保つ。
+
+optional handoffは`TypedAst` stack sizeを安定させるprivate boxed storageを使う。
+freeze済みpublic by-value installerと`Option<&Handoff>` getterは不変。

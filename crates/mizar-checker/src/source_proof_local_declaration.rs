@@ -2,9 +2,10 @@
 
 use crate::{
     binding_env::{
-        BinderIdentity, BindingContextDraft, BindingContextId, BindingContextTable, BindingDraft,
-        BindingEnv, BindingEnvParts, BindingId, BindingKind, BindingLookupResult,
-        BindingLookupSite,
+        BinderIdentity, BindingContextDraft, BindingContextId, BindingContextLayer,
+        BindingContextOwner, BindingContextRecovery, BindingContextTable, BindingDraft, BindingEnv,
+        BindingEnvParts, BindingId, BindingKind, BindingLookupResult, BindingLookupSite,
+        BindingRecoveryState, BindingStatus, BindingTypeSite,
     },
     source_statement::{
         SourceStatementHandoff, SourceStatementWitnessError, SourceStatementWitnessHandoff,
@@ -17,8 +18,9 @@ use crate::{
     },
 };
 use mizar_resolve::{
+    env::{DefinitionId, SourceContributionId},
     names::{LocalTermBinding, LocalTermScope},
-    resolved_ast::ModuleId,
+    resolved_ast::{ModuleId, SymbolId},
 };
 use mizar_session::{SourceAnchor, SourceId, SourceRange};
 use std::{
@@ -1149,4 +1151,1677 @@ fn task258b3m1_canonical_arena(source_id: SourceId) -> TypedArena {
     builder
         .finish(Some(ids[55]))
         .expect("frozen Task258B3M1 arena is valid")
+}
+
+/// Complete syntax-free input for the frozen proof-local `let` binding transaction.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceProofLocalLetBindingHandoffInput {
+    pub source_id: SourceId,
+    pub module_id: ModuleId,
+    pub lower_fingerprint: String,
+    pub theorem_symbol: SymbolId,
+    pub theorem_definition: DefinitionId,
+    pub contribution: SourceContributionId,
+    pub theorem_range: SourceRange,
+    pub proof_range: SourceRange,
+    pub let_range: SourceRange,
+    pub segment_range: SourceRange,
+    pub name_range: SourceRange,
+    pub source_ordinal: usize,
+    pub local: LocalTermBinding,
+    pub recovery: SourceProofLocalLetBindingRecovery,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct SourceProofLocalLetBindingId(usize);
+
+impl SourceProofLocalLetBindingId {
+    pub const fn new(index: usize) -> Self {
+        Self(index)
+    }
+
+    pub const fn index(self) -> usize {
+        self.0
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum SourceProofLocalLetBindingRecovery {
+    Normal,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceProofLocalLetBinding {
+    binding: BindingId,
+    binding_context: BindingContextId,
+    source_ordinal: usize,
+    visible_after_ordinal: usize,
+    recovery: SourceProofLocalLetBindingRecovery,
+}
+
+impl SourceProofLocalLetBinding {
+    pub const fn binding(&self) -> BindingId {
+        self.binding
+    }
+
+    pub const fn binding_context(&self) -> BindingContextId {
+        self.binding_context
+    }
+
+    pub const fn source_ordinal(&self) -> usize {
+        self.source_ordinal
+    }
+
+    pub const fn visible_after_ordinal(&self) -> usize {
+        self.visible_after_ordinal
+    }
+
+    pub const fn recovery(&self) -> SourceProofLocalLetBindingRecovery {
+        self.recovery
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceProofLocalLetBindingTable {
+    rows: Vec<SourceProofLocalLetBinding>,
+}
+
+impl SourceProofLocalLetBindingTable {
+    pub fn get(&self, id: SourceProofLocalLetBindingId) -> Option<&SourceProofLocalLetBinding> {
+        self.rows.get(id.index())
+    }
+
+    pub fn iter(
+        &self,
+    ) -> impl Iterator<Item = (SourceProofLocalLetBindingId, &SourceProofLocalLetBinding)> {
+        self.rows
+            .iter()
+            .enumerate()
+            .map(|(index, row)| (SourceProofLocalLetBindingId::new(index), row))
+    }
+
+    pub const fn len(&self) -> usize {
+        self.rows.len()
+    }
+
+    pub const fn is_empty(&self) -> bool {
+        self.rows.is_empty()
+    }
+}
+
+/// Immutable proof-local `let` binding transaction.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceProofLocalLetBindingHandoff {
+    source_id: SourceId,
+    module_id: ModuleId,
+    lower_fingerprint: String,
+    theorem_symbol: SymbolId,
+    theorem_definition: DefinitionId,
+    contribution: SourceContributionId,
+    theorem_range: SourceRange,
+    proof_range: SourceRange,
+    let_range: SourceRange,
+    segment_range: SourceRange,
+    name_range: SourceRange,
+    base_binding_env: BindingEnv,
+    base_binding_fingerprint: String,
+    binding_env: BindingEnv,
+    final_binding_fingerprint: String,
+    bindings: SourceProofLocalLetBindingTable,
+}
+
+impl SourceProofLocalLetBindingHandoff {
+    pub const fn source_id(&self) -> SourceId {
+        self.source_id
+    }
+
+    pub const fn module_id(&self) -> &ModuleId {
+        &self.module_id
+    }
+
+    pub fn lower_fingerprint(&self) -> &str {
+        &self.lower_fingerprint
+    }
+
+    pub const fn theorem_symbol(&self) -> &SymbolId {
+        &self.theorem_symbol
+    }
+
+    pub const fn theorem_definition(&self) -> DefinitionId {
+        self.theorem_definition
+    }
+
+    pub const fn contribution(&self) -> SourceContributionId {
+        self.contribution
+    }
+
+    pub const fn theorem_range(&self) -> SourceRange {
+        self.theorem_range
+    }
+
+    pub const fn proof_range(&self) -> SourceRange {
+        self.proof_range
+    }
+
+    pub const fn let_range(&self) -> SourceRange {
+        self.let_range
+    }
+
+    pub const fn segment_range(&self) -> SourceRange {
+        self.segment_range
+    }
+
+    pub const fn name_range(&self) -> SourceRange {
+        self.name_range
+    }
+
+    pub const fn base_binding_env(&self) -> &BindingEnv {
+        &self.base_binding_env
+    }
+
+    pub fn base_binding_fingerprint(&self) -> &str {
+        &self.base_binding_fingerprint
+    }
+
+    pub const fn binding_env(&self) -> &BindingEnv {
+        &self.binding_env
+    }
+
+    pub fn final_binding_fingerprint(&self) -> &str {
+        &self.final_binding_fingerprint
+    }
+
+    pub const fn bindings(&self) -> &SourceProofLocalLetBindingTable {
+        &self.bindings
+    }
+
+    pub fn debug_text(&self) -> String {
+        let binding = self
+            .bindings
+            .get(SourceProofLocalLetBindingId::new(0))
+            .expect("validated Task269C handoff has one dense row");
+        format!(
+            concat!(
+                "source-proof-local-let-binding-debug-v1\n",
+                "module: {}::{}\n",
+                "lower-fingerprint: {:?}\n",
+                "theorem symbol={:?} definition={} contribution={} range={}..{} proof={}..{}\n",
+                "let range={}..{} segment={}..{} name={}..{} source_ordinal={}\n",
+                "base-binding-fingerprint: {:?}\n",
+                "binding#0 binding={} context={} source_ordinal={} visible_after={} recovery={}\n",
+                "final-binding-fingerprint: {:?}\n",
+            ),
+            self.module_id.package().as_str(),
+            self.module_id.path().as_str(),
+            self.lower_fingerprint,
+            self.theorem_symbol.fqn().as_str(),
+            self.theorem_definition.index(),
+            self.contribution.index(),
+            self.theorem_range.start,
+            self.theorem_range.end,
+            self.proof_range.start,
+            self.proof_range.end,
+            self.let_range.start,
+            self.let_range.end,
+            self.segment_range.start,
+            self.segment_range.end,
+            self.name_range.start,
+            self.name_range.end,
+            binding.source_ordinal,
+            self.base_binding_fingerprint,
+            binding.binding.index(),
+            binding.binding_context.index(),
+            binding.source_ordinal,
+            binding.visible_after_ordinal,
+            let_binding_recovery_key(binding.recovery),
+            self.final_binding_fingerprint,
+        )
+    }
+
+    pub(crate) fn validate_installation(
+        &self,
+        source_id: SourceId,
+        module_id: &ModuleId,
+    ) -> Result<(), SourceProofLocalLetBindingError> {
+        if self.source_id != source_id
+            || &self.module_id != module_id
+            || self.base_binding_env.source_id() != source_id
+            || self.base_binding_env.module_id() != module_id
+            || self.binding_env.source_id() != source_id
+            || self.binding_env.module_id() != module_id
+        {
+            return Err(SourceProofLocalLetBindingError::InvalidTransaction);
+        }
+        validate_task269c_dependency(Task269cDependency {
+            source_id: self.source_id,
+            module_id: &self.module_id,
+            lower_fingerprint: &self.lower_fingerprint,
+            theorem_symbol: &self.theorem_symbol,
+            theorem_definition: self.theorem_definition,
+            contribution: self.contribution,
+            theorem_range: self.theorem_range,
+            proof_range: self.proof_range,
+            let_range: self.let_range,
+            segment_range: self.segment_range,
+            name_range: self.name_range,
+        })?;
+        if !exact_task269c_base_binding_env(&self.base_binding_env)
+            || self.base_binding_fingerprint != self.base_binding_env.debug_text()
+        {
+            return Err(SourceProofLocalLetBindingError::InvalidBaseBindingEnvironment);
+        }
+        if self.bindings.len() != 1 {
+            return Err(SourceProofLocalLetBindingError::InvalidAggregate);
+        }
+        let id = SourceProofLocalLetBindingId::new(0);
+        let binding = self
+            .bindings
+            .get(id)
+            .ok_or(SourceProofLocalLetBindingError::InvalidDeclaration { binding: id })?;
+        if !exact_task269c_output_binding(binding)
+            || !exact_task269c_declaration_binding(&self.binding_env, self.source_id)
+        {
+            return Err(SourceProofLocalLetBindingError::InvalidDeclaration { binding: id });
+        }
+        let expected = extend_task269c_binding_env(&self.base_binding_env)?;
+        if self.binding_env != expected
+            || self.final_binding_fingerprint != self.binding_env.debug_text()
+            || !exact_task269c_local_binding(&self.binding_env, self.source_id)
+            || !exact_task269c_lookup_behavior(&self.binding_env)
+        {
+            return Err(SourceProofLocalLetBindingError::InvalidBindingEnvironment);
+        }
+        Ok(())
+    }
+
+    pub(crate) fn validate_complete_installation(
+        &self,
+        source_id: SourceId,
+        module_id: &ModuleId,
+        installation_available: bool,
+    ) -> Result<(), SourceProofLocalLetBindingError> {
+        self.validate_installation(source_id, module_id)?;
+        if !installation_available {
+            return Err(SourceProofLocalLetBindingError::InvalidInstallation);
+        }
+        Ok(())
+    }
+
+    #[cfg(test)]
+    pub(crate) fn set_lower_fingerprint_for_test(&mut self, value: impl Into<String>) {
+        self.lower_fingerprint = value.into();
+    }
+
+    #[cfg(test)]
+    pub(crate) fn set_base_binding_fingerprint_for_task269c_test(
+        &mut self,
+        value: impl Into<String>,
+    ) {
+        self.base_binding_fingerprint = value.into();
+    }
+
+    #[cfg(test)]
+    pub(crate) fn truncate_task269c_bindings_for_test(&mut self) {
+        self.bindings.rows.clear();
+    }
+
+    #[cfg(test)]
+    pub(crate) fn corrupt_task269c_binding_row_for_test(&mut self) {
+        if let Some(binding) = self.bindings.rows.first_mut() {
+            binding.source_ordinal += 1;
+        }
+    }
+
+    #[cfg(test)]
+    pub(crate) fn set_final_binding_fingerprint_for_task269c_test(
+        &mut self,
+        value: impl Into<String>,
+    ) {
+        self.final_binding_fingerprint = value.into();
+    }
+}
+
+#[derive(Debug, Clone, Copy, Default)]
+pub struct SourceProofLocalLetBindingProducer;
+
+impl SourceProofLocalLetBindingProducer {
+    pub fn build(
+        input: SourceProofLocalLetBindingHandoffInput,
+        base_binding_env: &BindingEnv,
+    ) -> Result<SourceProofLocalLetBindingHandoff, SourceProofLocalLetBindingError> {
+        if input.source_id != base_binding_env.source_id()
+            || &input.module_id != base_binding_env.module_id()
+        {
+            return Err(SourceProofLocalLetBindingError::InvalidTransaction);
+        }
+        validate_task269c_dependency(Task269cDependency {
+            source_id: input.source_id,
+            module_id: &input.module_id,
+            lower_fingerprint: &input.lower_fingerprint,
+            theorem_symbol: &input.theorem_symbol,
+            theorem_definition: input.theorem_definition,
+            contribution: input.contribution,
+            theorem_range: input.theorem_range,
+            proof_range: input.proof_range,
+            let_range: input.let_range,
+            segment_range: input.segment_range,
+            name_range: input.name_range,
+        })?;
+        if !exact_task269c_base_binding_env(base_binding_env) {
+            return Err(SourceProofLocalLetBindingError::InvalidBaseBindingEnvironment);
+        }
+        if !exact_task269c_input_declaration(&input) {
+            return Err(SourceProofLocalLetBindingError::InvalidDeclaration {
+                binding: SourceProofLocalLetBindingId::new(0),
+            });
+        }
+        let binding_env = extend_task269c_binding_env(base_binding_env)?;
+        if !exact_task269c_lookup_behavior(&binding_env) {
+            return Err(SourceProofLocalLetBindingError::InvalidBindingEnvironment);
+        }
+        let base_binding_fingerprint = base_binding_env.debug_text();
+        let final_binding_fingerprint = binding_env.debug_text();
+        Ok(SourceProofLocalLetBindingHandoff {
+            source_id: input.source_id,
+            module_id: input.module_id,
+            lower_fingerprint: input.lower_fingerprint,
+            theorem_symbol: input.theorem_symbol,
+            theorem_definition: input.theorem_definition,
+            contribution: input.contribution,
+            theorem_range: input.theorem_range,
+            proof_range: input.proof_range,
+            let_range: input.let_range,
+            segment_range: input.segment_range,
+            name_range: input.name_range,
+            base_binding_env: base_binding_env.clone(),
+            base_binding_fingerprint,
+            binding_env,
+            final_binding_fingerprint,
+            bindings: SourceProofLocalLetBindingTable {
+                rows: vec![SourceProofLocalLetBinding {
+                    binding: BindingId::new(1),
+                    binding_context: BindingContextId::new(1),
+                    source_ordinal: input.source_ordinal,
+                    visible_after_ordinal: input.local.visible_after_ordinal(),
+                    recovery: input.recovery,
+                }],
+            },
+        })
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum SourceProofLocalLetBindingError {
+    InvalidTransaction,
+    DependencyMismatch,
+    InvalidBaseBindingEnvironment,
+    InvalidAggregate,
+    InvalidDeclaration {
+        binding: SourceProofLocalLetBindingId,
+    },
+    InvalidBindingEnvironment,
+    InvalidInstallation,
+}
+
+impl fmt::Display for SourceProofLocalLetBindingError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::InvalidTransaction => {
+                formatter.write_str("source proof-local let-binding transaction is invalid")
+            }
+            Self::DependencyMismatch => {
+                formatter.write_str("source proof-local let-binding dependency mismatch")
+            }
+            Self::InvalidBaseBindingEnvironment => formatter
+                .write_str("source proof-local let-binding base binding environment is invalid"),
+            Self::InvalidAggregate => {
+                formatter.write_str("source proof-local let-binding aggregate is invalid")
+            }
+            Self::InvalidDeclaration { binding } => write!(
+                formatter,
+                "source proof-local let-binding {} is invalid",
+                binding.index()
+            ),
+            Self::InvalidBindingEnvironment => {
+                formatter.write_str("source proof-local let-binding binding environment is invalid")
+            }
+            Self::InvalidInstallation => {
+                formatter.write_str("source proof-local let-binding installation is invalid")
+            }
+        }
+    }
+}
+
+impl Error for SourceProofLocalLetBindingError {}
+
+#[derive(Debug, Clone, Copy)]
+struct Task269cDependency<'a> {
+    source_id: SourceId,
+    module_id: &'a ModuleId,
+    lower_fingerprint: &'a str,
+    theorem_symbol: &'a SymbolId,
+    theorem_definition: DefinitionId,
+    contribution: SourceContributionId,
+    theorem_range: SourceRange,
+    proof_range: SourceRange,
+    let_range: SourceRange,
+    segment_range: SourceRange,
+    name_range: SourceRange,
+}
+
+fn validate_task269c_dependency(
+    dependency: Task269cDependency<'_>,
+) -> Result<(), SourceProofLocalLetBindingError> {
+    let expected_prefix = format!(
+        "{}::{}::",
+        dependency.module_id.package().as_str(),
+        dependency.module_id.path().as_str()
+    );
+    let expected_local = format!(
+        concat!(
+            "contribution=0:namespace={}:owner=theorem#1:shell=theorem:kind=theorem:",
+            "name=FormulaStatementLetSmoke:notation=_:arity=_:definition=theorem:",
+            "registration=_:policy=non-overloadable:slot=non-overloadable:_:theorem:_"
+        ),
+        escape_task269c_symbol_component(dependency.module_id.path().as_str()),
+    );
+    let exact_symbol_identity = dependency.theorem_symbol.module() == dependency.module_id
+        && dependency.theorem_symbol.local().as_str() == expected_local
+        && dependency.theorem_symbol.fqn().as_str() == format!("{expected_prefix}{expected_local}");
+    if !exact_symbol_identity
+        || dependency.theorem_definition.index() != 0
+        || dependency.contribution.index() != 0
+        || dependency.theorem_range != range(dependency.source_id, 19, 99)
+        || dependency.proof_range != range(dependency.source_id, 59, 98)
+        || dependency.let_range != range(dependency.source_id, 67, 80)
+        || dependency.segment_range != range(dependency.source_id, 71, 79)
+        || dependency.name_range != range(dependency.source_id, 71, 72)
+        || dependency.lower_fingerprint != exact_task269cp_lower_fingerprint(dependency)
+    {
+        return Err(SourceProofLocalLetBindingError::DependencyMismatch);
+    }
+    Ok(())
+}
+
+fn escape_task269c_symbol_component(value: &str) -> String {
+    value
+        .replace('\\', "\\\\")
+        .replace(':', "\\c")
+        .replace('|', "\\p")
+        .replace('/', "\\s")
+}
+
+fn exact_task269cp_lower_fingerprint(dependency: Task269cDependency<'_>) -> String {
+    format!(
+        concat!(
+            "source-proof-local-let-lower-debug-v1\n",
+            "module: {}::{}\n",
+            "source-fingerprint: \"7860a3fe5af89063ac6a2b9a4465cac36d26f6d64e892ba6e2c89bcbaaf9763a\"\n",
+            "surface-fingerprint: \"1fc35ec18db82efc0968b2f42b08cfaae678184983210cd26f060d45354c7f68\"\n",
+            "theorem symbol={:?} definition=0 contribution=0 range=19..99 proof=59..98\n",
+            "let range=67..80 segment=71..79 source_ordinal=1\n",
+            "name range=71..72 spelling=\"y\" scope=[0] visible_after=1\n",
+            "type range=76..79 head=76..79 spelling=\"set\" form=bare\n",
+        ),
+        dependency.module_id.package().as_str(),
+        dependency.module_id.path().as_str(),
+        dependency.theorem_symbol.fqn().as_str(),
+    )
+}
+
+fn exact_task269c_base_binding_env(base: &BindingEnv) -> bool {
+    let Some(context) = base.contexts().get(BindingContextId::new(0)) else {
+        return false;
+    };
+    let Some(binding) = base.bindings().get(BindingId::new(0)) else {
+        return false;
+    };
+    base.contexts().len() == 1
+        && base.bindings().len() == 1
+        && base.diagnostics().is_empty()
+        && context.id == BindingContextId::new(0)
+        && context.owner == BindingContextOwner::Module
+        && context.parent.is_none()
+        && context.layer == BindingContextLayer::Module
+        && context.lexical_scope.is_none()
+        && context.bindings == [BindingId::new(0)]
+        && context.visible_bindings == [BindingId::new(0)]
+        && context.recovery == BindingContextRecovery::Normal
+        && binding.id == BindingId::new(0)
+        && binding.spelling == "x"
+        && binding.kind == BindingKind::ReservedVariable
+        && matches!(
+            &binding.identity,
+            BinderIdentity::ReservedVariable {
+                spelling,
+                declaration_range,
+            } if spelling == "x"
+                && *declaration_range == range(base.source_id(), 8, 9)
+        )
+        && binding.owner_context == BindingContextId::new(0)
+        && binding.declaration_range == range(base.source_id(), 8, 9)
+        && binding.visible_after_ordinal == 0
+        && binding.type_site == BindingTypeSite::Source(range(base.source_id(), 14, 17))
+        && binding.status == BindingStatus::Reserved
+        && binding.captured.identities().is_empty()
+        && binding.diagnostics.is_empty()
+        && binding.recovery == BindingRecoveryState::Normal
+}
+
+fn exact_task269c_input_declaration(input: &SourceProofLocalLetBindingHandoffInput) -> bool {
+    input.source_ordinal == 1
+        && input.local.spelling() == "y"
+        && input.local.scope().path() == [0]
+        && input.local.declaration_range() == input.name_range
+        && input.local.visible_after_ordinal() == 1
+        && input.recovery == SourceProofLocalLetBindingRecovery::Normal
+}
+
+fn exact_task269c_output_binding(binding: &SourceProofLocalLetBinding) -> bool {
+    binding.binding == BindingId::new(1)
+        && binding.binding_context == BindingContextId::new(1)
+        && binding.source_ordinal == 1
+        && binding.visible_after_ordinal == 1
+        && binding.recovery == SourceProofLocalLetBindingRecovery::Normal
+}
+
+fn exact_task269c_local_binding(binding_env: &BindingEnv, source_id: SourceId) -> bool {
+    let Some(context) = binding_env.contexts().get(BindingContextId::new(1)) else {
+        return false;
+    };
+    let Some(binding) = binding_env.bindings().get(BindingId::new(1)) else {
+        return false;
+    };
+    context.id == BindingContextId::new(1)
+        && context.owner
+            == BindingContextOwner::SourceStatement {
+                source_range: range(source_id, 59, 98),
+            }
+        && context.parent == Some(BindingContextId::new(0))
+        && context.layer == BindingContextLayer::Proof
+        && context
+            .lexical_scope
+            .as_ref()
+            .is_some_and(|scope| scope.path() == [0])
+        && context.bindings == [BindingId::new(1)]
+        && context.visible_bindings == [BindingId::new(0), BindingId::new(1)]
+        && context.recovery == BindingContextRecovery::Normal
+        && binding.id == BindingId::new(1)
+        && binding.spelling == "y"
+        && binding.kind == BindingKind::LetBinding
+        && matches!(
+            &binding.identity,
+            BinderIdentity::ResolverLocal {
+                scope,
+                ordinal: 1,
+                declaration_range,
+            } if scope.path() == [0]
+                && *declaration_range == range(source_id, 71, 72)
+        )
+        && binding.owner_context == BindingContextId::new(1)
+        && binding.declaration_range == range(source_id, 71, 72)
+        && binding.visible_after_ordinal == 1
+        && binding.type_site == BindingTypeSite::Missing
+        && binding.status == BindingStatus::Active
+        && binding.captured.identities().is_empty()
+        && binding.diagnostics.is_empty()
+        && binding.recovery == BindingRecoveryState::Normal
+}
+
+fn exact_task269c_declaration_binding(binding_env: &BindingEnv, source_id: SourceId) -> bool {
+    binding_env
+        .bindings()
+        .get(BindingId::new(1))
+        .is_some_and(|binding| {
+            binding.id == BindingId::new(1)
+                && binding.spelling == "y"
+                && matches!(
+                    &binding.identity,
+                    BinderIdentity::ResolverLocal {
+                        scope,
+                        ordinal: 1,
+                        declaration_range,
+                    } if scope.path() == [0]
+                        && *declaration_range == range(source_id, 71, 72)
+                )
+                && binding.owner_context == BindingContextId::new(1)
+                && binding.declaration_range == range(source_id, 71, 72)
+                && binding.visible_after_ordinal == 1
+                && binding.recovery == BindingRecoveryState::Normal
+        })
+}
+
+fn extend_task269c_binding_env(
+    base: &BindingEnv,
+) -> Result<BindingEnv, SourceProofLocalLetBindingError> {
+    if !exact_task269c_base_binding_env(base) {
+        return Err(SourceProofLocalLetBindingError::InvalidBaseBindingEnvironment);
+    }
+    let local = LocalTermBinding::new(
+        "y",
+        LocalTermScope::new(vec![0]),
+        range(base.source_id(), 71, 72),
+        1,
+    );
+    let mut bindings = base.bindings().clone();
+    let binding = bindings.insert(BindingDraft::from_local_term(
+        BindingContextId::new(1),
+        BindingKind::LetBinding,
+        &local,
+    ));
+    if binding != BindingId::new(1) {
+        return Err(SourceProofLocalLetBindingError::InvalidBindingEnvironment);
+    }
+    let mut contexts = base.contexts().clone();
+    let context = contexts.insert(BindingContextDraft {
+        owner: BindingContextOwner::SourceStatement {
+            source_range: range(base.source_id(), 59, 98),
+        },
+        parent: Some(BindingContextId::new(0)),
+        layer: BindingContextLayer::Proof,
+        lexical_scope: Some(LocalTermScope::new(vec![0])),
+        bindings: vec![binding],
+        visible_bindings: vec![BindingId::new(0), binding],
+        recovery: BindingContextRecovery::Normal,
+    });
+    if context != BindingContextId::new(1) {
+        return Err(SourceProofLocalLetBindingError::InvalidBindingEnvironment);
+    }
+    BindingEnv::try_new(BindingEnvParts {
+        source_id: base.source_id(),
+        module_id: base.module_id().clone(),
+        contexts,
+        bindings,
+        diagnostics: base.diagnostics().clone(),
+    })
+    .map_err(|_| SourceProofLocalLetBindingError::InvalidBindingEnvironment)
+}
+
+fn exact_task269c_lookup_behavior(binding_env: &BindingEnv) -> bool {
+    let definition = BindingLookupSite::new(
+        "y",
+        BindingContextId::new(1),
+        Some(LocalTermScope::new(vec![0])),
+        1,
+    );
+    let later = BindingLookupSite::new(
+        "y",
+        BindingContextId::new(1),
+        Some(LocalTermScope::new(vec![0])),
+        2,
+    );
+    matches!(
+        binding_env.lookup(&definition),
+        Ok(BindingLookupResult::ForwardReference { candidates, .. })
+            if candidates == [BindingId::new(1)]
+    ) && binding_env.lookup(&later) == Ok(BindingLookupResult::Local(BindingId::new(1)))
+}
+
+const fn let_binding_recovery_key(recovery: SourceProofLocalLetBindingRecovery) -> &'static str {
+    match recovery {
+        SourceProofLocalLetBindingRecovery::Normal => "normal",
+    }
+}
+
+#[cfg(test)]
+mod task269c_tests {
+    use super::*;
+    use crate::{
+        binding_env::{
+            BindingContextLayer, BindingContextOwner, BindingContextRecovery, BindingDiagnosticId,
+            BindingDiagnosticTable, BindingStatus, BindingTable, BindingTypeSite,
+            CapturedFreeVariables,
+        },
+        cluster_trace::ClusterFactTable,
+        overload_resolution::{
+            CandidateViabilityInput, CandidateViabilityOutput, OverloadCandidateInput,
+            OverloadCollectionOutput, OverloadSelectionOutput, OverloadSiteInput,
+            OverloadSiteResolutionInput, SpecificityComparisonInput, SpecificityGraphOutput,
+            TemplateExpansionOutput,
+        },
+        resolved_typed_ast::{
+            ResolvedNodeKindHint, ResolvedNodeKindHintKind, ResolvedTypedAst,
+            ResolvedTypedAstError, ResolvedTypedAstInputs, SourceNodeRole,
+        },
+        source_term::{SourcePrimaryTermHandoffInput, SourcePrimaryTermProducer},
+        typed_ast::{
+            CoercionTable, InitialObligationTable, LocalTypeContextTable, TypeDiagnosticTable,
+            TypeFactTable, TypeTable, TypedArena, TypedArenaBuilder, TypedAst, TypedAstError,
+            TypedAstParts, TypedNode, TypedNodeId,
+        },
+    };
+    use mizar_resolve::{
+        env::{
+            ContributionKind, DefinitionIndex, DefinitionKind, DefinitionShell,
+            SourceContributionIndex,
+        },
+        resolved_ast::{FullyQualifiedName, LocalSymbolId, SemanticOrigin},
+    };
+    use mizar_session::{
+        BuildSnapshotId, InMemorySessionIdAllocator, ModulePath, PackageId, SessionIdAllocator,
+        SourceAnchor,
+    };
+
+    #[test]
+    fn exact_producer_output_debug_and_lookup_are_stable() {
+        let fixture = fixture();
+        let handoff = SourceProofLocalLetBindingProducer::build(fixture.input, &fixture.base)
+            .expect("Task269C exact checker transaction");
+        assert_eq!(handoff.source_id(), fixture.source);
+        assert_eq!(handoff.module_id(), &fixture.module);
+        assert_eq!(handoff.base_binding_env(), &fixture.base);
+        assert_eq!(
+            handoff.base_binding_fingerprint(),
+            fixture.base.debug_text()
+        );
+        assert_eq!(
+            (
+                handoff.binding_env().contexts().len(),
+                handoff.binding_env().bindings().len(),
+                handoff.binding_env().diagnostics().len(),
+            ),
+            (2, 2, 0)
+        );
+        let row = handoff
+            .bindings()
+            .get(SourceProofLocalLetBindingId::new(0))
+            .expect("Task269C dense binding row");
+        assert!(exact_task269c_output_binding(row));
+        assert!(exact_task269c_lookup_behavior(handoff.binding_env()));
+        let expected_debug = format!(
+            concat!(
+                "source-proof-local-let-binding-debug-v1\n",
+                "module: pkg::task269c\n",
+                "lower-fingerprint: {:?}\n",
+                "theorem symbol={:?} definition=0 contribution=0 range=19..99 proof=59..98\n",
+                "let range=67..80 segment=71..79 name=71..72 source_ordinal=1\n",
+                "base-binding-fingerprint: {:?}\n",
+                "binding#0 binding=1 context=1 source_ordinal=1 visible_after=1 recovery=normal\n",
+                "final-binding-fingerprint: {:?}\n",
+            ),
+            handoff.lower_fingerprint(),
+            handoff.theorem_symbol().fqn().as_str(),
+            handoff.base_binding_fingerprint(),
+            handoff.final_binding_fingerprint(),
+        );
+        assert_eq!(handoff.debug_text(), expected_debug);
+    }
+
+    #[test]
+    fn corruption_classes_follow_the_frozen_precedence() {
+        let fixture = fixture();
+        let mut wrong_transaction = fixture.input.clone();
+        wrong_transaction.source_id = other_source_id();
+        assert_eq!(
+            SourceProofLocalLetBindingProducer::build(wrong_transaction, &fixture.base),
+            Err(SourceProofLocalLetBindingError::InvalidTransaction)
+        );
+
+        let mut wrong_dependency = fixture.input.clone();
+        wrong_dependency.lower_fingerprint.push_str("corrupt");
+        assert_eq!(
+            SourceProofLocalLetBindingProducer::build(wrong_dependency, &empty_base(&fixture)),
+            Err(SourceProofLocalLetBindingError::DependencyMismatch)
+        );
+        let mut dependency_inputs = Vec::new();
+        let mut input = fixture.input.clone();
+        let extra_local = format!("{}extra", input.theorem_symbol.local().as_str());
+        input.theorem_symbol = SymbolId::new(
+            fixture.module.clone(),
+            LocalSymbolId::new(extra_local.clone()),
+            FullyQualifiedName::new(format!("pkg::task269c::{extra_local}")),
+        );
+        dependency_inputs.push(input);
+        let mut input = fixture.input.clone();
+        input.theorem_symbol = SymbolId::new(
+            fixture.module.clone(),
+            input.theorem_symbol.local().clone(),
+            FullyQualifiedName::new(format!("{}extra", input.theorem_symbol.fqn().as_str())),
+        );
+        dependency_inputs.push(input);
+        let mut input = fixture.input.clone();
+        input.theorem_symbol = SymbolId::new(
+            ModuleId::new(PackageId::new("pkg"), ModulePath::new("task269c.wrong")),
+            input.theorem_symbol.local().clone(),
+            input.theorem_symbol.fqn().clone(),
+        );
+        dependency_inputs.push(input);
+        let mut input = fixture.input.clone();
+        input.theorem_definition = fixture.other_definition;
+        dependency_inputs.push(input);
+        let mut input = fixture.input.clone();
+        input.contribution = fixture.other_contribution;
+        dependency_inputs.push(input);
+        for select in 0..5 {
+            let mut input = fixture.input.clone();
+            let target = match select {
+                0 => &mut input.theorem_range,
+                1 => &mut input.proof_range,
+                2 => &mut input.let_range,
+                3 => &mut input.segment_range,
+                4 => &mut input.name_range,
+                _ => unreachable!(),
+            };
+            target.end += 1;
+            dependency_inputs.push(input);
+        }
+        for input in dependency_inputs {
+            assert_eq!(
+                SourceProofLocalLetBindingProducer::build(input, &fixture.base),
+                Err(SourceProofLocalLetBindingError::DependencyMismatch)
+            );
+        }
+
+        let mut declaration_inputs = Vec::new();
+        let mut input = fixture.input.clone();
+        input.source_ordinal += 1;
+        declaration_inputs.push(input);
+        let mut input = fixture.input.clone();
+        input.local = LocalTermBinding::new(
+            "z",
+            input.local.scope().clone(),
+            input.local.declaration_range(),
+            input.local.visible_after_ordinal(),
+        );
+        declaration_inputs.push(input);
+        let mut input = fixture.input.clone();
+        input.local = LocalTermBinding::new(
+            input.local.spelling(),
+            LocalTermScope::new(vec![1]),
+            input.local.declaration_range(),
+            input.local.visible_after_ordinal(),
+        );
+        declaration_inputs.push(input);
+        let mut input = fixture.input.clone();
+        input.local = LocalTermBinding::new(
+            input.local.spelling(),
+            input.local.scope().clone(),
+            range(fixture.source, 70, 72),
+            input.local.visible_after_ordinal(),
+        );
+        declaration_inputs.push(input);
+        let mut input = fixture.input.clone();
+        input.local = LocalTermBinding::new(
+            input.local.spelling(),
+            input.local.scope().clone(),
+            input.local.declaration_range(),
+            2,
+        );
+        declaration_inputs.push(input);
+        for input in declaration_inputs {
+            assert_eq!(
+                SourceProofLocalLetBindingProducer::build(input, &fixture.base),
+                Err(SourceProofLocalLetBindingError::InvalidDeclaration {
+                    binding: SourceProofLocalLetBindingId::new(0),
+                })
+            );
+        }
+
+        assert_eq!(
+            SourceProofLocalLetBindingProducer::build(fixture.input.clone(), &empty_base(&fixture),),
+            Err(SourceProofLocalLetBindingError::InvalidBaseBindingEnvironment)
+        );
+        for base in inexact_bases(&fixture) {
+            assert_eq!(
+                SourceProofLocalLetBindingProducer::build(fixture.input.clone(), &base),
+                Err(SourceProofLocalLetBindingError::InvalidBaseBindingEnvironment)
+            );
+        }
+
+        let handoff = SourceProofLocalLetBindingProducer::build(fixture.input, &fixture.base)
+            .expect("Task269C handoff before replay corruption");
+        let mut dependency = handoff.clone();
+        dependency.set_lower_fingerprint_for_test("corrupt");
+        assert_eq!(
+            dependency.validate_installation(fixture.source, &fixture.module),
+            Err(SourceProofLocalLetBindingError::DependencyMismatch)
+        );
+        let mut base_fingerprint = handoff.clone();
+        base_fingerprint.set_base_binding_fingerprint_for_task269c_test("corrupt");
+        assert_eq!(
+            base_fingerprint.validate_installation(fixture.source, &fixture.module),
+            Err(SourceProofLocalLetBindingError::InvalidBaseBindingEnvironment)
+        );
+        let mut aggregate = handoff.clone();
+        aggregate.truncate_task269c_bindings_for_test();
+        assert_eq!(
+            aggregate.validate_installation(fixture.source, &fixture.module),
+            Err(SourceProofLocalLetBindingError::InvalidAggregate)
+        );
+        let mut declaration = handoff.clone();
+        declaration.corrupt_task269c_binding_row_for_test();
+        assert_eq!(
+            declaration.validate_installation(fixture.source, &fixture.module),
+            Err(SourceProofLocalLetBindingError::InvalidDeclaration {
+                binding: SourceProofLocalLetBindingId::new(0),
+            })
+        );
+        let mut row_corruptions = Vec::new();
+        let mut corrupted = handoff.clone();
+        corrupted.bindings.rows[0].binding = BindingId::new(0);
+        row_corruptions.push(corrupted);
+        let mut corrupted = handoff.clone();
+        corrupted.bindings.rows[0].binding_context = BindingContextId::new(0);
+        row_corruptions.push(corrupted);
+        let mut corrupted = handoff.clone();
+        corrupted.bindings.rows[0].visible_after_ordinal = 2;
+        row_corruptions.push(corrupted);
+        for corrupted in row_corruptions {
+            assert_eq!(
+                corrupted.validate_installation(fixture.source, &fixture.module),
+                Err(SourceProofLocalLetBindingError::InvalidDeclaration {
+                    binding: SourceProofLocalLetBindingId::new(0),
+                })
+            );
+        }
+        for corrupted in inexact_final_declaration_handoffs(&handoff, fixture.source) {
+            assert_eq!(
+                corrupted.validate_installation(fixture.source, &fixture.module),
+                Err(SourceProofLocalLetBindingError::InvalidDeclaration {
+                    binding: SourceProofLocalLetBindingId::new(0),
+                })
+            );
+        }
+        for corrupted in inexact_final_environment_handoffs(&handoff, fixture.source) {
+            assert_eq!(
+                corrupted.validate_installation(fixture.source, &fixture.module),
+                Err(SourceProofLocalLetBindingError::InvalidBindingEnvironment)
+            );
+        }
+        let mut wrong_final_module = handoff.clone();
+        wrong_final_module.binding_env = BindingEnv::try_new(BindingEnvParts {
+            source_id: handoff.binding_env.source_id(),
+            module_id: ModuleId::new(PackageId::new("pkg"), ModulePath::new("task269c.wrong")),
+            contexts: handoff.binding_env.contexts().clone(),
+            bindings: handoff.binding_env.bindings().clone(),
+            diagnostics: handoff.binding_env.diagnostics().clone(),
+        })
+        .expect("Task269C final module corruption remains structurally valid");
+        assert_eq!(
+            wrong_final_module.validate_installation(fixture.source, &fixture.module),
+            Err(SourceProofLocalLetBindingError::InvalidTransaction)
+        );
+        let mut binding_env = handoff.clone();
+        binding_env.set_final_binding_fingerprint_for_task269c_test("corrupt");
+        assert_eq!(
+            binding_env.validate_installation(fixture.source, &fixture.module),
+            Err(SourceProofLocalLetBindingError::InvalidBindingEnvironment)
+        );
+        assert_eq!(
+            handoff.validate_complete_installation(fixture.source, &fixture.module, false),
+            Err(SourceProofLocalLetBindingError::InvalidInstallation)
+        );
+        for (error, expected) in [
+            (
+                SourceProofLocalLetBindingError::InvalidTransaction,
+                "source proof-local let-binding transaction is invalid",
+            ),
+            (
+                SourceProofLocalLetBindingError::DependencyMismatch,
+                "source proof-local let-binding dependency mismatch",
+            ),
+            (
+                SourceProofLocalLetBindingError::InvalidBaseBindingEnvironment,
+                "source proof-local let-binding base binding environment is invalid",
+            ),
+            (
+                SourceProofLocalLetBindingError::InvalidAggregate,
+                "source proof-local let-binding aggregate is invalid",
+            ),
+            (
+                SourceProofLocalLetBindingError::InvalidDeclaration {
+                    binding: SourceProofLocalLetBindingId::new(0),
+                },
+                "source proof-local let-binding 0 is invalid",
+            ),
+            (
+                SourceProofLocalLetBindingError::InvalidBindingEnvironment,
+                "source proof-local let-binding binding environment is invalid",
+            ),
+            (
+                SourceProofLocalLetBindingError::InvalidInstallation,
+                "source proof-local let-binding installation is invalid",
+            ),
+        ] {
+            assert_eq!(error.to_string(), expected);
+        }
+    }
+
+    #[test]
+    fn typed_and_resolved_ownership_is_one_shot_and_replayed() {
+        let fixture = fixture();
+        let handoff =
+            SourceProofLocalLetBindingProducer::build(fixture.input.clone(), &fixture.base)
+                .expect("Task269C checker handoff");
+        let empty = empty_typed(fixture.source, fixture.module.clone());
+        let typed = empty
+            .clone()
+            .with_source_proof_local_let_binding(handoff.clone())
+            .expect("Task269C typed installation");
+        assert_eq!(typed.source_proof_local_let_binding(), Some(&handoff));
+        assert_eq!(
+            typed
+                .clone()
+                .with_source_proof_local_let_binding(handoff.clone()),
+            Err(TypedAstError::InvalidSourceProofLocalLetBinding)
+        );
+        assert!(empty.source_proof_local_let_binding().is_none());
+
+        let family = task269ab_dummy_handoff(&fixture);
+        let mut forward_cross_family = empty.clone();
+        forward_cross_family.inject_source_proof_local_declaration_for_test(family.clone());
+        assert_eq!(
+            forward_cross_family.with_source_proof_local_let_binding(handoff.clone()),
+            Err(TypedAstError::InvalidSourceProofLocalLetBinding)
+        );
+        assert_eq!(
+            typed
+                .clone()
+                .with_source_proof_local_declaration(family.clone()),
+            Err(TypedAstError::InvalidSourceProofLocalDeclaration)
+        );
+
+        let empty_term = SourcePrimaryTermProducer::build(
+            SourcePrimaryTermHandoffInput {
+                source_id: fixture.source,
+                module_id: fixture.module.clone(),
+                terms: Vec::new(),
+                references: Vec::new(),
+                numeric_type_requests: Vec::new(),
+            },
+            &fixture.base,
+            typed.nodes(),
+        )
+        .expect("Task269C reverse-order empty term");
+        assert_eq!(
+            typed.clone().with_source_term(empty_term),
+            Err(TypedAstError::InvalidSourceTerm)
+        );
+
+        let resolved = assemble_empty(&typed).expect("Task269C resolved replay");
+        assert_eq!(resolved.source_proof_local_let_binding(), Some(&handoff));
+        assert!(resolved.debug_text().contains(&handoff.debug_text()));
+
+        let mut resolved_cross_family = typed.clone();
+        resolved_cross_family.inject_source_proof_local_declaration_for_test(family);
+        assert_eq!(
+            assemble_empty(&resolved_cross_family),
+            Err(ResolvedTypedAstError::InvalidSourceProofLocalLetBinding)
+        );
+        assert_eq!(
+            assemble_with_node_hints(
+                &typed,
+                vec![ResolvedNodeKindHint {
+                    typed_node: TypedNodeId::new(0),
+                    kind: ResolvedNodeKindHintKind::SourcePreserved {
+                        role: SourceNodeRole::new("Task269C.forbidden"),
+                    },
+                }],
+            ),
+            Err(ResolvedTypedAstError::InvalidSourceProofLocalLetBinding)
+        );
+        let mut stale_handoff = handoff.clone();
+        stale_handoff.set_lower_fingerprint_for_test("stale");
+        let mut stale_typed = empty.clone();
+        stale_typed.inject_source_proof_local_let_binding_for_test(stale_handoff);
+        assert_eq!(
+            assemble_empty(&stale_typed),
+            Err(ResolvedTypedAstError::InvalidSourceProofLocalLetBinding)
+        );
+        assert!(empty.source_proof_local_let_binding().is_none());
+
+        let occupied = occupied_typed(fixture.source, fixture.module);
+        assert_eq!(
+            occupied.with_source_proof_local_let_binding(handoff),
+            Err(TypedAstError::InvalidSourceProofLocalLetBinding)
+        );
+    }
+
+    #[test]
+    fn missing_type_and_empty_semantic_profile_are_preserved() {
+        let fixture = fixture();
+        let handoff = SourceProofLocalLetBindingProducer::build(fixture.input, &fixture.base)
+            .expect("Task269C checker handoff");
+        let binding = handoff
+            .binding_env()
+            .bindings()
+            .get(BindingId::new(1))
+            .expect("Task269C local binding");
+        assert_eq!(binding.kind, BindingKind::LetBinding);
+        assert_eq!(binding.type_site, BindingTypeSite::Missing);
+        assert!(binding.captured.identities().is_empty());
+        assert!(binding.diagnostics.is_empty());
+
+        let typed = empty_typed(fixture.source, fixture.module)
+            .with_source_proof_local_let_binding(handoff)
+            .expect("Task269C typed installation");
+        assert!(typed.nodes().is_empty());
+        assert!(typed.contexts().is_empty());
+        assert!(typed.types().is_empty());
+        assert!(typed.facts().is_empty());
+        assert!(typed.coercions().is_empty());
+        assert!(typed.initial_obligations().is_empty());
+        assert!(typed.diagnostics().is_empty());
+        let resolved = assemble_empty(&typed).expect("Task269C resolved assembly");
+        assert!(resolved.nodes().is_empty());
+        assert!(resolved.expr_metadata().is_empty());
+        assert!(resolved.checked_formulas().is_empty());
+        assert!(resolved.statement_semantics().is_empty());
+        assert!(resolved.checked_proofs().is_empty());
+        assert!(resolved.checked_terminal_goals().is_empty());
+        assert!(resolved.diagnostics().is_empty());
+        for forbidden in [
+            "initial-obligation#",
+            "fact#",
+            "terminal-goal#",
+            "accepted",
+            "discharged",
+        ] {
+            assert!(!resolved.debug_text().contains(forbidden));
+        }
+    }
+
+    struct Fixture {
+        source: SourceId,
+        module: ModuleId,
+        input: SourceProofLocalLetBindingHandoffInput,
+        base: BindingEnv,
+        other_definition: DefinitionId,
+        other_contribution: SourceContributionId,
+    }
+
+    fn fixture() -> Fixture {
+        let source = source_id();
+        let module = ModuleId::new(PackageId::new("pkg"), ModulePath::new("task269c"));
+        let local = concat!(
+            "contribution=0:namespace=task269c:owner=theorem#1:shell=theorem:",
+            "kind=theorem:name=FormulaStatementLetSmoke:notation=_:arity=_:",
+            "definition=theorem:registration=_:policy=non-overloadable:",
+            "slot=non-overloadable:_:theorem:_"
+        );
+        let theorem_symbol = SymbolId::new(
+            module.clone(),
+            LocalSymbolId::new(local),
+            FullyQualifiedName::new(format!("pkg::task269c::{local}")),
+        );
+        let mut contributions = SourceContributionIndex::new();
+        let contribution = contributions.insert(
+            module.clone(),
+            ContributionKind::LocalSource { source_id: source },
+            SourceAnchor::Range(range(source, 0, 18)),
+        );
+        let other_contribution = contributions.insert(
+            module.clone(),
+            ContributionKind::LocalSource { source_id: source },
+            SourceAnchor::Range(range(source, 0, 18)),
+        );
+        let mut definitions = DefinitionIndex::new();
+        let theorem_definition = definitions.insert(DefinitionShell::new(
+            theorem_symbol.clone(),
+            DefinitionKind::Theorem,
+            SemanticOrigin::new(
+                source,
+                module.clone(),
+                SourceAnchor::Range(range(source, 19, 99)),
+                vec![2, 1],
+            ),
+            contribution,
+        ));
+        let other_definition = definitions.insert(DefinitionShell::new(
+            theorem_symbol.clone(),
+            DefinitionKind::Theorem,
+            SemanticOrigin::new(
+                source,
+                module.clone(),
+                SourceAnchor::Range(range(source, 19, 99)),
+                vec![2, 1],
+            ),
+            contribution,
+        ));
+        let mut input = SourceProofLocalLetBindingHandoffInput {
+            source_id: source,
+            module_id: module.clone(),
+            lower_fingerprint: String::new(),
+            theorem_symbol,
+            theorem_definition,
+            contribution,
+            theorem_range: range(source, 19, 99),
+            proof_range: range(source, 59, 98),
+            let_range: range(source, 67, 80),
+            segment_range: range(source, 71, 79),
+            name_range: range(source, 71, 72),
+            source_ordinal: 1,
+            local: LocalTermBinding::new(
+                "y",
+                LocalTermScope::new(vec![0]),
+                range(source, 71, 72),
+                1,
+            ),
+            recovery: SourceProofLocalLetBindingRecovery::Normal,
+        };
+        input.lower_fingerprint = exact_task269cp_lower_fingerprint(Task269cDependency {
+            source_id: input.source_id,
+            module_id: &input.module_id,
+            lower_fingerprint: "",
+            theorem_symbol: &input.theorem_symbol,
+            theorem_definition: input.theorem_definition,
+            contribution: input.contribution,
+            theorem_range: input.theorem_range,
+            proof_range: input.proof_range,
+            let_range: input.let_range,
+            segment_range: input.segment_range,
+            name_range: input.name_range,
+        });
+        Fixture {
+            source,
+            module,
+            base: exact_base(source, input.module_id.clone()),
+            input,
+            other_definition,
+            other_contribution,
+        }
+    }
+
+    fn exact_base(source: SourceId, module: ModuleId) -> BindingEnv {
+        let mut bindings = BindingTable::new();
+        let reserved = bindings.insert(BindingDraft {
+            spelling: "x".to_owned(),
+            kind: BindingKind::ReservedVariable,
+            identity: BinderIdentity::ReservedVariable {
+                spelling: "x".to_owned(),
+                declaration_range: range(source, 8, 9),
+            },
+            owner_context: BindingContextId::new(0),
+            declaration_range: range(source, 8, 9),
+            visible_after_ordinal: 0,
+            type_site: BindingTypeSite::Source(range(source, 14, 17)),
+            status: BindingStatus::Reserved,
+            captured: CapturedFreeVariables::default(),
+            diagnostics: Vec::new(),
+            recovery: BindingRecoveryState::Normal,
+        });
+        let mut contexts = BindingContextTable::new();
+        contexts.insert(BindingContextDraft {
+            owner: BindingContextOwner::Module,
+            parent: None,
+            layer: BindingContextLayer::Module,
+            lexical_scope: None,
+            bindings: vec![reserved],
+            visible_bindings: vec![reserved],
+            recovery: BindingContextRecovery::Normal,
+        });
+        BindingEnv::try_new(BindingEnvParts {
+            source_id: source,
+            module_id: module,
+            contexts,
+            bindings,
+            diagnostics: BindingDiagnosticTable::new(),
+        })
+        .expect("Task269C exact base")
+    }
+
+    fn empty_base(fixture: &Fixture) -> BindingEnv {
+        let mut contexts = BindingContextTable::new();
+        contexts.insert(BindingContextDraft {
+            owner: BindingContextOwner::Module,
+            parent: None,
+            layer: BindingContextLayer::Module,
+            lexical_scope: None,
+            bindings: Vec::new(),
+            visible_bindings: Vec::new(),
+            recovery: BindingContextRecovery::Normal,
+        });
+        BindingEnv::try_new(BindingEnvParts {
+            source_id: fixture.source,
+            module_id: fixture.module.clone(),
+            contexts,
+            bindings: BindingTable::new(),
+            diagnostics: BindingDiagnosticTable::new(),
+        })
+        .expect("Task269C valid but inexact empty base")
+    }
+
+    fn inexact_bases(fixture: &Fixture) -> Vec<BindingEnv> {
+        let mut bases = Vec::new();
+        for mutate in 0..9 {
+            let mut base = fixture.base.clone();
+            let binding = base
+                .binding_mut_for_test(BindingId::new(0))
+                .expect("Task269C base binding");
+            match mutate {
+                0 => binding.spelling = "z".to_owned(),
+                1 => {
+                    binding.identity = BinderIdentity::ReservedVariable {
+                        spelling: "z".to_owned(),
+                        declaration_range: range(fixture.source, 8, 9),
+                    }
+                }
+                2 => binding.declaration_range = range(fixture.source, 7, 9),
+                3 => binding.visible_after_ordinal = 1,
+                4 => binding.type_site = BindingTypeSite::Missing,
+                5 => binding.status = BindingStatus::Active,
+                6 => {
+                    binding.captured = CapturedFreeVariables::new(vec![BinderIdentity::Generated {
+                        context: BindingContextId::new(0),
+                        counter: 269,
+                    }])
+                }
+                7 => binding.diagnostics = vec![BindingDiagnosticId::new(0)],
+                8 => binding.recovery = BindingRecoveryState::Recovered,
+                _ => unreachable!(),
+            }
+            bases.push(base);
+        }
+        for (owned, visible, scope, recovery) in [
+            (Vec::new(), Vec::new(), None, BindingContextRecovery::Normal),
+            (
+                vec![BindingId::new(0)],
+                Vec::new(),
+                None,
+                BindingContextRecovery::Normal,
+            ),
+            (
+                vec![BindingId::new(0)],
+                vec![BindingId::new(0)],
+                Some(LocalTermScope::new(vec![0])),
+                BindingContextRecovery::Normal,
+            ),
+            (
+                vec![BindingId::new(0)],
+                vec![BindingId::new(0)],
+                None,
+                BindingContextRecovery::Recovered,
+            ),
+        ] {
+            let mut contexts = BindingContextTable::new();
+            contexts.insert(BindingContextDraft {
+                owner: BindingContextOwner::Module,
+                parent: None,
+                layer: BindingContextLayer::Module,
+                lexical_scope: scope,
+                bindings: owned,
+                visible_bindings: visible,
+                recovery,
+            });
+            bases.push(
+                BindingEnv::try_new(BindingEnvParts {
+                    source_id: fixture.source,
+                    module_id: fixture.module.clone(),
+                    contexts,
+                    bindings: fixture.base.bindings().clone(),
+                    diagnostics: fixture.base.diagnostics().clone(),
+                })
+                .expect("Task269C inexact context base remains structurally valid"),
+            );
+        }
+        bases
+    }
+
+    fn inexact_final_declaration_handoffs(
+        handoff: &SourceProofLocalLetBindingHandoff,
+        source: SourceId,
+    ) -> Vec<SourceProofLocalLetBindingHandoff> {
+        let mut handoffs = Vec::new();
+        for mutate in 0..6 {
+            let mut corrupted = handoff.clone();
+            let binding = corrupted
+                .binding_env
+                .binding_mut_for_test(BindingId::new(1))
+                .expect("Task269C final binding");
+            match mutate {
+                0 => binding.spelling = "z".to_owned(),
+                1 => {
+                    binding.identity = BinderIdentity::ResolverLocal {
+                        scope: LocalTermScope::new(vec![1]),
+                        ordinal: 1,
+                        declaration_range: range(source, 71, 72),
+                    }
+                }
+                2 => binding.declaration_range = range(source, 70, 72),
+                3 => binding.visible_after_ordinal = 2,
+                4 => binding.owner_context = BindingContextId::new(0),
+                5 => binding.recovery = BindingRecoveryState::Recovered,
+                _ => unreachable!(),
+            }
+            corrupted.final_binding_fingerprint = corrupted.binding_env.debug_text();
+            handoffs.push(corrupted);
+        }
+        handoffs
+    }
+
+    fn inexact_final_environment_handoffs(
+        handoff: &SourceProofLocalLetBindingHandoff,
+        source: SourceId,
+    ) -> Vec<SourceProofLocalLetBindingHandoff> {
+        let mut handoffs = Vec::new();
+        for mutate in 0..5 {
+            let mut corrupted = handoff.clone();
+            let binding = corrupted
+                .binding_env
+                .binding_mut_for_test(BindingId::new(1))
+                .expect("Task269C final binding");
+            match mutate {
+                0 => binding.kind = BindingKind::LocalAbbreviation,
+                1 => binding.type_site = BindingTypeSite::Source(range(source, 76, 79)),
+                2 => binding.status = BindingStatus::Reserved,
+                3 => {
+                    binding.captured = CapturedFreeVariables::new(vec![BinderIdentity::Generated {
+                        context: BindingContextId::new(1),
+                        counter: 269,
+                    }])
+                }
+                4 => binding.diagnostics = vec![BindingDiagnosticId::new(0)],
+                _ => unreachable!(),
+            }
+            corrupted.final_binding_fingerprint = corrupted.binding_env.debug_text();
+            handoffs.push(corrupted);
+        }
+        for (owner, layer, scope, visible, recovery) in [
+            (
+                BindingContextOwner::SourceStatement {
+                    source_range: range(source, 58, 98),
+                },
+                BindingContextLayer::Proof,
+                Some(LocalTermScope::new(vec![0])),
+                vec![BindingId::new(0), BindingId::new(1)],
+                BindingContextRecovery::Normal,
+            ),
+            (
+                BindingContextOwner::SourceStatement {
+                    source_range: range(source, 59, 98),
+                },
+                BindingContextLayer::Block,
+                Some(LocalTermScope::new(vec![0])),
+                vec![BindingId::new(0), BindingId::new(1)],
+                BindingContextRecovery::Normal,
+            ),
+            (
+                BindingContextOwner::SourceStatement {
+                    source_range: range(source, 59, 98),
+                },
+                BindingContextLayer::Proof,
+                Some(LocalTermScope::new(vec![1])),
+                vec![BindingId::new(0), BindingId::new(1)],
+                BindingContextRecovery::Normal,
+            ),
+            (
+                BindingContextOwner::SourceStatement {
+                    source_range: range(source, 59, 98),
+                },
+                BindingContextLayer::Proof,
+                Some(LocalTermScope::new(vec![0])),
+                vec![BindingId::new(0)],
+                BindingContextRecovery::Normal,
+            ),
+            (
+                BindingContextOwner::SourceStatement {
+                    source_range: range(source, 59, 98),
+                },
+                BindingContextLayer::Proof,
+                Some(LocalTermScope::new(vec![0])),
+                vec![BindingId::new(0), BindingId::new(1)],
+                BindingContextRecovery::Recovered,
+            ),
+        ] {
+            let mut contexts = BindingContextTable::new();
+            contexts.insert(BindingContextDraft {
+                owner: BindingContextOwner::Module,
+                parent: None,
+                layer: BindingContextLayer::Module,
+                lexical_scope: None,
+                bindings: vec![BindingId::new(0)],
+                visible_bindings: vec![BindingId::new(0)],
+                recovery: BindingContextRecovery::Normal,
+            });
+            contexts.insert(BindingContextDraft {
+                owner,
+                parent: Some(BindingContextId::new(0)),
+                layer,
+                lexical_scope: scope,
+                bindings: vec![BindingId::new(1)],
+                visible_bindings: visible,
+                recovery,
+            });
+            let mut corrupted = handoff.clone();
+            corrupted.binding_env = BindingEnv::try_new(BindingEnvParts {
+                source_id: source,
+                module_id: handoff.module_id.clone(),
+                contexts,
+                bindings: handoff.binding_env.bindings().clone(),
+                diagnostics: handoff.binding_env.diagnostics().clone(),
+            })
+            .expect("Task269C inexact final context remains structurally valid");
+            corrupted.final_binding_fingerprint = corrupted.binding_env.debug_text();
+            handoffs.push(corrupted);
+        }
+        handoffs
+    }
+
+    fn empty_typed(source: SourceId, module: ModuleId) -> TypedAst {
+        TypedAst::try_new(TypedAstParts {
+            source_id: source,
+            module_id: module,
+            resolved_root: None,
+            source_context: None,
+            source_type: None,
+            source_attribute: None,
+            nodes: TypedArena::try_new(None, Vec::new()).expect("empty arena"),
+            contexts: LocalTypeContextTable::new(),
+            types: TypeTable::new(),
+            facts: TypeFactTable::new(),
+            coercions: CoercionTable::new(),
+            initial_obligations: InitialObligationTable::new(),
+            diagnostics: TypeDiagnosticTable::new(),
+        })
+        .expect("Task269C empty typed AST")
+    }
+
+    fn occupied_typed(source: SourceId, module: ModuleId) -> TypedAst {
+        let mut builder = TypedArenaBuilder::new();
+        let root = builder
+            .push(TypedNode::new(
+                "Task269CExcludedNode",
+                SourceAnchor::Range(range(source, 0, 1)),
+            ))
+            .expect("Task269C occupied node");
+        TypedAst::try_new(TypedAstParts {
+            source_id: source,
+            module_id: module,
+            resolved_root: None,
+            source_context: None,
+            source_type: None,
+            source_attribute: None,
+            nodes: builder.finish(Some(root)).expect("Task269C occupied arena"),
+            contexts: LocalTypeContextTable::new(),
+            types: TypeTable::new(),
+            facts: TypeFactTable::new(),
+            coercions: CoercionTable::new(),
+            initial_obligations: InitialObligationTable::new(),
+            diagnostics: TypeDiagnosticTable::new(),
+        })
+        .expect("Task269C occupied typed AST")
+    }
+
+    fn task269ab_dummy_handoff(fixture: &Fixture) -> SourceProofLocalDeclarationHandoff {
+        SourceProofLocalDeclarationHandoff {
+            source_id: fixture.source,
+            module_id: fixture.module.clone(),
+            base_binding_fingerprint: fixture.base.debug_text(),
+            statement_fingerprint: "Task269C cross-family statement".to_owned(),
+            witness_fingerprint: "Task269C cross-family witness".to_owned(),
+            primary_term_fingerprint: "Task269C cross-family term".to_owned(),
+            binding_env: fixture.base.clone(),
+            final_binding_fingerprint: fixture.base.debug_text(),
+            declarations: SourceProofLocalDeclarationTable { rows: Vec::new() },
+        }
+    }
+
+    fn assemble_empty(
+        typed_ast: &TypedAst,
+    ) -> Result<ResolvedTypedAst, crate::resolved_typed_ast::ResolvedTypedAstError> {
+        assemble_with_node_hints(typed_ast, Vec::new())
+    }
+
+    fn assemble_with_node_hints(
+        typed_ast: &TypedAst,
+        node_hints: Vec<ResolvedNodeKindHint>,
+    ) -> Result<ResolvedTypedAst, crate::resolved_typed_ast::ResolvedTypedAstError> {
+        let cluster_facts = ClusterFactTable::new();
+        let overload_collection = OverloadCollectionOutput::collect(
+            Vec::<OverloadSiteInput>::new(),
+            Vec::<OverloadCandidateInput>::new(),
+        );
+        let template_expansion = TemplateExpansionOutput::expand(&overload_collection);
+        let viability = CandidateViabilityOutput::filter(
+            &template_expansion,
+            Vec::<CandidateViabilityInput>::new(),
+        );
+        let specificity =
+            SpecificityGraphOutput::build(&viability, Vec::<SpecificityComparisonInput>::new());
+        let overload_selection = OverloadSelectionOutput::resolve(
+            &specificity,
+            Vec::<OverloadSiteResolutionInput>::new(),
+        );
+        ResolvedTypedAst::assemble(ResolvedTypedAstInputs {
+            typed_ast,
+            cluster_facts: &cluster_facts,
+            overload_collection: &overload_collection,
+            template_expansion: &template_expansion,
+            viability: &viability,
+            specificity: &specificity,
+            overload_selection: &overload_selection,
+            expressions: Vec::new(),
+            node_hints,
+            statement_semantics: None,
+            statement_proofs: None,
+        })
+    }
+
+    fn source_id() -> SourceId {
+        let snapshot = BuildSnapshotId::from_published_schema_str(&format!(
+            "mizar-session-build-snapshot-v1:{}",
+            "c9".repeat(32)
+        ))
+        .expect("Task269C snapshot");
+        InMemorySessionIdAllocator::new()
+            .next_source_id(snapshot)
+            .expect("Task269C source")
+    }
+
+    fn other_source_id() -> SourceId {
+        let snapshot = BuildSnapshotId::from_published_schema_str(&format!(
+            "mizar-session-build-snapshot-v1:{}",
+            "ca".repeat(32)
+        ))
+        .expect("Task269C other snapshot");
+        let allocator = InMemorySessionIdAllocator::new();
+        allocator
+            .next_source_id(snapshot)
+            .expect("Task269C skipped source");
+        allocator
+            .next_source_id(snapshot)
+            .expect("Task269C other source")
+    }
 }

@@ -892,6 +892,7 @@ remain Tasks 269–272.
 Generated public newtypes:
 
 - `SourceProofLocalDeclarationId`
+- `SourceProofLocalLetBindingId`
 
 Literal top-level public items:
 
@@ -902,6 +903,10 @@ Literal top-level public items:
   `SourceProofLocalDeclarationHandoff`,
   `SourceProofLocalDeclarationProducer`,
   `SourceProofLocalDeclarationError`
+- `SourceProofLocalLetBindingHandoffInput`,
+  `SourceProofLocalLetBindingRecovery`, `SourceProofLocalLetBinding`,
+  `SourceProofLocalLetBindingTable`, `SourceProofLocalLetBindingHandoff`,
+  `SourceProofLocalLetBindingProducer`, `SourceProofLocalLetBindingError`
 
 Correspondence:
 
@@ -911,6 +916,7 @@ Correspondence:
 | The producer authenticates source/module identity, the Task-258B3N statement/witness/primary fingerprints, all 51 typed nodes, and the complete base-to-final binding transition. | `SourceProofLocalDeclarationProducer::build`, retained five fingerprints, and fail-closed validation categories. | Transaction/dependency/row/resolver/all-node/fingerprint corruption matrices. | Implemented transactionally without syntax parsing. |
 | Typed/final owners publish, replay, and clone-preserve the optional handoff atomically while all semantic tables remain empty. | `TypedAst::with_source_proof_local_declaration` and both read-only ownership getters. | One-shot/orphan/stale/sibling/final-replay and empty-semantics checker/runner tests. | Implemented as the dormant Task-269A definition-site slice. |
 | Public enums remain forward-compatible. | `#[non_exhaustive]` on kind, recovery, and error. | Public-enum and source/spec-audit lint policies. | Guarded; no exhaustive exception. |
+| The exact proof-`let` profile appends one missing-type `LetBinding` over the reserve-only base and is preserved atomically without semantic publication. | Public `SourceProofLocalLetBinding*` input/row/table/handoff/producer/error types and Typed/final ownership. | Four checker and four private runner Task-269C tests. | Implemented as zero-credit binding transport. |
 
 Bounded gaps: later-use resolution and capture replay, other proof-local
 declaration forms, witness typing, existential matching, goal substitution,
@@ -5878,3 +5884,8 @@ scope. The frozen syntax-free checker/runner transaction closes bounded
 remain separately classified `source_drift`. No `doc/spec`, `.miz`,
 expectation, trace status, diagnostic, proof, or semantic intent changes, and
 the broad diagnostic fixture receives no positive credit.
+
+Implementation closes exactly the classified binding `source_drift` and its
+eight-test `test_gap`. Canonical artifacts remain byte-identical; source-type,
+real use/capture, and all proof/diagnostic semantics remain open rather than
+being inferred from the new source behavior.

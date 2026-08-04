@@ -2336,3 +2336,7 @@ fixtureでcoveredのままでpositive binding/proof acceptanceではない。cas
 `428/395`、type coverage `259=247+12`、trace SHA-256
 `55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`は不変。
 coverage auditはprivate binding ownerとseparate source-type prerequisiteだけを記録。
+
+implementationもno-credit contractをexactに維持する。corpus/trace artifactは不変、
+countは`428/395`、active stageは`101/7/205/1`、trace hashはbyte-identical。
+dormant unit-test inventoryだけが`544`へ移る。

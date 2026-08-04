@@ -4076,3 +4076,7 @@ but adds no `SourceStatementKind`, statement context/fact/candidate row,
 formula edge, or statement semantic. `SourceStatement(59..98)` is solely the
 binding-context owner tag. Goal/thesis and conclusion ownership remain
 deferred.
+
+The implemented transaction preserves this boundary: its context owner tag is
+validated as provenance only and no statement, formula, thesis, conclusion,
+fact, or proof row is emitted.

@@ -5249,3 +5249,10 @@ missing type, one Typed/final handoff, no nodes, and every semantic table
 empty. Four tests cover exact output/debug/lookup, lower/base/checker
 corruption, near-miss and adjacent-family/public-route isolation, and zero
 active or semantic effect. Production dispatch never calls the leaf.
+
+## Checker Task 269C Active Dormant Harness
+
+The private route now implements that exact composition. Its four tests pass
+the normal transaction and reject all frozen corruption/near-miss profiles;
+the route remains absent from production dispatch and publishes no diagnostic,
+fixture, trace, type, proof, fact, or downstream semantic result.

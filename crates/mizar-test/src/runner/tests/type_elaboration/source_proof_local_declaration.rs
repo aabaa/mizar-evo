@@ -7,10 +7,11 @@ use super::type_elaboration::{
     source_statement_transport_detail_keys as task269a_legacy_detail_keys,
 };
 use super::{
-    SOURCE_PROOF_LOCAL_LET_TEXT, SourceProofLocalLetLowerMutation,
+    SOURCE_PROOF_LOCAL_LET_TEXT, SourceProofLocalLetBindingRouteMutation,
+    SourceProofLocalLetBindingRouteOutput, SourceProofLocalLetLowerMutation,
     SourceProofLocalLetLowerOutput, SourceProofLocalLetResolverProfileMutation,
-    SourceProofLocalLetShellMutation,
-    SourceProofLocalLetSurfaceMutation,
+    SourceProofLocalLetShellMutation, SourceProofLocalLetSurfaceMutation,
+    source_proof_local_let_binding_output, source_proof_local_let_binding_output_with_mutation,
     source_proof_local_let_lower_output, source_proof_local_let_lower_output_with_mutation,
     source_proof_local_let_lower_output_with_resolver_mutation,
     source_proof_local_let_lower_output_with_resolver_profile_mutation,
@@ -1961,4 +1962,229 @@ fn task269cp_private_lower_route_has_zero_checker_and_active_semantic_effect() {
         ),
         None
     );
+}
+
+#[test]
+fn task269c_exact_binding_transaction_debug_and_lookup_are_stable() {
+    let (ast, module, shells, symbols) =
+        task253_ast_from_source_text(SOURCE_PROOF_LOCAL_LET_TEXT, 269_600);
+    let SourceProofLocalLetBindingRouteOutput {
+        typed_ast,
+        resolved,
+    } = source_proof_local_let_binding_output(
+        &ast,
+        module.clone(),
+        &shells,
+        &symbols,
+        SOURCE_PROOF_LOCAL_LET_TEXT,
+    )
+    .expect("Task269C exact private selector")
+    .expect("Task269C exact binding transaction");
+    let handoff = typed_ast
+        .source_proof_local_let_binding()
+        .expect("Task269C typed owner");
+    assert_eq!(handoff.source_id(), ast.source_id);
+    assert_eq!(handoff.module_id(), &module);
+    assert_eq!(handoff.theorem_symbol().module(), &module);
+    assert_eq!((handoff.theorem_definition().index(), handoff.contribution().index()), (0, 0));
+    assert_eq!((handoff.base_binding_env().contexts().len(), handoff.base_binding_env().bindings().len(), handoff.base_binding_env().diagnostics().len()), (1, 1, 0));
+    assert_eq!((handoff.binding_env().contexts().len(), handoff.binding_env().bindings().len(), handoff.binding_env().diagnostics().len()), (2, 2, 0));
+    assert_eq!(handoff.base_binding_fingerprint(), handoff.base_binding_env().debug_text());
+    assert_eq!(handoff.final_binding_fingerprint(), handoff.binding_env().debug_text());
+    let row = handoff
+        .bindings()
+        .get(mizar_checker::source_proof_local_declaration::SourceProofLocalLetBindingId::new(0))
+        .expect("Task269C one dense row");
+    assert_eq!((row.binding().index(), row.binding_context().index(), row.source_ordinal(), row.visible_after_ordinal()), (1, 1, 1, 1));
+    assert_eq!(row.recovery(), mizar_checker::source_proof_local_declaration::SourceProofLocalLetBindingRecovery::Normal);
+    let local = handoff
+        .binding_env()
+        .bindings()
+        .get(mizar_checker::binding_env::BindingId::new(1))
+        .expect("Task269C let binding");
+    assert_eq!(local.kind, mizar_checker::binding_env::BindingKind::LetBinding);
+    assert_eq!(local.type_site, mizar_checker::binding_env::BindingTypeSite::Missing);
+    assert!(handoff.debug_text().starts_with("source-proof-local-let-binding-debug-v1\n"));
+    assert!(handoff.debug_text().ends_with(&format!("final-binding-fingerprint: {:?}\n", handoff.final_binding_fingerprint())));
+    assert_eq!(resolved.source_proof_local_let_binding(), Some(handoff));
+    assert!(typed_ast.debug_text().contains(&handoff.debug_text()));
+    assert!(resolved.debug_text().contains(&handoff.debug_text()));
+}
+
+#[test]
+fn task269c_lower_base_and_checker_corruption_fail_closed() {
+    let cases = [
+        (
+            SourceProofLocalLetBindingRouteMutation::WrongLowerFingerprint,
+            "source proof-local let-binding dependency mismatch",
+        ),
+        (
+            SourceProofLocalLetBindingRouteMutation::EmptyBase,
+            "source proof-local let-binding base binding environment is invalid",
+        ),
+        (
+            SourceProofLocalLetBindingRouteMutation::WrongTheoremRange,
+            "source proof-local let-binding dependency mismatch",
+        ),
+        (
+            SourceProofLocalLetBindingRouteMutation::WrongProofRange,
+            "source proof-local let-binding dependency mismatch",
+        ),
+        (
+            SourceProofLocalLetBindingRouteMutation::WrongLetRange,
+            "source proof-local let-binding dependency mismatch",
+        ),
+        (
+            SourceProofLocalLetBindingRouteMutation::WrongSegmentRange,
+            "source proof-local let-binding dependency mismatch",
+        ),
+        (
+            SourceProofLocalLetBindingRouteMutation::WrongNameRange,
+            "source proof-local let-binding dependency mismatch",
+        ),
+        (
+            SourceProofLocalLetBindingRouteMutation::WrongLocalSpelling,
+            "source proof-local let-binding 0 is invalid",
+        ),
+        (
+            SourceProofLocalLetBindingRouteMutation::WrongLocalScope,
+            "source proof-local let-binding 0 is invalid",
+        ),
+        (
+            SourceProofLocalLetBindingRouteMutation::WrongLocalRange,
+            "source proof-local let-binding 0 is invalid",
+        ),
+        (
+            SourceProofLocalLetBindingRouteMutation::WrongLocalVisibleAfter,
+            "source proof-local let-binding 0 is invalid",
+        ),
+        (
+            SourceProofLocalLetBindingRouteMutation::WrongSourceOrdinal,
+            "source proof-local let-binding 0 is invalid",
+        ),
+    ];
+    for (ordinal, (mutation, expected)) in cases.into_iter().enumerate() {
+        let (ast, module, shells, symbols) =
+            task253_ast_from_source_text(SOURCE_PROOF_LOCAL_LET_TEXT, 269_610 + ordinal);
+        assert_eq!(
+            source_proof_local_let_binding_output_with_mutation(
+                &ast,
+                module,
+                &shells,
+                &symbols,
+                SOURCE_PROOF_LOCAL_LET_TEXT,
+                mutation,
+            )
+            .expect("Task269C exact selector under corruption"),
+            Err(expected.to_owned()),
+            "Task269C mutation {mutation:?}",
+        );
+    }
+}
+
+#[test]
+fn task269c_typed_and_resolved_owners_are_one_shot_and_semantically_empty() {
+    let (ast, module, shells, symbols) =
+        task253_ast_from_source_text(SOURCE_PROOF_LOCAL_LET_TEXT, 269_630);
+    let output = source_proof_local_let_binding_output(
+        &ast,
+        module,
+        &shells,
+        &symbols,
+        SOURCE_PROOF_LOCAL_LET_TEXT,
+    )
+    .expect("Task269C exact selector")
+    .expect("Task269C owners");
+    let handoff = output
+        .typed_ast
+        .source_proof_local_let_binding()
+        .expect("Task269C typed owner")
+        .clone();
+    assert_eq!(
+        output
+            .typed_ast
+            .clone()
+            .with_source_proof_local_let_binding(handoff),
+        Err(mizar_checker::typed_ast::TypedAstError::InvalidSourceProofLocalLetBinding)
+    );
+    assert!(output.typed_ast.nodes().is_empty());
+    assert!(output.typed_ast.contexts().is_empty());
+    assert!(output.typed_ast.types().is_empty());
+    assert!(output.typed_ast.facts().is_empty());
+    assert!(output.typed_ast.coercions().is_empty());
+    assert!(output.typed_ast.initial_obligations().is_empty());
+    assert!(output.typed_ast.diagnostics().is_empty());
+    assert!(output.resolved.nodes().is_empty());
+    assert!(output.resolved.expr_metadata().is_empty());
+    assert!(output.resolved.checked_formulas().is_empty());
+    assert!(output.resolved.statement_semantics().is_empty());
+    assert!(output.resolved.checked_proofs().is_empty());
+    assert!(output.resolved.checked_terminal_goals().is_empty());
+    assert!(output.resolved.diagnostics().is_empty());
+    assert!(!output.resolved.debug_text().contains("initial-obligations:"));
+}
+
+#[test]
+fn task269c_near_miss_neighbor_and_active_routes_remain_isolated() {
+    let near_misses = [
+        SOURCE_PROOF_LOCAL_LET_TEXT.replace("let y be set;", "let z be set;"),
+        SOURCE_PROOF_LOCAL_LET_TEXT.replace("let y be set;", "let y, z be set;"),
+        SOURCE_PROOF_LOCAL_LET_TEXT.replace("let y be set;", "let y be set such that x = x;"),
+        SOURCE_PROOF_LOCAL_LET_TEXT.replace("let y be set;", "let y be set by A;"),
+        SOURCE_PROOF_LOCAL_LET_TEXT.replace("thus x = x;", "thus y = y;"),
+    ];
+    for (ordinal, source) in near_misses.into_iter().enumerate() {
+        let (ast, module, shells, symbols) =
+            task253_ast_from_source_text(&source, 269_640 + ordinal);
+        assert!(
+            source_proof_local_let_binding_output(
+                &ast,
+                module,
+                &shells,
+                &symbols,
+                &source,
+            )
+            .is_none(),
+            "Task269C selected near miss {ordinal}",
+        );
+    }
+    for (ordinal, source) in [TASK269A_SOURCE_TEXT, TASK269B_SOURCE_TEXT]
+        .into_iter()
+        .enumerate()
+    {
+        let (ast, module, shells, symbols) =
+            task253_ast_from_source_text(source, 269_650 + ordinal);
+        assert!(
+            source_proof_local_let_binding_output(
+                &ast,
+                module,
+                &shells,
+                &symbols,
+                source,
+            )
+            .is_none(),
+            "Task269C selected Task269A/B family {ordinal}",
+        );
+    }
+    let (ast, module, shells, symbols) =
+        task253_ast_from_source_text(SOURCE_PROOF_LOCAL_LET_TEXT, 269_660);
+    assert!(
+        source_proof_local_declaration_output(
+            &ast,
+            module.clone(),
+            &symbols,
+            SOURCE_PROOF_LOCAL_LET_TEXT,
+        )
+        .is_none()
+    );
+    assert_eq!(
+        task269a_legacy_detail_keys(
+            &ast,
+            module,
+            &symbols,
+            SOURCE_PROOF_LOCAL_LET_TEXT,
+        ),
+        None
+    );
+    assert_eq!(shells.declarations().len(), 2);
 }

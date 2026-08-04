@@ -623,10 +623,12 @@ use type_elaboration::{
 };
 #[cfg(test)]
 use type_elaboration::{
-    SOURCE_PROOF_LOCAL_LET_TEXT, SourceProofLocalLetLowerMutation, SourceProofLocalLetLowerOutput,
-    SourceProofLocalLetResolverProfileMutation, SourceProofLocalLetShellMutation,
-    SourceProofLocalLetSurfaceMutation, source_proof_local_let_lower_output,
-    source_proof_local_let_lower_output_with_mutation,
+    SOURCE_PROOF_LOCAL_LET_TEXT, SourceProofLocalLetBindingRouteMutation,
+    SourceProofLocalLetBindingRouteOutput, SourceProofLocalLetLowerMutation,
+    SourceProofLocalLetLowerOutput, SourceProofLocalLetResolverProfileMutation,
+    SourceProofLocalLetShellMutation, SourceProofLocalLetSurfaceMutation,
+    source_proof_local_let_binding_output, source_proof_local_let_binding_output_with_mutation,
+    source_proof_local_let_lower_output, source_proof_local_let_lower_output_with_mutation,
     source_proof_local_let_lower_output_with_resolver_mutation,
     source_proof_local_let_lower_output_with_resolver_profile_mutation,
     source_proof_local_let_lower_output_with_shell_mutation,

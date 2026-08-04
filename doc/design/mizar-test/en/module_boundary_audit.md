@@ -13060,3 +13060,15 @@ stays `37/71194` before implementation with path/content hashes
 Library tests project `540 -> 544`. Raw syntax remains runner-private and only
 the frozen syntax-free binding input crosses to checker; active dispatch,
 Cargo, corpus, trace, parser/resolver, and source-type ownership do not change.
+
+## Checker Task 269C Implemented Runner Boundary
+
+Exactly the frozen four runner files change and no module or production path
+is added. Production is `37/71412`; path hash remains
+`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d`
+and content hash becomes
+`bf8c5a242bdc3e8a6809583ef1813138afbb246e41612413d7a7783631bc3cd6`.
+The library is `544`, with raw/normalized hashes
+`fa69bfaa53fb75a2a6ec62b1ac7faf8fc5e5a12693a3840e0e31439eafa156db` /
+`717a16f30326b9878949c7158be81eff5f7769c32ceeb19e23de0e569eb7ab4c`.
+All excluded ownership and active boundaries remain unchanged.

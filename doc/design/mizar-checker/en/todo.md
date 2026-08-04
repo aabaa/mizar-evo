@@ -6784,10 +6784,11 @@ implementation commit does not satisfy a producer task.
   exit in synchronized EN/JA.
 - [x] Repeat specification review to **NO FINDINGS** and pass all nine docs-
   only hard gates without a score cap at `100/100`.
-- [ ] Stage and commit only the documentation prerequisite, then run fresh
-  implementation preflight.
-- [ ] Fresh-preflight and implement only the exact seven-file binding
+- [x] Stage and commit only the documentation prerequisite as
+  `e3bc93c36577e7e250efab8cfc11d9b9695c3953`, then run fresh implementation
+  preflight.
+- [x] Fresh-preflight and implement only the exact seven-file binding
   transaction; keep source-type admission and use/capture separate.
-- [ ] Complete independent test/implementation/source-doc/final reviews,
+- [~] Complete independent test/implementation/source-doc/final reviews,
   verification, all nine final gates, task-only commit, and fresh next-task
   inventory automatically.

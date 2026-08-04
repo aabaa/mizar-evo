@@ -94,8 +94,8 @@ is its task 1). "Next work" points into the
 | mizar-parser | Grammar, Pratt parsing, syntax recovery, parse-only corpus | [x] Tasks 1-48 plus bounded `PARSER-RECOVERY-B1B1P-P1` complete; historical post-Task-46 score 99/100 | no inferred Task 49; human-owned P-265-47D remains separate | [todo](./mizar-parser/en/todo.md) |
 | mizar-frontend | Source loading and phase 1-3 orchestration | [x] prior milestone plus `PARSER-RECOVERY-B1B1P-P1-FE` regression complete | — | [todo](./mizar-frontend/en/todo.md) |
 | mizar-resolve | Module graph, namespaces, symbols, labels, signatures | [~] complete through task 29, Checker Task 263R, and Task 264R implementation | Preserve Task-264R shell/no-symbol boundary through Checker Tasks 248P/264 | [todo](./mizar-resolve/en/todo.md) |
-| mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] foundation complete through task 22; Tasks 265-268, Core-31, and Checker consumers through implemented Task 269CP are complete | Freeze and implement binding-only Checker Task 269C without adding source-type or checker-semantic ownership | [todo](./mizar-test/en/todo.md) |
-| mizar-checker | Type checking, cluster/registration resolution, overload resolution | [~] explicit-payload milestone and source producers/consumers through implemented Task 269CP are complete | Freeze and implement binding-only Checker Task 269C; keep later-use/capture and source-type admission separate | [todo](./mizar-checker/en/todo.md) |
+| mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] foundation complete through task 22; Tasks 265-268, Core-31, and Checker consumers through implemented Task 269C are complete | Fresh-inventory the separate proof-`let` source-type prerequisite; keep use/capture and checker semantics separate | [todo](./mizar-test/en/todo.md) |
+| mizar-checker | Type checking, cluster/registration resolution, overload resolution | [~] explicit-payload milestone and source producers/consumers through implemented Task 269C are complete | Fresh-inventory the separate proof-`let` source-type prerequisite; keep later-use/capture and goal/proof semantics separate | [todo](./mizar-checker/en/todo.md) |
 | mizar-core | Elaboration, binder-normalized core logic, control-flow preparation | [x] core/control-flow milestone, tasks 27-32 complete | step-5 Tasks 33-53 under the Task-32 graph | [todo](./mizar-core/en/todo.md) |
 | mizar-vc | VC IR, VC generation, deterministic pre-ATP discharge | [x] exact source-derived contradiction VC integration complete through task 31 | dependency-paced VC Tasks 32-55; VC 40/53 and S1 gates remain explicit | [todo](./mizar-vc/en/todo.md) |
 | mizar-kernel | Trusted certificate parsing and checking | [x] SAT-backed kernel milestone complete | step 4 task 35 resolved; task 32 parked; tasks 30-34 resolved | [todo](./mizar-kernel/en/todo.md) |
@@ -4174,13 +4174,14 @@ or semantic owner changed. B3M2B2B remains next before B4.
   and full verification authorizes the exact task-only commit. Continue after
   that commit to binding-only Task 269C with a missing type site; source-type
   admission remains a separately selected prerequisite.
-- [~] Fresh-inventory and freeze Checker Task 269C as the exact binding-only
+- [x] Fresh-inventory and freeze Checker Task 269C as the exact binding-only
   proof-`let` transaction: base/final `1/1/0 -> 2/2/0`, one missing-type
   `LetBinding`, one-shot Typed/final ownership, no active/semantic credit.
 - [x] Complete the Task-269C documentation prerequisite review with **NO
   FINDINGS** and all nine hard gates uncapped at `100/100`.
-- [ ] Create the exact docs-only commit and run post-commit fresh
+- [x] Create the exact docs-only commit
+  `e3bc93c36577e7e250efab8cfc11d9b9695c3953` and run post-commit fresh
   implementation preflight.
-- [ ] Implement/review/verify/commit exactly Task 269C, then fresh-inventory the
+- [~] Implement/review/verify/commit exactly Task 269C, then fresh-inventory the
   separately owned source-type prerequisite without absorbing use/capture or
   goal/proof semantics.

@@ -6463,8 +6463,10 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   count/hash、audit impact、exitをEN/JAでfreeze。
 - [x] specification reviewを**NO FINDINGS**までrepeatし、docs-only hard gate 9件を
   score capなしの`100/100`でPASS。
-- [ ] documentation prerequisiteだけをstage/commitし、fresh implementation preflight。
-- [ ] fresh preflight後exact 7-file binding transactionだけをimplementし、source-type
+- [x] documentation prerequisiteだけを
+  `e3bc93c36577e7e250efab8cfc11d9b9695c3953`としてstage/commitし、fresh
+  implementation preflight。
+- [x] fresh preflight後exact 7-file binding transactionだけをimplementし、source-type
   admission/use-captureを分離。
-- [ ] independent test/implementation/source-doc/final review、verification、final gate
+- [~] independent test/implementation/source-doc/final review、verification、final gate
   9件、task-only commit、fresh next-task inventoryを自動継続。

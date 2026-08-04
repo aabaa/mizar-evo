@@ -441,7 +441,9 @@ pub(super) use source_predicate_definition::{
 #[cfg(test)]
 pub(super) use source_proof_local_declaration::{
     SourceProofLocalDeclarationRouteMutation, SourceProofLocalDeclarationRouteOutput,
+    SourceProofLocalLetBindingRouteMutation, SourceProofLocalLetBindingRouteOutput,
     source_proof_local_declaration_output, source_proof_local_declaration_output_with_mutation,
+    source_proof_local_let_binding_output, source_proof_local_let_binding_output_with_mutation,
 };
 pub(super) use source_property_implementation::source_property_implementation_transport_detail_keys;
 #[cfg(test)]

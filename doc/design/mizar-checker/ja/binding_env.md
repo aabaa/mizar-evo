@@ -793,3 +793,10 @@ context1は`SourceStatement(59..98)`、proof layer、parent0、owned `[1]`、vis
 `[0,1]`。definition-site ordinal1はforward、synthetic ordinal2はbinding1をresolveする。
 actual use/capture row/source typeはclaimせず、全base/final row/debug fingerprintをfail
 closedにvalidateする。
+
+## Task 269C active `LetBinding` transaction
+
+implemented producerとinstaller 2段はこのexact transitionとlookup oracle 2件を
+enforceする。environment/context/binding/declaration link/fingerprintのcorruptionは
+transactional failし、final bindingはmissing typeのままでreal use/captureまたは
+semantic effectを持たない。

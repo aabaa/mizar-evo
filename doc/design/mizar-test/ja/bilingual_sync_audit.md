@@ -1604,3 +1604,9 @@ coverage delta 0で一致する。bilingual implementation debtはない。
 EN/JAはexact private lower-to-reserve-to-checker composition、missing-type `LetBinding`、
 empty Typed/final semantics、4-file/4-test runner scope、`540 -> 544`、production/active/
 corpus/trace/CLI不変、separate source-type/use-capture ownerで一致する。English canonical。
+
+## Checker Task 269C implementation synchronization
+
+EN/JAはimplemented private route、exact checker transaction、4-test matrix、runner
+`544`、production `37/71412`、raw/normalized hash、public/active/corpus/trace/CLI
+不変、全semantic deferralで一致する。implementation-time bilingual debtはない。

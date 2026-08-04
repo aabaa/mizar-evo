@@ -1677,3 +1677,7 @@ new checker siblingは`LetBinding` 1行とexact `BindingEnv` transitionだけを
 syntaxをimportせずTask-269CP provenanceをconsumeし、missing type siteをretainして
 Typed/final ownerがone-shot preserveする。named-witness A/B、source-type application、
 actual use/capture、formula/goal/fact/proof/obligation family、active coverageとはdisjoint。
+
+このfamilyはexact declaration row 1件だけでimplementedとなりsibling payloadは0。
+Typed/final replayとdormant runnerはdecompositionを保ち、separate source-type
+prerequisiteは未実装のまま。

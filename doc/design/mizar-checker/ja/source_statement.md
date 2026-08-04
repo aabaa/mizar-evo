@@ -3549,3 +3549,6 @@ binding-only transactionはTask-269CP theorem/proof/let rangeをconsumeするが
 `SourceStatementKind`、statement context/fact/candidate row、formula edge、statement
 semanticを追加しない。`SourceStatement(59..98)`はbinding-context owner tagだけ。
 goal/thesis/conclusion ownershipはdeferred。
+
+implemented transactionもこのboundaryを維持する。context owner tagはprovenance
+としてだけvalidateし、statement/formula/thesis/conclusion/fact/proof rowをemitしない。

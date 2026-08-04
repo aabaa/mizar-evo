@@ -1875,3 +1875,14 @@ handoff and adds no type, node link, fact, coercion, initial obligation, or
 diagnostic. Duplicate, stale, partial, Task-269A/B cross-family, and semantic-
 coexistence inputs fail transactionally. The binding remains
 `BindingTypeSite::Missing`.
+
+## Task 269C Active Typed Ownership
+
+The frozen field/getter/installer are implemented. The installer validates the
+entire handoff before mutation, rejects both installation orders for every
+sibling family, and leaves all node, type, fact, proof, obligation, and
+diagnostic payloads empty.
+
+The optional handoff uses private boxed storage to keep `TypedAst` stack size
+stable; the frozen public by-value installer and `Option<&Handoff>` getter are
+unchanged.

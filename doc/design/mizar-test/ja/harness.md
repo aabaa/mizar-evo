@@ -4945,3 +4945,10 @@ missing typeの`LetBinding`、Typed/final handoff 1件、nodeなし、全semanti
 tests 4件はexact output/debug/lookup、lower/base/checker corruption、near-miss/adjacent-
 family/public-route isolation、active/semantic effect 0をcover。production dispatchはleafを
 callしない。
+
+## Checker Task 269C active dormant harness
+
+private routeはexact compositionを実装した。tests 4件はnormal transactionをpassし、
+freeze済みcorruption/near-miss profileをrejectする。routeはproduction dispatchに
+存在せず、diagnostic/fixture/trace/type/proof/fact/downstream semantic resultを
+publishしない。

@@ -477,6 +477,8 @@ warnings/errors `23/0`, and trace SHA-256 remains
 | `SourceProofLocalDeclarationKind` | `#[non_exhaustive]`; callers must tolerate later explicitly frozen proof-local declaration forms. |
 | `SourceProofLocalDeclarationRecovery` | `#[non_exhaustive]`; callers must tolerate later recovery classes. |
 | `SourceProofLocalDeclarationError` | `#[non_exhaustive]`; callers must not exhaustively match validation or installation failures. |
+| `SourceProofLocalLetBindingRecovery` | `#[non_exhaustive]`; callers must tolerate later explicitly frozen proof-`let` recovery classes. |
+| `SourceProofLocalLetBindingError` | `#[non_exhaustive]`; callers must not exhaustively match proof-`let` validation or installation failures. |
 
 No exhaustive public enum exceptions are owned by this module.
 
@@ -1263,3 +1265,66 @@ Independent final quality review reports **NO FINDINGS**: all nine hard gates
 PASS, no score cap applies, and the valid score is `100/100`
 (`20/20/15/15/10/10/5/5`). Exact staging and the docs-only commit remain
 parent-owned next steps.
+
+### Task-269C implementation result
+
+The committed documentation prerequisite is implemented without widening the
+frozen seven-source-file boundary. The checker producer validates the opaque
+Task-269CP lower fingerprint, exact theorem/range/resolver provenance, the
+reserve-only `1/1/0` base environment, the one-row declaration table, and the
+exact `2/2/0` final environment in the frozen seven-phase order. It publishes
+one missing-type, active, uncaptured `LetBinding`; definition-site lookup at
+ordinal 1 remains forward and synthetic ordinal 2 resolves binding 1. Typed
+and final installation are one-shot, mutually exclusive with every existing
+sibling family, replay the complete transaction, and add no node or semantic
+payload.
+
+The private dormant runner consumes the unchanged Task-269CP projection and
+existing reserve bridge only. Four checker and four runner tests close exact
+output, corruption/precedence, cross-family/rollback/replay, near-miss, and
+semantic-emptiness gaps. Libraries are now checker/runner `486/544`. Raw and
+normalized test-list SHA-256 values are checker
+`0a4d39c5cad8ee81ee1a9b52fa437a6203202cc783100c275adb1a717fb749f7` /
+`2bece131be70bdfd0a3128faa1b83852b774692353c4926f069bafa61d2d7e28`
+and runner
+`fa69bfaa53fb75a2a6ec62b1ac7faf8fc5e5a12693a3840e0e31439eafa156db` /
+`717a16f30326b9878949c7158be81eff5f7769c32ceeb19e23de0e569eb7ab4c`.
+Production is checker `30/167058` and runner `37/71412`; path hashes remain
+`c89f43f6abebf7ebeb3ac9394ecd8ea3186ad28934c75526d2cc0b85a66ebad5` /
+`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d`,
+and content hashes are
+`d5d6c3bf41176422ffe78b9c612db02ef8eb8550ea080d0c11e90c16d320cb49` /
+`bf8c5a242bdc3e8a6809583ef1813138afbb246e41612413d7a7783631bc3cd6`.
+
+No parser/resolver, source-type, active dispatch, public runner, fixture,
+sidecar, expectation, trace, metadata, Cargo, diagnostic, goal, guard, proof,
+discharge, acceptance, fact, Core, CFG, or VC owner changed. Corpus/count/CLI
+and trace values remain the frozen Task-264 baseline. The coverage audit
+therefore closes only the zero-credit binding transport and keeps the separate
+source-type prerequisite for fresh dependency selection.
+
+Typed and final owners use private boxed storage for this comparatively large
+handoff while preserving the frozen by-value installer and `Option<&Handoff>`
+getter signatures. This representation-only choice prevents legacy
+cross-family tests from exhausting the default Rust test-thread stack and
+does not alter ownership, validation, debug bytes, or public semantics.
+
+### Task-269C implementation review and verification
+
+After a legacy cross-family crate test exposed default-thread stack exhaustion,
+the bounded private boxing correction above restored that test without changing
+the public contract. Repeated test-sufficiency, implementation, and source/
+documentation reviews all end **NO FINDINGS**. Focused checker Task-269C tests
+pass `4/4`; checker and runner libraries pass `486/486` and `544/544`; lint
+policies pass `15/15` and `14/14`; metadata passes `137/137`. Cargo metadata,
+`cargo fmt --all --check`, warnings-denied all-target/all-feature workspace
+Clippy, full `cargo test --no-fail-fast`, and `git diff --check` pass.
+
+All five metadata CLIs exit zero and reproduce the frozen plan/parse/
+declaration/type/proof stdout hashes. They report cases/requirements `428/395`,
+pass/fail `235/193`, active stages `101/7/205/1`, type coverage
+`259=247+12`, and warnings/errors `23/0`. Final production, test-list, and trace
+hashes reproduce the values recorded above. Independent final quality reports
+**NO FINDINGS**: all nine hard gates PASS, no score cap applies, and the valid
+score is `100/100` (`20/20/15/15/10/10/5/5`). Only task-only staging/commit
+and clean post-commit fresh inventory remain parent-owned gates.

@@ -454,6 +454,8 @@ SHA-256
 | `SourceProofLocalDeclarationKind` | `#[non_exhaustive]`。callerはlater explicitly frozen proof-local declaration formを許容する。 |
 | `SourceProofLocalDeclarationRecovery` | `#[non_exhaustive]`。callerはlater recovery classを許容する。 |
 | `SourceProofLocalDeclarationError` | `#[non_exhaustive]`。callerはvalidation/installation failureをexhaustive matchしない。 |
+| `SourceProofLocalLetBindingRecovery` | `#[non_exhaustive]`。callerはlater explicitly frozen proof-`let` recovery classを許容する。 |
+| `SourceProofLocalLetBindingError` | `#[non_exhaustive]`。callerはproof-`let` validation/installation failureをexhaustive matchしない。 |
 
 この module が所有する exhaustive public enum exception はない。
 
@@ -1140,3 +1142,60 @@ coverage `259=247+12`、warnings/errors `23/0`、trace SHA-256
 independent final quality reviewは**NO FINDINGS**、hard gate 9件PASS、score capなし、valid
 `100/100`（`20/20/15/15/10/10/5/5`）。exact staging/docs-only commitはparent-owned
 next step。
+
+### Task-269C implementation result
+
+commit済みdocumentation prerequisiteを、freeze済み7 source file境界を拡張せず
+実装した。checker producerはopaqueなTask-269CP lower fingerprint、exact theorem/
+range/resolver provenance、reserve-only `1/1/0` base、1-row declaration table、
+exact `2/2/0` final environmentをfreeze済み7-phase順で検証する。missing-type、
+active、uncapturedな`LetBinding`を1件だけpublishし、definition-site ordinal 1は
+forward、synthetic ordinal 2はbinding 1をresolveする。Typed/final installは
+one-shotで全既存sibling familyと排他的、transaction全体をreplayし、nodeまたは
+semantic payloadを追加しない。
+
+private dormant runnerは不変のTask-269CP projectionと既存reserve bridgeだけを
+consumeする。checker 4件とrunner 4件がexact output、corruption/precedence、
+cross-family/rollback/replay、near-miss、semantic emptinessのtest gapを閉じる。
+libraryはchecker/runner `486/544`。raw/normalized test-list SHA-256はchecker
+`0a4d39c5cad8ee81ee1a9b52fa437a6203202cc783100c275adb1a717fb749f7` /
+`2bece131be70bdfd0a3128faa1b83852b774692353c4926f069bafa61d2d7e28`、runner
+`fa69bfaa53fb75a2a6ec62b1ac7faf8fc5e5a12693a3840e0e31439eafa156db` /
+`717a16f30326b9878949c7158be81eff5f7769c32ceeb19e23de0e569eb7ab4c`。
+productionはchecker `30/167058`、runner `37/71412`。path hashは
+`c89f43f6abebf7ebeb3ac9394ecd8ea3186ad28934c75526d2cc0b85a66ebad5` /
+`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d`
+のまま、content hashは
+`d5d6c3bf41176422ffe78b9c612db02ef8eb8550ea080d0c11e90c16d320cb49` /
+`bf8c5a242bdc3e8a6809583ef1813138afbb246e41612413d7a7783631bc3cd6`。
+
+parser/resolver、source-type、active dispatch、public runner、fixture、sidecar、
+expectation、trace、metadata、Cargo、diagnostic、goal、guard、proof、discharge、
+acceptance、fact、Core、CFG、VC ownerは変えていない。corpus/count/CLI/traceは
+freeze済みTask-264 baselineを維持する。coverage auditはzero-credit binding
+transportだけをcloseし、separate source-type prerequisiteはfresh dependency
+selectionへ残す。
+
+Typed/final ownerは比較的大きいhandoffをprivate boxed storageで保持し、freeze済み
+by-value installerと`Option<&Handoff>` getter signatureを維持する。この
+representation-only choiceはlegacy cross-family testがdefault Rust test-thread
+stackをexhaustすることを防ぎ、ownership/validation/debug byte/public semanticsを
+変更しない。
+
+### Task-269C implementation review and verification
+
+legacy cross-family crate testがdefault-thread stack exhaustionを検出後、上のbounded
+private boxing correctionによりpublic contractを変えず当該testをrestoreした。
+repeated test-sufficiency/implementation/source-documentation reviewはすべて
+**NO FINDINGS**。focused checker Task-269Cは`4/4`、checker/runner libraryは
+`486/486` / `544/544`、lint policyは`15/15` / `14/14`、metadataは`137/137`。
+Cargo metadata、`cargo fmt --all --check`、warnings-denied all-target/all-feature
+workspace Clippy、full `cargo test --no-fail-fast`、`git diff --check`はPASS。
+
+metadata CLI 5件はexit zeroでfrozen plan/parse/declaration/type/proof stdout hashを
+再現し、cases/requirements `428/395`、pass/fail `235/193`、active stage
+`101/7/205/1`、type coverage `259=247+12`、warnings/errors `23/0`を報告する。
+final production/test-list/trace hashも上記recordを再現。independent final qualityは
+**NO FINDINGS**、全9 hard gate PASS、score capなし、valid `100/100`
+（`20/20/15/15/10/10/5/5`）。task-only stage/commitとclean post-commit fresh
+inventoryだけがparent-owned gateとして残る。

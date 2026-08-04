@@ -2464,3 +2464,8 @@ coverage stays `259=247+12`, and trace SHA-256 stays
 `55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`.
 The coverage audit records only the private binding owner and the separate
 source-type prerequisite.
+
+The implementation preserves this no-credit contract exactly: no corpus or
+trace artifact changed, counts remain `428/395`, active stages remain
+`101/7/205/1`, and the trace hash remains byte-identical. Only dormant unit
+test inventory moves to `544`.

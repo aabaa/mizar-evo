@@ -824,3 +824,10 @@ normal. Context 1 is `SourceStatement(59..98)`, proof-layer, parent 0, owned
 `[1]`, visible `[0,1]`. Definition-site ordinal 1 remains forward; synthetic
 ordinal 2 resolves binding 1. No actual use/capture row or source type is
 claimed. Every base/final row and debug fingerprint fails closed.
+
+## Task 269C Active `LetBinding` Transaction
+
+The implemented producer and both installers now enforce this exact
+transition and both lookup oracles. Corruption of either environment, context,
+binding, declaration link, or fingerprint fails transactionally; the final
+binding still has a missing type and no real use/capture or semantic effect.

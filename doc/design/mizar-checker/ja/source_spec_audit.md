@@ -860,6 +860,7 @@ acceptance/proof-local behavior/justification semanticsはTasks 269–272。
 generated public newtype:
 
 - `SourceProofLocalDeclarationId`
+- `SourceProofLocalLetBindingId`
 
 literal top-level public item:
 
@@ -870,6 +871,10 @@ literal top-level public item:
   `SourceProofLocalDeclarationHandoff`、
   `SourceProofLocalDeclarationProducer`、
   `SourceProofLocalDeclarationError`
+- `SourceProofLocalLetBindingHandoffInput`、
+  `SourceProofLocalLetBindingRecovery`、`SourceProofLocalLetBinding`、
+  `SourceProofLocalLetBindingTable`、`SourceProofLocalLetBindingHandoff`、
+  `SourceProofLocalLetBindingProducer`、`SourceProofLocalLetBindingError`
 
 対応:
 
@@ -879,6 +884,7 @@ literal top-level public item:
 | producerはsource/module identity、Task-258B3N statement/witness/primary fingerprint、typed node全51件、complete base-to-final binding transitionをauthenticateする。 | `SourceProofLocalDeclarationProducer::build`、retained fingerprint 5件、fail-closed validation category。 | transaction/dependency/row/resolver/all-node/fingerprint corruption matrix。 | syntax parsingなしでtransactionalにimplemented。 |
 | Typed/final ownerはoptional handoffをatomicにpublish/replay/clone-preserveし、全semantic tableをemptyに保つ。 | `TypedAst::with_source_proof_local_declaration`とread-only ownership getter 2件。 | one-shot/orphan/stale/sibling/final-replay/empty-semantics checker/runner test。 | dormant Task-269A definition-site sliceとしてimplemented。 |
 | public enumはforward-compatible。 | kind/recovery/errorの`#[non_exhaustive]`。 | public-enum/source-spec-audit lint policy。 | exhaustive exceptionなしでguard。 |
+| exact proof-`let` profileはreserve-only baseへmissing-type `LetBinding` 1件をappendし、semantic publicationなしでatomic preserveする。 | public `SourceProofLocalLetBinding*` input/row/table/handoff/producer/error typeとTyped/final ownership。 | checker 4件とprivate runner 4件のTask-269C tests。 | zero-credit binding transportとしてimplemented。 |
 
 bounded gap: later-use resolution/capture replay、他のproof-local declaration
 form、witness typing、existential matching、goal substitution、proof/discharge/
@@ -5608,3 +5614,7 @@ free checker/runner transactionがbounded `source_drift`を、checker/runner tes
 bounded `test_gap`をcloseする。missing source-type admissionとresolver-wide later-use/
 captureはseparate `source_drift`。`doc/spec`、`.miz`、expectation、trace status、
 diagnostic、proof/semantic intentは不変でbroad diagnostic fixtureへpositive creditは0。
+
+implementationはclassified binding `source_drift`と8-test `test_gap`だけをcloseする。
+canonical artifactはbyte-identicalで、source-type、real use/capture、全proof/
+diagnostic semanticsはnew source behaviorから推測せずopenのまま。
