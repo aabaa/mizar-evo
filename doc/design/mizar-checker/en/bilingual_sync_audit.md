@@ -1779,3 +1779,11 @@ hint final-input rejection, four checker/four runner tests, libraries
 `490/548`, production `30/168322` / `37/71647`, and exact test-list/content
 hashes consistently. Public Enum Policy adds the implemented non-exhaustive
 `SourceProofLocalLetTypeError` row. No bilingual debt remains.
+
+## Task 269GP Documentation Synchronization
+
+EN/JA agree on selection, authority, classifications, exact source/Surface/
+resolver/private-output fingerprints, exclusions, four-file/four-test scope,
+zero-credit impact, the canonical scope contradiction blocking 269G/269GT,
+and exit gates. English remains canonical and no delayed companion is
+accepted.

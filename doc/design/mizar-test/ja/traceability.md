@@ -2355,3 +2355,13 @@ expectation、trace row/backlink/status、active dispatch、diagnostic、result 
 cases/requirements `428/395`、pass/fail `235/193`、active `101/7/205/1`、type
 `259=247+12`、warnings/errors `23/0`、trace SHA-256は
 `55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`のまま。
+
+## Checker Task 269GP zero-credit lower contract
+
+269GPはfixture、sidecar、expectation、requirement、trace row/backlink/status、active
+route、diagnostic、creditを追加しない。broad proof-local extraction-gap rowはunchanged
+coveredだがpositive `given` binding/existential semanticsへcreditしない。Chapter-4/16
+scope矛盾がblockするtest contractは269G/269GTのbinding/typeだけ。existential semanticsは
+independently deferredで、ここでtest intentを推測しない。cases/
+requirements `428/395`、active `101/7/205/1`、type `259=247+12`、上記trace hashは
+byte-identicalのまま。

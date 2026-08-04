@@ -1302,3 +1302,11 @@ fixture/trace hashes, and whitespace pass.
 
 Repeated source/docs consistency and final quality reviews report **NO
 FINDINGS**. All nine hard gates PASS uncapped at `100/100`.
+
+## Task 269GP No-Type Boundary
+
+The private lower row records only the written bare builtin-`set` spelling and
+range `84..87`; it does not invoke `SourceTypeProducer`, allocate a type
+id/node, or change Task-269CT. The canonical `given` scope contradiction
+blocks binding-only 269G and type admission 269GT. Type assumptions and guards
+remain semantic deferrals.

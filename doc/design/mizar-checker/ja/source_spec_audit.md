@@ -5635,3 +5635,14 @@ additionはdocumented struct field order、producer signature、non-exhaustive e
 display order、Typed/final getter/installerに一致。generic Task-249 behaviorとTask-269C bytesは
 unchanged。final-input review findingは`boundary_violation`で、Task-specific empty-node-hint
 predicate/regression修正後**NO FINDINGS**。canonical/active artifact変更なし。
+
+## Task 269GP source/API audit
+
+canonical Chapters 4/15/16とmeasured parser/resolver dataはexact private proof-`given`
+syntax-lower projectionをsupportする。missing contract/source/testsは`design_drift`/
+bounded `source_drift`/`test_gap`。Chapter 4 §4.6.1とChapter 16
+§§16.3.3/16.4.2のbinding scope矛盾はblocking `spec_gap`で、269GPからexcludeしhuman
+canonical reviewがownする。checker API、canonical artifact、trace status、active
+result変更なし。Task269は未完了でTask270はgated。
+repeated source/docs/final-quality reviewは**NO FINDINGS**、narrowed taskはhard gate
+9件をscore capなし`100/100`でPASS。

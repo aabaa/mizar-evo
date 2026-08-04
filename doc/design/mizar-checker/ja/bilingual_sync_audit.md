@@ -1693,3 +1693,10 @@ EN/JAはimplemented seven-file composite、全node hintをrejectするdedicated 
 boundary、checker/runner test 4/4、library `490/548`、production `30/168322` /
 `37/71647`、exact test-list/content hashを一致して記録する。Public Enum Policyには
 implemented non-exhaustive `SourceProofLocalLetTypeError` rowを追加し、bilingual debtはない。
+
+## Task 269GP documentation synchronization
+
+EN/JAはselection、authority、classification、exact source/Surface/resolver/private-output
+fingerprint、binding-shaped field exclusion、4-file/test scope、zero credit、269G/269GTを
+blockするcanonical scope矛盾、exit gateで一致する。English canonical、delayed
+companionなし。

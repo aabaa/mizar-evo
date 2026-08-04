@@ -2407,6 +2407,7 @@ outcome, or executable coverage credit. Requirements/cases remain `395/428`,
 type coverage remains `259 = 247 covered + 12 deferred`, and trace SHA-256
 remains
 `55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`.
+
 The existing broad proof-local diagnostic-gap rows remain covered and
 unchanged; they grant no credit to positive named-witness binding semantics,
 which remain deferred. Any later active Task-269 coverage requires a separate
@@ -2486,3 +2487,15 @@ active dispatch, diagnostic, or result owner changes. Cases/requirements stay
 `428/395`, pass/fail `235/193`, active stages `101/7/205/1`, type coverage
 `259=247+12`, warnings/errors `23/0`, and trace SHA-256 remains
 `55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`.
+
+## Checker Task 269GP Zero-Credit Lower Contract
+
+Task 269GP adds no fixture, sidecar, expectation, requirement, trace row,
+backlink, status, active route, diagnostic, or coverage credit. The broad
+proof-local extraction-gap row remains covered and unchanged, but does not
+credit positive `given` binding or existential semantics. The conflicting
+Chapter-4/16 scope requirements block only the 269G/269GT binding/type test
+contract; existential semantics remain independently deferred and receive no
+inferred test intent here. Cases/requirements
+remain `428/395`, active stages `101/7/205/1`, type coverage `259=247+12`, and
+the trace hash above remains byte-identical.

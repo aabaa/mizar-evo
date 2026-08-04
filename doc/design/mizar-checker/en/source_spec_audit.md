@@ -5911,3 +5911,15 @@ and Typed/final getters/installer. Generic Task-249 behavior and Task-269C
 bytes remain unchanged. The final-input review finding was a
 `boundary_violation`; its Task-specific empty-node-hint predicate and regression
 are now reviewed **NO FINDINGS**. No canonical or active artifact changed.
+
+## Task 269GP Source/API Audit
+
+Canonical Chapters 4/15/16 and measured parser/resolver data support the exact
+private proof-`given` syntax-lower projection. Missing contract/source/tests
+are `design_drift`/bounded `source_drift`/`test_gap`. Chapter 4 Section 4.6.1
+and Chapter 16 Sections 16.3.3/16.4.2 conflict on binding scope, a blocking
+`spec_gap` explicitly excluded from 269GP and owned by human canonical review.
+No checker API, canonical test artifact, trace status, or active result
+changes. Task 269 remains open and Task 270 stays gated.
+Repeated source/docs and final-quality reviews report **NO FINDINGS**; the
+narrowed task passes all nine gates uncapped at `100/100`.

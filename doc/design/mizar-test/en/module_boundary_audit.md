@@ -13089,3 +13089,13 @@ measures 71,647 lines with path/content hashes
 `1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d` /
 `0f8f5926b9bee23c92d1f05e9cc9e85b4c0561b543e9e0a1e4c825f43b6c5798`.
 The route remains private and dormant; all excluded owners remain unchanged.
+
+## Checker Task 269GP Frozen Runner Boundary
+
+No module or path is added. The only later implementation files are existing
+`runner/type_elaboration/source_statement.rs`, both test-only facade hops, and
+the proof-local runner test file. Four tests project `548 -> 552`; production
+remains 37 paths. Checker/parser/resolver, public dispatch, fixtures, trace,
+metadata, Cargo, and semantic owners remain outside the boundary.
+Repeated source/docs and final-quality reviews report **NO FINDINGS** and
+confirm this exact boundary.

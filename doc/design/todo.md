@@ -94,8 +94,8 @@ is its task 1). "Next work" points into the
 | mizar-parser | Grammar, Pratt parsing, syntax recovery, parse-only corpus | [x] Tasks 1-48 plus bounded `PARSER-RECOVERY-B1B1P-P1` complete; historical post-Task-46 score 99/100 | no inferred Task 49; human-owned P-265-47D remains separate | [todo](./mizar-parser/en/todo.md) |
 | mizar-frontend | Source loading and phase 1-3 orchestration | [x] prior milestone plus `PARSER-RECOVERY-B1B1P-P1-FE` regression complete | — | [todo](./mizar-frontend/en/todo.md) |
 | mizar-resolve | Module graph, namespaces, symbols, labels, signatures | [~] complete through task 29, Checker Task 263R, and Task 264R implementation | Preserve Task-264R shell/no-symbol boundary through Checker Tasks 248P/264 | [todo](./mizar-resolve/en/todo.md) |
-| mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] foundation complete through task 22; Tasks 265-268, Core-31, and Checker consumers through implemented Task 269C are complete | Complete frozen Task 269CT docs/implementation; keep its dormant consumer out of dispatch and preserve zero trace credit | [todo](./mizar-test/en/todo.md) |
-| mizar-checker | Type checking, cluster/registration resolution, overload resolution | [~] explicit-payload milestone and source producers/consumers through implemented Task 269C are complete | Complete frozen Task 269CT source-type composition; keep later use/capture and all goal/proof semantics separate | [todo](./mizar-checker/en/todo.md) |
+| mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] foundation complete through task 22; Tasks 265-268, Core-31, and Checker consumers through implemented Task 269CT are complete | Complete syntax-only Task 269GP docs/implementation; preserve zero trace credit and report the canonical scope blocker afterward | [todo](./mizar-test/en/todo.md) |
+| mizar-checker | Type checking, cluster/registration resolution, overload resolution | [~] explicit-payload milestone and source producers/consumers through implemented Task 269CT are complete | Complete syntax-only Task 269GP; Chapter-4/16 scope conflict blocks 269G/269GT, while Task 270 and goal/proof semantics remain separate | [todo](./mizar-checker/en/todo.md) |
 | mizar-core | Elaboration, binder-normalized core logic, control-flow preparation | [x] core/control-flow milestone, tasks 27-32 complete | step-5 Tasks 33-53 under the Task-32 graph | [todo](./mizar-core/en/todo.md) |
 | mizar-vc | VC IR, VC generation, deterministic pre-ATP discharge | [x] exact source-derived contradiction VC integration complete through task 31 | dependency-paced VC Tasks 32-55; VC 40/53 and S1 gates remain explicit | [todo](./mizar-vc/en/todo.md) |
 | mizar-kernel | Trusted certificate parsing and checking | [x] SAT-backed kernel milestone complete | step 4 task 35 resolved; task 32 parked; tasks 30-34 resolved | [todo](./mizar-kernel/en/todo.md) |
@@ -4207,4 +4207,26 @@ or semantic owner changed. B3M2B2B remains next before B4.
   implementation reviews to **NO FINDINGS**.
 - [x] Complete source/docs and final quality review with **NO FINDINGS**, all
   nine gates uncapped at `100/100`, and full verification.
-- [~] Create the exact implementation commit and automatic fresh inventory.
+- [x] Create implementation commit
+  `c60361977f6c4d832cf4217b85bd9b458c902848` and complete automatic fresh
+  inventory.
+
+## Checker Task 269GP Isolated Proof-`given` Lower Prerequisite
+
+- [x] Fresh-inventory Task-269CT, canonical Chapters 4/15/16, parser and broad
+  proof-local fixtures, resolver provenance, public APIs, origin divergence,
+  and protected stash; confirm Task 269 remains open and select only 269GP.
+- [x] Freeze the exact 129-byte source/hash, 48-node/root-47 Surface profile,
+  two shells, theorem provenance, syntax-only `y`/bare-`set` lower row without
+  binding scope/visibility, fingerprints,
+  four-file/four-test scope, zero-credit impact, deferrals, and exit criteria.
+- [x] Repeat specification review to **NO FINDINGS** and pass docs-only
+  verification with exact counts/hashes.
+- [x] Complete source/docs and final-quality review with **NO FINDINGS** and
+  pass all nine docs-only hard gates uncapped at `100/100`.
+- [ ] Stage exactly the synchronized design files and create only the
+  documentation prerequisite commit.
+- [ ] Fresh-preflight and implement only Task 269GP, then repeat test,
+  implementation, source/docs, and final-quality reviews to **NO FINDINGS**,
+  pass all gates, commit exactly the four-file implementation, and report the
+  human-owned Chapter-4/16 scope contradiction instead of selecting 269G.

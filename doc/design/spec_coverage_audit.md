@@ -6492,3 +6492,24 @@ trace SHA-256 remains
 `55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`.
 Later use/capture, assumptions/guards, goals, obligations, facts, proof/
 discharge/acceptance, IR, and VC remain deferred with zero new credit.
+
+## Checker Task 269GP Frozen Zero-Credit Proof-`given` Lower Boundary
+
+Post-Task-269CT inventory confirms Task 269 remains incomplete and Task 270 is
+not dependency-ready. Task 269GP freezes only a runner-private exact lower
+projection for one canonical-derived `given y being set such that G: thesis;`
+definition site. It carries syntax/token/range/provenance only and no binding
+scope or visibility. Chapter 4 Section 4.6.1 conflicts with Chapter 16
+Sections 16.3.3/16.4.2 on the lifetime of a `given` witness; the resulting
+`spec_gap` is human-owned and blocks 269G/269GT.
+Condition/label/fact/Skolem/escape/goal/proof semantics, `set` capture,
+`consider`, later-use replay, and Task 270 remain deferred.
+
+This prerequisite and its later implementation grant no executable coverage.
+No `.miz`, sidecar, expectation, trace row/backlink/status, active dispatch,
+metadata case, or diagnostic changes. Corpus/requirements remain `428/395`,
+pass/fail `235/193`, active stages `101/7/205/1`, type coverage
+`259=247+12`, warnings/errors `23/0`, and trace SHA-256 remains
+`55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`.
+No new `.miz` test is safe to derive for binding visibility until the
+canonical contradiction is reconciled.

@@ -4966,3 +4966,12 @@ exact routeを実装したがprivateで`run_case`からunreachableのまま。te
 全payload field、complete 3-node arena、dependency/input/arena failure、owner replay、
 Task-269C/active-route isolation、semantic emptiness全件をvalidateする。runner libraryは548、
 case/requirement/result/detail key/warning/error変更なし。
+
+## Checker Task 269GP dormant proof-`given` lower consumer
+
+private exact-source branchはfrozen 129-byte sourceだけを認識し、all-node/shell/
+resolver/debug authentication後にbinding scope/visibilityを持たないsyntax-only
+`SourceProofLocalGivenLowerOutput`を返す。corpus
+dispatchから到達不能。tests 4件がexact output、exhaustive corruption、near-miss/
+family isolation、zero checker/semantic effectをcoverし、runnerは`548 -> 552`。
+canonical scope矛盾はharnessで解決せず269G/269GTをblockする。

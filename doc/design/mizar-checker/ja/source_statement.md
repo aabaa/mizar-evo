@@ -3565,3 +3565,10 @@ final compositeはexact source-type node 3件だけをmapする。complete 3-row
 `source.statement.transport` hint setでも`InvalidSourceProofLocalLetType`としてrejectし、
 silent consume/overrideできないことをregressionで固定した。statement handoff/semantics/
 proof/fingerprintはempty/unchanged。
+
+## Task 269GP no-statement lower boundary
+
+runnerは`GivenStatement(70..108)`をsyntax owner rangeとしてだけauthenticateし、
+binding scope/visibilityをpublishしない。condition、
+proposition、label、thesis、conclusion、fact、statement context、proof rowはprivate lower
+outputからexclude。source-statement API/checker fingerprint変更なし。

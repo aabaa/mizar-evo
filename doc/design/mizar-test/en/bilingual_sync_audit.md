@@ -1695,3 +1695,11 @@ EN/JA now record the implemented four-file dormant runner consumer, four
 passing compound tests, runner `548`, production `37/71647`, exact list/content
 hashes, and unchanged dispatch/corpus/trace/semantic state. No bilingual debt
 remains.
+
+## Checker Task 269GP Documentation Synchronization
+
+EN/JA agree on the exact 129-byte source, 48-node/root-47 Surface and resolver
+profiles, private lower output/debug, condition/label/semantic exclusions,
+four-file/four-test `548 -> 552` scope, zero corpus/trace credit, binding-shaped
+field exclusion, and the canonical scope contradiction blocking 269G/269GT.
+No bilingual exception is accepted.

@@ -11799,3 +11799,11 @@ content hashは
 `1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d` /
 `0f8f5926b9bee23c92d1f05e9cc9e85b4c0561b543e9e0a1e4c825f43b6c5798`。
 routeはprivate/dormantのままで、全excluded ownerはunchanged。
+
+## Checker Task 269GP frozen runner boundary
+
+module/path追加なし。later implementationはexisting
+`runner/type_elaboration/source_statement.rs`、test-only facade 2件、proof-local test
+fileだけ。tests 4件で`548 -> 552`、production paths 37。checker/parser/resolver、
+public dispatch、fixture、trace、metadata、Cargo、semantic ownerはscope外。
+repeated source/docs/final-quality reviewは**NO FINDINGS**で、このboundaryをconfirm。

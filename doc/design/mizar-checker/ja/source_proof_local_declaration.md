@@ -5,8 +5,9 @@
 
 ## 状態と authority
 
-この文書はqueue Task 269の最初の4つのdependency-minimal sliceである
-**Checker Tasks 269A--269C**をfreezeする。英語版がcanonicalであり、同じlogical
+この文書はqueue Task 269のcompleted named-witness/proof-`let` sliceと次の
+dependency-minimal lower sliceである**Checker Tasks 269A/B/CP/C/CT/269GP**をfreezeする。
+英語版がcanonicalであり、同じlogical
 task内で本JA companionを同期する。
 
 normative authorityは次の順である。
@@ -1139,6 +1140,15 @@ CLI 5件のplan/parse/declaration/type/proof stdout hashは
 corpus/requirements `428/395`、pass/fail `235/193`、active `101/7/205/1`、type
 coverage `259=247+12`、warnings/errors `23/0`、trace SHA-256
 `55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`は不変。
+
+narrowed contractのrepeated specification reviewは**NO FINDINGS**。docs-only
+preflightはfocused 269CP/C/CT、lint `15/14`、metadata137、Cargo metadata、fmt、
+warnings-denied Clippy、workspace全test、CLI 5件、whitespaceをPASS。libraries
+`490/548`、production `30/168322`/`37/71647`、EN canonicalに記録したproduction/
+test-list/CLI/fixture/trace hashは全てexactに再現した。
+
+repeated source/docs consistency/final-quality reviewは**NO FINDINGS**。hard gate 9件は
+score capなし`100/100`で全PASS。exact stage/docs commitはparent-owned。
 independent final quality reviewは**NO FINDINGS**、hard gate 9件PASS、score capなし、valid
 `100/100`（`20/20/15/15/10/10/5/5`）。exact staging/docs-only commitはparent-owned
 next step。
@@ -1213,3 +1223,146 @@ assumption、goal、fact、proof behavior、active routeはscope外。
 fingerprintをcompositeへstoreする。Task-269C direct owner/missing type siteはunchangedで、
 composite Typed/final profileではempty。このmoduleのsource/API/test変更はなく、later
 use/captureと全proof semanticsはdefer。
+
+## Checker Task 269GP frozen isolated proof-`given` syntax-lower prerequisite
+
+### Selection、authority、classification
+
+`c60361977f6c4d832cf4217b85bd9b458c902848`でのfresh inventoryは269GPだけを
+selectする。Task 269は未完了で、269A/Bはnamed `take`、269CP/C/CTはisolated
+`let` definition-siteとwritten typeだけを実装済み。Task 270はTask 269依存のため
+未readyである。`set`はRHSのresolved local-binding captureが必要で、`consider`は
+justification subtreeも持つ。source-order上の最小ready formは`given`
+syntax-only definition-site projectionである。
+
+authorityはcanonical Chapter 4 §§4.2/4.4/4.6、Chapter 15
+§§15.3.3/15.10/15.11.4、Chapter 16 §§16.3.3/16.4/16.5、parser simple-statement
+fixture、unchanged broad proof-local gap fixture。broad fixture/sidecar/
+expectation/trace backlinkはread-onlyでpositive creditを与えない。
+
+specification reviewはbinding consumerをblockする`spec_gap`を確認した。Chapter 4
+§4.6.1は`given` binderを導入statement/formulaへ限定する一方、Chapter 16
+§§16.3.3/16.4.2はwitnessをlocal subproof/enclosing blockでavailableとする。Chapter 15
+§15.10は`let` scopeだけを定め、矛盾を解消しない。このため269GPはsyntax/range/
+provenance transportだけへstrictly narrowし、`LocalTermBinding`、scope path、
+visible-after ordinal、condition availability、later-use promiseをpublishしない。
+269G/269GTはcanonical scope intentがhuman decisionで整合されるまでblocked。
+
+narrowed task内のmissing contractは`design_drift`、private lower projectionはbounded
+`source_drift`、4-test guardはcanonical-derived `test_gap`。binding visibility、
+existential fact、Skolem result、label identity、goal change、use/captureの捏造は
+`boundary_violation`。
+`origin/main...HEAD=0/8`はreport-only `repo_metadata_conflict`、protected stash
+`f65cf4a13752ec380710814a9ac6392ccb9d75d4`は範囲外。
+
+### Exact source / Surface / resolver
+
+sole private final-LF sourceは次である。
+
+```mizar
+reserve x for set;
+theorem FormulaStatementGivenSmoke: thesis proof
+  given y being set such that G: thesis;
+  thus thesis;
+end;
+```
+
+129 bytes、SHA-256
+`04e54b8ada9af54fde9f937e1bb0f96bd8cf85002b2b57f4d348b11c8eb72a2f`。
+normal Surfaceは48 nodes/root47/range `0..128`、expression rootなし、recovery/
+diagnosticなし、token `0..24`、snapshot SHA-256
+`58ac16a3c75860180a8bec5dc8e87ec8b269fe75715a6d8363f7ef064e3deea8`。
+selectorは全node kind/source/range/ordered children/recovery/tokenをauthenticateする。
+主要rowはreserve `28/0..18/[0,27,4]`、type head/expression
+`31/32/84..87`、segment `33/76..87/[11,12,32]`、condition subtree
+`34..37/93..107`、given `38/70..108/[10,33,14,37,19]`、conclusion
+`42/111..123`、proof `43/62..127`、theorem `44/19..128`、root47。condition/
+label token16/17/conclusion subtreeはselector-onlyでhandoffへ渡さない。
+
+shellはnormal rootのreserve `0/28/0..18`とtheorem `1/44/19..128`だけ。resolverは
+public/exported theorem symbol/definition/local-source contribution各1件を持ち、originは
+`19..128`、path `[2,1]`、importなし。signatureは
+`node=TheoremItem;symbol=theorem;definition=theorem;primary_tokens=theorem FormulaStatementGivenSmoke : thesis proof given y being set such that G : thesis ; thus thesis ; end ;;notation=_;arity=_;roles=FormulaExpression,ProofBlock`
+である。parameters/binders/notation/doc/conflict/dependenciesと全other indexesはempty。
+resolverは`y`も`G`もsymbol/labelとして公開しないため269GPも捏造しない。
+
+theorem symbolはprimary spelling `FormulaStatementGivenSmoke`、requested
+namespace/module、`Public`/`Exported`、contribution0、notationなし、relations empty、上記
+exact source/range/path/no-import origin。definition0は同symbol/origin、kind `Theorem`、
+`Public`、contribution0、arity/signature deviationなし、全optional/list field empty。
+contribution0はrequested module、`LocalSource { source_id }`、anchor `0..18`、symbol
+effect `[theorem]`、definition effect `[0]`、その他全effect empty。
+
+private `SourceProofLocalGivenLowerOutput`はsource/module identity/fingerprint、theorem
+resolver identity、theorem/proof/given/segment/name/type range、exact token spelling
+`y`/`set`、source statement ordinal1だけをretainし、binding-shaped fieldを持たない。
+source/Surface/shell/resolver/output/debug fingerprintは独立にfail-closed authenticateする。
+
+### Complete runner-private Rust contract
+
+production leafはcrate-private familyだけを追加し、fieldはprivate、accessorは全て
+`pub(in crate::runner)`。`SOURCE_PROOF_LOCAL_GIVEN_TEXT`、`Debug/Clone/PartialEq/Eq`
+の`SourceProofLocalGivenLowerOutput`をfreezeする。fieldsは`source_id/module_id`、source/
+Surface fingerprint `String`、`theorem_symbol: SymbolId`、definition/contribution、theorem/
+proof/given/segment/name/type/type-head ranges、`name_spelling: String`、
+`type_spelling: String`、source ordinal。binding fieldはない。
+production functionは`(&SurfaceAst, ModuleId, &DeclarationShellSet, &SymbolEnv, &str) ->
+Option<Result<SourceProofLocalGivenLowerOutput, String>>`。
+
+read-only implは各field accessorに加え`name_spelling() -> &str`、
+`type_spelling() -> &str`、`debug_text() -> String`を`pub(in crate::runner)`で公開する。
+exact definition/contribution/ordinalは`0/0/1`、theorem `19..128`、proof `62..127`、
+given `70..108`、segment `76..87`、name `76..77`/`"y"`、type/head
+`84..87`/`"set"`。debugはmodule、quoted source/Surface hash、theorem
+fqn/definition/contribution/range/proof、given/segment/ordinal、name、type/head/spelling/
+formの順で、exactly one terminal LFを持つ。name行にscope/visibilityは含めない。
+
+test-only exact enumsは`SourceProofLocalGivenSurfaceMutation`、
+`SourceProofLocalGivenLowerMutation`、`SourceProofLocalGivenShellMutation`、
+`SourceProofLocalGivenResolverProfileMutation`。全て
+`pub(in crate::runner)`かつ`Debug/Clone/Copy/PartialEq/Eq`で、EN canonicalに列挙した
+Task269CP-mirroring variantsをexactに持つ。lower variantsはbinding mutationを持たず、
+`NameSpelling`と`TypeSpelling`を含む。
+
+5 seamsは`source_proof_local_given_lower_output_with_surface_mutation`、
+`source_proof_local_given_lower_output_with_mutation`、
+`source_proof_local_given_lower_output_with_shell_mutation`、
+`source_proof_local_given_lower_output_with_resolver_profile_mutation`、
+`source_proof_local_given_lower_output_with_resolver_mutation`。最後だけ
+`impl FnOnce(SymbolEnv) -> SymbolEnv`を取る。selector/source mismatchは`None`、selected
+source後は`Some(Err(String))`。precedenceはexact Surface identity、shell count/export/
+ordinal profile、resolver module/empty indexes、theorem symbol/definition/contribution、
+lower row、debug bytes。
+
+error grammarはEN canonicalの16 exact stringsに固定する。prefixは全て`Task269GP`、
+shell field failureだけ`Task269GP declaration shell {ordinal} mismatch`でordinalを
+substituteする。whole-environment seamはneutral reconstructionを保持し、missing/
+duplicate/wrong-module/cross-profileをrejectする。
+
+### Ownership、tests、impact、exit
+
+269GPはrunner-privateでchecker/public API、`LocalTermBinding`、BindingEnv/source type/arena、Typed/final
+owner、statement/formula/fact/diagnostic、active dispatch、fixture/sidecar/expectation/
+trace/metadata/Cargo/creditを追加しない。canonical `given` scope contradictionはdirect
+binding/type consumerの269G/269GTだけをblockする。condition availability、Skolem/existential、
+label/fact、escape、goal/thesis、proof/discharge/acceptance、Core/CFG/VCはTask258/272
+またはlater workへdeferする。`set` capture、`consider`、other forms、real later-use、
+Task270は新しいblockerを付与せずseparately deferred。
+
+implementation scopeはexisting runner source-statement leaf、test-only facade 2件、
+proof-local test fileの4 files。exact test functionは
+`source_proof_local_given_lower_projection_is_exact_and_private`、
+`source_proof_local_given_lower_rejects_every_corruption_with_frozen_precedence`、
+`source_proof_local_given_lower_excludes_near_misses_and_adjacent_families`、
+`source_proof_local_given_lower_has_zero_checker_or_semantic_effect`。全variant/token/
+node/shell、whole-env、precedence、near miss、adjacent family、zero effect、269CP/C/CT
+不変をcoverする。runner `548 -> 552`、checker490、paths `30/37`。
+corpus/requirements `428/395`、pass/fail `235/193`、active `101/7/205/1`、type
+`259=247+12`、warnings/errors `23/0`、trace SHA-256
+`55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`は不変。
+
+EN/JA sync、repeated spec review **NO FINDINGS**、uncapped 90/100以上のhard gate 9件、
+full verification/count/hash、docs-only staging、dedicated commit、fresh preflight後だけ
+4-file implementationを開始する。implementationも4種review **NO FINDINGS**、全gate、
+exact commit後のfresh inventoryは269Gを開始せず、human-owned canonical scope
+contradictionをblockerとしてreportする。

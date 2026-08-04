@@ -4095,3 +4095,11 @@ proves that even a complete three-row `source.statement.transport` hint set is
 rejected with `InvalidSourceProofLocalLetType`; it cannot be silently consumed
 or overridden. Statement handoffs, semantics, proofs, and fingerprints remain
 empty/unchanged.
+
+## Task 269GP No-Statement Lower Boundary
+
+The runner authenticates `GivenStatement(70..108)` as a syntax owner range
+only and publishes no binding scope or visibility.
+Condition, proposition, label, thesis, conclusion, fact, statement context,
+and proof rows are excluded from `SourceProofLocalGivenLowerOutput`. No source-
+statement API or checker fingerprint changes.

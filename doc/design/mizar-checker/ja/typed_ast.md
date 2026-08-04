@@ -1803,3 +1803,8 @@ fingerprint/arena、duplicate、occupied sibling、nonempty semanticsは
 dependency、overlay、source type、fingerprint、arena、empty semantic table、全sibling source
 ownerをrevalidateする。duplicate、direct Task-269C/source-type sibling、stale payload、occupied
 ownerは`InvalidSourceProofLocalLetType`でatomic fail。
+
+## Task 269GP no-typed-owner boundary
+
+269GPはrunner-privateで`TypedAst` fieldをinstallしない。Task-269A/Bとboxed
+269C/CT ownership、one-shot validation、mutual exclusionは不変。

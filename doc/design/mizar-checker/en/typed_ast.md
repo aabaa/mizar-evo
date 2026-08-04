@@ -1904,3 +1904,9 @@ revalidates dependency, overlay, source type, fingerprints, arena, empty
 semantic tables, and all sibling source owners before publication. Duplicate,
 direct Task-269C sibling, direct source-type sibling, stale payload, or any
 occupied owner fails atomically with `InvalidSourceProofLocalLetType`.
+
+## Task 269GP No-Typed-Owner Boundary
+
+Task 269GP is runner-private and installs no `TypedAst` field. All Task-269A/B
+and boxed Task-269C/CT ownership, one-shot validation, and mutual exclusions
+remain unchanged.

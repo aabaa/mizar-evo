@@ -5272,3 +5272,14 @@ The exact route is implemented but remains private and unreachable from
 three-node arena, dependency/input/arena failure, owner replay, Task-269C and
 active-route isolation, and exhaustive semantic emptiness. Runner library is
 548; no case, requirement, result, detail key, warning, or error changes.
+
+## Checker Task 269GP Dormant Proof-`given` Lower Consumer
+
+The private exact-source branch recognizes only the frozen 129-byte source and
+returns syntax-only `SourceProofLocalGivenLowerOutput` with no binding scope or
+visibility after all-node, shell, resolver, and debug authentication. It is
+unreachable from corpus dispatch. Four tests
+cover exact output, exhaustive corruption, near-miss/family isolation, and
+zero checker/semantic effect. The broad proof-local case and active results
+remain unchanged; runner tests project `548 -> 552`. The canonical scope
+contradiction blocks 269G/269GT rather than being resolved in the harness.

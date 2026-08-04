@@ -6812,4 +6812,22 @@ implementation commit does not satisfy a producer task.
   files; repeat test-sufficiency and implementation review to **NO FINDINGS**.
 - [x] Complete source/docs and final quality review with **NO FINDINGS**, all
   nine gates uncapped at `100/100`, and full verification.
-- [~] Create the exact implementation commit, then continue fresh inventory.
+- [x] Create exact implementation commit
+  `c60361977f6c4d832cf4217b85bd9b458c902848`, then continue fresh inventory.
+
+## Checker Task 269GP Proof-`given` Lower Prerequisite
+
+- [x] Confirm Task-269CT commit/clean inventory, canonical authority, exact
+  parser/resolver measurements, report-only origin divergence, protected
+  stash, and dependency readiness; select only 269GP before Task 270.
+- [x] Freeze exact source/Surface/shell/resolver/output/debug fingerprints,
+  subtree exclusions, binding-shaped field prohibition, four tests/files,
+  zero active credit, count/hash impact, semantic deferrals, and exit criteria
+  in EN/JA; record the Chapter-4/16 scope contradiction blocking 269G/269GT.
+- [x] Repeat specification review to **NO FINDINGS** and pass docs-only
+  verification with frozen counts/hashes.
+- [x] Complete source/docs and final-quality review with **NO FINDINGS** and
+  pass all nine docs-only hard gates uncapped at `100/100`.
+- [ ] Stage exactly the 40 synchronized design files and commit only docs.
+- [ ] After fresh preflight implement/review/verify/commit only 269GP, then
+  report the human-owned scope contradiction instead of selecting 269G.

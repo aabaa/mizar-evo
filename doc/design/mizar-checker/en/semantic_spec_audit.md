@@ -719,3 +719,12 @@ result owner as empty. Final assembly rejects nonempty semantic input before
 publication. The implementation closes only bounded source composition drift;
 assumptions/guards, goals, obligations, facts, proof/discharge/acceptance, IR,
 and VC remain deferred with zero credit.
+
+## Task 269GP Semantic No-Op
+
+Task 269GP authenticates only a proof-`given` syntax-lower shape. It
+does not create a binding or type, assume the condition, publish label/fact or
+Skolem evidence, check witness escape, change thesis/goal, accept a proof, or
+emit an obligation/Core/CFG/VC row. These are explicit later owners; semantic
+tables and credit remain empty. Conflicting Chapter-4/16 scope statements are
+recorded as a human-owned `spec_gap`, not resolved here.

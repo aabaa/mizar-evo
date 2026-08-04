@@ -849,3 +849,10 @@ captures, diagnostics, and recovery compare equal to Task 269C except solely
 for binding 1's `Missing -> Source(76..79)` type-site overlay. Validation and
 tests authenticate the complete `2/2/0` payload and fail binding corruption
 before source-type or availability errors.
+
+## Task 269GP No-Binding Lower Boundary
+
+The private lower output carries only the `y` token spelling/range and no
+resolver-shaped local identity; it neither creates a `BindingEnv` row nor
+performs lookup. The Chapter-4/16 `given` scope contradiction blocks future
+Task 269G/269GT pending human canonical reconciliation.

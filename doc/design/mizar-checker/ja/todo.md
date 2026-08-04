@@ -6489,4 +6489,21 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   implementation reviewを**NO FINDINGS**までrepeat。
 - [x] source/docs/final qualityを**NO FINDINGS**、hard gate 9件capなし`100/100`で
   完了し、full verificationをPASS。
-- [~] exact implementation commit後、fresh inventoryを継続。
+- [x] exact implementation commit
+  `c60361977f6c4d832cf4217b85bd9b458c902848`後、fresh inventoryを継続。
+
+## Checker Task 269GP proof-`given` lower prerequisite
+
+- [x] Task-269CT commit/clean inventory、canonical authority、exact parser/resolver
+  measurement、report-only origin差、protected stash、dependency readinessを確認し、
+  Task270より先に269GPだけをselect。
+- [x] exact source/Surface/shell/resolver/output/debug fingerprint、subtree exclusion、
+  binding-shaped field禁止、4 files/tests、zero credit、count/hash、semantic deferral、
+  exitをEN/JAへfreezeし、269G/269GTをblockするChapter-4/16 scope矛盾を記録。
+- [x] specification reviewを**NO FINDINGS**までrepeatし、docs-only verificationと
+  frozen count/hashをPASS。
+- [x] source/docs/final-quality reviewを**NO FINDINGS**で完了し、docs-only hard gate
+  9件をscore capなし`100/100`でPASS。
+- [ ] synchronized design 40 filesだけをexact stageしてdocs commit。
+- [ ] fresh preflight後269GPだけをimplement/review/verify/commitし、269Gをselectせず
+  human-owned scope矛盾をreport。

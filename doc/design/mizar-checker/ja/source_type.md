@@ -937,3 +937,10 @@ whitespaceはPASS。
 
 repeated source/docs consistency/final quality reviewは**NO FINDINGS**。hard gate 9件は
 score capなし`100/100`で全PASS。
+
+## Task 269GP no-type boundary
+
+private lower rowはwritten bare builtin-`set` spelling/range `84..87`だけをrecordし、
+`SourceTypeProducer`、type id/node、Task-269CTを変更しない。canonical `given` scope
+矛盾はbinding-only 269Gとtype admission 269GTをblockする。type assumption/guardは
+semantic deferral。

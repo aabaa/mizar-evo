@@ -1689,3 +1689,12 @@ and `1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d`,
 with content hashes
 `4d0c793a47dac672e5f395c9c2b9e7c9274b5d776b54870888ba5c918f751dc2`
 and `0f8f5926b9bee23c92d1f05e9cc9e85b4c0561b543e9e0a1e4c825f43b6c5798`.
+
+## Task 269GP Frozen Boundary
+
+The docs prerequisite changes no source. Later implementation changes only
+four existing runner files; checker/parser/resolver modules, paths,
+dependencies, and public APIs remain unchanged. Production paths stay `30/37`
+and checker tests stay `490`; runner tests project `548 -> 552`.
+Repeated source/docs and final-quality reviews report **NO FINDINGS** and
+confirm this exact boundary.

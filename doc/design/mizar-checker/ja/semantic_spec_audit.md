@@ -663,3 +663,11 @@ Typed/resolved testはfrozen source siblingとsemantic-result ownerを全てempt
 final assemblyはnonempty semantic inputをpublication前にrejectする。implementationが閉じるのは
 bounded source composition driftだけで、assumption/guard、goal、obligation、fact、proof/
 discharge/acceptance、IR/VCはzero creditのままdefer。
+
+## Task 269GP semantic no-op
+
+269GPはproof-`given` syntax-lower shapeだけをauthenticateする。binding/type、
+condition assumption、label/fact/Skolem evidence、escape check、thesis/goal変更、proof
+acceptance、obligation/Core/CFG/VCを作らない。later ownerへ明示deferし、semantic table/
+creditはempty。Chapter-4/16 scope矛盾はhuman-owned `spec_gap`として記録し、ここでは
+解決しない。

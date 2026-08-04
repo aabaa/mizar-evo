@@ -3572,4 +3572,19 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
   runner files; focused test and implementation reviews end **NO FINDINGS**.
 - [x] Complete full verification and source/docs/final quality with **NO
   FINDINGS**, all nine gates uncapped at `100/100`.
-- [~] Create the exact commit and continue to the next dependency-ready task.
+- [x] Create exact commit
+  `c60361977f6c4d832cf4217b85bd9b458c902848` and continue inventory.
+
+## Checker Task 269GP Dormant Lower Increment
+
+- [x] Freeze exact 129-byte/48-node proof-`given` selector, theorem resolver
+  profile, syntax-only private lower row/debug, binding-field prohibition,
+  four-file/four-test scope, `548 -> 552`, zero dispatch/trace credit, semantic
+  exclusions, and the scope contradiction blocking 269G/269GT.
+- [x] Finish specification review and docs-only verification/count/hash gates.
+- [x] Finish source/docs and final-quality review with **NO FINDINGS** and all
+  nine gates uncapped at `100/100`.
+- [ ] Stage exactly the synchronized design files and create the dedicated
+  docs-only commit.
+- [ ] Fresh-preflight then implement/review/verify/commit only 269GP and report
+  the human-owned scope contradiction instead of starting 269G.

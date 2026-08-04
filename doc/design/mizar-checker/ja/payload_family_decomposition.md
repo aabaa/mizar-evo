@@ -1695,3 +1695,11 @@ composite familyをfrozen syntax-free boundaryで実装した。immutable Task-2
 separate typed binding overlay、bare builtin-`set` type application 2件、
 source-preserved node 3件だけをownする。generic Task 249はproof-local `LetBinding`をrejectし、
 semantic family/active coverage ownerは追加しない。
+
+## Task 269GP proof-`given` lower family
+
+Task269は未完了。runner-private 269GPはsyntaxだけをtransportする。canonical
+Chapter-4/16 scope矛盾はdirect binding/type consumerの269G/269GTだけをhuman
+reconciliationまでblockする。その後の`given` condition/escape semanticsは新しい
+blocker classificationなしでseparately deferred。checker Task-269 familyとTask270
+dependencyを変更せず、active creditは0。

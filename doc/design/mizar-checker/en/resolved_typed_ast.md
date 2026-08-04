@@ -1874,3 +1874,8 @@ semantic/overload state, and uses a Task-specific predicate that requires
 `node_hints.is_empty()`. All three nodes map one-for-one to role
 `source.proof-local.let.type`. Statement-transport hints and nonempty expression
 metadata fail atomically with `InvalidSourceProofLocalLetType`.
+
+## Task 269GP No-Final-Owner Boundary
+
+Task 269GP publishes no `ResolvedTypedAst` sibling or node hint. Existing
+Task-269C/CT replay and all final semantic exclusions remain byte-identical.

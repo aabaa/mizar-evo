@@ -1787,3 +1787,12 @@ boundary: immutable Task-269C dependency, separate typed binding overlay,
 two bare builtin-`set` type applications, and three source-preserved nodes.
 Generic Task 249 rejects the proof-local `LetBinding`; no semantic family or
 active coverage owner was added.
+
+## Task 269GP Proof-`given` Lower Family
+
+Task 269 remains open. Runner-private 269GP transports syntax only. The
+canonical Chapter-4/16 scope contradiction blocks only the direct
+binding/type consumers 269G and 269GT pending human reconciliation. Later
+`given` condition/escape semantics remain separately deferred without a new
+blocker classification. This lower slice changes no Task-269 checker family
+or Task-270 dependency and grants no active credit.

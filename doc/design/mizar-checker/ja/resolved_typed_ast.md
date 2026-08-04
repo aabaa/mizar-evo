@@ -1784,3 +1784,8 @@ otherwise empty source/semantic/overload stateを要求する。Task-specific pr
 `node_hints.is_empty()`を要求し、3 node全てを`source.proof-local.let.type`へone-for-one map。
 statement-transport hint/nonempty expression metadataは
 `InvalidSourceProofLocalLetType`でatomic fail。
+
+## Task 269GP no-final-owner boundary
+
+269GPは`ResolvedTypedAst` sibling/node hintをpublishしない。existing 269C/CT replayと
+全final semantic exclusionはbyte-identical。

@@ -5,8 +5,9 @@
 
 ## Status and authority
 
-This document freezes **Checker Tasks 269A--269C**, the first four
-dependency-minimal slices of queue Task 269. English is canonical. The matching Japanese document
+This document freezes **Checker Tasks 269A/B/CP/C/CT and 269GP**, the completed
+named-witness/proof-`let` slices and the next dependency-minimal lower slice of
+queue Task 269. English is canonical. The matching Japanese document
 must remain synchronized in the same logical task.
 
 The normative authority is:
@@ -469,6 +470,35 @@ diagnostic code/key, or CLI output. Corpus/requirements remain `428/395`,
 pass/fail `235/193`, stages `101/7/205/1`, type coverage `259=247+12`,
 warnings/errors `23/0`, and trace SHA-256 remains
 `55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`.
+
+Repeated specification review of the narrowed contract reports **NO
+FINDINGS**. Docs-only preflight passes focused Task-269CP/C/CT tests,
+checker/runner lint `15/14`, metadata `137`, Cargo metadata, format,
+warnings-denied workspace Clippy, full workspace tests, all five CLIs, and
+whitespace. Libraries remain `490/548`; production remains
+`30/168322` and `37/71647`, with path/content hashes
+`c89f43f6abebf7ebeb3ac9394ecd8ea3186ad28934c75526d2cc0b85a66ebad5` /
+`4d0c793a47dac672e5f395c9c2b9e7c9274b5d776b54870888ba5c918f751dc2`
+and
+`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d` /
+`0f8f5926b9bee23c92d1f05e9cc9e85b4c0561b543e9e0a1e4c825f43b6c5798`.
+Raw/normalized test-list hashes remain checker
+`10e1f56783a472b63a0473893196d68b54a7a7aa3a3aff4f66e74ac42b4a2ad2` /
+`21d65f467319e2e7ac463344902b10dfce5716a96c41a87e879326c293ff36e0`
+and runner
+`cd47be81d6e0987a4461191b700c442c3182fb9f35fe6ab6e2d216ba122fd841` /
+`e24bc08e3c8207ba96b6df3de995a3b489e333f8599233c1eded9f81fe696a77`.
+Plan/parse/declaration/type/proof hashes remain
+`700f4bf503783742cefd8004fa095675b7476d46e9a3a6dd439916d237eb6718`,
+`a8a7aa639d2ebc65eddc923c7e9369ea5637d50e935f808600f446da1bfbda56`,
+`71e83ba0b20d4015e07b3bd2c0c4db2837b6151d1251812caed7954530d53c74`,
+`4b2c7bd5ec3cc56e5672fb351126126230ec84fba9bd2bd9049a516d378fab7f`,
+and `ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`.
+
+Repeated source/docs consistency and final-quality reviews report **NO
+FINDINGS**. All nine hard gates PASS without a score cap at `100/100`
+(`20/20/15/15/10/10/5/5`). Exact staging and the dedicated docs commit remain
+parent-owned.
 
 ## Public Enum Policy
 
@@ -1345,3 +1375,309 @@ unchanged dependency plus its byte-exact fingerprint inside the composite.
 Task-269C's direct owner and missing type site remain unchanged and empty in
 the composite Typed/final profiles. This module has no source/API/test change;
 later use/capture and all proof semantics remain deferred.
+
+## Checker Task 269GP Frozen Isolated Proof-`given` Syntax-Lower Prerequisite
+
+### Selection, authority, and disagreement classification
+
+Fresh inventory at `c60361977f6c4d832cf4217b85bd9b458c902848`
+selects only Task 269GP. Task 269 is still open: Tasks 269A/B implement named
+`take`, and Tasks 269CP/C/CT implement only one isolated `let` definition-site
+and its written type. Task 270 depends on Task 269 and is therefore not yet
+ready. A `set` slice would require the RHS to be authenticated as a resolved
+local-binding capture, while `consider` adds a justification subtree; the
+source-order-minimal independently implementable form is a syntax-only
+`given` definition-site projection.
+
+Canonical authority is Chapter 4 Sections 4.2, 4.4, and 4.6; Chapter 15
+Sections 15.3.3, 15.10, and 15.11.4; and Chapter 16 Sections 16.3.3, 16.4, and
+16.5. The parser simple-statement fixture and unchanged broad
+`fail_type_elaboration_proof_local_declaration_gap_001` fixture establish the
+surface family. That broad fixture, sidecar, expectation, and trace backlinks
+remain read-only and cannot credit this isolated positive slice.
+
+Specification review found a blocking `spec_gap` for any binding consumer:
+Chapter 4 Section 4.6.1 limits `given` binders to the introducing statement or
+formula, while Chapter 16 Sections 16.3.3 and 16.4.2 make the witness available
+in the local subproof/enclosing block. Chapter 15 Section 15.10 specifies only
+`let` variable scope and does not resolve the conflict. Therefore 269GP is
+strictly narrowed to syntax/range/provenance transport. It publishes no
+`LocalTermBinding`, scope path, visible-after ordinal, condition availability,
+or later-use promise. Task 269G and 269GT are human-blocked until canonical
+scope intent is reconciled; this task does not choose either interpretation.
+
+Within the narrowed task, the missing exact lower contract is `design_drift`,
+its absent private source/Surface/resolver projection is bounded
+`source_drift`, and the missing four-test guard matrix is a canonical-derived
+`test_gap`. Synthesizing binding visibility, an existential fact, Skolem
+result, label identity, goal change, or local-use/capture row would be a
+`boundary_violation`. The local
+`origin/main...HEAD = 0/8` is a report-only `repo_metadata_conflict`; protected
+stash `f65cf4a13752ec380710814a9ac6392ccb9d75d4` is outside the task.
+
+### Exact source and complete Surface identity
+
+The sole admitted source is this private final-LF text:
+
+```mizar
+reserve x for set;
+theorem FormulaStatementGivenSmoke: thesis proof
+  given y being set such that G: thesis;
+  thus thesis;
+end;
+```
+
+It is exactly 129 bytes with SHA-256
+`04e54b8ada9af54fde9f937e1bb0f96bd8cf85002b2b57f4d348b11c8eb72a2f`.
+The normal Surface AST has 48 nodes, root 47, root range `0..128`, no
+expression root, recovery, or frontend diagnostic, token rows `0..24`, and
+snapshot SHA-256
+`58ac16a3c75860180a8bec5dc8e87ec8b269fe75715a6d8363f7ef064e3deea8`.
+The selector authenticates every node kind, source id/range, ordered child
+list, recovery state, and token text/kind. Role-defining rows are:
+
+| node | kind | range | children |
+| ---: | --- | --- | --- |
+| 28 | `ReserveItem` | `0..18` | `[0,27,4]` |
+| 31/32 | `TypeHead` / `TypeExpression` | `84..87` | `[13]` / `[31]` |
+| 33 | `QualifiedVariableSegment` | `76..87` | `[11,12,32]` |
+| 34/35 | `FormulaConstant(Thesis)` / `FormulaExpression` | `101..107` | `[18]` / `[34]` |
+| 36 | `Proposition` | `98..107` | `[16,17,35]` |
+| 37 | `ConditionList` | `93..107` | `[15,36]` |
+| 38 | `GivenStatement` | `70..108` | `[10,33,14,37,19]` |
+| 42 | `ConclusionStatement` | `111..123` | `[20,41,22]` |
+| 43 | `ProofBlock` | `62..127` | `[9,38,42,23]` |
+| 44 | `TheoremItem` | `19..128` | `[5,6,7,30,43,24]` |
+| 47 | `Root` | `0..128` | tokens `0..24`, then `[46]` |
+
+Condition subtree `34..37`, label tokens `16/17`, and conclusion subtree
+`39..42` are selector-only exclusions and do not cross the lower handoff.
+
+### Resolver provenance and private lower output
+
+The declaration-shell profile is exactly two normal root shells: reserve
+ordinal/node/range `0/28/0..18` and theorem `1/44/19..128`. The symbol
+environment contains exactly one public/exported theorem symbol, definition,
+and local-source contribution. The theorem origin is range `19..128`, path
+`[2,1]`, and no import. Its opaque parser signature is exactly:
+
+```text
+node=TheoremItem;symbol=theorem;definition=theorem;primary_tokens=theorem FormulaStatementGivenSmoke : thesis proof given y being set such that G : thesis ; thus thesis ; end ;;notation=_;arity=_;roles=FormulaExpression,ProofBlock
+```
+
+The definition has no parameters, binders, notation, document, conflict, or
+dependencies. Import/export/label/overload/registration/lexical-summary/
+namespace/declaration-dependency/module-summary indexes are empty. Resolver
+publishes neither `y` nor `G` as a module symbol or label; 269GP must not invent
+either identity.
+
+The theorem symbol's primary spelling is `FormulaStatementGivenSmoke`,
+namespace/module are the requested module, visibility/export status are
+`Public`/`Exported`, contribution is 0, notation is absent, relations are
+empty, and origin is the exact source/range/path/no-import row above. Definition
+0 references that symbol and origin, has kind `Theorem`, visibility `Public`,
+contribution 0, no arity or signature deviation, and all listed optional/list
+fields empty. Contribution 0 has the requested module, kind
+`LocalSource { source_id }`, anchor `0..18`, symbol effect `[theorem]`,
+definition effect `[0]`, and empty label/overload/registration/lexical/
+namespace/declaration-dependency/import/export/diagnostic effects.
+
+Runner-private `SourceProofLocalGivenLowerOutput` retains only source/module
+identity and fingerprints, theorem resolver identity, theorem/proof/
+`GivenStatement`/segment/name/type ranges, exact token spellings `y` and `set`,
+and source statement ordinal 1. It deliberately has no binding-shaped field.
+Complete source SHA-256, Surface snapshot SHA-256, shell profile, resolver
+theorem profile, output row, and exact debug bytes are independent fail-closed
+fingerprints.
+
+### Complete runner-private Rust contract
+
+The production leaf adds only this crate-private family; field visibility is
+private and all accessors are `pub(in crate::runner)`:
+
+```rust
+pub(in crate::runner) const SOURCE_PROOF_LOCAL_GIVEN_TEXT: &str;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(in crate::runner) struct SourceProofLocalGivenLowerOutput {
+    source_id: SourceId,
+    module_id: ModuleId,
+    source_fingerprint: String,
+    surface_fingerprint: String,
+    theorem_symbol: SymbolId,
+    theorem_definition: DefinitionId,
+    contribution: SourceContributionId,
+    theorem_range: SourceRange,
+    proof_range: SourceRange,
+    given_range: SourceRange,
+    segment_range: SourceRange,
+    name_range: SourceRange,
+    name_spelling: String,
+    type_range: SourceRange,
+    type_head_range: SourceRange,
+    type_spelling: String,
+    source_ordinal: usize,
+}
+
+pub(in crate::runner) fn source_proof_local_given_lower_output(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    shells: &DeclarationShellSet,
+    symbols: &SymbolEnv,
+    source_text: &str,
+) -> Option<Result<SourceProofLocalGivenLowerOutput, String>>;
+```
+
+The read-only impl exposes exactly `source_id() -> SourceId`,
+`module_id() -> &ModuleId`, `source_fingerprint() -> &str`,
+`surface_fingerprint() -> &str`, `theorem_symbol() -> &SymbolId`,
+`theorem_definition() -> DefinitionId`,
+`contribution() -> SourceContributionId`, `theorem_range() -> SourceRange`,
+`proof_range() -> SourceRange`, `given_range() -> SourceRange`,
+`segment_range() -> SourceRange`, `name_range() -> SourceRange`,
+`name_spelling() -> &str`, `type_range() -> SourceRange`,
+`type_head_range() -> SourceRange`, `type_spelling() -> &str`,
+`source_ordinal() -> usize`, and `debug_text() -> String`, all
+`pub(in crate::runner)`. Exact values are definition/contribution/ordinal
+`0/0/1`, theorem `19..128`, proof `62..127`, given `70..108`, segment
+`76..87`, name `76..77`/`"y"`, and type/head `84..87`/`"set"`.
+`debug_text()` is byte-exact in this field order and ends with exactly one LF:
+
+```text
+source-proof-local-given-lower-debug-v1
+module: {package}::{module}
+source-fingerprint: "04e54b8ada9af54fde9f937e1bb0f96bd8cf85002b2b57f4d348b11c8eb72a2f"
+surface-fingerprint: "58ac16a3c75860180a8bec5dc8e87ec8b269fe75715a6d8363f7ef064e3deea8"
+theorem symbol="{fqn}" definition=0 contribution=0 range=19..128 proof=62..127
+given range=70..108 segment=76..87 source_ordinal=1
+name range=76..77 spelling="y"
+type range=84..87 head=84..87 spelling="set" form=bare
+```
+
+Four test-only enums are `pub(in crate::runner)`, derive
+`Debug, Clone, Copy, PartialEq, Eq`, and have exactly these variants:
+
+```rust
+enum SourceProofLocalGivenSurfaceMutation {
+    None, ExpressionRoot, TokenNode(usize), TokenNodeCount,
+    NodeKind(usize), NodeSourceId(usize), NodeRange(usize),
+    NodeRecovery(usize), NodeChildren(usize),
+    MissingRootIdentity, WrongRootIdentity,
+}
+enum SourceProofLocalGivenLowerMutation {
+    None, SourceId, Module, SourceFingerprint, SurfaceFingerprint,
+    TheoremSymbol, TheoremDefinition, Contribution, TheoremRange, ProofRange,
+    GivenRange, SegmentRange, NameRange, NameSpelling, TypeRange,
+    TypeHeadRange, TypeSpelling, SourceOrdinal,
+}
+enum SourceProofLocalGivenShellMutation {
+    None, Id(usize), Ordinal(usize), Kind(usize), Module(usize), Node(usize),
+    Syntax(usize), Range(usize), Parent(usize), VisibilityState(usize),
+    VisibilityMarker(usize), VisibilitySpelling(usize), Recovery(usize),
+}
+enum SourceProofLocalGivenResolverProfileMutation {
+    None, ResolverModule, ImportIndex, ExportIndex, LabelIndex, OverloadIndex,
+    RegistrationIndex, LexicalSummaryIndex, NamespaceGraph,
+    DeclarationDependencyIndex, ModuleSummaryIndex, SymbolModule,
+    SymbolNotation, SymbolContribution, SymbolRelations, SymbolOriginSource,
+    SymbolOriginImport, DefinitionId, DefinitionParameters,
+    DefinitionBinders, DefinitionNotation, DefinitionDoc,
+    DefinitionContribution, DefinitionConflict, DefinitionDependencies,
+    ContributionLabelEffect, ContributionOverloadEffect,
+    ContributionRegistrationEffect, ContributionLexicalEffect,
+    ContributionNamespaceEffect, ContributionDeclarationDependencyEffect,
+    ContributionImportEffect, ContributionExportEffect,
+    ContributionDiagnosticEffect,
+}
+```
+
+The five `#[cfg(test)] pub(in crate::runner)` seams are the production
+signature plus respectively a final `SourceProofLocalGivenSurfaceMutation`,
+`SourceProofLocalGivenLowerMutation`, `SourceProofLocalGivenShellMutation`, or
+`SourceProofLocalGivenResolverProfileMutation` argument, named:
+
+```text
+source_proof_local_given_lower_output_with_surface_mutation
+source_proof_local_given_lower_output_with_mutation
+source_proof_local_given_lower_output_with_shell_mutation
+source_proof_local_given_lower_output_with_resolver_profile_mutation
+source_proof_local_given_lower_output_with_resolver_mutation
+```
+
+The last seam instead takes final
+`mutate: impl FnOnce(SymbolEnv) -> SymbolEnv`. Selector/source mismatches return
+`None`; once selected, all failures return `Some(Err(String))`. Validation
+precedence is exact Surface identity after selection; shell count/export/
+profile in ordinal order; resolver module and empty indexes; theorem symbol,
+definition, and contribution; lower row; then debug bytes. Error strings are:
+
+```text
+Task269GP exact Surface identity changed after selection
+Task269GP requires exactly two declaration shells
+Task269GP resolver shells unexpectedly export a path
+Task269GP declaration shell {ordinal} mismatch
+Task269GP raw resolver module mismatch
+Task269GP local y already resolves as a module symbol
+Task269GP raw resolver inventory mismatch
+Task269GP requires one exact theorem owner
+Task269GP exact theorem owner provenance mismatch
+Task269GP requires one exact theorem definition
+Task269GP theorem contribution is missing
+Task269GP theorem symbol provenance mismatch
+Task269GP theorem definition provenance mismatch
+Task269GP theorem contribution provenance mismatch
+Task269GP private lower output mismatch
+Task269GP private lower debug grammar mismatch
+```
+
+The whole-environment seam preserves neutral reconstruction and rejects
+missing, duplicated, wrong-module, and cross-profile environments. No error
+string may expose parser/debug internals beyond this list.
+
+### Ownership, exclusions, tests, impact, and exit
+
+Task 269GP is runner-private. It adds no checker/public API,
+`LocalTermBinding`, `BindingEnv`,
+source-type table, typed arena, `TypedAst`/`ResolvedTypedAst` owner, statement
+or formula row, fact, diagnostic, active dispatch, fixture, sidecar,
+expectation, trace row/status/backlink, metadata case, Cargo edge, or coverage
+credit. The canonical `given` scope contradiction blocks only the direct
+binding/type consumers 269G/269GT. Given-condition availability,
+Skolem/existential meaning, label or
+candidate-fact publication, escape checking, goal/thesis composition, proof/
+discharge/acceptance, and Core/CFG/VC remain Task 258/272 or later semantic
+work. `set` capture, `consider`, other local forms, real later-use replay, and
+Task 270 remain separately deferred; 269GP does not assign them a new blocker.
+
+Implementation is restricted to the existing runner source-statement leaf,
+two existing test-only facade hops, and existing proof-local test file. The
+four exact test functions are:
+
+```text
+source_proof_local_given_lower_projection_is_exact_and_private
+source_proof_local_given_lower_rejects_every_corruption_with_frozen_precedence
+source_proof_local_given_lower_excludes_near_misses_and_adjacent_families
+source_proof_local_given_lower_has_zero_checker_or_semantic_effect
+```
+
+They cover exact source/Surface/resolver/output/debug; every enum variant,
+every token/node/shell ordinal, whole-environment corruption and precedence;
+source/header/body/trailing-LF near misses, broad/parser fixtures, adjacent
+`let`/`take`/`set`/`consider`/`reconsider`/inline families; and zero checker or
+semantic effect plus unchanged Tasks 269CP/C/CT.
+Runner library projects `548 -> 552`; checker stays `490`; production paths
+remain checker/runner `30/37`. Baselines remain corpus/requirements `428/395`,
+pass/fail `235/193`, active stages `101/7/205/1`, type coverage `259=247+12`,
+warnings/errors `23/0`, and trace SHA-256
+`55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`.
+
+The prerequisite exits only after synchronized EN/JA records, repeated
+specification review with **NO FINDINGS** for the narrowed contract, all nine
+hard gates uncapped at
+90/100 or better, full verification/count/hash reproduction, exact docs-only
+staging, its dedicated commit, and fresh preflight. The four-file
+implementation then requires separate test-sufficiency, implementation,
+source/docs, and final-quality reviews with **NO FINDINGS**, the same hard and
+verification gates and one exact commit. Fresh inventory after that commit
+must report the human-owned canonical scope contradiction as the blocker
+rather than automatically starting 269G.

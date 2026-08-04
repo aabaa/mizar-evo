@@ -815,3 +815,9 @@ implementationはdependency environmentをsorting/repairなしでexact reconstru
 binding 2件、identity、lookup field、capture、diagnostic、recoveryは、binding 1のtype site
 `Missing -> Source(76..79)`だけを除きTask 269Cとequal。validation/testはcomplete
 `2/2/0` payloadをauthenticateし、binding corruptionをsource-type/availabilityより先にfail。
+
+## Task 269GP no-binding lower boundary
+
+private lower outputは`y` token spelling/rangeだけをcarryし、resolver-shaped local
+identity、BindingEnv row、lookupを作らない。Chapter-4/16 `given` scope矛盾はhuman
+canonical reconciliationまで269G/269GTをblockする。

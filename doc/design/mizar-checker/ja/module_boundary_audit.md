@@ -1624,3 +1624,10 @@ runner export/dispatch arm/corpus ownerを追加しない。checker/runner produ
 content hashは
 `4d0c793a47dac672e5f395c9c2b9e7c9274b5d776b54870888ba5c918f751dc2` /
 `0f8f5926b9bee23c92d1f05e9cc9e85b4c0561b543e9e0a1e4c825f43b6c5798`。
+
+## Task 269GP frozen boundary
+
+docs prerequisiteはsource変更なし。later implementationはexisting runner 4 filesだけ。
+checker/parser/resolver module/path/dependency/public APIは不変。production paths `30/37`、
+checker tests 490、runner tests `548 -> 552`。
+repeated source/docs/final-quality reviewは**NO FINDINGS**で、このboundaryをconfirm。
