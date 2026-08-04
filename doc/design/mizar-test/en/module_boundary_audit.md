@@ -13171,3 +13171,12 @@ Owned runner files are exactly `type_elaboration/source_proof_local_declaration.
 The exact four runner files are the only runner changes. Production remains 37
 paths and is now 75,074 lines; `source_statement.rs`, public dispatch, Cargo,
 metadata, artifacts, diagnostics, and active results are unchanged.
+
+## Task 269GU Runner Ownership Boundary
+
+Owned runner files are exactly
+`type_elaboration/source_proof_local_declaration.rs`, `type_elaboration.rs`,
+`runner.rs`, and the existing proof-local test leaf. `source_statement.rs`,
+active dispatch/result owners, Cargo, fixtures, sidecars, expectations,
+trace, metadata, diagnostics, and CLI owners are excluded. Production remains
+37 paths; the two facade hops stay test-only.

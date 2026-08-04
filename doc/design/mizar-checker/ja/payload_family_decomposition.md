@@ -1754,3 +1754,11 @@ new familyは`SourceProofLocalGivenUseTypeHandoff` 1件だけ。unchanged GUP de
 frozen compositeをexactに実装し、new payload familyはこの1件だけ。
 Typed/Resolved ownershipはatomicかつsemantically emptyで、later term/referenceは
 269GUがownする。
+
+## Task 269GU payload delta凍結
+
+new familyは`SourceProofLocalGivenUseTermHandoff`だけ。owned exact GUPT
+dependency/fingerprintとexact `2/2/0` primary-term handoff/fingerprintをdistinct
+6-node arenaで合成する。direct GUPT/binding/type/term ownerはない。formula/
+equality、statement、condition/fact、capture、goal/obligation、proof/acceptance、
+downstream IRはabsent。

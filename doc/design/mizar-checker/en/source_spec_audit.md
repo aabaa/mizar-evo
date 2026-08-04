@@ -6012,3 +6012,13 @@ The frozen public family and all eight tests now exist, closing the bounded
 expectations, trace, metadata, CLI behavior, or active coverage. The source
 type is transported only as authenticated source evidence; Task 269GU still
 owns later occurrences and all semantic deferrals remain explicit.
+
+## Task 269GU Frozen Source/Specification Mapping
+
+Canonical Chapters 4/13/15/16 and the exact GUP/GUPT artifacts authorize the
+two later `y` variable references and no enclosing formula semantics. Planned
+public coverage is the GU handoff/producer/non-exhaustive error plus four
+checker and four private runner tests. Until implementation this is a bounded
+`source_drift`/`test_gap` contract. Canonical specification, `.miz`,
+expectations, trace, metadata, diagnostics, CLI behavior, and active coverage
+credit stay unchanged.

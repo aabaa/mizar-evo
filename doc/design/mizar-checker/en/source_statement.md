@@ -4155,3 +4155,11 @@ GUPT owns only the written type on the already authenticated `given` declaration
 Only the authenticated written source type is transported. Statement APIs,
 the condition/label/equality/later-use subtrees, proof state, acceptance, and
 production dispatch remain unchanged.
+
+## Task 269GU Statement Boundary
+
+GU consumes only the two `TermReference` leaves inside `thus y = y;`.
+`TermExpression` wrappers, `BuiltinPredicateApplication`, equality formula,
+proposition, `ConclusionStatement`, `such that` condition/label, proof block,
+goal, facts, and acceptance remain selector-only. Existing statement APIs and
+production dispatch stay unchanged.

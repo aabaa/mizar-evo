@@ -3674,5 +3674,16 @@ No dispatch, fixture, sidecar, expectation, trace, metadata, diagnostic, CLI, ac
   source/docs reviews are **NO FINDINGS**, and all nine hard gates pass
   uncapped at `100/100`. Fixtures, expectations, trace, metadata, diagnostics,
   CLI bytes, and active results remain unchanged.
-- [~] Finish exact staging and the separate implementation commit, then
-  fresh-inventory Task 269GU.
+- [x] Exact staging and separate implementation commit
+  `c529245138b6d40be65c590ba701fef4f4ea0881` are complete; clean fresh
+  inventory selects Task 269GU.
+
+## Checker Task 269GU Dormant Term/Reference Consumer
+
+- [x] Freeze reuse of exact GUPT, two later `y` occurrences/references,
+  six-node arena, private output and six mutations, four runner files/tests,
+  `568 -> 572`, zero dispatch/artifact/semantic credit, and exclusions.
+- [ ] Complete EN/JA specification review to **NO FINDINGS**, docs-only gates,
+  exact 42-file prerequisite stage, and commit.
+- [ ] Fresh-preflight and implement the dormant route; complete all reviews,
+  verification, separate commit, and next-task fresh inventory.

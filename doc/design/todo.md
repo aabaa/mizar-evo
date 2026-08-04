@@ -94,8 +94,8 @@ is its task 1). "Next work" points into the
 | mizar-parser | Grammar, Pratt parsing, syntax recovery, parse-only corpus | [x] Tasks 1-48 plus bounded `PARSER-RECOVERY-B1B1P-P1` complete; historical post-Task-46 score 99/100 | no inferred Task 49; human-owned P-265-47D remains separate | [todo](./mizar-parser/en/todo.md) |
 | mizar-frontend | Source loading and phase 1-3 orchestration | [x] prior milestone plus `PARSER-RECOVERY-B1B1P-P1-FE` regression complete | — | [todo](./mizar-frontend/en/todo.md) |
 | mizar-resolve | Module graph, namespaces, symbols, labels, signatures | [~] complete through task 29, Checker Task 263R, and Task 264R implementation | Preserve Task-264R shell/no-symbol boundary through Checker Tasks 248P/264 | [todo](./mizar-resolve/en/todo.md) |
-| mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] foundation complete through task 22; Tasks 265-268, Core-31, and Checker consumers through committed Task 269GUP are complete; Task 269GUPT implementation and all reviews/gates are complete | Stage and commit GUPT exactly, then fresh-inventory Task 269GU | [todo](./mizar-test/en/todo.md) |
-| mizar-checker | Type checking, cluster/registration resolution, overload resolution | [~] explicit-payload milestone and source producers/consumers through committed Task 269GUP are complete; Task 269GUPT implementation and all reviews/gates are complete | Stage and commit GUPT exactly; GU, capture, and Task 270 remain separate | [todo](./mizar-checker/en/todo.md) |
+| mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] foundation complete through task 22; Tasks 265-268, Core-31, and Checker consumers through committed Task 269GUPT are complete; Task 269GU is frozen | Finish and commit the GU docs prerequisite, then implement its dormant runner | [todo](./mizar-test/en/todo.md) |
+| mizar-checker | Type checking, cluster/registration resolution, overload resolution | [~] explicit-payload milestone and source producers/consumers through committed Task 269GUPT are complete; Task 269GU is frozen | Finish GU docs prerequisite, then implement GU; capture and Task 270 remain separate | [todo](./mizar-checker/en/todo.md) |
 | mizar-core | Elaboration, binder-normalized core logic, control-flow preparation | [x] core/control-flow milestone, tasks 27-32 complete | step-5 Tasks 33-53 under the Task-32 graph | [todo](./mizar-core/en/todo.md) |
 | mizar-vc | VC IR, VC generation, deterministic pre-ATP discharge | [x] exact source-derived contradiction VC integration complete through task 31 | dependency-paced VC Tasks 32-55; VC 40/53 and S1 gates remain explicit | [todo](./mizar-vc/en/todo.md) |
 | mizar-kernel | Trusted certificate parsing and checking | [x] SAT-backed kernel milestone complete | step 4 task 35 resolved; task 32 parked; tasks 30-34 resolved | [todo](./mizar-kernel/en/todo.md) |
@@ -4323,5 +4323,22 @@ Complete in the frozen six Rust files with four checker and four runner tests. L
 - [x] Commit exactly the 40 Markdown prerequisite files.
 - [x] GUPT fresh preflight and implementation are complete; all reviews are
   **NO FINDINGS** and all nine hard gates pass uncapped at `100/100`.
-- [~] Finish exact GUPT staging and its separate commit, then fresh-inventory
-  Task 269GU. Capture/export and Task 270 remain dependency-gated.
+- [x] Exact GUPT staging and separate commit
+  `c529245138b6d40be65c590ba701fef4f4ea0881` are complete; clean fresh
+  inventory selects Task 269GU. Capture/export and Task 270 remain gated.
+
+## Checker Task 269GU Frozen Later-use Term/Reference Prerequisite
+
+- [x] Fresh clean committed GUPT HEAD and canonical Chapters 3/4/8/13/15/16
+  select only the exact two later `y` occurrences; origin `0/9` is report-only
+  metadata divergence and the protected stash is unchanged.
+- [x] Freeze the by-value GUPT dependency, private profile-scoped
+  `GivenWitness -> Variable` admission, exact `2/2/0` handoff, distinct
+  six-node arena, two fingerprints, public handoff/producer/error, boxed
+  Typed/final owner, private runner, seven Rust files, eight tests, 42 docs,
+  zero active credit, exclusions, baselines, semantic deferrals, and exit.
+- [ ] Complete specification review to **NO FINDINGS**, pass docs-only 9/9
+  hard gates uncapped at `>=90/100`, and commit exactly the prerequisite.
+- [ ] Fresh-preflight and implement GU only; repeat test, implementation,
+  source/docs, and final-quality reviews and all gates, make the separate
+  implementation commit, then fresh-inventory the next dependency-ready task.

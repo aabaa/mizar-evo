@@ -886,3 +886,11 @@ immutable GUP handoffのexact `2/2/0` envをcopyし、binding 1だけを`Missing
 exact copied overlayとcorruption/replay/ownership/same-identity cross-family
 matrixを実装しpass。immutable GUP dependencyと全non-type binding stateは不変で、
 semantic binding creditなし。
+
+## Task 269GU lookup consumer凍結
+
+GUはimmutable GUPT `2/2/0` envをreuseする。later `y` 2 rowはcontext 1、scope
+`[0]`、derived use ordinal 2で`GivenWitness` `BindingId(1)`へresolve必須。private
+exact source-term profileだけがこれを`Variable`としてadmitする。generic admission、
+context/capture/diagnostic/type/scope lifetime、GUP/GUPT byteは不変で、parent/
+sibling visibilityはexcludeする。

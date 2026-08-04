@@ -69,7 +69,7 @@ strict containする。parentだけがchildをownする。root/siblingはsource 
 private runner extractorはlater term family descendantを含むparenthesized subtree
 全体をexcludeする。
 
-variable/constant rowはreference exactly 1件を持つ。variableは
+variable/constant rowはreference exactly 1件を持つ。generic profileのvariableは
 `ReservedVariable`/`LetBinding`/`QuantifierBinder`/`DefinitionParameter`だけ、
 constantは`LocalAbbreviation`だけを受ける。`it`/numeral/parenthesisはbinding
 referenceを持たない。全numeralはnumeric request exactly 1件、他kindは0件である。
@@ -227,3 +227,115 @@ GUPT後のTask269GUだけがfuture GivenWitness Variable admission/occurrenceを
 凍結済みの6ファイル transactionとchecker/runner各4件の正確なtestを実装した。libraryは`502/564`、checker/runner productionは`30/172531`と`37/74826`で、path hashは不変、content hashは`e0342952a01a0b379cf7b06ad243cd40a1656e940480196323cf43fbe7d8f7c5` / `8fe7c8c0b7e855e5113f3830873e133f42c8048a3272055e2fddd5ebd9cbb1bc`である。
 
 閉じるのはdormant private lexical-binding evidenceだけで、active corpus、trace、type、term/use、condition/fact、goal/proof、obligation、diagnostic、CLIのcreditは0のままである。次はTask 269GUPTであり、Task 269GU、capture、Task 270は引き続きdeferする。
+
+## Task 269GU proof-`given` later-use term/reference 凍結契約
+
+### 選択、authority、classification
+
+fresh clean HEAD `c529245138b6d40be65c590ba701fef4f4ea0881`はcommitted
+GUPT source-type prerequisiteを含み、Task 269GUだけを選択する。canonical
+Chapter 4 §4.6.1(5)、Chapter 15 §§15.3.3/15.10、Chapter 16 §16.3.3
+item 5a/§16.4.2とuser確認は、`given` witnessがdeclaration condition内をbindし、
+その後はinnermost enclosing proof/reasoning blockの残りと、shadowされないchild
+blockで有効、parent/siblingでは無効であることを定める。Chapter 8 §8.1は既に
+実装済みのdeclared typeだけ、Chapter 3は通常のin-scope variable解釈だけを与え、
+Chapter 13 §§13.1.1/13.8.1がin-scope identifier occurrenceをvariable referenceとする。
+
+exact sourceは128 byte・final LF 1件、source SHA
+`ec15ded78ae96022840a8419a85d74643de3b37337e9a202cbda77ee97aa7c01`、
+54 Surface node/root 53、snapshot SHA
+`c64297ce72e380a2e4146276966e085d780f8b38f2528d5abaa440a50c67db6d`である。
+later leafはunrecovered `TermReference` node 41/43、`y@116..117`/
+`y@120..121`だけである。GUPはshell/theorem/resolver provenance、proof
+`62..126`、given `70..108`、name `76..77`、scope `[0]`/ordinal 1を認証済み、
+GUPTはexact `2/2/0` typed BindingEnvと`2/2/0/0/0/0` source typeをownする。
+
+blocking `spec_gap`はない。未実装composition/testはbounded `source_drift`/
+`test_gap`、stale ledgerは`design_drift`。generic Task-252 pathへの無制限
+`GivenWitness` admission、old GUP/GUPT変更、formula/proof semantics出版は
+`boundary_violation`。origin `0/9`はreport-only `repo_metadata_conflict`である。
+
+### Public compositeとexact payload
+
+`source_term.rs`へpublic `SourceProofLocalGivenUseTermHandoff`、
+`SourceProofLocalGivenUseTermProducer`、non-exhaustive
+`SourceProofLocalGivenUseTermError { InvalidDependency, InvalidSourceTerm,
+InvalidInstallation }`を追加する。handoff getterはsource/module、owned GUPT
+dependency、そのcomplete debug fingerprint、`SourcePrimaryTermHandoff`とその
+complete fingerprintをborrowする。producerはGUPTをby valueでconsumeし、
+`SourcePrimaryTermHandoffInput`と`TypedArena`からatomicに構築する。
+handoffとerror enumはいずれも`Debug + Clone + PartialEq + Eq`を実装し、errorは
+さらに`std::error::Error`を実装する。
+
+exact profileは`2/2/0`である。term 0/1はsite node 3/4、range
+`116..117`/`120..121`、source ordinal 0/1、context 1、Normal、spelling `y`、
+`VariableReference`/`Value`、parentなし。reference 0/1は各term、binding 1、
+`Variable`、producer-derived scope `[0]`、use ordinalは双方2。reserve binding 0と
+witness binding 1が両use以前にcompleteし、first occurrenceはbinding eventを
+増やさないためである。numeric requestは0。context 1/scope `[0]` lookupは両方
+local binding 1を返す。
+
+generic `SourcePrimaryTermProducer::build`の既存allowlist behaviorは不変。
+private GU profileだけがexact compositeで`GivenWitness -> Variable`を許可する。
+これによりcanonical決定をunauthenticated global admissionへ拡張しない。
+
+arenaはGUPT prefixを保つdistinct 6 nodeである。node 0/1/2は
+`reserve-type@14..17`、`type@84..87`、`type-root@0..127 children [0,1]`。
+node 3/4は`source.term.variable-reference` at `116..117`/`120..121`。
+node 5は`source.proof-local.given-use.term-root@0..127 children [2,3,4]`でroot。
+全nodeはresolved nodeなし、Unknown、Normal、empty links。dependencyはnode
+0--2を含む全public component/fingerprintで再認証し、standalone GUPTの3-node
+contractを弱めない。source/module/payload/fingerprint/lookup/arena mismatchは
+atomic failureである。
+
+debug headerは`source-proof-local-given-use-term-debug-v1`、module、quoted
+complete dependency fingerprint、quoted complete source-term fingerprint。
+error stringは`source proof-local given-use term dependency is invalid`、
+`source proof-local given-use source term is invalid`、`source proof-local
+given-use term installation is invalid`。
+validation precedenceはdependency/GUPT prefix再認証、exact source-term input/
+profile検証、exact full-arena/one-shot installation検証の順である。どのfailureも
+partial handoffまたはAST ownerをpublishしない。
+
+### Typed/final ownership、runner、scope
+
+`TypedAst`/`ResolvedTypedAst`はboxed optional
+`source_proof_local_given_use_term`だけをownし、getter/one-shot installerと
+exact Invalid errorを追加する。direct GUPT/binding/type/term fieldはinstallしない。
+six nodesはfinalで`source.proof-local.given-use.term`へone-for-one projectionする。
+全semantic table/node-hint inputはempty、全old ownerとboth-order mutually exclusive。
+
+dormant runner outputは`{ typed_ast, resolved }`、mutationは`None`、
+`WrongDependencyModule`、`WrongTermRange`、`WrongReferenceBinding`、
+`WrongArenaRoot`、`WrongArenaKind`。selector argsはGUPTと同じでcfg-test版だけ
+mutationを追加する。mismatchは`None`、selected failureは`Some(Err(_))`。
+route-local stringは`Task269GU GUPT dependency is missing`だけ。exact GUPT
+private outputからauthenticated owned dependencyをcloneし、2 term/referenceと
+6-node arenaだけを構築する。public dispatchから到達不能。
+
+implementationはexact 7 Rust files、checker `source_term.rs`/`typed_ast.rs`/
+`resolved_typed_ast.rs`とrunner proof-local leaf/facade 2件/test leafだけ。
+`source_type.rs`、`source_proof_local_declaration.rs`、`binding_env.rs`、runner
+`source_statement.rs`、parser/resolver、canonical spec、fixture/sidecar/
+expectation/trace/metadata/Cargo/diagnostic/dispatch/CLI/active resultは禁止。
+
+checker/runner各4 testで、2 occurrence/lookup、全fingerprint、全dependency/input/
+arena corruptionとprecedence、clone replay、one-shot/both-order ownership、generic/
+Let/old-Given/GUP/GUPT/near-miss isolation、zero semantic publicationを網羅する。
+docsはchecker 14 pairs、runner 6 pairs、global 2の42 Markdown。baselineは
+libraries `506/568`、production `30/174332`/`37/75074`、implementation projection
+`510/572`。path/content/test-list hash、corpus `428/395`、pass/fail `235/193`、
+warnings/errors `23/0`、stage `101/7/205/1`、type coverage `259=247+12`、trace
+SHA `55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`と
+全CLI/fixture hashはEN canonical記載値を共有し、artifact/countは変更しない。
+
+GUのownershipはlater primary-term occurrence/referenceだけ。equality/
+BuiltinPredicateApplication/proposition/`thus`、condition/label/fact、existential/
+Skolem、guard/assume、capture/export、goal/thesis、initial obligation、proof/
+discharge/acceptance、theorem acceptance、Core/CFG/VCは明示deferする。
+
+exitはEN/JA spec review NO FINDINGS、docs-only 9 hard gates uncapped `>=90/100`、
+docs prerequisite commit、fresh preflight、exact seven-file/eight-test implementation、
+test/implementation/source-docs各review NO FINDINGS、全verification/count/hash、
+exact stage/implementation commit、clean tree/origin report/stash不変、その直後の
+fresh next-task inventoryである。

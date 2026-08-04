@@ -723,3 +723,11 @@ canonical `given y being set`がauthorizeするのはwritten source typeとblock
 
 source-type transportを全frozen semantic table emptyで実装。condition/fact、guard、
 later use、capture、goal、obligation、proof、acceptance、Core/CFG/VCは発明・publishしない。
+
+## Task 269GU semantic deferral audit
+
+GUが証明するのはlater identifier leaf 2件がin-block `given` witnessへのauthenticated
+local referenceであることだけ。equality/formula、condition/label fact、existential/
+Skolem、guard/assume、capture/export result、goal/thesis、initial obligation、proof/
+discharge/acceptance、theorem acceptance、Core/CFG/VC semanticsはpublishしない。
+scope visibilityはtransport evidenceでありproof truthではない。

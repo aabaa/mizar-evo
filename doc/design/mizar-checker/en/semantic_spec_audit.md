@@ -789,3 +789,12 @@ Canonical `given y being set` authorizes the written source type and block scope
 The source-type transport is implemented with every frozen semantic table
 empty. No condition/fact, guard, later-use, capture, goal, obligation, proof,
 acceptance, Core, CFG, or VC behavior is inferred or published.
+
+## Task 269GU Semantic Deferral Audit
+
+GU proves only that the two later identifier leaves are authenticated local
+references to the in-block `given` witness. It publishes no equality/formula,
+condition or label fact, existential/Skolem operation, guard/assumption,
+capture/export result, goal/thesis, initial obligation, proof/discharge/
+acceptance, theorem acceptance, Core, CFG, or VC semantics. Scope visibility
+is transport evidence, not proof truth.

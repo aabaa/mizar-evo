@@ -5355,3 +5355,13 @@ No dispatch, fixture, sidecar, expectation, trace, metadata, diagnostic, CLI, ac
 The frozen selector, five mutations, exact input/arena, direct by-value checker
 handoff, Typed/final installation, and four-test matrix are implemented. The
 route remains private and dormant with no public dispatch or semantic output.
+
+## Task 269GU Frozen Private Harness Route
+
+`source_proof_local_given_use_term_output` takes the same five arguments as
+GUPT; cfg-test `_with_mutation` appends `None`, `WrongDependencyModule`,
+`WrongTermRange`, `WrongReferenceBinding`, `WrongArenaRoot`, or
+`WrongArenaKind`. Mismatch is `None`; selected failure is `Some(Err(_))`.
+The only route-local string is `Task269GU GUPT dependency is missing`.
+Success owns only the GU boxed Typed/final composite and remains unreachable
+from public dispatch.

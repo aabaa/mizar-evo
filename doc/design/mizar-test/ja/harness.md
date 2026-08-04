@@ -5037,3 +5037,11 @@ dispatch、fixture、sidecar、expectation、trace、metadata、diagnostic、CLI
 frozen selector、5 mutations、exact input/arena、direct by-value checker handoff、
 Typed/final installation、4-test matrixを実装。routeはprivate/dormantのままで、
 public dispatch/semantic outputなし。
+
+## Task 269GU private harness route凍結
+
+`source_proof_local_given_use_term_output`はGUPTと同じ5 args、cfg-test版は
+`None`/`WrongDependencyModule`/`WrongTermRange`/`WrongReferenceBinding`/
+`WrongArenaRoot`/`WrongArenaKind`を追加。mismatch=`None`、selected failure=
+`Some(Err(_))`。route-local stringは`Task269GU GUPT dependency is missing`だけ。
+successはGU boxed Typed/final compositeだけをownしpublic dispatchから到達不能。

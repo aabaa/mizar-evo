@@ -1842,3 +1842,11 @@ byte-identical。GUPT/GUはGUP dependencyを順にconsumeした後だけownerを
 
 boxed owner、exact revalidation、3 source-preserved nodes、both-order exclusionを
 実装/test済み。final semantic tableとnode-hint inputはempty。
+
+## Task 269GU final ownership凍結
+
+`ResolvedTypedAst`はboxed optional `source_proof_local_given_use_term`とgetterだけを
+追加。exact Typed compositeを再validate/cloneし、6 nodeをsource-preserved role
+`source.proof-local.given-use.term`へmapする。invalid stringは`resolved typed AST
+source proof-local given-use term handoff is invalid`。node hint/semantic tableは
+empty、old ownerはboth-order mutually exclusive。

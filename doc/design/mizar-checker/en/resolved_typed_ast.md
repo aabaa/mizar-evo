@@ -1941,3 +1941,13 @@ This closes only dormant private lexical-binding evidence and grants zero active
 The boxed owner, exact revalidation, three source-preserved nodes, and
 both-order exclusion are implemented and tested. Final semantic tables and
 node-hint inputs remain empty.
+
+## Task 269GU Frozen Final Ownership
+
+`ResolvedTypedAst` adds only boxed optional
+`source_proof_local_given_use_term` and its getter. Assembly revalidates the
+exact Typed composite, clones it, and maps all six nodes to source-preserved
+role `source.proof-local.given-use.term`. The exact invalid-handoff string is
+`resolved typed AST source proof-local given-use term handoff is invalid`.
+Node hints and every semantic table remain empty; all old owners are mutually
+exclusive in both orders.

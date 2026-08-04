@@ -5722,3 +5722,11 @@ frozen public familyと8 testsを実装し、bounded `source_drift`/`test_gap`�
 canonical spec、`.miz`、expectation、trace、metadata、CLI、active coverageは
 変更しない。source typeはauthenticated source evidenceとしてのみtransportし、
 later occurrenceはTask 269GU、全semantic deferralは明示したまま。
+
+## Task 269GU source/spec mapping凍結
+
+canonical Chapters 4/13/15/16とexact GUP/GUPT artifactはlater `y` variable
+reference 2件だけをauthorizeし、enclosing formula semanticsはauthorizeしない。
+planned public coverageはGU handoff/producer/non-exhaustive errorとchecker/runner
+各4 test。implementationまではbounded `source_drift`/`test_gap`。canonical spec、
+`.miz`、expectation、trace、metadata、diagnostic、CLI、active creditは不変。

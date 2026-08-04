@@ -3618,3 +3618,11 @@ already authenticated `given` declarationのwritten typeだけをownする。`su
 
 authenticated written source typeだけをtransport。statement API、condition/label/
 equality/later-use subtree、proof state、acceptance、production dispatchは不変。
+
+## Task 269GU statement boundary
+
+GUは`thus y = y;`内の`TermReference` leaf 2件だけをconsumeする。
+`TermExpression` wrapper、`BuiltinPredicateApplication`、equality formula、
+proposition、`ConclusionStatement`、`such that` condition/label、proof block、
+goal/fact/acceptanceはselector-only。existing statement API/production dispatch
+は不変。

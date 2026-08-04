@@ -1687,3 +1687,11 @@ implementationはchecker `source_type.rs`/`typed_ast.rs`/`resolved_typed_ast.rs`
 exact 7-file boundaryを保持。checker productionは`30/174332`、runnerは
 `37/75074`、path inventory不変。excluded owner、dispatch、artifact、Cargo target、
 diagnosticは変更しない。
+
+## Task 269GU module boundary凍結
+
+checker ownerは`source_term.rs`/`typed_ast.rs`/`resolved_typed_ast.rs`、runner
+ownerはproof-local leaf/test-only facade 2件/existing test leafだけ。
+`source_type.rs`、`source_proof_local_declaration.rs`、`binding_env.rs`、runner
+`source_statement.rs`、parser/resolver、dispatch/artifact/metadata/Cargo/
+diagnosticはexclude。production path countは`30/37`不変。

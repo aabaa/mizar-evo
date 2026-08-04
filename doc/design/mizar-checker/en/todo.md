@@ -6942,5 +6942,25 @@ This closes only dormant private lexical-binding evidence and grants zero active
 - [x] Fresh-preflight and implementation of Task 269GUPT are complete; test,
   implementation, and source/docs reviews are **NO FINDINGS**, and all nine
   hard gates pass uncapped at `100/100`.
-- [~] Finish exact staging and the separate implementation commit, then
-  fresh-inventory Task 269GU. Capture and Task 270 remain deferred.
+- [x] Exact staging and the separate implementation commit
+  `c529245138b6d40be65c590ba701fef4f4ea0881` are complete; clean fresh
+  inventory selects Task 269GU. Capture and Task 270 remain deferred.
+
+## Checker Task 269GU Later-use Term/Reference Prerequisite
+
+- [x] Fresh-inventory committed GUPT HEAD, canonical Chapters 3/4/8/13/15/16,
+  exact 128-byte/54-node source, GUP/GUPT APIs, baselines, origin divergence,
+  and protected stash; select GU only.
+- [x] Classify the absent composite/tests as `source_drift`/`test_gap`, stale
+  status as `design_drift`, generic admission or semantics as
+  `boundary_violation`, and origin `0/9` as report-only
+  `repo_metadata_conflict`; no blocking `spec_gap`.
+- [x] Freeze exact GUPT dependency, `2/2/0` occurrence/reference payload,
+  profile-scoped Given admission, six-node arena, public ABI/errors/debug,
+  boxed Typed/final owner, private runner, seven files/eight tests, 42 docs,
+  zero active credit, baselines, deferrals, and exit.
+- [ ] Complete specification review to **NO FINDINGS**, docs-only hard gates,
+  exact 42-file staging, and the prerequisite commit.
+- [ ] Fresh-preflight and implement GU only; repeat all reviews/gates and make
+  the separate implementation commit, then fresh-inventory capture or the
+  next dependency-ready task. Task 270 remains separate.

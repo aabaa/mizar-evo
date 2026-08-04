@@ -1985,5 +1985,15 @@ initial-obligation, or downstream-IR credit. Task 269GU is next; capture and
 Task 270 remain deferred.
 
 Source/documentation and final-quality reviews are **NO FINDINGS**. All nine
-hard gates pass uncapped at `100/100`; only exact staging and the separate
-implementation commit remain before fresh Task-269GU inventory.
+hard gates pass uncapped at `100/100`; the separate implementation commit is
+`c529245138b6d40be65c590ba701fef4f4ea0881`, and its clean fresh inventory
+selects Task 269GU.
+
+## Task 269GU Frozen Type Dependency Boundary
+
+GU owns the committed GUPT handoff by value and reauthenticates its complete
+binding/type payload and fingerprints by projecting arena nodes 0--2 into an
+exact private reconstruction of the standalone GUPT arena. Standalone GUPT
+validation, source-type rows, public API, error strings, and three-node arena
+contract remain unchanged. GU adds no type application, normalization,
+constraint, coercion, guard, or obligation.

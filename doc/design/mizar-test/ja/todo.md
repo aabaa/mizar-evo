@@ -3431,4 +3431,14 @@ dispatch、fixture、sidecar、expectation、trace、metadata、diagnostic、CLI
 - [x] dormant GUPTをimplementしtest/implementation/source-docs reviewは
   **NO FINDINGS**、hard gate `9/9`、capなし`100/100`。fixture/expectation/
   trace/metadata/diagnostic/CLI/active resultは不変。
-- [~] exact stageとseparate implementation commit後269GUをfresh inventory。
+- [x] exact stage/separate implementation commit
+  `c529245138b6d40be65c590ba701fef4f4ea0881`完了。clean fresh inventoryは269GU。
+
+## Checker Task 269GU dormant term/reference consumer
+
+- [x] exact GUPT、later `y` occurrence/reference 2件、6-node arena、private
+  output/mutation 6件、runner 4 files/tests、`568 -> 572`、zero dispatch/
+  artifact/semantic credit、exclusionを凍結。
+- [ ] EN/JA spec review NO FINDINGS、docs-only gates、exact 42-file stage/commit。
+- [ ] fresh preflight後dormant route実装、全review/verification/別commit、
+  next-task fresh inventory。

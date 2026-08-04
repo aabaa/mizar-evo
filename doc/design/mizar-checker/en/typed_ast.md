@@ -1968,3 +1968,12 @@ This closes only dormant private lexical-binding evidence and grants zero active
 The boxed getter/installer/error and exact availability checks are implemented.
 Tests cover one-shot installation and both-order same-identity neighbor
 exclusion while all semantic tables remain empty.
+
+## Task 269GU Frozen Typed Ownership
+
+`TypedAst` adds boxed optional `source_proof_local_given_use_term`, its getter,
+and one-shot installer. `InvalidSourceProofLocalGivenUseTerm` renders `source
+proof-local given-use term handoff is invalid`. Installation authenticates the
+owned GUPT dependency, exact `2/2/0` term profile, and six-node arena, rejects
+all old source/proof-local owners in both orders, and leaves direct fields and
+all semantic tables empty.

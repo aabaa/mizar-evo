@@ -1860,3 +1860,11 @@ public binding handoffはGUPT dependencyで、existing source owner/semantic tab
 
 boxed getter/installer/errorとexact availability checkを実装。one-shotと
 same-identity neighborのboth-order exclusionをtestし、semantic tableは全empty。
+
+## Task 269GU Typed ownership凍結
+
+`TypedAst`はboxed optional `source_proof_local_given_use_term`、getter、one-shot
+installerを追加。`InvalidSourceProofLocalGivenUseTerm`は`source proof-local
+given-use term handoff is invalid`。owned GUPT dependency、exact `2/2/0` term、
+6-node arenaをauthenticateし、old source/proof-local ownerをboth-order reject、
+direct field/semantic tableはempty。

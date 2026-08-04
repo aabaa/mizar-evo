@@ -6602,5 +6602,20 @@ runner、docs-only implementation commitはproducer taskを満たさない。
 - [x] exact 40 Markdownをstageしdocs commitする。
 - [x] GUPTだけのfresh preflight/implementationは完了し、test/implementation/
   source-docs reviewは**NO FINDINGS**、hard gate `9/9`、capなし`100/100`。
-- [~] exact stageとseparate implementation commit後に269GUをfresh inventory。
-  capture/270はdefer。
+- [x] exact stageとseparate implementation commit
+  `c529245138b6d40be65c590ba701fef4f4ea0881`を完了し、clean fresh inventoryは
+  269GUを選択。capture/270はdefer。
+
+## Checker Task 269GU later-use term/reference prerequisite
+
+- [x] committed GUPT HEAD、canonical Chapters 3/4/8/13/15/16、exact source、
+  GUP/GUPT API、baseline、origin/stashをfresh inventoryしGUだけを選択。
+- [x] absent composite/test=`source_drift`/`test_gap`、stale status=
+  `design_drift`、generic admission/semantics=`boundary_violation`、origin
+  `0/9`=report-only `repo_metadata_conflict`と分類。blocking `spec_gap`なし。
+- [x] exact GUPT dependency、`2/2/0` payload、profile-scoped Given admission、
+  6-node arena、public ABI/error/debug、boxed Typed/final、private runner、
+  7 files/8 tests、42 docs、zero credit、baseline/deferral/exitを凍結。
+- [ ] spec review NO FINDINGS、docs-only gates、exact 42-file stage/commit。
+- [ ] fresh preflight後GUだけを実装しreviews/gates/別commit、次の
+  dependency-ready capture等をfresh inventory。Task270はseparate。

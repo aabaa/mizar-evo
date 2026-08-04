@@ -1862,3 +1862,11 @@ Both languages record the implemented seven-file/eight-test transaction,
 `506/568` libraries, `30/174332` and `37/75074` production manifests, current
 content/test-list hashes, zero artifact/semantic credit, and Task 269GU as the
 next owner. No synchronization exception exists.
+
+## Task 269GU Bilingual Freeze
+
+English canonical and Japanese companion synchronize the exact GUPT by-value
+dependency, two `y` term/reference rows, profile-scoped `GivenWitness ->
+Variable` admission, six-node arena, boxed Typed/final owner, private runner,
+seven-file/eight-test scope, 42 docs, zero active credit, exclusions, baselines,
+semantic deferrals, and exit. There is no synchronization exception.

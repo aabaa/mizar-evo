@@ -933,3 +933,12 @@ The exact copied overlay is implemented and its corruption, replay, ownership,
 and same-identity cross-family matrix passes. The immutable GUP dependency and
 all non-type binding state remain unchanged; no semantic binding credit is
 claimed.
+
+## Task 269GU Frozen Lookup Consumer
+
+GU reuses the immutable GUPT `2/2/0` environment. Both later `y` rows query
+context 1, lexical scope `[0]`, and derived use ordinal 2 and must resolve to
+`BindingId(1)` of kind `GivenWitness`. A private exact source-term profile
+admits that winner as `Variable`; generic role admission, contexts, capture,
+diagnostics, binding types, scope lifetime, and all GUP/GUPT bytes are
+unchanged. Parent/sibling visibility remains excluded.

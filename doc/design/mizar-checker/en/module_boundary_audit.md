@@ -1765,3 +1765,12 @@ The implementation boundary is exactly checker `source_type.rs`, `typed_ast.rs`,
 The exact seven-file boundary is preserved. Checker production is now
 `30/174332`, runner production `37/75074`; path inventories are unchanged.
 No excluded owner, dispatch, artifact, Cargo target, or diagnostic changed.
+
+## Task 269GU Frozen Module Boundary
+
+Owned checker files are exactly `source_term.rs`, `typed_ast.rs`, and
+`resolved_typed_ast.rs`; owned runner files are the proof-local declaration
+leaf, its two test-only facade hops, and its existing test leaf. `source_type.rs`,
+`source_proof_local_declaration.rs`, `binding_env.rs`, runner
+`source_statement.rs`, parser/resolver, dispatch, artifacts, metadata, Cargo,
+and diagnostics are excluded. Production path counts remain `30/37`.

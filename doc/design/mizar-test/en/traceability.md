@@ -2566,3 +2566,12 @@ GUPT is a private source-type contract/test increment only. It changes no row, b
 Implementation adds only eight Rust unit tests and no canonical test artifact
 or trace row. Counts, status, backlinks, type credit, trace SHA, metadata, and
 all active outcomes remain at the frozen values above.
+
+## Task 269GU Zero-Credit Trace Boundary
+
+GU adds only eight Rust unit tests. No `.miz`, sidecar, expectation, trace
+row/status/backlink, metadata case, active stage, warning, error, diagnostic,
+or CLI output changes. Cases/requirements stay `428/395`, stages
+`101/7/205/1`, type coverage `259=247+12`, and trace SHA-256
+`55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`.
+Capture/export and active proof-local visibility remain deferred.

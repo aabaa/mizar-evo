@@ -6670,3 +6670,20 @@ unchanged. Task 269GU remains the later-occurrence owner.
 
 Source/documentation and final-quality reviews are **NO FINDINGS**. All nine
 hard gates pass uncapped at `100/100`; this audit grants no new active credit.
+
+## Task 269GU Frozen Coverage Status
+
+Task 269GU is selected as a documentation-first, zero-credit later-use
+term/reference prerequisite. Canonical Chapters 4/13/15/16 and exact GUP/GUPT
+artifacts authorize only two `y` `VariableReference`/`Variable` rows at
+`116..117` and `120..121`, both resolving to witness binding 1 at derived use
+ordinal 2. The frozen implementation adds one public composite and four
+checker/four private runner tests, but no `.miz`, expectation, trace row/
+status/backlink, metadata, active stage, diagnostic, dispatch, or CLI behavior.
+
+Counts stay `428/395`, `235/193`, `23/0`, `101/7/205/1`, and type coverage
+`259=247+12`; trace SHA remains
+`55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`.
+GU receives dormant occurrence/reference transport credit only. Equality/
+formula, condition/fact, existential/guard, capture/export, goal/proof/
+acceptance, initial obligations, downstream IR, and Task 270 remain deferred.

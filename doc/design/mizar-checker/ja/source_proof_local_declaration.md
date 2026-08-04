@@ -1665,3 +1665,11 @@ public GUP binding handoffは`SourceProofLocalGivenUseTypeProducer`だけがby-v
 producer/private runnerがGUP handoffをby-value consumeし、complete authenticated
 snapshotを保持。lower owner/GUP public ABIは不変で、later identifierは269GUまで
 unconsumed。
+
+## Task 269GU binding dependency凍結
+
+GUはcommitted GUPT compositeをby valueでconsumeし、immutable typed BindingEnv
+だけを使う。GUP lower/source/shell/resolver fingerprint、declaration row、context、
+scope `[0]`、visibility ordinal 1、public APIは不変。later use 2件のordinal 2は
+`source_term.rs`がderiveし、本moduleはoccurrence/reference/capture/fact/proof
+ownerを追加しない。

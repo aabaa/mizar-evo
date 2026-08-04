@@ -2547,3 +2547,12 @@ The public GUP binding handoff is consumed by value only by `SourceProofLocalGiv
 The producer and private runner now consume the GUP handoff by value and
 preserve its complete authenticated snapshot. The lower owner and GUP public
 ABI are unchanged; later identifiers remain unconsumed until Task 269GU.
+
+## Task 269GU Frozen Binding Dependency
+
+GU consumes the committed GUPT composite by value and uses only its immutable
+typed binding environment. GUP lower/source/shell/resolver fingerprints,
+declaration row, contexts, scope `[0]`, visibility ordinal 1, and public API
+remain unchanged. The two later use lookups derive ordinal 2 in
+`source_term.rs`; this module gains no occurrence, reference, capture, fact,
+or proof owner.

@@ -1854,3 +1854,11 @@ The only new family is one `SourceProofLocalGivenUseTypeHandoff`: unchanged GUP 
 The frozen composite is now implemented exactly and remains the sole new
 payload family. Typed/Resolved ownership is atomic and semantically empty;
 Task 269GU still owns the later term/reference composition.
+
+## Task 269GU Frozen Payload Delta
+
+The only new family is `SourceProofLocalGivenUseTermHandoff`: an owned exact
+GUPT dependency and fingerprint plus one exact `2/2/0` primary-term handoff
+and fingerprint over a distinct six-node arena. Direct GUPT, binding, type,
+or term owners are absent. Formula/equality, statement, condition/fact,
+capture, goal/obligation, proof/acceptance, and downstream IR remain absent.

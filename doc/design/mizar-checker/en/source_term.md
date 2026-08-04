@@ -73,7 +73,7 @@ pre-order tree over the five Task-252 kinds. The private runner extractor
 excludes an entire parenthesized subtree if any descendant belongs to a later
 term family.
 
-Variable and constant rows have exactly one reference. Variables accept only
+Variable and constant rows have exactly one reference. On the generic profile, variables accept only
 `ReservedVariable`, `LetBinding`, `QuantifierBinder`, or
 `DefinitionParameter`; constants accept only `LocalAbbreviation`. `it`,
 numerals, and parentheses have no binding reference. Every numeral has
@@ -243,3 +243,262 @@ and `120..121` are selector-only. Task 269GU, after GUPT, owns any future
 The frozen six-file transaction and its exact four checker/four runner tests are implemented. Libraries measure `502/564`; checker/runner production is `30/172531` and `37/74826`, with unchanged path hashes and content hashes `e0342952a01a0b379cf7b06ad243cd40a1656e940480196323cf43fbe7d8f7c5` / `8fe7c8c0b7e855e5113f3830873e133f42c8048a3272055e2fddd5ebd9cbb1bc`.
 
 This closes only dormant private lexical-binding evidence and grants zero active corpus, trace, type, term/use, condition/fact, goal/proof, obligation, diagnostic, or CLI credit. Task 269GUPT is next; Task 269GU, capture, and Task 270 remain deferred.
+
+## Task 269GU Frozen Proof-`given` Later-use Term/Reference Contract
+
+### Selection, authority, and classification
+
+Fresh clean HEAD `c529245138b6d40be65c590ba701fef4f4ea0881` contains the
+committed GUPT source-type prerequisite and selects only Task 269GU. Canonical
+Chapter 4 §4.6.1(5), Chapter 15 §§15.3.3 and 15.10, Chapter 16 §16.3.3
+item 5a and §16.4.2 require a `given` witness to bind its declaration
+conditions and then remain visible for the rest of its innermost enclosing
+proof/reasoning block and inherited child blocks unless shadowed. The user
+confirmed that exact block lifetime; parent and sibling blocks never inherit
+the binding. Chapter 8 §8.1 supplies only the already implemented declared
+type. Chapter 3 supplies only the ordinary in-scope variable interpretation,
+and Chapter 13 §§13.1.1 and 13.8.1 identify an in-scope identifier occurrence
+as a variable reference.
+
+The exact parser/resolver-authenticated source already selected by GUP is:
+
+```mizar
+reserve x for set;
+theorem FormulaStatementGivenSmoke: thesis proof
+  given y being set such that G: thesis;
+  thus y = y;
+end;
+```
+
+It is 128 bytes with one final LF, source SHA-256
+`ec15ded78ae96022840a8419a85d74643de3b37337e9a202cbda77ee97aa7c01`,
+54 Surface nodes rooted at 53, and Surface snapshot SHA-256
+`c64297ce72e380a2e4146276966e085d780f8b38f2528d5abaa440a50c67db6d`.
+The two exact later leaves are unrecovered `TermReference` Surface nodes 41
+and 43, `y@116..117` and `y@120..121`, under the conclusion subtree
+`111..122`. GUP already authenticates the exact two declaration shells,
+theorem symbol/definition/contribution, theorem `19..127`, proof `62..126`,
+`given` `70..108`, segment `76..87`, name `76..77`, written type `84..87`,
+and resolver-local identity scope `[0]`, ordinal 1. GUPT owns the copied exact
+`2/2/0` typed binding environment and `2/2/0/0/0/0` source type.
+
+There is no blocking `spec_gap`: canonical scope, exact AST leaves, GUP
+lookup identity, and GUPT type dependency determine the transport uniquely.
+Absent term/reference composition and focused tests are bounded `source_drift`
+and `test_gap`; stale post-GUPT ledgers are `design_drift`. Admitting
+`GivenWitness` through the generic Task-252 path, changing old GUP/GUPT
+payloads, or publishing formula/proof semantics is a `boundary_violation`.
+Origin `0/9` is report-only `repo_metadata_conflict` and must not be repaired.
+
+### Public composite and exact payload
+
+Task 269GU adds these syntax-free public siblings in `source_term.rs`:
+
+```rust
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceProofLocalGivenUseTermHandoff { /* private fields */ }
+
+impl SourceProofLocalGivenUseTermHandoff {
+    pub const fn source_id(&self) -> SourceId;
+    pub const fn module_id(&self) -> &ModuleId;
+    pub const fn dependency(&self) -> &SourceProofLocalGivenUseTypeHandoff;
+    pub fn dependency_fingerprint(&self) -> &str;
+    pub const fn source_term(&self) -> &SourcePrimaryTermHandoff;
+    pub fn source_term_fingerprint(&self) -> &str;
+    pub fn debug_text(&self) -> String;
+}
+
+pub struct SourceProofLocalGivenUseTermProducer;
+
+impl SourceProofLocalGivenUseTermProducer {
+    pub fn build(
+        dependency: SourceProofLocalGivenUseTypeHandoff,
+        input: SourcePrimaryTermHandoffInput,
+        arena: &TypedArena,
+    ) -> Result<SourceProofLocalGivenUseTermHandoff,
+                SourceProofLocalGivenUseTermError>;
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum SourceProofLocalGivenUseTermError {
+    InvalidDependency,
+    InvalidSourceTerm,
+    InvalidInstallation,
+}
+
+impl std::error::Error for SourceProofLocalGivenUseTermError {}
+```
+
+The producer consumes one authenticated GUPT handoff by value. It preserves
+the entire dependency and exact `dependency.debug_text()` fingerprint, then
+builds exactly one `SourcePrimaryTermHandoff` with profile `2/2/0`:
+
+| row | exact term | exact reference |
+|---|---|---|
+| 0 | site node 3; `116..117`; source ordinal 0; context 1; `Normal`; spelling `y`; `VariableReference`; `Value`; no parent | term 0; binding 1; `Variable`; derived scope `[0]`; derived use ordinal 2 |
+| 1 | site node 4; `120..121`; source ordinal 1; context 1; `Normal`; spelling `y`; `VariableReference`; `Value`; no parent | term 1; binding 1; `Variable`; derived scope `[0]`; derived use ordinal 2 |
+
+There are no numeric-type requests. Both references have use ordinal 2
+because reserve binding 0 and witness binding 1 have completed before each
+later leaf; the first occurrence does not increment a binding event. Exact
+`BindingEnv::lookup` in context 1 and lexical scope `[0]` must return local
+binding 1 for each row. This is occurrence/reference identity transport only:
+the source-term rows do not type the equality, create an equality node, or
+publish a fact.
+
+The ordinary public `SourcePrimaryTermProducer::build` retains its current
+binding-role allowlist byte-for-byte in behavior. A private producer profile
+admits `BindingKind::GivenWitness` only for the exact GU composite and only as
+`SourcePrimaryTermReferenceRole::Variable`; all non-GU generic, Let,
+quantifier, definition-parameter, reserved-variable, abbreviation, and
+constant behavior remains unchanged. This prevents the canonical decision
+from becoming an unauthenticated global admission.
+
+The exact six-node arena is distinct from the standalone three-node GUPT
+arena while preserving its dependency prefix:
+
+| node | kind | anchor | children |
+|---|---|---|---|
+| 0 | `source.proof-local.given-use.reserve-type` | `14..17` | `[]` |
+| 1 | `source.proof-local.given-use.type` | `84..87` | `[]` |
+| 2 | `source.proof-local.given-use.type-root` | `0..127` | `[0,1]` |
+| 3 | `source.term.variable-reference` | `116..117` | `[]` |
+| 4 | `source.term.variable-reference` | `120..121` | `[]` |
+| 5 | `source.proof-local.given-use.term-root` | `0..127` | `[2,3,4]` |
+
+Root is node 5. All nodes have no resolver node, `TypingState::Unknown`,
+`NodeRecoveryState::Normal`, and empty links. Dependency reauthentication
+checks every GUPT public component and fingerprint against nodes 0--2 without
+weakening the standalone GUPT three-node installation contract. Nodes 3--4
+are checked by the existing primary-term node validator. Any source/module,
+dependency, binding/type payload, fingerprint, cardinality, row, reference,
+lookup, prefix, node, root, child, range, kind, recovery, typing, or link
+mismatch fails atomically.
+
+The composite debug grammar is exactly:
+
+```text
+source-proof-local-given-use-term-debug-v1
+module: <package>::<path>
+dependency-fingerprint: <Debug quoted complete GUPT debug text>
+source-term-fingerprint: <Debug quoted complete source-primary-term debug text>
+```
+
+The nested source-term fingerprint renders exactly two terms and two
+references in dense order and zero numeric requests. The exact public error
+strings are `source proof-local given-use term dependency is invalid`,
+`source proof-local given-use source term is invalid`, and
+`source proof-local given-use term installation is invalid`.
+Validation precedence is dependency and GUPT-prefix reauthentication, exact
+source-term input/profile validation, then exact full-arena and one-shot
+installation validation. Every failure publishes no partial handoff or AST
+owner.
+
+### Typed/final ownership and runner consumer
+
+`TypedAst` adds only boxed optional `source_proof_local_given_use_term`, its
+getter, one-shot `with_source_proof_local_given_use_term`, and
+`InvalidSourceProofLocalGivenUseTerm`, whose string is
+`source proof-local given-use term handoff is invalid`. Installation owns the
+composite rather than installing temporary direct GUPT, binding, source-type,
+or source-term fields. It requires the exact six-node arena, excludes every
+old proof-local/source/semantic owner in both installation orders, and keeps
+contexts, types, facts, coercions, initial obligations, and diagnostics empty.
+
+`ResolvedTypedAst` clones and revalidates only that boxed composite, exposes
+the matching getter, and adds `InvalidSourceProofLocalGivenUseTerm`, whose
+string is `resolved typed AST source proof-local given-use term handoff is
+invalid`. All six nodes project one-for-one as source-preserved role
+`source.proof-local.given-use.term`. Node-hint inputs and every semantic table
+remain empty.
+
+The dormant runner adds private
+`SourceProofLocalGivenUseTermRouteOutput { typed_ast, resolved }` and
+`SourceProofLocalGivenUseTermRouteMutation` with exact variants `None`,
+`WrongDependencyModule`, `WrongTermRange`, `WrongReferenceBinding`,
+`WrongArenaRoot`, and `WrongArenaKind`. Both selectors take the same five
+arguments as GUPT; cfg-test `_with_mutation` appends the mutation. Mismatch is
+`None`; selected failure is `Some(Err(_))`. The only route-local error is
+`Task269GU GUPT dependency is missing`; all other strings come from the
+frozen upstream routes or the new public error. The route reuses the exact
+GUPT private output, clones its authenticated owned dependency, constructs
+only the two AST-authenticated term/reference rows and six-node arena,
+installs the GU composite into an otherwise empty TypedAst, assembles
+ResolvedTypedAst, and remains unreachable from public dispatch.
+
+### Scope, tests, impact, deferrals, and exit
+
+Implementation ownership is exactly seven existing Rust files:
+`crates/mizar-checker/src/source_term.rs`,
+`crates/mizar-checker/src/typed_ast.rs`,
+`crates/mizar-checker/src/resolved_typed_ast.rs`,
+`crates/mizar-test/src/runner/type_elaboration/source_proof_local_declaration.rs`,
+`crates/mizar-test/src/runner/type_elaboration.rs`,
+`crates/mizar-test/src/runner.rs`, and
+`crates/mizar-test/src/runner/tests/type_elaboration/source_proof_local_declaration.rs`.
+The facade re-exports remain test-only. Checker `source_type.rs`,
+`source_proof_local_declaration.rs`, and `binding_env.rs`; runner
+`source_statement.rs`; parser; resolver; canonical specification; fixtures;
+sidecars; expectations; trace; metadata; Cargo; diagnostics; public dispatch;
+CLI; and active results must not change.
+
+The exact checker tests are
+`task269gu_exact_occurrence_references_and_fingerprints_are_stable`,
+`task269gu_dependency_term_input_and_arena_corruption_fail_closed`,
+`task269gu_typed_and_resolved_ownership_is_atomic`, and
+`task269gu_generic_and_neighbor_routes_remain_isolated`. The exact runner
+tests are
+`task269gu_exact_term_reference_composition_and_replay_are_stable`,
+`task269gu_dependency_input_and_arena_corruption_fail_closed`,
+`task269gu_typed_and_resolved_owners_are_one_shot_and_semantically_empty`, and
+`task269gu_near_miss_gupt_and_active_routes_remain_isolated`. They cover both
+occurrences and derived lookups, complete fingerprints, every dependency/
+input/arena field and validation precedence, clone replay, one-shot and
+both-order same-identity exclusion, generic/Let/old-Given/GUP/GUPT isolation,
+exact selector near misses, and exhaustive zero semantic publication.
+
+Documentation ownership is 42 synchronized Markdown files: 28 paired checker
+plan/todo/audit/owner documents including this new primary owner, 12 paired
+runner documents, and two global ledgers. Baselines are checker/runner library
+tests `506/568`, parser/resolver/syntax `226/148/59`, production
+`30/174332` and `37/75074`, path hashes
+`c89f43f6abebf7ebeb3ac9394ecd8ea3186ad28934c75526d2cc0b85a66ebad5` /
+`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d`,
+and content hashes
+`fc85ad8c271614a4474cab3ef6a6d212b168546d1f76d1bc3edb9fa4354378b0` /
+`afef82f149a350314a9160685e094e4a1b580d772790cf1c9e2a7efd89d0c870`.
+Raw/normalized test-list hashes are checker
+`d9c3c7e10b836f1e5ab987bfc54b1c06eaf8af15e2d6f3532fad51a756fca140` /
+`9342b51b7e26745f5e04770fe254b8954524dccd45a01ced475b5f097d941cb1`
+and runner
+`30fce970d193edf3a0a84607b6015e017e91f8e6c8f35fc9b10be88e16fdff93` /
+`48261f74e202e4496db6e231c335f842942ab3049b61196884984b16cc997c99`.
+Implementation projects `510/572`; production lines/content and test-list
+hashes are remeasured, while path hashes remain fixed.
+
+Cases/requirements stay `428/395`, pass/fail `235/193`, warnings/errors
+`23/0`, stages `101/7/205/1`, type coverage `259=247+12`, and trace SHA-256
+`55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`.
+All five CLI hashes and the parser and broad proof-local gap fixture/sidecar
+hashes remain at the committed GUPT values. Task 269GU adds eight Rust unit
+tests but no active `.miz`, sidecar, expectation, trace row/status/backlink,
+metadata case, diagnostic, CLI output, dispatch branch, or coverage credit.
+
+Task 269GU owns only later primary-term occurrence/reference transport. It
+does not own the containing `BuiltinPredicateApplication`, equality formula,
+proposition, `thus` conclusion, `such that` condition or label, condition/fact
+lifetime, existential/Skolem operation, type guard or assumption, capture or
+export checks, goal/thesis composition, initial obligations, proof discharge
+or acceptance, theorem acceptance, CoreIr, ControlFlowIr, or VC. Those remain
+semantic deferrals; capture/export is the next candidate only after fresh
+post-GU inventory, and Task 270 remains separate.
+
+Exit requires EN/JA specification review **NO FINDINGS**, docs-only nine hard
+gates uncapped at `>=90/100`, an exact documentation prerequisite commit,
+fresh lower-stage/count/hash preflight, the exact seven-file/eight-test
+implementation, separate test-sufficiency/implementation/source-docs reviews
+ending **NO FINDINGS**, all verification and count/hash gates, exact staging,
+and a separate implementation commit leaving a clean tree with origin
+divergence reported and protected stash unchanged. Fresh inventory must then
+select the next dependency-ready task automatically.

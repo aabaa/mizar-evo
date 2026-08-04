@@ -1776,3 +1776,10 @@ Both languages record the implemented four-file private runner, four tests,
 `568` runner library tests, `37/75074` production manifest, current content/
 test-list hashes, zero dispatch/artifact/semantic credit, and Task 269GU next.
 No synchronization exception exists.
+
+## Task 269GU Runner Bilingual Freeze
+
+English canonical and Japanese companion synchronize the exact GUPT
+dependency route, two term/reference rows, six-node arena, private output and
+mutations, four owned files/tests, `568 -> 572`, zero artifact/active/semantic
+credit, exclusions, and exit. No synchronization exception exists.
