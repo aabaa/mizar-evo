@@ -5327,3 +5327,16 @@ neighbor/active-route isolation.
 ### Checker Task 269GT implemented dormant harness
 
 The private selector composes unchanged Task 269G with the frozen type input and arena and remains absent from normal dispatch. Near misses, Task-269G direct ownership, Let neighbors, and active fixtures remain isolated; no fixture, sidecar, expectation, trace, metadata, diagnostic, or CLI byte changes.
+
+## Checker Task 269GUP Frozen Dormant Harness
+
+`SOURCE_PROOF_LOCAL_GIVEN_USE_TEXT` and its private lower output authenticate
+the exact 128-byte/54-node source, theorem shell/resolver profile, declaration
+ranges, source/Surface fingerprints, and byte-exact lower debug. The runner
+builds the reserve base and passes only the frozen binding input to the checker
+producer. It never classifies or emits Surface term nodes 41/43.
+
+Surface/lower/shell/resolver and binding-route mutation seams cover every
+field and frozen failure precedence. Tests require deterministic lower/binding
+debug, lookup matrix, old/new/near-miss isolation, no active dispatch, and no
+type, term, Typed/final, or semantic output.

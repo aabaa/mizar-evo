@@ -1823,3 +1823,8 @@ tableをpopulateしない。
 ### Task 269GT implemented final owner
 
 Resolved assemblyは`SourceProofLocalGivenTypeHandoff`だけをcloneし、occupied/semantic inputをrejectし、3 typed nodesを`source.proof-local.given.type` roleへ1対1 mapする。direct source-type/Given-binding/Let ownerと全semantic tableは空。
+
+## Task 269GUP final-owner exclusion
+
+GUPは`ResolvedTypedAst` field/getter/error/node role/clone replay/final tableを追加せずassemblyは
+byte-identical。GUPT/GUはGUP dependencyを順にconsumeした後だけownerをfreezeできる。

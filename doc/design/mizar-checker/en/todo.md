@@ -6891,7 +6891,7 @@ implementation commit does not satisfy a producer task.
 - [x] Commit only the synchronized 40-file documentation prerequisite as
   `35bc97b92ce075226105e8fcd4c1e43c8621995c`; fresh-preflight and implement
   only the frozen Task 269GT slice.
-- [~] Repeat test/implementation/source-doc/final reviews to **NO FINDINGS**,
+- [x] Repeat test/implementation/source-doc/final reviews to **NO FINDINGS**,
   pass full verification and all nine gates, commit exact implementation plus
   synchronized records, then fresh-inventory later-use/capture or Task 270.
 
@@ -6899,7 +6899,29 @@ implementation commit does not satisfy a producer task.
 
 - [x] Implement the exact seven-file Given-type transaction and exact four checker/four runner tests.
 - [x] Repeat test-sufficiency and implementation reviews to **NO FINDINGS** and pass focused plus full checker/runner library suites at `498/560`.
-- [~] Source/docs and independent final-quality reviews are **NO FINDINGS**;
+- [x] Source/docs and independent final-quality reviews are **NO FINDINGS**;
   full workspace/count/hash and all nine hard gates pass uncapped at `100/100`.
   Complete exact staging and the single implementation commit, then fresh-
   inventory the dependency-ready successor.
+
+## Checker Task 269GUP Proof-`given` Use-profile Binding Prerequisite
+
+- [x] Fresh-inventory clean Task-269GT, Chapters 4/15/16, immutable 269GP/G/GT
+  APIs, exact parser/resolver measurements, baselines, origin divergence, and
+  protected stash; select the missing 128-byte sibling binding profile before
+  Task 269GUPT, 269GU, capture, or Task 270.
+- [x] Classify the missing exact sibling profile as `test_gap`, its absent
+  binding handoff as `source_drift`, stale status/ownership text as
+  `design_drift`, and either binding reconstruction in `source_type.rs` or a
+  resolver use-ID table as prohibited `boundary_violation`; no blocking
+  `spec_gap` remains.
+- [x] Freeze the exact 128-byte/54-node profile, unique private lower output,
+  new-source binding identity and `1/1/0 -> 2/2/0` transition, lookup matrix,
+  public binding ABI/errors/debug, exact six-file scope, eight tests,
+  zero-credit impact, exclusions, the 42-file docs stage set, and exit gates.
+- [~] Specification review is **NO FINDINGS** and the docs-only verification
+  and hard gates are complete; parent-owned exact staging of the 42 synchronized
+  Markdown files and the dedicated documentation-prerequisite commit remain.
+- [ ] Fresh-preflight and implement only Task 269GUP; repeat all reviews to
+  **NO FINDINGS**, pass all nine hard gates, commit once, then fresh-inventory
+  Task 269GUPT. Source type, term/use, Typed/final, and capture remain absent.

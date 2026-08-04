@@ -1672,3 +1672,8 @@ capなし`100/100`で全PASS。parent stagingだけpending。
 ### Checker Task 269GT implementation synchronization
 
 exact dormant runner consumer、4 tests、library `560`、production `37/73351`、test-list/content hash、zero active/trace credit、全semantic exclusionをJA companionと同期した。bilingual exceptionはない。
+
+## Checker Task 269GUP documentation synchronization
+
+exact lower/hash/shell/resolver、excluded term、binding ownership、runner 4 tests、`560 -> 564`、
+old/new isolation、active artifact/path fixed、zero credit、GUPT/GU defer、exitを同期。exceptionなし。

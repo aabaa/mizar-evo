@@ -5978,3 +5978,13 @@ artifact.
 ### Task 269GT implemented source/API delta
 
 The frozen `SourceProofLocalGivenTypeHandoff`, producer, non-exhaustive error, private Given binding profile, Typed getter/installer/error, Resolved getter/error, final node role, and dormant runner consumer now exist exactly. Four checker and four runner tests close the bounded `source_drift` and `test_gap`; no canonical test artifact or active coverage is rebaselined.
+
+## Task 269GUP Frozen Source/API Delta
+
+There is no blocking `spec_gap`. The exact sibling binding profile is a
+`test_gap`; its private lower/public binding family is bounded `source_drift`;
+stale ownership/status is `design_drift`. Reconstructing the binding in
+`source_type.rs` or adding a resolver-use table would be `boundary_violation`.
+The frozen lower route, public binding input/handoff/producer/error, and eight
+tests will close only GUP when implemented. Direct GP/G/GT APIs remain unchanged;
+GUPT/GU are absent.

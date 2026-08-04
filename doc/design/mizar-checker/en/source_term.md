@@ -230,3 +230,11 @@ without copying their binding, spelling, range, lookup winner, or source
 ordinal. Task 252 retains all occurrence/reference ownership and semantics.
 This documentation prerequisite changes no Task-252 API, source, test, or
 debug byte.
+
+## Task 269GUP Source-term Exclusion
+
+GUP creates only the exact sibling binding environment. Checker and runner
+source-term code, Task-252 role allowlists, term/reference/request tables, and
+all source-term tests remain byte-identical. The later leaves at `116..117`
+and `120..121` are selector-only. Task 269GU, after GUPT, owns any future
+`GivenWitness -> Variable` admission and occurrence payload.

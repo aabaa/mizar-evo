@@ -1664,3 +1664,11 @@ write scope外、semantic/downstream ownerもexclude。
 ### Task 269GT implemented boundary
 
 implementationはfrozen 7 Rust filesだけを変更し、module/Cargo/parser/resolver/lower-stage/fixture/dispatch edgeを追加しない。checker/runner productionは`30/171383` / `37/73351`、path hashは`c89f43f6abebf7ebeb3ac9394ecd8ea3186ad28934c75526d2cc0b85a66ebad5` / `1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d`、content hashは`4a2635cbde94426652d75bfad176d9f167242630d6e1996ab4087ddf14e20abf` / `747a923200a6c23c58adfca7211c82724ff83e1a808b3e045cc73027054f4d07`。
+
+## Task 269GUP frozen boundary
+
+exact 6 files: checker `source_proof_local_declaration.rs`; runner `source_statement.rs`、
+`source_proof_local_declaration.rs`、`type_elaboration.rs`、`runner.rs`、existing test leaf。
+bindingはestablished owner内。source_type/source-term/Typed/final/parser/resolver/module/Cargo/
+artifact/dispatch/CLIはexcluded。baseline `30/171383` / `37/73351`とhash、path/module/dispatchは
+fixedでimplementation後contentを再measure。

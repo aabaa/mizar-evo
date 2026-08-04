@@ -1656,3 +1656,11 @@ are **NO FINDINGS**. All focused, crate, lint-policy, metadata, Cargo-metadata,
 format, Clippy, workspace, CLI, count/hash, and whitespace checks pass. All
 nine hard gates PASS uncapped at `100/100`; staging, commit, and fresh
 inventory remain parent-owned.
+
+## Task 269GUP Source-type Exclusion
+
+GUP ends with `BindingTypeSite::Missing`. This module and all source-type
+public APIs, profiles, arenas, tests, and direct Task-269GT validation remain
+byte-identical. Task 269GUPT will be the only owner permitted to consume the
+new GUP binding handoff by value and overlay `Source(84..87)`; Task 269GU
+remains later still.

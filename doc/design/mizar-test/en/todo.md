@@ -3630,14 +3630,29 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
   all nine gates PASS and no score cap.
 - [x] Create the synchronized 40-file documentation prerequisite commit as
   `35bc97b92ce075226105e8fcd4c1e43c8621995c`.
-- [~] Implement/review/verify/commit only the exact dormant Task-269GT route;
+- [x] Implement/review/verify/commit only the exact dormant Task-269GT route;
   keep fixture/sidecar/expectation/trace/metadata/Cargo/CLI bytes unchanged.
 
 ### Checker Task 269GT implementation handoff
 
 - [x] Implement the exact private Task-269G-first type route and four runner tests without corpus/trace/dispatch changes.
 - [x] Pass focused and full runner library suites at `560` and finish test/implementation reviews with **NO FINDINGS**.
-- [~] Source/docs and independent final-quality reviews are **NO FINDINGS**;
+- [x] Source/docs and independent final-quality reviews are **NO FINDINGS**;
   full workspace/count/hash and all nine hard gates pass uncapped at `100/100`.
   Finish exact staging and the one implementation commit before fresh
   successor inventory.
+
+## Checker Task 269GUP Dormant Use-profile Binding Prerequisite
+
+- [x] Select the canonical-derived private sibling obtained only by replacing
+  `thus thesis;` with `thus y = y;`; preserve every active fixture, sidecar,
+  expectation, trace row, metadata case, dispatch branch, and CLI byte.
+- [x] Freeze source SHA-256
+  `ec15ded78ae96022840a8419a85d74643de3b37337e9a202cbda77ee97aa7c01`,
+  54-node Surface SHA-256
+  `c64297ce72e380a2e4146276966e085d780f8b38f2528d5abaa440a50c67db6d`,
+  exact lower/binding rows, old/new isolation, four runner tests, projected
+  library `560 -> 564`, and zero corpus/trace/semantic credit.
+- [ ] Implement only the frozen private lower-to-binding route and test leaf.
+  Both later `y` leaves and the equality/conclusion/proof subtrees remain
+  selector-only; no type, term/reference, Typed/final, or semantic payload.

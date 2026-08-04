@@ -703,3 +703,9 @@ goal、initial obligation、proof/discharge/acceptance、Core/CFG/VCはempty、a
 ### Task 269GT implementation semantic audit
 
 implementationはsource-type provenanceだけをpublishする。condition/label fact、existential/Skolem meaning、assumption/guard、goal、initial obligation、use/capture/export、proof/discharge/acceptance、Core/CFG/VC、active corpus behaviorを作らず、executable semantic coverageはzeroのまま。
+
+## Task 269GUP zero-semantic boundary
+
+canonical scopeはsibling binding env construction/ordinal-2 lookup testをauthorizeするがlater
+source occurrence、`y = y` truth、`thus` acceptanceはpublishしない。source type/term/formula/
+fact/Skolem/guard/goal/obligation/proof/acceptance/export/capture/substitution/diagnostic/IRなし。

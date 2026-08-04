@@ -1831,3 +1831,11 @@ acceptance, Core, CFG, or VC payload is part of this family.
 ### Task 269GT implemented payload delta
 
 One immutable Given-type composite now owns the Task-269G dependency, exact upgraded binding environment, exact `2/2/0/0/0/0` source-type handoff, three fingerprints, and the separate three-node arena. Direct Given-binding, generic type, Let, condition/fact, assumption/guard, proof, obligation, acceptance, and downstream semantic payload families remain absent.
+
+## Task 269GUP Payload Delta
+
+One sibling-specific Given binding handoff owns exact lower provenance, base
+and final fingerprints, one declaration row, and the `2/2/0` environment.
+Source type is GUPT; terms/references and final composition are GU. Typed/final,
+capture, formula/condition/fact, goals/obligations, proof acceptance, and every
+downstream semantic family remain absent.

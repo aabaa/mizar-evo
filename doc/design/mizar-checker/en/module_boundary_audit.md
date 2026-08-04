@@ -1738,3 +1738,15 @@ semantic and downstream owners remain excluded.
 ### Task 269GT implemented boundary
 
 Implementation changed exactly the frozen seven Rust files and added no module, Cargo, parser, resolver, lower-stage, fixture, or dispatch edge. Checker/runner production are `30/171383` and `37/73351`; path hashes remain `c89f43f6abebf7ebeb3ac9394ecd8ea3186ad28934c75526d2cc0b85a66ebad5` / `1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d`, and content hashes are `4a2635cbde94426652d75bfad176d9f167242630d6e1996ab4087ddf14e20abf` / `747a923200a6c23c58adfca7211c82724ff83e1a808b3e045cc73027054f4d07`.
+
+## Task 269GUP Frozen Boundary
+
+The implementation may change exactly six existing Rust files: checker
+`source_proof_local_declaration.rs`; runner `source_statement.rs`,
+`source_proof_local_declaration.rs`, `type_elaboration.rs`, `runner.rs`, and
+the existing proof-local test leaf. Binding production remains with its
+established owner. `source_type.rs`, both source-term leaves, Typed/final,
+parser/resolver production, modules, Cargo, artifacts, dispatch, and CLIs are
+excluded. Pre-implementation production remains `30/171383` and `37/73351`
+with the recorded path/content hashes; path/module/dispatch inventory stays
+fixed while changed production content is remeasured after implementation.

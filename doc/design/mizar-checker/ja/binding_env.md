@@ -864,3 +864,10 @@ capture/diagnostic/cardinality `2/2/0`不変。immutable dependencyをmutateせ�
 ### Task 269GT implemented overlay
 
 immutable Task269G environmentはGiven rowのtype missingを含む`2/2/0`のまま。Task269GTはsort/repairせずcopyし、binding 1だけを`Source(84..87)`へ変更する。binding 0、両context、resolver identity、block-local inheritance/shadowing/restoration、capture、diagnostic、全non-type fieldはexactに不変。
+
+## Task 269GUP new-source binding profile
+
+sibling transactionは独立に`1/1/0 -> 2/2/0`をbuild。context 1 owner `62..126`、binding 1は
+`GivenWitness`、scope `[0]`、ordinal 1、`76..77`、type `Missing`。ordinal 2はこのenv自身の
+`BindingId(1)`をselect。capture/diagnostic empty、parent/sibling exclusionとchild inheritance/
+shadow restorationをtest。

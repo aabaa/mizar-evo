@@ -3394,13 +3394,23 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
 - [x] specification review/docs-only verification/final gateを9件PASS、score capなしで完了。
 - [x] synchronized 40-file docs prerequisite commit
   `35bc97b92ce075226105e8fcd4c1e43c8621995c`を作成。
-- [~] exact dormant Task269GT routeだけをimplement/review/verify/commitし、fixture/sidecar/
+- [x] exact dormant Task269GT routeだけをimplement/review/verify/commitし、fixture/sidecar/
   expectation/trace/metadata/Cargo/CLIをbyte-identicalに保持。
 
 ### Checker Task 269GT implementation handoff
 
 - [x] corpus/trace/dispatchを変えずexact private Task269G-first type routeとrunner 4 testsを実装。
 - [x] focused/full runner library `560`をpassし、test/implementation reviewを **NO FINDINGS** で完了。
-- [~] source/docs/independent final-quality reviewは **NO FINDINGS**、full workspace/count/hash
+- [x] source/docs/independent final-quality reviewは **NO FINDINGS**、full workspace/count/hash
   とhard gate 9件はcapなし`100/100`でPASS。exact staging、single implementation commitを
   完了してsuccessorをfresh inventoryする。
+
+## Checker Task 269GUP dormant use-profile binding prerequisite
+
+- [x] `thus thesis;`だけを`thus y = y;`へ置換したcanonical-derived private siblingを
+  selectし、active fixture/sidecar/expectation/trace/metadata/dispatch/CLIを保持。
+- [x] source SHA `ec15ded78ae96022840a8419a85d74643de3b37337e9a202cbda77ee97aa7c01`、
+  54-node Surface SHA `c64297ce72e380a2e4146276966e085d780f8b38f2528d5abaa440a50c67db6d`、
+  exact lower/binding row、old/new isolation、runner 4 tests、`560 -> 564`、zero creditをfreeze。
+- [ ] private lower-to-binding route/testだけを実装。両later `y`とequality/conclusion/proofは
+  selector-onlyで、type/term/reference/Typed/final/semanticsなし。

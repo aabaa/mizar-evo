@@ -3599,3 +3599,8 @@ reinterpretしない。
 ### Task 269GT implemented statement boundary
 
 statement ownerやstatement/proof hintを追加しない。dormant consumerはdispatch外で、final assemblyはstatement/condition/fact/proof/semantic inputが空の場合だけGiven-type compositeをacceptする。
+
+## Task 269GUP statement boundary
+
+`thus y = y;` conclusion全体はselector-only。statement/term/conclusion/formula/equality/
+condition/label/fact/proof/acceptance ownerなし。private lower/binding routeはdispatch外。

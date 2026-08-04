@@ -2186,3 +2186,348 @@ the consumer.
 ### Task 269GT implemented consumer status
 
 Task 269GT consumes the exact Task-269G handoff by value and preserves that snapshot and its lower fingerprint byte-for-byte. It overlays only the copied Given binding's written `set@84..87` type site; Task-269GP lower and Task-269G binding production, canonical block scope, and all condition/proof deferrals are unchanged.
+
+## Checker Task 269GUP Frozen Use-profile Binding Prerequisite
+
+Task 269GUP authenticates only the binding profile required before later-use
+transport. Its canonical authority is Spec 4.6.1, 15.3.3, 15.10, 16.3.3, and
+16.4.2 plus the human-confirmed rule: a `given` variable is visible through
+the remainder of the corresponding block and descendants unless shadowed,
+but not in parent or sibling blocks. The 128-byte sibling is a distinct source
+transaction. GUP therefore derives a new checker-local `BindingId(1)` in that
+source's own `BindingEnv`; it does not claim object identity with Task-269G's
+old binding. `BinderIdentity::ResolverLocal(scope=[0], ordinal=1,
+range=76..77)` supplies provenance, while checker `BindingEnv::lookup`
+authenticates the scope rule. No resolver API is added.
+
+The only accepted source is:
+
+```mizar
+reserve x for set;
+theorem FormulaStatementGivenSmoke: thesis proof
+  given y being set such that G: thesis;
+  thus y = y;
+end;
+```
+
+It is exactly 128 bytes, ends in one LF, has source SHA-256
+`ec15ded78ae96022840a8419a85d74643de3b37337e9a202cbda77ee97aa7c01`,
+and has the exact 54-node Surface fingerprint
+`c64297ce72e380a2e4146276966e085d780f8b38f2528d5abaa440a50c67db6d`.
+The parser profile is root 53 with token nodes `0..26`, no expression root,
+diagnostic, or recovery. The reserve shell is `0..18`; the theorem shell is
+`19..127`, its formula is `55..61`, proof is `62..126`, Given is `70..108`,
+declaration/name is `76..77`, written type is `84..87`, and the conclusion is
+`111..122`. The two `TermReference` leaves `y@116..117` and `y@120..121`,
+equality, conclusion wrapper, condition/label, theorem formula, proof shell,
+and every other non-declaration subtree are selector-only exclusions. GUP
+publishes no term or later-use row.
+
+### Exact runner-private lower ABI
+
+The old 129-byte Task-269GP/G/GT selectors and validators remain byte/profile
+exact and reject this source. GUP adds a distinct runner-private
+`SOURCE_PROOF_LOCAL_GIVEN_USE_TEXT`, `SourceProofLocalGivenUseLowerOutput`, and
+`source_proof_local_given_use_lower_output(...)`. The output derives
+`Debug, Clone, PartialEq, Eq`; its private fields, in order, are `source_id:
+SourceId`, `module_id: ModuleId`, `source_fingerprint: String`,
+`surface_fingerprint: String`, `theorem_symbol: SymbolId`,
+`theorem_definition: DefinitionId`, `contribution: SourceContributionId`,
+`theorem_range`, `proof_range`, `given_range`, `segment_range`, and
+`name_range: SourceRange`, `name_spelling: String`, `type_range` and
+`type_head_range: SourceRange`, `type_spelling: String`, and
+`source_ordinal: usize`.
+
+Every field has the corresponding read-only `pub(in crate::runner)` getter;
+copy fields are `const fn`, string/symbol/module getters return references, and
+`debug_text() -> String` is non-const. The function signature takes
+`&SurfaceAst`, `ModuleId`, `&DeclarationShellSet`, `&SymbolEnv`, and `&str`,
+returning `Option<Result<SourceProofLocalGivenUseLowerOutput, String>>`.
+Selector mismatch is `None`; selected validation failure is `Some(Err(_))`.
+
+The getter names, in field order, are `source_id`, `module_id`,
+`source_fingerprint`, `surface_fingerprint`, `theorem_symbol`,
+`theorem_definition`, `contribution`, `theorem_range`, `proof_range`,
+`given_range`, `segment_range`, `name_range`, `name_spelling`, `type_range`,
+`type_head_range`, `type_spelling`, and `source_ordinal`, followed by
+`debug_text`.
+
+The exact lower debug bytes end in one LF:
+
+```text
+source-proof-local-given-use-lower-debug-v1
+module: {package}::{module}
+source-fingerprint: "ec15ded78ae96022840a8419a85d74643de3b37337e9a202cbda77ee97aa7c01"
+surface-fingerprint: "c64297ce72e380a2e4146276966e085d780f8b38f2528d5abaa440a50c67db6d"
+theorem symbol="{fqn}" definition=0 contribution=0 range=19..127 proof=62..126
+given range=70..108 segment=76..87 source_ordinal=1
+name range=76..77 spelling="y"
+type range=84..87 head=84..87 spelling="set" form=bare
+```
+
+The selector authenticates every node kind/source/range/children/recovery and
+every token kind/text. Role rows are reserve `30@0..18`; theorem thesis
+`31/32@55..61`; Given type `33/34@84..87`, segment `35@76..87`, condition
+`36..39@93..107`, Given `40@70..108`; excluded term pairs
+`41/42@116..117` and `43/44@120..121`; excluded predicate/formula/proposition
+`45..47@116..121`; conclusion `48@111..122`; proof `49@62..126`; theorem
+`50@19..127`; item-list/compilation/root `51/52/53@0..127`. The exact ordered
+children are the measured 54-node snapshot represented by the frozen Surface
+SHA, not inferred during production.
+
+Four test-only mutation enums use the GUP prefix and exactly the Task-269GP
+variant sets: `Surface` has `None`, `ExpressionRoot`, `TokenNode(usize)`,
+`TokenNodeCount`, `NodeKind/NodeSourceId/NodeRange/NodeRecovery/NodeChildren
+(usize)`, `MissingRootIdentity`, `WrongRootIdentity`; `Lower` has `None`,
+`SourceId`, `Module`, both fingerprints, theorem symbol/definition,
+contribution, every retained range/spelling, and source ordinal; `Shell` has
+`None` plus `Id/Ordinal/Kind/Module/Node/Syntax/Range/Parent/VisibilityState/
+VisibilityMarker/VisibilitySpelling/Recovery(usize)`; `ResolverProfile` has
+`None`, resolver module, every normally empty index, every theorem
+symbol/definition provenance field, and every contribution-effect field. The
+five test-only lower seams have the base name plus `_with_surface_mutation`,
+`_with_mutation`, `_with_shell_mutation`, `_with_resolver_profile_mutation`,
+and `_with_resolver_mutation`; the last takes
+`impl FnOnce(SymbolEnv) -> SymbolEnv`.
+
+The private binding route mutation enum is
+`SourceProofLocalGivenUseBindingRouteMutation` with exact variants `None`,
+`WrongLowerFingerprint`, `EmptyBase`, `WrongTheoremRange`, `WrongProofRange`,
+`WrongGivenRange`, `WrongSegmentRange`, `WrongNameRange`,
+`WrongLocalSpelling`, `WrongLocalScope`, `WrongLocalRange`,
+`WrongLocalVisibleAfter`, and `WrongSourceOrdinal`. The cfg-test seam appends
+that mutation to the production route signature. The literal handoff seam is:
+
+```rust
+pub(in crate::runner) fn source_proof_local_given_use_binding_output(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    shells: &DeclarationShellSet,
+    symbols: &SymbolEnv,
+    source_text: &str,
+) -> Option<Result<SourceProofLocalGivenUseBindingHandoff, String>>;
+
+#[cfg(test)]
+pub(in crate::runner) fn source_proof_local_given_use_binding_output_with_mutation(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    shells: &DeclarationShellSet,
+    symbols: &SymbolEnv,
+    source_text: &str,
+    mutation: SourceProofLocalGivenUseBindingRouteMutation,
+) -> Option<Result<SourceProofLocalGivenUseBindingHandoff, String>>;
+```
+
+Both routes are dormant and `pub(in crate::runner)`. A selector mismatch is
+`None`; all selected lower/base/producer failures are `Some(Err(_))`; success
+is the public binding handoff itself, which Task 269GUPT must consume by value.
+No temporary Typed/Resolved wrapper is introduced.
+
+Validation precedence is path-specific. The private lower path is Surface,
+shells, resolver module/empty indexes, theorem symbol/definition/contribution,
+lower row, then lower debug. The binding route runs that path, reserve
+extraction/base construction, exact input construction, then producer build.
+Producer `build` checks transaction, dependency, base environment, input
+declaration, constructed environment/lookup, and final fingerprint; its own
+one-row aggregate cannot fail cardinality. Handoff `validate_installation`
+checks transaction, dependency, base environment/fingerprint, aggregate
+cardinality, row/declaration, then reconstructed final environment/lookup/
+fingerprint. Combined-failure tests target each path independently. Exact
+private error strings are
+the following complete list; no parser debug dump or additional diagnostic is
+exposed:
+
+```text
+Task269GUP exact Surface identity changed after selection
+Task269GUP requires exactly two declaration shells
+Task269GUP resolver shells unexpectedly export a path
+Task269GUP declaration shell {ordinal} mismatch
+Task269GUP raw resolver module mismatch
+Task269GUP local y already resolves as a module symbol
+Task269GUP raw resolver inventory mismatch
+Task269GUP requires one exact theorem owner
+Task269GUP exact theorem owner provenance mismatch
+Task269GUP requires one exact theorem definition
+Task269GUP theorem contribution is missing
+Task269GUP theorem symbol provenance mismatch
+Task269GUP theorem definition provenance mismatch
+Task269GUP theorem contribution provenance mismatch
+Task269GUP private lower output mismatch
+Task269GUP private lower debug grammar mismatch
+Task269GUP exact reserve base extraction failed
+Task269GUP exact reserve base failed: {error}
+```
+
+### Exact public binding ABI
+
+The checker adds only this public family in
+`source_proof_local_declaration.rs`:
+
+```rust
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceProofLocalGivenUseBindingHandoffInput {
+    pub source_id: SourceId,
+    pub module_id: ModuleId,
+    pub lower_fingerprint: String,
+    pub theorem_symbol: SymbolId,
+    pub theorem_definition: DefinitionId,
+    pub contribution: SourceContributionId,
+    pub theorem_range: SourceRange,
+    pub proof_range: SourceRange,
+    pub given_range: SourceRange,
+    pub segment_range: SourceRange,
+    pub name_range: SourceRange,
+    pub source_ordinal: usize,
+    pub local: LocalTermBinding,
+    pub recovery: SourceProofLocalGivenBindingRecovery,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceProofLocalGivenUseBindingHandoff { /* frozen fields below */ }
+
+#[derive(Debug, Clone, Copy, Default)]
+pub struct SourceProofLocalGivenUseBindingProducer;
+
+impl SourceProofLocalGivenUseBindingProducer {
+    pub fn build(
+        input: SourceProofLocalGivenUseBindingHandoffInput,
+        base_binding_env: &BindingEnv,
+    ) -> Result<SourceProofLocalGivenUseBindingHandoff,
+                SourceProofLocalGivenUseBindingError>;
+}
+```
+
+The handoff's exact private layout and read-only API are:
+
+```rust
+pub struct SourceProofLocalGivenUseBindingHandoff {
+    source_id: SourceId,
+    module_id: ModuleId,
+    lower_fingerprint: String,
+    theorem_symbol: SymbolId,
+    theorem_definition: DefinitionId,
+    contribution: SourceContributionId,
+    theorem_range: SourceRange,
+    proof_range: SourceRange,
+    given_range: SourceRange,
+    segment_range: SourceRange,
+    name_range: SourceRange,
+    base_binding_env: BindingEnv,
+    base_binding_fingerprint: String,
+    binding_env: BindingEnv,
+    final_binding_fingerprint: String,
+    bindings: SourceProofLocalGivenBindingTable,
+}
+
+impl SourceProofLocalGivenUseBindingHandoff {
+    pub const fn source_id(&self) -> SourceId;
+    pub const fn module_id(&self) -> &ModuleId;
+    pub fn lower_fingerprint(&self) -> &str;
+    pub const fn theorem_symbol(&self) -> &SymbolId;
+    pub const fn theorem_definition(&self) -> DefinitionId;
+    pub const fn contribution(&self) -> SourceContributionId;
+    pub const fn theorem_range(&self) -> SourceRange;
+    pub const fn proof_range(&self) -> SourceRange;
+    pub const fn given_range(&self) -> SourceRange;
+    pub const fn segment_range(&self) -> SourceRange;
+    pub const fn name_range(&self) -> SourceRange;
+    pub const fn base_binding_env(&self) -> &BindingEnv;
+    pub fn base_binding_fingerprint(&self) -> &str;
+    pub const fn binding_env(&self) -> &BindingEnv;
+    pub fn final_binding_fingerprint(&self) -> &str;
+    pub const fn bindings(&self) -> &SourceProofLocalGivenBindingTable;
+    pub fn debug_text(&self) -> String;
+    pub(crate) fn validate_installation(
+        &self, source_id: SourceId, module_id: &ModuleId,
+    ) -> Result<(), SourceProofLocalGivenUseBindingError>;
+}
+```
+
+The old dense row/table/recovery types are reused; no duplicate binding-row
+ABI is created. All public structs/enums remain ordinary syntax-free checker
+payloads and expose no Surface node or parser type.
+
+`SourceProofLocalGivenUseBindingError` derives `Debug, Clone, PartialEq, Eq`,
+is `#[non_exhaustive]`, implements `Display` and `Error`, and has variants
+`InvalidTransaction`, `DependencyMismatch`,
+`InvalidBaseBindingEnvironment`, `InvalidAggregate`,
+`InvalidDeclaration { binding: SourceProofLocalGivenBindingId }`, and
+`InvalidBindingEnvironment`. Display strings replace the old family prefix
+with `source proof-local given-use binding`; the declaration string inserts
+the dense binding index. There is no installation variant because GUP has no
+Typed/final owner.
+
+The exact `Display` strings are `source proof-local given-use binding
+transaction is invalid`, `source proof-local given-use binding dependency
+mismatch`, `source proof-local given-use binding base binding environment is
+invalid`, `source proof-local given-use binding aggregate is invalid`, `source
+proof-local given-use binding {binding.index()} is invalid`, and `source
+proof-local given-use binding binding environment is invalid`.
+
+The handoff debug header is
+`source-proof-local-given-use-binding-debug-v1`. The remaining labels, field
+order, quoting, row rendering, fingerprint rendering, and final LF are exactly
+the Task-269G binding debug grammar, with theorem/proof ranges
+`19..127`/`62..126` and the unique GUP lower fingerprint above.
+
+```text
+source-proof-local-given-use-binding-debug-v1
+module: {package}::{module}
+lower-fingerprint: {quoted exact lower debug}
+theorem symbol={quoted fqn} definition=0 contribution=0 range=19..127 proof=62..126
+given range=70..108 segment=76..87 name=76..77 source_ordinal=1
+base-binding-fingerprint: {quoted exact base BindingEnv debug}
+binding#0 binding=1 context=1 source_ordinal=1 visible_after=1 recovery=normal
+final-binding-fingerprint: {quoted exact final BindingEnv debug}
+```
+
+### Exact binding profile and lookup matrix
+
+The base remains the exact reserve-only `1 context / 1 binding / 0
+diagnostics` environment. The output is exactly `2/2/0`; context 1 is a normal
+proof context owned by `SourceStatement(62..126)`, parent 0, scope `[0]`,
+bindings `[1]`, visible `[0,1]`. Binding 1 is active normal `GivenWitness`,
+owned by context 1, declaration `76..77`, visible after ordinal 1, type
+`Missing`, resolver-local identity `([0],1,76..77)`, empty capture and
+diagnostics. No sort, repair, or mutation of binding/context 0 is permitted.
+
+Lookup at definition ordinal 1 is the exact forward-reference result and
+lookup at ordinal 2 is `Local(BindingId(1))`. Tests also freeze inherited-child
+selection, inner-shadow selection, restoration to binding 1, and parent and
+sibling exclusion. These tests authenticate the user-approved block lifetime;
+GUP still publishes no source occurrence.
+
+### Scope, tests, impact, and exit
+
+The exact Rust write set is checker
+`source_proof_local_declaration.rs`; runner `source_statement.rs`,
+`source_proof_local_declaration.rs`, `type_elaboration.rs`, `runner.rs`, and
+the existing proof-local test leaf. The docs stage set is exactly 40 paired
+EN/JA plan/todo/audit/owner/trace files plus the two global ledgers
+`doc/design/spec_coverage_audit.md` and `doc/design/todo.md`. Checker/runner libraries project
+`498 -> 502` and `560 -> 564`.
+
+The four checker tests are
+`source_proof_local_given_use_binding_is_exact_and_new_source_local`,
+`source_proof_local_given_use_binding_rejects_every_corruption_in_precedence`,
+`source_proof_local_given_use_binding_inherits_shadows_restores_and_excludes`,
+and `source_proof_local_given_use_binding_has_no_type_term_or_semantic_owner`.
+The four runner tests are
+`source_proof_local_given_use_binding_profile_is_exact_and_private`,
+`source_proof_local_given_use_binding_profile_rejects_every_corruption`,
+`source_proof_local_given_use_binding_profile_isolates_old_and_near_miss_sources`,
+and `source_proof_local_given_use_binding_profile_has_zero_semantic_effect`.
+They cover every lower Surface/shell/resolver/output mutation, every public
+input field, both fingerprints, aggregate/row/environment corruption, combined
+failure precedence, old/new GP/G/GT rejection, deterministic debug replay, and
+the full lookup matrix.
+
+No source type, term/reference/request, Typed/final owner, arena, Task-252
+allowlist, `.miz`, sidecar, expectation, trace, metadata, Cargo, public
+dispatch, CLI, diagnostic, or active result may change. No condition/label
+fact, existential/Skolem interpretation, assumption/guard, equality/formula
+truth, goal, obligation, proof/acceptance, export, capture/closure/substitution,
+Core, CFG, or VC row is created. This task exits only after all reviews end NO
+FINDINGS, all nine hard gates pass uncapped at least 90/100, exact staging is
+audited, and docs/implementation are separate commits. Fresh inventory then
+selects Task 269GUPT; Task 269GU, capture, and Task 270 remain deferred.

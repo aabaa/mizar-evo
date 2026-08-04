@@ -6622,3 +6622,32 @@ are **NO FINDINGS**. Focused/crate/workspace, policy, metadata, format, Clippy,
 five-CLI, count/hash, canonical-artifact, trace, and whitespace verification
 all pass. All nine hard gates PASS without a score cap at `100/100`; only
 staging, commit, and fresh inventory remain.
+
+## Checker Task 269GUP Frozen Zero-Credit Use-profile Binding
+
+Fresh inventory after implemented Task 269GT selects the missing binding
+profile for the exact 128-byte sibling before any positive later-use payload.
+Canonical Chapters 4, 15, and 16 establish the enclosing-block lifetime. The
+new transaction derives its own checker `BindingId(1)` inside its own source
+environment, structurally following Task 269G; it never claims cross-source
+identity with the old G handoff. Its proof context is `62..126`, scope `[0]`,
+and lookup remains forward at ordinal 1 and local at ordinal 2. The binding's
+type stays `Missing`, and capture/diagnostics stay empty.
+
+The source is 128 bytes with one final LF and SHA-256
+`ec15ded78ae96022840a8419a85d74643de3b37337e9a202cbda77ee97aa7c01`;
+the 54-node Surface SHA-256 is
+`c64297ce72e380a2e4146276966e085d780f8b38f2528d5abaa440a50c67db6d`.
+Both later `y` leaves, equality, conclusion, condition/label, and proof are
+selector-only exclusions. GUP publishes no type, term/reference/request,
+Typed/final, formula, fact, goal, obligation, proof, acceptance, capture,
+substitution, diagnostic, Core, CFG, or VC payload. GUPT owns the type overlay;
+GU owns occurrences; resolver-owned closure identity remains later work.
+
+This prerequisite closes only documentation drift; its implementation closes
+the bounded private-profile `test_gap` and binding `source_drift`. Existing
+`.miz`, sidecars, expectations, trace metadata/status, dispatch, CLI, and
+corpus bytes remain unchanged. Counts stay `428/395`, pass/fail `235/193`,
+warnings/errors `23/0`, stages `101/7/205/1`, type `259=247+12`, and trace
+SHA-256 stays
+`55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`.

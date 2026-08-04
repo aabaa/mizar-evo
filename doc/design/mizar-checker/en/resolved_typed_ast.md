@@ -1920,3 +1920,9 @@ is populated.
 ### Task 269GT implemented final owner
 
 Resolved assembly clones only `SourceProofLocalGivenTypeHandoff`, rejects occupied or semantic inputs, and maps all three typed nodes one-for-one to source-preserved role `source.proof-local.given.type`. Direct source-type/Given-binding/Let owners and every semantic table remain empty.
+
+## Task 269GUP Final-owner Exclusion
+
+GUP adds no `ResolvedTypedAst` field, getter, error, node role, clone replay,
+or final table. Final assembly is byte-identical. GUPT/GU may freeze later
+owners only after consuming the GUP dependency in order.

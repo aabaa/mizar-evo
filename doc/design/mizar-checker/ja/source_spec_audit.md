@@ -5692,3 +5692,10 @@ active artifactをrebaselineせず、そのclosureを記録する。
 ### Task 269GT implemented source/API delta
 
 frozen `SourceProofLocalGivenTypeHandoff`、producer、non-exhaustive error、private Given binding profile、Typed getter/installer/error、Resolved getter/error、final node role、dormant runner consumerがexactに存在する。checker 4件/runner 4件でbounded `source_drift`/`test_gap`をcloseし、canonical test artifact/active coverageはrebaselineしない。
+
+## Task 269GUP frozen source/API delta
+
+blocking `spec_gap`なし。exact sibling binding profileは`test_gap`、private lower/public binding
+family不在は`source_drift`、stale owner/statusは`design_drift`。`source_type.rs`でのbinding再構築/
+resolver-use tableは`boundary_violation`。lower/public binding family/8 testsだけをfreezeし、
+direct GP/G/GT不変、GUPT/GU absent。

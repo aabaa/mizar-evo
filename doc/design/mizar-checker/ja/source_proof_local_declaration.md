@@ -1589,3 +1589,63 @@ semanticsはconsumer外。
 ### Task 269GT implemented consumer status
 
 Task269GTはexact Task269G handoffをby-value consumeし、そのsnapshot/lower fingerprintをbyte-exactに保持する。copyしたGiven bindingのwritten `set@84..87` type siteだけをoverlayし、Task269GP lower、Task269G binding production、canonical block scope、condition/proof deferは不変。
+
+## Checker Task 269GUP frozen use-profile binding prerequisite
+
+Task269GUPはlater-use前のbinding profileだけをauthenticateする。authorityはSpec 4.6.1、
+15.3.3、15.10、16.3.3、16.4.2とhuman-confirmed enclosing-block rule。128-byte siblingは
+distinct source transactionで、自身の`BindingEnv`内にnew checker-local `BindingId(1)`をderiveし、
+old Task269G bindingとのobject identityをclaimしない。provenanceは
+`BinderIdentity::ResolverLocal([0],1,76..77)`、scope ruleはchecker lookupがauthenticate。
+resolver API追加なし。
+
+accepted sourceは`thus thesis;`だけを`thus y = y;`へ変えたexact 128 bytes、final LF 1個、
+source SHA-256 `ec15ded78ae96022840a8419a85d74643de3b37337e9a202cbda77ee97aa7c01`、
+54-node Surface SHA-256
+`c64297ce72e380a2e4146276966e085d780f8b38f2528d5abaa440a50c67db6d`。
+root 53、token `0..26`、expression root/diagnostic/recoveryなし。reserve `0..18`、theorem
+`19..127`、formula `55..61`、proof `62..126`、Given `70..108`、name `76..77`、type
+`84..87`、conclusion `111..122`。両later `y`、equality/conclusion/condition/label/formula/proofは
+selector-only exclusionで、GUPはterm/later-use rowをpublishしない。
+
+### Exact lower / public binding ABI
+
+旧Task269GP/G/GTはexactのままnew sourceをreject。runner-private
+`SOURCE_PROOF_LOCAL_GIVEN_USE_TEXT`、`SourceProofLocalGivenUseLowerOutput`、lower functionを追加。
+output fields/getter/constness/signatureはEN canonical exact blockどおり。unique debug headerは
+`source-proof-local-given-use-lower-debug-v1`、source/Surface SHA、theorem `19..127`、proof
+`62..126`、Given `70..108`、segment/name/type `76..87`/`76..77`/`84..87`をbyte-exact render。
+全54 node/token identityをSHAとrole rows 30..53でauthenticateし、term/predicate/conclusionは
+selector-only。test-only Surface/Lower/Shell/ResolverProfile mutation enumと5 lower seamsはENの
+exact variant/name/signature、binding route mutationは`None`、lower/base/range/local/ordinalの全
+G-style variants。literal route signature/return、None/Some semantics、GUPT by-value seam、lower/
+route/producer/handoff別precedenceはEN canonicalどおり。private errorはEN complete listとbyte-identical。
+
+checker `source_proof_local_declaration.rs`はexact public
+`SourceProofLocalGivenUseBindingHandoffInput/Handoff/Producer/Error`だけを追加。input field/type/order、
+producer signature、handoff private field/getter/constness/validatorはEN Rust blockどおり。existing
+`SourceProofLocalGivenBindingTable`/row/recoveryをreuse。errorはnon-exhaustive standard traitsで
+`InvalidTransaction`、`DependencyMismatch`、`InvalidBaseBindingEnvironment`、`InvalidAggregate`、
+`InvalidDeclaration { binding }`、`InvalidBindingEnvironment`のprecedence。Typed ownerがないため
+installation variantなし。debug headerは`source-proof-local-given-use-binding-debug-v1`で
+Task269G grammar/new ranges/unique lower fingerprintをexact使用。
+exact DisplayはENに列挙したtransaction/dependency/base/aggregate/indexed declaration/final-env
+6 strings。debug grammarもEN code blockのlabel/order/quote/final LFをbyte-exact使用。
+
+### Exact binding / lookup
+
+base exact `1/1/0`からfinal exact `2/2/0`。proof context 1 owner `62..126`、parent 0、scope
+`[0]`、bindings `[1]`、visible `[0,1]`。binding 1はactive normal `GivenWitness`、owner 1、
+declaration `76..77`、visible-after 1、type `Missing`、identity `([0],1,76..77)`、capture/
+diagnostic empty。ordinal 1 forward、ordinal 2 local B1。child inheritance、inner shadow、restore、
+parent/sibling exclusionもtestするがsource occurrenceはpublishしない。
+
+### Scope / tests / impact / exit
+
+Rust scopeはchecker `source_proof_local_declaration.rs`; runner `source_statement.rs`、
+`source_proof_local_declaration.rs`、`type_elaboration.rs`、`runner.rs`、existing testのexact 6 files。
+docs stageはpaired EN/JA 40 files + global ledger 2 files。EN canonicalに列挙したchecker/runner各4 exact testsで全input/
+fingerprint/corruption/precedence/lookup/isolationをcoverし`498 -> 502` / `560 -> 564`。
+source type、term/reference、Typed/final、arena、Task252 allowlist、fixture/trace/semanticsは不変。
+全review NO FINDINGS、9 gates uncapped 90/100以上、exact staging、separate docs/implementation
+commit後GUPTをfresh inventory。GU/capture/Task270はdefer。

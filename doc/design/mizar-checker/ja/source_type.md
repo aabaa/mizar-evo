@@ -1232,3 +1232,9 @@ final implementation/source-documentation/independent quality reviewは **NO FIN
 focused/crate/lint-policy/metadata/Cargo-metadata/format/Clippy/workspace/CLI/count-hash/
 whitespace checkは全PASS。hard gate 9件はcapなし`100/100`でPASSし、staging、commit、
 fresh inventoryだけparent-owned。
+
+## Task 269GUP source-type exclusion
+
+GUPは`BindingTypeSite::Missing`で終了。本module/API/profile/arena/test/direct Task269GT validationは
+byte-identical。Task269GUPTだけがnew GUP binding handoffをby-value consumeして
+`Source(84..87)`をoverlayし、Task269GUはさらにlater。

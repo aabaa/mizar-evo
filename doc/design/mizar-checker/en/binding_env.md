@@ -909,3 +909,11 @@ typed snapshot without mutating the immutable Task-269G dependency.
 ### Task 269GT implemented overlay
 
 The immutable Task-269G environment remains `2/2/0` with the Given row missing its type. Task 269GT copies it without sorting or repair and changes only binding 1 to `Source(84..87)`; binding 0, both contexts, resolver identity, block-local inheritance/shadowing/restoration behavior, capture, diagnostics, and all other fields remain exact.
+
+## Task 269GUP New-source Binding Profile
+
+The sibling transaction independently builds `1/1/0 -> 2/2/0`. Its context 1
+owner is `62..126`; binding 1 is `GivenWitness`, scope `[0]`, ordinal 1,
+range `76..77`, and type `Missing`. Ordinal-2 lookup selects this environment's
+own `BindingId(1)`. Capture/diagnostics stay empty; parent/sibling exclusion
+and child inheritance/shadow restoration are the required test matrix.

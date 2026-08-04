@@ -1753,3 +1753,10 @@ nine gates uncapped at `100/100`. Parent staging remains pending.
 ### Checker Task 269GT implementation synchronization
 
 The exact dormant runner consumer, four tests, `560` library count, `37/73351` production manifest, test-list/content hashes, zero active/trace credit, and all semantic exclusions are synchronized with the Japanese companion. No bilingual exception exists.
+
+## Checker Task 269GUP Documentation Synchronization
+
+The exact lower fingerprints/shell/resolver profile, excluded term leaves,
+runner/checker binding ownership, four runner tests, `560 -> 564`, old/new
+isolation, fixed active artifacts/path inventory, zero credit, GUPT/GU
+deferrals, and exit gates are synchronized. No bilingual exception exists.

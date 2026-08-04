@@ -766,3 +766,11 @@ coverage credit.
 ### Task 269GT implementation semantic audit
 
 The implementation publishes source-type provenance only. It creates no condition or label fact, existential/Skolem meaning, assumption/guard, goal, initial obligation, use/capture/export, proof/discharge/acceptance state, Core/CFG/VC row, or active-corpus behavior; executable semantic coverage remains zero.
+
+## Task 269GUP Zero-semantic Boundary
+
+Canonical block scope authorizes construction and ordinal-2 lookup tests for
+the sibling binding environment. GUP does not publish either later source
+occurrence, `y = y` truth, or `thus` acceptance. It creates no source type,
+term, formula, condition/fact, Skolem state, guard, goal, obligation, proof,
+acceptance, export, capture, substitution, diagnostic, or IR payload.

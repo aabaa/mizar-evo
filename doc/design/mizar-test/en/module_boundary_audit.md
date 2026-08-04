@@ -13146,3 +13146,13 @@ dependency, corpus artifact, or trace owner appears.
 ### Checker Task 269GT implemented runner boundary
 
 Only the frozen proof-local runner leaf, two test-only facades, and existing test leaf changed. Runner production remains 37 paths and is now 73,351 lines; path/content hashes are `1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d` / `747a923200a6c23c58adfca7211c82724ff83e1a808b3e045cc73027054f4d07`. No dispatch or dependency edge was added.
+
+## Checker Task 269GUP Frozen Runner Boundary
+
+The exact runner scope is `source_statement.rs`,
+`source_proof_local_declaration.rs`, two existing test-only facade files, and
+one existing test leaf. The first owns the exact lower profile and the second
+reserve-to-binding composition. `source_term.rs` is excluded. No file/module/
+Cargo/parser/resolver/public-dispatch/active edge is added. Production baseline
+is `37/73351`; path/module inventory stays fixed and changed content is
+remeasured after implementation.

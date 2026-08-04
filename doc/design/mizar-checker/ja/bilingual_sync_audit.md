@@ -1743,3 +1743,9 @@ parent stagingだけpending。
 ### Task 269GT implementation synchronization
 
 implemented Given-type public API、Typed/Resolved ownership、exact runner consumer、8 tests、`498/560` library、production manifest、zero-semantic boundaryを全EN/JA Task269GT recordで同期した。bilingual exceptionはない。
+
+## Task 269GUP documentation synchronization
+
+enclosing-block rule、exact 128-byte/54-node lower、transaction-local binding identity、
+`1/1/0 -> 2/2/0`、public binding ABI/error/debug、6-file/8-test/42-doc scope、zero credit、
+GUPT/GU defer、boundary/baseline/exitを同期。English canonical、exceptionなし。

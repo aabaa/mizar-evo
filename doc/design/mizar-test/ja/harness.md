@@ -5012,3 +5012,13 @@ emptiness/neighbor-active isolationをcover。
 ### Checker Task 269GT implemented dormant harness
 
 private selectorはunchanged Task269Gとfrozen type input/arenaをcomposeし、normal dispatchに入らない。near miss、Task269G direct ownership、Let neighbor、active fixtureはisolatedで、fixture/sidecar/expectation/trace/metadata/diagnostic/CLI byte変更はない。
+
+## Checker Task 269GUP frozen dormant harness
+
+constant/private lower outputはexact 128-byte/54-node source、theorem shell/resolver、declaration
+range、source/Surface hash、lower debugをauthenticate。runnerはreserve baseとfrozen binding input
+だけをcheckerへ渡し、Surface term nodes 41/43をclassify/emissionしない。
+
+Surface/lower/shell/resolver/binding route mutationは全field/precedenceをcover。deterministic lower/
+binding debug、lookup、old/new/near-miss isolation、dispatch absent、type/term/Typed/final/semantics
+absentをtest。

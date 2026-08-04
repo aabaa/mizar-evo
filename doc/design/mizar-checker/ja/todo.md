@@ -6559,13 +6559,30 @@ runner、docs-only implementation commitはproducer taskを満たさない。
 - [x] synchronized Markdown 40件だけを
   `35bc97b92ce075226105e8fcd4c1e43c8621995c`としてcommitし、fresh preflight後frozen
   Task269GTだけを実装。
-- [~] test/implementation/source-doc/final review **NO FINDINGS**、full verification/hard gate、
+- [x] test/implementation/source-doc/final review **NO FINDINGS**、full verification/hard gate、
   exact implementation+synchronized record commit後later-use/captureまたはTask270をfresh inventory。
 
 ### Task 269GT implementation handoff
 
 - [x] exact 7-file Given-type transactionとchecker 4件/runner 4件を実装。
 - [x] test-sufficiency/implementation reviewを **NO FINDINGS** まで反復し、focused/full library `498/560`をpass。
-- [~] source/docs/independent final-quality reviewは **NO FINDINGS**、full workspace/count/hash
+- [x] source/docs/independent final-quality reviewは **NO FINDINGS**、full workspace/count/hash
   とhard gate 9件はcapなし`100/100`でPASS。exact staging、single implementation commitを
   完了し、dependency-ready successorをfresh inventoryする。
+
+## Checker Task 269GUP proof-`given` use-profile binding prerequisite
+
+- [x] clean Task269GT、Chapter 4/15/16、immutable 269GP/G/GT API、exact parser/resolver、
+  baseline、origin差、stashをfresh inventoryし、269GUPT/269GU/capture/270より先に128-byte
+  sibling binding profileだけをselect。
+- [x] missing profileを`test_gap`、binding handoff不在を`source_drift`、stale status/ownerを
+  `design_drift`、`source_type.rs`でのbinding reconstructionまたはresolver use-ID追加を禁止
+  `boundary_violation`と分類。blocking `spec_gap`なし。
+- [x] exact 128-byte/54-node profile、unique lower output、new-source identity、
+  `1/1/0 -> 2/2/0`、lookup matrix、public ABI/error/debug、exact 6-file/8-test scope、
+  zero credit、exclusion、42-file docs stage、exitをfreeze。
+- [~] specification reviewは**NO FINDINGS**、docs-only verification/hard gateは完了。
+  parent-owned exact stagingで42 synchronized Markdownだけをstageし、dedicated prerequisite
+  commitを作成する作業が残る。
+- [ ] fresh preflight後269GUPだけを実装/review/verify/commitし269GUPTをfresh inventory。
+  source type、term/use、Typed/final、captureはabsent。

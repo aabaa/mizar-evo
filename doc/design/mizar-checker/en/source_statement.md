@@ -4134,3 +4134,9 @@ condition.
 ### Task 269GT implemented statement boundary
 
 No statement owner or statement/proof hint is added. The dormant consumer remains outside dispatch, and final assembly accepts the Given-type composite only with empty statement, condition, fact, proof, and semantic inputs.
+
+## Task 269GUP Statement Boundary
+
+The entire `thus y = y;` conclusion is selector-only. GUP adds no statement,
+term, conclusion, formula, equality, condition, label, fact, proof hint/state,
+or acceptance owner. The private lower/binding route remains outside dispatch.

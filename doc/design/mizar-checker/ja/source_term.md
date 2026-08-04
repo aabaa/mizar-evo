@@ -216,3 +216,9 @@ statement input factはreference IDs `[0, 1]`を指すだけでbinding/spelling/
 range/lookup winner/source ordinalをcopyしない。Task 252が全occurrence/
 reference ownership/semanticsを保持する。本prerequisiteはTask-252 API/
 source/test/debug byteを変更しない。
+
+## Task 269GUP source-term exclusion
+
+GUPはexact sibling binding envだけを作る。checker/runner source-term、Task252 allowlist、
+term/reference/request table/testはbyte-identical。`116..117`/`120..121`はselector-only。
+GUPT後のTask269GUだけがfuture GivenWitness Variable admission/occurrenceをownする。

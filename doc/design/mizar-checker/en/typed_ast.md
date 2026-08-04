@@ -1947,3 +1947,9 @@ diagnostics, and semantic nodes remain absent; all failures are atomic.
 ### Task 269GT implemented typed owner
 
 `TypedAst` now owns one boxed optional `source_proof_local_given_type` immediately after the Given-binding slot, exposes the frozen getter and consuming installer, authenticates the exact three-node arena, and rejects duplicate, direct Given-binding, Let, other source-owner, or nonempty semantic state atomically. No `TypedAstParts` field or semantic table is added.
+
+## Task 269GUP Typed-owner Exclusion
+
+GUP adds no `TypedAst` field, getter, installer, error, arena, or
+`TypedAstParts` member. The public binding handoff remains a dependency payload
+for GUPT; all existing source owners and semantic tables are byte-identical.

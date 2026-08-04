@@ -1733,3 +1733,9 @@ condition/label/fact/type guard/assumption/goal/proof/obligation/acceptance/Core
 ### Task 269GT implemented payload delta
 
 immutable Given-type composite 1件がTask269G dependency、exact upgraded binding environment、exact `2/2/0/0/0/0` source-type handoff、3 fingerprints、separate 3-node arenaをownする。direct Given-binding/generic type/Let/condition/fact/assumption/guard/proof/obligation/acceptance/downstream semantic payloadは空。
+
+## Task 269GUP payload delta
+
+sibling-specific Given binding handoff 1件がexact lower provenance、base/final fingerprint、
+declaration row 1件、`2/2/0` envをown。source typeはGUPT、term/reference/final compositionはGU。
+Typed/final/capture/formula/fact/goal/proof/downstream semanticsは空。
