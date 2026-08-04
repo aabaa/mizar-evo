@@ -5124,5 +5124,12 @@ libraryは`584`、raw/normalized hashは
 active dispatch/protected artifact/count/hashは変更せず、condition occurrence
 successorはGCUだけ。test-sufficiency、implementation、source/docs、final-quality reviewは
 **NO FINDINGS**。全9 hard gatesはscore capなしの`100/100`でPASSし、
-focused/full gateもPASS。exact stageとimplementation commitがremainingで、
-commit完了はclaimしない。
+focused/full gateもPASS。dedicated implementation commit
+`d6fb0ed28ced4d4706a1793b3aedd2a20eea0749`を完了。
+
+## Task 269GCU frozen dormant harness consumer
+
+exact 134-byte/final-LF sourceとunchanged Surface/GCP/GC/GCT chainをauthenticate
+してterm/reference各2件だけをbuild。normal replay、dependency/input/arena
+mutation、one-shot empty semantics、final role/clone、missing-final-LF、GCT/GU/
+active isolationを4 frozen testsでcover。expectation selector/active dispatchなし。

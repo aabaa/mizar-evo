@@ -3513,5 +3513,87 @@ condition occurrences and every wider semantic effect. Independent test-sufficie
 final-quality reviews report **NO FINDINGS**. All nine hard gates PASS with no
 score cap at `100/100`; focused and crate suites, lint policies, formatting,
 Clippy, workspace tests, metadata, all five CLIs, count/hash oracles, and diff
-checks pass. Exact staging and the implementation commit remain; no commit
-claim is made.
+checks pass. Dedicated implementation commit
+`d6fb0ed28ced4d4706a1793b3aedd2a20eea0749` is complete.
+
+## Task 269GCU Frozen Given-condition Occurrence Consumer
+
+Fresh inventory selects GCU only after GCT implementation commit
+`d6fb0ed28ced4d4706a1793b3aedd2a20eea0749`. The private runner must call the
+unchanged GCT route and consume the installed
+`SourceProofLocalGivenConditionTypeHandoff` by value. That dependency retains
+the exact 134-byte source, 54-node/root-53 Surface fingerprint, authenticated
+GCP theorem/resolver provenance, GC `2/2/0` environment, witness binding 1,
+and the two-row/three-node GCT type transaction. GCU may not reconstruct,
+weaken, or separately select any dependency field.
+
+The unchanged frontend exposes exactly two condition `TermReference` leaves:
+`y@107..108` and `y@111..112`. The runner constructs the exact two-term/two-
+reference/zero-request input and six-node arena frozen in `source_term.md`.
+It transfers the GCT handoff to
+`SourceProofLocalGivenConditionUseTermProducer`, installs the returned owner on
+an otherwise empty `TypedAst`, and assembles an otherwise empty
+`ResolvedTypedAst`. Its private output has only `typed_ast` and `resolved`
+fields. The non-test function is dormant and always selects mutation `None`.
+
+The output ABI, field privacy, derives, and read-only accessors are frozen
+exactly to the newest GCT pattern:
+
+```rust
+#[derive(Debug, PartialEq, Eq)]
+#[allow(dead_code)] // Rationale: Task 269GCU is a private dormant runner consumer until activation.
+pub(in crate::runner) struct SourceProofLocalGivenConditionUseTermRouteOutput {
+    typed_ast: TypedAst,
+    resolved: ResolvedTypedAst,
+}
+
+impl SourceProofLocalGivenConditionUseTermRouteOutput {
+    pub(in crate::runner) const fn typed_ast(&self) -> &TypedAst;
+    pub(in crate::runner) const fn resolved(&self) -> &ResolvedTypedAst;
+}
+```
+
+No field is `pub(in crate::runner)` and no mutable or consuming accessor
+exists.
+
+The private mutation enum is exactly:
+
+```rust
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[allow(dead_code)] // Rationale: production selects `None`; other variants are private Task-269GCU corruption seams.
+pub(in crate::runner) enum SourceProofLocalGivenConditionUseTermRouteMutation {
+    None,
+    WrongDependencyModule,
+    WrongTermRange,
+    WrongReferenceBinding,
+    WrongArenaRoot,
+    WrongArenaKind,
+}
+```
+
+The private production and test-seam functions are respectively
+`source_proof_local_given_condition_use_term_output` and
+`source_proof_local_given_condition_use_term_output_with_mutation`; both return
+`Option<Result<SourceProofLocalGivenConditionUseTermRouteOutput, String>>`.
+Only the test seam accepts the mutation argument. Visibility, dead-code
+rationale, and absence from active dispatch match the newer GCT private route.
+
+Exact checker tests are
+`task269gcu_exact_occurrence_references_and_fingerprints_are_stable`,
+`task269gcu_dependency_term_input_and_arena_corruption_fail_closed`,
+`task269gcu_typed_and_resolved_ownership_is_atomic`, and
+`task269gcu_generic_and_neighbor_routes_remain_isolated`. Exact runner tests
+are `task269gcu_exact_term_reference_composition_and_replay_are_stable`,
+`task269gcu_dependency_input_and_arena_corruption_fail_closed`,
+`task269gcu_typed_and_resolved_owners_are_one_shot_and_semantically_empty`, and
+`task269gcu_near_miss_gct_and_active_routes_remain_isolated`.
+
+Implementation changes exactly checker `source_term.rs`, `typed_ast.rs`, and
+`resolved_typed_ast.rs`, plus runner proof-local production leaf, facade,
+`runner.rs`, and proof-local test leaf. It adds no parser/resolver/lower code,
+fixture, sidecar, expectation, trace, metadata, Cargo, diagnostic, dispatcher,
+or active route. `G@104..105`, punctuation, equality, formula/proposition/
+condition containers, Given statement semantics, `thus`, proof close, later/
+descendant/sibling occurrences, label/fact/guard/goal/proof/discharge/
+acceptance/initial-obligation/capture/export/IR behavior, and Task 270 are
+strict exclusions.

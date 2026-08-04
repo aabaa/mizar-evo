@@ -6681,7 +6681,8 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   verificationはPASS。
 - [x] final-quality reviewを**NO FINDINGS**、全9 gates PASS、score capなしの
   `100/100`で完了。
-- [ ] exact task filesをstageしseparate commit後Task269GCUをautomatic inventory。
+- [x] exact task filesをstageしseparate commit
+  `d6fb0ed28ced4d4706a1793b3aedd2a20eea0749`後Task269GCUをautomatic inventory。
 
 ### Task 269GCT implementation status
 
@@ -6711,5 +6712,20 @@ metadata/diagnostic/public dispatch/CLI byte/active result/semantic creditは
 test sufficiency、implementation、source/docs、final-qualityのindependent
 reviewは**NO FINDINGS**。全9 hard gatesはscore capなしの`100/100`でPASSし、
 focused/crate suite、lint policy、format、Clippy、workspace test、metadata、
-全5 CLI、count/hash oracle、diff checkもPASS。exact stageとimplementation
-commitがremainingで、commit完了はclaimしない。
+全5 CLI、count/hash oracle、diff checkもPASS。dedicated implementation
+commit `d6fb0ed28ced4d4706a1793b3aedd2a20eea0749`を完了。
+
+## Checker Task 269GCU given-condition term/reference consumer
+
+- [x] clean GCT、canonical block scope、GCP/GC/GCT、GU pattern、baseline、
+  origin/stashをfresh inventoryしGCUだけをselect。
+- [x] `design_drift`/`source_drift`/`test_gap`を分類しblocking
+  `spec_gap`/lower defectなしを確認。
+- [x] by-value GCT、2 occurrence/reference、private profile、6-node arena、
+  fingerprint、Typed/Resolved、private runner、7 files/8 tests、zero credit、
+  exclusion/exitをEN/JAでfreeze。
+- [x] spec/sync review **NO FINDINGS**、docs 9 gates capなし`100/100`。
+- [ ] exact 42 Markdown stage/separate prerequisite commit。
+- [ ] fresh preflight後exact GCUだけを実装しtest/implementation reviews
+  **NO FINDINGS**。
+- [ ] source/docs/final-quality/full gates、task-only commit、next inventory。

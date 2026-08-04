@@ -1951,5 +1951,14 @@ condition occurrences and every wider semantic effect. Independent test-sufficie
 final-quality reviews report **NO FINDINGS**. All nine hard gates PASS with no
 score cap at `100/100`; focused and crate suites, lint policies, formatting,
 Clippy, workspace tests, metadata, all five CLIs, count/hash oracles, and diff
-checks pass. Exact staging and the implementation commit remain; no commit
-claim is made.
+checks pass. Dedicated implementation commit
+`d6fb0ed28ced4d4706a1793b3aedd2a20eea0749` is complete.
+
+## Task 269GCU Frozen Term/reference Synchronization
+
+EN and JA synchronize the clean GCT dependency, human-confirmed own-condition
+scope, exact `107..108` / `111..112` occurrence/reference rows, private
+condition-use binding profile, six-node arena, public checker/private runner
+ownership, seven files/eight tests, zero active credit, exclusions, baselines,
+and exit criteria in the same logical task. No synchronization exception
+exists.

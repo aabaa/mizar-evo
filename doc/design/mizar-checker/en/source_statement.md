@@ -4234,5 +4234,14 @@ condition occurrences and every wider semantic effect. Independent test-sufficie
 final-quality reviews report **NO FINDINGS**. All nine hard gates PASS with no
 score cap at `100/100`; focused and crate suites, lint policies, formatting,
 Clippy, workspace tests, metadata, all five CLIs, count/hash oracles, and diff
-checks pass. Exact staging and the implementation commit remain; no commit
-claim is made.
+checks pass. Dedicated implementation commit
+`d6fb0ed28ced4d4706a1793b3aedd2a20eea0749` is complete.
+
+## Task 269GCU Frozen Statement Deferral
+
+The unchanged 54-node Surface tree supplies exact selector evidence for two
+`TermReference` leaves at `107..108` and `111..112`. GCU publishes no
+statement owner, proposition, condition list, equality/formula target, label,
+fact candidate, proof state, conclusion, or acceptance row. The Given
+statement and all enclosing/subsequent statement structure remain opaque to
+this term/reference consumer.

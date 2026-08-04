@@ -7036,8 +7036,9 @@ This closes only dormant private lexical-binding evidence and grants zero active
   FINDINGS**, and focused plus full verification passes.
 - [x] Complete final-quality review with **NO FINDINGS**, all nine gates PASS,
   no score cap, and `100/100`.
-- [ ] Stage the exact task files, commit separately, and fresh-inventory Task
-  269GCU automatically.
+- [x] Stage the exact task files, commit separately as
+  `d6fb0ed28ced4d4706a1793b3aedd2a20eea0749`, and fresh-inventory Task 269GCU
+  automatically.
 
 ### Task 269GCT implementation status
 
@@ -7068,5 +7069,26 @@ condition occurrences and every wider semantic effect. Independent test-sufficie
 final-quality reviews report **NO FINDINGS**. All nine hard gates PASS with no
 score cap at `100/100`; focused and crate suites, lint policies, formatting,
 Clippy, workspace tests, metadata, all five CLIs, count/hash oracles, and diff
-checks pass. Exact staging and the implementation commit remain; no commit
-claim is made.
+checks pass. Dedicated implementation commit
+`d6fb0ed28ced4d4706a1793b3aedd2a20eea0749` is complete.
+
+## Checker Task 269GCU Given-condition Term/reference Consumer
+
+- [x] Fresh-inventory clean GCT commit, canonical block-scope authority, exact
+  GCP/GC/GCT dependencies, GU public patterns, baselines, origin divergence,
+  and protected stash; select only GCU.
+- [x] Classify the missing exact ABI as `design_drift`, absent consumer as
+  `source_drift`, and missing focused matrix as `test_gap`; confirm no
+  blocking `spec_gap` or lower-stage defect.
+- [x] Freeze by-value GCT composition, two occurrence/reference rows, private
+  GCU binding profile, six-node arena, fingerprints, Typed/Resolved ownership,
+  private runner route, seven files/eight tests, zero credit, exclusions, and
+  exit criteria in synchronized EN/JA documentation.
+- [x] Repeat review-only specification and synchronization audits to **NO
+  FINDINGS** and pass all nine docs-only gates uncapped at `100/100`.
+- [ ] Stage exactly 42 Markdown files and create the separate documentation
+  prerequisite commit.
+- [ ] Fresh-preflight and implement only the frozen seven-file/eight-test GCU;
+  repeat test-sufficiency and implementation reviews to **NO FINDINGS**.
+- [ ] Complete source/docs and final-quality reviews, full verification,
+  task-only implementation commit, and automatic next-task inventory.

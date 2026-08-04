@@ -2191,5 +2191,13 @@ condition occurrences and every wider semantic effect. Independent test-sufficie
 final-quality reviews report **NO FINDINGS**. All nine hard gates PASS with no
 score cap at `100/100`; focused and crate suites, lint policies, formatting,
 Clippy, workspace tests, metadata, all five CLIs, count/hash oracles, and diff
-checks pass. Exact staging and the implementation commit remain; no commit
-claim is made.
+checks pass. Dedicated implementation commit
+`d6fb0ed28ced4d4706a1793b3aedd2a20eea0749` is complete.
+
+## Task 269GCU Frozen Type Dependency
+
+GCU consumes the complete GCT handoff by value and preserves both dense
+builtin-`set` rows, the binding-1 type overlay, all dependency fingerprints,
+and GCT arena nodes 0--2 unchanged. It creates no source-type row, argument,
+normalization, constraint, coercion, type fact, or obligation. Type validation
+precedes term validation; GCU cannot reconstruct or weaken GCT.

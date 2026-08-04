@@ -5821,5 +5821,13 @@ metadata/diagnostic/public dispatch/CLI byte/active result/semantic creditは
 test sufficiency、implementation、source/docs、final-qualityのindependent
 reviewは**NO FINDINGS**。全9 hard gatesはscore capなしの`100/100`でPASSし、
 focused/crate suite、lint policy、format、Clippy、workspace test、metadata、
-全5 CLI、count/hash oracle、diff checkもPASS。exact stageとimplementation
-commitがremainingで、commit完了はclaimしない。
+全5 CLI、count/hash oracle、diff checkもPASS。dedicated implementation
+commit `d6fb0ed28ced4d4706a1793b3aedd2a20eea0749`を完了。
+
+## Task 269GCU frozen source/specification mapping
+
+Chapters 4/13/15/16は`y@107..108`/`y@111..112`をblock-local witness
+`82..83`へmapする。exact GCTがbinding1/resolver provenanceを供給し、GCUは
+2 variable/reference rowsとownerだけを追加。missing family/testsは
+`source_drift`/`test_gap`、本docsは`design_drift`をcloseし、blocking
+`spec_gap`なし。全wider semantics/active creditはdefer。

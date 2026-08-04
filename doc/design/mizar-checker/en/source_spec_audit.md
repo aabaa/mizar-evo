@@ -6124,5 +6124,16 @@ condition occurrences and every wider semantic effect. Independent test-sufficie
 final-quality reviews report **NO FINDINGS**. All nine hard gates PASS with no
 score cap at `100/100`; focused and crate suites, lint policies, formatting,
 Clippy, workspace tests, metadata, all five CLIs, count/hash oracles, and diff
-checks pass. Exact staging and the implementation commit remain; no commit
-claim is made.
+checks pass. Dedicated implementation commit
+`d6fb0ed28ced4d4706a1793b3aedd2a20eea0749` is complete.
+
+## Task 269GCU Frozen Source/Specification Mapping
+
+Canonical Chapters 4/13/15/16 map `y@107..108` and `y@111..112` to the
+block-local witness declared at `82..83`. The exact GCT dependency supplies
+binding 1 and resolver provenance; GCU adds only two
+`VariableReference`/binding-reference rows and immutable ownership. Missing
+family/tests are `source_drift`/`test_gap`; this prerequisite repairs
+`design_drift`. There is no blocking `spec_gap`. Formula, label, fact,
+guard, proof, obligation, descendant/export/capture, active route, and semantic
+credit remain deferred.

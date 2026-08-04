@@ -5497,5 +5497,14 @@ the library is `584` with raw/normalized hashes
 No active dispatcher or protected artifact/count/hash changes. GCU remains
 the sole condition-occurrence successor. Test-sufficiency, implementation, source/documentation, and final-quality
 reviews report **NO FINDINGS**. All nine hard gates PASS without a score cap at
-`100/100`, and the focused plus full gates pass. Exact staging and the
-implementation commit remain; no commit claim is made.
+`100/100`, and the focused plus full gates pass. Dedicated implementation
+commit `d6fb0ed28ced4d4706a1793b3aedd2a20eea0749` is complete.
+
+## Task 269GCU Frozen Dormant Harness Consumer
+
+The private harness route authenticates the exact 134-byte/final-LF source and
+unchanged 54-node Surface/GCP/GC/GCT chain before constructing only two term
+and two reference rows. Normal replay plus dependency/input/arena mutation,
+one-shot empty-semantics ownership, final clone/role, missing-final-LF,
+neighbor GCT/GU, and all active-route isolation are covered by the four frozen
+runner tests. No expectation-driven selector or active dispatch is added.

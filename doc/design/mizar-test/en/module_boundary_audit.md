@@ -13251,5 +13251,13 @@ the library is `584` with raw/normalized hashes
 No active dispatcher or protected artifact/count/hash changes. GCU remains
 the sole condition-occurrence successor. Test-sufficiency, implementation, source/documentation, and final-quality
 reviews report **NO FINDINGS**. All nine hard gates PASS without a score cap at
-`100/100`, and the focused plus full gates pass. Exact staging and the
-implementation commit remain; no commit claim is made.
+`100/100`, and the focused plus full gates pass. Dedicated implementation
+commit `d6fb0ed28ced4d4706a1793b3aedd2a20eea0749` is complete.
+
+## Task 269GCU Frozen Runner Module Boundary
+
+Only the existing proof-local production/test leaves, type-elaboration facade,
+and `runner.rs` private re-export may change. The checker remains sole
+validator and owner. Generic runner routes, parser/resolver/lower producers,
+public dispatch, fixtures, expectations, metadata, diagnostics, Cargo, and
+artifacts remain outside the boundary.

@@ -1831,5 +1831,12 @@ metadata/diagnostic/public dispatch/CLI byte/active result/semantic creditは
 test sufficiency、implementation、source/docs、final-qualityのindependent
 reviewは**NO FINDINGS**。全9 hard gatesはscore capなしの`100/100`でPASSし、
 focused/crate suite、lint policy、format、Clippy、workspace test、metadata、
-全5 CLI、count/hash oracle、diff checkもPASS。exact stageとimplementation
-commitがremainingで、commit完了はclaimしない。
+全5 CLI、count/hash oracle、diff checkもPASS。dedicated implementation
+commit `d6fb0ed28ced4d4706a1793b3aedd2a20eea0749`を完了。
+
+## Task 269GCU source-term-family decomposition
+
+complete GCT/fingerprintとexact common primary-term/fingerprintだけのdistinct
+composite。GCTをextendせずGUをreuseせずgeneric term/formula/condition/fact/
+proof/obligation/capture/export/IR payloadなし。Typed/Resolvedはsame composite
+をatomic box/replayし、later/descendant occurrenceはseparate family。

@@ -1862,5 +1862,15 @@ condition occurrences and every wider semantic effect. Independent test-sufficie
 final-quality reviews report **NO FINDINGS**. All nine hard gates PASS with no
 score cap at `100/100`; focused and crate suites, lint policies, formatting,
 Clippy, workspace tests, metadata, all five CLIs, count/hash oracles, and diff
-checks pass. Exact staging and the implementation commit remain; no commit
-claim is made.
+checks pass. Dedicated implementation commit
+`d6fb0ed28ced4d4706a1793b3aedd2a20eea0749` is complete.
+
+## Task 269GCU Frozen Module Boundary
+
+`source_term.rs` exclusively validates the by-value GCT dependency, exact
+two-term/two-reference input, private binding profile, six-node arena, and
+immutable composite. `typed_ast.rs` and `resolved_typed_ast.rs` only install
+and replay it. The proof-local runner constructs syntax-free input and remains
+private. No parser/resolver/lower module, `binding_env.rs`, active dispatcher,
+artifact, metadata, diagnostic, Cargo file, formula/fact/condition table, or
+downstream IR crosses this boundary.

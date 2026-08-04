@@ -6809,8 +6809,8 @@ Markdown diff passes lint, metadata, format, Clippy, full workspace, CLI,
 count/hash, protected-artifact, and whitespace verification without changing
 active credit. Final read-only quality is also **NO FINDINGS**: all nine hard
 gates PASS without a score cap at valid `100/100`
-(`20/20/15/15/10/10/5/5`). Staging and the dedicated docs commit remain
-parent-owned gates.
+(`20/20/15/15/10/10/5/5`). Staging and dedicated docs commit
+`b43081161b31fcc4bc23ac2fd42c5c42e772ab78` are complete.
 
 ### Checker Task 269GCT implementation audit status
 
@@ -6826,5 +6826,38 @@ Canonical artifacts, metadata, diagnostics, public dispatch, CLI bytes, active
 credit, GCU occurrences, and every wider semantic owner are unchanged.
 Independent test-sufficiency, implementation, source/documentation, and
 final-quality reviews report **NO FINDINGS**. All nine hard gates PASS without a
-score cap at `100/100`, and focused plus full gates pass. Exact staging and the
-implementation commit remain parent-owned.
+score cap at `100/100`, and focused plus full gates pass. Dedicated
+implementation commit `d6fb0ed28ced4d4706a1793b3aedd2a20eea0749` is complete.
+
+## Checker Task 269GCU Frozen Zero-credit Term/reference Boundary
+
+Fresh clean GCT commit `d6fb0ed28ced4d4706a1793b3aedd2a20eea0749`
+makes GCU dependency-ready. Canonical Chapters 4/13/15/16 authorize the two
+own-condition identifiers at `107..108` and `111..112` as references to the
+block-local witness. The distinct frozen composite consumes GCT by value,
+retains its fingerprint, publishes exactly two primary-term and two binding-
+reference rows, and extends the exact three-node type arena to six nodes.
+
+This prerequisite changes exactly 42 synchronized design/audit Markdown files
+and no Rust or canonical test artifact. Implementation may add the distinct
+public term family, boxed Typed/Resolved owners, private runner route, and four
+checker/four runner tests. It earns no active specification coverage: no
+`.miz`, expectation, trace row/status/backlink, metadata, stage, diagnostic,
+dispatch, CLI, or result changes. Cases/requirements stay `428/395`,
+pass/fail `235/193`, warnings/errors `23/0`, stages `101/7/205/1`, type
+coverage `259=247+12`, and trace SHA-256 remains
+`55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`.
+
+GCU receives dormant occurrence/reference transport credit only. Equality/
+formula/condition/label/fact semantics, existential/Skolem state, guards,
+goals, proofs, obligations, acceptance, descendant/export/capture behavior,
+downstream IR, and Task 270 remain deferred. Missing contract, consumer, and
+tests are classified `design_drift`, `source_drift`, and `test_gap`;
+there is no blocking `spec_gap`.
+
+The repeated documentation specification and synchronization reviews are
+**NO FINDINGS**. The exact 42-file Markdown-only diff passes every measured
+docs-only verification gate. Independent final quality is **NO FINDINGS** with
+all nine hard gates PASS, no score cap, and valid `100/100`
+(`20/20/15/15/10/10/5/5`). Staging and the dedicated prerequisite commit
+remain parent-owned.

@@ -1945,5 +1945,15 @@ metadata/diagnostic/public dispatch/CLI byte/active result/semantic creditは
 test sufficiency、implementation、source/docs、final-qualityのindependent
 reviewは**NO FINDINGS**。全9 hard gatesはscore capなしの`100/100`でPASSし、
 focused/crate suite、lint policy、format、Clippy、workspace test、metadata、
-全5 CLI、count/hash oracle、diff checkもPASS。exact stageとimplementation
-commitがremainingで、commit完了はclaimしない。
+全5 CLI、count/hash oracle、diff checkもPASS。dedicated implementation
+commit `d6fb0ed28ced4d4706a1793b3aedd2a20eea0749`を完了。
+
+## Task 269GCU frozen Typed ownership
+
+boxed optional `source_proof_local_given_condition_use_term`、getter、consuming
+one-shot installer、`InvalidSourceProofLocalGivenConditionUseTerm`だけを追加。
+complete GCT、2-term/2-reference fingerprint、6-node arena、slotの順にvalidateし、
+generic/all proof-local siblingとboth-order mutual exclusion、atomic rollback。
+Displayは`source proof-local given-condition-use term handoff is invalid`。
+nodes/context/type/fact/coercion/initial obligation/diagnostic/`TypedAstParts`
+とgeneric source-termは不変。

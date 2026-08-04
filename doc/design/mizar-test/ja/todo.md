@@ -3489,8 +3489,8 @@ dispatch、fixture、sidecar、expectation、trace、metadata、diagnostic、CLI
   implementation/source-doc reviewは**NO FINDINGS**で、focused/full gatesはPASS。
 - [x] final-quality reviewを**NO FINDINGS**、全9 gates PASS、score capなしの
   `100/100`で完了。
-- [ ] exact task filesをstageしてseparate implementation commit後GCUへ
-  automatic continue。
+- [x] exact task filesをstageしseparate implementation commit
+  `d6fb0ed28ced4d4706a1793b3aedd2a20eea0749`後GCUへautomatic continue。
 
 ### Task 269GCT implemented private runner status
 
@@ -3507,5 +3507,17 @@ libraryは`584`、raw/normalized hashは
 active dispatch/protected artifact/count/hashは変更せず、condition occurrence
 successorはGCUだけ。test-sufficiency、implementation、source/docs、final-quality reviewは
 **NO FINDINGS**。全9 hard gatesはscore capなしの`100/100`でPASSし、
-focused/full gateもPASS。exact stageとimplementation commitがremainingで、
-commit完了はclaimしない。
+focused/full gateもPASS。dedicated implementation commit
+`d6fb0ed28ced4d4706a1793b3aedd2a20eea0749`を完了。
+
+## Task 269GCU given-condition term/reference route
+
+- [x] clean GCT、own-condition scope、runner/checker pattern、baseline、
+  origin/stashをfresh inventoryしGCUだけをselect。
+- [x] by-value GCT、2 term/reference、6-node arena、private ABI、runner 4
+  files/tests、zero artifact/credit、exclusion/exitをEN/JAでfreeze。
+- [x] repeated spec/sync review **NO FINDINGS**、docs 9 gates capなし`100/100`。
+- [ ] exact 42 files stage/separate prerequisite commit。
+- [ ] fresh preflight後frozen routeだけ実装しtest/implementation reviews
+  **NO FINDINGS**。
+- [ ] source/docs/final-quality/full gates、task-only commit、next inventory。

@@ -584,5 +584,122 @@ condition occurrences and every wider semantic effect. Independent test-sufficie
 final-quality reviews report **NO FINDINGS**. All nine hard gates PASS with no
 score cap at `100/100`; focused and crate suites, lint policies, formatting,
 Clippy, workspace tests, metadata, all five CLIs, count/hash oracles, and diff
-checks pass. Exact staging and the implementation commit remain; no commit
-claim is made.
+checks pass. Dedicated implementation commit
+`d6fb0ed28ced4d4706a1793b3aedd2a20eea0749` is complete.
+
+## Task 269GCU Frozen Given-condition Term/reference Composition
+
+GCU consumes the exact `SourceProofLocalGivenConditionTypeHandoff` by value and
+publishes only the two declaration-condition variable occurrences
+`y@107..108` and `y@111..112`. The input has two dense term rows on typed nodes
+3/4 with source ordinals 0/1, binding context 1, normal recovery, spelling `y`,
+`VariableReference`, `Value`, and no parent; two dense reference rows map terms
+0/1 to `BindingId(1)` as `Variable`; numeric-type requests are empty. The
+common producer derives use ordinal 2 and must resolve both rows uniquely to
+the GCT-owned `GivenWitness` with scope `[0]` and type site `Source(90..93)`.
+
+The private `SourcePrimaryTermBindingProfile::ProofLocalGivenConditionUse`
+admits only `GivenWitness -> Variable` for this family. Generic admission and
+the older `ProofLocalGivenUse` profile remain unchanged and mutually isolated.
+No resolver `SymbolId` is fabricated: complete theorem/resolver provenance is
+retained only through the nested GCT/GC/GCP dependency fingerprint.
+
+The six-node arena is exact and ordered:
+
+1. `source.proof-local.given-condition.reserve-type@14..17`;
+2. `source.proof-local.given-condition.type@90..93`;
+3. `source.proof-local.given-condition.type-root@0..133`, children `[0,1]`;
+4. `source.term.variable-reference@107..108`;
+5. `source.term.variable-reference@111..112`;
+6. `source.proof-local.given-condition.term-root@0..133`, children `[2,3,4]`.
+
+Root is node 5. Every node is unresolved, unknown-typed, normal, and link-free.
+Dependency validation extracts nodes 0--2 with root 2 and revalidates GCT
+before checking source-term input or the complete arena.
+
+The public ABI and field order are frozen exactly as follows:
+
+```rust
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceProofLocalGivenConditionUseTermHandoff {
+    source_id: SourceId,
+    module_id: ModuleId,
+    dependency: SourceProofLocalGivenConditionTypeHandoff,
+    dependency_fingerprint: String,
+    source_term: SourcePrimaryTermHandoff,
+    source_term_fingerprint: String,
+}
+
+impl SourceProofLocalGivenConditionUseTermHandoff {
+    pub const fn source_id(&self) -> SourceId;
+    pub const fn module_id(&self) -> &ModuleId;
+    pub const fn dependency(&self) -> &SourceProofLocalGivenConditionTypeHandoff;
+    pub fn dependency_fingerprint(&self) -> &str;
+    pub const fn source_term(&self) -> &SourcePrimaryTermHandoff;
+    pub fn source_term_fingerprint(&self) -> &str;
+    pub fn debug_text(&self) -> String;
+
+    pub(crate) fn validate_installation(
+        &self,
+        source_id: SourceId,
+        module_id: &ModuleId,
+        arena: &TypedArena,
+    ) -> Result<(), SourceProofLocalGivenConditionUseTermError>;
+
+    pub(crate) fn validate_complete_installation(
+        &self,
+        source_id: SourceId,
+        module_id: &ModuleId,
+        arena: &TypedArena,
+        installation_available: bool,
+    ) -> Result<(), SourceProofLocalGivenConditionUseTermError>;
+}
+
+pub struct SourceProofLocalGivenConditionUseTermProducer;
+
+impl SourceProofLocalGivenConditionUseTermProducer {
+    pub fn build(
+        dependency: SourceProofLocalGivenConditionTypeHandoff,
+        input: SourcePrimaryTermHandoffInput,
+        arena: &TypedArena,
+    ) -> Result<
+        SourceProofLocalGivenConditionUseTermHandoff,
+        SourceProofLocalGivenConditionUseTermError,
+    >;
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum SourceProofLocalGivenConditionUseTermError {
+    InvalidDependency,
+    InvalidSourceTerm,
+    InvalidInstallation,
+}
+```
+
+The enum implements `fmt::Display` and `std::error::Error`; it has no source or
+additional public method. Exact display strings are respectively
+`source proof-local given-condition-use term dependency is invalid`,
+`source proof-local given-condition-use source term is invalid`, and
+`source proof-local given-condition-use term installation is invalid`.
+
+Exact debug grammar is:
+
+```text
+source-proof-local-given-condition-use-term-debug-v1
+module: {package}::{module}
+dependency-fingerprint: {Rust-debug-quoted complete GCT debug text}
+source-term-fingerprint: {Rust-debug-quoted complete source-term debug text}
+```
+
+Every line, including the last fingerprint line, ends in exactly one LF; no
+blank or extra terminal line exists. Producer and replay validate dependency
+identity/fingerprint first, exact term input/common term handoff/fingerprint
+second, exact complete arena third, and slot availability last. Multi-
+corruption tests observe the stable three-tier error precedence.
+
+GCU owns only identifier occurrence/reference transport. `G@104..105`, the
+equality and all enclosing formula/condition nodes, label/fact/guard/proof/
+obligation semantics, later or descendant occurrences, capture/export, generic
+source-term publication, active dispatch, coverage credit, and downstream IR
+remain excluded.

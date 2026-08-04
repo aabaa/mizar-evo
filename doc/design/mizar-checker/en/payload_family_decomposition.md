@@ -1938,5 +1938,14 @@ condition occurrences and every wider semantic effect. Independent test-sufficie
 final-quality reviews report **NO FINDINGS**. All nine hard gates PASS with no
 score cap at `100/100`; focused and crate suites, lint policies, formatting,
 Clippy, workspace tests, metadata, all five CLIs, count/hash oracles, and diff
-checks pass. Exact staging and the implementation commit remain; no commit
-claim is made.
+checks pass. Dedicated implementation commit
+`d6fb0ed28ced4d4706a1793b3aedd2a20eea0749` is complete.
+
+## Task 269GCU Source-term-family Decomposition
+
+GCU is one distinct composite node: complete GCT dependency/fingerprint plus
+the exact common primary-term handoff/fingerprint. It neither extends GCT nor
+reuses GU, and it does not add a generic source-term owner, formula/condition/
+fact/label, proof, obligation, capture/export, or IR payload. Typed and
+Resolved box/replay the same composite atomically. Later and descendant
+occurrence consumers remain separate payload families.

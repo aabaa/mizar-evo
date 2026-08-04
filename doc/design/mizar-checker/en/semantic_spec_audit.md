@@ -875,5 +875,14 @@ condition occurrences and every wider semantic effect. Independent test-sufficie
 final-quality reviews report **NO FINDINGS**. All nine hard gates PASS with no
 score cap at `100/100`; focused and crate suites, lint policies, formatting,
 Clippy, workspace tests, metadata, all five CLIs, count/hash oracles, and diff
-checks pass. Exact staging and the implementation commit remain; no commit
-claim is made.
+checks pass. Dedicated implementation commit
+`d6fb0ed28ced4d4706a1793b3aedd2a20eea0749` is complete.
+
+## Task 269GCU Zero-semantic Occurrence Boundary
+
+GCU transports only two scoped identifier occurrences and their binding
+references. It does not assert equality, condition truth, a labeled fact,
+existential/Skolem state, assumption/guard composition, goal transition,
+proof/discharge/acceptance, initial obligation, capture/export legality, type
+normalization/coercion, or Core/CFG/VC/ATP meaning. Empty semantic tables are
+an exclusion invariant, not evidence that those semantics succeeded.

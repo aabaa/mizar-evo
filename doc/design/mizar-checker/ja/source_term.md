@@ -411,5 +411,41 @@ metadata/diagnostic/public dispatch/CLI byte/active result/semantic creditは
 test sufficiency、implementation、source/docs、final-qualityのindependent
 reviewは**NO FINDINGS**。全9 hard gatesはscore capなしの`100/100`でPASSし、
 focused/crate suite、lint policy、format、Clippy、workspace test、metadata、
-全5 CLI、count/hash oracle、diff checkもPASS。exact stageとimplementation
-commitがremainingで、commit完了はclaimしない。
+全5 CLI、count/hash oracle、diff checkもPASS。dedicated implementation
+commit `d6fb0ed28ced4d4706a1793b3aedd2a20eea0749`を完了。
+
+## Task 269GCU frozen given-condition term/reference composition
+
+GCUはexact `SourceProofLocalGivenConditionTypeHandoff`をby-value consumeし、
+declaration conditionの`y@107..108`/`y@111..112`だけをpublishする。inputは
+typed node 3/4、ordinal 0/1、context 1、normal、spelling `y`、
+`VariableReference`/`Value`、parentなしのterm 2 rowsと、term 0/1から
+`BindingId(1)`へ`Variable`としてlinkするreference 2 rows、numeric request 0。
+common producerはuse ordinal 2をderiveし、scope `[0]`、type site
+`Source(90..93)`のGCT-owned `GivenWitness`へunique lookupする。
+
+private `SourcePrimaryTermBindingProfile::ProofLocalGivenConditionUse`だけが
+`GivenWitness -> Variable`をadmitする。generic/older GU profileは不変。arenaは
+GCT reserve-type/type/type-root nodes 0--2、variable-reference nodes 3/4、
+`source.proof-local.given-condition.term-root@0..133` node 5 children
+`[2,3,4]`のexact 6 nodes。root 5、全node unresolved/unknown/normal/link-free。
+
+public handoff field orderはsource_id、module_id、
+`SourceProofLocalGivenConditionTypeHandoff` dependency、dependency fingerprint、
+`SourcePrimaryTermHandoff`、term fingerprint。getter、`debug_text`、crate-private
+installation validatorを持つ。producer signatureは
+`build(dependency, SourcePrimaryTermHandoffInput, &TypedArena)`。
+non-exhaustive errorは`InvalidDependency`、`InvalidSourceTerm`、
+`InvalidInstallation`で、この順にprecedenceを持つ。
+
+debug headerは
+`source-proof-local-given-condition-use-term-debug-v1`、続いてmodule、Rust-
+Debug quoted complete GCT fingerprint、quoted source-term fingerprintを各LFで
+renderする。Displayは順に
+`source proof-local given-condition-use term dependency is invalid`、
+`source proof-local given-condition-use source term is invalid`、
+`source proof-local given-condition-use term installation is invalid`。
+
+GCUはidentifier occurrence/reference transportだけをownする。label `G`、
+equality/formula/condition/fact/guard/proof/obligation、later/descendant
+occurrence、capture/export、generic source-term、active credit/dispatch、IRはexcluded。

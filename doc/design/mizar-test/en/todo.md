@@ -3741,8 +3741,8 @@ No dispatch, fixture, sidecar, expectation, trace, metadata, diagnostic, CLI, ac
   FINDINGS**, and focused plus full gates pass.
 - [x] Complete final-quality review with **NO FINDINGS**, all nine gates PASS,
   no score cap, and `100/100`.
-- [ ] Stage the exact task files, create the separate implementation commit,
-  and continue automatically with Task 269GCU.
+- [x] Stage the exact task files, create separate implementation commit
+  `d6fb0ed28ced4d4706a1793b3aedd2a20eea0749`, and continue with Task 269GCU.
 
 ### Task 269GCT implemented private runner status
 
@@ -3759,5 +3759,20 @@ the library is `584` with raw/normalized hashes
 No active dispatcher or protected artifact/count/hash changes. GCU remains
 the sole condition-occurrence successor. Test-sufficiency, implementation, source/documentation, and final-quality
 reviews report **NO FINDINGS**. All nine hard gates PASS without a score cap at
-`100/100`, and the focused plus full gates pass. Exact staging and the
-implementation commit remain; no commit claim is made.
+`100/100`, and the focused plus full gates pass. Dedicated implementation
+commit `d6fb0ed28ced4d4706a1793b3aedd2a20eea0749` is complete.
+
+## Task 269GCU Given-condition Term/reference Route
+
+- [x] Fresh-inventory clean GCT, canonical own-condition scope, exact private
+  runner/public checker patterns, baselines, origin/stash, and select GCU only.
+- [x] Freeze GCT-by-value composition, two term/reference rows, six-node arena,
+  private mutation/output, four runner files/tests, zero artifact/credit, all
+  exclusions, and exit criteria in EN/JA.
+- [x] Complete repeated spec/sync review with **NO FINDINGS** and all docs-only
+  hard gates uncapped at `100/100`.
+- [ ] Stage the exact 42 files and create the separate prerequisite commit.
+- [ ] Fresh-preflight and implement only the frozen runner route; repeat test
+  sufficiency and implementation reviews to **NO FINDINGS**.
+- [ ] Complete source/docs and final-quality reviews, full gates, task-only
+  implementation commit, and automatic next-task inventory.

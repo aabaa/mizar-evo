@@ -1023,5 +1023,14 @@ condition occurrences and every wider semantic effect. Independent test-sufficie
 final-quality reviews report **NO FINDINGS**. All nine hard gates PASS with no
 score cap at `100/100`; focused and crate suites, lint policies, formatting,
 Clippy, workspace tests, metadata, all five CLIs, count/hash oracles, and diff
-checks pass. Exact staging and the implementation commit remain; no commit
-claim is made.
+checks pass. Dedicated implementation commit
+`d6fb0ed28ced4d4706a1793b3aedd2a20eea0749` is complete.
+
+## Task 269GCU Frozen Reference Lookup
+
+GCU does not mutate the GCT `2/2/0` environment. Both term rows use context 1
+and producer-derived use ordinal 2; lookup must return binding 1 uniquely as
+the block-local `GivenWitness`, scope `[0]`, declaration `82..83`, type site
+`Source(90..93)`. The private GCU primary-term profile alone admits that
+binding kind as a variable reference. No context, binding, scope, capture,
+recovery, diagnostic, or environment fingerprint changes.

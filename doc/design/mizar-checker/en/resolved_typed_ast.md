@@ -2044,5 +2044,24 @@ condition occurrences and every wider semantic effect. Independent test-sufficie
 final-quality reviews report **NO FINDINGS**. All nine hard gates PASS with no
 score cap at `100/100`; focused and crate suites, lint policies, formatting,
 Clippy, workspace tests, metadata, all five CLIs, count/hash oracles, and diff
-checks pass. Exact staging and the implementation commit remain; no commit
-claim is made.
+checks pass. Dedicated implementation commit
+`d6fb0ed28ced4d4706a1793b3aedd2a20eea0749` is complete.
+
+## Task 269GCU Frozen Resolved Ownership
+
+Final assembly clone-preserves the optional boxed
+`SourceProofLocalGivenConditionUseTermHandoff`, revalidates its complete GCT
+dependency, source-term handoff/fingerprints, exact six-node arena, and mutual-
+exclusion rules, and exposes only
+`source_proof_local_given_condition_use_term()`. When present, all six nodes
+are projected once as `SourcePreserved` with exact role
+`source.proof-local.given-condition.term`; node hints, expression metadata,
+generic source-term ownership, semantic insertions, and diagnostics are
+rejected. Clone replay is deterministic and failure is atomic.
+
+The only new final error is
+`InvalidSourceProofLocalGivenConditionUseTerm`, displayed exactly as
+`resolved typed AST source proof-local given-condition-use term handoff is
+invalid`. The owner does not publish equality/formula/condition/fact/label,
+goal/proof/acceptance, initial obligation, capture/export, or downstream IR
+meaning.

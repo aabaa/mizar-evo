@@ -2062,5 +2062,23 @@ condition occurrences and every wider semantic effect. Independent test-sufficie
 final-quality reviews report **NO FINDINGS**. All nine hard gates PASS with no
 score cap at `100/100`; focused and crate suites, lint policies, formatting,
 Clippy, workspace tests, metadata, all five CLIs, count/hash oracles, and diff
-checks pass. Exact staging and the implementation commit remain; no commit
-claim is made.
+checks pass. Dedicated implementation commit
+`d6fb0ed28ced4d4706a1793b3aedd2a20eea0749` is complete.
+
+## Task 269GCU Frozen Typed Ownership
+
+`TypedAst` adds only boxed optional
+`source_proof_local_given_condition_use_term`, its getter, consuming one-shot
+`with_source_proof_local_given_condition_use_term`, and
+`InvalidSourceProofLocalGivenConditionUseTerm`. Installation revalidates the
+by-value GCT dependency, exact two-term/two-reference handoff and fingerprint,
+the complete six-node arena, then slot availability. It is mutually exclusive
+in both orders with generic `source_term` and every proof-local A/C/CT/G/GT/
+GUP/GUPT/GU/GC/GCT owner; failure rolls back without partial mutation.
+
+The getter returns
+`Option<&SourceProofLocalGivenConditionUseTermHandoff>`. The exact error display
+is `source proof-local given-condition-use term handoff is invalid`. Nodes,
+contexts, types, facts, coercions, initial obligations, diagnostics, generic
+source-term ownership, and `TypedAstParts` stay unchanged. Test-only injection
+may support corruption and reverse-order oracles only and is not public.

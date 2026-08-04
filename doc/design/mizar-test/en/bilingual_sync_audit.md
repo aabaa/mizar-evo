@@ -1844,5 +1844,12 @@ the library is `584` with raw/normalized hashes
 No active dispatcher or protected artifact/count/hash changes. GCU remains
 the sole condition-occurrence successor. Test-sufficiency, implementation, source/documentation, and final-quality
 reviews report **NO FINDINGS**. All nine hard gates PASS without a score cap at
-`100/100`, and the focused plus full gates pass. Exact staging and the
-implementation commit remain; no commit claim is made.
+`100/100`, and the focused plus full gates pass. Dedicated implementation
+commit `d6fb0ed28ced4d4706a1793b3aedd2a20eea0749` is complete.
+
+## Task 269GCU Frozen Runner Synchronization
+
+EN and JA share the exact private GCT-to-GCU route, two occurrence/reference
+rows, six-node arena, mutation enum, four runner tests, four owned runner
+files, projected `588` library/hash values, zero artifact/dispatch/semantic
+credit, exclusions, and exit criteria. No synchronization exception exists.

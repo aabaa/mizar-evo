@@ -11941,5 +11941,12 @@ libraryは`584`、raw/normalized hashは
 active dispatch/protected artifact/count/hashは変更せず、condition occurrence
 successorはGCUだけ。test-sufficiency、implementation、source/docs、final-quality reviewは
 **NO FINDINGS**。全9 hard gatesはscore capなしの`100/100`でPASSし、
-focused/full gateもPASS。exact stageとimplementation commitがremainingで、
-commit完了はclaimしない。
+focused/full gateもPASS。dedicated implementation commit
+`d6fb0ed28ced4d4706a1793b3aedd2a20eea0749`を完了。
+
+## Task 269GCU frozen runner module boundary
+
+existing proof-local production/test leaf、facade、`runner.rs` private
+re-exportだけを変更可。checkerがsole validator/owner。generic route、parser/
+resolver/lower、dispatch、fixture/expectation/metadata/diagnostic/Cargo/artifactは
+boundary外。

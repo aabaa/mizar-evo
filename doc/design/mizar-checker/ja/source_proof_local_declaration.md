@@ -2042,5 +2042,51 @@ metadata/diagnostic/public dispatch/CLI byte/active result/semantic creditは
 test sufficiency、implementation、source/docs、final-qualityのindependent
 reviewは**NO FINDINGS**。全9 hard gatesはscore capなしの`100/100`でPASSし、
 focused/crate suite、lint policy、format、Clippy、workspace test、metadata、
-全5 CLI、count/hash oracle、diff checkもPASS。exact stageとimplementation
-commitがremainingで、commit完了はclaimしない。
+全5 CLI、count/hash oracle、diff checkもPASS。dedicated implementation
+commit `d6fb0ed28ced4d4706a1793b3aedd2a20eea0749`を完了。
+
+## Task 269GCU frozen given-condition occurrence consumer
+
+private runnerはunchanged GCT routeのinstalled handoffをby-value consumeし、
+GCP-authenticated `y@107..108`/`y@111..112`からEN `source_term.md`のexact
+2-term/2-reference/0-request inputと6-node arenaだけをconstructする。private
+output ABIはnewest GCT patternへexact freezeする：
+
+```rust
+#[derive(Debug, PartialEq, Eq)]
+#[allow(dead_code)] // Rationale: Task 269GCU is a private dormant runner consumer until activation.
+pub(in crate::runner) struct SourceProofLocalGivenConditionUseTermRouteOutput {
+    typed_ast: TypedAst,
+    resolved: ResolvedTypedAst,
+}
+
+impl SourceProofLocalGivenConditionUseTermRouteOutput {
+    pub(in crate::runner) const fn typed_ast(&self) -> &TypedAst;
+    pub(in crate::runner) const fn resolved(&self) -> &ResolvedTypedAst;
+}
+```
+
+fieldはprivateでmutable/consuming accessorなし。mutation enumは以下のattribute
+とrationaleをexactに持つ。
+
+```rust
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[allow(dead_code)] // Rationale: production selects `None`; other variants are private Task-269GCU corruption seams.
+pub(in crate::runner) enum SourceProofLocalGivenConditionUseTermRouteMutation {
+    None,
+    WrongDependencyModule,
+    WrongTermRange,
+    WrongReferenceBinding,
+    WrongArenaRoot,
+    WrongArenaKind,
+}
+```
+
+production/test seamは
+`source_proof_local_given_condition_use_term_output` /
+`..._output_with_mutation`、returnは
+`Option<Result<SourceProofLocalGivenConditionUseTermRouteOutput, String>>`。
+exact checker/runner各4 testsと7-file scopeはENと同じ。parser/resolver/lower、
+fixture/sidecar/expectation/trace/metadata/Cargo/diagnostic/dispatchは変更しない。
+label/equality/formula/condition/Given/thus/proof、semantic/descendant/export/
+capture/Task270はexcluded。
