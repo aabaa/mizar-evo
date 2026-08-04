@@ -1803,3 +1803,10 @@ including nested child blocks unless shadowed, but not parent or sibling
 blocks. Both languages preserve ordinary condition-label scope and defer
 condition/fact/proof semantics. No bilingual exception is accepted before the
 separate 269G contract.
+
+## Task 269G Sync Delta
+
+The EN/JA proof-local, binding, Typed/Resolved, boundary, audit, plan, and TODO
+records synchronize the exact `GivenWitness` transaction, lexical scope
+matrix, eight-file implementation/four-plus-four-test scope, zero active
+corpus semantics, and Task-269GT type deferral. No bilingual exception remains.

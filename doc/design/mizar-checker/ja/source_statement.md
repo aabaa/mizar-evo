@@ -3580,3 +3580,9 @@ source-statement file/APIは変更なし。
 
 canonical block-lifetime ruleはsource-statement lowering/existing 269GP private rowを変更しない。
 condition、label、formula、statement payload追加なし。binding-only consumptionはTask269G。
+
+## Task 269G statement boundary
+
+existing exact `given` lowerをbyte-for-byte consumeし、statement/condition/label/formula/
+use-site rowは追加しない。checker binding handoffはenclosing proofだけをidentify。
+statement semantics/proof effectはdefer。

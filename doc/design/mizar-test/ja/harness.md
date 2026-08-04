@@ -4987,3 +4987,10 @@ canonical witness scopeはresolvedだがTask269GSはharness route、fixture、si
 metadata case、result field、diagnosticを追加しない。existing parser fixtureはsyntax-only、
 broad type fixtureはdiagnostic-onlyのまま。later-use visibility coverage/dormant consumerは
 separate Task269G contract owner。
+
+## Task 269G dormant harness boundary
+
+test-only leafはexact Task269GP source/Surface/resolver outputとreal reserve baseを認証し、
+syntax-free localだけを構成してchecker producerを呼ぶ。production dispatch/CLIには不在。
+focused test 4件がcomposition/corruption/Typed-final atomicity/route isolationをcoverし、
+fixture/expectation変更なし。

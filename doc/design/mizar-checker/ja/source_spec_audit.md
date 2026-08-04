@@ -5658,3 +5658,10 @@ parser syntax/269GP runner-private projectionはcompatible。checkerに
 `SourceProofLocalGiven` binding consumer/public APIがないことはnext Task269G
 `source_drift`、existing fixtureがlater witness useを実行しないことは`test_gap`。269GSでは
 source/test artifact変更なし。
+
+## Task 269G source/spec delta
+
+planned sourceはTask269GP lowerから`GivenWitness` `BindingEnv` row 1件を構成し、その
+handoffをotherwise-empty Typed/final profileがownする。semantic/node tableと全sibling handoffは
+emptyのまま、exact lookup matrixがcanonical block lifetimeをcover。source typeはTask269GT、
+condition/fact/proof/active use extractionはdefer。existing canonical artifact rebaselineなし。

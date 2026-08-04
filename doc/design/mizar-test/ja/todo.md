@@ -3373,3 +3373,13 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
   9件、uncapped quality `100/100`を完了。
 - [x] synchronized 269GS documentだけをstage/commitし、separate Task269G binding consumerを
   fresh inventory。
+
+## Checker Task 269G dormant binding consumer
+
+- [x] unchanged 269GP lower/reserve input、private runner 4-file consumer、checker-owned
+  scope matrix、active/semantic output 0、runner test 4件、count/hash、Task269GT deferをfreeze。
+- [x] docs review/verification/final gateを全9 gate PASS、score capなし、valid
+  `100/100`で完了。
+- [ ] synchronized 40-file docs commitを作成。
+- [ ] exact dormant Task269G routeだけをimplement/review/verify/commitし、fixture/sidecar/
+  expectation/trace/metadata/Cargo/CLIをbyte-identicalに保持。

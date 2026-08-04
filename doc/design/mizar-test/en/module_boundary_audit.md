@@ -13111,3 +13111,10 @@ This reconciliation touches specifications and derived records only. Runner
 production remains 37 paths, all test-only facades and private 269GP APIs are
 unchanged, and no dispatch/corpus/trace boundary moves. Task 269G remains the
 first permitted binding consumer.
+
+## Task 269G Runner Boundary
+
+Only the existing proof-local runner leaf, two test-only facades, and existing
+test leaf change. The lower producer file is immutable. Raw source/AST/resolver
+data remains runner-owned; only the syntax-free handoff crosses to checker.
+No new path, public route, active dispatch, Cargo edge, or trace owner appears.

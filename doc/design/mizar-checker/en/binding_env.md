@@ -870,3 +870,18 @@ inherited by nested children unless shadowed, and is absent from parent and
 sibling blocks. Task 269GS does not modify
 `BindingEnv`; Task 269G must separately freeze exact scope IDs, ordinals,
 lookup/replay, restoration, and tests without adding condition or proof facts.
+
+## Task 269G Frozen `GivenWitness` Environment
+
+Task 269G adds `BindingKind::GivenWitness` immediately after `LetBinding` and
+before `Generated`, with stable debug key `given_witness`, and one exact proof-context binding
+at context/binding `1/1`, scope `[0]`, source/visible-after ordinal `1/1`, and
+missing type. Lookups prove forward-before, same-condition/later/child
+visibility, parent/sibling exclusion, child shadowing, and outer restoration.
+Only real contexts 0/1 enter the handoff. Test-derived contexts 2/3/4 are
+normal `Block` rows with owner keys `task269g-unshadowed-child`,
+`task269g-shadow-child`, and `task269g-sibling`; binding 2 is the exact
+test-only `y`/`GivenWitness` shadow at scope `[0,1]`, ordinal/range
+`2/109..110`, owner 3, missing type, active status, and empty capture/
+diagnostics. No condition, fact, capture, type, or proof row is created. Task 269GT
+owns the missing source type.

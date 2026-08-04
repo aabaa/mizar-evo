@@ -2511,3 +2511,10 @@ sidecar, expectation, requirement count, or executable credit. Existing tests
 cover syntax and the broad extraction-gap diagnostic only; later witness
 visibility is a now-derivable `test_gap` owned by Task 269G. The trace manifest
 must remain byte-identical in this docs-only task.
+
+## Task 269G Traceability Delta
+
+Focused Rust tests close the private lexical-binding `test_gap` after
+implementation. No `.miz` backlink, trace row/status/count, expectation,
+diagnostic key, or active type/proof coverage changes. The trace manifest stays
+byte-identical; Task 269GT and active source-use coverage remain explicit.

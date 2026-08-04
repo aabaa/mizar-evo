@@ -5298,3 +5298,11 @@ fixture, sidecar, expectation, metadata case, result field, or diagnostic. The
 existing parser fixture proves syntax only and the broad type fixture remains
 diagnostic-only; later-use visibility coverage and its dormant consumer belong
 to the separate Task 269G contract.
+
+## Task 269G Dormant Harness Boundary
+
+The test-only leaf authenticates the exact Task-269GP source/Surface/resolver
+output, obtains the real reserve base, constructs only the syntax-free local,
+and invokes the checker producer. It is absent from production dispatch and
+all CLI outcomes. Four focused tests cover exact composition, corruption,
+Typed/final atomicity, and route isolation; no fixture or expectation changes.

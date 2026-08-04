@@ -1807,3 +1807,10 @@ The human-approved block-lifetime rule removes the `given` binding/type family
 freeze a binding-only consumer of the existing 269GP syntax row; Task 269GT
 retains later type admission. Condition, label-fact, goal, proof, and
 obligation families remain excluded.
+
+## Task 269G Payload Delta
+
+The only new payload family is one immutable lexical binding transaction:
+authenticated lower provenance, base/final `BindingEnv` snapshots and
+fingerprints, and one dense binding row. Type, condition/label fact, theorem
+fact, goal, proof, obligation, acceptance, IR, and VC payloads remain absent.

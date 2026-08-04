@@ -3606,3 +3606,14 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
   verification, all nine hard gates, and uncapped quality `100/100`.
 - [x] Stage/commit only synchronized 269GS documents and fresh-inventory the
   separate Task 269G binding consumer.
+
+## Checker Task 269G Dormant Binding Consumer
+
+- [x] Freeze unchanged 269GP lower/reserve inputs, private four-file runner
+  consumer, checker-owned lexical scope matrix, zero active/semantic output,
+  four runner tests, counts/hashes, and Task-269GT deferral.
+- [x] Complete docs review/verification/final gates with all nine gates PASS,
+  no score cap, and valid `100/100`.
+- [ ] Create the synchronized 40-file documentation commit.
+- [ ] Implement/review/verify/commit only the exact dormant Task-269G route;
+  keep fixture/sidecar/expectation/trace/metadata/Cargo/CLI bytes unchanged.

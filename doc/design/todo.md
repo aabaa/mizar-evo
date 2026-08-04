@@ -4248,3 +4248,13 @@ or semantic owner changed. B3M2B2B remains next before B4.
   docs-only verification and nine hard gates at uncapped `100/100`.
 - [x] Create one exact 269GS documentation commit, fresh-inventory Task 269G,
   and continue automatically.
+
+## Checker Task 269G Frozen Proof-`given` Binding Transaction
+
+- [x] Select dependency-ready binding-only Task 269G after the canonical scope
+  reconciliation and freeze the exact ABI, scope matrix, boundaries, tests,
+  40-file docs scope, eight-file implementation scope, baselines, and exit.
+- [ ] Finish docs review and gates, commit the documentation prerequisite,
+  implement/review/verify the bounded dormant binding consumer, and commit it.
+- [ ] Fresh-inventory source-type-only Task 269GT; do not absorb condition,
+  fact, proof, acceptance, IR, VC, free-witness export, or Task-270 semantics.

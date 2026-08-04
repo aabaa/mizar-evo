@@ -953,3 +953,9 @@ checker source-type byte変更なし。
 canonical witness lifetimeはfixedだがTask269GSはsource typeをadmitしない。Task269Gがscoped
 bindingを先に確立し、Task269GTがwritten `set` type site/block-consistent type replayをowner。
 type assumption、guard、proof obligationはdefer。
+
+## Task 269G missing-type boundary
+
+new `GivenWitness` rowは`BindingTypeSite::Missing`を保持。lowerの`set@84..87`を独立admit/
+infer/guard化しない。Task269GTだけがimmutable binding handoffをby-value consumeして
+source-type ownerを追加できる。

@@ -1320,3 +1320,10 @@ Canonical witness lifetime is now fixed, but Task 269GS admits no source type.
 Task 269G must establish the scoped binding first; Task 269GT then owns the
 written `set` type site and block-consistent type replay. Type assumptions,
 guards, and proof obligations remain deferred.
+
+## Task 269G Missing-Type Boundary
+
+The new `GivenWitness` row deliberately retains `BindingTypeSite::Missing`.
+The authenticated lower `set@84..87` is not independently admitted, inferred,
+or used to create a guard. Task 269GT alone may consume the immutable binding
+handoff by value and add the source-type owner.

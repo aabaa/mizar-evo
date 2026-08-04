@@ -6858,3 +6858,19 @@ implementation commit does not satisfy a producer task.
   verification/count/hash/hard-gate checks at uncapped `100/100`.
 - [x] Stage and commit only the synchronized 269GS documentation, then fresh-
   inventory binding-only Task 269G automatically.
+
+## Checker Task 269G Proof-`given` Binding Consumer
+
+- [x] Fresh-inventory Task-269GS authority, immutable 269GP lower output,
+  reserve base, binding/Typed/Resolved APIs, tests, counts, and hashes.
+- [x] Freeze exact `GivenWitness` ABI, `1/1/0 -> 2/2/0` transaction, lookup/
+  inheritance/shadow/restoration matrix, error precedence, debug grammar,
+  Typed/final ownership, Task-269GT boundary, eight-file implementation scope,
+  eight focused tests, audit impact, baselines, and exit gates.
+- [x] Repeat specification review to **NO FINDINGS** and pass all docs-only
+  verification/count/hash gates at uncapped `>=90/100`.
+- [ ] Commit only the synchronized 40-file documentation prerequisite; fresh-
+  preflight and implement only the frozen Task 269G slice.
+- [ ] Repeat test/implementation/source-doc/final reviews to **NO FINDINGS**,
+  pass all verification and nine gates, commit the exact eight-file
+  implementation plus synchronized records, then fresh-inventory Task 269GT.

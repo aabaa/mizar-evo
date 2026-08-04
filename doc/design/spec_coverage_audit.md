@@ -6543,3 +6543,19 @@ so that coverage is a classified `test_gap`; the absent binding consumer is
 `source_drift`. Task 269G owns both as the next dependency-ready contract, and
 Task 269GT retains later type admission. No executable coverage credit is
 granted by 269GS.
+
+## Checker Task 269G Frozen Private Lexical-Binding Coverage
+
+Task 269G is now frozen to consume the byte-identical Task-269GP lower row and
+publish one `GivenWitness` binding in the enclosing proof `BindingEnv`.
+Focused checker tests cover same-statement condition and later visibility,
+nested inheritance, shadowing/restoration, and parent/sibling exclusion;
+focused runner tests cover the exact dormant lower-to-checker transaction and
+fail-closed ownership. This closes the Task-269GS lexical binding `test_gap`
+and `source_drift` only when the separate implementation commit lands.
+
+The audit grants no documentation-prerequisite credit and no active `.miz` or
+trace credit. Task 269GT retains source-type admission. Condition/label facts,
+existential/Skolem meaning, free-witness export, goals, proof/discharge/
+acceptance, IR, VC, and Task 270 remain deferred. Existing fixtures,
+expectations, trace rows/status/counts, and hashes are unchanged.

@@ -1889,3 +1889,11 @@ Resolving lexical scope does not install a `ResolvedTypedAst` field or final
 owner. A future 269G contract must decide the binding handoff and replay from
 the canonical block rule; 269GT remains the separate type owner. All semantic
 tables remain unchanged in Task 269GS.
+
+## Task 269G Final Owner
+
+`ResolvedTypedAst` clone-preserves one validated
+`SourceProofLocalGivenBindingHandoff` through a read-only getter and rejects
+duplicate, stale, cross-family, or semantic-coexisting installation with
+`InvalidSourceProofLocalGivenBinding`. It adds no node or semantic table; the
+debug block follows the existing `let` binding/type slot.

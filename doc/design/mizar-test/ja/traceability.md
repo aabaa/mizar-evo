@@ -2375,3 +2375,9 @@ canonical scope decisionはtrace row、backlink、status、fixture、sidecar、e
 requirement count、executable creditを変更しない。existing testsはsyntax/broad extraction-
 gap diagnosticだけをcoverし、later witness visibilityはTask269G ownerの導出可能な
 `test_gap`。本docs-only taskでtrace manifestはbyte-identical必須。
+
+## Task 269G traceability delta
+
+implementation後focused Rust testがprivate lexical-binding `test_gap`だけをcloseする。
+`.miz` backlink、trace row/status/count、expectation、diagnostic、active type/proof coverageは
+変更せずmanifest byte-identical。Task269GT/active source-useはexplicit defer。

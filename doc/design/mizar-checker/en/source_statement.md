@@ -4112,3 +4112,10 @@ checker source-statement file or API changed.
 The canonical block-lifetime rule does not change source-statement lowering or
 the existing 269GP private row. No condition, label, formula, or statement
 payload is added. Binding-only consumption remains Task 269G.
+
+## Task 269G Statement Boundary
+
+The existing exact `given` lower output is consumed byte-for-byte; this module
+adds no statement, condition, label, formula, or use-site row. The checker
+binding handoff identifies the enclosing proof only. Statement semantics and
+all proof effects remain deferred.

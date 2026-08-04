@@ -11817,3 +11817,9 @@ dormantのままで、全excluded module/consumerはbyteまたはbehavior不変�
 本reconciliationはspecification/derived recordだけ。runner productionは37 paths、全test-
 only facade/private 269GP APIは不変で、dispatch/corpus/trace boundaryは移動しない。
 Task269Gが最初に許可されるbinding consumer。
+
+## Task 269G runner boundary
+
+existing proof-local leaf、test-only facade 2段、existing test leafだけを変更し、lower
+producer fileはimmutable。raw source/AST/resolverはrunner-owned、syntax-free handoffだけが
+checkerへcross。new path/public route/active dispatch/Cargo edge/trace ownerなし。

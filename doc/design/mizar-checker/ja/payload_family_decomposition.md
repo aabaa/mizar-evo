@@ -1713,3 +1713,9 @@ human-approved block-lifetime ruleは`given` binding/type familyの`spec_gap`を
 documentation taskはpayloadを作らない。Task269Gはexisting 269GP syntax rowのbinding-only
 consumerをfreeze可能となり、Task269GTがlater type admissionを保持する。condition、label-
 fact、goal、proof、obligation familyはexcludeのまま。
+
+## Task 269G payload delta
+
+new payloadはimmutable lexical binding transaction 1件だけ: authenticated lower、base/final
+`BindingEnv`+fingerprint、dense binding row 1件。type、condition/label/theorem fact、goal、
+proof、obligation、acceptance、IR、VC payloadはabsent。

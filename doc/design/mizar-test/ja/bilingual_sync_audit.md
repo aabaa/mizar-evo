@@ -1646,3 +1646,8 @@ runner EN/JA recordはpaired Chapter 4/15/16 ruleと一致する。`given`変数
 shadowされない限りnested childへ継承、parent/sibling blockへescapeしない。両companionは
 runner/corpus/trace change 0、separate
 269G/269GT ownership、condition/proof semantics追加なしを記録する。
+
+## Task 269G sync delta
+
+EN/JA runner plan/harness/boundary/traceability/TODOはunchanged 269GP lower、private
+4-file consumer、test 4件、active corpus/trace/semantic change 0、Task269GT type deferで一致。

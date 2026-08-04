@@ -1722,3 +1722,418 @@ The resolved rule makes binding-only Task 269G dependency-ready, with exact
 scope IDs, visibility ordinals, nested inheritance/shadowing, block restoration,
 and spec-derived tests still to freeze. Task 269GT remains separately ordered
 after 269G, and all semantic exclusions above remain in force.
+
+## Checker Task 269G Frozen Binding-Only Proof-`given` Transaction
+
+### Selection, authority, and classified boundary
+
+Fresh inventory after Task-269GS commit
+`10bdd041517eb0334df982484b540e2799b106ca` selects only Task 269G. Canonical
+Chapters 4, 15, and 16 require a `given` witness to bind its occurrences in
+the declaration's `such that` conditions and to remain visible to later
+statements through the innermost enclosing proof or reasoning block. A nested
+child inherits the binding unless it shadows it; parent and sibling blocks do
+not see it, and leaving a child restores the outer binding. This authority is
+sufficient for lexical binding and lookup only.
+
+Task 269GP supplies the immutable exact source/Surface/resolver/lower
+projection, and the reserve bridge supplies the module base `BindingEnv`. The
+absent transaction is `source_drift`; focused binding/lookup coverage is the
+Task-269GS `test_gap`. Task 269G closes both only at the private binding
+boundary. It does not interpret or publish a condition, label fact,
+existential/Skolem fact, goal, proof step, discharge, acceptance, IR, or VC.
+Source-type admission is separate Task 269GT; merging it here is a
+`boundary_violation`.
+
+No lower-stage change is required. Task-269GP's 129-byte source, 48-node
+Surface arena, resolver profile, lower fields, source SHA-256
+`04e54b8ada9af54fde9f937e1bb0f96bd8cf85002b2b57f4d348b11c8eb72a2f`,
+Surface SHA-256
+`58ac16a3c75860180a8bec5dc8e87ec8b269fe75715a6d8363f7ef064e3deea8`,
+and debug grammar remain byte-identical. Existing `.miz`, sidecars,
+expectations, and trace metadata are read-only. Spec-derived Rust scope tests
+are sufficient for this dormant binding slice; active corpus/type execution
+remains deferred.
+
+### Exact checker ABI and public surface
+
+`binding_env::BindingKind` adds exactly one forward-compatible public variant,
+`GivenWitness`, immediately after `LetBinding` and before `Generated` in the
+existing `#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]`
+and `#[non_exhaustive]` enum. Its exhaustive internal `binding_kind_name`
+mapping is exactly `GivenWitness => "given_witness"`; this stable key enters
+the final `BindingEnv::debug_text()` fingerprint and consequently the outer
+handoff debug's quoted final-fingerprint field. The reserve-only base
+fingerprint stays byte-identical and does not contain this key. The existing checker module
+`source_proof_local_declaration` adds the following sibling family; private
+fields have no unchecked public constructor or mutable accessor:
+
+```rust
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceProofLocalGivenBindingHandoffInput {
+    pub source_id: SourceId,
+    pub module_id: ModuleId,
+    pub lower_fingerprint: String,
+    pub theorem_symbol: SymbolId,
+    pub theorem_definition: DefinitionId,
+    pub contribution: SourceContributionId,
+    pub theorem_range: SourceRange,
+    pub proof_range: SourceRange,
+    pub given_range: SourceRange,
+    pub segment_range: SourceRange,
+    pub name_range: SourceRange,
+    pub source_ordinal: usize,
+    pub local: LocalTermBinding,
+    pub recovery: SourceProofLocalGivenBindingRecovery,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct SourceProofLocalGivenBindingId(usize);
+
+impl SourceProofLocalGivenBindingId {
+    pub const fn new(index: usize) -> Self;
+    pub const fn index(self) -> usize;
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum SourceProofLocalGivenBindingRecovery {
+    Normal,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceProofLocalGivenBinding {
+    binding: BindingId,
+    binding_context: BindingContextId,
+    source_ordinal: usize,
+    visible_after_ordinal: usize,
+    recovery: SourceProofLocalGivenBindingRecovery,
+}
+
+impl SourceProofLocalGivenBinding {
+    pub const fn binding(&self) -> BindingId;
+    pub const fn binding_context(&self) -> BindingContextId;
+    pub const fn source_ordinal(&self) -> usize;
+    pub const fn visible_after_ordinal(&self) -> usize;
+    pub const fn recovery(&self) -> SourceProofLocalGivenBindingRecovery;
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceProofLocalGivenBindingTable {
+    rows: Vec<SourceProofLocalGivenBinding>,
+}
+
+impl SourceProofLocalGivenBindingTable {
+    pub fn get(
+        &self,
+        id: SourceProofLocalGivenBindingId,
+    ) -> Option<&SourceProofLocalGivenBinding>;
+    pub fn iter(
+        &self,
+    ) -> impl Iterator<
+        Item = (SourceProofLocalGivenBindingId, &SourceProofLocalGivenBinding),
+    >;
+    pub const fn len(&self) -> usize;
+    pub const fn is_empty(&self) -> bool;
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceProofLocalGivenBindingHandoff {
+    source_id: SourceId,
+    module_id: ModuleId,
+    lower_fingerprint: String,
+    theorem_symbol: SymbolId,
+    theorem_definition: DefinitionId,
+    contribution: SourceContributionId,
+    theorem_range: SourceRange,
+    proof_range: SourceRange,
+    given_range: SourceRange,
+    segment_range: SourceRange,
+    name_range: SourceRange,
+    base_binding_env: BindingEnv,
+    base_binding_fingerprint: String,
+    binding_env: BindingEnv,
+    final_binding_fingerprint: String,
+    bindings: SourceProofLocalGivenBindingTable,
+}
+
+impl SourceProofLocalGivenBindingHandoff {
+    pub const fn source_id(&self) -> SourceId;
+    pub const fn module_id(&self) -> &ModuleId;
+    pub fn lower_fingerprint(&self) -> &str;
+    pub const fn theorem_symbol(&self) -> &SymbolId;
+    pub const fn theorem_definition(&self) -> DefinitionId;
+    pub const fn contribution(&self) -> SourceContributionId;
+    pub const fn theorem_range(&self) -> SourceRange;
+    pub const fn proof_range(&self) -> SourceRange;
+    pub const fn given_range(&self) -> SourceRange;
+    pub const fn segment_range(&self) -> SourceRange;
+    pub const fn name_range(&self) -> SourceRange;
+    pub const fn base_binding_env(&self) -> &BindingEnv;
+    pub fn base_binding_fingerprint(&self) -> &str;
+    pub const fn binding_env(&self) -> &BindingEnv;
+    pub fn final_binding_fingerprint(&self) -> &str;
+    pub const fn bindings(&self) -> &SourceProofLocalGivenBindingTable;
+    pub fn debug_text(&self) -> String;
+
+    pub(crate) fn validate_installation(
+        &self,
+        source_id: SourceId,
+        module_id: &ModuleId,
+    ) -> Result<(), SourceProofLocalGivenBindingError>;
+
+    pub(crate) fn validate_complete_installation(
+        &self,
+        source_id: SourceId,
+        module_id: &ModuleId,
+        installation_available: bool,
+    ) -> Result<(), SourceProofLocalGivenBindingError>;
+}
+
+#[derive(Debug, Clone, Copy, Default)]
+pub struct SourceProofLocalGivenBindingProducer;
+
+impl SourceProofLocalGivenBindingProducer {
+    pub fn build(
+        input: SourceProofLocalGivenBindingHandoffInput,
+        base_binding_env: &BindingEnv,
+    ) -> Result<
+        SourceProofLocalGivenBindingHandoff,
+        SourceProofLocalGivenBindingError,
+    >;
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum SourceProofLocalGivenBindingError {
+    InvalidTransaction,
+    DependencyMismatch,
+    InvalidBaseBindingEnvironment,
+    InvalidAggregate,
+    InvalidDeclaration { binding: SourceProofLocalGivenBindingId },
+    InvalidBindingEnvironment,
+    InvalidInstallation,
+}
+```
+
+The error implements `std::error::Error`; the signatures above are complete,
+including constness, return types, derives, and non-exhaustive attributes.
+
+All referenced values are existing owner-module types. No `SurfaceAst`, syntax
+node/shell, `SymbolEnv`, source text, type expression, condition, formula,
+goal, fact, proof, or obligation crosses the checker ABI. The sole lower token
+is the complete byte-exact `source-proof-local-given-lower-debug-v1` string.
+
+### Exact transaction and lexical scope matrix
+
+Dependency validation fixes theorem `19..128`, proof `62..127`, `given`
+`70..108`, segment `76..87`, name `76..77`, source ordinal `1`, definition/
+contribution `0/0`, and spelling `y`. The runner creates the syntax-free local
+identity at scope `[0]`, declaration `76..77`, visible-after ordinal `1`.
+`set@84..87` stays inside the opaque lower fingerprint and the binding type
+site remains `Missing` until Task 269GT.
+
+The exact normal reserve base is `1/1/0`. The atomic transition is
+`1/1/0 -> 2/2/0`: context 1 is `SourceStatement(62..127)`, parent 0, proof
+layer, scope `[0]`, owned `[1]`, visible `[0,1]`, normal; binding 1 is `y`,
+`GivenWitness`, resolver-local `([0], ordinal=1, range=76..77)`, owner context
+1, visible-after 1, missing type, active, uncaptured, diagnostic-free, normal;
+row 0 records binding/context `1/1`, source/visible-after `1/1`, normal. Context
+0 and binding 0 remain byte-identical.
+
+The installed environment must reproduce:
+
+| intent | context / scope / ordinal | result |
+|---|---|---|
+| before declaration | `1 / [0] / 1` | forward binding 1 |
+| same-statement `such that` | `1 / [0] / 2` | local binding 1 |
+| first later statement | `1 / [0] / 2` | local binding 1 |
+| inherited child | `2 / [0,0] / 2` | local binding 1 |
+| parent | `0 / [] / 2` | unresolved |
+| sibling | `4 / [1] / 2` | unresolved |
+
+The two proof-context ordinal-2 rows are distinct test intents over one lexical
+table; this task creates no condition-use or later-use source row. The three
+non-proof contexts and one shadow row exist only in the checker test-derived
+environment, with every `BindingEnv` field frozen as follows:
+
+- context 2: owner `Generated("task269g-unshadowed-child")`, parent 1, layer
+  `Block`, lexical scope `[0,0]`, owned `[]`, visible `[0,1]`, recovery
+  `Normal`;
+- context 3: owner `Generated("task269g-shadow-child")`, parent 1, layer
+  `Block`, lexical scope `[0,1]`, owned `[2]`, visible `[0,1,2]`, recovery
+  `Normal`;
+- context 4: owner `Generated("task269g-sibling")`, parent 0, layer `Block`,
+  lexical scope `[1]`, owned `[]`, visible `[0]`, recovery `Normal`;
+- binding 2: spelling `y`, kind `GivenWitness`, identity
+  `ResolverLocal(scope=[0,1], ordinal=2, declaration_range=109..110)`, owner
+  context 3, declaration `109..110`, visible-after 2, type `Missing`, status
+  `Active`, empty captured variables and diagnostics, recovery `Normal`.
+
+The synthetic `109..110` test-only range is only a deterministic table key and
+does not assert a second source declaration. Lookup in context 3 at ordinal 3
+selects binding 2, while lookup after child exit in context 1 at ordinal 3
+restores binding 1. This matrix never enters the handoff, runner output, or
+production context table.
+
+Validation precedence is transaction identity; lower/theorem/ranges; base;
+dense aggregate; local/row fields; final environment/fingerprints/lookups;
+Typed/final availability. Failure is atomic. Exact display text is:
+
+| variant | exact text |
+|---|---|
+| `InvalidTransaction` | `source proof-local given-binding transaction is invalid` |
+| `DependencyMismatch` | `source proof-local given-binding dependency mismatch` |
+| `InvalidBaseBindingEnvironment` | `source proof-local given-binding base binding environment is invalid` |
+| `InvalidAggregate` | `source proof-local given-binding aggregate is invalid` |
+| `InvalidDeclaration { binding }` | `source proof-local given-binding <binding.index()> is invalid` |
+| `InvalidBindingEnvironment` | `source proof-local given-binding binding environment is invalid` |
+| `InvalidInstallation` | `source proof-local given-binding installation is invalid` |
+
+Stable debug is exactly:
+
+```text
+source-proof-local-given-binding-debug-v1
+module: <package>::<path>
+lower-fingerprint: <quoted Task-269GP debug bytes>
+theorem symbol=<quoted-fqn> definition=0 contribution=0 range=19..128 proof=62..127
+given range=70..108 segment=76..87 name=76..77 source_ordinal=1
+base-binding-fingerprint: <quoted BindingEnv debug bytes>
+binding#0 binding=1 context=1 source_ordinal=1 visible_after=1 recovery=normal
+final-binding-fingerprint: <quoted BindingEnv debug bytes>
+```
+
+Quoted fields use Rust `Debug`; order is fixed, with no blank line and one
+final LF.
+
+### Typed/final ownership and exclusions
+
+`TypedAst` adds private optional `source_proof_local_given_binding` and exactly
+these methods; `TypedAstParts` receives no replacement field:
+
+```rust
+pub const fn source_proof_local_given_binding(
+    &self,
+) -> Option<&SourceProofLocalGivenBindingHandoff>;
+
+pub fn with_source_proof_local_given_binding(
+    self,
+    handoff: SourceProofLocalGivenBindingHandoff,
+) -> Result<Self, TypedAstError>;
+```
+
+The installer consumes the handoff by value and is one-shot. `TypedAstError` adds
+`InvalidSourceProofLocalGivenBinding`, text
+`typed AST source proof-local given-binding handoff is inconsistent`.
+Installation accepts only an otherwise-empty profile and publishes no node,
+context/type/fact/coercion/initial-obligation/diagnostic row or other handoff.
+
+`ResolvedTypedAst` adds exactly this read-only getter:
+
+```rust
+pub const fn source_proof_local_given_binding(
+    &self,
+) -> Option<&SourceProofLocalGivenBindingHandoff>;
+```
+
+It clone-preserves the handoff only after replay. `ResolvedTypedAstInputs` has
+no replacement path.
+`ResolvedTypedAstError` adds `InvalidSourceProofLocalGivenBinding`, text
+`resolved typed AST source proof-local given-binding handoff is inconsistent`.
+Debug uses the proof-local slot after the existing `let` binding/type slot;
+cross-family ownership is mutually exclusive.
+
+Task 269G creates no condition/label/fact, theorem fact, type guard/source
+type, goal/thesis transition, proof/discharge/acceptance, Core/CFG/VC/ATP,
+diagnostic mapping, active dispatch/corpus outcome, or source use/capture row.
+Only Task 269GT may consume the handoff by value and admit `set@84..87`.
+Multi-segment `given`, `consider`, free-witness export, and Task 270 remain
+separate.
+
+### Frozen files, tests, measurements, audit, and exit
+
+Implementation may change exactly eight existing Rust files:
+
+1. `crates/mizar-checker/src/binding_env.rs`;
+2. `crates/mizar-checker/src/source_proof_local_declaration.rs`;
+3. `crates/mizar-checker/src/typed_ast.rs`;
+4. `crates/mizar-checker/src/resolved_typed_ast.rs`;
+5. `crates/mizar-test/src/runner/type_elaboration/source_proof_local_declaration.rs`;
+6. `crates/mizar-test/src/runner/type_elaboration.rs`;
+7. `crates/mizar-test/src/runner.rs`;
+8. `crates/mizar-test/src/runner/tests/type_elaboration/source_proof_local_declaration.rs`.
+
+No path/module, parser/resolver/lower source, `.miz`, sidecar, expectation,
+trace row/status/backlink, metadata assertion, Cargo file, public runner
+route, active dispatch, or diagnostic key changes. The exact checker tests are:
+
+1. `source_proof_local_given_binding_builds_exact_scope_transaction`;
+2. `source_proof_local_given_binding_rejects_corruption_with_stable_precedence`;
+3. `source_proof_local_given_binding_typed_and_resolved_ownership_is_atomic`;
+4. `source_proof_local_given_binding_scope_matrix_is_lexical_and_semantically_empty`.
+
+The exact runner tests are:
+
+1. `task269g_exact_given_binding_transaction_debug_and_lookup_are_stable`;
+2. `task269g_lower_base_and_checker_corruption_fail_closed`;
+3. `task269g_typed_and_resolved_owners_are_one_shot_and_semantically_empty`;
+4. `task269g_near_miss_neighbor_and_active_routes_remain_isolated`.
+
+The checker corruption test fixes one seam per validation tier: wrong
+input/handoff source or module gives `InvalidTransaction`; wrong lower,
+theorem, or range gives `DependencyMismatch`; empty/wrong reserve base gives
+`InvalidBaseBindingEnvironment`; truncated dense rows gives
+`InvalidAggregate`; a mutated row/local gives `InvalidDeclaration`; a wrong
+final fingerprint or lookup environment gives `InvalidBindingEnvironment`;
+unavailable, duplicate, cross-family, or rollback-broken Typed/Resolved replay
+gives `InvalidInstallation`. Each of the seven variants is asserted, and the
+documented first-error precedence is asserted on combined corruptions.
+
+The exact checker-only mutation methods are
+`set_lower_fingerprint_for_test`,
+`set_base_binding_fingerprint_for_task269g_test`,
+`truncate_task269g_bindings_for_test`,
+`corrupt_task269g_binding_row_for_test`, and
+`set_final_binding_fingerprint_for_task269g_test`. Direct same-module test
+mutation of the private final environment supplies the lookup-environment
+case; none of these seams is a public or runner API.
+
+The runner corruption enum is exactly `None`, `WrongLowerFingerprint`,
+`EmptyBase`, `WrongTheoremRange`, `WrongProofRange`, `WrongGivenRange`,
+`WrongSegmentRange`, `WrongNameRange`, `WrongLocalSpelling`,
+`WrongLocalScope`, `WrongLocalRange`, `WrongLocalVisibleAfter`, and
+`WrongSourceOrdinal`; all non-`None` routes fail closed before publication.
+Typed/Resolved tests exercise initial install, duplicate replay, cross-family
+replay, rollback, and post-build mutation without publishing semantic rows.
+
+Docs baseline checker/runner libraries is `490/552`, projected `494/556`.
+Raw/normalized hashes are checker
+`10e1f56783a472b63a0473893196d68b54a7a7aa3a3aff4f66e74ac42b4a2ad2` /
+`21d65f467319e2e7ac463344902b10dfce5716a96c41a87e879326c293ff36e0`
+and runner
+`9dff9057edba19fe41f71bfa2936f6708438f4a9c969b4b87f9da40641710cd0` /
+`fb55cd699daaf5beb28077eb36385cf16eedae43e38fe4385244f632ea4e54e2`.
+Production paths stay `30/37`, currently `168322/72916` lines. Path/content
+hashes are checker
+`c89f43f6abebf7ebeb3ac9394ecd8ea3186ad28934c75526d2cc0b85a66ebad5` /
+`4d0c793a47dac672e5f395c9c2b9e7c9274b5d776b54870888ba5c918f751dc2`
+and runner
+`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d` /
+`532d96defde8f63fa821a4f619c21699069eed19c8f48d50be1f1516be0dac63`.
+After implementation, both libraries' raw/normalized test-list hashes and
+both production line/content measurements are remeasured; path hashes stay
+fixed. The values above remain the unchanged documentation-prerequisite
+baseline.
+
+Corpus/requirements `428/395`, pass/fail `235/193`, warnings/errors `23/0`,
+active stages `101/7/205/1`, type coverage `259=247+12`, trace, and all five
+CLI hashes remain unchanged. The coverage audit may credit only focused
+private lexical-binding tests/ownership, never active `.miz`, trace, type,
+condition/fact, proof, or downstream coverage.
+
+Exit requires synchronized EN/JA, repeated spec review **NO FINDINGS**, all
+nine docs-only gates and uncapped `>=90/100`, exact docs commit, fresh
+lower-stage preflight, exact eight-file implementation, separate no-findings
+test/implementation/source-doc reviews, full verification/count/hash, final
+nine gates and score, task-only commit, clean inventory, and protected-stash
+identity before selecting Task 269GT.

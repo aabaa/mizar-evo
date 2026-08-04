@@ -1400,3 +1400,152 @@ Cargo、public API artifactを変更しない。existing 269GP lower rowはsynta
 onlyのまま。resolved ruleによりbinding-only Task269Gはdependency-readyとなり、exact scope
 ID、visibility ordinal、nested inheritance/shadowing、block restore、spec-derived testsを
 後続contractでfreezeする。Task269GTは269G後にseparate ordering、全semantic exclusion維持。
+
+## Checker Task 269G frozen binding-only proof-`given` transaction
+
+Task269GS commit `10bdd041517eb0334df982484b540e2799b106ca`直後のfresh
+inventoryはTask269Gだけをselectする。canonical Chapter 4/15/16により、`given`
+witnessはdeclarationの`such that` condition内をbindし、後続statementでは最内の
+enclosing proof/reasoning block末尾まで可視。nested childはshadowしない限り継承し、
+parent/siblingでは不可視、child終了後はouter bindingへrestoreする。本authorityが許す
+のはlexical binding/lookupだけである。
+
+Task269GP exact lowerとreserve baseをconsumeする。missing transactionは
+`source_drift`、focused binding coverageはTask269GS `test_gap`。condition/label fact、
+existential/Skolem fact、goal、proof、discharge、acceptance、IR、VCは作らない。source typeは
+separate Task269GTであり、本taskへの混在は`boundary_violation`。lower-stage変更は不要。
+source 129 byte/Surface 48 node、source/surface hash
+`04e54b8ada9af54fde9f937e1bb0f96bd8cf85002b2b57f4d348b11c8eb72a2f` /
+`58ac16a3c75860180a8bec5dc8e87ec8b269fe75715a6d8363f7ef064e3deea8`、
+resolver/lower debugはbyte-identical。`.miz`/sidecar/expectation/traceはread-onlyで、
+spec-derived Rust scope matrixだけを追加する。
+
+### exact ABI、transaction、scope
+
+`BindingKind`へpublic `GivenWitness`を`LetBinding`直後、`Generated`直前に1 variant追加する。
+existing enumのderiveと`#[non_exhaustive]`を維持し、`binding_kind_name`のstable keyは
+exact `given_witness`。このkeyはfinal `BindingEnv::debug_text()` fingerprintと、それを
+quoteするouter handoff debugのfinal fieldだけへ入る。reserve-only base fingerprintは
+byte-identicalでこのkeyを含まない。EN canonical sectionに列挙したexact sibling family、すなわち
+`SourceProofLocalGivenBindingHandoffInput`、dense ID/recovery/row/table、immutable handoff、
+producer、7 error variantを追加する。EN code blockのderive/attribute、全getter/build/
+validator signature、constness、return typeをexact契約とする。read-only getter、dense
+iteration、`debug_text`、crate-private installation replayだけを公開し、unchecked
+constructor/mutable accessorは持たない。`SurfaceAst`、syntax/shell、`SymbolEnv`、
+source text、type expression、condition/formula/goal/fact/proof/obligationはABIをcrossせず、
+sole lower tokenはbyte-exact `source-proof-local-given-lower-debug-v1` string。
+
+exact provenanceはtheorem `19..128`、proof `62..127`、given `70..108`、segment
+`76..87`、name `76..77`、source ordinal 1、definition/contribution `0/0`、`y`。
+runner localはscope `[0]`、declaration `76..77`、visible-after 1。`set@84..87`はopaque
+lower内だけでtype siteはTask269GTまで`Missing`。
+
+base `1/1/0`からatomic `2/2/0`へ遷移する。context 1は
+`SourceStatement(62..127)`、parent 0、proof、scope `[0]`、owned `[1]`、visible
+`[0,1]`、normal。binding 1は`y`/`GivenWitness`、resolver-local
+`([0],1,76..77)`、owner 1、visible-after 1、missing type、active、capture/diagnosticなし、
+normal。row 0はbinding/context `1/1`、source/visible-after `1/1`。
+
+lookup matrixはdeclaration前 `1/[0]/1`がforward、same-statement `such that`とfirst
+later statement `1/[0]/2`がlocal 1、test-derived child `2/[0,0]/2`がlocal 1、parent
+`0/[]/2`とtest-derived sibling `4/[1]/2`がunresolved。ordinal-2のproof行2件は別test
+intentでcondition/later-use source rowは作らない。test-derived context 2はowner
+`Generated("task269g-unshadowed-child")`、parent 1、layer `Block`、scope `[0,0]`、owned
+`[]`、visible `[0,1]`、normal。context 3はowner
+`Generated("task269g-shadow-child")`、parent 1、layer `Block`、scope `[0,1]`、owned `[2]`、
+visible `[0,1,2]`、normal。context 4はowner `Generated("task269g-sibling")`、parent 0、
+layer `Block`、scope `[1]`、owned `[]`、visible `[0]`、normal。test-only binding 2はspelling
+`y`、`GivenWitness`、`ResolverLocal([0,1], ordinal=2, range=109..110)`、owner 3、declaration
+`109..110`、visible-after 2、type `Missing`、status `Active`、capture/diagnostics empty、
+normal。synthetic `109..110`はdeterministic table keyだけで第2 source declarationを主張
+しない。context 3 ordinal 3はinner 2、child exit後のcontext 1 ordinal 3はouter 1へ
+restore。このmatrixはproductionへpublishしない。
+
+failure precedenceはtransaction、lower/theorem/ranges、base、aggregate、local/row、
+final env/fingerprint/lookup、Typed/final availability。exact error textはEN canonicalの
+`source proof-local given-binding ...` tableどおり、failureはatomic。debugは
+`source-proof-local-given-binding-debug-v1`、module、quoted lower、theorem、given/
+segment/name/ordinal、quoted base、dense row、quoted finalの順、blankなしfinal LF 1件。
+
+### Typed/final、exclusion、files/tests
+
+`TypedAst`はprivate optional fieldと次のexact methodsだけを追加し、`TypedAstParts`に
+replacement fieldは追加しない。
+
+```rust
+pub const fn source_proof_local_given_binding(
+    &self,
+) -> Option<&SourceProofLocalGivenBindingHandoff>;
+
+pub fn with_source_proof_local_given_binding(
+    self,
+    handoff: SourceProofLocalGivenBindingHandoff,
+) -> Result<Self, TypedAstError>;
+```
+
+installerはhandoffをby-value consumeするone-shot。
+`InvalidSourceProofLocalGivenBinding` textは
+`typed AST source proof-local given-binding handoff is inconsistent`。
+otherwise-empty profileだけにinstallし、semantic table/node/other handoffを追加しない。
+`ResolvedTypedAst`は次のexact read-only getterを追加し、validation replay後だけcloneする。
+
+```rust
+pub const fn source_proof_local_given_binding(
+    &self,
+) -> Option<&SourceProofLocalGivenBindingHandoff>;
+```
+
+error textは
+`resolved typed AST source proof-local given-binding handoff is inconsistent`。debugは
+existing let binding/type後のproof-local slotでcross-family mutually exclusive。
+
+condition/label/fact、type guard/source type、goal/thesis、proof/discharge/acceptance、
+Core/CFG/VC/ATP、diagnostic mapping、active dispatch/corpus、source use/captureは禁止。
+Task269GTだけがhandoffをby-value consumeして`set@84..87`をadmitできる。multi-segment
+`given`、`consider`、free-witness export、Task270はseparate。
+
+implementation write scopeはexact 8 Rust file:
+
+1. `crates/mizar-checker/src/binding_env.rs`;
+2. `crates/mizar-checker/src/source_proof_local_declaration.rs`;
+3. `crates/mizar-checker/src/typed_ast.rs`;
+4. `crates/mizar-checker/src/resolved_typed_ast.rs`;
+5. `crates/mizar-test/src/runner/type_elaboration/source_proof_local_declaration.rs`;
+6. `crates/mizar-test/src/runner/type_elaboration.rs`;
+7. `crates/mizar-test/src/runner.rs`;
+8. `crates/mizar-test/src/runner/tests/type_elaboration/source_proof_local_declaration.rs`。
+
+checker exact testsは
+`source_proof_local_given_binding_builds_exact_scope_transaction`、
+`source_proof_local_given_binding_rejects_corruption_with_stable_precedence`、
+`source_proof_local_given_binding_typed_and_resolved_ownership_is_atomic`、
+`source_proof_local_given_binding_scope_matrix_is_lexical_and_semantically_empty`。
+runner exact testsは
+`task269g_exact_given_binding_transaction_debug_and_lookup_are_stable`、
+`task269g_lower_base_and_checker_corruption_fail_closed`、
+`task269g_typed_and_resolved_owners_are_one_shot_and_semantically_empty`、
+`task269g_near_miss_neighbor_and_active_routes_remain_isolated`。
+
+checker corruption seamはwrong source/module/cross-family、wrong lower/theorem/range、wrong
+base、truncated aggregate、mutated local/row、wrong final fingerprint/lookup、unavailable/
+duplicate/cross-family/rollback replayを分離し、7 error variantとcombined-corruptionの
+first-error precedenceを全assertする。runner corruption enumはexact `None`、
+`WrongLowerFingerprint`、`EmptyBase`、`WrongTheoremRange`、`WrongProofRange`、
+`WrongGivenRange`、`WrongSegmentRange`、`WrongNameRange`、`WrongLocalSpelling`、
+`WrongLocalScope`、`WrongLocalRange`、`WrongLocalVisibleAfter`、`WrongSourceOrdinal`。
+Typed/Resolvedはinitial/duplicate/cross-family/rollback/post-build mutation replayをcoverする。
+libraryは
+`490/552 -> 494/556`、production pathは`30/37`不変。docs baseline line
+`168322/72916`、path/content hashはchecker
+`c89f43f6abebf7ebeb3ac9394ecd8ea3186ad28934c75526d2cc0b85a66ebad5` /
+`4d0c793a47dac672e5f395c9c2b9e7c9274b5d776b54870888ba5c918f751dc2`、runner
+`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d` /
+`532d96defde8f63fa821a4f619c21699069eed19c8f48d50be1f1516be0dac63`。
+implementation後はchecker/runner双方のraw/normalized test-list hashとproduction
+line/contentを再計測し、path hashは固定。上記値はdocs prerequisite baselineでは不変。
+corpus/trace/CLI/countは不変、audit creditはprivate lexical-binding Rust coverageだけ。
+
+docs prerequisiteはEN/JA sync、spec review **NO FINDINGS**、hard gate 9件uncapped
+`>=90/100`、exact docs commitを要求。fresh lower preflight後exact 8-file implementation、
+test/implementation/source-doc review **NO FINDINGS**、full verification/count/hash、final
+gate/score、task-only commit、clean inventory、stash不変を満たしてTask269GTを選ぶ。

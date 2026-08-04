@@ -1817,3 +1817,9 @@ compatibility testsはunchanged PASS。
 scope decisionは`TypedAst` fieldをinstallしない。Task269Gがbinding-only ownershipを先に
 freeze/implementし、Task269GTはseparate type admission。existing one-shot ownershipと
 semantic exclusionは不変。
+
+## Task 269G Typed owner
+
+`TypedAst`はprivate optional given-binding handoff、read-only getter、one-shot installer/
+`InvalidSourceProofLocalGivenBinding`を追加。otherwise-empty profileだけをacceptし、type/
+fact/coercion/initial obligation/diagnostic/coexisting handoffをpublishしない。

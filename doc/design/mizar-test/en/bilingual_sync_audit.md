@@ -1723,3 +1723,9 @@ subsequent statements through its innermost enclosing block, inherits into
 nested children unless shadowed, and does not escape to parent or sibling
 blocks. Both companions record zero runner/corpus/trace change and the
 separate 269G/269GT ownership without adding condition or proof semantics.
+
+## Task 269G Sync Delta
+
+EN/JA runner plan, harness, boundary, traceability, and TODO records agree on
+the unchanged 269GP lower, private four-file consumer, four tests, zero active
+corpus/trace/semantic change, and Task-269GT type deferral.

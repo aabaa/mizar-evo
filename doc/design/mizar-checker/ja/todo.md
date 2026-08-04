@@ -6529,3 +6529,17 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   hash/hard-gateをuncapped `100/100`で全PASS。
 - [x] synchronized 269GS documentationだけをstage/commitし、binding-only Task269Gを
   fresh inventoryから自動選択。
+
+## Checker Task 269G proof-`given` binding consumer
+
+- [x] Task269GS authority、immutable 269GP lower、reserve base、binding/Typed/Resolved
+  API、tests/count/hashをfresh inventory。
+- [x] exact `GivenWitness` ABI、`1/1/0 -> 2/2/0`、lookup/inheritance/shadow/
+  restore matrix、error/debug、Typed/final、Task269GT boundary、8-file scope、focused test
+  8件、audit/baseline/exitをfreeze。
+- [x] specification reviewを**NO FINDINGS**までrepeatし、docs-only gateとuncapped
+  `>=90/100`をPASS。
+- [ ] synchronized existing Markdown 40件だけをcommitし、fresh preflight後frozen Task269G
+  だけをimplement。
+- [ ] test/implementation/source-doc/final review **NO FINDINGS**、全verification/gate、exact
+  8-file implementation+synchronized record commit後Task269GTをfresh inventory。

@@ -1713,3 +1713,9 @@ bindし、後続statementではshadowされない限りnested child blockを含�
 proof/reasoning block末尾まで有効で、parent/sibling blockでは無効、という規則で一致する。
 両languageはordinary condition-label scopeを保持し、condition/fact/proof semanticsをdefer
 する。separate 269G contract前にbilingual exceptionは許容しない。
+
+## Task 269G sync delta
+
+EN/JA proof-local、binding、Typed/Resolved、boundary/audit/plan/TODOはexact
+`GivenWitness` transaction、scope matrix、implementation 8 file/test 4+4、active corpus
+semantics 0、Task269GT type deferを同期する。bilingual exceptionなし。

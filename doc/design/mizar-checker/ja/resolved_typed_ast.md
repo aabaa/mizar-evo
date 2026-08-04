@@ -1797,3 +1797,10 @@ implemented runner routeもfinal owner/serializer変更なしをconfirmする。
 lexical scopeのresolveは`ResolvedTypedAst` field/final ownerをinstallしない。future 269G
 contractがcanonical block ruleからbinding handoff/replayを決め、269GTはseparate type owner。
 Task269GSでは全semantic table不変。
+
+## Task 269G final owner
+
+`ResolvedTypedAst`はvalidated `SourceProofLocalGivenBindingHandoff` 1件をread-only getterで
+clone-preserveし、duplicate/stale/cross-family/semantic coexistenceを
+`InvalidSourceProofLocalGivenBinding`でreject。node/semantic tableなし、debugはexisting
+`let` binding/type slot後。

@@ -1920,3 +1920,10 @@ The scope decision does not install a `TypedAst` field. Task 269G must first
 freeze and implement binding-only ownership; Task 269GT remains the separate
 type admission. Existing one-shot ownership and semantic exclusions are
 unchanged.
+
+## Task 269G Typed Owner
+
+`TypedAst` adds one private optional given-binding handoff, a read-only getter,
+and one-shot installer with `InvalidSourceProofLocalGivenBinding`. It accepts
+only an otherwise-empty semantic/node profile and publishes no type, fact,
+coercion, initial obligation, diagnostic, or coexisting source handoff.

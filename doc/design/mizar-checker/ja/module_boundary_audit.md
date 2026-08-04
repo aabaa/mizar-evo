@@ -1641,3 +1641,9 @@ public API変更なし。runner testsは552、productionは`37/72916`、checker�
 旧canonical blockerはpaired specification/design document内だけでresolveする。checker/
 runner module path、dependency、visibility、public API、production inventory、test binaryは
 byte-identical。binding implementationはseparate Task269G、type admissionはTask269GT owner。
+
+## Task 269G boundary delta
+
+checkerはsyntax-free public binding family/`GivenWitness`、runnerはexact lower/base assemblyと
+private dormant consumerをownする。raw AST/resolver/sourceはrunnerで停止。existing Rust
+8 fileだけ、new module/path/Cargo edgeなし。type/condition/fact/proof/downstreamはscope外。

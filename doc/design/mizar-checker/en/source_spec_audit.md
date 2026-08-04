@@ -5937,3 +5937,13 @@ remain compatible. Checker has no `SourceProofLocalGiven` binding consumer or
 public API, classified as the next Task 269G `source_drift`; existing fixtures
 do not exercise later witness use, classified as a `test_gap`. No source or
 test artifact changes in 269GS.
+
+## Task 269G Source/Spec Delta
+
+The planned source maps the Task-269GP exact lower row to one `GivenWitness`
+`BindingEnv` row and preserves its handoff in otherwise-empty Typed/final
+profiles. Those profiles own the binding handoff while every semantic/node
+table and every sibling handoff remains empty. The exact lookup matrix covers
+the canonical block lifetime. Missing source type is Task 269GT; missing
+condition/fact/proof and active source-use extraction remain deferred. No
+existing canonical test artifact is rebaselined.

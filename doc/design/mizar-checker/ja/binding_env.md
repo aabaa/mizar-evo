@@ -833,3 +833,15 @@ canonical scopeはlater binding consumerに十分となった。`given` binding�
 Task269GSは`BindingEnv`を変更しない。
 Task269Gがcondition/proof factを追加せず、exact scope ID、ordinal、lookup/replay、restore、
 testsを別途freezeする。
+
+## Task 269G frozen `GivenWitness` environment
+
+`BindingKind::GivenWitness`を`LetBinding`直後/`Generated`直前、stable debug key
+`given_witness`で追加し、exact proof-context bindingをcontext/binding `1/1`、scope
+`[0]`、source/visible-after `1/1`、missing typeで追加。forward-before、same-condition/
+later/child可視、parent/sibling exclusion、child shadow、outer restoreをlookup testする。
+handoffにはreal context 0/1だけ。test-derived context 2/3/4はowner key
+`task269g-unshadowed-child` / `task269g-shadow-child` / `task269g-sibling`のnormal `Block`、
+binding 2はscope `[0,1]`、ordinal/range `2/109..110`、owner 3、missing type、active、empty
+capture/diagnosticsのtest-only `y`/`GivenWitness` shadow。condition/fact/capture/type/proof rowなし。
+missing source typeはTask269GT。

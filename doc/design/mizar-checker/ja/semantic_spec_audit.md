@@ -682,3 +682,9 @@ human authorityがresolveするのはwitness-variable lexical scopeだけ。ordi
 不変で、condition availability、existential/Skolem meaning、fact、goal、proof state、
 discharge、acceptance、IR、VCはdeferする。よってdocs-only reconciliationはsemantic
 implementation/coverage creditを付与しない。
+
+## Task 269G semantic audit delta
+
+canonical authorityがsupportするのはwitness lexical scopeだけ。`such that`をfact/Skolem/
+goal premise/proof step/obligationへせずscopeだけ実装/test。private binding Rust creditだけ、
+active type/proof/trace credit 0。

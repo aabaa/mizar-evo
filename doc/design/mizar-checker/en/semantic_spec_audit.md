@@ -740,3 +740,10 @@ scope is unchanged, while condition availability, existential/Skolem meaning,
 facts, goals, proof state, discharge, acceptance, IR, and VC remain deferred.
 Therefore this docs-only reconciliation grants no semantic implementation or
 coverage credit.
+
+## Task 269G Semantic Audit Delta
+
+Canonical authority supports lexical witness scope only. Task 269G implements
+and tests that scope without turning a `such that` condition into a fact,
+Skolem record, goal premise, proof step, or obligation. Focused Rust tests may
+credit private binding ownership; active type/proof/trace credit remains zero.

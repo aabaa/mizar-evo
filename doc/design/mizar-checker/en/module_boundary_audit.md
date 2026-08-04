@@ -1712,3 +1712,11 @@ design documents. Checker and runner module paths, dependencies, visibility,
 public APIs, production inventories, and test binaries remain byte-identical.
 Binding implementation remains owned by the separate Task 269G; type admission
 remains Task 269GT.
+
+## Task 269G Boundary Delta
+
+The checker owns the new syntax-free public binding family and `GivenWitness`
+kind; the runner owns exact lower/base assembly and a private dormant consumer.
+Raw AST/resolver/source values stop at the runner. Only eight existing Rust
+files may change, with no module/path/Cargo edge. Type/condition/fact/proof and
+all downstream owners remain outside the boundary.
