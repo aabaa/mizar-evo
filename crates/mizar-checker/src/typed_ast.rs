@@ -23,7 +23,8 @@ use crate::{
         SourcePredicateDefinitionHandoff, SourcePredicateDefinitionProjection,
     },
     source_proof_local_declaration::{
-        SourceProofLocalDeclarationHandoff, SourceProofLocalLetBindingHandoff,
+        SourceProofLocalDeclarationHandoff, SourceProofLocalGivenBindingHandoff,
+        SourceProofLocalLetBindingHandoff,
     },
     source_property_implementation::{
         SourcePropertyImplementationHandoff, SourcePropertyImplementationProjection,
@@ -143,6 +144,7 @@ pub struct TypedAst {
     source_proof_local_declaration: Option<SourceProofLocalDeclarationHandoff>,
     source_proof_local_let_binding: Option<Box<SourceProofLocalLetBindingHandoff>>,
     source_proof_local_let_type: Option<Box<SourceProofLocalLetTypeHandoff>>,
+    source_proof_local_given_binding: Option<Box<SourceProofLocalGivenBindingHandoff>>,
     nodes: TypedArena,
     contexts: LocalTypeContextTable,
     types: TypeTable,
@@ -195,6 +197,7 @@ impl TypedAst {
             source_proof_local_declaration: None,
             source_proof_local_let_binding: None,
             source_proof_local_let_type: None,
+            source_proof_local_given_binding: None,
             nodes: parts.nodes,
             contexts: parts.contexts,
             types: parts.types,
@@ -333,6 +336,15 @@ impl TypedAst {
         }
     }
 
+    pub const fn source_proof_local_given_binding(
+        &self,
+    ) -> Option<&SourceProofLocalGivenBindingHandoff> {
+        match self.source_proof_local_given_binding.as_ref() {
+            Some(handoff) => Some(handoff),
+            None => None,
+        }
+    }
+
     #[cfg(test)]
     pub(crate) fn with_source_context_for_test(
         mut self,
@@ -464,6 +476,14 @@ impl TypedAst {
         handoff: SourceProofLocalLetBindingHandoff,
     ) {
         self.source_proof_local_let_binding = Some(Box::new(handoff));
+    }
+
+    #[cfg(test)]
+    pub(crate) fn inject_source_proof_local_given_binding_for_test(
+        &mut self,
+        handoff: SourceProofLocalGivenBindingHandoff,
+    ) {
+        self.source_proof_local_given_binding = Some(Box::new(handoff));
     }
 
     #[cfg(test)]
@@ -623,7 +643,8 @@ impl TypedAst {
         mut self,
         handoff: SourceEvidenceHandoff,
     ) -> Result<Self, TypedAstError> {
-        if self.source_proof_local_let_binding.is_some()
+        if (self.source_proof_local_let_binding.is_some()
+            || self.source_proof_local_given_binding.is_some())
             || self.source_proof_local_let_type.is_some()
             || self.source_evidence.is_some()
             || self.source_statement.is_some()
@@ -651,7 +672,8 @@ impl TypedAst {
         mut self,
         handoff: SourcePrimaryTermHandoff,
     ) -> Result<Self, TypedAstError> {
-        if self.source_proof_local_let_binding.is_some()
+        if (self.source_proof_local_let_binding.is_some()
+            || self.source_proof_local_given_binding.is_some())
             || self.source_proof_local_let_type.is_some()
             || self.source_term.is_some()
         {
@@ -668,7 +690,8 @@ impl TypedAst {
         mut self,
         handoff: SourceFunctorApplicationHandoff,
     ) -> Result<Self, TypedAstError> {
-        if self.source_proof_local_let_binding.is_some()
+        if (self.source_proof_local_let_binding.is_some()
+            || self.source_proof_local_given_binding.is_some())
             || self.source_proof_local_let_type.is_some()
             || self.source_application.is_some()
             || self.source_statement.is_some()
@@ -726,7 +749,8 @@ impl TypedAst {
         mut self,
         handoff: SourceStructureHandoff,
     ) -> Result<Self, TypedAstError> {
-        if self.source_proof_local_let_binding.is_some()
+        if (self.source_proof_local_let_binding.is_some()
+            || self.source_proof_local_given_binding.is_some())
             || self.source_proof_local_let_type.is_some()
             || self.source_structure.is_some()
             || self.source_statement.is_some()
@@ -779,7 +803,8 @@ impl TypedAst {
         mut self,
         handoff: SourceSetTermHandoff,
     ) -> Result<Self, TypedAstError> {
-        if self.source_proof_local_let_binding.is_some()
+        if (self.source_proof_local_let_binding.is_some()
+            || self.source_proof_local_given_binding.is_some())
             || self.source_proof_local_let_type.is_some()
             || self.source_set_term.is_some()
             || self.source_statement.is_some()
@@ -821,7 +846,8 @@ impl TypedAst {
         mut self,
         handoff: SourceAtomicFormulaHandoff,
     ) -> Result<Self, TypedAstError> {
-        if self.source_proof_local_let_binding.is_some()
+        if (self.source_proof_local_let_binding.is_some()
+            || self.source_proof_local_given_binding.is_some())
             || self.source_proof_local_let_type.is_some()
             || self.source_atomic_formula.is_some()
         {
@@ -850,7 +876,8 @@ impl TypedAst {
         mut self,
         projection: SourcePredicateDefinitionProjection,
     ) -> Result<Self, TypedAstError> {
-        if self.source_proof_local_let_binding.is_some()
+        if (self.source_proof_local_let_binding.is_some()
+            || self.source_proof_local_given_binding.is_some())
             || self.source_proof_local_let_type.is_some()
             || self.source_predicate_definition.is_some()
             || self.source_structure_definition.is_some()
@@ -899,7 +926,8 @@ impl TypedAst {
         mut self,
         handoff: SourceAttributeDefinitionHandoff,
     ) -> Result<Self, TypedAstError> {
-        if self.source_proof_local_let_binding.is_some()
+        if (self.source_proof_local_let_binding.is_some()
+            || self.source_proof_local_given_binding.is_some())
             || self.source_proof_local_let_type.is_some()
             || self.source_attribute_definition.is_some()
             || self.source_functor_definition.is_some()
@@ -944,7 +972,8 @@ impl TypedAst {
         mut self,
         projection: SourceFunctorDefinitionProjection,
     ) -> Result<Self, TypedAstError> {
-        if self.source_proof_local_let_binding.is_some()
+        if (self.source_proof_local_let_binding.is_some()
+            || self.source_proof_local_given_binding.is_some())
             || self.source_proof_local_let_type.is_some()
             || self.source_functor_definition.is_some()
             || self.source_predicate_definition.is_some()
@@ -993,7 +1022,8 @@ impl TypedAst {
         mut self,
         projection: SourcePropertyImplementationProjection,
     ) -> Result<Self, TypedAstError> {
-        if self.source_proof_local_let_binding.is_some()
+        if (self.source_proof_local_let_binding.is_some()
+            || self.source_proof_local_given_binding.is_some())
             || self.source_proof_local_let_type.is_some()
             || self.source_property_implementation.is_some()
             || self.source_predicate_definition.is_some()
@@ -1044,7 +1074,8 @@ impl TypedAst {
         mut self,
         projection: SourceModeDefinitionProjection,
     ) -> Result<Self, TypedAstError> {
-        if self.source_proof_local_let_binding.is_some()
+        if (self.source_proof_local_let_binding.is_some()
+            || self.source_proof_local_given_binding.is_some())
             || self.source_proof_local_let_type.is_some()
             || self.source_mode_definition.is_some()
             || self.source_attribute_definition.is_some()
@@ -1086,7 +1117,8 @@ impl TypedAst {
         mut self,
         projection: SourceStructureDefinitionProjection,
     ) -> Result<Self, TypedAstError> {
-        if self.source_proof_local_let_binding.is_some()
+        if (self.source_proof_local_let_binding.is_some()
+            || self.source_proof_local_given_binding.is_some())
             || self.source_proof_local_let_type.is_some()
             || self.source_structure_definition.is_some()
             || self.source_predicate_definition.is_some()
@@ -1125,7 +1157,8 @@ impl TypedAst {
         mut self,
         handoff: SourceCompositeFormulaHandoff,
     ) -> Result<Self, TypedAstError> {
-        if self.source_proof_local_let_binding.is_some()
+        if (self.source_proof_local_let_binding.is_some()
+            || self.source_proof_local_given_binding.is_some())
             || self.source_proof_local_let_type.is_some()
             || self.source_composite_formula.is_some()
             || self.source_formula_composition.is_some()
@@ -1149,7 +1182,8 @@ impl TypedAst {
         composite: SourceCompositeFormulaHandoff,
         composition: SourceFormulaCompositionHandoff,
     ) -> Result<Self, TypedAstError> {
-        if self.source_proof_local_let_binding.is_some()
+        if (self.source_proof_local_let_binding.is_some()
+            || self.source_proof_local_given_binding.is_some())
             || self.source_proof_local_let_type.is_some()
             || self.source_composite_formula.is_some()
             || self.source_formula_composition.is_some()
@@ -1195,7 +1229,8 @@ impl TypedAst {
         composition: SourceFormulaCompositionHandoff,
         statement: SourceStatementHandoff,
     ) -> Result<Self, TypedAstError> {
-        if self.source_proof_local_let_binding.is_some()
+        if (self.source_proof_local_let_binding.is_some()
+            || self.source_proof_local_given_binding.is_some())
             || self.source_proof_local_let_type.is_some()
             || self.source_composite_formula.is_some()
             || self.source_formula_composition.is_some()
@@ -1266,7 +1301,8 @@ impl TypedAst {
         mut self,
         composition: SourceConditionFormulaCompositionHandoff,
     ) -> Result<Self, TypedAstError> {
-        if self.source_proof_local_let_binding.is_some()
+        if (self.source_proof_local_let_binding.is_some()
+            || self.source_proof_local_given_binding.is_some())
             || self.source_proof_local_let_type.is_some()
             || self.source_condition_formula_composition.is_some()
             || self.source_composite_formula.is_some()
@@ -1311,7 +1347,8 @@ impl TypedAst {
         mut self,
         composition: SourcePredicateChainCompositionHandoff,
     ) -> Result<Self, TypedAstError> {
-        if self.source_proof_local_let_binding.is_some()
+        if (self.source_proof_local_let_binding.is_some()
+            || self.source_proof_local_given_binding.is_some())
             || self.source_proof_local_let_type.is_some()
             || self.source_predicate_chain_composition.is_some()
             || self.source_composite_formula.is_some()
@@ -1346,7 +1383,8 @@ impl TypedAst {
         mut self,
         statement: SourceStatementHandoff,
     ) -> Result<Self, TypedAstError> {
-        if self.source_proof_local_let_binding.is_some()
+        if (self.source_proof_local_let_binding.is_some()
+            || self.source_proof_local_given_binding.is_some())
             || self.source_proof_local_let_type.is_some()
             || self.source_statement.is_some()
             || self.source_statement_references.is_some()
@@ -1401,7 +1439,8 @@ impl TypedAst {
         statements: SourceStatementHandoff,
         references: SourceStatementReferenceHandoff,
     ) -> Result<Self, TypedAstError> {
-        if self.source_proof_local_let_binding.is_some()
+        if (self.source_proof_local_let_binding.is_some()
+            || self.source_proof_local_given_binding.is_some())
             || self.source_proof_local_let_type.is_some()
             || self.source_statement.is_some()
             || self.source_statement_references.is_some()
@@ -1463,7 +1502,8 @@ impl TypedAst {
         statements: SourceStatementHandoff,
         witnesses: SourceStatementWitnessHandoff,
     ) -> Result<Self, TypedAstError> {
-        if self.source_proof_local_let_binding.is_some()
+        if (self.source_proof_local_let_binding.is_some()
+            || self.source_proof_local_given_binding.is_some())
             || self.source_proof_local_let_type.is_some()
             || self.source_statement.is_some()
             || self.source_statement_references.is_some()
@@ -1533,7 +1573,8 @@ impl TypedAst {
         mut self,
         handoff: SourceProofLocalDeclarationHandoff,
     ) -> Result<Self, TypedAstError> {
-        if self.source_proof_local_let_binding.is_some()
+        if (self.source_proof_local_let_binding.is_some()
+            || self.source_proof_local_given_binding.is_some())
             || self.source_proof_local_let_type.is_some()
         {
             return Err(TypedAstError::InvalidSourceProofLocalDeclaration);
@@ -1613,6 +1654,7 @@ impl TypedAst {
     ) -> Result<Self, TypedAstError> {
         let installation_available = self.source_proof_local_let_binding.is_none()
             && self.source_proof_local_let_type.is_none()
+            && self.source_proof_local_given_binding.is_none()
             && self.resolved_root.is_none()
             && self.source_context.is_none()
             && self.source_type.is_none()
@@ -1657,6 +1699,7 @@ impl TypedAst {
     ) -> Result<Self, TypedAstError> {
         let installation_available = self.source_proof_local_let_type.is_none()
             && self.source_proof_local_let_binding.is_none()
+            && self.source_proof_local_given_binding.is_none()
             && self.resolved_root.is_none()
             && self.source_context.is_none()
             && self.source_type.is_none()
@@ -1699,13 +1742,59 @@ impl TypedAst {
         Ok(self)
     }
 
+    pub fn with_source_proof_local_given_binding(
+        mut self,
+        handoff: SourceProofLocalGivenBindingHandoff,
+    ) -> Result<Self, TypedAstError> {
+        let installation_available = self.source_proof_local_given_binding.is_none()
+            && self.source_proof_local_let_binding.is_none()
+            && self.source_proof_local_let_type.is_none()
+            && self.resolved_root.is_none()
+            && self.source_context.is_none()
+            && self.source_type.is_none()
+            && self.source_attribute.is_none()
+            && self.source_evidence.is_none()
+            && self.source_term.is_none()
+            && self.source_application.is_none()
+            && self.source_structure.is_none()
+            && self.source_set_term.is_none()
+            && self.source_atomic_formula.is_none()
+            && self.source_attribute_definition.is_none()
+            && self.source_functor_definition.is_none()
+            && self.source_property_implementation.is_none()
+            && self.source_mode_definition.is_none()
+            && self.source_structure_definition.is_none()
+            && self.source_predicate_definition.is_none()
+            && self.source_composite_formula.is_none()
+            && self.source_formula_composition.is_none()
+            && self.source_condition_formula_composition.is_none()
+            && self.source_predicate_chain_composition.is_none()
+            && self.source_statement.is_none()
+            && self.source_statement_references.is_none()
+            && self.source_statement_witnesses.is_none()
+            && self.source_proof_local_declaration.is_none()
+            && self.nodes.is_empty()
+            && self.contexts.is_empty()
+            && self.types.is_empty()
+            && self.facts.is_empty()
+            && self.coercions.is_empty()
+            && self.initial_obligations.is_empty()
+            && self.diagnostics.is_empty();
+        handoff
+            .validate_complete_installation(self.source_id, &self.module_id, installation_available)
+            .map_err(|_| TypedAstError::InvalidSourceProofLocalGivenBinding)?;
+        self.source_proof_local_given_binding = Some(Box::new(handoff));
+        Ok(self)
+    }
+
     pub fn with_source_application_statement_witnesses(
         mut self,
         application: SourceFunctorApplicationHandoff,
         statements: SourceStatementHandoff,
         witnesses: SourceStatementWitnessHandoff,
     ) -> Result<Self, TypedAstError> {
-        if self.source_proof_local_let_binding.is_some()
+        if (self.source_proof_local_let_binding.is_some()
+            || self.source_proof_local_given_binding.is_some())
             || self.source_proof_local_let_type.is_some()
             || self.source_statement.is_some()
             || self.source_statement_references.is_some()
@@ -1788,7 +1877,8 @@ impl TypedAst {
         statements: SourceStatementHandoff,
         witnesses: SourceStatementWitnessHandoff,
     ) -> Result<Self, TypedAstError> {
-        if self.source_proof_local_let_binding.is_some()
+        if (self.source_proof_local_let_binding.is_some()
+            || self.source_proof_local_given_binding.is_some())
             || self.source_proof_local_let_type.is_some()
             || self.source_statement.is_some()
             || self.source_statement_references.is_some()
@@ -1879,7 +1969,8 @@ impl TypedAst {
         statements: SourceStatementHandoff,
         witnesses: SourceStatementWitnessHandoff,
     ) -> Result<Self, TypedAstError> {
-        if self.source_proof_local_let_binding.is_some()
+        if (self.source_proof_local_let_binding.is_some()
+            || self.source_proof_local_given_binding.is_some())
             || self.source_proof_local_let_type.is_some()
             || self.source_statement.is_some()
             || self.source_statement_references.is_some()
@@ -2079,6 +2170,9 @@ impl TypedAst {
         }
         if let Some(source_proof_local_let_type) = &self.source_proof_local_let_type {
             output.push_str(&source_proof_local_let_type.debug_text());
+        }
+        if let Some(source_proof_local_given_binding) = &self.source_proof_local_given_binding {
+            output.push_str(&source_proof_local_given_binding.debug_text());
         }
         if let Some(source_statement_references) = &self.source_statement_references {
             output.push_str(&source_statement_references.debug_text());
@@ -2985,6 +3079,7 @@ pub enum TypedAstError {
     InvalidSourceProofLocalDeclaration,
     InvalidSourceProofLocalLetBinding,
     InvalidSourceProofLocalLetType,
+    InvalidSourceProofLocalGivenBinding,
     InvalidNodeContext {
         node: TypedNodeId,
         context: LocalTypeContextId,
@@ -3157,6 +3252,8 @@ impl fmt::Display for TypedAstError {
             Self::InvalidSourceProofLocalLetType => {
                 formatter.write_str("source proof-local let type handoff is invalid")
             }
+            Self::InvalidSourceProofLocalGivenBinding => formatter
+                .write_str("typed AST source proof-local given-binding handoff is inconsistent"),
             Self::InvalidNodeContext { node, context } => write!(
                 formatter,
                 "typed node {} references missing context {}",

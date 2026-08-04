@@ -1719,3 +1719,10 @@ proof/reasoning block末尾まで有効で、parent/sibling blockでは無効、
 EN/JA proof-local、binding、Typed/Resolved、boundary/audit/plan/TODOはexact
 `GivenWitness` transaction、scope matrix、implementation 8 file/test 4+4、active corpus
 semantics 0、Task269GT type deferを同期する。bilingual exceptionなし。
+
+## Task 269G implementation synchronization
+
+EN/JAはimplemented 8-file transaction、exact `GivenWitness` rowと`1/1/0 -> 2/2/0`、
+canonical lexical lookup matrix、boxed Typed/final ownership、private dormant runner、tests 8件、
+library `494/556`、production `30/169847` / `37/73118`、active/trace/CLI不変、Task269GT
+source-type deferralで一致する。implementation-time bilingual debtなし。

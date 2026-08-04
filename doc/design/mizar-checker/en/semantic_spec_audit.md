@@ -747,3 +747,9 @@ Canonical authority supports lexical witness scope only. Task 269G implements
 and tests that scope without turning a `such that` condition into a fact,
 Skolem record, goal premise, proof step, or obligation. Focused Rust tests may
 credit private binding ownership; active type/proof/trace credit remains zero.
+
+Implementation preserves this boundary: only lexical binding ownership is
+published, and every typed/final semantic table remains empty. No active route
+or source-type admission is added, so the `such that` condition still creates
+no fact, Skolem/existential meaning, goal premise, proof step, discharge,
+acceptance, initial obligation, Core, CFG, or VC result.

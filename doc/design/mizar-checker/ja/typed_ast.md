@@ -1823,3 +1823,10 @@ semantic exclusionは不変。
 `TypedAst`はprivate optional given-binding handoff、read-only getter、one-shot installer/
 `InvalidSourceProofLocalGivenBinding`を追加。otherwise-empty profileだけをacceptし、type/
 fact/coercion/initial obligation/diagnostic/coexisting handoffをpublishしない。
+
+## Task 269G active typed ownership
+
+frozen field/getter/one-shot installerを実装した。installationはmutation前にcomplete handoffを
+validateし、全sibling family両順序とnonempty semantic tableをreject、node/type/fact/proof/
+obligation/diagnostic payloadをemptyに保つ。private boxed storageでもby-value public installerと
+`Option<&Handoff>` getterは不変。

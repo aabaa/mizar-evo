@@ -688,3 +688,8 @@ implementation/coverage creditを付与しない。
 canonical authorityがsupportするのはwitness lexical scopeだけ。`such that`をfact/Skolem/
 goal premise/proof step/obligationへせずscopeだけ実装/test。private binding Rust creditだけ、
 active type/proof/trace credit 0。
+
+implementationもこのboundaryを保持する。lexical binding ownershipだけをpublishし、全Typed/
+final semantic tableはempty。active route/source-type admissionなしで、`such that`はfact、
+Skolem/existential、goal premise、proof step、discharge、acceptance、initial obligation、Core、
+CFG、VCを作らない。

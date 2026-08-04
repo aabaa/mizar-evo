@@ -3586,3 +3586,6 @@ condition、label、formula、statement payload追加なし。binding-only consu
 existing exact `given` lowerをbyte-for-byte consumeし、statement/condition/label/formula/
 use-site rowは追加しない。checker binding handoffはenclosing proofだけをidentify。
 statement semantics/proof effectはdefer。
+
+implemented transactionはこのboundaryを保持する。proof contextはprovenanceとしてだけ
+authenticateし、statement/condition/label/formula/fact/thesis/conclusion/proof rowをemitしない。

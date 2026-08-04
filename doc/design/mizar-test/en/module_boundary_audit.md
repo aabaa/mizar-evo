@@ -13118,3 +13118,15 @@ Only the existing proof-local runner leaf, two test-only facades, and existing
 test leaf change. The lower producer file is immutable. Raw source/AST/resolver
 data remains runner-owned; only the syntax-free handoff crosses to checker.
 No new path, public route, active dispatch, Cargo edge, or trace owner appears.
+
+## Checker Task 269G Implemented Runner Boundary
+
+Exactly the frozen four runner files change and no module or production path is
+added. Production is `37/73118`; the path hash remains
+`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d`
+and the content hash is
+`2cae769737fdee4560ab1d1bca81f10d900ff8a1d9824aba720806f84e802711`.
+The library is `556`, with raw/normalized hashes
+`194b2884a9d933823e0d06b24460cd510fd9d16fbd6823b9e13584779acd1f03` /
+`728a5b688c19acc42d66a9c2f5c13ad67d795949ec88a2d877b917c9607d80e8`.
+All excluded ownership and active boundaries remain unchanged.

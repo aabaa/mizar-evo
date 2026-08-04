@@ -5306,3 +5306,11 @@ output, obtains the real reserve base, constructs only the syntax-free local,
 and invokes the checker producer. It is absent from production dispatch and
 all CLI outcomes. Four focused tests cover exact composition, corruption,
 Typed/final atomicity, and route isolation; no fixture or expectation changes.
+
+## Checker Task 269G Active Dormant Harness
+
+The private route now implements that exact composition. Its four tests pass
+the normal binding transaction and reject every frozen lower/base/checker
+corruption, ownership conflict, and selector near miss. It remains absent from
+production dispatch and publishes no diagnostic, fixture, trace, type, fact,
+proof, obligation, or downstream semantic result.

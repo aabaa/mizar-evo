@@ -863,6 +863,7 @@ generated public newtype:
 
 - `SourceProofLocalDeclarationId`
 - `SourceProofLocalLetBindingId`
+- `SourceProofLocalGivenBindingId`
 
 literal top-level public item:
 
@@ -877,6 +878,10 @@ literal top-level public item:
   `SourceProofLocalLetBindingRecovery`、`SourceProofLocalLetBinding`、
   `SourceProofLocalLetBindingTable`、`SourceProofLocalLetBindingHandoff`、
   `SourceProofLocalLetBindingProducer`、`SourceProofLocalLetBindingError`
+- `SourceProofLocalGivenBindingHandoffInput`、
+  `SourceProofLocalGivenBindingRecovery`、`SourceProofLocalGivenBinding`、
+  `SourceProofLocalGivenBindingTable`、`SourceProofLocalGivenBindingHandoff`、
+  `SourceProofLocalGivenBindingProducer`、`SourceProofLocalGivenBindingError`
 
 対応:
 
@@ -887,6 +892,7 @@ literal top-level public item:
 | Typed/final ownerはoptional handoffをatomicにpublish/replay/clone-preserveし、全semantic tableをemptyに保つ。 | `TypedAst::with_source_proof_local_declaration`とread-only ownership getter 2件。 | one-shot/orphan/stale/sibling/final-replay/empty-semantics checker/runner test。 | dormant Task-269A definition-site sliceとしてimplemented。 |
 | public enumはforward-compatible。 | kind/recovery/errorの`#[non_exhaustive]`。 | public-enum/source-spec-audit lint policy。 | exhaustive exceptionなしでguard。 |
 | exact proof-`let` profileはreserve-only baseへmissing-type `LetBinding` 1件をappendし、semantic publicationなしでatomic preserveする。 | public `SourceProofLocalLetBinding*` input/row/table/handoff/producer/error typeとTyped/final ownership。 | checker 4件とprivate runner 4件のTask-269C tests。 | zero-credit binding transportとしてimplemented。 |
+| exact proof-`given` profileはreserve-only baseへmissing-type `GivenWitness` 1件をappendし、canonical block-local lookupを保ち、semantic publicationなしでatomic preserveする。 | public `SourceProofLocalGivenBinding*` input/row/table/handoff/producer/error type、`BindingKind::GivenWitness`、Typed/final ownership。 | inherited/shadowed/restored/parent-excluded/sibling-excluded lookupを含むchecker 4件とprivate runner 4件のTask-269G tests。 | zero-credit binding transportとしてimplemented。source-type admissionはTask 269GTに残る。 |
 
 bounded gap: later-use resolution/capture replay、他のproof-local declaration
 form、witness typing、existential matching、goal substitution、proof/discharge/
@@ -5665,3 +5671,8 @@ planned sourceはTask269GP lowerから`GivenWitness` `BindingEnv` row 1件を構
 handoffをotherwise-empty Typed/final profileがownする。semantic/node tableと全sibling handoffは
 emptyのまま、exact lookup matrixがcanonical block lifetimeをcover。source typeはTask269GT、
 condition/fact/proof/active use extractionはdefer。existing canonical artifact rebaselineなし。
+
+implementationはこのbinding `source_drift`と8-test `test_gap`だけをcloseした。public Given
+family、`BindingKind::GivenWitness`、Typed/Resolved ownershipはfrozen contract/canonical block
+scopeに一致。canonical artifactはbyte-identicalで、source type、active use/capture、全condition/
+fact/proof semanticはsource behaviorから推測せずopenのまま。

@@ -477,6 +477,7 @@ pub enum BindingKind {
     LocalAbbreviation,
     ReservedVariable,
     LetBinding,
+    GivenWitness,
     Generated,
 }
 
@@ -1633,6 +1634,7 @@ fn binding_kind_name(kind: BindingKind) -> &'static str {
         BindingKind::LocalAbbreviation => "local_abbreviation",
         BindingKind::ReservedVariable => "reserved_variable",
         BindingKind::LetBinding => "let_binding",
+        BindingKind::GivenWitness => "given_witness",
         BindingKind::Generated => "generated",
     }
 }

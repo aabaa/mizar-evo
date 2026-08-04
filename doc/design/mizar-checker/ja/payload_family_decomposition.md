@@ -1719,3 +1719,7 @@ fact、goal、proof、obligation familyはexcludeのまま。
 new payloadはimmutable lexical binding transaction 1件だけ: authenticated lower、base/final
 `BindingEnv`+fingerprint、dense binding row 1件。type、condition/label/theorem fact、goal、
 proof、obligation、acceptance、IR、VC payloadはabsent。
+
+familyはdense Given binding row 1件、authenticated lower provenance、base/final environment
+だけとしてimplemented。Typed/final replayとdormant runnerは分解を保持し、separate
+source-type payloadを追加できるownerはTask269GTだけ。

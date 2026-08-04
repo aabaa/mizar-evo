@@ -1327,3 +1327,7 @@ The new `GivenWitness` row deliberately retains `BindingTypeSite::Missing`.
 The authenticated lower `set@84..87` is not independently admitted, inferred,
 or used to create a guard. Task 269GT alone may consume the immutable binding
 handoff by value and add the source-type owner.
+
+The Task-269G implementation deliberately retains `BindingTypeSite::Missing`
+and leaves the authenticated lower `set@84..87` unconsumed by checker source-
+type ownership. Task 269GT remains dependency-ready and separately scoped.

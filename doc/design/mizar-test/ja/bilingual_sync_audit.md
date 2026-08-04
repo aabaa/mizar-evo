@@ -1651,3 +1651,9 @@ runner/corpus/trace change 0、separate
 
 EN/JA runner plan/harness/boundary/traceability/TODOはunchanged 269GP lower、private
 4-file consumer、test 4件、active corpus/trace/semantic change 0、Task269GT type deferで一致。
+
+## Checker Task 269G implementation synchronization
+
+EN/JAはimplemented private route、exact checker transaction、runner test matrix 4件、runner
+`556`、production `37/73118`、raw/normalized hash、public/active/corpus/trace/CLI不変、全semantic
+deferで一致する。implementation-time bilingual debtなし。

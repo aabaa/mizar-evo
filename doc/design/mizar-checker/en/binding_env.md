@@ -885,3 +885,15 @@ test-only `y`/`GivenWitness` shadow at scope `[0,1]`, ordinal/range
 `2/109..110`, owner 3, missing type, active status, and empty capture/
 diagnostics. No condition, fact, capture, type, or proof row is created. Task 269GT
 owns the missing source type.
+
+## Task 269G Active `GivenWitness` Transaction
+
+The producer and both installers now enforce the frozen transition and the
+exact declaration-context forward/local lookups. A separate checker-only
+synthetic matrix proves that the declared witness remains visible through its
+corresponding block and nested children unless shadowed, is restored after a
+shadow ends, and is absent from parent and sibling blocks; those synthetic
+contexts are not production handoff rows. Environment, declaration, binding,
+and fingerprint corruption fails transactionally. The installed row keeps a
+missing type and creates no condition, fact, capture, obligation, or proof
+effect.

@@ -2518,3 +2518,9 @@ Focused Rust tests close the private lexical-binding `test_gap` after
 implementation. No `.miz` backlink, trace row/status/count, expectation,
 diagnostic key, or active type/proof coverage changes. The trace manifest stays
 byte-identical; Task 269GT and active source-use coverage remain explicit.
+
+The implementation preserves this no-credit contract exactly. No corpus or
+trace artifact changed; cases/requirements remain `428/395`, active stages
+remain `101/7/205/1`, type coverage remains `259=247+12`, and the trace hash
+remains byte-identical. Only the dormant runner library inventory moves to
+`556`.

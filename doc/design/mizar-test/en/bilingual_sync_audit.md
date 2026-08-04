@@ -1729,3 +1729,10 @@ separate 269G/269GT ownership without adding condition or proof semantics.
 EN/JA runner plan, harness, boundary, traceability, and TODO records agree on
 the unchanged 269GP lower, private four-file consumer, four tests, zero active
 corpus/trace/semantic change, and Task-269GT type deferral.
+
+## Checker Task 269G Implementation Synchronization
+
+EN/JA agree on the implemented private route, exact checker transaction,
+four-test runner matrix, runner `556`, production `37/73118`, raw/normalized
+hashes, unchanged public/active/corpus/trace/CLI behavior, and all semantic
+deferrals. No implementation-time bilingual debt remains.

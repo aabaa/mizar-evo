@@ -3614,6 +3614,8 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
   four runner tests, counts/hashes, and Task-269GT deferral.
 - [x] Complete docs review/verification/final gates with all nine gates PASS,
   no score cap, and valid `100/100`.
-- [ ] Create the synchronized 40-file documentation commit.
-- [ ] Implement/review/verify/commit only the exact dormant Task-269G route;
-  keep fixture/sidecar/expectation/trace/metadata/Cargo/CLI bytes unchanged.
+- [x] Create synchronized 40-file documentation commit
+  `1672486e7c7923e56d9019404bc9c75ffa119f96`.
+- [~] Exact dormant Task-269G implementation/reviews/verification are complete
+  at uncapped `100/100`; commit it and fresh-inventory Task 269GT while keeping
+  fixture/sidecar/expectation/trace/metadata/Cargo/CLI bytes unchanged.

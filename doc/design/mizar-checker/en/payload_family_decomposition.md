@@ -1814,3 +1814,8 @@ The only new payload family is one immutable lexical binding transaction:
 authenticated lower provenance, base/final `BindingEnv` snapshots and
 fingerprints, and one dense binding row. Type, condition/label fact, theorem
 fact, goal, proof, obligation, acceptance, IR, and VC payloads remain absent.
+
+The family is now implemented as exactly one dense Given binding row plus the
+authenticated lower provenance and base/final environments. Typed/final
+replay and the dormant runner preserve that decomposition; Task 269GT remains
+the only owner allowed to add the separately frozen source-type payload.

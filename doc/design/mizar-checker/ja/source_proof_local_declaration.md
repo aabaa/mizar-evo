@@ -457,6 +457,8 @@ SHA-256
 | `SourceProofLocalDeclarationError` | `#[non_exhaustive]`。callerはvalidation/installation failureをexhaustive matchしない。 |
 | `SourceProofLocalLetBindingRecovery` | `#[non_exhaustive]`。callerはlater explicitly frozen proof-`let` recovery classを許容する。 |
 | `SourceProofLocalLetBindingError` | `#[non_exhaustive]`。callerはproof-`let` validation/installation failureをexhaustive matchしない。 |
+| `SourceProofLocalGivenBindingRecovery` | `#[non_exhaustive]`。callerはlater explicitly frozen proof-`given` recovery classを許容する。 |
+| `SourceProofLocalGivenBindingError` | `#[non_exhaustive]`。callerはproof-`given` validation/installation failureをexhaustive matchしない。 |
 
 この module が所有する exhaustive public enum exception はない。
 
@@ -1549,3 +1551,30 @@ docs prerequisiteはEN/JA sync、spec review **NO FINDINGS**、hard gate 9件unc
 `>=90/100`、exact docs commitを要求。fresh lower preflight後exact 8-file implementation、
 test/implementation/source-doc review **NO FINDINGS**、full verification/count/hash、final
 gate/score、task-only commit、clean inventory、stash不変を満たしてTask269GTを選ぶ。
+
+### Task-269G implementation closure
+
+exact checker transaction、boxed Typed/final ownership、private dormant runner consumerをfrozen
+Rust 8 filesへ実装した。producerはunchanged Task269GP lowerとreserve-only baseをauthenticateし、
+dense `GivenWitness` row 1件、`1/1/0 -> 2/2/0` environment、
+`BindingTypeSite::Missing`を保持。checker scope matrixはblock inheritance、shadow、restore、
+parent/sibling exclusionを証明し、validation/cross-family failureはpublication前にrollback。
+
+checker/runner exact 4+4 testsでlibraryは`494/556`。raw/normalized list hashはchecker
+`ce299dfafb8db5d5c27cb9e271dd77d08a09b45a7323d0efc17790e0d104a984` /
+`6d8f1938b05118e129f8d0942bd7af77914435b6b45282bd46e636132891d4cb`、runner
+`194b2884a9d933823e0d06b24460cd510fd9d16fbd6823b9e13584779acd1f03` /
+`728a5b688c19acc42d66a9c2f5c13ad67d795949ec88a2d877b917c9607d80e8`。
+productionはchecker `30/169847`、runner `37/73118`、path hashは
+`c89f43f6abebf7ebeb3ac9394ecd8ea3186ad28934c75526d2cc0b85a66ebad5` /
+`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d`、
+content hashは`e47862eebdb59b576160d4b64ab390549d91daecd69fd34f8bcfbc2952d6ca96` /
+`2cae769737fdee4560ab1d1bca81f10d900ff8a1d9824aba720806f84e802711`。
+
+`.miz`/sidecar/expectation/trace/metadata/Cargo/parser/resolver/active dispatch/diagnostic/
+condition/fact/source type/goal/proof/discharge/acceptance/initial obligation/Core/CFG/VC ownerは
+不変。corpus/count/CLI/traceはfrozen Task264 baseline。test-sufficiency/implementation/source-
+docs/final-quality reviewは**NO FINDINGS**。focused/crate/workspace/lint/metadata/fmt/Clippy/
+CLI/count/hash/whitespaceはPASS、hard gate 9件はcapなし`100/100`
+(`20/20/15/15/10/10/5/5`)。parent-owned staging/commit/fresh inventory後にseparate
+source-type-only Task269GTへ進む。

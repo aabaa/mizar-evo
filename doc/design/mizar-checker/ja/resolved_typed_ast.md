@@ -1804,3 +1804,11 @@ Task269GSでは全semantic table不変。
 clone-preserveし、duplicate/stale/cross-family/semantic coexistenceを
 `InvalidSourceProofLocalGivenBinding`でreject。node/semantic tableなし、debugはexisting
 `let` binding/type slot後。
+
+## Task 269G active final ownership
+
+final assemblyはcomplete Given binding handoffをrevalidate/clone-preserveする。dedicated final-
+replay testsはstale/cross-family/node-hint conflictをrejectし、valid replayはexact lexical
+binding/empty semantic profileを保持する。Typed installer testsは別にnonempty semantic table
+6 familyをfinal assembly前にreject。private boxed storageはfrozen getter/installer/clone/debug
+contractを変えずaggregate stack sizeを保つ。

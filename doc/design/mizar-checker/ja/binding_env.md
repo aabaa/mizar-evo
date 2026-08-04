@@ -845,3 +845,12 @@ handoffにはreal context 0/1だけ。test-derived context 2/3/4はowner key
 binding 2はscope `[0,1]`、ordinal/range `2/109..110`、owner 3、missing type、active、empty
 capture/diagnosticsのtest-only `y`/`GivenWitness` shadow。condition/fact/capture/type/proof rowなし。
 missing source typeはTask269GT。
+
+## Task 269G active `GivenWitness` transaction
+
+producer/installer 2件はfrozen transitionとexact declaration-context forward/local lookupを
+実装する。separate checker-only synthetic matrixが、witnessは対応block/nested childで
+shadowされない限りvisible、shadow終了後restore、parent/siblingではabsentと証明するが、
+synthetic contextはproduction handoff rowではない。environment/declaration/binding/fingerprint
+corruptionはtransactional failure。installed rowはmissing typeを保持しcondition/fact/capture/
+obligation/proof effectを作らない。

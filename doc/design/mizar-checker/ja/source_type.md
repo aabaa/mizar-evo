@@ -959,3 +959,7 @@ type assumption、guard、proof obligationはdefer。
 new `GivenWitness` rowは`BindingTypeSite::Missing`を保持。lowerの`set@84..87`を独立admit/
 infer/guard化しない。Task269GTだけがimmutable binding handoffをby-value consumeして
 source-type ownerを追加できる。
+
+Task269G implementationは`BindingTypeSite::Missing`を意図通り保持し、authenticated lower
+`set@84..87`をchecker source-type ownershipへconsumeしない。Task269GTはdependency-readyな
+separate scopeのまま。

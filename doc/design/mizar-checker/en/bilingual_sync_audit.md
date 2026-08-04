@@ -1810,3 +1810,12 @@ The EN/JA proof-local, binding, Typed/Resolved, boundary, audit, plan, and TODO
 records synchronize the exact `GivenWitness` transaction, lexical scope
 matrix, eight-file implementation/four-plus-four-test scope, zero active
 corpus semantics, and Task-269GT type deferral. No bilingual exception remains.
+
+## Task 269G Implementation Synchronization
+
+EN/JA agree on the implemented eight-file transaction, exact `GivenWitness`
+row and `1/1/0 -> 2/2/0` environment transition, canonical lexical lookup
+matrix, boxed Typed/final ownership, private dormant runner, eight tests,
+measured `494/556` libraries and `30/169847` / `37/73118` production, unchanged
+active/trace/CLI state, and the separate Task-269GT source-type deferral. No
+implementation-time bilingual debt remains.

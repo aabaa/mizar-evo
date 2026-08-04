@@ -11823,3 +11823,14 @@ Task269Gが最初に許可されるbinding consumer。
 existing proof-local leaf、test-only facade 2段、existing test leafだけを変更し、lower
 producer fileはimmutable。raw source/AST/resolverはrunner-owned、syntax-free handoffだけが
 checkerへcross。new path/public route/active dispatch/Cargo edge/trace ownerなし。
+
+## Checker Task 269G implemented runner boundary
+
+frozen runner 4 filesだけを変更し、module/production path追加なし。productionは
+`37/73118`、path hashは
+`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d`不変、content hashは
+`2cae769737fdee4560ab1d1bca81f10d900ff8a1d9824aba720806f84e802711`。
+libraryは`556`、raw/normalized hashは
+`194b2884a9d933823e0d06b24460cd510fd9d16fbd6823b9e13584779acd1f03` /
+`728a5b688c19acc42d66a9c2f5c13ad67d795949ec88a2d877b917c9607d80e8`。
+excluded ownership/active boundaryは全て不変。

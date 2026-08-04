@@ -3380,6 +3380,8 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
   scope matrix、active/semantic output 0、runner test 4件、count/hash、Task269GT deferをfreeze。
 - [x] docs review/verification/final gateを全9 gate PASS、score capなし、valid
   `100/100`で完了。
-- [ ] synchronized 40-file docs commitを作成。
-- [ ] exact dormant Task269G routeだけをimplement/review/verify/commitし、fixture/sidecar/
-  expectation/trace/metadata/Cargo/CLIをbyte-identicalに保持。
+- [x] synchronized 40-file docs commit
+  `1672486e7c7923e56d9019404bc9c75ffa119f96`を作成。
+- [~] exact dormant Task269G implementation/review/verificationはcapなし`100/100`で完了。
+  commit後Task269GTをfresh inventoryし、fixture/sidecar/expectation/trace/metadata/Cargo/CLIを
+  byte-identicalに保持。

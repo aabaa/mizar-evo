@@ -6869,8 +6869,10 @@ implementation commit does not satisfy a producer task.
   eight focused tests, audit impact, baselines, and exit gates.
 - [x] Repeat specification review to **NO FINDINGS** and pass all docs-only
   verification/count/hash gates at uncapped `>=90/100`.
-- [ ] Commit only the synchronized 40-file documentation prerequisite; fresh-
-  preflight and implement only the frozen Task 269G slice.
-- [ ] Repeat test/implementation/source-doc/final reviews to **NO FINDINGS**,
-  pass all verification and nine gates, commit the exact eight-file
-  implementation plus synchronized records, then fresh-inventory Task 269GT.
+- [x] Commit only the synchronized 40-file documentation prerequisite as
+  `1672486e7c7923e56d9019404bc9c75ffa119f96`; fresh-preflight and implement
+  only the frozen Task 269G slice.
+- [~] Test/implementation/source-doc/final reviews are **NO FINDINGS**, all
+  verification and nine gates pass uncapped at `100/100`; commit the exact
+  eight-file implementation plus synchronized records, then fresh-inventory
+  Task 269GT.

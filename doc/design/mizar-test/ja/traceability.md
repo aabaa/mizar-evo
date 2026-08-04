@@ -2381,3 +2381,7 @@ gap diagnosticだけをcoverし、later witness visibilityはTask269G ownerの�
 implementation後focused Rust testがprivate lexical-binding `test_gap`だけをcloseする。
 `.miz` backlink、trace row/status/count、expectation、diagnostic、active type/proof coverageは
 変更せずmanifest byte-identical。Task269GT/active source-useはexplicit defer。
+
+implementationはno-credit contractをexactに保持。corpus/trace artifact変更なし、cases/
+requirements `428/395`、active stages `101/7/205/1`、type coverage `259=247+12`、trace hashは
+byte-identical。dormant runner library inventoryだけ`556`へ移動。

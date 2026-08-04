@@ -4119,3 +4119,7 @@ The existing exact `given` lower output is consumed byte-for-byte; this module
 adds no statement, condition, label, formula, or use-site row. The checker
 binding handoff identifies the enclosing proof only. Statement semantics and
 all proof effects remain deferred.
+
+The implemented transaction preserves this boundary. Its proof context is
+authenticated only as provenance; no statement, condition, label, formula,
+fact, thesis, conclusion, or proof row is emitted.

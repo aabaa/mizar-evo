@@ -1897,3 +1897,13 @@ tables remain unchanged in Task 269GS.
 duplicate, stale, cross-family, or semantic-coexisting installation with
 `InvalidSourceProofLocalGivenBinding`. It adds no node or semantic table; the
 debug block follows the existing `let` binding/type slot.
+
+## Task 269G Active Final Ownership
+
+Final assembly now revalidates and clone-preserves the complete Given binding
+handoff. Dedicated final-replay tests reject stale, cross-family, and node-hint
+conflicts while valid replay preserves the exact lexical binding and empty
+semantic profile; the Typed installer tests independently reject all six
+nonempty semantic-table families before final assembly. Private boxed storage
+keeps the aggregate's stack size stable without changing the frozen getter,
+installer, clone, or debug contract.

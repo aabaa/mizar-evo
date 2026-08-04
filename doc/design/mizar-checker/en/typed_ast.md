@@ -1927,3 +1927,11 @@ unchanged.
 and one-shot installer with `InvalidSourceProofLocalGivenBinding`. It accepts
 only an otherwise-empty semantic/node profile and publishes no type, fact,
 coercion, initial obligation, diagnostic, or coexisting source handoff.
+
+## Task 269G Active Typed Ownership
+
+The frozen field, getter, and one-shot installer are implemented. Installation
+validates the entire handoff before mutation, rejects both installation orders
+for every sibling family and all nonempty semantic tables, and leaves node,
+type, fact, proof, obligation, and diagnostic payloads empty. Private boxed
+storage preserves the by-value public installer and `Option<&Handoff>` getter.

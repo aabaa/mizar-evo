@@ -4994,3 +4994,10 @@ test-only leafはexact Task269GP source/Surface/resolver outputとreal reserve b
 syntax-free localだけを構成してchecker producerを呼ぶ。production dispatch/CLIには不在。
 focused test 4件がcomposition/corruption/Typed-final atomicity/route isolationをcoverし、
 fixture/expectation変更なし。
+
+## Checker Task 269G active dormant harness
+
+private routeはexact compositionを実装済み。tests 4件はnormal binding transactionをpassし、
+frozen lower/base/checker corruption、ownership conflict、selector near missを全reject。
+production dispatchには不在でdiagnostic/fixture/trace/type/fact/proof/obligation/downstream
+semantic resultをpublishしない。

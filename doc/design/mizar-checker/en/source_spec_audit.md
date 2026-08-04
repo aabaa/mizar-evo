@@ -895,6 +895,7 @@ Generated public newtypes:
 
 - `SourceProofLocalDeclarationId`
 - `SourceProofLocalLetBindingId`
+- `SourceProofLocalGivenBindingId`
 
 Literal top-level public items:
 
@@ -909,6 +910,10 @@ Literal top-level public items:
   `SourceProofLocalLetBindingRecovery`, `SourceProofLocalLetBinding`,
   `SourceProofLocalLetBindingTable`, `SourceProofLocalLetBindingHandoff`,
   `SourceProofLocalLetBindingProducer`, `SourceProofLocalLetBindingError`
+- `SourceProofLocalGivenBindingHandoffInput`,
+  `SourceProofLocalGivenBindingRecovery`, `SourceProofLocalGivenBinding`,
+  `SourceProofLocalGivenBindingTable`, `SourceProofLocalGivenBindingHandoff`,
+  `SourceProofLocalGivenBindingProducer`, `SourceProofLocalGivenBindingError`
 
 Correspondence:
 
@@ -919,6 +924,7 @@ Correspondence:
 | Typed/final owners publish, replay, and clone-preserve the optional handoff atomically while all semantic tables remain empty. | `TypedAst::with_source_proof_local_declaration` and both read-only ownership getters. | One-shot/orphan/stale/sibling/final-replay and empty-semantics checker/runner tests. | Implemented as the dormant Task-269A definition-site slice. |
 | Public enums remain forward-compatible. | `#[non_exhaustive]` on kind, recovery, and error. | Public-enum and source/spec-audit lint policies. | Guarded; no exhaustive exception. |
 | The exact proof-`let` profile appends one missing-type `LetBinding` over the reserve-only base and is preserved atomically without semantic publication. | Public `SourceProofLocalLetBinding*` input/row/table/handoff/producer/error types and Typed/final ownership. | Four checker and four private runner Task-269C tests. | Implemented as zero-credit binding transport. |
+| The exact proof-`given` profile appends one missing-type `GivenWitness` over the reserve-only base, preserves canonical block-local lookup behavior, and is carried atomically without semantic publication. | Public `SourceProofLocalGivenBinding*` input/row/table/handoff/producer/error types, `BindingKind::GivenWitness`, and Typed/final ownership. | Four checker and four private runner Task-269G tests, including inherited, shadowed, restored, parent-excluded, and sibling-excluded lookup. | Implemented as zero-credit binding transport; source-type admission remains Task 269GT. |
 
 Bounded gaps: later-use resolution and capture replay, other proof-local
 declaration forms, witness typing, existential matching, goal substitution,
@@ -5947,3 +5953,10 @@ table and every sibling handoff remains empty. The exact lookup matrix covers
 the canonical block lifetime. Missing source type is Task 269GT; missing
 condition/fact/proof and active source-use extraction remain deferred. No
 existing canonical test artifact is rebaselined.
+
+Implementation closes exactly that binding `source_drift` and the eight-test
+`test_gap`. The public Given family, `BindingKind::GivenWitness`, and Typed/
+Resolved ownership match the frozen contract and canonical block scope.
+Canonical artifacts remain byte-identical; source type, active use/capture,
+and every condition/fact/proof semantic remain open rather than inferred from
+source behavior.

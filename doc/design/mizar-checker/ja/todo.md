@@ -6539,7 +6539,9 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   8件、audit/baseline/exitをfreeze。
 - [x] specification reviewを**NO FINDINGS**までrepeatし、docs-only gateとuncapped
   `>=90/100`をPASS。
-- [ ] synchronized existing Markdown 40件だけをcommitし、fresh preflight後frozen Task269G
-  だけをimplement。
-- [ ] test/implementation/source-doc/final review **NO FINDINGS**、全verification/gate、exact
-  8-file implementation+synchronized record commit後Task269GTをfresh inventory。
+- [x] synchronized existing Markdown 40件だけを
+  `1672486e7c7923e56d9019404bc9c75ffa119f96`としてcommitし、fresh preflight後frozen
+  Task269Gだけをimplement。
+- [~] test/implementation/source-doc/final reviewは**NO FINDINGS**、全verification/hard gateは
+  capなし`100/100`でPASS。exact 8-file implementation+synchronized recordをcommit後、
+  Task269GTをfresh inventory。

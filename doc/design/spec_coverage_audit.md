@@ -6559,3 +6559,23 @@ trace credit. Task 269GT retains source-type admission. Condition/label facts,
 existential/Skolem meaning, free-witness export, goals, proof/discharge/
 acceptance, IR, VC, and Task 270 remain deferred. Existing fixtures,
 expectations, trace rows/status/counts, and hashes are unchanged.
+
+## Checker Task 269G Implemented Zero-Credit Given Binding Ownership
+
+The frozen private transaction is implemented with checker/runner libraries
+`494/556` and no canonical or active corpus artifact change. It closes only
+the bounded binding `source_drift` and eight-test `test_gap`, proving the
+human-approved block-local inheritance, shadowing, restoration, and parent/
+sibling exclusion while retaining `BindingTypeSite::Missing`.
+Cases/requirements remain `428/395`, active stages remain `101/7/205/1`, type
+coverage remains `259=247+12`, and the trace hash remains
+`55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`.
+Source-type admission remains separate Task 269GT. Active use/capture,
+condition/fact semantics, existential/Skolem meaning, free-witness export,
+goals, proof/discharge/acceptance, initial obligations, Core, CFG, and VC
+remain deferred with zero new credit.
+
+Independent test, implementation, source/documentation, and final-quality
+reviews end **NO FINDINGS**. All nine hard gates PASS without a score cap at
+`100/100`; this remains zero active specification/trace credit and leaves
+Task 269GT as the next source-type-only owner.
