@@ -4106,3 +4106,9 @@ statement API or checker fingerprint changes.
 
 The implemented runner-only projection retains exactly this exclusion; no
 checker source-statement file or API changed.
+
+## Task 269GS No-Statement-Owner Reconciliation
+
+The canonical block-lifetime rule does not change source-statement lowering or
+the existing 269GP private row. No condition, label, formula, or statement
+payload is added. Binding-only consumption remains Task 269G.

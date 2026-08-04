@@ -11811,3 +11811,9 @@ repeated source/docs/final-quality reviewは**NO FINDINGS**で、このboundary�
 implementationはexactlyその4 files内で完了。path追加なし、runner productionは
 `37/72916`、libraryは552。facade 2段は`#[cfg(test)]`、producerはrunner-private/
 dormantのままで、全excluded module/consumerはbyteまたはbehavior不変。
+
+## Checker Task 269GS documentation boundary
+
+本reconciliationはspecification/derived recordだけ。runner productionは37 paths、全test-
+only facade/private 269GP APIは不変で、dispatch/corpus/trace boundaryは移動しない。
+Task269Gが最初に許可されるbinding consumer。

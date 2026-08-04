@@ -6512,3 +6512,20 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   9件をscore capなし`100/100`で完了。
 - [x] exact staging/implementation commitを完了し、fresh inventoryはcleanで、269Gを
   selectせずhuman-owned scope矛盾をreport。
+
+## Checker Task 269GS canonical `given` scope reconciliation
+
+- [x] clean HEAD/origin/stash、paired Chapter 4/15/16、existing parser/diagnostic
+  fixture、trace row、269GP lower output、checker consumer不在をfresh inventory。
+- [x] human-approved ruleをfreeze: 各`given`変数はdeclarationの`such that` condition内を
+  bindし、後続statementでは最内のenclosing proof/reasoning block末尾までscope内、
+  shadowされない限りnested childへ継承し、parent/sibling blockへescapeしない。
+- [x] label scopeを不変とし、condition/fact、existential/Skolem、goal、proof、discharge、
+  acceptance、IR、VC semanticsをdefer。
+- [x] exact Markdown 46-file write scope、parser/broad-gap source/sidecar path/hash、
+  byte-identical trace hash、library/production/list/CLI/count baseline、audit credit 0、
+  Task269G `test_gap`/`source_drift` ownershipをfreeze。
+- [x] specification reviewを**NO FINDINGS**までrepeatし、docs-only verification/count/
+  hash/hard-gateをuncapped `100/100`で全PASS。
+- [x] synchronized 269GS documentationだけをstage/commitし、binding-only Task269Gを
+  fresh inventoryから自動選択。

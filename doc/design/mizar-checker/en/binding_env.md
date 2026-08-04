@@ -860,3 +860,13 @@ Task 269G/269GT pending human canonical reconciliation.
 Implemented 269GP preserves this boundary; focused tests reject every
 binding-shaped publication and leave the existing binding environment APIs
 unchanged.
+
+## Task 269GS Resolved Scope Input
+
+Canonical scope is now sufficient for a later binding consumer: the `given`
+binding covers its declaration's `such that` conditions and subsequent
+visibility ends with the innermost enclosing proof or reasoning block, is
+inherited by nested children unless shadowed, and is absent from parent and
+sibling blocks. Task 269GS does not modify
+`BindingEnv`; Task 269G must separately freeze exact scope IDs, ordinals,
+lookup/replay, restoration, and tests without adding condition or proof facts.

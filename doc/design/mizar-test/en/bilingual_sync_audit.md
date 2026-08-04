@@ -1714,3 +1714,12 @@ The post-selection Surface seam fix and review closure are recorded without a
 companion lag. Repeated source/documentation and final-quality reviews are
 **NO FINDINGS**; full verification passes and all nine hard gates are uncapped
 at `100/100`.
+
+## Checker Task 269GS Scope Synchronization
+
+Runner EN/JA records agree with the paired Chapter 4/15/16 rule: a `given`
+variable binds its declaration's `such that` occurrences, remains visible to
+subsequent statements through its innermost enclosing block, inherits into
+nested children unless shadowed, and does not escape to parent or sibling
+blocks. Both companions record zero runner/corpus/trace change and the
+separate 269G/269GT ownership without adding condition or proof semantics.

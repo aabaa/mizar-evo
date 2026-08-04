@@ -1701,3 +1701,24 @@ FINDINGS**; all nine hard gates PASS without a score cap at `100/100`
 (`20/20/15/15/10/10/5/5`). Exact task-only staging is audited and this
 implementation commit closes the frozen syntax-only prerequisite. Fresh
 inventory reports the scope contradiction rather than selecting 269G.
+
+## Checker Task 269GS Canonical Proof-`given` Scope Reconciliation
+
+Explicit human authority resolves the previous contradiction. A variable
+introduced by `given` binds its occurrences in that statement's `such that`
+conditions and remains visible to subsequent statements through the end of the
+innermost enclosing proof or reasoning block. Nested child blocks inherit the
+binding unless they shadow it; the variable is not visible after the block or
+in a sibling block. This rule covers the witness variable only. Existing
+reasoning-block label rules continue to govern `such that` labels, and no
+condition/fact, existential/Skolem, goal, proof, discharge, acceptance, IR, or
+VC behavior is inferred.
+
+Task 269GS is a documentation-only prerequisite over the paired Chapter 4/15/16
+specifications and synchronized derived records. It changes no production,
+fixture, sidecar, expectation, trace, count/status, metadata, Cargo, or public
+API artifact. The existing 269GP lower row stays syntax/range/provenance-only.
+The resolved rule makes binding-only Task 269G dependency-ready, with exact
+scope IDs, visibility ordinals, nested inheritance/shadowing, block restoration,
+and spec-derived tests still to freeze. Task 269GT remains separately ordered
+after 269G, and all semantic exclusions above remain in force.

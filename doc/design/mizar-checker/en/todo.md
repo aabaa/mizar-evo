@@ -6838,3 +6838,23 @@ implementation commit does not satisfy a producer task.
 - [x] Complete exact staging and the implementation commit; fresh inventory is
   clean and reports the human-owned scope contradiction instead of selecting
   269G.
+
+## Checker Task 269GS Canonical `given` Scope Reconciliation
+
+- [x] Fresh-inventory clean HEAD/origin/stash, paired Chapters 4/15/16,
+  existing parser/diagnostic fixtures, trace rows, 269GP lower output, and
+  absent checker consumer.
+- [x] Freeze the human-approved rule: each `given` variable binds its `such
+  that` occurrences and remains visible to subsequent statements through the
+  innermost enclosing proof/reasoning block, inherits into nested children
+  unless shadowed, and does not escape to parent or sibling blocks.
+- [x] Keep label scope unchanged and defer condition/fact, existential/Skolem,
+  goal, proof, discharge, acceptance, IR, and VC semantics.
+- [x] Freeze the exact 46-file Markdown write scope, parser and broad-gap
+  source/sidecar paths and SHA-256 values, byte-identical trace hash, library/
+  production/list/CLI/count baselines, zero audit credit, and Task-269G
+  `test_gap`/`source_drift` ownership.
+- [x] Repeat specification review to **NO FINDINGS** and pass all docs-only
+  verification/count/hash/hard-gate checks at uncapped `100/100`.
+- [x] Stage and commit only the synchronized 269GS documentation, then fresh-
+  inventory binding-only Task 269G automatically.

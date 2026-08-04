@@ -675,3 +675,10 @@ creditはempty。Chapter-4/16 scope矛盾はhuman-owned `spec_gap`として記�
 implementationもこのno-op boundaryを保持する。唯一のoutputはauthenticated
 syntax/range/provenance rowで、focused negative testsはbinding/condition/label/fact/
 goal/proof/VC-shaped effectをrejectする。
+
+## Task 269GS semantic boundary
+
+human authorityがresolveするのはwitness-variable lexical scopeだけ。ordinary label scopeは
+不変で、condition availability、existential/Skolem meaning、fact、goal、proof state、
+discharge、acceptance、IR、VCはdeferする。よってdocs-only reconciliationはsemantic
+implementation/coverage creditを付与しない。

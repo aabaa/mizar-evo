@@ -1705,3 +1705,11 @@ implementation syncもexact。両言語はimplemented runner 4 files、passing t
 libraries `490/552`、runner production `37/72916`、exact list/content hash、
 semantic/public owner不変、review 4種**NO FINDINGS**を記録する。full verificationは
 PASS、hard gate 9件はscore capなし`100/100`で、bilingual debtなし。
+
+## Task 269GS canonical-scope synchronization
+
+EN canonical/JA companionは、各`given`変数がdeclarationの`such that` condition内の出現を
+bindし、後続statementではshadowされない限りnested child blockを含む最内のenclosing
+proof/reasoning block末尾まで有効で、parent/sibling blockでは無効、という規則で一致する。
+両languageはordinary condition-label scopeを保持し、condition/fact/proof semanticsをdefer
+する。separate 269G contract前にbilingual exceptionは許容しない。

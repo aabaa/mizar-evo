@@ -5928,3 +5928,12 @@ The exact runner projection and four tests are now implemented, closing the
 bounded `source_drift` and `test_gap`. Canonical source/test intent and checker
 public API remain untouched. The scope contradiction is unchanged and still
 blocks only 269G/269GT after the 269GP implementation commit.
+
+## Task 269GS Source/API Audit
+
+The human-approved canonical edit resolves the `given` lifetime `spec_gap` in
+documentation. Existing parser syntax and the 269GP runner-private projection
+remain compatible. Checker has no `SourceProofLocalGiven` binding consumer or
+public API, classified as the next Task 269G `source_drift`; existing fixtures
+do not exercise later witness use, classified as a `test_gap`. No source or
+test artifact changes in 269GS.

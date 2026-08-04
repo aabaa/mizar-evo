@@ -1799,3 +1799,11 @@ or Task-270 dependency and grants no active credit.
 
 The implemented private lower row closes only its syntax projection gap and
 adds no checker payload-family member.
+
+## Task 269GS Family Readiness
+
+The human-approved block-lifetime rule removes the `given` binding/type family
+`spec_gap`. It creates no payload in this documentation task. Task 269G may now
+freeze a binding-only consumer of the existing 269GP syntax row; Task 269GT
+retains later type admission. Condition, label-fact, goal, proof, and
+obligation families remain excluded.

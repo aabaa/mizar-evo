@@ -2368,3 +2368,10 @@ byte-identicalのまま。
 
 Rust unit test 4件を実装してPASSし、private projectionの`test_gap`だけをclose。
 corpus/trace creditは意図的に0で、全count/status/backlink/trace hashはbyte-identical。
+
+## Checker Task 269GS zero-credit scope reconciliation
+
+canonical scope decisionはtrace row、backlink、status、fixture、sidecar、expectation、
+requirement count、executable creditを変更しない。existing testsはsyntax/broad extraction-
+gap diagnosticだけをcoverし、later witness visibilityはTask269G ownerの導出可能な
+`test_gap`。本docs-only taskでtrace manifestはbyte-identical必須。

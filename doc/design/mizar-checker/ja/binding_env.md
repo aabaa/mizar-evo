@@ -824,3 +824,12 @@ canonical reconciliationまで269G/269GTをblockする。
 
 implemented 269GPもこのboundaryを保持し、focused testsは全binding-shaped publicationを
 rejectする。existing binding environment APIは不変。
+
+## Task 269GS resolved scope input
+
+canonical scopeはlater binding consumerに十分となった。`given` bindingはdeclarationの
+`such that` conditionをcoverし、後続visibilityは最内のenclosing proof/reasoning blockと
+ともに終了し、shadowされない限りnested childへ継承され、parent/sibling blockには存在しない。
+Task269GSは`BindingEnv`を変更しない。
+Task269Gがcondition/proof factを追加せず、exact scope ID、ordinal、lookup/replay、restore、
+testsを別途freezeする。

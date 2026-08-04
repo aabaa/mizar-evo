@@ -3593,3 +3593,16 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
 - [x] Finish exact staging and the implementation commit; fresh inventory is
   clean and reports the human-owned scope contradiction instead of starting
   269G.
+
+## Checker Task 269GS Canonical Scope Reconciliation
+
+- [x] Record the human-approved enclosing-block lifetime in paired Chapter
+  4/15/16 specifications and synchronized runner design records.
+- [x] Freeze zero Rust/fixture/expectation/sidecar/trace/metadata/Cargo/CLI
+  impact and defer later-use coverage to Task 269G.
+- [x] Freeze the exact 46-file Markdown scope, exact read-only fixture/sidecar/
+  trace hashes, and inherited runner/checker list/production/count/CLI values.
+- [x] Finish repeated specification/source-doc/final reviews, docs-only
+  verification, all nine hard gates, and uncapped quality `100/100`.
+- [x] Stage/commit only synchronized 269GS documents and fresh-inventory the
+  separate Task 269G binding consumer.

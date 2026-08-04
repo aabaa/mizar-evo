@@ -1793,3 +1793,13 @@ four implemented runner files, four passing tests, library `490/552`, runner
 production `37/72916`, exact list/content hashes, unchanged semantic/public
 ownership, and all four reviews as **NO FINDINGS**. Full verification passes,
 all nine hard gates are uncapped at `100/100`, and no bilingual debt remains.
+
+## Task 269GS Canonical-Scope Synchronization
+
+EN canonical and JA companion now agree that each `given` variable binds its
+occurrences in the declaration's `such that` conditions and remains visible to
+subsequent statements through the innermost enclosing proof or reasoning block,
+including nested child blocks unless shadowed, but not parent or sibling
+blocks. Both languages preserve ordinary condition-label scope and defer
+condition/fact/proof semantics. No bilingual exception is accepted before the
+separate 269G contract.

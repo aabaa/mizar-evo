@@ -5290,3 +5290,11 @@ source/selector near misses still return `None`; later validation stages have
 exact error/precedence assertions. The runner library is `552`, but `run_case`,
 metadata, result/detail schemas, warnings/errors, and active route counts are
 unchanged.
+
+## Checker Task 269GS Harness No-Op
+
+Canonical witness scope is now resolved, but Task 269GS adds no harness route,
+fixture, sidecar, expectation, metadata case, result field, or diagnostic. The
+existing parser fixture proves syntax only and the broad type fixture remains
+diagnostic-only; later-use visibility coverage and its dormant consumer belong
+to the separate Task 269G contract.

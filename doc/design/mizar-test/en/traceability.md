@@ -2503,3 +2503,11 @@ the trace hash above remains byte-identical.
 The four Rust unit tests are implemented and pass, closing only the private
 projection `test_gap`. They intentionally create no corpus or trace credit;
 all counts, statuses, backlinks, and the trace hash remain byte-identical.
+
+## Checker Task 269GS Zero-Credit Scope Reconciliation
+
+The canonical scope decision changes no trace row, backlink, status, fixture,
+sidecar, expectation, requirement count, or executable credit. Existing tests
+cover syntax and the broad extraction-gap diagnostic only; later witness
+visibility is a now-derivable `test_gap` owned by Task 269G. The trace manifest
+must remain byte-identical in this docs-only task.

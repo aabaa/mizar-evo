@@ -94,8 +94,8 @@ is its task 1). "Next work" points into the
 | mizar-parser | Grammar, Pratt parsing, syntax recovery, parse-only corpus | [x] Tasks 1-48 plus bounded `PARSER-RECOVERY-B1B1P-P1` complete; historical post-Task-46 score 99/100 | no inferred Task 49; human-owned P-265-47D remains separate | [todo](./mizar-parser/en/todo.md) |
 | mizar-frontend | Source loading and phase 1-3 orchestration | [x] prior milestone plus `PARSER-RECOVERY-B1B1P-P1-FE` regression complete | — | [todo](./mizar-frontend/en/todo.md) |
 | mizar-resolve | Module graph, namespaces, symbols, labels, signatures | [~] complete through task 29, Checker Task 263R, and Task 264R implementation | Preserve Task-264R shell/no-symbol boundary through Checker Tasks 248P/264 | [todo](./mizar-resolve/en/todo.md) |
-| mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] foundation complete through task 22; Tasks 265-268, Core-31, and Checker consumers through implemented Task 269GP are complete | Preserve zero trace credit; wait for canonical reconciliation before any 269G/269GT consumer | [todo](./mizar-test/en/todo.md) |
-| mizar-checker | Type checking, cluster/registration resolution, overload resolution | [~] explicit-payload milestone and source producers/consumers through implemented Task 269GP are complete | Chapter-4/16 scope conflict blocks 269G/269GT; Task 270 and goal/proof semantics remain separate | [todo](./mizar-checker/en/todo.md) |
+| mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] foundation complete through task 22; Tasks 265-268, Core-31, Checker consumers through implemented Task 269GP, and docs-only Task 269GS are complete | Freeze Task 269G visibility coverage with zero premature semantic credit, then implement its bounded binding consumer | [todo](./mizar-test/en/todo.md) |
+| mizar-checker | Type checking, cluster/registration resolution, overload resolution | [~] explicit-payload milestone and source producers/consumers through implemented Task 269GP plus docs-only Task 269GS are complete | Freeze and implement binding-only Task 269G before type-only 269GT; Task 270 and goal/proof semantics remain separate | [todo](./mizar-checker/en/todo.md) |
 | mizar-core | Elaboration, binder-normalized core logic, control-flow preparation | [x] core/control-flow milestone, tasks 27-32 complete | step-5 Tasks 33-53 under the Task-32 graph | [todo](./mizar-core/en/todo.md) |
 | mizar-vc | VC IR, VC generation, deterministic pre-ATP discharge | [x] exact source-derived contradiction VC integration complete through task 31 | dependency-paced VC Tasks 32-55; VC 40/53 and S1 gates remain explicit | [todo](./mizar-vc/en/todo.md) |
 | mizar-kernel | Trusted certificate parsing and checking | [x] SAT-backed kernel milestone complete | step 4 task 35 resolved; task 32 parked; tasks 30-34 resolved | [todo](./mizar-kernel/en/todo.md) |
@@ -4233,3 +4233,18 @@ or semantic owner changed. B3M2B2B remains next before B4.
 - [x] Commit exactly the four-file implementation plus synchronized derived
   records; fresh inventory is clean and reports the human-owned Chapter-4/16
   scope contradiction instead of selecting 269G.
+
+## Checker Task 269GS Canonical `given` Scope Reconciliation
+
+- [x] Accept explicit human authority that a `given` variable binds its
+  declaration's `such that` occurrences and remains visible to subsequent
+  statements through the innermost enclosing proof/reasoning block, inherits
+  into nested children unless shadowed, and does not escape to parent/sibling
+  blocks.
+- [x] Synchronize paired Chapters 4/15/16 and derived checker/test plans,
+  ownership audits, traceability, and coverage audit without changing source,
+  fixture, expectation, sidecar, trace manifest, metadata, Cargo, or output.
+- [x] Repeat specification/source-doc/final reviews to **NO FINDINGS**, pass all
+  docs-only verification and nine hard gates at uncapped `100/100`.
+- [x] Create one exact 269GS documentation commit, fresh-inventory Task 269G,
+  and continue automatically.

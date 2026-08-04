@@ -5650,3 +5650,11 @@ repeated source/docs/final-quality reviewは**NO FINDINGS**、narrowed taskはha
 exact runner projection/test 4件を実装し、bounded `source_drift`/`test_gap`をclose。
 canonical source/test intentとchecker public APIは不変。scope矛盾は未解決のままで、
 269GP implementation commit後も269G/269GTだけをblockする。
+
+## Task 269GS source/API audit
+
+human-approved canonical editが`given` lifetime `spec_gap`をdocumentationでresolve。existing
+parser syntax/269GP runner-private projectionはcompatible。checkerに
+`SourceProofLocalGiven` binding consumer/public APIがないことはnext Task269G
+`source_drift`、existing fixtureがlater witness useを実行しないことは`test_gap`。269GSでは
+source/test artifact変更なし。

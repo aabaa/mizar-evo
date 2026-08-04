@@ -732,3 +732,11 @@ recorded as a human-owned `spec_gap`, not resolved here.
 The implementation preserves this no-op boundary: its only output is the
 authenticated syntax/range/provenance row, and focused negative tests reject
 binding-, condition-, label-, fact-, goal-, proof-, and VC-shaped effects.
+
+## Task 269GS Semantic Boundary
+
+Human authority resolves only witness-variable lexical scope. Ordinary label
+scope is unchanged, while condition availability, existential/Skolem meaning,
+facts, goals, proof state, discharge, acceptance, IR, and VC remain deferred.
+Therefore this docs-only reconciliation grants no semantic implementation or
+coverage credit.

@@ -6524,3 +6524,22 @@ metadata, diagnostic, or checker owner changed, so this audit's coverage
 counts and trace hash remain exactly the prerequisite values above. The
 Chapter-4/16 scope contradiction remains the human-owned blocking `spec_gap`
 for binding/type consumers 269G/269GT only.
+
+## Checker Task 269GS Canonical Scope Reconciliation
+
+Explicit human authority resolves the former Chapter-4/16 `given` variable-
+scope `spec_gap`. Paired Chapters 4, 15, and 16 now define binding within the
+declaration's `such that` conditions and subsequent visibility through the
+innermost enclosing proof or reasoning block, inherited by nested children
+unless shadowed and absent from parent and sibling blocks. Condition-label
+scope remains unchanged, and no condition,
+fact, existential/Skolem, goal, proof, discharge, acceptance, IR, or VC meaning
+is added.
+
+This documentation-only reconciliation changes no coverage row, owner,
+status, backlink, fixture, sidecar, expectation, trace count, or trace hash.
+Existing parser and diagnostic cases do not exercise later witness visibility,
+so that coverage is a classified `test_gap`; the absent binding consumer is
+`source_drift`. Task 269G owns both as the next dependency-ready contract, and
+Task 269GT retains later type admission. No executable coverage credit is
+granted by 269GS.

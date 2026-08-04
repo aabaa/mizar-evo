@@ -3575,3 +3575,8 @@ outputからexclude。source-statement API/checker fingerprint変更なし。
 
 implemented runner-only projectionもexactlyこのexclusionを保持し、checker
 source-statement file/APIは変更なし。
+
+## Task 269GS no-statement-owner reconciliation
+
+canonical block-lifetime ruleはsource-statement lowering/existing 269GP private rowを変更しない。
+condition、label、formula、statement payload追加なし。binding-only consumptionはTask269G。

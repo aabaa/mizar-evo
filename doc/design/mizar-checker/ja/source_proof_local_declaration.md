@@ -1383,3 +1383,20 @@ source/docs consistency/final quality reviewは**NO FINDINGS**で、hard gate 9�
 score capなし`100/100`（`20/20/15/15/10/10/5/5`）。exact task-only stagingを
 auditし、本implementation commitでfrozen syntax-only prerequisiteをcloseする。
 fresh inventoryは269Gをselectせずscope矛盾をreportする。
+
+## Checker Task 269GS canonical proof-`given` scope reconciliation
+
+explicit human authorityが旧contradictionをresolveする。`given`導入変数はdeclarationの
+`such that` condition内の出現をbindし、後続statementでは最内のenclosing proof/reasoning
+block末尾まで可視。nested child blockはshadowしない限りbindingを継承し、変数はblock
+終了後やsibling blockでは可視ではない。本ruleがcoverするのは
+witness variableだけ。existing reasoning-block label ruleが`such that` labelを引き続き
+governし、condition/fact、existential/Skolem、goal、proof、discharge、acceptance、IR、VC
+behaviorは推測しない。
+
+Task269GSはpaired Chapter 4/15/16 specificationとderived recordだけのdocumentation-only
+prerequisite。production、fixture、sidecar、expectation、trace、count/status、metadata、
+Cargo、public API artifactを変更しない。existing 269GP lower rowはsyntax/range/provenance-
+onlyのまま。resolved ruleによりbinding-only Task269Gはdependency-readyとなり、exact scope
+ID、visibility ordinal、nested inheritance/shadowing、block restore、spec-derived testsを
+後続contractでfreezeする。Task269GTは269G後にseparate ordering、全semantic exclusion維持。

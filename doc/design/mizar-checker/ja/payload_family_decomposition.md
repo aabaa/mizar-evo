@@ -1706,3 +1706,10 @@ dependencyを変更せず、active creditは0。
 
 implemented private lower rowはsyntax projection gapだけをcloseし、checker payload-
 family memberを追加しない。
+
+## Task 269GS family readiness
+
+human-approved block-lifetime ruleは`given` binding/type familyの`spec_gap`を除くが、この
+documentation taskはpayloadを作らない。Task269Gはexisting 269GP syntax rowのbinding-only
+consumerをfreeze可能となり、Task269GTがlater type admissionを保持する。condition、label-
+fact、goal、proof、obligation familyはexcludeのまま。

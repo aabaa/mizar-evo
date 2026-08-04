@@ -1811,3 +1811,9 @@ ownerは`InvalidSourceProofLocalLetType`でatomic fail。
 
 implemented runner routeはtyped owner/install callを持たず、focused Task-269C/CT
 compatibility testsはunchanged PASS。
+
+## Task 269GS no-typed-owner reconciliation
+
+scope decisionは`TypedAst` fieldをinstallしない。Task269Gがbinding-only ownershipを先に
+freeze/implementし、Task269GTはseparate type admission。existing one-shot ownershipと
+semantic exclusionは不変。

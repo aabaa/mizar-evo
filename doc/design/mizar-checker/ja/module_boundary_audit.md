@@ -1635,3 +1635,9 @@ repeated source/docs/final-quality reviewは**NO FINDINGS**で、このboundary�
 implementationはexactlyそのexisting runner 4 filesだけへ入った。module/path/dependency/
 public API変更なし。runner testsは552、productionは`37/72916`、checkerは
 `30/168322`/490のまま。bounded `source_drift`をboundary越境なしでcloseした。
+
+## Task 269GS documentation boundary
+
+旧canonical blockerはpaired specification/design document内だけでresolveする。checker/
+runner module path、dependency、visibility、public API、production inventory、test binaryは
+byte-identical。binding implementationはseparate Task269G、type admissionはTask269GT owner。

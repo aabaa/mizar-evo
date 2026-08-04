@@ -947,3 +947,9 @@ semantic deferral。
 
 implemented syntax rowはspelling/rangeだけをrecordし、Task-269CT replay testはgreen、
 checker source-type byte変更なし。
+
+## Task 269GS type deferral after scope resolution
+
+canonical witness lifetimeはfixedだがTask269GSはsource typeをadmitしない。Task269Gがscoped
+bindingを先に確立し、Task269GTがwritten `set` type site/block-consistent type replayをowner。
+type assumption、guard、proof obligationはdefer。

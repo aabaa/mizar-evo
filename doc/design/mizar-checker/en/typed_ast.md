@@ -1913,3 +1913,10 @@ remain unchanged.
 
 The implemented runner route has no typed owner or installation call; focused
 Task-269C/CT compatibility tests pass unchanged.
+
+## Task 269GS No-Typed-Owner Reconciliation
+
+The scope decision does not install a `TypedAst` field. Task 269G must first
+freeze and implement binding-only ownership; Task 269GT remains the separate
+type admission. Existing one-shot ownership and semantic exclusions are
+unchanged.

@@ -1704,3 +1704,11 @@ No module/path/dependency/public-API change occurred. Runner tests measure
 `552` and production measures `37/72916`; checker production/tests remain
 `30/168322` and `490`. The bounded `source_drift` is closed without crossing
 the frozen boundary.
+
+## Task 269GS Documentation Boundary
+
+The former canonical blocker is resolved entirely in paired specification and
+design documents. Checker and runner module paths, dependencies, visibility,
+public APIs, production inventories, and test binaries remain byte-identical.
+Binding implementation remains owned by the separate Task 269G; type admission
+remains Task 269GT.

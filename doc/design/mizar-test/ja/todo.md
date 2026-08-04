@@ -3360,3 +3360,16 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
   score capなし`100/100`で完了。
 - [x] exact staging/implementation commitを完了し、fresh inventoryはcleanで、269Gを
   開始せずhuman-owned scope矛盾をreport。
+
+## Checker Task 269GS canonical scope reconciliation
+
+- [x] human-approved enclosing-block lifetimeをpaired Chapter 4/15/16 specificationと
+  synchronized runner design recordへ記録。
+- [x] Rust/fixture/expectation/sidecar/trace/metadata/Cargo/CLI impact 0をfreezeし、later-
+  use coverageをTask269Gへdefer。
+- [x] exact Markdown 46-file scope、read-only fixture/sidecar/trace hash、inherited
+  runner/checker list/production/count/CLI valuesをfreeze。
+- [x] repeated specification/source-doc/final review、docs-only verification、hard gate
+  9件、uncapped quality `100/100`を完了。
+- [x] synchronized 269GS documentだけをstage/commitし、separate Task269G binding consumerを
+  fresh inventory。

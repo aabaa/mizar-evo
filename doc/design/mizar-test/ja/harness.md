@@ -4980,3 +4980,10 @@ dormant branchとtest 4件は実装済み。selection後Surface corruptionはfro
 errorへ到達し、real source/selector near missは`None`のまま。後続validation stageも
 exact error/precedence assertionを持つ。runner libraryは552だが、`run_case`、metadata、
 result/detail schema、warnings/errors、active route countは不変。
+
+## Checker Task 269GS harness no-op
+
+canonical witness scopeはresolvedだがTask269GSはharness route、fixture、sidecar、expectation、
+metadata case、result field、diagnosticを追加しない。existing parser fixtureはsyntax-only、
+broad type fixtureはdiagnostic-onlyのまま。later-use visibility coverage/dormant consumerは
+separate Task269G contract owner。

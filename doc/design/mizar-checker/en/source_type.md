@@ -1313,3 +1313,10 @@ remain semantic deferrals.
 
 The implemented syntax row records the spelling/range only; Task-269CT replay
 tests remain green and no checker source-type byte changed.
+
+## Task 269GS Type Deferral After Scope Resolution
+
+Canonical witness lifetime is now fixed, but Task 269GS admits no source type.
+Task 269G must establish the scoped binding first; Task 269GT then owns the
+written `set` type site and block-consistent type replay. Type assumptions,
+guards, and proof obligations remain deferred.

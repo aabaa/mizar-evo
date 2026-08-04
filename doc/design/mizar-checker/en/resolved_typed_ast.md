@@ -1882,3 +1882,10 @@ Task-269C/CT replay and all final semantic exclusions remain byte-identical.
 
 The implemented runner route confirms this with no final owner or serializer
 change.
+
+## Task 269GS No-Final-Owner Reconciliation
+
+Resolving lexical scope does not install a `ResolvedTypedAst` field or final
+owner. A future 269G contract must decide the binding handoff and replay from
+the canonical block rule; 269GT remains the separate type owner. All semantic
+tables remain unchanged in Task 269GS.

@@ -13104,3 +13104,10 @@ Implementation is complete inside exactly those four files. No path was added;
 runner production is `37/72916` and the library is `552`. The two facade hops
 remain `#[cfg(test)]`, the producer remains runner-private and dormant, and
 all excluded modules and consumers remain byte- or behavior-unchanged.
+
+## Checker Task 269GS Documentation Boundary
+
+This reconciliation touches specifications and derived records only. Runner
+production remains 37 paths, all test-only facades and private 269GP APIs are
+unchanged, and no dispatch/corpus/trace boundary moves. Task 269G remains the
+first permitted binding consumer.

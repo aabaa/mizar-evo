@@ -1638,3 +1638,11 @@ list hash
 post-selection Surface seam fixとreview closureにcompanion lagなし。
 repeated source/docs consistency/final quality reviewは**NO FINDINGS**、full
 verificationはPASS、hard gate 9件はscore capなし`100/100`である。
+
+## Checker Task 269GS scope synchronization
+
+runner EN/JA recordはpaired Chapter 4/15/16 ruleと一致する。`given`変数はdeclarationの
+`such that` condition内をbindし、後続statementでは最内のenclosing block末尾まで可視、
+shadowされない限りnested childへ継承、parent/sibling blockへescapeしない。両companionは
+runner/corpus/trace change 0、separate
+269G/269GT ownership、condition/proof semantics追加なしを記録する。

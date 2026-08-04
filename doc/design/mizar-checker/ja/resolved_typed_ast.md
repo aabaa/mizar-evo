@@ -1791,3 +1791,9 @@ statement-transport hint/nonempty expression metadataは
 全final semantic exclusionはbyte-identical。
 
 implemented runner routeもfinal owner/serializer変更なしをconfirmする。
+
+## Task 269GS no-final-owner reconciliation
+
+lexical scopeのresolveは`ResolvedTypedAst` field/final ownerをinstallしない。future 269G
+contractがcanonical block ruleからbinding handoff/replayを決め、269GTはseparate type owner。
+Task269GSでは全semantic table不変。
