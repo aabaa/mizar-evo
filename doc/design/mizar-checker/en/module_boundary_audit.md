@@ -1797,3 +1797,12 @@ remains `30/176258`; runner production is `37/76642` with unchanged path hash
 and content hash
 `adaeaad8bf2943e05e402f1bc565b5bb0f9a509fb74ffdcd9bbb05eab4d86b22`.
 No excluded owner, artifact, dispatch, Cargo target, or diagnostic changed.
+
+## Task 269GC Frozen Boundary
+
+Runner alone owns Surface/shell/resolver/source text and converts the exact GCP
+row into syntax-free input. Checker owns the distinct public GC producer,
+binding transaction, and Typed/final replay. The ABI carries only identity,
+ranges, lower fingerprint, `LocalTermBinding`, and reserve `BindingEnv`.
+Condition/type/term syntax, occurrence IDs, facts, proof state, diagnostics,
+and active dispatch do not cross the boundary. G/GUP/GCP remain immutable.

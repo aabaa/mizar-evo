@@ -5068,3 +5068,10 @@ frozen dormant selectorとtest mutation seam 5件を実装。test 4件はexact r
 全frozen corruption field、wrong opaque schema/payload、representative Surface/
 shell/resolver/lower precedence、near-miss/sibling isolation、legacy active route
 positiveをcover。helperは`TestCase`/production-stage dispatchに存在しない。
+
+## Task 269GC frozen dormant harness
+
+runner-private `source_proof_local_given_condition_binding_output`とcfg-test
+mutation seamだけ。unchanged GCPでselectしexact reserve baseをprepare、immutable
+Typed/Resolvedを返す。mismatch `None`、selected failure `Some(Err(_))`。
+TestCase/dispatch/fixture/expectation/diagnostic/serialized outputなし。exact 4 tests。

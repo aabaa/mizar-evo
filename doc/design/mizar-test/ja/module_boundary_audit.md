@@ -11899,3 +11899,10 @@ excluded。productionは37 paths、line/content hashはimplementation後remeasur
 不変、content hashは
 `adaeaad8bf2943e05e402f1bc565b5bb0f9a509fb74ffdcd9bbb05eab4d86b22`。
 public dispatch/artifact/metadata/Cargo/diagnostic/他runner familyは不変。
+
+## Task 269GC frozen runner boundary
+
+`source_statement.rs`はunchanged sole GCP lower owner。proof-local consumerは
+getter/reserve extractionだけを読みsyntax-free checker inputを作り、outputは
+`crate::runner`外へ出さない。dispatch/TestCase/artifact/metadata/Cargo/
+diagnostic/sibling route不変。validation/Typed-final replayはchecker owner。

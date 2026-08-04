@@ -1988,11 +1988,21 @@ direct generic term fields and all semantic tables remain empty.
 
 GCP is runner-private lower evidence and adds no `TypedAst` field, getter,
 installer, error, node, or parts member. All existing source owners and every
-semantic table remain byte-identical. The first possible Typed owner is the
-future GCT/GCU composite after GC exists.
+semantic table remain byte-identical. The distinct next GC task owns the first
+boxed binding-only Typed slot; GCT/GCU retain later type/term composites.
 
 ### Task 269GCP implemented Typed-owner exclusion
 
 Implementation adds no `TypedAst` field, getter, installer, error, node, or
-parts member. The private lower row remains runner-local; the first possible
-Typed owner is still the future GCT/GCU composite after GC.
+parts member. The private lower row remains runner-local. The separate GC
+contract below freezes the first binding-only Typed owner, while GCT/GCU retain
+later composite ownership.
+
+## Task 269GC Frozen Typed Ownership
+
+`TypedAst` adds only boxed optional
+`source_proof_local_given_condition_binding`, its getter, consuming one-shot
+installer, and `InvalidSourceProofLocalGivenConditionBinding`. It authenticates
+the exact GC composite and rejects every existing owner in both orders. Nodes,
+contexts, types, facts, coercions, initial obligations, diagnostics, and
+`TypedAstParts` remain empty/unchanged. GCT/GCU own later composites.

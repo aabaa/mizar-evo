@@ -1819,3 +1819,117 @@ lower/shell/resolver field、opaque schema/payload corruption、representative
 combined validation precedence、sibling/near-miss reject、GUP isolation、legacy
 active route positive replayをcover。binding/type/term/fact/obligation/Typed/final/
 diagnostic/dispatch resultはpublishしない。next by-value bindingはTask269GC。
+
+## Checker Task 269GC frozen Given-condition binding consumer
+
+clean post-GCP HEAD `59eb7de68d83901375883a2a6249796afc6a0de3`のfresh inventoryは
+Task269GCだけをselectする。canonical Chapters 4 §4.6.1、15 §§15.3.3/15.10、
+16 §§16.3.3/16.4.2とhuman semantic decisionが定めるexact ruleは、`given`
+variableが自分のdeclarationの`such that` condition内をbindし、後続statement
+では対応する最内proof/reasoning blockの残りとshadowされないdescendantで可視、
+parent/sibling/block終了後では不可視、というもの。labelはordinary label scopeを
+維持し、condition/fact/proof/discharge/acceptance/goal/guard/obligationの新lifetimeは
+作らない。
+
+implemented GCPのexact 134-byte/54-node source、source/Surface SHA、shell/
+resolver provenance、rangeはEN contractとbyte-for-byte共有する。GC checker ABIは
+complete `source-proof-local-given-condition-lower-debug-v1`とunchanged
+reserve-only `BindingEnv`だけをconsumeし、Surface/syntax/shell/SymbolEnv/source
+text/type/condition/occurrence IDを受け取らない。missing producer/testは
+`source_drift`/`test_gap`、本contractは`design_drift`を修復し、blocking
+`spec_gap`なし。origin `0/13`はreport-only `repo_metadata_conflict`。
+
+public sibling familyは
+`SourceProofLocalGivenConditionBindingHandoffInput`、
+`SourceProofLocalGivenConditionBindingHandoff`、
+`SourceProofLocalGivenConditionBindingProducer`、non-exhaustive
+`SourceProofLocalGivenConditionBindingError`。field/getter/signature/derive/
+constness/error variant/displayはENのexact Rust blocks/tableを共有する。existing
+`BindingKind::GivenWitness`とGiven binding ID/recovery/row/tableだけをcommon row
+vocabularyとしてreuseし、G/GUP/GC handoffはdistinct。unchecked constructor/
+mutable public accessorは追加しない。
+
+dependencyはtheorem `19..133`、proof `68..132`、Given `76..113`、segment
+`82..93`、name `82..83`、ordinal 1、definition/contribution `0/0`、spelling
+`y`、complete GCP lower fingerprint。runner localはscope `[0]`、declaration
+`82..83`、visible-after 1、normal。`set@90..93`、condition reference
+`107..108`/`111..112`、condition/formula/labelはopaque lower内だけでGCはpublish
+しない。
+
+checkerはsupplied symbolとlower bytesを相互にself-validatingとは扱わず、exact GCP
+theorem identityを独立認証する。symbol moduleはtransaction `module_id`、namespaceは
+requested module path、primary spellingはexact
+`ProofLocalGivenConditionUseSmoke`。module pathへ順に `\\` -> `\\\\`、`:` ->
+`\\c`、`|` -> `\\p`、`/` -> `\\s`を適用した値を
+`escaped_module_path`とし、required local IDはexactに次のbytesである。
+
+```text
+contribution=0:namespace={escaped_module_path}:owner=theorem#1:shell=theorem:kind=theorem:name=ProofLocalGivenConditionUseSmoke:notation=_:arity=_:definition=theorem:registration=_:policy=non-overloadable:slot=non-overloadable:_:theorem:_
+```
+
+required FQNはexact
+`{module_id.package}::{module_id.path}::{required-local-id}`。dependency validatorは
+supplied symbolのmodule/local/FQNをこの独立構築値と照合し、expected complete GCP
+lower fingerprintもsupplied FQNでなくrequired FQNから構築する。このため
+`theorem_symbol`と`lower_fingerprint`のcoherent mutationも
+`DependencyMismatch`であり、checker corruption testはこのoracleを含む。
+
+atomic transitionはexact `1/1/0 -> 2/2/0`。context 1は
+`SourceStatement(68..132)`、parent 0、Proof、scope `[0]`、owned `[1]`、visible
+`[0,1]`、normal。binding 1は`y`/`GivenWitness`、resolver-local
+`([0],1,82..83)`、owner 1、visible-after 1、type Missing、Active、uncaptured、
+diagnostic-free、normal。row 0はbinding/context `1/1`、source/visible-after
+`1/1`。base context/bindingはbyte-identicalで、`binding_env.rs`やkindは変更しない。
+
+lookup matrixはEN tableをexactに共有する。own `such that`とfirst subsequent
+statementは同じcontext/scope/ordinal `1/[0]/2`を使うdistinct test intentであり、
+condition/later-use rowは作らない。unshadowed child、shadow child、restore、
+parent/sibling exclusionをtest-derived context 2--4/binding 2で検証し、synthetic
+`114..115` rowはhandoff/runner/production/source claimへ入れない。validation
+precedenceとexact debug grammar/header
+`source-proof-local-given-condition-binding-debug-v1`はENと共有する。
+
+TypedAstはold Given-use term slot後にboxed optional
+`source_proof_local_given_condition_binding`、getter、consuming one-shot
+installerだけを追加し、error
+`InvalidSourceProofLocalGivenConditionBinding` / `typed AST source proof-local
+given-condition binding handoff is inconsistent`を追加。ResolvedTypedAstもboxed
+clone-preserved owner/getterと同名error / `resolved typed AST source proof-local
+given-condition binding handoff is inconsistent`だけを追加する。otherwise-empty
+profile、all-owner mutual exclusion、complete replayを必須にし、Typed/final node、
+semantic table、parts/input pathは追加しない。
+
+Resolved getterのexact signatureはEN Rust blockを共有する。
+
+private runnerは`source_proof_local_given_condition_binding_output`とcfg-test
+`_with_mutation`だけ。GCP selector mismatch=`None`、selected failure=
+`Some(Err(_))`、successはone-shot Typed/Resolved owner。exact mutationはEN記載の
+13 variants、private base errorは`Task269GC exact reserve base extraction
+failed` / `Task269GC exact reserve base failed: {error}`。GCP Surface/shell/
+resolver validationはduplicateしない。
+
+private output struct/getter、13-variant mutation、base/cfg-test functionのexact
+derive/attribute/visibility/signatureはENのRust blockを共有する。output fieldは
+privateで`typed_ast()`/`resolved()` const getterだけ。production functionは
+`#[allow(dead_code)]`、mutation seamだけ`#[cfg(test)]`である。
+
+implementationはEN記載exact 7 existing Rust files、checker/runner各4 named
+tests。checker corruptionはtheorem symbolとlower fingerprintのcoherent mutation
+oracleを含む。GCはbinding-onlyでtype/term/reference/condition/formula/fact/label/
+Skolem/assume guard/goal/proof/discharge/acceptance/initial obligation/
+diagnostic/Core/CFG/VC/ATP/dispatch/corpus/creditをpublishしない。next GCTだけが
+bindingをby-value consumeして`set@90..93`をoverlayし、その後GCUだけがcondition
+occurrenceをtransport可。descendant/export/capture/Task270はseparate。
+
+docs baselineはlibrary `510/576`、parser/resolver/syntax `226/148/59`、
+production `30/176258`/`37/76642`、case/requirement `428/395`、pass/fail
+`235/193`、warning/error `23/0`、stage `101/7/205/1`、type `259=247+12`、
+projected library `514/580`。全hashはEN baseline/protected listを共有する。
+docs prerequisiteはsame exact 42 MarkdownだけでRust/Cargo/spec/.miz/sidecar/
+expectation/trace/metadata/count/status/hashを変更しない。
+
+exitはEN/JA sync、spec review **NO FINDINGS**、docs-only hard gates 9件
+uncapped `>=90/100`、exact docs commit、fresh preflight、7-file/8-test
+implementation、test/implementation/source-doc review **NO FINDINGS**、full
+verification、all gates/score、separate commit、clean/stash確認、Task269GCTの
+automatic fresh inventory。

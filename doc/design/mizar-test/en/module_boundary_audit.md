@@ -13204,3 +13204,12 @@ and content hash is
 `adaeaad8bf2943e05e402f1bc565b5bb0f9a509fb74ffdcd9bbb05eab4d86b22`.
 Public dispatch, artifacts, metadata, Cargo, diagnostics, and all other runner
 families are unchanged.
+
+## Task 269GC Frozen Runner Boundary
+
+`source_statement.rs` remains the sole GCP lower owner and is unchanged. The
+proof-local runner consumer reads only GCP getters and reserve extraction,
+constructs syntax-free checker input, and never exposes the output beyond
+`crate::runner`. Public dispatch, `TestCase`, artifacts, metadata, Cargo,
+diagnostics, and every sibling route remain unchanged. Checker owns validation
+and Typed/final replay.

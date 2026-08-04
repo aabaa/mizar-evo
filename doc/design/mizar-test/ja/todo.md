@@ -3458,4 +3458,14 @@ dispatch、fixture、sidecar、expectation、trace、metadata、diagnostic、CLI
   public dispatchは不変。
 - [x] source-doc/final review **NO FINDINGS**、full verification、全9 hard gatesを
   score capなし`100/100`で完了。
-- [ ] exact stagingとdedicated implementation commit後Task269GCへhandoff。
+- [x] exact stagingとimplementation commit
+  `59eb7de68d83901375883a2a6249796afc6a0de3`後Task269GCへhandoff。
+
+## Task 269GC Given-condition binding route
+
+- [x] exact GCP lower、canonical scope、reserve base、checker pattern、baseline、
+  origin/stashをfresh inventoryしGCだけをselect。
+- [x] private composition、distinct ABI/owner、7 files、checker/runner各4 tests、
+  corruption、zero credit、deferral/exitをEN/JAでfreeze。
+- [ ] spec review **NO FINDINGS**、docs gates/score、exact 42 Markdown commit。
+- [ ] fresh preflight後GCだけをimplement/review/verify/commitしGCTをinventory。

@@ -913,3 +913,11 @@ exact condition sourceはfuture binding consumerの必要性だけを示す。GC
 implemented lower rowはwitness declaration siteを保持するが、binding context/
 ID/lookup/lifetime/diagnosticを作らない。GUP/GUPT/GUはbyte-identical。user-confirmed
 innermost-block lifetimeはnext distinct Task269GC binding handoffのownerである。
+
+## Task 269GC frozen binding environment
+
+GCはunchanged `GivenWitness`/common rowをreuseし`binding_env.rs`を変更しない。
+reserve base `1/1/0 -> 2/2/0`、`SourceStatement(68..132)` proof context scope
+`[0]`、normal active missing-type `y@82..83` 1件だけ。own condition、subsequent、
+child inheritance、shadow/restore、parent/sibling exclusionをfreezeし、occurrence/
+fact/condition lifetime/capture/diagnostic/type rowは作らない。

@@ -1884,3 +1884,11 @@ The runner-private immutable lower row now authenticates the exact source,
 Surface, shells, theorem provenance, declaration sites, and debug replay. It
 adds no checker payload family or semantic owner; GC, GCT, and GCU remain the
 separate binding, type, and condition-use nodes.
+
+## Task 269GC Binding-family Decomposition
+
+GC is one distinct composite: complete GCP lower bytes + immutable reserve
+base + one dense common Given row + final `BindingEnv` fingerprints. It owns no
+source type, occurrence/reference, condition/fact, proof, obligation, or IR
+payload. Typed and Resolved only box/replay the same composite. GCT and GCU are
+separate later payload nodes; G, GUP, GUPT, and GU are not generalized.

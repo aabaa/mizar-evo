@@ -1892,3 +1892,11 @@ EN and JA record the same implemented four-file/four-test private route,
 content/test-list hashes, unchanged canonical artifacts and zero semantic
 credit, and the separate GC/GCT/GCU successor order. No synchronization
 exception exists.
+
+## Task 269GC Frozen Synchronization
+
+EN canonically freezes the human-confirmed innermost-block witness lifetime,
+the distinct by-value GC ABI, `1/1/0 -> 2/2/0` lookup matrix, Typed/Resolved and
+private runner ownership, exact seven files/eight tests, zero semantic credit,
+and GCT/GCU deferrals. JA carries the same logical fields and exclusions in
+this task. No synchronization exception exists.

@@ -1859,11 +1859,19 @@ boxed owner、exact revalidation、source-preserved node 6件、both-order exclu
 ## Task 269GCP final-owner exclusion
 
 GCPは`ResolvedTypedAst` owner/getter/error/clone/role/node hintを追加せず、final
-assemblyはbyte-identicalでprivate lower rowを観測しない。GCもnon-final dependency
-であり、GCT/GCUが後でmutually-exclusive final ownerをfreezeする。
+assemblyはbyte-identicalでprivate lower rowを観測しない。distinct next GCが
+binding-only final slot、GCT/GCUがlater mutually-exclusive type/term compositeをown。
 
 ### Task 269GCP implemented final-owner exclusion
 
 implementationは`ResolvedTypedAst` state/final assembly branchを追加しない。
-private lower route/test 4件はfinal ownerをpublishせず完了。GCはnon-final、
-GCT/GCUがlater ownerを保持。
+private lower route/test 4件はfinal ownerをpublishせず完了。separate GC contractが
+binding-only final ownerをfreezeし、GCT/GCUがlater compositeを保持。
+
+## Task 269GC frozen final ownership
+
+`ResolvedTypedAst`はboxed optional
+`source_proof_local_given_condition_binding`、getter、
+`InvalidSourceProofLocalGivenConditionBinding`だけを追加。exact GC/empty Typedを
+revalidateしてclone-preserveし、node hint/role/formula/semantic table/input pathは
+追加しない。duplicate/cross-familyはatomic failure、absent時old debug不変。

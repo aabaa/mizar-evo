@@ -750,3 +750,10 @@ condition subtreeはGC/GCT/GCU用lower dependencyだけ。
 exact lower profileはsemantic publication 0で実装。canonical innermost-block scope
 ruleは不変で、binding/condition term/fact/assume/goal/obligation/proof/acceptance/
 capture/export/IRはfrozen ownerへ明示的にdefer。
+
+## Task 269GC zero-semantic boundary
+
+GCが実装するのはcanonical lexical binding lifetimeだけ。existential/
+Skolem、condition truth/fact、label lifetime、assume/guard、goal、obligation、
+discharge/acceptance、capture/export、Core/CFG/VC/ATP meaningはclaimせず、source
+behaviorからinferせず、empty semantic successとしてもencodeしない。

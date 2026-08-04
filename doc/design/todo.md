@@ -94,8 +94,8 @@ is its task 1). "Next work" points into the
 | mizar-parser | Grammar, Pratt parsing, syntax recovery, parse-only corpus | [x] Tasks 1-48 plus bounded `PARSER-RECOVERY-B1B1P-P1` complete; historical post-Task-46 score 99/100 | no inferred Task 49; human-owned P-265-47D remains separate | [todo](./mizar-parser/en/todo.md) |
 | mizar-frontend | Source loading and phase 1-3 orchestration | [x] prior milestone plus `PARSER-RECOVERY-B1B1P-P1-FE` regression complete | — | [todo](./mizar-frontend/en/todo.md) |
 | mizar-resolve | Module graph, namespaces, symbols, labels, signatures | [~] complete through task 29, Checker Task 263R, and Task 264R implementation | Preserve Task-264R shell/no-symbol boundary through Checker Tasks 248P/264 | [todo](./mizar-resolve/en/todo.md) |
-| mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] foundation complete through task 22; Tasks 265-268, Core-31, and Checker consumers through committed Task 269GU are complete; Task 269GCP private lower route is implemented | Complete GCP gates/commit, then fresh-inventory GC | [todo](./mizar-test/en/todo.md) |
-| mizar-checker | Type checking, cluster/registration resolution, overload resolution | [~] explicit-payload milestone and source producers/consumers through committed Task 269GU are complete; Task 269GCP private lower prerequisite is implemented | Complete GCP gates/commit; GC/GCT/GCU precede descendant/capture and Task 270 | [todo](./mizar-checker/en/todo.md) |
+| mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] foundation complete through task 22; Tasks 265-268, Core-31, and Checker consumers through committed Task 269GU are complete; Task 269GCP private lower route is committed | Complete GC documentation review/commit and GC implementation, then fresh-inventory GCT | [todo](./mizar-test/en/todo.md) |
+| mizar-checker | Type checking, cluster/registration resolution, overload resolution | [~] explicit-payload milestone and source producers/consumers through committed Task 269GU are complete; Task 269GCP private lower prerequisite is committed; Task 269GC binding contract is frozen | Complete GC documentation review/commit and GC implementation; GCT/GCU precede descendant/capture and Task 270 | [todo](./mizar-checker/en/todo.md) |
 | mizar-core | Elaboration, binder-normalized core logic, control-flow preparation | [x] core/control-flow milestone, tasks 27-32 complete | step-5 Tasks 33-53 under the Task-32 graph | [todo](./mizar-core/en/todo.md) |
 | mizar-vc | VC IR, VC generation, deterministic pre-ATP discharge | [x] exact source-derived contradiction VC integration complete through task 31 | dependency-paced VC Tasks 32-55; VC 40/53 and S1 gates remain explicit | [todo](./mizar-vc/en/todo.md) |
 | mizar-kernel | Trusted certificate parsing and checking | [x] SAT-backed kernel milestone complete | step 4 task 35 resolved; task 32 parked; tasks 30-34 resolved | [todo](./mizar-kernel/en/todo.md) |
@@ -4380,4 +4380,21 @@ Canonical artifacts, trace, metadata, CLI behavior, public dispatch, active
 results, and semantic credit remain unchanged. Test-sufficiency and
 implementation review findings were repaired; all reviews end **NO FINDINGS**,
 full verification passes, and all nine hard gates pass uncapped at `100/100`.
-Exact staging/commit and post-commit Task 269GC inventory remain.
+Exact staging/commit `59eb7de68d83901375883a2a6249796afc6a0de3` and
+post-commit Task 269GC inventory are complete.
+
+## Checker Task 269GC Autonomous Handoff
+
+Committed GCP HEAD `59eb7de68d83901375883a2a6249796afc6a0de3` is clean;
+origin `0/13` remains report-only `repo_metadata_conflict` and stash
+`f65cf4a13752ec380710814a9ac6392ccb9d75d4` is protected. Human-confirmed
+canonical scope unblocks GC: own `such that`, remaining innermost block and
+unshadowed descendants are visible; parent, sibling, and post-exit sites are
+not.
+
+Task 269GC freezes only the distinct GCP-by-value binding transaction,
+`1/1/0 -> 2/2/0` lookup matrix, Typed/Resolved/private runner ownership, exact
+seven files/eight tests, zero active credit, and GCT/GCU deferrals. Complete
+review-only specification audit to **NO FINDINGS**, docs gates/commit, fresh
+preflight, implementation reviews/full gates/separate commit, then continue
+automatically with Task 269GCT.

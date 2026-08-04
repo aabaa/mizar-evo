@@ -820,3 +820,11 @@ The exact lower profile is implemented with zero semantic publication. The
 canonical innermost-block scope rule is unchanged; binding, condition terms,
 facts, assumptions, goals, obligations, proofs, acceptance, capture/export,
 and IR remain explicitly deferred to their frozen owners.
+
+## Task 269GC Zero-semantic Boundary
+
+GC implements only the canonical lexical binding lifetime. It does not claim
+existential elimination, Skolemization, condition truth/fact availability,
+label lifetime, assumption/guard composition, goals, obligations, discharge,
+acceptance, capture/export, or any Core/CFG/VC/ATP meaning. These are neither
+inferred from source behavior nor encoded as empty semantic success.

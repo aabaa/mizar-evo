@@ -365,3 +365,9 @@ Task269GCUはexact GC binding/GCT type dependencyをby-value取得後だけtrans
 
 condition leaf 2件はprivate lower outputと全Typed/final term ownerからexcluded。
 source-term API/admissionは不変で、GCUはseparate GC/GCT dependency後だけconsume可。
+
+## Task 269GC frozen term deferral
+
+GCはterm/occurrence/reference/use-site resolver/equality operand/Typed-final term
+nodeをpublishしない。GCP-authenticated `107..108`/`111..112`はopaque。exact GCT
+composite後GCUだけがtransport可、descendant useはlater。

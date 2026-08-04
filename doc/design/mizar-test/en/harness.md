@@ -5393,3 +5393,13 @@ Four tests cover exact replay, every frozen corruption field, wrong opaque
 schema/payload, representative Surface/shell/resolver/lower precedence,
 near-miss and sibling isolation, and positive legacy active routes. The helper
 remains absent from `TestCase` and production-stage dispatch.
+
+## Task 269GC Frozen Dormant Harness
+
+The harness exposes only runner-private
+`source_proof_local_given_condition_binding_output` and its cfg-test mutation
+seam. It delegates selection to unchanged GCP, prepares the exact reserve base,
+and returns immutable Typed/Resolved owners. Mismatch stays `None`; selected
+failure is `Some(Err(_))`. No `TestCase`, production-stage branch, fixture,
+expectation, diagnostic, or serialized output is added. Four exact tests cover
+success/debug/lookup, corruption/precedence, owner atomicity, and isolation.

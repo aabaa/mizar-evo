@@ -4182,3 +4182,10 @@ label facts, statement semantics, proof state, and acceptance remain absent.
 The runner now authenticates the exact Given/condition statement subtrees only
 as selector evidence. No `source_statement` payload, condition/label fact,
 assumption, proof state, or acceptance result is published.
+
+## Task 269GC Frozen Statement Exclusion
+
+GC uses theorem/proof/Given/segment/name ranges only to authenticate and scope
+the lexical binding. It adds no `source_statement` handoff, proposition,
+condition list, label, fact, assumption, conclusion, proof-state, or acceptance
+row. The two condition occurrences remain GCU-owned after GCT.

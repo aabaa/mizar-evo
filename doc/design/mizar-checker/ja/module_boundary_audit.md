@@ -1717,3 +1717,11 @@ binding再構築は`boundary_violation`。
 不変、content hashは
 `adaeaad8bf2943e05e402f1bc565b5bb0f9a509fb74ffdcd9bbb05eab4d86b22`。
 excluded owner/artifact/dispatch/Cargo/diagnosticは不変。
+
+## Task 269GC frozen boundary
+
+runnerだけがSurface/shell/resolver/source textをownし、exact GCP rowをsyntax-free
+inputへ変換。checkerがdistinct public GC producer/binding/Typed/final replayをown。
+ABIはidentity/range/lower fingerprint/LocalTermBinding/reserve BindingEnvだけで、
+condition/type/term syntax、occurrence ID、fact/proof/diagnostic/dispatchはcrossしない。
+G/GUP/GCPはimmutable。

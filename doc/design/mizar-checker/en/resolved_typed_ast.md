@@ -1962,11 +1962,21 @@ node-hint inputs remain empty.
 
 GCP adds no `ResolvedTypedAst` owner, getter, error, clone path, role, or node
 hint. Final assembly remains byte-identical and cannot observe the private
-lower row. GC also remains a non-final dependency; GCT/GCU must later freeze
-their own mutually exclusive final owner.
+lower row. The distinct next GC task owns a binding-only final slot; GCT/GCU
+must later freeze their own mutually exclusive type/term final composites.
 
 ### Task 269GCP implemented final-owner exclusion
 
 Implementation adds no `ResolvedTypedAst` state or final assembly branch. The
 private lower route and all four tests complete without publishing a final
-owner; GC remains non-final and GCT/GCU retain later ownership.
+owner. The separate GC contract below freezes the binding-only final owner;
+GCT/GCU retain later composite ownership.
+
+## Task 269GC Frozen Final Ownership
+
+`ResolvedTypedAst` adds only boxed optional
+`source_proof_local_given_condition_binding`, its read-only getter, and
+`InvalidSourceProofLocalGivenConditionBinding`. Assembly revalidates the exact
+GC handoff and otherwise-empty Typed profile, then clone-preserves it. No node
+hint, node role, checked formula, semantic table, or input path is added.
+Duplicate/cross-family replay fails atomically; absent-slot old debug is stable.

@@ -2949,3 +2949,434 @@ precedence, sibling/near-miss rejection, GUP isolation, and positive legacy
 active-route replay. It publishes no binding, type, term, fact, obligation,
 Typed/final owner, diagnostic, or dispatch result. Task 269GC remains the next
 by-value binding consumer.
+
+## Checker Task 269GC Frozen Given-condition Binding Consumer
+
+Fresh clean post-GCP inventory at
+`59eb7de68d83901375883a2a6249796afc6a0de3` selects only Task 269GC. The
+canonical rule in Chapters 4 §4.6.1, 15 §§15.3.3/15.10, and 16
+§§16.3.3/16.4.2, confirmed by the human semantic decision, is exact: a
+`given` variable binds occurrences in its own declaration's `such that`
+conditions; for subsequent statements it remains visible through the rest of
+the corresponding innermost proof or reasoning block and descendants unless
+shadowed; it is absent from the parent, siblings, and every site after block
+exit. Labels keep ordinary label scope, and this lexical rule creates no new
+condition, fact, proof, discharge, acceptance, goal, guard, or obligation
+lifetime.
+
+The implemented GCP lower row authenticates the exact final-LF 134-byte source,
+54-node/root-53 Surface tree, two declaration shells, one theorem provenance,
+and source/Surface SHA-256 values
+`2c2d767a0654670412b377bdcc6c5970ecec05b41c02aa754766320927bc6aad` /
+`49d46d5f24338772e6e968f12c2216a8957b35242474132690db843b510b430f`.
+Task 269GC consumes only its complete byte-exact
+`source-proof-local-given-condition-lower-debug-v1` string plus the unchanged
+reserve-only base environment. It does not accept `SurfaceAst`, syntax nodes,
+shells, `SymbolEnv`, source text, type syntax, condition syntax, or occurrence
+IDs at the checker ABI. Missing binding production/tests are
+`source_drift`/`test_gap`; this contract repairs `design_drift`. There is no
+blocking `spec_gap`. Origin divergence `0/13` is report-only
+`repo_metadata_conflict` and is not repaired.
+
+### Exact public checker ABI
+
+The existing `BindingKind::GivenWitness`,
+`SourceProofLocalGivenBindingId`, `SourceProofLocalGivenBindingRecovery`,
+`SourceProofLocalGivenBinding`, and `SourceProofLocalGivenBindingTable` remain
+byte-for-byte unchanged and are reused only as common row vocabulary. G, GUP,
+and GC handoff identities are distinct. The existing checker module
+`source_proof_local_declaration` adds exactly this sibling family; fields are
+private except for the input transaction, and no unchecked constructor or
+mutable public accessor exists:
+
+```rust
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceProofLocalGivenConditionBindingHandoffInput {
+    pub source_id: SourceId,
+    pub module_id: ModuleId,
+    pub lower_fingerprint: String,
+    pub theorem_symbol: SymbolId,
+    pub theorem_definition: DefinitionId,
+    pub contribution: SourceContributionId,
+    pub theorem_range: SourceRange,
+    pub proof_range: SourceRange,
+    pub given_range: SourceRange,
+    pub segment_range: SourceRange,
+    pub name_range: SourceRange,
+    pub source_ordinal: usize,
+    pub local: LocalTermBinding,
+    pub recovery: SourceProofLocalGivenBindingRecovery,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceProofLocalGivenConditionBindingHandoff {
+    source_id: SourceId,
+    module_id: ModuleId,
+    lower_fingerprint: String,
+    theorem_symbol: SymbolId,
+    theorem_definition: DefinitionId,
+    contribution: SourceContributionId,
+    theorem_range: SourceRange,
+    proof_range: SourceRange,
+    given_range: SourceRange,
+    segment_range: SourceRange,
+    name_range: SourceRange,
+    base_binding_env: BindingEnv,
+    base_binding_fingerprint: String,
+    binding_env: BindingEnv,
+    final_binding_fingerprint: String,
+    bindings: SourceProofLocalGivenBindingTable,
+}
+
+impl SourceProofLocalGivenConditionBindingHandoff {
+    pub const fn source_id(&self) -> SourceId;
+    pub const fn module_id(&self) -> &ModuleId;
+    pub fn lower_fingerprint(&self) -> &str;
+    pub const fn theorem_symbol(&self) -> &SymbolId;
+    pub const fn theorem_definition(&self) -> DefinitionId;
+    pub const fn contribution(&self) -> SourceContributionId;
+    pub const fn theorem_range(&self) -> SourceRange;
+    pub const fn proof_range(&self) -> SourceRange;
+    pub const fn given_range(&self) -> SourceRange;
+    pub const fn segment_range(&self) -> SourceRange;
+    pub const fn name_range(&self) -> SourceRange;
+    pub const fn base_binding_env(&self) -> &BindingEnv;
+    pub fn base_binding_fingerprint(&self) -> &str;
+    pub const fn binding_env(&self) -> &BindingEnv;
+    pub fn final_binding_fingerprint(&self) -> &str;
+    pub const fn bindings(&self) -> &SourceProofLocalGivenBindingTable;
+    pub fn debug_text(&self) -> String;
+
+    pub(crate) fn validate_installation(
+        &self,
+        source_id: SourceId,
+        module_id: &ModuleId,
+    ) -> Result<(), SourceProofLocalGivenConditionBindingError>;
+
+    pub(crate) fn validate_complete_installation(
+        &self,
+        source_id: SourceId,
+        module_id: &ModuleId,
+        installation_available: bool,
+    ) -> Result<(), SourceProofLocalGivenConditionBindingError>;
+}
+
+#[derive(Debug, Clone, Copy, Default)]
+pub struct SourceProofLocalGivenConditionBindingProducer;
+
+impl SourceProofLocalGivenConditionBindingProducer {
+    pub fn build(
+        input: SourceProofLocalGivenConditionBindingHandoffInput,
+        base_binding_env: &BindingEnv,
+    ) -> Result<
+        SourceProofLocalGivenConditionBindingHandoff,
+        SourceProofLocalGivenConditionBindingError,
+    >;
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum SourceProofLocalGivenConditionBindingError {
+    InvalidTransaction,
+    DependencyMismatch,
+    InvalidBaseBindingEnvironment,
+    InvalidAggregate,
+    InvalidDeclaration { binding: SourceProofLocalGivenBindingId },
+    InvalidBindingEnvironment,
+    InvalidInstallation,
+}
+```
+
+The error implements `std::error::Error`. All signatures, derives,
+non-exhaustive attributes, constness, return types, and field order above are
+complete. Exact display text is:
+
+| variant | exact text |
+|---|---|
+| `InvalidTransaction` | `source proof-local given-condition binding transaction is invalid` |
+| `DependencyMismatch` | `source proof-local given-condition binding dependency mismatch` |
+| `InvalidBaseBindingEnvironment` | `source proof-local given-condition binding base binding environment is invalid` |
+| `InvalidAggregate` | `source proof-local given-condition binding aggregate is invalid` |
+| `InvalidDeclaration { binding }` | `source proof-local given-condition binding <binding.index()> is invalid` |
+| `InvalidBindingEnvironment` | `source proof-local given-condition binding binding environment is invalid` |
+| `InvalidInstallation` | `source proof-local given-condition binding installation is invalid` |
+
+### Exact dependency, transaction, and scope matrix
+
+Dependency replay fixes theorem `19..133`, proof `68..132`, Given `76..113`,
+segment `82..93`, name `82..83`, source ordinal 1, definition/contribution
+`0/0`, spelling `y`, and the complete GCP lower fingerprint. The runner creates
+one syntax-free `LocalTermBinding` at lexical scope `[0]`, declaration
+`82..83`, visible-after ordinal 1, recovery `Normal`. The written bare
+`set@90..93`, both condition references at `107..108` and `111..112`, their
+equality/formula/condition structure, and label `G` remain authenticated only
+inside the opaque lower bytes; GC publishes none of them.
+
+The checker independently authenticates the exact GCP theorem identity rather
+than treating the supplied symbol and lower bytes as mutually self-validating.
+The symbol module is exactly the transaction `module_id`; its namespace is the
+requested module path; and its primary spelling is exactly
+`ProofLocalGivenConditionUseSmoke`. Let `escaped_module_path` be the module path
+after replacing `\\` with `\\\\`, `:` with `\\c`, `|` with `\\p`, and `/` with
+`\\s`, in that order. The required local ID is exactly:
+
+```text
+contribution=0:namespace={escaped_module_path}:owner=theorem#1:shell=theorem:kind=theorem:name=ProofLocalGivenConditionUseSmoke:notation=_:arity=_:definition=theorem:registration=_:policy=non-overloadable:slot=non-overloadable:_:theorem:_
+```
+
+The required FQN is exactly
+`{module_id.package}::{module_id.path}::{required-local-id}`. Dependency
+validation first requires equality of the supplied symbol's module, local ID,
+and FQN with those independently constructed values. It also constructs the
+expected complete GCP lower fingerprint with the independently constructed
+required FQN, not with the supplied symbol's FQN. Consequently a coherent
+mutation of both `theorem_symbol` and `lower_fingerprint` is a
+`DependencyMismatch`; checker corruption tests must include that oracle.
+
+The exact normal reserve base is `1/1/0`. The atomic binding transition is
+`1/1/0 -> 2/2/0`: context 1 is `SourceStatement(68..132)`, parent 0, layer
+`Proof`, lexical scope `[0]`, owned `[1]`, visible `[0,1]`, recovery `Normal`;
+binding 1 is spelling `y`, kind `GivenWitness`, resolver-local identity
+`([0], ordinal=1, declaration=82..83)`, owner context 1, visible-after 1,
+`BindingTypeSite::Missing`, `Active`, uncaptured, diagnostic-free, recovery
+`Normal`; row 0 records binding/context `1/1`, source/visible-after `1/1`, and
+normal recovery. Context 0 and reserve binding 0 are byte-identical to the GCP
+base. GC does not change `binding_env.rs` or add a binding kind.
+
+The installed environment must reproduce this canonical lookup matrix:
+
+| intent | context / lexical scope / ordinal | result |
+|---|---|---|
+| prior source position | `1 / [0] / 1` | forward binding 1 |
+| declaration's own `such that` | `1 / [0] / 2` | local binding 1 |
+| subsequent statement in block | `1 / [0] / 2` | local binding 1 |
+| unshadowed descendant | `2 / [0,0] / 2` | local binding 1 |
+| shadowed descendant | `3 / [0,1] / 3` | local binding 2 |
+| after shadowed descendant | `1 / [0] / 3` | local binding 1 |
+| parent block | `0 / [] / 2` | unresolved |
+| sibling block | `4 / [1] / 2` | unresolved |
+
+The two context-1 ordinal-2 rows are intentionally distinct test intents over
+one lexical table: one represents the declaration condition and one the first
+subsequent statement. GC creates no condition-use or later-use source row.
+Test-only context 2 is generated `task269gc-unshadowed-child`, parent 1, block
+layer, scope `[0,0]`, owned `[]`, visible `[0,1]`; context 3 is generated
+`task269gc-shadow-child`, parent 1, block layer, scope `[0,1]`, owned `[2]`,
+visible `[0,1,2]`; context 4 is generated `task269gc-sibling`, parent 0, block
+layer, scope `[1]`, owned `[]`, visible `[0]`. All are normal. Test-only binding
+2 is a normal active uncaptured diagnostic-free `GivenWitness` named `y`,
+resolver-local at scope `[0,1]`, ordinal 2, deterministic synthetic declaration
+range `114..115`, owner context 3, missing type. This row never enters the
+handoff, runner, production table, or a source claim.
+
+Validation precedence is transaction identity; lower/theorem/ranges; base;
+dense aggregate; local/row fields; final environment/fingerprints/lookups;
+Typed/final availability. Every failure is atomic. Stable debug is exactly:
+
+```text
+source-proof-local-given-condition-binding-debug-v1
+module: <package>::<path>
+lower-fingerprint: <quoted complete Task-269GCP debug bytes>
+theorem symbol=<quoted-fqn> definition=0 contribution=0 range=19..133 proof=68..132
+given range=76..113 segment=82..93 name=82..83 source_ordinal=1
+base-binding-fingerprint: <quoted BindingEnv debug bytes>
+binding#0 binding=1 context=1 source_ordinal=1 visible_after=1 recovery=normal
+final-binding-fingerprint: <quoted BindingEnv debug bytes>
+```
+
+Quoted fields use Rust `Debug`; order is fixed, with no blank line and one
+final LF.
+
+### Typed, Resolved, and runner ownership
+
+`TypedAst` adds one boxed optional
+`source_proof_local_given_condition_binding` after the existing Given-use term
+slot, a read-only getter, and a consuming one-shot installer:
+
+```rust
+pub const fn source_proof_local_given_condition_binding(
+    &self,
+) -> Option<&SourceProofLocalGivenConditionBindingHandoff>;
+
+pub fn with_source_proof_local_given_condition_binding(
+    self,
+    handoff: SourceProofLocalGivenConditionBindingHandoff,
+) -> Result<Self, TypedAstError>;
+```
+
+`TypedAstError` adds `InvalidSourceProofLocalGivenConditionBinding`, rendered
+`typed AST source proof-local given-condition binding handoff is inconsistent`.
+Installation accepts only an otherwise-empty profile, rejects duplicate and
+every old/new source owner in both orders, and publishes no Typed node,
+context, type, fact, coercion, initial obligation, diagnostic, or
+`TypedAstParts` field.
+
+`ResolvedTypedAst` adds the corresponding boxed optional clone-preserved owner
+and this exact read-only getter:
+
+```rust
+pub const fn source_proof_local_given_condition_binding(
+    &self,
+) -> Option<&SourceProofLocalGivenConditionBindingHandoff>;
+```
+
+Assembly revalidates the
+complete handoff and the empty Typed profile before cloning it. Its error adds
+`InvalidSourceProofLocalGivenConditionBinding`, rendered `resolved typed AST
+source proof-local given-condition binding handoff is inconsistent`. It adds no
+node hint, node role, final node, checked formula, semantic table, or
+`ResolvedTypedAstInputs` path. Debug emits this slot after the old Given-use
+term slot. All old debug bytes are unchanged when the slot is absent.
+
+The private runner consumer is exactly
+`source_proof_local_given_condition_binding_output` plus cfg-test
+`_with_mutation`, returning an optional immutable output with read-only
+`typed_ast()` and `resolved()` getters. Selection is delegated unchanged to
+GCP; mismatch is `None`, selected lower/checker failure is `Some(Err(_))`, and
+success contains the one-shot Typed/final owners. The mutation enum derives
+`Debug, Clone, Copy, PartialEq, Eq`, is visible only in `crate::runner`, and is
+exactly `None`, `WrongLowerFingerprint`, `EmptyBase`, `WrongTheoremRange`,
+`WrongProofRange`, `WrongGivenRange`, `WrongSegmentRange`, `WrongNameRange`,
+`WrongLocalSpelling`, `WrongLocalScope`, `WrongLocalRange`,
+`WrongLocalVisibleAfter`, and `WrongSourceOrdinal`. Its validation errors are
+the checker display strings plus exact private base messages `Task269GC exact
+reserve base extraction failed` and `Task269GC exact reserve base failed:
+{error}`. The runner does not duplicate GCP Surface/shell/resolver validation.
+
+Its complete private type/function surface is:
+
+```rust
+#[derive(Debug, PartialEq, Eq)]
+#[allow(dead_code)]
+pub(in crate::runner) struct SourceProofLocalGivenConditionBindingRouteOutput {
+    typed_ast: TypedAst,
+    resolved: ResolvedTypedAst,
+}
+
+impl SourceProofLocalGivenConditionBindingRouteOutput {
+    pub(in crate::runner) const fn typed_ast(&self) -> &TypedAst;
+    pub(in crate::runner) const fn resolved(&self) -> &ResolvedTypedAst;
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[allow(dead_code)]
+pub(in crate::runner) enum SourceProofLocalGivenConditionBindingRouteMutation {
+    None,
+    WrongLowerFingerprint,
+    EmptyBase,
+    WrongTheoremRange,
+    WrongProofRange,
+    WrongGivenRange,
+    WrongSegmentRange,
+    WrongNameRange,
+    WrongLocalSpelling,
+    WrongLocalScope,
+    WrongLocalRange,
+    WrongLocalVisibleAfter,
+    WrongSourceOrdinal,
+}
+
+#[allow(dead_code)]
+pub(in crate::runner) fn source_proof_local_given_condition_binding_output(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    shells: &DeclarationShellSet,
+    symbols: &SymbolEnv,
+    source_text: &str,
+) -> Option<Result<SourceProofLocalGivenConditionBindingRouteOutput, String>>;
+
+#[cfg(test)]
+pub(in crate::runner) fn source_proof_local_given_condition_binding_output_with_mutation(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    shells: &DeclarationShellSet,
+    symbols: &SymbolEnv,
+    source_text: &str,
+    mutation: SourceProofLocalGivenConditionBindingRouteMutation,
+) -> Option<Result<SourceProofLocalGivenConditionBindingRouteOutput, String>>;
+```
+
+The two output getters are the only access to the private fields. Attribute
+rationale comments may describe dormancy but may not change these attributes
+or visibility. The non-test function selects `None`; the test seam injects
+only the listed mutation before checker production.
+
+### Files, tests, deferrals, measurements, and exit
+
+Implementation may change exactly seven existing Rust files:
+
+1. `crates/mizar-checker/src/source_proof_local_declaration.rs`;
+2. `crates/mizar-checker/src/typed_ast.rs`;
+3. `crates/mizar-checker/src/resolved_typed_ast.rs`;
+4. `crates/mizar-test/src/runner/type_elaboration/source_proof_local_declaration.rs`;
+5. `crates/mizar-test/src/runner/type_elaboration.rs`;
+6. `crates/mizar-test/src/runner.rs`;
+7. `crates/mizar-test/src/runner/tests/type_elaboration/source_proof_local_declaration.rs`.
+
+Exact checker tests are
+`source_proof_local_given_condition_binding_builds_exact_scope_transaction`,
+`source_proof_local_given_condition_binding_rejects_corruption_with_stable_precedence`,
+`source_proof_local_given_condition_binding_typed_and_resolved_ownership_is_atomic`,
+and
+`source_proof_local_given_condition_binding_scope_matrix_is_lexical_and_semantically_empty`.
+Exact runner tests are
+`task269gc_exact_condition_binding_transaction_debug_and_lookup_are_stable`,
+`task269gc_lower_base_and_checker_corruption_fail_closed`,
+`task269gc_typed_and_resolved_owners_are_one_shot_and_semantically_empty`, and
+`task269gc_near_miss_neighbor_and_active_routes_remain_isolated`. Corruption
+tests cover every error variant, one seam per validation tier, combined
+first-error precedence, coherent theorem-symbol plus lower-fingerprint
+corruption, post-build mutation, duplicate/cross-family install in
+both orders, rollback, near misses, G/GUP/GCP isolation, and positive legacy
+active-route replay.
+
+GC is binding-only. It does not publish written type, term/reference,
+condition/formula/fact, label, existential/Skolem state, assumption guard,
+goal/thesis transition, proof/discharge/acceptance, initial obligation,
+diagnostic, Core/CFG/VC/ATP row, active dispatch, corpus result, or coverage
+credit. Task 269GCT is the sole next by-value type consumer and may overlay only
+`set@90..93`; Task 269GCU may transport the two declaration-condition term/
+reference occurrences only after the exact GCT dependency. Descendant
+occurrence transport, free-witness export enforcement, `set` capture, and Task
+270 remain separate. Existing G/GUP/GUPT/GU APIs and bytes are immutable.
+
+Docs-only baselines are checker/runner libraries `510/576`, parser/resolver/
+syntax `226/148/59`, checker production `30/176258`, runner production
+`37/76642`, cases/requirements `428/395`, pass/fail `235/193`, warnings/errors
+`23/0`, stages `101/7/205/1`, and type coverage `259=247+12`. Implementation
+projects `514/580`. Path hashes remain
+`c89f43f6abebf7ebeb3ac9394ecd8ea3186ad28934c75526d2cc0b85a66ebad5` /
+`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d`;
+baseline content hashes are
+`5390a4ddc5516d3550fc2c6f5b010c629a79a66e098766a29d814b5dad40ee66` /
+`adaeaad8bf2943e05e402f1bc565b5bb0f9a509fb74ffdcd9bbb05eab4d86b22`.
+Raw/normalized test-list hashes are checker
+`f6b6a3e76b9ae3207aae24434c5291986330755f18b8397b4bf62132fde2ed74` /
+`51cdc82064023eaa77a9415de2c63f77940df92102086f7eeb71b48be771be34`
+and runner
+`b0f551ee94ca2e0ba0f294a80fc517e109832d3d1039659ad407fa4452f6bf86` /
+`625307a34a88434ab27f03643a76311ac6f1d8c1f02bdb70ea8af77ced4fcede`.
+All changed implementation measurements must be remeasured.
+
+Protected parser fixture/sidecar, broad proof-local fixture/sidecar,
+mixed-boundary fixture/sidecar, and trace SHA-256 values remain respectively
+`bd9a2d473fa84012afb36dab8d0f9c11063dd5618df5a31791d57cba2c027234`,
+`7361b50bc564d900e1852deaeaaf804544ad9c8ad0a3321a67c1e31bbaa80f17`,
+`5fc4849a77eced7a93d65e0cae000c87b1730070c74aef116d6ca62be896ecd9`,
+`8e2c73b1661a37c35887b08af01b42fc886199e7a3fb07db8c1412c69f62fa43`,
+`d330fcb2a8196aaf2bf653cc604b7cd660f56dcef5331a55bd1b35b84e2732ef`,
+`f318b97a75b119bf32b3d130f84df829e93a4a87007c4ada7e890fa30010f46c`,
+and `55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`.
+
+The documentation prerequisite owns exactly the same 42 Markdown records as
+GCP: 28 paired checker records, 12 paired mizar-test records, and two global
+ledgers. It changes no Rust, Cargo, canonical spec, `.miz`, sidecar,
+expectation, trace TOML, metadata, count, status, or production/test-list hash.
+Exit requires synchronized EN/JA, repeated review-only specification audit
+ending **NO FINDINGS**, all nine docs-only hard gates uncapped at `>=90/100`,
+exact docs staging/commit, fresh parser/resolver/GCP/count/hash preflight, exact
+seven-file/eight-test implementation, separate test-sufficiency,
+implementation, and source/docs reviews ending **NO FINDINGS**, full
+verification, all nine implementation gates and `>=90/100`, task-only commit,
+clean post-commit inventory, protected stash identity, and automatic selection
+of Task 269GCT.

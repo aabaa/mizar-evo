@@ -5758,3 +5758,10 @@ bounded private lower `source_drift`/`test_gap`はexact canonical-derived select
 Rust test 4件でclosed。canonical spec、existing `.miz`/expectation、trace、metadata、
 diagnostic、dispatch、active coverageは不変。executable witness scope/condition
 occurrenceはGC/GCT/GCUがowner。
+
+## Task 269GC frozen source/spec mapping
+
+Spec 4.6.1、15.3.3、15.10、16.3.3、16.4.2をexact GCP-derived binding
+transaction/scope matrixへmap。focused private testでclassified gapを閉じ、existing
+.miz/sidecar/expectation/traceは不変。written typeはGCT、condition occurrenceは
+GCU。condition/fact/proof semantics/active creditなし。

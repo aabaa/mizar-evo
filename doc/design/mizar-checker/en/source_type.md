@@ -2016,3 +2016,10 @@ binding handoff; reusing the exact GUPT handoff for this source is forbidden.
 The lower route preserves only the exact written `set` ranges and spelling.
 No type application, overlay, normalization, constraint, guard, or obligation
 is created; GCT remains the separate consumer of the future GC handoff.
+
+## Task 269GC Frozen Type Deferral
+
+Binding 1 remains `BindingTypeSite::Missing`; `set@90..93` stays only inside
+the authenticated GCP lower bytes. GC creates no source-type application,
+overlay, normalization, constraint, guard, or obligation. Task 269GCT alone
+may consume the GC handoff by value and overlay that exact written type.

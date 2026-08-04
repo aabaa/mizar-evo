@@ -3705,5 +3705,17 @@ No dispatch, fixture, sidecar, expectation, trace, metadata, diagnostic, CLI, ac
   private GCP route; all corpus artifacts and public dispatch are unchanged.
 - [x] Finish source-doc/final reviews to **NO FINDINGS**, full verification,
   and all nine hard gates uncapped at `100/100`.
-- [ ] Complete exact staging and the dedicated implementation commit, then
-  hand off Task 269GC.
+- [x] Complete exact staging and implementation commit
+  `59eb7de68d83901375883a2a6249796afc6a0de3`, then hand off Task 269GC.
+
+## Task 269GC Given-condition Binding Route
+
+- [x] Fresh-inventory exact GCP lower, canonical witness scope, reserve base,
+  public checker patterns, baselines, origin/stash, and select GC only.
+- [x] Freeze private composition, distinct checker ABI/owners, seven files,
+  four checker/four runner tests, corruption matrix, zero credit, deferrals,
+  and exit in synchronized EN/JA.
+- [ ] Finish spec review **NO FINDINGS**, docs-only gates/score, and exact
+  42-Markdown prerequisite commit.
+- [ ] Fresh-preflight, implement/review/verify/commit GC only, then
+  automatically inventory Task 269GCT.

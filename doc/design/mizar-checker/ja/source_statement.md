@@ -3644,3 +3644,9 @@ proof state、acceptanceはabsent。
 runnerはexact Given/condition statement subtreeをselector evidenceとしてだけ
 authenticateする。`source_statement` payload、condition/label fact、assume、proof
 state、acceptance resultはpublishしない。
+
+## Task 269GC frozen statement exclusion
+
+theorem/proof/Given/segment/name rangeはbinding authenticate/scopeだけに使用。
+`source_statement` handoff、proposition/condition list/label/fact/assume/
+conclusion/proof-state/acceptance rowなし。condition occurrenceはGCT後GCU owner。

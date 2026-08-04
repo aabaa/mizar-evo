@@ -6642,5 +6642,18 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   artifact/public route/semantic ownerを不変に維持。
 - [x] source-doc/final-quality review **NO FINDINGS**、full verification、全9
   hard gatesをscore capなし`100/100`で完了。
-- [ ] exact stagingとdedicated implementation commit後、Task269GCをautomatic
-  fresh-inventory。
+- [x] exact stagingとdedicated implementation commit
+  `59eb7de68d83901375883a2a6249796afc6a0de3`後Task269GCをfresh inventory。
+
+## Checker Task 269GC Given-condition binding consumer
+
+- [x] clean GCP commit、canonical scope、exact GCP lower、G/GUP boundary、
+  baseline、origin、stashをfresh inventoryしGCだけをselect。
+- [x] missing producer/test=`source_drift`/`test_gap`、contract=
+  `design_drift`、forbidden semantic/higher-owner=`boundary_violation`、origin
+  `0/13`=report-only `repo_metadata_conflict`、blocking `spec_gap`なし。
+- [x] distinct ABI、GCP dependency、`1/1/0 -> 2/2/0`、block matrix、Typed/
+  Resolved/runner、7 files/8 tests、zero credit、42 docs、deferral/exitをfreeze。
+- [ ] spec review **NO FINDINGS**、docs gates/score、exact Markdown commit。
+- [ ] fresh preflight後GCだけをimplementし、test/implementation/source-doc
+  review **NO FINDINGS**、full gates/commit後Task269GCTをautomatic inventory。

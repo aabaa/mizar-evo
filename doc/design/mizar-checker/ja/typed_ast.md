@@ -1878,11 +1878,19 @@ semantic tableは全empty。
 ## Task 269GCP Typed-owner exclusion
 
 GCPはrunner-private lower evidenceで`TypedAst` field/getter/installer/error/node/
-partsを追加しない。existing source owner/semantic tableはbyte-identical。最初の
-Typed owner候補はGC後のfuture GCT/GCU composite。
+partsを追加しない。existing source owner/semantic tableはbyte-identical。distinct
+next GCがfirst boxed binding-only Typed slot、GCT/GCUがlater type/term compositeをown。
 
 ### Task 269GCP implemented Typed-owner exclusion
 
 implementationは`TypedAst` field/getter/installer/error/node/partsを追加しない。
-private lower rowはrunner-localのままで、最初のTyped owner候補はGC後のfuture
-GCT/GCU composite。
+private lower rowはrunner-localのまま。separate GC contractがfirst binding-only
+Typed ownerをfreezeし、GCT/GCUがlater compositeをown。
+
+## Task 269GC frozen Typed ownership
+
+`TypedAst`はboxed optional
+`source_proof_local_given_condition_binding`、getter、consuming one-shot
+installer、`InvalidSourceProofLocalGivenConditionBinding`だけ。exact GCを
+authenticateし全existing ownerとboth-order exclusion。node/context/type/fact/
+coercion/initial obligation/diagnostic/`TypedAstParts`はempty/不変。laterはGCT/GCU。

@@ -2449,3 +2449,9 @@ formula-statement runner前にrowをactivateしない。
 implementationはRust test 4件だけを追加し、canonical test artifact/trace rowは
 追加しない。count/status/backlink/type credit/trace SHA/metadata/CLI/active outcome
 は不変で、GC/GCT/GCUがlater creditを保持。
+
+## Task 269GC frozen trace status
+
+focused private binding/ownership testだけ。spec_trace row/status/backlink/
+fixture/expectation/metadata/stage/creditは変更しない。count `428/395`、type
+`259=247+12`、trace SHAはEN記載値不変。GCT/GCUがtype/occurrence follow-up owner。

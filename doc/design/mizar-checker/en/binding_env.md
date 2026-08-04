@@ -964,3 +964,13 @@ The implemented lower row retains the witness declaration sites but creates no
 binding context, ID, lookup, lifetime, or diagnostic. GUP/GUPT/GU remain
 byte-identical; the user-confirmed innermost-block lifetime is still owned by
 the distinct next Task 269GC binding handoff.
+
+## Task 269GC Frozen Binding Environment
+
+GC reuses unchanged `BindingKind::GivenWitness` and common Given row types; it
+adds no `binding_env.rs` source. The authenticated reserve base changes only
+`1/1/0 -> 2/2/0`, adding proof context `SourceStatement(68..132)` at scope
+`[0]` and one normal active missing-type witness `y@82..83`, visible after
+ordinal 1. Lookup freezes own-condition and subsequent visibility, descendant
+inheritance, shadow/restoration, and parent/sibling exclusion. No occurrence,
+fact, condition lifetime, capture, diagnostic, or type row is created.

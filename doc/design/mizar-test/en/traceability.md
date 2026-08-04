@@ -2595,3 +2595,12 @@ activate a row before the prepared formula-statement runner exists.
 Implementation adds exactly four Rust tests and no canonical test artifact or
 trace row. Counts, statuses, backlinks, type credit, trace SHA, metadata, CLI
 results, and active outcomes remain unchanged; GC/GCT/GCU retain later credit.
+
+## Task 269GC Frozen Trace Status
+
+GC adds focused private binding/ownership tests only. It does not add or alter
+a `spec_trace.toml` row, requirement status, backlink, fixture, expectation,
+metadata case, active stage, or semantic credit. Counts remain `428/395`, type
+coverage `259=247+12`, and trace SHA remains
+`55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`.
+GCT/GCU retain type/occurrence follow-up ownership.

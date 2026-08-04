@@ -1781,3 +1781,11 @@ Task270はlater graph node。
 runner-private immutable lower rowがexact source/Surface/shell/theorem provenance/
 declaration site/debug replayをauthenticateする。checker payload family/semantic
 ownerは追加せず、GC/GCT/GCUがbinding/type/condition-useのseparate node。
+
+## Task 269GC binding-family decomposition
+
+GCはcomplete GCP lower bytes + immutable reserve base + dense common Given row
+1件 + final BindingEnv fingerprintのdistinct composite。source type、occurrence/
+reference、condition/fact、proof/obligation/IR payloadなし。Typed/Resolvedはsame
+compositeをbox/replayするだけ。GCT/GCUはlater separate node、G/GUP/GUPT/GUは
+generalizeしない。

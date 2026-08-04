@@ -6053,3 +6053,12 @@ canonical-derived selector and four Rust tests. Canonical specifications,
 existing `.miz`/expectations, trace, metadata, diagnostics, dispatch, and active
 coverage remain unchanged. Executable witness scope and condition occurrences
 remain with GC/GCT/GCU.
+
+## Task 269GC Frozen Source/Specification Mapping
+
+Spec 4.6.1, 15.3.3, 15.10, 16.3.3, and 16.4.2 map to one exact GCP-derived
+binding transaction and lexical scope matrix. Existing `.miz`, sidecars,
+expectations, and trace rows remain unchanged because the focused private tests
+close the classified source/test gap without active corpus admission. GCT owns
+the written type and GCU owns the authenticated condition occurrences. No
+condition/fact/proof semantics or active coverage is credited.

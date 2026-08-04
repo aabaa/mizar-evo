@@ -1456,3 +1456,9 @@ application、binding overlay、arena、normalization、constraint、guard、obl
 lower routeはexact written `set` range/spellingだけを保持。type application/
 overlay/normalization/constraint/guard/obligationを作らず、GCTがfuture GC handoffの
 separate consumer。
+
+## Task 269GC frozen type deferral
+
+binding 1は`BindingTypeSite::Missing`、`set@90..93`はGCP lower内だけ。source-
+type application/overlay/normalization/constraint/guard/obligationなし。GCTだけが
+GC handoffをby-value consumeしてexact written typeをoverlay可。

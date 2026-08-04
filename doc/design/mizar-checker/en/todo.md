@@ -6989,5 +6989,23 @@ This closes only dormant private lexical-binding evidence and grants zero active
   tests; preserve every canonical artifact, public route, and semantic owner.
 - [x] Finish source/docs and final-quality reviews to **NO FINDINGS**, full
   verification, and all nine hard gates uncapped at `100/100`.
-- [ ] Complete exact staging and the dedicated implementation commit, then
-  fresh-inventory Task 269GC automatically.
+- [x] Complete exact staging and dedicated implementation commit
+  `59eb7de68d83901375883a2a6249796afc6a0de3`, then fresh-inventory Task 269GC.
+
+## Checker Task 269GC Given-condition Binding Consumer
+
+- [x] Fresh-inventory clean GCP commit, canonical scope rule, exact GCP lower,
+  G/GUP boundaries, baselines, origin divergence, and protected stash; select
+  only GC.
+- [x] Classify missing producer/tests as `source_drift`/`test_gap`, absent
+  contract as `design_drift`, forbidden semantic/higher-owner changes as
+  `boundary_violation`, and origin `0/13` as report-only
+  `repo_metadata_conflict`; no blocking `spec_gap`.
+- [x] Freeze distinct public binding ABI, exact GCP dependency, `1/1/0 ->
+  2/2/0`, canonical block lookup matrix, Typed/Resolved/private runner owners,
+  seven files/eight tests, zero credit, 42 docs, baselines, deferrals, and exit.
+- [ ] Repeat specification review to **NO FINDINGS**, pass docs-only hard gates
+  uncapped at `>=90/100`, and commit exact synchronized Markdown.
+- [ ] Fresh-preflight and implement only GC; repeat test, implementation, and
+  source/docs reviews to **NO FINDINGS**, run full verification/gates, commit,
+  and fresh-inventory Task 269GCT automatically.

@@ -6740,3 +6740,20 @@ acceptance, downstream IR, and Task 270 remain explicit zero-credit follow-ups.
 Test-sufficiency, implementation, and source/documentation reviews end
 **NO FINDINGS**; full verification passes. Final read-only quality reports all
 nine hard gates PASS, no score cap, and `100/100`.
+
+## Checker Task 269GC Frozen Zero-credit Binding Boundary
+
+Canonical Spec 4.6.1, 15.3.3, 15.10, 16.3.3, and 16.4.2 now have a frozen
+focused plan for the declaration's own `such that` binding and the witness's
+innermost-block lifetime. The exact GCP-derived `1/1/0 -> 2/2/0` binding
+transaction, lookup inheritance/shadow/restoration/exclusion matrix, and
+Typed/Resolved private ownership close only classified `source_drift` and
+`test_gap` after implementation.
+
+This task earns no active specification coverage: no `.miz`, sidecar,
+expectation, trace row/status/backlink, type credit, semantic fact, proof,
+obligation, diagnostic, dispatch, or CLI result changes. Task 269GCT retains
+the written type, Task 269GCU retains declaration-condition occurrences, and
+descendant/export/capture/Task 270 retain their prior owners. Documentation is
+the exact 42-file prerequisite; implementation is seven Rust files/eight
+focused tests, followed by full gates and a separate commit.
