@@ -335,6 +335,8 @@ literal top-level public item:
   `SourceTypeDefinitionReturnProducer`, `SourceTypeModeRhsProducer`,
   `SourceTypeStructureMemberProducer`, `SourceProofLocalLetTypeHandoff`,
   `SourceProofLocalLetTypeProducer`, `SourceProofLocalLetTypeError`,
+  `SourceProofLocalGivenTypeHandoff`, `SourceProofLocalGivenTypeProducer`,
+  `SourceProofLocalGivenTypeError`,
   `SourceTypeError`
 
 対応:
@@ -348,6 +350,7 @@ literal top-level public item:
 | standalone mode RHSをthird applicationの捻造やdefinition-return semanticsのreuseなしにexact two-binding baseへextendする。 | `SourceTypeModeRhsProducer`、immutable owner row 1件、appended root 2、frozen precedence、one-shot/install validation。 | exact Task-249M extension/corruption/arena/Typed-final test 4件。 | Task 249Mで実装済み。combined profileは`2/3/0/0/1`。 |
 | standalone structure-member typeをfabricated binding applicationやreturn/RHS family reuseなしにbuildする。 | `SourceTypeStructureMemberProducer`、immutable owner row/root 4件、exact precedence、arena/install validation。 | exact Task-249S profile/corruption/arena/Typed-final test 4件。 | Task 249Sで実装済み。standalone profileは`0/4/0/0/0/4`。 |
 | exact proof-local `let` composition 1件がTask-269C missing type siteだけをupgradeしdependencyをunchanged preserveする。 | `SourceProofLocalLetTypeHandoff`、`SourceProofLocalLetTypeProducer`、`SourceProofLocalLetTypeError`。 | checker 4件/runner dormant 4件のexact/corruption/ownership/isolation test。 | Task 269CTで実装済み、active/semantic credit zero。 |
+| exact proof-local `given` composition 1件がTask-269G witness type siteだけをupgradeしdependencyをunchanged preserveする。 | `SourceProofLocalGivenTypeHandoff`、`SourceProofLocalGivenTypeProducer`、`SourceProofLocalGivenTypeError`。 | checker 4件/runner dormant 4件のexact/corruption/ownership/isolation test。 | Task 269GTで実装済み、active/semantic credit zero。 |
 | `TypedAst`がresultを所有し、`ResolvedTypedAst`はcloneだけする。 | optional `SourceTypeApplicationHandoff` fieldとborrowed getter。 | immutable final preservation/repeated-run assertion。 | 実装済み。legacy empty debug byteはconditionalに維持。 |
 | public enumはforward-compatible。 | public enumの`#[non_exhaustive]`。 | `checker_public_enums_are_forward_compatible_and_documented`。 | exhaustive exceptionなしでguard。 |
 
@@ -5679,7 +5682,13 @@ fact/proof semanticはsource behaviorから推測せずopenのまま。
 
 ## Task 269GT source/API delta
 
-current sourceには`SourceProofLocalGivenType*` family/Given-type Typed/final ownerなしで、
-implementation-owned `source_drift`。plannedはhandoff/producer/non-exhaustive error、Typed
-getter/installer、Resolved getter、private exact binding profile。source-backed inventoryは実在する
-implementationまで不変。canonical/active artifactをrebaselineしない。
+documentation-prerequisite commit
+`35bc97b92ce075226105e8fcd4c1e43c8621995c`時点のsourceには
+`SourceProofLocalGivenType*` family/Given-type Typed/final ownerがなく、implementation-owned
+`source_drift`だった。frozen planはhandoff/producer/non-exhaustive error、Typed getter/
+installer、Resolved getter、private exact binding profile。下のimplementation statusはcanonical/
+active artifactをrebaselineせず、そのclosureを記録する。
+
+### Task 269GT implemented source/API delta
+
+frozen `SourceProofLocalGivenTypeHandoff`、producer、non-exhaustive error、private Given binding profile、Typed getter/installer/error、Resolved getter/error、final node role、dormant runner consumerがexactに存在する。checker 4件/runner 4件でbounded `source_drift`/`test_gap`をcloseし、canonical test artifact/active coverageはrebaselineしない。

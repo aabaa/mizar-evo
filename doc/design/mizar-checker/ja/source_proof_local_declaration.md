@@ -1585,3 +1585,7 @@ Task269GTは`SourceProofLocalGivenBindingHandoff`をby-value consumeしlower/bin
 preserve、new `source_type.rs` composite内でbinding 1へexact `set@84..87`だけoverlay。
 Given binding ABI/scope matrix/debug bytesは不変。condition/fact/use/capture/free-export/proof
 semanticsはconsumer外。
+
+### Task 269GT implemented consumer status
+
+Task269GTはexact Task269G handoffをby-value consumeし、そのsnapshot/lower fingerprintをbyte-exactに保持する。copyしたGiven bindingのwritten `set@84..87` type siteだけをoverlayし、Task269GP lower、Task269G binding production、canonical block scope、condition/proof deferは不変。

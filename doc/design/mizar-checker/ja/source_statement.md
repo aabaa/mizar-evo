@@ -3595,3 +3595,7 @@ authenticateし、statement/condition/label/formula/fact/thesis/conclusion/proof
 type compositeはexisting proof statement contextをbinding provenanceとしてだけauthenticate。
 statement/condition/label/formula/fact/thesis/conclusion/proof rowを追加せず`such that`を
 reinterpretしない。
+
+### Task 269GT implemented statement boundary
+
+statement ownerやstatement/proof hintを追加しない。dormant consumerはdispatch外で、final assemblyはstatement/condition/fact/proof/semantic inputが空の場合だけGiven-type compositeをacceptする。

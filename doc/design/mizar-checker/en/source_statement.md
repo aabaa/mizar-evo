@@ -4130,3 +4130,7 @@ The type composite authenticates the existing proof statement context only as
 binding provenance. It adds no statement, condition, label, formula, fact,
 thesis, conclusion, or proof row and does not reinterpret the `such that`
 condition.
+
+### Task 269GT implemented statement boundary
+
+No statement owner or statement/proof hint is added. The dormant consumer remains outside dispatch, and final assembly accepts the Given-type composite only with empty statement, condition, fact, proof, and semantic inputs.

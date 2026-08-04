@@ -1827,3 +1827,7 @@ binding dependency, its fingerprint, a typed `2/2/0` binding snapshot, one
 `2/2/0/0/0/0` builtin-`set` source-type handoff, and their fingerprints. No
 condition, label/fact, type guard/assumption, goal, proof, obligation,
 acceptance, Core, CFG, or VC payload is part of this family.
+
+### Task 269GT implemented payload delta
+
+One immutable Given-type composite now owns the Task-269G dependency, exact upgraded binding environment, exact `2/2/0/0/0/0` source-type handoff, three fingerprints, and the separate three-node arena. Direct Given-binding, generic type, Let, condition/fact, assumption/guard, proof, obligation, acceptance, and downstream semantic payload families remain absent.

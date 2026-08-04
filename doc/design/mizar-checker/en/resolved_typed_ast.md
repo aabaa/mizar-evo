@@ -1916,3 +1916,7 @@ Final assembly will clone and revalidate one boxed
 semantic coexistence. The direct Given binding and generic source-type slots
 remain empty because the composite owns both dependencies. No semantic table
 is populated.
+
+### Task 269GT implemented final owner
+
+Resolved assembly clones only `SourceProofLocalGivenTypeHandoff`, rejects occupied or semantic inputs, and maps all three typed nodes one-for-one to source-preserved role `source.proof-local.given.type`. Direct source-type/Given-binding/Let owners and every semantic table remain empty.

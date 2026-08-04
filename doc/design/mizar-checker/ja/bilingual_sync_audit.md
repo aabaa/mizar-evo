@@ -1739,3 +1739,7 @@ exact Markdown 40件だけで、library/lint/metadata/workspace/CLI/list/product
 trace/whitespace checkはunchanged executable baselineで全PASS。final read-only reviewと
 source/documentation reviewは**NO FINDINGS**、hard gate 9件はcapなし`100/100`で全PASS。
 parent stagingだけpending。
+
+### Task 269GT implementation synchronization
+
+implemented Given-type public API、Typed/Resolved ownership、exact runner consumer、8 tests、`498/560` library、production manifest、zero-semantic boundaryを全EN/JA Task269GT recordで同期した。bilingual exceptionはない。

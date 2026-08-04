@@ -2527,7 +2527,7 @@ remains byte-identical. Only the dormant runner library inventory moves to
 
 ## Checker Task 269GT Zero-Credit Trace Boundary
 
-The documentation prerequisite and later private unit tests add no `.miz`
+The documentation prerequisite and implemented private unit tests add no `.miz`
 backlink, trace row/status/count, expectation, diagnostic key, or active type/
 proof credit. Cases/requirements remain `428/395`, active stages
 `101/7/205/1`, type coverage `259=247+12`, and the trace manifest stays byte-
@@ -2538,3 +2538,7 @@ pass/fail `235/193`, warnings/errors `23/0`, every active-stage and five-CLI
 hash, and trace SHA-256
 `55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`.
 No trace credit or artifact mutation occurred.
+
+### Checker Task 269GT implementation trace status
+
+Implementation closes only private Rust `source_drift`/`test_gap` and grants zero trace credit. Cases/requirements remain `428/395`, active stages `101/7/205/1`, type coverage `259=247+12`, and trace SHA-256 remains `55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`; no row, backlink, status, fixture, sidecar, expectation, or diagnostic changed.

@@ -6556,6 +6556,16 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   7-file/8-test scope、zero-credit audit、semantic exclusion、exitをfreeze。
 - [x] specification reviewを**NO FINDINGS**までrepeatし、docs-only verification/count/hash/
   hard gateをuncapped `>=90/100`でPASS。
-- [ ] synchronized Markdown 40件だけをcommitし、fresh preflight後frozen Task269GTだけを実装。
-- [ ] test/implementation/source-doc/final review **NO FINDINGS**、full verification/hard gate、
+- [x] synchronized Markdown 40件だけを
+  `35bc97b92ce075226105e8fcd4c1e43c8621995c`としてcommitし、fresh preflight後frozen
+  Task269GTだけを実装。
+- [~] test/implementation/source-doc/final review **NO FINDINGS**、full verification/hard gate、
   exact implementation+synchronized record commit後later-use/captureまたはTask270をfresh inventory。
+
+### Task 269GT implementation handoff
+
+- [x] exact 7-file Given-type transactionとchecker 4件/runner 4件を実装。
+- [x] test-sufficiency/implementation reviewを **NO FINDINGS** まで反復し、focused/full library `498/560`をpass。
+- [~] source/docs/independent final-quality reviewは **NO FINDINGS**、full workspace/count/hash
+  とhard gate 9件はcapなし`100/100`でPASS。exact staging、single implementation commitを
+  完了し、dependency-ready successorをfresh inventoryする。

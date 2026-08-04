@@ -442,10 +442,12 @@ pub(super) use source_predicate_definition::{
 pub(super) use source_proof_local_declaration::{
     SourceProofLocalDeclarationRouteMutation, SourceProofLocalDeclarationRouteOutput,
     SourceProofLocalGivenBindingRouteMutation, SourceProofLocalGivenBindingRouteOutput,
+    SourceProofLocalGivenTypeRouteMutation, SourceProofLocalGivenTypeRouteOutput,
     SourceProofLocalLetBindingRouteMutation, SourceProofLocalLetBindingRouteOutput,
     SourceProofLocalLetTypeRouteMutation, SourceProofLocalLetTypeRouteOutput,
     source_proof_local_declaration_output, source_proof_local_declaration_output_with_mutation,
     source_proof_local_given_binding_output, source_proof_local_given_binding_output_with_mutation,
+    source_proof_local_given_type_output, source_proof_local_given_type_output_with_mutation,
     source_proof_local_let_binding_output, source_proof_local_let_binding_output_with_mutation,
     source_proof_local_let_type_output, source_proof_local_let_type_output_with_mutation,
 };

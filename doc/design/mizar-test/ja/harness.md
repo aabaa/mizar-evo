@@ -5008,3 +5008,7 @@ private routeはunchanged Task269Gをcallしdependencyをclone、authenticated r
 rangeだけをcombine、新checker producerをcallしてotherwise-empty Typed/finalへcompositeを
 install/replay。dispatch不在。exact tests 4件がcomposition/mutation precedence/atomic ownership-
 emptiness/neighbor-active isolationをcover。
+
+### Checker Task 269GT implemented dormant harness
+
+private selectorはunchanged Task269Gとfrozen type input/arenaをcomposeし、normal dispatchに入らない。near miss、Task269G direct ownership、Let neighbor、active fixtureはisolatedで、fixture/sidecar/expectation/trace/metadata/diagnostic/CLI byte変更はない。

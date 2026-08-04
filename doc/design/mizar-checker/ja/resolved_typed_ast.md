@@ -1819,3 +1819,7 @@ final assemblyはboxed `SourceProofLocalGivenTypeHandoff` 1件をclone/revalidat
 arenaを`source.proof-local.given.type` roleでmap、stale/sibling/node-hint/semantic coexistenceを
 reject。direct Given binding/generic source-type slotはcomposite ownershipのためempty。semantic
 tableをpopulateしない。
+
+### Task 269GT implemented final owner
+
+Resolved assemblyは`SourceProofLocalGivenTypeHandoff`だけをcloneし、occupied/semantic inputをrejectし、3 typed nodesを`source.proof-local.given.type` roleへ1対1 mapする。direct source-type/Given-binding/Let ownerと全semantic tableは空。

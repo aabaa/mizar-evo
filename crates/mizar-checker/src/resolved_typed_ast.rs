@@ -44,7 +44,10 @@ use crate::{
     source_structure::SourceStructureHandoff,
     source_structure_definition::SourceStructureDefinitionHandoff,
     source_term::SourcePrimaryTermHandoff,
-    source_type::{SourceProofLocalLetTypeHandoff, SourceTypeApplicationHandoff},
+    source_type::{
+        SourceProofLocalGivenTypeHandoff, SourceProofLocalLetTypeHandoff,
+        SourceTypeApplicationHandoff,
+    },
     type_checker::{
         CheckedFormulaId, CheckedFormulaTable, CheckedStatementOwner, ExportStatus, FormulaKind,
         FormulaStatus, TermFormulaInferenceOutput, Visibility,
@@ -153,6 +156,7 @@ pub struct ResolvedTypedAst {
     source_proof_local_let_binding: Option<Box<SourceProofLocalLetBindingHandoff>>,
     source_proof_local_let_type: Option<Box<SourceProofLocalLetTypeHandoff>>,
     source_proof_local_given_binding: Option<Box<SourceProofLocalGivenBindingHandoff>>,
+    source_proof_local_given_type: Option<Box<SourceProofLocalGivenTypeHandoff>>,
     nodes: ResolvedTypedArena,
     expr_metadata: ExpressionMetadataTable,
     collection_candidates: OverloadCandidateSummaryTable,
@@ -306,6 +310,13 @@ impl ResolvedTypedAst {
         &self,
     ) -> Option<&SourceProofLocalGivenBindingHandoff> {
         match self.source_proof_local_given_binding.as_ref() {
+            Some(handoff) => Some(handoff),
+            None => None,
+        }
+    }
+
+    pub const fn source_proof_local_given_type(&self) -> Option<&SourceProofLocalGivenTypeHandoff> {
+        match self.source_proof_local_given_type.as_ref() {
             Some(handoff) => Some(handoff),
             None => None,
         }
@@ -507,6 +518,9 @@ impl ResolvedTypedAst {
         }
         if let Some(source_proof_local_given_binding) = &self.source_proof_local_given_binding {
             output.push_str(&source_proof_local_given_binding.debug_text());
+        }
+        if let Some(source_proof_local_given_type) = &self.source_proof_local_given_type {
+            output.push_str(&source_proof_local_given_type.debug_text());
         }
         if let Some(source_statement_references) = &self.source_statement_references {
             output.push_str(&source_statement_references.debug_text());
@@ -1475,6 +1489,7 @@ pub enum ResolvedTypedAstError {
     InvalidSourceProofLocalLetBinding,
     InvalidSourceProofLocalLetType,
     InvalidSourceProofLocalGivenBinding,
+    InvalidSourceProofLocalGivenType,
     StatementProofBundleMismatch,
     MissingStatementSemantic,
     NonSingletonStatementSemantic {
@@ -1602,6 +1617,8 @@ impl fmt::Display for ResolvedTypedAstError {
             Self::InvalidSourceProofLocalGivenBinding => formatter.write_str(
                 "resolved typed AST source proof-local given-binding handoff is inconsistent",
             ),
+            Self::InvalidSourceProofLocalGivenType => formatter
+                .write_str("resolved typed AST source proof-local given type handoff is invalid"),
             Self::StatementProofBundleMismatch => formatter.write_str(
                 "statement semantic and proof-intent bundles must be supplied together",
             ),
@@ -1797,6 +1814,25 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
             handoff
                 .validate_complete_installation(source_id, &module_id, installation_available)
                 .map_err(|_| ResolvedTypedAstError::InvalidSourceProofLocalGivenBinding)?;
+        }
+        let source_proof_local_given_type = self
+            .inputs
+            .typed_ast
+            .source_proof_local_given_type()
+            .cloned()
+            .map(Box::new);
+        if let Some(handoff) = &source_proof_local_given_type {
+            let installation_available =
+                source_proof_local_given_type_typed_profile_is_exact(self.inputs.typed_ast)
+                    && source_proof_local_given_type_inputs_are_syntax_only(&self.inputs);
+            handoff
+                .validate_complete_installation(
+                    source_id,
+                    &module_id,
+                    self.inputs.typed_ast.nodes(),
+                    installation_available,
+                )
+                .map_err(|_| ResolvedTypedAstError::InvalidSourceProofLocalGivenType)?;
         }
         if self
             .inputs
@@ -2573,6 +2609,7 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
             source_proof_local_let_binding,
             source_proof_local_let_type,
             source_proof_local_given_binding,
+            source_proof_local_given_type,
             nodes,
             expr_metadata,
             collection_candidates,
@@ -2622,6 +2659,7 @@ fn source_proof_local_let_binding_typed_profile_is_empty(typed_ast: &TypedAst) -
         && typed_ast.source_proof_local_declaration().is_none()
         && typed_ast.source_proof_local_let_type().is_none()
         && typed_ast.source_proof_local_given_binding().is_none()
+        && typed_ast.source_proof_local_given_type().is_none()
         && typed_ast.nodes().is_empty()
 }
 
@@ -2652,6 +2690,7 @@ fn source_proof_local_given_binding_typed_profile_is_empty(typed_ast: &TypedAst)
         && typed_ast.source_proof_local_declaration().is_none()
         && typed_ast.source_proof_local_let_binding().is_none()
         && typed_ast.source_proof_local_let_type().is_none()
+        && typed_ast.source_proof_local_given_type().is_none()
         && typed_ast.nodes().is_empty()
 }
 
@@ -2681,6 +2720,38 @@ fn source_proof_local_let_type_typed_profile_is_exact(typed_ast: &TypedAst) -> b
         && typed_ast.source_statement_witnesses().is_none()
         && typed_ast.source_proof_local_declaration().is_none()
         && typed_ast.source_proof_local_let_binding().is_none()
+        && typed_ast.source_proof_local_given_binding().is_none()
+        && typed_ast.source_proof_local_given_type().is_none()
+        && typed_ast.nodes().len() == 3
+}
+
+fn source_proof_local_given_type_typed_profile_is_exact(typed_ast: &TypedAst) -> bool {
+    typed_ast.resolved_root().is_none()
+        && typed_ast.source_context().is_none()
+        && typed_ast.source_type().is_none()
+        && typed_ast.source_attribute().is_none()
+        && typed_ast.source_evidence().is_none()
+        && typed_ast.source_term().is_none()
+        && typed_ast.source_application().is_none()
+        && typed_ast.source_structure().is_none()
+        && typed_ast.source_set_term().is_none()
+        && typed_ast.source_atomic_formula().is_none()
+        && typed_ast.source_attribute_definition().is_none()
+        && typed_ast.source_functor_definition().is_none()
+        && typed_ast.source_property_implementation().is_none()
+        && typed_ast.source_mode_definition().is_none()
+        && typed_ast.source_structure_definition().is_none()
+        && typed_ast.source_predicate_definition().is_none()
+        && typed_ast.source_composite_formula().is_none()
+        && typed_ast.source_formula_composition().is_none()
+        && typed_ast.source_condition_formula_composition().is_none()
+        && typed_ast.source_predicate_chain_composition().is_none()
+        && typed_ast.source_statement().is_none()
+        && typed_ast.source_statement_references().is_none()
+        && typed_ast.source_statement_witnesses().is_none()
+        && typed_ast.source_proof_local_declaration().is_none()
+        && typed_ast.source_proof_local_let_binding().is_none()
+        && typed_ast.source_proof_local_let_type().is_none()
         && typed_ast.source_proof_local_given_binding().is_none()
         && typed_ast.nodes().len() == 3
 }
@@ -2716,6 +2787,12 @@ fn source_statement_inputs_are_syntax_only(inputs: &ResolvedTypedAstInputs<'_>) 
 }
 
 fn source_proof_local_let_type_inputs_are_syntax_only(inputs: &ResolvedTypedAstInputs<'_>) -> bool {
+    source_statement_inputs_are_syntax_only(inputs) && inputs.node_hints.is_empty()
+}
+
+fn source_proof_local_given_type_inputs_are_syntax_only(
+    inputs: &ResolvedTypedAstInputs<'_>,
+) -> bool {
     source_statement_inputs_are_syntax_only(inputs) && inputs.node_hints.is_empty()
 }
 
@@ -3742,6 +3819,7 @@ fn build_resolved_nodes(
     type_diagnostics: &BTreeMap<TypeDiagnosticId, ResolvedTypedDiagnosticId>,
 ) -> Result<ResolvedTypedArena, ResolvedTypedAstError> {
     let source_proof_local_let_type = inputs.typed_ast.source_proof_local_let_type().is_some();
+    let source_proof_local_given_type = inputs.typed_ast.source_proof_local_given_type().is_some();
     let mut hints = BTreeMap::new();
     for hint in &inputs.node_hints {
         validate_typed_node(inputs.typed_ast, hint.typed_node)?;
@@ -3785,6 +3863,7 @@ fn build_resolved_nodes(
             failed_overload_id,
             hints.get(&typed_id),
             source_proof_local_let_type,
+            source_proof_local_given_type,
         );
         nodes.push(ResolvedTypedNode {
             id,
@@ -3815,10 +3894,16 @@ fn resolved_node_kind(
     overload_id: Option<OverloadResolutionId>,
     hint: Option<&ResolvedNodeKindHintKind>,
     source_proof_local_let_type: bool,
+    source_proof_local_given_type: bool,
 ) -> ResolvedTypedNodeKind {
     if source_proof_local_let_type {
         return ResolvedTypedNodeKind::SourcePreserved {
             role: SourceNodeRole::new("source.proof-local.let.type"),
+        };
+    }
+    if source_proof_local_given_type {
+        return ResolvedTypedNodeKind::SourcePreserved {
+            role: SourceNodeRole::new("source.proof-local.given.type"),
         };
     }
     if let Some(result) = overload_id {

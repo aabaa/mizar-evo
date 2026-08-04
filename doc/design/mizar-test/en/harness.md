@@ -5323,3 +5323,7 @@ new checker producer, install the composite into an otherwise-empty typed AST,
 and replay final assembly. The route is absent from dispatch. Four exact tests
 cover composition, mutation precedence, atomic ownership/emptiness, and
 neighbor/active-route isolation.
+
+### Checker Task 269GT implemented dormant harness
+
+The private selector composes unchanged Task 269G with the frozen type input and arena and remains absent from normal dispatch. Near misses, Task-269G direct ownership, Let neighbors, and active fixtures remain isolated; no fixture, sidecar, expectation, trace, metadata, diagnostic, or CLI byte changes.

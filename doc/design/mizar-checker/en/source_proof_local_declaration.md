@@ -2182,3 +2182,7 @@ its lower and binding fingerprints, and overlays only binding 1's exact
 Given binding ABI, lexical scope matrix, and debug bytes remain unchanged.
 Condition/fact/use/capture/free-export and every proof semantic stay outside
 the consumer.
+
+### Task 269GT implemented consumer status
+
+Task 269GT consumes the exact Task-269G handoff by value and preserves that snapshot and its lower fingerprint byte-for-byte. It overlays only the copied Given binding's written `set@84..87` type site; Task-269GP lower and Task-269G binding production, canonical block scope, and all condition/proof deferrals are unchanged.

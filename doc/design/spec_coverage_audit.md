@@ -6596,7 +6596,7 @@ case, diagnostic, or coverage count changes. Corpus/requirements remain
 `428/395`, pass/fail `235/193`, active stages `101/7/205/1`, type coverage
 `259=247+12`, warnings/errors `23/0`, and trace SHA-256 remains
 `55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`.
-The later implementation closes only the bounded source-type `source_drift`
+The implementation below closes only the bounded source-type `source_drift`
 and eight-test `test_gap`. Condition/label facts, existential or Skolem
 meaning, assumptions/guards, goals, initial obligations, use/capture,
 proof/discharge/acceptance, free-witness export, Core, CFG, VC, and Task 270
@@ -6608,4 +6608,17 @@ library, policy, metadata, workspace, CLI, test-list, production, fixture,
 sidecar, corpus, and trace baselines; therefore this section still grants zero
 new coverage or trace credit. Source/documentation and final-quality reviews
 end **NO FINDINGS**; all nine hard gates PASS uncapped at `100/100`. The exact
-documentation commit remains parent-owned.
+documentation prerequisite is committed as
+`35bc97b92ce075226105e8fcd4c1e43c8621995c`.
+
+### Checker Task 269GT Implemented Zero-Credit Status
+
+The exact Given-type transaction and its four checker/four runner tests now close the bounded `source_drift` and `test_gap`. The immutable Task-269G scope owner remains authoritative; only the copied binding type site, source-type rows, three-node arena, and Typed/final composite are added. Test and implementation reviews are **NO FINDINGS**.
+
+This still grants zero specification or trace credit. Cases/requirements remain `428/395`, pass/fail `235/193`, warnings/errors `23/0`, active stages `101/7/205/1`, type coverage `259=247+12`, and trace SHA-256 `55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`. Condition/fact, existential/Skolem, assumption/guard, goal/obligation, use/capture/export, proof/acceptance, downstream IR/VC, and Task 270 remain deferred.
+
+Final implementation, source/documentation, and independent quality reviews
+are **NO FINDINGS**. Focused/crate/workspace, policy, metadata, format, Clippy,
+five-CLI, count/hash, canonical-artifact, trace, and whitespace verification
+all pass. All nine hard gates PASS without a score cap at `100/100`; only
+staging, commit, and fresh inventory remain.

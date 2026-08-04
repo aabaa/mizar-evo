@@ -762,3 +762,7 @@ type structure and provenance. Type assumption/guard, condition/fact,
 existential/Skolem meaning, goal, initial obligation, proof/discharge/
 acceptance, Core, CFG, and VC tables remain empty and receive zero active
 coverage credit.
+
+### Task 269GT implementation semantic audit
+
+The implementation publishes source-type provenance only. It creates no condition or label fact, existential/Skolem meaning, assumption/guard, goal, initial obligation, use/capture/export, proof/discharge/acceptance state, Core/CFG/VC row, or active-corpus behavior; executable semantic coverage remains zero.

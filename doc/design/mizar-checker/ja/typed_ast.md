@@ -1837,3 +1837,7 @@ obligation/diagnostic payloadをemptyに保つ。private boxed storageでもby-v
 追加。exact 3-node arena/otherwise-empty profileだけaccept。direct Given binding、generic type、
 sibling、contexts/types/facts/coercions/initial obligations/diagnostics/semantic nodesはabsent、
 failureはatomic。
+
+### Task 269GT implemented typed owner
+
+`TypedAst`はGiven-binding slot直後にboxed optional `source_proof_local_given_type` 1件をownし、frozen getter/consuming installerを公開し、exact 3-node arenaをauthenticateする。duplicate/direct Given-binding/Let/他source owner/nonempty semantic stateはatomicにrejectする。`TypedAstParts` field/semantic tableは追加しない。
