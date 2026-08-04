@@ -921,3 +921,10 @@ reserve base `1/1/0 -> 2/2/0`、`SourceStatement(68..132)` proof context scope
 `[0]`、normal active missing-type `y@82..83` 1件だけ。own condition、subsequent、
 child inheritance、shadow/restore、parent/sibling exclusionをfreezeし、occurrence/
 fact/condition lifetime/capture/diagnostic/type rowは作らない。
+
+### Task 269GC implemented binding environment
+
+exact `1/1/0 -> 2/2/0` transactionとcomplete lexical lookup matrixをfrozen
+checker ownerへ実装し、`binding_env.rs`は不変。checker/runner各4 testsがown-
+condition、subsequent、inheritance、shadow/restore、parent/sibling boundaryを
+cover。type/occurrence/fact/capture/diagnostic/semantic creditはfrozenどおりdefer。

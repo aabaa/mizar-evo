@@ -4189,3 +4189,10 @@ GC uses theorem/proof/Given/segment/name ranges only to authenticate and scope
 the lexical binding. It adds no `source_statement` handoff, proposition,
 condition list, label, fact, assumption, conclusion, proof-state, or acceptance
 row. The two condition occurrences remain GCU-owned after GCT.
+
+### Task 269GC implemented statement exclusion
+
+The binding handoff is implemented using only authenticated ranges. No
+`source_statement` payload, condition/label fact, assumption, conclusion,
+proof state, or acceptance row changed. The condition occurrences remain
+opaque and GCU-owned after GCT.

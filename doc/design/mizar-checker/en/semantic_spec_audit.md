@@ -828,3 +828,10 @@ existential elimination, Skolemization, condition truth/fact availability,
 label lifetime, assumption/guard composition, goals, obligations, discharge,
 acceptance, capture/export, or any Core/CFG/VC/ATP meaning. These are neither
 inferred from source behavior nor encoded as empty semantic success.
+
+### Task 269GC implementation semantic status
+
+Implementation closes only the canonical lexical-binding `source_drift` and
+focused `test_gap`. Existential/Skolem, condition/fact/label, guard, goal,
+obligation, proof/acceptance, capture/export, and downstream IR remain absent
+and explicitly deferred. Active semantic credit stays zero.

@@ -2604,3 +2604,12 @@ metadata case, active stage, or semantic credit. Counts remain `428/395`, type
 coverage `259=247+12`, and trace SHA remains
 `55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`.
 GCT/GCU retain type/occurrence follow-up ownership.
+
+### Task 269GC implemented zero-credit trace status
+
+Implementation adds exactly eight Rust tests across checker and runner and no
+canonical test artifact or trace row. Cases/requirements remain `428/395`,
+type coverage remains `259=247+12`, and trace SHA remains
+`55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`.
+Statuses, backlinks, metadata, corpus/CLI results, and active semantic credit
+are unchanged; GCT/GCU retain follow-up ownership.

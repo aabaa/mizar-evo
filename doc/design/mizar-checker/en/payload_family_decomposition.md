@@ -1892,3 +1892,10 @@ base + one dense common Given row + final `BindingEnv` fingerprints. It owns no
 source type, occurrence/reference, condition/fact, proof, obligation, or IR
 payload. Typed and Resolved only box/replay the same composite. GCT and GCU are
 separate later payload nodes; G, GUP, GUPT, and GU are not generalized.
+
+### Task 269GC implemented binding payload
+
+The distinct GCP-by-value binding composite, dense Given row, final
+`BindingEnv` fingerprints, and Typed/Resolved replay are implemented exactly
+as frozen. The implementation adds no source type, occurrence/reference,
+condition/fact, proof, obligation, or IR payload; GCT and GCU remain separate.

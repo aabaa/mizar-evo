@@ -3715,7 +3715,10 @@ No dispatch, fixture, sidecar, expectation, trace, metadata, diagnostic, CLI, ac
 - [x] Freeze private composition, distinct checker ABI/owners, seven files,
   four checker/four runner tests, corruption matrix, zero credit, deferrals,
   and exit in synchronized EN/JA.
-- [ ] Finish spec review **NO FINDINGS**, docs-only gates/score, and exact
-  42-Markdown prerequisite commit.
-- [ ] Fresh-preflight, implement/review/verify/commit GC only, then
-  automatically inventory Task 269GCT.
+- [x] Finish spec review **NO FINDINGS**, docs-only gates at `100/100`, and
+  exact 42-Markdown prerequisite commit
+  `dd053c86dab322508a15823de1c4afd268c2d35a`.
+- [x] Fresh-preflight and implement only the frozen GC route; test-sufficiency
+  and implementation reviews end **NO FINDINGS**.
+- [ ] Finish source-doc consistency/final-quality review, workspace-wide final
+  gates, exact implementation commit, then automatically inventory Task 269GCT.

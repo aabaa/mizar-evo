@@ -927,6 +927,10 @@ Literal top-level public items:
   `SourceProofLocalGivenUseBindingHandoff`,
   `SourceProofLocalGivenUseBindingProducer`,
   `SourceProofLocalGivenUseBindingError`
+- `SourceProofLocalGivenConditionBindingHandoffInput`,
+  `SourceProofLocalGivenConditionBindingHandoff`,
+  `SourceProofLocalGivenConditionBindingProducer`,
+  `SourceProofLocalGivenConditionBindingError`
 
 Correspondence:
 
@@ -939,6 +943,7 @@ Correspondence:
 | The exact proof-`let` profile appends one missing-type `LetBinding` over the reserve-only base and is preserved atomically without semantic publication. | Public `SourceProofLocalLetBinding*` input/row/table/handoff/producer/error types and Typed/final ownership. | Four checker and four private runner Task-269C tests. | Implemented as zero-credit binding transport. |
 | The exact proof-`given` profile appends one missing-type `GivenWitness` over the reserve-only base, preserves canonical block-local lookup behavior, and is carried atomically without semantic publication. | Public `SourceProofLocalGivenBinding*` input/row/table/handoff/producer/error types, `BindingKind::GivenWitness`, and Typed/final ownership. | Four checker and four private runner Task-269G tests, including inherited, shadowed, restored, parent-excluded, and sibling-excluded lookup. | Implemented as zero-credit binding transport; source-type admission remains Task 269GT. |
 | The distinct proof-`given` later-use source rebuilds the same block-local binding lifetime in its own transaction without publishing any occurrence or semantic row. | Public `SourceProofLocalGivenUseBindingHandoffInput`, `SourceProofLocalGivenUseBindingHandoff`, `SourceProofLocalGivenUseBindingProducer`, and `SourceProofLocalGivenUseBindingError`; reused dense Given row/table/recovery ABI. | Four checker and four private runner Task-269GUP tests cover exact source identity, corruption precedence, lookup inheritance/shadow/restoration/exclusion, and zero semantic effect. | Implemented as zero-credit dormant binding prerequisite for Task 269GUPT. |
+| The declaration-condition source installs the canonical own-condition and innermost-block witness lifetime without publishing type, occurrence, condition, or proof semantics. | Public `SourceProofLocalGivenConditionBindingHandoffInput`, `SourceProofLocalGivenConditionBindingHandoff`, `SourceProofLocalGivenConditionBindingProducer`, and `SourceProofLocalGivenConditionBindingError`; independently reconstructed theorem identity and reused dense Given row/table/recovery ABI. | Four checker and four private runner Task-269GC tests cover coherent identity corruption, validation precedence, lookup inheritance/shadow/restoration/exclusion, atomic ownership, and zero semantic effect. | Implemented as zero-credit binding prerequisite for Task 269GCT. |
 
 Bounded gaps: later-use resolution and capture replay, other proof-local
 declaration forms, witness typing, existential matching, goal substitution,
@@ -6062,3 +6067,14 @@ expectations, and trace rows remain unchanged because the focused private tests
 close the classified source/test gap without active corpus admission. GCT owns
 the written type and GCU owns the authenticated condition occurrences. No
 condition/fact/proof semantics or active coverage is credited.
+
+### Task 269GC implemented source/spec mapping
+
+The exact public four-item GC family, canonical block-scope transaction, and
+eight focused tests close the classified `source_drift`/`test_gap`. Canonical
+specifications, `.miz`, sidecars, expectations, trace, metadata, diagnostics,
+dispatch, and active credit remain unchanged. GCT and GCU retain the written
+type and declaration-condition occurrence owners. Source/docs final review is
+**NO FINDINGS** and all parent workspace verification gates pass. Independent
+final quality is also **NO FINDINGS** with all
+nine gates uncapped at `100/100`; only staging/commit and GCT inventory remain.

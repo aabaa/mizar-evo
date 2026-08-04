@@ -3467,5 +3467,9 @@ dispatch、fixture、sidecar、expectation、trace、metadata、diagnostic、CLI
   origin/stashをfresh inventoryしGCだけをselect。
 - [x] private composition、distinct ABI/owner、7 files、checker/runner各4 tests、
   corruption、zero credit、deferral/exitをEN/JAでfreeze。
-- [ ] spec review **NO FINDINGS**、docs gates/score、exact 42 Markdown commit。
-- [ ] fresh preflight後GCだけをimplement/review/verify/commitしGCTをinventory。
+- [x] spec review **NO FINDINGS**、docs gate `100/100`、exact 42 Markdown commit
+  `dd053c86dab322508a15823de1c4afd268c2d35a`を完了。
+- [x] fresh preflight後frozen GCだけを実装し、test-sufficiency/implementation
+  reviewは**NO FINDINGS**。
+- [ ] source-doc consistency/final-quality、workspace final gate、exact
+  implementation commit後Task269GCTをautomatic inventory。

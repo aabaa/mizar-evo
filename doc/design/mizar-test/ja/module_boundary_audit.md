@@ -11906,3 +11906,14 @@ public dispatch/artifact/metadata/Cargo/diagnostic/他runner familyは不変。
 getter/reserve extractionだけを読みsyntax-free checker inputを作り、outputは
 `crate::runner`外へ出さない。dispatch/TestCase/artifact/metadata/Cargo/
 diagnostic/sibling route不変。validation/Typed-final replayはchecker owner。
+
+### Task 269GC implemented runner boundary
+
+変更はfrozen runner 4 filesだけ。production module sizeは
+`type_elaboration/source_proof_local_declaration.rs=2217`、
+`type_elaboration.rs=942`、`runner.rs=2775`、proof-local test leafは`7442`。
+productionは`37/76863`、path hash
+`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d`不変、
+content hashは
+`6efd7b0ecf2f94b6440b910cef62796e5093d8618ffe196d17ce99bd2245619f`。
+GCP lower owner/public dispatch/artifact/metadata/Cargo/diagnostic/sibling routeは不変。

@@ -974,3 +974,12 @@ adds no `binding_env.rs` source. The authenticated reserve base changes only
 ordinal 1. Lookup freezes own-condition and subsequent visibility, descendant
 inheritance, shadow/restoration, and parent/sibling exclusion. No occurrence,
 fact, condition lifetime, capture, diagnostic, or type row is created.
+
+### Task 269GC implemented binding environment
+
+The exact `1/1/0 -> 2/2/0` transaction and complete lexical lookup matrix are
+implemented in the frozen checker owner without changing `binding_env.rs`.
+All four checker and four runner tests pass the own-condition, subsequent,
+inheritance, shadow/restoration, and parent/sibling boundaries. Type,
+occurrence, fact, capture, diagnostic, and semantic-credit ownership remains
+deferred exactly as frozen.

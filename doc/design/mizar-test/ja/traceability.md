@@ -2455,3 +2455,10 @@ implementationはRust test 4件だけを追加し、canonical test artifact/trac
 focused private binding/ownership testだけ。spec_trace row/status/backlink/
 fixture/expectation/metadata/stage/creditは変更しない。count `428/395`、type
 `259=247+12`、trace SHAはEN記載値不変。GCT/GCUがtype/occurrence follow-up owner。
+
+### Task 269GC implemented zero-credit trace status
+
+checker/runner合計Rust test 8件だけを追加しcanonical artifact/trace rowなし。
+case/requirement `428/395`、type `259=247+12`、trace SHA
+`55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`
+不変。status/backlink/metadata/corpus/CLI/active credit不変、GCT/GCUがfollow-up owner。

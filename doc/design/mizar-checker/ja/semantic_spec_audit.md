@@ -757,3 +757,9 @@ GCが実装するのはcanonical lexical binding lifetimeだけ。existential/
 Skolem、condition truth/fact、label lifetime、assume/guard、goal、obligation、
 discharge/acceptance、capture/export、Core/CFG/VC/ATP meaningはclaimせず、source
 behaviorからinferせず、empty semantic successとしてもencodeしない。
+
+### Task 269GC implementation semantic status
+
+canonical lexical-binding `source_drift`とfocused `test_gap`だけをclose。
+existential/Skolem、condition/fact/label、guard、goal、obligation、proof/
+acceptance、capture/export、downstream IRはabsent/deferred、active creditは0。

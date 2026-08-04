@@ -3650,3 +3650,9 @@ state、acceptance resultはpublishしない。
 theorem/proof/Given/segment/name rangeはbinding authenticate/scopeだけに使用。
 `source_statement` handoff、proposition/condition list/label/fact/assume/
 conclusion/proof-state/acceptance rowなし。condition occurrenceはGCT後GCU owner。
+
+### Task 269GC implemented statement exclusion
+
+authenticated rangeだけでbinding handoffを実装。`source_statement` payload、
+condition/label fact、assume、conclusion、proof state、acceptance rowは不変。
+condition occurrenceはopaqueのままGCT後GCU owner。

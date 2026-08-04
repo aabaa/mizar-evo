@@ -2023,3 +2023,9 @@ Binding 1 remains `BindingTypeSite::Missing`; `set@90..93` stays only inside
 the authenticated GCP lower bytes. GC creates no source-type application,
 overlay, normalization, constraint, guard, or obligation. Task 269GCT alone
 may consume the GC handoff by value and overlay that exact written type.
+
+### Task 269GC implemented type deferral
+
+The installed witness remains missing-type and the exact `set@90..93` source
+type remains unpublished. No application, overlay, normalization, constraint,
+guard, or obligation changed. GCT is still the sole next by-value type owner.

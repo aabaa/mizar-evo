@@ -460,6 +460,7 @@ SHA-256
 | `SourceProofLocalGivenBindingRecovery` | `#[non_exhaustive]`。callerはlater explicitly frozen proof-`given` recovery classを許容する。 |
 | `SourceProofLocalGivenBindingError` | `#[non_exhaustive]`。callerはproof-`given` validation/installation failureをexhaustive matchしない。 |
 | `SourceProofLocalGivenUseBindingError` | `#[non_exhaustive]`。callerはproof-`given` later-use-profile validation failureをexhaustive matchしない。 |
+| `SourceProofLocalGivenConditionBindingError` | `#[non_exhaustive]`。callerはproof-`given` declaration-condition binding validation/installation failureをexhaustive matchしない。 |
 
 この module が所有する exhaustive public enum exception はない。
 
@@ -1933,3 +1934,35 @@ uncapped `>=90/100`、exact docs commit、fresh preflight、7-file/8-test
 implementation、test/implementation/source-doc review **NO FINDINGS**、full
 verification、all gates/score、separate commit、clean/stash確認、Task269GCTの
 automatic fresh inventory。
+
+### Task 269GC implementation status
+
+documentation prerequisite `dd053c86dab322508a15823de1c4afd268c2d35a`後、
+exact existing Rust 7 filesを実装。checker/runner各4 named testsがcomplete
+binding transaction、independent theorem identity/coherent mutation oracle、
+precedence、lexical matrix、one-shot Typed/Resolved ownership、neighbor isolationを
+freeze。specification/test-sufficiency/implementation reviewは**NO FINDINGS**。
+
+libraryはchecker/runner `514/580`。checker productionは`30/177771`、moduleは
+`source_proof_local_declaration.rs=6660`、`typed_ast.rs=6281`、
+`resolved_typed_ast.rs=8340`。runner productionは`37/76863`、moduleは
+`type_elaboration/source_proof_local_declaration.rs=2217`、
+`type_elaboration.rs=942`、`runner.rs=2775`、test leaf `7442`。
+checker path/content hashは
+`c89f43f6abebf7ebeb3ac9394ecd8ea3186ad28934c75526d2cc0b85a66ebad5` /
+`4e9220617eac3d5e993c2cee6adfb4958e4cb70e9ddbec83fb0c8955c86aa9fd`、
+runnerは
+`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d` /
+`6efd7b0ecf2f94b6440b910cef62796e5093d8618ffe196d17ce99bd2245619f`。
+raw/normalized test-list hashはchecker
+`b0638853bf46edd9b9d6d9da7a9236f16451f21d0c8477f849ceda55c6e17b4b` /
+`206638b6a9b4ef7ac48d706fe8070c7b60f6700fdbc7754f28d6c954a542936c`、runner
+`287a66efbc2b27590a90cee3ac235c0389ace4e35b22dc0cfcd6cd2821fbe11a` /
+`4e1df8e302161ef8be0f29573922d41b18a89efbc3ba41542f7831556b359900`。
+
+protected parser/broad/mixed artifact、trace、corpus/CLI count/hash、diagnostic、
+dispatch、active creditは不変。type/condition occurrenceはpublishせず、GCT/GCUと
+全semantic deferralはseparate。source/docs consistencyは**NO FINDINGS**、parent
+workspace verification gateは全PASS。independent final qualityも**NO
+FINDINGS**、9 hard gateはcapなし`100/100`。exact stage/commitとGCT inventory
+だけが残る。

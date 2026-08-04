@@ -1894,3 +1894,9 @@ Typed ownerをfreezeし、GCT/GCUがlater compositeをown。
 installer、`InvalidSourceProofLocalGivenConditionBinding`だけ。exact GCを
 authenticateし全existing ownerとboth-order exclusion。node/context/type/fact/
 coercion/initial obligation/diagnostic/`TypedAstParts`はempty/不変。laterはGCT/GCU。
+
+### Task 269GC implemented Typed ownership
+
+boxed optional owner/getter/consuming one-shot installer/exact errorをcomplete
+mutual exclusion/rollback test付きで実装。node/context/type/fact/coercion/initial
+obligation/diagnostic/`TypedAstParts`は不変、later compositeはGCT/GCU owner。

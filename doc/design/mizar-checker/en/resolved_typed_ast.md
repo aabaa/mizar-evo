@@ -1980,3 +1980,11 @@ GCT/GCU retain later composite ownership.
 GC handoff and otherwise-empty Typed profile, then clone-preserves it. No node
 hint, node role, checked formula, semantic table, or input path is added.
 Duplicate/cross-family replay fails atomically; absent-slot old debug is stable.
+
+### Task 269GC implemented final ownership
+
+The boxed binding-only owner, read-only getter, exact error, full replay, and
+clone preservation are implemented. Four checker and four runner tests verify
+atomic duplicate/cross-family rejection and semantic emptiness. No node hint,
+role, checked formula, semantic table, or input path changed; GCT/GCU remain
+later mutually exclusive composites.

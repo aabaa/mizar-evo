@@ -1875,3 +1875,9 @@ binding-only final ownerをfreezeし、GCT/GCUがlater compositeを保持。
 `InvalidSourceProofLocalGivenConditionBinding`だけを追加。exact GC/empty Typedを
 revalidateしてclone-preserveし、node hint/role/formula/semantic table/input pathは
 追加しない。duplicate/cross-familyはatomic failure、absent時old debug不変。
+
+### Task 269GC implemented final ownership
+
+boxed binding-only owner/getter/exact error/full replay/clone preserveを実装。
+checker/runner各4 testsがduplicate/cross-family atomic rejectionとsemantic emptyを
+検証。node hint/role/formula/table/input pathは不変で、GCT/GCUはlater composite。

@@ -10,6 +10,8 @@ use super::{
     SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT, SOURCE_PROOF_LOCAL_GIVEN_TEXT,
     SOURCE_PROOF_LOCAL_GIVEN_USE_TEXT, SOURCE_PROOF_LOCAL_LET_TEXT,
     SourceProofLocalGivenBindingRouteMutation, SourceProofLocalGivenBindingRouteOutput,
+    SourceProofLocalGivenConditionBindingRouteMutation,
+    SourceProofLocalGivenConditionBindingRouteOutput,
     SourceProofLocalGivenConditionLowerMutation, SourceProofLocalGivenConditionLowerOutput,
     SourceProofLocalGivenConditionResolverProfileMutation,
     SourceProofLocalGivenConditionShellMutation, SourceProofLocalGivenConditionSurfaceMutation,
@@ -27,6 +29,8 @@ use super::{
     SourceProofLocalLetShellMutation, SourceProofLocalLetSurfaceMutation,
     SourceProofLocalLetTypeRouteMutation, SourceProofLocalLetTypeRouteOutput,
     source_proof_local_given_condition_lower_output,
+    source_proof_local_given_condition_binding_output,
+    source_proof_local_given_condition_binding_output_with_mutation,
     source_proof_local_given_condition_lower_output_with_mutation,
     source_proof_local_given_condition_lower_output_with_resolver_mutation,
     source_proof_local_given_condition_lower_output_with_resolver_profile_mutation,
@@ -6228,6 +6232,436 @@ fn task269gcp_near_miss_and_active_routes_remain_isolated() {
         SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT,
     )
     .is_none());
+}
+
+#[test]
+fn task269gc_exact_condition_binding_transaction_debug_and_lookup_are_stable() {
+    let (ast, module, shells, symbols, diagnostics) =
+        task253_ast_from_source_text_with_diagnostic_count(
+            SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT,
+            2_691_080,
+        );
+    assert_eq!(diagnostics, 0);
+    let lower = source_proof_local_given_condition_lower_output(
+        &ast,
+        module.clone(),
+        &shells,
+        &symbols,
+        SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT,
+    )
+    .expect("Task269GC exact lower selector")
+    .expect("Task269GC exact lower output");
+    let output: SourceProofLocalGivenConditionBindingRouteOutput =
+        source_proof_local_given_condition_binding_output(
+            &ast,
+            module.clone(),
+            &shells,
+            &symbols,
+            SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT,
+        )
+        .expect("Task269GC exact binding selector")
+        .expect("Task269GC exact binding route");
+    let typed = output.typed_ast();
+    let resolved = output.resolved();
+    let handoff = typed
+        .source_proof_local_given_condition_binding()
+        .expect("Task269GC Typed owner");
+    assert_eq!(
+        resolved.source_proof_local_given_condition_binding(),
+        Some(handoff)
+    );
+    assert_eq!(handoff.source_id(), ast.source_id);
+    assert_eq!(handoff.module_id(), &module);
+    assert_eq!(handoff.lower_fingerprint(), lower.debug_text());
+    assert_eq!(handoff.theorem_symbol(), lower.theorem_symbol());
+    assert_eq!(handoff.theorem_definition(), lower.theorem_definition());
+    assert_eq!(handoff.contribution(), lower.contribution());
+    assert_eq!(task269cp_range_tuple(handoff.theorem_range()), (ast.source_id, 19, 133));
+    assert_eq!(task269cp_range_tuple(handoff.proof_range()), (ast.source_id, 68, 132));
+    assert_eq!(task269cp_range_tuple(handoff.given_range()), (ast.source_id, 76, 113));
+    assert_eq!(task269cp_range_tuple(handoff.segment_range()), (ast.source_id, 82, 93));
+    assert_eq!(task269cp_range_tuple(handoff.name_range()), (ast.source_id, 82, 83));
+    assert_eq!(
+        (
+            handoff.base_binding_env().contexts().len(),
+            handoff.base_binding_env().bindings().len(),
+            handoff.base_binding_env().diagnostics().len(),
+        ),
+        (1, 1, 0)
+    );
+    assert_eq!(
+        (
+            handoff.binding_env().contexts().len(),
+            handoff.binding_env().bindings().len(),
+            handoff.binding_env().diagnostics().len(),
+        ),
+        (2, 2, 0)
+    );
+    assert_eq!(
+        handoff.base_binding_fingerprint(),
+        handoff.base_binding_env().debug_text()
+    );
+    assert_eq!(
+        handoff.final_binding_fingerprint(),
+        handoff.binding_env().debug_text()
+    );
+    let row = handoff
+        .bindings()
+        .get(mizar_checker::source_proof_local_declaration::SourceProofLocalGivenBindingId::new(0))
+        .expect("Task269GC dense binding row");
+    assert_eq!(row.binding().index(), 1);
+    assert_eq!(row.binding_context().index(), 1);
+    assert_eq!(row.source_ordinal(), 1);
+    assert_eq!(row.visible_after_ordinal(), 1);
+    assert_eq!(
+        row.recovery(),
+        mizar_checker::source_proof_local_declaration::SourceProofLocalGivenBindingRecovery::Normal
+    );
+    let prior = mizar_checker::binding_env::BindingLookupSite::new(
+        "y",
+        mizar_checker::binding_env::BindingContextId::new(1),
+        Some(mizar_resolve::names::LocalTermScope::new(vec![0])),
+        1,
+    );
+    assert!(matches!(
+        handoff.binding_env().lookup(&prior),
+        Ok(mizar_checker::binding_env::BindingLookupResult::ForwardReference {
+            candidates,
+            ..
+        }) if candidates == [mizar_checker::binding_env::BindingId::new(1)]
+    ));
+    for _intent in ["own-such-that", "subsequent-statement"] {
+        assert_eq!(
+            handoff.binding_env().lookup(
+                &mizar_checker::binding_env::BindingLookupSite::new(
+                    "y",
+                    mizar_checker::binding_env::BindingContextId::new(1),
+                    Some(mizar_resolve::names::LocalTermScope::new(vec![0])),
+                    2,
+                ),
+            ),
+            Ok(mizar_checker::binding_env::BindingLookupResult::Local(
+                mizar_checker::binding_env::BindingId::new(1),
+            ))
+        );
+    }
+    let expected_debug = format!(
+        concat!(
+            "source-proof-local-given-condition-binding-debug-v1\n",
+            "module: {}::{}\n",
+            "lower-fingerprint: {:?}\n",
+            "theorem symbol={:?} definition=0 contribution=0 range=19..133 proof=68..132\n",
+            "given range=76..113 segment=82..93 name=82..83 source_ordinal=1\n",
+            "base-binding-fingerprint: {:?}\n",
+            "binding#0 binding=1 context=1 source_ordinal=1 visible_after=1 recovery=normal\n",
+            "final-binding-fingerprint: {:?}\n",
+        ),
+        module.package().as_str(),
+        module.path().as_str(),
+        lower.debug_text(),
+        lower.theorem_symbol().fqn().as_str(),
+        handoff.base_binding_fingerprint(),
+        handoff.final_binding_fingerprint(),
+    );
+    assert_eq!(handoff.debug_text(), expected_debug);
+    assert!(handoff.debug_text().ends_with('\n'));
+    assert!(!handoff.debug_text().ends_with("\n\n"));
+}
+
+#[test]
+fn task269gc_lower_base_and_checker_corruption_fail_closed() {
+    let (ast, module, shells, symbols) =
+        task253_ast_from_source_text(SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT, 2_691_090);
+    for (mutation, expected) in [
+        (
+            SourceProofLocalGivenConditionBindingRouteMutation::None,
+            None,
+        ),
+        (
+            SourceProofLocalGivenConditionBindingRouteMutation::WrongLowerFingerprint,
+            Some("source proof-local given-condition binding dependency mismatch"),
+        ),
+        (
+            SourceProofLocalGivenConditionBindingRouteMutation::EmptyBase,
+            Some("source proof-local given-condition binding base binding environment is invalid"),
+        ),
+        (
+            SourceProofLocalGivenConditionBindingRouteMutation::WrongTheoremRange,
+            Some("source proof-local given-condition binding dependency mismatch"),
+        ),
+        (
+            SourceProofLocalGivenConditionBindingRouteMutation::WrongProofRange,
+            Some("source proof-local given-condition binding dependency mismatch"),
+        ),
+        (
+            SourceProofLocalGivenConditionBindingRouteMutation::WrongGivenRange,
+            Some("source proof-local given-condition binding dependency mismatch"),
+        ),
+        (
+            SourceProofLocalGivenConditionBindingRouteMutation::WrongSegmentRange,
+            Some("source proof-local given-condition binding dependency mismatch"),
+        ),
+        (
+            SourceProofLocalGivenConditionBindingRouteMutation::WrongNameRange,
+            Some("source proof-local given-condition binding dependency mismatch"),
+        ),
+        (
+            SourceProofLocalGivenConditionBindingRouteMutation::WrongLocalSpelling,
+            Some("source proof-local given-condition binding 0 is invalid"),
+        ),
+        (
+            SourceProofLocalGivenConditionBindingRouteMutation::WrongLocalScope,
+            Some("source proof-local given-condition binding 0 is invalid"),
+        ),
+        (
+            SourceProofLocalGivenConditionBindingRouteMutation::WrongLocalRange,
+            Some("source proof-local given-condition binding 0 is invalid"),
+        ),
+        (
+            SourceProofLocalGivenConditionBindingRouteMutation::WrongLocalVisibleAfter,
+            Some("source proof-local given-condition binding 0 is invalid"),
+        ),
+        (
+            SourceProofLocalGivenConditionBindingRouteMutation::WrongSourceOrdinal,
+            Some("source proof-local given-condition binding 0 is invalid"),
+        ),
+    ] {
+        let result = source_proof_local_given_condition_binding_output_with_mutation(
+            &ast,
+            module.clone(),
+            &shells,
+            &symbols,
+            SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT,
+            mutation,
+        )
+        .expect("Task269GC selected corruption route");
+        match expected {
+            None => {
+                result.expect("Task269GC neutral mutation");
+            }
+            Some(expected) => assert_eq!(result.unwrap_err(), expected),
+        }
+    }
+
+    let missing_resolver = task269cp_symbols_with_missing_index(&symbols, true, true, true);
+    assert_eq!(
+        source_proof_local_given_condition_binding_output_with_mutation(
+            &ast,
+            module.clone(),
+            &shells,
+            &missing_resolver,
+            SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT,
+            SourceProofLocalGivenConditionBindingRouteMutation::WrongLowerFingerprint,
+        )
+        .expect("Task269GC selected resolver plus checker corruption"),
+        Err("Task269GCP raw resolver inventory mismatch".to_owned())
+    );
+    let (_, _, wrong_shells, _) =
+        task253_ast_from_source_text(SOURCE_PROOF_LOCAL_LET_TEXT, 2_691_090);
+    assert_eq!(
+        source_proof_local_given_condition_binding_output_with_mutation(
+            &ast,
+            module,
+            &wrong_shells,
+            &missing_resolver,
+            SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT,
+            SourceProofLocalGivenConditionBindingRouteMutation::EmptyBase,
+        )
+        .expect("Task269GC selected shell plus base corruption"),
+        Err("Task269GCP declaration shell 0 mismatch".to_owned())
+    );
+}
+
+#[test]
+fn task269gc_typed_and_resolved_owners_are_one_shot_and_semantically_empty() {
+    let (ast, module, shells, symbols) =
+        task253_ast_from_source_text(SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT, 2_691_100);
+    let output = source_proof_local_given_condition_binding_output(
+        &ast,
+        module,
+        &shells,
+        &symbols,
+        SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT,
+    )
+    .expect("Task269GC exact selector")
+    .expect("Task269GC exact owners");
+    let handoff = output
+        .typed_ast()
+        .source_proof_local_given_condition_binding()
+        .expect("Task269GC Typed owner")
+        .clone();
+    assert_eq!(
+        output
+            .resolved()
+            .source_proof_local_given_condition_binding(),
+        Some(&handoff)
+    );
+    assert_eq!(
+        output
+            .typed_ast()
+            .clone()
+            .with_source_proof_local_given_condition_binding(handoff),
+        Err(mizar_checker::typed_ast::TypedAstError::InvalidSourceProofLocalGivenConditionBinding)
+    );
+    let typed = output.typed_ast();
+    assert!(typed.nodes().is_empty());
+    assert!(typed.contexts().is_empty());
+    assert!(typed.types().is_empty());
+    assert!(typed.facts().is_empty());
+    assert!(typed.coercions().is_empty());
+    assert!(typed.initial_obligations().is_empty());
+    assert!(typed.diagnostics().is_empty());
+    let resolved = output.resolved();
+    assert!(resolved.nodes().is_empty());
+    assert!(resolved.expr_metadata().is_empty());
+    assert!(resolved.collection_candidates().is_empty());
+    assert!(resolved.expanded_candidates().is_empty());
+    assert!(resolved.template_expansions().is_empty());
+    assert!(resolved.viable_candidates().is_empty());
+    assert!(resolved.viability_decisions().is_empty());
+    assert!(resolved.specificity_graphs().is_empty());
+    assert!(resolved.resolved_overloads().is_empty());
+    assert!(resolved.inserted_coercions().is_empty());
+    assert!(resolved.cluster_facts().is_empty());
+    assert!(resolved.checked_formulas().is_empty());
+    assert!(resolved.statement_semantics().is_empty());
+    assert!(resolved.checked_proofs().is_empty());
+    assert!(resolved.checked_proof_nodes().is_empty());
+    assert!(resolved.checked_terminal_goals().is_empty());
+    assert!(resolved.diagnostics().is_empty());
+    for forbidden in [
+        "107..108",
+        "111..112",
+        "term-reference",
+        "checked-formula",
+        "condition-fact",
+        "initial-obligation#",
+        "terminal-goal#",
+        "accepted",
+        "discharged",
+        "verification-condition",
+    ] {
+        assert!(!resolved.debug_text().contains(forbidden), "excluded {forbidden}");
+    }
+}
+
+#[test]
+fn task269gc_near_miss_neighbor_and_active_routes_remain_isolated() {
+    let near_misses = [
+        SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT.replace("G: y = y", "G: thesis"),
+        SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT.replace("G: y = y", "y = y"),
+        SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT.replace(
+            "ProofLocalGivenConditionUseSmoke",
+            "ProofLocalGivenConditionUseOther",
+        ),
+        SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT.replace(
+            "given y being set such that G: y = y",
+            "given z being set such that G: z = z",
+        ),
+        SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT.replace("being set", "being object"),
+        SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT.trim_end_matches('\n').to_owned(),
+    ];
+    for (ordinal, source) in near_misses.into_iter().enumerate() {
+        let (ast, module, shells, symbols) =
+            task253_ast_from_source_text(&source, 2_691_110 + ordinal);
+        assert!(
+            source_proof_local_given_condition_binding_output(
+                &ast, module, &shells, &symbols, &source,
+            )
+            .is_none(),
+            "Task269GC selected near miss {ordinal}"
+        );
+    }
+    for (ordinal, source) in [
+        SOURCE_PROOF_LOCAL_GIVEN_TEXT,
+        SOURCE_PROOF_LOCAL_GIVEN_USE_TEXT,
+        SOURCE_PROOF_LOCAL_LET_TEXT,
+        TASK269A_SOURCE_TEXT,
+        TASK269B_SOURCE_TEXT,
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let (ast, module, shells, symbols) =
+            task253_ast_from_source_text(source, 2_691_120 + ordinal);
+        assert!(
+            source_proof_local_given_condition_binding_output(
+                &ast, module, &shells, &symbols, source,
+            )
+            .is_none(),
+            "Task269GC selected neighboring family {ordinal}"
+        );
+    }
+
+    let (ast, module, shells, symbols) =
+        task253_ast_from_source_text(SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT, 2_691_130);
+    assert!(source_proof_local_given_condition_lower_output(
+        &ast,
+        module.clone(),
+        &shells,
+        &symbols,
+        SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT,
+    )
+    .is_some());
+    assert!(source_proof_local_given_condition_binding_output(
+        &ast,
+        module.clone(),
+        &shells,
+        &symbols,
+        SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT,
+    )
+    .is_some());
+    assert!(source_proof_local_given_binding_output(
+        &ast,
+        module.clone(),
+        &shells,
+        &symbols,
+        SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT,
+    )
+    .is_none());
+    assert!(source_proof_local_given_type_output(
+        &ast,
+        module.clone(),
+        &shells,
+        &symbols,
+        SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT,
+    )
+    .is_none());
+    assert!(source_proof_local_given_use_binding_output(
+        &ast,
+        module.clone(),
+        &shells,
+        &symbols,
+        SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT,
+    )
+    .is_none());
+    assert!(source_proof_local_given_use_type_output(
+        &ast,
+        module.clone(),
+        &shells,
+        &symbols,
+        SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT,
+    )
+    .is_none());
+    assert!(source_proof_local_given_use_term_output(
+        &ast,
+        module,
+        &shells,
+        &symbols,
+        SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT,
+    )
+    .is_none());
+
+    let (active_ast, active_module, _, active_symbols) =
+        task253_ast_from_source_text(TASK269A_SOURCE_TEXT, 2_691_131);
+    assert!(task269a_lower_output(
+        &active_ast,
+        active_module,
+        &active_symbols,
+        TASK269A_SOURCE_TEXT,
+    )
+    .is_some());
+    assert_task269b_exact_frontend_binding_transaction_and_debug();
 }
 
 #[test]

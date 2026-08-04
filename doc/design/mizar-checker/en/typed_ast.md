@@ -2006,3 +2006,10 @@ installer, and `InvalidSourceProofLocalGivenConditionBinding`. It authenticates
 the exact GC composite and rejects every existing owner in both orders. Nodes,
 contexts, types, facts, coercions, initial obligations, diagnostics, and
 `TypedAstParts` remain empty/unchanged. GCT/GCU own later composites.
+
+### Task 269GC implemented Typed ownership
+
+The boxed optional owner, getter, consuming one-shot installer, and exact error
+are implemented with complete mutual exclusion and rollback tests. Nodes,
+contexts, types, facts, coercions, initial obligations, diagnostics, and
+`TypedAstParts` remain unchanged; GCT/GCU retain later composite ownership.

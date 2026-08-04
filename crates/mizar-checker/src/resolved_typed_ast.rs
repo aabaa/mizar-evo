@@ -34,7 +34,7 @@ use crate::{
     source_predicate_definition::SourcePredicateDefinitionHandoff,
     source_proof_local_declaration::{
         SourceProofLocalDeclarationHandoff, SourceProofLocalGivenBindingHandoff,
-        SourceProofLocalLetBindingHandoff,
+        SourceProofLocalGivenConditionBindingHandoff, SourceProofLocalLetBindingHandoff,
     },
     source_property_implementation::SourcePropertyImplementationHandoff,
     source_set_term::SourceSetTermHandoff,
@@ -159,6 +159,8 @@ pub struct ResolvedTypedAst {
     source_proof_local_given_type: Option<Box<SourceProofLocalGivenTypeHandoff>>,
     source_proof_local_given_use_type: Option<Box<SourceProofLocalGivenUseTypeHandoff>>,
     source_proof_local_given_use_term: Option<Box<SourceProofLocalGivenUseTermHandoff>>,
+    source_proof_local_given_condition_binding:
+        Option<Box<SourceProofLocalGivenConditionBindingHandoff>>,
     nodes: ResolvedTypedArena,
     expr_metadata: ExpressionMetadataTable,
     collection_candidates: OverloadCandidateSummaryTable,
@@ -337,6 +339,15 @@ impl ResolvedTypedAst {
         &self,
     ) -> Option<&SourceProofLocalGivenUseTermHandoff> {
         match self.source_proof_local_given_use_term.as_ref() {
+            Some(handoff) => Some(handoff),
+            None => None,
+        }
+    }
+
+    pub const fn source_proof_local_given_condition_binding(
+        &self,
+    ) -> Option<&SourceProofLocalGivenConditionBindingHandoff> {
+        match self.source_proof_local_given_condition_binding.as_ref() {
             Some(handoff) => Some(handoff),
             None => None,
         }
@@ -547,6 +558,11 @@ impl ResolvedTypedAst {
         }
         if let Some(source_proof_local_given_use_term) = &self.source_proof_local_given_use_term {
             output.push_str(&source_proof_local_given_use_term.debug_text());
+        }
+        if let Some(source_proof_local_given_condition_binding) =
+            &self.source_proof_local_given_condition_binding
+        {
+            output.push_str(&source_proof_local_given_condition_binding.debug_text());
         }
         if let Some(source_statement_references) = &self.source_statement_references {
             output.push_str(&source_statement_references.debug_text());
@@ -1518,6 +1534,7 @@ pub enum ResolvedTypedAstError {
     InvalidSourceProofLocalGivenType,
     InvalidSourceProofLocalGivenUseType,
     InvalidSourceProofLocalGivenUseTerm,
+    InvalidSourceProofLocalGivenConditionBinding,
     StatementProofBundleMismatch,
     MissingStatementSemantic,
     NonSingletonStatementSemantic {
@@ -1652,6 +1669,9 @@ impl fmt::Display for ResolvedTypedAstError {
             ),
             Self::InvalidSourceProofLocalGivenUseTerm => formatter.write_str(
                 "resolved typed AST source proof-local given-use term handoff is invalid",
+            ),
+            Self::InvalidSourceProofLocalGivenConditionBinding => formatter.write_str(
+                "resolved typed AST source proof-local given-condition binding handoff is inconsistent",
             ),
             Self::StatementProofBundleMismatch => formatter.write_str(
                 "statement semantic and proof-intent bundles must be supplied together",
@@ -1905,6 +1925,23 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
                     installation_available,
                 )
                 .map_err(|_| ResolvedTypedAstError::InvalidSourceProofLocalGivenUseTerm)?;
+        }
+        let source_proof_local_given_condition_binding = self
+            .inputs
+            .typed_ast
+            .source_proof_local_given_condition_binding()
+            .cloned()
+            .map(Box::new);
+        if let Some(handoff) = &source_proof_local_given_condition_binding {
+            let installation_available =
+                source_proof_local_given_condition_binding_typed_profile_is_empty(
+                    self.inputs.typed_ast,
+                ) && source_proof_local_given_condition_binding_inputs_are_syntax_only(
+                    &self.inputs,
+                );
+            handoff
+                .validate_complete_installation(source_id, &module_id, installation_available)
+                .map_err(|_| ResolvedTypedAstError::InvalidSourceProofLocalGivenConditionBinding)?;
         }
         if self
             .inputs
@@ -2684,6 +2721,7 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
             source_proof_local_given_type,
             source_proof_local_given_use_type,
             source_proof_local_given_use_term,
+            source_proof_local_given_condition_binding,
             nodes,
             expr_metadata,
             collection_candidates,
@@ -2736,6 +2774,9 @@ fn source_proof_local_let_binding_typed_profile_is_empty(typed_ast: &TypedAst) -
         && typed_ast.source_proof_local_given_type().is_none()
         && typed_ast.source_proof_local_given_use_type().is_none()
         && typed_ast.source_proof_local_given_use_term().is_none()
+        && typed_ast
+            .source_proof_local_given_condition_binding()
+            .is_none()
         && typed_ast.nodes().is_empty()
 }
 
@@ -2904,6 +2945,40 @@ fn source_proof_local_given_use_term_typed_profile_is_exact(typed_ast: &TypedAst
         && typed_ast.nodes().len() == 6
 }
 
+fn source_proof_local_given_condition_binding_typed_profile_is_empty(typed_ast: &TypedAst) -> bool {
+    typed_ast.resolved_root().is_none()
+        && typed_ast.source_context().is_none()
+        && typed_ast.source_type().is_none()
+        && typed_ast.source_attribute().is_none()
+        && typed_ast.source_evidence().is_none()
+        && typed_ast.source_term().is_none()
+        && typed_ast.source_application().is_none()
+        && typed_ast.source_structure().is_none()
+        && typed_ast.source_set_term().is_none()
+        && typed_ast.source_atomic_formula().is_none()
+        && typed_ast.source_attribute_definition().is_none()
+        && typed_ast.source_functor_definition().is_none()
+        && typed_ast.source_property_implementation().is_none()
+        && typed_ast.source_mode_definition().is_none()
+        && typed_ast.source_structure_definition().is_none()
+        && typed_ast.source_predicate_definition().is_none()
+        && typed_ast.source_composite_formula().is_none()
+        && typed_ast.source_formula_composition().is_none()
+        && typed_ast.source_condition_formula_composition().is_none()
+        && typed_ast.source_predicate_chain_composition().is_none()
+        && typed_ast.source_statement().is_none()
+        && typed_ast.source_statement_references().is_none()
+        && typed_ast.source_statement_witnesses().is_none()
+        && typed_ast.source_proof_local_declaration().is_none()
+        && typed_ast.source_proof_local_let_binding().is_none()
+        && typed_ast.source_proof_local_let_type().is_none()
+        && typed_ast.source_proof_local_given_binding().is_none()
+        && typed_ast.source_proof_local_given_type().is_none()
+        && typed_ast.source_proof_local_given_use_type().is_none()
+        && typed_ast.source_proof_local_given_use_term().is_none()
+        && typed_ast.nodes().is_empty()
+}
+
 fn source_statement_inputs_are_syntax_only(inputs: &ResolvedTypedAstInputs<'_>) -> bool {
     inputs.typed_ast.resolved_root().is_none()
         && inputs.typed_ast.contexts().is_empty()
@@ -2951,6 +3026,12 @@ fn source_proof_local_given_use_type_inputs_are_syntax_only(
 }
 
 fn source_proof_local_given_use_term_inputs_are_syntax_only(
+    inputs: &ResolvedTypedAstInputs<'_>,
+) -> bool {
+    source_statement_inputs_are_syntax_only(inputs) && inputs.node_hints.is_empty()
+}
+
+fn source_proof_local_given_condition_binding_inputs_are_syntax_only(
     inputs: &ResolvedTypedAstInputs<'_>,
 ) -> bool {
     source_statement_inputs_are_syntax_only(inputs) && inputs.node_hints.is_empty()

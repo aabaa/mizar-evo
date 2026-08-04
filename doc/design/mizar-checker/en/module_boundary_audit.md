@@ -28,7 +28,7 @@ remain aligned with their owning specifications.
 | Path | Lines | Boundary label | Owning specification | Split required | Hard-gate finding | Decision |
 |---|---:|---|---|---|---|---|
 | `src/lib.rs` | 51 | crate boundary and public module exports | `00.crate_plan.md` and `source_spec_audit.md` | no | no | Keep as the crate root; it exports the documented syntax-free formula-composition, definition, statement, and Task-269A proof-local declaration source modules. |
-| `src/typed_ast.rs` | 6173 | typed AST data model | `typed_ast.md` | no | no | Large but cohesive typed-AST tables, validation, rendering, and one-shot handoffs, including mutually exclusive Task-259--264 definition transactions and separate Task-269A/B plus privately boxed Task-269C/269CT/269G/269GT/269GUPT/269GU proof-local owners; monitor ergonomics after downstream use. |
+| `src/typed_ast.rs` | 6281 | typed AST data model | `typed_ast.md` | no | no | Large but cohesive typed-AST tables, validation, rendering, and one-shot handoffs, including mutually exclusive Task-259--264 definition transactions and separate Task-269A/B plus privately boxed Task-269C/269CT/269G/269GT/269GUPT/269GU/269GC proof-local owners; monitor ergonomics after downstream use. |
 | `src/binding_env.rs` | 3168 | binding environment and resolver shell boundary | `binding_env.md` | no | no | Cohesive binding/context data layer, including source-formula, Task-258B1 statement-context identity, the unchanged Task-258B2 context contract, and exact Task-269A/269G installed-local tests; no behavior-neutral split required. |
 | `src/source_context.rs` | 1727 | syntax-free source-item and binding-context producer | `source_context.md` | no | no | Cohesive Task-248 validation, table construction, recovery, handoff, and boundary tests; no split required. |
 | `src/source_atomic_formula.rs` | 8511 | syntax-free source atomic-formula producer | `source_atomic_formula.md` | no | no | Cohesive Task-256/257C1 nine-table association, resolver provenance, predicate-segment/shared-boundary validation, cross-family ownership/fingerprint validation, deterministic rendering, install checks, compatibility literals, and test-only dependency corruption seams; no split required. |
@@ -45,7 +45,7 @@ remain aligned with their owning specifications.
 | `src/source_property_implementation.rs` | 2460 | syntax-free source property-implementation producer | `source_property_implementation.md` | no | no | Cohesive Task-264 five-table equals/means handoff, resolver/return/lower/arena validation, baseline-preserving pending-obligation projection, deterministic rendering, and typed/final sibling isolation; production remains syntax-free. |
 | `src/source_set_term.rs` | 6806 | syntax-free source set-term producer | `source_set_term.md` | no | no | Cohesive Task-255/255C1 seven-table association, condition-subtree exclusion, cross-family ownership/fingerprint validation, deterministic rendering, install checks, and corruption tests; no split required. |
 | `src/source_statement.rs` | 52266 | syntax-free source statement producer | `source_statement.md` | no | no | Cohesive Task-258 statement/witness transactions and their corruption matrices; the same four Task-269 tests reuse the private exact B3N/B3M1 fixtures, including all-field arena and isolated cross-profile rejection, while production proof-local ownership remains in its dedicated module. |
-| `src/source_proof_local_declaration.rs` | 5336 | syntax-free proof-local declaration producer | `source_proof_local_declaration.md` | no | no | Cohesive Task-269A/B named-witness, Task-269C proof-`let`, Task-269G proof-`given`, and Task-269GUP new-source binding inputs/rows/tables/handoffs, exact lower authentication, resolver-local lexical binding transitions and ordinal lookup replay, deterministic rendering, phase-ordered replay, and owner validation; no syntax, type, term/use, condition, fact, or proof-semantic ownership. |
+| `src/source_proof_local_declaration.rs` | 6660 | syntax-free proof-local declaration producer | `source_proof_local_declaration.md` | no | no | Cohesive Task-269A/B named-witness, Task-269C proof-`let`, Task-269G proof-`given`, Task-269GUP new-source binding, and Task-269GC declaration-condition binding inputs/rows/tables/handoffs, exact lower and independent theorem authentication, resolver-local lexical binding transitions and lookup replay, deterministic rendering, phase-ordered replay, and owner validation; no syntax, type, term/use, condition, fact, or proof-semantic ownership. |
 | `src/source_structure.rs` | 5036 | syntax-free source structure-term producer | `source_structure.md` | no | no | Cohesive Task-254 term/wrapper/root/member/field-update/edge/request tables, written-partition and cross-family dependency/provenance validation, deterministic rendering, and corruption tests; no split required. |
 | `src/source_structure_definition.rs` | 1773 | syntax-free source structure-definition producer | `source_structure_definition.md` | no | no | Cohesive Task-263 definition/member/inheritance/mapping/coherence tables, private resolver/baseline snapshots, exact contribution-effect and own-domain obligation validation, deterministic rendering, and compound precedence tests; production remains syntax-free. |
 | `src/source_type.rs` | 11462 | syntax-free source-type application producer | `source_type.md` | no | no | Cohesive Task-249 flat/extension families plus exact Task-269CT/269GT/269GUPT proof-local composites, environment/arena/form/graph/provenance validation, deterministic rendering, exhaustive corruption tests, and cfg(test)-only corruption seams; production remains syntax-free and no split is required. |
@@ -53,7 +53,7 @@ remain aligned with their owning specifications.
 | `src/registration_resolution.rs` | 5897 | phase-7 registration validation, activation, and existential gates | `registration_resolution.md` | no | no | Cohesive registration data layer, gate logic, and Task-259/260/264 obligation-kind serializers; no behavior-neutral split required. |
 | `src/cluster_trace.rs` | 3948 | cluster closure and reduction trace recording | `cluster_trace.md` | no | no | Cohesive trace/replay module; no behavior-neutral split required. |
 | `src/overload_resolution.rs` | 8004 | phase-8 overload pipeline | `overload_resolution.md` | no | no | Large but cohesive overload collection, template expansion, viability, specificity, selection, rendering, and tests; monitor ergonomics after downstream use. |
-| `src/resolved_typed_ast.rs` | 8259 | final resolved typed AST assembly | `resolved_typed_ast.md` | no | no | Cohesive final projection module, including clone-preserving Task-259--264 definition handoffs and complete, mutually exclusive Task-269A/B plus privately boxed Task-269C/269CT/269G/269GT/269GUPT/269GU proof-local replay; no behavior-neutral split required. |
+| `src/resolved_typed_ast.rs` | 8340 | final resolved typed AST assembly | `resolved_typed_ast.md` | no | no | Cohesive final projection module, including clone-preserving Task-259--264 definition handoffs and complete, mutually exclusive Task-269A/B plus privately boxed Task-269C/269CT/269G/269GT/269GUPT/269GU/269GC proof-local replay; no behavior-neutral split required. |
 | `src/determinism_suite.rs` | 1101 | test-only cross-module determinism suite | `00.crate_plan.md` and `source_spec_audit.md` | no | no | Keep as private `#[cfg(test)]` crate support. |
 | `tests/lint_policy.rs` | 1941 | cross-cutting policy and audit guards | `source_spec_audit.md`, `bilingual_sync_audit.md`, and `module_boundary_audit.md` | no | no | Centralized policy guardrails include Task-259--264 and Task-269A module/spec/public-enum coverage and the unchanged production syntax boundary. |
 | `tests/support/source_attribute_definition_unit.rs` | 1070 | test-only Task-261 unit-test support | `source_attribute_definition.md` and this audit | no | no | Non-integration child support for the exact producer, obligation preservation, corruption, ownership, replay, and cfg(test)-only Task-262 reverse-isolation fixture. |
@@ -1806,3 +1806,18 @@ binding transaction, and Typed/final replay. The ABI carries only identity,
 ranges, lower fingerprint, `LocalTermBinding`, and reserve `BindingEnv`.
 Condition/type/term syntax, occurrence IDs, facts, proof state, diagnostics,
 and active dispatch do not cross the boundary. G/GUP/GCP remain immutable.
+
+### Task 269GC implemented boundary
+
+Exactly the frozen three checker and four runner files changed. Checker module
+sizes are `source_proof_local_declaration.rs=6660`, `typed_ast.rs=6281`, and
+`resolved_typed_ast.rs=8340`; checker production is `30/177771`, with path hash
+`c89f43f6abebf7ebeb3ac9394ecd8ea3186ad28934c75526d2cc0b85a66ebad5`
+and content hash
+`4e9220617eac3d5e993c2cee6adfb4958e4cb70e9ddbec83fb0c8955c86aa9fd`.
+Runner production is `37/76863`, with path hash
+`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d`
+and content hash
+`6efd7b0ecf2f94b6440b910cef62796e5093d8618ffe196d17ce99bd2245619f`.
+No excluded syntax, artifact, dispatch, diagnostic, Cargo, or semantic owner
+crossed the frozen boundary.

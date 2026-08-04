@@ -1789,3 +1789,9 @@ GCはcomplete GCP lower bytes + immutable reserve base + dense common Given row
 reference、condition/fact、proof/obligation/IR payloadなし。Typed/Resolvedはsame
 compositeをbox/replayするだけ。GCT/GCUはlater separate node、G/GUP/GUPT/GUは
 generalizeしない。
+
+### Task 269GC implemented binding payload
+
+distinct GCP-by-value binding composite、dense Given row、final `BindingEnv`
+fingerprint、Typed/Resolved replayをfrozenどおり実装。source type、occurrence/
+reference、condition/fact、proof、obligation、IR payloadは追加せず、GCT/GCUはseparate。

@@ -6654,6 +6654,9 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   `0/13`=report-only `repo_metadata_conflict`、blocking `spec_gap`なし。
 - [x] distinct ABI、GCP dependency、`1/1/0 -> 2/2/0`、block matrix、Typed/
   Resolved/runner、7 files/8 tests、zero credit、42 docs、deferral/exitをfreeze。
-- [ ] spec review **NO FINDINGS**、docs gates/score、exact Markdown commit。
-- [ ] fresh preflight後GCだけをimplementし、test/implementation/source-doc
-  review **NO FINDINGS**、full gates/commit後Task269GCTをautomatic inventory。
+- [x] spec review **NO FINDINGS**、docs gate `100/100`、exact Markdown commit
+  `dd053c86dab322508a15823de1c4afd268c2d35a`を完了。
+- [x] fresh preflight後frozen 7-file/8-test GCだけをimplementし、test-sufficiency/
+  implementation reviewは**NO FINDINGS**。
+- [ ] source-doc consistency/final-quality review、workspace-wide final gate、
+  exact implementation stage/commit後Task269GCTをautomatic inventory。

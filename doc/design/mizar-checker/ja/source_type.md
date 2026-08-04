@@ -1462,3 +1462,9 @@ separate consumer。
 binding 1は`BindingTypeSite::Missing`、`set@90..93`はGCP lower内だけ。source-
 type application/overlay/normalization/constraint/guard/obligationなし。GCTだけが
 GC handoffをby-value consumeしてexact written typeをoverlay可。
+
+### Task 269GC implemented type deferral
+
+installed witnessはmissing-type、exact `set@90..93` source typeはunpublished。
+application/overlay/normalization/constraint/guard/obligationは不変で、GCTがsole
+next by-value type owner。

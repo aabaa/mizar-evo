@@ -895,6 +895,10 @@ literal top-level public item:
   `SourceProofLocalGivenUseBindingHandoff`、
   `SourceProofLocalGivenUseBindingProducer`、
   `SourceProofLocalGivenUseBindingError`
+- `SourceProofLocalGivenConditionBindingHandoffInput`、
+  `SourceProofLocalGivenConditionBindingHandoff`、
+  `SourceProofLocalGivenConditionBindingProducer`、
+  `SourceProofLocalGivenConditionBindingError`
 
 対応:
 
@@ -907,6 +911,7 @@ literal top-level public item:
 | exact proof-`let` profileはreserve-only baseへmissing-type `LetBinding` 1件をappendし、semantic publicationなしでatomic preserveする。 | public `SourceProofLocalLetBinding*` input/row/table/handoff/producer/error typeとTyped/final ownership。 | checker 4件とprivate runner 4件のTask-269C tests。 | zero-credit binding transportとしてimplemented。 |
 | exact proof-`given` profileはreserve-only baseへmissing-type `GivenWitness` 1件をappendし、canonical block-local lookupを保ち、semantic publicationなしでatomic preserveする。 | public `SourceProofLocalGivenBinding*` input/row/table/handoff/producer/error type、`BindingKind::GivenWitness`、Typed/final ownership。 | inherited/shadowed/restored/parent-excluded/sibling-excluded lookupを含むchecker 4件とprivate runner 4件のTask-269G tests。 | zero-credit binding transportとしてimplemented。source-type admissionはTask 269GTに残る。 |
 | distinct proof-`given` later-use sourceは、occurrence/semantic rowをpublishせず、自身のtransactionで同じblock-local binding lifetimeを再構築する。 | public `SourceProofLocalGivenUseBindingHandoffInput`、`SourceProofLocalGivenUseBindingHandoff`、`SourceProofLocalGivenUseBindingProducer`、`SourceProofLocalGivenUseBindingError`と再利用するdense Given row/table/recovery ABI。 | exact source identity、corruption precedence、lookup inheritance/shadow/restoration/exclusion、zero semantic effectを覆うchecker 4件・private runner 4件のTask-269GUP tests。 | Task 269GUPT向けzero-credit dormant binding prerequisiteとしてimplemented。 |
+| declaration-condition sourceがtype/occurrence/condition/proof semanticsをpublishせずcanonical own-condition/innermost-block witness lifetimeをinstallする。 | public `SourceProofLocalGivenConditionBindingHandoffInput`、`SourceProofLocalGivenConditionBindingHandoff`、`SourceProofLocalGivenConditionBindingProducer`、`SourceProofLocalGivenConditionBindingError`、independent theorem identity、reused Given row/table/recovery ABI。 | coherent identity corruption、precedence、lookup inheritance/shadow/restoration/exclusion、atomic ownership、zero semantic effectを覆うchecker/runner各4 Task269GC tests。 | Task269GCT向けzero-credit binding prerequisiteとしてimplemented。 |
 
 bounded gap: later-use resolution/capture replay、他のproof-local declaration
 form、witness typing、existential matching、goal substitution、proof/discharge/
@@ -5765,3 +5770,13 @@ Spec 4.6.1、15.3.3、15.10、16.3.3、16.4.2をexact GCP-derived binding
 transaction/scope matrixへmap。focused private testでclassified gapを閉じ、existing
 .miz/sidecar/expectation/traceは不変。written typeはGCT、condition occurrenceは
 GCU。condition/fact/proof semantics/active creditなし。
+
+### Task 269GC implemented source/spec mapping
+
+exact public 4-item GC family、canonical block-scope transaction、focused test
+8件がclassified `source_drift`/`test_gap`をclose。canonical spec、`.miz`、sidecar、
+expectation、trace、metadata、diagnostic、dispatch、active creditは不変。written
+type/condition occurrenceはGCT/GCU owner。source-doc final reviewは**NO FINDINGS**、
+parent workspace verification gateは全PASS。independent final qualityも**NO
+FINDINGS**、9 gateはcapなし`100/100`。stage/
+commitとGCT inventoryだけが残る。

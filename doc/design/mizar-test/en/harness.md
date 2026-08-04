@@ -5403,3 +5403,11 @@ and returns immutable Typed/Resolved owners. Mismatch stays `None`; selected
 failure is `Some(Err(_))`. No `TestCase`, production-stage branch, fixture,
 expectation, diagnostic, or serialized output is added. Four exact tests cover
 success/debug/lookup, corruption/precedence, owner atomicity, and isolation.
+
+### Task 269GC implemented dormant harness
+
+The runner-private selector, exact reserve composition, cfg-test mutation seam,
+and immutable Typed/Resolved output are implemented. Four runner tests cover
+success/debug/lookup, every frozen corruption tier and precedence, one-shot
+ownership, near misses, neighbor isolation, and legacy active routes. The
+helper remains absent from `TestCase` and public production dispatch.

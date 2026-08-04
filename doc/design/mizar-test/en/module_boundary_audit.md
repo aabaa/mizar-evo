@@ -13213,3 +13213,15 @@ constructs syntax-free checker input, and never exposes the output beyond
 `crate::runner`. Public dispatch, `TestCase`, artifacts, metadata, Cargo,
 diagnostics, and every sibling route remain unchanged. Checker owns validation
 and Typed/final replay.
+
+### Task 269GC implemented runner boundary
+
+Exactly the frozen four runner files changed. Production module sizes are
+`type_elaboration/source_proof_local_declaration.rs=2217`,
+`type_elaboration.rs=942`, and `runner.rs=2775`; the proof-local test leaf is
+`7442`. Production is `37/76863`, path hash remains
+`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d`,
+and content hash is
+`6efd7b0ecf2f94b6440b910cef62796e5093d8618ffe196d17ce99bd2245619f`.
+No GCP lower owner, public dispatch, artifact, metadata, Cargo, diagnostic, or
+sibling route changed.

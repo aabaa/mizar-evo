@@ -540,3 +540,9 @@ GC publishes no term, occurrence, reference, resolver provenance at a use
 site, equality operand, or Typed/final term node. The GCP-authenticated
 `107..108` and `111..112` leaves remain opaque. Only GCU may transport them,
 after consuming the exact GCT composite; descendant uses remain later.
+
+### Task 269GC implemented term deferral
+
+No term/reference/use-site or Typed/final term owner was added. Both opaque
+condition leaves, descendant occurrences, and all resolver-at-use provenance
+remain deferred to GCU after the exact GCT dependency.

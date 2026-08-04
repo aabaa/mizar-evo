@@ -8,9 +8,11 @@ use mizar_checker::{
         SourceProofLocalDeclarationKind, SourceProofLocalDeclarationProducer,
         SourceProofLocalDeclarationRecovery, SourceProofLocalGivenBindingHandoffInput,
         SourceProofLocalGivenBindingProducer, SourceProofLocalGivenBindingRecovery,
-        SourceProofLocalGivenUseBindingHandoff, SourceProofLocalGivenUseBindingHandoffInput,
-        SourceProofLocalGivenUseBindingProducer, SourceProofLocalLetBindingHandoffInput,
-        SourceProofLocalLetBindingProducer, SourceProofLocalLetBindingRecovery,
+        SourceProofLocalGivenConditionBindingHandoffInput,
+        SourceProofLocalGivenConditionBindingProducer, SourceProofLocalGivenUseBindingHandoff,
+        SourceProofLocalGivenUseBindingHandoffInput, SourceProofLocalGivenUseBindingProducer,
+        SourceProofLocalLetBindingHandoffInput, SourceProofLocalLetBindingProducer,
+        SourceProofLocalLetBindingRecovery,
     },
     source_statement::{
         SourceStatementWitnessId, SourceStatementWitnessNameId, SourceStatementWitnessTermTarget,
@@ -55,8 +57,9 @@ use super::{
     source_statement::{
         SOURCE_STATEMENT_B3M1_TEXT, SOURCE_STATEMENT_B3N_TEXT, SourceStatementRouteOutput,
         extract_multiple_witness_source_statement, extract_named_witness_source_statement,
-        source_proof_local_given_lower_output, source_proof_local_given_use_lower_output,
-        source_proof_local_let_lower_output, source_statement_output_with_source,
+        source_proof_local_given_condition_lower_output, source_proof_local_given_lower_output,
+        source_proof_local_given_use_lower_output, source_proof_local_let_lower_output,
+        source_statement_output_with_source,
     },
 };
 
@@ -1048,6 +1051,217 @@ fn mutated_task269g_range(mut source_range: SourceRange, mutate: bool) -> Source
         source_range.end += 1;
     }
     source_range
+}
+
+#[derive(Debug, PartialEq, Eq)]
+#[allow(dead_code)] // Rationale: Task 269GC is a private dormant runner consumer until activation.
+pub(in crate::runner) struct SourceProofLocalGivenConditionBindingRouteOutput {
+    typed_ast: TypedAst,
+    resolved: ResolvedTypedAst,
+}
+
+impl SourceProofLocalGivenConditionBindingRouteOutput {
+    pub(in crate::runner) const fn typed_ast(&self) -> &TypedAst {
+        &self.typed_ast
+    }
+
+    pub(in crate::runner) const fn resolved(&self) -> &ResolvedTypedAst {
+        &self.resolved
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[allow(dead_code)] // Rationale: production selects `None`; other variants are private corruption seams.
+pub(in crate::runner) enum SourceProofLocalGivenConditionBindingRouteMutation {
+    None,
+    WrongLowerFingerprint,
+    EmptyBase,
+    WrongTheoremRange,
+    WrongProofRange,
+    WrongGivenRange,
+    WrongSegmentRange,
+    WrongNameRange,
+    WrongLocalSpelling,
+    WrongLocalScope,
+    WrongLocalRange,
+    WrongLocalVisibleAfter,
+    WrongSourceOrdinal,
+}
+
+#[allow(dead_code)] // Rationale: Task 269GC deliberately leaves this exact private leaf dormant.
+pub(in crate::runner) fn source_proof_local_given_condition_binding_output(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    shells: &DeclarationShellSet,
+    symbols: &SymbolEnv,
+    source_text: &str,
+) -> Option<Result<SourceProofLocalGivenConditionBindingRouteOutput, String>> {
+    source_proof_local_given_condition_binding_output_impl(
+        ast,
+        module,
+        shells,
+        symbols,
+        source_text,
+        SourceProofLocalGivenConditionBindingRouteMutation::None,
+    )
+}
+
+#[cfg(test)]
+pub(in crate::runner) fn source_proof_local_given_condition_binding_output_with_mutation(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    shells: &DeclarationShellSet,
+    symbols: &SymbolEnv,
+    source_text: &str,
+    mutation: SourceProofLocalGivenConditionBindingRouteMutation,
+) -> Option<Result<SourceProofLocalGivenConditionBindingRouteOutput, String>> {
+    source_proof_local_given_condition_binding_output_impl(
+        ast,
+        module,
+        shells,
+        symbols,
+        source_text,
+        mutation,
+    )
+}
+
+fn source_proof_local_given_condition_binding_output_impl(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    shells: &DeclarationShellSet,
+    symbols: &SymbolEnv,
+    source_text: &str,
+    mutation: SourceProofLocalGivenConditionBindingRouteMutation,
+) -> Option<Result<SourceProofLocalGivenConditionBindingRouteOutput, String>> {
+    let lower = source_proof_local_given_condition_lower_output(
+        ast,
+        module.clone(),
+        shells,
+        symbols,
+        source_text,
+    )?;
+    Some(lower.and_then(|lower| {
+        let extraction = extract_builtin_source_reserve_declarations_after_node_guard(
+            ast,
+            module.clone(),
+            symbols,
+        )
+        .map_err(|()| "Task269GC exact reserve base extraction failed".to_owned())?;
+        let exact_base = extraction
+            .bridge
+            .prepare_binding_env(symbols)
+            .map_err(|error| format!("Task269GC exact reserve base failed: {error}"))?;
+        let base = if mutation == SourceProofLocalGivenConditionBindingRouteMutation::EmptyBase {
+            source_module_binding_env(ast, module.clone()).map_err(|error| error.to_string())?
+        } else {
+            exact_base
+        };
+
+        let mut lower_fingerprint = lower.debug_text();
+        if mutation == SourceProofLocalGivenConditionBindingRouteMutation::WrongLowerFingerprint {
+            lower_fingerprint.push_str("corrupt");
+        }
+        let theorem_range = mutated_task269g_range(
+            lower.theorem_range(),
+            mutation == SourceProofLocalGivenConditionBindingRouteMutation::WrongTheoremRange,
+        );
+        let proof_range = mutated_task269g_range(
+            lower.proof_range(),
+            mutation == SourceProofLocalGivenConditionBindingRouteMutation::WrongProofRange,
+        );
+        let given_range = mutated_task269g_range(
+            lower.given_range(),
+            mutation == SourceProofLocalGivenConditionBindingRouteMutation::WrongGivenRange,
+        );
+        let segment_range = mutated_task269g_range(
+            lower.segment_range(),
+            mutation == SourceProofLocalGivenConditionBindingRouteMutation::WrongSegmentRange,
+        );
+        let name_range = mutated_task269g_range(
+            lower.name_range(),
+            mutation == SourceProofLocalGivenConditionBindingRouteMutation::WrongNameRange,
+        );
+        let exact_local = LocalTermBinding::new(
+            lower.name_spelling(),
+            LocalTermScope::new(vec![0]),
+            lower.name_range(),
+            1,
+        );
+        let local = match mutation {
+            SourceProofLocalGivenConditionBindingRouteMutation::WrongLocalSpelling => {
+                LocalTermBinding::new(
+                    "z",
+                    exact_local.scope().clone(),
+                    exact_local.declaration_range(),
+                    exact_local.visible_after_ordinal(),
+                )
+            }
+            SourceProofLocalGivenConditionBindingRouteMutation::WrongLocalScope => {
+                LocalTermBinding::new(
+                    exact_local.spelling(),
+                    LocalTermScope::new(vec![1]),
+                    exact_local.declaration_range(),
+                    exact_local.visible_after_ordinal(),
+                )
+            }
+            SourceProofLocalGivenConditionBindingRouteMutation::WrongLocalRange => {
+                LocalTermBinding::new(
+                    exact_local.spelling(),
+                    exact_local.scope().clone(),
+                    SourceRange {
+                        start: exact_local.declaration_range().start - 1,
+                        ..exact_local.declaration_range()
+                    },
+                    exact_local.visible_after_ordinal(),
+                )
+            }
+            SourceProofLocalGivenConditionBindingRouteMutation::WrongLocalVisibleAfter => {
+                LocalTermBinding::new(
+                    exact_local.spelling(),
+                    exact_local.scope().clone(),
+                    exact_local.declaration_range(),
+                    exact_local.visible_after_ordinal() + 1,
+                )
+            }
+            _ => exact_local,
+        };
+        let source_ordinal =
+            if mutation == SourceProofLocalGivenConditionBindingRouteMutation::WrongSourceOrdinal {
+                lower.source_ordinal() + 1
+            } else {
+                lower.source_ordinal()
+            };
+        let handoff = SourceProofLocalGivenConditionBindingProducer::build(
+            SourceProofLocalGivenConditionBindingHandoffInput {
+                source_id: lower.source_id(),
+                module_id: lower.module_id().clone(),
+                lower_fingerprint,
+                theorem_symbol: lower.theorem_symbol().clone(),
+                theorem_definition: lower.theorem_definition(),
+                contribution: lower.contribution(),
+                theorem_range,
+                proof_range,
+                given_range,
+                segment_range,
+                name_range,
+                source_ordinal,
+                local,
+                recovery: SourceProofLocalGivenBindingRecovery::Normal,
+            },
+            &base,
+        )
+        .map_err(|error| error.to_string())?;
+        let typed_ast = empty_task269c_typed_ast(ast.source_id, module.clone())?
+            .with_source_proof_local_given_condition_binding(handoff)
+            .map_err(|error| error.to_string())?;
+        let resolved = assemble_empty_resolved_typed_ast(&typed_ast, Vec::new())?;
+        let output = SourceProofLocalGivenConditionBindingRouteOutput {
+            typed_ast,
+            resolved,
+        };
+        let _ = (output.typed_ast(), output.resolved());
+        Ok(output)
+    }))
 }
 
 #[derive(Debug, PartialEq, Eq)]

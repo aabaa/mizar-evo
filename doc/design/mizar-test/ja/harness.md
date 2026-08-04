@@ -5075,3 +5075,10 @@ runner-private `source_proof_local_given_condition_binding_output`とcfg-test
 mutation seamだけ。unchanged GCPでselectしexact reserve baseをprepare、immutable
 Typed/Resolvedを返す。mismatch `None`、selected failure `Some(Err(_))`。
 TestCase/dispatch/fixture/expectation/diagnostic/serialized outputなし。exact 4 tests。
+
+### Task 269GC implemented dormant harness
+
+runner-private selector、exact reserve composition、cfg-test mutation seam、
+immutable Typed/Resolved outputを実装。runner test 4件がsuccess/debug/lookup、全
+frozen corruption tier/precedence、one-shot ownership、near miss/neighbor isolation、
+legacy active routeをcover。helperは`TestCase`/public production dispatchにない。

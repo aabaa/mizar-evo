@@ -512,6 +512,7 @@ parent-owned.
 | `SourceProofLocalGivenBindingRecovery` | `#[non_exhaustive]`; callers must tolerate later explicitly frozen proof-`given` recovery classes. |
 | `SourceProofLocalGivenBindingError` | `#[non_exhaustive]`; callers must not exhaustively match proof-`given` validation or installation failures. |
 | `SourceProofLocalGivenUseBindingError` | `#[non_exhaustive]`; callers must not exhaustively match proof-`given` later-use-profile validation failures. |
+| `SourceProofLocalGivenConditionBindingError` | `#[non_exhaustive]`; callers must not exhaustively match proof-`given` declaration-condition binding validation or installation failures. |
 
 No exhaustive public enum exceptions are owned by this module.
 
@@ -3380,3 +3381,41 @@ implementation, and source/docs reviews ending **NO FINDINGS**, full
 verification, all nine implementation gates and `>=90/100`, task-only commit,
 clean post-commit inventory, protected stash identity, and automatic selection
 of Task 269GCT.
+
+### Task 269GC implementation status
+
+Documentation prerequisite `dd053c86dab322508a15823de1c4afd268c2d35a` is
+committed and the exact seven existing Rust files are implemented. The four
+named checker and four named runner tests freeze the complete binding
+transaction, independent theorem-identity/coherent-mutation oracle, validation
+precedence, lexical lookup matrix, one-shot Typed/Resolved ownership, and
+neighbor isolation. Specification, test-sufficiency, and implementation
+reviews end **NO FINDINGS**.
+
+Libraries are checker/runner `514/580`. Checker production is `30/177771`;
+module sizes are `source_proof_local_declaration.rs=6660`,
+`typed_ast.rs=6281`, and `resolved_typed_ast.rs=8340`. Runner production is
+`37/76863`; module sizes are
+`type_elaboration/source_proof_local_declaration.rs=2217`,
+`type_elaboration.rs=942`, and `runner.rs=2775`, with proof-local test leaf
+`7442`. Checker path/content hashes are
+`c89f43f6abebf7ebeb3ac9394ecd8ea3186ad28934c75526d2cc0b85a66ebad5` /
+`4e9220617eac3d5e993c2cee6adfb4958e4cb70e9ddbec83fb0c8955c86aa9fd`;
+runner path/content hashes are
+`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d` /
+`6efd7b0ecf2f94b6440b910cef62796e5093d8618ffe196d17ce99bd2245619f`.
+Raw/normalized test-list hashes are checker
+`b0638853bf46edd9b9d6d9da7a9236f16451f21d0c8477f849ceda55c6e17b4b` /
+`206638b6a9b4ef7ac48d706fe8070c7b60f6700fdbc7754f28d6c954a542936c`
+and runner
+`287a66efbc2b27590a90cee3ac235c0389ace4e35b22dc0cfcd6cd2821fbe11a` /
+`4e1df8e302161ef8be0f29573922d41b18a89efbc3ba41542f7831556b359900`.
+
+Protected parser/broad/mixed artifacts, trace, corpus and CLI counts/hashes,
+diagnostics, dispatch, and active credit remain unchanged. The implementation
+publishes no type or declaration-condition occurrence; GCT/GCU and every
+frozen semantic deferral remain separate. Source/documentation consistency is
+**NO FINDINGS** and every parent workspace verification gate passes.
+Independent final quality is **NO FINDINGS**; all nine
+hard gates PASS uncapped at `100/100`, leaving only exact staging/commit and
+fresh GCT inventory.
