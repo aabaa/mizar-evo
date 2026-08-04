@@ -715,12 +715,15 @@ later-use、capture、typing、proof acceptance、全semantic effectはdeferred�
 
 ### Tests、impact、audit、exit
 
-implementation scopeはexisting runner production leaf/facadeとexisting
-proof-local runner test file、すなわち
+implementation scopeはexisting runner production leaf、existing test-only facade
+2段、existing proof-local runner test file、すなわち
 `crates/mizar-test/src/runner/type_elaboration/source_statement.rs`、
+`crates/mizar-test/src/runner/type_elaboration.rs`、
 `crates/mizar-test/src/runner.rs`、
 `crates/mizar-test/src/runner/tests/type_elaboration/source_proof_local_declaration.rs`
-だけ。new runner tests exact 4件がfull output/debug、
+だけ。最初のfacadeはnew crate-private test seamの再exportだけ、次の
+facadeはexisting included runner test moduleへのimportだけをownし、production
+dispatchやpublic APIは変更しない。new runner tests exact 4件がfull output/debug、
 parser/resolver/local/all-node mutation、near-missとB3N/B3M1/mixed isolation、
 checker/active semantic effect 0をcoverする。checker testsは`482`、runnerは
 `536 -> 540` projected。runner production pathsは37のままline/test-list/

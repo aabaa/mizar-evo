@@ -792,11 +792,15 @@ from current implementation behavior.
 
 ### Tests, impact, audit, and exit
 
-Implementation is limited to the existing runner production leaf and facade
-plus the existing proof-local runner test file: respectively
+Implementation is limited to the existing runner production leaf, both
+existing test-only facade hops, and the existing proof-local runner test file:
 `crates/mizar-test/src/runner/type_elaboration/source_statement.rs`,
+`crates/mizar-test/src/runner/type_elaboration.rs`,
 `crates/mizar-test/src/runner.rs`, and
 `crates/mizar-test/src/runner/tests/type_elaboration/source_proof_local_declaration.rs`.
+The first facade hop only re-exports the new crate-private test seam and the
+second only imports it into the already included runner test module; neither
+is a production dispatch or public API change.
 Exactly four new runner tests
 cover the full exact output/debug oracle, parser/resolver/local/all-node
 mutation matrix, near-miss and B3N/B3M1/mixed-family isolation, and zero

@@ -1577,7 +1577,8 @@ runner productionは`37/69872`、
 ## Checker Task 269CP frozen module boundary
 
 docs prerequisiteはmoduleを変更しない。implementation targetはexisting
-`mizar-test` source-statement production leaf、runner facade、proof-local runner
-test fileだけ。checkerはproduction paths 30/tests 482、runner productionはpaths
+`mizar-test` source-statement production leaf、existing test-only re-export facade
+`type_elaboration.rs`、existing `runner.rs` test-only root facade import、proof-local
+runner test fileだけ。checkerはproduction paths 30/tests 482、runner productionはpaths
 37を保持し、line/content hashと`536 -> 540` test-list hashを再測定する。new
 checker moduleやparser/resolver editはscope外。

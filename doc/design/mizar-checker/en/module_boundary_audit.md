@@ -1635,8 +1635,10 @@ runner production is `37/69872` with
 ## Checker Task 269CP frozen module boundary
 
 The documentation prerequisite changes no module. The implementation target
-is limited to the existing `mizar-test` source-statement production leaf,
-runner facade, and proof-local runner test file. `mizar-checker` stays at
+is limited to the existing `mizar-test` source-statement production leaf, the
+existing test-only re-export facade `type_elaboration.rs`, the existing test-
+only root facade import in `runner.rs`, and the proof-local runner test file.
+`mizar-checker` stays at
 30 production paths and 482 tests; runner production stays at 37 paths while
 its line/content hash and `536 -> 540` test-list hash are remeasured. A new
 checker module or parser/resolver edit is outside 269CP.

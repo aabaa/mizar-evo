@@ -11751,6 +11751,7 @@ content hashは
 ## Checker Task 269CP frozen boundary
 
 module/production pathは追加しない。implementation filesはexisting source-
-statement production leaf、`runner.rs` facade、proof-local runner test fileだけ。
+statement production leaf、test-only re-export facade `type_elaboration.rs`、`runner.rs`
+test-only root facade import、proof-local runner test fileだけ。
 production pathsは37、line/content hashを再測定し、testsは`536 -> 540`。
 checker/parser/resolver/fixture/metadata/trace/Cargo fileはtarget外。

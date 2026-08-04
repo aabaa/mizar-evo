@@ -13035,8 +13035,9 @@ remains `35/67939`, with path/content hashes
 ## Checker Task 269CP Frozen Boundary
 
 No module or production path is added. The only permitted implementation
-files are the existing source-statement production leaf, `runner.rs` facade,
-and proof-local runner test file. Production remains 37 paths; line/content
+files are the existing source-statement production leaf, the test-only
+re-export facade `type_elaboration.rs`, the test-only root facade import in
+`runner.rs`, and the proof-local runner test file. Production remains 37 paths; line/content
 hashes are remeasured. Four tests project library count `536 -> 540`. No
 checker, parser, resolver, fixture, metadata, trace, or Cargo file is in the
 implementation target.
