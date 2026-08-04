@@ -3453,7 +3453,9 @@ dispatch、fixture、sidecar、expectation、trace、metadata、diagnostic、CLI
 
 - [x] exact source/Surface/shell/resolver/lower、mutation、private route、existing
   4 files/4 tests、zero creditをEN/JAでfreeze。
-- [ ] docs prerequisite commit後fresh frontend/resolver/baseline preflightし、
-  private GCPだけを実装。corpus artifact/public dispatchは不変。
-- [ ] test/implementation/source-doc/final review **NO FINDINGS**、full
-  verification/gate/commit後Task269GCへhandoff。
+- [x] docs prerequisite `db907a789dc01ba65ed8fdcc001e568e4f03cf49`後、fresh
+  frontend/resolver/baseline preflightしprivate GCPだけを実装。corpus artifact/
+  public dispatchは不変。
+- [x] source-doc/final review **NO FINDINGS**、full verification、全9 hard gatesを
+  score capなし`100/100`で完了。
+- [ ] exact stagingとdedicated implementation commit後Task269GCへhandoff。

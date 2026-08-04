@@ -1990,3 +1990,9 @@ GCP is runner-private lower evidence and adds no `TypedAst` field, getter,
 installer, error, node, or parts member. All existing source owners and every
 semantic table remain byte-identical. The first possible Typed owner is the
 future GCT/GCU composite after GC exists.
+
+### Task 269GCP implemented Typed-owner exclusion
+
+Implementation adds no `TypedAst` field, getter, installer, error, node, or
+parts member. The private lower row remains runner-local; the first possible
+Typed owner is still the future GCT/GCU composite after GC.

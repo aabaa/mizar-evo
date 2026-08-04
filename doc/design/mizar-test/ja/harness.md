@@ -5061,3 +5061,10 @@ enum/seamは存在しない。label remove/rename等のsource変更はselected r
 mutationではなくselector mismatch。test 4件がpositive replay、全Surface/lower
 mutation、shell/symbol provenance、near miss、GU isolation、active route不変を
 cover。`TestCase`/production stage branchは追加しない。
+
+### Task 269GCP implemented private harness
+
+frozen dormant selectorとtest mutation seam 5件を実装。test 4件はexact replay、
+全frozen corruption field、wrong opaque schema/payload、representative Surface/
+shell/resolver/lower precedence、near-miss/sibling isolation、legacy active route
+positiveをcover。helperは`TestCase`/production-stage dispatchに存在しない。

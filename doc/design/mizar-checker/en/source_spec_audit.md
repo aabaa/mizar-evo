@@ -6045,3 +6045,11 @@ occurrence, so the exact canonical-derived private profile is a bounded
 the source, Surface, shells, theorem provenance, and declaration/type ranges;
 condition terms remain unowned until GCU. No `.miz`, expectation, trace,
 diagnostic, dispatch, or coverage status changes.
+
+### Task 269GCP implemented source/spec mapping
+
+The bounded private lower `source_drift`/`test_gap` is closed by the exact
+canonical-derived selector and four Rust tests. Canonical specifications,
+existing `.miz`/expectations, trace, metadata, diagnostics, dispatch, and active
+coverage remain unchanged. Executable witness scope and condition occurrences
+remain with GC/GCT/GCU.

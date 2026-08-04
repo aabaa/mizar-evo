@@ -1809,3 +1809,13 @@ exitはEN/JA sync、spec review **NO FINDINGS**、docs-only gate 9件uncapped
 `>=90/100`、exact Markdown commit。その後fresh preflight、exact 4-file/4-test、
 test/implementation/source-doc review **NO FINDINGS**、full verification、全gate、
 separate commit、Task269GC fresh inventoryを必須とする。
+
+### Task 269GCP implemented lower prerequisite
+
+exact 134-byte/54-node selector、shell 2件、theorem resolver provenance、immutable
+lower ABI、retained source site 6件、16-error ABI、dormant base 1件、test seam
+5件、named test 4件をfrozen runner 4 filesへ実装。matrixは全frozen Surface/
+lower/shell/resolver field、opaque schema/payload corruption、representative
+combined validation precedence、sibling/near-miss reject、GUP isolation、legacy
+active route positive replayをcover。binding/type/term/fact/obligation/Typed/final/
+diagnostic/dispatch resultはpublishしない。next by-value bindingはTask269GC。

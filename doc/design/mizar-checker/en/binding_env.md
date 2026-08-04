@@ -957,3 +957,10 @@ required. GCP creates no context, `BindingId`, lookup, captured identity, or
 diagnostic and leaves GUP/GUPT/GU byte-identical. Task 269GC must construct a
 new exact environment in which the witness is available to condition
 occurrences without weakening generic source-order lookup.
+
+### Task 269GCP implemented no-binding boundary
+
+The implemented lower row retains the witness declaration sites but creates no
+binding context, ID, lookup, lifetime, or diagnostic. GUP/GUPT/GU remain
+byte-identical; the user-confirmed innermost-block lifetime is still owned by
+the distinct next Task 269GC binding handoff.

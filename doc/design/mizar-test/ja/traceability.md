@@ -2443,3 +2443,9 @@ sourceはin-code canonical-derived dormant profileでnew corpus fixtureではな
 existing parser/broad fixture/sidecar hashとtrace SHAは不変。GCPはRust test 4件
 だけでtrace/stage/diagnostic/semantic credit 0。future GCUもprepared
 formula-statement runner前にrowをactivateしない。
+
+### Task 269GCP implemented zero-credit trace status
+
+implementationはRust test 4件だけを追加し、canonical test artifact/trace rowは
+追加しない。count/status/backlink/type credit/trace SHA/metadata/CLI/active outcome
+は不変で、GC/GCT/GCUがlater creditを保持。

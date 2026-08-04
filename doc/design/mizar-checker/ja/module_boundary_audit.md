@@ -1708,3 +1708,12 @@ implementationで変更可能なのはexisting `mizar-test` runner 4 filesだけ
 checker/resolver/parser、fixture、metadata、Cargo、public dispatch、active artifactは
 read-only。public checker owner追加、GUP/GUPT/GU緩和、future GCより上位での
 binding再構築は`boundary_violation`。
+
+### Task 269GCP implemented boundary
+
+変更はfrozen existing `mizar-test` 4 filesだけ。checker productionは
+`30/176258`、runnerは`37/76642`、path hashは
+`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d`
+不変、content hashは
+`adaeaad8bf2943e05e402f1bc565b5bb0f9a509fb74ffdcd9bbb05eab4d86b22`。
+excluded owner/artifact/dispatch/Cargo/diagnosticは不変。

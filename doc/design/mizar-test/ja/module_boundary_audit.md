@@ -11891,3 +11891,11 @@ implementation ownerはexact `runner.rs`、`runner/type_elaboration.rs`、
 `runner/type_elaboration/source_statement.rs`、matching test module。
 public dispatch、metadata、discovery、expectation、fixture、Cargo、他runner familyは
 excluded。productionは37 paths、line/content hashはimplementation後remeasure。
+
+### Task 269GCP implemented runner boundary
+
+変更はfrozen existing runner 4 filesだけ。productionは`37/76642`、path hashは
+`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d`
+不変、content hashは
+`adaeaad8bf2943e05e402f1bc565b5bb0f9a509fb74ffdcd9bbb05eab4d86b22`。
+public dispatch/artifact/metadata/Cargo/diagnostic/他runner familyは不変。

@@ -4176,3 +4176,9 @@ The selector authenticates the Given statement, condition list, labeled
 proposition, equality subtree, and final conclusion only to prove exact source
 identity. GCP publishes none of them through `source_statement`; condition and
 label facts, statement semantics, proof state, and acceptance remain absent.
+
+### Task 269GCP implemented statement exclusion
+
+The runner now authenticates the exact Given/condition statement subtrees only
+as selector evidence. No `source_statement` payload, condition/label fact,
+assumption, proof state, or acceptance result is published.

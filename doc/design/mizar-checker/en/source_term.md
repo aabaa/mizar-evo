@@ -527,3 +527,9 @@ The two condition leaves at `107..108` and `111..112` are exact selector
 evidence only. GCP adds no `SourcePrimaryTermHandoff`, no profile admission,
 and no Typed/final term owner. Task 269GCU may transport them only after the
 exact GC binding and GCT type dependencies exist by value.
+
+### Task 269GCP implemented term deferral
+
+Both condition leaves remain excluded from the private lower output and from
+all Typed/final term owners. No source-term API or admission changed; GCU may
+consume them only after the separate GC and GCT dependencies exist.

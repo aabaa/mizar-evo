@@ -13194,3 +13194,13 @@ Implementation ownership is exactly `runner.rs`, `runner/type_elaboration.rs`,
 module. Public dispatch, metadata, discovery, expectations, fixtures, Cargo,
 and all other runner families are excluded. Production stays 37 paths; line
 and content hashes are remeasured after implementation.
+
+### Task 269GCP implemented runner boundary
+
+Exactly the frozen four existing runner files changed. Production is
+`37/76642`; the path hash remains
+`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d`
+and content hash is
+`adaeaad8bf2943e05e402f1bc565b5bb0f9a509fb74ffdcd9bbb05eab4d86b22`.
+Public dispatch, artifacts, metadata, Cargo, diagnostics, and all other runner
+families are unchanged.

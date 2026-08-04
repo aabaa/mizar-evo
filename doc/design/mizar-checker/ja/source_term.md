@@ -360,3 +360,8 @@ formula/fact/goal/proof/obligation意味論はexplicit follow-up。
 condition leaf `107..108`/`111..112`はexact selector evidenceだけ。GCPは
 `SourcePrimaryTermHandoff`、profile admission、Typed/final term ownerを追加しない。
 Task269GCUはexact GC binding/GCT type dependencyをby-value取得後だけtransport可。
+
+### Task 269GCP implemented term deferral
+
+condition leaf 2件はprivate lower outputと全Typed/final term ownerからexcluded。
+source-term API/admissionは不変で、GCUはseparate GC/GCT dependency後だけconsume可。

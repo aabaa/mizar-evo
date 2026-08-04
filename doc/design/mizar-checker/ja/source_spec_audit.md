@@ -5751,3 +5751,10 @@ profileはbounded `source_drift`/`test_gap`でspec変更ではない。GCPはsou
 Surface/shell/theorem provenance/declaration-type rangeだけをauthenticateし、
 condition termはGCUまでunowned。`.miz`/expectation/trace/diagnostic/dispatch/
 coverage statusは不変。
+
+### Task 269GCP implemented source/spec mapping
+
+bounded private lower `source_drift`/`test_gap`はexact canonical-derived selectorと
+Rust test 4件でclosed。canonical spec、existing `.miz`/expectation、trace、metadata、
+diagnostic、dispatch、active coverageは不変。executable witness scope/condition
+occurrenceはGC/GCT/GCUがowner。

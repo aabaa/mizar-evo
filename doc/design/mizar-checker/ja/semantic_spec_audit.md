@@ -744,3 +744,9 @@ canonical ruleはdeclaration condition内lexical bindingをauthorizeするが、
 binding、occurrence、formula、condition/label fact、assume、Skolem、capture/export、
 goal、obligation、proof、acceptance、IR意味をpublishしない。authenticated
 condition subtreeはGC/GCT/GCU用lower dependencyだけ。
+
+### Task 269GCP implementation deferral status
+
+exact lower profileはsemantic publication 0で実装。canonical innermost-block scope
+ruleは不変で、binding/condition term/fact/assume/goal/obligation/proof/acceptance/
+capture/export/IRはfrozen ownerへ明示的にdefer。

@@ -2937,3 +2937,15 @@ the exact four-file/four-test transaction, separate test/implementation/
 source-doc reviews ending **NO FINDINGS**, full verification, all nine hard
 gates, task-only staging, a separate commit, and automatic fresh inventory of
 Task 269GC.
+
+### Task 269GCP implemented lower prerequisite
+
+The exact 134-byte/54-node selector, two shells, theorem resolver provenance,
+immutable lower ABI, six retained source sites, 16-error ABI, one dormant base,
+five test seams, and four named tests are implemented in the frozen four
+runner files. The matrix covers all frozen Surface/lower/shell/resolver fields,
+exact opaque schema and payload corruption, representative combined validation
+precedence, sibling/near-miss rejection, GUP isolation, and positive legacy
+active-route replay. It publishes no binding, type, term, fact, obligation,
+Typed/final owner, diagnostic, or dispatch result. Task 269GC remains the next
+by-value binding consumer.

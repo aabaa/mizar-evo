@@ -1450,3 +1450,9 @@ lower rowはwritten bare builtin-`set` range `90..93`だけを保持。source-ty
 application、binding overlay、arena、normalization、constraint、guard、obligationは
 なし。Task269GCTはfuture GC bindingをconsumeし、このsourceへexact GUPTをreuse
 してはならない。
+
+### Task 269GCP implemented type deferral
+
+lower routeはexact written `set` range/spellingだけを保持。type application/
+overlay/normalization/constraint/guard/obligationを作らず、GCTがfuture GC handoffの
+separate consumer。

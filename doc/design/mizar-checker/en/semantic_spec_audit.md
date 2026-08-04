@@ -813,3 +813,10 @@ condition, but GCP publishes no binding, occurrence, formula, condition fact,
 label fact, assumption, Skolem state, capture/export result, goal, obligation,
 proof, acceptance, or IR meaning. Its authenticated condition subtree is only
 a lower-stage dependency for GC/GCT/GCU.
+
+### Task 269GCP implementation deferral status
+
+The exact lower profile is implemented with zero semantic publication. The
+canonical innermost-block scope rule is unchanged; binding, condition terms,
+facts, assumptions, goals, obligations, proofs, acceptance, capture/export,
+and IR remain explicitly deferred to their frozen owners.

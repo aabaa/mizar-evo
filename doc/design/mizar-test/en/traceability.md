@@ -2589,3 +2589,9 @@ fixture. Existing parser/broad proof-local fixture and sidecar hashes and the
 trace SHA remain unchanged. GCP adds four Rust tests only and grants zero
 trace, stage, diagnostic, or semantic credit; the future GCU consumer may not
 activate a row before the prepared formula-statement runner exists.
+
+### Task 269GCP implemented zero-credit trace status
+
+Implementation adds exactly four Rust tests and no canonical test artifact or
+trace row. Counts, statuses, backlinks, type credit, trace SHA, metadata, CLI
+results, and active outcomes remain unchanged; GC/GCT/GCU retain later credit.

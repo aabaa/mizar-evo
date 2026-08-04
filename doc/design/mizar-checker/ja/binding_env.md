@@ -907,3 +907,9 @@ exact condition sourceはfuture binding consumerの必要性だけを示す。GC
 `BindingId`、lookup、captured identity、diagnosticを作らずGUP/GUPT/GU byteを不変に
 する。Task269GCがgeneric source-order lookupを緩めずcondition occurrenceから
 見えるdistinct exact environmentを構築する。
+
+### Task 269GCP implemented no-binding boundary
+
+implemented lower rowはwitness declaration siteを保持するが、binding context/
+ID/lookup/lifetime/diagnosticを作らない。GUP/GUPT/GUはbyte-identical。user-confirmed
+innermost-block lifetimeはnext distinct Task269GC binding handoffのownerである。

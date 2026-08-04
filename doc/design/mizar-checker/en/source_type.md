@@ -2010,3 +2010,9 @@ The lower row retains only the written bare builtin-`set` range `90..93`.
 There is no source-type application, binding overlay, arena, normalization,
 constraint, guard, or obligation. Task 269GCT must consume the future GC
 binding handoff; reusing the exact GUPT handoff for this source is forbidden.
+
+### Task 269GCP implemented type deferral
+
+The lower route preserves only the exact written `set` ranges and spelling.
+No type application, overlay, normalization, constraint, guard, or obligation
+is created; GCT remains the separate consumer of the future GC handoff.

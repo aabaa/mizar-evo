@@ -1861,3 +1861,9 @@ boxed owner、exact revalidation、source-preserved node 6件、both-order exclu
 GCPは`ResolvedTypedAst` owner/getter/error/clone/role/node hintを追加せず、final
 assemblyはbyte-identicalでprivate lower rowを観測しない。GCもnon-final dependency
 であり、GCT/GCUが後でmutually-exclusive final ownerをfreezeする。
+
+### Task 269GCP implemented final-owner exclusion
+
+implementationは`ResolvedTypedAst` state/final assembly branchを追加しない。
+private lower route/test 4件はfinal ownerをpublishせず完了。GCはnon-final、
+GCT/GCUがlater ownerを保持。

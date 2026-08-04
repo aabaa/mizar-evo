@@ -7,8 +7,12 @@ use super::type_elaboration::{
     source_statement_transport_detail_keys as task269a_legacy_detail_keys,
 };
 use super::{
-    SOURCE_PROOF_LOCAL_GIVEN_TEXT, SOURCE_PROOF_LOCAL_GIVEN_USE_TEXT, SOURCE_PROOF_LOCAL_LET_TEXT,
+    SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT, SOURCE_PROOF_LOCAL_GIVEN_TEXT,
+    SOURCE_PROOF_LOCAL_GIVEN_USE_TEXT, SOURCE_PROOF_LOCAL_LET_TEXT,
     SourceProofLocalGivenBindingRouteMutation, SourceProofLocalGivenBindingRouteOutput,
+    SourceProofLocalGivenConditionLowerMutation, SourceProofLocalGivenConditionLowerOutput,
+    SourceProofLocalGivenConditionResolverProfileMutation,
+    SourceProofLocalGivenConditionShellMutation, SourceProofLocalGivenConditionSurfaceMutation,
     SourceProofLocalGivenTypeRouteMutation, SourceProofLocalGivenTypeRouteOutput,
     SourceProofLocalGivenLowerMutation, SourceProofLocalGivenLowerOutput,
     SourceProofLocalGivenResolverProfileMutation, SourceProofLocalGivenShellMutation,
@@ -22,6 +26,12 @@ use super::{
     SourceProofLocalLetLowerOutput, SourceProofLocalLetResolverProfileMutation,
     SourceProofLocalLetShellMutation, SourceProofLocalLetSurfaceMutation,
     SourceProofLocalLetTypeRouteMutation, SourceProofLocalLetTypeRouteOutput,
+    source_proof_local_given_condition_lower_output,
+    source_proof_local_given_condition_lower_output_with_mutation,
+    source_proof_local_given_condition_lower_output_with_resolver_mutation,
+    source_proof_local_given_condition_lower_output_with_resolver_profile_mutation,
+    source_proof_local_given_condition_lower_output_with_shell_mutation,
+    source_proof_local_given_condition_lower_output_with_surface_mutation,
     source_proof_local_given_lower_output,
     source_proof_local_given_lower_output_with_mutation,
     source_proof_local_given_lower_output_with_resolver_mutation,
@@ -1507,6 +1517,8 @@ enum Task269cpResolverMutation {
     SymbolOriginRecovery,
     SymbolSignature,
     SymbolCorruptPresentSignature,
+    SymbolOpaqueWrongSchema,
+    SymbolOpaqueWrongPayload,
     DefinitionSymbol,
     DefinitionKind,
     DefinitionVisibility,
@@ -1521,7 +1533,7 @@ enum Task269cpResolverMutation {
 }
 
 impl Task269cpResolverMutation {
-    const ALL: [Self; 22] = [
+    const ALL: [Self; 24] = [
         Self::SymbolKind,
         Self::SymbolNamespace,
         Self::SymbolSpelling,
@@ -1533,6 +1545,8 @@ impl Task269cpResolverMutation {
         Self::SymbolOriginRecovery,
         Self::SymbolSignature,
         Self::SymbolCorruptPresentSignature,
+        Self::SymbolOpaqueWrongSchema,
+        Self::SymbolOpaqueWrongPayload,
         Self::DefinitionSymbol,
         Self::DefinitionKind,
         Self::DefinitionVisibility,
@@ -1572,7 +1586,9 @@ fn task269gp_resolver_mutation_error(mutation: Task269cpResolverMutation) -> &'s
             "Task269GP exact theorem owner provenance mismatch"
         }
         Task269cpResolverMutation::SymbolSignature
-        | Task269cpResolverMutation::SymbolCorruptPresentSignature => {
+        | Task269cpResolverMutation::SymbolCorruptPresentSignature
+        | Task269cpResolverMutation::SymbolOpaqueWrongSchema
+        | Task269cpResolverMutation::SymbolOpaqueWrongPayload => {
             "Task269GP theorem symbol provenance mismatch"
         }
         Task269cpResolverMutation::DefinitionArity
@@ -1605,6 +1621,29 @@ fn task269cp_mutate_resolver(
         .contributions()
         .get(owner.contribution())
         .expect("Task269CP contribution before mutation");
+    let corrupted_opaque_signature = match mutation {
+        Task269cpResolverMutation::SymbolOpaqueWrongSchema => {
+            let Some(mizar_resolve::env::SignatureShell::Opaque { payload, .. }) = owner.signature()
+            else {
+                panic!("Task269CP opaque signature before schema mutation")
+            };
+            Some(mizar_resolve::env::SignatureShell::Opaque {
+                schema: "parser-signature-v2".to_owned(),
+                payload: payload.clone(),
+            })
+        }
+        Task269cpResolverMutation::SymbolOpaqueWrongPayload => {
+            let Some(mizar_resolve::env::SignatureShell::Opaque { schema, .. }) = owner.signature()
+            else {
+                panic!("Task269CP opaque signature before payload mutation")
+            };
+            Some(mizar_resolve::env::SignatureShell::Opaque {
+                schema: schema.clone(),
+                payload: "Task269CP-wrong-opaque-payload".to_owned(),
+            })
+        }
+        _ => None,
+    };
     let wrong_module = mizar_resolve::resolved_ast::ModuleId::new(
         module.package().clone(),
         mizar_session::ModulePath::new(format!("{}.field-mutation", module.path().as_str())),
@@ -1725,6 +1764,8 @@ fn task269cp_mutate_resolver(
             symbol_entry.with_signature(mizar_resolve::env::SignatureShell::Malformed {
                 class: "Task269CP-corrupt-present".to_owned(),
             });
+    } else if let Some(signature) = &corrupted_opaque_signature {
+        symbol_entry = symbol_entry.with_signature(signature.clone());
     } else if mutation != Task269cpResolverMutation::SymbolSignature
         && let Some(signature) = owner.signature()
     {
@@ -1784,6 +1825,8 @@ fn task269cp_mutate_resolver(
             definition_shell.with_signature(mizar_resolve::env::SignatureShell::Malformed {
                 class: "Task269CP-corrupt-present".to_owned(),
             });
+    } else if let Some(signature) = corrupted_opaque_signature {
+        definition_shell = definition_shell.with_signature(signature);
     } else if mutation != Task269cpResolverMutation::DefinitionSignature
         && let Some(signature) = definition.signature()
     {
@@ -5397,6 +5440,792 @@ fn source_proof_local_given_use_binding_profile_has_zero_semantic_effect() {
         &shells,
         &symbols,
         SOURCE_PROOF_LOCAL_GIVEN_USE_TEXT,
+    )
+    .is_none());
+}
+
+fn assert_task269gcp_exact_lower_output(
+    ast: &mizar_syntax::SurfaceAst,
+    module: &mizar_resolve::resolved_ast::ModuleId,
+    output: &SourceProofLocalGivenConditionLowerOutput,
+) {
+    assert_eq!(output.source_id(), ast.source_id);
+    assert_eq!(output.module_id(), module);
+    assert_eq!(
+        output.source_fingerprint(),
+        "2c2d767a0654670412b377bdcc6c5970ecec05b41c02aa754766320927bc6aad"
+    );
+    assert_eq!(
+        output.surface_fingerprint(),
+        "49d46d5f24338772e6e968f12c2216a8957b35242474132690db843b510b430f"
+    );
+    assert_eq!(output.theorem_symbol().module(), module);
+    assert_eq!(
+        (
+            output.theorem_definition().index(),
+            output.contribution().index(),
+        ),
+        (0, 0)
+    );
+    assert_eq!(
+        task269cp_range_tuple(output.theorem_range()),
+        (ast.source_id, 19, 133)
+    );
+    assert_eq!(
+        task269cp_range_tuple(output.proof_range()),
+        (ast.source_id, 68, 132)
+    );
+    assert_eq!(
+        task269cp_range_tuple(output.given_range()),
+        (ast.source_id, 76, 113)
+    );
+    assert_eq!(
+        task269cp_range_tuple(output.segment_range()),
+        (ast.source_id, 82, 93)
+    );
+    assert_eq!(
+        task269cp_range_tuple(output.name_range()),
+        (ast.source_id, 82, 83)
+    );
+    assert_eq!(output.name_spelling(), "y");
+    assert_eq!(
+        task269cp_range_tuple(output.type_range()),
+        (ast.source_id, 90, 93)
+    );
+    assert_eq!(
+        task269cp_range_tuple(output.type_head_range()),
+        (ast.source_id, 90, 93)
+    );
+    assert_eq!(output.type_spelling(), "set");
+    assert_eq!(output.source_ordinal(), 1);
+    let expected_debug = format!(
+        concat!(
+            "source-proof-local-given-condition-lower-debug-v1\n",
+            "module: {}::{}\n",
+            "source-fingerprint: \"2c2d767a0654670412b377bdcc6c5970ecec05b41c02aa754766320927bc6aad\"\n",
+            "surface-fingerprint: \"49d46d5f24338772e6e968f12c2216a8957b35242474132690db843b510b430f\"\n",
+            "theorem symbol={:?} definition=0 contribution=0 range=19..133 proof=68..132\n",
+            "given range=76..113 segment=82..93 source_ordinal=1\n",
+            "name range=82..83 spelling=\"y\"\n",
+            "type range=90..93 head=90..93 spelling=\"set\" form=bare\n",
+        ),
+        module.package().as_str(),
+        module.path().as_str(),
+        output.theorem_symbol().fqn().as_str(),
+    );
+    assert_eq!(output.debug_text(), expected_debug);
+    assert!(output.debug_text().ends_with('\n'));
+    assert!(!output.debug_text().ends_with("\n\n"));
+}
+
+#[test]
+fn task269gcp_exact_condition_lower_projection_is_stable() {
+    assert_eq!(SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT.len(), 134);
+    assert_eq!(
+        sha256_text(SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT),
+        "2c2d767a0654670412b377bdcc6c5970ecec05b41c02aa754766320927bc6aad"
+    );
+    let (ast, module, shells, symbols, diagnostics) =
+        task253_ast_from_source_text_with_diagnostic_count(
+            SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT,
+            2_691_010,
+        );
+    assert_eq!(diagnostics, 0);
+    assert_eq!(
+        (ast.nodes().len(), ast.root().map(|root| root.index())),
+        (54, Some(53))
+    );
+    assert_eq!(
+        sha256_text(&ast.snapshot_text()),
+        "49d46d5f24338772e6e968f12c2216a8957b35242474132690db843b510b430f"
+    );
+    assert!(ast.expression_root().is_none());
+    assert_eq!(
+        ast.token_nodes()
+            .iter()
+            .map(|node| node.index())
+            .collect::<Vec<_>>(),
+        (0..27).collect::<Vec<_>>()
+    );
+    let output = source_proof_local_given_condition_lower_output(
+        &ast,
+        module.clone(),
+        &shells,
+        &symbols,
+        SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT,
+    )
+    .expect("Task269GCP exact selector")
+    .expect("Task269GCP exact lower output");
+    assert_task269gcp_exact_lower_output(&ast, &module, &output);
+    assert!(source_proof_local_given_lower_output(
+        &ast,
+        module.clone(),
+        &shells,
+        &symbols,
+        SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT,
+    )
+    .is_none());
+    assert!(source_proof_local_given_use_lower_output(
+        &ast,
+        module,
+        &shells,
+        &symbols,
+        SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT,
+    )
+    .is_none());
+}
+
+#[test]
+fn task269gcp_surface_and_lower_corruption_fail_closed() {
+    let (ast, module, shells, symbols) =
+        task253_ast_from_source_text(SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT, 2_691_020);
+    let output = source_proof_local_given_condition_lower_output_with_surface_mutation(
+        &ast,
+        module.clone(),
+        &shells,
+        &symbols,
+        SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT,
+        SourceProofLocalGivenConditionSurfaceMutation::None,
+    )
+    .expect("Task269GCP neutral Surface selector")
+    .expect("Task269GCP neutral Surface output");
+    assert_task269gcp_exact_lower_output(&ast, &module, &output);
+    let output = source_proof_local_given_condition_lower_output_with_mutation(
+        &ast,
+        module.clone(),
+        &shells,
+        &symbols,
+        SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT,
+        SourceProofLocalGivenConditionLowerMutation::None,
+    )
+    .expect("Task269GCP neutral lower selector")
+    .expect("Task269GCP neutral lower output");
+    assert_task269gcp_exact_lower_output(&ast, &module, &output);
+
+    for index in 0..54 {
+        for mutation in [
+            SourceProofLocalGivenConditionSurfaceMutation::NodeKind(index),
+            SourceProofLocalGivenConditionSurfaceMutation::NodeSourceId(index),
+            SourceProofLocalGivenConditionSurfaceMutation::NodeRange(index),
+            SourceProofLocalGivenConditionSurfaceMutation::NodeRecovery(index),
+            SourceProofLocalGivenConditionSurfaceMutation::NodeChildren(index),
+        ] {
+            assert_eq!(
+                source_proof_local_given_condition_lower_output_with_surface_mutation(
+                    &ast,
+                    module.clone(),
+                    &shells,
+                    &symbols,
+                    SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT,
+                    mutation,
+                )
+                .expect("Task269GCP selected Surface corruption"),
+                Err("Task269GCP exact Surface identity changed after selection".to_owned()),
+                "Task269GCP Surface mutation {mutation:?}"
+            );
+        }
+    }
+    for index in 0..27 {
+        assert_eq!(
+            source_proof_local_given_condition_lower_output_with_surface_mutation(
+                &ast,
+                module.clone(),
+                &shells,
+                &symbols,
+                SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT,
+                SourceProofLocalGivenConditionSurfaceMutation::TokenNode(index),
+            )
+            .expect("Task269GCP selected token corruption"),
+            Err("Task269GCP exact Surface identity changed after selection".to_owned())
+        );
+    }
+    for mutation in [
+        SourceProofLocalGivenConditionSurfaceMutation::ExpressionRoot,
+        SourceProofLocalGivenConditionSurfaceMutation::TokenNodeCount,
+        SourceProofLocalGivenConditionSurfaceMutation::MissingRootIdentity,
+        SourceProofLocalGivenConditionSurfaceMutation::WrongRootIdentity,
+    ] {
+        assert_eq!(
+            source_proof_local_given_condition_lower_output_with_surface_mutation(
+                &ast,
+                module.clone(),
+                &shells,
+                &symbols,
+                SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT,
+                mutation,
+            )
+            .expect("Task269GCP selected Surface side-table corruption"),
+            Err("Task269GCP exact Surface identity changed after selection".to_owned())
+        );
+    }
+    assert!(source_proof_local_given_condition_lower_output(
+        &task269cp_ast_with_expression_root(&ast),
+        module.clone(),
+        &shells,
+        &symbols,
+        SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT,
+    )
+    .is_none());
+
+    for mutation in [
+        SourceProofLocalGivenConditionLowerMutation::SourceId,
+        SourceProofLocalGivenConditionLowerMutation::Module,
+        SourceProofLocalGivenConditionLowerMutation::SourceFingerprint,
+        SourceProofLocalGivenConditionLowerMutation::SurfaceFingerprint,
+        SourceProofLocalGivenConditionLowerMutation::TheoremSymbol,
+        SourceProofLocalGivenConditionLowerMutation::TheoremDefinition,
+        SourceProofLocalGivenConditionLowerMutation::Contribution,
+        SourceProofLocalGivenConditionLowerMutation::TheoremRange,
+        SourceProofLocalGivenConditionLowerMutation::ProofRange,
+        SourceProofLocalGivenConditionLowerMutation::GivenRange,
+        SourceProofLocalGivenConditionLowerMutation::SegmentRange,
+        SourceProofLocalGivenConditionLowerMutation::NameRange,
+        SourceProofLocalGivenConditionLowerMutation::NameSpelling,
+        SourceProofLocalGivenConditionLowerMutation::TypeRange,
+        SourceProofLocalGivenConditionLowerMutation::TypeHeadRange,
+        SourceProofLocalGivenConditionLowerMutation::TypeSpelling,
+        SourceProofLocalGivenConditionLowerMutation::SourceOrdinal,
+    ] {
+        assert_eq!(
+            source_proof_local_given_condition_lower_output_with_mutation(
+                &ast,
+                module.clone(),
+                &shells,
+                &symbols,
+                SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT,
+                mutation,
+            )
+            .expect("Task269GCP selected lower corruption"),
+            Err("Task269GCP private lower output mismatch".to_owned()),
+            "Task269GCP lower mutation {mutation:?}"
+        );
+    }
+}
+
+#[test]
+fn task269gcp_resolver_shell_and_symbol_corruption_fail_closed() {
+    let (ast, module, shells, symbols) =
+        task253_ast_from_source_text(SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT, 2_691_030);
+    let shell_none = source_proof_local_given_condition_lower_output_with_shell_mutation(
+        &ast,
+        module.clone(),
+        &shells,
+        &symbols,
+        SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT,
+        SourceProofLocalGivenConditionShellMutation::None,
+    )
+    .expect("Task269GCP neutral shell selector")
+    .expect("Task269GCP neutral shell output");
+    assert_task269gcp_exact_lower_output(&ast, &module, &shell_none);
+    let resolver_none =
+        source_proof_local_given_condition_lower_output_with_resolver_profile_mutation(
+            &ast,
+            module.clone(),
+            &shells,
+            &symbols,
+            SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT,
+            SourceProofLocalGivenConditionResolverProfileMutation::None,
+        )
+        .expect("Task269GCP neutral resolver selector")
+        .expect("Task269GCP neutral resolver output");
+    assert_task269gcp_exact_lower_output(&ast, &module, &resolver_none);
+
+    for shell in 0..2 {
+        for mutation in [
+            SourceProofLocalGivenConditionShellMutation::Id(shell),
+            SourceProofLocalGivenConditionShellMutation::Ordinal(shell),
+            SourceProofLocalGivenConditionShellMutation::Kind(shell),
+            SourceProofLocalGivenConditionShellMutation::Module(shell),
+            SourceProofLocalGivenConditionShellMutation::Node(shell),
+            SourceProofLocalGivenConditionShellMutation::Syntax(shell),
+            SourceProofLocalGivenConditionShellMutation::Range(shell),
+            SourceProofLocalGivenConditionShellMutation::Parent(shell),
+            SourceProofLocalGivenConditionShellMutation::VisibilityState(shell),
+            SourceProofLocalGivenConditionShellMutation::VisibilityMarker(shell),
+            SourceProofLocalGivenConditionShellMutation::VisibilitySpelling(shell),
+            SourceProofLocalGivenConditionShellMutation::Recovery(shell),
+        ] {
+            assert_eq!(
+                source_proof_local_given_condition_lower_output_with_shell_mutation(
+                    &ast,
+                    module.clone(),
+                    &shells,
+                    &symbols,
+                    SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT,
+                    mutation,
+                )
+                .expect("Task269GCP selector under shell corruption"),
+                Err(format!("Task269GCP declaration shell {shell} mismatch")),
+                "Task269GCP shell mutation {mutation:?}"
+            );
+        }
+    }
+
+    for mutation in [
+        SourceProofLocalGivenConditionResolverProfileMutation::ResolverModule,
+        SourceProofLocalGivenConditionResolverProfileMutation::ImportIndex,
+        SourceProofLocalGivenConditionResolverProfileMutation::ExportIndex,
+        SourceProofLocalGivenConditionResolverProfileMutation::LabelIndex,
+        SourceProofLocalGivenConditionResolverProfileMutation::OverloadIndex,
+        SourceProofLocalGivenConditionResolverProfileMutation::RegistrationIndex,
+        SourceProofLocalGivenConditionResolverProfileMutation::LexicalSummaryIndex,
+        SourceProofLocalGivenConditionResolverProfileMutation::NamespaceGraph,
+        SourceProofLocalGivenConditionResolverProfileMutation::DeclarationDependencyIndex,
+        SourceProofLocalGivenConditionResolverProfileMutation::ModuleSummaryIndex,
+        SourceProofLocalGivenConditionResolverProfileMutation::SymbolModule,
+        SourceProofLocalGivenConditionResolverProfileMutation::SymbolNotation,
+        SourceProofLocalGivenConditionResolverProfileMutation::SymbolContribution,
+        SourceProofLocalGivenConditionResolverProfileMutation::SymbolRelations,
+        SourceProofLocalGivenConditionResolverProfileMutation::SymbolOriginSource,
+        SourceProofLocalGivenConditionResolverProfileMutation::SymbolOriginImport,
+        SourceProofLocalGivenConditionResolverProfileMutation::DefinitionId,
+        SourceProofLocalGivenConditionResolverProfileMutation::DefinitionParameters,
+        SourceProofLocalGivenConditionResolverProfileMutation::DefinitionBinders,
+        SourceProofLocalGivenConditionResolverProfileMutation::DefinitionNotation,
+        SourceProofLocalGivenConditionResolverProfileMutation::DefinitionDoc,
+        SourceProofLocalGivenConditionResolverProfileMutation::DefinitionContribution,
+        SourceProofLocalGivenConditionResolverProfileMutation::DefinitionConflict,
+        SourceProofLocalGivenConditionResolverProfileMutation::DefinitionDependencies,
+        SourceProofLocalGivenConditionResolverProfileMutation::ContributionLabelEffect,
+        SourceProofLocalGivenConditionResolverProfileMutation::ContributionOverloadEffect,
+        SourceProofLocalGivenConditionResolverProfileMutation::ContributionRegistrationEffect,
+        SourceProofLocalGivenConditionResolverProfileMutation::ContributionLexicalEffect,
+        SourceProofLocalGivenConditionResolverProfileMutation::ContributionNamespaceEffect,
+        SourceProofLocalGivenConditionResolverProfileMutation::ContributionDeclarationDependencyEffect,
+        SourceProofLocalGivenConditionResolverProfileMutation::ContributionImportEffect,
+        SourceProofLocalGivenConditionResolverProfileMutation::ContributionExportEffect,
+        SourceProofLocalGivenConditionResolverProfileMutation::ContributionDiagnosticEffect,
+    ] {
+        let expected = match mutation {
+            SourceProofLocalGivenConditionResolverProfileMutation::ResolverModule => {
+                "Task269GCP raw resolver module mismatch"
+            }
+            SourceProofLocalGivenConditionResolverProfileMutation::ImportIndex
+            | SourceProofLocalGivenConditionResolverProfileMutation::ExportIndex
+            | SourceProofLocalGivenConditionResolverProfileMutation::LabelIndex
+            | SourceProofLocalGivenConditionResolverProfileMutation::OverloadIndex
+            | SourceProofLocalGivenConditionResolverProfileMutation::RegistrationIndex
+            | SourceProofLocalGivenConditionResolverProfileMutation::LexicalSummaryIndex
+            | SourceProofLocalGivenConditionResolverProfileMutation::NamespaceGraph
+            | SourceProofLocalGivenConditionResolverProfileMutation::DeclarationDependencyIndex
+            | SourceProofLocalGivenConditionResolverProfileMutation::ModuleSummaryIndex => {
+                "Task269GCP raw resolver inventory mismatch"
+            }
+            SourceProofLocalGivenConditionResolverProfileMutation::SymbolModule
+            | SourceProofLocalGivenConditionResolverProfileMutation::SymbolNotation
+            | SourceProofLocalGivenConditionResolverProfileMutation::SymbolContribution
+            | SourceProofLocalGivenConditionResolverProfileMutation::SymbolRelations
+            | SourceProofLocalGivenConditionResolverProfileMutation::SymbolOriginSource
+            | SourceProofLocalGivenConditionResolverProfileMutation::SymbolOriginImport => {
+                "Task269GCP theorem symbol provenance mismatch"
+            }
+            SourceProofLocalGivenConditionResolverProfileMutation::DefinitionId
+            | SourceProofLocalGivenConditionResolverProfileMutation::DefinitionParameters
+            | SourceProofLocalGivenConditionResolverProfileMutation::DefinitionBinders
+            | SourceProofLocalGivenConditionResolverProfileMutation::DefinitionNotation
+            | SourceProofLocalGivenConditionResolverProfileMutation::DefinitionDoc
+            | SourceProofLocalGivenConditionResolverProfileMutation::DefinitionContribution
+            | SourceProofLocalGivenConditionResolverProfileMutation::DefinitionConflict
+            | SourceProofLocalGivenConditionResolverProfileMutation::DefinitionDependencies => {
+                "Task269GCP theorem definition provenance mismatch"
+            }
+            SourceProofLocalGivenConditionResolverProfileMutation::ContributionLabelEffect
+            | SourceProofLocalGivenConditionResolverProfileMutation::ContributionOverloadEffect
+            | SourceProofLocalGivenConditionResolverProfileMutation::ContributionRegistrationEffect
+            | SourceProofLocalGivenConditionResolverProfileMutation::ContributionLexicalEffect
+            | SourceProofLocalGivenConditionResolverProfileMutation::ContributionNamespaceEffect
+            | SourceProofLocalGivenConditionResolverProfileMutation::ContributionDeclarationDependencyEffect
+            | SourceProofLocalGivenConditionResolverProfileMutation::ContributionImportEffect
+            | SourceProofLocalGivenConditionResolverProfileMutation::ContributionExportEffect
+            | SourceProofLocalGivenConditionResolverProfileMutation::ContributionDiagnosticEffect => {
+                "Task269GCP theorem contribution provenance mismatch"
+            }
+            SourceProofLocalGivenConditionResolverProfileMutation::None => unreachable!(),
+        };
+        assert_eq!(
+            source_proof_local_given_condition_lower_output_with_resolver_profile_mutation(
+                &ast,
+                module.clone(),
+                &shells,
+                &symbols,
+                SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT,
+                mutation,
+            )
+            .expect("Task269GCP selector under resolver corruption"),
+            Err(expected.to_owned()),
+            "Task269GCP resolver mutation {mutation:?}"
+        );
+    }
+    let neutral = source_proof_local_given_condition_lower_output_with_resolver_mutation(
+        &ast,
+        module.clone(),
+        &shells,
+        &symbols,
+        SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT,
+        |symbols| task269cp_mutate_resolver(symbols, Task269cpResolverMutation::None),
+    )
+    .expect("Task269GCP selector under neutral resolver replay")
+    .expect("Task269GCP neutral resolver replay");
+    assert_task269gcp_exact_lower_output(&ast, &module, &neutral);
+
+    for mutation in Task269cpResolverMutation::ALL {
+        assert_eq!(
+            source_proof_local_given_condition_lower_output_with_resolver_mutation(
+                &ast,
+                module.clone(),
+                &shells,
+                &symbols,
+                SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT,
+                |symbols| task269cp_mutate_resolver(symbols, mutation),
+            )
+            .expect("Task269GCP selector under resolver field corruption"),
+            Err(task269gp_resolver_mutation_error(mutation)
+                .replace("Task269GP", "Task269GCP")),
+            "Task269GCP resolver field mutation {mutation:?}"
+        );
+    }
+    for (drop_symbols, drop_definitions, drop_contributions) in
+        [(true, false, false), (false, true, false), (false, false, true)]
+    {
+        let corrupted = task269cp_symbols_with_missing_index(
+            &symbols,
+            drop_symbols,
+            drop_definitions,
+            drop_contributions,
+        );
+        assert_eq!(
+            source_proof_local_given_condition_lower_output(
+                &ast,
+                module.clone(),
+                &shells,
+                &corrupted,
+                SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT,
+            )
+            .expect("Task269GCP selector with missing resolver index"),
+            Err("Task269GCP raw resolver inventory mismatch".to_owned())
+        );
+    }
+    assert_eq!(
+        source_proof_local_given_condition_lower_output(
+            &ast,
+            module.clone(),
+            &shells,
+            &task269gp_symbols_with_duplicate_owner(&symbols),
+            SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT,
+        )
+        .expect("Task269GCP selector with duplicate theorem owner"),
+        Err("Task269GCP raw resolver inventory mismatch".to_owned())
+    );
+    let wrong_resolver_module = mizar_resolve::resolved_ast::ModuleId::new(
+        module.package().clone(),
+        mizar_session::ModulePath::new("tests.task269gcp_resolver_wrong_module"),
+    );
+    assert_eq!(
+        source_proof_local_given_condition_lower_output(
+            &ast,
+            module.clone(),
+            &shells,
+            &task269gp_symbols_with_module(&symbols, wrong_resolver_module),
+            SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT,
+        )
+        .expect("Task269GCP selector with wrong resolver module"),
+        Err("Task269GCP raw resolver module mismatch".to_owned())
+    );
+    assert_eq!(
+        source_proof_local_given_condition_lower_output(
+            &ast,
+            module.clone(),
+            &shells,
+            &task269cp_symbols_with_visible_y(&symbols, ast.source_id),
+            SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT,
+        )
+        .expect("Task269GCP selector with visible module y"),
+        Err("Task269GCP local y already resolves as a module symbol".to_owned())
+    );
+    let (_, one_shell_module, one_shells, _) =
+        task253_ast_from_source_text("reserve x for set;\n", 2_691_030);
+    assert_eq!(one_shell_module, module);
+    assert_eq!(
+        source_proof_local_given_condition_lower_output(
+            &ast,
+            module.clone(),
+            &one_shells,
+            &symbols,
+            SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT,
+        )
+        .expect("Task269GCP selector with one shell"),
+        Err("Task269GCP requires exactly two declaration shells".to_owned())
+    );
+    let export_source = format!("export Demo;\n{SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT}");
+    let (_, export_module, export_shells, _) =
+        task253_ast_from_source_text(&export_source, 2_691_030);
+    assert_eq!(export_module, module);
+    assert_eq!(
+        source_proof_local_given_condition_lower_output(
+            &ast,
+            module.clone(),
+            &export_shells,
+            &symbols,
+            SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT,
+        )
+        .expect("Task269GCP selector with export shell"),
+        Err("Task269GCP resolver shells unexpectedly export a path".to_owned())
+    );
+    let (_, _, wrong_shells, _) =
+        task253_ast_from_source_text(SOURCE_PROOF_LOCAL_LET_TEXT, 2_691_030);
+    let missing_resolver = task269cp_symbols_with_missing_index(&symbols, true, true, true);
+    assert_eq!(
+        source_proof_local_given_condition_lower_output(
+            &ast,
+            module.clone(),
+            &wrong_shells,
+            &missing_resolver,
+            SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT,
+        )
+        .expect("Task269GCP selector with shell and resolver corruption"),
+        Err("Task269GCP declaration shell 0 mismatch".to_owned())
+    );
+    assert_eq!(
+        source_proof_local_given_condition_lower_output_with_surface_mutation(
+            &ast,
+            module.clone(),
+            &wrong_shells,
+            &missing_resolver,
+            SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT,
+            SourceProofLocalGivenConditionSurfaceMutation::NodeKind(0),
+        )
+        .expect("Task269GCP selector with Surface, shell, and resolver corruption"),
+        Err("Task269GCP exact Surface identity changed after selection".to_owned())
+    );
+    assert_eq!(
+        source_proof_local_given_condition_lower_output_with_mutation(
+            &ast,
+            module.clone(),
+            &wrong_shells,
+            &symbols,
+            SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT,
+            SourceProofLocalGivenConditionLowerMutation::SourceId,
+        )
+        .expect("Task269GCP selector with shell and lower corruption"),
+        Err("Task269GCP declaration shell 0 mismatch".to_owned())
+    );
+    assert_eq!(
+        source_proof_local_given_condition_lower_output_with_mutation(
+            &ast,
+            module,
+            &shells,
+            &missing_resolver,
+            SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT,
+            SourceProofLocalGivenConditionLowerMutation::SourceId,
+        )
+        .expect("Task269GCP selector with resolver and lower corruption"),
+        Err("Task269GCP raw resolver inventory mismatch".to_owned())
+    );
+}
+
+#[test]
+fn task269gcp_near_miss_and_active_routes_remain_isolated() {
+    let near_misses = [
+        SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT.replace("G: y = y", "G: thesis"),
+        SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT.replace("G: y = y", "y = y"),
+        SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT.replace(
+            "ProofLocalGivenConditionUseSmoke",
+            "ProofLocalGivenConditionUseOther",
+        ),
+        SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT.replace(
+            "given y being set such that G: y = y",
+            "given z being set such that G: z = z",
+        ),
+        SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT.replace("being set", "being object"),
+        SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT.replace("being set", "be set"),
+        SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT.replace("G: y = y;", "G: y = y"),
+        SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT.replacen(
+            "reserve x for set;\n",
+            "reserve x for set;\nreserve z for set;\n",
+            1,
+        ),
+        SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT.trim_end_matches('\n').to_owned(),
+    ];
+    for (ordinal, source) in near_misses.into_iter().enumerate() {
+        let (ast, module, shells, symbols) =
+            task253_ast_from_source_text(&source, 2_691_040 + ordinal);
+        assert!(
+            source_proof_local_given_condition_lower_output(
+                &ast,
+                module,
+                &shells,
+                &symbols,
+                &source,
+            )
+            .is_none(),
+            "Task269GCP selected near miss {ordinal}"
+        );
+    }
+
+    for (ordinal, source) in [
+        SOURCE_PROOF_LOCAL_GIVEN_TEXT,
+        SOURCE_PROOF_LOCAL_GIVEN_USE_TEXT,
+        SOURCE_PROOF_LOCAL_LET_TEXT,
+        TASK269A_SOURCE_TEXT,
+        TASK269B_SOURCE_TEXT,
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let (ast, module, shells, symbols) =
+            task253_ast_from_source_text(source, 2_691_060 + ordinal);
+        assert!(
+            source_proof_local_given_condition_lower_output(
+                &ast, module, &shells, &symbols, source,
+            )
+            .is_none(),
+            "Task269GCP selected neighboring family {ordinal}"
+        );
+    }
+
+    let (old_ast, old_module, old_shells, old_symbols) =
+        task253_ast_from_source_text(SOURCE_PROOF_LOCAL_GIVEN_TEXT, 2_691_070);
+    assert!(source_proof_local_given_lower_output(
+        &old_ast,
+        old_module.clone(),
+        &old_shells,
+        &old_symbols,
+        SOURCE_PROOF_LOCAL_GIVEN_TEXT,
+    )
+    .is_some());
+    assert!(source_proof_local_given_binding_output(
+        &old_ast,
+        old_module.clone(),
+        &old_shells,
+        &old_symbols,
+        SOURCE_PROOF_LOCAL_GIVEN_TEXT,
+    )
+    .is_some());
+    assert!(source_proof_local_given_type_output(
+        &old_ast,
+        old_module,
+        &old_shells,
+        &old_symbols,
+        SOURCE_PROOF_LOCAL_GIVEN_TEXT,
+    )
+    .is_some());
+
+    let (use_ast, use_module, use_shells, use_symbols) =
+        task253_ast_from_source_text(SOURCE_PROOF_LOCAL_GIVEN_USE_TEXT, 2_691_071);
+    assert!(source_proof_local_given_use_lower_output(
+        &use_ast,
+        use_module.clone(),
+        &use_shells,
+        &use_symbols,
+        SOURCE_PROOF_LOCAL_GIVEN_USE_TEXT,
+    )
+    .is_some());
+    assert!(source_proof_local_given_use_binding_output(
+        &use_ast,
+        use_module.clone(),
+        &use_shells,
+        &use_symbols,
+        SOURCE_PROOF_LOCAL_GIVEN_USE_TEXT,
+    )
+    .is_some());
+    assert!(source_proof_local_given_use_type_output(
+        &use_ast,
+        use_module.clone(),
+        &use_shells,
+        &use_symbols,
+        SOURCE_PROOF_LOCAL_GIVEN_USE_TEXT,
+    )
+    .is_some());
+    assert!(source_proof_local_given_use_term_output(
+        &use_ast,
+        use_module,
+        &use_shells,
+        &use_symbols,
+        SOURCE_PROOF_LOCAL_GIVEN_USE_TEXT,
+    )
+    .is_some());
+
+    let (active_ast, active_module, _, active_symbols) =
+        task253_ast_from_source_text(TASK269A_SOURCE_TEXT, 2_691_072);
+    assert!(task269a_lower_output(
+        &active_ast,
+        active_module,
+        &active_symbols,
+        TASK269A_SOURCE_TEXT,
+    )
+    .is_some());
+    assert_task269b_exact_frontend_binding_transaction_and_debug();
+
+    let (ast, module, shells, symbols) =
+        task253_ast_from_source_text(SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT, 2_691_073);
+    let output = source_proof_local_given_condition_lower_output(
+        &ast,
+        module.clone(),
+        &shells,
+        &symbols,
+        SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT,
+    )
+    .expect("Task269GCP exact selector")
+    .expect("Task269GCP exact lower output");
+    for excluded in [
+        "107..108",
+        "111..112",
+        "term-reference",
+        "checked-formula",
+        "condition-fact",
+        "initial-obligation",
+        "terminal-goal",
+        "accepted",
+        "discharged",
+        "verification-condition",
+    ] {
+        assert!(!output.debug_text().contains(excluded), "excluded {excluded}");
+    }
+    assert!(source_proof_local_given_binding_output(
+        &ast,
+        module.clone(),
+        &shells,
+        &symbols,
+        SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT,
+    )
+    .is_none());
+    assert!(source_proof_local_given_type_output(
+        &ast,
+        module.clone(),
+        &shells,
+        &symbols,
+        SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT,
+    )
+    .is_none());
+    assert!(source_proof_local_given_use_binding_output(
+        &ast,
+        module.clone(),
+        &shells,
+        &symbols,
+        SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT,
+    )
+    .is_none());
+    assert!(source_proof_local_given_use_type_output(
+        &ast,
+        module.clone(),
+        &shells,
+        &symbols,
+        SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT,
+    )
+    .is_none());
+    assert!(source_proof_local_given_use_term_output(
+        &ast,
+        module.clone(),
+        &shells,
+        &symbols,
+        SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT,
+    )
+    .is_none());
+    assert!(task269a_lower_output(
+        &ast,
+        module,
+        &symbols,
+        SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT,
     )
     .is_none());
 }

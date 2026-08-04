@@ -623,8 +623,12 @@ use type_elaboration::{
 };
 #[cfg(test)]
 use type_elaboration::{
-    SOURCE_PROOF_LOCAL_GIVEN_TEXT, SOURCE_PROOF_LOCAL_GIVEN_USE_TEXT, SOURCE_PROOF_LOCAL_LET_TEXT,
+    SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT, SOURCE_PROOF_LOCAL_GIVEN_TEXT,
+    SOURCE_PROOF_LOCAL_GIVEN_USE_TEXT, SOURCE_PROOF_LOCAL_LET_TEXT,
     SourceProofLocalGivenBindingRouteMutation, SourceProofLocalGivenBindingRouteOutput,
+    SourceProofLocalGivenConditionLowerMutation, SourceProofLocalGivenConditionLowerOutput,
+    SourceProofLocalGivenConditionResolverProfileMutation,
+    SourceProofLocalGivenConditionShellMutation, SourceProofLocalGivenConditionSurfaceMutation,
     SourceProofLocalGivenLowerMutation, SourceProofLocalGivenLowerOutput,
     SourceProofLocalGivenResolverProfileMutation, SourceProofLocalGivenShellMutation,
     SourceProofLocalGivenSurfaceMutation, SourceProofLocalGivenTypeRouteMutation,
@@ -639,6 +643,12 @@ use type_elaboration::{
     SourceProofLocalLetShellMutation, SourceProofLocalLetSurfaceMutation,
     SourceProofLocalLetTypeRouteMutation, SourceProofLocalLetTypeRouteOutput,
     source_proof_local_given_binding_output, source_proof_local_given_binding_output_with_mutation,
+    source_proof_local_given_condition_lower_output,
+    source_proof_local_given_condition_lower_output_with_mutation,
+    source_proof_local_given_condition_lower_output_with_resolver_mutation,
+    source_proof_local_given_condition_lower_output_with_resolver_profile_mutation,
+    source_proof_local_given_condition_lower_output_with_shell_mutation,
+    source_proof_local_given_condition_lower_output_with_surface_mutation,
     source_proof_local_given_lower_output, source_proof_local_given_lower_output_with_mutation,
     source_proof_local_given_lower_output_with_resolver_mutation,
     source_proof_local_given_lower_output_with_resolver_profile_mutation,

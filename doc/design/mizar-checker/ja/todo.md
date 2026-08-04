@@ -6635,6 +6635,12 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   `0/11`をreport-only `repo_metadata_conflict`に分類。
 - [x] exact 134-byte/54-node source/hash、shell/resolver、private lower/debug、
   mutation、4 files/tests、zero credit、exclusion、successor/exitをEN/JAでfreeze。
-- [ ] spec reviewを**NO FINDINGS**まで反復し、docs-only gate、exact Markdown
-  stage、documentation prerequisite commitを完了。
-- [ ] fresh-preflight後GCPだけを実装し、全review/gate/commit後Task269GCへ進む。
+- [x] spec reviewを**NO FINDINGS**まで反復し、docs-only gate、exact Markdown
+  stage、documentation prerequisite commit
+  `db907a789dc01ba65ed8fdcc001e568e4f03cf49`を完了。
+- [x] fresh-preflight後frozen 4 files/4 testsへGCPだけを実装し、canonical
+  artifact/public route/semantic ownerを不変に維持。
+- [x] source-doc/final-quality review **NO FINDINGS**、full verification、全9
+  hard gatesをscore capなし`100/100`で完了。
+- [ ] exact stagingとdedicated implementation commit後、Task269GCをautomatic
+  fresh-inventory。

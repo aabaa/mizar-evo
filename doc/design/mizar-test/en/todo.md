@@ -3700,8 +3700,10 @@ No dispatch, fixture, sidecar, expectation, trace, metadata, diagnostic, CLI, ac
 - [x] Freeze the exact source/Surface/shell/resolver/lower profile, mutations,
   private routing semantics, four existing files, four tests, and zero-credit
   impact in synchronized EN/JA records.
-- [ ] After the docs prerequisite commit, re-run fresh frontend/resolver and
-  baseline preflight, implement only the private GCP route, and keep all corpus
-  artifacts and public dispatch unchanged.
-- [ ] Finish test/implementation/source-doc/final reviews to **NO FINDINGS**,
-  full verification and all hard gates, commit, then hand off Task 269GC.
+- [x] After docs prerequisite `db907a789dc01ba65ed8fdcc001e568e4f03cf49`,
+  re-run fresh frontend/resolver/baseline preflight and implement only the
+  private GCP route; all corpus artifacts and public dispatch are unchanged.
+- [x] Finish source-doc/final reviews to **NO FINDINGS**, full verification,
+  and all nine hard gates uncapped at `100/100`.
+- [ ] Complete exact staging and the dedicated implementation commit, then
+  hand off Task 269GC.

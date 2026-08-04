@@ -1877,3 +1877,10 @@ condition-use edge. It authenticates syntax and theorem provenance only. GC,
 GCT, and GCU separately own binding, written type, and the two condition term
 references; descendant use, first-order `set` capture replay, and Task 270
 remain later graph nodes.
+
+### Task 269GCP implemented lower payload
+
+The runner-private immutable lower row now authenticates the exact source,
+Surface, shells, theorem provenance, declaration sites, and debug replay. It
+adds no checker payload family or semantic owner; GC, GCT, and GCU remain the
+separate binding, type, and condition-use nodes.

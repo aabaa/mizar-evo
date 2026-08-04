@@ -5385,3 +5385,11 @@ not selected resolver mutations. Four tests cover positive replay, the full
 Surface/lower mutation sets, shell/symbol provenance, near misses, GU
 isolation, and unchanged active routing. No `TestCase` or production-stage
 branch is added.
+
+### Task 269GCP implemented private harness
+
+The frozen dormant selector and all five mutation seams are implemented.
+Four tests cover exact replay, every frozen corruption field, wrong opaque
+schema/payload, representative Surface/shell/resolver/lower precedence,
+near-miss and sibling isolation, and positive legacy active routes. The helper
+remains absent from `TestCase` and production-stage dispatch.

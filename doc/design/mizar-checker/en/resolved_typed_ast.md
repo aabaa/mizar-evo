@@ -1964,3 +1964,9 @@ GCP adds no `ResolvedTypedAst` owner, getter, error, clone path, role, or node
 hint. Final assembly remains byte-identical and cannot observe the private
 lower row. GC also remains a non-final dependency; GCT/GCU must later freeze
 their own mutually exclusive final owner.
+
+### Task 269GCP implemented final-owner exclusion
+
+Implementation adds no `ResolvedTypedAst` state or final assembly branch. The
+private lower route and all four tests complete without publishing a final
+owner; GC remains non-final and GCT/GCU retain later ownership.

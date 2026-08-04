@@ -3638,3 +3638,9 @@ selectorはexact source identityのためGiven statement、condition list、labe
 proposition、equality subtree、final conclusionをauthenticateするだけ。
 `source_statement`にはpublishせず、condition/label fact、statement semantics、
 proof state、acceptanceはabsent。
+
+### Task 269GCP implemented statement exclusion
+
+runnerはexact Given/condition statement subtreeをselector evidenceとしてだけ
+authenticateする。`source_statement` payload、condition/label fact、assume、proof
+state、acceptance resultはpublishしない。
