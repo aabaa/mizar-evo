@@ -737,3 +737,10 @@ scope visibilityはtransport evidenceでありproof truthではない。
 later lexical variable reference 2件だけをtransport。semantic tableは全emptyで、
 condition/fact、assume、existential、capture、formula、goal、initial obligation、
 proof、acceptance、Core、CFG、VCの意味を推測/publishしない。
+
+## Task 269GCP zero-semantic boundary
+
+canonical ruleはdeclaration condition内lexical bindingをauthorizeするが、GCPは
+binding、occurrence、formula、condition/label fact、assume、Skolem、capture/export、
+goal、obligation、proof、acceptance、IR意味をpublishしない。authenticated
+condition subtreeはGC/GCT/GCU用lower dependencyだけ。

@@ -949,3 +949,11 @@ The term producer consumes the immutable GUPT environment and authenticates
 both later references to binding 1 at use ordinal 2. It adds no binding row or
 context, and does not yet transport condition/descendant occurrences, capture,
 or export behavior.
+
+## Task 269GCP No-binding Lower Boundary
+
+The exact condition source proves only that a future binding consumer is
+required. GCP creates no context, `BindingId`, lookup, captured identity, or
+diagnostic and leaves GUP/GUPT/GU byte-identical. Task 269GC must construct a
+new exact environment in which the witness is available to condition
+occurrences without weakening generic source-order lookup.

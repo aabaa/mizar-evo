@@ -6622,5 +6622,19 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   **NO FINDINGS**、exact count/hashを記録しexcluded artifactを保持。
 - [x] source/docs/final-quality reviewは**NO FINDINGS**、全verificationを含む
   hard gate 9件はcapなし`100/100`でPASS。
-- [~] exact stage/separate implementation commit後、dependency-ready successorを
-  fresh inventory。Task270はseparate。
+- [x] exact stage/separate implementation commit
+  `998dc104957d47e2707f4a8292d2002f1c5beb2d`完了、clean fresh inventoryは
+  Task269GCPを選択。Task270はseparate。
+
+## Checker Task 269GCP Given-condition lower prerequisite
+
+- [x] committed GU HEAD、origin/stash、canonical condition authority、fixture/
+  trace、lower API、baselineをfresh inventory。
+- [x] condition occurrenceをdescendant/capture/exportより先に選択し、missing
+  profile/testを`source_drift`/`test_gap`、stale recordを`design_drift`、origin
+  `0/11`をreport-only `repo_metadata_conflict`に分類。
+- [x] exact 134-byte/54-node source/hash、shell/resolver、private lower/debug、
+  mutation、4 files/tests、zero credit、exclusion、successor/exitをEN/JAでfreeze。
+- [ ] spec reviewを**NO FINDINGS**まで反復し、docs-only gate、exact Markdown
+  stage、documentation prerequisite commitを完了。
+- [ ] fresh-preflight後GCPだけを実装し、全review/gate/commit後Task269GCへ進む。

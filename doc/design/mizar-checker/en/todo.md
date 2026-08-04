@@ -6967,5 +6967,22 @@ This closes only dormant private lexical-binding evidence and grants zero active
   artifacts remain unchanged.
 - [x] Source/docs and final-quality reviews are **NO FINDINGS**; all nine hard
   gates pass uncapped at `100/100`, including complete verification.
-- [~] Finish exact staging and the separate implementation commit, then
-  fresh-inventory the dependency-ready successor. Task 270 remains separate.
+- [x] Exact staging and separate implementation commit
+  `998dc104957d47e2707f4a8292d2002f1c5beb2d` are complete; clean fresh
+  inventory selects Task 269GCP. Task 270 remains separate.
+
+## Checker Task 269GCP Given-condition Lower Prerequisite
+
+- [x] Confirm clean committed GU HEAD, origin/stash state, canonical given-
+  condition authority, current fixtures/trace, exact lower APIs, and baselines.
+- [x] Resolve review disagreement by selecting condition occurrence before
+  descendant/capture/export; classify missing profile/tests as
+  `source_drift`/`test_gap`, stale records as `design_drift`, and origin `0/11`
+  as report-only `repo_metadata_conflict`.
+- [x] Freeze the exact 134-byte/54-node source, hashes, shell/resolver profile,
+  private lower/debug ABI, mutations, four runner files/tests, zero-credit
+  impact, exclusions, successor chain, and exit criteria in EN/JA.
+- [ ] Repeat specification review to **NO FINDINGS**, pass docs-only hard gates,
+  stage only synchronized Markdown, and commit the documentation prerequisite.
+- [ ] Fresh-preflight and implement only GCP; repeat all reviews/gates,
+  task-only commit, then fresh-inventory Task 269GC automatically.

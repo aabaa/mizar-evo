@@ -3445,4 +3445,15 @@ dispatch、fixture、sidecar、expectation、trace、metadata、diagnostic、CLI
   reviewは**NO FINDINGS**、excluded artifact/active resultは全て不変。
 - [x] source/docs/final-quality reviewは**NO FINDINGS**、verification/hard gate
   9件はcapなし`100/100`でPASS。
-- [~] exact stage、separate commit、next-task fresh inventoryを完了する。
+- [x] exact stage/separate implementation commit
+  `998dc104957d47e2707f4a8292d2002f1c5beb2d`完了、fresh inventoryは
+  Task269GCPを選択。
+
+## Task 269GCP Given-condition lower route
+
+- [x] exact source/Surface/shell/resolver/lower、mutation、private route、existing
+  4 files/4 tests、zero creditをEN/JAでfreeze。
+- [ ] docs prerequisite commit後fresh frontend/resolver/baseline preflightし、
+  private GCPだけを実装。corpus artifact/public dispatchは不変。
+- [ ] test/implementation/source-doc/final review **NO FINDINGS**、full
+  verification/gate/commit後Task269GCへhandoff。

@@ -1443,3 +1443,10 @@ normalization/constraint/coercion/guard/obligationを追加しない。
 GUはimmutable GUPT source-type dependencyをconsume/reauthenticateするだけでrow/
 arenaを変更しない。new source type、normalization、constraint、coercion、guard、
 assume、obligationは追加しない。
+
+## Task 269GCP frozen type deferral
+
+lower rowはwritten bare builtin-`set` range `90..93`だけを保持。source-type
+application、binding overlay、arena、normalization、constraint、guard、obligationは
+なし。Task269GCTはfuture GC bindingをconsumeし、このsourceへexact GUPTをreuse
+してはならない。

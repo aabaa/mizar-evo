@@ -2436,3 +2436,10 @@ capture/exportとactive proof-local visibilityはdefer。
 Rust unit test 8件だけを追加しcanonical test artifact/trace rowは追加しない。
 count/status/backlink/type credit/trace SHA/metadata/CLI/active outcomeは上記
 frozen値不変。
+
+## Task 269GCP frozen trace status
+
+sourceはin-code canonical-derived dormant profileでnew corpus fixtureではない。
+existing parser/broad fixture/sidecar hashとtrace SHAは不変。GCPはRust test 4件
+だけでtrace/stage/diagnostic/semantic credit 0。future GCUもprepared
+formula-statement runner前にrowをactivateしない。

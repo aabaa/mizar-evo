@@ -1983,3 +1983,10 @@ all semantic tables empty.
 The boxed getter/installer/error and exact availability checks are implemented.
 One-shot and same-identity neighbor both-order exclusions are tested, while
 direct generic term fields and all semantic tables remain empty.
+
+## Task 269GCP Typed-owner Exclusion
+
+GCP is runner-private lower evidence and adds no `TypedAst` field, getter,
+installer, error, node, or parts member. All existing source owners and every
+semantic table remain byte-identical. The first possible Typed owner is the
+future GCT/GCU composite after GC exists.

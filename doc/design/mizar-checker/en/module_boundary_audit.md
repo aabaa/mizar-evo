@@ -1780,3 +1780,11 @@ and diagnostics are excluded. Production path counts remain `30/37`.
 The exact seven-file boundary is preserved. Checker production is now
 `30/176258`, runner production `37/75339`; path inventories are unchanged.
 No excluded owner, dispatch, artifact, Cargo target, or diagnostic changed.
+
+## Task 269GCP Frozen Boundary
+
+Only four existing `mizar-test` runner files may change in implementation.
+`mizar-checker`, resolver, parser, fixtures, metadata, Cargo targets, public
+dispatch, and every active artifact are read-only. Adding a public checker
+owner, loosening GUP/GUPT/GU, or reconstructing a binding above the future GC
+owner is a `boundary_violation`.

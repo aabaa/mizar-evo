@@ -13186,3 +13186,11 @@ trace, metadata, diagnostics, and CLI owners are excluded. Production remains
 The exact four runner files are the only runner changes. Production remains 37
 paths and is now 75,339 lines; `source_statement.rs`, public dispatch, Cargo,
 metadata, artifacts, diagnostics, and active results are unchanged.
+
+## Task 269GCP Frozen Runner Boundary
+
+Implementation ownership is exactly `runner.rs`, `runner/type_elaboration.rs`,
+`runner/type_elaboration/source_statement.rs`, and the matching runner test
+module. Public dispatch, metadata, discovery, expectations, fixtures, Cargo,
+and all other runner families are excluded. Production stays 37 paths; line
+and content hashes are remeasured after implementation.

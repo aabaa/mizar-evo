@@ -1869,3 +1869,11 @@ The frozen GUPT-dependent `2/2/0` term/reference composite is implemented as
 the sole new family. Typed/Resolved ownership is atomic and semantically empty;
 condition/descendant use, capture/export, formulas, facts, and proof owners stay
 deferred.
+
+### Task 269GCP Condition-profile Decomposition
+
+GCP is the source-order-minimal lower prerequisite for the still-open Task-269
+condition-use edge. It authenticates syntax and theorem provenance only. GC,
+GCT, and GCU separately own binding, written type, and the two condition term
+references; descendant use, first-order `set` capture replay, and Task 270
+remain later graph nodes.

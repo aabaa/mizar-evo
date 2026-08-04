@@ -1874,3 +1874,9 @@ direct field/semantic tableはempty。
 boxed getter/installer/errorとexact availability checkを実装。one-shotおよび
 same-identity neighborのboth-order exclusionをtestし、direct generic term fieldと
 semantic tableは全empty。
+
+## Task 269GCP Typed-owner exclusion
+
+GCPはrunner-private lower evidenceで`TypedAst` field/getter/installer/error/node/
+partsを追加しない。existing source owner/semantic tableはbyte-identical。最初の
+Typed owner候補はGC後のfuture GCT/GCU composite。

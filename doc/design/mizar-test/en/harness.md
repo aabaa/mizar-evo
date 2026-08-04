@@ -5372,3 +5372,16 @@ The frozen selector, six mutations, exact input/six-node arena, direct by-value
 GUPT-to-GU checker handoff, Typed/final installation, and four-test matrix are
 implemented. The route remains private and dormant with no public dispatch or
 semantic output.
+
+## Task 269GCP Frozen Harness Route
+
+An exact source/Surface or sibling-selector mismatch returns `None`. After the
+exact source is selected, every lower, shell, resolver-profile, or
+whole-resolver mutation returns `Some(Err(_))`; exact success is `Some(Ok(_))`
+and asserts the exact final-LF debug replay. There is no debug mutation enum or
+seam.
+Source changes such as label removal or renaming remain selector mismatches,
+not selected resolver mutations. Four tests cover positive replay, the full
+Surface/lower mutation sets, shell/symbol provenance, near misses, GU
+isolation, and unchanged active routing. No `TestCase` or production-stage
+branch is added.

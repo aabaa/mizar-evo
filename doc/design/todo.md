@@ -94,8 +94,8 @@ is its task 1). "Next work" points into the
 | mizar-parser | Grammar, Pratt parsing, syntax recovery, parse-only corpus | [x] Tasks 1-48 plus bounded `PARSER-RECOVERY-B1B1P-P1` complete; historical post-Task-46 score 99/100 | no inferred Task 49; human-owned P-265-47D remains separate | [todo](./mizar-parser/en/todo.md) |
 | mizar-frontend | Source loading and phase 1-3 orchestration | [x] prior milestone plus `PARSER-RECOVERY-B1B1P-P1-FE` regression complete | — | [todo](./mizar-frontend/en/todo.md) |
 | mizar-resolve | Module graph, namespaces, symbols, labels, signatures | [~] complete through task 29, Checker Task 263R, and Task 264R implementation | Preserve Task-264R shell/no-symbol boundary through Checker Tasks 248P/264 | [todo](./mizar-resolve/en/todo.md) |
-| mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] foundation complete through task 22; Tasks 265-268, Core-31, and Checker consumers through committed Task 269GUPT are complete; Task 269GU implementation/reviews/gates are complete | Stage and commit GU, then fresh-inventory the successor | [todo](./mizar-test/en/todo.md) |
-| mizar-checker | Type checking, cluster/registration resolution, overload resolution | [~] explicit-payload milestone and source producers/consumers through committed Task 269GUPT are complete; Task 269GU implementation/reviews/gates are complete | Stage and commit GU; capture and Task 270 remain separate | [todo](./mizar-checker/en/todo.md) |
+| mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] foundation complete through task 22; Tasks 265-268, Core-31, and Checker consumers through committed Task 269GU are complete; Task 269GCP lower contract is frozen | Review/commit GCP docs, implement its private route, then fresh-inventory GC | [todo](./mizar-test/en/todo.md) |
+| mizar-checker | Type checking, cluster/registration resolution, overload resolution | [~] explicit-payload milestone and source producers/consumers through committed Task 269GU are complete; Task 269GCP lower contract is frozen | Review/commit and implement GCP; GC/GCT/GCU precede descendant/capture and Task 270 | [todo](./mizar-checker/en/todo.md) |
 | mizar-core | Elaboration, binder-normalized core logic, control-flow preparation | [x] core/control-flow milestone, tasks 27-32 complete | step-5 Tasks 33-53 under the Task-32 graph | [todo](./mizar-core/en/todo.md) |
 | mizar-vc | VC IR, VC generation, deterministic pre-ATP discharge | [x] exact source-derived contradiction VC integration complete through task 31 | dependency-paced VC Tasks 32-55; VC 40/53 and S1 gates remain explicit | [todo](./mizar-vc/en/todo.md) |
 | mizar-kernel | Trusted certificate parsing and checking | [x] SAT-backed kernel milestone complete | step 4 task 35 resolved; task 32 parked; tasks 30-34 resolved | [todo](./mizar-kernel/en/todo.md) |
@@ -4357,5 +4357,16 @@ implementation reviews are **NO FINDINGS**. Libraries are `510/572`;
 production is `30/176258` / `37/75339`; canonical artifacts, trace, metadata,
 CLI behavior, dispatch, active results, and semantic credit are unchanged.
 Source/docs and final-quality reviews are **NO FINDINGS**; all nine hard gates
-pass uncapped at `100/100`. Exact staging, the dedicated implementation commit,
-and successor fresh inventory remain in progress.
+pass uncapped at `100/100`. Exact staging and dedicated implementation commit
+`998dc104957d47e2707f4a8292d2002f1c5beb2d` are complete; successor fresh
+inventory selects Task 269GCP.
+
+## Checker Task 269GCP Autonomous Handoff
+
+Task 269GU implementation is committed as
+`998dc104957d47e2707f4a8292d2002f1c5beb2d`. Fresh inventory classifies the
+missing declaration-condition profile as `source_drift`/`test_gap`, stale GU
+status as `design_drift`, and origin `0/11` as report-only
+`repo_metadata_conflict`. Task 269GCP now freezes only the exact private lower
+profile; docs review/commit, implementation review/commit, and Task 269GC fresh
+inventory remain in progress. Task 270 is not dependency-ready.

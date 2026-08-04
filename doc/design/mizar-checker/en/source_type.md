@@ -2003,3 +2003,10 @@ constraint, coercion, guard, or obligation.
 GU consumes and reauthenticates the immutable GUPT source-type dependency but
 does not alter its rows or arena. No new source type, normalization, constraint,
 coercion, guard, assumption, or obligation is produced.
+
+## Task 269GCP Frozen Type Deferral
+
+The lower row retains only the written bare builtin-`set` range `90..93`.
+There is no source-type application, binding overlay, arena, normalization,
+constraint, guard, or obligation. Task 269GCT must consume the future GC
+binding handoff; reusing the exact GUPT handoff for this source is forbidden.

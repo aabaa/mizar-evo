@@ -5051,3 +5051,13 @@ successはGU boxed Typed/final compositeだけをownしpublic dispatchから到�
 frozen selector、6 mutations、exact input/6-node arena、direct by-value
 GUPT-to-GU checker handoff、Typed/final installation、4-test matrixを実装。
 routeはprivate/dormantでpublic dispatch/semantic outputなし。
+
+## Task 269GCP frozen harness route
+
+exact source/Surface/sibling selector mismatchは`None`。exact source選択後のlower/
+shell/resolver-profile/whole-resolver mutationは全`Some(Err(_))`、exact
+successは`Some(Ok(_))`でfinal-LF exact debug replayをassertする。debug mutation
+enum/seamは存在しない。label remove/rename等のsource変更はselected resolver
+mutationではなくselector mismatch。test 4件がpositive replay、全Surface/lower
+mutation、shell/symbol provenance、near miss、GU isolation、active route不変を
+cover。`TestCase`/production stage branchは追加しない。

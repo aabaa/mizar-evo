@@ -3691,4 +3691,17 @@ No dispatch, fixture, sidecar, expectation, trace, metadata, diagnostic, CLI, ac
   and active result unchanged.
 - [x] Source/docs and final-quality reviews are **NO FINDINGS**; verification
   and all nine hard gates pass uncapped at `100/100`.
-- [~] Finish exact stage, separate commit, and next-task fresh inventory.
+- [x] Exact stage and separate implementation commit
+  `998dc104957d47e2707f4a8292d2002f1c5beb2d` are complete; fresh inventory
+  selects Task 269GCP.
+
+## Task 269GCP Given-condition Lower Route
+
+- [x] Freeze the exact source/Surface/shell/resolver/lower profile, mutations,
+  private routing semantics, four existing files, four tests, and zero-credit
+  impact in synchronized EN/JA records.
+- [ ] After the docs prerequisite commit, re-run fresh frontend/resolver and
+  baseline preflight, implement only the private GCP route, and keep all corpus
+  artifacts and public dispatch unchanged.
+- [ ] Finish test/implementation/source-doc/final reviews to **NO FINDINGS**,
+  full verification and all hard gates, commit, then hand off Task 269GC.

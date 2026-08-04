@@ -1701,3 +1701,10 @@ diagnosticはexclude。production path countは`30/37`不変。
 exact 7-file boundaryを保持。checker production `30/176258`、runner
 `37/75339`でpath inventory不変。excluded owner、dispatch、artifact、Cargo、
 diagnosticは変更なし。
+
+## Task 269GCP frozen boundary
+
+implementationで変更可能なのはexisting `mizar-test` runner 4 filesだけ。
+checker/resolver/parser、fixture、metadata、Cargo、public dispatch、active artifactは
+read-only。public checker owner追加、GUP/GUPT/GU緩和、future GCより上位での
+binding再構築は`boundary_violation`。

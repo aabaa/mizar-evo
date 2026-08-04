@@ -4169,3 +4169,10 @@ production dispatch stay unchanged.
 Only the two primary-term/reference leaves are transported. Statement APIs,
 the condition/label/equality/formula shells, facts, proof state, acceptance,
 and production dispatch remain unchanged.
+
+## Task 269GCP Frozen Statement Exclusion
+
+The selector authenticates the Given statement, condition list, labeled
+proposition, equality subtree, and final conclusion only to prove exact source
+identity. GCP publishes none of them through `source_statement`; condition and
+label facts, statement semantics, proof state, and acceptance remain absent.

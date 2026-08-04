@@ -6707,3 +6707,18 @@ credit and remain explicit follow-ups.
 
 Source/documentation and final-quality reviews are **NO FINDINGS**. All nine
 hard gates pass uncapped at `100/100`; this audit grants no new active credit.
+
+## Checker Task 269GCP Frozen Zero-credit Condition Lower Boundary
+
+Fresh post-GU inventory selects a canonical-derived private lower profile for
+the Chapter-4/15/16 rule that a Given witness binds occurrences in its own
+declaration condition. The existing parser and broad proof-local artifacts are
+unchanged and still carry only their current coverage. GCP adds no `.miz`,
+sidecar, expectation, trace row/status/backlink, metadata case, diagnostic,
+dispatch, or active credit; cases/requirements remain `428/395`, pass/fail
+`235/193`, warnings/errors `23/0`, stages `101/7/205/1`, type coverage
+`259=247+12`, and trace SHA-256 remains
+`55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`.
+GC/GCT/GCU retain executable binding/type/occurrence ownership. Descendant use,
+export enforcement, first-order abbreviation capture replay, and Task 270
+remain deferred with zero credit.

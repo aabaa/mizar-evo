@@ -5742,3 +5742,12 @@ frozen public familyとtest 8件を実装し、bounded dormant occurrence/refere
 metadata、diagnostic、CLI、dispatch、active coverageは不変。declaration-condition/
 descendant occurrence、capture/export、equality/formula/fact/goal/proof/obligation
 semantics、downstream IR、Task 270はseparate ownerのまま。
+
+## Task 269GCP frozen source/spec mapping
+
+Chapters 4/15/16はGiven witnessが自身の`such that` occurrenceをbindすると明記。
+existing canonical fixtureに該当useがないため、canonical-derived private exact
+profileはbounded `source_drift`/`test_gap`でspec変更ではない。GCPはsource/
+Surface/shell/theorem provenance/declaration-type rangeだけをauthenticateし、
+condition termはGCUまでunowned。`.miz`/expectation/trace/diagnostic/dispatch/
+coverage statusは不変。

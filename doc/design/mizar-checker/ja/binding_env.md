@@ -900,3 +900,10 @@ sibling visibilityはexcludeする。
 term producerはimmutable GUPT environmentをconsumeし、later reference 2件を
 binding 1/use ordinal 2へauthenticate。binding row/contextは追加せず、condition/
 descendant occurrence、capture/exportはまだtransportしない。
+
+## Task 269GCP no-binding lower boundary
+
+exact condition sourceはfuture binding consumerの必要性だけを示す。GCPはcontext、
+`BindingId`、lookup、captured identity、diagnosticを作らずGUP/GUPT/GU byteを不変に
+する。Task269GCがgeneric source-order lookupを緩めずcondition occurrenceから
+見えるdistinct exact environmentを構築する。

@@ -2581,3 +2581,11 @@ Capture/export and active proof-local visibility remain deferred.
 Implementation adds only eight Rust unit tests and no canonical test artifact
 or trace row. Counts, statuses, backlinks, type credit, trace SHA, metadata,
 CLI results, and all active outcomes remain at the frozen values above.
+
+## Task 269GCP Frozen Trace Status
+
+The source is an in-code canonical-derived dormant profile, not a new corpus
+fixture. Existing parser/broad proof-local fixture and sidecar hashes and the
+trace SHA remain unchanged. GCP adds four Rust tests only and grants zero
+trace, stage, diagnostic, or semantic credit; the future GCU consumer may not
+activate a row before the prepared formula-statement runner exists.

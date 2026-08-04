@@ -6035,3 +6035,13 @@ specification, `.miz`, expectations, trace, metadata, diagnostics, CLI behavior,
 dispatch, and active coverage are unchanged. Declaration-condition and
 descendant occurrences, capture/export, equality/formula/fact/goal/proof/
 obligation semantics, downstream IR, and Task 270 remain separate owners.
+
+## Task 269GCP Frozen Source/Specification Mapping
+
+Chapters 4/15/16 explicitly require a Given witness to bind its own `such
+that` occurrences. The existing canonical fixtures do not exercise such an
+occurrence, so the exact canonical-derived private profile is a bounded
+`source_drift`/`test_gap`, not a specification change. GCP authenticates only
+the source, Surface, shells, theorem provenance, and declaration/type ranges;
+condition terms remain unowned until GCU. No `.miz`, expectation, trace,
+diagnostic, dispatch, or coverage status changes.

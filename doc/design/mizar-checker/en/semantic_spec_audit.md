@@ -805,3 +805,11 @@ Only the two later lexical variable references are transported. Every semantic
 table remains empty: no condition/fact, assumption, existential, capture,
 formula, goal, initial obligation, proof, acceptance, Core, CFG, or VC meaning
 is inferred or published.
+
+## Task 269GCP Zero-semantic Boundary
+
+The canonical rule authorizes lexical binding inside the declaration
+condition, but GCP publishes no binding, occurrence, formula, condition fact,
+label fact, assumption, Skolem state, capture/export result, goal, obligation,
+proof, acceptance, or IR meaning. Its authenticated condition subtree is only
+a lower-stage dependency for GC/GCT/GCU.

@@ -1768,3 +1768,10 @@ downstream IRはabsent。
 frozen GUPT-dependent `2/2/0` term/reference compositeだけを新familyとして実装。
 Typed/Resolved ownershipはatomic/semantically empty。condition/descendant use、
 capture/export、formula、fact、proof ownerはdefer。
+
+### Task 269GCP condition-profile decomposition
+
+GCPはopen Task269 condition-use edgeのsource-order-minimal lower prerequisite。
+syntax/theorem provenanceだけをauthenticateし、GC/GCT/GCUがbinding/written type/
+condition term 2件を別々にown。descendant、first-order `set` capture replay、
+Task270はlater graph node。

@@ -2562,3 +2562,378 @@ or proof owner.
 The source-term producer and private runner consume GUPT by value and preserve
 its complete authenticated snapshot. The lower/GUP/GUPT owners and public APIs
 are unchanged; no declaration-condition or descendant-use row is fabricated.
+
+## Task 269GCP Frozen Given-condition Lower Prerequisite
+
+Fresh clean post-GU inventory at
+`998dc104957d47e2707f4a8292d2002f1c5beb2d` selects only the runner-private
+lower prerequisite for a `given` witness used in its own declaration
+condition. Canonical Chapters 4 §4.6.1, 15 §§15.3.3/15.10, and 16
+§§16.3.3/16.4.2 explicitly bind these occurrences. Existing parser and broad
+proof-local fixtures prove syntax reachability but contain no such occurrence.
+The missing exact profile is `source_drift` plus `test_gap`; this frozen record
+repairs `design_drift`. There is no blocking `spec_gap`.
+
+The exact dormant final-LF source is 134 bytes:
+
+```mizar
+reserve x for set;
+theorem ProofLocalGivenConditionUseSmoke: thesis proof
+  given y being set such that G: y = y;
+  thus thesis;
+end;
+```
+
+Its source SHA-256 is
+`2c2d767a0654670412b377bdcc6c5970ecec05b41c02aa754766320927bc6aad`.
+Read-only frontend preflight reports no diagnostics and freezes a 54-node
+Surface arena with root 53, root range `0..133`, and snapshot SHA-256
+`49d46d5f24338772e6e968f12c2216a8957b35242474132690db843b510b430f`.
+Token nodes are 0--26. Structural nodes are reserve type head/expression/
+segment/item 27--30; theorem thesis constant/formula 31--32; Given type
+head/expression/segment 33--35; condition terms/references 36--39 at
+`107..108` and `111..112`; equality 40, formula 41, proposition 42,
+condition list 43, Given statement 44; final thesis constant/formula/
+proposition/conclusion 45--48; proof 49; theorem 50; item list/compilation/root
+51--53. The exact retained ranges are theorem `19..133`, proof `68..132`,
+Given `76..113`, segment `82..93`, name `82..83`, and written bare builtin
+`set` type/head `90..93`, with source ordinal 1. The two condition references
+remain selector-authenticated but are not published by GCP.
+
+Resolver preflight freezes exactly two declaration shells: reserve shell
+0/node 30/range `0..18` and theorem shell 1/node 50/range `19..133`, both
+normal, parentless, and visibility-unspecified, with no export shell. The
+symbol environment has one public/exported local theorem symbol, one theorem
+definition, and one contribution anchored at `0..18`; the theorem origin is
+`19..133` with structural path `[2,1]`. Imports, exports, labels, overloads,
+registrations, lexical summaries, namespace edges, declaration dependencies,
+module summaries, relations, parameters, binders, diagnostics, and all other
+contribution effects are empty. The opaque signature schema is exactly
+`parser-signature-v1` and its payload is the following one-line byte string:
+
+```text
+node=TheoremItem;symbol=theorem;definition=theorem;primary_tokens=theorem ProofLocalGivenConditionUseSmoke : thesis proof given y being set such that G : y = y ; thus thesis ; end ;;notation=_;arity=_;roles=FormulaExpression,ProofBlock
+```
+
+Neither `y` occurrence is promoted to a module `SymbolId`.
+
+Implementation may change exactly four existing runner files:
+`runner.rs`, `runner/type_elaboration.rs`,
+`runner/type_elaboration/source_statement.rs`, and
+`runner/tests/type_elaboration/source_proof_local_declaration.rs`. It adds a
+private `SourceProofLocalGivenConditionLowerOutput`, the exact GCP Surface,
+lower, shell, and resolver-profile mutation enums, one dormant
+production-private base function, and five `#[cfg(test)]` mutation seams,
+and four runner tests named
+`task269gcp_exact_condition_lower_projection_is_stable`,
+`task269gcp_surface_and_lower_corruption_fail_closed`,
+`task269gcp_resolver_shell_and_symbol_corruption_fail_closed`, and
+`task269gcp_near_miss_and_active_routes_remain_isolated`. Selection mismatch
+is `None`; selected validation failure is `Some(Err(_))`; success is the
+private immutable lower row. Validation order is Surface, shells, resolver
+inventory, theorem symbol/definition/contribution, lower row, then exact debug
+bytes.
+
+The output and debug grammar retain only source/module identity, both SHA-256
+fingerprints, theorem symbol/definition/contribution, the six declaration
+ranges/spellings above, source ordinal, and a final LF. No checker public API,
+`BindingEnv`, type/term/reference row, condition/formula/fact, label lifetime,
+existential/Skolem state, guard/assumption, capture/export result, goal,
+initial obligation, proof/discharge/acceptance, Core/CFG/VC row, Typed owner,
+Resolved owner, runner dispatch, diagnostic, fixture, sidecar, expectation,
+trace row/status/backlink, metadata case, or active coverage is permitted.
+
+The private row is frozen type-for-type as follows; no field is `pub`, and the
+row itself is visible only within `crate::runner`:
+
+```rust
+#[cfg_attr(not(test), allow(dead_code))]
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(in crate::runner) struct SourceProofLocalGivenConditionLowerOutput {
+    source_id: SourceId,
+    module_id: ModuleId,
+    source_fingerprint: String,
+    surface_fingerprint: String,
+    theorem_symbol: SymbolId,
+    theorem_definition: DefinitionId,
+    contribution: SourceContributionId,
+    theorem_range: SourceRange,
+    proof_range: SourceRange,
+    given_range: SourceRange,
+    segment_range: SourceRange,
+    name_range: SourceRange,
+    name_spelling: String,
+    type_range: SourceRange,
+    type_head_range: SourceRange,
+    type_spelling: String,
+    source_ordinal: usize,
+}
+```
+
+Its same-named read-only getter signatures are frozen in field order, followed
+by `debug_text`; only the four `String` getters and `debug_text` are
+non-const:
+
+```rust
+pub(in crate::runner) const fn source_id(&self) -> SourceId;
+pub(in crate::runner) const fn module_id(&self) -> &ModuleId;
+pub(in crate::runner) fn source_fingerprint(&self) -> &str;
+pub(in crate::runner) fn surface_fingerprint(&self) -> &str;
+pub(in crate::runner) const fn theorem_symbol(&self) -> &SymbolId;
+pub(in crate::runner) const fn theorem_definition(&self) -> DefinitionId;
+pub(in crate::runner) const fn contribution(&self) -> SourceContributionId;
+pub(in crate::runner) const fn theorem_range(&self) -> SourceRange;
+pub(in crate::runner) const fn proof_range(&self) -> SourceRange;
+pub(in crate::runner) const fn given_range(&self) -> SourceRange;
+pub(in crate::runner) const fn segment_range(&self) -> SourceRange;
+pub(in crate::runner) const fn name_range(&self) -> SourceRange;
+pub(in crate::runner) fn name_spelling(&self) -> &str;
+pub(in crate::runner) const fn type_range(&self) -> SourceRange;
+pub(in crate::runner) const fn type_head_range(&self) -> SourceRange;
+pub(in crate::runner) fn type_spelling(&self) -> &str;
+pub(in crate::runner) const fn source_ordinal(&self) -> usize;
+pub(in crate::runner) fn debug_text(&self) -> String;
+```
+
+The exact debug bytes are:
+
+```text
+source-proof-local-given-condition-lower-debug-v1
+module: {package}::{module}
+source-fingerprint: "2c2d767a0654670412b377bdcc6c5970ecec05b41c02aa754766320927bc6aad"
+surface-fingerprint: "49d46d5f24338772e6e968f12c2216a8957b35242474132690db843b510b430f"
+theorem symbol="{fqn}" definition=0 contribution=0 range=19..133 proof=68..132
+given range=76..113 segment=82..93 source_ordinal=1
+name range=82..83 spelling="y"
+type range=90..93 head=90..93 spelling="set" form=bare
+```
+
+The four mutation enums derive `Debug, Clone, Copy, PartialEq, Eq`, are
+`pub(in crate::runner)`, and have these literal variant sets:
+
+```rust
+enum SourceProofLocalGivenConditionSurfaceMutation {
+    None,
+    ExpressionRoot,
+    TokenNode(usize),
+    TokenNodeCount,
+    NodeKind(usize),
+    NodeSourceId(usize),
+    NodeRange(usize),
+    NodeRecovery(usize),
+    NodeChildren(usize),
+    MissingRootIdentity,
+    WrongRootIdentity,
+}
+
+enum SourceProofLocalGivenConditionLowerMutation {
+    None,
+    SourceId,
+    Module,
+    SourceFingerprint,
+    SurfaceFingerprint,
+    TheoremSymbol,
+    TheoremDefinition,
+    Contribution,
+    TheoremRange,
+    ProofRange,
+    GivenRange,
+    SegmentRange,
+    NameRange,
+    NameSpelling,
+    TypeRange,
+    TypeHeadRange,
+    TypeSpelling,
+    SourceOrdinal,
+}
+
+enum SourceProofLocalGivenConditionShellMutation {
+    None,
+    Id(usize),
+    Ordinal(usize),
+    Kind(usize),
+    Module(usize),
+    Node(usize),
+    Syntax(usize),
+    Range(usize),
+    Parent(usize),
+    VisibilityState(usize),
+    VisibilityMarker(usize),
+    VisibilitySpelling(usize),
+    Recovery(usize),
+}
+
+enum SourceProofLocalGivenConditionResolverProfileMutation {
+    None,
+    ResolverModule,
+    ImportIndex,
+    ExportIndex,
+    LabelIndex,
+    OverloadIndex,
+    RegistrationIndex,
+    LexicalSummaryIndex,
+    NamespaceGraph,
+    DeclarationDependencyIndex,
+    ModuleSummaryIndex,
+    SymbolModule,
+    SymbolNotation,
+    SymbolContribution,
+    SymbolRelations,
+    SymbolOriginSource,
+    SymbolOriginImport,
+    DefinitionId,
+    DefinitionParameters,
+    DefinitionBinders,
+    DefinitionNotation,
+    DefinitionDoc,
+    DefinitionContribution,
+    DefinitionConflict,
+    DefinitionDependencies,
+    ContributionLabelEffect,
+    ContributionOverloadEffect,
+    ContributionRegistrationEffect,
+    ContributionLexicalEffect,
+    ContributionNamespaceEffect,
+    ContributionDeclarationDependencyEffect,
+    ContributionImportEffect,
+    ContributionExportEffect,
+    ContributionDiagnosticEffect,
+}
+```
+
+Each declaration above also has the exact attributes
+`#[cfg_attr(not(test), allow(dead_code))]` and
+`#[derive(Debug, Clone, Copy, PartialEq, Eq)]`. The one dormant base and five
+test-only mutation seams are frozen to the same first five parameters and
+return type:
+
+```rust
+pub(in crate::runner) fn source_proof_local_given_condition_lower_output(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    shells: &DeclarationShellSet,
+    symbols: &SymbolEnv,
+    source_text: &str,
+) -> Option<Result<SourceProofLocalGivenConditionLowerOutput, String>>;
+
+#[cfg(test)]
+pub(in crate::runner) fn source_proof_local_given_condition_lower_output_with_surface_mutation(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    shells: &DeclarationShellSet,
+    symbols: &SymbolEnv,
+    source_text: &str,
+    mutation: SourceProofLocalGivenConditionSurfaceMutation,
+) -> Option<Result<SourceProofLocalGivenConditionLowerOutput, String>>;
+
+#[cfg(test)]
+pub(in crate::runner) fn source_proof_local_given_condition_lower_output_with_mutation(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    shells: &DeclarationShellSet,
+    symbols: &SymbolEnv,
+    source_text: &str,
+    mutation: SourceProofLocalGivenConditionLowerMutation,
+) -> Option<Result<SourceProofLocalGivenConditionLowerOutput, String>>;
+
+#[cfg(test)]
+pub(in crate::runner) fn source_proof_local_given_condition_lower_output_with_shell_mutation(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    shells: &DeclarationShellSet,
+    symbols: &SymbolEnv,
+    source_text: &str,
+    mutation: SourceProofLocalGivenConditionShellMutation,
+) -> Option<Result<SourceProofLocalGivenConditionLowerOutput, String>>;
+
+#[cfg(test)]
+pub(in crate::runner) fn source_proof_local_given_condition_lower_output_with_resolver_profile_mutation(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    shells: &DeclarationShellSet,
+    symbols: &SymbolEnv,
+    source_text: &str,
+    mutation: SourceProofLocalGivenConditionResolverProfileMutation,
+) -> Option<Result<SourceProofLocalGivenConditionLowerOutput, String>>;
+
+#[cfg(test)]
+pub(in crate::runner) fn source_proof_local_given_condition_lower_output_with_resolver_mutation(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    shells: &DeclarationShellSet,
+    symbols: &SymbolEnv,
+    source_text: &str,
+    mutate: impl FnOnce(SymbolEnv) -> SymbolEnv,
+) -> Option<Result<SourceProofLocalGivenConditionLowerOutput, String>>;
+```
+
+The base carries `#[cfg_attr(not(test), allow(dead_code))]`; each mutation seam
+carries `#[cfg(test)]`. The complete stable lower-only private error ABI is
+exactly these 16 strings; the two GUP binding/base errors do not belong to GCP,
+and no additional parser dump or diagnostic is exposed:
+
+```text
+Task269GCP exact Surface identity changed after selection
+Task269GCP requires exactly two declaration shells
+Task269GCP resolver shells unexpectedly export a path
+Task269GCP declaration shell {ordinal} mismatch
+Task269GCP raw resolver module mismatch
+Task269GCP local y already resolves as a module symbol
+Task269GCP raw resolver inventory mismatch
+Task269GCP requires one exact theorem owner
+Task269GCP exact theorem owner provenance mismatch
+Task269GCP requires one exact theorem definition
+Task269GCP theorem contribution is missing
+Task269GCP theorem symbol provenance mismatch
+Task269GCP theorem definition provenance mismatch
+Task269GCP theorem contribution provenance mismatch
+Task269GCP private lower output mismatch
+Task269GCP private lower debug grammar mismatch
+```
+
+Tests must cover all fields and combined
+precedence, every node/token mutation, both shells, every normally empty
+resolver index/effect, all theorem symbol/definition/contribution fields, and
+exact debug replay. Near misses include the old GP and GUP sources, condition
+`G: thesis`, an unlabelled condition, a later-use-only `y = y`, theorem or
+witness renaming, altered type/form, recovery, extra item, missing final LF,
+and every active corpus route.
+
+GCP is a lower-stage prerequisite only. Task 269GC must next build a distinct
+by-value binding profile for this exact source; later GCT/GCU slices retain the
+written type and condition occurrence/reference transport. They may not loosen
+the exact GUP/GUPT/GU validators or reconstruct bindings in a higher owner.
+Descendant occurrence transport follows separately. Free-witness export
+enforcement remains gated by the Task-272 block-result/proof owner. Task 269's
+`set` capture replay and Task 270's resolver-local inline-definition identity
+also remain separate, later prerequisites.
+
+Docs-only baselines are checker/runner libraries `510/572`, parser/resolver/
+syntax `226/148/59`, checker production `30/176258`, runner production
+`37/75339`, cases/requirements `428/395`, pass/fail `235/193`, warnings/errors
+`23/0`, stages `101/7/205/1`, and type coverage `259=247+12`. Implementation
+projects runner library `576` and changes no checker test. Production path
+hashes remain
+`c89f43f6abebf7ebeb3ac9394ecd8ea3186ad28934c75526d2cc0b85a66ebad5` /
+`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d`;
+changed runner line/content/test-list hashes must be remeasured. Existing
+parser fixture, sidecar, broad fixture, broad sidecar, and trace hashes remain
+`bd9a2d473fa84012afb36dab8d0f9c11063dd5618df5a31791d57cba2c027234`,
+`7361b50bc564d900e1852deaeaaf804544ad9c8ad0a3321a67c1e31bbaa80f17`,
+`5fc4849a77eced7a93d65e0cae000c87b1730070c74aef116d6ca62be896ecd9`,
+`8e2c73b1661a37c35887b08af01b42fc886199e7a3fb07db8c1412c69f62fa43`,
+and `55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`.
+
+The documentation prerequisite owns exactly 42 Markdown files: 28 paired
+checker plan/todo/audit/owner records, 12 paired mizar-test plan/todo/audit
+records, and the two global ledgers. It changes no Rust, Cargo, canonical
+artifact, expectation, trace TOML, or metadata file.
+
+Exit requires synchronized EN/JA frozen records, review-only specification
+audit ending **NO FINDINGS**, all nine docs-only hard gates at uncapped
+`>=90/100`, exact Markdown staging and a dedicated prerequisite commit. The
+implementation then requires fresh parser/resolver/lower/count/hash preflight,
+the exact four-file/four-test transaction, separate test/implementation/
+source-doc reviews ending **NO FINDINGS**, full verification, all nine hard
+gates, task-only staging, a separate commit, and automatic fresh inventory of
+Task 269GC.

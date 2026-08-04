@@ -11884,3 +11884,10 @@ facade 2件はtest-only。
 runner変更はexact 4 filesだけ。productionは37 paths/75,339 lines。
 `source_statement.rs`、public dispatch、Cargo、metadata、artifact、diagnostic、
 active resultは不変。
+
+## Task 269GCP frozen runner boundary
+
+implementation ownerはexact `runner.rs`、`runner/type_elaboration.rs`、
+`runner/type_elaboration/source_statement.rs`、matching test module。
+public dispatch、metadata、discovery、expectation、fixture、Cargo、他runner familyは
+excluded。productionは37 paths、line/content hashはimplementation後remeasure。

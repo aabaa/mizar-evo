@@ -354,3 +354,9 @@ normalized test-list hashはcrate plan記載値。canonical artifact、active ro
 semantic table、coverage creditは不変。user-confirmed block lifetimeをauthorityとし、
 condition/descendant occurrence transport、shadow/capture/export realization、全
 formula/fact/goal/proof/obligation意味論はexplicit follow-up。
+
+## Task 269GCP frozen term deferral
+
+condition leaf `107..108`/`111..112`はexact selector evidenceだけ。GCPは
+`SourcePrimaryTermHandoff`、profile admission、Typed/final term ownerを追加しない。
+Task269GCUはexact GC binding/GCT type dependencyをby-value取得後だけtransport可。

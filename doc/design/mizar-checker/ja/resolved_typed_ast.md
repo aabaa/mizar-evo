@@ -1855,3 +1855,9 @@ empty、old ownerはboth-order mutually exclusive。
 
 boxed owner、exact revalidation、source-preserved node 6件、both-order exclusionを
 実装/test。final semantic table/node-hint inputはempty。
+
+## Task 269GCP final-owner exclusion
+
+GCPは`ResolvedTypedAst` owner/getter/error/clone/role/node hintを追加せず、final
+assemblyはbyte-identicalでprivate lower rowを観測しない。GCもnon-final dependency
+であり、GCT/GCUが後でmutually-exclusive final ownerをfreezeする。

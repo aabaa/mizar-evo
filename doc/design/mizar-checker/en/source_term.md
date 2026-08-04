@@ -520,3 +520,10 @@ canonical artifact, active route, semantic table, or coverage credit changed.
 The user-confirmed block lifetime remains authoritative, while condition and
 descendant occurrence transport, shadow/capture/export realization, and every
 formula/fact/goal/proof/obligation meaning remain explicit follow-ups.
+
+## Task 269GCP Frozen Term Deferral
+
+The two condition leaves at `107..108` and `111..112` are exact selector
+evidence only. GCP adds no `SourcePrimaryTermHandoff`, no profile admission,
+and no Typed/final term owner. Task 269GCU may transport them only after the
+exact GC binding and GCT type dependencies exist by value.

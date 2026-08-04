@@ -1957,3 +1957,10 @@ exclusive in both orders.
 The boxed owner, exact revalidation, all six source-preserved nodes, and
 both-order exclusion are implemented and tested. Final semantic tables and
 node-hint inputs remain empty.
+
+## Task 269GCP Final-owner Exclusion
+
+GCP adds no `ResolvedTypedAst` owner, getter, error, clone path, role, or node
+hint. Final assembly remains byte-identical and cannot observe the private
+lower row. GC also remains a non-final dependency; GCT/GCU must later freeze
+their own mutually exclusive final owner.

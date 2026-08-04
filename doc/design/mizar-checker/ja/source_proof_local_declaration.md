@@ -1679,3 +1679,133 @@ ownerを追加しない。
 source-term producer/private runnerはGUPTをby-value consumeしcomplete authenticated
 snapshotを保持。lower/GUP/GUPT owner/public APIは不変で、declaration-condition/
 descendant-use rowを捏造しない。
+
+## Task 269GCP frozen Given-condition lower prerequisite
+
+cleanなpost-GU HEAD `998dc104957d47e2707f4a8292d2002f1c5beb2d`のfresh
+inventoryは、`given` witnessを同じdeclaration condition内で使うrunner-private
+lower prerequisiteだけを選択する。canonical Chapters 4 §4.6.1、15
+§§15.3.3/15.10、16 §§16.3.3/16.4.2がこのoccurrenceを明示的にbindする。
+existing parser/broad proof-local fixtureはsyntax reachabilityのみで該当useなし。
+missing exact profileは`source_drift`/`test_gap`、本contractが`design_drift`を
+修復し、blocking `spec_gap`はない。
+
+exact final-LF sourceは134 bytes:
+
+```mizar
+reserve x for set;
+theorem ProofLocalGivenConditionUseSmoke: thesis proof
+  given y being set such that G: y = y;
+  thus thesis;
+end;
+```
+
+source SHA-256は
+`2c2d767a0654670412b377bdcc6c5970ecec05b41c02aa754766320927bc6aad`。
+read-only frontendはdiagnostic 0、54-node/root 53、root range `0..133`、
+Surface snapshot SHA-256
+`49d46d5f24338772e6e968f12c2216a8957b35242474132690db843b510b430f`。
+token node 0--26、reserve structural 27--30、theorem thesis 31--32、Given type/
+segment 33--35、condition term/reference 36--39 (`107..108`/`111..112`)、
+equality/formula/proposition/condition 40--43、Given 44、final thesis/conclusion
+45--48、proof 49、theorem 50、item-list/compilation/root 51--53。retained rangeは
+theorem `19..133`、proof `68..132`、Given `76..113`、segment `82..93`、name
+`82..83`、bare builtin `set` type/head `90..93`、source ordinal 1。condition
+reference 2件はselector-authenticatedだがGCPはpublishしない。
+
+resolverはreserve shell 0/node30/`0..18`とtheorem shell 1/node50/`19..133`の
+exact 2件、export shell 0をfreeze。public/exported local theorem symbol 1、theorem
+definition 1、`0..18` contribution 1、origin `19..133` path `[2,1]`。import、
+export、label、overload、registration、lexical summary、namespace edge、dependency、
+module summary、relation、parameter、binder、diagnostic、他effectはempty。
+opaque signature schemaはexact `parser-signature-v1`、payloadは次の1-line byte
+stringである。
+
+```text
+node=TheoremItem;symbol=theorem;definition=theorem;primary_tokens=theorem ProofLocalGivenConditionUseSmoke : thesis proof given y being set such that G : y = y ; thus thesis ; end ;;notation=_;arity=_;roles=FormulaExpression,ProofBlock
+```
+
+`y`をmodule `SymbolId`へ昇格しない。
+
+implementation scopeはexisting runner 4 files (`runner.rs`、
+`runner/type_elaboration.rs`、`runner/type_elaboration/source_statement.rs`、
+`runner/tests/type_elaboration/source_proof_local_declaration.rs`)だけ。private
+`SourceProofLocalGivenConditionLowerOutput`、exact Surface/lower/shell/resolver
+mutation、dormant production-private base 1件と`#[cfg(test)]` mutation seam 5件、
+runner test 4件を追加する。validation orderはSurface、
+shell、resolver inventory、theorem symbol/definition/contribution、lower row、
+exact debug。selector mismatchは`None`、selected failureは`Some(Err(_))`。
+
+checker public API、BindingEnv、type/term/reference、condition/formula/fact、label
+lifetime、existential/Skolem、guard/assume、capture/export result、goal、initial
+obligation、proof/discharge/acceptance、Core/CFG/VC、Typed/Resolved owner、dispatch、
+diagnostic、fixture/sidecar/expectation/trace/metadata/active creditは全禁止。
+GCP後はdistinct by-value binding Task 269GC、type GCT、condition use GCUの順。
+existing GUP/GUPT/GU validatorを緩めずhigher ownerでbindingを再構築しない。
+descendant use、Task-272 export enforcement、Task-269 `set` capture、Task270
+resolver-local inline identityはseparate follow-up。
+
+private rowのfield型・順序・非`pub` field、
+`#[cfg_attr(not(test), allow(dead_code))]`、
+`#[derive(Debug, Clone, PartialEq, Eq)]`、`pub(in crate::runner)` visibilityは
+ENのexact Rust blockとbyte-for-byte同一である。field/accessor順は`source_id`、
+`module_id`、source/Surface fingerprint、theorem symbol/definition/contribution、
+theorem/proof/Given/segment/name range、name spelling、type/head range、type
+spelling、source ordinal、`debug_text()`。getterの型・visibility・constnessもEN
+blockとexactに共有し、4 String getterと`debug_text`だけがnon-constである。
+debug headerは
+`source-proof-local-given-condition-lower-debug-v1`で、ENのexact 7 data linesと
+final LFをbyte-for-byte共有する。
+
+Surface/Lower/Shell/ResolverProfile mutationのexact enum名、全variant順、
+`Debug, Clone, Copy, PartialEq, Eq` derive、`pub(in crate::runner)` visibility、
+`cfg_attr`はENの4 Rust blocksとbyte-for-byte共有する。base
+`source_proof_local_given_condition_lower_output`は
+`#[cfg_attr(not(test), allow(dead_code))]`、5引数、return
+`Option<Result<SourceProofLocalGivenConditionLowerOutput, String>>`。5つの
+`#[cfg(test)]` seamはENのexact signaturesを共有し、最後だけ
+`impl FnOnce(SymbolEnv) -> SymbolEnv`を追加する。
+
+lower-only private error ABIは次のexact 16 stringsであり、GUPのbinding/base
+errors 2件と追加dump/diagnosticを含まない。
+
+```text
+Task269GCP exact Surface identity changed after selection
+Task269GCP requires exactly two declaration shells
+Task269GCP resolver shells unexpectedly export a path
+Task269GCP declaration shell {ordinal} mismatch
+Task269GCP raw resolver module mismatch
+Task269GCP local y already resolves as a module symbol
+Task269GCP raw resolver inventory mismatch
+Task269GCP requires one exact theorem owner
+Task269GCP exact theorem owner provenance mismatch
+Task269GCP requires one exact theorem definition
+Task269GCP theorem contribution is missing
+Task269GCP theorem symbol provenance mismatch
+Task269GCP theorem definition provenance mismatch
+Task269GCP theorem contribution provenance mismatch
+Task269GCP private lower output mismatch
+Task269GCP private lower debug grammar mismatch
+```
+
+testは全field/node/token/shell/
+empty resolver index/effect/symbol-definition-contribution/debug/combined
+precedenceをcover。near missはold GP/GUP、`G: thesis`、unlabelled condition、
+later-use-only、theorem/witness rename、type/form、recovery、extra item、missing LF、
+active route全件。
+
+baselineはlibrary `510/572`、parser/resolver/syntax `226/148/59`、production
+`30/176258`/`37/75339`、cases/requirements `428/395`、pass/fail `235/193`、
+warnings/errors `23/0`、stages `101/7/205/1`、type `259=247+12`。implementationは
+runner `576`、checker test不変。path hashは不変、changed runner count/content/
+test-list hashはremeasure。parser/broad fixture/sidecar/trace SHAはEN記載値を
+byte-for-byte共有する。
+
+docs prerequisiteはexact 42 Markdown（checker paired record 28、mizar-test
+paired record 12、global ledger 2）だけをown。Rust/Cargo/canonical artifact/
+expectation/trace TOML/metadataは変更しない。
+
+exitはEN/JA sync、spec review **NO FINDINGS**、docs-only gate 9件uncapped
+`>=90/100`、exact Markdown commit。その後fresh preflight、exact 4-file/4-test、
+test/implementation/source-doc review **NO FINDINGS**、full verification、全gate、
+separate commit、Task269GC fresh inventoryを必須とする。
