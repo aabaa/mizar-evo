@@ -438,7 +438,10 @@ Literal top-level public items:
   `SourcePrimaryTermHandoff`, `SourcePrimaryTermTable`, `SourcePrimaryTerm`,
   `SourcePrimaryTermReferenceTable`, `SourcePrimaryTermReference`,
   `SourceNumericTypeRequestTable`, `SourceNumericTypeRequest`,
-  `SourcePrimaryTermError`, `SourcePrimaryTermProducer`
+  `SourcePrimaryTermError`, `SourcePrimaryTermProducer`,
+  `SourceProofLocalGivenUseTermHandoff`,
+  `SourceProofLocalGivenUseTermProducer`,
+  `SourceProofLocalGivenUseTermError`
 
 Correspondence:
 
@@ -447,6 +450,7 @@ Correspondence:
 | A syntax-free three-table transaction retains primary-term occurrences, authenticated binding references, and unresolved numeric-type requests without creating semantic results. | `SourcePrimaryTermHandoffInput` and the immutable term/reference/request tables in `src/source_term.rs`. | Exact three-route 7/4/2 runner oracle plus every-kind checker tests. | Implemented for Task 252. |
 | Typed site/range/kind/recovery, canonical lexer-identifier vocabulary and spelling, context, dense pre-order, parent closure, reference/request cardinality, and numeric association fail closed. | `SourcePrimaryTermProducer::build` validates the complete transaction against `TypedArena` and `BindingEnv` and reuses `mizar_lexer::is_identifier` without importing raw syntax. | Site/range/kind/recovery/context, identifier shape/reserved-word rejection, graph, cardinality, request, and corruption tests. | Implemented transactionally without sorting or repair. |
 | Scope and binding-event ordinal are producer-derived, and the exact `BindingEnv::lookup` local winner is required. | Reference construction clones context scope, counts preceding completed binding rows, preserves exact duplicate-priority groups, and rejects every non-local result. | Shadow-winner, forward, ambiguous, missing-scope, unresolved, wrong-winner, and ordinal tests. | Implemented with `Resolver` structurally unreachable. |
+| One exact proof-local `given` use-profile composition transports only the two later `y` variable references from the authenticated GUPT dependency. | `SourceProofLocalGivenUseTermHandoff`, `SourceProofLocalGivenUseTermProducer`, and `SourceProofLocalGivenUseTermError`. | Four checker and four dormant-runner exact/corruption/ownership/isolation tests. | Implemented for Task 269GU with zero active/semantic credit. |
 | `TypedAst` owns the immutable handoff and `ResolvedTypedAst` only clone-preserves it. | Optional `SourcePrimaryTermHandoff` field, validated installer, and borrowed getters. | Production-runner ownership, replacement rejection, clone equality, and deterministic replay assertions. | Implemented; semantic typed/fact/downstream tables remain unchanged. |
 | Public enums remain forward-compatible. | `#[non_exhaustive]` on all public Task-252 enums. | `checker_public_enums_are_forward_compatible_and_documented`. | Guarded; no exhaustive exception. |
 
@@ -6022,3 +6026,12 @@ checker and four private runner tests. Until implementation this is a bounded
 `source_drift`/`test_gap` contract. Canonical specification, `.miz`,
 expectations, trace, metadata, diagnostics, CLI behavior, and active coverage
 credit stay unchanged.
+
+### Task 269GU implemented source/spec mapping
+
+The frozen public family and all eight tests now exist, closing only the
+bounded dormant occurrence/reference `source_drift` and `test_gap`. Canonical
+specification, `.miz`, expectations, trace, metadata, diagnostics, CLI behavior,
+dispatch, and active coverage are unchanged. Declaration-condition and
+descendant occurrences, capture/export, equality/formula/fact/goal/proof/
+obligation semantics, downstream IR, and Task 270 remain separate owners.

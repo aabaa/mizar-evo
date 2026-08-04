@@ -2052,6 +2052,11 @@ hashes
 `ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`
 は不変。
 
+### Task 269GU implemented statement boundary
+
+primary-term/reference leaf 2件だけをtransport。statement API、condition/label/
+equality/formula shell、fact、proof state、acceptance、production dispatchは不変。
+
 implementationはchecker/runner exactly 4/5 tests、libraries `366/404`を
 projectし、changed sizes/hashesは実測する。broad umbrellaと
 root/primary conflationの2件の`design_drift`をcloseし、future code/testは

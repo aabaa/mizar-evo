@@ -1437,3 +1437,9 @@ arenaのexact private reconstructionへprojectしてcomplete binding/type payloa
 fingerprintを再authenticateする。standalone GUPT validation/source-type row/
 public API/error string/3-node arena contractは不変。GUはtype application/
 normalization/constraint/coercion/guard/obligationを追加しない。
+
+### Task 269GU implemented source-type boundary
+
+GUはimmutable GUPT source-type dependencyをconsume/reauthenticateするだけでrow/
+arenaを変更しない。new source type、normalization、constraint、coercion、guard、
+assume、obligationは追加しない。

@@ -798,3 +798,10 @@ condition or label fact, existential/Skolem operation, guard/assumption,
 capture/export result, goal/thesis, initial obligation, proof/discharge/
 acceptance, theorem acceptance, Core, CFG, or VC semantics. Scope visibility
 is transport evidence, not proof truth.
+
+### Task 269GU implementation deferral status
+
+Only the two later lexical variable references are transported. Every semantic
+table remains empty: no condition/fact, assumption, existential, capture,
+formula, goal, initial obligation, proof, acceptance, Core, CFG, or VC meaning
+is inferred or published.

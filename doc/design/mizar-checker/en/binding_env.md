@@ -942,3 +942,10 @@ context 1, lexical scope `[0]`, and derived use ordinal 2 and must resolve to
 admits that winner as `Variable`; generic role admission, contexts, capture,
 diagnostics, binding types, scope lifetime, and all GUP/GUPT bytes are
 unchanged. Parent/sibling visibility remains excluded.
+
+### Task 269GU implemented binding use
+
+The term producer consumes the immutable GUPT environment and authenticates
+both later references to binding 1 at use ordinal 2. It adds no binding row or
+context, and does not yet transport condition/descendant occurrences, capture,
+or export behavior.

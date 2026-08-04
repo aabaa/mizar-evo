@@ -1997,3 +1997,9 @@ exact private reconstruction of the standalone GUPT arena. Standalone GUPT
 validation, source-type rows, public API, error strings, and three-node arena
 contract remain unchanged. GU adds no type application, normalization,
 constraint, coercion, guard, or obligation.
+
+### Task 269GU implemented source-type boundary
+
+GU consumes and reauthenticates the immutable GUPT source-type dependency but
+does not alter its rows or arena. No new source type, normalization, constraint,
+coercion, guard, assumption, or obligation is produced.

@@ -6959,8 +6959,13 @@ This closes only dormant private lexical-binding evidence and grants zero active
   profile-scoped Given admission, six-node arena, public ABI/errors/debug,
   boxed Typed/final owner, private runner, seven files/eight tests, 42 docs,
   zero active credit, baselines, deferrals, and exit.
-- [ ] Complete specification review to **NO FINDINGS**, docs-only hard gates,
-  exact 42-file staging, and the prerequisite commit.
-- [ ] Fresh-preflight and implement GU only; repeat all reviews/gates and make
-  the separate implementation commit, then fresh-inventory capture or the
-  next dependency-ready task. Task 270 remains separate.
+- [x] Complete specification review to **NO FINDINGS**, docs-only hard gates,
+  exact 42-file staging, and prerequisite commit
+  `5f61e125eddeaf2a6defeb2419436a2f37396421`.
+- [x] Fresh-preflight and implement GU only; test-sufficiency and implementation
+  reviews are **NO FINDINGS**, exact counts/hashes are recorded, and excluded
+  artifacts remain unchanged.
+- [x] Source/docs and final-quality reviews are **NO FINDINGS**; all nine hard
+  gates pass uncapped at `100/100`, including complete verification.
+- [~] Finish exact staging and the separate implementation commit, then
+  fresh-inventory the dependency-ready successor. Task 270 remains separate.

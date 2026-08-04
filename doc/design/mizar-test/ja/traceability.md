@@ -2430,3 +2430,9 @@ cases/requirements `428/395`、stages `101/7/205/1`、type coverage
 `259=247+12`、trace SHA
 `55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`不変。
 capture/exportとactive proof-local visibilityはdefer。
+
+### Task 269GU implemented zero-credit trace status
+
+Rust unit test 8件だけを追加しcanonical test artifact/trace rowは追加しない。
+count/status/backlink/type credit/trace SHA/metadata/CLI/active outcomeは上記
+frozen値不変。

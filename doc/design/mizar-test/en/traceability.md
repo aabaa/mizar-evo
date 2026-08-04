@@ -2575,3 +2575,9 @@ or CLI output changes. Cases/requirements stay `428/395`, stages
 `101/7/205/1`, type coverage `259=247+12`, and trace SHA-256
 `55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`.
 Capture/export and active proof-local visibility remain deferred.
+
+### Task 269GU implemented zero-credit trace status
+
+Implementation adds only eight Rust unit tests and no canonical test artifact
+or trace row. Counts, statuses, backlinks, type credit, trace SHA, metadata,
+CLI results, and all active outcomes remain at the frozen values above.

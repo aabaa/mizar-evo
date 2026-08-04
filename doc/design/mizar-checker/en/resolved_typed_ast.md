@@ -1951,3 +1951,9 @@ role `source.proof-local.given-use.term`. The exact invalid-handoff string is
 `resolved typed AST source proof-local given-use term handoff is invalid`.
 Node hints and every semantic table remain empty; all old owners are mutually
 exclusive in both orders.
+
+### Task 269GU implemented final owner
+
+The boxed owner, exact revalidation, all six source-preserved nodes, and
+both-order exclusion are implemented and tested. Final semantic tables and
+node-hint inputs remain empty.

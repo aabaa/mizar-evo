@@ -1862,3 +1862,10 @@ GUPT dependency and fingerprint plus one exact `2/2/0` primary-term handoff
 and fingerprint over a distinct six-node arena. Direct GUPT, binding, type,
 or term owners are absent. Formula/equality, statement, condition/fact,
 capture, goal/obligation, proof/acceptance, and downstream IR remain absent.
+
+### Task 269GU implemented payload
+
+The frozen GUPT-dependent `2/2/0` term/reference composite is implemented as
+the sole new family. Typed/Resolved ownership is atomic and semantically empty;
+condition/descendant use, capture/export, formulas, facts, and proof owners stay
+deferred.

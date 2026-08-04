@@ -5045,3 +5045,9 @@ public dispatch/semantic outputなし。
 `WrongArenaRoot`/`WrongArenaKind`を追加。mismatch=`None`、selected failure=
 `Some(Err(_))`。route-local stringは`Task269GU GUPT dependency is missing`だけ。
 successはGU boxed Typed/final compositeだけをownしpublic dispatchから到達不能。
+
+### Task 269GU implemented private harness
+
+frozen selector、6 mutations、exact input/6-node arena、direct by-value
+GUPT-to-GU checker handoff、Typed/final installation、4-test matrixを実装。
+routeはprivate/dormantでpublic dispatch/semantic outputなし。

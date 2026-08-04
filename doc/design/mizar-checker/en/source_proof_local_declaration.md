@@ -2556,3 +2556,9 @@ declaration row, contexts, scope `[0]`, visibility ordinal 1, and public API
 remain unchanged. The two later use lookups derive ordinal 2 in
 `source_term.rs`; this module gains no occurrence, reference, capture, fact,
 or proof owner.
+
+### Task 269GU implemented dependency consumer
+
+The source-term producer and private runner consume GUPT by value and preserve
+its complete authenticated snapshot. The lower/GUP/GUPT owners and public APIs
+are unchanged; no declaration-condition or descendant-use row is fabricated.

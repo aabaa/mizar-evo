@@ -3683,7 +3683,12 @@ No dispatch, fixture, sidecar, expectation, trace, metadata, diagnostic, CLI, ac
 - [x] Freeze reuse of exact GUPT, two later `y` occurrences/references,
   six-node arena, private output and six mutations, four runner files/tests,
   `568 -> 572`, zero dispatch/artifact/semantic credit, and exclusions.
-- [ ] Complete EN/JA specification review to **NO FINDINGS**, docs-only gates,
-  exact 42-file prerequisite stage, and commit.
-- [ ] Fresh-preflight and implement the dormant route; complete all reviews,
-  verification, separate commit, and next-task fresh inventory.
+- [x] Complete EN/JA specification review to **NO FINDINGS**, docs-only gates,
+  exact 42-file prerequisite stage, and commit
+  `5f61e125eddeaf2a6defeb2419436a2f37396421`.
+- [x] Fresh-preflight and implement the dormant route; test-sufficiency and
+  implementation reviews are **NO FINDINGS**, with every excluded artifact
+  and active result unchanged.
+- [x] Source/docs and final-quality reviews are **NO FINDINGS**; verification
+  and all nine hard gates pass uncapped at `100/100`.
+- [~] Finish exact stage, separate commit, and next-task fresh inventory.

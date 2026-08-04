@@ -5365,3 +5365,10 @@ GUPT; cfg-test `_with_mutation` appends `None`, `WrongDependencyModule`,
 The only route-local string is `Task269GU GUPT dependency is missing`.
 Success owns only the GU boxed Typed/final composite and remains unreachable
 from public dispatch.
+
+### Task 269GU implemented private harness
+
+The frozen selector, six mutations, exact input/six-node arena, direct by-value
+GUPT-to-GU checker handoff, Typed/final installation, and four-test matrix are
+implemented. The route remains private and dormant with no public dispatch or
+semantic output.

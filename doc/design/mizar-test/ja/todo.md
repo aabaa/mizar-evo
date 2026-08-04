@@ -3439,6 +3439,10 @@ dispatch、fixture、sidecar、expectation、trace、metadata、diagnostic、CLI
 - [x] exact GUPT、later `y` occurrence/reference 2件、6-node arena、private
   output/mutation 6件、runner 4 files/tests、`568 -> 572`、zero dispatch/
   artifact/semantic credit、exclusionを凍結。
-- [ ] EN/JA spec review NO FINDINGS、docs-only gates、exact 42-file stage/commit。
-- [ ] fresh preflight後dormant route実装、全review/verification/別commit、
-  next-task fresh inventory。
+- [x] EN/JA spec review **NO FINDINGS**、docs-only gates、exact 42-file
+  prerequisite commit `5f61e125eddeaf2a6defeb2419436a2f37396421`を完了。
+- [x] fresh preflight後dormant routeを実装し、test-sufficiency/implementation
+  reviewは**NO FINDINGS**、excluded artifact/active resultは全て不変。
+- [x] source/docs/final-quality reviewは**NO FINDINGS**、verification/hard gate
+  9件はcapなし`100/100`でPASS。
+- [~] exact stage、separate commit、next-task fresh inventoryを完了する。

@@ -1673,3 +1673,9 @@ GUはcommitted GUPT compositeをby valueでconsumeし、immutable typed BindingE
 scope `[0]`、visibility ordinal 1、public APIは不変。later use 2件のordinal 2は
 `source_term.rs`がderiveし、本moduleはoccurrence/reference/capture/fact/proof
 ownerを追加しない。
+
+### Task 269GU implemented dependency consumer
+
+source-term producer/private runnerはGUPTをby-value consumeしcomplete authenticated
+snapshotを保持。lower/GUP/GUPT owner/public APIは不変で、declaration-condition/
+descendant-use rowを捏造しない。

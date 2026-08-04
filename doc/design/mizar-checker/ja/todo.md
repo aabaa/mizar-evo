@@ -6616,6 +6616,11 @@ runner、docs-only implementation commitはproducer taskを満たさない。
 - [x] exact GUPT dependency、`2/2/0` payload、profile-scoped Given admission、
   6-node arena、public ABI/error/debug、boxed Typed/final、private runner、
   7 files/8 tests、42 docs、zero credit、baseline/deferral/exitを凍結。
-- [ ] spec review NO FINDINGS、docs-only gates、exact 42-file stage/commit。
-- [ ] fresh preflight後GUだけを実装しreviews/gates/別commit、次の
-  dependency-ready capture等をfresh inventory。Task270はseparate。
+- [x] spec review **NO FINDINGS**、docs-only gates、exact 42-file prerequisite
+  commit `5f61e125eddeaf2a6defeb2419436a2f37396421`を完了。
+- [x] fresh preflight後GUだけを実装し、test-sufficiency/implementation reviewは
+  **NO FINDINGS**、exact count/hashを記録しexcluded artifactを保持。
+- [x] source/docs/final-quality reviewは**NO FINDINGS**、全verificationを含む
+  hard gate 9件はcapなし`100/100`でPASS。
+- [~] exact stage/separate implementation commit後、dependency-ready successorを
+  fresh inventory。Task270はseparate。

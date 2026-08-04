@@ -13180,3 +13180,9 @@ Owned runner files are exactly
 active dispatch/result owners, Cargo, fixtures, sidecars, expectations,
 trace, metadata, diagnostics, and CLI owners are excluded. Production remains
 37 paths; the two facade hops stay test-only.
+
+### Task 269GU implemented runner boundary
+
+The exact four runner files are the only runner changes. Production remains 37
+paths and is now 75,339 lines; `source_statement.rs`, public dispatch, Cargo,
+metadata, artifacts, diagnostics, and active results are unchanged.

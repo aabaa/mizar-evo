@@ -11878,3 +11878,9 @@ ownerは`type_elaboration/source_proof_local_declaration.rs`、
 `source_statement.rs`、active dispatch/result、Cargo、fixture/sidecar/
 expectation/trace/metadata/diagnostic/CLI ownerはexclude。productionは37 paths、
 facade 2件はtest-only。
+
+### Task 269GU implemented runner boundary
+
+runner変更はexact 4 filesだけ。productionは37 paths/75,339 lines。
+`source_statement.rs`、public dispatch、Cargo、metadata、artifact、diagnostic、
+active resultは不変。

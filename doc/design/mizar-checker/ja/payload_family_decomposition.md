@@ -1762,3 +1762,9 @@ dependency/fingerprintとexact `2/2/0` primary-term handoff/fingerprintをdistin
 6-node arenaで合成する。direct GUPT/binding/type/term ownerはない。formula/
 equality、statement、condition/fact、capture、goal/obligation、proof/acceptance、
 downstream IRはabsent。
+
+### Task 269GU implemented payload
+
+frozen GUPT-dependent `2/2/0` term/reference compositeだけを新familyとして実装。
+Typed/Resolved ownershipはatomic/semantically empty。condition/descendant use、
+capture/export、formula、fact、proof ownerはdefer。

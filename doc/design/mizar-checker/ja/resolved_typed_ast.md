@@ -1850,3 +1850,8 @@ boxed owner、exact revalidation、3 source-preserved nodes、both-order exclusi
 `source.proof-local.given-use.term`へmapする。invalid stringは`resolved typed AST
 source proof-local given-use term handoff is invalid`。node hint/semantic tableは
 empty、old ownerはboth-order mutually exclusive。
+
+### Task 269GU implemented final owner
+
+boxed owner、exact revalidation、source-preserved node 6件、both-order exclusionを
+実装/test。final semantic table/node-hint inputはempty。

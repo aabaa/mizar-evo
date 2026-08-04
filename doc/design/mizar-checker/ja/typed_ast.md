@@ -1868,3 +1868,9 @@ installerを追加。`InvalidSourceProofLocalGivenUseTerm`は`source proof-local
 given-use term handoff is invalid`。owned GUPT dependency、exact `2/2/0` term、
 6-node arenaをauthenticateし、old source/proof-local ownerをboth-order reject、
 direct field/semantic tableはempty。
+
+### Task 269GU implemented Typed ownership
+
+boxed getter/installer/errorとexact availability checkを実装。one-shotおよび
+same-identity neighborのboth-order exclusionをtestし、direct generic term fieldと
+semantic tableは全empty。

@@ -894,3 +894,9 @@ GUはimmutable GUPT `2/2/0` envをreuseする。later `y` 2 rowはcontext 1、sc
 exact source-term profileだけがこれを`Variable`としてadmitする。generic admission、
 context/capture/diagnostic/type/scope lifetime、GUP/GUPT byteは不変で、parent/
 sibling visibilityはexcludeする。
+
+### Task 269GU implemented binding use
+
+term producerはimmutable GUPT environmentをconsumeし、later reference 2件を
+binding 1/use ordinal 2へauthenticate。binding row/contextは追加せず、condition/
+descendant occurrence、capture/exportはまだtransportしない。

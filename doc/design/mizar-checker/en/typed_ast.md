@@ -1977,3 +1977,9 @@ proof-local given-use term handoff is invalid`. Installation authenticates the
 owned GUPT dependency, exact `2/2/0` term profile, and six-node arena, rejects
 all old source/proof-local owners in both orders, and leaves direct fields and
 all semantic tables empty.
+
+### Task 269GU implemented Typed ownership
+
+The boxed getter/installer/error and exact availability checks are implemented.
+One-shot and same-identity neighbor both-order exclusions are tested, while
+direct generic term fields and all semantic tables remain empty.

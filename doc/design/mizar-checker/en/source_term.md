@@ -51,6 +51,7 @@ ordinal. `debug_text()` renders every table deterministically.
 | `SourcePrimaryTermReferenceRole` | `#[non_exhaustive]`; callers must tolerate later authenticated binding roles. |
 | `SourcePrimaryTermRecovery` | `#[non_exhaustive]`; callers must tolerate later recovery classes. |
 | `SourcePrimaryTermError` | `#[non_exhaustive]`; callers must not exhaustively match validation failures. |
+| `SourceProofLocalGivenUseTermError` | `#[non_exhaustive]`; callers must not exhaustively match Task 269GU dependency, input, or installation failures. |
 
 No exhaustive public enum exceptions are owned by this module.
 
@@ -502,3 +503,20 @@ ending **NO FINDINGS**, all verification and count/hash gates, exact staging,
 and a separate implementation commit leaving a clean tree with origin
 divergence reported and protected stash unchanged. Fresh inventory must then
 select the next dependency-ready task automatically.
+
+### Task 269GU implemented term/reference transport
+
+The exact two rows at `116..117` and `120..121`, both resolving to binding 1
+at derived use ordinal 2, are implemented in the frozen six-node arena. The
+profile-scoped `GivenWitness -> Variable` admission, dependency/source
+fingerprints, full corruption/precedence matrix, immutable replay, one-shot
+Typed/Resolved ownership, and old/generic/neighbor isolation are covered by the
+four checker and four runner tests. Test-sufficiency and implementation reviews
+are **NO FINDINGS**.
+
+Libraries are `510/572`; production is `30/176258` and `37/75339`, with the
+content and raw/normalized test-list hashes recorded in the crate plan. No
+canonical artifact, active route, semantic table, or coverage credit changed.
+The user-confirmed block lifetime remains authoritative, while condition and
+descendant occurrence transport, shadow/capture/export realization, and every
+formula/fact/goal/proof/obligation meaning remain explicit follow-ups.

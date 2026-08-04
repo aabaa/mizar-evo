@@ -6687,3 +6687,23 @@ Counts stay `428/395`, `235/193`, `23/0`, `101/7/205/1`, and type coverage
 GU receives dormant occurrence/reference transport credit only. Equality/
 formula, condition/fact, existential/guard, capture/export, goal/proof/
 acceptance, initial obligations, downstream IR, and Task 270 remain deferred.
+
+### Task 269GU implementation audit
+
+The frozen composite and eight Rust tests are implemented with checker/runner
+libraries `510/572` and production `30/176258` / `37/75339`. This closes only
+the bounded private later-occurrence/reference `source_drift`/`test_gap`; it
+adds no `.miz`, expectation, trace row/status/backlink, metadata, active stage,
+diagnostic, dispatch, CLI, or semantic coverage credit. Cases/requirements
+remain `428/395`, pass/fail `235/193`, stages `101/7/205/1`, warnings/errors
+`23/0`, type coverage `259=247+12`, and trace SHA-256 remains
+`55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`.
+
+The user-confirmed enclosing-block lifetime is preserved as authority, but GU
+transports only the two later sibling occurrences. Condition and descendant
+occurrences, shadow/capture/export realization, formula/fact/goal/proof/
+obligation semantics, acceptance, downstream IR, and Task 270 receive no
+credit and remain explicit follow-ups.
+
+Source/documentation and final-quality reviews are **NO FINDINGS**. All nine
+hard gates pass uncapped at `100/100`; this audit grants no new active credit.

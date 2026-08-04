@@ -731,3 +731,9 @@ local referenceであることだけ。equality/formula、condition/label fact�
 Skolem、guard/assume、capture/export result、goal/thesis、initial obligation、proof/
 discharge/acceptance、theorem acceptance、Core/CFG/VC semanticsはpublishしない。
 scope visibilityはtransport evidenceでありproof truthではない。
+
+### Task 269GU implementation deferral status
+
+later lexical variable reference 2件だけをtransport。semantic tableは全emptyで、
+condition/fact、assume、existential、capture、formula、goal、initial obligation、
+proof、acceptance、Core、CFG、VCの意味を推測/publishしない。

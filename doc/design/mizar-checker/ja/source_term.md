@@ -48,6 +48,7 @@ deterministically renderする。
 | `SourcePrimaryTermReferenceRole` | `#[non_exhaustive]`。callerはlater authenticated binding roleを許容する。 |
 | `SourcePrimaryTermRecovery` | `#[non_exhaustive]`。callerはlater recovery classを許容する。 |
 | `SourcePrimaryTermError` | `#[non_exhaustive]`。callerはvalidation failureをexhaustive matchしない。 |
+| `SourceProofLocalGivenUseTermError` | `#[non_exhaustive]`。callerはTask 269GU dependency/input/installation failureをexhaustive matchしない。 |
 
 この module が所有する exhaustive public enum exception はない。
 
@@ -339,3 +340,17 @@ docs prerequisite commit、fresh preflight、exact seven-file/eight-test impleme
 test/implementation/source-docs各review NO FINDINGS、全verification/count/hash、
 exact stage/implementation commit、clean tree/origin report/stash不変、その直後の
 fresh next-task inventoryである。
+
+### Task 269GU implemented term/reference transport
+
+`116..117`/`120..121`のexact 2 rowsをfrozen 6-node arenaで実装し、どちらも
+binding 1/use ordinal 2へresolve。profile-scoped `GivenWitness -> Variable` admission、
+dependency/source fingerprint、全corruption/precedence matrix、immutable replay、
+one-shot Typed/Resolved ownership、old/generic/neighbor isolationをchecker/runner
+各4 testでcover。test-sufficiency/implementation reviewは**NO FINDINGS**。
+
+library `510/572`、production `30/176258` / `37/75339`、contentおよびraw/
+normalized test-list hashはcrate plan記載値。canonical artifact、active route、
+semantic table、coverage creditは不変。user-confirmed block lifetimeをauthorityとし、
+condition/descendant occurrence transport、shadow/capture/export realization、全
+formula/fact/goal/proof/obligation意味論はexplicit follow-up。

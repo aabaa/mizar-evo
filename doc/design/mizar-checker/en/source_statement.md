@@ -4163,3 +4163,9 @@ GU consumes only the two `TermReference` leaves inside `thus y = y;`.
 proposition, `ConclusionStatement`, `such that` condition/label, proof block,
 goal, facts, and acceptance remain selector-only. Existing statement APIs and
 production dispatch stay unchanged.
+
+### Task 269GU implemented statement boundary
+
+Only the two primary-term/reference leaves are transported. Statement APIs,
+the condition/label/equality/formula shells, facts, proof state, acceptance,
+and production dispatch remain unchanged.

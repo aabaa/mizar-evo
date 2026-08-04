@@ -413,7 +413,10 @@ literal top-level public item:
   `SourcePrimaryTermHandoff`, `SourcePrimaryTermTable`, `SourcePrimaryTerm`,
   `SourcePrimaryTermReferenceTable`, `SourcePrimaryTermReference`,
   `SourceNumericTypeRequestTable`, `SourceNumericTypeRequest`,
-  `SourcePrimaryTermError`, `SourcePrimaryTermProducer`
+  `SourcePrimaryTermError`, `SourcePrimaryTermProducer`,
+  `SourceProofLocalGivenUseTermHandoff`,
+  `SourceProofLocalGivenUseTermProducer`,
+  `SourceProofLocalGivenUseTermError`
 
 対応:
 
@@ -422,6 +425,7 @@ literal top-level public item:
 | syntax-free three-table transactionがsemantic resultを作らずprimary-term occurrence、authenticated binding reference、unresolved numeric-type requestを保持する。 | `src/source_term.rs`の`SourcePrimaryTermHandoffInput`とimmutable term/reference/request table。 | exact 3-route 7/4/2 runner oracleとevery-kind checker test。 | Task 252について実装済み。 |
 | typed site/range/kind/recovery、canonical lexer-identifier vocabulary/spelling、context、dense pre-order、parent closure、reference/request cardinality、numeric associationをfail closedにする。 | `SourcePrimaryTermProducer::build`がraw syntaxをimportせず`mizar_lexer::is_identifier`をreuseし、complete transactionを`TypedArena`と`BindingEnv`に対してvalidateする。 | site/range/kind/recovery/context、identifier shape/reserved-word rejection、graph、cardinality、request、corruption test。 | sort/repairなしでtransactionalに実装済み。 |
 | scopeとbinding-event ordinalはproducer-derivedであり、exact `BindingEnv::lookup` local winnerを要求する。 | reference constructionがcontext scopeをcloneし、preceding completed binding rowをcountし、exact duplicate-priority groupを保持し、すべてのnon-local resultをrejectする。 | shadow-winner、forward、ambiguous、missing-scope、unresolved、wrong-winner、ordinal test。 | `Resolver`をstructurally unreachableとして実装済み。 |
+| exact proof-local `given` use-profile composition 1件がauthenticated GUPT dependencyからlater `y` variable reference 2件だけをtransportする。 | `SourceProofLocalGivenUseTermHandoff`、`SourceProofLocalGivenUseTermProducer`、`SourceProofLocalGivenUseTermError`。 | checker 4件/runner dormant 4件のexact/corruption/ownership/isolation test。 | Task 269GUで実装済み、active/semantic credit zero。 |
 | `TypedAst`がimmutable handoffをownし、`ResolvedTypedAst`はclone-preserveだけを行う。 | optional `SourcePrimaryTermHandoff` field、validated installer、borrowed getter。 | production-runner ownership、replacement rejection、clone equality、deterministic replay assertion。 | 実装済み。semantic typed/fact/downstream tableは不変。 |
 | public enumはforward-compatible。 | public Task-252 enumすべての`#[non_exhaustive]`。 | `checker_public_enums_are_forward_compatible_and_documented`。 | exhaustive exceptionなしでguard。 |
 
@@ -5730,3 +5734,11 @@ reference 2件だけをauthorizeし、enclosing formula semanticsはauthorizeし
 planned public coverageはGU handoff/producer/non-exhaustive errorとchecker/runner
 各4 test。implementationまではbounded `source_drift`/`test_gap`。canonical spec、
 `.miz`、expectation、trace、metadata、diagnostic、CLI、active creditは不変。
+
+### Task 269GU implemented source/spec mapping
+
+frozen public familyとtest 8件を実装し、bounded dormant occurrence/reference
+`source_drift`/`test_gap`だけをclose。canonical spec、`.miz`、expectation、trace、
+metadata、diagnostic、CLI、dispatch、active coverageは不変。declaration-condition/
+descendant occurrence、capture/export、equality/formula/fact/goal/proof/obligation
+semantics、downstream IR、Task 270はseparate ownerのまま。
