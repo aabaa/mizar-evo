@@ -1830,3 +1830,10 @@ frozen field/getter/one-shot installerを実装した。installationはmutation�
 validateし、全sibling family両順序とnonempty semantic tableをreject、node/type/fact/proof/
 obligation/diagnostic payloadをemptyに保つ。private boxed storageでもby-value public installerと
 `Option<&Handoff>` getterは不変。
+
+## Task 269GT frozen typed owner
+
+`TypedAst`はboxed optional Given-type composite、read-only getter、one-shot by-value installerを
+追加。exact 3-node arena/otherwise-empty profileだけaccept。direct Given binding、generic type、
+sibling、contexts/types/facts/coercions/initial obligations/diagnostics/semantic nodesはabsent、
+failureはatomic。

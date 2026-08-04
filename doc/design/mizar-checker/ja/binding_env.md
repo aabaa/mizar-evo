@@ -854,3 +854,9 @@ shadowされない限りvisible、shadow終了後restore、parent/siblingではa
 synthetic contextはproduction handoff rowではない。environment/declaration/binding/fingerprint
 corruptionはtransactional failure。installed rowはmissing typeを保持しcondition/fact/capture/
 obligation/proof effectを作らない。
+
+## Task 269GT frozen type overlay
+
+new compositeはTask269G environmentをbinding 1の`Missing -> Source(84..87)`以外
+byte-for-byte preserve。binding 0は`Source(14..17)`、context/identity/lookup/scope/status/
+capture/diagnostic/cardinality `2/2/0`不変。immutable dependencyをmutateせずtyped snapshotをown。

@@ -6872,7 +6872,24 @@ implementation commit does not satisfy a producer task.
 - [x] Commit only the synchronized 40-file documentation prerequisite as
   `1672486e7c7923e56d9019404bc9c75ffa119f96`; fresh-preflight and implement
   only the frozen Task 269G slice.
-- [~] Test/implementation/source-doc/final reviews are **NO FINDINGS**, all
-  verification and nine gates pass uncapped at `100/100`; commit the exact
-  eight-file implementation plus synchronized records, then fresh-inventory
-  Task 269GT.
+- [x] Test/implementation/source-doc/final reviews are **NO FINDINGS**, all
+  verification and nine gates pass uncapped at `100/100`; exact implementation
+  commit `4f65bc4d50ab950c6976a4b3f3cb4bc0948b27c1` is clean and Task 269GT is
+  fresh-inventoried.
+
+## Checker Task 269GT Proof-`given` Source-Type Consumer
+
+- [x] Fresh-inventory canonical Chapters 4/8/15/16, immutable 269GP lower,
+  committed 269G binding, 269CT source-type model, public APIs, focused tests,
+  baselines, origin divergence, and protected stash; select only 269GT.
+- [x] Freeze the exact Given-type composite/error ABI, `Missing ->
+  Source(84..87)` overlay, `2/2/0/0/0/0` type payload, three-node arena,
+  fingerprints, Typed/final/private runner ownership, seven-file scope, eight
+  tests, zero-credit audit impact, semantic exclusions, and exit gates.
+- [x] Repeat specification review to **NO FINDINGS** and pass all docs-only
+  verification/count/hash gates at uncapped `>=90/100`.
+- [ ] Commit only the synchronized 40-file documentation prerequisite; fresh-
+  preflight and implement only the frozen Task 269GT slice.
+- [ ] Repeat test/implementation/source-doc/final reviews to **NO FINDINGS**,
+  pass full verification and all nine gates, commit exact implementation plus
+  synchronized records, then fresh-inventory later-use/capture or Task 270.

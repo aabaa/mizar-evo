@@ -2173,3 +2173,12 @@ FINDINGS**. Focused/crate/workspace/lint/metadata/fmt/Clippy/CLI/count/hash/
 whitespace verification passes; all nine hard gates PASS uncapped at
 `100/100` (`20/20/15/15/10/10/5/5`). Only parent-owned staging, commit, and
 fresh inventory remain before the separate source-type-only Task 269GT.
+
+## Checker Task 269GT Frozen Given-Type Consumer
+
+Task 269GT consumes `SourceProofLocalGivenBindingHandoff` by value, preserves
+its lower and binding fingerprints, and overlays only binding 1's exact
+`set@84..87` source type in a new `source_type.rs` composite. This document's
+Given binding ABI, lexical scope matrix, and debug bytes remain unchanged.
+Condition/fact/use/capture/free-export and every proof semantic stay outside
+the consumer.

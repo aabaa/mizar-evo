@@ -1720,3 +1720,17 @@ kind; the runner owns exact lower/base assembly and a private dormant consumer.
 Raw AST/resolver/source values stop at the runner. Only eight existing Rust
 files may change, with no module/path/Cargo edge. Type/condition/fact/proof and
 all downstream owners remain outside the boundary.
+
+## Task 269GT Frozen Boundary
+
+Implementation may change exactly
+`crates/mizar-checker/src/source_type.rs`,
+`crates/mizar-checker/src/typed_ast.rs`,
+`crates/mizar-checker/src/resolved_typed_ast.rs`,
+`crates/mizar-test/src/runner/type_elaboration/source_proof_local_declaration.rs`,
+`crates/mizar-test/src/runner/type_elaboration.rs`,
+`crates/mizar-test/src/runner.rs`, and
+`crates/mizar-test/src/runner/tests/type_elaboration/source_proof_local_declaration.rs`.
+The facade hops remain test-only. No module/path/Cargo edge is added. Binding/
+lower/parser/resolver/corpus artifacts remain outside the write boundary;
+semantic and downstream owners remain excluded.

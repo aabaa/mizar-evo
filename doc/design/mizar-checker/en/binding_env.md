@@ -897,3 +897,11 @@ contexts are not production handoff rows. Environment, declaration, binding,
 and fingerprint corruption fails transactionally. The installed row keeps a
 missing type and creates no condition, fact, capture, obligation, or proof
 effect.
+
+## Task 269GT Frozen Type Overlay
+
+The new composite must preserve the Task-269G environment byte-for-byte except
+for binding 1's `BindingTypeSite::Missing -> Source(84..87)` overlay. Binding
+0 stays `Source(14..17)`; contexts, identities, lookup, scope, status, capture,
+diagnostics, and `2/2/0` cardinality do not change. The composite owns this
+typed snapshot without mutating the immutable Task-269G dependency.

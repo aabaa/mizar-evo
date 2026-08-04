@@ -1935,3 +1935,11 @@ validates the entire handoff before mutation, rejects both installation orders
 for every sibling family and all nonempty semantic tables, and leaves node,
 type, fact, proof, obligation, and diagnostic payloads empty. Private boxed
 storage preserves the by-value public installer and `Option<&Handoff>` getter.
+
+## Task 269GT Frozen Typed Owner
+
+`TypedAst` will add one boxed optional Given-type composite, a read-only getter,
+and one-shot by-value installer. Only the exact three-node arena and otherwise-
+empty profile are accepted. The direct Given binding, generic source type,
+every sibling handoff, contexts/types/facts/coercions/initial obligations/
+diagnostics, and semantic nodes remain absent; all failures are atomic.

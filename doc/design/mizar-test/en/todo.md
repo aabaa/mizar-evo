@@ -3616,6 +3616,18 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
   no score cap, and valid `100/100`.
 - [x] Create synchronized 40-file documentation commit
   `1672486e7c7923e56d9019404bc9c75ffa119f96`.
-- [~] Exact dormant Task-269G implementation/reviews/verification are complete
-  at uncapped `100/100`; commit it and fresh-inventory Task 269GT while keeping
-  fixture/sidecar/expectation/trace/metadata/Cargo/CLI bytes unchanged.
+- [x] Exact dormant Task-269G implementation/reviews/verification are complete
+  at uncapped `100/100`; commit
+  `4f65bc4d50ab950c6976a4b3f3cb4bc0948b27c1` preserves all excluded bytes and
+  fresh-inventories Task 269GT.
+
+## Checker Task 269GT Dormant Source-Type Consumer
+
+- [x] Freeze unchanged 269GP lower/269G dependency, exact private four-file
+  runner composition, two-row input, three-node arena, four tests, projected
+  `560`, count/hash baselines, zero active/semantic effect, and exclusions.
+- [x] Complete specification review and docs-only verification/final gates with
+  all nine gates PASS and no score cap.
+- [ ] Create the synchronized 40-file documentation prerequisite commit.
+- [ ] Implement/review/verify/commit only the exact dormant Task-269GT route;
+  keep fixture/sidecar/expectation/trace/metadata/Cargo/CLI bytes unchanged.

@@ -1726,3 +1726,16 @@ EN/JAはimplemented 8-file transaction、exact `GivenWitness` rowと`1/1/0 -> 2/
 canonical lexical lookup matrix、boxed Typed/final ownership、private dormant runner、tests 8件、
 library `494/556`、production `30/169847` / `37/73118`、active/trace/CLI不変、Task269GT
 source-type deferralで一致する。implementation-time bilingual debtなし。
+
+## Task 269GT documentation synchronization
+
+EN/JAはselection、Chapters 4/8/15/16 authority、exact Task269G dependency/`84..87` overlay、
+public composite/error ABI、arena/fingerprint、Typed/final/private runner ownership、7-file/
+8-test scope、corpus/trace/CLI不変、semantic exclusion、exitで同期。EN canonical、delayed
+companionなし。
+
+post-review verification recordも同期する。specification reviewは**NO FINDINGS**、changeは
+exact Markdown 40件だけで、library/lint/metadata/workspace/CLI/list/production/fixture/
+trace/whitespace checkはunchanged executable baselineで全PASS。final read-only reviewと
+source/documentation reviewは**NO FINDINGS**、hard gate 9件はcapなし`100/100`で全PASS。
+parent stagingだけpending。

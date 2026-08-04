@@ -1723,3 +1723,9 @@ proof、obligation、acceptance、IR、VC payloadはabsent。
 familyはdense Given binding row 1件、authenticated lower provenance、base/final environment
 だけとしてimplemented。Typed/final replayとdormant runnerは分解を保持し、separate
 source-type payloadを追加できるownerはTask269GTだけ。
+
+## Task 269GT payload delta
+
+new familyはunchanged Given binding dependency/fingerprint、typed `2/2/0` binding snapshot、
+`2/2/0/0/0/0` builtin-`set` source-type handoff/fingerprintを持つimmutable composite 1件だけ。
+condition/label/fact/type guard/assumption/goal/proof/obligation/acceptance/Core/CFG/VCなし。

@@ -5314,3 +5314,12 @@ the normal binding transaction and reject every frozen lower/base/checker
 corruption, ownership conflict, and selector near miss. It remains absent from
 production dispatch and publishes no diagnostic, fixture, trace, type, fact,
 proof, obligation, or downstream semantic result.
+
+## Checker Task 269GT Frozen Dormant Harness
+
+The private route must call unchanged Task 269G, extract its dependency by
+clone, combine only the authenticated reserve and Given type ranges, call the
+new checker producer, install the composite into an otherwise-empty typed AST,
+and replay final assembly. The route is absent from dispatch. Four exact tests
+cover composition, mutation precedence, atomic ownership/emptiness, and
+neighbor/active-route isolation.

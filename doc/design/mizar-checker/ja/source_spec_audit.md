@@ -5676,3 +5676,10 @@ implementationはこのbinding `source_drift`と8-test `test_gap`だけをclose�
 family、`BindingKind::GivenWitness`、Typed/Resolved ownershipはfrozen contract/canonical block
 scopeに一致。canonical artifactはbyte-identicalで、source type、active use/capture、全condition/
 fact/proof semanticはsource behaviorから推測せずopenのまま。
+
+## Task 269GT source/API delta
+
+current sourceには`SourceProofLocalGivenType*` family/Given-type Typed/final ownerなしで、
+implementation-owned `source_drift`。plannedはhandoff/producer/non-exhaustive error、Typed
+getter/installer、Resolved getter、private exact binding profile。source-backed inventoryは実在する
+implementationまで不変。canonical/active artifactをrebaselineしない。

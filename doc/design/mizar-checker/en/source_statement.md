@@ -4123,3 +4123,10 @@ all proof effects remain deferred.
 The implemented transaction preserves this boundary. Its proof context is
 authenticated only as provenance; no statement, condition, label, formula,
 fact, thesis, conclusion, or proof row is emitted.
+
+## Task 269GT Statement Boundary
+
+The type composite authenticates the existing proof statement context only as
+binding provenance. It adds no statement, condition, label, formula, fact,
+thesis, conclusion, or proof row and does not reinterpret the `such that`
+condition.

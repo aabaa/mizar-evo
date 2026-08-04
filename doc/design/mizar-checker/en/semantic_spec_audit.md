@@ -753,3 +753,12 @@ published, and every typed/final semantic table remains empty. No active route
 or source-type admission is added, so the `such that` condition still creates
 no fact, Skolem/existential meaning, goal premise, proof step, discharge,
 acceptance, initial obligation, Core, CFG, or VC result.
+
+## Task 269GT Zero-Semantic Boundary
+
+Canonical authority supports the witness's written source type, not semantic
+publication in this prerequisite. The frozen composite records only source-
+type structure and provenance. Type assumption/guard, condition/fact,
+existential/Skolem meaning, goal, initial obligation, proof/discharge/
+acceptance, Core, CFG, and VC tables remain empty and receive zero active
+coverage credit.

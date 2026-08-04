@@ -2385,3 +2385,15 @@ implementation後focused Rust testがprivate lexical-binding `test_gap`だけを
 implementationはno-credit contractをexactに保持。corpus/trace artifact変更なし、cases/
 requirements `428/395`、active stages `101/7/205/1`、type coverage `259=247+12`、trace hashは
 byte-identical。dormant runner library inventoryだけ`556`へ移動。
+
+## Checker Task 269GT zero-credit trace boundary
+
+docs prerequisite/later private unit testsは`.miz` backlink/trace row/status/count/expectation/
+diagnostic/active type-proof creditを追加しない。cases/requirements `428/395`、active
+`101/7/205/1`、type `259=247+12`、manifest byte-identical。broad proof-local fail fixtureは
+diagnosticのまま。
+
+docs prerequisite verificationはcase/requirement `428/395`、pass/fail `235/193`、
+warning/error `23/0`、全active-stage/5 CLI hash、trace SHA-256
+`55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`を再現。
+trace credit/artifact mutationなし。

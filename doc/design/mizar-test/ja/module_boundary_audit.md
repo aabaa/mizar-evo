@@ -11834,3 +11834,14 @@ libraryは`556`、raw/normalized hashは
 `194b2884a9d933823e0d06b24460cd510fd9d16fbd6823b9e13584779acd1f03` /
 `728a5b688c19acc42d66a9c2f5c13ad67d795949ec88a2d877b917c9607d80e8`。
 excluded ownership/active boundaryは全て不変。
+
+## Checker Task 269GT frozen runner boundary
+
+変更可能なのは
+`crates/mizar-test/src/runner/type_elaboration/source_proof_local_declaration.rs`、
+`crates/mizar-test/src/runner/type_elaboration.rs`、
+`crates/mizar-test/src/runner.rs`、
+`crates/mizar-test/src/runner/tests/type_elaboration/source_proof_local_declaration.rs`だけ。
+facade 2段はtest-only。production paths 37、lower owner
+`crates/mizar-test/src/runner/type_elaboration/source_statement.rs`はimmutable。
+new module/public route/dispatch/Cargo/corpus/trace ownerなし。

@@ -1736,3 +1736,16 @@ EN/JA agree on the implemented private route, exact checker transaction,
 four-test runner matrix, runner `556`, production `37/73118`, raw/normalized
 hashes, unchanged public/active/corpus/trace/CLI behavior, and all semantic
 deferrals. No implementation-time bilingual debt remains.
+
+## Checker Task 269GT Documentation Synchronization
+
+EN/JA runner plans synchronize the unchanged 269GP/269G dependencies, exact
+private four-file type composition, `14..17`/`84..87` input and three-node
+arena, four tests, projected `560`, zero active/corpus/trace/CLI impact,
+semantic exclusions, and exit. No bilingual exception is accepted.
+
+Both companions also record the same **NO FINDINGS** specification result and
+passing docs-only runner/workspace/CLI/list/production/artifact/hash gates.
+The executable baseline and protected corpus remain byte-identical;
+source/documentation and final-quality reviews are **NO FINDINGS**, with all
+nine gates uncapped at `100/100`. Parent staging remains pending.

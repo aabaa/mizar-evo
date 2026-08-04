@@ -3382,6 +3382,16 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
   `100/100`で完了。
 - [x] synchronized 40-file docs commit
   `1672486e7c7923e56d9019404bc9c75ffa119f96`を作成。
-- [~] exact dormant Task269G implementation/review/verificationはcapなし`100/100`で完了。
-  commit後Task269GTをfresh inventoryし、fixture/sidecar/expectation/trace/metadata/Cargo/CLIを
-  byte-identicalに保持。
+- [x] exact dormant Task269G implementation/review/verificationはcapなし`100/100`で完了。
+  commit `4f65bc4d50ab950c6976a4b3f3cb4bc0948b27c1`はexcluded bytesを保持しTask269GTを
+  fresh inventory。
+
+## Checker Task 269GT dormant source-type consumer
+
+- [x] unchanged 269GP lower/269G dependency、private runner 4-file composition、2-row input、
+  3-node arena、tests 4件、projected `560`、count/hash baseline、active/semantic effect 0、
+  exclusionをfreeze。
+- [x] specification review/docs-only verification/final gateを9件PASS、score capなしで完了。
+- [ ] synchronized 40-file docs prerequisite commitを作成。
+- [ ] exact dormant Task269GT routeだけをimplement/review/verify/commitし、fixture/sidecar/
+  expectation/trace/metadata/Cargo/CLIをbyte-identicalに保持。

@@ -6542,6 +6542,20 @@ runner、docs-only implementation commitはproducer taskを満たさない。
 - [x] synchronized existing Markdown 40件だけを
   `1672486e7c7923e56d9019404bc9c75ffa119f96`としてcommitし、fresh preflight後frozen
   Task269Gだけをimplement。
-- [~] test/implementation/source-doc/final reviewは**NO FINDINGS**、全verification/hard gateは
-  capなし`100/100`でPASS。exact 8-file implementation+synchronized recordをcommit後、
-  Task269GTをfresh inventory。
+- [x] test/implementation/source-doc/final reviewは**NO FINDINGS**、全verification/hard gateは
+  capなし`100/100`でPASS。exact implementation commit
+  `4f65bc4d50ab950c6976a4b3f3cb4bc0948b27c1`後cleanでTask269GTをfresh inventory。
+
+## Checker Task 269GT proof-`given` source-type consumer
+
+- [x] canonical Chapters 4/8/15/16、immutable 269GP lower、committed 269G binding、
+  269CT type model、public API、focused test、baseline、origin差、stashをfresh inventoryし、
+  269GTだけをselect。
+- [x] exact Given-type composite/error ABI、`Missing -> Source(84..87)` overlay、
+  `2/2/0/0/0/0` payload、3-node arena、fingerprint、Typed/final/private runner ownership、
+  7-file/8-test scope、zero-credit audit、semantic exclusion、exitをfreeze。
+- [x] specification reviewを**NO FINDINGS**までrepeatし、docs-only verification/count/hash/
+  hard gateをuncapped `>=90/100`でPASS。
+- [ ] synchronized Markdown 40件だけをcommitし、fresh preflight後frozen Task269GTだけを実装。
+- [ ] test/implementation/source-doc/final review **NO FINDINGS**、full verification/hard gate、
+  exact implementation+synchronized record commit後later-use/captureまたはTask270をfresh inventory。

@@ -1657,3 +1657,14 @@ EN/JA runner plan/harness/boundary/traceability/TODOはunchanged 269GP lower、p
 EN/JAはimplemented private route、exact checker transaction、runner test matrix 4件、runner
 `556`、production `37/73118`、raw/normalized hash、public/active/corpus/trace/CLI不変、全semantic
 deferで一致する。implementation-time bilingual debtなし。
+
+## Checker Task 269GT documentation synchronization
+
+EN/JA runner planはunchanged 269GP/269G dependency、private 4-file composition、
+`14..17`/`84..87` input/3-node arena、tests 4件、projected `560`、active/corpus/trace/CLI
+impact 0、semantic exclusion/exitで同期。bilingual exceptionなし。
+
+両companionは同じspecification **NO FINDINGS**とdocs-only runner/workspace/CLI/list/
+production/artifact/hash gate全PASSも記録する。executable baseline/protected corpusは
+byte-identical。source/documentation/final-quality reviewは**NO FINDINGS**、hard gate 9件は
+capなし`100/100`で全PASS。parent stagingだけpending。

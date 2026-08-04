@@ -1578,3 +1578,10 @@ docs/final-quality reviewは**NO FINDINGS**。focused/crate/workspace/lint/metad
 CLI/count/hash/whitespaceはPASS、hard gate 9件はcapなし`100/100`
 (`20/20/15/15/10/10/5/5`)。parent-owned staging/commit/fresh inventory後にseparate
 source-type-only Task269GTへ進む。
+
+## Checker Task 269GT frozen Given-type consumer
+
+Task269GTは`SourceProofLocalGivenBindingHandoff`をby-value consumeしlower/binding fingerprintを
+preserve、new `source_type.rs` composite内でbinding 1へexact `set@84..87`だけoverlay。
+Given binding ABI/scope matrix/debug bytesは不変。condition/fact/use/capture/free-export/proof
+semanticsはconsumer外。

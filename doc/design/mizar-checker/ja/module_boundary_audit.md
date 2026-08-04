@@ -1647,3 +1647,16 @@ byte-identical。binding implementationはseparate Task269G、type admissionはT
 checkerはsyntax-free public binding family/`GivenWitness`、runnerはexact lower/base assemblyと
 private dormant consumerをownする。raw AST/resolver/sourceはrunnerで停止。existing Rust
 8 fileだけ、new module/path/Cargo edgeなし。type/condition/fact/proof/downstreamはscope外。
+
+## Task 269GT frozen boundary
+
+implementationはexact
+`crates/mizar-checker/src/source_type.rs`、
+`crates/mizar-checker/src/typed_ast.rs`、
+`crates/mizar-checker/src/resolved_typed_ast.rs`、
+`crates/mizar-test/src/runner/type_elaboration/source_proof_local_declaration.rs`、
+`crates/mizar-test/src/runner/type_elaboration.rs`、
+`crates/mizar-test/src/runner.rs`、
+`crates/mizar-test/src/runner/tests/type_elaboration/source_proof_local_declaration.rs`だけ。
+facade hopはtest-only。module/path/Cargo edgeなし。binding/lower/parser/resolver/corpusは
+write scope外、semantic/downstream ownerもexclude。

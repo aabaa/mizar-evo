@@ -693,3 +693,9 @@ implementationもこのboundaryを保持する。lexical binding ownershipだけ
 final semantic tableはempty。active route/source-type admissionなしで、`such that`はfact、
 Skolem/existential、goal premise、proof step、discharge、acceptance、initial obligation、Core、
 CFG、VCを作らない。
+
+## Task 269GT zero-semantic boundary
+
+canonical authorityがsupportするのはwritten source typeで、本prerequisiteはsource-type
+structure/provenanceだけをrecord。type assumption/guard、condition/fact、existential/Skolem、
+goal、initial obligation、proof/discharge/acceptance、Core/CFG/VCはempty、active credit 0。

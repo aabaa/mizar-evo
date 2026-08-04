@@ -6579,3 +6579,33 @@ Independent test, implementation, source/documentation, and final-quality
 reviews end **NO FINDINGS**. All nine hard gates PASS without a score cap at
 `100/100`; this remains zero active specification/trace credit and leaves
 Task 269GT as the next source-type-only owner.
+
+## Checker Task 269GT Frozen Zero-Credit Proof-`given` Type Composition
+
+Post-Task-269G inventory selects only the source-type admission prerequisite
+for the already block-scoped `GivenWitness`. The frozen transaction preserves
+the authenticated Task-269G dependency, replaces only that witness's
+`BindingTypeSite::Missing` row with its exact bare-builtin `set` source range,
+embeds the two-row source-type handoff and a separate three-node typed arena,
+and installs the composite atomically in Typed/final ownership. The existing
+reserve row and all lexical-scope behavior remain unchanged.
+
+This documentation prerequisite grants no executable coverage. No `.miz`,
+sidecar, expectation, trace row/backlink/status, active dispatch, metadata
+case, diagnostic, or coverage count changes. Corpus/requirements remain
+`428/395`, pass/fail `235/193`, active stages `101/7/205/1`, type coverage
+`259=247+12`, warnings/errors `23/0`, and trace SHA-256 remains
+`55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`.
+The later implementation closes only the bounded source-type `source_drift`
+and eight-test `test_gap`. Condition/label facts, existential or Skolem
+meaning, assumptions/guards, goals, initial obligations, use/capture,
+proof/discharge/acceptance, free-witness export, Core, CFG, VC, and Task 270
+remain separately deferred with zero new credit.
+
+Repeated specification review ends **NO FINDINGS** after the exact public
+standard-error trait was synchronized. Docs-only verification reproduces all
+library, policy, metadata, workspace, CLI, test-list, production, fixture,
+sidecar, corpus, and trace baselines; therefore this section still grants zero
+new coverage or trace credit. Source/documentation and final-quality reviews
+end **NO FINDINGS**; all nine hard gates PASS uncapped at `100/100`. The exact
+documentation commit remains parent-owned.

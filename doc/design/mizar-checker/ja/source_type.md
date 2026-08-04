@@ -963,3 +963,256 @@ source-type ownerを追加できる。
 Task269G implementationは`BindingTypeSite::Missing`を意図通り保持し、authenticated lower
 `set@84..87`をchecker source-type ownershipへconsumeしない。Task269GTはdependency-readyな
 separate scopeのまま。
+
+## Task 269GT frozen proof-`given` source-type composition
+
+### selection、authority、classification
+
+Task269G commit `4f65bc4d50ab950c6976a4b3f3cb4bc0948b27c1`後のfresh inventoryは
+dormant `FormulaStatementGivenSmoke`のsource-type prerequisite Task269GTだけをselect。
+canonical authorityはChapter 4 §§4.1--4.2/4.6、Chapter 8 §§8.1/8.3、Chapter 15
+§§15.3.3/15.10/15.11.4、Chapter 16 §§16.3.3/16.4.2。`given y being set`がwritten
+typeを持つblock-local witnessを導入することは定めるが、`such that` condition、type guard/
+assumption、Skolem/existential fact、goal、initial obligation、proof/discharge/acceptance、IRを
+本prerequisiteがpublishするauthorityではない。
+
+blocking `spec_gap`なし。Task269GPはexact written type site/source/resolver、Task269Gは
+lexical `GivenWitness` binding、Task249とimplemented Task269CTはsyntax-free type model/
+proof-local composition patternをauthenticate済み。missing Given-specific contractは
+`design_drift`、absent producer/testはimplementationの`source_drift`/`test_gap`。
+Task269G `BindingTypeSite::Missing`はimmutable prerequisite snapshot。
+`source_undocumented_behavior`、`test_expectation_drift`、current `boundary_violation`なし。
+`origin/main...HEAD=0/3`はreport-only `repo_metadata_conflict`で修復しない。
+
+### exact dependency/lower profile
+
+sourceは129 bytes、final LF 1件、SHA-256
+`04e54b8ada9af54fde9f937e1bb0f96bd8cf85002b2b57f4d348b11c8eb72a2f`。
+Task269GPがsole source/Surface/resolver lower owner: normal unrecovered 48 nodes、root 47、
+Surface SHA-256
+`58ac16a3c75860180a8bec5dc8e87ec8b269fe75715a6d8363f7ef064e3deea8`、reserve
+type/head `14..17`、theorem/proof/given/segment/name
+`19..128`/`62..127`/`70..108`/`76..87`/`76..77`、proof-`given` type/head
+`84..87`、source ordinal 1、scope `[0]`、local `y`。shell 2件、theorem symbol/
+definition/contribution `0/0`はexact。Task269GTはTask269G handoff/lower fingerprintをconsumeし、
+syntax rescan/resolver reconstruction/lower modificationなし。
+
+dependency binding environmentは`1/1/0 -> 2/2/0`。binding 0はreserved `x`、source type
+`14..17`。binding 1はproof context active `GivenWitness` `y`、context 1、resolver-local
+scope `[0]`、declaration `76..77`、visible-after/source ordinal 1、normal、uncaptured、
+diagnostic-free、Task269G snapshot内は`BindingTypeSite::Missing`。
+
+### exact additive public API/atomic model
+
+`source_type.rs`に次のsyntax-free public siblingを追加する。
+
+```rust
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceProofLocalGivenTypeHandoff {
+    source_id: SourceId,
+    module_id: ModuleId,
+    dependency: SourceProofLocalGivenBindingHandoff,
+    dependency_fingerprint: String,
+    binding_env: BindingEnv,
+    binding_fingerprint: String,
+    source_type: SourceTypeApplicationHandoff,
+    source_type_fingerprint: String,
+}
+pub struct SourceProofLocalGivenTypeProducer;
+
+impl SourceProofLocalGivenTypeProducer {
+    pub fn build(
+        dependency: SourceProofLocalGivenBindingHandoff,
+        input: SourceTypeHandoffInput,
+        symbols: &SymbolEnv,
+        arena: &TypedArena,
+    ) -> Result<SourceProofLocalGivenTypeHandoff, SourceProofLocalGivenTypeError>;
+}
+
+impl SourceProofLocalGivenTypeHandoff {
+    pub const fn source_id(&self) -> SourceId;
+    pub const fn module_id(&self) -> &ModuleId;
+    pub const fn dependency(&self) -> &SourceProofLocalGivenBindingHandoff;
+    pub fn dependency_fingerprint(&self) -> &str;
+    pub const fn binding_env(&self) -> &BindingEnv;
+    pub fn binding_fingerprint(&self) -> &str;
+    pub const fn source_type(&self) -> &SourceTypeApplicationHandoff;
+    pub fn source_type_fingerprint(&self) -> &str;
+    pub fn debug_text(&self) -> String;
+    pub(crate) fn validate_installation(
+        &self,
+        source_id: SourceId,
+        module_id: &ModuleId,
+        arena: &TypedArena,
+    ) -> Result<(), SourceProofLocalGivenTypeError>;
+    pub(crate) fn validate_complete_installation(
+        &self,
+        source_id: SourceId,
+        module_id: &ModuleId,
+        arena: &TypedArena,
+        installation_available: bool,
+    ) -> Result<(), SourceProofLocalGivenTypeError>;
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum SourceProofLocalGivenTypeError {
+    InvalidDependency,
+    InvalidBindingEnvironment,
+    InvalidSourceType,
+    InvalidInstallation,
+}
+```
+
+error typeはpublic standard error traitをexact
+`impl std::error::Error for SourceProofLocalGivenTypeError {}`として実装する。このtrait
+implementationの省略/置換はfrozen APIの範囲外。
+
+variant順exact displayは`source proof-local given type dependency is invalid`、
+`source proof-local given typed binding environment is invalid`、
+`source proof-local given source type is invalid`、
+`source proof-local given type installation is invalid`。precedenceはdependency、upgraded
+binding environment、source-type input/arena/symbols、one-shot availability。partial publishなし。
+source-backed Public Enum Policy/source inventoryはdocs prerequisiteでは変更せず、sourceに実在する
+implementation commitでenum/literal itemを追加する。
+
+producerはTask269Gをby-value consumeし`dependency()`でunchanged preserve。context/binding/
+identity/lookup/diagnostic/non-type fieldをsort/repairせず再構成し、binding 1だけ`Missing`から
+`Source(84..87)`、binding 0は`Source(14..17)`、cardinality `2/2/0`。Task269G fingerprintは
+不変でupgraded environmentはown exact debug fingerprintを持つ。
+
+embedded `SourceTypeApplicationHandoff`のapplications/expressions/arguments/definition-returns/
+mode-RHS/structure-membersは`2/2/0/0/0/0`。application 0はbinding/source ordinal/root
+`0/0/0`、application 1は`1/1/1`。両expressionはnormal/argument-free/`Bare`/builtin
+`set`、written/head spelling `set`、range `14..17`/`84..87`。resolver head、argument、
+attribute、type result、normalization、inhabitation、subtyping、coercion、evidence、semantic
+assumption/conditionをinferしない。
+
+generic `SourceTypeProducer::build`のadmissionは不変。private
+`SourceTypeBindingProfile::ProofLocalGiven`だけがactive `BindingKind::GivenWitness`とmatching
+`ResolverLocal` identity、proof `SourceStatement` context/parent/scope/range/ordinal、empty
+capture/diagnostics、exact source type siteをadmit。generic/`ProofLocalLet`をbroadeningせず、
+missing siteをtyped扱いしない。
+
+### arena、fingerprint、Typed/final ownership
+
+checker `TypedArena`はnormal/untyped/unlinked 3 nodes、root 2。node 0
+`source.proof-local.given.reserve-type` `14..17`、node 1
+`source.proof-local.given.type` `84..87`、node 2
+`source.proof-local.given.type-root` `0..128` children `[0,1]`。resolved linkなし。
+expression/headは各nodeのdistinct `TypedSiteRef::Role` `source.type.expression` /
+`source.type.head`。producer/installerはexact node/site/range/recoveryをauthenticate。
+
+`dependency.debug_text()`、upgraded `BindingEnv::debug_text()`、embedded source-type debugを
+byte-exact fingerprintとしてfreeze。debugはterminal LF 1件でexact:
+
+```text
+source-proof-local-given-type-debug-v1
+module: {package}::{module_path}
+dependency-fingerprint: {dependency_fingerprint:?}
+binding-fingerprint: {binding_fingerprint:?}
+source-type-fingerprint: {source_type_fingerprint:?}
+```
+
+private field orderはdeclaration順、unit producer derive requirementなし。
+`validate_installation`はdependency/environment/fingerprint/source type/arena、complete版はそれを
+先に呼びavailabilityを最後にcheck。Typed/finalは同じarenaを渡しfinal arena再構成なし。
+empty/Task269C/CT/G bytesは不変。
+
+`TypedAst`/`ResolvedTypedAst`はGiven binding slot後にboxed optional
+`source_proof_local_given_type` ownerを追加し、exact APIは次。
+
+```rust
+impl TypedAst {
+    pub const fn source_proof_local_given_type(
+        &self,
+    ) -> Option<&SourceProofLocalGivenTypeHandoff>;
+    pub fn with_source_proof_local_given_type(
+        self,
+        handoff: SourceProofLocalGivenTypeHandoff,
+    ) -> Result<Self, TypedAstError>;
+}
+impl ResolvedTypedAst {
+    pub const fn source_proof_local_given_type(
+        &self,
+    ) -> Option<&SourceProofLocalGivenTypeHandoff>;
+}
+```
+
+error enumへ`InvalidSourceProofLocalGivenType`をappendし、displayはtyped
+`source proof-local given type handoff is invalid`、resolved
+`resolved typed AST source proof-local given type handoff is invalid`。profileはcomposite/3-node
+arenaだけをownし、direct `source_type`/Given binding/Let fieldsはempty。dependencyはcomposite
+経由。finalはcloneして3 nodesを`source.proof-local.given.type` roleでone-for-one map。
+semantic table/node-hint inputは全empty。duplicate/wrong dependency/fingerprint/env/arena/site/
+root/sibling/nonempty semanticはatomic reject。
+
+### runner、tests、exclusion、impact、exit
+
+dormant runnerはunchanged Task269Gを先にcallし、そのhandoffとTask269GP type rangeだけから
+arena/inputをbuild。public dispatchなし。implementation ownershipはexact existing Rust 7 files:
+`crates/mizar-checker/src/source_type.rs`、
+`crates/mizar-checker/src/typed_ast.rs`、
+`crates/mizar-checker/src/resolved_typed_ast.rs`、
+`crates/mizar-test/src/runner/type_elaboration/source_proof_local_declaration.rs`、
+`crates/mizar-test/src/runner/type_elaboration.rs`、
+`crates/mizar-test/src/runner.rs`、
+`crates/mizar-test/src/runner/tests/type_elaboration/source_proof_local_declaration.rs`。
+後者production facade 2段はtest-only。checker `binding_env.rs`/proof-local declaration、runner
+lower `crates/mizar-test/src/runner/type_elaboration/source_statement.rs`、parser/resolver/
+fixture/sidecar/expectation/trace/metadata/Cargo/diagnostic/dispatchは変更しない。
+
+checker exact tests 4件:
+`task269gt_exact_transaction_fingerprints_and_overlay_are_stable`、
+`task269gt_dependency_binding_source_type_and_precedence_fail_closed`、
+`task269gt_typed_and_resolved_ownership_is_atomic`、
+`task269gt_generic_and_neighbor_routes_remain_isolated`。runner exact tests 4件:
+`task269gt_exact_type_composition_fingerprints_and_replay_are_stable`、
+`task269gt_dependency_input_and_arena_corruption_fail_closed`、
+`task269gt_typed_and_resolved_owners_are_one_shot_and_semantically_empty`、
+`task269gt_near_miss_task269g_and_active_routes_remain_isolated`。overlay/payload/fingerprint、全
+dependency/env/input/arena field/precedence、Typed/final one-shot/both-order cross-family、generic/
+Let/Given-binding isolation、near miss、clone、semantic emptyをcover。
+
+libraryは`494/556 -> 498/560`をproject、parser/resolver/syntax `226/148/59`不変。
+production paths `30/37`不変、implementation後line/contentを再測定。path hashは
+`c89f43f6abebf7ebeb3ac9394ecd8ea3186ad28934c75526d2cc0b85a66ebad5` /
+`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d`。
+docs baseline production `30/169847` / `37/73118`、content
+`e47862eebdb59b576160d4b64ab390549d91daecd69fd34f8bcfbc2952d6ca96` /
+`2cae769737fdee4560ab1d1bca81f10d900ff8a1d9824aba720806f84e802711`、
+list raw/normalized checker
+`ce299dfafb8db5d5c27cb9e271dd77d08a09b45a7323d0efc17790e0d104a984` /
+`6d8f1938b05118e129f8d0942bd7af77914435b6b45282bd46e636132891d4cb`、runner
+`194b2884a9d933823e0d06b24460cd510fd9d16fbd6823b9e13584779acd1f03` /
+`728a5b688c19acc42d66a9c2f5c13ad67d795949ec88a2d877b917c9607d80e8`。
+
+`.miz`/sidecar/expectation/trace row/backlink/status/count/metadata/diagnostic/active/CLI変更なし。
+corpus/requirements `428/395`、pass/fail `235/193`、warnings/errors `23/0`、active
+`101/7/205/1`、type `259=247+12`、trace
+`55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`。
+plan/parse/declaration/type/proof hashは
+`700f4bf503783742cefd8004fa095675b7476d46e9a3a6dd439916d237eb6718`、
+`a8a7aa639d2ebc65eddc923c7e9369ea5637d50e935f808600f446da1bfbda56`、
+`71e83ba0b20d4015e07b3bd2c0c4db2837b6151d1251812caed7954530d53c74`、
+`4b2c7bd5ec3cc56e5672fb351126126230ec84fba9bd2bd9049a516d378fab7f`、
+`ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`。
+broad proof-local fail fixtureはcondition/fact/later-use/consider/set/reconsider/acceptance/proof gap
+によりdiagnosticのまま、active type/trace credit 0。
+
+use/capture、condition/label/fact、existential/Skolem、type assumption/guard、goal/thesis、
+proof skeleton、initial obligation、proof/discharge/acceptance、overload/normalization/
+inhabitation、Core/CFG/VC、free-witness export、other proof-local form、Task270をexclude。
+docs-only scopeはTask269Gと同じexisting Markdown 40件。EN/JA sync、spec review **NO
+FINDINGS**、docs-only hard gate 9件uncapped `>=90/100`、exact docs commit、fresh lower
+preflight、exact 7-file implementation、test/implementation/source-doc review **NO FINDINGS**、
+full verification/count/hash、final gate/score、task-only commit、clean inventory、stash不変後に
+later-use/captureまたはTask270をfresh select。
+
+### documentation prerequisite verification status
+
+EN/JA contractへ`std::error::Error`をexplicitにfreezeした後のspecification re-reviewは
+**NO FINDINGS**。全docs-only executable/policy/metadata/CLI/test-list/production/canonical-
+artifact/trace/whitespace checkはfrozen baselineでPASS。このstatusは未実装producerをclaim
+せず、source/documentation/final-quality reviewは**NO FINDINGS**、hard gate 9件はcapなし
+`100/100`で全PASS。exact stagingだけ残る。

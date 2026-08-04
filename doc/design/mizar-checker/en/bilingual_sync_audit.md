@@ -1819,3 +1819,18 @@ matrix, boxed Typed/final ownership, private dormant runner, eight tests,
 measured `494/556` libraries and `30/169847` / `37/73118` production, unchanged
 active/trace/CLI state, and the separate Task-269GT source-type deferral. No
 implementation-time bilingual debt remains.
+
+## Task 269GT Documentation Synchronization
+
+EN/JA synchronize selection, Chapters 4/8/15/16 authority, exact Task-269G
+dependency and `84..87` type overlay, public composite/error ABI, arena and
+fingerprints, Typed/final/private-runner ownership, seven-file/eight-test
+scope, unchanged corpus/trace/CLI state, semantic exclusions, and exit. English
+remains canonical and no delayed companion is accepted.
+
+The post-review verification record is also synchronized: specification review
+is **NO FINDINGS**, the change remains exactly 40 Markdown files, and all
+library/lint/metadata/workspace/CLI/list/production/fixture/trace/whitespace
+checks pass with unchanged executable baselines. Final read-only review and
+source/documentation review are **NO FINDINGS**; all nine gates PASS uncapped
+at `100/100`. Only parent staging remains pending.

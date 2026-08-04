@@ -3589,3 +3589,9 @@ statement semantics/proof effectはdefer。
 
 implemented transactionはこのboundaryを保持する。proof contextはprovenanceとしてだけ
 authenticateし、statement/condition/label/formula/fact/thesis/conclusion/proof rowをemitしない。
+
+## Task 269GT statement boundary
+
+type compositeはexisting proof statement contextをbinding provenanceとしてだけauthenticate。
+statement/condition/label/formula/fact/thesis/conclusion/proof rowを追加せず`such that`を
+reinterpretしない。

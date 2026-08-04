@@ -1907,3 +1907,12 @@ semantic profile; the Typed installer tests independently reject all six
 nonempty semantic-table families before final assembly. Private boxed storage
 keeps the aggregate's stack size stable without changing the frozen getter,
 installer, clone, or debug contract.
+
+## Task 269GT Frozen Final Owner
+
+Final assembly will clone and revalidate one boxed
+`SourceProofLocalGivenTypeHandoff`, map its exact three-node arena with role
+`source.proof-local.given.type`, and reject stale, sibling, node-hint, or
+semantic coexistence. The direct Given binding and generic source-type slots
+remain empty because the composite owns both dependencies. No semantic table
+is populated.

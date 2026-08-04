@@ -13130,3 +13130,15 @@ The library is `556`, with raw/normalized hashes
 `194b2884a9d933823e0d06b24460cd510fd9d16fbd6823b9e13584779acd1f03` /
 `728a5b688c19acc42d66a9c2f5c13ad67d795949ec88a2d877b917c9607d80e8`.
 All excluded ownership and active boundaries remain unchanged.
+
+## Checker Task 269GT Frozen Runner Boundary
+
+Only
+`crates/mizar-test/src/runner/type_elaboration/source_proof_local_declaration.rs`,
+`crates/mizar-test/src/runner/type_elaboration.rs`,
+`crates/mizar-test/src/runner.rs`, and
+`crates/mizar-test/src/runner/tests/type_elaboration/source_proof_local_declaration.rs`
+may change; both facade hops remain test-only. Production paths stay 37 and
+`crates/mizar-test/src/runner/type_elaboration/source_statement.rs` is the
+immutable lower owner. No new module, public route, dispatch edge, Cargo
+dependency, corpus artifact, or trace owner appears.

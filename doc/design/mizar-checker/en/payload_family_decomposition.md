@@ -1819,3 +1819,11 @@ The family is now implemented as exactly one dense Given binding row plus the
 authenticated lower provenance and base/final environments. Typed/final
 replay and the dormant runner preserve that decomposition; Task 269GT remains
 the only owner allowed to add the separately frozen source-type payload.
+
+## Task 269GT Payload Delta
+
+The sole new family is one immutable composite containing the unchanged Given
+binding dependency, its fingerprint, a typed `2/2/0` binding snapshot, one
+`2/2/0/0/0/0` builtin-`set` source-type handoff, and their fingerprints. No
+condition, label/fact, type guard/assumption, goal, proof, obligation,
+acceptance, Core, CFG, or VC payload is part of this family.

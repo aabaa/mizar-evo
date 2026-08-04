@@ -5960,3 +5960,12 @@ Resolved ownership match the frozen contract and canonical block scope.
 Canonical artifacts remain byte-identical; source type, active use/capture,
 and every condition/fact/proof semantic remain open rather than inferred from
 source behavior.
+
+## Task 269GT Source/API Delta
+
+Current source has no `SourceProofLocalGivenType*` family or Given-type Typed/
+final owner: `source_drift` reserved for implementation. The frozen planned
+items are one handoff, producer, non-exhaustive error, Typed getter/installer,
+Resolved getter, and private exact binding profile. Source-backed enum and
+literal-item inventories remain unchanged until those items exist. No
+canonical or active test artifact is rebaselined.

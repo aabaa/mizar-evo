@@ -1812,3 +1812,10 @@ replay testsはstale/cross-family/node-hint conflictをrejectし、valid replay�
 binding/empty semantic profileを保持する。Typed installer testsは別にnonempty semantic table
 6 familyをfinal assembly前にreject。private boxed storageはfrozen getter/installer/clone/debug
 contractを変えずaggregate stack sizeを保つ。
+
+## Task 269GT frozen final owner
+
+final assemblyはboxed `SourceProofLocalGivenTypeHandoff` 1件をclone/revalidateし、exact 3-node
+arenaを`source.proof-local.given.type` roleでmap、stale/sibling/node-hint/semantic coexistenceを
+reject。direct Given binding/generic source-type slotはcomposite ownershipのためempty。semantic
+tableをpopulateしない。

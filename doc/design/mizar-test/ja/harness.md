@@ -5001,3 +5001,10 @@ private routeはexact compositionを実装済み。tests 4件はnormal binding t
 frozen lower/base/checker corruption、ownership conflict、selector near missを全reject。
 production dispatchには不在でdiagnostic/fixture/trace/type/fact/proof/obligation/downstream
 semantic resultをpublishしない。
+
+## Checker Task 269GT frozen dormant harness
+
+private routeはunchanged Task269Gをcallしdependencyをclone、authenticated reserve/Given type
+rangeだけをcombine、新checker producerをcallしてotherwise-empty Typed/finalへcompositeを
+install/replay。dispatch不在。exact tests 4件がcomposition/mutation precedence/atomic ownership-
+emptiness/neighbor-active isolationをcover。
