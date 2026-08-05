@@ -1,0 +1,14 @@
+# Frozen preimage inventory for DOC-269CTGP-COMPACT.
+# Columns: task, language, component, source path, ATX level, exact heading text without the ATX prefix, section SHA-256, physical lines.
+269CT	en	mizar-checker	doc/design/mizar-checker/en/00.crate_plan.md	3	Task-269CT implementation measurement	706f013ac44aa2b951ec47b78c8d4a450799b3dc061899511d2b99769db7c3d8	37
+269CT	en	mizar-checker	doc/design/mizar-checker/en/source_type.md	3	Task 269CT implementation verification	79bddecf08bfee6bceb62dc6c562021c80f9452bfefc867dcc7803341ab19c61	39
+269CT	en	mizar-test	doc/design/mizar-test/en/00.crate_plan.md	3	Task-269CT implementation measurement	56f6591b42e5b42145a03be2698c79fbcf2f69d43b5c1e68a1a3e4510b8af51d	23
+269CT	ja	mizar-checker	doc/design/mizar-checker/ja/00.crate_plan.md	3	Task-269CT implementation measurement	7c49f5a0cadea8b95992a9a27d436c34ca35c9acf2f57c5d0362fd6a4c2c5a63	33
+269CT	ja	mizar-checker	doc/design/mizar-checker/ja/source_type.md	3	Task 269CT implementation verification	c3c05073ebec1c96e5db7e55578557d5f6f858d4b5434c5a467bbecb5f4af552	32
+269CT	ja	mizar-test	doc/design/mizar-test/ja/00.crate_plan.md	3	Task-269CT implementation measurement	a123474e2df7a1b7d00ce8d0ae1bad84af1e5fb09d31efe2d711bafaec6273a1	20
+269GP	en	mizar-checker	doc/design/mizar-checker/en/00.crate_plan.md	3	Task-269GP implementation status	1ccc593787c3c47367cc6986c6c06f479f736b3a7af068a8036f3c5241397bf7	21
+269GP	en	mizar-checker	doc/design/mizar-checker/en/source_proof_local_declaration.md	3	Task 269GP implementation closure	0271f4e10133570c357760b544f8426576c72dec89bee6b7bdb232aa735bebd5	20
+269GP	en	mizar-test	doc/design/mizar-test/en/00.crate_plan.md	3	Task-269GP implementation measurement	a023f9213751126142bd5d65b6e1d32d70d78053945ff7899477ab576dad6cc7	22
+269GP	ja	mizar-checker	doc/design/mizar-checker/ja/00.crate_plan.md	3	Task-269GP implementation status	c745cb60a7ce2b746ac6b32d5e4b08dca14e93c3c4f71c7d00545f757f986d79	16
+269GP	ja	mizar-checker	doc/design/mizar-checker/ja/source_proof_local_declaration.md	3	Task 269GP implementation closure	b9eeb4a424b1040828bd2522c109f83d2596eec3f162878785c79bef78b4ceb7	17
+269GP	ja	mizar-test	doc/design/mizar-test/ja/00.crate_plan.md	3	Task-269GP implementation measurement	240c9d9aaacdb550ef1c5455c0002aaeb13880208e859851216a50163591835b	19
