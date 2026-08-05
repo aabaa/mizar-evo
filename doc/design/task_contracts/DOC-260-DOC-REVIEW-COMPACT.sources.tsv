@@ -1,0 +1,8 @@
+# Frozen preimage inventory for DOC-260-DOC-REVIEW-COMPACT.
+# Columns: task, language, component, source path, ATX level, exact heading text without the ATX prefix, section SHA-256, physical lines.
+260	en	mizar-checker	doc/design/mizar-checker/en/00.crate_plan.md	2	Task 260 Documentation-Prerequisite Verification	19628a38360aa8ae71742ee6653d0c9227a7c4a5d8472090eb1f4831a3d1b64a	25
+260	en	mizar-checker	doc/design/mizar-checker/en/bilingual_sync_audit.md	2	Task 260 Frozen-Contract Synchronization	10ffecfbe81ff079fe33c6279fc1673dad655650db32d17412ce0f4dfb5c8032	10
+260	en	mizar-checker	doc/design/mizar-checker/en/todo.md	2	Checker Task 260 Frozen-Contract Documentation Prerequisite	95fcd12f088a90011bd49199b93368c26ce54f3de894fdf4c500fb1a9a44e15f	20
+260	ja	mizar-checker	doc/design/mizar-checker/ja/00.crate_plan.md	2	Task 260 Documentation-Prerequisite Verification	19a1278ab8dd945d744a0c815ac4791dc01c6f724d570cd865c26953e04f197d	24
+260	ja	mizar-checker	doc/design/mizar-checker/ja/bilingual_sync_audit.md	2	Task 260 Frozen-Contract Synchronization	60cdba24d4ac78d1586644536280d40a0b0b5950b22f4be5a0c26ea3d31494c3	9
+260	ja	mizar-checker	doc/design/mizar-checker/ja/todo.md	2	Checker Task 260 Frozen-Contract Documentation Prerequisite	46e5cb0ba5c23f2340d4c24f3d03021ae73625efe424be8999a9e87761487c20	19
