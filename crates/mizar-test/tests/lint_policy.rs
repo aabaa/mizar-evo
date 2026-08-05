@@ -1,8 +1,59 @@
 use std::{
     collections::{BTreeMap, BTreeSet},
     fs,
-    path::{Path, PathBuf},
+    path::{Component, Path, PathBuf},
 };
+
+#[derive(Debug)]
+struct LegacyCompactionManifest {
+    batches: BTreeMap<String, LegacyCompactionBatch>,
+    tasks: BTreeMap<String, LegacyCompactionTask>,
+    redirects: Vec<LegacyCompactionRedirect>,
+    indexes: Vec<LegacyCompactionIndex>,
+    raw_rows_by_batch: BTreeMap<String, Vec<String>>,
+}
+
+#[derive(Debug)]
+struct LegacyCompactionBatch {
+    id: String,
+    contract_en: PathBuf,
+    contract_ja: PathBuf,
+    inventory_sha256: String,
+    task_count: usize,
+    redirect_count: usize,
+    source_count: usize,
+    index_count: usize,
+}
+
+#[derive(Debug)]
+struct LegacyCompactionTask {
+    batch_id: String,
+    id: String,
+    contract_en: PathBuf,
+    contract_ja: PathBuf,
+}
+
+#[derive(Debug)]
+struct LegacyCompactionRedirect {
+    batch_id: String,
+    task_id: String,
+    language: String,
+    source_path: PathBuf,
+    heading_level: usize,
+    legacy_heading: String,
+    replacement: String,
+    previous_heading: String,
+    next_heading: String,
+}
+
+#[derive(Debug)]
+struct LegacyCompactionIndex {
+    batch_id: String,
+    indexed_id: String,
+    language: String,
+    plan_path: PathBuf,
+    row: String,
+}
 
 #[test]
 fn mizar_test_manifest_opts_into_workspace_lints() {
@@ -115,15 +166,31 @@ fn public_enums_are_non_exhaustive_and_documented() {
 #[test]
 fn task_contracts_are_recursively_paired_and_supported_links_resolve() {
     assert_eq!(
+        sha256_hex(b""),
+        "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    );
+    assert_eq!(
         markdown_link_destinations("``code ` [ignored](ignored.md) ` code`` [owner](owner.md)"),
         vec!["owner.md"]
     );
+    assert_legacy_heading_boundary_vectors();
+    assert_legacy_document_evidence_vectors();
     assert_eq!(
         markdown_link_destinations("```text\n~~~\n[ignored](ignored.md)\n```\n[owner](owner.md)\n"),
         vec!["owner.md"]
     );
+    assert_eq!(
+        markdown_h2_section(
+            "```md\n## Task Index\n| fenced |\n```\n## Task Index\n| visible |\n## Next\n",
+            "Task Index"
+        ),
+        Some("## Task Index\n| visible |\n")
+    );
 
     let workspace = workspace_root();
+    let manifest_document =
+        read_to_string(&workspace.join("doc/design/task_contracts/legacy_compactions.tsv"));
+    assert_legacy_manifest_mutation_vectors(&workspace, &manifest_document);
     let contract_root = workspace.join("doc/design/task_contracts");
     let en_root = contract_root.join("en");
     let ja_root = contract_root.join("ja");
@@ -137,8 +204,7 @@ fn task_contracts_are_recursively_paired_and_supported_links_resolve() {
 
     let mut ids = BTreeMap::new();
     let mut violations = Vec::new();
-    validate_legacy_completion_redirects(&workspace, &mut violations);
-    validate_compaction_task_index_rows(&workspace, &mut violations);
+    validate_legacy_compaction_manifest(&workspace, &mut violations);
     for relative_path in &en_paths {
         let Some(task_id) = relative_path.file_stem().and_then(|stem| stem.to_str()) else {
             violations.push(format!(
@@ -1089,10 +1155,18 @@ fn collect_markdown_files(dir: &Path, files: &mut Vec<PathBuf>) {
     for entry in entries {
         let entry =
             entry.unwrap_or_else(|error| panic!("failed to read {} entry: {error}", dir.display()));
+        let file_type = entry.file_type().unwrap_or_else(|error| {
+            panic!("failed to inspect {} entry type: {error}", dir.display())
+        });
+        if file_type.is_symlink() {
+            continue;
+        }
         let path = entry.path();
-        if path.is_dir() {
+        if file_type.is_dir() {
             collect_markdown_files(&path, files);
-        } else if path.extension().and_then(|extension| extension.to_str()) == Some("md") {
+        } else if file_type.is_file()
+            && path.extension().and_then(|extension| extension.to_str()) == Some("md")
+        {
             files.push(path);
         }
     }
@@ -1164,25 +1238,35 @@ fn without_inline_code(line: &str) -> String {
     visible
 }
 
-fn update_fence_state(line: &str, fence: &mut Option<char>) -> bool {
-    let delimiter = if line.starts_with("```") {
-        Some('`')
-    } else if line.starts_with("~~~") {
-        Some('~')
-    } else {
-        None
+fn update_fence_state(line: &str, fence: &mut Option<(char, usize)>) -> bool {
+    let Some(delimiter) = line
+        .chars()
+        .next()
+        .filter(|character| matches!(character, '`' | '~'))
+    else {
+        return false;
     };
+    let length = line
+        .chars()
+        .take_while(|character| *character == delimiter)
+        .count();
+    if length < 3 {
+        return false;
+    }
+    let remainder = &line[length..];
 
-    match (*fence, delimiter) {
-        (None, Some(delimiter)) => {
-            *fence = Some(delimiter);
+    match *fence {
+        None => {
+            *fence = Some((delimiter, length));
             true
         }
-        (Some(active), Some(delimiter)) if active == delimiter => {
+        Some((active, minimum))
+            if active == delimiter && length >= minimum && remainder.trim().is_empty() =>
+        {
             *fence = None;
             true
         }
-        _ => false,
+        Some(_) => false,
     }
 }
 
@@ -1314,18 +1398,34 @@ fn validate_crate_plan_backlinks(
 
 fn crate_plan_paths(design_root: &Path) -> Vec<PathBuf> {
     let mut plans = Vec::new();
+    let canonical_design_root = fs::canonicalize(design_root).unwrap_or_else(|error| {
+        panic!(
+            "failed to resolve design root {}: {error}",
+            design_root.display()
+        )
+    });
     let entries = fs::read_dir(design_root)
         .unwrap_or_else(|error| panic!("failed to read {}: {error}", design_root.display()));
     for entry in entries {
         let entry = entry.unwrap_or_else(|error| {
             panic!("failed to read {} entry: {error}", design_root.display())
         });
-        if !entry.path().is_dir() {
+        let file_type = entry.file_type().unwrap_or_else(|error| {
+            panic!(
+                "failed to inspect {} entry type: {error}",
+                design_root.display()
+            )
+        });
+        if !file_type.is_dir() || file_type.is_symlink() {
             continue;
         }
         for language in ["en", "ja"] {
             let plan = entry.path().join(language).join("00.crate_plan.md");
-            if plan.is_file() {
+            let is_regular_file =
+                fs::symlink_metadata(&plan).is_ok_and(|metadata| metadata.file_type().is_file());
+            let is_contained = fs::canonicalize(&plan)
+                .is_ok_and(|canonical| canonical.starts_with(&canonical_design_root));
+            if is_regular_file && is_contained {
                 plans.push(plan);
             }
         }
@@ -1334,147 +1434,1259 @@ fn crate_plan_paths(design_root: &Path) -> Vec<PathBuf> {
     plans
 }
 
-fn validate_legacy_completion_redirects(workspace: &Path, violations: &mut Vec<String>) {
-    const CHECKER_FILES: [&str; 14] = [
-        "00.crate_plan.md",
-        "bilingual_sync_audit.md",
-        "binding_env.md",
-        "module_boundary_audit.md",
-        "payload_family_decomposition.md",
-        "resolved_typed_ast.md",
-        "semantic_spec_audit.md",
-        "source_proof_local_declaration.md",
-        "source_spec_audit.md",
-        "source_statement.md",
-        "source_term.md",
-        "source_type.md",
-        "todo.md",
-        "typed_ast.md",
-    ];
-    const TEST_FILES: [&str; 6] = [
-        "00.crate_plan.md",
-        "bilingual_sync_audit.md",
-        "harness.md",
-        "module_boundary_audit.md",
-        "todo.md",
-        "traceability.md",
-    ];
-
-    let design_root = workspace.join("doc/design");
-    let mut expected = BTreeSet::new();
-    for language in ["en", "ja"] {
-        let punctuation = if language == "en" { "." } else { "。" };
-        for (component, filenames) in [
-            ("mizar-checker", &CHECKER_FILES[..]),
-            ("mizar-test", &TEST_FILES[..]),
-        ] {
-            for filename in filenames {
-                let path = design_root.join(component).join(language).join(filename);
-                for task in ["269SDP", "269SDC"] {
-                    expected.insert((
-                        path.clone(),
-                        format!(
-                            "Completion evidence: [central Task-{task} historical contract](../../task_contracts/{language}/{task}.md#completion-evidence){punctuation}"
-                        ),
-                    ));
-                }
-            }
-        }
+fn validate_legacy_compaction_manifest(workspace: &Path, violations: &mut Vec<String>) {
+    let manifest_path = workspace.join("doc/design/task_contracts/legacy_compactions.tsv");
+    if !manifest_path.is_file() {
+        violations.push(format!(
+            "{}: legacy compaction manifest is missing",
+            manifest_path.display()
+        ));
+        return;
     }
-    for filename in ["spec_coverage_audit.md", "todo.md"] {
-        expected.insert((
-            design_root.join(filename),
-            "Completion evidence: [central Task-269SDC historical contract](./task_contracts/en/269SDC.md#completion-evidence).".to_owned(),
+    let manifest_text = read_to_string(&manifest_path);
+    violations.extend(legacy_compaction_manifest_violations(
+        workspace,
+        &manifest_text,
+    ));
+}
+
+fn legacy_compaction_manifest_violations(workspace: &Path, document: &str) -> Vec<String> {
+    let mut violations = Vec::new();
+    if let Some(manifest) = parse_legacy_compaction_manifest(document, &mut violations) {
+        validate_legacy_manifest_relations(workspace, &manifest, &mut violations);
+        validate_legacy_manifest_documents(workspace, &manifest, &mut violations);
+    }
+    violations
+}
+
+fn parse_legacy_compaction_manifest(
+    document: &str,
+    violations: &mut Vec<String>,
+) -> Option<LegacyCompactionManifest> {
+    if document.contains('\r') {
+        violations.push("legacy compaction manifest must use LF line endings".to_owned());
+    }
+
+    let data_rows = document
+        .lines()
+        .enumerate()
+        .filter(|(_, line)| !line.is_empty() && !line.starts_with('#'))
+        .collect::<Vec<_>>();
+    let Some((schema_line_number, schema)) = data_rows.first().copied() else {
+        violations.push("legacy compaction manifest is empty".to_owned());
+        return None;
+    };
+    if schema != "schema\t1" {
+        violations.push(format!(
+            "legacy compaction manifest:{}: first data row must be schema<TAB>1",
+            schema_line_number + 1
         ));
     }
 
-    let old_headings = [
-        "## Task 269SDP Implementation Status",
-        "## Task 269SDP implementation status",
-        "## Task 269SDC Implementation Status",
-    ];
-    let mut markdown_paths = Vec::new();
-    collect_markdown_files(&design_root, &mut markdown_paths);
-    let mut observed = BTreeMap::new();
-    for path in markdown_paths {
-        let document = read_to_string(&path);
-        for (line_number, line) in document.lines().enumerate() {
-            if old_headings.contains(&line) {
-                violations.push(format!(
-                    "{}:{}: legacy completion heading must remain compacted",
-                    path.display(),
-                    line_number + 1
-                ));
-            }
-            if line.starts_with("Completion evidence: [central Task-269SD") {
-                *observed
-                    .entry((path.clone(), line.to_owned()))
-                    .or_insert(0_usize) += 1;
-            }
-        }
-    }
-
-    for (path, line) in &expected {
-        let count = observed
-            .get(&(path.clone(), line.clone()))
-            .copied()
-            .unwrap_or(0);
-        if count != 1 {
+    for window in data_rows[1..].windows(2) {
+        if window[0].1.as_bytes() >= window[1].1.as_bytes() {
             violations.push(format!(
-                "{}: frozen legacy redirect {line:?} must occur exactly once, found {count}",
-                path.display()
-            ));
-        }
-        validate_local_markdown_links(path, line, violations);
-    }
-    for (path, line) in observed.keys() {
-        if !expected.contains(&(path.clone(), line.clone())) {
-            violations.push(format!(
-                "{}: unexpected or misdirected legacy redirect {line:?}",
-                path.display()
+                "legacy compaction manifest:{}: data rows must be strictly byte-sorted",
+                window[1].0 + 1
             ));
         }
     }
-}
 
-fn validate_compaction_task_index_rows(workspace: &Path, violations: &mut Vec<String>) {
-    for component in ["mizar-checker", "mizar-test"] {
-        for (language, label) in [("en", "EN"), ("ja", "JA")] {
-            let path = workspace
-                .join("doc/design")
-                .join(component)
-                .join(language)
-                .join("00.crate_plan.md");
-            let document = read_to_string(&path);
-            let Some(task_index) = markdown_h2_section(&document, "Task Index") else {
-                violations.push(format!("{}: missing Task Index section", path.display()));
-                continue;
-            };
-            for task in ["269SDP", "269SDC", "DOC-269SD-COMPACT"] {
-                let row = format!(
-                    "| {task} | [{label} contract](../../task_contracts/{language}/{task}.md) |"
-                );
-                let count = task_index.lines().filter(|line| *line == row).count();
-                if count != 1 {
+    let mut manifest = LegacyCompactionManifest {
+        batches: BTreeMap::new(),
+        tasks: BTreeMap::new(),
+        redirects: Vec::new(),
+        indexes: Vec::new(),
+        raw_rows_by_batch: BTreeMap::new(),
+    };
+    let mut redirect_keys = BTreeSet::new();
+    let mut index_keys = BTreeSet::new();
+
+    for (line_number, row) in data_rows.into_iter().skip(1) {
+        let fields = row.split('\t').collect::<Vec<_>>();
+        if fields.iter().any(|field| field.is_empty()) {
+            violations.push(format!(
+                "legacy compaction manifest:{}: fields must be nonempty",
+                line_number + 1
+            ));
+            continue;
+        }
+        match fields.first().copied() {
+            Some("batch") if fields.len() == 9 => {
+                let counts = fields[5..9]
+                    .iter()
+                    .map(|field| parse_manifest_count(field, line_number, violations))
+                    .collect::<Option<Vec<_>>>();
+                let Some(counts) = counts else {
+                    continue;
+                };
+                let batch = LegacyCompactionBatch {
+                    id: fields[1].to_owned(),
+                    contract_en: PathBuf::from(fields[2]),
+                    contract_ja: PathBuf::from(fields[3]),
+                    inventory_sha256: fields[4].to_owned(),
+                    task_count: counts[0],
+                    redirect_count: counts[1],
+                    source_count: counts[2],
+                    index_count: counts[3],
+                };
+                if !valid_task_contract_id(&batch.id) {
                     violations.push(format!(
-                        "{}: Task Index must contain {row:?} exactly once, found {count}",
-                        path.display()
+                        "legacy compaction manifest:{}: invalid batch id {:?}",
+                        line_number + 1,
+                        batch.id
+                    ));
+                }
+                if manifest.batches.insert(batch.id.clone(), batch).is_some() {
+                    violations.push(format!(
+                        "legacy compaction manifest:{}: duplicate batch id {}",
+                        line_number + 1,
+                        fields[1]
                     ));
                 }
             }
+            Some("task") if fields.len() == 5 => {
+                let task = LegacyCompactionTask {
+                    batch_id: fields[1].to_owned(),
+                    id: fields[2].to_owned(),
+                    contract_en: PathBuf::from(fields[3]),
+                    contract_ja: PathBuf::from(fields[4]),
+                };
+                if !valid_task_contract_id(&task.id) {
+                    violations.push(format!(
+                        "legacy compaction manifest:{}: invalid task id {:?}",
+                        line_number + 1,
+                        task.id
+                    ));
+                }
+                if manifest.tasks.insert(task.id.clone(), task).is_some() {
+                    violations.push(format!(
+                        "legacy compaction manifest:{}: task id {} belongs to multiple rows",
+                        line_number + 1,
+                        fields[2]
+                    ));
+                }
+                manifest
+                    .raw_rows_by_batch
+                    .entry(fields[1].to_owned())
+                    .or_default()
+                    .push(row.to_owned());
+            }
+            Some("redirect") if fields.len() == 10 => {
+                let Some(heading_level) = parse_manifest_count(fields[5], line_number, violations)
+                else {
+                    continue;
+                };
+                let redirect = LegacyCompactionRedirect {
+                    batch_id: fields[1].to_owned(),
+                    task_id: fields[2].to_owned(),
+                    language: fields[3].to_owned(),
+                    source_path: PathBuf::from(fields[4]),
+                    heading_level,
+                    legacy_heading: fields[6].to_owned(),
+                    replacement: fields[7].to_owned(),
+                    previous_heading: fields[8].to_owned(),
+                    next_heading: fields[9].to_owned(),
+                };
+                let key = (redirect.source_path.clone(), redirect.task_id.clone());
+                if !redirect_keys.insert(key) {
+                    violations.push(format!(
+                        "legacy compaction manifest:{}: duplicate redirect source/task",
+                        line_number + 1
+                    ));
+                }
+                manifest
+                    .raw_rows_by_batch
+                    .entry(redirect.batch_id.clone())
+                    .or_default()
+                    .push(row.to_owned());
+                manifest.redirects.push(redirect);
+            }
+            Some("index") if fields.len() == 6 => {
+                let index = LegacyCompactionIndex {
+                    batch_id: fields[1].to_owned(),
+                    indexed_id: fields[2].to_owned(),
+                    language: fields[3].to_owned(),
+                    plan_path: PathBuf::from(fields[4]),
+                    row: fields[5].to_owned(),
+                };
+                let key = (
+                    index.batch_id.clone(),
+                    index.indexed_id.clone(),
+                    index.language.clone(),
+                    index.plan_path.clone(),
+                );
+                if !index_keys.insert(key) {
+                    violations.push(format!(
+                        "legacy compaction manifest:{}: duplicate logical index identity",
+                        line_number + 1
+                    ));
+                }
+                manifest
+                    .raw_rows_by_batch
+                    .entry(index.batch_id.clone())
+                    .or_default()
+                    .push(row.to_owned());
+                manifest.indexes.push(index);
+            }
+            Some("schema") => violations.push(format!(
+                "legacy compaction manifest:{}: schema record must occur exactly once and first",
+                line_number + 1
+            )),
+            Some(kind) => violations.push(format!(
+                "legacy compaction manifest:{}: unknown kind or wrong field count {kind:?}",
+                line_number + 1
+            )),
+            None => unreachable!("nonempty row has a first field"),
+        }
+    }
+
+    Some(manifest)
+}
+
+fn parse_manifest_count(
+    field: &str,
+    line_number: usize,
+    violations: &mut Vec<String>,
+) -> Option<usize> {
+    match field.parse::<usize>() {
+        Ok(value) => Some(value),
+        Err(error) => {
+            violations.push(format!(
+                "legacy compaction manifest:{}: invalid count {field:?}: {error}",
+                line_number + 1
+            ));
+            None
         }
     }
 }
 
+fn validate_legacy_manifest_relations(
+    workspace: &Path,
+    manifest: &LegacyCompactionManifest,
+    violations: &mut Vec<String>,
+) {
+    for batch in manifest.batches.values() {
+        validate_manifest_contract_path(workspace, &batch.contract_en, "en", &batch.id, violations);
+        validate_manifest_contract_path(workspace, &batch.contract_ja, "ja", &batch.id, violations);
+        let raw_rows = manifest
+            .raw_rows_by_batch
+            .get(&batch.id)
+            .cloned()
+            .unwrap_or_default();
+        let canonical = if raw_rows.is_empty() {
+            String::new()
+        } else {
+            format!("{}\n", raw_rows.join("\n"))
+        };
+        let observed_hash = sha256_hex(canonical.as_bytes());
+        if observed_hash != batch.inventory_sha256 {
+            violations.push(format!(
+                "legacy compaction batch {}: inventory hash {} != {}",
+                batch.id, observed_hash, batch.inventory_sha256
+            ));
+        }
+        let tasks = manifest
+            .tasks
+            .values()
+            .filter(|task| task.batch_id == batch.id)
+            .count();
+        let redirects = manifest
+            .redirects
+            .iter()
+            .filter(|redirect| redirect.batch_id == batch.id)
+            .collect::<Vec<_>>();
+        let sources = redirects
+            .iter()
+            .map(|redirect| &redirect.source_path)
+            .collect::<BTreeSet<_>>()
+            .len();
+        let indexes = manifest
+            .indexes
+            .iter()
+            .filter(|index| index.batch_id == batch.id)
+            .count();
+        for (label, observed, expected) in [
+            ("tasks", tasks, batch.task_count),
+            ("redirects", redirects.len(), batch.redirect_count),
+            ("source files", sources, batch.source_count),
+            ("index rows", indexes, batch.index_count),
+        ] {
+            if observed != expected {
+                violations.push(format!(
+                    "legacy compaction batch {}: {label} count {observed} != {expected}",
+                    batch.id
+                ));
+            }
+        }
+    }
+
+    for batch_id in manifest.raw_rows_by_batch.keys() {
+        if !manifest.batches.contains_key(batch_id) {
+            violations.push(format!(
+                "legacy compaction manifest: rows reference undeclared batch {batch_id}"
+            ));
+        }
+    }
+    for task in manifest.tasks.values() {
+        if !manifest.batches.contains_key(&task.batch_id) {
+            violations.push(format!(
+                "legacy compaction task {} references undeclared batch {}",
+                task.id, task.batch_id
+            ));
+        }
+        validate_manifest_contract_path(workspace, &task.contract_en, "en", &task.id, violations);
+        validate_manifest_contract_path(workspace, &task.contract_ja, "ja", &task.id, violations);
+    }
+    for redirect in &manifest.redirects {
+        validate_manifest_redirect_relation(workspace, manifest, redirect, violations);
+    }
+    for index in &manifest.indexes {
+        validate_manifest_index_relation(workspace, manifest, index, violations);
+    }
+}
+
+fn validate_manifest_contract_path(
+    workspace: &Path,
+    relative_path: &Path,
+    language: &str,
+    id: &str,
+    violations: &mut Vec<String>,
+) {
+    if !manifest_path_within_workspace(workspace, relative_path)
+        || !relative_path.starts_with(format!("doc/design/task_contracts/{language}"))
+        || relative_path.file_stem().and_then(|stem| stem.to_str()) != Some(id)
+    {
+        violations.push(format!(
+            "legacy compaction {id}: invalid {language} contract path {}",
+            relative_path.display()
+        ));
+        return;
+    }
+    let path = workspace.join(relative_path);
+    if !path.is_file() {
+        violations.push(format!(
+            "legacy compaction {id}: missing {language} contract {}",
+            path.display()
+        ));
+        return;
+    }
+    let document = read_to_string(&path);
+    let title = document.lines().next().unwrap_or_default();
+    if !title.starts_with(&format!("# Task {id}:")) {
+        violations.push(format!(
+            "{}: contract title must identify Task {id}",
+            path.display()
+        ));
+    }
+}
+
+fn safe_manifest_relative_path(path: &Path) -> bool {
+    !path.as_os_str().is_empty()
+        && !path.is_absolute()
+        && path
+            .components()
+            .all(|component| matches!(component, Component::Normal(_)))
+        && path.starts_with("doc/design")
+        && !path.to_string_lossy().contains('\\')
+}
+
+fn manifest_path_within_workspace(workspace: &Path, relative_path: &Path) -> bool {
+    if !safe_manifest_relative_path(relative_path) {
+        return false;
+    }
+    let Ok(canonical_workspace) = fs::canonicalize(workspace) else {
+        return false;
+    };
+    fs::canonicalize(workspace.join(relative_path))
+        .is_ok_and(|path| path.starts_with(canonical_workspace))
+}
+
+fn validate_manifest_redirect_relation(
+    workspace: &Path,
+    manifest: &LegacyCompactionManifest,
+    redirect: &LegacyCompactionRedirect,
+    violations: &mut Vec<String>,
+) {
+    let Some(task) = manifest.tasks.get(&redirect.task_id) else {
+        violations.push(format!(
+            "legacy redirect {} references undeclared task {}",
+            redirect.source_path.display(),
+            redirect.task_id
+        ));
+        return;
+    };
+    if task.batch_id != redirect.batch_id {
+        violations.push(format!(
+            "legacy redirect {} binds task {} to wrong batch {}",
+            redirect.source_path.display(),
+            task.id,
+            redirect.batch_id
+        ));
+    }
+    if !matches!(redirect.language.as_str(), "en" | "ja")
+        || manifest_path_language(&redirect.source_path) != Some(redirect.language.as_str())
+    {
+        violations.push(format!(
+            "legacy redirect {} has mismatched language {}",
+            redirect.source_path.display(),
+            redirect.language
+        ));
+    }
+    if !manifest_path_within_workspace(workspace, &redirect.source_path)
+        || redirect
+            .source_path
+            .extension()
+            .and_then(|extension| extension.to_str())
+            != Some("md")
+    {
+        violations.push(format!(
+            "legacy redirect has unsafe source path {}",
+            redirect.source_path.display()
+        ));
+    }
+    if !(2..=6).contains(&redirect.heading_level)
+        || atx_heading_level(&redirect.legacy_heading) != Some(redirect.heading_level)
+    {
+        violations.push(format!(
+            "legacy redirect {} has invalid level/heading {:?}",
+            redirect.source_path.display(),
+            redirect.legacy_heading
+        ));
+    }
+
+    let contract = if redirect.language == "en" {
+        &task.contract_en
+    } else {
+        &task.contract_ja
+    };
+    let punctuation = if redirect.language == "en" {
+        "."
+    } else {
+        "。"
+    };
+    let prefix = format!(
+        "Completion evidence: [central Task-{} historical contract](",
+        task.id
+    );
+    let suffix = format!("){}", punctuation);
+    let Some(destination) = redirect
+        .replacement
+        .strip_prefix(&prefix)
+        .and_then(|line| line.strip_suffix(&suffix))
+    else {
+        violations.push(format!(
+            "legacy redirect {} is outside the reserved grammar: {:?}",
+            redirect.source_path.display(),
+            redirect.replacement
+        ));
+        return;
+    };
+    if !supported_relative_markdown_destination(destination) {
+        violations.push(format!(
+            "legacy redirect {} must use a relative Markdown path",
+            redirect.source_path.display()
+        ));
+        return;
+    }
+    if destination.split_once('#').map(|(_, fragment)| fragment) != Some("completion-evidence") {
+        violations.push(format!(
+            "legacy redirect {} must target #completion-evidence",
+            redirect.source_path.display()
+        ));
+    }
+    let source = workspace.join(&redirect.source_path);
+    let declared_contract = workspace.join(contract);
+    let resolved =
+        markdown_target_path(&source, destination).and_then(|path| fs::canonicalize(path).ok());
+    let declared = fs::canonicalize(&declared_contract).ok();
+    if resolved.is_none() || resolved != declared {
+        violations.push(format!(
+            "legacy redirect {} must target declared {} contract {}",
+            redirect.source_path.display(),
+            redirect.language,
+            declared_contract.display()
+        ));
+    }
+}
+
+fn validate_manifest_index_relation(
+    workspace: &Path,
+    manifest: &LegacyCompactionManifest,
+    index: &LegacyCompactionIndex,
+    violations: &mut Vec<String>,
+) {
+    let Some(batch) = manifest.batches.get(&index.batch_id) else {
+        violations.push(format!(
+            "legacy index {} references undeclared batch {}",
+            index.plan_path.display(),
+            index.batch_id
+        ));
+        return;
+    };
+    let contract = if index.indexed_id == batch.id {
+        if index.language == "en" {
+            &batch.contract_en
+        } else {
+            &batch.contract_ja
+        }
+    } else {
+        let Some(task) = manifest.tasks.get(&index.indexed_id) else {
+            violations.push(format!(
+                "legacy index {} references undeclared task {}",
+                index.plan_path.display(),
+                index.indexed_id
+            ));
+            return;
+        };
+        if task.batch_id != batch.id {
+            violations.push(format!(
+                "legacy index {} binds task {} to wrong batch {}",
+                index.plan_path.display(),
+                task.id,
+                batch.id
+            ));
+        }
+        if index.language == "en" {
+            &task.contract_en
+        } else {
+            &task.contract_ja
+        }
+    };
+    if !matches!(index.language.as_str(), "en" | "ja")
+        || manifest_path_language(&index.plan_path) != Some(index.language.as_str())
+        || !manifest_path_within_workspace(workspace, &index.plan_path)
+        || index.plan_path.file_name().and_then(|name| name.to_str()) != Some("00.crate_plan.md")
+    {
+        violations.push(format!(
+            "legacy index has invalid plan language/path {} ({})",
+            index.plan_path.display(),
+            index.language
+        ));
+    }
+    let label = index.language.to_ascii_uppercase();
+    let prefix = format!("| {} | [{label} contract](", index.indexed_id);
+    let Some(destination) = index
+        .row
+        .strip_prefix(&prefix)
+        .and_then(|row| row.strip_suffix(") |"))
+    else {
+        violations.push(format!(
+            "legacy index {} has invalid exact row {:?}",
+            index.plan_path.display(),
+            index.row
+        ));
+        return;
+    };
+    let plan = workspace.join(&index.plan_path);
+    let resolved =
+        markdown_target_path(&plan, destination).and_then(|path| fs::canonicalize(path).ok());
+    let declared = fs::canonicalize(workspace.join(contract)).ok();
+    if resolved.is_none() || resolved != declared {
+        violations.push(format!(
+            "legacy index {} row must target declared contract {}",
+            index.plan_path.display(),
+            contract.display()
+        ));
+    }
+}
+
+fn manifest_path_language(path: &Path) -> Option<&'static str> {
+    for component in path.components() {
+        match component.as_os_str().to_str() {
+            Some("en") => return Some("en"),
+            Some("ja") => return Some("ja"),
+            _ => {}
+        }
+    }
+    path.starts_with("doc/design").then_some("en")
+}
+
+fn validate_legacy_manifest_documents(
+    workspace: &Path,
+    manifest: &LegacyCompactionManifest,
+    violations: &mut Vec<String>,
+) {
+    let design_root = workspace.join("doc/design");
+    let mut markdown_paths = Vec::new();
+    collect_markdown_files(&design_root, &mut markdown_paths);
+    markdown_paths.sort();
+
+    let expected = manifest
+        .redirects
+        .iter()
+        .map(|redirect| {
+            (
+                workspace.join(&redirect.source_path),
+                redirect.replacement.clone(),
+            )
+        })
+        .collect::<BTreeSet<_>>();
+    if expected.len() != manifest.redirects.len() {
+        violations.push("legacy compaction manifest has duplicate expanded redirects".to_owned());
+    }
+    let forbidden = manifest
+        .redirects
+        .iter()
+        .map(|redirect| redirect.legacy_heading.clone())
+        .collect::<BTreeSet<_>>();
+    let mut documents = BTreeMap::new();
+    let mut heading_slugs = BTreeMap::new();
+    for path in markdown_paths {
+        let document = read_to_string(&path);
+        if let Ok(canonical_path) = fs::canonicalize(&path) {
+            heading_slugs.insert(canonical_path, markdown_heading_slugs(&document));
+        }
+        documents.insert(path, document);
+    }
+
+    let mut expected_by_path = BTreeMap::<PathBuf, BTreeSet<String>>::new();
+    for (path, line) in &expected {
+        expected_by_path
+            .entry(path.clone())
+            .or_default()
+            .insert(line.clone());
+        validate_cached_manifest_markdown_links(path, line, &heading_slugs, violations);
+    }
+    for (path, document) in &documents {
+        let expected_lines = expected_by_path.get(path).cloned().unwrap_or_default();
+        validate_legacy_redirect_document_evidence(
+            path,
+            document,
+            &forbidden,
+            &expected_lines,
+            violations,
+        );
+    }
+    for (path, expected_lines) in &expected_by_path {
+        if !documents.contains_key(path) {
+            validate_legacy_redirect_document_evidence(
+                path,
+                "",
+                &forbidden,
+                expected_lines,
+                violations,
+            );
+        }
+    }
+
+    for redirect in &manifest.redirects {
+        let path = workspace.join(&redirect.source_path);
+        let Some(document) = documents.get(&path) else {
+            violations.push(format!("{}: redirect source is missing", path.display()));
+            continue;
+        };
+        match legacy_redirect_anchors(document, &redirect.replacement, redirect.heading_level) {
+            Ok((previous, next)) => {
+                if previous != redirect.previous_heading || next != redirect.next_heading {
+                    violations.push(format!(
+                        "{}: redirect anchors ({previous:?}, {next:?}) != ({:?}, {:?})",
+                        path.display(),
+                        redirect.previous_heading,
+                        redirect.next_heading
+                    ));
+                }
+            }
+            Err(error) => violations.push(format!("{}: {error}", path.display())),
+        }
+    }
+
+    for index in &manifest.indexes {
+        let path = workspace.join(&index.plan_path);
+        let Some(document) = documents.get(&path) else {
+            violations.push(format!("{}: indexed plan is missing", path.display()));
+            continue;
+        };
+        let Some(task_index) = markdown_h2_section(document, "Task Index") else {
+            violations.push(format!("{}: missing Task Index section", path.display()));
+            continue;
+        };
+        let count = visible_markdown_lines(task_index)
+            .iter()
+            .filter(|(_, line)| *line == index.row)
+            .count();
+        if count != 1 {
+            violations.push(format!(
+                "{}: Task Index row {:?} must occur exactly once, found {count}",
+                path.display(),
+                index.row
+            ));
+        }
+    }
+}
+
+fn validate_legacy_redirect_document_evidence(
+    path: &Path,
+    document: &str,
+    forbidden: &BTreeSet<String>,
+    expected: &BTreeSet<String>,
+    violations: &mut Vec<String>,
+) {
+    let mut observed = BTreeMap::new();
+    for (line_number, line) in visible_markdown_lines(document) {
+        if forbidden.contains(line) {
+            violations.push(format!(
+                "{}:{}: forbidden legacy completion heading {:?}",
+                path.display(),
+                line_number + 1,
+                line
+            ));
+        }
+        if reserved_completion_redirect(line) {
+            *observed.entry(line.to_owned()).or_insert(0_usize) += 1;
+        }
+    }
+    for line in expected {
+        let count = observed.get(line).copied().unwrap_or(0);
+        if count != 1 {
+            violations.push(format!(
+                "{}: manifest redirect {line:?} must occur exactly once, found {count}",
+                path.display()
+            ));
+        }
+    }
+    for line in observed.keys() {
+        if !expected.contains(line) {
+            violations.push(format!(
+                "{}: unexpected central historical-contract redirect {line:?}",
+                path.display()
+            ));
+        }
+    }
+}
+
+fn validate_cached_manifest_markdown_links(
+    source_path: &Path,
+    document: &str,
+    heading_slugs: &BTreeMap<PathBuf, BTreeSet<String>>,
+    violations: &mut Vec<String>,
+) {
+    for destination in markdown_link_destinations(document) {
+        let Some(target_path) = markdown_target_path(source_path, &destination) else {
+            continue;
+        };
+        let Ok(canonical_target) = fs::canonicalize(&target_path) else {
+            violations.push(format!(
+                "{}: local Markdown target does not exist: {destination}",
+                source_path.display()
+            ));
+            continue;
+        };
+        let Some((_, fragment)) = destination.split_once('#') else {
+            continue;
+        };
+        if fragment.is_empty() {
+            continue;
+        }
+        if !heading_slugs
+            .get(&canonical_target)
+            .is_some_and(|slugs| slugs.contains(fragment))
+        {
+            violations.push(format!(
+                "{}: fragment #{fragment} does not exist in {}",
+                source_path.display(),
+                target_path.display()
+            ));
+        }
+    }
+}
+
+fn visible_markdown_lines(document: &str) -> Vec<(usize, &str)> {
+    let mut visible = Vec::new();
+    let mut fence = None;
+    for (line_number, line) in document.lines().enumerate() {
+        if update_fence_state(line.trim_start(), &mut fence) {
+            continue;
+        }
+        if fence.is_none() {
+            visible.push((line_number, line));
+        }
+    }
+    visible
+}
+
+fn reserved_completion_redirect(line: &str) -> bool {
+    let Some(rest) = line.strip_prefix("Completion evidence: [central Task-") else {
+        return false;
+    };
+    let Some((task_id, destination)) = rest.split_once(" historical contract](") else {
+        return false;
+    };
+    if !valid_task_contract_id(task_id) {
+        return false;
+    }
+    let destination = destination
+        .strip_suffix(").")
+        .or_else(|| destination.strip_suffix(")。"));
+    destination.is_some_and(|destination| {
+        destination.ends_with(".md#completion-evidence")
+            && supported_relative_markdown_destination(destination)
+    })
+}
+
+fn supported_relative_markdown_destination(destination: &str) -> bool {
+    let target = destination
+        .split_once('#')
+        .map_or(destination, |(target, _)| target);
+    !target.is_empty()
+        && !Path::new(target).is_absolute()
+        && !destination.contains(['\\', '\r', '\n', '\t', ' '])
+        && Path::new(target)
+            .extension()
+            .and_then(|extension| extension.to_str())
+            == Some("md")
+        && markdown_target_path(Path::new("source.md"), destination).is_some()
+}
+
+fn legacy_redirect_anchors(
+    document: &str,
+    replacement: &str,
+    legacy_level: usize,
+) -> Result<(String, String), String> {
+    let visible = visible_markdown_lines(document);
+    let matches = visible
+        .iter()
+        .enumerate()
+        .filter(|(_, (_, line))| *line == replacement)
+        .map(|(index, _)| index)
+        .collect::<Vec<_>>();
+    if matches.len() != 1 {
+        return Err(format!(
+            "redirect {replacement:?} must be unique outside code, found {}",
+            matches.len()
+        ));
+    }
+    let redirect_index = matches[0];
+    let previous = visible[..redirect_index]
+        .iter()
+        .rev()
+        .find_map(|(_, line)| {
+            atx_heading_level(line)
+                .filter(|level| *level <= legacy_level)
+                .map(|_| (*line).to_owned())
+        })
+        .unwrap_or_else(|| "BOF".to_owned());
+    let next = visible[redirect_index + 1..]
+        .iter()
+        .find_map(|(_, line)| {
+            atx_heading_level(line)
+                .filter(|level| *level <= legacy_level)
+                .map(|_| (*line).to_owned())
+        })
+        .unwrap_or_else(|| "EOF".to_owned());
+    Ok((previous, next))
+}
+
+fn atx_heading_level(line: &str) -> Option<usize> {
+    let level = line.bytes().take_while(|byte| *byte == b'#').count();
+    (1..=6)
+        .contains(&level)
+        .then(|| line.as_bytes().get(level))
+        .flatten()
+        .is_some_and(|byte| *byte == b' ')
+        .then_some(level)
+}
+
+fn assert_legacy_heading_boundary_vectors() {
+    for level in 2..=6 {
+        let marker = "#".repeat(level);
+        let document = format!("{marker} Previous\nredirect\n{marker} Next\n");
+        assert_eq!(
+            legacy_redirect_anchors(&document, "redirect", level),
+            Ok((format!("{marker} Previous"), format!("{marker} Next")))
+        );
+    }
+    assert_eq!(
+        legacy_redirect_anchors("redirect\n", "redirect", 2),
+        Ok(("BOF".to_owned(), "EOF".to_owned()))
+    );
+    let lower_level = "## Previous\n### Nested\nredirect\n### Still nested\n## Next\n";
+    assert_eq!(
+        legacy_redirect_anchors(lower_level, "redirect", 2),
+        Ok(("## Previous".to_owned(), "## Next".to_owned()))
+    );
+    let higher_level = "### Previous\nredirect\n# Higher\n";
+    assert_eq!(
+        legacy_redirect_anchors(higher_level, "redirect", 3),
+        Ok(("### Previous".to_owned(), "# Higher".to_owned()))
+    );
+    let fences =
+        "## Same\n## Same\n```md\n## Ignored\n```\nredirect\n~~~md\n## Ignored too\n~~~\n## Next\n";
+    assert_eq!(
+        legacy_redirect_anchors(fences, "redirect", 2),
+        Ok(("## Same".to_owned(), "## Next".to_owned()))
+    );
+}
+
+fn assert_legacy_document_evidence_vectors() {
+    let path = Path::new("fixture.md");
+    let forbidden = BTreeSet::from(["## Legacy completion".to_owned()]);
+    let redirect = "Completion evidence: [central Task-T historical contract](contract.md#completion-evidence).";
+    let unexpected =
+        "Completion evidence: [central Task-U historical contract](other.md#completion-evidence).";
+    let expected = BTreeSet::from([redirect.to_owned()]);
+
+    let accepted = format!(
+        "{redirect}\nordinary prose mentions {unexpected}\n```md\n## Legacy completion\n{unexpected}\n```\n"
+    );
+    let mut violations = Vec::new();
+    validate_legacy_redirect_document_evidence(
+        path,
+        &accepted,
+        &forbidden,
+        &expected,
+        &mut violations,
+    );
+    assert!(
+        violations.is_empty(),
+        "ordinary prose and fenced evidence must be ignored: {violations:?}"
+    );
+
+    for (document, diagnostic) in [
+        (
+            "## Legacy completion\n",
+            "forbidden legacy completion heading",
+        ),
+        ("", "must occur exactly once, found 0"),
+        (
+            &format!("{redirect}\n{redirect}\n"),
+            "must occur exactly once, found 2",
+        ),
+        (
+            &format!("{redirect}\n{unexpected}\n"),
+            "unexpected central historical-contract redirect",
+        ),
+    ] {
+        let mut violations = Vec::new();
+        validate_legacy_redirect_document_evidence(
+            path,
+            document,
+            &forbidden,
+            &expected,
+            &mut violations,
+        );
+        assert!(
+            violations
+                .iter()
+                .any(|violation| violation.contains(diagnostic)),
+            "document mutation must report {diagnostic:?}, got {violations:?}"
+        );
+    }
+}
+
+fn assert_legacy_manifest_mutation_vectors(workspace: &Path, manifest: &str) {
+    let zero_hash = "0".repeat(64);
+    let mutations = vec![
+        (
+            mutate_first_manifest_field(manifest, "schema", 1, |_| "2".to_owned()),
+            "first data row must be schema<TAB>1",
+        ),
+        (
+            mutate_first_manifest_field(manifest, "batch", 4, |_| zero_hash),
+            "inventory hash",
+        ),
+        (
+            mutate_first_manifest_field(manifest, "batch", 5, |_| "999".to_owned()),
+            "tasks count",
+        ),
+        (
+            mutate_first_manifest_field(manifest, "redirect", 4, |_| "/outside.md".to_owned()),
+            "unsafe source path",
+        ),
+        (
+            mutate_first_manifest_field(manifest, "redirect", 6, |_| {
+                "### Wrong legacy level".to_owned()
+            }),
+            "invalid level/heading",
+        ),
+        (
+            mutate_first_manifest_field(manifest, "redirect", 7, |_| {
+                "not a reserved completion redirect".to_owned()
+            }),
+            "outside the reserved grammar",
+        ),
+        (
+            mutate_first_manifest_field(manifest, "redirect", 7, |line| {
+                let (prefix, destination) = line
+                    .split_once("](")
+                    .expect("reserved redirect has a destination");
+                let (_, suffix) = destination
+                    .split_once("#completion-evidence")
+                    .expect("reserved redirect has the completion fragment");
+                format!("{prefix}](missing.md#completion-evidence{suffix}")
+            }),
+            "must target declared",
+        ),
+        (
+            mutate_first_manifest_field(manifest, "redirect", 7, |line| {
+                line.replace("#completion-evidence", "#missing-fragment")
+            }),
+            "must target #completion-evidence",
+        ),
+        (
+            mutate_first_manifest_field(manifest, "redirect", 7, |line| {
+                line.replacen("](", "](/", 1)
+            }),
+            "must use a relative Markdown path",
+        ),
+        (
+            mutate_first_manifest_field(manifest, "redirect", 8, |_| {
+                "## Missing previous anchor".to_owned()
+            }),
+            "redirect anchors",
+        ),
+        (
+            mutate_first_manifest_field(manifest, "index", 5, |_| {
+                "| wrong | [EN contract](missing.md) |".to_owned()
+            }),
+            "invalid exact row",
+        ),
+        (
+            swap_first_two_manifest_rows(manifest, "index"),
+            "strictly byte-sorted",
+        ),
+        (
+            duplicate_first_manifest_row(manifest, "batch"),
+            "duplicate batch id",
+        ),
+        (
+            duplicate_first_manifest_row(manifest, "task"),
+            "belongs to multiple rows",
+        ),
+        (
+            duplicate_first_manifest_row_with(manifest, "index", |duplicate| {
+                duplicate.replace("](", "](./")
+            }),
+            "duplicate logical index identity",
+        ),
+        (
+            append_manifest_row(manifest, "unknown\tfield"),
+            "unknown kind or wrong field count",
+        ),
+        (
+            mutate_first_manifest_row(manifest, "task", |row| format!("{row}\textra")),
+            "unknown kind or wrong field count",
+        ),
+        (
+            append_manifest_row(manifest, "schema\t1"),
+            "schema record must occur exactly once and first",
+        ),
+        (
+            manifest.replacen('\n', "\r\n", 1),
+            "must use LF line endings",
+        ),
+        (
+            mutate_first_manifest_field(manifest, "redirect", 1, |_| "UNDECLARED-BATCH".to_owned()),
+            "wrong batch",
+        ),
+        (
+            mutate_first_manifest_field(manifest, "redirect", 3, |_| "ja".to_owned()),
+            "mismatched language",
+        ),
+    ];
+    for (mutation, expected) in mutations {
+        let violations = legacy_compaction_manifest_violations(workspace, &mutation);
+        assert!(
+            violations
+                .iter()
+                .any(|violation| violation.contains(expected)),
+            "legacy manifest mutation must report {expected:?}, got:\n{}",
+            violations.join("\n")
+        );
+    }
+}
+
+fn mutate_first_manifest_row(
+    document: &str,
+    kind: &str,
+    mutate: impl FnOnce(&str) -> String,
+) -> String {
+    let mut mutation = Some(mutate);
+    let mut changed = false;
+    let mut output = String::with_capacity(document.len());
+    for segment in document.split_inclusive('\n') {
+        let (line, newline) = segment
+            .strip_suffix('\n')
+            .map_or((segment, ""), |line| (line, "\n"));
+        if !changed && line.split('\t').next() == Some(kind) {
+            output.push_str(&mutation.take().expect("mutation is available")(line));
+            changed = true;
+        } else {
+            output.push_str(line);
+        }
+        output.push_str(newline);
+    }
+    assert!(changed, "manifest must contain a {kind} row");
+    output
+}
+
+fn duplicate_first_manifest_row(document: &str, kind: &str) -> String {
+    mutate_first_manifest_row(document, kind, |row| format!("{row}\n{row}"))
+}
+
+fn duplicate_first_manifest_row_with(
+    document: &str,
+    kind: &str,
+    mutate_duplicate: impl FnOnce(&str) -> String,
+) -> String {
+    mutate_first_manifest_row(document, kind, |row| {
+        format!("{row}\n{}", mutate_duplicate(row))
+    })
+}
+
+fn append_manifest_row(document: &str, row: &str) -> String {
+    format!(
+        "{}{row}\n",
+        document.trim_end_matches('\n').to_owned() + "\n"
+    )
+}
+
+fn swap_first_two_manifest_rows(document: &str, kind: &str) -> String {
+    let mut lines = document.lines().map(str::to_owned).collect::<Vec<_>>();
+    let positions = lines
+        .iter()
+        .enumerate()
+        .filter(|(_, line)| line.split('\t').next() == Some(kind))
+        .map(|(index, _)| index)
+        .take(2)
+        .collect::<Vec<_>>();
+    assert_eq!(positions.len(), 2, "manifest must contain two {kind} rows");
+    lines.swap(positions[0], positions[1]);
+    format!("{}\n", lines.join("\n"))
+}
+
+fn mutate_first_manifest_field(
+    document: &str,
+    kind: &str,
+    field_index: usize,
+    mutate: impl FnOnce(&str) -> String,
+) -> String {
+    let mut mutation = Some(mutate);
+    let mut changed = false;
+    let mut output = String::with_capacity(document.len());
+    for segment in document.split_inclusive('\n') {
+        let (line, newline) = segment
+            .strip_suffix('\n')
+            .map_or((segment, ""), |line| (line, "\n"));
+        let mut fields = line.split('\t').map(str::to_owned).collect::<Vec<_>>();
+        if !changed && fields.first().is_some_and(|field| field == kind) {
+            let value = fields
+                .get(field_index)
+                .unwrap_or_else(|| panic!("{kind} field {field_index} must exist"));
+            fields[field_index] = mutation.take().expect("mutation is available")(value);
+            changed = true;
+        }
+        output.push_str(&fields.join("\t"));
+        output.push_str(newline);
+    }
+    assert!(changed, "manifest must contain a {kind} row");
+    output
+}
+
+fn sha256_hex(input: &[u8]) -> String {
+    const INITIAL: [u32; 8] = [
+        0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab,
+        0x5be0cd19,
+    ];
+    const ROUND: [u32; 64] = [
+        0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4,
+        0xab1c5ed5, 0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe,
+        0x9bdc06a7, 0xc19bf174, 0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f,
+        0x4a7484aa, 0x5cb0a9dc, 0x76f988da, 0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7,
+        0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967, 0x27b70a85, 0x2e1b2138, 0x4d2c6dfc,
+        0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85, 0xa2bfe8a1, 0xa81a664b,
+        0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070, 0x19a4c116,
+        0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
+        0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7,
+        0xc67178f2,
+    ];
+
+    let bit_length = (input.len() as u64).wrapping_mul(8);
+    let mut padded = input.to_vec();
+    padded.push(0x80);
+    while padded.len() % 64 != 56 {
+        padded.push(0);
+    }
+    padded.extend_from_slice(&bit_length.to_be_bytes());
+
+    let mut hash = INITIAL;
+    for block in padded.chunks_exact(64) {
+        let mut words = [0_u32; 64];
+        for (index, word) in words[..16].iter_mut().enumerate() {
+            let offset = index * 4;
+            *word = u32::from_be_bytes([
+                block[offset],
+                block[offset + 1],
+                block[offset + 2],
+                block[offset + 3],
+            ]);
+        }
+        for index in 16..64 {
+            let s0 = words[index - 15].rotate_right(7)
+                ^ words[index - 15].rotate_right(18)
+                ^ (words[index - 15] >> 3);
+            let s1 = words[index - 2].rotate_right(17)
+                ^ words[index - 2].rotate_right(19)
+                ^ (words[index - 2] >> 10);
+            words[index] = words[index - 16]
+                .wrapping_add(s0)
+                .wrapping_add(words[index - 7])
+                .wrapping_add(s1);
+        }
+        let [mut a, mut b, mut c, mut d, mut e, mut f, mut g, mut h] = hash;
+        for index in 0..64 {
+            let upper = e.rotate_right(6) ^ e.rotate_right(11) ^ e.rotate_right(25);
+            let choose = (e & f) ^ (!e & g);
+            let temporary_one = h
+                .wrapping_add(upper)
+                .wrapping_add(choose)
+                .wrapping_add(ROUND[index])
+                .wrapping_add(words[index]);
+            let lower = a.rotate_right(2) ^ a.rotate_right(13) ^ a.rotate_right(22);
+            let majority = (a & b) ^ (a & c) ^ (b & c);
+            let temporary_two = lower.wrapping_add(majority);
+            h = g;
+            g = f;
+            f = e;
+            e = d.wrapping_add(temporary_one);
+            d = c;
+            c = b;
+            b = a;
+            a = temporary_one.wrapping_add(temporary_two);
+        }
+        for (slot, value) in hash.iter_mut().zip([a, b, c, d, e, f, g, h]) {
+            *slot = slot.wrapping_add(value);
+        }
+    }
+
+    hash.iter()
+        .map(|word| format!("{word:08x}"))
+        .collect::<Vec<_>>()
+        .join("")
+}
+
 fn markdown_h2_section<'a>(document: &'a str, heading: &str) -> Option<&'a str> {
-    let marker = format!("## {heading}\n");
-    let start = document.find(&marker)?;
-    let tail = &document[start..];
-    let body = &tail[marker.len()..];
-    let end = body
-        .find("\n## ")
-        .map_or(tail.len(), |offset| marker.len() + offset);
-    Some(&tail[..end])
+    let marker = format!("## {heading}");
+    let mut fence = None;
+    let mut start = None;
+    let mut offset = 0_usize;
+
+    for segment in document.split_inclusive('\n') {
+        let line = segment.strip_suffix('\n').unwrap_or(segment);
+        let trimmed = line.trim_start();
+        if update_fence_state(trimmed, &mut fence) || fence.is_some() {
+            offset += segment.len();
+            continue;
+        }
+        if start.is_none() && trimmed == marker {
+            start = Some(offset);
+        } else if start.is_some() && atx_heading_level(trimmed) == Some(2) {
+            return start.map(|start| &document[start..offset]);
+        }
+        offset += segment.len();
+    }
+
+    start.map(|start| &document[start..])
 }
 
 fn markdown_heading_slugs(document: &str) -> BTreeSet<String> {

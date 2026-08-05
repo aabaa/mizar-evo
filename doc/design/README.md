@@ -166,6 +166,10 @@ one coherent legacy duplication family only with an exact redirect inventory,
 paired per-task owners, preserved owner-local facts, local link/fragment
 validation, and no specification, test-intent, trace-status, coverage, source,
 or active-behavior change. Ordinary semantic tasks do not perform that cleanup.
+Completed exact whole-section migrations are indexed by the versioned
+[`legacy_compactions.tsv`](./task_contracts/legacy_compactions.tsv) ledger so
+repository lint remains data-driven. The ledger enforces approved redirects;
+it is not authority to delete mixed or owner-local content.
 
 See
 [autonomous_crate_development.md](./autonomous_crate_development.md#canonical-task-contracts)

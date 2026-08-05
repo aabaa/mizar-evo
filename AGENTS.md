@@ -258,6 +258,17 @@ equivalence and bilingual reviews, hard gates, and task-only commit. It does not
 authorize a repository-wide historical rewrite or let a semantic task absorb
 unrelated documentation cleanup.
 
+Record every completed whole-section legacy compaction in
+`doc/design/task_contracts/legacy_compactions.tsv`; keep the lint consumer
+generic rather than adding task IDs, file lists, or index rows to Rust. Schema
+version 1 covers only exact whole ATX H2-H6 section replacements with explicit
+source paths, forbidden headings, language-local redirects, neighboring
+heading anchors, Task Index rows, counts, and an expanded-inventory hash. Do
+not force a mixed owner-local section or paragraph-only cleanup into that
+schema. Extend the schema only in a separately reviewed prerequisite. The
+manifest is derived enforcement data and cannot authorize a migration that its
+paired task contracts and equivalence review did not already approve.
+
 When a component first links a central task contract, include that EN/JA pair
 in the component's bilingual review surface. Claim recursive task-contract or
 local-link enforcement only after the repository lint that performs it passes.

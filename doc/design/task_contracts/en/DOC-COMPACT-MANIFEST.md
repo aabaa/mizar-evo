@@ -13,12 +13,12 @@ reviewable data source before further legacy-evidence batches are migrated.
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-COMPACT-MANIFEST` |
-| Status | Documentation prerequisite reviewed and verified; implementation remains forbidden until this docs-only prerequisite is committed and fresh inventory passes. |
+| Status | Implementation, independent reviews, and required verification complete; exact task-only staging and commit remain. |
 | Purpose | Move exact legacy-compaction inventory out of lint implementation code, preserve the existing Task-269SDP/269SDC guarantees byte-for-byte, and let later bounded batches extend data without adding a Rust test or ledger branch per task. |
 | Primary owners | Repository documentation policy and `mizar-test` lint policy |
 | Consumers | `task_contracts_are_recursively_paired_and_supported_links_resolve`, paired task contracts, owning crate-plan Task Index tables, and every later exact-section compaction batch |
 | Dependencies | `DOC-269SD-COMPACT` commit `5080d3fddaad6e9683e5eecc5e497b4b16908e8a` and its exact 82 redirects/12 index rows |
-| Readiness | Fresh inventory is clean at `5080d3fd`; `origin/main...HEAD` is `0/0`; the protected stash is unchanged. |
+| Readiness | The documentation prerequisite is commit `a16fee8fa7d059dd2d1930cca1ce067434b3ebe2`; its fresh inventory was clean, `origin/main...HEAD` was `0/1`, and protected `stash@{0}` remained `f65cf4a13752ec380710814a9ac6392ccb9d75d4`. |
 
 The [checker plan](../../mizar-checker/en/00.crate_plan.md#task-index) and
 [runner plan](../../mizar-test/en/00.crate_plan.md#task-index) index this
@@ -74,7 +74,7 @@ The schema contains these exact records:
 | `batch` | batch id; EN batch-contract path; JA batch-contract path; canonical expanded-inventory SHA-256; task count; redirect count; distinct source-file count; index-row count |
 | `task` | batch id; task id; EN historical-contract path; JA historical-contract path |
 | `redirect` | batch id; task id; language (`en`/`ja`); source path; legacy heading level (`2` through `6`); exact forbidden legacy heading; exact replacement line; exact preceding same-or-higher-level heading or `BOF`; exact following same-or-higher-level heading or `EOF` |
-| `index` | batch id; indexed task/batch id; language (`en`/`ja`); owning plan path; exact Task Index row |
+| `index` | batch id; indexed task/batch id; language (`en`/`ja`); owning `00.crate_plan.md` path; exact Task Index row |
 
 All paths are slash-separated workspace-relative paths. Task and batch IDs use
 `[A-Za-z0-9][A-Za-z0-9._-]*`. A `redirect` represents replacement of one exact
@@ -102,7 +102,8 @@ task record's declared language-local contract and `#completion-evidence`, not
 merely to any existing document. Every `index` ID must be either a task in its
 batch or that batch ID; its exact EN/JA row must resolve to the corresponding
 declared language-local task or batch contract. Plan-path language and the
-record's language must agree.
+record's language must agree, and the plan filename must be exactly
+`00.crate_plan.md`.
 
 For each batch, canonical expanded inventory excludes `schema`, `batch`,
 comments, and blank lines. It consists of the complete physical UTF-8 bytes,
@@ -195,6 +196,38 @@ diff contains only the frozen six Markdown paths. The full 15-test
 local link/fragment checks, protected-scope inspection, and `git diff --check`
 pass. No specification, semantic test, production source, coverage audit,
 trace, Cargo file, or executable status changed.
+
+## Implementation Evidence
+
+- The seven-path implementation surface is exactly this EN/JA pair, the TSV
+  ledger, the existing `mizar-test` lint-policy file, `AGENTS.md`, the design
+  index, and the autonomous protocol. No production, specification, fixture,
+  sidecar, expectation, trace, Cargo, public-API, or coverage-audit path
+  changed.
+- The 99-line TSV has physical SHA-256
+  `c537eda8401c1cdc0a3386ca648d112075b0728b702b56d03f89e353d4a4347f`.
+  It declares one batch, two tasks, 82 redirects over 42 distinct source
+  files, and 12 index rows. Independent replay reproduces expanded-inventory
+  SHA-256
+  `66087afe7a11a73aafeda4853dba2b684ef9edccae5fc014cc8fa01bb8265f8b`.
+- The Rust consumer contains no Task-269SDP/269SDC or batch-specific ledger.
+  Strict mutation vectors, document-evidence boundary vectors, fence-aware
+  headings, canonical containment, non-symlink traversal, and cached document/
+  fragment validation all use the existing single test. The lint target stays
+  at 15 tests with raw list hash
+  `b044e771a655e72131d0371636bbac5684ef93a3ea503984537a4bb9dd13a7cf`.
+- Independent test-sufficiency, implementation/security, and source/document/
+  EN-JA reviews ended **NO FINDINGS** after all findings were corrected.
+- Focused and full lint policy, checker 530-test and runner 600-test libraries,
+  137 metadata tests, checker lint, formatting, warnings-denied workspace
+  Clippy, and full `cargo test` pass. The five CLI hashes remain respectively
+  `700f4bf503783742cefd8004fa095675b7476d46e9a3a6dd439916d237eb6718`,
+  `a8a7aa639d2ebc65eddc923c7e9369ea5637d50e935f808600f446da1bfbda56`,
+  `71e83ba0b20d4015e07b3bd2c0c4db2837b6151d1251812caed7954530d53c74`,
+  `4b2c7bd5ec3cc56e5672fb351126126230ec84fba9bd2bd9049a516d378fab7f`,
+  and `ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`.
+  The protected trace hash remains
+  `55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`.
 
 ## Reviews, Verification, And Exit
 

@@ -290,6 +290,23 @@ committed, and bounded enough that every removed fact has a live owner. It does
 not authorize a wholesale repository history rewrite or let semantic work
 absorb unrelated cleanup.
 
+After a whole-section batch is committed, declare it in the versioned
+`doc/design/task_contracts/legacy_compactions.tsv` ledger. Its generic lint
+consumer validates exact explicit source paths, forbidden raw H2-H6 headings,
+language-local completion redirects and fragments, nearest same-or-higher
+heading anchors, paired task/batch contracts, owning Task Index rows, declared
+counts, and the canonical expanded-inventory hash. Extend the data ledger for
+later batches; do not add historical task/file lists to lint-policy Rust.
+
+Ledger schema version 1 represents only replacement of a complete ATX heading
+section through the next heading of equal or higher level. A section that mixes
+shared completion evidence with owner-local API, invariant, runner, audit,
+traceability, coverage, bilingual, or sequencing facts must remain intact
+until a separately reviewed schema/ownership prerequisite defines a safe
+paragraph-level migration. The ledger records and enforces a migration already
+authorized by paired contracts; it cannot itself authorize deletion or change
+semantic/coverage ownership.
+
 ## Economical Review Packets
 
 Keep all independent review phases and hard gates. Context economy changes how
