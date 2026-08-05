@@ -755,13 +755,7 @@ unnamed witness1はbindingを作らない。`2/1/0 -> 2/2/0`、definition-site
 forward、later same-scope binding1を保存する。later-use/capture executionと
 type/goal/proof effectはdeferする。
 
-## Task 269B active B3M1 transition
-
-implemented transitionはrange `84..85`でexact `2/1/0 -> 2/2/0`を再現する。
-context1はbinding1だけをownし`[0,1]`をvisibleにし、binding2は存在しないため
-unnamed siblingにbinding effectがない。ordinal1 lookupはforward、ordinal2は
-binding1をresolveする。rowは`BindingTypeSite::Missing`を保持してtypeをinferせず、
-captureはempty、fact、obligation、proof/goal effectはabsentのまま。
+Completion evidence: [central Task-269B historical contract](../../task_contracts/ja/269B.md#completion-evidence)。
 
 ## Task 269CP no-binding lower boundary
 

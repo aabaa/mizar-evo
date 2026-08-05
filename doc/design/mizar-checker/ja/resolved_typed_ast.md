@@ -1619,13 +1619,7 @@ debug fingerprintをvalue equalityで維持する。final field/installer、
 semantic projection、diagnostic、obligation、fact、proof、acceptance outputは
 追加しない。
 
-## Task 269B active final replay increment
-
-final assemblyはexisting getter/seven phasesでexact B3M1 handoffをclone-preserve
-してrevalidateする。valid replayはdeterministicで、orphan/partial/stale/
-cross-profile/arena-corrupt inputはexisting proof-local errorでfailする。proof、
-goal、fact、obligation、diagnostic、downstream semantic tableはすべてemptyまたは
-unchangedのまま。
+Completion evidence: [central Task-269B historical contract](../../task_contracts/ja/269B.md#completion-evidence)。
 
 ## Task 263 frozen final ownership
 

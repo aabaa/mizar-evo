@@ -12,10 +12,10 @@ freezeする。language behavior、test intent、API、diagnostic、traceability
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-269B-DOC-REVIEW-COMPACT` |
-| Status | Documentation prerequisite、全review、full verification complete。exact staging/commit pending。 |
+| Status | migration、全independent review、full verification、final quality完了。exact staging/commitがremaining。 |
 | Purpose | Task-269B implementation-completion evidenceをcentralizeし、全frozen/durable ownerとTODO 2件をretainする。 |
 | Owners | migration policy、historical [269B](./269B.md#completion-evidence)、[checker plan](../../mizar-checker/ja/00.crate_plan.md#task-index)、[runner plan](../../mizar-test/ja/00.crate_plan.md#task-index) |
-| Consumers | checker source 22 path、Task Index 4件、future schema-v1 ledger/lint |
+| Consumers | checker source 22 path、Task Index 4件、post-migration schema-v1 ledger/lint |
 | Sequence | `f548ceb9` -> `3d462b1f` -> `afd54a37` -> `8efb0ae5` |
 | Readiness | clean selection HEAD `9451e57df52dc105a3faa2348432e3d81642519a`、`origin/main...HEAD=0/22`、protected `stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4`。selection finding 1件の修正/re-review後dependency-ready。 |
 
@@ -126,8 +126,58 @@ gates PASS、score capなし、valid score `100/100`
 (`20/20/15/15/10/10/5/5`)。residual riskはseparately frozen migrationだけ。
 exact staging/commitがremaining。
 
+## Migration Evidence
+
+prerequisiteは
+`d3d736e8831c5a28f9938643cf381c7c80effabc`としてseparate commitした。fresh
+inventoryはclean `origin/main...HEAD=0/23`、protected
+`stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4`不変。editing前にimmutable
+source preimage 22件を`11/113 + 11/106 = 22/219`とfrozen hashでreplayした。
+
+migrationはdeclared checker source 22件、本EN/JA pair、
+`legacy_compactions.tsv`のexact 25 pathsを変更する。complete H2 section 22件だけを
+language-local redirectへ変換し、219 physical linesは44 redirect-plus-separator
+lines、175減、exact source diffは`+22/-197`。checker TODO pair、全runner section、
+durable owner、later chronology、protected surface、source TSV、historical pair、
+index rowは不変。
+
+ledgerは762 physical lines、complete physical SHA-256は
+`512633c4d6b7f3f8c460a5e5ccd2a5b9717d2826626e08689b4a3205a8dadb11`。本batchは
+task 1、distinct source path 22件のredirect 22件、index record 8件を追加する。
+independently computed expanded-inventory SHA-256は
+`3e081810f038edf8c3a75f9a222e02dcb8ea07d42b957d911df04ce8ad33b96f`。generic
+recursive schema/link/fragment lintは`1/1` PASSし、count/hash、forbidden-heading
+absence、exact anchor、redirect uniqueness、language-local fragment、Task Index rowを
+validateした。
+
+migration equivalence/boundary reviewは**NO FINDINGS**。schema/test-sufficiencyと
+source-documentation/EN-JA reviewは、populated ledgerのconsumerがまだ"future"と
+記す同じLow `design_drift`を各1件検出した。source-documentation reviewはhandoffが
+required final-quality gateを欠くLow findingも検出した。両EN/JA correction後の
+independent re-reviewは**NO FINDINGS**。全preimage、scope、line delta、retained
+boundary、ledger relationship/hash、audit no-impact claimをindependently reproduce
+した。
+
+full migration-state verificationはchecker/runner lint各`15/15`、library
+`530/530` / `600/600`、metadata `137/137`をPASS。`cargo fmt --all --check`、
+offline Cargo metadata、warnings-denied all-target/all-feature Clippy、全frontend/
+lexer benchmarkを含む
+`cargo test --workspace --all-targets --all-features --no-fail-fast`をPASSした。
+CLI 5本はexit 0、各warnings 23/errors 0で全frozen stdout hashを再現した。
+
+protected surface 6件のpath count/path hashをexact reproductionし、protected zero
+diffが全frozen content hashをretainする。trace/coverage-audit hashはそれぞれ
+`55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3` /
+`2aa808aa033c04fa46ea76f65cfadcf0d8f0e1e53fba6d70edab223a7481685f`
+不変。immutable source TSV、ledger両hash、preimage replay、exact 25-path scope、
+`git diff --check`も再現した。final independent read-only qualityは
+**NO FINDINGS**、all nine hard gates PASS、score capなし、valid score
+`100/100` (`20/20/15/15/10/10/5/5`)。residual riskはnormal exact staging、
+commit、fresh-inventory confirmationだけ。
+
 ## Handoff
 
-exact staging/task-only commitを完了し、fresh-inventory後にfrozen 22-section
-migrationだけをapplyする。parent `xhigh`、
-independent review `high`、deterministic inventory `medium`。
+exact 25-path staging/task-only commit後、次checker-first compaction family選択前に
+HEAD/clean worktree/origin divergence/protected stashをfresh-inventoryする。parent
+`xhigh`、deterministic next-family inventory `medium`、independent selection review
+`high`。

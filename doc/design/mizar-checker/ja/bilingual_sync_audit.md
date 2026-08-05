@@ -1581,13 +1581,7 @@ test 8件、measured checker/runner `482/536`、production `30/164419`/
 `37/69729`、corpus/trace/CLI impact 0、全semantic deferralで一致する。
 implementation-time bilingual debtはない。
 
-## Task 269B active implementation synchronization
-
-EN/JAはexact named-only binding、explicit unnamed-row non-binding、fingerprint
-5件/56-node replay、representative all-field/isolated cross-profile rejection、
-Typed/final ownership、dormant runner、test count `482/536`不変、measured
-production `30/165219` / `37/69872`、corpus/trace/CLI/audit impact 0、全semantic
-deferralで一致する。implementation-time bilingual debtはない。
+Completion evidence: [central Task-269B historical contract](../../task_contracts/ja/269B.md#completion-evidence)。
 
 ## Checker Task 269CP documentation synchronization
 

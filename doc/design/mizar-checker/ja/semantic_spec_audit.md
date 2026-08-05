@@ -625,12 +625,7 @@ Task269Bはnamed definition-site bindingだけをpublishしunnamed rowのeffect�
 existential match、witness type、remaining goal、substitution、fact、acceptance、IRは
 推論せず、dormant zero-credit boundaryとdeferralは不変。
 
-## Task 269B active semantic boundary
-
-implementationはfrozen named definition-site bindingだけをpublishし、unnamed
-rowにbinding effectがないことを直接証明する。semantic tableはすべてemptyで、
-existential matching、typing、goal/guard、substitution、fact、proof、discharge、
-acceptance、Core、CFG、VC behaviorを推論またはactivateしない。
+Completion evidence: [central Task-269B historical contract](../../task_contracts/ja/269B.md#completion-evidence)。
 
 ## Task 269CP semantic no-op audit
 

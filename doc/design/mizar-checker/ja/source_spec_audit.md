@@ -5555,14 +5555,7 @@ credit、diagnostic、deferred typing/proof/goal/fact/IR behaviorは変更せず
 public API、spec/corpus/trace、coverage、diagnostic、audit ownerを変更しないため
 `spec_coverage_audit.md`はintentional no-op。
 
-## Task 269B implemented source/specification audit
-
-implementationはfrozen B3M1の`source_drift`、`design_drift`、canonical-derived
-unit-test gapだけを閉じる。exact named/unnamed distinction、resolver provenance、
-fingerprint 5件、all-field arena replay、isolated profile rejectionはcanonical
-contractと一致する。`doc/spec`、`.miz`、expectation、trace、diagnostic、public
-API、semantic intentは不変で、新規`spec_gap`、`boundary_violation`、coverage-
-audit deltaはない。
+Completion evidence: [central Task-269B historical contract](../../task_contracts/ja/269B.md#completion-evidence)。
 
 ## Task 269CP source/spec classification
 

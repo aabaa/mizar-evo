@@ -5813,14 +5813,7 @@ No public API, spec/corpus/trace artifact, coverage credit, diagnostic, or
 audit-owner status changes. `spec_coverage_audit.md` therefore remains a
 deliberate no-op.
 
-## Task 269B implemented source/specification audit
-
-The implementation closes only the frozen B3M1 `source_drift`, `design_drift`,
-and canonical-derived unit-test gap. The exact named/unnamed distinction,
-resolver provenance, five fingerprints, all-field arena replay, and isolated
-profile rejection agree with the canonical contract. No `doc/spec`, `.miz`,
-expectation, trace, diagnostic, public API, or semantic intent changed, so
-there is no new `spec_gap`, `boundary_violation`, or coverage-audit delta.
+Completion evidence: [central Task-269B historical contract](../../task_contracts/en/269B.md#completion-evidence).
 
 ## Task 269CP source/spec classification
 

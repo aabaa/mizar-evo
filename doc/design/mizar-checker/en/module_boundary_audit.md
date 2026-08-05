@@ -1560,19 +1560,7 @@ authentication stays runner-owned; syntax-free transaction validation stays
 checker-owned. Path counts remain `30/37`, with lines/content remeasured only
 after implementation.
 
-## Task 269B implemented module boundary
-
-Implementation remains inside the existing owners: checker
-`source_proof_local_declaration.rs`, adjacent private tests in
-`source_statement.rs`, and the existing `TypedAst` installer allowlist; runner
-uses its existing private proof-local production/test leaves. No module,
-export, dependency, public surface, or active dispatch changed. Checker source
-is `30/165219` with path/content hashes
-`c89f43f6abebf7ebeb3ac9394ecd8ea3186ad28934c75526d2cc0b85a66ebad5` /
-`1fb5ea739c810ff66ed551b359ffa7cbb26265c0057fa18f5128ee5966bad958`;
-runner production is `37/69872` with
-`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d` /
-`1cdc1720e687890e9007664a2140a10194b7637add9b8eb589ee92d9cce3a771`.
+Completion evidence: [central Task-269B historical contract](../../task_contracts/en/269B.md#completion-evidence).
 
 ## Checker Task 269CP frozen module boundary
 

@@ -1734,12 +1734,7 @@ B3M1 bundleがinstalledの場合だけacceptする。field/method変更なし。
 fingerprint hybrid、unnamed witness binding、partial lower、sibling、semantic
 coexistenceはpublish前にrejectし、valid installはlower byte/empty semanticsを保存。
 
-## Task 269B active Typed ownership increment
-
-existing installer allowlistはB3Nに加えてexact B3M1をadmitし、field/methodを
-変更しない。56-node arenaとempty semantic tablesをpreserveし、one binding
-transactionを一度だけpublishし、duplicate/partial/cross-profile/corrupt-arena/
-stale-fingerprint/semantic-coexistence inputをtransactionalにrejectする。
+Completion evidence: [central Task-269B historical contract](../../task_contracts/ja/269B.md#completion-evidence)。
 
 ## Task 269CP typed-owner exclusion
 

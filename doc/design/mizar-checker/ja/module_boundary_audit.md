@@ -1508,19 +1508,7 @@ exact profileを1件acceptし、existing runner leafがprivate branchを1件追�
 Surface authenticationはrunner、syntax-free validationはchecker。path countは
 `30/37`、line/contentはimplementation後remeasure。
 
-## Task 269B implemented module boundary
-
-implementationはexisting owner内に留まる。checkerは
-`source_proof_local_declaration.rs`、`source_statement.rs`内の隣接private
-tests、existing `TypedAst` installer allowlist、runnerはexisting private
-proof-local production/test leavesだけを変更した。module、export、dependency、
-public surface、active dispatchの変更はない。checker sourceは`30/165219`、
-path/content hashは
-`c89f43f6abebf7ebeb3ac9394ecd8ea3186ad28934c75526d2cc0b85a66ebad5` /
-`1fb5ea739c810ff66ed551b359ffa7cbb26265c0057fa18f5128ee5966bad958`、
-runner productionは`37/69872`、
-`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d` /
-`1cdc1720e687890e9007664a2140a10194b7637add9b8eb589ee92d9cce3a771`である。
+Completion evidence: [central Task-269B historical contract](../../task_contracts/ja/269B.md#completion-evidence)。
 
 ## Checker Task 269CP frozen module boundary
 

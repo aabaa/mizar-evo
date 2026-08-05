@@ -1795,13 +1795,7 @@ statement, and witness ownership and forbids statement references. It then
 rejects cross-profile/stale/partial inputs through the existing dedicated
 error. No final field, error, node role, or semantic table is added.
 
-## Task 269B active final replay increment
-
-Final assembly now clone-preserves and revalidates the exact B3M1 handoff
-through the existing getter and seven phases. Valid replay is deterministic;
-all orphan, partial, stale, cross-profile, and arena-corrupt inputs fail with
-the existing proof-local error. Every proof, goal, fact, obligation, diagnostic,
-and downstream semantic table remains empty or unchanged.
+Completion evidence: [central Task-269B historical contract](../../task_contracts/en/269B.md#completion-evidence).
 
 ## Task 269CP final-owner exclusion
 

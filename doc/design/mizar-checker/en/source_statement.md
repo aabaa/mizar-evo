@@ -4022,13 +4022,7 @@ increment may link only witness/name/RHS `0/0/2`; it must not alter or bind
 unnamed witness 1, change any lower API/debug byte, or assign left-to-right
 goal semantics.
 
-## Task 269B active B3M1 lower-consumer boundary
-
-The implemented upper consumer leaves every B3M1 lower row, node, range,
-ordinal, and debug byte unchanged. It fingerprints the two-row witness handoff,
-associates only named row 0/name 0/RHS primary 2, and explicitly verifies that
-unnamed row 1 allocates no checker binding. All-node and isolated cross-profile
-tests remain adjacent private tests and add no lower API or semantic meaning.
+Completion evidence: [central Task-269B historical contract](../../task_contracts/en/269B.md#completion-evidence).
 
 ## Task 269CP lower statement boundary
 
