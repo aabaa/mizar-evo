@@ -1,0 +1,10 @@
+# Frozen preimage inventory for DOC-248P-DOC-REVIEW-COMPACT.
+# Columns: task, language, component, source path, ATX level, exact heading text without the ATX prefix, section SHA-256, physical lines.
+248P	en	mizar-checker	doc/design/mizar-checker/en/00.crate_plan.md	2	Task 248P Documentation-Prerequisite Verification	e1acfb1436ee12ee2cd6c09f552bb5ad8a4bc2531fcc98ab9bb30fc557e68645	25
+248P	en	mizar-checker	doc/design/mizar-checker/en/bilingual_sync_audit.md	2	Task 248P Frozen Profile-C Synchronization	e7767db9b81739894e15bdc01bc4840c63a55ffd333f4930e6820564beca1964	10
+248P	en	mizar-checker	doc/design/mizar-checker/en/module_boundary_audit.md	2	Task 248P Frozen One-File Checker Boundary	dde5bbfc23ca72790c20951c2d56b09cc6041e609e313c14a25b3b50c8eae051	11
+248P	en	mizar-checker	doc/design/mizar-checker/en/source_spec_audit.md	2	Task 248P Frozen Source/Specification Status	1dc0fb9cc3623ee5d3932259fef5f3176424260cdea6edf84764241948e56f0a	14
+248P	ja	mizar-checker	doc/design/mizar-checker/ja/00.crate_plan.md	2	Task 248P documentation-prerequisite verification	5f579a60fb992358c5ffff996eb177a3cb28d84ed57dd98e71bee49f00aaf546	22
+248P	ja	mizar-checker	doc/design/mizar-checker/ja/bilingual_sync_audit.md	2	Task 248P frozen Profile-C synchronization	1d6b6d585c9ba84f28665404bf26f286875098fd04c4acf7afea34ea9d335673	9
+248P	ja	mizar-checker	doc/design/mizar-checker/ja/module_boundary_audit.md	2	Task 248P frozen one-file checker boundary	f64d09e697b8925beebdd171a13eedac3f5928c0fabc7c37b9ed70ca0989370c	10
+248P	ja	mizar-checker	doc/design/mizar-checker/ja/source_spec_audit.md	2	Task 248P frozen source/specification status	187f95cdfc8f6b01dbef6418567a3a6410e61fca57a3296316895ddf31062e73	12
