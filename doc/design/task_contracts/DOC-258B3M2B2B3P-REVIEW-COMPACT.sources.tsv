@@ -1,0 +1,14 @@
+# Frozen preimage inventory for DOC-258B3M2B2B3P-REVIEW-COMPACT.
+# Columns: task, language, component, source path, ATX level, exact heading text without the ATX prefix, section SHA-256, physical lines.
+258B3M2B2B3P	en	mizar-checker	doc/design/mizar-checker/en/00.crate_plan.md	2	Task 258B3M2B2B3P Documentation Review and Verification Status	d37c0a1be5ce7030b91b283af761e0f4dcf6dd1fab30888ff0a39b99488ea1dc	19
+258B3M2B2B3P	en	mizar-checker	doc/design/mizar-checker/en/bilingual_sync_audit.md	2	Task 258B3M2B2B3P Reviewed Synchronization Status	6e516e064dc882770c1c19d99ada93befb4a2d1a1f0d509ecbb047525676b312	11
+258B3M2B2B3P	en	mizar-checker	doc/design/mizar-checker/en/payload_family_decomposition.md	3	Task 258B3M2B2B3P Reviewed Family Status	ffb6f130c5d31036afc72ae52bd8cd7a7ade42712b34dab07e86ee83122ad9b7	9
+258B3M2B2B3P	en	mizar-checker	doc/design/mizar-checker/en/source_set_term.md	2	Task 258B3M2B2B3P Documentation Review Status	3546304fd5773c41f155b5e7dc7a331b63e42a6db2a3d25d2a6f94ea1fdd3989	9
+258B3M2B2B3P	en	mizar-checker	doc/design/mizar-checker/en/source_spec_audit.md	2	Task 258B3M2B2B3P Review Closure Status	39840723c615f4f427a630ed84c3438c2125f00d359e4308e05249d86f491600	12
+258B3M2B2B3P	en	mizar-checker	doc/design/mizar-checker/en/source_statement.md	2	Task 258B3M2B2B3P Documentation Review Status	7ffe7484b9ea759d3db27b25a4237bb55debff5206a986c8cae1e3bed14f40be	8
+258B3M2B2B3P	ja	mizar-checker	doc/design/mizar-checker/ja/00.crate_plan.md	2	Task 258B3M2B2B3P documentation review/verification status	7cac20f98957172171c2f72157cf28cc70d7478bf217bf565c3c662985363015	17
+258B3M2B2B3P	ja	mizar-checker	doc/design/mizar-checker/ja/bilingual_sync_audit.md	2	Task 258B3M2B2B3P reviewed synchronization status	81bf1755ec8f7712b2966aac0a043721100c61b24a3266d87b96bae7a08731b6	11
+258B3M2B2B3P	ja	mizar-checker	doc/design/mizar-checker/ja/payload_family_decomposition.md	3	Task 258B3M2B2B3P reviewed family status	8c1b721ae5dc99d1a5b851f11d244b0d809234eb2b42fca40eae3d97f57c7fcc	9
+258B3M2B2B3P	ja	mizar-checker	doc/design/mizar-checker/ja/source_set_term.md	2	Task 258B3M2B2B3P documentation review status	b155a79df1071458cba58a09df8e6c7a60426faeafe0e5f4b7064d10d82ad300	9
+258B3M2B2B3P	ja	mizar-checker	doc/design/mizar-checker/ja/source_spec_audit.md	2	Task 258B3M2B2B3P review closure status	5593fb3fd4e45c5aa450f4bf503f2b095a55e2d5ecbba511aae7de36f5a7434a	12
+258B3M2B2B3P	ja	mizar-checker	doc/design/mizar-checker/ja/source_statement.md	2	Task 258B3M2B2B3P documentation review status	14d481ca26af910e0992a2f153cfaa231e2946eb8d926e5009491ac57674acea	8
