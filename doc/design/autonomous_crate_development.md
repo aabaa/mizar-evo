@@ -76,10 +76,13 @@ Before crate-wide autonomous development starts, create or update:
 
 ```text
 doc/design/<crate>/en/00.crate_plan.md
+doc/design/<crate>/ja/00.crate_plan.md
 ```
 
-If the repository later uses a different language/design layout, adapt the path
-while preserving the same purpose.
+English is canonical. Update the Japanese plan in the same change when the
+component has a bilingual design tree. If the repository later uses a different
+language/design layout, adapt the paths while preserving the same purpose and
+logical synchronization.
 
 The Crate Plan must include:
 
@@ -135,25 +138,11 @@ Observed behavior:
 
 Expected updates to `doc/design/spec_coverage_audit.md`:
 
-## Task Decomposition
+## Task Index
 
-### Task <ID>: <title>
-
-Purpose:
-
-Spec refs:
-
-Tests:
-
-Affected design files:
-
-Affected source files:
-
-Spec coverage audit impact:
-
-Completion condition:
-
-Forbidden behavior:
+| Task | Contract |
+|---|---|
+| <ID> | [EN contract](../../task_contracts/en/<ID>.md) |
 
 ## Exit Criteria
 
@@ -167,11 +156,20 @@ Review expectations:
 Tasks inside a crate should be decomposed by specification requirement or test
 obligation, not merely by source module.
 
+The crate plan is the ordered compact crate-level index. Every task placed in
+that index has a paired contract: the English plan links the English contract
+and the Japanese plan links `../../task_contracts/ja/<ID>.md`. Small localized
+work that does not require a contract is not added as a crate-plan task row.
+Do not copy purpose, task readiness, status, audit impact, or the complete task
+contract into the plan; those facts belong to the contract. Crate-level
+responsibility and readiness remain plan-owned.
+
 Each task must update `doc/design/spec_coverage_audit.md` when it changes the
 coverage status, design mapping, follow-up owner, or deferred rationale for any
 `doc/spec/en/` chapter. If a task has no audit impact, record that explicitly
-in the Crate Plan task entry or the task handoff/review notes instead of making
-a no-op edit.
+in its task contract instead of making a no-op audit edit. For small localized
+work that requires neither a task contract nor a plan row, record the no-impact
+decision in the review or final response when relevant.
 
 ## Source Observation
 
@@ -202,51 +200,90 @@ When artifacts disagree, classify the issue before editing:
 
 For `repo_metadata_conflict`, report only. Do not repair it automatically.
 
-## Crate Task Entries
+## Canonical Task Contracts
 
-Each crate task entry should identify:
+Use one paired task contract for a non-trivial autonomous task:
 
-- task id
-- purpose
-- spec refs
-- tests
-- affected design files
-- affected source files
-- spec coverage audit impact
-- completion condition
-- forbidden behavior
-
-Example:
-
-```md
-### Task P-001: Parse theorem statement syntax
-
-Spec refs:
-- spec.en.15.statements.theorem_statement
-
-Tests:
-- tests/miz/pass/parser/...
-- tests/miz/fail/parser/...
-
-Affected files:
-- doc/design/mizar-parser/en/...
-- crates/mizar-parser/src/...
-
-Spec coverage audit impact:
-- update parser-related coverage rows if this task changes chapter coverage or
-  closes a parser follow-up; otherwise record no audit change required
-
-Completion:
-- positive syntax is accepted
-- negative syntax is rejected at the correct phase
-- no resolver/type/proof behavior is introduced
-
-Forbidden:
-- name resolution
-- type inference
-- theorem validity checking
-- proof obligation generation
+```text
+doc/design/task_contracts/en/<task-id>.md
+doc/design/task_contracts/ja/<task-id>.md
 ```
+
+`<task-id>` must match `[A-Za-z0-9][A-Za-z0-9._-]*` and be identical in both
+trees. The English contract is canonical; the Japanese companion is updated in
+the same logical change and links back to it. The English and Japanese
+contracts link to the corresponding owning crate plans. If an owner has no
+Japanese plan under an adapted non-bilingual layout, the Japanese contract
+links the canonical English plan and records that exception. A task contract
+is a derived orchestration record and cannot introduce or override language
+semantics, test intent, diagnostics, or soundness policy.
+
+The contract must identify:
+
+- task id, status, purpose, primary owner, consumers, dependencies, and
+  readiness or blockers
+- exact authority references and relevant existing or test-first tests
+- classified gaps and drift with evidence
+- in-scope and forbidden behavior, semantic deferrals, affected design/source/
+  test artifacts, and lower-stage ownership
+- stable links to owner-local API, invariant, runner, and test-design sections
+  instead of copies of those sections
+- `doc/design/spec_coverage_audit.md` impact, or an explicit no-impact decision
+- required review roles, verification commands, count/hash impact, exit
+  criteria, completion evidence, and next-task handoff
+
+### Single-owner documentation rule
+
+Each derived fact has one live owner. The task contract owns orchestration and
+indexes owner-local details; it does not become a second copy of module design.
+The synchronized English/Japanese pair counts as one logical derived owner.
+Module documents own durable public/private API and invariants, harness
+documents own runner routes, traceability documents own manifest relationships,
+coverage audits own coverage status and follow-up ownership, boundary audits
+own module-layout decisions, bilingual audits own parity evidence, and todo
+documents own concise sequencing status. Crate-plan task entries contain only
+the ordered task/contract links; the other mandatory crate-level plan sections
+continue to own responsibility, specification/test inventory, gaps, audit
+expectations, readiness, and exit criteria.
+
+Update only documents whose owned state changes. There is no required fan-out
+file count, and repeated boilerplate is not synchronization evidence. Record
+measured verification counts and hashes once in the task contract or required
+exit report and link to them elsewhere. If an audit has no impact, leave it
+unchanged and record the no-impact decision in the contract.
+
+Stable module inventories and public-enum policies remain in their existing
+owner documents when required by repository lint. A future task-contract lint
+must scan the paired directory recursively before the workflow may claim that
+nested task contracts are machine-enforced.
+
+### Migration policy
+
+Apply the contract structure to new tasks. Historical task appendices are
+frozen logs and need not be rewritten. Migrate an active or reopened task only
+as a separate documentation task: first move every unique contract, API,
+test-intent, classification, deferral, traceability, and verification fact to
+its designated owner; then replace duplicate blocks with links; finally run an
+equivalence and EN/JA review. Git history is not a substitute for a live owner.
+
+## Economical Review Packets
+
+Keep all independent review phases and hard gates. Context economy changes how
+evidence is delivered, not what must be reviewed. A compact review packet
+contains:
+
+- canonical authority and exact specification/test references
+- the EN/JA task-contract paths and diff
+- linked owner-document and implementation/test diffs
+- gap classifications, scope exclusions, audit/traceability impact, and
+  verification status
+- the single review question and, for a re-review, the prior finding ids
+
+Prefer independent no-history review agents with self-contained packets. Do
+not include the implementer's conclusion or unrelated historical narrative.
+Use a finding-specific follow-up review after fixes. Any authority ambiguity,
+semantic choice, public-API expansion, lower-stage change, or soundness issue
+returns to the parent agent at the user's requested reasoning setting.
 
 ## Crate Exit Gates
 

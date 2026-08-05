@@ -1,8 +1,10 @@
 # Implementation Roadmap (Crate Sequencing)
 
 > Canonical language: English. This is the top-level index for crate-level work
-> ordering. Per-crate TODOs carry detailed module checklists and have Japanese
-> companions under each crate's `ja/` directory when that companion exists.
+> ordering. For new non-trivial tasks, paired task contracts carry the detailed
+> task record; per-crate TODOs carry concise status and have Japanese companions
+> under each crate's `ja/` directory when that companion exists. Historical
+> task bodies remain frozen logs.
 
 This document records the current implementation order across crates. It
 complements [README.md](./README.md) (design layout), the pipeline definition in
@@ -15,9 +17,11 @@ and the crate ownership map in
 - The [Sequential Execution Plan](#sequential-execution-plan) is the single
   ordering authority: execute steps top to bottom, and tasks inside a step in
   the listed order unless a task's own `Deps:` line says otherwise.
-- Each entry names an owner task in a crate TODO; the crate TODO carries the
-  full task text, acceptance criteria, and verification commands. This file
-  never restates them — follow the link.
+- Each entry names an owner task. For a new non-trivial task, follow the crate
+  TODO's link to its paired `doc/design/task_contracts/{en,ja}/` record for
+  scope, acceptance criteria, and verification. Crate TODOs retain only concise
+  sequencing status and owner-local checklist deltas. This file never restates
+  the detailed contract.
 - The [Completion Gates](#completion-gates) table says what "done" means
   end to end. The appendices keep audit/contract traceability; they are
   reference indexes, not a second ordering.
@@ -94,8 +98,8 @@ is its task 1). "Next work" points into the
 | mizar-parser | Grammar, Pratt parsing, syntax recovery, parse-only corpus | [x] Tasks 1-48 plus bounded `PARSER-RECOVERY-B1B1P-P1` complete; historical post-Task-46 score 99/100 | no inferred Task 49; human-owned P-265-47D remains separate | [todo](./mizar-parser/en/todo.md) |
 | mizar-frontend | Source loading and phase 1-3 orchestration | [x] prior milestone plus `PARSER-RECOVERY-B1B1P-P1-FE` regression complete | — | [todo](./mizar-frontend/en/todo.md) |
 | mizar-resolve | Module graph, namespaces, symbols, labels, signatures | [~] complete through task 29, Checker Task 263R, and Task 264R implementation | Preserve Task-264R shell/no-symbol boundary through Checker Tasks 248P/264 | [todo](./mizar-resolve/en/todo.md) |
-| mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] foundation complete through task 22; Tasks 265-268, Core-31, and the Task 269SDC dormant consumer are implemented and synchronized | Commit the Task 269SDT documentation prerequisite, then implement only its dormant private source-type route | [todo](./mizar-test/en/todo.md) |
-| mizar-checker | Type checking, cluster/registration resolution, overload resolution | [~] explicit-payload milestone and source producers/consumers through Task 269SDC binding/context are implemented and synchronized | Commit the Task 269SDT documentation prerequisite, then implement only Given source type; descendant occurrence stays later and capture remains blocked on `set` reconciliation | [todo](./mizar-checker/en/todo.md) |
+| mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] foundation complete through task 22; Tasks 265-268, Core-31, and the Task 269SDC dormant consumer are implemented and synchronized | Migrate active Task 269SDT from distributed contract `5fdcaa1d` to the paired central contract in a separate docs commit, then implement only its dormant private source-type route | [todo](./mizar-test/en/todo.md) |
+| mizar-checker | Type checking, cluster/registration resolution, overload resolution | [~] explicit-payload milestone and source producers/consumers through Task 269SDC binding/context are implemented and synchronized | Migrate active Task 269SDT from distributed contract `5fdcaa1d` to the paired central contract, then implement only Given source type; descendant occurrence stays later and capture remains blocked on `set` reconciliation | [todo](./mizar-checker/en/todo.md) |
 | mizar-core | Elaboration, binder-normalized core logic, control-flow preparation | [x] core/control-flow milestone, tasks 27-32 complete | step-5 Tasks 33-53 under the Task-32 graph | [todo](./mizar-core/en/todo.md) |
 | mizar-vc | VC IR, VC generation, deterministic pre-ATP discharge | [x] exact source-derived contradiction VC integration complete through task 31 | dependency-paced VC Tasks 32-55; VC 40/53 and S1 gates remain explicit | [todo](./mizar-vc/en/todo.md) |
 | mizar-kernel | Trusted certificate parsing and checking | [x] SAT-backed kernel milestone complete | step 4 task 35 resolved; task 32 parked; tasks 30-34 resolved | [todo](./mizar-kernel/en/todo.md) |

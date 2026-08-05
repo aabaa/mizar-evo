@@ -83,7 +83,11 @@ responsibility, specification references, relevant tests, design/source
 inventory, known gaps and drift, task decomposition, the expected impact on
 `doc/design/spec_coverage_audit.md`, and exit criteria. Do not begin
 implementation if the plan finds missing or contradictory specification that
-blocks the crate.
+blocks the crate. Keep the plan as a compact crate-level index. For a
+non-trivial logical task, put detailed task-specific orchestration in the
+paired task contract described under Documentation Expectations and link it
+from the plan instead of copying the contract into the plan and multiple
+component documents.
 
 Before editing, classify disagreements as `spec_gap`, `test_gap`,
 `design_drift`, `source_drift`, `source_undocumented_behavior`,
@@ -109,6 +113,33 @@ Recommended delegation pattern:
 When delegating, give each agent a concrete, self-contained task. If an agent edits files, assign a clear ownership area and tell it not to revert unrelated edits or changes made by other agents.
 
 Do not delegate the immediate critical-path task if the parent agent needs that result before it can make progress. In that case, do the work locally and use agents for sidecar review or independent checks.
+
+### Reasoning And Context Economy
+
+The parent agent keeps the reasoning setting requested by the user and remains
+responsible for authority interpretation, semantic decisions, integration,
+final verification, staging, and committing. A lower reasoning setting for a
+sub-agent must never silently lower the parent setting or relax a review gate.
+
+When per-agent reasoning controls are available:
+
+- use the parent setting for authority conflicts, specification gaps,
+  soundness boundaries, disputed semantics, and final quality scoring
+- use `high` for bounded implementation work and independent specification,
+  test-sufficiency, implementation, bilingual, and source/documentation
+  reviews after the parent has frozen the task contract
+- use `medium` or lower only for deterministic inventory or mechanical checks
+  that cannot decide language behavior, test intent, public API, or acceptance
+- escalate any ambiguity, authority disagreement, or proposed scope expansion
+  back to the parent before editing
+
+Prefer a no-history or short-history sub-agent context when the task can be
+made self-contained. Give the agent a compact review packet containing the
+task-contract path, exact authority references, affected-file scope,
+prohibited behavior, relevant diff, and review question. Do not copy the full
+conversation or pre-state the desired review conclusion. Reuse the same
+reviewer for a finding-specific re-review when appropriate; keep the required
+first-pass review roles independent.
 
 ## Review Standards
 
@@ -159,6 +190,62 @@ Follow the repository documentation policy:
 - Keep file names aligned across language directories whenever possible.
 - If an English document changes but the Japanese companion cannot be updated in the same change, explicitly note the reason and mark the Japanese document as needing synchronization.
 - When adding a new English documentation file in a bilingual area, add the corresponding Japanese companion or a clearly marked Japanese placeholder that links to the canonical English file.
+
+### Canonical Task Contracts And Minimal Deltas
+
+For an autonomous logical task that needs a frozen contract, crosses owner
+documents, or carries exact API, test, file, diagnostic, count, or hash
+requirements, create one paired task-contract record:
+
+```text
+doc/design/task_contracts/en/<task-id>.md
+doc/design/task_contracts/ja/<task-id>.md
+```
+
+The English file is canonical and the Japanese companion must be logically
+synchronized in the same change. Use the same task id in both trees, matching
+`[A-Za-z0-9][A-Za-z0-9._-]*`. These files are derived planning and review
+records; they do not override `doc/spec/en/`, `.miz` tests, traceability
+metadata, expectations, or the authority order.
+
+Document each fact once in its owning derived document:
+
+- the task contract owns task identity, authority links, dependencies,
+  readiness or blockers, primary and lower-stage owners, consumers, relevant
+  existing or test-first tests, gap classifications, scope, forbidden behavior,
+  semantic deferrals, affected-artifact index, audit-impact decision, review
+  and verification plans, baseline and expected count/hash impact, exit
+  criteria, completion evidence, status, stable owner-section links, and next
+  handoff
+- the crate plan owns stable crate responsibility, crate-level readiness, and
+  the ordered compact task-link index
+- a module design document owns durable module API, invariants, validation,
+  ownership, and module-local test design
+- a runner or harness document owns only its private route and consumer delta
+- todo, boundary, bilingual, traceability, source, semantic, and coverage
+  audits record only changes to the state they own, or remain unchanged
+- baseline and expected count/hash impact are frozen in the task contract;
+  final measured counts and hashes are recorded once in the contract or
+  required exit report and linked rather than copied into every affected
+  document
+
+The synchronized EN/JA contract pair is one logical derived owner for this
+rule, not two competing sources.
+
+There is no required documentation fan-out count. Do not append an identical
+task narrative to every component document merely to demonstrate
+synchronization. Update a document only when its owned durable state changes,
+and use stable links to the task contract and owner-local sections for shared
+context. An explicit no-impact decision belongs in the task contract; it does
+not require a no-op edit to the corresponding audit.
+
+Apply this structure prospectively. Do not bulk-rewrite historical task logs.
+Migrate an active or reopened task only in a separately reviewed documentation
+change that preserves every unique API, test-intent, classification,
+deferral, and traceability claim before removing duplicates. When a component
+first links a central task contract, include that EN/JA pair in the component's
+bilingual review surface; do not claim automated recursive enforcement unless
+the repository actually provides it.
 
 ## Commit Expectations
 

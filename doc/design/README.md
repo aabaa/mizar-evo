@@ -147,6 +147,26 @@ crates are added to the workspace:
 
 - [mizar-doc](./mizar-doc/en/todo.md) - documentation rendering and extraction.
 
+## 4. Canonical Task Contracts (`task_contracts/`)
+
+New non-trivial autonomous tasks use one logically synchronized pair:
+
+```text
+doc/design/task_contracts/en/<task-id>.md
+doc/design/task_contracts/ja/<task-id>.md
+```
+
+The English contract is canonical. The pair records task orchestration and
+links the crate plan and owner-local design sections; it does not define
+language behavior or duplicate module API, runner, traceability, audit, or todo
+content. Those facts remain in their designated owner documents. Existing
+historical task appendices remain valid; an active-task migration is a separate
+reviewed documentation change.
+
+See
+[autonomous_crate_development.md](./autonomous_crate_development.md#canonical-task-contracts)
+for required fields, single-owner rules, review packets, and migration policy.
+
 ## Focused Design Document Template
 
 For a focused design document, use this structure when it fits:
