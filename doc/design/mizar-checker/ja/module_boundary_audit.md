@@ -1915,6 +1915,75 @@ trace row/status/backlink、metadata、diagnostic、public/active dispatch、
 CLI result、executable coverage creditの変更はない。SDCがpublishするのは
 exact outer Given bindingとinherited child contextだけで、source type、
 descendant occurrence、Set binding、capture/closure、fact、proof、obligation、
-downstream semanticsはexcludeしたまま。implementation self-hashはtask-only
-commitまでpendingで、次taskはpost-commit fresh authority/API inventory
-からだけ選択する。
+downstream semanticsはexcludeしたまま。Task-only implementation commit
+`b1c8c814655d58fff5e5445dd94132bab37965c7`、post-commit clean inventory、
+全reviewの **NO FINDINGS**、全9 hard gatesのuncapped `100/100` は完了した。
+そのfresh authority/API inventoryからTask 269SDTを選択する。
+
+## Task 269SDT Frozen Descendant Source-Type Boundary
+
+clean HEAD `b1c8c814655d58fff5e5445dd94132bab37965c7` のfresh inventoryは
+Task `269SDT` だけを選択する。canonical Chapter 3 §§3.3--3.4、4
+§§4.2/4.6.1、8 §8.1、15 §§15.3.3/15.6.1/15.10、16
+§§16.3.3/16.4.1--16.4.3は、proof-local `given y` declarationに記述された
+`set` source typeとblock-local bindingだけをauthorityとして与える。
+実装済みSDCがexact dependencyである。未凍結SDT contract、未実装の
+source/runner owner、未追加のfocused 8 testsをそれぞれ `design_drift`、
+`source_drift`、`test_gap` と分類する。Chapter 4/15の
+`set`-statement effect不一致はSDTにはnonblockingな `spec_gap` であり、
+すべての `z`/`q` binding、closure、capture claimを引き続きblockする。
+
+SDTはSDCをby valueでconsumeし、standalone SDC Typed/Resolved ownerを置換する。
+exact 180-byte final-LF source
+(`efa21af05a15f611815a4eb573577d0a368a3134693b225bdb56177f3637c2a8`)と
+68-node/root-67 Surface profile
+(`cbeae821434b0db13d77d7dac9984d8d6bf8012de9e7c680be12e8371e87ceaa`)
+を保持する。binding 1だけを `BindingTypeSite::Missing` から
+`Source(95..98)` へ変更し、binding environmentは
+`3 contexts / 2 bindings / 0 diagnostics` のまま。common source-type
+inputはdenseなapplication/expression 2 rowsで、reserve `set@14..17` は
+binding/ordinal/root `0/0/0`、Given `set@95..98` は `1/1/1`。
+両方ともtyped node 0/1のexpression/head roleを持つnormal bare
+`BuiltinSet` headで、argumentsと全extension tableはemptyである。
+
+exact arenaはunknown/normal/link-freeのreserve-type `14..17`、
+Given-descendant type `95..98`、children `[0,1]` を持つroot `0..179`
+の3 nodes。`SourceProofLocalGivenDescendantType{Handoff,Producer,Error}`
+がpublic familyで、non-exhaustiveな4 errorsはdependency、binding
+environment、source type、installation failureの順で優先する。完全なSDC
+dependency、overlaid binding environment、source-type handoffをfingerprint
+する。Typed/Resolvedが所有するのはboxed SDT compositeだけで、SDC slotを
+重複publishしない。atomic one-shot installationはSDC、先行10
+proof-local owners、全current source-owner slotsと双方向にmutually
+exclusiveで、どちらのinstall順でもfailureは既存debug bytesと全empty
+semantic tablesを保持する。
+
+implementationはchecker `source_type.rs`、`typed_ast.rs`、
+`resolved_typed_ast.rs` と既存4 proof-local runner/facade/test filesだけ。
+runnerはprivate dormantで、mutationはexactに `None`、
+`WrongDependencyModule`、`WrongTypeRange`、`WrongArenaRoot`、
+`WrongArenaKind`。checker 4 testsとrunner 4 testsはexact composition、
+corruption/precedence、atomic empty-semantics ownership、neighbor/active-route
+isolationを凍結する。checker ABI/display/debug/validation/test namesの
+canonical記録はchecker `source_type.md`、exact scope/count/hash/exitはchecker
+`00.crate_plan.md`、private runner ABI/result/test namesはrunner `harness.md` とする。
+
+documentation prerequisiteは同期したexact 42 Markdown filesだけを変更し、
+production、fixture、sidecar、expectation、trace、Cargo、count、statusを
+変更しない。baselineはchecker/runner libraries `526/596`、production
+`30/183606` と `37/79263`、cases/requirements `428/395`、pass/fail
+`235/193`、warnings/errors `23/0`、stages `101/7/205/1`、type
+`259=247+12`、trace SHA-256
+`55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`
+のまま。implementationはchecker 4 testsとrunner 4 testsだけを追加予定で、
+全count/hashはcommit前に再実測する。
+
+SDTはdescendant `y@118..119` occurrence/reference、`z`/`q`
+abbreviation/term、closure/capture set、Given fact/guard、normalization、
+constraint、inference、coercion、proof/discharge/acceptance、initial
+obligation、export rule、diagnostic、IR/CFG/VC/ATP object、active dispatch、
+coverage creditをpublishしない。Task 259とmixed predicate/functor ownershipも
+isolateする。exitにはreview-only auditを **NO FINDINGS** まで反復し、全9
+hard gatesをscore capなし `>=90/100` でPASSし、Markdown-only prerequisite
+commit、fresh preflight、exact seven-file/eight-test implementation、個別review、
+full verification、task-only commit、successorの自動選択を必要とする。

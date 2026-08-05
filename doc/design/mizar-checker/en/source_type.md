@@ -2325,6 +2325,208 @@ expectation, trace row/status/backlink, metadata, diagnostic, public or active
 dispatch, CLI result, or executable-coverage credit changes. SDC publishes
 only the exact outer Given binding and inherited child context; source type,
 descendant occurrence, Set binding, capture/closure, fact, proof, obligation,
-and downstream semantics remain excluded. The implementation self-hash is
-pending its task-only commit; the next task is selected only from a fresh
-post-commit authority/API inventory.
+and downstream semantics remain excluded. Task-only implementation commit
+`b1c8c814655d58fff5e5445dd94132bab37965c7`, post-commit clean inventory,
+all review **NO FINDINGS**, and all nine uncapped `100/100` hard gates are
+complete. That fresh authority/API inventory selects Task 269SDT.
+
+## Task 269SDT Frozen Descendant Source-Type Boundary
+
+Fresh clean inventory at
+`b1c8c814655d58fff5e5445dd94132bab37965c7` selects only Task `269SDT`.
+Canonical Chapters 3 §§3.3--3.4, 4 §§4.2/4.6.1, 8 §8.1, 15
+§§15.3.3/15.6.1/15.10, and 16 §§16.3.3/16.4.1--16.4.3 authorize the written
+`set` source type of the proof-local `given y` declaration and its
+block-local binding. Implemented SDC is the exact dependency. The absent
+frozen SDT contract, source/runner owner, and eight focused tests are
+`design_drift`, `source_drift`, and `test_gap`. The Chapter-4/15
+`set`-statement effect disagreement is a nonblocking SDT `spec_gap` and
+continues to block every `z`/`q` binding, closure, and capture claim.
+
+SDT consumes SDC by value and replaces its standalone Typed/Resolved owner.
+It preserves the exact 180-byte final-LF source
+(`efa21af05a15f611815a4eb573577d0a368a3134693b225bdb56177f3637c2a8`)
+and 68-node/root-67 Surface profile
+(`cbeae821434b0db13d77d7dac9984d8d6bf8012de9e7c680be12e8371e87ceaa`).
+Only binding 1 changes from `BindingTypeSite::Missing` to
+`Source(95..98)`; the binding environment stays `3 contexts / 2 bindings /
+0 diagnostics`. The common source-type input contains two dense
+application/expression rows: reserve `set@14..17` at binding/ordinal/root
+`0/0/0`, and Given `set@95..98` at `1/1/1`. Both are normal bare
+`BuiltinSet` heads with expression/head roles on typed nodes 0 and 1.
+Arguments and every extension table are empty.
+
+The exact unknown, normal, link-free arena has reserve-type `14..17`,
+Given-descendant type `95..98`, and root `0..179` with children `[0,1]`.
+The public family is
+`SourceProofLocalGivenDescendantType{Handoff,Producer,Error}`; the four
+non-exhaustive errors are dependency, binding-environment, source-type, and
+installation failures in that precedence. It fingerprints the complete SDC
+dependency, overlaid binding environment, and source-type handoff. Typed and
+Resolved own only the boxed SDT composite, not a second SDC slot. Atomic
+one-shot installation is reciprocal and mutually exclusive with SDC, the ten
+earlier proof-local owners, and all other current source-owner slots; failure
+in either installation order preserves prior debug bytes and all empty
+semantic tables.
+
+Implementation is limited to checker `source_type.rs`, `typed_ast.rs`,
+`resolved_typed_ast.rs`, and the four existing proof-local runner/facade/test
+files. The runner is private and dormant, with mutations exactly `None`,
+`WrongDependencyModule`, `WrongTypeRange`, `WrongArenaRoot`, and
+`WrongArenaKind`. Four checker and four runner tests freeze exact
+composition, corruption/precedence, atomic empty-semantics ownership, and
+neighbor/active-route isolation. Checker ABI/display/debug/validation/test
+names are canonical in checker `source_type.md`; exact scope/count/hash/exit
+is in checker `00.crate_plan.md`; private runner ABI/result/test names are in
+runner `harness.md`.
+
+The documentation prerequisite changes exactly these synchronized 42 Markdown
+files and no production, fixture, sidecar, expectation, trace, Cargo, count, or
+status. Baselines remain checker/runner libraries `526/596`, production
+`30/183606` and `37/79263`, cases/requirements `428/395`, pass/fail
+`235/193`, warnings/errors `23/0`, stages `101/7/205/1`, type
+`259=247+12`, and trace SHA-256
+`55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`.
+The implementation projects only four new checker and four new runner tests;
+all counts and hashes are remeasured before commit.
+
+SDT publishes no descendant `y@118..119` occurrence/reference, `z`/`q`
+abbreviation or term, closure/capture set, Given fact/guard, normalization,
+constraint, inference, coercion, proof/discharge/acceptance, initial
+obligation, export rule, diagnostic, IR/CFG/VC/ATP object, active dispatch, or
+coverage credit. Task 259 and mixed predicate/functor ownership remain
+isolated. Exit requires repeated review-only audits ending **NO FINDINGS**, all
+nine hard gates PASS without a score cap at `>=90/100`, a Markdown-only
+prerequisite commit, fresh preflight, exact seven-file/eight-test
+implementation, separate reviews and full verification, task-only commit, and
+automatic successor selection.
+
+## Task 269SDT Normative Checker ABI
+
+The field order and read-only ABI are exact:
+
+```rust
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceProofLocalGivenDescendantTypeHandoff {
+    source_id: SourceId,
+    module_id: ModuleId,
+    dependency: SourceProofLocalGivenDescendantBindingHandoff,
+    dependency_fingerprint: String,
+    binding_env: BindingEnv,
+    binding_fingerprint: String,
+    source_type: SourceTypeApplicationHandoff,
+    source_type_fingerprint: String,
+}
+
+impl SourceProofLocalGivenDescendantTypeHandoff {
+    pub const fn source_id(&self) -> SourceId;
+    pub const fn module_id(&self) -> &ModuleId;
+    pub const fn dependency(&self)
+        -> &SourceProofLocalGivenDescendantBindingHandoff;
+    pub fn dependency_fingerprint(&self) -> &str;
+    pub const fn binding_env(&self) -> &BindingEnv;
+    pub fn binding_fingerprint(&self) -> &str;
+    pub const fn source_type(&self) -> &SourceTypeApplicationHandoff;
+    pub fn source_type_fingerprint(&self) -> &str;
+    pub fn debug_text(&self) -> String;
+
+    pub(crate) fn validate_installation(
+        &self,
+        source_id: SourceId,
+        module_id: &ModuleId,
+        arena: &TypedArena,
+    ) -> Result<(), SourceProofLocalGivenDescendantTypeError>;
+
+    pub(crate) fn validate_complete_installation(
+        &self,
+        source_id: SourceId,
+        module_id: &ModuleId,
+        arena: &TypedArena,
+        installation_available: bool,
+    ) -> Result<(), SourceProofLocalGivenDescendantTypeError>;
+}
+
+pub struct SourceProofLocalGivenDescendantTypeProducer;
+
+impl SourceProofLocalGivenDescendantTypeProducer {
+    pub fn build(
+        dependency: SourceProofLocalGivenDescendantBindingHandoff,
+        input: SourceTypeHandoffInput,
+        symbols: &SymbolEnv,
+        arena: &TypedArena,
+    ) -> Result<
+        SourceProofLocalGivenDescendantTypeHandoff,
+        SourceProofLocalGivenDescendantTypeError,
+    >;
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum SourceProofLocalGivenDescendantTypeError {
+    InvalidDependency,
+    InvalidBindingEnvironment,
+    InvalidSourceType,
+    InvalidInstallation,
+}
+```
+
+The four `Display` strings are exactly
+`source proof-local given-descendant type dependency is invalid`,
+`source proof-local given-descendant typed binding environment is invalid`,
+`source proof-local given-descendant source type is invalid`, and
+`source proof-local given-descendant type installation is invalid`. The enum
+implements `std::error::Error` and exposes no source or additional public
+methods.
+
+The exact debug grammar is:
+
+```text
+source-proof-local-given-descendant-type-debug-v1
+module: {package}::{module}
+dependency-fingerprint: {Rust-debug-quoted complete SDC debug text}
+binding-fingerprint: {Rust-debug-quoted complete overlaid BindingEnv debug text}
+source-type-fingerprint: {Rust-debug-quoted complete source-type debug text}
+```
+
+Every line, including the last, ends in one LF. Nested fingerprints use Rust
+`Debug` quoting and retain embedded `\n` bytes. Producer and installation
+validation precedence is exact: revalidate SDC identity/complete fingerprint;
+validate and fingerprint the `3/2/0` overlay; validate exact input, common
+`SourceTypeBindingProfile::ProofLocalGiven`, source-type handoff, and arena;
+then test installation availability. No failure publishes a partial owner.
+
+The exact site-role strings are `source.type.expression` and
+`source.type.head`. Arena kind strings are
+`source.proof-local.given-descendant.reserve-type`,
+`source.proof-local.given-descendant.type`, and
+`source.proof-local.given-descendant.type-root`. Root node 2 spans `0..179`
+and has children `[0,1]`; nodes 0/1 span `14..17` and `95..98`.
+All are unresolved, unknown-typed, normal, and link-free.
+
+`TypedAst` adds boxed optional
+`source_proof_local_given_descendant_type`, exact getter
+`source_proof_local_given_descendant_type() -> Option<&SourceProofLocalGivenDescendantTypeHandoff>`,
+and consuming installer
+`with_source_proof_local_given_descendant_type(...) -> Result<Self, TypedAstError>`.
+Its error is `TypedAstError::InvalidSourceProofLocalGivenDescendantType` with
+`source proof-local given-descendant type handoff is invalid`.
+`ResolvedTypedAst` adds the same getter and builder-finish replay, with
+`ResolvedTypedAstError::InvalidSourceProofLocalGivenDescendantType` displayed
+as `resolved typed AST source proof-local given-descendant type handoff is invalid`.
+There is no separately replaceable Resolved input.
+
+SDT owns the SDC dependency by value and does not co-install the standalone SDC
+slot. Both Typed and Resolved reject coexistence in either order with the exact
+eleven predecessors: proof-local declaration, Let binding, Let type, Given
+binding, Given type, Given-use type, Given-use term, Given-condition binding,
+Given-condition type, Given-condition-use term, and Given-descendant binding.
+Every current generic/source owner receives the reciprocal availability guard.
+Failure preserves pre-call debug bytes, owner state, the three arena nodes, and
+empty context/type/fact/coercion/initial-obligation/diagnostic tables.
+
+The exact checker tests are:
+
+- `task269sdt_exact_descendant_type_composition_is_stable`
+- `task269sdt_dependency_binding_input_and_arena_corruption_fail_closed`
+- `task269sdt_typed_and_resolved_ownership_is_atomic`
+- `task269sdt_generic_neighbor_and_descendant_use_routes_remain_isolated`

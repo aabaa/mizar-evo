@@ -5644,6 +5644,141 @@ expectation, trace row/status/backlink, metadata, diagnostic, public or active
 dispatch, CLI result, or executable-coverage credit changes. SDC publishes
 only the exact outer Given binding and inherited child context; source type,
 descendant occurrence, Set binding, capture/closure, fact, proof, obligation,
-and downstream semantics remain excluded. The implementation self-hash is
-pending its task-only commit; the next task is selected only from a fresh
-post-commit authority/API inventory.
+and downstream semantics remain excluded. Task-only implementation commit
+`b1c8c814655d58fff5e5445dd94132bab37965c7`, post-commit clean inventory,
+all review **NO FINDINGS**, and all nine uncapped `100/100` hard gates are
+complete. That fresh authority/API inventory selects Task 269SDT.
+
+## Task 269SDT Frozen Descendant Source-Type Boundary
+
+Fresh clean inventory at
+`b1c8c814655d58fff5e5445dd94132bab37965c7` selects only Task `269SDT`.
+Canonical Chapters 3 §§3.3--3.4, 4 §§4.2/4.6.1, 8 §8.1, 15
+§§15.3.3/15.6.1/15.10, and 16 §§16.3.3/16.4.1--16.4.3 authorize the written
+`set` source type of the proof-local `given y` declaration and its
+block-local binding. Implemented SDC is the exact dependency. The absent
+frozen SDT contract, source/runner owner, and eight focused tests are
+`design_drift`, `source_drift`, and `test_gap`. The Chapter-4/15
+`set`-statement effect disagreement is a nonblocking SDT `spec_gap` and
+continues to block every `z`/`q` binding, closure, and capture claim.
+
+SDT consumes SDC by value and replaces its standalone Typed/Resolved owner.
+It preserves the exact 180-byte final-LF source
+(`efa21af05a15f611815a4eb573577d0a368a3134693b225bdb56177f3637c2a8`)
+and 68-node/root-67 Surface profile
+(`cbeae821434b0db13d77d7dac9984d8d6bf8012de9e7c680be12e8371e87ceaa`).
+Only binding 1 changes from `BindingTypeSite::Missing` to
+`Source(95..98)`; the binding environment stays `3 contexts / 2 bindings /
+0 diagnostics`. The common source-type input contains two dense
+application/expression rows: reserve `set@14..17` at binding/ordinal/root
+`0/0/0`, and Given `set@95..98` at `1/1/1`. Both are normal bare
+`BuiltinSet` heads with expression/head roles on typed nodes 0 and 1.
+Arguments and every extension table are empty.
+
+The exact unknown, normal, link-free arena has reserve-type `14..17`,
+Given-descendant type `95..98`, and root `0..179` with children `[0,1]`.
+The public family is
+`SourceProofLocalGivenDescendantType{Handoff,Producer,Error}`; the four
+non-exhaustive errors are dependency, binding-environment, source-type, and
+installation failures in that precedence. It fingerprints the complete SDC
+dependency, overlaid binding environment, and source-type handoff. Typed and
+Resolved own only the boxed SDT composite, not a second SDC slot. Atomic
+one-shot installation is reciprocal and mutually exclusive with SDC, the ten
+earlier proof-local owners, and all other current source-owner slots; failure
+in either installation order preserves prior debug bytes and all empty
+semantic tables.
+
+Implementation is limited to checker `source_type.rs`, `typed_ast.rs`,
+`resolved_typed_ast.rs`, and the four existing proof-local runner/facade/test
+files. The runner is private and dormant, with mutations exactly `None`,
+`WrongDependencyModule`, `WrongTypeRange`, `WrongArenaRoot`, and
+`WrongArenaKind`. Four checker and four runner tests freeze exact
+composition, corruption/precedence, atomic empty-semantics ownership, and
+neighbor/active-route isolation. Checker ABI/display/debug/validation/test
+names are canonical in checker `source_type.md`; exact scope/count/hash/exit
+is in checker `00.crate_plan.md`; private runner ABI/result/test names are in
+runner `harness.md`.
+
+The documentation prerequisite changes exactly these synchronized 42 Markdown
+files and no production, fixture, sidecar, expectation, trace, Cargo, count, or
+status. Baselines remain checker/runner libraries `526/596`, production
+`30/183606` and `37/79263`, cases/requirements `428/395`, pass/fail
+`235/193`, warnings/errors `23/0`, stages `101/7/205/1`, type
+`259=247+12`, and trace SHA-256
+`55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`.
+The implementation projects only four new checker and four new runner tests;
+all counts and hashes are remeasured before commit.
+
+SDT publishes no descendant `y@118..119` occurrence/reference, `z`/`q`
+abbreviation or term, closure/capture set, Given fact/guard, normalization,
+constraint, inference, coercion, proof/discharge/acceptance, initial
+obligation, export rule, diagnostic, IR/CFG/VC/ATP object, active dispatch, or
+coverage credit. Task 259 and mixed predicate/functor ownership remain
+isolated. Exit requires repeated review-only audits ending **NO FINDINGS**, all
+nine hard gates PASS without a score cap at `>=90/100`, a Markdown-only
+prerequisite commit, fresh preflight, exact seven-file/eight-test
+implementation, separate reviews and full verification, task-only commit, and
+automatic successor selection.
+
+## Task 269SDT Normative Private Runner ABI
+
+The dormant runner consumes the private SDC output by value and calls the
+unchanged Task-269SDP lower only for authenticated
+`given_type_range() == 95..98`, `given_type_head_range() == 95..98`, and
+`given_type_spelling() == "set"`. Reserve binding 0 supplies `14..17`.
+It constructs no syntax-derived semantic row.
+
+```rust
+#[derive(Debug, PartialEq, Eq)]
+#[allow(dead_code)]
+pub(in crate::runner) struct SourceProofLocalGivenDescendantTypeRouteOutput {
+    typed_ast: TypedAst,
+    resolved: ResolvedTypedAst,
+}
+
+impl SourceProofLocalGivenDescendantTypeRouteOutput {
+    pub(in crate::runner) const fn typed_ast(&self) -> &TypedAst;
+    pub(in crate::runner) const fn resolved(&self) -> &ResolvedTypedAst;
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[allow(dead_code)]
+pub(in crate::runner) enum SourceProofLocalGivenDescendantTypeRouteMutation {
+    None,
+    WrongDependencyModule,
+    WrongTypeRange,
+    WrongArenaRoot,
+    WrongArenaKind,
+}
+
+#[allow(dead_code)]
+pub(in crate::runner) fn source_proof_local_given_descendant_type_output(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    shells: &DeclarationShellSet,
+    symbols: &SymbolEnv,
+    source_text: &str,
+) -> Option<Result<SourceProofLocalGivenDescendantTypeRouteOutput, String>>;
+
+#[cfg(test)]
+pub(in crate::runner) fn source_proof_local_given_descendant_type_output_with_mutation(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    shells: &DeclarationShellSet,
+    symbols: &SymbolEnv,
+    source_text: &str,
+    mutation: SourceProofLocalGivenDescendantTypeRouteMutation,
+) -> Option<Result<SourceProofLocalGivenDescendantTypeRouteOutput, String>>;
+```
+
+Each dead-code allowance has an inline Task-269SDT dormant-route rationale.
+The production wrapper always selects `None` mutation and is not dispatched.
+A source mismatch returns `None`; a selected validation failure returns
+`Some(Err(display_string))`; exact success returns `Some(Ok(output))`.
+The output exposes only immutable Typed/Resolved views. The exact runner tests
+are:
+
+- `task269sdt_exact_descendant_type_route_is_stable`
+- `task269sdt_dependency_input_and_arena_corruption_fail_closed`
+- `task269sdt_typed_and_resolved_owners_are_one_shot_and_semantically_empty`
+- `task269sdt_near_miss_neighbor_and_active_routes_remain_isolated`
