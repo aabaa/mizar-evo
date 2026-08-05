@@ -931,16 +931,7 @@ with `InvalidSourceStatement`; no final output is published, the original
 typed debug remains byte-identical, and either valid single-owner input can
 be replayed.
 
-### Task 258A Implementation Result
-
-Final assembly clone-preserves the validated handoff after rechecking the
-owned binding environment, Task-252/256 fingerprints, and arena. It rejects
-nonempty typed semantic tables, cluster facts, overload-stage outputs,
-expression inputs, statement semantics/proofs, and diagnostics before
-output construction. Empty node hints and the exact complete
-`source.statement.transport` source-preserved hint set are admitted because
-they preserve syntax nodes only; every other nonempty hint set fails through
-`InvalidSourceStatement`.
+Completion evidence: [central Task-258A historical contract](../../task_contracts/en/258A.md#completion-evidence).
 
 ## Task 258B1 Frozen Final Statement Projection
 
@@ -969,13 +960,7 @@ is absent. No name resolution is inferred at final assembly, and no fact,
 checked formula, statement semantic, proof, goal, diagnostic, or downstream
 IR/VC output is created. This prerequisite changes no resolved source.
 
-### Task 258B1 Implementation Status
-
-Final assembly clones and revalidates the B1 base/reference pair together and
-rejects an orphan, missing, stale, or cross-profile half as
-`InvalidSourceStatement`. The reference debug chunk follows the base chunk
-before resolved nodes. All statement semantic, checked-formula, proof, goal,
-diagnostic, and downstream tables remain empty.
+Completion evidence: [central Task-258B1 historical contract](../../task_contracts/en/258B1.md#completion-evidence).
 
 ### Task 258B2 Frozen Final Ownership
 
@@ -993,13 +978,7 @@ and publishes no accepted premise, fact, checked formula, statement
 semantic, proof, goal, diagnostic, theorem result, or downstream IR/VC
 output. This prerequisite changes no resolved source or test.
 
-### Task 258B2 Implementation Closure
-
-Final assembly revalidates and clone-preserves the exact base-only B2
-handoff with no reference association. Any cluster fact, statement-proof
-input, foreign source family, checked formula, statement semantic, proof,
-goal, diagnostic, or other semantic output remains rejected; the successful
-result keeps every such table empty.
+Completion evidence: [central Task-258B2 historical contract](../../task_contracts/en/258B2.md#completion-evidence).
 
 ### Task 258B3 Frozen Final Ownership
 

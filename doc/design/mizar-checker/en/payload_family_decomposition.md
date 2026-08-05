@@ -766,13 +766,7 @@ declaration and proof/justification ownership. The deferred `MT10-FS` row
 stays deferred until the complete dependency chain and runner are
 executable.
 
-### Task 258B1 Implementation Closure
-
-The B1 statement/reference edge is implemented as frozen and remains a
-transport-only family. The next statement work is Task 258B2+ after fresh
-contract review; Tasks 269–272 still own local declarations, closures,
-coercion intent, proof skeletons, justification meaning, goals, and
-acceptance. No family edge is reclassified by the implementation.
+Completion evidence: [central Task-258B1 historical contract](../../task_contracts/en/258B1.md#completion-evidence).
 
 ### Task 258B2 Frozen Family Edge
 
@@ -791,13 +785,7 @@ proof-local declarations and proof/justification semantics. The deferred
 earns no executable coverage credit and changes no source, fixture,
 sidecar, expectation, trace status/count, or existing test list/hash.
 
-### Task 258B2 Implemented Family Edge
-
-The frozen single-assumption edge is now executable but remains
-transport-only: one direct equality theorem, one unlabeled assumption, one
-direct conclusion, and no reference or semantic handoff. This closes the B2
-source/test gaps without consuming B3 witness, B4 composite-root, B5 broader
-visibility, or Tasks 269–272 proof-semantic ownership.
+Completion evidence: [central Task-258B2 historical contract](../../task_contracts/en/258B2.md#completion-evidence).
 
 ### Task 258B3 Witness Companion
 

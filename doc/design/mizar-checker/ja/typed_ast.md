@@ -864,14 +864,7 @@ SourceStatementHandoff)` bypassはfinal-assembly coexistence rejectionの準備
 slotの後、node/table sectionの前。`facts`/existing semantic tableはempty。
 本documentation commitは`TypedAst` source/APIを変更しない。
 
-### Task 258A implementation result
-
-optional handoff、read-only accessor、one-shot installer、debug chunk、
-dedicated `InvalidSourceStatement` pathを実装した。installationはfrozen
-source-family exclusionとTask-252/256 dependencyに加え、generic typed
-projection (`resolved_root`、context、type、fact、coercion、initial
-obligation、diagnostic)がemptyであることを要求する。coexistence failureは
-prior valueをmutateせず、valid replayはdeterministic。
+Completion evidence: [central Task-258A historical contract](../../task_contracts/ja/258A.md#completion-evidence)。
 
 ## Task 258B1 frozen combined statement ownership
 
@@ -907,13 +900,7 @@ identical。checked formula、fact、statement semantic、proof、goal、
 diagnostic、accepted theoremを作らない。本prerequisiteは`TypedAst` sourceを
 変更しない。
 
-### Task 258B1 implementation status
-
-`TypedAst::with_source_statement_references`はexact B1 base/reference pairを
-validateしてatomicにinstallする。legacy statement installerはTask 258Aだけを
-acceptし、既存payload ownerはpairをrejectし、validation failure後もoriginal
-valueをreuseできる。accessor、clone、debug orderはsemantic outputなしで
-frozen contractを保持する。
+Completion evidence: [central Task-258B1 historical contract](../../task_contracts/ja/258B1.md#completion-evidence)。
 
 ### Task 258B2 frozen typed ownership
 
@@ -934,13 +921,7 @@ ownし、fact、accepted premise、checked formula、statement semantic、proof�
 goal、diagnostic、theorem resultを作らない。本prerequisiteは`TypedAst`
 source/test/existing debug byteを変更しない。
 
-### Task 258B2 implementation closure
-
-`TypedAst::with_source_statement`はexact Task-258AまたはTask-258B2 base
-profileだけをadmitする。Task-258B1はpair-onlyのまま。Task-248、
-Task-257A/B/C2/C3、Task-258 cross-profile hybrid、occupied semantic table、
-foreign-first/statement-firstの両ownership orderはpartial mutationなしで
-failする。clone/debug orderもstableである。
+Completion evidence: [central Task-258B2 historical contract](../../task_contracts/ja/258B2.md#completion-evidence)。
 
 ### Task 258B3 frozen paired installation
 

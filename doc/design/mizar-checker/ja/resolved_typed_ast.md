@@ -879,15 +879,7 @@ test-injected typed inputはdeterministically `InvalidSourceStatement`。
 final outputをpublishせずoriginal typed debugをbyte-identicalに保ち、validな
 single-owner inputはいずれもreplayできる。
 
-### Task 258A implementation result
-
-final assemblyはowned binding environment、Task-252/256 fingerprint、arenaを
-再検証してhandoffをclone-preserveする。output construction前にnonempty
-typed semantic table、cluster fact、overload-stage output、expression input、
-statement semantics/proof、diagnosticをrejectする。empty node hintとexact
-complete `source.statement.transport` source-preserved hint setだけはsyntax
-nodeをpreserveするためadmitし、他のnonempty hint setは
-`InvalidSourceStatement`となる。
+Completion evidence: [central Task-258A historical contract](../../task_contracts/ja/258A.md#completion-evidence)。
 
 ## Task 258B1 frozen final statement projection
 
@@ -915,13 +907,7 @@ absentなのでoutput byte-identical。final assemblyでname resolutionをinfer
 せず、fact、checked formula、statement semantic、proof、goal、diagnostic、
 downstream IR/VC outputを作らない。本prerequisiteはresolved sourceを変更しない。
 
-### Task 258B1 implementation status
-
-final assemblyはB1 base/reference pairを一緒にclone/revalidateし、orphan、
-missing、stale、cross-profile halfを`InvalidSourceStatement`としてrejectする。
-reference debug chunkはbase chunk直後、resolved node前に出る。statement
-semantic、checked-formula、proof、goal、diagnostic、downstream tableはすべて
-emptyのまま。
+Completion evidence: [central Task-258B1 historical contract](../../task_contracts/ja/258B1.md#completion-evidence)。
 
 ### Task 258B2 frozen final ownership
 
@@ -939,13 +925,7 @@ accepted premise、fact、checked formula、statement semantic、proof、goal、
 diagnostic、theorem result、downstream IR/VC outputをpublishしない。本prerequisite
 はresolved source/testを変更しない。
 
-### Task 258B2 implementation closure
-
-final assemblyはreference associationなしのexact base-only B2 handoffを
-revalidateしてclone-preserveする。cluster fact、statement-proof input、
-foreign source family、checked formula、statement semantic、proof、goal、
-diagnostic、その他semantic outputはrejectしたままで、successful resultは
-全該当tableをemptyに保つ。
+Completion evidence: [central Task-258B2 historical contract](../../task_contracts/ja/258B2.md#completion-evidence)。
 
 ### Task 258B3 frozen final ownership
 

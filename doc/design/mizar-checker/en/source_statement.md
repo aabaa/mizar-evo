@@ -1164,22 +1164,7 @@ quality at least 90/100, task-only staging, and one dedicated documentation
 commit. Only after that commit and fresh preflight may Task-258B1
 implementation begin.
 
-### Task 258B1 Implementation Status
-
-The frozen base and reference transactions are implemented exactly. The base
-producer selects the Task-258A or Task-258B1 profile from authenticated
-dependencies rather than a caller flag. The reference producer publishes one
-proof-step label and one simple local citation only after replaying the exact
-resolver projection/reference/result and comparing every resolver node to
-the same-index typed node. Dependency, aggregate, label, and citation error
-precedence is fail-closed and replay-safe.
-
-The combined `TypedAst`/`ResolvedTypedAst` owner publishes the base/reference
-pair atomically. Four checker tests cover the complete API/debug surface,
-dependency/row/provenance corruptions, owner exclusion/rollback, final
-revalidation/clone, and the empty semantic boundary. Task-258A installer and
-debug bytes remain unchanged. Broader statement shapes and every proof
-semantic remain outside this implementation.
+Completion evidence: [central Task-258B1 historical contract](../../task_contracts/en/258B1.md#completion-evidence).
 
 ## Task 258B2 Frozen Single-Assumption Slice
 

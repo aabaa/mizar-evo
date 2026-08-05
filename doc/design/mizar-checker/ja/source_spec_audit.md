@@ -4032,16 +4032,7 @@ test listを保ち、本prerequisiteではstatus/count/fixture/sidecar/expectati
 coverageを変更しない。broader statement formはTask 258BとTasks 269–272が
 所有する。
 
-### Task 258A implementation audit
-
-public module/producer、typed/final ownership、dormant real parser/resolver
-bridgeはfrozen contractと一致した。checker 3 tests/runner 4 testsがrecorded
-`source_drift`/`test_gap`をcloseし、prior `design_drift`もclosedのまま。
-new language behavior、accepted theorem fact、proof meaning、fixture、
-expectation、trace activationは追加しない。blocking `spec_gap`、
-`source_undocumented_behavior`、`test_expectation_drift`、
-`boundary_violation`は残らない。broader/semantic statement familyは
-Task 258BとTasks 269–272が保持する。
+Completion evidence: [central Task-258A historical contract](../../task_contracts/ja/258A.md#completion-evidence)。
 
 ## Task 258B1 frozen surface audit
 

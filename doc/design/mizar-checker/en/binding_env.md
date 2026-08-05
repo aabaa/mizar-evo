@@ -524,14 +524,7 @@ and empty ranges, parent/layer/scope/visibility mutation, fingerprint
 propagation into Tasks 252/258, rollback, and Task-258A byte compatibility.
 This documentation prerequisite changes no source or test.
 
-### Task 258B1 Implementation Status
-
-The frozen `BindingContextOwner::SourceStatement { source_range }` variant is
-implemented. Exact outer/nested proof contexts at `69..137` and `86..113`
-extend the module base to `3/1/0`, preserve the reserved binding, scope paths
-`[0]` and `[0, 0]`, and deterministic debug/fingerprint bytes. Invalid empty
-or foreign ranges and profile substitutions fail before publication.
-Task-258A retains its original one-context bytes.
+Completion evidence: [central Task-258B1 historical contract](../../task_contracts/en/258B1.md#completion-evidence).
 
 ### Task 258B2 Frozen Assumption-Context Extension
 
@@ -550,14 +543,7 @@ scope, another binding count, or any profile other than `2/1/0` must fail
 before publication. The documentation prerequisite changes no source or test;
 the existing Task-258A and Task-258B1 profiles and bytes remain unchanged.
 
-### Task 258B2 Implementation Closure
-
-The implementation reuses the existing `SourceStatement` owner exactly:
-module context 0 plus proof context 1 at `72..111`, parent 0, proof layer,
-scope `[0]`, no local bindings, and visible reserved binding `[0]`.
-`binding_env.rs` remains byte-for-byte outside this task; mutation tests
-authenticate the exact `2/1/0` fingerprint and reject cross-profile lower
-environments atomically.
+Completion evidence: [central Task-258B2 historical contract](../../task_contracts/en/258B2.md#completion-evidence).
 
 ## Task 258B3 Frozen Proof Context
 

@@ -836,20 +836,7 @@ artifact不変、全hard gate、quality 90/100以上、task-only staging、
 dedicated documentation commitを要求。そのcommitとfresh preflight後だけ
 Task-258B1 implementationへ進む。
 
-### Task 258B1 implementation status
-
-frozen base/reference transactionをexactに実装した。base producerはcaller
-flagではなくauthenticated dependencyからTask-258A/Task-258B1 profileを
-selectする。reference producerはexact resolver projection/reference/resultを
-replayし、全resolver nodeをsame-index typed nodeと比較してからproof-step
-label 1件とsimple local citation 1件だけをpublishする。dependency、
-aggregate、label、citation error precedenceはfail-closedかつreplay-safe。
-
-combined `TypedAst`/`ResolvedTypedAst` ownerはbase/reference pairをatomicに
-publishする。checker 4本がcomplete API/debug、dependency/row/provenance
-corruption、owner exclusion/rollback、final revalidation/clone、empty semantic
-boundaryをcoverする。Task-258A installer/debug byteは不変。broader statement
-shapeと全proof semanticは本implementation外に残る。
+Completion evidence: [central Task-258B1 historical contract](../../task_contracts/ja/258B1.md#completion-evidence)。
 
 ## Task 258B2 frozen single-assumption slice
 

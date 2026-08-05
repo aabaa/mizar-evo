@@ -3225,18 +3225,7 @@ metadata/status/count、route、production manifest、test list、hashを変更�
 assumption、witness、composite formula、broader label visibility、proof
 meaning、acceptanceはTask 258B1外に残る。
 
-### Task 258B1 implemented harness boundary
-
-frozen routeを実装し、corpus-dormantのまま維持した。private leafはexact
-source selection、real parser/resolver extraction、proof-context binding
-extension、per-context Task-252 lowering、Task-256とstatement/reference
-assembly、atomic final publicationを行う。semantic statement/proof payloadを
-返さず、既存caseをactivateできない。
-
-library test 5本でrunner listは374となった。raw/normalized hashは
-`e8b5f54f219f8aa091014557c38ff8018d229ffbbc01cfa449bdc215826ca105` /
-`99e6b7199e007707d1b4074b7079885e58378c4900a6811a7e1eb6cc02f9a2bf`。
-productionは30 paths / 35,854 lines。
+Completion evidence: [central Task-258B1 historical contract](../../task_contracts/ja/258B1.md#completion-evidence)。
 
 ### Task 258B2 frozen harness boundary
 
@@ -3260,13 +3249,7 @@ corpus artifact、trace metadata、production manifest、test list/hashを
 変更しない。witness、composite root、broader visibility、proof meaningは
 Tasks 258B3–B5と269–272に残る。
 
-### Task 258B2 implemented harness boundary
-
-private leaf/facadeは2,120/678 lines、`runner.rs`は2,491 lines、statement
-test leafは2,884 linesで実装済み。routeはcorpus-dormantのままprior
-statement/lower selectorより先に実行する。all-index parityとcomplete
-resolver mutation matrixがraw-syntax/provenance driftのsyntax-free checker
-boundary越えを防ぐ。
+Completion evidence: [central Task-258B2 historical contract](../../task_contracts/ja/258B2.md#completion-evidence)。
 
 ### Task 258B3 frozen harness boundary
 

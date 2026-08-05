@@ -910,15 +910,7 @@ slot and precedes the node/table section. `facts` and all existing semantic
 tables remain empty. This documentation commit changes no `TypedAst` source
 or API.
 
-### Task 258A Implementation Result
-
-The optional handoff, read-only accessor, one-shot installer, debug chunk,
-and dedicated `InvalidSourceStatement` path are implemented. Installation
-requires an empty generic typed projection (`resolved_root`, contexts, types,
-facts, coercions, initial obligations, and diagnostics) in addition to the
-frozen source-family exclusions and Task-252/256 dependencies. Failed
-coexistence does not mutate the prior value and valid replay remains
-deterministic.
+Completion evidence: [central Task-258A historical contract](../../task_contracts/en/258A.md#completion-evidence).
 
 ## Task 258B1 Frozen Combined Statement Ownership
 
@@ -955,13 +947,7 @@ before nodes/tables. Task-258A has no second chunk and keeps identical bytes.
 No checked formula, fact, statement semantic, proof, goal, diagnostic, or
 accepted theorem is created. This prerequisite changes no `TypedAst` source.
 
-### Task 258B1 Implementation Status
-
-`TypedAst::with_source_statement_references` now validates and installs the
-exact B1 base/reference pair atomically. The legacy statement installer still
-accepts only Task 258A, all existing payload owners reject the pair, and
-failed validation leaves the original value reusable. Accessors, cloning,
-and debug ordering preserve the frozen contract without semantic output.
+Completion evidence: [central Task-258B1 historical contract](../../task_contracts/en/258B1.md#completion-evidence).
 
 ### Task 258B2 Frozen Typed Ownership
 
@@ -983,13 +969,7 @@ fact, accepted premise, checked formula, statement semantic, proof, goal,
 diagnostic, or theorem result. This prerequisite changes no `TypedAst`
 source, tests, or existing debug bytes.
 
-### Task 258B2 Implementation Closure
-
-`TypedAst::with_source_statement` now admits only the exact Task-258A or
-Task-258B2 base profile. Task-258B1 remains pair-only, and Task-248,
-Task-257A/B/C2/C3, Task-258 cross-profile hybrids, occupied semantic tables,
-and either foreign-first or statement-first ownership order fail without
-partial mutation. Clone and debug order remain stable.
+Completion evidence: [central Task-258B2 historical contract](../../task_contracts/en/258B2.md#completion-evidence).
 
 ### Task 258B3 Frozen Paired Installation
 

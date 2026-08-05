@@ -13,12 +13,13 @@ or coverage credit.
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-258AB-COMPACT` |
-| Status | Documentation prerequisite reviews, required verification, and all nine hard gates complete at uncapped 100/100; exact staging and its dedicated commit remain. |
+| Status | Documentation prerequisite committed; exact migration, independent reviews, required verification, and all nine hard gates complete at uncapped 100/100. Exact staging and the separate migration commit remain. |
 | Purpose | Centralize completion-only evidence for Tasks 258A, 258B1, and 258B2 while retaining every frozen contract, owner-local invariant, semantic deferral, and verification owner. |
 | Owners | Repository migration policy, historical [258A](./258A.md#completion-evidence), [258B1](./258B1.md#completion-evidence), and [258B2](./258B2.md#completion-evidence) contracts, plus the [checker](../../mizar-checker/en/00.crate_plan.md#task-index) and [runner](../../mizar-test/en/00.crate_plan.md#task-index) Task Indexes |
 | Consumers | 18 checker/runner EN/JA design paths, four Task Indexes, and the post-migration generic schema-v1 ledger/lint |
 | Historical commits | 258A prerequisite/implementation `e0b4bb59`/`1e81db7a`; 258B1 `ddcac673`/`e87b4a48`; 258B2 `3dd38526`/`4d9ed4f5` |
-| Readiness | Clean selection HEAD `a1bf34e86b42b19a81cf7ca07bb1e420a266637f`; all 38 preimages replay; no blocking authority gap. |
+| Documentation prerequisite | `d767941aad8f0339af76500c3801823675f2b139` |
+| Readiness | Clean post-prerequisite HEAD `d767941a`, `origin/main...HEAD=0/1`, protected `stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4`; all 38 preimages replayed before editing and no blocking authority gap exists. |
 
 Task order is historical selection order: 258A, then the pair-only 258B1
 slice, then the base-only 258B2 sibling. It is not a semantic dependency
@@ -145,6 +146,46 @@ The final independent read-only quality review ended **NO FINDINGS**, passed
 all nine hard gates, applied no score cap, and assigned **100/100**. The only
 residual observation is the report-only remote-ref metadata conflict; it does
 not obstruct exact staging.
+
+## Implementation Evidence
+
+Fresh post-prerequisite inventory replayed all 38 frozen preimages, headings,
+hashes, physical-line counts, language/component partitions, and neighboring
+anchors before editing. The migration replaces only those 38 complete H3
+sections with 38 language-local redirects to the corresponding historical
+contract. The selected intervals occupied 502 physical lines, including 38
+separator blanks. Replacement preserves those blanks, removes 464 completion-
+content lines, adds 38 redirect lines, and reduces the mapped intervals by 426
+lines. Every H2, all unlisted H3s, and all six paired B2 frozen H3 owners remain.
+
+The ledger has 508 physical lines and adds exactly one batch, three task
+records, 38 redirects over 18 distinct source paths, and 16 index records. Its
+expanded-inventory SHA-256 is
+`c472137844a8f41c6e3ad7ab96b8a8de559df962979b148c2dc706b1de6acbd8`;
+its complete physical SHA-256 is
+`4d6dd6103ee721e72b2c008247eeb84fcd30a7023e38cedbe8b73571ed621dd0`.
+The immutable 40-line source TSV remains
+`65fda187d1f5e0e5202269918c78cf3a74f7eda451d0d70fab9c7d9f3a2db119`.
+
+Specification, `.miz`, fixtures, sidecars, expectations, trace TOML/status/
+backlinks, coverage credit, source, Cargo, public API, diagnostics, root
+coverage audit, historical contracts, and the four prerequisite Task Indexes
+are unchanged. The protected trace hash remains
+`55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`.
+
+Independent test-sufficiency, equivalence/boundary, and source/document/EN-JA
+consistency reviews each ended **NO FINDINGS**. Focused and full runner lint
+policy passed `1/1` and `15/15`; checker and runner libraries passed `530/530`
+and `600/600`; runner metadata passed `137/137`; checker lint passed `15/15`.
+`cargo fmt --all --check`, Cargo metadata, warnings-denied all-target/
+all-feature Clippy, the full workspace test suite, all five CLIs with the
+prerequisite hashes above, protected count/hash replay, and `git diff --check`
+passed.
+
+The final independent read-only quality review ended **NO FINDINGS**, passed
+all nine hard gates, applied no score cap, and assigned **100/100** with no
+residual risk inside migration scope. The historical remote-ref movement
+remains a report-only, human-owned observation.
 
 ## Tests, Reviews, And Exit
 

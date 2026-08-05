@@ -12,12 +12,13 @@ diagnostic、traceability、coverage creditを導入・再解釈しない。
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-258AB-COMPACT` |
-| Status | Documentation prerequisite review、required verification、全9 hard gatesをuncapped 100/100で完了。exact staging、専用commitが未完。 |
+| Status | Documentation prerequisite commit済み。exact migration、independent review、required verification、全9 hard gatesをuncapped 100/100で完了。exact staging、separate migration commitが未完。 |
 | Purpose | Tasks 258A/258B1/258B2のcompletion-only evidenceを集約し、全frozen contract、owner-local invariant、semantic deferral、verification ownerを保持する。 |
 | Owners | repository migration policy、historical [258A](./258A.md#completion-evidence)、[258B1](./258B1.md#completion-evidence)、[258B2](./258B2.md#completion-evidence) contracts、[checker](../../mizar-checker/ja/00.crate_plan.md#task-index)/[runner](../../mizar-test/ja/00.crate_plan.md#task-index) Task Index |
 | Consumers | checker/runner EN/JA design 18 paths、Task Index 4個、post-migration generic schema-v1 ledger/lint |
 | Historical commits | 258A prerequisite/implementation `e0b4bb59`/`1e81db7a`、258B1 `ddcac673`/`e87b4a48`、258B2 `3dd38526`/`4d9ed4f5` |
-| Readiness | clean selection HEAD `a1bf34e86b42b19a81cf7ca07bb1e420a266637f`、38 preimage replay済み、blocking authority gapなし。 |
+| Documentation prerequisite | `d767941aad8f0339af76500c3801823675f2b139` |
+| Readiness | clean post-prerequisite HEAD `d767941a`、`origin/main...HEAD=0/1`、protected `stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4`。編集前に38 preimageをreplayし、blocking authority gapなし。 |
 
 task orderはhistorical selection order、すなわち258A、pair-only 258B1 slice、
 base-only 258B2 siblingであり、semantic dependency chainではない。B2はshared
@@ -134,6 +135,40 @@ behaviorは不変。既存plan warningはbaseline warningでstdout hashを変え
 final independent read-only quality reviewは**NO FINDINGS**、全9 hard gates
 PASS、score capなし**100/100**。残る観測はreport-only remote-ref metadata
 conflictだけで、exact stagingを妨げない。
+
+## Implementation evidence
+
+fresh post-prerequisite inventoryは編集前に38 frozen preimages、heading、hash、
+physical-line count、language/component partition、neighbor anchorを全てreplayした。
+migrationはその38 complete H3だけを対応するhistorical contractへの38
+language-local redirectsへ置換する。selected intervalはseparator blank 38行を含む
+502 physical linesだった。replacementはblankを保持し、completion-content 464行を
+削除、redirect 38行を追加し、mapped intervalを426行削減した。全H2、全unlisted
+H3、B2 frozen H3 owner 6組を保持する。
+
+ledgerは508 physical linesで、exactly batch 1、task 3、18 distinct source pathsに
+またがるredirect 38、index 16 recordsを追加する。expanded-inventory SHA-256は
+`c472137844a8f41c6e3ad7ab96b8a8de559df962979b148c2dc706b1de6acbd8`、
+complete physical SHA-256は
+`4d6dd6103ee721e72b2c008247eeb84fcd30a7023e38cedbe8b73571ed621dd0`。
+immutable 40-line source TSVは
+`65fda187d1f5e0e5202269918c78cf3a74f7eda451d0d70fab9c7d9f3a2db119`のまま。
+
+spec、`.miz`、fixture、sidecar、expectation、trace TOML/status/backlink、coverage
+credit、source、Cargo、public API、diagnostic、root coverage audit、historical
+contract、prerequisite Task Index 4件は不変。protected trace hashは
+`55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`のまま。
+
+独立test-sufficiency、equivalence/boundary、source/document/EN-JA consistency
+reviewはすべて**NO FINDINGS**。focused/full runner lint policyは`1/1`、`15/15`、
+checker/runner libraryは`530/530`、`600/600`、runner metadataは`137/137`、
+checker lintは`15/15`。`cargo fmt --all --check`、Cargo metadata、warnings-denied
+all-target/all-feature Clippy、full workspace test suite、上記prerequisite hashと
+一致する全5 CLI、protected count/hash replay、`git diff --check`がPASS。
+
+final independent read-only quality reviewは**NO FINDINGS**、全9 hard gates
+PASS、score capなし**100/100**、migration scope内residual riskなし。
+historical remote-ref movementはreport-only human-owned observationのまま。
 
 ## Tests, reviews, and exit
 

@@ -706,13 +706,7 @@ imported/outer/inner visibilityを保持する。Tasks 269-272がproof-local
 declarationとproof/justification ownershipを保持する。complete dependency
 chain/runnerがexecutableになるまでdeferred `MT10-FS` rowはdeferredのまま。
 
-### Task 258B1 implementation closure
-
-B1 statement/reference edgeはfrozenどおりtransport-only familyとして実装した。
-次のstatement workはfresh contract review後のTask 258B2+であり、Tasks
-269–272がlocal declaration、closure、coercion intent、proof skeleton、
-justification meaning、goal、acceptanceを所有し続ける。本implementationで
-family edgeをreclassifyしない。
+Completion evidence: [central Task-258B1 historical contract](../../task_contracts/ja/258B1.md#completion-evidence)。
 
 ### Task 258B2 frozen family edge
 
@@ -731,13 +725,7 @@ deferred `MT10-FS` rowはdeferredのまま。本documentation prerequisiteは
 executable coverage creditを得ず、source、fixture、sidecar、expectation、
 trace status/count、既存test list/hashを変更しない。
 
-### Task 258B2 implemented family edge
-
-frozen single-assumption edgeはexecutableになったがtransport-onlyのまま。
-direct equality theorem 1件、unlabeled assumption 1件、direct conclusion
-1件だけで、reference/semantic handoffはない。B2 source/test gapをcloseするが、
-B3 witness、B4 composite root、B5 broader visibility、Tasks 269–272
-proof-semantic ownershipを消費しない。
+Completion evidence: [central Task-258B2 historical contract](../../task_contracts/ja/258B2.md#completion-evidence)。
 
 ### Task 258B3 witness companion
 

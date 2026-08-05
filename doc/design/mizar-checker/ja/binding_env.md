@@ -506,13 +506,7 @@ empty range、parent/layer/scope/visibility mutation、Tasks 252/258への
 fingerprint propagation、rollback、Task-258A byte compatibilityをcoverする。
 本documentation prerequisiteはsource/testを変更しない。
 
-### Task 258B1 implementation status
-
-frozen `BindingContextOwner::SourceStatement { source_range }` variantを
-実装した。exact outer/nested proof context `69..137` / `86..113`がmodule
-baseを`3/1/0`へ拡張し、reserved binding、scope `[0]` / `[0, 0]`、
-deterministic debug/fingerprint byteを保持する。empty/foreign rangeやprofile
-substitutionはpublication前にfailする。Task-258Aのone-context byteは不変。
+Completion evidence: [central Task-258B1 historical contract](../../task_contracts/ja/258B1.md#completion-evidence)。
 
 ### Task 258B2 frozen assumption-context extension
 
@@ -530,13 +524,7 @@ empty/foreign range、non-proof owner、異なるparent/scope、別binding count
 `2/1/0`以外のprofileはpublication前にfailする。本documentation prerequisiteは
 source/testを変更せず、既存Task-258A/Task-258B1 profileとbyteも不変。
 
-### Task 258B2 implementation closure
-
-implementationはexisting `SourceStatement` ownerをexactにreuseする。module
-context 0とproof context 1 (`72..111`)、parent 0、proof layer、scope `[0]`、
-local bindingなし、visible reserved binding `[0]`である。`binding_env.rs`は
-本task外でbyte-for-byte不変。mutation testはexact `2/1/0` fingerprintを
-authenticateし、cross-profile lower environmentをatomicにrejectする。
+Completion evidence: [central Task-258B2 historical contract](../../task_contracts/ja/258B2.md#completion-evidence)。
 
 ## Task 258B3 frozen proof context
 

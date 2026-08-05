@@ -4212,16 +4212,7 @@ list and receives no status, count, fixture, sidecar, expectation, or
 coverage change in this prerequisite. Broader statement forms remain owned
 by Task 258B and Tasks 269–272.
 
-### Task 258A Implementation Audit
-
-The public module, producer, typed/final ownership, and dormant real
-parser/resolver bridge now match the frozen contract. Three checker and four
-runner tests close the recorded `source_drift` and `test_gap`; the prior
-`design_drift` remains closed. The implementation adds no new language
-behavior, accepted theorem fact, proof meaning, fixture, expectation, or
-trace activation. No blocking `spec_gap`, `source_undocumented_behavior`,
-`test_expectation_drift`, or `boundary_violation` remains. Task 258B and
-Tasks 269–272 retain the broader and semantic statement families.
+Completion evidence: [central Task-258A historical contract](../../task_contracts/en/258A.md#completion-evidence).
 
 ## Task 258B1 Frozen Surface Audit
 
