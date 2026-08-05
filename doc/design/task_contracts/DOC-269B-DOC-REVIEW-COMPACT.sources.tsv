@@ -1,0 +1,24 @@
+# Frozen preimage inventory for DOC-269B-DOC-REVIEW-COMPACT.
+# Columns: task, language, component, source path, ATX level, exact heading text without the ATX prefix, section SHA-256, physical lines.
+269B	en	mizar-checker	doc/design/mizar-checker/en/00.crate_plan.md	2	Checker Task 269B Implemented B3M1 Binding Increment	22ff44e98b614aafb0ca888cfa05219088144a3810215925a0efa2c40e6c1fe9	22
+269B	en	mizar-checker	doc/design/mizar-checker/en/bilingual_sync_audit.md	2	Task 269B active implementation synchronization	6b71c133d7552d47b3dcb85ff309302069a49e4f5e2bc51b389d75c43a6aa979	9
+269B	en	mizar-checker	doc/design/mizar-checker/en/binding_env.md	2	Task 269B active B3M1 transition	2b4d06e52403fb55da2445686389fdcdf2756c9a00fd5692e31c152e4a3d1e9c	9
+269B	en	mizar-checker	doc/design/mizar-checker/en/module_boundary_audit.md	2	Task 269B implemented module boundary	82964742af37f24e2b71f78df8b0f565222ca5f3a2805935d0ba21c7fdc07081	14
+269B	en	mizar-checker	doc/design/mizar-checker/en/payload_family_decomposition.md	2	Task 269B active B3M1 family increment	48f569e66ea8a443c66a043e7ae7c85fefa16afcd551f92691e7015ba6320a0a	7
+269B	en	mizar-checker	doc/design/mizar-checker/en/resolved_typed_ast.md	2	Task 269B active final replay increment	3874265ddff6346cc68302d0002eae109066b6d19c1d7f588168b80bf6e61e40	8
+269B	en	mizar-checker	doc/design/mizar-checker/en/semantic_spec_audit.md	2	Task 269B active semantic boundary	293f7fd3f985dab5ac3a1bef0322bec25fa70677f1bd72e993f396b9f06d60e1	8
+269B	en	mizar-checker	doc/design/mizar-checker/en/source_proof_local_declaration.md	2	Task 269B active B3M1 binding contract	0a03510907012f51ebab78a734150a1daaa0826e2bc60c59001e15b840f7e338	11
+269B	en	mizar-checker	doc/design/mizar-checker/en/source_spec_audit.md	2	Task 269B implemented source/specification audit	923ea3ec0443bba78d69d1662b98160e191fedf3b69b867bb619babb6b8d7d94	9
+269B	en	mizar-checker	doc/design/mizar-checker/en/source_statement.md	2	Task 269B active B3M1 lower-consumer boundary	f780d85d61f95180f3dba254e617887f7ecfea9dbcf87d4a173aa485a45dfc2d	8
+269B	en	mizar-checker	doc/design/mizar-checker/en/typed_ast.md	2	Task 269B active Typed ownership increment	0f922eea1fe5b929bd0eb785b5b7859653062205e19ddbce1f08b4200df52282	8
+269B	ja	mizar-checker	doc/design/mizar-checker/ja/00.crate_plan.md	2	Checker Task 269B implemented B3M1 binding increment	f43d8a1610765bf5ab460214c8c82383a5909dd01738a57d4d02b7c7b14db9ea	20
+269B	ja	mizar-checker	doc/design/mizar-checker/ja/bilingual_sync_audit.md	2	Task 269B active implementation synchronization	baa0d03940140c18090009cd65124595da041b3d3c808af772f26fe52a6f9156	8
+269B	ja	mizar-checker	doc/design/mizar-checker/ja/binding_env.md	2	Task 269B active B3M1 transition	76d4037949f694a08d13c95976e75eca3c2642f7425ec8ed90186ef39a80cd53	8
+269B	ja	mizar-checker	doc/design/mizar-checker/ja/module_boundary_audit.md	2	Task 269B implemented module boundary	a9afed2c59e40034528ef94b59a1e082fcf432020d3d8bd8332b59018f63e517	14
+269B	ja	mizar-checker	doc/design/mizar-checker/ja/payload_family_decomposition.md	2	Task 269B active B3M1 family increment	2c6cc2ecee8ecc9d6fd58a01c7fee40961cb90236cc4bf80902eba2ff064b108	7
+269B	ja	mizar-checker	doc/design/mizar-checker/ja/resolved_typed_ast.md	2	Task 269B active final replay increment	b9f3c2306035c638e4ef0367c9d945e1ead57f1d5a1784f2804674a099c52887	8
+269B	ja	mizar-checker	doc/design/mizar-checker/ja/semantic_spec_audit.md	2	Task 269B active semantic boundary	bf1f25d74d20fbd0f36db84af5ce7f01af28f240f6c1112774ea696aeeb6534e	7
+269B	ja	mizar-checker	doc/design/mizar-checker/ja/source_proof_local_declaration.md	2	Task 269B active B3M1 binding contract	5a922aafe7446c8d16bc62e918304ebbb21c54997d2e2a122af2656e76209b10	10
+269B	ja	mizar-checker	doc/design/mizar-checker/ja/source_spec_audit.md	2	Task 269B implemented source/specification audit	40e36018aa06dfd25e6c662911aa1a2786968526649203ff00bece4b5796ad3a	9
+269B	ja	mizar-checker	doc/design/mizar-checker/ja/source_statement.md	2	Task 269B active B3M1 lower-consumer boundary	6978abdfff67f6f0888b37f81e427c423dedfc1b1e503319a834b7f12f0540b4	8
+269B	ja	mizar-checker	doc/design/mizar-checker/ja/typed_ast.md	2	Task 269B active Typed ownership increment	74bcc905fdf76db40070f827fb75e1fe90671883b1d08a706fad367c11f22b92	7
