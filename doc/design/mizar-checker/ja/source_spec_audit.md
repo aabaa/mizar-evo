@@ -5143,13 +5143,7 @@ sidecar、trace artifactをeditしない。
 absent seven-consumer B5A implementationはbounded `source_drift`であり、
 immediate next implementation taskへ意図的にdeferする。
 
-### Task 258B5A reviewed authority result
-
-independent specification/source-documentation reviewsはbounded
-next-task-owned `source_drift`をrecord後、全8 protocol classificationで
-**NO FINDINGS**。independent test sufficiencyも**NO FINDINGS**。full
-verificationはspecification/corpus/expectation/sidecar/trace/production/
-public API ownerを変更せずPASSする。
+Completion evidence: [central Task-258B5A historical contract](../../task_contracts/ja/258B5A.md#completion-evidence)。
 
 ## Task 258B5A implementation authority result
 

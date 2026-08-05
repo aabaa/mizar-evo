@@ -11233,11 +11233,7 @@ evidenceをconsumeする。B5B imported summaryとB5C negative diagnosticは
 excludeする。exact 20/73 ownershipによりlabel/citation/proof-block/wrapper
 nodeをchecker-owned syntax-free tableへ移動しない。
 
-### Checker Task 258B5A boundary review result
-
-independent source/documentation boundary reviewは**NO FINDINGS**。全future
-production changeはfrozen seven consumers内でfeasibleで、public harness/
-lower-owner/module split/ownership transferは不要である。
+Completion evidence: [central Task-258B5A historical contract](../../task_contracts/ja/258B5A.md#completion-evidence)。
 
 ## Checker Task 258B5A implemented runner boundary
 

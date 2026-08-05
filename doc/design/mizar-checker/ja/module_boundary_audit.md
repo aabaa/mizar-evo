@@ -1038,11 +1038,7 @@ statementだけをassignし、label/reference/proof structureと他73 nodeは
 Surface-ownedのまま。B5B importとB5C negative routeはseparate
 dependency-ordered taskである。
 
-### Task 258B5A boundary review result
-
-independent source/documentation boundary reviewは**NO FINDINGS**。seven
-consumersはsufficient、全excluded ownerはunchangedで、module split/
-ownership transferは不要である。
+Completion evidence: [central Task-258B5A historical contract](../../task_contracts/ja/258B5A.md#completion-evidence)。
 
 ## Task 258B5A implemented consumer boundary
 

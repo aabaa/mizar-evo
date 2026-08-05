@@ -5364,14 +5364,7 @@ expectation, sidecar, or trace artifacts.
 The absent seven-consumer B5A implementation is bounded `source_drift`,
 intentionally left to the immediate next implementation task.
 
-### Task 258B5A Reviewed Authority Result
-
-Independent specification and source/documentation reviews report
-**NO FINDINGS** across all eight protocol classifications after recording
-the bounded, next-task-owned `source_drift`. Independent test sufficiency
-also reports **NO FINDINGS**. Full verification passes without changing
-specification, corpus, expectation, sidecar, trace, production, or public
-API owners.
+Completion evidence: [central Task-258B5A historical contract](../../task_contracts/en/258B5A.md#completion-evidence).
 
 ## Task 258B5A Implementation Authority Result
 

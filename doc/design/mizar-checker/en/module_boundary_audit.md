@@ -1054,11 +1054,7 @@ term, five formula, and five statement nodes; label/reference/proof structure
 and the other 73 nodes remain Surface-owned. B5B imports and B5C negative
 routes are separate dependency-ordered tasks, not extensions of B5A.
 
-### Task 258B5A Boundary Review Result
-
-Independent source/documentation boundary review reports **NO FINDINGS**:
-the seven consumers are sufficient, every excluded owner remains unchanged,
-and no module split or ownership transfer is required.
+Completion evidence: [central Task-258B5A historical contract](../../task_contracts/en/258B5A.md#completion-evidence).
 
 ## Task 258B5A Implemented Consumer Boundary
 

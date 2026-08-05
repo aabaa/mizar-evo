@@ -1306,13 +1306,7 @@ The same seven implementation consumers, four checker tests, five runner
 tests, no-public-API rule, semantic deferrals, baselines, hashes, and
 trace/corpus no-op boundary are synchronized without exception.
 
-### Task 258B5A Review Synchronization
-
-Both languages record specification, test-contract, and source/documentation
-reviews as **NO FINDINGS**, with checker/runner/full-workspace, format,
-Clippy, five-CLI, exact scope/count/hash, authority no-op, HEAD/ahead, and
-stash gates PASS. Independent final quality and commit gates remain pending
-in both languages.
+Completion evidence: [central Task-258B5A historical contract](../../task_contracts/en/258B5A.md#completion-evidence).
 
 ### Task 258B5A Final-Quality Synchronization
 

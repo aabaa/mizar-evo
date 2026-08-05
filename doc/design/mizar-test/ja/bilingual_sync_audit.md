@@ -1258,12 +1258,7 @@ boundary、empty semanticsをfreezeする。same B5A/B5B/B5C task split、
 public/active/corpus/trace no-op rule、next-task-owned bounded B5A
 `source_drift`、baselines/hashesもsynchronization exceptionなしでpreserveする。
 
-### Checker Task 258B5A review synchronization
-
-両runner languageはthree independent reviewsを**NO FINDINGS**、complete
-crate/workspace、format、Clippy、CLI、scope/count/hash、authority-no-op、
-repository-state、stash verificationをPASSとしてrecordする。final
-quality/commit gatesはsynchronized pendingである。
+Completion evidence: [central Task-258B5A historical contract](../../task_contracts/ja/258B5A.md#completion-evidence)。
 
 ### Checker Task 258B5A final-quality synchronization
 

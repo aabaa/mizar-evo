@@ -1265,12 +1265,7 @@ seven implementation consumers、checker 4 tests、runner 5 tests、
 no-public-API rule、semantic deferrals、baselines/hashes、trace/corpus no-op
 boundaryをexceptionなしで同期する。
 
-### Task 258B5A review synchronization
-
-両languageはspecification、test-contract、source/documentation reviewsを
-**NO FINDINGS**、checker/runner/full-workspace、format、Clippy、five-CLI、
-exact scope/count/hash、authority no-op、HEAD/ahead、stash gatesをPASSとして
-recordする。independent final quality/commit gatesは両languageでpending。
+Completion evidence: [central Task-258B5A historical contract](../../task_contracts/ja/258B5A.md#completion-evidence)。
 
 ### Task 258B5A final-quality synchronization
 

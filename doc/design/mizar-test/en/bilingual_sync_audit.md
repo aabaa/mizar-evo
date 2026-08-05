@@ -1299,12 +1299,7 @@ same B5A/B5B/B5C task split, public/active/corpus/trace no-op rule,
 bounded next-task-owned B5A `source_drift`, baselines, and hashes without a
 synchronization exception.
 
-### Checker Task 258B5A Review Synchronization
-
-Both runner languages record all three independent reviews as
-**NO FINDINGS** and the complete crate/workspace, format, Clippy, CLI,
-scope/count/hash, authority-no-op, repository-state, and stash verification
-as PASS. Final quality and commit gates remain synchronized and pending.
+Completion evidence: [central Task-258B5A historical contract](../../task_contracts/en/258B5A.md#completion-evidence).
 
 ### Checker Task 258B5A Final-Quality Synchronization
 

@@ -12467,12 +12467,7 @@ negative diagnostics are excluded. Exact 20/73 ownership prevents moving
 label, citation, proof-block, or wrapper nodes into checker-owned syntax-free
 tables.
 
-### Checker Task 258B5A Boundary Review Result
-
-Independent source/documentation boundary review reports **NO FINDINGS**.
-All production changes remain feasible inside the frozen seven consumers;
-no public harness, lower-owner, module split, or ownership transfer is
-required.
+Completion evidence: [central Task-258B5A historical contract](../../task_contracts/en/258B5A.md#completion-evidence).
 
 ## Checker Task 258B5A Implemented Runner Boundary
 

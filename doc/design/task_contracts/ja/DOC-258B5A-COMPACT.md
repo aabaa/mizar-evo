@@ -12,11 +12,12 @@ API、diagnostic、traceability、coverageを変更しない。
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-258B5A-COMPACT` |
-| Status | Documentation prerequisite review/verification/final qualityはPASS。exact staging/commitが残る。migration未開始。 |
+| Status | Documentation prerequisite commit済み。exact migration、independent reviews、full verification、final quality完了。exact staging/commitが残る。 |
 | Purpose | repeated Task-258B5A documentation-review、verification、authority、boundary、bilingual evidenceを集約し、全durable/later ownerを保持する。 |
 | Owners | migration policy、historical [258B5A](./258B5A.md#completion-evidence)、[checker plan](../../mizar-checker/ja/00.crate_plan.md#task-index)、[runner plan](../../mizar-test/ja/00.crate_plan.md#task-index) |
 | Consumers | EN/JA checker/runner source 14 paths、Task Index 4件、post-migration generic schema-v1 ledger/lint |
 | Historical sequence | `50ab1ebc` -> `59021f76` -> `4a79116c` -> `141dc44a` -> `46dd9db5` -> `f27d2c91` |
+| Documentation prerequisite | `153dd93b3304be6c5bea0a8861fa5940abf1913c` |
 | Readiness | clean selection HEAD `f77f68f9b0bd48c681396afb4125cba343a294a8`、`origin/main...HEAD=0/4`、protected `stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4`。exact selectionはdependency-ready。 |
 
 ## Authority and classification
@@ -135,8 +136,50 @@ protected inventory measurementsは以下。
 protected trace manifestは
 `55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`。
 final read-only quality reviewは**NO FINDINGS**。全9 hard gates PASS、score cap
-なし、valid `100/100`（`20/20/15/15/10/10/5/5`）。残るのはexact task-only
-stagingとdedicated prerequisite commitだけで、migrationはseparate future change。
+なし、valid `100/100`（`20/20/15/15/10/10/5/5`）。そのprerequisite checkpoint
+ではexact task-only staging/dedicated commitだけが残り、migrationはseparate
+future changeだった。
+
+## Migration evidence
+
+prerequisiteはcommit `153dd93b3304be6c5bea0a8861fa5940abf1913c`。
+post-commit inventoryはclean、`origin/main...HEAD=0/5`、protected stash不変で、
+edit前にfrozen preimages 14件を全てreplayした。
+
+mechanical migrationはdeclared sources 14件、本EN/JA pair、
+`legacy_compactions.tsv`のexact 17 pathsだけを変更する。14 complete H3だけを
+language-local redirectへ置換する。133 physical linesはredirect+separator 28行に
+なり、105行削減。全H2、implementation section、source-local final-quality H3
+8件、root coverage-audit H3 2件、全unlisted ownerを保持する。
+
+ledgerは559 physical linesで、batch 1、task 1、14 redirects / 14 distinct source
+paths、index 8件をexactly追加する。expanded-inventory SHA-256は
+`7484411f88cb4009b4ad6ea0cd9bd0e1d99e1e92fe4e0bf2bc9c578369510e34`、
+complete physical SHA-256は
+`55ecba46e9847d2bfcea17c6f7df64ca4f6248d689654c820ffccb3a3b396dae`。
+immutable source TSVは
+`ffd6e9161804d82baaf89c2a843db5e19a9e48c34faa24ecd4a4513d02ac51bc`。
+
+focused generic-ledger/link/fragment lintと`git diff --check`はPASS。
+specification、`.miz`、fixture、sidecar、expectation、trace status/backlink、coverage
+credit、source、Cargo、public API、diagnostic、root coverage audit、historical
+contracts、source TSV、four Task Indexesはunchanged。
+
+independent test-sufficiency、equivalence/boundary、source/document/EN-JA
+consistency reviewsは**NO FINDINGS**。committed preimages、全live fact owner/
+retained section、exact redirects/anchors、ledger ordering/arithmetic/hashes、
+chronology、classification、protected scope、bilingual parity、audit no-impactを
+replayした。generic schema-v1 lintはsufficientで、batch-specific Rust/semantic
+testはdata-driven policy上不要かつ追加不可。
+
+focused/full runner lint policyは`1/1` / `15/15`、checker lintは`15/15`、
+checker/runner libraryは`530/530` / `600/600`、runner metadataは`137/137`。
+format、Cargo metadata、warnings-denied Clippy、full workspace suite、protected
+count/hash replay、`git diff --check`はPASS。five CLIはunchanged warnings 23件、
+exit zero、上記prerequisiteとsame hashes。
+final read-only quality reviewは**NO FINDINGS**。全9 hard gates PASS、score cap
+なし、valid `100/100`（`20/20/15/15/10/10/5/5`）で、migration scope内の
+residual riskはない。
 
 ## Handoff
 
