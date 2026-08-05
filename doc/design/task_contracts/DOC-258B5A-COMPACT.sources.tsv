@@ -1,0 +1,16 @@
+# Frozen preimage inventory for DOC-258B5A-COMPACT.
+# Columns: task, language, component, source path, ATX level, exact heading text without the ATX prefix, section SHA-256, physical lines.
+258B5A	en	mizar-checker	doc/design/mizar-checker/en/00.crate_plan.md	3	Task 258B5A Documentation Review And Verification	ce49afab02320b2acb56abe62cbadc62990145123f115d48978fab0ef986990c	20
+258B5A	en	mizar-checker	doc/design/mizar-checker/en/bilingual_sync_audit.md	3	Task 258B5A Review Synchronization	673f27de5f3b9ad2b53c9f98145d651ef3db52f5f967434720df5f6046f94847	8
+258B5A	en	mizar-checker	doc/design/mizar-checker/en/module_boundary_audit.md	3	Task 258B5A Boundary Review Result	6c9613866a8fbd1f3e8adaeb00575a6fc07d54878f2bc8b1ee00cc250ce228d1	6
+258B5A	en	mizar-checker	doc/design/mizar-checker/en/source_spec_audit.md	3	Task 258B5A Reviewed Authority Result	64bf63bb201976fc8cf3a11c27833b7557dbe7bb09e389313b790cf7a8b74da0	9
+258B5A	en	mizar-test	doc/design/mizar-test/en/00.crate_plan.md	3	Checker Task 258B5A Documentation Review And Verification	f56c128f9cf0b71f7db3dc20b5a828837e4dabb4d9cb3eb41e1c50390affb3f5	11
+258B5A	en	mizar-test	doc/design/mizar-test/en/bilingual_sync_audit.md	3	Checker Task 258B5A Review Synchronization	6e72b9dc03d41ce015f333e1a10d03a5abf1e5ed9a1ff22af768b073af2e780a	7
+258B5A	en	mizar-test	doc/design/mizar-test/en/module_boundary_audit.md	3	Checker Task 258B5A Boundary Review Result	fc28061e8db6ff31c0708d2b26033807ea87715d8d1613aed7a69bae38983d7e	7
+258B5A	ja	mizar-checker	doc/design/mizar-checker/ja/00.crate_plan.md	3	Task 258B5A documentation review/verification	f644b98ddb3abc105557490ce663006ccb4b89558b070bc982841c037c9e2905	20
+258B5A	ja	mizar-checker	doc/design/mizar-checker/ja/bilingual_sync_audit.md	3	Task 258B5A review synchronization	0e201dd49eb41a5b4191e6274840878944ce82edec9cfdf620f2c160af71e790	7
+258B5A	ja	mizar-checker	doc/design/mizar-checker/ja/module_boundary_audit.md	3	Task 258B5A boundary review result	a26935b0665dffa110ab8ae73aab75963c9d9c0dc67c1c88de90e8876c7d677b	6
+258B5A	ja	mizar-checker	doc/design/mizar-checker/ja/source_spec_audit.md	3	Task 258B5A reviewed authority result	dc3b2c62ad2d6389e9a2a7380d59083eb5e66e22fe03388aa1e8ed96bafc79a1	8
+258B5A	ja	mizar-test	doc/design/mizar-test/ja/00.crate_plan.md	3	Checker Task 258B5A documentation review/verification	72d3681ef2b06ac10a657d65f6ddd1b161eda569ed05dfae726279846d8d90c3	11
+258B5A	ja	mizar-test	doc/design/mizar-test/ja/bilingual_sync_audit.md	3	Checker Task 258B5A review synchronization	a54e02de69c173f472b924418cde0b928da5641afd27d4881cfafdf2e5155b5e	7
+258B5A	ja	mizar-test	doc/design/mizar-test/ja/module_boundary_audit.md	3	Checker Task 258B5A boundary review result	7f10e3751dbe68c52440f5686600f6b392daff8c5bb17f91b2faed58fdfc7528	6
