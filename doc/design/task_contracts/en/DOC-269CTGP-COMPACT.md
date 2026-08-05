@@ -12,7 +12,7 @@ language behavior, test intent, API, diagnostics, traceability, or coverage.
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-269CTGP-COMPACT` |
-| Status | Documentation prerequisite ready for its dedicated commit; independent reviews, verification, and final quality gate are complete. |
+| Status | Exact migration is ready for its separate commit; independent reviews, verification, and final quality gate are complete. |
 | Purpose | Centralize completion evidence for 269CT and 269GP while retaining every prerequisite, durable owner, later authority, and semantic deferral. |
 | Owners | Migration policy, historical [269CT](./269CT.md#completion-evidence) and [269GP](./269GP.md#completion-evidence) records, [checker plan](../../mizar-checker/en/00.crate_plan.md#task-index), and [runner plan](../../mizar-test/en/00.crate_plan.md#task-index) |
 | Consumers | Eight EN/JA checker/runner design paths, four Task Indexes, and the post-migration generic schema-v1 ledger/lint |
@@ -119,3 +119,69 @@ The protected trace manifest remains
 `55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`.
 Final finding-specific re-review reports **NO FINDINGS**; all nine hard gates
 pass without a score cap at a valid `100/100`.
+
+## Migration Evidence
+
+The documentation prerequisite is commit
+`4177b69866d3d18c230938cbd50ed87801f7e990`. Its post-commit inventory was
+clean at `origin/main...HEAD=0/3`, and the protected stash was unchanged.
+Before editing, fresh parent and independent deterministic replay matched all
+12 frozen preimages, section hashes, headings, physical-line counts, language/
+component partitions, and neighboring anchors.
+
+The mechanical migration changes exactly the eight declared source paths,
+this EN/JA pair, and `legacy_compactions.tsv`: 11 paths. It replaces only the
+12 complete H3 sections with 12 language-local redirects. Their 299 physical
+lines become 24 redirect-plus-separator lines, a reduction of 275 lines. Every
+H2, all eight prerequisite H3s, every unlisted section, later 269GS, and all
+durable owners remain.
+
+The ledger now has 535 physical lines and adds exactly one batch, two task
+records, 12 redirects over eight distinct source paths, and 12 index records.
+Its expanded-inventory SHA-256 is
+`370df3c1cc663091ce777024d735534d25d562262e1f48515d2c3e13e1f87efe`;
+its complete physical SHA-256 is
+`14e45e9fbd12c2d68275f6d57a24e32b758327ae13ac71e374d8ceb992684bcd`.
+The immutable source TSV remains
+`6d32ed76afb190c3669b48359ded7a7d2fdd54018b01e729d37a195b4dd8b0f9`.
+
+Specification, `.miz`, fixture, sidecar, expectation, trace TOML/status/
+backlinks, coverage credit, production source, Cargo, public API, diagnostics,
+root coverage audit, frozen source inventory, historical contracts, and the
+four Task Indexes are unchanged. The protected trace hash remains
+`55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`.
+Focused generic-ledger lint and `git diff --check` pass.
+
+Independent test-sufficiency, equivalence/boundary, and source/document/EN-JA
+consistency reviews each ended **NO FINDINGS**. They independently replayed the
+12 preimages, live fact owners, retained `6+2` prerequisite sections, CT-to-GP
+chronology, GP/269GS history, exact redirects/anchors/indexes, schema arithmetic,
+hashes, protected scope, and audit no-impact decision. No new Rust test is
+required because the generic schema-v1 consumer already covers this exact
+whole-section shape.
+
+Focused and full runner lint policy passed `1/1` and `15/15`; checker and runner
+libraries passed `530/530` and `600/600`; runner metadata passed `137/137`; and
+checker lint passed `15/15`. `cargo fmt --all --check`, Cargo metadata,
+warnings-denied all-target/all-feature Clippy, the full workspace test suite,
+all five CLIs with the prerequisite stdout hashes above and 23 unchanged
+warnings, protected count/hash replay, and `git diff --check` passed.
+
+Final finding-specific re-review ended **NO FINDINGS** after adding the required
+next-task handoff. All nine hard gates pass without a score cap at a valid
+`100/100`, with no residual risk inside migration scope.
+
+## Handoff
+
+After exact task-only staging, the separate migration commit, and a clean
+post-commit HEAD/origin/stash check, perform a fresh read-only inventory of
+completed checker-owned documentation. Select exactly one coherent,
+dependency-ready duplication family only after freezing its preimages, live
+owners, exclusions, count/hash impact, and paired prerequisite contract. This
+contract preauthorizes neither a later compaction batch nor a semantic task.
+
+Keep the parent at `xhigh` for authority interpretation, ownership decisions,
+integration, final quality scoring, staging, and commit. Use `high` for bounded
+independent reviews and `medium` only for deterministic inventories that make
+no semantic, test-intent, public-API, or acceptance decision. Escalate any
+authority ambiguity or mixed owner-local section to the parent before editing.

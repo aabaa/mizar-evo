@@ -12,7 +12,7 @@ diagnostic、traceability、coverageを変更しない。
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-269CTGP-COMPACT` |
-| Status | Documentation prerequisiteは専用commit ready。independent review、verification、final quality gateは完了。 |
+| Status | Exact migrationはseparate commit ready。independent review、verification、final quality gateは完了。 |
 | Purpose | 269CT/269GP completion evidenceを集約し、全prerequisite、durable owner、later authority、semantic deferralを保持する。 |
 | Owners | migration policy、historical [269CT](./269CT.md#completion-evidence)/[269GP](./269GP.md#completion-evidence)、[checker plan](../../mizar-checker/ja/00.crate_plan.md#task-index)、[runner plan](../../mizar-test/ja/00.crate_plan.md#task-index) |
 | Consumers | EN/JA checker/runner design 8 paths、Task Index 4件、post-migration generic schema-v1 ledger/lint |
@@ -109,3 +109,61 @@ protected trace manifestは
 `55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`のまま。
 final finding-specific re-reviewは**NO FINDINGS**。hard gate 9件はscore capなしで
 全PASS、valid `100/100`。
+
+## Migration evidence
+
+documentation prerequisiteはcommit
+`4177b69866d3d18c230938cbd50ed87801f7e990`。post-commit inventoryはclean、
+`origin/main...HEAD=0/3`、protected stash不変だった。edit前のfresh parent replayと
+independent deterministic replayはfrozen preimage 12件、section hash、heading、physical
+line count、language/component partition、neighbor anchorをすべて再現した。
+
+mechanical migrationが変更するのはdeclared source 8 paths、本EN/JA pair、
+`legacy_compactions.tsv`のexact 11 paths。complete H3 12節だけをlanguage-local
+redirect 12件へ置換する。299 physical linesは24 redirect-plus-separator linesとなり、
+275 lines削減。全H2、prerequisite H3 8節、全unlisted section、later 269GS、全durable
+ownerを保持する。
+
+ledgerは535 physical linesで、batch 1、task records 2、8 distinct source paths上の
+redirect 12、index records 12をexact追加する。expanded-inventory SHA-256は
+`370df3c1cc663091ce777024d735534d25d562262e1f48515d2c3e13e1f87efe`、
+complete physical SHA-256は
+`14e45e9fbd12c2d68275f6d57a24e32b758327ae13ac71e374d8ceb992684bcd`。
+immutable source TSVは
+`6d32ed76afb190c3669b48359ded7a7d2fdd54018b01e729d37a195b4dd8b0f9`のまま。
+
+spec、`.miz`、fixture、sidecar、expectation、trace TOML/status/backlink、coverage
+credit、production source、Cargo、public API、diagnostic、root coverage audit、frozen
+source inventory、historical contract、Task Index 4件は不変。protected trace hashは
+`55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`。
+focused generic-ledger lintと`git diff --check`はPASS。
+
+independent test-sufficiency、equivalence/boundary、source/document/EN-JA
+consistency reviewはすべて**NO FINDINGS**。preimage 12件、live fact owner、retained
+prerequisite `6+2`節、CT-to-GP chronology、GP/269GS history、exact redirect/anchor/
+index、schema arithmetic、hash、protected scope、audit no-impact decisionを独立再現した。
+generic schema-v1 consumerが本exact whole-section shapeを既にcoverするため、新規Rust
+testは不要。
+
+focused/full runner lint policy `1/1` / `15/15`、checker/runner library
+`530/530` / `600/600`、runner metadata `137/137`、checker lint `15/15`がPASS。
+`cargo fmt --all --check`、Cargo metadata、warnings-denied all-target/all-feature
+Clippy、full workspace test、上記prerequisite stdout hashとunchanged warnings 23件を持つ
+全5 CLI、protected count/hash replay、`git diff --check`もPASS。
+
+required next-task handoff追加後のfinal finding-specific re-reviewは**NO FINDINGS**。
+hard gate 9件はscore capなしで全PASS、valid `100/100`。migration scope内のresidual
+riskはなし。
+
+## Handoff
+
+exact task-only staging、separate migration commit、clean post-commit HEAD/origin/
+stash check後、completed checker-owned documentationをfresh read-only inventoryする。
+preimage、live owner、exclusion、count/hash impact、paired prerequisite contractを
+freezeした後でのみ、coherentかつdependency-readyなduplication familyをexact 1件
+selectする。本contractはlater compaction batchもsemantic taskもpreauthorizeしない。
+
+authority interpretation、ownership decision、integration、final quality scoring、stage、
+commitは`xhigh` parentが担当する。bounded independent reviewには`high`、semantic、
+test intent、public API、acceptanceを決定しないdeterministic inventoryだけに`medium`を
+使う。authority ambiguityまたはmixed owner-local sectionはedit前にparentへescalateする。

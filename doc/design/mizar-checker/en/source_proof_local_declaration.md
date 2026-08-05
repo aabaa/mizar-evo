@@ -1705,25 +1705,7 @@ verification gates and one exact commit. Fresh inventory after that commit
 must report the human-owned canonical scope contradiction as the blocker
 rather than automatically starting 269G.
 
-### Task 269GP implementation closure
-
-The docs prerequisite is commit
-`97a75fd9bf6a791055f236b3e3b4bb07b8d3d7c3`. The exact four-file producer,
-test-only facade hops, and four named tests now implement this contract. The
-Surface seam preserves `None` for a real selector mismatch and returns the
-frozen `Some(Err(...))` only for post-selection identity corruption. All four
-explicit `None` variants, 48 node rows, 25 token rows, two shell ordinals,
-all 34 resolver-profile variants, lower fields, shell count/export, neutral
-reconstruction, missing/duplicate/wrong/cross-profile environments, and
-stage precedence are covered. Focused tests, format, package Clippy, and
-whitespace pass; independent test and implementation reviews are **NO
-FINDINGS**. The output remains syntax-only and binding-free. Full repository
-verification and every frozen count/hash/no-op check pass. Repeated
-source/documentation consistency and final quality reviews report **NO
-FINDINGS**; all nine hard gates PASS without a score cap at `100/100`
-(`20/20/15/15/10/10/5/5`). Exact task-only staging is audited and this
-implementation commit closes the frozen syntax-only prerequisite. Fresh
-inventory reports the scope contradiction rather than selecting 269G.
+Completion evidence: [central Task-269GP historical contract](../../task_contracts/en/269GP.md#completion-evidence).
 
 ## Checker Task 269GS Canonical Proof-`given` Scope Reconciliation
 
