@@ -2407,11 +2407,7 @@ implementationはprivate Rust `source_drift`/`test_gap`だけをcloseしtrace cr
 private Rust-only sibling implementationはbinding-profile `test_gap`を`.miz`/requirementなしでclose予定。
 `428/395`、`235/193`、`23/0`、`101/7/205/1`、type `259=247+12`、trace SHA不変。
 row/artifact変更なし。GUPT/GU/capture/active visibilityはdefer。
-### Task 269GUP dormant runner 実装状況
-
-凍結済みの128-byte/54-node selector、lower row、reserve base composition、checker handoff直接返却、runner test 4件をprivate boundary内に実装した。libraryはchecker/runner `502/564`、productionは`30/172531`と`37/74826`で、path hashは不変、content hashは`e0342952a01a0b379cf7b06ad243cd40a1656e940480196323cf43fbe7d8f7c5` / `8fe7c8c0b7e855e5113f3830873e133f42c8048a3272055e2fddd5ebd9cbb1bc`である。
-
-dispatch、fixture、sidecar、expectation、trace、metadata、diagnostic、CLI、active result、Typed/final、source type、term/use、fact/proof、obligation ownerは変わらない。次のconsumerはTask 269GUPTであり、Task 269GU、capture、Task 270は引き続きdeferする。
+Completion evidence: [central Task-269GUP historical contract](../../task_contracts/ja/269GUP.md#completion-evidence)。
 
 ## Task 269GUPT zero-credit trace boundary
 
@@ -2473,23 +2469,7 @@ creditは不変。case/requirement `428/395`、pass/fail `235/193`、warning/err
 
 condition occurrence follow-upはGCU owner。
 
-### Task 269GCT implemented private runner status
-
-docs commit `b43081161b31fcc4bc23ac2fd42c5c42e772ab78`後、frozen
-private GC/GCP-to-GCT routeとexact runner test 4件をowned runner 4 filesに
-実装した。module sizeはproof-local production leaf `2506`、facade `946`、
-`runner.rs` `2778`、proof-local test leaf `8049`。runner productionは
-37 paths / 77,159 lines、path/content hashは
-`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d` /
-`5b0e68f35d37fcf843f7cb64885f09bfa9dd5423c17506713e096811a5ddf689`。
-libraryは`584`、raw/normalized hashは
-`d599bd69654d000f44858942cec771742d8c3c9e0d2ca459d7fecc84d76752c9` /
-`bc3cdabbc6424b0f01d817ed323dd823ff57d1d8d4261220dc3d9c37d9004a61`。
-active dispatch/protected artifact/count/hashは変更せず、condition occurrence
-successorはGCUだけ。test-sufficiency、implementation、source/docs、final-quality reviewは
-**NO FINDINGS**。全9 hard gatesはscore capなしの`100/100`でPASSし、
-focused/full gateもPASS。dedicated implementation commit
-`d6fb0ed28ced4d4706a1793b3aedd2a20eea0749`を完了。
+Completion evidence: [central Task-269GCT historical contract](../../task_contracts/ja/269GCT.md#completion-evidence)。
 
 ## Task 269GCU frozen zero-credit trace status
 
@@ -2499,25 +2479,7 @@ active stage/creditは不変。countsは`428/395`、`235/193`、`23/0`、
 `101/7/205/1`、type `259=247+12`、trace SHAは
 `55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`。
 
-### Task 269GCU implemented private runner status
-
-docs commit `15f47a837bc2f52d4cd30e8a4dcb86c16f2961d3`の後、
-frozen private GCT-to-GCU routeとexactly four runner testsが4つのowned
-runner fileに存在する。module sizeはproof-local production leaf `2775`、
-facade `949`、`runner.rs` `2782`、proof-local test leaf `8606`。
-runner productionは37 paths / 77,435 lines、path/content hashは
-`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d` /
-`0651af8339c147d04f88be237f8f49fc716b7da3ff90238be50a9527e89992b7`、
-libraryは`588`、raw/normalized hashは
-`7a99bcbb35838b6c1df31dec7b7c70d9c569df86bdc6f5c68d72f41578be2a9e` /
-`e49dac17564f330ad5c73018538bf5736720e47f4833709c1b9d36622208888a`
-である。active dispatcherとprotected artifact/count/hashに変更はない。
-GCUが所有するのは2つのown-condition occurrenceだけであり、authoritative
-wider block scopeとdescendant use/capture implementationは別successorに残る。
-test-sufficiency、implementation、source/docsのindependent reviewは
-**NO FINDINGS**。final read-only qualityも**NO FINDINGS**で、全9 hard gatesは
-score capなしの`100/100`でPASS。focused/full measured gateもPASSし、exact
-stagingとimplementation commit f984ae683419944493c07723e9950a9101a46502 が完了した。
+Completion evidence: [central Task-269GCU historical contract](../../task_contracts/ja/269GCU.md#completion-evidence)。
 
 ## Task 269SDP traceability freeze
 

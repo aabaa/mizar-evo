@@ -13,12 +13,12 @@ contractであり、language behavior、test intent、diagnostic、public API、
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-269G-COMPACT` |
-| Status | documentation prerequisiteはreview/verification済み。本exact docs-only changeのcommitとclean fresh inventoryまでcompaction禁止。 |
+| Status | implementation、independent review、final read-only quality reviewを完了。全9 hard gates PASS、score capなし`100/100`で、exact task-only staging/commit ready。 |
 | Purpose | exact shared Task-269GUP/GCT/GCU completion sectionをcentralizeし、全nonidentical plan/audit/trace-status/verification/boundary/sequencing ownerを保持する。 |
 | Owners | repository documentation policyとdata-driven `mizar-test` legacy-compaction lint |
 | Consumers | [checker plan](../../mizar-checker/ja/00.crate_plan.md#task-index)、[runner plan](../../mizar-test/ja/00.crate_plan.md#task-index)、declared source documents 40件、versioned compaction manifest |
-| Dependencies | Task 269GUP `076c1425`、Task 269GCT `d6fb0ed2`、Task 269GCU `f984ae68`、`DOC-COMPACT-MANIFEST` `0ec5fce293a6105e04761c5298b605d3f4ff60ca` |
-| Readiness | fresh clean HEAD `0ec5fce2`、`origin/main...HEAD=0/2`、protected `stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4`。blocking authority gapなし。 |
+| Dependencies | Task 269GUP `076c1425`、Task 269GCT `d6fb0ed2`、Task 269GCU `f984ae68`、`DOC-COMPACT-MANIFEST` `0ec5fce293a6105e04761c5298b605d3f4ff60ca`、generic multi-batch mutation prerequisite `deb2e823ef6bc5d68a53aa871a4a9dd7ed333253` |
+| Readiness | implementationはclean HEAD `deb2e823`、`origin/main...HEAD=0/4`、protected `stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4`から開始。blocking authority gapなし。 |
 
 ## Authority And Classification
 
@@ -37,7 +37,7 @@ authorityは変更しない。
 | `source_undocumented_behavior` | 導入・推測しない。 |
 | `test_expectation_drift` | なし。`.miz`、sidecar、expectation、trace dataはprotected。 |
 | `boundary_violation` | 全nonidentical/owner-local sectionを除外し、mixed checker-plan GCT heading 2件を削除せずdisambiguateすることで回避する。 |
-| `repo_metadata_conflict` | safe targetを妨げない。`origin/main`はHEADより2 commits behind、agent pushは禁止。 |
+| `repo_metadata_conflict` | safe targetを妨げない。documentation-prerequisite inventoryでは`origin/main`がHEADより2 commits behindだったが、implementation中にexternal refがagent pushなしで`deb2e823`（`0/0`）へ進んだ。report-only metadata movementであり、repair/pushは禁止。 |
 
 ## Documentation-Prerequisite Scope
 
@@ -155,6 +155,33 @@ production、public API、tests、trace、corpus、全5 CLI outputs/hashesを保
   `55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`
   のまま。
 
+## Implementation Evidence
+
+- fresh implementation preflightでgeneric mutation-oracle `test_gap`が判明した。first
+  byte-sorted H3 redirectによりhard-coded H3 malformed headingがlevel-consistentになった。
+  isolated one-line prerequisiteはmutationをalways-invalid H1へ変更し、independent reviewは
+  **NO FINDINGS**、全gates `100/100`でPASS、commit
+  `deb2e823ef6bc5d68a53aa871a4a9dd7ed333253`完了後にclean inventoryから本batchを
+  再適用した。
+- declared 40 pathsのfrozen section byte range exact 116件だけをlanguage-local redirectへ
+  置換した。checker/test documentsでforbidden legacy headings 8種は0件、matching
+  redirectはexact 116件。nonidentical plan、prerequisite-verification、zero-credit trace、
+  owner-local、sequencing、root coverage-audit exclusionは保持した。
+- 235-line manifestのphysical SHA-256は
+  `d794d78662b570260f777e1b074ff20d7f5fa3ed911bb3c3e8730471ff96a46a`。
+  global declarationはtwo batches、five tasks、198 redirects、28 index rows。本batchの
+  independent inventory SHA-256は
+  `deba263f24954ac6f7e081a3919933277fbb7152e5f256c38b9b992231716b53`、
+  three tasks、116 redirects、40 source paths、16 index rowsを再現する。
+- independent equivalence、test-sufficiency、source/document/EN-JA reviewは、
+  report-only external-origin wordingを正確にした後 **NO FINDINGS**。focused/full lint
+  policyは各15 tests、checker/runner libraryは530/600 tests、metadataは137 testsでpass。
+  Cargo format、metadata、warnings-denied workspace Clippy、full `cargo test`はpass。
+  全5 CLI hashとprotected trace hashは上記frozen prerequisite valueから不変。manifest
+  counts、physical/inventory hashes、exact 43-path scope、forbidden-heading zero、116
+  redirects、protected-path exclusion、`git diff --check`は全てpass。commit前には
+  cached/unstaged staging auditだけを残す。
+
 ## Reviews, Verification, And Exit
 
 documentation prerequisiteはindependent specification/policy、exact-inventory/boundary、
@@ -168,3 +195,16 @@ metadata/checker lint、format、warnings-denied workspace Clippy、full `cargo 
 exact 116/2,567/path/hash replay、manifest counts/hashes、protected trace/corpus/source hashes、
 local links、`git diff --check`、cached/unstaged audit、final 9/9 hard gates `>=90/100`を
 verificationする。one task-only commitで完了し、agentはpushしない。
+
+## Final Quality And Handoff
+
+final read-only quality reviewのfindingはterminal handoff欠落だけで、全9 hard gates PASS、
+score capなし。paired EN/JA correctionとfinding-specific re-review後のfinal scoreは
+`100/100`。focused lintとdiff checkを再通過してから同じexact 43 pathsだけをstageする。
+
+commit後はclean read-only repository/canonical-authority inventoryから開始する。
+`mizar-checker`をfirst inventoryし、`mizar-test`は該当時だけconsumerとして扱う。migration
+policyに従うdependency-ready duplication familyをexact 1件だけ選択・freezeし、本contractは
+特定のnext batch/semantic taskを事前承認しない。ownership/byte-preservation boundaryが多数の
+文書にまたがるためparentは`xhigh`を維持し、boundedかつmechanically frozenなreview packet
+だけ`high` review agentを使用できる。

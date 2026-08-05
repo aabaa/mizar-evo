@@ -240,11 +240,7 @@ source-term code, Task-252 role allowlists, term/reference/request tables, and
 all source-term tests remain byte-identical. The later leaves at `116..117`
 and `120..121` are selector-only. Task 269GU, after GUPT, owns any future
 `GivenWitness -> Variable` admission and occurrence payload.
-### Task 269GUP implemented binding profile
-
-The frozen six-file transaction and its exact four checker/four runner tests are implemented. Libraries measure `502/564`; checker/runner production is `30/172531` and `37/74826`, with unchanged path hashes and content hashes `e0342952a01a0b379cf7b06ad243cd40a1656e940480196323cf43fbe7d8f7c5` / `8fe7c8c0b7e855e5113f3830873e133f42c8048a3272055e2fddd5ebd9cbb1bc`.
-
-This closes only dormant private lexical-binding evidence and grants zero active corpus, trace, type, term/use, condition/fact, goal/proof, obligation, diagnostic, or CLI credit. Task 269GUPT is next; Task 269GU, capture, and Task 270 remain deferred.
+Completion evidence: [central Task-269GUP historical contract](../../task_contracts/en/269GUP.md#completion-evidence).
 
 ## Task 269GU Frozen Proof-`given` Later-use Term/Reference Contract
 
@@ -556,37 +552,7 @@ provenance, equality operand, or Typed/final term node. The condition leaves
 `107..108` and `111..112` remain excluded; only GCU may transport them after
 consuming the exact GCT composite.
 
-### Task 269GCT implementation status
-
-After documentation prerequisite `b43081161b31fcc4bc23ac2fd42c5c42e772ab78`,
-the exact seven-file implementation and four checker/four private runner tests
-are present. The new public checker family is
-`SourceProofLocalGivenConditionType{Handoff,Producer,Error}`; Typed and
-Resolved own the same boxed composite atomically. Libraries are `518/584`.
-Checker production is `30/179612`, with unchanged path hash
-`c89f43f6abebf7ebeb3ac9394ecd8ea3186ad28934c75526d2cc0b85a66ebad5`
-and content hash
-`8078ee6235c8ca52ce8cdba0be9a347231260d3421c54625a3fc96cf395c9718`.
-Runner production is `37/77159`, with unchanged path hash
-`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d`
-and content hash
-`5b0e68f35d37fcf843f7cb64885f09bfa9dd5423c17506713e096811a5ddf689`.
-Raw/normalized test-list hashes are checker
-`6d10b524115a209f198bc5085a726bc1fcc6f92dc3e25a8056e29975b708b656` /
-`502f7535a34b9d2224c67e6db15f4eaf45f05eec2a2fe4c914704ecf162d89b2`
-and runner
-`d599bd69654d000f44858942cec771742d8c3c9e0d2ca459d7fecc84d76752c9` /
-`bc3cdabbc6424b0f01d817ed323dd823ff57d1d8d4261220dc3d9c37d9004a61`.
-
-The implementation changes no canonical specification, `.miz`, fixture,
-sidecar, expectation, trace row/status/backlink, metadata, diagnostic, public
-dispatch, CLI byte, active result, or semantic credit. GCU still owns both
-condition occurrences and every wider semantic effect. Independent test-sufficiency, implementation, source/documentation, and
-final-quality reviews report **NO FINDINGS**. All nine hard gates PASS with no
-score cap at `100/100`; focused and crate suites, lint policies, formatting,
-Clippy, workspace tests, metadata, all five CLIs, count/hash oracles, and diff
-checks pass. Dedicated implementation commit
-`d6fb0ed28ced4d4706a1793b3aedd2a20eea0749` is complete.
+Completion evidence: [central Task-269GCT historical contract](../../task_contracts/en/269GCT.md#completion-evidence).
 
 ## Task 269GCU Frozen Given-condition Term/reference Composition
 
@@ -705,43 +671,7 @@ obligation semantics, later or descendant occurrences, capture/export, generic
 source-term publication, active dispatch, coverage credit, and downstream IR
 remain excluded.
 
-### Task 269GCU implementation status
-
-After documentation prerequisite `15f47a837bc2f52d4cd30e8a4dcb86c16f2961d3`,
-the seven frozen implementation files, one `cfg(test)`-only predecessor
-ownership-sentinel support file, and four checker/four private runner tests are
-present. The support seam closes the review-discovered Task-269A both-order
-`test_gap` without changing production API or behavior. The public family is
-`SourceProofLocalGivenConditionUseTerm{Handoff,Producer,Error}`; Typed and
-Resolved own the same boxed composite atomically. Libraries are `522/588`.
-Checker production is `30/181154`, with unchanged path hash
-`c89f43f6abebf7ebeb3ac9394ecd8ea3186ad28934c75526d2cc0b85a66ebad5`
-and content hash
-`f9901821c2242bfe66321c57982b54b78425c7940c5a7c47c93c43a8c2c035dc`.
-Runner production is `37/77435`, with unchanged path hash
-`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d`
-and content hash
-`0651af8339c147d04f88be237f8f49fc716b7da3ff90238be50a9527e89992b7`.
-Raw/normalized test-list hashes are checker
-`d453ca1e8a7cf9870f14a0f933451ca201c19cc8c8367d51767c40a941766f82` /
-`7cd84f6cd8e6d1070b39be9e5f1031512cc2c1b664829f10d337f1b67bcb74b3`
-and runner
-`7a99bcbb35838b6c1df31dec7b7c70d9c569df86bdc6f5c68d72f41578be2a9e` /
-`e49dac17564f330ad5c73018538bf5736720e47f4833709c1b9d36622208888a`.
-
-The implementation closes only the two frozen own-condition `y` term/reference
-occurrences. The authoritative block-scope decision makes a `given` binding
-visible through the remainder of its innermost block and descendant blocks,
-subject to inner shadowing, but descendant-use/capture implementation remains
-a separate successor. No canonical specification, `.miz`, fixture, sidecar,
-expectation, trace row/status/backlink, metadata, diagnostic, public dispatch,
-CLI byte, active result, or semantic credit changed. Equality/formula/fact,
-guard, goal, proof/obligation/acceptance, export/capture enforcement,
-downstream IR, and Task 270 remain deferred. Independent test-sufficiency,
-implementation, and source/documentation reviews report **NO FINDINGS**.
-Final read-only quality reports **NO FINDINGS**: all nine hard gates PASS
-without a score cap at `100/100`. Focused and full measured gates pass.
-Exact staging and implementation commit f984ae683419944493c07723e9950a9101a46502 are complete.
+Completion evidence: [central Task-269GCU historical contract](../../task_contracts/en/269GCU.md#completion-evidence).
 
 ## Task 269SDP Term Deferral
 

@@ -1760,11 +1760,7 @@ The exact lower fingerprints/shell/resolver profile, excluded term leaves,
 runner/checker binding ownership, four runner tests, `560 -> 564`, old/new
 isolation, fixed active artifacts/path inventory, zero credit, GUPT/GU
 deferrals, and exit gates are synchronized. No bilingual exception exists.
-### Task 269GUP implemented dormant runner
-
-The exact 128-byte/54-node selector, lower row, reserve-base composition, direct checker handoff, and four runner tests are implemented inside the frozen private boundary. Libraries measure checker/runner `502/564`; production is `30/172531` and `37/74826`, with unchanged path hashes and content hashes `e0342952a01a0b379cf7b06ad243cd40a1656e940480196323cf43fbe7d8f7c5` / `8fe7c8c0b7e855e5113f3830873e133f42c8048a3272055e2fddd5ebd9cbb1bc`.
-
-No dispatch, fixture, sidecar, expectation, trace, metadata, diagnostic, CLI, active result, Typed/final, source-type, term/use, fact/proof, or obligation owner changed. Task 269GUPT is the next consumer; Task 269GU, capture, and Task 270 remain deferred.
+Completion evidence: [central Task-269GUP historical contract](../../task_contracts/en/269GUP.md#completion-evidence).
 
 ## Task 269GUPT Runner Bilingual Freeze
 
@@ -1829,23 +1825,7 @@ type rows, three-node arena, mutations/tests/files, Typed/Resolved install,
 zero artifact/dispatch/semantic credit, all exclusions, and GCU successor in
 the same logical task. No synchronization exception exists.
 
-### Task 269GCT implemented private runner status
-
-After docs commit `b43081161b31fcc4bc23ac2fd42c5c42e772ab78`, the
-frozen private GC/GCP-to-GCT route and exactly four runner tests are present in
-the four owned runner files. Module sizes are proof-local production leaf
-`2506`, facade `946`, `runner.rs` `2778`, and proof-local test leaf `8049`.
-Runner production remains 37 paths / 77,159 lines with path/content hashes
-`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d` /
-`5b0e68f35d37fcf843f7cb64885f09bfa9dd5423c17506713e096811a5ddf689`;
-the library is `584` with raw/normalized hashes
-`d599bd69654d000f44858942cec771742d8c3c9e0d2ca459d7fecc84d76752c9` /
-`bc3cdabbc6424b0f01d817ed323dd823ff57d1d8d4261220dc3d9c37d9004a61`.
-No active dispatcher or protected artifact/count/hash changes. GCU remains
-the sole condition-occurrence successor. Test-sufficiency, implementation, source/documentation, and final-quality
-reviews report **NO FINDINGS**. All nine hard gates PASS without a score cap at
-`100/100`, and the focused plus full gates pass. Dedicated implementation
-commit `d6fb0ed28ced4d4706a1793b3aedd2a20eea0749` is complete.
+Completion evidence: [central Task-269GCT historical contract](../../task_contracts/en/269GCT.md#completion-evidence).
 
 ## Task 269GCU Frozen Runner Synchronization
 
@@ -1854,25 +1834,7 @@ rows, six-node arena, mutation enum, four runner tests, four owned runner
 files, projected `588` library/hash values, zero artifact/dispatch/semantic
 credit, exclusions, and exit criteria. No synchronization exception exists.
 
-### Task 269GCU implemented private runner status
-
-After docs commit `15f47a837bc2f52d4cd30e8a4dcb86c16f2961d3`, the
-frozen private GCT-to-GCU route and exactly four runner tests are present in the
-four owned runner files. Module sizes are proof-local production leaf `2775`,
-facade `949`, `runner.rs` `2782`, and proof-local test leaf `8606`.
-Runner production remains 37 paths / 77,435 lines with path/content hashes
-`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d` /
-`0651af8339c147d04f88be237f8f49fc716b7da3ff90238be50a9527e89992b7`;
-the library is `588` with raw/normalized hashes
-`7a99bcbb35838b6c1df31dec7b7c70d9c569df86bdc6f5c68d72f41578be2a9e` /
-`e49dac17564f330ad5c73018538bf5736720e47f4833709c1b9d36622208888a`.
-No active dispatcher or protected artifact/count/hash changes. GCU owns only
-the two own-condition occurrences; the authoritative wider block scope and its
-descendant-use/capture implementation remain separate successor work.
-Test-sufficiency, implementation, and source/documentation reviews report
-**NO FINDINGS**. Final read-only quality also reports **NO FINDINGS**: all nine
-hard gates PASS without a score cap at `100/100`. Focused and full measured
-gates pass. Exact staging and implementation commit f984ae683419944493c07723e9950a9101a46502 are complete.
+Completion evidence: [central Task-269GCU historical contract](../../task_contracts/en/269GCU.md#completion-evidence).
 
 ## Task 269SDP Bilingual Runner Audit
 

@@ -12,12 +12,12 @@ test intent, diagnostics, public API, or coverage credit.
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-269G-COMPACT` |
-| Status | Documentation prerequisite reviewed and verified; compaction remains forbidden until this exact docs-only change is committed and clean fresh inventory passes. |
+| Status | Implementation, independent reviews, and final read-only quality review complete at `100/100` with all nine hard gates PASS and no score cap; ready for exact task-only staging and commit. |
 | Purpose | Centralize the exact shared Task-269GUP/GCT/GCU completion sections while preserving every nonidentical plan, audit, trace-status, verification, boundary, and sequencing owner. |
 | Owners | Repository documentation policy and the data-driven `mizar-test` legacy-compaction lint |
 | Consumers | [checker plan](../../mizar-checker/en/00.crate_plan.md#task-index), [runner plan](../../mizar-test/en/00.crate_plan.md#task-index), 40 declared source documents, and the versioned compaction manifest |
-| Dependencies | Task 269GUP `076c1425`; Task 269GCT `d6fb0ed2`; Task 269GCU `f984ae68`; `DOC-COMPACT-MANIFEST` `0ec5fce293a6105e04761c5298b605d3f4ff60ca` |
-| Readiness | Fresh clean HEAD `0ec5fce2`, `origin/main...HEAD=0/2`, protected `stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4`; no blocking authority gap. |
+| Dependencies | Task 269GUP `076c1425`; Task 269GCT `d6fb0ed2`; Task 269GCU `f984ae68`; `DOC-COMPACT-MANIFEST` `0ec5fce293a6105e04761c5298b605d3f4ff60ca`; generic multi-batch mutation prerequisite `deb2e823ef6bc5d68a53aa871a4a9dd7ed333253` |
+| Readiness | Implementation began from clean HEAD `deb2e823`, `origin/main...HEAD=0/4`, protected `stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4`; no blocking authority gap. |
 
 ## Authority And Classification
 
@@ -36,7 +36,7 @@ Language specification and semantic test authority are unchanged.
 | `source_undocumented_behavior` | None introduced or inferred. |
 | `test_expectation_drift` | None; `.miz`, sidecars, expectations, and trace data are protected. |
 | `boundary_violation` | Avoided by excluding all nonidentical and owner-local sections and by disambiguating, not deleting, the two mixed checker-plan GCT headings. |
-| `repo_metadata_conflict` | None obscures the target. `origin/main` is two commits behind HEAD; no agent push is authorized. |
+| `repo_metadata_conflict` | None obscures the target. At documentation-prerequisite inventory `origin/main` was two commits behind; during implementation the external ref advanced to `deb2e823` (`0/0`) without an agent push. This is report-only metadata movement; no repair or push is authorized. |
 
 ## Documentation-Prerequisite Scope
 
@@ -165,6 +165,37 @@ five CLI outputs/hashes remain protected.
   The protected trace hash remains
   `55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`.
 
+## Implementation Evidence
+
+- Fresh implementation preflight exposed a generic mutation-oracle
+  `test_gap`: the first byte-sorted H3 redirect made a hard-coded H3 malformed
+  heading level-consistent. The isolated one-line prerequisite changed that
+  mutation to an always-invalid H1; independent reviews ended **NO FINDINGS**,
+  all gates passed at `100/100`, and commit
+  `deb2e823ef6bc5d68a53aa871a4a9dd7ed333253` completed it before this batch
+  was reapplied from clean inventory.
+- Exactly the 116 frozen section byte ranges across the declared 40 paths are
+  replaced by language-local redirects. All eight forbidden legacy headings
+  are absent from checker/test documents; exactly 116 matching redirects are
+  present. Nonidentical plan, prerequisite-verification, zero-credit trace,
+  owner-local, sequencing, and root coverage-audit exclusions remain intact.
+- The 235-line manifest has physical SHA-256
+  `d794d78662b570260f777e1b074ff20d7f5fa3ed911bb3c3e8730471ff96a46a`.
+  Globally it declares two batches, five tasks, 198 redirects, and 28 index
+  rows. This batch independently replays inventory SHA-256
+  `deba263f24954ac6f7e081a3919933277fbb7152e5f256c38b9b992231716b53`
+  with three tasks, 116 redirects, 40 source paths, and 16 index rows.
+- Independent equivalence, test-sufficiency, and source/document/EN-JA reviews
+  ended **NO FINDINGS** after the report-only external-origin wording was made
+  exact. The focused and full lint policies pass with 15 tests each; checker
+  and runner libraries pass with 530 and 600 tests, and metadata passes with
+  137 tests. Cargo formatting, metadata, warnings-denied workspace Clippy, and
+  full `cargo test` pass. All five CLI hashes and the protected trace hash are
+  unchanged from the frozen prerequisite values above. The manifest counts,
+  physical and inventory hashes, exact 43-path scope, forbidden-heading zero,
+  116 redirects, protected-path exclusion, and `git diff --check` all pass.
+  Only the cached/unstaged staging audit remains before commit.
+
 ## Reviews, Verification, And Exit
 
 The documentation prerequisite requires independent specification/policy,
@@ -181,3 +212,18 @@ Clippy, full `cargo test`, all five CLIs, exact 116/2,567/path/hash replay,
 manifest counts/hashes, protected trace/corpus/source hashes, local links,
 `git diff --check`, cached/unstaged audit, and final 9/9 hard gates at
 `>=90/100`. One task-only commit completes the batch; the agent does not push.
+
+## Final Quality And Handoff
+
+The final read-only quality review found only the missing terminal handoff. All
+nine hard gates passed and no score cap applied. After paired EN/JA correction
+and finding-specific re-review, the final score is `100/100`. Focused lint and
+diff checks must pass again before exactly the same 43 paths are staged.
+
+After commit, begin with clean read-only repository and canonical-authority
+inventory. Inventory `mizar-checker` first and treat `mizar-test` only as its
+consumer where applicable. Select and freeze exactly one dependency-ready
+duplication family under the migration policy; this contract does not
+preauthorize any particular next batch or semantic task. Keep the parent at
+`xhigh` because ownership and byte-preservation boundaries span many documents;
+a bounded, mechanically frozen review packet may use a `high` review agent.

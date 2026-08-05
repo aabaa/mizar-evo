@@ -224,11 +224,7 @@ source/test/debug byteを変更しない。
 GUPはexact sibling binding envだけを作る。checker/runner source-term、Task252 allowlist、
 term/reference/request table/testはbyte-identical。`116..117`/`120..121`はselector-only。
 GUPT後のTask269GUだけがfuture GivenWitness Variable admission/occurrenceをownする。
-### Task 269GUP binding profile 実装状況
-
-凍結済みの6ファイル transactionとchecker/runner各4件の正確なtestを実装した。libraryは`502/564`、checker/runner productionは`30/172531`と`37/74826`で、path hashは不変、content hashは`e0342952a01a0b379cf7b06ad243cd40a1656e940480196323cf43fbe7d8f7c5` / `8fe7c8c0b7e855e5113f3830873e133f42c8048a3272055e2fddd5ebd9cbb1bc`である。
-
-閉じるのはdormant private lexical-binding evidenceだけで、active corpus、trace、type、term/use、condition/fact、goal/proof、obligation、diagnostic、CLIのcreditは0のままである。次はTask 269GUPTであり、Task 269GU、capture、Task 270は引き続きdeferする。
+Completion evidence: [central Task-269GUP historical contract](../../task_contracts/ja/269GUP.md#completion-evidence)。
 
 ## Task 269GU proof-`given` later-use term/reference 凍結契約
 
@@ -384,36 +380,7 @@ written typeにterm argumentがないためsource-type argument tableはempty。
 occurrence/reference/use-site resolver/equality operand/Typed-final term nodeなし。
 condition leaf `107..108`/`111..112`はexcludedでexact GCT後GCUだけがtransport可。
 
-### Task 269GCT implementation status
-
-documentation prerequisite `b43081161b31fcc4bc23ac2fd42c5c42e772ab78`後、
-exact 7-file implementationとchecker 4件/private runner 4件のtestを実装した。
-new public checker familyは
-`SourceProofLocalGivenConditionType{Handoff,Producer,Error}`で、Typed/Resolvedは
-same boxed compositeをatomicにownする。libraryは`518/584`。checker productionは
-`30/179612`、unchanged path hash
-`c89f43f6abebf7ebeb3ac9394ecd8ea3186ad28934c75526d2cc0b85a66ebad5`、
-content hash
-`8078ee6235c8ca52ce8cdba0be9a347231260d3421c54625a3fc96cf395c9718`。
-runner productionは`37/77159`、unchanged path hash
-`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d`、
-content hash
-`5b0e68f35d37fcf843f7cb64885f09bfa9dd5423c17506713e096811a5ddf689`。
-raw/normalized test-list hashはchecker
-`6d10b524115a209f198bc5085a726bc1fcc6f92dc3e25a8056e29975b708b656` /
-`502f7535a34b9d2224c67e6db15f4eaf45f05eec2a2fe4c914704ecf162d89b2`、
-runner
-`d599bd69654d000f44858942cec771742d8c3c9e0d2ca459d7fecc84d76752c9` /
-`bc3cdabbc6424b0f01d817ed323dd823ff57d1d8d4261220dc3d9c37d9004a61`。
-
-canonical spec、`.miz`、fixture/sidecar/expectation、trace row/status/backlink、
-metadata/diagnostic/public dispatch/CLI byte/active result/semantic creditは
-変更しない。condition occurrence 2件とwider semantic effectはGCU ownerのまま。
-test sufficiency、implementation、source/docs、final-qualityのindependent
-reviewは**NO FINDINGS**。全9 hard gatesはscore capなしの`100/100`でPASSし、
-focused/crate suite、lint policy、format、Clippy、workspace test、metadata、
-全5 CLI、count/hash oracle、diff checkもPASS。dedicated implementation
-commit `d6fb0ed28ced4d4706a1793b3aedd2a20eea0749`を完了。
+Completion evidence: [central Task-269GCT historical contract](../../task_contracts/ja/269GCT.md#completion-evidence)。
 
 ## Task 269GCU frozen given-condition term/reference composition
 
@@ -451,43 +418,7 @@ GCUはidentifier occurrence/reference transportだけをownする。label `G`、
 equality/formula/condition/fact/guard/proof/obligation、later/descendant
 occurrence、capture/export、generic source-term、active credit/dispatch、IRはexcluded。
 
-### Task 269GCU implementation status
-
-documentation prerequisite `15f47a837bc2f52d4cd30e8a4dcb86c16f2961d3`
-の後、frozen implementation 7 files、`cfg(test)`-only predecessor
-ownership-sentinel support 1 file、checker/private runner各4 testが存在する。
-support seamはreviewで判明したTask-269A both-order `test_gap`だけを閉じ、
-production API/behaviorを変更しない。public familyは
-`SourceProofLocalGivenConditionUseTerm{Handoff,Producer,Error}`であり、Typedと
-Resolvedは同じboxed compositeをatomicに所有する。libraryは`522/588`。
-checker productionは`30/181154`、unchanged path hash
-`c89f43f6abebf7ebeb3ac9394ecd8ea3186ad28934c75526d2cc0b85a66ebad5`、
-content hash
-`f9901821c2242bfe66321c57982b54b78425c7940c5a7c47c93c43a8c2c035dc`。
-runner productionは`37/77435`、unchanged path hash
-`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d`、
-content hash
-`0651af8339c147d04f88be237f8f49fc716b7da3ff90238be50a9527e89992b7`。
-raw/normalized test-list hashはchecker
-`d453ca1e8a7cf9870f14a0f933451ca201c19cc8c8367d51767c40a941766f82` /
-`7cd84f6cd8e6d1070b39be9e5f1031512cc2c1b664829f10d337f1b67bcb74b3`、
-runner
-`7a99bcbb35838b6c1df31dec7b7c70d9c569df86bdc6f5c68d72f41578be2a9e` /
-`e49dac17564f330ad5c73018538bf5736720e47f4833709c1b9d36622208888a`
-である。
-
-implementationが閉じるのはfrozen own-condition内の2つの`y` term/reference
-occurrenceだけである。authoritative block-scope decisionにより`given`
-bindingはinnermost blockの残余とdescendant blockでinner shadowingを除き有効
-だが、descendant use/capture implementationは別successorに残る。canonical
-specification、`.miz`、fixture、sidecar、expectation、trace row/status/
-backlink、metadata、diagnostic、public dispatch、CLI byte、active result、
-semantic creditは変更しない。equality/formula/fact、guard、goal、proof/
-obligation/acceptance、export/capture enforcement、downstream IR、Task 270は
-deferredのままである。test-sufficiency、implementation、source/docsの
-independent reviewは**NO FINDINGS**。final read-only qualityも**NO FINDINGS**、
-全9 hard gatesはscore capなしの`100/100`でPASS。focused/full measured
-gateもPASSし、exact stagingとimplementation commit f984ae683419944493c07723e9950a9101a46502 が完了した。
+Completion evidence: [central Task-269GCU historical contract](../../task_contracts/ja/269GCU.md#completion-evidence)。
 
 ## Task 269SDP term deferral
 
