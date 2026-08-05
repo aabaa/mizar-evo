@@ -239,13 +239,28 @@ and use stable links to the task contract and owner-local sections for shared
 context. An explicit no-impact decision belongs in the task contract; it does
 not require a no-op edit to the corresponding audit.
 
-Apply this structure prospectively. Do not bulk-rewrite historical task logs.
-Migrate an active or reopened task only in a separately reviewed documentation
-change that preserves every unique API, test-intent, classification,
-deferral, and traceability claim before removing duplicates. When a component
-first links a central task contract, include that EN/JA pair in the component's
-bilingual review surface; do not claim automated recursive enforcement unless
-the repository actually provides it.
+Apply this structure prospectively. An ordinary semantic task must not
+bulk-rewrite historical task logs. Migrate an active or reopened task only in a
+separately reviewed documentation change that preserves every unique API,
+test-intent, classification, deferral, and traceability claim before removing
+duplicates.
+
+An explicitly user-authorized legacy-evidence compaction may batch multiple
+completed tasks in one logical documentation task only when they form one
+coherent duplication family. Freeze the exact old-section-to-new-owner redirect
+map and baseline counts first; create a paired EN/JA contract for each migrated
+task; preserve every adjacent owner-local API, invariant, runner, audit,
+traceability, coverage, and sequencing fact; replace only the mapped shared
+evidence with language-local links; validate local targets and fragments; and
+prove that specification, test intent, trace status, coverage credit, source,
+and active behavior are unchanged. The batch needs its own paired contract,
+equivalence and bilingual reviews, hard gates, and task-only commit. It does not
+authorize a repository-wide historical rewrite or let a semantic task absorb
+unrelated documentation cleanup.
+
+When a component first links a central task contract, include that EN/JA pair
+in the component's bilingual review surface. Claim recursive task-contract or
+local-link enforcement only after the repository lint that performs it passes.
 
 ## Commit Expectations
 

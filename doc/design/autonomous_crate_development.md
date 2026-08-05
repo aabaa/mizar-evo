@@ -260,11 +260,35 @@ nested task contracts are machine-enforced.
 ### Migration policy
 
 Apply the contract structure to new tasks. Historical task appendices are
-frozen logs and need not be rewritten. Migrate an active or reopened task only
-as a separate documentation task: first move every unique contract, API,
-test-intent, classification, deferral, traceability, and verification fact to
-its designated owner; then replace duplicate blocks with links; finally run an
-equivalence and EN/JA review. Git history is not a substitute for a live owner.
+frozen logs and need not be rewritten. An ordinary semantic task does not
+rewrite them. Migrate an active or reopened task only as a separate
+documentation task: first move every unique contract, API, test-intent,
+classification, deferral, traceability, and verification fact to its designated
+owner; then replace duplicate blocks with links; finally run an equivalence and
+EN/JA review. Git history is not a substitute for a live owner.
+
+An explicitly user-authorized legacy-evidence compaction may migrate multiple
+completed tasks in one logical documentation task only when fresh inventory
+proves that they are one coherent duplication family. Before deletion, its
+paired migration contract freezes:
+
+- every source section and its language-local destination owner
+- exact source-section/file/line baselines and the allowed plan/index deltas
+- the per-task paired historical contracts that retain shared evidence
+- owner-local API, invariant, runner, audit, traceability, coverage, bilingual,
+  and sequencing sections that must remain
+- protected specification, `.miz`, expectation, trace, source, diagnostic,
+  active-result, count, and hash surfaces
+- equivalence, EN/JA, local-link/fragment, and hard-gate verification
+
+Replace only mapped shared evidence with links. Current-state plans, TODOs, and
+audits remain concise replace-in-place summaries; module documents remain
+durable product contracts rather than task diaries. Record final task-local
+measurements once in the historical task contract or required exit report.
+The batch must be behavior- and coverage-neutral, separately reviewed and
+committed, and bounded enough that every removed fact has a live owner. It does
+not authorize a wholesale repository history rewrite or let semantic work
+absorb unrelated cleanup.
 
 ## Economical Review Packets
 

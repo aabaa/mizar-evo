@@ -160,8 +160,12 @@ The English contract is canonical. The pair records task orchestration and
 links the crate plan and owner-local design sections; it does not define
 language behavior or duplicate module API, runner, traceability, audit, or todo
 content. Those facts remain in their designated owner documents. Existing
-historical task appendices remain valid; an active-task migration is a separate
-reviewed documentation change.
+historical task appendices remain valid by default. A migration is a separate
+reviewed documentation task; an explicitly user-authorized batch may compact
+one coherent legacy duplication family only with an exact redirect inventory,
+paired per-task owners, preserved owner-local facts, local link/fragment
+validation, and no specification, test-intent, trace-status, coverage, source,
+or active-behavior change. Ordinary semantic tasks do not perform that cleanup.
 
 See
 [autonomous_crate_development.md](./autonomous_crate_development.md#canonical-task-contracts)

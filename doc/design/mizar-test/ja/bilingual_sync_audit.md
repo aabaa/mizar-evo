@@ -1788,37 +1788,7 @@ expectation/corpus/metadata/trace count/hashへのimpactは0。prerequisiteは
 runner library `588 -> 592`をprojectし、下記statusが実測hashを記録する。
 capture credit 0、Ch.4/15 `set` blockerも同期し、ENがcanonical。
 
-## Task 269SDP implementation status
-
-documentation prerequisite
-`f468b0163bb00726dca9b356f48790c73bb1fe98`は完了した。frozen 4 Rust
-filesとexact 4 testsはdormant lower projectionだけを実装する。focused
-`4/4`とrunner library `592/592`はPASSし、test-sufficiency/implementation
-reviewは**NO FINDINGS**。
-
-checker/runner libraryは`522/592`。checker productionは`30/181154`、
-path/content SHA-256は
-`c89f43f6abebf7ebeb3ac9394ecd8ea3186ad28934c75526d2cc0b85a66ebad5` /
-`f9901821c2242bfe66321c57982b54b78425c7940c5a7c47c93c43a8c2c035dc`。
-runner productionは`37/79025`、path/contentは
-`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d` /
-`313843b1f4f2e210588410de2e1440f1263711fc6cad4085a943d467d5c6ba5a`。
-runner module sizesはsource-statement `23936`、facade `959`、root
-`2792`、proof-local test leaf `9648`。raw/normalized test-list hashesは
-checker `d453ca1e8a7cf9870f14a0f933451ca201c19cc8c8367d51767c40a941766f82` /
-`7cd84f6cd8e6d1070b39be9e5f1031512cc2c1b664829f10d337f1b67bcb74b3`、
-runner `40f4271712d7fed6ed238a2e03b61511fc26914af52333b12732824e740ead4a` /
-`e9e4f359a571a1aa383168ff6950568788ecffcea2c4eb5d85934fd4ee15e147`。
-
-corpus/requirements `428/395`、pass/fail `235/193`、warnings/errors `23/0`、
-stages `101/7/205/1`、type `259=247+12`、trace hash
-`55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`、
-fixture/sidecar/expectation/metadata/5 CLI bytes/diagnostic/dispatch/active
-resultは不変。SDPのchecker、`BindingEnv`、type、term/reference、capture/
-closure、fact、proof、obligation、coverage creditは0。次は別taskの
-Given-plus-descendant context/binding consumerで、occurrenceはさらに後、
-`z`/`q` captureはCh.4/15 `set` `spec_gap`でblocked。Task-269SDP
-implementation commit `2ba1ee910aea4939abc26b64a96a113e80c01306`は完了。
+Completion evidence: [central Task-269SDP historical contract](../../task_contracts/ja/269SDP.md#completion-evidence)。
 
 ## Task 269SDC frozen bilingual synchronization
 
@@ -1829,46 +1799,7 @@ checker/runner各4 tests、不変corpus/trace/CLI、occurrence/type/Set/capture
 deferral、exitで同期。exact API/mutation/error/debug/test identifierはENを
 canonicalとする。
 
-## Task 269SDC Implementation Status
-
-documentation prerequisite `7ccf436a92a285e83de1de912250f77577527ab2` は
-complete。frozen primary Rust 7 filesと`cfg(test)`-only ownership support
-1 fileはdormant descendant binding/context transactionだけを実装した。
-exact checker 4 testsとrunner 4 tests、およびpredecessor ownership sentinelは
-passし、independent test-sufficiency/implementation reviewは
-**NO FINDINGS**。
-
-checker/runner libraryは`526/596`。checker productionは`30/183606`、
-path/content SHA-256は
-`c89f43f6abebf7ebeb3ac9394ecd8ea3186ad28934c75526d2cc0b85a66ebad5` /
-`abaaa23c6605e1f5c1e1bb62d1665ba5140ff74af61ded310fd164899d3b99f4`。
-runner productionは`37/79263`、path/content SHA-256は
-`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d` /
-`766428921a1531d74d2fe764aa84881bf30970ac948213a2198d63cd97a37e3c`。
-checker module sizeはproof-local declaration `8606`、typed AST `6628`、
-resolved typed AST `8622`、source term `5625`。runner module sizeは
-proof-local production leaf `3005`、facade `963`、root `2796`、proof-local
-test leaf `10037`。raw/normalized test-list hashはchecker
-`83094a868177342bb9e9edb30dc0dd41bf209f5e3d68d98ccef62748776d0539` /
-`bc576099de9b92096791d0aedc89896f5a6804c49a95072cd35e84b59e36f021`、
-runner
-`88ef7579e05f73f34ca98351782a5481c657b615986fb0085a2d842fa61ad79b` /
-`e6a16e93394f8a71554a50bfc64f66734ecbbf4b08e0683c6d10a8ccae96e76e`。
-実装後のfresh test-list replayによりprerequisiteのprojected hash値を
-`design_drift`と確認した。上記の実測値はexact 8 frozen test names/countを
-変えず、そのprojectionを置き換える。
-
-corpus/requirements `428/395`、pass/fail `235/193`、warnings/errors `23/0`、
-stages `101/7/205/1`、type `259=247+12`、trace SHA-256
-`55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`
-は不変。canonical specification、`.miz`、fixture、sidecar、expectation、
-trace row/status/backlink、metadata、diagnostic、public/active dispatch、
-CLI result、executable coverage creditの変更はない。SDCがpublishするのは
-exact outer Given bindingとinherited child contextだけで、source type、
-descendant occurrence、Set binding、capture/closure、fact、proof、obligation、
-downstream semanticsはexcludeしたまま。Task-only implementation commit
-`b1c8c814655d58fff5e5445dd94132bab37965c7`、post-commit clean inventory、
-全reviewの **NO FINDINGS**、全9 hard gatesのuncapped `100/100` は完了した。
+Completion evidence: [central Task-269SDC historical contract](../../task_contracts/ja/269SDC.md#completion-evidence)。
 
 ## Task 269SDT Contract Parity
 

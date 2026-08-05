@@ -1,5 +1,5 @@
 use std::{
-    collections::BTreeSet,
+    collections::{BTreeMap, BTreeSet},
     fs,
     path::{Path, PathBuf},
 };
@@ -110,6 +110,121 @@ fn public_enums_are_non_exhaustive_and_documented() {
             );
         }
     }
+}
+
+#[test]
+fn task_contracts_are_recursively_paired_and_supported_links_resolve() {
+    assert_eq!(
+        markdown_link_destinations("``code ` [ignored](ignored.md) ` code`` [owner](owner.md)"),
+        vec!["owner.md"]
+    );
+    assert_eq!(
+        markdown_link_destinations("```text\n~~~\n[ignored](ignored.md)\n```\n[owner](owner.md)\n"),
+        vec!["owner.md"]
+    );
+
+    let workspace = workspace_root();
+    let contract_root = workspace.join("doc/design/task_contracts");
+    let en_root = contract_root.join("en");
+    let ja_root = contract_root.join("ja");
+    let en_paths = relative_markdown_paths(&en_root);
+    let ja_paths = relative_markdown_paths(&ja_root);
+
+    assert_eq!(
+        en_paths, ja_paths,
+        "task-contract EN/JA trees must contain identical relative Markdown paths"
+    );
+
+    let mut ids = BTreeMap::new();
+    let mut violations = Vec::new();
+    validate_legacy_completion_redirects(&workspace, &mut violations);
+    validate_compaction_task_index_rows(&workspace, &mut violations);
+    for relative_path in &en_paths {
+        let Some(task_id) = relative_path.file_stem().and_then(|stem| stem.to_str()) else {
+            violations.push(format!(
+                "{}: task-contract filename must be UTF-8",
+                relative_path.display()
+            ));
+            continue;
+        };
+        if !valid_task_contract_id(task_id) {
+            violations.push(format!(
+                "{}: task id must match [A-Za-z0-9][A-Za-z0-9._-]*",
+                relative_path.display()
+            ));
+        }
+        if let Some(previous) = ids.insert(task_id.to_owned(), relative_path.clone()) {
+            violations.push(format!(
+                "{}: duplicate task id {task_id} also used by {}",
+                relative_path.display(),
+                previous.display()
+            ));
+        }
+
+        for (language, root, marker, counterpart_root) in [
+            (
+                "en",
+                en_root.as_path(),
+                "Canonical language: English",
+                ja_root.as_path(),
+            ),
+            (
+                "ja",
+                ja_root.as_path(),
+                "canonical English:",
+                en_root.as_path(),
+            ),
+        ] {
+            let path = root.join(relative_path);
+            let document = read_to_string(&path);
+            let title_prefix = format!("# Task {task_id}:");
+            if !document
+                .lines()
+                .next()
+                .is_some_and(|title| title.starts_with(&title_prefix))
+            {
+                violations.push(format!(
+                    "{}: first heading must start with {title_prefix:?}",
+                    path.display()
+                ));
+            }
+            if !document.contains(marker) {
+                violations.push(format!(
+                    "{}: missing {language} canonical/companion marker {marker:?}",
+                    path.display()
+                ));
+            }
+
+            let counterpart = counterpart_root.join(relative_path);
+            let counterpart = fs::canonicalize(&counterpart).unwrap_or_else(|error| {
+                panic!(
+                    "failed to resolve paired contract {}: {error}",
+                    counterpart.display()
+                )
+            });
+            let links = markdown_link_destinations(&document);
+            if !links.iter().any(|destination| {
+                markdown_target_path(&path, destination)
+                    .and_then(|target| fs::canonicalize(target).ok())
+                    .is_some_and(|target| target == counterpart)
+            }) {
+                violations.push(format!(
+                    "{}: missing reciprocal link to {}",
+                    path.display(),
+                    counterpart.display()
+                ));
+            }
+
+            validate_crate_plan_backlinks(&path, &links, &mut violations);
+            validate_local_markdown_links(&path, &document, &mut violations);
+        }
+    }
+
+    assert!(
+        violations.is_empty(),
+        "task-contract policy violations:\n{}",
+        violations.join("\n")
+    );
 }
 
 #[test]
@@ -946,6 +1061,465 @@ fn collect_rust_files(dir: &Path, files: &mut Vec<PathBuf>) {
             files.push(path);
         }
     }
+}
+
+fn relative_markdown_paths(root: &Path) -> BTreeSet<PathBuf> {
+    let mut paths = Vec::new();
+    collect_markdown_files(root, &mut paths);
+    paths
+        .into_iter()
+        .map(|path| {
+            path.strip_prefix(root)
+                .unwrap_or_else(|error| {
+                    panic!(
+                        "failed to make {} relative to {}: {error}",
+                        path.display(),
+                        root.display()
+                    )
+                })
+                .to_path_buf()
+        })
+        .collect()
+}
+
+fn collect_markdown_files(dir: &Path, files: &mut Vec<PathBuf>) {
+    let entries = fs::read_dir(dir)
+        .unwrap_or_else(|error| panic!("failed to read {}: {error}", dir.display()));
+
+    for entry in entries {
+        let entry =
+            entry.unwrap_or_else(|error| panic!("failed to read {} entry: {error}", dir.display()));
+        let path = entry.path();
+        if path.is_dir() {
+            collect_markdown_files(&path, files);
+        } else if path.extension().and_then(|extension| extension.to_str()) == Some("md") {
+            files.push(path);
+        }
+    }
+}
+
+fn valid_task_contract_id(task_id: &str) -> bool {
+    let mut bytes = task_id.bytes();
+    bytes
+        .next()
+        .is_some_and(|byte| byte.is_ascii_alphanumeric())
+        && bytes.all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'.' | b'_' | b'-'))
+}
+
+fn markdown_link_destinations(document: &str) -> Vec<String> {
+    let mut destinations = Vec::new();
+    let mut fence = None;
+
+    for line in document.lines() {
+        let trimmed = line.trim_start();
+        if update_fence_state(trimmed, &mut fence) {
+            continue;
+        }
+        if fence.is_some() {
+            continue;
+        }
+
+        let visible = without_inline_code(line);
+        let mut remainder = visible.as_str();
+        while let Some(start) = remainder.find("](") {
+            let after_open = &remainder[start + 2..];
+            let Some(end) = after_open.find(')') else {
+                break;
+            };
+            let raw = after_open[..end].trim();
+            let destination = if let Some(angle) = raw.strip_prefix('<') {
+                angle.split_once('>').map_or(angle, |(target, _)| target)
+            } else {
+                raw.split_whitespace().next().unwrap_or("")
+            };
+            if !destination.is_empty() {
+                destinations.push(destination.to_owned());
+            }
+            remainder = &after_open[end + 1..];
+        }
+    }
+
+    destinations
+}
+
+fn without_inline_code(line: &str) -> String {
+    let mut visible = String::with_capacity(line.len());
+    let mut delimiter = None;
+    let mut characters = line.chars().peekable();
+    while let Some(character) = characters.next() {
+        if character == '`' {
+            let mut ticks = 1_usize;
+            while characters.next_if_eq(&'`').is_some() {
+                ticks += 1;
+            }
+            if delimiter == Some(ticks) {
+                delimiter = None;
+            } else if delimiter.is_none() {
+                delimiter = Some(ticks);
+            }
+        } else if delimiter.is_none() {
+            visible.push(character);
+        }
+    }
+    visible
+}
+
+fn update_fence_state(line: &str, fence: &mut Option<char>) -> bool {
+    let delimiter = if line.starts_with("```") {
+        Some('`')
+    } else if line.starts_with("~~~") {
+        Some('~')
+    } else {
+        None
+    };
+
+    match (*fence, delimiter) {
+        (None, Some(delimiter)) => {
+            *fence = Some(delimiter);
+            true
+        }
+        (Some(active), Some(delimiter)) if active == delimiter => {
+            *fence = None;
+            true
+        }
+        _ => false,
+    }
+}
+
+fn markdown_target_path(source_path: &Path, destination: &str) -> Option<PathBuf> {
+    if destination.starts_with("http://")
+        || destination.starts_with("https://")
+        || destination.starts_with("mailto:")
+    {
+        return None;
+    }
+
+    let target = destination
+        .split_once('#')
+        .map_or(destination, |(target, _)| target);
+    if target.is_empty() {
+        return Some(source_path.to_path_buf());
+    }
+    if Path::new(target)
+        .extension()
+        .and_then(|extension| extension.to_str())
+        != Some("md")
+    {
+        return None;
+    }
+
+    source_path.parent().map(|parent| parent.join(target))
+}
+
+fn validate_local_markdown_links(source_path: &Path, document: &str, violations: &mut Vec<String>) {
+    for destination in markdown_link_destinations(document) {
+        let Some(target_path) = markdown_target_path(source_path, &destination) else {
+            continue;
+        };
+        if !target_path.is_file() {
+            violations.push(format!(
+                "{}: local Markdown target does not exist: {destination}",
+                source_path.display()
+            ));
+            continue;
+        }
+
+        let Some((_, fragment)) = destination.split_once('#') else {
+            continue;
+        };
+        if fragment.is_empty() {
+            continue;
+        }
+        let target_document = if target_path == source_path {
+            document.to_owned()
+        } else {
+            read_to_string(&target_path)
+        };
+        if !markdown_heading_slugs(&target_document).contains(fragment) {
+            violations.push(format!(
+                "{}: fragment #{fragment} does not exist in {}",
+                source_path.display(),
+                target_path.display()
+            ));
+        }
+    }
+}
+
+fn validate_crate_plan_backlinks(
+    contract_path: &Path,
+    destinations: &[String],
+    violations: &mut Vec<String>,
+) {
+    let contract = fs::canonicalize(contract_path).unwrap_or_else(|error| {
+        panic!(
+            "failed to resolve task contract {}: {error}",
+            contract_path.display()
+        )
+    });
+    let linked_plans = destinations
+        .iter()
+        .filter_map(|destination| markdown_target_path(contract_path, destination))
+        .filter(|target| {
+            target.file_name().and_then(|name| name.to_str()) == Some("00.crate_plan.md")
+        })
+        .filter_map(|target| fs::canonicalize(target).ok())
+        .collect::<BTreeSet<_>>();
+    if linked_plans.is_empty() {
+        violations.push(format!(
+            "{}: task contract must link at least one owning crate plan",
+            contract_path.display()
+        ));
+    }
+
+    let mut indexed_plans = BTreeSet::new();
+    for plan_path in crate_plan_paths(&workspace_root().join("doc/design")) {
+        let plan = read_to_string(&plan_path);
+        let Some(task_index) = markdown_h2_section(&plan, "Task Index") else {
+            continue;
+        };
+        let has_backlink = markdown_link_destinations(task_index)
+            .iter()
+            .any(|destination| {
+                markdown_target_path(&plan_path, destination)
+                    .and_then(|target| fs::canonicalize(target).ok())
+                    .is_some_and(|target| target == contract)
+            });
+        if has_backlink {
+            indexed_plans.insert(fs::canonicalize(&plan_path).unwrap_or_else(|error| {
+                panic!(
+                    "failed to resolve crate plan {}: {error}",
+                    plan_path.display()
+                )
+            }));
+        }
+    }
+
+    for plan_path in indexed_plans.difference(&linked_plans) {
+        violations.push(format!(
+            "{}: indexed owning crate plan {} is missing from contract links",
+            contract_path.display(),
+            plan_path.display()
+        ));
+    }
+    for plan_path in linked_plans.difference(&indexed_plans) {
+        if plan_path.is_file() {
+            violations.push(format!(
+                "{}: owning crate plan {} must link back to the contract",
+                contract_path.display(),
+                plan_path.display()
+            ));
+        }
+    }
+}
+
+fn crate_plan_paths(design_root: &Path) -> Vec<PathBuf> {
+    let mut plans = Vec::new();
+    let entries = fs::read_dir(design_root)
+        .unwrap_or_else(|error| panic!("failed to read {}: {error}", design_root.display()));
+    for entry in entries {
+        let entry = entry.unwrap_or_else(|error| {
+            panic!("failed to read {} entry: {error}", design_root.display())
+        });
+        if !entry.path().is_dir() {
+            continue;
+        }
+        for language in ["en", "ja"] {
+            let plan = entry.path().join(language).join("00.crate_plan.md");
+            if plan.is_file() {
+                plans.push(plan);
+            }
+        }
+    }
+    plans.sort();
+    plans
+}
+
+fn validate_legacy_completion_redirects(workspace: &Path, violations: &mut Vec<String>) {
+    const CHECKER_FILES: [&str; 14] = [
+        "00.crate_plan.md",
+        "bilingual_sync_audit.md",
+        "binding_env.md",
+        "module_boundary_audit.md",
+        "payload_family_decomposition.md",
+        "resolved_typed_ast.md",
+        "semantic_spec_audit.md",
+        "source_proof_local_declaration.md",
+        "source_spec_audit.md",
+        "source_statement.md",
+        "source_term.md",
+        "source_type.md",
+        "todo.md",
+        "typed_ast.md",
+    ];
+    const TEST_FILES: [&str; 6] = [
+        "00.crate_plan.md",
+        "bilingual_sync_audit.md",
+        "harness.md",
+        "module_boundary_audit.md",
+        "todo.md",
+        "traceability.md",
+    ];
+
+    let design_root = workspace.join("doc/design");
+    let mut expected = BTreeSet::new();
+    for language in ["en", "ja"] {
+        let punctuation = if language == "en" { "." } else { "。" };
+        for (component, filenames) in [
+            ("mizar-checker", &CHECKER_FILES[..]),
+            ("mizar-test", &TEST_FILES[..]),
+        ] {
+            for filename in filenames {
+                let path = design_root.join(component).join(language).join(filename);
+                for task in ["269SDP", "269SDC"] {
+                    expected.insert((
+                        path.clone(),
+                        format!(
+                            "Completion evidence: [central Task-{task} historical contract](../../task_contracts/{language}/{task}.md#completion-evidence){punctuation}"
+                        ),
+                    ));
+                }
+            }
+        }
+    }
+    for filename in ["spec_coverage_audit.md", "todo.md"] {
+        expected.insert((
+            design_root.join(filename),
+            "Completion evidence: [central Task-269SDC historical contract](./task_contracts/en/269SDC.md#completion-evidence).".to_owned(),
+        ));
+    }
+
+    let old_headings = [
+        "## Task 269SDP Implementation Status",
+        "## Task 269SDP implementation status",
+        "## Task 269SDC Implementation Status",
+    ];
+    let mut markdown_paths = Vec::new();
+    collect_markdown_files(&design_root, &mut markdown_paths);
+    let mut observed = BTreeMap::new();
+    for path in markdown_paths {
+        let document = read_to_string(&path);
+        for (line_number, line) in document.lines().enumerate() {
+            if old_headings.contains(&line) {
+                violations.push(format!(
+                    "{}:{}: legacy completion heading must remain compacted",
+                    path.display(),
+                    line_number + 1
+                ));
+            }
+            if line.starts_with("Completion evidence: [central Task-269SD") {
+                *observed
+                    .entry((path.clone(), line.to_owned()))
+                    .or_insert(0_usize) += 1;
+            }
+        }
+    }
+
+    for (path, line) in &expected {
+        let count = observed
+            .get(&(path.clone(), line.clone()))
+            .copied()
+            .unwrap_or(0);
+        if count != 1 {
+            violations.push(format!(
+                "{}: frozen legacy redirect {line:?} must occur exactly once, found {count}",
+                path.display()
+            ));
+        }
+        validate_local_markdown_links(path, line, violations);
+    }
+    for (path, line) in observed.keys() {
+        if !expected.contains(&(path.clone(), line.clone())) {
+            violations.push(format!(
+                "{}: unexpected or misdirected legacy redirect {line:?}",
+                path.display()
+            ));
+        }
+    }
+}
+
+fn validate_compaction_task_index_rows(workspace: &Path, violations: &mut Vec<String>) {
+    for component in ["mizar-checker", "mizar-test"] {
+        for (language, label) in [("en", "EN"), ("ja", "JA")] {
+            let path = workspace
+                .join("doc/design")
+                .join(component)
+                .join(language)
+                .join("00.crate_plan.md");
+            let document = read_to_string(&path);
+            let Some(task_index) = markdown_h2_section(&document, "Task Index") else {
+                violations.push(format!("{}: missing Task Index section", path.display()));
+                continue;
+            };
+            for task in ["269SDP", "269SDC", "DOC-269SD-COMPACT"] {
+                let row = format!(
+                    "| {task} | [{label} contract](../../task_contracts/{language}/{task}.md) |"
+                );
+                let count = task_index.lines().filter(|line| *line == row).count();
+                if count != 1 {
+                    violations.push(format!(
+                        "{}: Task Index must contain {row:?} exactly once, found {count}",
+                        path.display()
+                    ));
+                }
+            }
+        }
+    }
+}
+
+fn markdown_h2_section<'a>(document: &'a str, heading: &str) -> Option<&'a str> {
+    let marker = format!("## {heading}\n");
+    let start = document.find(&marker)?;
+    let tail = &document[start..];
+    let body = &tail[marker.len()..];
+    let end = body
+        .find("\n## ")
+        .map_or(tail.len(), |offset| marker.len() + offset);
+    Some(&tail[..end])
+}
+
+fn markdown_heading_slugs(document: &str) -> BTreeSet<String> {
+    let mut slugs = BTreeSet::new();
+    let mut duplicate_counts = BTreeMap::new();
+    let mut fence = None;
+
+    for line in document.lines() {
+        let trimmed = line.trim_start();
+        if update_fence_state(trimmed, &mut fence) {
+            continue;
+        }
+        if fence.is_some() {
+            continue;
+        }
+
+        let level = trimmed.bytes().take_while(|byte| *byte == b'#').count();
+        if !(1..=6).contains(&level) || trimmed.as_bytes().get(level) != Some(&b' ') {
+            continue;
+        }
+        let heading = trimmed[level + 1..].trim().trim_end_matches('#').trim();
+        let base = github_heading_slug(heading);
+        let count = duplicate_counts.entry(base.clone()).or_insert(0_usize);
+        let slug = if *count == 0 {
+            base
+        } else {
+            format!("{base}-{count}")
+        };
+        *count += 1;
+        slugs.insert(slug);
+    }
+
+    slugs
+}
+
+fn github_heading_slug(heading: &str) -> String {
+    let mut slug = String::new();
+    for character in heading.chars().flat_map(char::to_lowercase) {
+        if character.is_alphanumeric() || matches!(character, '-' | '_') {
+            slug.push(character);
+        } else if character.is_whitespace() {
+            slug.push('-');
+        }
+    }
+    slug
 }
 
 fn read_to_string(path: &Path) -> String {
