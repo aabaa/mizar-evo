@@ -1,0 +1,40 @@
+# Frozen preimage inventory for DOC-258AB-COMPACT.
+# Columns: task, language, component, source path, ATX level, exact heading text without the ATX prefix, section SHA-256, physical lines.
+258A	en	mizar-checker	doc/design/mizar-checker/en/00.crate_plan.md	3	Task 258A Implementation Result	ef06ccd8aaaab0097ed3e7d0bbb9521af4fee47536f0d3e12f7b54f2e501d9f8	29
+258A	en	mizar-checker	doc/design/mizar-checker/en/resolved_typed_ast.md	3	Task 258A Implementation Result	869fb64368c36ad676cadb0875ffd56c50bd29f8226d54d071e843ec6c27efd9	11
+258A	en	mizar-checker	doc/design/mizar-checker/en/source_spec_audit.md	3	Task 258A Implementation Audit	bd4e4035e405af4c7c560604b637e4d9fe2f8873ef5297840ea5b110f3f35398	11
+258A	en	mizar-checker	doc/design/mizar-checker/en/typed_ast.md	3	Task 258A Implementation Result	19eb46ac4ea831bb89dbe5a518b984976edc15a790174089ac39635bc50c8235	10
+258A	en	mizar-test	doc/design/mizar-test/en/00.crate_plan.md	3	Checker Task 258A Implementation Result	001916479e8a0bbbbf93f8846f5fa3191bc5bcc31d05eb7be2eb00f84552772e	19
+258A	ja	mizar-checker	doc/design/mizar-checker/ja/00.crate_plan.md	3	Task 258A implementation result	c73a45c1df72e3ca3000f7f8378488f4baa17475aefd5e9dddb87d4e1a490493	27
+258A	ja	mizar-checker	doc/design/mizar-checker/ja/resolved_typed_ast.md	3	Task 258A implementation result	f2545e4f12cf57141808e8f0a12f7589dc747def86542de14003806a85ea1c6c	10
+258A	ja	mizar-checker	doc/design/mizar-checker/ja/source_spec_audit.md	3	Task 258A implementation audit	c3fc3c9a648e2e468acbf67bc6e1ba09bad3aabd484d372ba829ef352dffea33	11
+258A	ja	mizar-checker	doc/design/mizar-checker/ja/typed_ast.md	3	Task 258A implementation result	dbdb70d3cae38b52e1bccaf3f8205d3607cac37f99c4133ea6eb8f2fc05ecdc1	9
+258A	ja	mizar-test	doc/design/mizar-test/ja/00.crate_plan.md	3	Checker Task 258A implementation result	2593a35250d7bf881000b2bdf98ca5ba6f298fc282c2a0e0277183bc44b8bf62	18
+258B1	en	mizar-checker	doc/design/mizar-checker/en/00.crate_plan.md	3	Task 258B1 Implementation Result	fcf6134d2c91442b791516d938b37af8143ef929ef37ff3041cb07458ed8b74b	38
+258B1	en	mizar-checker	doc/design/mizar-checker/en/binding_env.md	3	Task 258B1 Implementation Status	542a4cbb3b7d00516da8414f866a7ee130be284950aeef202210bb98e413c303	9
+258B1	en	mizar-checker	doc/design/mizar-checker/en/payload_family_decomposition.md	3	Task 258B1 Implementation Closure	6733159188b3640907c7c1d8003731837778eeea64fd82fd5f3f72e1d377878f	8
+258B1	en	mizar-checker	doc/design/mizar-checker/en/resolved_typed_ast.md	3	Task 258B1 Implementation Status	0fd42d0d40f73812c77f35260c80dee359b00f452feba72677f2f3a68c716fdf	8
+258B1	en	mizar-checker	doc/design/mizar-checker/en/source_statement.md	3	Task 258B1 Implementation Status	900dcee62c8f15122eb06022e4fcca08fd50ee34473c7b350d78ed6052c0a95a	17
+258B1	en	mizar-checker	doc/design/mizar-checker/en/typed_ast.md	3	Task 258B1 Implementation Status	e6aa34de6cbccbd63d1373867a018f999e2e3d57d3cec5003d1dfd2ac978881c	8
+258B1	en	mizar-test	doc/design/mizar-test/en/00.crate_plan.md	3	Checker Task 258B1 Implementation Result	c86b442520e5178e7c95a39bbf4fb19b02cdfdd2b9a48ce320b3d9b13c6ceb5a	17
+258B1	en	mizar-test	doc/design/mizar-test/en/harness.md	3	Task 258B1 Implemented Harness Boundary	166014f4a20d93d552f889dc92d099a53de8dc37fe785754af8c0f09ec539d72	13
+258B1	ja	mizar-checker	doc/design/mizar-checker/ja/00.crate_plan.md	3	Task 258B1 implementation result	fa214f776c9b49bd4e2fda82be132e8a5bac3c5f8d2d58a1663852b3ac63a64c	35
+258B1	ja	mizar-checker	doc/design/mizar-checker/ja/binding_env.md	3	Task 258B1 implementation status	caaa700647cd4ec2505505934367d7ce0e2e2b5e7e3093ba9f05861991171160	8
+258B1	ja	mizar-checker	doc/design/mizar-checker/ja/payload_family_decomposition.md	3	Task 258B1 implementation closure	111560a57ef46680a006b22dab14479ef91ad56cf937fa2d07069079888222f3	8
+258B1	ja	mizar-checker	doc/design/mizar-checker/ja/resolved_typed_ast.md	3	Task 258B1 implementation status	7dc76c3d5c6a94255d3ee452cfabca1ec6758dffe198581f03da4d9737ea25b6	8
+258B1	ja	mizar-checker	doc/design/mizar-checker/ja/source_statement.md	3	Task 258B1 implementation status	f6d759d90691a68f6e517045116a25c0c9ae8f38a52bb6edd3a7c6802c335a75	15
+258B1	ja	mizar-checker	doc/design/mizar-checker/ja/typed_ast.md	3	Task 258B1 implementation status	3cca59dd4f31a45dbdb635caa721d5289267dd063bdee9ab89277a030a80d253	8
+258B1	ja	mizar-test	doc/design/mizar-test/ja/00.crate_plan.md	3	Checker Task 258B1 implementation result	e02054e24c35bf336087ca5952f42a0d2a35905d29608f6b8b1baf906b6f09bd	16
+258B1	ja	mizar-test	doc/design/mizar-test/ja/harness.md	3	Task 258B1 implemented harness boundary	2971e41770e682a8efdd3a98cfe4fb0ddc23a672dc980068712a279576964692	13
+258B2	en	mizar-checker	doc/design/mizar-checker/en/binding_env.md	3	Task 258B2 Implementation Closure	2cdb06642a32999354a641ad3a4dd1f78cdb9163670785467f6c52be5c40385f	9
+258B2	en	mizar-checker	doc/design/mizar-checker/en/payload_family_decomposition.md	3	Task 258B2 Implemented Family Edge	014f13643e3ee1e8926055b43f46e77e8cc372dff55354e755745cd3bbf36e08	8
+258B2	en	mizar-checker	doc/design/mizar-checker/en/resolved_typed_ast.md	3	Task 258B2 Implementation Closure	2d530eda97f9a710b1f91561e84b8c485c1092c16b101dee4c029496b1ad01a1	8
+258B2	en	mizar-checker	doc/design/mizar-checker/en/typed_ast.md	3	Task 258B2 Implementation Closure	d6239acc1797c50e194bf1554669c5d8c0aa591a69d156bc27c0429d97bb38c5	8
+258B2	en	mizar-test	doc/design/mizar-test/en/00.crate_plan.md	3	Checker Task 258B2 Implementation Result	7aea15f55d0936252078e9ba36be6ecf4accbdd6b394e6ba97c1a9f204d738e0	19
+258B2	en	mizar-test	doc/design/mizar-test/en/harness.md	3	Task 258B2 Implemented Harness Boundary	818c748613019f92a2af950151284cc9ee58f658d215010b4cd5518cc00c979e	8
+258B2	ja	mizar-checker	doc/design/mizar-checker/ja/binding_env.md	3	Task 258B2 implementation closure	e271e7cbcae7852e2393bf94f97e928bccecb3c1c0362d1ce6582e2012371b38	8
+258B2	ja	mizar-checker	doc/design/mizar-checker/ja/payload_family_decomposition.md	3	Task 258B2 implemented family edge	bf16d4b1a4f4838f6f016e4279b3071cffa9b3b785cd6f17c212d9dfbd01ecf6	8
+258B2	ja	mizar-checker	doc/design/mizar-checker/ja/resolved_typed_ast.md	3	Task 258B2 implementation closure	3636d722e9c14d56959ac016bbe0073da82581cb2ab21c77813de8450905cf48	8
+258B2	ja	mizar-checker	doc/design/mizar-checker/ja/typed_ast.md	3	Task 258B2 implementation closure	233efc0ff40642c82466e30acab2dc0765d9bc843ce0b34804915dc07e246728	8
+258B2	ja	mizar-test	doc/design/mizar-test/ja/00.crate_plan.md	3	Checker Task 258B2 implementation result	1c4d4978e3b7440b7aa1696b4b4adc8661fec0e1298c4ee8017df05b0d6e9fc2	18
+258B2	ja	mizar-test	doc/design/mizar-test/ja/harness.md	3	Task 258B2 implemented harness boundary	6ab19d8e4221f3727b8a536b2e441a91203c78829d606735f63a4e7edc82f512	8
