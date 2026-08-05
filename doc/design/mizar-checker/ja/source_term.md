@@ -524,5 +524,13 @@ fixture/sidecar/expectation/metadata/5 CLI bytes/diagnostic/dispatch/active
 resultは不変。SDPのchecker、`BindingEnv`、type、term/reference、capture/
 closure、fact、proof、obligation、coverage creditは0。次は別taskの
 Given-plus-descendant context/binding consumerで、occurrenceはさらに後、
-`z`/`q` captureはCh.4/15 `set` `spec_gap`でblocked。implementation
-self-hashはtask-only commitまでpending。
+`z`/`q` captureはCh.4/15 `set` `spec_gap`でblocked。Task-269SDP
+implementation commit `2ba1ee910aea4939abc26b64a96a113e80c01306`は完了。
+
+## Task 269SDC frozen term/occurrence deferral
+
+context-2 lookup oracleはabstract `BindingEnv`の継承可視性だけを証明する。
+SDCは`y@118..119`のterm arena/reference row/request/source-site mappingを
+作らず、descendant occurrence/capture creditは0。`z@114..115`、
+`z@133..134`、`q@129..130`はopaque。occurrence consumerは別のGiven
+type owner後で、全Set closure/captureはcanonical reconciliationまでblocked。

@@ -1111,5 +1111,26 @@ dispatch, and active results remain unchanged. SDP publishes zero checker,
 `BindingEnv`, type, term/reference, capture/closure, fact, proof, obligation,
 or coverage credit. The next task is the separate Given-plus-descendant
 context/binding consumer; occurrence remains later, and `z`/`q` capture stays
-blocked by the Chapter-4/15 `set` `spec_gap`. The implementation self-hash is
-pending its task-only commit.
+blocked by the Chapter-4/15 `set` `spec_gap`. Task-269SDP implementation commit
+`2ba1ee910aea4939abc26b64a96a113e80c01306` is complete.
+
+## Task 269SDC Frozen Binding Environment Transition
+
+SDC is the first production owner of the exact descendant relationship for the
+SDP source. Its transition is atomic `1/1/0 -> 3/2/0`. Context 0 and reserve
+binding 0 remain byte-identical. Context 1 is normal
+`SourceStatement(73..178)`, parent 0, `Proof`, scope `[0]`, owned `[1]`,
+visible `[0,1]`. Binding 1 is normal active `GivenWitness y`, resolver-local
+`([0], ordinal=1, declaration=87..88)`, owner 1, visible-after 1, type
+`Missing`, empty capture/diagnostics. Context 2 is normal
+`SourceStatement(102..159)`, parent 1, `Block`, scope `[0,0]`, owned `[]`,
+visible `[0,1]`.
+
+The installed lookup matrix is forward binding 1 at context 1/[0]/ordinal 1,
+local binding 1 at context 1/[0]/ordinal 2, and local binding 1 at context
+2/[0,0]/ordinal 2. Test-only child shadow, restoration, parent, and sibling
+rows authenticate canonical visibility but never enter the handoff. No lookup
+row is a source occurrence. No binding for `z` or `q`, type overlay, captured
+identity, closure, formula/fact, guard, proof, obligation, or active effect is
+permitted. The Chapter-4/15 `set` gap is nonblocking for this transition and
+blocking for every `LocalAbbreviation`/capture successor.

@@ -1915,5 +1915,15 @@ fixture/sidecar/expectation/metadata/5 CLI bytes/diagnostic/dispatch/active
 resultは不変。SDPのchecker、`BindingEnv`、type、term/reference、capture/
 closure、fact、proof、obligation、coverage creditは0。次は別taskの
 Given-plus-descendant context/binding consumerで、occurrenceはさらに後、
-`z`/`q` captureはCh.4/15 `set` `spec_gap`でblocked。implementation
-self-hashはtask-only commitまでpending。
+`z`/`q` captureはCh.4/15 `set` `spec_gap`でblocked。Task-269SDP
+implementation commit `2ba1ee910aea4939abc26b64a96a113e80c01306`は完了。
+
+## Task 269SDC frozen payload-family decomposition
+
+SDCは
+`SourceProofLocalGivenDescendantBinding{HandoffInput,Handoff,Producer,Error}`
+というsource-proof-local binding family 1件だけを追加する。common Given
+row/recovery ABIをreuseし、one Given rowとdescendant context IDをownして
+Typed/Resolvedへatomic boxed installする。SDPはprivate lower ownerのまま。
+source type/term/reference、Set/local-abbreviation、fact/proof/obligation、
+capture/export、downstream IRをSDCへ混在させない。

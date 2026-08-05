@@ -94,8 +94,8 @@ is its task 1). "Next work" points into the
 | mizar-parser | Grammar, Pratt parsing, syntax recovery, parse-only corpus | [x] Tasks 1-48 plus bounded `PARSER-RECOVERY-B1B1P-P1` complete; historical post-Task-46 score 99/100 | no inferred Task 49; human-owned P-265-47D remains separate | [todo](./mizar-parser/en/todo.md) |
 | mizar-frontend | Source loading and phase 1-3 orchestration | [x] prior milestone plus `PARSER-RECOVERY-B1B1P-P1-FE` regression complete | — | [todo](./mizar-frontend/en/todo.md) |
 | mizar-resolve | Module graph, namespaces, symbols, labels, signatures | [~] complete through task 29, Checker Task 263R, and Task 264R implementation | Preserve Task-264R shell/no-symbol boundary through Checker Tasks 248P/264 | [todo](./mizar-resolve/en/todo.md) |
-| mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] foundation complete through task 22; Tasks 265-268, Core-31, and Checker consumers through committed Task 269GCU are complete; Task 269SDP lower-only implementation and tests are present | Commit SDP, then fresh-select the descendant binding/context consumer | [todo](./mizar-test/en/todo.md) |
-| mizar-checker | Type checking, cluster/registration resolution, overload resolution | [~] explicit-payload milestone and source producers/consumers through committed Task 269GCU are complete; Task 269SDP lower-only implementation is present with zero checker payload | Commit SDP before fresh-selecting descendant binding; occurrence stays later and capture remains blocked on `set` reconciliation | [todo](./mizar-checker/en/todo.md) |
+| mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] foundation complete through task 22; Tasks 265-268, Core-31, and Checker consumers through committed Task 269SDP are complete | Freeze/review/commit Task 269SDC descendant binding docs, then implement its dormant route | [todo](./mizar-test/en/todo.md) |
+| mizar-checker | Type checking, cluster/registration resolution, overload resolution | [~] explicit-payload milestone and source producers/consumers through committed Task 269SDP are complete | Complete Task 269SDC binding/context only; type and occurrence stay later, capture remains blocked on `set` reconciliation | [todo](./mizar-checker/en/todo.md) |
 | mizar-core | Elaboration, binder-normalized core logic, control-flow preparation | [x] core/control-flow milestone, tasks 27-32 complete | step-5 Tasks 33-53 under the Task-32 graph | [todo](./mizar-core/en/todo.md) |
 | mizar-vc | VC IR, VC generation, deterministic pre-ATP discharge | [x] exact source-derived contradiction VC integration complete through task 31 | dependency-paced VC Tasks 32-55; VC 40/53 and S1 gates remain explicit | [todo](./mizar-vc/en/todo.md) |
 | mizar-kernel | Trusted certificate parsing and checking | [x] SAT-backed kernel milestone complete | step 4 task 35 resolved; task 32 parked; tasks 30-34 resolved | [todo](./mizar-kernel/en/todo.md) |
@@ -4524,5 +4524,24 @@ occurrence, export/proof semantics, and Task 270 remain separate. `z`/`q`
 closure and capture remain blocked on canonical Chapter-4/15 `set`
 reconciliation. Source/docs review is **NO FINDINGS**, full verification
 passes, and final read-only quality has all nine hard gates PASS without a
-score cap at `100/100`. Complete the implementation commit, then continue
-automatically.
+score cap at `100/100`. Implementation commit
+`2ba1ee910aea4939abc26b64a96a113e80c01306` is complete; continue
+automatically with the fresh successor inventory.
+
+## Checker Task 269SDC Autonomous Handoff
+
+Task 269SDP implementation commit
+`2ba1ee910aea4939abc26b64a96a113e80c01306` is clean. Current origin
+divergence `0/1` is report-only `repo_metadata_conflict`; protected stash
+`f65cf4a13752ec380710814a9ac6392ccb9d75d4` is unchanged. Fresh inventory and
+independent review select dependency-ready Task 269SDC only.
+
+SDC freezes a distinct public Given-descendant binding family, exact
+`BindingEnv 1/1/0 -> 3/2/0`, inherited child context 2, boxed Typed/Resolved
+ownership, seven primary Rust files plus one cfg-test-only predecessor-owner
+support file, and four checker/four runner tests. It consumes
+the immutable SDP lower and publishes no type, occurrence, Set binding,
+capture, fact, proof, obligation, diagnostic, active result, or coverage
+credit. Chapter-4/15 `set` disagreement is nonblocking for SDC and blocking
+for all `z`/`q` work. Complete the synchronized 42-file documentation review,
+gates, and prerequisite commit; then fresh-preflight and implement SDC alone.

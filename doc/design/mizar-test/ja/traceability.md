@@ -2554,5 +2554,14 @@ fixture/sidecar/expectation/metadata/5 CLI bytes/diagnostic/dispatch/active
 resultは不変。SDPのchecker、`BindingEnv`、type、term/reference、capture/
 closure、fact、proof、obligation、coverage creditは0。次は別taskの
 Given-plus-descendant context/binding consumerで、occurrenceはさらに後、
-`z`/`q` captureはCh.4/15 `set` `spec_gap`でblocked。implementation
-self-hashはtask-only commitまでpending。
+`z`/`q` captureはCh.4/15 `set` `spec_gap`でblocked。Task-269SDP
+implementation commit `2ba1ee910aea4939abc26b64a96a113e80c01306`は完了。
+
+## Task 269SDC frozen traceability impact
+
+SDCはcanonical Given scope由来のdormant checker/runner unit `test_gap`だけを
+closeする。`.miz`/sidecar/expectation/trace requirement/status/backlink/
+runner case/warning/error/stage/executable coverage creditは追加しない。
+countsはcases/requirements `428/395`、pass/fail `235/193`、warnings/errors
+`23/0`、stages `101/7/205/1`、type `259=247+12`、trace SHA-256は
+`55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`。

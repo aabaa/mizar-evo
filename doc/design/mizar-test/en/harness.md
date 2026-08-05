@@ -5568,5 +5568,41 @@ dispatch, and active results remain unchanged. SDP publishes zero checker,
 `BindingEnv`, type, term/reference, capture/closure, fact, proof, obligation,
 or coverage credit. The next task is the separate Given-plus-descendant
 context/binding consumer; occurrence remains later, and `z`/`q` capture stays
-blocked by the Chapter-4/15 `set` `spec_gap`. The implementation self-hash is
-pending its task-only commit.
+blocked by the Chapter-4/15 `set` `spec_gap`. Task-269SDP implementation commit
+`2ba1ee910aea4939abc26b64a96a113e80c01306` is complete.
+
+## Task 269SDC Frozen Harness Boundary
+
+The dormant route is
+`source_proof_local_given_descendant_binding_output` plus a cfg-test mutation
+seam. It accepts only the exact SDP source, reuses its lower selector, builds
+the reserve base, supplies syntax-free Given/descendant input, and returns
+immutable Typed/Resolved views. Its exact private ABI is:
+
+```rust
+#[derive(Debug, PartialEq, Eq)]
+#[allow(dead_code)] // Rationale: Task 269SDC is a private dormant runner consumer until activation.
+pub(in crate::runner) struct SourceProofLocalGivenDescendantBindingRouteOutput {
+    typed_ast: TypedAst,
+    resolved: ResolvedTypedAst,
+}
+
+impl SourceProofLocalGivenDescendantBindingRouteOutput {
+    pub(in crate::runner) const fn typed_ast(&self) -> &TypedAst;
+    pub(in crate::runner) const fn resolved(&self) -> &ResolvedTypedAst;
+}
+```
+
+The mutation enum is `pub(in crate::runner)`, derives
+`Debug, Clone, Copy, PartialEq, Eq`, and has `#[allow(dead_code)]` with the
+private-corruption-seam rationale; its exact 15 variants and the two reserve
+error strings are frozen in the checker owner document. The production route
+has the dormant `#[allow(dead_code)]` rationale, always selects `None`, and is
+not dispatched; only the mutation-taking sibling is `#[cfg(test)]`.
+
+Four runner tests freeze exact `3/2/0` output/debug replay, every representably
+corruptible route input and precedence tier, SDP/G/GUP/GC/GCU/near-miss isolation, one-shot
+Typed/final installation, and zero occurrence/capture/semantic effect. The
+route does not inspect Set rows directly, add a dispatcher detail, or alter a
+fixture, sidecar, expectation, trace row, CLI byte, diagnostic, or active
+result.

@@ -1048,5 +1048,23 @@ fixture/sidecar/expectation/metadata/5 CLI bytes/diagnostic/dispatch/active
 resultは不変。SDPのchecker、`BindingEnv`、type、term/reference、capture/
 closure、fact、proof、obligation、coverage creditは0。次は別taskの
 Given-plus-descendant context/binding consumerで、occurrenceはさらに後、
-`z`/`q` captureはCh.4/15 `set` `spec_gap`でblocked。implementation
-self-hashはtask-only commitまでpending。
+`z`/`q` captureはCh.4/15 `set` `spec_gap`でblocked。Task-269SDP
+implementation commit `2ba1ee910aea4939abc26b64a96a113e80c01306`は完了。
+
+## Task 269SDC frozen BindingEnv transition
+
+SDCはSDP sourceのexact descendant relationshipを初めてproductionでownする。
+atomic transitionは`1/1/0 -> 3/2/0`。context 0/reserve binding 0は
+byte-identical。context 1はnormal `SourceStatement(73..178)`、parent 0、
+`Proof`、scope `[0]`、owned `[1]`、visible `[0,1]`。binding 1はnormal
+active `GivenWitness y`、resolver-local `([0],1,87..88)`、owner 1、
+visible-after 1、type `Missing`、capture/diagnostic empty。context 2はnormal
+`SourceStatement(102..159)`、parent 1、`Block`、scope `[0,0]`、owned `[]`、
+visible `[0,1]`。
+
+lookupはcontext 1/[0]/ordinal 1でforward 1、context 1/[0]/ordinal 2と
+context 2/[0,0]/ordinal 2でlocal 1。shadow/restoration/parent/siblingは
+test-onlyで、handoffへ入らない。lookupはsource occurrenceではない。
+`z`/`q` binding、type overlay、capture、closure、formula/fact/guard/proof/
+obligation/active effectは禁止。Ch.4/15 `set` gapはこのtransitionには
+nonblocking、全`LocalAbbreviation`/capture successorにはblocking。

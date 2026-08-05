@@ -2015,5 +2015,19 @@ fixture/sidecar/expectation/metadata/5 CLI bytes/diagnostic/dispatch/active
 resultは不変。SDPのchecker、`BindingEnv`、type、term/reference、capture/
 closure、fact、proof、obligation、coverage creditは0。次は別taskの
 Given-plus-descendant context/binding consumerで、occurrenceはさらに後、
-`z`/`q` captureはCh.4/15 `set` `spec_gap`でblocked。implementation
-self-hashはtask-only commitまでpending。
+`z`/`q` captureはCh.4/15 `set` `spec_gap`でblocked。Task-269SDP
+implementation commit `2ba1ee910aea4939abc26b64a96a113e80c01306`は完了。
+
+## Task 269SDC frozen Resolved ownership
+
+`ResolvedTypedAst`は同じboxed optional
+`source_proof_local_given_descendant_binding`とborrowed getterだけを持つ。
+getterのexact Rust signatureはcanonical ENと同一。final assemblyはTyped
+ownerを要求し、complete SDC handoffとreciprocal exclusionをreplayして
+byte-for-byte preserveし、failureを
+`InvalidSourceProofLocalGivenDescendantBinding`へprojectする。exact displayは
+`resolved typed AST source proof-local given-descendant binding handoff is inconsistent`。
+debug slotはGCU直後かつ`source_statement_references`/node/table前で、absent
+bytes不変、present 1回。resolved node/overload/metadata tableは全empty。
+これはauthenticated context treeのownerで、descendant term/reference
+occurrenceやcapture/closure factではない。

@@ -3847,5 +3847,20 @@ dispatch, and active results remain unchanged. SDP publishes zero checker,
 `BindingEnv`, type, term/reference, capture/closure, fact, proof, obligation,
 or coverage credit. The next task is the separate Given-plus-descendant
 context/binding consumer; occurrence remains later, and `z`/`q` capture stays
-blocked by the Chapter-4/15 `set` `spec_gap`. The implementation self-hash is
-pending its task-only commit.
+blocked by the Chapter-4/15 `set` `spec_gap`. Task-269SDP implementation commit
+`2ba1ee910aea4939abc26b64a96a113e80c01306` is complete.
+
+## Checker Task 269SDC Dormant Consumer Handoff
+
+- [x] Fresh-select only SDC from clean SDP commit; classify authority/source/
+  test gaps and retain report-only origin/stash invariants.
+- [x] Freeze exact SDP dependency, `3/2/0` public binding payload,
+  Typed/Resolved installation, runner route, seven primary files plus one
+  cfg-test ownership-support file/eight tests, zero active credit, strict
+  exclusions, counts, and exit gates.
+- [ ] Complete repeated spec/bilingual review with **NO FINDINGS**, all nine
+  docs gates uncapped at `>=90/100`, exact 42-file staging, and docs commit.
+- [ ] Fresh-preflight and implement only SDC; keep source type and descendant
+  occurrence separate and all Set closure/capture blocked.
+- [ ] Complete all implementation reviews/gates, commit, and fresh-select the
+  next dependency-ready successor.

@@ -5911,5 +5911,16 @@ fixture/sidecar/expectation/metadata/5 CLI bytes/diagnostic/dispatch/active
 resultは不変。SDPのchecker、`BindingEnv`、type、term/reference、capture/
 closure、fact、proof、obligation、coverage creditは0。次は別taskの
 Given-plus-descendant context/binding consumerで、occurrenceはさらに後、
-`z`/`q` captureはCh.4/15 `set` `spec_gap`でblocked。implementation
-self-hashはtask-only commitまでpending。
+`z`/`q` captureはCh.4/15 `set` `spec_gap`でblocked。Task-269SDP
+implementation commit `2ba1ee910aea4939abc26b64a96a113e80c01306`は完了。
+
+## Task 269SDC frozen source/specification audit
+
+post-SDP inventoryはmissing exact descendant contractを`design_drift`、
+producer/Typed/Resolved/private runner欠如を`source_drift`、exact
+child-context tests欠如を`test_gap`とする。Specs 4.6.1、
+15.3.3/15.6.1/15.10、16.3.3/16.4.1--16.4.3は`1/1/0 -> 3/2/0`、
+inherited `y`、parent/sibling exclusionの
+安全なtest intentを与える。Ch.4/15 Set conflictはSDCにはnonblocking、
+LocalAbbreviation/captureにはblockingな`spec_gap`。既存`.miz`/
+expectation/trace/coverage status/diagnosticは不変で、新fixtureは不要。

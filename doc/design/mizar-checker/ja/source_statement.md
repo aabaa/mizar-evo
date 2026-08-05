@@ -3776,5 +3776,16 @@ fixture/sidecar/expectation/metadata/5 CLI bytes/diagnostic/dispatch/active
 resultは不変。SDPのchecker、`BindingEnv`、type、term/reference、capture/
 closure、fact、proof、obligation、coverage creditは0。次は別taskの
 Given-plus-descendant context/binding consumerで、occurrenceはさらに後、
-`z`/`q` captureはCh.4/15 `set` `spec_gap`でblocked。implementation
-self-hashはtask-only commitまでpending。
+`z`/`q` captureはCh.4/15 `set` `spec_gap`でblocked。Task-269SDP
+implementation commit `2ba1ee910aea4939abc26b64a96a113e80c01306`は完了。
+
+## Task 269SDC frozen source-statement consumer boundary
+
+SDCは既存Task-269SDP lowerをconsumeし、`source_statement.rs`を変更しない。
+lower source/module identity、theorem provenance、theorem/proof/Given/
+segment/name/descendant ranges、Given name spelling/source ordinal、complete
+lower debug fingerprintだけをsyntax-free binding producerへ渡す。Given type
+getters、2 Set rows/RHS、conclusion gettersはauthenticated lower evidenceの
+ままでsemanticに読まない。
+`y@118..119` occurrence、`z`/`q` declaration、formula/conclusion/fact/
+block-result/proof payloadをpublishしない。

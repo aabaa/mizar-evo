@@ -6220,5 +6220,17 @@ dispatch, and active results remain unchanged. SDP publishes zero checker,
 `BindingEnv`, type, term/reference, capture/closure, fact, proof, obligation,
 or coverage credit. The next task is the separate Given-plus-descendant
 context/binding consumer; occurrence remains later, and `z`/`q` capture stays
-blocked by the Chapter-4/15 `set` `spec_gap`. The implementation self-hash is
-pending its task-only commit.
+blocked by the Chapter-4/15 `set` `spec_gap`. Task-269SDP implementation commit
+`2ba1ee910aea4939abc26b64a96a113e80c01306` is complete.
+
+## Task 269SDC Frozen Source/Specification Audit
+
+Fresh post-SDP inventory classifies the absent exact descendant checker
+contract as `design_drift`, its missing producer/Typed/Resolved/private runner
+route as `source_drift`, and missing exact child-context tests as `test_gap`.
+Specs 4.6.1, 15.3.3/15.6.1/15.10, and 16.3.3/16.4.1--16.4.3 give sufficient
+test intent for `1/1/0 -> 3/2/0`, inherited `y`, and parent/sibling exclusion. The Chapter-4/
+15 Set conflict remains a nonblocking SDC `spec_gap` and a blocking
+LocalAbbreviation/capture gap. Existing `.miz`, expectations, trace rows,
+coverage status, and diagnostics remain authoritative and unchanged; no new
+fixture is required for this dormant exact-source consumer.

@@ -1636,5 +1636,13 @@ fixture/sidecar/expectation/metadata/5 CLI bytes/diagnostic/dispatch/active
 resultは不変。SDPのchecker、`BindingEnv`、type、term/reference、capture/
 closure、fact、proof、obligation、coverage creditは0。次は別taskの
 Given-plus-descendant context/binding consumerで、occurrenceはさらに後、
-`z`/`q` captureはCh.4/15 `set` `spec_gap`でblocked。implementation
-self-hashはtask-only commitまでpending。
+`z`/`q` captureはCh.4/15 `set` `spec_gap`でblocked。Task-269SDP
+implementation commit `2ba1ee910aea4939abc26b64a96a113e80c01306`は完了。
+
+## Task 269SDC frozen source-type deferral
+
+SDCはGiven binding 1を`BindingTypeSite::Missing`のまま保持する。SDPに
+written `set@95..98`があってもsource-type row/arena/normalization/
+constraint/guard/obligationを作らない。別に凍結するsuccessorだけがSDCを
+by-value consumeしてexact typeをoverlayできる。2 Set name/RHSは
+source-type ownership外。

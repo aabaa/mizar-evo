@@ -13320,5 +13320,17 @@ dispatch, and active results remain unchanged. SDP publishes zero checker,
 `BindingEnv`, type, term/reference, capture/closure, fact, proof, obligation,
 or coverage credit. The next task is the separate Given-plus-descendant
 context/binding consumer; occurrence remains later, and `z`/`q` capture stays
-blocked by the Chapter-4/15 `set` `spec_gap`. The implementation self-hash is
-pending its task-only commit.
+blocked by the Chapter-4/15 `set` `spec_gap`. Task-269SDP implementation commit
+`2ba1ee910aea4939abc26b64a96a113e80c01306` is complete.
+
+## Task 269SDC Frozen Module Boundary
+
+Runner writes only `type_elaboration/source_proof_local_declaration.rs`,
+`type_elaboration.rs`, `runner.rs`, and the existing proof-local test leaf;
+checker writes the three frozen owner files. `source_statement.rs`, parser,
+resolver, and `binding_env.rs` are unchanged. Checker `source_term.rs` receives
+only a cfg-test reciprocal-owner sentinel extension; its production owner is
+unchanged. Other source type/term owners, public runner schemas,
+dispatch, Cargo, canonical artifacts, metadata, and downstream crates are
+excluded. This keeps lower extraction, syntax-free binding production, and
+Typed/final ownership in their established modules.

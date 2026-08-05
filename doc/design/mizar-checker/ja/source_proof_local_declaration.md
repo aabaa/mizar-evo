@@ -2258,5 +2258,105 @@ fixture/sidecar/expectation/metadata/5 CLI bytes/diagnostic/dispatch/active
 resultは不変。SDPのchecker、`BindingEnv`、type、term/reference、capture/
 closure、fact、proof、obligation、coverage creditは0。次は別taskの
 Given-plus-descendant context/binding consumerで、occurrenceはさらに後、
-`z`/`q` captureはCh.4/15 `set` `spec_gap`でblocked。implementation
-self-hashはtask-only commitまでpending。
+`z`/`q` captureはCh.4/15 `set` `spec_gap`でblocked。Task-269SDP
+implementation commit `2ba1ee910aea4939abc26b64a96a113e80c01306`は完了。
+
+## Task 269SDC frozen descendant binding consumer
+
+Task 269SDCはimmutable Task-269SDP lower debugをconsumeし、外側Given
+bindingとexact descendant context relationshipだけをinstallする。authority、
+range、分類、7 primary implementation files + 1 `cfg(test)`-only
+predecessor-ownership support file、8 tests、zero-credit境界、exitはcrate
+planに凍結し、本ownerはcomplete public ABI/replayを凍結する。
+
+public familyは
+`SourceProofLocalGivenDescendantBindingHandoffInput`、
+`SourceProofLocalGivenDescendantBindingHandoff`、
+`SourceProofLocalGivenDescendantBindingProducer`、non-exhaustive
+`SourceProofLocalGivenDescendantBindingError`。既存
+`SourceProofLocalGivenBinding{Id,Table,Recovery}`をreuseする。input field
+orderはsource/module/lower fingerprint/theorem symbol/definition/
+contribution/theorem/proof/Given/segment/name/descendant ranges/source ordinal/
+`LocalTermBinding`/descendant `LocalTermScope`/recovery。handoffは同じ
+dependency fieldsの後にbase env/fingerprint、final env/fingerprint、one
+binding table、`BindingContextId` descendant contextをprivateに保持する。
+
+全read-only getterはEN owner記載field順・constnessをcanonicalとする。
+producerは`build(input, &BindingEnv)`だけを公開し、handoffまたはexact
+errorを返す。error variantsは`InvalidTransaction`、
+`DependencyMismatch`、`InvalidBaseBindingEnvironment`、`InvalidAggregate`、
+`InvalidDeclaration { binding: SourceProofLocalGivenBindingId }`、`InvalidDescendantContext`、
+`InvalidBindingEnvironment`、`InvalidInstallation`で、exact English
+Display bytesはEN ownerをcanonicalとする。errorは`Display`/`Error`を実装。
+`pub(crate)`な`validate_installation(&self, SourceId, &ModuleId)`と
+`validate_complete_installation(&self, SourceId, &ModuleId, bool)`のexact
+Result signatureもEN ownerをcanonicalとする。
+
+dependencyはprimary name `ProofLocalGivenDescendantCaptureSmoke`、
+definition/contribution `0/0`、range `19..179`/`73..178`/`81..99`/
+`87..98`/`87..88`/`102..159`とcomplete SDP lower debugを独立再構成する。
+coherent symbol+fingerprint corruptionもreject。inputはordinal 1、`y`、
+scope `[0]`、declaration `87..88`、visible-after 1、descendant `[0,0]`、
+normalのみ。
+
+base `1/1/0`からfinal `3/2/0`へのatomic replayはcrate planのexact profile。
+rowはbinding/context `1/1`、source/visible `1/1`、normal、descendant context
+は2。validation/error mappingはsource/module identity ->
+`InvalidTransaction`、lower/theorem/theorem・proof・Given・segment・name ranges
+-> `DependencyMismatch`、base env/
+base fingerprint -> `InvalidBaseBindingEnvironment`、aggregate ->
+`InvalidAggregate`、local/row -> `InvalidDeclaration`、descendant scalar/
+scope/context -> `InvalidDescendantContext`、final env/fingerprint/lookup ->
+`InvalidBindingEnvironment`、Typed/final availability ->
+`InvalidInstallation`の順。全failureはpublication前。
+
+checkerは全alterable public input/injected handoff fieldをcorruptする。runner 15-variant
+seamはrepresentably corruptibleなroute inputとcombined precedenceだけをcover
+する。recovery enumは`Normal` 1 variantだけなのでrecovery mutationは作らず、
+success pathでexact `Normal`を検証する。scope matrix、test-only binding 2、
+contexts 3--5のexact identity/parent/scope/visible/resultはEN crate planを
+canonicalとし、handoff/source claimには入れない。
+
+debug headerは
+`source-proof-local-given-descendant-binding-debug-v1`。続くmodule、quoted
+SDP lower、theorem、Given、quoted base env、binding row、
+`descendant range=102..159 context=2 parent=1 scope=[0,0] recovery=normal`、
+quoted final envの順、blankなし・final LF 1個。exact literalはEN ownerを
+canonicalとする。
+
+`TypedAst`/`ResolvedTypedAst`はboxed optional
+`source_proof_local_given_descendant_binding`を1件だけownし、full replay後
+のみpublishする。Typed getter/installerとResolved getterのexact signature、
+Typed/Resolved error display bytesはEN ownerをcanonicalとする。debug slotは
+GCU直後かつ`source_statement_references`/node/table前で、absent bytes不変、
+present 1回。duplicateと既存proof-local owner 10件を両順序でrejectし、
+さらに`resolved_root`と全current source-owner slotをrejectする。全existing
+source-owner installerはreciprocal SDC availability checkを追加し、generic
+`source_term`をnon-proof rollback sentinelとする。rollback/debug不変を
+検証する。semantic tablesは全empty。
+
+private runner outputは`SourceProofLocalGivenDescendantBindingRouteOutput`、
+`#[derive(Debug, PartialEq, Eq)]`、dormant rationaleの
+`#[allow(dead_code)]`、`pub(in crate::runner)`で、private `typed_ast`/
+`resolved` fieldsと同visibilityの`const fn` borrowed gettersだけを持つ。
+mutation enumは`SourceProofLocalGivenDescendantBindingRouteMutation`、
+`Debug, Clone, Copy, PartialEq, Eq`、private seam rationaleの
+`#[allow(dead_code)]`、`pub(in crate::runner)`で、EN owner記載の15 variants
+exact order。production functionはdormant `allow(dead_code)`、mutation
+functionは`cfg(test)`。routeは
+`source_proof_local_given_descendant_binding_output`とcfg-test
+`..._with_mutation`で、全parameter/return exact signaturesはEN ownerを
+canonicalとする。selector mismatchだけ`None`。reserve errorは
+`Task269SDC exact reserve base extraction failed`と
+`Task269SDC exact reserve base failed: {error}`。SDP lower errorは不変に
+propagateする。
+
+runnerはlower `source_id`/`module_id`、theorem symbol/definition/
+contribution、theorem/proof/Given/segment/name ranges、Given name spelling/
+source ordinal、descendant-`now` range、`lower_fingerprint`となるcomplete
+`debug_text()`を直接consumeする。Given type getters、Set row/RHS、conclusion
+getterはcomplete lower fingerprint外では読まず、`y@118..119` occurrenceを作らない。
+test corruptionは全representable route input/fingerprint/row/context-2
+fields/lookup/installation/precedenceをcoverする。残るexact tests/
+exclusions/count/exitは
+EN crate planをcanonicalとする。

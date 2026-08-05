@@ -963,5 +963,18 @@ dispatch, and active results remain unchanged. SDP publishes zero checker,
 `BindingEnv`, type, term/reference, capture/closure, fact, proof, obligation,
 or coverage credit. The next task is the separate Given-plus-descendant
 context/binding consumer; occurrence remains later, and `z`/`q` capture stays
-blocked by the Chapter-4/15 `set` `spec_gap`. The implementation self-hash is
-pending its task-only commit.
+blocked by the Chapter-4/15 `set` `spec_gap`. Task-269SDP implementation commit
+`2ba1ee910aea4939abc26b64a96a113e80c01306` is complete.
+
+## Task 269SDC Frozen Semantic Audit
+
+Canonical Given block scope makes the outer binding visible in every
+unshadowed descendant of the owning block. The exact SDP/SDC production
+transaction materializes one such child context and one outer Given binding;
+the synthetic matrix proves a second same-proof child also inherits. SDC
+deliberately assigns zero meaning to the witness
+as an existential/Skolem object, its written type as a guard, the child RHS as
+an occurrence or capture, the Set statements as equalities or substitutions,
+and every conclusion/proof/obligation. Chapter-4/15 Set disagreement is
+nonblocking only because those effects are excluded; introducing any `z`/`q`
+row would be an authority-free lower-stage expansion and a boundary violation.

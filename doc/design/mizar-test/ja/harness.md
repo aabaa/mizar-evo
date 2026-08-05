@@ -5189,5 +5189,27 @@ fixture/sidecar/expectation/metadata/5 CLI bytes/diagnostic/dispatch/active
 resultは不変。SDPのchecker、`BindingEnv`、type、term/reference、capture/
 closure、fact、proof、obligation、coverage creditは0。次は別taskの
 Given-plus-descendant context/binding consumerで、occurrenceはさらに後、
-`z`/`q` captureはCh.4/15 `set` `spec_gap`でblocked。implementation
-self-hashはtask-only commitまでpending。
+`z`/`q` captureはCh.4/15 `set` `spec_gap`でblocked。Task-269SDP
+implementation commit `2ba1ee910aea4939abc26b64a96a113e80c01306`は完了。
+
+## Task 269SDC frozen harness boundary
+
+dormant routeは`source_proof_local_given_descendant_binding_output`と
+cfg-test mutation seam。exact SDP sourceだけを受け、既存lower selectorと
+reserve baseをreuseし、syntax-free Given/descendant inputをbuildして
+immutable Typed/Resolved viewsを返す。outputは
+`SourceProofLocalGivenDescendantBindingRouteOutput`、
+`Debug, PartialEq, Eq` derive、dormant rationaleの`allow(dead_code)`、
+`pub(in crate::runner)`で、private Typed/Resolved fieldsと同visibilityの
+borrowed `const fn` gettersだけを持つ。mutation enumは
+`Debug, Clone, Copy, PartialEq, Eq`、private seam rationaleの
+`allow(dead_code)`、同visibility。exact 15 mutationsと2 reserve errorは
+checker EN ownerをcanonicalとする。production routeはdormant
+`allow(dead_code)`で常に`None` mutationを選びdispatchされず、mutation
+siblingだけが`cfg(test)`。
+
+runner 4 testsはexact `3/2/0`/debug、全representably corruptible route
+input/precedence、SDP/G/GUP/
+GC/GCU/near-miss isolation、one-shot install、zero occurrence/capture/
+semanticsをfreeze。Set rowsを直接inspectせず、dispatcher/fixture/sidecar/
+expectation/trace/CLI/diagnostic/active resultを変更しない。

@@ -2141,5 +2141,27 @@ dispatch, and active results remain unchanged. SDP publishes zero checker,
 `BindingEnv`, type, term/reference, capture/closure, fact, proof, obligation,
 or coverage credit. The next task is the separate Given-plus-descendant
 context/binding consumer; occurrence remains later, and `z`/`q` capture stays
-blocked by the Chapter-4/15 `set` `spec_gap`. The implementation self-hash is
-pending its task-only commit.
+blocked by the Chapter-4/15 `set` `spec_gap`. Task-269SDP implementation commit
+`2ba1ee910aea4939abc26b64a96a113e80c01306` is complete.
+
+## Task 269SDC Frozen Resolved Ownership
+
+`ResolvedTypedAst` carries the same boxed optional
+`source_proof_local_given_descendant_binding` and exposes only:
+
+```rust
+pub const fn source_proof_local_given_descendant_binding(
+    &self,
+) -> Option<&SourceProofLocalGivenDescendantBindingHandoff>;
+```
+
+Final assembly requires the Typed owner, replays the complete SDC handoff and
+all reciprocal proof-local exclusions, preserves it byte-for-byte, and
+projects `InvalidSourceProofLocalGivenDescendantBinding` on failure. The exact
+display is `resolved typed AST source proof-local given-descendant binding
+handoff is inconsistent`. Debug places the optional chunk immediately after
+GCU and before `source_statement_references` and node/table rendering; absence
+preserves all old bytes and presence appends exactly once. Every resolved node
+and overload/metadata table remains empty. This ownership records an
+authenticated context tree, not a descendant term/reference occurrence or a
+capture/closure fact.

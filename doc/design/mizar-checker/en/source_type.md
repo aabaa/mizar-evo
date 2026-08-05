@@ -2277,5 +2277,13 @@ dispatch, and active results remain unchanged. SDP publishes zero checker,
 `BindingEnv`, type, term/reference, capture/closure, fact, proof, obligation,
 or coverage credit. The next task is the separate Given-plus-descendant
 context/binding consumer; occurrence remains later, and `z`/`q` capture stays
-blocked by the Chapter-4/15 `set` `spec_gap`. The implementation self-hash is
-pending its task-only commit.
+blocked by the Chapter-4/15 `set` `spec_gap`. Task-269SDP implementation commit
+`2ba1ee910aea4939abc26b64a96a113e80c01306` is complete.
+
+## Task 269SDC Frozen Source-type Deferral
+
+SDC keeps Given binding 1 at `BindingTypeSite::Missing`. Although SDP retains
+written `set@95..98`, no source-type row, type arena node, normalization,
+constraint, guard, or obligation is created. A separately frozen successor
+may consume SDC by value to overlay that exact type. The two Set-statement
+names and RHS values remain outside source-type ownership.

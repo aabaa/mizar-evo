@@ -2039,5 +2039,15 @@ dispatch, and active results remain unchanged. SDP publishes zero checker,
 `BindingEnv`, type, term/reference, capture/closure, fact, proof, obligation,
 or coverage credit. The next task is the separate Given-plus-descendant
 context/binding consumer; occurrence remains later, and `z`/`q` capture stays
-blocked by the Chapter-4/15 `set` `spec_gap`. The implementation self-hash is
-pending its task-only commit.
+blocked by the Chapter-4/15 `set` `spec_gap`. Task-269SDP implementation commit
+`2ba1ee910aea4939abc26b64a96a113e80c01306` is complete.
+
+## Task 269SDC Frozen Bilingual Synchronization
+
+The canonical English and Japanese companion now agree on Task ID `269SDC`,
+authority and classifications, exact SDP dependency/ranges, public ABI and
+debug grammar, `1/1/0 -> 3/2/0`, context/binding/lookup values, boxed
+Typed/Resolved ownership, seven primary Rust files plus one cfg-test-only
+ownership-support file, eight test names, zero-credit
+exclusions, Set blocker, baselines, and exit gates. English exact identifiers,
+signatures, display/debug bytes, and test names remain canonical.

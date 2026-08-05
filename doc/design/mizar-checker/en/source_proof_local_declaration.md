@@ -4113,5 +4113,341 @@ dispatch, and active results remain unchanged. SDP publishes zero checker,
 `BindingEnv`, type, term/reference, capture/closure, fact, proof, obligation,
 or coverage credit. The next task is the separate Given-plus-descendant
 context/binding consumer; occurrence remains later, and `z`/`q` capture stays
-blocked by the Chapter-4/15 `set` `spec_gap`. The implementation self-hash is
-pending its task-only commit.
+blocked by the Chapter-4/15 `set` `spec_gap`. Task-269SDP implementation commit
+`2ba1ee910aea4939abc26b64a96a113e80c01306` is complete.
+
+## Task 269SDC Frozen Descendant Binding Consumer
+
+Task 269SDC consumes the immutable Task-269SDP lower debug text and installs
+only the outer Given binding plus the exact descendant context relationship.
+The authority, ranges, classification, seven primary implementation files plus
+one `cfg(test)`-only predecessor-ownership support file, eight tests,
+zero-credit boundary, and exit gates are frozen in the crate plan. This owner
+document freezes the complete public ABI and replay contract.
+
+### Exact public ABI
+
+The new structs derive `Debug, Clone, PartialEq, Eq`. Fields of the handoff are
+private and appear in exactly this order:
+
+```rust
+pub struct SourceProofLocalGivenDescendantBindingHandoffInput {
+    pub source_id: SourceId,
+    pub module_id: ModuleId,
+    pub lower_fingerprint: String,
+    pub theorem_symbol: SymbolId,
+    pub theorem_definition: DefinitionId,
+    pub contribution: SourceContributionId,
+    pub theorem_range: SourceRange,
+    pub proof_range: SourceRange,
+    pub given_range: SourceRange,
+    pub segment_range: SourceRange,
+    pub name_range: SourceRange,
+    pub descendant_range: SourceRange,
+    pub source_ordinal: usize,
+    pub local: LocalTermBinding,
+    pub descendant_scope: LocalTermScope,
+    pub recovery: SourceProofLocalGivenBindingRecovery,
+}
+
+pub struct SourceProofLocalGivenDescendantBindingHandoff {
+    source_id: SourceId,
+    module_id: ModuleId,
+    lower_fingerprint: String,
+    theorem_symbol: SymbolId,
+    theorem_definition: DefinitionId,
+    contribution: SourceContributionId,
+    theorem_range: SourceRange,
+    proof_range: SourceRange,
+    given_range: SourceRange,
+    segment_range: SourceRange,
+    name_range: SourceRange,
+    descendant_range: SourceRange,
+    base_binding_env: BindingEnv,
+    base_binding_fingerprint: String,
+    binding_env: BindingEnv,
+    final_binding_fingerprint: String,
+    bindings: SourceProofLocalGivenBindingTable,
+    descendant_context: BindingContextId,
+}
+```
+
+The read-only getters follow field order. Copy values are `const fn`; borrowed
+module/symbol/environment/table values are `const fn`; strings and
+`debug_text()` are ordinary functions. There is no mutable or consuming
+public accessor:
+
+```rust
+pub const fn source_id(&self) -> SourceId;
+pub const fn module_id(&self) -> &ModuleId;
+pub fn lower_fingerprint(&self) -> &str;
+pub const fn theorem_symbol(&self) -> &SymbolId;
+pub const fn theorem_definition(&self) -> DefinitionId;
+pub const fn contribution(&self) -> SourceContributionId;
+pub const fn theorem_range(&self) -> SourceRange;
+pub const fn proof_range(&self) -> SourceRange;
+pub const fn given_range(&self) -> SourceRange;
+pub const fn segment_range(&self) -> SourceRange;
+pub const fn name_range(&self) -> SourceRange;
+pub const fn descendant_range(&self) -> SourceRange;
+pub const fn base_binding_env(&self) -> &BindingEnv;
+pub fn base_binding_fingerprint(&self) -> &str;
+pub const fn binding_env(&self) -> &BindingEnv;
+pub fn final_binding_fingerprint(&self) -> &str;
+pub const fn bindings(&self) -> &SourceProofLocalGivenBindingTable;
+pub const fn descendant_context(&self) -> BindingContextId;
+pub fn debug_text(&self) -> String;
+```
+
+The producer derives `Debug, Clone, Copy, Default` and has only this build API:
+
+```rust
+pub struct SourceProofLocalGivenDescendantBindingProducer;
+
+impl SourceProofLocalGivenDescendantBindingProducer {
+    pub fn build(
+        input: SourceProofLocalGivenDescendantBindingHandoffInput,
+        base_binding_env: &BindingEnv,
+    ) -> Result<
+        SourceProofLocalGivenDescendantBindingHandoff,
+        SourceProofLocalGivenDescendantBindingError,
+    >;
+}
+```
+
+The error derives `Debug, Clone, PartialEq, Eq`, is `#[non_exhaustive]`, and
+implements `Display` plus `std::error::Error`. Its exact variants and display
+strings are:
+
+| variant | exact display |
+|---|---|
+| `InvalidTransaction` | `source proof-local given-descendant binding transaction is invalid` |
+| `DependencyMismatch` | `source proof-local given-descendant binding dependency mismatch` |
+| `InvalidBaseBindingEnvironment` | `source proof-local given-descendant binding base binding environment is invalid` |
+| `InvalidAggregate` | `source proof-local given-descendant binding aggregate is invalid` |
+| `InvalidDeclaration { binding }` | `source proof-local given-descendant binding <index> is invalid` |
+| `InvalidDescendantContext` | `source proof-local given-descendant binding descendant context is invalid` |
+| `InvalidBindingEnvironment` | `source proof-local given-descendant binding binding environment is invalid` |
+| `InvalidInstallation` | `source proof-local given-descendant binding installation is invalid` |
+
+The exact enum declaration uses
+`InvalidDeclaration { binding: SourceProofLocalGivenBindingId }`. Validation
+is not public; its exact signatures are:
+
+```rust
+pub(crate) fn validate_installation(
+    &self,
+    source_id: SourceId,
+    module_id: &ModuleId,
+) -> Result<(), SourceProofLocalGivenDescendantBindingError>;
+pub(crate) fn validate_complete_installation(
+    &self,
+    source_id: SourceId,
+    module_id: &ModuleId,
+    installation_available: bool,
+) -> Result<(), SourceProofLocalGivenDescendantBindingError>;
+```
+
+Complete installation appends only the one-shot owner check after full replay.
+
+### Exact dependency and environment replay
+
+Dependency validation independently reconstructs the theorem symbol local ID
+using the existing escaped-module-path grammar and primary name
+`ProofLocalGivenDescendantCaptureSmoke`; it does not trust a supplied symbol
+or matching lower string. Definition/contribution are `0/0`; theorem, proof,
+Given, segment, name, and descendant ranges are exactly `19..179`, `73..178`,
+`81..99`, `87..98`, `87..88`, and `102..159`. `lower_fingerprint` is the
+complete Task-269SDP lower debug text, including exact source/Surface SHA-256,
+resolver theorem FQN, both Set rows, conclusions, and final LF.
+
+The input declaration must be source ordinal 1, spelling `y`, scope `[0]`,
+declaration `87..88`, visible-after 1, normal recovery, and descendant scope
+`[0,0]`. The base is the exact reserve-only `1/1/0` environment. The final
+environment is exactly `3 contexts / 2 bindings / 0 diagnostics` with the
+profile in the crate plan. The reused public row is binding/context `1/1`,
+source/visible-after `1/1`, normal recovery; `descendant_context` is exactly 2.
+Binding 1 remains `BindingTypeSite::Missing`, active, uncaptured, and
+diagnostic-free. Context 2 owns no binding and can see only `[0,1]`.
+
+Validation precedence and exact error projection are frozen as follows:
+
+1. source/module transaction identity -> `InvalidTransaction`;
+2. lower fingerprint, theorem identity, and theorem/proof/Given/segment/name
+   ranges -> `DependencyMismatch`;
+3. base environment or base fingerprint ->
+   `InvalidBaseBindingEnvironment`;
+4. one-row aggregate shape -> `InvalidAggregate`;
+5. local declaration or reused binding-row field ->
+   `InvalidDeclaration { binding }`;
+6. descendant range/scope or context-2 identity/parent/layer/scope/owned/
+   visible/recovery field -> `InvalidDescendantContext`;
+7. reconstructed final environment, final fingerprint, or any lookup result ->
+   `InvalidBindingEnvironment`; and
+8. Typed/final availability -> `InvalidInstallation`.
+
+Every failure is atomic. Checker tests corrupt every alterable public input
+field and injected handoff/environment field. The private runner seam covers
+every *representably corruptible* route-input field and the combined-failure
+precedence. `SourceProofLocalGivenBindingRecovery` currently has only the
+single `Normal` value, so neither layer invents a synthetic recovery mutation;
+both exact success paths explicitly check `Normal`.
+
+The exact scope oracle is the crate-plan matrix. In particular, test-only
+binding 2 is a normal active missing-type `GivenWitness y` in context 3 with
+`ResolverLocal([0,1], ordinal=2, declaration=106..107)` and visible-after 2.
+Context 3 is the shadow child `[0,1]`, context 4 is the same-proof sibling
+child `[0,2]` that still inherits binding 1, and context 5 is the parent-0
+proof sibling `[1]` where `y` is unresolved. Test-only contexts 3--5 and
+binding 2 never enter the handoff or source provenance.
+
+The exact debug grammar has no blank line and exactly one final LF:
+
+```text
+source-proof-local-given-descendant-binding-debug-v1
+module: {package}::{module}
+lower-fingerprint: {quoted complete Task-269SDP lower debug}
+theorem symbol={quoted fqn} definition=0 contribution=0 range=19..179 proof=73..178
+given range=81..99 segment=87..98 name=87..88 source_ordinal=1
+base-binding-fingerprint: {quoted exact base BindingEnv debug}
+binding#0 binding=1 context=1 source_ordinal=1 visible_after=1 recovery=normal
+descendant range=102..159 context=2 parent=1 scope=[0,0] recovery=normal
+final-binding-fingerprint: {quoted exact final BindingEnv debug}
+```
+
+### Typed/Resolved and private runner boundary
+
+`TypedAst` and `ResolvedTypedAst` each own one boxed optional handoff named
+`source_proof_local_given_descendant_binding`. The exact Typed API is:
+
+```rust
+pub const fn source_proof_local_given_descendant_binding(
+    &self,
+) -> Option<&SourceProofLocalGivenDescendantBindingHandoff>;
+pub fn with_source_proof_local_given_descendant_binding(
+    self,
+    handoff: SourceProofLocalGivenDescendantBindingHandoff,
+) -> Result<Self, TypedAstError>;
+```
+
+The Typed error variant is
+`InvalidSourceProofLocalGivenDescendantBinding` and renders exactly
+`typed AST source proof-local given-descendant binding handoff is inconsistent`.
+The Resolved borrowed getter is exactly:
+
+```rust
+pub const fn source_proof_local_given_descendant_binding(
+    &self,
+) -> Option<&SourceProofLocalGivenDescendantBindingHandoff>;
+```
+
+Its error variant has the same name and renders exactly
+`resolved typed AST source proof-local given-descendant binding handoff is inconsistent`.
+In both debug renderers, the optional SDC chunk appears immediately after the
+current GCU `source_proof_local_given_condition_use_term` chunk and before
+`source_statement_references` and node/table rendering. An absent SDC slot
+preserves every current debug byte; a present slot appends the handoff debug
+exactly once.
+
+The Typed one-shot installer and final assembly reject a duplicate and all
+ten predecessor proof-local owners in both orders: declaration, Let binding,
+Let type, Given binding, Given type, Given-use type, Given-use term,
+Given-condition binding, Given-condition type, and Given-condition-use term.
+They also reject `resolved_root` and every other current source-owner slot;
+every existing source-owner installer adds the reciprocal SDC availability
+check, so no undocumented hybrid can be installed in either order. The ten
+proof-local owners remain the explicit per-owner sentinel matrix, with generic
+`source_term` as the representative non-proof source-owner rollback oracle.
+Every replay happens before publication; failed reverse-order installation
+preserves the pre-failure owner and debug bytes. Every semantic table remains
+empty. Neither layer adds a node, type, term, occurrence, fact, obligation, or
+diagnostic.
+
+The private runner ABI is exactly:
+
+```rust
+#[derive(Debug, PartialEq, Eq)]
+#[allow(dead_code)] // Rationale: Task 269SDC is a private dormant runner consumer until activation.
+pub(in crate::runner) struct SourceProofLocalGivenDescendantBindingRouteOutput {
+    typed_ast: TypedAst,
+    resolved: ResolvedTypedAst,
+}
+
+impl SourceProofLocalGivenDescendantBindingRouteOutput {
+    pub(in crate::runner) const fn typed_ast(&self) -> &TypedAst;
+    pub(in crate::runner) const fn resolved(&self) -> &ResolvedTypedAst;
+}
+```
+
+Neither field is visible and there is no mutable or consuming getter. The
+private mutation enum is named
+`SourceProofLocalGivenDescendantBindingRouteMutation`, derives
+`Debug, Clone, Copy, PartialEq, Eq`, is `pub(in crate::runner)`, and carries
+`#[allow(dead_code)]` with the rationale that production selects `None` while
+the remaining variants are private Task-269SDC corruption seams. Its exact
+declaration is:
+
+```rust
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[allow(dead_code)] // Rationale: production selects `None`; other variants are private Task-269SDC corruption seams.
+pub(in crate::runner) enum SourceProofLocalGivenDescendantBindingRouteMutation {
+    None,
+    WrongLowerFingerprint,
+    EmptyBase,
+    WrongTheoremRange,
+    WrongProofRange,
+    WrongGivenRange,
+    WrongSegmentRange,
+    WrongNameRange,
+    WrongDescendantRange,
+    WrongLocalSpelling,
+    WrongLocalScope,
+    WrongLocalRange,
+    WrongLocalVisibleAfter,
+    WrongDescendantScope,
+    WrongSourceOrdinal,
+}
+```
+
+The exact production and cfg-test route signatures are:
+
+```rust
+#[allow(dead_code)] // Rationale: Task 269SDC is dormant until an active dispatcher is separately frozen.
+pub(in crate::runner) fn source_proof_local_given_descendant_binding_output(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    shells: &DeclarationShellSet,
+    symbols: &SymbolEnv,
+    source_text: &str,
+) -> Option<Result<SourceProofLocalGivenDescendantBindingRouteOutput, String>>;
+
+#[cfg(test)]
+pub(in crate::runner) fn source_proof_local_given_descendant_binding_output_with_mutation(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    shells: &DeclarationShellSet,
+    symbols: &SymbolEnv,
+    source_text: &str,
+    mutation: SourceProofLocalGivenDescendantBindingRouteMutation,
+) -> Option<Result<SourceProofLocalGivenDescendantBindingRouteOutput, String>>;
+```
+
+Only exact-source mismatch returns `None`. Selected lower/base/producer/
+installation failures return `Some(Err(_))`. Extra runner errors are exactly
+`Task269SDC exact reserve base extraction failed` and
+`Task269SDC exact reserve base failed: {error}`; SDP lower errors propagate
+unchanged.
+
+The production function carries `#[allow(dead_code)]` with the dormant-route
+rationale; the mutation-taking function is `#[cfg(test)]`. The production
+function always selects `None`, and neither function is added to public or
+active dispatch.
+
+The route reads lower `source_id`, `module_id`, theorem symbol/definition/
+contribution, theorem/proof/Given/segment/name ranges, Given name spelling and
+source ordinal, descendant-`now` range, and the complete `debug_text()` used as
+`lower_fingerprint`. It must not read the Given type getters, either Set row,
+RHS, or conclusion getter except indirectly through that immutable complete
+lower fingerprint, and it must not turn `y@118..119` into an occurrence. The
+four checker and four runner test names, complete exclusions, projected counts,
+and exit criteria in the crate plan are normative for this owner.

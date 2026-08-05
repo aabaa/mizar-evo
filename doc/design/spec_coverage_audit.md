@@ -6934,3 +6934,34 @@ SDP still publishes no binding, type, term/reference, closure/capture, fact,
 proof, obligation, or downstream IR. Given-plus-descendant context/binding is
 the next separate consumer, occurrence remains later, and `z`/`q` capture is
 blocked by the unresolved Chapter-4/15 `set` `spec_gap`.
+
+## Checker Task 269SDC Frozen Descendant Binding Boundary
+
+Committed Task-269SDP lower `2ba1ee910aea4939abc26b64a96a113e80c01306`
+makes SDC dependency-ready. Canonical Specs 4.6.1,
+15.3.3/15.6.1/15.10, and 16.3.3/16.4.1--16.4.3 authorize the exact outer
+Given binding plus inherited child context and exclusion from parent/sibling/
+post-exit scopes. Missing exact ABI,
+producer/Typed/Resolved/runner route, and focused tests are classified
+`design_drift`, `source_drift`, and `test_gap`. Chapter-4/15 Set effects remain
+a nonblocking SDC `spec_gap` and a blocking `z`/`q` binding/closure/capture
+gap.
+
+The frozen checker handoff installs only `BindingEnv 1/1/0 -> 3/2/0`: one
+normal active missing-type `GivenWitness y` in proof context `[0]`, plus a
+normal child `now` context `[0,0]` that inherits `[x,y]` and owns nothing.
+Typed/Resolved own that payload atomically with every semantic table empty.
+Abstract lookup proves inheritance without publishing the source occurrence.
+Implementation is exact seven primary Rust files plus one cfg-test-only
+predecessor-owner support file and four checker/four runner tests after a
+synchronized 42-Markdown prerequisite. Reciprocal Typed/final isolation covers
+all ten predecessor proof-local owners in both orders without changing
+production source-term behavior or test count.
+
+No canonical specification, `.miz`, expectation, sidecar, trace row/status/
+backlink, metadata, diagnostic, dispatcher, CLI, active result, or executable
+coverage credit changes. Counts stay `428/395`, `235/193`, `23/0`,
+`101/7/205/1`, type `259=247+12`, and trace SHA-256
+`55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`.
+Given type and descendant `y@118..119` are separate successors; `z`/`q`
+LocalAbbreviation, closure, and capture remain blocked.

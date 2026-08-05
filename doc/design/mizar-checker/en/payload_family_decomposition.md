@@ -2026,5 +2026,15 @@ dispatch, and active results remain unchanged. SDP publishes zero checker,
 `BindingEnv`, type, term/reference, capture/closure, fact, proof, obligation,
 or coverage credit. The next task is the separate Given-plus-descendant
 context/binding consumer; occurrence remains later, and `z`/`q` capture stays
-blocked by the Chapter-4/15 `set` `spec_gap`. The implementation self-hash is
-pending its task-only commit.
+blocked by the Chapter-4/15 `set` `spec_gap`. Task-269SDP implementation commit
+`2ba1ee910aea4939abc26b64a96a113e80c01306` is complete.
+
+## Task 269SDC Frozen Payload-family Decomposition
+
+SDC adds one source-proof-local binding family only:
+`SourceProofLocalGivenDescendantBinding{HandoffInput,Handoff,Producer,Error}`.
+It reuses the common Given binding row/recovery ABI, owns one Given row plus a
+descendant context ID, and is boxed atomically in Typed/Resolved. SDP remains
+the private lower owner. Source type, source term/reference, Set/local-
+abbreviation, fact, proof, obligation, capture/export, and downstream IR stay
+in distinct families and may not be folded into SDC.

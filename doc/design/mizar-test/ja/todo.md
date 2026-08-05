@@ -3588,5 +3588,17 @@ fixture/sidecar/expectation/metadata/5 CLI bytes/diagnostic/dispatch/active
 resultは不変。SDPのchecker、`BindingEnv`、type、term/reference、capture/
 closure、fact、proof、obligation、coverage creditは0。次は別taskの
 Given-plus-descendant context/binding consumerで、occurrenceはさらに後、
-`z`/`q` captureはCh.4/15 `set` `spec_gap`でblocked。implementation
-self-hashはtask-only commitまでpending。
+`z`/`q` captureはCh.4/15 `set` `spec_gap`でblocked。Task-269SDP
+implementation commit `2ba1ee910aea4939abc26b64a96a113e80c01306`は完了。
+
+## Checker Task 269SDC dormant consumer handoff
+
+- [x] clean SDP commitからSDCだけをfresh-selectし、gap/origin/stashを分類。
+- [x] exact SDP dependency、`3/2/0` public binding、Typed/Resolved install、
+  runner route、7 primary files + 1 cfg-test ownership-support file/8 tests、
+  zero active credit、exclusion/count/exitを凍結。
+- [ ] repeated spec/bilingual reviewをNO FINDINGS、docs 9 gatesをuncapped
+  `>=90/100`、exact 42-file stage/docs commitまで完了。
+- [ ] fresh preflight後SDCだけを実装し、source type/descendant occurrenceを
+  分離、全Set closure/captureをblockedに維持。
+- [ ] 全implementation review/gate/commit後、next successorをfresh-select。

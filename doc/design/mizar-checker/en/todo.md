@@ -7189,5 +7189,25 @@ dispatch, and active results remain unchanged. SDP publishes zero checker,
 `BindingEnv`, type, term/reference, capture/closure, fact, proof, obligation,
 or coverage credit. The next task is the separate Given-plus-descendant
 context/binding consumer; occurrence remains later, and `z`/`q` capture stays
-blocked by the Chapter-4/15 `set` `spec_gap`. The implementation self-hash is
-pending its task-only commit.
+blocked by the Chapter-4/15 `set` `spec_gap`. Task-269SDP implementation commit
+`2ba1ee910aea4939abc26b64a96a113e80c01306` is complete.
+
+## Checker Task 269SDC Descendant Context/Binding Prerequisite
+
+- [x] Verify clean SDP commit `2ba1ee910aea4939abc26b64a96a113e80c01306`,
+  current origin `0/1` report-only `repo_metadata_conflict`, and unchanged
+  protected stash.
+- [x] Classify missing contract/API/tests as `design_drift`, `source_drift`,
+  and `test_gap`; keep the Set `spec_gap` nonblocking only for SDC and blocking
+  for `z`/`q` closure/capture.
+- [x] Freeze exact lower dependency, public ABI/error/debug, `3/2/0`
+  BindingEnv and lookup matrix, Typed/Resolved ownership, seven primary files
+  plus one cfg-test ownership-support file/eight tests, reciprocal ten-owner
+  exclusion, baselines, semantic deferrals, and exit criteria.
+- [ ] Repeat specification and bilingual reviews to **NO FINDINGS**, pass all
+  nine docs gates uncapped at `>=90/100`, stage exactly 42 Markdown files, and
+  create the documentation prerequisite commit.
+- [ ] Fresh-preflight SDP/parser/resolver/count/hash, then implement SDC only.
+- [ ] Complete separate test, implementation, source/docs, and final-quality
+  reviews, full verification, exact implementation commit, and fresh
+  successor selection.

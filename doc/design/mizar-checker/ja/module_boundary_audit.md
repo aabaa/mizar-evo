@@ -1862,5 +1862,18 @@ fixture/sidecar/expectation/metadata/5 CLI bytes/diagnostic/dispatch/active
 resultは不変。SDPのchecker、`BindingEnv`、type、term/reference、capture/
 closure、fact、proof、obligation、coverage creditは0。次は別taskの
 Given-plus-descendant context/binding consumerで、occurrenceはさらに後、
-`z`/`q` captureはCh.4/15 `set` `spec_gap`でblocked。implementation
-self-hashはtask-only commitまでpending。
+`z`/`q` captureはCh.4/15 `set` `spec_gap`でblocked。Task-269SDP
+implementation commit `2ba1ee910aea4939abc26b64a96a113e80c01306`は完了。
+
+## Task 269SDC frozen module boundary
+
+exact implementationはchecker `source_proof_local_declaration.rs`/
+`typed_ast.rs`/`resolved_typed_ast.rs`、runner
+`type_elaboration/source_proof_local_declaration.rs`/`type_elaboration.rs`/
+`runner.rs`/existing proof-local test leafの7 primary files。checkerはsyntax-free
+producer/env replay/Typed-final install、runnerはlower/reserve composeと
+private testsだけをown。checker `source_term.rs`はexisting GCU reciprocal
+owner sentinel拡張の`cfg(test)`だけ変更可能で、production API/behaviorは
+不変。parser/resolver/`binding_env.rs`/SDP
+`source_statement.rs`/production source type-term/Cargo/fixture/expectation/trace/
+metadata/active/downstream cratesはexclude。

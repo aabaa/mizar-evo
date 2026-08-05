@@ -1952,5 +1952,20 @@ dispatch, and active results remain unchanged. SDP publishes zero checker,
 `BindingEnv`, type, term/reference, capture/closure, fact, proof, obligation,
 or coverage credit. The next task is the separate Given-plus-descendant
 context/binding consumer; occurrence remains later, and `z`/`q` capture stays
-blocked by the Chapter-4/15 `set` `spec_gap`. The implementation self-hash is
-pending its task-only commit.
+blocked by the Chapter-4/15 `set` `spec_gap`. Task-269SDP implementation commit
+`2ba1ee910aea4939abc26b64a96a113e80c01306` is complete.
+
+## Task 269SDC Frozen Module Boundary
+
+The exact implementation writes checker
+`source_proof_local_declaration.rs`, `typed_ast.rs`, and
+`resolved_typed_ast.rs`, plus runner
+`type_elaboration/source_proof_local_declaration.rs`, `type_elaboration.rs`,
+`runner.rs`, and its existing proof-local test leaf. Checker owns the
+syntax-free producer/environment replay and Typed/final installation; runner
+owns only lower/reserve composition and private tests. Checker `source_term.rs`
+may change only under `cfg(test)` to extend the existing GCU reciprocal-owner
+sentinel; its production API/behavior is unchanged. Parser, resolver,
+`binding_env.rs`, SDP `source_statement.rs`, production source type/term modules, Cargo,
+fixtures, expectations, trace, metadata, active dispatch, and downstream
+crates are excluded.

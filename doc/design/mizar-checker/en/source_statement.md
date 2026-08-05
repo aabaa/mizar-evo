@@ -4324,5 +4324,17 @@ dispatch, and active results remain unchanged. SDP publishes zero checker,
 `BindingEnv`, type, term/reference, capture/closure, fact, proof, obligation,
 or coverage credit. The next task is the separate Given-plus-descendant
 context/binding consumer; occurrence remains later, and `z`/`q` capture stays
-blocked by the Chapter-4/15 `set` `spec_gap`. The implementation self-hash is
-pending its task-only commit.
+blocked by the Chapter-4/15 `set` `spec_gap`. Task-269SDP implementation commit
+`2ba1ee910aea4939abc26b64a96a113e80c01306` is complete.
+
+## Task 269SDC Frozen Source-statement Consumer Boundary
+
+SDC consumes the existing Task-269SDP lower output without changing
+`source_statement.rs`. Only lower source/module identity, theorem provenance,
+theorem/proof/Given/segment/name/descendant ranges, Given name spelling and
+source ordinal, and the complete lower debug fingerprint cross into the
+syntax-free binding producer. Given type getters, the two Set rows/RHS
+spellings, and conclusion getters remain
+authenticated lower evidence but are not read as statement semantics. No
+`y@118..119` occurrence, `z`/`q` declaration, formula, conclusion, fact,
+block-result, or proof payload is published.

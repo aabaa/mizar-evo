@@ -1913,5 +1913,14 @@ dispatch, and active results remain unchanged. SDP publishes zero checker,
 `BindingEnv`, type, term/reference, capture/closure, fact, proof, obligation,
 or coverage credit. The next task is the separate Given-plus-descendant
 context/binding consumer; occurrence remains later, and `z`/`q` capture stays
-blocked by the Chapter-4/15 `set` `spec_gap`. The implementation self-hash is
-pending its task-only commit.
+blocked by the Chapter-4/15 `set` `spec_gap`. Task-269SDP implementation commit
+`2ba1ee910aea4939abc26b64a96a113e80c01306` is complete.
+
+## Task 269SDC Frozen Bilingual Synchronization
+
+EN/JA agree on the exact SDP dependency, SDC classifications, `3/2/0`
+binding/context profile, lookup-only inheritance, boxed Typed/final owner,
+seven primary implementation files plus one cfg-test ownership-support file,
+four checker/four runner tests, unchanged corpus/
+trace/CLI surface, occurrence/type/Set/capture deferrals, and exit gates.
+English exact API, mutation, error/debug, and test identifiers are canonical.

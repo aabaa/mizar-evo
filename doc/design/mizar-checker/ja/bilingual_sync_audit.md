@@ -1925,5 +1925,14 @@ fixture/sidecar/expectation/metadata/5 CLI bytes/diagnostic/dispatch/active
 resultは不変。SDPのchecker、`BindingEnv`、type、term/reference、capture/
 closure、fact、proof、obligation、coverage creditは0。次は別taskの
 Given-plus-descendant context/binding consumerで、occurrenceはさらに後、
-`z`/`q` captureはCh.4/15 `set` `spec_gap`でblocked。implementation
-self-hashはtask-only commitまでpending。
+`z`/`q` captureはCh.4/15 `set` `spec_gap`でblocked。Task-269SDP
+implementation commit `2ba1ee910aea4939abc26b64a96a113e80c01306`は完了。
+
+## Task 269SDC frozen bilingual synchronization
+
+canonical ENとJA companionはTask ID `269SDC`、authority/classification、
+SDP dependency/ranges、public ABI/debug、`1/1/0 -> 3/2/0`、context/
+binding/lookup、boxed Typed/Resolved ownership、7 primary Rust files + 1
+cfg-test-only ownership-support file、8 tests、
+zero-credit exclusions、Set blocker、baseline、exit gatesで同期する。exact
+identifier/signature/Display/debug/test namesはEnglishをcanonicalとする。
