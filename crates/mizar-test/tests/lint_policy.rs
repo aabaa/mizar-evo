@@ -2395,7 +2395,7 @@ fn assert_legacy_manifest_mutation_vectors(workspace: &Path, manifest: &str) {
         ),
         (
             mutate_first_manifest_field(manifest, "redirect", 6, |_| {
-                "### Wrong legacy level".to_owned()
+                "# Wrong legacy level".to_owned()
             }),
             "invalid level/heading",
         ),
