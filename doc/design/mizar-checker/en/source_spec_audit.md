@@ -5296,19 +5296,7 @@ and private telemetry `2/2/[2,2,4,4,4,4]`. There is no blocking
 Specification review, verification, quality, and documentation commit
 remain pending.
 
-## Task 258B4C Documentation Review Result
-
-Repeated specification, test-boundary, bilingual, and corrected
-source/documentation reviews report **NO FINDINGS**. The sole interim Medium
-`boundary_violation` was derived ownership text, not an authority conflict,
-and is closed by assigning raw authentication to the runner selector and
-`SourceStatementProducer`. Focused and full verification, frozen
-counts/hashes, exact docs-only scope, authority/corpus/trace/production
-no-ops, and stash invariance PASS. There is still no blocking `spec_gap`,
-`source_undocumented_behavior`, or authority-less lower repair. Independent
-final quality reports **NO FINDINGS**, all nine hard gates PASS, no cap, and
-valid `100/100` (`20/20/15/15/10/10/5/5`). Only staging, the dedicated
-documentation commit, and post-commit inventory remain.
+Completion evidence: [central Task-258B4C historical contract](../../task_contracts/en/258B4C.md#completion-evidence).
 
 ## Task 258B4C Implementation Authority Result
 

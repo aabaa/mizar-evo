@@ -5076,19 +5076,7 @@ B3/B4C pairing、upper `1/1/1/0/1`、input facts 0、private telemetry
 specification review、verification、quality、documentation commitは
 pendingである。
 
-## Task 258B4C documentation review result
-
-repeated specification、test-boundary、bilingual、corrected
-source/documentation reviewsは**NO FINDINGS**。途中のMedium
-`boundary_violation` 1件はauthority conflictではなくderived ownership
-textであり、raw authenticationをrunner selectorと
-`SourceStatementProducer`へ帰属してcloseした。focused/full
-verification、frozen counts/hashes、exact docs-only scope、
-authority/corpus/trace/production no-op、stash invarianceはPASS。blocking
-`spec_gap`、`source_undocumented_behavior`、authority-less lower repairは
-依然ない。independent final qualityは**NO FINDINGS**、全9 hard gates
-PASS、capなし、valid `100/100`（`20/20/15/15/10/10/5/5`）。pendingは
-staging、dedicated documentation commit、post-commit inventoryだけ。
+Completion evidence: [central Task-258B4C historical contract](../../task_contracts/ja/258B4C.md#completion-evidence)。
 
 ## Task 258B4C Implementation Authority Result
 

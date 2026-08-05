@@ -12,11 +12,12 @@ traceability, or coverage.
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-258B4C-DOC-REVIEW-COMPACT` |
-| Status | Documentation prerequisite independently reviewed, fully verified, and final-quality approved. Exact staging and commit remain. No selected section has migrated. |
+| Status | Documentation prerequisite committed; exact migration, independent migration reviews, full verification, and final quality complete. Exact staging and commit remain. |
 | Purpose | Centralize repeated Task-258B4C documentation-prerequisite review evidence while retaining every durable and runner owner. |
 | Owners | Migration policy, historical [258B4C](./258B4C.md#completion-evidence), [checker plan](../../mizar-checker/en/00.crate_plan.md#task-index), and [runner plan](../../mizar-test/en/00.crate_plan.md#task-index) |
 | Consumers | Eight checker source paths, four Task Indexes, and the post-migration schema-v1 ledger/lint |
 | Sequence | `752c17ae` -> `3c723316` -> `42356f38` -> `50ab1ebc` -> `59021f76` |
+| Documentation prerequisite | `957ada5b0e14651a5148b3ff118b60555e010c9f` |
 | Readiness | Clean selection HEAD `9b356722d29c26ffc1ba5e927112555ead51babb`, `origin/main...HEAD=0/12`, protected `stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4`; dependency-ready. |
 
 ## Authority And Classification
@@ -127,8 +128,49 @@ stdout hash frozen above. Specification, `.miz`, expectation, checker/runner
 production, Cargo, trace, coverage-audit, and 642-line ledger surfaces remain
 unchanged. Final read-only quality review ended **NO FINDINGS**; all nine hard
 gates PASS, no score cap applies, and the valid score is `100/100`
-(`20/20/15/15/10/10/5/5`). Exact staging and the prerequisite commit remain;
-no selected section may migrate first.
+(`20/20/15/15/10/10/5/5`). At that prerequisite checkpoint, exact staging and
+the dedicated commit remained; both closed in `957ada5b`.
+
+## Migration Evidence
+
+The prerequisite committed as `957ada5b0e14651a5148b3ff118b60555e010c9f`.
+Fresh post-commit inventory was clean at `origin/main...HEAD=0/13`; protected
+`stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4` was unchanged, and all eight
+frozen preimages replayed at 132 lines before editing.
+
+The mechanical migration changes exactly eight declared checker sources,
+this EN/JA pair, and `legacy_compactions.tsv`: eleven paths. It replaces only
+the eight complete review sections with language-local redirects. Their 132
+physical lines become 16 redirect-plus-separator lines, a reduction of 116.
+Every TODO, runner, frozen, implementation, final-quality, post-commit, and
+unlisted owner remains.
+
+The ledger now has 660 physical lines. The batch adds exactly one task, eight
+redirects over eight distinct source paths, and eight index records. Its
+expanded inventory SHA-256 is
+`94dff8e850fb803a1b11aebbc42dcc5f66557bcfb242ba17e822e83f8e2ca551`;
+its complete physical SHA-256 is
+`f3fdbf5111f4c17cf19088f97844dfa4eeb8ac5b2051866e1c86f99b44efc301`.
+The immutable source TSV remains
+`d580bea1c8da57390a2fb6b96111771bca416028677b99db62ceabf736fcc1d2`.
+Focused generic-ledger/link/fragment lint and `git diff --check` pass.
+
+Independent equivalence/boundary, test-sufficiency/schema, and
+source-documentation/EN-JA reviews ended **NO FINDINGS**. They replayed all
+preimages, postimages, anchors, redirects, chronology, preserved evidence and
+owners, ledger ordering/counts/hashes, protected scope, and audit no-impact.
+Existing generic schema-v1 lint is sufficient; no Rust, schema, fixture,
+expectation, test, trace, or coverage change is warranted.
+
+Checker and runner lint passed `15/15` each; checker/runner libraries passed
+`530/530` and `600/600`; runner metadata passed `137/137`. Formatting, offline
+Cargo metadata, warnings-denied all-target/all-feature Clippy, the full offline
+workspace suite, and `git diff --check` passed. Five CLIs exited zero with 23
+stderr lines each and exactly reproduced the frozen stdout hashes. Every
+protected count/hash, trace, coverage audit, and immutable source TSV remains
+unchanged. Final read-only quality review ended **NO FINDINGS**; all nine hard
+gates PASS, no score cap applies, and the valid score is `100/100`
+(`20/20/15/15/10/10/5/5`). Only exact staging and the task-only commit remain.
 
 ## Handoff
 

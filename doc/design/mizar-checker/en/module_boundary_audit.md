@@ -1002,17 +1002,7 @@ all semantic/proof/IR boundaries. Parser, resolver, corpus, sidecars,
 expectations, specification, B5, and unrelated owners are forbidden.
 Documentation-only review and verification remain pending.
 
-## Task 258B4C Documentation Boundary Review Status
-
-After correcting one Medium `boundary_violation` in typed/final ownership
-wording, repeated boundary and source/documentation review reports **NO
-FINDINGS**. Raw authentication belongs to the runner selector and statement
-producer; checker installers retain only handoff/fingerprint/arena
-validation. The exact 32-document scope, both future write boundaries, all
-forbidden no-ops, counts/hashes, offline tests, formatting, Clippy, and stash
-gates PASS. Independent final quality reports **NO FINDINGS**, all nine hard
-gates PASS, no cap, and valid `100/100`; only staging, commit, and
-post-commit gates remain.
+Completion evidence: [central Task-258B4C historical contract](../../task_contracts/en/258B4C.md#completion-evidence).
 
 ## Task 258B4C Implemented Boundary Inventory
 

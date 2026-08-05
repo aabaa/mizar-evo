@@ -987,16 +987,7 @@ boundariesをpreserveする。parser、resolver、corpus、sidecars、
 expectations、specification、B5、unrelated ownersは禁止である。
 documentation-only review/verificationはpendingである。
 
-## Task 258B4C documentation boundary review status
-
-typed/final ownership wordingのMedium `boundary_violation` 1件を修正後、
-repeated boundary/source-documentation reviewは**NO FINDINGS**。raw
-authenticationはrunner selector/statement producerが所有し、checker
-installersはhandoff/fingerprint/arena validationだけをretainする。exact
-32-document scope、future write boundaries 2件、全forbidden no-op、
-counts/hashes、offline tests、formatting、Clippy、stash gatesはPASS。
-independent final qualityは**NO FINDINGS**、全9 hard gates PASS、capなし、
-valid `100/100`。pendingはstaging/commit/post-commit gatesである。
+Completion evidence: [central Task-258B4C historical contract](../../task_contracts/ja/258B4C.md#completion-evidence)。
 
 ## Task 258B4C 実装済み Boundary Inventory
 

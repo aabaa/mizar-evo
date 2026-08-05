@@ -1195,19 +1195,7 @@ active-route intentはunchangedである。documentation review、
 verification、quality、staging、commit、post-commit synchronizationは
 pendingである。
 
-## Task 258B4C documentation review synchronization
-
-Medium `boundary_violation` 1件の同期修正後、repeated specification、
-test-boundary、bilingual、source/documentation reviewsは**NO FINDINGS**。
-両言語はraw source/Surface/resolver authenticationをrunner selectorと
-`SourceStatementProducer`へ帰属し、typed/final validationを同じ
-authenticated handoff rows/identity、lower fingerprints、retained arenaに
-限定する。focused/full offline verification、全frozen count/hash、exact
-32-document/no-op scope、stash invarianceは両recordでPASS。external origin
-movementによる0/0はreport-only `repo_metadata_conflict`として同期した。
-independent final qualityは**NO FINDINGS**、全9 hard gates PASS、capなし、
-valid `100/100`（`20/20/15/15/10/10/5/5`）として同期した。pendingは
-staging、commit、post-commit synchronizationだけ。
+Completion evidence: [central Task-258B4C historical contract](../../task_contracts/ja/258B4C.md#completion-evidence)。
 
 ## Task 258B4C Implementation Synchronization
 

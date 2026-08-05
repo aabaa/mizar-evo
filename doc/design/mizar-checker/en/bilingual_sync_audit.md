@@ -1234,21 +1234,7 @@ IR, B5, and active-route intent stay unchanged. Documentation review,
 verification, quality, staging, commit, and post-commit synchronization
 remain pending.
 
-## Task 258B4C Documentation Review Synchronization
-
-Repeated specification, test-boundary, bilingual, and source/documentation
-reviews report **NO FINDINGS** after one synchronized Medium
-`boundary_violation` correction. Both languages assign raw
-source/Surface/resolver authentication to the runner selector and
-`SourceStatementProducer`; typed/final validation is limited identically to
-authenticated handoff rows/identity, lower fingerprints, and retained arena.
-Focused and full offline verification, every frozen count/hash, exact
-32-document/no-op scope, and stash invariance PASS in both records. External
-origin movement to 0/0 is synchronized as report-only
-`repo_metadata_conflict`. Independent final quality is synchronized as
-**NO FINDINGS**, all nine hard gates PASS, no cap, and valid `100/100`
-(`20/20/15/15/10/10/5/5`). Only staging, commit, and post-commit
-synchronization remain.
+Completion evidence: [central Task-258B4C historical contract](../../task_contracts/en/258B4C.md#completion-evidence).
 
 ## Task 258B4C Implementation Synchronization
 

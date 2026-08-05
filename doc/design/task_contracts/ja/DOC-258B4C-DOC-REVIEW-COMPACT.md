@@ -12,11 +12,12 @@ language behavior、test intent、API、diagnostics、traceability、coverageを
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-258B4C-DOC-REVIEW-COMPACT` |
-| Status | documentation prerequisiteはindependent review、full verification、final-quality approval済み。exact staging/commitは未完。selected sectionは未移行。 |
+| Status | documentation prerequisiteはcommit済み。exact migration、independent migration reviews、full verification、final qualityは完了。exact staging/commitは未完。 |
 | Purpose | durable/runner ownerをすべて保持し、反復するTask-258B4C documentation-prerequisite review evidenceを集約する。 |
 | Owners | migration policy、historical [258B4C](./258B4C.md#completion-evidence)、[checker plan](../../mizar-checker/ja/00.crate_plan.md#task-index)、[runner plan](../../mizar-test/ja/00.crate_plan.md#task-index) |
 | Consumers | checker source 8 paths、4 Task Indexes、migration後のschema-v1 ledger/lint |
 | Sequence | `752c17ae` -> `3c723316` -> `42356f38` -> `50ab1ebc` -> `59021f76` |
+| Documentation prerequisite | `957ada5b0e14651a5148b3ff118b60555e010c9f` |
 | Readiness | clean selection HEAD `9b356722d29c26ffc1ba5e927112555ead51babb`、`origin/main...HEAD=0/12`、protected `stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4`。dependency-ready。 |
 
 ## Authority And Classification
@@ -123,8 +124,46 @@ zero・stderr 23行で、上記full stdout hashesをすべて再現した。
 specification、`.miz`、expectation、checker/runner production、Cargo、trace、
 coverage audit、642-line ledgerは不変。final read-only quality reviewは
 **NO FINDINGS**、9 hard gatesはすべてPASS、score capなし、valid scoreは
-`100/100` (`20/20/15/15/10/10/5/5`)。exact staging/prerequisite commitは
-未完で、selected sectionを先に移行してはならない。
+`100/100` (`20/20/15/15/10/10/5/5`)。そのprerequisite checkpointで残った
+exact staging/dedicated commitは`957ada5b`でcloseした。
+
+## Migration Evidence
+
+prerequisiteは`957ada5b0e14651a5148b3ff118b60555e010c9f`としてcommitされた。
+fresh post-commit inventoryは`origin/main...HEAD=0/13`でclean、protected
+`stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4`は不変で、edit前にfrozen
+preimages 8件/132行をすべてreplayした。
+
+mechanical migrationはdeclared checker sources 8件、本EN/JA pair、
+`legacy_compactions.tsv`のexact 11 pathsを変更する。complete review sections
+8件だけをlanguage-local redirectへ置換し、physical 132行は
+redirect+separator 16行、116行削減となる。全TODO、runner、frozen、
+implementation、final-quality、post-commit、未列挙ownerを保持する。
+
+ledgerは現在660 physical lines。batchはtask 1、distinct 8 source paths上の
+redirect 8、index records 8を追加した。expanded inventory SHA-256は
+`94dff8e850fb803a1b11aebbc42dcc5f66557bcfb242ba17e822e83f8e2ca551`、
+complete physical SHA-256は
+`f3fdbf5111f4c17cf19088f97844dfa4eeb8ac5b2051866e1c86f99b44efc301`。
+immutable source TSVは
+`d580bea1c8da57390a2fb6b96111771bca416028677b99db62ceabf736fcc1d2`
+のまま。focused generic-ledger/link/fragment lintと`git diff --check`はPASS。
+
+independent equivalence/boundary、test-sufficiency/schema、
+source-documentation/EN-JA reviewsは **NO FINDINGS** で終了した。全preimage、
+postimage、anchors、redirects、chronology、preserved evidence/owners、ledger
+ordering/counts/hashes、protected scope、audit no-impactをreplayした。existing
+generic schema-v1 lintは十分で、Rust、schema、fixture、expectation、test、
+trace、coverage変更は不要である。
+
+checker/runner lintは各`15/15`、checker/runner librariesは`530/530`と
+`600/600`、runner metadataは`137/137`を通過した。formatting、offline Cargo
+metadata、warnings-denied all-target/all-feature Clippy、full offline workspace
+suite、`git diff --check`はPASS。five CLIsは各exit zero・stderr 23行で、frozen
+stdout hashesをexactly再現した。全protected count/hash、trace、coverage audit、
+immutable source TSVは不変。final read-only quality reviewは **NO FINDINGS**、
+9 hard gatesはすべてPASS、score capなし、valid scoreは`100/100`
+(`20/20/15/15/10/10/5/5`)。exact staging/task-only commitだけが残る。
 
 ## Handoff
 
