@@ -2762,12 +2762,7 @@ broad fmt/Clippy/crate/workspace gates、focused `4/4`/`5/5`、sibling
 transport contractの変更やsemantic credit追加は不要。independent final
 source/docs/quality reviews、commit、post-commit inventoryはpending。
 
-## Task 258B3M2B2B2C final statement review status
-
-independent final source/docs consistency/final qualityは**NO FINDINGS**。
-全9 hard gates PASS、valid `98/100`。exact statement/witness evidenceと
-semantic deferralsはunchanged。pendingはcached-diff/staging audit、
-implementation commit、post-commit inventory/fresh-next-task gatesだけ。
+Completion evidence: [central Task-258B3M2B2B2C historical contract](../../task_contracts/ja/258B3M2B2B2C.md#completion-evidence)。
 
 ## Task 258B3M2B2B3P statement-owner deferral
 

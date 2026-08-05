@@ -815,13 +815,7 @@ plans. Canonical and trace artifacts remain unchanged. The independent final
 source/documentation re-review, final quality, commit, and post-commit
 inventory remain pending in both languages.
 
-## Task 258B3M2B2B2C Final-Review Synchronization
-
-Both companions now record independent final source/documentation consistency
-as **NO FINDINGS** and independent final quality as **NO FINDINGS**, with all
-nine hard gates PASS and a valid `98/100`. Evidence and metrics remain
-unchanged. Only cached-diff/staging audit, implementation commit, and
-post-commit inventory/fresh-next-task gates remain pending in both languages.
+Completion evidence: [central Task-258B3M2B2B2C historical contract](../../task_contracts/en/258B3M2B2B2C.md#completion-evidence).
 
 ## Task 258B3M2B2B2C Closure and Task 258B3M2B2B3P Synchronization
 

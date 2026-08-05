@@ -1180,12 +1180,7 @@ rollbackはimplemented private siblingに限定され、public/semantic expansio
 なし。independent final source/docs/quality reviews、commit、post-commit
 inventoryはpending。
 
-## Task 258B3M2B2B2C final atomic-install review status
-
-independent final source/docs consistency/final qualityは**NO FINDINGS**。
-全9 hard gates PASS、valid `98/100`。atomicity evidence/counts/hashes/
-public/semantic boundariesはunchanged。pendingはcached-diff/staging audit、
-implementation commit、post-commit inventory/fresh-next-task gatesだけ。
+Completion evidence: [central Task-258B3M2B2B2C historical contract](../../task_contracts/ja/258B3M2B2B2C.md#completion-evidence)。
 
 ## Task 258B3M2B2B3A frozen Typed-AST installer
 

@@ -3310,13 +3310,7 @@ contract change and gains no semantic credit. Independent final source/
 documentation and quality reviews, commit, and post-commit inventory remain
 pending.
 
-## Task 258B3M2B2B2C Final Statement Review Status
-
-Independent final source/documentation consistency and final quality report
-**NO FINDINGS**; all nine hard gates PASS with a valid `98/100`. The exact
-statement/witness evidence and semantic deferrals remain unchanged. Only
-cached-diff/staging audit, implementation commit, and post-commit inventory/
-fresh-next-task gates remain pending.
+Completion evidence: [central Task-258B3M2B2B2C historical contract](../../task_contracts/en/258B3M2B2B2C.md#completion-evidence).
 
 ## Task 258B3M2B2B3P Statement-Owner Deferral
 

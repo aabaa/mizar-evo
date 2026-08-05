@@ -4913,13 +4913,7 @@ public/active surfaces, and semantics remain unchanged. Independent final
 source/documentation and quality reviews, commit, and post-commit inventory
 remain pending.
 
-## Task 258B3M2B2B2C Final Source/Specification Review Status
-
-The independent final source/documentation consistency re-review and final
-quality review both report **NO FINDINGS**. All nine hard gates PASS and the
-valid score is `98/100`. Evidence, metrics, classifications, and the deliberate
-trace no-op remain unchanged. Only cached-diff/staging audit, implementation
-commit, and post-commit inventory/fresh-next-task gates remain pending.
+Completion evidence: [central Task-258B3M2B2B2C historical contract](../../task_contracts/en/258B3M2B2B2C.md#completion-evidence).
 
 ## Task 258B3M2B2B2C Post-Commit and Task 258B3M2B2B3P Specification Audit
 

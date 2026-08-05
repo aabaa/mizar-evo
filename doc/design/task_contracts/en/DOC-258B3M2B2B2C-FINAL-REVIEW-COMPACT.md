@@ -12,12 +12,12 @@ behavior, test intent, API, diagnostics, traceability, or coverage.
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-258B3M2B2B2C-FINAL-REVIEW-COMPACT` |
-| Status | Documentation prerequisite independently reviewed, fully verified, and final-quality approved. Exact staging and commit remain. No selected section has been migrated. |
+| Status | Documentation prerequisite committed; exact migration, independent migration reviews, full verification, and final quality complete. Exact staging and commit remain. |
 | Purpose | Centralize repeated Task-258B3M2B2B2C final-review evidence while retaining every broad-verification, frozen, implementation, post-commit, runner, todo, and audit owner. |
 | Owners | Migration policy, historical [258B3M2B2B2C](./258B3M2B2B2C.md#completion-evidence), [checker plan](../../mizar-checker/en/00.crate_plan.md#task-index), and [runner plan](../../mizar-test/en/00.crate_plan.md#task-index) |
 | Consumers | Eighteen checker source paths (nine EN/JA pairs), four Task Indexes, and the post-migration generic schema-v1 ledger/lint |
 | Historical sequence | B2CP implementation `b146f0f7` -> B2C prerequisite `d6076cc7` -> B2C implementation `e8373c68` -> B3P prerequisite `285a1f11` |
-| Documentation prerequisite | Pending this dedicated commit. |
+| Documentation prerequisite | `e2ee5ffc3c73d1642c68f03bb43372b60a0fc292` |
 | Readiness | Clean selection HEAD `787c16fb682db58f2a9fddc0d3f9aee1f9fd22bf`, `origin/main...HEAD=0/10`, protected `stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4`; exact selection is dependency-ready. |
 
 ## Authority And Classification
@@ -100,7 +100,8 @@ After a separate prerequisite commit and fresh replay, migration may replace
 only the 18 declared sections with language-local redirects to
 `258B3M2B2B2C.md#completion-evidence`. It changes exactly the 18 sources, this
 EN/JA pair, and `legacy_compactions.tsv`: 21 paths. The 137 physical lines
-become 36 redirect-plus-separator lines, a reduction of 101. Ledger impact is
+become 34 redirect-plus-separator lines, a reduction of 103; the two EOF
+redirects need no following separator line. Ledger impact is
 one batch, one task, 18 redirects over 18 distinct paths, eight index records,
 and one expanded-inventory hash. Source TSV, historical contracts, and indexes
 become immutable.
@@ -155,12 +156,53 @@ and proof-verification
 
 Final read-only quality review ended **NO FINDINGS**. All nine hard gates PASS,
 no score cap applies, and the valid score is `100/100`
-(`20/20/15/15/10/10/5/5`). Only exact staging and the dedicated prerequisite
-commit remain.
+(`20/20/15/15/10/10/5/5`). At that prerequisite checkpoint, only exact staging
+and the dedicated commit remained; both closed in `e2ee5ffc`.
 
 ## Migration Evidence
 
-Pending the dedicated documentation-prerequisite commit and fresh inventory.
+The prerequisite committed as `e2ee5ffc3c73d1642c68f03bb43372b60a0fc292`.
+Fresh post-commit inventory was clean at `origin/main...HEAD=0/11`; protected
+`stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4` was unchanged, and all
+18 frozen preimages replayed at 137 lines before editing.
+
+The mechanical migration changes exactly the 18 declared checker sources,
+this EN/JA pair, and `legacy_compactions.tsv`: 21 paths. It replaces only the
+18 complete final-review sections with language-local redirects. The 137
+physical lines become 34 redirect-plus-separator lines, a reduction of 103;
+the two EOF redirects do not need a following separator line.
+Every broad-verification, frozen, implementation, post-commit, runner, and
+unlisted owner remains.
+
+The ledger now has 642 physical lines. The batch adds exactly one task, 18
+redirects over 18 distinct source paths, and eight index records. Its expanded
+inventory SHA-256 is
+`a8b45aaac013212a4fcc90f28f7204f54ee1353dca25c57a09d799a10df4bc7d`;
+its complete physical SHA-256 is
+`eb3d7692ac7050e33ceda0708ce137b8af3646a1bc040abacb4c4479377106c3`.
+The immutable source TSV remains
+`7f5f682e796af301a698e17dc5948f1b30a18489b8155e8016e630447a4d5059`.
+Focused generic-ledger/link/fragment lint and `git diff --check` pass.
+
+Independent equivalence/boundary and source-documentation/EN-JA reviews ended
+**NO FINDINGS**. The first test-sufficiency/schema review found that the two
+EOF redirects need no separator and therefore corrected the predicted and
+measured postimage from 36 to 34 lines, and the reduction from 101 to 103;
+finding-specific re-review ended **NO FINDINGS**. No semantic, test-intent,
+ownership, trace, coverage, or protected-source change was required.
+
+Full checker and runner lint passed `15/15` each; checker and runner libraries
+passed `530/530` and `600/600`; runner metadata passed `137/137`.
+`cargo fmt --all --check`, offline Cargo metadata, warnings-denied
+all-target/all-feature Clippy, the full offline workspace test suite, and
+`git diff --check` passed. The five CLIs exited zero with 23 stderr lines each
+and reproduced the prerequisite stdout hashes recorded above. Every protected
+count and hash in the frozen baseline, including trace and coverage audit,
+remains unchanged.
+
+Final read-only quality review ended **NO FINDINGS**. All nine hard gates PASS,
+no score cap applies, and the valid score is `100/100`
+(`20/20/15/15/10/10/5/5`). Only exact staging and the task-only commit remain.
 
 ## Handoff
 

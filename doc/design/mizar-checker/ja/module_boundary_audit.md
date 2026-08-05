@@ -686,12 +686,7 @@ sizes/manifests/hashesはimplemented boundaryと一致し、module/path/
 dependency/public/active-route/semantic boundary変更は不要。independent
 final consistency/quality、commit/post-commit gatesはpending。
 
-## Task 258B3M2B2B2C final boundary review status
-
-independent final source/docs consistencyとfinal qualityはどちらも
-**NO FINDINGS**。全9 hard gates PASS、valid score `98/100`で、exact
-boundary evidenceはunchanged。pendingはcached-diff/staging audit、
-implementation commit、post-commit inventory/fresh-next-task gatesだけ。
+Completion evidence: [central Task-258B3M2B2B2C historical contract](../../task_contracts/ja/258B3M2B2B2C.md#completion-evidence)。
 
 ## Task 258B3M2B2B3A frozen module boundary
 

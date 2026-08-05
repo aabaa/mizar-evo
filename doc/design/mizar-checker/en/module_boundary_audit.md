@@ -716,13 +716,7 @@ no module, path, dependency, public, active-route, or semantic boundary
 changes are required. Independent final consistency/quality review and the
 commit/post-commit gates remain pending.
 
-## Task 258B3M2B2B2C Final Boundary Review Status
-
-Independent final source/documentation consistency and final quality both
-report **NO FINDINGS**. All nine hard gates PASS and the valid score is
-`98/100`; the exact boundary evidence remains unchanged. Only cached-diff/
-staging audit, implementation commit, and post-commit inventory/fresh-next-
-task gates remain pending.
+Completion evidence: [central Task-258B3M2B2B2C historical contract](../../task_contracts/en/258B3M2B2B2C.md#completion-evidence).
 
 ## Task 258B3M2B2B3A Frozen Module Boundary
 

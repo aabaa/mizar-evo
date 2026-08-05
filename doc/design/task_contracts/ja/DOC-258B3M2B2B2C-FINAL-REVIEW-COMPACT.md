@@ -12,12 +12,12 @@ API、diagnostic、traceability、coverage を変更できない。
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-258B3M2B2B2C-FINAL-REVIEW-COMPACT` |
-| Status | documentation prerequisite は independent review、full verification、final-quality approval を完了。exact staging と commit は未完。選定 section は未移行。 |
+| Status | documentation prerequisite は commit 済み。exact migration、independent migration reviews、full verification、final quality は完了。exact staging と commit は未完。 |
 | Purpose | broad-verification、frozen、implementation、post-commit、runner、todo、audit owner をすべて保持し、反復する Task-258B3M2B2B2C final-review evidence を集約する。 |
 | Owners | migration policy、historical [258B3M2B2B2C](./258B3M2B2B2C.md#completion-evidence)、[checker plan](../../mizar-checker/ja/00.crate_plan.md#task-index)、[runner plan](../../mizar-test/ja/00.crate_plan.md#task-index) |
 | Consumers | checker source 18 paths（EN/JA 9 pairs）、4 Task Indexes、migration 後の generic schema-v1 ledger/lint |
 | Historical sequence | B2CP implementation `b146f0f7` -> B2C prerequisite `d6076cc7` -> B2C implementation `e8373c68` -> B3P prerequisite `285a1f11` |
-| Documentation prerequisite | 本 dedicated commit を待つ。 |
+| Documentation prerequisite | `e2ee5ffc3c73d1642c68f03bb43372b60a0fc292` |
 | Readiness | clean selection HEAD `787c16fb682db58f2a9fddc0d3f9aee1f9fd22bf`、`origin/main...HEAD=0/10`、protected `stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4`。exact selection は dependency-ready。 |
 
 ## Authority And Classification
@@ -98,7 +98,8 @@ behavior は変更しない。
 別 prerequisite commit と fresh replay 後、migration はdeclared 18 sections
 だけを language-local `258B3M2B2B2C.md#completion-evidence` redirect に置換できる。
 exact 18 sources、本 EN/JA pair、`legacy_compactions.tsv` の21 pathsを変更する。
-physical 137行はredirect+separator 36行となり、101行削減する。ledger impact
+physical 137行はredirect+separator 34行となり、103行削減する。EOF redirect
+2件には後続separator行が不要である。ledger impact
 はbatch 1、task 1、distinct 18 paths上のredirect 18、index 8、expanded-inventory
 hash 1件。source TSV、historical contracts、indexes はimmutableとなる。
 
@@ -148,12 +149,50 @@ proof-verification
 
 final read-only quality review は **NO FINDINGS** で終了した。9 hard gates は
 すべて PASS、score cap なし、valid score は `100/100`
-(`20/20/15/15/10/10/5/5`)。残るのは exact staging と dedicated
-prerequisite commit だけである。
+(`20/20/15/15/10/10/5/5`)。その prerequisite checkpoint で残った exact
+staging と dedicated commit は `e2ee5ffc` で完了した。
 
 ## Migration Evidence
 
-dedicated documentation-prerequisite commit と fresh inventory を待つ。
+prerequisite は `e2ee5ffc3c73d1642c68f03bb43372b60a0fc292` として commit
+された。fresh post-commit inventory は `origin/main...HEAD=0/11` で clean、
+protected `stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4` は不変で、
+edit前に frozen preimages 18件/137行をすべて replay した。
+
+mechanical migration はdeclared checker sources 18件、本 EN/JA pair、
+`legacy_compactions.tsv` のexact 21 pathsを変更する。complete final-review
+sections 18件だけをlanguage-local redirectへ置換し、physical 137行は
+redirect+separator 34行、103行削減となる。EOF redirect 2件には後続separator
+行が不要である。broad-verification、frozen、
+implementation、post-commit、runner、未列挙 owner はすべて保持する。
+
+ledger は現在642 physical lines。batch はtask 1、distinct source paths 18上の
+redirect 18、index records 8をexactly追加した。expanded inventory SHA-256 は
+`a8b45aaac013212a4fcc90f28f7204f54ee1353dca25c57a09d799a10df4bc7d`、
+complete physical SHA-256 は
+`eb3d7692ac7050e33ceda0708ce137b8af3646a1bc040abacb4c4479377106c3`。
+immutable source TSV は
+`7f5f682e796af301a698e17dc5948f1b30a18489b8155e8016e630447a4d5059`
+のまま。focused generic-ledger/link/fragment lint と `git diff --check` はPASS。
+
+independent equivalence/boundary review と source-documentation/EN-JA review
+は **NO FINDINGS** で終了した。初回test-sufficiency/schema review は、EOF
+redirect 2件にseparatorが不要であるため、予測値と実測値を36行から34行へ、
+削減量を101行から103行へ修正するfindingを検出した。finding-specific
+re-review は **NO FINDINGS** で終了した。semantic、test intent、ownership、
+trace、coverage、protected source の変更は不要だった。
+
+checker/runner lint は各 `15/15`、checker/runner libraries は `530/530` と
+`600/600`、runner metadata は `137/137` を通過した。
+`cargo fmt --all --check`、offline Cargo metadata、warnings-denied
+all-target/all-feature Clippy、full offline workspace test suite、
+`git diff --check` はPASS。five CLIs は各exit zero・stderr 23行で、上記
+prerequisite stdout hashesを再現した。traceとcoverage auditを含むfrozen
+baselineの全protected count/hashは不変。
+
+final read-only quality review は **NO FINDINGS** で終了した。9 hard gates は
+すべてPASS、score capなし、valid scoreは `100/100`
+(`20/20/15/15/10/10/5/5`)。exact staging とtask-only commitだけが残る。
 
 ## Handoff
 

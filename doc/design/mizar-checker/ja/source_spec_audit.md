@@ -4694,13 +4694,7 @@ spec、`.miz`、fixtures、expectations、sidecars、trace、public/active
 surfaces、semanticsはunchanged。independent final source/docs/quality
 reviews、commit、post-commit inventoryはpending。
 
-## Task 258B3M2B2B2C final source/specification review status
-
-independent final source/docs consistency re-review/final quality reviewは
-どちらも**NO FINDINGS**。全9 hard gates PASS、valid score `98/100`。
-evidence/metrics/classificationsとdeliberate trace no-opはunchanged。
-pendingはcached-diff/staging audit、implementation commit、post-commit
-inventory/fresh-next-task gatesだけ。
+Completion evidence: [central Task-258B3M2B2B2C historical contract](../../task_contracts/ja/258B3M2B2B2C.md#completion-evidence)。
 
 ## Task 258B3M2B2B2C post-commitとTask 258B3M2B2B3P specification audit
 

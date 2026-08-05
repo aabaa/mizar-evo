@@ -1184,12 +1184,7 @@ sibling `12/12`/`21/21` suitesはunchanged counts/hashesでPASS。final-AST
 surface/semantic claim追加なし。independent final source/docs/quality
 reviews、implementation commit、post-commit inventoryはpending。
 
-## Task 258B3M2B2B2C final final-AST review status
-
-independent final source/docs consistency/final qualityは**NO FINDINGS**。
-全9 hard gates PASS、valid score `98/100`で、final-AST evidence/boundariesは
-unchanged。pendingはcached-diff/staging audit、implementation commit、
-post-commit inventory/fresh-next-task gatesだけ。
+Completion evidence: [central Task-258B3M2B2B2C historical contract](../../task_contracts/ja/258B3M2B2B2C.md#completion-evidence)。
 
 ## Task 258B3M2B2B3A frozen final-AST contract
 

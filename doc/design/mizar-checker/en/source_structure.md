@@ -412,10 +412,4 @@ gains no structure or semantic ownership. Independent final source/
 documentation and quality reviews, commit, and post-commit inventory remain
 pending.
 
-## Task 258B3M2B2B2C Final Structure Review Status
-
-Independent final source/documentation consistency and final quality report
-**NO FINDINGS**; all nine hard gates PASS with a valid `98/100`. Task-254
-ownership, exact evidence, and semantic deferrals remain unchanged. Only
-cached-diff/staging audit, implementation commit, and post-commit inventory/
-fresh-next-task gates remain pending.
+Completion evidence: [central Task-258B3M2B2B2C historical contract](../../task_contracts/en/258B3M2B2B2C.md#completion-evidence).

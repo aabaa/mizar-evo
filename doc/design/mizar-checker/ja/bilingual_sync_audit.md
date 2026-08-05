@@ -773,13 +773,7 @@ counts/hashesもunchangedで一致。canonical/trace artifactsはunchanged。
 independent final source/docs re-review、final quality、commit、
 post-commit inventoryは両言語でpending。
 
-## Task 258B3M2B2B2C final-review synchronization
-
-両companionがindependent final source/docs consistencyを**NO FINDINGS**、
-independent final qualityも**NO FINDINGS**、全9 hard gates PASS、valid
-`98/100`としてrecordする。evidence/metricsはunchanged。pendingは
-cached-diff/staging audit、implementation commit、post-commit inventory/
-fresh-next-task gatesだけで両言語一致。
+Completion evidence: [central Task-258B3M2B2B2C historical contract](../../task_contracts/ja/258B3M2B2B2C.md#completion-evidence)。
 
 ## Task 258B3M2B2B2C closureとTask 258B3M2B2B3P synchronization
 

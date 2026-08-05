@@ -400,9 +400,4 @@ existing structure handoffのconsumerだけで、structure/semantic ownership
 追加なし。independent final source/docs/quality reviews、commit、
 post-commit inventoryはpending。
 
-## Task 258B3M2B2B2C final structure review status
-
-independent final source/docs consistency/final qualityは**NO FINDINGS**。
-全9 hard gates PASS、valid `98/100`。Task254 ownership、exact evidence、
-semantic deferralsはunchanged。pendingはcached-diff/staging audit、
-implementation commit、post-commit inventory/fresh-next-task gatesだけ。
+Completion evidence: [central Task-258B3M2B2B2C historical contract](../../task_contracts/ja/258B3M2B2B2C.md#completion-evidence)。
