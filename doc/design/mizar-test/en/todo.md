@@ -3806,9 +3806,46 @@ gates pass. Exact staging and implementation commit f984ae683419944493c07723e995
 
 - [x] Freeze exact source/Surface/shell/resolver/debug identity and the
   lower-only zero-credit boundary in synchronized EN/JA documentation.
-- [ ] After the docs commit, add only the private lower selector/facades and
+- [x] After docs commit `f468b0163bb00726dca9b356f48790c73bb1fe98`, add only the private lower selector/facades and
   four runner tests.
-- [ ] Keep every existing `.miz`, sidecar, expectation, trace row/status,
+- [x] Keep every existing `.miz`, sidecar, expectation, trace row/status,
   metadata count, dispatcher, diagnostic, and active result unchanged.
-- [ ] Reproduce all count/hash oracles and hand off to the separate descendant
-  context/binding consumer; occurrence and capture remain later.
+- [x] Reproduce runner library `592`, production `37/79025`, and raw/normalized
+  test-list hashes; focused, crate, and implementation reviews pass.
+- [x] Complete final source/docs and quality gates at uncapped `100/100`.
+- [ ] Commit and hand off to the separate descendant context/binding consumer;
+  occurrence and capture remain later.
+
+## Task 269SDP Implementation Status
+
+Documentation prerequisite `f468b0163bb00726dca9b356f48790c73bb1fe98` is
+complete. The frozen four Rust files and four exact tests now implement only
+the dormant lower projection. Focused `4/4`, runner-library `592/592`, and
+full workspace gates pass. Independent test-sufficiency, implementation, and
+source/documentation reviews report **NO FINDINGS**; final read-only quality
+reports all nine hard gates PASS without a score cap at `100/100`.
+
+Checker/runner libraries are `522/592`. Checker production remains
+`30/181154`, path/content SHA-256
+`c89f43f6abebf7ebeb3ac9394ecd8ea3186ad28934c75526d2cc0b85a66ebad5` /
+`f9901821c2242bfe66321c57982b54b78425c7940c5a7c47c93c43a8c2c035dc`.
+Runner production is `37/79025`, path/content
+`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d` /
+`313843b1f4f2e210588410de2e1440f1263711fc6cad4085a943d467d5c6ba5a`.
+Runner module sizes are source-statement `23936`, facade `959`, root
+`2792`, and proof-local test leaf `9648`. Raw/normalized test-list hashes are
+checker `d453ca1e8a7cf9870f14a0f933451ca201c19cc8c8367d51767c40a941766f82` /
+`7cd84f6cd8e6d1070b39be9e5f1031512cc2c1b664829f10d337f1b67bcb74b3`
+and runner `40f4271712d7fed6ed238a2e03b61511fc26914af52333b12732824e740ead4a` /
+`e9e4f359a571a1aa383168ff6950568788ecffcea2c4eb5d85934fd4ee15e147`.
+
+Corpus/requirements `428/395`, pass/fail `235/193`, warnings/errors `23/0`,
+stages `101/7/205/1`, type `259=247+12`, trace hash
+`55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`,
+fixtures, sidecars, expectations, metadata, five CLI bytes, diagnostics,
+dispatch, and active results remain unchanged. SDP publishes zero checker,
+`BindingEnv`, type, term/reference, capture/closure, fact, proof, obligation,
+or coverage credit. The next task is the separate Given-plus-descendant
+context/binding consumer; occurrence remains later, and `z`/`q` capture stays
+blocked by the Chapter-4/15 `set` `spec_gap`. The implementation self-hash is
+pending its task-only commit.

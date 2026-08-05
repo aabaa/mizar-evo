@@ -94,8 +94,8 @@ is its task 1). "Next work" points into the
 | mizar-parser | Grammar, Pratt parsing, syntax recovery, parse-only corpus | [x] Tasks 1-48 plus bounded `PARSER-RECOVERY-B1B1P-P1` complete; historical post-Task-46 score 99/100 | no inferred Task 49; human-owned P-265-47D remains separate | [todo](./mizar-parser/en/todo.md) |
 | mizar-frontend | Source loading and phase 1-3 orchestration | [x] prior milestone plus `PARSER-RECOVERY-B1B1P-P1-FE` regression complete | — | [todo](./mizar-frontend/en/todo.md) |
 | mizar-resolve | Module graph, namespaces, symbols, labels, signatures | [~] complete through task 29, Checker Task 263R, and Task 264R implementation | Preserve Task-264R shell/no-symbol boundary through Checker Tasks 248P/264 | [todo](./mizar-resolve/en/todo.md) |
-| mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] foundation complete through task 22; Tasks 265-268, Core-31, and Checker consumers through committed Task 269GCU are complete; Task 269SDP lower-only contract is frozen | Review, commit, and implement the private Task 269SDP runner profile | [todo](./mizar-test/en/todo.md) |
-| mizar-checker | Type checking, cluster/registration resolution, overload resolution | [~] explicit-payload milestone and source producers/consumers through committed Task 269GCU are complete; Task 269SDP lower-only contract is frozen | Review, commit, and implement Task 269SDP before descendant binding/occurrence; capture remains blocked on `set` reconciliation | [todo](./mizar-checker/en/todo.md) |
+| mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] foundation complete through task 22; Tasks 265-268, Core-31, and Checker consumers through committed Task 269GCU are complete; Task 269SDP lower-only implementation and tests are present | Commit SDP, then fresh-select the descendant binding/context consumer | [todo](./mizar-test/en/todo.md) |
+| mizar-checker | Type checking, cluster/registration resolution, overload resolution | [~] explicit-payload milestone and source producers/consumers through committed Task 269GCU are complete; Task 269SDP lower-only implementation is present with zero checker payload | Commit SDP before fresh-selecting descendant binding; occurrence stays later and capture remains blocked on `set` reconciliation | [todo](./mizar-checker/en/todo.md) |
 | mizar-core | Elaboration, binder-normalized core logic, control-flow preparation | [x] core/control-flow milestone, tasks 27-32 complete | step-5 Tasks 33-53 under the Task-32 graph | [todo](./mizar-core/en/todo.md) |
 | mizar-vc | VC IR, VC generation, deterministic pre-ATP discharge | [x] exact source-derived contradiction VC integration complete through task 31 | dependency-paced VC Tasks 32-55; VC 40/53 and S1 gates remain explicit | [todo](./mizar-vc/en/todo.md) |
 | mizar-kernel | Trusted certificate parsing and checking | [x] SAT-backed kernel milestone complete | step 4 task 35 resolved; task 32 parked; tasks 30-34 resolved | [todo](./mizar-kernel/en/todo.md) |
@@ -4506,17 +4506,23 @@ implementation commit f984ae683419944493c07723e9950a9101a46502 are complete.
 
 ## Checker Task 269SDP Autonomous Handoff
 
-Task 269GCU implementation commit
-`f984ae683419944493c07723e9950a9101a46502` is clean; origin `0/19` is
-report-only `repo_metadata_conflict`, and stash
-`f65cf4a13752ec380710814a9ac6392ccb9d75d4` is unchanged. Fresh inventory
-selects only lower-only Task 269SDP. Its exact 180-byte descendant/set source,
+Task 269SDP documentation prerequisite
+`f468b0163bb00726dca9b356f48790c73bb1fe98` was clean at fresh implementation
+preflight; origin `0/20` is report-only `repo_metadata_conflict`, and stash
+`f65cf4a13752ec380710814a9ac6392ccb9d75d4` is unchanged. That inventory
+selected only lower-only Task 269SDP. Its exact 180-byte descendant/set source,
 68-node Surface profile, resolver theorem provenance, private output/debug
-contract, and four runner files/tests are frozen. Corpus/metadata/trace
-counts/hashes remain unchanged; implementation projects runner library
-`588 -> 592` and remeasures test-list/production hashes. Strict exclusions
-and exit criteria are frozen. Descendant binding/context, term
+contract, and four runner files/tests are frozen. Documentation prerequisite
+`f468b0163bb00726dca9b356f48790c73bb1fe98` is complete. The exact four Rust
+files and four tests now implement SDP; runner library is `592`, production is
+`37/79025`, and raw/normalized runner test-list hashes are
+`40f4271712d7fed6ed238a2e03b61511fc26914af52333b12732824e740ead4a` /
+`e9e4f359a571a1aa383168ff6950568788ecffcea2c4eb5d85934fd4ee15e147`.
+Corpus/metadata/trace counts/hashes and active outputs remain unchanged.
+Strict exclusions hold. Descendant binding/context, term
 occurrence, export/proof semantics, and Task 270 remain separate. `z`/`q`
 closure and capture remain blocked on canonical Chapter-4/15 `set`
-reconciliation. Complete docs review/gates/commit, then implement SDP and continue
+reconciliation. Source/docs review is **NO FINDINGS**, full verification
+passes, and final read-only quality has all nine hard gates PASS without a
+score cap at `100/100`. Complete the implementation commit, then continue
 automatically.

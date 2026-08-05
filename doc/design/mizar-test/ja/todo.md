@@ -3549,6 +3549,44 @@ stagingとimplementation commit f984ae683419944493c07723e9950a9101a46502 が完�
 ## Checker Task 269SDP dormant runner handoff
 
 - [x] exact lower source/Surface/shell/resolver/debugとzero-credit境界を凍結。
-- [ ] docs commit後private selector/facadeと4 testsだけを追加。
-- [ ] fixture/sidecar/trace/metadata/dispatch/active resultを不変に保つ。
-- [ ] count/hashを再現しdescendant context/bindingへhandoffする。
+- [x] docs commit `f468b0163bb00726dca9b356f48790c73bb1fe98`後、private selector/facadeと4 testsだけを追加。
+- [x] fixture/sidecar/trace/metadata/dispatch/active resultを不変に保つ。
+- [x] runner library `592`、production `37/79025`、test-list hashを再現し、
+  focused/crate/test/implementation reviewをPASS。
+- [x] source/docs/full verification/final qualityを全9 hard gates PASS、
+  score capなしの`100/100`で完了する。
+- [ ] commit後、descendant context/bindingへhandoffする。
+
+## Task 269SDP implementation status
+
+documentation prerequisite
+`f468b0163bb00726dca9b356f48790c73bb1fe98`は完了した。frozen 4 Rust
+filesとexact 4 testsはdormant lower projectionだけを実装する。focused
+`4/4`、runner library `592/592`、full workspace gatesはPASS。
+test-sufficiency、implementation、source/documentation reviewはすべて
+**NO FINDINGS**で、final read-only qualityは全9 hard gates PASS、score
+capなしの`100/100`。
+
+checker/runner libraryは`522/592`。checker productionは`30/181154`、
+path/content SHA-256は
+`c89f43f6abebf7ebeb3ac9394ecd8ea3186ad28934c75526d2cc0b85a66ebad5` /
+`f9901821c2242bfe66321c57982b54b78425c7940c5a7c47c93c43a8c2c035dc`。
+runner productionは`37/79025`、path/contentは
+`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d` /
+`313843b1f4f2e210588410de2e1440f1263711fc6cad4085a943d467d5c6ba5a`。
+runner module sizesはsource-statement `23936`、facade `959`、root
+`2792`、proof-local test leaf `9648`。raw/normalized test-list hashesは
+checker `d453ca1e8a7cf9870f14a0f933451ca201c19cc8c8367d51767c40a941766f82` /
+`7cd84f6cd8e6d1070b39be9e5f1031512cc2c1b664829f10d337f1b67bcb74b3`、
+runner `40f4271712d7fed6ed238a2e03b61511fc26914af52333b12732824e740ead4a` /
+`e9e4f359a571a1aa383168ff6950568788ecffcea2c4eb5d85934fd4ee15e147`。
+
+corpus/requirements `428/395`、pass/fail `235/193`、warnings/errors `23/0`、
+stages `101/7/205/1`、type `259=247+12`、trace hash
+`55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`、
+fixture/sidecar/expectation/metadata/5 CLI bytes/diagnostic/dispatch/active
+resultは不変。SDPのchecker、`BindingEnv`、type、term/reference、capture/
+closure、fact、proof、obligation、coverage creditは0。次は別taskの
+Given-plus-descendant context/binding consumerで、occurrenceはさらに後、
+`z`/`q` captureはCh.4/15 `set` `spec_gap`でblocked。implementation
+self-hashはtask-only commitまでpending。
