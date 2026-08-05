@@ -1,0 +1,20 @@
+# Frozen preimage inventory for DOC-258B3M2B2B2C-FINAL-REVIEW-COMPACT.
+# Columns: task, language, component, source path, ATX level, exact heading text without the ATX prefix, section SHA-256, physical lines.
+258B3M2B2B2C	en	mizar-checker	doc/design/mizar-checker/en/00.crate_plan.md	2	Task 258B3M2B2B2C Final Review Status	7cc1d41e599b0e3e2cb4f1033dbdf5be81ba4fe20f1f6198dcc0c4cad08bc8c0	9
+258B3M2B2B2C	en	mizar-checker	doc/design/mizar-checker/en/bilingual_sync_audit.md	2	Task 258B3M2B2B2C Final-Review Synchronization	3052a8fcd55bac877f602debe16251f700a698c00df26f19f9089847607df72b	8
+258B3M2B2B2C	en	mizar-checker	doc/design/mizar-checker/en/module_boundary_audit.md	2	Task 258B3M2B2B2C Final Boundary Review Status	c76eed7f87b997a610c44ae74b545b2cc8395bd673b28884137b288aa77a9af4	8
+258B3M2B2B2C	en	mizar-checker	doc/design/mizar-checker/en/payload_family_decomposition.md	3	Task 258B3M2B2B2C Final Family Review Status	bd28bd67ccaa5febca42797b240792a4d62b4a146e96020b386bcca8d216c083	8
+258B3M2B2B2C	en	mizar-checker	doc/design/mizar-checker/en/resolved_typed_ast.md	2	Task 258B3M2B2B2C Final Final-AST Review Status	162f9ebae1db29e4da60d2705ee778eefeb9559daf99e39c075ef89597862022	8
+258B3M2B2B2C	en	mizar-checker	doc/design/mizar-checker/en/source_spec_audit.md	2	Task 258B3M2B2B2C Final Source/Specification Review Status	622b10ce80bb2e4290a7120b90378ba0dc17cf1a24d4916b5ae2ee2dae5841ce	8
+258B3M2B2B2C	en	mizar-checker	doc/design/mizar-checker/en/source_statement.md	2	Task 258B3M2B2B2C Final Statement Review Status	e4a635b74283f4e369ddb9beaee5c297aa4dac62f4ed0844b42932e9569938cd	8
+258B3M2B2B2C	en	mizar-checker	doc/design/mizar-checker/en/source_structure.md	2	Task 258B3M2B2B2C Final Structure Review Status	85d236185ee75d197cf16d4d936dfe2c29d258987ec1a2a923161bbd30c977b1	7
+258B3M2B2B2C	en	mizar-checker	doc/design/mizar-checker/en/typed_ast.md	2	Task 258B3M2B2B2C Final Atomic-Install Review Status	cf67c7b40982d89dcface9ff7571840fd2c1eb55f15514792169b627f9f1dbda	8
+258B3M2B2B2C	ja	mizar-checker	doc/design/mizar-checker/ja/00.crate_plan.md	2	Task 258B3M2B2B2C final review status	8f3881f0c2ef56938fe6b71ef0d7e0be068c98922b94048b72af25e66e70da59	8
+258B3M2B2B2C	ja	mizar-checker	doc/design/mizar-checker/ja/bilingual_sync_audit.md	2	Task 258B3M2B2B2C final-review synchronization	e95d4995a592c64af0b88604b580a48ca4fed3106d5041aa1a486e370578bea8	8
+258B3M2B2B2C	ja	mizar-checker	doc/design/mizar-checker/ja/module_boundary_audit.md	2	Task 258B3M2B2B2C final boundary review status	eb2e4b6d0d596ddb964503f3c2bafabcc3e67e81c91e37653e526b11f18c96f8	7
+258B3M2B2B2C	ja	mizar-checker	doc/design/mizar-checker/ja/payload_family_decomposition.md	3	Task 258B3M2B2B2C final family review status	e93e276983cfa4030e889c7e7d494d032bbce1c7b96920d5f5505175e2df3e82	7
+258B3M2B2B2C	ja	mizar-checker	doc/design/mizar-checker/ja/resolved_typed_ast.md	2	Task 258B3M2B2B2C final final-AST review status	0bf1c4b3db74d5bfcb6f282bfc76d933e3aa4bb9d866ab47c901db66cad062a5	7
+258B3M2B2B2C	ja	mizar-checker	doc/design/mizar-checker/ja/source_spec_audit.md	2	Task 258B3M2B2B2C final source/specification review status	05c68acc31982083a7c88f64b4f49713cef695237fcbde0e1b5ee0b3f275b1fa	8
+258B3M2B2B2C	ja	mizar-checker	doc/design/mizar-checker/ja/source_statement.md	2	Task 258B3M2B2B2C final statement review status	2f630462e72e0017d1242113c66c1922382c9adfa302781df0e1a827c6d33210	7
+258B3M2B2B2C	ja	mizar-checker	doc/design/mizar-checker/ja/source_structure.md	2	Task 258B3M2B2B2C final structure review status	7952bd49e99416c808df9b38af15232b531c96a319ee083740667bc4d1d713ac	6
+258B3M2B2B2C	ja	mizar-checker	doc/design/mizar-checker/ja/typed_ast.md	2	Task 258B3M2B2B2C final atomic-install review status	b48d16764118a68ae5222c6649e6426c94691e90ae90c7f924edcf8bcedf8390	7
