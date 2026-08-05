@@ -3738,4 +3738,11 @@ obligation/acceptance、export/capture enforcement、downstream IR、Task 270は
 deferredのままである。test-sufficiency、implementation、source/docsの
 independent reviewは**NO FINDINGS**。final read-only qualityも**NO FINDINGS**、
 全9 hard gatesはscore capなしの`100/100`でPASS。focused/full measured
-gateもPASSし、exact stagingとimplementation commitが残る。
+gateもPASSし、exact stagingとimplementation commit f984ae683419944493c07723e9950a9101a46502 が完了した。
+
+## Task 269SDP source-statement ownership
+
+`source_statement.rs`だけがexact source、68 Surface nodes/tokens、2 shells、
+theorem provenance、Given/now/two-Set ranges、debugを検証するprivate lower
+ownerとなる。statement semantics、proof context、fact/result、binding、term、
+capture、diagnosticは生成しない。

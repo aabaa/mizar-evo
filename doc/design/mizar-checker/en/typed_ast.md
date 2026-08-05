@@ -2119,4 +2119,11 @@ downstream IR, and Task 270 remain deferred. Independent test-sufficiency,
 implementation, and source/documentation reviews report **NO FINDINGS**.
 Final read-only quality reports **NO FINDINGS**: all nine hard gates PASS
 without a score cap at `100/100`. Focused and full measured gates pass.
-Exact staging and the implementation commit remain.
+Exact staging and implementation commit f984ae683419944493c07723e9950a9101a46502 are complete.
+
+## Task 269SDP Typed Ownership Deferral
+
+No `TypedAst` field or public API changes in SDP. The private lower output
+does not install nodes or publish binding/type/term/fact/obligation tables.
+Any future descendant owner requires its own frozen contract and mutual-
+exclusion matrix.

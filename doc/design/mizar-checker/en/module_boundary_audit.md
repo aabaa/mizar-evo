@@ -1833,6 +1833,15 @@ No parser/resolver/lower module, `binding_env.rs`, active dispatcher, artifact,
 metadata, diagnostic, Cargo file, condition occurrence, semantic table, or
 downstream IR crosses this boundary.
 
+## Task 269SDP Module Boundary
+
+The frozen implementation touches only the existing mizar-test production
+source-statement owner, the private type-elaboration/root facades, and the
+proof-local test leaf listed in the crate plan. `mizar-checker`, parser,
+resolver, Cargo, public dispatch, fixtures, expectations, trace metadata,
+diagnostics, and active outputs do not change. Any checker owner, production
+proof-local leaf, or cross-crate DTO in SDP is a `boundary_violation`.
+
 ### Task 269GCU implementation status
 
 After documentation prerequisite `15f47a837bc2f52d4cd30e8a4dcb86c16f2961d3`,
@@ -1869,7 +1878,7 @@ downstream IR, and Task 270 remain deferred. Independent test-sufficiency,
 implementation, and source/documentation reviews report **NO FINDINGS**.
 Final read-only quality reports **NO FINDINGS**: all nine hard gates PASS
 without a score cap at `100/100`. Focused and full measured gates pass.
-Exact staging and the implementation commit remain.
+Exact staging and implementation commit f984ae683419944493c07723e9950a9101a46502 are complete.
 
 ### Task 269GCT implementation status
 

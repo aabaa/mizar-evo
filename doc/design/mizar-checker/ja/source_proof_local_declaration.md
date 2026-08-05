@@ -5,19 +5,28 @@
 
 ## 状態と authority
 
-この文書はqueue Task 269のcompleted named-witness/proof-`let` sliceと次の
-dependency-minimal lower sliceである**Checker Tasks 269A/B/CP/C/CT/269GP**をfreezeする。
-英語版がcanonicalであり、同じlogical
-task内で本JA companionを同期する。
+このliving owner文書はChecker Task-269 proof-local declaration lineageの
+Tasks 269A/B/CP/C/CTからGP/GS/G/GT/GUP/GUPT/GU、GCP/GC/GCT/GCUまでの
+completed sliceと、current lower-only **Task 269SDP** contractをfreezeする。
+英語版がcanonicalであり、同じlogical task内で本JA companionを同期する。
 
 normative authorityは次の順である。
 
-1. `doc/spec/en/04.variables_and_constants.md` §§4.1、4.2、4.4.3、4.6。
-2. `doc/spec/en/15.statements.md` §§15.2.1、15.4.4、15.10。
-3. `doc/spec/en/16.theorems_and_proofs.md` §§16.3.3、16.4。
-4. 実装済みTask-258B3Nのexact source/statement/witness/term transportと
+1. `doc/spec/en/03.type_system.md` §§3.1--3.4。
+2. `doc/spec/en/04.variables_and_constants.md` §§4.1、4.2、4.4（特に
+   4.4.1/4.4.3）、4.6（特に4.6.1/4.6.2）。
+3. `doc/spec/en/08.type_inference.md` §§8.1、8.3。
+4. `doc/spec/en/13.term_expression.md` §§13.1.1、13.8.1。
+5. `doc/spec/en/15.statements.md` §§15.2.1--15.2.2、15.3.3、15.4.4、
+   15.6.1、15.10、15.11.1--15.11.2、15.11.4。
+6. `doc/spec/en/16.theorems_and_proofs.md` §§16.3.3、16.4.1--16.4.3、
+   16.5。§16.5はhistorical syntax/justification boundaryだけを保持し、proof
+   justification ownershipを意味しない。
+7. 実装済みTask-258B3Nのexact source/statement/witness/term transportと
    parser/resolver provenance。
-5. Tasks 248--258の公開API、特に`LocalTermBinding`、`BindingEnv`、
+8. parser simple/block statement fixture、broad proof-local declaration
+   fixture、mixed predicate/functor boundary fixtureとunchanged sidecar/trace。
+9. Tasks 248--259の公開API、特に`LocalTermBinding`、`BindingEnv`、
    `SourcePrimaryTermHandoff`、`SourceStatementHandoff`、
    `SourceStatementWitnessHandoff`。
 
@@ -25,16 +34,22 @@ normative authorityは次の順である。
 `fail_type_elaboration_proof_local_declaration_gap_001.miz`、sidecar、existing
 covered diagnostic-gap trace rowはread-onlyのままにする。これらのrowは
 positive proof-local binding semanticsをcreditしない。このfixtureは`let`、
-`given`、`consider`、`set`、`reconsider`を混在させるためnamed-witness-only
-sliceの安全な表現には使えない。frozen sliceをblockする`spec_gap`はない。
+`given`、`consider`、`set`、`reconsider`を混在させるためindividual
+Task-269 sliceの安全な表現には単独で使えない。completed sliceとlower-only
+SDPをblockする`spec_gap`はない。Ch.4/15のlater `set` effect矛盾はSDP syntax
+transportにはnonblocking、capture/closure consumerにはblockingである。
 
-selection inventoryはHEAD
+historical Task-269A selection inventoryはHEAD
 `52cf07be3c77d3aa2a797a7681ed9cbabf88295b`、`main`、docs edit前clean、
 `origin/main...HEAD = 0/19`、protected `stash@{0}`
 `f65cf4a13752ec380710814a9ac6392ccb9d75d4`。origin divergenceはreport-only
 `repo_metadata_conflict`で、task-only targetを曖昧にせず修復しない。
 
-## 分類とtask選択
+current Task-269SDP selection inventoryはHEAD
+`f984ae683419944493c07723e9950a9101a46502`、`main`、SDP docs edit前clean、
+同じreport-only origin `0/19`、同じprotected stash identityである。
+
+## Historical Task 269A 分類とtask選択
 
 認証済みnamed witnessにchecker-owned binding transactionがない差を
 `source_drift`、contract欠落を`design_drift`、exact producer/ownership/
@@ -2127,4 +2142,89 @@ obligation/acceptance、export/capture enforcement、downstream IR、Task 270は
 deferredのままである。test-sufficiency、implementation、source/docsの
 independent reviewは**NO FINDINGS**。final read-only qualityも**NO FINDINGS**、
 全9 hard gatesはscore capなしの`100/100`でPASS。focused/full measured
-gateもPASSし、exact stagingとimplementation commitが残る。
+gateもPASSし、exact stagingとimplementation commit f984ae683419944493c07723e9950a9101a46502 が完了した。
+
+## Task 269SDP descendant/set lower境界
+
+exact 180-byte sourceとparser/resolver provenanceだけを
+`SourceProofLocalGivenDescendantSetLowerOutput`へ保持する。Given、now、
+`set z = y`、`set q = z`はrange/spelling syntaxであり、binding/context/
+term/capture/fact/proof semanticsではない。`CaptureSmoke`もcreditではない。
+
+Ch.4/15の`set`意味論矛盾はlower-only SDPには影響しないが、closure/
+capture実装をblockする。SDP後はGiven-plus-child-contextだけを先に分離し、
+occurrenceとcaptureを混在させない。実装scopeは
+`runner/type_elaboration/source_statement.rs`、`runner/type_elaboration.rs`、
+`runner.rs`、`runner/tests/type_elaboration/source_proof_local_declaration.rs`
+のprivate runner 4 filesだけ。exact testsは
+`task269sdp_exact_descendant_set_lower_projection_is_stable`、
+`task269sdp_surface_lower_and_subtree_corruption_fail_closed`、
+`task269sdp_resolver_shell_and_precedence_corruption_fail_closed`、
+`task269sdp_near_miss_and_active_routes_remain_isolated`の4件である。
+full range/resolver signatureはcrate plan、literal debugとtype-for-type ABIは
+以下の本owner文書がcanonicalに保持する。
+
+### Task 269SDP exact private lower ABI
+
+EN canonicalのexact Rust blockと同一に、runner-private rowは
+`SourceProofLocalGivenDescendantSetLowerRow` 2件を固定長arrayとして持つ
+`SourceProofLocalGivenDescendantSetLowerOutput`である。row field順はstatement/
+equating/name range、name spelling、RHS range/spelling、source ordinal。output
+field順はsource/module、source/Surface fingerprint、theorem symbol/definition/
+contribution、theorem/proof、Given/segment/name/type、Given ordinal、Now、Set
+rows 2件、inner/outer conclusionである。全fieldはnon-`pub`、型visibilityは
+`pub(in crate::runner)`、mutable/consuming accessorはない。attributes/derive、
+getterの型・順序・constnessもEN blockとexactに共有する。
+
+row値はGiven `81..99`、segment `87..98`、name `87..88`/`"y"`、type/head
+`95..98`/`"set"`、ordinal 1、Now `102..159`。Set 0はstatement
+`110..120`、Equating `114..119`、name `114..115`/`"z"`、RHS
+`118..119`/`"y"`、ordinal 0。Set 1は`125..135`、`129..134`、
+`129..130`/`"q"`、`133..134`/`"z"`、ordinal 1。conclusionはinner
+`140..152`、outer `162..174`である。
+
+debugはheader
+`source-proof-local-given-descendant-set-lower-debug-v1`に続くEN canonicalの
+module、2 fingerprint、theorem、Given 3行、Now、各Set 2行、conclusion行を
+exact separator/orderで出力し、final LFはexactly one。`{package}`、
+`{module}`、`{fqn}`だけが入力identityから置換される。
+
+Surface/Lower/Shell/ResolverProfile mutation enumのexact type名、全variant順、
+indexed cardinality、attribute/derive/visibilityはENの4 Rust blockと共有する。
+lower mutationは全output fieldとSet index 0/1を覆い、resolver mutationは
+nonempty contribution symbol/definition effectも個別に覆う。dormant base 1件と
+`#[cfg(test)]` seam 5件の名前、5 common arguments、mutation argument、return
+`Option<Result<SourceProofLocalGivenDescendantSetLowerOutput, String>>`もENの
+exact signaturesを共有する。最後のseamだけ
+`impl FnOnce(SymbolEnv) -> SymbolEnv`を取る。
+
+selector mismatch（missing final LFを含む）は`None`、selected validation
+failureは`Some(Err(_))`、successはimmutable row。precedenceはSurface、shell
+count/export、shell 0/1、resolver module/local `y/z/q`/indexes、theorem owner、
+definition、symbol/definition各1 effectを持つcontribution、lower row、debug。
+private error ABIは次のexact 16 stringsだけである。
+
+```text
+Task269SDP exact Surface identity changed after selection
+Task269SDP requires exactly two declaration shells
+Task269SDP resolver shells unexpectedly export a path
+Task269SDP declaration shell {ordinal} mismatch
+Task269SDP raw resolver module mismatch
+Task269SDP local y/z/q already resolves as a module symbol
+Task269SDP raw resolver inventory mismatch
+Task269SDP requires one exact theorem owner
+Task269SDP exact theorem owner provenance mismatch
+Task269SDP requires one exact theorem definition
+Task269SDP theorem contribution is missing
+Task269SDP theorem symbol provenance mismatch
+Task269SDP theorem definition provenance mismatch
+Task269SDP theorem contribution provenance mismatch
+Task269SDP private lower output mismatch
+Task269SDP private lower debug grammar mismatch
+```
+
+Surface oracleは68件すべてのkind/source/range/recovery/children、root 67、
+expression rootなし、token index `[0,36)`を検査する。structural partitionは
+checker plan記載の36--67をexactに共有する。これらはsyntax/corruption
+contractだけであり、binding/reference/capture/closure/fact/proof semanticsを
+一切publishしない。

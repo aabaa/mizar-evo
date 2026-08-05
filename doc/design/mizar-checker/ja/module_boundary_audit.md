@@ -1823,4 +1823,12 @@ obligation/acceptance、export/capture enforcement、downstream IR、Task 270は
 deferredのままである。test-sufficiency、implementation、source/docsの
 independent reviewは**NO FINDINGS**。final read-only qualityも**NO FINDINGS**、
 全9 hard gatesはscore capなしの`100/100`でPASS。focused/full measured
-gateもPASSし、exact stagingとimplementation commitが残る。
+gateもPASSし、exact stagingとimplementation commit f984ae683419944493c07723e9950a9101a46502 が完了した。
+
+## Task 269SDP module boundary
+
+変更可能なのはcrate plan記載のmizar-test production source-statement owner、
+private type-elaboration/root facade、proof-local test leafだけ。checker/public
+API、parser/resolver、Cargo、fixture/trace/metadata/diagnostic/active outputは
+不変で、checker owner、production proof-local leaf、cross-crate DTOの追加は
+`boundary_violation`である。

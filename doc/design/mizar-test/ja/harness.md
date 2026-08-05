@@ -5152,4 +5152,10 @@ wider block scopeとdescendant use/capture implementationは別successorに残�
 test-sufficiency、implementation、source/docsのindependent reviewは
 **NO FINDINGS**。final read-only qualityも**NO FINDINGS**で、全9 hard gatesは
 score capなしの`100/100`でPASS。focused/full measured gateもPASSし、exact
-stagingとimplementation commitが残る。
+stagingとimplementation commit f984ae683419944493c07723e9950a9101a46502 が完了した。
+
+## Task 269SDP harness boundary
+
+test-private exact-source selectorはparser/resolver evidenceからlowerだけを
+構築する。final LF欠落、shape変更、neighbor/broad/active routeは`None`。
+binding/term/capture/proof/semantic payloadを合成しない。

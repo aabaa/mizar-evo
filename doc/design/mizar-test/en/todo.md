@@ -3778,8 +3778,9 @@ commit `d6fb0ed28ced4d4706a1793b3aedd2a20eea0749` is complete.
 - [x] Complete source/docs review to **NO FINDINGS**.
 - [x] Complete final-quality review with all nine gates PASS, no score cap,
   `100/100`, and full gates.
-- [ ] Complete exact staging, the task-only implementation commit, and
-  automatic next-task inventory.
+- [x] Complete exact staging, task-only implementation commit
+  `f984ae683419944493c07723e9950a9101a46502`, and automatic next-task
+  inventory.
 
 ### Task 269GCU implemented private runner status
 
@@ -3799,4 +3800,15 @@ descendant-use/capture implementation remain separate successor work.
 Test-sufficiency, implementation, and source/documentation reviews report
 **NO FINDINGS**. Final read-only quality also reports **NO FINDINGS**: all nine
 hard gates PASS without a score cap at `100/100`. Focused and full measured
-gates pass. Exact staging and the implementation commit remain.
+gates pass. Exact staging and implementation commit f984ae683419944493c07723e9950a9101a46502 are complete.
+
+## Checker Task 269SDP Dormant Runner Handoff
+
+- [x] Freeze exact source/Surface/shell/resolver/debug identity and the
+  lower-only zero-credit boundary in synchronized EN/JA documentation.
+- [ ] After the docs commit, add only the private lower selector/facades and
+  four runner tests.
+- [ ] Keep every existing `.miz`, sidecar, expectation, trace row/status,
+  metadata count, dispatcher, diagnostic, and active result unchanged.
+- [ ] Reproduce all count/hash oracles and hand off to the separate descendant
+  context/binding consumer; occurrence and capture remain later.

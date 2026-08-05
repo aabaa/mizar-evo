@@ -7093,8 +7093,9 @@ checks pass. Dedicated implementation commit
 - [x] Complete source/docs review to **NO FINDINGS**.
 - [x] Complete final-quality review with all nine gates PASS, no score cap,
   `100/100`, and full verification.
-- [ ] Complete exact staging, the task-only implementation commit, and
-  automatic next-task inventory.
+- [x] Complete exact staging, task-only implementation commit
+  `f984ae683419944493c07723e9950a9101a46502`, and automatic next-task
+  inventory.
 
 ### Task 269GCU implementation status
 
@@ -7132,4 +7133,25 @@ downstream IR, and Task 270 remain deferred. Independent test-sufficiency,
 implementation, and source/documentation reviews report **NO FINDINGS**.
 Final read-only quality reports **NO FINDINGS**: all nine hard gates PASS
 without a score cap at `100/100`. Focused and full measured gates pass.
-Exact staging and the implementation commit remain.
+Exact staging and implementation commit f984ae683419944493c07723e9950a9101a46502 are complete.
+
+## Checker Task 269SDP Descendant/Set Lower Prerequisite
+
+- [x] Confirm clean committed GCU, `0/19` report-only
+  `repo_metadata_conflict`, and unchanged protected stash.
+- [x] Classify stale GCU completion text as repaired `design_drift`; classify
+  the missing exact descendant/set lower contract, selector, and tests as
+  `design_drift`, `source_drift`, and `test_gap`; record the nonblocking-for-SDP
+  but capture-blocking Chapter-4/15 `set` `spec_gap`.
+- [x] Freeze the exact 180-byte source, 68-node/root-67 Surface identity,
+  theorem shell/resolver provenance, Given/now/two-Set ranges, fingerprints,
+  private lower/debug ABI, four runner files/tests, baselines, exclusions,
+  semantic deferrals, and exit criteria.
+- [ ] Repeat specification and bilingual review to **NO FINDINGS**, pass all
+  docs-only gates at uncapped `>=90/100`, stage exactly 42 Markdown files,
+  and commit the documentation prerequisite.
+- [ ] Fresh-preflight and implement only the lower profile; do not publish
+  binding contexts, occurrences, captures, facts, proof results, or Task 270.
+- [ ] Complete separate test, implementation, source/docs, and final-quality
+  reviews, full verification, exact staging, implementation commit, and
+  fresh selection of the descendant context/binding consumer.

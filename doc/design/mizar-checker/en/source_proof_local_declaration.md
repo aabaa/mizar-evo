@@ -5,19 +5,30 @@
 
 ## Status and authority
 
-This document freezes **Checker Tasks 269A/B/CP/C/CT and 269GP**, the completed
-named-witness/proof-`let` slices and the next dependency-minimal lower slice of
-queue Task 269. English is canonical. The matching Japanese document
-must remain synchronized in the same logical task.
+This living owner document freezes the completed Checker Task-269 proof-local
+declaration lineage from Tasks 269A/B/CP/C/CT through GP/GS/G/GT/GUP/GUPT/GU,
+GCP/GC/GCT/GCU, plus the current lower-only **Task 269SDP** contract. English
+is canonical. The matching Japanese document must remain synchronized in the
+same logical task.
 
 The normative authority is:
 
-1. `doc/spec/en/04.variables_and_constants.md` §§4.1, 4.2, 4.4.3, and 4.6;
-2. `doc/spec/en/15.statements.md` §§15.2.1, 15.4.4, and 15.10;
-3. `doc/spec/en/16.theorems_and_proofs.md` §§16.3.3 and 16.4;
-4. the exact already-implemented Task-258B3N source/statement/witness/term
+1. `doc/spec/en/03.type_system.md` §§3.1--3.4;
+2. `doc/spec/en/04.variables_and_constants.md` §§4.1, 4.2, 4.4 (especially
+   4.4.1 and 4.4.3), and 4.6 (especially 4.6.1 and 4.6.2);
+3. `doc/spec/en/08.type_inference.md` §§8.1 and 8.3;
+4. `doc/spec/en/13.term_expression.md` §§13.1.1 and 13.8.1;
+5. `doc/spec/en/15.statements.md` §§15.2.1--15.2.2, 15.3.3, 15.4.4,
+   15.6.1, 15.10, 15.11.1--15.11.2, and 15.11.4;
+6. `doc/spec/en/16.theorems_and_proofs.md` §§16.3.3, 16.4.1--16.4.3,
+   and 16.5, with §16.5 retained only for the historical syntax/justification
+   boundary and not as proof-justification ownership;
+7. the exact already-implemented Task-258B3N source/statement/witness/term
    transport and its parser/resolver provenance;
-5. Tasks 248--258 public APIs, especially `LocalTermBinding`, `BindingEnv`,
+8. the parser simple/block statement fixtures, the broad proof-local
+   declaration fixture, the mixed predicate/functor boundary fixture, and
+   their unchanged sidecars/trace metadata; and
+9. Tasks 248--259 public APIs, especially `LocalTermBinding`, `BindingEnv`,
    `SourcePrimaryTermHandoff`, `SourceStatementHandoff`, and
    `SourceStatementWitnessHandoff`.
 
@@ -26,17 +37,24 @@ The broad proof-local declaration gap fixture
 its existing covered diagnostic-gap trace rows remain read-only. Those rows do
 not credit positive proof-local binding semantics. The fixture mixes `let`,
 `given`, `consider`, `set`, and `reconsider`, so it cannot safely represent
-this named-witness-only slice. No blocking `spec_gap` exists for the frozen
-slice.
+any exact Task-269 slice by itself. No blocking `spec_gap` exists for the
+completed slices or lower-only Task 269SDP. The Chapter-4/15 conflict over
+later `set` effects remains nonblocking for SDP syntax transport and blocking
+for every capture/closure consumer.
 
-Selection inventory is HEAD
+The historical Task-269A selection inventory was HEAD
 `52cf07be3c77d3aa2a797a7681ed9cbabf88295b` on `main`, clean before this docs
 edit, `origin/main...HEAD = 0/19`, with protected `stash@{0}` fixed at
 `f65cf4a13752ec380710814a9ac6392ccb9d75d4`. The origin divergence is a
 report-only `repo_metadata_conflict`; it does not obscure the task-only target
 and is not repaired.
 
-## Classification and task selection
+The current Task-269SDP selection inventory is HEAD
+`f984ae683419944493c07723e9950a9101a46502` on `main`, clean before the SDP
+documentation edit, with the same report-only origin divergence `0/19` and
+the same protected stash identity.
+
+## Historical Task 269A classification and task selection
 
 Fresh inventory classifies the absence of a checker-owned binding transaction
 for an already authenticated named witness as `source_drift`, the absent
@@ -3634,4 +3652,433 @@ downstream IR, and Task 270 remain deferred. Independent test-sufficiency,
 implementation, and source/documentation reviews report **NO FINDINGS**.
 Final read-only quality reports **NO FINDINGS**: all nine hard gates PASS
 without a score cap at `100/100`. Focused and full measured gates pass.
-Exact staging and the implementation commit remain.
+Exact staging and implementation commit f984ae683419944493c07723e9950a9101a46502 are complete.
+
+## Task 269SDP Frozen Descendant/Set Lower Boundary
+
+SDP authenticates only the exact 180-byte
+`ProofLocalGivenDescendantCaptureSmoke` source and its parser/resolver
+provenance. The immutable runner-private
+`SourceProofLocalGivenDescendantSetLowerOutput` records theorem/proof/Given,
+`now`, and the ordered `set z = y` / `set q = z` syntax sites plus source and
+Surface fingerprints. It is built in `source_statement.rs` and re-exported
+only through private runner/test facades.
+
+The source is canonical-derived from Given descendant visibility and `set`
+syntax, but Chapter 4 and Chapter 15 disagree on later `set` effects. The
+resulting `spec_gap` does not affect syntax-only SDP; the lower output assigns
+no binding or closure meaning. It adds no `BindingEnv`, context transition, Given or
+LocalAbbreviation row, type, term/reference, captured `BinderIdentity`,
+condition/fact, result/export, proof, obligation, semantic table, diagnostic,
+or active route. The first consumer after SDP must freeze descendant
+context/binding only; occurrence transport and `z`/`q` capture remain
+separate later consumers. `CaptureSmoke` is a source spelling, not credit.
+Combining those layers would be a `boundary_violation`; implementing closure
+or capture before canonical reconciliation would also violate authority.
+
+Exact source/Surface hashes are
+`efa21af05a15f611815a4eb573577d0a368a3134693b225bdb56177f3637c2a8` /
+`cbeae821434b0db13d77d7dac9984d8d6bf8012de9e7c680be12e8371e87ceaa`.
+Surface is `68/root=67/tokens=[0,36)` (token indices 0--35), shells are
+reserve node 39 and theorem node 64. The full ranges and resolver signature
+are summarized in the crate plan; the literal debug grammar and type-for-type
+ABI are frozen below in this owner document. The four existing runner files are
+`crates/mizar-test/src/runner/type_elaboration/source_statement.rs`,
+`crates/mizar-test/src/runner/type_elaboration.rs`,
+`crates/mizar-test/src/runner.rs`, and
+`crates/mizar-test/src/runner/tests/type_elaboration/source_proof_local_declaration.rs`.
+The exact tests are
+`task269sdp_exact_descendant_set_lower_projection_is_stable`,
+`task269sdp_surface_lower_and_subtree_corruption_fail_closed`,
+`task269sdp_resolver_shell_and_precedence_corruption_fail_closed`, and
+`task269sdp_near_miss_and_active_routes_remain_isolated`; these four files and
+four tests are the entire later implementation scope.
+
+### Exact Task 269SDP private lower ABI
+
+The 68-node Surface oracle is exact, not digest-only. In the following compact
+table, `RW(s)`, `Id(s)`, and `RS(s)` mean the exact debug kinds
+`Token(SurfaceToken { kind: ReservedWord, text: s })`,
+`Token(SurfaceToken { kind: Identifier, text: s })`, and
+`Token(SurfaceToken { kind: ReservedSymbol, text: s })`. Every token has no
+children. Every row has the selected `SourceId` and `recovered=false`:
+
+```text
+ 0 RW("reserve") 0..7       1 Id("x") 8..9
+ 2 RW("for") 10..13         3 RW("set") 14..17
+ 4 RS(";") 17..18           5 RW("theorem") 19..26
+ 6 Id("ProofLocalGivenDescendantCaptureSmoke") 27..64
+ 7 RS(":") 64..65           8 RW("thesis") 66..72
+ 9 RW("proof") 73..78      10 RW("given") 81..86
+11 Id("y") 87..88          12 RW("being") 89..94
+13 RW("set") 95..98        14 RS(";") 98..99
+15 RW("now") 102..105      16 RW("set") 110..113
+17 Id("z") 114..115        18 RS("=") 116..117
+19 Id("y") 118..119        20 RS(";") 119..120
+21 RW("set") 125..128      22 Id("q") 129..130
+23 RS("=") 131..132        24 Id("z") 133..134
+25 RS(";") 134..135        26 RW("thus") 140..144
+27 RW("thesis") 145..151   28 RS(";") 151..152
+29 RW("end") 155..158      30 RS(";") 158..159
+31 RW("thus") 162..166     32 RW("thesis") 167..173
+33 RS(";") 173..174        34 RW("end") 175..178
+35 RS(";") 178..179
+```
+
+Structural rows use `index kind range children`:
+
+```text
+36 TypeHead 14..17 [3]
+37 TypeExpression 14..17 [36]
+38 ReserveSegment 8..17 [1,2,37]
+39 ReserveItem 0..18 [0,38,4]
+40 FormulaConstant(Thesis) 66..72 [8]
+41 FormulaExpression 66..72 [40]
+42 TypeHead 95..98 [13]
+43 TypeExpression 95..98 [42]
+44 QualifiedVariableSegment 87..98 [11,12,43]
+45 GivenStatement 81..99 [10,44,14]
+46 TermReference 118..119 [19]
+47 TermExpression 118..119 [46]
+48 Equating 114..119 [17,18,47]
+49 SetStatement 110..120 [16,48,20]
+50 TermReference 133..134 [24]
+51 TermExpression 133..134 [50]
+52 Equating 129..134 [22,23,51]
+53 SetStatement 125..135 [21,52,25]
+54 FormulaConstant(Thesis) 145..151 [27]
+55 FormulaExpression 145..151 [54]
+56 Proposition 145..151 [55]
+57 ConclusionStatement 140..152 [26,56,28]
+58 NowStatement 102..159 [15,49,53,57,29,30]
+59 FormulaConstant(Thesis) 167..173 [32]
+60 FormulaExpression 167..173 [59]
+61 Proposition 167..173 [60]
+62 ConclusionStatement 162..174 [31,61,33]
+63 ProofBlock 73..178 [9,45,58,62,34]
+64 TheoremItem 19..179 [5,6,7,41,63,35]
+65 ItemList 0..179 [39,64]
+66 CompilationUnit 0..179 [65]
+67 Root 0..179 [0,1,...,35,66]
+```
+
+Root is 67, the expression root is absent, and token-node identity is the
+half-open sequence `0..36`. This table serializes to the already frozen
+Surface snapshot digest; any kind, source, range, recovery, children, root,
+expression-root, token identity, or token-count difference fails Surface
+validation.
+
+The lower row is a syntax projection only. These two structs, field order,
+field types, cardinality, visibility, attributes, and derives are exact; no
+field is `pub`, and neither type is visible outside `crate::runner`:
+
+```rust
+#[cfg_attr(not(test), allow(dead_code))]
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(in crate::runner) struct SourceProofLocalGivenDescendantSetLowerRow {
+    statement_range: SourceRange,
+    equating_range: SourceRange,
+    name_range: SourceRange,
+    name_spelling: String,
+    rhs_range: SourceRange,
+    rhs_spelling: String,
+    source_ordinal: usize,
+}
+
+#[cfg_attr(not(test), allow(dead_code))]
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(in crate::runner) struct SourceProofLocalGivenDescendantSetLowerOutput {
+    source_id: SourceId,
+    module_id: ModuleId,
+    source_fingerprint: String,
+    surface_fingerprint: String,
+    theorem_symbol: SymbolId,
+    theorem_definition: DefinitionId,
+    contribution: SourceContributionId,
+    theorem_range: SourceRange,
+    proof_range: SourceRange,
+    given_range: SourceRange,
+    given_segment_range: SourceRange,
+    given_name_range: SourceRange,
+    given_name_spelling: String,
+    given_type_range: SourceRange,
+    given_type_head_range: SourceRange,
+    given_type_spelling: String,
+    given_source_ordinal: usize,
+    descendant_now_range: SourceRange,
+    set_rows: [SourceProofLocalGivenDescendantSetLowerRow; 2],
+    inner_conclusion_range: SourceRange,
+    outer_conclusion_range: SourceRange,
+}
+```
+
+The same-named read-only getters are exact in this order. Only spelling,
+fingerprint, and `debug_text` getters are non-const; there is no mutable or
+consuming accessor:
+
+```rust
+pub(in crate::runner) const fn statement_range(&self) -> SourceRange;
+pub(in crate::runner) const fn equating_range(&self) -> SourceRange;
+pub(in crate::runner) const fn name_range(&self) -> SourceRange;
+pub(in crate::runner) fn name_spelling(&self) -> &str;
+pub(in crate::runner) const fn rhs_range(&self) -> SourceRange;
+pub(in crate::runner) fn rhs_spelling(&self) -> &str;
+pub(in crate::runner) const fn source_ordinal(&self) -> usize;
+
+pub(in crate::runner) const fn source_id(&self) -> SourceId;
+pub(in crate::runner) const fn module_id(&self) -> &ModuleId;
+pub(in crate::runner) fn source_fingerprint(&self) -> &str;
+pub(in crate::runner) fn surface_fingerprint(&self) -> &str;
+pub(in crate::runner) const fn theorem_symbol(&self) -> &SymbolId;
+pub(in crate::runner) const fn theorem_definition(&self) -> DefinitionId;
+pub(in crate::runner) const fn contribution(&self) -> SourceContributionId;
+pub(in crate::runner) const fn theorem_range(&self) -> SourceRange;
+pub(in crate::runner) const fn proof_range(&self) -> SourceRange;
+pub(in crate::runner) const fn given_range(&self) -> SourceRange;
+pub(in crate::runner) const fn given_segment_range(&self) -> SourceRange;
+pub(in crate::runner) const fn given_name_range(&self) -> SourceRange;
+pub(in crate::runner) fn given_name_spelling(&self) -> &str;
+pub(in crate::runner) const fn given_type_range(&self) -> SourceRange;
+pub(in crate::runner) const fn given_type_head_range(&self) -> SourceRange;
+pub(in crate::runner) fn given_type_spelling(&self) -> &str;
+pub(in crate::runner) const fn given_source_ordinal(&self) -> usize;
+pub(in crate::runner) const fn descendant_now_range(&self) -> SourceRange;
+pub(in crate::runner) const fn set_rows(
+    &self,
+) -> &[SourceProofLocalGivenDescendantSetLowerRow; 2];
+pub(in crate::runner) const fn inner_conclusion_range(&self) -> SourceRange;
+pub(in crate::runner) const fn outer_conclusion_range(&self) -> SourceRange;
+pub(in crate::runner) fn debug_text(&self) -> String;
+```
+
+The exact row values are Given `81..99`, segment `87..98`, name
+`87..88`/`"y"`, type/head `95..98`/`"set"`, source ordinal 1, descendant
+Now `102..159`, Set row 0 `110..120`/Equating `114..119`/name
+`114..115`/`"z"`/RHS `118..119`/`"y"`/ordinal 0, Set row 1
+`125..135`/Equating `129..134`/name `129..130`/`"q"`/RHS
+`133..134`/`"z"`/ordinal 1, inner conclusion `140..152`, and outer
+conclusion `162..174`. The exact debug bytes, including the dynamic module and
+theorem FQN placeholders and exactly one final LF, are:
+
+```text
+source-proof-local-given-descendant-set-lower-debug-v1
+module: {package}::{module}
+source-fingerprint: "efa21af05a15f611815a4eb573577d0a368a3134693b225bdb56177f3637c2a8"
+surface-fingerprint: "cbeae821434b0db13d77d7dac9984d8d6bf8012de9e7c680be12e8371e87ceaa"
+theorem symbol="{fqn}" definition=0 contribution=0 range=19..179 proof=73..178
+given range=81..99 segment=87..98 source_ordinal=1
+given-name range=87..88 spelling="y"
+given-type range=95..98 head=95..98 spelling="set" form=bare
+descendant-now range=102..159
+set#0 statement=110..120 equating=114..119 source_ordinal=0
+set#0 name range=114..115 spelling="z" rhs range=118..119 spelling="y"
+set#1 statement=125..135 equating=129..134 source_ordinal=1
+set#1 name range=129..130 spelling="q" rhs range=133..134 spelling="z"
+conclusions inner=140..152 outer=162..174
+```
+
+All four mutation enums are `pub(in crate::runner)`, carry
+`#[cfg_attr(not(test), allow(dead_code))]`, and derive
+`Debug, Clone, Copy, PartialEq, Eq`. Their literal variant sets and order are:
+
+```rust
+enum SourceProofLocalGivenDescendantSetSurfaceMutation {
+    None,
+    ExpressionRoot,
+    TokenNode(usize),
+    TokenNodeCount,
+    NodeKind(usize),
+    NodeSourceId(usize),
+    NodeRange(usize),
+    NodeRecovery(usize),
+    NodeChildren(usize),
+    MissingRootIdentity,
+    WrongRootIdentity,
+}
+
+enum SourceProofLocalGivenDescendantSetLowerMutation {
+    None,
+    SourceId,
+    Module,
+    SourceFingerprint,
+    SurfaceFingerprint,
+    TheoremSymbol,
+    TheoremDefinition,
+    Contribution,
+    TheoremRange,
+    ProofRange,
+    GivenRange,
+    GivenSegmentRange,
+    GivenNameRange,
+    GivenNameSpelling,
+    GivenTypeRange,
+    GivenTypeHeadRange,
+    GivenTypeSpelling,
+    GivenSourceOrdinal,
+    DescendantNowRange,
+    SetStatementRange(usize),
+    SetEquatingRange(usize),
+    SetNameRange(usize),
+    SetNameSpelling(usize),
+    SetRhsRange(usize),
+    SetRhsSpelling(usize),
+    SetSourceOrdinal(usize),
+    InnerConclusionRange,
+    OuterConclusionRange,
+}
+
+enum SourceProofLocalGivenDescendantSetShellMutation {
+    None,
+    Id(usize),
+    Ordinal(usize),
+    Kind(usize),
+    Module(usize),
+    Node(usize),
+    Syntax(usize),
+    Range(usize),
+    Parent(usize),
+    VisibilityState(usize),
+    VisibilityMarker(usize),
+    VisibilitySpelling(usize),
+    Recovery(usize),
+}
+
+enum SourceProofLocalGivenDescendantSetResolverProfileMutation {
+    None,
+    ResolverModule,
+    ImportIndex,
+    ExportIndex,
+    LabelIndex,
+    OverloadIndex,
+    RegistrationIndex,
+    LexicalSummaryIndex,
+    NamespaceGraph,
+    DeclarationDependencyIndex,
+    ModuleSummaryIndex,
+    SymbolModule,
+    SymbolNotation,
+    SymbolContribution,
+    SymbolRelations,
+    SymbolOriginSource,
+    SymbolOriginImport,
+    DefinitionId,
+    DefinitionParameters,
+    DefinitionBinders,
+    DefinitionNotation,
+    DefinitionDoc,
+    DefinitionContribution,
+    DefinitionConflict,
+    DefinitionDependencies,
+    ContributionSymbolEffect,
+    ContributionDefinitionEffect,
+    ContributionLabelEffect,
+    ContributionOverloadEffect,
+    ContributionRegistrationEffect,
+    ContributionLexicalEffect,
+    ContributionNamespaceEffect,
+    ContributionDeclarationDependencyEffect,
+    ContributionImportEffect,
+    ContributionExportEffect,
+    ContributionDiagnosticEffect,
+}
+```
+
+The dormant base and five test-only seams have these exact signatures. The
+base alone carries `#[cfg_attr(not(test), allow(dead_code))]`; every mutation
+seam carries `#[cfg(test)]`:
+
+```rust
+pub(in crate::runner) fn source_proof_local_given_descendant_set_lower_output(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    shells: &DeclarationShellSet,
+    symbols: &SymbolEnv,
+    source_text: &str,
+) -> Option<Result<SourceProofLocalGivenDescendantSetLowerOutput, String>>;
+
+#[cfg(test)]
+pub(in crate::runner) fn source_proof_local_given_descendant_set_lower_output_with_surface_mutation(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    shells: &DeclarationShellSet,
+    symbols: &SymbolEnv,
+    source_text: &str,
+    mutation: SourceProofLocalGivenDescendantSetSurfaceMutation,
+) -> Option<Result<SourceProofLocalGivenDescendantSetLowerOutput, String>>;
+
+#[cfg(test)]
+pub(in crate::runner) fn source_proof_local_given_descendant_set_lower_output_with_mutation(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    shells: &DeclarationShellSet,
+    symbols: &SymbolEnv,
+    source_text: &str,
+    mutation: SourceProofLocalGivenDescendantSetLowerMutation,
+) -> Option<Result<SourceProofLocalGivenDescendantSetLowerOutput, String>>;
+
+#[cfg(test)]
+pub(in crate::runner) fn source_proof_local_given_descendant_set_lower_output_with_shell_mutation(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    shells: &DeclarationShellSet,
+    symbols: &SymbolEnv,
+    source_text: &str,
+    mutation: SourceProofLocalGivenDescendantSetShellMutation,
+) -> Option<Result<SourceProofLocalGivenDescendantSetLowerOutput, String>>;
+
+#[cfg(test)]
+pub(in crate::runner) fn source_proof_local_given_descendant_set_lower_output_with_resolver_profile_mutation(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    shells: &DeclarationShellSet,
+    symbols: &SymbolEnv,
+    source_text: &str,
+    mutation: SourceProofLocalGivenDescendantSetResolverProfileMutation,
+) -> Option<Result<SourceProofLocalGivenDescendantSetLowerOutput, String>>;
+
+#[cfg(test)]
+pub(in crate::runner) fn source_proof_local_given_descendant_set_lower_output_with_resolver_mutation(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    shells: &DeclarationShellSet,
+    symbols: &SymbolEnv,
+    source_text: &str,
+    mutate: impl FnOnce(SymbolEnv) -> SymbolEnv,
+) -> Option<Result<SourceProofLocalGivenDescendantSetLowerOutput, String>>;
+```
+
+Source mismatch, including a missing final LF, returns `None`. A selected
+validation failure returns `Some(Err(_))`; exact success returns the immutable
+row. Validation precedence is exact Surface identity first; declaration-shell
+count/export and shell ordinals 0 then 1; resolver module, absence of module
+symbols `y`/`z`/`q`, and top-level indexes; theorem owner; theorem definition;
+local contribution and its one-symbol/one-definition effects; lower row; then
+exact debug bytes. The complete private error ABI is exactly these 16 strings:
+
+```text
+Task269SDP exact Surface identity changed after selection
+Task269SDP requires exactly two declaration shells
+Task269SDP resolver shells unexpectedly export a path
+Task269SDP declaration shell {ordinal} mismatch
+Task269SDP raw resolver module mismatch
+Task269SDP local y/z/q already resolves as a module symbol
+Task269SDP raw resolver inventory mismatch
+Task269SDP requires one exact theorem owner
+Task269SDP exact theorem owner provenance mismatch
+Task269SDP requires one exact theorem definition
+Task269SDP theorem contribution is missing
+Task269SDP theorem symbol provenance mismatch
+Task269SDP theorem definition provenance mismatch
+Task269SDP theorem contribution provenance mismatch
+Task269SDP private lower output mismatch
+Task269SDP private lower debug grammar mismatch
+```
+
+The Surface oracle validates all 68 kind/source/range/recovery/children rows,
+root 67, no expression root, and the exact half-open token-node sequence
+`0..36`; its structural partition is the one frozen in the checker plan.
+Tests enumerate both row indices for every indexed lower mutation, all nodes
+and tokens, both shells, every resolver-profile variant, direct resolver-field
+corruption, debug replay, and the stated validation precedence. None of these
+private syntax or corruption records is a binding, reference, capture,
+closure, fact, proof, or semantic payload.

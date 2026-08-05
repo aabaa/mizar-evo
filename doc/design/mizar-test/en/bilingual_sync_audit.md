@@ -1872,4 +1872,13 @@ descendant-use/capture implementation remain separate successor work.
 Test-sufficiency, implementation, and source/documentation reviews report
 **NO FINDINGS**. Final read-only quality also reports **NO FINDINGS**: all nine
 hard gates PASS without a score cap at `100/100`. Focused and full measured
-gates pass. Exact staging and the implementation commit remain.
+gates pass. Exact staging and implementation commit f984ae683419944493c07723e9950a9101a46502 are complete.
+
+## Task 269SDP Bilingual Runner Audit
+
+EN/JA runner records agree on exact source/hash/ranges and four private files
+and tests. Fixture, sidecar, expectation, corpus, metadata, and trace
+counts/hashes have zero impact; implementation separately projects runner
+library `588 -> 592` and requires test-list hash remeasurement. Both languages
+record no capture credit and the downstream Chapter-4/15 `set` blocker.
+English remains canonical.

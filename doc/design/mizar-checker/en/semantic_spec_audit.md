@@ -923,4 +923,12 @@ downstream IR, and Task 270 remain deferred. Independent test-sufficiency,
 implementation, and source/documentation reviews report **NO FINDINGS**.
 Final read-only quality reports **NO FINDINGS**: all nine hard gates PASS
 without a score cap at `100/100`. Focused and full measured gates pass.
-Exact staging and the implementation commit remain.
+Exact staging and implementation commit f984ae683419944493c07723e9950a9101a46502 are complete.
+
+## Task 269SDP Zero-semantic Boundary
+
+The exact source is syntax evidence only. `CaptureSmoke` is a theorem
+spelling, and `set z = y` / `set q = z` are opaque subtrees. SDP creates no
+condition, fact, Skolem state, closure, capture, substitution, block result,
+goal, proof, obligation, acceptance, export decision, or IR. The `set`
+semantic contradiction remains a downstream blocking `spec_gap`.

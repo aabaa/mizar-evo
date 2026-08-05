@@ -1999,4 +1999,12 @@ downstream IR, and Task 270 remain deferred. Independent test-sufficiency,
 implementation, and source/documentation reviews report **NO FINDINGS**.
 Final read-only quality reports **NO FINDINGS**: all nine hard gates PASS
 without a score cap at `100/100`. Focused and full measured gates pass.
-Exact staging and the implementation commit remain.
+Exact staging and implementation commit f984ae683419944493c07723e9950a9101a46502 are complete.
+
+## Task 269SDP Bilingual Freeze Audit
+
+The canonical English contract and all Japanese companions freeze the same
+Task ID, 180-byte source, hashes/ranges, private lower ABI, four-file/test
+scope, zero-credit boundary, and Chapter-4/15 `set` `spec_gap`. That gap is
+nonblocking only for SDP syntax transport and blocking for capture/closure.
+No canonical specification or test artifact changes.

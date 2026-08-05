@@ -4282,4 +4282,14 @@ downstream IR, and Task 270 remain deferred. Independent test-sufficiency,
 implementation, and source/documentation reviews report **NO FINDINGS**.
 Final read-only quality reports **NO FINDINGS**: all nine hard gates PASS
 without a score cap at `100/100`. Focused and full measured gates pass.
-Exact staging and the implementation commit remain.
+Exact staging and implementation commit f984ae683419944493c07723e9950a9101a46502 are complete.
+
+## Task 269SDP Source-statement Ownership
+
+`source_statement.rs` is the sole production owner of the later SDP lower
+selector. It may validate exact source bytes, all 68 Surface nodes/token
+membership, two declaration shells, theorem symbol/definition/contribution,
+the Given/now/two-Set subtree ranges, and deterministic debug bytes. It may
+not create a statement semantic row, proof context, label/fact, block result,
+binding context, term/reference, capture, or diagnostic. All existing
+statement producers and active routes remain byte-for-byte isolated.

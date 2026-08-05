@@ -11969,4 +11969,11 @@ wider block scopeとdescendant use/capture implementationは別successorに残�
 test-sufficiency、implementation、source/docsのindependent reviewは
 **NO FINDINGS**。final read-only qualityも**NO FINDINGS**で、全9 hard gatesは
 score capなしの`100/100`でPASS。focused/full measured gateもPASSし、exact
-stagingとimplementation commitが残る。
+stagingとimplementation commit f984ae683419944493c07723e9950a9101a46502 が完了した。
+
+## Task 269SDP runner boundary
+
+checker plan記載のproduction source-statement leaf、private
+type-elaboration/root facade、proof-local test leafだけを変更可能とする。
+production proof-local runner leafは除外する。public command/checker API/
+artifact ownerは境界外。

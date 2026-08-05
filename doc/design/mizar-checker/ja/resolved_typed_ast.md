@@ -1979,4 +1979,9 @@ obligation/acceptance、export/capture enforcement、downstream IR、Task 270は
 deferredのままである。test-sufficiency、implementation、source/docsの
 independent reviewは**NO FINDINGS**。final read-only qualityも**NO FINDINGS**、
 全9 hard gatesはscore capなしの`100/100`でPASS。focused/full measured
-gateもPASSし、exact stagingとimplementation commitが残る。
+gateもPASSし、exact stagingとimplementation commit f984ae683419944493c07723e9950a9101a46502 が完了した。
+
+## Task 269SDP Resolved ownership deferral
+
+`TypedAst`/`ResolvedTypedAst` slot、getter、installer、node role、semantic
+table、replayを追加しない。lower outputはprivate runner内に留まる。

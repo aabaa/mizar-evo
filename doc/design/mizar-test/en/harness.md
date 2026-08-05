@@ -5527,4 +5527,13 @@ descendant-use/capture implementation remain separate successor work.
 Test-sufficiency, implementation, and source/documentation reviews report
 **NO FINDINGS**. Final read-only quality also reports **NO FINDINGS**: all nine
 hard gates PASS without a score cap at `100/100`. Focused and full measured
-gates pass. Exact staging and the implementation commit remain.
+gates pass. Exact staging and implementation commit f984ae683419944493c07723e9950a9101a46502 are complete.
+
+## Task 269SDP Harness Boundary
+
+The later SDP harness path is test-private and exact-source selected. It
+authenticates parser/resolver evidence and constructs only the immutable lower
+projection. It must return `None` for missing final LF, theorem/Given/now/Set
+shape changes, neighboring 269 sources, broad fixtures, and every public
+active route. It does not dispatch a corpus case or synthesize binding, term,
+capture, proof, or semantic payload.

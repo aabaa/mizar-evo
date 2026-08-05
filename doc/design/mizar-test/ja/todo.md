@@ -3523,7 +3523,8 @@ focused/full gateもPASS。dedicated implementation commit
 - [x] test/implementation reviewsを**NO FINDINGS**まで反復。
 - [x] source/docs reviewを**NO FINDINGS**まで反復。
 - [x] final-qualityは全9 gates PASS、score capなし`100/100`、full gates完了。
-- [ ] exact staging、task-only commit、next inventory。
+- [x] exact staging、task-only implementation commit
+  `f984ae683419944493c07723e9950a9101a46502`、next inventoryを完了。
 
 ### Task 269GCU implemented private runner status
 
@@ -3543,4 +3544,11 @@ wider block scopeとdescendant use/capture implementationは別successorに残�
 test-sufficiency、implementation、source/docsのindependent reviewは
 **NO FINDINGS**。final read-only qualityも**NO FINDINGS**で、全9 hard gatesは
 score capなしの`100/100`でPASS。focused/full measured gateもPASSし、exact
-stagingとimplementation commitが残る。
+stagingとimplementation commit f984ae683419944493c07723e9950a9101a46502 が完了した。
+
+## Checker Task 269SDP dormant runner handoff
+
+- [x] exact lower source/Surface/shell/resolver/debugとzero-credit境界を凍結。
+- [ ] docs commit後private selector/facadeと4 testsだけを追加。
+- [ ] fixture/sidecar/trace/metadata/dispatch/active resultを不変に保つ。
+- [ ] count/hashを再現しdescendant context/bindingへhandoffする。

@@ -13280,4 +13280,12 @@ descendant-use/capture implementation remain separate successor work.
 Test-sufficiency, implementation, and source/documentation reviews report
 **NO FINDINGS**. Final read-only quality also reports **NO FINDINGS**: all nine
 hard gates PASS without a score cap at `100/100`. Focused and full measured
-gates pass. Exact staging and the implementation commit remain.
+gates pass. Exact staging and implementation commit f984ae683419944493c07723e9950a9101a46502 are complete.
+
+## Task 269SDP Runner Boundary
+
+Only the existing production source-statement leaf, private
+type-elaboration/root facades, and proof-local test leaf listed in the checker
+plan may change. The production proof-local runner leaf is excluded. No public
+command, checker API, fixture, sidecar, metadata, expectation, or trace owner
+crosses the boundary.

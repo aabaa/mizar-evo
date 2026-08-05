@@ -6731,7 +6731,8 @@ commit `d6fb0ed28ced4d4706a1793b3aedd2a20eea0749`を完了。
 - [x] test/implementation reviewsを**NO FINDINGS**まで反復。
 - [x] source/docs reviewを**NO FINDINGS**まで反復。
 - [x] final-qualityは全9 gates PASS、score capなし`100/100`、full gates完了。
-- [ ] exact staging、task-only commit、next inventory。
+- [x] exact staging、task-only implementation commit
+  `f984ae683419944493c07723e9950a9101a46502`、next inventoryを完了。
 
 ### Task 269GCU implementation status
 
@@ -6769,4 +6770,16 @@ obligation/acceptance、export/capture enforcement、downstream IR、Task 270は
 deferredのままである。test-sufficiency、implementation、source/docsの
 independent reviewは**NO FINDINGS**。final read-only qualityも**NO FINDINGS**、
 全9 hard gatesはscore capなしの`100/100`でPASS。focused/full measured
-gateもPASSし、exact stagingとimplementation commitが残る。
+gateもPASSし、exact stagingとimplementation commit f984ae683419944493c07723e9950a9101a46502 が完了した。
+
+## Checker Task 269SDP descendant/set lower prerequisite
+
+- [x] clean GCU commit、origin `0/19` report-only、stash不変を確認する。
+- [x] GCU stale statusを`design_drift`、missing lower/selector/testsを
+  `design_drift`/`source_drift`/`test_gap`、Ch.4/15 `set`矛盾をSDPには
+  nonblocking・captureにはblockingな`spec_gap`として分類する。
+- [x] 180-byte source、68-node Surface、shell/resolver、range/hash、private
+  ABI/debug、4 files/tests、zero-credit境界、exitを凍結する。
+- [ ] EN/JA review NO FINDINGS、docs 9 gates、42 Markdown stage/commit。
+- [ ] fresh preflight後lower-onlyを実装し、全review/gate/commit後に
+  descendant context/binding taskをfresh-selectする。

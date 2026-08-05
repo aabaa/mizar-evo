@@ -6178,4 +6178,14 @@ downstream IR, and Task 270 remain deferred. Independent test-sufficiency,
 implementation, and source/documentation reviews report **NO FINDINGS**.
 Final read-only quality reports **NO FINDINGS**: all nine hard gates PASS
 without a score cap at `100/100`. Focused and full measured gates pass.
-Exact staging and the implementation commit remain.
+Exact staging and implementation commit f984ae683419944493c07723e9950a9101a46502 are complete.
+
+## Task 269SDP Frozen Source/Specification Mapping
+
+| Canonical requirement | Frozen source evidence | Owner/test | Status |
+|---|---|---|---|
+| Given is inherited by a descendant block; `now`, `set`, and bare references have defined syntax. | Exact 180-byte source; 68-node/root-67 Surface profile; ranges for Given, now, two Set/Equating/name/RHS subtrees. | Private runner lower output and four exhaustive tests. | Frozen syntax-only `design_drift`/`source_drift`/`test_gap`; no active credit. |
+
+Chapter 4 and Chapter 15 disagree on `set` effects. SDP does not choose a
+meaning; closure/capture remains blocked while context and occurrence can be
+separately inventoried.

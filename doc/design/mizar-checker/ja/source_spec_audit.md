@@ -5872,4 +5872,12 @@ obligation/acceptance、export/capture enforcement、downstream IR、Task 270は
 deferredのままである。test-sufficiency、implementation、source/docsの
 independent reviewは**NO FINDINGS**。final read-only qualityも**NO FINDINGS**、
 全9 hard gatesはscore capなしの`100/100`でPASS。focused/full measured
-gateもPASSし、exact stagingとimplementation commitが残る。
+gateもPASSし、exact stagingとimplementation commit f984ae683419944493c07723e9950a9101a46502 が完了した。
+
+## Task 269SDP source/spec mapping
+
+| canonical requirement | frozen evidence | status |
+|---|---|---|
+| Given descendant scope、now/set/reference syntax | exact 180-byte source、68-node Surface、Given/now/two-Set ranges、private 4 tests | syntax-only `design_drift`/`source_drift`/`test_gap`; active credit 0 |
+
+Ch.4/15の`set` effect矛盾を選択せず、capture/closureをblockしたままにする。

@@ -846,4 +846,10 @@ obligation/acceptance、export/capture enforcement、downstream IR、Task 270は
 deferredのままである。test-sufficiency、implementation、source/docsの
 independent reviewは**NO FINDINGS**。final read-only qualityも**NO FINDINGS**、
 全9 hard gatesはscore capなしの`100/100`でPASS。focused/full measured
-gateもPASSし、exact stagingとimplementation commitが残る。
+gateもPASSし、exact stagingとimplementation commit f984ae683419944493c07723e9950a9101a46502 が完了した。
+
+## Task 269SDP zero-semantic boundary
+
+`CaptureSmoke`と2つのSet subtreeはsyntax evidenceだけ。condition/fact、
+Skolem、closure/capture/substitution、block result、goal/proof/obligation/
+acceptance/export/IRは0件。`set`矛盾はdownstream blocking `spec_gap`。

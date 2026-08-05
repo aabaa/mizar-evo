@@ -741,4 +741,12 @@ downstream IR, and Task 270 remain deferred. Independent test-sufficiency,
 implementation, and source/documentation reviews report **NO FINDINGS**.
 Final read-only quality reports **NO FINDINGS**: all nine hard gates PASS
 without a score cap at `100/100`. Focused and full measured gates pass.
-Exact staging and the implementation commit remain.
+Exact staging and implementation commit f984ae683419944493c07723e9950a9101a46502 are complete.
+
+## Task 269SDP Term Deferral
+
+The RHS leaves `y@118..119` and `z@133..134` are authenticated only as
+`TermReference` Surface subtrees. SDP publishes no primary-term row,
+reference winner, use ordinal, arena node, numeric request, type, or capture.
+The descendant `y` occurrence is a later consumer; `z` closure replay remains
+blocked on canonical `set` reconciliation.

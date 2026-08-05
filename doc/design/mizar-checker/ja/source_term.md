@@ -487,4 +487,10 @@ obligation/acceptance、export/capture enforcement、downstream IR、Task 270は
 deferredのままである。test-sufficiency、implementation、source/docsの
 independent reviewは**NO FINDINGS**。final read-only qualityも**NO FINDINGS**、
 全9 hard gatesはscore capなしの`100/100`でPASS。focused/full measured
-gateもPASSし、exact stagingとimplementation commitが残る。
+gateもPASSし、exact stagingとimplementation commit f984ae683419944493c07723e9950a9101a46502 が完了した。
+
+## Task 269SDP term deferral
+
+`y@118..119`と`z@133..134`はSurface TermReference syntaxだけ。primary-term/
+reference winner/use ordinal/arena/type/captureはpublishしない。descendant
+`y` occurrenceは後続、`z` replayは`set` reconciliation待ち。
