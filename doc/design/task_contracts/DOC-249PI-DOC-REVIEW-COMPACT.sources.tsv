@@ -1,0 +1,10 @@
+# Frozen preimage inventory for DOC-249PI-DOC-REVIEW-COMPACT.
+# Columns: task, language, component, source path, ATX level, exact heading text without the ATX prefix, section SHA-256, physical lines.
+249PI	en	mizar-checker	doc/design/mizar-checker/en/bilingual_sync_audit.md	2	Task 249PI Frozen-Contract Synchronization	9f1b205ee5597dd296305eea59933cee95af948fe834b38d14aa10d3efe8cac2	9
+249PI	en	mizar-checker	doc/design/mizar-checker/en/module_boundary_audit.md	2	Task 249PI Frozen Module Boundary	840393b7b4b93f00a67fe4f71ba4b87007eea29a755b0312690c1794d3550bb7	10
+249PI	en	mizar-checker	doc/design/mizar-checker/en/source_spec_audit.md	2	Task 249PI Frozen Source/Specification Audit	7beb9410740362d3ba2f5546ae3bf566d5f1b49189b25edbb0d86ec0867becd8	17
+249PI	en	mizar-checker	doc/design/mizar-checker/en/source_type.md	2	Task 249PI Documentation-Prerequisite Verification	4413c1e3de32bd085ea2f9962a28d7f873ef406ae06fca70c2922153c99a004c	40
+249PI	ja	mizar-checker	doc/design/mizar-checker/ja/bilingual_sync_audit.md	2	Task 249PI frozen-contract synchronization	aacf8ca5433dee782f8047410ffb7497bb36269bdaed8c1abeacfa29019783d9	8
+249PI	ja	mizar-checker	doc/design/mizar-checker/ja/module_boundary_audit.md	2	Task 249PI frozen module boundary	f2b2850ed4080b737fdf85b3359f1371659624a31e41dcf8ffa912305a45a3e7	9
+249PI	ja	mizar-checker	doc/design/mizar-checker/ja/source_spec_audit.md	2	Task 249PI frozen source/specification audit	56a0d8362a929ddc827e262e847e5d7de3751dc0adbf3b2e903fee917f69f479	14
+249PI	ja	mizar-checker	doc/design/mizar-checker/ja/source_type.md	2	Task 249PI documentation-prerequisite verification	bb8484ed7df6a29e82ce07e29a34178e706c1f315d72060697a8412d5c8c1c87	23
