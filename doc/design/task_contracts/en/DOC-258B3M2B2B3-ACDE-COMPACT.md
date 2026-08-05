@@ -13,12 +13,12 @@ diagnostics, traceability, or coverage credit.
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-258B3M2B2B3-ACDE-COMPACT` |
-| Status | Documentation-prerequisite reviews, verification, and final quality are complete. Exact staging and the prerequisite commit remain; migration is a separate later commit. |
+| Status | Documentation prerequisite committed; migration, reviews, full verification, and final quality are complete. Exact staging and the migration commit remain. |
 | Purpose | Centralize the completion-only payload-family evidence for Tasks 258B3M2B2B3A, C, D, and E while retaining every frozen/durable owner and the asymmetric B3B record. |
 | Owners | Migration policy; historical [A](./258B3M2B2B3A.md#completion-evidence), [C](./258B3M2B2B3C.md#completion-evidence), [D](./258B3M2B2B3D.md#completion-evidence), and [E](./258B3M2B2B3E.md#completion-evidence) contracts; [checker](../../mizar-checker/en/00.crate_plan.md#task-index) and [runner](../../mizar-test/en/00.crate_plan.md#task-index) indexes |
 | Consumers | Paired checker payload-family documents, four Task Indexes, and the post-migration generic schema-v1 ledger/lint |
 | Historical sequence | A `f4ff4596` -> `a147bad8`; C `ea48ffc4` -> `7988a509`; D `43af562c` -> `08a7d1e3`; E `8075000b` -> `e4479691` |
-| Documentation prerequisite | Pending |
+| Documentation prerequisite | Committed as `497e60b2ad5ec338cf28d1846663364aeb45f6b6`. |
 | Readiness | Clean selection HEAD `95b4ce9801bc0b5ec85dbdba30d40ec26d44d3d7`, `origin/main...HEAD=0/6`, protected `stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4`; exact selection is dependency-ready. |
 
 The four tasks are adjacent completed siblings in the same Task-255 set-term
@@ -181,6 +181,82 @@ replay, protected no-ops, and repository metadata. Residual risk is limited to
 the separately committed migration and retained historical semantic/coverage
 deferrals. Exact task-only staging/cached review, commit, and post-commit replay
 remain.
+
+## Migration Evidence
+
+The prerequisite is commit
+`497e60b2ad5ec338cf28d1846663364aeb45f6b6`. Its post-commit inventory was
+clean at `origin/main...HEAD=0/7`, protected `stash@{0}` was unchanged, and all
+eight frozen preimages replayed before editing.
+
+The mechanical migration changes exactly the paired payload-family documents,
+this EN/JA batch pair, and `legacy_compactions.tsv`: five paths. It replaces
+only the eight declared complete H3s with language-local redirects. Their 157
+physical lines become 16 redirect-plus-separator lines, a reduction of 141.
+Every frozen/H2 owner, B3B record, adjacent anchor, and unlisted section
+remains.
+
+The generic ledger now has 592 physical lines and adds exactly one batch, four
+tasks, eight redirects over two distinct source paths, and 20 index records.
+Its expanded-inventory SHA-256 is
+`89f03fdf9d967a1c5d72bbf4830acf1d8af7fa4af94d8da62e386f2c1bb857a9`;
+its complete physical SHA-256 is
+`d261a5c87f7f8adeb18cdfe0c9d49cc5d260f446120b7c09c48ca69d24cfddbb`.
+The immutable source TSV remains
+`cad05407f570a7305bf31168a78de2a5dd577577b0abd6f7267fe07628010b5e`.
+
+Focused generic-ledger/link/fragment lint and `git diff --check` pass.
+Specification, `.miz`, fixture, sidecar, expectation, trace status/count/
+backlinks, coverage credit, source, Cargo, public API, diagnostics, root
+coverage audit, historical contracts, source TSV, and four Task Indexes are
+unchanged.
+
+Independent test-sufficiency review ended **NO FINDINGS** and confirmed that
+the generic schema-v1 lint is sufficient for the exact whole-section shape;
+task-specific Rust or schema changes would be unwarranted. Equivalence and
+boundary review found one medium `design_drift`: the identity table still
+said that the prerequisite was pending after its commit. After synchronizing
+the EN/JA cells to `497e60b2`, finding-specific re-review ended
+**NO FINDINGS**. It replayed all eight preimages, hashes, line counts, and
+anchors and confirmed that the frozen owners, asymmetric B3B material, and
+unlisted sections remain. Independent source/documentation and EN/JA review
+also ended **NO FINDINGS** after reproducing the ledger order, arithmetic,
+both hashes, source-TSV hashes, language-local redirects, and protected
+no-impact claims.
+
+Full migration verification passed: recursive runner and checker lint policies
+`15/15` and `15/15`; checker and runner libraries `530/530` and `600/600`;
+runner metadata `137/137`; `cargo fmt --all --check`; offline Cargo metadata;
+warnings-denied all-target/all-feature Clippy; and the complete offline
+workspace test suite. All five CLIs exited zero with `23/0` unchanged
+warnings/errors and exactly reproduced the prerequisite stdout hashes:
+
+| CLI | SHA-256 |
+|---|---|
+| plan | `700f4bf503783742cefd8004fa095675b7476d46e9a3a6dd439916d237eb6718` |
+| parse-only | `a8a7aa639d2ebc65eddc923c7e9369ea5637d50e935f808600f446da1bfbda56` |
+| declaration-symbol | `71e83ba0b20d4015e07b3bd2c0c4db2837b6151d1251812caed7954530d53c74` |
+| type-elaboration | `4b2c7bd5ec3cc56e5672fb351126126230ec84fba9bd2bd9049a516d378fab7f` |
+| proof-verification | `ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450` |
+
+The frozen protected counts and path/content hashes reproduce with zero delta;
+the trace remains `55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`.
+The ledger remains 592 lines at physical hash `d261a5c8...ddbb` and expanded
+hash `89f03fdf...857a`; the immutable ten-line source TSV remains
+`cad05407...0b5e`. Exact protected-surface diffs against the prerequisite are
+empty, the worktree is exactly the declared five paths, and `git diff --check`
+passes. At that verification checkpoint, final quality and the subsequent
+staging/commit gates remained.
+
+Independent final read-only quality review ended **NO FINDINGS**. All nine
+hard gates PASS, no score cap applies, and the valid score is `100/100`
+(`20/20/15/15/10/10/5/5`). The reviewer independently reproduced the exact
+eight-section migration, ledger arithmetic and hashes, protected boundaries,
+focused and both full lint policies, checker/runner/metadata counts, format,
+Cargo metadata, and whitespace. Its residual non-rerun set was full Clippy,
+the workspace suite, and five CLIs, all of which the parent had already passed
+against the unchanged diff with the exact results above. Only exact staging/
+cached review, commit, and post-commit replay remain.
 
 ## Handoff
 

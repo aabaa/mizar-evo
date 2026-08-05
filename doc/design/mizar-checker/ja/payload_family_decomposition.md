@@ -1202,23 +1202,7 @@ full graphはformula `0 -> Primary(0/1)`、formula
 set-shape/label/family hybrid/order near missesはpartial publicationなしで
 fail closed。B4/B5とsemantic expansionはdeferred。
 
-### Task 258B3M2B2B3A implemented upper-family edge
-
-implementationはfrozen partitionとsole
-`SourceStatementWitness(0) -> SetTerm(0)` edgeを実現し、Task-255
-productionは変更しない。set-only fingerprint tuple、exact label/lower
-provenance、atomic typed installation、final revalidation/cloneはfrozen
-checker4+runner5 testsでcoverする。application/structure/multi-family
-hybridは引き続きfail closedし、B4/B5と全semantic expansionはdeferred。
-specification/test-sufficiency/implementation reviewsは**NO FINDINGS**。
-2回目のsource/documentation consistency repeatとfinal documentation/
-boundary rereadも**NO FINDINGS**で、crate plans記載のparent final
-verificationはexact `39`-file scopeを含めPASS。independent final
-read-only quality reviewは**NO FINDINGS**。全9 hard gates PASS、score
-capなし、valid `98/100`（`20/20/15/14/10/10/5/4`）。記載済み
-semantic/coverage deferralsはunchanged residual risk。pendingは
-dedicated implementation commit、postcommit invariant verification、
-fresh next-task inventoryだけ。
+Completion evidence: [central Task-258B3M2B2B3A historical contract](../../task_contracts/ja/258B3M2B2B3A.md#completion-evidence)。
 
 ### Task 258B3M2B2B3B frozen zero-edge family boundary
 
@@ -1263,17 +1247,7 @@ Task 252は`{27,29,39,41}`、Task 256は`{31,43}`、Task 258 baseは
 `{46,48}`をretainする。comprehension、`qua`、nonemptiness discharge、
 generated choice semantics、B4/B5、proof acceptanceはseparate families。
 
-### Task 258B3M2B2B3C implemented choice-witness edge
-
-implementationはownershipをexactにrealizeする: Task-252
-`{27,29,39,41}`、Task-255 `{33,34,35}`、Task-256 `{31,43}`、
-Task-258 `{46,48}`、B3C `{37,38}`。choiceのTask-255 child edgeは0で、
-upper edgeは`Witness(0) -> SetTerm(0)`だけ。全6 B3A/B3B/B3C
-installation ordersはindependent exact familyとしてのみacceptし、
-application/structure hybridとgeneric fallbackはatomicにfailする。choice
-semantics、comprehension、`qua`、B4/B5、proof acceptanceはdeferred。
-bounded replay/prefixとB3C-only route correction後のrepeat test/
-implementation reviewsは**NO FINDINGS**。
+Completion evidence: [central Task-258B3M2B2B3C historical contract](../../task_contracts/ja/258B3M2B2B3C.md#completion-evidence)。
 
 ### Task 258B3M2B2B3D frozen qua-witness edge
 
@@ -1286,31 +1260,7 @@ condition-free comprehensionはgenerator/sethood rowを追加するため後続�
 overload/coercion、result typing、proof acceptance、comprehension、
 B4/B5、active creditはseparate ownersのままである。
 
-### Task 258B3M2B2B3D implemented qua-witness edge
-
-private exact routeはfrozen graphをrealizeする: Task-252
-`{28,30,34,41,43}`、Task-255 `{35,36,37}`、Task-256 `{32,45}`、
-Task-258 `{48,50}`、B3D `{39,40}`。Task-255
-`SetTerm(0) -> Primary(2)` through `QuaBase`と、B3D
-`Witness(0) -> SetTerm(0)`だけをpublishする。`QuaTarget`、ordered
-unresolved requests、set-only fingerprintはunchanged lower producerと
-existing upper APIからcomposeする。B3A/B3B/B3C/B3Dのpairingsと24
-family ordersはindependent exact profilesとしてのみacceptし、hybrid、
-stale、reordered、generic fallbackはatomicにfailする。
-
-checker 4 + runner 5 testsと`32/70/44/72/62/21` matricesがedge/owner/
-family isolationをcoverし、test-sufficiency reviewとindependent
-implementation reviewは**NO FINDINGS**。inheritance/cluster widening、
-overload/coercion、result typing、proof acceptance、comprehension、B4/B5、
-active creditは引き続きdeferred。24-order/qua-edge wordingとreview-state
-driftの同期修正後、source/docs consistencyとboundary repeatも
-**NO FINDINGS**、final verificationもPASS。
-
-independent final read-only quality reviewも**NO FINDINGS**、全9 hard
-gates PASS、score capなし、valid `100/100`
-（`20/20/15/15/10/10/5/5`）。CLI warnings `23`/errors `0`とlarge
-repeated-test diff review volumeはnonblocking residual。残るのは
-staging/cached diff、commit、post-commit/fresh-nextだけ。
+Completion evidence: [central Task-258B3M2B2B3D historical contract](../../task_contracts/ja/258B3M2B2B3D.md#completion-evidence)。
 
 ### Task 258B3M2B2B3E frozen condition-free-comprehension witness edge
 
@@ -1340,27 +1290,7 @@ existential/proof/goal semantics、B4/B5、active creditはseparate ownersに
 deferする。B3Eはtransport-onlyであり、lower-stage prerequisiteまたは
 semantic ownership expansionを導入しない。
 
-### Task 258B3M2B2B3E implemented comprehension-witness edge
-
-private exact routeはTask-255 producerを変更せずfrozen graphを実装する。
-Task-252 `{32,34,38,47,49}`、Task-255 `{16,40,41,43}`、Task-256
-`{36,51}`、Task-258 `{54,56}`、B3E `{45,46}`、segment `42`
-unownedである。Task 255は`ComprehensionMapper -> Primary(2)`と
-`GeneratorSethood`/`ResultType`を保持し、B3Eは
-`Witness(0) -> SetTerm(0)`だけを追加する。
-
-全120 orders、subtree exclusion、coherent same-provenance near misses、
-`32/70/53/72/62/21`をcoverし、test/implementation reviewは
-**NO FINDINGS**。binding/capture、condition/multiple/nested/
-generator-reference semantics、sethood/type/proof/Core/CFG/VC、B4/B5、
-coverage creditはdeferredである。
-
-3件のbounded design correction後のfinal source/docs consistencyは
-**NO FINDINGS**である。complete verificationはPASSし、independent final
-qualityも**NO FINDINGS**、全9 gates PASS、capなし、valid `100/100`。
-staging/post-commit gatesはimplementation commit
-`e4479691db3b0a8785bb16e94d386bd71a394274`でcloseし、fresh inventoryは
-Task 258B4Aをselectした。
+Completion evidence: [central Task-258B3M2B2B3E historical contract](../../task_contracts/ja/258B3M2B2B3E.md#completion-evidence)。
 
 ### Task 258B4 composite-root decomposition
 

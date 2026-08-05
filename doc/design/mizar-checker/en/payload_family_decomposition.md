@@ -1322,24 +1322,7 @@ The full graph is formula `0 -> Primary(0/1)`, formula
 All set-shape, label, family-hybrid, and family-order near misses fail closed
 without partial publication. B4/B5 and semantic expansion remain deferred.
 
-### Task 258B3M2B2B3A Implemented Upper-Family Edge
-
-The implementation realizes the frozen partition and sole
-`SourceStatementWitness(0) -> SetTerm(0)` edge without changing Task-255
-production. The set-only fingerprint tuple, exact label/lower provenance,
-atomic typed installation, and final revalidation/clone are covered by the
-frozen four checker plus five runner tests. Application, structure, and
-multi-family hybrids still fail closed; B4/B5 and every semantic expansion
-remain deferred. Specification, test-sufficiency, and implementation
-reviews report **NO FINDINGS**. The second source/documentation consistency
-repeat and final documentation/boundary reread also report
-**NO FINDINGS**; parent final verification listed in the crate plans
-passes, including exact `39`-file scope. Independent final read-only quality
-review reports **NO FINDINGS**. All nine hard gates PASS with no score cap;
-the valid score is `98/100` (`20/20/15/14/10/10/5/4`). The stated semantic
-and coverage deferrals remain unchanged as residual risk. Only the
-dedicated implementation commit, post-commit invariant verification, and
-fresh next-task inventory remain pending.
+Completion evidence: [central Task-258B3M2B2B3A historical contract](../../task_contracts/en/258B3M2B2B3A.md#completion-evidence).
 
 ### Task 258B3M2B2B3B Frozen Zero-Edge Family Boundary
 
@@ -1384,18 +1367,7 @@ requests with zero child edges. Task 252 retains `{27,29,39,41}`, Task 256
 discharge, generated choice semantics, B4/B5, and proof acceptance remain
 separate families.
 
-### Task 258B3M2B2B3C Implemented Choice-Witness Edge
-
-The implementation realizes the frozen ownership exactly: Task-252
-`{27,29,39,41}`, Task-255 `{33,34,35}`, Task-256 `{31,43}`, Task-258
-`{46,48}`, and B3C `{37,38}`. The choice contributes zero Task-255 child
-edges; the only upper edge is `Witness(0) -> SetTerm(0)`. All six
-B3A/B3B/B3C installation orders are accepted only as independent exact
-families, while application/structure hybrids and generic fallbacks fail
-atomically. Choice semantics, comprehension, `qua`, B4/B5, and proof
-acceptance remain deferred. Repeated test-sufficiency and implementation
-reviews report **NO FINDINGS** after the bounded replay/prefix and B3C-only
-route corrections.
+Completion evidence: [central Task-258B3M2B2B3C historical contract](../../task_contracts/en/258B3M2B2B3C.md#completion-evidence).
 
 ### Task 258B3M2B2B3D Frozen Qua-Witness Edge
 
@@ -1407,27 +1379,7 @@ because it adds a generator/sethood row. The B3D edge is transport only;
 inheritance/cluster widening, overload/coercion, result typing, proof
 acceptance, comprehension, B4/B5, and active credit remain separate owners.
 
-### Task 258B3M2B2B3D Implemented Qua-Witness Edge
-
-The private exact route now realizes the frozen graph: Task-252 owns
-`{28,30,34,41,43}`, Task-255 `{35,36,37}`, Task-256 `{32,45}`,
-Task-258 `{48,50}`, and B3D `{39,40}`. Task 255 retains the sole
-`QuaBase -> Primary(2)` lower edge and unresolved
-`QuaWidening`/`ResultType` requests; B3D adds only
-`Witness(0) -> SetTerm(0)`.
-
-All B3A/B3B/B3C/B3D pairings and 24 family orders, subtree exclusions, and
-the exact `32/70/44/72/62/21` matrices are covered by the frozen tests.
-Test-sufficiency and independent implementation reviews report
-**NO FINDINGS**. No widening, type, proof/fact, Core/CFG/VC,
-comprehension, B4/B5, or active-credit edge is introduced;
-source/documentation consistency and boundary review also report
-**NO FINDINGS** after the family-order/qua-edge wording corrections. Full
-package/workspace/formatting/Clippy/CLI/count-hash verification passes.
-Independent final read-only quality review reports **NO FINDINGS**; all nine
-hard gates PASS with no cap at valid `100/100`
-(`20/20/15/15/10/10/5/5`). Only exact staging/cached-diff review,
-implementation commit, and post-commit/fresh-next-task gates remain pending.
+Completion evidence: [central Task-258B3M2B2B3D historical contract](../../task_contracts/en/258B3M2B2B3D.md#completion-evidence).
 
 ### Task 258B3M2B2B3E Frozen Comprehension-Witness Edge
 
@@ -1441,30 +1393,7 @@ segment `42` remains unowned. All five B3A-E families remain independent
 across 120 orders. Binding/capture, sethood discharge, conditions, semantics,
 B4/B5, and coverage credit remain deferred.
 
-### Task 258B3M2B2B3E Implemented Comprehension-Witness Edge
-
-The private exact route realizes the frozen graph without changing the
-Task-255 producer. Task-252 owns `{32,34,38,47,49}`, Task-255
-`{16,40,41,43}`, Task-256 `{36,51}`, Task-258 `{54,56}`, and B3E
-`{45,46}`; generator segment `42` remains unowned. Task 255 retains
-`ComprehensionMapper -> Primary(2)` and unresolved
-`GeneratorSethood`/`ResultType`; B3E adds only
-`Witness(0) -> SetTerm(0)`.
-
-All five-family pairings and 120 orders, complete-subtree exclusions,
-same-provenance coherent Task-255 near misses, and exact
-`32/70/53/72/62/21` matrices are covered. Independent test-sufficiency and
-implementation reviews report **NO FINDINGS**. Binding/capture,
-conditioned/multiple/nested/generator-reference semantics, sethood/type/
-proof/fact/Core/CFG/VC behavior, B4/B5, and coverage credit remain deferred.
-
-Final source/documentation consistency reports **NO FINDINGS** after the
-three bounded design corrections. Complete verification PASSes, and
-independent final quality reports **NO FINDINGS**, all nine hard gates PASS,
-valid `100/100` with no cap. Staging and post-commit gates subsequently
-closed in implementation commit
-`e4479691db3b0a8785bb16e94d386bd71a394274`; fresh inventory selected
-Task 258B4A.
+Completion evidence: [central Task-258B3M2B2B3E historical contract](../../task_contracts/en/258B3M2B2B3E.md#completion-evidence).
 
 ## Task 258B4 Composite-Root Decomposition
 
