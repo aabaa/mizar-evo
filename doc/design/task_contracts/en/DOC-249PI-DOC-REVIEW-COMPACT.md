@@ -12,12 +12,12 @@ traceability, or coverage.
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-249PI-DOC-REVIEW-COMPACT` |
-| Status | Documentation prerequisite reviews, verification, and final read-only quality complete; exact staging and commit remain. Migration is prohibited until that commit and fresh replay. |
+| Status | Documentation prerequisite committed; exact migration, independent reviews, full verification, and final quality complete. Exact staging and commit remain. |
 | Purpose | Centralize repeated Task-249PI documentation-prerequisite and frozen-review evidence while retaining every durable implementation and runner owner. |
 | Owners | Migration policy, historical [249PI](./249PI.md#completion-evidence), [checker plan](../../mizar-checker/en/00.crate_plan.md#task-index), and [runner plan](../../mizar-test/en/00.crate_plan.md#task-index) |
 | Consumers | Eight checker source paths, four Task Indexes, and the post-migration schema-v1 ledger/lint |
 | Sequence | `4c3f74b0` -> `7e194bb3` -> `73a34f94` -> `52cf07be` |
-| Documentation prerequisite | Pending |
+| Documentation prerequisite | `6796433eb27f16768a36fb88e0fbd6bae43ea412` |
 | Readiness | Clean selection HEAD `bee5a905c3e0b291018a33165b382d14bb5eb9fd`, `origin/main...HEAD=0/16`, protected `stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4`; dependency-ready. |
 
 ## Authority And Classification
@@ -140,16 +140,57 @@ Specification, `.miz`, expectation, checker/runner production, Cargo, trace,
 coverage audit, and the 678-line ledger have zero delta; the immutable source
 TSV has its frozen full-file hash. `git diff --check` passes. Final read-only
 quality ended **NO FINDINGS**; all nine hard gates PASS, no score cap applies,
-and the valid score is `100/100` (`20/20/15/15/10/10/5/5`). Exact staging and
-the dedicated prerequisite commit remain.
+and the valid score is `100/100` (`20/20/15/15/10/10/5/5`). The prerequisite
+committed separately as `6796433eb27f16768a36fb88e0fbd6bae43ea412`.
 
 ## Migration Evidence
 
-Pending the committed prerequisite and fresh preimage replay.
+Fresh post-prerequisite inventory was clean at `origin/main...HEAD=0/17`;
+protected `stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4` was unchanged. All eight
+immutable preimages replayed at 130 lines and their frozen hashes before
+editing.
+
+The mechanical migration changes exactly the eight declared checker sources,
+this EN/JA pair, and `legacy_compactions.tsv`: eleven paths. Only the eight
+complete sections become language-local redirects. Their 130 physical lines
+become 16 redirect-plus-separator lines, a reduction of 114; source diff is
+eight additions and 122 deletions. The duplicated plans, all TODOs, frozen
+source-type API, implementation and implementation-verification sections,
+Typed/final and payload owners, every runner document, trace, coverage, and
+all unlisted content remain.
+
+The ledger now has 696 physical lines. This batch adds exactly one task, eight
+redirects over eight distinct source paths, and eight index records. Its
+expanded-inventory SHA-256 is
+`b5d183379643e68f5b87b530c59b8e5425dc2b3a286eaaea54b6fee116a1ea76`;
+its complete physical SHA-256 is
+`7f5ef689d418f8605282e90ba67b446a3f404031af99f44d5683a5158e1d16e8`.
+The immutable source TSV remains
+`5d61e5c9982432deb1a671ed45168ca2a811b33981cf90cd6d2dfb5657220d2e`.
+Focused generic-ledger/link/fragment lint and `git diff --check` pass.
+
+Independent equivalence/boundary, test-sufficiency/schema, and
+source-documentation/EN-JA reviews ended **NO FINDINGS**. They replayed every
+preimage, postimage, redirect, neighboring anchor, unique historical claim,
+retained owner, ledger relation and hash, protected surface, and audit
+no-impact decision. Existing generic schema-v1 lint is sufficient; no Rust,
+schema, test, fixture, expectation, trace, coverage, or additional
+documentation change is warranted.
+
+Full checker/runner lint passed `15/15` each; checker/runner libraries passed
+`530/530` and `600/600`; runner metadata passed `137/137`. Formatting, offline
+Cargo metadata, warnings-denied all-target/all-feature Clippy, the full
+all-target/all-feature workspace suite including benchmarks, and `git diff
+--check` passed. Five CLIs exited zero with 23 stderr lines and zero errors each
+and reproduced every frozen stdout hash. Protected specification, `.miz`,
+expectation, checker/runner production, Cargo, trace, coverage audit, and
+immutable source TSV surfaces remain unchanged. Final read-only quality ended
+**NO FINDINGS**; all nine hard gates PASS, no score cap applies, and the valid
+score is `100/100` (`20/20/15/15/10/10/5/5`). Exact staging and the task-only
+commit remain.
 
 ## Handoff
 
-Complete exact staging and the dedicated commit. Then fresh-inventory the same
-task and perform only its frozen schema-v1 migration. Parent reasoning remains
-`xhigh`; independent reviews use `high`, deterministic inventory may use
-`medium`.
+Complete exact staging and the task-only commit. Then clean fresh-inventory the
+next schema-v1-safe checker family. Parent reasoning remains `xhigh`;
+independent reviews use `high`, deterministic inventory may use `medium`.

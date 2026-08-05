@@ -945,45 +945,7 @@ implementation exits only after the exact four tests, reviews, focused/full
 verification and count/hash gates, one-file task-only staging, a dedicated
 commit, clean fresh inventory, and automatic return to Task 264.
 
-## Task 249PI Documentation-Prerequisite Verification
-
-Repeated specification and boundary/source-documentation reviews report **NO
-FINDINGS** after correcting the resolver-FQN/debug template and closing stale
-Task-264 checklist state. Independent final quality reports **NO FINDINGS**;
-all nine hard gates PASS with no score cap at valid `100/100`
-(`20/20/15/15/10/10/5/5`). The delta is exactly 32 synchronized design files
-and has zero canonical spec, production, test, fixture, sidecar, expectation,
-trace, Cargo, or metadata change.
-
-Focused parser/resolver/Profile-C checker tests pass `1/2/2`; checker/runner
-lint policies pass `15/14`; metadata passes `137/137`; `cargo fmt --all
---check`, warnings-denied all-target/all-feature Clippy, full workspace tests,
-Cargo metadata, all five CLIs, and `git diff --check` pass. The CLIs reproduce
-cases/requirements `426/394`, pass/fail `233/193`, active
-parse/declaration/type/proof `101/7/203/1`, type coverage `258=246+12`, and
-warnings/errors `23/0`.
-
-Checker/runner/resolver/syntax lists remain `469/528/148/59`; their exact
-raw/normalized hashes remain respectively
-`3e7712bb86277f45d8883e949cf9f59d9b20176693c4f224751184728b92ddc7` /
-`2fdb8681cad17eeee4640433aaa0f54428fc83f9941cd62862652a9aebb859b4`,
-`b8128fc8f77a50aebba6dfb75488cb838ccc84c8a3f9bd71f046304cd607784e` /
-`5887a3aaf1818b44fba6d46d49b7275997928c4ce2587a6cc47343eee3a35456`,
-`c99d9d179cf14ab9ccd274b11d0404bdc47a64d23a2aa914c69ba674d01a3fee` /
-`1c76831124b1e680d708fd30ddfa7a96959aa82d20c840594dbb108dcd063490`,
-and `512775259a51121a0c12ab9fbf0d1083273d3d140362d889cdd9e22184215da6` /
-`c11a29c90fee3fe81d839f80f196dcd405cc43c7da86e83f37dc123042066540`.
-
-Checker production remains `28/158478`, path/content
-`6e4bc96ef04cb5f011d53c651bb93549992e3c7fd0e7595b851d7181c8a65dcd` /
-`19a0dd0472f0e3b40c486ab9451322be03aab4322c53d30cff03ef5e6f8c8490`;
-runner production remains `35/67939`, path/content
-`4218936ff3ee3baaceb7c0723307ad266d722d0a2473e8b7f82e11c75aeb2b6e` /
-`a543608c5075ffed97141626ebbf8d952a847051a34d6782097329b44aa1d09e`.
-Trace remains
-`cf0ef6d28a132bcbafc8aa1214ded935a715fdffdb3421c37d66c35954f2a06c`;
-all Task-48 and mixed-gap source/sidecar hashes remain the exact prior values.
-Exact staging, commit, and post-commit fresh inventory remain parent-owned.
+Completion evidence: [central Task-249PI historical contract](../../task_contracts/en/249PI.md#completion-evidence).
 
 ## Task 249PI Implementation Verification
 

@@ -11,12 +11,12 @@ language behavior、test intent、API、diagnostic、traceability、coverageを�
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-249PI-DOC-REVIEW-COMPACT` |
-| Status | Documentation prerequisite reviews/verification/final read-only quality complete。exact staging/commitが残る。そのcommitとfresh replayまでmigrationは禁止。 |
+| Status | Documentation prerequisite committed。exact migration、independent reviews、full verification、final quality complete。exact staging/commitが残る。 |
 | Purpose | 全durable implementation/runner ownerを保持し、repeated Task-249PI documentation-prerequisite/frozen-review evidenceをcentralizeする。 |
 | Owners | migration policy、historical [249PI](./249PI.md#completion-evidence)、[checker plan](../../mizar-checker/ja/00.crate_plan.md#task-index)、[runner plan](../../mizar-test/ja/00.crate_plan.md#task-index) |
 | Consumers | checker source paths 8件、Task Index 4件、post-migration schema-v1 ledger/lint |
 | Sequence | `4c3f74b0` -> `7e194bb3` -> `73a34f94` -> `52cf07be` |
-| Documentation prerequisite | Pending |
+| Documentation prerequisite | `6796433eb27f16768a36fb88e0fbd6bae43ea412` |
 | Readiness | clean selection HEAD `bee5a905c3e0b291018a33165b382d14bb5eb9fd`、`origin/main...HEAD=0/16`、protected `stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4`。dependency-ready。 |
 
 ## Authority And Classification
@@ -128,14 +128,50 @@ PASS。five CLIsは各exit zero、stderr 23行、errors zeroで全frozen stdout 
 trace、coverage audit、678-line ledgerはdelta zeroで、immutable source TSVはfrozen
 full-file hashを持つ。`git diff --check`はPASS。final read-only qualityは
 **NO FINDINGS**、全9 hard gates PASS、score capなし、valid scoreは`100/100`
-(`20/20/15/15/10/10/5/5`)。exact staging/dedicated prerequisite commitが残る。
+(`20/20/15/15/10/10/5/5`)。prerequisiteは
+`6796433eb27f16768a36fb88e0fbd6bae43ea412`としてseparate commitされた。
 
 ## Migration Evidence
 
-committed prerequisiteとfresh preimage replay待ち。
+fresh post-prerequisite inventoryは`origin/main...HEAD=0/17`でclean、protected
+`stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4`は不変。edit前にimmutable
+preimages 8件/130行と全frozen hashをreplayした。
+
+mechanical migrationはdeclared checker sources 8件、本EN/JA pair、
+`legacy_compactions.tsv`のexact 11 pathsを変更する。complete sections 8件だけを
+language-local redirectへ置換し、physical 130行はredirect+separator 16行、114行
+削減となる。source diffは8 additions/122 deletions。duplicated plans、全TODO、
+frozen source-type API、implementation/implementation-verification sections、
+Typed/final/payload owners、全runner document、trace、coverage、unlisted contentを
+保持する。
+
+ledgerは696 physical lines。本batchはtask 1、distinct 8 source paths上のredirect
+8、index records 8を追加した。expanded-inventory SHA-256は
+`b5d183379643e68f5b87b530c59b8e5425dc2b3a286eaaea54b6fee116a1ea76`、
+complete physical SHA-256は
+`7f5ef689d418f8605282e90ba67b446a3f404031af99f44d5683a5158e1d16e8`。
+immutable source TSVは
+`5d61e5c9982432deb1a671ed45168ca2a811b33981cf90cd6d2dfb5657220d2e`。
+focused generic-ledger/link/fragment lintと`git diff --check`はPASS。
+
+independent equivalence/boundary、test-sufficiency/schema、source-documentation/
+EN-JA reviewsは**NO FINDINGS**。全preimage/postimage/redirect/neighbor anchor、unique
+historical claim、retained owner、ledger relation/hash、protected surface、audit
+no-impact decisionをreplayした。existing generic schema-v1 lintは十分で、Rust、
+schema、test、fixture、expectation、trace、coverage、追加document変更は不要。
+
+full checker/runner lintは各`15/15`、checker/runner librariesは`530/530`と
+`600/600`、runner metadataは`137/137`をPASS。format、offline Cargo metadata、
+warnings-denied all-target/all-feature Clippy、benchmarksを含むfull all-target/
+all-feature workspace suite、`git diff --check`はPASS。five CLIsは各exit zero、
+stderr 23行、errors zeroで全frozen stdout hashを再現した。protected specification、
+`.miz`、expectation、checker/runner production、Cargo、trace、coverage audit、
+immutable source TSVは不変。final read-only qualityは**NO FINDINGS**、全9 hard
+gates PASS、score capなし、valid scoreは`100/100`
+(`20/20/15/15/10/10/5/5`)。exact staging/task-only commitが残る。
 
 ## Handoff
 
-exact staging/dedicated commitを完了する。その後同taskをfresh inventoryし、frozen
-schema-v1 migrationだけを実施する。parentは`xhigh`、independent reviewsは`high`、
+exact staging/task-only commitを完了する。その後next schema-v1-safe checker familyを
+clean fresh inventoryする。parentは`xhigh`、independent reviewsは`high`、
 deterministic inventoryは`medium`。

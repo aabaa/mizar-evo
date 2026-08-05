@@ -1623,14 +1623,7 @@ counts, and all semantic deferrals. Both select separate Task 249PI after the
 docs commit and add no current executable or coverage credit. No untranslated
 normative delta remains.
 
-## Task 249PI Frozen-Contract Synchronization
-
-The canonical `source_type.md` and Japanese companion agree on the Chapter-5/7
-authority, lower `source_drift` classification, exact
-`1/3/0/0/0/2` means/equals profiles and site pairs, additive extension method,
-three errors and precedence, unchanged debug grammar, Typed/final ownership,
-four checker tests, `469 -> 473` count, zero runner/corpus/trace impact,
-semantic exclusions, and two-commit exit. No bilingual normative debt remains.
+Completion evidence: [central Task-249PI historical contract](../../task_contracts/en/249PI.md#completion-evidence).
 
 ## Task 249PI Implementation Synchronization
 

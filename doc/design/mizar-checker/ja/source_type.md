@@ -658,28 +658,7 @@ report-only origin divergence、protected-stash invarianceでexitする。separa
 implementationはexact test 4件、review、focused/full verification、count/hash、one-file
 task-only staging、dedicated commit、clean fresh inventory後にTask 264へautomatic returnする。
 
-## Task 249PI documentation-prerequisite verification
-
-resolver-FQN/debug template修正とstale Task264 checklist closure後、repeated spec reviewと
-boundary/source-doc reviewは**NO FINDINGS**。independent final qualityも**NO FINDINGS**、
-hard gate 9件はscore capなしで全PASS、valid `100/100`
-(`20/20/15/15/10/10/5/5`)。deltaはexactly synchronized design 32 filesで、canonical
-spec/production/test/fixture/sidecar/expectation/trace/Cargo/metadata changeはzero。
-
-focused parser/resolver/Profile-C checkerは`1/2/2`、checker/runner lintは`15/14`、
-metadataは`137/137`、fmt、warnings-denied Clippy、full workspace test、Cargo metadata、
-all five CLI、`git diff --check`はPASS。CLIはcases/requirements `426/394`、pass/fail
-`233/193`、active `101/7/203/1`、type `258=246+12`、warnings/errors `23/0`を再現する。
-
-checker/runner/resolver/syntax listは`469/528/148/59`で、raw/normalized hashはcanonical
-EN sectionのexact 8値から不変。checker productionは`28/158478`、path/content
-`6e4bc96ef04cb5f011d53c651bb93549992e3c7fd0e7595b851d7181c8a65dcd` /
-`19a0dd0472f0e3b40c486ab9451322be03aab4322c53d30cff03ef5e6f8c8490`、runnerは
-`35/67939`、`4218936ff3ee3baaceb7c0723307ad266d722d0a2473e8b7f82e11c75aeb2b6e` /
-`a543608c5075ffed97141626ebbf8d952a847051a34d6782097329b44aa1d09e`。
-traceは`cf0ef6d28a132bcbafc8aa1214ded935a715fdffdb3421c37d66c35954f2a06c`、
-Task48/mixed-gap source/sidecar hashも不変。exact stage/commit/post-commit inventoryは
-parent-owned gateとして残る。
+Completion evidence: [central Task-249PI historical contract](../../task_contracts/ja/249PI.md#completion-evidence)。
 
 ## Task 249PI implementation verification
 

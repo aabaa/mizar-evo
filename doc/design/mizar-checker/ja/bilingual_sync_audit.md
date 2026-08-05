@@ -1555,13 +1555,7 @@ EN canonicalとJA companionはexact two sources/hashes、85/56 AST、resolver
 isolation、two future consumers、counts/deferralsで一致する。両方ともdocs後
 Task249PIをselectし、current executable creditを追加しない。
 
-## Task 249PI frozen-contract synchronization
-
-canonical `source_type.md`とJA companionはChapter-5/7 authority、lower
-`source_drift`分類、exact `1/3/0/0/0/2` means/equals profile/site pair、additive
-extension method、error 3件/precedence、unchanged debug grammar、Typed/final ownership、
-checker test 4件、`469 -> 473`、runner/corpus/trace zero impact、semantic exclusion、
-two-commit exitで一致する。bilingual normative debtはない。
+Completion evidence: [central Task-249PI historical contract](../../task_contracts/ja/249PI.md#completion-evidence)。
 
 ## Task 249PI implementation synchronization
 

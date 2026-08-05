@@ -5509,19 +5509,7 @@ coherence、proof/acceptance/fact/IR/VCをinfer/publishするのは禁止boundar
 Implementation後public inventoryはcanonical module docの5 IDs/tables、enums、
 handoff/projection/producer、typed/final getters、serializer literalsをexactに列挙する。
 
-## Task 249PI frozen source/specification audit
-
-fresh inventoryはbinding-linked `Task264Carrier` type 1件とindependent structure-member
-return type 2件が共存できないことをlower `source_drift`、paired `design_drift`、
-canonical-derived four-test `test_gap`に分類する。Chapters 5 §§5.1--5.2、7
-§§7.4.1/7.8.2/7.10、exact Task264 parser/resolver profile、committed
-Task-248P/249/249S transportで十分で、blocking `spec_gap`はない。
-
-frozen repairは`source_type.rs`へのappend-only exact `1/3/0/0/0/2`、means sites
-63/64・56/55/54・59/58/57、equals 45/46・38/37/36・41/40/39、extension method
-1件、error 3件、global precedence、arena/install replay、legacy byte不変。language
-semantic/executable corpus creditはない。property provenance/return association/
-means/equals/definiens/`it`/initial obligation/runner evidenceはTask264がownする。
+Completion evidence: [central Task-249PI historical contract](../../task_contracts/ja/249PI.md#completion-evidence)。
 
 ## Task 249PI implemented source/specification audit
 
