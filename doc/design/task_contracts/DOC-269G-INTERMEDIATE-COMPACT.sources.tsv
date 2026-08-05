@@ -1,0 +1,144 @@
+# Frozen preimage inventory for DOC-269G-INTERMEDIATE-COMPACT.
+# Columns: task, language, component, source path, ATX level, exact heading text without the ATX prefix, section SHA-256, physical lines.
+269GC	en	mizar-checker	doc/design/mizar-checker/en/00.crate_plan.md	3	Task 269GC implementation status	5f71eb8392b678c8453dc452a023b6fb73d093a0a49730ed9ee3bf689b5c9a3a	34
+269GC	en	mizar-checker	doc/design/mizar-checker/en/bilingual_sync_audit.md	3	Task 269GC implementation synchronization	b266a72d9e0b3f81d129df1313c05824d9bf19ffb42003796eb73f05a17669c2	13
+269GC	en	mizar-checker	doc/design/mizar-checker/en/binding_env.md	3	Task 269GC implemented binding environment	86e16739ce4afea5f643768acc695a5ff399a6a3d5d712b94ca78403401eeb6e	9
+269GC	en	mizar-checker	doc/design/mizar-checker/en/module_boundary_audit.md	3	Task 269GC implemented boundary	b1a63319c220809f218f317fa0335e9fb670191fc5bb356608c15af7df3f05ce	15
+269GC	en	mizar-checker	doc/design/mizar-checker/en/payload_family_decomposition.md	3	Task 269GC implemented binding payload	1bfc4666457dda8581812772d9656bba618626b0950fe9efbc6ad6f92935eaf1	7
+269GC	en	mizar-checker	doc/design/mizar-checker/en/resolved_typed_ast.md	3	Task 269GC implemented final ownership	cebba7539f7575806ba6e622e99008999d3ad3a9d859ae522b9ec9c6ff8c24e7	8
+269GC	en	mizar-checker	doc/design/mizar-checker/en/semantic_spec_audit.md	3	Task 269GC implementation semantic status	9c5cdb6ae7b8bf1d39d993c8618a4c360998e08aa5b2ce2f7e7b4fe2cb003b84	7
+269GC	en	mizar-checker	doc/design/mizar-checker/en/source_proof_local_declaration.md	3	Task 269GC implementation status	d5206c3e0ecb02b7a4364444d2da77c6dfe446513030b89bf1ef98b1934087f2	39
+269GC	en	mizar-checker	doc/design/mizar-checker/en/source_spec_audit.md	3	Task 269GC implemented source/spec mapping	fb834a354d9a21bc1ce9dda771a93897d2a1d5c291dc539978dd7e98c06f7362	12
+269GC	en	mizar-checker	doc/design/mizar-checker/en/source_statement.md	3	Task 269GC implemented statement exclusion	c1d6bb36d6aa5e6673c70b23cbf3c924a986270b4dc6823fe2b3f21b5d476af1	7
+269GC	en	mizar-checker	doc/design/mizar-checker/en/source_term.md	3	Task 269GC implemented term deferral	c41e11caa60d707dd0918472946a70d28283259218b4d17f0c01e6be47c9fd6f	6
+269GC	en	mizar-checker	doc/design/mizar-checker/en/source_type.md	3	Task 269GC implemented type deferral	b28e02062eadd2ff65af7361713efb4a616684df9bac9585364d9dbe02bdf29a	6
+269GC	en	mizar-checker	doc/design/mizar-checker/en/typed_ast.md	3	Task 269GC implemented Typed ownership	1fc87c6f0f6d888628c819d71d48f4a7847e28f9997829026bfbf7aaa413c2f1	7
+269GC	en	mizar-test	doc/design/mizar-test/en/00.crate_plan.md	3	Checker Task 269GC implemented private binding consumer	2c5726044c024ef249b023296dff75545c115bd42476429c8a5b1931fbe9c714	27
+269GC	en	mizar-test	doc/design/mizar-test/en/bilingual_sync_audit.md	3	Task 269GC implementation synchronization	75e0dff1b0b7a39bca5e6b66a6d5fe9d2269d6904ea93b37efe9969e838ab197	11
+269GC	en	mizar-test	doc/design/mizar-test/en/harness.md	3	Task 269GC implemented dormant harness	5e3b51f63f8ed911ab66f9943c70c3bf52b8415618f93c0986a405bfe8528259	8
+269GC	en	mizar-test	doc/design/mizar-test/en/module_boundary_audit.md	3	Task 269GC implemented runner boundary	72553a54062c099740a5fb640f736b6c92c3b00e27eca1f6703e0b69ecf8955d	12
+269GC	en	mizar-test	doc/design/mizar-test/en/traceability.md	3	Task 269GC implemented zero-credit trace status	dd2094f0815b361e8ef6344f16496e64c4db29570d461d5fe28aa097584e6b59	9
+269GC	ja	mizar-checker	doc/design/mizar-checker/ja/00.crate_plan.md	3	Task 269GC implementation status	aad15d8300744298aa75fab871836011e6aa6a8a2197f4bb710e596fb35d1aad	30
+269GC	ja	mizar-checker	doc/design/mizar-checker/ja/bilingual_sync_audit.md	3	Task 269GC implementation synchronization	8b2e513d90e22245c191f338e52aeef32c85581b996db973787f57c43454f582	10
+269GC	ja	mizar-checker	doc/design/mizar-checker/ja/binding_env.md	3	Task 269GC implemented binding environment	8f4e943922712b0cb3a8c20f03162841a470751f43f9806f86861d5daaeea0f1	7
+269GC	ja	mizar-checker	doc/design/mizar-checker/ja/module_boundary_audit.md	3	Task 269GC implemented boundary	8d503de67b192df28407c04a39ef35ab041c226f3a1ad5744803f256367c7f36	14
+269GC	ja	mizar-checker	doc/design/mizar-checker/ja/payload_family_decomposition.md	3	Task 269GC implemented binding payload	2253c451088c86cf816aba478491891e40ae145e4c65708162364c76b560f8c2	6
+269GC	ja	mizar-checker	doc/design/mizar-checker/ja/resolved_typed_ast.md	3	Task 269GC implemented final ownership	4ed197b8fdd5d754d187c3d70f24519f6d8b54abd5f5095eecf6f183636ef3d4	6
+269GC	ja	mizar-checker	doc/design/mizar-checker/ja/semantic_spec_audit.md	3	Task 269GC implementation semantic status	ec585907cdd090ffd631b041e37dc0fea0151389bb6f402e33e3c800a808e26e	6
+269GC	ja	mizar-checker	doc/design/mizar-checker/ja/source_proof_local_declaration.md	3	Task 269GC implementation status	0bebaf29cf8a99605bd4876486162d5dfce8bb0754b926a1f89d1c9d93d7194f	32
+269GC	ja	mizar-checker	doc/design/mizar-checker/ja/source_spec_audit.md	3	Task 269GC implemented source/spec mapping	2c99260268b489d2c83b5764fd41ccb4dd89cabe9a764c743efe3790ddd3d0a2	10
+269GC	ja	mizar-checker	doc/design/mizar-checker/ja/source_statement.md	3	Task 269GC implemented statement exclusion	e85af36cd77747bd276006f34fb1f66b1ca7c20582e87db08dc1bbdda728c32f	6
+269GC	ja	mizar-checker	doc/design/mizar-checker/ja/source_term.md	3	Task 269GC implemented term deferral	aa99cea64b9e2d475b85c4634cfc19249b24a2925596fe211b5beb6cb4dd75e4	5
+269GC	ja	mizar-checker	doc/design/mizar-checker/ja/source_type.md	3	Task 269GC implemented type deferral	f11a28ca4882978dee958993020682cfee4afadc053d47f1860c902c6e1c51d7	6
+269GC	ja	mizar-checker	doc/design/mizar-checker/ja/typed_ast.md	3	Task 269GC implemented Typed ownership	5009d137698e7184d1f68cc2d05d56041b14d3167bb226eb44121432f1456949	6
+269GC	ja	mizar-test	doc/design/mizar-test/ja/00.crate_plan.md	3	Checker Task 269GC implemented private binding consumer	aee82ccea10366d4129e500acce6447f8fc94aa6a78c86742e765f423c2f6fb9	22
+269GC	ja	mizar-test	doc/design/mizar-test/ja/bilingual_sync_audit.md	3	Task 269GC implementation synchronization	313f69d6870fe22ddf9ce9553e076a2a7f4ff1de35a37fb0ad3a891ed342a898	9
+269GC	ja	mizar-test	doc/design/mizar-test/ja/harness.md	3	Task 269GC implemented dormant harness	4df0003174e18108e8278e8437b73ae0f78a6bce846d33edc50ace8936f5c18d	7
+269GC	ja	mizar-test	doc/design/mizar-test/ja/module_boundary_audit.md	3	Task 269GC implemented runner boundary	968fba4be652cef1bfc857be262f473c03a819b3736e000ce05865f7321331b1	11
+269GC	ja	mizar-test	doc/design/mizar-test/ja/traceability.md	3	Task 269GC implemented zero-credit trace status	78c5ac78e46c845322af418a905915db209a3c728d4250e75d85e7e8d655717e	7
+269GCP	en	mizar-checker	doc/design/mizar-checker/en/00.crate_plan.md	3	Task 269GCP implementation status	ca97a787e807465d5625da44e2f40565ac8c0b5e6eda376599d46599d2409b01	26
+269GCP	en	mizar-checker	doc/design/mizar-checker/en/bilingual_sync_audit.md	3	Task 269GCP implementation synchronization	59055059358f932db67a1bd580ddf2549e7ab20016880d5076ab28577693a789	8
+269GCP	en	mizar-checker	doc/design/mizar-checker/en/binding_env.md	3	Task 269GCP implemented no-binding boundary	0a95f57f7509cb5062222847255b8c5d88e78746416b667d6b2a2dfc7f6efc51	7
+269GCP	en	mizar-checker	doc/design/mizar-checker/en/module_boundary_audit.md	3	Task 269GCP implemented boundary	c78616e45ceab94b132a306929d35ec41e5a31c8c2f203d95265a23a39202927	9
+269GCP	en	mizar-checker	doc/design/mizar-checker/en/payload_family_decomposition.md	3	Task 269GCP implemented lower payload	b6a64e1531f81f03d0bda0eba3a1751174a09ead1d239869a5089c40b49f1c79	7
+269GCP	en	mizar-checker	doc/design/mizar-checker/en/resolved_typed_ast.md	3	Task 269GCP implemented final-owner exclusion	b772242c16c194924f2cf2af2705876c79824069a1ff313e69bf335cb3f4e5b1	7
+269GCP	en	mizar-checker	doc/design/mizar-checker/en/semantic_spec_audit.md	3	Task 269GCP implementation deferral status	c7b341a2f63958cb838a247b5fee2895a8bd5a6d14290a47f7160e53f560f33b	7
+269GCP	en	mizar-checker	doc/design/mizar-checker/en/source_proof_local_declaration.md	3	Task 269GCP implemented lower prerequisite	b347e52375bf9c0371623f32ffdc740872c8b90389c76a5236cb67e6f30f0455	12
+269GCP	en	mizar-checker	doc/design/mizar-checker/en/source_spec_audit.md	3	Task 269GCP implemented source/spec mapping	999b8dc5e7899902ea450407247e2c893a95d1ea38b4ef540cb9b4bc57326862	8
+269GCP	en	mizar-checker	doc/design/mizar-checker/en/source_statement.md	3	Task 269GCP implemented statement exclusion	7d029690706a13f33f7418d9f45ebc4287bf080a4129cb3a8db972180da17f02	6
+269GCP	en	mizar-checker	doc/design/mizar-checker/en/source_term.md	3	Task 269GCP implemented term deferral	70ac1e400535859ec1d3222e29bdb8e28a0ecca9ddf028476d7cc672bff7ca93	6
+269GCP	en	mizar-checker	doc/design/mizar-checker/en/source_type.md	3	Task 269GCP implemented type deferral	a2bc7a8b3046bbd76626713fcfc5e29fd78bfd3a06d6b464c7ea945c1d2f2004	6
+269GCP	en	mizar-checker	doc/design/mizar-checker/en/typed_ast.md	3	Task 269GCP implemented Typed-owner exclusion	44837ea66867496a08f8d3f1adec70c65ab473264cdd90656749b539f20e2aad	7
+269GCP	en	mizar-test	doc/design/mizar-test/en/00.crate_plan.md	3	Checker Task 269GCP implemented private lower consumer	18b2f9921dee250cdb4efba29a9ddf68a06a8357709de403d48754f3f3c54029	19
+269GCP	en	mizar-test	doc/design/mizar-test/en/bilingual_sync_audit.md	3	Task 269GCP implementation synchronization	2f6a7b662e694f695000d3e70bce1e0b8b60975ec5c1bdf9e3aa28e0c113826b	7
+269GCP	en	mizar-test	doc/design/mizar-test/en/harness.md	3	Task 269GCP implemented private harness	4a41d73dc39bab530cfc47c821274b63414c61105a000084f81627816f787584	8
+269GCP	en	mizar-test	doc/design/mizar-test/en/module_boundary_audit.md	3	Task 269GCP implemented runner boundary	171c08c657ad3c50ccf0fbd3bdbab8ef2656bd9d65161af82e7c3b80278b0dc8	10
+269GCP	en	mizar-test	doc/design/mizar-test/en/traceability.md	3	Task 269GCP implemented zero-credit trace status	1dda13de1c1174a3be39687a25433520d5a40187f14d2905d1924d45923d782c	6
+269GCP	ja	mizar-checker	doc/design/mizar-checker/ja/00.crate_plan.md	3	Task 269GCP implementation status	27b6265fafe32d4850b7c61bc8fcc032e306b32414a2e16c9579fbc26f138230	23
+269GCP	ja	mizar-checker	doc/design/mizar-checker/ja/bilingual_sync_audit.md	3	Task 269GCP implementation synchronization	e42eeec6fb5de06e0dfc84ae2b0f9495cc35b1115363efe7e514a5aece08099c	6
+269GCP	ja	mizar-checker	doc/design/mizar-checker/ja/binding_env.md	3	Task 269GCP implemented no-binding boundary	05adf1f9241662701a7221c88c32c045b62c7fa647f01b56e906ce124fd50228	6
+269GCP	ja	mizar-checker	doc/design/mizar-checker/ja/module_boundary_audit.md	3	Task 269GCP implemented boundary	ebecfda4db09ff12202de26803a6f1497b87fb7392a292336d6e268b66683ce7	9
+269GCP	ja	mizar-checker	doc/design/mizar-checker/ja/payload_family_decomposition.md	3	Task 269GCP implemented lower payload	97a396347ad0fcfccab166a5afa43eec38da62c78cb962a23efae5e5020f6414	6
+269GCP	ja	mizar-checker	doc/design/mizar-checker/ja/resolved_typed_ast.md	3	Task 269GCP implemented final-owner exclusion	b09813d58ca1c70bb8bd9e653af128b20cd3c4bb482b0115b805e6b08713c059	6
+269GCP	ja	mizar-checker	doc/design/mizar-checker/ja/semantic_spec_audit.md	3	Task 269GCP implementation deferral status	f7dbcb165fd9502d1c313e6bb65d43ee53d5ffa99c2ff81fa8b43cf3d65fb830	6
+269GCP	ja	mizar-checker	doc/design/mizar-checker/ja/source_proof_local_declaration.md	3	Task 269GCP implemented lower prerequisite	68ec878adc2029796b11ce02b46db8ee9bee28806d55fba96b52622abaaa2522	10
+269GCP	ja	mizar-checker	doc/design/mizar-checker/ja/source_spec_audit.md	3	Task 269GCP implemented source/spec mapping	7e41906c5c0a68c687facc54448d14464272da1f971316eac112c0b72255b6aa	7
+269GCP	ja	mizar-checker	doc/design/mizar-checker/ja/source_statement.md	3	Task 269GCP implemented statement exclusion	394d566bf3e6b9c9ff2035f70535d46c68da0af8abd9884f3bb79a31816525e1	6
+269GCP	ja	mizar-checker	doc/design/mizar-checker/ja/source_term.md	3	Task 269GCP implemented term deferral	8bcc13fb4c67bbf59845bac6bb7b7495e2ed33999a6981133dff6373113fd507	5
+269GCP	ja	mizar-checker	doc/design/mizar-checker/ja/source_type.md	3	Task 269GCP implemented type deferral	b2b56e0ef660fc73848ffff32219a1456db5bfd439fffcaeea3e7ba86ce1b215	6
+269GCP	ja	mizar-checker	doc/design/mizar-checker/ja/typed_ast.md	3	Task 269GCP implemented Typed-owner exclusion	fd4a7e42ffd80be42f7a0e1fff492c5fe2d482750fc5866402791e0299268b5e	6
+269GCP	ja	mizar-test	doc/design/mizar-test/ja/00.crate_plan.md	3	Checker Task 269GCP implemented private lower consumer	e3e2725deceeb0d226f75deab0f9356d55fc0a08ec808efa4a5acc33305bedb8	18
+269GCP	ja	mizar-test	doc/design/mizar-test/ja/bilingual_sync_audit.md	3	Task 269GCP implementation synchronization	6dd54fb539e5823b80a719e189e1418578bf7475360e059cccabb99a98acf88a	6
+269GCP	ja	mizar-test	doc/design/mizar-test/ja/harness.md	3	Task 269GCP implemented private harness	043360a0679ee3b2b74c1b1979a56afe5c2710fe7bbc55282fe28cfcf0873fe8	7
+269GCP	ja	mizar-test	doc/design/mizar-test/ja/module_boundary_audit.md	3	Task 269GCP implemented runner boundary	9173207ea5316207a072684ccce69192efd22670f88a3069bc639202494c0fc3	8
+269GCP	ja	mizar-test	doc/design/mizar-test/ja/traceability.md	3	Task 269GCP implemented zero-credit trace status	09bcf87c64d11c22790fbcecc0363ce7d053d9d8c679907b432d91a69d1f0266	6
+269GU	en	mizar-checker	doc/design/mizar-checker/en/00.crate_plan.md	3	Task 269GU implementation status	171800fdbb8d8ae6f2f5260dc4639cd6c9a41f32d38b360c413cf5accc5862e3	28
+269GU	en	mizar-checker	doc/design/mizar-checker/en/bilingual_sync_audit.md	3	Task 269GU implementation synchronization	d29fce8e0628fda0e1ceb3997cdc95b9cf494c882c7b9c49fd923f482f4dd80f	7
+269GU	en	mizar-checker	doc/design/mizar-checker/en/binding_env.md	3	Task 269GU implemented binding use	a87cc2d946e4a322c5c3daefcce4d73a80c3d546aab18283cb0e46a03e55bef6	7
+269GU	en	mizar-checker	doc/design/mizar-checker/en/module_boundary_audit.md	3	Task 269GU implemented module boundary	f37fee2cad62394303060a8239f4b40f18111ff0164b0e7147b75c7d8e83fb08	6
+269GU	en	mizar-checker	doc/design/mizar-checker/en/payload_family_decomposition.md	3	Task 269GU implemented payload	6cb99157ce7ce500a25eaaa03f636f72b8b345674e52f19c5b4c6fab35a86b5a	7
+269GU	en	mizar-checker	doc/design/mizar-checker/en/resolved_typed_ast.md	3	Task 269GU implemented final owner	310ba741f93e5a96ab34d7b1b55278fe173b6ef6e8749aa28fa0d295aa0e165a	6
+269GU	en	mizar-checker	doc/design/mizar-checker/en/semantic_spec_audit.md	3	Task 269GU implementation deferral status	de6455854b089d4687d1f10d5ab9b2c461f6d40a5b9101349174c0ab841b8f6a	7
+269GU	en	mizar-checker	doc/design/mizar-checker/en/source_proof_local_declaration.md	3	Task 269GU implemented dependency consumer	be4b5116b41665626008db6b0673a3c9577d60413e496da8e3ee45a1cc1babf9	6
+269GU	en	mizar-checker	doc/design/mizar-checker/en/source_spec_audit.md	3	Task 269GU implemented source/spec mapping	ecba989dd4c10e3363302500eda4e6ada0f1b0eb7144f0aa436845f0bd451823	9
+269GU	en	mizar-checker	doc/design/mizar-checker/en/source_statement.md	3	Task 269GU implemented statement boundary	ef272593033573ff358e8852ab93b15464bc4c920f818541a768c09ea83f1c16	6
+269GU	en	mizar-checker	doc/design/mizar-checker/en/source_term.md	3	Task 269GU implemented term/reference transport	d07e512e508533257bd8721a7a107cc3b6adfac07e69c7318ae1523a919af0c7	17
+269GU	en	mizar-checker	doc/design/mizar-checker/en/source_type.md	3	Task 269GU implemented source-type boundary	be9fa1d1565966ba5ed6e52a92cdf3df9c5d7630145cb851c854e3725ba3f04a	6
+269GU	en	mizar-checker	doc/design/mizar-checker/en/typed_ast.md	3	Task 269GU implemented Typed ownership	66334bb14f542434e2b7b05ad57205a65fe6efdedfade724d4d0f1b3fb60e633	6
+269GU	en	mizar-test	doc/design/mizar-test/en/00.crate_plan.md	3	Checker Task 269GU implemented dormant runner	ad3ff7d89810dd126127348377749402728f4c0a525fd61953276c0a0500f57b	15
+269GU	en	mizar-test	doc/design/mizar-test/en/bilingual_sync_audit.md	3	Task 269GU implementation synchronization	39bbaae631fef08bf8b9ad4eb2f53f62114d903ebe120e2daa3869c2fe84dedb	7
+269GU	en	mizar-test	doc/design/mizar-test/en/harness.md	3	Task 269GU implemented private harness	e4362655f1ec1db503a60c9526ef70280ba081ad59f379dbd201455f78e6d08e	7
+269GU	en	mizar-test	doc/design/mizar-test/en/module_boundary_audit.md	3	Task 269GU implemented runner boundary	e7b6270c971d516027a25cb3db266a1cde09ec2cce0187eb1f66f95daede050d	6
+269GU	en	mizar-test	doc/design/mizar-test/en/traceability.md	3	Task 269GU implemented zero-credit trace status	585217f6311e5516ecd8e8913278a72d0059d4db13cdef56fde7822f2b6d010c	6
+269GU	ja	mizar-checker	doc/design/mizar-checker/ja/00.crate_plan.md	3	Task 269GU implementation status	36e1b93f75289baf0e34f0722e0174f212ce0f16e131cecd26b099d9b8dea051	27
+269GU	ja	mizar-checker	doc/design/mizar-checker/ja/bilingual_sync_audit.md	3	Task 269GU implementation synchronization	da77bc1a42d7136fd1d3d1f76f1e23cd899ca24152cb97d6d7e7a9aca43c0fd0	6
+269GU	ja	mizar-checker	doc/design/mizar-checker/ja/binding_env.md	3	Task 269GU implemented binding use	70a2f7b2b00c9004df7e357601ef4eebfed020e7e9a27d574962519badad5f05	6
+269GU	ja	mizar-checker	doc/design/mizar-checker/ja/module_boundary_audit.md	3	Task 269GU implemented module boundary	c96cd8a487a7eb53fb95c44fb31df2744de1d5285304aebc961623d0873b9a47	6
+269GU	ja	mizar-checker	doc/design/mizar-checker/ja/payload_family_decomposition.md	3	Task 269GU implemented payload	103bddcf07513694690afc64fb5bc2148905af79b8151f2f6201b3508c7bec5b	6
+269GU	ja	mizar-checker	doc/design/mizar-checker/ja/resolved_typed_ast.md	3	Task 269GU implemented final owner	dcc7cb688caa10ff927e0557aa863bc0a14b28135d4457b8e500575395912568	5
+269GU	ja	mizar-checker	doc/design/mizar-checker/ja/semantic_spec_audit.md	3	Task 269GU implementation deferral status	6d65dfe286848e91d61ccbd41189046c82d68f987c1071400e48f753b8c62e61	6
+269GU	ja	mizar-checker	doc/design/mizar-checker/ja/source_proof_local_declaration.md	3	Task 269GU implemented dependency consumer	6fc9310ed832334d7c73b51ae26b19fbf0212356536d9ebaa588e99869e5007e	6
+269GU	ja	mizar-checker	doc/design/mizar-checker/ja/source_spec_audit.md	3	Task 269GU implemented source/spec mapping	fdc07e6c2b3da2b8b15acf6aac586f9532576019fd84a91d2f7e5d84163fc2e7	8
+269GU	ja	mizar-checker	doc/design/mizar-checker/ja/source_statement.md	3	Task 269GU implemented statement boundary	c277032a6ad32a2d53a51f0daf10062108aef221b234a8b3a29d894c78e8647f	5
+269GU	ja	mizar-checker	doc/design/mizar-checker/ja/source_term.md	3	Task 269GU implemented term/reference transport	4e80f749c459f7e472b39c192683784e724cf6722f4d5e9ddeffcbfbce6db2a1	14
+269GU	ja	mizar-checker	doc/design/mizar-checker/ja/source_type.md	3	Task 269GU implemented source-type boundary	3003c6cdc8323d95536057f84edfe80c6e8b7fbfe332d36e2dc10c8752ca4f88	6
+269GU	ja	mizar-checker	doc/design/mizar-checker/ja/typed_ast.md	3	Task 269GU implemented Typed ownership	4fd2c5f26e8620b4442821d37eeea94bbdd8e92b136545dc69599e1693de6ef7	6
+269GU	ja	mizar-test	doc/design/mizar-test/ja/00.crate_plan.md	3	Checker Task 269GU implemented dormant runner	ce7dd64fe142c26d692191e55ec76bcb7ba70ea58c0aa29101396300b67d3a23	13
+269GU	ja	mizar-test	doc/design/mizar-test/ja/bilingual_sync_audit.md	3	Task 269GU implementation synchronization	d092b0a2094eba1f2ca1ebcce95272440353ef37eede200e505c25c8baee8b3d	6
+269GU	ja	mizar-test	doc/design/mizar-test/ja/harness.md	3	Task 269GU implemented private harness	8c8ee3176328dc3d625b304374026a5c43ad904f72f488e3674c5bb2fe82fa77	6
+269GU	ja	mizar-test	doc/design/mizar-test/ja/module_boundary_audit.md	3	Task 269GU implemented runner boundary	4dfda35dccba03b0ace99bfd5892aee7c018e45a015bf7c10088039bd326bc40	6
+269GU	ja	mizar-test	doc/design/mizar-test/ja/traceability.md	3	Task 269GU implemented zero-credit trace status	f03d29dd494528862fcf1022c06b57e66b11f13409ec5b5da0b91b360a88381a	6
+269GUPT	en	mizar-checker	doc/design/mizar-checker/en/00.crate_plan.md	3	Task 269GUPT implementation status	baf1eb0ae2a0724b61e81fff68055dfd7febe284b4dfbc0ad60ae2477a9a4d12	19
+269GUPT	en	mizar-checker	doc/design/mizar-checker/en/bilingual_sync_audit.md	3	Task 269GUPT implementation synchronization	23c00d6129d7be166a577c1ef4f25b4418642d238a876c112d63537817df472b	7
+269GUPT	en	mizar-checker	doc/design/mizar-checker/en/binding_env.md	3	Task 269GUPT implemented overlay	2c14f5f23e5091b7912d212b8eb2f6c4efed504baec73de32cae58d971dd26be	7
+269GUPT	en	mizar-checker	doc/design/mizar-checker/en/module_boundary_audit.md	3	Task 269GUPT implemented module boundary	b64e36dcd3bbf3deca6ac9e0dd0b9fffb39a88c1fde50c997e57a73bfe777aec	6
+269GUPT	en	mizar-checker	doc/design/mizar-checker/en/payload_family_decomposition.md	3	Task 269GUPT implemented payload	cf0a0e71b796366dfa6732ce07486df1914a8a4c69d5a6990aaf18018468a164	6
+269GUPT	en	mizar-checker	doc/design/mizar-checker/en/resolved_typed_ast.md	3	Task 269GUPT implemented final owner	127fa7a228f872f6192a21af11d65601da3584ea083a43be2a94fed4c1c572e0	6
+269GUPT	en	mizar-checker	doc/design/mizar-checker/en/semantic_spec_audit.md	3	Task 269GUPT implementation deferral status	6e5101149506cfc0cb53ce2a93403bfae924035a51bb27f0361c08eabd9e96bb	6
+269GUPT	en	mizar-checker	doc/design/mizar-checker/en/source_proof_local_declaration.md	3	Task 269GUPT implemented dependency consumer	687607cf19bc3d81e28fd6153f5d5ef9786944339f16a7c99634f4ebbc79e3a8	6
+269GUPT	en	mizar-checker	doc/design/mizar-checker/en/source_spec_audit.md	3	Task 269GUPT implemented source/spec mapping	1aee5be51bdbb7b50a4a50bf0b5a57d058f59702168ab637d72d3077833e626b	8
+269GUPT	en	mizar-checker	doc/design/mizar-checker/en/source_statement.md	3	Task 269GUPT implemented statement boundary	3daeaa0a5f3234e5160553e96b7ea1771b4309670cca5880fa5bcbafedfb7ea6	6
+269GUPT	en	mizar-checker	doc/design/mizar-checker/en/source_type.md	3	Task 269GUPT implementation verification status	b8d1ce90e24141492ef0fe5204c5cbfec1fd1ab163eb9932fc76d611a817a85c	36
+269GUPT	en	mizar-checker	doc/design/mizar-checker/en/typed_ast.md	3	Task 269GUPT implemented Typed ownership	a36b6da5c002448c0ed4f42fcd9e39c140b5357ab2ed329306177ac51968e103	6
+269GUPT	en	mizar-test	doc/design/mizar-test/en/00.crate_plan.md	3	Checker Task 269GUPT implemented dormant runner	e3da4bd9c290790e93f4cac0b55471c4e9aa97717c02c244629c9f656e7cc672	16
+269GUPT	en	mizar-test	doc/design/mizar-test/en/bilingual_sync_audit.md	3	Task 269GUPT implementation synchronization	03d333d4e9f00da5fa87ff70bb90a5d4ca406d8db171703e0362e6fb3bc692b9	7
+269GUPT	en	mizar-test	doc/design/mizar-test/en/harness.md	3	Task 269GUPT implemented private harness	549a7aac6d88f6b94eb1fbb3d161fe0ed38ae18012518dd0097d241c86bee305	6
+269GUPT	en	mizar-test	doc/design/mizar-test/en/module_boundary_audit.md	3	Task 269GUPT implemented runner boundary	fe2f01e26f455f3d07398f05326d315c00426b14c4635c2cda5e3b0e475c8281	6
+269GUPT	en	mizar-test	doc/design/mizar-test/en/traceability.md	3	Task 269GUPT implemented zero-credit trace status	956f1ca9f20d252fda7b8c638de0c9a25bd699fcc7863e8680e9214a748942e8	6
+269GUPT	ja	mizar-checker	doc/design/mizar-checker/ja/00.crate_plan.md	3	Task 269GUPT implementation status	ae19615052ce7cdf0d5bde290ef0b5f0bdbe7a17edc872eb36f6c42671d0e54e	18
+269GUPT	ja	mizar-checker	doc/design/mizar-checker/ja/bilingual_sync_audit.md	3	Task 269GUPT implementation synchronization	a40d9693b3373d985dbeef536d618cc7e6ce58460e28cf7be24725c596295477	6
+269GUPT	ja	mizar-checker	doc/design/mizar-checker/ja/binding_env.md	3	Task 269GUPT implemented overlay	19fa1d64e7f3b0364f41c2d32cd2e89cb2f4ca58ca1f90a000d01a24496c4706	6
+269GUPT	ja	mizar-checker	doc/design/mizar-checker/ja/module_boundary_audit.md	3	Task 269GUPT implemented module boundary	7476f19101f18fac23e34097069f6d4e5e44db3ea55f5a5ab446c70fc621d736	6
+269GUPT	ja	mizar-checker	doc/design/mizar-checker/ja/payload_family_decomposition.md	3	Task 269GUPT implemented payload	0b183ddd9c9fe583ff71f36098625040cac9e582f11661d24d244ab1b78ace4b	6
+269GUPT	ja	mizar-checker	doc/design/mizar-checker/ja/resolved_typed_ast.md	3	Task 269GUPT implemented final owner	64b8922558a4a8bf92e62e5a6398391b5e9d36f73e6e01d345014cc16a489266	5
+269GUPT	ja	mizar-checker	doc/design/mizar-checker/ja/semantic_spec_audit.md	3	Task 269GUPT implementation deferral status	e053af1681cecf932831fe8673336712bec69c3726f6617c8b33341d06d9257f	5
+269GUPT	ja	mizar-checker	doc/design/mizar-checker/ja/source_proof_local_declaration.md	3	Task 269GUPT implemented dependency consumer	8429da9fb4c0ad84b723c1b75b43b66f9629df5439ba77160badec2a625ecf47	6
+269GUPT	ja	mizar-checker	doc/design/mizar-checker/ja/source_spec_audit.md	3	Task 269GUPT implemented source/spec mapping	daf8b4cb29912fa93c33356791e2b4835c9a7d365e8e57f46fe6a9f86cc53f08	7
+269GUPT	ja	mizar-checker	doc/design/mizar-checker/ja/source_statement.md	3	Task 269GUPT implemented statement boundary	e6da6eb0f26c60404a8c417a1e61b406d3e14894013f4d6fcfe6798a24d83a85	5
+269GUPT	ja	mizar-checker	doc/design/mizar-checker/ja/source_type.md	3	Task 269GUPT implementation verification status	5c831fd4a126bb6b3f8fefa90b3faf761ab5a371ca55e3a4262709eb447b0056	33
+269GUPT	ja	mizar-checker	doc/design/mizar-checker/ja/typed_ast.md	3	Task 269GUPT implemented Typed ownership	a76c89e86e229c162778c292f9c908cb818739be6c30d2c15ac9bc969818fed8	5
+269GUPT	ja	mizar-test	doc/design/mizar-test/ja/00.crate_plan.md	3	Checker Task 269GUPT implemented dormant runner	2a89acd49b9979bd59d0e640c5a2893c449642b8b3d5710a9814d9684cd4c809	14
+269GUPT	ja	mizar-test	doc/design/mizar-test/ja/bilingual_sync_audit.md	3	Task 269GUPT implementation synchronization	de576036be405d0a0fc4f0076a58ff5f35228559c684d044d4d5e46a338f2c90	6
+269GUPT	ja	mizar-test	doc/design/mizar-test/ja/harness.md	3	Task 269GUPT implemented private harness	f4dd53c276922dd3773a7d52f042415f6b129a1267264b9ad9b37e066dbc420a	6
+269GUPT	ja	mizar-test	doc/design/mizar-test/ja/module_boundary_audit.md	3	Task 269GUPT implemented runner boundary	1caab0b4fd3ed3f129271697f3a87babefe4dfc65b5262a90b5e58d524006fbb	6
+269GUPT	ja	mizar-test	doc/design/mizar-test/ja/traceability.md	3	Task 269GUPT implemented zero-credit trace status	f1eded890ffda65e401a315ff4d644fbbbe374a682f560c999a41d5eea7bbfcf	5
