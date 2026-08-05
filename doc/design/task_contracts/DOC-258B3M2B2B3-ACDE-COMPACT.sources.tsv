@@ -1,0 +1,10 @@
+# Frozen preimage inventory for DOC-258B3M2B2B3-ACDE-COMPACT.
+# Columns: task, language, component, source path, ATX level, exact heading text without the ATX prefix, section SHA-256, physical lines.
+258B3M2B2B3A	en	mizar-checker	doc/design/mizar-checker/en/payload_family_decomposition.md	3	Task 258B3M2B2B3A Implemented Upper-Family Edge	dc707e5bbcb7fa5727e518463baf6ea6ad88d34ff106a967e052bfee366afb3c	19
+258B3M2B2B3A	ja	mizar-checker	doc/design/mizar-checker/ja/payload_family_decomposition.md	3	Task 258B3M2B2B3A implemented upper-family edge	102257b6d29c51df055a96ebe0a414086220cc17a4f1bf1a27fb3eabb10a46be	18
+258B3M2B2B3C	en	mizar-checker	doc/design/mizar-checker/en/payload_family_decomposition.md	3	Task 258B3M2B2B3C Implemented Choice-Witness Edge	52a83836e726335be00815d475dfa1a6d17b404b6a46e7b861d69b4ac32cb2af	13
+258B3M2B2B3C	ja	mizar-checker	doc/design/mizar-checker/ja/payload_family_decomposition.md	3	Task 258B3M2B2B3C implemented choice-witness edge	65c12da6d9c01087876856994a5e762cec903213f2d98b46800bc6a13da5b294	12
+258B3M2B2B3D	en	mizar-checker	doc/design/mizar-checker/en/payload_family_decomposition.md	3	Task 258B3M2B2B3D Implemented Qua-Witness Edge	21cb0e8778d36e0901505ecd92a980e782036732913cd1ae3cfece8013e0e1d9	22
+258B3M2B2B3D	ja	mizar-checker	doc/design/mizar-checker/ja/payload_family_decomposition.md	3	Task 258B3M2B2B3D implemented qua-witness edge	742fd28ad568eb76ac118dbdeaf2b6c164a95473abbd58d22b5cee66244907b8	26
+258B3M2B2B3E	en	mizar-checker	doc/design/mizar-checker/en/payload_family_decomposition.md	3	Task 258B3M2B2B3E Implemented Comprehension-Witness Edge	27ce8b57bad61efcbb45d74cc98c2ff100fd3b8e5b7b958bba621d04f0a09cef	25
+258B3M2B2B3E	ja	mizar-checker	doc/design/mizar-checker/ja/payload_family_decomposition.md	3	Task 258B3M2B2B3E implemented comprehension-witness edge	054b57356e46d7c1603cc4b7d37da20eaf15f69afda3ec5d94f7d09f6d84561e	22
