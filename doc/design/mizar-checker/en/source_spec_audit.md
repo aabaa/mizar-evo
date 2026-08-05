@@ -4955,17 +4955,7 @@ ownership, precedence/replay/clones, empty adjacent/semantic outputs, and
 the three independent Task-111 literal hashes. Documentation re-review and
 quality remain pending.
 
-## Task 258B3M2B2B3P Review Closure Status
-
-Repeated specification/documentation, test-sufficiency,
-implementation-boundary, and source/documentation consistency reviews all
-report **NO FINDINGS**. Exact-source/hash, `15/14` lint, `390/444`
-libraries, recorded production/test-list/five-CLI hashes, exact 26-doc scope,
-diff check, and trace no-op verification pass. This closes/finalizes the
-documentation prerequisite's `design_drift` and test-intent correction while
-retaining planned future implementation `source_drift`/`test_gap`. Only
-final nine-gate quality/score, commit, post-commit, and fresh implementation
-inventory remain pending.
+Completion evidence: [central Task-258B3M2B2B3P historical contract](../../task_contracts/en/258B3M2B2B3P.md#completion-evidence).
 
 ## Task 258B3M2B2B3P Final Quality Audit
 

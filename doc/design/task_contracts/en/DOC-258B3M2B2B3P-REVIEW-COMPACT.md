@@ -12,12 +12,12 @@ behavior, test intent, API, diagnostics, traceability, or coverage.
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-258B3M2B2B3P-REVIEW-COMPACT` |
-| Status | Documentation prerequisite reviewed, verified, and final-quality approved; exact staging and the prerequisite commit remain. Migration is a separate later commit. |
+| Status | Documentation prerequisite committed; migration reviewed, fully verified, and final-quality approved. Exact staging and the migration commit remain. |
 | Purpose | Centralize repeated Task-258B3M2B2B3P documentation-prerequisite review evidence while retaining every final-quality, frozen, implementation, runner, todo, and audit owner. |
 | Owners | Migration policy, historical [258B3M2B2B3P](./258B3M2B2B3P.md#completion-evidence), [checker plan](../../mizar-checker/en/00.crate_plan.md#task-index), and [runner plan](../../mizar-test/en/00.crate_plan.md#task-index) |
 | Consumers | Twelve checker source paths (six EN/JA pairs), four Task Indexes, and the post-migration generic schema-v1 ledger/lint |
 | Historical sequence | B2C implementation `e8373c68` -> B3P prerequisite `285a1f11` -> B3P implementation `abbfedfc` -> B3A prerequisite `f4ff4596` |
-| Documentation prerequisite | All reviews and hard gates PASS; ready for exact staging |
+| Documentation prerequisite | `5dca509241fdfa01736202f253cff1870075b8cb` |
 | Readiness | Clean selection HEAD `9c31231eae4a0bb1cff9d6bb037ab030eb2d5fef`, `origin/main...HEAD=0/8`, protected `stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4`; exact selection is dependency-ready. |
 
 ## Authority And Classification
@@ -143,8 +143,49 @@ and proof-verification
 
 Final read-only quality review ended **NO FINDINGS**. All nine hard gates PASS,
 no score cap applies, and the valid score is `98/100`
-(`20/20/15/14/10/10/5/4`). The only residual state is parent-owned exact
-staging, the prerequisite commit, and the separately reviewed migration.
+(`20/20/15/14/10/10/5/4`). At that prerequisite checkpoint, the only residual
+state was parent-owned exact staging, the prerequisite commit, and the
+separately reviewed migration.
+
+## Migration Evidence
+
+The prerequisite committed as `5dca509241fdfa01736202f253cff1870075b8cb`.
+Fresh post-commit inventory was clean at `origin/main...HEAD=0/9`; protected
+`stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4` was unchanged, and all
+12 frozen preimages replayed at 134 lines before editing.
+
+The mechanical migration changes exactly the 12 declared checker sources,
+this EN/JA pair, and `legacy_compactions.tsv`: 15 paths. It replaces only the
+12 complete review sections with language-local redirects. Their 134 physical
+lines become 24 redirect-plus-separator lines, a reduction of 110. Every
+final-quality, frozen, and implementation section, every runner owner, and
+every unlisted section remains.
+
+The ledger now has 614 physical lines. The batch adds exactly one task, 12
+redirects over 12 distinct source paths, and eight index records. Its expanded
+inventory SHA-256 is
+`9b72ed0867a2e459ac989cd11e185f859dd8c1f5390ba923de5544c69e80f8dd`;
+its complete physical SHA-256 is
+`d3bf34059a5a30dc86a2feee58cf9b3c400daaf49157121960f8096b57e6f2a2`.
+The immutable source TSV remains
+`0f40c4b508344a3bcb411e02d2fef4fca64a5df6f1bce4c2c9b4bd70f8bacfb9`.
+Focused generic-ledger/link/fragment lint and `git diff --check` pass.
+Independent test-sufficiency, equivalence/boundary, and source/document/EN-JA
+consistency reviews ended **NO FINDINGS**. They replayed every committed
+preimage and retained owner, all redirects/anchors/indexes, ledger
+ordering/arithmetic/hashes, chronology, bilingual parity, protected scope, and
+the audit no-impact decision. Generic schema-v1 lint is sufficient; no new
+Rust/schema/fixture/test is required or authorized.
+
+Focused/full runner lint passed `1/1` and `15/15`; checker lint passed `15/15`;
+checker/runner libraries passed `530/530` and `600/600`; runner metadata passed
+`137/137`. Formatting, offline Cargo metadata, warnings-denied Clippy, the full
+offline workspace suite, all six protected count/path/content baselines,
+trace/coverage/source-TSV no-ops, and `git diff --check` passed. All five CLIs
+exited zero with 23 unchanged warnings and exactly reproduced the prerequisite
+stdout hashes. Final read-only quality review ended **NO FINDINGS**. All nine
+hard gates PASS, no score cap applies, and the valid score is `98/100`
+(`20/20/15/14/10/10/5/4`). Only exact staging and the migration commit remain.
 
 ## Handoff
 

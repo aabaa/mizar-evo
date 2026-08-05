@@ -12,12 +12,12 @@ API、diagnostic、traceability、coverageを変更できない。
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-258B3M2B2B3P-REVIEW-COMPACT` |
-| Status | Documentation prerequisiteはreviewed/verified/final-quality approved。exact staging、prerequisite commitはpending。migrationはseparate later commit。 |
+| Status | Documentation prerequisiteはcommitted、migrationはreviewed/fully verified/final-quality approved。exact staging、migration commitはpending。 |
 | Purpose | Task-258B3M2B2B3P documentation-prerequisite review evidenceを集約し、全final-quality/frozen/implementation/runner/todo/audit ownerを保持する。 |
 | Owners | migration policy、historical [258B3M2B2B3P](./258B3M2B2B3P.md#completion-evidence)、[checker plan](../../mizar-checker/ja/00.crate_plan.md#task-index)、[runner plan](../../mizar-test/ja/00.crate_plan.md#task-index) |
 | Consumers | checker source paths 12（EN/JA pairs 6）、Task Indexes 4、post-migration generic schema-v1 ledger/lint |
 | Historical sequence | B2C implementation `e8373c68` -> B3P prerequisite `285a1f11` -> B3P implementation `abbfedfc` -> B3A prerequisite `f4ff4596` |
-| Documentation prerequisite | 全reviews/hard gates PASS、exact stagingへready |
+| Documentation prerequisite | `5dca509241fdfa01736202f253cff1870075b8cb` |
 | Readiness | clean selection HEAD `9c31231eae4a0bb1cff9d6bb037ab030eb2d5fef`、`origin/main...HEAD=0/8`、protected `stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4`。exact selectionはdependency-ready。 |
 
 ## Authority And Classification
@@ -135,9 +135,46 @@ proof-verification
 `ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`。
 
 final read-only quality reviewは**NO FINDINGS**。全9 hard gates PASS、score cap
-なし、valid scoreは`98/100`（`20/20/15/14/10/10/5/4`）。残るstateは
-parent-owned exact staging、prerequisite commit、separately reviewed migration
-だけである。
+なし、valid scoreは`98/100`（`20/20/15/14/10/10/5/4`）。そのprerequisite
+checkpointで残るstateはparent-owned exact staging、prerequisite commit、
+separately reviewed migrationだけであった。
+
+## Migration Evidence
+
+prerequisiteは`5dca509241fdfa01736202f253cff1870075b8cb`としてcommitした。
+fresh post-commit inventoryは`origin/main...HEAD=0/9`でclean、protected
+`stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4`はunchanged、editing前に
+全12 frozen preimagesを134 linesでreplayした。
+
+mechanical migrationはdeclared checker sources 12、本EN/JA pair、
+`legacy_compactions.tsv`のexact 15 pathsを変更する。complete review sections
+12件だけをlanguage-local redirectsへ置換し、134 physical linesは
+redirect+separator 24 linesとなり110減。全final-quality/frozen/
+implementation sections、runner owners、unlisted sectionsを保持する。
+
+ledgerは614 physical lines。batchはtask 1、distinct source paths 12上の
+redirects 12、index records 8をexactに追加する。expanded inventory SHA-256は
+`9b72ed0867a2e459ac989cd11e185f859dd8c1f5390ba923de5544c69e80f8dd`、
+complete physical SHA-256は
+`d3bf34059a5a30dc86a2feee58cf9b3c400daaf49157121960f8096b57e6f2a2`。
+immutable source TSVは
+`0f40c4b508344a3bcb411e02d2fef4fca64a5df6f1bce4c2c9b4bd70f8bacfb9`。
+focused generic-ledger/link/fragment lintと`git diff --check`はPASS。
+independent test-sufficiency、equivalence/boundary、source/document/EN-JA
+consistency reviewsは**NO FINDINGS**。全committed preimages/retained owners、
+全redirects/anchors/indexes、ledger ordering/arithmetic/hashes、chronology、
+bilingual parity、protected scope、audit no-impact decisionをreplayした。
+generic schema-v1 lintはsufficientで、新規Rust/schema/fixture/testは不要かつ
+authorizeされない。
+
+focused/full runner lintは`1/1`/`15/15`、checker lintは`15/15`、checker/
+runner librariesは`530/530`/`600/600`、runner metadataは`137/137`をPASS。
+format、offline Cargo metadata、warnings-denied Clippy、full offline workspace
+suite、protected 6 rowsのcount/path/content baselines、trace/coverage/source-TSV
+no-op、`git diff --check`もPASS。five CLIsはunchanged warnings 23件でexit zero、
+prerequisite stdout hashesをexactにreproduceした。final read-only qualityは
+**NO FINDINGS**。全9 hard gates PASS、score capなし、valid scoreは`98/100`
+（`20/20/15/14/10/10/5/4`）。exact stagingとmigration commitだけがpending。
 
 ## Handoff
 

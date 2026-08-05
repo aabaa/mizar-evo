@@ -4733,17 +4733,7 @@ resolver/lower fields、ownership、precedence/replay/clones、empty
 adjacent/semantic outputs、independent Task111 literal hashes 3件をexhaust
 させる。documentation re-review/qualityはpending。
 
-## Task 258B3M2B2B3P review closure status
-
-repeated specification/documentation、test-sufficiency、
-implementation-boundary、source/documentation consistency reviewsはすべて
-**NO FINDINGS**。exact source/hash、lint `15/14`、libraries `390/444`、
-record済みproduction/test-list/5 CLI hashes、exact 26-doc scope、
-diff check、trace no-op verificationはPASS。docs prerequisiteの
-`design_drift`/test-intent correctionはclosed/frozen、future
-implementation `source_drift`/`test_gap`はplanned。pendingはfinal
-nine-gate quality/score、commit、post-commit、fresh implementation
-inventoryだけ。
+Completion evidence: [central Task-258B3M2B2B3P historical contract](../../task_contracts/ja/258B3M2B2B3P.md#completion-evidence)。
 
 ## Task 258B3M2B2B3P final quality audit
 

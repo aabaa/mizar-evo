@@ -852,16 +852,7 @@ rows, owner partitions, precedence/replay/rollback/clones, empty adjacent
 and semantic outputs, and literal Task-111 handoff/typed/resolved hashes.
 This correction does not mark documentation re-review complete.
 
-## Task 258B3M2B2B3P Reviewed Synchronization Status
-
-EN/JA specification/documentation, test-sufficiency,
-implementation-boundary, and source/documentation consistency reviews now
-all report **NO FINDINGS**. Both companions record passing source/hash,
-lint `15/14`, library `390/444`, production/test-list/CLI hash,
-exact-26-doc, diff-check, and trace-no-op verification. Prerequisite
-`design_drift`/test-intent drift is closed and frozen; future implementation
-`source_drift`/`test_gap` remains planned. Final nine-gate quality, commit,
-post-commit, and fresh implementation inventory remain pending in both.
+Completion evidence: [central Task-258B3M2B2B3P historical contract](../../task_contracts/en/258B3M2B2B3P.md#completion-evidence).
 
 ## Task 258B3M2B2B3P Final-Quality Synchronization
 

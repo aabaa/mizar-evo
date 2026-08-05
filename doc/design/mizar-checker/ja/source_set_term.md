@@ -289,14 +289,7 @@ empty/singleton/3+、nested/parenthesized/comprehension/choice/`qua`、
 sethood/element/result unification、existential/proof/goal/theorem behavior、
 Tasks253/254/256/258はexclude。
 
-## Task 258B3M2B2B3P documentation review status
-
-specification/documentation、test-sufficiency、implementation-boundary、
-source/documentation consistency reviewsはすべて**NO FINDINGS**。
-exact source/hash、lint、library、production/test-list/CLI hashes、scope、
-diff、trace no-op verificationはPASS。lower table/test oracleはfrozenで、
-future private implementation `source_drift`/`test_gap`はplanned。
-final quality、commit、post-commit、fresh inventoryはpending。
+Completion evidence: [central Task-258B3M2B2B3P historical contract](../../task_contracts/ja/258B3M2B2B3P.md#completion-evidence)。
 
 ## Task 258B3M2B2B3P final quality status
 

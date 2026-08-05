@@ -2784,13 +2784,7 @@ SetTerm(0)`、public witness schema/installers、checker 4/runner 5 testsを
 freeze/implementできる。B3Pはそのedgeを先取りせず、witness、
 existential、substitution、type、goal、proof、theorem semanticsをclaimしない。
 
-## Task 258B3M2B2B3P documentation review status
-
-documentation phaseの4 review tracksはすべて**NO FINDINGS**で、record済み
-source/count/hash/scope/trace-no-op verificationはすべてPASS。B3Pの
-statement-owner exclusionをconfirmし、later B3A consumerはcloseしない。
-future B3P implementation `source_drift`/`test_gap`はplannedで、
-final quality、commit、post-commit、fresh inventoryはpending。
+Completion evidence: [central Task-258B3M2B2B3P historical contract](../../task_contracts/ja/258B3M2B2B3P.md#completion-evidence)。
 
 ## Task 258B3M2B2B3P final quality status
 

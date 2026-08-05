@@ -3335,13 +3335,7 @@ schema/installers and four checker/five runner tests. B3P neither anticipates
 that edge nor claims witness, existential, substitution, type, goal, proof,
 or theorem semantics.
 
-## Task 258B3M2B2B3P Documentation Review Status
-
-All four documentation-phase review tracks report **NO FINDINGS**, and all
-recorded source/count/hash/scope/trace-no-op verification passes. This
-confirms the B3P statement-owner exclusion without closing the later B3A
-consumer. Future B3P implementation `source_drift`/`test_gap` remains
-planned; final quality, commit, post-commit, and fresh inventory are pending.
+Completion evidence: [central Task-258B3M2B2B3P historical contract](../../task_contracts/en/258B3M2B2B3P.md#completion-evidence).
 
 ## Task 258B3M2B2B3P Final Quality Status
 

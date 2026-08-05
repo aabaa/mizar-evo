@@ -1155,14 +1155,7 @@ Task252 primary fingerprint、absent application/structure fingerprintsを
 field-for-fieldでfreeze。同じ2 testsがgraphをexhaustiveにauthenticateし、
 Task111 literal hashes 3件を使う。
 
-### Task 258B3M2B2B3P reviewed family status
-
-documentation phaseの4 review tracksはすべて**NO FINDINGS**。
-117-byte/hash、lint `15/14`、libraries `390/444`、source/test/CLI hashes、
-exact scope、diff、trace no-op checksはPASS。prerequisite family/test
-oracleはfrozenで、future private implementationはbounded
-`source_drift`/`test_gap`をownする。final quality、commit、post-commit、
-fresh implementation inventoryはpending。
+Completion evidence: [central Task-258B3M2B2B3P historical contract](../../task_contracts/ja/258B3M2B2B3P.md#completion-evidence)。
 
 ### Task 258B3M2B2B3P final family quality
 

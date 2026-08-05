@@ -329,14 +329,7 @@ nested, parenthesized, comprehension, choice, and `qua` terms; sethood,
 element/result unification; existential/proof/goal/theorem behavior; and
 Tasks 253/254/256/258 remain excluded.
 
-## Task 258B3M2B2B3P Documentation Review Status
-
-Specification/documentation, test-sufficiency, implementation-boundary, and
-source/documentation consistency reviews all report **NO FINDINGS**. Exact
-source/hash, lint, library, production/test-list/CLI hash, scope, diff, and
-trace-no-op verification pass. The lower table/test oracle is frozen; future
-private implementation `source_drift`/`test_gap` remains planned. Final
-quality, commit, post-commit, and fresh inventory are pending.
+Completion evidence: [central Task-258B3M2B2B3P historical contract](../../task_contracts/en/258B3M2B2B3P.md#completion-evidence).
 
 ## Task 258B3M2B2B3P Final Quality Status
 

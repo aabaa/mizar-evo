@@ -808,16 +808,7 @@ partitions、precedence/replay/rollback/clones、empty adjacent/semantic
 outputs、Task111 handoff/typed/resolved literal hashesをexhaustする。
 このcorrectionでdocumentation re-review完了とはしない。
 
-## Task 258B3M2B2B3P reviewed synchronization status
-
-EN/JA specification/documentation、test-sufficiency、
-implementation-boundary、source/documentation consistency reviewsはすべて
-**NO FINDINGS**。両companionsはsource/hash、lint `15/14`、libraries
-`390/444`、production/test-list/CLI hashes、exact 26 docs、diff check、
-trace no-op verification PASSで一致。prerequisite
-`design_drift`/test-intent driftはclosed/frozen、future implementation
-`source_drift`/`test_gap`はplanned。final nine-gate quality、commit、
-post-commit、fresh implementation inventoryは両言語pending。
+Completion evidence: [central Task-258B3M2B2B3P historical contract](../../task_contracts/ja/258B3M2B2B3P.md#completion-evidence)。
 
 ## Task 258B3M2B2B3P final-quality synchronization
 

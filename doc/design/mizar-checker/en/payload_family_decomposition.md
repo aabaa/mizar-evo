@@ -1271,14 +1271,7 @@ and absent application/structure fingerprints are frozen field-for-field.
 The two tests authenticate this graph exhaustively and use the three literal
 Task-111 legacy hashes.
 
-### Task 258B3M2B2B3P Reviewed Family Status
-
-All four documentation-phase review tracks report **NO FINDINGS**, and the
-117-byte/hash, lint `15/14`, library `390/444`, source/test/CLI hash,
-exact-scope, diff, and trace-no-op checks pass. The prerequisite family
-description and exhaustive test oracle are now frozen; the future private
-implementation still owns the bounded `source_drift`/`test_gap`. Final
-quality, commit, post-commit, and fresh implementation inventory are pending.
+Completion evidence: [central Task-258B3M2B2B3P historical contract](../../task_contracts/en/258B3M2B2B3P.md#completion-evidence).
 
 ### Task 258B3M2B2B3P Final Family Quality
 
