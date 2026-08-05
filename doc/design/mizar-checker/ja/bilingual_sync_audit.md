@@ -1578,14 +1578,7 @@ ranges、means-only `it` failure rules、pending obligations 2件、Typed/final 
 ownership、private consumer tests 4件、reciprocal pass sidecars 2件、measured metadata、
 unchanged semantic deferralsで一致する。未翻訳normative deltaはない。
 
-## Task 269A frozen-contract synchronization
-
-EN canonical `source_proof_local_declaration.md`とJA companionはexact
-107-byte/51-node Task-258B3N source、resolver-local `y`、binding transition
-`2/1/0 -> 2/2/0`、witness/name/RHS link、5 fingerprints、public API/debug
-grammar、node再所有0、Typed/final transaction、private dormant runner、exact
-8 tests、projected `482/536`、corpus/trace impact 0、semantic exclusion、
-Task-269B+/270--272 deferralで一致する。review前に未翻訳normative deltaはない。
+Completion evidence: [central Task-269A historical contract](../../task_contracts/ja/269A.md#completion-evidence)。
 
 ## Task 269A active implementation synchronization
 

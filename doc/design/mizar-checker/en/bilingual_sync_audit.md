@@ -1640,15 +1640,7 @@ two pending obligations, Typed/final one-shot ownership, the four-test private
 consumer, two reciprocal pass sidecars, measured metadata, and unchanged
 semantic deferrals. The audit found no untranslated normative delta.
 
-## Task 269A Frozen-Contract Synchronization
-
-EN canonical `source_proof_local_declaration.md` and its JA companion agree on
-the exact 107-byte/51-node Task-258B3N source, resolver-local `y`, binding
-transition `2/1/0 -> 2/2/0`, witness/name/RHS links, five fingerprints, public
-API/debug grammar, zero node re-ownership, Typed/final transaction, private
-dormant runner, exactly eight tests, projected `482/536`, zero corpus/trace
-impact, semantic exclusions, and Task-269B+/270--272 deferrals. No
-untranslated normative delta remains before review.
+Completion evidence: [central Task-269A historical contract](../../task_contracts/en/269A.md#completion-evidence).
 
 ## Task 269A Active Implementation Synchronization
 

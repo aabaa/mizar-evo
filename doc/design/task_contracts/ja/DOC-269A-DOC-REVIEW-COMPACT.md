@@ -11,11 +11,12 @@ language behavior、test intent、API、diagnostic、traceability、coverageを�
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-269A-DOC-REVIEW-COMPACT` |
-| Status | Documentation-prerequisite reviews/full verification/final quality complete。exact staging/commitが残る。migrationは未開始。 |
+| Status | Documentation prerequisite committed。exact migration、全independent reviews、full verification、final qualityがPASS。exact staging/commitが残る。 |
 | Purpose | 全durable implementation/runner ownerを保持し、repeated Task-269A documentation-prerequisite/frozen-review evidenceをcentralizeする。 |
 | Owners | migration policy、historical [269A](./269A.md#completion-evidence)、[checker plan](../../mizar-checker/ja/00.crate_plan.md#task-index)、[runner plan](../../mizar-test/ja/00.crate_plan.md#task-index) |
 | Consumers | checker source paths 8件、Task Index 4件、post-migration schema-v1 ledger/lint |
 | Sequence | `52cf07be` -> `1360a9c0` -> `f548ceb9` -> `3d462b1f` |
+| Documentation prerequisite | `1b7f9eb98b8e515f8ae3a07205e4ab8e04dc2fb1` |
 | Readiness | clean selection HEAD `6b139bf1ab37cdc6c0d7239d202802db1efe113f`、`origin/main...HEAD=0/18`、protected `stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4`。dependency-ready。 |
 
 ## Authority And Classification
@@ -128,14 +129,52 @@ PASS。CLI 5件は各exit zero、stderr 23行、errors zeroで全frozen stdout h
 trace、coverage audit、696-line ledgerはdelta zero、source TSVはfrozen complete-
 file hashを保持する。`git diff --check`はPASS。final read-only qualityは
 **NO FINDINGS**、全9 hard gates PASS、score capなし、valid scoreは`100/100`
-(`20/20/15/15/10/10/5/5`)。exact staging/task-only prerequisite commitが残る。
+(`20/20/15/15/10/10/5/5`)。prerequisiteは
+`1b7f9eb98b8e515f8ae3a07205e4ab8e04dc2fb1`としてseparate commitされた。
 
 ## Migration Evidence
 
-未開始。
+fresh post-prerequisite inventoryは`origin/main...HEAD=0/19`でclean、protected
+`stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4`は不変。edit前にimmutable
+preimages 8件/157行と全frozen hashをreplayした。
+
+mechanical migrationはdeclared checker sources 8件、本EN/JA pair、
+`legacy_compactions.tsv`のexact 11 pathsを変更する。complete sections 8件だけを
+language-local redirectへ置換し、physical 157行はredirect+separator 16行、141行
+削減となる。source diffは8 additions/149 deletions。frozen plan/API、proof-local
+owner、binding/Typed/final/payload/semantic/statement owners、implementation/active
+sections、checker/runner TODO、全runner document、trace、coverage、unlisted
+contentを保持する。
+
+ledgerは714 physical lines。本batchはtask 1、distinct 8 source paths上のredirect
+8、index records 8を追加した。expanded-inventory SHA-256は
+`67c14cc574974b8cbd062daeca5ed30fca34129f96619fe84475e70a9cf4d32f`、
+complete physical SHA-256は
+`0d2cb3968d79e93e1898838e31cc51b6d455f0941301e5347c6534880211e50f`。
+immutable source TSVは
+`2cd696c1957ade3232b5c66e88325514b0afd35352285a7fa718842e764661d2`。
+focused generic-ledger/link/fragment lintと`git diff --check`はPASS。
+
+independent equivalence/boundary、test-sufficiency/schema、source-documentation/
+EN-JA migration reviewsは**NO FINDINGS**。全8 immutable preimages/anchors、exact
+`157 -> 16` replacementと`+8/-149` source diff、両ledger hashと`1/1/8/8`
+relations、protected-owner retentionをreplayし、generic schema/link/fragment
+testが本mechanical migrationに十分であることを確認した。
+
+full checker/runner lintは各`15/15`、checker/runner librariesは`530/530`と
+`600/600`、runner metadataは`137/137`をPASS。formatting、offline Cargo
+metadata、warnings-denied all-target/all-feature Clippy、benchmarksを含むfull
+all-target/all-feature workspace suiteがPASS。CLI 5件は各exit zero、unchanged
+warnings 23行、errors zeroで5 frozen stdout hashを再現した。protected 6 surfaces
+はpath count/path hashを再現し、verified prerequisiteとのexact zero diffにより全
+frozen content hashを保持する。trace、coverage audit、immutable source TSV、
+ledger counts/hashes、generic recursive lint、`git diff --check`もPASS。final
+read-only qualityは**NO FINDINGS**、全9 hard gates PASS、score capなし、valid
+scoreは`100/100` (`20/20/15/15/10/10/5/5`)。exact staging、task-only commitが
+残る。
 
 ## Handoff
 
-exact staging/task-only prerequisite commitを完了する。その後immutable
-preimagesをfresh replayしてexact migrationを行う。parentは`xhigh`、independent
-reviewsは`high`、deterministic inventoryは`medium`。
+exact stagingとtask-only migration commit後、次checker compaction familyを
+fresh-inventoryする。parentは`xhigh`、independent reviewsは`high`、deterministic
+inventoryは`medium`。

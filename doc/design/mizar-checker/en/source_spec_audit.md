@@ -5790,21 +5790,7 @@ Task-248P/254 public APIs. No `doc/spec`, pre-existing `.miz`, or pre-existing
 expectation intent changed, and no blocking `spec_gap` remains in this bounded
 transaction.
 
-## Task 269A Frozen Source/Specification Audit
-
-Chapters 4 §4.4.3 and 15 §15.4.4 explicitly authorize a local identifier for
-named `take y = x`; Chapter 16 §16.4 fixes its proof-local scope. The exact
-Task-258B3N lower transport already authenticates the name and RHS but
-deliberately creates no binding. This is sufficient authority for the frozen
-definition-site binding/link transition and no more. There is no blocking
-`spec_gap`.
-
-The contract closes only `source_drift`, `design_drift`, and an eight-test
-canonical-derived `test_gap` for the one exact source. Creating a module
-symbol, parsing the witness in checker code, inferring a type, emitting an
-equality fact, or implementing existential/goal/proof behavior is a guarded
-`boundary_violation`. Existing `.miz`/expectation intent and the broad deferred
-proof-local fixture remain unchanged.
+Completion evidence: [central Task-269A historical contract](../../task_contracts/en/269A.md#completion-evidence).
 
 ## Task 269A Implemented Source/Specification Audit
 
