@@ -1,0 +1,10 @@
+# Frozen preimage inventory for DOC-258B4C-DOC-REVIEW-COMPACT.
+# Columns: task, language, component, source path, ATX level, exact heading text without the ATX prefix, section SHA-256, physical lines.
+258B4C	en	mizar-checker	doc/design/mizar-checker/en/00.crate_plan.md	3	Documentation review and verification status	2fede4c5e59b8cc2a8194cda9850420c3b002b74c8b0632cb26cd6ecb32957d3	26
+258B4C	en	mizar-checker	doc/design/mizar-checker/en/bilingual_sync_audit.md	2	Task 258B4C Documentation Review Synchronization	19ef0f524256ac3500b26c57c3a86a3ebf43e247bde23fcb0fddd61e40e6be9e	16
+258B4C	en	mizar-checker	doc/design/mizar-checker/en/module_boundary_audit.md	2	Task 258B4C Documentation Boundary Review Status	883b4ae729b1f6a18b8a596813268b1cc08bec8362645183392ba7161b9b2f09	12
+258B4C	en	mizar-checker	doc/design/mizar-checker/en/source_spec_audit.md	2	Task 258B4C Documentation Review Result	8cc887cad02f764b3db2eb81ca20d90c0b0dbbff014d4b85f79be92f4f5e7dc6	14
+258B4C	ja	mizar-checker	doc/design/mizar-checker/ja/00.crate_plan.md	3	Documentation review/verification status	beaa505c5b77a9e4d975253e57796cc3a0614b11f11a793152a35e505d52fddd	25
+258B4C	ja	mizar-checker	doc/design/mizar-checker/ja/bilingual_sync_audit.md	2	Task 258B4C documentation review synchronization	03e6ec581c5c03841dc192795dd8d966dcdb1fc19e176fab891e31ad903b2892	14
+258B4C	ja	mizar-checker	doc/design/mizar-checker/ja/module_boundary_audit.md	2	Task 258B4C documentation boundary review status	bd05ca353dbf7b7210f9bac4dbb20dc0f940a2b78a92b78b6434db9f430705d7	11
+258B4C	ja	mizar-checker	doc/design/mizar-checker/ja/source_spec_audit.md	2	Task 258B4C documentation review result	ae0fe678351126fb7ed15bebdb328a19f217bea9749224d6c0bb2ab9b38da469	14
