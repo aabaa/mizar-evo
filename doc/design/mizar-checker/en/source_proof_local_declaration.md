@@ -531,6 +531,7 @@ parent-owned.
 | `SourceProofLocalGivenBindingError` | `#[non_exhaustive]`; callers must not exhaustively match proof-`given` validation or installation failures. |
 | `SourceProofLocalGivenUseBindingError` | `#[non_exhaustive]`; callers must not exhaustively match proof-`given` later-use-profile validation failures. |
 | `SourceProofLocalGivenConditionBindingError` | `#[non_exhaustive]`; callers must not exhaustively match proof-`given` declaration-condition binding validation or installation failures. |
+| `SourceProofLocalGivenDescendantBindingError` | `#[non_exhaustive]`; callers must not exhaustively match proof-`given` descendant binding/context validation or installation failures. |
 
 No exhaustive public enum exceptions are owned by this module.
 
@@ -4451,3 +4452,44 @@ RHS, or conclusion getter except indirectly through that immutable complete
 lower fingerprint, and it must not turn `y@118..119` into an occurrence. The
 four checker and four runner test names, complete exclusions, projected counts,
 and exit criteria in the crate plan are normative for this owner.
+
+## Task 269SDC Implementation Status
+
+Documentation prerequisite `7ccf436a92a285e83de1de912250f77577527ab2` is
+complete. The frozen seven primary Rust files plus one `cfg(test)`-only
+ownership-support file now implement only the dormant descendant binding/
+context transaction. The exact four checker and four runner tests pass;
+the predecessor ownership sentinel also passes. Independent test-sufficiency
+and implementation reviews report **NO FINDINGS**.
+
+Checker/runner libraries are `526/596`. Checker production is `30/183606`,
+with path/content SHA-256
+`c89f43f6abebf7ebeb3ac9394ecd8ea3186ad28934c75526d2cc0b85a66ebad5` /
+`abaaa23c6605e1f5c1e1bb62d1665ba5140ff74af61ded310fd164899d3b99f4`.
+Runner production is `37/79263`, with path/content SHA-256
+`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d` /
+`766428921a1531d74d2fe764aa84881bf30970ac948213a2198d63cd97a37e3c`.
+Checker module sizes are proof-local declaration `8606`, typed AST `6628`,
+resolved typed AST `8622`, and source term `5625`. Runner module sizes are
+proof-local production leaf `3005`, facade `963`, root `2796`, and proof-local
+test leaf `10037`. Raw/normalized test-list hashes are checker
+`83094a868177342bb9e9edb30dc0dd41bf209f5e3d68d98ccef62748776d0539` /
+`bc576099de9b92096791d0aedc89896f5a6804c49a95072cd35e84b59e36f021`
+and runner
+`88ef7579e05f73f34ca98351782a5481c657b615986fb0085a2d842fa61ad79b` /
+`e6a16e93394f8a71554a50bfc64f66734ecbbf4b08e0683c6d10a8ccae96e76e`.
+Fresh post-implementation list replay exposed the prerequisite's projected
+hash values as `design_drift`; the measured values above supersede those
+projections without changing the exact eight frozen test names or counts.
+
+Corpus/requirements `428/395`, pass/fail `235/193`, warnings/errors `23/0`,
+stages `101/7/205/1`, type `259=247+12`, and trace SHA-256
+`55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`
+remain unchanged. No canonical specification, `.miz`, fixture, sidecar,
+expectation, trace row/status/backlink, metadata, diagnostic, public or active
+dispatch, CLI result, or executable-coverage credit changes. SDC publishes
+only the exact outer Given binding and inherited child context; source type,
+descendant occurrence, Set binding, capture/closure, fact, proof, obligation,
+and downstream semantics remain excluded. The implementation self-hash is
+pending its task-only commit; the next task is selected only from a fresh
+post-commit authority/API inventory.

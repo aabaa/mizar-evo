@@ -3703,6 +3703,660 @@ fn exact_task269gc_lookup_behavior(binding_env: &BindingEnv) -> bool {
     ) && binding_env.lookup(&visible) == Ok(BindingLookupResult::Local(BindingId::new(1)))
 }
 
+/// Complete syntax-free input for the frozen proof-local `given` descendant
+/// binding transaction.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceProofLocalGivenDescendantBindingHandoffInput {
+    pub source_id: SourceId,
+    pub module_id: ModuleId,
+    pub lower_fingerprint: String,
+    pub theorem_symbol: SymbolId,
+    pub theorem_definition: DefinitionId,
+    pub contribution: SourceContributionId,
+    pub theorem_range: SourceRange,
+    pub proof_range: SourceRange,
+    pub given_range: SourceRange,
+    pub segment_range: SourceRange,
+    pub name_range: SourceRange,
+    pub descendant_range: SourceRange,
+    pub source_ordinal: usize,
+    pub local: LocalTermBinding,
+    pub descendant_scope: LocalTermScope,
+    pub recovery: SourceProofLocalGivenBindingRecovery,
+}
+
+/// Immutable proof-local `given` binding plus descendant-context transaction.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceProofLocalGivenDescendantBindingHandoff {
+    source_id: SourceId,
+    module_id: ModuleId,
+    lower_fingerprint: String,
+    theorem_symbol: SymbolId,
+    theorem_definition: DefinitionId,
+    contribution: SourceContributionId,
+    theorem_range: SourceRange,
+    proof_range: SourceRange,
+    given_range: SourceRange,
+    segment_range: SourceRange,
+    name_range: SourceRange,
+    descendant_range: SourceRange,
+    base_binding_env: BindingEnv,
+    base_binding_fingerprint: String,
+    binding_env: BindingEnv,
+    final_binding_fingerprint: String,
+    bindings: SourceProofLocalGivenBindingTable,
+    descendant_context: BindingContextId,
+}
+
+impl SourceProofLocalGivenDescendantBindingHandoff {
+    pub const fn source_id(&self) -> SourceId {
+        self.source_id
+    }
+
+    pub const fn module_id(&self) -> &ModuleId {
+        &self.module_id
+    }
+
+    pub fn lower_fingerprint(&self) -> &str {
+        &self.lower_fingerprint
+    }
+
+    pub const fn theorem_symbol(&self) -> &SymbolId {
+        &self.theorem_symbol
+    }
+
+    pub const fn theorem_definition(&self) -> DefinitionId {
+        self.theorem_definition
+    }
+
+    pub const fn contribution(&self) -> SourceContributionId {
+        self.contribution
+    }
+
+    pub const fn theorem_range(&self) -> SourceRange {
+        self.theorem_range
+    }
+
+    pub const fn proof_range(&self) -> SourceRange {
+        self.proof_range
+    }
+
+    pub const fn given_range(&self) -> SourceRange {
+        self.given_range
+    }
+
+    pub const fn segment_range(&self) -> SourceRange {
+        self.segment_range
+    }
+
+    pub const fn name_range(&self) -> SourceRange {
+        self.name_range
+    }
+
+    pub const fn descendant_range(&self) -> SourceRange {
+        self.descendant_range
+    }
+
+    pub const fn base_binding_env(&self) -> &BindingEnv {
+        &self.base_binding_env
+    }
+
+    pub fn base_binding_fingerprint(&self) -> &str {
+        &self.base_binding_fingerprint
+    }
+
+    pub const fn binding_env(&self) -> &BindingEnv {
+        &self.binding_env
+    }
+
+    pub fn final_binding_fingerprint(&self) -> &str {
+        &self.final_binding_fingerprint
+    }
+
+    pub const fn bindings(&self) -> &SourceProofLocalGivenBindingTable {
+        &self.bindings
+    }
+
+    pub const fn descendant_context(&self) -> BindingContextId {
+        self.descendant_context
+    }
+
+    pub fn debug_text(&self) -> String {
+        let binding = self
+            .bindings
+            .get(SourceProofLocalGivenBindingId::new(0))
+            .expect("validated Task269SDC handoff has one dense row");
+        let descendant = self
+            .binding_env
+            .contexts()
+            .get(self.descendant_context)
+            .expect("validated Task269SDC handoff has one descendant context");
+        let parent = descendant
+            .parent
+            .expect("validated Task269SDC descendant has a parent");
+        format!(
+            concat!(
+                "source-proof-local-given-descendant-binding-debug-v1\n",
+                "module: {}::{}\n",
+                "lower-fingerprint: {:?}\n",
+                "theorem symbol={:?} definition={} contribution={} range={}..{} proof={}..{}\n",
+                "given range={}..{} segment={}..{} name={}..{} source_ordinal={}\n",
+                "base-binding-fingerprint: {:?}\n",
+                "binding#0 binding={} context={} source_ordinal={} visible_after={} recovery={}\n",
+                "descendant range={}..{} context={} parent={} scope=[0,0] recovery={}\n",
+                "final-binding-fingerprint: {:?}\n",
+            ),
+            self.module_id.package().as_str(),
+            self.module_id.path().as_str(),
+            self.lower_fingerprint,
+            self.theorem_symbol.fqn().as_str(),
+            self.theorem_definition.index(),
+            self.contribution.index(),
+            self.theorem_range.start,
+            self.theorem_range.end,
+            self.proof_range.start,
+            self.proof_range.end,
+            self.given_range.start,
+            self.given_range.end,
+            self.segment_range.start,
+            self.segment_range.end,
+            self.name_range.start,
+            self.name_range.end,
+            binding.source_ordinal,
+            self.base_binding_fingerprint,
+            binding.binding.index(),
+            binding.binding_context.index(),
+            binding.source_ordinal,
+            binding.visible_after_ordinal,
+            given_binding_recovery_key(binding.recovery),
+            self.descendant_range.start,
+            self.descendant_range.end,
+            descendant.id.index(),
+            parent.index(),
+            binding_context_recovery_key(descendant.recovery),
+            self.final_binding_fingerprint,
+        )
+    }
+
+    pub(crate) fn validate_installation(
+        &self,
+        source_id: SourceId,
+        module_id: &ModuleId,
+    ) -> Result<(), SourceProofLocalGivenDescendantBindingError> {
+        if self.source_id != source_id
+            || &self.module_id != module_id
+            || self.base_binding_env.source_id() != source_id
+            || self.base_binding_env.module_id() != module_id
+            || self.binding_env.source_id() != source_id
+            || self.binding_env.module_id() != module_id
+        {
+            return Err(SourceProofLocalGivenDescendantBindingError::InvalidTransaction);
+        }
+        validate_task269sdc_dependency(Task269sdcDependency {
+            source_id: self.source_id,
+            module_id: &self.module_id,
+            lower_fingerprint: &self.lower_fingerprint,
+            theorem_symbol: &self.theorem_symbol,
+            theorem_definition: self.theorem_definition,
+            contribution: self.contribution,
+            theorem_range: self.theorem_range,
+            proof_range: self.proof_range,
+            given_range: self.given_range,
+            segment_range: self.segment_range,
+            name_range: self.name_range,
+        })?;
+        if !exact_task269c_base_binding_env(&self.base_binding_env)
+            || self.base_binding_fingerprint != self.base_binding_env.debug_text()
+        {
+            return Err(SourceProofLocalGivenDescendantBindingError::InvalidBaseBindingEnvironment);
+        }
+        if self.bindings.len() != 1 {
+            return Err(SourceProofLocalGivenDescendantBindingError::InvalidAggregate);
+        }
+        let id = SourceProofLocalGivenBindingId::new(0);
+        let binding = self.bindings.get(id).ok_or(
+            SourceProofLocalGivenDescendantBindingError::InvalidDeclaration { binding: id },
+        )?;
+        if !exact_task269sdc_output_binding(binding)
+            || !exact_task269sdc_declaration_binding(&self.binding_env, self.source_id)
+        {
+            return Err(
+                SourceProofLocalGivenDescendantBindingError::InvalidDeclaration { binding: id },
+            );
+        }
+        if self.descendant_range != range(self.source_id, 102, 159)
+            || self.descendant_context != BindingContextId::new(2)
+            || !exact_task269sdc_descendant_context(&self.binding_env, self.source_id)
+        {
+            return Err(SourceProofLocalGivenDescendantBindingError::InvalidDescendantContext);
+        }
+        let expected = extend_task269sdc_binding_env(&self.base_binding_env)?;
+        if self.binding_env != expected
+            || self.final_binding_fingerprint != self.binding_env.debug_text()
+            || !exact_task269sdc_local_binding(&self.binding_env, self.source_id)
+            || !exact_task269sdc_lookup_behavior(&self.binding_env)
+        {
+            return Err(SourceProofLocalGivenDescendantBindingError::InvalidBindingEnvironment);
+        }
+        Ok(())
+    }
+
+    pub(crate) fn validate_complete_installation(
+        &self,
+        source_id: SourceId,
+        module_id: &ModuleId,
+        installation_available: bool,
+    ) -> Result<(), SourceProofLocalGivenDescendantBindingError> {
+        self.validate_installation(source_id, module_id)?;
+        if !installation_available {
+            return Err(SourceProofLocalGivenDescendantBindingError::InvalidInstallation);
+        }
+        Ok(())
+    }
+}
+
+#[derive(Debug, Clone, Copy, Default)]
+pub struct SourceProofLocalGivenDescendantBindingProducer;
+
+impl SourceProofLocalGivenDescendantBindingProducer {
+    pub fn build(
+        input: SourceProofLocalGivenDescendantBindingHandoffInput,
+        base_binding_env: &BindingEnv,
+    ) -> Result<
+        SourceProofLocalGivenDescendantBindingHandoff,
+        SourceProofLocalGivenDescendantBindingError,
+    > {
+        if input.source_id != base_binding_env.source_id()
+            || &input.module_id != base_binding_env.module_id()
+        {
+            return Err(SourceProofLocalGivenDescendantBindingError::InvalidTransaction);
+        }
+        validate_task269sdc_dependency(Task269sdcDependency {
+            source_id: input.source_id,
+            module_id: &input.module_id,
+            lower_fingerprint: &input.lower_fingerprint,
+            theorem_symbol: &input.theorem_symbol,
+            theorem_definition: input.theorem_definition,
+            contribution: input.contribution,
+            theorem_range: input.theorem_range,
+            proof_range: input.proof_range,
+            given_range: input.given_range,
+            segment_range: input.segment_range,
+            name_range: input.name_range,
+        })?;
+        if !exact_task269c_base_binding_env(base_binding_env) {
+            return Err(SourceProofLocalGivenDescendantBindingError::InvalidBaseBindingEnvironment);
+        }
+        if !exact_task269sdc_input_declaration(&input) {
+            return Err(
+                SourceProofLocalGivenDescendantBindingError::InvalidDeclaration {
+                    binding: SourceProofLocalGivenBindingId::new(0),
+                },
+            );
+        }
+        if input.descendant_range != range(input.source_id, 102, 159)
+            || input.descendant_scope.path() != [0, 0]
+        {
+            return Err(SourceProofLocalGivenDescendantBindingError::InvalidDescendantContext);
+        }
+        let binding_env = extend_task269sdc_binding_env(base_binding_env)?;
+        if !exact_task269sdc_lookup_behavior(&binding_env) {
+            return Err(SourceProofLocalGivenDescendantBindingError::InvalidBindingEnvironment);
+        }
+        let base_binding_fingerprint = base_binding_env.debug_text();
+        let final_binding_fingerprint = binding_env.debug_text();
+        Ok(SourceProofLocalGivenDescendantBindingHandoff {
+            source_id: input.source_id,
+            module_id: input.module_id,
+            lower_fingerprint: input.lower_fingerprint,
+            theorem_symbol: input.theorem_symbol,
+            theorem_definition: input.theorem_definition,
+            contribution: input.contribution,
+            theorem_range: input.theorem_range,
+            proof_range: input.proof_range,
+            given_range: input.given_range,
+            segment_range: input.segment_range,
+            name_range: input.name_range,
+            descendant_range: input.descendant_range,
+            base_binding_env: base_binding_env.clone(),
+            base_binding_fingerprint,
+            binding_env,
+            final_binding_fingerprint,
+            bindings: SourceProofLocalGivenBindingTable {
+                rows: vec![SourceProofLocalGivenBinding {
+                    binding: BindingId::new(1),
+                    binding_context: BindingContextId::new(1),
+                    source_ordinal: input.source_ordinal,
+                    visible_after_ordinal: input.local.visible_after_ordinal(),
+                    recovery: input.recovery,
+                }],
+            },
+            descendant_context: BindingContextId::new(2),
+        })
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum SourceProofLocalGivenDescendantBindingError {
+    InvalidTransaction,
+    DependencyMismatch,
+    InvalidBaseBindingEnvironment,
+    InvalidAggregate,
+    InvalidDeclaration {
+        binding: SourceProofLocalGivenBindingId,
+    },
+    InvalidDescendantContext,
+    InvalidBindingEnvironment,
+    InvalidInstallation,
+}
+
+impl fmt::Display for SourceProofLocalGivenDescendantBindingError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::InvalidTransaction => formatter
+                .write_str("source proof-local given-descendant binding transaction is invalid"),
+            Self::DependencyMismatch => formatter
+                .write_str("source proof-local given-descendant binding dependency mismatch"),
+            Self::InvalidBaseBindingEnvironment => formatter.write_str(
+                "source proof-local given-descendant binding base binding environment is invalid",
+            ),
+            Self::InvalidAggregate => formatter
+                .write_str("source proof-local given-descendant binding aggregate is invalid"),
+            Self::InvalidDeclaration { binding } => write!(
+                formatter,
+                "source proof-local given-descendant binding {} is invalid",
+                binding.index()
+            ),
+            Self::InvalidDescendantContext => formatter.write_str(
+                "source proof-local given-descendant binding descendant context is invalid",
+            ),
+            Self::InvalidBindingEnvironment => formatter.write_str(
+                "source proof-local given-descendant binding binding environment is invalid",
+            ),
+            Self::InvalidInstallation => formatter
+                .write_str("source proof-local given-descendant binding installation is invalid"),
+        }
+    }
+}
+
+impl Error for SourceProofLocalGivenDescendantBindingError {}
+
+#[derive(Debug, Clone, Copy)]
+struct Task269sdcDependency<'a> {
+    source_id: SourceId,
+    module_id: &'a ModuleId,
+    lower_fingerprint: &'a str,
+    theorem_symbol: &'a SymbolId,
+    theorem_definition: DefinitionId,
+    contribution: SourceContributionId,
+    theorem_range: SourceRange,
+    proof_range: SourceRange,
+    given_range: SourceRange,
+    segment_range: SourceRange,
+    name_range: SourceRange,
+}
+
+fn validate_task269sdc_dependency(
+    dependency: Task269sdcDependency<'_>,
+) -> Result<(), SourceProofLocalGivenDescendantBindingError> {
+    let expected_prefix = format!(
+        "{}::{}::",
+        dependency.module_id.package().as_str(),
+        dependency.module_id.path().as_str()
+    );
+    let expected_local = format!(
+        concat!(
+            "contribution=0:namespace={}:owner=theorem#1:shell=theorem:kind=theorem:",
+            "name=ProofLocalGivenDescendantCaptureSmoke:notation=_:arity=_:definition=theorem:",
+            "registration=_:policy=non-overloadable:slot=non-overloadable:_:theorem:_"
+        ),
+        escape_task269c_symbol_component(dependency.module_id.path().as_str()),
+    );
+    let expected_fqn = format!("{expected_prefix}{expected_local}");
+    let exact_symbol_identity = dependency.theorem_symbol.module() == dependency.module_id
+        && dependency.theorem_symbol.local().as_str() == expected_local
+        && dependency.theorem_symbol.fqn().as_str() == expected_fqn;
+    if !exact_symbol_identity
+        || dependency.theorem_definition.index() != 0
+        || dependency.contribution.index() != 0
+        || dependency.theorem_range != range(dependency.source_id, 19, 179)
+        || dependency.proof_range != range(dependency.source_id, 73, 178)
+        || dependency.given_range != range(dependency.source_id, 81, 99)
+        || dependency.segment_range != range(dependency.source_id, 87, 98)
+        || dependency.name_range != range(dependency.source_id, 87, 88)
+        || dependency.lower_fingerprint
+            != exact_task269sdc_lower_fingerprint(dependency.module_id, &expected_fqn)
+    {
+        return Err(SourceProofLocalGivenDescendantBindingError::DependencyMismatch);
+    }
+    Ok(())
+}
+
+fn exact_task269sdc_lower_fingerprint(module_id: &ModuleId, expected_fqn: &str) -> String {
+    format!(
+        concat!(
+            "source-proof-local-given-descendant-set-lower-debug-v1\n",
+            "module: {}::{}\n",
+            "source-fingerprint: \"efa21af05a15f611815a4eb573577d0a368a3134693b225bdb56177f3637c2a8\"\n",
+            "surface-fingerprint: \"cbeae821434b0db13d77d7dac9984d8d6bf8012de9e7c680be12e8371e87ceaa\"\n",
+            "theorem symbol={:?} definition=0 contribution=0 range=19..179 proof=73..178\n",
+            "given range=81..99 segment=87..98 source_ordinal=1\n",
+            "given-name range=87..88 spelling=\"y\"\n",
+            "given-type range=95..98 head=95..98 spelling=\"set\" form=bare\n",
+            "descendant-now range=102..159\n",
+            "set#0 statement=110..120 equating=114..119 source_ordinal=0\n",
+            "set#0 name range=114..115 spelling=\"z\" rhs range=118..119 spelling=\"y\"\n",
+            "set#1 statement=125..135 equating=129..134 source_ordinal=1\n",
+            "set#1 name range=129..130 spelling=\"q\" rhs range=133..134 spelling=\"z\"\n",
+            "conclusions inner=140..152 outer=162..174\n",
+        ),
+        module_id.package().as_str(),
+        module_id.path().as_str(),
+        expected_fqn,
+    )
+}
+
+fn exact_task269sdc_input_declaration(
+    input: &SourceProofLocalGivenDescendantBindingHandoffInput,
+) -> bool {
+    input.source_ordinal == 1
+        && input.local.spelling() == "y"
+        && input.local.scope().path() == [0]
+        && input.local.declaration_range() == input.name_range
+        && input.local.visible_after_ordinal() == 1
+        && input.recovery == SourceProofLocalGivenBindingRecovery::Normal
+}
+
+fn exact_task269sdc_output_binding(binding: &SourceProofLocalGivenBinding) -> bool {
+    binding.binding == BindingId::new(1)
+        && binding.binding_context == BindingContextId::new(1)
+        && binding.source_ordinal == 1
+        && binding.visible_after_ordinal == 1
+        && binding.recovery == SourceProofLocalGivenBindingRecovery::Normal
+}
+
+fn exact_task269sdc_local_binding(binding_env: &BindingEnv, source_id: SourceId) -> bool {
+    let Some(context) = binding_env.contexts().get(BindingContextId::new(1)) else {
+        return false;
+    };
+    let Some(binding) = binding_env.bindings().get(BindingId::new(1)) else {
+        return false;
+    };
+    context.id == BindingContextId::new(1)
+        && context.owner
+            == BindingContextOwner::SourceStatement {
+                source_range: range(source_id, 73, 178),
+            }
+        && context.parent == Some(BindingContextId::new(0))
+        && context.layer == BindingContextLayer::Proof
+        && context
+            .lexical_scope
+            .as_ref()
+            .is_some_and(|scope| scope.path() == [0])
+        && context.bindings == [BindingId::new(1)]
+        && context.visible_bindings == [BindingId::new(0), BindingId::new(1)]
+        && context.recovery == BindingContextRecovery::Normal
+        && binding.id == BindingId::new(1)
+        && binding.spelling == "y"
+        && binding.kind == BindingKind::GivenWitness
+        && matches!(
+            &binding.identity,
+            BinderIdentity::ResolverLocal {
+                scope,
+                ordinal: 1,
+                declaration_range,
+            } if scope.path() == [0]
+                && *declaration_range == range(source_id, 87, 88)
+        )
+        && binding.owner_context == BindingContextId::new(1)
+        && binding.declaration_range == range(source_id, 87, 88)
+        && binding.visible_after_ordinal == 1
+        && binding.type_site == BindingTypeSite::Missing
+        && binding.status == BindingStatus::Active
+        && binding.captured.identities().is_empty()
+        && binding.diagnostics.is_empty()
+        && binding.recovery == BindingRecoveryState::Normal
+}
+
+fn exact_task269sdc_declaration_binding(binding_env: &BindingEnv, source_id: SourceId) -> bool {
+    binding_env
+        .bindings()
+        .get(BindingId::new(1))
+        .is_some_and(|binding| {
+            binding.id == BindingId::new(1)
+                && binding.spelling == "y"
+                && matches!(
+                    &binding.identity,
+                    BinderIdentity::ResolverLocal {
+                        scope,
+                        ordinal: 1,
+                        declaration_range,
+                    } if scope.path() == [0]
+                        && *declaration_range == range(source_id, 87, 88)
+                )
+                && binding.owner_context == BindingContextId::new(1)
+                && binding.declaration_range == range(source_id, 87, 88)
+                && binding.visible_after_ordinal == 1
+                && binding.recovery == BindingRecoveryState::Normal
+        })
+}
+
+fn exact_task269sdc_descendant_context(binding_env: &BindingEnv, source_id: SourceId) -> bool {
+    let Some(context) = binding_env.contexts().get(BindingContextId::new(2)) else {
+        return false;
+    };
+    context.id == BindingContextId::new(2)
+        && context.owner
+            == BindingContextOwner::SourceStatement {
+                source_range: range(source_id, 102, 159),
+            }
+        && context.parent == Some(BindingContextId::new(1))
+        && context.layer == BindingContextLayer::Block
+        && context
+            .lexical_scope
+            .as_ref()
+            .is_some_and(|scope| scope.path() == [0, 0])
+        && context.bindings.is_empty()
+        && context.visible_bindings == [BindingId::new(0), BindingId::new(1)]
+        && context.recovery == BindingContextRecovery::Normal
+}
+
+fn extend_task269sdc_binding_env(
+    base: &BindingEnv,
+) -> Result<BindingEnv, SourceProofLocalGivenDescendantBindingError> {
+    if !exact_task269c_base_binding_env(base) {
+        return Err(SourceProofLocalGivenDescendantBindingError::InvalidBaseBindingEnvironment);
+    }
+    let local = LocalTermBinding::new(
+        "y",
+        LocalTermScope::new(vec![0]),
+        range(base.source_id(), 87, 88),
+        1,
+    );
+    let mut bindings = base.bindings().clone();
+    let binding = bindings.insert(BindingDraft::from_local_term(
+        BindingContextId::new(1),
+        BindingKind::GivenWitness,
+        &local,
+    ));
+    if binding != BindingId::new(1) {
+        return Err(SourceProofLocalGivenDescendantBindingError::InvalidBindingEnvironment);
+    }
+    let mut contexts = base.contexts().clone();
+    let proof_context = contexts.insert(BindingContextDraft {
+        owner: BindingContextOwner::SourceStatement {
+            source_range: range(base.source_id(), 73, 178),
+        },
+        parent: Some(BindingContextId::new(0)),
+        layer: BindingContextLayer::Proof,
+        lexical_scope: Some(LocalTermScope::new(vec![0])),
+        bindings: vec![binding],
+        visible_bindings: vec![BindingId::new(0), binding],
+        recovery: BindingContextRecovery::Normal,
+    });
+    if proof_context != BindingContextId::new(1) {
+        return Err(SourceProofLocalGivenDescendantBindingError::InvalidBindingEnvironment);
+    }
+    let descendant_context = contexts.insert(BindingContextDraft {
+        owner: BindingContextOwner::SourceStatement {
+            source_range: range(base.source_id(), 102, 159),
+        },
+        parent: Some(proof_context),
+        layer: BindingContextLayer::Block,
+        lexical_scope: Some(LocalTermScope::new(vec![0, 0])),
+        bindings: Vec::new(),
+        visible_bindings: vec![BindingId::new(0), binding],
+        recovery: BindingContextRecovery::Normal,
+    });
+    if descendant_context != BindingContextId::new(2) {
+        return Err(SourceProofLocalGivenDescendantBindingError::InvalidDescendantContext);
+    }
+    BindingEnv::try_new(BindingEnvParts {
+        source_id: base.source_id(),
+        module_id: base.module_id().clone(),
+        contexts,
+        bindings,
+        diagnostics: base.diagnostics().clone(),
+    })
+    .map_err(|_| SourceProofLocalGivenDescendantBindingError::InvalidBindingEnvironment)
+}
+
+fn exact_task269sdc_lookup_behavior(binding_env: &BindingEnv) -> bool {
+    let forward = BindingLookupSite::new(
+        "y",
+        BindingContextId::new(1),
+        Some(LocalTermScope::new(vec![0])),
+        1,
+    );
+    let proof = BindingLookupSite::new(
+        "y",
+        BindingContextId::new(1),
+        Some(LocalTermScope::new(vec![0])),
+        2,
+    );
+    let descendant = BindingLookupSite::new(
+        "y",
+        BindingContextId::new(2),
+        Some(LocalTermScope::new(vec![0, 0])),
+        2,
+    );
+    matches!(
+        binding_env.lookup(&forward),
+        Ok(BindingLookupResult::ForwardReference { candidates, .. })
+            if candidates == [BindingId::new(1)]
+    ) && binding_env.lookup(&proof) == Ok(BindingLookupResult::Local(BindingId::new(1)))
+        && binding_env.lookup(&descendant) == Ok(BindingLookupResult::Local(BindingId::new(1)))
+}
+
+const fn binding_context_recovery_key(recovery: BindingContextRecovery) -> &'static str {
+    match recovery {
+        BindingContextRecovery::Normal => "normal",
+        BindingContextRecovery::Recovered => "recovered",
+        BindingContextRecovery::Degraded => "degraded",
+    }
+}
+
 const fn given_binding_recovery_key(
     recovery: SourceProofLocalGivenBindingRecovery,
 ) -> &'static str {
@@ -6038,6 +6692,1279 @@ mod task269c_tests {
             diagnostics: BindingDiagnosticTable::new(),
         })
         .expect("Task269GUP valid but inexact empty base")
+    }
+
+    #[test]
+    fn source_proof_local_given_descendant_binding_is_exact_and_installed() {
+        let fixture = task269sdc_fixture();
+        let handoff = SourceProofLocalGivenDescendantBindingProducer::build(
+            fixture.input.clone(),
+            &fixture.base,
+        )
+        .expect("Task269SDC exact checker transaction");
+        assert_eq!(handoff.source_id(), fixture.source);
+        assert_eq!(handoff.module_id(), &fixture.module);
+        assert_eq!(handoff.lower_fingerprint(), fixture.input.lower_fingerprint);
+        assert_eq!(handoff.theorem_symbol(), &fixture.input.theorem_symbol);
+        assert_eq!(
+            handoff.theorem_definition(),
+            fixture.input.theorem_definition
+        );
+        assert_eq!(handoff.contribution(), fixture.input.contribution);
+        assert_eq!(handoff.theorem_range(), range(fixture.source, 19, 179));
+        assert_eq!(handoff.proof_range(), range(fixture.source, 73, 178));
+        assert_eq!(handoff.given_range(), range(fixture.source, 81, 99));
+        assert_eq!(handoff.segment_range(), range(fixture.source, 87, 98));
+        assert_eq!(handoff.name_range(), range(fixture.source, 87, 88));
+        assert_eq!(handoff.descendant_range(), range(fixture.source, 102, 159));
+        assert_eq!(handoff.base_binding_env(), &fixture.base);
+        assert_eq!(
+            handoff.base_binding_fingerprint(),
+            fixture.base.debug_text()
+        );
+        assert_eq!(handoff.descendant_context(), BindingContextId::new(2));
+        assert_eq!(
+            (
+                handoff.binding_env().contexts().len(),
+                handoff.binding_env().bindings().len(),
+                handoff.binding_env().diagnostics().len(),
+            ),
+            (3, 2, 0)
+        );
+        assert!(exact_task269sdc_local_binding(
+            handoff.binding_env(),
+            fixture.source
+        ));
+        assert!(exact_task269sdc_descendant_context(
+            handoff.binding_env(),
+            fixture.source
+        ));
+        assert!(exact_task269sdc_lookup_behavior(handoff.binding_env()));
+        let row = handoff
+            .bindings()
+            .get(SourceProofLocalGivenBindingId::new(0))
+            .expect("Task269SDC dense binding row");
+        assert!(exact_task269sdc_output_binding(row));
+        let expected_debug = format!(
+            concat!(
+                "source-proof-local-given-descendant-binding-debug-v1\n",
+                "module: {}::{}\n",
+                "lower-fingerprint: {:?}\n",
+                "theorem symbol={:?} definition=0 contribution=0 range=19..179 proof=73..178\n",
+                "given range=81..99 segment=87..98 name=87..88 source_ordinal=1\n",
+                "base-binding-fingerprint: {:?}\n",
+                "binding#0 binding=1 context=1 source_ordinal=1 visible_after=1 recovery=normal\n",
+                "descendant range=102..159 context=2 parent=1 scope=[0,0] recovery=normal\n",
+                "final-binding-fingerprint: {:?}\n",
+            ),
+            fixture.module.package().as_str(),
+            fixture.module.path().as_str(),
+            fixture.input.lower_fingerprint,
+            fixture.input.theorem_symbol.fqn().as_str(),
+            handoff.base_binding_fingerprint(),
+            handoff.final_binding_fingerprint(),
+        );
+        assert_eq!(handoff.debug_text(), expected_debug);
+        assert!(handoff.debug_text().ends_with('\n'));
+        assert!(!handoff.debug_text().ends_with("\n\n"));
+
+        let empty = empty_typed(fixture.source, fixture.module.clone());
+        let absent_debug = empty.debug_text();
+        let typed = empty
+            .clone()
+            .with_source_proof_local_given_descendant_binding(handoff.clone())
+            .expect("Task269SDC Typed owner");
+        assert_eq!(
+            typed.source_proof_local_given_descendant_binding(),
+            Some(&handoff)
+        );
+        assert_eq!(
+            typed
+                .debug_text()
+                .matches("source-proof-local-given-descendant-binding-debug-v1")
+                .count(),
+            1
+        );
+        assert!(!absent_debug.contains("source-proof-local-given-descendant-binding-debug-v1"));
+        assert_eq!(
+            typed
+                .clone()
+                .with_source_proof_local_given_descendant_binding(handoff.clone()),
+            Err(TypedAstError::InvalidSourceProofLocalGivenDescendantBinding)
+        );
+        let resolved = assemble_empty(&typed).expect("Task269SDC Resolved owner");
+        assert_eq!(
+            resolved.source_proof_local_given_descendant_binding(),
+            Some(&handoff)
+        );
+        assert_eq!(
+            resolved
+                .debug_text()
+                .matches("source-proof-local-given-descendant-binding-debug-v1")
+                .count(),
+            1
+        );
+    }
+
+    #[test]
+    fn source_proof_local_given_descendant_binding_rejects_every_corruption_in_precedence() {
+        let fixture = task269sdc_fixture();
+
+        let mut transaction = fixture.input.clone();
+        transaction.source_id = other_source_id();
+        transaction.lower_fingerprint.push('!');
+        assert_eq!(
+            SourceProofLocalGivenDescendantBindingProducer::build(transaction, &fixture.base),
+            Err(SourceProofLocalGivenDescendantBindingError::InvalidTransaction)
+        );
+        let mut transaction = fixture.input.clone();
+        transaction.module_id = ModuleId::new(PackageId::new("pkg"), ModulePath::new("wrong"));
+        assert_eq!(
+            SourceProofLocalGivenDescendantBindingProducer::build(transaction, &fixture.base),
+            Err(SourceProofLocalGivenDescendantBindingError::InvalidTransaction)
+        );
+
+        let mut dependency_inputs = Vec::new();
+        let mut input = fixture.input.clone();
+        input.lower_fingerprint.push('!');
+        dependency_inputs.push(input);
+        let mut input = fixture.input.clone();
+        input.theorem_symbol = SymbolId::new(
+            fixture.module.clone(),
+            LocalSymbolId::new("wrong"),
+            FullyQualifiedName::new("pkg::task269sdc::wrong"),
+        );
+        dependency_inputs.push(input);
+        let mut input = fixture.input.clone();
+        input.theorem_definition = fixture.other_definition;
+        dependency_inputs.push(input);
+        let mut input = fixture.input.clone();
+        input.contribution = fixture.other_contribution;
+        dependency_inputs.push(input);
+        for select in 0..5 {
+            let mut input = fixture.input.clone();
+            match select {
+                0 => input.theorem_range.end += 1,
+                1 => input.proof_range.end += 1,
+                2 => input.given_range.end += 1,
+                3 => input.segment_range.end += 1,
+                4 => input.name_range.end += 1,
+                _ => unreachable!(),
+            }
+            dependency_inputs.push(input);
+        }
+        for input in dependency_inputs {
+            assert_eq!(
+                SourceProofLocalGivenDescendantBindingProducer::build(input, &fixture.base),
+                Err(SourceProofLocalGivenDescendantBindingError::DependencyMismatch)
+            );
+        }
+
+        let mut wrong_base_and_declaration = fixture.input.clone();
+        wrong_base_and_declaration.source_ordinal = 2;
+        assert_eq!(
+            SourceProofLocalGivenDescendantBindingProducer::build(
+                wrong_base_and_declaration,
+                &task269sdc_empty_base(&fixture),
+            ),
+            Err(SourceProofLocalGivenDescendantBindingError::InvalidBaseBindingEnvironment)
+        );
+        for local in [
+            LocalTermBinding::new(
+                "z",
+                LocalTermScope::new(vec![0]),
+                range(fixture.source, 87, 88),
+                1,
+            ),
+            LocalTermBinding::new(
+                "y",
+                LocalTermScope::new(vec![1]),
+                range(fixture.source, 87, 88),
+                1,
+            ),
+            LocalTermBinding::new(
+                "y",
+                LocalTermScope::new(vec![0]),
+                range(fixture.source, 86, 88),
+                1,
+            ),
+            LocalTermBinding::new(
+                "y",
+                LocalTermScope::new(vec![0]),
+                range(fixture.source, 87, 88),
+                2,
+            ),
+        ] {
+            let mut input = fixture.input.clone();
+            input.local = local;
+            assert_eq!(
+                SourceProofLocalGivenDescendantBindingProducer::build(input, &fixture.base),
+                Err(
+                    SourceProofLocalGivenDescendantBindingError::InvalidDeclaration {
+                        binding: SourceProofLocalGivenBindingId::new(0),
+                    }
+                )
+            );
+        }
+        let mut input = fixture.input.clone();
+        input.source_ordinal = 2;
+        assert_eq!(
+            SourceProofLocalGivenDescendantBindingProducer::build(input, &fixture.base),
+            Err(
+                SourceProofLocalGivenDescendantBindingError::InvalidDeclaration {
+                    binding: SourceProofLocalGivenBindingId::new(0),
+                }
+            )
+        );
+        let mut wrong_descendant_range = fixture.input.clone();
+        wrong_descendant_range.descendant_range.end += 1;
+        let mut wrong_descendant_scope = fixture.input.clone();
+        wrong_descendant_scope.descendant_scope = LocalTermScope::new(vec![0, 1]);
+        for input in [wrong_descendant_range, wrong_descendant_scope] {
+            assert_eq!(
+                SourceProofLocalGivenDescendantBindingProducer::build(input, &fixture.base),
+                Err(SourceProofLocalGivenDescendantBindingError::InvalidDescendantContext)
+            );
+        }
+
+        let handoff = SourceProofLocalGivenDescendantBindingProducer::build(
+            fixture.input.clone(),
+            &fixture.base,
+        )
+        .expect("Task269SDC valid handoff before replay mutations");
+        let mut transaction = handoff.clone();
+        transaction.source_id = other_source_id();
+        transaction.lower_fingerprint.push('!');
+        assert_eq!(
+            transaction.validate_installation(fixture.source, &fixture.module),
+            Err(SourceProofLocalGivenDescendantBindingError::InvalidTransaction)
+        );
+        let mut transaction = handoff.clone();
+        transaction.module_id = ModuleId::new(PackageId::new("pkg"), ModulePath::new("wrong"));
+        assert_eq!(
+            transaction.validate_installation(fixture.source, &fixture.module),
+            Err(SourceProofLocalGivenDescendantBindingError::InvalidTransaction)
+        );
+        for mutate in 0..9 {
+            let mut dependency = handoff.clone();
+            match mutate {
+                0 => dependency.lower_fingerprint.push('!'),
+                1 => {
+                    dependency.theorem_symbol = SymbolId::new(
+                        fixture.module.clone(),
+                        LocalSymbolId::new("wrong"),
+                        FullyQualifiedName::new("pkg::task269sdc::wrong"),
+                    )
+                }
+                2 => dependency.theorem_definition = fixture.other_definition,
+                3 => dependency.contribution = fixture.other_contribution,
+                4 => dependency.theorem_range.end += 1,
+                5 => dependency.proof_range.end += 1,
+                6 => dependency.given_range.end += 1,
+                7 => dependency.segment_range.end += 1,
+                8 => dependency.name_range.end += 1,
+                _ => unreachable!(),
+            }
+            dependency.base_binding_fingerprint = "wrong".to_owned();
+            assert_eq!(
+                dependency.validate_installation(fixture.source, &fixture.module),
+                Err(SourceProofLocalGivenDescendantBindingError::DependencyMismatch)
+            );
+        }
+        let mut coherent_dependency = handoff.clone();
+        coherent_dependency.theorem_symbol = SymbolId::new(
+            fixture.module.clone(),
+            LocalSymbolId::new("coherent-wrong"),
+            FullyQualifiedName::new("pkg::task269sdc::CoherentWrong"),
+        );
+        coherent_dependency.lower_fingerprint = exact_task269sdc_lower_fingerprint(
+            &fixture.module,
+            coherent_dependency.theorem_symbol.fqn().as_str(),
+        );
+        assert_eq!(
+            coherent_dependency.validate_installation(fixture.source, &fixture.module),
+            Err(SourceProofLocalGivenDescendantBindingError::DependencyMismatch)
+        );
+        for inexact_base in task269sdc_inexact_bases(&fixture) {
+            let mut base = handoff.clone();
+            base.base_binding_env = inexact_base;
+            base.base_binding_fingerprint = base.base_binding_env.debug_text();
+            base.bindings.rows.clear();
+            assert_eq!(
+                base.validate_installation(fixture.source, &fixture.module),
+                Err(SourceProofLocalGivenDescendantBindingError::InvalidBaseBindingEnvironment)
+            );
+        }
+        let mut base = handoff.clone();
+        base.base_binding_fingerprint = "wrong".to_owned();
+        base.bindings.rows.clear();
+        assert_eq!(
+            base.validate_installation(fixture.source, &fixture.module),
+            Err(SourceProofLocalGivenDescendantBindingError::InvalidBaseBindingEnvironment)
+        );
+        let mut aggregate = handoff.clone();
+        aggregate.bindings.rows.clear();
+        aggregate.descendant_range.end += 1;
+        assert_eq!(
+            aggregate.validate_installation(fixture.source, &fixture.module),
+            Err(SourceProofLocalGivenDescendantBindingError::InvalidAggregate)
+        );
+        for mutate in 0..4 {
+            let mut declaration = handoff.clone();
+            match mutate {
+                0 => declaration.bindings.rows[0].binding = BindingId::new(0),
+                1 => declaration.bindings.rows[0].binding_context = BindingContextId::new(0),
+                2 => declaration.bindings.rows[0].source_ordinal = 2,
+                3 => declaration.bindings.rows[0].visible_after_ordinal = 2,
+                _ => unreachable!(),
+            }
+            declaration.descendant_range.end += 1;
+            assert_eq!(
+                declaration.validate_installation(fixture.source, &fixture.module),
+                Err(
+                    SourceProofLocalGivenDescendantBindingError::InvalidDeclaration {
+                        binding: SourceProofLocalGivenBindingId::new(0),
+                    }
+                )
+            );
+        }
+        for mut declaration in task269sdc_inexact_declaration_handoffs(&handoff, fixture.source) {
+            declaration.descendant_range.end += 1;
+            assert_eq!(
+                declaration.validate_installation(fixture.source, &fixture.module),
+                Err(
+                    SourceProofLocalGivenDescendantBindingError::InvalidDeclaration {
+                        binding: SourceProofLocalGivenBindingId::new(0),
+                    }
+                )
+            );
+        }
+        let mut descendant = handoff.clone();
+        descendant.descendant_range.end += 1;
+        descendant.final_binding_fingerprint = "wrong".to_owned();
+        assert_eq!(
+            descendant.validate_installation(fixture.source, &fixture.module),
+            Err(SourceProofLocalGivenDescendantBindingError::InvalidDescendantContext)
+        );
+        let mut descendant = handoff.clone();
+        descendant.descendant_context = BindingContextId::new(1);
+        assert_eq!(
+            descendant.validate_installation(fixture.source, &fixture.module),
+            Err(SourceProofLocalGivenDescendantBindingError::InvalidDescendantContext)
+        );
+        for mut descendant in task269sdc_inexact_descendant_context_handoffs(&handoff) {
+            descendant.final_binding_fingerprint = "wrong".to_owned();
+            assert_eq!(
+                descendant.validate_installation(fixture.source, &fixture.module),
+                Err(SourceProofLocalGivenDescendantBindingError::InvalidDescendantContext)
+            );
+        }
+        let mut descendant = handoff.clone();
+        descendant.binding_env = task269sdc_environment_with_generated_descendant(&handoff);
+        descendant.final_binding_fingerprint = descendant.binding_env.debug_text();
+        assert_eq!(
+            descendant.validate_installation(fixture.source, &fixture.module),
+            Err(SourceProofLocalGivenDescendantBindingError::InvalidDescendantContext)
+        );
+        let mut environment = handoff.clone();
+        environment
+            .binding_env
+            .binding_mut_for_test(BindingId::new(1))
+            .expect("Task269SDC binding row")
+            .status = BindingStatus::Reserved;
+        environment.final_binding_fingerprint = environment.binding_env.debug_text();
+        assert_eq!(
+            environment.validate_installation(fixture.source, &fixture.module),
+            Err(SourceProofLocalGivenDescendantBindingError::InvalidBindingEnvironment)
+        );
+        for environment in task269sdc_inexact_final_environment_handoffs(&handoff, fixture.source) {
+            assert_eq!(
+                environment.validate_installation(fixture.source, &fixture.module),
+                Err(SourceProofLocalGivenDescendantBindingError::InvalidBindingEnvironment)
+            );
+        }
+        let mut environment = handoff.clone();
+        environment.final_binding_fingerprint = "wrong".to_owned();
+        assert_eq!(
+            environment.validate_installation(fixture.source, &fixture.module),
+            Err(SourceProofLocalGivenDescendantBindingError::InvalidBindingEnvironment)
+        );
+        assert_eq!(
+            handoff.validate_complete_installation(fixture.source, &fixture.module, false),
+            Err(SourceProofLocalGivenDescendantBindingError::InvalidInstallation)
+        );
+        let mut invalid_before_unavailable = handoff;
+        invalid_before_unavailable.final_binding_fingerprint = "wrong".to_owned();
+        assert_eq!(
+            invalid_before_unavailable.validate_complete_installation(
+                fixture.source,
+                &fixture.module,
+                false,
+            ),
+            Err(SourceProofLocalGivenDescendantBindingError::InvalidBindingEnvironment)
+        );
+
+        for (error, expected) in [
+            (
+                SourceProofLocalGivenDescendantBindingError::InvalidTransaction,
+                "source proof-local given-descendant binding transaction is invalid".to_owned(),
+            ),
+            (
+                SourceProofLocalGivenDescendantBindingError::DependencyMismatch,
+                "source proof-local given-descendant binding dependency mismatch".to_owned(),
+            ),
+            (
+                SourceProofLocalGivenDescendantBindingError::InvalidBaseBindingEnvironment,
+                "source proof-local given-descendant binding base binding environment is invalid"
+                    .to_owned(),
+            ),
+            (
+                SourceProofLocalGivenDescendantBindingError::InvalidAggregate,
+                "source proof-local given-descendant binding aggregate is invalid".to_owned(),
+            ),
+            (
+                SourceProofLocalGivenDescendantBindingError::InvalidDeclaration {
+                    binding: SourceProofLocalGivenBindingId::new(0),
+                },
+                "source proof-local given-descendant binding 0 is invalid".to_owned(),
+            ),
+            (
+                SourceProofLocalGivenDescendantBindingError::InvalidDescendantContext,
+                "source proof-local given-descendant binding descendant context is invalid"
+                    .to_owned(),
+            ),
+            (
+                SourceProofLocalGivenDescendantBindingError::InvalidBindingEnvironment,
+                "source proof-local given-descendant binding binding environment is invalid"
+                    .to_owned(),
+            ),
+            (
+                SourceProofLocalGivenDescendantBindingError::InvalidInstallation,
+                "source proof-local given-descendant binding installation is invalid".to_owned(),
+            ),
+        ] {
+            assert_eq!(error.to_string(), expected);
+            let _: &dyn std::error::Error = &error;
+        }
+    }
+
+    #[test]
+    fn source_proof_local_given_descendant_binding_inherits_shadows_restores_and_excludes() {
+        let fixture = task269sdc_fixture();
+        let handoff =
+            SourceProofLocalGivenDescendantBindingProducer::build(fixture.input, &fixture.base)
+                .expect("Task269SDC checker handoff");
+        let mut bindings = handoff.binding_env().bindings().clone();
+        let shadow = bindings.insert(BindingDraft {
+            spelling: "y".to_owned(),
+            kind: BindingKind::GivenWitness,
+            identity: BinderIdentity::ResolverLocal {
+                scope: LocalTermScope::new(vec![0, 1]),
+                ordinal: 2,
+                declaration_range: range(fixture.source, 106, 107),
+            },
+            owner_context: BindingContextId::new(3),
+            declaration_range: range(fixture.source, 106, 107),
+            visible_after_ordinal: 2,
+            type_site: BindingTypeSite::Missing,
+            status: BindingStatus::Active,
+            captured: CapturedFreeVariables::default(),
+            diagnostics: Vec::new(),
+            recovery: BindingRecoveryState::Normal,
+        });
+        assert_eq!(shadow, BindingId::new(2));
+        let mut contexts = handoff.binding_env().contexts().clone();
+        assert_eq!(
+            contexts.insert(BindingContextDraft {
+                owner: BindingContextOwner::Generated("task269sdc-shadow-child".to_owned()),
+                parent: Some(BindingContextId::new(1)),
+                layer: BindingContextLayer::Block,
+                lexical_scope: Some(LocalTermScope::new(vec![0, 1])),
+                bindings: vec![shadow],
+                visible_bindings: vec![BindingId::new(0), BindingId::new(1), shadow],
+                recovery: BindingContextRecovery::Normal,
+            }),
+            BindingContextId::new(3)
+        );
+        assert_eq!(
+            contexts.insert(BindingContextDraft {
+                owner: BindingContextOwner::Generated("task269sdc-sibling-child".to_owned()),
+                parent: Some(BindingContextId::new(1)),
+                layer: BindingContextLayer::Block,
+                lexical_scope: Some(LocalTermScope::new(vec![0, 2])),
+                bindings: Vec::new(),
+                visible_bindings: vec![BindingId::new(0), BindingId::new(1)],
+                recovery: BindingContextRecovery::Normal,
+            }),
+            BindingContextId::new(4)
+        );
+        assert_eq!(
+            contexts.insert(BindingContextDraft {
+                owner: BindingContextOwner::Generated("task269sdc-proof-sibling".to_owned()),
+                parent: Some(BindingContextId::new(0)),
+                layer: BindingContextLayer::Proof,
+                lexical_scope: Some(LocalTermScope::new(vec![1])),
+                bindings: Vec::new(),
+                visible_bindings: vec![BindingId::new(0)],
+                recovery: BindingContextRecovery::Normal,
+            }),
+            BindingContextId::new(5)
+        );
+        let matrix = BindingEnv::try_new(BindingEnvParts {
+            source_id: fixture.source,
+            module_id: fixture.module,
+            contexts,
+            bindings,
+            diagnostics: handoff.binding_env().diagnostics().clone(),
+        })
+        .expect("Task269SDC synthetic scope matrix");
+        let lookup = |context, scope: Vec<u32>, ordinal| {
+            matrix.lookup(&BindingLookupSite::new(
+                "y",
+                BindingContextId::new(context),
+                Some(LocalTermScope::new(scope)),
+                ordinal,
+            ))
+        };
+        assert!(matches!(
+            lookup(1, vec![0], 1),
+            Ok(BindingLookupResult::ForwardReference { candidates, .. })
+                if candidates == [BindingId::new(1)]
+        ));
+        assert_eq!(
+            lookup(1, vec![0], 2),
+            Ok(BindingLookupResult::Local(BindingId::new(1)))
+        );
+        assert_eq!(
+            lookup(2, vec![0, 0], 2),
+            Ok(BindingLookupResult::Local(BindingId::new(1)))
+        );
+        assert_eq!(
+            lookup(3, vec![0, 1], 3),
+            Ok(BindingLookupResult::Local(BindingId::new(2)))
+        );
+        assert_eq!(
+            lookup(1, vec![0], 3),
+            Ok(BindingLookupResult::Local(BindingId::new(1)))
+        );
+        assert_eq!(
+            lookup(4, vec![0, 2], 2),
+            Ok(BindingLookupResult::Local(BindingId::new(1)))
+        );
+        assert_eq!(
+            lookup(0, Vec::new(), 2),
+            Ok(BindingLookupResult::Unresolved)
+        );
+        assert_eq!(lookup(5, vec![1], 2), Ok(BindingLookupResult::Unresolved));
+    }
+
+    #[test]
+    fn source_proof_local_given_descendant_binding_has_no_occurrence_capture_or_semantic_owner() {
+        let fixture = task269sdc_fixture();
+        let handoff =
+            SourceProofLocalGivenDescendantBindingProducer::build(fixture.input, &fixture.base)
+                .expect("Task269SDC checker handoff");
+        let binding = handoff
+            .binding_env()
+            .bindings()
+            .get(BindingId::new(1))
+            .expect("Task269SDC Given binding");
+        assert_eq!(binding.type_site, BindingTypeSite::Missing);
+        assert_eq!(binding.status, BindingStatus::Active);
+        assert!(binding.captured.identities().is_empty());
+        assert!(binding.diagnostics.is_empty());
+        for excluded in [
+            "term-reference",
+            "occurrence",
+            "local-abbreviation",
+            "captured-variable",
+            "condition-fact",
+            "initial-obligation",
+            "terminal-goal",
+            "accepted",
+            "discharged",
+            "verification-condition",
+        ] {
+            assert!(
+                !handoff.debug_text().contains(excluded),
+                "excluded {excluded}"
+            );
+        }
+
+        let empty = empty_typed(fixture.source, fixture.module.clone());
+        let generic = SourcePrimaryTermProducer::build(
+            SourcePrimaryTermHandoffInput {
+                source_id: fixture.source,
+                module_id: fixture.module.clone(),
+                terms: Vec::new(),
+                references: Vec::new(),
+                numeric_type_requests: Vec::new(),
+            },
+            &fixture.base,
+            empty.nodes(),
+        )
+        .expect("Task269SDC generic source-term sentinel");
+        let generic_first = empty
+            .clone()
+            .with_source_term(generic.clone())
+            .expect("Task269SDC generic first");
+        let generic_before = generic_first.debug_text();
+        assert_eq!(
+            generic_first
+                .clone()
+                .with_source_proof_local_given_descendant_binding(handoff.clone()),
+            Err(TypedAstError::InvalidSourceProofLocalGivenDescendantBinding)
+        );
+        assert_eq!(generic_first.debug_text(), generic_before);
+        let mut generic_collision = generic_first.clone();
+        generic_collision
+            .inject_source_proof_local_given_descendant_binding_for_test(handoff.clone());
+        assert_eq!(
+            assemble_empty(&generic_collision),
+            Err(ResolvedTypedAstError::InvalidSourceProofLocalGivenDescendantBinding)
+        );
+        assert_eq!(generic_first.debug_text(), generic_before);
+        let sdc_first = empty
+            .with_source_proof_local_given_descendant_binding(handoff.clone())
+            .expect("Task269SDC first owner");
+        let sdc_before = sdc_first.debug_text();
+        assert_eq!(
+            sdc_first.clone().with_source_term(generic),
+            Err(TypedAstError::InvalidSourceTerm)
+        );
+        assert_eq!(sdc_first.debug_text(), sdc_before);
+        assert!(sdc_first.nodes().is_empty());
+        assert!(sdc_first.contexts().is_empty());
+        assert!(sdc_first.types().is_empty());
+        assert!(sdc_first.facts().is_empty());
+        assert!(sdc_first.coercions().is_empty());
+        assert!(sdc_first.initial_obligations().is_empty());
+        assert!(sdc_first.diagnostics().is_empty());
+        let resolved = assemble_empty(&sdc_first).expect("Task269SDC final replay");
+        assert!(resolved.nodes().is_empty());
+        assert!(resolved.expr_metadata().is_empty());
+        assert!(resolved.collection_candidates().is_empty());
+        assert!(resolved.expanded_candidates().is_empty());
+        assert!(resolved.template_expansions().is_empty());
+        assert!(resolved.viable_candidates().is_empty());
+        assert!(resolved.viability_decisions().is_empty());
+        assert!(resolved.specificity_graphs().is_empty());
+        assert!(resolved.resolved_overloads().is_empty());
+        assert!(resolved.inserted_coercions().is_empty());
+        assert!(resolved.cluster_facts().is_empty());
+        assert!(resolved.checked_formulas().is_empty());
+        assert!(resolved.statement_semantics().is_empty());
+        assert!(resolved.checked_proofs().is_empty());
+        assert!(resolved.checked_proof_nodes().is_empty());
+        assert!(resolved.checked_terminal_goals().is_empty());
+        assert!(resolved.diagnostics().is_empty());
+        assert_eq!(
+            TypedAstError::InvalidSourceProofLocalGivenDescendantBinding.to_string(),
+            "typed AST source proof-local given-descendant binding handoff is inconsistent"
+        );
+        assert_eq!(
+            ResolvedTypedAstError::InvalidSourceProofLocalGivenDescendantBinding.to_string(),
+            "resolved typed AST source proof-local given-descendant binding handoff is inconsistent"
+        );
+
+        let mut corrupted = handoff;
+        corrupted.final_binding_fingerprint = "corrupt".to_owned();
+        let mut injected = empty_typed(fixture.source, fixture.module);
+        injected.inject_source_proof_local_given_descendant_binding_for_test(corrupted);
+        assert_eq!(
+            assemble_empty(&injected),
+            Err(ResolvedTypedAstError::InvalidSourceProofLocalGivenDescendantBinding)
+        );
+    }
+
+    struct Task269sdcFixture {
+        source: SourceId,
+        module: ModuleId,
+        input: SourceProofLocalGivenDescendantBindingHandoffInput,
+        base: BindingEnv,
+        other_definition: DefinitionId,
+        other_contribution: SourceContributionId,
+    }
+
+    fn task269sdc_fixture() -> Task269sdcFixture {
+        let source = source_id();
+        let module = ModuleId::new(PackageId::new("pkg"), ModulePath::new("task269sdc"));
+        let local = concat!(
+            "contribution=0:namespace=task269sdc:owner=theorem#1:shell=theorem:",
+            "kind=theorem:name=ProofLocalGivenDescendantCaptureSmoke:notation=_:arity=_:",
+            "definition=theorem:registration=_:policy=non-overloadable:",
+            "slot=non-overloadable:_:theorem:_"
+        );
+        let theorem_symbol = SymbolId::new(
+            module.clone(),
+            LocalSymbolId::new(local),
+            FullyQualifiedName::new(format!("pkg::task269sdc::{local}")),
+        );
+        let mut contributions = SourceContributionIndex::new();
+        let contribution = contributions.insert(
+            module.clone(),
+            ContributionKind::LocalSource { source_id: source },
+            SourceAnchor::Range(range(source, 0, 18)),
+        );
+        let other_contribution = contributions.insert(
+            module.clone(),
+            ContributionKind::LocalSource { source_id: source },
+            SourceAnchor::Range(range(source, 0, 18)),
+        );
+        let mut definitions = DefinitionIndex::new();
+        let theorem_definition = definitions.insert(DefinitionShell::new(
+            theorem_symbol.clone(),
+            DefinitionKind::Theorem,
+            SemanticOrigin::new(
+                source,
+                module.clone(),
+                SourceAnchor::Range(range(source, 19, 179)),
+                vec![2, 1],
+            ),
+            contribution,
+        ));
+        let other_definition = definitions.insert(DefinitionShell::new(
+            theorem_symbol.clone(),
+            DefinitionKind::Theorem,
+            SemanticOrigin::new(
+                source,
+                module.clone(),
+                SourceAnchor::Range(range(source, 19, 179)),
+                vec![2, 1],
+            ),
+            contribution,
+        ));
+        let mut input = SourceProofLocalGivenDescendantBindingHandoffInput {
+            source_id: source,
+            module_id: module.clone(),
+            lower_fingerprint: String::new(),
+            theorem_symbol,
+            theorem_definition,
+            contribution,
+            theorem_range: range(source, 19, 179),
+            proof_range: range(source, 73, 178),
+            given_range: range(source, 81, 99),
+            segment_range: range(source, 87, 98),
+            name_range: range(source, 87, 88),
+            descendant_range: range(source, 102, 159),
+            source_ordinal: 1,
+            local: LocalTermBinding::new(
+                "y",
+                LocalTermScope::new(vec![0]),
+                range(source, 87, 88),
+                1,
+            ),
+            descendant_scope: LocalTermScope::new(vec![0, 0]),
+            recovery: SourceProofLocalGivenBindingRecovery::Normal,
+        };
+        input.lower_fingerprint = exact_task269sdc_lower_fingerprint(
+            &input.module_id,
+            input.theorem_symbol.fqn().as_str(),
+        );
+        Task269sdcFixture {
+            source,
+            module: module.clone(),
+            input,
+            base: exact_base(source, module),
+            other_definition,
+            other_contribution,
+        }
+    }
+
+    fn task269sdc_empty_base(fixture: &Task269sdcFixture) -> BindingEnv {
+        let mut contexts = BindingContextTable::new();
+        contexts.insert(BindingContextDraft {
+            owner: BindingContextOwner::Module,
+            parent: None,
+            layer: BindingContextLayer::Module,
+            lexical_scope: None,
+            bindings: Vec::new(),
+            visible_bindings: Vec::new(),
+            recovery: BindingContextRecovery::Normal,
+        });
+        BindingEnv::try_new(BindingEnvParts {
+            source_id: fixture.source,
+            module_id: fixture.module.clone(),
+            contexts,
+            bindings: BindingTable::new(),
+            diagnostics: BindingDiagnosticTable::new(),
+        })
+        .expect("Task269SDC valid but inexact empty base")
+    }
+
+    fn task269sdc_inexact_bases(fixture: &Task269sdcFixture) -> Vec<BindingEnv> {
+        let mut bases = Vec::new();
+        for mutate in 0..13 {
+            let mut base = fixture.base.clone();
+            let binding = base
+                .binding_mut_for_test(BindingId::new(0))
+                .expect("Task269SDC reserve binding");
+            match mutate {
+                0 => binding.id = BindingId::new(1),
+                1 => binding.spelling = "wrong".to_owned(),
+                2 => binding.kind = BindingKind::GivenWitness,
+                3 => {
+                    binding.identity = BinderIdentity::ReservedVariable {
+                        spelling: "wrong".to_owned(),
+                        declaration_range: range(fixture.source, 8, 9),
+                    }
+                }
+                4 => {
+                    binding.identity = BinderIdentity::ReservedVariable {
+                        spelling: "x".to_owned(),
+                        declaration_range: range(fixture.source, 7, 9),
+                    }
+                }
+                5 => binding.owner_context = BindingContextId::new(1),
+                6 => binding.declaration_range = range(fixture.source, 7, 9),
+                7 => binding.visible_after_ordinal = 1,
+                8 => binding.type_site = BindingTypeSite::Missing,
+                9 => binding.status = BindingStatus::Active,
+                10 => {
+                    binding.captured =
+                        CapturedFreeVariables::new(vec![BinderIdentity::ReservedVariable {
+                            spelling: "x".to_owned(),
+                            declaration_range: range(fixture.source, 8, 9),
+                        }])
+                }
+                11 => binding.diagnostics = vec![BindingDiagnosticId::new(0)],
+                12 => binding.recovery = BindingRecoveryState::Recovered,
+                _ => unreachable!(),
+            }
+            bases.push(base);
+        }
+        for mutate in 0..6 {
+            let mut contexts = BindingContextTable::new();
+            let mut root = BindingContextDraft {
+                owner: BindingContextOwner::Module,
+                parent: None,
+                layer: BindingContextLayer::Module,
+                lexical_scope: None,
+                bindings: vec![BindingId::new(0)],
+                visible_bindings: vec![BindingId::new(0)],
+                recovery: BindingContextRecovery::Normal,
+            };
+            match mutate {
+                0 => root.owner = BindingContextOwner::Generated("task269sdc-base".to_owned()),
+                1 => root.layer = BindingContextLayer::Expression,
+                2 => root.lexical_scope = Some(LocalTermScope::new(vec![0])),
+                3 => root.bindings.clear(),
+                4 => root.visible_bindings.clear(),
+                5 => root.recovery = BindingContextRecovery::Recovered,
+                _ => unreachable!(),
+            }
+            contexts.insert(root);
+            bases.push(
+                BindingEnv::try_new(BindingEnvParts {
+                    source_id: fixture.source,
+                    module_id: fixture.module.clone(),
+                    contexts,
+                    bindings: fixture.base.bindings().clone(),
+                    diagnostics: fixture.base.diagnostics().clone(),
+                })
+                .unwrap_or_else(|_| {
+                    let mut base = fixture.base.clone();
+                    base.binding_mut_for_test(BindingId::new(0))
+                        .expect("Task269SDC fallback reserve binding")
+                        .spelling = format!("wrong-context-{mutate}");
+                    base
+                }),
+            );
+        }
+        let mut diagnostics = BindingDiagnosticTable::new();
+        diagnostics.insert(crate::binding_env::BindingDiagnosticDraft {
+            source_range: Some(range(fixture.source, 8, 9)),
+            class: crate::binding_env::BindingDiagnosticClass::UnsupportedSourceShape,
+            severity: crate::binding_env::BindingDiagnosticSeverity::Error,
+            message_key: "task269sdc.base".to_owned(),
+            recovery: crate::binding_env::BindingDiagnosticRecovery::Normal,
+        });
+        bases.push(
+            BindingEnv::try_new(BindingEnvParts {
+                source_id: fixture.source,
+                module_id: fixture.module.clone(),
+                contexts: fixture.base.contexts().clone(),
+                bindings: fixture.base.bindings().clone(),
+                diagnostics,
+            })
+            .expect("Task269SDC inexact base diagnostic table"),
+        );
+        bases
+    }
+
+    fn task269sdc_inexact_declaration_handoffs(
+        handoff: &SourceProofLocalGivenDescendantBindingHandoff,
+        source: SourceId,
+    ) -> Vec<SourceProofLocalGivenDescendantBindingHandoff> {
+        let mut handoffs = Vec::new();
+        for mutate in 0..10 {
+            let mut corrupted = handoff.clone();
+            let binding = corrupted
+                .binding_env
+                .binding_mut_for_test(BindingId::new(1))
+                .expect("Task269SDC final Given binding");
+            match mutate {
+                0 => binding.id = BindingId::new(2),
+                1 => binding.spelling = "wrong".to_owned(),
+                2 => {
+                    binding.identity = BinderIdentity::ResolverLocal {
+                        scope: LocalTermScope::new(vec![1]),
+                        ordinal: 1,
+                        declaration_range: range(source, 87, 88),
+                    }
+                }
+                3 => {
+                    binding.identity = BinderIdentity::ResolverLocal {
+                        scope: LocalTermScope::new(vec![0]),
+                        ordinal: 2,
+                        declaration_range: range(source, 87, 88),
+                    }
+                }
+                4 => {
+                    binding.identity = BinderIdentity::ResolverLocal {
+                        scope: LocalTermScope::new(vec![0]),
+                        ordinal: 1,
+                        declaration_range: range(source, 86, 88),
+                    }
+                }
+                5 => binding.owner_context = BindingContextId::new(0),
+                6 => binding.declaration_range = range(source, 86, 88),
+                7 => binding.visible_after_ordinal = 2,
+                8 => binding.recovery = BindingRecoveryState::Recovered,
+                9 => binding.spelling.clear(),
+                _ => unreachable!(),
+            }
+            corrupted.final_binding_fingerprint = corrupted.binding_env.debug_text();
+            handoffs.push(corrupted);
+        }
+        handoffs
+    }
+
+    fn task269sdc_inexact_descendant_context_handoffs(
+        handoff: &SourceProofLocalGivenDescendantBindingHandoff,
+    ) -> Vec<SourceProofLocalGivenDescendantBindingHandoff> {
+        let mut handoffs = Vec::new();
+        for mutate in 0..7 {
+            let mut contexts = BindingContextTable::new();
+            contexts.insert(BindingContextDraft {
+                owner: BindingContextOwner::Module,
+                parent: None,
+                layer: BindingContextLayer::Module,
+                lexical_scope: None,
+                bindings: vec![BindingId::new(0)],
+                visible_bindings: vec![BindingId::new(0)],
+                recovery: BindingContextRecovery::Normal,
+            });
+            contexts.insert(BindingContextDraft {
+                owner: BindingContextOwner::SourceStatement {
+                    source_range: range(handoff.source_id, 73, 178),
+                },
+                parent: Some(BindingContextId::new(0)),
+                layer: BindingContextLayer::Proof,
+                lexical_scope: Some(LocalTermScope::new(vec![0])),
+                bindings: vec![BindingId::new(1)],
+                visible_bindings: vec![BindingId::new(0), BindingId::new(1)],
+                recovery: BindingContextRecovery::Normal,
+            });
+            let mut descendant = BindingContextDraft {
+                owner: BindingContextOwner::SourceStatement {
+                    source_range: range(handoff.source_id, 102, 159),
+                },
+                parent: Some(BindingContextId::new(1)),
+                layer: BindingContextLayer::Block,
+                lexical_scope: Some(LocalTermScope::new(vec![0, 0])),
+                bindings: Vec::new(),
+                visible_bindings: vec![BindingId::new(0), BindingId::new(1)],
+                recovery: BindingContextRecovery::Normal,
+            };
+            let mut bindings = handoff.binding_env.bindings().clone();
+            match mutate {
+                0 => {
+                    descendant.owner =
+                        BindingContextOwner::Generated("task269sdc-descendant".to_owned())
+                }
+                1 => {
+                    descendant.parent = Some(BindingContextId::new(0));
+                    descendant.visible_bindings = vec![BindingId::new(0)];
+                }
+                2 => descendant.layer = BindingContextLayer::Expression,
+                3 => descendant.lexical_scope = Some(LocalTermScope::new(vec![0, 1])),
+                4 => {
+                    let extra = bindings.insert(BindingDraft {
+                        spelling: "extra".to_owned(),
+                        kind: BindingKind::Generated,
+                        identity: BinderIdentity::Generated {
+                            context: BindingContextId::new(2),
+                            counter: 269,
+                        },
+                        owner_context: BindingContextId::new(2),
+                        declaration_range: range(handoff.source_id, 103, 104),
+                        visible_after_ordinal: 2,
+                        type_site: BindingTypeSite::Missing,
+                        status: BindingStatus::Active,
+                        captured: CapturedFreeVariables::default(),
+                        diagnostics: Vec::new(),
+                        recovery: BindingRecoveryState::Normal,
+                    });
+                    descendant.bindings = vec![extra];
+                    descendant.visible_bindings.push(extra);
+                }
+                5 => descendant.visible_bindings = vec![BindingId::new(0)],
+                6 => descendant.recovery = BindingContextRecovery::Recovered,
+                _ => unreachable!(),
+            }
+            contexts.insert(descendant);
+            let mut corrupted = handoff.clone();
+            corrupted.binding_env = BindingEnv::try_new(BindingEnvParts {
+                source_id: handoff.source_id,
+                module_id: handoff.module_id.clone(),
+                contexts,
+                bindings,
+                diagnostics: handoff.binding_env.diagnostics().clone(),
+            })
+            .expect("Task269SDC inexact descendant context remains structurally valid");
+            corrupted.final_binding_fingerprint = corrupted.binding_env.debug_text();
+            handoffs.push(corrupted);
+        }
+        handoffs
+    }
+
+    fn task269sdc_inexact_final_environment_handoffs(
+        handoff: &SourceProofLocalGivenDescendantBindingHandoff,
+        source: SourceId,
+    ) -> Vec<SourceProofLocalGivenDescendantBindingHandoff> {
+        let mut handoffs = Vec::new();
+        for mutate in 0..13 {
+            let mut corrupted = handoff.clone();
+            let binding = corrupted
+                .binding_env
+                .binding_mut_for_test(BindingId::new(0))
+                .expect("Task269SDC final reserve binding");
+            match mutate {
+                0 => binding.id = BindingId::new(2),
+                1 => binding.spelling = "wrong".to_owned(),
+                2 => binding.kind = BindingKind::GivenWitness,
+                3 => {
+                    binding.identity = BinderIdentity::ReservedVariable {
+                        spelling: "wrong".to_owned(),
+                        declaration_range: range(source, 8, 9),
+                    }
+                }
+                4 => {
+                    binding.identity = BinderIdentity::ReservedVariable {
+                        spelling: "x".to_owned(),
+                        declaration_range: range(source, 7, 9),
+                    }
+                }
+                5 => binding.owner_context = BindingContextId::new(1),
+                6 => binding.declaration_range = range(source, 7, 9),
+                7 => binding.visible_after_ordinal = 1,
+                8 => binding.type_site = BindingTypeSite::Missing,
+                9 => binding.status = BindingStatus::Active,
+                10 => {
+                    binding.captured =
+                        CapturedFreeVariables::new(vec![BinderIdentity::ReservedVariable {
+                            spelling: "x".to_owned(),
+                            declaration_range: range(source, 8, 9),
+                        }])
+                }
+                11 => binding.diagnostics = vec![BindingDiagnosticId::new(0)],
+                12 => binding.recovery = BindingRecoveryState::Recovered,
+                _ => unreachable!(),
+            }
+            corrupted.final_binding_fingerprint = corrupted.binding_env.debug_text();
+            handoffs.push(corrupted);
+        }
+        for mutate in 0..5 {
+            let mut corrupted = handoff.clone();
+            let binding = corrupted
+                .binding_env
+                .binding_mut_for_test(BindingId::new(1))
+                .expect("Task269SDC semantic-free Given binding");
+            match mutate {
+                0 => binding.kind = BindingKind::Generated,
+                1 => binding.type_site = BindingTypeSite::Source(range(source, 95, 98)),
+                2 => binding.status = BindingStatus::Reserved,
+                3 => {
+                    binding.captured = CapturedFreeVariables::new(vec![BinderIdentity::Generated {
+                        context: BindingContextId::new(1),
+                        counter: 269,
+                    }])
+                }
+                4 => binding.diagnostics = vec![BindingDiagnosticId::new(0)],
+                _ => unreachable!(),
+            }
+            corrupted.final_binding_fingerprint = corrupted.binding_env.debug_text();
+            handoffs.push(corrupted);
+        }
+        for mutate in 0..3 {
+            let mut contexts = BindingContextTable::new();
+            let mut root = BindingContextDraft {
+                owner: BindingContextOwner::Module,
+                parent: None,
+                layer: BindingContextLayer::Module,
+                lexical_scope: None,
+                bindings: vec![BindingId::new(0)],
+                visible_bindings: vec![BindingId::new(0)],
+                recovery: BindingContextRecovery::Normal,
+            };
+            match mutate {
+                0 => root.lexical_scope = Some(LocalTermScope::new(Vec::new())),
+                1 => root.visible_bindings.clear(),
+                2 => root.recovery = BindingContextRecovery::Recovered,
+                _ => unreachable!(),
+            }
+            contexts.insert(root);
+            for context_id in [BindingContextId::new(1), BindingContextId::new(2)] {
+                let context = handoff
+                    .binding_env
+                    .contexts()
+                    .get(context_id)
+                    .expect("Task269SDC final context");
+                contexts.insert(BindingContextDraft {
+                    owner: context.owner.clone(),
+                    parent: context.parent,
+                    layer: context.layer,
+                    lexical_scope: context.lexical_scope.clone(),
+                    bindings: context.bindings.clone(),
+                    visible_bindings: context.visible_bindings.clone(),
+                    recovery: context.recovery,
+                });
+            }
+            let mut corrupted = handoff.clone();
+            corrupted.binding_env = BindingEnv::try_new(BindingEnvParts {
+                source_id: source,
+                module_id: handoff.module_id.clone(),
+                contexts,
+                bindings: handoff.binding_env.bindings().clone(),
+                diagnostics: handoff.binding_env.diagnostics().clone(),
+            })
+            .expect("Task269SDC inexact final root context remains structurally valid");
+            corrupted.final_binding_fingerprint = corrupted.binding_env.debug_text();
+            handoffs.push(corrupted);
+        }
+        let mut diagnostics = BindingDiagnosticTable::new();
+        diagnostics.insert(crate::binding_env::BindingDiagnosticDraft {
+            source_range: Some(range(source, 102, 103)),
+            class: crate::binding_env::BindingDiagnosticClass::UnsupportedSourceShape,
+            severity: crate::binding_env::BindingDiagnosticSeverity::Error,
+            message_key: "task269sdc.final".to_owned(),
+            recovery: crate::binding_env::BindingDiagnosticRecovery::Normal,
+        });
+        let mut corrupted = handoff.clone();
+        corrupted.binding_env = BindingEnv::try_new(BindingEnvParts {
+            source_id: source,
+            module_id: handoff.module_id.clone(),
+            contexts: handoff.binding_env.contexts().clone(),
+            bindings: handoff.binding_env.bindings().clone(),
+            diagnostics,
+        })
+        .expect("Task269SDC inexact final diagnostic table");
+        corrupted.final_binding_fingerprint = corrupted.binding_env.debug_text();
+        handoffs.push(corrupted);
+        for mutate in 0..6 {
+            let mut contexts = BindingContextTable::new();
+            contexts.insert(BindingContextDraft {
+                owner: BindingContextOwner::Module,
+                parent: None,
+                layer: BindingContextLayer::Module,
+                lexical_scope: None,
+                bindings: vec![BindingId::new(0)],
+                visible_bindings: vec![BindingId::new(0)],
+                recovery: BindingContextRecovery::Normal,
+            });
+            let mut proof = BindingContextDraft {
+                owner: BindingContextOwner::SourceStatement {
+                    source_range: range(source, 73, 178),
+                },
+                parent: Some(BindingContextId::new(0)),
+                layer: BindingContextLayer::Proof,
+                lexical_scope: Some(LocalTermScope::new(vec![0])),
+                bindings: vec![BindingId::new(1)],
+                visible_bindings: vec![BindingId::new(0), BindingId::new(1)],
+                recovery: BindingContextRecovery::Normal,
+            };
+            match mutate {
+                0 => {
+                    proof.owner = BindingContextOwner::SourceStatement {
+                        source_range: range(source, 72, 178),
+                    }
+                }
+                1 => proof.layer = BindingContextLayer::Block,
+                2 => proof.lexical_scope = Some(LocalTermScope::new(vec![1])),
+                3 => proof.visible_bindings = vec![BindingId::new(1)],
+                4 => proof.recovery = BindingContextRecovery::Recovered,
+                5 => proof.owner = BindingContextOwner::Generated("task269sdc-proof".to_owned()),
+                _ => unreachable!(),
+            }
+            contexts.insert(proof);
+            contexts.insert(BindingContextDraft {
+                owner: BindingContextOwner::SourceStatement {
+                    source_range: range(source, 102, 159),
+                },
+                parent: Some(BindingContextId::new(1)),
+                layer: BindingContextLayer::Block,
+                lexical_scope: Some(LocalTermScope::new(vec![0, 0])),
+                bindings: Vec::new(),
+                visible_bindings: vec![BindingId::new(0), BindingId::new(1)],
+                recovery: BindingContextRecovery::Normal,
+            });
+            let mut corrupted = handoff.clone();
+            corrupted.binding_env = BindingEnv::try_new(BindingEnvParts {
+                source_id: source,
+                module_id: handoff.module_id.clone(),
+                contexts,
+                bindings: handoff.binding_env.bindings().clone(),
+                diagnostics: handoff.binding_env.diagnostics().clone(),
+            })
+            .expect("Task269SDC inexact proof context remains structurally valid");
+            corrupted.final_binding_fingerprint = corrupted.binding_env.debug_text();
+            handoffs.push(corrupted);
+        }
+        handoffs
+    }
+
+    fn task269sdc_environment_with_generated_descendant(
+        handoff: &SourceProofLocalGivenDescendantBindingHandoff,
+    ) -> BindingEnv {
+        let mut contexts = BindingContextTable::new();
+        contexts.insert(BindingContextDraft {
+            owner: BindingContextOwner::Module,
+            parent: None,
+            layer: BindingContextLayer::Module,
+            lexical_scope: None,
+            bindings: vec![BindingId::new(0)],
+            visible_bindings: vec![BindingId::new(0)],
+            recovery: BindingContextRecovery::Normal,
+        });
+        contexts.insert(BindingContextDraft {
+            owner: BindingContextOwner::SourceStatement {
+                source_range: range(handoff.source_id, 73, 178),
+            },
+            parent: Some(BindingContextId::new(0)),
+            layer: BindingContextLayer::Proof,
+            lexical_scope: Some(LocalTermScope::new(vec![0])),
+            bindings: vec![BindingId::new(1)],
+            visible_bindings: vec![BindingId::new(0), BindingId::new(1)],
+            recovery: BindingContextRecovery::Normal,
+        });
+        contexts.insert(BindingContextDraft {
+            owner: BindingContextOwner::Generated("task269sdc-corrupt".to_owned()),
+            parent: Some(BindingContextId::new(1)),
+            layer: BindingContextLayer::Block,
+            lexical_scope: Some(LocalTermScope::new(vec![0, 0])),
+            bindings: Vec::new(),
+            visible_bindings: vec![BindingId::new(0), BindingId::new(1)],
+            recovery: BindingContextRecovery::Normal,
+        });
+        BindingEnv::try_new(BindingEnvParts {
+            source_id: handoff.source_id,
+            module_id: handoff.module_id.clone(),
+            contexts,
+            bindings: handoff.binding_env.bindings().clone(),
+            diagnostics: handoff.binding_env.diagnostics().clone(),
+        })
+        .expect("Task269SDC generated descendant remains structurally valid")
     }
 
     struct GivenFixture {

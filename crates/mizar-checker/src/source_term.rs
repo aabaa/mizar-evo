@@ -1652,6 +1652,9 @@ mod tests {
             SourceProofLocalGivenBindingRecovery,
             SourceProofLocalGivenConditionBindingHandoffInput,
             SourceProofLocalGivenConditionBindingProducer,
+            SourceProofLocalGivenDescendantBindingHandoff,
+            SourceProofLocalGivenDescendantBindingHandoffInput,
+            SourceProofLocalGivenDescendantBindingProducer,
             SourceProofLocalGivenUseBindingHandoffInput, SourceProofLocalGivenUseBindingProducer,
             SourceProofLocalLetBindingHandoff, SourceProofLocalLetBindingHandoffInput,
             SourceProofLocalLetBindingProducer, SourceProofLocalLetBindingRecovery,
@@ -2371,6 +2374,109 @@ mod tests {
             &task269gu_base_binding_env(source, module),
         )
         .expect("Task269GU same-identity old-Given neighbor")
+    }
+
+    fn task269sdc_neighbor() -> SourceProofLocalGivenDescendantBindingHandoff {
+        let source = source_id_for("f8");
+        let module = module("task269sdc");
+        task269sdc_neighbor_for(source, module)
+    }
+
+    fn task269sdc_neighbor_for(
+        source: SourceId,
+        module: ModuleId,
+    ) -> SourceProofLocalGivenDescendantBindingHandoff {
+        let escaped_module_path = module
+            .path()
+            .as_str()
+            .replace('\\', "\\\\")
+            .replace(':', "\\c")
+            .replace('|', "\\p")
+            .replace('/', "\\s");
+        let local = format!(
+            concat!(
+                "contribution=0:namespace={}:owner=theorem#1:shell=theorem:",
+                "kind=theorem:name=ProofLocalGivenDescendantCaptureSmoke:notation=_:arity=_:",
+                "definition=theorem:registration=_:policy=non-overloadable:",
+                "slot=non-overloadable:_:theorem:_"
+            ),
+            escaped_module_path
+        );
+        let theorem_symbol = SymbolId::new(
+            module.clone(),
+            LocalSymbolId::new(local.clone()),
+            FullyQualifiedName::new(format!(
+                "{}::{}::{local}",
+                module.package().as_str(),
+                module.path().as_str()
+            )),
+        );
+        let mut contributions = SourceContributionIndex::new();
+        let contribution = contributions.insert(
+            module.clone(),
+            ContributionKind::LocalSource { source_id: source },
+            SourceAnchor::Range(range(source, 0, 18)),
+        );
+        let mut definitions = DefinitionIndex::new();
+        let theorem_definition = definitions.insert(DefinitionShell::new(
+            theorem_symbol.clone(),
+            DefinitionKind::Theorem,
+            SemanticOrigin::new(
+                source,
+                module.clone(),
+                SourceAnchor::Range(range(source, 19, 179)),
+                vec![2, 1],
+            ),
+            contribution,
+        ));
+        let lower_fingerprint = format!(
+            concat!(
+                "source-proof-local-given-descendant-set-lower-debug-v1\n",
+                "module: {}::{}\n",
+                "source-fingerprint: \"efa21af05a15f611815a4eb573577d0a368a3134693b225bdb56177f3637c2a8\"\n",
+                "surface-fingerprint: \"cbeae821434b0db13d77d7dac9984d8d6bf8012de9e7c680be12e8371e87ceaa\"\n",
+                "theorem symbol={:?} definition=0 contribution=0 range=19..179 proof=73..178\n",
+                "given range=81..99 segment=87..98 source_ordinal=1\n",
+                "given-name range=87..88 spelling=\"y\"\n",
+                "given-type range=95..98 head=95..98 spelling=\"set\" form=bare\n",
+                "descendant-now range=102..159\n",
+                "set#0 statement=110..120 equating=114..119 source_ordinal=0\n",
+                "set#0 name range=114..115 spelling=\"z\" rhs range=118..119 spelling=\"y\"\n",
+                "set#1 statement=125..135 equating=129..134 source_ordinal=1\n",
+                "set#1 name range=129..130 spelling=\"q\" rhs range=133..134 spelling=\"z\"\n",
+                "conclusions inner=140..152 outer=162..174\n",
+            ),
+            module.package().as_str(),
+            module.path().as_str(),
+            theorem_symbol.fqn().as_str(),
+        );
+        SourceProofLocalGivenDescendantBindingProducer::build(
+            SourceProofLocalGivenDescendantBindingHandoffInput {
+                source_id: source,
+                module_id: module.clone(),
+                lower_fingerprint,
+                theorem_symbol,
+                theorem_definition,
+                contribution,
+                theorem_range: range(source, 19, 179),
+                proof_range: range(source, 73, 178),
+                given_range: range(source, 81, 99),
+                segment_range: range(source, 87, 98),
+                name_range: range(source, 87, 88),
+                descendant_range: range(source, 102, 159),
+                source_ordinal: 1,
+                local: LocalTermBinding::new(
+                    "y",
+                    LocalTermScope::new(vec![0]),
+                    range(source, 87, 88),
+                    1,
+                ),
+                descendant_scope: LocalTermScope::new(vec![0, 0]),
+                recovery: SourceProofLocalGivenBindingRecovery::Normal,
+            },
+            &task269gu_base_binding_env(source, module),
+        )
+        .expect("Task269SDC ownership neighbor")
     }
 
     fn task269gu_let_type_neighbor() -> (SourceProofLocalLetTypeHandoff, TypedArena) {
@@ -4335,6 +4441,218 @@ mod tests {
             fixture.source,
             fixture.module.clone(),
             task269gcu_type_arena(fixture.source)
+        );
+        assert_task269gcu_sibling_both_orders!(
+            task269sdc_neighbor(),
+            inject_source_proof_local_given_descendant_binding_for_test,
+            with_source_proof_local_given_descendant_binding,
+            TypedAstError::InvalidSourceProofLocalGivenDescendantBinding,
+            source_id_for("f8"),
+            module("task269sdc"),
+            TypedArena::try_new(None, Vec::new()).expect("Task269SDC ownership arena")
+        );
+
+        macro_rules! assert_task269sdc_sibling_both_orders {
+            (
+                $sibling:expr,
+                $inject:ident,
+                $install:ident,
+                $getter:ident,
+                $sibling_error:expr,
+                $resolved_error:expr,
+                $source:expr,
+                $module:expr,
+                $arena:expr
+            ) => {{
+                let sibling_source = $source;
+                let sibling_module = $module;
+                let sdc = task269sdc_neighbor_for(sibling_source, sibling_module.clone());
+                let sibling = $sibling;
+                let sibling_arena = $arena;
+                let sdc_source = sdc.source_id();
+                let sdc_module = sdc.module_id().clone();
+                let mut sibling_first = task269gcu_empty_typed_for(
+                    sdc_source,
+                    sdc_module.clone(),
+                    TypedArena::try_new(None, Vec::new())
+                        .expect("Task269SDC predecessor-first arena"),
+                );
+                sibling_first.$inject(sibling.clone());
+                let sibling_first_before = sibling_first.debug_text();
+                assert_eq!(
+                    sibling_first
+                        .clone()
+                        .with_source_proof_local_given_descendant_binding(sdc.clone()),
+                    Err(TypedAstError::InvalidSourceProofLocalGivenDescendantBinding),
+                );
+                assert_eq!(sibling_first.debug_text(), sibling_first_before);
+                assert!(
+                    sibling_first
+                        .source_proof_local_given_descendant_binding()
+                        .is_none()
+                );
+                assert!(sibling_first.$getter().is_some());
+
+                let mut sdc_first = task269gcu_empty_typed_for(
+                    sibling_source,
+                    sibling_module,
+                    sibling_arena.clone(),
+                );
+                sdc_first.inject_source_proof_local_given_descendant_binding_for_test(sdc.clone());
+                let sdc_first_before = sdc_first.debug_text();
+                assert_eq!(
+                    sdc_first.clone().$install(sibling.clone()),
+                    Err($sibling_error)
+                );
+                assert_eq!(sdc_first.debug_text(), sdc_first_before);
+                assert!(
+                    sdc_first
+                        .source_proof_local_given_descendant_binding()
+                        .is_some()
+                );
+                assert!(sdc_first.$getter().is_none());
+
+                let mut final_collision =
+                    task269gcu_empty_typed_for(sdc_source, sdc_module, sibling_arena);
+                final_collision.$inject(sibling);
+                final_collision.inject_source_proof_local_given_descendant_binding_for_test(sdc);
+                let collision_before = final_collision.debug_text();
+                assert_eq!(
+                    task269gcu_resolved_result_with_inputs(
+                        &final_collision,
+                        Vec::new(),
+                        Vec::new(),
+                    ),
+                    Err($resolved_error),
+                );
+                assert_eq!(final_collision.debug_text(), collision_before);
+            }};
+        }
+
+        let sdc = task269sdc_neighbor();
+        let declaration = SourceProofLocalDeclarationHandoff::ownership_sentinel_for_test(
+            sdc.source_id(),
+            sdc.module_id().clone(),
+            sdc.binding_env().clone(),
+        );
+        assert_task269sdc_sibling_both_orders!(
+            declaration,
+            inject_source_proof_local_declaration_for_test,
+            with_source_proof_local_declaration,
+            source_proof_local_declaration,
+            TypedAstError::InvalidSourceProofLocalDeclaration,
+            ResolvedTypedAstError::InvalidSourceProofLocalGivenDescendantBinding,
+            source_id_for("f8"),
+            module("task269sdc"),
+            TypedArena::try_new(None, Vec::new()).expect("Task269SDC declaration arena")
+        );
+        assert_task269sdc_sibling_both_orders!(
+            task269gu_let_neighbor(),
+            inject_source_proof_local_let_binding_for_test,
+            with_source_proof_local_let_binding,
+            source_proof_local_let_binding,
+            TypedAstError::InvalidSourceProofLocalLetBinding,
+            ResolvedTypedAstError::InvalidSourceProofLocalGivenDescendantBinding,
+            source_id_for("f7"),
+            module("task269gup"),
+            TypedArena::try_new(None, Vec::new()).expect("Task269SDC Let-binding arena")
+        );
+        let (let_type, let_type_arena) = task269gu_let_type_neighbor();
+        assert_task269sdc_sibling_both_orders!(
+            let_type,
+            inject_source_proof_local_let_type_for_test,
+            with_source_proof_local_let_type,
+            source_proof_local_let_type,
+            TypedAstError::InvalidSourceProofLocalLetType,
+            ResolvedTypedAstError::InvalidSourceProofLocalGivenDescendantBinding,
+            source_id_for("f7"),
+            module("task269gup"),
+            let_type_arena
+        );
+        assert_task269sdc_sibling_both_orders!(
+            task269gu_given_neighbor(),
+            inject_source_proof_local_given_binding_for_test,
+            with_source_proof_local_given_binding,
+            source_proof_local_given_binding,
+            TypedAstError::InvalidSourceProofLocalGivenBinding,
+            ResolvedTypedAstError::InvalidSourceProofLocalGivenDescendantBinding,
+            source_id_for("f7"),
+            module("task269gup"),
+            TypedArena::try_new(None, Vec::new()).expect("Task269SDC Given-binding arena")
+        );
+        let (given_type, given_type_arena) = task269gu_given_type_neighbor();
+        assert_task269sdc_sibling_both_orders!(
+            given_type,
+            inject_source_proof_local_given_type_for_test,
+            with_source_proof_local_given_type,
+            source_proof_local_given_type,
+            TypedAstError::InvalidSourceProofLocalGivenType,
+            ResolvedTypedAstError::InvalidSourceProofLocalGivenDescendantBinding,
+            source_id_for("f7"),
+            module("task269gup"),
+            given_type_arena
+        );
+        let gu_fixture = task269gu_fixture();
+        assert_task269sdc_sibling_both_orders!(
+            gu_fixture.dependency.clone(),
+            inject_source_proof_local_given_use_type_for_test,
+            with_source_proof_local_given_use_type,
+            source_proof_local_given_use_type,
+            TypedAstError::InvalidSourceProofLocalGivenUseType,
+            ResolvedTypedAstError::InvalidSourceProofLocalGivenDescendantBinding,
+            gu_fixture.source,
+            gu_fixture.module.clone(),
+            task269gupt_arena(gu_fixture.source)
+        );
+        let gu_term = SourceProofLocalGivenUseTermProducer::build(
+            gu_fixture.dependency,
+            gu_fixture.input,
+            &gu_fixture.arena,
+        )
+        .expect("Task269SDC GU-term predecessor");
+        assert_task269sdc_sibling_both_orders!(
+            gu_term,
+            inject_source_proof_local_given_use_term_for_test,
+            with_source_proof_local_given_use_term,
+            source_proof_local_given_use_term,
+            TypedAstError::InvalidSourceProofLocalGivenUseTerm,
+            ResolvedTypedAstError::InvalidSourceProofLocalGivenDescendantBinding,
+            gu_fixture.source,
+            gu_fixture.module,
+            gu_fixture.arena
+        );
+        assert_task269sdc_sibling_both_orders!(
+            fixture.dependency.dependency().clone(),
+            inject_source_proof_local_given_condition_binding_for_test,
+            with_source_proof_local_given_condition_binding,
+            source_proof_local_given_condition_binding,
+            TypedAstError::InvalidSourceProofLocalGivenConditionBinding,
+            ResolvedTypedAstError::InvalidSourceProofLocalGivenDescendantBinding,
+            fixture.source,
+            fixture.module.clone(),
+            TypedArena::try_new(None, Vec::new()).expect("Task269SDC GC-binding arena")
+        );
+        assert_task269sdc_sibling_both_orders!(
+            fixture.dependency.clone(),
+            inject_source_proof_local_given_condition_type_for_test,
+            with_source_proof_local_given_condition_type,
+            source_proof_local_given_condition_type,
+            TypedAstError::InvalidSourceProofLocalGivenConditionType,
+            ResolvedTypedAstError::InvalidSourceProofLocalGivenDescendantBinding,
+            fixture.source,
+            fixture.module.clone(),
+            task269gcu_type_arena(fixture.source)
+        );
+        assert_task269sdc_sibling_both_orders!(
+            handoff.clone(),
+            inject_source_proof_local_given_condition_use_term_for_test,
+            with_source_proof_local_given_condition_use_term,
+            source_proof_local_given_condition_use_term,
+            TypedAstError::InvalidSourceProofLocalGivenConditionUseTerm,
+            ResolvedTypedAstError::InvalidSourceProofLocalGivenDescendantBinding,
+            fixture.source,
+            fixture.module.clone(),
+            fixture.arena.clone()
         );
         assert_eq!(
             TypedAstError::InvalidSourceProofLocalGivenConditionUseTerm.to_string(),

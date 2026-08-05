@@ -19,6 +19,8 @@ use super::{
     SourceProofLocalGivenConditionLowerMutation, SourceProofLocalGivenConditionLowerOutput,
     SourceProofLocalGivenConditionResolverProfileMutation,
     SourceProofLocalGivenConditionShellMutation, SourceProofLocalGivenConditionSurfaceMutation,
+    SourceProofLocalGivenDescendantBindingRouteMutation,
+    SourceProofLocalGivenDescendantBindingRouteOutput,
     SourceProofLocalGivenDescendantSetLowerMutation,
     SourceProofLocalGivenDescendantSetLowerOutput,
     SourceProofLocalGivenDescendantSetResolverProfileMutation,
@@ -49,6 +51,8 @@ use super::{
     source_proof_local_given_condition_lower_output_with_resolver_profile_mutation,
     source_proof_local_given_condition_lower_output_with_shell_mutation,
     source_proof_local_given_condition_lower_output_with_surface_mutation,
+    source_proof_local_given_descendant_binding_output,
+    source_proof_local_given_descendant_binding_output_with_mutation,
     source_proof_local_given_descendant_set_lower_output,
     source_proof_local_given_descendant_set_lower_output_with_mutation,
     source_proof_local_given_descendant_set_lower_output_with_resolver_mutation,
@@ -9645,4 +9649,389 @@ fn task269sdp_near_miss_and_active_routes_remain_isolated() {
         )
         .is_none()
     );
+}
+
+fn task269sdc_output() -> SourceProofLocalGivenDescendantBindingRouteOutput {
+    let (ast, module, shells, symbols, diagnostics) =
+        task253_ast_from_source_text_with_diagnostic_count(
+            SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT,
+            269_012,
+        );
+    assert_eq!(diagnostics, 0);
+    source_proof_local_given_descendant_binding_output(
+        &ast,
+        module,
+        &shells,
+        &symbols,
+        SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT,
+    )
+    .expect("Task269SDC exact selector")
+    .expect("Task269SDC exact private route")
+}
+
+#[test]
+fn task269sdc_descendant_binding_profile_is_exact_and_private() {
+    let output = task269sdc_output();
+    let typed = output.typed_ast();
+    let resolved = output.resolved();
+    let handoff = typed
+        .source_proof_local_given_descendant_binding()
+        .expect("Task269SDC Typed handoff");
+    assert_eq!(
+        (
+            handoff.base_binding_env().contexts().len(),
+            handoff.base_binding_env().bindings().len(),
+            handoff.base_binding_env().diagnostics().len(),
+        ),
+        (1, 1, 0)
+    );
+    assert_eq!(
+        (
+            handoff.binding_env().contexts().len(),
+            handoff.binding_env().bindings().len(),
+            handoff.binding_env().diagnostics().len(),
+        ),
+        (3, 2, 0)
+    );
+    assert_eq!(handoff.theorem_range().start, 19);
+    assert_eq!(handoff.theorem_range().end, 179);
+    assert_eq!(handoff.proof_range().start, 73);
+    assert_eq!(handoff.proof_range().end, 178);
+    assert_eq!(handoff.given_range().start, 81);
+    assert_eq!(handoff.given_range().end, 99);
+    assert_eq!(handoff.segment_range().start, 87);
+    assert_eq!(handoff.segment_range().end, 98);
+    assert_eq!(handoff.name_range().start, 87);
+    assert_eq!(handoff.name_range().end, 88);
+    assert_eq!(handoff.descendant_range().start, 102);
+    assert_eq!(handoff.descendant_range().end, 159);
+    assert_eq!(handoff.descendant_context().index(), 2);
+    let row = handoff
+        .bindings()
+        .get(
+            mizar_checker::source_proof_local_declaration::SourceProofLocalGivenBindingId::new(0),
+        )
+        .expect("Task269SDC dense row");
+    assert_eq!(row.binding().index(), 1);
+    assert_eq!(row.binding_context().index(), 1);
+    assert_eq!(row.source_ordinal(), 1);
+    assert_eq!(row.visible_after_ordinal(), 1);
+    assert_eq!(
+        row.recovery(),
+        mizar_checker::source_proof_local_declaration::SourceProofLocalGivenBindingRecovery::Normal
+    );
+    assert_eq!(
+        resolved.source_proof_local_given_descendant_binding(),
+        Some(handoff)
+    );
+    assert_eq!(
+        typed
+            .debug_text()
+            .matches("source-proof-local-given-descendant-binding-debug-v1")
+            .count(),
+        1
+    );
+    assert_eq!(
+        resolved
+            .debug_text()
+            .matches("source-proof-local-given-descendant-binding-debug-v1")
+            .count(),
+        1
+    );
+    assert!(handoff.lower_fingerprint().contains(
+        "source-proof-local-given-descendant-set-lower-debug-v1\n"
+    ));
+    assert!(handoff.lower_fingerprint().ends_with('\n'));
+}
+
+#[test]
+fn task269sdc_descendant_binding_profile_rejects_every_corruption() {
+    let (ast, module, shells, symbols, diagnostics) =
+        task253_ast_from_source_text_with_diagnostic_count(
+            SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT,
+            269_013,
+        );
+    assert_eq!(diagnostics, 0);
+    for (mutation, expected) in [
+        (
+            SourceProofLocalGivenDescendantBindingRouteMutation::WrongLowerFingerprint,
+            "source proof-local given-descendant binding dependency mismatch",
+        ),
+        (
+            SourceProofLocalGivenDescendantBindingRouteMutation::EmptyBase,
+            "source proof-local given-descendant binding base binding environment is invalid",
+        ),
+        (
+            SourceProofLocalGivenDescendantBindingRouteMutation::WrongTheoremRange,
+            "source proof-local given-descendant binding dependency mismatch",
+        ),
+        (
+            SourceProofLocalGivenDescendantBindingRouteMutation::WrongProofRange,
+            "source proof-local given-descendant binding dependency mismatch",
+        ),
+        (
+            SourceProofLocalGivenDescendantBindingRouteMutation::WrongGivenRange,
+            "source proof-local given-descendant binding dependency mismatch",
+        ),
+        (
+            SourceProofLocalGivenDescendantBindingRouteMutation::WrongSegmentRange,
+            "source proof-local given-descendant binding dependency mismatch",
+        ),
+        (
+            SourceProofLocalGivenDescendantBindingRouteMutation::WrongNameRange,
+            "source proof-local given-descendant binding dependency mismatch",
+        ),
+        (
+            SourceProofLocalGivenDescendantBindingRouteMutation::WrongDescendantRange,
+            "source proof-local given-descendant binding descendant context is invalid",
+        ),
+        (
+            SourceProofLocalGivenDescendantBindingRouteMutation::WrongLocalSpelling,
+            "source proof-local given-descendant binding 0 is invalid",
+        ),
+        (
+            SourceProofLocalGivenDescendantBindingRouteMutation::WrongLocalScope,
+            "source proof-local given-descendant binding 0 is invalid",
+        ),
+        (
+            SourceProofLocalGivenDescendantBindingRouteMutation::WrongLocalRange,
+            "source proof-local given-descendant binding 0 is invalid",
+        ),
+        (
+            SourceProofLocalGivenDescendantBindingRouteMutation::WrongLocalVisibleAfter,
+            "source proof-local given-descendant binding 0 is invalid",
+        ),
+        (
+            SourceProofLocalGivenDescendantBindingRouteMutation::WrongDescendantScope,
+            "source proof-local given-descendant binding descendant context is invalid",
+        ),
+        (
+            SourceProofLocalGivenDescendantBindingRouteMutation::WrongSourceOrdinal,
+            "source proof-local given-descendant binding 0 is invalid",
+        ),
+    ] {
+        let error = source_proof_local_given_descendant_binding_output_with_mutation(
+            &ast,
+            module.clone(),
+            &shells,
+            &symbols,
+            SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT,
+            mutation,
+        )
+        .expect("Task269SDC exact selector under input mutation")
+        .expect_err("Task269SDC input mutation must fail closed");
+        assert_eq!(error, expected, "mutation {mutation:?}");
+    }
+    assert!(
+        source_proof_local_given_descendant_binding_output_with_mutation(
+            &ast,
+            module,
+            &shells,
+            &symbols,
+            SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT,
+            SourceProofLocalGivenDescendantBindingRouteMutation::None,
+        )
+        .expect("Task269SDC exact selector")
+        .is_ok()
+    );
+}
+
+#[test]
+fn task269sdc_descendant_binding_profile_isolates_sdp_and_near_miss_sources() {
+    let (ast, module, shells, symbols, diagnostics) =
+        task253_ast_from_source_text_with_diagnostic_count(
+            SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT,
+            269_014,
+        );
+    assert_eq!(diagnostics, 0);
+    assert!(
+        source_proof_local_given_descendant_set_lower_output(
+            &ast,
+            module.clone(),
+            &shells,
+            &symbols,
+            SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT,
+        )
+        .expect("Task269SDP selector remains exact")
+        .is_ok()
+    );
+    assert!(
+        source_proof_local_given_descendant_binding_output(
+            &ast,
+            module.clone(),
+            &shells,
+            &symbols,
+            SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT,
+        )
+        .expect("Task269SDC selector")
+        .is_ok()
+    );
+
+    let (_, _, wrong_shells, _) =
+        task253_ast_from_source_text(SOURCE_PROOF_LOCAL_LET_TEXT, 269_015);
+    let sdp_error = source_proof_local_given_descendant_set_lower_output(
+        &ast,
+        module.clone(),
+        &wrong_shells,
+        &symbols,
+        SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT,
+    )
+    .expect("Task269SDP exact selector with selected shell failure")
+    .expect_err("Task269SDP selected shell failure");
+    assert_eq!(sdp_error, "Task269SDP declaration shell 0 mismatch");
+    assert_eq!(
+        source_proof_local_given_descendant_binding_output(
+            &ast,
+            module.clone(),
+            &wrong_shells,
+            &symbols,
+            SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT,
+        )
+        .expect("Task269SDC exact selector with selected SDP failure"),
+        Err(sdp_error.clone())
+    );
+    assert_eq!(
+        source_proof_local_given_descendant_binding_output_with_mutation(
+            &ast,
+            module,
+            &wrong_shells,
+            &symbols,
+            SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT,
+            SourceProofLocalGivenDescendantBindingRouteMutation::WrongLowerFingerprint,
+        )
+        .expect("Task269SDC exact selector with lower and route corruption"),
+        Err(sdp_error)
+    );
+
+    for (index, source) in [
+        SOURCE_PROOF_LOCAL_GIVEN_TEXT,
+        SOURCE_PROOF_LOCAL_GIVEN_USE_TEXT,
+        SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT,
+        SOURCE_PROOF_LOCAL_LET_TEXT,
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let (ast, module, shells, symbols, diagnostics) =
+            task253_ast_from_source_text_with_diagnostic_count(source, 269_020 + index);
+        assert_eq!(diagnostics, 0);
+        assert!(
+            source_proof_local_given_descendant_binding_output(
+                &ast, module, &shells, &symbols, source,
+            )
+            .is_none(),
+            "neighbor source {index}",
+        );
+    }
+    for (index, source) in [
+        SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT.replacen(
+            "ProofLocalGivenDescendantCaptureSmoke",
+            "ProofLocalGivenDescendantCaptureNearMiss",
+            1,
+        ),
+        SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT.replacen("given y", "given w", 1),
+        SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT.replacen("now\n", "hereby\n", 1),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let (ast, module, shells, symbols, _) = task253_ast_from_source_text_with_diagnostic_count(
+            &source,
+            269_030 + index,
+        );
+        assert!(
+            source_proof_local_given_descendant_binding_output(
+                &ast,
+                module.clone(),
+                &shells,
+                &symbols,
+                &source,
+            )
+            .is_none(),
+            "near miss {index}",
+        );
+        assert!(
+            source_proof_local_given_descendant_binding_output_with_mutation(
+                &ast,
+                module,
+                &shells,
+                &symbols,
+                &source,
+                SourceProofLocalGivenDescendantBindingRouteMutation::WrongLowerFingerprint,
+            )
+            .is_none(),
+            "near-miss selector precedes route corruption {index}",
+        );
+    }
+}
+
+#[test]
+fn task269sdc_descendant_binding_profile_has_zero_occurrence_capture_or_semantic_effect() {
+    let output = task269sdc_output();
+    let typed = output.typed_ast();
+    let resolved = output.resolved();
+    let handoff = typed
+        .source_proof_local_given_descendant_binding()
+        .expect("Task269SDC handoff");
+    let binding = handoff
+        .binding_env()
+        .bindings()
+        .get(mizar_checker::binding_env::BindingId::new(1))
+        .expect("Task269SDC Given binding");
+    assert_eq!(binding.spelling, "y");
+    assert_eq!(
+        binding.type_site,
+        mizar_checker::binding_env::BindingTypeSite::Missing
+    );
+    assert!(binding.captured.identities().is_empty());
+    assert!(binding.diagnostics.is_empty());
+    assert!(typed.source_type().is_none());
+    assert!(typed.source_term().is_none());
+    assert!(typed.source_statement().is_none());
+    assert!(typed.source_statement_references().is_none());
+    assert!(typed.source_statement_witnesses().is_none());
+    assert!(typed.source_proof_local_declaration().is_none());
+    assert!(typed.source_proof_local_given_condition_use_term().is_none());
+    assert!(typed.nodes().is_empty());
+    assert!(typed.contexts().is_empty());
+    assert!(typed.types().is_empty());
+    assert!(typed.facts().is_empty());
+    assert!(typed.coercions().is_empty());
+    assert!(typed.initial_obligations().is_empty());
+    assert!(typed.diagnostics().is_empty());
+    assert!(resolved.source_type().is_none());
+    assert!(resolved.source_term().is_none());
+    assert!(resolved.source_statement().is_none());
+    assert!(resolved.source_statement_references().is_none());
+    assert!(resolved.nodes().is_empty());
+    assert!(resolved.expr_metadata().is_empty());
+    assert!(resolved.collection_candidates().is_empty());
+    assert!(resolved.expanded_candidates().is_empty());
+    assert!(resolved.template_expansions().is_empty());
+    assert!(resolved.viable_candidates().is_empty());
+    assert!(resolved.viability_decisions().is_empty());
+    assert!(resolved.specificity_graphs().is_empty());
+    assert!(resolved.resolved_overloads().is_empty());
+    assert!(resolved.inserted_coercions().is_empty());
+    assert!(resolved.cluster_facts().is_empty());
+    assert!(resolved.checked_formulas().is_empty());
+    assert!(resolved.statement_semantics().is_empty());
+    assert!(resolved.checked_proofs().is_empty());
+    assert!(resolved.checked_proof_nodes().is_empty());
+    assert!(resolved.checked_terminal_goals().is_empty());
+    assert!(resolved.diagnostics().is_empty());
+    for excluded in [
+        "term-reference",
+        "occurrence",
+        "local-abbreviation",
+        "captured-variable",
+        "condition-fact",
+        "initial-obligation",
+        "terminal-goal",
+        "accepted",
+        "discharged",
+        "verification-condition",
+    ] {
+        assert!(!handoff.debug_text().contains(excluded), "excluded {excluded}");
+    }
 }

@@ -938,6 +938,10 @@ Literal top-level public items:
   `SourceProofLocalGivenConditionBindingHandoff`,
   `SourceProofLocalGivenConditionBindingProducer`,
   `SourceProofLocalGivenConditionBindingError`
+- `SourceProofLocalGivenDescendantBindingHandoffInput`,
+  `SourceProofLocalGivenDescendantBindingHandoff`,
+  `SourceProofLocalGivenDescendantBindingProducer`,
+  `SourceProofLocalGivenDescendantBindingError`
 
 Correspondence:
 
@@ -951,6 +955,7 @@ Correspondence:
 | The exact proof-`given` profile appends one missing-type `GivenWitness` over the reserve-only base, preserves canonical block-local lookup behavior, and is carried atomically without semantic publication. | Public `SourceProofLocalGivenBinding*` input/row/table/handoff/producer/error types, `BindingKind::GivenWitness`, and Typed/final ownership. | Four checker and four private runner Task-269G tests, including inherited, shadowed, restored, parent-excluded, and sibling-excluded lookup. | Implemented as zero-credit binding transport; source-type admission remains Task 269GT. |
 | The distinct proof-`given` later-use source rebuilds the same block-local binding lifetime in its own transaction without publishing any occurrence or semantic row. | Public `SourceProofLocalGivenUseBindingHandoffInput`, `SourceProofLocalGivenUseBindingHandoff`, `SourceProofLocalGivenUseBindingProducer`, and `SourceProofLocalGivenUseBindingError`; reused dense Given row/table/recovery ABI. | Four checker and four private runner Task-269GUP tests cover exact source identity, corruption precedence, lookup inheritance/shadow/restoration/exclusion, and zero semantic effect. | Implemented as zero-credit dormant binding prerequisite for Task 269GUPT. |
 | The declaration-condition source installs the canonical own-condition and innermost-block witness lifetime without publishing type, occurrence, condition, or proof semantics. | Public `SourceProofLocalGivenConditionBindingHandoffInput`, `SourceProofLocalGivenConditionBindingHandoff`, `SourceProofLocalGivenConditionBindingProducer`, and `SourceProofLocalGivenConditionBindingError`; independently reconstructed theorem identity and reused dense Given row/table/recovery ABI. | Four checker and four private runner Task-269GC tests cover coherent identity corruption, validation precedence, lookup inheritance/shadow/restoration/exclusion, atomic ownership, and zero semantic effect. | Implemented as zero-credit binding prerequisite for Task 269GCT. |
+| The descendant source installs the outer Given witness and one inherited child context while excluding parent, proof siblings, and post-owner positions without publishing type, occurrence, Set binding, capture, or proof semantics. | Public `SourceProofLocalGivenDescendantBindingHandoffInput`, `SourceProofLocalGivenDescendantBindingHandoff`, `SourceProofLocalGivenDescendantBindingProducer`, and `SourceProofLocalGivenDescendantBindingError`; exact Task-269SDP replay and reused Given row/table/recovery ABI. | Four checker and four private runner Task-269SDC tests cover every input/replay field, exact precedence, descendant lookup/shadow/restoration/exclusion, all-owner atomicity, and zero semantic effect. | Implemented as zero-credit descendant binding/context transport. |
 
 Bounded gaps: later-use resolution and capture replay, other proof-local
 declaration forms, witness typing, existential matching, goal substitution,
@@ -6234,3 +6239,44 @@ test intent for `1/1/0 -> 3/2/0`, inherited `y`, and parent/sibling exclusion. T
 LocalAbbreviation/capture gap. Existing `.miz`, expectations, trace rows,
 coverage status, and diagnostics remain authoritative and unchanged; no new
 fixture is required for this dormant exact-source consumer.
+
+## Task 269SDC Implementation Status
+
+Documentation prerequisite `7ccf436a92a285e83de1de912250f77577527ab2` is
+complete. The frozen seven primary Rust files plus one `cfg(test)`-only
+ownership-support file now implement only the dormant descendant binding/
+context transaction. The exact four checker and four runner tests pass;
+the predecessor ownership sentinel also passes. Independent test-sufficiency
+and implementation reviews report **NO FINDINGS**.
+
+Checker/runner libraries are `526/596`. Checker production is `30/183606`,
+with path/content SHA-256
+`c89f43f6abebf7ebeb3ac9394ecd8ea3186ad28934c75526d2cc0b85a66ebad5` /
+`abaaa23c6605e1f5c1e1bb62d1665ba5140ff74af61ded310fd164899d3b99f4`.
+Runner production is `37/79263`, with path/content SHA-256
+`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d` /
+`766428921a1531d74d2fe764aa84881bf30970ac948213a2198d63cd97a37e3c`.
+Checker module sizes are proof-local declaration `8606`, typed AST `6628`,
+resolved typed AST `8622`, and source term `5625`. Runner module sizes are
+proof-local production leaf `3005`, facade `963`, root `2796`, and proof-local
+test leaf `10037`. Raw/normalized test-list hashes are checker
+`83094a868177342bb9e9edb30dc0dd41bf209f5e3d68d98ccef62748776d0539` /
+`bc576099de9b92096791d0aedc89896f5a6804c49a95072cd35e84b59e36f021`
+and runner
+`88ef7579e05f73f34ca98351782a5481c657b615986fb0085a2d842fa61ad79b` /
+`e6a16e93394f8a71554a50bfc64f66734ecbbf4b08e0683c6d10a8ccae96e76e`.
+Fresh post-implementation list replay exposed the prerequisite's projected
+hash values as `design_drift`; the measured values above supersede those
+projections without changing the exact eight frozen test names or counts.
+
+Corpus/requirements `428/395`, pass/fail `235/193`, warnings/errors `23/0`,
+stages `101/7/205/1`, type `259=247+12`, and trace SHA-256
+`55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`
+remain unchanged. No canonical specification, `.miz`, fixture, sidecar,
+expectation, trace row/status/backlink, metadata, diagnostic, public or active
+dispatch, CLI result, or executable-coverage credit changes. SDC publishes
+only the exact outer Given binding and inherited child context; source type,
+descendant occurrence, Set binding, capture/closure, fact, proof, obligation,
+and downstream semantics remain excluded. The implementation self-hash is
+pending its task-only commit; the next task is selected only from a fresh
+post-commit authority/API inventory.

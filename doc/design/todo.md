@@ -94,8 +94,8 @@ is its task 1). "Next work" points into the
 | mizar-parser | Grammar, Pratt parsing, syntax recovery, parse-only corpus | [x] Tasks 1-48 plus bounded `PARSER-RECOVERY-B1B1P-P1` complete; historical post-Task-46 score 99/100 | no inferred Task 49; human-owned P-265-47D remains separate | [todo](./mizar-parser/en/todo.md) |
 | mizar-frontend | Source loading and phase 1-3 orchestration | [x] prior milestone plus `PARSER-RECOVERY-B1B1P-P1-FE` regression complete | — | [todo](./mizar-frontend/en/todo.md) |
 | mizar-resolve | Module graph, namespaces, symbols, labels, signatures | [~] complete through task 29, Checker Task 263R, and Task 264R implementation | Preserve Task-264R shell/no-symbol boundary through Checker Tasks 248P/264 | [todo](./mizar-resolve/en/todo.md) |
-| mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] foundation complete through task 22; Tasks 265-268, Core-31, and Checker consumers through committed Task 269SDP are complete | Freeze/review/commit Task 269SDC descendant binding docs, then implement its dormant route | [todo](./mizar-test/en/todo.md) |
-| mizar-checker | Type checking, cluster/registration resolution, overload resolution | [~] explicit-payload milestone and source producers/consumers through committed Task 269SDP are complete | Complete Task 269SDC binding/context only; type and occurrence stay later, capture remains blocked on `set` reconciliation | [todo](./mizar-checker/en/todo.md) |
+| mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] foundation complete through task 22; Tasks 265-268, Core-31, and the Task 269SDC dormant consumer are implemented and synchronized | Finish Task 269SDC gates/commit, then fresh-select the next dependency-ready consumer | [todo](./mizar-test/en/todo.md) |
+| mizar-checker | Type checking, cluster/registration resolution, overload resolution | [~] explicit-payload milestone and source producers/consumers through Task 269SDC binding/context are implemented and synchronized | Finish Task 269SDC gates/commit; type and occurrence stay later and capture remains blocked on `set` reconciliation | [todo](./mizar-checker/en/todo.md) |
 | mizar-core | Elaboration, binder-normalized core logic, control-flow preparation | [x] core/control-flow milestone, tasks 27-32 complete | step-5 Tasks 33-53 under the Task-32 graph | [todo](./mizar-core/en/todo.md) |
 | mizar-vc | VC IR, VC generation, deterministic pre-ATP discharge | [x] exact source-derived contradiction VC integration complete through task 31 | dependency-paced VC Tasks 32-55; VC 40/53 and S1 gates remain explicit | [todo](./mizar-vc/en/todo.md) |
 | mizar-kernel | Trusted certificate parsing and checking | [x] SAT-backed kernel milestone complete | step 4 task 35 resolved; task 32 parked; tasks 30-34 resolved | [todo](./mizar-kernel/en/todo.md) |
@@ -4545,3 +4545,44 @@ capture, fact, proof, obligation, diagnostic, active result, or coverage
 credit. Chapter-4/15 `set` disagreement is nonblocking for SDC and blocking
 for all `z`/`q` work. Complete the synchronized 42-file documentation review,
 gates, and prerequisite commit; then fresh-preflight and implement SDC alone.
+
+## Task 269SDC Implementation Status
+
+Documentation prerequisite `7ccf436a92a285e83de1de912250f77577527ab2` is
+complete. The frozen seven primary Rust files plus one `cfg(test)`-only
+ownership-support file now implement only the dormant descendant binding/
+context transaction. The exact four checker and four runner tests pass;
+the predecessor ownership sentinel also passes. Independent test-sufficiency
+and implementation reviews report **NO FINDINGS**.
+
+Checker/runner libraries are `526/596`. Checker production is `30/183606`,
+with path/content SHA-256
+`c89f43f6abebf7ebeb3ac9394ecd8ea3186ad28934c75526d2cc0b85a66ebad5` /
+`abaaa23c6605e1f5c1e1bb62d1665ba5140ff74af61ded310fd164899d3b99f4`.
+Runner production is `37/79263`, with path/content SHA-256
+`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d` /
+`766428921a1531d74d2fe764aa84881bf30970ac948213a2198d63cd97a37e3c`.
+Checker module sizes are proof-local declaration `8606`, typed AST `6628`,
+resolved typed AST `8622`, and source term `5625`. Runner module sizes are
+proof-local production leaf `3005`, facade `963`, root `2796`, and proof-local
+test leaf `10037`. Raw/normalized test-list hashes are checker
+`83094a868177342bb9e9edb30dc0dd41bf209f5e3d68d98ccef62748776d0539` /
+`bc576099de9b92096791d0aedc89896f5a6804c49a95072cd35e84b59e36f021`
+and runner
+`88ef7579e05f73f34ca98351782a5481c657b615986fb0085a2d842fa61ad79b` /
+`e6a16e93394f8a71554a50bfc64f66734ecbbf4b08e0683c6d10a8ccae96e76e`.
+Fresh post-implementation list replay exposed the prerequisite's projected
+hash values as `design_drift`; the measured values above supersede those
+projections without changing the exact eight frozen test names or counts.
+
+Corpus/requirements `428/395`, pass/fail `235/193`, warnings/errors `23/0`,
+stages `101/7/205/1`, type `259=247+12`, and trace SHA-256
+`55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`
+remain unchanged. No canonical specification, `.miz`, fixture, sidecar,
+expectation, trace row/status/backlink, metadata, diagnostic, public or active
+dispatch, CLI result, or executable-coverage credit changes. SDC publishes
+only the exact outer Given binding and inherited child context; source type,
+descendant occurrence, Set binding, capture/closure, fact, proof, obligation,
+and downstream semantics remain excluded. The implementation self-hash is
+pending its task-only commit; the next task is selected only from a fresh
+post-commit authority/API inventory.

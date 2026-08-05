@@ -906,6 +906,10 @@ literal top-level public item:
   `SourceProofLocalGivenConditionBindingHandoff`、
   `SourceProofLocalGivenConditionBindingProducer`、
   `SourceProofLocalGivenConditionBindingError`
+- `SourceProofLocalGivenDescendantBindingHandoffInput`、
+  `SourceProofLocalGivenDescendantBindingHandoff`、
+  `SourceProofLocalGivenDescendantBindingProducer`、
+  `SourceProofLocalGivenDescendantBindingError`
 
 対応:
 
@@ -919,6 +923,7 @@ literal top-level public item:
 | exact proof-`given` profileはreserve-only baseへmissing-type `GivenWitness` 1件をappendし、canonical block-local lookupを保ち、semantic publicationなしでatomic preserveする。 | public `SourceProofLocalGivenBinding*` input/row/table/handoff/producer/error type、`BindingKind::GivenWitness`、Typed/final ownership。 | inherited/shadowed/restored/parent-excluded/sibling-excluded lookupを含むchecker 4件とprivate runner 4件のTask-269G tests。 | zero-credit binding transportとしてimplemented。source-type admissionはTask 269GTに残る。 |
 | distinct proof-`given` later-use sourceは、occurrence/semantic rowをpublishせず、自身のtransactionで同じblock-local binding lifetimeを再構築する。 | public `SourceProofLocalGivenUseBindingHandoffInput`、`SourceProofLocalGivenUseBindingHandoff`、`SourceProofLocalGivenUseBindingProducer`、`SourceProofLocalGivenUseBindingError`と再利用するdense Given row/table/recovery ABI。 | exact source identity、corruption precedence、lookup inheritance/shadow/restoration/exclusion、zero semantic effectを覆うchecker 4件・private runner 4件のTask-269GUP tests。 | Task 269GUPT向けzero-credit dormant binding prerequisiteとしてimplemented。 |
 | declaration-condition sourceがtype/occurrence/condition/proof semanticsをpublishせずcanonical own-condition/innermost-block witness lifetimeをinstallする。 | public `SourceProofLocalGivenConditionBindingHandoffInput`、`SourceProofLocalGivenConditionBindingHandoff`、`SourceProofLocalGivenConditionBindingProducer`、`SourceProofLocalGivenConditionBindingError`、independent theorem identity、reused Given row/table/recovery ABI。 | coherent identity corruption、precedence、lookup inheritance/shadow/restoration/exclusion、atomic ownership、zero semantic effectを覆うchecker/runner各4 Task269GC tests。 | Task269GCT向けzero-credit binding prerequisiteとしてimplemented。 |
+| descendant sourceがtype/occurrence/Set binding/capture/proof semanticsをpublishせずouter Given witnessとinherited child context 1件をinstallし、parent/proof sibling/owner終了後をexcludeする。 | public `SourceProofLocalGivenDescendantBindingHandoffInput`、`SourceProofLocalGivenDescendantBindingHandoff`、`SourceProofLocalGivenDescendantBindingProducer`、`SourceProofLocalGivenDescendantBindingError`、exact Task-269SDP replay、reused Given row/table/recovery ABI。 | 全input/replay field、exact precedence、descendant lookup/shadow/restoration/exclusion、全owner atomicity、zero semantic effectを覆うchecker/runner各4 Task269SDC tests。 | zero-credit descendant binding/context transportとしてimplemented。 |
 
 bounded gap: later-use resolution/capture replay、他のproof-local declaration
 form、witness typing、existential matching、goal substitution、proof/discharge/
@@ -5924,3 +5929,44 @@ inherited `y`、parent/sibling exclusionの
 安全なtest intentを与える。Ch.4/15 Set conflictはSDCにはnonblocking、
 LocalAbbreviation/captureにはblockingな`spec_gap`。既存`.miz`/
 expectation/trace/coverage status/diagnosticは不変で、新fixtureは不要。
+
+## Task 269SDC Implementation Status
+
+documentation prerequisite `7ccf436a92a285e83de1de912250f77577527ab2` は
+complete。frozen primary Rust 7 filesと`cfg(test)`-only ownership support
+1 fileはdormant descendant binding/context transactionだけを実装した。
+exact checker 4 testsとrunner 4 tests、およびpredecessor ownership sentinelは
+passし、independent test-sufficiency/implementation reviewは
+**NO FINDINGS**。
+
+checker/runner libraryは`526/596`。checker productionは`30/183606`、
+path/content SHA-256は
+`c89f43f6abebf7ebeb3ac9394ecd8ea3186ad28934c75526d2cc0b85a66ebad5` /
+`abaaa23c6605e1f5c1e1bb62d1665ba5140ff74af61ded310fd164899d3b99f4`。
+runner productionは`37/79263`、path/content SHA-256は
+`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d` /
+`766428921a1531d74d2fe764aa84881bf30970ac948213a2198d63cd97a37e3c`。
+checker module sizeはproof-local declaration `8606`、typed AST `6628`、
+resolved typed AST `8622`、source term `5625`。runner module sizeは
+proof-local production leaf `3005`、facade `963`、root `2796`、proof-local
+test leaf `10037`。raw/normalized test-list hashはchecker
+`83094a868177342bb9e9edb30dc0dd41bf209f5e3d68d98ccef62748776d0539` /
+`bc576099de9b92096791d0aedc89896f5a6804c49a95072cd35e84b59e36f021`、
+runner
+`88ef7579e05f73f34ca98351782a5481c657b615986fb0085a2d842fa61ad79b` /
+`e6a16e93394f8a71554a50bfc64f66734ecbbf4b08e0683c6d10a8ccae96e76e`。
+実装後のfresh test-list replayによりprerequisiteのprojected hash値を
+`design_drift`と確認した。上記の実測値はexact 8 frozen test names/countを
+変えず、そのprojectionを置き換える。
+
+corpus/requirements `428/395`、pass/fail `235/193`、warnings/errors `23/0`、
+stages `101/7/205/1`、type `259=247+12`、trace SHA-256
+`55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`
+は不変。canonical specification、`.miz`、fixture、sidecar、expectation、
+trace row/status/backlink、metadata、diagnostic、public/active dispatch、
+CLI result、executable coverage creditの変更はない。SDCがpublishするのは
+exact outer Given bindingとinherited child contextだけで、source type、
+descendant occurrence、Set binding、capture/closure、fact、proof、obligation、
+downstream semanticsはexcludeしたまま。implementation self-hashはtask-only
+commitまでpendingで、次taskはpost-commit fresh authority/API inventory
+からだけ選択する。
