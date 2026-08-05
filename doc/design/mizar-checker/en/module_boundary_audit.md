@@ -1491,16 +1491,7 @@ The completed lower implementation changes only the four frozen
 inventory, production count/hash, or line-count decision changes. The checker
 consumer remains exclusively deferred to Task 248P and Task 264.
 
-## Task 248P Frozen One-File Checker Boundary
-
-Task 248P changes exactly `src/source_context.rs`: append one public
-non-exhaustive item role, admit closed Profile C, reuse the existing binding
-role/context tables, and add two inline tests. No module, dependency, Cargo,
-runner, parser/resolver, corpus, trace, diagnostic-code, or lint-policy path is
-added. Documentation preserves checker production `28/157908` and its current
-path/content hashes; implementation keeps 28 paths, projects checker library
-`467 -> 469`, and must remeasure lines/content. Runner remains byte-identical
-at `35/67939`. Property payload ownership stays in separate Task 264.
+Completion evidence: [central Task-248P historical contract](../../task_contracts/en/248P.md#completion-evidence).
 
 ## Task 248P Implemented One-File Checker Boundary
 

@@ -12,11 +12,12 @@ traceability, or coverage.
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-248P-DOC-REVIEW-COMPACT` |
-| Status | Documentation prerequisite reviews, full verification, and final quality complete; exact staging and commit remain. |
+| Status | Documentation prerequisite committed; exact migration, independent migration reviews, full verification, and final quality complete. Exact staging and commit remain. |
 | Purpose | Centralize repeated Task-248P documentation-prerequisite and frozen-review evidence while retaining every durable implementation and runner owner. |
 | Owners | Migration policy, historical [248P](./248P.md#completion-evidence), [checker plan](../../mizar-checker/en/00.crate_plan.md#task-index), and [runner plan](../../mizar-test/en/00.crate_plan.md#task-index) |
 | Consumers | Eight checker source paths, four Task Indexes, and the post-migration schema-v1 ledger/lint |
 | Sequence | `db8c39e3` -> `1e3fa789` -> `1637380d` -> `4c3f74b0` |
+| Documentation prerequisite | `b483bc298cc459e2b294bd07726ca6721d9fe298` |
 | Readiness | Clean selection HEAD `d94dfd6330c1dd067be8b26c814ac95e077b2639`, `origin/main...HEAD=0/14`, protected `stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4`; dependency-ready. |
 
 ## Authority And Classification
@@ -134,11 +135,53 @@ remain.
 
 ## Migration Evidence
 
-Pending the separately committed prerequisite and fresh inventory.
+The prerequisite committed as `b483bc298cc459e2b294bd07726ca6721d9fe298`.
+Fresh post-commit inventory was clean at `origin/main...HEAD=0/15`; protected
+`stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4` was unchanged, and all eight
+frozen preimages replayed at 113 lines before editing.
+
+The mechanical migration changes exactly eight declared checker sources,
+this EN/JA pair, and `legacy_compactions.tsv`: eleven paths. It replaces only
+the eight complete sections with language-local redirects. Their 113 physical
+lines become 16 redirect-plus-separator lines, a reduction of 97; the source
+diff is eight additions and 105 deletions. Every TODO, runner, frozen-plan,
+implementation, implementation-verification, active API, audit, trace,
+coverage, and unlisted owner remains.
+
+The ledger now has 678 physical lines. The batch adds exactly one task, eight
+redirects over eight distinct source paths, and eight index records. Its
+expanded-inventory SHA-256 is
+`d3549958ec578a603d18a15d62175db616cd60d312e733e5bd3574ad9a534a21`;
+its complete physical SHA-256 is
+`a26fe1fedd9f6b634de66daff85682d3ef63871242df77953eb4b881ec2a1d3a`.
+The immutable source TSV remains
+`ba3029c35715c3450c2d3bd863e4904ef7e940d568d3321f5644b5faf1e70285`.
+Focused generic-ledger/link/fragment lint and `git diff --check` pass.
+
+Independent equivalence/boundary, test-sufficiency/schema, and
+source-documentation/EN-JA reviews ended **NO FINDINGS** after one Low
+`design_drift` correction to the stale handoff. They replayed every preimage,
+postimage, anchor, redirect, unique claim, retained owner, ledger relation and
+hash, protected scope, and audit no-impact. Existing generic schema-v1 lint is
+sufficient; no Rust, schema, fixture, expectation, test, trace, coverage, or
+additional documentation change is warranted.
+
+Checker and runner lint passed `15/15` each; checker/runner libraries passed
+`530/530` and `600/600`; runner metadata passed `137/137`. Formatting, offline
+Cargo metadata, warnings-denied all-target/all-feature Clippy, the full offline
+all-target/all-feature workspace suite, and `git diff --check` passed. Five
+CLIs exited zero with 23 stderr lines and zero errors each and reproduced all
+frozen stdout hashes. Protected specification, `.miz`, expectation,
+checker/runner production, Cargo, trace, coverage-audit, and immutable source
+TSV surfaces remain unchanged. Final read-only quality ended **NO FINDINGS**;
+all nine hard gates PASS, no score cap applies, and the valid score is
+`100/100` (`20/20/15/15/10/10/5/5`). Exact staging and the task-only commit
+remain.
 
 ## Handoff
 
-After the prerequisite commit, fresh-inventory the same eight preimages and
-complete only the mechanical migration before selecting another checker
-duplication family. Parent reasoning remains `xhigh`; independent reviews use
-`high`, deterministic inventory may use `medium`.
+Exact staging and the task-only commit remain. After clean post-commit
+inventory, select the next schema-v1-safe checker duplication family; `249PI`
+is the current lower-risk candidate, while `264`, `269A`, and `259` require
+stricter retained-owner review. Parent reasoning remains `xhigh`; independent
+reviews use `high`, deterministic inventory may use `medium`.

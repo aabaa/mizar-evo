@@ -1538,14 +1538,7 @@ source/API、runner、corpus、trace、Cargo、coverage deltaなしでimplemente
 一致する。両言語ともTask 248Pをnextとし、Task 264 semantic payload、initial obligation、
 proof/acceptance/fact/VC decisionをすべてdeferする。
 
-## Task 248P frozen Profile-C synchronization
-
-EN/JAはChapters 4/7 authority、closed one-shell/one-parameter normal Profile C、
-zero-binding recovered incomplete behavior、exact `1/1/1/2/2/2/0` output、
-append-only item role、reused binding role、nonzero real-shell ordinal authentication、
-Profile A/B behavior不変、one-file/two-test checker scope、`467 -> 469`、runner/
-corpus/trace changeなしで一致する。両言語とも全property payload、initial-obligation、
-proof、acceptance、fact、VC decisionをTask 264へdeferする。
+Completion evidence: [central Task-248P historical contract](../../task_contracts/ja/248P.md#completion-evidence)。
 
 ## Task 248P implementation synchronization
 
