@@ -12,12 +12,12 @@ coverage creditを追加・再解釈しない。
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-269GT-COMPACT` |
-| Status | documentation prerequisite reviews/全9 hard gatesは100/100でPASS。migration許可前にexact staging/prerequisite commitが必要。 |
+| Status | exact migration、independent reviews、required verification、全9 hard gatesをuncapped 100/100で完了。exact staging、separate migration commitが残る。 |
 | Purpose | Task-269GT implementation-completion evidenceをcentralizeし、全prerequisite/verification/H2 product/runner/trace/TODO/semantic ownerを保持。 |
 | Owners | repository migration policy、[historical 269GT contract](./269GT.md#completion-evidence)、[checker plan](../../mizar-checker/ja/00.crate_plan.md#task-index)、[runner plan](../../mizar-test/ja/00.crate_plan.md#task-index) |
 | Consumers | checker-first EN/JA design documents 38件、Task Index 4件、post-migration schema-v1 ledger/lint |
-| Dependencies | Task-269GT prerequisite `35bc97b9`、implementation `1fc6cc01`、generic manifest consumer `0ec5fce2`、prior compaction `f3dd80bc` |
-| Readiness | fresh clean HEAD `f3dd80bc`、`origin/main...HEAD=0/1`、protected `stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4`。blocking authority gapなし。 |
+| Dependencies | 本batch prerequisite `133128bc`、Task-269GT prerequisite `35bc97b9`、implementation `1fc6cc01`、generic manifest consumer `0ec5fce2`、prior compaction `f3dd80bc` |
+| Readiness | post-prerequisite clean HEAD `133128bc`、`origin/main...HEAD=0/2`、protected `stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4`。編集前に全38 preimagesをreplayし、blocking authority gapなし。 |
 
 ## Authority And Classification
 
@@ -35,7 +35,7 @@ Task-269GT recordsとfrozen H2/H3 design owners。source behaviorはnormativeで
 | `source_undocumented_behavior` | 導入・推測しない。 |
 | `test_expectation_drift` | なし。specification、`.miz`、fixture、sidecar、expectation、trace TOML、metadataはprotected。 |
 | `boundary_violation` | historical completion measurementをpaired 269GT contractへ移し、全H2とplan-local prerequisite/verification H3 8件を保持して回避。 |
-| `repo_metadata_conflict` | なし。`origin/main`よりlocal 1 commit aheadは直前task commitによるexpected state。repair/push禁止。 |
+| `repo_metadata_conflict` | なし。`origin/main`よりlocal 2 commits aheadはexpected preceding compactionと本batch prerequisiteによる。report-onlyでrepair/push禁止。 |
 
 ## Frozen Preimage Inventory
 
@@ -138,6 +138,46 @@ prerequisiteはexact 9 documentation pathsのまま。production、specification
 fixtures、expectations、traceability、ledger、root coverage auditは不変。final read-only
 quality reviewは **NO FINDINGS**、全9 hard gates PASS、score capなし **100/100**。
 commit identityはexact staging/commit後に記録する。
+
+## Implementation Evidence
+
+documentation prerequisiteはcommit
+`133128bc4d4909b8be8c3c2b5f8206fe8b94649b`。fresh post-commit inventoryはclean、
+`origin/main...HEAD=0/2`、protected stash不変。編集前にparent/independent deterministic
+replayが全38 frozen preimagesのheading/hash/physical line count/language/component
+partition/neighboring anchorsと一致。
+
+mechanical migrationはdeclared source documents 38、本EN/JA status/evidence pair、
+`legacy_compactions.tsv`のexact 41 pathsを変更する。complete sections 38はseparator
+blank lines 38を含むphysical 205 lines。replacementはcompletion-content 167 linesを
+削除し、standard language-local redirect lines 38を追加、separatorを保持してmapped
+intervalを129 lines削減。forbidden headings 38はすべて消滅、redirects 38は全unique、
+全H2/excluded plan-local H3 8件は残り、unlisted task sectionは不変。
+
+450-line ledgerはbatch 1、task record 1、distinct source paths 38のredirects 38、index
+records 8をexact追加。expanded-inventory SHA-256は
+`319638d715de101065fe65fd16a15f7bacbc07dc52db12dd8479cbcd492ad5e2`、complete
+physical SHA-256は
+`8c896ee2812b36435113bfb55cd1f65885d5d329d967401fa9251ad4c935ca37`。
+source inventory physical hashは
+`1dfde440f4ad4a2b7f203dee472640ccb0ea7cba2e6d937b2eeedaeac6809d86`のまま。
+
+specification、`.miz`、fixture、sidecar、expectation、trace TOML/status/backlink、
+coverage credit、active outcome、production、Cargo、public API、diagnostic、root coverage
+audit、source inventory、historical 269GT contractは不変。paired traceability design
+documentsはselected completion evidenceのredirectだけを変更。protected trace hashは
+`55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`のまま。
+
+independent test-sufficiency/equivalence/boundary reviewsは **NO FINDINGS**。
+source/document/EN-JA reviewのmedium stale repository-distance sentence 1件はexpected
+two-commit distanceへ同期後、finding-specific re-reviewが **NO FINDINGS**。
+
+focused/full runner lint policy 1/1・15/15、checker/runner libraries 530/530・600/600、
+runner metadata 137/137、checker lint 15/15がPASS。`cargo fmt --all --check`、Cargo
+metadata、warnings-denied all-target/all-feature Clippy、full workspace tests、上記
+prerequisite hashesと同じ全5 CLI、protected count/hash replay、`git diff --check`もPASS。
+final read-only quality reviewは **NO FINDINGS**、全9 hard gates PASS、score capなし
+**100/100**、scope内residual riskなし。exact staging、commit identityが残る。
 
 ## Tests, Reviews, And Exit
 

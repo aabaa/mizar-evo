@@ -1735,9 +1735,7 @@ The facade hops remain test-only. No module/path/Cargo edge is added. Binding/
 lower/parser/resolver/corpus artifacts remain outside the write boundary;
 semantic and downstream owners remain excluded.
 
-### Task 269GT implemented boundary
-
-Implementation changed exactly the frozen seven Rust files and added no module, Cargo, parser, resolver, lower-stage, fixture, or dispatch edge. Checker/runner production are `30/171383` and `37/73351`; path hashes remain `c89f43f6abebf7ebeb3ac9394ecd8ea3186ad28934c75526d2cc0b85a66ebad5` / `1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d`, and content hashes are `4a2635cbde94426652d75bfad176d9f167242630d6e1996ab4087ddf14e20abf` / `747a923200a6c23c58adfca7211c82724ff83e1a808b3e045cc73027054f4d07`.
+Completion evidence: [central Task-269GT historical contract](../../task_contracts/en/269GT.md#completion-evidence).
 
 ## Task 269GUP Frozen Boundary
 

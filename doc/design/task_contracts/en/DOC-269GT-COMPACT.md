@@ -13,12 +13,12 @@ credit.
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-269GT-COMPACT` |
-| Status | Documentation prerequisite reviews and all nine hard gates passed at 100/100; exact staging and the prerequisite commit remain before migration is permitted. |
+| Status | Exact migration, independent reviews, required verification, and all nine hard gates complete at uncapped 100/100. Exact staging and the separate migration commit remain. |
 | Purpose | Centralize Task-269GT implementation-completion evidence while retaining every prerequisite, verification, H2 product, runner, trace, TODO, and semantic owner. |
 | Owners | Repository migration policy, [historical 269GT contract](./269GT.md#completion-evidence), [checker plan](../../mizar-checker/en/00.crate_plan.md#task-index), and [runner plan](../../mizar-test/en/00.crate_plan.md#task-index) |
 | Consumers | 38 checker-first EN/JA design documents, four Task Indexes, and the post-migration schema-v1 ledger/lint |
-| Dependencies | Task-269GT prerequisite `35bc97b9`; implementation `1fc6cc01`; generic manifest consumer `0ec5fce2`; prior compaction `f3dd80bc` |
-| Readiness | Fresh clean HEAD `f3dd80bc`, `origin/main...HEAD=0/1`, and protected `stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4`; no blocking authority gap. |
+| Dependencies | This batch's prerequisite `133128bc`; Task-269GT prerequisite `35bc97b9`; implementation `1fc6cc01`; generic manifest consumer `0ec5fce2`; prior compaction `f3dd80bc` |
+| Readiness | Post-prerequisite clean HEAD `133128bc`, `origin/main...HEAD=0/2`, and protected `stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4`; all 38 preimages replayed before editing and no blocking authority gap exists. |
 
 ## Authority And Classification
 
@@ -37,7 +37,7 @@ behavior is not normative for this task.
 | `source_undocumented_behavior` | None introduced or inferred. |
 | `test_expectation_drift` | None; specification, `.miz`, fixtures, sidecars, expectations, trace TOML, and metadata are protected. |
 | `boundary_violation` | Avoided by moving historical completion measurements to the paired 269GT contract while retaining every H2 and the eight plan-local prerequisite/verification H3s. |
-| `repo_metadata_conflict` | None. The one local commit ahead of `origin/main` is the expected preceding task commit; no repair or push is authorized. |
+| `repo_metadata_conflict` | None. The two local commits ahead of `origin/main` are the expected preceding compaction and this batch's prerequisite; this state is report-only and no repair or push is authorized. |
 
 ## Frozen Preimage Inventory
 
@@ -154,6 +154,56 @@ specification, tests, fixtures, expectations, traceability, ledger, and the
 root coverage audit remain unchanged. The final read-only quality review ended
 **NO FINDINGS**, passed all nine hard gates, applied no score cap, and assigned
 **100/100**. The commit identity is recorded after exact staging and commit.
+
+## Implementation Evidence
+
+The documentation prerequisite is commit
+`133128bc4d4909b8be8c3c2b5f8206fe8b94649b`. Fresh post-commit inventory was
+clean at `origin/main...HEAD=0/2`, and the protected stash was unchanged. Before
+editing, parent and independent deterministic replay matched all 38 frozen
+preimages, their headings, hashes, physical line counts, language/component
+partition, and neighboring anchors.
+
+The mechanical migration changes exactly the 38 declared source documents,
+this EN/JA status/evidence pair, and `legacy_compactions.tsv`: 41 paths. The 38
+complete sections occupied 205 physical lines, including their 38 separator
+blank lines. Replacement removes 167 completion-content lines, adds exactly 38
+standard language-local redirect lines, preserves those separators, and
+therefore reduces the mapped intervals by 129 lines. All 38 forbidden headings
+are absent, all 38 redirects are unique, every H2 and all eight excluded
+plan-local H3s remain, and no unlisted task section changed.
+
+The 450-line ledger adds exactly one batch, one task record, 38 redirects over
+38 distinct source paths, and eight index records. Its expanded-inventory
+SHA-256 is
+`319638d715de101065fe65fd16a15f7bacbc07dc52db12dd8479cbcd492ad5e2`;
+its complete physical SHA-256 is
+`8c896ee2812b36435113bfb55cd1f65885d5d329d967401fa9251ad4c935ca37`.
+The source inventory remains physically
+`1dfde440f4ad4a2b7f203dee472640ccb0ea7cba2e6d937b2eeedaeac6809d86`.
+
+Specification, `.miz`, fixture, sidecar, expectation, trace TOML/status/
+backlinks, coverage credit, active outcomes, production, Cargo, public API,
+diagnostics, root coverage audit, source inventory, and historical 269GT
+contract are unchanged. The paired traceability design documents change only
+by redirecting their selected completion evidence. The protected trace hash
+remains
+`55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`.
+
+Independent test-sufficiency and equivalence/boundary reviews ended **NO
+FINDINGS**. Source/document/EN-JA review found one medium stale repository-
+distance sentence; after synchronizing the expected two-commit distance, its
+finding-specific re-review ended **NO FINDINGS**.
+
+Focused and full runner lint policy passed 1/1 and 15/15, checker and runner
+libraries passed 530/530 and 600/600, runner metadata passed 137/137, and
+checker lint passed 15/15. `cargo fmt --all --check`, Cargo metadata,
+warnings-denied all-target/all-feature Clippy, the full workspace test suite,
+all five CLIs with the prerequisite hashes above, protected count/hash replay,
+and `git diff --check` passed. The final read-only quality review ended **NO
+FINDINGS**, passed all nine hard gates, applied no score cap, and assigned
+**100/100** with no residual risk inside scope. Exact staging and commit
+identity remain to be recorded.
 
 ## Tests, Reviews, And Exit
 

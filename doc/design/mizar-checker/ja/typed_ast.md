@@ -1838,9 +1838,7 @@ obligation/diagnostic payloadをemptyに保つ。private boxed storageでもby-v
 sibling、contexts/types/facts/coercions/initial obligations/diagnostics/semantic nodesはabsent、
 failureはatomic。
 
-### Task 269GT implemented typed owner
-
-`TypedAst`はGiven-binding slot直後にboxed optional `source_proof_local_given_type` 1件をownし、frozen getter/consuming installerを公開し、exact 3-node arenaをauthenticateする。duplicate/direct Given-binding/Let/他source owner/nonempty semantic stateはatomicにrejectする。`TypedAstParts` field/semantic tableは追加しない。
+Completion evidence: [central Task-269GT historical contract](../../task_contracts/ja/269GT.md#completion-evidence)。
 
 ## Task 269GUP Typed-owner exclusion
 

@@ -700,9 +700,7 @@ canonical authorityがsupportするのはwritten source typeで、本prerequisit
 structure/provenanceだけをrecord。type assumption/guard、condition/fact、existential/Skolem、
 goal、initial obligation、proof/discharge/acceptance、Core/CFG/VCはempty、active credit 0。
 
-### Task 269GT implementation semantic audit
-
-implementationはsource-type provenanceだけをpublishする。condition/label fact、existential/Skolem meaning、assumption/guard、goal、initial obligation、use/capture/export、proof/discharge/acceptance、Core/CFG/VC、active corpus behaviorを作らず、executable semantic coverageはzeroのまま。
+Completion evidence: [central Task-269GT historical contract](../../task_contracts/ja/269GT.md#completion-evidence)。
 
 ## Task 269GUP zero-semantic boundary
 

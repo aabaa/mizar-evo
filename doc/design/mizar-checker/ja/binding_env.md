@@ -861,9 +861,7 @@ new compositeはTask269G environmentをbinding 1の`Missing -> Source(84..87)`�
 byte-for-byte preserve。binding 0は`Source(14..17)`、context/identity/lookup/scope/status/
 capture/diagnostic/cardinality `2/2/0`不変。immutable dependencyをmutateせずtyped snapshotをown。
 
-### Task 269GT implemented overlay
-
-immutable Task269G environmentはGiven rowのtype missingを含む`2/2/0`のまま。Task269GTはsort/repairせずcopyし、binding 1だけを`Source(84..87)`へ変更する。binding 0、両context、resolver identity、block-local inheritance/shadowing/restoration、capture、diagnostic、全non-type fieldはexactに不変。
+Completion evidence: [central Task-269GT historical contract](../../task_contracts/ja/269GT.md#completion-evidence)。
 
 ## Task 269GUP new-source binding profile
 

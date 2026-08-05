@@ -1223,18 +1223,7 @@ artifact/trace/whitespace checkはfrozen baselineでPASS。documentation-prerequ
 9件はcapなし`100/100`で全PASSし、
 `35bc97b92ce075226105e8fcd4c1e43c8621995c`としてcommit済み。
 
-### Task 269GT implementation verification status
-
-frozen API/transactionをexactに実装した。validation orderはdependency、upgraded binding environment、source-type input/symbols/arena、availability。dependency snapshotは`Missing`のまま、copyしたbinding 1だけが`Source(84..87)`。exact 2 application/expression rows、3 fingerprints、3-node arena、Typed/Resolved boxed owner、final source-preserved role、private Task269G-first runner routeを実装し、Generic/ProofLocalLet admissionを拡張しない。
-
-checker/runner各4 testsはcomplete positive rows、全source-type input field、symbols mismatch、全3 arena nodesの全field、利用可能なdependency corruption seam、independent fingerprints/precedence、ownership/cross-family failure、nonempty final inputs、clone replay、near miss、exhaustive semantic emptinessをcoverする。focused/full crate suitesは`498/498` / `560/560` PASS、test-sufficiency/implementation reviewは **NO FINDINGS**。
-
-checker/runner productionは`30/171383` / `37/73351`、content hashは`4a2635cbde94426652d75bfad176d9f167242630d6e1996ab4087ddf14e20abf` / `747a923200a6c23c58adfca7211c82724ff83e1a808b3e045cc73027054f4d07`。raw/normalized test-list hashはchecker `b6868cffc0a01b60f7a82bcacfd9e52f62ae98d2dbce5d72f832caf624870ff7` / `16cdd3c0bf618d7a16466ec71813ea0265b20d4e217a1fdafd0265c933cb9c00`、runner `da4b6c6049fbf4b0b10dd3fe49d840d0e61814ae250aaba5a47f2742a669c1f1` / `ca5fb8b3230848186435b8f29e8c9a5e542d2f9690faeb21d443165faa335ee2`。corpus/trace/fixture/expectation/metadata/5 CLI/diagnostic/semantic deferは不変。
-
-final implementation/source-documentation/independent quality reviewは **NO FINDINGS**。
-focused/crate/lint-policy/metadata/Cargo-metadata/format/Clippy/workspace/CLI/count-hash/
-whitespace checkは全PASS。hard gate 9件はcapなし`100/100`でPASSし、staging、commit、
-fresh inventoryだけparent-owned。
+Completion evidence: [central Task-269GT historical contract](../../task_contracts/ja/269GT.md#completion-evidence)。
 
 ## Task 269GUP source-type exclusion
 

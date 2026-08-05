@@ -2398,9 +2398,7 @@ warning/error `23/0`、全active-stage/5 CLI hash、trace SHA-256
 `55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`を再現。
 trace credit/artifact mutationなし。
 
-### Checker Task 269GT implementation trace status
-
-implementationはprivate Rust `source_drift`/`test_gap`だけをcloseしtrace creditはzero。cases/requirements `428/395`、active stages `101/7/205/1`、type coverage `259=247+12`、trace SHA-256 `55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`は不変で、row/backlink/status/fixture/sidecar/expectation/diagnostic変更はない。
+Completion evidence: [central Task-269GT historical contract](../../task_contracts/ja/269GT.md#completion-evidence)。
 
 ## Checker Task 269GUP zero-credit trace boundary
 

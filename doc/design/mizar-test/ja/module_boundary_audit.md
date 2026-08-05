@@ -11846,9 +11846,7 @@ facade 2段はtest-only。production paths 37、lower owner
 `crates/mizar-test/src/runner/type_elaboration/source_statement.rs`はimmutable。
 new module/public route/dispatch/Cargo/corpus/trace ownerなし。
 
-### Checker Task 269GT implemented runner boundary
-
-frozen proof-local runner leaf、test-only facade 2件、existing test leafだけを変更した。runner productionは37 paths/73,351 lines、path/content hashは`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d` / `747a923200a6c23c58adfca7211c82724ff83e1a808b3e045cc73027054f4d07`。dispatch/dependency edgeは追加しない。
+Completion evidence: [central Task-269GT historical contract](../../task_contracts/ja/269GT.md#completion-evidence)。
 
 ## Checker Task 269GUP frozen runner boundary
 

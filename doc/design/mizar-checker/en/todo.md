@@ -6895,14 +6895,7 @@ implementation commit does not satisfy a producer task.
   pass full verification and all nine gates, commit exact implementation plus
   synchronized records, then fresh-inventory later-use/capture or Task 270.
 
-### Task 269GT implementation handoff
-
-- [x] Implement the exact seven-file Given-type transaction and exact four checker/four runner tests.
-- [x] Repeat test-sufficiency and implementation reviews to **NO FINDINGS** and pass focused plus full checker/runner library suites at `498/560`.
-- [x] Source/docs and independent final-quality reviews are **NO FINDINGS**;
-  full workspace/count/hash and all nine hard gates pass uncapped at `100/100`.
-  Complete exact staging and the single implementation commit, then fresh-
-  inventory the dependency-ready successor.
+Completion evidence: [central Task-269GT historical contract](../../task_contracts/en/269GT.md#completion-evidence).
 
 ## Checker Task 269GUP Proof-`given` Use-profile Binding Prerequisite
 

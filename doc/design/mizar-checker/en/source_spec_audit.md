@@ -6008,9 +6008,7 @@ getter, and private exact binding profile. The implementation status below
 records its closure without rebaselining any canonical or active test
 artifact.
 
-### Task 269GT implemented source/API delta
-
-The frozen `SourceProofLocalGivenTypeHandoff`, producer, non-exhaustive error, private Given binding profile, Typed getter/installer/error, Resolved getter/error, final node role, and dormant runner consumer now exist exactly. Four checker and four runner tests close the bounded `source_drift` and `test_gap`; no canonical test artifact or active coverage is rebaselined.
+Completion evidence: [central Task-269GT historical contract](../../task_contracts/en/269GT.md#completion-evidence).
 
 ## Task 269GUP Frozen Source/API Delta
 

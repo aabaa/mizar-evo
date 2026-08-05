@@ -3397,13 +3397,7 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
 - [x] exact dormant Task269GT routeだけをimplement/review/verify/commitし、fixture/sidecar/
   expectation/trace/metadata/Cargo/CLIをbyte-identicalに保持。
 
-### Checker Task 269GT implementation handoff
-
-- [x] corpus/trace/dispatchを変えずexact private Task269G-first type routeとrunner 4 testsを実装。
-- [x] focused/full runner library `560`をpassし、test/implementation reviewを **NO FINDINGS** で完了。
-- [x] source/docs/independent final-quality reviewは **NO FINDINGS**、full workspace/count/hash
-  とhard gate 9件はcapなし`100/100`でPASS。exact staging、single implementation commitを
-  完了してsuccessorをfresh inventoryする。
+Completion evidence: [central Task-269GT historical contract](../../task_contracts/ja/269GT.md#completion-evidence)。
 
 ## Checker Task 269GUP dormant use-profile binding prerequisite
 

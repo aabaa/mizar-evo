@@ -2539,9 +2539,7 @@ hash, and trace SHA-256
 `55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`.
 No trace credit or artifact mutation occurred.
 
-### Checker Task 269GT implementation trace status
-
-Implementation closes only private Rust `source_drift`/`test_gap` and grants zero trace credit. Cases/requirements remain `428/395`, active stages `101/7/205/1`, type coverage `259=247+12`, and trace SHA-256 remains `55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`; no row, backlink, status, fixture, sidecar, expectation, or diagnostic changed.
+Completion evidence: [central Task-269GT historical contract](../../task_contracts/en/269GT.md#completion-evidence).
 
 ## Checker Task 269GUP Zero-credit Trace Boundary
 

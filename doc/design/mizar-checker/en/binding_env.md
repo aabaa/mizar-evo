@@ -906,9 +906,7 @@ for binding 1's `BindingTypeSite::Missing -> Source(84..87)` overlay. Binding
 diagnostics, and `2/2/0` cardinality do not change. The composite owns this
 typed snapshot without mutating the immutable Task-269G dependency.
 
-### Task 269GT implemented overlay
-
-The immutable Task-269G environment remains `2/2/0` with the Given row missing its type. Task 269GT copies it without sorting or repair and changes only binding 1 to `Source(84..87)`; binding 0, both contexts, resolver identity, block-local inheritance/shadowing/restoration behavior, capture, diagnostics, and all other fields remain exact.
+Completion evidence: [central Task-269GT historical contract](../../task_contracts/en/269GT.md#completion-evidence).
 
 ## Task 269GUP New-source Binding Profile
 

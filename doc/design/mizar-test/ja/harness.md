@@ -5009,9 +5009,7 @@ rangeだけをcombine、新checker producerをcallしてotherwise-empty Typed/fi
 install/replay。dispatch不在。exact tests 4件がcomposition/mutation precedence/atomic ownership-
 emptiness/neighbor-active isolationをcover。
 
-### Checker Task 269GT implemented dormant harness
-
-private selectorはunchanged Task269Gとfrozen type input/arenaをcomposeし、normal dispatchに入らない。near miss、Task269G direct ownership、Let neighbor、active fixtureはisolatedで、fixture/sidecar/expectation/trace/metadata/diagnostic/CLI byte変更はない。
+Completion evidence: [central Task-269GT historical contract](../../task_contracts/ja/269GT.md#completion-evidence)。
 
 ## Checker Task 269GUP frozen dormant harness
 

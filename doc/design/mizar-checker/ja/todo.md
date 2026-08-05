@@ -6562,13 +6562,7 @@ runner、docs-only implementation commitはproducer taskを満たさない。
 - [x] test/implementation/source-doc/final review **NO FINDINGS**、full verification/hard gate、
   exact implementation+synchronized record commit後later-use/captureまたはTask270をfresh inventory。
 
-### Task 269GT implementation handoff
-
-- [x] exact 7-file Given-type transactionとchecker 4件/runner 4件を実装。
-- [x] test-sufficiency/implementation reviewを **NO FINDINGS** まで反復し、focused/full library `498/560`をpass。
-- [x] source/docs/independent final-quality reviewは **NO FINDINGS**、full workspace/count/hash
-  とhard gate 9件はcapなし`100/100`でPASS。exact staging、single implementation commitを
-  完了し、dependency-ready successorをfresh inventoryする。
+Completion evidence: [central Task-269GT historical contract](../../task_contracts/ja/269GT.md#completion-evidence)。
 
 ## Checker Task 269GUP proof-`given` use-profile binding prerequisite
 

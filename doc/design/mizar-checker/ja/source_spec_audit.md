@@ -5721,9 +5721,7 @@ documentation-prerequisite commit
 installer、Resolved getter、private exact binding profile。下のimplementation statusはcanonical/
 active artifactをrebaselineせず、そのclosureを記録する。
 
-### Task 269GT implemented source/API delta
-
-frozen `SourceProofLocalGivenTypeHandoff`、producer、non-exhaustive error、private Given binding profile、Typed getter/installer/error、Resolved getter/error、final node role、dormant runner consumerがexactに存在する。checker 4件/runner 4件でbounded `source_drift`/`test_gap`をcloseし、canonical test artifact/active coverageはrebaselineしない。
+Completion evidence: [central Task-269GT historical contract](../../task_contracts/ja/269GT.md#completion-evidence)。
 
 ## Task 269GUP frozen source/API delta
 

@@ -1661,9 +1661,7 @@ implementationはexact
 facade hopはtest-only。module/path/Cargo edgeなし。binding/lower/parser/resolver/corpusは
 write scope外、semantic/downstream ownerもexclude。
 
-### Task 269GT implemented boundary
-
-implementationはfrozen 7 Rust filesだけを変更し、module/Cargo/parser/resolver/lower-stage/fixture/dispatch edgeを追加しない。checker/runner productionは`30/171383` / `37/73351`、path hashは`c89f43f6abebf7ebeb3ac9394ecd8ea3186ad28934c75526d2cc0b85a66ebad5` / `1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d`、content hashは`4a2635cbde94426652d75bfad176d9f167242630d6e1996ab4087ddf14e20abf` / `747a923200a6c23c58adfca7211c82724ff83e1a808b3e045cc73027054f4d07`。
+Completion evidence: [central Task-269GT historical contract](../../task_contracts/ja/269GT.md#completion-evidence)。
 
 ## Task 269GUP frozen boundary
 

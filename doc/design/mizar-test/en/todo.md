@@ -3633,14 +3633,7 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
 - [x] Implement/review/verify/commit only the exact dormant Task-269GT route;
   keep fixture/sidecar/expectation/trace/metadata/Cargo/CLI bytes unchanged.
 
-### Checker Task 269GT implementation handoff
-
-- [x] Implement the exact private Task-269G-first type route and four runner tests without corpus/trace/dispatch changes.
-- [x] Pass focused and full runner library suites at `560` and finish test/implementation reviews with **NO FINDINGS**.
-- [x] Source/docs and independent final-quality reviews are **NO FINDINGS**;
-  full workspace/count/hash and all nine hard gates pass uncapped at `100/100`.
-  Finish exact staging and the one implementation commit before fresh
-  successor inventory.
+Completion evidence: [central Task-269GT historical contract](../../task_contracts/en/269GT.md#completion-evidence).
 
 ## Checker Task 269GUP Dormant Use-profile Binding Prerequisite
 

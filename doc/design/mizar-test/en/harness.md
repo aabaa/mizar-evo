@@ -5324,9 +5324,7 @@ and replay final assembly. The route is absent from dispatch. Four exact tests
 cover composition, mutation precedence, atomic ownership/emptiness, and
 neighbor/active-route isolation.
 
-### Checker Task 269GT implemented dormant harness
-
-The private selector composes unchanged Task 269G with the frozen type input and arena and remains absent from normal dispatch. Near misses, Task-269G direct ownership, Let neighbors, and active fixtures remain isolated; no fixture, sidecar, expectation, trace, metadata, diagnostic, or CLI byte changes.
+Completion evidence: [central Task-269GT historical contract](../../task_contracts/en/269GT.md#completion-evidence).
 
 ## Checker Task 269GUP Frozen Dormant Harness
 

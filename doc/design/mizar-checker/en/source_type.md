@@ -1646,19 +1646,7 @@ prerequisite were **NO FINDINGS**, and all nine hard gates passed uncapped at
 `100/100` before commit
 `35bc97b92ce075226105e8fcd4c1e43c8621995c`.
 
-### Task 269GT implementation verification status
-
-The frozen API and transaction are implemented exactly. Validation order remains dependency, upgraded binding environment, source-type input/symbols/arena, then availability. The dependency snapshot remains `Missing`; the copied binding 1 alone becomes `Source(84..87)`. The exact two application/expression rows, three fingerprints, three-node arena, Typed/Resolved boxed owner, final source-preserved role, and private Task-269G-first runner route are present without broadening Generic or ProofLocalLet admission.
-
-The four checker and four runner tests cover complete positive rows, every source-type input field, symbols mismatch, every field on all three arena nodes, available dependency corruption seams, independent fingerprints and precedence, ownership/cross-family failure, nonempty final inputs, clone replay, near misses, and exhaustive semantic emptiness. Focused and full crate suites pass `498/498` and `560/560`; test-sufficiency and implementation reviews are **NO FINDINGS**.
-
-Checker/runner production are `30/171383` and `37/73351`. Content hashes are `4a2635cbde94426652d75bfad176d9f167242630d6e1996ab4087ddf14e20abf` / `747a923200a6c23c58adfca7211c82724ff83e1a808b3e045cc73027054f4d07`; path hashes remain frozen. Raw/normalized test-list hashes are checker `b6868cffc0a01b60f7a82bcacfd9e52f62ae98d2dbce5d72f832caf624870ff7` / `16cdd3c0bf618d7a16466ec71813ea0265b20d4e217a1fdafd0265c933cb9c00` and runner `da4b6c6049fbf4b0b10dd3fe49d840d0e61814ae250aaba5a47f2742a669c1f1` / `ca5fb8b3230848186435b8f29e8c9a5e542d2f9690faeb21d443165faa335ee2`. Corpus, trace, fixtures, expectations, metadata, five CLI outputs, diagnostics, and all semantic deferrals remain unchanged.
-
-Final implementation, source/documentation, and independent quality reviews
-are **NO FINDINGS**. All focused, crate, lint-policy, metadata, Cargo-metadata,
-format, Clippy, workspace, CLI, count/hash, and whitespace checks pass. All
-nine hard gates PASS uncapped at `100/100`; staging, commit, and fresh
-inventory remain parent-owned.
+Completion evidence: [central Task-269GT historical contract](../../task_contracts/en/269GT.md#completion-evidence).
 
 ## Task 269GUP Source-type Exclusion
 

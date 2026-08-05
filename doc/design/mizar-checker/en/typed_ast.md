@@ -1944,9 +1944,7 @@ empty profile are accepted. The direct Given binding, generic source type,
 every sibling handoff, contexts/types/facts/coercions/initial obligations/
 diagnostics, and semantic nodes remain absent; all failures are atomic.
 
-### Task 269GT implemented typed owner
-
-`TypedAst` now owns one boxed optional `source_proof_local_given_type` immediately after the Given-binding slot, exposes the frozen getter and consuming installer, authenticates the exact three-node arena, and rejects duplicate, direct Given-binding, Let, other source-owner, or nonempty semantic state atomically. No `TypedAstParts` field or semantic table is added.
+Completion evidence: [central Task-269GT historical contract](../../task_contracts/en/269GT.md#completion-evidence).
 
 ## Task 269GUP Typed-owner Exclusion
 

@@ -13143,9 +13143,7 @@ may change; both facade hops remain test-only. Production paths stay 37 and
 immutable lower owner. No new module, public route, dispatch edge, Cargo
 dependency, corpus artifact, or trace owner appears.
 
-### Checker Task 269GT implemented runner boundary
-
-Only the frozen proof-local runner leaf, two test-only facades, and existing test leaf changed. Runner production remains 37 paths and is now 73,351 lines; path/content hashes are `1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d` / `747a923200a6c23c58adfca7211c82724ff83e1a808b3e045cc73027054f4d07`. No dispatch or dependency edge was added.
+Completion evidence: [central Task-269GT historical contract](../../task_contracts/en/269GT.md#completion-evidence).
 
 ## Checker Task 269GUP Frozen Runner Boundary
 

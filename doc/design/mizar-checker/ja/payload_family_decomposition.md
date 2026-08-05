@@ -1730,9 +1730,7 @@ new familyはunchanged Given binding dependency/fingerprint、typed `2/2/0` bind
 `2/2/0/0/0/0` builtin-`set` source-type handoff/fingerprintを持つimmutable composite 1件だけ。
 condition/label/fact/type guard/assumption/goal/proof/obligation/acceptance/Core/CFG/VCなし。
 
-### Task 269GT implemented payload delta
-
-immutable Given-type composite 1件がTask269G dependency、exact upgraded binding environment、exact `2/2/0/0/0/0` source-type handoff、3 fingerprints、separate 3-node arenaをownする。direct Given-binding/generic type/Let/condition/fact/assumption/guard/proof/obligation/acceptance/downstream semantic payloadは空。
+Completion evidence: [central Task-269GT historical contract](../../task_contracts/ja/269GT.md#completion-evidence)。
 
 ## Task 269GUP payload delta
 

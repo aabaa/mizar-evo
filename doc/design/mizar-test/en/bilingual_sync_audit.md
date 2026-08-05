@@ -1750,9 +1750,7 @@ The executable baseline and protected corpus remain byte-identical;
 source/documentation and final-quality reviews are **NO FINDINGS**, with all
 nine gates uncapped at `100/100`. Parent staging remains pending.
 
-### Checker Task 269GT implementation synchronization
-
-The exact dormant runner consumer, four tests, `560` library count, `37/73351` production manifest, test-list/content hashes, zero active/trace credit, and all semantic exclusions are synchronized with the Japanese companion. No bilingual exception exists.
+Completion evidence: [central Task-269GT historical contract](../../task_contracts/en/269GT.md#completion-evidence).
 
 ## Checker Task 269GUP Documentation Synchronization
 

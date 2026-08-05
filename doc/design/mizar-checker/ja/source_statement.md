@@ -3596,9 +3596,7 @@ type compositeはexisting proof statement contextをbinding provenanceとして�
 statement/condition/label/formula/fact/thesis/conclusion/proof rowを追加せず`such that`を
 reinterpretしない。
 
-### Task 269GT implemented statement boundary
-
-statement ownerやstatement/proof hintを追加しない。dormant consumerはdispatch外で、final assemblyはstatement/condition/fact/proof/semantic inputが空の場合だけGiven-type compositeをacceptする。
+Completion evidence: [central Task-269GT historical contract](../../task_contracts/ja/269GT.md#completion-evidence)。
 
 ## Task 269GUP statement boundary
 

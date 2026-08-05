@@ -1820,9 +1820,7 @@ arenaを`source.proof-local.given.type` roleでmap、stale/sibling/node-hint/sem
 reject。direct Given binding/generic source-type slotはcomposite ownershipのためempty。semantic
 tableをpopulateしない。
 
-### Task 269GT implemented final owner
-
-Resolved assemblyは`SourceProofLocalGivenTypeHandoff`だけをcloneし、occupied/semantic inputをrejectし、3 typed nodesを`source.proof-local.given.type` roleへ1対1 mapする。direct source-type/Given-binding/Let ownerと全semantic tableは空。
+Completion evidence: [central Task-269GT historical contract](../../task_contracts/ja/269GT.md#completion-evidence)。
 
 ## Task 269GUP final-owner exclusion
 

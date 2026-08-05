@@ -1604,9 +1604,7 @@ preserve、new `source_type.rs` composite内でbinding 1へexact `set@84..87`だ
 Given binding ABI/scope matrix/debug bytesは不変。condition/fact/use/capture/free-export/proof
 semanticsはconsumer外。
 
-### Task 269GT implemented consumer status
-
-Task269GTはexact Task269G handoffをby-value consumeし、そのsnapshot/lower fingerprintをbyte-exactに保持する。copyしたGiven bindingのwritten `set@84..87` type siteだけをoverlayし、Task269GP lower、Task269G binding production、canonical block scope、condition/proof deferは不変。
+Completion evidence: [central Task-269GT historical contract](../../task_contracts/ja/269GT.md#completion-evidence)。
 
 ## Checker Task 269GUP frozen use-profile binding prerequisite
 

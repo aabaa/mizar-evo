@@ -1740,9 +1740,7 @@ trace/whitespace checkはunchanged executable baselineで全PASS。final read-on
 source/documentation reviewは**NO FINDINGS**、hard gate 9件はcapなし`100/100`で全PASS。
 parent stagingだけpending。
 
-### Task 269GT implementation synchronization
-
-implemented Given-type public API、Typed/Resolved ownership、exact runner consumer、8 tests、`498/560` library、production manifest、zero-semantic boundaryを全EN/JA Task269GT recordで同期した。bilingual exceptionはない。
+Completion evidence: [central Task-269GT historical contract](../../task_contracts/ja/269GT.md#completion-evidence)。
 
 ## Task 269GUP documentation synchronization
 
