@@ -1852,10 +1852,7 @@ Completion evidence: [central Task-269GUP historical contract](../../task_contra
 
 `TypedAst`はold Given-type slot直後にboxed optional `source_proof_local_given_use_type`、getter、one-shot `with_source_proof_local_given_use_type`だけを追加。errorは`InvalidSourceProofLocalGivenUseType` / `source proof-local given-use type handoff is invalid`。exact composite/3-node arenaをauthenticateし、全existing owner/nonempty semantic tableとのboth-order共存をreject。direct binding/source-type ownerはinstallしない。
 
-### Task 269GUPT implemented Typed ownership
-
-boxed getter/installer/errorとexact availability checkを実装。one-shotと
-same-identity neighborのboth-order exclusionをtestし、semantic tableは全empty。
+Completion evidence: [central Task-269GUPT historical contract](../../task_contracts/ja/269GUPT.md#completion-evidence)。
 
 ## Task 269GU Typed ownership凍結
 
@@ -1865,11 +1862,7 @@ given-use term handoff is invalid`。owned GUPT dependency、exact `2/2/0` term�
 6-node arenaをauthenticateし、old source/proof-local ownerをboth-order reject、
 direct field/semantic tableはempty。
 
-### Task 269GU implemented Typed ownership
-
-boxed getter/installer/errorとexact availability checkを実装。one-shotおよび
-same-identity neighborのboth-order exclusionをtestし、direct generic term fieldと
-semantic tableは全empty。
+Completion evidence: [central Task-269GU historical contract](../../task_contracts/ja/269GU.md#completion-evidence)。
 
 ## Task 269GCP Typed-owner exclusion
 
@@ -1877,11 +1870,7 @@ GCPはrunner-private lower evidenceで`TypedAst` field/getter/installer/error/no
 partsを追加しない。existing source owner/semantic tableはbyte-identical。distinct
 next GCがfirst boxed binding-only Typed slot、GCT/GCUがlater type/term compositeをown。
 
-### Task 269GCP implemented Typed-owner exclusion
-
-implementationは`TypedAst` field/getter/installer/error/node/partsを追加しない。
-private lower rowはrunner-localのまま。separate GC contractがfirst binding-only
-Typed ownerをfreezeし、GCT/GCUがlater compositeをown。
+Completion evidence: [central Task-269GCP historical contract](../../task_contracts/ja/269GCP.md#completion-evidence)。
 
 ## Task 269GC frozen Typed ownership
 
@@ -1891,11 +1880,7 @@ installer、`InvalidSourceProofLocalGivenConditionBinding`だけ。exact GCを
 authenticateし全existing ownerとboth-order exclusion。node/context/type/fact/
 coercion/initial obligation/diagnostic/`TypedAstParts`はempty/不変。laterはGCT/GCU。
 
-### Task 269GC implemented Typed ownership
-
-boxed optional owner/getter/consuming one-shot installer/exact errorをcomplete
-mutual exclusion/rollback test付きで実装。node/context/type/fact/coercion/initial
-obligation/diagnostic/`TypedAstParts`は不変、later compositeはGCT/GCU owner。
+Completion evidence: [central Task-269GC historical contract](../../task_contracts/ja/269GC.md#completion-evidence)。
 
 ## Task 269GCT frozen Typed ownership
 

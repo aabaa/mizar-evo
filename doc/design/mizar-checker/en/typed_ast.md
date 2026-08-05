@@ -1959,11 +1959,7 @@ Completion evidence: [central Task-269GUP historical contract](../../task_contra
 
 `TypedAst` adds boxed optional `source_proof_local_given_use_type` after the old Given-type slot, its getter, and one-shot `with_source_proof_local_given_use_type`. `InvalidSourceProofLocalGivenUseType` renders `source proof-local given-use type handoff is invalid`. Installation authenticates the exact composite and three-node arena, rejects every existing proof-local/source/semantic owner in both orders, and retains empty contexts/types/facts/coercions/initial-obligations/diagnostics. No temporary direct binding or source-type owner is installed.
 
-### Task 269GUPT implemented Typed ownership
-
-The boxed getter/installer/error and exact availability checks are implemented.
-Tests cover one-shot installation and both-order same-identity neighbor
-exclusion while all semantic tables remain empty.
+Completion evidence: [central Task-269GUPT historical contract](../../task_contracts/en/269GUPT.md#completion-evidence).
 
 ## Task 269GU Frozen Typed Ownership
 
@@ -1974,11 +1970,7 @@ owned GUPT dependency, exact `2/2/0` term profile, and six-node arena, rejects
 all old source/proof-local owners in both orders, and leaves direct fields and
 all semantic tables empty.
 
-### Task 269GU implemented Typed ownership
-
-The boxed getter/installer/error and exact availability checks are implemented.
-One-shot and same-identity neighbor both-order exclusions are tested, while
-direct generic term fields and all semantic tables remain empty.
+Completion evidence: [central Task-269GU historical contract](../../task_contracts/en/269GU.md#completion-evidence).
 
 ## Task 269GCP Typed-owner Exclusion
 
@@ -1987,12 +1979,7 @@ installer, error, node, or parts member. All existing source owners and every
 semantic table remain byte-identical. The distinct next GC task owns the first
 boxed binding-only Typed slot; GCT/GCU retain later type/term composites.
 
-### Task 269GCP implemented Typed-owner exclusion
-
-Implementation adds no `TypedAst` field, getter, installer, error, node, or
-parts member. The private lower row remains runner-local. The separate GC
-contract below freezes the first binding-only Typed owner, while GCT/GCU retain
-later composite ownership.
+Completion evidence: [central Task-269GCP historical contract](../../task_contracts/en/269GCP.md#completion-evidence).
 
 ## Task 269GC Frozen Typed Ownership
 
@@ -2003,12 +1990,7 @@ the exact GC composite and rejects every existing owner in both orders. Nodes,
 contexts, types, facts, coercions, initial obligations, diagnostics, and
 `TypedAstParts` remain empty/unchanged. GCT/GCU own later composites.
 
-### Task 269GC implemented Typed ownership
-
-The boxed optional owner, getter, consuming one-shot installer, and exact error
-are implemented with complete mutual exclusion and rollback tests. Nodes,
-contexts, types, facts, coercions, initial obligations, diagnostics, and
-`TypedAstParts` remain unchanged; GCT/GCU retain later composite ownership.
+Completion evidence: [central Task-269GC historical contract](../../task_contracts/en/269GC.md#completion-evidence).
 
 ## Task 269GCT Frozen Typed Ownership
 

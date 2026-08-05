@@ -1852,12 +1852,7 @@ Completion evidence: [central Task-269GUP historical contract](../../task_contra
 
 English canonical and Japanese companion freeze the same GUPT transaction: exact GUP by-value dependency, copied binding-1 `Missing -> Source(84..87)` overlay, `2/2/0/0/0/0` source type, distinct three-node arena, public handoff/producer/error, boxed Typed/Resolved owner, exact seven-file/eight-test implementation, 40-file docs scope, zero active credit, exclusions, baselines, and exit. There is no synchronization exception. Task 269GU remains next; capture and Task 270 are deferred.
 
-### Task 269GUPT implementation synchronization
-
-Both languages record the implemented seven-file/eight-test transaction,
-`506/568` libraries, `30/174332` and `37/75074` production manifests, current
-content/test-list hashes, zero artifact/semantic credit, and Task 269GU as the
-next owner. No synchronization exception exists.
+Completion evidence: [central Task-269GUPT historical contract](../../task_contracts/en/269GUPT.md#completion-evidence).
 
 ## Task 269GU Bilingual Freeze
 
@@ -1867,12 +1862,7 @@ Variable` admission, six-node arena, boxed Typed/final owner, private runner,
 seven-file/eight-test scope, 42 docs, zero active credit, exclusions, baselines,
 semantic deferrals, and exit. There is no synchronization exception.
 
-### Task 269GU implementation synchronization
-
-Both languages record the implemented seven-file/eight-test transaction,
-`510/572` libraries, `30/176258` and `37/75339` production manifests, current
-content/test-list hashes, zero artifact/semantic credit, and unchanged explicit
-deferrals. No synchronization exception exists.
+Completion evidence: [central Task-269GU historical contract](../../task_contracts/en/269GU.md#completion-evidence).
 
 ## Task 269GCP Frozen Synchronization
 
@@ -1881,13 +1871,7 @@ profile, shells/provenance, private four-file/four-test boundary, zero-credit
 impact, exclusions, GC/GCT/GCU order, and Task-270 deferral. No synchronization
 exception exists.
 
-### Task 269GCP implementation synchronization
-
-EN and JA record the same implemented four-file/four-test private route,
-`510/576` libraries, `30/176258` and `37/76642` production inventories, current
-content/test-list hashes, unchanged canonical artifacts and zero semantic
-credit, and the separate GC/GCT/GCU successor order. No synchronization
-exception exists.
+Completion evidence: [central Task-269GCP historical contract](../../task_contracts/en/269GCP.md#completion-evidence).
 
 ## Task 269GC Frozen Synchronization
 
@@ -1897,18 +1881,7 @@ private runner ownership, exact seven files/eight tests, zero semantic credit,
 and GCT/GCU deferrals. JA carries the same logical fields and exclusions in
 this task. No synchronization exception exists.
 
-### Task 269GC implementation synchronization
-
-EN and JA record the same implemented seven-file/eight-test binding route,
-libraries `514/580`, production `30/177771` and `37/76863`, current content and
-test-list hashes, unchanged protected artifacts and zero semantic credit, and
-GCT/GCU ownership. Specification, test-sufficiency, and implementation reviews
-are **NO FINDINGS**. Source/docs consistency is also **NO FINDINGS** and every
-parent workspace verification gate passes. No synchronization exception
-exists. Independent final quality is **NO FINDINGS** with all nine gates
-uncapped at `100/100`; commit
-`8181ae8fc8af0c7028254ad30147b417fbf84611` and fresh GCT inventory are now
-synchronized.
+Completion evidence: [central Task-269GC historical contract](../../task_contracts/en/269GC.md#completion-evidence).
 
 ## Task 269GCT Frozen Source-Type Synchronization
 

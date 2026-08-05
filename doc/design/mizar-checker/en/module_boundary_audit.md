@@ -1756,11 +1756,7 @@ Completion evidence: [central Task-269GUP historical contract](../../task_contra
 
 The implementation boundary is exactly checker `source_type.rs`, `typed_ast.rs`, `resolved_typed_ast.rs` and runner `type_elaboration/source_proof_local_declaration.rs`, `type_elaboration.rs`, `runner.rs`, and the existing proof-local test leaf. Checker `source_proof_local_declaration.rs`, `binding_env.rs`, `source_term.rs`, runner `source_statement.rs`, parser/resolver, public dispatch, canonical artifacts, trace, metadata, Cargo, and diagnostics are excluded. Production path counts remain `30/37`; docs-only baseline lines are `172531/74826`.
 
-### Task 269GUPT implemented module boundary
-
-The exact seven-file boundary is preserved. Checker production is now
-`30/174332`, runner production `37/75074`; path inventories are unchanged.
-No excluded owner, dispatch, artifact, Cargo target, or diagnostic changed.
+Completion evidence: [central Task-269GUPT historical contract](../../task_contracts/en/269GUPT.md#completion-evidence).
 
 ## Task 269GU Frozen Module Boundary
 
@@ -1771,11 +1767,7 @@ leaf, its two test-only facade hops, and its existing test leaf. `source_type.rs
 `source_statement.rs`, parser/resolver, dispatch, artifacts, metadata, Cargo,
 and diagnostics are excluded. Production path counts remain `30/37`.
 
-### Task 269GU implemented module boundary
-
-The exact seven-file boundary is preserved. Checker production is now
-`30/176258`, runner production `37/75339`; path inventories are unchanged.
-No excluded owner, dispatch, artifact, Cargo target, or diagnostic changed.
+Completion evidence: [central Task-269GU historical contract](../../task_contracts/en/269GU.md#completion-evidence).
 
 ## Task 269GCP Frozen Boundary
 
@@ -1785,14 +1777,7 @@ dispatch, and every active artifact are read-only. Adding a public checker
 owner, loosening GUP/GUPT/GU, or reconstructing a binding above the future GC
 owner is a `boundary_violation`.
 
-### Task 269GCP implemented boundary
-
-Only the frozen four existing `mizar-test` files changed. Checker production
-remains `30/176258`; runner production is `37/76642` with unchanged path hash
-`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d`
-and content hash
-`adaeaad8bf2943e05e402f1bc565b5bb0f9a509fb74ffdcd9bbb05eab4d86b22`.
-No excluded owner, artifact, dispatch, Cargo target, or diagnostic changed.
+Completion evidence: [central Task-269GCP historical contract](../../task_contracts/en/269GCP.md#completion-evidence).
 
 ## Task 269GC Frozen Boundary
 
@@ -1803,20 +1788,7 @@ ranges, lower fingerprint, `LocalTermBinding`, and reserve `BindingEnv`.
 Condition/type/term syntax, occurrence IDs, facts, proof state, diagnostics,
 and active dispatch do not cross the boundary. G/GUP/GCP remain immutable.
 
-### Task 269GC implemented boundary
-
-Exactly the frozen three checker and four runner files changed. Checker module
-sizes are `source_proof_local_declaration.rs=6660`, `typed_ast.rs=6281`, and
-`resolved_typed_ast.rs=8340`; checker production is `30/177771`, with path hash
-`c89f43f6abebf7ebeb3ac9394ecd8ea3186ad28934c75526d2cc0b85a66ebad5`
-and content hash
-`4e9220617eac3d5e993c2cee6adfb4958e4cb70e9ddbec83fb0c8955c86aa9fd`.
-Runner production is `37/76863`, with path hash
-`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d`
-and content hash
-`6efd7b0ecf2f94b6440b910cef62796e5093d8618ffe196d17ce99bd2245619f`.
-No excluded syntax, artifact, dispatch, diagnostic, Cargo, or semantic owner
-crossed the frozen boundary.
+Completion evidence: [central Task-269GC historical contract](../../task_contracts/en/269GC.md#completion-evidence).
 
 ## Task 269GCT Frozen Module Boundary
 

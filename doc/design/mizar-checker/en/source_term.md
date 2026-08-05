@@ -501,22 +501,7 @@ and a separate implementation commit leaving a clean tree with origin
 divergence reported and protected stash unchanged. Fresh inventory must then
 select the next dependency-ready task automatically.
 
-### Task 269GU implemented term/reference transport
-
-The exact two rows at `116..117` and `120..121`, both resolving to binding 1
-at derived use ordinal 2, are implemented in the frozen six-node arena. The
-profile-scoped `GivenWitness -> Variable` admission, dependency/source
-fingerprints, full corruption/precedence matrix, immutable replay, one-shot
-Typed/Resolved ownership, and old/generic/neighbor isolation are covered by the
-four checker and four runner tests. Test-sufficiency and implementation reviews
-are **NO FINDINGS**.
-
-Libraries are `510/572`; production is `30/176258` and `37/75339`, with the
-content and raw/normalized test-list hashes recorded in the crate plan. No
-canonical artifact, active route, semantic table, or coverage credit changed.
-The user-confirmed block lifetime remains authoritative, while condition and
-descendant occurrence transport, shadow/capture/export realization, and every
-formula/fact/goal/proof/obligation meaning remain explicit follow-ups.
+Completion evidence: [central Task-269GU historical contract](../../task_contracts/en/269GU.md#completion-evidence).
 
 ## Task 269GCP Frozen Term Deferral
 
@@ -525,11 +510,7 @@ evidence only. GCP adds no `SourcePrimaryTermHandoff`, no profile admission,
 and no Typed/final term owner. Task 269GCU may transport them only after the
 exact GC binding and GCT type dependencies exist by value.
 
-### Task 269GCP implemented term deferral
-
-Both condition leaves remain excluded from the private lower output and from
-all Typed/final term owners. No source-term API or admission changed; GCU may
-consume them only after the separate GC and GCT dependencies exist.
+Completion evidence: [central Task-269GCP historical contract](../../task_contracts/en/269GCP.md#completion-evidence).
 
 ## Task 269GC Frozen Term Deferral
 
@@ -538,11 +519,7 @@ site, equality operand, or Typed/final term node. The GCP-authenticated
 `107..108` and `111..112` leaves remain opaque. Only GCU may transport them,
 after consuming the exact GCT composite; descendant uses remain later.
 
-### Task 269GC implemented term deferral
-
-No term/reference/use-site or Typed/final term owner was added. Both opaque
-condition leaves, descendant occurrences, and all resolver-at-use provenance
-remain deferred to GCU after the exact GCT dependency.
+Completion evidence: [central Task-269GC historical contract](../../task_contracts/en/269GC.md#completion-evidence).
 
 ## Task 269GCT Frozen Term Deferral
 

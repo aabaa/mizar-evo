@@ -1673,11 +1673,7 @@ Completion evidence: [central Task-269GUP historical contract](../../task_contra
 
 public GUP binding handoffは`SourceProofLocalGivenUseTypeProducer`だけがby-value consumeする。unchanged lower seamはauthenticated `84..87`だけに使い、128-byte selector、54-node Surface、lower fingerprint、resolver provenance、binding rows/lookup/public ABIは変更しない。complete dependency debugをfingerprint化し、later identifierの最初のconsumerは269GUのまま。
 
-### Task 269GUPT implemented dependency consumer
-
-producer/private runnerがGUP handoffをby-value consumeし、complete authenticated
-snapshotを保持。lower owner/GUP public ABIは不変で、later identifierは269GUまで
-unconsumed。
+Completion evidence: [central Task-269GUPT historical contract](../../task_contracts/ja/269GUPT.md#completion-evidence)。
 
 ## Task 269GU binding dependency凍結
 
@@ -1687,11 +1683,7 @@ scope `[0]`、visibility ordinal 1、public APIは不変。later use 2件のordi
 `source_term.rs`がderiveし、本moduleはoccurrence/reference/capture/fact/proof
 ownerを追加しない。
 
-### Task 269GU implemented dependency consumer
-
-source-term producer/private runnerはGUPTをby-value consumeしcomplete authenticated
-snapshotを保持。lower/GUP/GUPT owner/public APIは不変で、declaration-condition/
-descendant-use rowを捏造しない。
+Completion evidence: [central Task-269GU historical contract](../../task_contracts/ja/269GU.md#completion-evidence)。
 
 ## Task 269GCP frozen Given-condition lower prerequisite
 
@@ -1823,15 +1815,7 @@ exitはEN/JA sync、spec review **NO FINDINGS**、docs-only gate 9件uncapped
 test/implementation/source-doc review **NO FINDINGS**、full verification、全gate、
 separate commit、Task269GC fresh inventoryを必須とする。
 
-### Task 269GCP implemented lower prerequisite
-
-exact 134-byte/54-node selector、shell 2件、theorem resolver provenance、immutable
-lower ABI、retained source site 6件、16-error ABI、dormant base 1件、test seam
-5件、named test 4件をfrozen runner 4 filesへ実装。matrixは全frozen Surface/
-lower/shell/resolver field、opaque schema/payload corruption、representative
-combined validation precedence、sibling/near-miss reject、GUP isolation、legacy
-active route positive replayをcover。binding/type/term/fact/obligation/Typed/final/
-diagnostic/dispatch resultはpublishしない。next by-value bindingはTask269GC。
+Completion evidence: [central Task-269GCP historical contract](../../task_contracts/ja/269GCP.md#completion-evidence)。
 
 ## Checker Task 269GC frozen Given-condition binding consumer
 
@@ -1947,37 +1931,7 @@ implementation、test/implementation/source-doc review **NO FINDINGS**、full
 verification、all gates/score、separate commit、clean/stash確認、Task269GCTの
 automatic fresh inventory。
 
-### Task 269GC implementation status
-
-documentation prerequisite `dd053c86dab322508a15823de1c4afd268c2d35a`後、
-exact existing Rust 7 filesを実装。checker/runner各4 named testsがcomplete
-binding transaction、independent theorem identity/coherent mutation oracle、
-precedence、lexical matrix、one-shot Typed/Resolved ownership、neighbor isolationを
-freeze。specification/test-sufficiency/implementation reviewは**NO FINDINGS**。
-
-libraryはchecker/runner `514/580`。checker productionは`30/177771`、moduleは
-`source_proof_local_declaration.rs=6660`、`typed_ast.rs=6281`、
-`resolved_typed_ast.rs=8340`。runner productionは`37/76863`、moduleは
-`type_elaboration/source_proof_local_declaration.rs=2217`、
-`type_elaboration.rs=942`、`runner.rs=2775`、test leaf `7442`。
-checker path/content hashは
-`c89f43f6abebf7ebeb3ac9394ecd8ea3186ad28934c75526d2cc0b85a66ebad5` /
-`4e9220617eac3d5e993c2cee6adfb4958e4cb70e9ddbec83fb0c8955c86aa9fd`、
-runnerは
-`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d` /
-`6efd7b0ecf2f94b6440b910cef62796e5093d8618ffe196d17ce99bd2245619f`。
-raw/normalized test-list hashはchecker
-`b0638853bf46edd9b9d6d9da7a9236f16451f21d0c8477f849ceda55c6e17b4b` /
-`206638b6a9b4ef7ac48d706fe8070c7b60f6700fdbc7754f28d6c954a542936c`、runner
-`287a66efbc2b27590a90cee3ac235c0389ace4e35b22dc0cfcd6cd2821fbe11a` /
-`4e1df8e302161ef8be0f29573922d41b18a89efbc3ba41542f7831556b359900`。
-
-protected parser/broad/mixed artifact、trace、corpus/CLI count/hash、diagnostic、
-dispatch、active creditは不変。type/condition occurrenceはpublishせず、GCT/GCUと
-全semantic deferralはseparate。source/docs consistencyは**NO FINDINGS**、parent
-workspace verification gateは全PASS。independent final qualityも**NO
-FINDINGS**、9 hard gateはcapなし`100/100`。commit
-`8181ae8fc8af0c7028254ad30147b417fbf84611`は完了しGCT inventoryを以下に記録。
+Completion evidence: [central Task-269GC historical contract](../../task_contracts/ja/269GC.md#completion-evidence)。
 
 ## Task 269GCT frozen Given-condition type consumer
 

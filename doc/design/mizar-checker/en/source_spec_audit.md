@@ -6027,13 +6027,7 @@ Completion evidence: [central Task-269GUP historical contract](../../task_contra
 
 Chapters 3/4/8/15/16 plus the exact GUP source/lower/binding artifacts require the declared `set` source type but no semantic publication. Planned public coverage is `SourceProofLocalGivenUseTypeHandoff`, `SourceProofLocalGivenUseTypeProducer`, and `SourceProofLocalGivenUseTypeError`, with four checker and four private runner tests. Until implementation, this is a frozen `source_drift`/`test_gap` contract; it changes no canonical specification, `.miz`, expectation, trace row, or active coverage credit.
 
-### Task 269GUPT implemented source/spec mapping
-
-The frozen public family and all eight tests now exist, closing the bounded
-`source_drift` and `test_gap` without changing canonical specification, `.miz`,
-expectations, trace, metadata, CLI behavior, or active coverage. The source
-type is transported only as authenticated source evidence; Task 269GU still
-owns later occurrences and all semantic deferrals remain explicit.
+Completion evidence: [central Task-269GUPT historical contract](../../task_contracts/en/269GUPT.md#completion-evidence).
 
 ## Task 269GU Frozen Source/Specification Mapping
 
@@ -6045,14 +6039,7 @@ checker and four private runner tests. Until implementation this is a bounded
 expectations, trace, metadata, diagnostics, CLI behavior, and active coverage
 credit stay unchanged.
 
-### Task 269GU implemented source/spec mapping
-
-The frozen public family and all eight tests now exist, closing only the
-bounded dormant occurrence/reference `source_drift` and `test_gap`. Canonical
-specification, `.miz`, expectations, trace, metadata, diagnostics, CLI behavior,
-dispatch, and active coverage are unchanged. Declaration-condition and
-descendant occurrences, capture/export, equality/formula/fact/goal/proof/
-obligation semantics, downstream IR, and Task 270 remain separate owners.
+Completion evidence: [central Task-269GU historical contract](../../task_contracts/en/269GU.md#completion-evidence).
 
 ## Task 269GCP Frozen Source/Specification Mapping
 
@@ -6064,13 +6051,7 @@ the source, Surface, shells, theorem provenance, and declaration/type ranges;
 condition terms remain unowned until GCU. No `.miz`, expectation, trace,
 diagnostic, dispatch, or coverage status changes.
 
-### Task 269GCP implemented source/spec mapping
-
-The bounded private lower `source_drift`/`test_gap` is closed by the exact
-canonical-derived selector and four Rust tests. Canonical specifications,
-existing `.miz`/expectations, trace, metadata, diagnostics, dispatch, and active
-coverage remain unchanged. Executable witness scope and condition occurrences
-remain with GC/GCT/GCU.
+Completion evidence: [central Task-269GCP historical contract](../../task_contracts/en/269GCP.md#completion-evidence).
 
 ## Task 269GC Frozen Source/Specification Mapping
 
@@ -6081,17 +6062,7 @@ close the classified source/test gap without active corpus admission. GCT owns
 the written type and GCU owns the authenticated condition occurrences. No
 condition/fact/proof semantics or active coverage is credited.
 
-### Task 269GC implemented source/spec mapping
-
-The exact public four-item GC family, canonical block-scope transaction, and
-eight focused tests close the classified `source_drift`/`test_gap`. Canonical
-specifications, `.miz`, sidecars, expectations, trace, metadata, diagnostics,
-dispatch, and active credit remain unchanged. GCT and GCU retain the written
-type and declaration-condition occurrence owners. Source/docs final review is
-**NO FINDINGS** and all parent workspace verification gates pass. Independent
-final quality is also **NO FINDINGS** with all nine gates uncapped at
-`100/100`; commit `8181ae8fc8af0c7028254ad30147b417fbf84611` is complete and
-the GCT mapping follows below.
+Completion evidence: [central Task-269GC historical contract](../../task_contracts/en/269GC.md#completion-evidence).
 
 ## Task 269GCT Frozen Source/Specification Mapping
 

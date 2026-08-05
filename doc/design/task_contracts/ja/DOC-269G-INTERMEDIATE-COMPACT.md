@@ -12,12 +12,12 @@ creditを追加・再解釈しない。
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-269G-INTERMEDIATE-COMPACT` |
-| Status | 全9 hard gates PASS、score capなし100/100までdocumentation prerequisite完了。exact staging/commit完了までmigration/manifest change禁止。 |
+| Status | redirect migration、schema-v1 ledger expansion、independent reviews、full verification、final quality review完了。全9 gates PASS、score capなし100/100。exact staging/commitが残る。 |
 | Purpose | contiguous GUPT → GU → GCP → GC chainのcompletion-only H3をcentralizeし、全frozen H2 product ownerを保持する。 |
 | Owners | repository migration policy、paired historical contracts 4件、[checker plan](../../mizar-checker/ja/00.crate_plan.md#task-index)、[runner plan](../../mizar-test/ja/00.crate_plan.md#task-index) |
 | Consumers | checker-first EN/JA design documents 36件、`mizar-test` consumer docs、Task Index 4件、post-migration schema-v1 ledger/lint |
 | Dependencies | GUPT `c5292451`、GU `998dc104`、GCP `59eb7de6`、GC `8181ae8f`、manifest consumer `0ec5fce2`、prior compaction `34b42908` |
-| Readiness | fresh clean HEAD `34b42908`、`origin/main...HEAD=0/1`、protected `stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4`。blocking authority gapなし。 |
+| Readiness | documentation prerequisite commit `cb03a208`。fresh clean selection inventoryは`origin/main...HEAD=0/2`、protected `stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4`。blocking authority gapなし。 |
 
 ## Authority And Classification
 
@@ -35,7 +35,7 @@ records 4件、current frozen H2/H3 design owners。source behaviorはnormative�
 | `source_undocumented_behavior` | 導入・推測しない。 |
 | `test_expectation_drift` | なし。specification、`.miz`、fixture、sidecar、expectation、trace、metadataはprotected。 |
 | `boundary_violation` | completion-only H3をhistorical contractへ移し、全frozen H2 module/audit/runner/trace/sequencing/deferral ownerを保持して回避。 |
-| `repo_metadata_conflict` | prior local commit後`origin/main`はclean HEADより1 commit behind。report-onlyでrepair/push禁止。 |
+| `repo_metadata_conflict` | implementation selection時はprior compactionと本task prerequisite commits後の`origin/main...HEAD=0/2`。その後reflogはexternal `update by push`による`cb03a208`でのalignment (`0/0`)を記録。両observationsはreport-onlyで、repair/agent pushは禁止。 |
 
 ## Frozen Preimage Inventory
 
@@ -160,3 +160,36 @@ trace hashは
 migration sources/manifest pathsは不変。final read-only quality reviewは
 **NO FINDINGS**、全9 hard gates **PASS**、score capなし **100/100**。prerequisite
 commit前にcached 15-path auditだけが残る。
+
+## Implementation Evidence
+
+fresh post-prerequisite replayは編集前にfrozen preimages 142件すべてと一致。mechanical
+migrationはdeclared source documents 36、本EN/JA status/evidence、
+`legacy_compactions.tsv`のexact 39 pathsを変更する。completion-section lines 1,216件を
+削除し、standard language-local redirect lines 142件を追加。matching historical headingは
+durable GCP decomposition H3 owners 2件だけで、frozen H2 product ownerは変更しない。
+
+ledgerはbatch 1、task records 4、distinct source paths 36のredirects 142、index
+records 20をexact追加。declared expanded-inventory SHA-256は
+`d934963a0043aa5a6b7c4b04bbc86ee27875484c6a2d58cff040fcb493c8b3b3`、
+complete physical ledger SHA-256は
+`f18988333588664aab1e9bb1c92382100f2b240ce04fb59229c09cea19a83283`。
+unchanged generic schema-v1 lint consumerはcomplete migrationをacceptする。
+
+specification、`.miz`、fixture、sidecar、expectation、trace TOML/status/backlink、
+coverage credit、active outcome、production、Cargo、public API、diagnostic、root
+coverage audit、source inventory TSV、historical contractsは不変。paired traceability
+design documentsはselected completion evidenceのredirectだけを変更する。protected trace hashは
+`55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`
+のまま。
+
+independent test-sufficiency/equivalence/boundary reviewsは **NO FINDINGS**。
+source/document/EN-JA reviewのlow wording findings 2件はorigin distanceと
+traceability scope wordingを修正し、finding-specific re-reviewが **NO FINDINGS**。
+full `mizar-test` lint policy 15 tests、checker 530-test/runner 600-test libraries、
+runner metadata 137/137、checker lint 15/15がpass。`cargo fmt --all --check`、Cargo
+metadata、warnings-denied workspace Clippy、full `cargo test`、prerequisite記録と同じ
+hashを持つtarget CLI 5件、protected count/hash checks、`git diff --check`もpass。
+final read-only quality reviewのlow `repo_metadata_conflict` wording finding 1件を修正し、
+finding-specific re-reviewは **NO FINDINGS**、全9 hard gates **PASS**、score capなし
+**100/100**。commit前にexact stagingだけが残る。

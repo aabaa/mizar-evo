@@ -1678,11 +1678,7 @@ Completion evidence: [central Task-269GUP historical contract](../../task_contra
 
 implementationはchecker `source_type.rs`/`typed_ast.rs`/`resolved_typed_ast.rs`、runner `type_elaboration/source_proof_local_declaration.rs`/`type_elaboration.rs`/`runner.rs`/existing proof-local test leafだけ。checker lower/binding/term owners、runner `source_statement.rs`、parser/resolver、dispatch、canonical artifacts、trace/metadata/Cargo/diagnosticはexclude。production paths `30/37`、docs baseline lines `172531/74826`。
 
-### Task 269GUPT implemented module boundary
-
-exact 7-file boundaryを保持。checker productionは`30/174332`、runnerは
-`37/75074`、path inventory不変。excluded owner、dispatch、artifact、Cargo target、
-diagnosticは変更しない。
+Completion evidence: [central Task-269GUPT historical contract](../../task_contracts/ja/269GUPT.md#completion-evidence)。
 
 ## Task 269GU module boundary凍結
 
@@ -1692,11 +1688,7 @@ ownerはproof-local leaf/test-only facade 2件/existing test leafだけ。
 `source_statement.rs`、parser/resolver、dispatch/artifact/metadata/Cargo/
 diagnosticはexclude。production path countは`30/37`不変。
 
-### Task 269GU implemented module boundary
-
-exact 7-file boundaryを保持。checker production `30/176258`、runner
-`37/75339`でpath inventory不変。excluded owner、dispatch、artifact、Cargo、
-diagnosticは変更なし。
+Completion evidence: [central Task-269GU historical contract](../../task_contracts/ja/269GU.md#completion-evidence)。
 
 ## Task 269GCP frozen boundary
 
@@ -1705,14 +1697,7 @@ checker/resolver/parser、fixture、metadata、Cargo、public dispatch、active 
 read-only。public checker owner追加、GUP/GUPT/GU緩和、future GCより上位での
 binding再構築は`boundary_violation`。
 
-### Task 269GCP implemented boundary
-
-変更はfrozen existing `mizar-test` 4 filesだけ。checker productionは
-`30/176258`、runnerは`37/76642`、path hashは
-`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d`
-不変、content hashは
-`adaeaad8bf2943e05e402f1bc565b5bb0f9a509fb74ffdcd9bbb05eab4d86b22`。
-excluded owner/artifact/dispatch/Cargo/diagnosticは不変。
+Completion evidence: [central Task-269GCP historical contract](../../task_contracts/ja/269GCP.md#completion-evidence)。
 
 ## Task 269GC frozen boundary
 
@@ -1722,19 +1707,7 @@ ABIはidentity/range/lower fingerprint/LocalTermBinding/reserve BindingEnvだけ
 condition/type/term syntax、occurrence ID、fact/proof/diagnostic/dispatchはcrossしない。
 G/GUP/GCPはimmutable。
 
-### Task 269GC implemented boundary
-
-変更はfrozen checker 3 files/runner 4 filesだけ。checker module sizeは
-`source_proof_local_declaration.rs=6660`、`typed_ast.rs=6281`、
-`resolved_typed_ast.rs=8340`。checker productionは`30/177771`、path hash
-`c89f43f6abebf7ebeb3ac9394ecd8ea3186ad28934c75526d2cc0b85a66ebad5`、
-content hash
-`4e9220617eac3d5e993c2cee6adfb4958e4cb70e9ddbec83fb0c8955c86aa9fd`。
-runner productionは`37/76863`、path hash
-`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d`、
-content hash
-`6efd7b0ecf2f94b6440b910cef62796e5093d8618ffe196d17ce99bd2245619f`。
-excluded syntax/artifact/dispatch/diagnostic/Cargo/semantic ownerはboundaryをcrossしない。
+Completion evidence: [central Task-269GC historical contract](../../task_contracts/ja/269GC.md#completion-evidence)。
 
 ## Task 269GCT frozen module boundary
 

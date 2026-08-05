@@ -1932,11 +1932,7 @@ Completion evidence: [central Task-269GUP historical contract](../../task_contra
 
 `ResolvedTypedAst` adds only boxed optional `source_proof_local_given_use_type` and its getter after the old Given-type slot. Assembly revalidates the exact Typed profile, clones the composite, and maps all three nodes to source-preserved role `source.proof-local.given-use.type`. `InvalidSourceProofLocalGivenUseType` reports `resolved typed AST source proof-local given-use type handoff is invalid`. All semantic tables, node-hint inputs, old owners, and direct binding/type fields remain empty and mutually exclusive.
 
-### Task 269GUPT implemented final owner
-
-The boxed owner, exact revalidation, three source-preserved nodes, and
-both-order exclusion are implemented and tested. Final semantic tables and
-node-hint inputs remain empty.
+Completion evidence: [central Task-269GUPT historical contract](../../task_contracts/en/269GUPT.md#completion-evidence).
 
 ## Task 269GU Frozen Final Ownership
 
@@ -1948,11 +1944,7 @@ role `source.proof-local.given-use.term`. The exact invalid-handoff string is
 Node hints and every semantic table remain empty; all old owners are mutually
 exclusive in both orders.
 
-### Task 269GU implemented final owner
-
-The boxed owner, exact revalidation, all six source-preserved nodes, and
-both-order exclusion are implemented and tested. Final semantic tables and
-node-hint inputs remain empty.
+Completion evidence: [central Task-269GU historical contract](../../task_contracts/en/269GU.md#completion-evidence).
 
 ## Task 269GCP Final-owner Exclusion
 
@@ -1961,12 +1953,7 @@ hint. Final assembly remains byte-identical and cannot observe the private
 lower row. The distinct next GC task owns a binding-only final slot; GCT/GCU
 must later freeze their own mutually exclusive type/term final composites.
 
-### Task 269GCP implemented final-owner exclusion
-
-Implementation adds no `ResolvedTypedAst` state or final assembly branch. The
-private lower route and all four tests complete without publishing a final
-owner. The separate GC contract below freezes the binding-only final owner;
-GCT/GCU retain later composite ownership.
+Completion evidence: [central Task-269GCP historical contract](../../task_contracts/en/269GCP.md#completion-evidence).
 
 ## Task 269GC Frozen Final Ownership
 
@@ -1977,13 +1964,7 @@ GC handoff and otherwise-empty Typed profile, then clone-preserves it. No node
 hint, node role, checked formula, semantic table, or input path is added.
 Duplicate/cross-family replay fails atomically; absent-slot old debug is stable.
 
-### Task 269GC implemented final ownership
-
-The boxed binding-only owner, read-only getter, exact error, full replay, and
-clone preservation are implemented. Four checker and four runner tests verify
-atomic duplicate/cross-family rejection and semantic emptiness. No node hint,
-role, checked formula, semantic table, or input path changed; GCT/GCU remain
-later mutually exclusive composites.
+Completion evidence: [central Task-269GC historical contract](../../task_contracts/en/269GC.md#completion-evidence).
 
 ## Task 269GCT Frozen Final Ownership
 

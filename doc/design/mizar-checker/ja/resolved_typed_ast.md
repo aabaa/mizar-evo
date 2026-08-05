@@ -1834,10 +1834,7 @@ Completion evidence: [central Task-269GUP historical contract](../../task_contra
 
 `ResolvedTypedAst`はold Given-type slot直後のboxed optional `source_proof_local_given_use_type`とgetterだけを追加。assemblyはexact Typed profileをrevalidate/cloneし、3 nodesをrole `source.proof-local.given-use.type`でsource-preserveする。errorは`InvalidSourceProofLocalGivenUseType` / `resolved typed AST source proof-local given-use type handoff is invalid`。semantic table/node hint/old owner/direct binding/typeはemptyかつ排他。
 
-### Task 269GUPT implemented final owner
-
-boxed owner、exact revalidation、3 source-preserved nodes、both-order exclusionを
-実装/test済み。final semantic tableとnode-hint inputはempty。
+Completion evidence: [central Task-269GUPT historical contract](../../task_contracts/ja/269GUPT.md#completion-evidence)。
 
 ## Task 269GU final ownership凍結
 
@@ -1847,10 +1844,7 @@ boxed owner、exact revalidation、3 source-preserved nodes、both-order exclusi
 source proof-local given-use term handoff is invalid`。node hint/semantic tableは
 empty、old ownerはboth-order mutually exclusive。
 
-### Task 269GU implemented final owner
-
-boxed owner、exact revalidation、source-preserved node 6件、both-order exclusionを
-実装/test。final semantic table/node-hint inputはempty。
+Completion evidence: [central Task-269GU historical contract](../../task_contracts/ja/269GU.md#completion-evidence)。
 
 ## Task 269GCP final-owner exclusion
 
@@ -1858,11 +1852,7 @@ GCPは`ResolvedTypedAst` owner/getter/error/clone/role/node hintを追加せず�
 assemblyはbyte-identicalでprivate lower rowを観測しない。distinct next GCが
 binding-only final slot、GCT/GCUがlater mutually-exclusive type/term compositeをown。
 
-### Task 269GCP implemented final-owner exclusion
-
-implementationは`ResolvedTypedAst` state/final assembly branchを追加しない。
-private lower route/test 4件はfinal ownerをpublishせず完了。separate GC contractが
-binding-only final ownerをfreezeし、GCT/GCUがlater compositeを保持。
+Completion evidence: [central Task-269GCP historical contract](../../task_contracts/ja/269GCP.md#completion-evidence)。
 
 ## Task 269GC frozen final ownership
 
@@ -1872,11 +1862,7 @@ binding-only final ownerをfreezeし、GCT/GCUがlater compositeを保持。
 revalidateしてclone-preserveし、node hint/role/formula/semantic table/input pathは
 追加しない。duplicate/cross-familyはatomic failure、absent時old debug不変。
 
-### Task 269GC implemented final ownership
-
-boxed binding-only owner/getter/exact error/full replay/clone preserveを実装。
-checker/runner各4 testsがduplicate/cross-family atomic rejectionとsemantic emptyを
-検証。node hint/role/formula/table/input pathは不変で、GCT/GCUはlater composite。
+Completion evidence: [central Task-269GC historical contract](../../task_contracts/ja/269GC.md#completion-evidence)。
 
 ## Task 269GCT frozen final ownership
 

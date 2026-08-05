@@ -923,12 +923,7 @@ Completion evidence: [central Task-269GUP historical contract](../../task_contra
 
 GUPT consumes the immutable GUP handoff and constructs a copy of its exact `2/2/0` environment. Contexts, identities, lookup lifetime, capture, diagnostics, and every non-type field are unchanged; only copied binding 1 changes from `Missing` to `Source(84..87)`, while binding 0 stays `Source(14..17)`. The GUP dependency and old G/GT environments are never mutated. No occurrence, guard, fact, capture, or semantic binding state is added.
 
-### Task 269GUPT implemented overlay
-
-The exact copied overlay is implemented and its corruption, replay, ownership,
-and same-identity cross-family matrix passes. The immutable GUP dependency and
-all non-type binding state remain unchanged; no semantic binding credit is
-claimed.
+Completion evidence: [central Task-269GUPT historical contract](../../task_contracts/en/269GUPT.md#completion-evidence).
 
 ## Task 269GU Frozen Lookup Consumer
 
@@ -939,12 +934,7 @@ admits that winner as `Variable`; generic role admission, contexts, capture,
 diagnostics, binding types, scope lifetime, and all GUP/GUPT bytes are
 unchanged. Parent/sibling visibility remains excluded.
 
-### Task 269GU implemented binding use
-
-The term producer consumes the immutable GUPT environment and authenticates
-both later references to binding 1 at use ordinal 2. It adds no binding row or
-context, and does not yet transport condition/descendant occurrences, capture,
-or export behavior.
+Completion evidence: [central Task-269GU historical contract](../../task_contracts/en/269GU.md#completion-evidence).
 
 ## Task 269GCP No-binding Lower Boundary
 
@@ -954,12 +944,7 @@ diagnostic and leaves GUP/GUPT/GU byte-identical. Task 269GC must construct a
 new exact environment in which the witness is available to condition
 occurrences without weakening generic source-order lookup.
 
-### Task 269GCP implemented no-binding boundary
-
-The implemented lower row retains the witness declaration sites but creates no
-binding context, ID, lookup, lifetime, or diagnostic. GUP/GUPT/GU remain
-byte-identical; the user-confirmed innermost-block lifetime is still owned by
-the distinct next Task 269GC binding handoff.
+Completion evidence: [central Task-269GCP historical contract](../../task_contracts/en/269GCP.md#completion-evidence).
 
 ## Task 269GC Frozen Binding Environment
 
@@ -971,14 +956,7 @@ ordinal 1. Lookup freezes own-condition and subsequent visibility, descendant
 inheritance, shadow/restoration, and parent/sibling exclusion. No occurrence,
 fact, condition lifetime, capture, diagnostic, or type row is created.
 
-### Task 269GC implemented binding environment
-
-The exact `1/1/0 -> 2/2/0` transaction and complete lexical lookup matrix are
-implemented in the frozen checker owner without changing `binding_env.rs`.
-All four checker and four runner tests pass the own-condition, subsequent,
-inheritance, shadow/restoration, and parent/sibling boundaries. Type,
-occurrence, fact, capture, diagnostic, and semantic-credit ownership remains
-deferred exactly as frozen.
+Completion evidence: [central Task-269GC historical contract](../../task_contracts/en/269GC.md#completion-evidence).
 
 ## Task 269GCT Frozen Type Overlay
 

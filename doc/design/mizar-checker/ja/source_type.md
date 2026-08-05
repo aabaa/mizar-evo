@@ -1395,38 +1395,7 @@ fresh lower-stage preflight、exact 7-file/8-test implementation、3 review **NO
 full verification/count/hash、separate implementation commit、clean/origin/stash auditでexit。
 次はTask 269GU。captureとTask 270はdeferする。
 
-### Task 269GUPT implementation verification status
-
-frozen public composite、copied binding overlay、exact `2/2/0/0/0/0`
-builtin-`set` source type、3-node `given-use` arena、boxed Typed/Resolved owner、
-final role、dormant private runner consumerをexact 7 Rust filesに実装した。
-checker/runner各4 testsはpayload/fingerprint replay、validation precedence/
-corruption、same-identity familyのboth-order exclusion、one-shot ownership、
-route isolation、semantic publication zeroをcoverする。test sufficiencyと
-implementation reviewは**NO FINDINGS**。
-
-libraryはchecker/runner `506/568`。production manifestは`30/174332`と
-`37/75074`、path hashは
-`c89f43f6abebf7ebeb3ac9394ecd8ea3186ad28934c75526d2cc0b85a66ebad5` /
-`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d`
-のまま、content hashは
-`fc85ad8c271614a4474cab3ef6a6d212b168546d1f76d1bc3edb9fa4354378b0` /
-`afef82f149a350314a9160685e094e4a1b580d772790cf1c9e2a7efd89d0c870`。
-raw/normalized test-list hashはchecker
-`d9c3c7e10b836f1e5ab987bfc54b1c06eaf8af15e2d6f3532fad51a756fca140` /
-`9342b51b7e26745f5e04770fe254b8954524dccd45a01ced475b5f097d941cb1`、
-runner
-`30fce970d193edf3a0a84607b6015e017e91f8e6c8f35fc9b10be88e16fdff93` /
-`48261f74e202e4496db6e231c335f842942ab3049b61196884984b16cc997c99`。
-
-corpus/fixture/sidecar/expectation/trace/metadata/5 CLI/diagnostic/dispatch/
-active outcomeは不変。occurrence、condition/fact、guard、capture、goal/proof/
-acceptance、initial obligation、downstream IRのcreditは0。次はTask 269GU、
-captureとTask 270はdeferする。
-
-source/docs/final-quality reviewは**NO FINDINGS**。hard gate `9/9`、capなし
-`100/100`。separate implementation commitは
-`c529245138b6d40be65c590ba701fef4f4ea0881`、clean fresh inventoryは269GUを選択。
+Completion evidence: [central Task-269GUPT historical contract](../../task_contracts/ja/269GUPT.md#completion-evidence)。
 
 ## Task 269GU type dependency boundary凍結
 
@@ -1436,11 +1405,7 @@ fingerprintを再authenticateする。standalone GUPT validation/source-type row
 public API/error string/3-node arena contractは不変。GUはtype application/
 normalization/constraint/coercion/guard/obligationを追加しない。
 
-### Task 269GU implemented source-type boundary
-
-GUはimmutable GUPT source-type dependencyをconsume/reauthenticateするだけでrow/
-arenaを変更しない。new source type、normalization、constraint、coercion、guard、
-assume、obligationは追加しない。
+Completion evidence: [central Task-269GU historical contract](../../task_contracts/ja/269GU.md#completion-evidence)。
 
 ## Task 269GCP frozen type deferral
 
@@ -1449,11 +1414,7 @@ application、binding overlay、arena、normalization、constraint、guard、obl
 なし。Task269GCTはfuture GC bindingをconsumeし、このsourceへexact GUPTをreuse
 してはならない。
 
-### Task 269GCP implemented type deferral
-
-lower routeはexact written `set` range/spellingだけを保持。type application/
-overlay/normalization/constraint/guard/obligationを作らず、GCTがfuture GC handoffの
-separate consumer。
+Completion evidence: [central Task-269GCP historical contract](../../task_contracts/ja/269GCP.md#completion-evidence)。
 
 ## Task 269GC frozen type deferral
 
@@ -1461,11 +1422,7 @@ binding 1は`BindingTypeSite::Missing`、`set@90..93`はGCP lower内だけ。sou
 type application/overlay/normalization/constraint/guard/obligationなし。GCTだけが
 GC handoffをby-value consumeしてexact written typeをoverlay可。
 
-### Task 269GC implemented type deferral
-
-installed witnessはmissing-type、exact `set@90..93` source typeはunpublished。
-application/overlay/normalization/constraint/guard/obligationは不変で、GCTがsole
-next by-value type owner。
+Completion evidence: [central Task-269GC historical contract](../../task_contracts/ja/269GC.md#completion-evidence)。
 
 ## Task 269GCT frozen Given-condition source-type composition
 

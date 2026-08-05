@@ -1683,11 +1683,7 @@ Completion evidence: [central Task-269GUP historical contract](../../task_contra
 
 English canonical/日本語companionはdirect GUP dependency、exact input/arena、private output/mutation/selectors、runner 4 tests/4 files、zero dispatch/artifact/credit、baseline/exclusion、269GU handoffを同期。exceptionなし。
 
-### Task 269GUPT implementation synchronization
-
-両言語はimplemented private runner 4 files/4 tests、runner library `568`、
-production `37/75074`、current content/test-list hash、zero dispatch/artifact/
-semantic credit、次owner 269GUを同期。exceptionなし。
+Completion evidence: [central Task-269GUPT historical contract](../../task_contracts/ja/269GUPT.md#completion-evidence)。
 
 ## Task 269GU runner bilingual freeze
 
@@ -1695,22 +1691,14 @@ EN canonical/JA companionはexact GUPT dependency route、term/reference 2 row�
 6-node arena、private output/mutation、owner 4 files/tests、`568 -> 572`、zero
 artifact/active/semantic credit、exclusion/exitを同期。exceptionなし。
 
-### Task 269GU implementation synchronization
-
-両言語はimplemented private runner 4-file/4-test transaction、runner library
-`572`、production `37/75339`、current content/test-list hash、zero dispatch/
-artifact/semantic credit、不変deferralを同期。exceptionなし。
+Completion evidence: [central Task-269GU historical contract](../../task_contracts/ja/269GU.md#completion-evidence)。
 
 ## Task 269GCP frozen synchronization
 
 EN/JA runner recordはexact source/Surface SHA、range、shell/resolver、4-file/
 4-test、private return、zero artifact、GC/GCT/GCU handoffを共有。exceptionなし。
 
-### Task 269GCP implementation synchronization
-
-EN/JA runner recordはimplemented 4-file/4-test route、test `576`、production
-`37/76642`、current content/test-list hash、canonical artifact/credit不変、next
-by-value consumer Task269GCを同期。exceptionなし。
+Completion evidence: [central Task-269GCP historical contract](../../task_contracts/ja/269GCP.md#completion-evidence)。
 
 ## Task 269GC frozen synchronization
 
@@ -1718,14 +1706,7 @@ private GCP-to-GC composition、exact source/range/lower dependency、mutation/
 test/file、Typed/Resolved install、zero artifact/dispatch/semantic credit、GCT/GCU
 順をEN/JA同じlogical taskで同期。exceptionなし。
 
-### Task 269GC implementation synchronization
-
-EN/JAはrunner 4/checker 3 files、checker/runner各4 tests、runner
-`580`/`37/76863`、current hash、artifact/dispatch/credit不変、GCT/GCU deferralを
-同期。specification/test-sufficiency/implementation/source-doc reviewは**NO
-FINDINGS**、parent workspace verification gateは全PASS。exceptionなし。
-independent final qualityも**NO FINDINGS**、9 gateはcapなし`100/100`。commit
-`8181ae8fc8af0c7028254ad30147b417fbf84611`とfresh GCT inventoryを同期済み。
+Completion evidence: [central Task-269GC historical contract](../../task_contracts/ja/269GC.md#completion-evidence)。
 
 ## Task 269GCT frozen synchronization
 

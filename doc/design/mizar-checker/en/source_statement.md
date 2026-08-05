@@ -4146,11 +4146,7 @@ Completion evidence: [central Task-269GUP historical contract](../../task_contra
 
 GUPT owns only the written type on the already authenticated `given` declaration. The `such that G: thesis` condition, label, conclusion equality, later `y` leaves, proof goal, and acceptance remain selector-only with no statement/fact/semantic row. Existing statement APIs and production dispatch are byte-identical.
 
-### Task 269GUPT implemented statement boundary
-
-Only the authenticated written source type is transported. Statement APIs,
-the condition/label/equality/later-use subtrees, proof state, acceptance, and
-production dispatch remain unchanged.
+Completion evidence: [central Task-269GUPT historical contract](../../task_contracts/en/269GUPT.md#completion-evidence).
 
 ## Task 269GU Statement Boundary
 
@@ -4160,11 +4156,7 @@ proposition, `ConclusionStatement`, `such that` condition/label, proof block,
 goal, facts, and acceptance remain selector-only. Existing statement APIs and
 production dispatch stay unchanged.
 
-### Task 269GU implemented statement boundary
-
-Only the two primary-term/reference leaves are transported. Statement APIs,
-the condition/label/equality/formula shells, facts, proof state, acceptance,
-and production dispatch remain unchanged.
+Completion evidence: [central Task-269GU historical contract](../../task_contracts/en/269GU.md#completion-evidence).
 
 ## Task 269GCP Frozen Statement Exclusion
 
@@ -4173,11 +4165,7 @@ proposition, equality subtree, and final conclusion only to prove exact source
 identity. GCP publishes none of them through `source_statement`; condition and
 label facts, statement semantics, proof state, and acceptance remain absent.
 
-### Task 269GCP implemented statement exclusion
-
-The runner now authenticates the exact Given/condition statement subtrees only
-as selector evidence. No `source_statement` payload, condition/label fact,
-assumption, proof state, or acceptance result is published.
+Completion evidence: [central Task-269GCP historical contract](../../task_contracts/en/269GCP.md#completion-evidence).
 
 ## Task 269GC Frozen Statement Exclusion
 
@@ -4186,12 +4174,7 @@ the lexical binding. It adds no `source_statement` handoff, proposition,
 condition list, label, fact, assumption, conclusion, proof-state, or acceptance
 row. The two condition occurrences remain GCU-owned after GCT.
 
-### Task 269GC implemented statement exclusion
-
-The binding handoff is implemented using only authenticated ranges. No
-`source_statement` payload, condition/label fact, assumption, conclusion,
-proof state, or acceptance row changed. The condition occurrences remain
-opaque and GCU-owned after GCT.
+Completion evidence: [central Task-269GC historical contract](../../task_contracts/en/269GC.md#completion-evidence).
 
 ## Task 269GCT Frozen Statement Exclusion
 

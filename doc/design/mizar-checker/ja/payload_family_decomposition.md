@@ -1745,11 +1745,7 @@ Completion evidence: [central Task-269GUP historical contract](../../task_contra
 
 new familyは`SourceProofLocalGivenUseTypeHandoff` 1件だけ。unchanged GUP dependency、copied typed env、exact `2/2/0/0/0/0` builtin-set source type、3 fingerprints、distinct 3-node arenaをTyped/Resolvedがatomicにownする。term/reference/final-useは269GU、condition/fact/capture/goal/obligation/proof/acceptance/IRはabsent。
 
-### Task 269GUPT implemented payload
-
-frozen compositeをexactに実装し、new payload familyはこの1件だけ。
-Typed/Resolved ownershipはatomicかつsemantically emptyで、later term/referenceは
-269GUがownする。
+Completion evidence: [central Task-269GUPT historical contract](../../task_contracts/ja/269GUPT.md#completion-evidence)。
 
 ## Task 269GU payload delta凍結
 
@@ -1759,11 +1755,7 @@ dependency/fingerprintとexact `2/2/0` primary-term handoff/fingerprintをdistin
 equality、statement、condition/fact、capture、goal/obligation、proof/acceptance、
 downstream IRはabsent。
 
-### Task 269GU implemented payload
-
-frozen GUPT-dependent `2/2/0` term/reference compositeだけを新familyとして実装。
-Typed/Resolved ownershipはatomic/semantically empty。condition/descendant use、
-capture/export、formula、fact、proof ownerはdefer。
+Completion evidence: [central Task-269GU historical contract](../../task_contracts/ja/269GU.md#completion-evidence)。
 
 ### Task 269GCP condition-profile decomposition
 
@@ -1772,11 +1764,7 @@ syntax/theorem provenanceだけをauthenticateし、GC/GCT/GCUがbinding/written
 condition term 2件を別々にown。descendant、first-order `set` capture replay、
 Task270はlater graph node。
 
-### Task 269GCP implemented lower payload
-
-runner-private immutable lower rowがexact source/Surface/shell/theorem provenance/
-declaration site/debug replayをauthenticateする。checker payload family/semantic
-ownerは追加せず、GC/GCT/GCUがbinding/type/condition-useのseparate node。
+Completion evidence: [central Task-269GCP historical contract](../../task_contracts/ja/269GCP.md#completion-evidence)。
 
 ## Task 269GC binding-family decomposition
 
@@ -1786,11 +1774,7 @@ reference、condition/fact、proof/obligation/IR payloadなし。Typed/Resolved�
 compositeをbox/replayするだけ。GCT/GCUはlater separate node、G/GUP/GUPT/GUは
 generalizeしない。
 
-### Task 269GC implemented binding payload
-
-distinct GCP-by-value binding composite、dense Given row、final `BindingEnv`
-fingerprint、Typed/Resolved replayをfrozenどおり実装。source type、occurrence/
-reference、condition/fact、proof、obligation、IR payloadは追加せず、GCT/GCUはseparate。
+Completion evidence: [central Task-269GC historical contract](../../task_contracts/ja/269GC.md#completion-evidence)。
 
 ## Task 269GCT source-type-family decomposition
 

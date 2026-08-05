@@ -5028,11 +5028,7 @@ Completion evidence: [central Task-269GUP historical contract](../../task_contra
 
 `source_proof_local_given_use_type_output`はSurface/module/shell/symbol/exact textを受け、cfg-test seamは`None`/`WrongDependencyModule`/`WrongTypeRange`/`WrongArenaRoot`/`WrongArenaKind`を追加。mismatchは`None`、selected failureは`Some(Err(_))`、route-local stringは`Task269GUPT reserve type range is missing`だけ。successは`typed_ast`、`resolved`順でGUPT compositeだけをownしpublic dispatchから到達不能。
 
-### Task 269GUPT implemented private harness
-
-frozen selector、5 mutations、exact input/arena、direct by-value checker handoff、
-Typed/final installation、4-test matrixを実装。routeはprivate/dormantのままで、
-public dispatch/semantic outputなし。
+Completion evidence: [central Task-269GUPT historical contract](../../task_contracts/ja/269GUPT.md#completion-evidence)。
 
 ## Task 269GU private harness route凍結
 
@@ -5042,11 +5038,7 @@ public dispatch/semantic outputなし。
 `Some(Err(_))`。route-local stringは`Task269GU GUPT dependency is missing`だけ。
 successはGU boxed Typed/final compositeだけをownしpublic dispatchから到達不能。
 
-### Task 269GU implemented private harness
-
-frozen selector、6 mutations、exact input/6-node arena、direct by-value
-GUPT-to-GU checker handoff、Typed/final installation、4-test matrixを実装。
-routeはprivate/dormantでpublic dispatch/semantic outputなし。
+Completion evidence: [central Task-269GU historical contract](../../task_contracts/ja/269GU.md#completion-evidence)。
 
 ## Task 269GCP frozen harness route
 
@@ -5058,12 +5050,7 @@ mutationではなくselector mismatch。test 4件がpositive replay、全Surface
 mutation、shell/symbol provenance、near miss、GU isolation、active route不変を
 cover。`TestCase`/production stage branchは追加しない。
 
-### Task 269GCP implemented private harness
-
-frozen dormant selectorとtest mutation seam 5件を実装。test 4件はexact replay、
-全frozen corruption field、wrong opaque schema/payload、representative Surface/
-shell/resolver/lower precedence、near-miss/sibling isolation、legacy active route
-positiveをcover。helperは`TestCase`/production-stage dispatchに存在しない。
+Completion evidence: [central Task-269GCP historical contract](../../task_contracts/ja/269GCP.md#completion-evidence)。
 
 ## Task 269GC frozen dormant harness
 
@@ -5072,12 +5059,7 @@ mutation seamだけ。unchanged GCPでselectしexact reserve baseをprepare、im
 Typed/Resolvedを返す。mismatch `None`、selected failure `Some(Err(_))`。
 TestCase/dispatch/fixture/expectation/diagnostic/serialized outputなし。exact 4 tests。
 
-### Task 269GC implemented dormant harness
-
-runner-private selector、exact reserve composition、cfg-test mutation seam、
-immutable Typed/Resolved outputを実装。runner test 4件がsuccess/debug/lookup、全
-frozen corruption tier/precedence、one-shot ownership、near miss/neighbor isolation、
-legacy active routeをcover。helperは`TestCase`/public production dispatchにない。
+Completion evidence: [central Task-269GC historical contract](../../task_contracts/ja/269GC.md#completion-evidence)。
 
 ## Task 269GCT frozen dormant harness
 

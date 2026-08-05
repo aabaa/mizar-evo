@@ -2557,11 +2557,7 @@ Completion evidence: [central Task-269GUP historical contract](../../task_contra
 
 GUPT is a private source-type contract/test increment only. It changes no row, backlink, status, requirement, `.miz`, sidecar, expectation, metadata case, active stage, warning, error, or CLI output. Cases/requirements remain `428/395`, stages `101/7/205/1`, type coverage `259=247+12`, and trace SHA-256 `55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`. Task 269GU, capture, and active visibility remain deferred.
 
-### Task 269GUPT implemented zero-credit trace status
-
-Implementation adds only eight Rust unit tests and no canonical test artifact
-or trace row. Counts, status, backlinks, type credit, trace SHA, metadata, and
-all active outcomes remain at the frozen values above.
+Completion evidence: [central Task-269GUPT historical contract](../../task_contracts/en/269GUPT.md#completion-evidence).
 
 ## Task 269GU Zero-Credit Trace Boundary
 
@@ -2572,11 +2568,7 @@ or CLI output changes. Cases/requirements stay `428/395`, stages
 `55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`.
 Capture/export and active proof-local visibility remain deferred.
 
-### Task 269GU implemented zero-credit trace status
-
-Implementation adds only eight Rust unit tests and no canonical test artifact
-or trace row. Counts, statuses, backlinks, type credit, trace SHA, metadata,
-CLI results, and all active outcomes remain at the frozen values above.
+Completion evidence: [central Task-269GU historical contract](../../task_contracts/en/269GU.md#completion-evidence).
 
 ## Task 269GCP Frozen Trace Status
 
@@ -2586,11 +2578,7 @@ trace SHA remain unchanged. GCP adds four Rust tests only and grants zero
 trace, stage, diagnostic, or semantic credit; the future GCU consumer may not
 activate a row before the prepared formula-statement runner exists.
 
-### Task 269GCP implemented zero-credit trace status
-
-Implementation adds exactly four Rust tests and no canonical test artifact or
-trace row. Counts, statuses, backlinks, type credit, trace SHA, metadata, CLI
-results, and active outcomes remain unchanged; GC/GCT/GCU retain later credit.
+Completion evidence: [central Task-269GCP historical contract](../../task_contracts/en/269GCP.md#completion-evidence).
 
 ## Task 269GC Frozen Trace Status
 
@@ -2601,14 +2589,7 @@ coverage `259=247+12`, and trace SHA remains
 `55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`.
 GCT/GCU retain type/occurrence follow-up ownership.
 
-### Task 269GC implemented zero-credit trace status
-
-Implementation adds exactly eight Rust tests across checker and runner and no
-canonical test artifact or trace row. Cases/requirements remain `428/395`,
-type coverage remains `259=247+12`, and trace SHA remains
-`55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`.
-Statuses, backlinks, metadata, corpus/CLI results, and active semantic credit
-are unchanged; GCT/GCU retain follow-up ownership.
+Completion evidence: [central Task-269GC historical contract](../../task_contracts/en/269GC.md#completion-evidence).
 
 ## Task 269GCT Frozen Zero-credit Trace Status
 

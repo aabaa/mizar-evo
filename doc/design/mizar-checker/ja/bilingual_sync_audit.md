@@ -1755,11 +1755,7 @@ Completion evidence: [central Task-269GUP historical contract](../../task_contra
 
 English canonical/日本語companionは、exact GUP by-value dependency、binding 1 `Missing -> Source(84..87)`、`2/2/0/0/0/0` source type、distinct 3-node arena、public handoff/producer/error、boxed Typed/Resolved owner、exact 7-file/8-test、40 docs、zero active credit、exclusion/baseline/exitを同期する。exceptionなし。次は269GU、capture/270はdefer。
 
-### Task 269GUPT implementation synchronization
-
-両言語はimplemented 7-file/8-test transaction、library `506/568`、production
-`30/174332` / `37/75074`、current content/test-list hash、zero artifact/
-semantic credit、次owner 269GUを同期する。exceptionなし。
+Completion evidence: [central Task-269GUPT historical contract](../../task_contracts/ja/269GUPT.md#completion-evidence)。
 
 ## Task 269GU bilingual freeze
 
@@ -1768,11 +1764,7 @@ English canonical/JA companionはexact GUPT by-value dependency、`y` term/refer
 Typed/final owner、private runner、7-file/8-test、42 docs、zero active credit、
 exclusion/baseline/semantic deferral/exitを同期する。sync exceptionはない。
 
-### Task 269GU implementation synchronization
-
-両言語はimplemented 7-file/8-test transaction、library `510/572`、production
-`30/176258` / `37/75339`、current content/test-list hash、zero artifact/
-semantic credit、explicit deferral不変を同期。exceptionなし。
+Completion evidence: [central Task-269GU historical contract](../../task_contracts/ja/269GU.md#completion-evidence)。
 
 ## Task 269GCP frozen synchronization
 
@@ -1780,11 +1772,7 @@ EN/JAは同一134-byte source、SHA 2件、54-node/root53、shell/provenance、p
 4-file/4-test、zero credit、exclusion、GC/GCT/GCU順、Task270 deferralを同期。
 exceptionなし。
 
-### Task 269GCP implementation synchronization
-
-EN/JAはimplemented 4-file/4-test private route、library `510/576`、production
-`30/176258` / `37/76642`、current content/test-list hash、canonical artifact/
-semantic credit不変、separate GC/GCT/GCU順を同期。exceptionなし。
+Completion evidence: [central Task-269GCP historical contract](../../task_contracts/ja/269GCP.md#completion-evidence)。
 
 ## Task 269GC frozen synchronization
 
@@ -1793,15 +1781,7 @@ ABI、`1/1/0 -> 2/2/0` lookup matrix、Typed/Resolved/private runner ownership�
 exact 7 files/8 tests、zero semantic credit、GCT/GCU deferralをJAで同じlogical
 field/exclusionとして同期する。exceptionなし。
 
-### Task 269GC implementation synchronization
-
-EN/JAはimplemented 7-file/8-test binding route、library `514/580`、production
-`30/177771` / `37/76863`、current content/test-list hash、protected artifact
-不変、zero semantic credit、GCT/GCU ownerを同期。specification/test-sufficiency/
-implementation/source-doc reviewは**NO FINDINGS**、parent workspace verification
-gateは全PASS。exceptionなし。
-independent final qualityも**NO FINDINGS**、全9 gateがcapなし`100/100`。commit
-`8181ae8fc8af0c7028254ad30147b417fbf84611`とfresh GCT inventoryを同期済み。
+Completion evidence: [central Task-269GC historical contract](../../task_contracts/ja/269GC.md#completion-evidence)。
 
 ## Task 269GCT frozen source-type synchronization
 

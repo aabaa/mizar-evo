@@ -1845,11 +1845,7 @@ Completion evidence: [central Task-269GUP historical contract](../../task_contra
 
 The only new family is one `SourceProofLocalGivenUseTypeHandoff`: unchanged GUP binding dependency, copied typed environment, exact `2/2/0/0/0/0` builtin-`set` source-type handoff, three fingerprints, and a distinct three-node arena. Typed/Resolved own that composite atomically. Term/reference/final-use composition belongs to Task 269GU; condition/fact, capture, goal/obligation, proof/acceptance, and downstream IR remain absent.
 
-### Task 269GUPT implemented payload
-
-The frozen composite is now implemented exactly and remains the sole new
-payload family. Typed/Resolved ownership is atomic and semantically empty;
-Task 269GU still owns the later term/reference composition.
+Completion evidence: [central Task-269GUPT historical contract](../../task_contracts/en/269GUPT.md#completion-evidence).
 
 ## Task 269GU Frozen Payload Delta
 
@@ -1859,12 +1855,7 @@ and fingerprint over a distinct six-node arena. Direct GUPT, binding, type,
 or term owners are absent. Formula/equality, statement, condition/fact,
 capture, goal/obligation, proof/acceptance, and downstream IR remain absent.
 
-### Task 269GU implemented payload
-
-The frozen GUPT-dependent `2/2/0` term/reference composite is implemented as
-the sole new family. Typed/Resolved ownership is atomic and semantically empty;
-condition/descendant use, capture/export, formulas, facts, and proof owners stay
-deferred.
+Completion evidence: [central Task-269GU historical contract](../../task_contracts/en/269GU.md#completion-evidence).
 
 ### Task 269GCP Condition-profile Decomposition
 
@@ -1874,12 +1865,7 @@ GCT, and GCU separately own binding, written type, and the two condition term
 references; descendant use, first-order `set` capture replay, and Task 270
 remain later graph nodes.
 
-### Task 269GCP implemented lower payload
-
-The runner-private immutable lower row now authenticates the exact source,
-Surface, shells, theorem provenance, declaration sites, and debug replay. It
-adds no checker payload family or semantic owner; GC, GCT, and GCU remain the
-separate binding, type, and condition-use nodes.
+Completion evidence: [central Task-269GCP historical contract](../../task_contracts/en/269GCP.md#completion-evidence).
 
 ## Task 269GC Binding-family Decomposition
 
@@ -1889,12 +1875,7 @@ source type, occurrence/reference, condition/fact, proof, obligation, or IR
 payload. Typed and Resolved only box/replay the same composite. GCT and GCU are
 separate later payload nodes; G, GUP, GUPT, and GU are not generalized.
 
-### Task 269GC implemented binding payload
-
-The distinct GCP-by-value binding composite, dense Given row, final
-`BindingEnv` fingerprints, and Typed/Resolved replay are implemented exactly
-as frozen. The implementation adds no source type, occurrence/reference,
-condition/fact, proof, obligation, or IR payload; GCT and GCU remain separate.
+Completion evidence: [central Task-269GC historical contract](../../task_contracts/en/269GC.md#completion-evidence).
 
 ## Task 269GCT Source-Type-family Decomposition
 

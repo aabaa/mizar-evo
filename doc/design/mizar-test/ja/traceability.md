@@ -2413,10 +2413,7 @@ Completion evidence: [central Task-269GUP historical contract](../../task_contra
 
 private source-type contract/test incrementだけ。row/backlink/status/requirement/`.miz`/sidecar/expectation/metadata case/active stage/warning/error/CLIは変更なし。cases/requirements `428/395`、stages `101/7/205/1`、type coverage `259=247+12`、trace SHA `55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`。269GU/capture/active visibilityはdefer。
 
-### Task 269GUPT implemented zero-credit trace status
-
-Rust unit test 8件だけを追加し、canonical test artifact/trace rowは追加しない。
-count/status/backlink/type credit/trace SHA/metadata/active outcomeは上記frozen値不変。
+Completion evidence: [central Task-269GUPT historical contract](../../task_contracts/ja/269GUPT.md#completion-evidence)。
 
 ## Task 269GU zero-credit trace boundary
 
@@ -2427,11 +2424,7 @@ cases/requirements `428/395`、stages `101/7/205/1`、type coverage
 `55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`不変。
 capture/exportとactive proof-local visibilityはdefer。
 
-### Task 269GU implemented zero-credit trace status
-
-Rust unit test 8件だけを追加しcanonical test artifact/trace rowは追加しない。
-count/status/backlink/type credit/trace SHA/metadata/CLI/active outcomeは上記
-frozen値不変。
+Completion evidence: [central Task-269GU historical contract](../../task_contracts/ja/269GU.md#completion-evidence)。
 
 ## Task 269GCP frozen trace status
 
@@ -2440,11 +2433,7 @@ existing parser/broad fixture/sidecar hashとtrace SHAは不変。GCPはRust tes
 だけでtrace/stage/diagnostic/semantic credit 0。future GCUもprepared
 formula-statement runner前にrowをactivateしない。
 
-### Task 269GCP implemented zero-credit trace status
-
-implementationはRust test 4件だけを追加し、canonical test artifact/trace rowは
-追加しない。count/status/backlink/type credit/trace SHA/metadata/CLI/active outcome
-は不変で、GC/GCT/GCUがlater creditを保持。
+Completion evidence: [central Task-269GCP historical contract](../../task_contracts/ja/269GCP.md#completion-evidence)。
 
 ## Task 269GC frozen trace status
 
@@ -2452,12 +2441,7 @@ focused private binding/ownership testだけ。spec_trace row/status/backlink/
 fixture/expectation/metadata/stage/creditは変更しない。count `428/395`、type
 `259=247+12`、trace SHAはEN記載値不変。GCT/GCUがtype/occurrence follow-up owner。
 
-### Task 269GC implemented zero-credit trace status
-
-checker/runner合計Rust test 8件だけを追加しcanonical artifact/trace rowなし。
-case/requirement `428/395`、type `259=247+12`、trace SHA
-`55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`
-不変。status/backlink/metadata/corpus/CLI/active credit不変、GCT/GCUがfollow-up owner。
+Completion evidence: [central Task-269GC historical contract](../../task_contracts/ja/269GC.md#completion-evidence)。
 
 ## Task 269GCT frozen zero-credit trace status
 

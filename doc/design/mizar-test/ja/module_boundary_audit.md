@@ -11861,11 +11861,7 @@ Completion evidence: [central Task-269GUP historical contract](../../task_contra
 
 owned runner filesは`type_elaboration/source_proof_local_declaration.rs`、`type_elaboration.rs`、`runner.rs`、existing proof-local test leafだけ。`source_statement.rs`とactive runner/metadata/CLI ownerはexclude。facade 2 hopsはtest-onlyで、新module path/Cargo target/dispatch/public resultなし。
 
-### Task 269GUPT implemented runner boundary
-
-runner変更はexact 4 filesだけ。productionは37 paths/75,074 lines。
-`source_statement.rs`、public dispatch、Cargo、metadata、artifact、diagnostic、
-active resultは不変。
+Completion evidence: [central Task-269GUPT historical contract](../../task_contracts/ja/269GUPT.md#completion-evidence)。
 
 ## Task 269GU runner ownership boundary
 
@@ -11875,11 +11871,7 @@ ownerは`type_elaboration/source_proof_local_declaration.rs`、
 expectation/trace/metadata/diagnostic/CLI ownerはexclude。productionは37 paths、
 facade 2件はtest-only。
 
-### Task 269GU implemented runner boundary
-
-runner変更はexact 4 filesだけ。productionは37 paths/75,339 lines。
-`source_statement.rs`、public dispatch、Cargo、metadata、artifact、diagnostic、
-active resultは不変。
+Completion evidence: [central Task-269GU historical contract](../../task_contracts/ja/269GU.md#completion-evidence)。
 
 ## Task 269GCP frozen runner boundary
 
@@ -11888,13 +11880,7 @@ implementation ownerはexact `runner.rs`、`runner/type_elaboration.rs`、
 public dispatch、metadata、discovery、expectation、fixture、Cargo、他runner familyは
 excluded。productionは37 paths、line/content hashはimplementation後remeasure。
 
-### Task 269GCP implemented runner boundary
-
-変更はfrozen existing runner 4 filesだけ。productionは`37/76642`、path hashは
-`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d`
-不変、content hashは
-`adaeaad8bf2943e05e402f1bc565b5bb0f9a509fb74ffdcd9bbb05eab4d86b22`。
-public dispatch/artifact/metadata/Cargo/diagnostic/他runner familyは不変。
+Completion evidence: [central Task-269GCP historical contract](../../task_contracts/ja/269GCP.md#completion-evidence)。
 
 ## Task 269GC frozen runner boundary
 
@@ -11903,16 +11889,7 @@ getter/reserve extractionだけを読みsyntax-free checker inputを作り、out
 `crate::runner`外へ出さない。dispatch/TestCase/artifact/metadata/Cargo/
 diagnostic/sibling route不変。validation/Typed-final replayはchecker owner。
 
-### Task 269GC implemented runner boundary
-
-変更はfrozen runner 4 filesだけ。production module sizeは
-`type_elaboration/source_proof_local_declaration.rs=2217`、
-`type_elaboration.rs=942`、`runner.rs=2775`、proof-local test leafは`7442`。
-productionは`37/76863`、path hash
-`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d`不変、
-content hashは
-`6efd7b0ecf2f94b6440b910cef62796e5093d8618ffe196d17ce99bd2245619f`。
-GCP lower owner/public dispatch/artifact/metadata/Cargo/diagnostic/sibling routeは不変。
+Completion evidence: [central Task-269GC historical contract](../../task_contracts/ja/269GC.md#completion-evidence)。
 
 ## Task 269GCT frozen runner boundary
 

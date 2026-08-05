@@ -3610,10 +3610,7 @@ Completion evidence: [central Task-269GUP historical contract](../../task_contra
 
 already authenticated `given` declarationのwritten typeだけをownする。`such that G: thesis` condition/label、conclusion equality、later `y` leaves、proof goal/acceptanceはselector-onlyでstatement/fact/semantic rowなし。existing statement API/production dispatchはbyte-identical。
 
-### Task 269GUPT implemented statement boundary
-
-authenticated written source typeだけをtransport。statement API、condition/label/
-equality/later-use subtree、proof state、acceptance、production dispatchは不変。
+Completion evidence: [central Task-269GUPT historical contract](../../task_contracts/ja/269GUPT.md#completion-evidence)。
 
 ## Task 269GU statement boundary
 
@@ -3623,10 +3620,7 @@ proposition、`ConclusionStatement`、`such that` condition/label、proof block�
 goal/fact/acceptanceはselector-only。existing statement API/production dispatch
 は不変。
 
-### Task 269GU implemented statement boundary
-
-primary-term/reference leaf 2件だけをtransport。statement API、condition/label/
-equality/formula shell、fact、proof state、acceptance、production dispatchは不変。
+Completion evidence: [central Task-269GU historical contract](../../task_contracts/ja/269GU.md#completion-evidence)。
 
 ## Task 269GCP frozen statement exclusion
 
@@ -3635,11 +3629,7 @@ proposition、equality subtree、final conclusionをauthenticateするだけ。
 `source_statement`にはpublishせず、condition/label fact、statement semantics、
 proof state、acceptanceはabsent。
 
-### Task 269GCP implemented statement exclusion
-
-runnerはexact Given/condition statement subtreeをselector evidenceとしてだけ
-authenticateする。`source_statement` payload、condition/label fact、assume、proof
-state、acceptance resultはpublishしない。
+Completion evidence: [central Task-269GCP historical contract](../../task_contracts/ja/269GCP.md#completion-evidence)。
 
 ## Task 269GC frozen statement exclusion
 
@@ -3647,11 +3637,7 @@ theorem/proof/Given/segment/name rangeはbinding authenticate/scopeだけに使�
 `source_statement` handoff、proposition/condition list/label/fact/assume/
 conclusion/proof-state/acceptance rowなし。condition occurrenceはGCT後GCU owner。
 
-### Task 269GC implemented statement exclusion
-
-authenticated rangeだけでbinding handoffを実装。`source_statement` payload、
-condition/label fact、assume、conclusion、proof state、acceptance rowは不変。
-condition occurrenceはopaqueのままGCT後GCU owner。
+Completion evidence: [central Task-269GC historical contract](../../task_contracts/ja/269GC.md#completion-evidence)。
 
 ## Task 269GCT frozen statement exclusion
 

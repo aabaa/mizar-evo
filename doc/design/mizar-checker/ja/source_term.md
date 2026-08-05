@@ -338,19 +338,7 @@ test/implementation/source-docs各review NO FINDINGS、全verification/count/has
 exact stage/implementation commit、clean tree/origin report/stash不変、その直後の
 fresh next-task inventoryである。
 
-### Task 269GU implemented term/reference transport
-
-`116..117`/`120..121`のexact 2 rowsをfrozen 6-node arenaで実装し、どちらも
-binding 1/use ordinal 2へresolve。profile-scoped `GivenWitness -> Variable` admission、
-dependency/source fingerprint、全corruption/precedence matrix、immutable replay、
-one-shot Typed/Resolved ownership、old/generic/neighbor isolationをchecker/runner
-各4 testでcover。test-sufficiency/implementation reviewは**NO FINDINGS**。
-
-library `510/572`、production `30/176258` / `37/75339`、contentおよびraw/
-normalized test-list hashはcrate plan記載値。canonical artifact、active route、
-semantic table、coverage creditは不変。user-confirmed block lifetimeをauthorityとし、
-condition/descendant occurrence transport、shadow/capture/export realization、全
-formula/fact/goal/proof/obligation意味論はexplicit follow-up。
+Completion evidence: [central Task-269GU historical contract](../../task_contracts/ja/269GU.md#completion-evidence)。
 
 ## Task 269GCP frozen term deferral
 
@@ -358,10 +346,7 @@ condition leaf `107..108`/`111..112`はexact selector evidenceだけ。GCPは
 `SourcePrimaryTermHandoff`、profile admission、Typed/final term ownerを追加しない。
 Task269GCUはexact GC binding/GCT type dependencyをby-value取得後だけtransport可。
 
-### Task 269GCP implemented term deferral
-
-condition leaf 2件はprivate lower outputと全Typed/final term ownerからexcluded。
-source-term API/admissionは不変で、GCUはseparate GC/GCT dependency後だけconsume可。
+Completion evidence: [central Task-269GCP historical contract](../../task_contracts/ja/269GCP.md#completion-evidence)。
 
 ## Task 269GC frozen term deferral
 
@@ -369,10 +354,7 @@ GCはterm/occurrence/reference/use-site resolver/equality operand/Typed-final te
 nodeをpublishしない。GCP-authenticated `107..108`/`111..112`はopaque。exact GCT
 composite後GCUだけがtransport可、descendant useはlater。
 
-### Task 269GC implemented term deferral
-
-term/reference/use-site/Typed-final term ownerは追加しない。opaque condition
-leaf 2件、descendant occurrence、use-site resolver provenanceはexact GCT後GCUへdefer。
+Completion evidence: [central Task-269GC historical contract](../../task_contracts/ja/269GC.md#completion-evidence)。
 
 ## Task 269GCT frozen term deferral
 

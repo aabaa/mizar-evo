@@ -5346,11 +5346,7 @@ Completion evidence: [central Task-269GUP historical contract](../../task_contra
 
 `source_proof_local_given_use_type_output` takes `SurfaceAst`, `ModuleId`, shells, symbols, and exact source text; cfg-test `_with_mutation` appends one of `None`, `WrongDependencyModule`, `WrongTypeRange`, `WrongArenaRoot`, or `WrongArenaKind`. Mismatch is `None`; selected failure is `Some(Err(_))`. The only route-local string is `Task269GUPT reserve type range is missing`. Success contains `typed_ast` then `resolved`, owns only the GUPT composite, and remains unreachable from public dispatch.
 
-### Task 269GUPT implemented private harness
-
-The frozen selector, five mutations, exact input/arena, direct by-value checker
-handoff, Typed/final installation, and four-test matrix are implemented. The
-route remains private and dormant with no public dispatch or semantic output.
+Completion evidence: [central Task-269GUPT historical contract](../../task_contracts/en/269GUPT.md#completion-evidence).
 
 ## Task 269GU Frozen Private Harness Route
 
@@ -5362,12 +5358,7 @@ The only route-local string is `Task269GU GUPT dependency is missing`.
 Success owns only the GU boxed Typed/final composite and remains unreachable
 from public dispatch.
 
-### Task 269GU implemented private harness
-
-The frozen selector, six mutations, exact input/six-node arena, direct by-value
-GUPT-to-GU checker handoff, Typed/final installation, and four-test matrix are
-implemented. The route remains private and dormant with no public dispatch or
-semantic output.
+Completion evidence: [central Task-269GU historical contract](../../task_contracts/en/269GU.md#completion-evidence).
 
 ## Task 269GCP Frozen Harness Route
 
@@ -5382,13 +5373,7 @@ Surface/lower mutation sets, shell/symbol provenance, near misses, GU
 isolation, and unchanged active routing. No `TestCase` or production-stage
 branch is added.
 
-### Task 269GCP implemented private harness
-
-The frozen dormant selector and all five mutation seams are implemented.
-Four tests cover exact replay, every frozen corruption field, wrong opaque
-schema/payload, representative Surface/shell/resolver/lower precedence,
-near-miss and sibling isolation, and positive legacy active routes. The helper
-remains absent from `TestCase` and production-stage dispatch.
+Completion evidence: [central Task-269GCP historical contract](../../task_contracts/en/269GCP.md#completion-evidence).
 
 ## Task 269GC Frozen Dormant Harness
 
@@ -5400,13 +5385,7 @@ failure is `Some(Err(_))`. No `TestCase`, production-stage branch, fixture,
 expectation, diagnostic, or serialized output is added. Four exact tests cover
 success/debug/lookup, corruption/precedence, owner atomicity, and isolation.
 
-### Task 269GC implemented dormant harness
-
-The runner-private selector, exact reserve composition, cfg-test mutation seam,
-and immutable Typed/Resolved output are implemented. Four runner tests cover
-success/debug/lookup, every frozen corruption tier and precedence, one-shot
-ownership, near misses, neighbor isolation, and legacy active routes. The
-helper remains absent from `TestCase` and public production dispatch.
+Completion evidence: [central Task-269GC historical contract](../../task_contracts/en/269GC.md#completion-evidence).
 
 ## Task 269GCT Frozen Dormant Harness
 

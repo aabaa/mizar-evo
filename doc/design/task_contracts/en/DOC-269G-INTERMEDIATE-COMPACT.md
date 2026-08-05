@@ -12,12 +12,12 @@ test intent, API, diagnostics, traceability, or coverage credit.
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-269G-INTERMEDIATE-COMPACT` |
-| Status | Documentation prerequisite complete with all nine hard gates passing and uncapped quality score 100/100; migration and manifest changes remain forbidden until exact staging and commit pass. |
+| Status | Redirect migration, schema-v1 ledger expansion, independent reviews, full verification, and final quality review complete with all nine gates passing at 100/100; exact staging and commit remain. |
 | Purpose | Centralize completion-only H3 records for the contiguous GUPT → GU → GCP → GC dependency chain while preserving every frozen H2 product owner. |
 | Owners | Repository migration policy, the four paired historical contracts, [checker plan](../../mizar-checker/en/00.crate_plan.md#task-index), and [runner plan](../../mizar-test/en/00.crate_plan.md#task-index) |
 | Consumers | 36 checker-first EN/JA design documents, `mizar-test` consumer documents, four Task Indexes, and the post-migration schema-v1 ledger/lint |
 | Dependencies | GUPT `c5292451`; GU `998dc104`; GCP `59eb7de6`; GC `8181ae8f`; manifest consumer `0ec5fce2`; prior compaction `34b42908` |
-| Readiness | Fresh clean HEAD `34b42908`, `origin/main...HEAD=0/1`, protected `stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4`; no blocking authority gap. |
+| Readiness | Documentation prerequisite commit `cb03a208`; fresh clean selection inventory `origin/main...HEAD=0/2` with protected `stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4`; no blocking authority gap. |
 
 ## Authority And Classification
 
@@ -36,7 +36,7 @@ owners. No source behavior is normative for this task.
 | `source_undocumented_behavior` | None introduced or inferred. |
 | `test_expectation_drift` | None; specification, `.miz`, fixtures, sidecars, expectations, trace, and metadata are protected. |
 | `boundary_violation` | Avoided by moving completion-only H3 evidence to historical contracts while retaining all frozen H2 module, audit, runner, trace, sequencing, and deferral owners. |
-| `repo_metadata_conflict` | `origin/main` is one commit behind clean HEAD after the prior local commit. This is report-only; no repair or push is authorized. |
+| `repo_metadata_conflict` | At implementation selection, `origin/main...HEAD` was `0/2` after the prior compaction and this task's prerequisite commits. The reflog later recorded an external `update by push` aligning both refs at `cb03a208` (`0/0`). Both observations are report-only; no repair or agent push is authorized. |
 
 ## Frozen Preimage Inventory
 
@@ -182,3 +182,41 @@ migration sources, and manifest paths are unchanged. The final read-only
 quality review reported **NO FINDINGS**, all nine hard gates **PASS**, and an
 uncapped score of **100/100**. Only the cached 15-path audit remains before the
 prerequisite commit.
+
+## Implementation Evidence
+
+Fresh post-prerequisite replay matched all 142 frozen preimages before editing.
+The mechanical migration now changes exactly the 36 declared source documents,
+this EN/JA status/evidence pair, and `legacy_compactions.tsv`: 39 paths. It
+removes 1,216 completion-section lines, adds 142 standard language-local
+redirect lines, and leaves the two durable GCP decomposition H3 owners as the
+only matching historical headings. No frozen H2 product owner was changed.
+
+The ledger adds exactly one batch, four task records, 142 redirects over 36
+distinct source paths, and 20 index records. Its declared expanded-inventory
+SHA-256 is
+`d934963a0043aa5a6b7c4b04bbc86ee27875484c6a2d58cff040fcb493c8b3b3`;
+the complete physical ledger SHA-256 is
+`f18988333588664aab1e9bb1c92382100f2b240ce04fb59229c09cea19a83283`.
+The unchanged generic schema-v1 lint consumer accepts the complete migration.
+
+Specification, `.miz`, fixture, sidecar, expectation, trace TOML/status/
+backlinks, coverage credit, active outcomes, production, Cargo, public API,
+diagnostics, root coverage audit, source inventory TSV, and historical
+contracts are unchanged. The paired traceability design documents change only
+by redirecting their selected completion evidence. The protected trace hash
+remains
+`55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`.
+
+Independent test-sufficiency and equivalence/boundary reviews reported **NO
+FINDINGS**. Source/document/EN-JA review reported two low wording findings;
+after the origin-distance and traceability-scope wording was corrected, its
+finding-specific re-review reported **NO FINDINGS**. The complete 15-test
+`mizar-test` lint policy, checker 530-test and runner 600-test libraries,
+runner metadata 137/137, and checker lint 15/15 pass. `cargo fmt --all
+--check`, Cargo metadata, warnings-denied workspace Clippy, full `cargo test`,
+all five target CLIs with the prerequisite hashes above, protected count/hash
+checks, and `git diff --check` pass. The final read-only quality review's one low
+`repo_metadata_conflict` wording finding was corrected; finding-specific
+re-review reported **NO FINDINGS**, all nine hard gates **PASS**, no score cap,
+and **100/100**. Only exact staging remains before commit.

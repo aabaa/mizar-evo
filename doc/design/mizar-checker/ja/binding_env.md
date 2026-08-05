@@ -877,11 +877,7 @@ Completion evidence: [central Task-269GUP historical contract](../../task_contra
 
 immutable GUP handoffのexact `2/2/0` envをcopyし、binding 1だけを`Missing -> Source(84..87)`へ変更、binding 0は`Source(14..17)`を保持する。context/identity/lookup lifetime/capture/diagnostic/全non-type fieldは不変で、dependencyとold G/GT envをmutateしない。occurrence/guard/fact/capture/semantic binding stateは追加しない。
 
-### Task 269GUPT implemented overlay
-
-exact copied overlayとcorruption/replay/ownership/same-identity cross-family
-matrixを実装しpass。immutable GUP dependencyと全non-type binding stateは不変で、
-semantic binding creditなし。
+Completion evidence: [central Task-269GUPT historical contract](../../task_contracts/ja/269GUPT.md#completion-evidence)。
 
 ## Task 269GU lookup consumer凍結
 
@@ -891,11 +887,7 @@ exact source-term profileだけがこれを`Variable`としてadmitする。gene
 context/capture/diagnostic/type/scope lifetime、GUP/GUPT byteは不変で、parent/
 sibling visibilityはexcludeする。
 
-### Task 269GU implemented binding use
-
-term producerはimmutable GUPT environmentをconsumeし、later reference 2件を
-binding 1/use ordinal 2へauthenticate。binding row/contextは追加せず、condition/
-descendant occurrence、capture/exportはまだtransportしない。
+Completion evidence: [central Task-269GU historical contract](../../task_contracts/ja/269GU.md#completion-evidence)。
 
 ## Task 269GCP no-binding lower boundary
 
@@ -904,11 +896,7 @@ exact condition sourceはfuture binding consumerの必要性だけを示す。GC
 する。Task269GCがgeneric source-order lookupを緩めずcondition occurrenceから
 見えるdistinct exact environmentを構築する。
 
-### Task 269GCP implemented no-binding boundary
-
-implemented lower rowはwitness declaration siteを保持するが、binding context/
-ID/lookup/lifetime/diagnosticを作らない。GUP/GUPT/GUはbyte-identical。user-confirmed
-innermost-block lifetimeはnext distinct Task269GC binding handoffのownerである。
+Completion evidence: [central Task-269GCP historical contract](../../task_contracts/ja/269GCP.md#completion-evidence)。
 
 ## Task 269GC frozen binding environment
 
@@ -918,12 +906,7 @@ reserve base `1/1/0 -> 2/2/0`、`SourceStatement(68..132)` proof context scope
 child inheritance、shadow/restore、parent/sibling exclusionをfreezeし、occurrence/
 fact/condition lifetime/capture/diagnostic/type rowは作らない。
 
-### Task 269GC implemented binding environment
-
-exact `1/1/0 -> 2/2/0` transactionとcomplete lexical lookup matrixをfrozen
-checker ownerへ実装し、`binding_env.rs`は不変。checker/runner各4 testsがown-
-condition、subsequent、inheritance、shadow/restore、parent/sibling boundaryを
-cover。type/occurrence/fact/capture/diagnostic/semantic creditはfrozenどおりdefer。
+Completion evidence: [central Task-269GC historical contract](../../task_contracts/ja/269GC.md#completion-evidence)。
 
 ## Task 269GCT frozen type overlay
 

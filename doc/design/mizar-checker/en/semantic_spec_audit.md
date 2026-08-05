@@ -780,11 +780,7 @@ Completion evidence: [central Task-269GUP historical contract](../../task_contra
 
 Canonical `given y being set` authorizes the written source type and block scope. GUPT freezes only syntax-backed type transport. It deliberately grants zero condition/label fact, type guard/assumption, existential/Skolem, later-use, capture/export, goal, initial-obligation, proof/discharge/acceptance, Core, CFG, or VC ownership. Those deferrals prevent source-type evidence from being mistaken for proved semantics.
 
-### Task 269GUPT implementation deferral status
-
-The source-type transport is implemented with every frozen semantic table
-empty. No condition/fact, guard, later-use, capture, goal, obligation, proof,
-acceptance, Core, CFG, or VC behavior is inferred or published.
+Completion evidence: [central Task-269GUPT historical contract](../../task_contracts/en/269GUPT.md#completion-evidence).
 
 ## Task 269GU Semantic Deferral Audit
 
@@ -795,12 +791,7 @@ capture/export result, goal/thesis, initial obligation, proof/discharge/
 acceptance, theorem acceptance, Core, CFG, or VC semantics. Scope visibility
 is transport evidence, not proof truth.
 
-### Task 269GU implementation deferral status
-
-Only the two later lexical variable references are transported. Every semantic
-table remains empty: no condition/fact, assumption, existential, capture,
-formula, goal, initial obligation, proof, acceptance, Core, CFG, or VC meaning
-is inferred or published.
+Completion evidence: [central Task-269GU historical contract](../../task_contracts/en/269GU.md#completion-evidence).
 
 ## Task 269GCP Zero-semantic Boundary
 
@@ -810,12 +801,7 @@ label fact, assumption, Skolem state, capture/export result, goal, obligation,
 proof, acceptance, or IR meaning. Its authenticated condition subtree is only
 a lower-stage dependency for GC/GCT/GCU.
 
-### Task 269GCP implementation deferral status
-
-The exact lower profile is implemented with zero semantic publication. The
-canonical innermost-block scope rule is unchanged; binding, condition terms,
-facts, assumptions, goals, obligations, proofs, acceptance, capture/export,
-and IR remain explicitly deferred to their frozen owners.
+Completion evidence: [central Task-269GCP historical contract](../../task_contracts/en/269GCP.md#completion-evidence).
 
 ## Task 269GC Zero-semantic Boundary
 
@@ -825,12 +811,7 @@ label lifetime, assumption/guard composition, goals, obligations, discharge,
 acceptance, capture/export, or any Core/CFG/VC/ATP meaning. These are neither
 inferred from source behavior nor encoded as empty semantic success.
 
-### Task 269GC implementation semantic status
-
-Implementation closes only the canonical lexical-binding `source_drift` and
-focused `test_gap`. Existential/Skolem, condition/fact/label, guard, goal,
-obligation, proof/acceptance, capture/export, and downstream IR remain absent
-and explicitly deferred. Active semantic credit stays zero.
+Completion evidence: [central Task-269GC historical contract](../../task_contracts/en/269GC.md#completion-evidence).
 
 ## Task 269GCT Zero-semantic Type Boundary
 

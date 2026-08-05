@@ -1766,12 +1766,7 @@ Completion evidence: [central Task-269GUP historical contract](../../task_contra
 
 English canonical and Japanese companion synchronize the direct GUP dependency, exact source-type input/arena, private output/mutation/selectors, four runner tests, four owned runner files, zero dispatch/artifact/credit impact, baselines, exclusions, and Task-269GU handoff. No synchronization exception exists.
 
-### Task 269GUPT implementation synchronization
-
-Both languages record the implemented four-file private runner, four tests,
-`568` runner library tests, `37/75074` production manifest, current content/
-test-list hashes, zero dispatch/artifact/semantic credit, and Task 269GU next.
-No synchronization exception exists.
+Completion evidence: [central Task-269GUPT historical contract](../../task_contracts/en/269GUPT.md#completion-evidence).
 
 ## Task 269GU Runner Bilingual Freeze
 
@@ -1780,12 +1775,7 @@ dependency route, two term/reference rows, six-node arena, private output and
 mutations, four owned files/tests, `568 -> 572`, zero artifact/active/semantic
 credit, exclusions, and exit. No synchronization exception exists.
 
-### Task 269GU implementation synchronization
-
-Both languages record the implemented private runner four-file/four-test
-transaction, runner library `572`, production `37/75339`, current content/
-test-list hashes, zero dispatch/artifact/semantic credit, and unchanged
-deferrals. No synchronization exception exists.
+Completion evidence: [central Task-269GU historical contract](../../task_contracts/en/269GU.md#completion-evidence).
 
 ## Task 269GCP Frozen Synchronization
 
@@ -1793,12 +1783,7 @@ EN/JA runner records share the exact source and Surface hashes, ranges,
 shell/resolver profile, four-file/four-test scope, private return semantics,
 zero-artifact impact, and GC/GCT/GCU handoff. No exception exists.
 
-### Task 269GCP implementation synchronization
-
-EN/JA runner records now share the implemented four-file/four-test route,
-`576` tests, `37/76642` production, current content/test-list hashes, unchanged
-canonical artifacts and zero credit, and Task 269GC as the next by-value
-consumer. No synchronization exception exists.
+Completion evidence: [central Task-269GCP historical contract](../../task_contracts/en/269GCP.md#completion-evidence).
 
 ## Task 269GC Frozen Synchronization
 
@@ -1807,16 +1792,7 @@ range/lower dependency, mutation/test/file inventory, Typed/Resolved install,
 zero artifact/dispatch/semantic credit, and GCT/GCU successor order in the same
 logical task. No synchronization exception exists.
 
-### Task 269GC implementation synchronization
-
-EN and JA record the same four-runner/three-checker file implementation, four
-checker/four runner tests, runner `580`/`37/76863`, current hashes, unchanged
-artifacts/dispatch/credit, and GCT/GCU deferrals. Specification,
-test-sufficiency, implementation, and source/docs reviews are **NO FINDINGS**;
-all parent workspace verification gates pass. No exception exists.
-Independent final quality is **NO FINDINGS** and all nine gates PASS uncapped
-at `100/100`; commit `8181ae8fc8af0c7028254ad30147b417fbf84611` and fresh GCT
-inventory are now synchronized.
+Completion evidence: [central Task-269GC historical contract](../../task_contracts/en/269GC.md#completion-evidence).
 
 ## Task 269GCT Frozen Synchronization
 

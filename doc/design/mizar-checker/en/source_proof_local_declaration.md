@@ -2558,11 +2558,7 @@ Completion evidence: [central Task-269GUP historical contract](../../task_contra
 
 The public GUP binding handoff is consumed by value only by `SourceProofLocalGivenUseTypeProducer`. GUPT uses the unchanged private GUP lower seam solely to recover authenticated `84..87`; it does not alter the 128-byte selector, 54-node Surface profile, lower fingerprint, resolver provenance, binding rows, lookup lifetime, or GUP public ABI. The new type composite preserves the complete dependency debug text as its dependency fingerprint. Task 269GU remains the first permitted later-identifier consumer.
 
-### Task 269GUPT implemented dependency consumer
-
-The producer and private runner now consume the GUP handoff by value and
-preserve its complete authenticated snapshot. The lower owner and GUP public
-ABI are unchanged; later identifiers remain unconsumed until Task 269GU.
+Completion evidence: [central Task-269GUPT historical contract](../../task_contracts/en/269GUPT.md#completion-evidence).
 
 ## Task 269GU Frozen Binding Dependency
 
@@ -2573,11 +2569,7 @@ remain unchanged. The two later use lookups derive ordinal 2 in
 `source_term.rs`; this module gains no occurrence, reference, capture, fact,
 or proof owner.
 
-### Task 269GU implemented dependency consumer
-
-The source-term producer and private runner consume GUPT by value and preserve
-its complete authenticated snapshot. The lower/GUP/GUPT owners and public APIs
-are unchanged; no declaration-condition or descendant-use row is fabricated.
+Completion evidence: [central Task-269GU historical contract](../../task_contracts/en/269GU.md#completion-evidence).
 
 ## Task 269GCP Frozen Given-condition Lower Prerequisite
 
@@ -2954,17 +2946,7 @@ source-doc reviews ending **NO FINDINGS**, full verification, all nine hard
 gates, task-only staging, a separate commit, and automatic fresh inventory of
 Task 269GC.
 
-### Task 269GCP implemented lower prerequisite
-
-The exact 134-byte/54-node selector, two shells, theorem resolver provenance,
-immutable lower ABI, six retained source sites, 16-error ABI, one dormant base,
-five test seams, and four named tests are implemented in the frozen four
-runner files. The matrix covers all frozen Surface/lower/shell/resolver fields,
-exact opaque schema and payload corruption, representative combined validation
-precedence, sibling/near-miss rejection, GUP isolation, and positive legacy
-active-route replay. It publishes no binding, type, term, fact, obligation,
-Typed/final owner, diagnostic, or dispatch result. Task 269GC remains the next
-by-value binding consumer.
+Completion evidence: [central Task-269GCP historical contract](../../task_contracts/en/269GCP.md#completion-evidence).
 
 ## Checker Task 269GC Frozen Given-condition Binding Consumer
 
@@ -3397,44 +3379,7 @@ verification, all nine implementation gates and `>=90/100`, task-only commit,
 clean post-commit inventory, protected stash identity, and automatic selection
 of Task 269GCT.
 
-### Task 269GC implementation status
-
-Documentation prerequisite `dd053c86dab322508a15823de1c4afd268c2d35a` is
-committed and the exact seven existing Rust files are implemented. The four
-named checker and four named runner tests freeze the complete binding
-transaction, independent theorem-identity/coherent-mutation oracle, validation
-precedence, lexical lookup matrix, one-shot Typed/Resolved ownership, and
-neighbor isolation. Specification, test-sufficiency, and implementation
-reviews end **NO FINDINGS**.
-
-Libraries are checker/runner `514/580`. Checker production is `30/177771`;
-module sizes are `source_proof_local_declaration.rs=6660`,
-`typed_ast.rs=6281`, and `resolved_typed_ast.rs=8340`. Runner production is
-`37/76863`; module sizes are
-`type_elaboration/source_proof_local_declaration.rs=2217`,
-`type_elaboration.rs=942`, and `runner.rs=2775`, with proof-local test leaf
-`7442`. Checker path/content hashes are
-`c89f43f6abebf7ebeb3ac9394ecd8ea3186ad28934c75526d2cc0b85a66ebad5` /
-`4e9220617eac3d5e993c2cee6adfb4958e4cb70e9ddbec83fb0c8955c86aa9fd`;
-runner path/content hashes are
-`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d` /
-`6efd7b0ecf2f94b6440b910cef62796e5093d8618ffe196d17ce99bd2245619f`.
-Raw/normalized test-list hashes are checker
-`b0638853bf46edd9b9d6d9da7a9236f16451f21d0c8477f849ceda55c6e17b4b` /
-`206638b6a9b4ef7ac48d706fe8070c7b60f6700fdbc7754f28d6c954a542936c`
-and runner
-`287a66efbc2b27590a90cee3ac235c0389ace4e35b22dc0cfcd6cd2821fbe11a` /
-`4e1df8e302161ef8be0f29573922d41b18a89efbc3ba41542f7831556b359900`.
-
-Protected parser/broad/mixed artifacts, trace, corpus and CLI counts/hashes,
-diagnostics, dispatch, and active credit remain unchanged. The implementation
-publishes no type or declaration-condition occurrence; GCT/GCU and every
-frozen semantic deferral remain separate. Source/documentation consistency is
-**NO FINDINGS** and every parent workspace verification gate passes.
-Independent final quality is **NO FINDINGS** and all nine hard gates PASS
-uncapped at `100/100`. Commit
-`8181ae8fc8af0c7028254ad30147b417fbf84611` is complete and the GCT inventory
-follows below.
+Completion evidence: [central Task-269GC historical contract](../../task_contracts/en/269GC.md#completion-evidence).
 
 ## Task 269GCT Frozen Given-condition Type Consumer
 

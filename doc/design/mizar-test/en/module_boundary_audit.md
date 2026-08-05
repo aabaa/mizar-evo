@@ -13162,11 +13162,7 @@ Completion evidence: [central Task-269GUP historical contract](../../task_contra
 
 Owned runner files are exactly `type_elaboration/source_proof_local_declaration.rs`, `type_elaboration.rs`, `runner.rs`, and the existing proof-local test leaf. `source_statement.rs` and every active runner/metadata/CLI owner are excluded. The two facade hops are test-only; no new module path, Cargo target, dispatch branch, or public result field is permitted.
 
-### Task 269GUPT implemented runner boundary
-
-The exact four runner files are the only runner changes. Production remains 37
-paths and is now 75,074 lines; `source_statement.rs`, public dispatch, Cargo,
-metadata, artifacts, diagnostics, and active results are unchanged.
+Completion evidence: [central Task-269GUPT historical contract](../../task_contracts/en/269GUPT.md#completion-evidence).
 
 ## Task 269GU Runner Ownership Boundary
 
@@ -13177,11 +13173,7 @@ active dispatch/result owners, Cargo, fixtures, sidecars, expectations,
 trace, metadata, diagnostics, and CLI owners are excluded. Production remains
 37 paths; the two facade hops stay test-only.
 
-### Task 269GU implemented runner boundary
-
-The exact four runner files are the only runner changes. Production remains 37
-paths and is now 75,339 lines; `source_statement.rs`, public dispatch, Cargo,
-metadata, artifacts, diagnostics, and active results are unchanged.
+Completion evidence: [central Task-269GU historical contract](../../task_contracts/en/269GU.md#completion-evidence).
 
 ## Task 269GCP Frozen Runner Boundary
 
@@ -13191,15 +13183,7 @@ module. Public dispatch, metadata, discovery, expectations, fixtures, Cargo,
 and all other runner families are excluded. Production stays 37 paths; line
 and content hashes are remeasured after implementation.
 
-### Task 269GCP implemented runner boundary
-
-Exactly the frozen four existing runner files changed. Production is
-`37/76642`; the path hash remains
-`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d`
-and content hash is
-`adaeaad8bf2943e05e402f1bc565b5bb0f9a509fb74ffdcd9bbb05eab4d86b22`.
-Public dispatch, artifacts, metadata, Cargo, diagnostics, and all other runner
-families are unchanged.
+Completion evidence: [central Task-269GCP historical contract](../../task_contracts/en/269GCP.md#completion-evidence).
 
 ## Task 269GC Frozen Runner Boundary
 
@@ -13210,17 +13194,7 @@ constructs syntax-free checker input, and never exposes the output beyond
 diagnostics, and every sibling route remain unchanged. Checker owns validation
 and Typed/final replay.
 
-### Task 269GC implemented runner boundary
-
-Exactly the frozen four runner files changed. Production module sizes are
-`type_elaboration/source_proof_local_declaration.rs=2217`,
-`type_elaboration.rs=942`, and `runner.rs=2775`; the proof-local test leaf is
-`7442`. Production is `37/76863`, path hash remains
-`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d`,
-and content hash is
-`6efd7b0ecf2f94b6440b910cef62796e5093d8618ffe196d17ce99bd2245619f`.
-No GCP lower owner, public dispatch, artifact, metadata, Cargo, diagnostic, or
-sibling route changed.
+Completion evidence: [central Task-269GC historical contract](../../task_contracts/en/269GC.md#completion-evidence).
 
 ## Task 269GCT Frozen Runner Boundary
 

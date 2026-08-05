@@ -5737,12 +5737,7 @@ Completion evidence: [central Task-269GUP historical contract](../../task_contra
 
 Chapter 3/4/8/15/16とexact GUP source/lower/bindingはdeclared `set` source typeだけをrequireし、semantic publicationはrequireしない。planned public coverageは`SourceProofLocalGivenUseTypeHandoff`/`Producer`/`Error`、checker/runner各4 tests。implementationまではfrozen `source_drift`/`test_gap`で、canonical spec、`.miz`、expectation、trace、active creditは変更しない。
 
-### Task 269GUPT implemented source/spec mapping
-
-frozen public familyと8 testsを実装し、bounded `source_drift`/`test_gap`をclose。
-canonical spec、`.miz`、expectation、trace、metadata、CLI、active coverageは
-変更しない。source typeはauthenticated source evidenceとしてのみtransportし、
-later occurrenceはTask 269GU、全semantic deferralは明示したまま。
+Completion evidence: [central Task-269GUPT historical contract](../../task_contracts/ja/269GUPT.md#completion-evidence)。
 
 ## Task 269GU source/spec mapping凍結
 
@@ -5752,13 +5747,7 @@ planned public coverageはGU handoff/producer/non-exhaustive errorとchecker/run
 各4 test。implementationまではbounded `source_drift`/`test_gap`。canonical spec、
 `.miz`、expectation、trace、metadata、diagnostic、CLI、active creditは不変。
 
-### Task 269GU implemented source/spec mapping
-
-frozen public familyとtest 8件を実装し、bounded dormant occurrence/reference
-`source_drift`/`test_gap`だけをclose。canonical spec、`.miz`、expectation、trace、
-metadata、diagnostic、CLI、dispatch、active coverageは不変。declaration-condition/
-descendant occurrence、capture/export、equality/formula/fact/goal/proof/obligation
-semantics、downstream IR、Task 270はseparate ownerのまま。
+Completion evidence: [central Task-269GU historical contract](../../task_contracts/ja/269GU.md#completion-evidence)。
 
 ## Task 269GCP frozen source/spec mapping
 
@@ -5769,12 +5758,7 @@ Surface/shell/theorem provenance/declaration-type rangeだけをauthenticateし�
 condition termはGCUまでunowned。`.miz`/expectation/trace/diagnostic/dispatch/
 coverage statusは不変。
 
-### Task 269GCP implemented source/spec mapping
-
-bounded private lower `source_drift`/`test_gap`はexact canonical-derived selectorと
-Rust test 4件でclosed。canonical spec、existing `.miz`/expectation、trace、metadata、
-diagnostic、dispatch、active coverageは不変。executable witness scope/condition
-occurrenceはGC/GCT/GCUがowner。
+Completion evidence: [central Task-269GCP historical contract](../../task_contracts/ja/269GCP.md#completion-evidence)。
 
 ## Task 269GC frozen source/spec mapping
 
@@ -5783,15 +5767,7 @@ transaction/scope matrixへmap。focused private testでclassified gapを閉じ�
 .miz/sidecar/expectation/traceは不変。written typeはGCT、condition occurrenceは
 GCU。condition/fact/proof semantics/active creditなし。
 
-### Task 269GC implemented source/spec mapping
-
-exact public 4-item GC family、canonical block-scope transaction、focused test
-8件がclassified `source_drift`/`test_gap`をclose。canonical spec、`.miz`、sidecar、
-expectation、trace、metadata、diagnostic、dispatch、active creditは不変。written
-type/condition occurrenceはGCT/GCU owner。source-doc final reviewは**NO FINDINGS**、
-parent workspace verification gateは全PASS。independent final qualityも**NO
-FINDINGS**、9 gateはcapなし`100/100`。commit
-`8181ae8fc8af0c7028254ad30147b417fbf84611`は完了しGCT mappingを以下に記録。
+Completion evidence: [central Task-269GC historical contract](../../task_contracts/ja/269GC.md#completion-evidence)。
 
 ## Task 269GCT frozen source/spec mapping
 

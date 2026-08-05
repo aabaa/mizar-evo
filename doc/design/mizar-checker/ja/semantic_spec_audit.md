@@ -715,10 +715,7 @@ Completion evidence: [central Task-269GUP historical contract](../../task_contra
 
 canonical `given y being set`がauthorizeするのはwritten source typeとblock scope。GUPTはsyntax-backed type transportだけをfreezeし、condition/label fact、guard/assumption、existential/Skolem、later use、capture/export、goal/initial obligation、proof/discharge/acceptance、Core/CFG/VC creditは0。
 
-### Task 269GUPT implementation deferral status
-
-source-type transportを全frozen semantic table emptyで実装。condition/fact、guard、
-later use、capture、goal、obligation、proof、acceptance、Core/CFG/VCは発明・publishしない。
+Completion evidence: [central Task-269GUPT historical contract](../../task_contracts/ja/269GUPT.md#completion-evidence)。
 
 ## Task 269GU semantic deferral audit
 
@@ -728,11 +725,7 @@ Skolem、guard/assume、capture/export result、goal/thesis、initial obligation
 discharge/acceptance、theorem acceptance、Core/CFG/VC semanticsはpublishしない。
 scope visibilityはtransport evidenceでありproof truthではない。
 
-### Task 269GU implementation deferral status
-
-later lexical variable reference 2件だけをtransport。semantic tableは全emptyで、
-condition/fact、assume、existential、capture、formula、goal、initial obligation、
-proof、acceptance、Core、CFG、VCの意味を推測/publishしない。
+Completion evidence: [central Task-269GU historical contract](../../task_contracts/ja/269GU.md#completion-evidence)。
 
 ## Task 269GCP zero-semantic boundary
 
@@ -741,11 +734,7 @@ binding、occurrence、formula、condition/label fact、assume、Skolem、captur
 goal、obligation、proof、acceptance、IR意味をpublishしない。authenticated
 condition subtreeはGC/GCT/GCU用lower dependencyだけ。
 
-### Task 269GCP implementation deferral status
-
-exact lower profileはsemantic publication 0で実装。canonical innermost-block scope
-ruleは不変で、binding/condition term/fact/assume/goal/obligation/proof/acceptance/
-capture/export/IRはfrozen ownerへ明示的にdefer。
+Completion evidence: [central Task-269GCP historical contract](../../task_contracts/ja/269GCP.md#completion-evidence)。
 
 ## Task 269GC zero-semantic boundary
 
@@ -754,11 +743,7 @@ Skolem、condition truth/fact、label lifetime、assume/guard、goal、obligatio
 discharge/acceptance、capture/export、Core/CFG/VC/ATP meaningはclaimせず、source
 behaviorからinferせず、empty semantic successとしてもencodeしない。
 
-### Task 269GC implementation semantic status
-
-canonical lexical-binding `source_drift`とfocused `test_gap`だけをclose。
-existential/Skolem、condition/fact/label、guard、goal、obligation、proof/
-acceptance、capture/export、downstream IRはabsent/deferred、active creditは0。
+Completion evidence: [central Task-269GC historical contract](../../task_contracts/ja/269GC.md#completion-evidence)。
 
 ## Task 269GCT zero-semantic type boundary
 
