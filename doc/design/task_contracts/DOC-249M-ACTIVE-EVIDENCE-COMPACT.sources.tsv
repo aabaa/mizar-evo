@@ -1,0 +1,18 @@
+# Frozen preimage inventory for DOC-249M-ACTIVE-EVIDENCE-COMPACT.
+# Columns: task, language, component, source path, ATX level, exact heading text without the ATX prefix, section SHA-256, physical lines.
+249M	en	mizar-checker	doc/design/mizar-checker/en/00.crate_plan.md	2	Task 249M Active Implementation Result	919f1884f0205e454d17f0c9dc0428dfc583ce3c1464c4d982c8d687ae6426d7	13
+249M	en	mizar-checker	doc/design/mizar-checker/en/module_boundary_audit.md	2	Task 249M Implemented Module Boundary	6a78d00e8ffbfe42f1b0aaf0ddd7580e0701b25ad40771936e389e6b51ba824a	10
+249M	en	mizar-checker	doc/design/mizar-checker/en/payload_family_decomposition.md	2	Task 249M Active Family Inventory	c6122bd64108272098eabfa7e3ad7acbc3c6f8326695b37daa132a58fb6c5f02	6
+249M	en	mizar-checker	doc/design/mizar-checker/en/resolved_typed_ast.md	2	Task 249M Active Clone Boundary	e1f29104d9536b6ddf6caddc183d949104dc8c30d4b197f72a6950d4ab84cea8	7
+249M	en	mizar-checker	doc/design/mizar-checker/en/source_mode_definition.md	2	Task 249M Implemented Lower-Contract Link	852e49887543307f0c9a9207d9b9cb7683d600151fff80ebbbc3735aaa1fa1e9	7
+249M	en	mizar-checker	doc/design/mizar-checker/en/source_spec_audit.md	2	Task 249M Active Source Audit	44a7e4ece384ef9b632047d63ef2a806e3b508e6195c67bfcc7520c53c32e2ab	9
+249M	en	mizar-checker	doc/design/mizar-checker/en/source_type.md	2	Task 249M Active Implementation Result	c7664415c40ada53d7df1bfe681276004585351a78aafb45948107c88731664b	22
+249M	en	mizar-checker	doc/design/mizar-checker/en/typed_ast.md	2	Task 249M Active Typed Ownership	e6b5255d7aaf1d2906983f00e0801edefb1b62dd959ac5d2fde5911ccc0a87a6	7
+249M	ja	mizar-checker	doc/design/mizar-checker/ja/00.crate_plan.md	2	Task 249M active implementation result	796b969c959a9b919a9011fe31f81abb388dac8bada19f5658786b25cbba5cbc	13
+249M	ja	mizar-checker	doc/design/mizar-checker/ja/module_boundary_audit.md	2	Task 249M implemented module boundary	5211d37adb7a0a7472f068d348e9f7ee5eeb290e20fc279ef3925be9b564c717	10
+249M	ja	mizar-checker	doc/design/mizar-checker/ja/payload_family_decomposition.md	2	Task 249M active family inventory	baa5e09aaaa63ed3bafb0446f4c09cff9778ef7e9b7cc65b798668e4465165e2	6
+249M	ja	mizar-checker	doc/design/mizar-checker/ja/resolved_typed_ast.md	2	Task 249M active clone boundary	41a201671d5674ed2dc697ea3647264283c26c1a24a4a38743892a39e1c28dc8	7
+249M	ja	mizar-checker	doc/design/mizar-checker/ja/source_mode_definition.md	2	Task 249M implemented lower-contract link	13bd040f993d027c610aa23844ebf92ced36a6d5cbb6723096883f2eefab5f74	7
+249M	ja	mizar-checker	doc/design/mizar-checker/ja/source_spec_audit.md	2	Task 249M active source audit	01c964d0b0ff9b5620db011925c323ea43f81043f6e11137b8eee3fa3907ad70	8
+249M	ja	mizar-checker	doc/design/mizar-checker/ja/source_type.md	2	Task 249M active implementation result	d08054a79f907618e81d4f4892a89443b07c5eb25e4a4927d9452dafccd99aae	20
+249M	ja	mizar-checker	doc/design/mizar-checker/ja/typed_ast.md	2	Task 249M active typed ownership	8daedf294891ff6b21e73f5eb1e916a1fe7e9d982974d48cd9024769646b0176	7
