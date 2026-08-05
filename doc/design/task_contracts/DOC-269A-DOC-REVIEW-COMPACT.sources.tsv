@@ -1,0 +1,10 @@
+# Frozen preimage inventory for DOC-269A-DOC-REVIEW-COMPACT.
+# Columns: task, language, component, source path, ATX level, exact heading text without the ATX prefix, section SHA-256, physical lines.
+269A	en	mizar-checker	doc/design/mizar-checker/en/00.crate_plan.md	2	Checker Task 269A Documentation-Prerequisite Verification	97ac0b3e6446c5f74433633bbc888d6e78ec2efdec44f2738f57e01ed26bfb9c	33
+269A	en	mizar-checker	doc/design/mizar-checker/en/bilingual_sync_audit.md	2	Task 269A Frozen-Contract Synchronization	7f42db0ad6b0ce3f90b5f45abf2473f486f21a2ae2181a9903d5eb131fecfac6	10
+269A	en	mizar-checker	doc/design/mizar-checker/en/module_boundary_audit.md	2	Task 269A Frozen Module Boundary	a07b378d9f8e3f9ac4eca1182374b389e77d3faac1e36375f6ce18eabdda1ddf	23
+269A	en	mizar-checker	doc/design/mizar-checker/en/source_spec_audit.md	2	Task 269A Frozen Source/Specification Audit	efc5d395d66f3579505a1edf96f18f2c1287ec8b4316b3e876b186e361e38a1d	16
+269A	ja	mizar-checker	doc/design/mizar-checker/ja/00.crate_plan.md	2	Checker Task 269A documentation-prerequisite verification	07347e786461e323b6fa37c010a9faccd667e1b310bf612aef0ae6a4dab0bf68	32
+269A	ja	mizar-checker	doc/design/mizar-checker/ja/bilingual_sync_audit.md	2	Task 269A frozen-contract synchronization	05ecdaefc2bf76eab94f55420b63b23363c42c4869beee2ea7fc4651780c5363	9
+269A	ja	mizar-checker	doc/design/mizar-checker/ja/module_boundary_audit.md	2	Task 269A frozen module boundary	27b09888e5c2ba1ef958a152864ae44ee3ca6b1b75491f1a0aefb0d052545c04	21
+269A	ja	mizar-checker	doc/design/mizar-checker/ja/source_spec_audit.md	2	Task 269A frozen source/specification audit	8fc7775353772fc5c95c8f709acd065278a4ceb95d6651e4b5e281102db37763	13
