@@ -26,10 +26,10 @@ use mizar_checker::{
         SourceProofLocalGivenConditionUseTermProducer, SourceProofLocalGivenUseTermProducer,
     },
     source_type::{
-        SourceProofLocalGivenConditionTypeProducer, SourceProofLocalGivenTypeProducer,
-        SourceProofLocalGivenUseTypeProducer, SourceProofLocalLetTypeProducer,
-        SourceTypeApplicationForm, SourceTypeApplicationInput, SourceTypeExpressionId,
-        SourceTypeExpressionInput, SourceTypeHandoffInput, SourceTypeHead,
+        SourceProofLocalGivenConditionTypeProducer, SourceProofLocalGivenDescendantTypeProducer,
+        SourceProofLocalGivenTypeProducer, SourceProofLocalGivenUseTypeProducer,
+        SourceProofLocalLetTypeProducer, SourceTypeApplicationForm, SourceTypeApplicationInput,
+        SourceTypeExpressionId, SourceTypeExpressionInput, SourceTypeHandoffInput, SourceTypeHead,
     },
     typed_ast::{
         CoercionTable, InitialObligationTable, LocalTypeContextTable, TypeDiagnosticTable,
@@ -1781,6 +1781,256 @@ fn source_proof_local_given_descendant_binding_output_impl(
         let _ = (output.typed_ast(), output.resolved());
         Ok(output)
     }))
+}
+
+#[derive(Debug, PartialEq, Eq)]
+#[allow(dead_code)] // Rationale: Task 269SDT is a private dormant runner consumer until activation.
+pub(in crate::runner) struct SourceProofLocalGivenDescendantTypeRouteOutput {
+    typed_ast: TypedAst,
+    resolved: ResolvedTypedAst,
+}
+
+impl SourceProofLocalGivenDescendantTypeRouteOutput {
+    pub(in crate::runner) const fn typed_ast(&self) -> &TypedAst {
+        &self.typed_ast
+    }
+
+    pub(in crate::runner) const fn resolved(&self) -> &ResolvedTypedAst {
+        &self.resolved
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[allow(dead_code)] // Rationale: production selects `None`; other variants are private Task-269SDT corruption seams.
+pub(in crate::runner) enum SourceProofLocalGivenDescendantTypeRouteMutation {
+    None,
+    WrongDependencyModule,
+    WrongTypeRange,
+    WrongArenaRoot,
+    WrongArenaKind,
+}
+
+#[allow(dead_code)] // Rationale: Task 269SDT is dormant until an active dispatcher is separately frozen.
+pub(in crate::runner) fn source_proof_local_given_descendant_type_output(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    shells: &DeclarationShellSet,
+    symbols: &SymbolEnv,
+    source_text: &str,
+) -> Option<Result<SourceProofLocalGivenDescendantTypeRouteOutput, String>> {
+    source_proof_local_given_descendant_type_output_impl(
+        ast,
+        module,
+        shells,
+        symbols,
+        source_text,
+        SourceProofLocalGivenDescendantTypeRouteMutation::None,
+    )
+}
+
+#[cfg(test)]
+pub(in crate::runner) fn source_proof_local_given_descendant_type_output_with_mutation(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    shells: &DeclarationShellSet,
+    symbols: &SymbolEnv,
+    source_text: &str,
+    mutation: SourceProofLocalGivenDescendantTypeRouteMutation,
+) -> Option<Result<SourceProofLocalGivenDescendantTypeRouteOutput, String>> {
+    source_proof_local_given_descendant_type_output_impl(
+        ast,
+        module,
+        shells,
+        symbols,
+        source_text,
+        mutation,
+    )
+}
+
+fn source_proof_local_given_descendant_type_output_impl(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    shells: &DeclarationShellSet,
+    symbols: &SymbolEnv,
+    source_text: &str,
+    mutation: SourceProofLocalGivenDescendantTypeRouteMutation,
+) -> Option<Result<SourceProofLocalGivenDescendantTypeRouteOutput, String>> {
+    let dependency = source_proof_local_given_descendant_binding_output(
+        ast,
+        module.clone(),
+        shells,
+        symbols,
+        source_text,
+    )?;
+    Some(dependency.and_then(|dependency| {
+        let lower = source_proof_local_given_descendant_set_lower_output(
+            ast,
+            module.clone(),
+            shells,
+            symbols,
+            source_text,
+        )
+        .ok_or_else(|| "Task269SDT lower selector mismatch".to_owned())??;
+        if lower.given_type_range()
+            != (SourceRange {
+                source_id: ast.source_id,
+                start: 95,
+                end: 98,
+            })
+            || lower.given_type_head_range() != lower.given_type_range()
+            || lower.given_type_spelling() != "set"
+        {
+            return Err("source proof-local given-descendant source type is invalid".to_owned());
+        }
+        let dependency = dependency
+            .typed_ast()
+            .source_proof_local_given_descendant_binding()
+            .cloned()
+            .ok_or_else(|| "Task269SDT SDC dependency is missing".to_owned())?;
+        let reserve_range = dependency
+            .binding_env()
+            .bindings()
+            .get(mizar_checker::binding_env::BindingId::new(0))
+            .and_then(|binding| match binding.type_site {
+                mizar_checker::binding_env::BindingTypeSite::Source(range) => Some(range),
+                _ => None,
+            })
+            .ok_or_else(|| "Task269SDT reserve type source is missing".to_owned())?;
+        let arena = task269sdt_arena(ast.source_id, mutation)?;
+        let mut input = task269sdt_type_input(
+            ast.source_id,
+            module.clone(),
+            reserve_range,
+            lower.given_type_range(),
+        );
+        match mutation {
+            SourceProofLocalGivenDescendantTypeRouteMutation::WrongDependencyModule => {
+                input.module_id = ModuleId::new(
+                    module.package().clone(),
+                    ModulePath::new("task269sdt.wrong"),
+                );
+                for expression in &mut input.expressions {
+                    expression.module_id = input.module_id.clone();
+                }
+            }
+            SourceProofLocalGivenDescendantTypeRouteMutation::WrongTypeRange => {
+                input.expressions[1].source_range.end += 1;
+            }
+            SourceProofLocalGivenDescendantTypeRouteMutation::None
+            | SourceProofLocalGivenDescendantTypeRouteMutation::WrongArenaRoot
+            | SourceProofLocalGivenDescendantTypeRouteMutation::WrongArenaKind => {}
+        }
+        let handoff =
+            SourceProofLocalGivenDescendantTypeProducer::build(dependency, input, symbols, &arena)
+                .map_err(|error| error.to_string())?;
+        let typed_ast = empty_task269gct_typed_ast(ast.source_id, module, arena)?
+            .with_source_proof_local_given_descendant_type(handoff)
+            .map_err(|error| error.to_string())?;
+        let resolved = assemble_empty_resolved_typed_ast(&typed_ast, Vec::new())?;
+        let output = SourceProofLocalGivenDescendantTypeRouteOutput {
+            typed_ast,
+            resolved,
+        };
+        let _ = (output.typed_ast(), output.resolved());
+        Ok(output)
+    }))
+}
+
+fn task269sdt_type_input(
+    source_id: mizar_session::SourceId,
+    module_id: ModuleId,
+    reserve_range: SourceRange,
+    given_range: SourceRange,
+) -> SourceTypeHandoffInput {
+    SourceTypeHandoffInput {
+        source_id,
+        module_id: module_id.clone(),
+        applications: (0..2)
+            .map(|index| SourceTypeApplicationInput {
+                binding: mizar_checker::binding_env::BindingId::new(index),
+                source_ordinal: index,
+                root: SourceTypeExpressionId::new(index),
+            })
+            .collect(),
+        expressions: [reserve_range, given_range]
+            .into_iter()
+            .enumerate()
+            .map(|(index, source_range)| SourceTypeExpressionInput {
+                source_id,
+                module_id: module_id.clone(),
+                site: TypedSiteRef::Role {
+                    node: TypedNodeId::new(index),
+                    role: TypeRole::new("source.type.expression"),
+                },
+                source_range,
+                spelling: "set".to_owned(),
+                head_site: TypedSiteRef::Role {
+                    node: TypedNodeId::new(index),
+                    role: TypeRole::new("source.type.head"),
+                },
+                head_range: source_range,
+                head_spelling: "set".to_owned(),
+                form: SourceTypeApplicationForm::Bare,
+                head: SourceTypeHead::BuiltinSet,
+                recovery: mizar_checker::typed_ast::NodeRecoveryState::Normal,
+            })
+            .collect(),
+        arguments: Vec::new(),
+    }
+}
+
+fn task269sdt_arena(
+    source_id: mizar_session::SourceId,
+    mutation: SourceProofLocalGivenDescendantTypeRouteMutation,
+) -> Result<TypedArena, String> {
+    let wrong_kind = mutation == SourceProofLocalGivenDescendantTypeRouteMutation::WrongArenaKind;
+    let mut builder = TypedArenaBuilder::new();
+    let reserve = builder
+        .push(TypedNode::new(
+            "source.proof-local.given-descendant.reserve-type",
+            SourceAnchor::Range(SourceRange {
+                source_id,
+                start: 14,
+                end: 17,
+            }),
+        ))
+        .map_err(|error| error.to_string())?;
+    let local = builder
+        .push(TypedNode::new(
+            if wrong_kind {
+                "source.proof-local.given-descendant.type.wrong"
+            } else {
+                "source.proof-local.given-descendant.type"
+            },
+            SourceAnchor::Range(SourceRange {
+                source_id,
+                start: 95,
+                end: 98,
+            }),
+        ))
+        .map_err(|error| error.to_string())?;
+    let root = builder
+        .push(
+            TypedNode::new(
+                "source.proof-local.given-descendant.type-root",
+                SourceAnchor::Range(SourceRange {
+                    source_id,
+                    start: 0,
+                    end: 179,
+                }),
+            )
+            .with_children(vec![reserve, local]),
+        )
+        .map_err(|error| error.to_string())?;
+    let selected_root =
+        if mutation == SourceProofLocalGivenDescendantTypeRouteMutation::WrongArenaRoot {
+            local
+        } else {
+            root
+        };
+    builder
+        .finish(Some(selected_root))
+        .map_err(|error| error.to_string())
 }
 
 #[derive(Debug, PartialEq, Eq)]

@@ -3646,7 +3646,7 @@ downstream semanticsはexcludeしたまま。Task-only implementation commit
 
 ## Task 269SDT
 
-次はcontract-migration commitとclean fresh inventory後、
-[central contract](../../task_contracts/ja/269SDT.md) が凍結したprivate dormant
-runner consumerとrunner 4 testsだけを追加する。active dispatchとcoverage
-creditはexcludeしたまま。
+実装済み：[central contract](../../task_contracts/ja/269SDT.md) が凍結した
+private dormant runner consumerとrunner 4 testsはpaired checker sliceとともに
+完了した。active dispatchとcoverage creditはexcludeしたままで、successorは
+post-commit fresh inventoryからだけ選択する。

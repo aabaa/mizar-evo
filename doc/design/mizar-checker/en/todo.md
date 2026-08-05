@@ -7256,7 +7256,8 @@ complete.
 
 ## Task 269SDT
 
-Next: implement only the dependency-ready Given descendant source-type slice
-from the [central contract](../../task_contracts/en/269SDT.md), after the
-contract-migration commit and clean fresh inventory. Descendant occurrence and
-all `z`/`q` closure/capture semantics remain later work.
+Implemented: the exact Given descendant source-type slice and its dormant
+runner consumer are complete under the
+[central contract](../../task_contracts/en/269SDT.md). Descendant occurrence
+and all `z`/`q` closure/capture semantics remain later work; the successor is
+selected only from fresh post-commit inventory.

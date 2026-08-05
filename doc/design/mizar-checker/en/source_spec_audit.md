@@ -365,6 +365,9 @@ Literal top-level public items:
   `SourceProofLocalGivenConditionTypeHandoff`,
   `SourceProofLocalGivenConditionTypeProducer`,
   `SourceProofLocalGivenConditionTypeError`,
+  `SourceProofLocalGivenDescendantTypeHandoff`,
+  `SourceProofLocalGivenDescendantTypeProducer`,
+  `SourceProofLocalGivenDescendantTypeError`,
   `SourceTypeError`
 
 Correspondence:
@@ -380,6 +383,7 @@ Correspondence:
 | One exact proof-local `let` composition upgrades only the Task-269C missing type site and preserves its dependency unchanged. | `SourceProofLocalLetTypeHandoff`, `SourceProofLocalLetTypeProducer`, and `SourceProofLocalLetTypeError`. | Four checker and four dormant-runner exact/corruption/ownership/isolation tests. | Implemented for Task 269CT with zero active/semantic credit. |
 | One exact proof-local `given` composition upgrades only the Task-269G witness type site and preserves its dependency unchanged. | `SourceProofLocalGivenTypeHandoff`, `SourceProofLocalGivenTypeProducer`, and `SourceProofLocalGivenTypeError`. | Four checker and four dormant-runner exact/corruption/ownership/isolation tests. | Implemented for Task 269GT with zero active/semantic credit. |
 | One exact proof-local `given` use-profile composition copies the Task-269GUP environment, upgrades only binding 1's source type, and preserves its dependency unchanged. | `SourceProofLocalGivenUseTypeHandoff`, `SourceProofLocalGivenUseTypeProducer`, and `SourceProofLocalGivenUseTypeError`. | Four checker and four dormant-runner exact/corruption/ownership/isolation tests. | Implemented for Task 269GUPT with zero active/semantic credit. |
+| One exact proof-local descendant composition consumes the complete Task-269SDC handoff, upgrades only binding 1's written source type, and atomically replaces the standalone SDC owner. | `SourceProofLocalGivenDescendantTypeHandoff`, `SourceProofLocalGivenDescendantTypeProducer`, and `SourceProofLocalGivenDescendantTypeError`. | Four checker and four dormant-runner exact/corruption/ownership/isolation tests. | Implemented for Task 269SDT with zero active/semantic credit. |
 | `TypedAst` owns the result and `ResolvedTypedAst` only clones it. | Optional `SourceTypeApplicationHandoff` field and borrowed getters. | Immutable final-preservation and repeated-run assertions. | Implemented; empty legacy debug bytes remain conditional. |
 | Public enums are forward-compatible. | `#[non_exhaustive]` on public enums. | `checker_public_enums_are_forward_compatible_and_documented`. | Guarded; no exhaustive exception. |
 
@@ -387,7 +391,8 @@ Bounded gaps: Tasks 249/249R/249M/249S publish source-type inputs,
 definition-return owner links, one standalone mode-RHS owner link, and four
 standalone structure-member type owner links only. Expansion,
 normalization, evidence, term/`qua` selection, accepted facts/declarations/
-proofs, and downstream IR remain with their explicit later owners.
+proofs, descendant occurrence/capture, and downstream IR remain with their
+explicit later owners.
 
 ### `source_evidence`
 

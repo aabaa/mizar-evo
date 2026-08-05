@@ -3909,7 +3909,7 @@ complete.
 
 ## Task 269SDT
 
-Next: after the contract-migration commit and clean fresh inventory, add only
-the private dormant runner consumer and four runner tests frozen by the
-[central contract](../../task_contracts/en/269SDT.md). Active dispatch and
-coverage credit remain excluded.
+Implemented: the private dormant runner consumer and four runner tests frozen
+by the [central contract](../../task_contracts/en/269SDT.md) are complete with
+the paired checker slice. Active dispatch and coverage credit remain excluded;
+the successor is selected only from fresh post-commit inventory.

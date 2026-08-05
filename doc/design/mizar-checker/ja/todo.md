@@ -6881,7 +6881,7 @@ downstream semanticsはexcludeしたまま。Task-only implementation commit
 
 ## Task 269SDT
 
-次は [central contract](../../task_contracts/ja/269SDT.md) のdependency-readyな
-Given descendant source-type sliceだけを、contract-migration commitとclean fresh
-inventory後に実装する。descendant occurrenceと全 `z`/`q` closure/capture
-semanticsは後続。
+実装済み：[central contract](../../task_contracts/ja/269SDT.md) のexact Given
+descendant source-type sliceとdormant runner consumerは完了した。descendant
+occurrenceと全 `z`/`q` closure/capture semanticsは後続であり、successorは
+post-commit fresh inventoryからだけ選択する。

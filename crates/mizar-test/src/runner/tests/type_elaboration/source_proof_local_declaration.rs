@@ -21,6 +21,8 @@ use super::{
     SourceProofLocalGivenConditionShellMutation, SourceProofLocalGivenConditionSurfaceMutation,
     SourceProofLocalGivenDescendantBindingRouteMutation,
     SourceProofLocalGivenDescendantBindingRouteOutput,
+    SourceProofLocalGivenDescendantTypeRouteMutation,
+    SourceProofLocalGivenDescendantTypeRouteOutput,
     SourceProofLocalGivenDescendantSetLowerMutation,
     SourceProofLocalGivenDescendantSetLowerOutput,
     SourceProofLocalGivenDescendantSetResolverProfileMutation,
@@ -53,6 +55,8 @@ use super::{
     source_proof_local_given_condition_lower_output_with_surface_mutation,
     source_proof_local_given_descendant_binding_output,
     source_proof_local_given_descendant_binding_output_with_mutation,
+    source_proof_local_given_descendant_type_output,
+    source_proof_local_given_descendant_type_output_with_mutation,
     source_proof_local_given_descendant_set_lower_output,
     source_proof_local_given_descendant_set_lower_output_with_mutation,
     source_proof_local_given_descendant_set_lower_output_with_resolver_mutation,
@@ -10034,4 +10038,374 @@ fn task269sdc_descendant_binding_profile_has_zero_occurrence_capture_or_semantic
     ] {
         assert!(!handoff.debug_text().contains(excluded), "excluded {excluded}");
     }
+}
+
+#[test]
+fn task269sdt_exact_descendant_type_route_is_stable() {
+    assert_eq!(SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT.len(), 180);
+    assert_eq!(
+        sha256_text(SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT),
+        "efa21af05a15f611815a4eb573577d0a368a3134693b225bdb56177f3637c2a8"
+    );
+    let (ast, module, shells, symbols) = task253_ast_from_source_text(
+        SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT,
+        2_691_400,
+    );
+    let output: SourceProofLocalGivenDescendantTypeRouteOutput =
+        source_proof_local_given_descendant_type_output(
+            &ast,
+            module.clone(),
+            &shells,
+            &symbols,
+            SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT,
+        )
+        .expect("Task269SDT exact private selector")
+        .expect("Task269SDT exact type composition");
+    let typed = output.typed_ast();
+    let resolved = output.resolved();
+    let handoff = typed
+        .source_proof_local_given_descendant_type()
+        .expect("Task269SDT Typed owner");
+    assert_eq!(handoff.source_id(), ast.source_id);
+    assert_eq!(handoff.module_id(), &module);
+    assert_eq!(handoff.dependency_fingerprint(), handoff.dependency().debug_text());
+    assert_eq!(handoff.binding_fingerprint(), handoff.binding_env().debug_text());
+    assert_eq!(
+        handoff.source_type_fingerprint(),
+        handoff.source_type().debug_text()
+    );
+    assert_eq!(
+        (
+            handoff.binding_env().contexts().len(),
+            handoff.binding_env().bindings().len(),
+            handoff.binding_env().diagnostics().len(),
+        ),
+        (3, 2, 0)
+    );
+    assert_eq!(
+        handoff
+            .dependency()
+            .binding_env()
+            .bindings()
+            .get(mizar_checker::binding_env::BindingId::new(1))
+            .expect("Task269SDT dependency binding")
+            .type_site,
+        mizar_checker::binding_env::BindingTypeSite::Missing
+    );
+    assert_eq!(
+        handoff
+            .binding_env()
+            .bindings()
+            .get(mizar_checker::binding_env::BindingId::new(1))
+            .expect("Task269SDT typed binding")
+            .type_site,
+        mizar_checker::binding_env::BindingTypeSite::Source(mizar_session::SourceRange {
+            source_id: ast.source_id,
+            start: 95,
+            end: 98,
+        })
+    );
+    assert_eq!(
+        (
+            handoff.source_type().applications().len(),
+            handoff.source_type().expressions().len(),
+            handoff.source_type().arguments().len(),
+            handoff.source_type().definition_returns().len(),
+            handoff.source_type().mode_rhs().len(),
+            handoff.source_type().structure_members().len(),
+        ),
+        (2, 2, 0, 0, 0, 0)
+    );
+    for (index, (start, end)) in [(14, 17), (95, 98)].into_iter().enumerate() {
+        let application = handoff
+            .source_type()
+            .applications()
+            .get(mizar_checker::source_type::SourceTypeApplicationId::new(index))
+            .expect("Task269SDT application");
+        assert_eq!(application.binding().index(), index);
+        assert_eq!(application.source_ordinal(), index);
+        assert_eq!(application.root().index(), index);
+        let expression = handoff
+            .source_type()
+            .expressions()
+            .get(mizar_checker::source_type::SourceTypeExpressionId::new(index))
+            .expect("Task269SDT expression");
+        assert_eq!((expression.source_range().start, expression.source_range().end), (start, end));
+        assert_eq!(expression.source_range(), expression.head_range());
+        assert_eq!(expression.spelling(), "set");
+        assert_eq!(expression.head_spelling(), "set");
+        assert_eq!(
+            expression.form(),
+            mizar_checker::source_type::SourceTypeApplicationForm::Bare
+        );
+        assert_eq!(
+            expression.head(),
+            &mizar_checker::source_type::SourceTypeHead::BuiltinSet
+        );
+    }
+    assert_eq!(typed.nodes().len(), 3);
+    assert_eq!(
+        typed.nodes().root(),
+        Some(mizar_checker::typed_ast::TypedNodeId::new(2))
+    );
+    for (index, (kind, start, end)) in [
+        ("source.proof-local.given-descendant.reserve-type", 14, 17),
+        ("source.proof-local.given-descendant.type", 95, 98),
+        ("source.proof-local.given-descendant.type-root", 0, 179),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let node = typed
+            .nodes()
+            .node(mizar_checker::typed_ast::TypedNodeId::new(index))
+            .expect("Task269SDT typed node");
+        assert_eq!(node.kind.as_str(), kind);
+        assert_eq!(
+            node.anchor,
+            mizar_session::SourceAnchor::Range(mizar_session::SourceRange {
+                source_id: ast.source_id,
+                start,
+                end,
+            })
+        );
+        assert!(node.resolved_node.is_none());
+        assert_eq!(node.typing, mizar_checker::typed_ast::TypingState::Unknown);
+        assert_eq!(node.recovery, mizar_checker::typed_ast::NodeRecoveryState::Normal);
+        assert_eq!(node.links, mizar_checker::typed_ast::TypedNodeLinks::default());
+    }
+    assert_eq!(
+        resolved.source_proof_local_given_descendant_type(),
+        Some(handoff)
+    );
+    assert!(typed.source_proof_local_given_descendant_binding().is_none());
+    assert!(resolved.source_proof_local_given_descendant_binding().is_none());
+    for (_, node) in resolved.nodes().iter() {
+        assert!(matches!(
+            &node.kind,
+            mizar_checker::resolved_typed_ast::ResolvedTypedNodeKind::SourcePreserved { role }
+                if role.as_str() == "source.proof-local.given-descendant.type"
+        ));
+    }
+    let replay = source_proof_local_given_descendant_type_output(
+        &ast,
+        module,
+        &shells,
+        &symbols,
+        SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT,
+    )
+    .expect("Task269SDT replay selector")
+    .expect("Task269SDT replay");
+    assert_eq!(replay.typed_ast().debug_text(), typed.debug_text());
+    assert_eq!(replay.resolved().debug_text(), resolved.debug_text());
+}
+
+#[test]
+fn task269sdt_dependency_input_and_arena_corruption_fail_closed() {
+    for (ordinal, (mutation, expected)) in [
+        (SourceProofLocalGivenDescendantTypeRouteMutation::None, None),
+        (
+            SourceProofLocalGivenDescendantTypeRouteMutation::WrongDependencyModule,
+            Some("source proof-local given-descendant type dependency is invalid"),
+        ),
+        (
+            SourceProofLocalGivenDescendantTypeRouteMutation::WrongTypeRange,
+            Some("source proof-local given-descendant source type is invalid"),
+        ),
+        (
+            SourceProofLocalGivenDescendantTypeRouteMutation::WrongArenaRoot,
+            Some("source proof-local given-descendant source type is invalid"),
+        ),
+        (
+            SourceProofLocalGivenDescendantTypeRouteMutation::WrongArenaKind,
+            Some("source proof-local given-descendant source type is invalid"),
+        ),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let (ast, module, shells, symbols) = task253_ast_from_source_text(
+            SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT,
+            2_691_410 + ordinal,
+        );
+        let result = source_proof_local_given_descendant_type_output_with_mutation(
+            &ast,
+            module,
+            &shells,
+            &symbols,
+            SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT,
+            mutation,
+        )
+        .expect("Task269SDT exact selector under corruption");
+        match expected {
+            Some(expected) => assert_eq!(result, Err(expected.to_owned()), "mutation {mutation:?}"),
+            None => assert!(result.is_ok()),
+        }
+    }
+}
+
+#[test]
+fn task269sdt_typed_and_resolved_owners_are_one_shot_and_semantically_empty() {
+    let (ast, module, shells, symbols) = task253_ast_from_source_text(
+        SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT,
+        2_691_420,
+    );
+    let output = source_proof_local_given_descendant_type_output(
+        &ast,
+        module,
+        &shells,
+        &symbols,
+        SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT,
+    )
+    .expect("Task269SDT selector")
+    .expect("Task269SDT output");
+    let handoff = output
+        .typed_ast()
+        .source_proof_local_given_descendant_type()
+        .expect("Task269SDT owner")
+        .clone();
+    let before = output.typed_ast().debug_text();
+    assert_eq!(
+        output
+            .typed_ast()
+            .clone()
+            .with_source_proof_local_given_descendant_type(handoff),
+        Err(mizar_checker::typed_ast::TypedAstError::InvalidSourceProofLocalGivenDescendantType)
+    );
+    assert_eq!(output.typed_ast().debug_text(), before);
+    let typed = output.typed_ast();
+    let resolved = output.resolved();
+    assert!(typed.source_proof_local_given_descendant_binding().is_none());
+    assert!(typed.source_proof_local_given_condition_use_term().is_none());
+    assert!(typed.source_proof_local_given_condition_type().is_none());
+    assert!(typed.source_proof_local_given_condition_binding().is_none());
+    assert!(typed.source_proof_local_given_use_term().is_none());
+    assert!(typed.source_proof_local_given_use_type().is_none());
+    assert!(typed.source_proof_local_given_type().is_none());
+    assert!(typed.source_proof_local_given_binding().is_none());
+    assert!(typed.source_proof_local_let_type().is_none());
+    assert!(typed.source_proof_local_let_binding().is_none());
+    assert!(typed.source_proof_local_declaration().is_none());
+    assert!(typed.contexts().is_empty());
+    assert!(typed.types().is_empty());
+    assert!(typed.facts().is_empty());
+    assert!(typed.coercions().is_empty());
+    assert!(typed.initial_obligations().is_empty());
+    assert!(typed.diagnostics().is_empty());
+    assert!(resolved.expr_metadata().is_empty());
+    assert!(resolved.collection_candidates().is_empty());
+    assert!(resolved.expanded_candidates().is_empty());
+    assert!(resolved.template_expansions().is_empty());
+    assert!(resolved.viable_candidates().is_empty());
+    assert!(resolved.viability_decisions().is_empty());
+    assert!(resolved.specificity_graphs().is_empty());
+    assert!(resolved.resolved_overloads().is_empty());
+    assert!(resolved.inserted_coercions().is_empty());
+    assert!(resolved.cluster_facts().is_empty());
+    assert!(resolved.checked_formulas().is_empty());
+    assert!(resolved.statement_semantics().is_empty());
+    assert!(resolved.checked_proofs().is_empty());
+    assert!(resolved.checked_proof_nodes().is_empty());
+    assert!(resolved.checked_terminal_goals().is_empty());
+    assert!(resolved.diagnostics().is_empty());
+    for forbidden in [
+        "binding#2",
+        "binding#3",
+        "fact#",
+        "initial-obligation#",
+        "terminal-goal#",
+        "accepted",
+        "discharged",
+        "verification-condition",
+    ] {
+        assert!(!resolved.debug_text().contains(forbidden));
+    }
+}
+
+#[test]
+fn task269sdt_near_miss_neighbor_and_active_routes_remain_isolated() {
+    for (ordinal, source) in [
+        SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT.replace(
+            "ProofLocalGivenDescendantCaptureSmoke",
+            "ProofLocalGivenDescendantCaptureOther",
+        ),
+        SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT.replacen("given y", "given w", 1),
+        SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT.replacen("being set", "being object", 1),
+        SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT.replacen("now\n", "hereby\n", 1),
+        SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT
+            .trim_end_matches('\n')
+            .to_owned(),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let (ast, module, shells, symbols) =
+            task253_ast_from_source_text(&source, 2_691_430 + ordinal);
+        assert!(
+            source_proof_local_given_descendant_type_output(
+                &ast, module, &shells, &symbols, &source,
+            )
+            .is_none(),
+            "Task269SDT selected near miss {ordinal}",
+        );
+    }
+    for (ordinal, source) in [
+        TASK269A_SOURCE_TEXT,
+        TASK269B_SOURCE_TEXT,
+        SOURCE_PROOF_LOCAL_LET_TEXT,
+        SOURCE_PROOF_LOCAL_GIVEN_TEXT,
+        SOURCE_PROOF_LOCAL_GIVEN_USE_TEXT,
+        SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT,
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let (ast, module, shells, symbols) =
+            task253_ast_from_source_text(source, 2_691_440 + ordinal);
+        assert!(source_proof_local_given_descendant_type_output(
+            &ast, module, &shells, &symbols, source,
+        )
+        .is_none());
+    }
+    let (ast, module, shells, symbols) = task253_ast_from_source_text(
+        SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT,
+        2_691_450,
+    );
+    let lower = source_proof_local_given_descendant_set_lower_output(
+        &ast,
+        module.clone(),
+        &shells,
+        &symbols,
+        SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT,
+    )
+    .expect("Task269SDP selected")
+    .expect("Task269SDP valid");
+    assert_eq!(lower.given_type_range(), lower.given_type_head_range());
+    assert_eq!(lower.given_type_spelling(), "set");
+    let sdc = source_proof_local_given_descendant_binding_output(
+        &ast,
+        module,
+        &shells,
+        &symbols,
+        SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT,
+    )
+    .expect("Task269SDC selected")
+    .expect("Task269SDC valid");
+    assert!(sdc
+        .typed_ast()
+        .source_proof_local_given_descendant_binding()
+        .is_some());
+    assert!(sdc
+        .typed_ast()
+        .source_proof_local_given_descendant_type()
+        .is_none());
+    let (active_ast, active_module, _, active_symbols) =
+        task253_ast_from_source_text(TASK269A_SOURCE_TEXT, 2_691_451);
+    assert!(task269a_lower_output(
+        &active_ast,
+        active_module,
+        &active_symbols,
+        TASK269A_SOURCE_TEXT,
+    )
+    .is_some());
 }

@@ -341,6 +341,9 @@ literal top-level public item:
   `SourceProofLocalGivenConditionTypeHandoff`,
   `SourceProofLocalGivenConditionTypeProducer`,
   `SourceProofLocalGivenConditionTypeError`,
+  `SourceProofLocalGivenDescendantTypeHandoff`,
+  `SourceProofLocalGivenDescendantTypeProducer`,
+  `SourceProofLocalGivenDescendantTypeError`,
   `SourceTypeError`
 
 対応:
@@ -356,6 +359,7 @@ literal top-level public item:
 | exact proof-local `let` composition 1件がTask-269C missing type siteだけをupgradeしdependencyをunchanged preserveする。 | `SourceProofLocalLetTypeHandoff`、`SourceProofLocalLetTypeProducer`、`SourceProofLocalLetTypeError`。 | checker 4件/runner dormant 4件のexact/corruption/ownership/isolation test。 | Task 269CTで実装済み、active/semantic credit zero。 |
 | exact proof-local `given` composition 1件がTask-269G witness type siteだけをupgradeしdependencyをunchanged preserveする。 | `SourceProofLocalGivenTypeHandoff`、`SourceProofLocalGivenTypeProducer`、`SourceProofLocalGivenTypeError`。 | checker 4件/runner dormant 4件のexact/corruption/ownership/isolation test。 | Task 269GTで実装済み、active/semantic credit zero。 |
 | exact proof-local `given` use-profile composition 1件がTask-269GUP envをcopyしbinding 1のsource typeだけをupgradeしてdependencyをunchanged preserveする。 | `SourceProofLocalGivenUseTypeHandoff`、`SourceProofLocalGivenUseTypeProducer`、`SourceProofLocalGivenUseTypeError`。 | checker 4件/runner dormant 4件のexact/corruption/ownership/isolation test。 | Task 269GUPTで実装済み、active/semantic credit zero。 |
+| exact proof-local descendant composition 1件がcomplete Task-269SDC handoffをconsumeし、binding 1のwritten source typeだけをupgradeしてstandalone SDC ownerをatomicに置換する。 | `SourceProofLocalGivenDescendantTypeHandoff`、`SourceProofLocalGivenDescendantTypeProducer`、`SourceProofLocalGivenDescendantTypeError`。 | checker 4件/runner dormant 4件のexact/corruption/ownership/isolation test。 | Task 269SDTで実装済み、active/semantic credit zero。 |
 | `TypedAst`がresultを所有し、`ResolvedTypedAst`はcloneだけする。 | optional `SourceTypeApplicationHandoff` fieldとborrowed getter。 | immutable final preservation/repeated-run assertion。 | 実装済み。legacy empty debug byteはconditionalに維持。 |
 | public enumはforward-compatible。 | public enumの`#[non_exhaustive]`。 | `checker_public_enums_are_forward_compatible_and_documented`。 | exhaustive exceptionなしでguard。 |
 
@@ -363,7 +367,7 @@ bounded gap: Tasks 249/249R/249M/249Sがpublishするのはsource-type input、
 definition-return owner link、standalone mode-RHS owner link 1件、standalone
 structure-member type owner link 4件だけである。expansion、
 normalization、evidence、term/`qua` selection、accepted fact/declaration/proof、
-downstream IRはexplicit later ownerに残る。
+descendant occurrence/capture、downstream IRはexplicit later ownerに残る。
 
 ### `source_evidence`
 

@@ -76,6 +76,7 @@ Core/CFG/VCはTask 249外である。
 | `SourceProofLocalGivenTypeError` | `#[non_exhaustive]`。callerはTask-269GT dependency、overlay、source-type、installation failureをexhaustive matchしない。 |
 | `SourceProofLocalGivenUseTypeError` | `#[non_exhaustive]`。callerはTask-269GUPT dependency、copied overlay、source-type、installation failureをexhaustive matchしない。 |
 | `SourceProofLocalGivenConditionTypeError` | `#[non_exhaustive]`。callerはTask-269GCT dependency、upgraded overlay、source-type、installation failureをexhaustive matchしない。 |
+| `SourceProofLocalGivenDescendantTypeError` | `#[non_exhaustive]`。callerはTask-269SDT dependency、upgraded overlay、source-type、installation failureをexhaustive matchしない。 |
 
 この module が所有する exhaustive public enum exception はない。
 

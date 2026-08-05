@@ -81,6 +81,7 @@ outside Task 249.
 | `SourceProofLocalGivenTypeError` | `#[non_exhaustive]`; callers must not exhaustively match Task-269GT dependency, overlay, source-type, or installation failures. |
 | `SourceProofLocalGivenUseTypeError` | `#[non_exhaustive]`; callers must not exhaustively match Task-269GUPT dependency, copied overlay, source-type, or installation failures. |
 | `SourceProofLocalGivenConditionTypeError` | `#[non_exhaustive]`; callers must not exhaustively match Task-269GCT dependency, upgraded overlay, source-type, or installation failures. |
+| `SourceProofLocalGivenDescendantTypeError` | `#[non_exhaustive]`; callers must not exhaustively match Task-269SDT dependency, upgraded overlay, source-type, or installation failures. |
 
 No exhaustive public enum exceptions are owned by this module.
 
