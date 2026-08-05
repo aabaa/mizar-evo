@@ -1439,14 +1439,7 @@ five-file implementation scope、four-test matrix、projected runner
 synchronization exceptionはない。両言語はfindings-free、nine-gate、
 score capなしのdocumentation quality `100/100`も記録する。
 
-## Task 260 Frozen-Contract Synchronization
-
-canonical EN/companion JAは262-byte source/hash、108-row AST、resolver profile、
-`2/2/1/2/2` table、lower fingerprint、equals/means/correctness association、
-Pending obligation kind 2件、exact API/debug/opaque key、serializer 3件、Task
-259とmutually exclusiveなTyped/Resolved ownership、runner consumer、exact
-test/write scope/count projection/semantic deferral/exit
-gateを同期します。synchronization exceptionはありません。
+Completion evidence: [central Task-260 historical contract](../../task_contracts/ja/260.md#completion-evidence)。
 
 ## Task 249R synchronization addendum
 

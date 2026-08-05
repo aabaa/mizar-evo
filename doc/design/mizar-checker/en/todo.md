@@ -6398,25 +6398,7 @@ implementation commit does not satisfy a producer task.
   `b61be7e567b92d31b3544b86e5c7a68537625743`, verify clean repository/
   protected-stash invariants, and fresh-inventory Task 260 as next.
 
-## Checker Task 260 Frozen-Contract Documentation Prerequisite
-
-- [x] Select Task 260 from clean post-Task-259 inventory and classify the
-  origin reference mismatch as report-only `repo_metadata_conflict`.
-- [x] Freeze exact 262-byte source/hash, 108-row AST, three-shell/two-functor
-  resolver profile, two context parameters, one guard, two return types,
-  equals/means styles, and explicit existence/uniqueness association.
-- [x] Freeze five dense `2/2/1/2/2` tables, required Task-248/249/252 and
-  optional Task-253--256 fingerprints, and strict Task-259 sibling isolation.
-- [x] Freeze Pending `FunctorExistence`/`FunctorUniqueness`, empty assumptions,
-  opaque goal/provenance, and all proof/discharge/acceptance/fact/VC deferrals.
-- [x] Freeze exact Typed/Resolved atomic ownership, runner consumer, new pass
-  pair/trace intent, nine tests, write scope, projected counts, and exclusions.
-- [x] Repeat review-only specification audit to **NO FINDINGS**.
-- [x] Complete docs-only verification and pass all nine hard gates with no
-  score cap and final read-only quality `100/100`.
-- [x] Complete exact staging and dedicated documentation commit
-  `b587038f12f84a77720f6441a000ddb84c7b996f`, then run fresh
-  implementation preflight.
+Completion evidence: [central Task-260 historical contract](../../task_contracts/en/260.md#completion-evidence).
 
 ## Checker Task 249R Definition-Return Documentation Prerequisite
 

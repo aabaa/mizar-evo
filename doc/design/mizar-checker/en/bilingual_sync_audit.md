@@ -1487,15 +1487,7 @@ five-file implementation scope, four-test matrix, projected runner
 There is no synchronization exception. Both record the findings-free,
 nine-gate, uncapped `100/100` documentation-quality result.
 
-## Task 260 Frozen-Contract Synchronization
-
-Canonical EN and companion JA synchronize the 262-byte source/hash, 108-row
-AST, resolver profile, `2/2/1/2/2` syntax-free tables, lower fingerprints,
-equals/means and correctness association, two Pending obligation kinds,
-exact API/debug/opaque keys, all three serializers, Typed/Resolved mutual
-exclusion from Task 259, runner consumer, exact tests, write scope, count
-projections, semantic deferrals, and exit gates. No
-synchronization exception is recorded.
+Completion evidence: [central Task-260 historical contract](../../task_contracts/en/260.md#completion-evidence).
 
 ## Task 249R Synchronization Addendum
 

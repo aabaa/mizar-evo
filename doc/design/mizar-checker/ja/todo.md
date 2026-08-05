@@ -6109,24 +6109,7 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   `b61be7e567b92d31b3544b86e5c7a68537625743`を作成、clean repository/
   protected-stash invariantをverifyしてTask 260をnextとしてfresh inventoryする。
 
-## Checker Task 260 Frozen-Contract Documentation Prerequisite
-
-- [x] clean post-Task-259 inventoryからTask 260をselectし、origin reference差を
-  report-only `repo_metadata_conflict`にclassifyする。
-- [x] exact 262-byte source/hash、108-row AST、three-shell/two-functor resolver、
-  parameter 2、guard 1、return type 2、equals/means、existence/uniqueness associationをfreeze。
-- [x] five dense `2/2/1/2/2` table、Task-248/249/252 requiredおよび
-  Task-253--256 optional fingerprint、Task-259 sibling isolationをfreeze。
-- [x] Pending `FunctorExistence`/`FunctorUniqueness`、empty assumptions、opaque
-  goal/provenance、proof/discharge/acceptance/fact/VC deferralをfreeze。
-- [x] Typed/Resolved atomic ownership、runner consumer、新規pass pair/trace intent、
-  test 9件、write scope、count projection、exclusionをfreeze。
-- [x] review-only specification auditを**NO FINDINGS**までrepeatする。
-- [x] docs-only verificationをcompleteし、all nine gates PASS、score capなし、
-  final read-only quality `100/100`を得る。
-- [x] exact stagingとdedicated docs commit
-  `b587038f12f84a77720f6441a000ddb84c7b996f`をcompleteし、fresh
-  implementation preflightを実行する。
+Completion evidence: [central Task-260 historical contract](../../task_contracts/ja/260.md#completion-evidence)。
 
 ## Checker Task 249R definition-return documentation prerequisite
 

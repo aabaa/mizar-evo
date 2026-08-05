@@ -12,10 +12,10 @@ coverageを変更できない。
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-260-DOC-REVIEW-COMPACT` |
-| Status | Documentation prerequisite complete。independent review/full verification/final quality PASS。exact staging/commit pending。 |
+| Status | Documentation prerequisite committed。exact migration、全review、full verification complete。exact staging/commit pending。 |
 | Purpose | Task-260 documentation-prerequisite verification、bilingual sync、completed checklist evidenceをcentralizeし、implementation/durable component ownerをretainする。 |
 | Owners | migration policy、historical [260](./260.md#completion-evidence)、[checker plan](../../mizar-checker/ja/00.crate_plan.md#task-index)、[runner plan](../../mizar-test/ja/00.crate_plan.md#task-index) |
-| Consumers | checker source 6 path、Task Index 4件、future schema-v1 ledger/lint |
+| Consumers | checker source 6 path、Task Index 4件、post-migration schema-v1 ledger/lint |
 | Sequence | `b61be7e5` -> `b587038f` -> `b292b800` -> `c233bfdf` -> `c83e424a` |
 | Readiness | clean selection HEAD `a9d5f40650d2ed694ba9304e2448fbd95e272406`、`origin/main...HEAD=0/20`、protected `stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4`。selection re-review後dependency-ready。 |
 
@@ -134,10 +134,51 @@ source TSV、`git diff --check`も再現した。final independent read-only qua
 
 ## Migration Evidence
 
-separate documentation-prerequisite commitとfresh inventory待ち。
+prerequisiteは
+`9469d2a0868a39b4cce9685afb69b42f591524c0`としてseparate commitした。fresh
+inventoryはclean `origin/main...HEAD=0/21`、protected
+`stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4`不変。editing前にimmutable
+preimage 6件/107 lines/frozen hashをそのcommitからreplayした。
+
+mechanical migrationはdeclared checker source 6件、本EN/JA pair、
+`legacy_compactions.tsv`のexact 9 pathsを変更する。whole section 6件だけを
+language-local completion-evidence redirectへ変換し、107 physical linesは12 lines、
+95減、source diffは+6/-101。implementation-verification pairと全durable ownerは
+retainする。
+
+ledgerは730 physical linesで、本batchはtask 1、distinct source path 6件のredirect
+6件、index 8件をexact追加する。expanded-inventory SHA-256は
+`0685c2259dbf909f4e8724d479ddd979f5695084df18484dd74ade26eb99f9e1`、complete
+physical SHA-256は
+`fbb5bae996031bb0137302ae375eab64c14a0475fdfff4a5478964d3ae7a9c87`。immutable
+source TSVは
+`5f6e31b89902a747fa0ba141cef966e5aff6cb0f0f2b79b56e447584fce6289f`。
+
+first focused lintはretained legacy headingとresulting wrong anchorを正しくreject
+した。schema v1どおりheading 6件をremoveしてfrozen `+6/-101` source diffとし、
+focused recursive schema/link/fragment lintと`git diff --check`はPASSした。
+stale consumer phrase 1件のLow findingを修正後、migration equivalence/boundary、
+schema/test-sufficiency、source-documentation/EN-JA independent reviewはすべて
+**NO FINDINGS**。prerequisite commit `9469d2a`からpreimage 6件をexact replayし、
+forbidden heading absent、redirect 6件、ledger schema/cardinality/expanded inventory
+`1/1/6/6/8`と上記frozen hashを再現した。
+
+full migration-state verificationはchecker/runner lint各`15/15`、library
+`530/530` / `600/600`、metadata `137/137`、`cargo fmt --all --check`、offline
+Cargo metadata、warnings-denied Clippy、全frontend/lexer benchmarkを含む
+`cargo test --workspace --all-targets --all-features --no-fail-fast`をPASSした。
+CLI 5本はexit 0、各warnings 23/errors 0で全frozen stdout hashを再現した。protected
+surface 6件のpath count/path hashをexact reproductionし、`9469d2a`からのprotected
+zero diffが全frozen content hashをretainする。trace/coverage hash、immutable source
+TSV、ledger `730`/physical・expanded hash、`git diff --check`も再現した。
+
+final independent read-only qualityは**NO FINDINGS**。all nine hard gates PASS、
+score capなし、valid score `100/100` (`20/20/15/15/10/10/5/5`)。in-scope
+residual riskはnoneで、origin divergenceはreport-only、protected stashは不変。
+exact staging/task-only commitがremaining。
 
 ## Handoff
 
-exact stage/task-only prerequisite commit後、immutable preimageをfresh replayし、
-declared migrationだけを実行する。parentは`xhigh`、independent reviewは`high`、
+exact stage/task-only commitをcompleteし、next checker duplication familyを
+fresh-inventoryする。parentは`xhigh`、independent reviewは`high`、
 deterministic inventoryは`medium`を維持する。
