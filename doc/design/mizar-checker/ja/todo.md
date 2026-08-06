@@ -4127,28 +4127,7 @@ cargo test -p mizar-test
   captured byte-identical empty renderingを実装した。次はCore Task 31で、
   acceptance、Core/VC、broader proof、Steps 6/7はdeferredのままである。
 
-## Task 247 STEP 5 Payload-Family Decomposition
-
-- [x] 残るAST-wide declaration、attribute、term、formula、proof-skeleton、
-  registration/activation/trace、overload、Task-49 payload familyをcanonical spec、
-  既存`.miz`、trace、expectation、checker APIに対してinventoryする。prepared
-  mizar-test Task-10 consumerとexplicit forbidden scopeを持つbounded producer task
-  を作る。docs/traceability-onlyであり、source、fixture、expectation、trace status、
-  coverage creditを変更しない。Parser Tasks 47-48とresolver Task 31は独立
-  prerequisiteのまま。Task 49は自身の全prerequisite成立までdependency-gated。
-  Task 266へのdependencyはない。そのinventoryは再利用できるが、contradiction
-  sliceをgeneral扱いしない。
-  accepted producer-task graphはcore Task 32のinput authorityとなる。
-  完了: [payload_family_decomposition.md](./payload_family_decomposition.md)は
-  全remaining familyをchecker Tasks 248-264/269-279、mizar-test Task-10
-  increments `MT10-FS`/`MT10-AS`、既存Task 49、またはexplicit external gateへ
-  割り当てた。exact 24-fixture reconciliation setを固定し、resolver Task 31が
-  same-return memberを`declaration_symbol`でsole activation、Task 49が他23件を
-  activateして24件全体をreconcile/deduplicateする。既にactiveなdifferent-return
-  controlも維持する。Task 274とexternal Gate S1はcanonical
-  upstream owner未命名のためblocked。trace status/tests/
-  coverage credit/source/fixture/expectation/Steps 6/7は不変。Core Task 32は
-  accepted graphを自身のdocs-only decompositionへ利用できる。
+Completion evidence: [central Task-247 historical contract](../../task_contracts/ja/247.md#completion-evidence)。
 
 ## Tasks 248-264/269-279 STEP 5 ソースペイロードproducer queue
 

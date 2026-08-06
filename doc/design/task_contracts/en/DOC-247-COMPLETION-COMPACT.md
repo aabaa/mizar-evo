@@ -12,7 +12,7 @@ diagnostics, traceability state, coverage, or descendant-task ownership.
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-247-COMPLETION-COMPACT` |
-| Status | Documentation-prerequisite reviews, full verification, and final quality complete; exact staging and commit remain. Migration is forbidden until a separate prerequisite commit and fresh replay. |
+| Status | Documentation prerequisite committed; separately frozen migration implemented and independently reviewed. Full verification and final quality pass; exact staging and commit remain. |
 | Purpose | Centralize four repeated Task-247 plan/TODO completion sections while retaining every durable graph, audit, runner, trace, coverage, and sequencing owner. |
 | Historical owner | [Task 247](./247.md#completion-evidence) |
 | Plan indexes | [checker plan](../../mizar-checker/en/00.crate_plan.md#task-index) and [runner plan](../../mizar-test/en/00.crate_plan.md#task-index) |
@@ -185,10 +185,46 @@ production 90, and Cargo 21. Zero protected diff retains every frozen content
 hash. Trace, coverage audit, the 822-line ledger, and their hashes reproduce
 exactly. The final independent read-only quality review ends **NO FINDINGS**,
 passes all nine hard gates, applies no score cap, and assigns **100/100**.
-Exact staging, commit, and post-commit replay remain.
+Exact nine-path staging produced prerequisite commit
+`e22a4fa14f49bf02fa3209f249bbf45b9a2970e3`. Its fresh inventory was clean at
+`origin/main...HEAD=0/3`, preserved the protected stash, and replayed all four
+preimages before migration.
+
+## Migration Evidence
+
+Fresh replay from prerequisite commit `e22a4fa1` authorized only the frozen
+seven-path migration. The four exact legacy sections are now four language-
+local completion redirects, with source delta `+4/-112`; every neighboring
+anchor and retained owner remains in place. The ledger adds exactly 14 sorted
+rows: one batch, one task, four redirects over four paths, and eight existing
+Task Index records. It is exactly 836 lines with physical SHA-256
+`33c569ebeac13be3f353177f6c23ddf40c581435950e0e47f57bcdcd7f3528cb`,
+and generic schema/link/fragment lint reproduces the canonical 13-row hash
+`12da6c943ebc9cdd21c2ab8be9d5c72a1350c2bce74e07a5e81cf272c921385c`.
+Protected specification, tests, expectations, production, Cargo, trace,
+coverage audit, source TSV, historical contracts, and Task Index contents are
+unchanged. Independent migration-equivalence, schema/test-sufficiency, and
+bilingual/boundary reviews each end **NO FINDINGS**. Generic recursive task-
+contract/link/fragment/legacy-ledger lint, checker/runner lint (`15/15` each),
+checker/runner libraries (`530/530` and `600/600`), and runner metadata
+(`137/137`) pass. Formatting, offline Cargo metadata, warnings-denied all-
+target/all-feature Clippy, the full all-target/all-feature workspace suite
+including all three long frontend benchmarks, and `git diff --check` pass.
+
+All five CLIs exit zero with 23 known warnings and zero errors each and
+reproduce every frozen stdout hash. Protected counts and path hashes reproduce
+as specification 64, `.miz` 343, expectation 435, checker production 30,
+runner production 90, and Cargo 21; zero protected diff retains all frozen
+content hashes. Trace, coverage audit, source TSV, the 836-line ledger, and
+their hashes reproduce exactly. The working diff contains only the frozen
+seven paths; the four source documents retain the exact `+4/-112` delta.
+The final independent read-only quality review ends **NO FINDINGS**, passes
+all nine hard gates, applies no score cap, and assigns **100/100**. Its only
+residual item is the required exact staging, migration commit, and clean post-
+commit replay.
 
 ## Handoff
 
-Complete and commit this documentation prerequisite only. Fresh-replay all
-four source sections and anchors, then perform the separately frozen seven-path
-migration. The parent remains `xhigh`; bounded independent reviews use `high`.
+Complete exact staging, commit the seven-path migration, then fresh-inventory
+the next checker duplication family. The parent remains `xhigh`; bounded
+independent reviews use `high`.

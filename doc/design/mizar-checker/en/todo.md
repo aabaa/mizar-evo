@@ -4340,32 +4340,7 @@ Check the task off here once tests pass.
   Core Task 31 is next; acceptance, Core/VC, broader proofs, and Steps 6/7
   remain deferred.
 
-## Task 247 STEP 5 Payload-Family Decomposition
-
-- [x] Inventory all remaining AST-wide declaration, attribute, term, formula,
-  proof-skeleton, registration/activation/trace, overload, and Task-49 payload
-  families against canonical specs, existing `.miz`, trace, expectations, and
-  checker APIs. Create bounded producer tasks with prepared mizar-test Task-10
-  consumers and explicit forbidden scope. This is docs/traceability-only; do
-  not change source, fixtures, expectations, trace status, or coverage credit.
-  Parser Tasks 47-48 and resolver Task 31 remain independent prerequisites.
-  Task 49 stays dependency-gated until every prerequisite in its own row is
-  satisfied. Dependency: none on Task 266; its inventory may be reused, but
-  Task 247 must cover all remaining families rather than treating the
-  contradiction slice as general.
-  Its accepted producer-task graph is the input authority for core Task 32.
-  Complete: [payload_family_decomposition.md](./payload_family_decomposition.md)
-  assigns all remaining families to checker Tasks 248-264 and 269-279,
-  mizar-test Task-10 increments `MT10-FS`/`MT10-AS`, existing Task 49, or an
-  explicit external gate. It freezes the exact 24-fixture reconciliation set:
-  resolver Task 31 solely activates the same-return member via
-  `declaration_symbol`, and Task 49 activates the other 23 before reconciling/
-  deduplicating all 24. It also preserves the already active different-return
-  control. Task 274 and external
-  Gate S1 remain blocked because canonical upstream owners are unnamed. Trace
-  status, tests, coverage credit, source,
-  fixtures, expectations, and Steps 6/7 are unchanged. Core Task 32 may now
-  consume the accepted graph for its own docs-only decomposition.
+Completion evidence: [central Task-247 historical contract](../../task_contracts/en/247.md#completion-evidence).
 
 ## Tasks 248-264 And 269-279 STEP 5 Source-Payload Producer Queue
 

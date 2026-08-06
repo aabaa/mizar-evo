@@ -12,7 +12,7 @@ coverage、descendant-task ownershipを変更できない。
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-247-COMPLETION-COMPACT` |
-| Status | Documentation-prerequisite review/full verification/final quality完了。exact staging/commit待ち。separate prerequisite commit/fresh replay前のmigrationは禁止。 |
+| Status | Documentation prerequisite commit済み。separately frozen migrationは実装・independent review済み。full verification/final quality PASS、exact staging/commit待ち。 |
 | Purpose | durable graph/audit/runner/trace/coverage/sequencing ownerを全て保持し、Task-247 plan/TODO completion section 4件を集約する。 |
 | Historical owner | [Task 247](./247.md#completion-evidence) |
 | Plan indexes | [checker plan](../../mizar-checker/ja/00.crate_plan.md#task-index)と[runner plan](../../mizar-test/ja/00.crate_plan.md#task-index) |
@@ -174,10 +174,42 @@ specification 64、`.miz` 343、expectation 435、checker production 30、runner
 production 90、Cargo 21を再現し、zero protected diffが全frozen content hashを
 保持する。trace、coverage audit、822-line ledgerと各hashもexactに再現する。
 final independent read-only quality reviewは**NO FINDINGS**、hard gate 9件PASS、
-score capなしで**100/100**。exact staging、commit、post-commit replayは未完了。
+score capなしで**100/100**。exact 9-path stagingはprerequisite commit
+`e22a4fa14f49bf02fa3209f249bbf45b9a2970e3`を作成した。fresh inventoryはclean、
+`origin/main...HEAD=0/3`、protected stash不変で、migration前にpreimage 4件を再現
+した。
+
+## Migration evidence
+
+prerequisite commit `e22a4fa1`からのfresh replayはfrozen seven-path migration
+だけをauthorizeした。legacy section exact 4件はlanguage-local completion redirect
+4件となり、source deltaは`+4/-112`。全neighbor anchor/retained ownerは保持される。
+ledgerはbatch 1、task 1、4 paths上のredirect 4、既存Task Index record 8のsorted
+14 rowsだけを追加した。exact 836 lines、physical SHA-256は
+`33c569ebeac13be3f353177f6c23ddf40c581435950e0e47f57bcdcd7f3528cb`で、generic
+schema/link/fragment lintはcanonical 13-row hash
+`12da6c943ebc9cdd21c2ab8be9d5c72a1350c2bce74e07a5e81cf272c921385c`を再現する。
+protected specification/test/expectation/production/Cargo/trace/coverage audit、
+source TSV、historical contract、Task Index contentは不変。independent migration
+equivalence、schema/test-sufficiency、bilingual/boundary reviewは各**NO FINDINGS**。
+generic recursive task-contract/link/fragment/legacy-ledger lint、checker/runner
+lint（各`15/15`）、checker/runner library（`530/530`/`600/600`）、runner metadata
+（`137/137`）はPASS。format、offline Cargo metadata、warnings-denied all-target/
+all-feature Clippy、long frontend benchmark 3件を含むfull all-target/all-feature
+workspace suite、`git diff --check`もPASS。
+
+CLI 5件は各23 known warnings/zero errorsでexit zeroし、frozen stdout hashを全て
+再現する。protected count/path hashはspecification 64、`.miz` 343、expectation
+435、checker production 30、runner production 90、Cargo 21を再現し、zero
+protected diffが全frozen content hashを保持する。trace、coverage audit、source
+TSV、836-line ledgerと各hashもexactに再現する。working diffはfrozen seven
+pathsだけで、source document 4件はexact `+4/-112` deltaを保持する。
+final independent read-only quality reviewは**NO FINDINGS**、hard gate 9件PASS、
+score capなしで**100/100**。residual itemはrequired exact staging、migration
+commit、clean post-commit replayだけである。
 
 ## Handoff
 
-本documentation prerequisiteだけをcomplete/commitする。source section/anchor
-4件をfresh-replay後、separately frozen seven-path migrationを行う。parentは
-`xhigh`、bounded independent reviewは`high`を用いる。
+exact stagingを完了し、seven-path migrationをcommit後、次のchecker duplication
+familyをfresh-inventoryする。parentは`xhigh`、bounded independent reviewは
+`high`を用いる。
