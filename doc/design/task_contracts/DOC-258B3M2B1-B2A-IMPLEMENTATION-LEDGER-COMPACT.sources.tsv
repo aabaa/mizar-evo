@@ -1,0 +1,6 @@
+# Frozen preimage inventory for DOC-258B3M2B1-B2A-IMPLEMENTATION-LEDGER-COMPACT.
+# Columns: task, language, component, source path, ATX level, exact heading text without the ATX prefix, section SHA-256, physical lines.
+258B3M2B1	en	mizar-checker	doc/design/mizar-checker/en/todo.md	2	Checker Task 258B3M2B1 Implementation Ledger	8ef97be51c99d6a5c08e27267fe9700db613620fa337d7aa15403f3efb023de7	14
+258B3M2B1	ja	mizar-checker	doc/design/mizar-checker/ja/todo.md	2	Checker Task 258B3M2B1 implementation ledger	c63ea162f91c65212dccd1b62d1b2f528794bab24d81cb2b6070720ab868b037	14
+258B3M2B2A	en	mizar-checker	doc/design/mizar-checker/en/todo.md	2	Checker Task 258B3M2B2A Implementation Ledger	2b296580961f453a76b8ff41e116359b2a90a615ae91a332a518c81e4e25b0cf	14
+258B3M2B2A	ja	mizar-checker	doc/design/mizar-checker/ja/todo.md	2	Checker Task 258B3M2B2A implementation ledger	84269124a9de1a46b8462a03f0fd451aff275f307f35e480cd81ae42fc14422e	14
