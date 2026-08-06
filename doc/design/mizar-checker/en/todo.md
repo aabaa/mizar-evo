@@ -4841,16 +4841,7 @@ implementation commit does not satisfy a producer task.
   fresh parser/resolver/lower/count/hash preflight.
 - [ ] Freeze and implement Task 258B3M2B2B before selecting Task 258B4.
 
-## Checker Task 258B3N Implementation Ledger
-
-- [x] Preserve B3 v1 debug bytes while adding the exact B3N name row and
-  dependency/aggregate/witness/name validation precedence.
-- [x] Authenticate the complete 51-node arena, resolver/lower provenance,
-  forward/reverse links, subtree exclusions, replay, and rollback.
-- [x] Keep binding, semantic, proof, goal, fixture, expectation, sidecar,
-  trace status/count, and active-corpus ownership unchanged.
-- [x] Remeasure `354/389` tests, checker modules
-  `12114/4644/7200/3156`, and runner production 30 paths / 37,555 lines.
+Completion evidence: [central Task-258B3N historical contract](../../task_contracts/en/258B3N.md#completion-evidence).
 
 ## Checker Task 258B3M1 Documentation Ledger
 

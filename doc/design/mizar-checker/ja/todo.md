@@ -4607,16 +4607,7 @@ runner、docs-only implementation commitはproducer taskを満たさない。
 - [ ] B3M2B2B remaining witness-term shapesをfreeze/implementしてから
   Task 258B4を選ぶ。
 
-## Checker Task 258B3N 実装ledger
-
-- [x] B3 v1 debug bytesを維持し、exact B3N name rowと
-  dependency/aggregate/witness/name validation precedenceを追加。
-- [x] full 51-node arena、resolver/lower provenance、forward/reverse link、
-  subtree exclusion、replay、rollbackをauthenticate。
-- [x] binding、semantic、proof、goal、fixture、expectation、sidecar、trace
-  status/count、active-corpus ownershipを変更しない。
-- [x] `354/389` tests、checker modules `12114/4644/7200/3156`、runner
-  production 30 paths / 37,555 linesを再測定。
+Completion evidence: [central Task-258B3N historical contract](../../task_contracts/ja/258B3N.md#completion-evidence)。
 
 ## Checker Task 258B3M1 documentation ledger
 
