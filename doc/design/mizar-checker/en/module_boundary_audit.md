@@ -1394,15 +1394,7 @@ field, diagnostic, or Cargo edge. The docs prerequisite preserves current
 checker production `26/152184`; implementation must fresh-measure the same
 26-file boundary. Task-262 production remains excluded.
 
-## Task 249M Implemented Module Boundary
-
-The existing `source_type` module now owns the standalone row/table/producer
-and four tests. No module or dependency edge was added. Checker production is
-`26/153116`; the sorted path hash remains
-`e290d082e428124d3fd21919e76b88458daabfa44b7009a8cb1b3d8c430fec53` and the
-ordered per-file content hash is
-`3c85673ebb527cb33bb4b042b1b1194bda34a5348b4b6b20142617db47bde2f2`.
-Task 262 remains a separate consumer task.
+Completion evidence: [central Task-249M historical contract](../../task_contracts/en/249M.md#completion-evidence).
 
 ## Task 262 Active Module Boundary
 

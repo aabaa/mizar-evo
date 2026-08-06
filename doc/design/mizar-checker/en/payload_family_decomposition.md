@@ -1550,12 +1550,8 @@ a third binding application or a definition-return row. Task 262 is its sole
 consumer; request, evidence, expansion, acceptance, fact, proof, and VC rows
 do not cross this lower boundary.
 
-## Task 249M Active Family Inventory
+Completion evidence: [central Task-249M historical contract](../../task_contracts/en/249M.md#completion-evidence).
 
-The distinct standalone owner-link family is now implemented exactly as
-frozen. The active handoff has one `SourceTypeModeRhsId(0)` row and root 2,
-remains mutually exclusive with the Task-249R definition-return family, and
-still publishes no request, evidence, semantic, fact, proof, IR, or VC row.
 ## Task 249S Structure-Member Type Lower Family
 
 Task 249S is a distinct standalone owner-link family in the existing immutable

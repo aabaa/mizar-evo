@@ -5626,14 +5626,7 @@ today (`source_drift`); the exact tests are prospective, canonical-derived
 current source behavior is credited. Implementation must synchronize the
 literal public inventory and existing enum/source-spec lint policies.
 
-## Task 249M Active Source Audit
-
-The previously classified standalone-owner `source_drift` and four-test
-`test_gap` are closed by the public syntax-free `SourceTypeModeRhs*` API,
-seven non-exhaustive `SourceTypeError` variants, exact transactional producer,
-installation validation, and four source-local tests in `source_type.rs`.
-Task-249R isolation and the absence of new syntax, diagnostics, semantics,
-runner, corpus, or trace credit remain explicit boundaries.
+Completion evidence: [central Task-249M historical contract](../../task_contracts/en/249M.md#completion-evidence).
 
 ## Task 262 Active Source Audit
 

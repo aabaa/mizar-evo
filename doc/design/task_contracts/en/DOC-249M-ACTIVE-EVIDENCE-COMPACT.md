@@ -12,7 +12,7 @@ diagnostics, traceability, or coverage.
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-249M-ACTIVE-EVIDENCE-COMPACT` |
-| Status | Documentation prerequisite, all independent reviews, full verification, and final quality complete; exact staging and commit remain. |
+| Status | Migration, all independent reviews, full verification, and final quality complete; exact staging and commit remain. |
 | Purpose | Centralize repeated Task-249M active implementation evidence while retaining every durable/frozen owner and all excluded mixed evidence. |
 | Owners | Migration policy, historical [249M](./249M.md#completion-evidence), [checker plan](../../mizar-checker/en/00.crate_plan.md#task-index), and [runner plan](../../mizar-test/en/00.crate_plan.md#task-index) |
 | Consumers | Sixteen checker source paths, four Task Indexes, and the future schema-v1 ledger/lint |
@@ -153,9 +153,55 @@ applies, and the valid score is `100/100` (`20/20/15/15/10/10/5/5`). Residual
 risk is limited to exact staging, commit, fresh inventory, and the separately
 frozen migration.
 
+## Migration Evidence
+
+The prerequisite was committed as
+`3d3f98767aa3818186f75e429dad468d97003ba7`. Its immediate fresh inventory was
+clean at `origin/main...HEAD=0/25`, with the protected stash unchanged. All
+sixteen source-TSV preimages and anchors replayed before migration.
+
+Only the declared sixteen whole H2 sections have been replaced by sixteen
+language-local completion redirects. Their physical shape is exactly
+`159 -> 32`, a net reduction of 127 lines. Patience and histogram diff both
+reproduce the frozen source delta `+16/-143`. The default Myers presentation
+reports `+18/-145` because the two EN/JA `source_type.md` separator lines are
+paired as churn; it has the same net delta and the checked postimage still has
+one redirect plus one separator per source. All fourteen forbidden raw heading
+strings are absent, and the redirect count is sixteen.
+
+The byte-sorted schema-v1 ledger now has 788 physical lines and physical
+SHA-256 `1702d79a198685ce8603f65dbdd2947f7d2c78e7b9ea3e76a150caac29a48da7`.
+Its generic lint accepts expanded-inventory SHA-256
+`bb38229607a2a3eaa81e7b8d4ab8218c8ce42f0f86de91dd7471b3f205ed0b66`
+and exact cardinality `1/1/16/16/8` for batch/task/redirect/distinct-path/index.
+The migration diff is the exact nineteen paths: sixteen sources, this paired
+batch contract, and the ledger. The immutable source TSV, historical contract,
+four Task Indexes, protected artifacts, trace, and coverage audit remain
+unchanged; the frozen no-impact decision therefore still applies.
+
+Independent equivalence/boundary, schema/test-sufficiency, and source-
+documentation/EN-JA reviews all end **NO FINDINGS**. Recursive and full runner
+lint `15/15`, checker lint `15/15`, checker/runner libraries `530/530` and
+`600/600`, metadata `137/137`, `cargo fmt --all --check`, offline Cargo
+metadata, warnings-denied all-target/all-feature Clippy, and the full
+all-target/all-feature workspace suite with frontend benchmarks all pass. The
+five CLIs each exit zero with 23 warnings and zero errors and reproduce the
+five frozen stdout hashes.
+
+Protected counts and path hashes reproduce as specification 64, `.miz` 343,
+expectation 435, checker production 30, runner production 90, and Cargo 21;
+zero protected diff preserves each frozen content hash. Trace, coverage audit,
+source-TSV, ledger, forbidden-heading/redirect, exact-scope, and
+`git diff --check` checks pass. Staging evidence remains to be recorded.
+
+Final independent read-only quality review ends **NO FINDINGS**. All nine hard
+gates PASS, no score cap applies, and the valid score is `100/100`
+(`20/20/15/15/10/10/5/5`). Its independent replay confirms the exact scope,
+all preimages and postimages, ledger inventory, protected surfaces, paired
+ownership, and lint/format/metadata evidence. Residual risk is limited to exact
+staging, commit, and post-commit inventory.
+
 ## Handoff
 
-Exact-stage and commit the nine-path prerequisite. Then fresh-inventory
-HEAD/origin/stash, replay all sixteen immutable preimages, and perform only the
-separately frozen migration. Parent remains `xhigh`; bounded independent
-reviews may use `high`.
+Exact-stage the nineteen migration paths, commit, and fresh-inventory the next
+checker duplication family. The parent remains `xhigh`.

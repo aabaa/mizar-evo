@@ -673,12 +673,7 @@ extension」にcanonical freezeした。separate docs prerequisite/implementatio
 commitされfresh inventoryがfingerprint seamを確認するまでTask-262
 implementation authorityを与えない。
 
-## Task 249M implemented lower-contract link
-
-lower standalone mode-RHS ABIとexact fingerprintは実装されchecker test済みである。
-Task 262はfresh inventory後に`mode_rhs().get(0)`とexpression root 2だけを
-consumeできる。goal/guard composition、discharge、acceptance、fact、proof、
-IR、VC behaviorを発明するauthorityは与えない。
+Completion evidence: [central Task-249M historical contract](../../task_contracts/ja/249M.md#completion-evidence)。
 
 ## Task 262 active implementation result
 

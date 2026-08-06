@@ -1362,15 +1362,7 @@ edgeは追加しない。docs prerequisiteはchecker production `26/152184`を�
 implementationはsame 26-file boundaryをfresh-measureする。Task-262 productionは
 excludedのままである。
 
-## Task 249M implemented module boundary
-
-existing `source_type` moduleがstandalone row/table/producer/test 4件をownし、
-module/dependency edgeは追加しない。checker productionは`26/153116`、
-sorted path hashは
-`e290d082e428124d3fd21919e76b88458daabfa44b7009a8cb1b3d8c430fec53`、
-ordered per-file content hashは
-`3c85673ebb527cb33bb4b042b1b1194bda34a5348b4b6b20142617db47bde2f2`。
-Task 262はseparate consumer taskのままである。
+Completion evidence: [central Task-249M historical contract](../../task_contracts/ja/249M.md#completion-evidence)。
 
 ## Task 262 active module boundary
 

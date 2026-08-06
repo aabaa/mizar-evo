@@ -5397,13 +5397,7 @@ input、immutable row/table、handoff getter、producer、non-exhaustive
 public enum class/syntax boundary/current source creditは追加しない。
 implementationはliteral public inventoryとexisting enum/source-spec lintを同期する。
 
-## Task 249M active source audit
-
-既存のstandlone-owner `source_drift`とtest 4件の`test_gap`は、public
-syntax-free `SourceTypeModeRhs*` API、non-exhaustive `SourceTypeError` variant
-7件、exact transactional producer/installation validation、source-local test 4件で
-closeした。Task-249R isolationとnew syntax/diagnostic/semantics/runner/corpus/
-trace creditの非存在はboundaryのままである。
+Completion evidence: [central Task-249M historical contract](../../task_contracts/ja/249M.md#completion-evidence)。
 
 ## Task 262 active source audit
 

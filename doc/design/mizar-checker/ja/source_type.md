@@ -406,26 +406,8 @@ exitする。separate implementation write scopeは
 exact test 4件、`2/3/0/0/1` profile、full review/verification/gate、dedicated
 commit後にTask 262 implementationへautomatic fresh-inventory returnする。
 
-## Task 249M active implementation result
+Completion evidence: [central Task-249M historical contract](../../task_contracts/ja/249M.md#completion-evidence)。
 
-先行のfuture/prerequisite記述は歴史である。frozen APIは
-`crates/mizar-checker/src/source_type.rs`に実装済みで、dense mode-RHS ID、
-extension/row input、immutable row/table、borrowed getter、unit producer、frozen
-precedenceのerror 7件、exact base/arena revalidation、one-shot atomic extension、
-installation validation、deterministic debug order、bidirectional Task-249R exclusionを
-publishする。
-
-exact named test 4件は全field/error class、全adjacent compound-precedence
-boundary、legacy/Task-249R byte、arena/installation drift、Typed/Resolved clone/
-replay、empty semantic outputをcoverする。lower oracleはexact `2/3/0/0/1`。
-checker libraryは`453`、raw/normalized test-list hashは
-`34f63b3b9fb1ae2f3b43d769184be2b0c23cc3ada13b5a8b45a933aed629fe25` /
-`ee25ffd88d06e34491ced5c0499acc4198c1e8690ed40c3fb79fb276e3852db4`。
-productionは`26/153116`、path/content hashは
-`e290d082e428124d3fd21919e76b88458daabfa44b7009a8cb1b3d8c430fec53` /
-`3c85673ebb527cb33bb4b042b1b1194bda34a5348b4b6b20142617db47bde2f2`。
-runner/resolver/syntax/corpus/trace/CLI/metadataはfrozen baseline不変。Task 262は
-sole next consumerかつseparate logical taskである。
 ## Task 249S standalone structure-member type intake frozen contract
 
 ### 選択、authority、分類

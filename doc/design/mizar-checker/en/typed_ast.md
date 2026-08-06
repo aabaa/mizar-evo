@@ -1726,12 +1726,7 @@ and arena identity. The same optional field is the sole owner, legacy and
 Task-249R debug bytes stay unchanged, and the Task-262 lower profile is one
 combined `2/3/0/0/1` handoff with no semantic output.
 
-## Task 249M Active Typed Ownership
-
-The standalone mode-RHS extension is now implemented before installation.
-`TypedAst::try_new` revalidates the row and all three source-type expressions
-through the existing optional handoff, with no new field or installer. Exact
-tests keep type, fact, coercion, obligation, and diagnostic tables empty.
+Completion evidence: [central Task-249M historical contract](../../task_contracts/en/249M.md#completion-evidence).
 
 ## Task 262 Active Mode-Definition Transaction
 
