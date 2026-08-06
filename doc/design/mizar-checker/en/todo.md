@@ -4931,19 +4931,7 @@ Completion evidence: [central Task-258B3M2B2A historical contract](../../task_co
   sidecars, trace status/count, coverage credit, tests, counts, and hashes;
   retain B1P implementation before B1A.
 
-## Checker Task 258B3M2B2B1P Implementation Ledger
-
-- [x] Add only the private explicit-context Task-253 reuse sibling and
-  preserve the legacy helper through context-0 delegation.
-- [x] Reuse the exact extractor/public producer for proof context 1 and
-  publish only Task-253 `1/0/1/2/2`.
-- [x] Pass exactly two compound tests covering identity, lower profiles,
-  context/provenance/range/form corruption, stale replay, fixed legacy
-  debug bytes, and empty statement/semantic/proof/goal output.
-- [x] Measure libraries `370/411`, runner Task-253 sizes
-  `1782/701/2514/2799`, and 30 production paths / 39,857 lines.
-- [x] Fresh-inventory and freeze B3M2B2B1A before implementing its exact
-  application-witness consumer.
+Completion evidence: [central Task-258B3M2B2B1P historical contract](../../task_contracts/en/258B3M2B2B1P.md#completion-evidence).
 
 ## Checker Task 258B3M2B2B1A Frozen-Contract Ledger
 
@@ -4965,26 +4953,7 @@ Completion evidence: [central Task-258B3M2B2A historical contract](../../task_co
 - [x] After the dedicated documentation commit and fresh preflight,
   implement only B3M2B2B1A and measure libraries `374/416`.
 
-## Checker Task 258B3M2B2B1A Implementation Ledger
-
-- [x] Add `Application(0)` witness ownership, an optional B1A-only
-  application fingerprint, and the application-aware builder while keeping
-  legacy application-free bytes stable.
-- [x] Authenticate the exact real `parser.type_fixtures::++` symbol,
-  local/FQN lookup, contribution/path/export provenance, Task-252 arguments,
-  Task-253 application, Task-256 exclusion, and all 63 nodes.
-- [x] Install the application, statement, and witness handoffs atomically;
-  reject stale, orphan, hybrid, reversed, repeated, and semantic-coexisting
-  states without partial publication, including final clone revalidation.
-- [x] Pass the exact checker/runner compound tests `4/5`, including all
-  143 loaded-source byte mutations, reparsed near misses, dependency and
-  provenance corruption, validation precedence, family order, rollback,
-  replay, and empty semantic/proof/goal ownership.
-- [x] Measure libraries `374/416`, checker modules
-  `21664/4742/7224/3156`, runner statement sizes
-  `5618/706/2520/11945`, and 30 production paths / 40,298 lines; preserve
-  canonical artifacts, active routes, fixtures, sidecars, expectations,
-  trace status/count, and coverage `deferred` / `tests = []`.
+Completion evidence: [central Task-258B3M2B2B1A historical contract](../../task_contracts/en/258B3M2B2B1A.md#completion-evidence).
 
 ## Checker Task 258B3M2B2B1B1P Frozen-Prerequisite Ledger
 

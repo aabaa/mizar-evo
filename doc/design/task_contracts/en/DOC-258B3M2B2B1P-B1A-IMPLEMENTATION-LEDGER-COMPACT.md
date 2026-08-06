@@ -8,7 +8,7 @@
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-258B3M2B2B1P-B1A-IMPLEMENTATION-LEDGER-COMPACT` |
-| Status | Documentation-prerequisite reviews, full verification, and independent final quality are complete with no findings; all nine hard gates PASS, no score cap applies, and quality is 100/100. Exact staging, the prerequisite commit, clean replay, and the separately reviewed migration remain. No manifest row or source redirect is authorized yet. |
+| Status | Migration implemented with the exact frozen redirects and ledger rows; all reviews, all nine hard gates, and full verification are complete with no findings and a valid `100/100`. Exact staging, commit, and clean replay remain. |
 | Purpose | Centralize only the completed Task-258B3M2B2B1P and Task-258B3M2B2B1A checker implementation ledgers while retaining both frozen ledgers and every later task. |
 | Historical owners | [Task 258B3M2B2B1P](./258B3M2B2B1P.md#completion-evidence) and [Task 258B3M2B2B1A](./258B3M2B2B1A.md#completion-evidence) |
 | Plan indexes | [checker plan](../../mizar-checker/en/00.crate_plan.md#task-index) and [runner plan](../../mizar-test/en/00.crate_plan.md#task-index) |
@@ -193,3 +193,56 @@ stash mutation occurred. Independent final read-only quality ends **NO
 FINDINGS**. All nine hard gates PASS, no score cap applies, and the valid
 score is **100/100** (`20/20/15/15/10/10/5/5`). Exact staging, the dedicated
 prerequisite commit, and clean post-commit replay remain.
+
+## Migration Evidence
+
+The documentation prerequisite committed separately as
+`f8b4c8e0fc73c04cd4136a24c62dfdc3ed8c30df`. Clean fresh replay reproduced all
+four frozen preimages, source TSV hashes, unchanged 942-line ledger, protected
+no-ops, `73/73` contracts, `origin/main...HEAD=0/2`, and the protected stash
+before migration.
+
+The selected Task-258B3M2B2B1P and Task-258B3M2B2B1A implementation-ledger
+sections are now four language-local redirects to their historical completion
+evidence. Exact source diff is `+4/-66`; all four forbidden implementation
+headings and bodies are gone. Both EN/JA frozen ledgers, successor B1B1P,
+every recorded neighboring anchor, and every unselected TODO section remain.
+
+The ledger adds exactly 19 byte-sorted rows: one batch, two canonical tasks,
+twelve indexes, and four redirects. It is 961 lines with physical SHA-256
+`d421b3115c780370bb0129463df908f7beb94ad687c679467201d39324fca9c3`,
+reproduces canonical 18-row SHA-256
+`0b8534ed721345098b9af38a4de80460da6c3c145e0bb62679828b3370bee322`,
+and measures 28 batches, 41 canonical tasks, two task references, 612
+redirects, and 276 indexes. Historical contracts, source TSV, four plans,
+protected surfaces, trace, and coverage audit remain unchanged. Generic lint
+passes `15/15` and `git diff --check` passes.
+
+Independent migration evidence-equivalence, schema/test-sufficiency, and
+bilingual/boundary/source-documentation reviews end **NO FINDINGS**. They
+reproduce every frozen preimage and unique completion fact, the exact
+`+4/-66` redirect delta, all 19 ledger rows, language-local links and
+fragments, retained exclusions, ordering, hashes, and cardinalities without
+schema or semantic expansion.
+
+Generic lint passes `15/15`; checker `530/530`, runner `600/600`, and metadata
+`137/137` tests pass. `cargo fmt --all --check`, offline Cargo metadata,
+warnings-denied all-target/all-feature Clippy, and the full offline workspace
+suite pass. All five CLIs exit zero with the unchanged 23 warnings and zero
+errors and reproduce the frozen plan/parse/declaration/type/proof hashes.
+
+Protected path counts and NUL-delimited path hashes reproduce exactly as
+specification `64`, `.miz` `343`, expectation `435`, checker production `30`,
+runner production `90`, and Cargo `21`; zero protected diff preserves every
+frozen content hash. Trace, coverage audit, immutable source TSV, historical
+contracts, and four plans remain unchanged; task contracts measure `73/73`.
+`git diff --check` passes. Repository inventory remains prerequisite HEAD on
+`main` with the exact task-only five-path worktree,
+`origin/main...HEAD=0/2`, and protected
+`stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4`. No push, fetch, reset, or
+stash mutation occurred.
+
+Independent final read-only quality ends **NO FINDINGS**. All nine hard gates
+PASS, no score cap applies, and the valid score is **100/100**
+(`20/20/15/15/10/10/5/5`). Exact five-path staging, the dedicated migration
+commit, and clean post-commit replay remain.

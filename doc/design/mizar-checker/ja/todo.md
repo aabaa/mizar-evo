@@ -4694,19 +4694,7 @@ Completion evidence: [central Task-258B3M2B2A historical contract](../../task_co
   trace status/count、coverage credit、tests、counts、hashesを維持し、
   B1A前にB1P implementationを保持。
 
-## Checker Task 258B3M2B2B1P implementation ledger
-
-- [x] private explicit-context Task-253 reuse siblingだけを追加し、legacy
-  helperをcontext-0 delegationで維持。
-- [x] exact extractor/public producerをproof context 1でreuseし、Task-253
-  `1/0/1/2/2`だけをpublish。
-- [x] identity、lower profiles、context/provenance/range/form corruption、
-  stale replay、fixed legacy debug bytes、empty statement/semantic/proof/
-  goal outputをcoverするcompound testsちょうど2件をpass。
-- [x] libraries `370/411`、runner Task-253 sizes
-  `1782/701/2514/2799`、production 30 paths / 39,857 linesを実測。
-- [x] B3M2B2B1Aのexact application-witness consumerを実装する前にfresh
-  inventory/frozen contractを作成。
+Completion evidence: [central Task-258B3M2B2B1P historical contract](../../task_contracts/ja/258B3M2B2B1P.md#completion-evidence)。
 
 ## Checker Task 258B3M2B2B1A frozen-contract ledger
 
@@ -4726,26 +4714,7 @@ Completion evidence: [central Task-258B3M2B2A historical contract](../../task_co
 - [x] dedicated docs commit/fresh preflight後、B3M2B2B1Aだけを実装し、
   libraries `374/416`を実測。
 
-## Checker Task 258B3M2B2B1A implementation ledger
-
-- [x] `Application(0)` witness ownership、B1Aだけのoptional application
-  fingerprint、application-aware builderを追加し、legacy
-  application-free bytesを維持。
-- [x] exact real `parser.type_fixtures::++` symbol、local/FQN lookup、
-  contribution/path/export provenance、Task-252 arguments、Task-253
-  application、Task-256 exclusion、全63 nodesをauthenticate。
-- [x] application/statement/witness handoffsをatomic installし、stale、
-  orphan、hybrid、reverse、repeat、semantic coexistenceをpartial publish
-  なしでrejectし、final cloneでもrevalidate。
-- [x] checker/runner compound tests `4/5`をpassし、143 loaded-source
-  bytes全mutation、reparsed near miss、dependency/provenance corruption、
-  validation precedence、family order、rollback/replay、empty semantic/
-  proof/goal ownershipをcover。
-- [x] libraries `374/416`、checker modules
-  `21664/4742/7224/3156`、runner statement sizes
-  `5618/706/2520/11945`、production 30 paths / 40,298 linesを実測し、
-  canonical artifacts、active routes、fixtures、sidecars、expectations、
-  trace status/count、coverage `deferred` / `tests = []`を維持。
+Completion evidence: [central Task-258B3M2B2B1A historical contract](../../task_contracts/ja/258B3M2B2B1A.md#completion-evidence)。
 
 ## Checker Task 258B3M2B2B1B1P frozen-prerequisite ledger
 
