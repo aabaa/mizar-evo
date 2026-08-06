@@ -4895,19 +4895,7 @@ Completion evidence: [central Task-258B3M2A historical contract](../../task_cont
 - [x] After the dedicated docs commit and fresh preflight, implement only
   B3M2B1, measure libraries `366/404`, then retain B3M2B2.
 
-## Checker Task 258B3M2B1 Implementation Ledger
-
-- [x] Add only the private exact B3M2B1 dependency/base/witness profile and
-  preserve public APIs and prior debug grammar.
-- [x] Revalidate five roots versus six primaries, the wrapper/child edge,
-  dense references, subtree exclusions, and the complete 53-node arena.
-- [x] Install only the paired `1 witness / 0 names` handoff atomically and
-  preserve binding plus all semantic/proof/goal tables.
-- [x] Add exactly four checker and five runner compound tests covering all
-  frozen identity, precedence, mutation, family, replay, and clone cases.
-- [x] Measure libraries `366/404`, checker modules
-  `17569/4661/7203/3156`, runner sizes `4676/695/2508/9902`, and 30
-  production paths / 39,069 lines; retain B3M2B2 before B4.
+Completion evidence: [central Task-258B3M2B1 historical contract](../../task_contracts/en/258B3M2B1.md#completion-evidence).
 
 ## Checker Task 258B3M2B2A Frozen-Contract Ledger
 
@@ -4924,19 +4912,7 @@ Completion evidence: [central Task-258B3M2A historical contract](../../task_cont
   four checker and five runner future tests, unchanged `366/404`
   baselines, and B3M2B2B-before-B4.
 
-## Checker Task 258B3M2B2A Implementation Ledger
-
-- [x] Add only the private exact nested-parentheses dependency/base/witness
-  profile; preserve public APIs and debug grammar.
-- [x] Revalidate all 57 nodes, five roots/seven primaries, chain
-  `2 -> 3 -> 4`, five references, and Task-256 subtree exclusion.
-- [x] Publish paired base plus `1 witness / 0 names` atomically while
-  preserving all binding and semantic/proof/goal tables.
-- [x] Add exactly four checker and five runner compound tests and pass all
-  identity, corruption, family, replay, and clone cases.
-- [x] Measure libraries `370/409`, checker modules
-  `19571/4662/7204/3156`, runner sizes `5188/699/2513/11234`, and 30
-  production paths / 39,590 lines; retain B3M2B2B before B4.
+Completion evidence: [central Task-258B3M2B2A historical contract](../../task_contracts/en/258B3M2B2A.md#completion-evidence).
 
 ## Checker Task 258B3M2B2B1P Frozen Lower-Prerequisite Ledger
 

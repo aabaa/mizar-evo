@@ -4659,19 +4659,7 @@ Completion evidence: [central Task-258B3M2A historical contract](../../task_cont
 - [x] dedicated docs commit/fresh preflight後にB3M2B1だけをimplementし、
   `366/404`を実測してB3M2B2を保持。
 
-## Checker Task 258B3M2B1 implementation ledger
-
-- [x] private exact B3M2B1 dependency/base/witness profileだけを追加し、
-  public API/prior debug grammarを維持。
-- [x] five roots / six primaries、wrapper/child edge、dense references、
-  subtree exclusions、complete 53-node arenaをrevalidate。
-- [x] paired `1 witness / 0 names`だけをatomic installし、bindingと全
-  semantic/proof/goal tablesを維持。
-- [x] exactly checker 4 / runner 5 testsでidentity、precedence、mutation、
-  Tasks 253–255/family order、replay、cloneをcover。
-- [x] libraries `366/404`、checker `17569/4661/7203/3156`、runner
-  `4676/695/2508/9902`、production 30 paths / 39,069 linesを実測し、
-  B3M2B2をB4前に保持。
+Completion evidence: [central Task-258B3M2B1 historical contract](../../task_contracts/ja/258B3M2B1.md#completion-evidence)。
 
 ## Checker Task 258B3M2B2A frozen-contract ledger
 
@@ -4687,19 +4675,7 @@ Completion evidence: [central Task-258B3M2A historical contract](../../task_cont
   4 / runner 5 tests、unchanged `366/404` baseline、
   B3M2B2B-before-B4をfreeze。
 
-## Checker Task 258B3M2B2A implementation ledger
-
-- [x] private exact nested-parentheses dependency/base/witness profileだけを
-  追加し、public API/debug grammarを維持。
-- [x] 全57 nodes、five roots/seven primaries、chain `2 -> 3 -> 4`、
-  five refs、Task-256 subtree exclusionをrevalidate。
-- [x] paired base + `1 witness / 0 names`だけをatomic publishし、binding
-  とsemantic/proof/goal tablesを維持。
-- [x] exactly checker 4 / runner 5 compound testsを追加し、identity、
-  corruption、family、replay、clone casesを全pass。
-- [x] libraries `370/409`、checker `19571/4662/7204/3156`、runner
-  `5188/699/2513/11234`、production 30 paths / 39,590 linesを実測し、
-  B3M2B2BをB4前に保持。
+Completion evidence: [central Task-258B3M2B2A historical contract](../../task_contracts/ja/258B3M2B2A.md#completion-evidence)。
 
 ## Checker Task 258B3M2B2B1P frozen lower-prerequisite ledger
 

@@ -8,7 +8,7 @@
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-258B3M2B1-B2A-IMPLEMENTATION-LEDGER-COMPACT` |
-| Status | Documentation-prerequisite reviews, full verification, and independent final quality complete with no findings; all nine hard gates PASS, no score cap applies, and quality is 100/100. Exact staging, the dedicated prerequisite commit, and clean replay remain; selected TODOs and the ledger are unchanged. |
+| Status | Migration implemented with the exact frozen redirects and ledger rows; migration reviews, full verification, and independent final quality are complete. Exact staging, commit, and clean replay remain. |
 | Purpose | Centralize the completed Task-258B3M2B1 and Task-258B3M2B2A implementation checklists while retaining both frozen-contract ledgers and every durable checker/runner owner. |
 | Historical owners | [Task 258B3M2B1](./258B3M2B1.md#completion-evidence) and [Task 258B3M2B2A](./258B3M2B2A.md#completion-evidence) |
 | Plan indexes | [checker plan](../../mizar-checker/en/00.crate_plan.md#task-index) and [runner plan](../../mizar-test/en/00.crate_plan.md#task-index) |
@@ -189,3 +189,60 @@ Independent final read-only quality ends **NO FINDINGS**. All nine hard gates
 PASS, no score cap applies, and the valid score is **100/100**
 (`20/20/15/15/10/10/5/5`). Exact staging, the dedicated prerequisite commit,
 and clean post-commit replay remain.
+
+## Migration Evidence
+
+The documentation prerequisite committed separately as
+`11d5453b8f6e9f60d5fc11cd8970369de83b5a35`. Clean fresh replay reproduced all
+four frozen preimages, source TSV hashes, unchanged 923-line ledger, protected
+no-ops, `70/70` contracts, `origin/main...HEAD=0/1`, and the protected stash
+before migration.
+
+The selected Task-258B3M2B1 and Task-258B3M2B2A implementation-ledger sections
+are now four language-local redirects to their historical completion evidence.
+Exact source diff is `+4/-52`; all four forbidden implementation headings and
+bodies are gone. Both EN/JA frozen-contract ledgers, the B2B1P lower-
+prerequisite ledger, every recorded neighboring anchor, and every unselected
+TODO section remain.
+
+The ledger adds exactly 19 byte-sorted rows: one batch, two canonical tasks,
+twelve indexes, and four redirects. It is 942 lines with physical SHA-256
+`e5a804a4c5b452610e0024b1de3186445b5179b43d138927f7e3a079bb19af41`,
+reproduces canonical 18-row SHA-256
+`4ce4f8564f99478a229756ea8b9313f627fbe869ab0fb784b96c1e427b3565e5`,
+and measures 27 batches, 39 tasks, two task references, 608 redirects, and 264
+indexes. Historical contracts, source TSV, four plans, protected surfaces,
+trace, and coverage audit remain unchanged. Generic lint passes `15/15` and
+`git diff --check` passes.
+
+Independent migration evidence-equivalence, schema/test-sufficiency, and
+bilingual/boundary reviews end **NO FINDINGS**. They reproduce every frozen
+preimage and unique fact, the exact `+4/-52` redirect delta, the 19 ledger
+rows, language-local links and fragments, retained exclusions, ordering,
+cardinalities, and both frozen hashes without schema or semantic expansion.
+
+Generic lint passes `15/15`; checker `530/530`, runner `600/600`, and metadata
+`137/137` tests pass. `cargo fmt --all --check`, offline Cargo metadata,
+warnings-denied all-target/all-feature Clippy, and the full offline workspace
+suite pass. All five CLIs exit zero with the unchanged 23 warnings and zero
+errors and reproduce the frozen plan/parse/declaration/type/proof hashes.
+
+Protected path counts and NUL-delimited path hashes reproduce exactly as
+specification `64`, `.miz` `343`, expectation `435`, checker production `30`,
+runner production `90`, and Cargo `21`; zero protected diff preserves every
+frozen content hash. Trace, coverage audit, immutable source TSV, and `70/70`
+contracts reproduce their frozen counts and hashes. `git diff --check` passes.
+Verification first measured prerequisite HEAD on `main` with the exact
+task-only five-path worktree, `origin/main...HEAD=0/1`, and protected
+`stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4`. During focused evidence
+review, the remote-tracking ref independently moved from `a9435046` to
+prerequisite HEAD `11d5453b` with reflog reason `update by push`, making the
+live relation `0/0`. This is a report-only `repo_metadata_conflict`: task
+files and ancestry remain unchanged, the exact commit target remains safe,
+and no repair is authorized. No push, fetch, reset, or stash mutation occurred
+from this workflow.
+
+Independent final read-only quality ends **NO FINDINGS**. All nine hard gates
+PASS, no score cap applies, and the valid score is **100/100**
+(`20/20/15/15/10/10/5/5`). Exact five-path staging, commit, and clean
+post-commit replay remain.
