@@ -1,0 +1,6 @@
+# Frozen preimage inventory for DOC-258B4B-COMPACT.
+# Columns: task, language, component, source path, ATX level, exact heading text without the ATX prefix, section SHA-256, physical lines.
+258B4B	en	mizar-checker	doc/design/mizar-checker/en/00.crate_plan.md	2	Task 258B4B Implementation Inventory	ff0cb6db4ec4a1075108638c956e15c76be7d18420ff1cb192166f4a67befdc5	76
+258B4B	en	mizar-checker	doc/design/mizar-checker/en/todo.md	2	Checker Task 258B4B Implementation Ledger	b07d721c2bd16e781ee3c13b5aafbaac53469f0bfd0e661896e82a6f0c2cb143	32
+258B4B	ja	mizar-checker	doc/design/mizar-checker/ja/00.crate_plan.md	2	Task 258B4B implementation inventory	ee40ad99b5e05b564d4c3cb95125fddae0d6753adc014ca6112c4d4cd2626358	70
+258B4B	ja	mizar-checker	doc/design/mizar-checker/ja/todo.md	2	Checker Task 258B4B implementation ledger	5f053513c422c1c3c9fabc2a9a4163ca03ede5e5c4d9bdaa71bdd0054abdad95	29
