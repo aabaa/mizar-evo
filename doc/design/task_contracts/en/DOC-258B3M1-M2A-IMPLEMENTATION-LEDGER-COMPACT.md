@@ -8,7 +8,7 @@
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-258B3M1-M2A-IMPLEMENTATION-LEDGER-COMPACT` |
-| Status | Documentation-prerequisite reviews, final verification, and independent final quality complete; exact staging, the dedicated prerequisite commit, and clean replay remain. Selected sources and schema-2 ledger are unchanged. |
+| Status | Migration complete through independent final quality with all reviews at no findings, all nine hard gates PASS, no score cap, and 100/100. Exact staging, commit, and clean replay remain. |
 | Purpose | Centralize the completed Task-258B3M1 and Task-258B3M2A implementation checklists while retaining their documentation ledgers and every durable checker/runner owner. |
 | Historical owners | [Task 258B3M1](./258B3M1.md#completion-evidence) and [Task 258B3M2A](./258B3M2A.md#completion-evidence) |
 | Plan indexes | [checker plan](../../mizar-checker/en/00.crate_plan.md#task-index) and [runner plan](../../mizar-test/en/00.crate_plan.md#task-index) |
@@ -176,4 +176,55 @@ task-only 11-path worktree, `origin/main...HEAD=0/6`, and protected
 stash mutation occurred. Independent final read-only quality ends **NO
 FINDINGS**; all nine hard gates PASS, no score cap applies, and the valid score
 is **100/100** (`20/20/15/15/10/10/5/5`). Exact staging, commit, and clean
+post-commit replay remain.
+
+## Migration Evidence
+
+The documentation prerequisite committed separately as
+`e604125f8b9be8052ebc686fa294bcb926448906`. Clean fresh replay reproduced all
+four frozen preimages, source TSV hashes, unchanged 904-line ledger, protected
+no-ops, `67/67` contracts, `origin/main...HEAD=0/7`, and the protected stash
+before migration.
+
+The selected Task-258B3M1 and Task-258B3M2A implementation-ledger sections are
+now four language-local redirects to their historical completion evidence.
+Exact source diff is `+4/-51`; all four forbidden implementation headings and
+bodies are gone. Both EN/JA documentation ledgers, every recorded neighboring
+anchor, and every unselected TODO section remain.
+
+The ledger adds exactly 19 byte-sorted rows: one batch, two canonical tasks,
+twelve indexes, and four redirects. It is 923 lines with physical SHA-256
+`a5d809911f8ffe4996db8eb147fd17253c101a5921098ffc51be87fda3f99b3f`,
+reproduces canonical 18-row SHA-256
+`103e804ae1fe2e561b4c5047048cba5f0c659c43b625776c60a3f9828b3512cb`,
+and measures 26 batches, 37 tasks, two task references, 604 redirects, and 252
+indexes. Historical contracts, source TSV, four plans, protected surfaces,
+trace, and coverage audit remain unchanged. Generic lint passes `15/15` and
+`git diff --check` passes.
+
+Independent evidence-equivalence, schema/test-sufficiency, and bilingual/
+boundary migration reviews end **NO FINDINGS**. Reviewers independently
+reproduce every frozen preimage and retained fact, the exact five-path scope,
+language-local redirects and fragments, neighboring anchors, source TSV and
+ledger hashes, schema rows/counts/order, protected no-op, and EN/JA parity.
+
+Generic lint passes `15/15`; checker `530/530`, runner `600/600`, and metadata
+`137/137` tests pass. `cargo fmt --all --check`, offline Cargo metadata,
+warnings-denied all-target/all-feature Clippy, and the full offline workspace
+suite pass. All five CLIs exit zero with the existing 23 warnings and zero
+errors and reproduce the frozen plan/parse/declaration/type/proof hashes.
+
+Protected path counts and NUL-delimited path hashes reproduce exactly as
+specification `64`, `.miz` `343`, expectation `435`, checker production `30`,
+runner production `90`, and Cargo `21`; zero protected diff preserves every
+frozen content hash. Trace and coverage-audit hashes reproduce. The immutable
+source TSV, four historical contracts, and four plan indexes remain unchanged;
+the ledger and its cardinalities reproduce the values above. `git diff
+--check` passes. The initial metadata test invocation used the nonexistent
+target name `metadata_consistency`; repository target discovery identified
+`metadata`, whose required `137/137` tests then passed.
+
+Independent final read-only quality ends **NO FINDINGS**. All nine hard gates
+PASS, no score cap applies, and the valid score is **100/100**
+(`20/20/15/15/10/10/5/5`). Exact five-path staging, commit, and clean
 post-commit replay remain.

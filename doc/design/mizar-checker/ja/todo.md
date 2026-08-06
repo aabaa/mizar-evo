@@ -4623,19 +4623,7 @@ Completion evidence: [central Task-258B3N historical contract](../../task_contra
 - [x] EN/JA plan/auditのfollow-up ownershipを更新し、B3M1 implementation
   後はB3M2がnextでB4前であることを記録。
 
-## Checker Task 258B3M1 implementation ledger
-
-- [x] exact 113-byte/56-node mixed reserved-variable profileだけをpublishし、
-  Task-252 `6/6/0`、Task-256 `2/0/0/0/0/0/0/4/4`、base
-  `1/2/2/2/2`、witness/name `2/1`を維持。
-- [x] B3/B3N v1 bytesを維持し、complete shared arenaに対する
-  dependency/fingerprint、aggregate、witness 0、witness 1、name precedenceを
-  validate。
-- [x] typed/final ownershipでpaired handoffをatomically installし、binding、
-  semantic、proof、goal、corpus、trace、public API ownershipを不変に維持。
-- [x] checker exactly 4本 / runner exactly 5本のcompound testsを追加し、
-  library `358/394`、checker modules `14045/4659/7201/3156`、runner
-  production 30 paths / 38,103 linesを再測定。
+Completion evidence: [central Task-258B3M1 historical contract](../../task_contracts/ja/258B3M1.md#completion-evidence)。
 
 ## Checker Task 258B3M2A documentation ledger
 
@@ -4653,18 +4641,7 @@ Completion evidence: [central Task-258B3N historical contract](../../task_contra
   status/count、active route、source/test、list、count、hashを維持し、
   B3M2B-before-B4を保持。
 
-## Checker Task 258B3M2A implementation ledger
-
-- [x] private exact B3M2A dependency/base/witness profileだけを追加し、
-  public APIとprior debug grammarを維持。
-- [x] paired `1 witness / 0 names` handoffだけをtyped/final ownershipで
-  install/revalidateし、bindingと全semantic/proof/goal tablesを維持。
-- [x] identity、precedence、全dependency/node/byte/subtree mutation、
-  cross-family order、replay/rollback、empty semanticsをcoverするchecker
-  exactly 4本 / runner exactly 5本のcompound testsを追加。
-- [x] libraries `362/399`、checker modules
-  `15746/4660/7202/3156`、runner sizes `4185/691/2505/8611`、production
-  30 paths / 38,571 linesを実測し、B3M2B-before-B4を保持。
+Completion evidence: [central Task-258B3M2A historical contract](../../task_contracts/ja/258B3M2A.md#completion-evidence)。
 
 ## Checker Task 258B3M2B1 frozen-contract ledger
 

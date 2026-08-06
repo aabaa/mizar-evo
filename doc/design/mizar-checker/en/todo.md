@@ -4858,20 +4858,7 @@ Completion evidence: [central Task-258B3N historical contract](../../task_contra
 - [x] Update follow-up ownership in EN/JA plans/audits: B3M2 is next after
   B3M1 implementation and remains before B4.
 
-## Checker Task 258B3M1 Implementation Ledger
-
-- [x] Publish only the exact 113-byte/56-node mixed reserved-variable
-  profile with Task-252 `6/6/0`, Task-256 `2/0/0/0/0/0/0/4/4`, base
-  `1/2/2/2/2`, and witness/name `2/1`.
-- [x] Preserve B3/B3N v1 bytes while validating dependency/fingerprint,
-  aggregate, witness 0, witness 1, and name precedence over the complete
-  shared arena.
-- [x] Install the paired handoff atomically in typed and final ownership;
-  keep binding, semantic, proof, goal, corpus, trace, and public API
-  ownership unchanged.
-- [x] Add exactly four checker and five runner compound tests and remeasure
-  `358/394` library tests, checker modules `14045/4659/7201/3156`, and the
-  runner 30-path / 38,103-line production manifest.
+Completion evidence: [central Task-258B3M1 historical contract](../../task_contracts/en/258B3M1.md#completion-evidence).
 
 ## Checker Task 258B3M2A Documentation Ledger
 
@@ -4888,18 +4875,7 @@ Completion evidence: [central Task-258B3N historical contract](../../task_contra
   sidecars, trace status/count, active routes, source/tests, lists, counts,
   and hashes; retain B3M2B before B4.
 
-## Checker Task 258B3M2A Implementation Ledger
-
-- [x] Add only the private exact B3M2A dependency/base/witness profile and
-  preserve the public API and prior debug grammar.
-- [x] Install/revalidate only the paired `1 witness / 0 names` handoff in
-  typed/final ownership; preserve binding and all semantic/proof/goal tables.
-- [x] Add exactly four checker and five runner compound tests covering
-  identity, precedence, all dependency/node/byte/subtree mutations,
-  cross-family orders, replay/rollback, and empty semantics.
-- [x] Measure libraries `362/399`, checker modules
-  `15746/4660/7202/3156`, runner sizes `4185/691/2505/8611`, and 30
-  production paths / 38,571 lines; retain B3M2B before B4.
+Completion evidence: [central Task-258B3M2A historical contract](../../task_contracts/en/258B3M2A.md#completion-evidence).
 
 ## Checker Task 258B3M2B1 Frozen-Contract Ledger
 
