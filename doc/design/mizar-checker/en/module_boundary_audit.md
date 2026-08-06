@@ -1419,16 +1419,7 @@ explicitly out of this prerequisite. No runner, parser, resolver, Cargo, or
 corpus file moves or splits here. Current `source_type.rs` remains 5,339 lines
 until the separate implementation commit.
 
-## Task 249S Active Module Boundary
-
-The implementation remains confined to the existing syntax-free
-`src/source_type.rs` owner plus synchronized documents. The module is
-`6244` lines and the checker production manifest is `27/156019`; its
-path/content hashes are
-`180b090a167912f0b04f014180ec6755aa5bde54eecd49f0990cc87fb566667f` /
-`37a7bb07a441086ee2915f601dedbca002f9a356b53a32050c29d467eb56b9f1`.
-The new member table is behavior-coupled to the existing source-type
-transaction and installation validator, so no split is warranted.
+Completion evidence: [central Task-249S historical contract](../../task_contracts/en/249S.md#completion-evidence).
 
 ## Task 263 Frozen Module Boundary
 

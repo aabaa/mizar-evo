@@ -1489,14 +1489,7 @@ parent/root/path/view、inheritance coverage、constructor/selector declaration�
 coherence、request/evidence/semantics/fact/proof/IR/VC rowはこのlower boundaryを
 crossしない。
 
-## Task 249S active lower-family result
-
-frozen standalone member-type familyはapplications/expressions/arguments/
-definition-returns/mode-RHS/members `0/4/0/0/0/4`としてactiveになった。
-所有するのはdeclaration-memberからtype-rootへのlink 4件だけである。
-structure/member identity association、classification、inheritance、
-coverage、constructor/selector、coherence request、runner/corpus consumerは
-Task 263に残り、semantic familyはこのboundaryをcrossしない。
+Completion evidence: [central Task-249S historical contract](../../task_contracts/ja/249S.md#completion-evidence)。
 
 ## Task 264 property-implementation family
 

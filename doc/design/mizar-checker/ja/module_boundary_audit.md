@@ -1385,15 +1385,7 @@ producerはnew dedicated moduleに属し、このprerequisiteの範囲外。runn
 resolver/Cargo/corpus fileのmove/splitはない。separate implementation commit前の
 `source_type.rs`は5,339 linesのままである。
 
-## Task 249S active module boundary
-
-implementationはexisting syntax-free `src/source_type.rs` ownerと同期文書
-だけに限定する。moduleは`6244` lines、checker production manifestは
-`27/156019`、path/content hashは
-`180b090a167912f0b04f014180ec6755aa5bde54eecd49f0990cc87fb566667f` /
-`37a7bb07a441086ee2915f601dedbca002f9a356b53a32050c29d467eb56b9f1`。
-new member tableはexisting source-type transaction/install validatorと
-behavior-coupledであり、split不要である。
+Completion evidence: [central Task-249S historical contract](../../task_contracts/ja/249S.md#completion-evidence)。
 
 ## Task 263 frozen module boundary
 

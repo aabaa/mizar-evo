@@ -1752,13 +1752,7 @@ expression, and head sites against `TypedArena`; missing or corrupt values fail
 as `InvalidSourceType`. Types, facts, coercions, initial obligations,
 diagnostics, context, and every Task-263 upper field remain empty/absent.
 
-## Task 249S Active Typed Ownership Result
-
-The existing optional `source_type` field and one-shot installation path are
-the sole owner. Installation revalidates the exact member table, expression
-table, source/module identity, all twelve arena sites, and mutual exclusion
-with sibling profiles. All semantic tables and Task-263 upper fields remain
-empty or absent.
+Completion evidence: [central Task-249S historical contract](../../task_contracts/en/249S.md#completion-evidence).
 
 ## Task 263 Frozen Typed Ownership
 

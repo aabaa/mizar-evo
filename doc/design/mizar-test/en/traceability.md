@@ -2284,14 +2284,7 @@ structure/mode gap remains active and unchanged. Chapter-5 structure-definition
 coverage stays partial until Task 263 adds one distinct spec-derived pass pair,
 sole covered backlink, metadata case, and real consumer.
 
-## Checker Task 249S Active Traceability No-Op Result
-
-Implementation closes only checker lower representation `source_drift` and
-its checker-local `test_gap`. `tests/coverage/spec_trace.toml` remains
-byte-identical at
-`3f510f819f03a3fd2922275b37ab71070e41d4f8e2e0e9c0c94147076552626a`;
-there is no new source, sidecar, expectation, backlink, row, status, or count.
-Chapter 5 remains partial until Task 263.
+Completion evidence: [central Task-249S historical contract](../../task_contracts/en/249S.md#completion-evidence).
 
 ## Checker Task 263 Frozen Trace Intent
 

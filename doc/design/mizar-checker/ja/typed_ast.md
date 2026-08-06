@@ -1621,12 +1621,7 @@ Task 249Sは`TypedAstParts` field/install pathを追加しない。existing opti
 type/fact/coercion/initial obligation/diagnostic/contextと全Task-263 upper fieldは
 empty/absentのまま。
 
-## Task 249S active Typed ownership result
-
-existing optional `source_type` fieldとone-shot installation pathがsole
-ownerである。install時にexact member/expression table、source/module identity、
-arena site 12件、sibling profileとのmutual exclusionをrevalidateする。
-semantic tableとTask-263 upper fieldは全てempty/absentのままである。
+Completion evidence: [central Task-249S historical contract](../../task_contracts/ja/249S.md#completion-evidence)。
 
 ## Task 263 frozen Typed ownership
 

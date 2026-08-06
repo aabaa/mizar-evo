@@ -12,7 +12,7 @@ traceability、coverageを変更できない。
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-249S-ACTIVE-EVIDENCE-COMPACT` |
-| Status | Documentation prerequisite、全independent review、full verification、final quality完了。exact staging、prerequisite commit待ち。 |
+| Status | Documentation prerequisite commit済み。frozen migration、全review、full verification、final quality完了。exact staging、commit待ち。 |
 | Purpose | durable/frozen ownerと全mixed sectionを保持し、Task-249S active implementation/no-runner evidenceを集約する。 |
 | Owners | migration policy、historical [249S](./249S.md#completion-evidence)、[checker plan](../../mizar-checker/ja/00.crate_plan.md#task-index)、[runner plan](../../mizar-test/ja/00.crate_plan.md#task-index) |
 | Consumers | checker/runner source 24 paths、Task Index 4件、future schema-v1 ledger/lint |
@@ -168,8 +168,56 @@ protected surface、EN/JA ownership、review closure、verification health、ext
 origin classificationを確認した。residual riskはexact staging、commit、separate
 migration前のfresh inventoryだけである。
 
+## Migration evidence
+
+prerequisiteは`2b5e1590a6e187e7d5285f61f4bc7a12783168af`としてcommit済み。
+直後のfresh inventoryはclean、`origin/main...HEAD=0/1`、protected
+`stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4`不変で、編集前にsource-TSV
+preimage/anchor 24件をすべてreplayした。
+
+declared whole H2 24節だけをlanguage-local completion redirect 24件へ置換した。
+physical shapeはexact `256 -> 48`、net 208行削減、source deltaはfrozen
+`+24/-232`。forbidden raw heading 24件はすべて消失し、各sourceはredirect
+exact 1件とfrozen neighboring anchorを保持する。excluded final section両方と
+live coverage ownerは不変。
+
+byte-sorted schema-v1 ledgerは822 physical lines、physical SHA-256
+`1a3a07297f4f0aee4b13274df44322b52cf92bf71f0ed40824debd7d0aba6c59`。
+generic lintはfrozen 33-row expanded-inventory SHA-256
+`71017a5197eb6bac76a8d6e079ee17f24301db20a19ca84c00df120e24155acf`
+とbatch/task/redirect/distinct-path/indexのexact cardinality `1/1/24/24/8`を
+受理する。migration diffはsource 24件、本batch contract pair、ledgerのexact
+27 paths。immutable source TSV、historical contract、Task Index 4件、protected
+artifact、trace、coverage auditは不変で、frozen no-impact decisionを維持する。
+
+independent migration-equivalence、schema/test-sufficiency、source-
+documentation/EN-JA reviewは**NO FINDINGS**。全24 preimage、anchor、redirect、
+forbidden heading、exclusion、historical owner、exact source/postimage delta、
+ledger schema/order/hash/cardinality、paired redirect family 12件、不変のaudit/
+protected surfaceをreplayした。
+
+full migration-state verificationはchecker/runner lint各`15/15`、checker/
+runner library `530/530`/`600/600`、metadata `137/137`がPASS。
+`cargo fmt --all --check`、offline Cargo metadata、warnings-denied all-target/
+all-feature Clippy、frontend benchmark 3件を含むfull all-target/all-feature
+workspace suiteがPASSした。CLI 5種は各exit zero、warnings 23/errors 0で、
+frozen stdout hash 5件を再現した。protected count/path/content hashはexactly
+reproduceし、zero protected diffがspecification、test、expectation、production、
+Cargo、trace、coverage audit、source TSV、historical contract、Task Indexを
+保持する。822-line ledger physical hash、frozen expanded-inventory hash/
+cardinality、exact 27-path scope、source delta、redirect/anchor replay、
+`git diff --check`を再現した。
+
+final independent read-only quality reviewは**NO FINDINGS**。全9 hard gates
+PASS、score capなし、valid score `100/100` (`20/20/15/15/10/10/5/5`)。
+independent replayはexact scope、preimage/postimage、hash、schema cardinality、
+redirect/anchor、exclusion、protected surface、audit no-impact、verification
+health、HEAD `2b5e1590a6e187e7d5285f61f4bc7a12783168af`、
+`origin/main...HEAD=0/1`、protected stash identityを確認した。residual riskは
+exact staging、commit、post-commit inventoryだけである。
+
 ## Handoff
 
-本prerequisiteをexact-stage/commitする。preimage/anchor 24件をfresh-replay後、
-separately frozen 27-path migrationを行う。parentは`xhigh`、bounded
-independent reviewは`high`を用いる。
+verified exact 27-path migrationをexact-stage/commitし、next checker compaction
+family選定前にfresh post-commit inventoryを行う。parent/final-quality reviewは
+`xhigh`、bounded independent reviewは`high`を用いた。

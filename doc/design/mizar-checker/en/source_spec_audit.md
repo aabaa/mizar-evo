@@ -5654,15 +5654,7 @@ runner, corpus, or trace credit is added; five variants append to the existing
 non-exhaustive public `SourceTypeError`. The literal public/source-spec lint
 inventories must be synchronized when implementation lands.
 
-## Task 249S Active Source/Public-Surface Result
-
-The frozen dense ID, two inputs, row/table, producer, getter, and five appended
-non-exhaustive error variants are implemented in `source_type.rs`. The
-literal public inventory and correspondence table above include every new
-item. Exact row/range/site/arena/shape validation is globally precedence
-ordered, and sibling Task-249/249R/249M profiles reject mixed ownership. The
-source is `6244` lines; checker tests are `462`. No undocumented semantic
-surface was added.
+Completion evidence: [central Task-249S historical contract](../../task_contracts/en/249S.md#completion-evidence).
 
 ## Task 263 Frozen Source/API Audit
 

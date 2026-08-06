@@ -2183,13 +2183,7 @@ structure/mode gapはactive/unchanged。Chapter-5 structure-definition coverage�
 Task 263がdistinct spec-derived pass pair 1件、sole covered backlink、metadata
 case、real consumerを追加するまでpartialのまま。
 
-## Checker Task 249S active traceability no-op result
-
-implementationが閉じるのはchecker lower representation `source_drift`と
-checker-local `test_gap`だけである。`tests/coverage/spec_trace.toml`は
-`3f510f819f03a3fd2922275b37ab71070e41d4f8e2e0e9c0c94147076552626a`
-でbyte-identical。source/sidecar/expectation/backlink/row/status/countを追加
-せず、Chapter 5はTask 263までpartialのままである。
+Completion evidence: [central Task-249S historical contract](../../task_contracts/ja/249S.md#completion-evidence)。
 
 ## Checker Task 263 frozen trace intent
 

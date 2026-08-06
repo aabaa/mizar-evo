@@ -1529,11 +1529,7 @@ EN/JA synchronize that Task 249S is checker-only, has exact lower profile
 `0/4/0/0/0/4`, adds four checker tests, and changes no runner/corpus/trace/
 metadata/CLI artifact. Task 263 retains the future executable and trace work.
 
-## Checker Task 249S Active No-Op Synchronization
-
-EN/JA synchronize the measured unchanged runner `34/67087`, `524` tests,
-corpus/metadata counts, trace hash, and five CLI fingerprints. Only checker
-lower representation changed; Task 263 retains all executable and trace work.
+Completion evidence: [central Task-249S historical contract](../../task_contracts/en/249S.md#completion-evidence).
 
 ## Checker Task 263 Frozen Consumer Synchronization
 

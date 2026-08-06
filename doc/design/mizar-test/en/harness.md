@@ -5065,12 +5065,7 @@ tests freeze the standalone structure-member type handoff. The exact
 Task-263 runner, pass source, sidecar, covered trace row, diagnostic behavior,
 and all structure/inheritance semantics remain deferred to Task 263.
 
-## Checker Task 249S Active Harness No-Op
-
-The four Task-249S tests execute only inside `mizar-checker::source_type`.
-No discovery, selector, stage, loaded-source extractor, runner assertion, or
-snapshot path was added. The `524`-test harness inventory and all five CLI
-outputs remain byte-stable; Task 263 owns the first real consumer.
+Completion evidence: [central Task-249S historical contract](../../task_contracts/en/249S.md#completion-evidence).
 
 ## Checker Task 263 Frozen Harness Route
 

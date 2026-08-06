@@ -5422,14 +5422,7 @@ diagnostic、obligation、semantic result、runner、corpus、trace creditは追
 existing non-exhaustive public `SourceTypeError`へvariant 5件をappendする。
 implementation時にliteral public/source-spec lint inventoryを同期する。
 
-## Task 249S active source/public-surface result
-
-frozen dense ID、input 2件、row/table、producer、getter、existing
-non-exhaustive errorへのvariant 5件を`source_type.rs`に実装した。上のliteral
-public inventory/correspondenceは全new itemを含む。exact row/range/site/arena/
-shape validationはglobal precedence orderであり、sibling Task-249/249R/249M
-profileとのmixed ownershipを拒否する。sourceは`6244` lines、checker testは
-`462`。undocumented semantic surfaceは追加していない。
+Completion evidence: [central Task-249S historical contract](../../task_contracts/ja/249S.md#completion-evidence)。
 
 ## Task 263 frozen source/API audit
 

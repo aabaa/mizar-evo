@@ -12,7 +12,7 @@ public API, diagnostics, traceability, or coverage.
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-249S-ACTIVE-EVIDENCE-COMPACT` |
-| Status | Documentation prerequisite, all independent reviews, full verification, and final quality complete; exact staging and prerequisite commit remain. |
+| Status | Documentation prerequisite committed; frozen migration, all reviews, full verification, and final quality complete. Exact staging and commit remain. |
 | Purpose | Centralize repeated Task-249S active implementation/no-runner evidence while retaining every durable/frozen owner and mixed section. |
 | Owners | Migration policy, historical [249S](./249S.md#completion-evidence), [checker plan](../../mizar-checker/en/00.crate_plan.md#task-index), and [runner plan](../../mizar-test/en/00.crate_plan.md#task-index) |
 | Consumers | Twenty-four checker/runner source paths, four Task Indexes, and the future schema-v1 ledger/lint |
@@ -172,8 +172,62 @@ ownership, review closure, verification health, and the external-origin
 classification. Residual risk is limited to exact staging, commit, and fresh
 inventory before the separate migration.
 
+## Migration Evidence
+
+The prerequisite was committed as
+`2b5e1590a6e187e7d5285f61f4bc7a12783168af`. Immediate fresh inventory was
+clean at `origin/main...HEAD=0/1`, preserved protected
+`stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4`, and replayed all 24 source-TSV
+preimages and anchors before editing.
+
+Only the declared 24 whole H2 sections have been replaced by 24 language-local
+completion redirects. Their physical shape is exactly `256 -> 48`, a net
+reduction of 208 lines, and the source delta is the frozen `+24/-232`. All 24
+forbidden raw headings are absent; every source has exactly one redirect and
+retains its frozen neighboring anchors. Both excluded final sections and the
+live coverage owner remain unchanged.
+
+The byte-sorted schema-v1 ledger now has 822 physical lines and physical
+SHA-256 `1a3a07297f4f0aee4b13274df44322b52cf92bf71f0ed40824debd7d0aba6c59`.
+Generic lint accepts the frozen 33-row expanded-inventory SHA-256
+`71017a5197eb6bac76a8d6e079ee17f24301db20a19ca84c00df120e24155acf`
+and exact batch/task/redirect/distinct-path/index cardinality `1/1/24/24/8`.
+The migration diff is the exact 27 paths: 24 sources, this paired batch
+contract, and the ledger. Immutable source TSV, historical contract, four Task
+Indexes, protected artifacts, trace, and coverage audit remain unchanged, so
+the frozen no-impact decision still applies.
+
+Independent migration-equivalence, schema/test-sufficiency, and source-
+documentation/EN-JA reviews end **NO FINDINGS**. They replay all 24 preimages,
+anchors, redirects, forbidden headings, exclusions, the historical owner,
+exact source/postimage delta, ledger schema/order/hash/cardinality, 12 paired
+redirect families, and the unchanged audit and protected surfaces.
+
+Full migration-state verification passes checker/runner lint `15/15` each,
+checker/runner libraries `530/530` and `600/600`, and metadata `137/137`.
+`cargo fmt --all --check`, offline Cargo metadata, warnings-denied all-target/
+all-feature Clippy, and the full all-target/all-feature workspace suite with
+all three frontend benchmarks pass. All five CLIs exit zero with 23 warnings
+and zero errors each and reproduce the five frozen stdout hashes. Protected
+counts, path hashes, and content hashes reproduce exactly; zero protected
+diff preserves specification, tests, expectations, production, Cargo, trace,
+coverage audit, source TSV, historical contracts, and Task Indexes. The
+822-line ledger physical hash, frozen expanded-inventory hash and cardinality,
+exact 27-path scope, source delta, redirect/anchor replay, and
+`git diff --check` all reproduce.
+
+Final independent read-only quality review ends **NO FINDINGS**. All nine hard
+gates PASS, no score cap applies, and the valid score is `100/100`
+(`20/20/15/15/10/10/5/5`). Independent replay confirms exact scope,
+preimages/postimages, hashes, schema cardinality, redirects and anchors,
+exclusions, protected surfaces, audit no-impact, verification health, HEAD
+`2b5e1590a6e187e7d5285f61f4bc7a12783168af`, `origin/main...HEAD=0/1`, and
+protected stash identity. Residual risk is limited to exact staging, commit,
+and post-commit inventory.
+
 ## Handoff
 
-Exact-stage and commit this prerequisite, fresh-replay the 24 preimages and
-anchors, then perform the separately frozen 27-path migration. The parent
-remains `xhigh`; bounded independent reviews use `high`.
+Exact-stage and commit the verified 27-path migration, then perform fresh
+post-commit inventory before selecting the next checker compaction family.
+The parent and final-quality review used `xhigh`; bounded independent reviews
+used `high`.

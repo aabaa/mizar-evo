@@ -4785,12 +4785,7 @@ standalone structure-member type handoffをfreezeする。exact Task-263 runner�
 pass source/sidecar/covered trace row、diagnostic behavior、全structure/inheritance
 semanticsはTask 263へdeferする。
 
-## Checker Task 249S active harness no-op
-
-Task-249S test 4件は`mizar-checker::source_type`内だけで実行する。discovery、
-selector、stage、loaded-source extractor、runner assertion、snapshot pathは
-追加しない。harness `524` testsと5 CLI outputはbyte-stableで、最初のreal
-consumerはTask 263が所有する。
+Completion evidence: [central Task-249S historical contract](../../task_contracts/ja/249S.md#completion-evidence)。
 
 ## Checker Task 263 frozen harness route
 
