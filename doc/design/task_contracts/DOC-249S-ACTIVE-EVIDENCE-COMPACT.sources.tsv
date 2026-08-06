@@ -1,0 +1,26 @@
+# Frozen preimage inventory for DOC-249S-ACTIVE-EVIDENCE-COMPACT.
+# Columns: task, language, component, source path, ATX level, exact heading text without the ATX prefix, section SHA-256, physical lines.
+249S	en	mizar-checker	doc/design/mizar-checker/en/00.crate_plan.md	2	Task 249S Active Lower-Representation Checkpoint	bdc1c0bcef1b5eab249cc157273e565b94990b84de5a4d46e61149501bec3e87	22
+249S	en	mizar-checker	doc/design/mizar-checker/en/bilingual_sync_audit.md	2	Task 249S Active-Result Synchronization	6ba95bee7f67093b17795b0ea5559668349e3310889bcfb4e2cbdcba3e55a3cd	8
+249S	en	mizar-checker	doc/design/mizar-checker/en/module_boundary_audit.md	2	Task 249S Active Module Boundary	e43d033a9ae263c218c1c5acff13940e78cf3c06cdb454216463ae77cf9ac558	11
+249S	en	mizar-checker	doc/design/mizar-checker/en/payload_family_decomposition.md	2	Task 249S Active Lower-Family Result	616370f126441fca0e328a1dd8e86a4610ccb500395b5ce61867d5be9ff699d9	9
+249S	en	mizar-checker	doc/design/mizar-checker/en/source_spec_audit.md	2	Task 249S Active Source/Public-Surface Result	d5528b60cb1dfe2bfa2883e3d7818702c8913486ceb54bd1db0485c0021eaed5	10
+249S	en	mizar-checker	doc/design/mizar-checker/en/source_type.md	2	Task 249S Active Implementation Result	70c9ccaf045fa3316a20d31e1d22be42754f0bbef2723805d8602e9909fa41ad	19
+249S	en	mizar-checker	doc/design/mizar-checker/en/typed_ast.md	2	Task 249S Active Typed Ownership Result	c54d733c6c3837494066bedb5448d75df17011659ef6728d27f0749e072ed8b5	8
+249S	en	mizar-test	doc/design/mizar-test/en/00.crate_plan.md	2	Checker Task 249S Active No-Runner Result	7e0b3f88c171f62cdd6ed874ef4addd2f8d5e32c79abaaa236d4bf9bf8602b9b	14
+249S	en	mizar-test	doc/design/mizar-test/en/bilingual_sync_audit.md	2	Checker Task 249S Active No-Op Synchronization	4d63666c96d3d77baaaf4f150293e25e8b737abdd9135481cfa46b205c296f2a	6
+249S	en	mizar-test	doc/design/mizar-test/en/harness.md	2	Checker Task 249S Active Harness No-Op	59dc700e0d5d7b53a6508175c793fac5fca0918eca6e19118137419fd9d72423	7
+249S	en	mizar-test	doc/design/mizar-test/en/module_boundary_audit.md	2	Checker Task 249S Active No-Runner Boundary	88b34b8cae8a932ab2ebb7934b7a4e40ae823bf491383e3cb36a9d400ba6759b	8
+249S	en	mizar-test	doc/design/mizar-test/en/traceability.md	2	Checker Task 249S Active Traceability No-Op Result	a329b00834f3a9f56c46e019355dbfb7c418ed7ae4cf30dbfdf2d5150772ef68	9
+249S	ja	mizar-checker	doc/design/mizar-checker/ja/00.crate_plan.md	2	Task 249S active lower-representation checkpoint	8e5e1fd3af9198f345fdc6d9b6de3b6a0559211de4c7b977f669e6251726e768	22
+249S	ja	mizar-checker	doc/design/mizar-checker/ja/bilingual_sync_audit.md	2	Task 249S active-result synchronization	5d0e41398c8f0f66b5dc0b43faf10740e0978ad56b2405a4da4f1083cefce143	7
+249S	ja	mizar-checker	doc/design/mizar-checker/ja/module_boundary_audit.md	2	Task 249S active module boundary	0e86ef92d2db2004d7680b6b8aa5ab97a88f8d60f1e5ad2ac5fd0adb13880b77	10
+249S	ja	mizar-checker	doc/design/mizar-checker/ja/payload_family_decomposition.md	2	Task 249S active lower-family result	0c0f6bac33855060091572d98c95a65605f89fdcf76fedbf363148d7c21699a6	9
+249S	ja	mizar-checker	doc/design/mizar-checker/ja/source_spec_audit.md	2	Task 249S active source/public-surface result	35693ab62946135165edc0f08390ace913661d69cc998138d4ebe34eaa3fce0a	9
+249S	ja	mizar-checker	doc/design/mizar-checker/ja/source_type.md	2	Task 249S active implementation result	f11daf78fb67073c47345b6c47e872fe52ab6582bddf493004492b2c37c611a2	18
+249S	ja	mizar-checker	doc/design/mizar-checker/ja/typed_ast.md	2	Task 249S active Typed ownership result	48eda0a979463c5a65f64c9a9723caf4aa52eddcc0e0ac2d15905b9e8bf7bfca	7
+249S	ja	mizar-test	doc/design/mizar-test/ja/00.crate_plan.md	2	Checker Task 249S active no-runner result	7fad9eea20aa890d60a7dbed7057e77c94cbe87ae96a3cbd17f50a186fd3ff74	14
+249S	ja	mizar-test	doc/design/mizar-test/ja/bilingual_sync_audit.md	2	Checker Task 249S active no-op synchronization	a6ac5dd01c952c0835ee0211a7faac2d001c65fa8429f6bc188d6a60c8ab640f	6
+249S	ja	mizar-test	doc/design/mizar-test/ja/harness.md	2	Checker Task 249S active harness no-op	9e87a7ac512d241e4da06e0840880b2b326fb4b7a0a536000bdb23db4ada1c08	7
+249S	ja	mizar-test	doc/design/mizar-test/ja/module_boundary_audit.md	2	Checker Task 249S active no-runner boundary	ae42669687a343683fea3a53b8894a283f2438445b0605b286455b87f05b6cd1	8
+249S	ja	mizar-test	doc/design/mizar-test/ja/traceability.md	2	Checker Task 249S active traceability no-op result	d5751b093e1603a5343c31205a7ae0a101026d404dcea981ae9b7acf524249b2	8
