@@ -5931,30 +5931,7 @@ Completion evidence: [central Task-258B4B historical contract](../../task_contra
 - [x] Verify clean post-commit/stash invariants and fresh-inventory B4C
   upper implementation.
 
-## Checker Task 258B4C Implementation Ledger
-
-- [x] Change only the frozen three checker and four runner source/test files.
-- [x] Authenticate exact source/Surface/raw/enriched resolver provenance,
-  lower profiles, rootless `24/1/41`, upper `1/1/1/0/1`, both
-  `Composite(0)` links, `[0]`, no input fact, and telemetry
-  `2/2/[2,2,4,4,4,4]`.
-- [x] Pass exact checker `4/4` and runner `5/5`; close independent
-  test-sufficiency and implementation reviews with **NO FINDINGS**.
-- [x] Measure libraries `422/488`, production `23/141952` and `30/56872`,
-  owner sizes, and production/test-list hashes.
-- [x] Preserve public APIs, active/corpus authority, expectations, sidecars,
-  trace/coverage state, semantic outputs, and lower-owner boundaries.
-- [x] Complete final source/documentation, bilingual, and boundary review
-  with **NO FINDINGS** after correcting one Medium `design_drift`.
-- [x] Pass broad workspace/fmt/Clippy/CLI/count/hash/scope/stash gates and
-  reproduce every frozen count and hash.
-- [x] Complete independent final quality with **NO FINDINGS**, all nine
-  hard gates PASS, no cap, and valid `100/100`
-  (`20/20/15/15/10/10/5/5`).
-- [x] Stage and inspect only Task-258B4C and create implementation commit
-  `50ab1ebc747e912fff1f0cf111832e3c2c81ba01`.
-- [x] Verify clean post-commit state, unchanged protected stash, and
-  fresh-inventory the next dependency-ready task.
+Completion evidence: [central Task-258B4C historical contract](../../task_contracts/en/258B4C.md#completion-evidence).
 
 ## Checker Task 258B5A Frozen-Contract Documentation Prerequisite
 

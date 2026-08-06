@@ -5667,29 +5667,7 @@ Completion evidence: [central Task-258B4B historical contract](../../task_contra
 - [x] clean post-commit/stash invariantsをverifyし、B4C upper
   implementationをfresh inventory。
 
-## Checker Task 258B4C implementation ledger
-
-- [x] frozen checker 3 / runner 4 source/test filesだけを変更。
-- [x] exact source/Surface/raw/enriched resolver provenance、lower profiles、
-  rootless `24/1/41`、upper `1/1/1/0/1`、両 `Composite(0)` link、`[0]`、
-  no input fact、telemetry `2/2/[2,2,4,4,4,4]`をauthenticate。
-- [x] exact checker `4/4` / runner `5/5`をPASSし、independent
-  test-sufficiency/implementation reviewを**NO FINDINGS**でclose。
-- [x] libraries `422/488`、production `23/141952` と `30/56872`、
-  owner sizes、production/test-list hashesをmeasure。
-- [x] public API、active/corpus authority、expectation、sidecar、
-  trace/coverage state、semantic output、lower-owner boundaryをpreserve。
-- [x] Medium `design_drift` 1件をcorrect後、final
-  source/documentation、bilingual、boundary reviewを**NO FINDINGS**で
-  complete。
-- [x] broad workspace/fmt/Clippy/CLI/count/hash/scope/stash gatesをPASSし、
-  全frozen count/hashをreproduce。
-- [x] independent final qualityを**NO FINDINGS**、全9 hard gates PASS、
-  capなし、valid `100/100`（`20/20/15/15/10/10/5/5`）でcomplete。
-- [x] Task-258B4Cだけをstage/inspectしimplementation commit
-  `50ab1ebc747e912fff1f0cf111832e3c2c81ba01`をcreate。
-- [x] clean post-commit state、unchanged protected stash、next
-  dependency-ready taskのfresh inventoryをverify。
+Completion evidence: [central Task-258B4C historical contract](../../task_contracts/ja/258B4C.md#completion-evidence)。
 
 ## Checker Task 258B5A frozen-contract documentation prerequisite
 

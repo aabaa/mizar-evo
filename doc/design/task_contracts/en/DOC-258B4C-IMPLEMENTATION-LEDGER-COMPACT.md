@@ -8,7 +8,7 @@
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-258B4C-IMPLEMENTATION-LEDGER-COMPACT` |
-| Status | Documentation prerequisite complete; selected sources and schema-2 ledger remain unchanged pending exact staging and this dedicated commit. |
+| Status | Migration complete; exact staging and the dedicated migration commit remain. |
 | Purpose | Centralize the EN/JA checker TODO implementation-completion checklists for historical Task 258B4C without changing any durable checker or runner owner. |
 | Historical owner | [Task 258B4C](./258B4C.md#completion-evidence) |
 | Plan indexes | [checker plan](../../mizar-checker/en/00.crate_plan.md#task-index) and [runner plan](../../mizar-test/en/00.crate_plan.md#task-index) |
@@ -105,9 +105,9 @@ unchanged; task-contract counts move from 58/58 to 59/59.
 
 After prerequisite commit and fresh replay, migration changes exactly five
 paths: the EN/JA checker TODOs, this EN/JA batch pair, and
-`legacy_compactions.tsv`. The two 49-line sections become two language-local
-redirects to `258B4C.md#completion-evidence`, with exact source diff
-`+2/-47`; all four neighboring H2 anchors remain byte-identical.
+`legacy_compactions.tsv`. The two sections totaling 49 physical lines become
+two language-local redirects to `258B4C.md#completion-evidence`, with exact
+source diff `+2/-47`; all four neighboring H2 anchors remain byte-identical.
 
 Ledger impact is eight lines, `864 -> 872`: one batch, four batch indexes, two
 redirects over two source paths, and one `task_ref`; no second task row or
@@ -166,4 +166,46 @@ expectation, checker production, runner production, and Cargo path sets and
 their frozen counts and hashes. Final independent read-only quality review ends
 **NO FINDINGS**, passes all nine hard gates, applies no score cap, and assigns
 **100/100** (`20/20/15/15/10/10/5/5`). Exact nine-path staging, cached review,
+commit, and clean replay then completed as recorded below.
+
+## Migration Evidence
+
+The documentation prerequisite committed separately as
+`1a693f1f341982b92ee601ce23c58834007bbcc2`. Clean fresh replay reproduced the
+two frozen preimages, source TSV hashes, unchanged 864-line ledger, protected
+surfaces, trace, coverage audit, and stash fingerprint before migration.
+
+The two selected TODO sections are now language-local redirects to
+`258B4C.md#completion-evidence`. The exact Git source diff is `+2/-47`; each
+selected heading and body is gone, while the four neighboring H2 anchors and
+the distinct lower-stage ledger remain byte-identical. Focused lint initially
+rejected an intermediate form that retained the forbidden selected headings;
+removing them restored the frozen whole-section boundary without evidence or
+semantic loss.
+
+The ledger adds exactly eight byte-sorted lines: one batch, four batch indexes,
+two redirects, and one `task_ref`. It is 872 lines with physical SHA-256
+`5ac307e25074e8a776024a0a060fab9d45ca68a631ca39a40283f14bfe6d485b`,
+reproduces canonical seven-row SHA-256
+`952749b6af84fab726964089b40cc0812629e117e2f06ba36b3efbb9cdc363c6`,
+and measures 22 batches, 33 tasks, one task reference, 594 redirects, and 220
+indexes. There is no second task row or historical Task Index. The historical
+contract, source TSV, four plans, protected surfaces, trace, and coverage audit
+remain unchanged.
+
+Independent migration-equivalence, schema/test-sufficiency, and bilingual/
+boundary reviews all end **NO FINDINGS**. Generic lint passes `15/15` against
+the first real schema-2 reference. Warnings-denied all-target/all-feature
+Clippy, the full workspace suite, formatting, offline Cargo metadata, and
+`git diff --check` pass. All five CLIs exit zero and reproduce their frozen
+stdout hashes; the 23 known warnings and zero errors are unchanged from the
+prerequisite replay.
+
+Protected counts and NUL-delimited path hashes reproduce as specification 64,
+`.miz` 343, expectation 435, checker production 30, runner production 90, and
+Cargo 21. Zero protected diff preserves every frozen content hash. Trace,
+coverage audit, immutable source TSV, seven-row canonical payload, and 872-line
+ledger reproduce their frozen hashes. Final independent read-only quality
+review ends **NO FINDINGS**, passes all nine hard gates, applies no score cap,
+and assigns **100/100** (`20/20/15/15/10/10/5/5`). Exact five-path staging,
 commit, and clean replay remain.
