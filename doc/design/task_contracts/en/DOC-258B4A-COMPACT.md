@@ -8,7 +8,7 @@
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-258B4A-COMPACT` |
-| Status | Documentation prerequisite and lower lint contract implemented; all reviews and verification complete; exact staging and commit remain. Migration is blocked on [DOC-COMPACT-PATH-SCOPE](./DOC-COMPACT-PATH-SCOPE.md). |
+| Status | Documentation and path-scoped lint prerequisites committed; frozen migration implemented; all migration reviews and verification complete; exact staging and commit remain. |
 | Purpose | Centralize four repeated Task-258B4A implementation-completion sections while retaining frozen contracts and durable owners. |
 | Historical owner | [Task 258B4A](./258B4A.md#completion-evidence) |
 | Plan indexes | [checker plan](../../mizar-checker/en/00.crate_plan.md#task-index) and [runner plan](../../mizar-test/en/00.crate_plan.md#task-index) |
@@ -162,9 +162,42 @@ global-heading lint defect: migration remains blocked until the separately
 contracted path-scoped correction passes and commits. Exact staging, commit,
 and clean post-commit replay remain.
 
+## Migration Evidence
+
+The generic path-scoped lint correction committed separately as
+`fa7c3acf89e2d66c1f9f21fd515da650f6226304` after independent specification,
+test-sufficiency, implementation, source/documentation, and final-quality
+reviews ended **NO FINDINGS**; all nine hard gates passed without a cap at
+`100/100`. Clean fresh replay then reproduced all four frozen preimages, the
+source TSV hashes, and the unchanged 836-line ledger.
+
+The four selected sections are now four language-local redirects to
+`258B4A.md#completion-evidence`. Source delta is exactly `+4/-150`: each
+`52/52/25/25`-line section became one redirect plus its retained separator.
+Every neighboring anchor and retained owner remains in place. The ledger adds
+exactly 14 byte-sorted rows (batch 1, task 1, redirects 4, indexes 8), is 850
+lines, and reproduces physical SHA-256
+`7bd738ad591a40667cb95421dd68d386213c25c51274cbf5c79d8f24b0b1688a`.
+Generic recursive link/fragment/ledger lint passes and reproduces the frozen
+13-row canonical hash. The source TSV, historical contract, Task Index rows,
+protected surfaces, trace, and coverage audit are unchanged. Independent
+migration-equivalence, schema/test-sufficiency, and bilingual/boundary reviews
+all end **NO FINDINGS**. Checker and runner lint pass `15/15` each, checker and
+runner libraries pass `530/530` and `600/600`, and runner metadata passes
+`137/137`. Formatting, offline Cargo metadata, warnings-denied all-target/all-
+feature Clippy, the full all-target/all-feature workspace suite (including all
+three long frontend benchmarks), and `git diff --check` pass. All five CLIs
+exit zero with 23 known warnings and zero errors each and reproduce their five
+frozen stdout hashes. Protected counts/path hashes reproduce as specification
+64, `.miz` 343, expectation 435, checker production 30, runner production 90,
+and Cargo 21; zero protected diff retains every frozen content hash. Final
+independent read-only quality review ends **NO FINDINGS**, passes all nine hard
+gates, applies no score cap, and assigns **100/100**
+(`20/20/15/15/10/10/5/5`). The only residual risk is process-only: exact
+staging, the dedicated migration commit, and clean post-commit replay remain.
+
 ## Handoff
 
-Complete and commit this documentation prerequisite only. Then implement and
-commit `DOC-COMPACT-PATH-SCOPE` separately, fresh-replay the four sections, and
-perform the frozen migration. Parent remains `xhigh`; bounded independent
-reviews use `high`.
+Stage exactly the seven reviewed migration paths, commit, then fresh-inventory
+the next checker duplication family. Parent remains `xhigh`; bounded
+independent reviews use `high`.

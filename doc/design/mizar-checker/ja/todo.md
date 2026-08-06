@@ -5574,30 +5574,7 @@ runner、docs-only implementation commitはproducer taskを満たさない。
 - [x] clean ahead-6/behind-0 post-commit state、unchanged stash
   fingerprintをverifyし、B4A implementationをfresh inventory。
 
-## Checker Task 258B4A implementation ledger
-
-- [x] frozen checker 3/runner 5 consumersだけをimplement。
-- [x] exact checker 4/runner 5 testsとfrozen lower/upper mutation、
-  coherent-near-miss、cross-family、replay、clone matricesを追加。
-- [x] lower Task-257 `UnassignedStatement` ownershipを保持し、Surface root
-  25とrootless lower typed arenaを区別。
-- [x] separate test-sufficiency/implementation reviewsを
-  **NO FINDINGS**でcomplete。
-- [x] focused checker `4/4` / runner `5/5`をPASSし、libraries
-  `414/476`、production `23/139828` / `30/55109`をmeasure。
-- [x] specifications、existing corpus/expectation/sidecar/trace artifacts、
-  active behavior、semantic tables、public runner schemasをpreserve。
-- [x] source/documentation、bilingual、boundary consistency reviewを
-  **NO FINDINGS**でcomplete。
-- [x] focused/package、formatting、full Clippy、workspace、5 CLI、
-  count/hash/scope/forbidden/stash verificationをPASS。
-- [x] independent final qualityを**NO FINDINGS**、全9 hard gates PASS、
-  capなし、valid `100/100`でcomplete。
-- [x] exact B4A implementation scopeだけをstage/inspect。
-- [x] dedicated B4A implementation commit
-  `662adbde71e665ab37504ac476e94c935c493535`をcreate。
-- [x] clean ahead-7/behind-0 post-commit state、unchanged stash
-  fingerprintをverifyし、B4Bをfresh inventory。
+Completion evidence: [central Task-258B4A historical contract](../../task_contracts/ja/258B4A.md#completion-evidence)。
 
 ## Checker Task 258B4B documentation prerequisite
 

@@ -7,7 +7,7 @@
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-258B4A-COMPACT` |
-| Status | documentation prerequisite/lower lint contract実装済み。全review/verification完了。exact staging/commit待ち。migrationは[DOC-COMPACT-PATH-SCOPE](./DOC-COMPACT-PATH-SCOPE.md)待ち。 |
+| Status | documentation/path-scoped lint prerequisite commit済み。frozen migration実装済み。全migration review/verification完了。exact staging/commit待ち。 |
 | Purpose | frozen contract/durable ownerを保持し、Task-258B4A implementation completion 4節を集約する。 |
 | Historical owner | [Task 258B4A](./258B4A.md#completion-evidence) |
 | Plan indexes | [checker plan](../../mizar-checker/ja/00.crate_plan.md#task-index) / [runner plan](../../mizar-test/ja/00.crate_plan.md#task-index) |
@@ -137,8 +137,36 @@ hash/850-line physical ledger hashを再現した。classified residual riskはc
 global-heading lint defectであり、separate path-scoped correctionのPASS/commitまで
 migrationはblocked。exact staging、commit、clean post-commit replayだけが残る。
 
+## Migration evidence
+
+generic path-scoped lint correctionはindependent specification、test-sufficiency、
+implementation、source/documentation、final-quality reviewを全て**NO FINDINGS**、
+hard gate 9件PASS/capなし/`100/100`でclose後、separate
+`fa7c3acf89e2d66c1f9f21fd515da650f6226304`としてcommitした。clean fresh
+replayはfrozen preimage 4件、source TSV hash、unchanged 836-line ledgerを再現した。
+
+selected 4 sectionsは`258B4A.md#completion-evidence`へのlanguage-local redirect
+4件になった。source deltaはexact `+4/-150`で、各`52/52/25/25`-line sectionを
+redirect 1行とretained separatorへ置換した。全neighbor anchor/retained ownerは
+維持される。ledgerはbyte-sorted 14 rows（batch 1/task 1/redirect 4/index 8）を
+追加し、850 lines、physical SHA
+`7bd738ad591a40667cb95421dd68d386213c25c51274cbf5c79d8f24b0b1688a`を再現。
+generic recursive link/fragment/ledger lintはPASSし、frozen 13-row canonical hashを
+再現した。source TSV、historical contract、Task Index row、protected surface、
+trace、coverage auditは不変。independent migration-equivalence、schema/test-
+sufficiency、bilingual/boundary reviewは全て**NO FINDINGS**。checker/runner lint
+各`15/15`、checker/runner library `530/530` / `600/600`、runner metadata
+`137/137`がPASS。format、offline Cargo metadata、warnings-denied all-target/all-
+feature Clippy、long frontend benchmark 3件を含むfull all-target/all-feature
+workspace、`git diff --check`がPASS。CLI 5件は各exit zero、known warning 23、
+error zeroでfrozen stdout hash 5件を再現した。protected count/path hashはspec
+64、`.miz` 343、expectation 435、checker production 30、runner production 90、
+Cargo 21を再現し、protected diff zeroが全frozen content hashを保持する。final
+independent read-only quality reviewは**NO FINDINGS**、hard gate 9件PASS、cap
+なし、**100/100**（`20/20/15/15/10/10/5/5`）。remaining riskはprocess-onlyで、
+exact staging、dedicated migration commit、clean post-commit replayだけが残る。
+
 ## Handoff
 
-本documentation prerequisiteだけをcomplete/commitする。その後
-`DOC-COMPACT-PATH-SCOPE`をseparate implement/commitし、fresh replay後にfrozen
-migrationを行う。parentは`xhigh`、bounded reviewは`high`。
+review済みexact seven migration pathsをstage/commit後、次checker duplication
+familyをfresh inventoryする。parentは`xhigh`、bounded reviewは`high`。

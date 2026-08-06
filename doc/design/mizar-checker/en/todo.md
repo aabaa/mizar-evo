@@ -5835,30 +5835,7 @@ implementation commit does not satisfy a producer task.
   fingerprint, and fresh-inventory B4A
   implementation.
 
-## Checker Task 258B4A Implementation Ledger
-
-- [x] Implement only the frozen checker three and runner five consumers.
-- [x] Add the exact four checker/five runner tests and frozen lower/upper
-  mutation, coherent-near-miss, cross-family, replay, and clone matrices.
-- [x] Preserve lower Task-257 `UnassignedStatement` ownership and distinguish
-  Surface root 25 from the rootless lower typed arena.
-- [x] Complete separate test-sufficiency and implementation reviews with
-  **NO FINDINGS**.
-- [x] Pass focused checker `4/4` and runner `5/5`; measure libraries
-  `414/476` and production `23/139828`, `30/55109`.
-- [x] Preserve specifications, existing corpus/expectation/sidecar/trace
-  artifacts, active behavior, semantic tables, and public runner schemas.
-- [x] Complete source/documentation, bilingual, and boundary consistency
-  review with **NO FINDINGS**.
-- [x] Pass focused/package, formatting, full Clippy, workspace, five-CLI,
-  count/hash/scope/forbidden/stash verification.
-- [x] Complete independent final quality with **NO FINDINGS**, all nine hard
-  gates PASS, no cap, and valid `100/100`.
-- [x] Stage and inspect only the exact B4A implementation scope.
-- [x] Create one dedicated B4A implementation commit
-  `662adbde71e665ab37504ac476e94c935c493535`.
-- [x] Verify clean ahead-7/behind-0 post-commit state, unchanged stash
-  fingerprint, and fresh-inventory B4B.
+Completion evidence: [central Task-258B4A historical contract](../../task_contracts/en/258B4A.md#completion-evidence).
 
 ## Checker Task 258B4B Documentation Prerequisite
 
