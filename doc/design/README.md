@@ -169,7 +169,10 @@ or active-behavior change. Ordinary semantic tasks do not perform that cleanup.
 Completed exact whole-section migrations are indexed by the versioned
 [`legacy_compactions.tsv`](./task_contracts/legacy_compactions.tsv) ledger so
 repository lint remains data-driven. The ledger enforces approved redirects;
-it is not authority to delete mixed or owner-local content.
+it is not authority to delete mixed or owner-local content. Its schema-2
+`task_ref` keeps one canonical historical-task owner while allowing a later
+batch with a disjoint source-file set to reuse that owner; it does not permit a
+second same-task section in one source file or duplicate Task Index ownership.
 
 See
 [autonomous_crate_development.md](./autonomous_crate_development.md#canonical-task-contracts)

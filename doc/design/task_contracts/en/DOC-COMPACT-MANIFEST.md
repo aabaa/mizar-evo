@@ -8,6 +8,11 @@ or override language behavior, test intent, diagnostics, public API, or
 coverage credit. It replaces a Rust-coded historical ledger with one bounded,
 reviewable data source before further legacy-evidence batches are migrated.
 
+> Live schema note: schema 2 and cross-batch historical-task references are
+> owned by [DOC-COMPACT-MANIFEST-TASK-REF](./DOC-COMPACT-MANIFEST-TASK-REF.md).
+> The schema-1 contract below remains the frozen historical implementation
+> baseline and does not describe that later delta.
+
 ## Identity And Status
 
 | Field | Frozen value |

@@ -15,7 +15,7 @@ or duplicating that contract's ownership.
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-COMPACT-MANIFEST-TASK-REF` |
-| Status | Documentation prerequisite complete: independent policy and EN/JA reviews end with no findings and all required verification passes; exact task-only staging and commit remain. Implementation stays forbidden until that dedicated commit. |
+| Status | Documentation prerequisite committed as `31d35e71e809a51c421098e5c9c9eb2853a73a93`; generic schema-2 implementation, independent reviews, required verification, and final quality review are complete. Exact task-only staging and commit remain. |
 | Primary owner | Repository legacy-compaction schema and its `mizar-test` lint consumer |
 | Consumers | Later coherent batches that compact additional sections for an already registered historical task; first intended consumer `DOC-258B4C-IMPLEMENTATION-LEDGER-COMPACT` |
 | Dependencies | `DOC-COMPACT-MANIFEST`, `DOC-COMPACT-PATH-SCOPE`, and the completed `DOC-258B4C-DOC-REVIEW-COMPACT` batch |
@@ -171,6 +171,46 @@ All completed historical migration task/batch contracts and their registered
 inventories remain unchanged. The earlier `DOC-COMPACT-MANIFEST` pair is the
 schema owner, not a migration batch; its only delta is the explicit live-policy
 supersession notice above.
+
+## Implementation Evidence
+
+- The implementation changes exactly the frozen nine paths. The ledger changes
+  only `schema<TAB>1` to `schema<TAB>2`; it remains 864 lines with physical
+  SHA-256
+  `b7e9a943afcca7ee4773e6ac472e8a350624d17f96dbb54ca821fcb1f57d56cc`,
+  21 batches, 33 canonical tasks, zero task references, 592 redirects, and 216
+  indexes. All existing batch rows and expanded-inventory hashes are unchanged.
+- The generic lint parser owns a unique `(batch ID, task ID)` reference set,
+  includes each reference in the declaring batch's participating-task count and
+  canonical inventory, requires an existing different owner batch, authorizes
+  an owner-batch redirect or a cross-batch redirect only with the exact
+  reference, preserves original Task Index ownership, and keeps the existing
+  `(source path, task ID)` collision boundary. Rust contains no historical task,
+  batch, or source-path allowlist.
+- Same-test synthetic EN/JA vectors accept the exact two-batch/one-task route
+  and reject duplicate, undeclared, self-owned, malformed, invalid-ID,
+  unreferenced redirect, reused same-task source, and repeated-index cases.
+  Test-sufficiency, full-implementation, and source/documentation/EN-JA reviews
+  independently report **NO FINDINGS**.
+- The focused and full 15-test lint-policy target pass with unchanged raw list
+  hash
+  `b044e771a655e72131d0371636bbac5684ef93a3ea503984537a4bb9dd13a7cf`.
+  `cargo fmt --all --check`, offline metadata,
+  `cargo clippy --all-targets --all-features -- -D warnings`, and full workspace
+  `cargo test` pass. All five CLI routes exit zero with the unchanged hashes
+  recorded under Documentation-Prerequisite Evidence and the same 23 warnings/
+  zero errors. Protected specification, `.miz`, expectation, trace, coverage,
+  production, public-API, Cargo, and active-result surfaces are unchanged;
+  `git diff --check` passes.
+- During implementation, `origin/main` moved externally through an `update by
+  push` from ten commits behind to `31d35e71e809a51c421098e5c9c9eb2853a73a93`.
+  The agent did not push. This is a report-only `repo_metadata_conflict`; HEAD,
+  the exact nine-path task diff, and protected stash identity remain unambiguous,
+  so no metadata repair is attempted.
+- Final read-only quality review reports **NO FINDINGS**, all nine hard gates
+  PASS, no score cap, and **100/100**. The residual first-real-ledger-row risk is
+  bounded by the synthetic EN/JA positive route and its fail-closed mutation
+  matrix; the later B4C batch must still replay the actual data path separately.
 
 ## Reviews, Verification, And Exit
 

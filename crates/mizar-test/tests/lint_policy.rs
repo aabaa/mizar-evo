@@ -8,6 +8,7 @@ use std::{
 struct LegacyCompactionManifest {
     batches: BTreeMap<String, LegacyCompactionBatch>,
     tasks: BTreeMap<String, LegacyCompactionTask>,
+    task_refs: BTreeSet<(String, String)>,
     redirects: Vec<LegacyCompactionRedirect>,
     indexes: Vec<LegacyCompactionIndex>,
     raw_rows_by_batch: BTreeMap<String, Vec<String>>,
@@ -176,6 +177,7 @@ fn task_contracts_are_recursively_paired_and_supported_links_resolve() {
     assert_legacy_heading_boundary_vectors();
     assert_legacy_document_evidence_vectors();
     assert_legacy_path_scoped_heading_vectors();
+    assert_legacy_task_reference_vectors();
     assert_eq!(
         markdown_link_destinations("```text\n~~~\n[ignored](ignored.md)\n```\n[owner](owner.md)\n"),
         vec!["owner.md"]
@@ -1477,9 +1479,9 @@ fn parse_legacy_compaction_manifest(
         violations.push("legacy compaction manifest is empty".to_owned());
         return None;
     };
-    if schema != "schema\t1" {
+    if schema != "schema\t2" {
         violations.push(format!(
-            "legacy compaction manifest:{}: first data row must be schema<TAB>1",
+            "legacy compaction manifest:{}: first data row must be schema<TAB>2",
             schema_line_number + 1
         ));
     }
@@ -1496,6 +1498,7 @@ fn parse_legacy_compaction_manifest(
     let mut manifest = LegacyCompactionManifest {
         batches: BTreeMap::new(),
         tasks: BTreeMap::new(),
+        task_refs: BTreeSet::new(),
         redirects: Vec::new(),
         indexes: Vec::new(),
         raw_rows_by_batch: BTreeMap::new(),
@@ -1565,6 +1568,28 @@ fn parse_legacy_compaction_manifest(
                         "legacy compaction manifest:{}: task id {} belongs to multiple rows",
                         line_number + 1,
                         fields[2]
+                    ));
+                }
+                manifest
+                    .raw_rows_by_batch
+                    .entry(fields[1].to_owned())
+                    .or_default()
+                    .push(row.to_owned());
+            }
+            Some("task_ref") if fields.len() == 3 => {
+                for (label, id) in [("batch", fields[1]), ("task", fields[2])] {
+                    if !valid_task_contract_id(id) {
+                        violations.push(format!(
+                            "legacy compaction manifest:{}: invalid task_ref {label} id {id:?}",
+                            line_number + 1
+                        ));
+                    }
+                }
+                let key = (fields[1].to_owned(), fields[2].to_owned());
+                if !manifest.task_refs.insert(key) {
+                    violations.push(format!(
+                        "legacy compaction manifest:{}: duplicate task_ref batch/task",
+                        line_number + 1
                     ));
                 }
                 manifest
@@ -1691,7 +1716,12 @@ fn validate_legacy_manifest_relations(
             .tasks
             .values()
             .filter(|task| task.batch_id == batch.id)
-            .count();
+            .count()
+            + manifest
+                .task_refs
+                .iter()
+                .filter(|(batch_id, _)| batch_id == &batch.id)
+                .count();
         let redirects = manifest
             .redirects
             .iter()
@@ -1738,6 +1768,24 @@ fn validate_legacy_manifest_relations(
         }
         validate_manifest_contract_path(workspace, &task.contract_en, "en", &task.id, violations);
         validate_manifest_contract_path(workspace, &task.contract_ja, "ja", &task.id, violations);
+    }
+    for (batch_id, task_id) in &manifest.task_refs {
+        if !manifest.batches.contains_key(batch_id) {
+            violations.push(format!(
+                "legacy compaction task_ref {batch_id}/{task_id} references undeclared batch"
+            ));
+        }
+        let Some(task) = manifest.tasks.get(task_id) else {
+            violations.push(format!(
+                "legacy compaction task_ref {batch_id}/{task_id} references undeclared task"
+            ));
+            continue;
+        };
+        if task.batch_id == *batch_id {
+            violations.push(format!(
+                "legacy compaction task_ref {batch_id}/{task_id}: owner batch must use its task row"
+            ));
+        }
     }
     for redirect in &manifest.redirects {
         validate_manifest_redirect_relation(workspace, manifest, redirect, violations);
@@ -1817,9 +1865,13 @@ fn validate_manifest_redirect_relation(
         ));
         return;
     };
-    if task.batch_id != redirect.batch_id {
+    if task.batch_id != redirect.batch_id
+        && !manifest
+            .task_refs
+            .contains(&(redirect.batch_id.clone(), task.id.clone()))
+    {
         violations.push(format!(
-            "legacy redirect {} binds task {} to wrong batch {}",
+            "legacy redirect {} binds task {} to wrong batch {} without task_ref",
             redirect.source_path.display(),
             task.id,
             redirect.batch_id
@@ -2409,6 +2461,7 @@ fn assert_legacy_path_scoped_heading_vectors() {
     let manifest = LegacyCompactionManifest {
         batches: BTreeMap::new(),
         tasks: BTreeMap::new(),
+        task_refs: BTreeSet::new(),
         redirects: vec![LegacyCompactionRedirect {
             batch_id: "BATCH".to_owned(),
             task_id: "T".to_owned(),
@@ -2448,12 +2501,151 @@ fn assert_legacy_path_scoped_heading_vectors() {
     remove_dir_if_exists(&workspace);
 }
 
+fn assert_legacy_task_reference_vectors() {
+    let workspace =
+        std::env::temp_dir().join(format!("mizar_test_legacy_task_ref_{}", std::process::id()));
+    remove_dir_if_exists(&workspace);
+
+    for language in ["en", "ja"] {
+        create_dir(&workspace.join(format!("doc/design/task_contracts/{language}")));
+        create_dir(&workspace.join(format!("doc/design/component/{language}")));
+        write_test_file(
+            &workspace.join(format!("doc/design/task_contracts/{language}/OWNER.md")),
+            "# Task OWNER: Owning batch\n\n## Completion Evidence\n",
+        );
+        write_test_file(
+            &workspace.join(format!("doc/design/task_contracts/{language}/REF.md")),
+            "# Task REF: Referencing batch\n\n## Completion Evidence\n",
+        );
+        write_test_file(
+            &workspace.join(format!("doc/design/task_contracts/{language}/T.md")),
+            "# Task T: Historical task\n\n## Completion Evidence\n",
+        );
+    }
+
+    let replacement_en = "Completion evidence: [central Task-T historical contract](../../task_contracts/en/T.md#completion-evidence).";
+    let replacement_ja = "Completion evidence: [central Task-T historical contract](../../task_contracts/ja/T.md#completion-evidence)。";
+    write_test_file(
+        &workspace.join("doc/design/component/en/ref.md"),
+        &format!("## Previous EN\n{replacement_en}\n## Next EN\n"),
+    );
+    write_test_file(
+        &workspace.join("doc/design/component/ja/ref.md"),
+        &format!("## Previous JA\n{replacement_ja}\n## Next JA\n"),
+    );
+    let referenced_index = "| T | [EN contract](../../task_contracts/en/T.md) |";
+    write_test_file(
+        &workspace.join("doc/design/component/en/00.crate_plan.md"),
+        &format!("## Task Index\n{referenced_index}\n"),
+    );
+
+    let task_row =
+        "task\tOWNER\tT\tdoc/design/task_contracts/en/T.md\tdoc/design/task_contracts/ja/T.md"
+            .to_owned();
+    let task_ref_row = "task_ref\tREF\tT".to_owned();
+    let redirect_en = format!(
+        "redirect\tREF\tT\ten\tdoc/design/component/en/ref.md\t2\t## Legacy EN\t{replacement_en}\t## Previous EN\t## Next EN"
+    );
+    let redirect_ja = format!(
+        "redirect\tREF\tT\tja\tdoc/design/component/ja/ref.md\t2\t## Legacy JA\t{replacement_ja}\t## Previous JA\t## Next JA"
+    );
+
+    let owner_inventory = format!("{task_row}\n");
+    let mut ref_rows = vec![redirect_en, redirect_ja, task_ref_row];
+    ref_rows.sort();
+    let ref_inventory = format!("{}\n", ref_rows.join("\n"));
+    let mut rows = vec![
+        format!(
+            "batch\tOWNER\tdoc/design/task_contracts/en/OWNER.md\tdoc/design/task_contracts/ja/OWNER.md\t{}\t1\t0\t0\t0",
+            sha256_hex(owner_inventory.as_bytes())
+        ),
+        format!(
+            "batch\tREF\tdoc/design/task_contracts/en/REF.md\tdoc/design/task_contracts/ja/REF.md\t{}\t1\t2\t2\t0",
+            sha256_hex(ref_inventory.as_bytes())
+        ),
+        task_row,
+    ];
+    rows.extend(ref_rows);
+    rows.sort();
+    let manifest = format!("schema\t2\n{}\n", rows.join("\n"));
+
+    let violations = legacy_compaction_manifest_violations(&workspace, &manifest);
+    assert!(
+        violations.is_empty(),
+        "a second batch may reference one canonical historical task: {violations:?}"
+    );
+
+    let mutations = vec![
+        (
+            duplicate_first_manifest_row(&manifest, "task_ref"),
+            "duplicate task_ref batch/task",
+        ),
+        (
+            mutate_first_manifest_field(&manifest, "task_ref", 1, |_| "MISSING".to_owned()),
+            "references undeclared batch",
+        ),
+        (
+            mutate_first_manifest_field(&manifest, "task_ref", 2, |_| "MISSING".to_owned()),
+            "references undeclared task",
+        ),
+        (
+            mutate_first_manifest_field(&manifest, "task_ref", 1, |_| "OWNER".to_owned()),
+            "owner batch must use its task row",
+        ),
+        (
+            mutate_first_manifest_row(&manifest, "task_ref", |row| format!("{row}\textra")),
+            "unknown kind or wrong field count",
+        ),
+        (
+            mutate_first_manifest_field(&manifest, "task_ref", 1, |_| "bad/id".to_owned()),
+            "invalid task_ref batch id",
+        ),
+        (
+            mutate_first_manifest_field(&manifest, "task_ref", 2, |_| "bad/id".to_owned()),
+            "invalid task_ref task id",
+        ),
+        (
+            remove_first_manifest_row(&manifest, "task_ref"),
+            "wrong batch REF without task_ref",
+        ),
+        (
+            duplicate_first_manifest_row_with(&manifest, "redirect", |row| {
+                let mut fields = row.split('\t').collect::<Vec<_>>();
+                fields[1] = "OWNER";
+                fields.join("\t")
+            }),
+            "duplicate redirect source/task",
+        ),
+        (
+            append_manifest_row(
+                &manifest,
+                &format!(
+                    "index\tREF\tT\ten\tdoc/design/component/en/00.crate_plan.md\t{referenced_index}"
+                ),
+            ),
+            "binds task T to wrong batch REF",
+        ),
+    ];
+    for (mutation, expected) in mutations {
+        let violations = legacy_compaction_manifest_violations(&workspace, &mutation);
+        assert!(
+            violations
+                .iter()
+                .any(|violation| violation.contains(expected)),
+            "task_ref mutation must report {expected:?}, got:\n{}",
+            violations.join("\n")
+        );
+    }
+
+    remove_dir_if_exists(&workspace);
+}
+
 fn assert_legacy_manifest_mutation_vectors(workspace: &Path, manifest: &str) {
     let zero_hash = "0".repeat(64);
     let mutations = vec![
         (
-            mutate_first_manifest_field(manifest, "schema", 1, |_| "2".to_owned()),
-            "first data row must be schema<TAB>1",
+            mutate_first_manifest_field(manifest, "schema", 1, |_| "1".to_owned()),
+            "first data row must be schema<TAB>2",
         ),
         (
             mutate_first_manifest_field(manifest, "batch", 4, |_| zero_hash),
@@ -2542,7 +2734,7 @@ fn assert_legacy_manifest_mutation_vectors(workspace: &Path, manifest: &str) {
             "unknown kind or wrong field count",
         ),
         (
-            append_manifest_row(manifest, "schema\t1"),
+            append_manifest_row(manifest, "schema\t2"),
             "schema record must occur exactly once and first",
         ),
         (
@@ -2613,6 +2805,23 @@ fn append_manifest_row(document: &str, row: &str) -> String {
         "{}{row}\n",
         document.trim_end_matches('\n').to_owned() + "\n"
     )
+}
+
+fn remove_first_manifest_row(document: &str, kind: &str) -> String {
+    let mut removed = false;
+    let lines = document
+        .lines()
+        .filter(|line| {
+            if !removed && line.split('\t').next() == Some(kind) {
+                removed = true;
+                false
+            } else {
+                true
+            }
+        })
+        .collect::<Vec<_>>();
+    assert!(removed, "manifest must contain a {kind} row");
+    format!("{}\n", lines.join("\n"))
 }
 
 fn swap_first_two_manifest_rows(document: &str, kind: &str) -> String {

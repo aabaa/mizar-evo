@@ -261,11 +261,16 @@ unrelated documentation cleanup.
 Record every completed whole-section legacy compaction in
 `doc/design/task_contracts/legacy_compactions.tsv`; keep the lint consumer
 generic rather than adding task IDs, file lists, or index rows to Rust. Schema
-version 1 covers only exact whole ATX H2-H6 section replacements with explicit
+version 2 covers only exact whole ATX H2-H6 section replacements with explicit
 source paths, forbidden headings, language-local redirects, neighboring
-heading anchors, Task Index rows, counts, and an expanded-inventory hash. Do
-not force a mixed owner-local section or paragraph-only cleanup into that
-schema. Extend the schema only in a separately reviewed prerequisite. The
+heading anchors, Task Index rows, counts, and an expanded-inventory hash. One
+global `task` row remains the sole historical-contract owner. A later batch may
+declare a `task_ref` to that owner only when its source-file set is disjoint
+from every other batch for the task; the reference participates in the later
+batch's task count and inventory hash, does not duplicate historical Task Index
+ownership, and cannot authorize deletion. Do not force same-task sections from
+one source file, a mixed owner-local section, or paragraph-only cleanup into
+this schema. Extend the schema only in a separately reviewed prerequisite. The
 manifest is derived enforcement data and cannot authorize a migration that its
 paired task contracts and equivalence review did not already approve.
 

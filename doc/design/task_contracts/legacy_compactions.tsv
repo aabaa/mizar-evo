@@ -1,5 +1,5 @@
 # Legacy compaction ledger. Canonical schema: task_contracts/en/DOC-COMPACT-MANIFEST.md
-schema	1
+schema	2
 batch	DOC-247-COMPLETION-COMPACT	doc/design/task_contracts/en/DOC-247-COMPLETION-COMPACT.md	doc/design/task_contracts/ja/DOC-247-COMPLETION-COMPACT.md	12da6c943ebc9cdd21c2ab8be9d5c72a1350c2bce74e07a5e81cf272c921385c	1	4	4	8
 batch	DOC-248P-DOC-REVIEW-COMPACT	doc/design/task_contracts/en/DOC-248P-DOC-REVIEW-COMPACT.md	doc/design/task_contracts/ja/DOC-248P-DOC-REVIEW-COMPACT.md	d3549958ec578a603d18a15d62175db616cd60d312e733e5bd3574ad9a534a21	1	8	8	8
 batch	DOC-249M-ACTIVE-EVIDENCE-COMPACT	doc/design/task_contracts/en/DOC-249M-ACTIVE-EVIDENCE-COMPACT.md	doc/design/task_contracts/ja/DOC-249M-ACTIVE-EVIDENCE-COMPACT.md	bb38229607a2a3eaa81e7b8d4ab8218c8ce42f0f86de91dd7471b3f205ed0b66	1	16	16	8

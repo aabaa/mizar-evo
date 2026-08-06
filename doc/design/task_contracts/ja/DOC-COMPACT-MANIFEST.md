@@ -9,6 +9,11 @@ test intent、diagnostic、public API、coverage creditを追加・上書きし�
 legacy-evidence batchより先に、Rust-coded historical ledgerを一つのboundedかつ
 reviewableなdata sourceへ置換する。
 
+> live schema note: schema 2とcross-batch historical-task referenceは
+> [DOC-COMPACT-MANIFEST-TASK-REF](./DOC-COMPACT-MANIFEST-TASK-REF.md)が所有する。
+> 以下のschema-1 contractはfrozen historical implementation baselineとして残り、
+> そのlater deltaは記述しない。
+
 ## Identity And Status
 
 | Field | Frozen value |

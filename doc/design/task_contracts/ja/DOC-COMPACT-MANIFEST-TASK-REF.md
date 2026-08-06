@@ -15,7 +15,7 @@ whole-section compaction batchを関連付ける。
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-COMPACT-MANIFEST-TASK-REF` |
-| Status | documentation prerequisite完了。independent policy/EN-JA reviewはno findings、全required verificationはpass。exact task-only staging/commitが残り、そのdedicated commitまではimplementation禁止。 |
+| Status | documentation prerequisiteは`31d35e71e809a51c421098e5c9c9eb2853a73a93`でcommit済み。generic schema-2 implementation、independent reviews、required verification、final quality review完了。exact task-only staging/commitが残る。 |
 | Primary owner | repository legacy-compaction schemaと`mizar-test` lint consumer |
 | Consumers | 既登録historical taskの追加sectionをcompactする後続coherent batch。最初の予定consumerは`DOC-258B4C-IMPLEMENTATION-LEDGER-COMPACT` |
 | Dependencies | `DOC-COMPACT-MANIFEST`、`DOC-COMPACT-PATH-SCOPE`、完了済み`DOC-258B4C-DOC-REVIEW-COMPACT` batch |
@@ -144,6 +144,40 @@ impactがなく不変とする。
 completed historical migration task/batch contractsとregistered inventoriesはすべて
 不変とする。先行`DOC-COMPACT-MANIFEST` pairはmigration batchではなくschema ownerであり、
 そのdeltaは上記explicit live-policy supersession noticeだけである。
+
+## Implementation Evidence
+
+- implementationはfrozen exact 9 pathsだけを変更する。ledger deltaは
+  `schema<TAB>1`から`schema<TAB>2`だけで、864 lines、physical SHA-256
+  `b7e9a943afcca7ee4773e6ac472e8a350624d17f96dbb54ca821fcb1f57d56cc`、
+  21 batches、33 canonical tasks、zero task references、592 redirects、216 indexes。
+  existing batch rows/expanded-inventory hashesはすべて不変。
+- generic lint parserはunique `(batch ID, task ID)` reference setを所有し、各referenceを
+  declaring batchのparticipating-task count/canonical inventoryへ含め、existing different
+  owner batchを要求し、owner-batch redirectまたはexact referenceがある場合だけ
+  cross-batch redirectをauthorizeし、original Task Index ownershipとexisting
+  `(source path, task ID)` collision boundaryを保存する。Rustにはhistorical
+  task/batch/source-path allowlistがない。
+- same-test synthetic EN/JA vectorsはexact two-batch/one-task routeをacceptし、duplicate、
+  undeclared、self-owned、malformed、invalid-ID、unreferenced redirect、reused same-task
+  source、repeated-index casesをrejectする。test-sufficiency、full-implementation、
+  source/documentation/EN-JA reviewsは独立に**NO FINDINGS**を報告した。
+- focused/full 15-test lint-policy targetはpassし、raw list hash
+  `b044e771a655e72131d0371636bbac5684ef93a3ea503984537a4bb9dd13a7cf`は不変。
+  `cargo fmt --all --check`、offline metadata、
+  `cargo clippy --all-targets --all-features -- -D warnings`、full workspace
+  `cargo test`はpass。five CLI routesはすべてexit zeroで、Documentation-Prerequisite
+  Evidence記録hashおよび23 warnings/zero errorsは不変。protected specification、
+  `.miz`、expectation、trace、coverage、production、public API、Cargo、active-result
+  surfacesは不変で、`git diff --check`はpass。
+- implementation中に`origin/main`は外部`update by push`によりten commits behindから
+  `31d35e71e809a51c421098e5c9c9eb2853a73a93`へ移動した。agentはpushしていない。
+  これはreport-only `repo_metadata_conflict`であり、HEAD、exact 9-path task diff、
+  protected stash identityはunambiguousのためmetadata repairを行わない。
+- final read-only quality reviewは**NO FINDINGS**、all nine hard gates PASS、score capなし、
+  **100/100**を報告した。first real ledger rowのresidual riskはsynthetic EN/JA positive
+  routeとfail-closed mutation matrixでboundedだが、later B4C batchはactual data pathを
+  別途replayしなければならない。
 
 ## Reviews, Verification, And Exit
 

@@ -298,14 +298,20 @@ heading anchors, paired task/batch contracts, owning Task Index rows, declared
 counts, and the canonical expanded-inventory hash. Extend the data ledger for
 later batches; do not add historical task/file lists to lint-policy Rust.
 
-Ledger schema version 1 represents only replacement of a complete ATX heading
-section through the next heading of equal or higher level. A section that mixes
-shared completion evidence with owner-local API, invariant, runner, audit,
-traceability, coverage, bilingual, or sequencing facts must remain intact
-until a separately reviewed schema/ownership prerequisite defines a safe
-paragraph-level migration. The ledger records and enforces a migration already
-authorized by paired contracts; it cannot itself authorize deletion or change
-semantic/coverage ownership.
+Ledger schema version 2 represents only replacement of a complete ATX heading
+section through the next heading of equal or higher level. One global `task`
+row remains the sole historical-contract owner. A later batch may declare a
+`task_ref` only to an existing task owned by another batch, and only when every
+batch for that task has a disjoint source-file set. The reference participates
+in the declaring batch's task count and expanded-inventory hash; redirects
+resolve through the canonical task row, and historical Task Index ownership is
+not repeated. A second same-task section in one source file, or a section that
+mixes shared completion evidence with owner-local API, invariant, runner,
+audit, traceability, coverage, bilingual, or sequencing facts, must remain
+intact until a separately reviewed schema/ownership prerequisite defines a
+safe occurrence or paragraph-level migration. The ledger records and enforces
+a migration already authorized by paired contracts; it cannot itself authorize
+deletion or change semantic/coverage ownership.
 
 ## Economical Review Packets
 
