@@ -1,0 +1,6 @@
+# Frozen preimage inventory for DOC-247-COMPLETION-COMPACT.
+# Columns: task, language, component, source path, ATX level, exact heading text without the ATX prefix, section SHA-256, physical lines.
+247	en	mizar-checker	doc/design/mizar-checker/en/00.crate_plan.md	2	Task 247 STEP 5 Payload-Family Decomposition Completion	4983d9551a4713248ae641b0dc06301fc31cca654eaab5c4101719064c6be07b	34
+247	en	mizar-checker	doc/design/mizar-checker/en/todo.md	2	Task 247 STEP 5 Payload-Family Decomposition	3c0d5955cabef07784c773683d85acca4fdd02450d725d0cfe0468518a0e7929	27
+247	ja	mizar-checker	doc/design/mizar-checker/ja/00.crate_plan.md	2	Task 247 STEP 5 payload-family decomposition completion	3ad42f407d719331cff14e47a71cc20cc307068bcebb3efb812a400ca0450e44	32
+247	ja	mizar-checker	doc/design/mizar-checker/ja/todo.md	2	Task 247 STEP 5 Payload-Family Decomposition	8ef3cac6bd81d227f7f918bf756816bc9c46561233cd311385e912247584577a	23
