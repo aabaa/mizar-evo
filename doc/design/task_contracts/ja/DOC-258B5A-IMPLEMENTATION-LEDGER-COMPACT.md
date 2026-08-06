@@ -8,7 +8,7 @@
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-258B5A-IMPLEMENTATION-LEDGER-COMPACT` |
-| Status | documentation prerequisite完了。exact staging、本dedicated commitまでselected sources/schema-2 ledgerは不変。 |
+| Status | migration完了。exact stagingとdedicated migration commitがremaining。 |
 | Purpose | durable checker/runner ownerを変更せずhistorical Task 258B5Aのchecker TODO EN/JA implementation-completion checklistを集約する。 |
 | Historical owner | [Task 258B5A](./258B5A.md#completion-evidence) |
 | Plan indexes | [checker plan](../../mizar-checker/ja/00.crate_plan.md#task-index)と[runner plan](../../mizar-test/ja/00.crate_plan.md#task-index) |
@@ -151,5 +151,40 @@ review中、externally pushed `origin/main`はselection relation `0/3`からsame
 `71edf340` HEAD（`0/0`）へ進んだ。agentによるfetch/push/reset/stash actionはなく、
 eventはreport-onlyのままでexact nine-path commit targetはunambiguous。final independent
 read-only quality reviewは**NO FINDINGS**、全9 hard gates PASS、score capなし、
-**100/100**（`20/20/15/15/10/10/5/5`）である。exact staging、commit、clean replayが
-remaining。
+**100/100**（`20/20/15/15/10/10/5/5`）である。exact staging、commit、clean replayは
+下記記録どおり後続完了した。
+
+## Migration Evidence
+
+documentation prerequisiteは
+`b213e68bae54a8b2a5c7415195e89a398761558b`としてseparately commitした。clean fresh
+replayはmigration前にfrozen preimages 2件、source TSV hashes、unchanged 872-line
+ledger、protected surfaces、trace、coverage audit、origin relation `0/1`、stash
+fingerprintをreproduceした。
+
+selected TODO sections 2件は`258B5A.md#completion-evidence`へのlanguage-local
+redirectになった。exact Git source diffは`+2/-52`で、selected heading/bodyは除去され、
+neighboring H2 anchors 4件と全retained TODO sectionはbyte-identicalである。
+
+ledgerはexact 8 byte-sorted lines、すなわちone batch、four batch indexes、two
+redirects、one `task_ref`を追加した。880 lines、physical SHA-256
+`ecaba8321e82f662b436460d1e41cb936c6284b7503621863a3f59e903113026`、canonical
+seven-row SHA-256
+`93c964b12ac36314e1731317a081eb2c08077a5ec35e69cf30776ee0a55e2daf`をreproduceし、
+23 batches、33 tasks、two task references、596 redirects、224 indexesをmeasureする。
+second task row/historical Task Indexはない。historical contract、source TSV、plans
+4件、protected surfaces、trace、coverage auditは不変。
+
+independent migration-equivalence、schema/test-sufficiency、bilingual/boundary reviewsは
+全て**NO FINDINGS**で終了した。generic lintはsecond real schema-2 referenceに対して
+`15/15`でPASS。warnings-denied all-target/all-feature Clippy、full workspace suite、
+formatting、offline Cargo metadata、`git diff --check`はPASSした。5 CLIsは全てexit
+zeroでfrozen stdout hashesをreproduceし、known warnings 23、errors zeroは不変。
+
+protected counts/NUL-delimited path hashesはspecification 64、`.miz` 343、expectation
+435、checker production 30、runner production 90、Cargo 21をreproduceする。zero
+protected diffが全frozen content hashを保持する。trace、coverage audit、immutable
+source TSV、seven-row canonical payload、880-line ledgerはfrozen hashesをreproduceする。
+final independent read-only quality reviewは**NO FINDINGS**、全9 hard gates PASS、
+score capなし、**100/100**（`20/20/15/15/10/10/5/5`）である。exact five-path staging、
+commit、clean replayがremaining。
