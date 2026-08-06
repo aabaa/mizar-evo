@@ -8,7 +8,7 @@
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-258B5B-UPPER-IMPLEMENTATION-LEDGER-COMPACT` |
-| Status | prerequisite reviews/verification/independent final quality完了。exact staging/dedicated prerequisite commitがremaining。selected source/schema-2 ledgerは不変。 |
+| Status | migration reviews、final verification、independent final quality完了。exact staging、dedicated migration commit、clean post-commit replayがremaining。 |
 | Purpose | durable checker/runner ownerを変えずhistorical Task 258B5Bのchecker TODO EN/JA upper-implementation completion checklistを集約する。 |
 | Historical owner | [Task 258B5B](./258B5B.md#completion-evidence) |
 | Plan indexes | [checker plan](../../mizar-checker/ja/00.crate_plan.md#task-index)と[runner plan](../../mizar-test/ja/00.crate_plan.md#task-index) |
@@ -144,3 +144,41 @@ mutationは行っていない。independent final read-only qualityは**NO FINDI
 hard gates PASS、score capなし、valid **100/100**
 （`20/20/15/15/10/10/5/5`）。exact staging、commit、clean post-commit replayが
 remaining。
+
+## Migration Evidence
+
+documentation prerequisiteはseparate
+`947c96e22ef24e939f553190eb101fefeefd4a40`としてcommit済み。migration前のclean
+fresh replayはfrozen preimage 2件、source TSV hashes、unchanged 880-line ledger、
+protected no-op、`origin/main...HEAD=0/3`、protected stashを再現した。
+
+selected EN/JA TODO sectionsは`258B5B.md#completion-evidence`へのlanguage-local
+redirectとなった。exact source diffは`+2/-38`。forbidden legacy heading/bodyは両方
+消え、neighboring H2 anchors 4件と全unselected TODO sectionは残る。
+
+ledgerはexact 12 byte-sorted rows、すなわちone batch、one canonical task、eight
+indexes、two redirectsを追加する。892 lines、physical SHA-256
+`9fbff2dc28e5bd3f331f80f688633c50ce702d80b48448c620ba848a6ae2eeae`、canonical
+11-row SHA-256
+`f092cd19c475ae8219cc6c68f2334debbf1025a6f29cbaa1cddff1212b571c6d`を再現し、
+24 batches、34 tasks、two task references、598 redirects、232 indexesを測定する。
+historical contract、source TSV、four plans、protected surfaces、trace、coverage auditは
+不変。
+
+independent evidence-equivalence、schema/test-sufficiency、bilingual/boundary
+migration reviewsは全件**NO FINDINGS**。exact whole-H2 splice、`+2/-38` source
+delta、language-local redirect、retained neighboring anchor/unselected section、
+removed checklist fact全件の保持、schema-2 ownership、exact ledger row/hash/
+cardinality、protected no-opを独立にproveした。
+
+generic lintは`15/15`、checker `530/530`、runner `600/600`、metadata `137/137`
+testsはPASS。`cargo fmt --all --check`、offline Cargo metadata、warnings-denied
+all-target/all-feature Clippy、full offline workspace suiteもPASS。five CLIsは23
+known warnings/zero errorsでexit zeroとなりfrozen plan/parse/declaration/type/proof
+hashesを再現した。protected path count/hash、trace、coverage audit、source TSV、全
+frozen content hashはexactに再現し、`git diff --check`はPASS。push/fetch/reset/
+stash mutationは行っていない。
+
+independent final read-only qualityは**NO FINDINGS**。全9 hard gates PASS、score
+capなし、valid **100/100**（`20/20/15/15/10/10/5/5`）。exact five-path staging、
+commit、clean post-commit replayがremaining。

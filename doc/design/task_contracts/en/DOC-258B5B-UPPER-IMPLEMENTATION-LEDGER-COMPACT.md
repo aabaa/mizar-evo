@@ -8,7 +8,7 @@
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-258B5B-UPPER-IMPLEMENTATION-LEDGER-COMPACT` |
-| Status | Prerequisite reviews, verification, and independent final quality complete; exact staging and the dedicated prerequisite commit remain. Selected sources and schema-2 ledger are unchanged. |
+| Status | Migration reviews, final verification, and independent final quality complete; exact staging, the dedicated migration commit, and clean post-commit replay remain. |
 | Purpose | Centralize the EN/JA checker TODO upper-implementation completion checklist for historical Task 258B5B without changing a durable checker or runner owner. |
 | Historical owner | [Task 258B5B](./258B5B.md#completion-evidence) |
 | Plan indexes | [checker plan](../../mizar-checker/en/00.crate_plan.md#task-index) and [runner plan](../../mizar-test/en/00.crate_plan.md#task-index) |
@@ -154,4 +154,47 @@ task-only nine-path worktree, `origin/main...HEAD=0/2`, and protected
 stash mutation occurred. Independent final read-only quality ends **NO
 FINDINGS**; all nine hard gates PASS, no score cap applies, and the valid score
 is **100/100** (`20/20/15/15/10/10/5/5`). Exact staging, commit, and clean
+post-commit replay remain.
+
+## Migration Evidence
+
+The documentation prerequisite committed separately as
+`947c96e22ef24e939f553190eb101fefeefd4a40`. Clean fresh replay reproduced
+both frozen preimages, the source TSV hashes, unchanged 880-line ledger,
+protected no-ops, `origin/main...HEAD=0/3`, and the protected stash before
+migration.
+
+The selected EN/JA TODO sections are now language-local redirects to
+`258B5B.md#completion-evidence`. Exact source diff is `+2/-38`; both forbidden
+legacy headings and bodies are gone, while all four neighboring H2 anchors and
+every unselected TODO section remain.
+
+The ledger adds exactly 12 byte-sorted rows: one batch, one canonical task,
+eight indexes, and two redirects. It is 892 lines with physical SHA-256
+`9fbff2dc28e5bd3f331f80f688633c50ce702d80b48448c620ba848a6ae2eeae`,
+reproduces canonical 11-row SHA-256
+`f092cd19c475ae8219cc6c68f2334debbf1025a6f29cbaa1cddff1212b571c6d`,
+and measures 24 batches, 34 tasks, two task references, 598 redirects, and 232
+indexes. The historical contract, source TSV, four plans, protected surfaces,
+trace, and coverage audit remain unchanged.
+
+Independent evidence-equivalence, schema/test-sufficiency, and bilingual/
+boundary migration reviews all end **NO FINDINGS**. They independently prove
+the exact whole-H2 splices, `+2/-38` source delta, language-local redirects,
+retained neighboring anchors and unselected sections, complete preservation
+of every removed checklist fact, schema-2 ownership, exact ledger rows,
+hashes, cardinalities, and protected no-ops.
+
+Generic lint passes `15/15`; checker `530/530`, runner `600/600`, and metadata
+`137/137` tests pass. `cargo fmt --all --check`, offline Cargo metadata,
+warnings-denied all-target/all-feature Clippy, and the full offline workspace
+suite pass. All five CLIs exit zero with 23 known warnings and zero errors and
+reproduce the frozen plan/parse/declaration/type/proof hashes. Protected path
+counts and hashes, trace, coverage audit, source TSV, and every frozen content
+hash reproduce exactly; `git diff --check` passes. No push, fetch, reset, or
+stash mutation occurred.
+
+Independent final read-only quality ends **NO FINDINGS**. All nine hard gates
+PASS, no score cap applies, and the valid score is **100/100**
+(`20/20/15/15/10/10/5/5`). Exact five-path staging, commit, and clean
 post-commit replay remain.

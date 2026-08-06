@@ -5734,24 +5734,7 @@ Completion evidence: [central Task-258B5A historical contract](../../task_contra
   gatesをseparate commit
   `46dd9db56ced2fcc57799420de9d5fed06f284f5`でPASS。
 
-## Checker Task 258B5B upper implementation
-
-- [x] lower commitとfresh inventory後、frozen three checker/four runner
-  consumersだけを変更。
-- [x] exact imported target/API、profile、resolver replay、mutation matrix、
-  four checker/five runner testsをimplementし、全review/hard gatesを
-  pre-commit状態でPASS。
-- [x] classified `design_drift`/adjacent-profile `source_drift`をrepair後、
-  separate test-sufficiency、implementation、final source/documentation
-  consistency reviewを**NO FINDINGS**でcomplete。
-- [x] focused/crate/workspace、formatting、exact Clippy、five-CLI、
-  count/hash、forbidden-artifact、repository-state、stash gateをPASS。
-- [x] independent final qualityを**NO FINDINGS**、全9 hard gates PASS、
-  capなし、valid `100/100`（`20/20/15/15/10/10/5/5`）でcomplete。
-- [x] Task-258B5B upperだけをstage/inspectしdedicated implementation
-  commit `f27d2c9169b08078f00b75c4a57f94e30fa28f59`を作り、clean
-  post-commit invariantをverifyしてnext dependency-ready taskをfresh
-  inventory。
+Completion evidence: [central Task-258B5B historical contract](../../task_contracts/ja/258B5B.md#completion-evidence)。
 
 ## Checker Task 258B5C frozen-contract documentation prerequisite
 

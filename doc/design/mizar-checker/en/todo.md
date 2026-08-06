@@ -6001,26 +6001,7 @@ Completion evidence: [central Task-258B5A historical contract](../../task_contra
   lower tests and all protocol gates in separate commit
   `46dd9db56ced2fcc57799420de9d5fed06f284f5`.
 
-## Checker Task 258B5B Upper Implementation
-
-- [x] After the lower commit and fresh inventory, change only the frozen
-  three checker and four runner consumers.
-- [x] Implement the exact imported target/API, profiles, resolver replay,
-  mutation matrix, four checker and five runner tests, then pass all reviews
-  and pre-commit hard gates.
-- [x] Complete separate test-sufficiency, implementation, and final
-  source/documentation consistency reviews with **NO FINDINGS** after
-  repairing the classified `design_drift` and adjacent-profile
-  `source_drift`.
-- [x] Pass focused, crate, workspace, formatting, exact Clippy, five-CLI,
-  count/hash, forbidden-artifact, repository-state, and stash gates.
-- [x] Complete independent final quality with **NO FINDINGS**, all nine hard
-  gates PASS, no cap, and valid `100/100`
-  (`20/20/15/15/10/10/5/5`).
-- [x] Stage and inspect only Task-258B5B upper, create dedicated
-  implementation commit
-  `f27d2c9169b08078f00b75c4a57f94e30fa28f59`, verify clean post-commit
-  invariants, and fresh-inventory the next dependency-ready task.
+Completion evidence: [central Task-258B5B historical contract](../../task_contracts/en/258B5B.md#completion-evidence).
 
 ## Checker Task 258B5C Frozen-Contract Documentation Prerequisite
 
