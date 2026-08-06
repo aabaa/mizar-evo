@@ -175,6 +175,7 @@ fn task_contracts_are_recursively_paired_and_supported_links_resolve() {
     );
     assert_legacy_heading_boundary_vectors();
     assert_legacy_document_evidence_vectors();
+    assert_legacy_path_scoped_heading_vectors();
     assert_eq!(
         markdown_link_destinations("```text\n~~~\n[ignored](ignored.md)\n```\n[owner](owner.md)\n"),
         vec!["owner.md"]
@@ -2025,11 +2026,13 @@ fn validate_legacy_manifest_documents(
     if expected.len() != manifest.redirects.len() {
         violations.push("legacy compaction manifest has duplicate expanded redirects".to_owned());
     }
-    let forbidden = manifest
-        .redirects
-        .iter()
-        .map(|redirect| redirect.legacy_heading.clone())
-        .collect::<BTreeSet<_>>();
+    let mut forbidden_by_path = BTreeMap::<PathBuf, BTreeSet<String>>::new();
+    for redirect in &manifest.redirects {
+        forbidden_by_path
+            .entry(workspace.join(&redirect.source_path))
+            .or_default()
+            .insert(redirect.legacy_heading.clone());
+    }
     let mut documents = BTreeMap::new();
     let mut heading_slugs = BTreeMap::new();
     for path in markdown_paths {
@@ -2049,6 +2052,7 @@ fn validate_legacy_manifest_documents(
         validate_cached_manifest_markdown_links(path, line, &heading_slugs, violations);
     }
     for (path, document) in &documents {
+        let forbidden = forbidden_by_path.get(path).cloned().unwrap_or_default();
         let expected_lines = expected_by_path.get(path).cloned().unwrap_or_default();
         validate_legacy_redirect_document_evidence(
             path,
@@ -2060,6 +2064,7 @@ fn validate_legacy_manifest_documents(
     }
     for (path, expected_lines) in &expected_by_path {
         if !documents.contains_key(path) {
+            let forbidden = forbidden_by_path.get(path).cloned().unwrap_or_default();
             validate_legacy_redirect_document_evidence(
                 path,
                 "",
@@ -2372,6 +2377,75 @@ fn assert_legacy_document_evidence_vectors() {
             "document mutation must report {diagnostic:?}, got {violations:?}"
         );
     }
+}
+
+fn assert_legacy_path_scoped_heading_vectors() {
+    let workspace = std::env::temp_dir().join(format!(
+        "mizar_test_legacy_path_scope_{}",
+        std::process::id()
+    ));
+    remove_dir_if_exists(&workspace);
+
+    let source_path = PathBuf::from("doc/design/component/en/source.md");
+    let unrelated_path = PathBuf::from("doc/design/component/en/unrelated.md");
+    let contract_path = PathBuf::from("doc/design/task_contracts/en/T.md");
+    let legacy_heading = "## Legacy completion";
+    let replacement = "Completion evidence: [central Task-T historical contract](../../task_contracts/en/T.md#completion-evidence).";
+    create_dir(&workspace.join("doc/design/component/en"));
+    create_dir(&workspace.join("doc/design/task_contracts/en"));
+    write_test_file(
+        &workspace.join(&contract_path),
+        "# Task T: Historical record\n\n## Completion Evidence\n",
+    );
+    write_test_file(
+        &workspace.join(&source_path),
+        &format!("## Previous\n{replacement}\n## Next\n"),
+    );
+    write_test_file(
+        &workspace.join(&unrelated_path),
+        &format!("{legacy_heading}\n"),
+    );
+
+    let manifest = LegacyCompactionManifest {
+        batches: BTreeMap::new(),
+        tasks: BTreeMap::new(),
+        redirects: vec![LegacyCompactionRedirect {
+            batch_id: "BATCH".to_owned(),
+            task_id: "T".to_owned(),
+            language: "en".to_owned(),
+            source_path: source_path.clone(),
+            heading_level: 2,
+            legacy_heading: legacy_heading.to_owned(),
+            replacement: replacement.to_owned(),
+            previous_heading: "## Previous".to_owned(),
+            next_heading: "## Next".to_owned(),
+        }],
+        indexes: Vec::new(),
+        raw_rows_by_batch: BTreeMap::new(),
+    };
+
+    let mut violations = Vec::new();
+    validate_legacy_manifest_documents(&workspace, &manifest, &mut violations);
+    assert!(
+        violations.is_empty(),
+        "an unrelated document may retain the same heading text: {violations:?}"
+    );
+
+    write_test_file(
+        &workspace.join(&source_path),
+        &format!("## Previous\n{replacement}\n## Next\n{legacy_heading}\n"),
+    );
+    let mut violations = Vec::new();
+    validate_legacy_manifest_documents(&workspace, &manifest, &mut violations);
+    assert!(
+        violations.iter().any(|violation| {
+            violation.contains("forbidden legacy completion heading")
+                && violation.contains(&workspace.join(&source_path).display().to_string())
+        }),
+        "the declared source must reject its legacy heading: {violations:?}"
+    );
+
+    remove_dir_if_exists(&workspace);
 }
 
 fn assert_legacy_manifest_mutation_vectors(workspace: &Path, manifest: &str) {
