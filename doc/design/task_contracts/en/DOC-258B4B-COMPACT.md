@@ -8,7 +8,7 @@
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-258B4B-COMPACT` |
-| Status | Documentation-prerequisite reviews and verification complete; exact staging and commit remain. |
+| Status | Documentation prerequisite committed; migration reviews and verification complete; exact staging and commit remain. |
 | Purpose | Centralize four repeated Task-258B4B task-wide implementation-completion sections while retaining frozen contracts and durable checker/runner owners. |
 | Historical owner | [Task 258B4B](./258B4B.md#completion-evidence) |
 | Plan indexes | [checker plan](../../mizar-checker/en/00.crate_plan.md#task-index) and [runner plan](../../mizar-test/en/00.crate_plan.md#task-index) |
@@ -164,8 +164,45 @@ reproduce their frozen hashes. Final independent read-only quality review ends
 **100/100** (`20/20/15/15/10/10/5/5`). Exact nine-path staging, cached
 review, commit, and clean replay remain.
 
+## Migration Evidence
+
+The documentation prerequisite committed separately as
+`158986616f91898d24c5c1ffc13c9446f38b2306`. Clean fresh replay then
+reproduced all four frozen preimages, the source TSV hashes, the unchanged
+850-line ledger, protected surfaces, trace, coverage audit, and stash
+fingerprint.
+
+The four selected sections are now four language-local redirects to
+`258B4B.md#completion-evidence`. Source delta is exactly `+4/-203`: each
+`76/70/32/29`-line section became one redirect plus its retained separator.
+Every neighboring anchor, registered B4A redirect, and retained owner remains
+in place. The ledger adds exactly 14 byte-sorted rows (batch 1, task 1,
+redirects 4, indexes 8), is 864 lines, reproduces physical SHA-256
+`876dbd36c52952d029257d3c16d0ae8f7cb2a9fac9f09fedafae6c4df3e026bf`,
+and reproduces the frozen 13-row canonical hash. The source TSV, historical
+contract, Task Index rows, protected surfaces, trace, and coverage audit are
+unchanged.
+
+Independent migration-equivalence, schema/test-sufficiency, and bilingual/
+boundary reviews all end **NO FINDINGS**. Checker and runner lint pass `15/15`
+each, checker and runner libraries pass `530/530` and `600/600`, and runner
+metadata passes `137/137`. Formatting, offline Cargo metadata,
+warnings-denied all-target/all-feature Clippy, the full all-target/all-feature
+workspace suite including all three long frontend benchmarks, generic
+recursive contract/link/fragment/ledger lint, and `git diff --check` pass.
+
+All five CLIs exit zero with 23 known warnings and zero errors each and
+reproduce the five frozen stdout hashes. Protected counts/path hashes
+reproduce as specification 64, `.miz` 343, expectation 435, checker
+production 30, runner production 90, and Cargo 21; zero protected diff
+preserves every frozen content hash. Trace, coverage audit, immutable source
+TSV, 13-row canonical payload, and 864-line ledger reproduce their frozen
+hashes. Final independent read-only quality review ends **NO FINDINGS**,
+passes all nine hard gates, applies no score cap, and assigns **100/100**
+(`20/20/15/15/10/10/5/5`). Exact staging, commit, and clean replay remain.
+
 ## Handoff
 
-Complete documentation-prerequisite reviews and verification, stage exactly
-the nine frozen paths, commit, then fresh-replay this contract and implement
-the migration. Parent remains `xhigh`; bounded independent reviews use `high`.
+Complete migration reviews and verification, stage exactly the seven frozen
+paths, commit, then fresh-inventory the next checker duplication family.
+Parent remains `xhigh`; bounded independent reviews use `high`.

@@ -5869,37 +5869,7 @@ Completion evidence: [central Task-258B4A historical contract](../../task_contra
   fingerprint, and fresh-inventory B4B
   implementation.
 
-## Checker Task 258B4B Implementation Ledger
-
-- [x] Change exactly three checker and four runner files; keep
-  `source_formula_composition.rs` and every lower owner unchanged.
-- [x] Authenticate the private 167-byte route, label-free raw resolver
-  provenance, enriched `1/1/1/1/0`, complete Task-257B2 lower handoff,
-  rootless 124-node arena with `42/1/81`, and upper `1/1/1/0/1` with both
-  links `Composite(0)`.
-- [x] Pair B4A/Task-257B1 and B4B/Task-257B2 exactly, preserve B4B
-  `0/0/[]`, B4A `1/1/[1,1]`, and the active 166-byte lower-only route.
-- [x] Pass exact checker `4/4` and runner `5/5` focused tests.
-- [x] Complete separate test-sufficiency and implementation reviews with
-  **NO FINDINGS**.
-- [x] Measure libraries `418/481`, production `23/140821` and `30/56007`,
-  all four test-list hashes, both production hashes, and unchanged CLI
-  counts/hashes.
-- [x] Preserve public APIs, semantics, corpus, expectations, sidecars, trace
-  status/count/backlinks, and specification authority.
-- [x] Repeat source/documentation, bilingual, and boundary consistency
-  reviews to **NO FINDINGS**.
-- [x] Run full package/workspace, fmt, Clippy, CLI, count/hash, scope, and
-  stash verification.
-- [x] Complete independent final quality with **NO FINDINGS**, all nine hard
-  gates PASS, no cap, and valid `100/100`
-  (`20/20/15/15/10/10/5/5`).
-- [x] Stage and inspect only the exact Task-258B4B implementation scope,
-  then create dedicated implementation commit
-  `752c17ae7d552d5268d1028612b8174e480b6f3e`.
-- [x] Verify clean ahead-1/behind-0 post-commit state after report-only
-  external origin movement, unchanged stash fingerprint, and fresh-inventory
-  B4C.
+Completion evidence: [central Task-258B4B historical contract](../../task_contracts/en/258B4B.md#completion-evidence).
 
 ## Checker Task 258B4C Documentation Prerequisite
 

@@ -8,7 +8,7 @@
 | field | frozen value |
 |---|---|
 | task | `DOC-258B4B-COMPACT` |
-| status | documentation-prerequisite review/verificationはcomplete。exact staging/commitがremainingである。 |
+| status | documentation prerequisiteはcommitted。migration review/verificationはcomplete。exact staging/commitがremainingである。 |
 | purpose | frozen contractとdurable checker/runner ownerを保持し、Task-258B4Bのtask-wide implementation-completion section 4件を集約する。 |
 | historical owner | [Task 258B4B](./258B4B.md#completion-evidence) |
 | plan indexes | [checker plan](../../mizar-checker/ja/00.crate_plan.md#task-index)と[runner plan](../../mizar-test/ja/00.crate_plan.md#task-index) |
@@ -165,8 +165,45 @@ frozen hashesをreproduceする。final independent read-only quality reviewは
 （`20/20/15/15/10/10/5/5`）である。exact nine-path staging、cached
 review、commit、clean replayがremainingである。
 
+## migration evidence
+
+documentation prerequisiteは
+`158986616f91898d24c5c1ffc13c9446f38b2306`としてseparately commitした。
+clean fresh replayは4 frozen preimages、source TSV hashes、unchanged
+850-line ledger、protected surfaces、trace、coverage audit、stash
+fingerprintをreproduceした。
+
+selected sections 4件は`258B4B.md#completion-evidence`へのlanguage-local
+redirect 4件になった。source deltaはexact `+4/-203`で、各
+`76/70/32/29`-line sectionはredirect 1行とretained separatorになった。
+全neighboring anchors、registered B4A redirects、retained ownersはin place
+である。ledgerはexact 14 byte-sorted rows（batch 1、task 1、redirects 4、
+indexes 8）を追加し、864 lines、physical SHA-256
+`876dbd36c52952d029257d3c16d0ae8f7cb2a9fac9f09fedafae6c4df3e026bf`
+とfrozen 13-row canonical hashをreproduceする。source TSV、historical
+contract、Task Index rows、protected surfaces、trace、coverage auditは
+unchangedである。
+
+independent migration-equivalence、schema/test-sufficiency、bilingual/
+boundary reviewsは全て**NO FINDINGS**で終了した。checker/runner lintは
+各`15/15`、checker/runner librariesは`530/530`と`600/600`、runner
+metadataは`137/137`でPASSした。formatting、offline Cargo metadata、
+warnings-denied all-target/all-feature Clippy、3 long frontend benchmarksを
+含むfull all-target/all-feature workspace suite、generic recursive
+contract/link/fragment/ledger lint、`git diff --check`はPASSした。
+
+5 CLIsは全てexit zero、known warnings 23、errors zeroで、5 frozen stdout
+hashesをreproduceする。protected counts/path hashesはspecification 64、
+`.miz` 343、expectation 435、checker production 30、runner production 90、
+Cargo 21をreproduceし、zero protected diffが全frozen content hashを保持
+する。trace、coverage audit、immutable source TSV、13-row canonical
+payload、864-line ledgerはfrozen hashesをreproduceする。final independent
+read-only quality reviewは**NO FINDINGS**、全9 hard gates PASS、score cap
+なし、**100/100**（`20/20/15/15/10/10/5/5`）である。exact staging、
+commit、clean replayがremainingである。
+
 ## handoff
 
-documentation-prerequisite reviews/verificationを完了し、exact nine
-frozen pathsだけをstage/commitし、fresh replay後にmigrationを実装する。
+migration reviews/verificationを完了し、exact seven frozen pathsだけを
+stage/commitし、次のchecker duplication familyをfresh-inventoryする。
 parentは`xhigh`、bounded independent reviewsは`high`を用いる。

@@ -5608,34 +5608,7 @@ Completion evidence: [central Task-258B4A historical contract](../../task_contra
   fingerprintをverifyし、B4B implementationを
   fresh inventory。
 
-## Checker Task 258B4B implementation ledger
-
-- [x] frozen checker 3/runner 4、合計7 consumersだけをimplement。
-- [x] private 167-byte source、raw label-free resolverからenriched
-  `1/1/1/1/0`へのhandoff、Task-257B2 lower transactionをauthenticate。
-- [x] rootless 124-node arena、exact `42/1/81` ownership、upper
-  `1/1/1/0/1`、statement/candidateの両`Composite(0)`をpreserve。
-- [x] B1/B4AとB2/B4Bだけをpairし、B4B private telemetry
-  `0/0/[]`、B4A `1/1/[1,1]`をfail-closedに保持。
-- [x] active 166-byte sourceをlower-onlyに保持し、public API、
-  semantics、corpus、expectation、sidecar、traceを変更しない。
-- [x] exact checker `4/4` / runner `5/5` focused testsをPASS。
-- [x] separate test-sufficiency/implementation reviewsを
-  **NO FINDINGS**でcomplete。
-- [x] final source/documentation、bilingual、boundary consistency reviewを
-  repeatし、
-  **NO FINDINGS**でclose。
-- [x] focused/package、`cargo fmt --check`、full Clippy、workspace、
-  5 CLI、全count/hash/scope/forbidden/stash verificationをcomplete。
-- [x] independent final qualityを**NO FINDINGS**、全9 hard gates PASS、
-  capなし、valid `100/100`
-  （`20/20/15/15/10/10/5/5`）でcomplete。
-- [x] exact Task-258B4B implementation scopeだけをstageしcached diffを
-  inspectし、dedicated implementation commit
-  `752c17ae7d552d5268d1028612b8174e480b6f3e`をcreate。
-- [x] report-only external origin movement後のclean ahead-1/behind-0
-  post-commit state、unchanged stash fingerprintをverifyし、Task 258B4Cを
-  fresh inventory。
+Completion evidence: [central Task-258B4B historical contract](../../task_contracts/ja/258B4B.md#completion-evidence)。
 
 ## Checker Task 258B4C documentation prerequisite
 
