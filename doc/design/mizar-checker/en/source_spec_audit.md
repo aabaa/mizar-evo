@@ -48,6 +48,7 @@ Module specifications audited:
 - [source_structure.md](./source_structure.md)
 - [source_statement.md](./source_statement.md)
 - [source_proof_local_declaration.md](./source_proof_local_declaration.md)
+- [source_template.md](./source_template.md)
 - [source_term.md](./source_term.md)
 - [source_type.md](./source_type.md)
 - [type_checker.md](./type_checker.md)
@@ -440,6 +441,42 @@ interpret evidence, create or accept facts, evaluate gates, select
 inheritance/coercion, publish accepted registrations/artifacts, or create
 downstream IR. Those behaviors remain with Tasks 252+ and their explicit
 owners.
+
+### `source_template`
+
+Generated public newtypes:
+
+- `SourceTemplateParameterId`, `SourceTemplateLociId`,
+  `SourceTemplateLocusId`, `SourceTemplateArgumentsId`,
+  `SourceTemplateArgumentId`
+
+Literal top-level public items:
+
+- `SourceTemplateHandoffInput`, `SourceTemplateParameterInput`,
+  `SourceTemplateLociInput`, `SourceTemplateLocusInput`,
+  `SourceTemplateArgumentsInput`, `SourceTemplateArgumentInput`,
+  `SourceTemplateRecovery`, `SourceTemplateParentKind`,
+  `SourceTemplateParameterKind`, `SourceTemplateParameterTable`,
+  `SourceTemplateParameter`, `SourceTemplateLociTable`,
+  `SourceTemplateLoci`, `SourceTemplateLocusTable`, `SourceTemplateLocus`,
+  `SourceTemplateArgumentsTable`, `SourceTemplateArguments`,
+  `SourceTemplateArgumentTable`, `SourceTemplateArgument`,
+  `SourceTemplateHandoff`, `SourceTemplateError`, `SourceTemplateProducer`
+
+Correspondence:
+
+| Specification promise | Source evidence | Test evidence | Status |
+|---|---|---|---|
+| Chapter 18 direct parameter/loci/argument syntax is transported without target or theorem semantics. | Frozen five-table input/handoff API in `src/source_template.rs`. | Four checker and four private real-frontend runner tests. | Frozen for Task 277A; implementation pending. |
+| Parent/child TypedArena adjacency, dense order, range, recovery, and duplicate-site rules fail closed. | `SourceTemplateProducer::build` and crate-private installation validation. | Exact and corrupted parent/group/order/environment tests. | Frozen transactionally; no repair or sorting. |
+| Typed/final owners preserve one neutral slot without changing semantic profiles. | `TypedAst::with_source_template` and `ResolvedTypedAst::source_template`. | Duplicate install, final replay, deterministic clone, and semantic-isolation tests. | Frozen as coexistent parser-origin evidence. |
+| Public surface and enums remain documented and forward-compatible. | Five IDs, six input aggregates, four data/error enums, five row/table pairs, handoff, and producer above; every public enum is non-exhaustive. | Public-enum and source/spec-audit lint policies. | Frozen with no exhaustive or syntax-dependency exception. |
+
+Bounded gaps: Task 277A does not publish a resolved template target,
+formal-to-actual association, actual kind, substitution request/result,
+scheme/theorem role, algorithm role, guard, inference, compatibility, verdict,
+diagnostic, active route, or coverage credit. Later Task-277 slices and Task 278
+retain those separately authorized decisions.
 
 ### `source_term`
 
@@ -5885,6 +5922,23 @@ Resolved ownership match the frozen contract and canonical block scope.
 Canonical artifacts remain byte-identical; source type, active use/capture,
 and every condition/fact/proof semantic remain open rather than inferred from
 source behavior.
+
+## Task 277A Frozen Source/Specification Mapping
+
+The [central Task 277A contract](../../task_contracts/en/277A.md) maps only the
+direct parser-origin Parameter/Loci/Locus/Arguments/Argument grammar roles in
+Templates Chapter 18 to a syntax-free, targetless transport profile. The exact
+fixture has no scheme/theorem source role, no algorithm, and no pred/func
+schema parameter. Missing durable owner, source producer, and focused tests are
+respectively `design_drift`, `source_drift`, and `test_gap`; the contradictory
+algorithm wording remains deferred `spec_gap`. No expectation or coverage
+status changes, and implementation is pending.
+
+The future public surface is inventoried under `source_template` above. The
+implementation must add the module/export, public-surface, and four-public-enum
+entries to the paired current inventories and checker `tests/lint_policy.rs`
+in the same logical task; that policy-only ninth Rust path adds no behavior or
+test count.
 
 ## Task 269GT Source/API Delta
 

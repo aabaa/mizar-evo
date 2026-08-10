@@ -3782,3 +3782,10 @@ the successor is selected only from fresh post-commit inventory.
   quality passes all nine gates at `100/100`; implementation commit
   `3bddc5fd6383226bbb66d7d5757e7b77f80678d9` and clean post-commit inventory
   are complete. No semantic successor is assigned here.
+
+## Checker Task 277A Direct Parser-Origin Template Transport
+
+- [x] Prepare the paired [central contract](../../task_contracts/en/277A.md)
+  and private runner owner/audit documentation.
+- [ ] Add only the cfg-test dormant route and four `task277a_` runner tests;
+  do not add dispatcher/detail-key/coverage behavior or alter `runner.rs`.

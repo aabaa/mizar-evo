@@ -1736,3 +1736,11 @@ selector、6-value mutation seam、missing-dependency text、runner 4 tests、sh
 exitを同期する。実装済みrunner route/test updateはharness/module-boundary/TODOの
 各pairとshared checker owner linksを対象にする。exact identifier/bytesはEnglish
 canonicalで、synchronization exceptionはない。
+
+## Task 277A Contract Parity
+
+canonical [EN contract](../../task_contracts/en/277A.md) と[JA companion]
+(../../task_contracts/ja/277A.md) はcfg-test-only runner boundary、all-surface arena
+construction、no-dispatch/no-detail-key rule、pending runner tests 4件、shared 9 Rust
+paths / 24 completion-doc paths、no-impact decisionを同期する。exact identifier/
+fixture bytesはEnglish canonical。

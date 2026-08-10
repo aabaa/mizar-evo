@@ -3524,3 +3524,10 @@ post-commit fresh inventoryからだけ選択する。
   `100/100`でPASSした。implementation commit
   `3bddc5fd6383226bbb66d7d5757e7b77f80678d9`とclean post-commit inventoryは
   complete。このrecordはsemantic successorをassignしない。
+
+## Checker Task 277A Direct Parser-Origin Template Transport
+
+- [x] paired [central contract](../../task_contracts/ja/277A.md) とprivate runner
+  owner/audit documentationをprepareする。
+- [ ] cfg-test dormant routeと`task277a_` runner test 4件だけを追加し、dispatcher/
+  detail-key/coverage behaviorを作らず`runner.rs`を変更しない。

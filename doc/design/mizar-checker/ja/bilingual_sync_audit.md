@@ -57,6 +57,7 @@ task 33 で pair が同期済みであるとは、以下をすべて満たすこ
 | `source_structure.md` | `../ja/source_structure.md` | `../en/source_structure.md` | Task-254 authority/boundary、seven-table structure/member/FieldUpdate/edge/request transport、Task-252/253 fingerprint association、exact/synthetic consumer、exclusion、public enum policy | none |
 | `source_statement.md` | `../ja/source_statement.md` | `../en/source_statement.md` | Tasks 258A/258B1 authority/boundary、five-table theorem/statement transportとlocal-label/citation composition、BindingEnv/Task-252/256 fingerprint、replay-authenticated resolver input、ownership exclusion、exact dormant consumer、semantic deferral、public enum policy | none |
 | `source_evidence.md` | `../ja/source_evidence.md` | `../en/source_evidence.md` | Task-251 authority/boundary、request/response transport model、Task-249/250 association、catalog/payload validation、ownership、exact consumer、exclusion、public enum policy | none |
+| `source_template.md` | `../ja/source_template.md` | `../en/source_template.md` | Task-277A direct parser-origin five-table transport、targetless provenance、neutral Typed/Resolved ownership、private runner boundary、exclusion、public enum policy | none |
 | `source_term.md` | `../ja/source_term.md` | `../en/source_term.md` | Task-252 authority/boundary、three-table primary-term transport、binding lookup/parent/request validation、ownership、exact consumer、exclusion、public enum policy | none |
 | `source_type.md` | `../ja/source_type.md` | `../en/source_type.md` | Task-249 authority/boundary、flat application/expression/argument model、environment/arena/graph/provenance validation、ownership、consumer、exclusion、public enum policy | none |
 | `todo.md` | `../ja/todo.md` | `../en/todo.md` | module implementation table、prerequisites、resolved decisions、ordered task list、task statuses、verification、notes | none |
@@ -1741,3 +1742,12 @@ ordinal `2`、5-node arena、error順、boxed Typed/Resolved ownership、7-file/
 updateはsource-term、Typed、Resolved、source-spec-audit、TODOの各pairとroot
 zero-credit mappingを対象にする。exact identifier/bytesはEnglish canonicalで、
 synchronization exceptionはない。
+
+## Task 277A Contract Parity
+
+canonical [EN contract](../../task_contracts/en/277A.md) と[JA companion]
+(../../task_contracts/ja/277A.md) はexact fixture fingerprint、five two-row table、
+targetless meaning、ABI/error order、future implementation 9 Rust paths / 24
+completion-doc paths、no-impact decision、pending statusを同期する。exact
+identifier/signature/hash/rangeはEnglishを
+canonicalとする。synchronization exceptionはない。

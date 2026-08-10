@@ -1827,3 +1827,12 @@ artifact/coverage impact, baselines, and exit criteria. The implemented
 runner route/test updates cover the paired harness, module-boundary, and TODO
 entries plus shared checker owner links. Exact identifiers and bytes remain
 canonical in English; no synchronization exception is recorded.
+
+## Task 277A Contract Parity
+
+The canonical [EN contract](../../task_contracts/en/277A.md) and [JA
+companion](../../task_contracts/ja/277A.md) synchronize the cfg-test-only
+runner boundary, all-surface arena construction, no-dispatch/no-detail-key
+rule, four pending runner tests, nine-Rust-path plus 24-completion-doc shared
+scope, and no-impact decisions. English exact identifiers and fixture bytes
+are canonical.

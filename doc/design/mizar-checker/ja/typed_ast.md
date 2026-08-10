@@ -1923,3 +1923,11 @@ binding/type ownerまたはsibling proof-local transactionは両順序でcoexist
 failureは全owner stateとsemantic tableを不変に保つ。semantic table、node hint、fact、
 diagnostic、downstream IR entryは作らない。
 `TypedAstError::InvalidSourceProofLocalGivenDescendantUseTerm` がinvalid installationをrejectする。
+
+## Task 277A Typed Ownership
+
+[central Task 277A contract](../../task_contracts/ja/277A.md) は`TypedAst`のneutral
+`Option<SourceTemplateHandoff>` slot 1件をreserveする。consuming installerはhandoff
+validation後のsame-slot duplicateをrejectし、getterはread-only。unrelated semantic
+slotとはcoexistでき、semantic profile/fact/diagnostic/substitution/downstream IRを
+create/gateしない。implementationはpendingである。

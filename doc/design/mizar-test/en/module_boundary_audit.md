@@ -13115,6 +13115,15 @@ The library is `556`, with raw/normalized hashes
 `728a5b688c19acc42d66a9c2f5c13ad67d795949ec88a2d877b917c9607d80e8`.
 All excluded ownership and active boundaries remain unchanged.
 
+## Checker Task 277A Frozen Runner Boundary
+
+The [central Task 277A contract](../../task_contracts/en/277A.md) permits only
+the new cfg-test source-template leaf, type-elaboration facade, test leaf, and
+test module registration. `runner.rs` is excluded. The runner selects parser
+nodes and builds a TypedArena only; checker remains the sole producer and
+Typed/Resolved owner. Public dispatch, artifacts, diagnostics, fixtures,
+expectations, trace, metadata, and semantic routes remain outside the boundary.
+
 ## Checker Task 269GT Frozen Runner Boundary
 
 Only

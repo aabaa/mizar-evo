@@ -1574,6 +1574,15 @@ checkerはsyntax-free public binding family/`GivenWitness`、runnerはexact lowe
 private dormant consumerをownする。raw AST/resolver/sourceはrunnerで停止。existing Rust
 8 fileだけ、new module/path/Cargo edgeなし。type/condition/fact/proof/downstreamはscope外。
 
+## Task 277A Frozen Module Boundary
+
+[central Task 277A contract](../../task_contracts/ja/277A.md) はfuture checker changeを
+`source_template.rs`、そのexport、neutral Typed/Resolved installation、
+`tests/lint_policy.rs`のgeneric module/public-API/public-enum inventory entryに限定する。
+runnerはcfg-test-only extraction/testだけをownしsemanticはownしない。`runner.rs`、
+parser/syntax/resolver owner、active dispatch、artifact、diagnostic、fixture metadata、
+traceability、semantic profile gateはboundary外である。
+
 ## Task 269GT frozen boundary
 
 implementationはexact

@@ -5560,3 +5560,13 @@ precedence, one-shot empty-semantic ownership, and isolation:
 - `task269sdu_typed_and_resolved_owners_are_one_shot_and_semantically_empty`
 - `task269sdu_isolation_preserves_predecessors_siblings_and_absent_set_terms`
 There is no public dispatcher or active CLI route.
+
+## Checker Task 277A Frozen Runner Boundary
+
+The [central Task 277A contract](../../task_contracts/en/277A.md) reserves a
+cfg-test-only `source_template_output` route and mutation variant. It selects
+only the frozen direct parser nodes and constructs the indexed all-surface
+`TypedArena`; output is the neutral checker handoff through Typed/Resolved.
+There is no detail key, public dispatcher, active CLI path, semantic target,
+or coverage credit. Four pending `task277a_` runner tests cover the exact
+profile, validation/mutation failure, neutral ownership, and route isolation.

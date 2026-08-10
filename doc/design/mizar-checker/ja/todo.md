@@ -6461,3 +6461,10 @@ post-commit fresh inventoryからだけ選択する。
   qualityも全9 gates `100/100`でPASSした。implementation commit
   `3bddc5fd6383226bbb66d7d5757e7b77f80678d9`とclean post-commit inventoryは
   complete。このrecordはsemantic successorをassignしない。
+
+## Task 277A Direct Parser-Origin Template Transport
+
+- [x] paired [central contract](../../task_contracts/ja/277A.md)、owner link、
+  Task Index row、documentation-only review surfaceをprepareする。
+- [ ] frozen neutral transportと8件の`task277a_` testだけをimplementし、targetless
+  raw suffix meaning、inactive routing、全no-impact exclusionをpreserveする。

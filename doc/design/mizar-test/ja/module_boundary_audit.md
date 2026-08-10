@@ -11819,6 +11819,14 @@ libraryは`556`、raw/normalized hashは
 `728a5b688c19acc42d66a9c2f5c13ad67d795949ec88a2d877b917c9607d80e8`。
 excluded ownership/active boundaryは全て不変。
 
+## Checker Task 277A Frozen Runner Boundary
+
+[central Task 277A contract](../../task_contracts/ja/277A.md) はnew cfg-test
+source-template leaf、type-elaboration facade、test leaf、test module registrationだけを
+permitし、`runner.rs`はexcludeする。runnerはparser nodeをselectしてTypedArenaをbuildする
+だけで、checkerがsole producer/Typed/Resolved ownerである。public dispatch/artifact/
+diagnostic/fixture/expectation/trace/metadata/semantic routeはboundary外。
+
 ## Checker Task 269GT frozen runner boundary
 
 変更可能なのは

@@ -1906,3 +1906,11 @@ ownershipをatomicにreplaceする。direct binding/type ownershipとsibling pro
 transactionは両順序でmutually excludeし、failureはpartial Resolved state/semantic
 payloadをpublishしない。
 `ResolvedTypedAstError::InvalidSourceProofLocalGivenDescendantUseTerm` がinvalid final replayをreportする。
+
+## Task 277A Resolved Ownership
+
+[central Task 277A contract](../../task_contracts/ja/277A.md) は`ResolvedTypedAst`の
+matching neutral `Option<SourceTemplateHandoff>` slotをreserveする。final installationは
+immutable Typed handoffをrevalidateしてcloneし、same-slot duplicateをrejectする。
+unrelated semantic ownerとはcoexistでき、semantic profile/acceptance gateを追加しない。
+implementationはpendingである。

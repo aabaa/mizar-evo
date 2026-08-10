@@ -1641,6 +1641,16 @@ Raw AST/resolver/source values stop at the runner. Only eight existing Rust
 files may change, with no module/path/Cargo edge. Type/condition/fact/proof and
 all downstream owners remain outside the boundary.
 
+## Task 277A Frozen Module Boundary
+
+The [central Task 277A contract](../../task_contracts/en/277A.md) confines the
+future checker change to `source_template.rs`, its export, neutral
+Typed/Resolved installation, and the generic module/public-API/public-enum
+inventory entries in `tests/lint_policy.rs`. The runner owns cfg-test-only
+extraction and tests, not semantics. `runner.rs`, parser/syntax/resolver owners, active
+dispatch, artifacts, diagnostics, fixture metadata, traceability, and semantic
+profile gates are outside this boundary.
+
 ## Task 269GT Frozen Boundary
 
 Implementation may change exactly

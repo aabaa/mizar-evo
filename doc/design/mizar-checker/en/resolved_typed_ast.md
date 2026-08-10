@@ -2033,3 +2033,12 @@ and sibling proof-local transactions are mutually excluded in either order;
 failed installation publishes no partial Resolved state or semantic payload.
 `ResolvedTypedAstError::InvalidSourceProofLocalGivenDescendantUseTerm` reports
 an invalid final replay.
+
+## Task 277A Resolved Ownership
+
+The [central Task 277A contract](../../task_contracts/en/277A.md) reserves the
+matching neutral `Option<SourceTemplateHandoff>` slot on `ResolvedTypedAst`.
+Final installation revalidates and clones the immutable Typed handoff; a
+duplicate same-slot installation fails. The slot coexists with unrelated
+semantic owners and introduces no semantic profile or acceptance gate.
+Implementation is pending.

@@ -2057,3 +2057,12 @@ either order; failure leaves all owner state and semantic tables unchanged.
 `TypedAstError::InvalidSourceProofLocalGivenDescendantUseTerm` rejects invalid
 installation. No semantic table, node hint, fact, diagnostic, or downstream IR
 entry is created.
+
+## Task 277A Typed Ownership
+
+The [central Task 277A contract](../../task_contracts/en/277A.md) reserves one
+neutral `Option<SourceTemplateHandoff>` slot on `TypedAst`. Its consuming
+installer rejects duplicate same-slot installation after handoff validation;
+the getter is read-only. It may coexist with unrelated semantic slots and does
+not create or gate semantic profiles, facts, diagnostics, substitutions, or
+downstream IR. Implementation is pending.

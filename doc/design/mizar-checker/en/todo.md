@@ -6820,3 +6820,11 @@ selected only from fresh post-commit inventory.
   final quality passes all nine gates at `100/100`, and implementation commit
   `3bddc5fd6383226bbb66d7d5757e7b77f80678d9` plus clean post-commit inventory
   are complete. No semantic successor is assigned here.
+
+## Task 277A Direct Parser-Origin Template Transport
+
+- [x] Prepare the paired [central contract](../../task_contracts/en/277A.md),
+  owner links, Task Index rows, and documentation-only review surface.
+- [ ] Implement only the frozen neutral transport and eight `task277a_` tests;
+  preserve targetless raw suffix meaning, inactive routing, and all no-impact
+  exclusions.

@@ -5165,3 +5165,12 @@ ownership、isolationをcoverする:
 - `task269sdu_isolation_preserves_predecessors_siblings_and_absent_set_terms`
 
 public dispatcher/active CLI routeはない。
+
+## Checker Task 277A Frozen Runner Boundary
+
+[central Task 277A contract](../../task_contracts/ja/277A.md) はcfg-test-only
+`source_template_output` routeとmutation variantをreserveする。frozen direct parser
+nodeだけをselectしindexed all-surface `TypedArena`をconstructし、outputはTyped/
+Resolved経由のneutral checker handoff。detail key/public dispatcher/active CLI path/
+semantic target/coverage creditはない。pending `task277a_` runner tests 4件はexact
+profile、validation/mutation failure、neutral ownership、route isolationをcoverする。
