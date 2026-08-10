@@ -5223,3 +5223,16 @@ protected-surface checkはPASS。checker containment repair後のfinding-specifi
 （`20/20/15/15/10/10/5/5`）でPASS。exact staging/cached-diff review、task-only commit、
 post-implementation proof、fresh successor inventoryはcentral [historical checkpoint](../../task_contracts/ja/277B-L.md#post-implementation-checkpoint)でclosedし、successorはselectしない。
 Task 277Bはnot ready/semantic credit zero。
+
+## Resolver Task 277R2 test-only fixture probe
+
+[Task 277R2 contract](../../task_contracts/ja/RESOLVE-FRAENKEL-GENERATOR-VAR-277R2.md) はfuture
+private `runner/tests/type_elaboration/fraenkel_generator_variable_identity.rs` leaf 1件と
+`tests.rs` registrationだけをfreezeする。sole testは
+`task277r2_real_fixture_links_exact_fraenkel_generator_binding_and_uses`。unchanged inactive F5を
+existing helperでparseし、validated resolver arenaをlowerしてnew collectorをdirect callし、exact
+binding `0`、mapper use `0`、condition uses `1/2`、frozen debug textをassertする。expected library
+countは`610 -> 611`。
+
+production runner/facade/dispatcher/detail key/checker output/Typed-Resolved install/active-stage/
+diagnostic/metadata-trace/coverage credit/semantic verdictではない。implementation/verificationはpending。

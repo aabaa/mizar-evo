@@ -313,3 +313,19 @@ symbolic verification に分離する。Chapter 13 §13.4.2 は後段 Fraenkel s
 diagnostic、formal/actual substitution、overload、checker activation、coverage credit を
 resolver 外に保つ。`spec_coverage_audit.md`、inactive seed、sidecar、trace、expectation
 は不変。
+
+## Resolver Task 277R2 source/specification correspondence
+
+frozen [Task 277R2 contract](../../task_contracts/ja/RESOLVE-FRAENKEL-GENERATOR-VAR-277R2.md)
+はChapter 13 §§13.4.2、13.4.4、13.8.6のgenerator binding/capture requirementとChapter 18
+§18.10.2のimmutable F5 contextをresolver-only binding/use identity collectionへmapする。
+exact `#53/#52/#49/#41/#19` owner/binding、mapper `#38/#37/#17`、condition
+`#48/#42/#24`・`#44/#26` profileは本documentation prerequisiteで`design_drift`をcloseする。
+future implementationとresolver 4件+direct fixture 1件が`source_drift`/Rust `test_gap`を
+closeしなければならない。`spec_gap`はない。
+
+本prerequisiteはidentity/source orderだけをrecordする。R1/277B-L identityをcarryせず、
+template substitution、type、sethood、evidence、diagnostic、rejection、checker activationを
+決定しない。immutable seed/expectation、inactive trace mapping、deferred
+`MC-G020`/`MC-G021` checker-plan gap、semantic credit、
+`spec_coverage_audit.md`は不変でcoverage-audit deltaはない。

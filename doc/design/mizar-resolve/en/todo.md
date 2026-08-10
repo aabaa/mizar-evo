@@ -866,3 +866,21 @@ Check the task off here once tests pass.
 - [x] Complete exact staging, task-only implementation commit
   `b22033c38249326e366ceb9e19b1a9100da2248e`, immediate post-implementation
   proof, and fresh successor inventory. Task 277B remains not ready.
+
+## Resolver Task 277R2 Frozen Documentation Prerequisite
+
+- [x] Freeze the canonical [Task 277R2 contract](../../task_contracts/en/RESOLVE-FRAENKEL-GENERATOR-VAR-277R2.md),
+  authority, exact F5 binding/use profile, exhaustive public ABI, default-deny
+  matrix, exact five-path Rust scope, named `4 + 1` tests, baselines, and
+  protected no-impact decisions.
+- [ ] After a fresh clean preflight reproduces every baseline, implement only
+  the five frozen Rust paths and five named tests. Preserve the private fixture
+  boundary and all semantic, active, trace, coverage, and production exclusions.
+- [ ] Complete independent test-sufficiency and implementation reviews and all
+  focused, crate, workspace, lint, metadata, formatting, Clippy, CLI, and
+  protected count/hash verification.
+- [ ] Complete source/documentation, bilingual, boundary, and final-quality
+  reviews with all nine hard gates passing and a valid uncapped score of at
+  least 90/100.
+- [ ] Complete exact staging, task-only commit, post-commit proof, and fresh
+  successor inventory. Task 277B remains not ready with zero semantic credit.

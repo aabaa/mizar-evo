@@ -398,3 +398,15 @@ commit, and post-commit inventory are complete with task-only implementation com
 `b22033c38249326e366ceb9e19b1a9100da2248e` and the central contract's historical
 checkpoint. This post-exit prerequisite is complete without revising the
 historical crate exit or its score; Task 277B remains not ready.
+
+## Resolver Task 277R2 Post-Exit Prerequisite
+
+This later [Task 277R2 prerequisite](../../task_contracts/en/RESOLVE-FRAENKEL-GENERATOR-VAR-277R2.md)
+does not revise the historical crate exit or its score. It freezes a narrow
+`names`-owned generator-variable binding/use collection and one private direct
+fixture assertion for the already inactive F5 seed. The future exact five-path
+implementation remains subject to fresh preflight, independent reviews, all
+nine hard gates, an uncapped score of at least 90/100, full verification, exact
+staging, task-only commit, and post-commit proof. Production behavior,
+diagnostics, active trace/coverage state, semantic verdicts, and Task 277B
+readiness remain unchanged with zero semantic credit.

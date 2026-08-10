@@ -5627,3 +5627,21 @@ is **NO FINDINGS**; all nine hard gates PASS uncapped at valid `100/100`
 post-implementation proof, and fresh successor inventory are closed in the
 central [historical checkpoint](../../task_contracts/en/277B-L.md#post-implementation-checkpoint);
 no successor is selected. Task 277B remains not ready with zero semantic credit.
+
+## Resolver Task 277R2 Test-Only Fixture Probe
+
+The [Task 277R2 contract](../../task_contracts/en/RESOLVE-FRAENKEL-GENERATOR-VAR-277R2.md)
+freezes exactly one future private leaf,
+`runner/tests/type_elaboration/fraenkel_generator_variable_identity.rs`, and
+its `tests.rs` registration. Its sole test is
+`task277r2_real_fixture_links_exact_fraenkel_generator_binding_and_uses`.
+It parses the unchanged inactive F5 fixture through the existing helper,
+lowers the validated resolver arena, directly invokes the new resolver
+collector, and asserts the exact binding `0`, mapper use `0`, and condition
+uses `1/2` profile plus the frozen debug text. Expected library count is
+`610 -> 611`.
+
+This is no production runner, facade, dispatcher, detail key, checker output,
+Typed/Resolved installation, active-stage route, diagnostic, metadata/trace
+change, coverage credit, or semantic verdict. Implementation and verification
+remain pending.

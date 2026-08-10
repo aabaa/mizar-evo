@@ -3840,3 +3840,17 @@ the successor is selected only from fresh post-commit inventory.
   proof, and fresh successor inventory are closed in the central
   [historical checkpoint](../../task_contracts/en/277B-L.md#post-implementation-checkpoint).
   No successor is selected; Task 277B remains not ready with zero semantic credit.
+
+## Resolver Task 277R2 Test-Only Fixture Probe
+
+- [x] Freeze the [Task 277R2 contract](../../task_contracts/en/RESOLVE-FRAENKEL-GENERATOR-VAR-277R2.md)
+  and the exact two-path private mizar-test assertion boundary.
+- [ ] After fresh preflight, add only
+  `task277r2_real_fixture_links_exact_fraenkel_generator_binding_and_uses` and
+  its test registration, changing the library count `610 -> 611`.
+- [ ] Assert the exact F5 binding/mapper/condition identity profile and debug
+  text while preserving fixture, expectation, metadata, trace, coverage,
+  diagnostic, production-runner, and active-stage boundaries.
+- [ ] Complete focused/full verification and all required independent reviews;
+  then exact staging, task-only commit, post-commit proof, and fresh successor
+  inventory. Task 277B remains not ready with zero semantic credit.

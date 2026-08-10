@@ -1883,3 +1883,14 @@ gates PASS uncapped at valid `100/100` (`20/20/15/15/10/10/5/5`). Exact
 staging/cached-diff review, task-only commit, post-implementation proof, and
 fresh successor inventory are closed in the central [historical checkpoint](../../task_contracts/en/277B-L.md#post-implementation-checkpoint); no successor
 is selected. No bilingual exception is recorded.
+
+## Resolver Task 277R2 Contract Parity
+
+The canonical [EN contract](../../task_contracts/en/RESOLVE-FRAENKEL-GENERATOR-VAR-277R2.md)
+and [JA companion](../../task_contracts/ja/RESOLVE-FRAENKEL-GENERATOR-VAR-277R2.md)
+synchronize the sole future private fixture probe, literal test name, exact F5
+binding/mapper/condition profile and debug text, two mizar-test paths,
+`610 -> 611`, no-production-route boundary, protected no-impact decision, and
+Task-277B-not-ready/zero-credit status. Exact identifiers, ranges, counts, and
+hashes are English-canonical. No bilingual exception is recorded;
+implementation and later review/verification evidence remain pending.

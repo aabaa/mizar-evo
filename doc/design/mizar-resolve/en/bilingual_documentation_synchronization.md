@@ -285,3 +285,15 @@ reviews report **NO FINDINGS**. Independent final-quality review also reports
 Task-only implementation commit `b22033c38249326e366ceb9e19b1a9100da2248e`
 and the central contract's post-implementation checkpoint complete this parity
 record without an exception. Task 277B remains not ready.
+
+## Resolver Task 277R2 Bilingual Synchronization
+
+The canonical [EN contract](../../task_contracts/en/RESOLVE-FRAENKEL-GENERATOR-VAR-277R2.md)
+and [JA companion](../../task_contracts/ja/RESOLVE-FRAENKEL-GENERATOR-VAR-277R2.md)
+synchronize the exact F5 binding/mapper/condition profile, literal
+`FraenkelGeneratorVariable*` API, non-exhaustive role variants, exhaustive row
+and table getters, both-boundary arena validation, default-deny matrix, five
+Rust paths, five named tests, `152 -> 156` / `610 -> 611`, and protected
+no-impact decision. English owns exact identifiers, ranges, counts, hashes,
+and debug text. No synchronization exception is recorded; implementation and
+all later review/verification evidence remain pending.

@@ -265,3 +265,13 @@ implementation commit
 `b22033c38249326e366ceb9e19b1a9100da2248e`とcentral contractの
 post-implementation checkpointはこのparity recordをexceptionなしでcompleteする。
 Task 277Bはnot readyのまま。
+
+## Resolver Task 277R2 bilingual synchronization
+
+canonical [EN contract](../../task_contracts/en/RESOLVE-FRAENKEL-GENERATOR-VAR-277R2.md)
+と [JA companion](../../task_contracts/ja/RESOLVE-FRAENKEL-GENERATOR-VAR-277R2.md) はexact F5
+binding/mapper/condition profile、literal `FraenkelGeneratorVariable*` API、non-exhaustive role、
+exhaustive row/table getter、both-boundary arena validation、default-deny matrix、Rust 5 paths、
+named test 5件、`152 -> 156` / `610 -> 611`、protected no-impact decisionを同期する。exact
+identifier/range/count/hash/debug textはEnglish canonical。synchronization exceptionはなく、
+implementationと全later review/verification evidenceはpending。

@@ -407,3 +407,45 @@ receive recomputed dense ordinals after every owner is collected. Recovery
 anywhere in a candidate `SetComprehension` subtree rejects that link while
 leaving independently valid bindings intact. The exact module and test metrics
 and verification record are owned by the central contract.
+
+## Resolver Task 277R2 Fraenkel Generator-Variable Identity
+
+The canonical [Task 277R2 contract](../../task_contracts/en/RESOLVE-FRAENKEL-GENERATOR-VAR-277R2.md)
+adds one independent structural collection to this existing `names` owner.
+Its exact public names are `FraenkelGeneratorVariableBindingId`,
+`FraenkelGeneratorVariableBinding`, non-exhaustive
+`FraenkelGeneratorVariableUseRole::{Mapper, Condition}`,
+`FraenkelGeneratorVariableUseLink`, the corresponding binding/use-link tables,
+`FraenkelGeneratorVariableSourceCollection`, and
+`FraenkelGeneratorVariableSourceCollector`.
+
+The future public-enum policy registration is:
+
+- `FraenkelGeneratorVariableUseRole`
+
+It must be `#[non_exhaustive]`; no exception is authorized.
+
+The binding row returns resolved `definition_block`, `functor_definition`,
+`comprehension`, `segment`, and `binder` identities, exact `spelling`, segment
+and binder `SourceRange`s, and its dense source ordinal. The use row returns
+resolved `definition_block`, `functor_definition`, `comprehension`,
+`role_owner`, `term_reference`, and `identifier` identities, the binding ID,
+the copied `Mapper` or `Condition` role, dense global and role-local ordinals,
+and the identifier range. Binding-table iteration yields `(id, row)`; use-link
+iteration yields rows and has no separate ID. Both tables expose `get`, `iter`,
+`len`, and `is_empty`; the collection exposes source, module, bindings, uses,
+and the exact diagnostics-free `debug_text` grammar owned by the contract.
+
+`new` and `collect` both validate the complete `SurfaceResolvedArena` and
+return only `SurfaceResolvedArenaError`; every identity comes from
+`resolved_node_for`. The collector admits only an exact normal single-generator,
+single-binder Fraenkel shape. The sole bounded exact-spelling match gives the
+binder scope over the mapper occurrence before the binder and the ordered
+condition occurrences after it. Binding/use tables and global/role ordinals
+are dense and deterministic.
+
+Recovery, non-exact edges or wrappers, multiple generators or binders, nested
+comprehensions or binders, shadowing, ambiguity, and unsupported shapes reject
+the whole candidate with zero rows. This API carries no template/R1/277B-L
+identity and creates no `SymbolId`, `NameRef`, type, sethood, evidence,
+diagnostic, or verdict.

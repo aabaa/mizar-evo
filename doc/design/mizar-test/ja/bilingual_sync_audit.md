@@ -1784,3 +1784,12 @@ hard gateはscore capなしvalid `100/100`（`20/20/15/15/10/10/5/5`）でPASS�
 cached-diff review、task-only commit、post-implementation proof、fresh successor inventoryはcentral
 [historical checkpoint](../../task_contracts/ja/277B-L.md#post-implementation-checkpoint)でclosedし、
 successorはselectしない。bilingual exceptionはない。
+
+## Resolver Task 277R2 contract parity
+
+canonical [EN contract](../../task_contracts/en/RESOLVE-FRAENKEL-GENERATOR-VAR-277R2.md) と
+[JA companion](../../task_contracts/ja/RESOLVE-FRAENKEL-GENERATOR-VAR-277R2.md) はsole future
+private fixture probe、literal test name、exact F5 binding/mapper/condition profile/debug text、
+mizar-test 2 paths、`610 -> 611`、no-production-route boundary、protected no-impact decision、
+Task-277B-not-ready/zero-creditを同期する。exact identifier/range/count/hashはEnglish canonical。
+bilingual exceptionはなく、implementation/later review-verification evidenceはpending。

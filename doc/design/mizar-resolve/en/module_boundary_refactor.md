@@ -255,3 +255,18 @@ boundary.
 The final source scope is exactly those two resolver files plus the two
 mizar-test test-only paths. No module, dependency, Cargo, lint-policy,
 production-route, or ownership boundary changed.
+
+## Resolver Task 277R2 Module Boundary
+
+[Task 277R2](../../task_contracts/en/RESOLVE-FRAENKEL-GENERATOR-VAR-277R2.md)
+keeps production ownership in existing `names.rs`, with resolver regressions
+in private `names/tests.rs` and the public-enum/documentation policy adjustment
+in resolver `tests/lint_policy.rs`. `SurfaceResolvedArena` remains the sole
+identity authority; neither `resolved_ast.rs` nor another resolver module is
+edited. The only lower consumer is one private mizar-test leaf plus its test
+registration.
+
+The future source scope is exactly those three resolver paths and two
+mizar-test test-only paths. No module split, Cargo/dependency change,
+parser/frontend/checker/Core edit, production runner, public diagnostic/error,
+active route, or resolver-to-checker ownership transfer is authorized.

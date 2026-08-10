@@ -333,3 +333,22 @@ validated structure and explicitly leaves sethood, verdict, diagnostic,
 formal/actual substitution, overload, checker activation, and coverage credit
 outside the resolver. `spec_coverage_audit.md`, the inactive seed, sidecar,
 trace, and expectations remain unchanged.
+
+## Resolver Task 277R2 Source/Specification Correspondence
+
+The frozen [Task 277R2 contract](../../task_contracts/en/RESOLVE-FRAENKEL-GENERATOR-VAR-277R2.md)
+maps Chapter 13 §§13.4.2, 13.4.4, and 13.8.6 generator binding/capture
+requirements and Chapter 18 §18.10.2's immutable F5 context to a resolver-only
+binding/use identity collection. The exact `#53/#52/#49/#41/#19` owner and
+binding profile plus mapper `#38/#37/#17` and condition `#48/#42/#24`,
+`#44/#26` uses close the classified `design_drift` in this documentation
+prerequisite. The future implementation and four resolver regressions plus
+one direct fixture regression must close `source_drift` and the Rust
+`test_gap`. There is no `spec_gap`.
+
+This prerequisite records identity and source order only. It does not carry
+R1 or 277B-L identities or decide template substitution, types, sethood,
+evidence, diagnostics, rejection, or checker activation. The immutable seed,
+expectation, inactive trace mapping, deferred `MC-G020`/`MC-G021` checker-plan
+gaps, semantic credit, and
+`spec_coverage_audit.md` remain unchanged, so the coverage audit has no delta.

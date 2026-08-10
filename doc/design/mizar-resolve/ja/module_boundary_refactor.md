@@ -233,3 +233,15 @@ diagnostic/error enum、checker handoff、resolver-to-checker ownership transfer
 
 final source scopeはresolver 2 filesとmizar-test test-only 2 pathsのexact 4。module、
 dependency、Cargo、lint-policy、production route、ownership boundaryは変更しない。
+
+## Resolver Task 277R2 module boundary
+
+[Task 277R2](../../task_contracts/ja/RESOLVE-FRAENKEL-GENERATOR-VAR-277R2.md) のproduction
+ownerは既存`names.rs`、resolver regressionはprivate `names/tests.rs`、public-enum/documentation
+policy adjustmentはresolver `tests/lint_policy.rs`に限定する。`SurfaceResolvedArena`はsole
+identity authorityのままで、`resolved_ast.rs`/other resolver moduleはeditしない。lower consumerは
+mizar-test private leaf 1件とtest registrationだけ。
+
+future source scopeはresolver 3 paths+mizar-test test-only 2 pathsのexact 5。module split、
+Cargo/dependency、parser/frontend/checker/Core、production runner、public diagnostic/error、active
+route、resolver-to-checker ownership transferはない。

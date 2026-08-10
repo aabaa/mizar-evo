@@ -377,3 +377,36 @@ non-inferential structural admission check で、same-owner duplicate spelling �
 再採番する。candidate `SetComprehension` subtree内の任意recoveryはlinkをrejectするが、
 independently validなbindingは保持する。exact module/test metricとverification recordは
 central contractがownする。
+
+## Resolver Task 277R2 Fraenkel generator-variable identity
+
+canonical [Task 277R2 contract](../../task_contracts/ja/RESOLVE-FRAENKEL-GENERATOR-VAR-277R2.md)
+は既存`names` ownerへindependent structural collectionを1件追加する。exact public nameは
+`FraenkelGeneratorVariableBindingId`、`FraenkelGeneratorVariableBinding`、non-exhaustive
+`FraenkelGeneratorVariableUseRole::{Mapper, Condition}`、
+`FraenkelGeneratorVariableUseLink`、対応するbinding/use-link table、
+`FraenkelGeneratorVariableSourceCollection`、`FraenkelGeneratorVariableSourceCollector`。
+
+future public-enum policy registrationは次の通り:
+
+- `FraenkelGeneratorVariableUseRole`
+
+これは`#[non_exhaustive]`でなければならず、exceptionは許可しない。
+
+binding rowはresolved `definition_block`、`functor_definition`、`comprehension`、`segment`、
+`binder`、exact `spelling`、segment/binder `SourceRange`、dense source ordinalを返す。use rowは
+resolved `definition_block`、`functor_definition`、`comprehension`、`role_owner`、
+`term_reference`、`identifier`、binding ID、copied `Mapper`/`Condition` role、dense global/
+role-local ordinal、identifier rangeを返す。binding-table `iter`は`(id,row)`、use-link `iter`は
+rowでseparate IDなし。両tableは`get`/`iter`/`len`/`is_empty`、collectionはsource/module/
+bindings/usesとcontract-owned exact diagnostics-free `debug_text` grammarを公開する。
+
+`new`/`collect`は両方complete `SurfaceResolvedArena`をvalidateし、既存
+`SurfaceResolvedArenaError`だけを返す。identityは`resolved_node_for`だけから得る。exact normal
+single-generator/single-binder Fraenkel shapeだけを認め、sole bounded exact-spelling matchが
+binderより前のmapper useと後段ordered condition usesをscopeする。table/global-role ordinalは
+dense/deterministic。
+
+recovery、nonexact edge/wrapper、multi generator/binder、nested comprehension/binder、shadow、
+ambiguity、unsupported shapeはwhole candidateをzero rowsでrejectする。template/R1/277B-L ID、
+`SymbolId`、`NameRef`、type/sethood/evidence/diagnostic/verdictは追加しない。

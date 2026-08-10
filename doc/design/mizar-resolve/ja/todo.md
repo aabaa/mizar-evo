@@ -810,3 +810,17 @@ cargo test -p mizar-vc
 - [x] exact staging、task-only implementation commit
   `b22033c38249326e366ceb9e19b1a9100da2248e`、immediate post-implementation proof、
   fresh successor inventoryを完了。Task 277Bはnot readyのまま。
+
+## Resolver Task 277R2 frozen documentation prerequisite
+
+- [x] canonical [Task 277R2 contract](../../task_contracts/ja/RESOLVE-FRAENKEL-GENERATOR-VAR-277R2.md)、
+  authority、exact F5 binding/use profile、exhaustive public ABI、default-deny matrix、exact Rust
+  5-path scope、named `4 + 1` tests、baseline、protected no-impact decisionをfreeze。
+- [ ] fresh clean preflightが全baselineを再現した後、frozen Rust 5 paths / named test 5件だけを
+  implement。private fixture boundaryと全semantic/active/trace/coverage/production exclusionを保持。
+- [ ] independent test-sufficiency/implementation reviewとfocused/crate/workspace/lint/metadata/
+  fmt/Clippy/CLI/protected count-hash verificationを完了。
+- [ ] source/documentation、bilingual、boundary、final-quality reviewを完了し、全9 hard gate
+  PASS、valid uncapped score 90/100以上を得る。
+- [ ] exact staging、task-only commit、post-commit proof、fresh successor inventoryを完了。
+  Task 277Bはnot ready/semantic credit zeroのまま。

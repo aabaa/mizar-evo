@@ -12,6 +12,16 @@ SHA-256は
 dispatch、CLI、corpus/trace/metadata、Cargo、semantic publication、coverage boundaryは
 変わらず、routeはzero-creditである。
 
+## Resolver Task 277R2 test module boundary
+
+[Task 277R2](../../task_contracts/ja/RESOLVE-FRAENKEL-GENERATOR-VAR-277R2.md) は
+`src/runner/tests.rs` registrationとnew private
+`src/runner/tests/type_elaboration/fraenkel_generator_variable_identity.rs` leafだけを許す。
+existing parser/frontend/resolver APIでimmutable F5をobserveするが、production runner module/
+route/dispatcher/facade/detail key/checker handoff/Typed-Resolved output/Cargo edge/fixture stage/
+metadata-trace owner/diagnostic/semantic publicationは追加しない。production runnerはprotected
+38 paths / 80,090 linesのまま。
+
 ## Checker Task 257B1 formula-composition current-state addendum
 
 Task 257B1はcohesiveな540-line private `source_formula_composition.rs`
