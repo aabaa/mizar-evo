@@ -9,7 +9,7 @@ Owner plan は [mizar-checker](../../mizar-checker/ja/00.crate_plan.md#task-inde
 
 **状態:** implementation、broad verification、すべてのindependent reviewはcompleteした。final-quality
 reviewは**NO FINDINGS**で、全9 hard gateはscore capなしvalid `100/100`
-(`20/20/15/15/10/10/5/5`)でPASS。task-closeout evidenceだけpendingである。本書は同期companionであり、
+(`20/20/15/15/10/10/5/5`)でPASS。historical implementation closeoutは後記する。本書は同期companionであり、
 EN contractがcanonical authorityを持つ。
 
 本taskは完了済みの`RESOLVE-TEMPLATE-TYPEPARAM-277R1`、`277B-L`、
@@ -205,23 +205,47 @@ parent-owned broad verificationもPASSした: `cargo fmt --check`、
 137/137、five CLI replay、frozen count/hash。final source/documentation re-reviewとindependent
 bilingual/boundary reviewは**NO FINDINGS**。independent final-quality reviewも**NO FINDINGS**で、全9
 hard gateはscore capなしvalid `100/100`（`20/20/15/15/10/10/5/5`）でPASS。task-only staging、commit、
-post-commit proof、fresh successor inventoryはclaimしない。
+post-commit proof、fresh successor inventoryはこのpre-closure completion evidenceではclaimしない。
+下記のseparate historical checkpointはこれらのimplementation claimをcloseするが、current
+documentation-closure `HEAD`をclaimしない。
+
+## Historical Immediate-Post-Implementation Checkpoint
+
+これはhistoricalかつpre-documentation-closureのcheckpointであり、current `HEAD`についての
+statementではない。historical
+`HEAD=2efa111ab1bb4973c85fb341a8c95a1e3956ed6c`はimplementation commit直後にobservedされ、
+worktreeはclean、
+`origin/main...HEAD`は`0/16`、protected
+`stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4`はunchangedだった。exact sorted
+20 Markdown completion recordと3 Rust pathがseparately measuredしたexact sorted
+23-path implementation-commit inventoryを構成し、そのSHA-256は
+`6c7643ac84f7bd9adf3cdb291070f2b0d904c61f4cc3abc4add744d74304fb52`である。
+
+このcheckpointはexact staging/cached-diff review、task-only implementation commit、post-commit
+proof、fresh successor-inventory claimをcloseする。successorをselectせず、Task 277Bも変更しない:
+not readyかつsemantic credit zeroのままである。separate documentation closureはstatus-bearing document
+exact 14件だけをtouchする: このpaired contract、paired checker bilingual/source/TODO、paired
+mizar-test bilingual/harness/TODO recordである。four plan、other six 277C owner、
+`spec_coverage_audit.md`、legacy ledger、Rust、specification、test、traceability、Cargoはalterしない。
 
 ## Documentation、gates、handoff
 
-completeしたdocumentation surfaceは本EN/JA contract pairとpaired checker/mizar-test owner recordの
-exact 20 Markdown pathだけを変更する。four plan rowはprerequisite-only indexでありunchangedである。
+separate closureは本EN/JA contract pairとpaired checker bilingual/source/TODO、mizar-test
+bilingual/harness/TODO recordのexact 14 status-bearing Markdown pathだけを変更する。four plan rowと
+other six 277C owner recordはunchangedである。このclosureはhistoricalな20 Markdown completion recordと
+three Rust implementation pathとはseparateである。
 `spec_coverage_audit.md`へのimpactはなくunchangedとし、legacy-compaction ledger/policy sourceも変更しない。
 
 implementation-specific authority/scope、dependency、ABI、structural、test-sufficiency、implementation-review、
 CLI-replay、broad-workspace verification、source/documentation、bilingual、boundary evidenceはcompleteし、
 三つのindependent reviewは**NO FINDINGS**。final independent quality reviewも**NO FINDINGS**、全9 hard
-gateはPASS、valid uncapped scoreは`100/100`（`20/20/15/15/10/10/5/5`）。残るparent-owned actionはexact
-staging/cached review、task-only commit、post-commit proof、fresh successor inventoryである。
-Sol xhighがauthority/integration/final review/stage/commitを担当し、Terra highはbounded inventory/review route、
-Lunaはunavailableでeffective routingを記録する。`doc/design/spec_coverage_audit.md`または
+gateはPASS、valid uncapped scoreは`100/100`（`20/20/15/15/10/10/5/5`）。exact
+staging/cached review、task-only commit、post-commit proof、fresh successor inventoryは
+[historical checkpoint](#historical-immediate-post-implementation-checkpoint)でclosedしている。
+closure自体はdocumentation-onlyでcurrent-`HEAD`をclaimしない。Sol xhighがauthority/integration/final
+reviewを担当し、Terra highはbounded inventory/review route、Lunaはunavailableでeffective routingを記録する。
+`doc/design/spec_coverage_audit.md`または
 legacy-compaction/ledger deltaはauthorizeしない。
 
-**Next handoff:** exact staging/cached review、task-only commit、post-commit proof、fresh successor
-inventoryを行う。scopeはthree implemented Rust pathとこの20 completion recordに限定し、authority矛盾、
-public dependency issue、scope expansion、protected replay failureではtask-only commitのstage前に停止する。
+**Next handoff:** fresh inventoryからseparately authorized taskをselectする。Task 277Bはnot ready/
+semantic credit zeroのままであり、このhistorical checkpointからsuccessorをinferしない。

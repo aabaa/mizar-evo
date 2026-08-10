@@ -11,8 +11,8 @@ Stable owner sections: checker [module API](../../mizar-checker/en/source_templa
 
 **Status:** implementation, broad verification, and all independent reviews are
 complete. The final-quality review reports **NO FINDINGS**; all nine hard gates
-pass without a score cap at valid `100/100` (`20/20/15/15/10/10/5/5`). Only
-task-closeout evidence remains pending. This contract is canonical; its
+pass without a score cap at valid `100/100` (`20/20/15/15/10/10/5/5`). The
+historical implementation closeout is recorded below. This contract is canonical; its
 synchronized companion is a translation, not competing authority.
 
 This task is a neutral checker-only structural composition after completed
@@ -255,13 +255,38 @@ counts/hashes. The final source/documentation re-review and independent
 bilingual/boundary review report **NO FINDINGS**. The independent final-quality
 review also reports **NO FINDINGS**; all nine hard gates pass uncapped at valid
 `100/100` (`20/20/15/15/10/10/5/5`). No task-only staging, commit, post-commit
-proof, or fresh successor inventory is claimed.
+proof, or fresh successor inventory was claimed by this pre-closure completion
+evidence; the separately historical checkpoint below closes those implementation
+claims without making a claim about the current documentation-closure `HEAD`.
+
+## Historical Immediate-Post-Implementation Checkpoint
+
+This is a historical, pre-documentation-closure checkpoint, not a statement
+about the current `HEAD`. Historical
+`HEAD=2efa111ab1bb4973c85fb341a8c95a1e3956ed6c` was observed immediately after
+the implementation commit; the worktree was clean,
+`origin/main...HEAD` was `0/16`, and protected
+`stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4` was unchanged. The exact
+20 Markdown completion records plus 3 Rust paths formed the separately measured
+exact sorted 23-path implementation-commit inventory, with SHA-256
+`6c7643ac84f7bd9adf3cdb291070f2b0d904c61f4cc3abc4add744d74304fb52`.
+
+That checkpoint closes the exact staging/cached-diff review, task-only
+implementation commit, post-commit proof, and fresh successor-inventory claims.
+It does not select a successor or change Task 277B: it remains not ready with
+zero semantic credit. The separate documentation closure touches exactly 14
+status-bearing documents: this paired contract and the paired checker
+bilingual/source/TODO and mizar-test bilingual/harness/TODO records. It does
+not alter the four plans, the other six 277C owners, `spec_coverage_audit.md`,
+the legacy ledger, Rust, specifications, tests, traceability, or Cargo.
 
 ## Documentation, gates, and handoff
 
-The completed documentation surface changes exactly 20 Markdown paths: this
-EN/JA contract pair and the paired checker and mizar-test owner records. The
-four plan rows were prerequisite-only index changes and remain untouched.
+The separate closure changes exactly 14 status-bearing Markdown paths: this
+EN/JA contract pair and the paired checker bilingual/source/TODO and mizar-test
+bilingual/harness/TODO records. The four plan rows and the other six 277C owner
+records remain untouched. This closure is separate from the historical 20
+Markdown completion records that accompanied the three Rust implementation paths.
 `spec_coverage_audit.md` has no impact and remains unchanged; neither the
 legacy-compaction ledger nor its policy source changed.
 
@@ -271,15 +296,14 @@ verification, source/documentation, bilingual, and boundary evidence is
 complete; the three independent reviews report **NO FINDINGS**. Final
 independent quality review reports **NO FINDINGS**, all nine hard gates pass,
 and the valid uncapped score is `100/100` (`20/20/15/15/10/10/5/5`). The
-remaining parent-owned actions are exact staging/cached review, task-only
-commit, post-commit proof, and fresh successor inventory. Sol xhigh owns
-authority, integration, final reviews, staging, and commit; Terra high is the
-bounded inventory/review route; Luna is unavailable and the effective routing
-must be recorded. No `doc/design/spec_coverage_audit.md` or
+staging/cached review, task-only commit, post-commit proof, and fresh successor
+inventory are closed at the [historical checkpoint](#historical-immediate-post-implementation-checkpoint).
+The closure itself remains documentation-only and makes no current-`HEAD`
+claim. Sol xhigh owns authority, integration, and final reviews; Terra high is
+the bounded inventory/review route; Luna is unavailable and the effective
+routing must be recorded. No `doc/design/spec_coverage_audit.md` or
 legacy-compaction/ledger delta is authorized.
 
-**Next handoff:** perform the exact staging/cached review, task-only commit,
-post-commit proof, and fresh successor inventory. Keep the scope to the three
-implemented Rust paths and these 20 completion records; stop for any authority
-contradiction, public dependency issue, scope expansion, or failed protected
-replay before staging a task-only commit.
+**Next handoff:** select a separately authorized task from fresh inventory.
+Task 277B remains not ready with zero semantic credit; do not infer a successor
+from this historical checkpoint.

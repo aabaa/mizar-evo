@@ -1910,5 +1910,9 @@ counts, hashes, F5 values, and public ABI remain English-canonical in the contra
 Broad verification passes; the final source/documentation re-review and independent
 bilingual/boundary reviews report **NO FINDINGS**. Final-quality review reports
 **NO FINDINGS**; all nine hard gates pass uncapped at valid `100/100`
-(`20/20/15/15/10/10/5/5`). Exact staging/cached review and task-closeout remain
-pending and no exception is recorded.
+(`20/20/15/15/10/10/5/5`). Exact staging/cached review, task-only implementation
+commit, post-commit proof, and fresh successor inventory are closed in the
+language-local [central historical checkpoint](../../task_contracts/en/CHECKER-FRAENKEL-TEMPLATE-STRUCTURAL-277C.md#historical-immediate-post-implementation-checkpoint).
+The separate closure changes exactly 14 status-bearing documents; no exception is
+recorded, no successor is selected, and Task 277B remains not ready with zero
+semantic credit.

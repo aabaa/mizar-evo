@@ -1887,11 +1887,17 @@ The canonical [EN contract](../../task_contracts/en/CHECKER-FRAENKEL-TEMPLATE-ST
 and [JA companion](../../task_contracts/ja/CHECKER-FRAENKEL-TEMPLATE-STRUCTURAL-277C.md)
 are synchronized for the completed neutral input boundary, exact public family,
 error precedence, getter inventory, F5 IDs/ordinals/debug text, protected
-baselines, exact `4 + 1` tests, the 20-path completion surface, and the
-no-audit/no-credit decision. English exact Rust identifiers, signatures, values,
+baselines, exact `4 + 1` tests, the historical 20 Markdown completion records
+plus 3 Rust paths and their separately measured 23-path implementation-commit
+inventory, and the no-audit/no-credit decision. English exact Rust identifiers,
+signatures, values,
 counts, and hashes are canonical in the contract. This record does not claim a
 Task 277B state change. Broad verification passes; the final source/documentation
 re-review and independent bilingual/boundary reviews report **NO FINDINGS**.
 Final-quality review also reports **NO FINDINGS**; all nine hard gates pass
 uncapped at valid `100/100` (`20/20/15/15/10/10/5/5`). Exact staging/cached
-review and task-closeout remain pending with no synchronization exception recorded.
+review, task-only implementation commit, post-commit proof, and fresh successor
+inventory are closed in the language-local [central historical checkpoint](../../task_contracts/en/CHECKER-FRAENKEL-TEMPLATE-STRUCTURAL-277C.md#historical-immediate-post-implementation-checkpoint).
+The separate closure changes exactly 14 status-bearing documents; no synchronization
+exception is recorded, no successor is selected, and Task 277B remains not ready
+with zero semantic credit.
