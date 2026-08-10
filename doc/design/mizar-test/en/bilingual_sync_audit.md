@@ -1888,9 +1888,13 @@ is selected. No bilingual exception is recorded.
 
 The canonical [EN contract](../../task_contracts/en/RESOLVE-FRAENKEL-GENERATOR-VAR-277R2.md)
 and [JA companion](../../task_contracts/ja/RESOLVE-FRAENKEL-GENERATOR-VAR-277R2.md)
-synchronize the sole future private fixture probe, literal test name, exact F5
+synchronize the sole implemented private fixture probe, literal test name, exact F5
 binding/mapper/condition profile and debug text, two mizar-test paths,
 `610 -> 611`, no-production-route boundary, protected no-impact decision, and
 Task-277B-not-ready/zero-credit status. Exact identifiers, ranges, counts, and
-hashes are English-canonical. No bilingual exception is recorded;
-implementation and later review/verification evidence remain pending.
+hashes are English-canonical. No bilingual exception is recorded. The
+implementation, exact `4 + 1` regressions, resolver and mizar-test library and
+lint suites, package and workspace Clippy, workspace tests, metadata,
+formatting, diff, five CLI hashes, and protected path-hash verification pass;
+test-sufficiency and implementation reviews are **NO FINDINGS**. The dedicated
+bilingual integration review also reports **NO FINDINGS**.

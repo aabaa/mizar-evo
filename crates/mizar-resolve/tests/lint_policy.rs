@@ -168,6 +168,11 @@ const PUBLIC_ENUM_DECISIONS: &[PublicEnumDecision] = &[
         spec_name: "names.md",
     },
     PublicEnumDecision {
+        relative_path: "src/names.rs",
+        enum_name: "FraenkelGeneratorVariableUseRole",
+        spec_name: "names.md",
+    },
+    PublicEnumDecision {
         relative_path: "src/resolved_ast.rs",
         enum_name: "RecoveryState",
         spec_name: "resolved_ast.md",

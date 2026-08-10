@@ -381,17 +381,17 @@ central contractがownする。
 ## Resolver Task 277R2 Fraenkel generator-variable identity
 
 canonical [Task 277R2 contract](../../task_contracts/ja/RESOLVE-FRAENKEL-GENERATOR-VAR-277R2.md)
-は既存`names` ownerへindependent structural collectionを1件追加する。exact public nameは
+は既存`names` ownerのimplemented independent structural collection 1件をrecordする。exact public nameは
 `FraenkelGeneratorVariableBindingId`、`FraenkelGeneratorVariableBinding`、non-exhaustive
 `FraenkelGeneratorVariableUseRole::{Mapper, Condition}`、
 `FraenkelGeneratorVariableUseLink`、対応するbinding/use-link table、
 `FraenkelGeneratorVariableSourceCollection`、`FraenkelGeneratorVariableSourceCollector`。
 
-future public-enum policy registrationは次の通り:
+public-enum policy registrationは次の通り:
 
 - `FraenkelGeneratorVariableUseRole`
 
-これは`#[non_exhaustive]`でなければならず、exceptionは許可しない。
+これは`#[non_exhaustive]`であり、exceptionは登録しない。
 
 binding rowはresolved `definition_block`、`functor_definition`、`comprehension`、`segment`、
 `binder`、exact `spelling`、segment/binder `SourceRange`、dense source ordinalを返す。use rowは

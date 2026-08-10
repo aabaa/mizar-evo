@@ -242,6 +242,7 @@ policy adjustmentはresolver `tests/lint_policy.rs`に限定する。`SurfaceRes
 identity authorityのままで、`resolved_ast.rs`/other resolver moduleはeditしない。lower consumerは
 mizar-test private leaf 1件とtest registrationだけ。
 
-future source scopeはresolver 3 paths+mizar-test test-only 2 pathsのexact 5。module split、
+implemented source scopeはresolver 3 paths+mizar-test test-only 2 pathsのexact 5。module split、
 Cargo/dependency、parser/frontend/checker/Core、production runner、public diagnostic/error、active
 route、resolver-to-checker ownership transferはない。
+independent boundary integration reviewは**NO FINDINGS**。

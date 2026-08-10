@@ -816,11 +816,13 @@ cargo test -p mizar-vc
 - [x] canonical [Task 277R2 contract](../../task_contracts/ja/RESOLVE-FRAENKEL-GENERATOR-VAR-277R2.md)、
   authority、exact F5 binding/use profile、exhaustive public ABI、default-deny matrix、exact Rust
   5-path scope、named `4 + 1` tests、baseline、protected no-impact decisionをfreeze。
-- [ ] fresh clean preflightが全baselineを再現した後、frozen Rust 5 paths / named test 5件だけを
-  implement。private fixture boundaryと全semantic/active/trace/coverage/production exclusionを保持。
-- [ ] independent test-sufficiency/implementation reviewとfocused/crate/workspace/lint/metadata/
-  fmt/Clippy/CLI/protected count-hash verificationを完了。
-- [ ] source/documentation、bilingual、boundary、final-quality reviewを完了し、全9 hard gate
-  PASS、valid uncapped score 90/100以上を得る。
-- [ ] exact staging、task-only commit、post-commit proof、fresh successor inventoryを完了。
-  Task 277Bはnot ready/semantic credit zeroのまま。
+- [x] frozen Rust 5 paths / named test 5件だけをimplementし、private fixture boundaryと全semantic/
+  active/trace/coverage/production exclusionを保持。
+- [x] independent test-sufficiency / implementation reviewを**NO FINDINGS**で完了し、focused
+  `4 + 1`、resolver/mizar-test library・lint、package/workspace Clippy、workspace test、metadata、
+  format、diff、five CLI hash、protected path-hash verificationをPASS。
+- [x] final source/documentation/API、bilingual、boundary integration reviewを**NO FINDINGS**で完了。
+- [x] final-quality reviewを**NO FINDINGS**で完了し、全9 hard gateはscore capなしvalid
+  `100/100`（`20/20/15/15/10/10/5/5`）でPASS。
+- [ ] exact staging/cached-diff review、task-only implementation commit、post-commit proof、fresh
+  successor inventoryを完了。Task 277Bはnot ready/semantic credit zeroのまま。

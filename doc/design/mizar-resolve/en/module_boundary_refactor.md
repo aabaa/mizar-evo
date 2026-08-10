@@ -266,7 +266,8 @@ identity authority; neither `resolved_ast.rs` nor another resolver module is
 edited. The only lower consumer is one private mizar-test leaf plus its test
 registration.
 
-The future source scope is exactly those three resolver paths and two
+The implemented source scope is exactly those three resolver paths and two
 mizar-test test-only paths. No module split, Cargo/dependency change,
 parser/frontend/checker/Core edit, production runner, public diagnostic/error,
 active route, or resolver-to-checker ownership transfer is authorized.
+The independent boundary integration review reports **NO FINDINGS**.

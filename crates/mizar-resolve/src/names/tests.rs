@@ -14,7 +14,7 @@ use mizar_session::{
     SourceId,
 };
 use mizar_syntax::ast::SurfaceNodeKind;
-use mizar_syntax::{SurfaceAst, SurfaceAstBuilder, SurfaceTokenKind};
+use mizar_syntax::{SurfaceAst, SurfaceAstBuilder, SurfaceFormulaPrefixOperator, SurfaceTokenKind};
 use semver::Version;
 
 #[test]
@@ -193,6 +193,274 @@ fn task277r1_revalidates_surface_resolved_arena_and_replays_deterministically() 
         Err(SurfaceResolvedArenaError::NodeCountMismatch)
     ));
     let stale_collector = TemplateTypeParameterSourceCollector {
+        ast: &stale_ast,
+        module: &module,
+        resolved: &resolved,
+    };
+    assert!(matches!(
+        stale_collector.collect(),
+        Err(SurfaceResolvedArenaError::NodeCountMismatch)
+    ));
+}
+
+#[test]
+fn task277r2_collects_exact_f5_generator_binding_and_uses() {
+    let source_id = source_id();
+    let module = module_id("pkg", "fraenkel");
+    let ast = task277r2_identity_ast(source_id);
+    let resolved = SurfaceResolvedArena::lower(&ast, &module).unwrap();
+    let collection = FraenkelGeneratorVariableSourceCollector::new(&ast, &module, &resolved)
+        .unwrap()
+        .collect()
+        .unwrap();
+
+    assert_eq!(collection.source_id(), source_id);
+    assert_eq!(collection.module(), &module);
+    assert_eq!(
+        collection.debug_text(),
+        "fraenkel-generator-variable-source-v1|module=pkg.fraenkel|bindings=1|uses=3"
+    );
+    assert_eq!(collection.bindings().len(), 1);
+    assert!(!collection.bindings().is_empty());
+    assert_eq!(collection.uses().len(), 3);
+    assert!(!collection.uses().is_empty());
+
+    let binding_id = FraenkelGeneratorVariableBindingId::new(0);
+    assert_eq!(binding_id.index(), 0);
+    let binding = collection.bindings().get(binding_id).unwrap();
+    assert_eq!(
+        binding.definition_block(),
+        resolved_node(&ast, &resolved, 0, 120, |kind| {
+            matches!(kind, SurfaceNodeKind::DefinitionBlockItem)
+        })
+    );
+    assert_eq!(
+        binding.functor_definition(),
+        resolved_node(&ast, &resolved, 20, 105, |kind| {
+            matches!(kind, SurfaceNodeKind::FunctorDefinition)
+        })
+    );
+    assert_eq!(
+        binding.comprehension(),
+        resolved_node(&ast, &resolved, 60, 100, |kind| {
+            matches!(kind, SurfaceNodeKind::SetComprehension)
+        })
+    );
+    assert_eq!(
+        binding.segment(),
+        resolved_node(&ast, &resolved, 70, 76, |kind| {
+            matches!(kind, SurfaceNodeKind::ComprehensionVariableSegment)
+        })
+    );
+    assert_eq!(
+        binding.binder(),
+        resolved_node(&ast, &resolved, 70, 71, |kind| {
+            matches!(kind, SurfaceNodeKind::Token(token) if token.kind == SurfaceTokenKind::Identifier && token.text.as_ref() == "x")
+        })
+    );
+    assert_eq!(binding.spelling(), "x");
+    assert_eq!(binding.segment_range(), range(source_id, 70, 76));
+    assert_eq!(binding.binder_range(), range(source_id, 70, 71));
+    assert_eq!(binding.source_ordinal(), 0);
+    assert_eq!(
+        collection
+            .bindings()
+            .iter()
+            .map(|(id, row)| (id, row.spelling()))
+            .collect::<Vec<_>>(),
+        vec![(binding_id, "x")]
+    );
+    assert!(
+        collection
+            .bindings()
+            .get(FraenkelGeneratorVariableBindingId::new(1))
+            .is_none()
+    );
+
+    let uses = collection.uses().iter().collect::<Vec<_>>();
+    assert_eq!(uses.len(), 3);
+    for link in &uses {
+        assert_eq!(link.definition_block(), binding.definition_block());
+        assert_eq!(link.functor_definition(), binding.functor_definition());
+        assert_eq!(link.comprehension(), binding.comprehension());
+        assert_eq!(link.binding(), binding_id);
+    }
+    assert_eq!(uses[0].role(), FraenkelGeneratorVariableUseRole::Mapper);
+    assert_eq!(uses[0].source_ordinal(), 0);
+    assert_eq!(uses[0].role_source_ordinal(), 0);
+    assert_eq!(uses[0].identifier_range(), range(source_id, 62, 63));
+    assert_eq!(
+        uses[0].role_owner(),
+        resolved_node(&ast, &resolved, 62, 63, |kind| {
+            matches!(kind, SurfaceNodeKind::TermExpression)
+        })
+    );
+    assert_eq!(
+        uses[0].term_reference(),
+        resolved_node(&ast, &resolved, 62, 63, |kind| {
+            matches!(kind, SurfaceNodeKind::TermReference)
+        })
+    );
+    assert_eq!(
+        uses[0].identifier(),
+        resolved_node(&ast, &resolved, 62, 63, |kind| {
+            matches!(kind, SurfaceNodeKind::Token(token) if token.kind == SurfaceTokenKind::Identifier && token.text.as_ref() == "x")
+        })
+    );
+    assert_eq!(
+        uses.iter()
+            .map(|link| (
+                link.role(),
+                link.source_ordinal(),
+                link.role_source_ordinal(),
+                link.identifier_range(),
+            ))
+            .collect::<Vec<_>>(),
+        vec![
+            (
+                FraenkelGeneratorVariableUseRole::Mapper,
+                0,
+                0,
+                range(source_id, 62, 63),
+            ),
+            (
+                FraenkelGeneratorVariableUseRole::Condition,
+                1,
+                0,
+                range(source_id, 83, 84),
+            ),
+            (
+                FraenkelGeneratorVariableUseRole::Condition,
+                2,
+                1,
+                range(source_id, 88, 89),
+            ),
+        ]
+    );
+    assert!(collection.uses().get(3).is_none());
+}
+
+#[test]
+fn task277r2_scopes_mapper_before_binder_and_orders_condition_uses() {
+    let source_id = source_id();
+    let module = module_id("pkg", "fraenkel");
+    let ast = task277r2_ordering_ast(source_id);
+    let resolved = SurfaceResolvedArena::lower(&ast, &module).unwrap();
+    let collection = FraenkelGeneratorVariableSourceCollector::new(&ast, &module, &resolved)
+        .unwrap()
+        .collect()
+        .unwrap();
+
+    let bindings = collection.bindings().iter().collect::<Vec<_>>();
+    assert_eq!(bindings.len(), 3);
+    assert_eq!(
+        bindings
+            .iter()
+            .map(|(id, binding)| (
+                id.index(),
+                binding.source_ordinal(),
+                binding.segment_range()
+            ))
+            .collect::<Vec<_>>(),
+        vec![
+            (0, 0, range(source_id, 70, 76)),
+            (1, 1, range(source_id, 70, 76)),
+            (2, 2, range(source_id, 270, 276)),
+        ]
+    );
+    assert!(bindings[0].1.binder().index() < bindings[1].1.binder().index());
+    let uses = collection.uses().iter().collect::<Vec<_>>();
+    assert_eq!(uses.len(), 9);
+    assert!(uses[0].identifier_range().start < bindings[0].1.binder_range().start);
+    assert_eq!(
+        uses[0].binding(),
+        FraenkelGeneratorVariableBindingId::new(0)
+    );
+    assert_eq!(uses[0].role(), FraenkelGeneratorVariableUseRole::Mapper);
+    assert_eq!(
+        uses.iter()
+            .map(|link| (
+                link.binding().index(),
+                link.role(),
+                link.source_ordinal(),
+                link.role_source_ordinal(),
+            ))
+            .collect::<Vec<_>>(),
+        vec![
+            (0, FraenkelGeneratorVariableUseRole::Mapper, 0, 0),
+            (1, FraenkelGeneratorVariableUseRole::Mapper, 1, 1),
+            (0, FraenkelGeneratorVariableUseRole::Condition, 2, 0),
+            (1, FraenkelGeneratorVariableUseRole::Condition, 3, 1),
+            (0, FraenkelGeneratorVariableUseRole::Condition, 4, 2),
+            (1, FraenkelGeneratorVariableUseRole::Condition, 5, 3),
+            (2, FraenkelGeneratorVariableUseRole::Mapper, 6, 2),
+            (2, FraenkelGeneratorVariableUseRole::Condition, 7, 4),
+            (2, FraenkelGeneratorVariableUseRole::Condition, 8, 5),
+        ]
+    );
+    assert!(uses[1].identifier_range().start < uses[2].identifier_range().start);
+}
+
+#[test]
+fn task277r2_ignores_unsupported_and_recovered_fraenkel_shapes() {
+    let source_id = source_id();
+    let module = module_id("pkg", "fraenkel");
+    let ast = task277r2_rejected_shapes_ast(source_id);
+    let resolved = SurfaceResolvedArena::lower(&ast, &module).unwrap();
+    let collection = FraenkelGeneratorVariableSourceCollector::new(&ast, &module, &resolved)
+        .unwrap()
+        .collect()
+        .unwrap();
+
+    assert!(collection.bindings().is_empty());
+    assert!(collection.uses().is_empty());
+    assert_eq!(
+        collection.debug_text(),
+        "fraenkel-generator-variable-source-v1|module=pkg.fraenkel|bindings=0|uses=0"
+    );
+
+    let mixed_ast = task277r2_mixed_shapes_ast(source_id);
+    let mixed_resolved = SurfaceResolvedArena::lower(&mixed_ast, &module).unwrap();
+    let mixed = FraenkelGeneratorVariableSourceCollector::new(&mixed_ast, &module, &mixed_resolved)
+        .unwrap()
+        .collect()
+        .unwrap();
+    assert_eq!(mixed.bindings().len(), 1);
+    assert_eq!(mixed.uses().len(), 3);
+    assert!(
+        mixed
+            .uses()
+            .iter()
+            .all(|link| link.binding() == FraenkelGeneratorVariableBindingId::new(0))
+    );
+}
+
+#[test]
+fn task277r2_revalidates_surface_resolved_arena_and_replays_deterministically() {
+    let source_id = source_id();
+    let module = module_id("pkg", "fraenkel");
+    let ast = task277r2_identity_ast(source_id);
+    let resolved = SurfaceResolvedArena::lower(&ast, &module).unwrap();
+    let collector =
+        FraenkelGeneratorVariableSourceCollector::new(&ast, &module, &resolved).unwrap();
+
+    let first = collector.collect().unwrap();
+    let second = collector.collect().unwrap();
+    assert_eq!(first, second);
+    assert_eq!(first.debug_text(), second.debug_text());
+
+    let wrong_module = module_id("pkg", "other");
+    assert!(matches!(
+        FraenkelGeneratorVariableSourceCollector::new(&ast, &wrong_module, &resolved),
+        Err(SurfaceResolvedArenaError::ModuleMismatch)
+    ));
+
+    let stale_ast = task277r2_rejected_shapes_ast(source_id);
+    assert!(matches!(
+        FraenkelGeneratorVariableSourceCollector::new(&stale_ast, &module, &resolved),
+        Err(SurfaceResolvedArenaError::NodeCountMismatch)
+    ));
+    let stale_collector = FraenkelGeneratorVariableSourceCollector {
         ast: &stale_ast,
         module: &module,
         resolved: &resolved,
@@ -2361,6 +2629,382 @@ fn symbol_id(module: ModuleId, local: &str, fqn: &str) -> SymbolId {
         module,
         LocalSymbolId::new(local),
         FullyQualifiedName::new(fqn),
+    )
+}
+
+fn task277r2_identity_ast(source_id: SourceId) -> SurfaceAst {
+    let mut builder = SurfaceAstBuilder::new(source_id);
+    let definition = task277r2_definition(&mut builder, source_id, 0, Task277r2Shape::Exact);
+    let root = builder.add_node(
+        SurfaceNodeKind::Root,
+        range(source_id, 0, 120),
+        vec![definition],
+    );
+    builder.finish(Some(root), None)
+}
+
+fn task277r2_rejected_shapes_ast(source_id: SourceId) -> SurfaceAst {
+    let mut builder = SurfaceAstBuilder::new(source_id);
+    let definitions = [
+        task277r2_definition(&mut builder, source_id, 0, Task277r2Shape::Recovered),
+        task277r2_definition(
+            &mut builder,
+            source_id,
+            200,
+            Task277r2Shape::MultipleSegments,
+        ),
+        task277r2_definition(&mut builder, source_id, 400, Task277r2Shape::ExtraBinder),
+        task277r2_definition(
+            &mut builder,
+            source_id,
+            600,
+            Task277r2Shape::DifferentConditionSpelling,
+        ),
+        task277r2_definition(
+            &mut builder,
+            source_id,
+            800,
+            Task277r2Shape::SpoofedTypeExpression,
+        ),
+        task277r2_definition(
+            &mut builder,
+            source_id,
+            1_000,
+            Task277r2Shape::SpoofedConditionTermExpression,
+        ),
+        task277r2_definition(
+            &mut builder,
+            source_id,
+            1_200,
+            Task277r2Shape::NestedComprehension,
+        ),
+        task277r2_definition(&mut builder, source_id, 1_400, Task277r2Shape::NestedBinder),
+        task277r2_definition(
+            &mut builder,
+            source_id,
+            1_600,
+            Task277r2Shape::AmbiguousSameSpelling,
+        ),
+    ];
+    let root = builder.add_node(
+        SurfaceNodeKind::Root,
+        range(source_id, 0, 1_720),
+        definitions.to_vec(),
+    );
+    builder.finish(Some(root), None)
+}
+
+fn task277r2_ordering_ast(source_id: SourceId) -> SurfaceAst {
+    let mut builder = SurfaceAstBuilder::new(source_id);
+    let late = task277r2_definition(&mut builder, source_id, 200, Task277r2Shape::Exact);
+    let first_early = task277r2_definition(&mut builder, source_id, 0, Task277r2Shape::Exact);
+    let second_early = task277r2_definition(&mut builder, source_id, 0, Task277r2Shape::Exact);
+    let root = builder.add_node(
+        SurfaceNodeKind::Root,
+        range(source_id, 0, 320),
+        vec![late, first_early, second_early],
+    );
+    builder.finish(Some(root), None)
+}
+
+fn task277r2_mixed_shapes_ast(source_id: SourceId) -> SurfaceAst {
+    let mut builder = SurfaceAstBuilder::new(source_id);
+    let rejected = task277r2_definition(
+        &mut builder,
+        source_id,
+        200,
+        Task277r2Shape::NestedComprehension,
+    );
+    let accepted = task277r2_definition(&mut builder, source_id, 0, Task277r2Shape::Exact);
+    let root = builder.add_node(
+        SurfaceNodeKind::Root,
+        range(source_id, 0, 320),
+        vec![rejected, accepted],
+    );
+    builder.finish(Some(root), None)
+}
+
+#[derive(Clone, Copy)]
+enum Task277r2Shape {
+    Exact,
+    Recovered,
+    MultipleSegments,
+    ExtraBinder,
+    DifferentConditionSpelling,
+    SpoofedTypeExpression,
+    SpoofedConditionTermExpression,
+    NestedComprehension,
+    NestedBinder,
+    AmbiguousSameSpelling,
+}
+
+fn task277r2_definition(
+    builder: &mut SurfaceAstBuilder,
+    source_id: SourceId,
+    start: usize,
+    shape: Task277r2Shape,
+) -> mizar_syntax::SurfaceBuilderNodeId {
+    let definition = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        "definition",
+        range(source_id, start, start + 10),
+    );
+    let func = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        "func",
+        range(source_id, start + 20, start + 24),
+    );
+    let open = if matches!(shape, Task277r2Shape::Recovered) {
+        builder.add_recovered_token(
+            SurfaceTokenKind::ReservedSymbol,
+            "{",
+            range(source_id, start + 60, start + 61),
+        )
+    } else {
+        builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            "{",
+            range(source_id, start + 60, start + 61),
+        )
+    };
+    let mapper = if matches!(shape, Task277r2Shape::NestedComprehension) {
+        let nested_binder = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "x",
+            range(source_id, start + 62, start + 63),
+        );
+        let nested_segment = builder.add_node(
+            SurfaceNodeKind::ComprehensionVariableSegment,
+            range(source_id, start + 62, start + 63),
+            vec![nested_binder],
+        );
+        let nested = builder.add_node(
+            SurfaceNodeKind::SetComprehension,
+            range(source_id, start + 62, start + 63),
+            vec![nested_segment],
+        );
+        builder.add_node(
+            SurfaceNodeKind::TermExpression,
+            range(source_id, start + 62, start + 63),
+            vec![nested],
+        )
+    } else {
+        let mapper_identifier = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "x",
+            range(source_id, start + 62, start + 63),
+        );
+        let mapper_reference = builder.add_node(
+            SurfaceNodeKind::TermReference,
+            range(source_id, start + 62, start + 63),
+            vec![mapper_identifier],
+        );
+        builder.add_node(
+            SurfaceNodeKind::TermExpression,
+            range(source_id, start + 62, start + 63),
+            vec![mapper_reference],
+        )
+    };
+    let where_keyword = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        "where",
+        range(source_id, start + 64, start + 69),
+    );
+    let binder = builder.add_token(
+        SurfaceTokenKind::Identifier,
+        "x",
+        range(source_id, start + 70, start + 71),
+    );
+    let is_keyword = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        "is",
+        range(source_id, start + 72, start + 74),
+    );
+    let type_identifier = builder.add_token(
+        SurfaceTokenKind::Identifier,
+        "T",
+        range(source_id, start + 75, start + 76),
+    );
+    let segment_type = if matches!(shape, Task277r2Shape::SpoofedTypeExpression) {
+        builder.add_node(
+            SurfaceNodeKind::TypeHead,
+            range(source_id, start + 75, start + 76),
+            vec![type_identifier],
+        )
+    } else if matches!(shape, Task277r2Shape::NestedBinder) {
+        let nested_identifier = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "x",
+            range(source_id, start + 76, start + 77),
+        );
+        let nested_segment = builder.add_node(
+            SurfaceNodeKind::ComprehensionVariableSegment,
+            range(source_id, start + 76, start + 77),
+            vec![nested_identifier],
+        );
+        let type_head = builder.add_node(
+            SurfaceNodeKind::TypeHead,
+            range(source_id, start + 75, start + 77),
+            vec![type_identifier, nested_segment],
+        );
+        builder.add_node(
+            SurfaceNodeKind::TypeExpression,
+            range(source_id, start + 75, start + 77),
+            vec![type_head],
+        )
+    } else {
+        let type_head = builder.add_node(
+            SurfaceNodeKind::TypeHead,
+            range(source_id, start + 75, start + 76),
+            vec![type_identifier],
+        );
+        builder.add_node(
+            SurfaceNodeKind::TypeExpression,
+            range(source_id, start + 75, start + 76),
+            vec![type_head],
+        )
+    };
+    let mut segment_children = vec![binder, is_keyword, segment_type];
+    if matches!(shape, Task277r2Shape::ExtraBinder) {
+        segment_children.push(builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "y",
+            range(source_id, start + 76, start + 77),
+        ));
+    }
+    let segment = builder.add_node(
+        SurfaceNodeKind::ComprehensionVariableSegment,
+        range(source_id, start + 70, start + 76),
+        segment_children,
+    );
+    let colon = builder.add_token(
+        SurfaceTokenKind::ReservedSymbol,
+        ":",
+        range(source_id, start + 77, start + 78),
+    );
+    let not_keyword = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        "not",
+        range(source_id, start + 79, start + 82),
+    );
+    let first_condition_identifier = builder.add_token(
+        SurfaceTokenKind::Identifier,
+        "x",
+        range(source_id, start + 83, start + 84),
+    );
+    let first_condition_reference = builder.add_node(
+        SurfaceNodeKind::TermReference,
+        range(source_id, start + 83, start + 84),
+        vec![first_condition_identifier],
+    );
+    let first_condition_owner = if matches!(shape, Task277r2Shape::SpoofedConditionTermExpression) {
+        first_condition_reference
+    } else {
+        builder.add_node(
+            SurfaceNodeKind::TermExpression,
+            range(source_id, start + 83, start + 84),
+            vec![first_condition_reference],
+        )
+    };
+    let membership = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        "in",
+        range(source_id, start + 85, start + 87),
+    );
+    let second_spelling = if matches!(shape, Task277r2Shape::DifferentConditionSpelling) {
+        "y"
+    } else {
+        "x"
+    };
+    let second_condition_identifier = builder.add_token(
+        SurfaceTokenKind::Identifier,
+        second_spelling,
+        range(source_id, start + 88, start + 89),
+    );
+    let second_condition_reference = builder.add_node(
+        SurfaceNodeKind::TermReference,
+        range(source_id, start + 88, start + 89),
+        vec![second_condition_identifier],
+    );
+    let second_condition = builder.add_node(
+        SurfaceNodeKind::TermExpression,
+        range(source_id, start + 88, start + 89),
+        vec![second_condition_reference],
+    );
+    let predicate = builder.add_node(
+        SurfaceNodeKind::BuiltinPredicateApplication,
+        range(source_id, start + 83, start + 89),
+        vec![first_condition_owner, membership, second_condition],
+    );
+    let prefix = builder.add_node(
+        SurfaceNodeKind::PrefixFormula(SurfaceFormulaPrefixOperator::Not),
+        range(source_id, start + 79, start + 89),
+        vec![not_keyword, predicate],
+    );
+    let condition = builder.add_node(
+        SurfaceNodeKind::FormulaExpression,
+        range(source_id, start + 79, start + 89),
+        vec![prefix],
+    );
+    let close = builder.add_token(
+        SurfaceTokenKind::ReservedSymbol,
+        "}",
+        range(source_id, start + 99, start + 100),
+    );
+    let mut comprehension_children = vec![
+        open,
+        mapper,
+        where_keyword,
+        segment,
+        colon,
+        condition,
+        close,
+    ];
+    if matches!(
+        shape,
+        Task277r2Shape::MultipleSegments | Task277r2Shape::AmbiguousSameSpelling
+    ) {
+        let spelling = if matches!(shape, Task277r2Shape::AmbiguousSameSpelling) {
+            "x"
+        } else {
+            "z"
+        };
+        let extra_binder = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            spelling,
+            range(source_id, start + 101, start + 102),
+        );
+        let extra_segment = builder.add_node(
+            SurfaceNodeKind::ComprehensionVariableSegment,
+            range(source_id, start + 101, start + 102),
+            vec![extra_binder],
+        );
+        comprehension_children.push(extra_segment);
+    }
+    let comprehension = builder.add_node(
+        SurfaceNodeKind::SetComprehension,
+        range(source_id, start + 60, start + 100),
+        comprehension_children,
+    );
+    let definiens_expression = builder.add_node(
+        SurfaceNodeKind::TermExpression,
+        range(source_id, start + 60, start + 100),
+        vec![comprehension],
+    );
+    let definiens = builder.add_node(
+        SurfaceNodeKind::TermDefiniens,
+        range(source_id, start + 60, start + 100),
+        vec![definiens_expression],
+    );
+    let functor = builder.add_node(
+        SurfaceNodeKind::FunctorDefinition,
+        range(source_id, start + 20, start + 105),
+        vec![func, definiens],
+    );
+    builder.add_node(
+        SurfaceNodeKind::DefinitionBlockItem,
+        range(source_id, start, start + 120),
+        vec![definition, functor],
     )
 }
 

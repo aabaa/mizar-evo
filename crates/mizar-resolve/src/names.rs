@@ -525,6 +525,678 @@ fn token_is_reserved_word(node: &SurfaceNodeView<'_>, first: &str, second: &str)
     })
 }
 
+/// Stable id for one admitted Fraenkel generator-variable binding.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct FraenkelGeneratorVariableBindingId(usize);
+
+impl FraenkelGeneratorVariableBindingId {
+    /// Creates an id from its deterministic table index.
+    #[must_use]
+    pub const fn new(index: usize) -> Self {
+        Self(index)
+    }
+
+    /// Returns the zero-based binding-table index.
+    #[must_use]
+    pub const fn index(self) -> usize {
+        self.0
+    }
+}
+
+/// One exact Fraenkel generator-variable declaration.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FraenkelGeneratorVariableBinding {
+    definition_block: ResolvedNodeId,
+    functor_definition: ResolvedNodeId,
+    comprehension: ResolvedNodeId,
+    segment: ResolvedNodeId,
+    binder: ResolvedNodeId,
+    spelling: String,
+    segment_range: SourceRange,
+    binder_range: SourceRange,
+    source_ordinal: usize,
+}
+
+impl FraenkelGeneratorVariableBinding {
+    /// Returns the enclosing definition-block node.
+    #[must_use]
+    pub const fn definition_block(&self) -> ResolvedNodeId {
+        self.definition_block
+    }
+
+    /// Returns the enclosing functor-definition node.
+    #[must_use]
+    pub const fn functor_definition(&self) -> ResolvedNodeId {
+        self.functor_definition
+    }
+
+    /// Returns the owning set-comprehension node.
+    #[must_use]
+    pub const fn comprehension(&self) -> ResolvedNodeId {
+        self.comprehension
+    }
+
+    /// Returns the single generator segment.
+    #[must_use]
+    pub const fn segment(&self) -> ResolvedNodeId {
+        self.segment
+    }
+
+    /// Returns the generator binder identifier.
+    #[must_use]
+    pub const fn binder(&self) -> ResolvedNodeId {
+        self.binder
+    }
+
+    /// Returns the exact binder spelling.
+    #[must_use]
+    pub fn spelling(&self) -> &str {
+        &self.spelling
+    }
+
+    /// Returns the single generator-segment source range.
+    #[must_use]
+    pub const fn segment_range(&self) -> SourceRange {
+        self.segment_range
+    }
+
+    /// Returns the binder identifier source range.
+    #[must_use]
+    pub const fn binder_range(&self) -> SourceRange {
+        self.binder_range
+    }
+
+    /// Returns the deterministic source-order ordinal.
+    #[must_use]
+    pub const fn source_ordinal(&self) -> usize {
+        self.source_ordinal
+    }
+}
+
+/// The structural role of an admitted Fraenkel generator-variable use.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum FraenkelGeneratorVariableUseRole {
+    /// The mapper term before the generator binder in source order.
+    Mapper,
+    /// A term reference in the comprehension condition.
+    Condition,
+}
+
+/// One exact use of a Fraenkel generator variable.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FraenkelGeneratorVariableUseLink {
+    definition_block: ResolvedNodeId,
+    functor_definition: ResolvedNodeId,
+    comprehension: ResolvedNodeId,
+    role_owner: ResolvedNodeId,
+    term_reference: ResolvedNodeId,
+    identifier: ResolvedNodeId,
+    binding: FraenkelGeneratorVariableBindingId,
+    role: FraenkelGeneratorVariableUseRole,
+    source_ordinal: usize,
+    role_source_ordinal: usize,
+    identifier_range: SourceRange,
+}
+
+impl FraenkelGeneratorVariableUseLink {
+    /// Returns the enclosing definition-block node.
+    #[must_use]
+    pub const fn definition_block(&self) -> ResolvedNodeId {
+        self.definition_block
+    }
+
+    /// Returns the enclosing functor-definition node.
+    #[must_use]
+    pub const fn functor_definition(&self) -> ResolvedNodeId {
+        self.functor_definition
+    }
+
+    /// Returns the owning set-comprehension node.
+    #[must_use]
+    pub const fn comprehension(&self) -> ResolvedNodeId {
+        self.comprehension
+    }
+
+    /// Returns the mapper-term or condition-formula owner.
+    #[must_use]
+    pub const fn role_owner(&self) -> ResolvedNodeId {
+        self.role_owner
+    }
+
+    /// Returns the exact term-reference node.
+    #[must_use]
+    pub const fn term_reference(&self) -> ResolvedNodeId {
+        self.term_reference
+    }
+
+    /// Returns the matched identifier token.
+    #[must_use]
+    pub const fn identifier(&self) -> ResolvedNodeId {
+        self.identifier
+    }
+
+    /// Returns the uniquely matched generator binding.
+    #[must_use]
+    pub const fn binding(&self) -> FraenkelGeneratorVariableBindingId {
+        self.binding
+    }
+
+    /// Returns the structural use role.
+    #[must_use]
+    pub const fn role(&self) -> FraenkelGeneratorVariableUseRole {
+        self.role
+    }
+
+    /// Returns the deterministic global source-order ordinal.
+    #[must_use]
+    pub const fn source_ordinal(&self) -> usize {
+        self.source_ordinal
+    }
+
+    /// Returns the deterministic source-order ordinal within this role.
+    #[must_use]
+    pub const fn role_source_ordinal(&self) -> usize {
+        self.role_source_ordinal
+    }
+
+    /// Returns the matched identifier source range.
+    #[must_use]
+    pub const fn identifier_range(&self) -> SourceRange {
+        self.identifier_range
+    }
+}
+
+/// Deterministic table of admitted Fraenkel generator-variable declarations.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct FraenkelGeneratorVariableBindingTable {
+    entries: Vec<FraenkelGeneratorVariableBinding>,
+}
+
+impl FraenkelGeneratorVariableBindingTable {
+    /// Returns a binding by stable table id.
+    #[must_use]
+    pub fn get(
+        &self,
+        id: FraenkelGeneratorVariableBindingId,
+    ) -> Option<&FraenkelGeneratorVariableBinding> {
+        self.entries.get(id.index())
+    }
+
+    /// Iterates bindings in deterministic source order.
+    pub fn iter(
+        &self,
+    ) -> impl Iterator<
+        Item = (
+            FraenkelGeneratorVariableBindingId,
+            &FraenkelGeneratorVariableBinding,
+        ),
+    > {
+        self.entries
+            .iter()
+            .enumerate()
+            .map(|(index, entry)| (FraenkelGeneratorVariableBindingId::new(index), entry))
+    }
+
+    /// Returns the number of admitted bindings.
+    #[must_use]
+    pub const fn len(&self) -> usize {
+        self.entries.len()
+    }
+
+    /// Returns whether no bindings were admitted.
+    #[must_use]
+    pub const fn is_empty(&self) -> bool {
+        self.entries.is_empty()
+    }
+}
+
+/// Deterministic table of exact Fraenkel generator-variable use links.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct FraenkelGeneratorVariableUseLinkTable {
+    entries: Vec<FraenkelGeneratorVariableUseLink>,
+}
+
+impl FraenkelGeneratorVariableUseLinkTable {
+    /// Returns a link by deterministic source-order index.
+    #[must_use]
+    pub fn get(&self, index: usize) -> Option<&FraenkelGeneratorVariableUseLink> {
+        self.entries.get(index)
+    }
+
+    /// Iterates links in deterministic source order.
+    pub fn iter(&self) -> impl Iterator<Item = &FraenkelGeneratorVariableUseLink> {
+        self.entries.iter()
+    }
+
+    /// Returns the number of admitted links.
+    #[must_use]
+    pub const fn len(&self) -> usize {
+        self.entries.len()
+    }
+
+    /// Returns whether no links were admitted.
+    #[must_use]
+    pub const fn is_empty(&self) -> bool {
+        self.entries.is_empty()
+    }
+}
+
+/// Validated Fraenkel generator-variable bindings and uses.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FraenkelGeneratorVariableSourceCollection {
+    source_id: SourceId,
+    module: ModuleId,
+    bindings: FraenkelGeneratorVariableBindingTable,
+    uses: FraenkelGeneratorVariableUseLinkTable,
+}
+
+impl FraenkelGeneratorVariableSourceCollection {
+    /// Returns the source represented by this collection.
+    #[must_use]
+    pub const fn source_id(&self) -> SourceId {
+        self.source_id
+    }
+
+    /// Returns the canonical module represented by this collection.
+    #[must_use]
+    pub const fn module(&self) -> &ModuleId {
+        &self.module
+    }
+
+    /// Returns admitted generator-variable bindings.
+    #[must_use]
+    pub const fn bindings(&self) -> &FraenkelGeneratorVariableBindingTable {
+        &self.bindings
+    }
+
+    /// Returns exact generator-variable uses.
+    #[must_use]
+    pub const fn uses(&self) -> &FraenkelGeneratorVariableUseLinkTable {
+        &self.uses
+    }
+
+    /// Returns a stable summary for diagnostics-free debugging.
+    #[must_use]
+    pub fn debug_text(&self) -> String {
+        format!(
+            "fraenkel-generator-variable-source-v1|module={}.{}|bindings={}|uses={}",
+            self.module.package().as_str(),
+            self.module.path().as_str(),
+            self.bindings.len(),
+            self.uses.len(),
+        )
+    }
+}
+
+/// Validated collector for an exact Fraenkel generator-variable relation.
+pub struct FraenkelGeneratorVariableSourceCollector<'a> {
+    ast: &'a SurfaceAst,
+    module: &'a ModuleId,
+    resolved: &'a SurfaceResolvedArena,
+}
+
+impl<'a> FraenkelGeneratorVariableSourceCollector<'a> {
+    /// Creates a collector after validating the complete structural arena.
+    pub fn new(
+        ast: &'a SurfaceAst,
+        module: &'a ModuleId,
+        resolved: &'a SurfaceResolvedArena,
+    ) -> Result<Self, SurfaceResolvedArenaError> {
+        resolved.validate_against(ast, module)?;
+        Ok(Self {
+            ast,
+            module,
+            resolved,
+        })
+    }
+
+    /// Collects only exact, normal, single-generator Fraenkel shapes.
+    ///
+    /// The complete structural arena is revalidated on every call so a
+    /// collector cannot rely on stale constructor validation.
+    pub fn collect(
+        &self,
+    ) -> Result<FraenkelGeneratorVariableSourceCollection, SurfaceResolvedArenaError> {
+        self.resolved.validate_against(self.ast, self.module)?;
+
+        let mut candidates = self
+            .ast
+            .node_views()
+            .filter_map(exact_fraenkel_generator_variable_candidate)
+            .collect::<Vec<_>>();
+        candidates.sort_by(|left, right| {
+            source_range_cmp(left.segment.range(), right.segment.range())
+                .then_with(|| left.segment.id().index().cmp(&right.segment.id().index()))
+        });
+
+        let mut bindings = Vec::with_capacity(candidates.len());
+        let mut uses = Vec::with_capacity(candidates.len() * 3);
+        for (source_ordinal, candidate) in candidates.into_iter().enumerate() {
+            let binding = FraenkelGeneratorVariableBindingId::new(source_ordinal);
+            let spelling = candidate
+                .binder
+                .as_token()
+                .expect("exact Fraenkel binder identifier")
+                .text
+                .to_string();
+            let definition_block = self.resolved_node(candidate.definition_block.id())?;
+            let functor_definition = self.resolved_node(candidate.functor_definition.id())?;
+            let comprehension = self.resolved_node(candidate.comprehension.id())?;
+            bindings.push(FraenkelGeneratorVariableBinding {
+                definition_block,
+                functor_definition,
+                comprehension,
+                segment: self.resolved_node(candidate.segment.id())?,
+                binder: self.resolved_node(candidate.binder.id())?,
+                spelling,
+                segment_range: candidate.segment.range(),
+                binder_range: candidate.binder.range(),
+                source_ordinal,
+            });
+
+            for (role, role_owner, reference) in [
+                (
+                    FraenkelGeneratorVariableUseRole::Mapper,
+                    candidate.mapper_owner,
+                    candidate.mapper_reference,
+                ),
+                (
+                    FraenkelGeneratorVariableUseRole::Condition,
+                    candidate.condition_owner,
+                    candidate.first_condition_reference,
+                ),
+                (
+                    FraenkelGeneratorVariableUseRole::Condition,
+                    candidate.condition_owner,
+                    candidate.second_condition_reference,
+                ),
+            ] {
+                uses.push(FraenkelGeneratorVariableUseLink {
+                    definition_block,
+                    functor_definition,
+                    comprehension,
+                    role_owner: self.resolved_node(role_owner.id())?,
+                    term_reference: self.resolved_node(reference.term_reference.id())?,
+                    identifier: self.resolved_node(reference.identifier.id())?,
+                    binding,
+                    role,
+                    source_ordinal: 0,
+                    role_source_ordinal: 0,
+                    identifier_range: reference.identifier.range(),
+                });
+            }
+        }
+        uses.sort_by(|left, right| {
+            source_range_cmp(left.identifier_range(), right.identifier_range()).then_with(|| {
+                left.term_reference()
+                    .index()
+                    .cmp(&right.term_reference().index())
+            })
+        });
+        let mut mapper_ordinal = 0;
+        let mut condition_ordinal = 0;
+        for (source_ordinal, link) in uses.iter_mut().enumerate() {
+            link.source_ordinal = source_ordinal;
+            link.role_source_ordinal = match link.role {
+                FraenkelGeneratorVariableUseRole::Mapper => {
+                    let ordinal = mapper_ordinal;
+                    mapper_ordinal += 1;
+                    ordinal
+                }
+                FraenkelGeneratorVariableUseRole::Condition => {
+                    let ordinal = condition_ordinal;
+                    condition_ordinal += 1;
+                    ordinal
+                }
+            };
+        }
+
+        Ok(FraenkelGeneratorVariableSourceCollection {
+            source_id: self.ast.source_id,
+            module: self.module.clone(),
+            bindings: FraenkelGeneratorVariableBindingTable { entries: bindings },
+            uses: FraenkelGeneratorVariableUseLinkTable { entries: uses },
+        })
+    }
+
+    fn resolved_node(
+        &self,
+        source: SurfaceNodeId,
+    ) -> Result<ResolvedNodeId, SurfaceResolvedArenaError> {
+        self.resolved
+            .resolved_node_for(source)
+            .ok_or(SurfaceResolvedArenaError::NodeCountMismatch)
+    }
+}
+
+#[derive(Clone, Copy)]
+struct ExactFraenkelGeneratorVariableCandidate<'a> {
+    definition_block: SurfaceNodeView<'a>,
+    functor_definition: SurfaceNodeView<'a>,
+    comprehension: SurfaceNodeView<'a>,
+    segment: SurfaceNodeView<'a>,
+    binder: SurfaceNodeView<'a>,
+    mapper_owner: SurfaceNodeView<'a>,
+    mapper_reference: ExactIdentifierTermReference<'a>,
+    condition_owner: SurfaceNodeView<'a>,
+    first_condition_reference: ExactIdentifierTermReference<'a>,
+    second_condition_reference: ExactIdentifierTermReference<'a>,
+}
+
+#[derive(Clone, Copy)]
+struct ExactIdentifierTermReference<'a> {
+    term_reference: SurfaceNodeView<'a>,
+    identifier: SurfaceNodeView<'a>,
+}
+
+fn exact_fraenkel_generator_variable_candidate(
+    definition_block: SurfaceNodeView<'_>,
+) -> Option<ExactFraenkelGeneratorVariableCandidate<'_>> {
+    if !matches!(
+        definition_block.kind(),
+        SurfaceNodeKind::DefinitionBlockItem
+    ) || surface_subtree_contains_recovery(definition_block)
+    {
+        return None;
+    }
+    let functors = definition_block
+        .child_views()
+        .filter(|child| matches!(child.kind(), SurfaceNodeKind::FunctorDefinition))
+        .collect::<Vec<_>>();
+    let [functor_definition] = functors.as_slice() else {
+        return None;
+    };
+    if surface_subtree_contains_recovery(*functor_definition)
+        || count_surface_kind(*functor_definition, |kind| {
+            matches!(kind, SurfaceNodeKind::SetComprehension)
+        }) != 1
+        || count_surface_kind(*functor_definition, |kind| {
+            matches!(kind, SurfaceNodeKind::ComprehensionVariableSegment)
+        }) != 1
+    {
+        return None;
+    }
+
+    let definiens = exact_single_direct_child_with_kind(*functor_definition, |kind| {
+        matches!(kind, SurfaceNodeKind::TermDefiniens)
+    })?;
+    let wrapped_comprehension = exact_single_child_with_kind(definiens, |kind| {
+        matches!(kind, SurfaceNodeKind::TermExpression)
+    })?;
+    let comprehension = exact_single_child_with_kind(wrapped_comprehension, |kind| {
+        matches!(kind, SurfaceNodeKind::SetComprehension)
+    })?;
+    let children = comprehension.child_views().collect::<Vec<_>>();
+    let [
+        open,
+        mapper_owner,
+        where_keyword,
+        segment,
+        colon,
+        condition_owner,
+        close,
+    ] = children.as_slice()
+    else {
+        return None;
+    };
+    if !token_is(open, SurfaceTokenKind::ReservedSymbol, "{")
+        || !matches!(mapper_owner.kind(), SurfaceNodeKind::TermExpression)
+        || !token_is_reserved_word(where_keyword, "where", "where")
+        || !matches!(
+            segment.kind(),
+            SurfaceNodeKind::ComprehensionVariableSegment
+        )
+        || !token_is(colon, SurfaceTokenKind::ReservedSymbol, ":")
+        || !matches!(condition_owner.kind(), SurfaceNodeKind::FormulaExpression)
+        || !token_is(close, SurfaceTokenKind::ReservedSymbol, "}")
+    {
+        return None;
+    }
+
+    let segment_children = segment.child_views().collect::<Vec<_>>();
+    let [binder, is_keyword, type_expression] = segment_children.as_slice() else {
+        return None;
+    };
+    if !token_has_kind(binder, SurfaceTokenKind::Identifier)
+        || !token_is_reserved_word(is_keyword, "is", "is")
+        || !exact_type_expression(type_expression)
+    {
+        return None;
+    }
+
+    let mapper_reference = exact_identifier_term_reference(*mapper_owner)?;
+    let condition_children = condition_owner.child_views().collect::<Vec<_>>();
+    let [prefix] = condition_children.as_slice() else {
+        return None;
+    };
+    if !matches!(prefix.kind(), SurfaceNodeKind::PrefixFormula(_)) {
+        return None;
+    }
+    let prefix_children = prefix.child_views().collect::<Vec<_>>();
+    let [not_keyword, predicate] = prefix_children.as_slice() else {
+        return None;
+    };
+    if !token_is_reserved_word(not_keyword, "not", "not")
+        || !matches!(
+            predicate.kind(),
+            SurfaceNodeKind::BuiltinPredicateApplication
+        )
+    {
+        return None;
+    }
+    let predicate_children = predicate.child_views().collect::<Vec<_>>();
+    let [first_condition_owner, membership, second_condition_owner] = predicate_children.as_slice()
+    else {
+        return None;
+    };
+    if !token_is_reserved_word(membership, "in", "in") {
+        return None;
+    }
+    let first_condition_reference = exact_identifier_term_reference(*first_condition_owner)?;
+    let second_condition_reference = exact_identifier_term_reference(*second_condition_owner)?;
+    let spelling = binder.as_token()?.text.as_ref();
+    if [
+        mapper_reference.identifier,
+        first_condition_reference.identifier,
+        second_condition_reference.identifier,
+    ]
+    .into_iter()
+    .any(|identifier| {
+        identifier
+            .as_token()
+            .is_none_or(|token| token.text.as_ref() != spelling)
+    }) {
+        return None;
+    }
+
+    Some(ExactFraenkelGeneratorVariableCandidate {
+        definition_block,
+        functor_definition: *functor_definition,
+        comprehension,
+        segment: *segment,
+        binder: *binder,
+        mapper_owner: *mapper_owner,
+        mapper_reference,
+        condition_owner: *condition_owner,
+        first_condition_reference,
+        second_condition_reference,
+    })
+}
+
+fn exact_single_child_with_kind(
+    node: SurfaceNodeView<'_>,
+    matches_kind: impl Fn(&SurfaceNodeKind) -> bool,
+) -> Option<SurfaceNodeView<'_>> {
+    let children = node.child_views().collect::<Vec<_>>();
+    let [child] = children.as_slice() else {
+        return None;
+    };
+    matches_kind(child.kind()).then_some(*child)
+}
+
+fn exact_single_direct_child_with_kind(
+    node: SurfaceNodeView<'_>,
+    matches_kind: impl Fn(&SurfaceNodeKind) -> bool,
+) -> Option<SurfaceNodeView<'_>> {
+    let children = node
+        .child_views()
+        .filter(|child| matches_kind(child.kind()))
+        .collect::<Vec<_>>();
+    let [child] = children.as_slice() else {
+        return None;
+    };
+    Some(*child)
+}
+
+fn exact_type_expression(node: &SurfaceNodeView<'_>) -> bool {
+    if !matches!(node.kind(), SurfaceNodeKind::TypeExpression) {
+        return false;
+    }
+    let Some(type_head) =
+        exact_single_child_with_kind(*node, |kind| matches!(kind, SurfaceNodeKind::TypeHead))
+    else {
+        return false;
+    };
+    let children = type_head.child_views().collect::<Vec<_>>();
+    matches!(
+        children.as_slice(),
+        [identifier] if token_has_kind(identifier, SurfaceTokenKind::Identifier)
+    )
+}
+
+fn exact_identifier_term_reference(
+    term_expression: SurfaceNodeView<'_>,
+) -> Option<ExactIdentifierTermReference<'_>> {
+    if !matches!(term_expression.kind(), SurfaceNodeKind::TermExpression) {
+        return None;
+    }
+    let term_reference = exact_single_child_with_kind(term_expression, |kind| {
+        matches!(kind, SurfaceNodeKind::TermReference)
+    })?;
+    let children = term_reference.child_views().collect::<Vec<_>>();
+    let [identifier] = children.as_slice() else {
+        return None;
+    };
+    token_has_kind(identifier, SurfaceTokenKind::Identifier).then_some(
+        ExactIdentifierTermReference {
+            term_reference,
+            identifier: *identifier,
+        },
+    )
+}
+
+fn count_surface_kind(
+    node: SurfaceNodeView<'_>,
+    matches_kind: impl Fn(&SurfaceNodeKind) -> bool + Copy,
+) -> usize {
+    usize::from(matches_kind(node.kind()))
+        + node
+            .child_views()
+            .map(|child| count_surface_kind(child, matches_kind))
+            .sum::<usize>()
+}
+
 /// One represented namespace path segment.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NamespacePathSegment {

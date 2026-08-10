@@ -14,10 +14,10 @@ Stable owner sections:
 
 | Field | Frozen value |
 |---|---|
-| Status | Documentation prerequisite frozen at clean `HEAD=f2cb57e752b4dbed95761b9d302a1766b7f0f53a`. Implementation, implementation-time reviews, full verification, quality scoring, staging, commit, and post-commit proof remain future work. Task 277B remains not ready with zero semantic credit. |
+| Status | The exact five-path Rust implementation is complete. The exact `4 + 1` regressions, resolver and mizar-test library and lint suites, package and workspace Clippy, workspace tests, offline metadata and its suite, formatting, diff, five frozen CLI hashes, and protected path-hash checks are complete. Independent test-sufficiency, implementation, source/documentation/API, bilingual, boundary, and final-quality reviews report **NO FINDINGS**. All nine hard gates pass with no score cap at valid `100/100` (`20/20/15/15/10/10/5/5`). Exact staging/cached-diff review, task-only implementation commit, post-commit proof, and fresh inventory remain pending. Task 277B remains not ready with zero semantic credit. |
 | Authority | `doc/spec/en/13.term_expression.md` §§13.4.2, 13.4.4, and 13.8.6; `doc/spec/en/18.templates.md` §18.10.2; the immutable F5 source, expectation, and trace row. |
 | Dependencies | Completed [277R1](./RESOLVE-TEMPLATE-TYPEPARAM-277R1.md) and [277B-L](./277B-L.md) are read-only context. This task creates an independent resolver-owned generator-variable relation and neither extends nor consumes their IDs. |
-| Classification | `source_drift`, `design_drift`, and Rust `test_gap`; no `spec_gap`. The later sethood decision and missing-sethood verdict remain checker-owned. |
+| Classification | The classified `source_drift` and Rust `test_gap` are resolved by the bounded implementation and exact regressions. Completion documentation reconciles the corresponding `design_drift`; no `spec_gap` exists. The later sethood decision and missing-sethood verdict remain checker-owned. |
 | Consumer | A separately frozen lower transport or checker task may consume this structural collection. This task does not select that consumer or make Task 277B ready. |
 
 The immutable semantic seed is
@@ -112,9 +112,9 @@ The task does not construct resolver IDs, allocate `SymbolId`, resolve
 `SourceFormula`, another task's `BindingId`, sethood, evidence, diagnostics,
 or a verdict. In particular it carries no template parameter, R1, or 277B-L ID.
 
-## Frozen implementation, tests, and inventory
+## Implementation, tests, and measured inventory
 
-After this prerequisite, exact Rust scope is five paths:
+The implementation changes exactly five Rust paths:
 
 1. `crates/mizar-resolve/src/names.rs`
 2. `crates/mizar-resolve/src/names/tests.rs`
@@ -136,28 +136,27 @@ the existing helper and directly calls the resolver collector. It is not a
 production route, dispatcher, detail key, checker output, typed/resolved slot,
 active-stage selection, or semantic test.
 
-| Inventory | Frozen baseline |
+| Inventory | Final measured value |
 |---|---|
-| resolver production source | 23 paths / 34,661 lines; path `4d8c3c499b238814a839ae11994503bbb28f54a3690921c66429dccd298d47c8`; content `d3f423448046180bb2db90f50d12518937fe00f5d0fb2ba188348db9bd08ab0e` |
-| `names.rs` | 3,248 lines / `de87c34a9afedd3649b410f4cf422b883a6fd567a1d61dc78221945320476548` |
-| `names/tests.rs` | 2,957 / `6d7c6c03fb15edd28af5428cf134bebb7d91686941429ea48d2e432837b55b40` |
-| resolver lint policy | 1,032 / `380b78b87590ae8471d8af80ec65cabf0cfa958d234cc6256571daa6c0568d9a` |
-| resolver library list | 152 / `924e4652edfc9303d5d5742d3e3eb2b9a095ee6f0f543c8b7caa0a78f0c7b747`; expected 156 |
-| mizar-test library list | 610 / `2d7e12fe5467d07fa4cef605c4d83cd8079ef8b5e0ea3e3431923b08a1532337`; expected 611 |
-| `runner/tests.rs` | 63 / `8873ea62bf642a8287eeacbfdaea06eccd0d917a17be9cd54a7764b0b6bea295` |
-| contract trees | `85/85 -> 86/86` |
+| resolver production source | 23 paths / 35,977 lines; path `4d8c3c499b238814a839ae11994503bbb28f54a3690921c66429dccd298d47c8`; content `8bf8f814a852adce43de16711d7ca7529263b9de79ee002438162c2234b6e4d8` |
+| `names.rs` | 3,920 lines / `9a4b1a0e289c058a40c5af91d00fb836eca7af3a1d83bfcfa9b60227ce46d14a` |
+| `names/tests.rs` | 3,601 lines / `31228c3502a08276a0c395715f74a6a5143a11c315145595ac88f93163e6863a` |
+| resolver lint policy | 1,037 lines / `1a84ba67b715b8df752accd18895fc89a8e727769061a89570b2b4fe15d1182d` |
+| resolver library list | 156 / `7c84ee615616d7f0982454c8d04e9eef2fcb451efbb8fd576296e28af3cb6301` |
+| mizar-test library list | 611 / `6eaaca04215420028c57731bc14144e2b73ca719dc6cc35f64a5a421e2a1c426` |
+| `runner/tests.rs` | 64 lines / `8ae81a6ca4dadd9a58165f09bdde4d2ad3cdcd0884ad7521fe5d1ea90539b316` |
+| private fixture leaf | 106 lines / `69b54a4effcb7a740d6588070e6951e3a772cd1818ef9fedcb36426642bf3bf4` |
 
 The protected production runner remains 38 paths / 80,090 lines with path /
 content SHA-256
 `0ef395004f7feaadf60da0daba7b5da9c52ea4974850adfa2bd9d09081b242aa` /
 `990b5ad4798786d9f87c03f76fdbad92fc2edf1f6d84ef3baad67254c79fdd70`.
 
-This prerequisite changes exactly 26 Markdown paths: this pair; four EN/JA
-plan indexes; paired resolver names, source/spec, module-boundary, TODO,
-bilingual, and exit records; and paired mizar-test harness, module-boundary,
-TODO, and bilingual records. Future completion documentation is exactly the 22
-paths excluding the four plan indexes; together with the five Rust paths, the
-implementation change is exactly 27 paths.
+Completion documentation changes exactly 22 Markdown paths: this pair; paired
+resolver names, source/spec, module-boundary, TODO, bilingual, and exit
+records; and paired mizar-test harness, module-boundary, TODO, and bilingual
+records. The four frozen plan indexes remain unchanged. Together with the five
+Rust paths, the implementation change is exactly 27 paths.
 
 ## Protected scope and audit decision
 
@@ -179,26 +178,28 @@ protected-artifact changes, or Task 277B readiness.
 
 ## Reviews, verification, and exit
 
-The documentation prerequisite requires independent specification/contract,
-bilingual, boundary, and source/documentation review with no unresolved
-finding, exact 26-path review, `git diff --check`, and recursive paired-contract
-and local-link lint. No implementation evidence is claimed by this commit.
+The exact four resolver tests and one real-fixture test pass. Resolver and
+mizar-test library and lint suites reach 156/611; package Clippy, formatting,
+and implementation-time diff checks pass. Independent test-sufficiency and
+implementation reviews end with **NO FINDINGS**.
 
-After fresh preflight reproduces every baseline, implementation must pass the
-four resolver tests and one real-fixture test, complete resolver and mizar-test
-library/lint suites at 156/611, package and workspace warnings-denied Clippy,
-full `cargo test`, `cargo fmt --all --check`, `git diff --check`, offline Cargo
-metadata and the existing metadata suite, unchanged five CLI outputs/hashes,
-and protected count/hash replay. Test-sufficiency, implementation,
-source/documentation, bilingual, boundary, and final-quality reviews must end
-with no unresolved finding. All nine hard gates must pass and the uncapped
-quality score must be at least 90/100 before staging or a task-only commit.
+Workspace-wide `cargo test` and warnings-denied Clippy, offline Cargo metadata
+and its suite, unchanged five CLI outputs/hashes, and protected count/hash
+replay also pass: the frozen F5 source and expectation, trace, coverage audit,
+production runner, resolver manifest/test-list hashes, and full protected
+path sets reproduce exactly. Independent source/documentation/API, bilingual,
+boundary, and final-quality reviews end with **NO FINDINGS**; all nine hard
+gates pass with no score cap at valid `100/100`
+(`20/20/15/15/10/10/5/5`). Exact staging/cached-diff review, task-only
+implementation commit, post-commit proof, and fresh successor inventory remain
+pending.
 
 ## Next-task handoff
 
-Implement `RESOLVE-FRAENKEL-GENERATOR-VAR-277R2` only after a fresh clean
-preflight reproduces this contract. Use GPT-5.6 Sol `xhigh` for authority,
-scope, disputed semantics, and final scoring; GPT-5.6 Terra `xhigh` for the
-bounded five-path implementation and independent precision reviews. Luna is
-not exposed in this runtime. Escalate every ambiguity or proposed expansion to
-Sol. Preserve Task 277B not-ready status and zero semantic credit.
+Complete exact staging/cached-diff review, task-only implementation commit,
+post-commit proof, and fresh successor inventory for
+`RESOLVE-FRAENKEL-GENERATOR-VAR-277R2`. Use GPT-5.6 Sol `xhigh` for authority,
+scope, disputed semantics, and any final scoring dispute; use GPT-5.6 Terra
+`xhigh` for bounded verification and precision reviews. Luna is not exposed in
+this runtime. Escalate every ambiguity or proposed expansion to Sol. Preserve
+Task 277B not-ready status and zero semantic credit.

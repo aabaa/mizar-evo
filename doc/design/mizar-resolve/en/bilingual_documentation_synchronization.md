@@ -295,5 +295,9 @@ synchronize the exact F5 binding/mapper/condition profile, literal
 and table getters, both-boundary arena validation, default-deny matrix, five
 Rust paths, five named tests, `152 -> 156` / `610 -> 611`, and protected
 no-impact decision. English owns exact identifiers, ranges, counts, hashes,
-and debug text. No synchronization exception is recorded; implementation and
-all later review/verification evidence remain pending.
+and debug text. No synchronization exception is recorded. The implementation,
+exact `4 + 1` regressions, resolver and mizar-test library and lint suites,
+package and workspace Clippy, workspace tests, metadata, formatting, diff,
+five CLI hashes, and protected count/hash replay are complete; test-sufficiency
+and implementation reviews are **NO FINDINGS**. The dedicated bilingual
+integration review also reports **NO FINDINGS**.

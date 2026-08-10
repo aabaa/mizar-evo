@@ -1788,8 +1788,11 @@ successorはselectしない。bilingual exceptionはない。
 ## Resolver Task 277R2 contract parity
 
 canonical [EN contract](../../task_contracts/en/RESOLVE-FRAENKEL-GENERATOR-VAR-277R2.md) と
-[JA companion](../../task_contracts/ja/RESOLVE-FRAENKEL-GENERATOR-VAR-277R2.md) はsole future
+[JA companion](../../task_contracts/ja/RESOLVE-FRAENKEL-GENERATOR-VAR-277R2.md) はsole implemented
 private fixture probe、literal test name、exact F5 binding/mapper/condition profile/debug text、
 mizar-test 2 paths、`610 -> 611`、no-production-route boundary、protected no-impact decision、
 Task-277B-not-ready/zero-creditを同期する。exact identifier/range/count/hashはEnglish canonical。
-bilingual exceptionはなく、implementation/later review-verification evidenceはpending。
+bilingual exceptionはない。implementation、exact `4 + 1` regression、resolver/mizar-test library・
+lint suite、package/workspace Clippy、workspace test、metadata、format、diff、five CLI hash、protected
+path-hash verificationはPASS、test-sufficiency / implementation reviewは**NO FINDINGS**。dedicated
+bilingual integration reviewも**NO FINDINGS**。

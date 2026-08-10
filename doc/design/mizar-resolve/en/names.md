@@ -411,7 +411,7 @@ and verification record are owned by the central contract.
 ## Resolver Task 277R2 Fraenkel Generator-Variable Identity
 
 The canonical [Task 277R2 contract](../../task_contracts/en/RESOLVE-FRAENKEL-GENERATOR-VAR-277R2.md)
-adds one independent structural collection to this existing `names` owner.
+records one implemented independent structural collection in this existing `names` owner.
 Its exact public names are `FraenkelGeneratorVariableBindingId`,
 `FraenkelGeneratorVariableBinding`, non-exhaustive
 `FraenkelGeneratorVariableUseRole::{Mapper, Condition}`,
@@ -419,11 +419,11 @@ Its exact public names are `FraenkelGeneratorVariableBindingId`,
 `FraenkelGeneratorVariableSourceCollection`, and
 `FraenkelGeneratorVariableSourceCollector`.
 
-The future public-enum policy registration is:
+The public-enum policy registration is:
 
 - `FraenkelGeneratorVariableUseRole`
 
-It must be `#[non_exhaustive]`; no exception is authorized.
+It is `#[non_exhaustive]`; no exception is registered.
 
 The binding row returns resolved `definition_block`, `functor_definition`,
 `comprehension`, `segment`, and `binder` identities, exact `spelling`, segment

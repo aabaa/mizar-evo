@@ -10,10 +10,10 @@ Owner plan は [mizar-resolve](../../mizar-resolve/ja/00.crate_plan.md#task-inde
 
 | 項目 | freeze 値 |
 |---|---|
-| Status | clean `HEAD=f2cb57e752b4dbed95761b9d302a1766b7f0f53a` でdocumentation prerequisiteをfreeze。implementation、implementation-time review、full verification、quality scoring、staging、commit、post-commit proofはfuture work。Task 277Bはnot ready、semantic credit zeroのまま。 |
+| Status | exact Rust 5-path implementationはcomplete。exact `4 + 1` regression、resolver/mizar-test library・lint suite、package/workspace Clippy、workspace test、offline metadataとそのsuite、format、diff、five frozen CLI hash、protected path-hash checkはcomplete。independent test-sufficiency、implementation、source/documentation/API、bilingual、boundary、final-quality reviewは**NO FINDINGS**。全9 hard gateはscore capなしvalid `100/100`（`20/20/15/15/10/10/5/5`）でPASS。exact staging/cached-diff review、task-only implementation commit、post-commit proof、fresh inventoryはpending。Task 277Bはnot ready、semantic credit zeroのまま。 |
 | Authority | `doc/spec/en/13.term_expression.md` §§13.4.2、13.4.4、13.8.6、`doc/spec/en/18.templates.md` §18.10.2、immutable F5 source/expectation/trace row。 |
 | Dependencies | complete [277R1](./RESOLVE-TEMPLATE-TYPEPARAM-277R1.md) / [277B-L](./277B-L.md) はread-only context。本taskはindependent resolver-owned generator-variable relationを作り、それらのIDをextend/consumeしない。 |
-| Classification | `source_drift`、`design_drift`、Rust `test_gap`。`spec_gap`はない。後段sethood decision/missing-sethood verdictはchecker-owned。 |
+| Classification | classified `source_drift`とRust `test_gap`はbounded implementationとexact regressionでresolve。completion documentationが対応する`design_drift`をreconcileし、`spec_gap`はない。後段sethood decision/missing-sethood verdictはchecker-owned。 |
 | Consumer | separately frozenなlower transport/checker taskだけがconsumeできる。本taskはconsumerをselectせずTask 277Bをreadyにしない。 |
 
 immutable seed は
@@ -85,9 +85,9 @@ resolver ID construct、`SymbolId` allocation、`NameRef` resolve、`ResolvedAst
 `SourceSetTerm`、`SourceFormula`、別taskの`BindingId`、sethood/evidence/diagnostic/verdict publishは禁止。
 template parameter/R1/277B-L IDはcarryしない。
 
-## Freezeしたimplementation、tests、inventory
+## Implementation、tests、measured inventory
 
-future Rust scopeはexact 5 paths:
+implementation Rust scopeはexact 5 paths:
 
 1. `crates/mizar-resolve/src/names.rs`
 2. `crates/mizar-resolve/src/names/tests.rs`
@@ -107,25 +107,25 @@ mizar-testはexact
 private leafはexisting helperでimmutable fixtureをparseしてresolver collectorをdirect callする。
 production route/dispatcher/detail key/checker output/typed-resolved slot/active-stage/semantic testではない。
 
-| inventory | frozen baseline |
+| inventory | final measured value |
 |---|---|
-| resolver production | 23 paths / 34,661 lines; path `4d8c3c499b238814a839ae11994503bbb28f54a3690921c66429dccd298d47c8`; content `d3f423448046180bb2db90f50d12518937fe00f5d0fb2ba188348db9bd08ab0e` |
-| `names.rs` | 3,248 / `de87c34a9afedd3649b410f4cf422b883a6fd567a1d61dc78221945320476548` |
-| `names/tests.rs` | 2,957 / `6d7c6c03fb15edd28af5428cf134bebb7d91686941429ea48d2e432837b55b40` |
-| resolver lint | 1,032 / `380b78b87590ae8471d8af80ec65cabf0cfa958d234cc6256571daa6c0568d9a` |
-| resolver list | 152 / `924e4652edfc9303d5d5742d3e3eb2b9a095ee6f0f543c8b7caa0a78f0c7b747`; expected 156 |
-| mizar-test list | 610 / `2d7e12fe5467d07fa4cef605c4d83cd8079ef8b5e0ea3e3431923b08a1532337`; expected 611 |
-| `runner/tests.rs` | 63 / `8873ea62bf642a8287eeacbfdaea06eccd0d917a17be9cd54a7764b0b6bea295` |
-| contract trees | `85/85 -> 86/86` |
+| resolver production | 23 paths / 35,977 lines; path `4d8c3c499b238814a839ae11994503bbb28f54a3690921c66429dccd298d47c8`; content `8bf8f814a852adce43de16711d7ca7529263b9de79ee002438162c2234b6e4d8` |
+| `names.rs` | 3,920 lines / `9a4b1a0e289c058a40c5af91d00fb836eca7af3a1d83bfcfa9b60227ce46d14a` |
+| `names/tests.rs` | 3,601 lines / `31228c3502a08276a0c395715f74a6a5143a11c315145595ac88f93163e6863a` |
+| resolver lint | 1,037 lines / `1a84ba67b715b8df752accd18895fc89a8e727769061a89570b2b4fe15d1182d` |
+| resolver list | 156 / `7c84ee615616d7f0982454c8d04e9eef2fcb451efbb8fd576296e28af3cb6301` |
+| mizar-test list | 611 / `6eaaca04215420028c57731bc14144e2b73ca719dc6cc35f64a5a421e2a1c426` |
+| `runner/tests.rs` | 64 lines / `8ae81a6ca4dadd9a58165f09bdde4d2ad3cdcd0884ad7521fe5d1ea90539b316` |
+| private fixture leaf | 106 lines / `69b54a4effcb7a740d6588070e6951e3a772cd1818ef9fedcb36426642bf3bf4` |
 
 protected production runnerは38 paths / 80,090 lines、path/content SHA-256
 `0ef395004f7feaadf60da0daba7b5da9c52ea4974850adfa2bd9d09081b242aa` /
 `990b5ad4798786d9f87c03f76fdbad92fc2edf1f6d84ef3baad67254c79fdd70`。
 
-documentation prerequisiteはexact 26 Markdown paths。paired contract、EN/JA plan index 4件、
-paired resolver names/source-spec/boundary/TODO/bilingual/exit、paired mizar-test harness/
-boundary/TODO/bilingual。completion documentationはplan 4 pathsだけを除くexact 22 pathsで、
-Rust 5 pathsと合わせimplementation changeはexact 27 paths。
+completion documentationはexact 22 Markdown paths。paired contract、paired resolver
+names/source-spec/boundary/TODO/bilingual/exit、paired mizar-test harness/boundary/TODO/
+bilingualである。freezeしたplan index 4件は不変。Rust 5 pathsと合わせimplementation changeは
+exact 27 paths。
 
 ## Protected scopeとaudit decision
 
@@ -143,20 +143,22 @@ artifact change、Task 277B readyが必要なら停止してSol parentへauthori
 
 ## Review、verification、exit
 
-documentation prerequisiteはindependent specification/contract、bilingual、boundary、source/docs
-reviewでunresolved findingなし、exact 26-path review、`git diff --check`、recursive paired-contract/
-local-link lintを要求する。このcommitはimplementation evidenceをclaimしない。
+exact resolver 4 testsとreal-fixture 1 testはPASS。resolver/mizar-test library・lint suiteは
+156/611に到達し、package Clippy、format、implementation-time diff checkはPASS。independent
+test-sufficiency / implementation reviewは**NO FINDINGS**。
 
-fresh preflight後のimplementationはfocused 4+1、resolver/mizar-test library/lint 156/611、package/
-workspace warnings-denied Clippy、full `cargo test`、`cargo fmt --all --check`、diff、offline metadata/
-existing metadata suite、five CLI output/hash unchanged、protected count/hash replayをPASSする。
-test-sufficiency、implementation、source/docs、bilingual、boundary、final-quality reviewはunresolved
-findingなしで完了し、staging/task-only commit前に全9 hard gate PASS、uncapped score 90/100以上。
+workspace-wide `cargo test` とwarnings-denied Clippy、offline Cargo metadataとそのsuite、unchanged
+five CLI output/hash、protected count/hash replayもPASS。freezeしたF5 source/expectation、trace、
+coverage audit、production runner、resolver manifest/test-list hash、full protected path setはexactに
+reproduceする。independent source/documentation/API、bilingual、boundary、final-quality reviewは
+**NO FINDINGS**、全9 hard gateはscore capなしvalid `100/100`
+（`20/20/15/15/10/10/5/5`）でPASS。exact staging/cached-diff review、task-only implementation
+commit、post-commit proof、fresh successor inventoryはpending。
 
 ## 次task handoff
 
-fresh clean preflightが本contractを再現した後だけ
-`RESOLVE-FRAENKEL-GENERATOR-VAR-277R2`をimplementする。authority/scope/disputed semantics/final
-scoringはGPT-5.6 Sol `xhigh`、bounded five-path implementationとindependent precision reviewは
-GPT-5.6 Terra `xhigh`。Lunaはruntimeで未提供。ambiguity/scope expansionはSolへescalateし、
+`RESOLVE-FRAENKEL-GENERATOR-VAR-277R2` のexact staging/cached-diff review、task-only
+implementation commit、post-commit proof、fresh successor inventoryを完了する。authority/scope/
+disputed semanticsとfinal scoring disputeはGPT-5.6 Sol `xhigh`、bounded verification/precision
+reviewはGPT-5.6 Terra `xhigh`。Lunaはruntimeで未提供。ambiguity/scope expansionはSolへescalateし、
 Task 277B not-ready/semantic-credit-zeroを保持する。

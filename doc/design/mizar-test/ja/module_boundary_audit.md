@@ -20,7 +20,8 @@ dispatch、CLI、corpus/trace/metadata、Cargo、semantic publication、coverage
 existing parser/frontend/resolver APIでimmutable F5をobserveするが、production runner module/
 route/dispatcher/facade/detail key/checker handoff/Typed-Resolved output/Cargo edge/fixture stage/
 metadata-trace owner/diagnostic/semantic publicationは追加しない。production runnerはprotected
-38 paths / 80,090 linesのまま。
+38 paths / 80,090 linesのまま。implemented test-only boundaryはexact fixture testとfocused
+verificationをPASSし、final independent boundary reviewは**NO FINDINGS**。
 
 ## Checker Task 257B1 formula-composition current-state addendum
 

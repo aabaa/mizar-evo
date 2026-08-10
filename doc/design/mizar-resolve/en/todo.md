@@ -873,14 +873,18 @@ Check the task off here once tests pass.
   authority, exact F5 binding/use profile, exhaustive public ABI, default-deny
   matrix, exact five-path Rust scope, named `4 + 1` tests, baselines, and
   protected no-impact decisions.
-- [ ] After a fresh clean preflight reproduces every baseline, implement only
-  the five frozen Rust paths and five named tests. Preserve the private fixture
-  boundary and all semantic, active, trace, coverage, and production exclusions.
-- [ ] Complete independent test-sufficiency and implementation reviews and all
-  focused, crate, workspace, lint, metadata, formatting, Clippy, CLI, and
-  protected count/hash verification.
-- [ ] Complete source/documentation, bilingual, boundary, and final-quality
-  reviews with all nine hard gates passing and a valid uncapped score of at
-  least 90/100.
-- [ ] Complete exact staging, task-only commit, post-commit proof, and fresh
-  successor inventory. Task 277B remains not ready with zero semantic credit.
+- [x] Implement only the five frozen Rust paths and five named tests, preserving
+  the private fixture boundary and all semantic, active, trace, coverage, and
+  production exclusions.
+- [x] Complete independent test-sufficiency and implementation reviews at **NO
+  FINDINGS**; pass focused `4 + 1`, resolver and mizar-test library/lint,
+  package and workspace Clippy, workspace tests, metadata, formatting, diff,
+  five CLI hashes, and protected path-hash verification.
+- [x] Complete final source/documentation/API, bilingual, and boundary
+  integration reviews at **NO FINDINGS**.
+- [x] Complete final-quality review at **NO FINDINGS**, with all nine hard
+  gates passing without a score cap at valid `100/100`
+  (`20/20/15/15/10/10/5/5`).
+- [ ] Complete exact staging/cached-diff review, task-only implementation
+  commit, post-commit proof, and fresh successor inventory. Task 277B remains
+  not ready with zero semantic credit.
