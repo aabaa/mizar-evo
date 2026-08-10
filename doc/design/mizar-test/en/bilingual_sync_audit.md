@@ -1903,9 +1903,12 @@ bilingual integration review also reports **NO FINDINGS**.
 
 The canonical [EN contract](../../task_contracts/en/CHECKER-FRAENKEL-TEMPLATE-STRUCTURAL-277C.md)
 and [JA companion](../../task_contracts/ja/CHECKER-FRAENKEL-TEMPLATE-STRUCTURAL-277C.md)
-synchronize the mizar-test private F5 route: one future named leaf, one registration,
-existing helpers, immutable fixture artifacts, `611 -> 612`, and the
-no-production/no-semantic/no-credit boundary. Exact test and Rust names, counts,
-hashes, F5 values, and public ABI remain English-canonical in the contract. The
-prerequisite is documentation-only and records no implementation completion or
-bilingual exception.
+synchronize the completed mizar-test private F5 route: one named leaf, one
+registration, existing helpers, immutable fixture artifacts, `611 -> 612`, and
+the no-production/no-semantic/no-credit boundary. Exact test and Rust names,
+counts, hashes, F5 values, and public ABI remain English-canonical in the contract.
+Broad verification passes; the final source/documentation re-review and independent
+bilingual/boundary reviews report **NO FINDINGS**. Final-quality review reports
+**NO FINDINGS**; all nine hard gates pass uncapped at valid `100/100`
+(`20/20/15/15/10/10/5/5`). Exact staging/cached review and task-closeout remain
+pending and no exception is recorded.

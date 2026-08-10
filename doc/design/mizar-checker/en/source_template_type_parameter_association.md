@@ -124,25 +124,26 @@ not-ready, zero-semantic-credit boundary.
 | Enum | Policy | Exhaustive exception |
 |---|---|---|
 | `SourceTemplateTypeParameterAssociationError` | `#[non_exhaustive]` | none |
+| `SourceTemplateFraenkelStructuralCompositionError` | `#[non_exhaustive]` | none |
 
 No exhaustive public enum exceptions are owned by this module.
 
 ## Task 277C Frozen Planned Public Extension
 
 The canonical [277C contract](../../task_contracts/en/CHECKER-FRAENKEL-TEMPLATE-STRUCTURAL-277C.md)
-reserves this existing module for a later neutral structural-composition family:
+records the completed neutral structural-composition family in this existing module:
 `SourceTemplateFraenkelStructuralCompositionId`, row, table, handoff,
 `#[non_exhaustive] SourceTemplateFraenkelStructuralCompositionError`, and
-producer. This is a frozen planned ABI, not a claim that current source has
-implemented it. The contract exclusively defines `build(template, generators,
-typed_ast)`, error precedence, row getters, validation, F5 profile, and
-deferred tests. On implementation, the new public enum follows the same policy:
-
-| Enum | Policy | Exhaustive exception |
-|---|---|---|
-| `SourceTemplateFraenkelStructuralCompositionError` | `#[non_exhaustive]` | none |
+producer. The producer exposes `build(template, generators, typed_ast)` and
+returns the immutable composition handoff. The contract exclusively owns the
+exact error precedence, row getters, validation, F5 profile, test matrix, and
+measured completion evidence; the public-enum policy above now applies.
 
 It remains a standalone `SourceTemplateTypeParameterAssociationHandoff` +
-`FraenkelGeneratorVariableSourceCollection` + `TypedAst` composition: no R1
-direct input, state installation, source-owner route, semantic credit, or
-production activation is authorized.
+`FraenkelGeneratorVariableSourceCollection` + `TypedAst` composition: it added
+no R1 direct input, state installation, source-owner route, semantic credit, or
+production activation. The legacy-stable heading preserves existing owner links.
+Broad verification passes, and the independent source/documentation, bilingual,
+and boundary reviews report **NO FINDINGS**. Final-quality review reports **NO
+FINDINGS** at valid uncapped `100/100` (`20/20/15/15/10/10/5/5`); only
+task-closeout evidence remains pending.

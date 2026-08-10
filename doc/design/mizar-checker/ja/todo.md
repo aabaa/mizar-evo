@@ -6505,8 +6505,11 @@ post-commit fresh inventoryからだけ選択する。
 - [x] canonical [277C contract](../../task_contracts/ja/CHECKER-FRAENKEL-TEMPLATE-STRUCTURAL-277C.md)、
   EN/JA owner link、exact neutral ABI、protected hash、implementation boundaryをdocs-only
   prerequisiteとしてfreezeする。
-- [ ] separate prerequisite commitとfresh preflight後に、contractのthree Rust pathsとexact
-  `4 + 1` testsだけをimplementする。no-R1-direct/no-install/no-production/no-semantic/no-credit
-  boundaryを保持する。
-- [ ] implementation commit前にindependent specification/equivalence、test、implementation、
-  bilingual、source/documentation review、90/100以上の全9 hard gate、task-only stagingを要求する。
+- [x] contractのthree Rust pathsとexact `4 + 1` testsだけをimplementし、
+  no-R1-direct/no-install/no-production/no-semantic/no-credit boundaryを保持した。focused/package
+  verificationはPASSし、independent test-sufficiency / implementation reviewは**NO FINDINGS**。parent-owned
+  broad workspace verificationもPASSした。
+- [x] independent source/documentation final re-review、bilingual、boundary reviewを**NO FINDINGS**で完了する。
+- [x] independent final-quality reviewを**NO FINDINGS**で完了する。全9 hard gateはscore capなしvalid
+  `100/100`（`20/20/15/15/10/10/5/5`）でPASS。
+- [ ] exact staging/cached review、task-only commit、post-commit proof、fresh inventoryを完了する。

@@ -28,12 +28,15 @@ verification; final independent boundary review reports **NO FINDINGS**.
 ## Checker Task 277C Frozen Module Boundary
 
 The [277C contract](../../task_contracts/en/CHECKER-FRAENKEL-TEMPLATE-STRUCTURAL-277C.md)
-gives mizar-test only an inactive private F5 probe and its `tests.rs` registration.
-It consumes checker composition output through a direct private test; it neither
-creates production plumbing nor changes fixtures, expectations, traceability,
-coverage, diagnostics, Typed/Resolved installation, or active dispatch. The existing
-F5 parse/lower helpers and mizar-test 38-path / 80090-line production baseline are
-protected.
+gives mizar-test only the completed inactive private F5 probe and its `tests.rs`
+registration. It consumes checker composition output through a direct private test;
+it neither creates production plumbing nor changes fixtures, expectations,
+traceability, coverage, diagnostics, Typed/Resolved installation, or active dispatch.
+The existing F5 parse/lower helpers and mizar-test 38-path / 80090-line production
+baseline remain protected. Broad verification passes and the independent boundary
+review reports **NO FINDINGS**; final-quality review also reports **NO FINDINGS**
+with all nine hard gates passing uncapped at valid `100/100`
+(`20/20/15/15/10/10/5/5`).
 
 ## Checker Task 257B1 Formula-Composition Current-State Addendum
 

@@ -3871,9 +3871,14 @@ the successor is selected only from fresh post-commit inventory.
 - [x] Record the [277C contract](../../task_contracts/en/CHECKER-FRAENKEL-TEMPLATE-STRUCTURAL-277C.md)
   and a docs-only private-route boundary; existing F5 and all canonical test
   artifacts remain immutable.
-- [ ] Following the separate prerequisite commit and fresh preflight, add only
-  the named private F5 leaf and registration (`611 -> 612`), while checker adds
-  its frozen four direct tests (`542 -> 546`).
+- [x] Add only the named private F5 leaf and registration (`611 -> 612`), while
+  checker adds its exact four direct tests (`542 -> 546`). Focused/package
+  verification passed and independent test-sufficiency and implementation reviews
+  report **NO FINDINGS**. Parent-owned broad workspace verification also passed.
+- [x] Complete independent source/documentation final re-review and bilingual and
+  boundary reviews at **NO FINDINGS**.
+- [x] Complete independent final-quality review at **NO FINDINGS**: all nine hard
+  gates pass uncapped at valid `100/100` (`20/20/15/15/10/10/5/5`).
 - [ ] Do not accept production route, semantic, diagnostic, trace/coverage, or
-  Task-277B readiness expansion; complete the required independent reviews and
-  all nine hard gates before the later task-only commit.
+  Task-277B readiness expansion; complete exact staging/cached review and
+  task-only commit, post-commit proof, and fresh inventory.

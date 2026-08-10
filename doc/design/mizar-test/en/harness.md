@@ -5651,11 +5651,15 @@ integration reviews also report **NO FINDINGS**.
 
 ## Checker Task 277C Private Structural Composition Probe
 
-The frozen [277C contract](../../task_contracts/en/CHECKER-FRAENKEL-TEMPLATE-STRUCTURAL-277C.md)
-reserves one new private leaf, `runner/tests/type_elaboration/template_fraenkel_structural_composition.rs`,
-and one `tests.rs` registration after its separate prerequisite commit. The leaf
-will use existing helpers and unchanged inactive F5 only to prove the exact composed
-row/debug profile; it adds no fixture, sidecar, expectation, trace, metadata,
-coverage credit, runner route, dispatcher, or semantic verdict. Its one registration
-changes the mizar-test raw list only from 611 to 612, while checker owns the four
-direct producer tests.
+The completed [277C contract](../../task_contracts/en/CHECKER-FRAENKEL-TEMPLATE-STRUCTURAL-277C.md)
+adds one private leaf, `runner/tests/type_elaboration/template_fraenkel_structural_composition.rs`,
+and one `tests.rs` registration. The leaf uses existing helpers and unchanged inactive
+F5 only to prove the exact composed row/debug profile; it adds no fixture, sidecar,
+expectation, trace, metadata, coverage credit, runner route, dispatcher, or semantic
+verdict. Its one registration changes the mizar-test raw list only from 611 to 612,
+while checker owns the four direct producer tests. Exact measurements and remaining
+closeout status are owned by the contract. Broad verification passes, and the
+independent source/documentation, bilingual, and boundary reviews report **NO
+FINDINGS**; final-quality review also reports **NO FINDINGS** with all nine hard
+gates passing uncapped at valid `100/100` (`20/20/15/15/10/10/5/5`). Only
+task-closeout evidence remains pending.

@@ -145,12 +145,14 @@ ControlFlowIr、VC payload、proof evidence の AST-wide source-to-checker gap �
 
 canonical [277C contract](../../task_contracts/ja/CHECKER-FRAENKEL-TEMPLATE-STRUCTURAL-277C.md) は、
 completeしたtemplate association handoff、Fraenkel generator collection、existing `TypedAst`の
-neutral/zero-semantic compositionをfreezeする。public composition
+completeしたneutral/zero-semantic compositionをrecordする。public composition
 ID/row/table/handoff/error/producer family、ordered fail-closed revalidation、exact F5
 node/ordinal profile、five-test matrixはcentral contractが一度だけownする。本recordはlanguage
 behaviorをderiveせず、Task 277B readiness/coverage creditをclaimしない。既存spec、F5
-fixture/expectation/trace、diagnostic、source ownerは不変で、implementationはseparate prerequisite
-commitとfresh preflight後までpendingである。
+fixture/expectation/trace、diagnostic、source ownerは不変で、broad verificationはPASS、final
+source/documentation re-reviewは**NO FINDINGS**。independent bilingual/boundary reviewも**NO FINDINGS**で、
+final-quality reviewも**NO FINDINGS**、全9 hard gateはscore capなしvalid `100/100`
+（`20/20/15/15/10/10/5/5`）でPASS。
 
 ## Crate Module Exports
 
@@ -466,7 +468,8 @@ later Task-277 sliceとTask 278が別途authorized decisionをretainする。
 
 生成 public newtype:
 
-- `SourceTemplateTypeParameterAssociationId`
+- `SourceTemplateTypeParameterAssociationId`、
+  `SourceTemplateFraenkelStructuralCompositionId`
 
 literal top-level public item:
 
@@ -474,7 +477,12 @@ literal top-level public item:
   `SourceTemplateTypeParameterAssociationTable`、
   `SourceTemplateTypeParameterAssociationHandoff`、
   `SourceTemplateTypeParameterAssociationError`、
-  `SourceTemplateTypeParameterAssociationProducer`
+  `SourceTemplateTypeParameterAssociationProducer`、
+  `SourceTemplateFraenkelStructuralComposition`、
+  `SourceTemplateFraenkelStructuralCompositionTable`、
+  `SourceTemplateFraenkelStructuralCompositionHandoff`、
+  `SourceTemplateFraenkelStructuralCompositionError`、
+  `SourceTemplateFraenkelStructuralCompositionProducer`
 
 対応:
 
@@ -483,8 +491,11 @@ literal top-level public item:
 | resolver-owned template type-parameter linkをimmutable、dense、zero-semantic typed-node association tableへtransportする。 | `src/source_template_type_parameter_association.rs`の`SourceTemplateTypeParameterAssociationProducer::build`、association ID/row/table/handoff family、deterministic `debug_text()`。 | `task277bl_maps_exact_resolver_association_to_typed_nodes`、`task277bl_rebuilds_deterministically_without_mutating_typed_ast`、`task277bl_real_fixture_builds_exact_template_type_parameter_association`。 | Task 277B-Lとして実装済み。Task 277B semantic creditはない。 |
 | 5 resolver identityは各exactly one typed nodeにmatchし、kindは`DefinitionBlockItem`、`TemplateParameter`、binder/generator identifier双方のcanonical `Identifier`、`TypeHead`である。 | exact `resolved_node` scan、normal-recovery、exact-kind predicate、range anchor/equality/containment、direct-edge validation。 | missing/ambiguous、all-site kind/recovery、forged Identifier-category、anchor/range/containment、edge-corruption matrix。 | `InvalidAssociation`でfail closed。dense-ID cast/spelling/range inferenceなし。 |
 | source/module mismatchを区別しpublic enum evolutionをforward-compatibleに保つ。 | `EnvironmentMismatch`と`#[non_exhaustive] SourceTemplateTypeParameterAssociationError`。 | environment mismatch matrixと`checker_public_enums_are_forward_compatible_and_documented`。 | 実装済み。exhaustive exceptionなし。 |
+| composition public familyがcomplete template associationとcomplete Fraenkel generator bindingをexact typed structural identityでjoinする。 | `src/source_template_type_parameter_association.rs`の`SourceTemplateFraenkelStructuralCompositionId`、row/table/handoff、error、producer。 | `task277c_composes_exact_template_fraenkel_structural_handoff`とprivate F5 composition probe。 | neutral transportとして実装済み。Task 277B semantic creditなし。 |
+| structural compositionがenvironment、association、binding、use、completed mappingをfixed fail-closed orderでrevalidateする。 | `SourceTemplateFraenkelStructuralCompositionProducer::build`とexact typed-node/provenance validator。 | environment/ambiguityとrecovery/kind/range/edge/provenance corruption matrix。 | zip、inference、reorder、partial handoffなしで実装済み。 |
+| composition errorはforward-compatibleのまま。 | `#[non_exhaustive] SourceTemplateFraenkelStructuralCompositionError`。 | `checker_public_enums_are_forward_compatible_and_documented`とfour direct producer test。 | 実装済み。exhaustive exceptionなし。 |
 
-bounded gap: このneutral prerequisiteはTyped/Resolved slot、type/sethood、formal-to-actual
+bounded gap: これらneutral handoffはTyped/Resolved slot、type/sethood、formal-to-actual
 substitution、diagnostic、active route、verdictをinstall/interpetしない。Task 277Bはnot readyで
 semantic creditはzeroのままである。
 

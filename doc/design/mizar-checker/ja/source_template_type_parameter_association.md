@@ -106,23 +106,24 @@ zero-semantic-credit boundaryをretainする。
 | enum | policy | exhaustive exception |
 |---|---|---|
 | `SourceTemplateTypeParameterAssociationError` | `#[non_exhaustive]` | none |
+| `SourceTemplateFraenkelStructuralCompositionError` | `#[non_exhaustive]` | none |
 
 この module が所有する exhaustive public enum exception はない。
 
 ## Task 277C frozen planned public extension
 
 canonical [277C contract](../../task_contracts/ja/CHECKER-FRAENKEL-TEMPLATE-STRUCTURAL-277C.md) は本existing
-moduleに後続のneutral structural-composition family、
+moduleでcompleteしたneutral structural-composition family、
 `SourceTemplateFraenkelStructuralCompositionId`、row、table、handoff、
 `#[non_exhaustive] SourceTemplateFraenkelStructuralCompositionError`、producerをreserveする。
-これはfrozen planned ABIであり、current sourceがすでにimplementしたというclaimではない。contractだけが
-`build(template, generators, typed_ast)`、error precedence、row getter、validation、F5 profile、deferred
-testをdefineする。implementation時、新public enumは次のpolicyに従う。
-
-| enum | policy | exhaustive exception |
-|---|---|---|
-| `SourceTemplateFraenkelStructuralCompositionError` | `#[non_exhaustive]` | none |
+producerは`build(template, generators, typed_ast)`をexposeし、immutable composition handoffを返す。
+contractだけがexact error precedence、row getter、validation、F5 profile、test matrix、measured completion
+evidenceをownし、上のpublic-enum policyが適用される。
 
 これは`SourceTemplateTypeParameterAssociationHandoff` +
 `FraenkelGeneratorVariableSourceCollection` + `TypedAst`のstandalone compositionのままである。R1 direct
-input、state installation、source-owner route、semantic credit、production activationはauthorizeしない。
+input、state installation、source-owner route、semantic credit、production activationは追加していない。legacy-stable
+headingはexisting owner linkを保持する。
+broad verificationはPASSし、independent source/documentation、bilingual、boundary reviewは
+**NO FINDINGS**。final-quality reviewも**NO FINDINGS** / valid uncapped `100/100`
+（`20/20/15/15/10/10/5/5`）で、task-closeout evidenceだけpendingである。

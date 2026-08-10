@@ -3580,10 +3580,14 @@ post-commit fresh inventoryからだけ選択する。
 
 - [x] [277C contract](../../task_contracts/ja/CHECKER-FRAENKEL-TEMPLATE-STRUCTURAL-277C.md) とdocs-only
   private-route boundaryをrecordし、existing F5とcanonical test artifactをimmutableに保つ。
-- [ ] separate prerequisite commitとfresh preflight後、named private F5 leafとregistrationだけを
-  追加（`611 -> 612`）し、checkerはfrozen four direct tests（`542 -> 546`）を追加する。
+- [x] named private F5 leafとregistrationだけを追加（`611 -> 612`）し、checkerはexact four direct
+  test（`542 -> 546`）を追加した。focused/package verificationはPASSし、independent test-sufficiency /
+  implementation reviewは**NO FINDINGS**。parent-owned broad workspace verificationもPASSした。
+- [x] independent source/documentation final re-review、bilingual、boundary reviewを**NO FINDINGS**で完了する。
+- [x] independent final-quality reviewを**NO FINDINGS**で完了する。全9 hard gateはscore capなしvalid
+  `100/100`（`20/20/15/15/10/10/5/5`）でPASS。
 - [ ] production route/semantic/diagnostic/trace-coverage/Task-277B readinessのscope拡張をacceptせず、
-  independent reviewとall nine hard gate後にlater task-only commitを行う。
+  exact staging/cached reviewとtask-only commit、post-commit proof、fresh inventoryを行う。
 
 ## Resolver Task 277R2 test-only fixture probe
 

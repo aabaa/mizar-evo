@@ -24,10 +24,10 @@ note として記録する。
 
 ## Source Layout Inventory
 
-Task 277B-Lはproduction layoutを32 paths / 189180 linesへ増やし、path SHA-256は
+Task 277Cはproduction layoutを32 paths / 191068 linesへ増やし、path SHA-256は
 `9dc5b02f26679677e593ea755394d68533173d2be988b7ef1ddcfd84a41b9787`、current
 content SHA-256は
-`560c15585dd85de320c42c15668657cf3d03a967dfe677ea03be33a0ae905861`である。
+`cf4e43bb5671f863d9af36f99592ca188bab28b2480acb886e1171d65f57fe8a`である。
 new/changed cohesive ownerのmeasurementは下のrowに記録する。
 
 | Path | Lines | Boundary label | Owning specification | Split required | Hard-gate finding | Decision |
@@ -52,7 +52,7 @@ new/changed cohesive ownerのmeasurementは下のrowに記録する。
 | `src/source_statement.rs` | 52266 | syntax-free source statement producer | `source_statement.md` | no | no | cohesiveなTask-258 statement/witness transactionとcorruption matrix。同じTask-269 test 4件がprivate exact B3N/B3M1 fixtureをreuseしてall-field arenaとisolated cross-profile rejectionを含め、production proof-local ownershipはdedicated moduleに置く。 |
 | `src/source_proof_local_declaration.rs` | 8606 | syntax-free proof-local declaration producer | `source_proof_local_declaration.md` | no | no | cohesiveなTask-269A/B named-witness、Task-269C proof-`let`、Task-269G proof-`given`、Task-269GUP/269GC/269SDC binding transaction、exact lower/independent theorem authentication、resolver-local lexical binding/context transition/lookup replay、deterministic rendering、exhaustive corruption replay、owner validation。syntax/type/occurrence/Set binding/capture/condition/fact/proof semantic ownershipなし。 |
 | `src/source_template.rs` | 1745 | syntax-free direct template transport | `source_template.md` | no | no | cohesiveなTask-277A five-table targetless producer、TypedArena validation、immutable rendering、checker test 4件。physical SHA-256は`fdd6ac38557979ed37fd7c9ba13300b8577416e4ebbdaefe64b986f22aceb85b`。 |
-| `src/source_template_type_parameter_association.rs` | 1224 | neutral resolver-to-typed template type-parameter association | `source_template_type_parameter_association.md` | no | no | cohesiveなTask-277B-L exact-identity、canonical `Identifier`、range/edge fail-closed producerと4 test corruption/determinism matrix。SHA-256は`7ff46174cf7818722ea8acf6a2a55be77659ce821d68c531b583134ac12f8018`。 |
+| `src/source_template_type_parameter_association.rs` | 3112 | neutral template/Fraenkel structural composition | `source_template_type_parameter_association.md` | no | no | cohesiveなTask-277B-L associationとTask-277C exact structural-composition producer、canonical `Identifier`、range/edge/provenance fail-closed validation、combined direct-test matrix。SHA-256は`0ff5b20f8c9a420149af232947ddd4f09924d31631aea22eabdc24d2daa91145`。 |
 | `src/source_structure.rs` | 5036 | syntax-free source structure-term producer | `source_structure.md` | no | no | cohesiveなTask-254 term/wrapper/root/member/field-update/edge/request table、written-partition/cross-family dependency/provenance validation、deterministic rendering、corruption test。split不要。 |
 | `src/source_structure_definition.rs` | 1773 | syntax-free source structure-definition producer | `source_structure_definition.md` | no | no | cohesiveなTask-263 definition/member/inheritance/mapping/coherence table、private resolver/baseline snapshot、exact contribution-effect/own-domain obligation validation、deterministic rendering、compound precedence test。productionはsyntax-free。 |
 | `src/source_type.rs` | 14321 | syntax-free source-type application producer | `source_type.md` | no | no | cohesiveなTask-249 flat/extension family、exact Task-269CT/269GT/269GUPT/269GCT/269SDT proof-local composite、environment/arena/form/graph/provenance validation、deterministic rendering、exhaustive corruption test、cfg(test)-only corruption seam。productionはsyntax-freeでsplit不要。 |
@@ -73,12 +73,14 @@ new/changed cohesive ownerのmeasurementは下のrowに記録する。
 ## Task 277C frozen module boundary
 
 [277C contract](../../task_contracts/ja/CHECKER-FRAENKEL-TEMPLATE-STRUCTURAL-277C.md) はexisting
-checker owner module一つをstandalone immutable structural compositionにreserveする。inputは
+checker owner module一つでcompleteしたstandalone immutable structural compositionをrecordする。inputは
 `SourceTemplateTypeParameterAssociationHandoff`、`FraenkelGeneratorVariableSourceCollection`、
-`TypedAst`だけで、R1 direct inputもTyped/Resolved installも不可。後続Rust surfaceはowner module、
-mizar-test `tests.rs`、new private leafだけ。`lib.rs`、lint Rust、resolver/source owner、production
+`TypedAst`だけで、R1 direct inputもTyped/Resolved installも不可。completeしたRust surfaceはowner module、
+mizar-test `tests.rs`、private leafだけ。`lib.rs`、lint Rust、resolver/source owner、production
 route、facade、Cargo、canonical artifact、metadata、downstream consumerはexclude。current 32 regular
-checker paths / 189180-line protected inventoryをbaselineのまま保持する。
+checker paths / 191068-line inventoryはcontractがmeasurementをownする。broad verificationはPASSし、
+independent boundary reviewは**NO FINDINGS**。final-quality reviewも**NO FINDINGS**、全9 hard gateは
+score capなしvalid `100/100`（`20/20/15/15/10/10/5/5`）でPASS。
 
 ## Task 34 Classification
 

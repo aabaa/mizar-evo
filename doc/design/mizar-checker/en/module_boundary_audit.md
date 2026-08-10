@@ -25,11 +25,11 @@ remain aligned with their owning specifications.
 
 ## Source Layout Inventory
 
-Task 277B-L grows the production layout to 32 paths / 189180 lines, with path
+Task 277C grows the production layout to 32 paths / 191068 lines, with path
 SHA-256
 `9dc5b02f26679677e593ea755394d68533173d2be988b7ef1ddcfd84a41b9787`
 and current content SHA-256
-`560c15585dd85de320c42c15668657cf3d03a967dfe677ea03be33a0ae905861`.
+`cf4e43bb5671f863d9af36f99592ca188bab28b2480acb886e1171d65f57fe8a`.
 The new and changed cohesive owners are measured in their rows below.
 
 | Path | Lines | Boundary label | Owning specification | Split required | Hard-gate finding | Decision |
@@ -54,7 +54,7 @@ The new and changed cohesive owners are measured in their rows below.
 | `src/source_statement.rs` | 52266 | syntax-free source statement producer | `source_statement.md` | no | no | Cohesive Task-258 statement/witness transactions and their corruption matrices; the same four Task-269 tests reuse the private exact B3N/B3M1 fixtures, including all-field arena and isolated cross-profile rejection, while production proof-local ownership remains in its dedicated module. |
 | `src/source_proof_local_declaration.rs` | 8606 | syntax-free proof-local declaration producer | `source_proof_local_declaration.md` | no | no | Cohesive Task-269A/B named-witness, Task-269C proof-`let`, Task-269G proof-`given`, Task-269GUP/269GC/269SDC binding transactions, exact lower and independent theorem authentication, resolver-local lexical binding/context transitions and lookup replay, deterministic rendering, exhaustive corruption replay, and owner validation; no syntax, type, occurrence, Set-binding, capture, condition, fact, or proof-semantic ownership. |
 | `src/source_template.rs` | 1745 | syntax-free direct template transport | `source_template.md` | no | no | Cohesive Task-277A five-table targetless producer, TypedArena validation, immutable rendering, and four checker tests; physical SHA-256 is `fdd6ac38557979ed37fd7c9ba13300b8577416e4ebbdaefe64b986f22aceb85b`. |
-| `src/source_template_type_parameter_association.rs` | 1224 | neutral resolver-to-typed template type-parameter association | `source_template_type_parameter_association.md` | no | no | Cohesive Task-277B-L exact-identity, canonical-`Identifier`, range/edge fail-closed producer and four-test corruption/determinism matrix; SHA-256 `7ff46174cf7818722ea8acf6a2a55be77659ce821d68c531b583134ac12f8018`. |
+| `src/source_template_type_parameter_association.rs` | 3112 | neutral template/Fraenkel structural composition | `source_template_type_parameter_association.md` | no | no | Cohesive Task-277B-L association and Task-277C exact structural-composition producers, canonical `Identifier`, range/edge/provenance fail-closed validation, and the combined direct-test matrix; SHA-256 `0ff5b20f8c9a420149af232947ddd4f09924d31631aea22eabdc24d2daa91145`. |
 | `src/source_structure.rs` | 5036 | syntax-free source structure-term producer | `source_structure.md` | no | no | Cohesive Task-254 term/wrapper/root/member/field-update/edge/request tables, written-partition and cross-family dependency/provenance validation, deterministic rendering, and corruption tests; no split required. |
 | `src/source_structure_definition.rs` | 1773 | syntax-free source structure-definition producer | `source_structure_definition.md` | no | no | Cohesive Task-263 definition/member/inheritance/mapping/coherence tables, private resolver/baseline snapshots, exact contribution-effect and own-domain obligation validation, deterministic rendering, and compound precedence tests; production remains syntax-free. |
 | `src/source_type.rs` | 14321 | syntax-free source-type application producer | `source_type.md` | no | no | Cohesive Task-249 flat/extension families plus exact Task-269CT/269GT/269GUPT/269GCT/269SDT proof-local composites, environment/arena/form/graph/provenance validation, deterministic rendering, exhaustive corruption tests, and cfg(test)-only corruption seams; production remains syntax-free and no split is required. |
@@ -75,14 +75,17 @@ The new and changed cohesive owners are measured in their rows below.
 ## Task 277C Frozen Module Boundary
 
 The [277C contract](../../task_contracts/en/CHECKER-FRAENKEL-TEMPLATE-STRUCTURAL-277C.md)
-reserves one existing checker owner module for a standalone immutable structural
-composition. It may consume only `SourceTemplateTypeParameterAssociationHandoff`,
+records one existing checker owner module's completed standalone immutable structural
+composition. It consumes only `SourceTemplateTypeParameterAssociationHandoff`,
 `FraenkelGeneratorVariableSourceCollection`, and `TypedAst`; it must not take
-R1 direct input or install into Typed/Resolved state. The later Rust surface is
-the owner module plus mizar-test `tests.rs` and one new private leaf. `lib.rs`,
+R1 direct input or install into Typed/Resolved state. The completed Rust surface is
+the owner module plus mizar-test `tests.rs` and one private leaf. `lib.rs`,
 lint Rust, resolver/source owners, production route, facades, Cargo, canonical
 artifacts, metadata, and downstream consumers are excluded. The current 32
-regular checker paths / 189180-line protected inventory remains the baseline.
+regular checker paths / 191068-line inventory is measured in the contract;
+broad verification passes and the independent boundary review reports **NO
+FINDINGS**. Final-quality review is **NO FINDINGS** with all nine hard gates
+passing uncapped at valid `100/100` (`20/20/15/15/10/10/5/5`).
 
 ## Task 34 Classification
 

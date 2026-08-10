@@ -168,15 +168,17 @@ rejection.
 ## Task 277C Frozen Source/Specification Mapping
 
 The canonical [277C contract](../../task_contracts/en/CHECKER-FRAENKEL-TEMPLATE-STRUCTURAL-277C.md)
-freezes a neutral, zero-semantic composition of the completed template
+records the completed neutral, zero-semantic composition of the completed template
 association handoff, completed Fraenkel generator collection, and existing
 `TypedAst`. The public composition ID/row/table/handoff/error/producer family,
 ordered fail-closed revalidation, exact F5 node/ordinal profile, and five-test
 matrix are owned once by that contract. This record neither derives language
 behavior nor claims Task 277B readiness or coverage credit. Existing specs,
 F5 fixture/expectation/trace, diagnostics, and source owners remain unchanged;
-the implementation is pending a separate prerequisite commit and fresh
-preflight.
+broad verification passes and the final source/documentation re-review reports
+**NO FINDINGS**. The independent bilingual/boundary reviews also report **NO
+FINDINGS**; final-quality review is **NO FINDINGS** with all nine hard gates
+passing uncapped at valid `100/100` (`20/20/15/15/10/10/5/5`).
 
 ## Crate Module Exports
 
@@ -497,7 +499,8 @@ retain those separately authorized decisions.
 
 Generated public newtypes:
 
-- `SourceTemplateTypeParameterAssociationId`
+- `SourceTemplateTypeParameterAssociationId`,
+  `SourceTemplateFraenkelStructuralCompositionId`
 
 Literal top-level public items:
 
@@ -505,7 +508,12 @@ Literal top-level public items:
   `SourceTemplateTypeParameterAssociationTable`,
   `SourceTemplateTypeParameterAssociationHandoff`,
   `SourceTemplateTypeParameterAssociationError`,
-  `SourceTemplateTypeParameterAssociationProducer`
+  `SourceTemplateTypeParameterAssociationProducer`,
+  `SourceTemplateFraenkelStructuralComposition`,
+  `SourceTemplateFraenkelStructuralCompositionTable`,
+  `SourceTemplateFraenkelStructuralCompositionHandoff`,
+  `SourceTemplateFraenkelStructuralCompositionError`,
+  `SourceTemplateFraenkelStructuralCompositionProducer`
 
 Correspondence:
 
@@ -514,9 +522,12 @@ Correspondence:
 | Resolver-owned template type-parameter links transport to an immutable, dense, zero-semantic typed-node association table. | `SourceTemplateTypeParameterAssociationProducer::build`, the association ID/row/table/handoff family, and deterministic `debug_text()` in `src/source_template_type_parameter_association.rs`. | `task277bl_maps_exact_resolver_association_to_typed_nodes`, `task277bl_rebuilds_deterministically_without_mutating_typed_ast`, and `task277bl_real_fixture_builds_exact_template_type_parameter_association`. | Implemented for Task 277B-L; no Task 277B semantic credit. |
 | Each of the five resolver identities matches exactly one typed node; the required kinds are `DefinitionBlockItem`, `TemplateParameter`, canonical `Identifier` for both binder and generator identifier, and `TypeHead`. | Exact `resolved_node` scan, normal-recovery check, exact-kind predicate, range anchors/equality/containment, and direct-edge validation. | Missing/ambiguous, all-site kind/recovery, forged identifier-category, anchor/range/containment, and edge-corruption matrix. | Fail closed with `InvalidAssociation`; no dense-ID cast or spelling/range inference. |
 | Source/module mismatch is distinguished and public enum evolution stays forward-compatible. | `EnvironmentMismatch` plus `#[non_exhaustive] SourceTemplateTypeParameterAssociationError`. | Environment mismatch matrix and `checker_public_enums_are_forward_compatible_and_documented`. | Implemented; no exhaustive exception. |
+| The composition public family joins each completed template association with one completed Fraenkel generator binding through exact typed structural identity. | `SourceTemplateFraenkelStructuralCompositionId`, row/table/handoff, error, and producer in `src/source_template_type_parameter_association.rs`. | `task277c_composes_exact_template_fraenkel_structural_handoff` and the private F5 composition probe. | Implemented as neutral transport; no Task 277B semantic credit. |
+| Structural composition revalidates environment, association, binding, uses, and completed mapping in fixed fail-closed order. | `SourceTemplateFraenkelStructuralCompositionProducer::build` and its exact typed-node/provenance validators. | Environment/ambiguity and recovery/kind/range/edge/provenance corruption matrices. | Implemented without zipping, inference, reordering, or partial handoff. |
+| Composition errors remain forward-compatible. | `#[non_exhaustive] SourceTemplateFraenkelStructuralCompositionError`. | `checker_public_enums_are_forward_compatible_and_documented` and the four direct producer tests. | Implemented; no exhaustive exception. |
 
-Bounded gaps: this neutral prerequisite neither installs a Typed/Resolved slot nor
-interprets a type, sethood, formal-to-actual substitution, diagnostic, active
+Bounded gaps: these neutral handoffs neither install a Typed/Resolved slot nor
+interpret a type, sethood, formal-to-actual substitution, diagnostic, active
 route, or verdict. Task 277B remains not ready with zero semantic credit.
 
 ### `source_term`

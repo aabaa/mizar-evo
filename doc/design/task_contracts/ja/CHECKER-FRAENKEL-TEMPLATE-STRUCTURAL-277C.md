@@ -7,8 +7,10 @@ Owner plan は [mizar-checker](../../mizar-checker/ja/00.crate_plan.md#task-inde
 
 ## 状態とauthority
 
-**状態:** documentation prerequisiteをfreezeした段階であり、implementationは未開始である。本書は
-同期companionであり、EN contractがcanonical authorityを持つ。
+**状態:** implementation、broad verification、すべてのindependent reviewはcompleteした。final-quality
+reviewは**NO FINDINGS**で、全9 hard gateはscore capなしvalid `100/100`
+(`20/20/15/15/10/10/5/5`)でPASS。task-closeout evidenceだけpendingである。本書は同期companionであり、
+EN contractがcanonical authorityを持つ。
 
 本taskは完了済みの`RESOLVE-TEMPLATE-TYPEPARAM-277R1`、`277B-L`、
 `RESOLVE-FRAENKEL-GENERATOR-VAR-277R2`の後に置くneutral checker-only structural
@@ -18,13 +20,13 @@ expectation、traceability、diagnostic、proof language、source behaviorを変
 `doc/spec/en/18.templates.md` §§18.2.1、18.2.2、18.2.6、18.10.2、immutableなF5
 `.miz` fixture/expectation/trace、次にderived design/source recordである。既存authorityはread-onlyである。
 
-閉じる対象はstructural handoffの`design_drift`、`source_drift`、Rust `test_gap`である。
-`spec_gap`はなく、新しいtest intentも導出しない。language/type/proof/diagnostic、source producer、
-production routeの判断は別途authorizeされたtaskへdeferする。
+completeしたimplementationはstructural handoffの`design_drift`、`source_drift`、Rust `test_gap`を
+閉じる。`spec_gap`はなく、新しいtest intentも導出しない。language/type/proof/diagnostic、source producer、
+production routeの判断は別途authorizeされたtaskへdeferしたままである。
 
 ## Frozen boundaryとpublic ABI
 
-implementationはexisting
+completeしたimplementationはexisting
 `crates/mizar-checker/src/source_template_type_parameter_association.rs`内のneutral standalone
 composition一つだけである。入力は次の三つに限定する。
 
@@ -114,7 +116,7 @@ range/recovery/resolver provenanceはexactにcheckし、textからreconstructし
 
 ## Frozen implementation/test scope
 
-prerequisite commitとfresh preflight後に変更できるRust pathはexactに三つである。
+completeしたimplementationが変更したRust pathはexactに三つである。
 
 1. `crates/mizar-checker/src/source_template_type_parameter_association.rs`;
 2. `crates/mizar-test/src/runner/tests.rs`; および
@@ -129,8 +131,8 @@ test matrixは四つのpublic-facing functionと一つのprivate fixture leafで
    binding、zero/multiple structural match、reused association、association-side orphanも含む）; および
 5. `task277c_real_fixture_builds_exact_template_fraenkel_structural_composition`。
 
-checker raw test listは`542 -> 546`、mizar-test raw listは`611 -> 612`で固定する。fixture、sidecar、
-expectation、trace、coverage、Cargo、production runner、lint-policy sourceは変更しない。
+checker raw test listは`542 -> 546`、mizar-test raw listは`611 -> 612`へexactに変化した。fixture、sidecar、
+expectation、trace、coverage、Cargo、production runner、lint-policy sourceは変更していない。
 
 ## Baselineとprotected evidence
 
@@ -173,22 +175,53 @@ frozen CLI hashはplan `700f4bf503783742cefd8004fa095675b7476d46e9a3a6dd439916d2
 `4b2c7bd5ec3cc56e5672fb351126126230ec84fba9bd2bd9049a516d378fab7f`、proof-verification
 `ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`である。
 
+## Completion evidence
+
+measured checker production manifestは32 regular path / 191068 lines、protected path SHA-256は不変の
+`9dc5b02f26679677e593ea755394d68533173d2be988b7ef1ddcfd84a41b9787`、content-manifest SHA-256は
+`cf4e43bb5671f863d9af36f99592ca188bab28b2480acb886e1171d65f57fe8a`である。mizar-test production
+manifestは38 regular path / 80090 linesのまま、path/content SHA-256は
+`0ef395004f7feaadf60da0daba7b5da9c52ea4974850adfa2bd9d09081b242aa` /
+`990b5ad4798786d9f87c03f76fdbad92fc2edf1f6d84ef3baad67254c79fdd70`である。
+
+exactに変更したRust pathのmeasurementは次の通り。
+
+| Path | Lines | SHA-256 |
+|---|---:|---|
+| `crates/mizar-checker/src/source_template_type_parameter_association.rs` | 3112 | `0ff5b20f8c9a420149af232947ddd4f09924d31631aea22eabdc24d2daa91145` |
+| `crates/mizar-test/src/runner/tests.rs` | 65 | `6d07a5ba5efe0be8f058eb52028e90c0bbb279b5d088604c55e1a9d1ca5e75ba` |
+| `crates/mizar-test/src/runner/tests/type_elaboration/template_fraenkel_structural_composition.rs` | 134 | `64dd80f1d4501c3ab5735a215fb0301bec6d85ca67258aebc195cc898be31d44` |
+
+`cargo test -q -p mizar-checker --lib -- --list`は546 entries、SHA-256
+`2477c548993fcbfffa817814f462ab5d7ce1549a083b6d65aa87091f08bbc9ed`をreportする。
+`cargo test -q -p mizar-test --lib -- --list`は612 entries、SHA-256
+`5a8c1170208533ed4d1723acd05a07ab9f62569b47507129d56c14f7fc2af65a`をreportする。
+
+`cargo fmt --check`、focused 277C test、両package library suite、両package library Clippy、
+`git diff --check`はPASS。independent test-sufficiency / implementation reviewは**NO FINDINGS**。
+five post-implementation CLI replayもfrozen hashのままPASSし、23 warnings / 0 errorsである。
+parent-owned broad verificationもPASSした: `cargo fmt --check`、
+`cargo clippy --all-targets --all-features -- -D warnings`、full `cargo test`、mizar-test metadata
+137/137、five CLI replay、frozen count/hash。final source/documentation re-reviewとindependent
+bilingual/boundary reviewは**NO FINDINGS**。independent final-quality reviewも**NO FINDINGS**で、全9
+hard gateはscore capなしvalid `100/100`（`20/20/15/15/10/10/5/5`）でPASS。task-only staging、commit、
+post-commit proof、fresh successor inventoryはclaimしない。
+
 ## Documentation、gates、handoff
 
-本prerequisiteは本EN/JA contract pairとplan Task Indexが列挙するpaired checker/mizar-test owner
-recordだけ、exact 24 Markdown pathを変更しledgerは変更しない。task-contract treeは86/86から87/87へ増える。
-completion surfaceはexact 20 owner/contract pathであり、four plan rowsはprerequisite-only indexである。
-`spec_coverage_audit.md`へのimpactはなくunchangedとする。
+completeしたdocumentation surfaceは本EN/JA contract pairとpaired checker/mizar-test owner recordの
+exact 20 Markdown pathだけを変更する。four plan rowはprerequisite-only indexでありunchangedである。
+`spec_coverage_audit.md`へのimpactはなくunchangedとし、legacy-compaction ledger/policy sourceも変更しない。
 
-implementation completionではauthority/scope、dependency readiness、ABI、structural invariant、test
-sufficiency、implementation/equivalence、bilingual/source-documentation consistency、protected
-baseline/count/hash、final independent quality review（hard-gate failureなし、90/100以上）の9 gateをpassする。
-docs-only prerequisiteでは追加でexact-24 scope、`git diff --check`、recursive task-contract link validation、
-checker/mizar-test lint-policy testを要求する。Sol xhighがauthority/integration/final review/stage/commitを
-担当し、Terra highはbounded inventory/review route、Lunaはunavailableでeffective routingを記録する。
-`doc/design/spec_coverage_audit.md`またはlegacy-compaction/ledger deltaはauthorizeしない。
+implementation-specific authority/scope、dependency、ABI、structural、test-sufficiency、implementation-review、
+CLI-replay、broad-workspace verification、source/documentation、bilingual、boundary evidenceはcompleteし、
+三つのindependent reviewは**NO FINDINGS**。final independent quality reviewも**NO FINDINGS**、全9 hard
+gateはPASS、valid uncapped scoreは`100/100`（`20/20/15/15/10/10/5/5`）。残るparent-owned actionはexact
+staging/cached review、task-only commit、post-commit proof、fresh successor inventoryである。
+Sol xhighがauthority/integration/final review/stage/commitを担当し、Terra highはbounded inventory/review route、
+Lunaはunavailableでeffective routingを記録する。`doc/design/spec_coverage_audit.md`または
+legacy-compaction/ledger deltaはauthorizeしない。
 
-**Next handoff:** separate docs-only prerequisite commit後、fresh HEAD/worktree/origin/stashと
-count/hash/CLI preflightを通してから、上記のfrozen three Rust pathsとfive testsだけをimplementする。authority/
-acceptanceはSol xhigh、bounded cross-module implementation/disagreementはTerra highを用い、authority矛盾、
-public dependency issue、scope expansionでは停止する。
+**Next handoff:** exact staging/cached review、task-only commit、post-commit proof、fresh successor
+inventoryを行う。scopeはthree implemented Rust pathとこの20 completion recordに限定し、authority矛盾、
+public dependency issue、scope expansion、protected replay failureではtask-only commitのstage前に停止する。

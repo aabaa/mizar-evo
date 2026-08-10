@@ -9,8 +9,11 @@ Stable owner sections: checker [module API](../../mizar-checker/en/source_templa
 
 ## Status and authority
 
-**Status:** frozen documentation prerequisite; implementation has not begun. This
-contract is canonical; its synchronized companion is a translation, not competing authority.
+**Status:** implementation, broad verification, and all independent reviews are
+complete. The final-quality review reports **NO FINDINGS**; all nine hard gates
+pass without a score cap at valid `100/100` (`20/20/15/15/10/10/5/5`). Only
+task-closeout evidence remains pending. This contract is canonical; its
+synchronized companion is a translation, not competing authority.
 
 This task is a neutral checker-only structural composition after completed
 `RESOLVE-TEMPLATE-TYPEPARAM-277R1`, `277B-L`, and
@@ -23,14 +26,14 @@ The authority remains, in order, `doc/spec/en/13.term_expression.md`
 and trace entry; then derived design and source records. Existing authorities
 are read-only for this task.
 
-The closed prerequisite records `design_drift`, `source_drift`, and Rust
-`test_gap` for this structural handoff. There is no `spec_gap`; no test intent
-is newly derived. All language, type, proof, diagnostic, source-producer, and
-production-route decisions are deferred to a separately authorized task.
+The completed implementation closes the recorded `design_drift`, `source_drift`,
+and Rust `test_gap` for this structural handoff. There is no `spec_gap`; no test
+intent is newly derived. All language, type, proof, diagnostic, source-producer,
+and production-route decisions remain deferred to a separately authorized task.
 
 ## Frozen boundary and public ABI
 
-The implementation is one neutral standalone composition in the existing
+The completed implementation is one neutral standalone composition in the existing
 `crates/mizar-checker/src/source_template_type_parameter_association.rs`
 module. It consumes exactly:
 
@@ -146,8 +149,7 @@ from text.
 
 ## Frozen implementation and test scope
 
-After this prerequisite is committed and a fresh preflight passes, implementation
-may change exactly three Rust paths:
+The completed implementation changed exactly three Rust paths:
 
 1. `crates/mizar-checker/src/source_template_type_parameter_association.rs`;
 2. `crates/mizar-test/src/runner/tests.rs`; and
@@ -164,9 +166,9 @@ fixture leaf:
    association, and association-side orphan cases); and
 5. `task277c_real_fixture_builds_exact_template_fraenkel_structural_composition`.
 
-The test registrations are frozen at checker raw list `542 -> 546` and
+The test registrations changed exactly from checker raw list `542 -> 546` and
 mizar-test raw list `611 -> 612`. No fixture, sidecar, expectation, trace,
-coverage, Cargo, production runner, or lint-policy source change is allowed.
+coverage, Cargo, production runner, or lint-policy source changed.
 
 ## Baseline and protected evidence
 
@@ -217,30 +219,67 @@ declaration-symbol `71e83ba0b20d4015e07b3bd2c0c4db2837b6151d1251812caed7954530d5
 type-elaboration `4b2c7bd5ec3cc56e5672fb351126126230ec84fba9bd2bd9049a516d378fab7f`,
 and proof-verification `ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`.
 
+## Completion evidence
+
+The measured checker production manifest is 32 regular paths / 191068 lines,
+with the protected path SHA-256 unchanged at
+`9dc5b02f26679677e593ea755394d68533173d2be988b7ef1ddcfd84a41b9787` and
+content-manifest SHA-256
+`cf4e43bb5671f863d9af36f99592ca188bab28b2480acb886e1171d65f57fe8a`.
+The mizar-test production manifest remains 38 regular paths / 80090 lines,
+with path/content SHA-256
+`0ef395004f7feaadf60da0daba7b5da9c52ea4974850adfa2bd9d09081b242aa` /
+`990b5ad4798786d9f87c03f76fdbad92fc2edf1f6d84ef3baad67254c79fdd70`.
+
+The exact changed Rust paths measure:
+
+| Path | Lines | SHA-256 |
+|---|---:|---|
+| `crates/mizar-checker/src/source_template_type_parameter_association.rs` | 3112 | `0ff5b20f8c9a420149af232947ddd4f09924d31631aea22eabdc24d2daa91145` |
+| `crates/mizar-test/src/runner/tests.rs` | 65 | `6d07a5ba5efe0be8f058eb52028e90c0bbb279b5d088604c55e1a9d1ca5e75ba` |
+| `crates/mizar-test/src/runner/tests/type_elaboration/template_fraenkel_structural_composition.rs` | 134 | `64dd80f1d4501c3ab5735a215fb0301bec6d85ca67258aebc195cc898be31d44` |
+
+`cargo test -q -p mizar-checker --lib -- --list` reports 546 entries with
+SHA-256 `2477c548993fcbfffa817814f462ab5d7ce1549a083b6d65aa87091f08bbc9ed`.
+`cargo test -q -p mizar-test --lib -- --list` reports 612 entries with SHA-256
+`5a8c1170208533ed4d1723acd05a07ab9f62569b47507129d56c14f7fc2af65a`.
+
+`cargo fmt --check`, focused 277C tests, both package library suites, both
+package library Clippy checks, and `git diff --check` passed. Independent
+test-sufficiency and implementation reviews report **NO FINDINGS**. The five
+post-implementation CLI replays also passed with their frozen hashes and 23
+warnings / 0 errors. Parent-owned broad verification also passed: `cargo fmt
+--check`, `cargo clippy --all-targets --all-features -- -D warnings`, full
+`cargo test`, mizar-test metadata 137/137, the five CLI replays, and the frozen
+counts/hashes. The final source/documentation re-review and independent
+bilingual/boundary review report **NO FINDINGS**. The independent final-quality
+review also reports **NO FINDINGS**; all nine hard gates pass uncapped at valid
+`100/100` (`20/20/15/15/10/10/5/5`). No task-only staging, commit, post-commit
+proof, or fresh successor inventory is claimed.
+
 ## Documentation, gates, and handoff
 
-This prerequisite changes exactly 24 Markdown paths: this EN/JA contract pair,
-the paired checker and mizar-test owner records listed by the plan Task Index
-rows, with no ledger edit. It raises task-contract trees from 86/86 to 87/87.
-The later completion surface is exactly 20 owner/contract paths; the four plan
-rows are prerequisite-only index changes. `spec_coverage_audit.md` has no
-impact and remains unchanged.
+The completed documentation surface changes exactly 20 Markdown paths: this
+EN/JA contract pair and the paired checker and mizar-test owner records. The
+four plan rows were prerequisite-only index changes and remain untouched.
+`spec_coverage_audit.md` has no impact and remains unchanged; neither the
+legacy-compaction ledger nor its policy source changed.
 
-All nine gates must pass for implementation completion: authority/scope,
-dependency readiness, ABI, structural invariants, test sufficiency,
-implementation/equivalence, bilingual/source-documentation consistency,
-protected baseline/count/hash, and final independent quality review (at least
-90/100 with no hard-gate failure). This docs-only prerequisite additionally
-requires exact-24 scope, `git diff --check`, recursive task-contract link
-validation, and checker plus mizar-test lint-policy tests. Sol xhigh owns
+The implementation-specific authority/scope, dependency, ABI, structural,
+test-sufficiency, implementation-review, CLI-replay, broad-workspace
+verification, source/documentation, bilingual, and boundary evidence is
+complete; the three independent reviews report **NO FINDINGS**. Final
+independent quality review reports **NO FINDINGS**, all nine hard gates pass,
+and the valid uncapped score is `100/100` (`20/20/15/15/10/10/5/5`). The
+remaining parent-owned actions are exact staging/cached review, task-only
+commit, post-commit proof, and fresh successor inventory. Sol xhigh owns
 authority, integration, final reviews, staging, and commit; Terra high is the
 bounded inventory/review route; Luna is unavailable and the effective routing
 must be recorded. No `doc/design/spec_coverage_audit.md` or
 legacy-compaction/ledger delta is authorized.
 
-**Next handoff:** after a separate docs-only prerequisite commit and fresh
-HEAD/worktree/origin/stash plus count/hash/CLI preflight, implement only the
-three frozen Rust paths and five tests above. Use Sol xhigh for authority and
-acceptance, Terra high for bounded cross-module implementation or disagreement;
-stop for any authority contradiction, public dependency issue, or scope
-expansion.
+**Next handoff:** perform the exact staging/cached review, task-only commit,
+post-commit proof, and fresh successor inventory. Keep the scope to the three
+implemented Rust paths and these 20 completion records; stop for any authority
+contradiction, public dependency issue, scope expansion, or failed protected
+replay before staging a task-only commit.
