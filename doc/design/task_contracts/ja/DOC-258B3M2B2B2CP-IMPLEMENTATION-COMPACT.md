@@ -8,7 +8,7 @@
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-258B3M2B2B2CP-IMPLEMENTATION-COMPACT` |
-| Status | documentation prerequisiteは`98/100`でaccept。dedicated commitとclean replayが残る。source migration/ledger declarationは引き続き禁止。 |
+| Status | documentation prerequisiteは`c3683921875a24e0efa3522cba47dbb676a9c7fe`でcommit済み。migrationは`98/100`でaccept、dedicated commitとclean replayが残る。 |
 | Purpose | completed Task-258B3M2B2B2CP implementation evidenceだけをcentralizeし、全frozen/correction/lower-route/successor/runner/TODO/audit/semantic ownersをretainする。 |
 | Historical owner | [Task 258B3M2B2B2CP](./258B3M2B2B2CP.md#completion-evidence) |
 | Plan indexes | [checker plan](../../mizar-checker/ja/00.crate_plan.md#task-index)と[runner plan](../../mizar-test/ja/00.crate_plan.md#task-index) |
@@ -79,8 +79,9 @@ task/batch Task Index rowsを追加しtotal 8 rows。selected sectionsと
 
 dedicated prerequisite commitとclean replay後のmigrationはexact 13 paths:
 selected sources 10、本EN/JA status/evidence、ledger。266 physical linesを
-language-local heading+redirect 10節、計20 linesへ置換し、expected source
-diffは`+10/-256`。
+構成するforbidden headings 10件とbodyを削除し、language-local redirect+
+separator records 10件、計20 physical linesへ置換する。expected source diffは
+`+10/-256`。
 
 specifications、`.miz`、`.src`、`.fixture.toml`、`.cert.json`、expectations、
 trace、coverage audit、production、Cargo、public API、diagnostics、active
@@ -130,7 +131,8 @@ contractのmalformed hashはreport-only `repo_metadata_conflict`のまま。
 focused checker/runner lint-policy testsは各`15/15`、runner metadataは
 `137/137`、full `cargo test`はchecker `530/530`、runner `600/600`を含めPASS。
 `cargo fmt --all --check`、offline no-deps Cargo metadata、warnings-denied
-all-target/all-feature ClippyもPASS。checker/runner test-list hashesは
+all-target/all-feature ClippyもPASS。exact
+`cargo test -p <crate> --lib -- --list` checker/runner library-list hashesは
 `e99f525f1839f730cfe03f2d0e80f7917e3564df2e2b58c3810502631f4c3e35`と
 `28f35ad5f4496714e9fd0882b39bfb751cff444a0460e0df6d17f03a7745776b`。
 successful five CLI hashesは次の通り。
@@ -153,6 +155,57 @@ traceability `15/15`、implementation correctness `14/15`、design/source
 synchronization `10/10`、boundary discipline `10/10`、verification health
 `5/5`、handoff quality `4/5`。唯一のresidual riskはmigration前に本exact
 prerequisiteをcommitしclean-replayするprocedural requirement。
+
+## Migration Evidence
+
+migrationはclean prerequisite commit
+`c3683921875a24e0efa3522cba47dbb676a9c7fe`、measured
+`origin/main...HEAD=0/2`、protected `stash@{0}` unchangedから開始した。
+変更scopeはfrozen exact 13 paths: selected checker documents 10件、本EN/JA
+batch pair、`legacy_compactions.tsv`。
+
+forbidden completion headings 10件とmapped bodiesは全てabsent。各old whole H2
+sectionはrecorded neighboring headings間のexact one language-local central
+completion-evidence redirectへ置換された。selected-source diffはexact
+`+10/-256`。全B2CP frozen prerequisites、B2C/B2CPC1 correction status、
+statement/structure lower-route facts、other unselected owner-local contentを
+retainする。
+
+schema-2 ledgerはbyte-sorted、1000 physical lines、SHA-256
+`114e5215e66e2e77912425b1283629ac1afd4269bff60d93a2540aba53988282`。
+exact 20-row additionはbatch 1、canonical `task` 1、`redirect` 10、`index`
+8、`task_ref`なし。final cardinalitiesは`30/44/2/626/296`。canonical
+19-row expanded inventoryは
+`6652c6b24353074470bdb7121082fbfda1654b34cc0172bb452d151d1611c0c1`を
+replay。protected specification/test/expectation/trace/coverage/production/
+Cargo/public API/diagnostic/active-behavior surfacesはunchanged。
+
+independent evidence-equivalence、schema/test-sufficiency、bilingual/boundary/
+source-documentation migration reviewsはcontractのsource-shape wordingを
+schema-2 forbidden-heading ruleへcorrect後、全て**NO FINDINGS**。focused
+checker/runner lint-policy testsは各`15/15`、runner metadataは`137/137`、full
+`cargo test`はchecker `530/530`、runner `600/600`を含めPASS。fmt、offline
+no-deps Cargo metadata、warnings-denied all-target/all-feature ClippyもPASS。
+上記exact library-list commandsは両frozen hashesをreproduce。five CLIは全て
+exit zero、known warnings 23件を維持し、prerequisite tableのfive frozen
+hashesをreproduceした。
+
+protected path counts/NUL-delimited path hashesはspecification `64`、`.miz`
+`343`、expectation `435`、checker production `30`、runner production `90`、
+Cargo manifests `21`をreproduceし、zero protected diffが全frozen content
+hashesをpreserve。side countsは`.src=62`、`.fixture.toml=7`、`.cert.json=23`、
+`.expect.toml=435`。traceはfrozen hash、395 rows = `368/20/7`、coverage-audit
+hashもunchanged。source TSV/ledger hashes、contract pairs `78/78`、local
+links/fragments、`git diff --check`、exact 13-path scope、
+`origin/main...HEAD=0/2`、protected stashを全てreplay。
+
+independent final read-only migration reviewは**NO FINDINGS**、score capなしで
+全9 hard gates PASS、`98/100`。breakdownはspecification `20/20`、test
+contract `20/20`、traceability `15/15`、implementation correctness `14/15`、
+design/source synchronization `10/10`、boundary discipline `10/10`、
+verification health `5/5`、handoff quality `4/5`。唯一のresidual riskはfresh
+checker selection前に本exact 13-path migrationをcommitしclean-replayする
+procedural requirement。
 
 ## Reviews, Verification, Exit, And Handoff
 

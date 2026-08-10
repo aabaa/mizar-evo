@@ -727,33 +727,7 @@ diff/checker-lint checks, the justified unrelated-source block on live broad
 reruns, all nine hard gates PASS, and valid final quality `98/100`. Only the
 dedicated correction commit and fresh implementation inventory remain.
 
-## Task 258B3M2B2B2CP Implementation-Completion Synchronization
-
-Both companions now record CPC1 commit `ee267d9c` as complete and B2CP as
-implemented only in the private dormant Task-254 update reuse seam. Exactly
-the two frozen runner tests pass, closing the prerequisite `design_drift`,
-bounded `source_drift`, and `test_gap`. Final test-sufficiency and
-implementation re-reviews have no findings. They synchronize checker/runner
-`386/439`, runner sizes `6826/6065/730/2546/17120/5848`, 30 production
-paths / 46,788 lines, production hashes
-`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
-`bbcc55ab769fb5b725de83a27ae13243000a1610a12064907c06187417e45b5f`,
-and raw/normalized test-list hashes
-`ea3e854c1b741ab4b642000df6610a15e521f0849b39e7480820ca86680a1d0e` /
-`11e6de35b422b913c235d8193fb2629da5aff39d1cf251af1c6cec2824301c8d`.
-
-Both languages preserve unchanged checker/corpus/CLI hashes and no
-specification, corpus, fixture, expectation, sidecar, trace
-status/count/backlink/credit, public, active, B2C, or semantic surface
-change. The formula row remains `deferred`, `tests = []`, and audit impact
-is narrative-only. Concurrent ownership remains report-only
-`repo_metadata_conflict`, with no metadata repair. Both record passing
-formatting, workspace Clippy, workspace tests, focused `2/2`, and unchanged
-count/hash gates. The final source/documentation re-review has no findings.
-Both record independent final quality with no findings, all nine hard gates
-PASS, and valid `98/100`. Implementation commit
-`b146f0f72dceac2233c9d679b7820e264974b227` is complete with a clean
-worktree, ahead-six branch, and unchanged stash.
+Completion evidence: [central Task-258B3M2B2B2CP historical contract](../../task_contracts/en/258B3M2B2B2CP.md#completion-evidence).
 
 ## Task 258B3M2B2B2C Frozen-Contract Synchronization
 

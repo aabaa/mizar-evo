@@ -8,7 +8,7 @@
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-258B3M2B2B2CP-IMPLEMENTATION-COMPACT` |
-| Status | Documentation prerequisite accepted at `98/100`; dedicated commit and clean replay remain. Source migration and ledger declaration are still forbidden. |
+| Status | Documentation prerequisite committed as `c3683921875a24e0efa3522cba47dbb676a9c7fe`; migration accepted at `98/100`, with dedicated commit and clean replay remaining. |
 | Purpose | Centralize only the completed Task-258B3M2B2B2CP implementation evidence while retaining every frozen, correction, lower-route, successor, runner, TODO, audit, and semantic owner. |
 | Historical owner | [Task 258B3M2B2B2CP](./258B3M2B2B2CP.md#completion-evidence) |
 | Plan indexes | [checker plan](../../mizar-checker/en/00.crate_plan.md#task-index) and [runner plan](../../mizar-test/en/00.crate_plan.md#task-index) |
@@ -84,9 +84,10 @@ Index rows, eight rows total. Selected source sections and
 
 After a dedicated prerequisite commit and clean replay, migration changes
 exactly thirteen paths: the ten selected sources, this EN/JA pair for status
-and evidence, and `legacy_compactions.tsv`. The 266 selected physical lines
-become ten language-local heading-plus-redirect sections totaling 20 physical
-lines; expected selected-source diff is `+10/-256`.
+and evidence, and `legacy_compactions.tsv`. The ten forbidden headings and
+their bodies are removed; the 266 selected physical lines become ten
+language-local redirect-plus-separator records totaling 20 physical lines.
+Expected selected-source diff is `+10/-256`.
 
 Specifications, `.miz`, `.src`, `.fixture.toml`, `.cert.json`, expectations,
 trace metadata, coverage audit, production, Cargo, public APIs, diagnostics,
@@ -152,8 +153,9 @@ report-only `repo_metadata_conflict`.
 Focused checker and runner lint-policy tests passed `15/15` each, runner
 metadata passed `137/137`, and full `cargo test` passed, including checker
 `530/530` and runner `600/600`. `cargo fmt --all --check`, offline no-deps Cargo
-metadata, and warnings-denied all-target/all-feature Clippy passed. Checker and
-runner test-list hashes are respectively
+metadata, and warnings-denied all-target/all-feature Clippy passed. Exact
+`cargo test -p <crate> --lib -- --list` checker and runner library-list hashes
+are respectively
 `e99f525f1839f730cfe03f2d0e80f7917e3564df2e2b58c3810502631f4c3e35`
 and `28f35ad5f4496714e9fd0882b39bfb751cff444a0460e0df6d17f03a7745776b`.
 The five successful CLI hashes are:
@@ -177,6 +179,61 @@ test contract `20/20`, traceability `15/15`, implementation correctness
 verification health `5/5`, and handoff quality `4/5`. Its only residual risk
 is the procedural requirement to commit and clean-replay this exact
 prerequisite before migration.
+
+## Migration Evidence
+
+Migration started from clean prerequisite commit
+`c3683921875a24e0efa3522cba47dbb676a9c7fe` at measured
+`origin/main...HEAD=0/2`, with protected `stash@{0}` unchanged. It changes
+exactly the frozen thirteen paths: the ten selected checker documents, this
+EN/JA batch pair, and `legacy_compactions.tsv`.
+
+All ten forbidden completion headings and their mapped bodies are absent.
+Each old whole H2 section is replaced by exactly one language-local central
+completion-evidence redirect between its recorded neighboring headings. The
+selected-source diff is exactly `+10/-256`; all B2CP frozen prerequisites,
+B2C/B2CPC1 correction status, statement/structure lower-route facts, and
+other unselected owner-local content remain.
+
+The schema-2 ledger is byte-sorted and now has 1000 physical lines with
+SHA-256
+`114e5215e66e2e77912425b1283629ac1afd4269bff60d93a2540aba53988282`.
+Its exact 20-row addition comprises one batch, one canonical `task`, ten
+`redirect`, and eight `index` rows, with no `task_ref`; final cardinalities
+are `30/44/2/626/296`. The canonical 19-row expanded inventory replays
+`6652c6b24353074470bdb7121082fbfda1654b34cc0172bb452d151d1611c0c1`.
+Protected specification, test, expectation, trace, coverage, production,
+Cargo, public API, diagnostic, and active-behavior surfaces are unchanged.
+
+Independent evidence-equivalence, schema/test-sufficiency, and bilingual/
+boundary/source-documentation migration reviews ended **NO FINDINGS** after
+correcting the contract's source-shape wording to the schema-2 forbidden-
+heading rule. Focused checker and runner lint-policy tests passed `15/15` each,
+runner metadata passed `137/137`, and full `cargo test` passed, including
+checker `530/530` and runner `600/600`. Formatting, offline no-deps Cargo
+metadata, and warnings-denied all-target/all-feature Clippy passed. The exact
+library-list commands above reproduced both frozen hashes. All five CLIs
+exited zero, retained the 23 known warnings, and reproduced the five frozen
+hashes in the prerequisite table.
+
+Protected path counts and NUL-delimited path hashes reproduce as specification
+`64`, `.miz` `343`, expectation `435`, checker production `30`, runner
+production `90`, and Cargo manifests `21`; zero protected diff preserves all
+frozen content hashes. Side counts remain `.src=62`, `.fixture.toml=7`,
+`.cert.json=23`, `.expect.toml=435`. Trace remains 395 rows at
+`368/20/7`, with its frozen hash, and the coverage-audit hash is unchanged.
+Source TSV and ledger hashes, contract pairs `78/78`, local links/fragments,
+`git diff --check`, exact thirteen-path scope, `origin/main...HEAD=0/2`, and
+the protected stash all replay.
+
+The independent final read-only migration review ended **NO FINDINGS**, passed
+all nine hard gates without a score cap, and assigned `98/100`:
+specification `20/20`, test contract `20/20`, traceability `15/15`,
+implementation correctness `14/15`, design/source synchronization `10/10`,
+boundary discipline `10/10`, verification health `5/5`, and handoff quality
+`4/5`. Its only residual risk is the procedural requirement to commit and
+clean-replay this exact thirteen-path migration before fresh checker
+selection.
 
 ## Reviews, Verification, Exit, And Handoff
 

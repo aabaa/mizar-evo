@@ -4834,26 +4834,7 @@ blocks live runner/workspace reruns. All nine hard gates pass and final
 read-only quality is a valid `98/100`. Only the dedicated correction commit
 and fresh implementation inventory remain.
 
-## Task 258B3M2B2B2CP Implementation Audit Update
-
-CPC1 correction commit `ee267d9c` is complete, and the frozen private B2CP
-seam is now implemented without changing canonical authority. Exactly the
-two B2CP runner tests pass. The skipped-prerequisite `design_drift`,
-bounded private `source_drift`, and two-test `test_gap` are therefore
-closed. Final test-sufficiency and implementation re-reviews have no
-findings. Broad formatting, Clippy, tests, and every count/hash gate pass.
-The final source/documentation re-review has no findings. Independent final
-quality has no findings, all nine hard gates PASS, and valid `98/100`.
-Implementation commit `b146f0f72dceac2233c9d679b7820e264974b227` is
-complete.
-
-No `doc/spec`, `.miz`, fixture, expectation, sidecar, trace
-status/count/backlink/credit, checker/public API, active route, B2C owner,
-or semantic behavior changed. The formula-statement row remains
-`deferred`, `tests = []`, and the audit update is narrative-only. Checker,
-corpus, and CLI hashes remain unchanged. The concurrent-writer history
-remains report-only `repo_metadata_conflict`; repository metadata is not
-repaired.
+Completion evidence: [central Task-258B3M2B2B2CP historical contract](../../task_contracts/en/258B3M2B2B2CP.md#completion-evidence).
 
 ## Task 258B3M2B2B2C Specification Audit
 

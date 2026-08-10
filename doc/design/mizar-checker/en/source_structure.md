@@ -344,30 +344,7 @@ containers `56/78` remain unowned. B2C alone may later own take/witness
 nodes `72/71` and attach its witness to functional-update `Structure(0)`.
 B2CP owns none of these upper rows or edges.
 
-## Task 258B3M2B2B2CP Private Reuse Implementation
-
-CPC1 correction commit `ee267d9c` is complete. The runner-private
-`ImportedStructureUpdateSite`,
-`imported_structure_update_owned_node_kinds`, and
-`imported_structure_update_handoff_in_context` seam now authenticates the
-frozen exact source and reuses the unchanged Task-252/254 rows in proof
-context 1. Exactly the two frozen B2CP tests pass, including corruption,
-replay, and prior constructor/selector compatibility. The prerequisite
-`design_drift`, bounded `source_drift`, and `test_gap` are closed. Final
-test-sufficiency and implementation re-reviews have no findings.
-
-No checker source or public API changed. Task-256/258 and B2C ownership,
-active routing, functional-copy semantics, member identity, replacement/
-result typing, proof/goal/theorem behavior, and IR remain deferred. No
-specification, corpus, fixture, expectation, sidecar, or trace
-status/count/backlink/credit changed; the formula row remains `deferred`,
-`tests = []`, and audit impact is narrative-only. Concurrent ownership is
-report-only `repo_metadata_conflict`; no metadata repair is performed.
-Broad formatting, Clippy, tests, and all count/hash gates pass. The final
-source/documentation re-review has no findings. Independent final quality
-has no findings, all nine hard gates PASS, and valid `98/100`. B2CP
-implementation commit `b146f0f72dceac2233c9d679b7820e264974b227` is
-complete.
+Completion evidence: [central Task-258B3M2B2B2CP historical contract](../../task_contracts/en/258B3M2B2B2CP.md#completion-evidence).
 
 ## Task 258B3M2B2B2C Frozen Update Consumer
 

@@ -4624,24 +4624,7 @@ executable broad verificationをauthorityにする。全9 hard gatesがPASSし�
 final read-only qualityはvalid `98/100`。残るのはdedicated correction
 commitとfresh implementation inventoryだけ。
 
-## Task 258B3M2B2B2CP implementation audit update
-
-CPC1 correction commit `ee267d9c`はcompleteし、frozen private B2CP seamは
-canonical authorityを変更せずimplementedされた。B2CP runner tests
-exactly 2件がPASS。skipped-prerequisite `design_drift`、bounded private
-`source_drift`、two-test `test_gap`はclose。final test-sufficiency/
-implementation re-reviewsはfindingsなし。fmt、workspace Clippy/tests、
-全count/hash gatesはPASS。final source/documentation re-reviewは
-findingsなし。independent final qualityはfindingsなし、全9 hard gates
-PASS、valid `98/100`。implementation commit
-`b146f0f72dceac2233c9d679b7820e264974b227`はcomplete。
-
-`doc/spec`、`.miz`、fixture、expectation、sidecar、trace status/count/
-backlink/credit、checker/public API、active route、B2C owner、semantic
-behaviorは変更なし。formula-statement rowは`deferred`、`tests = []`、
-audit updateはnarrative-only。checker/corpus/CLI hashesはunchanged。
-concurrent-writer historyはreport-only `repo_metadata_conflict`で、
-repository metadataはrepairしない。
+Completion evidence: [central Task-258B3M2B2B2CP historical contract](../../task_contracts/ja/258B3M2B2B2CP.md#completion-evidence)。
 
 ## Task 258B3M2B2B2C specification audit
 

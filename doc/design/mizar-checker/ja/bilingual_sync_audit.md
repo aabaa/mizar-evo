@@ -691,33 +691,7 @@ unrelated-sourceによるlive broad rerun blockのjustification、全9 hard
 gates PASS、valid final quality `98/100`をrecordする。残るのはdedicated
 correction commitとfresh implementation inventoryだけ。
 
-## Task 258B3M2B2B2CP implementation-completion synchronization
-
-両companionはCPC1 commit `ee267d9c`をcomplete、B2CPをprivate dormant
-Task-254 update reuse seamだけにimplementedとrecordする。frozen runner
-tests exactly 2件がPASSし、prerequisite `design_drift`、bounded
-`source_drift`、`test_gap`はclose。final test-sufficiency/implementation
-re-reviewsはfindingsなし。checker/runner `386/439`、runner sizes
-`6826/6065/730/2546/17120/5848`、30 production paths / 46,788 lines、
-production hashes
-`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
-`bbcc55ab769fb5b725de83a27ae13243000a1610a12064907c06187417e45b5f`、
-raw/normalized test-list hashes
-`ea3e854c1b741ab4b642000df6610a15e521f0849b39e7480820ca86680a1d0e` /
-`11e6de35b422b913c235d8193fb2629da5aff39d1cf251af1c6cec2824301c8d`
-を同期する。
-
-checker/corpus/CLI hashesはunchangedで、specification、corpus、fixture、
-expectation、sidecar、trace status/count/backlink/credit、public、active、
-B2C、semantic surfaceの変更はない。formula rowは`deferred`、
-`tests = []`、audit impactはnarrative-only。concurrent ownershipは
-report-only `repo_metadata_conflict`でmetadata repairなし。
-両sideはfmt、workspace Clippy/tests、focused `2/2`、全count/hash gatesの
-PASSもrecordする。final source/documentation re-reviewはfindingsなし。
-両sideはindependent final quality findingsなし、全9 hard gates PASS、
-valid `98/100`もrecordする。implementation commit
-`b146f0f72dceac2233c9d679b7820e264974b227`はclean worktree、
-ahead-six branch、unchanged stashでcomplete。
+Completion evidence: [central Task-258B3M2B2B2CP historical contract](../../task_contracts/ja/258B3M2B2B2CP.md#completion-evidence)。
 
 ## Task 258B3M2B2B2C frozen-contract synchronization
 

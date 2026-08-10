@@ -333,29 +333,7 @@ excludeする。containers `56/78`はunowned。B2Cだけがlater
 take/witness nodes `72/71`をownし、そのwitnessをfunctional-update
 `Structure(0)`へattachできる。B2CPはこれらupper rows/edgesをownしない。
 
-## Task 258B3M2B2B2CP private reuse implementation
-
-CPC1 correction commit `ee267d9c`はcomplete。runner-private
-`ImportedStructureUpdateSite`、
-`imported_structure_update_owned_node_kinds`、
-`imported_structure_update_handoff_in_context` seamはfrozen exact sourceを
-authenticateし、proof context 1でunchanged Task-252/254 rowsをreuseする。
-frozen B2CP tests exactly 2件がPASSし、corruption/replay/prior
-constructor-selector compatibilityをcover。prerequisite `design_drift`、
-bounded `source_drift`、`test_gap`はclose。final test-sufficiency/
-implementation re-reviewsはfindingsなし。
-
-checker source/public APIは変更なし。Task-256/258、B2C ownership、
-active routing、functional-copy semantics、member identity、replacement/
-result typing、proof/goal/theorem、IRはdeferred。specification、corpus、
-fixture、expectation、sidecar、trace status/count/backlink/creditは変更せず、
-formula rowは`deferred`、`tests = []`、audit impactはnarrative-only。
-concurrent ownershipはreport-only `repo_metadata_conflict`でmetadata
-repairなし。fmt、Clippy、tests、全count/hash gatesはPASS。
-final source/documentation re-reviewはfindingsなし。independent final
-qualityはfindingsなし、全9 hard gates PASS、valid `98/100`。B2CP
-implementation commit
-`b146f0f72dceac2233c9d679b7820e264974b227`はcomplete。
+Completion evidence: [central Task-258B3M2B2B2CP historical contract](../../task_contracts/ja/258B3M2B2B2CP.md#completion-evidence)。
 
 ## Task 258B3M2B2B2C frozen update consumer
 
