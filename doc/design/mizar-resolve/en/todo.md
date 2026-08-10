@@ -885,6 +885,8 @@ Check the task off here once tests pass.
 - [x] Complete final-quality review at **NO FINDINGS**, with all nine hard
   gates passing without a score cap at valid `100/100`
   (`20/20/15/15/10/10/5/5`).
-- [ ] Complete exact staging/cached-diff review, task-only implementation
-  commit, post-commit proof, and fresh successor inventory. Task 277B remains
-  not ready with zero semantic credit.
+- [x] Complete exact staging/cached-diff review, task-only implementation
+  commit, post-commit proof, and fresh successor inventory at the [central
+  historical checkpoint](../../task_contracts/en/RESOLVE-FRAENKEL-GENERATOR-VAR-277R2.md#historical-immediate-post-implementation-checkpoint).
+  No successor is selected; Task 277B remains not ready with zero semantic
+  credit.

@@ -14,7 +14,7 @@ Stable owner sections:
 
 | Field | Frozen value |
 |---|---|
-| Status | The exact five-path Rust implementation is complete. The exact `4 + 1` regressions, resolver and mizar-test library and lint suites, package and workspace Clippy, workspace tests, offline metadata and its suite, formatting, diff, five frozen CLI hashes, and protected path-hash checks are complete. Independent test-sufficiency, implementation, source/documentation/API, bilingual, boundary, and final-quality reviews report **NO FINDINGS**. All nine hard gates pass with no score cap at valid `100/100` (`20/20/15/15/10/10/5/5`). Exact staging/cached-diff review, task-only implementation commit, post-commit proof, and fresh inventory remain pending. Task 277B remains not ready with zero semantic credit. |
+| Status | The exact five-path Rust implementation is complete. The exact `4 + 1` regressions, resolver and mizar-test library and lint suites, package and workspace Clippy, workspace tests, offline metadata and its suite, formatting, diff, five frozen CLI hashes, and protected path-hash checks are complete. Independent test-sufficiency, implementation, source/documentation/API, bilingual, boundary, and final-quality reviews report **NO FINDINGS**. All nine hard gates pass with no score cap at valid `100/100` (`20/20/15/15/10/10/5/5`). Exact staging/cached-diff review, task-only implementation commit, post-commit proof, and fresh inventory are complete in the historical pre-closure checkpoint below. No successor is selected; Task 277B remains not ready with zero semantic credit. |
 | Authority | `doc/spec/en/13.term_expression.md` §§13.4.2, 13.4.4, and 13.8.6; `doc/spec/en/18.templates.md` §18.10.2; the immutable F5 source, expectation, and trace row. |
 | Dependencies | Completed [277R1](./RESOLVE-TEMPLATE-TYPEPARAM-277R1.md) and [277B-L](./277B-L.md) are read-only context. This task creates an independent resolver-owned generator-variable relation and neither extends nor consumes their IDs. |
 | Classification | The classified `source_drift` and Rust `test_gap` are resolved by the bounded implementation and exact regressions. Completion documentation reconciles the corresponding `design_drift`; no `spec_gap` exists. The later sethood decision and missing-sethood verdict remain checker-owned. |
@@ -191,15 +191,27 @@ path sets reproduce exactly. Independent source/documentation/API, bilingual,
 boundary, and final-quality reviews end with **NO FINDINGS**; all nine hard
 gates pass with no score cap at valid `100/100`
 (`20/20/15/15/10/10/5/5`). Exact staging/cached-diff review, task-only
-implementation commit, post-commit proof, and fresh successor inventory remain
-pending.
+implementation commit, post-commit proof, and fresh successor inventory are
+complete in the historical pre-closure checkpoint below.
+
+## Historical Immediate-Post-Implementation Checkpoint
+
+This is a historical, pre-closure record for task-only implementation commit
+`534a8797dc4066f0b07f47dbf440e35369ab80c5`; it does not represent or claim
+the current `HEAD`. Immediately after that commit, read-only inventory observed
+`HEAD=534a8797dc4066f0b07f47dbf440e35369ab80c5`, a clean worktree,
+`origin/main...HEAD=0/13`, and unchanged
+`stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4`.
+
+The exact 27-path implementation commit has path hash
+`43610037f566f01659392ec43c721af6b85ccb28fdbf43a5973b155e6937d62e`.
+Exact staging/cached-diff review, the task-only implementation commit,
+post-commit proof, and fresh successor inventory completed at this historical
+checkpoint. No successor is selected, and Task 277B remains not ready with
+zero semantic credit.
 
 ## Next-task handoff
 
-Complete exact staging/cached-diff review, task-only implementation commit,
-post-commit proof, and fresh successor inventory for
-`RESOLVE-FRAENKEL-GENERATOR-VAR-277R2`. Use GPT-5.6 Sol `xhigh` for authority,
-scope, disputed semantics, and any final scoring dispute; use GPT-5.6 Terra
-`xhigh` for bounded verification and precision reviews. Luna is not exposed in
-this runtime. Escalate every ambiguity or proposed expansion to Sol. Preserve
-Task 277B not-ready status and zero semantic credit.
+No successor is selected by `RESOLVE-FRAENKEL-GENERATOR-VAR-277R2`. Preserve
+Task 277B not-ready status and zero semantic credit. Any later lower transport
+or checker work requires its own frozen authority, scope, and review record.

@@ -10,7 +10,7 @@ Owner plan は [mizar-resolve](../../mizar-resolve/ja/00.crate_plan.md#task-inde
 
 | 項目 | freeze 値 |
 |---|---|
-| Status | exact Rust 5-path implementationはcomplete。exact `4 + 1` regression、resolver/mizar-test library・lint suite、package/workspace Clippy、workspace test、offline metadataとそのsuite、format、diff、five frozen CLI hash、protected path-hash checkはcomplete。independent test-sufficiency、implementation、source/documentation/API、bilingual、boundary、final-quality reviewは**NO FINDINGS**。全9 hard gateはscore capなしvalid `100/100`（`20/20/15/15/10/10/5/5`）でPASS。exact staging/cached-diff review、task-only implementation commit、post-commit proof、fresh inventoryはpending。Task 277Bはnot ready、semantic credit zeroのまま。 |
+| Status | exact Rust 5-path implementationはcomplete。exact `4 + 1` regression、resolver/mizar-test library・lint suite、package/workspace Clippy、workspace test、offline metadataとそのsuite、format、diff、five frozen CLI hash、protected path-hash checkはcomplete。independent test-sufficiency、implementation、source/documentation/API、bilingual、boundary、final-quality reviewは**NO FINDINGS**。全9 hard gateはscore capなしvalid `100/100`（`20/20/15/15/10/10/5/5`）でPASS。exact staging/cached-diff review、task-only implementation commit、post-commit proof、fresh inventoryは下のhistorical pre-closure checkpointでcomplete。successorはselectせず、Task 277Bはnot ready、semantic credit zeroのまま。 |
 | Authority | `doc/spec/en/13.term_expression.md` §§13.4.2、13.4.4、13.8.6、`doc/spec/en/18.templates.md` §18.10.2、immutable F5 source/expectation/trace row。 |
 | Dependencies | complete [277R1](./RESOLVE-TEMPLATE-TYPEPARAM-277R1.md) / [277B-L](./277B-L.md) はread-only context。本taskはindependent resolver-owned generator-variable relationを作り、それらのIDをextend/consumeしない。 |
 | Classification | classified `source_drift`とRust `test_gap`はbounded implementationとexact regressionでresolve。completion documentationが対応する`design_drift`をreconcileし、`spec_gap`はない。後段sethood decision/missing-sethood verdictはchecker-owned。 |
@@ -153,12 +153,25 @@ coverage audit、production runner、resolver manifest/test-list hash、full pro
 reproduceする。independent source/documentation/API、bilingual、boundary、final-quality reviewは
 **NO FINDINGS**、全9 hard gateはscore capなしvalid `100/100`
 （`20/20/15/15/10/10/5/5`）でPASS。exact staging/cached-diff review、task-only implementation
-commit、post-commit proof、fresh successor inventoryはpending。
+commit、post-commit proof、fresh successor inventoryは下のhistorical pre-closure checkpointでcomplete。
+
+## Historical Immediate-Post-Implementation Checkpoint
+
+これはtask-only implementation commit
+`534a8797dc4066f0b07f47dbf440e35369ab80c5`のhistorical pre-closure recordであり、current
+`HEAD`をrepresentまたはclaimしない。このcommit直後のread-only inventoryでは
+`HEAD=534a8797dc4066f0b07f47dbf440e35369ab80c5`、clean worktree、
+`origin/main...HEAD=0/13`、unchanged
+`stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4`をobserveした。
+
+exact 27-path implementation commitのpath hashは
+`43610037f566f01659392ec43c721af6b85ccb28fdbf43a5973b155e6937d62e`。
+exact staging/cached-diff review、task-only implementation commit、post-commit proof、fresh
+successor inventoryはこのhistorical checkpointでcomplete。successorはselectせず、Task 277Bは
+not ready、semantic credit zeroのまま。
 
 ## 次task handoff
 
-`RESOLVE-FRAENKEL-GENERATOR-VAR-277R2` のexact staging/cached-diff review、task-only
-implementation commit、post-commit proof、fresh successor inventoryを完了する。authority/scope/
-disputed semanticsとfinal scoring disputeはGPT-5.6 Sol `xhigh`、bounded verification/precision
-reviewはGPT-5.6 Terra `xhigh`。Lunaはruntimeで未提供。ambiguity/scope expansionはSolへescalateし、
-Task 277B not-ready/semantic-credit-zeroを保持する。
+`RESOLVE-FRAENKEL-GENERATOR-VAR-277R2` はsuccessorをselectしない。Task 277B not-ready/
+semantic-credit-zeroを保持する。後続lower transport/checker workにはseparate frozen authority、
+scope、review recordが必要である。
