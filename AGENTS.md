@@ -128,6 +128,11 @@ when a session exposes per-agent GPT-5.6 model selection. Model availability,
 account limits, and quota accounting are environment properties and must not
 be inferred from API pricing or assumed from this policy.
 
+For exposed GPT-5.6 per-agent selection, this subsection takes precedence over
+the generic reasoning defaults below. A complete frozen assignment is
+sufficient when repository policy does not require a task contract; when a
+contract is required, freeze it before delegation.
+
 - Keep GPT-5.6 Sol at the user-requested reasoning setting for the parent when
   the work can decide authority interpretation, unresolved specification or
   test intent, soundness boundaries, public API ownership, semantic acceptance,
@@ -144,7 +149,10 @@ be inferred from API pricing or assumed from this policy.
 - Use GPT-5.6 Terra with `high` or `xhigh`, when available, as the intermediate
   escalation route for cross-module implementation, precision review, or a
   disagreement that exceeds Luna's bounded assignment but does not yet require
-  a parent semantic decision.
+  a parent semantic decision. Treat `high` as the trial baseline and use
+  `xhigh` only when representative work shows a measured quality gain. Compare
+  the selected setting with one lower setting where the task can be repeated
+  safely, and do not broaden the route without no-regression evidence.
 - Luna output is subject to the same independent reviews, verification, hard
   gates, and commit rules as output from any other model. Lower model cost or a
   higher reasoning setting never substitutes for evidence and never lowers an
@@ -164,7 +172,8 @@ When per-agent reasoning controls are available:
   soundness boundaries, disputed semantics, and final quality scoring
 - use `high` for bounded implementation work and independent specification,
   test-sufficiency, implementation, bilingual, and source/documentation
-  reviews after the parent has frozen the task contract
+  reviews after the parent has frozen the task contract, unless the
+  model-specific routing above requires `xhigh`
 - use `medium` or lower only for deterministic inventory or mechanical checks
   that cannot decide language behavior, test intent, public API, or acceptance
 - escalate any ambiguity, authority disagreement, or proposed scope expansion
