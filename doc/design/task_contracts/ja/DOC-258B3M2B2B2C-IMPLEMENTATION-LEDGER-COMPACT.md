@@ -8,7 +8,7 @@
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-258B3M2B2B2C-IMPLEMENTATION-LEDGER-COMPACT` |
-| Status | documentation prerequisiteのreviews、verification、final qualityはcomplete。exact stagingとdedicated commitが残る。migrationは未開始。 |
+| Status | migration reviews、final verification、independent final qualityはcomplete。exact stagingとdedicated commitが残る。 |
 | Purpose | paired checker TODOが重複する完了済みB2C implementation checklistだけを集約する。 |
 | Historical owner | [Task 258B3M2B2B2C](./258B3M2B2B2C.md#completion-evidence) |
 | Plan indexes | [checker](../../mizar-checker/ja/00.crate_plan.md#task-index)と[runner](../../mizar-test/ja/00.crate_plan.md#task-index) plans |
@@ -104,3 +104,38 @@ gates PASS、score capなし、valid `100/100`（`20/20/15/15/10/10/5/5`）。Lu
 unavailableのためbounded implementation/first-pass reviewsはdocumented Terra
 `high` fallbackを使い、parentはSol `xhigh`を維持した。残るのはexact staging、
 dedicated prerequisite commit、clean replay、その後のseparately frozen migrationだけ。
+
+## Migration Evidence
+
+documentation prerequisiteは
+`f6ee9758f64866420d67951e93d4054c3b01a0eb`としてseparate commit。migration前の
+clean fresh replayはfrozen preimages 2件、immutable source TSV hashes、unchanged
+1000-line ledger、protected no-ops、`origin/main...HEAD=0/8`、protected stashを
+再現した。
+
+selected EN/JA checker TODO sectionsは`258B3M2B2B2C.md#completion-evidence`への
+language-local redirectsになった。exact source diffは`+2/-54`。forbidden headings/
+bodies 2件は消え、neighboring H2 anchors 4件と全unselected TODO sectionsは残る。
+
+ledgerはbyte-sorted rows 8件、batch 1件、batch indexes 4件、redirects 2件、
+source-disjoint `task_ref` 1件だけを追加する。1008 lines、physical SHA-256
+`5a483ef4358eb8c454542761dfc80007acf8a062577d6672549ab68959e3ada5`、
+canonical seven-row SHA-256
+`e1a25734745e7343182e0559d6f96f77260a65b7d0dfa0e28cdfed7990df4bf1`を
+再現し、31 batches、44 canonical tasks、task references 3件、redirects 628件、
+indexes 300件を測定した。second task row/historical Task Indexはない。historical
+contract、source TSV、plans 4件、trace、coverage audit、全protected surfacesは不変。
+
+independent evidence-equivalence、schema/test-sufficiency、bilingual/boundary、
+source/documentation migration reviewsは全て**NO FINDINGS**。exact whole-H2
+splices、retained claims/neighboring anchors、language-local redirects、schema-2
+ownership、hashes/cardinalities、protected no-opsをproveした。
+
+checker/runner lint-policyは各`15/15`、runner metadataは`137/137`、checker/
+runner librariesは`534/534`と`604/604`をPASS。formatting、offline Cargo metadata、
+warnings-denied all-target/all-feature Clippy、full workspace `cargo test`、recursive
+contract/link/fragment/ledger lint、`git diff --check`をPASS。five CLI stdout
+hashesは上記frozen plan/parse/declaration/type/proof valuesを再現し、既知warnings
+23件/errors 0件は不変。independent final read-only qualityは**NO FINDINGS**、全9
+hard gates PASS、score capなし、valid `100/100`（`20/20/15/15/10/10/5/5`）。
+exact 5-path staging、dedicated migration commit、clean post-commit replayが残る。

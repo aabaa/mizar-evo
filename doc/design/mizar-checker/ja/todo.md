@@ -5008,32 +5008,7 @@ Completion evidence: [central Task-258B3M2B2B1B1 historical contract](../../task
   `d6076cc757ce675d1b46a720b4f00805923d3c70`としてseparate commit。
 - [x] fresh-inventoryしてfrozen B2C contractだけをimplement。
 
-## Checker Task 258B3M2B2B2C implementation ledger
-
-- [x] implementationをfrozen checker 3/runner 5 filesに限定し、unrelated
-  formatter/pre-existing semantic churnを残さない。
-- [x] existing public structure-witness APIsとunchanged private B2CP update
-  seamをreuseし、public schema/active corpus caseを追加しない。
-- [x] update `Structure(0)`をtargetとするunnamed witness 1件だけをpublishし、
-  complete Task252/254/256/base ownership graphをpreserve。
-- [x] checker 4/runner 5 tests exactlyを追加しbounded
-  `source_drift`/`test_gap`をclose。
-- [x] focused checker `4/4`、runner `5/5`、checker library `390`、
-  runner library `444`+policy suitesをPASS。
-- [x] final test-sufficiency/implementation reviewsをfindingsなしでcomplete。
-- [x] final sizes、production manifests、test-list hashesをpaired completion
-  docsへrecord。
-- [x] canonical spec、`.miz`、fixtures、expectations、sidecars、trace
-  status/tests、coverage credit、public API、semanticsをunchangedに保つ。
-- [x] broad workspace fmt/Clippy/test verificationをcompleteし、focused
-  `4/4`/`5/5`、sibling `12/12`/`21/21` suitesもPASS。
-- [x] final source/docs consistency re-reviewを**NO FINDINGS**でcomplete。
-- [x] independent final qualityを**NO FINDINGS**、全9 hard gates PASS、
-  valid `98/100`でcomplete。
-- [x] cached diffをauditしdedicated B2C implementation commit
-  `e8373c683448e524cb98edde83fdf8de83a125cd`を作成。
-- [x] clean ahead 8/behind 0 post-commit state、unchanged stashをverifyし、
-  次のdependency-authorized task B3Pをfresh inventory。
+Completion evidence: [central Task-258B3M2B2B2C historical contract](../../task_contracts/ja/258B3M2B2B2C.md#completion-evidence)。
 
 ## Checker Task 258B3M2B2B3P frozen-contract ledger
 
