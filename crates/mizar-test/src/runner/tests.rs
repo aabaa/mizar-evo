@@ -53,6 +53,7 @@ include!("tests/type_elaboration/source_attribute_definition.rs");
 include!("tests/type_elaboration/source_functor_definition.rs");
 include!("tests/type_elaboration/source_mode_definition.rs");
 include!("tests/type_elaboration/source_structure_definition.rs");
+include!("tests/type_elaboration/source_template.rs");
 include!("tests/type_elaboration/source_predicate_definition.rs");
 include!("tests/type_elaboration/source_proof_local_declaration.rs");
 include!("tests/type_elaboration/source_property_implementation.rs");

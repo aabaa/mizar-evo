@@ -3529,5 +3529,12 @@ post-commit fresh inventoryからだけ選択する。
 
 - [x] paired [central contract](../../task_contracts/ja/277A.md) とprivate runner
   owner/audit documentationをprepareする。
-- [ ] cfg-test dormant routeと`task277a_` runner test 4件だけを追加し、dispatcher/
+- [x] cfg-test dormant routeと`task277a_` runner test 4件だけを追加し、dispatcher/
   detail-key/coverage behaviorを作らず`runner.rs`を変更しない。
+- [x] independent reviewを**NO FINDINGS**で完了し、full workspace test、両lint
+  suite、metadata、formatting、Clippy、five CLI replay、protected/count/hash verificationを
+  PASSする。
+- [x] final quality re-reviewを**NO FINDINGS**で完了する。全9 hard gateはscore cap
+  なしでPASSし、有効なscoreは`100/100`（`20/20/15/15/10/10/5/5`）。
+- [ ] exact staging/cached-diff review、task-only commit、clean
+  post-commit/fresh inventoryを完了する。

@@ -5169,8 +5169,11 @@ public dispatcher/active CLI routeはない。
 ## Checker Task 277A Frozen Runner Boundary
 
 [central Task 277A contract](../../task_contracts/ja/277A.md) はcfg-test-only
-`source_template_output` routeとmutation variantをreserveする。frozen direct parser
+`source_template_output` routeとmutation variantをimplementする。frozen direct parser
 nodeだけをselectしindexed all-surface `TypedArena`をconstructし、outputはTyped/
 Resolved経由のneutral checker handoff。detail key/public dispatcher/active CLI path/
-semantic target/coverage creditはない。pending `task277a_` runner tests 4件はexact
-profile、validation/mutation failure、neutral ownership、route isolationをcoverする。
+semantic target/coverage creditはない。`task277a_` runner tests 4件はexact profile、
+validation/mutation failure、neutral ownership、route isolationをcoverする。complete
+runner libraryは`608/608` pass。independent review/final quality re-reviewは**NO
+FINDINGS**、全9 hard gateはscore capなしの有効な`100/100`でPASS。pendingは
+staging/cached-diff review、commit、post-commit proofだけである。

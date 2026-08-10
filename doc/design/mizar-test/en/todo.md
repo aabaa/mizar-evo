@@ -3787,5 +3787,13 @@ the successor is selected only from fresh post-commit inventory.
 
 - [x] Prepare the paired [central contract](../../task_contracts/en/277A.md)
   and private runner owner/audit documentation.
-- [ ] Add only the cfg-test dormant route and four `task277a_` runner tests;
+- [x] Add only the cfg-test dormant route and four `task277a_` runner tests;
   do not add dispatcher/detail-key/coverage behavior or alter `runner.rs`.
+- [x] Complete independent reviews with **NO FINDINGS** and pass full workspace
+  tests, both lint suites, metadata, formatting, Clippy, five CLI replays, and
+  protected/count/hash verification.
+- [x] Complete final quality re-review with **NO FINDINGS**; all nine hard
+  gates PASS without a score cap at valid `100/100`
+  (`20/20/15/15/10/10/5/5`).
+- [ ] Complete exact staging/cached-diff review, task-only commit, and clean
+  post-commit/fresh inventory.

@@ -1927,7 +1927,10 @@ diagnostic、downstream IR entryは作らない。
 ## Task 277A Typed Ownership
 
 [central Task 277A contract](../../task_contracts/ja/277A.md) は`TypedAst`のneutral
-`Option<SourceTemplateHandoff>` slot 1件をreserveする。consuming installerはhandoff
+`Option<SourceTemplateHandoff>` slot 1件をimplementする。consuming installerはhandoff
 validation後のsame-slot duplicateをrejectし、getterはread-only。unrelated semantic
 slotとはcoexistでき、semantic profile/fact/diagnostic/substitution/downstream IRを
-create/gateしない。implementationはpendingである。
+create/gateしない。ownerはworktreeに存在し、independent reviewは**NO FINDINGS**、full
+verificationはPASS。final quality re-reviewも**NO FINDINGS**、全9 hard gateはscore
+capなしの有効な`100/100`でPASS。pendingはstaging/cached-diff review、commit、
+post-commit proofだけである。

@@ -5563,10 +5563,15 @@ There is no public dispatcher or active CLI route.
 
 ## Checker Task 277A Frozen Runner Boundary
 
-The [central Task 277A contract](../../task_contracts/en/277A.md) reserves a
+The [central Task 277A contract](../../task_contracts/en/277A.md) implements a
 cfg-test-only `source_template_output` route and mutation variant. It selects
 only the frozen direct parser nodes and constructs the indexed all-surface
 `TypedArena`; output is the neutral checker handoff through Typed/Resolved.
 There is no detail key, public dispatcher, active CLI path, semantic target,
-or coverage credit. Four pending `task277a_` runner tests cover the exact
-profile, validation/mutation failure, neutral ownership, and route isolation.
+or coverage credit. Four `task277a_` runner tests cover the exact profile,
+validation/mutation failure, neutral ownership, and route isolation. The
+complete runner library passes `608/608`; independent reviews report **NO
+FINDINGS** and full verification passes. Final-quality re-review also reports
+**NO FINDINGS**; all nine hard gates PASS without a score cap at valid
+`100/100`. Only staging/cached-diff review, commit, and post-commit proof remain
+pending.

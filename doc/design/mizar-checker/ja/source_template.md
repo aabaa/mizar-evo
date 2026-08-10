@@ -7,10 +7,16 @@
 
 [central Task 277A contract](../../task_contracts/ja/277A.md) がdirect-parser
 profile、exact five two-row table、public ABI/error order、exclusion、baseline、gateを
-ownする。このownerはそこに定めるsyntax-free `source_template` producerだけを扱う:
+ownする。このownerはそこに定めるsyntax-free `source_template` producerだけをimplementする:
 dense ID、direct TypedArena validation、immutable handoff/table/getter/debug、crate-private
 installation validationであり、resolver/spelling/semantic/substitution/target/verdict
-stateは持たない。implementationはpendingである。
+stateは持たない。source-identity mismatchは`EnvironmentMismatch`がownし、malformedな
+zero-length/inverted row rangeはfamily-local `Invalid*` failureのままにする。worktree
+implementationは`1745` lines、physical SHA-256
+`fdd6ac38557979ed37fd7c9ba13300b8577416e4ebbdaefe64b986f22aceb85b`。
+independent review/final quality re-reviewは**NO FINDINGS**、全9 hard gateはscore
+capなしの有効な`100/100`でPASS。pendingはstaging/cached-diff review、commit、
+post-commit proofだけである。
 
 ## Frozen Public Surface
 

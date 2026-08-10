@@ -269,6 +269,7 @@ fn checker_public_enums_are_forward_compatible_and_documented() {
             "src/source_structure_definition.rs",
             "source_structure_definition.md",
         ),
+        ("src/source_template.rs", "source_template.md"),
         ("src/type_checker.rs", "type_checker.md"),
         (
             "src/registration_resolution.rs",
@@ -424,6 +425,7 @@ fn checker_source_spec_audit_covers_public_surface_and_gaps() {
             "src/source_structure_definition.rs",
             "source_structure_definition",
         ),
+        ("src/source_template.rs", "source_template"),
         ("src/source_term.rs", "source_term"),
         ("src/type_checker.rs", "type_checker"),
         ("src/registration_resolution.rs", "registration_resolution"),
@@ -937,6 +939,7 @@ fn public_checker_api_is_documented(root: &Path, path: &Path, line: &str) -> boo
             || path == Path::new("src/source_proof_local_declaration.rs")
             || path == Path::new("src/source_structure.rs")
             || path == Path::new("src/source_structure_definition.rs")
+            || path == Path::new("src/source_template.rs")
             || path == Path::new("src/type_checker.rs")
             || path == Path::new("src/registration_resolution.rs")
             || path == Path::new("src/cluster_trace.rs")
@@ -969,6 +972,7 @@ fn public_checker_api_is_documented(root: &Path, path: &Path, line: &str) -> boo
                 | "pub mod source_proof_local_declaration;"
                 | "pub mod source_structure;"
                 | "pub mod source_structure_definition;"
+                | "pub mod source_template;"
                 | "pub mod type_checker;"
                 | "pub mod registration_resolution;"
                 | "pub mod cluster_trace;"

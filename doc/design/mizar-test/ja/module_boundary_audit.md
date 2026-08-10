@@ -1,15 +1,16 @@
 # Module-Boundary Audit: mizar-test Runner
 
-Task 269SDU completion evidence: existing proof-local leaf（3495 lines）、
-`#[cfg(test)]` facade 2 hops（971 / 2804 lines）、existing proof-local test leaf
-（10509 lines）がprivate dormant routeを実装する。checkerへcrossするのはsyntax-free
-SDU inputだけで、validationとTyped/final ownershipはchecker ownerのままである。
-productionは37 paths / 79769 linesで、path SHA-256は不変の
-`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d`、current
-content SHA-256は
-`2b642db1b23a8bb932a434ef7914f696951c998748644999486a107057effdfa`である。dispatch、
-CLI、corpus/trace/metadata、Cargo、semantic publication、coverage boundaryは変わらず、
-routeはzero-credit、`z`/`q` captureはblockedのままである。
+Task 277A completion-state evidence: new private production leaf（315 lines）、
+test-only facade（977）、test leaf（313）、test registry（61）がdormant targetless
+routeをimplementする。test leaf physical SHA-256は
+`eaabf36e56ccbe60fd556bd1e74f2dfc143600edbb82831af7be84439395f1c2`。
+checkerへcrossするのはsyntax-free template inputだけで、validationとTyped/final
+ownershipはchecker ownerのまま。productionは38 paths / 80090 lines、path/content
+SHA-256は
+`0ef395004f7feaadf60da0daba7b5da9c52ea4974850adfa2bd9d09081b242aa` /
+`990b5ad4798786d9f87c03f76fdbad92fc2edf1f6d84ef3baad67254c79fdd70`。
+dispatch、CLI、corpus/trace/metadata、Cargo、semantic publication、coverage boundaryは
+変わらず、routeはzero-creditである。
 
 ## Checker Task 257B1 formula-composition current-state addendum
 
@@ -11821,11 +11822,16 @@ excluded ownership/active boundaryは全て不変。
 
 ## Checker Task 277A Frozen Runner Boundary
 
-[central Task 277A contract](../../task_contracts/ja/277A.md) はnew cfg-test
+[central Task 277A contract](../../task_contracts/ja/277A.md) はimplemented cfg-test
 source-template leaf、type-elaboration facade、test leaf、test module registrationだけを
 permitし、`runner.rs`はexcludeする。runnerはparser nodeをselectしてTypedArenaをbuildする
 だけで、checkerがsole producer/Typed/Resolved ownerである。public dispatch/artifact/
 diagnostic/fixture/expectation/trace/metadata/semantic routeはboundary外。
+runner libraryは`608`、raw-list SHA-256
+`1025494e7948e8997a522178b0e8f409effee7c350e8527d32412863af73e3d6`。
+independent review/final quality re-reviewは**NO FINDINGS**、全9 hard gateはscore
+capなしの有効な`100/100`でPASS。pendingはstaging/cached-diff review、commit、
+post-commit proofだけである。
 
 ## Checker Task 269GT frozen runner boundary
 

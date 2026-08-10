@@ -25,17 +25,17 @@ remain aligned with their owning specifications.
 
 ## Source Layout Inventory
 
-Task 269SDU keeps the production layout at 30 paths / 186162 lines, with
-unchanged path SHA-256
-`c89f43f6abebf7ebeb3ac9394ecd8ea3186ad28934c75526d2cc0b85a66ebad5` and
-current content SHA-256
-`aeb472fb32ba2c3252b65fc9b0ceb81001a1b36a6486834bec113bd2bc4142fb`.
-The three changed cohesive owners are measured in their rows below.
+Task 277A grows the production layout to 31 paths / 187955 lines, with path
+SHA-256
+`3235caf1ca8f89617e7db3993f1421547b76b8d203a4d6a550201de4050beebd`
+and current content SHA-256
+`eda7f987a775f008de2cfe46aa1e47c256f442980c7e554dd0799b8d63f440ad`.
+The new and changed cohesive owners are measured in their rows below.
 
 | Path | Lines | Boundary label | Owning specification | Split required | Hard-gate finding | Decision |
 |---|---:|---|---|---|---|---|
-| `src/lib.rs` | 51 | crate boundary and public module exports | `00.crate_plan.md` and `source_spec_audit.md` | no | no | Keep as the crate root; it exports the documented syntax-free formula-composition, definition, statement, and Task-269A proof-local declaration source modules. |
-| `src/typed_ast.rs` | 6869 | typed AST data model | `typed_ast.md` | no | no | Large but cohesive typed-AST tables, validation, rendering, and one-shot handoffs, including mutually exclusive Task-259--264 definition transactions and separate Task-269A/B plus privately boxed Task-269C/269CT/269G/269GT/269GUPT/269GU/269GC/269GCT/269GCU/269SDC/269SDT/269SDU proof-local owners; monitor ergonomics after downstream use. |
+| `src/lib.rs` | 52 | crate boundary and public module exports | `00.crate_plan.md` and `source_spec_audit.md` | no | no | Keep as the crate root; it exports the documented syntax-free formula-composition, definition, statement, proof-local declaration, and Task-277A source-template modules. |
+| `src/typed_ast.rs` | 6897 | typed AST data model | `typed_ast.md` | no | no | Large but cohesive typed-AST tables, validation, rendering, and one-shot handoffs, including definition transactions, separate proof-local owners, and the neutral Task-277A source-template slot; monitor ergonomics after downstream use. |
 | `src/binding_env.rs` | 3168 | binding environment and resolver shell boundary | `binding_env.md` | no | no | Cohesive binding/context data layer, including source-formula, Task-258B1 statement-context identity, the unchanged Task-258B2 context contract, and exact Task-269A/269G installed-local tests; no behavior-neutral split required. |
 | `src/source_context.rs` | 1727 | syntax-free source-item and binding-context producer | `source_context.md` | no | no | Cohesive Task-248 validation, table construction, recovery, handoff, and boundary tests; no split required. |
 | `src/source_atomic_formula.rs` | 8511 | syntax-free source atomic-formula producer | `source_atomic_formula.md` | no | no | Cohesive Task-256/257C1 nine-table association, resolver provenance, predicate-segment/shared-boundary validation, cross-family ownership/fingerprint validation, deterministic rendering, install checks, compatibility literals, and test-only dependency corruption seams; no split required. |
@@ -53,6 +53,7 @@ The three changed cohesive owners are measured in their rows below.
 | `src/source_set_term.rs` | 6806 | syntax-free source set-term producer | `source_set_term.md` | no | no | Cohesive Task-255/255C1 seven-table association, condition-subtree exclusion, cross-family ownership/fingerprint validation, deterministic rendering, install checks, and corruption tests; no split required. |
 | `src/source_statement.rs` | 52266 | syntax-free source statement producer | `source_statement.md` | no | no | Cohesive Task-258 statement/witness transactions and their corruption matrices; the same four Task-269 tests reuse the private exact B3N/B3M1 fixtures, including all-field arena and isolated cross-profile rejection, while production proof-local ownership remains in its dedicated module. |
 | `src/source_proof_local_declaration.rs` | 8606 | syntax-free proof-local declaration producer | `source_proof_local_declaration.md` | no | no | Cohesive Task-269A/B named-witness, Task-269C proof-`let`, Task-269G proof-`given`, Task-269GUP/269GC/269SDC binding transactions, exact lower and independent theorem authentication, resolver-local lexical binding/context transitions and lookup replay, deterministic rendering, exhaustive corruption replay, and owner validation; no syntax, type, occurrence, Set-binding, capture, condition, fact, or proof-semantic ownership. |
+| `src/source_template.rs` | 1745 | syntax-free direct template transport | `source_template.md` | no | no | Cohesive Task-277A five-table targetless producer, TypedArena validation, immutable rendering, and four checker tests; physical SHA-256 is `fdd6ac38557979ed37fd7c9ba13300b8577416e4ebbdaefe64b986f22aceb85b`. |
 | `src/source_structure.rs` | 5036 | syntax-free source structure-term producer | `source_structure.md` | no | no | Cohesive Task-254 term/wrapper/root/member/field-update/edge/request tables, written-partition and cross-family dependency/provenance validation, deterministic rendering, and corruption tests; no split required. |
 | `src/source_structure_definition.rs` | 1773 | syntax-free source structure-definition producer | `source_structure_definition.md` | no | no | Cohesive Task-263 definition/member/inheritance/mapping/coherence tables, private resolver/baseline snapshots, exact contribution-effect and own-domain obligation validation, deterministic rendering, and compound precedence tests; production remains syntax-free. |
 | `src/source_type.rs` | 14321 | syntax-free source-type application producer | `source_type.md` | no | no | Cohesive Task-249 flat/extension families plus exact Task-269CT/269GT/269GUPT/269GCT/269SDT proof-local composites, environment/arena/form/graph/provenance validation, deterministic rendering, exhaustive corruption tests, and cfg(test)-only corruption seams; production remains syntax-free and no split is required. |
@@ -60,9 +61,9 @@ The three changed cohesive owners are measured in their rows below.
 | `src/registration_resolution.rs` | 5897 | phase-7 registration validation, activation, and existential gates | `registration_resolution.md` | no | no | Cohesive registration data layer, gate logic, and Task-259/260/264 obligation-kind serializers; no behavior-neutral split required. |
 | `src/cluster_trace.rs` | 3948 | cluster closure and reduction trace recording | `cluster_trace.md` | no | no | Cohesive trace/replay module; no behavior-neutral split required. |
 | `src/overload_resolution.rs` | 8004 | phase-8 overload pipeline | `overload_resolution.md` | no | no | Large but cohesive overload collection, template expansion, viability, specificity, selection, rendering, and tests; monitor ergonomics after downstream use. |
-| `src/resolved_typed_ast.rs` | 8889 | final resolved typed AST assembly | `resolved_typed_ast.md` | no | no | Cohesive final projection module, including clone-preserving Task-259--264 definition handoffs and complete, mutually exclusive Task-269A/B plus privately boxed Task-269C/269CT/269G/269GT/269GUPT/269GU/269GC/269GCT/269GCU/269SDC/269SDT/269SDU proof-local replay; no behavior-neutral split required. |
+| `src/resolved_typed_ast.rs` | 8908 | final resolved typed AST assembly | `resolved_typed_ast.md` | no | no | Cohesive final projection module, including clone-preserving definition and proof-local handoffs plus neutral Task-277A source-template replay; no behavior-neutral split required. |
 | `src/determinism_suite.rs` | 1101 | test-only cross-module determinism suite | `00.crate_plan.md` and `source_spec_audit.md` | no | no | Keep as private `#[cfg(test)]` crate support. |
-| `tests/lint_policy.rs` | 1941 | cross-cutting policy and audit guards | `source_spec_audit.md`, `bilingual_sync_audit.md`, and `module_boundary_audit.md` | no | no | Centralized policy guardrails include Task-259--264 and Task-269A module/spec/public-enum coverage and the unchanged production syntax boundary. |
+| `tests/lint_policy.rs` | 1945 | cross-cutting policy and audit guards | `source_spec_audit.md`, `bilingual_sync_audit.md`, and `module_boundary_audit.md` | no | no | Centralized policy guardrails include Task-259--264, Task-269A, and Task-277A module/spec/public-enum coverage and the unchanged production syntax boundary. |
 | `tests/support/source_attribute_definition_unit.rs` | 1070 | test-only Task-261 unit-test support | `source_attribute_definition.md` and this audit | no | no | Non-integration child support for the exact producer, obligation preservation, corruption, ownership, replay, and cfg(test)-only Task-262 reverse-isolation fixture. |
 | `tests/support/source_functor_definition_unit.rs` | 3798 | test-only Task-260 unit-test support | `source_functor_definition.md` and this audit | no | no | Non-integration child support; cfg(test)-only helpers reuse actual Task-259/260 producers for Task-261 and Task-263 reverse-isolation checks without changing production ownership. |
 | `tests/support/source_mode_definition_unit.rs` | 1237 | test-only Task-262 unit-test support | `source_mode_definition.md` and this audit | no | no | Non-integration child support for exact rows, obligation suffixes, Typed/final replay, all sibling-family installation orders, and the cfg(test)-only Task-263 mode projection/owner fixture. |
@@ -1644,12 +1645,16 @@ all downstream owners remain outside the boundary.
 ## Task 277A Frozen Module Boundary
 
 The [central Task 277A contract](../../task_contracts/en/277A.md) confines the
-future checker change to `source_template.rs`, its export, neutral
+implemented checker change to `source_template.rs`, its export, neutral
 Typed/Resolved installation, and the generic module/public-API/public-enum
 inventory entries in `tests/lint_policy.rs`. The runner owns cfg-test-only
 extraction and tests, not semantics. `runner.rs`, parser/syntax/resolver owners, active
 dispatch, artifacts, diagnostics, fixture metadata, traceability, and semantic
 profile gates are outside this boundary.
+The worktree inventory is `31/187955` with the path/content hashes above.
+Independent reviews and final-quality re-review report **NO FINDINGS**; all
+nine hard gates PASS without a score cap at valid `100/100`. Only
+staging/cached-diff review, commit, and post-commit proof remain pending.
 
 ## Task 269GT Frozen Boundary
 

@@ -167,6 +167,7 @@ ControlFlowIr、VC payload、proof evidence の AST-wide source-to-checker gap �
 - `source_proof_local_declaration`
 - `source_structure`
 - `source_structure_definition`
+- `source_template`
 - `source_term`
 - `source_type`
 - `type_checker`
@@ -439,10 +440,10 @@ literal top-level public item:
 
 | 仕様上の約束 | source根拠 | test根拠 | 状態 |
 |---|---|---|---|
-| Chapter 18のdirect parameter/loci/argument syntaxをtarget/theorem semanticsなしでtransportする。 | `src/source_template.rs`のfrozen five-table input/handoff API。 | checker 4件/private real-frontend runner 4件。 | Task 277A向けにfreeze、implementation pending。 |
-| parent/child TypedArena adjacency、dense order、range、recovery、duplicate-site ruleをfail closedにする。 | `SourceTemplateProducer::build`とcrate-private installation validation。 | exact/corrupted parent/group/order/environment test。 | repair/sortなしでtransactionalにfreeze。 |
-| Typed/final ownerがsemantic profileを変えずneutral slot 1件をpreserveする。 | `TypedAst::with_source_template`と`ResolvedTypedAst::source_template`。 | duplicate install、final replay、deterministic clone、semantic-isolation test。 | coexistent parser-origin evidenceとしてfreeze。 |
-| public surface/enumをdocumentしforward-compatibleに保つ。 | five ID、six input aggregate、four data/error enum、five row/table pair、handoff/producer。public enumは全てnon-exhaustive。 | public-enum/source-spec-audit lint policy。 | exhaustive/syntax-dependency exceptionなしでfreeze。 |
+| Chapter 18のdirect parameter/loci/argument syntaxをtarget/theorem semanticsなしでtransportする。 | `src/source_template.rs`のimplemented five-table input/handoff API。 | checker 4件/private real-frontend runner 4件。 | Task 277A向けworktree implementation済み。 |
+| parent/child TypedArena adjacency、dense order、range、recovery、duplicate-site ruleをfail closedにする。 | `SourceTemplateProducer::build`とcrate-private installation validation。 | exact/corrupted parent/group/order/environment test。 | repair/sortなしでtransactionalにimplement済み。 |
+| Typed/final ownerがsemantic profileを変えずneutral slot 1件をpreserveする。 | `TypedAst::with_source_template`と`ResolvedTypedAst::source_template`。 | duplicate install、final replay、deterministic clone、semantic-isolation test。 | coexistent parser-origin evidenceとしてimplement済み。 |
+| public surface/enumをdocumentしforward-compatibleに保つ。 | five ID、six input aggregate、four data/error enum、five row/table pair、handoff/producer。public enumは全てnon-exhaustive。 | public-enum/source-spec-audit lint policy。 | exhaustive/syntax-dependency exceptionなしでimplement済み。 |
 
 bounded gap: Task 277Aはresolved template target、formal-to-actual association、
 actual kind、substitution request/result、scheme/theorem role、algorithm role、guard、
@@ -5653,15 +5654,17 @@ fact/proof semanticはsource behaviorから推測せずopenのまま。
 [central Task 277A contract](../../task_contracts/ja/277A.md) はTemplates Chapter 18の
 direct parser-origin Parameter/Loci/Locus/Arguments/Argument grammar roleだけを
 syntax-free/targetless transport profileへmapする。exact fixtureはscheme/theorem source
-role、algorithm、pred/func schema parameterを持たない。missing durable owner/source
-producer/focused testは順に`design_drift`/`source_drift`/`test_gap`であり、矛盾する
+role、algorithm、pred/func schema parameterを持たない。implemented durable owner/source
+producer/focused testはbounded `design_drift`/`source_drift`/`test_gap`をcloseし、矛盾する
 algorithm wordingはdeferred `spec_gap`のまま。expectation/coverage statusは変えず、
-implementationはpendingである。
+targetless/no-impact boundaryを維持する。
 
-future public surfaceは上記`source_template`にinventory済み。implementationは同じ
-logical taskでmodule/export、public-surface、public enum 4件をpaired current
-inventoryとchecker `tests/lint_policy.rs`へ追加する。このpolicy-only ninth Rust pathは
-behavior/test countを追加しない。
+current public surfaceは上記`source_template`にinventory済み。module/export、
+public-surface、public enum 4件はpaired current inventoryとchecker
+`tests/lint_policy.rs`に存在する。このpolicy-only ninth Rust pathはbehavior/test countを
+追加しない。independent review/final quality re-reviewは**NO FINDINGS**、全9 hard
+gateはscore capなしの有効な`100/100`でPASS。pendingはstaging/cached-diff review、
+commit、post-commit proofだけである。
 
 ## Task 269GT source/API delta
 

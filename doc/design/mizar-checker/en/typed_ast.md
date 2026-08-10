@@ -2060,9 +2060,13 @@ entry is created.
 
 ## Task 277A Typed Ownership
 
-The [central Task 277A contract](../../task_contracts/en/277A.md) reserves one
+The [central Task 277A contract](../../task_contracts/en/277A.md) implements one
 neutral `Option<SourceTemplateHandoff>` slot on `TypedAst`. Its consuming
 installer rejects duplicate same-slot installation after handoff validation;
 the getter is read-only. It may coexist with unrelated semantic slots and does
 not create or gate semantic profiles, facts, diagnostics, substitutions, or
-downstream IR. Implementation is pending.
+downstream IR. The owner is present in the worktree; independent reviews report
+**NO FINDINGS** and full verification passes. Final-quality re-review also
+reports **NO FINDINGS**; all nine hard gates PASS without a score cap at valid
+`100/100`. Only staging/cached-diff review, commit, and post-commit proof remain
+pending.

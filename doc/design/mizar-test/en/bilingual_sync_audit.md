@@ -1833,6 +1833,10 @@ canonical in English; no synchronization exception is recorded.
 The canonical [EN contract](../../task_contracts/en/277A.md) and [JA
 companion](../../task_contracts/ja/277A.md) synchronize the cfg-test-only
 runner boundary, all-surface arena construction, no-dispatch/no-detail-key
-rule, four pending runner tests, nine-Rust-path plus 24-completion-doc shared
-scope, and no-impact decisions. English exact identifiers and fixture bytes
-are canonical.
+rule, four implemented runner tests, nine-Rust-path plus 24-completion-doc
+shared scope, measured evidence, final-quality result, and no-impact decisions.
+English exact identifiers and fixture bytes are canonical. No synchronization
+exception is recorded; independent bilingual review reports **NO FINDINGS**
+and full verification passes. Final-quality re-review also reports **NO
+FINDINGS**; all nine hard gates PASS without a score cap at valid `100/100`.
+Only staging/cached-diff review, commit, and post-commit proof remain pending.

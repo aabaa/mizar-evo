@@ -6825,6 +6825,14 @@ selected only from fresh post-commit inventory.
 
 - [x] Prepare the paired [central contract](../../task_contracts/en/277A.md),
   owner links, Task Index rows, and documentation-only review surface.
-- [ ] Implement only the frozen neutral transport and eight `task277a_` tests;
+- [x] Implement only the frozen neutral transport and eight `task277a_` tests;
   preserve targetless raw suffix meaning, inactive routing, and all no-impact
   exclusions.
+- [x] Complete independent reviews with **NO FINDINGS** and pass full workspace
+  tests, both lint suites, metadata, formatting, Clippy, five CLI replays, and
+  protected/count/hash verification.
+- [x] Complete final quality re-review with **NO FINDINGS**; all nine hard
+  gates PASS without a score cap at valid `100/100`
+  (`20/20/15/15/10/10/5/5`).
+- [ ] Complete exact staging/cached-diff review, task-only commit, and clean
+  post-commit/fresh inventory.

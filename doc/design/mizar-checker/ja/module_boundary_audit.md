@@ -24,16 +24,16 @@ note として記録する。
 
 ## Source Layout Inventory
 
-Task 269SDU後もproduction layoutは30 paths / 186162 linesで、path SHA-256は不変の
-`c89f43f6abebf7ebeb3ac9394ecd8ea3186ad28934c75526d2cc0b85a66ebad5`、current
+Task 277Aはproduction layoutを31 paths / 187955 linesへ増やし、path SHA-256は
+`3235caf1ca8f89617e7db3993f1421547b76b8d203a4d6a550201de4050beebd`、current
 content SHA-256は
-`aeb472fb32ba2c3252b65fc9b0ceb81001a1b36a6486834bec113bd2bc4142fb`である。
-変更したcohesive owner 3件のmeasurementは下のrowに記録する。
+`eda7f987a775f008de2cfe46aa1e47c256f442980c7e554dd0799b8d63f440ad`である。
+new/changed cohesive ownerのmeasurementは下のrowに記録する。
 
 | Path | Lines | Boundary label | Owning specification | Split required | Hard-gate finding | Decision |
 |---|---:|---|---|---|---|---|
-| `src/lib.rs` | 51 | crate boundary and public module exports | `00.crate_plan.md` and `source_spec_audit.md` | no | no | documented syntax-free formula-composition、definition、statement、Task-269A proof-local declaration source moduleをexportするcrate root。 |
-| `src/typed_ast.rs` | 6869 | typed AST data model | `typed_ast.md` | no | no | mutually exclusive Task-259--264 definition transactionとseparate Task-269A/B、private boxed Task-269C/269CT/269G/269GT/269GUPT/269GU/269GC/269GCT/269GCU/269SDC/269SDT/269SDU proof-local ownerを含むcohesive typed-AST table/validation/rendering/one-shot handoff。 |
+| `src/lib.rs` | 52 | crate boundary and public module exports | `00.crate_plan.md` and `source_spec_audit.md` | no | no | documented syntax-free formula-composition、definition、statement、proof-local declaration、Task-277A source-template moduleをexportするcrate root。 |
+| `src/typed_ast.rs` | 6897 | typed AST data model | `typed_ast.md` | no | no | definition transaction、separate proof-local owner、neutral Task-277A source-template slotを含むcohesive typed-AST table/validation/rendering/one-shot handoff。 |
 | `src/binding_env.rs` | 3168 | binding environment and resolver shell boundary | `binding_env.md` | no | no | source-formula、Task-258B1 statement-context identity、Task-258B2がreuseするunchanged context contract、exact Task-269A/269G installed-local testを含むcohesiveなbinding/context data layer。behavior-neutral splitは不要。 |
 | `src/source_context.rs` | 1727 | syntax-free source-item / binding-context producer | `source_context.md` | no | no | cohesive な Task-248 validation、table construction、recovery、handoff、boundary test。split不要。 |
 | `src/source_atomic_formula.rs` | 8511 | syntax-free source atomic-formula producer | `source_atomic_formula.md` | no | no | cohesiveなTask-256/257C1 nine-table association、resolver provenance、predicate-segment/shared-boundary validation、cross-family ownership/fingerprint validation、deterministic rendering、install check、compatibility literal、test-only dependency corruption seam。split不要。 |
@@ -51,6 +51,7 @@ content SHA-256は
 | `src/source_set_term.rs` | 6806 | syntax-free source set-term producer | `source_set_term.md` | no | no | cohesiveなTask-255/255C1 seven-table association、condition-subtree exclusion、cross-family ownership/fingerprint validation、deterministic rendering、install check、corruption test。split不要。 |
 | `src/source_statement.rs` | 52266 | syntax-free source statement producer | `source_statement.md` | no | no | cohesiveなTask-258 statement/witness transactionとcorruption matrix。同じTask-269 test 4件がprivate exact B3N/B3M1 fixtureをreuseしてall-field arenaとisolated cross-profile rejectionを含め、production proof-local ownershipはdedicated moduleに置く。 |
 | `src/source_proof_local_declaration.rs` | 8606 | syntax-free proof-local declaration producer | `source_proof_local_declaration.md` | no | no | cohesiveなTask-269A/B named-witness、Task-269C proof-`let`、Task-269G proof-`given`、Task-269GUP/269GC/269SDC binding transaction、exact lower/independent theorem authentication、resolver-local lexical binding/context transition/lookup replay、deterministic rendering、exhaustive corruption replay、owner validation。syntax/type/occurrence/Set binding/capture/condition/fact/proof semantic ownershipなし。 |
+| `src/source_template.rs` | 1745 | syntax-free direct template transport | `source_template.md` | no | no | cohesiveなTask-277A five-table targetless producer、TypedArena validation、immutable rendering、checker test 4件。physical SHA-256は`fdd6ac38557979ed37fd7c9ba13300b8577416e4ebbdaefe64b986f22aceb85b`。 |
 | `src/source_structure.rs` | 5036 | syntax-free source structure-term producer | `source_structure.md` | no | no | cohesiveなTask-254 term/wrapper/root/member/field-update/edge/request table、written-partition/cross-family dependency/provenance validation、deterministic rendering、corruption test。split不要。 |
 | `src/source_structure_definition.rs` | 1773 | syntax-free source structure-definition producer | `source_structure_definition.md` | no | no | cohesiveなTask-263 definition/member/inheritance/mapping/coherence table、private resolver/baseline snapshot、exact contribution-effect/own-domain obligation validation、deterministic rendering、compound precedence test。productionはsyntax-free。 |
 | `src/source_type.rs` | 14321 | syntax-free source-type application producer | `source_type.md` | no | no | cohesiveなTask-249 flat/extension family、exact Task-269CT/269GT/269GUPT/269GCT/269SDT proof-local composite、environment/arena/form/graph/provenance validation、deterministic rendering、exhaustive corruption test、cfg(test)-only corruption seam。productionはsyntax-freeでsplit不要。 |
@@ -58,9 +59,9 @@ content SHA-256は
 | `src/registration_resolution.rs` | 5897 | phase-7 registration validation, activation, and existential gates | `registration_resolution.md` | no | no | cohesiveなregistration data layer、gate logic、Task-259/260/264 obligation-kind serializer。behavior-neutral splitは不要。 |
 | `src/cluster_trace.rs` | 3948 | cluster closure and reduction trace recording | `cluster_trace.md` | no | no | cohesive な trace/replay module。behavior-neutral split は不要。 |
 | `src/overload_resolution.rs` | 8004 | phase-8 overload pipeline | `overload_resolution.md` | no | no | overload collection、template expansion、viability、specificity、selection、rendering、test は大きいが cohesive。downstream 利用後の ergonomics を monitor する。 |
-| `src/resolved_typed_ast.rs` | 8889 | final resolved typed AST assembly | `resolved_typed_ast.md` | no | no | Task-259--264 definition handoffのclone-preserveとmutually exclusiveなTask-269A/B、private boxed Task-269C/269CT/269G/269GT/269GUPT/269GU/269GC/269GCT/269GCU/269SDC/269SDT/269SDU complete proof-local replayを含むcohesive final projection。 |
+| `src/resolved_typed_ast.rs` | 8908 | final resolved typed AST assembly | `resolved_typed_ast.md` | no | no | clone-preserving definition/proof-local handoffとneutral Task-277A source-template replayを含むcohesive final projection。 |
 | `src/determinism_suite.rs` | 1101 | test-only cross-module determinism suite | `00.crate_plan.md` and `source_spec_audit.md` | no | no | private `#[cfg(test)]` crate support として維持する。 |
-| `tests/lint_policy.rs` | 1941 | cross-cutting policy and audit guards | `source_spec_audit.md`, `bilingual_sync_audit.md`, and `module_boundary_audit.md` | no | no | Task-259--264とTask-269A module/spec/public-enum coverage、unchanged syntax boundaryをcentral guardする。 |
+| `tests/lint_policy.rs` | 1945 | cross-cutting policy and audit guards | `source_spec_audit.md`, `bilingual_sync_audit.md`, and `module_boundary_audit.md` | no | no | Task-259--264、Task-269A、Task-277A module/spec/public-enum coverage、unchanged syntax boundaryをcentral guardする。 |
 | `tests/support/source_attribute_definition_unit.rs` | 1070 | test-only Task-261 unit-test support | `source_attribute_definition.md` and this audit | no | no | exact producer、obligation preservation、corruption、ownership、replay、cfg(test)-only Task-262 reverse-isolation fixture用non-integration child support。 |
 | `tests/support/source_functor_definition_unit.rs` | 3798 | test-only Task-260 unit-test support | `source_functor_definition.md` and this audit | no | no | cfg(test)-only helperがactual Task-259/260 producerをTask-261/263 reverse-isolationにreuseしproduction ownershipを変えない。 |
 | `tests/support/source_mode_definition_unit.rs` | 1237 | test-only Task-262 unit-test support | `source_mode_definition.md` and this audit | no | no | exact row、obligation suffix、Typed/final replay、全sibling-family installation order、cfg(test)-only Task-263 mode projection/owner fixture用support。 |
@@ -1576,12 +1577,16 @@ private dormant consumerをownする。raw AST/resolver/sourceはrunnerで停止
 
 ## Task 277A Frozen Module Boundary
 
-[central Task 277A contract](../../task_contracts/ja/277A.md) はfuture checker changeを
+[central Task 277A contract](../../task_contracts/ja/277A.md) はimplemented checker changeを
 `source_template.rs`、そのexport、neutral Typed/Resolved installation、
 `tests/lint_policy.rs`のgeneric module/public-API/public-enum inventory entryに限定する。
 runnerはcfg-test-only extraction/testだけをownしsemanticはownしない。`runner.rs`、
 parser/syntax/resolver owner、active dispatch、artifact、diagnostic、fixture metadata、
 traceability、semantic profile gateはboundary外である。
+worktree inventoryは上記path/content hashによる`31/187955`。independent reviewは
+**NO FINDINGS**でfull verificationはPASS。final quality re-reviewも**NO FINDINGS**、
+全9 hard gateはscore capなしの有効な`100/100`でPASS。pendingはstaging/cached-diff
+review、commit、post-commit proofだけである。
 
 ## Task 269GT frozen boundary
 

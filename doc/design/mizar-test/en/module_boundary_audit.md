@@ -1,16 +1,16 @@
 # Module-Boundary Audit: mizar-test Runner
 
-Task 269SDU completion evidence: the existing proof-local leaf (3495 lines),
-its two `#[cfg(test)]` facade hops (971 / 2804 lines), and the existing
-proof-local test leaf (10509 lines) implement the private dormant route. Only
-syntax-free SDU input crosses to checker; validation and Typed/final ownership
-remain checker-owned. Production remains 37 paths / 79769 lines with unchanged
-path SHA-256 `1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d`
-and current content SHA-256
-`2b642db1b23a8bb932a434ef7914f696951c998748644999486a107057effdfa`.
+Task 277A completion-state evidence: the new private production leaf (315
+lines), test-only facade (977), test leaf (313), and test registry (61)
+implement the dormant targetless route. The test leaf physical SHA-256 is
+`eaabf36e56ccbe60fd556bd1e74f2dfc143600edbb82831af7be84439395f1c2`.
+Only syntax-free template input crosses to checker; validation and Typed/final
+ownership remain checker-owned. Production is 38 paths / 80090 lines with
+path/content SHA-256
+`0ef395004f7feaadf60da0daba7b5da9c52ea4974850adfa2bd9d09081b242aa` /
+`990b5ad4798786d9f87c03f76fdbad92fc2edf1f6d84ef3baad67254c79fdd70`.
 No dispatch, CLI, corpus/trace/metadata, Cargo, semantic publication, or
-coverage boundary changes; the route remains zero-credit and `z`/`q` capture
-stays blocked.
+coverage boundary changes; the route remains zero-credit.
 
 ## Checker Task 257B1 Formula-Composition Current-State Addendum
 
@@ -13118,11 +13118,16 @@ All excluded ownership and active boundaries remain unchanged.
 ## Checker Task 277A Frozen Runner Boundary
 
 The [central Task 277A contract](../../task_contracts/en/277A.md) permits only
-the new cfg-test source-template leaf, type-elaboration facade, test leaf, and
+the implemented cfg-test source-template leaf, type-elaboration facade, test leaf, and
 test module registration. `runner.rs` is excluded. The runner selects parser
 nodes and builds a TypedArena only; checker remains the sole producer and
 Typed/Resolved owner. Public dispatch, artifacts, diagnostics, fixtures,
 expectations, trace, metadata, and semantic routes remain outside the boundary.
+Runner library state is `608` with raw-list SHA-256
+`1025494e7948e8997a522178b0e8f409effee7c350e8527d32412863af73e3d6`.
+Independent reviews and final-quality re-review report **NO FINDINGS**; all
+nine hard gates PASS without a score cap at valid `100/100`. Only
+staging/cached-diff review, commit, and post-commit proof remain pending.
 
 ## Checker Task 269GT Frozen Runner Boundary
 

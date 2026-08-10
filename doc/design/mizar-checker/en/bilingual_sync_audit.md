@@ -1846,7 +1846,10 @@ English; no synchronization exception is recorded.
 The canonical [EN contract](../../task_contracts/en/277A.md) and [JA
 companion](../../task_contracts/ja/277A.md) synchronize the exact fixture
 fingerprints, five two-row tables, targetless meaning, ABI/error order,
-nine-Rust-path future implementation scope, 24 completion-doc paths,
-no-impact decisions, and pending status. English exact identifiers,
+implemented nine-Rust-path scope, 24 completion-doc paths, measured evidence,
+no-impact decisions, and the uncapped final-quality result. English exact identifiers,
 signatures, hashes, and ranges are
-canonical. No synchronization exception is recorded.
+canonical. No synchronization exception is recorded; independent bilingual
+review and final-quality re-review report **NO FINDINGS**; all nine hard gates
+PASS without a score cap at valid `100/100`. Only staging/cached-diff review,
+commit, and post-commit proof remain pending.

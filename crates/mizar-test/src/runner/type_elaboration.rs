@@ -25,6 +25,8 @@ mod source_set_term;
 mod source_statement;
 mod source_structure;
 mod source_structure_definition;
+#[cfg(test)]
+mod source_template;
 mod source_term;
 mod source_type;
 mod type_assertion_routes;
@@ -726,6 +728,10 @@ pub(super) use source_structure_definition::source_structure_definition_transpor
 pub(super) use source_structure_definition::{
     SOURCE_STRUCTURE_DEFINITION_TEXT, SourceStructureDefinitionRouteMutation,
     source_structure_definition_output, source_structure_definition_output_with_mutation,
+};
+#[cfg(test)]
+pub(super) use source_template::{
+    SOURCE_TEMPLATE_TEXT, source_template_output, source_template_output_with_mutation,
 };
 pub(super) use source_term::source_term_transport_error_detail_keys;
 #[cfg(test)]

@@ -1910,7 +1910,9 @@ payloadをpublishしない。
 ## Task 277A Resolved Ownership
 
 [central Task 277A contract](../../task_contracts/ja/277A.md) は`ResolvedTypedAst`の
-matching neutral `Option<SourceTemplateHandoff>` slotをreserveする。final installationは
+matching neutral `Option<SourceTemplateHandoff>` slotをimplementする。final installationは
 immutable Typed handoffをrevalidateしてcloneし、same-slot duplicateをrejectする。
 unrelated semantic ownerとはcoexistでき、semantic profile/acceptance gateを追加しない。
-implementationはpendingである。
+ownerはworktreeに存在し、independent reviewは**NO FINDINGS**、full verificationは
+PASS。final quality re-reviewも**NO FINDINGS**、全9 hard gateはscore capなしの有効な
+`100/100`でPASS。pendingはstaging/cached-diff review、commit、post-commit proofだけ。

@@ -44,6 +44,7 @@ use crate::{
     },
     source_structure::SourceStructureHandoff,
     source_structure_definition::SourceStructureDefinitionHandoff,
+    source_template::SourceTemplateHandoff,
     source_term::{
         SourcePrimaryTermHandoff, SourceProofLocalGivenConditionUseTermHandoff,
         SourceProofLocalGivenDescendantUseTermHandoff, SourceProofLocalGivenUseTermHandoff,
@@ -140,6 +141,7 @@ pub struct ResolvedTypedAst {
     source_attribute: Option<SourceAttributeHandoff>,
     source_evidence: Option<SourceEvidenceHandoff>,
     source_term: Option<SourcePrimaryTermHandoff>,
+    source_template: Option<SourceTemplateHandoff>,
     source_application: Option<SourceFunctorApplicationHandoff>,
     source_structure: Option<SourceStructureHandoff>,
     source_set_term: Option<SourceSetTermHandoff>,
@@ -226,6 +228,10 @@ impl ResolvedTypedAst {
 
     pub const fn source_term(&self) -> Option<&SourcePrimaryTermHandoff> {
         self.source_term.as_ref()
+    }
+
+    pub const fn source_template(&self) -> Option<&SourceTemplateHandoff> {
+        self.source_template.as_ref()
     }
 
     pub const fn source_application(&self) -> Option<&SourceFunctorApplicationHandoff> {
@@ -546,6 +552,9 @@ impl ResolvedTypedAst {
         }
         if let Some(source_term) = &self.source_term {
             output.push_str(&source_term.debug_text());
+        }
+        if let Some(source_template) = &self.source_template {
+            output.push_str(&source_template.debug_text());
         }
         if let Some(source_application) = &self.source_application {
             output.push_str(&source_application.debug_text());
@@ -1596,6 +1605,7 @@ pub enum CandidateSummaryNamespace {
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum ResolvedTypedAstError {
+    InvalidSourceTemplate,
     InvalidSourceApplication,
     InvalidSourceStructure,
     InvalidSourceSetTerm,
@@ -1703,6 +1713,8 @@ pub enum ResolvedTypedAstError {
 impl fmt::Display for ResolvedTypedAstError {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            Self::InvalidSourceTemplate => formatter
+                .write_str("resolved typed AST source template handoff is inconsistent"),
             Self::InvalidSourceApplication => formatter
                 .write_str("resolved typed AST source functor-application handoff is inconsistent"),
             Self::InvalidSourceStructure => formatter
@@ -2231,6 +2243,12 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
             &viable_candidates,
             &diagnostics.type_diagnostics,
         )?;
+        let source_template = self.inputs.typed_ast.source_template().cloned();
+        if let Some(source_template) = &source_template {
+            source_template
+                .validate_installation(source_id, &module_id, self.inputs.typed_ast.nodes())
+                .map_err(|_| ResolvedTypedAstError::InvalidSourceTemplate)?;
+        }
         let source_application = self.inputs.typed_ast.source_application().cloned();
         if let Some(source_application) = &source_application {
             let source_term = self
@@ -2906,6 +2924,7 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
             source_attribute: self.inputs.typed_ast.source_attribute().cloned(),
             source_evidence: self.inputs.typed_ast.source_evidence().cloned(),
             source_term: self.inputs.typed_ast.source_term().cloned(),
+            source_template,
             source_application,
             source_structure,
             source_set_term,

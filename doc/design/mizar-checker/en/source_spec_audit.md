@@ -191,6 +191,7 @@ rejection.
 - `source_proof_local_declaration`
 - `source_structure`
 - `source_structure_definition`
+- `source_template`
 - `source_term`
 - `source_type`
 - `type_checker`
@@ -467,10 +468,10 @@ Correspondence:
 
 | Specification promise | Source evidence | Test evidence | Status |
 |---|---|---|---|
-| Chapter 18 direct parameter/loci/argument syntax is transported without target or theorem semantics. | Frozen five-table input/handoff API in `src/source_template.rs`. | Four checker and four private real-frontend runner tests. | Frozen for Task 277A; implementation pending. |
-| Parent/child TypedArena adjacency, dense order, range, recovery, and duplicate-site rules fail closed. | `SourceTemplateProducer::build` and crate-private installation validation. | Exact and corrupted parent/group/order/environment tests. | Frozen transactionally; no repair or sorting. |
-| Typed/final owners preserve one neutral slot without changing semantic profiles. | `TypedAst::with_source_template` and `ResolvedTypedAst::source_template`. | Duplicate install, final replay, deterministic clone, and semantic-isolation tests. | Frozen as coexistent parser-origin evidence. |
-| Public surface and enums remain documented and forward-compatible. | Five IDs, six input aggregates, four data/error enums, five row/table pairs, handoff, and producer above; every public enum is non-exhaustive. | Public-enum and source/spec-audit lint policies. | Frozen with no exhaustive or syntax-dependency exception. |
+| Chapter 18 direct parameter/loci/argument syntax is transported without target or theorem semantics. | Implemented five-table input/handoff API in `src/source_template.rs`. | Four checker and four private real-frontend runner tests. | Implemented for Task 277A in the worktree. |
+| Parent/child TypedArena adjacency, dense order, range, recovery, and duplicate-site rules fail closed. | `SourceTemplateProducer::build` and crate-private installation validation. | Exact and corrupted parent/group/order/environment tests. | Implemented transactionally; no repair or sorting. |
+| Typed/final owners preserve one neutral slot without changing semantic profiles. | `TypedAst::with_source_template` and `ResolvedTypedAst::source_template`. | Duplicate install, final replay, deterministic clone, and semantic-isolation tests. | Implemented as coexistent parser-origin evidence. |
+| Public surface and enums remain documented and forward-compatible. | Five IDs, six input aggregates, four data/error enums, five row/table pairs, handoff, and producer above; every public enum is non-exhaustive. | Public-enum and source/spec-audit lint policies. | Implemented with no exhaustive or syntax-dependency exception. |
 
 Bounded gaps: Task 277A does not publish a resolved template target,
 formal-to-actual association, actual kind, substitution request/result,
@@ -5929,16 +5930,19 @@ The [central Task 277A contract](../../task_contracts/en/277A.md) maps only the
 direct parser-origin Parameter/Loci/Locus/Arguments/Argument grammar roles in
 Templates Chapter 18 to a syntax-free, targetless transport profile. The exact
 fixture has no scheme/theorem source role, no algorithm, and no pred/func
-schema parameter. Missing durable owner, source producer, and focused tests are
-respectively `design_drift`, `source_drift`, and `test_gap`; the contradictory
+schema parameter. The implemented durable owner, source producer, and focused
+tests close the bounded `design_drift`, `source_drift`, and `test_gap`; the contradictory
 algorithm wording remains deferred `spec_gap`. No expectation or coverage
-status changes, and implementation is pending.
+status changes.
 
-The future public surface is inventoried under `source_template` above. The
-implementation must add the module/export, public-surface, and four-public-enum
-entries to the paired current inventories and checker `tests/lint_policy.rs`
-in the same logical task; that policy-only ninth Rust path adds no behavior or
-test count.
+The current public surface is inventoried under `source_template` above. The
+module/export, public-surface, and four-public-enum entries are present in the
+paired current inventories and checker `tests/lint_policy.rs`; that policy-only
+ninth Rust path adds no behavior or test count. Independent reviews report
+**NO FINDINGS** and full verification passes. Final-quality re-review also
+reports **NO FINDINGS**; all nine hard gates PASS without a score cap at valid
+`100/100`. Only staging/cached-diff review, commit, and post-commit proof remain
+pending.
 
 ## Task 269GT Source/API Delta
 

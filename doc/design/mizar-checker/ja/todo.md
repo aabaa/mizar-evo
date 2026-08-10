@@ -6466,5 +6466,12 @@ post-commit fresh inventoryからだけ選択する。
 
 - [x] paired [central contract](../../task_contracts/ja/277A.md)、owner link、
   Task Index row、documentation-only review surfaceをprepareする。
-- [ ] frozen neutral transportと8件の`task277a_` testだけをimplementし、targetless
+- [x] frozen neutral transportと8件の`task277a_` testだけをimplementし、targetless
   raw suffix meaning、inactive routing、全no-impact exclusionをpreserveする。
+- [x] independent reviewを**NO FINDINGS**で完了し、full workspace test、両lint
+  suite、metadata、formatting、Clippy、five CLI replay、protected/count/hash verificationを
+  PASSする。
+- [x] final quality re-reviewを**NO FINDINGS**で完了する。全9 hard gateはscore cap
+  なしでPASSし、有効なscoreは`100/100`（`20/20/15/15/10/10/5/5`）。
+- [ ] exact staging/cached-diff review、task-only commit、clean
+  post-commit/fresh inventoryを完了する。

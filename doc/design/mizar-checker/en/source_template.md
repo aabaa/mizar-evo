@@ -7,12 +7,18 @@
 
 The [central Task 277A contract](../../task_contracts/en/277A.md) owns the
 frozen direct-parser profile, exact five two-row tables, public ABI, error
-order, exclusions, baselines, and gates. This owner adds only the syntax-free
+order, exclusions, baselines, and gates. This owner implements only the syntax-free
 `source_template` producer described there: dense IDs, direct TypedArena
 validation, immutable handoff/tables/getters/debug, and crate-private
 installation validation,
 and no resolver, spelling, semantic, substitution, target, or verdict state.
-Implementation remains pending.
+Source-identity mismatch owns `EnvironmentMismatch`; malformed zero-length or
+inverted row ranges remain family-local `Invalid*` failures. The worktree
+implementation is `1745` lines with physical SHA-256
+`fdd6ac38557979ed37fd7c9ba13300b8577416e4ebbdaefe64b986f22aceb85b`;
+Independent reviews and final-quality re-review report **NO FINDINGS**; all
+nine hard gates PASS without a score cap at valid `100/100`. Only
+staging/cached-diff review, commit, and post-commit proof remain pending.
 
 ## Frozen Public Surface
 

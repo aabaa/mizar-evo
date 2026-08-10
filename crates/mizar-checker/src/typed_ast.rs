@@ -38,6 +38,7 @@ use crate::{
     source_structure_definition::{
         SourceStructureDefinitionHandoff, SourceStructureDefinitionProjection,
     },
+    source_template::SourceTemplateHandoff,
     source_term::{
         SourcePrimaryTermHandoff, SourceProofLocalGivenConditionUseTermHandoff,
         SourceProofLocalGivenDescendantUseTermHandoff, SourceProofLocalGivenUseTermHandoff,
@@ -132,6 +133,7 @@ pub struct TypedAst {
     source_attribute: Option<SourceAttributeHandoff>,
     source_evidence: Option<SourceEvidenceHandoff>,
     source_term: Option<SourcePrimaryTermHandoff>,
+    source_template: Option<SourceTemplateHandoff>,
     source_application: Option<SourceFunctorApplicationHandoff>,
     source_structure: Option<SourceStructureHandoff>,
     source_set_term: Option<SourceSetTermHandoff>,
@@ -199,6 +201,7 @@ impl TypedAst {
             source_attribute: parts.source_attribute,
             source_evidence: None,
             source_term: None,
+            source_template: None,
             source_application: None,
             source_structure: None,
             source_set_term: None,
@@ -269,6 +272,10 @@ impl TypedAst {
 
     pub const fn source_term(&self) -> Option<&SourcePrimaryTermHandoff> {
         self.source_term.as_ref()
+    }
+
+    pub const fn source_template(&self) -> Option<&SourceTemplateHandoff> {
+        self.source_template.as_ref()
     }
 
     pub const fn source_application(&self) -> Option<&SourceFunctorApplicationHandoff> {
@@ -891,6 +898,20 @@ impl TypedAst {
             .validate_installation(self.source_id, &self.module_id, &self.nodes)
             .map_err(|_| TypedAstError::InvalidSourceTerm)?;
         self.source_term = Some(handoff);
+        Ok(self)
+    }
+
+    pub fn with_source_template(
+        mut self,
+        handoff: SourceTemplateHandoff,
+    ) -> Result<Self, TypedAstError> {
+        if self.source_template.is_some() {
+            return Err(TypedAstError::InvalidSourceTemplate);
+        }
+        handoff
+            .validate_installation(self.source_id, &self.module_id, &self.nodes)
+            .map_err(|_| TypedAstError::InvalidSourceTemplate)?;
+        self.source_template = Some(handoff);
         Ok(self)
     }
 
@@ -3059,6 +3080,9 @@ impl TypedAst {
         if let Some(source_term) = &self.source_term {
             output.push_str(&source_term.debug_text());
         }
+        if let Some(source_template) = &self.source_template {
+            output.push_str(&source_template.debug_text());
+        }
         if let Some(source_application) = &self.source_application {
             output.push_str(&source_application.debug_text());
         }
@@ -4047,6 +4071,7 @@ pub enum TypedAstError {
     InvalidSourceAttribute,
     InvalidSourceEvidence,
     InvalidSourceTerm,
+    InvalidSourceTemplate,
     InvalidSourceApplication,
     InvalidSourceStructure,
     InvalidSourceSetTerm,
@@ -4196,6 +4221,9 @@ impl fmt::Display for TypedAstError {
             }
             Self::InvalidSourceTerm => {
                 formatter.write_str("typed AST source primary-term handoff is inconsistent")
+            }
+            Self::InvalidSourceTemplate => {
+                formatter.write_str("typed AST source template handoff is inconsistent")
             }
             Self::InvalidSourceApplication => {
                 formatter.write_str("typed AST source functor-application handoff is inconsistent")
