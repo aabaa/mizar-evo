@@ -1827,3 +1827,15 @@ Parity review also covers the paired `source_type`, `binding_env`, `typed_ast`,
 and `resolved_typed_ast` owner sections, checker Task Index rows, checker TODO
 links, and removal of the former copied block from all checker EN/JA surfaces.
 Exact identifiers and bytes remain canonical in English. Result: no sync debt.
+
+## Task 269SDU Contract Parity
+
+The canonical [EN contract](../../task_contracts/en/269SDU.md) and
+[JA companion](../../task_contracts/ja/269SDU.md) synchronize the exact
+SDT-by-value dependency, single descendant `y@118..119` reference, context
+`2` / scope `[0,0]` / use ordinal `2`, five-node arena, error order, boxed
+Typed/Resolved ownership, seven-file/eight-test scope, zero-credit exclusions,
+baselines, and exit criteria. Review includes the paired checker Task Index,
+current-plan, source-term, Typed, Resolved, source-spec-audit, and TODO entries,
+plus the root zero-credit mapping. Exact identifiers and bytes remain
+canonical in English; no synchronization exception is recorded.

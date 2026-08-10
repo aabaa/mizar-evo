@@ -15,6 +15,28 @@ moduleはtransport-onlyである。source shape、binding lookup、missing numer
 requestをauthenticateするが、numeric typeを選択せず、semantic term/formula、
 current definition result type、fact/axiom、FOL/downstream IRを作らない。
 
+## Task 269SDU Descendant Given Occurrence/Reference Contract
+
+[central Task-269SDU contract](../../task_contracts/ja/269SDU.md) の下で、
+`source_term.rs` はpublic `SourceProofLocalGivenDescendantUseTermHandoff`、producer、
+non-exhaustive errorをplanする。handoffはcomplete SDT dependencyをby-value consumeし、
+exact dependency/debug fingerprintをpreserveする。source-term rowは`y@118..119` 1件だけで、
+typed node `3`、ordinal `0`、descendant context `2` (`[0,0]`)、
+`VariableReference`/`Value`、`term 0 -> binding 1` の`Variable` reference 1件であり、
+numeric requestは0。
+
+validationはexact SDT dependency/prefix、exact term input/source-term fingerprint、
+complete five-node arena、one-shot installationの順でatomicに行う。arenaは3-node SDT
+prefix、node `3` `source.term.variable-reference@118..119`、children `[2,3]`のroot
+node `4` `source.proof-local.given-descendant-use.term-root@0..179`を持ち、全nodeは
+Unknown/Normal、unresolved、unlinkedのまま。profile限定`GivenWitness -> Variable`
+admissionだけを許可しgeneric admissionは不変。error順は`InvalidDependency`、
+`InvalidSourceTerm`、`InvalidInstallation`。
+
+このplanned ownerはSet binding/abbreviation/capture、equality/formula/fact/guard、
+proof completion、generic term publication、diagnostic、downstream IR、dispatch、
+coverage creditをexcludeする。特に`z@114..115`、`q@129..130`、`z@133..134`はabsentのまま。
+
 ## Public model
 
 `SourcePrimaryTermHandoffInput`はsource/module transaction 1件と、次のordered

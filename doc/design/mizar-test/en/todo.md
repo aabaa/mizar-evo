@@ -3796,3 +3796,12 @@ Implemented: the private dormant runner consumer and four runner tests frozen
 by the [central contract](../../task_contracts/en/269SDT.md) are complete with
 the paired checker slice. Active dispatch and coverage credit remain excluded;
 the successor is selected only from fresh post-commit inventory.
+
+## Task 269SDU Private Runner Prerequisite
+
+- [x] Complete the synchronized documentation prerequisite and review gates for
+  the [central contract](../../task_contracts/en/269SDU.md).
+- [ ] Implement only the private dormant route and four `task269sdu_` runner
+  tests with its frozen mutation seam.
+- [ ] Keep dispatch, CLI output, corpus metadata, trace status, and executable
+  coverage unchanged; verify and commit separately.

@@ -9,6 +9,17 @@ APIs. The audit classifies remaining uncovered behavior as explicit
 `external_dependency_gap`, `test_gap`, or `deferred` work instead of treating
 current implementation convenience as normative.
 
+## Task 269SDU Planned Zero-Credit Mapping
+
+The [central Task-269SDU contract](../../task_contracts/en/269SDU.md) plans one
+derived owner/test route for Chapters 4, 13, 15, and 16: the inherited
+proof-local Given binding is referenced only by exact descendant
+`y@118..119`. The planned source-term, Typed/Resolved, and private-runner
+owners add no executable or semantic credit. Existing fixture, expectation,
+trace, requirement-count, and diagnostic status remain authoritative and
+unchanged; `z`/`q` binding, closure, and capture stay blocked by the
+Chapter-4/15 `set` `spec_gap`.
+
 ## Scope And Method
 
 The inventory covers every current `pub mod` export in

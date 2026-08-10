@@ -1730,3 +1730,14 @@ parity reviewは `source_type`、`binding_env`、`typed_ast`、
 `resolved_typed_ast` owner pair、checker Task Index rows、checker TODO links、
 旧copied blockの全checker EN/JA surfaceからの除去も対象とする。exact identifier
 とbytesはEnglish canonical。結果はsync debtなし。
+
+## Task 269SDU Contract Parity
+
+canonical [EN contract](../../task_contracts/en/269SDU.md) と
+[JA companion](../../task_contracts/ja/269SDU.md) はexact SDT by-value dependency、
+descendant `y@118..119` reference 1件、context `2` / scope `[0,0]` / use
+ordinal `2`、5-node arena、error順、boxed Typed/Resolved ownership、7-file/
+8-test scope、zero-credit exclusion、baseline、exitを同期する。review surfaceは
+checker Task Index/current plan、source-term、Typed、Resolved、source-spec-audit、
+TODOの各pairとroot zero-credit mappingを含む。exact identifier/bytesはEnglish
+canonicalで、synchronization exceptionはない。

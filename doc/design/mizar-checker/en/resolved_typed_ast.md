@@ -2022,3 +2022,12 @@ Resolved ownership mirrors Typed's reciprocal exclusion with standalone SDC,
 the ten earlier proof-local owners, and every current generic/source owner.
 Either installation order is one-shot and atomic; failure preserves the prior
 Resolved/Typed debug bytes and owner state and publishes no partial SDT.
+
+## Task 269SDU Resolved Ownership
+
+The [central Task-269SDU contract](../../task_contracts/en/269SDU.md) plans the
+matching boxed optional SDU composite and read-only getter on
+`ResolvedTypedAst`. Final installation replays complete SDU validation and
+atomically replaces standalone SDT ownership. Direct binding/type ownership
+and sibling proof-local transactions are mutually excluded in either order;
+failed installation publishes no partial Resolved state or semantic payload.

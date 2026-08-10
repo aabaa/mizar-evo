@@ -6835,3 +6835,12 @@ runner consumer are complete under the
 [central contract](../../task_contracts/en/269SDT.md). Descendant occurrence
 and all `z`/`q` closure/capture semantics remain later work; the successor is
 selected only from fresh post-commit inventory.
+
+## Task 269SDU Descendant Given Occurrence/Reference Prerequisite
+
+- [x] Complete the synchronized documentation prerequisite and review gates for
+  the [central contract](../../task_contracts/en/269SDU.md).
+- [ ] Implement only the frozen source-term, Typed/Resolved, and private
+  runner route with four checker and four private runner tests.
+- [ ] Preserve zero executable credit, no active route, and the blocked
+  `z`/`q` closure/capture boundary; then verify and commit separately.

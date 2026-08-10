@@ -8,6 +8,15 @@ source behavior、`.miz` fixture、expectation、public API は変更しない�
 未接続の挙動は現在の実装都合を正本化せず、明示的な
 `external_dependency_gap`、`test_gap`、または `deferred` として分類する。
 
+## Task 269SDU Planned Zero-Credit Mapping
+
+[central Task-269SDU contract](../../task_contracts/ja/269SDU.md) はChapters 4、13、
+15、16に対するderived owner/test route 1件をplanする。inherited proof-local Given
+bindingはexact descendant `y@118..119`だけからreferenceされる。planned source-term、
+Typed/Resolved、private-runner ownerはexecutable/semantic creditを追加しない。existing
+fixture/expectation/trace/requirement-count/diagnostic statusはauthoritativeかつ不変で、
+`z`/`q` binding/closure/captureはChapter-4/15 `set` `spec_gap`によりblockedのまま。
+
 ## 範囲と方法
 
 inventory は `crates/mizar-checker/src/lib.rs` の現在の `pub mod` export、

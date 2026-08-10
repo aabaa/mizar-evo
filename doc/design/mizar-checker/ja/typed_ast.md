@@ -1912,3 +1912,13 @@ type/term、Given-condition binding/type/use-termと両install順でcoexistで�
 installationはone-shot/atomicで、failureはpre-call debug bytes、全owner state、
 3 arena nodes、empty context/type/fact/coercion/initial-obligation/diagnostic
 tablesを保持する。
+
+## Task 269SDU Typed Ownership
+
+[central Task-269SDU contract](../../task_contracts/ja/269SDU.md) は`TypedAst`の
+boxed optional `SourceProofLocalGivenDescendantUseTermHandoff` owner 1件と
+read-only getterをplanする。installationはSDUをby-value consumeしcomplete
+transactionをvalidateしてstandalone SDT ownershipをatomicにreplaceする。direct
+binding/type ownerまたはsibling proof-local transactionは両順序でcoexistできず、
+failureは全owner stateとsemantic tableを不変に保つ。semantic table、node hint、fact、
+diagnostic、downstream IR entryは作らない。

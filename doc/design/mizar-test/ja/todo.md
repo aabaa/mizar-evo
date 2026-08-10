@@ -3535,3 +3535,12 @@ Completion evidence: [central Task-269SDC historical contract](../../task_contra
 private dormant runner consumerとrunner 4 testsはpaired checker sliceとともに
 完了した。active dispatchとcoverage creditはexcludeしたままで、successorは
 post-commit fresh inventoryからだけ選択する。
+
+## Task 269SDU Private Runner Prerequisite
+
+- [x] [central contract](../../task_contracts/ja/269SDU.md) のsynchronized
+  documentation prerequisiteとreview gatesをcompleteする。
+- [ ] frozen mutation seamを持つprivate dormant routeとrunner 4件の
+  `task269sdu_` testsだけをimplementする。
+- [ ] dispatch、CLI output、corpus metadata、trace status、executable coverageを
+  不変に保ち、separateにverify/commitする。

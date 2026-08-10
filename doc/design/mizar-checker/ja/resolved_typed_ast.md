@@ -1896,3 +1896,12 @@ Resolved ownershipはstandalone SDC、先行10 proof-local owners、全current
 generic/source ownerに対するTypedのreciprocal exclusionをmirrorする。
 どちらのinstallation orderもone-shot/atomicで、failureは従前Resolved/Typed
 debug bytesとowner stateを保持し、partial SDTをpublishしない。
+
+## Task 269SDU Resolved Ownership
+
+[central Task-269SDU contract](../../task_contracts/ja/269SDU.md) は
+`ResolvedTypedAst`のmatching boxed optional SDU compositeとread-only getterを
+planする。final installationはcomplete SDU validationをreplayしstandalone SDT
+ownershipをatomicにreplaceする。direct binding/type ownershipとsibling proof-local
+transactionは両順序でmutually excludeし、failureはpartial Resolved state/semantic
+payloadをpublishしない。

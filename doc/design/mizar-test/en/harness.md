@@ -5561,3 +5561,15 @@ are:
 - `task269sdt_dependency_input_and_arena_corruption_fail_closed`
 - `task269sdt_typed_and_resolved_owners_are_one_shot_and_semantically_empty`
 - `task269sdt_near_miss_neighbor_and_active_routes_remain_isolated`
+
+## Task 269SDU Private Runner Route
+
+The [central Task-269SDU contract](../../task_contracts/en/269SDU.md) plans the
+private dormant `SourceProofLocalGivenDescendantUseTermRouteOutput { typed_ast,
+resolved }` and `source_proof_local_given_descendant_use_term_output` route.
+Its cfg-test mutation seam is limited to `None`, `WrongDependencyModule`,
+`WrongTermRange`, `WrongReferenceBinding`, `WrongArenaRoot`, and
+`WrongArenaKind`; a missing SDT dependency reports `Task269SDU SDT dependency
+is missing`. Four private `task269sdu_` tests will cover exact replay,
+corruption precedence, one-shot empty-semantic ownership, and isolation.
+There is no public dispatcher or active CLI route.

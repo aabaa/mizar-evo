@@ -6986,3 +6986,20 @@ proof-local declaration fixture remains diagnostic gap coverage. Descendant
 occurrence and every `z`/`q` binding, closure, and capture semantic remain
 explicit follow-ups, with the latter blocked by the Chapter-4/15 `set`
 `spec_gap`.
+
+## Task 269SDU Design Mapping
+
+The [central Task-269SDU contract](./task_contracts/en/269SDU.md) adds a
+zero-credit derived design mapping for Chapters 4, 13, 15, and 16. The planned
+[source-term](./mizar-checker/en/source_term.md#task-269sdu-descendant-given-occurrencereference-contract),
+[Typed](./mizar-checker/en/typed_ast.md#task-269sdu-typed-ownership),
+[Resolved](./mizar-checker/en/resolved_typed_ast.md#task-269sdu-resolved-ownership),
+and [private runner](./mizar-test/en/harness.md#task-269sdu-private-runner-route)
+owners transport only `y@118..119` to binding `1`.
+
+This mapping changes no `.miz`, expectation, trace row/status/backlink,
+requirement count, or executable coverage credit. It neither introduces a Set
+binding nor records abbreviation, capture, equality, fact, proof, diagnostic,
+or active-route meaning; `z@114..115`, `q@129..130`, and `z@133..134` remain
+absent, and later closure/capture remains blocked by the Chapter-4/15 `set`
+`spec_gap`.

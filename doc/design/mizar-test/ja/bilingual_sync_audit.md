@@ -1740,3 +1740,13 @@ canonical [EN contract](../../task_contracts/en/269SDT.md) と
 parity reviewはharness owner pair、mizar-test Task Index rows、mizar-test TODO
 links、旧copied blockの全mizar-test EN/JA surfaceからの除去も対象とする。exact
 identifierとbytesはEnglish canonical。結果はsync debtなし。
+
+## Task 269SDU Contract Parity
+
+canonical [EN contract](../../task_contracts/en/269SDU.md) と
+[JA companion](../../task_contracts/ja/269SDU.md) はprivate dormant output、
+selector、6-value mutation seam、missing-dependency text、runner 4 tests、shared
+7-file implementation boundary、dispatch/artifact/coverage impact 0、baseline、
+exitを同期する。review surfaceはmizar-test Task Index/current plan/harness/TODOの
+各pairとshared checker owner linksを含む。exact identifier/bytesはEnglish
+canonicalで、synchronization exceptionはない。

@@ -17,6 +17,32 @@ and missing numeric-type requests. It does not choose a numeric type, create a
 semantic term or formula, type a current definition result, publish a fact or
 axiom, or create FOL/downstream IR.
 
+## Task 269SDU Descendant Given Occurrence/Reference Contract
+
+Under the [central Task-269SDU contract](../../task_contracts/en/269SDU.md),
+`source_term.rs` plans the public
+`SourceProofLocalGivenDescendantUseTermHandoff`, producer, and non-exhaustive
+error. The handoff consumes the complete SDT dependency by value, preserving
+its exact dependency and debug fingerprint, and owns exactly one source-term
+row for `y@118..119`: typed node `3`, ordinal `0`, descendant context `2`
+(`[0,0]`), `VariableReference`/`Value`, and one `term 0 -> binding 1`
+`Variable` reference. It makes no numeric request.
+
+Validation is atomic and ordered as exact SDT dependency/prefix, exact term
+input and source-term fingerprint, complete five-node arena, then one-shot
+installation. The arena retains the three-node SDT prefix, adds node `3`
+`source.term.variable-reference@118..119`, and root node `4`
+`source.proof-local.given-descendant-use.term-root@0..179` with children
+`[2,3]`; every node remains Unknown/Normal, unresolved, and unlinked. Only
+the profile-scoped `GivenWitness -> Variable` admission is allowed; generic
+admission is unchanged. Errors are ordered `InvalidDependency`,
+`InvalidSourceTerm`, then `InvalidInstallation`.
+
+This planned owner excludes Set binding/abbreviation/capture, equality or
+formula/fact/guard creation, proof completion, generic term publication,
+diagnostics, downstream IR, dispatch, and coverage credit. In particular,
+`z@114..115`, `q@129..130`, and `z@133..134` remain absent.
+
 ## Public Model
 
 `SourcePrimaryTermHandoffInput` carries one source/module transaction plus
