@@ -13164,9 +13164,10 @@ canonical-`Identifier` prefix-spoof fix; source/documentation, bilingual, and
 boundary re-reviews are **NO FINDINGS**. Full verification and protected-surface
 checks pass. Finding-specific final-quality re-review after the checker
 containment repair is **NO FINDINGS**; all nine hard gates PASS uncapped at
-valid `100/100` (`20/20/15/15/10/10/5/5`). Only exact staging/cached-diff
-review, task-only commit, post-commit proof, and fresh-successor inventory
-remain pending. Task 277B remains not ready with zero semantic credit.
+valid `100/100` (`20/20/15/15/10/10/5/5`). Exact staging/cached-diff review,
+task-only commit, post-implementation proof, and fresh successor inventory are
+closed in the central [historical checkpoint](../../task_contracts/en/277B-L.md#post-implementation-checkpoint); no successor
+is selected. Task 277B remains not ready with zero semantic credit.
 
 ## Checker Task 269GT Frozen Runner Boundary
 

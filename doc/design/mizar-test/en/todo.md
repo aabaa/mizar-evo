@@ -3836,6 +3836,7 @@ the successor is selected only from fresh post-commit inventory.
 - [x] Complete finding-specific final-quality re-review at **NO FINDINGS**;
   all nine hard gates PASS uncapped at valid `100/100`
   (`20/20/15/15/10/10/5/5`).
-- [ ] Complete only exact staging/cached-diff review, task-only commit,
-  post-commit proof, and fresh-successor inventory. This task does not make
-  Task 277B ready and grants zero semantic credit.
+- [x] Exact staging/cached-diff review, task-only commit, post-implementation
+  proof, and fresh successor inventory are closed in the central
+  [historical checkpoint](../../task_contracts/en/277B-L.md#post-implementation-checkpoint).
+  No successor is selected; Task 277B remains not ready with zero semantic credit.

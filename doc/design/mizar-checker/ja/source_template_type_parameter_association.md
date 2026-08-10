@@ -97,7 +97,8 @@ containmentとcorruption assertionを
 `task277bl_rejects_kind_range_recovery_and_direct_edge_corruption`へ追加し、本EN/JA owner/contractを
 同期した。finding-specific re-reviewは**NO FINDINGS**。全9 hard gateはscore capなしvalid
 `100/100`（`20/20/15/15/10/10/5/5`）でPASS。exact staging/cached-diff review、task-only commit、
-post-commit proof、fresh-successor inventoryだけがpending。この実装はTask 277Bのnot-ready/
+post-implementation proof、fresh successor inventoryはcentral [historical checkpoint](../../task_contracts/ja/277B-L.md#post-implementation-checkpoint)でclosedし、successorはselectしない。
+この実装はTask 277Bのnot-ready/
 zero-semantic-credit boundaryをretainする。
 
 ## Public Enum Policy

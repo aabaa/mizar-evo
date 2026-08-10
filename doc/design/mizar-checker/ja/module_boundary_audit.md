@@ -1614,8 +1614,9 @@ prefix-spoof fix後に**NO FINDINGS**。EN/JA CLI tense fix後のsource/document
 bilingual review、本boundary reviewも**NO FINDINGS**。full verification/protected-surface checkはPASS。
 containment repair後のfinding-specific final-quality re-reviewは**NO FINDINGS**。全9 hard gateは
 score capなしvalid `100/100`（`20/20/15/15/10/10/5/5`）でPASS。exact staging/cached-diff
-review、task-only commit、post-commit proof、fresh-successor inventoryだけがpending。Task 277Bは
-not ready/semantic credit zeroである。
+review、task-only commit、post-implementation proof、fresh successor inventoryはcentral
+[historical checkpoint](../../task_contracts/ja/277B-L.md#post-implementation-checkpoint)でclosedし、
+successorはselectしない。Task 277Bはnot ready/semantic credit zeroである。
 
 ## Task 269GT frozen boundary
 

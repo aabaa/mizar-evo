@@ -3572,5 +3572,6 @@ post-commit fresh inventoryからだけ選択する。
   protected-surface checkはPASS。
 - [x] finding-specific final-quality re-reviewは**NO FINDINGS**、全9 hard gateはscore capなし
   valid `100/100`（`20/20/15/15/10/10/5/5`）でPASS。
-- [ ] exact staging/cached-diff review、task-only commit、post-commit proof、fresh-successor
-  inventoryだけをcompleteする。本taskはTask 277Bをreadyにせずsemantic creditはzero。
+- [x] exact staging/cached-diff review、task-only commit、post-implementation proof、fresh successor
+  inventoryはcentral [historical checkpoint](../../task_contracts/ja/277B-L.md#post-implementation-checkpoint)でclosed。successorはselectせず、
+  Task 277Bはnot ready/semantic credit zeroのまま。
