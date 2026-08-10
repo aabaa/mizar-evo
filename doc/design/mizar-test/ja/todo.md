@@ -3556,4 +3556,6 @@ post-commit fresh inventoryからだけ選択する。
 - [x] independent source/docs、bilingual reviewを**NO FINDINGS**で完了。
 - [x] independent final-quality reviewを**NO FINDINGS**、全9 hard gates PASS、score cap
   なしのvalid `100/100`で完了。
-- [ ] exact staging、task-only commit、post-commit proof、fresh inventoryを完了。
+- [x] exact staging、task-only implementation commit
+  `b22033c38249326e366ceb9e19b1a9100da2248e`、immediate post-implementation proof、
+  fresh successor inventoryを完了。Task 277Bはnot readyのまま。

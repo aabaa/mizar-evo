@@ -374,4 +374,7 @@ verificationをPASS。checker/runner production behavior、active corpus/trace/c
 diagnostic、semantic verdict、historical exit evidenceは不変。independent source/docs、
 bilingual reviewは**NO FINDINGS**。independent final-quality reviewも**NO FINDINGS**で、
 全9 hard gatesはscore capなしのvalid `100/100`でPASS。staging、commit、post-commit
-inventoryがclosure前に残る。
+inventoryはtask-only implementation commit
+`b22033c38249326e366ceb9e19b1a9100da2248e`とcentral contractのhistorical checkpointで
+complete。このpost-exit prerequisiteはhistorical crate exit/scoreを改訂せず完了し、Task
+277Bはnot readyのまま。

@@ -14,8 +14,9 @@ boundary audit、TODO、bilingual audit である。英語正本の stable link 
 
 | 項目 | freeze 値 |
 |---|---|
-| Status | documentation prerequisite は `2438cbb7d39c1844557293b270ef1784cfc31ece` としてcommit済み。exact 4-path Rust implementationとtest 5件はcomplete/verified。independent source/documentation、bilingual、final-quality reviewは**NO FINDINGS**。全9 hard gatesはscore capなしのvalid `100/100`でPASS。exact staging、commit、post-commit inventoryが残る。 |
-| Selection checkpoint | `HEAD=0827e494df96afacba4f35b9cc23dfbbb737d141`、`origin/main...HEAD=0/5`、protected `stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4` は unchanged。 |
+| Status | documentation prerequisite は `2438cbb7d39c1844557293b270ef1784cfc31ece`、task-only implementation は `b22033c38249326e366ceb9e19b1a9100da2248e` としてcommit済み。Task 277R1はcomplete。independent source/documentation、bilingual、final-quality reviewは**NO FINDINGS**、全9 hard gatesはscore capなしのvalid `100/100`でPASS。Task 277Bはnot readyのまま。 |
+| Pre-implementation selection checkpoint | `HEAD=0827e494df96afacba4f35b9cc23dfbbb737d141`、`origin/main...HEAD=0/5`、protected `stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4` は unchanged。 |
+| Post-implementation checkpoint | task-only implementation commit `b22033c38249326e366ceb9e19b1a9100da2248e` 直後のread-only inventoryは、`HEAD=b22033c38249326e366ceb9e19b1a9100da2248e`、clean worktree、`origin/main...HEAD=0/7`、protected `stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4` unchangedを観測した。Task 277R1はcompleteで、successorはseparately frozen/reviewedでなければならない。 |
 | Authority | `doc/spec/en/18.templates.md` §§18.2.1、18.2.2、18.2.6、18.10.2 と `doc/spec/en/13.term_expression.md` §13.4.2。parser prerequisite は [PARSER-TEMPLATE-TYPEHEAD-277P1](./PARSER-TEMPLATE-TYPEHEAD-277P1.md)。 |
 | Classification | `source_drift`、`design_drift`、Rust `test_gap`。`spec_gap` はない。後段の missing-sethood verdict は checker-owned のまま。 |
 | Consumer | これは後続 Task 277B の resolver prerequisite のまま。completionはTask 277B readyやchecker implementationを選択しない。 |
@@ -214,8 +215,9 @@ frozen stdout hashのfive CLI、protected hash/count replay、`git diff --check`
 fixture/sidecar/trace/coverage audit/active stage/diagnostic/semantic coverage/checker/production
 runnerは不変。independent source/documentation consistency、bilingual reviewは**NO
 FINDINGS**。independent final-quality reviewも**NO FINDINGS**で、全9 hard gatesはscore
-capなしのvalid `100/100`（`20/20/15/15/10/10/5/5`）でPASS。staging、implementation
-commit、post-commit proof、fresh successor inventoryを未完のまま保持する。
+capなしのvalid `100/100`（`20/20/15/15/10/10/5/5`）でPASS。exact staging、
+implementation commit、immediate post-implementation inventoryは上のhistorical
+checkpointでcomplete。Task 277Bはnot readyで、本taskはsuccessorを選択しない。
 
 plan、parse-only、declaration-symbol、type-elaboration、proof-verificationのfive CLI
 stdout SHA-256は順に
@@ -227,8 +229,8 @@ stdout SHA-256は順に
 
 ## 次 task handoff
 
-exact Rust 4 + completion docs 22 pathsをexact stage/cached-diff reviewし、task-only
-implementation commit、post-commit proof、fresh successor inventoryへ進む。parent
-authority/integration/staging/final scoringはGPT-5.6 Sol `xhigh`。Lunaは未提供で、effective
-bounded implementation/review routeはGPT-5.6 Terra `xhigh`。authority/boundary ambiguityは
-すべてSolへescalateする。
+fresh authority/dependency/scope inventoryから開始する。separately frozen/reviewedな
+lower-owner association taskがchecker consumerをdependency-readyにするまでTask 277Bを
+開始しない。parent authority interpretation/final scoringはGPT-5.6 Sol `xhigh`。Lunaは
+未提供で、effective bounded inventory/review routeはGPT-5.6 Terra `xhigh`。
+authority/boundary ambiguityはすべてSolへescalateする。

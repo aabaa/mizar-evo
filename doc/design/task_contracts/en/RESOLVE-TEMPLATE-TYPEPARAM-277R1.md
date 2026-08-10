@@ -14,8 +14,9 @@ Stable owner sections:
 
 | Field | Frozen value |
 |---|---|
-| Status | The documentation prerequisite is committed as `2438cbb7d39c1844557293b270ef1784cfc31ece`. The exact four-path Rust implementation and five tests are complete and verified; independent source/documentation, bilingual, and final-quality reviews report **NO FINDINGS**. All nine hard gates pass without a score cap at valid `100/100`; exact staging, commit, and post-commit inventory remain. |
-| Selection checkpoint | `HEAD=0827e494df96afacba4f35b9cc23dfbbb737d141`; `origin/main...HEAD=0/5`; protected `stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4`, unchanged. |
+| Status | The documentation prerequisite is committed as `2438cbb7d39c1844557293b270ef1784cfc31ece`; the task-only implementation is committed as `b22033c38249326e366ceb9e19b1a9100da2248e`. Task 277R1 is complete. Independent source/documentation, bilingual, and final-quality reviews report **NO FINDINGS**; all nine hard gates pass without a score cap at valid `100/100`. Task 277B remains not ready. |
+| Pre-implementation selection checkpoint | `HEAD=0827e494df96afacba4f35b9cc23dfbbb737d141`; `origin/main...HEAD=0/5`; protected `stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4`, unchanged. |
+| Post-implementation checkpoint | Immediately after task-only implementation commit `b22033c38249326e366ceb9e19b1a9100da2248e`, read-only inventory observed `HEAD=b22033c38249326e366ceb9e19b1a9100da2248e`, a clean worktree, `origin/main...HEAD=0/7`, and unchanged protected `stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4`. Task 277R1 is complete; any successor must be separately frozen and reviewed. |
 | Authority | `doc/spec/en/18.templates.md` §§18.2.1, 18.2.2, 18.2.6, 18.10.2 and `doc/spec/en/13.term_expression.md` §13.4.2. The parser prerequisite is [PARSER-TEMPLATE-TYPEHEAD-277P1](./PARSER-TEMPLATE-TYPEHEAD-277P1.md). |
 | Classification | `source_drift`, `design_drift`, and Rust `test_gap`; no `spec_gap`. The later missing-sethood verdict remains checker-owned. |
 | Consumer | This remains only the resolver prerequisite for later Task 277B. Its completion neither makes Task 277B ready nor selects a checker implementation. |
@@ -230,9 +231,10 @@ trace, coverage audit, active stage, diagnostics, semantic coverage, checker,
 and production runner remain unchanged. Independent source/documentation
 consistency and bilingual reviews report **NO FINDINGS**. Independent
 final-quality review also reports **NO FINDINGS**; all nine hard gates pass
-without a score cap at valid `100/100` (`20/20/15/15/10/10/5/5`). Staging,
-the implementation commit, post-commit proof, and fresh successor inventory
-remain and must not be claimed yet.
+without a score cap at valid `100/100` (`20/20/15/15/10/10/5/5`). Exact
+staging, the implementation commit, and the immediate post-implementation
+inventory are complete at the historical checkpoint above. Task 277B remains
+not ready and no successor is selected by this task.
 
 The five CLI stdout SHA-256 values for plan, parse-only, declaration-symbol,
 type-elaboration, and proof-verification are respectively
@@ -244,10 +246,9 @@ and `ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`.
 
 ## Next-task handoff
 
-Perform exact staging and cached-diff review for the four Rust plus 22
-completion-document paths, then create the task-only implementation commit,
-prove post-commit invariants, and run fresh successor inventory. Parent
-authority, integration, staging, and final scoring remain GPT-5.6 Sol `xhigh`.
-Luna is not exposed in this runtime; the effective bounded implementation/review
-route is GPT-5.6 Terra `xhigh`. Escalate every authority or boundary ambiguity
-to Sol.
+Start with fresh authority, dependency, and scope inventory. Do not start Task
+277B until a separately frozen and reviewed lower-owner association task makes
+its checker consumer dependency-ready. Parent authority interpretation and
+final scoring remain GPT-5.6 Sol `xhigh`. Luna is not exposed in this runtime;
+the effective bounded inventory/review route is GPT-5.6 Terra `xhigh`.
+Escalate every authority or boundary ambiguity to Sol.

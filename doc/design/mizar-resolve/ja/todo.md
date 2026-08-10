@@ -807,5 +807,6 @@ cargo test -p mizar-vc
 - [x] independent source/documentation、bilingual reviewを**NO FINDINGS**で完了。
 - [x] independent final-quality reviewを**NO FINDINGS**、全9 hard gates PASS、score cap
   なしのvalid `100/100`で完了。
-- [ ] exact staging、task-only implementation commit、post-commit proof、fresh successor
-  inventoryを完了。Task 277Bはnot readyのまま。
+- [x] exact staging、task-only implementation commit
+  `b22033c38249326e366ceb9e19b1a9100da2248e`、immediate post-implementation proof、
+  fresh successor inventoryを完了。Task 277Bはnot readyのまま。

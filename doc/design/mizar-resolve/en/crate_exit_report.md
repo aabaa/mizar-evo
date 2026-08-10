@@ -393,5 +393,8 @@ focused/full verification. Checker/runner production behavior, active corpus/
 trace/coverage status, diagnostics, semantic verdicts, and historical exit
 evidence remain unchanged. Independent source/docs and bilingual reviews report
 **NO FINDINGS**. Independent final-quality review also reports **NO FINDINGS**;
-all nine hard gates pass without a score cap at valid `100/100`. Staging,
-commit, and post-commit inventory remain before closure.
+all nine hard gates pass without a score cap at valid `100/100`. Exact staging,
+commit, and post-commit inventory are complete with task-only implementation commit
+`b22033c38249326e366ceb9e19b1a9100da2248e` and the central contract's historical
+checkpoint. This post-exit prerequisite is complete without revising the
+historical crate exit or its score; Task 277B remains not ready.
