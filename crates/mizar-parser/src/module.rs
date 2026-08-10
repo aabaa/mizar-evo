@@ -70,6 +70,11 @@ enum QuaTargetGrammar {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum RequiredTypePolicy {
+    ComprehensionGenerator,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum CaseBranchKind {
     Case,
     Suppose,
@@ -2848,6 +2853,10 @@ impl Parser {
         let template_definition = self.definition_block_is_template_shaped_at(cursor);
         let mut parsing_leading_template_parameters = template_definition;
 
+        if template_definition {
+            self.template_definition_depth += 1;
+        }
+
         while cursor < self.request.tokens.len() && !self.is_end_keyword_at(cursor) {
             let content =
                 if parsing_leading_template_parameters && self.is_reserved_word_at(cursor, "let") {
@@ -2864,6 +2873,10 @@ impl Parser {
             if !made_progress {
                 break;
             }
+        }
+
+        if template_definition {
+            self.template_definition_depth -= 1;
         }
 
         if self.is_end_keyword_at(cursor) {
@@ -8988,6 +9001,40 @@ impl Parser {
         })
     }
 
+    fn parse_required_type_expression_at(
+        &mut self,
+        position: usize,
+        policy: RequiredTypePolicy,
+    ) -> Option<ParsedTypeNode> {
+        if let Some(type_expression) = self.parse_type_expression_at(position) {
+            return Some(type_expression);
+        }
+
+        match policy {
+            RequiredTypePolicy::ComprehensionGenerator
+                if self.template_definition_depth > 0 && self.is_identifier_at(position) =>
+            {
+                let range = self.covering_token_range(position, position + 1);
+                let head = self.events.emit(SyntaxEvent::Node {
+                    kind: SurfaceNodeKind::TypeHead,
+                    range,
+                    children: vec![self.token_node_ids[position]],
+                });
+                let id = self.events.emit(SyntaxEvent::Node {
+                    kind: SurfaceNodeKind::TypeExpression,
+                    range,
+                    children: vec![head],
+                });
+                Some(ParsedTypeNode {
+                    id,
+                    next_position: position + 1,
+                    recovery_nodes: Vec::new(),
+                })
+            }
+            _ => None,
+        }
+    }
+
     fn parse_attribute_ref_from_plan(&mut self, plan: AttributeRefPlan) -> ParsedTypeNode {
         let mut children = Vec::new();
         let mut recovery_nodes = Vec::new();
@@ -11511,7 +11558,10 @@ impl Parser {
         if self.is_reserved_word_at(cursor, "is") {
             children.push(self.token_node_ids[cursor]);
             cursor += 1;
-            if let Some(type_expression) = self.parse_type_expression_at(cursor) {
+            if let Some(type_expression) = self.parse_required_type_expression_at(
+                cursor,
+                RequiredTypePolicy::ComprehensionGenerator,
+            ) {
                 cursor = type_expression.next_position;
                 children.push(type_expression.id);
                 recovery_nodes.extend(type_expression.recovery_nodes);

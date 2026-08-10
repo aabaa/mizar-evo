@@ -326,10 +326,16 @@ cargo test -p mizar-lexer
 
 ## Independently Authorized Template Type-Head Follow-Through
 
-- **`PARSER-TEMPLATE-TYPEHEAD-277P1`.** [ ]
+- **`PARSER-TEMPLATE-TYPEHEAD-277P1`.** [x]
   - [central JA contract](../../task_contracts/ja/PARSER-TEMPLATE-TYPEHEAD-277P1.md)
     に従い、real-parser cache namespace だけを v2 から v3 に変更し、orchestration
     replay/control test 1件を追加する。
   - frontend grammar、merge logic、diagnostic vocabulary/order、fuzz target、corpus、
     traceability、coverage、resolver/checker behavior、public API shape を変更しない。
     contract 対象の diagnostic vector と cache-version value だけを変更する。
+  - exact frontend Rust 2 path で実装済み。replay/control regression 1件と complete
+    frontend package 154件は pass。source/docs と bilingual/boundary re-review は no
+    findings、coverage-audit no-op は confirmed。independent final-quality review も no
+    findings、9 hard gate は全て PASS、cap なしで 99/100。remaining staging/cached
+    review、implementation commit、post-commit、fresh-inventory closure evidence は
+    central contract が所有する。

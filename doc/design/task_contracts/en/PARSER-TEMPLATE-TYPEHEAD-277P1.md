@@ -14,7 +14,7 @@ Stable owner sections:
 
 | Field | Frozen value |
 |---|---|
-| Status | Documentation frozen; implementation pending in a separate commit. |
+| Status | The exact five-path Rust implementation and 26-path completion-document update are complete in the worktree. All independent reviews report no findings after the three-parser-leaf-hash documentation repair; implementation verification passes, the coverage-audit no-op is confirmed, and all nine hard gates pass with an uncapped final-quality score of 99/100. Only exact staging/cached-diff review, the task-only implementation commit, clean post-commit proof, and fresh inventory remain pending. |
 | Selection checkpoint | `HEAD=2a6bf6ea`, `origin/main...HEAD=0/2`, and protected `stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4` were observed during the read-only selection inventory. This is historical selection evidence, not implementation evidence. |
 | Authority | `doc/spec/en/18.templates.md` §§18.2.2, 18.2.6, 18.10.2 and `doc/spec/en/13.term_expression.md` §13.4 and §13.4.2. |
 | Classification | `source_drift` plus Rust `test_gap`; no `spec_gap`. |
@@ -54,7 +54,7 @@ sethood under §18.10.2.
 
 ## Exact implementation and tests
 
-Only these five Rust paths are authorized in the later implementation commit:
+The completed implementation changes only these five authorized Rust paths:
 
 1. `crates/mizar-parser/src/grammar.rs`
 2. `crates/mizar-parser/src/module.rs`
@@ -104,7 +104,7 @@ contract pair; paired parser `00.crate_plan`, `grammar`, `source_spec_audit`,
 `todo`, `bilingual_documentation_synchronization`, and `crate_exit_report`;
 and paired frontend `00.crate_plan`, `parsing`, `cache_key`, `orchestration`,
 `source_spec_correspondence`, `todo`, `bilingual_documentation_synchronization`,
-and `crate_exit_report`. The later completion-document set is exactly 26 paths:
+and `crate_exit_report`. This completion-document set is exactly 26 paths:
 this pair plus every listed non-plan owner path. With the five Rust paths it is
 31 paths.
 
@@ -120,24 +120,72 @@ vocabulary is added.
 Trace hash `55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`
 remains unchanged.
 
+## Implementation evidence
+
+The implementation changes exactly the five frozen Rust paths. Parser source
+is 12 paths / 39,645 lines with unchanged path hash
+`192f9d0b5e6534c4daab010ec51a9356e9e0fd6fb86876bd2600a75844e7566a`
+and content-manifest hash
+`ec9a71e80d7b127de4c8956936e6a962f51897563ae39993982c812daffc1093`.
+The three parser leaves are `grammar.rs` 245 lines /
+`7b438b55db150e5dd2c391bfde4b72f5f54ec4c94c9c6ba7fcb20f5ff0e77a77`,
+`module.rs` 16,811 /
+`de648c5e1a81e6d26b2cf94fbcac85fdcae125f4bfcf2ec749c9c8cd0b2de96e`,
+and `module/tests.rs` 18,924 /
+`20ed0a5346888e3eab6837fa61220df75fca745ce5def411d46ec61cef0d325b`.
+The parser library state is 229 tests; its full-package raw-list hash is
+`d090874814c24c907a056bdf6c0e945d1f46ff9fc7c000e0a55df9a0847cb2d8`.
+
+Frontend source is 9 paths / 11,168 lines with unchanged path hash
+`c7b20f1ab8f9414109dce18eb6591a6f18c0b413cd5a11beb84fa1b785822101`
+and content-manifest hash
+`f20fa00c8bd4f69cd20766a5c41a29bde0a8da33cc0464e9288932a397cc4a8a`.
+`parsing.rs` is 1,459 lines /
+`5e1574dd77c9a3d756b4d7ce74ff4e155f36c650edd5c73a418a0ca528dc0f49`;
+`orchestration.rs` is 2,046 /
+`946acbd24025a476cb9184f11098668b6fddb0f27825bf809aca322ab189ae44`;
+and the full 154-test raw-list hash is
+`8b822fbbb8e56aaf2a89422e4a6b49028513bbc6fa3d552b113066a4e5282a73`.
+
+All three focused parser tests and the one focused frontend replay/control test
+pass. The parser library passes 229 tests, and the complete frontend package
+passes 154 tests.
+`cargo fmt --check`, warnings-denied all-target/all-feature workspace Clippy,
+full workspace `cargo test`, offline Cargo metadata, and all 137 metadata tests
+pass. The five CLIs exit zero and preserve stdout SHA-256 values
+`700f4bf503783742cefd8004fa095675b7476d46e9a3a6dd439916d237eb6718`,
+`a8a7aa639d2ebc65eddc923c7e9369ea5637d50e935f808600f446da1bfbda56`,
+`71e83ba0b20d4015e07b3bd2c0c4db2837b6151d1251812caed7954530d53c74`,
+`4b2c7bd5ec3cc56e5672fb351126126230ec84fba9bd2bd9049a516d378fab7f`,
+and `ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`.
+Protected fixture, sidecar, trace, coverage-audit, stage, route, and coverage
+credit remain unchanged at their frozen hashes and statuses.
+
+Specification/test-sufficiency, implementation/boundary, and
+source/documentation-consistency reviews report **NO FINDINGS**. The
+bilingual/boundary review's three-parser-leaf-hash documentation finding was
+repaired, and its finding-specific re-review reports **NO FINDINGS**. The
+coverage-audit no-op is confirmed. Final-quality review and scoring are
+complete with **NO FINDINGS**: all nine hard gates pass, no cap applies, and the
+independent score is **99/100**. Exact staging/cached-diff review, the task-only
+implementation commit, clean post-commit proof, and fresh inventory remain
+pending; no commit hash exists.
+Checker Task 277B remains blocked by its separate resolver declaration/use-
+identity prerequisite.
+
 ## Exit evidence
 
-The implementation must run focused parser and frontend tests, frontend replay
-and cache assertions, format, denied-warning Clippy, workspace tests, five
-CLIs, frozen count/hash remeasurement, recursive contract/link lint, and
-`git diff --check`. Independent specification/test, implementation, and
-source/documentation reviews must end with no findings before the separate
-implementation commit.
+Implementation verification, all independent reviews, the nine passing hard
+gates, the uncapped 99/100 score, and the coverage-audit no-op are confirmed.
+Task closure now requires only exact staging/cached-diff review, the task-only
+implementation commit, clean post-commit proof, and fresh-inventory evidence;
+the task must not be marked complete before those checks finish.
 
 ## Next-task handoff
 
-Implement `PARSER-TEMPLATE-TYPEHEAD-277P1` in exactly the five frozen Rust
-paths, add exactly the three parser tests and one frontend replay/cache test,
-keep the semantic seed, expectation, trace, coverage, diagnostics vocabulary,
-and resolver/checker behavior unchanged, then synchronize exactly the 26
-completion documents and run every frozen review and verification gate. Keep
-the parent on GPT-5.6 Sol `xhigh` for authority, integration, staging, and final
-scoring. GPT-5.6 Luna is not exposed at this checkpoint; use GPT-5.6 Terra
-`high` for each independently bounded parser/frontend implementation or review
-assignment, escalating any scope or authority ambiguity to the Sol `xhigh`
-parent.
+Perform exact staging/cached-diff review for the completed five-Rust-path plus
+26-document worktree, create the task-only implementation commit, and prove a
+clean post-commit/fresh inventory. Preserve every protected hash,
+inactive semantic status, and the separate resolver blocker. Keep the parent on
+GPT-5.6 Sol `xhigh` for authority, staging, and post-commit inventory; bounded reviews
+may use GPT-5.6 Terra `high`, escalating any ambiguity to the parent.

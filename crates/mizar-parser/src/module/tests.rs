@@ -11522,6 +11522,390 @@ fn parser_recovers_malformed_set_comprehensions() {
 }
 
 #[test]
+fn parser_parses_template_type_parameter_as_set_comprehension_generator_type() {
+    let source_id = source_id(252);
+    let output = parse(ParseRequest::new(
+        source_id,
+        Edition::new("2026"),
+        fraenkel_template_tokens(source_id),
+        Vec::new(),
+    ));
+
+    assert!(
+        output.diagnostics.is_empty(),
+        "the immutable Fraenkel seed should parse without syntax diagnostics: {:?}",
+        output.diagnostics
+    );
+    let ast = output
+        .ast
+        .expect("the Fraenkel seed should keep a full AST");
+    assert_eq!(ast.nodes().len(), 57);
+    assert_eq!(ast.root().expect("seed should have a root").index(), 56);
+    assert_eq!(
+        count_nodes(&ast, |kind| matches!(
+            kind,
+            SurfaceNodeKind::ErrorRecovery(_)
+        )),
+        0
+    );
+    assert!(ast.trivia().skipped_token_ranges().is_empty());
+
+    for (range, kind) in [
+        (range(source_id, 678, 679), "TypeExpression"),
+        (range(source_id, 678, 679), "TypeHead"),
+        (range(source_id, 673, 679), "ComprehensionVariableSegment"),
+        (range(source_id, 682, 692), "FormulaExpression"),
+        (range(source_id, 663, 694), "SetComprehension"),
+        (range(source_id, 623, 695), "FunctorDefinition"),
+        (range(source_id, 593, 700), "DefinitionBlockItem"),
+    ] {
+        assert!(
+            ast.nodes().iter().any(|node| {
+                node.range == range
+                    && match kind {
+                        "TypeExpression" => {
+                            matches!(node.kind, SurfaceNodeKind::TypeExpression)
+                        }
+                        "TypeHead" => matches!(node.kind, SurfaceNodeKind::TypeHead),
+                        "ComprehensionVariableSegment" => {
+                            matches!(node.kind, SurfaceNodeKind::ComprehensionVariableSegment)
+                        }
+                        "FormulaExpression" => {
+                            matches!(node.kind, SurfaceNodeKind::FormulaExpression)
+                        }
+                        "SetComprehension" => {
+                            matches!(node.kind, SurfaceNodeKind::SetComprehension)
+                        }
+                        "FunctorDefinition" => {
+                            matches!(node.kind, SurfaceNodeKind::FunctorDefinition)
+                        }
+                        "DefinitionBlockItem" => {
+                            matches!(node.kind, SurfaceNodeKind::DefinitionBlockItem)
+                        }
+                        _ => false,
+                    }
+            }),
+            "expected {kind} at {}..{}; snapshot={}",
+            range.start,
+            range.end,
+            ast.snapshot_text()
+        );
+    }
+}
+
+#[test]
+fn parser_scopes_required_identifier_type_fallback_to_template_definitions() {
+    let scoped_source_id = source_id(253);
+    let tokens = token_sequence(
+        scoped_source_id,
+        &[
+            ("definition", ParserTokenKind::ReservedWord),
+            ("let", ParserTokenKind::ReservedWord),
+            ("T", ParserTokenKind::Identifier),
+            ("be", ParserTokenKind::ReservedWord),
+            ("type", ParserTokenKind::ReservedWord),
+            (";", ParserTokenKind::ReservedSymbol),
+            ("func", ParserTokenKind::ReservedWord),
+            ("Inner", ParserTokenKind::Identifier),
+            (":", ParserTokenKind::ReservedSymbol),
+            ("f", ParserTokenKind::UserSymbol),
+            ("->", ParserTokenKind::ReservedSymbol),
+            ("set", ParserTokenKind::ReservedWord),
+            ("equals", ParserTokenKind::ReservedWord),
+            ("{", ParserTokenKind::ReservedSymbol),
+            ("x", ParserTokenKind::Identifier),
+            ("where", ParserTokenKind::ReservedWord),
+            ("x", ParserTokenKind::Identifier),
+            ("is", ParserTokenKind::ReservedWord),
+            ("T", ParserTokenKind::Identifier),
+            (":", ParserTokenKind::ReservedSymbol),
+            ("thesis", ParserTokenKind::ReservedWord),
+            ("}", ParserTokenKind::ReservedSymbol),
+            (";", ParserTokenKind::ReservedSymbol),
+            ("end", ParserTokenKind::ReservedWord),
+            (";", ParserTokenKind::ReservedSymbol),
+            ("theorem", ParserTokenKind::ReservedWord),
+            ("Outside", ParserTokenKind::Identifier),
+            (":", ParserTokenKind::ReservedSymbol),
+            ("{", ParserTokenKind::ReservedSymbol),
+            ("x", ParserTokenKind::Identifier),
+            ("where", ParserTokenKind::ReservedWord),
+            ("x", ParserTokenKind::Identifier),
+            ("is", ParserTokenKind::ReservedWord),
+            ("T", ParserTokenKind::Identifier),
+            (":", ParserTokenKind::ReservedSymbol),
+            ("thesis", ParserTokenKind::ReservedWord),
+            ("}", ParserTokenKind::ReservedSymbol),
+            ("=", ParserTokenKind::ReservedSymbol),
+            ("x", ParserTokenKind::Identifier),
+            (";", ParserTokenKind::ReservedSymbol),
+        ],
+    );
+    let inner_type_range = nth_token_range(&tokens, "T", 1);
+    let outside_type_range = nth_token_range(&tokens, "T", 2);
+    let output = parse(ParseRequest::new(
+        scoped_source_id,
+        Edition::new("2026"),
+        tokens,
+        Vec::new(),
+    ));
+    let ast = output
+        .ast
+        .expect("scope fixture should retain a recovered AST");
+
+    assert!(ast.nodes().iter().any(|node| {
+        node.range == inner_type_range && matches!(node.kind, SurfaceNodeKind::TypeHead)
+    }));
+    assert!(!ast.nodes().iter().any(|node| {
+        node.range == outside_type_range && matches!(node.kind, SurfaceNodeKind::TypeHead)
+    }));
+    assert!(output.diagnostics.iter().any(|diagnostic| {
+        diagnostic.code == SyntaxDiagnosticCode::MalformedTypeExpression
+            && diagnostic.primary == outside_type_range
+    }));
+
+    let symbol_source_id = source_id(251);
+    let symbol_tokens = token_sequence(
+        symbol_source_id,
+        &[
+            ("definition", ParserTokenKind::ReservedWord),
+            ("let", ParserTokenKind::ReservedWord),
+            ("T", ParserTokenKind::Identifier),
+            ("be", ParserTokenKind::ReservedWord),
+            ("type", ParserTokenKind::ReservedWord),
+            (";", ParserTokenKind::ReservedSymbol),
+            ("func", ParserTokenKind::ReservedWord),
+            ("Symbolic", ParserTokenKind::Identifier),
+            (":", ParserTokenKind::ReservedSymbol),
+            ("f", ParserTokenKind::UserSymbol),
+            ("->", ParserTokenKind::ReservedSymbol),
+            ("set", ParserTokenKind::ReservedWord),
+            ("equals", ParserTokenKind::ReservedWord),
+            ("{", ParserTokenKind::ReservedSymbol),
+            ("x", ParserTokenKind::Identifier),
+            ("where", ParserTokenKind::ReservedWord),
+            ("x", ParserTokenKind::Identifier),
+            ("is", ParserTokenKind::ReservedWord),
+            ("Mode", ParserTokenKind::UserSymbol),
+            (":", ParserTokenKind::ReservedSymbol),
+            ("thesis", ParserTokenKind::ReservedWord),
+            ("}", ParserTokenKind::ReservedSymbol),
+            (";", ParserTokenKind::ReservedSymbol),
+            ("end", ParserTokenKind::ReservedWord),
+            (";", ParserTokenKind::ReservedSymbol),
+        ],
+    );
+    let symbol_range = nth_token_range(&symbol_tokens, "Mode", 0);
+    let symbol_output = parse(ParseRequest::new(
+        symbol_source_id,
+        Edition::new("2026"),
+        symbol_tokens,
+        Vec::new(),
+    ));
+    assert!(symbol_output.diagnostics.is_empty());
+    let symbol_ast = symbol_output
+        .ast
+        .expect("strict user-symbol generator type should retain an AST");
+    let symbol_head = symbol_ast
+        .nodes()
+        .iter()
+        .find(|node| node.range == symbol_range && matches!(node.kind, SurfaceNodeKind::TypeHead))
+        .expect("user-symbol generator type should have a TypeHead");
+    assert!(
+        structural_children(&symbol_ast, symbol_head)
+            .iter()
+            .any(|child| matches!(child.kind, SurfaceNodeKind::QualifiedSymbol))
+    );
+}
+
+#[test]
+fn parser_keeps_template_required_type_fallback_single_token_and_ambiguity_bounded() {
+    let ambiguity_source_id = source_id(250);
+    let tokens = token_sequence(
+        ambiguity_source_id,
+        &[
+            ("definition", ParserTokenKind::ReservedWord),
+            ("let", ParserTokenKind::ReservedWord),
+            ("T", ParserTokenKind::Identifier),
+            ("be", ParserTokenKind::ReservedWord),
+            ("type", ParserTokenKind::ReservedWord),
+            (";", ParserTokenKind::ReservedSymbol),
+            ("func", ParserTokenKind::ReservedWord),
+            ("Ambiguous", ParserTokenKind::Identifier),
+            (":", ParserTokenKind::ReservedSymbol),
+            ("f", ParserTokenKind::UserSymbol),
+            ("->", ParserTokenKind::ReservedSymbol),
+            ("set", ParserTokenKind::ReservedWord),
+            ("equals", ParserTokenKind::ReservedWord),
+            ("{", ParserTokenKind::ReservedSymbol),
+            ("x", ParserTokenKind::Identifier),
+            ("where", ParserTokenKind::ReservedWord),
+            ("x", ParserTokenKind::Identifier),
+            ("is", ParserTokenKind::ReservedWord),
+            ("T", ParserTokenKind::Identifier),
+            ("U", ParserTokenKind::Identifier),
+            (":", ParserTokenKind::ReservedSymbol),
+            ("thesis", ParserTokenKind::ReservedWord),
+            ("}", ParserTokenKind::ReservedSymbol),
+            (";", ParserTokenKind::ReservedSymbol),
+            ("end", ParserTokenKind::ReservedWord),
+            (";", ParserTokenKind::ReservedSymbol),
+        ],
+    );
+    let first_range = nth_token_range(&tokens, "T", 1);
+    let second_range = nth_token_range(&tokens, "U", 0);
+    let output = parse(ParseRequest::new(
+        ambiguity_source_id,
+        Edition::new("2026"),
+        tokens,
+        Vec::new(),
+    ));
+    assert!(!output.diagnostics.is_empty());
+    let ast = output
+        .ast
+        .expect("multi-token near miss should retain a recovered AST");
+    assert!(ast.nodes().iter().any(|node| {
+        node.range == first_range && matches!(node.kind, SurfaceNodeKind::TypeHead)
+    }));
+    assert!(!ast.nodes().iter().any(|node| {
+        node.range == range(ambiguity_source_id, first_range.start, second_range.end)
+            && matches!(
+                node.kind,
+                SurfaceNodeKind::TypeHead | SurfaceNodeKind::TypeExpression
+            )
+    }));
+    assert!(
+        ast.nodes()
+            .iter()
+            .any(|node| matches!(node.kind, SurfaceNodeKind::ErrorRecovery(_)))
+    );
+
+    let assertion_source_id = source_id(249);
+    let assertion_tokens = token_sequence(
+        assertion_source_id,
+        &[
+            ("definition", ParserTokenKind::ReservedWord),
+            ("let", ParserTokenKind::ReservedWord),
+            ("T", ParserTokenKind::Identifier),
+            ("be", ParserTokenKind::ReservedWord),
+            ("type", ParserTokenKind::ReservedWord),
+            (";", ParserTokenKind::ReservedSymbol),
+            ("theorem", ParserTokenKind::ReservedWord),
+            ("Assertion", ParserTokenKind::Identifier),
+            (":", ParserTokenKind::ReservedSymbol),
+            ("x", ParserTokenKind::Identifier),
+            ("is", ParserTokenKind::ReservedWord),
+            ("T", ParserTokenKind::Identifier),
+            (";", ParserTokenKind::ReservedSymbol),
+            ("end", ParserTokenKind::ReservedWord),
+            (";", ParserTokenKind::ReservedSymbol),
+        ],
+    );
+    let assertion_type_range = nth_token_range(&assertion_tokens, "T", 1);
+    let assertion_output = parse(ParseRequest::new(
+        assertion_source_id,
+        Edition::new("2026"),
+        assertion_tokens,
+        Vec::new(),
+    ));
+    assert!(assertion_output.diagnostics.iter().any(|diagnostic| {
+        diagnostic.code == SyntaxDiagnosticCode::MalformedTypeExpression
+            && diagnostic.primary == assertion_type_range
+    }));
+    let assertion_ast = assertion_output
+        .ast
+        .expect("is-assertion near miss should retain a recovered AST");
+    assert!(!assertion_ast.nodes().iter().any(|node| {
+        node.range == assertion_type_range && matches!(node.kind, SurfaceNodeKind::TypeHead)
+    }));
+
+    let bracket_source_id = source_id(248);
+    let bracket_tokens = token_sequence(
+        bracket_source_id,
+        &[
+            ("definition", ParserTokenKind::ReservedWord),
+            ("let", ParserTokenKind::ReservedWord),
+            ("T", ParserTokenKind::Identifier),
+            ("be", ParserTokenKind::ReservedWord),
+            ("type", ParserTokenKind::ReservedWord),
+            (";", ParserTokenKind::ReservedSymbol),
+            ("func", ParserTokenKind::ReservedWord),
+            ("Bracket", ParserTokenKind::Identifier),
+            (":", ParserTokenKind::ReservedSymbol),
+            ("f", ParserTokenKind::UserSymbol),
+            ("->", ParserTokenKind::ReservedSymbol),
+            ("Mode", ParserTokenKind::UserSymbol),
+            ("[", ParserTokenKind::ReservedSymbol),
+            ("T", ParserTokenKind::Identifier),
+            ("]", ParserTokenKind::ReservedSymbol),
+            ("equals", ParserTokenKind::ReservedWord),
+            ("x", ParserTokenKind::Identifier),
+            (";", ParserTokenKind::ReservedSymbol),
+            ("end", ParserTokenKind::ReservedWord),
+            (";", ParserTokenKind::ReservedSymbol),
+        ],
+    );
+    let bracket_type_range = nth_token_range(&bracket_tokens, "T", 1);
+    let bracket_output = parse(ParseRequest::new(
+        bracket_source_id,
+        Edition::new("2026"),
+        bracket_tokens,
+        Vec::new(),
+    ));
+    assert!(bracket_output.diagnostics.is_empty());
+    let bracket_ast = bracket_output
+        .ast
+        .expect("bracket argument control should retain an AST");
+    assert!(!bracket_ast.nodes().iter().any(|node| {
+        node.range == bracket_type_range && matches!(node.kind, SurfaceNodeKind::TypeHead)
+    }));
+
+    let argument_source_id = source_id(247);
+    let argument_tokens = token_sequence(
+        argument_source_id,
+        &[
+            ("definition", ParserTokenKind::ReservedWord),
+            ("let", ParserTokenKind::ReservedWord),
+            ("T", ParserTokenKind::Identifier),
+            ("be", ParserTokenKind::ReservedWord),
+            ("type", ParserTokenKind::ReservedWord),
+            (";", ParserTokenKind::ReservedSymbol),
+            ("func", ParserTokenKind::ReservedWord),
+            ("TemplateArg", ParserTokenKind::Identifier),
+            (":", ParserTokenKind::ReservedSymbol),
+            ("f", ParserTokenKind::UserSymbol),
+            ("->", ParserTokenKind::ReservedSymbol),
+            ("set", ParserTokenKind::ReservedWord),
+            ("equals", ParserTokenKind::ReservedWord),
+            ("g", ParserTokenKind::Identifier),
+            ("[", ParserTokenKind::ReservedSymbol),
+            ("T", ParserTokenKind::Identifier),
+            ("]", ParserTokenKind::ReservedSymbol),
+            ("(", ParserTokenKind::ReservedSymbol),
+            ("x", ParserTokenKind::Identifier),
+            (")", ParserTokenKind::ReservedSymbol),
+            (";", ParserTokenKind::ReservedSymbol),
+            ("end", ParserTokenKind::ReservedWord),
+            (";", ParserTokenKind::ReservedSymbol),
+        ],
+    );
+    let argument_type_range = nth_token_range(&argument_tokens, "T", 1);
+    let argument_output = parse(ParseRequest::new(
+        argument_source_id,
+        Edition::new("2026"),
+        argument_tokens,
+        Vec::new(),
+    ));
+    assert!(argument_output.diagnostics.is_empty());
+    let argument_ast = argument_output
+        .ast
+        .expect("template argument control should retain an AST");
+    assert!(!argument_ast.nodes().iter().any(|node| {
+        node.range == argument_type_range && matches!(node.kind, SurfaceNodeKind::TypeHead)
+    }));
+}
+
+#[test]
 fn parser_parses_task31_template_predicate_args_inside_set_comprehension_conditions() {
     let source_id = source_id(170);
     let output = parse(ParseRequest::new(
@@ -18329,6 +18713,56 @@ fn token_sequence(source_id: SourceId, entries: &[(&str, ParserTokenKind)]) -> V
             let end = start + text.len();
             cursor = end + 1;
             token(source_id, *kind, text, start, end)
+        })
+        .collect()
+}
+
+const FRAENKEL_TEMPLATE_SOURCE: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/../../tests/miz/fail/templates/fail_template_fraenkel_over_type_param_001.miz"
+));
+
+fn fraenkel_template_tokens(source_id: SourceId) -> Vec<ParserToken> {
+    let entries = [
+        ("definition", ParserTokenKind::ReservedWord, 593, 603),
+        ("let", ParserTokenKind::ReservedWord, 606, 609),
+        ("T", ParserTokenKind::Identifier, 610, 611),
+        ("be", ParserTokenKind::ReservedWord, 612, 614),
+        ("type", ParserTokenKind::ReservedWord, 615, 619),
+        (";", ParserTokenKind::ReservedSymbol, 619, 620),
+        ("func", ParserTokenKind::ReservedWord, 623, 627),
+        ("ParaDef", ParserTokenKind::Identifier, 628, 635),
+        (":", ParserTokenKind::ReservedSymbol, 635, 636),
+        ("para", ParserTokenKind::Identifier, 637, 641),
+        ("[", ParserTokenKind::ReservedSymbol, 641, 642),
+        ("T", ParserTokenKind::Identifier, 642, 643),
+        ("]", ParserTokenKind::ReservedSymbol, 643, 644),
+        ("->", ParserTokenKind::ReservedSymbol, 645, 647),
+        ("set", ParserTokenKind::ReservedWord, 648, 651),
+        ("equals", ParserTokenKind::ReservedWord, 652, 658),
+        ("{", ParserTokenKind::ReservedSymbol, 663, 664),
+        ("x", ParserTokenKind::Identifier, 665, 666),
+        ("where", ParserTokenKind::ReservedWord, 667, 672),
+        ("x", ParserTokenKind::Identifier, 673, 674),
+        ("is", ParserTokenKind::ReservedWord, 675, 677),
+        ("T", ParserTokenKind::Identifier, 678, 679),
+        (":", ParserTokenKind::ReservedSymbol, 680, 681),
+        ("not", ParserTokenKind::ReservedWord, 682, 685),
+        ("x", ParserTokenKind::Identifier, 686, 687),
+        ("in", ParserTokenKind::ReservedWord, 688, 690),
+        ("x", ParserTokenKind::Identifier, 691, 692),
+        ("}", ParserTokenKind::ReservedSymbol, 693, 694),
+        (";", ParserTokenKind::ReservedSymbol, 694, 695),
+        ("end", ParserTokenKind::ReservedWord, 696, 699),
+        (";", ParserTokenKind::ReservedSymbol, 699, 700),
+    ];
+
+    assert_eq!(FRAENKEL_TEMPLATE_SOURCE.len(), 701);
+    entries
+        .into_iter()
+        .map(|(text, kind, start, end)| {
+            assert_eq!(&FRAENKEL_TEMPLATE_SOURCE[start..end], text);
+            token(source_id, kind, text, start, end)
         })
         .collect()
 }

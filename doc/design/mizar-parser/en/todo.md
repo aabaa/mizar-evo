@@ -1143,7 +1143,7 @@ Check the task off here once tests pass.
 
 ## Independently Authorized Template Type-Head Prerequisite
 
-- **`PARSER-TEMPLATE-TYPEHEAD-277P1`.** [ ]
+- **`PARSER-TEMPLATE-TYPEHEAD-277P1`.** [x]
   - The [central contract](../../task_contracts/en/PARSER-TEMPLATE-TYPEHEAD-277P1.md)
     freezes the required-generator `Identifier` fallback only inside
     template-shaped definitions; no generic/speculative type parsing,
@@ -1153,3 +1153,10 @@ Check the task off here once tests pass.
     test only.
   - This is not Task 49 and does not make Checker Task 277B ready; its resolver
     declaration/use-identity prerequisite remains separate.
+  - Implemented in the exact three parser Rust paths with all three focused
+    tests passing. Source/docs and bilingual/boundary re-reviews report no
+    findings and the coverage-audit no-op is confirmed. Independent
+    final-quality review reports no findings; all nine hard gates pass with no
+    cap and a 99/100 score. The central contract owns the remaining
+    staging/cached review, implementation commit, post-commit, and
+    fresh-inventory closure evidence.

@@ -2269,3 +2269,12 @@ the source token/range; this is not parameter binding or symbol
 classification. Existing `UserSymbol` heads retain their normal
 `QualifiedSymbol` shape. The fallback is absent from speculative template/type
 arguments and `is`-assertion alternatives, and cannot escape the definition.
+
+### Implementation result
+
+The explicit required-type policy and parse-local template-definition depth
+now preserve the frozen generator `Identifier` without widening ordinary or
+speculative type parsing. The target produces the exact complete 57-node AST
+with zero syntax diagnostics/recovery, and the three focused parser tests pass.
+No binding, resolution, sethood, public API, or diagnostic-vocabulary behavior
+was added; final task-closure evidence remains owned by the central contract.

@@ -186,8 +186,8 @@ trace metadata remain unchanged.
 
 | Finding | Classification | Disposition |
 |---|---|---|
-| A template type parameter is accepted in a leading declaration but not as the §13.4.2 Fraenkel generator type in that template body. | `source_drift` | Preserve a one-token identifier type head only through the explicit required-generator-type policy and parse-local template scope. |
-| No focused parser/frontend regression pins the full successful AST, strict near misses, and cache invalidation. | `test_gap` | Add only the four frozen Rust tests in the central contract. |
+| A template type parameter is accepted in a leading declaration but not as the §13.4.2 Fraenkel generator type in that template body. | `source_drift` | Closed by the one-token identifier type head, explicit required-generator-type policy, and parse-local template scope. |
+| No focused parser/frontend regression pins the full successful AST, strict near misses, and cache invalidation. | `test_gap` | Closed by exactly the four frozen Rust tests in the central contract. |
 
 There is no `spec_gap`: §§18.2.2/18.2.6 authorize the syntax, while §18.10.2
 requires the later semantic rejection. The seed, sidecar, trace row, active
@@ -195,3 +195,18 @@ routes, coverage, diagnostic vocabulary, and resolver/checker/Core ownership
 remain unchanged; the frozen target's obsolete recovery diagnostics disappear
 exactly as contracted. This prerequisite alone does not unblock Checker Task
 277B.
+
+### Implementation disposition
+
+The parser `source_drift` and Rust `test_gap` are closed in the worktree. The
+three parser regressions pass and the real frontend seam confirms the exact
+complete target AST and diagnostic-free result. Specification, fixture,
+sidecar, trace/status, coverage credit, and downstream semantic ownership stay
+unchanged. Specification/test-sufficiency and implementation/boundary reviews
+report no findings. The source/documentation-consistency re-review also reports
+**NO FINDINGS**, and confirms that the coverage-audit no-op is correct because
+no coverage owner, trace status, credit, or deferred rationale changes.
+Independent final-quality review also reports **NO FINDINGS**; all nine hard
+gates pass with no cap and a 99/100 score. Only staging/cached review, the
+implementation commit, post-commit proof, and fresh inventory remain tracked
+by the central contract.

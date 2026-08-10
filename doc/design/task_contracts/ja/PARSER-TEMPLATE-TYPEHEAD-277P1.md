@@ -14,7 +14,7 @@ stable owner section:
 
 | 項目 | freeze 値 |
 |---|---|
-| 状態 | documentation は freeze 済み、implementation は別 commit で pending。 |
+| 状態 | exact Rust 5 path implementation と completion document 26 path update は worktree で complete。three-parser-leaf-hash documentation repair 後の全 independent review は no findings、implementation verification は pass、coverage-audit no-op は confirmed、9 hard gate は全て PASS、cap なしの final-quality score は 99/100。exact staging/cached-diff review、task-only implementation commit、clean post-commit proof、fresh inventory だけが pending。 |
 | 選択 checkpoint | 読み取り専用 inventory で `HEAD=2a6bf6ea`、`origin/main...HEAD=0/2`、protected `stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4` を観測した。これは historical selection evidence であり implementation evidence ではない。 |
 | Authority | `doc/spec/en/18.templates.md` §§18.2.2、18.2.6、18.10.2 と `doc/spec/en/13.term_expression.md` §13.4 と §13.4.2。 |
 | 分類 | `source_drift` と Rust `test_gap`。`spec_gap` はない。 |
@@ -51,7 +51,7 @@ semantic verification が missing sethood として拒否する。
 
 ## Exact scope、tests、cache
 
-後続 implementation commit の Rust scope は
+completed implementation の Rust scope は
 `crates/mizar-parser/src/{grammar.rs,module.rs,module/tests.rs}` と
 `crates/mizar-frontend/src/{parsing.rs,orchestration.rs}` の5 pathだけである。
 parser tests は `226 -> 229`:
@@ -105,20 +105,65 @@ cache-version value 以外の public API shape、mizar-test/syntax/resolve/check
 追加しない。trace
 `55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3` は不変。
 
+## Implementation evidence
+
+implementation は frozen Rust 5 path だけを変更する。parser source は 12 paths /
+39,645 lines、unchanged path hash
+`192f9d0b5e6534c4daab010ec51a9356e9e0fd6fb86876bd2600a75844e7566a`、
+content-manifest hash
+`ec9a71e80d7b127de4c8956936e6a962f51897563ae39993982c812daffc1093`。
+parser leaf は `grammar.rs` 245 lines /
+`7b438b55db150e5dd2c391bfde4b72f5f54ec4c94c9c6ba7fcb20f5ff0e77a77`、
+`module.rs` 16,811 /
+`de648c5e1a81e6d26b2cf94fbcac85fdcae125f4bfcf2ec749c9c8cd0b2de96e`、
+`module/tests.rs` 18,924 /
+`20ed0a5346888e3eab6837fa61220df75fca745ce5def411d46ec61cef0d325b`。
+parser library state は 229 tests、full-package raw-list hash は
+`d090874814c24c907a056bdf6c0e945d1f46ff9fc7c000e0a55df9a0847cb2d8`。
+
+frontend source は 9 paths / 11,168 lines、unchanged path hash
+`c7b20f1ab8f9414109dce18eb6591a6f18c0b413cd5a11beb84fa1b785822101`、
+content-manifest hash
+`f20fa00c8bd4f69cd20766a5c41a29bde0a8da33cc0464e9288932a397cc4a8a`。
+`parsing.rs` は 1,459 lines /
+`5e1574dd77c9a3d756b4d7ce74ff4e155f36c650edd5c73a418a0ca528dc0f49`、
+`orchestration.rs` は 2,046 /
+`946acbd24025a476cb9184f11098668b6fddb0f27825bf809aca322ab189ae44`、
+full 154-test raw-list hash は
+`8b822fbbb8e56aaf2a89422e4a6b49028513bbc6fa3d552b113066a4e5282a73`。
+
+focused parser 3件と focused frontend replay/control 1件、parser library 229件、
+complete frontend package 154件は pass。`cargo fmt --check`、warnings-denied all-target/all-feature
+workspace Clippy、full workspace `cargo test`、offline Cargo metadata、metadata
+137件も pass。5 CLI は exit zero で、stdout SHA-256 は
+`700f4bf503783742cefd8004fa095675b7476d46e9a3a6dd439916d237eb6718`、
+`a8a7aa639d2ebc65eddc923c7e9369ea5637d50e935f808600f446da1bfbda56`、
+`71e83ba0b20d4015e07b3bd2c0c4db2837b6151d1251812caed7954530d53c74`、
+`4b2c7bd5ec3cc56e5672fb351126126230ec84fba9bd2bd9049a516d378fab7f`、
+`ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`
+のままである。protected fixture/sidecar/trace/coverage-audit hash、stage、route、
+coverage credit も frozen status のまま不変。
+
+specification/test-sufficiency、implementation/boundary、source/documentation-
+consistency review は **NO FINDINGS**。bilingual/boundary review の three-parser-leaf-
+hash documentation finding は repair 済みで、finding-specific re-review は **NO
+FINDINGS**。coverage-audit no-op も confirmed。final-quality review/score も **NO
+FINDINGS** で complete。9 hard gate はすべて PASS、cap はなく、independent score は
+**99/100**。exact staging/cached-diff review、task-only implementation commit、clean
+post-commit proof、fresh inventory は pending であり、commit hash は存在しない。Checker Task
+277B は separate resolver declaration/use-identity prerequisite により blocked のままである。
+
 ## Exit evidence
 
-focused parser/frontend tests、replay/cache、fmt、denied-warning Clippy、workspace
-tests、five CLIs、count/hash remeasurement、recursive contract/link lint、
-`git diff --check` と、NO FINDINGS の independent reviews を別 implementation
-commit 前に満たす。
+implementation verification、全 independent review、9 gate PASS、uncapped 99/100、
+coverage-audit no-op は confirmed。task closure には exact staging/cached-diff review、
+task-only implementation commit、clean post-commit proof、fresh-inventory evidence
+だけが残り、それらが完了する前に task complete としない。
 
 ## 次 task handoff
 
-`PARSER-TEMPLATE-TYPEHEAD-277P1` を frozen Rust 5 path だけで実装し、parser test
-3件と frontend replay/cache test 1件だけを追加する。semantic seed、expectation、
-trace、coverage、diagnostic vocabulary、resolver/checker behavior は不変に保ち、
-completion document exactly 26 path を同期して全 review/verification gate を通す。
-authority、integration、stage、final scoring を担当する親は GPT-5.6 Sol `xhigh` を
-維持する。本 checkpoint では GPT-5.6 Luna が exposed されていないため、独立して
-bounded な parser/frontend implementation/review には GPT-5.6 Terra `high` を使い、
-scope/authority ambiguity は Sol `xhigh` 親へ escalate する。
+completed Rust 5 path + document 26 path worktree の exact staging/cached-diff review を
+行い、task-only implementation commit、clean post-commit/fresh inventory を得る。
+protected hash、inactive semantic status、separate resolver blocker を保持する。authority、
+staging、post-commit inventory は GPT-5.6 Sol `xhigh` parent が担当し、bounded review は
+GPT-5.6 Terra `high` を使える。ambiguity は parent へ escalate する。

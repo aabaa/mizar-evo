@@ -692,7 +692,7 @@ Check off the task here once its tests pass.
 
 ## Independently Authorized Template Type-Head Follow-Through
 
-- **`PARSER-TEMPLATE-TYPEHEAD-277P1`.** [ ]
+- **`PARSER-TEMPLATE-TYPEHEAD-277P1`.** [x]
   - Follow the [central contract](../../task_contracts/en/PARSER-TEMPLATE-TYPEHEAD-277P1.md):
     change only the real-parser cache namespace v2 to v3 and add the one
     orchestration replay/control test.
@@ -700,3 +700,10 @@ Check off the task here once its tests pass.
     fuzz targets, corpus, traceability, coverage, resolver/checker behavior, or
     public API shape; only the contracted target vector and cache-version value
     change.
+  - Implemented in the exact two frontend Rust paths; the one replay/control
+    regression and the complete 154-test frontend package pass. Source/docs and
+    bilingual/boundary re-reviews report no findings and the coverage-audit
+    no-op is confirmed. Independent final-quality review reports no findings;
+    all nine hard gates pass with no cap and a 99/100 score. The central
+    contract owns the remaining staging/cached review, implementation commit,
+    post-commit, and fresh-inventory closure evidence.

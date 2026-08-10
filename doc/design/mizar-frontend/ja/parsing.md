@@ -222,7 +222,8 @@ seam変更は不要だった。
 
 central [JA contract](../../task_contracts/ja/PARSER-TEMPLATE-TYPEHEAD-277P1.md)
 は `MIZAR_PARSER_CACHE_KEY_VERSION` を `mizar-parser/surface-ast-v2` から v3 に
-変更することを要求する。target source は以前 recovered AST を返したが、今後は
-zero parser diagnostic の complete AST を返すため、v2 は両 artifact を識別できない。
-seam API と token adaptation は不変であり、この cache change は template parameter を
-interpretしない。
+変更して実装済み。target source は以前 recovered AST を返したが、現在は zero parser
+diagnostic の exact complete AST を返すため、v2 は両 artifact を識別できない。seam API
+と token adaptation は不変であり、この cache change は template parameter を
+interpretしない。focused real-seam replay/control test は pass し、final closure state
+は central contract が所有する。

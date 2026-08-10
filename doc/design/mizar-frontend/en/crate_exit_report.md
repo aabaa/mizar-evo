@@ -225,8 +225,15 @@ shared parser prerequisite implementation 96/100 with every hard gate passing.
 The historical frontend closeout is qualified by the frozen
 [parser-originated cache follow-through](../../task_contracts/en/PARSER-TEMPLATE-TYPEHEAD-277P1.md).
 Unlike the prior no-AST recovery correction, this source already produced a v2
-AST, so the separate implementation must bump v3 and prove a real-provider
-replay/control result. No frontend grammar, semantic, diagnostic-vocabulary or
-merge-order, corpus, trace, coverage, or public-API-shape work is authorized;
-the cache-version value and frozen target diagnostic vector change exactly as
-contracted.
+AST. The worktree implementation now uses v3 and the real-provider
+replay/control regression passes, including exact target and unchanged-control
+AST oracles. No frontend grammar, semantic, diagnostic-vocabulary or
+merge-order, corpus, trace, coverage, or public-API-shape work was added; only
+the contracted cache-version value and frozen target diagnostic vector change.
+Source/documentation-consistency and repaired bilingual/boundary re-reviews
+report **NO FINDINGS**, and the coverage-audit no-op is confirmed. The
+historical crate score is not reused for this task. Independent final-quality
+review reports **NO FINDINGS**; all nine hard gates pass, no cap applies, and
+the task-specific score is **99/100**. Staging/cached review, the implementation
+commit, post-commit proof, and fresh inventory remain pending in the central
+contract.

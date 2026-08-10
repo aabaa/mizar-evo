@@ -16,6 +16,7 @@ pub(crate) struct Parser {
     pub(super) diagnostics: Vec<SyntaxDiagnostic>,
     pub(super) fixity: BTreeMap<Arc<str>, Vec<OperatorFixityEntry>>,
     pub(super) trivia: SurfaceTriviaBuilder,
+    pub(super) template_definition_depth: usize,
 }
 
 impl Parser {
@@ -38,6 +39,7 @@ impl Parser {
             diagnostics: Vec::new(),
             fixity,
             trivia: SurfaceTriviaBuilder::new(source_id),
+            template_definition_depth: 0,
         }
     }
 

@@ -2130,3 +2130,11 @@ ordinary strict parse が失敗した後に bare one-token `Identifier` を `Typ
 binding や symbol classification ではない。既存 `UserSymbol` head は通常の
 `QualifiedSymbol` shape を維持する。fallback は speculative template/type argument と
 `is` assertion alternative にはなく、definition の外へescapeしない。
+
+### Implementation result
+
+explicit required-type policy と parse-local template-definition depth により、ordinary /
+speculative type parse を広げず frozen generator `Identifier` を保存する。target は
+syntax diagnostic/recovery 0 の exact complete 57-node AST を生成し、focused parser
+test 3件は pass。binding、resolution、sethood、public API、diagnostic vocabulary は
+追加していない。final task-closure evidence は central contract が所有する。

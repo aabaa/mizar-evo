@@ -982,7 +982,7 @@ mod tests {
     }
 
     #[test]
-    fn real_parser_frontend_merges_nested_missing_end_and_uses_parser_v2_cache_key() {
+    fn real_parser_frontend_merges_nested_missing_end_and_uses_parser_v3_cache_key() {
         let fixture = PackageFixture::new();
         fixture.write(
             "src/nested_missing_end.miz",
@@ -1021,9 +1021,147 @@ mod tests {
             MIZAR_PARSER_CACHE_KEY_VERSION
         );
         assert_eq!(
-            MIZAR_PARSER_CACHE_KEY_VERSION, "mizar-parser/surface-ast-v2",
-            "task-28 parser output semantics must not reuse the v1 AST cache namespace"
+            MIZAR_PARSER_CACHE_KEY_VERSION, "mizar-parser/surface-ast-v3",
+            "Task 277P1 parser output semantics must not reuse the v2 AST cache namespace"
         );
+    }
+
+    #[test]
+    fn task277p1_template_typehead_changes_ast_cache_namespace() {
+        const TEMPLATE_FRAENKEL_SOURCE: &str = include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../tests/miz/fail/templates/fail_template_fraenkel_over_type_param_001.miz"
+        ));
+        const UNCHANGED_CONTROL: &str = "definition\nend;\n";
+
+        assert_eq!(TEMPLATE_FRAENKEL_SOURCE.len(), 701);
+
+        let fixture = PackageFixture::new();
+        fixture.write("src/template_fraenkel.miz", TEMPLATE_FRAENKEL_SOURCE);
+        fixture.write("src/unchanged_control.miz", UNCHANGED_CONTROL);
+        let frontend = frontend_for_fixture(&fixture, MizarParserSeam);
+
+        let target = frontend
+            .run(
+                fixture.request("src/template_fraenkel.miz"),
+                &InMemorySessionIdAllocator::new(),
+            )
+            .expect("the frozen template Fraenkel source should run through the frontend");
+        let target_replay = frontend
+            .run(
+                fixture.request("src/template_fraenkel.miz"),
+                &InMemorySessionIdAllocator::new(),
+            )
+            .expect("the frozen template Fraenkel source should replay through the frontend");
+
+        assert!(target.diagnostics.is_empty(), "{:#?}", target.diagnostics);
+        let target_ast = target
+            .ast
+            .as_ref()
+            .expect("the frozen template Fraenkel source should return a complete AST");
+        assert_eq!(target_ast.nodes().len(), 57);
+        assert_eq!(target_ast.root().map(|root| root.index()), Some(56));
+        assert!(
+            target_ast.nodes().iter().all(|node| {
+                !node.recovered && !matches!(node.kind, SurfaceNodeKind::ErrorRecovery(_))
+            }),
+            "the complete target AST must not contain recovery nodes"
+        );
+        for (kind, start, end) in [
+            (SurfaceNodeKind::TypeExpression, 678, 679),
+            (SurfaceNodeKind::TypeHead, 678, 679),
+            (SurfaceNodeKind::ComprehensionVariableSegment, 673, 679),
+            (SurfaceNodeKind::FormulaExpression, 682, 692),
+            (SurfaceNodeKind::SetComprehension, 663, 694),
+            (SurfaceNodeKind::FunctorDefinition, 623, 695),
+            (SurfaceNodeKind::DefinitionBlockItem, 593, 700),
+        ] {
+            assert_eq!(
+                target_ast
+                    .nodes()
+                    .iter()
+                    .filter(|node| {
+                        node.kind == kind && node.range.start == start && node.range.end == end
+                    })
+                    .count(),
+                1,
+                "expected exactly one {kind:?} at {start}..{end}"
+            );
+        }
+        assert_eq!(
+            target
+                .cache_keys
+                .ast
+                .as_ref()
+                .expect("the complete target AST should have a cache key")
+                .parser_version
+                .version
+                .as_ref(),
+            "mizar-parser/surface-ast-v3"
+        );
+        assert_eq!(target.ast, target_replay.ast);
+        assert_eq!(target.diagnostics, target_replay.diagnostics);
+        assert_eq!(target.cache_keys, target_replay.cache_keys);
+
+        let control = frontend
+            .run(
+                fixture.request("src/unchanged_control.miz"),
+                &InMemorySessionIdAllocator::new(),
+            )
+            .expect("the unchanged control should run through the frontend");
+        let control_replay = frontend
+            .run(
+                fixture.request("src/unchanged_control.miz"),
+                &InMemorySessionIdAllocator::new(),
+            )
+            .expect("the unchanged control should replay through the frontend");
+        let control_ast = control
+            .ast
+            .as_ref()
+            .expect("the unchanged control should retain its complete AST");
+        assert!(control.diagnostics.is_empty());
+        assert_eq!(control_ast.nodes().len(), 7);
+        assert_eq!(control_ast.root().map(|root| root.index()), Some(6));
+        assert_eq!(control_ast.token_texts(), vec!["definition", "end", ";"]);
+        for kind in [
+            SurfaceNodeKind::DefinitionBlockItem,
+            SurfaceNodeKind::ItemList,
+            SurfaceNodeKind::CompilationUnit,
+            SurfaceNodeKind::Root,
+        ] {
+            assert_eq!(
+                control_ast
+                    .nodes()
+                    .iter()
+                    .filter(|node| {
+                        node.kind == kind && node.range.start == 0 && node.range.end == 15
+                    })
+                    .count(),
+                1,
+                "the unchanged control should retain one {kind:?} at 0..15"
+            );
+        }
+        assert!(
+            control_ast.nodes().iter().all(|node| {
+                !node.recovered && !matches!(node.kind, SurfaceNodeKind::ErrorRecovery(_))
+            }),
+            "the unchanged control must remain recovery-free"
+        );
+        assert_eq!(
+            control
+                .cache_keys
+                .ast
+                .as_ref()
+                .expect("the unchanged control should have a cache key")
+                .parser_version
+                .version
+                .as_ref(),
+            "mizar-parser/surface-ast-v3"
+        );
+        assert_eq!(control.ast, control_replay.ast);
+        assert_eq!(control.diagnostics, control_replay.diagnostics);
+        assert_eq!(control.cache_keys, control_replay.cache_keys);
+        assert_ne!(target.cache_keys.ast, control.cache_keys.ast);
     }
 
     #[test]

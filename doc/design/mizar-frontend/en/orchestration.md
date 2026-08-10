@@ -333,8 +333,9 @@ logic or diagnostic class/code changed.
 
 ## `PARSER-TEMPLATE-TYPEHEAD-277P1` Replay Contract
 
-`task277p1_template_typehead_changes_ast_cache_namespace` must run the real
-parser seam twice for the frozen source, observe the complete zero-diagnostic
-AST and v3 cache key, and compare an unchanged control. Orchestration remains
+`task277p1_template_typehead_changes_ast_cache_namespace` now runs the real
+parser seam twice for the frozen source, observes the exact complete
+zero-diagnostic 57-node AST and v3 cache key, and pins the unchanged control's
+seven-node shape/ranges across replay. The test passes. Orchestration remains
 payload-agnostic: no merge-order algorithm, diagnostic class, resolver input,
 or semantic result changes.

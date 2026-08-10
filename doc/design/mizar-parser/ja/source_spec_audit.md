@@ -174,11 +174,24 @@ trace metadataは不変である。
 
 | Finding | 分類 | disposition |
 |---|---|---|
-| template type parameter は leading declaration では受理されるが、その template body の §13.4.2 Fraenkel generator type にはならない。 | `source_drift` | explicit required-generator-type policy と parse-local template scope だけで one-token identifier type head を保存する。 |
-| 完全な成功 AST、strict near miss、cache invalidation を固定する focused parser/frontend regression がない。 | `test_gap` | central contract の Rust test 4件だけを追加する。 |
+| template type parameter は leading declaration では受理されるが、その template body の §13.4.2 Fraenkel generator type にはならない。 | `source_drift` | one-token identifier type head、explicit required-generator-type policy、parse-local template scope により close。 |
+| 完全な成功 AST、strict near miss、cache invalidation を固定する focused parser/frontend regression がない。 | `test_gap` | central contract の frozen Rust test 4件だけで close。 |
 
 §§18.2.2/18.2.6 が syntax を許し、§18.10.2 が後段 semantic rejection を要求するため
 `spec_gap` はない。seed、sidecar、trace row、active route、coverage、diagnostic
 vocabulary、resolver/checker/Core ownership は不変であり、frozen target の obsolete
 recovery diagnostic だけが contract 通り消える。本 prerequisite 単独では Checker
 Task 277B を unblock しない。
+
+### Implementation disposition
+
+parser `source_drift` と Rust `test_gap` は worktree で close。parser regression 3件は
+pass し、real frontend seam は exact complete target AST と diagnostic-free result を
+確認する。specification、fixture、sidecar、trace/status、coverage credit、downstream
+semantic ownership は不変。specification/test-sufficiency と implementation/boundary
+review は no findings。source/documentation-consistency re-review も **NO FINDINGS**
+であり、coverage owner、trace status、credit、deferred rationale が変わらないため
+coverage-audit no-op が正しいことを確認した。remaining closure evidence は central
+contract だけが追跡する。independent final-quality review も **NO FINDINGS**、9 hard
+gate は全て PASS、cap なしで 99/100。staging/cached review、implementation commit、
+post-commit proof、fresh inventory だけが central contract で pending。

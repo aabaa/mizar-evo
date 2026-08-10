@@ -216,7 +216,14 @@ test/implementation reviewはno findingsである。fresh read-only hard-gate re
 historical frontend closeout は frozen
 [parser-originated cache follow-through](../../task_contracts/ja/PARSER-TEMPLATE-TYPEHEAD-277P1.md)
 で qualify される。prior no-AST recovery correction と異なり、この source は既に v2
-AST を生成したため、separate implementation は v3 bump と real-provider
-replay/control result を証明する。frontend grammar、semantic、diagnostic vocabulary /
-merge order、corpus、trace、coverage、public API shape work は許可しない。cache-version
-value と frozen target diagnostic vector だけは contract 通り変更する。
+AST を生成していた。worktree implementation は現在 v3 を使い、exact target と
+unchanged-control AST oracle を含む real-provider replay/control regression は pass。
+frontend grammar、semantic、diagnostic vocabulary / merge order、corpus、trace、
+coverage、public API shape work は追加せず、contracted cache-version value と frozen
+target diagnostic vector だけを変更する。上記 historical crate score は本 task に
+再利用しない。
+source/documentation-consistency と repaired bilingual/boundary re-review は **NO
+FINDINGS**、coverage-audit no-op は confirmed。independent final-quality review は
+**NO FINDINGS**、9 hard gate は全て PASS、cap は
+なく、task-specific score は **99/100**。staging/cached review、implementation
+commit、post-commit proof、fresh inventory は central contract で pending のままである。
