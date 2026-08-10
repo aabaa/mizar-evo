@@ -4976,21 +4976,7 @@ Completion evidence: [central Task-258B3M2B2B1A historical contract](../../task_
 - [x] Commit this documentation prerequisite alone, fresh-inventory, then
   implement only B1B1P before freezing the B1B1 statement consumer.
 
-## Checker Task 258B3M2B2B1B1P Implementation Ledger
-
-- [x] Add only the runner-private wrapped Task-253 reuse seam; leave checker
-  source, public APIs, active routes, and the B1B1 consumer unchanged.
-- [x] Authenticate exact imported `++` provenance and reject five classes of
-  same-source resolver substitution before lower-table publication.
-- [x] Pass exactly two compound tests covering all 158 bytes, 67-node/root
-  mutations, the eight-entry diagnostic/node matrix, precedence, rollback,
-  replay, legacy hashes, exact rows, and empty upper tables.
-- [x] Measure checker/runner tests `374/418`, runner sizes
-  `2652/708/2523/3727`, and 30 production paths / 41,173 lines.
-- [x] Preserve canonical artifacts, fixtures, expectations, sidecars, trace
-  status/count, executable coverage credit, and semantic/proof/goal owners.
-- [x] Fresh-inventory B1B1 statement-consumer documentation as a separate
-  logical task after this implementation commit.
+Completion evidence: [central Task-258B3M2B2B1B1P historical contract](../../task_contracts/en/258B3M2B2B1B1P.md#completion-evidence).
 
 ## Checker Task 258B3M2B2B1B1 Frozen-Contract Ledger
 
@@ -5016,18 +5002,7 @@ Completion evidence: [central Task-258B3M2B2B1A historical contract](../../task_
 - [x] Commit this documentation prerequisite alone, fresh-inventory, then
   implement only B1B1.
 
-## Checker Task 258B3M2B2B1B1 Implementation Ledger
-
-- [x] Implement the exact private B1B1 statement/witness profile and preserve
-  B1A byte/API compatibility.
-- [x] Pass the frozen four checker and five runner tests; inventories are
-  `378/423`.
-- [x] Close `source_drift`, `test_gap`, and completion `design_drift`; test
-  sufficiency and implementation reviews report no findings.
-- [x] Preserve spec, `.miz`, fixture, expectation, sidecar, trace, active, and
-  public-API artifacts; retain semantic/proof/goal/type-substitution deferrals.
-- [x] Pass every final read-only quality hard gate with a valid `98/100`
-  score before commit.
+Completion evidence: [central Task-258B3M2B2B1B1 historical contract](../../task_contracts/en/258B3M2B2B1B1.md#completion-evidence).
 
 ## Checker Task 258B3M2B2B2P Frozen-Prerequisite Ledger
 

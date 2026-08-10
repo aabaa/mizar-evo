@@ -4737,22 +4737,7 @@ Completion evidence: [central Task-258B3M2B2B1A historical contract](../../task_
 - [x] このdocumentation prerequisiteだけをcommitし、fresh-inventory後、
   B1B1 statement consumerをfreezeする前にB1B1Pだけをimplement。
 
-## Checker Task 258B3M2B2B1B1P implementation ledger
-
-- [x] runner-private wrapped Task-253 reuse seamだけを追加し、checker
-  source、public APIs、active routes、B1B1 consumerを不変に維持。
-- [x] exact imported `++` provenanceをauthenticateし、same-source resolver
-  substitution 5 classesをlower-table publication前にreject。
-- [x] 全158 bytes、67-node/root mutations、eight-entry diagnostic/node
-  matrix、precedence、rollback/replay、legacy hashes、exact rows、empty
-  upper tablesをcoverするcompound testsちょうど2件をpass。
-- [x] checker/runner tests `374/418`、runner sizes
-  `2652/708/2523/3727`、production 30 paths / 41,173 linesを実測。
-- [x] canonical artifacts、fixtures、expectations、sidecars、trace
-  status/count、executable coverage credit、semantic/proof/goal ownersを
-  preserve。
-- [x] implementation commit後、B1B1 statement-consumer documentationを
-  separate logical taskとしてfresh-inventory。
+Completion evidence: [central Task-258B3M2B2B1B1P historical contract](../../task_contracts/ja/258B3M2B2B1B1P.md#completion-evidence)。
 
 ## Checker Task 258B3M2B2B1B1 frozen-contract ledger
 
@@ -4778,19 +4763,7 @@ Completion evidence: [central Task-258B3M2B2B1A historical contract](../../task_
 - [x] このdocumentation prerequisiteだけをcommitし、fresh-inventory後、
   B1B1だけをimplement。
 
-## Checker Task 258B3M2B2B1B1 implementation ledger
-
-- [x] exact private B1B1 statement/witness profileをimplementし、B1A
-  byte/API compatibilityをpreserve。
-- [x] frozen checker tests 4件/runner tests 5件をpass。inventoriesは
-  `378/423`。
-- [x] `source_drift`、`test_gap`、completion `design_drift`をcloseし、
-  test-sufficiency/implementation reviewsはfindingsなし。
-- [x] spec、`.miz`、fixture、expectation、sidecar、trace、active、
-  public-API artifactsを不変にし、semantic/proof/goal/type-substitution
-  deferralsを維持。
-- [x] commit前のfinal read-only quality reviewは全hard gate PASS、
-  valid score `98/100`。
+Completion evidence: [central Task-258B3M2B2B1B1 historical contract](../../task_contracts/ja/258B3M2B2B1B1.md#completion-evidence)。
 
 ## Checker Task 258B3M2B2B2P frozen-prerequisite ledger
 

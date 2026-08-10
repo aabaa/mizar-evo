@@ -8,7 +8,7 @@
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-258B3M2B2B1B1P-B1B1-IMPLEMENTATION-LEDGER-COMPACT` |
-| Status | Documentation-prerequisite reviews, all nine hard gates, and full verification are complete with no findings and a valid `100/100`. Exact staging, prerequisite commit, and clean replay remain; no redirect or manifest row is authorized yet. |
+| Status | Migration reviews, all nine hard gates, and full verification are complete with no findings and a valid `100/100`. Exact staging, migration commit, and clean replay remain. |
 | Purpose | Centralize only the completed Task-258B3M2B2B1B1P and Task-258B3M2B2B1B1 checker implementation ledgers while retaining their frozen ledgers and every durable owner. |
 | Historical owners | [Task 258B3M2B2B1B1P](./258B3M2B2B1B1P.md#completion-evidence) and [Task 258B3M2B2B1B1](./258B3M2B2B1B1.md#completion-evidence) |
 | Plan indexes | [checker plan](../../mizar-checker/en/00.crate_plan.md#task-index) and [runner plan](../../mizar-test/en/00.crate_plan.md#task-index) |
@@ -142,9 +142,10 @@ replay before fresh checker selection.
 
 ## Next Handoff
 
-After prerequisite commit, freshly replay this contract and implement only
-its four checker TODO redirects and 19 ledger rows. Do not compact frozen
-ledgers, B2P, runner, plan, audit, component API/result, or other evidence.
+After the migration commit and clean replay, stop this compaction task at the
+user-requested boundary. Preserve the clean repository for a separately
+scoped and reviewed refinement of `AGENTS.md` and related documentation
+policy. Do not select another legacy family as part of this task.
 
 ## Documentation-Prerequisite Evidence
 
@@ -177,3 +178,50 @@ stash mutation occurred. Independent final read-only quality ends **NO
 FINDINGS**. All nine hard gates PASS, no score cap applies, and the valid
 score is **100/100** (`20/20/15/15/10/10/5/5`). Exact staging, the dedicated
 prerequisite commit, and clean post-commit replay remain.
+
+## Migration Evidence
+
+The documentation prerequisite committed separately as
+`5dd0c7abc70657feb88871639eded7b0587171e8`. Its clean replay reproduced all
+four frozen preimages, source TSV hashes, unchanged 961-line ledger,
+protected no-ops, `76/76` contracts, `origin/main...HEAD=0/4`, and the
+protected stash before migration.
+
+The four selected B1B1P/B1B1 implementation-ledger H2 sections are now four
+language-local redirects to their historical completion evidence. Exact TODO
+source diff is `+4/-56` (EN `+2/-27`, JA `+2/-29`). All four forbidden
+headings and bodies are absent; both frozen ledgers, B2P, every recorded
+neighbor, and every unselected section remain byte-identical.
+
+The ledger adds exactly 19 globally byte-sorted rows: one batch, two canonical
+tasks, twelve indexes, and four redirects, with no `task_ref`. It is 980 lines
+with physical SHA-256
+`0878f515efd3c5ac677549d64904c9b3ff72cd9c09392f23843b4416f691a711`,
+reproduces canonical 18-row SHA-256
+`bdc9bd8220f3a7a9d67b1501b4b1c09a8c9b47d01538322d8336233394307b47`,
+and measures 29 batches, 43 canonical tasks, two task references, 616
+redirects, and 288 indexes. Generic lint passes `15/15` and `git diff
+--check` passes.
+
+Checker `530/530`, runner `600/600`, and metadata `137/137` tests pass.
+`cargo fmt --all --check`, offline Cargo metadata, warnings-denied all-target/
+all-feature Clippy, and the full offline workspace suite pass. All five CLIs
+exit zero and reproduce the frozen plan/parse/declaration/type/proof hashes.
+Protected path counts and NUL-delimited path hashes reproduce exactly as
+specification `64`, `.miz` `343`, expectation `435`, checker production `30`,
+runner production `90`, and Cargo `21`; zero protected diff preserves all
+frozen content hashes. Trace, coverage audit, source TSV, historical owners,
+and four plans remain unchanged; contracts measure `76/76`.
+
+After the VS Code restart, repository inventory remains prerequisite HEAD on
+`main` with the exact task-only five-path worktree and protected
+`stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4`. The external movement of
+`origin/main...HEAD` from `0/4` to `0/0`, with `origin/main` now equal to this
+HEAD, is a report-only `repo_metadata_conflict`; it was not repaired. No push,
+fetch, reset, or stash mutation occurred in this workflow. First-pass
+equivalence, schema, and bilingual reviews found only stale prerequisite
+lifecycle text, corrected by the synchronized status, evidence, and handoff.
+Focused re-reviews end **NO FINDINGS**. Independent final read-only quality
+also ends **NO FINDINGS**: all nine hard gates PASS, no score cap applies, and
+the valid score is **100/100** (`20/20/15/15/10/10/5/5`). Exact staging, the
+dedicated migration commit, and clean post-commit replay remain.

@@ -8,7 +8,7 @@
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-258B3M2B2B1B1P-B1B1-IMPLEMENTATION-LEDGER-COMPACT` |
-| Status | documentation-prerequisite reviews、全9 hard gates、full verificationはfindingsなし、valid `100/100`でcomplete。exact staging、prerequisite commit、clean replayがremainingで、redirect/manifest rowは未authorize。 |
+| Status | migration reviews、全9 hard gates、full verificationはfindingsなし、valid `100/100`でcomplete。exact staging、migration commit、clean replayがremaining。 |
 | Purpose | completed Task-258B3M2B2B1B1P/Task-258B3M2B2B1B1 checker implementation ledgersだけを集約し、frozen ledgersと全durable ownersを残す。 |
 | Historical owners | [Task 258B3M2B2B1B1P](./258B3M2B2B1B1P.md#completion-evidence)と[Task 258B3M2B2B1B1](./258B3M2B2B1B1.md#completion-evidence) |
 | Plan indexes | [checker plan](../../mizar-checker/ja/00.crate_plan.md#task-index)と[runner plan](../../mizar-test/ja/00.crate_plan.md#task-index) |
@@ -133,9 +133,10 @@ selectionする。
 
 ## Next Handoff
 
-prerequisite commit後、本contractをfresh replayし、checker TODO redirects 4件と
-ledger rows 19件だけをimplementする。frozen ledgers、B2P、runner、plan、audit、
-component API/result、他evidenceをcompactしない。
+migration commit/clean replay後、本compaction taskをuser-requested boundaryで
+stopする。clean repositoryを、separately scoped/reviewed `AGENTS.md`と関連
+documentation policyのrefinement用に保持する。本taskへ別legacy familyを混在
+させない。
 
 ## Documentation-Prerequisite Evidence
 
@@ -167,3 +168,47 @@ stash mutationは行っていない。independent final read-only qualityは**NO
 FINDINGS**。全9 hard gates PASS、score capなし、valid scoreは**100/100**
 （`20/20/15/15/10/10/5/5`）。exact staging、dedicated prerequisite commit、
 clean post-commit replayがremaining。
+
+## Migration Evidence
+
+documentation prerequisiteはseparate
+`5dd0c7abc70657feb88871639eded7b0587171e8`としてcommit済み。migration前のclean
+replayはfrozen preimages 4件、source TSV hashes、unchanged 961-line ledger、
+protected no-op、`76/76` contracts、`origin/main...HEAD=0/4`、protected stashを
+再現した。
+
+selected B1B1P/B1B1 implementation-ledger H2 sections 4件はhistorical completion
+evidenceへのlanguage-local redirects 4件となった。exact TODO source diffは
+`+4/-56`（EN `+2/-27`、JA `+2/-29`）。forbidden headings/bodies 4件はabsentで、
+両frozen ledgers、B2P、全recorded neighbors、全unselected sectionsはbyte-
+identicalに残る。
+
+ledgerはone batch、two canonical tasks、twelve indexes、four redirects、
+`task_ref`なしのexact 19 globally byte-sorted rowsを追加する。980 lines、physical
+SHA-256
+`0878f515efd3c5ac677549d64904c9b3ff72cd9c09392f23843b4416f691a711`、canonical
+18-row SHA-256
+`bdc9bd8220f3a7a9d67b1501b4b1c09a8c9b47d01538322d8336233394307b47`を再現し、
+29 batches、43 canonical tasks、two task references、616 redirects、288 indexesを
+測定する。generic lintは`15/15`、`git diff --check`はPASS。
+
+checker `530/530`、runner `600/600`、metadata `137/137` testsはPASS。
+`cargo fmt --all --check`、offline Cargo metadata、warnings-denied all-target/
+all-feature Clippy、full offline workspace suiteもPASS。five CLIsはexit zeroで
+frozen plan/parse/declaration/type/proof hashesを再現する。protected path count/
+NUL-delimited path hashはspecification `64`、`.miz` `343`、expectation `435`、
+checker production `30`、runner production `90`、Cargo `21`をexactに再現し、
+zero protected diffが全frozen content hashesを保持する。trace、coverage audit、
+source TSV、historical owners、four plansは不変で、contractsは`76/76`。
+
+VS Code restart後もrepository inventoryはprerequisite HEAD/`main`上のexact task-
+only five-path worktreeとprotected
+`stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4`を保持する。外部で
+`origin/main...HEAD`が`0/4`から`0/0`へ移動し、`origin/main`が本HEADと一致した
+ことはreport-only `repo_metadata_conflict`で、repairしていない。本workflowは
+push/fetch/reset/stash mutationを行っていない。first-pass equivalence/schema/
+bilingual reviewsはstale prerequisite lifecycle textだけをfindingとし、同期した
+status/evidence/handoffでcorrectした。focused re-reviewsは**NO FINDINGS**。
+independent final read-only qualityも**NO FINDINGS**で、全9 hard gates PASS、
+score capなし、valid scoreは**100/100**（`20/20/15/15/10/10/5/5`）。exact
+staging、dedicated migration commit、clean post-commit replayがremaining。
