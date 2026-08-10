@@ -5686,8 +5686,13 @@ policies, metadata, and five CLI replays also pass. Full assertions and baseline
 [C4A contract](../../task_contracts/en/CHECKER-FRAENKEL-GENERATOR-BINDING-257C4A.md).
 Independent source/documentation and bilingual/boundary reviews report **NO
 FINDINGS**. Final-quality is **NO FINDINGS**; all `9/9` hard gates pass at
-valid uncapped `100/100` (`20/20/15/15/10/10/5/5`). Exact staging/cached
-review passed over 28 paths (4 Rust and 24 documentation paths), including one
+valid uncapped `100/100` (`20/20/15/15/10/10/5/5`). The historical pre-commit
+staging/cached review passed over 28 paths (4 Rust and 24 documentation paths), including one
 new private leaf, with no unstaged paths at review time; cached diff check
-passed at 2435 insertions / 101 deletions. Only the task-only commit,
-post-commit proof, and fresh successor inventory remain pending.
+passed at 2435 insertions / 101 deletions. The task-only commit, immediate
+post-commit proof, and accepted fresh-inventory disposition are closed in the
+language-local [historical
+checkpoint](../../task_contracts/en/CHECKER-FRAENKEL-GENERATOR-BINDING-257C4A.md#historical-immediate-post-implementation-checkpoint).
+C4B remains unselected and requires a separately frozen post-closure
+documentation prerequisite; Task 277B remains not ready with zero semantic
+credit.

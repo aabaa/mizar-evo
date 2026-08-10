@@ -779,6 +779,11 @@ workspace Clippy, full workspace tests, both lint suites, metadata, and
 implementation/test reviews pass. Independent source/documentation and
 bilingual/boundary reviews report **NO FINDINGS**. Final-quality is **NO
 FINDINGS**, with `9/9` hard gates passing at valid uncapped `100/100`
-(`20/20/15/15/10/10/5/5`); only commit closeout remains pending.
-Exact staging/cached review passes; only task-only commit, post-commit proof,
-and fresh inventory remain.
+(`20/20/15/15/10/10/5/5`). The historical pre-commit staging/cached review
+passed. The task-only commit, immediate post-commit proof, and accepted
+fresh-inventory disposition
+are closed in the language-local [historical
+checkpoint](../../task_contracts/en/CHECKER-FRAENKEL-GENERATOR-BINDING-257C4A.md#historical-immediate-post-implementation-checkpoint).
+C4B remains unselected and requires a separately frozen post-closure
+documentation prerequisite; Task 277B remains not ready with zero semantic
+credit.

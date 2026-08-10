@@ -166,5 +166,11 @@ Implementation and test reviews found no dependency-boundary violation. The
 in its frozen consumer owner. Broad workspace verification passes.
 Independent source/documentation and boundary reviews report **NO FINDINGS**.
 Final-quality review is **NO FINDINGS**; all `9/9` hard gates pass at valid
-uncapped `100/100` (`20/20/15/15/10/10/5/5`). Exact staging/cached review
-passes; only task-only commit, post-commit proof, and fresh inventory remain.
+uncapped `100/100` (`20/20/15/15/10/10/5/5`). The historical pre-commit
+staging/cached review passed. The task-only commit, immediate post-commit proof,
+and accepted fresh-
+inventory disposition are closed in the language-local [historical
+checkpoint](../../task_contracts/en/CHECKER-FRAENKEL-GENERATOR-BINDING-257C4A.md#historical-immediate-post-implementation-checkpoint).
+C4B remains unselected and requires a separately frozen post-closure
+documentation prerequisite; Task 277B remains not ready with zero semantic
+credit.

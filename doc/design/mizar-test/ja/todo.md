@@ -3617,5 +3617,5 @@ post-commit fresh inventoryからだけ選択する。
 - [x] full workspace tests、両lint policy、metadata `137/137`、frozen hash一致の5 CLI replay（expected 23 warnings/0 errors）をPASS。
 - [x] sole Low stale-tense wording repair後、source-doc/bilingual/boundary reviewsを**NO FINDINGS**で完了する。
 - [x] final-quality reviewを**NO FINDINGS**、全`9/9` hard gates PASS、valid uncapped `100/100`（`20/20/15/15/10/10/5/5`）で完了する。
-- [x] exact staging/cached reviewを28 paths（Rust 4、documentation 24）、new private leaf 1件、review時unstaged path 0件で完了し、cached diff checkも2435 insertions / 101 deletionsでPASSする。
-- [ ] task-only commit、post-commit proof、fresh successor inventoryを完了する。
+- [x] historical pre-commit exact staging/cached reviewを28 paths（Rust 4、documentation 24）、new private leaf 1件、review時unstaged path 0件で完了し、cached diff checkも2435 insertions / 101 deletionsでPASSする。
+- [x] task-only commit、immediate post-commit proof、accepted fresh successor inventoryをlanguage-local [historical checkpoint](../../task_contracts/ja/CHECKER-FRAENKEL-GENERATOR-BINDING-257C4A.md#historical-immediate-post-implementation-checkpoint)で完了する。C4Bはauthority-ready in principleだがunselectedで、separate post-closure docs prerequisite freezeが必要。Task277Bはnot-ready/zero creditのまま。

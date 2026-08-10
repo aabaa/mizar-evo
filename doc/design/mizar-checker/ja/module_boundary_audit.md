@@ -13,7 +13,7 @@ rendering、artifact-facing schema、`.miz` fixture、expectation は変更し�
 completed [C4A](../../task_contracts/ja/CHECKER-FRAENKEL-GENERATOR-BINDING-257C4A.md)のchecker production scopeは
 `binding_env.rs` と `source_formula_composition.rs`だけ。R2/277Cはread-only lower ownerで、277Cはconsumeしrecreateしない。
 parser/resolver production、source-term/source-set-term owner、formula/type interpretation、sethood request/verdict、diagnostic、Typed/Resolved install、facade/dispatch、Cargo/canonical artifact/metadata/downstream crateはexclude。
-implemented boundaryはexactで、2 ownerは3266/7303 lines、third checker production path changeなし。implementation/test reviewはno findings、broad workspace verificationはPASS、independent bilingual/boundary/final-quality reviewは**NO FINDINGS**。final-qualityは全`9/9` hard gates PASS、valid uncapped `100/100`（`20/20/15/15/10/10/5/5`）。exact staging/cached reviewはPASS。pendingはtask-only commit/post-commit proof/fresh inventoryだけ。
+implemented boundaryはexactで、2 ownerは3266/7303 lines、third checker production path changeなし。implementation/test reviewはno findings、broad workspace verificationはPASS、independent bilingual/boundary/final-quality reviewは**NO FINDINGS**。final-qualityは全`9/9` hard gates PASS、valid uncapped `100/100`（`20/20/15/15/10/10/5/5`）。historical pre-commit exact staging/cached reviewはPASS。task-only commit/immediate post-commit proof/accepted fresh-inventory dispositionはlanguage-local [historical checkpoint](../../task_contracts/ja/CHECKER-FRAENKEL-GENERATOR-BINDING-257C4A.md#historical-immediate-post-implementation-checkpoint)でclosed。C4Bはunselectedでseparate post-closure docs prerequisite freezeが必要。Task277Bはnot-ready/zero creditのまま。
 
 ## Split Gate
 

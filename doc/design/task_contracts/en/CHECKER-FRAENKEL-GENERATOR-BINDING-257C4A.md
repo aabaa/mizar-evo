@@ -15,10 +15,15 @@ implementation/test-sufficiency reviews and broad workspace verification are
 complete. Independent source/documentation and bilingual/boundary reviews are
 also complete at **NO FINDINGS** after one Low stale-tense finding was repaired.
 Independent final-quality review is **NO FINDINGS**: all `9/9` hard gates pass
-at valid uncapped `100/100` (`20/20/15/15/10/10/5/5`). Exact staging/cached
-review is complete; only task-only commit, post-commit proof, and fresh
-successor inventory remain pending. This is a Task-257C
-owner slice, not a Task-277B readiness decision.
+at valid uncapped `100/100` (`20/20/15/15/10/10/5/5`). The historical
+pre-commit staging/cached review, the task-only implementation commit,
+immediate post-commit proof, and accepted fresh successor inventory are
+complete. The inventory found C4B
+authority-ready in principle but sequence-blocked until this documentation-only
+C4A closure; no C4B implementation or semantic successor is selected here, and
+a fresh post-closure inventory must freeze a separate C4B documentation
+prerequisite. This is a Task-257C owner slice, not a Task-277B readiness
+decision.
 
 Authority is, in order: canonical [Chapter 13 §13.4](../../../spec/en/13.term_expression.md#134-set-expressions),
 §§13.4.2, 13.4.4, and 13.8.6; [Chapter 18](../../../spec/en/18.templates.md)
@@ -279,7 +284,7 @@ The five inherited CLI hash values remain those recorded in completed 277C:
 `4b2c7bd5ec3cc56e5672fb351126126230ec84fba9bd2bd9049a516d378fab7f`, and
 `ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`.
 
-## Completion evidence, pending closeout, and next handoff
+## Historical immediate post-implementation checkpoint
 
 This completion documentation changes exactly 24 Markdown paths: this paired
 contract and the 22 existing owner documents linked above. The four checker/test
@@ -304,15 +309,32 @@ completed baseline table still said `Future Rust path`. It now says
 bilingual/boundary review both report **NO FINDINGS**.
 
 Independent final-quality review reports **NO FINDINGS**; all `9/9` hard gates
-pass at valid uncapped `100/100` (`20/20/15/15/10/10/5/5`). Still pending are
-only task-only commit, post-commit proof, and fresh successor inventory.
+pass at valid uncapped `100/100` (`20/20/15/15/10/10/5/5`). The task-only
+implementation commit, immediate post-commit proof, and accepted fresh
+successor inventory are complete.
 
-Exact staging/cached review passed with exactly 28 cached paths: 4 Rust and 24
-documentation paths, including one new private leaf, with no unstaged paths at
-review time. `git diff --cached --check` passed and the cached stat was exactly
-2435 insertions / 101 deletions. This lifecycle-only update is intentionally
-unstaged for the parent to re-add and re-review.
+Before that commit, exact staging/cached review passed with exactly 28 cached
+paths: 4 Rust and 24 documentation paths, including one new private leaf, with
+no unstaged paths at review time. `git diff --cached --check` passed and the
+pre-commit cached stat was exactly 2435 insertions / 101 deletions.
+
+Immediately after the task-only implementation commit
+`5f8eece10236b06c777e29ec80a2e82e3c1e6635`, the observed `HEAD` was that
+commit, the worktree was clean, `origin/main...HEAD` was `0/19`, and
+`stash@{0}` remained unchanged at
+`f65cf4a13752ec380710814a9ac6392ccb9d75d4`. The commit contained exactly 28
+paths; its reproducible sorted-path SHA-256 was
+`b4aae2c38d47c08d7b2acc77b9f0e06669120aba748730bf041e51d70884598b`, and its
+final stat was 2464 insertions / 101 deletions. These are historical,
+immediate-post-implementation observations from before this documentation-only
+closure, not claims about any later or current `HEAD`, index, worktree, origin,
+or stash state.
+
+The accepted fresh inventory found C4B authority-ready in principle but
+sequence-blocked until this documentation-only C4A closure. It selects neither
+a C4B implementation nor any semantic successor. A fresh post-closure inventory
+must separately freeze the C4B documentation prerequisite before implementation.
 Sol `xhigh` retains integration/final acceptance; Terra
 `xhigh` reviews the completed API/validation/test boundary. Task 277B remains
-not ready with zero semantic credit. Only after this closeout may a separately
-frozen C4B consume the opaque C4A handoff for use/capture mapping.
+not ready with zero semantic credit. Only after that separate freeze may C4B
+consume the opaque C4A handoff for use/capture mapping.

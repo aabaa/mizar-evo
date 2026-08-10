@@ -3855,11 +3855,16 @@ the successor is selected only from fresh post-commit inventory.
   FINDINGS** after the one Low stale-tense wording repair.
 - [x] Complete final-quality review at **NO FINDINGS**, with all `9/9` hard
   gates passing at valid uncapped `100/100` (`20/20/15/15/10/10/5/5`).
-- [x] Complete exact staging/cached review over 28 paths (4 Rust and 24
+- [x] Complete the historical pre-commit exact staging/cached review over 28
+  paths (4 Rust and 24
   documentation paths), including one new private leaf, with no unstaged paths
   at review time; cached diff check passed at 2435 insertions / 101 deletions.
-- [ ] Complete the task-only commit, post-commit proof, and fresh successor
-  inventory.
+- [x] Complete the task-only commit, immediate post-commit proof, and accepted
+  fresh successor inventory at the language-local [historical
+  checkpoint](../../task_contracts/en/CHECKER-FRAENKEL-GENERATOR-BINDING-257C4A.md#historical-immediate-post-implementation-checkpoint).
+  C4B is authority-ready in principle but remains unselected and requires a
+  separately frozen post-closure documentation prerequisite; Task 277B remains
+  not ready with zero semantic credit.
 
 ## Resolver Task 277R2 Test-Only Fixture Probe
 
