@@ -192,6 +192,7 @@ rejection.
 - `source_structure`
 - `source_structure_definition`
 - `source_template`
+- `source_template_type_parameter_association`
 - `source_term`
 - `source_type`
 - `type_checker`
@@ -478,6 +479,32 @@ formal-to-actual association, actual kind, substitution request/result,
 scheme/theorem role, algorithm role, guard, inference, compatibility, verdict,
 diagnostic, active route, or coverage credit. Later Task-277 slices and Task 278
 retain those separately authorized decisions.
+
+### `source_template_type_parameter_association`
+
+Generated public newtypes:
+
+- `SourceTemplateTypeParameterAssociationId`
+
+Literal top-level public items:
+
+- `SourceTemplateTypeParameterAssociation`,
+  `SourceTemplateTypeParameterAssociationTable`,
+  `SourceTemplateTypeParameterAssociationHandoff`,
+  `SourceTemplateTypeParameterAssociationError`,
+  `SourceTemplateTypeParameterAssociationProducer`
+
+Correspondence:
+
+| Specification promise | Source evidence | Test evidence | Status |
+|---|---|---|---|
+| Resolver-owned template type-parameter links transport to an immutable, dense, zero-semantic typed-node association table. | `SourceTemplateTypeParameterAssociationProducer::build`, the association ID/row/table/handoff family, and deterministic `debug_text()` in `src/source_template_type_parameter_association.rs`. | `task277bl_maps_exact_resolver_association_to_typed_nodes`, `task277bl_rebuilds_deterministically_without_mutating_typed_ast`, and `task277bl_real_fixture_builds_exact_template_type_parameter_association`. | Implemented for Task 277B-L; no Task 277B semantic credit. |
+| Each of the five resolver identities matches exactly one typed node; the required kinds are `DefinitionBlockItem`, `TemplateParameter`, canonical `Identifier` for both binder and generator identifier, and `TypeHead`. | Exact `resolved_node` scan, normal-recovery check, exact-kind predicate, range anchors/equality/containment, and direct-edge validation. | Missing/ambiguous, all-site kind/recovery, forged identifier-category, anchor/range/containment, and edge-corruption matrix. | Fail closed with `InvalidAssociation`; no dense-ID cast or spelling/range inference. |
+| Source/module mismatch is distinguished and public enum evolution stays forward-compatible. | `EnvironmentMismatch` plus `#[non_exhaustive] SourceTemplateTypeParameterAssociationError`. | Environment mismatch matrix and `checker_public_enums_are_forward_compatible_and_documented`. | Implemented; no exhaustive exception. |
+
+Bounded gaps: this neutral prerequisite neither installs a Typed/Resolved slot nor
+interprets a type, sethood, formal-to-actual substitution, diagnostic, active
+route, or verdict. Task 277B remains not ready with zero semantic credit.
 
 ### `source_term`
 
@@ -5950,40 +5977,38 @@ post-implementation checkpoint observed
 complete while umbrella Task 277 remains partial; any successor must be
 separately frozen and reviewed.
 
-## Task 277B-L Frozen Source/Specification Mapping
+## Task 277B-L Implemented Source/Specification Mapping
 
-The [Task 277B-L contract](../../task_contracts/en/277B-L.md) freezes a missing
+The [Task 277B-L contract](../../task_contracts/en/277B-L.md) records the completed
 checker-only structural bridge from completed resolver
 `TemplateTypeParameterSourceCollection` to an existing `TypedAst`. It is
-`design_drift`, `source_drift`, and Rust `test_gap`, with no `spec_gap`: it
-does not derive a new Templates or term-expression rule. The future standalone
+the completed closure of the former `design_drift`, `source_drift`, and Rust
+`test_gap`, with no `spec_gap`: it does not derive a new Templates or
+term-expression rule. The standalone
 owner is [source_template_type_parameter_association](./source_template_type_parameter_association.md#task-277b-l-template-type-parameter-association), not 277A's `source_template`.
 
-The future producer validates R1 binding identity against normal, exact,
+The implemented producer validates R1 binding identity against normal, exact,
 range-anchored typed nodes and their direct structural edges, yielding an
 immutable zero-semantic association table. It does not install Typed/Resolved
 state, interpret type/sethood, issue a diagnostic, alter an active route, or
 make Task 277B ready. Specification coverage, traceability, and
 `spec_coverage_audit.md` therefore have no owned-state delta.
 
-The current crate-export list and public-surface inventory above remain
-unchanged during this documentation prerequisite because the module does not
-yet exist. In the five-path implementation, `src/lib.rs` and checker lint
-policy add the `source_template_type_parameter_association` export, and the
-completion update adds the corresponding crate-export row plus a public-item
-inventory headed `### \`source_template_type_parameter_association\``. That
-future inventory is exact: generated public newtype
-`SourceTemplateTypeParameterAssociationId`; literal top-level public items
-`SourceTemplateTypeParameterAssociation`,
-`SourceTemplateTypeParameterAssociationTable`,
-`SourceTemplateTypeParameterAssociationHandoff`,
-`SourceTemplateTypeParameterAssociationError`, and
-`SourceTemplateTypeParameterAssociationProducer`; and a correspondence table
-covering exact resolver-to-typed identity, fail-closed structural validation,
-deterministic zero-semantic transport, and the non-exhaustive public-enum
-policy. Checker lint policy must add the module to its public-enum module list,
-source/spec module list, public-API path allowlist, and `lib.rs` public-module
-allowlist in that same implementation commit.
+`src/lib.rs` now exports `source_template_type_parameter_association`; checker
+lint policy contains the matching public-enum module, source/spec module,
+public-API-path, and `lib.rs` public-module allowlist entries. The current
+crate-export list and public-surface inventory above are therefore exact. The
+test-sufficiency review reports **NO FINDINGS**, and the implementation review
+reports **NO FINDINGS** after the canonical-`Identifier` prefix-spoof fix.
+Source/documentation re-review reports **NO FINDINGS** after the EN/JA CLI-tense
+fix; bilingual and boundary reviews report **NO FINDINGS**. All focused, lint,
+library, package/workspace Clippy, full-test, formatting/diff, metadata, CLI,
+and protected-surface gates pass. Finding-specific final-quality re-review after
+the identifier-within-type-head containment repair is **NO FINDINGS**; all nine
+hard gates PASS uncapped at valid `100/100` (`20/20/15/15/10/10/5/5`). Only
+exact staging/cached-diff review, task-only commit, post-commit proof, and fresh-
+successor inventory remain pending. Task 277B remains not ready and receives
+zero semantic credit.
 
 ## Task 269GT Source/API Delta
 

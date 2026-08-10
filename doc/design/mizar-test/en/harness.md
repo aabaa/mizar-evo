@@ -5601,7 +5601,7 @@ verification and protected no-impact evidence.
 
 ## Checker Task 277B-L Private Association Probe
 
-The [Task 277B-L contract](../../task_contracts/en/277B-L.md) reserves exactly
+The [Task 277B-L contract](../../task_contracts/en/277B-L.md) implements exactly
 one private leaf,
 `runner/tests/type_elaboration/template_type_parameter_association.rs`, and its
 `tests.rs` registration. It parses the unchanged inactive fixture through
@@ -5612,4 +5612,17 @@ mapping; no dense-ID cast, range/name inference, existing typed helper, or 277A
 route is used. Its one regression checks binding `0` and the frozen
 `#53/#31/#2 -> #39/#21` typed association; it has no production runner,
 facade, dispatcher, detail key, active-stage, checker-installation, diagnostic,
-or coverage effect. The projected library list is `609 -> 610`.
+or coverage effect. The measured library list is 610 /
+`2d7e12fe5467d07fa4cef605c4d83cd8079ef8b5e0ea3e3431923b08a1532337`; the leaf is
+249 lines / `5fb342d357fb8cb92bd88278c019b276741cd1d6edb255e16e4f231f578dfe04` and
+`tests.rs` is 63 / `8873ea62bf642a8287eeacbfdaea06eccd0d917a17be9cd54a7764b0b6bea295`.
+Focused verification passes; test-sufficiency and implementation reviews are
+**NO FINDINGS** after the canonical-`Identifier` prefix-spoof fix. Source/
+documentation, bilingual, and boundary re-reviews are **NO FINDINGS**; checker/
+mizar-test lint, full libraries, package/workspace Clippy, full tests, format/
+diff, metadata, unchanged CLI hashes, and protected-surface checks pass.
+Finding-specific final-quality re-review after the checker containment repair
+is **NO FINDINGS**; all nine hard gates PASS uncapped at valid `100/100`
+(`20/20/15/15/10/10/5/5`). Only exact staging/cached-diff review, task-only
+commit, post-commit proof, and fresh-successor inventory remain pending. Task
+277B remains not ready with zero semantic credit.

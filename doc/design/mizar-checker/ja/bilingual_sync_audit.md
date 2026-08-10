@@ -1766,9 +1766,14 @@ umbrella Task 277はpartialのままで、successorはseparately frozen/reviewed
 ## Task 277B-L Contract Parity
 
 canonical [EN contract](../../task_contracts/en/277B-L.md) と[JA companion]
-(../../task_contracts/ja/277B-L.md) はunimplemented standalone module API、R1-owned
-order/ambiguity、ordered structural validation、real-fixture identity profile 1件、
-future Rust 5 paths、4+1 test、documentation 24 paths、completion-document 20 paths、
-baseline、protected artifact、no-audit delta、handoffを同期する。exact identifier、signature、
-field name、range、count、hashはEnglish canonical。いずれもTask 277B readinessをclaimせず、
-synchronization exceptionはない。
+(../../task_contracts/ja/277B-L.md) はimplemented standalone module API、canonical `Identifier`
+category、R1-owned order/ambiguity、ordered structural validation、real-fixture identity profile 1件、
+Rust 5 paths、4+1 test、completion-document 20 paths、measured count/hash evidence、protected
+artifact、no-audit delta、handoffを同期する。exact identifier、signature、field name、range、count、
+hashはEnglish canonical。test-sufficiency/implementation reviewはprefix-spoof fix後に**NO FINDINGS**。
+EN/JA CLI tense fix後のsource/documentation re-review、本bilingual review、boundary reviewも
+**NO FINDINGS**。full verification/protected-surface checkはPASS。synchronized containment repair後の
+finding-specific final-quality re-reviewは**NO FINDINGS**。全9 hard gateはscore capなしvalid
+`100/100`（`20/20/15/15/10/10/5/5`）でPASS。exact staging/cached-diff review、task-only commit、
+post-commit proof、fresh-successor inventoryだけがpending。Task 277B readiness/semantic creditは
+claimせず、synchronization exceptionはない。

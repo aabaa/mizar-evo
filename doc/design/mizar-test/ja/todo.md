@@ -3562,9 +3562,15 @@ post-commit fresh inventoryからだけ選択する。
 
 ## Checker Task 277B-L Private Association Probe
 
-- [ ] fresh preflight後、direct private [277B-L contract](../../task_contracts/ja/277B-L.md)
+- [x] direct private [277B-L contract](../../task_contracts/ja/277B-L.md)
   fixture testとそのregistrationだけを追加し、production routeを作らず`runner.rs`をalterしない。
-- [ ] exact R1-to-Typed associationをassertし、fixture、sidecar、metadata、trace、coverage、
+- [x] exact R1-to-Typed associationをassertし、fixture、sidecar、metadata、trace、coverage、
   diagnostic、active-stage boundaryを全てpreserveする。
-- [ ] `609 -> 610`、protected production inventory、independent no-findings reviewをrecheckする。
-  本taskはTask 277Bをreadyにしない。
+- [x] measured 610-test list、protected production inventory、test-sufficiency/implementation review
+  （canonical `Identifier` prefix-spoof fix後に**NO FINDINGS**）をrecheckした。
+- [x] source/documentation、bilingual、boundary re-reviewは**NO FINDINGS**、full verification/
+  protected-surface checkはPASS。
+- [x] finding-specific final-quality re-reviewは**NO FINDINGS**、全9 hard gateはscore capなし
+  valid `100/100`（`20/20/15/15/10/10/5/5`）でPASS。
+- [ ] exact staging/cached-diff review、task-only commit、post-commit proof、fresh-successor
+  inventoryだけをcompleteする。本taskはTask 277Bをreadyにせずsemantic creditはzero。

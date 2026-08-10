@@ -4,11 +4,11 @@
 
 ## Task 277B-L Template Type-Parameter Association
 
-This is the durable module owner for the future standalone checker module
+This is the durable module owner for the standalone checker module
 `crates/mizar-checker/src/source_template_type_parameter_association.rs`.
 The frozen orchestration, source/test scope, baselines, and readiness boundary
 are owned by [Task 277B-L](../../task_contracts/en/277B-L.md). The module is
-not implemented yet and its existence does **not** make Task 277B ready.
+implemented; its neutral transport still does **not** make Task 277B ready.
 
 The module consumes completed R1
 `TemplateTypeParameterSourceCollection` and an existing `TypedAst`. It returns
@@ -62,8 +62,11 @@ and ambiguity; the checker adds no reorder or duplicate error variant.
 
 Validation is fail-closed and ordered: environment; R1 binding lookup; then an
 exactly-one scan match where `TypedNode.resolved_node == Some(the R1
-ResolvedNodeId)` for each of the five sites; normal recovery; exact node kind;
-range anchors; R1 range equality; nonempty contained definition/binder anchors;
+ResolvedNodeId)` for each of the five sites; normal recovery; exact node kind
+(`DefinitionBlockItem`, `TemplateParameter`, canonical `Identifier` for both
+binder and generator identifier, and `TypeHead`);
+range anchors; R1 range equality; binder-within-parameter,
+parameter/type-head-within-definition, and identifier-within-type-head ranges;
 then direct `definition -> parameter`, `parameter -> binder`, and
 `type_head -> identifier` edges. Every post-environment failure returns the
 association-specific invalid error. Zero/multiple scan matches fail; dense-ID
@@ -83,20 +86,37 @@ It must not edit resolver sources, `source_template.rs`, 277A, Typed/Resolved
 installation, Cargo, canonical specifications/tests/metadata, or production
 runner/facade/dispatch.
 
-Four checker tests cover exact mapping, environment/missing/ambiguous nodes,
-kind/range/recovery/edge corruption, and deterministic non-mutating rebuild.
+The four checker tests exhaustively cover exact mapping and public getters;
+source/module mismatch; missing or ambiguous matches at each of five sites;
+all-site kind and recovery corruption; prefix-spoofed non-canonical
+`Identifier` kinds; non-range/wrong-source/empty anchors, exact-range and
+containment failures, and each direct-edge removal; then deterministic,
+non-mutating rebuilds for empty, singleton, and multi-link profiles.
 One private mizar-test real-fixture probe constructs its own F5 `TypedAst` from
 the same validated Surface/Resolved 57-node profile, attaching resolver IDs
 only through the arena mapping, and calls this producer directly. No existing
 helper or 277A route supplies that typed arena. It has no active semantic,
 diagnostic, or coverage effect.
 
-The same implementation commit adds this module to checker lint policy's
+The implementation adds this module to checker lint policy's
 public-enum module list, source/spec module list, public-API path allowlist,
-and `lib.rs` public-module allowlist. Its completion documentation adds the
-crate-export row and exact public-item inventory to the paired source/spec
-audits; this documentation prerequisite does not claim the absent module as a
-current export.
+and `lib.rs` public-module allowlist. The paired source/spec audits now carry
+the crate-export row and exact public-item inventory. Test-sufficiency review
+is **NO FINDINGS**; implementation review is **NO FINDINGS** after the
+canonical-`Identifier` prefix-spoof fix. Source/documentation re-review is **NO
+FINDINGS** after the EN/JA CLI-tense fix; bilingual and boundary reviews are
+**NO FINDINGS**. Checker/mizar-test lint, focused and full libraries, package/
+workspace Clippy, full tests, formatting/diff checks, metadata, unchanged CLI
+hashes, and protected-surface gates all pass. Final-quality review found one
+Medium missing identifier-within-type-head range containment. The repair added
+the containment and a corruption assertion to
+`task277bl_rejects_kind_range_recovery_and_direct_edge_corruption` and
+synchronized this EN/JA owner and contract; finding-specific re-review is **NO
+FINDINGS**. All nine hard gates PASS uncapped at valid `100/100`
+(`20/20/15/15/10/10/5/5`). Only exact staging/cached-diff review, task-only
+commit, post-commit proof, and fresh-successor inventory remain pending. This
+implementation retains Task 277B's
+not-ready, zero-semantic-credit boundary.
 
 ## Public Enum Policy
 

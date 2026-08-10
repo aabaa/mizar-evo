@@ -13150,13 +13150,23 @@ The final test-only scope is exactly these two paths; production runner remains
 
 ## Checker Task 277B-L Private Association Probe
 
-[Task 277B-L](../../task_contracts/en/277B-L.md) permits only a private direct
+[Task 277B-L](../../task_contracts/en/277B-L.md) implemented only a private direct
 test leaf and `tests.rs` registration in mizar-test. It consumes existing
 frontend/parser output, completed resolver R1 data, and the standalone checker
 producer without adding a runner module, production route, facade, dispatcher,
 detail key, checker slot installation, Cargo edge, fixture/sidecar change,
 metadata/trace owner, diagnostic, or semantic publication. The production
 runner remains the protected 38 paths / 80090 lines with its frozen hashes.
+The leaf is 249 lines / `5fb342d357fb8cb92bd88278c019b276741cd1d6edb255e16e4f231f578dfe04`
+and registration is `tests.rs` 63 / `8873ea62bf642a8287eeacbfdaea06eccd0d917a17be9cd54a7764b0b6bea295`.
+Test sufficiency and implementation review are **NO FINDINGS** after the
+canonical-`Identifier` prefix-spoof fix; source/documentation, bilingual, and
+boundary re-reviews are **NO FINDINGS**. Full verification and protected-surface
+checks pass. Finding-specific final-quality re-review after the checker
+containment repair is **NO FINDINGS**; all nine hard gates PASS uncapped at
+valid `100/100` (`20/20/15/15/10/10/5/5`). Only exact staging/cached-diff
+review, task-only commit, post-commit proof, and fresh-successor inventory
+remain pending. Task 277B remains not ready with zero semantic credit.
 
 ## Checker Task 269GT Frozen Runner Boundary
 

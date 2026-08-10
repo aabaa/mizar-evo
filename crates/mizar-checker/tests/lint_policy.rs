@@ -270,6 +270,10 @@ fn checker_public_enums_are_forward_compatible_and_documented() {
             "source_structure_definition.md",
         ),
         ("src/source_template.rs", "source_template.md"),
+        (
+            "src/source_template_type_parameter_association.rs",
+            "source_template_type_parameter_association.md",
+        ),
         ("src/type_checker.rs", "type_checker.md"),
         (
             "src/registration_resolution.rs",
@@ -426,6 +430,10 @@ fn checker_source_spec_audit_covers_public_surface_and_gaps() {
             "source_structure_definition",
         ),
         ("src/source_template.rs", "source_template"),
+        (
+            "src/source_template_type_parameter_association.rs",
+            "source_template_type_parameter_association",
+        ),
         ("src/source_term.rs", "source_term"),
         ("src/type_checker.rs", "type_checker"),
         ("src/registration_resolution.rs", "registration_resolution"),
@@ -940,6 +948,7 @@ fn public_checker_api_is_documented(root: &Path, path: &Path, line: &str) -> boo
             || path == Path::new("src/source_structure.rs")
             || path == Path::new("src/source_structure_definition.rs")
             || path == Path::new("src/source_template.rs")
+            || path == Path::new("src/source_template_type_parameter_association.rs")
             || path == Path::new("src/type_checker.rs")
             || path == Path::new("src/registration_resolution.rs")
             || path == Path::new("src/cluster_trace.rs")
@@ -973,6 +982,7 @@ fn public_checker_api_is_documented(root: &Path, path: &Path, line: &str) -> boo
                 | "pub mod source_structure;"
                 | "pub mod source_structure_definition;"
                 | "pub mod source_template;"
+                | "pub mod source_template_type_parameter_association;"
                 | "pub mod type_checker;"
                 | "pub mod registration_resolution;"
                 | "pub mod cluster_trace;"

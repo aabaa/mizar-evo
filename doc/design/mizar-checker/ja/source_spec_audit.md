@@ -168,6 +168,7 @@ ControlFlowIr、VC payload、proof evidence の AST-wide source-to-checker gap �
 - `source_structure`
 - `source_structure_definition`
 - `source_template`
+- `source_template_type_parameter_association`
 - `source_term`
 - `source_type`
 - `type_checker`
@@ -449,6 +450,32 @@ bounded gap: Task 277Aはresolved template target、formal-to-actual association
 actual kind、substitution request/result、scheme/theorem role、algorithm role、guard、
 inference、compatibility、verdict、diagnostic、active route、coverage creditをpublishしない。
 later Task-277 sliceとTask 278が別途authorized decisionをretainする。
+
+### `source_template_type_parameter_association`
+
+生成 public newtype:
+
+- `SourceTemplateTypeParameterAssociationId`
+
+literal top-level public item:
+
+- `SourceTemplateTypeParameterAssociation`、
+  `SourceTemplateTypeParameterAssociationTable`、
+  `SourceTemplateTypeParameterAssociationHandoff`、
+  `SourceTemplateTypeParameterAssociationError`、
+  `SourceTemplateTypeParameterAssociationProducer`
+
+対応:
+
+| 仕様上の約束 | source根拠 | test根拠 | 状態 |
+|---|---|---|---|
+| resolver-owned template type-parameter linkをimmutable、dense、zero-semantic typed-node association tableへtransportする。 | `src/source_template_type_parameter_association.rs`の`SourceTemplateTypeParameterAssociationProducer::build`、association ID/row/table/handoff family、deterministic `debug_text()`。 | `task277bl_maps_exact_resolver_association_to_typed_nodes`、`task277bl_rebuilds_deterministically_without_mutating_typed_ast`、`task277bl_real_fixture_builds_exact_template_type_parameter_association`。 | Task 277B-Lとして実装済み。Task 277B semantic creditはない。 |
+| 5 resolver identityは各exactly one typed nodeにmatchし、kindは`DefinitionBlockItem`、`TemplateParameter`、binder/generator identifier双方のcanonical `Identifier`、`TypeHead`である。 | exact `resolved_node` scan、normal-recovery、exact-kind predicate、range anchor/equality/containment、direct-edge validation。 | missing/ambiguous、all-site kind/recovery、forged Identifier-category、anchor/range/containment、edge-corruption matrix。 | `InvalidAssociation`でfail closed。dense-ID cast/spelling/range inferenceなし。 |
+| source/module mismatchを区別しpublic enum evolutionをforward-compatibleに保つ。 | `EnvironmentMismatch`と`#[non_exhaustive] SourceTemplateTypeParameterAssociationError`。 | environment mismatch matrixと`checker_public_enums_are_forward_compatible_and_documented`。 | 実装済み。exhaustive exceptionなし。 |
+
+bounded gap: このneutral prerequisiteはTyped/Resolved slot、type/sethood、formal-to-actual
+substitution、diagnostic、active route、verdictをinstall/interpetしない。Task 277Bはnot readyで
+semantic creditはzeroのままである。
 
 ### `source_term`
 
@@ -5672,35 +5699,31 @@ post-implementation checkpointは
 umbrella Task 277はpartialのままで、successorはseparately frozen/reviewedでなければ
 ならない。
 
-## Task 277B-L Frozen Source/Specification Mapping
+## Task 277B-L Implemented Source/Specification Mapping
 
-[Task 277B-L contract](../../task_contracts/ja/277B-L.md) はcomplete resolver
+[Task 277B-L contract](../../task_contracts/ja/277B-L.md) はcompleteした resolver
 `TemplateTypeParameterSourceCollection` からexisting `TypedAst` へのchecker-only structural
-bridgeをfreezeする。Templates/term-expression ruleを新規deriveしないため、これは
-`design_drift`、`source_drift`、Rust `test_gap` であり `spec_gap` はない。future standalone
+bridgeのcompletionをrecordする。former `design_drift`、`source_drift`、Rust `test_gap`はclosedし、
+Templates/term-expression ruleを新規deriveしないため`spec_gap`はない。standalone
 owner は [source_template_type_parameter_association](./source_template_type_parameter_association.md#task-277b-l-template-type-parameter-association) で、277A `source_template` ではない。
 
-future producerはR1 binding identityをnormal/exact/range-anchored typed nodeとdirect
+implemented producerはR1 binding identityをnormal/exact/range-anchored typed nodeとdirect
 structural edgeに対してvalidateし、immutable zero-semantic association tableをyieldする。
 Typed/Resolved stateをinstallせず、type/sethoodをinterpretせず、diagnostic/active routeを
 変更せず、Task 277Bをreadyにしない。したがってspecification coverage、traceability、
 `spec_coverage_audit.md` にowned-state deltaはない。
 
-module未実装のため、このdocumentation prerequisiteでは上記current crate-export listと
-public-surface inventoryを変更しない。five-path implementationでは`src/lib.rs`とchecker lint
-policyへ`source_template_type_parameter_association` exportを追加し、completion updateで
-対応するcrate-export rowと`### \`source_template_type_parameter_association\`` headingの
-public-item inventoryを追加する。future inventoryはexactに、generated public newtype
-`SourceTemplateTypeParameterAssociationId`; literal top-level public item
-`SourceTemplateTypeParameterAssociation`、
-`SourceTemplateTypeParameterAssociationTable`、
-`SourceTemplateTypeParameterAssociationHandoff`、
-`SourceTemplateTypeParameterAssociationError`、
-`SourceTemplateTypeParameterAssociationProducer`; exact resolver-to-typed identity、
-fail-closed structural validation、deterministic zero-semantic transport、non-exhaustive public
-enum policyのcorrespondence tableを持つ。checker lint policyは同じimplementation commitで
-public-enum module list、source/spec module list、public-API path allowlist、`lib.rs`
-public-module allowlistへnew moduleを追加しなければならない。
+`src/lib.rs`は`source_template_type_parameter_association`をexportし、checker lint policyは
+対応するpublic-enum module、source/spec module、public-API path、`lib.rs` public-module
+allowlist entryを持つ。したがって上記current crate-export list/public-surface inventoryはexact。
+test-sufficiency reviewは**NO FINDINGS**、implementation reviewはcanonical `Identifier` prefix-spoof
+fix後に**NO FINDINGS**。source/documentation re-reviewはEN/JA CLI tense fix後に**NO FINDINGS**、
+bilingual/boundary reviewも**NO FINDINGS**。focused/lint/library、package/workspace Clippy、full test、
+format/diff、metadata、CLI、protected-surface gateは全てPASS。identifier-within-type-head containment
+repair後のfinding-specific final-quality re-reviewは**NO FINDINGS**。全9 hard gateはscore capなし
+valid `100/100`（`20/20/15/15/10/10/5/5`）でPASS。exact staging/cached-diff review、task-only
+commit、post-commit proof、fresh-successor inventoryだけがpending。Task 277Bはnot ready、semantic
+creditはzeroのままである。
 
 ## Task 269GT source/API delta
 

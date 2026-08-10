@@ -3823,10 +3823,19 @@ the successor is selected only from fresh post-commit inventory.
 
 ## Checker Task 277B-L Private Association Probe
 
-- [ ] After fresh preflight, add only the direct private
+- [x] Added only the direct private
   [277B-L contract](../../task_contracts/en/277B-L.md) fixture test and its
   registration; do not create a production route or alter `runner.rs`.
-- [ ] Assert the exact R1-to-Typed association and preserve all fixture,
+- [x] Asserted the exact R1-to-Typed association and preserved all fixture,
   sidecar, metadata, trace, coverage, diagnostic, and active-stage boundaries.
-- [ ] Recheck `609 -> 610`, protected production inventory, and independent
-  no-findings reviews. This task does not make Task 277B ready.
+- [x] Rechecked the measured 610-test list, protected production inventory, and
+  test-sufficiency/implementation reviews (**NO FINDINGS** after the canonical
+  `Identifier` prefix-spoof fix).
+- [x] Source/documentation, bilingual, and boundary re-reviews are **NO
+  FINDINGS**; full verification and protected-surface checks pass.
+- [x] Complete finding-specific final-quality re-review at **NO FINDINGS**;
+  all nine hard gates PASS uncapped at valid `100/100`
+  (`20/20/15/15/10/10/5/5`).
+- [ ] Complete only exact staging/cached-diff review, task-only commit,
+  post-commit proof, and fresh-successor inventory. This task does not make
+  Task 277B ready and grants zero semantic credit.

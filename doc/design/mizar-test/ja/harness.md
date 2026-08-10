@@ -5205,10 +5205,20 @@ central contractがownする。
 
 [Task 277B-L contract](../../task_contracts/ja/277B-L.md) は
 `runner/tests/type_elaboration/template_type_parameter_association.rs` private leaf 1件と
-その`tests.rs` registrationだけをreserveする。unchanged inactive fixtureをexisting helperでparse、
+その`tests.rs` registrationだけをimplementする。unchanged inactive fixtureをexisting helperでparse、
 R1 collectionを得る。leaf自身がsame validated F5 Surface/Resolved 57-node profileから
 test-only `TypedAst`を構築し、`resolved_node`をresolver arena mappingだけからattachする。
 dense-ID cast、range/name inference、existing typed helper、277A routeは使わない。regressionは
 binding `0` とfrozen `#53/#31/#2 -> #39/#21` typed associationだけ。production runner、
 facade、dispatcher、detail key、active-stage、checker-installation、diagnostic、coverage effectは
-なく、projected library listは`609 -> 610`。
+なく、measured library listは610 /
+`2d7e12fe5467d07fa4cef605c4d83cd8079ef8b5e0ea3e3431923b08a1532337`。leafは249 lines /
+`5fb342d357fb8cb92bd88278c019b276741cd1d6edb255e16e4f231f578dfe04`、`tests.rs`は63 /
+`8873ea62bf642a8287eeacbfdaea06eccd0d917a17be9cd54a7764b0b6bea295`。focused verificationはPASS、
+test-sufficiency/implementation reviewはcanonical `Identifier` prefix-spoof fix後に**NO FINDINGS**。
+source/documentation、bilingual、boundary re-reviewも**NO FINDINGS**。checker/mizar-test lint、
+full library、package/workspace Clippy、full test、format/diff、metadata、unchanged CLI hash、
+protected-surface checkはPASS。checker containment repair後のfinding-specific final-quality re-reviewは
+**NO FINDINGS**。全9 hard gateはscore capなしvalid `100/100`
+（`20/20/15/15/10/10/5/5`）でPASS。exact staging/cached-diff review、task-only commit、
+post-commit proof、fresh-successor inventoryだけがpending。Task 277Bはnot ready/semantic credit zero。

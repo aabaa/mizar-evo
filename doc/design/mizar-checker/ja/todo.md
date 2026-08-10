@@ -6484,11 +6484,17 @@ post-commit fresh inventoryからだけ選択する。
 
 ## Task 277B-L Template Type-Parameter Association
 
-- [ ] fresh baseline/authority inventory後だけ、frozen
-  [277B-L contract](../../task_contracts/ja/277B-L.md) standalone producerをimplementする。
-- [ ] new-module-only five-path Rust boundaryをpreserveし、277A、Typed/Resolved install、
+- [x] frozen [277B-L contract](../../task_contracts/ja/277B-L.md) standalone producerをexact
+  five-path Rust boundaryでimplementした。
+- [x] new-module-only boundaryをpreserveし、277A、Typed/Resolved install、
   resolver、production runner、Cargo、canonical specification/test/trace/coverage artifactをextendしない。
-- [ ] checker 4件とprivate real-fixture 1件、structural validation precedence、deterministic
+- [x] checker 4件とprivate real-fixture 1件、structural validation precedence、deterministic
   non-mutating handoff、exact count/hash gate、semantic/active-route/coverage effectなしをproveする。
-- [ ] independent no-findings reviewとhard-gate evidenceを得る。本prerequisiteはTask 277Bを
-  readyにしない。
+- [x] test-sufficiency review: **NO FINDINGS**。implementation review: canonical
+  `Identifier` prefix-spoof fix後に**NO FINDINGS**。
+- [x] EN/JA CLI tense fix後のsource/documentation re-review、bilingual review、boundary review、
+  full verification: **NO FINDINGS** / PASS。
+- [x] finding-specific final-quality re-reviewは**NO FINDINGS**、全9 hard gateはscore capなし
+  valid `100/100`（`20/20/15/15/10/10/5/5`）でPASS。
+- [ ] exact staging/cached-diff review、task-only commit、post-commit proof、fresh-successor
+  inventoryだけをcompleteする。本prerequisiteはTask 277Bをreadyにせず、semantic creditはzero。
