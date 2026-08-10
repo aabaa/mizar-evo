@@ -169,3 +169,16 @@ refinementはtheorem recoveryがcontiguous claimed `x !` speculative prefixを�
 implementation reviewはno findingsである。excluded 5 case、previously returning
 valid-source / unclaimed-fallback control、public/diagnostic/cache boundary、corpus、
 trace metadataは不変である。
+
+## `PARSER-TEMPLATE-TYPEHEAD-277P1` Audit Freeze
+
+| Finding | 分類 | disposition |
+|---|---|---|
+| template type parameter は leading declaration では受理されるが、その template body の §13.4.2 Fraenkel generator type にはならない。 | `source_drift` | explicit required-generator-type policy と parse-local template scope だけで one-token identifier type head を保存する。 |
+| 完全な成功 AST、strict near miss、cache invalidation を固定する focused parser/frontend regression がない。 | `test_gap` | central contract の Rust test 4件だけを追加する。 |
+
+§§18.2.2/18.2.6 が syntax を許し、§18.10.2 が後段 semantic rejection を要求するため
+`spec_gap` はない。seed、sidecar、trace row、active route、coverage、diagnostic
+vocabulary、resolver/checker/Core ownership は不変であり、frozen target の obsolete
+recovery diagnostic だけが contract 通り消える。本 prerequisite 単独では Checker
+Task 277B を unblock しない。

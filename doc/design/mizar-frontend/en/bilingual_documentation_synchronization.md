@@ -105,3 +105,14 @@ Implementation synchronization is complete: both languages record the real
 provider, nine recovered cases, unchanged valid source, five excluded
 `ast = None` controls, replay-stable diagnostics/AST/cache keys, and unchanged
 production/cache/fuzz/coverage boundaries.
+
+## `PARSER-TEMPLATE-TYPEHEAD-277P1` Pair Freeze
+
+The paired frontend plan, parsing, cache-key, orchestration, source/spec audit,
+TODO, closeout qualification, and this audit agree with the central EN/JA
+contract: a previously returning AST changes, so v3 and one replay/control
+test are required. Parser grammar remains upstream; passthrough, merge order,
+fuzz, public API shape other than the cache-version value, diagnostic
+vocabulary/order, corpus/trace/coverage, and semantic boundaries are unchanged.
+Both languages record the target vector becoming diagnostic-free and the
+version value becoming v3. No bilingual claim advances Checker Task 277B.

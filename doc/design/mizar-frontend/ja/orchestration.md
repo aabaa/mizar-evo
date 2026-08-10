@@ -203,3 +203,10 @@ deterministically入ることを証明する。
 implementation result: real-provider regressionはincluded mutationすべてのfull
 diagnostic vectorとAST/cache outputを比較する。merge logicまたはdiagnostic
 class/codeは変更しない。
+
+## `PARSER-TEMPLATE-TYPEHEAD-277P1` Replay Contract
+
+`task277p1_template_typehead_changes_ast_cache_namespace` は frozen source に対し
+real parser seam を2回実行し、complete zero-diagnostic AST と v3 cache key を観測し、
+unchanged control と比較する。orchestration は payload-agnostic のままである。merge
+algorithm、diagnostic class、resolver input、semantic result は変更しない。

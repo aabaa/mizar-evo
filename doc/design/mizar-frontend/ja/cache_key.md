@@ -186,3 +186,11 @@ constant、storage policy、public APIは変更しない。
 implementation result: recovered 9 caseのreplay keyは一致し、unchanged valid
 sourceはAST shapeとv2 keyを保持し、excluded 5 caseは`cache_keys.ast = None`を
 保持する。cache source変更なしでno-bump assessmentをcloseする。
+
+## `PARSER-TEMPLATE-TYPEHEAD-277P1` Cache Assessment
+
+本 task は v2 no-bump recovery correction と異なる。frozen Fraenkel input は既に
+recoverable v2 AST を持ち、parser はその tree/range/diagnostic を変える。従って
+real-parser key は v3 へ入る。focused replay test は source の v3 と unchanged control
+behavior を証明する。token-stream、parser-input、edition、storage、public cache-key
+shape は不変である。

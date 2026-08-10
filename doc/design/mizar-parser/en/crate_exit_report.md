@@ -216,3 +216,13 @@ production manifest pass. The five excluded inputs retain `ast = None`, and
 unclaimed/previously returning controls remain unchanged. A fresh read-only
 hard-gate review scores the implementation 96/100 with every hard gate
 passing; no Task 49 or coverage promotion follows.
+
+## Post-Closeout Qualification: `PARSER-TEMPLATE-TYPEHEAD-277P1`
+
+The historical parser closeout is additionally qualified by the frozen
+[template type-head prerequisite](../../task_contracts/en/PARSER-TEMPLATE-TYPEHEAD-277P1.md).
+The selected source already returns a recovered AST, so implementation must
+pair the bounded parser repair with frontend cache namespace v3 rather than
+reuse v2. Until the separate five-path implementation and four focused tests
+pass review, the target remains a documented `source_drift`/`test_gap`; no
+Task-49, coverage, or semantic-status claim is authorized.

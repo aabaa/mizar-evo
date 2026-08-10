@@ -219,3 +219,14 @@ Frontend production, cache v2, fuzz ownership, public APIs, diagnostics, and
 coverage metadata remain unchanged. Independent test and implementation
 reviews report no findings. A fresh read-only hard-gate review scores the
 shared parser prerequisite implementation 96/100 with every hard gate passing.
+
+## Post-Closeout Qualification: `PARSER-TEMPLATE-TYPEHEAD-277P1`
+
+The historical frontend closeout is qualified by the frozen
+[parser-originated cache follow-through](../../task_contracts/en/PARSER-TEMPLATE-TYPEHEAD-277P1.md).
+Unlike the prior no-AST recovery correction, this source already produced a v2
+AST, so the separate implementation must bump v3 and prove a real-provider
+replay/control result. No frontend grammar, semantic, diagnostic-vocabulary or
+merge-order, corpus, trace, coverage, or public-API-shape work is authorized;
+the cache-version value and frozen target diagnostic vector change exactly as
+contracted.

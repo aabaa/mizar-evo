@@ -689,3 +689,14 @@ Check off the task here once its tests pass.
   - The regression also freezes the unchanged valid source and all five
     excluded `ast = None` controls; frontend production and cache v2 remain
     unchanged.
+
+## Independently Authorized Template Type-Head Follow-Through
+
+- **`PARSER-TEMPLATE-TYPEHEAD-277P1`.** [ ]
+  - Follow the [central contract](../../task_contracts/en/PARSER-TEMPLATE-TYPEHEAD-277P1.md):
+    change only the real-parser cache namespace v2 to v3 and add the one
+    orchestration replay/control test.
+  - Do not change frontend grammar, merge logic, diagnostic vocabulary/order,
+    fuzz targets, corpus, traceability, coverage, resolver/checker behavior, or
+    public API shape; only the contracted target vector and cache-version value
+    change.

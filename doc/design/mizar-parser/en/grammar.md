@@ -2257,3 +2257,15 @@ conditions, and outer `end;`. The parameter is exactly one identifier with
 optional `TypeArguments`; generic definition constraints and attribute-bearing
 types are rejected. The parser preserves syntax only and does not resolve the
 mode/property, accept proofs, or check overlap/coherence semantics.
+
+## `PARSER-TEMPLATE-TYPEHEAD-277P1` Required Template Type Head
+
+The central [Task contract](../../task_contracts/en/PARSER-TEMPLATE-TYPEHEAD-277P1.md)
+freezes one parser grammar preservation rule: while parsing a template-shaped
+definition block, the grammar-required type expression after a Fraenkel
+generator's `is` may preserve a bare one-token `Identifier` as a `TypeHead`
+after ordinary strict parsing fails. Its `TypeExpression` and `TypeHead` retain
+the source token/range; this is not parameter binding or symbol
+classification. Existing `UserSymbol` heads retain their normal
+`QualifiedSymbol` shape. The fallback is absent from speculative template/type
+arguments and `is`-assertion alternatives, and cannot escape the definition.

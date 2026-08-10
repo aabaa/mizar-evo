@@ -2119,3 +2119,14 @@ exactly one identifier、`be`、`TypeHead -> QualifiedSymbol`とoptional
 `TypeArguments`で表すmode applicationだけを受理し、generic definition constraintと
 attribute-bearing typeはrejectする。parserはsyntaxだけを保存し、mode/property
 resolution、proof acceptance、overlap/coherence semantic checkを行わない。
+
+## `PARSER-TEMPLATE-TYPEHEAD-277P1` Required Template Type Head
+
+central [JA contract](../../task_contracts/ja/PARSER-TEMPLATE-TYPEHEAD-277P1.md)
+は一つの parser grammar preservation rule をfreezeする。template-shaped definition
+block 内で Fraenkel generator の `is` 後に grammar-required な type expression は、
+ordinary strict parse が失敗した後に bare one-token `Identifier` を `TypeHead` として
+保存できる。`TypeExpression` と `TypeHead` は source token/range を保ち、parameter
+binding や symbol classification ではない。既存 `UserSymbol` head は通常の
+`QualifiedSymbol` shape を維持する。fallback は speculative template/type argument と
+`is` assertion alternative にはなく、definition の外へescapeしない。

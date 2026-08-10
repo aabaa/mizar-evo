@@ -1140,3 +1140,16 @@ Check the task off here once tests pass.
     fallback filtering, and a contiguous-claimed-prefix theorem boundary.
     Exact nine-case parser/frontend matrices, five excluded controls, the
     unchanged valid-source control, and later-boundary assertions pass.
+
+## Independently Authorized Template Type-Head Prerequisite
+
+- **`PARSER-TEMPLATE-TYPEHEAD-277P1`.** [ ]
+  - The [central contract](../../task_contracts/en/PARSER-TEMPLATE-TYPEHEAD-277P1.md)
+    freezes the required-generator `Identifier` fallback only inside
+    template-shaped definitions; no generic/speculative type parsing,
+    binding/resolution, or semantic acceptance is authorized.
+  - Preserve the immutable inactive Fraenkel seed and all corpus/trace/coverage
+    state. Add the exact three parser tests and one frontend v3-cache replay
+    test only.
+  - This is not Task 49 and does not make Checker Task 277B ready; its resolver
+    declaration/use-identity prerequisite remains separate.

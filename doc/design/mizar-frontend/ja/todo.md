@@ -323,3 +323,13 @@ cargo test -p mizar-lexer
     戻った後、Checker B1B1Pへ戻る。
   - regressionはunchanged valid sourceとexcluded `ast = None` control 5件もfreezeし、
     frontend productionとcache v2は不変である。
+
+## Independently Authorized Template Type-Head Follow-Through
+
+- **`PARSER-TEMPLATE-TYPEHEAD-277P1`.** [ ]
+  - [central JA contract](../../task_contracts/ja/PARSER-TEMPLATE-TYPEHEAD-277P1.md)
+    に従い、real-parser cache namespace だけを v2 から v3 に変更し、orchestration
+    replay/control test 1件を追加する。
+  - frontend grammar、merge logic、diagnostic vocabulary/order、fuzz target、corpus、
+    traceability、coverage、resolver/checker behavior、public API shape を変更しない。
+    contract 対象の diagnostic vector と cache-version value だけを変更する。

@@ -144,3 +144,12 @@ implementation disposition:
 excluded 5 mutation、unchanged valid sourceをexerciseする。production passthrough、
 merge ordering、fuzz ownership、v2 cache version、public surface、coverage metadataは
 不変であり、frontend findingは残らない。
+
+## `PARSER-TEMPLATE-TYPEHEAD-277P1` Follow-Through Audit
+
+parser-originated template generator repair は bounded frontend cache follow-through
+であり、frontend grammar taskではない。previously-returning AST の変更には v3 と
+real-provider replay/control test 1件が必要である。existing seam passthrough、diagnostic
+ordering、fuzz ownership は十分なままである。central contract は implementation pending
+の `source_drift`/`test_gap` を保持し、frontend semantic/corpus/trace/coverage credit を
+作らない。

@@ -181,3 +181,17 @@ the first unclaimed token. Independent test and implementation reviews report
 no findings. The five excluded cases, previously returning valid-source and
 unclaimed-fallback controls, public/diagnostic/cache boundaries, corpus, and
 trace metadata remain unchanged.
+
+## `PARSER-TEMPLATE-TYPEHEAD-277P1` Audit Freeze
+
+| Finding | Classification | Disposition |
+|---|---|---|
+| A template type parameter is accepted in a leading declaration but not as the §13.4.2 Fraenkel generator type in that template body. | `source_drift` | Preserve a one-token identifier type head only through the explicit required-generator-type policy and parse-local template scope. |
+| No focused parser/frontend regression pins the full successful AST, strict near misses, and cache invalidation. | `test_gap` | Add only the four frozen Rust tests in the central contract. |
+
+There is no `spec_gap`: §§18.2.2/18.2.6 authorize the syntax, while §18.10.2
+requires the later semantic rejection. The seed, sidecar, trace row, active
+routes, coverage, diagnostic vocabulary, and resolver/checker/Core ownership
+remain unchanged; the frozen target's obsolete recovery diagnostics disappear
+exactly as contracted. This prerequisite alone does not unblock Checker Task
+277B.

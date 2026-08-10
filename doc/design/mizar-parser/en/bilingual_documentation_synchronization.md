@@ -162,3 +162,12 @@ contract, source/spec audit, TODO, README, and closeout qualification record
 the contiguous claimed-prefix refinement, exact nine recovered cases, five
 excluded controls, unchanged returning-path controls, and measured
 test/production oracles.
+
+## `PARSER-TEMPLATE-TYPEHEAD-277P1` Pair Freeze
+
+The paired parser plan, grammar, source/spec audit, TODO, closeout
+qualification, and this audit agree with the central EN/JA contract on the
+single required-generator fallback, untouched `UserSymbol` shape, strict
+ambiguous positions, immutable semantic seed, three parser and one frontend
+test deltas, and the mandatory v2-to-v3 cache namespace change. No bilingual
+claim grants semantic credit or Checker Task-277B readiness.

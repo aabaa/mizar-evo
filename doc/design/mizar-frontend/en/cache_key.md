@@ -244,3 +244,12 @@ Implementation result: replay keys match for all nine recovered cases, the
 unchanged valid source retains its AST shape and v2 key, and the five excluded
 cases retain `cache_keys.ast = None`. The no-bump assessment is therefore
 closed without a cache source change.
+
+## `PARSER-TEMPLATE-TYPEHEAD-277P1` Cache Assessment
+
+This task differs from the v2 no-bump recovery correction: the frozen
+Fraenkel input already has a recoverable v2 AST, and the parser will alter its
+tree/ranges/diagnostics. The real-parser key must therefore enter v3. The one
+focused replay test proves v3 for that source and unchanged behavior for a
+control; token-stream, parser-input, edition, storage, and public cache-key
+shape remain unchanged.

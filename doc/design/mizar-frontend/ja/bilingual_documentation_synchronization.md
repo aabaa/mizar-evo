@@ -98,3 +98,13 @@ returnで一致する。本frozen follow-throughにbilingual findingは残らな
 implementation synchronizationもcompleteである。両言語はreal provider、recovered
 9 case、unchanged valid source、excluded `ast = None` control 5件、replay-stable
 diagnostic/AST/cache key、unchanged production/cache/fuzz/coverage boundaryを記録する。
+
+## `PARSER-TEMPLATE-TYPEHEAD-277P1` Pair Freeze
+
+paired frontend plan、parsing、cache-key、orchestration、source/spec audit、TODO、closeout
+qualification と本 audit は central EN/JA contract に一致する。previously returning AST
+が変わるため v3 と replay/control test 1件が必要である。parser grammar は upstream の
+ままであり、passthrough、merge order、fuzz、cache-version value 以外の public API
+shape、diagnostic vocabulary/order、corpus/trace/coverage、semantic boundary は不変で
+ある。両言語は target vector が diagnostic-free になり version value が v3 になる
+ことを記録する。Checker Task 277B の前進を主張しない。

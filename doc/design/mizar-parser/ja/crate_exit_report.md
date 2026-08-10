@@ -203,3 +203,13 @@ corpus/CLI oracle、test-list inventory、production manifestがpassする。exc
 5 inputは`ast = None`、unclaimed/previously returning controlは不変である。fresh
 read-only hard-gate reviewは全hard gateをPASSとし、implementationを96/100と評価した。
 Task 49やcoverage promotionへ進まない。
+
+## Post-Closeout Qualification: `PARSER-TEMPLATE-TYPEHEAD-277P1`
+
+historical parser closeout は frozen
+[template type-head prerequisite](../../task_contracts/ja/PARSER-TEMPLATE-TYPEHEAD-277P1.md)
+によって追加で qualify される。selected source は既に recovered AST を返すため、
+implementation は bounded parser repair と frontend cache namespace v3 を pair にする。
+separate 5-path implementation と focused test 4件が review をpassするまでは、target は
+`source_drift`/`test_gap` のままであり、Task 49、coverage、semantic-status claim は
+許可しない。

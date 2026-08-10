@@ -337,3 +337,12 @@ API, grammar, or diagnostic contract changes.
 Implementation result: the regression now observes all nine recovered cases,
 the unchanged valid source, and all five excluded `ast = None` controls
 through `MizarParserSeam`; no production seam change was needed.
+
+## `PARSER-TEMPLATE-TYPEHEAD-277P1` Parser Version Freeze
+
+The [central contract](../../task_contracts/en/PARSER-TEMPLATE-TYPEHEAD-277P1.md)
+requires `MIZAR_PARSER_CACHE_KEY_VERSION` to move from
+`mizar-parser/surface-ast-v2` to v3. The target source previously returned a
+recovered AST but will return a complete AST with zero parser diagnostics; v2
+therefore cannot identify both artifacts. The seam API and token adaptation are
+unchanged, and this cache change does not interpret template parameters.

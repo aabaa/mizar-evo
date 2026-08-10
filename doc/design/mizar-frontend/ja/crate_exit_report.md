@@ -210,3 +210,13 @@ regressionはexact recovered input 9件、unchanged valid source、excluded
 fuzz ownership、public API、diagnostic、coverage metadataは不変である。independent
 test/implementation reviewはno findingsである。fresh read-only hard-gate reviewは
 全hard gateをPASSとし、shared parser prerequisite implementationを96/100と評価した。
+
+## Post-Closeout Qualification: `PARSER-TEMPLATE-TYPEHEAD-277P1`
+
+historical frontend closeout は frozen
+[parser-originated cache follow-through](../../task_contracts/ja/PARSER-TEMPLATE-TYPEHEAD-277P1.md)
+で qualify される。prior no-AST recovery correction と異なり、この source は既に v2
+AST を生成したため、separate implementation は v3 bump と real-provider
+replay/control result を証明する。frontend grammar、semantic、diagnostic vocabulary /
+merge order、corpus、trace、coverage、public API shape work は許可しない。cache-version
+value と frozen target diagnostic vector だけは contract 通り変更する。

@@ -150,3 +150,12 @@ parser seam for the nine included and five excluded mutations plus the
 unchanged valid source. Production passthrough, merge ordering, fuzz
 ownership, v2 cache version, public surfaces, and coverage metadata remain
 unchanged. No frontend finding remains.
+
+## `PARSER-TEMPLATE-TYPEHEAD-277P1` Follow-Through Audit
+
+The parser-originated template generator repair is a bounded frontend cache
+follow-through, not a frontend grammar task. The changed previously-returning
+AST requires v3 and one real-provider replay/control test; existing seam
+passthrough, diagnostic ordering, and fuzz ownership remain sufficient. The
+central contract retains the `source_drift`/`test_gap` pending implementation;
+no frontend semantic, corpus, trace, or coverage credit is created.

@@ -1092,3 +1092,15 @@ cargo test -p mizar-test
     contiguous-claimed-prefix theorem boundaryで実装済み。exact 9-case
     parser/frontend matrix、excluded 5 control、unchanged valid-source control、
     later-boundary assertionがpassする。
+
+## Independently Authorized Template Type-Head Prerequisite
+
+- **`PARSER-TEMPLATE-TYPEHEAD-277P1`.** [ ]
+  - [central JA contract](../../task_contracts/ja/PARSER-TEMPLATE-TYPEHEAD-277P1.md)
+    は required-generator `Identifier` fallback を template-shaped definition の内側
+    だけにfreezeする。generic/speculative type parse、binding/resolution、semantic
+    acceptance は許可しない。
+  - immutable inactive Fraenkel seed と corpus/trace/coverage state を保持し、exact
+    parser test 3件と frontend v3-cache replay test 1件だけを追加する。
+  - Task 49 ではなく、Checker Task 277B を ready にしない。resolver
+    declaration/use-identity prerequisite は別のままである。
