@@ -121,6 +121,43 @@ responsible for authority interpretation, semantic decisions, integration,
 final verification, staging, and committing. A lower reasoning setting for a
 sub-agent must never silently lower the parent setting or relax a review gate.
 
+#### GPT-5.6 Model Routing
+
+Use the [current official OpenAI model guidance](https://developers.openai.com/api/docs/guides/latest-model)
+when a session exposes per-agent GPT-5.6 model selection. Model availability,
+account limits, and quota accounting are environment properties and must not
+be inferred from API pricing or assumed from this policy.
+
+- Keep GPT-5.6 Sol at the user-requested reasoning setting for the parent when
+  the work can decide authority interpretation, unresolved specification or
+  test intent, soundness boundaries, public API ownership, semantic acceptance,
+  or final hard-gate scoring.
+- GPT-5.6 Luna with `xhigh` is eligible for bounded autonomous work only after
+  the parent has frozen a complete assignment or task contract. Suitable work
+  includes deterministic inventory, count and hash checks, whole-section
+  documentation compaction, manifest and link validation, focused verification,
+  localized contract-driven implementation, and first-pass independent reviews.
+- A Luna agent must not independently resolve a `spec_gap`, derive new test
+  intent, invent language or proof semantics, authorize a lower-stage change,
+  expand task scope, or accept a disputed finding. Escalate those decisions to
+  the parent without editing beyond the frozen scope.
+- Use GPT-5.6 Terra with `high` or `xhigh`, when available, as the intermediate
+  escalation route for cross-module implementation, precision review, or a
+  disagreement that exceeds Luna's bounded assignment but does not yet require
+  a parent semantic decision.
+- Luna output is subject to the same independent reviews, verification, hard
+  gates, and commit rules as output from any other model. Lower model cost or a
+  higher reasoning setting never substitutes for evidence and never lowers an
+  acceptance threshold.
+- Introduce or broaden Luna routing only through representative repository
+  trials. Compare task success, material missed findings, repair loops, hard-
+  gate agreement, token use, latency, and cost at `xhigh` and, where safe, one
+  lower effort. Keep Sol or Terra for a task class until the trial shows no
+  material quality regression.
+- If Luna is not exposed by the current agent runtime, use the closest eligible
+  route above without blocking the task. Record the effective model and
+  reasoning setting in the review packet or handoff when model choice matters.
+
 When per-agent reasoning controls are available:
 
 - use the parent setting for authority conflicts, specification gaps,
