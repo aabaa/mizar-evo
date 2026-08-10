@@ -98,8 +98,8 @@ is its task 1). "Next work" points into the
 | mizar-parser | Grammar, Pratt parsing, syntax recovery, parse-only corpus | [x] Tasks 1-48 plus bounded `PARSER-RECOVERY-B1B1P-P1` complete; historical post-Task-46 score 99/100 | no inferred Task 49; human-owned P-265-47D remains separate | [todo](./mizar-parser/en/todo.md) |
 | mizar-frontend | Source loading and phase 1-3 orchestration | [x] prior milestone plus `PARSER-RECOVERY-B1B1P-P1-FE` regression complete | — | [todo](./mizar-frontend/en/todo.md) |
 | mizar-resolve | Module graph, namespaces, symbols, labels, signatures | [~] complete through task 29, Checker Task 263R, and Task 264R implementation | Preserve Task-264R shell/no-symbol boundary through Checker Tasks 248P/264 | [todo](./mizar-resolve/en/todo.md) |
-| mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] foundation complete through task 22; Tasks 265-268, Core-31, dormant [Task 269SDT](./task_contracts/en/269SDT.md), and private [Task 269SDU](./task_contracts/en/269SDU.md) are implemented | Active dispatch remains excluded; Task-269SDU reviews/all nine gates pass at 100/100 and only the task-only commit remains | [todo](./mizar-test/en/todo.md) |
-| mizar-checker | Type checking, cluster/registration resolution, overload resolution | [~] explicit-payload milestone and source producers/consumers through [Task 269SDU](./task_contracts/en/269SDU.md) are implemented | `z`/`q` capture stays blocked on `set` reconciliation; Task-269SDU reviews/all nine gates pass at 100/100 and only the task-only commit remains | [todo](./mizar-checker/en/todo.md) |
+| mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] foundation complete through task 22; Tasks 265-268, Core-31, dormant [Task 269SDT](./task_contracts/en/269SDT.md), and private [Task 269SDU](./task_contracts/en/269SDU.md) are implemented | Active dispatch remains excluded; Task-269SDU is complete in `3bddc5fd6383226bbb66d7d5757e7b77f80678d9`; select later work only from fresh inventory | [todo](./mizar-test/en/todo.md) |
+| mizar-checker | Type checking, cluster/registration resolution, overload resolution | [~] explicit-payload milestone and source producers/consumers through [Task 269SDU](./task_contracts/en/269SDU.md) are implemented | `z`/`q` capture stays blocked on `set` reconciliation; Task-269SDU is complete in `3bddc5fd6383226bbb66d7d5757e7b77f80678d9`; no semantic successor is assigned | [todo](./mizar-checker/en/todo.md) |
 | mizar-core | Elaboration, binder-normalized core logic, control-flow preparation | [x] core/control-flow milestone, tasks 27-32 complete | step-5 Tasks 33-53 under the Task-32 graph | [todo](./mizar-core/en/todo.md) |
 | mizar-vc | VC IR, VC generation, deterministic pre-ATP discharge | [x] exact source-derived contradiction VC integration complete through task 31 | dependency-paced VC Tasks 32-55; VC 40/53 and S1 gates remain explicit | [todo](./mizar-vc/en/todo.md) |
 | mizar-kernel | Trusted certificate parsing and checking | [x] SAT-backed kernel milestone complete | step 4 task 35 resolved; task 32 parked; tasks 30-34 resolved | [todo](./mizar-kernel/en/todo.md) |
@@ -4532,7 +4532,7 @@ score cap at `100/100`. Implementation commit
 `2ba1ee910aea4939abc26b64a96a113e80c01306` is complete; continue
 automatically with the fresh successor inventory.
 
-## Current Task 269SDU Implementation Verification
+## Task 269SDU Completion State
 
 [Task 269SDU](./task_contracts/en/269SDU.md) has implemented the zero-credit
 transport of only descendant `y@118..119` to the inherited proof-local Given
@@ -4540,15 +4540,19 @@ binding, through the documented checker owners and private runner route. No
 specification, test-intent, trace, active-dispatch, or coverage-credit state changes.
 `z`/`q` binding, closure, and capture remain blocked by the Chapter-4/15 `set`
 `spec_gap`. Verification and independent reviews pass; final quality passes
-all nine hard gates at `100/100`. Explicit staging and the task-only commit remain.
+all nine hard gates at `100/100`. Implementation commit
+`3bddc5fd6383226bbb66d7d5757e7b77f80678d9` and its clean post-commit
+inventory are complete; `origin/main...HEAD` was `0/6` and protected
+`stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4` was unchanged. No semantic
+successor is assigned by this completion record.
 
 ## Checker Task 269SDC Autonomous Handoff
 
-Task 269SDP implementation commit
-`2ba1ee910aea4939abc26b64a96a113e80c01306` is clean. Current origin
-divergence `0/1` is report-only `repo_metadata_conflict`; protected stash
-`f65cf4a13752ec380710814a9ac6392ccb9d75d4` is unchanged. Fresh inventory and
-independent review select dependency-ready Task 269SDC only.
+This completed historical handoff followed the clean Task 269SDP implementation
+commit `2ba1ee910aea4939abc26b64a96a113e80c01306`. At that point, origin
+divergence `0/1` was a report-only `repo_metadata_conflict`; protected stash
+`f65cf4a13752ec380710814a9ac6392ccb9d75d4` was unchanged. Fresh inventory
+and independent review selected dependency-ready Task 269SDC only.
 
 SDC freezes a distinct public Given-descendant binding family, exact
 `BindingEnv 1/1/0 -> 3/2/0`, inherited child context 2, boxed Typed/Resolved
@@ -4556,8 +4560,9 @@ ownership, seven primary Rust files plus one cfg-test-only predecessor-owner
 support file, and four checker/four runner tests. It consumes
 the immutable SDP lower and publishes no type, occurrence, Set binding,
 capture, fact, proof, obligation, diagnostic, active result, or coverage
-credit. Chapter-4/15 `set` disagreement is nonblocking for SDC and blocking
-for all `z`/`q` work. Complete the synchronized 42-file documentation review,
-gates, and prerequisite commit; then fresh-preflight and implement SDC alone.
+credit. Chapter-4/15 `set` disagreement was nonblocking for SDC and remains
+blocking for all `z`/`q` work. The subsequent workflow completed the
+synchronized 42-file documentation review, gates, and prerequisite commit;
+then it fresh-preflighted and implemented SDC alone.
 
 Completion evidence: [central Task-269SDC historical contract](./task_contracts/en/269SDC.md#completion-evidence).
