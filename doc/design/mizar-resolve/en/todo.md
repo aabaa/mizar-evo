@@ -851,7 +851,17 @@ Check the task off here once tests pass.
   authority, exact parser profile, `source_drift`/`design_drift`/Rust
   `test_gap`, four-path Rust scope, five named tests, row ABI, counts, and
   protected hash/no-impact decisions.
-- [ ] After a separate documentation commit and fresh preflight, implement only
-  the four frozen Rust paths. Keep direct fixture testing private and exclude
-  `SymbolId`, `ResolvedAst`, diagnostics, semantics, checker state, active
-  routes, trace/coverage changes, and Task 277B readiness.
+- [x] Commit the documentation prerequisite as `2438cbb7d39c1844557293b270ef1784cfc31ece`,
+  reproduce every frozen baseline, and implement only the four frozen Rust
+  paths and five named tests. Preserve the private fixture boundary and every
+  semantic/active/protected exclusion.
+- [x] Repair test-discrimination, global link-order, and recovered-subtree
+  findings; finish independent test/implementation reviews at **NO FINDINGS**
+  and pass focused, crate, workspace, lint, metadata, formatting, Clippy, CLI,
+  and count/hash verification.
+- [x] Finish independent source/documentation and bilingual reviews at **NO
+  FINDINGS**.
+- [x] Finish independent final-quality review at **NO FINDINGS** with all nine
+  hard gates passing, no score cap, and valid `100/100`.
+- [ ] Perform exact staging, the task-only implementation commit, post-commit
+  proof, and fresh successor inventory. Task 277B remains not ready.

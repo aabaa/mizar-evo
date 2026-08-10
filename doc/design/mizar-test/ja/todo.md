@@ -3549,7 +3549,11 @@ post-commit fresh inventoryからだけ選択する。
 
 - [x] [Task 277R1 contract](../../task_contracts/ja/RESOLVE-TEMPLATE-TYPEPARAM-277R1.md) と
   mizar-test private assertion 2-path boundary を freeze。
-- [ ] separate documentation commit と fresh preflight 後、
-  `task277r1_real_fixture_links_exact_template_generator_identity` と test registration
-  だけを追加。701-byte fixture/sidecar は inactive のまま、dispatch/checker output/
-  active-stage/metadata/trace/diagnostic/coverage change を一切作らない。
+- [x] prerequisite commit `2438cbb7d39c1844557293b270ef1784cfc31ece` とfresh
+  preflight後、`task277r1_real_fixture_links_exact_template_generator_identity` とtest
+  registrationだけを追加。complete libraryは`609/609` PASSし、701-byte fixture/sidecarと
+  dispatch/checker/active/metadata/trace/diagnostic/coverage boundaryは不変。
+- [x] independent source/docs、bilingual reviewを**NO FINDINGS**で完了。
+- [x] independent final-quality reviewを**NO FINDINGS**、全9 hard gates PASS、score cap
+  なしのvalid `100/100`で完了。
+- [ ] exact staging、task-only commit、post-commit proof、fresh inventoryを完了。

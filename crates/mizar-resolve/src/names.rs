@@ -20,11 +20,510 @@ use crate::module_index::{
 use crate::resolved_ast::{
     AmbiguousNameRef, BuiltinId, BuiltinRef, DeferredSelectorRef, ModuleId, NameLookupClass,
     NameRefEntry, NameRefId, NameRefTable, NameResolution, NameResolutionCandidate, ReferenceSite,
-    ResolvedNodeId, SemanticOrigin, SymbolId, SymbolRef,
+    ResolvedNodeId, SemanticOrigin, SurfaceResolvedArena, SurfaceResolvedArenaError, SymbolId,
+    SymbolRef,
 };
-use mizar_session::{ModulePath, PackageId, SourceRange};
+use mizar_session::{ModulePath, PackageId, SourceId, SourceRange};
+use mizar_syntax::{SurfaceAst, SurfaceNodeId, SurfaceNodeKind, SurfaceNodeView, SurfaceTokenKind};
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, BTreeSet};
+
+/// Stable id for one admitted template type-parameter binding.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct TemplateTypeParameterBindingId(usize);
+
+impl TemplateTypeParameterBindingId {
+    /// Creates an id from its deterministic table index.
+    #[must_use]
+    pub const fn new(index: usize) -> Self {
+        Self(index)
+    }
+
+    /// Returns the zero-based binding-table index.
+    #[must_use]
+    pub const fn index(self) -> usize {
+        self.0
+    }
+}
+
+/// One direct, unbounded template type-parameter declaration.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TemplateTypeParameterBinding {
+    definition_block: ResolvedNodeId,
+    parameter: ResolvedNodeId,
+    binder: ResolvedNodeId,
+    spelling: String,
+    source_range: SourceRange,
+    source_ordinal: usize,
+}
+
+impl TemplateTypeParameterBinding {
+    /// Returns the enclosing definition-block node.
+    #[must_use]
+    pub const fn definition_block(&self) -> ResolvedNodeId {
+        self.definition_block
+    }
+
+    /// Returns the direct template-parameter node.
+    #[must_use]
+    pub const fn parameter(&self) -> ResolvedNodeId {
+        self.parameter
+    }
+
+    /// Returns the declaration identifier token.
+    #[must_use]
+    pub const fn binder(&self) -> ResolvedNodeId {
+        self.binder
+    }
+
+    /// Returns the exact declaration spelling.
+    #[must_use]
+    pub fn spelling(&self) -> &str {
+        &self.spelling
+    }
+
+    /// Returns the direct parameter source range.
+    #[must_use]
+    pub const fn source_range(&self) -> SourceRange {
+        self.source_range
+    }
+
+    /// Returns the deterministic source-order ordinal.
+    #[must_use]
+    pub const fn source_ordinal(&self) -> usize {
+        self.source_ordinal
+    }
+}
+
+/// One exact template-parameter use in a Fraenkel generator type head.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TemplateGeneratorTypeHeadLink {
+    definition_block: ResolvedNodeId,
+    type_head: ResolvedNodeId,
+    identifier: ResolvedNodeId,
+    binding: TemplateTypeParameterBindingId,
+    source_range: SourceRange,
+    source_ordinal: usize,
+}
+
+impl TemplateGeneratorTypeHeadLink {
+    /// Returns the enclosing definition-block node.
+    #[must_use]
+    pub const fn definition_block(&self) -> ResolvedNodeId {
+        self.definition_block
+    }
+
+    /// Returns the generator type-head node.
+    #[must_use]
+    pub const fn type_head(&self) -> ResolvedNodeId {
+        self.type_head
+    }
+
+    /// Returns the matched type-head identifier token.
+    #[must_use]
+    pub const fn identifier(&self) -> ResolvedNodeId {
+        self.identifier
+    }
+
+    /// Returns the uniquely matched declaration binding.
+    #[must_use]
+    pub const fn binding(&self) -> TemplateTypeParameterBindingId {
+        self.binding
+    }
+
+    /// Returns the type-head source range.
+    #[must_use]
+    pub const fn source_range(&self) -> SourceRange {
+        self.source_range
+    }
+
+    /// Returns the deterministic source-order ordinal.
+    #[must_use]
+    pub const fn source_ordinal(&self) -> usize {
+        self.source_ordinal
+    }
+}
+
+/// Deterministic table of admitted template type-parameter declarations.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct TemplateTypeParameterBindingTable {
+    entries: Vec<TemplateTypeParameterBinding>,
+}
+
+impl TemplateTypeParameterBindingTable {
+    /// Returns a binding by stable table id.
+    #[must_use]
+    pub fn get(&self, id: TemplateTypeParameterBindingId) -> Option<&TemplateTypeParameterBinding> {
+        self.entries.get(id.index())
+    }
+
+    /// Iterates bindings in deterministic source order.
+    pub fn iter(
+        &self,
+    ) -> impl Iterator<
+        Item = (
+            TemplateTypeParameterBindingId,
+            &TemplateTypeParameterBinding,
+        ),
+    > {
+        self.entries
+            .iter()
+            .enumerate()
+            .map(|(index, entry)| (TemplateTypeParameterBindingId::new(index), entry))
+    }
+
+    /// Returns the number of admitted bindings.
+    #[must_use]
+    pub const fn len(&self) -> usize {
+        self.entries.len()
+    }
+
+    /// Returns whether no bindings were admitted.
+    #[must_use]
+    pub const fn is_empty(&self) -> bool {
+        self.entries.is_empty()
+    }
+}
+
+/// Deterministic table of exact template generator type-head links.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct TemplateGeneratorTypeHeadLinkTable {
+    entries: Vec<TemplateGeneratorTypeHeadLink>,
+}
+
+impl TemplateGeneratorTypeHeadLinkTable {
+    /// Returns a link by deterministic source-order index.
+    #[must_use]
+    pub fn get(&self, index: usize) -> Option<&TemplateGeneratorTypeHeadLink> {
+        self.entries.get(index)
+    }
+
+    /// Iterates links in deterministic source order.
+    pub fn iter(&self) -> impl Iterator<Item = &TemplateGeneratorTypeHeadLink> {
+        self.entries.iter()
+    }
+
+    /// Returns the number of admitted links.
+    #[must_use]
+    pub const fn len(&self) -> usize {
+        self.entries.len()
+    }
+
+    /// Returns whether no links were admitted.
+    #[must_use]
+    pub const fn is_empty(&self) -> bool {
+        self.entries.is_empty()
+    }
+}
+
+/// Validated template type-parameter declarations and generator uses.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TemplateTypeParameterSourceCollection {
+    source_id: SourceId,
+    module: ModuleId,
+    bindings: TemplateTypeParameterBindingTable,
+    generator_links: TemplateGeneratorTypeHeadLinkTable,
+}
+
+impl TemplateTypeParameterSourceCollection {
+    /// Returns the source represented by this collection.
+    #[must_use]
+    pub const fn source_id(&self) -> SourceId {
+        self.source_id
+    }
+
+    /// Returns the canonical module represented by this collection.
+    #[must_use]
+    pub const fn module(&self) -> &ModuleId {
+        &self.module
+    }
+
+    /// Returns admitted template type-parameter bindings.
+    #[must_use]
+    pub const fn bindings(&self) -> &TemplateTypeParameterBindingTable {
+        &self.bindings
+    }
+
+    /// Returns exact generator type-head links.
+    #[must_use]
+    pub const fn generator_links(&self) -> &TemplateGeneratorTypeHeadLinkTable {
+        &self.generator_links
+    }
+
+    /// Returns a stable summary for diagnostics-free debugging.
+    #[must_use]
+    pub fn debug_text(&self) -> String {
+        format!(
+            "template-type-parameter-source-v1|module={}.{}|bindings={}|generator-links={}",
+            self.module.package().as_str(),
+            self.module.path().as_str(),
+            self.bindings.len(),
+            self.generator_links.len(),
+        )
+    }
+}
+
+/// Validated collector for direct template type parameters and Fraenkel generator uses.
+pub struct TemplateTypeParameterSourceCollector<'a> {
+    ast: &'a SurfaceAst,
+    module: &'a ModuleId,
+    resolved: &'a SurfaceResolvedArena,
+}
+
+impl<'a> TemplateTypeParameterSourceCollector<'a> {
+    /// Creates a collector after validating the complete structural arena.
+    pub fn new(
+        ast: &'a SurfaceAst,
+        module: &'a ModuleId,
+        resolved: &'a SurfaceResolvedArena,
+    ) -> Result<Self, SurfaceResolvedArenaError> {
+        resolved.validate_against(ast, module)?;
+        Ok(Self {
+            ast,
+            module,
+            resolved,
+        })
+    }
+
+    /// Collects the supported declaration/use relation.
+    ///
+    /// The complete structural arena is revalidated on every call so a
+    /// collector cannot rely on stale constructor validation.
+    pub fn collect(
+        &self,
+    ) -> Result<TemplateTypeParameterSourceCollection, SurfaceResolvedArenaError> {
+        self.resolved.validate_against(self.ast, self.module)?;
+
+        let mut owners = self
+            .ast
+            .node_views()
+            .filter(|node| {
+                !node.is_recovered() && matches!(node.kind(), SurfaceNodeKind::DefinitionBlockItem)
+            })
+            .collect::<Vec<_>>();
+        owners.sort_by(|left, right| {
+            source_range_cmp(left.range(), right.range())
+                .then_with(|| left.id().index().cmp(&right.id().index()))
+        });
+
+        let mut bindings = Vec::new();
+        let mut links = Vec::new();
+        for owner in owners {
+            self.collect_owner(owner, &mut bindings, &mut links)?;
+        }
+        links.sort_by(|left, right| {
+            source_range_cmp(left.source_range(), right.source_range())
+                .then_with(|| left.type_head().index().cmp(&right.type_head().index()))
+        });
+        for (source_ordinal, link) in links.iter_mut().enumerate() {
+            link.source_ordinal = source_ordinal;
+        }
+
+        Ok(TemplateTypeParameterSourceCollection {
+            source_id: self.ast.source_id,
+            module: self.module.clone(),
+            bindings: TemplateTypeParameterBindingTable { entries: bindings },
+            generator_links: TemplateGeneratorTypeHeadLinkTable { entries: links },
+        })
+    }
+
+    fn collect_owner(
+        &self,
+        owner: SurfaceNodeView<'a>,
+        bindings: &mut Vec<TemplateTypeParameterBinding>,
+        links: &mut Vec<TemplateGeneratorTypeHeadLink>,
+    ) -> Result<(), SurfaceResolvedArenaError> {
+        let definition_block = self.resolved_node(owner.id())?;
+        let mut parameters = owner
+            .child_views()
+            .filter_map(exact_template_type_parameter)
+            .collect::<Vec<_>>();
+        parameters.sort_by(|left, right| {
+            source_range_cmp(left.parameter.range(), right.parameter.range()).then_with(|| {
+                left.parameter
+                    .id()
+                    .index()
+                    .cmp(&right.parameter.id().index())
+            })
+        });
+
+        let binding_start = bindings.len();
+        let mut bindings_by_spelling =
+            BTreeMap::<String, Vec<TemplateTypeParameterBindingId>>::new();
+        for parameter in parameters {
+            let binding = TemplateTypeParameterBindingId::new(bindings.len());
+            let spelling = parameter
+                .binder
+                .as_token()
+                .expect("exact binder token")
+                .text
+                .to_string();
+            bindings_by_spelling
+                .entry(spelling.clone())
+                .or_default()
+                .push(binding);
+            bindings.push(TemplateTypeParameterBinding {
+                definition_block,
+                parameter: self.resolved_node(parameter.parameter.id())?,
+                binder: self.resolved_node(parameter.binder.id())?,
+                spelling,
+                source_range: parameter.parameter.range(),
+                source_ordinal: bindings.len(),
+            });
+        }
+
+        if bindings.len() == binding_start {
+            return Ok(());
+        }
+
+        let mut type_heads = Vec::new();
+        collect_generator_type_heads(owner, true, &mut type_heads);
+        type_heads.sort_by(|left, right| {
+            source_range_cmp(left.type_head.range(), right.type_head.range()).then_with(|| {
+                left.type_head
+                    .id()
+                    .index()
+                    .cmp(&right.type_head.id().index())
+            })
+        });
+        for type_head in type_heads {
+            let spelling = type_head
+                .identifier
+                .as_token()
+                .expect("exact identifier token")
+                .text
+                .as_ref();
+            let Some(matches) = bindings_by_spelling.get(spelling) else {
+                continue;
+            };
+            let [binding] = matches.as_slice() else {
+                continue;
+            };
+            links.push(TemplateGeneratorTypeHeadLink {
+                definition_block,
+                type_head: self.resolved_node(type_head.type_head.id())?,
+                identifier: self.resolved_node(type_head.identifier.id())?,
+                binding: *binding,
+                source_range: type_head.type_head.range(),
+                source_ordinal: links.len(),
+            });
+        }
+        Ok(())
+    }
+
+    fn resolved_node(
+        &self,
+        source: SurfaceNodeId,
+    ) -> Result<ResolvedNodeId, SurfaceResolvedArenaError> {
+        self.resolved
+            .resolved_node_for(source)
+            .ok_or(SurfaceResolvedArenaError::NodeCountMismatch)
+    }
+}
+
+#[derive(Clone, Copy)]
+struct ExactTemplateTypeParameter<'a> {
+    parameter: SurfaceNodeView<'a>,
+    binder: SurfaceNodeView<'a>,
+}
+
+fn exact_template_type_parameter(
+    parameter: SurfaceNodeView<'_>,
+) -> Option<ExactTemplateTypeParameter<'_>> {
+    if parameter.is_recovered() || !matches!(parameter.kind(), SurfaceNodeKind::TemplateParameter) {
+        return None;
+    }
+    let children = parameter.child_views().collect::<Vec<_>>();
+    if children.len() != 5 || children.iter().any(|child| child.is_recovered()) {
+        return None;
+    }
+    let binder = children[1];
+    (token_is(&children[0], SurfaceTokenKind::ReservedWord, "let")
+        && token_has_kind(&binder, SurfaceTokenKind::Identifier)
+        && token_is_reserved_word(&children[2], "be", "being")
+        && token_is(&children[3], SurfaceTokenKind::ReservedWord, "type")
+        && token_is(&children[4], SurfaceTokenKind::ReservedSymbol, ";"))
+    .then_some(ExactTemplateTypeParameter { parameter, binder })
+}
+
+#[derive(Clone, Copy)]
+struct ExactGeneratorTypeHead<'a> {
+    type_head: SurfaceNodeView<'a>,
+    identifier: SurfaceNodeView<'a>,
+}
+
+fn collect_generator_type_heads<'a>(
+    node: SurfaceNodeView<'a>,
+    is_owner: bool,
+    output: &mut Vec<ExactGeneratorTypeHead<'a>>,
+) {
+    if !is_owner && matches!(node.kind(), SurfaceNodeKind::DefinitionBlockItem) {
+        return;
+    }
+    if matches!(node.kind(), SurfaceNodeKind::SetComprehension)
+        && !surface_subtree_contains_recovery(node)
+    {
+        for segment in node.child_views() {
+            if segment.is_recovered()
+                || !matches!(
+                    segment.kind(),
+                    SurfaceNodeKind::ComprehensionVariableSegment
+                )
+            {
+                continue;
+            }
+            for type_expression in segment.child_views() {
+                if type_expression.is_recovered()
+                    || !matches!(type_expression.kind(), SurfaceNodeKind::TypeExpression)
+                {
+                    continue;
+                }
+                for type_head in type_expression.child_views() {
+                    if type_head.is_recovered()
+                        || !matches!(type_head.kind(), SurfaceNodeKind::TypeHead)
+                    {
+                        continue;
+                    }
+                    let children = type_head.child_views().collect::<Vec<_>>();
+                    if children.len() == 1
+                        && !children[0].is_recovered()
+                        && token_has_kind(&children[0], SurfaceTokenKind::Identifier)
+                    {
+                        output.push(ExactGeneratorTypeHead {
+                            type_head,
+                            identifier: children[0],
+                        });
+                    }
+                }
+            }
+        }
+    }
+    for child in node.child_views() {
+        if !child.is_recovered() {
+            collect_generator_type_heads(child, false, output);
+        }
+    }
+}
+
+fn surface_subtree_contains_recovery(node: SurfaceNodeView<'_>) -> bool {
+    node.is_recovered() || node.child_views().any(surface_subtree_contains_recovery)
+}
+
+fn token_has_kind(node: &SurfaceNodeView<'_>, kind: SurfaceTokenKind) -> bool {
+    node.as_token().is_some_and(|token| token.kind == kind)
+}
+
+fn token_is(node: &SurfaceNodeView<'_>, kind: SurfaceTokenKind, text: &str) -> bool {
+    node.as_token()
+        .is_some_and(|token| token.kind == kind && token.text.as_ref() == text)
+}
+
+fn token_is_reserved_word(node: &SurfaceNodeView<'_>, first: &str, second: &str) -> bool {
+    node.as_token().is_some_and(|token| {
+        token.kind == SurfaceTokenKind::ReservedWord
+            && (token.text.as_ref() == first || token.text.as_ref() == second)
+    })
+}
 
 /// One represented namespace path segment.
 #[derive(Debug, Clone, PartialEq, Eq)]

@@ -301,11 +301,11 @@ coverage、deferred Checker Task 248P/264 intentは変更しない。
 
 ## Resolver Task 277R1 source/specification correspondence
 
-canonical [Task 277R1 contract](../../task_contracts/ja/RESOLVE-TEMPLATE-TYPEPARAM-277R1.md)
+implemented [Task 277R1 contract](../../task_contracts/ja/RESOLVE-TEMPLATE-TYPEPARAM-277R1.md)
 は parser-proven `DefinitionBlockItem#53` / `TemplateParameter#31` / `T#2` /
-generator `TypeHead#39` / `T#21` profile を記録する。resolver-owned declaration/use
-transport の欠落は `source_drift`、narrow API の未文書化は `design_drift`、resolver 4件と
-direct fixture 1件の regression は Rust `test_gap`。`spec_gap` はない。
+generator `TypeHead#39` / `T#21` profile を保持する。resolver-owned declaration/use
+transportはclassified `source_drift`、paired design recordは`design_drift`、resolver 4件と
+direct fixture 1件はRust `test_gap`をcloseする。`spec_gap` はない。
 
 Chapter 18 は template parameter scope を定め、bare type-parameter sethood rejection を
 symbolic verification に分離する。Chapter 13 §13.4.2 は後段 Fraenkel sethood check を

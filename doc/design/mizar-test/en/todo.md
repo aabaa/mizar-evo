@@ -3808,8 +3808,14 @@ the successor is selected only from fresh post-commit inventory.
 
 - [x] Freeze the [Task 277R1 contract](../../task_contracts/en/RESOLVE-TEMPLATE-TYPEPARAM-277R1.md)
   and the two-path private mizar-test assertion boundary.
-- [ ] After the separate documentation commit and fresh preflight, add only
+- [x] After prerequisite commit `2438cbb7d39c1844557293b270ef1784cfc31ece`
+  and fresh preflight, add only
   `task277r1_real_fixture_links_exact_template_generator_identity` and its test
-  registration. Keep the 701-byte fixture/sidecar inactive and preserve no
-  dispatch, checker output, active-stage, metadata, trace, diagnostic, or
-  coverage change.
+  registration. The complete library passes `609/609`; the 701-byte fixture/
+  sidecar and every dispatch/checker/active/metadata/trace/diagnostic/coverage
+  boundary remain unchanged.
+- [x] Finish independent source/docs and bilingual reviews at **NO FINDINGS**.
+- [x] Finish independent final-quality review at **NO FINDINGS** with all nine
+  hard gates passing, no score cap, and valid `100/100`.
+- [ ] Perform exact staging, task-only commit, post-commit proof, and fresh
+  inventory.

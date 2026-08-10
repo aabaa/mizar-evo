@@ -382,10 +382,10 @@ cover:
 ## Resolver Task 277R1 Template Type-Parameter Identity
 
 The canonical [Task 277R1 contract](../../task_contracts/en/RESOLVE-TEMPLATE-TYPEPARAM-277R1.md)
-assigns one narrowly scoped parser-origin identity transport to this existing `names`
+implements one narrowly scoped parser-origin identity transport in this existing `names`
 owner. `TemplateTypeParameterBindingId`, binding/link rows and tables,
 `TemplateTypeParameterSourceCollection`, and
-`TemplateTypeParameterSourceCollector` are the only planned public names.
+`TemplateTypeParameterSourceCollector` are the only added public names.
 `TemplateTypeParameterBinding` exposes `definition_block`, `parameter`,
 `binder`, `spelling`, `source_range`, and `source_ordinal`; the link exposes
 `definition_block`, `type_head`, `identifier`, `binding`, `source_range`, and
@@ -401,3 +401,9 @@ non-inferential structural admission check; duplicate same-owner spellings
 retain bindings but produce no ambiguous link. This is not generic template
 lookup, alias/shadow resolution, or a `SymbolId`/`NameRef` producer, and it
 adds no diagnostic, type, sethood, or checker meaning.
+
+All generator links are globally sorted by source range and node identity and
+receive recomputed dense ordinals after every owner is collected. Recovery
+anywhere in a candidate `SetComprehension` subtree rejects that link while
+leaving independently valid bindings intact. The exact module and test metrics
+and verification record are owned by the central contract.

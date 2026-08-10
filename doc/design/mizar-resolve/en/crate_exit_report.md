@@ -384,9 +384,14 @@ corpus, trace, runner/checker, metadata, or semantic coverage credit changes.
 
 ## Resolver Task 277R1 Post-Exit Prerequisite
 
-This later documentation-only [Task 277R1 prerequisite](../../task_contracts/en/RESOLVE-TEMPLATE-TYPEPARAM-277R1.md)
+This later [Task 277R1 prerequisite](../../task_contracts/en/RESOLVE-TEMPLATE-TYPEPARAM-277R1.md)
 does not revise the historical crate exit or its score. It freezes a narrow
 `names`-owned structural transport and a private direct-fixture assertion for
-the already inactive semantic seed. Resolver source, checker/runner production
-behavior, active corpus/trace/coverage status, diagnostics, and historical
-exit evidence remain unchanged until a separately reviewed implementation.
+the already inactive semantic seed. The exact four-path implementation and
+five regressions now pass independent test/implementation reviews and all
+focused/full verification. Checker/runner production behavior, active corpus/
+trace/coverage status, diagnostics, semantic verdicts, and historical exit
+evidence remain unchanged. Independent source/docs and bilingual reviews report
+**NO FINDINGS**. Independent final-quality review also reports **NO FINDINGS**;
+all nine hard gates pass without a score cap at valid `100/100`. Staging,
+commit, and post-commit inventory remain before closure.

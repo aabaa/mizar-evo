@@ -319,12 +319,12 @@ changes.
 
 ## Resolver Task 277R1 Source/Specification Correspondence
 
-The canonical [Task 277R1 contract](../../task_contracts/en/RESOLVE-TEMPLATE-TYPEPARAM-277R1.md)
-records the parser-proven `DefinitionBlockItem#53` / `TemplateParameter#31` /
-`T#2` / generator `TypeHead#39` / `T#21` profile. The absent resolver-owned
-declaration/use transport is `source_drift`; its undocumented narrow API is
-`design_drift`; the four resolver plus one direct fixture regression are a
-Rust `test_gap`. There is no `spec_gap`.
+The implemented [Task 277R1 contract](../../task_contracts/en/RESOLVE-TEMPLATE-TYPEPARAM-277R1.md)
+preserves the parser-proven `DefinitionBlockItem#53` / `TemplateParameter#31` /
+`T#2` / generator `TypeHead#39` / `T#21` profile. The resolver-owned
+declaration/use transport closes the classified `source_drift`; the paired
+design records close `design_drift`; four resolver plus one direct fixture
+regression close the Rust `test_gap`. There is no `spec_gap`.
 
 Chapter 18 establishes template parameter scope and separately reserves bare
 type-parameter sethood rejection to symbolic verification; Chapter 13 §13.4.2

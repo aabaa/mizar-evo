@@ -14,11 +14,11 @@ boundary audit、TODO、bilingual audit である。英語正本の stable link 
 
 | 項目 | freeze 値 |
 |---|---|
-| Status | documentation-only prerequisite。separate fresh preflight が本 contract を accept するまで Rust、fixture、stage、metadata、coverage の変更を認可しない。 |
+| Status | documentation prerequisite は `2438cbb7d39c1844557293b270ef1784cfc31ece` としてcommit済み。exact 4-path Rust implementationとtest 5件はcomplete/verified。independent source/documentation、bilingual、final-quality reviewは**NO FINDINGS**。全9 hard gatesはscore capなしのvalid `100/100`でPASS。exact staging、commit、post-commit inventoryが残る。 |
 | Selection checkpoint | `HEAD=0827e494df96afacba4f35b9cc23dfbbb737d141`、`origin/main...HEAD=0/5`、protected `stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4` は unchanged。 |
 | Authority | `doc/spec/en/18.templates.md` §§18.2.1、18.2.2、18.2.6、18.10.2 と `doc/spec/en/13.term_expression.md` §13.4.2。parser prerequisite は [PARSER-TEMPLATE-TYPEHEAD-277P1](./PARSER-TEMPLATE-TYPEHEAD-277P1.md)。 |
 | Classification | `source_drift`、`design_drift`、Rust `test_gap`。`spec_gap` はない。後段の missing-sethood verdict は checker-owned のまま。 |
-| Consumer | これは後続 Task 277B の resolver prerequisite のみ。Task 277B ready や checker implementation は選択しない。 |
+| Consumer | これは後続 Task 277B の resolver prerequisite のまま。completionはTask 277B readyやchecker implementationを選択しない。 |
 
 immutable semantic seed は
 `tests/miz/fail/templates/fail_template_fraenkel_over_type_param_001.miz`
@@ -177,11 +177,58 @@ task-contract/link lint の PASS。後続 fresh preflight は implementation 前
 remeasure し、frozen tests 5件、relevant crate/workspace checks、protected hash/count gates を
 満たすまで separately authorized commit をしない。
 
+## Implementation evidence と current status
+
+implementation前のfresh preflightは全frozen baselineを再現した。exact Rust 4 pathsは
+seven-name public resolver API、two-boundary `SurfaceResolvedArena` validation、resolver-only
+node identity、owner-local exact token match、duplicate-binding ambiguity omission、global
+generator-link source order、candidate `SetComprehension` subtree全体のrecovery fail-closeを
+実装する。private mizar-test leaf 1件はproduction route/semantic verdictを追加せずimmutable
+real fixtureだけをobserveする。
+
+final measurement:
+
+- resolver sourceは23 paths / 34,661 lines、path SHA-256
+  `4d8c3c499b238814a839ae11994503bbb28f54a3690921c66429dccd298d47c8` unchanged、
+  content-manifest SHA-256
+  `d3f423448046180bb2db90f50d12518937fe00f5d0fb2ba188348db9bd08ab0e`。
+- `names.rs`は3,248 lines /
+  `de87c34a9afedd3649b410f4cf422b883a6fd567a1d61dc78221945320476548`、
+  `names/tests.rs`は2,957 /
+  `6d7c6c03fb15edd28af5428cf134bebb7d91686941429ea48d2e432837b55b40`。
+- resolver libraryは152 tests、raw-list SHA-256
+  `924e4652edfc9303d5d5742d3e3eb2b9a095ee6f0f543c8b7caa0a78f0c7b747`。
+- `runner/tests.rs`は62 lines /
+  `7c5cc9541b1cd2aabe050d3791e9153faeb302803cfa79abe39bfb58cb181d60`、
+  new leafは67 /
+  `5cafa3b0cd46ed29b8981f509b3fbec98f40be14e2ce8eee83bc7f10314bc1b8`。
+- mizar-test libraryは609 tests、raw-list SHA-256
+  `ea6e33af0de7353fa13517962c3b0e182cbcb3fc64bb06e5a61e3113daadb82c`。
+  productionはfrozen path/content hashの38 paths / 80,090 linesで不変。
+
+finding repair後のindependent test-sufficiency/implementation reviewは**NO FINDINGS**。
+focused `4/4 + 1/1`、resolver package `152` library + `11` lint-policy + existing doctest、
+mizar-test `609` library + `15` lint-policy + `137` metadata、full workspace `cargo test`、
+`cargo fmt --all --check`、all-target/all-feature warnings-denied Clippy、offline Cargo metadata、
+frozen stdout hashのfive CLI、protected hash/count replay、`git diff --check`は全PASS。
+fixture/sidecar/trace/coverage audit/active stage/diagnostic/semantic coverage/checker/production
+runnerは不変。independent source/documentation consistency、bilingual reviewは**NO
+FINDINGS**。independent final-quality reviewも**NO FINDINGS**で、全9 hard gatesはscore
+capなしのvalid `100/100`（`20/20/15/15/10/10/5/5`）でPASS。staging、implementation
+commit、post-commit proof、fresh successor inventoryを未完のまま保持する。
+
+plan、parse-only、declaration-symbol、type-elaboration、proof-verificationのfive CLI
+stdout SHA-256は順に
+`700f4bf503783742cefd8004fa095675b7476d46e9a3a6dd439916d237eb6718`、
+`a8a7aa639d2ebc65eddc923c7e9369ea5637d50e935f808600f446da1bfbda56`、
+`71e83ba0b20d4015e07b3bd2c0c4db2837b6151d1251812caed7954530d53c74`、
+`4b2c7bd5ec3cc56e5672fb351126126230ec84fba9bd2bd9049a516d378fab7f`、
+`ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`。
+
 ## 次 task handoff
 
-fresh clean inventory から exact Rust 4 paths と named test 5件だけを実装する。parent の
-authority、integration、staging、final quality scoring は GPT-5.6 Sol `xhigh` のまま。
-この runtime に Luna は expose されていないため、effective bounded inventory/docs-worker/
-review route は GPT-5.6 Terra `xhigh`。repeatable な一段低い trial で material quality
-regression がないと示されるまで Terra `high` を使わず、authority/boundary ambiguity は
-すべて Sol へ escalate する。
+exact Rust 4 + completion docs 22 pathsをexact stage/cached-diff reviewし、task-only
+implementation commit、post-commit proof、fresh successor inventoryへ進む。parent
+authority/integration/staging/final scoringはGPT-5.6 Sol `xhigh`。Lunaは未提供で、effective
+bounded implementation/review routeはGPT-5.6 Terra `xhigh`。authority/boundary ambiguityは
+すべてSolへescalateする。

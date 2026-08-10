@@ -14,11 +14,11 @@ Stable owner sections:
 
 | Field | Frozen value |
 |---|---|
-| Status | Documentation-only prerequisite. No Rust, fixture, stage, metadata, or coverage change is authorized until a separate fresh preflight accepts this contract. |
+| Status | The documentation prerequisite is committed as `2438cbb7d39c1844557293b270ef1784cfc31ece`. The exact four-path Rust implementation and five tests are complete and verified; independent source/documentation, bilingual, and final-quality reviews report **NO FINDINGS**. All nine hard gates pass without a score cap at valid `100/100`; exact staging, commit, and post-commit inventory remain. |
 | Selection checkpoint | `HEAD=0827e494df96afacba4f35b9cc23dfbbb737d141`; `origin/main...HEAD=0/5`; protected `stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4`, unchanged. |
 | Authority | `doc/spec/en/18.templates.md` §§18.2.1, 18.2.2, 18.2.6, 18.10.2 and `doc/spec/en/13.term_expression.md` §13.4.2. The parser prerequisite is [PARSER-TEMPLATE-TYPEHEAD-277P1](./PARSER-TEMPLATE-TYPEHEAD-277P1.md). |
 | Classification | `source_drift`, `design_drift`, and Rust `test_gap`; no `spec_gap`. The later missing-sethood verdict remains checker-owned. |
-| Consumer | This is only the resolver prerequisite for later Task 277B. It neither makes Task 277B ready nor selects a checker implementation. |
+| Consumer | This remains only the resolver prerequisite for later Task 277B. Its completion neither makes Task 277B ready nor selects a checker implementation. |
 
 The immutable semantic seed remains
 `tests/miz/fail/templates/fail_template_fraenkel_over_type_param_001.miz`, 701
@@ -187,11 +187,67 @@ preflight must remeasure every baseline before implementation; it then runs the
 five frozen tests, relevant crate/workspace checks, and the same protected
 hash/count gates before any separately authorized commit.
 
+## Implementation evidence and current status
+
+Fresh preflight reproduced every frozen baseline before the implementation.
+The exact four Rust paths now implement the seven-name public resolver API,
+two-boundary `SurfaceResolvedArena` validation, resolver-only node identity,
+per-owner exact token matching, duplicate-binding ambiguity omission, global
+generator-link source ordering, and fail-closed recovery across the complete
+candidate `SetComprehension` subtree. The one private mizar-test leaf observes
+the immutable real fixture without adding a production route or semantic
+verdict.
+
+Final measurements are:
+
+- resolver source: 23 paths / 34,661 lines, unchanged path SHA-256
+  `4d8c3c499b238814a839ae11994503bbb28f54a3690921c66429dccd298d47c8`
+  and content-manifest SHA-256
+  `d3f423448046180bb2db90f50d12518937fe00f5d0fb2ba188348db9bd08ab0e`;
+- `names.rs`: 3,248 lines /
+  `de87c34a9afedd3649b410f4cf422b883a6fd567a1d61dc78221945320476548`;
+  `names/tests.rs`: 2,957 /
+  `6d7c6c03fb15edd28af5428cf134bebb7d91686941429ea48d2e432837b55b40`;
+- resolver library: 152 tests, raw-list SHA-256
+  `924e4652edfc9303d5d5742d3e3eb2b9a095ee6f0f543c8b7caa0a78f0c7b747`;
+- `runner/tests.rs`: 62 lines /
+  `7c5cc9541b1cd2aabe050d3791e9153faeb302803cfa79abe39bfb58cb181d60`;
+  the new leaf: 67 /
+  `5cafa3b0cd46ed29b8981f509b3fbec98f40be14e2ce8eee83bc7f10314bc1b8`;
+- mizar-test library: 609 tests, raw-list SHA-256
+  `ea6e33af0de7353fa13517962c3b0e182cbcb3fc64bb06e5a61e3113daadb82c`;
+  production remains 38 paths / 80,090 lines with the frozen path/content
+  hashes.
+
+After finding-specific repairs, independent test-sufficiency and implementation
+reviews report **NO FINDINGS**. Focused tests pass `4/4 + 1/1`; resolver package
+tests pass `152` library, `11` lint-policy, and the existing doctest; mizar-test
+passes `609` library, `15` lint-policy, and `137` metadata tests. Full workspace
+`cargo test`, `cargo fmt --all --check`, all-target/all-feature warnings-denied
+Clippy, offline Cargo metadata, all five CLIs with their frozen stdout hashes,
+protected hash/count replay, and `git diff --check` pass. Fixture, sidecar,
+trace, coverage audit, active stage, diagnostics, semantic coverage, checker,
+and production runner remain unchanged. Independent source/documentation
+consistency and bilingual reviews report **NO FINDINGS**. Independent
+final-quality review also reports **NO FINDINGS**; all nine hard gates pass
+without a score cap at valid `100/100` (`20/20/15/15/10/10/5/5`). Staging,
+the implementation commit, post-commit proof, and fresh successor inventory
+remain and must not be claimed yet.
+
+The five CLI stdout SHA-256 values for plan, parse-only, declaration-symbol,
+type-elaboration, and proof-verification are respectively
+`700f4bf503783742cefd8004fa095675b7476d46e9a3a6dd439916d237eb6718`,
+`a8a7aa639d2ebc65eddc923c7e9369ea5637d50e935f808600f446da1bfbda56`,
+`71e83ba0b20d4015e07b3bd2c0c4db2837b6151d1251812caed7954530d53c74`,
+`4b2c7bd5ec3cc56e5672fb351126126230ec84fba9bd2bd9049a516d378fab7f`,
+and `ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`.
+
 ## Next-task handoff
 
-Start from fresh clean inventory and implement only the four frozen Rust paths
-and five named tests. Parent authority, integration, staging, and final quality
-scoring remain GPT-5.6 Sol `xhigh`. Luna is not exposed in this runtime; the
-effective bounded inventory/docs-worker/review route is GPT-5.6 Terra `xhigh`.
-Use Terra `high` only after a repeatable lower-effort trial shows no material
-quality regression; escalate every authority or boundary ambiguity to Sol.
+Perform exact staging and cached-diff review for the four Rust plus 22
+completion-document paths, then create the task-only implementation commit,
+prove post-commit invariants, and run fresh successor inventory. Parent
+authority, integration, staging, and final scoring remain GPT-5.6 Sol `xhigh`.
+Luna is not exposed in this runtime; the effective bounded implementation/review
+route is GPT-5.6 Terra `xhigh`. Escalate every authority or boundary ambiguity
+to Sol.

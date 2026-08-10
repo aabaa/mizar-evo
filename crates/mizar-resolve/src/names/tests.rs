@@ -14,7 +14,194 @@ use mizar_session::{
     SourceId,
 };
 use mizar_syntax::ast::SurfaceNodeKind;
+use mizar_syntax::{SurfaceAst, SurfaceAstBuilder, SurfaceTokenKind};
 use semver::Version;
+
+#[test]
+fn task277r1_collects_exact_template_generator_identity() {
+    let source_id = source_id();
+    let module = module_id("pkg", "templates");
+    let ast = task277r1_identity_ast(source_id);
+    let resolved = SurfaceResolvedArena::lower(&ast, &module).unwrap();
+    let collection = TemplateTypeParameterSourceCollector::new(&ast, &module, &resolved)
+        .unwrap()
+        .collect()
+        .unwrap();
+
+    assert_eq!(collection.source_id(), source_id);
+    assert_eq!(collection.module(), &module);
+    assert_eq!(collection.bindings().len(), 1);
+    assert!(!collection.bindings().is_empty());
+    assert_eq!(collection.generator_links().len(), 1);
+    assert!(!collection.generator_links().is_empty());
+    assert_eq!(
+        collection.debug_text(),
+        "template-type-parameter-source-v1|module=pkg.templates|bindings=1|generator-links=1"
+    );
+
+    let binding_id = TemplateTypeParameterBindingId::new(0);
+    assert_eq!(binding_id.index(), 0);
+    let binding = collection.bindings().get(binding_id).unwrap();
+    assert_eq!(
+        binding.definition_block(),
+        resolved_node(&ast, &resolved, 0, 62, |kind| {
+            matches!(kind, SurfaceNodeKind::DefinitionBlockItem)
+        })
+    );
+    assert_eq!(
+        binding.parameter(),
+        resolved_node(&ast, &resolved, 11, 25, |kind| {
+            matches!(kind, SurfaceNodeKind::TemplateParameter)
+        })
+    );
+    assert_eq!(
+        binding.binder(),
+        resolved_node(&ast, &resolved, 15, 16, |kind| {
+            matches!(kind, SurfaceNodeKind::Token(token) if token.kind == SurfaceTokenKind::Identifier && token.text.as_ref() == "T")
+        })
+    );
+    assert_eq!(binding.spelling(), "T");
+    assert_eq!(binding.source_range(), range(source_id, 11, 25));
+    assert_eq!(binding.source_ordinal(), 0);
+    assert_eq!(
+        collection
+            .bindings()
+            .iter()
+            .map(|(id, row)| (id, row.spelling()))
+            .collect::<Vec<_>>(),
+        vec![(binding_id, "T")]
+    );
+    assert!(
+        collection
+            .bindings()
+            .get(TemplateTypeParameterBindingId::new(1))
+            .is_none()
+    );
+
+    let link = collection.generator_links().get(0).unwrap();
+    assert_eq!(link.definition_block(), binding.definition_block());
+    assert_eq!(
+        link.type_head(),
+        resolved_node(&ast, &resolved, 48, 49, |kind| {
+            matches!(kind, SurfaceNodeKind::TypeHead)
+        })
+    );
+    assert_eq!(
+        link.identifier(),
+        resolved_node(&ast, &resolved, 48, 49, |kind| {
+            matches!(kind, SurfaceNodeKind::Token(token) if token.kind == SurfaceTokenKind::Identifier && token.text.as_ref() == "T")
+        })
+    );
+    assert_eq!(link.binding(), binding_id);
+    assert_eq!(link.source_range(), range(source_id, 48, 49));
+    assert_eq!(link.source_ordinal(), 0);
+    assert_eq!(
+        collection.generator_links().iter().collect::<Vec<_>>(),
+        vec![link]
+    );
+    assert!(collection.generator_links().get(1).is_none());
+}
+
+#[test]
+fn task277r1_isolates_scope_and_ignores_non_generator_roles() {
+    let source_id = source_id();
+    let module = module_id("pkg", "templates");
+    let ast = task277r1_scoped_ast(source_id);
+    let resolved = SurfaceResolvedArena::lower(&ast, &module).unwrap();
+    let collection = TemplateTypeParameterSourceCollector::new(&ast, &module, &resolved)
+        .unwrap()
+        .collect()
+        .unwrap();
+
+    assert_eq!(
+        collection
+            .bindings()
+            .iter()
+            .map(|(id, binding)| (id.index(), binding.spelling(), binding.source_ordinal()))
+            .collect::<Vec<_>>(),
+        vec![
+            (0, "T", 0),
+            (1, "T", 1),
+            (2, "V", 2),
+            (3, "N", 3),
+            (4, "X", 4),
+            (5, "U", 5),
+        ]
+    );
+    assert_eq!(collection.generator_links().len(), 3);
+    assert_eq!(
+        collection
+            .generator_links()
+            .iter()
+            .map(|link| (
+                link.binding().index(),
+                link.source_range(),
+                link.source_ordinal()
+            ))
+            .collect::<Vec<_>>(),
+        vec![
+            (2, range(source_id, 138, 139), 0),
+            (5, range(source_id, 198, 199), 1),
+            (2, range(source_id, 268, 269), 2),
+        ]
+    );
+}
+
+#[test]
+fn task277r1_rejects_unsupported_parameter_and_recovery_shapes() {
+    let source_id = source_id();
+    let module = module_id("pkg", "templates");
+    let ast = task277r1_rejected_shapes_ast(source_id);
+    let resolved = SurfaceResolvedArena::lower(&ast, &module).unwrap();
+    let collection = TemplateTypeParameterSourceCollector::new(&ast, &module, &resolved)
+        .unwrap()
+        .collect()
+        .unwrap();
+
+    assert_eq!(collection.bindings().len(), 1);
+    let binding = collection
+        .bindings()
+        .get(TemplateTypeParameterBindingId::new(0))
+        .unwrap();
+    assert_eq!(binding.spelling(), "Z");
+    assert_eq!(binding.source_range(), range(source_id, 190, 204));
+    assert!(collection.generator_links().is_empty());
+}
+
+#[test]
+fn task277r1_revalidates_surface_resolved_arena_and_replays_deterministically() {
+    let source_id = source_id();
+    let module = module_id("pkg", "templates");
+    let ast = task277r1_identity_ast(source_id);
+    let resolved = SurfaceResolvedArena::lower(&ast, &module).unwrap();
+    let collector = TemplateTypeParameterSourceCollector::new(&ast, &module, &resolved).unwrap();
+
+    let first = collector.collect().unwrap();
+    let second = collector.collect().unwrap();
+    assert_eq!(first, second);
+    assert_eq!(first.debug_text(), second.debug_text());
+
+    let wrong_module = module_id("pkg", "other");
+    assert!(matches!(
+        TemplateTypeParameterSourceCollector::new(&ast, &wrong_module, &resolved),
+        Err(SurfaceResolvedArenaError::ModuleMismatch)
+    ));
+
+    let stale_ast = task277r1_scoped_ast(source_id);
+    assert!(matches!(
+        TemplateTypeParameterSourceCollector::new(&stale_ast, &module, &resolved),
+        Err(SurfaceResolvedArenaError::NodeCountMismatch)
+    ));
+    let stale_collector = TemplateTypeParameterSourceCollector {
+        ast: &stale_ast,
+        module: &module,
+        resolved: &resolved,
+    };
+    assert!(matches!(
+        stale_collector.collect(),
+        Err(SurfaceResolvedArenaError::NodeCountMismatch)
+    ));
+}
 
 #[test]
 fn unqualified_lookup_uses_declaration_point_shadowing_and_builtins() {
@@ -2175,6 +2362,579 @@ fn symbol_id(module: ModuleId, local: &str, fqn: &str) -> SymbolId {
         LocalSymbolId::new(local),
         FullyQualifiedName::new(fqn),
     )
+}
+
+fn task277r1_identity_ast(source_id: SourceId) -> SurfaceAst {
+    let mut builder = SurfaceAstBuilder::new(source_id);
+    let definition = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        "definition",
+        range(source_id, 0, 10),
+    );
+    let parameter = task277r1_direct_type_parameter(&mut builder, source_id, 11, "T");
+    let generator = task277r1_generator(&mut builder, source_id, 30, 48, "T");
+    let functor = builder.add_node(
+        SurfaceNodeKind::FunctorDefinition,
+        range(source_id, 30, 60),
+        vec![generator],
+    );
+    let definition_block = builder.add_node(
+        SurfaceNodeKind::DefinitionBlockItem,
+        range(source_id, 0, 62),
+        vec![definition, parameter, functor],
+    );
+    let root = builder.add_node(
+        SurfaceNodeKind::Root,
+        range(source_id, 0, 62),
+        vec![definition_block],
+    );
+    builder.finish(Some(root), None)
+}
+
+fn task277r1_scoped_ast(source_id: SourceId) -> SurfaceAst {
+    let mut builder = SurfaceAstBuilder::new(source_id);
+    let definition = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        "definition",
+        range(source_id, 0, 10),
+    );
+    let outer_parameter = task277r1_direct_type_parameter(&mut builder, source_id, 11, "T");
+    let duplicate_outer_parameter =
+        task277r1_direct_type_parameter(&mut builder, source_id, 26, "T");
+    let unique_outer_parameter = task277r1_direct_type_parameter(&mut builder, source_id, 41, "V");
+    let non_generator_parameter = task277r1_direct_type_parameter(&mut builder, source_id, 56, "N");
+    let cross_owner_parameter = task277r1_direct_type_parameter(&mut builder, source_id, 71, "X");
+    let non_generator_identifier =
+        builder.add_token(SurfaceTokenKind::Identifier, "N", range(source_id, 87, 88));
+    let non_generator_head = builder.add_node(
+        SurfaceNodeKind::TypeHead,
+        range(source_id, 87, 88),
+        vec![non_generator_identifier],
+    );
+    let non_generator_type = builder.add_node(
+        SurfaceNodeKind::TypeExpression,
+        range(source_id, 87, 88),
+        vec![non_generator_head],
+    );
+    let ambiguous_generator = task277r1_generator(&mut builder, source_id, 90, 108, "T");
+    let first_unique_generator = task277r1_generator(&mut builder, source_id, 120, 138, "V");
+
+    let inner_definition = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        "definition",
+        range(source_id, 150, 160),
+    );
+    let inner_parameter = task277r1_direct_type_parameter(&mut builder, source_id, 161, "U");
+    let inner_generator = task277r1_generator(&mut builder, source_id, 180, 198, "U");
+    let cross_owner_generator = task277r1_generator(&mut builder, source_id, 205, 223, "X");
+    let inner_functor = builder.add_node(
+        SurfaceNodeKind::FunctorDefinition,
+        range(source_id, 180, 235),
+        vec![inner_generator, cross_owner_generator],
+    );
+    let nested_definition = builder.add_node(
+        SurfaceNodeKind::DefinitionBlockItem,
+        range(source_id, 150, 240),
+        vec![inner_definition, inner_parameter, inner_functor],
+    );
+    let second_unique_generator = task277r1_generator(&mut builder, source_id, 250, 268, "V");
+    let outer_functor = builder.add_node(
+        SurfaceNodeKind::FunctorDefinition,
+        range(source_id, 86, 280),
+        vec![
+            non_generator_type,
+            ambiguous_generator,
+            first_unique_generator,
+            nested_definition,
+            second_unique_generator,
+        ],
+    );
+    let outer_definition = builder.add_node(
+        SurfaceNodeKind::DefinitionBlockItem,
+        range(source_id, 0, 290),
+        vec![
+            definition,
+            outer_parameter,
+            duplicate_outer_parameter,
+            unique_outer_parameter,
+            non_generator_parameter,
+            cross_owner_parameter,
+            outer_functor,
+        ],
+    );
+    let root = builder.add_node(
+        SurfaceNodeKind::Root,
+        range(source_id, 0, 290),
+        vec![outer_definition],
+    );
+    builder.finish(Some(root), None)
+}
+
+fn task277r1_rejected_shapes_ast(source_id: SourceId) -> SurfaceAst {
+    let mut builder = SurfaceAstBuilder::new(source_id);
+    let definition = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        "definition",
+        range(source_id, 0, 10),
+    );
+
+    let bound_let = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        "let",
+        range(source_id, 11, 14),
+    );
+    let bound_name = builder.add_token(SurfaceTokenKind::Identifier, "T", range(source_id, 15, 16));
+    let bound_be = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        "be",
+        range(source_id, 17, 19),
+    );
+    let bound_type = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        "type",
+        range(source_id, 20, 24),
+    );
+    let extends = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        "extends",
+        range(source_id, 25, 32),
+    );
+    let bound = builder.add_token(SurfaceTokenKind::Identifier, "M", range(source_id, 33, 34));
+    let bound_semicolon = builder.add_token(
+        SurfaceTokenKind::ReservedSymbol,
+        ";",
+        range(source_id, 34, 35),
+    );
+    let bounded_parameter = builder.add_node(
+        SurfaceNodeKind::TemplateParameter,
+        range(source_id, 11, 35),
+        vec![
+            bound_let,
+            bound_name,
+            bound_be,
+            bound_type,
+            extends,
+            bound,
+            bound_semicolon,
+        ],
+    );
+
+    let multi_let = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        "let",
+        range(source_id, 36, 39),
+    );
+    let first_binder =
+        builder.add_token(SurfaceTokenKind::Identifier, "T", range(source_id, 40, 41));
+    let comma = builder.add_token(
+        SurfaceTokenKind::ReservedSymbol,
+        ",",
+        range(source_id, 41, 42),
+    );
+    let second_binder =
+        builder.add_token(SurfaceTokenKind::Identifier, "U", range(source_id, 43, 44));
+    let multi_be = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        "be",
+        range(source_id, 45, 47),
+    );
+    let multi_type = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        "type",
+        range(source_id, 48, 52),
+    );
+    let multi_semicolon = builder.add_token(
+        SurfaceTokenKind::ReservedSymbol,
+        ";",
+        range(source_id, 52, 53),
+    );
+    let multiple_binders = builder.add_node(
+        SurfaceNodeKind::TemplateParameter,
+        range(source_id, 36, 53),
+        vec![
+            multi_let,
+            first_binder,
+            comma,
+            second_binder,
+            multi_be,
+            multi_type,
+            multi_semicolon,
+        ],
+    );
+
+    let pred_let = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        "let",
+        range(source_id, 54, 57),
+    );
+    let pred_name = builder.add_token(SurfaceTokenKind::Identifier, "P", range(source_id, 58, 59));
+    let pred_be = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        "be",
+        range(source_id, 60, 62),
+    );
+    let pred = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        "pred",
+        range(source_id, 63, 67),
+    );
+    let pred_semicolon = builder.add_token(
+        SurfaceTokenKind::ReservedSymbol,
+        ";",
+        range(source_id, 67, 68),
+    );
+    let predicate_parameter = builder.add_node(
+        SurfaceNodeKind::TemplateParameter,
+        range(source_id, 54, 68),
+        vec![pred_let, pred_name, pred_be, pred, pred_semicolon],
+    );
+
+    let recovery_let = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        "let",
+        range(source_id, 69, 72),
+    );
+    let recovery_name =
+        builder.add_recovered_token(SurfaceTokenKind::Identifier, "R", range(source_id, 73, 74));
+    let recovery_be = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        "be",
+        range(source_id, 75, 77),
+    );
+    let recovery_type = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        "type",
+        range(source_id, 78, 82),
+    );
+    let recovery_semicolon = builder.add_token(
+        SurfaceTokenKind::ReservedSymbol,
+        ";",
+        range(source_id, 82, 83),
+    );
+    let recovered_parameter = builder.add_node(
+        SurfaceNodeKind::TemplateParameter,
+        range(source_id, 69, 83),
+        vec![
+            recovery_let,
+            recovery_name,
+            recovery_be,
+            recovery_type,
+            recovery_semicolon,
+        ],
+    );
+
+    let nested_parameter = task277r1_direct_type_parameter(&mut builder, source_id, 84, "T");
+    let wrapper = builder.add_node(
+        SurfaceNodeKind::DefinitionParameter,
+        range(source_id, 84, 98),
+        vec![nested_parameter],
+    );
+    let ordinary_parameter = builder.add_node(
+        SurfaceNodeKind::DefinitionParameter,
+        range(source_id, 99, 100),
+        Vec::new(),
+    );
+    let generator = task277r1_generator(&mut builder, source_id, 110, 128, "T");
+    let functor = builder.add_node(
+        SurfaceNodeKind::FunctorDefinition,
+        range(source_id, 110, 145),
+        vec![generator],
+    );
+
+    let constraint_let = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        "let",
+        range(source_id, 150, 153),
+    );
+    let constraint_name = builder.add_token(
+        SurfaceTokenKind::Identifier,
+        "C",
+        range(source_id, 154, 155),
+    );
+    let constraint_be = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        "be",
+        range(source_id, 156, 158),
+    );
+    let constraint_type = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        "type",
+        range(source_id, 159, 163),
+    );
+    let such = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        "such",
+        range(source_id, 164, 168),
+    );
+    let condition = builder.add_token(
+        SurfaceTokenKind::Identifier,
+        "Q",
+        range(source_id, 169, 170),
+    );
+    let constraint_semicolon = builder.add_token(
+        SurfaceTokenKind::ReservedSymbol,
+        ";",
+        range(source_id, 170, 171),
+    );
+    let constrained_parameter = builder.add_node(
+        SurfaceNodeKind::TemplateParameter,
+        range(source_id, 150, 171),
+        vec![
+            constraint_let,
+            constraint_name,
+            constraint_be,
+            constraint_type,
+            such,
+            condition,
+            constraint_semicolon,
+        ],
+    );
+
+    let func_let = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        "let",
+        range(source_id, 172, 175),
+    );
+    let func_name = builder.add_token(
+        SurfaceTokenKind::Identifier,
+        "F",
+        range(source_id, 176, 177),
+    );
+    let func_be = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        "be",
+        range(source_id, 178, 180),
+    );
+    let func = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        "func",
+        range(source_id, 181, 185),
+    );
+    let func_semicolon = builder.add_token(
+        SurfaceTokenKind::ReservedSymbol,
+        ";",
+        range(source_id, 185, 186),
+    );
+    let functor_parameter = builder.add_node(
+        SurfaceNodeKind::TemplateParameter,
+        range(source_id, 172, 186),
+        vec![func_let, func_name, func_be, func, func_semicolon],
+    );
+    let valid_parameter = task277r1_direct_type_parameter(&mut builder, source_id, 190, "Z");
+    let recovered_sibling_generator = task277r1_generator_with_shape(
+        &mut builder,
+        source_id,
+        210,
+        228,
+        "Z",
+        Task277r1GeneratorShape::RecoveredSibling,
+    );
+    let malformed_generator = task277r1_generator_with_shape(
+        &mut builder,
+        source_id,
+        240,
+        258,
+        "Z",
+        Task277r1GeneratorShape::MalformedTypeHead,
+    );
+    let rejected_generators = builder.add_node(
+        SurfaceNodeKind::FunctorDefinition,
+        range(source_id, 210, 275),
+        vec![recovered_sibling_generator, malformed_generator],
+    );
+    let definition_block = builder.add_node(
+        SurfaceNodeKind::DefinitionBlockItem,
+        range(source_id, 0, 280),
+        vec![
+            definition,
+            bounded_parameter,
+            multiple_binders,
+            predicate_parameter,
+            recovered_parameter,
+            wrapper,
+            ordinary_parameter,
+            functor,
+            constrained_parameter,
+            functor_parameter,
+            valid_parameter,
+            rejected_generators,
+        ],
+    );
+    let root = builder.add_node(
+        SurfaceNodeKind::Root,
+        range(source_id, 0, 280),
+        vec![definition_block],
+    );
+    builder.finish(Some(root), None)
+}
+
+fn task277r1_direct_type_parameter(
+    builder: &mut SurfaceAstBuilder,
+    source_id: SourceId,
+    start: usize,
+    spelling: &str,
+) -> mizar_syntax::SurfaceBuilderNodeId {
+    let let_keyword = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        "let",
+        range(source_id, start, start + 3),
+    );
+    let binder_start = start + 4;
+    let binder = builder.add_token(
+        SurfaceTokenKind::Identifier,
+        spelling,
+        range(source_id, binder_start, binder_start + spelling.len()),
+    );
+    let be_start = binder_start + spelling.len() + 1;
+    let be_keyword = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        "be",
+        range(source_id, be_start, be_start + 2),
+    );
+    let type_start = be_start + 3;
+    let type_keyword = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        "type",
+        range(source_id, type_start, type_start + 4),
+    );
+    let semicolon = builder.add_token(
+        SurfaceTokenKind::ReservedSymbol,
+        ";",
+        range(source_id, type_start + 4, type_start + 5),
+    );
+    builder.add_node(
+        SurfaceNodeKind::TemplateParameter,
+        range(source_id, start, type_start + 5),
+        vec![let_keyword, binder, be_keyword, type_keyword, semicolon],
+    )
+}
+
+fn task277r1_generator(
+    builder: &mut SurfaceAstBuilder,
+    source_id: SourceId,
+    start: usize,
+    type_start: usize,
+    spelling: &str,
+) -> mizar_syntax::SurfaceBuilderNodeId {
+    task277r1_generator_with_shape(
+        builder,
+        source_id,
+        start,
+        type_start,
+        spelling,
+        Task277r1GeneratorShape::Exact,
+    )
+}
+
+#[derive(Clone, Copy)]
+enum Task277r1GeneratorShape {
+    Exact,
+    RecoveredSibling,
+    MalformedTypeHead,
+}
+
+fn task277r1_generator_with_shape(
+    builder: &mut SurfaceAstBuilder,
+    source_id: SourceId,
+    start: usize,
+    type_start: usize,
+    spelling: &str,
+    shape: Task277r1GeneratorShape,
+) -> mizar_syntax::SurfaceBuilderNodeId {
+    let opener = if matches!(shape, Task277r1GeneratorShape::RecoveredSibling) {
+        builder.add_recovered_token(
+            SurfaceTokenKind::ReservedSymbol,
+            "{",
+            range(source_id, start, start + 1),
+        )
+    } else {
+        builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            "{",
+            range(source_id, start, start + 1),
+        )
+    };
+    let mapper = builder.add_token(
+        SurfaceTokenKind::Identifier,
+        "x",
+        range(source_id, start + 2, start + 3),
+    );
+    let where_keyword = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        "where",
+        range(source_id, start + 4, start + 9),
+    );
+    let generator = builder.add_token(
+        SurfaceTokenKind::Identifier,
+        "x",
+        range(source_id, type_start - 8, type_start - 7),
+    );
+    let is_keyword = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        "is",
+        range(source_id, type_start - 6, type_start - 4),
+    );
+    let identifier = builder.add_token(
+        SurfaceTokenKind::Identifier,
+        spelling,
+        range(source_id, type_start, type_start + spelling.len()),
+    );
+    let mut type_head_children = vec![identifier];
+    if matches!(shape, Task277r1GeneratorShape::MalformedTypeHead) {
+        type_head_children.push(builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            "[",
+            range(
+                source_id,
+                type_start + spelling.len(),
+                type_start + spelling.len() + 1,
+            ),
+        ));
+    }
+    let type_head = builder.add_node(
+        SurfaceNodeKind::TypeHead,
+        range(source_id, type_start, type_start + spelling.len()),
+        type_head_children,
+    );
+    let type_expression = builder.add_node(
+        SurfaceNodeKind::TypeExpression,
+        range(source_id, type_start, type_start + spelling.len()),
+        vec![type_head],
+    );
+    let segment = builder.add_node(
+        SurfaceNodeKind::ComprehensionVariableSegment,
+        range(source_id, type_start - 8, type_start + spelling.len()),
+        vec![generator, is_keyword, type_expression],
+    );
+    let closer = builder.add_token(
+        SurfaceTokenKind::ReservedSymbol,
+        "}",
+        range(
+            source_id,
+            type_start + spelling.len() + 1,
+            type_start + spelling.len() + 2,
+        ),
+    );
+    builder.add_node(
+        SurfaceNodeKind::SetComprehension,
+        range(source_id, start, type_start + spelling.len() + 2),
+        vec![opener, mapper, where_keyword, segment, closer],
+    )
+}
+
+fn resolved_node(
+    ast: &SurfaceAst,
+    resolved: &SurfaceResolvedArena,
+    start: usize,
+    end: usize,
+    matches_kind: impl Fn(&SurfaceNodeKind) -> bool,
+) -> ResolvedNodeId {
+    let source = ast
+        .node_views()
+        .find(|node| node.range() == range(ast.source_id, start, end) && matches_kind(node.kind()))
+        .map(|node| node.id())
+        .unwrap();
+    resolved.resolved_node_for(source).unwrap()
 }
 
 fn source_id() -> SourceId {

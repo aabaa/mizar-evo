@@ -798,6 +798,14 @@ cargo test -p mizar-vc
 - [x] canonical [Task 277R1 contract](../../task_contracts/ja/RESOLVE-TEMPLATE-TYPEPARAM-277R1.md)、
   authority、exact parser profile、`source_drift` / `design_drift` / Rust `test_gap`、Rust
   4-path scope、named test 5件、row ABI、count、protected hash/no-impact decision を freeze。
-- [ ] separate documentation commit と fresh preflight 後、frozen Rust 4 paths だけを
-  implement。direct fixture test は private に保ち、`SymbolId`、`ResolvedAst`、diagnostic、
-  semantic、checker state、active route、trace/coverage change、Task 277B readiness を除外する。
+- [x] documentation prerequisiteを`2438cbb7d39c1844557293b270ef1784cfc31ece`として
+  commitし、全frozen baselineを再現してexact Rust 4 paths / named test 5件だけをimplement。
+  private fixture boundaryと全semantic/active/protected exclusionを保持。
+- [x] test discrimination、global link order、recovered-subtree findingを修復し、independent
+  test/implementation reviewを**NO FINDINGS**、focused/crate/workspace/lint/metadata/fmt/
+  Clippy/CLI/count-hash verificationをPASS。
+- [x] independent source/documentation、bilingual reviewを**NO FINDINGS**で完了。
+- [x] independent final-quality reviewを**NO FINDINGS**、全9 hard gates PASS、score cap
+  なしのvalid `100/100`で完了。
+- [ ] exact staging、task-only implementation commit、post-commit proof、fresh successor
+  inventoryを完了。Task 277Bはnot readyのまま。

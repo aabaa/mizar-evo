@@ -5189,9 +5189,14 @@ umbrella Task 277はpartialのままで、successorはseparately frozen/reviewed
 
 canonical [Task 277R1 contract](../../task_contracts/ja/RESOLVE-TEMPLATE-TYPEPARAM-277R1.md)
 は private regression
-`task277r1_real_fixture_links_exact_template_generator_identity` 1件だけを reserve
+`task277r1_real_fixture_links_exact_template_generator_identity` 1件だけをimplement
 する。unchanged 701-byte inactive fixture を existing helper 経由で parse し、existing
 resolver arena を lower して single frozen `#53/#31/#2/#39` binding/generator-link profile
 を check する。library count は `608 -> 609`だけ。runner route、dispatcher、detail key、
 checker output、Typed/Resolved slot、active-stage selection、metadata change、semantic verdict
-にはしない。
+にはしない。leafは67 lines /
+`5cafa3b0cd46ed29b8981f509b3fbec98f40be14e2ce8eee83bc7f10314bc1b8`、
+`tests.rs`は62 /
+`7c5cc9541b1cd2aabe050d3791e9153faeb302803cfa79abe39bfb58cb181d60`。
+complete libraryは`609/609` PASSし、remaining verification/protected no-impact evidenceは
+central contractがownする。

@@ -11841,12 +11841,13 @@ umbrella Task 277はpartialのままで、successorはseparately frozen/reviewed
 
 ## Resolver Task 277R1 test module boundary
 
-future mizar-test change は `src/runner/tests.rs` の test registration と new private
+implemented mizar-test change は `src/runner/tests.rs` の test registration と new private
 `src/runner/tests/type_elaboration/template_parameter_identity.rs` leaf に限定する。existing
 frontend/parser と resolver API で immutable seed を observe するだけで、production runner
 module/route/dispatcher/detail key/checker handoff/Typed-Resolved output/fixture stage/metadata/
 trace owner を追加または変更しない。identity transport の唯一の production owner は resolver
-`names.rs` のままである。
+`names.rs` のままである。final test-only scopeはexact 2 pathsで、production runnerは
+unchanged path/content hashの38 paths / 80,090 linesのまま。
 
 ## Checker Task 269GT frozen runner boundary
 

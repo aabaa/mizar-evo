@@ -357,8 +357,8 @@ R-012 は documentation-only change なので test は追加しない。後続 t
 ## Resolver Task 277R1 template type-parameter identity
 
 canonical [Task 277R1 contract](../../task_contracts/ja/RESOLVE-TEMPLATE-TYPEPARAM-277R1.md)
-は、この既存 `names` owner に narrowly scoped parser-origin identity transport だけを割り当てる。
-planned public name は `TemplateTypeParameterBindingId`、binding/link row/table、
+は、この既存 `names` owner に narrowly scoped parser-origin identity transport だけを実装する。
+追加public name は `TemplateTypeParameterBindingId`、binding/link row/table、
 `TemplateTypeParameterSourceCollection`、`TemplateTypeParameterSourceCollector` のみ。
 `TemplateTypeParameterBinding` は `definition_block`、`parameter`、`binder`、`spelling`、
 `source_range`、`source_ordinal`、link は `definition_block`、`type_head`、`identifier`、
@@ -372,3 +372,8 @@ unrecovered/unbounded/single-binder `TemplateParameter` と same-owner Fraenkel 
 non-inferential structural admission check で、same-owner duplicate spelling は binding を
 残すが ambiguous link は作らない。generic template lookup、alias/shadow resolution、
 `SymbolId` / `NameRef` producer、diagnostic、type/sethood/checker meaning は追加しない。
+
+全generator linkは全owner収集後にsource range/node identityでglobal sortし、dense ordinalを
+再採番する。candidate `SetComprehension` subtree内の任意recoveryはlinkをrejectするが、
+independently validなbindingは保持する。exact module/test metricとverification recordは
+central contractがownする。

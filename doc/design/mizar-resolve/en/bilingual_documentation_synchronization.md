@@ -277,3 +277,9 @@ row ABI, two-boundary arena validation, token-equality admission rule, four
 Rust paths, five named tests, `148 -> 152` / `608 -> 609` counts, full
 protected hashes, and the no-checker/no-active-route boundary. English remains
 canonical for exact identifiers and bytes; no synchronization exception exists.
+The implementation preserves that parity, including global link ordering,
+complete-comprehension recovery rejection, exact `152` / `609` test counts,
+and unchanged protected surfaces. Independent bilingual and source/documentation
+reviews report **NO FINDINGS**. Independent final-quality review also reports
+**NO FINDINGS**; all nine hard gates pass without a score cap at valid `100/100`.
+Only staging, commit, and post-commit inventory remain.
