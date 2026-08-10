@@ -4206,25 +4206,7 @@ passes. Independent final quality has no findings, all nine hard gates PASS,
 and the valid score is `98/100`. The commit and implementation inventory
 remain open.
 
-## Checker Task 258B3M2B2B2C Implemented Runner Harness
-
-The harness now recognizes only the frozen 181-byte/86-node functional-update
-source, reuses the B2CP update extractor/producer boundary, and assembles the
-exact lower tables before the Task-258 statement and witness producers. The
-witness targets `Structure(0)`; the constructor, update value, equality
-operands, resolver provenance, and ownership exclusions remain with their
-existing producers.
-
-The five frozen runner tests pass: real frontend, validation precedence and
-replay, malformed/valid-excluded byte and subtree near misses, family/active
-isolation, and typed/final/debug/rollback/empty semantics. The paired four
-checker tests pass as well. Final test-sufficiency and implementation reviews
-have no findings. Runner library `444` and its policy suites pass; broad
-workspace and remaining final reviews are pending.
-
-No active fixture, expectation, sidecar, trace row/credit, diagnostic,
-semantic, proof, goal, or IR surface changed. The formula-statement trace row
-remains `deferred`, `tests = []`.
+Completion evidence: [central Task-258B3M2B2B2C historical contract](../../task_contracts/en/258B3M2B2B2C.md#completion-evidence).
 
 ## Checker Task 258B3M2B2B2C Broad Harness Verification
 

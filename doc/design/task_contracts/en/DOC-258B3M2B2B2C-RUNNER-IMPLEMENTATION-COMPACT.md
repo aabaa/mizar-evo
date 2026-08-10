@@ -8,7 +8,7 @@
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-258B3M2B2B2C-RUNNER-IMPLEMENTATION-COMPACT` |
-| Status | Documentation prerequisite committed as `5013a671`; migration-link correction accepted. Exact staging and its dedicated commit remain. Migration has not started. |
+| Status | Migration applied after link-correction prerequisite `41f053ef`; independent reviews, full verification, and final quality review pass. Exact staging and the dedicated commit remain. |
 | Purpose | Centralize only the completed B2C runner implementation evidence duplicated by five paired runner documents. |
 | Historical owner | [Task 258B3M2B2B2C](./258B3M2B2B2C.md#completion-evidence) |
 | Plan indexes | [checker](../../mizar-checker/en/00.crate_plan.md#task-index) and [runner](../../mizar-test/en/00.crate_plan.md#task-index) plans |
@@ -287,3 +287,52 @@ Final read-only correction review ended **NO FINDINGS**. All nine hard gates
 pass, no score cap applies, and the accepted score is `100/100`
 (`20/20/15/15/10/10/5/5`). Exact four-path staging, cached review, dedicated
 commit, and clean replay remain before the unchanged migration restarts.
+
+## Migration Evidence
+
+Clean replay at link-correction prerequisite `41f053ef` reproduced all ten
+frozen preimages and the unchanged 1008-line ledger. The migration replaced
+only the ten selected whole H2 sections with their language-local
+completion-evidence redirects, preserving each required blank separator and
+every neighboring anchor. The selected-source diff is exactly `+10/-236`; no
+frozen, broad, final, post-commit, B3P, checker, Task Index, or other
+source-TSV surface changed.
+
+The ledger gained the exact sixteen byte-sorted schema-v2 rows: one `batch`,
+four existing batch `index` rows, ten `redirect` rows, and one `task_ref`. It
+now has `1024` lines, SHA-256
+`2a66d200a1976861600bcf7686388faa3efb19b2b42a43c756c9e689d7f27359`, and
+cardinalities `32/44/4/638/304`; the fifteen-row expanded inventory is
+`0431940e513a7f54e468827a0135ce8c9bf00c603af7ae79599e5fba303efe87`.
+
+`git diff --check` and the focused recursive paired-contract/link/fragment
+lint pass. This bounded implementation did not stage or commit any file; exact
+task-only review, staging, and the dedicated commit remain for parent
+orchestration.
+
+## Migration Review And Verification Evidence
+
+Independent evidence-equivalence, schema/test-sufficiency/boundary, and
+source/documentation reviews ended **NO FINDINGS**. They independently confirm
+the exact thirteen-path boundary and `+10/-236` selected-source delta; ten
+language-local redirects and absent forbidden headings; preserved neighboring
+anchors, separators, Task Index rows, unique runner evidence, and EN/JA
+equivalence; one historical task owner with source-disjoint `task_ref` batches;
+and zero specification, test, trace, coverage, Rust, Cargo, public-API,
+diagnostic, semantic, or active-route delta.
+
+Verification passes checker/runner libraries `534/534` and `604/604`, both
+lint-policy suites `15/15`, metadata `137/137`, `cargo fmt --all --check`,
+offline Cargo metadata, warnings-denied all-target/all-feature Clippy, and full
+workspace `cargo test`. The plan, parse, declaration, type, and proof CLI
+stdout hashes reproduce their five frozen values exactly. The 1024-line ledger
+reproduces SHA-256
+`2a66d200a1976861600bcf7686388faa3efb19b2b42a43c756c9e689d7f27359`,
+cardinalities `32/44/4/638/304`, and expanded-inventory SHA-256
+`0431940e513a7f54e468827a0135ce8c9bf00c603af7ae79599e5fba303efe87`.
+Protected authority, test, trace, coverage, production, and library-list
+baselines reproduce with zero delta. `git diff --check` and recursive
+contract/link/fragment/ledger enforcement pass. Final read-only quality review
+ended **NO FINDINGS**: all nine hard gates pass, no score cap applies, and the
+accepted score is `100/100` (`20/20/15/15/10/10/5/5`). Exact cached review,
+task-only commit, and clean post-commit replay remain.

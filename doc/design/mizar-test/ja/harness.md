@@ -3953,24 +3953,7 @@ baseline/projection `386/439` -> `390/444`、all hashes unchanged。
 verificationもPASS。independent final qualityはfindingsなし、全9 hard
 gates PASS、valid `98/100`。commitとimplementation inventoryはopen。
 
-## Checker Task 258B3M2B2B2C implemented runner harness
-
-harnessはfrozen 181-byte/86-node functional-update sourceだけをrecognizeし、
-B2CP update extractor/producer boundaryをreuseして、Task258
-statement/witness producers前にexact lower tablesをassembleする。witnessは
-`Structure(0)`をtargetとし、constructor/update value/equality operands/
-resolver provenance/ownership exclusionsはexisting producersのまま。
-
-frozen runner tests 5件はreal frontend、validation precedence/replay、
-malformed/valid-excluded byte/subtree near misses、family/active isolation、
-typed/final/debug/rollback/empty semanticsをcoverしてPASS。paired checker
-tests 4件もPASS。final test-sufficiency/implementation reviewsはfindingsなし。
-runner library `444`+policy suitesはPASSし、broad workspace/remaining final
-reviewsはpending。
-
-active fixture、expectation、sidecar、trace row/credit、diagnostic、
-semantic/proof/goal/IRはunchanged。formula-statement trace rowは
-`deferred`, `tests = []`のまま。
+Completion evidence: [central Task-258B3M2B2B2C historical contract](../../task_contracts/ja/258B3M2B2B2C.md#completion-evidence)。
 
 ## Checker Task 258B3M2B2B2C broad harness verification
 

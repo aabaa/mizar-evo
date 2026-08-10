@@ -2493,33 +2493,7 @@ unrelated to the completed mizar-test Tasks 257A-H test-layout series above.
 - [x] Fresh-inventory and implement only the scoped B2C eight-file
   transaction.
 
-## Checker Task 258B3M2B2B2C Runner Implementation Ledger
-
-- [x] Limit runner implementation to the frozen statement/structure/facade/
-  root/test files and consume the private B2CP seam unchanged.
-- [x] Authenticate the exact source, malformed profile, and five valid
-  excluded profiles without adding an active fixture or public route.
-- [x] Preserve every Task-48/252/254/256/base row and publish only the
-  witness-to-`Structure(0)` edge.
-- [x] Add and pass exactly five runner tests and the paired four checker tests.
-- [x] Pass runner library `444` plus policy suites and checker library `390`.
-- [x] Complete final test-sufficiency and implementation reviews with no
-  findings.
-- [x] Synchronize EN/JA plans, ledgers, harness/module audits, and
-  narrative-only coverage audit with final sizes and hashes.
-- [x] Keep specification, `.miz`, fixtures, expectations, sidecars, trace
-  status/tests, coverage credit, active corpus, public API, and semantics
-  unchanged.
-- [x] Pass broad workspace format, Clippy, and tests, including focused
-  `4/4` and `5/5` and sibling `12/12` and `21/21` suites.
-- [x] Complete final source/documentation consistency re-review with
-  **NO FINDINGS**.
-- [x] Complete independent final read-only quality review with
-  **NO FINDINGS**, all nine hard gates PASS, and a valid `98/100`.
-- [x] Audit the cached implementation diff and commit B2C as
-  `e8373c683448e524cb98edde83fdf8de83a125cd`.
-- [x] Verify clean ahead-eight/behind-zero post-commit repository state,
-  unchanged stash, and fresh-inventory B3P.
+Completion evidence: [central Task-258B3M2B2B2C historical contract](../../task_contracts/en/258B3M2B2B2C.md#completion-evidence).
 
 ## Checker Task 258B3M2B2B3P Runner Frozen-Contract Ledger
 

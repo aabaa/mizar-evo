@@ -2293,30 +2293,7 @@ mizar-test Tasks 257A-H test-layout系列とは別である。
   `d6076cc757ce675d1b46a720b4f00805923d3c70`を作成。
 - [x] fresh-inventory後scoped B2C eight-file transactionだけをimplement。
 
-## Checker Task 258B3M2B2B2C runner implementation ledger
-
-- [x] runner implementationをfrozen statement/structure/facade/root/test
-  filesに限定しprivate B2CP seamをunchanged consume。
-- [x] exact source、malformed profile、valid excluded 5 profilesをauthenticateし、
-  active fixture/public routeを追加しない。
-- [x] Tasks48/252/254/256/base rowsをpreserveし、witness-to-
-  `Structure(0)` edgeだけをpublish。
-- [x] runner tests exactly 5件とpaired checker tests 4件を追加しPASS。
-- [x] runner library `444`+policy suitesとchecker library `390`をPASS。
-- [x] final test-sufficiency/implementation reviewsをfindingsなしでcomplete。
-- [x] EN/JA plan/ledger/harness/module auditsとnarrative-only coverage auditを
-  final sizes/hashesでsync。
-- [x] spec、`.miz`、fixtures、expectations、sidecars、trace status/tests、
-  coverage credit、active corpus、public API、semanticsをunchangedに保つ。
-- [x] broad workspace fmt/Clippy/testsをPASSし、focused `4/4`/`5/5`、
-  sibling `12/12`/`21/21` suitesもPASS。
-- [x] final source/docs consistency re-reviewを**NO FINDINGS**でcomplete。
-- [x] independent final qualityを**NO FINDINGS**、全9 hard gates PASS、
-  valid `98/100`でcomplete。
-- [x] cached implementation diffをauditしB2Cを
-  `e8373c683448e524cb98edde83fdf8de83a125cd`としてcommit。
-- [x] clean ahead 8/behind 0 post-commit repo state、unchanged stashを
-  verifyしB3Pをfresh inventory。
+Completion evidence: [central Task-258B3M2B2B2C historical contract](../../task_contracts/ja/258B3M2B2B2C.md#completion-evidence)。
 
 ## Checker Task 258B3M2B2B3P runner frozen-contract ledger
 

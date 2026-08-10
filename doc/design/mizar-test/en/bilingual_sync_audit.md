@@ -881,22 +881,7 @@ Independent final quality has no findings, all nine hard gates PASS, and the
 valid score is `98/100`. The dedicated documentation commit and fresh
 implementation inventory remain open.
 
-## Checker Task 258B3M2B2B2C Implementation Synchronization
-
-The EN/JA runner companions now agree that prerequisite commit
-`d6076cc757ce675d1b46a720b4f00805923d3c70` and fresh inventory are
-complete and that the exact five-runner-file portion of the frozen eight-file
-transaction is implemented. Both record the unchanged private B2CP seam,
-exact witness target, five runner/four checker tests, and no public, active,
-trace-credit, or semantic expansion.
-
-Both languages record libraries `390/444`, runner sizes
-`7240/6055/735/2552/19275/5848` and 30 paths / 47,203 lines, checker sizes
-`32036/4832/7246/5036` and 23 paths / 126,115 lines, plus identical
-production/test-list hashes. Focused and library verification described in
-the plan passes, and final test-sufficiency/implementation reviews have no
-findings. Broad workspace and final consistency/quality/commit gates remain
-pending in both companions.
+Completion evidence: [central Task-258B3M2B2B2C historical contract](../../task_contracts/en/258B3M2B2B2C.md#completion-evidence).
 
 ## Checker Task 258B3M2B2B2C Broad-Verification Synchronization
 

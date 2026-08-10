@@ -8,7 +8,7 @@
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-258B3M2B2B2C-RUNNER-IMPLEMENTATION-COMPACT` |
-| Status | documentation prerequisiteは`5013a671`でcommit済み。migration-link correctionはaccepted。exact stagingとdedicated commitが残る。migrationは未開始。 |
+| Status | link-correction prerequisite `41f053ef`後にmigrationを適用し、independent reviews、full verification、final quality reviewがpass。exact stagingとdedicated commitが残る。 |
 | Purpose | paired runner documents 5組が重複するcompleted B2C runner implementation evidenceだけを集約する。 |
 | Historical owner | [Task 258B3M2B2B2C](./258B3M2B2B2C.md#completion-evidence) |
 | Plan indexes | [checker](../../mizar-checker/ja/00.crate_plan.md#task-index)と[runner](../../mizar-test/ja/00.crate_plan.md#task-index) plans |
@@ -188,3 +188,48 @@ final read-only correction reviewは**NO FINDINGS**で終了した。全9 hard g
 passし、score capなし、accepted scoreは`100/100`
 （`20/20/15/15/10/10/5/5`）。unchanged migration再開前にexact 4-path staging、
 cached review、dedicated commit、clean replayが残る。
+
+## Migration Evidence
+
+link-correction prerequisite `41f053ef`でのclean replayはfrozen preimages 10件と
+unchanged 1008-line ledgerを再現した。migrationはselected whole H2 sections
+10件だけをlanguage-local completion-evidence redirectsへ置換し、required blank
+separatorと全neighboring anchorをpreserveした。selected-source diffはexact
+`+10/-236`であり、frozen、broad、final、post-commit、B3P、checker、Task Index、
+その他のsource-TSV surfaceは変更していない。
+
+ledgerにはbyte-sorted schema-v2 rows 16件をexactに追加した。すなわち`batch`
+1件、existing batch `index` rows 4件、`redirect` rows 10件、`task_ref` 1件である。
+現在は`1024` lines、SHA-256
+`2a66d200a1976861600bcf7686388faa3efb19b2b42a43c756c9e689d7f27359`、
+cardinalities `32/44/4/638/304`であり、fifteen-row expanded inventoryは
+`0431940e513a7f54e468827a0135ce8c9bf00c603af7ae79599e5fba303efe87`である。
+
+`git diff --check`とfocused recursive paired-contract/link/fragment lintはpass。
+bounded implementationはfileをstage/commitしていない。exact task-only review、
+staging、dedicated commitはparent orchestrationに残る。
+
+## Migration Review And Verification Evidence
+
+independent evidence-equivalence、schema/test-sufficiency/boundary、
+source/documentation reviewsは**NO FINDINGS**で終了した。exact 13-path boundaryと
+selected-source delta `+10/-236`、language-local redirects 10件とforbidden
+headingsのabsence、neighboring anchors、separators、Task Index rows、unique runner
+evidence、EN/JA equivalenceの保持、one historical task ownerとsource-disjointな
+`task_ref` batches、specification、test、trace、coverage、Rust、Cargo、public API、
+diagnostic、semantic、active-route deltaがzeroであることを独立に確認した。
+
+verificationはchecker/runner libraries `534/534`と`604/604`、両lint-policy
+suites `15/15`、metadata `137/137`、`cargo fmt --all --check`、offline Cargo
+metadata、warnings-denied all-target/all-feature Clippy、full workspace
+`cargo test`をpassした。plan、parse、declaration、type、proof CLI stdout hashesは
+frozen 5値をexactに再現した。1024-line ledgerはSHA-256
+`2a66d200a1976861600bcf7686388faa3efb19b2b42a43c756c9e689d7f27359`、
+cardinalities `32/44/4/638/304`、expanded-inventory SHA-256
+`0431940e513a7f54e468827a0135ce8c9bf00c603af7ae79599e5fba303efe87`を
+再現した。protected authority、test、trace、coverage、production、library-list
+baselinesはzero deltaで再現した。`git diff --check`とrecursive
+contract/link/fragment/ledger enforcementはpass。final read-only quality reviewは
+**NO FINDINGS**で終了した。全9 hard gatesがpassし、score capなし、accepted
+scoreは`100/100`（`20/20/15/15/10/10/5/5`）。exact cached review、task-only
+commit、clean post-commit replayが残る。
