@@ -5169,9 +5169,16 @@ outputはimmutable Typed/Resolved viewだけを公開する。exact runner tests
 
 [central Task-269SDU contract](../../task_contracts/ja/269SDU.md) はprivate dormant
 `SourceProofLocalGivenDescendantUseTermRouteOutput { typed_ast, resolved }` と
-`source_proof_local_given_descendant_use_term_output` routeをplanする。cfg-test
+`source_proof_local_given_descendant_use_term_output` routeを実装する。cfg-test
 mutation seamは`None`、`WrongDependencyModule`、`WrongTermRange`、
 `WrongReferenceBinding`、`WrongArenaRoot`、`WrongArenaKind`だけで、missing SDT
 dependencyは`Task269SDU SDT dependency is missing`とreportする。private
 `task269sdu_` tests 4件はexact replay、corruption precedence、one-shot empty-semantic
-ownership、isolationをcoverする。public dispatcher/active CLI routeはない。
+ownership、isolationをcoverする:
+
+- `task269sdu_exact_descendant_occurrence_reference_and_replay`
+- `task269sdu_dependency_input_and_arena_corruption_fail_closed`
+- `task269sdu_typed_and_resolved_owners_are_one_shot_and_semantically_empty`
+- `task269sdu_isolation_preserves_predecessors_siblings_and_absent_set_terms`
+
+public dispatcher/active CLI routeはない。

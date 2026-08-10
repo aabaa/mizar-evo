@@ -2025,9 +2025,11 @@ Resolved/Typed debug bytes and owner state and publishes no partial SDT.
 
 ## Task 269SDU Resolved Ownership
 
-The [central Task-269SDU contract](../../task_contracts/en/269SDU.md) plans the
+The [central Task-269SDU contract](../../task_contracts/en/269SDU.md) implements the
 matching boxed optional SDU composite and read-only getter on
 `ResolvedTypedAst`. Final installation replays complete SDU validation and
 atomically replaces standalone SDT ownership. Direct binding/type ownership
 and sibling proof-local transactions are mutually excluded in either order;
 failed installation publishes no partial Resolved state or semantic payload.
+`ResolvedTypedAstError::InvalidSourceProofLocalGivenDescendantUseTerm` reports
+an invalid final replay.

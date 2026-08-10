@@ -19,7 +19,7 @@ current definition result type、fact/axiom、FOL/downstream IRを作らない�
 
 [central Task-269SDU contract](../../task_contracts/ja/269SDU.md) の下で、
 `source_term.rs` はpublic `SourceProofLocalGivenDescendantUseTermHandoff`、producer、
-non-exhaustive errorをplanする。handoffはcomplete SDT dependencyをby-value consumeし、
+non-exhaustive errorを実装する。handoffはcomplete SDT dependencyをby-value consumeし、
 exact dependency/debug fingerprintをpreserveする。source-term rowは`y@118..119` 1件だけで、
 typed node `3`、ordinal `0`、descendant context `2` (`[0,0]`)、
 `VariableReference`/`Value`、`term 0 -> binding 1` の`Variable` reference 1件であり、
@@ -33,7 +33,7 @@ Unknown/Normal、unresolved、unlinkedのまま。profile限定`GivenWitness -> 
 admissionだけを許可しgeneric admissionは不変。error順は`InvalidDependency`、
 `InvalidSourceTerm`、`InvalidInstallation`。
 
-このplanned ownerはSet binding/abbreviation/capture、equality/formula/fact/guard、
+この実装済みownerはSet binding/abbreviation/capture、equality/formula/fact/guard、
 proof completion、generic term publication、diagnostic、downstream IR、dispatch、
 coverage creditをexcludeする。特に`z@114..115`、`q@129..130`、`z@133..134`はabsentのまま。
 
@@ -72,6 +72,7 @@ deterministically renderする。
 | `SourcePrimaryTermError` | `#[non_exhaustive]`。callerはvalidation failureをexhaustive matchしない。 |
 | `SourceProofLocalGivenUseTermError` | `#[non_exhaustive]`。callerはTask 269GU dependency/input/installation failureをexhaustive matchしない。 |
 | `SourceProofLocalGivenConditionUseTermError` | `#[non_exhaustive]`。callerはTask 269GCU dependency/input/installation failureをexhaustive matchしない。 |
+| `SourceProofLocalGivenDescendantUseTermError` | `#[non_exhaustive]`。callerはTask 269SDU dependency/input/installation failureをexhaustive matchしない。 |
 
 この module が所有する exhaustive public enum exception はない。
 

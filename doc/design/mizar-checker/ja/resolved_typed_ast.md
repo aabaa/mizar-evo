@@ -1901,7 +1901,8 @@ debug bytesとowner stateを保持し、partial SDTをpublishしない。
 
 [central Task-269SDU contract](../../task_contracts/ja/269SDU.md) は
 `ResolvedTypedAst`のmatching boxed optional SDU compositeとread-only getterを
-planする。final installationはcomplete SDU validationをreplayしstandalone SDT
+実装する。final installationはcomplete SDU validationをreplayしstandalone SDT
 ownershipをatomicにreplaceする。direct binding/type ownershipとsibling proof-local
 transactionは両順序でmutually excludeし、failureはpartial Resolved state/semantic
 payloadをpublishしない。
+`ResolvedTypedAstError::InvalidSourceProofLocalGivenDescendantUseTerm` がinvalid final replayをreportする。

@@ -2048,11 +2048,12 @@ context/type/fact/coercion/initial-obligation/diagnostic tables.
 
 ## Task 269SDU Typed Ownership
 
-The [central Task-269SDU contract](../../task_contracts/en/269SDU.md) plans one
+The [central Task-269SDU contract](../../task_contracts/en/269SDU.md) implements one
 boxed optional `SourceProofLocalGivenDescendantUseTermHandoff` owner and a
 read-only getter on `TypedAst`. Installation consumes SDU by value, validates
 the complete transaction, and atomically replaces standalone SDT ownership.
 No direct binding/type owner or sibling proof-local transaction may coexist in
 either order; failure leaves all owner state and semantic tables unchanged.
-No semantic table, node hint, fact, diagnostic, or downstream IR entry is
-created.
+`TypedAstError::InvalidSourceProofLocalGivenDescendantUseTerm` rejects invalid
+installation. No semantic table, node hint, fact, diagnostic, or downstream IR
+entry is created.

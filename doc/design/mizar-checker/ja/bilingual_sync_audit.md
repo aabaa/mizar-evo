@@ -1737,7 +1737,7 @@ canonical [EN contract](../../task_contracts/en/269SDU.md) と
 [JA companion](../../task_contracts/ja/269SDU.md) はexact SDT by-value dependency、
 descendant `y@118..119` reference 1件、context `2` / scope `[0,0]` / use
 ordinal `2`、5-node arena、error順、boxed Typed/Resolved ownership、7-file/
-8-test scope、zero-credit exclusion、baseline、exitを同期する。review surfaceは
-checker Task Index/current plan、source-term、Typed、Resolved、source-spec-audit、
-TODOの各pairとroot zero-credit mappingを含む。exact identifier/bytesはEnglish
-canonicalで、synchronization exceptionはない。
+8-test scope、zero-credit exclusion、baseline、exitを同期する。実装済みowner/test
+updateはsource-term、Typed、Resolved、source-spec-audit、TODOの各pairとroot
+zero-credit mappingを対象にする。exact identifier/bytesはEnglish canonicalで、
+synchronization exceptionはない。

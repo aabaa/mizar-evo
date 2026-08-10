@@ -1,5 +1,17 @@
 # Module-Boundary Audit: mizar-test Runner
 
+Task 269SDU completion evidence: the existing proof-local leaf (3495 lines),
+its two `#[cfg(test)]` facade hops (971 / 2804 lines), and the existing
+proof-local test leaf (10509 lines) implement the private dormant route. Only
+syntax-free SDU input crosses to checker; validation and Typed/final ownership
+remain checker-owned. Production remains 37 paths / 79769 lines with unchanged
+path SHA-256 `1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d`
+and current content SHA-256
+`2b642db1b23a8bb932a434ef7914f696951c998748644999486a107057effdfa`.
+No dispatch, CLI, corpus/trace/metadata, Cargo, semantic publication, or
+coverage boundary changes; the route remains zero-credit and `z`/`q` capture
+stays blocked.
+
 ## Checker Task 257B1 Formula-Composition Current-State Addendum
 
 Task 257B1 adds one cohesive 540-line private

@@ -6475,11 +6475,12 @@ descendant source-type sliceとdormant runner consumerは完了した。descenda
 occurrenceと全 `z`/`q` closure/capture semanticsは後続であり、successorは
 post-commit fresh inventoryからだけ選択する。
 
-## Task 269SDU Descendant Given Occurrence/Reference Prerequisite
+## Task 269SDU Descendant Given Occurrence/Reference
 
 - [x] [central contract](../../task_contracts/ja/269SDU.md) のsynchronized
   documentation prerequisiteとreview gatesをcompleteする。
-- [ ] frozen source-term、Typed/Resolved、private runner routeだけをchecker 4件と
+- [x] frozen source-term、Typed/Resolved、private runner routeだけをchecker 4件と
   private runner 4件のtestでimplementする。
-- [ ] executable credit 0、active routeなし、blocked `z`/`q` closure/capture
-  boundaryをpreserveし、その後separateにverify/commitする。
+- [x] executable credit 0、active routeなし、blocked `z`/`q` closure/capture
+  boundaryをpreserveする。verification/independent reviewはPASSし、final hard-gate
+  qualityも全9 gates `100/100`でPASSした。task-only commitだけが残る。

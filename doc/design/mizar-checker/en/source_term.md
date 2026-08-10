@@ -20,7 +20,7 @@ axiom, or create FOL/downstream IR.
 ## Task 269SDU Descendant Given Occurrence/Reference Contract
 
 Under the [central Task-269SDU contract](../../task_contracts/en/269SDU.md),
-`source_term.rs` plans the public
+`source_term.rs` implements the public
 `SourceProofLocalGivenDescendantUseTermHandoff`, producer, and non-exhaustive
 error. The handoff consumes the complete SDT dependency by value, preserving
 its exact dependency and debug fingerprint, and owns exactly one source-term
@@ -38,7 +38,7 @@ the profile-scoped `GivenWitness -> Variable` admission is allowed; generic
 admission is unchanged. Errors are ordered `InvalidDependency`,
 `InvalidSourceTerm`, then `InvalidInstallation`.
 
-This planned owner excludes Set binding/abbreviation/capture, equality or
+This implemented owner excludes Set binding/abbreviation/capture, equality or
 formula/fact/guard creation, proof completion, generic term publication,
 diagnostics, downstream IR, dispatch, and coverage credit. In particular,
 `z@114..115`, `q@129..130`, and `z@133..134` remain absent.
@@ -79,6 +79,7 @@ ordinal. `debug_text()` renders every table deterministically.
 | `SourcePrimaryTermError` | `#[non_exhaustive]`; callers must not exhaustively match validation failures. |
 | `SourceProofLocalGivenUseTermError` | `#[non_exhaustive]`; callers must not exhaustively match Task 269GU dependency, input, or installation failures. |
 | `SourceProofLocalGivenConditionUseTermError` | `#[non_exhaustive]`; callers must not exhaustively match Task 269GCU dependency, input, or installation failures. |
+| `SourceProofLocalGivenDescendantUseTermError` | `#[non_exhaustive]`; callers must not exhaustively match Task 269SDU dependency, input, or installation failures. |
 
 No exhaustive public enum exceptions are owned by this module.
 

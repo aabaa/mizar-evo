@@ -8,11 +8,11 @@ source behavior、`.miz` fixture、expectation、public API は変更しない�
 未接続の挙動は現在の実装都合を正本化せず、明示的な
 `external_dependency_gap`、`test_gap`、または `deferred` として分類する。
 
-## Task 269SDU Planned Zero-Credit Mapping
+## Task 269SDU Implemented Zero-Credit Mapping
 
 [central Task-269SDU contract](../../task_contracts/ja/269SDU.md) はChapters 4、13、
-15、16に対するderived owner/test route 1件をplanする。inherited proof-local Given
-bindingはexact descendant `y@118..119`だけからreferenceされる。planned source-term、
+15、16に対するderived owner/test route 1件を実装する。inherited proof-local Given
+bindingはexact descendant `y@118..119`だけからreferenceされる。実装済みsource-term、
 Typed/Resolved、private-runner ownerはexecutable/semantic creditを追加しない。existing
 fixture/expectation/trace/requirement-count/diagnostic statusはauthoritativeかつ不変で、
 `z`/`q` binding/closure/captureはChapter-4/15 `set` `spec_gap`によりblockedのまま。
@@ -435,7 +435,10 @@ literal top-level public item:
   `SourceProofLocalGivenUseTermError`,
   `SourceProofLocalGivenConditionUseTermHandoff`,
   `SourceProofLocalGivenConditionUseTermProducer`,
-  `SourceProofLocalGivenConditionUseTermError`
+  `SourceProofLocalGivenConditionUseTermError`,
+  `SourceProofLocalGivenDescendantUseTermHandoff`,
+  `SourceProofLocalGivenDescendantUseTermProducer`,
+  `SourceProofLocalGivenDescendantUseTermError`
 
 対応:
 
@@ -446,6 +449,7 @@ literal top-level public item:
 | scopeとbinding-event ordinalはproducer-derivedであり、exact `BindingEnv::lookup` local winnerを要求する。 | reference constructionがcontext scopeをcloneし、preceding completed binding rowをcountし、exact duplicate-priority groupを保持し、すべてのnon-local resultをrejectする。 | shadow-winner、forward、ambiguous、missing-scope、unresolved、wrong-winner、ordinal test。 | `Resolver`をstructurally unreachableとして実装済み。 |
 | exact proof-local `given` use-profile composition 1件がauthenticated GUPT dependencyからlater `y` variable reference 2件だけをtransportする。 | `SourceProofLocalGivenUseTermHandoff`、`SourceProofLocalGivenUseTermProducer`、`SourceProofLocalGivenUseTermError`。 | checker 4件/runner dormant 4件のexact/corruption/ownership/isolation test。 | Task 269GUで実装済み、active/semantic credit zero。 |
 | exact proof-local `given` condition composition 1件がauthenticated GCT dependencyからown-conditionの`y` variable reference 2件だけをtransportする。 | `SourceProofLocalGivenConditionUseTermHandoff`、`SourceProofLocalGivenConditionUseTermProducer`、`SourceProofLocalGivenConditionUseTermError`。 | checker 4件/runner dormant 4件のexact/corruption/ownership/isolation test。 | Task 269GCUで実装済み、active/semantic credit zero。 |
+| exact proof-local descendant composition 1件がcomplete SDT handoffをconsumeし、`y@118..119`だけを`term 0 -> binding 1`としてtransportしてstandalone SDT ownershipをatomicに置換する。 | `SourceProofLocalGivenDescendantUseTermHandoff`、`SourceProofLocalGivenDescendantUseTermProducer`、`SourceProofLocalGivenDescendantUseTermError`。 | checker 4件/runner dormant 4件のexact/corruption/ownership/isolation test。 | Task 269SDUで実装済み、active/semantic credit zero。 |
 | `TypedAst`がimmutable handoffをownし、`ResolvedTypedAst`はclone-preserveだけを行う。 | optional `SourcePrimaryTermHandoff` field、validated installer、borrowed getter。 | production-runner ownership、replacement rejection、clone equality、deterministic replay assertion。 | 実装済み。semantic typed/fact/downstream tableは不変。 |
 | public enumはforward-compatible。 | public Task-252 enumすべての`#[non_exhaustive]`。 | `checker_public_enums_are_forward_compatible_and_documented`。 | exhaustive exceptionなしでguard。 |
 

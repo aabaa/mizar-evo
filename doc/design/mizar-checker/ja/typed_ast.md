@@ -1917,8 +1917,9 @@ tablesを保持する。
 
 [central Task-269SDU contract](../../task_contracts/ja/269SDU.md) は`TypedAst`の
 boxed optional `SourceProofLocalGivenDescendantUseTermHandoff` owner 1件と
-read-only getterをplanする。installationはSDUをby-value consumeしcomplete
+read-only getterを実装する。installationはSDUをby-value consumeしcomplete
 transactionをvalidateしてstandalone SDT ownershipをatomicにreplaceする。direct
 binding/type ownerまたはsibling proof-local transactionは両順序でcoexistできず、
 failureは全owner stateとsemantic tableを不変に保つ。semantic table、node hint、fact、
 diagnostic、downstream IR entryは作らない。
+`TypedAstError::InvalidSourceProofLocalGivenDescendantUseTerm` がinvalid installationをrejectする。

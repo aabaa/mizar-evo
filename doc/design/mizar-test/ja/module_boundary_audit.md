@@ -1,5 +1,16 @@
 # Module-Boundary Audit: mizar-test Runner
 
+Task 269SDU completion evidence: existing proof-local leaf（3495 lines）、
+`#[cfg(test)]` facade 2 hops（971 / 2804 lines）、existing proof-local test leaf
+（10509 lines）がprivate dormant routeを実装する。checkerへcrossするのはsyntax-free
+SDU inputだけで、validationとTyped/final ownershipはchecker ownerのままである。
+productionは37 paths / 79769 linesで、path SHA-256は不変の
+`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d`、current
+content SHA-256は
+`2b642db1b23a8bb932a434ef7914f696951c998748644999486a107057effdfa`である。dispatch、
+CLI、corpus/trace/metadata、Cargo、semantic publication、coverage boundaryは変わらず、
+routeはzero-credit、`z`/`q` captureはblockedのままである。
+
 ## Checker Task 257B1 formula-composition current-state addendum
 
 Task 257B1はcohesiveな540-line private `source_formula_composition.rs`

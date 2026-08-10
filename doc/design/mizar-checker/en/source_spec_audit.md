@@ -9,12 +9,12 @@ APIs. The audit classifies remaining uncovered behavior as explicit
 `external_dependency_gap`, `test_gap`, or `deferred` work instead of treating
 current implementation convenience as normative.
 
-## Task 269SDU Planned Zero-Credit Mapping
+## Task 269SDU Implemented Zero-Credit Mapping
 
-The [central Task-269SDU contract](../../task_contracts/en/269SDU.md) plans one
+The [central Task-269SDU contract](../../task_contracts/en/269SDU.md) implements one
 derived owner/test route for Chapters 4, 13, 15, and 16: the inherited
 proof-local Given binding is referenced only by exact descendant
-`y@118..119`. The planned source-term, Typed/Resolved, and private-runner
+`y@118..119`. The implemented source-term, Typed/Resolved, and private-runner
 owners add no executable or semantic credit. Existing fixture, expectation,
 trace, requirement-count, and diagnostic status remain authoritative and
 unchanged; `z`/`q` binding, closure, and capture stay blocked by the
@@ -463,7 +463,10 @@ Literal top-level public items:
   `SourceProofLocalGivenUseTermError`,
   `SourceProofLocalGivenConditionUseTermHandoff`,
   `SourceProofLocalGivenConditionUseTermProducer`,
-  `SourceProofLocalGivenConditionUseTermError`
+  `SourceProofLocalGivenConditionUseTermError`,
+  `SourceProofLocalGivenDescendantUseTermHandoff`,
+  `SourceProofLocalGivenDescendantUseTermProducer`,
+  `SourceProofLocalGivenDescendantUseTermError`
 
 Correspondence:
 
@@ -474,6 +477,7 @@ Correspondence:
 | Scope and binding-event ordinal are producer-derived, and the exact `BindingEnv::lookup` local winner is required. | Reference construction clones context scope, counts preceding completed binding rows, preserves exact duplicate-priority groups, and rejects every non-local result. | Shadow-winner, forward, ambiguous, missing-scope, unresolved, wrong-winner, and ordinal tests. | Implemented with `Resolver` structurally unreachable. |
 | One exact proof-local `given` use-profile composition transports only the two later `y` variable references from the authenticated GUPT dependency. | `SourceProofLocalGivenUseTermHandoff`, `SourceProofLocalGivenUseTermProducer`, and `SourceProofLocalGivenUseTermError`. | Four checker and four dormant-runner exact/corruption/ownership/isolation tests. | Implemented for Task 269GU with zero active/semantic credit. |
 | One exact proof-local `given` condition composition transports only the two own-condition `y` variable references from the authenticated GCT dependency. | `SourceProofLocalGivenConditionUseTermHandoff`, `SourceProofLocalGivenConditionUseTermProducer`, and `SourceProofLocalGivenConditionUseTermError`. | Four checker and four dormant-runner exact/corruption/ownership/isolation tests. | Implemented for Task 269GCU with zero active/semantic credit. |
+| One exact proof-local descendant composition consumes the complete SDT handoff and transports only `y@118..119` as `term 0 -> binding 1`, atomically replacing standalone SDT ownership. | `SourceProofLocalGivenDescendantUseTermHandoff`, `SourceProofLocalGivenDescendantUseTermProducer`, and `SourceProofLocalGivenDescendantUseTermError`. | Four checker and four dormant-runner exact/corruption/ownership/isolation tests. | Implemented for Task 269SDU with zero active/semantic credit. |
 | `TypedAst` owns the immutable handoff and `ResolvedTypedAst` only clone-preserves it. | Optional `SourcePrimaryTermHandoff` field, validated installer, and borrowed getters. | Production-runner ownership, replacement rejection, clone equality, and deterministic replay assertions. | Implemented; semantic typed/fact/downstream tables remain unchanged. |
 | Public enums remain forward-compatible. | `#[non_exhaustive]` on all public Task-252 enums. | `checker_public_enums_are_forward_compatible_and_documented`. | Guarded; no exhaustive exception. |
 

@@ -23,6 +23,8 @@ use super::{
     SourceProofLocalGivenDescendantBindingRouteOutput,
     SourceProofLocalGivenDescendantTypeRouteMutation,
     SourceProofLocalGivenDescendantTypeRouteOutput,
+    SourceProofLocalGivenDescendantUseTermRouteMutation,
+    SourceProofLocalGivenDescendantUseTermRouteOutput,
     SourceProofLocalGivenDescendantSetLowerMutation,
     SourceProofLocalGivenDescendantSetLowerOutput,
     SourceProofLocalGivenDescendantSetResolverProfileMutation,
@@ -57,6 +59,9 @@ use super::{
     source_proof_local_given_descendant_binding_output_with_mutation,
     source_proof_local_given_descendant_type_output,
     source_proof_local_given_descendant_type_output_with_mutation,
+    source_proof_local_given_descendant_use_term_output,
+    source_proof_local_given_descendant_use_term_output_with_mutation,
+    task269sdu_missing_dependency_error_for_test,
     source_proof_local_given_descendant_set_lower_output,
     source_proof_local_given_descendant_set_lower_output_with_mutation,
     source_proof_local_given_descendant_set_lower_output_with_resolver_mutation,
@@ -305,6 +310,99 @@ fn task269a_exact_frontend_binding_transaction_and_debug_are_stable() {
     assert_task269b_exact_frontend_binding_transaction_and_debug();
 }
 
+#[test]
+fn task269sdu_exact_descendant_occurrence_reference_and_replay() {
+    let (ast, module, shells, symbols) = task253_ast_from_source_text(
+        SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT, 2_691_500,
+    );
+    let output: SourceProofLocalGivenDescendantUseTermRouteOutput =
+        source_proof_local_given_descendant_use_term_output(
+            &ast, module.clone(), &shells, &symbols, SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT,
+        ).expect("Task269SDU selector").expect("Task269SDU output");
+    let handoff = output.typed_ast().source_proof_local_given_descendant_use_term().expect("Typed owner");
+    assert_eq!(handoff.dependency_fingerprint(), handoff.dependency().debug_text());
+    assert_eq!(handoff.source_term_fingerprint(), handoff.source_term().debug_text());
+    assert_eq!((handoff.source_term().terms().len(), handoff.source_term().references().len(), handoff.source_term().numeric_type_requests().len()), (1, 1, 0));
+    let term = handoff.source_term().terms().get(mizar_checker::source_term::SourcePrimaryTermId::new(0)).expect("term");
+    assert_eq!((term.source_range().start, term.source_range().end, term.source_ordinal(), term.context().index(), term.spelling()), (118, 119, 0, 2, "y"));
+    assert_eq!(term.kind(), mizar_checker::source_term::SourcePrimaryTermKind::VariableReference);
+    let reference = handoff.source_term().references().get(mizar_checker::source_term::SourcePrimaryTermReferenceId::new(0)).expect("reference");
+    assert_eq!((reference.term().index(), reference.binding().index()), (0, 1));
+    assert_eq!(reference.lexical_scope().map(mizar_resolve::names::LocalTermScope::path), Some(&[0, 0][..]));
+    assert_eq!(reference.use_ordinal(), 2);
+    assert_eq!(output.typed_ast().nodes().root(), Some(mizar_checker::typed_ast::TypedNodeId::new(4)));
+    assert_eq!(output.typed_ast().nodes().node(mizar_checker::typed_ast::TypedNodeId::new(4)).expect("root").kind.as_str(), "source.proof-local.given-descendant-use.term-root");
+    assert!(output.typed_ast().debug_text().contains("source-proof-local-given-descendant-use-term-debug-v1"));
+    assert_eq!(output.resolved().source_proof_local_given_descendant_use_term(), Some(handoff));
+    assert!(output.resolved().debug_text().contains("source-proof-local-given-descendant-use-term-debug-v1"));
+    let replay = source_proof_local_given_descendant_use_term_output(&ast, module, &shells, &symbols, SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT).expect("replay selector").expect("replay");
+    assert_eq!(replay.typed_ast().debug_text(), output.typed_ast().debug_text());
+    assert_eq!(replay.resolved().debug_text(), output.resolved().debug_text());
+}
+
+#[test]
+fn task269sdu_dependency_input_and_arena_corruption_fail_closed() {
+    assert_eq!(
+        task269sdu_missing_dependency_error_for_test(),
+        "Task269SDU SDT dependency is missing"
+    );
+    for (ordinal, (mutation, expected)) in [
+        (SourceProofLocalGivenDescendantUseTermRouteMutation::None, None),
+        (SourceProofLocalGivenDescendantUseTermRouteMutation::WrongDependencyModule, Some("source proof-local given-descendant-use term dependency is invalid")),
+        (SourceProofLocalGivenDescendantUseTermRouteMutation::WrongTermRange, Some("source proof-local given-descendant-use source term is invalid")),
+        (SourceProofLocalGivenDescendantUseTermRouteMutation::WrongReferenceBinding, Some("source proof-local given-descendant-use source term is invalid")),
+        (SourceProofLocalGivenDescendantUseTermRouteMutation::WrongArenaRoot, Some("source proof-local given-descendant-use term installation is invalid")),
+        (SourceProofLocalGivenDescendantUseTermRouteMutation::WrongArenaKind, Some("source proof-local given-descendant-use source term is invalid")),
+    ].into_iter().enumerate() {
+        let (ast, module, shells, symbols) = task253_ast_from_source_text(SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT, 2_691_510 + ordinal);
+        let result = source_proof_local_given_descendant_use_term_output_with_mutation(&ast, module, &shells, &symbols, SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT, mutation).expect("selector");
+        match expected { Some(expected) => assert_eq!(result, Err(expected.to_owned())), None => assert!(result.is_ok()) }
+    }
+}
+
+#[test]
+fn task269sdu_typed_and_resolved_owners_are_one_shot_and_semantically_empty() {
+    let (ast, module, shells, symbols) = task253_ast_from_source_text(SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT, 2_691_520);
+    let output = source_proof_local_given_descendant_use_term_output(&ast, module.clone(), &shells, &symbols, SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT).expect("selector").expect("output");
+    let handoff = output.typed_ast().source_proof_local_given_descendant_use_term().expect("owner").clone();
+    assert_eq!(output.typed_ast().clone().with_source_proof_local_given_descendant_use_term(handoff), Err(mizar_checker::typed_ast::TypedAstError::InvalidSourceProofLocalGivenDescendantUseTerm));
+    let typed = output.typed_ast(); let resolved = output.resolved();
+    assert!(typed.contexts().is_empty() && typed.types().is_empty() && typed.facts().is_empty() && typed.diagnostics().is_empty());
+    assert!(resolved.expr_metadata().is_empty() && resolved.checked_formulas().is_empty() && resolved.checked_proofs().is_empty() && resolved.diagnostics().is_empty());
+    assert!(typed.source_proof_local_given_descendant_type().is_none());
+}
+
+#[test]
+fn task269sdu_isolation_preserves_predecessors_siblings_and_absent_set_terms() {
+    let (ast, module, shells, symbols) = task253_ast_from_source_text(SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT, 2_691_530);
+    let output = source_proof_local_given_descendant_use_term_output(&ast, module.clone(), &shells, &symbols, SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT).expect("selector").expect("output");
+    let source_term = output.typed_ast().source_proof_local_given_descendant_use_term().expect("owner").source_term();
+    assert_eq!(source_term.terms().len(), 1);
+    assert_eq!((source_term.terms().get(mizar_checker::source_term::SourcePrimaryTermId::new(0)).expect("term").source_range().start, source_term.terms().get(mizar_checker::source_term::SourcePrimaryTermId::new(0)).expect("term").source_range().end), (118, 119));
+    assert_eq!(source_term.references().len(), 1);
+    assert!(source_term.numeric_type_requests().is_empty());
+    for (start, end, spelling) in [(114, 115, "z"), (129, 130, "q"), (133, 134, "z")] {
+        assert!(!source_term.terms().iter().any(|(_, term)| {
+            term.source_range().start == start
+                && term.source_range().end == end
+                && term.spelling() == spelling
+        }));
+    }
+    assert!(source_proof_local_given_descendant_type_output(&ast, module.clone(), &shells, &symbols, SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT).is_some());
+    let near_miss = SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT.replacen("given y", "given w", 1);
+    let (ast, module, shells, symbols) = task253_ast_from_source_text(&near_miss, 2_691_531);
+    assert!(source_proof_local_given_descendant_use_term_output(&ast, module, &shells, &symbols, &near_miss).is_none());
+
+    let runner = include_str!("../../../runner.rs");
+    let facade = include_str!("../../type_elaboration.rs");
+    let leaf = include_str!("../../type_elaboration/source_proof_local_declaration.rs");
+    let active_call = "source_proof_local_given_descendant_use_term_output(";
+    assert_eq!(runner.matches(active_call).count(), 0);
+    assert_eq!(facade.matches(active_call).count(), 0);
+    assert_eq!(leaf.matches(active_call).count(), 1);
+    assert!(runner.contains("#[cfg(test)]\nuse type_elaboration::{"));
+    assert!(facade.contains("#[cfg(test)]\npub(super) use source_proof_local_declaration::{"));
+}
 
 fn assert_task269b_exact_frontend_binding_transaction_and_debug() {
     assert_eq!(TASK269B_SOURCE_TEXT.len(), 113);

@@ -23,7 +23,8 @@ use mizar_checker::{
         SourcePrimaryTermHandoffInput, SourcePrimaryTermId, SourcePrimaryTermInput,
         SourcePrimaryTermKind, SourcePrimaryTermRecovery, SourcePrimaryTermReferenceInput,
         SourcePrimaryTermReferenceRole, SourcePrimaryTermRole,
-        SourceProofLocalGivenConditionUseTermProducer, SourceProofLocalGivenUseTermProducer,
+        SourceProofLocalGivenConditionUseTermProducer,
+        SourceProofLocalGivenDescendantUseTermProducer, SourceProofLocalGivenUseTermProducer,
     },
     source_type::{
         SourceProofLocalGivenConditionTypeProducer, SourceProofLocalGivenDescendantTypeProducer,
@@ -2030,6 +2031,245 @@ fn task269sdt_arena(
         };
     builder
         .finish(Some(selected_root))
+        .map_err(|error| error.to_string())
+}
+
+#[derive(Debug, PartialEq, Eq)]
+#[allow(dead_code)] // Rationale: Task 269SDU is a private dormant runner consumer until activation.
+pub(in crate::runner) struct SourceProofLocalGivenDescendantUseTermRouteOutput {
+    typed_ast: TypedAst,
+    resolved: ResolvedTypedAst,
+}
+
+#[allow(dead_code)] // Rationale: Task 269SDU keeps these immutable views for its dormant route tests.
+impl SourceProofLocalGivenDescendantUseTermRouteOutput {
+    pub(in crate::runner) const fn typed_ast(&self) -> &TypedAst {
+        &self.typed_ast
+    }
+    pub(in crate::runner) const fn resolved(&self) -> &ResolvedTypedAst {
+        &self.resolved
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[allow(dead_code)] // Rationale: production selects `None`; other variants are private corruption seams.
+pub(in crate::runner) enum SourceProofLocalGivenDescendantUseTermRouteMutation {
+    None,
+    WrongDependencyModule,
+    WrongTermRange,
+    WrongReferenceBinding,
+    WrongArenaRoot,
+    WrongArenaKind,
+}
+
+#[allow(dead_code)] // Rationale: Task 269SDU deliberately leaves this exact private leaf dormant.
+pub(in crate::runner) fn source_proof_local_given_descendant_use_term_output(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    shells: &DeclarationShellSet,
+    symbols: &SymbolEnv,
+    source_text: &str,
+) -> Option<Result<SourceProofLocalGivenDescendantUseTermRouteOutput, String>> {
+    source_proof_local_given_descendant_use_term_output_impl(
+        ast,
+        module,
+        shells,
+        symbols,
+        source_text,
+        SourceProofLocalGivenDescendantUseTermRouteMutation::None,
+    )
+}
+
+#[cfg(test)]
+pub(in crate::runner) fn source_proof_local_given_descendant_use_term_output_with_mutation(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    shells: &DeclarationShellSet,
+    symbols: &SymbolEnv,
+    source_text: &str,
+    mutation: SourceProofLocalGivenDescendantUseTermRouteMutation,
+) -> Option<Result<SourceProofLocalGivenDescendantUseTermRouteOutput, String>> {
+    source_proof_local_given_descendant_use_term_output_impl(
+        ast,
+        module,
+        shells,
+        symbols,
+        source_text,
+        mutation,
+    )
+}
+
+#[cfg(test)]
+pub(in crate::runner) fn task269sdu_missing_dependency_error_for_test() -> String {
+    task269sdu_dependency(None).expect_err("Task269SDU missing dependency must fail")
+}
+
+fn task269sdu_dependency(
+    dependency: Option<&mizar_checker::source_type::SourceProofLocalGivenDescendantTypeHandoff>,
+) -> Result<mizar_checker::source_type::SourceProofLocalGivenDescendantTypeHandoff, String> {
+    dependency
+        .cloned()
+        .ok_or_else(|| "Task269SDU SDT dependency is missing".to_owned())
+}
+
+fn source_proof_local_given_descendant_use_term_output_impl(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    shells: &DeclarationShellSet,
+    symbols: &SymbolEnv,
+    source_text: &str,
+    mutation: SourceProofLocalGivenDescendantUseTermRouteMutation,
+) -> Option<Result<SourceProofLocalGivenDescendantUseTermRouteOutput, String>> {
+    let dependency = source_proof_local_given_descendant_type_output(
+        ast,
+        module.clone(),
+        shells,
+        symbols,
+        source_text,
+    )?;
+    Some(dependency.and_then(|dependency| {
+        let dependency = task269sdu_dependency(
+            dependency
+                .typed_ast()
+                .source_proof_local_given_descendant_type(),
+        )?;
+        let arena = task269sdu_arena(ast.source_id, mutation)?;
+        let mut input = task269sdu_term_input(ast.source_id, module.clone());
+        match mutation {
+            SourceProofLocalGivenDescendantUseTermRouteMutation::WrongDependencyModule => {
+                input.module_id = ModuleId::new(
+                    module.package().clone(),
+                    ModulePath::new("task269sdu.wrong"),
+                );
+            }
+            SourceProofLocalGivenDescendantUseTermRouteMutation::WrongTermRange => {
+                input.terms[0].source_range.end += 1
+            }
+            SourceProofLocalGivenDescendantUseTermRouteMutation::WrongReferenceBinding => {
+                input.references[0].binding = mizar_checker::binding_env::BindingId::new(0)
+            }
+            SourceProofLocalGivenDescendantUseTermRouteMutation::None
+            | SourceProofLocalGivenDescendantUseTermRouteMutation::WrongArenaRoot
+            | SourceProofLocalGivenDescendantUseTermRouteMutation::WrongArenaKind => {}
+        }
+        let handoff =
+            SourceProofLocalGivenDescendantUseTermProducer::build(dependency, input, &arena)
+                .map_err(|error| error.to_string())?;
+        let typed_ast = empty_task269gct_typed_ast(ast.source_id, module, arena)?
+            .with_source_proof_local_given_descendant_use_term(handoff)
+            .map_err(|error| error.to_string())?;
+        let resolved = assemble_empty_resolved_typed_ast(&typed_ast, Vec::new())?;
+        Ok(SourceProofLocalGivenDescendantUseTermRouteOutput {
+            typed_ast,
+            resolved,
+        })
+    }))
+}
+
+fn task269sdu_term_input(
+    source_id: mizar_session::SourceId,
+    module_id: ModuleId,
+) -> SourcePrimaryTermHandoffInput {
+    SourcePrimaryTermHandoffInput {
+        source_id,
+        module_id,
+        terms: vec![SourcePrimaryTermInput {
+            site: TypedSiteRef::Node(TypedNodeId::new(3)),
+            source_range: SourceRange {
+                source_id,
+                start: 118,
+                end: 119,
+            },
+            source_ordinal: 0,
+            context: BindingContextId::new(2),
+            recovery: SourcePrimaryTermRecovery::Normal,
+            spelling: "y".to_owned(),
+            kind: SourcePrimaryTermKind::VariableReference,
+            role: SourcePrimaryTermRole::Value,
+            parent: None,
+        }],
+        references: vec![SourcePrimaryTermReferenceInput {
+            term: SourcePrimaryTermId::new(0),
+            binding: mizar_checker::binding_env::BindingId::new(1),
+            role: SourcePrimaryTermReferenceRole::Variable,
+        }],
+        numeric_type_requests: Vec::new(),
+    }
+}
+
+fn task269sdu_arena(
+    source_id: mizar_session::SourceId,
+    mutation: SourceProofLocalGivenDescendantUseTermRouteMutation,
+) -> Result<TypedArena, String> {
+    let mut builder = TypedArenaBuilder::new();
+    let reserve = builder
+        .push(TypedNode::new(
+            "source.proof-local.given-descendant.reserve-type",
+            SourceAnchor::Range(SourceRange {
+                source_id,
+                start: 14,
+                end: 17,
+            }),
+        ))
+        .map_err(|error| error.to_string())?;
+    let given = builder
+        .push(TypedNode::new(
+            "source.proof-local.given-descendant.type",
+            SourceAnchor::Range(SourceRange {
+                source_id,
+                start: 95,
+                end: 98,
+            }),
+        ))
+        .map_err(|error| error.to_string())?;
+    let prefix = builder
+        .push(
+            TypedNode::new(
+                "source.proof-local.given-descendant.type-root",
+                SourceAnchor::Range(SourceRange {
+                    source_id,
+                    start: 0,
+                    end: 179,
+                }),
+            )
+            .with_children(vec![reserve, given]),
+        )
+        .map_err(|error| error.to_string())?;
+    let term = builder
+        .push(TypedNode::new(
+            if mutation == SourceProofLocalGivenDescendantUseTermRouteMutation::WrongArenaKind {
+                "source.term.variable-reference.wrong"
+            } else {
+                "source.term.variable-reference"
+            },
+            SourceAnchor::Range(SourceRange {
+                source_id,
+                start: 118,
+                end: 119,
+            }),
+        ))
+        .map_err(|error| error.to_string())?;
+    let root = builder
+        .push(
+            TypedNode::new(
+                "source.proof-local.given-descendant-use.term-root",
+                SourceAnchor::Range(SourceRange {
+                    source_id,
+                    start: 0,
+                    end: 179,
+                }),
+            )
+            .with_children(vec![prefix, term]),
+        )
+        .map_err(|error| error.to_string())?;
+    builder
+        .finish(Some(
+            if mutation == SourceProofLocalGivenDescendantUseTermRouteMutation::WrongArenaRoot {
+                term
+            } else {
+                root
+            },
+        ))
         .map_err(|error| error.to_string())
 }
 

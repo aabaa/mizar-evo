@@ -641,7 +641,9 @@ use type_elaboration::{
     SourceProofLocalGivenDescendantSetShellMutation,
     SourceProofLocalGivenDescendantSetSurfaceMutation,
     SourceProofLocalGivenDescendantTypeRouteMutation,
-    SourceProofLocalGivenDescendantTypeRouteOutput, SourceProofLocalGivenLowerMutation,
+    SourceProofLocalGivenDescendantTypeRouteOutput,
+    SourceProofLocalGivenDescendantUseTermRouteMutation,
+    SourceProofLocalGivenDescendantUseTermRouteOutput, SourceProofLocalGivenLowerMutation,
     SourceProofLocalGivenLowerOutput, SourceProofLocalGivenResolverProfileMutation,
     SourceProofLocalGivenShellMutation, SourceProofLocalGivenSurfaceMutation,
     SourceProofLocalGivenTypeRouteMutation, SourceProofLocalGivenTypeRouteOutput,
@@ -678,6 +680,8 @@ use type_elaboration::{
     source_proof_local_given_descendant_set_lower_output_with_surface_mutation,
     source_proof_local_given_descendant_type_output,
     source_proof_local_given_descendant_type_output_with_mutation,
+    source_proof_local_given_descendant_use_term_output,
+    source_proof_local_given_descendant_use_term_output_with_mutation,
     source_proof_local_given_lower_output, source_proof_local_given_lower_output_with_mutation,
     source_proof_local_given_lower_output_with_resolver_mutation,
     source_proof_local_given_lower_output_with_resolver_profile_mutation,
@@ -702,7 +706,7 @@ use type_elaboration::{
     source_proof_local_let_lower_output_with_resolver_profile_mutation,
     source_proof_local_let_lower_output_with_shell_mutation,
     source_proof_local_let_lower_output_with_surface_mutation, source_proof_local_let_type_output,
-    source_proof_local_let_type_output_with_mutation,
+    source_proof_local_let_type_output_with_mutation, task269sdu_missing_dependency_error_for_test,
 };
 use type_elaboration::{
     assemble_source_reserve_checker_handoff, assert_source_reserve_core_context_readiness,

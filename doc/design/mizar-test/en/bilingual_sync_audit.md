@@ -1838,7 +1838,7 @@ The canonical [EN contract](../../task_contracts/en/269SDU.md) and
 [JA companion](../../task_contracts/ja/269SDU.md) synchronize the private
 dormant output, selector, six-value mutation seam, missing-dependency text,
 four runner tests, seven-file shared implementation boundary, zero dispatch/
-artifact/coverage impact, baselines, and exit criteria. Review includes the
-paired mizar-test Task Index, current-plan, harness, and TODO entries and the
-shared checker owner links. Exact identifiers and bytes remain canonical in
-English; no synchronization exception is recorded.
+artifact/coverage impact, baselines, and exit criteria. The implemented
+runner route/test updates cover the paired harness, module-boundary, and TODO
+entries plus shared checker owner links. Exact identifiers and bytes remain
+canonical in English; no synchronization exception is recorded.

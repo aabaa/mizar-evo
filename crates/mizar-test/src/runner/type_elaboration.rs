@@ -450,7 +450,9 @@ pub(super) use source_proof_local_declaration::{
     SourceProofLocalGivenDescendantBindingRouteMutation,
     SourceProofLocalGivenDescendantBindingRouteOutput,
     SourceProofLocalGivenDescendantTypeRouteMutation,
-    SourceProofLocalGivenDescendantTypeRouteOutput, SourceProofLocalGivenTypeRouteMutation,
+    SourceProofLocalGivenDescendantTypeRouteOutput,
+    SourceProofLocalGivenDescendantUseTermRouteMutation,
+    SourceProofLocalGivenDescendantUseTermRouteOutput, SourceProofLocalGivenTypeRouteMutation,
     SourceProofLocalGivenTypeRouteOutput, SourceProofLocalGivenUseBindingRouteMutation,
     SourceProofLocalGivenUseTermRouteMutation, SourceProofLocalGivenUseTermRouteOutput,
     SourceProofLocalGivenUseTypeRouteMutation, SourceProofLocalGivenUseTypeRouteOutput,
@@ -468,6 +470,8 @@ pub(super) use source_proof_local_declaration::{
     source_proof_local_given_descendant_binding_output_with_mutation,
     source_proof_local_given_descendant_type_output,
     source_proof_local_given_descendant_type_output_with_mutation,
+    source_proof_local_given_descendant_use_term_output,
+    source_proof_local_given_descendant_use_term_output_with_mutation,
     source_proof_local_given_type_output, source_proof_local_given_type_output_with_mutation,
     source_proof_local_given_use_binding_output,
     source_proof_local_given_use_binding_output_with_mutation,
@@ -476,7 +480,7 @@ pub(super) use source_proof_local_declaration::{
     source_proof_local_given_use_type_output,
     source_proof_local_given_use_type_output_with_mutation, source_proof_local_let_binding_output,
     source_proof_local_let_binding_output_with_mutation, source_proof_local_let_type_output,
-    source_proof_local_let_type_output_with_mutation,
+    source_proof_local_let_type_output_with_mutation, task269sdu_missing_dependency_error_for_test,
 };
 pub(super) use source_property_implementation::source_property_implementation_transport_detail_keys;
 #[cfg(test)]

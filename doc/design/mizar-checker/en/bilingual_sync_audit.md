@@ -1835,7 +1835,7 @@ The canonical [EN contract](../../task_contracts/en/269SDU.md) and
 SDT-by-value dependency, single descendant `y@118..119` reference, context
 `2` / scope `[0,0]` / use ordinal `2`, five-node arena, error order, boxed
 Typed/Resolved ownership, seven-file/eight-test scope, zero-credit exclusions,
-baselines, and exit criteria. Review includes the paired checker Task Index,
-current-plan, source-term, Typed, Resolved, source-spec-audit, and TODO entries,
-plus the root zero-credit mapping. Exact identifiers and bytes remain
-canonical in English; no synchronization exception is recorded.
+baselines, and exit criteria. The implemented owner/test updates cover the
+paired source-term, Typed, Resolved, source-spec-audit, TODO, and root
+zero-credit mapping surfaces. Exact identifiers and bytes remain canonical in
+English; no synchronization exception is recorded.

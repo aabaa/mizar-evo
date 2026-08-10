@@ -6990,7 +6990,7 @@ explicit follow-ups, with the latter blocked by the Chapter-4/15 `set`
 ## Task 269SDU Design Mapping
 
 The [central Task-269SDU contract](./task_contracts/en/269SDU.md) adds a
-zero-credit derived design mapping for Chapters 4, 13, 15, and 16. The planned
+zero-credit derived design mapping for Chapters 4, 13, 15, and 16. The implemented
 [source-term](./mizar-checker/en/source_term.md#task-269sdu-descendant-given-occurrencereference-contract),
 [Typed](./mizar-checker/en/typed_ast.md#task-269sdu-typed-ownership),
 [Resolved](./mizar-checker/en/resolved_typed_ast.md#task-269sdu-resolved-ownership),

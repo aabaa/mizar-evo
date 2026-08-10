@@ -5564,12 +5564,17 @@ are:
 
 ## Task 269SDU Private Runner Route
 
-The [central Task-269SDU contract](../../task_contracts/en/269SDU.md) plans the
+The [central Task-269SDU contract](../../task_contracts/en/269SDU.md) implements the
 private dormant `SourceProofLocalGivenDescendantUseTermRouteOutput { typed_ast,
 resolved }` and `source_proof_local_given_descendant_use_term_output` route.
 Its cfg-test mutation seam is limited to `None`, `WrongDependencyModule`,
 `WrongTermRange`, `WrongReferenceBinding`, `WrongArenaRoot`, and
 `WrongArenaKind`; a missing SDT dependency reports `Task269SDU SDT dependency
-is missing`. Four private `task269sdu_` tests will cover exact replay,
-corruption precedence, one-shot empty-semantic ownership, and isolation.
+is missing`. Four private `task269sdu_` tests cover exact replay, corruption
+precedence, one-shot empty-semantic ownership, and isolation:
+
+- `task269sdu_exact_descendant_occurrence_reference_and_replay`
+- `task269sdu_dependency_input_and_arena_corruption_fail_closed`
+- `task269sdu_typed_and_resolved_owners_are_one_shot_and_semantically_empty`
+- `task269sdu_isolation_preserves_predecessors_siblings_and_absent_set_terms`
 There is no public dispatcher or active CLI route.

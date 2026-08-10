@@ -1747,6 +1747,6 @@ canonical [EN contract](../../task_contracts/en/269SDU.md) と
 [JA companion](../../task_contracts/ja/269SDU.md) はprivate dormant output、
 selector、6-value mutation seam、missing-dependency text、runner 4 tests、shared
 7-file implementation boundary、dispatch/artifact/coverage impact 0、baseline、
-exitを同期する。review surfaceはmizar-test Task Index/current plan/harness/TODOの
-各pairとshared checker owner linksを含む。exact identifier/bytesはEnglish
+exitを同期する。実装済みrunner route/test updateはharness/module-boundary/TODOの
+各pairとshared checker owner linksを対象にする。exact identifier/bytesはEnglish
 canonicalで、synchronization exceptionはない。
