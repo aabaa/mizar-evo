@@ -3803,3 +3803,13 @@ the successor is selected only from fresh post-commit inventory.
   `stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4`. Task 277A is complete while
   umbrella Task 277 remains partial; any successor must be separately frozen
   and reviewed.
+
+## Resolver Task 277R1 Test-Only Fixture Probe
+
+- [x] Freeze the [Task 277R1 contract](../../task_contracts/en/RESOLVE-TEMPLATE-TYPEPARAM-277R1.md)
+  and the two-path private mizar-test assertion boundary.
+- [ ] After the separate documentation commit and fresh preflight, add only
+  `task277r1_real_fixture_links_exact_template_generator_identity` and its test
+  registration. Keep the 701-byte fixture/sidecar inactive and preserve no
+  dispatch, checker output, active-stage, metadata, trace, diagnostic, or
+  coverage change.

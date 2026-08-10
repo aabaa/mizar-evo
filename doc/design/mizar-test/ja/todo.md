@@ -3544,3 +3544,12 @@ post-commit fresh inventoryからだけ選択する。
   `stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4`をobserveした。Task 277Aはcomplete、
   umbrella Task 277はpartialのままで、successorはseparately frozen/reviewedでなければ
   ならない。
+
+## Resolver Task 277R1 test-only fixture probe
+
+- [x] [Task 277R1 contract](../../task_contracts/ja/RESOLVE-TEMPLATE-TYPEPARAM-277R1.md) と
+  mizar-test private assertion 2-path boundary を freeze。
+- [ ] separate documentation commit と fresh preflight 後、
+  `task277r1_real_fixture_links_exact_template_generator_identity` と test registration
+  だけを追加。701-byte fixture/sidecar は inactive のまま、dispatch/checker output/
+  active-stage/metadata/trace/diagnostic/coverage change を一切作らない。

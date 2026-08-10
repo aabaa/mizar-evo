@@ -378,3 +378,26 @@ cover:
 - qualified and unqualified visibility, shadowing, and private access (R-014);
 - unresolved/ambiguous candidate ordering and cascade suppression (R-015);
 - selector-vs-namespace dot-chain finalization (R-016).
+
+## Resolver Task 277R1 Template Type-Parameter Identity
+
+The canonical [Task 277R1 contract](../../task_contracts/en/RESOLVE-TEMPLATE-TYPEPARAM-277R1.md)
+assigns one narrowly scoped parser-origin identity transport to this existing `names`
+owner. `TemplateTypeParameterBindingId`, binding/link rows and tables,
+`TemplateTypeParameterSourceCollection`, and
+`TemplateTypeParameterSourceCollector` are the only planned public names.
+`TemplateTypeParameterBinding` exposes `definition_block`, `parameter`,
+`binder`, `spelling`, `source_range`, and `source_ordinal`; the link exposes
+`definition_block`, `type_head`, `identifier`, `binding`, `source_range`, and
+`source_ordinal`. Binding-table iteration yields `(id, row)` and link-table
+iteration yields rows; no link ID is authorized.
+
+The collector accepts `SurfaceAst`, `ModuleId`, and `SurfaceResolvedArena` and
+revalidates the existing arena in both `new` and `collect`, returning only the
+existing `SurfaceResolvedArenaError`. It default-denies all but each direct,
+unrecovered, unbounded, single-binder `TemplateParameter` and a same-owner
+Fraenkel generator `TypeHead`. Exact identifier token/text equality is a
+non-inferential structural admission check; duplicate same-owner spellings
+retain bindings but produce no ambiguous link. This is not generic template
+lookup, alias/shadow resolution, or a `SymbolId`/`NameRef` producer, and it
+adds no diagnostic, type, sethood, or checker meaning.

@@ -247,3 +247,13 @@ EN/JAはexact 4-file context-shell implementation、2 tests、resolver tests `14
 production `15/18906`、stable `0..28` code/key table、exact pass/recovery profile、
 semantic identity/property-owned effectなし、checker/runner/corpus/trace/Cargo/
 coverage deltaなしで一致する。Task 248PとTask 264はseparate later consumerのままである。
+
+## Resolver Task 277R1 bilingual synchronization
+
+canonical [EN contract](../../task_contracts/en/RESOLVE-TEMPLATE-TYPEPARAM-277R1.md)
+と [JA companion](../../task_contracts/ja/RESOLVE-TEMPLATE-TYPEPARAM-277R1.md) は、57-node
+profile、`DefinitionParameter` ではなく `TemplateParameter` である区別、public resolver API
+7 names と frozen row ABI、two-boundary arena validation、token-equality admission rule、
+Rust 4 paths、named test 5件、`148 -> 152` / `608 -> 609`、full protected hash、
+no-checker/no-active-route boundary を論理的に同期する。exact identifier/byte の正本は英語で、
+synchronization exception はない。

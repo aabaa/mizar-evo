@@ -239,3 +239,15 @@ and their private test modules: exactly four Rust files, no new module or
 dependency, and only the frozen append-only public shell variant. Checker,
 runner, corpus, trace, Cargo, lint inventory, and module-split policy are
 unchanged.
+
+## Resolver Task 277R1 Module Boundary
+
+The later implementation remains in the existing public `names` owner and its
+private `names/tests.rs` module. `SurfaceResolvedArena` remains the sole
+resolver identity authority: the collector validates it and calls
+`resolved_node_for`, but neither changes `resolved_ast.rs` nor constructs IDs.
+There is no module split, dependency/Cargo change, `SymbolId`, `NameRef`,
+`ResolvedAst` field, public diagnostic/error enum, checker handoff, or
+resolver-to-checker ownership transfer. The two mizar-test paths are test-only
+consumers; production runner and all active routes remain outside this
+boundary.

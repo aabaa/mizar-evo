@@ -5581,3 +5581,15 @@ post-implementation checkpoint observed
 `stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4`. Task 277A is
 complete while umbrella Task 277 remains partial; any successor must be
 separately frozen and reviewed.
+
+## Resolver Task 277R1 Test-Only Fixture Probe
+
+The canonical [Task 277R1 contract](../../task_contracts/en/RESOLVE-TEMPLATE-TYPEPARAM-277R1.md)
+reserves exactly one private regression,
+`task277r1_real_fixture_links_exact_template_generator_identity`. It parses the
+unchanged 701-byte inactive fixture through the existing helper, lowers the
+existing resolver arena, and checks the single frozen `#53/#31/#2/#39` binding
+and generator-link profile. The test changes the library count `608 -> 609`
+only; it is not a runner route, dispatcher, detail key, checker output,
+Typed/Resolved slot, active-stage selection, metadata change, or semantic
+verdict.

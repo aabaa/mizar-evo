@@ -266,3 +266,14 @@ tests, `148` resolver tests, `15/18906` production inventory, stable
 `0..28` code/key table, exact pass/recovery profiles, no semantic identity or
 property-owned effect, and zero checker/runner/corpus/trace/Cargo/coverage
 delta. Both preserve Task 248P and Task 264 as separate later consumers.
+
+## Resolver Task 277R1 Bilingual Synchronization
+
+The canonical [EN contract](../../task_contracts/en/RESOLVE-TEMPLATE-TYPEPARAM-277R1.md)
+and [JA companion](../../task_contracts/ja/RESOLVE-TEMPLATE-TYPEPARAM-277R1.md)
+synchronize the 57-node profile, explicit `TemplateParameter` rather than
+`DefinitionParameter` distinction, seven public resolver API names and frozen
+row ABI, two-boundary arena validation, token-equality admission rule, four
+Rust paths, five named tests, `148 -> 152` / `608 -> 609` counts, full
+protected hashes, and the no-checker/no-active-route boundary. English remains
+canonical for exact identifiers and bytes; no synchronization exception exists.

@@ -221,3 +221,12 @@ separate consumerのままで、module split/line-count threshold decisionを変
 implementationは既存`declarations`/`symbols` ownerとprivate test moduleのexact 4 Rust
 files内に留まり、新規module/dependencyはなく、public deltaはfrozen append-only shell
 variantだけである。checker/runner/corpus/trace/Cargo/lint inventory/module-split policyは不変。
+
+## Resolver Task 277R1 module boundary
+
+後続 implementation は既存 public `names` owner と private `names/tests.rs` 内に留まる。
+`SurfaceResolvedArena` は sole resolver identity authority のまま。collector はこれを
+validate し `resolved_node_for` を呼ぶが、`resolved_ast.rs` を変更せず ID を construct しない。
+module split、dependency/Cargo change、`SymbolId`、`NameRef`、`ResolvedAst` field、public
+diagnostic/error enum、checker handoff、resolver-to-checker ownership transfer はない。mizar-test
+2 paths は test-only consumer で、production runner と全 active route は boundary 外である。

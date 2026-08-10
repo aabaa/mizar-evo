@@ -1754,3 +1754,12 @@ post-implementation checkpointは
 `stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4`をobserveした。Task 277Aはcomplete、
 umbrella Task 277はpartialのままで、successorはseparately frozen/reviewedでなければ
 ならない。
+
+## Resolver Task 277R1 contract parity
+
+canonical [EN contract](../../task_contracts/en/RESOLVE-TEMPLATE-TYPEPARAM-277R1.md)
+と [JA companion](../../task_contracts/ja/RESOLVE-TEMPLATE-TYPEPARAM-277R1.md) は、test-only
+real-fixture assertion、exact 701-byte/hash profile、mizar-test test path 2件、named test 1件、
+`608 -> 609`、production routing/checker state/active metadata/diagnostic/semantic coverage
+が存在しない strict boundary を論理的に同期する。exact identifier/byte の正本は英語で、
+bilingual exception はない。

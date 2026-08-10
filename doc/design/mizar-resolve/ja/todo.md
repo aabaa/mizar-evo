@@ -792,3 +792,12 @@ cargo test -p mizar-vc
   verificationとcount/hash gateをPASS。
 - [ ] findings-free final quality、exact staging、implementation commit、clean fresh
   inventory後Checker Task 248Pを選択。
+
+## Resolver Task 277R1 frozen documentation prerequisite
+
+- [x] canonical [Task 277R1 contract](../../task_contracts/ja/RESOLVE-TEMPLATE-TYPEPARAM-277R1.md)、
+  authority、exact parser profile、`source_drift` / `design_drift` / Rust `test_gap`、Rust
+  4-path scope、named test 5件、row ABI、count、protected hash/no-impact decision を freeze。
+- [ ] separate documentation commit と fresh preflight 後、frozen Rust 4 paths だけを
+  implement。direct fixture test は private に保ち、`SymbolId`、`ResolvedAst`、diagnostic、
+  semantic、checker state、active route、trace/coverage change、Task 277B readiness を除外する。

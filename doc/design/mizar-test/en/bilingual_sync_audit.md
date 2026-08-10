@@ -1847,3 +1847,13 @@ post-implementation checkpoint observed
 `stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4`. Task 277A is
 complete while umbrella Task 277 remains partial; any successor must be
 separately frozen and reviewed.
+
+## Resolver Task 277R1 Contract Parity
+
+The canonical [EN contract](../../task_contracts/en/RESOLVE-TEMPLATE-TYPEPARAM-277R1.md)
+and [JA companion](../../task_contracts/ja/RESOLVE-TEMPLATE-TYPEPARAM-277R1.md)
+synchronize the test-only real-fixture assertion, exact 701-byte/hash profile,
+the two mizar-test test paths, one named test, `608 -> 609`, and the strict
+absence of production routing, checker state, active metadata, diagnostics,
+or semantic coverage. English owns exact identifiers and bytes; no bilingual
+exception is recorded.

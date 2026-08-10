@@ -363,3 +363,11 @@ qualityは**NO FINDINGS**、全9 hard gate PASS、capなし`100/100`。separate
 implementation commitとclean fresh inventoryだけが残る。public API、corpus、
 trace、runner/checker、metadata、
 semantic coverage creditは変更しない。
+
+## Resolver Task 277R1 post-exit prerequisite
+
+後続 documentation-only [Task 277R1 prerequisite](../../task_contracts/ja/RESOLVE-TEMPLATE-TYPEPARAM-277R1.md)
+は historical crate exit/score を改訂しない。既に inactive な semantic seed に対する narrow
+`names`-owned structural transport と private direct-fixture assertion を freeze するだけである。
+separately reviewed implementation までは resolver source、checker/runner production
+behavior、active corpus/trace/coverage status、diagnostic、historical exit evidence は不変。

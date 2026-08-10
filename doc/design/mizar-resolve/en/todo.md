@@ -844,3 +844,14 @@ Check the task off here once tests pass.
   reviews plus all focused/full verification and count/hash gates.
 - [ ] Complete findings-free final quality, exact staging, implementation
   commit, and clean fresh inventory; then select Checker Task 248P.
+
+## Resolver Task 277R1 Frozen Documentation Prerequisite
+
+- [x] Freeze the canonical [Task 277R1 contract](../../task_contracts/en/RESOLVE-TEMPLATE-TYPEPARAM-277R1.md),
+  authority, exact parser profile, `source_drift`/`design_drift`/Rust
+  `test_gap`, four-path Rust scope, five named tests, row ABI, counts, and
+  protected hash/no-impact decisions.
+- [ ] After a separate documentation commit and fresh preflight, implement only
+  the four frozen Rust paths. Keep direct fixture testing private and exclude
+  `SymbolId`, `ResolvedAst`, diagnostics, semantics, checker state, active
+  routes, trace/coverage changes, and Task 277B readiness.

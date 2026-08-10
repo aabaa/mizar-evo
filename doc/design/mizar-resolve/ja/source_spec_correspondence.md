@@ -298,3 +298,18 @@ implementationはcontext-only resolver shellとしてすべて残り、exact fix
 following theorem identity/effectsはstableである。docs prerequisiteが対応する
 `design_drift`をcloseした。canonical spec、corpus、expectation、trace metadata、semantic
 coverage、deferred Checker Task 248P/264 intentは変更しない。
+
+## Resolver Task 277R1 source/specification correspondence
+
+canonical [Task 277R1 contract](../../task_contracts/ja/RESOLVE-TEMPLATE-TYPEPARAM-277R1.md)
+は parser-proven `DefinitionBlockItem#53` / `TemplateParameter#31` / `T#2` /
+generator `TypeHead#39` / `T#21` profile を記録する。resolver-owned declaration/use
+transport の欠落は `source_drift`、narrow API の未文書化は `design_drift`、resolver 4件と
+direct fixture 1件の regression は Rust `test_gap`。`spec_gap` はない。
+
+Chapter 18 は template parameter scope を定め、bare type-parameter sethood rejection を
+symbolic verification に分離する。Chapter 13 §13.4.2 は後段 Fraenkel sethood check を
+要求する。従って本 task は validated structure だけを transport し、sethood、verdict、
+diagnostic、formal/actual substitution、overload、checker activation、coverage credit を
+resolver 外に保つ。`spec_coverage_audit.md`、inactive seed、sidecar、trace、expectation
+は不変。

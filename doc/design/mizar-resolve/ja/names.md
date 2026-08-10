@@ -353,3 +353,22 @@ R-012 は documentation-only change なので test は追加しない。後続 t
 - qualified / unqualified visibility、shadowing、private access（R-014）。
 - unresolved / ambiguous candidate ordering と cascade suppression（R-015）。
 - selector-vs-namespace dot-chain finalization（R-016）。
+
+## Resolver Task 277R1 template type-parameter identity
+
+canonical [Task 277R1 contract](../../task_contracts/ja/RESOLVE-TEMPLATE-TYPEPARAM-277R1.md)
+は、この既存 `names` owner に narrowly scoped parser-origin identity transport だけを割り当てる。
+planned public name は `TemplateTypeParameterBindingId`、binding/link row/table、
+`TemplateTypeParameterSourceCollection`、`TemplateTypeParameterSourceCollector` のみ。
+`TemplateTypeParameterBinding` は `definition_block`、`parameter`、`binder`、`spelling`、
+`source_range`、`source_ordinal`、link は `definition_block`、`type_head`、`identifier`、
+`binding`、`source_range`、`source_ordinal` を持つ。binding-table `iter` は `(id, row)`、
+link-table `iter` は row を返し、link ID は追加しない。
+
+collector は `SurfaceAst`、`ModuleId`、`SurfaceResolvedArena` を受け、`new` と `collect`
+の両方で既存 arena を revalidate し、既存 `SurfaceResolvedArenaError` だけを返す。direct
+unrecovered/unbounded/single-binder `TemplateParameter` と same-owner Fraenkel generator
+`TypeHead` 以外は default-deny。exact identifier token/text equality は
+non-inferential structural admission check で、same-owner duplicate spelling は binding を
+残すが ambiguous link は作らない。generic template lookup、alias/shadow resolution、
+`SymbolId` / `NameRef` producer、diagnostic、type/sethood/checker meaning は追加しない。

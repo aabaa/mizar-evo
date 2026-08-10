@@ -381,3 +381,12 @@ independent final quality is **NO FINDINGS**, nine hard gates PASS, uncapped
 `100/100`. Only the separate implementation commit and clean fresh inventory
 remain. No public API,
 corpus, trace, runner/checker, metadata, or semantic coverage credit changes.
+
+## Resolver Task 277R1 Post-Exit Prerequisite
+
+This later documentation-only [Task 277R1 prerequisite](../../task_contracts/en/RESOLVE-TEMPLATE-TYPEPARAM-277R1.md)
+does not revise the historical crate exit or its score. It freezes a narrow
+`names`-owned structural transport and a private direct-fixture assertion for
+the already inactive semantic seed. Resolver source, checker/runner production
+behavior, active corpus/trace/coverage status, diagnostics, and historical
+exit evidence remain unchanged until a separately reviewed implementation.

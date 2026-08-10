@@ -5184,3 +5184,14 @@ post-implementation checkpointは
 `stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4`をobserveした。Task 277Aはcomplete、
 umbrella Task 277はpartialのままで、successorはseparately frozen/reviewedでなければ
 ならない。
+
+## Resolver Task 277R1 test-only fixture probe
+
+canonical [Task 277R1 contract](../../task_contracts/ja/RESOLVE-TEMPLATE-TYPEPARAM-277R1.md)
+は private regression
+`task277r1_real_fixture_links_exact_template_generator_identity` 1件だけを reserve
+する。unchanged 701-byte inactive fixture を existing helper 経由で parse し、existing
+resolver arena を lower して single frozen `#53/#31/#2/#39` binding/generator-link profile
+を check する。library count は `608 -> 609`だけ。runner route、dispatcher、detail key、
+checker output、Typed/Resolved slot、active-stage selection、metadata change、semantic verdict
+にはしない。

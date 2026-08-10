@@ -13135,6 +13135,17 @@ worktree, `origin/main...HEAD=0/1`, and unchanged protected
 complete while umbrella Task 277 remains partial; any successor must be
 separately frozen and reviewed.
 
+## Resolver Task 277R1 Test Module Boundary
+
+The future mizar-test change is limited to test registration in
+`src/runner/tests.rs` and the new private
+`src/runner/tests/type_elaboration/template_parameter_identity.rs` leaf. It
+uses existing frontend/parser and resolver APIs to observe the immutable seed;
+it does not add or alter a production runner module, route, dispatcher, detail
+key, checker handoff, Typed/Resolved output, fixture stage, metadata, or trace
+owner. Resolver `names.rs` remains the only production owner of the identity
+transport.
+
 ## Checker Task 269GT Frozen Runner Boundary
 
 Only
