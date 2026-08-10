@@ -6883,3 +6883,13 @@ selected only from fresh post-commit inventory.
   proof, and fresh successor inventory are closed in the language-local [central
   historical checkpoint](../../task_contracts/en/CHECKER-FRAENKEL-TEMPLATE-STRUCTURAL-277C.md#historical-immediate-post-implementation-checkpoint).
   No successor is selected; Task 277B remains not ready with zero semantic credit.
+
+## Task 257C4A Fraenkel generator binding context
+
+- [ ] Implement only the frozen C4A contract in `binding_env.rs` and
+  `source_formula_composition.rs`, with its four exact checker tests and no
+  semantic expansion.
+- [ ] Revalidate R2/277C/TypedAst full-field dependencies atomically and expose
+  only the opaque binding-context handoff; C4B owns any later use/capture map.
+- [ ] Keep F5, expectations, trace, coverage, diagnostics, production route,
+  and Task-277B readiness unchanged.

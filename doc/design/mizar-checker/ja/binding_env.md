@@ -943,3 +943,14 @@ binding 1だけが `BindingTypeSite::Missing` から
 `BindingTypeSite::Source(95..98)` へ変わり、reserve binding 0は
 `BindingTypeSite::Source(14..17)` のまま。本moduleはsource-type ABI、
 Typed/Resolved installation、runner route、language-semantic expansionを所有しない。
+
+## Task 257C4A Fraenkel generator binding environment
+
+planned [C4A contract](../../task_contracts/ja/CHECKER-FRAENKEL-GENERATOR-BINDING-257C4A.md)
+はbinding-environment APIだけを追加する：`BindingContextOwner::SourceComprehension { source_range }` と
+`BinderIdentity::SourceBound { context, ordinal }`。SourceComprehension rangeはcontext-range validationに入る。
+`SourceBound`は一方向だけ`QuantifierBinder`を意味し、逆ではないので既存
+`QuantifierBinder`/`ResolverLocal`はvalid。contextは存在してbinding ownerと等しく、converted ordinalは
+`visible_after_ordinal`と等しい。C4A capture emptyでもcaptured identityはcontext validateし、lookup priority depthは0。
+raw resolver nodeは持たず、source validityはvalidated contextからinherit、debug/canonical orderingはdomain-separated。
+このownerはcapture data/resolver/source-term/semantic/production routeを作らない。

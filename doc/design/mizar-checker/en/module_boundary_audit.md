@@ -9,6 +9,16 @@ gate only: it does not change checker source behavior, public APIs,
 diagnostics, deterministic renderings, artifact-facing schemas, `.miz`
 fixtures, or expectations.
 
+## Task 257C4A Fraenkel generator module boundary
+
+The planned [C4A](../../task_contracts/en/CHECKER-FRAENKEL-GENERATOR-BINDING-257C4A.md)
+limits future checker production changes to `binding_env.rs` and
+`source_formula_composition.rs`. R2 and 277C remain read-only lower owners;
+the latter is consumed, not recreated. Parser/resolver production, source-term
+and source-set-term ownership, formula/type interpretation, sethood requests
+or verdicts, diagnostics, Typed/Resolved installation, facade/dispatch, Cargo,
+canonical artifacts, metadata, and downstream crates are excluded.
+
 ## Split Gate
 
 A behavior-neutral private module split is required only when a checker-owned

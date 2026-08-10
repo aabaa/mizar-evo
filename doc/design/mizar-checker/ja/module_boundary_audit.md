@@ -8,6 +8,12 @@ task 34 は、downstream crate が checker boundary を消費する前に、現�
 だけであり、checker source behavior、public API、diagnostic、deterministic
 rendering、artifact-facing schema、`.miz` fixture、expectation は変更しない。
 
+## Task 257C4A Fraenkel generator module boundary
+
+planned [C4A](../../task_contracts/ja/CHECKER-FRAENKEL-GENERATOR-BINDING-257C4A.md)のfuture checker production scopeは
+`binding_env.rs` と `source_formula_composition.rs`だけ。R2/277Cはread-only lower ownerで、277Cはconsumeしrecreateしない。
+parser/resolver production、source-term/source-set-term owner、formula/type interpretation、sethood request/verdict、diagnostic、Typed/Resolved install、facade/dispatch、Cargo/canonical artifact/metadata/downstream crateはexclude。
+
 ## Split Gate
 
 behavior-neutral private module split が必要になるのは、checker-owned file が

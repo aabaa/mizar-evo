@@ -1916,3 +1916,12 @@ language-local [central historical checkpoint](../../task_contracts/en/CHECKER-F
 The separate closure changes exactly 14 status-bearing documents; no exception is
 recorded, no successor is selected, and Task 277B remains not ready with zero
 semantic credit.
+
+## Checker Task 257C4A frozen contract parity
+
+The [EN canonical](../../task_contracts/en/CHECKER-FRAENKEL-GENERATOR-BINDING-257C4A.md)
+and [JA companion](../../task_contracts/ja/CHECKER-FRAENKEL-GENERATOR-BINDING-257C4A.md)
+agree on the one private leaf/registration, exact test name, `612 -> 613`
+registration delta, and no-production/no-semantic/no-credit boundary. English
+owns exact Rust types, protected hashes, and implementation evidence. This
+docs-only record has no synchronization exception.

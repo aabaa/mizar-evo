@@ -5254,3 +5254,9 @@ mizar-test library・lint suite、package/workspace Clippy、workspace test、me
 five CLI hash、protected path-hash verificationはPASS、test-sufficiency / implementation reviewは
 **NO FINDINGS**。final source/documentation/API、bilingual、boundary integration reviewも
 **NO FINDINGS**。
+
+## Checker Task 257C4A private binding-context probe
+
+planned private leaf `runner/tests/type_elaboration/template_fraenkel_generator_binding_context.rs`は
+`task257c4a_real_fixture_builds_exact_fraenkel_generator_binding_context`だけをregisterする。existing private helperでF5 fixtureを通し、opaque C4A environmentと3 normalization rowだけをassertする。
+`runner/tests.rs`のmizar-test registrationは一つだけ（`612 -> 613`）。production route/fixture mutation/sidecar/trace/diagnostic/semantic verdict/coverage creditを追加しない。full assertion/baselineは[C4A contract](../../task_contracts/ja/CHECKER-FRAENKEL-GENERATOR-BINDING-257C4A.md)が所有する。

@@ -999,3 +999,18 @@ diagnostics`. Only binding 1 changes from `BindingTypeSite::Missing` to
 `BindingTypeSite::Source(95..98)`; reserve binding 0 remains
 `BindingTypeSite::Source(14..17)`. This module owns no source-type ABI,
 Typed/Resolved installation, runner route, or language-semantic expansion.
+
+## Task 257C4A Fraenkel generator binding environment
+
+The planned [C4A contract](../../task_contracts/en/CHECKER-FRAENKEL-GENERATOR-BINDING-257C4A.md)
+adds only the binding-environment API required by the checked Task-257C handoff:
+`BindingContextOwner::SourceComprehension { source_range }` and
+`BinderIdentity::SourceBound { context, ordinal }`. Source-comprehension
+ranges join context-range validation. `SourceBound` implies, but is not implied
+by, `QuantifierBinder`; its context exists and is the binding owner, its
+converted ordinal equals `visible_after_ordinal`, captured identities validate
+their context, and its lookup priority is depth zero. Existing
+`QuantifierBinder`/`ResolverLocal` remains valid. The identity contains no raw
+resolver node, inherits source validity from its validated context, and uses a
+domain-separated debug/canonical ordering. This owner creates neither capture
+data nor a resolver, source-term, semantic, or production route.

@@ -129,3 +129,9 @@ broad verificationはPASSし、independent source/documentation、bilingual、bo
 （`20/20/15/15/10/10/5/5`）である。historical closeoutをrecordする。exact staging/cached review、task-only implementation commit、
 post-commit proof、fresh successor inventoryはlanguage-local [central historical checkpoint](../../task_contracts/ja/CHECKER-FRAENKEL-TEMPLATE-STRUCTURAL-277C.md#historical-immediate-post-implementation-checkpoint)でclosedしている。
 successorはselectせず、Task 277Bはnot ready/semantic credit zeroのままである。
+
+## Task 257C4A Fraenkel generator dependency boundary
+
+planned [C4A](../../task_contracts/ja/CHECKER-FRAENKEL-GENERATOR-BINDING-257C4A.md)はcompleted 277C/R2のnonduplicative
+consumerである。authoritative rowと`TypedAst`をconsumeし、unique resolved-to-typed binder relationをID castなしでrecheckする。
+このmoduleの277C association ABIをextendせず、structural/debug summaryだけをtrustしない。lower clone/raw resolver nodeはopaqueであり、term/type-sethood/diagnostic/install/route/Task277B conclusionはboundary外にdeferする。

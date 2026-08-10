@@ -3608,3 +3608,8 @@ post-commit fresh inventoryからだけ選択する。
 - [x] exact staging/cached-diff review、task-only implementation commit、post-commit proof、fresh
   successor inventoryをlanguage-local [central historical checkpoint](../../task_contracts/ja/RESOLVE-FRAENKEL-GENERATOR-VAR-277R2.md#historical-immediate-post-implementation-checkpoint)
   で完了。successorはselectせず、Task 277Bはnot ready/semantic credit zeroのまま。
+
+## Checker Task 257C4A private binding-context probe
+
+- [ ] new private leafに`task257c4a_real_fixture_builds_exact_fraenkel_generator_binding_context`だけをregisterし、`612 -> 613` boundaryを守る。
+- [ ] exact C4A handoffをconsume/assertし、production route/semantic assertion/canonical artifact mutation/trace/coverage creditを追加しない。

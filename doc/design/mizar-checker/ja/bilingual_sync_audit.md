@@ -1793,3 +1793,8 @@ reviewも**NO FINDINGS**、全9 hard gateはscore capなしvalid `100/100`（`20
 exact staging/cached review、task-only implementation commit、post-commit proof、fresh successor inventoryは
 language-local [central historical checkpoint](../../task_contracts/ja/CHECKER-FRAENKEL-TEMPLATE-STRUCTURAL-277C.md#historical-immediate-post-implementation-checkpoint)でclosedしている。separate closureはexact 14 status-bearing documentを変更し、
 synchronization exceptionはない。successorはselectせず、Task 277Bはnot ready/semantic credit zeroのままである。
+
+## Task 257C4A frozen contract parity
+
+planned C4Aは[EN](../../task_contracts/en/CHECKER-FRAENKEL-GENERATOR-BINDING-257C4A.md)/[JA](../../task_contracts/ja/CHECKER-FRAENKEL-GENERATOR-BINDING-257C4A.md)のEN-canonical/JA-companion pair。
+同じ4 future Rust path、ABI、一方向SourceBound invariant、F5 profile、opaque validation boundary、test list、baseline、semantic deferralをfreezeする。checker paired owner deltaも同期し、このplanned docs changeはimplementation evidence/exceptionをrecordしない。

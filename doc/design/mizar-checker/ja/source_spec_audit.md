@@ -8,6 +8,12 @@ source behavior、`.miz` fixture、expectation、public API は変更しない�
 未接続の挙動は現在の実装都合を正本化せず、明示的な
 `external_dependency_gap`、`test_gap`、または `deferred` として分類する。
 
+## Task 257C4A Fraenkel generator source-spec audit
+
+[C4A contract](../../task_contracts/ja/CHECKER-FRAENKEL-GENERATOR-BINDING-257C4A.md)は`design_drift`解決だけをrecordする。
+canonical Ch.13 §13.4と§§13.4.2/13.4.4/13.8.6がbound generator/capture-later authority、Ch.18 §18.10.2はsethood verdictを供給しない。
+F5/expectation/traceはimmutable。future implementationのbounded `source_drift`/Rust `test_gap`以外、`spec_gap`、fixture/expectation/trace/coverage credit変更はない。
+
 ## Task 269SDU Implemented Zero-Credit Mapping
 
 [central Task-269SDU contract](../../task_contracts/ja/269SDU.md) はChapters 4、13、

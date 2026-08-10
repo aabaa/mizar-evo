@@ -757,3 +757,17 @@ not broaden structural matching, alter a row/fingerprint/debug byte, or
 credit active upper behavior. Truth, restriction discharge, existential
 witnesses, capture, facts, theorem acceptance, proof, and IR remain
 deferred.
+
+## Task 257C4A Fraenkel generator binding context
+
+Task 257C owns the planned standalone C4A handoff described by the canonical
+[contract](../../task_contracts/en/CHECKER-FRAENKEL-GENERATOR-BINDING-257C4A.md).
+This module will expose the binding-context ID/row/table, use-position
+ID/row/table, handoff, producer, and error only. Its producer consumes exact
+277C structural composition, R2 resolver collection, and `TypedAst`; opaque,
+version/domain-tagged dependency snapshots revalidate their full fields and
+the R2-to-277C-to-typed binder relation. The three use rows normalize actual
+resolver positions only; they own no term, reference, or capture. C4A is
+default-deny and produces no formula/type/sethood/evidence/verdict/diagnostic,
+Typed/Resolved install, or production route. C4B must consume its handoff
+before mapping a use or capture.

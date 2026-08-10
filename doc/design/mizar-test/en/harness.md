@@ -5666,3 +5666,14 @@ historical closeout records that exact staging/cached review, the task-only
 implementation commit, post-commit proof, and fresh successor inventory are
 closed in the language-local [central historical checkpoint](../../task_contracts/en/CHECKER-FRAENKEL-TEMPLATE-STRUCTURAL-277C.md#historical-immediate-post-implementation-checkpoint).
 No successor is selected; Task 277B remains not ready with zero semantic credit.
+
+## Checker Task 257C4A private binding-context probe
+
+The planned private leaf
+`runner/tests/type_elaboration/template_fraenkel_generator_binding_context.rs`
+registers exactly `task257c4a_real_fixture_builds_exact_fraenkel_generator_binding_context`.
+It consumes the F5 fixture through existing private helpers and asserts the
+opaque C4A environment/three normalization rows only. `runner/tests.rs` gains
+the sole mizar-test registration (`612 -> 613`); it adds no production route,
+fixture mutation, sidecar, trace, diagnostic, semantic verdict, or coverage
+credit. Full assertions and baselines remain in the [C4A contract](../../task_contracts/en/CHECKER-FRAENKEL-GENERATOR-BINDING-257C4A.md).

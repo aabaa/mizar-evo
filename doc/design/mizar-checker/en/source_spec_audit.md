@@ -9,6 +9,16 @@ APIs. The audit classifies remaining uncovered behavior as explicit
 `external_dependency_gap`, `test_gap`, or `deferred` work instead of treating
 current implementation convenience as normative.
 
+## Task 257C4A Fraenkel generator source-spec audit
+
+The [C4A contract](../../task_contracts/en/CHECKER-FRAENKEL-GENERATOR-BINDING-257C4A.md)
+records a `design_drift` resolution only. Canonical Chapter 13 §13.4 and
+§§13.4.2, 13.4.4, and 13.8.6 supply the bound-generator/capture-later
+authority; Chapter 18 §18.10.2 expressly does not supply a sethood verdict.
+F5 and its expectation/trace are immutable. Future implementation closes its
+bounded `source_drift`/Rust `test_gap`; there is no `spec_gap`, fixture change,
+expectation change, trace change, or coverage credit.
+
 ## Task 269SDU Implemented Zero-Credit Mapping
 
 The [central Task-269SDU contract](../../task_contracts/en/269SDU.md) implements one

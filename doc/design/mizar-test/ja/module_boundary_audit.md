@@ -12,6 +12,11 @@ SHA-256は
 dispatch、CLI、corpus/trace/metadata、Cargo、semantic publication、coverage boundaryは
 変わらず、routeはzero-creditである。
 
+## Checker Task 257C4A frozen module boundary
+
+planned [C4A contract](../../task_contracts/ja/CHECKER-FRAENKEL-GENERATOR-BINDING-257C4A.md)が許すmizar-test changeは
+`runner/tests.rs`とnew private type-elaboration leafだけ。leafはchecker handoffをconsumeし、missing lower dependencyをcreate/normalizeしない。public runner schema/dispatch/production checker path/Cargo/fixture/expectation/trace-coverage/metadata/diagnostic/active stage/downstream crateはexclude。
+
 ## Resolver Task 277R2 test module boundary
 
 [Task 277R2](../../task_contracts/ja/RESOLVE-FRAENKEL-GENERATOR-VAR-277R2.md) は

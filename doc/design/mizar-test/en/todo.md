@@ -3841,6 +3841,13 @@ the successor is selected only from fresh post-commit inventory.
   [historical checkpoint](../../task_contracts/en/277B-L.md#post-implementation-checkpoint).
   No successor is selected; Task 277B remains not ready with zero semantic credit.
 
+## Checker Task 257C4A private binding-context probe
+
+- [ ] Register only `task257c4a_real_fixture_builds_exact_fraenkel_generator_binding_context`
+  in the new private leaf and preserve the `612 -> 613` boundary.
+- [ ] Consume and assert the exact C4A handoff; do not add a production route,
+  semantic assertion, canonical-artifact mutation, trace, or coverage credit.
+
 ## Resolver Task 277R2 Test-Only Fixture Probe
 
 - [x] Freeze the [Task 277R2 contract](../../task_contracts/en/RESOLVE-FRAENKEL-GENERATOR-VAR-277R2.md)

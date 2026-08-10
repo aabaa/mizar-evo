@@ -6515,3 +6515,9 @@ post-commit fresh inventoryからだけ選択する。
 - [x] exact staging/cached review、task-only implementation commit、post-commit proof、fresh successor
   inventoryはlanguage-local [central historical checkpoint](../../task_contracts/ja/CHECKER-FRAENKEL-TEMPLATE-STRUCTURAL-277C.md#historical-immediate-post-implementation-checkpoint)でclosed。successorはselectせず、
   Task 277Bはnot ready/semantic credit zeroのままである。
+
+## Task 257C4A Fraenkel generator binding context
+
+- [ ] `binding_env.rs` と `source_formula_composition.rs`だけでfrozen C4A contractを実装し、4 exact checker test以外のsemantic expansionをしない。
+- [ ] R2/277C/TypedAst full-field dependencyをatomic revalidateし、opaque binding-context handoffだけをexposeする。後続use/capture mapはC4B owner。
+- [ ] F5/expectation/trace/coverage/diagnostic/production route/Task277B readinessを不変にする。

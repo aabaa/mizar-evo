@@ -1901,3 +1901,13 @@ inventory are closed in the language-local [central historical checkpoint](../..
 The separate closure changes exactly 14 status-bearing documents; no synchronization
 exception is recorded, no successor is selected, and Task 277B remains not ready
 with zero semantic credit.
+
+## Task 257C4A frozen contract parity
+
+The planned C4A record is an EN-canonical/JA-companion pair:
+[EN](../../task_contracts/en/CHECKER-FRAENKEL-GENERATOR-BINDING-257C4A.md) /
+[JA](../../task_contracts/ja/CHECKER-FRAENKEL-GENERATOR-BINDING-257C4A.md).
+Both records freeze the same four future Rust paths, ABI, one-way SourceBound
+invariant, F5 profile, opaque validation boundary, test list, baselines, and
+semantic deferrals. The paired checker owner deltas are synchronized; this
+planned documentation change records no implementation evidence or exception.

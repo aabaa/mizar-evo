@@ -1809,3 +1809,7 @@ source/documentation re-reviewとindependent bilingual/boundary reviewは**NO FI
 staging/cached review、task-only implementation commit、post-commit proof、fresh successor inventoryは
 language-local [central historical checkpoint](../../task_contracts/ja/CHECKER-FRAENKEL-TEMPLATE-STRUCTURAL-277C.md#historical-immediate-post-implementation-checkpoint)でclosedしている。separate closureはexact 14 status-bearing documentを変更し、
 exceptionはない。successorはselectせず、Task 277Bはnot ready/semantic credit zeroのままである。
+
+## Checker Task 257C4A frozen contract parity
+
+[EN canonical](../../task_contracts/en/CHECKER-FRAENKEL-GENERATOR-BINDING-257C4A.md)と[JA companion](../../task_contracts/ja/CHECKER-FRAENKEL-GENERATOR-BINDING-257C4A.md)はone private leaf/registration、exact test名、`612 -> 613`、no-production/no-semantic/no-credit boundaryを同期する。exact Rust type/protected hash/implementation evidenceはEnglish owner。このdocs-only recordにsynchronization exceptionはない。

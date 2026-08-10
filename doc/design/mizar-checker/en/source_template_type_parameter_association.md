@@ -150,3 +150,14 @@ historical closeout records that exact staging/cached review, the task-only
 implementation commit, post-commit proof, and fresh successor inventory are
 closed in the language-local [central historical checkpoint](../../task_contracts/en/CHECKER-FRAENKEL-TEMPLATE-STRUCTURAL-277C.md#historical-immediate-post-implementation-checkpoint).
 No successor is selected; Task 277B remains not ready with zero semantic credit.
+
+## Task 257C4A Fraenkel generator dependency boundary
+
+The planned [C4A](../../task_contracts/en/CHECKER-FRAENKEL-GENERATOR-BINDING-257C4A.md)
+is the nonduplicative consumer of completed 277C and R2. It consumes their
+authoritative rows together with `TypedAst`, rechecks the unique
+resolved-to-typed binder relation without an ID cast, and does not extend this
+module's 277C association ABI. Structural/debug summaries alone are insufficient.
+The lower clones and raw resolver nodes remain opaque, while all term,
+type/sethood, diagnostic, installation, route, and Task-277B conclusions stay
+outside this dependency boundary.

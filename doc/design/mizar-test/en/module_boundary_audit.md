@@ -12,6 +12,15 @@ path/content SHA-256
 No dispatch, CLI, corpus/trace/metadata, Cargo, semantic publication, or
 coverage boundary changes; the route remains zero-credit.
 
+## Checker Task 257C4A frozen module boundary
+
+The planned [C4A contract](../../task_contracts/en/CHECKER-FRAENKEL-GENERATOR-BINDING-257C4A.md)
+permits mizar-test changes only in `runner/tests.rs` and one new private
+type-elaboration leaf. The leaf consumes the checker handoff; it cannot create
+or normalize a missing lower dependency. Public runner schemas, dispatch,
+production checker paths, Cargo, fixtures, expectations, trace/coverage,
+metadata, diagnostics, active stages, and downstream crates remain excluded.
+
 ## Resolver Task 277R2 Test Module Boundary
 
 [Task 277R2](../../task_contracts/en/RESOLVE-FRAENKEL-GENERATOR-VAR-277R2.md)

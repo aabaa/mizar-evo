@@ -1,0 +1,57 @@
+# Task CHECKER-FRAENKEL-GENERATOR-BINDING-257C4A: Fraenkel Generator Binding Context
+
+> canonical English: [../en/CHECKER-FRAENKEL-GENERATOR-BINDING-257C4A.md](../en/CHECKER-FRAENKEL-GENERATOR-BINDING-257C4A.md)。正本は英語です。
+
+Owner planは[mizar-checker](../../mizar-checker/ja/00.crate_plan.md#task-index)と[mizar-test](../../mizar-test/ja/00.crate_plan.md#task-index)。stable owner sectionはchecker [binding environment](../../mizar-checker/ja/binding_env.md#task-257c4a-fraenkel-generator-binding-environment)、[formula composition](../../mizar-checker/ja/source_formula_composition.md#task-257c4a-fraenkel-generator-binding-context)、[dependency boundary](../../mizar-checker/ja/source_template_type_parameter_association.md#task-257c4a-fraenkel-generator-dependency-boundary)、[source/spec audit](../../mizar-checker/ja/source_spec_audit.md#task-257c4a-fraenkel-generator-source-spec-audit)、[module boundary](../../mizar-checker/ja/module_boundary_audit.md#task-257c4a-fraenkel-generator-module-boundary)、[TODO](../../mizar-checker/ja/todo.md#task-257c4a-fraenkel-generator-binding-context)、[bilingual record](../../mizar-checker/ja/bilingual_sync_audit.md#task-257c4a-frozen-contract-parity)、およびmizar-test [harness](../../mizar-test/ja/harness.md#checker-task-257c4a-private-binding-context-probe)、[boundary](../../mizar-test/ja/module_boundary_audit.md#checker-task-257c4a-frozen-module-boundary)、[TODO](../../mizar-test/ja/todo.md#checker-task-257c4a-private-binding-context-probe)、[bilingual audit](../../mizar-test/ja/bilingual_sync_audit.md#checker-task-257c4a-frozen-contract-parity)である。
+
+## Status, authority, and readiness
+
+**Status:** docs prerequisiteはplanned、未実装。R2と277Cの後で依存が閉じた唯一のlower-stage sliceをfreezeする。これはTask-257C owner sliceであり、Task-277B readyの判定ではない。実装は別taskでこのcontractをconsumeしなければならない。
+
+Authority順はcanonical [Chapter 13 §13.4](../../../spec/en/13.term_expression.md#134-set-expressions)、§§13.4.2/13.4.4/13.8.6、[Chapter 18](../../../spec/en/18.templates.md) §18.10.2、immutable F5 [`.miz`](../../../../tests/miz/fail/templates/fail_template_fraenkel_over_type_param_001.miz)、[trace entry](../../../../tests/coverage/spec_trace.toml)、[expectation](../../../../tests/miz/fail/templates/fail_template_fraenkel_over_type_param_001.expect.toml)、canonical EN [Architecture 16 binder normalization](../../architecture/en/16.substitution_and_binding.md#canonical-binder-normalization)、completed [R2](RESOLVE-FRAENKEL-GENERATOR-VAR-277R2.md)と[277C](CHECKER-FRAENKEL-TEMPLATE-STRUCTURAL-277C.md)、その後にderived design/source recordである。§13.8.6のgeneratorはexistentially bound `x`であり、Architecture 16のbinder-local/non-spelling normalizationを用いるbound variableであってgenerated-fresh variableではないため`QuantifierBinder`を使い`Generated`を使わない。§§13.4.2/18.10.2はここでsethood verdictをauthorizeしない。§13.4.4のresolved binder identity/captureは後続にdeferする。
+
+277Cはexact structural/typed binder relation、R2はexact resolver collectionを完成済み。Task257Cがgenerator binding/reference/captureを所有するのでR2/277Cのduplicateでもowner boundary越えでもない。解決した分類は`design_drift`、実装時の`source_drift`とRust `test_gap`はfuture。`spec_gap`はなく、新しいsemantic test intentもない。
+
+## Frozen future implementation boundary
+
+Future Rust scopeは次の4 pathのみである。
+
+1. `crates/mizar-checker/src/binding_env.rs`
+2. `crates/mizar-checker/src/source_formula_composition.rs`
+3. `crates/mizar-test/src/runner/tests.rs`
+4. 新private `crates/mizar-test/src/runner/tests/type_elaboration/template_fraenkel_generator_binding_context.rs`
+
+`source_formula_composition.rs`のexact public ABIは`SourceFraenkelGeneratorBindingContextId`、`SourceFraenkelGeneratorBindingContext`、`SourceFraenkelGeneratorBindingContextTable`、`SourceFraenkelGeneratorUsePositionId`、`SourceFraenkelGeneratorUsePosition`、`SourceFraenkelGeneratorUsePositionTable`、`SourceFraenkelGeneratorBindingContextHandoff`、`#[non_exhaustive] SourceFraenkelGeneratorBindingContextError`、`SourceFraenkelGeneratorBindingContextProducer`である。各IDは`new(usize) -> Self`/`index() -> usize`だけ。binding row getterは`composition() -> SourceTemplateFraenkelStructuralCompositionId`、`resolver_binding() -> FraenkelGeneratorVariableBindingId`、`context() -> BindingContextId`、`binding() -> BindingId`、`source_ordinal() -> usize`。use-position row getterは`binding_context() -> SourceFraenkelGeneratorBindingContextId`、`resolver_use_index() -> usize`、`source_ordinal() -> usize`、`lookup_ordinal() -> usize`。各tableは`get(id) -> Option<&Row>`、`iter() -> impl Iterator<Item = (Id, &Row)>`、`len() -> usize`、`is_empty() -> bool`。Handoff getterは`source_id() -> SourceId`、`module_id() -> &ModuleId`、`structural_summary() -> &str`、`resolver_summary() -> &str`、`binding_env() -> &BindingEnv`、`bindings() -> &SourceFraenkelGeneratorBindingContextTable`、`use_positions() -> &SourceFraenkelGeneratorUsePositionTable`、`debug_text() -> String`のみ。`structural_summary`はexisting 277Cの`source-template-fraenkel-structural-composition-v1|module=<module>|compositions=1|uses=3`、`resolver_summary`はexisting R2の`fraenkel-generator-variable-source-v1|module=<module>|bindings=1|uses=3`で、人間用non-authoritative summaryだから単独でtrustしない。`debug_text`はexact `source-fraenkel-generator-binding-context-v1|module=<package>.<path>|bindings=1|use-positions=3`。
+
+Producer signatureはexact `SourceFraenkelGeneratorBindingContextProducer::build(&SourceTemplateFraenkelStructuralCompositionHandoff, &FraenkelGeneratorVariableSourceCollection, &TypedAst) -> Result<SourceFraenkelGeneratorBindingContextHandoff, SourceFraenkelGeneratorBindingContextError>`。lower dependency cloneはopaque private fieldのみで、raw resolver nodeはpublic getter/debugに出さない。
+
+`BindingContextOwner::SourceComprehension { source_range: SourceRange }`はcontext source-range validationに参加する。`BinderIdentity::SourceBound { context: BindingContextId, ordinal: u32 }`は一方向だけ`SourceBound => QuantifierBinder`（逆は不可）であり、既存`QuantifierBinder`/`ResolverLocal`はvalidのまま。contextは存在してownerと等しく、`usize::try_from(ordinal) == visible_after_ordinal`。C4A captureはemptyでもcaptured `SourceBound`もcontext validateする。lookup priority depthは0、source validityはvalidated contextからinheritする。context owner renderはexact `source-comprehension(<start>..<end>)`、identity renderはexact `source_bound(context#<id>, ordinal=<u32>)`。existing canonical identity orderingはdebug-key lexicalの`DefinitionShell < Generated < ReservedVariable < ResolverLocal < SourceBound`であり、`SourceBound`はdistinct/last。debug/canonical orderingはdomain-separatedである。
+
+## Exact F5 environment and validation
+
+F5 environmentはctx0 empty `Module`、ctx1 `SourceComprehension { 663..694 }`、parent0、`Expression`、no lexical scope、owned+visible binding0、normal。binding0はactive/normal、`x`、`QuantifierBinder`、`SourceBound { ctx1, 0 }`、owner1、declaration `673..674`、visible-after 0、type site `Source(678..679)`、capture/diagnostic empty。binding rowはcomposition0/R2binding0/context1/binding0/source ordinal0。
+
+F5 `BindingEnv` debug oracleは次（module placeholderを含む）とexact一致する。
+
+```text
+binding-env-debug-v1
+module: <package>::<path>
+contexts:
+  context#0 owner=module parent=none layer=module scope=none bindings=[] visible=[] recovery=normal
+  context#1 owner=source-comprehension(663..694) parent=context#0 layer=expression scope=none bindings=[binding#0] visible=[binding#0] recovery=normal
+bindings:
+  binding#0 spelling="x" kind=quantifier_binder owner=context#1 identity=source_bound(context#1, ordinal=0) range=673..674 visible_after=0 type=source(678..679) status=active captured=[] diagnostics=[] recovery=normal
+diagnostics:
+```
+
+3 use-position rowはterm ownershipでなくordinal normalizationだけで、resolver indices/source ordinals 0/1/2をlookup 1/2/3へmapする。lookup ordinal0はmapperでないpre-visibility probeで`ForwardReference`、1/2/3は`Local(0)`。SourcePrimaryTerm/reference/capture row/formula/type interpretation/sethood evidence-request-verdict/diagnostic/Typed-Resolved install/production route/sidecar-trace-coverage credit/Task277B readinessは一切作らない。C4Bはuse/capture map前にexact C4A handoffをconsumeする。
+
+buildとhandoff validationでversion/domain-tagged opaque dependency snapshotがsource/module/count/dense ID、全R2 getter（role/spelling/range/resolved node/ordinal）、全277C getterをfull-field revalidateする。debug summaryをtrustしない。actual R2 binderは277C unique resolved-to-typed relationを経由しtyped binder19へ到達し、ID castしない。raw resolver nodeはopaque snapshot/validationだけで、BindingEnv/public/debugは不可。default-denyはone composition/one normal binding/three normal useのみ、nested/multiple/shadow/recovery/partial handoffなし。error precedenceは`EnvironmentMismatch`、`InvalidStructuralDependency`、`InvalidResolverDependency`、`InvalidBindingContext { binding_context: SourceFraenkelGeneratorBindingContextId }`、`InvalidUsePosition { use_position: SourceFraenkelGeneratorUsePositionId }`、`InvalidEnvironment`。
+
+## Tests, baselines, and handoff
+
+Exact checker testは4件：`task257c4a_builds_exact_fraenkel_generator_binding_context`、`task257c4a_rejects_environment_structural_and_resolver_corruption`、`task257c4a_rejects_context_identity_range_position_and_profile_corruption`、`task257c4a_rebuilds_deterministically_without_mutation`。sole private mizar-test testは`task257c4a_real_fixture_builds_exact_fraenkel_generator_binding_context`。raw listsはchecker `546 -> 550`、mizar-test `612 -> 613`。
+
+Baselineは`binding_env.rs` 3168 / `66454dcc8bc864c15e86d736a3e85deb0b095d3037d757a045055b3e04cebfc5`、`source_formula_composition.rs` 5366 / `827328853d2c74e8287b624adcf18d7a1efd5e6a76c35bde347e06237644d64f`、`runner/tests.rs` 65 / `6d07a5ba5efe0be8f058eb52028e90c0bbb279b5d088604c55e1a9d1ca5e75ba`、new leaf absent。checker productionは32/191068、path `9dc5b02f26679677e593ea755394d68533173d2be988b7ef1ddcfd84a41b9787`、content `cf4e43bb5671f863d9af36f99592ca188bab28b2480acb886e1171d65f57fe8a`。test productionは38/80090、path `0ef395004f7feaadf60da0daba7b5da9c52ea4974850adfa2bd9d09081b242aa`、content `990b5ad4798786d9f87c03f76fdbad92fc2edf1f6d84ef3baad67254c79fdd70`。protected authority inventoryはEnglish spec 64のpath/content `d900ba9e43ab094925f36493f830e0c6a2964be2911d5d229014a58842067a25` / `b30dd5519191a4407399826faf91cc58853d7944df7630734b5ab05de48c9f7b`、`.miz` 343の`d94980e167b4b8ac196f91e7694ff044080c6fb4d04c135b3cd5e65b9a019f22` / `54e6ea1254a0bd963c39026d788711507f353e9c6df3b4f9fd268b2e9f240afb`、expectation 435の`22a5ee257a294e3f2ed4b24bf9ca243d037bbd798f009d0d1e3a176dad8b4fea` / `b5f0ed1a8d73bbfb78af5cad87a8d426e97269f7f70163750893a9fe1f39d2ea`、Cargo 21の`d93f2816b760d8ba45430d6d8570e598864aa7b20b19a001f45171d36fd3a030` / `146e9b4024d2c344b2eca9c6f5ca6d6a80a3de427e382953a2280bc63cb3ecca`。coverage auditは`a31f6fb3bd2b561610630497c58284484d00716dd0b7f210f55bef3bc4bfa6db`。current raw checker 546は`2477c548993fcbfffa817814f462ab5d7ce1549a083b6d65aa87091f08bbc9ed`、mizar-test 612は`5a8c1170208533ed4d1723acd05a07ab9f62569b47507129d56c14f7fc2af65a`。postimplementation expected hashはfreezeせずmeasurementとする。F5 hashesと五CLI hashはcanonical EN contractのexact protected valuesを継承する。
+
+このdocs changeはexact 28 Markdown path（contract pair+26 existing owner delta）のみ、contract countは`87/87 -> 88/88`。`doc/design/spec_coverage_audit.md`はauthority/traceability/owner/coverageが不変なので変更しない。legacy anchorも保持する。closeoutは`git diff --check`、recursive-link lint、checker/test lint policy。docs-onlyなのでRust test不要。implementation review routingはauthority/final acceptanceにSol `xhigh`、API/validation/test boundary independent reviewにTerra `xhigh`。next handoffはこの4 Rust pathだけを実装しbaselineを再確認、exact test+lint/format/Clippy/workspace testをrunすること。semantic verdictは禁止、C4Bはopaque C4A handoffを起点に別freezeする。

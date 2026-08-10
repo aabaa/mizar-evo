@@ -701,3 +701,11 @@ production runner `source_formula_composition.rs`とchecker lower owners
 broadenせず、row/fingerprint/debug byteを変更せず、active upper behaviorを
 creditしない。truth、restriction discharge、existential witnesses、
 capture、facts、theorem acceptance、proof、IRはdeferredである。
+
+## Task 257C4A Fraenkel generator binding context
+
+Task257Cはcanonical [C4A contract](../../task_contracts/ja/CHECKER-FRAENKEL-GENERATOR-BINDING-257C4A.md)
+のplanned standalone handoffを所有する。本moduleはbinding-context ID/row/table、use-position
+ID/row/table、handoff、producer、errorだけをexposeする。producerはexact 277C structural composition、R2 resolver
+collection、`TypedAst`をconsumeし、opaque version/domain-tagged snapshotでfull fieldとR2→277C→typed binder relationをrevalidateする。
+3 use rowはactual resolver positionのnormalizationだけでterm/reference/captureを所有しない。default-denyでformula/type/sethood/evidence/verdict/diagnostic、Typed/Resolved install、production routeなし。C4Bはuse/capture map前にhandoffをconsumeする。
