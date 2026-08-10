@@ -1,0 +1,12 @@
+# Frozen preimage inventory for DOC-258B3M2B2B2C-RUNNER-IMPLEMENTATION-COMPACT.
+# Columns: task, language, component, source path, ATX level, exact heading text without the ATX prefix, section SHA-256, physical lines.
+258B3M2B2B2C	en	mizar-test	doc/design/mizar-test/en/00.crate_plan.md	2	Checker Task 258B3M2B2B2C Runner Implementation Completion	462e18bb846a2c6bc5bc08571204390050689d69aacab1881b53824b1381f2c7	42
+258B3M2B2B2C	en	mizar-test	doc/design/mizar-test/en/bilingual_sync_audit.md	2	Checker Task 258B3M2B2B2C Implementation Synchronization	1ce237a32b078dda52b9a23431b8d11176711b2c5c651236282b372e0ddbde2a	17
+258B3M2B2B2C	en	mizar-test	doc/design/mizar-test/en/harness.md	2	Checker Task 258B3M2B2B2C Implemented Runner Harness	408ae244704110669bdc0e6e609f1e7ea2550e8f365d679c6328f5c87ddc3f36	20
+258B3M2B2B2C	en	mizar-test	doc/design/mizar-test/en/module_boundary_audit.md	2	Checker Task 258B3M2B2B2C Implemented Runner Boundary	f8a319e12088364dcf2aa4fcb10c846e3c1006340614d0cac7b0e3997c3f7692	19
+258B3M2B2B2C	en	mizar-test	doc/design/mizar-test/en/todo.md	2	Checker Task 258B3M2B2B2C Runner Implementation Ledger	f3108251e4ea1a999d978dac99ca2355c99b24398e230d2a776a8a68141763f7	28
+258B3M2B2B2C	ja	mizar-test	doc/design/mizar-test/ja/00.crate_plan.md	2	Checker Task 258B3M2B2B2C runner implementation completion	a6a6e53e89bb548fdf4390683329c7cb0386b10bb5c73aac7917aca1c2a7972c	41
+258B3M2B2B2C	ja	mizar-test	doc/design/mizar-test/ja/bilingual_sync_audit.md	2	Checker Task 258B3M2B2B2C implementation synchronization	23a0c2554384fe8f1bf9f79a4c0d3e53a061279aacf45a68a0d3051fe31b24e4	16
+258B3M2B2B2C	ja	mizar-test	doc/design/mizar-test/ja/harness.md	2	Checker Task 258B3M2B2B2C implemented runner harness	beac8bf8a8d5ed8ec5c84689c461cf214e3bf2b5fbd200699fb1170c38ea3724	19
+258B3M2B2B2C	ja	mizar-test	doc/design/mizar-test/ja/module_boundary_audit.md	2	Checker Task 258B3M2B2B2C implemented runner boundary	0b195c0be14763b48a7f4f4bd3d3aa69fd375a5f1e2bde37b729886521f2a68d	19
+258B3M2B2B2C	ja	mizar-test	doc/design/mizar-test/ja/todo.md	2	Checker Task 258B3M2B2B2C runner implementation ledger	b2244ba1bcf94544309c6c84e5b55425316770d83f8eb63460f94f8d2dac4c98	25
