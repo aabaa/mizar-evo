@@ -8,7 +8,7 @@
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-258B3M2B2B2C-RUNNER-IMPLEMENTATION-COMPACT` |
-| Status | documentation prerequisiteはaccepted。exact stagingとdedicated commitが残り、migrationは未開始。 |
+| Status | documentation prerequisiteは`5013a671`でcommit済み。migration-link correctionはaccepted。exact stagingとdedicated commitが残る。migrationは未開始。 |
 | Purpose | paired runner documents 5組が重複するcompleted B2C runner implementation evidenceだけを集約する。 |
 | Historical owner | [Task 258B3M2B2B2C](./258B3M2B2B2C.md#completion-evidence) |
 | Plan indexes | [checker](../../mizar-checker/ja/00.crate_plan.md#task-index)と[runner](../../mizar-test/ja/00.crate_plan.md#task-index) plans |
@@ -126,3 +126,65 @@ final read-only quality reviewは**NO FINDINGS**で終了した。全9 hard gate
 passし、score capなし、accepted scoreは`100/100`
 （`20/20/15/15/10/10/5/5`）。migration開始前にexact task-only staging、cached
 review、dedicated commit、clean post-commit replayが残る。
+
+## Migration-Link Correction Prerequisite
+
+prerequisite commit `5013a671984e8fc87d2c66fd2e3515e1e72fa7d8`後のclean replayは
+frozen preimages/ledger hashをすべてreproduceした。frozen 13-path migrationだけを
+適用するとblocking `design_drift` 1件が判明した。earlier checker-ledger EN/JA
+contractsのrunner `completion` owner linkが、本batchで削除必須のrunner-plan H2を
+直接参照し、recursive link lintがdangling fragmentをrejectした。attempted
+migrationは本correction開始前にstage/commitせず完全にrevertした。
+
+本correctionはdocumentation paths 4件だけ、本EN/JA pairとearlier
+`DOC-258B3M2B2B2C-IMPLEMENTATION-LEDGER-COMPACT` EN/JA pairを変更する。earlier
+pairで変更するのは次のexact linksだけ。
+
+```text
+../../mizar-test/en/00.crate_plan.md#checker-task-258b3m2b2b2c-runner-implementation-completion
+../../mizar-test/ja/00.crate_plan.md#checker-task-258b3m2b2b2c-runner-implementation-completion
+```
+
+これらを、同じexact runner implementation factsを既に保持するdurable central
+historical completion owner `./258B3M2B2B2C.md#completion-evidence`への
+language-local linksへ変更する。pre-correction line/hash baselinesはearlier EN
+`150/e68e4f1afdeca17e73cc102142e27bf6177c4b6c4bef22753d5c4ba60c3b4a7d`、JA
+`141/d88bd126d37aeb9c3806f1f7f11ccfc45d4d71599262206ab6b32addf620db32`、本batch
+pairはEN `223/5fa9dbb29849bfa5fc4e55c968f6ca666369010c54c5cc1774f61ec93917b269`、JA
+`128/19cd03d92dc9561af74d5c8810946f9e980f8a02cade53a035333e5928679d69`。
+
+selected sections 10件、source TSV、historical owner、plan indexes 4件、1008-line
+ledgerはbyte-identical。future migrationは同じexact 13 paths、source delta
+`+10/-236`、expanded inventory hash
+`0431940e513a7f54e468827a0135ce8c9bf00c603af7ae79599e5fba303efe87`、projected
+1024-line ledger hash
+`2a66d200a1976861600bcf7686388faa3efb19b2b42a43c756c9e689d7f27359`のまま。
+schema、specification、test、trace、coverage、source、Cargo、API、diagnostic、
+semantic、active-route、test-intent changeはauthorizeしない。本exact correctionは
+independent equivalence、bilingual/boundary、source/documentation、final quality
+reviewをpassし、migration再開前にtask-only commit/clean replayを行う。
+
+### Correction Evidence
+
+independent evidence-equivalence、bilingual/boundary、
+source/documentation/test-sufficiency reviewsは**NO FINDINGS**で終了した。
+durable central completion ownerがrunner factsをすべて保持し、exact 4-path
+correctionがEN/JA-equivalentであり、soon-removed H2s 10件への他のMarkdown linkが
+なく、protected surfacesが不変であることを確認した。old anchor spellingsは上記
+correction record内のnon-link literalsだけに残る。
+
+corrected earlier contractsは`150/141` linesのまま、SHA-256は
+`44392e8e8690c892736e7fe0905ceaee4b05a9933ac66c0da52dcbcf962148e8` /
+`ca94beb567dc6394bdc6504628a6bf0a04db175152e5c4600b720cdaece54739`。
+preimages 10件、TSV hashes、1008-line ledger/hash、plan indexes 4件、historical
+owner、projected inventory/ledger hashes、protected count/hash/status baselinesは
+すべてunchangedでreproduceする。`git diff --check`とrepository recursive paired-
+contract/link/fragment lintはpass。correctionはexecutable、authority、test、trace、
+coverage、Cargo artifactを変更しないため、prerequisite `5013a671`が記録したfull
+workspace verificationは引き続きapplicable。exact cached review、dedicated
+commit、clean replayが残る。
+
+final read-only correction reviewは**NO FINDINGS**で終了した。全9 hard gatesが
+passし、score capなし、accepted scoreは`100/100`
+（`20/20/15/15/10/10/5/5`）。unchanged migration再開前にexact 4-path staging、
+cached review、dedicated commit、clean replayが残る。

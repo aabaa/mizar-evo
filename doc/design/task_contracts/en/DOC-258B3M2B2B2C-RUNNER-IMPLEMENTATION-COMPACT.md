@@ -8,7 +8,7 @@
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-258B3M2B2B2C-RUNNER-IMPLEMENTATION-COMPACT` |
-| Status | Documentation prerequisite accepted; exact staging and its dedicated commit remain. Migration has not started. |
+| Status | Documentation prerequisite committed as `5013a671`; migration-link correction accepted. Exact staging and its dedicated commit remain. Migration has not started. |
 | Purpose | Centralize only the completed B2C runner implementation evidence duplicated by five paired runner documents. |
 | Historical owner | [Task 258B3M2B2B2C](./258B3M2B2B2C.md#completion-evidence) |
 | Plan indexes | [checker](../../mizar-checker/en/00.crate_plan.md#task-index) and [runner](../../mizar-test/en/00.crate_plan.md#task-index) plans |
@@ -221,3 +221,69 @@ Final read-only quality review ended **NO FINDINGS**. All nine hard gates pass,
 no score cap applies, and the accepted score is `100/100`
 (`20/20/15/15/10/10/5/5`). Exact task-only staging, cached review, dedicated
 commit, and clean post-commit replay remain before migration may start.
+
+## Migration-Link Correction Prerequisite
+
+Clean replay after prerequisite commit `5013a671984e8fc87d2c66fd2e3515e1e72fa7d8`
+reproduced every frozen preimage and ledger hash. Applying only the frozen
+thirteen-path migration then exposed one blocking `design_drift`: the earlier
+checker-ledger EN/JA contracts linked their runner `completion` owner directly
+to the runner-plan H2 that this batch must remove. Recursive link lint rejected
+the resulting dangling fragment. The attempted migration was fully reverted
+without staging or commit before this correction began.
+
+This correction changes exactly four documentation paths: this EN/JA pair and
+the earlier `DOC-258B3M2B2B2C-IMPLEMENTATION-LEDGER-COMPACT` EN/JA pair. In the
+earlier pair, only these exact links change:
+
+```text
+../../mizar-test/en/00.crate_plan.md#checker-task-258b3m2b2b2c-runner-implementation-completion
+../../mizar-test/ja/00.crate_plan.md#checker-task-258b3m2b2b2c-runner-implementation-completion
+```
+
+They become language-local links to the durable central historical completion
+owner `./258B3M2B2B2C.md#completion-evidence`, which already preserves the
+same exact runner implementation facts. Pre-correction line/hash baselines are
+the earlier EN `150/e68e4f1afdeca17e73cc102142e27bf6177c4b6c4bef22753d5c4ba60c3b4a7d`
+and JA `141/d88bd126d37aeb9c3806f1f7f11ccfc45d4d71599262206ab6b32addf620db32`;
+this batch pair is EN `223/5fa9dbb29849bfa5fc4e55c968f6ca666369010c54c5cc1774f61ec93917b269`
+and JA `128/19cd03d92dc9561af74d5c8810946f9e980f8a02cade53a035333e5928679d69`.
+
+The ten selected sections, source TSV, historical owner, four plan indexes,
+and 1008-line ledger remain byte-identical. The future migration remains the
+same exact thirteen paths, source delta `+10/-236`, expanded inventory hash
+`0431940e513a7f54e468827a0135ce8c9bf00c603af7ae79599e5fba303efe87`,
+and projected 1024-line ledger hash
+`2a66d200a1976861600bcf7686388faa3efb19b2b42a43c756c9e689d7f27359`.
+No schema, specification, test, trace, coverage, source, Cargo, API, diagnostic,
+semantic, active-route, or test-intent change is authorized. This exact
+correction must pass independent equivalence, bilingual/boundary,
+source/documentation, and final quality review, then receive its own task-only
+commit and clean replay before migration restarts.
+
+### Correction Evidence
+
+Independent evidence-equivalence, bilingual/boundary, and
+source/documentation/test-sufficiency reviews ended **NO FINDINGS**. They
+confirm that the durable central completion owner preserves every runner fact,
+the exact four-path correction is EN/JA-equivalent, no other Markdown link to
+any of the ten soon-removed H2s remains, and all protected surfaces are
+unchanged. The old anchor spellings now occur only as non-link literals in the
+correction record above.
+
+The corrected earlier contracts remain `150/141` lines and have SHA-256
+`44392e8e8690c892736e7fe0905ceaee4b05a9933ac66c0da52dcbcf962148e8` /
+`ca94beb567dc6394bdc6504628a6bf0a04db175152e5c4600b720cdaece54739`.
+The ten preimages, TSV hashes, 1008-line ledger/hash, four plan indexes,
+historical owner, projected inventory/ledger hashes, and all protected
+count/hash/status baselines reproduce unchanged. `git diff --check` and the
+repository recursive paired-contract/link/fragment lint pass. The full
+workspace verification recorded by prerequisite `5013a671` remains applicable
+because this correction changes no executable, authority, test, trace,
+coverage, or Cargo artifact. Exact cached review, dedicated commit, and clean
+replay remain.
+
+Final read-only correction review ended **NO FINDINGS**. All nine hard gates
+pass, no score cap applies, and the accepted score is `100/100`
+(`20/20/15/15/10/10/5/5`). Exact four-path staging, cached review, dedicated
+commit, and clean replay remain before the unchanged migration restarts.

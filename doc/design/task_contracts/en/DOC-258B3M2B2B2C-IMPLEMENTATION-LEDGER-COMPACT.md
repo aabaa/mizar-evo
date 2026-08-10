@@ -48,7 +48,7 @@ sizes/manifests/test-list hashes, no-findings reviews, implementation
 Durable detail remains in the checker [implementation inventory](../../mizar-checker/en/00.crate_plan.md#task-258b3m2b2b2c-implementation-completion-inventory),
 [broad verification](../../mizar-checker/en/00.crate_plan.md#task-258b3m2b2b2c-broad-verification-completion),
 and [post-commit closure](../../mizar-checker/en/00.crate_plan.md#task-258b3m2b2b2c-post-commit-closure), plus the runner [contract](../../mizar-test/en/00.crate_plan.md#checker-task-258b3m2b2b2c-frozen-runner-contract),
-[completion](../../mizar-test/en/00.crate_plan.md#checker-task-258b3m2b2b2c-runner-implementation-completion),
+[historical completion](./258B3M2B2B2C.md#completion-evidence),
 [broad verification](../../mizar-test/en/00.crate_plan.md#checker-task-258b3m2b2b2c-broad-runner-verification-completion),
 [harness](../../mizar-test/en/harness.md#checker-task-258b3m2b2b2c-frozen-runner-harness),
 and [boundary](../../mizar-test/en/module_boundary_audit.md#checker-task-258b3m2b2b2c-frozen-runner-boundary) owners.

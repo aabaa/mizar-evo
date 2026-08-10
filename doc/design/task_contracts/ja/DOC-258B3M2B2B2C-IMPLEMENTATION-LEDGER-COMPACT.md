@@ -47,7 +47,7 @@ implementation `e8373c683448e524cb98edde83fdf8de83a125cd`、unchanged stash、B3
 [broad verification](../../mizar-checker/ja/00.crate_plan.md#task-258b3m2b2b2c-broad-verification-completion)、
 [post-commit closure](../../mizar-checker/ja/00.crate_plan.md#task-258b3m2b2b2c-post-commit-closure)、
 runner [contract](../../mizar-test/ja/00.crate_plan.md#checker-task-258b3m2b2b2c-frozen-runner-contract)、
-[completion](../../mizar-test/ja/00.crate_plan.md#checker-task-258b3m2b2b2c-runner-implementation-completion)、
+[historical completion](./258B3M2B2B2C.md#completion-evidence)、
 [broad verification](../../mizar-test/ja/00.crate_plan.md#checker-task-258b3m2b2b2c-broad-runner-verification-completion)、
 [harness](../../mizar-test/ja/harness.md#checker-task-258b3m2b2b2c-frozen-runner-harness)、
 [boundary](../../mizar-test/ja/module_boundary_audit.md#checker-task-258b3m2b2b2c-frozen-runner-boundary) ownersに残る。
