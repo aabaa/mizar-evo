@@ -72,6 +72,18 @@ The new and changed cohesive owners are measured in their rows below.
 | `tests/support/source_property_implementation_unit.rs` | 2004 | test-only Task-264 unit-test support | `source_property_implementation.md` and this audit | no | no | Non-integration child support for exact equals/means construction, corruption, nonempty-baseline transactionality, final replay, orphan/extra rejection, and actual Task-259 isolation. |
 | `tests/support/source_structure_definition_unit.rs` | 1502 | test-only Task-263 unit-test support | `source_structure_definition.md` and this audit | no | no | Non-integration child support for complete exact rows/debug bytes, resolver/row/metadata/shape corruption, all 12 adjacent precedence categories, contribution/baseline transactionality, and bidirectional Tasks-259--262 Typed/final isolation. |
 
+## Task 277C Frozen Module Boundary
+
+The [277C contract](../../task_contracts/en/CHECKER-FRAENKEL-TEMPLATE-STRUCTURAL-277C.md)
+reserves one existing checker owner module for a standalone immutable structural
+composition. It may consume only `SourceTemplateTypeParameterAssociationHandoff`,
+`FraenkelGeneratorVariableSourceCollection`, and `TypedAst`; it must not take
+R1 direct input or install into Typed/Resolved state. The later Rust surface is
+the owner module plus mizar-test `tests.rs` and one new private leaf. `lib.rs`,
+lint Rust, resolver/source owners, production route, facades, Cargo, canonical
+artifacts, metadata, and downstream consumers are excluded. The current 32
+regular checker paths / 189180-line protected inventory remains the baseline.
+
 ## Task 34 Classification
 
 | Class | Evidence | Action |

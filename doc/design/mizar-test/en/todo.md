@@ -3865,3 +3865,15 @@ the successor is selected only from fresh post-commit inventory.
   historical checkpoint](../../task_contracts/en/RESOLVE-FRAENKEL-GENERATOR-VAR-277R2.md#historical-immediate-post-implementation-checkpoint).
   No successor is selected; Task 277B remains not ready with zero semantic
   credit.
+
+## Checker Task 277C Private Structural Composition Probe
+
+- [x] Record the [277C contract](../../task_contracts/en/CHECKER-FRAENKEL-TEMPLATE-STRUCTURAL-277C.md)
+  and a docs-only private-route boundary; existing F5 and all canonical test
+  artifacts remain immutable.
+- [ ] Following the separate prerequisite commit and fresh preflight, add only
+  the named private F5 leaf and registration (`611 -> 612`), while checker adds
+  its frozen four direct tests (`542 -> 546`).
+- [ ] Do not accept production route, semantic, diagnostic, trace/coverage, or
+  Task-277B readiness expansion; complete the required independent reviews and
+  all nine hard gates before the later task-only commit.

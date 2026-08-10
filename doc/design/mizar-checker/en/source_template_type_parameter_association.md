@@ -126,3 +126,23 @@ not-ready, zero-semantic-credit boundary.
 | `SourceTemplateTypeParameterAssociationError` | `#[non_exhaustive]` | none |
 
 No exhaustive public enum exceptions are owned by this module.
+
+## Task 277C Frozen Planned Public Extension
+
+The canonical [277C contract](../../task_contracts/en/CHECKER-FRAENKEL-TEMPLATE-STRUCTURAL-277C.md)
+reserves this existing module for a later neutral structural-composition family:
+`SourceTemplateFraenkelStructuralCompositionId`, row, table, handoff,
+`#[non_exhaustive] SourceTemplateFraenkelStructuralCompositionError`, and
+producer. This is a frozen planned ABI, not a claim that current source has
+implemented it. The contract exclusively defines `build(template, generators,
+typed_ast)`, error precedence, row getters, validation, F5 profile, and
+deferred tests. On implementation, the new public enum follows the same policy:
+
+| Enum | Policy | Exhaustive exception |
+|---|---|---|
+| `SourceTemplateFraenkelStructuralCompositionError` | `#[non_exhaustive]` | none |
+
+It remains a standalone `SourceTemplateTypeParameterAssociationHandoff` +
+`FraenkelGeneratorVariableSourceCollection` + `TypedAst` composition: no R1
+direct input, state installation, source-owner route, semantic credit, or
+production activation is authorized.

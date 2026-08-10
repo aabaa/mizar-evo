@@ -70,6 +70,16 @@ new/changed cohesive ownerのmeasurementは下のrowに記録する。
 | `tests/support/source_property_implementation_unit.rs` | 2004 | test-only Task-264 unit-test support | `source_property_implementation.md` and this audit | no | no | exact equals/means construction、corruption、nonempty-baseline transactionality、final replay、orphan/extra rejection、actual Task259 isolation用support。 |
 | `tests/support/source_structure_definition_unit.rs` | 1502 | test-only Task-263 unit-test support | `source_structure_definition.md` and this audit | no | no | complete exact row/debug bytes、resolver/row/metadata/shape corruption、12 adjacent precedence category、contribution/baseline transactionality、Tasks-259--262双方向Typed/final isolation用support。 |
 
+## Task 277C frozen module boundary
+
+[277C contract](../../task_contracts/ja/CHECKER-FRAENKEL-TEMPLATE-STRUCTURAL-277C.md) はexisting
+checker owner module一つをstandalone immutable structural compositionにreserveする。inputは
+`SourceTemplateTypeParameterAssociationHandoff`、`FraenkelGeneratorVariableSourceCollection`、
+`TypedAst`だけで、R1 direct inputもTyped/Resolved installも不可。後続Rust surfaceはowner module、
+mizar-test `tests.rs`、new private leafだけ。`lib.rs`、lint Rust、resolver/source owner、production
+route、facade、Cargo、canonical artifact、metadata、downstream consumerはexclude。current 32 regular
+checker paths / 189180-line protected inventoryをbaselineのまま保持する。
+
 ## Task 34 Classification
 
 | Class | Evidence | Action |

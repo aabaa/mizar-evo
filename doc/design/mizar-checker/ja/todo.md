@@ -6499,3 +6499,14 @@ post-commit fresh inventoryからだけ選択する。
 - [x] exact staging/cached-diff review、task-only commit、post-implementation proof、fresh successor
   inventoryはcentral [historical checkpoint](../../task_contracts/ja/277B-L.md#post-implementation-checkpoint)でclosed。successorはselectせず、
   Task 277Bはnot ready/semantic credit zeroのまま。
+
+## Task 277C Fraenkel structural composition
+
+- [x] canonical [277C contract](../../task_contracts/ja/CHECKER-FRAENKEL-TEMPLATE-STRUCTURAL-277C.md)、
+  EN/JA owner link、exact neutral ABI、protected hash、implementation boundaryをdocs-only
+  prerequisiteとしてfreezeする。
+- [ ] separate prerequisite commitとfresh preflight後に、contractのthree Rust pathsとexact
+  `4 + 1` testsだけをimplementする。no-R1-direct/no-install/no-production/no-semantic/no-credit
+  boundaryを保持する。
+- [ ] implementation commit前にindependent specification/equivalence、test、implementation、
+  bilingual、source/documentation review、90/100以上の全9 hard gate、task-only stagingを要求する。

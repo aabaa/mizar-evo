@@ -3576,6 +3576,15 @@ post-commit fresh inventoryからだけ選択する。
   inventoryはcentral [historical checkpoint](../../task_contracts/ja/277B-L.md#post-implementation-checkpoint)でclosed。successorはselectせず、
   Task 277Bはnot ready/semantic credit zeroのまま。
 
+## Checker Task 277C private structural composition probe
+
+- [x] [277C contract](../../task_contracts/ja/CHECKER-FRAENKEL-TEMPLATE-STRUCTURAL-277C.md) とdocs-only
+  private-route boundaryをrecordし、existing F5とcanonical test artifactをimmutableに保つ。
+- [ ] separate prerequisite commitとfresh preflight後、named private F5 leafとregistrationだけを
+  追加（`611 -> 612`）し、checkerはfrozen four direct tests（`542 -> 546`）を追加する。
+- [ ] production route/semantic/diagnostic/trace-coverage/Task-277B readinessのscope拡張をacceptせず、
+  independent reviewとall nine hard gate後にlater task-only commitを行う。
+
 ## Resolver Task 277R2 test-only fixture probe
 
 - [x] [Task 277R2 contract](../../task_contracts/ja/RESOLVE-FRAENKEL-GENERATOR-VAR-277R2.md) と

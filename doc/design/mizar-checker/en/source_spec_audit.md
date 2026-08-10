@@ -165,6 +165,19 @@ ControlFlowIr, VC payloads, or proof evidence. Forward-reference acceptance is
 forbidden by active-range rules and is covered only as a lower-stage
 rejection.
 
+## Task 277C Frozen Source/Specification Mapping
+
+The canonical [277C contract](../../task_contracts/en/CHECKER-FRAENKEL-TEMPLATE-STRUCTURAL-277C.md)
+freezes a neutral, zero-semantic composition of the completed template
+association handoff, completed Fraenkel generator collection, and existing
+`TypedAst`. The public composition ID/row/table/handoff/error/producer family,
+ordered fail-closed revalidation, exact F5 node/ordinal profile, and five-test
+matrix are owned once by that contract. This record neither derives language
+behavior nor claims Task 277B readiness or coverage credit. Existing specs,
+F5 fixture/expectation/trace, diagnostics, and source owners remain unchanged;
+the implementation is pending a separate prerequisite commit and fresh
+preflight.
+
 ## Crate Module Exports
 
 `src/lib.rs` exports exactly these checker-owned modules:

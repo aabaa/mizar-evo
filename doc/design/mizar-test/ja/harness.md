@@ -4261,6 +4261,16 @@ empty semanticsがPASSする。statement tests 26,141 lines、focused `5/5`、
 library `471` PASS。corpus/trace/CLI/semanticはunchangedで、reviewは
 **NO FINDINGS**。
 
+## Checker Task 277C private structural composition probe
+
+frozen [277C contract](../../task_contracts/ja/CHECKER-FRAENKEL-TEMPLATE-STRUCTURAL-277C.md) はseparate
+prerequisite commit後にnew private leaf
+`runner/tests/type_elaboration/template_fraenkel_structural_composition.rs`一つと`tests.rs`
+registration一つをreserveする。leafはexisting helperとunchanged inactive F5でexact composed
+row/debug profileだけをproveし、fixture、sidecar、expectation、trace、metadata、coverage credit、
+runner route、dispatcher、semantic verdictを追加しない。registrationはmizar-test raw listを611から
+612へだけ変え、checkerがfour direct producer testをownする。
+
 harness responsibility overclaimと同期docs drift 2件の修正後、final
 consistency repeatは**NO FINDINGS**である。complete verificationはPASSし、
 independent qualityも**NO FINDINGS**、全9 gates PASS、valid `100/100`。

@@ -1880,3 +1880,15 @@ staging/cached-diff review, task-only commit, post-implementation proof, and
 fresh successor inventory are closed in the central [historical checkpoint](../../task_contracts/en/277B-L.md#post-implementation-checkpoint); no successor
 is selected. Neither surface claims Task 277B readiness
 or semantic credit; no synchronization exception is recorded.
+
+## Task 277C Frozen Contract Parity
+
+The canonical [EN contract](../../task_contracts/en/CHECKER-FRAENKEL-TEMPLATE-STRUCTURAL-277C.md)
+and [JA companion](../../task_contracts/ja/CHECKER-FRAENKEL-TEMPLATE-STRUCTURAL-277C.md)
+are synchronized for the frozen neutral input boundary, exact public family,
+error precedence, getter inventory, F5 IDs/ordinals/debug text, protected
+baselines, deferred `4 + 1` tests, 24-path prerequisite/20-path completion
+surface, and no-audit/no-credit decision. English exact Rust identifiers,
+signatures, values, counts, and hashes are canonical. Implementation has not
+begun; no parity review may claim a completed Rust change or a Task 277B state
+change, and no synchronization exception is recorded.

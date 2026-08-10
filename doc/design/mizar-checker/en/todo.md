@@ -6864,3 +6864,15 @@ selected only from fresh post-commit inventory.
   proof, and fresh successor inventory are closed in the central
   [historical checkpoint](../../task_contracts/en/277B-L.md#post-implementation-checkpoint).
   No successor is selected; Task 277B remains not ready with zero semantic credit.
+
+## Task 277C Fraenkel Structural Composition
+
+- [x] Freeze the canonical [277C contract](../../task_contracts/en/CHECKER-FRAENKEL-TEMPLATE-STRUCTURAL-277C.md),
+  EN/JA owner links, exact neutral ABI, protected hashes, and implementation
+  boundary as a docs-only prerequisite.
+- [ ] After a separate prerequisite commit and fresh preflight, implement only
+  the contract's three Rust paths and its exact `4 + 1` tests; preserve the
+  no-R1-direct/no-install/no-production/no-semantic/no-credit boundary.
+- [ ] Require independent specification/equivalence, test, implementation,
+  bilingual, and source/documentation reviews, all nine hard gates at at least
+  90/100, and task-only staging before any implementation commit.

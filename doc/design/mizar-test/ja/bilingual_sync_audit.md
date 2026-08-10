@@ -1796,3 +1796,12 @@ bilingual exceptionはない。implementation、exact `4 + 1` regression、resol
 lint suite、package/workspace Clippy、workspace test、metadata、format、diff、five CLI hash、protected
 path-hash verificationはPASS、test-sufficiency / implementation reviewは**NO FINDINGS**。dedicated
 bilingual integration reviewも**NO FINDINGS**。
+
+## Checker Task 277C frozen contract parity
+
+canonical [EN contract](../../task_contracts/en/CHECKER-FRAENKEL-TEMPLATE-STRUCTURAL-277C.md) と
+[JA companion](../../task_contracts/ja/CHECKER-FRAENKEL-TEMPLATE-STRUCTURAL-277C.md) はmizar-test
+private F5 route、future named leaf一つ、registration一つ、existing helper、immutable fixture artifact、
+`611 -> 612`、no-production/no-semantic/no-credit boundaryを同期する。exact test/Rust name、count、
+hash、F5 value、public ABIはcontractのEnglish canonicalに従う。prerequisiteはdocumentation-onlyで、
+implementation completion/bilingual exceptionをrecordしない。

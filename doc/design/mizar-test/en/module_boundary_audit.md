@@ -25,6 +25,16 @@ Production runner remains the protected 38-path / 80,090-line inventory. The
 implemented test-only boundary has passed the exact fixture test and focused
 verification; final independent boundary review reports **NO FINDINGS**.
 
+## Checker Task 277C Frozen Module Boundary
+
+The [277C contract](../../task_contracts/en/CHECKER-FRAENKEL-TEMPLATE-STRUCTURAL-277C.md)
+gives mizar-test only an inactive private F5 probe and its `tests.rs` registration.
+It consumes checker composition output through a direct private test; it neither
+creates production plumbing nor changes fixtures, expectations, traceability,
+coverage, diagnostics, Typed/Resolved installation, or active dispatch. The existing
+F5 parse/lower helpers and mizar-test 38-path / 80090-line production baseline are
+protected.
+
 ## Checker Task 257B1 Formula-Composition Current-State Addendum
 
 Task 257B1 adds one cohesive 540-line private

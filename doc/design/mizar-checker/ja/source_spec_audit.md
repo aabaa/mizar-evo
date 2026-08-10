@@ -141,6 +141,17 @@ argument-bearing / parameterized / contextual / ambiguous / cyclic
 mode expansion、term、formula、overload、CoreIr、
 ControlFlowIr、VC payload、proof evidence の AST-wide source-to-checker gap を閉じるものでもない。
 
+## Task 277C frozen source/specification mapping
+
+canonical [277C contract](../../task_contracts/ja/CHECKER-FRAENKEL-TEMPLATE-STRUCTURAL-277C.md) は、
+completeしたtemplate association handoff、Fraenkel generator collection、existing `TypedAst`の
+neutral/zero-semantic compositionをfreezeする。public composition
+ID/row/table/handoff/error/producer family、ordered fail-closed revalidation、exact F5
+node/ordinal profile、five-test matrixはcentral contractが一度だけownする。本recordはlanguage
+behaviorをderiveせず、Task 277B readiness/coverage creditをclaimしない。既存spec、F5
+fixture/expectation/trace、diagnostic、source ownerは不変で、implementationはseparate prerequisite
+commitとfresh preflight後までpendingである。
+
 ## Crate Module Exports
 
 `src/lib.rs` は次の checker-owned module だけを export する:

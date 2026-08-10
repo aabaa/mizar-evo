@@ -23,6 +23,14 @@ metadata-trace owner/diagnostic/semantic publicationは追加しない。product
 38 paths / 80,090 linesのまま。implemented test-only boundaryはexact fixture testとfocused
 verificationをPASSし、final independent boundary reviewは**NO FINDINGS**。
 
+## Checker Task 277C frozen module boundary
+
+[277C contract](../../task_contracts/ja/CHECKER-FRAENKEL-TEMPLATE-STRUCTURAL-277C.md) はmizar-testに
+inactive private F5 probeと`tests.rs` registrationだけを与える。checker composition outputをdirect
+private testでconsumeするだけでproduction plumbingを作らず、fixture、expectation、traceability、coverage、
+diagnostic、Typed/Resolved install、active dispatchを変更しない。existing F5 parse/lower helperと
+mizar-test 38-path / 80090-line production baselineはprotectedである。
+
 ## Checker Task 257B1 formula-composition current-state addendum
 
 Task 257B1はcohesiveな540-line private `source_formula_composition.rs`

@@ -108,3 +108,21 @@ zero-semantic-credit boundaryをretainする。
 | `SourceTemplateTypeParameterAssociationError` | `#[non_exhaustive]` | none |
 
 この module が所有する exhaustive public enum exception はない。
+
+## Task 277C frozen planned public extension
+
+canonical [277C contract](../../task_contracts/ja/CHECKER-FRAENKEL-TEMPLATE-STRUCTURAL-277C.md) は本existing
+moduleに後続のneutral structural-composition family、
+`SourceTemplateFraenkelStructuralCompositionId`、row、table、handoff、
+`#[non_exhaustive] SourceTemplateFraenkelStructuralCompositionError`、producerをreserveする。
+これはfrozen planned ABIであり、current sourceがすでにimplementしたというclaimではない。contractだけが
+`build(template, generators, typed_ast)`、error precedence、row getter、validation、F5 profile、deferred
+testをdefineする。implementation時、新public enumは次のpolicyに従う。
+
+| enum | policy | exhaustive exception |
+|---|---|---|
+| `SourceTemplateFraenkelStructuralCompositionError` | `#[non_exhaustive]` | none |
+
+これは`SourceTemplateTypeParameterAssociationHandoff` +
+`FraenkelGeneratorVariableSourceCollection` + `TypedAst`のstandalone compositionのままである。R1 direct
+input、state installation、source-owner route、semantic credit、production activationはauthorizeしない。
