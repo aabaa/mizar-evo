@@ -1663,6 +1663,21 @@ worktree, `origin/main...HEAD=0/1`, and unchanged protected
 complete while umbrella Task 277 remains partial; any successor must be
 separately frozen and reviewed.
 
+## Task 277B-L Frozen Module Boundary
+
+[Task 277B-L](../../task_contracts/en/277B-L.md) reserves one new standalone
+checker module, its `lib.rs` export, and generic lint-policy inventory for a
+future five-path Rust change. It consumes R1 collection data and `TypedAst`,
+but it must not modify the resolver, 277A `source_template.rs`, Typed/Resolved
+slots or installation, Cargo, production runner/facade/dispatch, or canonical
+specification/test/coverage artifacts. The only runner-side code is one private
+direct producer probe and its test-module include.
+
+The new module is a neutral immutable association handoff; it does not cross a
+semantic, diagnostic, active-stage, or Task 277B readiness boundary. The
+current 31-path checker and 38-path production-runner inventories are protected
+until a separately reviewed implementation remeasures them.
+
 ## Task 269GT Frozen Boundary
 
 Implementation may change exactly

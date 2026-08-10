@@ -5672,6 +5672,36 @@ post-implementation checkpointは
 umbrella Task 277はpartialのままで、successorはseparately frozen/reviewedでなければ
 ならない。
 
+## Task 277B-L Frozen Source/Specification Mapping
+
+[Task 277B-L contract](../../task_contracts/ja/277B-L.md) はcomplete resolver
+`TemplateTypeParameterSourceCollection` からexisting `TypedAst` へのchecker-only structural
+bridgeをfreezeする。Templates/term-expression ruleを新規deriveしないため、これは
+`design_drift`、`source_drift`、Rust `test_gap` であり `spec_gap` はない。future standalone
+owner は [source_template_type_parameter_association](./source_template_type_parameter_association.md#task-277b-l-template-type-parameter-association) で、277A `source_template` ではない。
+
+future producerはR1 binding identityをnormal/exact/range-anchored typed nodeとdirect
+structural edgeに対してvalidateし、immutable zero-semantic association tableをyieldする。
+Typed/Resolved stateをinstallせず、type/sethoodをinterpretせず、diagnostic/active routeを
+変更せず、Task 277Bをreadyにしない。したがってspecification coverage、traceability、
+`spec_coverage_audit.md` にowned-state deltaはない。
+
+module未実装のため、このdocumentation prerequisiteでは上記current crate-export listと
+public-surface inventoryを変更しない。five-path implementationでは`src/lib.rs`とchecker lint
+policyへ`source_template_type_parameter_association` exportを追加し、completion updateで
+対応するcrate-export rowと`### \`source_template_type_parameter_association\`` headingの
+public-item inventoryを追加する。future inventoryはexactに、generated public newtype
+`SourceTemplateTypeParameterAssociationId`; literal top-level public item
+`SourceTemplateTypeParameterAssociation`、
+`SourceTemplateTypeParameterAssociationTable`、
+`SourceTemplateTypeParameterAssociationHandoff`、
+`SourceTemplateTypeParameterAssociationError`、
+`SourceTemplateTypeParameterAssociationProducer`; exact resolver-to-typed identity、
+fail-closed structural validation、deterministic zero-semantic transport、non-exhaustive public
+enum policyのcorrespondence tableを持つ。checker lint policyは同じimplementation commitで
+public-enum module list、source/spec module list、public-API path allowlist、`lib.rs`
+public-module allowlistへnew moduleを追加しなければならない。
+
 ## Task 269GT source/API delta
 
 documentation-prerequisite commit

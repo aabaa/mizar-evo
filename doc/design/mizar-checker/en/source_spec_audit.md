@@ -5950,6 +5950,41 @@ post-implementation checkpoint observed
 complete while umbrella Task 277 remains partial; any successor must be
 separately frozen and reviewed.
 
+## Task 277B-L Frozen Source/Specification Mapping
+
+The [Task 277B-L contract](../../task_contracts/en/277B-L.md) freezes a missing
+checker-only structural bridge from completed resolver
+`TemplateTypeParameterSourceCollection` to an existing `TypedAst`. It is
+`design_drift`, `source_drift`, and Rust `test_gap`, with no `spec_gap`: it
+does not derive a new Templates or term-expression rule. The future standalone
+owner is [source_template_type_parameter_association](./source_template_type_parameter_association.md#task-277b-l-template-type-parameter-association), not 277A's `source_template`.
+
+The future producer validates R1 binding identity against normal, exact,
+range-anchored typed nodes and their direct structural edges, yielding an
+immutable zero-semantic association table. It does not install Typed/Resolved
+state, interpret type/sethood, issue a diagnostic, alter an active route, or
+make Task 277B ready. Specification coverage, traceability, and
+`spec_coverage_audit.md` therefore have no owned-state delta.
+
+The current crate-export list and public-surface inventory above remain
+unchanged during this documentation prerequisite because the module does not
+yet exist. In the five-path implementation, `src/lib.rs` and checker lint
+policy add the `source_template_type_parameter_association` export, and the
+completion update adds the corresponding crate-export row plus a public-item
+inventory headed `### \`source_template_type_parameter_association\``. That
+future inventory is exact: generated public newtype
+`SourceTemplateTypeParameterAssociationId`; literal top-level public items
+`SourceTemplateTypeParameterAssociation`,
+`SourceTemplateTypeParameterAssociationTable`,
+`SourceTemplateTypeParameterAssociationHandoff`,
+`SourceTemplateTypeParameterAssociationError`, and
+`SourceTemplateTypeParameterAssociationProducer`; and a correspondence table
+covering exact resolver-to-typed identity, fail-closed structural validation,
+deterministic zero-semantic transport, and the non-exhaustive public-enum
+policy. Checker lint policy must add the module to its public-enum module list,
+source/spec module list, public-API path allowlist, and `lib.rs` public-module
+allowlist in that same implementation commit.
+
 ## Task 269GT Source/API Delta
 
 At documentation-prerequisite commit

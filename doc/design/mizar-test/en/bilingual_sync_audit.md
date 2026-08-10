@@ -1865,3 +1865,13 @@ gates pass without a score cap at valid `100/100`. Task-only implementation
 commit `b22033c38249326e366ceb9e19b1a9100da2248e` and the central contract's
 post-implementation checkpoint complete this parity record without an
 exception. Task 277B remains not ready.
+
+## Task 277B-L Contract Parity
+
+The canonical [EN contract](../../task_contracts/en/277B-L.md) and [JA
+companion](../../task_contracts/ja/277B-L.md) synchronize the sole private
+direct producer probe, the R1 binding `0` fixture identity, no-runner-route
+boundary, `609 -> 610` projected count, five future Rust paths, protected
+production inventory, no coverage/trace/metadata change, and explicit Task
+277B-not-ready status. Exact identifiers, ranges, counts, and hashes are
+English-canonical; no bilingual exception is recorded.

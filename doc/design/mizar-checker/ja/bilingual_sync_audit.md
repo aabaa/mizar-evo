@@ -58,6 +58,7 @@ task 33 で pair が同期済みであるとは、以下をすべて満たすこ
 | `source_statement.md` | `../ja/source_statement.md` | `../en/source_statement.md` | Tasks 258A/258B1 authority/boundary、five-table theorem/statement transportとlocal-label/citation composition、BindingEnv/Task-252/256 fingerprint、replay-authenticated resolver input、ownership exclusion、exact dormant consumer、semantic deferral、public enum policy | none |
 | `source_evidence.md` | `../ja/source_evidence.md` | `../en/source_evidence.md` | Task-251 authority/boundary、request/response transport model、Task-249/250 association、catalog/payload validation、ownership、exact consumer、exclusion、public enum policy | none |
 | `source_template.md` | `../ja/source_template.md` | `../en/source_template.md` | Task-277A direct parser-origin five-table transport、targetless provenance、neutral Typed/Resolved ownership、private runner boundary、exclusion、public enum policy | none |
+| `source_template_type_parameter_association.md` | `../ja/source_template_type_parameter_association.md` | `../en/source_template_type_parameter_association.md` | Task-277B-L standalone R1-to-Typed structural association API、immutable handoff/table getter、ordered fail-closed validation、private probe boundary、Task-277B-not-ready deferral | none |
 | `source_term.md` | `../ja/source_term.md` | `../en/source_term.md` | Task-252 authority/boundary、three-table primary-term transport、binding lookup/parent/request validation、ownership、exact consumer、exclusion、public enum policy | none |
 | `source_type.md` | `../ja/source_type.md` | `../en/source_type.md` | Task-249 authority/boundary、flat application/expression/argument model、environment/arena/graph/provenance validation、ownership、consumer、exclusion、public enum policy | none |
 | `todo.md` | `../ja/todo.md` | `../en/todo.md` | module implementation table、prerequisites、resolved decisions、ordered task list、task statuses、verification、notes | none |
@@ -1761,3 +1762,13 @@ reviewもPASSした。implementation commit `b67b028e07337ff5b72422bc8f16fb8f187
 `stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4`をobserveした。Task 277Aはcomplete、
 umbrella Task 277はpartialのままで、successorはseparately frozen/reviewedでなければ
 ならない。
+
+## Task 277B-L Contract Parity
+
+canonical [EN contract](../../task_contracts/en/277B-L.md) と[JA companion]
+(../../task_contracts/ja/277B-L.md) はunimplemented standalone module API、R1-owned
+order/ambiguity、ordered structural validation、real-fixture identity profile 1件、
+future Rust 5 paths、4+1 test、documentation 24 paths、completion-document 20 paths、
+baseline、protected artifact、no-audit delta、handoffを同期する。exact identifier、signature、
+field name、range、count、hashはEnglish canonical。いずれもTask 277B readinessをclaimせず、
+synchronization exceptionはない。

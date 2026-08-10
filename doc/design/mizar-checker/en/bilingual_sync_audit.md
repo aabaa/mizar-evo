@@ -59,6 +59,7 @@ after this task.
 | `source_statement.md` | `../ja/source_statement.md` | `../en/source_statement.md` | Tasks 258A/258B1 authority/boundary, five-table theorem/statement transport plus local-label/citation composition, BindingEnv and Task-252/256 fingerprints, replay-authenticated resolver inputs, ownership exclusions, exact dormant consumers, semantic deferrals, public enum policy | none |
 | `source_evidence.md` | `../ja/source_evidence.md` | `../en/source_evidence.md` | Task-251 authority/boundary, request/response transport model, Task-249/250 association, catalog/payload validation, ownership, exact consumers, exclusions, public enum policy | none |
 | `source_template.md` | `../ja/source_template.md` | `../en/source_template.md` | Task-277A direct parser-origin five-table transport, targetless provenance, neutral Typed/Resolved ownership, private runner boundary, exclusions, public enum policy | none |
+| `source_template_type_parameter_association.md` | `../ja/source_template_type_parameter_association.md` | `../en/source_template_type_parameter_association.md` | Task-277B-L standalone R1-to-Typed structural association API, immutable handoff/table getters, ordered fail-closed validation, private probe boundary, Task-277B-not-ready deferral | none |
 | `source_term.md` | `../ja/source_term.md` | `../en/source_term.md` | Task-252 authority/boundary, three-table primary-term transport, binding lookup and parent/request validation, ownership, exact consumers, exclusions, public enum policy | none |
 | `source_type.md` | `../ja/source_type.md` | `../en/source_type.md` | Task-249 authority/boundary, flat application/expression/argument model, environment/arena/graph/provenance validation, ownership, consumers, exclusions, public enum policy | none |
 | `todo.md` | `../ja/todo.md` | `../en/todo.md` | module implementation table, prerequisites, resolved decisions, ordered task list, task statuses, verification, notes | none |
@@ -1859,3 +1860,14 @@ worktree, `origin/main...HEAD=0/1`, and unchanged protected
 `stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4`. Task 277A is
 complete while umbrella Task 277 remains partial; any successor must be
 separately frozen and reviewed.
+
+## Task 277B-L Contract Parity
+
+The canonical [EN contract](../../task_contracts/en/277B-L.md) and [JA
+companion](../../task_contracts/ja/277B-L.md) synchronize the unimplemented
+standalone module API, R1-owned order/ambiguity, ordered structural validation,
+one real-fixture identity profile, five future Rust paths, four-plus-one tests,
+24 documentation paths, 20 completion-document paths, baselines, protected
+artifacts, no-audit delta, and handoff. English exact identifiers, signature,
+field names, ranges, counts, and hashes are canonical. Neither surface claims
+Task 277B readiness; no synchronization exception is recorded.

@@ -6481,3 +6481,14 @@ post-commit fresh inventoryからだけ選択する。
   `stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4`をobserveした。Task 277Aはcomplete、
   umbrella Task 277はpartialのままで、successorはseparately frozen/reviewedでなければ
   ならない。
+
+## Task 277B-L Template Type-Parameter Association
+
+- [ ] fresh baseline/authority inventory後だけ、frozen
+  [277B-L contract](../../task_contracts/ja/277B-L.md) standalone producerをimplementする。
+- [ ] new-module-only five-path Rust boundaryをpreserveし、277A、Typed/Resolved install、
+  resolver、production runner、Cargo、canonical specification/test/trace/coverage artifactをextendしない。
+- [ ] checker 4件とprivate real-fixture 1件、structural validation precedence、deterministic
+  non-mutating handoff、exact count/hash gate、semantic/active-route/coverage effectなしをproveする。
+- [ ] independent no-findings reviewとhard-gate evidenceを得る。本prerequisiteはTask 277Bを
+  readyにしない。

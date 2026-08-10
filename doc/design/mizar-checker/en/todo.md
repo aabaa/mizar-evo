@@ -6842,3 +6842,16 @@ selected only from fresh post-commit inventory.
   `stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4`. Task 277A is complete while
   umbrella Task 277 remains partial; any successor must be separately frozen
   and reviewed.
+
+## Task 277B-L Template Type-Parameter Association
+
+- [ ] Implement only the frozen [277B-L contract](../../task_contracts/en/277B-L.md)
+  standalone producer after fresh baseline and authority inventory.
+- [ ] Preserve the new-module-only five-path Rust boundary; do not extend 277A,
+  Typed/Resolved installation, resolver, production runner, Cargo, or canonical
+  specification/test/trace/coverage artifacts.
+- [ ] Prove the four checker and one private real-fixture test, structural
+  validation precedence, deterministic non-mutating handoff, exact count/hash
+  gates, and no semantic/active-route/coverage effect.
+- [ ] Obtain independent no-findings reviews and hard-gate evidence. This
+  prerequisite does not make Task 277B ready.

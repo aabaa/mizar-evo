@@ -1769,3 +1769,11 @@ independent final-quality reviewも**NO FINDINGS**。全9 hard gatesはscore cap
 `100/100`でPASS。task-only implementation commit
 `b22033c38249326e366ceb9e19b1a9100da2248e`とcentral contractのpost-implementation
 checkpointはこのparity recordをexceptionなしでcompleteする。Task 277Bはnot readyのまま。
+
+## Task 277B-L Contract Parity
+
+canonical [EN contract](../../task_contracts/en/277B-L.md) と[JA companion]
+(../../task_contracts/ja/277B-L.md) はsole private direct producer probe、R1 binding `0`
+fixture identity、no-runner-route boundary、projected count `609 -> 610`、future Rust 5 paths、
+protected production inventory、coverage/trace/metadata changeなし、explicit Task 277B-not-ready
+statusを同期する。exact identifier/range/count/hashはEnglish canonicalで、bilingual exceptionはない。

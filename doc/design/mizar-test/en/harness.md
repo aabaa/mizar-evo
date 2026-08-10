@@ -5598,3 +5598,18 @@ verdict. The leaf is 67 lines with SHA-256
 `7c5cc9541b1cd2aabe050d3791e9153faeb302803cfa79abe39bfb58cb181d60`.
 The complete library passes `609/609`; the central contract owns the remaining
 verification and protected no-impact evidence.
+
+## Checker Task 277B-L Private Association Probe
+
+The [Task 277B-L contract](../../task_contracts/en/277B-L.md) reserves exactly
+one private leaf,
+`runner/tests/type_elaboration/template_type_parameter_association.rs`, and its
+`tests.rs` registration. It parses the unchanged inactive fixture through
+existing helpers and obtains the R1 collection. The leaf itself constructs a
+test-only `TypedAst` from the same validated F5 Surface/Resolved 57-node
+profile, attaching `resolved_node` values only through the resolver arena
+mapping; no dense-ID cast, range/name inference, existing typed helper, or 277A
+route is used. Its one regression checks binding `0` and the frozen
+`#53/#31/#2 -> #39/#21` typed association; it has no production runner,
+facade, dispatcher, detail key, active-stage, checker-installation, diagnostic,
+or coverage effect. The projected library list is `609 -> 610`.

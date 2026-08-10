@@ -5200,3 +5200,15 @@ checker output、Typed/Resolved slot、active-stage selection、metadata change�
 `7c5cc9541b1cd2aabe050d3791e9153faeb302803cfa79abe39bfb58cb181d60`。
 complete libraryは`609/609` PASSし、remaining verification/protected no-impact evidenceは
 central contractがownする。
+
+## Checker Task 277B-L Private Association Probe
+
+[Task 277B-L contract](../../task_contracts/ja/277B-L.md) は
+`runner/tests/type_elaboration/template_type_parameter_association.rs` private leaf 1件と
+その`tests.rs` registrationだけをreserveする。unchanged inactive fixtureをexisting helperでparse、
+R1 collectionを得る。leaf自身がsame validated F5 Surface/Resolved 57-node profileから
+test-only `TypedAst`を構築し、`resolved_node`をresolver arena mappingだけからattachする。
+dense-ID cast、range/name inference、existing typed helper、277A routeは使わない。regressionは
+binding `0` とfrozen `#53/#31/#2 -> #39/#21` typed associationだけ。production runner、
+facade、dispatcher、detail key、active-stage、checker-installation、diagnostic、coverage effectは
+なく、projected library listは`609 -> 610`。

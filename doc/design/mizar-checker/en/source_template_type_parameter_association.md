@@ -1,0 +1,107 @@
+# Source Template Type-Parameter Association
+
+> Canonical language: English. Japanese companion: [../ja/source_template_type_parameter_association.md](../ja/source_template_type_parameter_association.md).
+
+## Task 277B-L Template Type-Parameter Association
+
+This is the durable module owner for the future standalone checker module
+`crates/mizar-checker/src/source_template_type_parameter_association.rs`.
+The frozen orchestration, source/test scope, baselines, and readiness boundary
+are owned by [Task 277B-L](../../task_contracts/en/277B-L.md). The module is
+not implemented yet and its existence does **not** make Task 277B ready.
+
+The module consumes completed R1
+`TemplateTypeParameterSourceCollection` and an existing `TypedAst`. It returns
+an immutable association handoff. It neither extends 277A `source_template`,
+installs a Typed/Resolved slot, nor creates a production runner route.
+
+### Public API
+
+`SourceTemplateTypeParameterAssociationId` exposes only `new(index: usize) ->
+Self` and `index(self) -> usize`. `SourceTemplateTypeParameterAssociation` has
+getters:
+
+- `binding() -> TemplateTypeParameterBindingId`;
+- `definition_block()`, `parameter()`, `binder()`, `type_head()`, and
+  `identifier()` each returning `TypedNodeId`;
+- `parameter_range()` and `type_head_range()` each returning `SourceRange`; and
+- `parameter_source_ordinal()` and `type_head_source_ordinal()` each returning
+  `usize`.
+
+`SourceTemplateTypeParameterAssociationTable` exposes only
+`get(SourceTemplateTypeParameterAssociationId) ->
+Option<&SourceTemplateTypeParameterAssociation>`, `iter() -> impl
+Iterator<Item = (SourceTemplateTypeParameterAssociationId,
+&SourceTemplateTypeParameterAssociation)>`, `len() -> usize`, and `is_empty()
+-> bool`.
+
+`SourceTemplateTypeParameterAssociationHandoff` owns and exposes `source_id()
+-> SourceId`, `module_id() -> &ModuleId`, `associations() ->
+&SourceTemplateTypeParameterAssociationTable`, and `debug_text() -> String`.
+It is the sole output owner; there is no caller DTO.
+`SourceTemplateTypeParameterAssociationError` is
+`#[non_exhaustive]` and has `EnvironmentMismatch` plus
+`InvalidAssociation { association: SourceTemplateTypeParameterAssociationId }`.
+`SourceTemplateTypeParameterAssociationProducer` exposes exactly:
+
+```rust
+build(
+    collection: &TemplateTypeParameterSourceCollection,
+    typed_ast: &TypedAst,
+) -> Result<
+    SourceTemplateTypeParameterAssociationHandoff,
+    SourceTemplateTypeParameterAssociationError,
+>
+```
+
+### Invariants and validation
+
+Rows retain R1's binding identity, ranges, and source ordinals. They are dense
+in the existing resolver link order, which is already authoritative for order
+and ambiguity; the checker adds no reorder or duplicate error variant.
+
+Validation is fail-closed and ordered: environment; R1 binding lookup; then an
+exactly-one scan match where `TypedNode.resolved_node == Some(the R1
+ResolvedNodeId)` for each of the five sites; normal recovery; exact node kind;
+range anchors; R1 range equality; nonempty contained definition/binder anchors;
+then direct `definition -> parameter`, `parameter -> binder`, and
+`type_head -> identifier` edges. Every post-environment failure returns the
+association-specific invalid error. Zero/multiple scan matches fail; dense-ID
+casts and range/name inference are forbidden. The producer is deterministic,
+does not mutate `TypedAst`, and adds no Typed/Resolved link slot.
+
+The R1 fixture association is binding `0`,
+`DefinitionBlockItem#53` / `TemplateParameter#31` / `Identifier#2` to
+`TypeHead#39` / `Identifier#21`, in the 57-node arena rooted at 56, with
+parameter range `606..620`, type-head range `678..679`, and both ordinals 0.
+
+### Module boundary and tests
+
+The implementation may modify only the new module, checker `lib.rs`, checker
+lint-policy inventory, the private mizar-test leaf, and its `tests.rs` include.
+It must not edit resolver sources, `source_template.rs`, 277A, Typed/Resolved
+installation, Cargo, canonical specifications/tests/metadata, or production
+runner/facade/dispatch.
+
+Four checker tests cover exact mapping, environment/missing/ambiguous nodes,
+kind/range/recovery/edge corruption, and deterministic non-mutating rebuild.
+One private mizar-test real-fixture probe constructs its own F5 `TypedAst` from
+the same validated Surface/Resolved 57-node profile, attaching resolver IDs
+only through the arena mapping, and calls this producer directly. No existing
+helper or 277A route supplies that typed arena. It has no active semantic,
+diagnostic, or coverage effect.
+
+The same implementation commit adds this module to checker lint policy's
+public-enum module list, source/spec module list, public-API path allowlist,
+and `lib.rs` public-module allowlist. Its completion documentation adds the
+crate-export row and exact public-item inventory to the paired source/spec
+audits; this documentation prerequisite does not claim the absent module as a
+current export.
+
+## Public Enum Policy
+
+| Enum | Policy | Exhaustive exception |
+|---|---|---|
+| `SourceTemplateTypeParameterAssociationError` | `#[non_exhaustive]` | none |
+
+No exhaustive public enum exceptions are owned by this module.

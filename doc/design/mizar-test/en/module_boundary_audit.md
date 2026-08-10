@@ -13148,6 +13148,16 @@ transport.
 The final test-only scope is exactly these two paths; production runner remains
 38 paths / 80,090 lines with unchanged path/content hashes.
 
+## Checker Task 277B-L Private Association Probe
+
+[Task 277B-L](../../task_contracts/en/277B-L.md) permits only a private direct
+test leaf and `tests.rs` registration in mizar-test. It consumes existing
+frontend/parser output, completed resolver R1 data, and the standalone checker
+producer without adding a runner module, production route, facade, dispatcher,
+detail key, checker slot installation, Cargo edge, fixture/sidecar change,
+metadata/trace owner, diagnostic, or semantic publication. The production
+runner remains the protected 38 paths / 80090 lines with its frozen hashes.
+
 ## Checker Task 269GT Frozen Runner Boundary
 
 Only

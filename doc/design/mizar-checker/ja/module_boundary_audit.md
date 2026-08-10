@@ -1595,6 +1595,19 @@ reviewもPASSした。implementation commit `b67b028e07337ff5b72422bc8f16fb8f187
 umbrella Task 277はpartialのままで、successorはseparately frozen/reviewedでなければ
 ならない。
 
+## Task 277B-L Frozen Module Boundary
+
+[Task 277B-L](../../task_contracts/ja/277B-L.md) はfuture five-path Rust changeとして
+new standalone checker module、`lib.rs` export、generic lint-policy inventoryだけをreserve
+する。R1 collection dataと`TypedAst`をconsumeするが、resolver、277A
+`source_template.rs`、Typed/Resolved slot/install、Cargo、production runner/facade/dispatch、
+canonical specification/test/coverage artifactはmodifyしない。runner側codeはprivate direct
+producer probe 1件とtest-module includeだけ。
+
+new moduleはneutral immutable association handoffで、semantic、diagnostic、active-stage、
+Task 277B readiness boundaryをcrossしない。current 31-path checkerと38-path production-runner
+inventoryはseparately reviewed implementationがremeasureするまでprotectedである。
+
 ## Task 269GT frozen boundary
 
 implementationはexact

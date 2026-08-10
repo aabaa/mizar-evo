@@ -11849,6 +11849,15 @@ trace owner を追加または変更しない。identity transport の唯一の 
 `names.rs` のままである。final test-only scopeはexact 2 pathsで、production runnerは
 unchanged path/content hashの38 paths / 80,090 linesのまま。
 
+## Checker Task 277B-L Private Association Probe
+
+[Task 277B-L](../../task_contracts/ja/277B-L.md) はmizar-testのprivate direct test leafと
+`tests.rs` registrationだけをpermitする。existing frontend/parser output、complete resolver R1 data、
+standalone checker producerをconsumeするが、runner module、production route、facade、dispatcher、
+detail key、checker slot install、Cargo edge、fixture/sidecar change、metadata/trace owner、
+diagnostic、semantic publicationは追加しない。production runnerはfrozen hashのprotected
+38 paths / 80090 linesのまま。
+
 ## Checker Task 269GT frozen runner boundary
 
 変更可能なのは

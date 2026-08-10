@@ -3820,3 +3820,13 @@ the successor is selected only from fresh post-commit inventory.
 - [x] Complete exact staging, task-only implementation commit
   `b22033c38249326e366ceb9e19b1a9100da2248e`, immediate post-implementation
   proof, and fresh successor inventory. Task 277B remains not ready.
+
+## Checker Task 277B-L Private Association Probe
+
+- [ ] After fresh preflight, add only the direct private
+  [277B-L contract](../../task_contracts/en/277B-L.md) fixture test and its
+  registration; do not create a production route or alter `runner.rs`.
+- [ ] Assert the exact R1-to-Typed association and preserve all fixture,
+  sidecar, metadata, trace, coverage, diagnostic, and active-stage boundaries.
+- [ ] Recheck `609 -> 610`, protected production inventory, and independent
+  no-findings reviews. This task does not make Task 277B ready.

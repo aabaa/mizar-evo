@@ -3559,3 +3559,12 @@ post-commit fresh inventoryからだけ選択する。
 - [x] exact staging、task-only implementation commit
   `b22033c38249326e366ceb9e19b1a9100da2248e`、immediate post-implementation proof、
   fresh successor inventoryを完了。Task 277Bはnot readyのまま。
+
+## Checker Task 277B-L Private Association Probe
+
+- [ ] fresh preflight後、direct private [277B-L contract](../../task_contracts/ja/277B-L.md)
+  fixture testとそのregistrationだけを追加し、production routeを作らず`runner.rs`をalterしない。
+- [ ] exact R1-to-Typed associationをassertし、fixture、sidecar、metadata、trace、coverage、
+  diagnostic、active-stage boundaryを全てpreserveする。
+- [ ] `609 -> 610`、protected production inventory、independent no-findings reviewをrecheckする。
+  本taskはTask 277Bをreadyにしない。
