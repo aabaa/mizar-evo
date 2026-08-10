@@ -5696,3 +5696,20 @@ checkpoint](../../task_contracts/en/CHECKER-FRAENKEL-GENERATOR-BINDING-257C4A.md
 C4B remains unselected and requires a separately frozen post-closure
 documentation prerequisite; Task 277B remains not ready with zero semantic
 credit.
+
+## Checker Task 257C4B private bound-use probe
+
+The frozen [C4B contract](../../task_contracts/en/CHECKER-FRAENKEL-GENERATOR-BOUND-USE-257C4B.md)
+adds exactly one future private leaf,
+`runner/tests/type_elaboration/template_fraenkel_generator_bound_use.rs`, and
+one `runner/tests.rs` include. Its sole test is
+`task257c4b_real_fixture_builds_exact_fraenkel_generator_bound_uses`, changing
+the raw mizar-test library `613 -> 614`.
+
+The leaf reuses the existing private F5 parse/lower/typed-profile and completed
+277B-L, 277C, and C4A construction sequence, calls the public C4B producer
+directly, and asserts only source/module, dependency summary, three public
+bound-use rows, local lookup bindings, dense absence, literal debug text, and
+C4A non-mutation. It does not edit the immutable fixture or existing C4A leaf
+and is not a production route, active-stage assertion, semantic verdict,
+diagnostic, trace, sidecar, or coverage-credit consumer.

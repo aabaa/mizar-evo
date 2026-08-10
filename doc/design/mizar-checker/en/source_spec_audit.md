@@ -33,6 +33,26 @@ C4B remains unselected and requires a separately frozen post-closure
 documentation prerequisite; Task 277B remains not ready with zero semantic
 credit.
 
+## Task 257C4B Fraenkel generator bound-use classification
+
+The [C4B contract](../../task_contracts/en/CHECKER-FRAENKEL-GENERATOR-BOUND-USE-257C4B.md)
+closes only the `design_drift` of the missing separate derived bound-use
+transport record. Future exact-three-path implementation owns a bounded
+`source_drift` and Rust `test_gap`. Canonical Chapter 13 §13.4, especially
+§§13.4.2, 13.4.4, and 13.8.6, Chapter 18 §18.10.2, Architecture 16, immutable
+F5, and completed C4A already determine the bound identity and normalized
+three-use relation; there is no `spec_gap` and no new semantic test intent.
+
+F5 still has no nested-comprehension outer-generator use, so actual capture
+coverage remains a separate `test_gap`. C4B adds no Task-252 occurrence,
+capture, formula/type/sethood decision, diagnostic, semantic verdict,
+installation, route, trace, expectation, or coverage credit. Task 277B remains
+not ready with zero credit while `MC-G020` and `MC-G021` remain open.
+`doc/design/spec_coverage_audit.md` is an explicit no-op because specification
+mapping, traceability, follow-up ownership, deferred rationale, and semantic
+coverage status do not change. The schema-v2 compaction ledger is also
+unchanged; this task migrates no historical evidence or legacy anchor.
+
 ## Task 269SDU Implemented Zero-Credit Mapping
 
 The [central Task-269SDU contract](../../task_contracts/en/269SDU.md) implements one

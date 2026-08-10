@@ -36,6 +36,20 @@ C4B remains unselected and requires a separately frozen post-closure
 documentation prerequisite; Task 277B remains not ready with zero semantic
 credit.
 
+## Checker Task 257C4B frozen module boundary
+
+The [C4B contract](../../task_contracts/en/CHECKER-FRAENKEL-GENERATOR-BOUND-USE-257C4B.md)
+permits mizar-test changes only in `runner/tests.rs` and one new private
+type-elaboration leaf. The leaf consumes the checker C4B API through the
+existing inactive F5 test construction and cannot create, repair, normalize,
+or publish a missing checker dependency. Mizar-test production remains 38
+paths / 80090 lines with unchanged hashes.
+
+Public runner schemas, dispatch, active stages, Cargo, fixtures, expectations,
+trace/coverage, metadata, diagnostics, semantic verdicts, production checker
+paths, and downstream crates are excluded. The exact test-only delta is one
+include and one test (`613 -> 614`). Task 277B remains not ready and zero-credit.
+
 ## Resolver Task 277R2 Test Module Boundary
 
 [Task 277R2](../../task_contracts/en/RESOLVE-FRAENKEL-GENERATOR-VAR-277R2.md)

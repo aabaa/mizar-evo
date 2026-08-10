@@ -15,6 +15,12 @@ completed [C4A](../../task_contracts/ja/CHECKER-FRAENKEL-GENERATOR-BINDING-257C4
 parser/resolver production、source-term/source-set-term owner、formula/type interpretation、sethood request/verdict、diagnostic、Typed/Resolved install、facade/dispatch、Cargo/canonical artifact/metadata/downstream crateはexclude。
 implemented boundaryはexactで、2 ownerは3266/7303 lines、third checker production path changeなし。implementation/test reviewはno findings、broad workspace verificationはPASS、independent bilingual/boundary/final-quality reviewは**NO FINDINGS**。final-qualityは全`9/9` hard gates PASS、valid uncapped `100/100`（`20/20/15/15/10/10/5/5`）。historical pre-commit exact staging/cached reviewはPASS。task-only commit/immediate post-commit proof/accepted fresh-inventory dispositionはlanguage-local [historical checkpoint](../../task_contracts/ja/CHECKER-FRAENKEL-GENERATOR-BINDING-257C4A.md#historical-immediate-post-implementation-checkpoint)でclosed。C4Bはunselectedでseparate post-closure docs prerequisite freezeが必要。Task277Bはnot-ready/zero creditのまま。
 
+## Task 257C4B Fraenkel generator bound-use boundary
+
+Frozen [C4B](../../task_contracts/ja/CHECKER-FRAENKEL-GENERATOR-BOUND-USE-257C4B.md)のchecker production changeはexisting cohesive `source_formula_composition.rs`だけ。completed C4A handoffをconsumeし、`binding_env.rs`/Task252/source-term/parser/resolver/type/sethood/diagnostic/Typed-Resolved/facade/dispatch/Cargo/canonical artifact/metadata/downstream crateは変更しない。module countは32のままで、本ownerのline/content hashだけがmove可能。
+
+Full implementationはexact 3 Rust path（checker owner、mizar-test private registry、new private F5 bound-use leaf）。production module/splitなし。generic term/quantifier bound-use row reuse、resolver role copy、capture mutation、install/route追加は`boundary_violation`。Task277Bはboundary外/zero-credit。
+
 ## Split Gate
 
 behavior-neutral private module split が必要になるのは、checker-owned file が

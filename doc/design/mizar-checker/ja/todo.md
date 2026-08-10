@@ -6527,3 +6527,12 @@ post-commit fresh inventoryからだけ選択する。
 - [x] final-quality reviewを**NO FINDINGS**、全`9/9` hard gates PASS、valid uncapped `100/100`（`20/20/15/15/10/10/5/5`）で完了する。
 - [x] historical pre-commit exact staging/cached review（28 paths = 4 Rust/24 docs、new private leaf 1、unstaged 0、cached check PASS、stat `2435/101`）を完了する。
 - [x] task-only commit、immediate post-commit proof、accepted fresh successor inventoryをlanguage-local [historical checkpoint](../../task_contracts/ja/CHECKER-FRAENKEL-GENERATOR-BINDING-257C4A.md#historical-immediate-post-implementation-checkpoint)で完了する。C4Bはauthority-ready in principleだがunselectedで、separate post-closure docs prerequisite freezeが必要。Task277Bはnot-ready/zero creditのまま。
+
+## Task 257C4B Fraenkel generator bound-use transport
+
+- [x] separate EN/JA [C4B contract](../../task_contracts/ja/CHECKER-FRAENKEL-GENERATOR-BOUND-USE-257C4B.md)、exact ABI、C4A full snapshot validation、F5 three-row oracle、error precedence、test matrix、protected no-op、future exact 3 Rust pathをfreezeする。
+- [ ] docs-only commit/fresh clean preflight後、`source_formula_composition.rs`にdedicated bound-use row/table/handoffだけを実装する。
+- [ ] exact 4 checker testsで`550 -> 554`。Task252 term/reference、role copy、capture、semantic owner、install、routeは追加しない。
+- [ ] focused/checker `554/554`/format/package+workspace Clippy/tests/両lint/metadata/CLI/scope/hash/independent reviewsをPASSする。
+- [ ] 全`9/9` hard gatesとvalid `>=90/100`、exact scope/staging、task-only implementation commit、post-commit proof、fresh inventoryを完了する。
+- [ ] actual captureはseparate deferred、Task277Bはnot-ready/zero creditを維持する。

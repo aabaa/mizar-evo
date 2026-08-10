@@ -1924,3 +1924,15 @@ checkpoint](../../task_contracts/en/CHECKER-FRAENKEL-GENERATOR-BINDING-257C4A.md
 C4B remains unselected and requires a separately frozen post-closure
 documentation prerequisite; Task 277B remains not ready with zero semantic
 credit. No bilingual exception exists.
+
+## Task 257C4B frozen contract parity
+
+The new [EN canonical](../../task_contracts/en/CHECKER-FRAENKEL-GENERATOR-BOUND-USE-257C4B.md)
+and [JA companion](../../task_contracts/ja/CHECKER-FRAENKEL-GENERATOR-BOUND-USE-257C4B.md)
+freeze the same dependency-ready status, sole C4A input, exact public family
+and signatures, version/domain/debug strings, error precedence, F5 three-row
+oracle, four checker tests, `550 -> 554`, exact future three-Rust-path scope,
+hard prohibitions, protected no-op decision, nine gates, and Sol/Terra handoff.
+The paired checker owner sections are in the exact-24 documentation review
+surface. English remains canonical; there is no planned bilingual exception.
+Future completion must re-review both languages before acceptance.

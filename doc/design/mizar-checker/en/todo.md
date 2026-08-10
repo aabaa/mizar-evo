@@ -6910,3 +6910,22 @@ selected only from fresh post-commit inventory.
   C4B is authority-ready in principle but remains unselected and requires a
   separately frozen post-closure documentation prerequisite; Task 277B remains
   not ready with zero semantic credit.
+
+## Task 257C4B Fraenkel generator bound-use transport
+
+- [x] Freeze the separate EN/JA [C4B contract](../../task_contracts/en/CHECKER-FRAENKEL-GENERATOR-BOUND-USE-257C4B.md), exact public ABI, full C4A
+  snapshot validation, three-row F5 oracle, error precedence, test matrix,
+  protected no-op decision, and exact future three-Rust-path boundary.
+- [ ] After a docs-only commit and clean fresh preflight, implement only the
+  dedicated bound-use row/table/handoff in `source_formula_composition.rs`.
+- [ ] Add exactly the four named checker tests and preserve `550 -> 554`; add
+  no Task-252 term/reference, role copy, capture, semantic owner, install, or
+  route.
+- [ ] Pass focused tests, checker `554/554`, format, package/full-workspace
+  Clippy and tests, both lint policies, metadata, CLI/scope/hash checks, and
+  independent implementation/test/source-doc/bilingual/boundary reviews.
+- [ ] Pass all `9/9` hard gates and a valid final-quality score of at least
+  `90/100`, then complete exact scope/staging, a task-only implementation
+  commit, post-commit proof, and fresh successor inventory.
+- [ ] Keep actual capture separately deferred and Task 277B not ready with
+  zero semantic credit throughout.

@@ -1938,3 +1938,14 @@ checkpoint](../../task_contracts/en/CHECKER-FRAENKEL-GENERATOR-BINDING-257C4A.md
 C4B remains unselected and requires a separately frozen post-closure
 documentation prerequisite; Task 277B remains not ready with zero semantic
 credit. No bilingual exception exists.
+
+## Checker Task 257C4B frozen contract parity
+
+The [EN canonical](../../task_contracts/en/CHECKER-FRAENKEL-GENERATOR-BOUND-USE-257C4B.md)
+and [JA companion](../../task_contracts/ja/CHECKER-FRAENKEL-GENERATOR-BOUND-USE-257C4B.md)
+agree on the one future private leaf/include, exact sole test name, `613 ->
+614`, existing F5 construction reuse, and no-production/no-semantic/no-credit
+boundary. The harness, boundary, TODO, bilingual, and Task Index pairs are in
+the exact-24 review surface. English owns the exhaustive ABI and baseline
+hashes. No bilingual exception is planned; Task 277B remains not ready with
+zero credit.

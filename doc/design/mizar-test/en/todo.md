@@ -3866,6 +3866,20 @@ the successor is selected only from fresh post-commit inventory.
   separately frozen post-closure documentation prerequisite; Task 277B remains
   not ready with zero semantic credit.
 
+## Checker Task 257C4B private bound-use probe
+
+- [x] Freeze the exact private leaf, sole test name, `613 -> 614`, and
+  no-production/no-semantic/no-credit boundary in the paired contract and
+  harness owners under the [C4B contract](../../task_contracts/en/CHECKER-FRAENKEL-GENERATOR-BOUND-USE-257C4B.md).
+- [ ] After the docs-only commit and fresh preflight, add only
+  `template_fraenkel_generator_bound_use.rs` and its one `tests.rs` include.
+- [ ] Reuse the existing real F5 dependency construction and assert only the
+  exact public C4B handoff; do not edit the fixture, expectation, trace, C4A
+  leaf, route, diagnostic, verdict, or coverage state.
+- [ ] Pass the sole private test, mizar-test `614/614`, full required
+  verification and independent test/bilingual/boundary reviews, preserving
+  Task 277B not-ready/zero-credit status.
+
 ## Resolver Task 277R2 Test-Only Fixture Probe
 
 - [x] Freeze the [Task 277R2 contract](../../task_contracts/en/RESOLVE-FRAENKEL-GENERATOR-VAR-277R2.md)

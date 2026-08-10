@@ -15,6 +15,12 @@ canonical Ch.13 §13.4と§§13.4.2/13.4.4/13.8.6がbound generator/capture-late
 F5/expectation/traceはimmutable。`spec_gap`、fixture/expectation/trace/coverage credit変更はない。`doc/design/spec_coverage_audit.md`はowner/traceability/semantic coverage不変なのでunchanged。Task277Bはnot-ready/zero credit。broad workspace verificationはPASS。sole Low EN stale `Future Rust path` wordingを`Prerequisite Rust path`へrepair後、independent source-doc reviewは**NO FINDINGS**。
 final-qualityは**NO FINDINGS**、全`9/9` hard gates PASS、valid uncapped `100/100`（`20/20/15/15/10/10/5/5`）。historical pre-commit exact staging/cached reviewはPASS。task-only commit/immediate post-commit proof/accepted fresh-inventory dispositionはlanguage-local [historical checkpoint](../../task_contracts/ja/CHECKER-FRAENKEL-GENERATOR-BINDING-257C4A.md#historical-immediate-post-implementation-checkpoint)でclosed。C4Bはunselectedでseparate post-closure docs prerequisite freezeが必要。Task277Bはnot-ready/zero creditのまま。
 
+## Task 257C4B Fraenkel generator bound-use classification
+
+[C4B contract](../../task_contracts/ja/CHECKER-FRAENKEL-GENERATOR-BOUND-USE-257C4B.md)はmissing separate derived transport recordの`design_drift`だけをcloseする。future exact-three-path implementationがbounded `source_drift`/Rust `test_gap`をownする。canonical Ch.13 §13.4 umbrella（§§13.4.2/13.4.4/13.8.6）、Ch.18 §18.10.2、Architecture 16、immutable F5、completed C4Aがbound identity/normalized 3-use relationを決めており、`spec_gap`/new semantic test intentなし。
+
+F5にnested-comprehension outer-generator useがないためactual capture coverageはseparate `test_gap`。C4BはTask252 occurrence/capture/formula/type/sethood/diagnostic/verdict/install/route/trace/expectation/creditを追加しない。Task277Bは`MC-G020`/`MC-G021`未解消でnot-ready/zero credit。`doc/design/spec_coverage_audit.md`はmapping/trace/follow-up/deferred rationale/semantic coverage不変のexplicit no-op。schema-v2 ledgerもunchangedでlegacy evidence/anchor migrationなし。
+
 ## Task 269SDU Implemented Zero-Credit Mapping
 
 [central Task-269SDU contract](../../task_contracts/ja/269SDU.md) はChapters 4、13、

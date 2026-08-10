@@ -32,6 +32,23 @@ C4B remains unselected and requires a separately frozen post-closure
 documentation prerequisite; Task 277B remains not ready with zero semantic
 credit.
 
+## Task 257C4B Fraenkel generator bound-use boundary
+
+The frozen [C4B](../../task_contracts/en/CHECKER-FRAENKEL-GENERATOR-BOUND-USE-257C4B.md)
+keeps checker production changes to the existing cohesive
+`source_formula_composition.rs` owner only. It consumes the completed C4A
+handoff and adds no `binding_env.rs`, Task-252/source-term, parser/resolver,
+type/sethood, diagnostic, Typed/Resolved, facade, dispatch, Cargo, canonical
+artifact, metadata, or downstream-crate change. The module count remains 32;
+only this owner's line total and content hash may move.
+
+The full implementation boundary is exactly three Rust paths: this one checker
+owner, mizar-test's private test registry, and one new private F5 bound-use
+leaf. No new production module or split is justified. Reusing a generic term
+or quantifier-bound-use row, copying a resolver role, mutating capture, or
+adding installation/routing would cross an existing owner and is a
+`boundary_violation`. Task 277B remains outside the boundary and zero-credit.
+
 ## Split Gate
 
 A behavior-neutral private module split is required only when a checker-owned

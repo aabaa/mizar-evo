@@ -787,3 +787,118 @@ checkpoint](../../task_contracts/en/CHECKER-FRAENKEL-GENERATOR-BINDING-257C4A.md
 C4B remains unselected and requires a separately frozen post-closure
 documentation prerequisite; Task 277B remains not ready with zero semantic
 credit.
+
+## Task 257C4B Fraenkel generator bound-use transport
+
+The frozen [C4B contract](../../task_contracts/en/CHECKER-FRAENKEL-GENERATOR-BOUND-USE-257C4B.md)
+adds one independent, syntax-free association transaction to this existing
+module. Its producer consumes only the completed C4A handoff, revalidates the
+whole opaque C4A dependency snapshot, and maps the three normalized positions
+through the existing C4A `BindingEnv`. It creates no Task-252 term/reference,
+role copy, capture, formula, type, sethood, request, verdict, diagnostic,
+installation, or route.
+
+The exact public family is:
+
+```rust
+SourceFraenkelGeneratorBoundUseId
+SourceFraenkelGeneratorBoundUse
+SourceFraenkelGeneratorBoundUseTable
+SourceFraenkelGeneratorBoundUseHandoff
+#[non_exhaustive] SourceFraenkelGeneratorBoundUseError
+SourceFraenkelGeneratorBoundUseProducer
+```
+
+`SourceFraenkelGeneratorBoundUseId` exposes only:
+
+```rust
+new(index: usize) -> Self
+index(self) -> usize
+```
+
+The immutable row exposes exactly:
+
+```rust
+use_position() -> SourceFraenkelGeneratorUsePositionId
+binding_context() -> SourceFraenkelGeneratorBindingContextId
+resolver_use_index() -> usize
+source_ordinal() -> usize
+lookup_ordinal() -> usize
+context() -> BindingContextId
+binding() -> BindingId
+```
+
+The table exposes exactly:
+
+```rust
+get(id: SourceFraenkelGeneratorBoundUseId) -> Option<&SourceFraenkelGeneratorBoundUse>
+iter() -> impl Iterator<Item = (SourceFraenkelGeneratorBoundUseId, &SourceFraenkelGeneratorBoundUse)>
+len() -> usize
+is_empty() -> bool
+```
+
+The handoff exposes exactly:
+
+```rust
+source_id() -> SourceId
+module_id() -> &ModuleId
+dependency_summary() -> &str
+bound_uses() -> &SourceFraenkelGeneratorBoundUseTable
+debug_text() -> String
+```
+
+`dependency_summary()` is the exact C4A human summary
+`source-fraenkel-generator-binding-context-v1|module=<package>.<path>|bindings=1|use-positions=3`.
+It is non-authoritative and is never trusted without full snapshot validation.
+The C4B debug text is exactly
+`source-fraenkel-generator-bound-use-v1|module=<package>.<path>|bound-uses=3`.
+
+The producer signature is exactly:
+
+```rust
+SourceFraenkelGeneratorBoundUseProducer::build(
+    binding_context: &SourceFraenkelGeneratorBindingContextHandoff,
+) -> Result<
+    SourceFraenkelGeneratorBoundUseHandoff,
+    SourceFraenkelGeneratorBoundUseError,
+>
+```
+
+The handoff contains no public lower-dependency getter. Privately it retains a
+clone in a snapshot whose exact version is
+`source-fraenkel-generator-bound-use-dependency-v1` and exact domain is
+`source-fraenkel-generator-bound-use`. Both `build` and handoff validation
+check the wrapper environment, version/domain, C4A full validation, exact C4A
+summary, then dense C4B rows. C4A full validation transitively authenticates
+its R2, 277C, `TypedAst`, binding-table, use-position, and `BindingEnv` state;
+C4B does not reproduce or weaken that validation.
+
+The non-exhaustive error has exactly these variants and this precedence:
+
+```rust
+EnvironmentMismatch
+InvalidBindingContextDependency
+InvalidBoundUse { bound_use: SourceFraenkelGeneratorBoundUseId }
+```
+
+`EnvironmentMismatch` wins when the C4B wrapper source/module differs from its
+retained C4A dependency. `InvalidBindingContextDependency` next covers a stale
+version/domain, any C4A validation failure, or summary mismatch. Only after the
+dependency is valid does the lowest invalid dense C4B row return
+`InvalidBoundUse`; a wrong total count reports ID 0. No lower C4A error or raw
+resolver identity is exposed.
+
+For F5, bound-use IDs 0/1/2 map respectively from C4A use-position IDs 0/1/2,
+all through binding-context ID 0 and context 1 to binding 0. Their
+resolver-use/source ordinals are 0/1/2 and lookup ordinals are 1/2/3. Each
+lookup must be `Local(binding0)`. Ordinal 0 remains C4A's separate
+`ForwardReference` probe and is never a C4B row. Validation requires exact
+getter equality against the retained C4A rows and exact `BindingEnv::lookup`
+results; it does not infer an ordinal from a source range or spelling.
+
+Default-deny accepts only the complete three-row normal profile. Missing,
+extra, reordered, duplicated, recovered, stale, non-local, nested,
+multiple-generator, or shadowed state fails atomically. The four exact checker
+tests named by the contract cover the literal ABI/oracle, wrapper and complete
+snapshot corruption, row/lookup corruption plus precedence, and deterministic
+non-mutating replay. The raw checker list is frozen to change `550 -> 554`.

@@ -3619,3 +3619,10 @@ post-commit fresh inventoryからだけ選択する。
 - [x] final-quality reviewを**NO FINDINGS**、全`9/9` hard gates PASS、valid uncapped `100/100`（`20/20/15/15/10/10/5/5`）で完了する。
 - [x] historical pre-commit exact staging/cached reviewを28 paths（Rust 4、documentation 24）、new private leaf 1件、review時unstaged path 0件で完了し、cached diff checkも2435 insertions / 101 deletionsでPASSする。
 - [x] task-only commit、immediate post-commit proof、accepted fresh successor inventoryをlanguage-local [historical checkpoint](../../task_contracts/ja/CHECKER-FRAENKEL-GENERATOR-BINDING-257C4A.md#historical-immediate-post-implementation-checkpoint)で完了する。C4Bはauthority-ready in principleだがunselectedで、separate post-closure docs prerequisite freezeが必要。Task277Bはnot-ready/zero creditのまま。
+
+## Checker Task 257C4B private bound-use probe
+
+- [x] [C4B contract](../../task_contracts/ja/CHECKER-FRAENKEL-GENERATOR-BOUND-USE-257C4B.md)でexact private leaf/sole test/`613 -> 614`/no-production-no-semantic-no-credit boundaryをfreezeする。
+- [ ] docs-only commit/fresh preflight後、`template_fraenkel_generator_bound_use.rs`とone `tests.rs` includeだけを追加する。
+- [ ] existing F5 dependency constructionをreuseしexact public C4B handoffだけをassertする。fixture/expectation/trace/C4A leaf/route/diagnostic/verdict/coverageをeditしない。
+- [ ] sole test、mizar-test `614/614`、required verification、test/bilingual/boundary reviewsをPASSし、Task277B not-ready/zero-creditを維持する。

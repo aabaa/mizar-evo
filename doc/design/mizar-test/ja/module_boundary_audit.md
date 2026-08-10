@@ -18,6 +18,12 @@ completed [C4A contract](../../task_contracts/ja/CHECKER-FRAENKEL-GENERATOR-BIND
 `runner/tests.rs`とnew private type-elaboration leafだけ。leafはchecker handoffをconsumeし、missing lower dependencyをcreate/normalizeしない。public runner schema/dispatch/production checker path/Cargo/fixture/expectation/trace-coverage/metadata/diagnostic/active stage/downstream crateはexclude。
 measured 2-path test-only boundaryは66/156 linesでproduction inventory変更なし。implementation/test reviewはno findings、broad workspace verificationはPASS、independent bilingual/boundary/final-quality reviewは**NO FINDINGS**。final-qualityは全`9/9` hard gates PASS、valid uncapped `100/100`（`20/20/15/15/10/10/5/5`）。historical pre-commit exact staging/cached reviewは28 paths（Rust 4、documentation 24）、new private leaf 1件、review時unstaged path 0件でPASSし、cached diff checkも2435 insertions / 101 deletionsでPASSした。task-only commit/immediate post-commit proof/accepted fresh-inventory dispositionはlanguage-local [historical checkpoint](../../task_contracts/ja/CHECKER-FRAENKEL-GENERATOR-BINDING-257C4A.md#historical-immediate-post-implementation-checkpoint)でclosed。C4Bはunselectedでseparate post-closure docs prerequisite freezeが必要。Task277Bはnot-ready/zero creditのまま。
 
+## Checker Task 257C4B frozen module boundary
+
+[C4B contract](../../task_contracts/ja/CHECKER-FRAENKEL-GENERATOR-BOUND-USE-257C4B.md)が許すmizar-test changeは`runner/tests.rs`とnew private type-elaboration leafだけ。existing inactive F5 constructionからchecker APIをconsumeし、missing dependencyをcreate/repair/normalize/publishしない。productionは38 paths/80090 lines/hash unchanged。
+
+Public runner schema/dispatch/active stage/Cargo/fixture/expectation/trace-coverage/metadata/diagnostic/verdict/production checker/downstream crateはexclude。exact test-only deltaはone include/one test（`613 -> 614`）。Task277Bはnot-ready/zero-credit。
+
 ## Resolver Task 277R2 test module boundary
 
 [Task 277R2](../../task_contracts/ja/RESOLVE-FRAENKEL-GENERATOR-VAR-277R2.md) は
