@@ -100,6 +100,7 @@ tableは`get`/source-ordered `iter`/`len`/`is_empty`だけを公開する。
 | `SourceConditionFormulaCompositionError` | `#[non_exhaustive]`。callerはcondition/formula validation failureをexhaustive matchしない。 |
 | `SourceFormulaAtomicEdgeRole` | `#[non_exhaustive]`。callerはlater frozen cross-family body roleを許容する。 |
 | `SourceFormulaCompositionError` | `#[non_exhaustive]`。callerはvalidation failureをexhaustive matchしない。 |
+| `SourceFraenkelGeneratorBindingContextError` | `#[non_exhaustive]`。callerはFraenkel generator binding-context validation failureをexhaustive matchしない。 |
 | `SourcePredicateChainCompositionError` | `#[non_exhaustive]`。callerはpredicate-chain composition validation failureをexhaustive matchしない。 |
 
 この module が所有する exhaustive public enum exception はない。
@@ -705,7 +706,8 @@ capture、facts、theorem acceptance、proof、IRはdeferredである。
 ## Task 257C4A Fraenkel generator binding context
 
 Task257Cはcanonical [C4A contract](../../task_contracts/ja/CHECKER-FRAENKEL-GENERATOR-BINDING-257C4A.md)
-のplanned standalone handoffを所有する。本moduleはbinding-context ID/row/table、use-position
+のcompleted standalone handoffを所有する。本moduleはbinding-context ID/row/table、use-position
 ID/row/table、handoff、producer、errorだけをexposeする。producerはexact 277C structural composition、R2 resolver
 collection、`TypedAst`をconsumeし、opaque version/domain-tagged snapshotでfull fieldとR2→277C→typed binder relationをrevalidateする。
 3 use rowはactual resolver positionのnormalizationだけでterm/reference/captureを所有しない。default-denyでformula/type/sethood/evidence/verdict/diagnostic、Typed/Resolved install、production routeなし。C4Bはuse/capture map前にhandoffをconsumeする。
+implemented ownerは7303 lines、SHA-256 `f6da763061479e74e7b8f39169ecad311bb9bf879e91e93824d9899798017abc`。4 exact checker tests、550-test package library、format、workspace Clippy、full workspace tests、両lint、metadata、implementation/test reviewsはPASS。independent source-doc/bilingual/boundary/final-quality reviewsは**NO FINDINGS**。final-qualityは全`9/9` hard gates PASS、valid uncapped `100/100`（`20/20/15/15/10/10/5/5`）。exact staging/cached reviewはPASS。pendingはtask-only commit/post-commit proof/fresh inventoryだけ。

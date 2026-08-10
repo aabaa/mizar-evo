@@ -1796,5 +1796,5 @@ synchronization exceptionはない。successorはselectせず、Task 277Bはnot 
 
 ## Task 257C4A frozen contract parity
 
-planned C4Aは[EN](../../task_contracts/en/CHECKER-FRAENKEL-GENERATOR-BINDING-257C4A.md)/[JA](../../task_contracts/ja/CHECKER-FRAENKEL-GENERATOR-BINDING-257C4A.md)のEN-canonical/JA-companion pair。
-同じ4 future Rust path、ABI、一方向SourceBound invariant、F5 profile、opaque validation boundary、test list、baseline、semantic deferralをfreezeする。checker paired owner deltaも同期し、このplanned docs changeはimplementation evidence/exceptionをrecordしない。
+completed C4Aは[EN](../../task_contracts/en/CHECKER-FRAENKEL-GENERATOR-BINDING-257C4A.md)/[JA](../../task_contracts/ja/CHECKER-FRAENKEL-GENERATOR-BINDING-257C4A.md)のEN-canonical/JA-companion pair。
+同じ4 Rust path、ABI、一方向SourceBound invariant、F5 profile、opaque validation boundary、test list、final measurement、semantic deferralを同期しexceptionなし。focused/package/format/Clippy/full workspaceとimplementation/test evidenceはcomplete。sole Low EN stale-tense findingをrepair後、independent bilingual/source-doc/final-quality reviewは**NO FINDINGS**。final-qualityは全`9/9` hard gates PASS、valid uncapped `100/100`（`20/20/15/15/10/10/5/5`）。exact staging/cached reviewはPASS。pendingはtask-only commit/post-commit proof/fresh inventoryだけ。

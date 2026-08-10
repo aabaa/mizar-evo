@@ -10,9 +10,10 @@ source behavior、`.miz` fixture、expectation、public API は変更しない�
 
 ## Task 257C4A Fraenkel generator source-spec audit
 
-[C4A contract](../../task_contracts/ja/CHECKER-FRAENKEL-GENERATOR-BINDING-257C4A.md)は`design_drift`解決だけをrecordする。
+[C4A contract](../../task_contracts/ja/CHECKER-FRAENKEL-GENERATOR-BINDING-257C4A.md)は`design_drift`、`source_drift`、Rust `test_gap`のclosureをrecordする。
 canonical Ch.13 §13.4と§§13.4.2/13.4.4/13.8.6がbound generator/capture-later authority、Ch.18 §18.10.2はsethood verdictを供給しない。
-F5/expectation/traceはimmutable。future implementationのbounded `source_drift`/Rust `test_gap`以外、`spec_gap`、fixture/expectation/trace/coverage credit変更はない。
+F5/expectation/traceはimmutable。`spec_gap`、fixture/expectation/trace/coverage credit変更はない。`doc/design/spec_coverage_audit.md`はowner/traceability/semantic coverage不変なのでunchanged。Task277Bはnot-ready/zero credit。broad workspace verificationはPASS。sole Low EN stale `Future Rust path` wordingを`Prerequisite Rust path`へrepair後、independent source-doc reviewは**NO FINDINGS**。
+final-qualityは**NO FINDINGS**、全`9/9` hard gates PASS、valid uncapped `100/100`（`20/20/15/15/10/10/5/5`）。exact staging/cached reviewはPASS。pendingはtask-only commit/post-commit proof/fresh inventoryだけ。
 
 ## Task 269SDU Implemented Zero-Credit Mapping
 

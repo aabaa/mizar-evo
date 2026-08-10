@@ -106,6 +106,7 @@ The dense ids are `SourceFormulaAtomicEdgeId` and
 | `SourceConditionFormulaCompositionError` | `#[non_exhaustive]`; callers must not exhaustively match condition/formula validation failures. |
 | `SourceFormulaAtomicEdgeRole` | `#[non_exhaustive]`; callers must tolerate later frozen cross-family body roles. |
 | `SourceFormulaCompositionError` | `#[non_exhaustive]`; callers must not exhaustively match validation failures. |
+| `SourceFraenkelGeneratorBindingContextError` | `#[non_exhaustive]`; callers must not exhaustively match Fraenkel generator binding-context validation failures. |
 | `SourcePredicateChainCompositionError` | `#[non_exhaustive]`; callers must not exhaustively match predicate-chain composition validation failures. |
 
 No exhaustive public enum exceptions are owned by this module.
@@ -760,9 +761,9 @@ deferred.
 
 ## Task 257C4A Fraenkel generator binding context
 
-Task 257C owns the planned standalone C4A handoff described by the canonical
+Task 257C owns the completed standalone C4A handoff described by the canonical
 [contract](../../task_contracts/en/CHECKER-FRAENKEL-GENERATOR-BINDING-257C4A.md).
-This module will expose the binding-context ID/row/table, use-position
+This module exposes the binding-context ID/row/table, use-position
 ID/row/table, handoff, producer, and error only. Its producer consumes exact
 277C structural composition, R2 resolver collection, and `TypedAst`; opaque,
 version/domain-tagged dependency snapshots revalidate their full fields and
@@ -771,3 +772,13 @@ resolver positions only; they own no term, reference, or capture. C4A is
 default-deny and produces no formula/type/sethood/evidence/verdict/diagnostic,
 Typed/Resolved install, or production route. C4B must consume its handoff
 before mapping a use or capture.
+The implemented owner is 7303 lines, SHA-256
+`f6da763061479e74e7b8f39169ecad311bb9bf879e91e93824d9899798017abc`.
+All four exact checker tests, the 550-test package library, formatting,
+workspace Clippy, full workspace tests, both lint suites, metadata, and
+implementation/test reviews pass. Independent source/documentation and
+bilingual/boundary reviews report **NO FINDINGS**. Final-quality is **NO
+FINDINGS**, with `9/9` hard gates passing at valid uncapped `100/100`
+(`20/20/15/15/10/10/5/5`); only commit closeout remains pending.
+Exact staging/cached review passes; only task-only commit, post-commit proof,
+and fresh inventory remain.

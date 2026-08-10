@@ -1904,10 +1904,17 @@ with zero semantic credit.
 
 ## Task 257C4A frozen contract parity
 
-The planned C4A record is an EN-canonical/JA-companion pair:
+The completed C4A record is an EN-canonical/JA-companion pair:
 [EN](../../task_contracts/en/CHECKER-FRAENKEL-GENERATOR-BINDING-257C4A.md) /
 [JA](../../task_contracts/ja/CHECKER-FRAENKEL-GENERATOR-BINDING-257C4A.md).
-Both records freeze the same four future Rust paths, ABI, one-way SourceBound
+Both records freeze the same four completed Rust paths, ABI, one-way SourceBound
 invariant, F5 profile, opaque validation boundary, test list, baselines, and
-semantic deferrals. The paired checker owner deltas are synchronized; this
-planned documentation change records no implementation evidence or exception.
+semantic deferrals and exact completion measurements. The paired checker owner
+deltas are synchronized with no exception. Focused/package/format/Clippy/full
+workspace and implementation/test evidence is complete; independent bilingual
+and source/documentation reviews report **NO FINDINGS**. The sole Low EN stale-
+tense finding (`Future Rust path`) was repaired to `Prerequisite Rust path`
+before the no-findings re-review. Final-quality is **NO FINDINGS**; all `9/9`
+hard gates pass at valid uncapped `100/100` (`20/20/15/15/10/10/5/5`). Only
+task-only commit, post-commit proof, and fresh inventory remain after the
+passing exact staging/cached review.

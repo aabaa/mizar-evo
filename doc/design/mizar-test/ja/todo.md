@@ -3611,5 +3611,11 @@ post-commit fresh inventoryからだけ選択する。
 
 ## Checker Task 257C4A private binding-context probe
 
-- [ ] new private leafに`task257c4a_real_fixture_builds_exact_fraenkel_generator_binding_context`だけをregisterし、`612 -> 613` boundaryを守る。
-- [ ] exact C4A handoffをconsume/assertし、production route/semantic assertion/canonical artifact mutation/trace/coverage creditを追加しない。
+- [x] new private leafに`task257c4a_real_fixture_builds_exact_fraenkel_generator_binding_context`だけをregisterし、`612 -> 613` boundaryを守る。
+- [x] exact C4A handoffをconsume/assertし、production route/semantic assertion/canonical artifact mutation/trace/coverage creditを追加しない。
+- [x] private fixture test、613-test library、format、package/full-workspace Clippy、implementation/test reviewsをPASS。
+- [x] full workspace tests、両lint policy、metadata `137/137`、frozen hash一致の5 CLI replay（expected 23 warnings/0 errors）をPASS。
+- [x] sole Low stale-tense wording repair後、source-doc/bilingual/boundary reviewsを**NO FINDINGS**で完了する。
+- [x] final-quality reviewを**NO FINDINGS**、全`9/9` hard gates PASS、valid uncapped `100/100`（`20/20/15/15/10/10/5/5`）で完了する。
+- [x] exact staging/cached reviewを28 paths（Rust 4、documentation 24）、new private leaf 1件、review時unstaged path 0件で完了し、cached diff checkも2435 insertions / 101 deletionsでPASSする。
+- [ ] task-only commit、post-commit proof、fresh successor inventoryを完了する。

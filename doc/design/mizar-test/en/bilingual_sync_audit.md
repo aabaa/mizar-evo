@@ -1921,7 +1921,15 @@ semantic credit.
 
 The [EN canonical](../../task_contracts/en/CHECKER-FRAENKEL-GENERATOR-BINDING-257C4A.md)
 and [JA companion](../../task_contracts/ja/CHECKER-FRAENKEL-GENERATOR-BINDING-257C4A.md)
-agree on the one private leaf/registration, exact test name, `612 -> 613`
+agree on the completed one private leaf/registration, exact test name, `612 -> 613`
 registration delta, and no-production/no-semantic/no-credit boundary. English
-owns exact Rust types, protected hashes, and implementation evidence. This
-docs-only record has no synchronization exception.
+owns exact Rust types, protected hashes, and implementation evidence. The
+completion records are synchronized with no exception. After repairing the one
+Low EN stale `Future Rust path` wording, independent bilingual/boundary and
+source/documentation reviews report **NO FINDINGS**. Broad workspace and
+five-CLI verification pass. Final-quality is **NO FINDINGS**; all `9/9` hard
+gates pass at valid uncapped `100/100` (`20/20/15/15/10/10/5/5`). Exact
+staging/cached review passed over 28 paths (4 Rust and 24 documentation paths),
+including one new private leaf, with no unstaged paths at review time; cached
+diff check passed at 2435 insertions / 101 deletions. Only the task-only commit,
+post-commit proof, and fresh successor inventory remain pending.

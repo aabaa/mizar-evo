@@ -14,8 +14,9 @@ dispatch、CLI、corpus/trace/metadata、Cargo、semantic publication、coverage
 
 ## Checker Task 257C4A frozen module boundary
 
-planned [C4A contract](../../task_contracts/ja/CHECKER-FRAENKEL-GENERATOR-BINDING-257C4A.md)が許すmizar-test changeは
+completed [C4A contract](../../task_contracts/ja/CHECKER-FRAENKEL-GENERATOR-BINDING-257C4A.md)が実装したmizar-test changeは
 `runner/tests.rs`とnew private type-elaboration leafだけ。leafはchecker handoffをconsumeし、missing lower dependencyをcreate/normalizeしない。public runner schema/dispatch/production checker path/Cargo/fixture/expectation/trace-coverage/metadata/diagnostic/active stage/downstream crateはexclude。
+measured 2-path test-only boundaryは66/156 linesでproduction inventory変更なし。implementation/test reviewはno findings、broad workspace verificationはPASS、independent bilingual/boundary/final-quality reviewは**NO FINDINGS**。final-qualityは全`9/9` hard gates PASS、valid uncapped `100/100`（`20/20/15/15/10/10/5/5`）。exact staging/cached reviewは28 paths（Rust 4、documentation 24）、new private leaf 1件、review時unstaged path 0件でPASSし、cached diff checkも2435 insertions / 101 deletionsでPASSした。pendingはtask-only commit、post-commit proof、fresh successor inventoryだけ。
 
 ## Resolver Task 277R2 test module boundary
 

@@ -6886,10 +6886,21 @@ selected only from fresh post-commit inventory.
 
 ## Task 257C4A Fraenkel generator binding context
 
-- [ ] Implement only the frozen C4A contract in `binding_env.rs` and
+- [x] Implement only the frozen C4A contract in `binding_env.rs` and
   `source_formula_composition.rs`, with its four exact checker tests and no
   semantic expansion.
-- [ ] Revalidate R2/277C/TypedAst full-field dependencies atomically and expose
+- [x] Revalidate R2/277C/TypedAst full-field dependencies atomically and expose
   only the opaque binding-context handoff; C4B owns any later use/capture map.
-- [ ] Keep F5, expectations, trace, coverage, diagnostics, production route,
+- [x] Keep F5, expectations, trace, coverage, diagnostics, production route,
   and Task-277B readiness unchanged.
+- [x] Pass the exact four checker tests, 550-test checker library, formatting,
+  package/full-workspace Clippy, and implementation/test reviews with no findings.
+- [x] Pass full workspace tests, both lint policies, metadata `137/137`, and
+  all five frozen-hash CLI replays with expected 23 warnings / zero errors.
+- [x] Complete source/documentation and bilingual/boundary reviews at **NO
+  FINDINGS** after repairing the one Low stale-tense wording.
+- [x] Complete final-quality review at **NO FINDINGS**, with all `9/9` hard
+  gates passing at valid uncapped `100/100` (`20/20/15/15/10/10/5/5`).
+- [x] Complete exact staging/cached review over 28 paths (4 Rust / 24 docs), one
+  new private leaf, no unstaged paths, cached check PASS, and `2435/101` stat.
+- [ ] Complete task-only commit, post-commit proof, and fresh successor inventory.

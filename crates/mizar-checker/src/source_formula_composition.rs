@@ -1,7 +1,12 @@
 //! Syntax-free cross-family source formula composition transport.
 
 use crate::{
-    binding_env::{BindingLookupResult, BindingLookupSite},
+    binding_env::{
+        BinderIdentity, BindingContextDraft, BindingContextId, BindingContextLayer,
+        BindingContextOwner, BindingContextRecovery, BindingContextTable, BindingDraft, BindingEnv,
+        BindingEnvParts, BindingId, BindingKind, BindingLookupResult, BindingLookupSite,
+        BindingRecoveryState, BindingStatus, BindingTable, BindingTypeSite, CapturedFreeVariables,
+    },
     source_application::{
         SourceFunctorApplicationForm, SourceFunctorApplicationHandoff, SourceFunctorApplicationId,
         SourceFunctorApplicationKind, SourceFunctorApplicationRecovery, SourceFunctorArgumentId,
@@ -25,15 +30,27 @@ use crate::{
         SourceSetTermKind, SourceSetTermRecovery, SourceSetTypeHead, SourceSetTypeOwner,
         SourceSetTypeSiteId,
     },
+    source_template_type_parameter_association::{
+        SourceTemplateFraenkelStructuralComposition,
+        SourceTemplateFraenkelStructuralCompositionHandoff,
+        SourceTemplateFraenkelStructuralCompositionId,
+    },
     source_term::{
         SourceNumericTypeRequestId, SourcePrimaryTermHandoff, SourcePrimaryTermId,
         SourcePrimaryTermKind, SourcePrimaryTermRecovery, SourcePrimaryTermReferenceId,
         SourcePrimaryTermReferenceRole, SourcePrimaryTermRole,
     },
-    typed_ast::TypedArena,
+    typed_ast::{NodeRecoveryState, TypedArena, TypedAst, TypedNode, TypedNodeId},
 };
-use mizar_resolve::resolved_ast::ModuleId;
-use mizar_session::{SourceId, SourceRange};
+use mizar_resolve::{
+    names::{
+        FraenkelGeneratorVariableBinding, FraenkelGeneratorVariableBindingId,
+        FraenkelGeneratorVariableSourceCollection, FraenkelGeneratorVariableUseLink,
+        FraenkelGeneratorVariableUseRole,
+    },
+    resolved_ast::{ModuleId, ResolvedNodeId},
+};
+use mizar_session::{SourceAnchor, SourceId, SourceRange};
 use std::{
     error::Error,
     fmt::{self, Write as _},
@@ -2388,6 +2405,1042 @@ fn atomic_edge_role_key(role: SourceFormulaAtomicEdgeRole) -> &'static str {
     }
 }
 
+dense_id!(SourceFraenkelGeneratorBindingContextId);
+dense_id!(SourceFraenkelGeneratorUsePositionId);
+
+/// One checked Fraenkel generator binding context.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceFraenkelGeneratorBindingContext {
+    composition: SourceTemplateFraenkelStructuralCompositionId,
+    resolver_binding: FraenkelGeneratorVariableBindingId,
+    context: BindingContextId,
+    binding: BindingId,
+    source_ordinal: usize,
+}
+
+impl SourceFraenkelGeneratorBindingContext {
+    #[must_use]
+    pub const fn composition(&self) -> SourceTemplateFraenkelStructuralCompositionId {
+        self.composition
+    }
+
+    #[must_use]
+    pub const fn resolver_binding(&self) -> FraenkelGeneratorVariableBindingId {
+        self.resolver_binding
+    }
+
+    #[must_use]
+    pub const fn context(&self) -> BindingContextId {
+        self.context
+    }
+
+    #[must_use]
+    pub const fn binding(&self) -> BindingId {
+        self.binding
+    }
+
+    #[must_use]
+    pub const fn source_ordinal(&self) -> usize {
+        self.source_ordinal
+    }
+}
+
+/// Dense checked Fraenkel generator binding contexts.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceFraenkelGeneratorBindingContextTable {
+    rows: Vec<SourceFraenkelGeneratorBindingContext>,
+}
+
+impl SourceFraenkelGeneratorBindingContextTable {
+    #[must_use]
+    pub fn get(
+        &self,
+        id: SourceFraenkelGeneratorBindingContextId,
+    ) -> Option<&SourceFraenkelGeneratorBindingContext> {
+        self.rows.get(id.index())
+    }
+
+    pub fn iter(
+        &self,
+    ) -> impl Iterator<
+        Item = (
+            SourceFraenkelGeneratorBindingContextId,
+            &SourceFraenkelGeneratorBindingContext,
+        ),
+    > {
+        self.rows
+            .iter()
+            .enumerate()
+            .map(|(index, row)| (SourceFraenkelGeneratorBindingContextId::new(index), row))
+    }
+
+    #[must_use]
+    pub const fn len(&self) -> usize {
+        self.rows.len()
+    }
+
+    #[must_use]
+    pub const fn is_empty(&self) -> bool {
+        self.rows.is_empty()
+    }
+}
+
+/// One normalized lookup position for a checked Fraenkel generator use.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceFraenkelGeneratorUsePosition {
+    binding_context: SourceFraenkelGeneratorBindingContextId,
+    resolver_use_index: usize,
+    source_ordinal: usize,
+    lookup_ordinal: usize,
+}
+
+impl SourceFraenkelGeneratorUsePosition {
+    #[must_use]
+    pub const fn binding_context(&self) -> SourceFraenkelGeneratorBindingContextId {
+        self.binding_context
+    }
+
+    #[must_use]
+    pub const fn resolver_use_index(&self) -> usize {
+        self.resolver_use_index
+    }
+
+    #[must_use]
+    pub const fn source_ordinal(&self) -> usize {
+        self.source_ordinal
+    }
+
+    #[must_use]
+    pub const fn lookup_ordinal(&self) -> usize {
+        self.lookup_ordinal
+    }
+}
+
+/// Dense normalized lookup positions for a checked Fraenkel generator.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceFraenkelGeneratorUsePositionTable {
+    rows: Vec<SourceFraenkelGeneratorUsePosition>,
+}
+
+impl SourceFraenkelGeneratorUsePositionTable {
+    #[must_use]
+    pub fn get(
+        &self,
+        id: SourceFraenkelGeneratorUsePositionId,
+    ) -> Option<&SourceFraenkelGeneratorUsePosition> {
+        self.rows.get(id.index())
+    }
+
+    pub fn iter(
+        &self,
+    ) -> impl Iterator<
+        Item = (
+            SourceFraenkelGeneratorUsePositionId,
+            &SourceFraenkelGeneratorUsePosition,
+        ),
+    > {
+        self.rows
+            .iter()
+            .enumerate()
+            .map(|(index, row)| (SourceFraenkelGeneratorUsePositionId::new(index), row))
+    }
+
+    #[must_use]
+    pub const fn len(&self) -> usize {
+        self.rows.len()
+    }
+
+    #[must_use]
+    pub const fn is_empty(&self) -> bool {
+        self.rows.is_empty()
+    }
+}
+
+/// A rejected checked Fraenkel generator binding-context handoff.
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum SourceFraenkelGeneratorBindingContextError {
+    EnvironmentMismatch,
+    InvalidStructuralDependency,
+    InvalidResolverDependency,
+    InvalidBindingContext {
+        binding_context: SourceFraenkelGeneratorBindingContextId,
+    },
+    InvalidUsePosition {
+        use_position: SourceFraenkelGeneratorUsePositionId,
+    },
+    InvalidEnvironment,
+}
+
+impl fmt::Display for SourceFraenkelGeneratorBindingContextError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::EnvironmentMismatch => {
+                formatter.write_str("Fraenkel generator binding-context environment mismatch")
+            }
+            Self::InvalidStructuralDependency => formatter
+                .write_str("Fraenkel generator binding-context structural dependency is invalid"),
+            Self::InvalidResolverDependency => formatter
+                .write_str("Fraenkel generator binding-context resolver dependency is invalid"),
+            Self::InvalidBindingContext { binding_context } => write!(
+                formatter,
+                "Fraenkel generator binding context {} is invalid",
+                binding_context.index()
+            ),
+            Self::InvalidUsePosition { use_position } => write!(
+                formatter,
+                "Fraenkel generator use position {} is invalid",
+                use_position.index()
+            ),
+            Self::InvalidEnvironment => {
+                formatter.write_str("Fraenkel generator binding environment is invalid")
+            }
+        }
+    }
+}
+
+impl Error for SourceFraenkelGeneratorBindingContextError {}
+
+const FRAENKEL_GENERATOR_BINDING_SNAPSHOT_VERSION: &str =
+    "source-fraenkel-generator-binding-context-dependencies-v1";
+const FRAENKEL_GENERATOR_BINDING_SNAPSHOT_DOMAIN: &str =
+    "source-fraenkel-generator-binding-context";
+
+#[derive(Clone, PartialEq, Eq)]
+struct SourceFraenkelGeneratorBindingDependencies {
+    version: &'static str,
+    domain: &'static str,
+    structural: SourceTemplateFraenkelStructuralCompositionHandoff,
+    resolver: FraenkelGeneratorVariableSourceCollection,
+    typed_ast: TypedAst,
+}
+
+/// Opaque handoff for the checked Fraenkel generator binding context.
+#[derive(Clone, PartialEq, Eq)]
+pub struct SourceFraenkelGeneratorBindingContextHandoff {
+    source_id: SourceId,
+    module_id: ModuleId,
+    structural_summary: String,
+    resolver_summary: String,
+    binding_env: BindingEnv,
+    bindings: SourceFraenkelGeneratorBindingContextTable,
+    use_positions: SourceFraenkelGeneratorUsePositionTable,
+    dependencies: SourceFraenkelGeneratorBindingDependencies,
+}
+
+impl SourceFraenkelGeneratorBindingContextHandoff {
+    #[must_use]
+    pub const fn source_id(&self) -> SourceId {
+        self.source_id
+    }
+
+    #[must_use]
+    pub const fn module_id(&self) -> &ModuleId {
+        &self.module_id
+    }
+
+    #[must_use]
+    pub fn structural_summary(&self) -> &str {
+        &self.structural_summary
+    }
+
+    #[must_use]
+    pub fn resolver_summary(&self) -> &str {
+        &self.resolver_summary
+    }
+
+    #[must_use]
+    pub const fn binding_env(&self) -> &BindingEnv {
+        &self.binding_env
+    }
+
+    #[must_use]
+    pub const fn bindings(&self) -> &SourceFraenkelGeneratorBindingContextTable {
+        &self.bindings
+    }
+
+    #[must_use]
+    pub const fn use_positions(&self) -> &SourceFraenkelGeneratorUsePositionTable {
+        &self.use_positions
+    }
+
+    #[must_use]
+    pub fn debug_text(&self) -> String {
+        format!(
+            "source-fraenkel-generator-binding-context-v1|module={}.{}|bindings={}|use-positions={}",
+            self.module_id.package().as_str(),
+            self.module_id.path().as_str(),
+            self.bindings.len(),
+            self.use_positions.len(),
+        )
+    }
+
+    fn validate(&self) -> Result<(), SourceFraenkelGeneratorBindingContextError> {
+        let dependencies = &self.dependencies;
+        if self.source_id != dependencies.structural.source_id()
+            || self.source_id != dependencies.resolver.source_id()
+            || self.source_id != dependencies.typed_ast.source_id()
+            || &self.module_id != dependencies.structural.module_id()
+            || &self.module_id != dependencies.resolver.module()
+            || &self.module_id != dependencies.typed_ast.module_id()
+        {
+            return Err(SourceFraenkelGeneratorBindingContextError::EnvironmentMismatch);
+        }
+
+        validate_fraenkel_generator_dependency_header(dependencies)?;
+        let structural =
+            validate_structural_dependency(&dependencies.structural, &dependencies.typed_ast)
+                .ok_or(SourceFraenkelGeneratorBindingContextError::InvalidStructuralDependency)?;
+        if self.structural_summary != dependencies.structural.debug_text() {
+            return Err(SourceFraenkelGeneratorBindingContextError::InvalidStructuralDependency);
+        }
+        let profile = validate_resolver_dependency(
+            &dependencies.resolver,
+            &dependencies.typed_ast,
+            structural,
+        )
+        .ok_or(SourceFraenkelGeneratorBindingContextError::InvalidResolverDependency)?;
+        if self.resolver_summary != dependencies.resolver.debug_text() {
+            return Err(SourceFraenkelGeneratorBindingContextError::InvalidResolverDependency);
+        }
+        validate_binding_context_rows(&self.bindings, &profile)?;
+        validate_use_position_rows(&self.use_positions, &profile)?;
+        validate_fraenkel_generator_binding_env(
+            &self.binding_env,
+            self.source_id,
+            &self.module_id,
+            &profile,
+        )
+    }
+}
+
+/// Produces the one default-deny Fraenkel generator binding context.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct SourceFraenkelGeneratorBindingContextProducer;
+
+impl SourceFraenkelGeneratorBindingContextProducer {
+    pub fn build(
+        structural: &SourceTemplateFraenkelStructuralCompositionHandoff,
+        resolver: &FraenkelGeneratorVariableSourceCollection,
+        typed_ast: &TypedAst,
+    ) -> Result<
+        SourceFraenkelGeneratorBindingContextHandoff,
+        SourceFraenkelGeneratorBindingContextError,
+    > {
+        if structural.source_id() != resolver.source_id()
+            || structural.source_id() != typed_ast.source_id()
+            || structural.module_id() != resolver.module()
+            || structural.module_id() != typed_ast.module_id()
+        {
+            return Err(SourceFraenkelGeneratorBindingContextError::EnvironmentMismatch);
+        }
+
+        let dependencies = SourceFraenkelGeneratorBindingDependencies {
+            version: FRAENKEL_GENERATOR_BINDING_SNAPSHOT_VERSION,
+            domain: FRAENKEL_GENERATOR_BINDING_SNAPSHOT_DOMAIN,
+            structural: structural.clone(),
+            resolver: resolver.clone(),
+            typed_ast: typed_ast.clone(),
+        };
+        let profile = validate_fraenkel_generator_dependencies(&dependencies)?;
+        let binding_env = build_fraenkel_generator_binding_env(
+            dependencies.structural.source_id(),
+            dependencies.structural.module_id().clone(),
+            &profile,
+        )?;
+        let binding_context = SourceFraenkelGeneratorBindingContext {
+            composition: profile.composition,
+            resolver_binding: profile.resolver_binding,
+            context: BindingContextId::new(1),
+            binding: BindingId::new(0),
+            source_ordinal: 0,
+        };
+        let use_positions = SourceFraenkelGeneratorUsePositionTable {
+            rows: (0..3)
+                .map(|index| SourceFraenkelGeneratorUsePosition {
+                    binding_context: SourceFraenkelGeneratorBindingContextId::new(0),
+                    resolver_use_index: index,
+                    source_ordinal: index,
+                    lookup_ordinal: index + 1,
+                })
+                .collect(),
+        };
+        let handoff = SourceFraenkelGeneratorBindingContextHandoff {
+            source_id: dependencies.structural.source_id(),
+            module_id: dependencies.structural.module_id().clone(),
+            structural_summary: dependencies.structural.debug_text(),
+            resolver_summary: dependencies.resolver.debug_text(),
+            binding_env,
+            bindings: SourceFraenkelGeneratorBindingContextTable {
+                rows: vec![binding_context],
+            },
+            use_positions,
+            dependencies,
+        };
+        handoff.validate()?;
+        Ok(handoff)
+    }
+}
+
+#[derive(Clone, Copy)]
+struct FraenkelGeneratorBindingProfile {
+    composition: SourceTemplateFraenkelStructuralCompositionId,
+    resolver_binding: FraenkelGeneratorVariableBindingId,
+    comprehension_range: SourceRange,
+    binder_range: SourceRange,
+    type_range: SourceRange,
+}
+
+fn validate_fraenkel_generator_dependencies(
+    dependencies: &SourceFraenkelGeneratorBindingDependencies,
+) -> Result<FraenkelGeneratorBindingProfile, SourceFraenkelGeneratorBindingContextError> {
+    validate_fraenkel_generator_dependency_header(dependencies)?;
+    let structural =
+        validate_structural_dependency(&dependencies.structural, &dependencies.typed_ast)
+            .ok_or(SourceFraenkelGeneratorBindingContextError::InvalidStructuralDependency)?;
+    validate_resolver_dependency(&dependencies.resolver, &dependencies.typed_ast, structural)
+        .ok_or(SourceFraenkelGeneratorBindingContextError::InvalidResolverDependency)
+}
+
+fn validate_fraenkel_generator_dependency_header(
+    dependencies: &SourceFraenkelGeneratorBindingDependencies,
+) -> Result<(), SourceFraenkelGeneratorBindingContextError> {
+    if dependencies.structural.source_id() != dependencies.resolver.source_id()
+        || dependencies.structural.source_id() != dependencies.typed_ast.source_id()
+        || dependencies.structural.module_id() != dependencies.resolver.module()
+        || dependencies.structural.module_id() != dependencies.typed_ast.module_id()
+    {
+        return Err(SourceFraenkelGeneratorBindingContextError::EnvironmentMismatch);
+    }
+    if dependencies.version != FRAENKEL_GENERATOR_BINDING_SNAPSHOT_VERSION
+        || dependencies.domain != FRAENKEL_GENERATOR_BINDING_SNAPSHOT_DOMAIN
+    {
+        return Err(SourceFraenkelGeneratorBindingContextError::InvalidStructuralDependency);
+    }
+    Ok(())
+}
+
+#[derive(Clone, Copy)]
+struct StructuralDependencyProfile {
+    composition: SourceTemplateFraenkelStructuralCompositionId,
+    definition_block: TypedNodeId,
+    functor_definition: TypedNodeId,
+    comprehension: TypedNodeId,
+    segment: TypedNodeId,
+    binder: TypedNodeId,
+    type_expression: TypedNodeId,
+    mapper_role_owner: TypedNodeId,
+    mapper_term_reference: TypedNodeId,
+    mapper_identifier: TypedNodeId,
+    first_condition_role_owner: TypedNodeId,
+    first_condition_term_reference: TypedNodeId,
+    first_condition_identifier: TypedNodeId,
+    second_condition_role_owner: TypedNodeId,
+    second_condition_term_reference: TypedNodeId,
+    second_condition_identifier: TypedNodeId,
+}
+
+fn validate_structural_dependency(
+    handoff: &SourceTemplateFraenkelStructuralCompositionHandoff,
+    typed_ast: &TypedAst,
+) -> Option<StructuralDependencyProfile> {
+    let rows = handoff.compositions().iter().collect::<Vec<_>>();
+    let [(composition, row)] = rows.as_slice() else {
+        return None;
+    };
+    if composition.index() != 0
+        || handoff.compositions().get(*composition) != Some(*row)
+        || handoff
+            .compositions()
+            .get(SourceTemplateFraenkelStructuralCompositionId::new(1))
+            .is_some()
+        || row.template_association().index() != 0
+        || row.template_binding().index() != 0
+        || row.generator_binding().index() != 0
+        || !validate_structural_nodes(typed_ast, row)
+        || !validate_structural_edges(typed_ast, row)
+        || (
+            row.mapper_source_ordinal(),
+            row.mapper_role_source_ordinal(),
+            row.first_condition_source_ordinal(),
+            row.first_condition_role_source_ordinal(),
+            row.second_condition_source_ordinal(),
+            row.second_condition_role_source_ordinal(),
+        ) != (0, 0, 1, 0, 2, 1)
+    {
+        return None;
+    }
+    Some(StructuralDependencyProfile {
+        composition: *composition,
+        definition_block: row.definition_block(),
+        functor_definition: row.functor_definition(),
+        comprehension: row.comprehension(),
+        segment: row.segment(),
+        binder: row.generator_binder(),
+        type_expression: row.type_expression(),
+        mapper_role_owner: row.mapper_role_owner(),
+        mapper_term_reference: row.mapper_term_reference(),
+        mapper_identifier: row.mapper_identifier(),
+        first_condition_role_owner: row.first_condition_role_owner(),
+        first_condition_term_reference: row.first_condition_term_reference(),
+        first_condition_identifier: row.first_condition_identifier(),
+        second_condition_role_owner: row.second_condition_role_owner(),
+        second_condition_term_reference: row.second_condition_term_reference(),
+        second_condition_identifier: row.second_condition_identifier(),
+    })
+}
+
+fn validate_structural_nodes(
+    typed_ast: &TypedAst,
+    row: &SourceTemplateFraenkelStructuralComposition,
+) -> bool {
+    [
+        (row.definition_block(), "DefinitionBlockItem"),
+        (row.parameter(), "TemplateParameter"),
+        (row.template_binder(), "Identifier"),
+        (row.type_head(), "TypeHead"),
+        (row.template_identifier(), "Identifier"),
+        (row.functor_definition(), "FunctorDefinition"),
+        (row.comprehension(), "SetComprehension"),
+        (row.segment(), "ComprehensionVariableSegment"),
+        (row.generator_binder(), "Identifier"),
+        (row.type_expression(), "TypeExpression"),
+        (row.mapper_role_owner(), "TermExpression"),
+        (row.mapper_term_reference(), "TermReference"),
+        (row.mapper_identifier(), "Identifier"),
+        (row.first_condition_role_owner(), "FormulaExpression"),
+        (row.first_condition_term_reference(), "TermReference"),
+        (row.first_condition_identifier(), "Identifier"),
+        (row.second_condition_role_owner(), "FormulaExpression"),
+        (row.second_condition_term_reference(), "TermReference"),
+        (row.second_condition_identifier(), "Identifier"),
+    ]
+    .into_iter()
+    .all(|(id, kind)| exact_stored_typed_node(typed_ast, id, kind).is_some())
+}
+
+fn validate_structural_edges(
+    typed_ast: &TypedAst,
+    row: &SourceTemplateFraenkelStructuralComposition,
+) -> bool {
+    let Some(definition_range) = typed_range(typed_ast, row.definition_block()) else {
+        return false;
+    };
+    let Some(parameter_range) = typed_range(typed_ast, row.parameter()) else {
+        return false;
+    };
+    let Some(template_binder_range) = typed_range(typed_ast, row.template_binder()) else {
+        return false;
+    };
+    let Some(type_head_range) = typed_range(typed_ast, row.type_head()) else {
+        return false;
+    };
+    let Some(template_identifier_range) = typed_range(typed_ast, row.template_identifier()) else {
+        return false;
+    };
+    let Some(functor_range) = typed_range(typed_ast, row.functor_definition()) else {
+        return false;
+    };
+    let Some(comprehension_range) = typed_range(typed_ast, row.comprehension()) else {
+        return false;
+    };
+    let Some(segment_range) = typed_range(typed_ast, row.segment()) else {
+        return false;
+    };
+    let Some(generator_binder_range) = typed_range(typed_ast, row.generator_binder()) else {
+        return false;
+    };
+    let Some(type_expression_range) = typed_range(typed_ast, row.type_expression()) else {
+        return false;
+    };
+    let Some(mapper_range) = typed_range(typed_ast, row.mapper_role_owner()) else {
+        return false;
+    };
+    let Some(mapper_reference_range) = typed_range(typed_ast, row.mapper_term_reference()) else {
+        return false;
+    };
+    let Some(mapper_identifier_range) = typed_range(typed_ast, row.mapper_identifier()) else {
+        return false;
+    };
+    if !range_contains(definition_range, parameter_range)
+        || !range_contains(parameter_range, template_binder_range)
+        || !range_contains(definition_range, type_head_range)
+        || !range_contains(type_head_range, template_identifier_range)
+        || !range_contains(definition_range, functor_range)
+        || !range_contains(functor_range, comprehension_range)
+        || !range_contains(comprehension_range, segment_range)
+        || !range_contains(segment_range, generator_binder_range)
+        || !range_contains(segment_range, type_expression_range)
+        || !range_contains(type_expression_range, type_head_range)
+        || !range_contains(comprehension_range, mapper_range)
+        || !range_contains(mapper_range, mapper_reference_range)
+        || !range_contains(mapper_reference_range, mapper_identifier_range)
+        || !has_typed_edge(typed_ast, row.definition_block(), row.parameter())
+        || !has_typed_edge(typed_ast, row.definition_block(), row.functor_definition())
+        || !has_typed_edge(typed_ast, row.parameter(), row.template_binder())
+        || !has_typed_edge(typed_ast, row.type_head(), row.template_identifier())
+        || !has_typed_edge(typed_ast, row.comprehension(), row.segment())
+        || !has_typed_edge(typed_ast, row.segment(), row.generator_binder())
+        || !has_typed_edge(typed_ast, row.segment(), row.type_expression())
+        || !has_typed_edge(typed_ast, row.type_expression(), row.type_head())
+        || !has_typed_edge(typed_ast, row.comprehension(), row.mapper_role_owner())
+        || !has_typed_edge(
+            typed_ast,
+            row.mapper_role_owner(),
+            row.mapper_term_reference(),
+        )
+        || !has_typed_edge(
+            typed_ast,
+            row.mapper_term_reference(),
+            row.mapper_identifier(),
+        )
+    {
+        return false;
+    }
+    let Some(term_definiens) =
+        exact_typed_child(typed_ast, row.functor_definition(), "TermDefiniens")
+    else {
+        return false;
+    };
+    let Some(term_expression) = exact_typed_child(typed_ast, term_definiens, "TermExpression")
+    else {
+        return false;
+    };
+    if !has_typed_edge(typed_ast, term_expression, row.comprehension()) {
+        return false;
+    }
+    validate_condition_structure(
+        typed_ast,
+        row.comprehension(),
+        row.first_condition_role_owner(),
+        row.first_condition_term_reference(),
+        row.first_condition_identifier(),
+    ) && validate_condition_structure(
+        typed_ast,
+        row.comprehension(),
+        row.second_condition_role_owner(),
+        row.second_condition_term_reference(),
+        row.second_condition_identifier(),
+    )
+}
+
+fn validate_condition_structure(
+    typed_ast: &TypedAst,
+    comprehension: TypedNodeId,
+    owner: TypedNodeId,
+    term_reference: TypedNodeId,
+    identifier: TypedNodeId,
+) -> bool {
+    let Some(owner_range) = typed_range(typed_ast, owner) else {
+        return false;
+    };
+    let Some(comprehension_range) = typed_range(typed_ast, comprehension) else {
+        return false;
+    };
+    let Some(reference_range) = typed_range(typed_ast, term_reference) else {
+        return false;
+    };
+    let Some(identifier_range) = typed_range(typed_ast, identifier) else {
+        return false;
+    };
+    let Some(prefix) = exact_typed_child(typed_ast, owner, "PrefixFormula(Not)") else {
+        return false;
+    };
+    let Some(predicate) = exact_typed_child(typed_ast, prefix, "BuiltinPredicateApplication")
+    else {
+        return false;
+    };
+    let Some(term_expression) =
+        exact_typed_child_containing(typed_ast, predicate, "TermExpression", term_reference)
+    else {
+        return false;
+    };
+    let Some(prefix_range) = typed_range(typed_ast, prefix) else {
+        return false;
+    };
+    let Some(predicate_range) = typed_range(typed_ast, predicate) else {
+        return false;
+    };
+    let Some(term_range) = typed_range(typed_ast, term_expression) else {
+        return false;
+    };
+    range_contains(comprehension_range, owner_range)
+        && range_contains(owner_range, prefix_range)
+        && range_contains(prefix_range, predicate_range)
+        && range_contains(predicate_range, term_range)
+        && range_contains(term_range, reference_range)
+        && range_contains(reference_range, identifier_range)
+        && has_typed_edge(typed_ast, predicate, term_expression)
+        && has_typed_edge(typed_ast, term_expression, term_reference)
+        && has_typed_edge(typed_ast, term_reference, identifier)
+        && has_typed_edge(typed_ast, comprehension, owner)
+}
+
+fn validate_resolver_dependency(
+    resolver: &FraenkelGeneratorVariableSourceCollection,
+    typed_ast: &TypedAst,
+    structural: StructuralDependencyProfile,
+) -> Option<FraenkelGeneratorBindingProfile> {
+    let binding_rows = resolver.bindings().iter().collect::<Vec<_>>();
+    let [(binding_id, binding)] = binding_rows.as_slice() else {
+        return None;
+    };
+    if binding_id.index() != 0
+        || resolver.bindings().get(*binding_id) != Some(*binding)
+        || resolver
+            .bindings()
+            .get(FraenkelGeneratorVariableBindingId::new(1))
+            .is_some()
+        || binding.source_ordinal() != 0
+        || binding.spelling() != "x"
+        || !binding_matches_structural(typed_ast, binding, structural)
+    {
+        return None;
+    }
+    let uses = resolver.uses().iter().collect::<Vec<_>>();
+    if uses.len() != 3 || resolver.uses().get(3).is_some() {
+        return None;
+    }
+    let expected = [
+        (
+            FraenkelGeneratorVariableUseRole::Mapper,
+            0,
+            0,
+            structural.mapper_role_owner,
+            structural.mapper_term_reference,
+            structural.mapper_identifier,
+        ),
+        (
+            FraenkelGeneratorVariableUseRole::Condition,
+            1,
+            0,
+            structural.first_condition_role_owner,
+            structural.first_condition_term_reference,
+            structural.first_condition_identifier,
+        ),
+        (
+            FraenkelGeneratorVariableUseRole::Condition,
+            2,
+            1,
+            structural.second_condition_role_owner,
+            structural.second_condition_term_reference,
+            structural.second_condition_identifier,
+        ),
+    ];
+    if !uses.iter().zip(expected).all(
+        |(link, (role, source_ordinal, role_source_ordinal, owner, reference, identifier))| {
+            use_matches_structural(
+                typed_ast,
+                link,
+                *binding_id,
+                role,
+                source_ordinal,
+                role_source_ordinal,
+                structural,
+                owner,
+                reference,
+                identifier,
+            )
+        },
+    ) {
+        return None;
+    }
+    Some(FraenkelGeneratorBindingProfile {
+        composition: structural.composition,
+        resolver_binding: *binding_id,
+        comprehension_range: typed_range(typed_ast, structural.comprehension)?,
+        binder_range: typed_range(typed_ast, structural.binder)?,
+        type_range: typed_range(typed_ast, structural.type_expression)?,
+    })
+}
+
+fn binding_matches_structural(
+    typed_ast: &TypedAst,
+    binding: &FraenkelGeneratorVariableBinding,
+    structural: StructuralDependencyProfile,
+) -> bool {
+    typed_for_resolved(typed_ast, binding.definition_block()) == Some(structural.definition_block)
+        && typed_for_resolved(typed_ast, binding.functor_definition())
+            == Some(structural.functor_definition)
+        && typed_for_resolved(typed_ast, binding.comprehension()) == Some(structural.comprehension)
+        && typed_for_resolved(typed_ast, binding.segment()) == Some(structural.segment)
+        && typed_for_resolved(typed_ast, binding.binder()) == Some(structural.binder)
+        && Some(binding.segment_range()) == typed_range(typed_ast, structural.segment)
+        && Some(binding.binder_range()) == typed_range(typed_ast, structural.binder)
+}
+
+// Rationale: each frozen resolver getter maps to an independently authenticated typed field.
+#[allow(clippy::too_many_arguments)]
+fn use_matches_structural(
+    typed_ast: &TypedAst,
+    link: &FraenkelGeneratorVariableUseLink,
+    binding: FraenkelGeneratorVariableBindingId,
+    expected_role: FraenkelGeneratorVariableUseRole,
+    expected_source_ordinal: usize,
+    expected_role_source_ordinal: usize,
+    structural: StructuralDependencyProfile,
+    expected_owner: TypedNodeId,
+    expected_reference: TypedNodeId,
+    expected_identifier: TypedNodeId,
+) -> bool {
+    link.binding() == binding
+        && link.role() == expected_role
+        && link.source_ordinal() == expected_source_ordinal
+        && link.role_source_ordinal() == expected_role_source_ordinal
+        && typed_for_resolved(typed_ast, link.definition_block())
+            == Some(structural.definition_block)
+        && typed_for_resolved(typed_ast, link.functor_definition())
+            == Some(structural.functor_definition)
+        && typed_for_resolved(typed_ast, link.comprehension()) == Some(structural.comprehension)
+        && typed_for_resolved(typed_ast, link.role_owner()) == Some(expected_owner)
+        && typed_for_resolved(typed_ast, link.term_reference()) == Some(expected_reference)
+        && typed_for_resolved(typed_ast, link.identifier()) == Some(expected_identifier)
+        && Some(link.identifier_range()) == typed_range(typed_ast, expected_identifier)
+}
+
+fn build_fraenkel_generator_binding_env(
+    source_id: SourceId,
+    module_id: ModuleId,
+    profile: &FraenkelGeneratorBindingProfile,
+) -> Result<BindingEnv, SourceFraenkelGeneratorBindingContextError> {
+    let mut bindings = BindingTable::new();
+    let binding = bindings.insert(BindingDraft {
+        spelling: "x".to_owned(),
+        kind: BindingKind::QuantifierBinder,
+        identity: BinderIdentity::SourceBound {
+            context: BindingContextId::new(1),
+            ordinal: 0,
+        },
+        owner_context: BindingContextId::new(1),
+        declaration_range: profile.binder_range,
+        visible_after_ordinal: 0,
+        type_site: BindingTypeSite::Source(profile.type_range),
+        status: BindingStatus::Active,
+        captured: CapturedFreeVariables::default(),
+        diagnostics: Vec::new(),
+        recovery: BindingRecoveryState::Normal,
+    });
+    if binding != BindingId::new(0) {
+        return Err(SourceFraenkelGeneratorBindingContextError::InvalidEnvironment);
+    }
+    let mut contexts = BindingContextTable::new();
+    let root = contexts.insert(BindingContextDraft {
+        owner: BindingContextOwner::Module,
+        parent: None,
+        layer: BindingContextLayer::Module,
+        lexical_scope: None,
+        bindings: Vec::new(),
+        visible_bindings: Vec::new(),
+        recovery: BindingContextRecovery::Normal,
+    });
+    let context = contexts.insert(BindingContextDraft {
+        owner: BindingContextOwner::SourceComprehension {
+            source_range: profile.comprehension_range,
+        },
+        parent: Some(root),
+        layer: BindingContextLayer::Expression,
+        lexical_scope: None,
+        bindings: vec![binding],
+        visible_bindings: vec![binding],
+        recovery: BindingContextRecovery::Normal,
+    });
+    if root != BindingContextId::new(0) || context != BindingContextId::new(1) {
+        return Err(SourceFraenkelGeneratorBindingContextError::InvalidEnvironment);
+    }
+    BindingEnv::try_new(BindingEnvParts {
+        source_id,
+        module_id,
+        contexts,
+        bindings,
+        diagnostics: Default::default(),
+    })
+    .map_err(|_| SourceFraenkelGeneratorBindingContextError::InvalidEnvironment)
+}
+
+fn validate_binding_context_rows(
+    rows: &SourceFraenkelGeneratorBindingContextTable,
+    profile: &FraenkelGeneratorBindingProfile,
+) -> Result<(), SourceFraenkelGeneratorBindingContextError> {
+    let entries = rows.iter().collect::<Vec<_>>();
+    let Some((id, row)) = entries.first().copied() else {
+        return Err(
+            SourceFraenkelGeneratorBindingContextError::InvalidBindingContext {
+                binding_context: SourceFraenkelGeneratorBindingContextId::new(0),
+            },
+        );
+    };
+    if entries.len() != 1
+        || id.index() != 0
+        || rows.get(id) != Some(row)
+        || rows
+            .get(SourceFraenkelGeneratorBindingContextId::new(1))
+            .is_some()
+        || row.composition() != profile.composition
+        || row.resolver_binding() != profile.resolver_binding
+        || row.context() != BindingContextId::new(1)
+        || row.binding() != BindingId::new(0)
+        || row.source_ordinal() != 0
+    {
+        return Err(
+            SourceFraenkelGeneratorBindingContextError::InvalidBindingContext {
+                binding_context: id,
+            },
+        );
+    }
+    Ok(())
+}
+
+fn validate_use_position_rows(
+    rows: &SourceFraenkelGeneratorUsePositionTable,
+    _profile: &FraenkelGeneratorBindingProfile,
+) -> Result<(), SourceFraenkelGeneratorBindingContextError> {
+    if rows.len() != 3 {
+        return Err(
+            SourceFraenkelGeneratorBindingContextError::InvalidUsePosition {
+                use_position: SourceFraenkelGeneratorUsePositionId::new(0),
+            },
+        );
+    }
+    for (id, row) in rows.iter() {
+        let expected = id.index();
+        if rows.get(id) != Some(row)
+            || row.binding_context() != SourceFraenkelGeneratorBindingContextId::new(0)
+            || row.resolver_use_index() != expected
+            || row.source_ordinal() != expected
+            || row.lookup_ordinal() != expected + 1
+        {
+            return Err(
+                SourceFraenkelGeneratorBindingContextError::InvalidUsePosition { use_position: id },
+            );
+        }
+    }
+    Ok(())
+}
+
+fn validate_fraenkel_generator_binding_env(
+    binding_env: &BindingEnv,
+    source_id: SourceId,
+    module_id: &ModuleId,
+    profile: &FraenkelGeneratorBindingProfile,
+) -> Result<(), SourceFraenkelGeneratorBindingContextError> {
+    if binding_env.source_id() != source_id || binding_env.module_id() != module_id {
+        return Err(SourceFraenkelGeneratorBindingContextError::InvalidEnvironment);
+    }
+    let expected = format!(
+        "binding-env-debug-v1\nmodule: {}::{}\ncontexts:\n  context#0 owner=module parent=none layer=module scope=none bindings=[] visible=[] recovery=normal\n  context#1 owner=source-comprehension({}..{}) parent=context#0 layer=expression scope=none bindings=[binding#0] visible=[binding#0] recovery=normal\nbindings:\n  binding#0 spelling=\"x\" kind=quantifier_binder owner=context#1 identity=source_bound(context#1, ordinal=0) range={}..{} visible_after=0 type=source({}..{}) status=active captured=[] diagnostics=[] recovery=normal\ndiagnostics:\n",
+        module_id.package().as_str(),
+        module_id.path().as_str(),
+        profile.comprehension_range.start,
+        profile.comprehension_range.end,
+        profile.binder_range.start,
+        profile.binder_range.end,
+        profile.type_range.start,
+        profile.type_range.end,
+    );
+    if binding_env.debug_text() != expected
+        || !matches!(
+            binding_env.lookup(&BindingLookupSite::new(
+                "x",
+                BindingContextId::new(1),
+                None,
+                0,
+            )),
+            Ok(BindingLookupResult::ForwardReference { candidates, .. })
+                if candidates == vec![BindingId::new(0)]
+        )
+        || !(1..=3).all(|ordinal| {
+            matches!(
+                binding_env.lookup(&BindingLookupSite::new(
+                    "x",
+                    BindingContextId::new(1),
+                    None,
+                    ordinal,
+                )),
+                Ok(BindingLookupResult::Local(binding)) if binding == BindingId::new(0)
+            )
+        })
+    {
+        return Err(SourceFraenkelGeneratorBindingContextError::InvalidEnvironment);
+    }
+    Ok(())
+}
+
+fn exact_stored_typed_node<'a>(
+    typed_ast: &'a TypedAst,
+    id: TypedNodeId,
+    kind: &str,
+) -> Option<&'a TypedNode> {
+    let node = typed_ast.nodes().node(id)?;
+    let resolved = node.resolved_node?;
+    (node.kind.as_str() == kind
+        && node.recovery == NodeRecoveryState::Normal
+        && typed_for_resolved(typed_ast, resolved) == Some(id))
+    .then_some(node)
+}
+
+fn typed_for_resolved(typed_ast: &TypedAst, resolved_node: ResolvedNodeId) -> Option<TypedNodeId> {
+    let mut match_id = None;
+    for (typed_id, node) in typed_ast.nodes().iter() {
+        if node.resolved_node == Some(resolved_node) && match_id.replace(typed_id).is_some() {
+            return None;
+        }
+    }
+    match_id
+}
+
+fn typed_range(typed_ast: &TypedAst, id: TypedNodeId) -> Option<SourceRange> {
+    let SourceAnchor::Range(range) = typed_ast.nodes().node(id)?.anchor else {
+        return None;
+    };
+    (range.source_id == typed_ast.source_id() && range.start < range.end).then_some(range)
+}
+
+fn range_contains(parent: SourceRange, child: SourceRange) -> bool {
+    parent.source_id == child.source_id && parent.start <= child.start && child.end <= parent.end
+}
+
+fn has_typed_edge(typed_ast: &TypedAst, parent: TypedNodeId, child: TypedNodeId) -> bool {
+    typed_ast
+        .nodes()
+        .node(parent)
+        .is_some_and(|node| node.children.contains(&child))
+}
+
+fn exact_typed_child(typed_ast: &TypedAst, parent: TypedNodeId, kind: &str) -> Option<TypedNodeId> {
+    let parent = typed_ast.nodes().node(parent)?;
+    let mut matches = parent.children.iter().filter_map(|child| {
+        let node = typed_ast.nodes().node(*child)?;
+        (node.kind.as_str() == kind).then_some(*child)
+    });
+    let child = matches.next()?;
+    (matches.next().is_none()
+        && typed_ast
+            .nodes()
+            .node(child)
+            .is_some_and(|node| node.recovery == NodeRecoveryState::Normal))
+    .then_some(child)
+}
+
+fn exact_typed_child_containing(
+    typed_ast: &TypedAst,
+    parent: TypedNodeId,
+    kind: &str,
+    descendant: TypedNodeId,
+) -> Option<TypedNodeId> {
+    let parent = typed_ast.nodes().node(parent)?;
+    let mut matches = parent.children.iter().filter_map(|child| {
+        let node = typed_ast.nodes().node(*child)?;
+        (node.kind.as_str() == kind && node.children.contains(&descendant)).then_some(*child)
+    });
+    let child = matches.next()?;
+    (matches.next().is_none()
+        && typed_ast
+            .nodes()
+            .node(child)
+            .is_some_and(|node| node.recovery == NodeRecoveryState::Normal))
+    .then_some(child)
+}
+
 #[cfg(test)]
 pub(crate) mod tests {
     use super::*;
@@ -2396,7 +3449,8 @@ pub(crate) mod tests {
             BindingContextDraft, BindingContextId, BindingContextLayer, BindingContextOwner,
             BindingContextRecovery, BindingContextTable, BindingDiagnosticClass,
             BindingDiagnosticDraft, BindingDiagnosticRecovery, BindingDiagnosticSeverity,
-            BindingDiagnosticTable, BindingEnv, BindingEnvParts, BindingId, BindingTable,
+            BindingDiagnosticTable, BindingEnv, BindingEnvError, BindingEnvParts, BindingId,
+            BindingTable,
         },
         cluster_trace::ClusterFactTable,
         overload_resolution::{
@@ -2417,24 +3471,34 @@ pub(crate) mod tests {
             SourceFormulaRequestInput, SourceFormulaRequestKind, SourceFormulaRootInput,
             SourceFormulaRootOwnership, SourceFormulaWrapperInput, SourceQuantifierBinderInput,
         },
+        source_template_type_parameter_association::{
+            SourceTemplateFraenkelStructuralCompositionHandoff,
+            SourceTemplateFraenkelStructuralCompositionProducer,
+            SourceTemplateTypeParameterAssociationProducer,
+        },
         source_term::{
             SourceNumericTypeRequestInput, SourcePrimaryTermHandoffInput, SourcePrimaryTermInput,
             SourcePrimaryTermProducer, SourcePrimaryTermReferenceInput,
         },
         typed_ast::{
             CoercionTable, InitialObligationTable, LocalTypeContextTable, TypeDiagnosticTable,
-            TypeFactTable, TypeTable, TypedAst, TypedAstError, TypedAstParts, TypedNode,
-            TypedNodeId, TypedSiteRef,
+            TypeFactTable, TypeTable, TypedArenaBuilder, TypedAst, TypedAstError, TypedAstParts,
+            TypedNode, TypedNodeId, TypedSiteRef,
         },
     };
     use mizar_resolve::{
         env::{SymbolEnv, SymbolEnvIndexes},
-        names::{LocalTermBinding, LocalTermScope},
+        names::{
+            FraenkelGeneratorVariableSourceCollection, FraenkelGeneratorVariableSourceCollector,
+            LocalTermBinding, LocalTermScope, TemplateTypeParameterSourceCollector,
+        },
+        resolved_ast::SurfaceResolvedArena,
     };
     use mizar_session::{
         BuildSnapshotId, InMemorySessionIdAllocator, ModulePath, PackageId,
         SessionIdAllocator as _, SourceAnchor,
     };
+    use mizar_syntax as syntax;
 
     struct Fixture {
         source: SourceId,
@@ -2550,6 +3614,879 @@ pub(crate) mod tests {
             diagnostics,
         })
         .expect("base bindings")
+    }
+
+    struct Task257c4aFixture {
+        source: SourceId,
+        module: ModuleId,
+        structural: SourceTemplateFraenkelStructuralCompositionHandoff,
+        resolver: FraenkelGeneratorVariableSourceCollection,
+        typed_ast: TypedAst,
+    }
+
+    fn task257c4a_fixture() -> Task257c4aFixture {
+        let source = source_id();
+        let module = module();
+        let ast = task257c4a_surface_ast(source);
+        let resolved =
+            SurfaceResolvedArena::lower(&ast, &module).expect("Task257C4A resolver arena");
+        let templates = TemplateTypeParameterSourceCollector::new(&ast, &module, &resolved)
+            .expect("Task257C4A template collector")
+            .collect()
+            .expect("Task257C4A template collection");
+        let resolver = FraenkelGeneratorVariableSourceCollector::new(&ast, &module, &resolved)
+            .expect("Task257C4A generator collector")
+            .collect()
+            .expect("Task257C4A generator collection");
+        let typed_ast = task257c4a_typed_ast(&ast, module.clone(), &resolved);
+        let template =
+            SourceTemplateTypeParameterAssociationProducer::build(&templates, &typed_ast)
+                .expect("Task257C4A template handoff");
+        let structural = SourceTemplateFraenkelStructuralCompositionProducer::build(
+            &template, &resolver, &typed_ast,
+        )
+        .expect("Task257C4A structural handoff");
+        Task257c4aFixture {
+            source,
+            module,
+            structural,
+            resolver,
+            typed_ast,
+        }
+    }
+
+    fn task257c4a_surface_ast(source: SourceId) -> syntax::SurfaceAst {
+        let mut builder = syntax::SurfaceAstBuilder::new(source);
+        let definition = builder.add_token(
+            syntax::SurfaceTokenKind::ReservedWord,
+            "definition",
+            range(source, 600, 610),
+        );
+        let let_keyword = builder.add_token(
+            syntax::SurfaceTokenKind::ReservedWord,
+            "let",
+            range(source, 611, 614),
+        );
+        let template_binder = builder.add_token(
+            syntax::SurfaceTokenKind::Identifier,
+            "T",
+            range(source, 615, 616),
+        );
+        let be_keyword = builder.add_token(
+            syntax::SurfaceTokenKind::ReservedWord,
+            "be",
+            range(source, 617, 619),
+        );
+        let type_keyword = builder.add_token(
+            syntax::SurfaceTokenKind::ReservedWord,
+            "type",
+            range(source, 620, 624),
+        );
+        let semicolon = builder.add_token(
+            syntax::SurfaceTokenKind::ReservedSymbol,
+            ";",
+            range(source, 624, 625),
+        );
+        let parameter = builder.add_node(
+            syntax::SurfaceNodeKind::TemplateParameter,
+            range(source, 611, 625),
+            vec![
+                let_keyword,
+                template_binder,
+                be_keyword,
+                type_keyword,
+                semicolon,
+            ],
+        );
+        let func = builder.add_token(
+            syntax::SurfaceTokenKind::ReservedWord,
+            "func",
+            range(source, 630, 634),
+        );
+        let open = builder.add_token(
+            syntax::SurfaceTokenKind::ReservedSymbol,
+            "{",
+            range(source, 663, 664),
+        );
+        let mapper_identifier = builder.add_token(
+            syntax::SurfaceTokenKind::Identifier,
+            "x",
+            range(source, 665, 666),
+        );
+        let mapper_reference = builder.add_node(
+            syntax::SurfaceNodeKind::TermReference,
+            range(source, 665, 666),
+            vec![mapper_identifier],
+        );
+        let mapper = builder.add_node(
+            syntax::SurfaceNodeKind::TermExpression,
+            range(source, 665, 666),
+            vec![mapper_reference],
+        );
+        let where_keyword = builder.add_token(
+            syntax::SurfaceTokenKind::ReservedWord,
+            "where",
+            range(source, 667, 672),
+        );
+        let generator_binder = builder.add_token(
+            syntax::SurfaceTokenKind::Identifier,
+            "x",
+            range(source, 673, 674),
+        );
+        let is_keyword = builder.add_token(
+            syntax::SurfaceTokenKind::ReservedWord,
+            "is",
+            range(source, 675, 677),
+        );
+        let template_identifier = builder.add_token(
+            syntax::SurfaceTokenKind::Identifier,
+            "T",
+            range(source, 678, 679),
+        );
+        let type_head = builder.add_node(
+            syntax::SurfaceNodeKind::TypeHead,
+            range(source, 678, 679),
+            vec![template_identifier],
+        );
+        let type_expression = builder.add_node(
+            syntax::SurfaceNodeKind::TypeExpression,
+            range(source, 678, 679),
+            vec![type_head],
+        );
+        let segment = builder.add_node(
+            syntax::SurfaceNodeKind::ComprehensionVariableSegment,
+            range(source, 673, 679),
+            vec![generator_binder, is_keyword, type_expression],
+        );
+        let colon = builder.add_token(
+            syntax::SurfaceTokenKind::ReservedSymbol,
+            ":",
+            range(source, 680, 681),
+        );
+        let not_keyword = builder.add_token(
+            syntax::SurfaceTokenKind::ReservedWord,
+            "not",
+            range(source, 682, 685),
+        );
+        let first_identifier = builder.add_token(
+            syntax::SurfaceTokenKind::Identifier,
+            "x",
+            range(source, 686, 687),
+        );
+        let first_reference = builder.add_node(
+            syntax::SurfaceNodeKind::TermReference,
+            range(source, 686, 687),
+            vec![first_identifier],
+        );
+        let first_term = builder.add_node(
+            syntax::SurfaceNodeKind::TermExpression,
+            range(source, 686, 687),
+            vec![first_reference],
+        );
+        let membership = builder.add_token(
+            syntax::SurfaceTokenKind::ReservedWord,
+            "in",
+            range(source, 688, 690),
+        );
+        let second_identifier = builder.add_token(
+            syntax::SurfaceTokenKind::Identifier,
+            "x",
+            range(source, 691, 692),
+        );
+        let second_reference = builder.add_node(
+            syntax::SurfaceNodeKind::TermReference,
+            range(source, 691, 692),
+            vec![second_identifier],
+        );
+        let second_term = builder.add_node(
+            syntax::SurfaceNodeKind::TermExpression,
+            range(source, 691, 692),
+            vec![second_reference],
+        );
+        let predicate = builder.add_node(
+            syntax::SurfaceNodeKind::BuiltinPredicateApplication,
+            range(source, 686, 692),
+            vec![first_term, membership, second_term],
+        );
+        let prefix = builder.add_node(
+            syntax::SurfaceNodeKind::PrefixFormula(syntax::SurfaceFormulaPrefixOperator::Not),
+            range(source, 682, 692),
+            vec![not_keyword, predicate],
+        );
+        let condition = builder.add_node(
+            syntax::SurfaceNodeKind::FormulaExpression,
+            range(source, 682, 692),
+            vec![prefix],
+        );
+        let close = builder.add_token(
+            syntax::SurfaceTokenKind::ReservedSymbol,
+            "}",
+            range(source, 693, 694),
+        );
+        let comprehension = builder.add_node(
+            syntax::SurfaceNodeKind::SetComprehension,
+            range(source, 663, 694),
+            vec![
+                open,
+                mapper,
+                where_keyword,
+                segment,
+                colon,
+                condition,
+                close,
+            ],
+        );
+        let term_expression = builder.add_node(
+            syntax::SurfaceNodeKind::TermExpression,
+            range(source, 663, 694),
+            vec![comprehension],
+        );
+        let definiens = builder.add_node(
+            syntax::SurfaceNodeKind::TermDefiniens,
+            range(source, 663, 694),
+            vec![term_expression],
+        );
+        let functor = builder.add_node(
+            syntax::SurfaceNodeKind::FunctorDefinition,
+            range(source, 630, 700),
+            vec![func, definiens],
+        );
+        let definition_block = builder.add_node(
+            syntax::SurfaceNodeKind::DefinitionBlockItem,
+            range(source, 600, 700),
+            vec![definition, parameter, functor],
+        );
+        let root = builder.add_node(
+            syntax::SurfaceNodeKind::Root,
+            range(source, 600, 700),
+            vec![definition_block],
+        );
+        builder.finish(Some(root), None)
+    }
+
+    fn task257c4a_typed_ast(
+        ast: &syntax::SurfaceAst,
+        module: ModuleId,
+        resolved: &SurfaceResolvedArena,
+    ) -> TypedAst {
+        let mut builder = TypedArenaBuilder::new();
+        let mut typed_by_surface = std::collections::BTreeMap::new();
+        for view in ast.node_views() {
+            let surface = ast.node(view.id()).expect("Task257C4A surface node");
+            let resolved_node = resolved
+                .resolved_node_for(view.id())
+                .expect("Task257C4A resolver mapping");
+            let kind = match &surface.kind {
+                syntax::SurfaceNodeKind::Token(token)
+                    if token.kind == syntax::SurfaceTokenKind::Identifier =>
+                {
+                    "Identifier".to_owned()
+                }
+                _ => format!("{:?}", surface.kind),
+            };
+            let typed = TypedNode::new(kind, SourceAnchor::Range(surface.range))
+                .with_children(
+                    surface
+                        .children
+                        .iter()
+                        .map(|child| {
+                            *typed_by_surface
+                                .get(child)
+                                .expect("Task257C4A child before parent")
+                        })
+                        .collect(),
+                )
+                .with_resolved_node(resolved_node);
+            let typed_id = builder.push(typed).expect("Task257C4A typed node");
+            assert!(typed_by_surface.insert(view.id(), typed_id).is_none());
+        }
+        let root = ast
+            .root()
+            .and_then(|id| typed_by_surface.get(&id).copied())
+            .expect("Task257C4A typed root");
+        TypedAst::try_new(TypedAstParts {
+            source_id: ast.source_id,
+            module_id: module,
+            resolved_root: None,
+            source_context: None,
+            source_type: None,
+            source_attribute: None,
+            nodes: builder.finish(Some(root)).expect("Task257C4A typed arena"),
+            contexts: LocalTypeContextTable::new(),
+            types: TypeTable::new(),
+            facts: TypeFactTable::new(),
+            coercions: CoercionTable::new(),
+            initial_obligations: InitialObligationTable::new(),
+            diagnostics: TypeDiagnosticTable::new(),
+        })
+        .expect("Task257C4A typed AST")
+    }
+
+    fn task257c4a_typed_from_nodes(
+        source: SourceId,
+        module: ModuleId,
+        root: Option<TypedNodeId>,
+        nodes: Vec<TypedNode>,
+    ) -> TypedAst {
+        TypedAst::try_new(TypedAstParts {
+            source_id: source,
+            module_id: module,
+            resolved_root: None,
+            source_context: None,
+            source_type: None,
+            source_attribute: None,
+            nodes: TypedArena::try_new(root, nodes).expect("Task257C4A typed arena mutation"),
+            contexts: LocalTypeContextTable::new(),
+            types: TypeTable::new(),
+            facts: TypeFactTable::new(),
+            coercions: CoercionTable::new(),
+            initial_obligations: InitialObligationTable::new(),
+            diagnostics: TypeDiagnosticTable::new(),
+        })
+        .expect("Task257C4A typed AST mutation")
+    }
+
+    fn task257c4a_empty_resolver(
+        source: SourceId,
+        module: &ModuleId,
+    ) -> FraenkelGeneratorVariableSourceCollection {
+        let mut builder = syntax::SurfaceAstBuilder::new(source);
+        let root = builder.add_node(
+            syntax::SurfaceNodeKind::Root,
+            range(source, 600, 601),
+            Vec::new(),
+        );
+        let ast = builder.finish(Some(root), None);
+        let resolved =
+            SurfaceResolvedArena::lower(&ast, module).expect("Task257C4A empty resolver arena");
+        FraenkelGeneratorVariableSourceCollector::new(&ast, module, &resolved)
+            .expect("Task257C4A empty generator collector")
+            .collect()
+            .expect("Task257C4A empty generator collection")
+    }
+
+    #[test]
+    fn task257c4a_builds_exact_fraenkel_generator_binding_context() {
+        let fixture = task257c4a_fixture();
+        let handoff = SourceFraenkelGeneratorBindingContextProducer::build(
+            &fixture.structural,
+            &fixture.resolver,
+            &fixture.typed_ast,
+        )
+        .expect("Task257C4A binding context");
+
+        assert_eq!(handoff.source_id(), fixture.source);
+        assert_eq!(handoff.module_id(), &fixture.module);
+        assert_eq!(handoff.bindings().len(), 1);
+        assert!(!handoff.bindings().is_empty());
+        assert_eq!(handoff.use_positions().len(), 3);
+        let binding_rows = handoff.bindings().iter().collect::<Vec<_>>();
+        let [(binding_context, binding)] = binding_rows.as_slice() else {
+            panic!("Task257C4A requires one binding context");
+        };
+        assert_eq!(binding_context.index(), 0);
+        assert_eq!(binding.composition().index(), 0);
+        assert_eq!(binding.resolver_binding().index(), 0);
+        assert_eq!(binding.context(), BindingContextId::new(1));
+        assert_eq!(binding.binding(), BindingId::new(0));
+        assert_eq!(binding.source_ordinal(), 0);
+        assert_eq!(
+            handoff
+                .use_positions()
+                .iter()
+                .map(|(id, row)| (
+                    id.index(),
+                    row.binding_context().index(),
+                    row.resolver_use_index(),
+                    row.source_ordinal(),
+                    row.lookup_ordinal(),
+                ))
+                .collect::<Vec<_>>(),
+            vec![(0, 0, 0, 0, 1), (1, 0, 1, 1, 2), (2, 0, 2, 2, 3)]
+        );
+        assert_eq!(
+            handoff.binding_env().debug_text(),
+            "binding-env-debug-v1\nmodule: pkg::composition.fixture\ncontexts:\n  context#0 owner=module parent=none layer=module scope=none bindings=[] visible=[] recovery=normal\n  context#1 owner=source-comprehension(663..694) parent=context#0 layer=expression scope=none bindings=[binding#0] visible=[binding#0] recovery=normal\nbindings:\n  binding#0 spelling=\"x\" kind=quantifier_binder owner=context#1 identity=source_bound(context#1, ordinal=0) range=673..674 visible_after=0 type=source(678..679) status=active captured=[] diagnostics=[] recovery=normal\ndiagnostics:\n"
+        );
+        assert!(matches!(
+            handoff.binding_env().lookup(&BindingLookupSite::new(
+                "x",
+                BindingContextId::new(1),
+                None,
+                0,
+            )),
+            Ok(BindingLookupResult::ForwardReference { candidates, .. })
+                if candidates == vec![BindingId::new(0)]
+        ));
+        assert!(matches!(
+            handoff.binding_env().lookup(&BindingLookupSite::new(
+                "x",
+                BindingContextId::new(1),
+                None,
+                3,
+            )),
+            Ok(BindingLookupResult::Local(binding)) if binding == BindingId::new(0)
+        ));
+        assert_eq!(
+            handoff.debug_text(),
+            "source-fraenkel-generator-binding-context-v1|module=pkg.composition.fixture|bindings=1|use-positions=3"
+        );
+    }
+
+    #[test]
+    fn task257c4a_rejects_environment_structural_and_resolver_corruption() {
+        let fixture = task257c4a_fixture();
+        let wrong_module = ModuleId::new(PackageId::new("pkg"), ModulePath::new("other"));
+        let wrong_environment = task257c4a_typed_from_nodes(
+            fixture.source,
+            wrong_module,
+            fixture.typed_ast.nodes().root(),
+            fixture
+                .typed_ast
+                .nodes()
+                .iter()
+                .map(|(_, node)| node.clone())
+                .collect(),
+        );
+        assert!(matches!(
+            SourceFraenkelGeneratorBindingContextProducer::build(
+                &fixture.structural,
+                &fixture.resolver,
+                &wrong_environment,
+            ),
+            Err(SourceFraenkelGeneratorBindingContextError::EnvironmentMismatch)
+        ));
+
+        let parameter = fixture
+            .structural
+            .compositions()
+            .get(SourceTemplateFraenkelStructuralCompositionId::new(0))
+            .expect("Task257C4A composition")
+            .parameter();
+        let mut corrupted_nodes = fixture
+            .typed_ast
+            .nodes()
+            .iter()
+            .map(|(_, node)| node.clone())
+            .collect::<Vec<_>>();
+        corrupted_nodes[parameter.index()].resolved_node = None;
+        let corrupted_structural = task257c4a_typed_from_nodes(
+            fixture.source,
+            fixture.module.clone(),
+            fixture.typed_ast.nodes().root(),
+            corrupted_nodes,
+        );
+        assert!(matches!(
+            SourceFraenkelGeneratorBindingContextProducer::build(
+                &fixture.structural,
+                &fixture.resolver,
+                &corrupted_structural,
+            ),
+            Err(SourceFraenkelGeneratorBindingContextError::InvalidStructuralDependency)
+        ));
+
+        let composition = fixture
+            .structural
+            .compositions()
+            .get(SourceTemplateFraenkelStructuralCompositionId::new(0))
+            .expect("Task257C4A composition");
+        let mut detached_condition_nodes = fixture
+            .typed_ast
+            .nodes()
+            .iter()
+            .map(|(_, node)| node.clone())
+            .collect::<Vec<_>>();
+        detached_condition_nodes[composition.comprehension().index()]
+            .children
+            .retain(|child| *child != composition.first_condition_role_owner());
+        let detached_condition = task257c4a_typed_from_nodes(
+            fixture.source,
+            fixture.module.clone(),
+            fixture.typed_ast.nodes().root(),
+            detached_condition_nodes,
+        );
+        assert!(matches!(
+            SourceFraenkelGeneratorBindingContextProducer::build(
+                &fixture.structural,
+                &fixture.resolver,
+                &detached_condition,
+            ),
+            Err(SourceFraenkelGeneratorBindingContextError::InvalidStructuralDependency)
+        ));
+
+        assert!(matches!(
+            SourceFraenkelGeneratorBindingContextProducer::build(
+                &fixture.structural,
+                &task257c4a_empty_resolver(fixture.source, &fixture.module),
+                &fixture.typed_ast,
+            ),
+            Err(SourceFraenkelGeneratorBindingContextError::InvalidResolverDependency)
+        ));
+        assert!(matches!(
+            SourceFraenkelGeneratorBindingContextProducer::build(
+                &fixture.structural,
+                &task257c4a_empty_resolver(fixture.source, &fixture.module),
+                &corrupted_structural,
+            ),
+            Err(SourceFraenkelGeneratorBindingContextError::InvalidStructuralDependency)
+        ));
+        assert!(matches!(
+            SourceFraenkelGeneratorBindingContextProducer::build(
+                &fixture.structural,
+                &task257c4a_empty_resolver(fixture.source, &fixture.module),
+                &wrong_environment,
+            ),
+            Err(SourceFraenkelGeneratorBindingContextError::EnvironmentMismatch)
+        ));
+
+        let mut snapshot_resolver = SourceFraenkelGeneratorBindingContextProducer::build(
+            &fixture.structural,
+            &fixture.resolver,
+            &fixture.typed_ast,
+        )
+        .expect("Task257C4A snapshot handoff");
+        snapshot_resolver.dependencies.resolver =
+            task257c4a_empty_resolver(fixture.source, &fixture.module);
+        assert_eq!(
+            snapshot_resolver.validate(),
+            Err(SourceFraenkelGeneratorBindingContextError::InvalidResolverDependency)
+        );
+
+        let mut structural_summary_precedence =
+            SourceFraenkelGeneratorBindingContextProducer::build(
+                &fixture.structural,
+                &fixture.resolver,
+                &fixture.typed_ast,
+            )
+            .expect("Task257C4A snapshot handoff");
+        structural_summary_precedence
+            .structural_summary
+            .push_str("-stale");
+        structural_summary_precedence.dependencies.resolver =
+            task257c4a_empty_resolver(fixture.source, &fixture.module);
+        assert_eq!(
+            structural_summary_precedence.validate(),
+            Err(SourceFraenkelGeneratorBindingContextError::InvalidStructuralDependency)
+        );
+
+        let mut snapshot_structural = SourceFraenkelGeneratorBindingContextProducer::build(
+            &fixture.structural,
+            &fixture.resolver,
+            &fixture.typed_ast,
+        )
+        .expect("Task257C4A snapshot handoff");
+        snapshot_structural.dependencies.typed_ast = corrupted_structural.clone();
+        snapshot_structural.dependencies.resolver =
+            task257c4a_empty_resolver(fixture.source, &fixture.module);
+        assert_eq!(
+            snapshot_structural.validate(),
+            Err(SourceFraenkelGeneratorBindingContextError::InvalidStructuralDependency)
+        );
+
+        let mut snapshot_environment = SourceFraenkelGeneratorBindingContextProducer::build(
+            &fixture.structural,
+            &fixture.resolver,
+            &fixture.typed_ast,
+        )
+        .expect("Task257C4A snapshot handoff");
+        snapshot_environment.dependencies.typed_ast = wrong_environment;
+        snapshot_environment.dependencies.resolver =
+            task257c4a_empty_resolver(fixture.source, &fixture.module);
+        assert_eq!(
+            snapshot_environment.validate(),
+            Err(SourceFraenkelGeneratorBindingContextError::EnvironmentMismatch)
+        );
+    }
+
+    #[test]
+    fn task257c4a_rejects_context_identity_range_position_and_profile_corruption() {
+        let fixture = task257c4a_fixture();
+        let build = || {
+            SourceFraenkelGeneratorBindingContextProducer::build(
+                &fixture.structural,
+                &fixture.resolver,
+                &fixture.typed_ast,
+            )
+            .expect("Task257C4A valid handoff")
+        };
+
+        let mut context = build();
+        context.bindings.rows[0].context = BindingContextId::new(0);
+        assert_eq!(
+            context.validate(),
+            Err(
+                SourceFraenkelGeneratorBindingContextError::InvalidBindingContext {
+                    binding_context: SourceFraenkelGeneratorBindingContextId::new(0),
+                }
+            )
+        );
+
+        let mut position = build();
+        position.use_positions.rows[2].lookup_ordinal = 9;
+        assert_eq!(
+            position.validate(),
+            Err(
+                SourceFraenkelGeneratorBindingContextError::InvalidUsePosition {
+                    use_position: SourceFraenkelGeneratorUsePositionId::new(2),
+                }
+            )
+        );
+
+        let mut identity_and_range = build();
+        let binding = identity_and_range
+            .binding_env
+            .binding_mut_for_test(BindingId::new(0))
+            .expect("Task257C4A binding");
+        binding.identity = BinderIdentity::Generated {
+            context: BindingContextId::new(1),
+            counter: 0,
+        };
+        binding.declaration_range = range(fixture.source, 672, 674);
+        assert_eq!(
+            identity_and_range.validate(),
+            Err(SourceFraenkelGeneratorBindingContextError::InvalidEnvironment)
+        );
+
+        let mut binding_context_precedence = build();
+        binding_context_precedence.bindings.rows[0].context = BindingContextId::new(0);
+        binding_context_precedence.use_positions.rows[0].lookup_ordinal = 9;
+        binding_context_precedence
+            .binding_env
+            .binding_mut_for_test(BindingId::new(0))
+            .expect("Task257C4A precedence binding")
+            .declaration_range = range(fixture.source, 672, 674);
+        assert_eq!(
+            binding_context_precedence.validate(),
+            Err(
+                SourceFraenkelGeneratorBindingContextError::InvalidBindingContext {
+                    binding_context: SourceFraenkelGeneratorBindingContextId::new(0),
+                }
+            )
+        );
+
+        let mut use_position_precedence = build();
+        use_position_precedence.use_positions.rows[0].lookup_ordinal = 9;
+        use_position_precedence
+            .binding_env
+            .binding_mut_for_test(BindingId::new(0))
+            .expect("Task257C4A precedence binding")
+            .declaration_range = range(fixture.source, 672, 674);
+        assert_eq!(
+            use_position_precedence.validate(),
+            Err(
+                SourceFraenkelGeneratorBindingContextError::InvalidUsePosition {
+                    use_position: SourceFraenkelGeneratorUsePositionId::new(0),
+                }
+            )
+        );
+
+        let mut missing_binding = build();
+        missing_binding.bindings.rows.clear();
+        assert_eq!(
+            missing_binding.validate(),
+            Err(
+                SourceFraenkelGeneratorBindingContextError::InvalidBindingContext {
+                    binding_context: SourceFraenkelGeneratorBindingContextId::new(0),
+                }
+            )
+        );
+
+        let mut duplicate_binding = build();
+        duplicate_binding
+            .bindings
+            .rows
+            .push(duplicate_binding.bindings.rows[0].clone());
+        assert_eq!(
+            duplicate_binding.validate(),
+            Err(
+                SourceFraenkelGeneratorBindingContextError::InvalidBindingContext {
+                    binding_context: SourceFraenkelGeneratorBindingContextId::new(0),
+                }
+            )
+        );
+
+        let mut missing_use = build();
+        let _ = missing_use.use_positions.rows.pop();
+        assert_eq!(
+            missing_use.validate(),
+            Err(
+                SourceFraenkelGeneratorBindingContextError::InvalidUsePosition {
+                    use_position: SourceFraenkelGeneratorUsePositionId::new(0),
+                }
+            )
+        );
+
+        let mut duplicate_use = build();
+        duplicate_use
+            .use_positions
+            .rows
+            .push(duplicate_use.use_positions.rows[0].clone());
+        assert_eq!(
+            duplicate_use.validate(),
+            Err(
+                SourceFraenkelGeneratorBindingContextError::InvalidUsePosition {
+                    use_position: SourceFraenkelGeneratorUsePositionId::new(0),
+                }
+            )
+        );
+
+        let mut recovery = build();
+        recovery
+            .binding_env
+            .binding_mut_for_test(BindingId::new(0))
+            .expect("Task257C4A recovery binding")
+            .recovery = BindingRecoveryState::Recovered;
+        assert_eq!(
+            recovery.validate(),
+            Err(SourceFraenkelGeneratorBindingContextError::InvalidEnvironment)
+        );
+
+        let f5_parts = || BindingEnvParts {
+            source_id: fixture.source,
+            module_id: fixture.module.clone(),
+            contexts: build().binding_env.contexts().clone(),
+            bindings: build().binding_env.bindings().clone(),
+            diagnostics: build().binding_env.diagnostics().clone(),
+        };
+
+        let mut wrong_owner = f5_parts();
+        wrong_owner
+            .bindings
+            .get_mut_for_test(BindingId::new(0))
+            .expect("Task257C4A source-bound binding")
+            .identity = BinderIdentity::SourceBound {
+            context: BindingContextId::new(0),
+            ordinal: 0,
+        };
+        assert_eq!(
+            BindingEnv::try_new(wrong_owner),
+            Err(BindingEnvError::InvalidSourceBoundIdentityOwner {
+                binding: BindingId::new(0),
+                context: BindingContextId::new(0),
+                owner: BindingContextId::new(1),
+            })
+        );
+
+        let mut wrong_kind = f5_parts();
+        wrong_kind
+            .bindings
+            .get_mut_for_test(BindingId::new(0))
+            .expect("Task257C4A source-bound binding")
+            .kind = BindingKind::LetBinding;
+        assert_eq!(
+            BindingEnv::try_new(wrong_kind),
+            Err(BindingEnvError::InconsistentSourceBoundIdentity {
+                binding: BindingId::new(0),
+            })
+        );
+
+        let mut wrong_ordinal = f5_parts();
+        wrong_ordinal
+            .bindings
+            .get_mut_for_test(BindingId::new(0))
+            .expect("Task257C4A source-bound binding")
+            .identity = BinderIdentity::SourceBound {
+            context: BindingContextId::new(1),
+            ordinal: 1,
+        };
+        assert_eq!(
+            BindingEnv::try_new(wrong_ordinal),
+            Err(BindingEnvError::InconsistentSourceBoundIdentity {
+                binding: BindingId::new(0),
+            })
+        );
+
+        let mut missing_context = f5_parts();
+        missing_context
+            .bindings
+            .get_mut_for_test(BindingId::new(0))
+            .expect("Task257C4A source-bound binding")
+            .identity = BinderIdentity::SourceBound {
+            context: BindingContextId::new(2),
+            ordinal: 0,
+        };
+        assert_eq!(
+            BindingEnv::try_new(missing_context),
+            Err(BindingEnvError::InvalidSourceBoundIdentityContext {
+                binding: BindingId::new(0),
+                context: BindingContextId::new(2),
+            })
+        );
+
+        let mut captured_missing_context = f5_parts();
+        captured_missing_context
+            .bindings
+            .get_mut_for_test(BindingId::new(0))
+            .expect("Task257C4A source-bound binding")
+            .captured = CapturedFreeVariables::new(vec![BinderIdentity::SourceBound {
+            context: BindingContextId::new(2),
+            ordinal: 0,
+        }]);
+        assert_eq!(
+            BindingEnv::try_new(captured_missing_context),
+            Err(BindingEnvError::InvalidSourceBoundIdentityContext {
+                binding: BindingId::new(0),
+                context: BindingContextId::new(2),
+            })
+        );
+
+        let mut invalid_contexts = BindingContextTable::new();
+        let root = invalid_contexts.insert(BindingContextDraft {
+            owner: BindingContextOwner::Module,
+            parent: None,
+            layer: BindingContextLayer::Module,
+            lexical_scope: None,
+            bindings: Vec::new(),
+            visible_bindings: Vec::new(),
+            recovery: BindingContextRecovery::Normal,
+        });
+        let invalid_context = invalid_contexts.insert(BindingContextDraft {
+            owner: BindingContextOwner::SourceComprehension {
+                source_range: range(other_source_id(), 663, 694),
+            },
+            parent: Some(root),
+            layer: BindingContextLayer::Expression,
+            lexical_scope: None,
+            bindings: Vec::new(),
+            visible_bindings: Vec::new(),
+            recovery: BindingContextRecovery::Normal,
+        });
+        assert_eq!(
+            BindingEnv::try_new(BindingEnvParts {
+                source_id: fixture.source,
+                module_id: fixture.module.clone(),
+                contexts: invalid_contexts,
+                bindings: BindingTable::new(),
+                diagnostics: BindingDiagnosticTable::new(),
+            }),
+            Err(BindingEnvError::InvalidContextSourceRange {
+                context: invalid_context,
+            })
+        );
+    }
+
+    #[test]
+    fn task257c4a_rebuilds_deterministically_without_mutation() {
+        let fixture = task257c4a_fixture();
+        let structural_before = fixture.structural.clone();
+        let resolver_before = fixture.resolver.clone();
+        let typed_before = fixture.typed_ast.clone();
+        let first = SourceFraenkelGeneratorBindingContextProducer::build(
+            &fixture.structural,
+            &fixture.resolver,
+            &fixture.typed_ast,
+        )
+        .expect("Task257C4A first build");
+        let second = SourceFraenkelGeneratorBindingContextProducer::build(
+            &fixture.structural,
+            &fixture.resolver,
+            &fixture.typed_ast,
+        )
+        .expect("Task257C4A second build");
+        assert!(first == second);
+        assert_eq!(fixture.structural, structural_before);
+        assert_eq!(fixture.resolver, resolver_before);
+        assert_eq!(fixture.typed_ast, typed_before);
     }
 
     fn fixture() -> Fixture {

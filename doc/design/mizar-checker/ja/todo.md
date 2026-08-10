@@ -6518,6 +6518,12 @@ post-commit fresh inventoryからだけ選択する。
 
 ## Task 257C4A Fraenkel generator binding context
 
-- [ ] `binding_env.rs` と `source_formula_composition.rs`だけでfrozen C4A contractを実装し、4 exact checker test以外のsemantic expansionをしない。
-- [ ] R2/277C/TypedAst full-field dependencyをatomic revalidateし、opaque binding-context handoffだけをexposeする。後続use/capture mapはC4B owner。
-- [ ] F5/expectation/trace/coverage/diagnostic/production route/Task277B readinessを不変にする。
+- [x] `binding_env.rs` と `source_formula_composition.rs`だけでfrozen C4A contractを実装し、4 exact checker test以外のsemantic expansionをしない。
+- [x] R2/277C/TypedAst full-field dependencyをatomic revalidateし、opaque binding-context handoffだけをexposeする。後続use/capture mapはC4B owner。
+- [x] F5/expectation/trace/coverage/diagnostic/production route/Task277B readinessを不変にする。
+- [x] 4 checker tests、550-test library、format、package/full-workspace Clippy、implementation/test reviewsをPASS。
+- [x] full workspace tests、両lint policy、metadata `137/137`、frozen hash一致の5 CLI replay（expected 23 warnings/0 errors）をPASS。
+- [x] sole Low stale-tense wordingをrepair後、source-doc/bilingual/boundary reviewsを**NO FINDINGS**で完了する。
+- [x] final-quality reviewを**NO FINDINGS**、全`9/9` hard gates PASS、valid uncapped `100/100`（`20/20/15/15/10/10/5/5`）で完了する。
+- [x] exact staging/cached review（28 paths = 4 Rust/24 docs、new private leaf 1、unstaged 0、cached check PASS、stat `2435/101`）を完了する。
+- [ ] task-only commit、post-commit proof、fresh successor inventoryを完了する。

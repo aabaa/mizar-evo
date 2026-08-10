@@ -322,6 +322,7 @@ pub enum BindingContextOwner {
     DeclarationShell(DeclarationShellId),
     SourceFormula { source_range: SourceRange },
     SourceStatement { source_range: SourceRange },
+    SourceComprehension { source_range: SourceRange },
     Generated(String),
 }
 
@@ -500,6 +501,10 @@ pub enum BinderIdentity {
     Generated {
         context: BindingContextId,
         counter: u32,
+    },
+    SourceBound {
+        context: BindingContextId,
+        ordinal: u32,
     },
 }
 
@@ -772,6 +777,18 @@ pub enum BindingEnvError {
         binding: BindingId,
         context: BindingContextId,
     },
+    InconsistentSourceBoundIdentity {
+        binding: BindingId,
+    },
+    InvalidSourceBoundIdentityOwner {
+        binding: BindingId,
+        context: BindingContextId,
+        owner: BindingContextId,
+    },
+    InvalidSourceBoundIdentityContext {
+        binding: BindingId,
+        context: BindingContextId,
+    },
     InvalidBindingRange {
         binding: BindingId,
     },
@@ -899,6 +916,28 @@ impl fmt::Display for BindingEnvError {
                 binding.index(),
                 context.index()
             ),
+            Self::InconsistentSourceBoundIdentity { binding } => write!(
+                formatter,
+                "binding {} has source-bound identity fields inconsistent with lookup fields",
+                binding.index()
+            ),
+            Self::InvalidSourceBoundIdentityOwner {
+                binding,
+                context,
+                owner,
+            } => write!(
+                formatter,
+                "binding {} source-bound identity context {} does not match owner context {}",
+                binding.index(),
+                context.index(),
+                owner.index()
+            ),
+            Self::InvalidSourceBoundIdentityContext { binding, context } => write!(
+                formatter,
+                "binding {} references missing source-bound identity context {}",
+                binding.index(),
+                context.index()
+            ),
             Self::InvalidBindingRange { binding } => {
                 write!(
                     formatter,
@@ -975,6 +1014,7 @@ fn validate_contexts(parts: &BindingEnvParts) -> Result<(), BindingEnvError> {
         match context.owner {
             BindingContextOwner::SourceFormula { source_range }
             | BindingContextOwner::SourceStatement { source_range }
+            | BindingContextOwner::SourceComprehension { source_range }
                 if source_range.source_id != parts.source_id
                     || source_range.start >= source_range.end =>
             {
@@ -1170,8 +1210,10 @@ fn validate_binding_identity_coherence(
         });
     }
     validate_own_generated_identity_context(parts, binding_id, binding)?;
+    validate_own_source_bound_identity_context(parts, binding_id, binding)?;
     for identity in binding.captured.identities() {
         validate_generated_identity_context(parts, binding_id, identity)?;
+        validate_source_bound_identity_context(parts, binding_id, identity)?;
     }
     Ok(())
 }
@@ -1203,6 +1245,45 @@ fn validate_generated_identity_context(
         && parts.contexts.get(*context).is_none()
     {
         return Err(BindingEnvError::InvalidGeneratedIdentityContext {
+            binding,
+            context: *context,
+        });
+    }
+    Ok(())
+}
+
+fn validate_own_source_bound_identity_context(
+    parts: &BindingEnvParts,
+    binding: BindingId,
+    entry: &BindingEntry,
+) -> Result<(), BindingEnvError> {
+    if let BinderIdentity::SourceBound { context, ordinal } = &entry.identity {
+        validate_source_bound_identity_context(parts, binding, &entry.identity)?;
+        if *context != entry.owner_context {
+            return Err(BindingEnvError::InvalidSourceBoundIdentityOwner {
+                binding,
+                context: *context,
+                owner: entry.owner_context,
+            });
+        }
+        if entry.kind != BindingKind::QuantifierBinder
+            || usize::try_from(*ordinal).ok() != Some(entry.visible_after_ordinal)
+        {
+            return Err(BindingEnvError::InconsistentSourceBoundIdentity { binding });
+        }
+    }
+    Ok(())
+}
+
+fn validate_source_bound_identity_context(
+    parts: &BindingEnvParts,
+    binding: BindingId,
+    identity: &BinderIdentity,
+) -> Result<(), BindingEnvError> {
+    if let BinderIdentity::SourceBound { context, .. } = identity
+        && parts.contexts.get(*context).is_none()
+    {
+        return Err(BindingEnvError::InvalidSourceBoundIdentityContext {
             binding,
             context: *context,
         });
@@ -1242,7 +1323,9 @@ fn identity_has_source(source_id: SourceId, identity: &BinderIdentity) -> bool {
         | BinderIdentity::ReservedVariable {
             declaration_range, ..
         } => range_has_source(source_id, *declaration_range),
-        BinderIdentity::DefinitionShell { .. } | BinderIdentity::Generated { .. } => true,
+        BinderIdentity::DefinitionShell { .. }
+        | BinderIdentity::Generated { .. }
+        | BinderIdentity::SourceBound { .. } => true,
     }
 }
 
@@ -1254,7 +1337,8 @@ fn lookup_priority(binding: &BindingEntry, site: &BindingLookupSite) -> Option<L
         }
         BinderIdentity::ReservedVariable { .. }
         | BinderIdentity::DefinitionShell { .. }
-        | BinderIdentity::Generated { .. } => 0,
+        | BinderIdentity::Generated { .. }
+        | BinderIdentity::SourceBound { .. } => 0,
     };
     Some(LookupPriority {
         scope_depth,
@@ -1454,6 +1538,13 @@ fn write_context_owner(output: &mut String, owner: &BindingContextOwner) {
                 source_range.start, source_range.end
             );
         }
+        BindingContextOwner::SourceComprehension { source_range } => {
+            let _ = write!(
+                output,
+                "source-comprehension({}..{})",
+                source_range.start, source_range.end
+            );
+        }
         BindingContextOwner::Generated(key) => {
             output.push_str("generated(");
             write_quoted(output, key);
@@ -1545,6 +1636,13 @@ fn write_binder_identity(output: &mut String, identity: &BinderIdentity) {
             let _ = write!(
                 output,
                 "generated(context#{}, counter={counter})",
+                context.index()
+            );
+        }
+        BinderIdentity::SourceBound { context, ordinal } => {
+            let _ = write!(
+                output,
+                "source_bound(context#{}, ordinal={ordinal})",
                 context.index()
             );
         }

@@ -12,12 +12,20 @@ current implementation convenience as normative.
 ## Task 257C4A Fraenkel generator source-spec audit
 
 The [C4A contract](../../task_contracts/en/CHECKER-FRAENKEL-GENERATOR-BINDING-257C4A.md)
-records a `design_drift` resolution only. Canonical Chapter 13 §13.4 and
+records the completed `design_drift`, `source_drift`, and Rust `test_gap`
+closure. Canonical Chapter 13 §13.4 and
 §§13.4.2, 13.4.4, and 13.8.6 supply the bound-generator/capture-later
 authority; Chapter 18 §18.10.2 expressly does not supply a sethood verdict.
-F5 and its expectation/trace are immutable. Future implementation closes its
-bounded `source_drift`/Rust `test_gap`; there is no `spec_gap`, fixture change,
+F5 and its expectation/trace are immutable. There is no `spec_gap`, fixture change,
 expectation change, trace change, or coverage credit.
+`doc/design/spec_coverage_audit.md` remains unchanged because owner,
+traceability, and semantic coverage status do not move. Task 277B remains not
+ready with zero credit. Broad workspace verification passes; independent
+source/documentation review reports **NO FINDINGS** after the sole Low stale
+`Future Rust path` wording was repaired to `Prerequisite Rust path`.
+Final-quality review is **NO FINDINGS**; all `9/9` hard gates pass at valid
+uncapped `100/100` (`20/20/15/15/10/10/5/5`). Exact staging/cached review
+passes; only task-only commit, post-commit proof, and fresh inventory remain.
 
 ## Task 269SDU Implemented Zero-Credit Mapping
 

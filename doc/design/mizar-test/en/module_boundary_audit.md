@@ -14,12 +14,22 @@ coverage boundary changes; the route remains zero-credit.
 
 ## Checker Task 257C4A frozen module boundary
 
-The planned [C4A contract](../../task_contracts/en/CHECKER-FRAENKEL-GENERATOR-BINDING-257C4A.md)
-permits mizar-test changes only in `runner/tests.rs` and one new private
+The completed [C4A contract](../../task_contracts/en/CHECKER-FRAENKEL-GENERATOR-BINDING-257C4A.md)
+implements mizar-test changes only in `runner/tests.rs` and one new private
 type-elaboration leaf. The leaf consumes the checker handoff; it cannot create
 or normalize a missing lower dependency. Public runner schemas, dispatch,
 production checker paths, Cargo, fixtures, expectations, trace/coverage,
 metadata, diagnostics, active stages, and downstream crates remain excluded.
+The measured two-path test-only boundary is 66/156 lines with no production
+inventory change. Independent implementation/test reviews report no findings;
+broad workspace verification passes and the independent bilingual/boundary
+review reports **NO FINDINGS**. Final-quality is **NO FINDINGS**; all `9/9`
+hard gates pass at valid uncapped
+`100/100` (`20/20/15/15/10/10/5/5`). Exact staging/cached review passed over
+28 paths (4 Rust and 24 documentation paths), including one new private leaf,
+with no unstaged paths at review time; cached diff check passed at 2435
+insertions / 101 deletions. Only the task-only commit, post-commit proof, and
+fresh successor inventory remain pending.
 
 ## Resolver Task 277R2 Test Module Boundary
 

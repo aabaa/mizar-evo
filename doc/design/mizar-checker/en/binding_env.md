@@ -1002,7 +1002,7 @@ Typed/Resolved installation, runner route, or language-semantic expansion.
 
 ## Task 257C4A Fraenkel generator binding environment
 
-The planned [C4A contract](../../task_contracts/en/CHECKER-FRAENKEL-GENERATOR-BINDING-257C4A.md)
+The completed [C4A contract](../../task_contracts/en/CHECKER-FRAENKEL-GENERATOR-BINDING-257C4A.md)
 adds only the binding-environment API required by the checked Task-257C handoff:
 `BindingContextOwner::SourceComprehension { source_range }` and
 `BinderIdentity::SourceBound { context, ordinal }`. Source-comprehension
@@ -1014,3 +1014,11 @@ their context, and its lookup priority is depth zero. Existing
 resolver node, inherits source validity from its validated context, and uses a
 domain-separated debug/canonical ordering. This owner creates neither capture
 data nor a resolver, source-term, semantic, or production route.
+The implemented owner is 3266 lines, SHA-256
+`91c921f1527866692e62e4d542905a02fbb4d8ae695e048c92282ffe793faf39`;
+its focused tests, broad workspace verification, and independent
+implementation/test and source/documentation reviews pass with **NO FINDINGS**.
+Task 277B remains not ready with zero semantic credit.
+Final-quality review is **NO FINDINGS**; all `9/9` hard gates pass at valid
+uncapped `100/100` (`20/20/15/15/10/10/5/5`). Exact staging/cached review
+passes; only task-only commit, post-commit proof, and fresh inventory remain.

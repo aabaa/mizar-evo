@@ -5257,6 +5257,6 @@ five CLI hash、protected path-hash verificationはPASS、test-sufficiency / imp
 
 ## Checker Task 257C4A private binding-context probe
 
-planned private leaf `runner/tests/type_elaboration/template_fraenkel_generator_binding_context.rs`は
+completed private leaf `runner/tests/type_elaboration/template_fraenkel_generator_binding_context.rs`は
 `task257c4a_real_fixture_builds_exact_fraenkel_generator_binding_context`だけをregisterする。existing private helperでF5 fixtureを通し、opaque C4A environmentと3 normalization rowだけをassertする。
-`runner/tests.rs`のmizar-test registrationは一つだけ（`612 -> 613`）。production route/fixture mutation/sidecar/trace/diagnostic/semantic verdict/coverage creditを追加しない。full assertion/baselineは[C4A contract](../../task_contracts/ja/CHECKER-FRAENKEL-GENERATOR-BINDING-257C4A.md)が所有する。
+`runner/tests.rs`のmizar-test registrationは一つだけ（`612 -> 613`）。production route/fixture mutation/sidecar/trace/diagnostic/semantic verdict/coverage creditを追加しない。registryは66 lines / `85ae891b185ed1eeb5940998c5eef5ece793b472b8f3fa4be3c0b96d217e1f07`、leafは156 lines / `a25b06e7e40bf9922207708f8dfae7d1f97633f744ffba6b9c0578aa31cde4c1`。exact fixture testと613-test library、format/full-workspace Clippy/tests、両lint、metadata、5 CLI replayはPASS、implementation/test/source-doc/bilingual/boundary/final-quality reviewは**NO FINDINGS**。final-qualityは全`9/9` hard gates PASS、valid uncapped `100/100`（`20/20/15/15/10/10/5/5`）。exact staging/cached reviewは28 paths（Rust 4、documentation 24）、new private leaf 1件、review時unstaged path 0件でPASSし、cached diff checkも2435 insertions / 101 deletionsでPASSした。pendingはtask-only commit、post-commit proof、fresh successor inventoryだけ。full assertion/baselineは[C4A contract](../../task_contracts/ja/CHECKER-FRAENKEL-GENERATOR-BINDING-257C4A.md)が所有する。

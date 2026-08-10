@@ -3843,10 +3843,23 @@ the successor is selected only from fresh post-commit inventory.
 
 ## Checker Task 257C4A private binding-context probe
 
-- [ ] Register only `task257c4a_real_fixture_builds_exact_fraenkel_generator_binding_context`
+- [x] Register only `task257c4a_real_fixture_builds_exact_fraenkel_generator_binding_context`
   in the new private leaf and preserve the `612 -> 613` boundary.
-- [ ] Consume and assert the exact C4A handoff; do not add a production route,
+- [x] Consume and assert the exact C4A handoff; do not add a production route,
   semantic assertion, canonical-artifact mutation, trace, or coverage credit.
+- [x] Pass the private fixture test, 613-test library, formatting,
+  package/full-workspace Clippy, and implementation/test reviews with no findings.
+- [x] Pass full workspace tests, both lint policies, metadata `137/137`, and all
+  five frozen-hash CLI replays with expected 23 warnings / zero errors.
+- [x] Complete source/documentation and bilingual/boundary reviews at **NO
+  FINDINGS** after the one Low stale-tense wording repair.
+- [x] Complete final-quality review at **NO FINDINGS**, with all `9/9` hard
+  gates passing at valid uncapped `100/100` (`20/20/15/15/10/10/5/5`).
+- [x] Complete exact staging/cached review over 28 paths (4 Rust and 24
+  documentation paths), including one new private leaf, with no unstaged paths
+  at review time; cached diff check passed at 2435 insertions / 101 deletions.
+- [ ] Complete the task-only commit, post-commit proof, and fresh successor
+  inventory.
 
 ## Resolver Task 277R2 Test-Only Fixture Probe
 

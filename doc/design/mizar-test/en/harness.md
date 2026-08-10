@@ -5669,11 +5669,25 @@ No successor is selected; Task 277B remains not ready with zero semantic credit.
 
 ## Checker Task 257C4A private binding-context probe
 
-The planned private leaf
+The completed private leaf
 `runner/tests/type_elaboration/template_fraenkel_generator_binding_context.rs`
 registers exactly `task257c4a_real_fixture_builds_exact_fraenkel_generator_binding_context`.
 It consumes the F5 fixture through existing private helpers and asserts the
-opaque C4A environment/three normalization rows only. `runner/tests.rs` gains
+opaque C4A environment/three normalization rows only. `runner/tests.rs` gained
 the sole mizar-test registration (`612 -> 613`); it adds no production route,
 fixture mutation, sidecar, trace, diagnostic, semantic verdict, or coverage
-credit. Full assertions and baselines remain in the [C4A contract](../../task_contracts/en/CHECKER-FRAENKEL-GENERATOR-BINDING-257C4A.md).
+credit. The registry is 66 lines, SHA-256
+`85ae891b185ed1eeb5940998c5eef5ece793b472b8f3fa4be3c0b96d217e1f07`;
+the new leaf is 156 lines, SHA-256
+`a25b06e7e40bf9922207708f8dfae7d1f97633f744ffba6b9c0578aa31cde4c1`.
+The exact fixture test and 613-test library pass; implementation and test
+reviews report no findings. Formatting, full-workspace Clippy/tests, both lint
+policies, metadata, and five CLI replays also pass. Full assertions and baselines remain in the
+[C4A contract](../../task_contracts/en/CHECKER-FRAENKEL-GENERATOR-BINDING-257C4A.md).
+Independent source/documentation and bilingual/boundary reviews report **NO
+FINDINGS**. Final-quality is **NO FINDINGS**; all `9/9` hard gates pass at
+valid uncapped `100/100` (`20/20/15/15/10/10/5/5`). Exact staging/cached
+review passed over 28 paths (4 Rust and 24 documentation paths), including one
+new private leaf, with no unstaged paths at review time; cached diff check
+passed at 2435 insertions / 101 deletions. Only the task-only commit,
+post-commit proof, and fresh successor inventory remain pending.
