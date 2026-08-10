@@ -235,5 +235,12 @@ report **NO FINDINGS**, and the coverage-audit no-op is confirmed. The
 historical crate score is not reused for this task. Independent final-quality
 review reports **NO FINDINGS**; all nine hard gates pass, no cap applies, and
 the task-specific score is **99/100**. Staging/cached review, the implementation
-commit, post-commit proof, and fresh inventory remain pending in the central
-contract.
+commit, post-commit proof, and fresh inventory are complete: the exact review
+passed and implementation commit `745c67148df78df84e1274de513aa102ed56223a`
+was created. Immediately after that implementation commit, the read-only
+post-implementation checkpoint observed
+`HEAD=745c67148df78df84e1274de513aa102ed56223a`, a clean worktree,
+`origin/main...HEAD=0/4`, and unchanged protected
+`stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4`. This is historical
+evidence, not a current-HEAD claim after the documentation-closure commit. The
+implementation task is closed.

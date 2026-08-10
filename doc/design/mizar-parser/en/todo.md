@@ -1157,6 +1157,11 @@ Check the task off here once tests pass.
     tests passing. Source/docs and bilingual/boundary re-reviews report no
     findings and the coverage-audit no-op is confirmed. Independent
     final-quality review reports no findings; all nine hard gates pass with no
-    cap and a 99/100 score. The central contract owns the remaining
-    staging/cached review, implementation commit, post-commit, and
-    fresh-inventory closure evidence.
+    cap and a 99/100 score. Exact staging/cached review and implementation commit
+    `745c67148df78df84e1274de513aa102ed56223a` are complete. Immediately after
+    that implementation commit, the read-only post-implementation checkpoint
+    observed `HEAD=745c67148df78df84e1274de513aa102ed56223a`, a clean worktree,
+    `origin/main...HEAD=0/4`, and unchanged protected
+    `stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4`. This is historical
+    evidence, not a current-HEAD claim after the documentation-closure commit.
+    The implementation task is closed.

@@ -14,8 +14,9 @@ Stable owner sections:
 
 | Field | Frozen value |
 |---|---|
-| Status | The exact five-path Rust implementation and 26-path completion-document update are complete in the worktree. All independent reviews report no findings after the three-parser-leaf-hash documentation repair; implementation verification passes, the coverage-audit no-op is confirmed, and all nine hard gates pass with an uncapped final-quality score of 99/100. Only exact staging/cached-diff review, the task-only implementation commit, clean post-commit proof, and fresh inventory remain pending. |
+| Status | The implementation task is closed. The exact five-path Rust implementation and 26-path completion-document update, all independent reviews, implementation verification, the coverage-audit no-op, all nine uncapped hard gates at 99/100, exact staging/cached-diff review, task-only implementation commit `745c67148df78df84e1274de513aa102ed56223a`, and its immediate read-only post-implementation checkpoint are complete. |
 | Selection checkpoint | `HEAD=2a6bf6ea`, `origin/main...HEAD=0/2`, and protected `stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4` were observed during the read-only selection inventory. This is historical selection evidence, not implementation evidence. |
+| Implementation post-commit checkpoint | Immediately after implementation commit `745c67148df78df84e1274de513aa102ed56223a`, the read-only post-implementation checkpoint observed `HEAD=745c67148df78df84e1274de513aa102ed56223a`, a clean worktree, `origin/main...HEAD=0/4`, and unchanged protected `stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4`. This is durable historical evidence, not a claim that `745c67148df78df84e1274de513aa102ed56223a` remains the current HEAD after the later documentation-closure commit. |
 | Authority | `doc/spec/en/18.templates.md` §§18.2.2, 18.2.6, 18.10.2 and `doc/spec/en/13.term_expression.md` §13.4 and §13.4.2. |
 | Classification | `source_drift` plus Rust `test_gap`; no `spec_gap`. |
 | Upper consumer | Checker Task 277B remains blocked after this work by its separate resolver declaration/use-identity prerequisite. This task does not make 277B ready. |
@@ -167,25 +168,26 @@ bilingual/boundary review's three-parser-leaf-hash documentation finding was
 repaired, and its finding-specific re-review reports **NO FINDINGS**. The
 coverage-audit no-op is confirmed. Final-quality review and scoring are
 complete with **NO FINDINGS**: all nine hard gates pass, no cap applies, and the
-independent score is **99/100**. Exact staging/cached-diff review, the task-only
-implementation commit, clean post-commit proof, and fresh inventory remain
-pending; no commit hash exists.
+independent score is **99/100**. Exact staging/cached-diff review and task-only
+implementation commit `745c67148df78df84e1274de513aa102ed56223a` are complete.
+Its immediate read-only post-implementation checkpoint is recorded above,
+including clean worktree, origin delta, and unchanged stash evidence. The
+implementation task is closed.
 Checker Task 277B remains blocked by its separate resolver declaration/use-
 identity prerequisite.
 
 ## Exit evidence
 
 Implementation verification, all independent reviews, the nine passing hard
-gates, the uncapped 99/100 score, and the coverage-audit no-op are confirmed.
-Task closure now requires only exact staging/cached-diff review, the task-only
-implementation commit, clean post-commit proof, and fresh-inventory evidence;
-the task must not be marked complete before those checks finish.
+gates, the uncapped 99/100 score, the coverage-audit no-op, exact staging/cached
+review, implementation commit, and its immediate post-implementation inventory
+are confirmed. The implementation task is closed.
 
 ## Next-task handoff
 
-Perform exact staging/cached-diff review for the completed five-Rust-path plus
-26-document worktree, create the task-only implementation commit, and prove a
-clean post-commit/fresh inventory. Preserve every protected hash,
-inactive semantic status, and the separate resolver blocker. Keep the parent on
-GPT-5.6 Sol `xhigh` for authority, staging, and post-commit inventory; bounded reviews
-may use GPT-5.6 Terra `high`, escalating any ambiguity to the parent.
+Treat `PARSER-TEMPLATE-TYPEHEAD-277P1` as closed and preserve every protected
+hash, inactive semantic status, and the separate resolver blocker. Fresh
+inventory may select only a separately frozen and reviewed successor; it must
+not infer Task 277B readiness or new semantics. Keep the parent on GPT-5.6 Sol
+`xhigh` for any authority decision; bounded inventory may use GPT-5.6 Terra
+`high`, escalating any ambiguity to the parent.

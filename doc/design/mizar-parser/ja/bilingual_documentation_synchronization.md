@@ -159,7 +159,13 @@ implementation synchronization は worktree で complete。両言語は bounded 
 policy、exact complete target AST、pass した parser test 3件、v3 frontend
 follow-through、unchanged semantic/trace/coverage boundary を記録する。parser leaf
 hash 3件に対する bilingual/boundary finding は documentation だけで repair 済みで、
-finding-specific re-review は **NO FINDINGS**。本 section は final task closure または
-commit を主張しない。independent final-quality review も **NO FINDINGS**、9 hard gate
-は全て PASS、cap なしで 99/100。staging/cached review、implementation commit、
-post-commit proof、fresh inventory は pending のままである。
+finding-specific re-review は **NO FINDINGS**。independent final-quality review も **NO
+FINDINGS**、9 hard gate
+は全て PASS、cap なしで 99/100。exact staging/cached review と implementation commit
+`745c67148df78df84e1274de513aa102ed56223a` は complete。その implementation commit
+の直後、read-only post-implementation checkpoint は
+`HEAD=745c67148df78df84e1274de513aa102ed56223a`、clean worktree、
+`origin/main...HEAD=0/4`、unchanged protected
+`stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4` を observe した。これは historical
+evidence であり、documentation-closure commit 後の current-HEAD claim ではない。
+implementation task は closed。

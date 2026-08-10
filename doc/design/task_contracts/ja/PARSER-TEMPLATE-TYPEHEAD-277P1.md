@@ -14,8 +14,9 @@ stable owner section:
 
 | 項目 | freeze 値 |
 |---|---|
-| 状態 | exact Rust 5 path implementation と completion document 26 path update は worktree で complete。three-parser-leaf-hash documentation repair 後の全 independent review は no findings、implementation verification は pass、coverage-audit no-op は confirmed、9 hard gate は全て PASS、cap なしの final-quality score は 99/100。exact staging/cached-diff review、task-only implementation commit、clean post-commit proof、fresh inventory だけが pending。 |
+| 状態 | implementation task は closed。exact Rust 5 path implementation と completion document 26 path update、全 independent review、implementation verification、coverage-audit no-op、uncapped 99/100 の全9 hard gate、exact staging/cached-diff review、task-only implementation commit `745c67148df78df84e1274de513aa102ed56223a`、その直後の read-only post-implementation checkpoint は complete。 |
 | 選択 checkpoint | 読み取り専用 inventory で `HEAD=2a6bf6ea`、`origin/main...HEAD=0/2`、protected `stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4` を観測した。これは historical selection evidence であり implementation evidence ではない。 |
+| Implementation post-commit checkpoint | implementation commit `745c67148df78df84e1274de513aa102ed56223a` の直後、read-only post-implementation checkpoint は `HEAD=745c67148df78df84e1274de513aa102ed56223a`、clean worktree、`origin/main...HEAD=0/4`、unchanged protected `stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4` を observe した。これは durable historical evidence であり、後続 documentation-closure commit 後も `745c67148df78df84e1274de513aa102ed56223a` が current HEAD のままであるとの主張ではない。 |
 | Authority | `doc/spec/en/18.templates.md` §§18.2.2、18.2.6、18.10.2 と `doc/spec/en/13.term_expression.md` §13.4 と §13.4.2。 |
 | 分類 | `source_drift` と Rust `test_gap`。`spec_gap` はない。 |
 | 上位 consumer | Checker Task 277B は別の resolver declaration/use-identity prerequisite が残るため、本 task 後も blocked のままである。 |
@@ -149,21 +150,22 @@ consistency review は **NO FINDINGS**。bilingual/boundary review の three-par
 hash documentation finding は repair 済みで、finding-specific re-review は **NO
 FINDINGS**。coverage-audit no-op も confirmed。final-quality review/score も **NO
 FINDINGS** で complete。9 hard gate はすべて PASS、cap はなく、independent score は
-**99/100**。exact staging/cached-diff review、task-only implementation commit、clean
-post-commit proof、fresh inventory は pending であり、commit hash は存在しない。Checker Task
+**99/100**。exact staging/cached-diff review と task-only implementation commit
+`745c67148df78df84e1274de513aa102ed56223a` は complete。その直後の read-only
+post-implementation checkpoint は上記の clean worktree、origin delta、unchanged stash
+evidence を記録する。implementation task は closed。Checker Task
 277B は separate resolver declaration/use-identity prerequisite により blocked のままである。
 
 ## Exit evidence
 
 implementation verification、全 independent review、9 gate PASS、uncapped 99/100、
-coverage-audit no-op は confirmed。task closure には exact staging/cached-diff review、
-task-only implementation commit、clean post-commit proof、fresh-inventory evidence
-だけが残り、それらが完了する前に task complete としない。
+coverage-audit no-op、exact staging/cached review、implementation commit、その直後の
+post-implementation inventory は confirmed。implementation task は closed。
 
 ## 次 task handoff
 
-completed Rust 5 path + document 26 path worktree の exact staging/cached-diff review を
-行い、task-only implementation commit、clean post-commit/fresh inventory を得る。
-protected hash、inactive semantic status、separate resolver blocker を保持する。authority、
-staging、post-commit inventory は GPT-5.6 Sol `xhigh` parent が担当し、bounded review は
+`PARSER-TEMPLATE-TYPEHEAD-277P1` を closed とし、protected hash、inactive semantic
+status、separate resolver blocker を保持する。fresh inventory は separately frozen /
+reviewed successor だけを選べ、Task 277B readiness または新しい semantics を推定しない。
+authority decision は GPT-5.6 Sol `xhigh` parent が担当し、bounded inventory は
 GPT-5.6 Terra `high` を使える。ambiguity は parent へ escalate する。
