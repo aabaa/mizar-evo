@@ -468,7 +468,7 @@ Correspondence:
 
 | Specification promise | Source evidence | Test evidence | Status |
 |---|---|---|---|
-| Chapter 18 direct parameter/loci/argument syntax is transported without target or theorem semantics. | Implemented five-table input/handoff API in `src/source_template.rs`. | Four checker and four private real-frontend runner tests. | Implemented for Task 277A in the worktree. |
+| Chapter 18 direct parameter/loci/argument syntax is transported without target or theorem semantics. | Implemented five-table input/handoff API in `src/source_template.rs`. | Four checker and four private real-frontend runner tests. | Committed and complete for Task 277A in `b67b028e07337ff5b72422bc8f16fb8f187b5c06`. |
 | Parent/child TypedArena adjacency, dense order, range, recovery, and duplicate-site rules fail closed. | `SourceTemplateProducer::build` and crate-private installation validation. | Exact and corrupted parent/group/order/environment tests. | Implemented transactionally; no repair or sorting. |
 | Typed/final owners preserve one neutral slot without changing semantic profiles. | `TypedAst::with_source_template` and `ResolvedTypedAst::source_template`. | Duplicate install, final replay, deterministic clone, and semantic-isolation tests. | Implemented as coexistent parser-origin evidence. |
 | Public surface and enums remain documented and forward-compatible. | Five IDs, six input aggregates, four data/error enums, five row/table pairs, handoff, and producer above; every public enum is non-exhaustive. | Public-enum and source/spec-audit lint policies. | Implemented with no exhaustive or syntax-dependency exception. |
@@ -5941,8 +5941,14 @@ paired current inventories and checker `tests/lint_policy.rs`; that policy-only
 ninth Rust path adds no behavior or test count. Independent reviews report
 **NO FINDINGS** and full verification passes. Final-quality re-review also
 reports **NO FINDINGS**; all nine hard gates PASS without a score cap at valid
-`100/100`. Only staging/cached-diff review, commit, and post-commit proof remain
-pending.
+`100/100`. Exact staging/cached-diff review passed. Immediately after
+implementation commit `b67b028e07337ff5b72422bc8f16fb8f187b5c06`, the read-only
+post-implementation checkpoint observed
+`HEAD=b67b028e07337ff5b72422bc8f16fb8f187b5c06`, a clean worktree,
+`origin/main...HEAD=0/1`, and unchanged protected
+`stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4`. Task 277A is
+complete while umbrella Task 277 remains partial; any successor must be
+separately frozen and reviewed.
 
 ## Task 269GT Source/API Delta
 

@@ -440,7 +440,7 @@ literal top-level public item:
 
 | 仕様上の約束 | source根拠 | test根拠 | 状態 |
 |---|---|---|---|
-| Chapter 18のdirect parameter/loci/argument syntaxをtarget/theorem semanticsなしでtransportする。 | `src/source_template.rs`のimplemented five-table input/handoff API。 | checker 4件/private real-frontend runner 4件。 | Task 277A向けworktree implementation済み。 |
+| Chapter 18のdirect parameter/loci/argument syntaxをtarget/theorem semanticsなしでtransportする。 | `src/source_template.rs`のimplemented five-table input/handoff API。 | checker 4件/private real-frontend runner 4件。 | Task 277A向けに`b67b028e07337ff5b72422bc8f16fb8f187b5c06`でcommitted/complete。 |
 | parent/child TypedArena adjacency、dense order、range、recovery、duplicate-site ruleをfail closedにする。 | `SourceTemplateProducer::build`とcrate-private installation validation。 | exact/corrupted parent/group/order/environment test。 | repair/sortなしでtransactionalにimplement済み。 |
 | Typed/final ownerがsemantic profileを変えずneutral slot 1件をpreserveする。 | `TypedAst::with_source_template`と`ResolvedTypedAst::source_template`。 | duplicate install、final replay、deterministic clone、semantic-isolation test。 | coexistent parser-origin evidenceとしてimplement済み。 |
 | public surface/enumをdocumentしforward-compatibleに保つ。 | five ID、six input aggregate、four data/error enum、five row/table pair、handoff/producer。public enumは全てnon-exhaustive。 | public-enum/source-spec-audit lint policy。 | exhaustive/syntax-dependency exceptionなしでimplement済み。 |
@@ -5663,8 +5663,14 @@ current public surfaceは上記`source_template`にinventory済み。module/expo
 public-surface、public enum 4件はpaired current inventoryとchecker
 `tests/lint_policy.rs`に存在する。このpolicy-only ninth Rust pathはbehavior/test countを
 追加しない。independent review/final quality re-reviewは**NO FINDINGS**、全9 hard
-gateはscore capなしの有効な`100/100`でPASS。pendingはstaging/cached-diff review、
-commit、post-commit proofだけである。
+gateはscore capなしの有効な`100/100`でPASS。exact staging/cached-diff reviewもPASSした。
+implementation commit `b67b028e07337ff5b72422bc8f16fb8f187b5c06`の直後、read-only
+post-implementation checkpointは
+`HEAD=b67b028e07337ff5b72422bc8f16fb8f187b5c06`、clean worktree、
+`origin/main...HEAD=0/1`、unchanged protected
+`stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4`をobserveした。Task 277Aはcomplete、
+umbrella Task 277はpartialのままで、successorはseparately frozen/reviewedでなければ
+ならない。
 
 ## Task 269GT source/API delta
 
