@@ -2782,6 +2782,318 @@ impl SourceFraenkelGeneratorBindingContextProducer {
     }
 }
 
+dense_id!(SourceFraenkelGeneratorBoundUseId);
+
+/// One checked Fraenkel generator use mapped to its checker binding.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceFraenkelGeneratorBoundUse {
+    use_position: SourceFraenkelGeneratorUsePositionId,
+    binding_context: SourceFraenkelGeneratorBindingContextId,
+    resolver_use_index: usize,
+    source_ordinal: usize,
+    lookup_ordinal: usize,
+    context: BindingContextId,
+    binding: BindingId,
+}
+
+impl SourceFraenkelGeneratorBoundUse {
+    #[must_use]
+    pub const fn use_position(&self) -> SourceFraenkelGeneratorUsePositionId {
+        self.use_position
+    }
+
+    #[must_use]
+    pub const fn binding_context(&self) -> SourceFraenkelGeneratorBindingContextId {
+        self.binding_context
+    }
+
+    #[must_use]
+    pub const fn resolver_use_index(&self) -> usize {
+        self.resolver_use_index
+    }
+
+    #[must_use]
+    pub const fn source_ordinal(&self) -> usize {
+        self.source_ordinal
+    }
+
+    #[must_use]
+    pub const fn lookup_ordinal(&self) -> usize {
+        self.lookup_ordinal
+    }
+
+    #[must_use]
+    pub const fn context(&self) -> BindingContextId {
+        self.context
+    }
+
+    #[must_use]
+    pub const fn binding(&self) -> BindingId {
+        self.binding
+    }
+}
+
+/// Dense checked Fraenkel generator bound uses.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceFraenkelGeneratorBoundUseTable {
+    rows: Vec<SourceFraenkelGeneratorBoundUse>,
+}
+
+impl SourceFraenkelGeneratorBoundUseTable {
+    #[must_use]
+    pub fn get(
+        &self,
+        id: SourceFraenkelGeneratorBoundUseId,
+    ) -> Option<&SourceFraenkelGeneratorBoundUse> {
+        self.rows.get(id.index())
+    }
+
+    pub fn iter(
+        &self,
+    ) -> impl Iterator<
+        Item = (
+            SourceFraenkelGeneratorBoundUseId,
+            &SourceFraenkelGeneratorBoundUse,
+        ),
+    > {
+        self.rows
+            .iter()
+            .enumerate()
+            .map(|(index, row)| (SourceFraenkelGeneratorBoundUseId::new(index), row))
+    }
+
+    #[must_use]
+    pub const fn len(&self) -> usize {
+        self.rows.len()
+    }
+
+    #[must_use]
+    pub const fn is_empty(&self) -> bool {
+        self.rows.is_empty()
+    }
+}
+
+/// A rejected Fraenkel generator bound-use handoff.
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum SourceFraenkelGeneratorBoundUseError {
+    EnvironmentMismatch,
+    InvalidBindingContextDependency,
+    InvalidBoundUse {
+        bound_use: SourceFraenkelGeneratorBoundUseId,
+    },
+}
+
+impl fmt::Display for SourceFraenkelGeneratorBoundUseError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::EnvironmentMismatch => {
+                formatter.write_str("Fraenkel generator bound-use environment mismatch")
+            }
+            Self::InvalidBindingContextDependency => formatter
+                .write_str("Fraenkel generator bound-use binding-context dependency is invalid"),
+            Self::InvalidBoundUse { bound_use } => write!(
+                formatter,
+                "Fraenkel generator bound use {} is invalid",
+                bound_use.index()
+            ),
+        }
+    }
+}
+
+impl Error for SourceFraenkelGeneratorBoundUseError {}
+
+const FRAENKEL_GENERATOR_BOUND_USE_DEPENDENCY_VERSION: &str =
+    "source-fraenkel-generator-bound-use-dependency-v1";
+const FRAENKEL_GENERATOR_BOUND_USE_DEPENDENCY_DOMAIN: &str = "source-fraenkel-generator-bound-use";
+
+#[derive(Clone, PartialEq, Eq)]
+struct SourceFraenkelGeneratorBoundUseDependencies {
+    version: &'static str,
+    domain: &'static str,
+    binding_context: SourceFraenkelGeneratorBindingContextHandoff,
+}
+
+/// Opaque handoff for checked Fraenkel generator bound uses.
+#[derive(Clone, PartialEq, Eq)]
+pub struct SourceFraenkelGeneratorBoundUseHandoff {
+    source_id: SourceId,
+    module_id: ModuleId,
+    dependency_summary: String,
+    bound_uses: SourceFraenkelGeneratorBoundUseTable,
+    dependencies: SourceFraenkelGeneratorBoundUseDependencies,
+}
+
+impl SourceFraenkelGeneratorBoundUseHandoff {
+    #[must_use]
+    pub const fn source_id(&self) -> SourceId {
+        self.source_id
+    }
+
+    #[must_use]
+    pub const fn module_id(&self) -> &ModuleId {
+        &self.module_id
+    }
+
+    #[must_use]
+    pub fn dependency_summary(&self) -> &str {
+        &self.dependency_summary
+    }
+
+    #[must_use]
+    pub const fn bound_uses(&self) -> &SourceFraenkelGeneratorBoundUseTable {
+        &self.bound_uses
+    }
+
+    #[must_use]
+    pub fn debug_text(&self) -> String {
+        format!(
+            "source-fraenkel-generator-bound-use-v1|module={}.{}|bound-uses={}",
+            self.module_id.package().as_str(),
+            self.module_id.path().as_str(),
+            self.bound_uses.len(),
+        )
+    }
+
+    fn validate(&self) -> Result<(), SourceFraenkelGeneratorBoundUseError> {
+        let dependency = &self.dependencies.binding_context;
+        if self.source_id != dependency.source_id() || &self.module_id != dependency.module_id() {
+            return Err(SourceFraenkelGeneratorBoundUseError::EnvironmentMismatch);
+        }
+        validate_fraenkel_generator_bound_use_dependency(&self.dependencies)?;
+        if self.dependency_summary != dependency.debug_text() {
+            return Err(SourceFraenkelGeneratorBoundUseError::InvalidBindingContextDependency);
+        }
+        validate_fraenkel_generator_bound_use_rows(&self.bound_uses, dependency)
+    }
+}
+
+/// Produces the default-deny Fraenkel generator bound-use association.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct SourceFraenkelGeneratorBoundUseProducer;
+
+impl SourceFraenkelGeneratorBoundUseProducer {
+    pub fn build(
+        binding_context: &SourceFraenkelGeneratorBindingContextHandoff,
+    ) -> Result<SourceFraenkelGeneratorBoundUseHandoff, SourceFraenkelGeneratorBoundUseError> {
+        binding_context
+            .validate()
+            .map_err(|_| SourceFraenkelGeneratorBoundUseError::InvalidBindingContextDependency)?;
+        let dependencies = SourceFraenkelGeneratorBoundUseDependencies {
+            version: FRAENKEL_GENERATOR_BOUND_USE_DEPENDENCY_VERSION,
+            domain: FRAENKEL_GENERATOR_BOUND_USE_DEPENDENCY_DOMAIN,
+            binding_context: binding_context.clone(),
+        };
+        let bound_uses = build_fraenkel_generator_bound_use_rows(binding_context)?;
+        let handoff = SourceFraenkelGeneratorBoundUseHandoff {
+            source_id: binding_context.source_id(),
+            module_id: binding_context.module_id().clone(),
+            dependency_summary: binding_context.debug_text(),
+            bound_uses,
+            dependencies,
+        };
+        handoff.validate()?;
+        Ok(handoff)
+    }
+}
+
+fn validate_fraenkel_generator_bound_use_dependency(
+    dependencies: &SourceFraenkelGeneratorBoundUseDependencies,
+) -> Result<(), SourceFraenkelGeneratorBoundUseError> {
+    if dependencies.version != FRAENKEL_GENERATOR_BOUND_USE_DEPENDENCY_VERSION
+        || dependencies.domain != FRAENKEL_GENERATOR_BOUND_USE_DEPENDENCY_DOMAIN
+    {
+        return Err(SourceFraenkelGeneratorBoundUseError::InvalidBindingContextDependency);
+    }
+    dependencies
+        .binding_context
+        .validate()
+        .map_err(|_| SourceFraenkelGeneratorBoundUseError::InvalidBindingContextDependency)
+}
+
+fn build_fraenkel_generator_bound_use_rows(
+    binding_context: &SourceFraenkelGeneratorBindingContextHandoff,
+) -> Result<SourceFraenkelGeneratorBoundUseTable, SourceFraenkelGeneratorBoundUseError> {
+    let rows = binding_context
+        .use_positions()
+        .iter()
+        .map(|(use_position, position)| {
+            let binding = binding_context
+                .bindings()
+                .get(position.binding_context())
+                .ok_or(SourceFraenkelGeneratorBoundUseError::InvalidBoundUse {
+                    bound_use: SourceFraenkelGeneratorBoundUseId::new(use_position.index()),
+                })?;
+            let lookup = binding_context.binding_env().lookup(&BindingLookupSite::new(
+                "x",
+                binding.context(),
+                None,
+                position.lookup_ordinal(),
+            ));
+            if !matches!(lookup, Ok(BindingLookupResult::Local(found)) if found == binding.binding())
+            {
+                return Err(SourceFraenkelGeneratorBoundUseError::InvalidBoundUse {
+                    bound_use: SourceFraenkelGeneratorBoundUseId::new(use_position.index()),
+                });
+            }
+            Ok(SourceFraenkelGeneratorBoundUse {
+                use_position,
+                binding_context: position.binding_context(),
+                resolver_use_index: position.resolver_use_index(),
+                source_ordinal: position.source_ordinal(),
+                lookup_ordinal: position.lookup_ordinal(),
+                context: binding.context(),
+                binding: binding.binding(),
+            })
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    let table = SourceFraenkelGeneratorBoundUseTable { rows };
+    validate_fraenkel_generator_bound_use_rows(&table, binding_context)?;
+    Ok(table)
+}
+
+fn validate_fraenkel_generator_bound_use_rows(
+    rows: &SourceFraenkelGeneratorBoundUseTable,
+    dependency: &SourceFraenkelGeneratorBindingContextHandoff,
+) -> Result<(), SourceFraenkelGeneratorBoundUseError> {
+    if rows.len() != 3 {
+        return Err(SourceFraenkelGeneratorBoundUseError::InvalidBoundUse {
+            bound_use: SourceFraenkelGeneratorBoundUseId::new(0),
+        });
+    }
+    for (id, row) in rows.iter() {
+        let invalid = || SourceFraenkelGeneratorBoundUseError::InvalidBoundUse { bound_use: id };
+        let use_position_id = SourceFraenkelGeneratorUsePositionId::new(id.index());
+        let position = dependency
+            .use_positions()
+            .get(use_position_id)
+            .ok_or_else(invalid)?;
+        let binding = dependency
+            .bindings()
+            .get(position.binding_context())
+            .ok_or_else(invalid)?;
+        let lookup = dependency.binding_env().lookup(&BindingLookupSite::new(
+            "x",
+            binding.context(),
+            None,
+            position.lookup_ordinal(),
+        ));
+        if rows.get(id) != Some(row)
+            || row.use_position() != use_position_id
+            || row.binding_context() != position.binding_context()
+            || row.resolver_use_index() != position.resolver_use_index()
+            || row.source_ordinal() != position.source_ordinal()
+            || row.lookup_ordinal() != position.lookup_ordinal()
+            || row.context() != binding.context()
+            || row.binding() != binding.binding()
+            || !matches!(lookup, Ok(BindingLookupResult::Local(found)) if found == binding.binding())
+        {
+            return Err(invalid());
+        }
+    }
+    Ok(())
+}
+
 #[derive(Clone, Copy)]
 struct FraenkelGeneratorBindingProfile {
     composition: SourceTemplateFraenkelStructuralCompositionId,
@@ -4487,6 +4799,349 @@ pub(crate) mod tests {
         assert_eq!(fixture.structural, structural_before);
         assert_eq!(fixture.resolver, resolver_before);
         assert_eq!(fixture.typed_ast, typed_before);
+    }
+
+    #[test]
+    fn task257c4b_builds_exact_fraenkel_generator_bound_uses() {
+        let fixture = task257c4a_fixture();
+        let binding_context = SourceFraenkelGeneratorBindingContextProducer::build(
+            &fixture.structural,
+            &fixture.resolver,
+            &fixture.typed_ast,
+        )
+        .expect("Task257C4B binding-context dependency");
+        let handoff = SourceFraenkelGeneratorBoundUseProducer::build(&binding_context)
+            .expect("Task257C4B bound uses");
+
+        assert_eq!(handoff.source_id(), fixture.source);
+        assert_eq!(handoff.module_id(), &fixture.module);
+        assert_eq!(handoff.dependency_summary(), binding_context.debug_text());
+        assert_eq!(handoff.bound_uses().len(), 3);
+        assert!(!handoff.bound_uses().is_empty());
+        assert_eq!(handoff.bound_uses().iter().count(), 3);
+        assert_eq!(
+            handoff
+                .bound_uses()
+                .iter()
+                .map(|(id, row)| (
+                    id.index(),
+                    row.use_position().index(),
+                    row.binding_context().index(),
+                    row.resolver_use_index(),
+                    row.source_ordinal(),
+                    row.lookup_ordinal(),
+                    row.context().index(),
+                    row.binding().index(),
+                ))
+                .collect::<Vec<_>>(),
+            vec![
+                (0, 0, 0, 0, 0, 1, 1, 0),
+                (1, 1, 0, 1, 1, 2, 1, 0),
+                (2, 2, 0, 2, 2, 3, 1, 0),
+            ]
+        );
+        for (id, row) in handoff.bound_uses().iter() {
+            assert_eq!(handoff.bound_uses().get(id), Some(row));
+            assert!(matches!(
+                binding_context.binding_env().lookup(&BindingLookupSite::new(
+                    "x",
+                    row.context(),
+                    None,
+                    row.lookup_ordinal(),
+                )),
+                Ok(BindingLookupResult::Local(binding)) if binding == row.binding()
+            ));
+        }
+        assert!(
+            handoff
+                .bound_uses()
+                .get(SourceFraenkelGeneratorBoundUseId::new(3))
+                .is_none()
+        );
+        assert!(matches!(
+            binding_context.binding_env().lookup(&BindingLookupSite::new(
+                "x",
+                BindingContextId::new(1),
+                None,
+                0,
+            )),
+            Ok(BindingLookupResult::ForwardReference { candidates, .. })
+                if candidates == vec![BindingId::new(0)]
+        ));
+        assert_eq!(
+            handoff.debug_text(),
+            "source-fraenkel-generator-bound-use-v1|module=pkg.composition.fixture|bound-uses=3"
+        );
+    }
+
+    #[test]
+    fn task257c4b_rejects_environment_and_binding_context_dependency_corruption() {
+        let fixture = task257c4a_fixture();
+        let binding_context = SourceFraenkelGeneratorBindingContextProducer::build(
+            &fixture.structural,
+            &fixture.resolver,
+            &fixture.typed_ast,
+        )
+        .expect("Task257C4B binding-context dependency");
+        let build = || {
+            SourceFraenkelGeneratorBoundUseProducer::build(&binding_context)
+                .expect("Task257C4B valid handoff")
+        };
+
+        let mut wrong_source = build();
+        wrong_source.source_id = other_source_id();
+        wrong_source.dependencies.version = "stale";
+        wrong_source.bound_uses.rows[0].lookup_ordinal = 0;
+        assert_eq!(
+            wrong_source.validate(),
+            Err(SourceFraenkelGeneratorBoundUseError::EnvironmentMismatch)
+        );
+
+        let mut wrong_module = build();
+        wrong_module.module_id = ModuleId::new(PackageId::new("pkg"), ModulePath::new("other"));
+        assert_eq!(
+            wrong_module.validate(),
+            Err(SourceFraenkelGeneratorBoundUseError::EnvironmentMismatch)
+        );
+
+        let mut stale_version = build();
+        stale_version.dependencies.version = "stale";
+        assert_eq!(
+            stale_version.validate(),
+            Err(SourceFraenkelGeneratorBoundUseError::InvalidBindingContextDependency)
+        );
+
+        let mut stale_domain = build();
+        stale_domain.dependencies.domain = "stale";
+        assert_eq!(
+            stale_domain.validate(),
+            Err(SourceFraenkelGeneratorBoundUseError::InvalidBindingContextDependency)
+        );
+
+        let mut stale_summary = build();
+        stale_summary.dependency_summary.push_str("-stale");
+        stale_summary.bound_uses.rows[0].lookup_ordinal = 0;
+        assert_eq!(
+            stale_summary.validate(),
+            Err(SourceFraenkelGeneratorBoundUseError::InvalidBindingContextDependency)
+        );
+
+        let mut stale_resolver = build();
+        stale_resolver
+            .dependencies
+            .binding_context
+            .dependencies
+            .resolver = task257c4a_empty_resolver(fixture.source, &fixture.module);
+        stale_resolver.bound_uses.rows[0].lookup_ordinal = 0;
+        assert_eq!(
+            stale_resolver.validate(),
+            Err(SourceFraenkelGeneratorBoundUseError::InvalidBindingContextDependency)
+        );
+
+        let other_source = other_source_id();
+        let other_ast = task257c4a_surface_ast(other_source);
+        let other_resolved = SurfaceResolvedArena::lower(&other_ast, &fixture.module)
+            .expect("Task257C4B other resolver arena");
+        let other_templates =
+            TemplateTypeParameterSourceCollector::new(&other_ast, &fixture.module, &other_resolved)
+                .expect("Task257C4B other template collector")
+                .collect()
+                .expect("Task257C4B other template collection");
+        let other_resolver = FraenkelGeneratorVariableSourceCollector::new(
+            &other_ast,
+            &fixture.module,
+            &other_resolved,
+        )
+        .expect("Task257C4B other generator collector")
+        .collect()
+        .expect("Task257C4B other generator collection");
+        let other_typed = task257c4a_typed_ast(&other_ast, fixture.module.clone(), &other_resolved);
+        let other_template =
+            SourceTemplateTypeParameterAssociationProducer::build(&other_templates, &other_typed)
+                .expect("Task257C4B other template handoff");
+        let other_structural = SourceTemplateFraenkelStructuralCompositionProducer::build(
+            &other_template,
+            &other_resolver,
+            &other_typed,
+        )
+        .expect("Task257C4B other structural handoff");
+        let mut stale_structural = build();
+        stale_structural
+            .dependencies
+            .binding_context
+            .dependencies
+            .structural = other_structural;
+        stale_structural.bound_uses.rows[0].lookup_ordinal = 0;
+        assert_eq!(
+            stale_structural.validate(),
+            Err(SourceFraenkelGeneratorBoundUseError::InvalidBindingContextDependency)
+        );
+
+        let parameter = binding_context
+            .dependencies
+            .structural
+            .compositions()
+            .get(SourceTemplateFraenkelStructuralCompositionId::new(0))
+            .expect("Task257C4B structural composition")
+            .parameter();
+        let mut stale_nodes = binding_context
+            .dependencies
+            .typed_ast
+            .nodes()
+            .iter()
+            .map(|(_, node)| node.clone())
+            .collect::<Vec<_>>();
+        stale_nodes[parameter.index()].resolved_node = None;
+        let stale_typed = task257c4a_typed_from_nodes(
+            fixture.source,
+            fixture.module.clone(),
+            binding_context.dependencies.typed_ast.nodes().root(),
+            stale_nodes,
+        );
+        let mut stale_typed_dependency = build();
+        stale_typed_dependency
+            .dependencies
+            .binding_context
+            .dependencies
+            .typed_ast = stale_typed;
+        stale_typed_dependency.bound_uses.rows[0].lookup_ordinal = 0;
+        assert_eq!(
+            stale_typed_dependency.validate(),
+            Err(SourceFraenkelGeneratorBoundUseError::InvalidBindingContextDependency)
+        );
+
+        let mut stale_position = build();
+        stale_position
+            .dependencies
+            .binding_context
+            .use_positions
+            .rows[0]
+            .lookup_ordinal = 9;
+        assert_eq!(
+            stale_position.validate(),
+            Err(SourceFraenkelGeneratorBoundUseError::InvalidBindingContextDependency)
+        );
+
+        let mut stale_environment = build();
+        stale_environment
+            .dependencies
+            .binding_context
+            .binding_env
+            .binding_mut_for_test(BindingId::new(0))
+            .expect("Task257C4B retained binding")
+            .recovery = BindingRecoveryState::Recovered;
+        assert_eq!(
+            stale_environment.validate(),
+            Err(SourceFraenkelGeneratorBoundUseError::InvalidBindingContextDependency)
+        );
+
+        let mut invalid_input = binding_context.clone();
+        invalid_input.use_positions.rows[0].lookup_ordinal = 9;
+        assert!(matches!(
+            SourceFraenkelGeneratorBoundUseProducer::build(&invalid_input),
+            Err(SourceFraenkelGeneratorBoundUseError::InvalidBindingContextDependency)
+        ));
+    }
+
+    #[test]
+    fn task257c4b_rejects_bound_use_and_lookup_corruption() {
+        let fixture = task257c4a_fixture();
+        let binding_context = SourceFraenkelGeneratorBindingContextProducer::build(
+            &fixture.structural,
+            &fixture.resolver,
+            &fixture.typed_ast,
+        )
+        .expect("Task257C4B binding-context dependency");
+        let build = || {
+            SourceFraenkelGeneratorBoundUseProducer::build(&binding_context)
+                .expect("Task257C4B valid handoff")
+        };
+        let invalid = |candidate: &SourceFraenkelGeneratorBoundUseHandoff,
+                       id: SourceFraenkelGeneratorBoundUseId| {
+            assert_eq!(
+                candidate.validate(),
+                Err(SourceFraenkelGeneratorBoundUseError::InvalidBoundUse { bound_use: id })
+            );
+        };
+
+        let mut missing = build();
+        let _ = missing.bound_uses.rows.pop();
+        invalid(&missing, SourceFraenkelGeneratorBoundUseId::new(0));
+
+        let mut extra = build();
+        extra.bound_uses.rows.push(extra.bound_uses.rows[0].clone());
+        invalid(&extra, SourceFraenkelGeneratorBoundUseId::new(0));
+
+        let mut reordered = build();
+        reordered.bound_uses.rows.swap(0, 1);
+        invalid(&reordered, SourceFraenkelGeneratorBoundUseId::new(0));
+
+        let mut duplicate = build();
+        duplicate.bound_uses.rows[1] = duplicate.bound_uses.rows[0].clone();
+        invalid(&duplicate, SourceFraenkelGeneratorBoundUseId::new(1));
+
+        let mut use_position = build();
+        use_position.bound_uses.rows[0].use_position = SourceFraenkelGeneratorUsePositionId::new(2);
+        invalid(&use_position, SourceFraenkelGeneratorBoundUseId::new(0));
+
+        let mut binding_context_id = build();
+        binding_context_id.bound_uses.rows[0].binding_context =
+            SourceFraenkelGeneratorBindingContextId::new(1);
+        invalid(
+            &binding_context_id,
+            SourceFraenkelGeneratorBoundUseId::new(0),
+        );
+
+        let mut resolver_use = build();
+        resolver_use.bound_uses.rows[1].resolver_use_index = 99;
+        invalid(&resolver_use, SourceFraenkelGeneratorBoundUseId::new(1));
+
+        let mut source_ordinal = build();
+        source_ordinal.bound_uses.rows[1].source_ordinal = 99;
+        invalid(&source_ordinal, SourceFraenkelGeneratorBoundUseId::new(1));
+
+        let mut non_local_lookup = build();
+        non_local_lookup.bound_uses.rows[0].lookup_ordinal = 0;
+        invalid(&non_local_lookup, SourceFraenkelGeneratorBoundUseId::new(0));
+
+        let mut context = build();
+        context.bound_uses.rows[2].context = BindingContextId::new(0);
+        invalid(&context, SourceFraenkelGeneratorBoundUseId::new(2));
+
+        let mut binding = build();
+        binding.bound_uses.rows[2].binding = BindingId::new(1);
+        invalid(&binding, SourceFraenkelGeneratorBoundUseId::new(2));
+
+        let mut dependency_precedence = build();
+        dependency_precedence.dependencies.domain = "stale";
+        dependency_precedence.bound_uses.rows[0].lookup_ordinal = 0;
+        assert_eq!(
+            dependency_precedence.validate(),
+            Err(SourceFraenkelGeneratorBoundUseError::InvalidBindingContextDependency)
+        );
+    }
+
+    #[test]
+    fn task257c4b_rebuilds_deterministically_without_mutation() {
+        let fixture = task257c4a_fixture();
+        let binding_context = SourceFraenkelGeneratorBindingContextProducer::build(
+            &fixture.structural,
+            &fixture.resolver,
+            &fixture.typed_ast,
+        )
+        .expect("Task257C4B binding-context dependency");
+        let before = binding_context.clone();
+        let before_debug = binding_context.debug_text();
+        let first = SourceFraenkelGeneratorBoundUseProducer::build(&binding_context)
+            .expect("Task257C4B first build");
+        let second = SourceFraenkelGeneratorBoundUseProducer::build(&binding_context)
+            .expect("Task257C4B second build");
+
+        assert!(first == second);
+        assert!(binding_context == before);
+        assert_eq!(binding_context.debug_text(), before_debug);
+        assert!(first.dependencies.binding_context == binding_context);
+        assert!(second.dependencies.binding_context == binding_context);
     }
 
     fn fixture() -> Fixture {

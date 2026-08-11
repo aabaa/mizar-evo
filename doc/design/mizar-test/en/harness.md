@@ -5700,7 +5700,7 @@ credit.
 ## Checker Task 257C4B private bound-use probe
 
 The frozen [C4B contract](../../task_contracts/en/CHECKER-FRAENKEL-GENERATOR-BOUND-USE-257C4B.md)
-adds exactly one future private leaf,
+adds exactly one implemented private leaf,
 `runner/tests/type_elaboration/template_fraenkel_generator_bound_use.rs`, and
 one `runner/tests.rs` include. Its sole test is
 `task257c4b_real_fixture_builds_exact_fraenkel_generator_bound_uses`, changing
@@ -5713,3 +5713,18 @@ bound-use rows, local lookup bindings, dense absence, literal debug text, and
 C4A non-mutation. It does not edit the immutable fixture or existing C4A leaf
 and is not a production route, active-stage assertion, semantic verdict,
 diagnostic, trace, sidecar, or coverage-credit consumer.
+
+The registry is 67 lines / SHA-256
+`94bc44e8ba47ca568670adeec74d20f6738b3fc337da2422871095137040e8c4`;
+the private leaf is 121 lines / SHA-256
+`bea54489cf0c85d3026f950d080a0ffc609719fda28520b9e7b2f59d5fc162bc`.
+The focused private test and mizar-test `614/614` library pass, as do
+formatting, package/full-workspace Clippy, full workspace tests including
+metadata/public-enum suites, five unchanged CLI replays, and diff checks.
+Independent implementation and test-sufficiency reviews are **NO FINDINGS**.
+Final source/documentation and independent bilingual/boundary reviews are
+**NO FINDINGS** after the sole Low baseline/current wording repair.
+Final-quality is **NO FINDINGS**; all `9/9` hard gates pass at valid uncapped
+`100/100` (`20/20/15/15/10/10/5/5`). Exact 23-path staging/cached review also
+passes. Only task-only commit, post-commit proof, and fresh inventory remain
+pending.

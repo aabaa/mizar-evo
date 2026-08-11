@@ -3623,6 +3623,12 @@ post-commit fresh inventoryからだけ選択する。
 ## Checker Task 257C4B private bound-use probe
 
 - [x] [C4B contract](../../task_contracts/ja/CHECKER-FRAENKEL-GENERATOR-BOUND-USE-257C4B.md)でexact private leaf/sole test/`613 -> 614`/no-production-no-semantic-no-credit boundaryをfreezeする。
-- [ ] docs-only commit/fresh preflight後、`template_fraenkel_generator_bound_use.rs`とone `tests.rs` includeだけを追加する。
-- [ ] existing F5 dependency constructionをreuseしexact public C4B handoffだけをassertする。fixture/expectation/trace/C4A leaf/route/diagnostic/verdict/coverageをeditしない。
-- [ ] sole test、mizar-test `614/614`、required verification、test/bilingual/boundary reviewsをPASSし、Task277B not-ready/zero-creditを維持する。
+- [x] docs-only commit/fresh preflight後、`template_fraenkel_generator_bound_use.rs`とone `tests.rs` includeだけを追加する。
+- [x] existing F5 dependency constructionをreuseしexact public C4B handoffだけをassertする。fixture/expectation/trace/C4A leaf/route/diagnostic/verdict/coverageをeditしない。
+- [x] sole test、mizar-test `614/614`、format、package Clippy、diff check、implementation/test-sufficiency reviewを**NO FINDINGS**でPASSし、Task277B not-ready/zero-creditを維持する。
+- [x] 両15-test lint policyとcompletion-doc diff checkをPASSする。
+- [x] Full-workspace Clippy/tests、metadata `137/137`、public-enum `2/2`、23 warnings / 0 errorsのunchanged 5 CLI replayをPASSする。
+- [x] sole Low baseline/current wording repair後、final source-docとindependent bilingual/boundary reviewを**NO FINDINGS**で完了する。
+- [x] final-qualityを**NO FINDINGS**、全`9/9` hard gate PASS、valid uncapped `100/100`（`20/20/15/15/10/10/5/5`）で完了する。
+- [x] Exact staging/cached reviewを23 paths（3 Rust/20 docs）、new private leaf 1件、review時unstaged 0、cached diff check PASS、cached stat `1096/123`で完了する。
+- [ ] task-only commit、post-commit proof、fresh inventoryを完了する。

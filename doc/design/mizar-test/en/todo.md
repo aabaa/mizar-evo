@@ -3871,14 +3871,27 @@ the successor is selected only from fresh post-commit inventory.
 - [x] Freeze the exact private leaf, sole test name, `613 -> 614`, and
   no-production/no-semantic/no-credit boundary in the paired contract and
   harness owners under the [C4B contract](../../task_contracts/en/CHECKER-FRAENKEL-GENERATOR-BOUND-USE-257C4B.md).
-- [ ] After the docs-only commit and fresh preflight, add only
+- [x] After the docs-only commit and fresh preflight, add only
   `template_fraenkel_generator_bound_use.rs` and its one `tests.rs` include.
-- [ ] Reuse the existing real F5 dependency construction and assert only the
+- [x] Reuse the existing real F5 dependency construction and assert only the
   exact public C4B handoff; do not edit the fixture, expectation, trace, C4A
   leaf, route, diagnostic, verdict, or coverage state.
-- [ ] Pass the sole private test, mizar-test `614/614`, full required
-  verification and independent test/bilingual/boundary reviews, preserving
-  Task 277B not-ready/zero-credit status.
+- [x] Pass the sole private test, mizar-test `614/614`, format, package Clippy,
+  diff checks, and independent implementation/test-sufficiency reviews at
+  **NO FINDINGS**, preserving Task 277B not-ready/zero-credit status.
+- [x] Pass both 15-test policy lint suites and the completion-document diff
+  check.
+- [x] Pass full-workspace Clippy/tests, metadata `137/137`, public-enum `2/2`,
+  and five unchanged CLI replays with 23 warnings / 0 errors.
+- [x] Complete final source/documentation and independent bilingual/boundary
+  reviews at **NO FINDINGS** after the sole Low baseline/current wording
+  repair.
+- [x] Complete final-quality at **NO FINDINGS**, all `9/9` hard gates PASS,
+  and valid uncapped `100/100` (`20/20/15/15/10/10/5/5`).
+- [x] Complete exact staging/cached review over 23 paths (3 Rust / 20 docs),
+  one new private leaf, zero unstaged paths at review time, cached diff check
+  PASS, and cached stat `1096/123`.
+- [ ] Complete task-only commit, post-commit proof, and fresh inventory.
 
 ## Resolver Task 277R2 Test-Only Fixture Probe
 

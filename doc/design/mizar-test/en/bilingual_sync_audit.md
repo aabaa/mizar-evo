@@ -1941,11 +1941,21 @@ credit. No bilingual exception exists.
 
 ## Checker Task 257C4B frozen contract parity
 
-The [EN canonical](../../task_contracts/en/CHECKER-FRAENKEL-GENERATOR-BOUND-USE-257C4B.md)
+The completed [EN canonical](../../task_contracts/en/CHECKER-FRAENKEL-GENERATOR-BOUND-USE-257C4B.md)
 and [JA companion](../../task_contracts/ja/CHECKER-FRAENKEL-GENERATOR-BOUND-USE-257C4B.md)
-agree on the one future private leaf/include, exact sole test name, `613 ->
-614`, existing F5 construction reuse, and no-production/no-semantic/no-credit
-boundary. The harness, boundary, TODO, bilingual, and Task Index pairs are in
-the exact-24 review surface. English owns the exhaustive ABI and baseline
-hashes. No bilingual exception is planned; Task 277B remains not ready with
-zero credit.
+agree on the one implemented private leaf/include, exact sole test name,
+`613 -> 614`, final `67/121` measurements and hashes, existing F5 construction
+reuse, verification completed so far, pending lifecycle gates, and the
+no-production/no-semantic/no-credit boundary. The harness, boundary, TODO, and
+bilingual pairs are in the exact-20 completion review surface; all Task Index
+plans remain unchanged. English owns the exhaustive ABI and final hashes. No
+bilingual exception exists; independent bilingual/boundary review is
+**NO FINDINGS** after the sole Low baseline/current wording repair, and Task
+277B remains not ready with zero credit.
+
+Both companions record formatting, full-workspace Clippy/tests, metadata
+`137/137`, public-enum `2/2`, and the unchanged five CLI outputs as passing.
+Final-quality is **NO FINDINGS**; all `9/9` hard gates pass at valid uncapped
+`100/100` (`20/20/15/15/10/10/5/5`) in both languages. Exact 23-path
+staging/cached review also passes; only the task-only commit, post-commit proof,
+and fresh-inventory lifecycle remain pending.

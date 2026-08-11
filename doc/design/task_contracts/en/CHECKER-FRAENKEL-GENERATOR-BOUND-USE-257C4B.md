@@ -18,15 +18,23 @@ and [bilingual audit](../../mizar-test/en/bilingual_sync_audit.md#checker-task-2
 
 ## Status, authority, and readiness
 
-**Status:** this is the documentation-only implementation prerequisite. The
-implementation has not begun. Fresh clean inventory at
-`3d6add94f4b29d395a9362b56c05cc9256efa945` selects this separately bounded
-Task-257C slice after the completed C4A lifecycle closure. At that checkpoint
-`origin/main...HEAD` is `0/20`, and `stash@{0}` remains
-`f65cf4a13752ec380710814a9ac6392ccb9d75d4`. Implementation may begin only
-after this exact documentation prerequisite is reviewed, committed alone, and
-followed by a clean fresh preflight that reproduces the frozen authority, API,
-scope, counts, and hashes.
+**Status:** the exact three-Rust-path implementation is complete in the
+completion worktree based on clean preflight
+`53987a3fdc1a927dbcbd2b9ed22e9817c8b68f2d`. At that checkpoint
+`origin/main...HEAD` was `0/21`, and `stash@{0}` remained
+`f65cf4a13752ec380710814a9ac6392ccb9d75d4`. The implementation and test
+sufficiency reviews are **NO FINDINGS** after the existing corruption test was
+repaired to cover retained structural and `TypedAst` dependency corruption
+with dependency-before-row precedence. Final source/documentation review and
+independent bilingual/boundary review are also **NO FINDINGS** after the sole
+Low baseline/current wording issue was repaired in this contract pair. This
+task's final-quality review is **NO FINDINGS**; all `9/9` hard gates pass at a
+valid uncapped `100/100` (`20/20/15/15/10/10/5/5`). Only exact
+the task-only commit, post-commit proof, and fresh successor inventory remain
+pending. Exact staging/cached review passes over 23 paths (3 Rust and 20 docs),
+including one new private leaf, with zero unstaged paths at review time;
+`git diff --cached --check` passes and the cached stat is 1096 insertions / 123
+deletions.
 
 Authority is, in order:
 
@@ -52,8 +60,8 @@ term/reference/capture interpretation.
 
 Completed C4A is the sole lower dependency and must be consumed as one opaque
 handoff. The planning omission of a separately frozen C4B record was bounded
-`design_drift`, closed by this prerequisite. The later implementation owns a
-bounded `source_drift` and Rust `test_gap`. There is no `spec_gap`, no new
+`design_drift`, closed by this prerequisite. The exact implementation closes
+the bounded `source_drift` and Rust `test_gap`. There is no `spec_gap`, no new
 semantic test intent, and no authority conflict. The immutable fixture still
 lacks a nested-comprehension outer-variable occurrence, so actual capture
 coverage remains a separate `test_gap`; it is not silently satisfied here.
@@ -139,7 +147,7 @@ credit all remain explicitly deferred.
 
 ## Frozen implementation and test scope
 
-The future implementation changes exactly three Rust paths:
+The completed implementation changes exactly three Rust paths:
 
 1. `crates/mizar-checker/src/source_formula_composition.rs`;
 2. `crates/mizar-test/src/runner/tests.rs`; and
@@ -147,11 +155,10 @@ The future implementation changes exactly three Rust paths:
    `crates/mizar-test/src/runner/tests/type_elaboration/template_fraenkel_generator_bound_use.rs`.
 
 No `binding_env.rs`, `lib.rs`, checker lint Rust, existing private leaf, or
-production mizar-test path changes. Future completion documentation changes
-exactly 20 Markdown paths: this contract pair plus the 18 non-plan owner
-documents in this prerequisite. The four Task Index plans remain unchanged at
-implementation time. The implementation worktree is therefore exactly 23
-paths: 3 Rust and 20 Markdown.
+production mizar-test path changes. Completion documentation changes exactly
+20 Markdown paths: this contract pair plus the 18 non-plan owner documents in
+this prerequisite. The four Task Index plans remain unchanged. The completion
+worktree is therefore exactly 23 paths: 3 Rust and 20 Markdown.
 
 Checker adds exactly four tests, changing the raw library list `550 -> 554`:
 
@@ -184,19 +191,40 @@ The pre-documentation checkpoint is the clean
 protected `stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4`.
 Contract trees change `88/88 -> 89/89` in this prerequisite.
 
-| Future Rust path | Baseline lines | Baseline SHA-256 | Expected impact |
+| Rust path | Baseline lines | Baseline SHA-256 | Frozen impact |
 |---|---:|---|---|
 | `crates/mizar-checker/src/source_formula_composition.rs` | 7303 | `f6da763061479e74e7b8f39169ecad311bb9bf879e91e93824d9899798017abc` | changes; checker raw tests `+4` |
 | `crates/mizar-test/src/runner/tests.rs` | 66 | `85ae891b185ed1eeb5940998c5eef5ece793b472b8f3fa4be3c0b96d217e1f07` | `+1` include registration |
 | new private C4B leaf | absent | absent | one new test-only path / one test |
 
-Checker production is 32 paths / 193103 lines, with path/content SHA-256
+Final Rust measurements are:
+
+| Implemented Rust path | Final lines | Final SHA-256 |
+|---|---:|---|
+| `crates/mizar-checker/src/source_formula_composition.rs` | 7958 | `90b339d9707f9f8d847b678721e8db0ef6a00e4a15dbb41474a0cf6980f47168` |
+| `crates/mizar-test/src/runner/tests.rs` | 67 | `94bc44e8ba47ca568670adeec74d20f6738b3fc337da2422871095137040e8c4` |
+| `crates/mizar-test/src/runner/tests/type_elaboration/template_fraenkel_generator_bound_use.rs` | 121 | `bea54489cf0c85d3026f950d080a0ffc609719fda28520b9e7b2f59d5fc162bc` |
+
+The sorted exact-three path hash is
+`b55deb1e11851b50d135785ff685dd8df5803cff3d89205903370d5421ac55fa`;
+the Rust delta is 777 insertions and no deletions. Checker production remains
+32 paths with unchanged path SHA-256
+`9dc5b02f26679677e593ea755394d68533173d2be988b7ef1ddcfd84a41b9787`,
+grows to 193758 lines, and has final content SHA-256
+`90d8e277c6878b372090efbde122f3e95e5c50dce0475c9e50bbcabcb8eb1424`.
+Mizar-test production remains the protected 38 paths / 80090 lines with
+unchanged path/content hashes. The final raw checker list is 554 /
+`78f0291fb13aed8a8adbbc5aa1db9df1a7415fc9d8cf35820e1ad9e40aad2ace`;
+the final raw mizar-test list is 614 /
+`419ac370d2ec222cc822186db62595b5ebed71e1059e10fa95dc00741acc9778`.
+
+The implementation baseline for checker production was 32 paths / 193103
+lines, with path/content SHA-256
 `9dc5b02f26679677e593ea755394d68533173d2be988b7ef1ddcfd84a41b9787` /
 `cfc9a2bc5359f9baeea39f304e3c9dd15fcbd27749f1c746eb3ab695b84f8dab`.
-The future implementation keeps 32 paths, changes only the existing
-formula-composition line total/content hash, and records final measurements
-after formatting. Mizar-test production remains exactly 38 paths / 80090
-lines, with path/content SHA-256
+The implementation was frozen to keep 32 paths and change only the existing
+formula-composition line total/content hash. The corresponding mizar-test
+production baseline was exactly 38 paths / 80090 lines, with path/content SHA-256
 `0ef395004f7feaadf60da0daba7b5da9c52ea4974850adfa2bd9d09081b242aa` /
 `990b5ad4798786d9f87c03f76fdbad92fc2edf1f6d84ef3baad67254c79fdd70`.
 Raw baseline lists are checker 550 /
@@ -244,9 +272,9 @@ row, or expanded-inventory hash is changed.
 
 ## Review, verification, and nine hard gates
 
-The documentation prerequisite requires independent specification/API,
-test-sufficiency, EN/JA, boundary, and source/documentation reviews, repairing
-all blocking/high findings before implementation. Required docs verification:
+The prerequisite specification/API review and the implementation and
+test-sufficiency reviews are complete with **NO FINDINGS** after the retained
+structural/`TypedAst` corruption repair. Required docs verification is:
 
 ```sh
 git diff --check
@@ -254,13 +282,30 @@ cargo test -q -p mizar-checker --test lint_policy
 cargo test -q -p mizar-test --test lint_policy
 ```
 
-It also requires exact-24 path validation, EN/JA pair and stable-fragment/link
-validation, protected no-delta/hash checks, `88/88 -> 89/89` contract-pair
-proof, and unchanged schema-v2 ledger proof. The implementation later runs the
-focused `4 + 1`, package libraries `554/554` and `614/614`, formatting,
-package and full-workspace Clippy, full workspace tests, both lint suites,
-metadata, frozen CLI replays, diff/scope checks, independent reviews, and a
-final read-only quality review.
+The focused checker `4/4`, private `1/1`, package libraries `554/554` and
+`614/614`, `cargo fmt --all -- --check`, package and full-workspace
+all-target/all-feature Clippy with `-D warnings`, and full `cargo test` pass.
+The full test includes both policy lint suites at `15/15`, metadata at
+`137/137`, and the public-enum suite at `2/2`. Rust and completion-document
+diff checks pass.
+
+The five unchanged CLI stdout SHA-256 values are plan
+`700f4bf503783742cefd8004fa095675b7476d46e9a3a6dd439916d237eb6718`,
+parse
+`a8a7aa639d2ebc65eddc923c7e9369ea5637d50e935f808600f446da1bfbda56`,
+declaration
+`71e83ba0b20d4015e07b3bd2c0c4db2837b6151d1251812caed7954530d53c74`,
+type
+`4b2c7bd5ec3cc56e5672fb351126126230ec84fba9bd2bd9049a516d378fab7f`,
+and proof
+`ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`.
+The existing CLI result remains 23 warnings and no errors.
+Final-quality is **NO FINDINGS**; all `9/9` hard gates pass at valid uncapped
+`100/100` (`20/20/15/15/10/10/5/5`). Exact staging/cached review passes over
+23 paths (3 Rust / 20 docs), with one new private leaf, zero unstaged paths at
+review time, cached diff check PASS, cached stat `1096/123`, and both lint
+suites `15/15`. Task-only commit, post-commit proof, and fresh successor
+inventory remain pending.
 
 The nine gates are frozen as follows:
 
@@ -275,25 +320,25 @@ The nine gates are frozen as follows:
 8. all required verification passes; and
 9. every residual item is explicitly deferred, out of scope, or human-owned.
 
-Any hard-gate failure invalidates the score. Final acceptance requires all
-`9/9` gates and a valid score of at least `90/100` under the protocol rubric.
+Any hard-gate failure would invalidate the score. Final review confirms all
+`9/9` gates and a valid uncapped `100/100` under the protocol rubric, with
+category scores `20/20/15/15/10/10/5/5`.
 
 ## Exit criteria and next handoff
 
-This prerequisite exits only when its exact 24 Markdown paths are the sole
-worktree delta, EN canonical and JA companion are logically synchronized,
-every stable fragment/link and legacy neighbor anchor resolves, both lint
-policy suites and `git diff --check` pass, protected hashes/counts are
-unchanged, independent reviews report no unresolved blocking/high finding,
-and a docs-only commit is followed by a clean fresh inventory.
+The implementation/completion phase exits only after the exact 23-path scope
+is proved, EN canonical and JA companion are synchronized, every stable
+fragment/link and legacy neighbor anchor resolves, both lint suites and diff
+checks pass, protected hashes/counts remain unchanged, and
+commit/post-commit/fresh-inventory steps are completed. Those lifecycle claims
+remain pending here; every review, hard gate, and staging/cached gate is
+complete.
 
-That fresh inventory may hand off the exact three-Rust-path implementation
-above. Keep Sol at `xhigh` for authority/API integration, scope acceptance, and
-final hard-gate scoring. Use Terra `xhigh` for bounded implementation and
-independent API/test/bilingual/boundary reviews after the contract is frozen;
-raise back to Sol for any authority ambiguity, requested public-API expansion,
-Task-252/capture/semantic boundary question, or disputed finding. If Luna is
-not exposed, do not block.
+Keep Sol at `xhigh` for commit acceptance and successor inventory. Use Terra
+`xhigh` for any finding-specific bounded
+re-review; raise back to Sol for any authority
+ambiguity, requested public-API expansion, Task-252/capture/semantic boundary
+question, or disputed finding. If Luna is not exposed, do not block.
 
 After C4B completion, run another fresh inventory. Do not infer that the next
 task is capture, sethood, or Task 277B. Task 277B remains not ready with zero

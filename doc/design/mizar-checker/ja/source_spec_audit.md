@@ -17,9 +17,11 @@ final-qualityは**NO FINDINGS**、全`9/9` hard gates PASS、valid uncapped `100
 
 ## Task 257C4B Fraenkel generator bound-use classification
 
-[C4B contract](../../task_contracts/ja/CHECKER-FRAENKEL-GENERATOR-BOUND-USE-257C4B.md)はmissing separate derived transport recordの`design_drift`だけをcloseする。future exact-three-path implementationがbounded `source_drift`/Rust `test_gap`をownする。canonical Ch.13 §13.4 umbrella（§§13.4.2/13.4.4/13.8.6）、Ch.18 §18.10.2、Architecture 16、immutable F5、completed C4Aがbound identity/normalized 3-use relationを決めており、`spec_gap`/new semantic test intentなし。
+[C4B contract](../../task_contracts/ja/CHECKER-FRAENKEL-GENERATOR-BOUND-USE-257C4B.md)はmissing separate derived transport recordの`design_drift`をcloseし、completed exact-three-path implementationがbounded `source_drift`/Rust `test_gap`をcloseする。canonical Ch.13 §13.4 umbrella（§§13.4.2/13.4.4/13.8.6）、Ch.18 §18.10.2、Architecture 16、immutable F5、completed C4Aがbound identity/normalized 3-use relationを決めており、`spec_gap`/new semantic test intentなし。
 
 F5にnested-comprehension outer-generator useがないためactual capture coverageはseparate `test_gap`。C4BはTask252 occurrence/capture/formula/type/sethood/diagnostic/verdict/install/route/trace/expectation/creditを追加しない。Task277Bは`MC-G020`/`MC-G021`未解消でnot-ready/zero credit。`doc/design/spec_coverage_audit.md`はmapping/trace/follow-up/deferred rationale/semantic coverage不変のexplicit no-op。schema-v2 ledgerもunchangedでlegacy evidence/anchor migrationなし。
+
+Implementation/test-sufficiency reviewは**NO FINDINGS**。focused `4 + 1`、package library `554/554`/`614/614`、format、package/full-workspace Clippy、full workspace tests（metadata/public-enum suiteを含む）、unchanged 5 CLI replay、diff checkはPASS。sole Low baseline/current wording repair後、final source-doc reviewとindependent bilingual/boundary reviewも**NO FINDINGS**。final-qualityも**NO FINDINGS**、全`9/9` hard gate PASS、valid uncapped `100/100`（`20/20/15/15/10/10/5/5`）。exact 23-path staging/cached reviewもPASS。task-only commit、post-commit proof、fresh inventoryだけがpending。coverage audit/schema-v2 no-op decisionはcompleted transportでも不変。
 
 ## Task 269SDU Implemented Zero-Credit Mapping
 
@@ -915,7 +917,10 @@ owner/acceptance、proof、fact、downstream IRはTasks 257B/257C/258以降に�
 
 - `SourceFormulaAtomicEdgeId`、`SourceQuantifierBoundUseId`、
   `SourceConditionFormulaEdgeId`、`SourcePredicateChainConjunctionId`、
-  `SourcePredicateChainNegationId`
+  `SourcePredicateChainNegationId`、
+  `SourceFraenkelGeneratorBindingContextId`、
+  `SourceFraenkelGeneratorUsePositionId`、
+  `SourceFraenkelGeneratorBoundUseId`
 
 literal top-level public item:
 
@@ -940,7 +945,19 @@ literal top-level public item:
   `SourcePredicateChainCompositionProducer`、
   `SourceFormulaCompositionError`、
   `SourceConditionFormulaCompositionError`、
-  `SourcePredicateChainCompositionError`。
+  `SourcePredicateChainCompositionError`、
+  `SourceFraenkelGeneratorBindingContext`、
+  `SourceFraenkelGeneratorBindingContextTable`、
+  `SourceFraenkelGeneratorUsePosition`、
+  `SourceFraenkelGeneratorUsePositionTable`、
+  `SourceFraenkelGeneratorBindingContextError`、
+  `SourceFraenkelGeneratorBindingContextHandoff`、
+  `SourceFraenkelGeneratorBindingContextProducer`、
+  `SourceFraenkelGeneratorBoundUse`、
+  `SourceFraenkelGeneratorBoundUseTable`、
+  `SourceFraenkelGeneratorBoundUseError`、
+  `SourceFraenkelGeneratorBoundUseHandoff`、
+  `SourceFraenkelGeneratorBoundUseProducer`。
 
 対応:
 
@@ -949,7 +966,9 @@ literal top-level public item:
 | syntax-free dense table 5件がexact composite-to-atomic/binder-use、condition-to-formula、predicate-segment conjunction、segment-negation associationを保持する。 | `src/source_formula_composition.rs`のpublic input/immutable row/table。 | exact Task-257B1/B2/B3、C2 `1`、C3 `1/1` transaction、literal debug、independent field/association corruption test。 | Task 257C3までimplemented。 |
 | 各transactionはexact Task-252/253/255/256/257 lower dependencyだけをone arenaでfingerprint/revalidateする。 | public producer 3件、immutable owned fingerprint、exact private profile validator。 | coherent wrong profile、dependency substitution、cross-source、order、lookup-winner、containment、stale arena/fingerprint、validation-precedence test。 | transactionalにimplemented。 |
 | B-family combined ownership、C2 condition ownership、C3 predicate-chain ownershipはatomicにpublishされ、frozen範囲でmutually exclusive、final assemblyまでclone-preserveされる。 | `TypedAst` installer/getter、`ResolvedTypedAst` revalidation。 | legacy/combined partition、Task-248/A/B/C2/C3 exclusion、rollback/replay、debug order、final clone test。 | intermediate AST stateなしでimplemented。 |
-| public enumはforward-compatible。 | public enum 4件すべての`#[non_exhaustive]`。 | `checker_public_enums_are_forward_compatible_and_documented`。 | exhaustive exceptionなしでguard。 |
+| C4Aはexact opaque R2/277C/`TypedAst` snapshot上のbinding-context tableとnormalized-use-position tableをownする。 | C4A ID 2件、row/table 2組、handoff/error/producer。 | exact C4A checker test 4件とprivate F5 probe。 | term/reference/capture/semantic installなしでimplemented。 |
+| C4BはC4A position 3件を`BindingEnv::lookup`でone checker-local bindingへmapしone dense tableをpublishする。 | `SourceFraenkelGeneratorBoundUseId`、row/table/handoff/error/producer。 | exact C4B checker test 4件とprivate F5 bound-use probe。 | full retained C4A validation/zero semantic creditでimplemented。 |
+| public enumはforward-compatible。 | public enum 6件すべての`#[non_exhaustive]`。 | `checker_public_enums_are_forward_compatible_and_documented`。 | exhaustive exceptionなしでguard。 |
 
 bounded gap: connective/quantifier/predicate truth、signature applicability、
 overload selection、formula fact/result、implicit theorem closure/acceptance、

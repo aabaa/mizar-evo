@@ -6531,8 +6531,14 @@ post-commit fresh inventoryからだけ選択する。
 ## Task 257C4B Fraenkel generator bound-use transport
 
 - [x] separate EN/JA [C4B contract](../../task_contracts/ja/CHECKER-FRAENKEL-GENERATOR-BOUND-USE-257C4B.md)、exact ABI、C4A full snapshot validation、F5 three-row oracle、error precedence、test matrix、protected no-op、future exact 3 Rust pathをfreezeする。
-- [ ] docs-only commit/fresh clean preflight後、`source_formula_composition.rs`にdedicated bound-use row/table/handoffだけを実装する。
-- [ ] exact 4 checker testsで`550 -> 554`。Task252 term/reference、role copy、capture、semantic owner、install、routeは追加しない。
-- [ ] focused/checker `554/554`/format/package+workspace Clippy/tests/両lint/metadata/CLI/scope/hash/independent reviewsをPASSする。
-- [ ] 全`9/9` hard gatesとvalid `>=90/100`、exact scope/staging、task-only implementation commit、post-commit proof、fresh inventoryを完了する。
-- [ ] actual captureはseparate deferred、Task277Bはnot-ready/zero creditを維持する。
+- [x] docs-only commit/fresh clean preflight後、`source_formula_composition.rs`にdedicated bound-use row/table/handoffだけを実装する。
+- [x] exact 4 checker testsで`550 -> 554`。Task252 term/reference、role copy、capture、semantic owner、install、routeは追加しない。
+- [x] focused `4 + 1`、checker `554/554`、mizar-test `614/614`、format、package Clippy、diff checkをPASSし、retained structural/`TypedAst` corruptionをexisting testへrepair後implementation/test-sufficiency reviewを**NO FINDINGS**で完了する。
+- [x] 両15-test lint policyとcompletion-doc diff checkをPASSする。
+- [x] Full-workspace Clippy/tests、metadata `137/137`、public-enum `2/2`、23 warnings / 0 errorsのunchanged 5 CLI replayをPASSする。
+- [x] sole Low baseline/current wording repair後、final source-doc reviewとindependent bilingual/boundary reviewを**NO FINDINGS**で完了し、exact scope/hash checkをpreserveする。
+- [x] Exact final Rust measurement/raw-list hash/checker production `32/193758` content hashをcentral contractへrecordし、4 Task Index planはunchangedに保つ。
+- [x] final-qualityを**NO FINDINGS**、全`9/9` hard gate PASS、valid uncapped `100/100`（`20/20/15/15/10/10/5/5`）で完了する。
+- [x] Exact staging/cached reviewを23 paths（3 Rust/20 docs）、new private leaf 1件、review時unstaged 0、cached diff check PASS、cached stat `1096/123`で完了する。
+- [ ] task-only implementation commit、post-commit proof、fresh inventoryを完了する。
+- [x] actual captureはseparate deferred、Task277Bはnot-ready/zero creditを維持する。

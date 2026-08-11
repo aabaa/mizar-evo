@@ -1927,12 +1927,20 @@ credit. No bilingual exception exists.
 
 ## Task 257C4B frozen contract parity
 
-The new [EN canonical](../../task_contracts/en/CHECKER-FRAENKEL-GENERATOR-BOUND-USE-257C4B.md)
+The completed [EN canonical](../../task_contracts/en/CHECKER-FRAENKEL-GENERATOR-BOUND-USE-257C4B.md)
 and [JA companion](../../task_contracts/ja/CHECKER-FRAENKEL-GENERATOR-BOUND-USE-257C4B.md)
-freeze the same dependency-ready status, sole C4A input, exact public family
+record the same implementation-complete status, sole C4A input, exact public family
 and signatures, version/domain/debug strings, error precedence, F5 three-row
-oracle, four checker tests, `550 -> 554`, exact future three-Rust-path scope,
-hard prohibitions, protected no-op decision, nine gates, and Sol/Terra handoff.
-The paired checker owner sections are in the exact-24 documentation review
-surface. English remains canonical; there is no planned bilingual exception.
-Future completion must re-review both languages before acceptance.
+oracle, four checker tests, `550 -> 554`, exact implemented three-Rust-path
+scope and measurements, raw-list hashes, checker production `32/193758`, hard
+prohibitions, protected no-op decision, pending gates, and Sol/Terra handoff.
+Both companions record formatting, full-workspace Clippy/tests, metadata
+`137/137`, public-enum `2/2`, and the unchanged five CLI outputs as passing.
+The paired checker owner sections are in the exact-20 completion review
+surface while all four plans remain unchanged. English remains canonical;
+there is no bilingual exception. Independent bilingual/boundary review is
+**NO FINDINGS** after the sole Low baseline/current wording repair.
+Final-quality is **NO FINDINGS**; all `9/9` hard gates pass at valid
+uncapped `100/100` (`20/20/15/15/10/10/5/5`) in both languages. Exact
+23-path staging/cached review also passes; only the task-only commit,
+post-commit proof, and fresh-inventory lifecycle remain pending.

@@ -101,6 +101,7 @@ tableは`get`/source-ordered `iter`/`len`/`is_empty`だけを公開する。
 | `SourceFormulaAtomicEdgeRole` | `#[non_exhaustive]`。callerはlater frozen cross-family body roleを許容する。 |
 | `SourceFormulaCompositionError` | `#[non_exhaustive]`。callerはvalidation failureをexhaustive matchしない。 |
 | `SourceFraenkelGeneratorBindingContextError` | `#[non_exhaustive]`。callerはFraenkel generator binding-context validation failureをexhaustive matchしない。 |
+| `SourceFraenkelGeneratorBoundUseError` | `#[non_exhaustive]`。callerはFraenkel generator bound-use validation failureをexhaustive matchしない。 |
 | `SourcePredicateChainCompositionError` | `#[non_exhaustive]`。callerはpredicate-chain composition validation failureをexhaustive matchしない。 |
 
 この module が所有する exhaustive public enum exception はない。
@@ -727,3 +728,5 @@ Producer signatureはexact `SourceFraenkelGeneratorBoundUseProducer::build(bindi
 Exact error/precedenceは`EnvironmentMismatch`、`InvalidBindingContextDependency`、`InvalidBoundUse { bound_use: SourceFraenkelGeneratorBoundUseId }`。wrapper source/module mismatch、snapshot/C4A/summary failure、最後にlowest invalid rowの順。wrong total countはID0。lower error/raw resolver identityをexposeしない。
 
 F5 row 0/1/2はC4A use position 0/1/2、binding-context0、resolver/source ordinal 0/1/2、lookup 1/2/3、context1、binding0で、全lookupが`Local(binding0)`。ordinal0はC4A `ForwardReference` probeでC4B rowではない。range/spellingからordinalをinferしない。default-denyでmissing/extra/reorder/duplicate/recovery/stale/non-local/nested/multiple/shadowをatomic rejectする。contractの4 exact checker testsがABI/oracle、full snapshot corruption、row/lookup+precedence、deterministic non-mutationをcoverし、raw listは`550 -> 554`。
+
+Implementationは本existing ownerでcompleteし、7958 lines / SHA-256 `90b339d9707f9f8d847b678721e8db0ef6a00e4a15dbb41474a0cf6980f47168`。上記exact family/getter、full retained C4A validation、three row、exact 4 checker testを実装した。Focused `4/4`、checker `554/554`、format、package/full-workspace Clippy、full workspace tests、metadata/public-enum suites、unchanged 5 CLI replay、diff checkはPASS。Structural/`TypedAst` dependency corruptionをexisting precedence testへ追加した後、implementation/test-sufficiency reviewは**NO FINDINGS**。sole Low baseline/current wording repair後、final source-doc reviewとindependent bilingual/boundary reviewも**NO FINDINGS**。final-qualityも**NO FINDINGS**、全`9/9` hard gate PASS、valid uncapped `100/100`（`20/20/15/15/10/10/5/5`）。contractのexact 23-path staging/cached reviewもPASS。task-only commit、post-commit proof、fresh inventoryだけがpending。

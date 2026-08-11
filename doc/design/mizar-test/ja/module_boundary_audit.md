@@ -20,9 +20,9 @@ measured 2-path test-only boundaryは66/156 linesでproduction inventory変更�
 
 ## Checker Task 257C4B frozen module boundary
 
-[C4B contract](../../task_contracts/ja/CHECKER-FRAENKEL-GENERATOR-BOUND-USE-257C4B.md)が許すmizar-test changeは`runner/tests.rs`とnew private type-elaboration leafだけ。existing inactive F5 constructionからchecker APIをconsumeし、missing dependencyをcreate/repair/normalize/publishしない。productionは38 paths/80090 lines/hash unchanged。
+Completed [C4B contract](../../task_contracts/ja/CHECKER-FRAENKEL-GENERATOR-BOUND-USE-257C4B.md)のmizar-test changeは`runner/tests.rs`とnew private type-elaboration leafだけ。existing inactive F5 constructionからchecker APIをconsumeし、missing dependencyをcreate/repair/normalize/publishしない。productionは38 paths/80090 lines/hash unchanged。
 
-Public runner schema/dispatch/active stage/Cargo/fixture/expectation/trace-coverage/metadata/diagnostic/verdict/production checker/downstream crateはexclude。exact test-only deltaはone include/one test（`613 -> 614`）。Task277Bはnot-ready/zero-credit。
+Public runner schema/dispatch/active stage/Cargo/fixture/expectation/trace-coverage/metadata/diagnostic/verdict/production checker/downstream crateはexclude。exact test-only deltaはone include/one test（`613 -> 614`）。registryは67 lines / `94bc44e8ba47ca568670adeec74d20f6738b3fc337da2422871095137040e8c4`、leafは121 lines / `bea54489cf0c85d3026f950d080a0ffc609719fda28520b9e7b2f59d5fc162bc`。focused/privateと`614/614` library、full-workspace Clippy/tests、metadata/public-enum suites、unchanged 5 CLI replayはproduction boundary変更なしでPASS、implementation/test reviewは**NO FINDINGS**。sole Low baseline/current wording repair後、independent bilingual/boundary reviewも**NO FINDINGS**。final-qualityも**NO FINDINGS**、全`9/9` hard gate PASS、valid uncapped `100/100`（`20/20/15/15/10/10/5/5`）。exact 23-path staging/cached reviewもPASS。task-only commit、post-commit proof、fresh inventoryだけがpending。Task277Bはnot-ready/zero-credit。
 
 ## Resolver Task 277R2 test module boundary
 

@@ -17,9 +17,11 @@ implemented boundaryはexactで、2 ownerは3266/7303 lines、third checker prod
 
 ## Task 257C4B Fraenkel generator bound-use boundary
 
-Frozen [C4B](../../task_contracts/ja/CHECKER-FRAENKEL-GENERATOR-BOUND-USE-257C4B.md)のchecker production changeはexisting cohesive `source_formula_composition.rs`だけ。completed C4A handoffをconsumeし、`binding_env.rs`/Task252/source-term/parser/resolver/type/sethood/diagnostic/Typed-Resolved/facade/dispatch/Cargo/canonical artifact/metadata/downstream crateは変更しない。module countは32のままで、本ownerのline/content hashだけがmove可能。
+Completed [C4B](../../task_contracts/ja/CHECKER-FRAENKEL-GENERATOR-BOUND-USE-257C4B.md)のchecker production changeはexisting cohesive `source_formula_composition.rs`だけ。completed C4A handoffをconsumeし、`binding_env.rs`/Task252/source-term/parser/resolver/type/sethood/diagnostic/Typed-Resolved/facade/dispatch/Cargo/canonical artifact/metadata/downstream crateは変更しない。module countは32のままで、本ownerだけが7958 lines / SHA-256 `90b339d9707f9f8d847b678721e8db0ef6a00e4a15dbb41474a0cf6980f47168`へgrowする。
 
 Full implementationはexact 3 Rust path（checker owner、mizar-test private registry、new private F5 bound-use leaf）。production module/splitなし。generic term/quantifier bound-use row reuse、resolver role copy、capture mutation、install/route追加は`boundary_violation`。Task277Bはboundary外/zero-credit。
+
+Implementation/test-sufficiency reviewは**NO FINDINGS**、focused/package verification、format、package/full-workspace Clippy/tests、metadata/public-enum suites、unchanged 5 CLI replay、diff checkはboundary拡張なしでPASS。sole Low baseline/current wording repair後、independent bilingual/boundary reviewも**NO FINDINGS**。final-qualityも**NO FINDINGS**、全`9/9` hard gate PASS、valid uncapped `100/100`（`20/20/15/15/10/10/5/5`）。exact 23-path staging/cached reviewもPASS。task-only commit、post-commit proof、fresh inventoryだけがpending。
 
 ## Split Gate
 
@@ -37,10 +39,10 @@ note として記録する。
 
 ## Source Layout Inventory
 
-Task 257C4Aはproduction layoutを32 paths / 193103 linesへ増やし、path SHA-256は
+Task 257C4Bはproduction layoutを32 paths / 193758 linesへ増やし、path SHA-256は
 `9dc5b02f26679677e593ea755394d68533173d2be988b7ef1ddcfd84a41b9787`、current
 content SHA-256は
-`cfc9a2bc5359f9baeea39f304e3c9dd15fcbd27749f1c746eb3ab695b84f8dab`である。
+`90d8e277c6878b372090efbde122f3e95e5c50dce0475c9e50bbcabcb8eb1424`である。
 new/changed cohesive ownerのmeasurementは下のrowに記録する。
 
 | Path | Lines | Boundary label | Owning specification | Split required | Hard-gate finding | Decision |
@@ -51,7 +53,7 @@ new/changed cohesive ownerのmeasurementは下のrowに記録する。
 | `src/source_context.rs` | 1727 | syntax-free source-item / binding-context producer | `source_context.md` | no | no | cohesive な Task-248 validation、table construction、recovery、handoff、boundary test。split不要。 |
 | `src/source_atomic_formula.rs` | 8511 | syntax-free source atomic-formula producer | `source_atomic_formula.md` | no | no | cohesiveなTask-256/257C1 nine-table association、resolver provenance、predicate-segment/shared-boundary validation、cross-family ownership/fingerprint validation、deterministic rendering、install check、compatibility literal、test-only dependency corruption seam。split不要。 |
 | `src/source_composite_formula.rs` | 4700 | syntax-free source composite-formula/binder producer | `source_composite_formula.md` | no | no | exact Task-257A/B1/B2/B3 profiles、binding extension、wrapper/tree validation、rendering/install/corruption/profile testsを持つcohesive owner。 |
-| `src/source_formula_composition.rs` | 7303 | syntax-free cross-family formula composition producer | `source_formula_composition.md` | no | no | Task-257B1/B2/B3、Task-257C2/C3に加え、completed Task-257C4A Fraenkel generator binding-context production、opaque dependency validation、rendering/corruption testsを持つcohesive owner。 |
+| `src/source_formula_composition.rs` | 7958 | syntax-free cross-family formula composition producer | `source_formula_composition.md` | no | no | Task-257B1/B2/B3、Task-257C2/C3、completed Task-257C4A binding-context production、completed Task-257C4B exact three-row bound-use transport、opaque dependency validation、rendering/corruption testsを持つcohesive owner。 |
 | `src/source_attribute.rs` | 3074 | syntax-free source-attribute producer | `source_attribute.md` | no | no | cohesiveなTask-250 flat table、environment/parent/arena/provenance validation、deterministic rendering、corruption test。split不要。 |
 | `src/source_attribute_definition.rs` | 1516 | syntax-free source attribute-definition producer | `source_attribute_definition.md` | no | no | Task-261 four-table handoff、exact resolver/lower/context ownership、obligation-preserving one-shot validation、deterministic rendering、Task-259/260 isolationをcohesiveにownする。 |
 | `src/source_evidence.rs` | 2413 | syntax-free source-evidence request/reference producer | `source_evidence.md` | no | no | cohesiveなTask-251 request/response table、upstream association、catalog/payload validation、deterministic rendering、corruption test。split不要。 |

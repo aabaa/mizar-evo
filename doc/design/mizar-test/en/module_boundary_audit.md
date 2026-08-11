@@ -38,8 +38,8 @@ credit.
 
 ## Checker Task 257C4B frozen module boundary
 
-The [C4B contract](../../task_contracts/en/CHECKER-FRAENKEL-GENERATOR-BOUND-USE-257C4B.md)
-permits mizar-test changes only in `runner/tests.rs` and one new private
+The completed [C4B contract](../../task_contracts/en/CHECKER-FRAENKEL-GENERATOR-BOUND-USE-257C4B.md)
+keeps mizar-test changes to `runner/tests.rs` and one new private
 type-elaboration leaf. The leaf consumes the checker C4B API through the
 existing inactive F5 test construction and cannot create, repair, normalize,
 or publish a missing checker dependency. Mizar-test production remains 38
@@ -48,7 +48,20 @@ paths / 80090 lines with unchanged hashes.
 Public runner schemas, dispatch, active stages, Cargo, fixtures, expectations,
 trace/coverage, metadata, diagnostics, semantic verdicts, production checker
 paths, and downstream crates are excluded. The exact test-only delta is one
-include and one test (`613 -> 614`). Task 277B remains not ready and zero-credit.
+include and one test (`613 -> 614`): the registry is 67 lines /
+`94bc44e8ba47ca568670adeec74d20f6738b3fc337da2422871095137040e8c4`
+and the leaf is 121 lines /
+`bea54489cf0c85d3026f950d080a0ffc609719fda28520b9e7b2f59d5fc162bc`.
+The focused/private and `614/614` library checks pass; independent
+implementation/test reviews are **NO FINDINGS**. Independent bilingual and
+boundary review is **NO FINDINGS** after the sole Low baseline/current wording
+repair. Final-quality is **NO FINDINGS**; all `9/9` hard gates pass at valid
+uncapped `100/100` (`20/20/15/15/10/10/5/5`). Exact 23-path staging/cached
+review also passes. Task-only commit, post-commit proof, and fresh inventory
+remain pending.
+Full-workspace Clippy/tests,
+metadata/public-enum suites, and five unchanged CLI replays pass without a
+production-boundary change. Task 277B remains not ready and zero-credit.
 
 ## Resolver Task 277R2 Test Module Boundary
 

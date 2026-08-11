@@ -6916,16 +6916,31 @@ selected only from fresh post-commit inventory.
 - [x] Freeze the separate EN/JA [C4B contract](../../task_contracts/en/CHECKER-FRAENKEL-GENERATOR-BOUND-USE-257C4B.md), exact public ABI, full C4A
   snapshot validation, three-row F5 oracle, error precedence, test matrix,
   protected no-op decision, and exact future three-Rust-path boundary.
-- [ ] After a docs-only commit and clean fresh preflight, implement only the
+- [x] After the docs-only commit and clean fresh preflight, implement only the
   dedicated bound-use row/table/handoff in `source_formula_composition.rs`.
-- [ ] Add exactly the four named checker tests and preserve `550 -> 554`; add
+- [x] Add exactly the four named checker tests and preserve `550 -> 554`; add
   no Task-252 term/reference, role copy, capture, semantic owner, install, or
   route.
-- [ ] Pass focused tests, checker `554/554`, format, package/full-workspace
-  Clippy and tests, both lint policies, metadata, CLI/scope/hash checks, and
-  independent implementation/test/source-doc/bilingual/boundary reviews.
-- [ ] Pass all `9/9` hard gates and a valid final-quality score of at least
-  `90/100`, then complete exact scope/staging, a task-only implementation
-  commit, post-commit proof, and fresh successor inventory.
-- [ ] Keep actual capture separately deferred and Task 277B not ready with
+- [x] Pass focused `4 + 1`, checker `554/554`, mizar-test `614/614`, format,
+  package Clippy, diff checks, and independent implementation/test-sufficiency
+  reviews at **NO FINDINGS** after repairing retained structural/`TypedAst`
+  corruption coverage in the existing test.
+- [x] Pass both 15-test policy lint suites and the completion-document diff
+  check.
+- [x] Pass full-workspace Clippy/tests, metadata `137/137`, public-enum `2/2`,
+  and five unchanged CLI replays with 23 warnings / 0 errors.
+- [x] Complete final source-doc and independent bilingual/boundary reviews at
+  **NO FINDINGS** after the sole Low baseline/current wording repair; preserve
+  the exact scope/hash checks.
+- [x] Record exact final Rust measurements, raw-list hashes, and checker
+  production `32/193758` / content hash in the central contract while leaving
+  all four Task Index plans unchanged.
+- [x] Complete final-quality at **NO FINDINGS**, all `9/9` hard gates PASS,
+  and valid uncapped `100/100` (`20/20/15/15/10/10/5/5`).
+- [x] Complete exact staging/cached review over 23 paths (3 Rust / 20 docs),
+  one new private leaf, zero unstaged paths at review time, cached diff check
+  PASS, and cached stat `1096/123`.
+- [ ] Complete a task-only implementation commit, post-commit proof, and fresh
+  successor inventory.
+- [x] Keep actual capture separately deferred and Task 277B not ready with
   zero semantic credit throughout.

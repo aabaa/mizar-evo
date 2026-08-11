@@ -36,8 +36,8 @@ credit.
 ## Task 257C4B Fraenkel generator bound-use classification
 
 The [C4B contract](../../task_contracts/en/CHECKER-FRAENKEL-GENERATOR-BOUND-USE-257C4B.md)
-closes only the `design_drift` of the missing separate derived bound-use
-transport record. Future exact-three-path implementation owns a bounded
+closes the `design_drift` of the missing separate derived bound-use transport
+record. The completed exact-three-path implementation closes the bounded
 `source_drift` and Rust `test_gap`. Canonical Chapter 13 §13.4, especially
 §§13.4.2, 13.4.4, and 13.8.6, Chapter 18 §18.10.2, Architecture 16, immutable
 F5, and completed C4A already determine the bound identity and normalized
@@ -52,6 +52,17 @@ not ready with zero credit while `MC-G020` and `MC-G021` remain open.
 mapping, traceability, follow-up ownership, deferred rationale, and semantic
 coverage status do not change. The schema-v2 compaction ledger is also
 unchanged; this task migrates no historical evidence or legacy anchor.
+Independent implementation and test-sufficiency reviews are **NO FINDINGS**;
+focused `4 + 1`, package libraries `554/554` and `614/614`, formatting,
+package/full-workspace Clippy, full workspace tests including metadata/public-
+enum suites, five unchanged CLI replays, and diff checks pass.
+Final source/documentation review and independent bilingual/boundary review
+are **NO FINDINGS** after the sole Low baseline/current wording repair.
+Final-quality is **NO FINDINGS**; all `9/9` hard gates pass at valid uncapped
+`100/100` (`20/20/15/15/10/10/5/5`). The exact 23-path staging/cached review
+also passes. Only task-only commit, post-commit proof, and fresh inventory
+remain pending. The completed transport does not change
+the explicit coverage-audit or schema-v2 no-op decision.
 
 ## Task 269SDU Implemented Zero-Credit Mapping
 
@@ -983,7 +994,10 @@ Generated public newtypes:
 
 - `SourceFormulaAtomicEdgeId`, `SourceQuantifierBoundUseId`,
   `SourceConditionFormulaEdgeId`, `SourcePredicateChainConjunctionId`,
-  `SourcePredicateChainNegationId`
+  `SourcePredicateChainNegationId`,
+  `SourceFraenkelGeneratorBindingContextId`,
+  `SourceFraenkelGeneratorUsePositionId`,
+  `SourceFraenkelGeneratorBoundUseId`
 
 Literal top-level public items:
 
@@ -1008,7 +1022,19 @@ Literal top-level public items:
   `SourcePredicateChainCompositionProducer`,
   `SourceFormulaCompositionError`,
   `SourceConditionFormulaCompositionError`,
-  `SourcePredicateChainCompositionError`.
+  `SourcePredicateChainCompositionError`,
+  `SourceFraenkelGeneratorBindingContext`,
+  `SourceFraenkelGeneratorBindingContextTable`,
+  `SourceFraenkelGeneratorUsePosition`,
+  `SourceFraenkelGeneratorUsePositionTable`,
+  `SourceFraenkelGeneratorBindingContextError`,
+  `SourceFraenkelGeneratorBindingContextHandoff`,
+  `SourceFraenkelGeneratorBindingContextProducer`,
+  `SourceFraenkelGeneratorBoundUse`,
+  `SourceFraenkelGeneratorBoundUseTable`,
+  `SourceFraenkelGeneratorBoundUseError`,
+  `SourceFraenkelGeneratorBoundUseHandoff`,
+  `SourceFraenkelGeneratorBoundUseProducer`.
 
 Correspondence:
 
@@ -1017,7 +1043,9 @@ Correspondence:
 | Five syntax-free dense tables retain the exact composite-to-atomic/binder-use, condition-to-formula, predicate-segment conjunction, and segment-negation associations. | Public inputs, immutable rows, and tables in `src/source_formula_composition.rs`. | Exact Task-257B1/B2/B3, C2 `1`, and C3 `1/1` transactions, literal debug, and independent field/association corruption tests. | Implemented through Task 257C3. |
 | Every transaction fingerprints and revalidates only its exact Task-252/253/255/256/257 lower dependencies in one arena. | The three public producers, immutable owned fingerprints, and exact private profile validators. | Coherent wrong profiles, dependency substitution, cross-source, ordering, lookup-winner, containment, stale-arena/fingerprint, and validation-precedence tests. | Implemented transactionally. |
 | B-family combined ownership, C2 condition ownership, and C3 predicate-chain ownership publish atomically, are mutually exclusive where frozen, and clone-preserve through final assembly. | `TypedAst` installers/getters and `ResolvedTypedAst` revalidation. | Legacy/combined partition, Task-248/A/B/C2/C3 exclusions, rollback/replay, debug order, and final clone tests. | Implemented without an intermediate AST state. |
-| Public enums remain forward-compatible. | `#[non_exhaustive]` on all four public enums. | `checker_public_enums_are_forward_compatible_and_documented`. | Guarded; no exhaustive exception. |
+| C4A owns one binding-context table and one normalized-use-position table over the exact opaque R2/277C/`TypedAst` snapshot. | `SourceFraenkelGeneratorBindingContextId`, `SourceFraenkelGeneratorUsePositionId`, both row/table pairs, handoff, error, and producer. | The four exact C4A checker tests and private F5 probe. | Implemented without term/reference, capture, or semantic installation. |
+| C4B maps exactly the three C4A positions through `BindingEnv::lookup` to the one checker-local binding and publishes one dense table. | `SourceFraenkelGeneratorBoundUseId`, row/table/handoff, error, and producer. | The four exact C4B checker tests and private F5 bound-use probe. | Implemented with full retained C4A validation and zero semantic credit. |
+| Public enums remain forward-compatible. | `#[non_exhaustive]` on all six public enums. | `checker_public_enums_are_forward_compatible_and_documented`. | Guarded; no exhaustive exception. |
 
 Bounded gaps: connective/quantifier/predicate truth, signature applicability,
 overload selection, formula facts/results, implicit theorem closure and

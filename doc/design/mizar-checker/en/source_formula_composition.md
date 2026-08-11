@@ -107,6 +107,7 @@ The dense ids are `SourceFormulaAtomicEdgeId` and
 | `SourceFormulaAtomicEdgeRole` | `#[non_exhaustive]`; callers must tolerate later frozen cross-family body roles. |
 | `SourceFormulaCompositionError` | `#[non_exhaustive]`; callers must not exhaustively match validation failures. |
 | `SourceFraenkelGeneratorBindingContextError` | `#[non_exhaustive]`; callers must not exhaustively match Fraenkel generator binding-context validation failures. |
+| `SourceFraenkelGeneratorBoundUseError` | `#[non_exhaustive]`; callers must not exhaustively match Fraenkel generator bound-use validation failures. |
 | `SourcePredicateChainCompositionError` | `#[non_exhaustive]`; callers must not exhaustively match predicate-chain composition validation failures. |
 
 No exhaustive public enum exceptions are owned by this module.
@@ -902,3 +903,19 @@ multiple-generator, or shadowed state fails atomically. The four exact checker
 tests named by the contract cover the literal ABI/oracle, wrapper and complete
 snapshot corruption, row/lookup corruption plus precedence, and deterministic
 non-mutating replay. The raw checker list is frozen to change `550 -> 554`.
+
+The implementation is complete in this existing owner at 7958 lines / SHA-256
+`90b339d9707f9f8d847b678721e8db0ef6a00e4a15dbb41474a0cf6980f47168`.
+It publishes exactly the family and getters above, validates the full retained
+C4A snapshot before its three rows, and adds exactly the four named checker
+tests. Focused `4/4`, checker `554/554`, formatting, package/full-workspace
+Clippy, full workspace tests, metadata/public-enum suites, five unchanged CLI
+replays, and diff checks pass. Independent implementation and test-sufficiency reviews are
+**NO FINDINGS** after structural and `TypedAst` dependency corruption were
+added to the existing precedence test. Final source/documentation review and
+independent bilingual/boundary review are **NO FINDINGS** after the sole Low
+baseline/current wording repair. Final-quality is **NO FINDINGS**; all `9/9`
+hard gates pass at valid uncapped `100/100`
+(`20/20/15/15/10/10/5/5`). The contract's exact 23-path staging/cached review
+also passes. Only task-only commit, post-commit proof, and fresh inventory
+remain pending.
