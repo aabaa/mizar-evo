@@ -9,9 +9,9 @@ Owning planは[mizar-resolve](../../mizar-resolve/ja/00.crate_plan.md#task-index
 
 ## status、purpose、readiness
 
-**Status:** accepted precommit implementation。required reviewはすべて**NO FINDINGS**、hard gateは
-`9/9` pass、valid uncapped qualityは`100/100`。task-only commit、postcommit proof、fresh successor
-inventoryは未完了。
+**Status:** complete。required reviewはすべて**NO FINDINGS**、hard gateは`9/9` pass、valid
+uncapped qualityは`100/100`。task-only implementation commitとclean postcommit proofを以下に記録した。
+fresh successor inventoryは一意にdependency-readyな次実装を認めなかったため、この境界で停止する。
 
 clean `HEAD b7f52dfa8d804c0adb4896cc5f1b9473ac99431c`のfresh inventoryは、既存の
 import済みnested-comprehension oracleに対するresolver-owned最小依存taskを選定した。
@@ -133,8 +133,7 @@ reviewも**NO FINDINGS**で、hard gate `9/9` pass、score capなし、valid `10
 （`20/20/15/15/10/10/5/5`）。そのhistorical review checkpointではindexはexact task 6 paths、
 unstagedなし、sorted path-list SHA-256
 `90af71a41ac7ae346c20bc76fc6e74380ce808bf97a64e25de5148430118e149`、`1278` insertions /
-`55` deletions。親も同じhard-gate結果を独立acceptした。commit、postcommit proof、fresh inventoryは
-implementation findingではなく残るlifecycle workである。
+`55` deletions。親も同じhard-gate結果を独立acceptした。
 
 ## protected scope、audit、exit
 
@@ -156,3 +155,34 @@ not-ready/zero creditのまま。
 推奨routingはauthority/API/boundary/final scoreをGPT-5.6 Sol `xhigh`、frozen implementation/reviewを
 Terra `high`/`xhigh`。new public item、general nested/shadow semantics、checker payload、diagnostic、active routeが
 必要ならedit前に親へ戻す。
+
+## postcommit proofとfresh successor inventory
+
+task-only implementation commitは
+`601db2ab8fbcfa736d4b619e0eacbbf1291cc800`（`feat(resolve): link nested Fraenkel
+identity`）、documentation prerequisite parentは
+`ed46bcd550b9129818404b8f095dfa333c5f85cf`。commitの変更はfrozen Rust 4 pathと本synchronized
+contract pairだけを含み、sorted path-list SHA-256は
+`90af71a41ac7ae346c20bc76fc6e74380ce808bf97a64e25de5148430118e149`、`git show --check`はpass。
+直後のworktreeはclean、`origin/main...HEAD`は`0/2`、既存stashは
+`f65cf4a13752ec380710814a9ac6392ccb9d75d4`のまま未変更だった。
+
+authority/design/sourceの独立read-only successor inventoryは、C4C2がresolver identityだけを閉じる点で
+一致した。Chapter 13は最終semantic result、すなわちinner mapper `x`がouter resolved binderをcaptureし、
+generated symbolが後にcaptured free variableをparameterに持つことを固定する。しかし、どのchecker-owned
+intermediate boundaryが最初にC4C2を消費するかは固定しない。Task 257C ownedのzero-semantic
+binder/mapper-use transportと、mapper primary occurrenceを先にownするTask 252 extensionという、意味の異なる
+2 decompositionが残る。現`.miz`、inactive sidecar、trace row、private resolver probeはそのどちらも選ばず、
+checker row ID/ordinal、typed-node association、capture-table owner、installation APIも固定しない。
+
+従って一意にdependency-readyなsuccessorはない。未確定checker intermediate contractを`design_drift`、
+checker-level exact oracle不在を`test_gap`と分類する。owner未選択のままcapture/Task-252 rowを導入すること、
+またはexact-F5 C4A/C4B handoffを流用することは`boundary_violation`である。type/sethood evidence、
+request/result ownership、verdict、diagnostic、advanced-semantics production routeはexternal dependency gapのまま。
+inactive sidecar/test-intent-only traceは変更せず、Task 277Bは独立にnot-ready/zero-creditを維持する。
+
+再開には、最初のchecker boundaryを選ぶ人間のowner判断と、sole owner、exact
+C4C2-resolver-to-typed association、row/site/order oracle、Task-252 ownershipまたは明示的除外、public/private
+installation surfaceを別のpaired task contractで凍結することが必要である。semantic capture、pass verdict、
+diagnostic、activationより前に、`Element of NAT` type/sethood evidenceとrequest/result routeも別契約でownする。
+推奨parent routingはGPT-5.6 Sol `xhigh`を維持し、Terra `high`/`xhigh`はcontract freeze後の限定作業に使う。

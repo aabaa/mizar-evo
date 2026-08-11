@@ -9,10 +9,11 @@ and test [harness](../../mizar-test/en/harness.md#resolver-task-257c4c2-private-
 
 ## Status, purpose, and readiness
 
-**Status:** accepted precommit implementation. All required reviews have
-reached **NO FINDINGS**, all `9/9` hard gates pass, and the valid uncapped
-quality score is `100/100`; task-only commit, post-commit proof, and fresh
-successor inventory remain.
+**Status:** complete. All required reviews reached **NO FINDINGS**, all `9/9`
+hard gates passed, and the valid uncapped quality score is `100/100`. The
+task-only implementation commit and its clean post-commit proof are recorded
+below. Fresh successor inventory found no uniquely dependency-ready next
+implementation task, so this task stops at that boundary.
 
 This is the dependency-minimal successor selected by fresh inventory at clean
 `HEAD b7f52dfa8d804c0adb4896cc5f1b9473ac99431c`. It extends the existing
@@ -196,8 +197,7 @@ score is `100/100`, split `20/20/15/15/10/10/5/5`. At that historical review
 checkpoint the index contained exactly the six task paths, no unstaged path,
 SHA-256 `90af71a41ac7ae346c20bc76fc6e74380ce808bf97a64e25de5148430118e149`
 for its sorted path list, and `1278` insertions / `55` deletions. The parent
-independently accepts the same hard-gate result. Commit, post-commit proof, and
-fresh inventory remain lifecycle work rather than implementation findings.
+independently accepts the same hard-gate result.
 
 ## Protected scope and audit impact
 
@@ -237,3 +237,46 @@ acceptance, and final scoring. GPT-5.6 Terra at `high` or `xhigh` may perform
 the frozen implementation and independent reviews. Any need for a new public
 item, generalized nested/shadow semantics, checker payload, diagnostic, or
 active route returns to the parent before editing.
+
+## Post-commit proof and fresh successor inventory
+
+The task-only implementation commit is
+`601db2ab8fbcfa736d4b619e0eacbbf1291cc800` (`feat(resolve): link nested
+Fraenkel identity`) with documentation prerequisite parent
+`ed46bcd550b9129818404b8f095dfa333c5f85cf`. The commit changes exactly the
+four frozen Rust paths and this synchronized contract pair; the sorted path-list
+SHA-256 is
+`90af71a41ac7ae346c20bc76fc6e74380ce808bf97a64e25de5148430118e149`,
+and `git show --check` passes. Immediately afterward the worktree was clean,
+`origin/main...HEAD` was `0/2`, and the pre-existing stash remained untouched
+at `f65cf4a13752ec380710814a9ac6392ccb9d75d4`.
+
+The authority-, design-, and source-oriented read-only successor inventories
+agree that C4C2 closes only resolver identity. Chapter 13 fixes the eventual
+semantic result: the inner mapper `x` captures the outer resolved binder and
+the generated symbol later receives captured free variables as parameters.
+It does not fix which checker-owned intermediate boundary must consume C4C2
+first. Two materially different decompositions remain possible: a
+zero-semantic binder/mapper-use transport owned by Task 257C, or an extension
+of Task 252 that first owns the mapper primary occurrence. The current `.miz`,
+inactive sidecar, trace row, and private resolver probe do not select between
+them or fix checker row IDs, ordinals, typed-node associations, a capture-table
+owner, or installation API.
+
+Accordingly there is no uniquely dependency-ready successor. The unresolved
+checker intermediate contract is `design_drift`, and the absent checker-level
+exact oracle is a `test_gap`; introducing capture or Task-252 rows through an
+unselected owner, or reusing the exact-F5 C4A/C4B handoffs, would be a
+`boundary_violation`. Type/sethood evidence, request/result ownership,
+verdicts, diagnostics, and the advanced-semantics production route remain
+external dependency gaps. The inactive sidecar and test-intent-only trace stay
+unchanged. Task 277B remains independently not-ready and zero-credit.
+
+Resumption requires a human owner decision choosing the first checker boundary
+and freezing, in a separate paired task contract, its sole owner, exact
+C4C2-resolver-to-typed association, row/site/order oracle, Task-252 ownership
+or explicit exclusion, and public/private installation surface. A distinct
+later contract must own `Element of NAT` type/sethood evidence and the
+request/result route before semantic capture, pass verdict, diagnostic, or
+activation work. Recommended parent routing remains GPT-5.6 Sol at `xhigh`;
+Terra at `high` or `xhigh` is suitable only after that contract is frozen.
