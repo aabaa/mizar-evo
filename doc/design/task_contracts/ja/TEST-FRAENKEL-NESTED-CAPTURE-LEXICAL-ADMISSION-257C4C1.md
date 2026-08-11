@@ -121,11 +121,13 @@ second `Element@141..148`/`NAT@152..155`。
 Preprocess outputはexact one `ImportStub`を持つ：stub span `7..37`、path
 spelling `parser.nested_capture_fixtures`、path span `7..37`、components
 `parser`/`nested_capture_fixtures`、raw source segment一つ`7..37`、relative
-prefix/aliasなし。parsed ASTはcomponent ranges `parser@7..13` /
-`nested_capture_fixtures@14..37`を保持し、周囲のimport declarationは`0..38`で
-ある。Providerはordinal `0` stubを上記exact one-summary/two-shape lexical environmentへ
+prefix/aliasなし。parsed ASTは`ImportAliasDecl@7..37`、component ranges
+`parser@7..13`/`nested_capture_fixtures@14..37`、および周囲の
+`ImportItem@0..38`を保持する。Providerはordinal `0` stubを上記exact
+one-summary/two-shape lexical environmentへ
 resolveし、real frontend ASTはdiagnostic/recovery 0。本taskはresolver import
-augmentationをrun/extendしない。Resolver imported identity、use-site name reference、
+augmentationをproduction routeでrun/extendせず、下記validation-only no-op testだけが
+direct callする。Resolver imported identity、use-site name reference、
 generator identity、capture readiness、type application、sethood、formula semanticsは
 separately deferred。
 
@@ -143,9 +145,12 @@ Public API deltaなし。`mizar-frontend::lexical_env`が
 `ResolvedImports`、provenance validation、active-environment assemblyをownする。
 `mizar-lexer`が`ModuleLexicalSummary`、`ExportedSymbolShape`、`ExportRank`、
 `UserSymbolKind`、`UserSymbolArity`、`LexicalSummaryFingerprint`をownする。
-C4C1はcrate-private `ParseOnlyImportProvider` summary branchだけをextendする。
-Existing `augment_type_elaboration_import_summaries` allowlistと全resolver
-augmentation behaviorはbyte-identical。
+C4C1はcrate-private `ParseOnlyImportProvider` summary branchをextendし、resolver
+augmentationを`parser.type_fixtures`だけに保つexact private discovery guardを追加する。
+C4C1 testはcanonical C4C1 ASTが`SymbolEnv`をbyte-for-byte unchangedにすることだけを
+証明するためにそのseamを呼ぶ。このvalidation-only exclusionはresolver creditを
+与えず、existing `augment_type_elaboration_import_summaries` allowlistと全resolver
+augmentation outputはbyte-identical。
 
 Docs prerequisite commit後のimplementationはexact 7 paths：
 

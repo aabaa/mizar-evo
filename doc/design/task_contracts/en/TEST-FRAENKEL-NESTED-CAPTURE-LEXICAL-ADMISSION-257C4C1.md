@@ -131,13 +131,14 @@ path `7..37`, `NestedCapture@58..71`, inner mapper `x@94..95`, inner generator
 Preprocessing must expose exactly one `ImportStub`: stub span `7..37`,
 path spelling `parser.nested_capture_fixtures`, path span `7..37`, components
 `parser` and `nested_capture_fixtures`, one raw source segment `7..37`, no
-relative prefix, and no alias. The parsed AST retains component ranges
-`parser@7..13` and `nested_capture_fixtures@14..37`, while the surrounding
-import declaration is `0..38`. The provider resolves that stub at ordinal `0`
+relative prefix, and no alias. The parsed AST retains `ImportAliasDecl@7..37`,
+component ranges `parser@7..13` and `nested_capture_fixtures@14..37`, and the
+surrounding `ImportItem@0..38`. The provider resolves that stub at ordinal `0`
 to the exact one-summary/
 two-shape lexical environment above, after which the real frontend AST has zero
-diagnostics and no recovery. This task does not run or extend resolver import
-augmentation. Resolver imported identities, use-site name-reference
+diagnostics and no recovery. No production C4C1 route runs or extends resolver
+import augmentation; the validation-only no-op test below is the sole direct
+call. Resolver imported identities, use-site name-reference
 resolution, generator identity, capture readiness, type application, sethood,
 and formula semantics remain separately deferred.
 
@@ -157,10 +158,13 @@ No public API is added or changed. `mizar-frontend::lexical_env` already owns
 `ResolvedImports`, provenance validation, and active-environment assembly.
 `mizar-lexer` already owns `ModuleLexicalSummary`, `ExportedSymbolShape`,
 `ExportRank`, `UserSymbolKind`, `UserSymbolArity`, and
-`LexicalSummaryFingerprint`. C4C1 only extends the crate-private
-`ParseOnlyImportProvider` summary branch. The existing
-`augment_type_elaboration_import_summaries` allowlist and all resolver
-augmentation behavior remain byte-identical.
+`LexicalSummaryFingerprint`. C4C1 extends the crate-private
+`ParseOnlyImportProvider` summary branch and adds an exact private discovery
+guard that keeps resolver augmentation limited to `parser.type_fixtures`.
+The C4C1 test calls that seam only to prove the canonical C4C1 AST leaves
+`SymbolEnv` byte-for-byte unchanged. This validation-only exclusion grants no
+resolver credit; the existing `augment_type_elaboration_import_summaries`
+allowlist and all resolver augmentation output remain byte-identical.
 
 After the documentation prerequisite commit, implementation changes exactly
 these seven paths:
