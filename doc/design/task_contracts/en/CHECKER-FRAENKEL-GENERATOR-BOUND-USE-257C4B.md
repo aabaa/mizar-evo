@@ -29,9 +29,10 @@ with dependency-before-row precedence. Final source/documentation review and
 independent bilingual/boundary review are also **NO FINDINGS** after the sole
 Low baseline/current wording issue was repaired in this contract pair. This
 task's final-quality review is **NO FINDINGS**; all `9/9` hard gates pass at a
-valid uncapped `100/100` (`20/20/15/15/10/10/5/5`). Only exact
-the task-only commit, post-commit proof, and fresh successor inventory remain
-pending. Exact staging/cached review passes over 23 paths (3 Rust and 20 docs),
+valid uncapped `100/100` (`20/20/15/15/10/10/5/5`). The task-only commit,
+immediate post-commit proof, and accepted fresh successor inventory are
+complete at the [historical checkpoint](#historical-immediate-post-implementation-checkpoint).
+Exact staging/cached review passes over 23 paths (3 Rust and 20 docs),
 including one new private leaf, with zero unstaged paths at review time;
 `git diff --cached --check` passes and the cached stat is 1096 insertions / 123
 deletions.
@@ -304,8 +305,9 @@ Final-quality is **NO FINDINGS**; all `9/9` hard gates pass at valid uncapped
 `100/100` (`20/20/15/15/10/10/5/5`). Exact staging/cached review passes over
 23 paths (3 Rust / 20 docs), with one new private leaf, zero unstaged paths at
 review time, cached diff check PASS, cached stat `1096/123`, and both lint
-suites `15/15`. Task-only commit, post-commit proof, and fresh successor
-inventory remain pending.
+suites `15/15`. The task-only commit, immediate post-commit proof, and accepted
+fresh successor STOP disposition are complete at the
+[historical checkpoint](#historical-immediate-post-implementation-checkpoint).
 
 The nine gates are frozen as follows:
 
@@ -331,16 +333,65 @@ is proved, EN canonical and JA companion are synchronized, every stable
 fragment/link and legacy neighbor anchor resolves, both lint suites and diff
 checks pass, protected hashes/counts remain unchanged, and
 commit/post-commit/fresh-inventory steps are completed. Those lifecycle claims
-remain pending here; every review, hard gate, and staging/cached gate is
+are complete; every review, hard gate, and staging/cached gate is also
 complete.
 
-Keep Sol at `xhigh` for commit acceptance and successor inventory. Use Terra
+Keep Sol at `xhigh` for any separately authorized successor inventory. Use Terra
 `xhigh` for any finding-specific bounded
 re-review; raise back to Sol for any authority
 ambiguity, requested public-API expansion, Task-252/capture/semantic boundary
 question, or disputed finding. If Luna is not exposed, do not block.
 
-After C4B completion, run another fresh inventory. Do not infer that the next
-task is capture, sethood, or Task 277B. Task 277B remains not ready with zero
-credit until separately authorized semantic owners and `MC-G020`/`MC-G021`
-are actually discharged.
+The accepted fresh inventory returned a protocol semantic STOP and selected no
+successor. Do not infer that the next task is capture, sethood, Task 252, or
+Task 277B. Resume only through a separately frozen prerequisite satisfying the
+conditions recorded below.
+
+## Historical immediate post-implementation checkpoint
+
+This documentation-only closure changes exactly 20 Markdown paths: this paired
+contract plus the 18 existing owner documents linked above. The four checker
+and mizar-test crate plans, the three implemented Rust paths,
+`doc/design/spec_coverage_audit.md`, the compaction ledger, Cargo,
+specification, fixtures, expectations, trace, coverage, and metadata are
+unchanged by the closure.
+
+Before the implementation commit, exact staging/cached review passed with 23
+cached paths: 3 Rust and 20 documentation paths, including one new private
+leaf, with zero unstaged paths at review time. `git diff --cached --check`
+passed and the historical pre-commit cached stat was exactly 1096 insertions /
+123 deletions.
+
+The implementation commit's parent was
+`53987a3fdc1a927dbcbd2b9ed22e9817c8b68f2d`. Immediately after the task-only
+implementation commit `1b57f1dc97af2993603699d92820c2dd3e84ed0e`, the
+observed `HEAD` was that commit, the worktree was clean,
+`origin/main...HEAD` was `0/22`, and `stash@{0}` remained unchanged at
+`f65cf4a13752ec380710814a9ac6392ccb9d75d4`. The commit contained exactly 23
+paths (3 Rust and 20 documentation paths); its reproducible sorted-path SHA-256
+was `2a718c8f3a4a7c9d58e5af0d129dd35550dd73f8efa6c5c3ecf7c32f7e05092e`,
+and its final stat was 1117 insertions / 123 deletions. These are historical,
+immediate-post-implementation observations from before this documentation-only
+closure, not claims about any later or current `HEAD`, index, worktree, origin,
+or stash state. The task-only commit and immediate post-commit proof are
+closed.
+
+The accepted fresh inventory returned a protocol semantic **STOP** and closed
+the successor-inventory gate without selecting a successor:
+
+- actual nested-comprehension capture remains a `test_gap`; immutable F5 has no
+  outer-generator occurrence and therefore supplies no authority-backed capture
+  oracle. Resume only after a separate test-first contract derives and freezes
+  an oracle from canonical §13.4.4;
+- Task 252 owns the existing occurrence ordinal/site public surfaces, while
+  C4B owns no `SourcePrimaryTerm`, reference, site, or generic quantifier-use
+  row. Reusing or duplicating those surfaces would be a `boundary_violation`.
+  Resume only after a separately reviewed public-API owner resolves the
+  ordinal/site association without duplicate ownership;
+- template-type interpretation and sethood remain semantic-owner work under
+  canonical §§13.4.2 and 18.10.2, and `MC-G020`/`MC-G021` remain open. Resume
+  only after a separately frozen source-to-checker payload and sethood
+  evidence/request bridge owns that composition and the required external gaps
+  are discharged; and
+- Task 277B remains not ready with zero semantic credit. No capture, Task-252,
+  sethood, Task-277B, or other semantic successor is selected here.

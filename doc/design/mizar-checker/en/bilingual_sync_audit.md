@@ -1933,7 +1933,8 @@ record the same implementation-complete status, sole C4A input, exact public fam
 and signatures, version/domain/debug strings, error precedence, F5 three-row
 oracle, four checker tests, `550 -> 554`, exact implemented three-Rust-path
 scope and measurements, raw-list hashes, checker production `32/193758`, hard
-prohibitions, protected no-op decision, pending gates, and Sol/Terra handoff.
+prohibitions, protected no-op decision, completed lifecycle gates, and
+Sol/Terra handoff.
 Both companions record formatting, full-workspace Clippy/tests, metadata
 `137/137`, public-enum `2/2`, and the unchanged five CLI outputs as passing.
 The paired checker owner sections are in the exact-20 completion review
@@ -1942,5 +1943,8 @@ there is no bilingual exception. Independent bilingual/boundary review is
 **NO FINDINGS** after the sole Low baseline/current wording repair.
 Final-quality is **NO FINDINGS**; all `9/9` hard gates pass at valid
 uncapped `100/100` (`20/20/15/15/10/10/5/5`) in both languages. Exact
-23-path staging/cached review also passes; only the task-only commit,
-post-commit proof, and fresh-inventory lifecycle remain pending.
+23-path staging/cached review also passes. The task-only commit, immediate
+post-commit proof, and accepted fresh semantic STOP are synchronized as closed
+at the language-local [historical
+checkpoint](../../task_contracts/en/CHECKER-FRAENKEL-GENERATOR-BOUND-USE-257C4B.md#historical-immediate-post-implementation-checkpoint).
+No successor is selected and no bilingual exception exists.

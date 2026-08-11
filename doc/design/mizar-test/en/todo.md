@@ -3891,7 +3891,10 @@ the successor is selected only from fresh post-commit inventory.
 - [x] Complete exact staging/cached review over 23 paths (3 Rust / 20 docs),
   one new private leaf, zero unstaged paths at review time, cached diff check
   PASS, and cached stat `1096/123`.
-- [ ] Complete task-only commit, post-commit proof, and fresh inventory.
+- [x] Close the task-only implementation commit, immediate post-commit proof,
+  and accepted fresh semantic STOP at the language-local [historical
+  checkpoint](../../task_contracts/en/CHECKER-FRAENKEL-GENERATOR-BOUND-USE-257C4B.md#historical-immediate-post-implementation-checkpoint),
+  selecting no successor.
 
 ## Resolver Task 277R2 Test-Only Fixture Probe
 

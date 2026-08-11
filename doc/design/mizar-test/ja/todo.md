@@ -3631,4 +3631,4 @@ post-commit fresh inventoryからだけ選択する。
 - [x] sole Low baseline/current wording repair後、final source-docとindependent bilingual/boundary reviewを**NO FINDINGS**で完了する。
 - [x] final-qualityを**NO FINDINGS**、全`9/9` hard gate PASS、valid uncapped `100/100`（`20/20/15/15/10/10/5/5`）で完了する。
 - [x] Exact staging/cached reviewを23 paths（3 Rust/20 docs）、new private leaf 1件、review時unstaged 0、cached diff check PASS、cached stat `1096/123`で完了する。
-- [ ] task-only commit、post-commit proof、fresh inventoryを完了する。
+- [x] task-only implementation commit、immediate post-commit proof、accepted fresh semantic STOPをlanguage-local [historical checkpoint](../../task_contracts/ja/CHECKER-FRAENKEL-GENERATOR-BOUND-USE-257C4B.md#historical-immediate-post-implementation-checkpoint)でcloseし、successorをselectしない。

@@ -1945,7 +1945,7 @@ The completed [EN canonical](../../task_contracts/en/CHECKER-FRAENKEL-GENERATOR-
 and [JA companion](../../task_contracts/ja/CHECKER-FRAENKEL-GENERATOR-BOUND-USE-257C4B.md)
 agree on the one implemented private leaf/include, exact sole test name,
 `613 -> 614`, final `67/121` measurements and hashes, existing F5 construction
-reuse, verification completed so far, pending lifecycle gates, and the
+reuse, completed verification and lifecycle gates, and the
 no-production/no-semantic/no-credit boundary. The harness, boundary, TODO, and
 bilingual pairs are in the exact-20 completion review surface; all Task Index
 plans remain unchanged. English owns the exhaustive ABI and final hashes. No
@@ -1957,5 +1957,8 @@ Both companions record formatting, full-workspace Clippy/tests, metadata
 `137/137`, public-enum `2/2`, and the unchanged five CLI outputs as passing.
 Final-quality is **NO FINDINGS**; all `9/9` hard gates pass at valid uncapped
 `100/100` (`20/20/15/15/10/10/5/5`) in both languages. Exact 23-path
-staging/cached review also passes; only the task-only commit, post-commit proof,
-and fresh-inventory lifecycle remain pending.
+staging/cached review also passes. The task-only commit, immediate post-commit
+proof, and accepted fresh semantic STOP are synchronized as closed at the
+language-local [historical
+checkpoint](../../task_contracts/en/CHECKER-FRAENKEL-GENERATOR-BOUND-USE-257C4B.md#historical-immediate-post-implementation-checkpoint).
+No successor is selected and no bilingual exception exists.

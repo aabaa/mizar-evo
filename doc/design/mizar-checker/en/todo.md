@@ -6940,7 +6940,9 @@ selected only from fresh post-commit inventory.
 - [x] Complete exact staging/cached review over 23 paths (3 Rust / 20 docs),
   one new private leaf, zero unstaged paths at review time, cached diff check
   PASS, and cached stat `1096/123`.
-- [ ] Complete a task-only implementation commit, post-commit proof, and fresh
-  successor inventory.
+- [x] Close the task-only implementation commit, immediate post-commit proof,
+  and accepted fresh semantic STOP at the language-local [historical
+  checkpoint](../../task_contracts/en/CHECKER-FRAENKEL-GENERATOR-BOUND-USE-257C4B.md#historical-immediate-post-implementation-checkpoint),
+  selecting no successor.
 - [x] Keep actual capture separately deferred and Task 277B not ready with
   zero semantic credit throughout.

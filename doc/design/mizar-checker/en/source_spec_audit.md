@@ -60,9 +60,11 @@ Final source/documentation review and independent bilingual/boundary review
 are **NO FINDINGS** after the sole Low baseline/current wording repair.
 Final-quality is **NO FINDINGS**; all `9/9` hard gates pass at valid uncapped
 `100/100` (`20/20/15/15/10/10/5/5`). The exact 23-path staging/cached review
-also passes. Only task-only commit, post-commit proof, and fresh inventory
-remain pending. The completed transport does not change
-the explicit coverage-audit or schema-v2 no-op decision.
+also passes. The task-only commit, immediate post-commit proof, and accepted
+fresh semantic STOP are closed at the language-local [historical
+checkpoint](../../task_contracts/en/CHECKER-FRAENKEL-GENERATOR-BOUND-USE-257C4B.md#historical-immediate-post-implementation-checkpoint).
+No successor is selected. The completed transport does not change the explicit
+coverage-audit or schema-v2 no-op decision.
 
 ## Task 269SDU Implemented Zero-Credit Mapping
 
