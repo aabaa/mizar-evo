@@ -225,7 +225,8 @@ wording independently. Run `git diff --check` plus checker and mizar-test
 `lint_policy` suites. The documentation prerequisite exits only with exactly
 20 Markdown paths, synchronized EN/JA owners, no artifact/source delta, passing
 checks, and all nine autonomous hard gates valid. Staging, commit, post-commit
-proof, and fresh inventory remain separate lifecycle steps.
+proof, and fresh inventory were separate lifecycle steps and are closed in the
+historical checkpoint below.
 
 Pre-staging completion evidence is now closed. Independent authority/test-
 intent and bilingual/boundary reviews ended with **NO FINDINGS** after the
@@ -239,8 +240,25 @@ the uncapped valid score is `100/100` (`20/20/15/15/10/10/5/5`). Exact
 staging/cached review is complete: the cache contains only these 20 paths,
 has sorted path SHA-256 `9826854d25bdd239f1a0e568e4bf27bd8a06d23e2731aeb9222b9738f99e935d`,
 has `633` insertions and zero deletions, had zero unstaged paths at review
-time, and passes `git diff --cached --check`. Only the task-only commit,
-post-commit proof, and fresh inventory remain pending.
+time, and passes `git diff --cached --check`.
+
+## Historical immediate post-prerequisite checkpoint
+
+Immediately after the task-only documentation commit
+`8e42d5d40a1524639ab13e5462eaf3f646705618`, read-only inventory observed
+`HEAD=8e42d5d40a1524639ab13e5462eaf3f646705618`, a clean worktree,
+`origin/main...HEAD=0/24`, and unchanged protected
+`stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4`. The commit contains exactly
+20 Markdown paths, `633` insertions and zero deletions, with sorted path
+SHA-256 `9826854d25bdd239f1a0e568e4bf27bd8a06d23e2731aeb9222b9738f99e935d`;
+`git show --check HEAD` passed. This is a historical immediate observation,
+not a claim about the later closeout commit's current `HEAD` or worktree.
+
+The task-only commit, post-commit proof, and fresh successor inventory are
+closed. Fresh inventory accepted the already frozen exact20 artifact-and-owner
+completion as the next task; it did not authorize capture implementation or a
+lexical/import implementation choice. Task 277B remains not ready with zero
+credit.
 
 The next task after this prerequisite is the exact artifact-and-owner
 completion task frozen above. After that task's commit, run fresh inventory
