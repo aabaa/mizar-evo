@@ -134,3 +134,14 @@ inventory is `344/344`; the new pair remains inactive and earns no
 current parser, semantic, route, warning/error, or Task-277B credit. The exact
 source bytes/hash and sidecar are owned by the contract; local-lookalike and
 builtin-set variants are forbidden.
+
+## Task 257C4C1 explicit-import corpus repair
+
+The [C4C1 contract](../../task_contracts/en/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md)
+modifies that existing oracle in place to the exact 164-byte explicit-import
+source and updates only its inactive sidecar note. One separate 140-byte module
+at `crates/mizar-test/tests/testdata/parser/nested_capture_fixtures.miz`
+defines the ordered `Element`/`NAT` lexical shapes in separate definition
+blocks. It is crate-local testdata, not an ordinary corpus payload, and has no
+sidecar. Corpus pairs therefore remain `344/344`; active cases, outcomes,
+routes, warnings/errors, capture credit, and Task-277B credit do not change.

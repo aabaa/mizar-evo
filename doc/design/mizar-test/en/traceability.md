@@ -2292,6 +2292,18 @@ measurements are recorded in the central contract. The row grants no active
 route-count, aggregate CLI warning/error, semantic, or Task-277B credit; the
 current six parser diagnostics remain a lower lexical/import `source_drift`.
 
+## Task 257C4C1 inactive trace repair
+
+The [C4C1 contract](../../task_contracts/en/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md)
+updates the existing nested-capture row note and sole sidecar note after exact
+explicit-import frontend admission. The requirement id, Chapter-13 source/
+section, `advanced_semantics/covered/required/pass` fields, parser-only
+dependency, and sole sidecar remain unchanged. No row, backlink, active tag,
+failure field, route count, diagnostic credit, or semantic credit is added.
+The Chapter-13 audit row alone records lexical-blocker closure; Chapters
+2/3/7/10/11/12 receive no coverage credit. Resolver identities, capture
+transport, advanced execution, and Task 277B remain deferred.
+
 ## Checker Task 249S Frozen Traceability No-Op
 
 Task 249S changes representation coverage only. It adds no corpus source,

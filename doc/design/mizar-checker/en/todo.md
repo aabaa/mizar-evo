@@ -6964,3 +6964,18 @@ selected only from fresh post-commit inventory.
   Fresh inventory ends in a human-owned blocking `spec_gap` STOP until test
   intent or language-specification authority supplies the missing rule; no
   lower or capture implementation is selected here.
+
+## Task 257C4C1 explicit-import lexical admission
+
+- [x] Freeze the paired [C4C1 contract](../../task_contracts/en/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md),
+  exact 140-byte crate-local support module, ordered two-shape summary, repaired
+  164-byte C4C0 source, historical 124-byte/six-diagnostic isolation baseline,
+  exact seven implementation paths, and four existing-leaf test names.
+- [ ] After a task-only docs commit, implement only frontend lexical/parser
+  admission through `ParseOnlyImportProvider`; keep resolver augmentation and
+  every checker/capture/semantic owner unchanged.
+- [ ] Update the inactive sidecar note, existing trace-row note, and Chapter-
+  13 audit mapping without adding a row, active tag, route, diagnostic
+  credit, semantic credit, or Task-277B readiness.
+- [ ] Complete all frozen focused/full verification, independent reviews, nine
+  hard gates, exact staging/commit, post-commit proof, and fresh inventory.

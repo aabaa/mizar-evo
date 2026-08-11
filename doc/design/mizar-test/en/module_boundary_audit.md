@@ -11554,6 +11554,21 @@ Plan/parse/declaration/type/proof CLI hashes are
 `f87a743b914d2d51d6b9a8dbcf3c8d93bbc1403b44907fd85123a1865f84edd5`,
 and `ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`.
 
+## Task 257C4C1 crate-local testdata boundary
+
+The [C4C1 contract](../../task_contracts/en/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md)
+owns exactly one file under `crates/mizar-test/tests/testdata/parser/`, one
+private provider branch in `runner/import_fixtures.rs`, and four tests in the
+existing `runner/tests/parse_only.rs`. The support file is outside `tests/miz`
+and the production source manifest, has no sidecar, and cannot be discovered as
+an ordinary corpus payload. Tests associate and cross-validate the physical
+evidence file with the synthetic module; the provider recognizes only the
+logical module id. This admits no package, MML, or implicit-prelude behavior.
+
+Frontend/parser/resolver/checker public APIs, the resolver augmentation
+allowlist, Cargo, `tests.rs`, new leaves, public runner routes, and downstream
+semantic owners are excluded.
+
 ## Checker Task 258A Frozen-Contract Boundary
 
 This documentation prerequisite adds no runner source path and leaves the

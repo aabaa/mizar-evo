@@ -1979,3 +1979,13 @@ post-commit proof, and accepted fresh inventory are closed at the language-local
 Fresh inventory records a human-owned blocking `spec_gap` STOP until test-
 intent or language-specification authority supplies the missing rule; no lower
 or capture task is selected.
+
+## Task 257C4C1 frozen contract parity
+
+The [EN canonical](../../task_contracts/en/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md)
+and [JA companion](../../task_contracts/ja/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md)
+synchronize the exact 140-byte split-block support module, synthetic module
+mapping, one import/summary with two ordered shapes, 164-byte repaired inactive
+oracle, historical six-diagnostic isolation, private existing-leaf test scope,
+Chapter-13-only audit impact, and zero resolver/capture/semantic/Task-277B
+credit. English is canonical; no exception exists.

@@ -10304,6 +10304,20 @@ plan/parse/declaration/type/proof CLI hashは
 `f87a743b914d2d51d6b9a8dbcf3c8d93bbc1403b44907fd85123a1865f84edd5`、
 `ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`。
 
+## Task 257C4C1 crate-local testdata boundary
+
+[C4C1 contract](../../task_contracts/ja/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md)は
+`crates/mizar-test/tests/testdata/parser/`のone file、
+`runner/import_fixtures.rs`のprivate provider branch 1件、existing
+`runner/tests/parse_only.rs`のtests 4件だけをownする。Support fileは`tests/miz`/
+production source manifest外、sidecarなし、ordinary corpus payloadとしてdiscover
+されない。Testsがphysical evidence fileをsynthetic moduleへassociateして
+cross-validateし、providerはlogical module idだけをrecognizeする。Package/MML/
+implicit-prelude behaviorをadmitしない。
+
+Frontend/parser/resolver/checker public API、resolver augmentation allowlist、Cargo、
+`tests.rs`、new leaf、public runner route、downstream semantic ownerはexclude。
+
 ## Checker Task 258A frozen-contract boundary
 
 このdocumentation prerequisiteはrunner source pathを追加せず、29-path /

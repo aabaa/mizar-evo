@@ -2189,6 +2189,17 @@ trace/audit counts/hashes、metadata、全5 CLI measurementはcentral contract�
 record済み。Active route-count/aggregate CLI warning-error/semantic/Task277B creditは
 0で、current parser diagnostic 6件はlower lexical/import `source_drift`のまま。
 
+## Task 257C4C1 inactive trace repair
+
+[C4C1 contract](../../task_contracts/ja/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md)は
+exact explicit-import frontend admission後、existing nested-capture row noteとsole
+sidecar noteをupdateする。Requirement id、Chapter-13 source/section、
+`advanced_semantics/covered/required/pass` fields、parser-only dependency、sole
+sidecarは不変。Row/backlink/active tag/failure field/route count/diagnostic/semantic
+creditは追加しない。Chapter-13 audit rowだけがlexical blocker closureをrecordし、
+Chapters 2/3/7/10/11/12 coverage creditは0。Resolver identity/capture transport/
+advanced execution/Task277Bはdeferred。
+
 ## Checker Task 249S frozen traceability no-op
 
 Task 249Sはrepresentation coverageだけを変更する。corpus source、sidecar、

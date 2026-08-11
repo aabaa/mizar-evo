@@ -3161,6 +3161,23 @@ arena mutation、exact replay、selector near miss、route isolation、
 typed/resolved debug order、clone preservationをexactly runner tests 4件で
 coverする。fixture/empty semantic detailはbyte-for-byte unchanged。
 
+## Task 257C4C1 private import provider
+
+[C4C1 contract](../../task_contracts/ja/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md)は
+synthetic module `parser.nested_capture_fixtures`用crate-private
+`ParseOnlyImportProvider` branch 1件をfreezeする。Ordinal 0 import stub 1件は
+fingerprint-1 summary 1件を作り、ordered shapesは`Element` Mode/exact-1/rank-0と
+`NAT` Functor/exact-0/rank-1。Testsがsole crate-local testdata sourceをsynthetic
+moduleへassociateしてdeclarationsをcross-validateし、providerはexact logical
+module idだけをrecognizeする。Package/MML/prelude/manifest/general module loading
+ではない。
+
+Tests 4件はexisting `runner/tests/parse_only.rs`に置く：physical declaration/hash/
+range、exact provider summary/unrelated isolation、exact ImportStub + zero-diagnostic/
+no-recovery frontend AST、historical 124-byte/6-diagnostic no-leakage baseline。
+Libraryは`614 -> 618`。Resolver augmentation allowlist/public dispatch/active route/
+semantic runner/checker outputはbyte-identical。
+
 ## Checker Task 258A frozen harness boundary
 
 later harness leafはexact 81-byte future `MT10-FS` sourceをparse/resolveし、

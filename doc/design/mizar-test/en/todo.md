@@ -3957,3 +3957,19 @@ the successor is selected only from fresh post-commit inventory.
   Fresh inventory ends in a human-owned blocking `spec_gap` STOP until test
   intent or language-specification authority supplies the missing rule; no
   lower or capture implementation is selected here.
+
+## Task 257C4C1 lexical-admission prerequisite
+
+- [x] Freeze the paired [C4C1 contract](../../task_contracts/en/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md),
+  exact 140-byte crate-local support module, one-summary/two-symbol provider,
+  164-byte repaired oracle, historical 124-byte isolation baseline, exact
+  seven implementation paths, four tests, counts, hashes, and prohibitions.
+- [ ] Implement only the exact private provider/frontend admission slice in
+  `import_fixtures.rs` and existing `parse_only.rs`; the resolver augmentation
+  allowlist must remain byte-identical.
+- [ ] Update the existing inactive source/sidecar/trace note and Chapter-13
+  audit row only; preserve `344/344`, metadata/route counts, parser-only trace
+  dependency, and zero executable/semantic/Task-277B credit.
+- [ ] Run all contract verification/reviews/gates and complete task-only
+  staging, commit, post-commit proof, and fresh inventory before selecting any
+  capture successor.

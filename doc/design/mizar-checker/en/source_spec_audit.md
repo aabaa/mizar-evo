@@ -4373,6 +4373,23 @@ pass test intent, but grants no executable or semantic credit.
 
 Final source-documentation and boundary review ended with **NO FINDINGS**.
 
+## Task 257C4C1 explicit-import lexical admission
+
+The canonical [C4C1 contract](../../task_contracts/en/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md)
+freezes the user-authorized lower repair for the inactive C4C0 oracle. Canonical
+Chapter 2 §2.10, Chapter 3 §3.3, Chapter 7 §7.2, Chapter 10 §10.1, Chapter 11
+§§11.2.1/11.2.4, Chapter 12 §§12.3/12.5, and Chapter 13
+§§13.4.2/13.4.4/13.8.6 authorize one explicit import, one public mode shape,
+one public functor shape, and the unchanged nested-capture intent.
+
+C4C1 closes only the six-diagnostic frontend lexical-admission `source_drift`,
+the dedicated support-module `test_gap`, and its private-provider
+`design_drift`. Checker Rust, public APIs, resolver imported identities,
+Task-252 terms/uses, binding/capture, type/sethood/formula semantics,
+Typed/Resolved installation, routing, and Task-277B credit remain unchanged.
+The existing trace row and sidecar remain inactive and zero-credit; the audit
+delta records blocker closure, not semantic coverage expansion.
+
 ## Task 258A Frozen Surface Audit
 
 Chapter 4 §§4.3 and 4.7.1, Chapter 14 §14.5.2, Chapter 15 §§15.8 and

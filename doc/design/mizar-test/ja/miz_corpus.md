@@ -129,3 +129,13 @@ handwritten pass pair 1件を`tests/miz/pass/types/`でownする。Pair inventor
 `344/344`であるがinactiveであり、current parser/semantic/route/warning-error/Task277B creditは
 0。Exact source bytes/hash/sidecarはcontract ownerであり、local-lookalike/builtin-set
 variantは禁止。
+
+## Task 257C4C1 explicit-import corpus repair
+
+[C4C1 contract](../../task_contracts/ja/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md)は
+existing oracleをexact 164-byte explicit-import sourceへin-place updateし、inactive
+sidecar noteだけを更新する。Separate 140-byte module
+`crates/mizar-test/tests/testdata/parser/nested_capture_fixtures.miz`はseparate
+definition blocksでordered `Element`/`NAT` lexical shapesをdefineする。Crate-local
+testdataでordinary corpus payloadではなくsidecarなし。Corpus pairsは`344/344`のまま、
+active cases/outcomes/routes/warnings-errors/capture/Task277B creditは不変。

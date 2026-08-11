@@ -1832,3 +1832,13 @@ hard gates PASS、valid `100/100`。Task-only artifact commit、post-commit proo
 accepted fresh inventoryはlanguage-local [historical checkpoint](../../task_contracts/ja/TEST-FRAENKEL-NESTED-CAPTURE-257C4C0.md#historical-immediate-post-artifact-checkpoint)でclosed。
 Fresh inventoryはtest-intentまたはlanguage-specification authorityがmissing ruleを
 供給するまでhuman-owned blocking `spec_gap` STOPであり、lower/capture taskをselectしない。
+
+## Task 257C4C1 frozen contract parity
+
+[EN canonical](../../task_contracts/en/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md)と
+[JA companion](../../task_contracts/ja/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md)は
+exact 140-byte split-block support module、synthetic module mapping、one import/
+summaryとordered shapes 2件、164-byte repaired inactive oracle、historical
+6-diagnostic isolation、private existing-leaf test scope、Chapter-13-only audit
+impact、zero resolver/capture/semantic/Task277B creditを同期する。English canonical、
+exceptionなし。

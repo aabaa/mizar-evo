@@ -3648,3 +3648,17 @@ post-commit fresh inventoryからだけ選択する。
   Fresh inventoryはtest intentまたはlanguage specification authorityがmissing ruleを
   供給するまでhuman-owned blocking `spec_gap` STOPであり、lower/capture implementationを
   selectしない。
+
+## Task 257C4C1 lexical-admission prerequisite
+
+- [x] Paired [C4C1 contract](../../task_contracts/ja/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md)、
+  exact 140-byte crate-local support module、one-summary/two-symbol provider、
+  164-byte repaired oracle、historical 124-byte isolation baseline、exact seven
+  implementation paths、tests 4件、counts/hashes/prohibitionsをfreezeする。
+- [ ] `import_fixtures.rs`とexisting `parse_only.rs`のexact private provider/frontend
+  admissionだけをimplementし、resolver augmentation allowlistはbyte-identical。
+- [ ] Existing inactive source/sidecar/trace noteとChapter-13 audit rowだけをupdateし、
+  `344/344`、metadata/route、parser-only dependency、zero executable/semantic/
+  Task277B creditを保持する。
+- [ ] Contract verification/reviews/gatesとtask-only staging/commit/post-commit proof/
+  fresh inventoryを完了してからcapture successorを選定する。

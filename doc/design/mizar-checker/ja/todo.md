@@ -6558,3 +6558,16 @@ post-commit fresh inventoryからだけ選択する。
   Fresh inventoryはtest intentまたはlanguage specification authorityがmissing ruleを
   供給するまでhuman-owned blocking `spec_gap` STOPであり、lower/capture implementationを
   selectしない。
+
+## Task 257C4C1 explicit-import lexical admission
+
+- [x] Paired [C4C1 contract](../../task_contracts/ja/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md)、
+  exact 140-byte crate-local support module、ordered two-shape summary、repaired
+  164-byte C4C0 source、historical 124-byte/6-diagnostic isolation baseline、
+  exact seven implementation paths、existing-leaf test names 4件をfreezeする。
+- [ ] Task-only docs commit後、`ParseOnlyImportProvider`によるfrontend lexical/parser
+  admissionだけをimplementし、resolver augmentation/checker/capture/semantic ownerは不変。
+- [ ] Inactive sidecar note、existing trace-row note、Chapter-13 audit mappingだけを
+  updateし、row/active tag/route/diagnostic/semantic/Task277B creditは追加しない。
+- [ ] Frozen focused/full verification、independent reviews、nine hard gates、exact
+  staging/commit、post-commit proof、fresh inventoryを完了する。

@@ -3295,6 +3295,24 @@ selector near misses, route isolation, typed/resolved debug order, and clone
 preservation are covered by exactly four runner tests. The fixture and empty
 semantic detail remain byte-for-byte unchanged.
 
+## Task 257C4C1 private import provider
+
+The [C4C1 contract](../../task_contracts/en/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md)
+freezes one crate-private `ParseOnlyImportProvider` branch for synthetic module
+`parser.nested_capture_fixtures`. One import stub at ordinal 0 yields one
+fingerprint-1 summary with ordered `Element` Mode/exact-1/rank-0 and `NAT`
+Functor/exact-0/rank-1 shapes. The tests associate the sole crate-local
+testdata source with that synthetic module and cross-validate its declarations;
+the provider recognizes only the exact logical module id. This is not package,
+MML, prelude, manifest, or general module-loading behavior.
+
+Four tests live in existing `runner/tests/parse_only.rs`: physical declaration
+and hash/range validation, exact provider-summary and unrelated-module
+isolation, exact ImportStub plus zero-diagnostic/no-recovery frontend AST, and
+the historical 124-byte/six-diagnostic no-leakage baseline. Library tests
+project `614 -> 618`. The resolver augmentation allowlist, public dispatch,
+active routes, semantic runners, and checker outputs remain byte-identical.
+
 ## Checker Task 258A Frozen Harness Boundary
 
 The later harness leaf parses/resolves the exact 81-byte future `MT10-FS`
