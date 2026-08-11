@@ -449,3 +449,23 @@ comprehensions or binders, shadowing, ambiguity, and unsupported shapes reject
 the whole candidate with zero rows. This API carries no template/R1/277B-L
 identity and creates no `SymbolId`, `NameRef`, type, sethood, evidence,
 diagnostic, or verdict.
+
+## Resolver Task 257C4C2 Exact Nested Fraenkel Identity
+
+The canonical [C4C2 contract](../../task_contracts/en/RESOLVE-FRAENKEL-NESTED-CAPTURE-257C4C2.md)
+extends the existing R2 collection without adding a public item or enum
+variant. It supersedes R2's nested-comprehension exclusion only for the exact
+normal C4C0 source topology. The collection publishes inner `y` then outer `x`
+as binding IDs `0/1`, and publishes the inner mapper `x@94..95` as one existing
+`Mapper` use whose owning comprehension is inner and whose binding is outer ID
+`1`.
+
+The exact extension remains source-structural and resolver-owned. It preserves
+complete arena revalidation, resolved-node-only public identities, global
+source ordering, dense ordinals, the existing debug grammar, F5 behavior, and
+default-deny rejection of malformed, recovered, ambiguous, shadowed, extra, or
+otherwise unsupported nesting. Both generator type subtrees must be the exact
+normal `Element of NAT` shape; an alternate normal type is not admitted by this
+slice. It creates no checker capture, Task-252
+occurrence, type/sethood value, request, verdict, diagnostic, installation, or
+production route.

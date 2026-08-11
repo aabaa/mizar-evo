@@ -7003,3 +7003,19 @@ binding nor records abbreviation, capture, equality, fact, proof, diagnostic,
 or active-route meaning; `z@114..115`, `q@129..130`, and `z@133..134` remain
 absent, and later closure/capture remains blocked by the Chapter-4/15 `set`
 `spec_gap`.
+
+## Task 257C4C2 Zero-Credit Resolver Identity Mapping
+
+The canonical [C4C2 contract](./task_contracts/en/RESOLVE-FRAENKEL-NESTED-CAPTURE-257C4C2.md)
+adds the exact Chapter-13 design mapping from the inner mapper `x@94..95` to
+the distinct outer generator binding in the already approved inactive C4C0
+oracle. Durable API ownership remains the existing resolver
+[names collection](./mizar-resolve/en/names.md#resolver-task-257c4c2-exact-nested-fraenkel-identity),
+and the real imported-source probe remains
+[mizar-test harness-owned](./mizar-test/en/harness.md#resolver-task-257c4c2-private-imported-fixture-probe).
+
+This is resolver identity infrastructure only. It changes no specification,
+`.miz`, expectation, trace row/status/backlink, active route, diagnostic, or
+executable coverage credit. Checker capture transport, Task-252 occurrence
+ownership, type/sethood requests and results, semantic verdicts, generated-core
+parameters, production routing, and Task 277B remain deferred and zero-credit.

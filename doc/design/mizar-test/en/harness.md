@@ -5764,3 +5764,17 @@ passes. The task-only commit, immediate post-commit proof, and accepted fresh
 semantic STOP are closed at the language-local [historical
 checkpoint](../../task_contracts/en/CHECKER-FRAENKEL-GENERATOR-BOUND-USE-257C4B.md#historical-immediate-post-implementation-checkpoint).
 No production route or successor is selected.
+
+## Resolver Task 257C4C2 Private Imported-Fixture Probe
+
+The canonical [C4C2 contract](../../task_contracts/en/RESOLVE-FRAENKEL-NESTED-CAPTURE-257C4C2.md)
+adds one private included leaf and one library test. It reuses the existing
+C4C1 frontend helper and exact import provider, lowers the admitted C4C0 AST,
+and invokes the existing resolver collection directly. The test asserts only
+the two binding rows, the inner-mapper-to-outer-binding link, node/range
+provenance, deterministic replay, and unchanged empty type-elaboration import
+augmentation.
+
+The probe is library-test-only. It adds no dispatcher case, CLI output,
+production runner, active stage, checker handoff, diagnostic, sidecar/trace
+change, or executable coverage credit.

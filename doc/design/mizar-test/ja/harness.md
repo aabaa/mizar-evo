@@ -5296,3 +5296,14 @@ Frozen [C4B contract](../../task_contracts/ja/CHECKER-FRAENKEL-GENERATOR-BOUND-U
 Leafはexisting private F5 parse/lower/typed-profileとcompleted 277B-L/277C/C4A sequenceをreuseし、public C4B producerをdirect callしてsource/module、dependency summary、3 public row、local lookup binding、dense absence、literal debug、C4A non-mutationだけをassertする。fixture/existing C4A leafはeditせず、production route/active semantic assertion/verdict/diagnostic/trace/sidecar/creditではない。
 
 Registryは67 lines / SHA-256 `94bc44e8ba47ca568670adeec74d20f6738b3fc337da2422871095137040e8c4`、private leafは121 lines / SHA-256 `bea54489cf0c85d3026f950d080a0ffc609719fda28520b9e7b2f59d5fc162bc`。focused private test、mizar-test `614/614`、format、package/full-workspace Clippy、full workspace tests（metadata/public-enum suiteを含む）、unchanged 5 CLI replay、diff checkはPASS。implementation/test-sufficiency reviewは**NO FINDINGS**。sole Low baseline/current wording repair後、final source-docとindependent bilingual/boundary reviewも**NO FINDINGS**。final-qualityも**NO FINDINGS**、全`9/9` hard gate PASS、valid uncapped `100/100`（`20/20/15/15/10/10/5/5`）。exact 23-path staging/cached reviewもPASS。task-only commit/immediate post-commit proof/accepted fresh semantic STOPはlanguage-local [historical checkpoint](../../task_contracts/ja/CHECKER-FRAENKEL-GENERATOR-BOUND-USE-257C4B.md#historical-immediate-post-implementation-checkpoint)でclosedし、production route/successorはselectしない。
+
+## Resolver Task 257C4C2 Private Imported-Fixture Probe
+
+canonical [C4C2 contract](../../task_contracts/ja/RESOLVE-FRAENKEL-NESTED-CAPTURE-257C4C2.md)は
+private include leaf 1件とlibrary test 1件だけを追加する。existing C4C1 frontend helper/exact import
+providerをreuseし、admitted C4C0 ASTをlowerしてexisting resolver collectionをdirect callする。testは
+2 binding row、inner-mapper-to-outer-binding link、node/range provenance、deterministic replay、empty
+type-elaboration import augmentation不変だけをassertする。
+
+probeはlibrary-test-onlyであり、dispatcher case、CLI output、production runner、active stage、checker
+handoff、diagnostic、sidecar/trace change、executable coverage creditを追加しない。

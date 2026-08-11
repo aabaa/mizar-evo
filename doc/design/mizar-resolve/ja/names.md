@@ -410,3 +410,18 @@ dense/deterministic。
 recovery、nonexact edge/wrapper、multi generator/binder、nested comprehension/binder、shadow、
 ambiguity、unsupported shapeはwhole candidateをzero rowsでrejectする。template/R1/277B-L ID、
 `SymbolId`、`NameRef`、type/sethood/evidence/diagnostic/verdictは追加しない。
+
+## Resolver Task 257C4C2 Exact Nested Fraenkel Identity
+
+canonical [C4C2 contract](../../task_contracts/ja/RESOLVE-FRAENKEL-NESTED-CAPTURE-257C4C2.md)は
+public item/enum variantを追加せず既存R2 collectionを拡張する。R2のnested-comprehension exclusionを
+exact normal C4C0 topologyだけでsupersedeする。collectionはinner `y`、outer `x`をbinding ID `0/1`で
+publishし、inner mapper `x@94..95`をexisting `Mapper` use 1件としてpublishする。owning
+comprehensionはinner、bindingはouter ID `1`。
+
+extensionはsource-structural/resolver-ownedのまま、complete arena revalidation、resolved-node-only
+public identity、global source ordering、dense ordinal、existing debug grammar、F5 behaviorを維持する。
+malformed/recovered/ambiguous/shadowed/extra/unsupported nestingはdefault-deny。両generator type subtreeは
+exact normal `Element of NAT` shapeでなければならず、alternate normal typeはこのsliceでadmitしない。
+checker capture、Task-252
+occurrence、type/sethood、request、verdict、diagnostic、installation、production routeは作らない。
