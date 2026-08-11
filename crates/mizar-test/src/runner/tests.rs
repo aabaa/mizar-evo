@@ -56,6 +56,7 @@ include!("tests/type_elaboration/source_structure_definition.rs");
 include!("tests/type_elaboration/source_template.rs");
 include!("tests/type_elaboration/template_parameter_identity.rs");
 include!("tests/type_elaboration/fraenkel_generator_variable_identity.rs");
+include!("tests/type_elaboration/fraenkel_nested_capture_identity.rs");
 include!("tests/type_elaboration/template_type_parameter_association.rs");
 include!("tests/type_elaboration/template_fraenkel_structural_composition.rs");
 include!("tests/type_elaboration/template_fraenkel_generator_binding_context.rs");

@@ -9,7 +9,9 @@ Owning planは[mizar-resolve](../../mizar-resolve/ja/00.crate_plan.md#task-index
 
 ## status、purpose、readiness
 
-**Status:** frozen documentation prerequisite。独立specification review後にのみ実装する。
+**Status:** accepted precommit implementation。required reviewはすべて**NO FINDINGS**、hard gateは
+`9/9` pass、valid uncapped qualityは`100/100`。task-only commit、postcommit proof、fresh successor
+inventoryは未完了。
 
 clean `HEAD b7f52dfa8d804c0adb4896cc5f1b9473ac99431c`のfresh inventoryは、既存の
 import済みnested-comprehension oracleに対するresolver-owned最小依存taskを選定した。
@@ -82,6 +84,57 @@ resolver `156 -> 160`、mizar-test `618 -> 619`。baselineは`names.rs` `3920` l
 raw sorted test-list hashはresolver `7c84ee615616d7f0982454c8d04e9eef2fcb451efbb8fd576296e28af3cb6301`、
 mizar-test `d145e5bf5c8ae3f8231ffe73ee034b639001d349c99dd4f00f3c60b6382db4c1`。contract treeは
 `91/91 -> 92/92`。
+
+## precommit implementation completion evidence
+
+documentation prerequisiteはcommit
+`ed46bcd550b9129818404b8f095dfa333c5f85cf`。implementationはfrozen 4 Rust pathだけを変更した。
+public R2 tableを不変reuseし、private binding/use candidateでexact nested relationをadmitし、global
+source order後にbinding IDを付与してinner mapper targetをouter binder identityへ解決する。required
+resolver 4 testとprivate imported-fixture 1 testを追加し、default-deny matrixはcondition、extra/missing/
+reordered generator、additional reference、extra nesting、wrapper、recovery、binder、mapper、両alternate
+type near missを含む。
+
+final precommit source measurementは次の通り。
+
+| Path | Lines | SHA-256 |
+|---|---:|---|
+| `crates/mizar-resolve/src/names.rs` | `4183` | `ac05067d09a8da784e6faa8f5078eb4e7b57c4dfa331d06b94594f7edc97254d` |
+| `crates/mizar-resolve/src/names/tests.rs` | `4287` | `feb8f5721131c5bc92ba8e04ced2cfe9634e16c21f64f876a2bafb27ed1858d1` |
+| `crates/mizar-test/src/runner/tests.rs` | `68` | `c5d0395e69225fbf74492c5f58e122c829d7fd1a555f8f0db9abce3f7c7ef78c` |
+| `crates/mizar-test/src/runner/tests/type_elaboration/fraenkel_nested_capture_identity.rs` | `169` | `fa70dc53fb92376fcbd71b4058d9830355ab12fc4e5d6f67050d129cb7f46ae9` |
+
+raw library listはresolver `160`、mizar-test `619`で、sorted-list SHA-256はそれぞれ
+`c041a4a4c978ac484863ad6025f39490ffdc4b7aa61e34d8e6c7cb2ca5592211`と
+`ad70984d911bd6ef84fc5efa15a50815acc7b4cc7daab1c89235263e022aa00b`。既存source、inactive
+sidecar、traceはそれぞれSHA-256
+`c3b8bd62c16406ccedee2e64a71ef62a5c4b329d2319be33ad3834a9541af431`、
+`9ed000a30c1d519bd665f338c636fb9e529e9848a285209bebe6728f19961b92`、
+`d4d817e83aac78d19e729702b26c62604fc57581eec18672a5c26ec44efe7a81`でbyte-identical。
+zero-credit coverage auditは`7021` lines / SHA-256
+`390783d84ea52582fae037b78c0ab9ddd14d2fd7c4b04e1dd4676871b7164c01`、contract treeは`92/92`、
+corpus source/sidecar pairは`344/344`のまま。
+
+focused C4C2全testと既存R2 compatibility 4 testはpass。resolver/mizar-test libraryは
+`160/160`/`619/619`、lintは`11/11`/`15/15`、metadataは`137/137`。`cargo fmt --all -- --check`、
+offline Cargo metadata、warnings-denied all-target/all-feature Clippy、full workspace `cargo test`、
+`git diff --check`はpass。plan/parse/declaration/type/proof CLI stdout SHA-256はそれぞれ
+`2d2accef2c6fc32c1b3372530f6136af1299ac6ae7db6a0158798336b779c7e7`、
+`a8a7aa639d2ebc65eddc923c7e9369ea5637d50e935f808600f446da1bfbda56`、
+`71e83ba0b20d4015e07b3bd2c0c4db2837b6151d1251812caed7954530d53c74`、
+`4b2c7bd5ec3cc56e5672fb351126126230ec84fba9bd2bd9049a516d378fab7f`、
+`ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`で、各routeはunchanged
+`23` warnings / zero errors。
+
+初回spec reviewのexact-type-shape findingと初回test reviewのprovenance/default-deny 2 findingsを
+repairし、finding-specific re-reviewは**NO FINDINGS**。independent bilingual/boundary、full
+implementation、source/docs/API、completion-bilingual reviewも**NO FINDINGS**。final-quality
+reviewも**NO FINDINGS**で、hard gate `9/9` pass、score capなし、valid `100/100`
+（`20/20/15/15/10/10/5/5`）。そのhistorical review checkpointではindexはexact task 6 paths、
+unstagedなし、sorted path-list SHA-256
+`90af71a41ac7ae346c20bc76fc6e74380ce808bf97a64e25de5148430118e149`、`1278` insertions /
+`55` deletions。親も同じhard-gate結果を独立acceptした。commit、postcommit proof、fresh inventoryは
+implementation findingではなく残るlifecycle workである。
 
 ## protected scope、audit、exit
 

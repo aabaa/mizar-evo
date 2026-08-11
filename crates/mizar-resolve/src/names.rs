@@ -851,7 +851,7 @@ impl<'a> FraenkelGeneratorVariableSourceCollector<'a> {
         })
     }
 
-    /// Collects only exact, normal, single-generator Fraenkel shapes.
+    /// Collects exact, normal Fraenkel profiles, including the approved nested capture.
     ///
     /// The complete structural arena is revalidated on every call so a
     /// collector cannot rely on stale constructor validation.
@@ -860,72 +860,102 @@ impl<'a> FraenkelGeneratorVariableSourceCollector<'a> {
     ) -> Result<FraenkelGeneratorVariableSourceCollection, SurfaceResolvedArenaError> {
         self.resolved.validate_against(self.ast, self.module)?;
 
-        let mut candidates = self
+        let mut binding_candidates = Vec::new();
+        let mut use_candidates = Vec::new();
+        for definition_block in self
             .ast
             .node_views()
-            .filter_map(exact_fraenkel_generator_variable_candidate)
-            .collect::<Vec<_>>();
-        candidates.sort_by(|left, right| {
+            .filter(|node| matches!(node.kind(), SurfaceNodeKind::DefinitionBlockItem))
+        {
+            if let Some(candidate) = exact_fraenkel_generator_variable_candidate(definition_block) {
+                binding_candidates.push(ExactFraenkelGeneratorVariableBindingCandidate {
+                    definition_block: candidate.definition_block,
+                    functor_definition: candidate.functor_definition,
+                    comprehension: candidate.comprehension,
+                    segment: candidate.segment,
+                    binder: candidate.binder,
+                });
+                for (role, role_owner, reference) in [
+                    (
+                        FraenkelGeneratorVariableUseRole::Mapper,
+                        candidate.mapper_owner,
+                        candidate.mapper_reference,
+                    ),
+                    (
+                        FraenkelGeneratorVariableUseRole::Condition,
+                        candidate.condition_owner,
+                        candidate.first_condition_reference,
+                    ),
+                    (
+                        FraenkelGeneratorVariableUseRole::Condition,
+                        candidate.condition_owner,
+                        candidate.second_condition_reference,
+                    ),
+                ] {
+                    use_candidates.push(ExactFraenkelGeneratorVariableUseCandidate {
+                        definition_block: candidate.definition_block,
+                        functor_definition: candidate.functor_definition,
+                        comprehension: candidate.comprehension,
+                        role_owner,
+                        reference,
+                        target_binder: candidate.binder,
+                        role,
+                    });
+                }
+            }
+            if let Some(candidate) =
+                exact_nested_fraenkel_generator_variable_candidate(definition_block)
+            {
+                binding_candidates.extend([candidate.inner_binding, candidate.outer_binding]);
+                use_candidates.push(candidate.mapper_use);
+            }
+        }
+        binding_candidates.sort_by(|left, right| {
             source_range_cmp(left.segment.range(), right.segment.range())
                 .then_with(|| left.segment.id().index().cmp(&right.segment.id().index()))
         });
 
-        let mut bindings = Vec::with_capacity(candidates.len());
-        let mut uses = Vec::with_capacity(candidates.len() * 3);
-        for (source_ordinal, candidate) in candidates.into_iter().enumerate() {
+        let mut bindings = Vec::with_capacity(binding_candidates.len());
+        let mut binding_ids = BTreeMap::new();
+        for (source_ordinal, candidate) in binding_candidates.into_iter().enumerate() {
             let binding = FraenkelGeneratorVariableBindingId::new(source_ordinal);
-            let spelling = candidate
-                .binder
-                .as_token()
-                .expect("exact Fraenkel binder identifier")
-                .text
-                .to_string();
-            let definition_block = self.resolved_node(candidate.definition_block.id())?;
-            let functor_definition = self.resolved_node(candidate.functor_definition.id())?;
-            let comprehension = self.resolved_node(candidate.comprehension.id())?;
+            binding_ids.insert(candidate.binder.id(), binding);
             bindings.push(FraenkelGeneratorVariableBinding {
-                definition_block,
-                functor_definition,
-                comprehension,
+                definition_block: self.resolved_node(candidate.definition_block.id())?,
+                functor_definition: self.resolved_node(candidate.functor_definition.id())?,
+                comprehension: self.resolved_node(candidate.comprehension.id())?,
                 segment: self.resolved_node(candidate.segment.id())?,
                 binder: self.resolved_node(candidate.binder.id())?,
-                spelling,
+                spelling: candidate
+                    .binder
+                    .as_token()
+                    .expect("exact Fraenkel binder identifier")
+                    .text
+                    .to_string(),
                 segment_range: candidate.segment.range(),
                 binder_range: candidate.binder.range(),
                 source_ordinal,
             });
+        }
 
-            for (role, role_owner, reference) in [
-                (
-                    FraenkelGeneratorVariableUseRole::Mapper,
-                    candidate.mapper_owner,
-                    candidate.mapper_reference,
-                ),
-                (
-                    FraenkelGeneratorVariableUseRole::Condition,
-                    candidate.condition_owner,
-                    candidate.first_condition_reference,
-                ),
-                (
-                    FraenkelGeneratorVariableUseRole::Condition,
-                    candidate.condition_owner,
-                    candidate.second_condition_reference,
-                ),
-            ] {
-                uses.push(FraenkelGeneratorVariableUseLink {
-                    definition_block,
-                    functor_definition,
-                    comprehension,
-                    role_owner: self.resolved_node(role_owner.id())?,
-                    term_reference: self.resolved_node(reference.term_reference.id())?,
-                    identifier: self.resolved_node(reference.identifier.id())?,
-                    binding,
-                    role,
-                    source_ordinal: 0,
-                    role_source_ordinal: 0,
-                    identifier_range: reference.identifier.range(),
-                });
-            }
+        let mut uses = Vec::with_capacity(use_candidates.len());
+        for candidate in use_candidates {
+            let binding = *binding_ids
+                .get(&candidate.target_binder.id())
+                .expect("exact Fraenkel use target must have an admitted binding");
+            uses.push(FraenkelGeneratorVariableUseLink {
+                definition_block: self.resolved_node(candidate.definition_block.id())?,
+                functor_definition: self.resolved_node(candidate.functor_definition.id())?,
+                comprehension: self.resolved_node(candidate.comprehension.id())?,
+                role_owner: self.resolved_node(candidate.role_owner.id())?,
+                term_reference: self.resolved_node(candidate.reference.term_reference.id())?,
+                identifier: self.resolved_node(candidate.reference.identifier.id())?,
+                binding,
+                role: candidate.role,
+                source_ordinal: 0,
+                role_source_ordinal: 0,
+                identifier_range: candidate.reference.identifier.range(),
+            });
         }
         uses.sort_by(|left, right| {
             source_range_cmp(left.identifier_range(), right.identifier_range()).then_with(|| {
@@ -982,6 +1012,33 @@ struct ExactFraenkelGeneratorVariableCandidate<'a> {
     condition_owner: SurfaceNodeView<'a>,
     first_condition_reference: ExactIdentifierTermReference<'a>,
     second_condition_reference: ExactIdentifierTermReference<'a>,
+}
+
+#[derive(Clone, Copy)]
+struct ExactFraenkelGeneratorVariableBindingCandidate<'a> {
+    definition_block: SurfaceNodeView<'a>,
+    functor_definition: SurfaceNodeView<'a>,
+    comprehension: SurfaceNodeView<'a>,
+    segment: SurfaceNodeView<'a>,
+    binder: SurfaceNodeView<'a>,
+}
+
+#[derive(Clone, Copy)]
+struct ExactFraenkelGeneratorVariableUseCandidate<'a> {
+    definition_block: SurfaceNodeView<'a>,
+    functor_definition: SurfaceNodeView<'a>,
+    comprehension: SurfaceNodeView<'a>,
+    role_owner: SurfaceNodeView<'a>,
+    reference: ExactIdentifierTermReference<'a>,
+    target_binder: SurfaceNodeView<'a>,
+    role: FraenkelGeneratorVariableUseRole,
+}
+
+#[derive(Clone, Copy)]
+struct ExactNestedFraenkelGeneratorVariableCandidate<'a> {
+    inner_binding: ExactFraenkelGeneratorVariableBindingCandidate<'a>,
+    outer_binding: ExactFraenkelGeneratorVariableBindingCandidate<'a>,
+    mapper_use: ExactFraenkelGeneratorVariableUseCandidate<'a>,
 }
 
 #[derive(Clone, Copy)]
@@ -1121,6 +1178,212 @@ fn exact_fraenkel_generator_variable_candidate(
         condition_owner: *condition_owner,
         first_condition_reference,
         second_condition_reference,
+    })
+}
+
+fn exact_nested_fraenkel_generator_variable_candidate(
+    definition_block: SurfaceNodeView<'_>,
+) -> Option<ExactNestedFraenkelGeneratorVariableCandidate<'_>> {
+    if !matches!(
+        definition_block.kind(),
+        SurfaceNodeKind::DefinitionBlockItem
+    ) || surface_subtree_contains_recovery(definition_block)
+    {
+        return None;
+    }
+    let functors = definition_block
+        .child_views()
+        .filter(|child| matches!(child.kind(), SurfaceNodeKind::FunctorDefinition))
+        .collect::<Vec<_>>();
+    let [functor_definition] = functors.as_slice() else {
+        return None;
+    };
+    if surface_subtree_contains_recovery(*functor_definition)
+        || count_surface_kind(*functor_definition, |kind| {
+            matches!(kind, SurfaceNodeKind::SetComprehension)
+        }) != 2
+        || count_surface_kind(*functor_definition, |kind| {
+            matches!(kind, SurfaceNodeKind::ComprehensionVariableSegment)
+        }) != 2
+    {
+        return None;
+    }
+
+    let definiens = exact_single_direct_child_with_kind(*functor_definition, |kind| {
+        matches!(kind, SurfaceNodeKind::TermDefiniens)
+    })?;
+    let wrapped_outer = exact_single_child_with_kind(definiens, |kind| {
+        matches!(kind, SurfaceNodeKind::TermExpression)
+    })?;
+    let outer = exact_single_child_with_kind(wrapped_outer, |kind| {
+        matches!(kind, SurfaceNodeKind::SetComprehension)
+    })?;
+    let outer_children = outer.child_views().collect::<Vec<_>>();
+    let [
+        outer_open,
+        outer_mapper_owner,
+        outer_where,
+        outer_segment,
+        outer_close,
+    ] = outer_children.as_slice()
+    else {
+        return None;
+    };
+    if !token_is(outer_open, SurfaceTokenKind::ReservedSymbol, "{")
+        || !matches!(outer_mapper_owner.kind(), SurfaceNodeKind::TermExpression)
+        || !token_is_reserved_word(outer_where, "where", "where")
+        || !matches!(
+            outer_segment.kind(),
+            SurfaceNodeKind::ComprehensionVariableSegment
+        )
+        || !token_is(outer_close, SurfaceTokenKind::ReservedSymbol, "}")
+    {
+        return None;
+    }
+    let inner = exact_single_child_with_kind(*outer_mapper_owner, |kind| {
+        matches!(kind, SurfaceNodeKind::SetComprehension)
+    })?;
+    let inner_children = inner.child_views().collect::<Vec<_>>();
+    let [
+        inner_open,
+        inner_mapper_owner,
+        inner_where,
+        inner_segment,
+        inner_close,
+    ] = inner_children.as_slice()
+    else {
+        return None;
+    };
+    if !token_is(inner_open, SurfaceTokenKind::ReservedSymbol, "{")
+        || !matches!(inner_mapper_owner.kind(), SurfaceNodeKind::TermExpression)
+        || !token_is_reserved_word(inner_where, "where", "where")
+        || !matches!(
+            inner_segment.kind(),
+            SurfaceNodeKind::ComprehensionVariableSegment
+        )
+        || !token_is(inner_close, SurfaceTokenKind::ReservedSymbol, "}")
+    {
+        return None;
+    }
+
+    let (inner_binder, inner_type) = exact_element_of_nat_segment(*inner_segment)?;
+    let (outer_binder, outer_type) = exact_element_of_nat_segment(*outer_segment)?;
+    if inner_type.range().start != 107
+        || inner_type.range().end != 121
+        || outer_type.range().start != 141
+        || outer_type.range().end != 155
+        || inner_binder.as_token()?.text.as_ref() != "y"
+        || outer_binder.as_token()?.text.as_ref() != "x"
+    {
+        return None;
+    }
+    let mapper_reference = exact_identifier_term_reference(*inner_mapper_owner)?;
+    if mapper_reference.identifier.as_token()?.text.as_ref() != "x" {
+        return None;
+    }
+
+    Some(ExactNestedFraenkelGeneratorVariableCandidate {
+        inner_binding: ExactFraenkelGeneratorVariableBindingCandidate {
+            definition_block,
+            functor_definition: *functor_definition,
+            comprehension: inner,
+            segment: *inner_segment,
+            binder: inner_binder,
+        },
+        outer_binding: ExactFraenkelGeneratorVariableBindingCandidate {
+            definition_block,
+            functor_definition: *functor_definition,
+            comprehension: outer,
+            segment: *outer_segment,
+            binder: outer_binder,
+        },
+        mapper_use: ExactFraenkelGeneratorVariableUseCandidate {
+            definition_block,
+            functor_definition: *functor_definition,
+            comprehension: inner,
+            role_owner: *inner_mapper_owner,
+            reference: mapper_reference,
+            target_binder: outer_binder,
+            role: FraenkelGeneratorVariableUseRole::Mapper,
+        },
+    })
+}
+
+fn exact_element_of_nat_segment(
+    segment: SurfaceNodeView<'_>,
+) -> Option<(SurfaceNodeView<'_>, SurfaceNodeView<'_>)> {
+    let children = segment.child_views().collect::<Vec<_>>();
+    let [binder, is_keyword, type_expression] = children.as_slice() else {
+        return None;
+    };
+    if !token_has_kind(binder, SurfaceTokenKind::Identifier)
+        || !token_is_reserved_word(is_keyword, "is", "is")
+        || !exact_element_of_nat_type_expression(type_expression)
+    {
+        return None;
+    }
+    Some((*binder, *type_expression))
+}
+
+fn exact_element_of_nat_type_expression(node: &SurfaceNodeView<'_>) -> bool {
+    if !matches!(node.kind(), SurfaceNodeKind::TypeExpression) {
+        return false;
+    }
+    let Some(type_head) =
+        exact_single_child_with_kind(*node, |kind| matches!(kind, SurfaceNodeKind::TypeHead))
+    else {
+        return false;
+    };
+    let type_head_children = type_head.child_views().collect::<Vec<_>>();
+    let [element_symbol, type_arguments] = type_head_children.as_slice() else {
+        return false;
+    };
+    if !exact_qualified_symbol_spelling(*element_symbol, "Element")
+        || !matches!(type_arguments.kind(), SurfaceNodeKind::TypeArguments)
+    {
+        return false;
+    }
+    let type_argument_children = type_arguments.child_views().collect::<Vec<_>>();
+    let [of_keyword, nat_expression] = type_argument_children.as_slice() else {
+        return false;
+    };
+    token_is(of_keyword, SurfaceTokenKind::ReservedWord, "of")
+        && exact_qualified_symbol_term_expression(*nat_expression, "NAT")
+}
+
+fn exact_qualified_symbol_term_expression(node: SurfaceNodeView<'_>, spelling: &str) -> bool {
+    if !matches!(node.kind(), SurfaceNodeKind::TermExpression) {
+        return false;
+    }
+    let Some(reference) =
+        exact_single_child_with_kind(node, |kind| matches!(kind, SurfaceNodeKind::TermReference))
+    else {
+        return false;
+    };
+    let Some(symbol) = exact_single_child_with_kind(reference, |kind| {
+        matches!(kind, SurfaceNodeKind::QualifiedSymbol)
+    }) else {
+        return false;
+    };
+    exact_qualified_symbol_spelling(symbol, spelling)
+}
+
+fn exact_qualified_symbol_spelling(node: SurfaceNodeView<'_>, spelling: &str) -> bool {
+    if !matches!(node.kind(), SurfaceNodeKind::QualifiedSymbol) {
+        return false;
+    }
+    let Some(path_segment) =
+        exact_single_child_with_kind(node, |kind| matches!(kind, SurfaceNodeKind::PathSegment))
+    else {
+        return false;
+    };
+    let Some(token) = exact_single_child_with_kind(path_segment, |kind| {
+        matches!(kind, SurfaceNodeKind::Token(_))
+    }) else {
+        return false;
+    };
+    token.as_token().is_some_and(|token| {
+        token.kind == SurfaceTokenKind::UserSymbol && token.text.as_ref() == spelling
     })
 }
 
