@@ -5310,13 +5310,13 @@ handoff、diagnostic、sidecar/trace change、executable coverage creditを追�
 
 ## Checker Task 257C4C3 private nested binder/use probe
 
-Frozen [C4C3 contract](../../task_contracts/ja/CHECKER-FRAENKEL-NESTED-BINDER-USE-257C4C3.md)は
+Implementation-complete [C4C3 contract](../../task_contracts/ja/CHECKER-FRAENKEL-NESTED-BINDER-USE-257C4C3.md)は
 existing private `runner/tests/type_elaboration/fraenkel_nested_capture_identity.rs`へexact
-`task257c4c3_real_imported_fixture_builds_checker_identity_handoff` 1件だけを追加する予定である。C4C1
+`task257c4c3_real_imported_fixture_builds_checker_identity_handoff` 1件だけを追加した。C4C1
 frontend/import helperとexisting test-only typed profileをreuseし、public C4C3 producerをdirect callして
-immutable resolver-use→typed-binder row 1件、source/module/summary、dense absence、deterministic replay、
-dependency non-mutationだけをassertする予定である。
+immutable resolver-use→typed-binder row 1件、source/module/summary、dense absence、dependency non-mutationだけを
+assertする。Deterministic replayはchecker-owner C4C3 testがcoverする。
 
-Sole current API consumerかつlibrary-test-onlyとなる。Registry include、production dispatch、active route、Task252
-row、capture、semantic verdict、diagnostic、sidecar/trace mutation、coverage creditなし。Frozen countとcompletion
-evidenceはtask contractがownする。
+Sole current API consumerかつlibrary-test-onlyである。Registry include、production dispatch、active route、Task252
+row、capture、semantic verdict、diagnostic、sidecar/trace mutation、coverage creditなし。Exact measurement、count、
+completion evidenceはlanguage-local [task-contract checkpoint](../../task_contracts/ja/CHECKER-FRAENKEL-NESTED-BINDER-USE-257C4C3.md#precommit-implementation-completion-evidence)がownする。

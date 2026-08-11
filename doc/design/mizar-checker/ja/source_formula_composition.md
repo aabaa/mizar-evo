@@ -102,6 +102,7 @@ tableは`get`/source-ordered `iter`/`len`/`is_empty`だけを公開する。
 | `SourceFormulaCompositionError` | `#[non_exhaustive]`。callerはvalidation failureをexhaustive matchしない。 |
 | `SourceFraenkelGeneratorBindingContextError` | `#[non_exhaustive]`。callerはFraenkel generator binding-context validation failureをexhaustive matchしない。 |
 | `SourceFraenkelGeneratorBoundUseError` | `#[non_exhaustive]`。callerはFraenkel generator bound-use validation failureをexhaustive matchしない。 |
+| `SourceNestedFraenkelBinderUseError` | `#[non_exhaustive]`。callerはnested Fraenkel binder/use validation failureをexhaustive matchしない。 |
 | `SourcePredicateChainCompositionError` | `#[non_exhaustive]`。callerはpredicate-chain composition validation failureをexhaustive matchしない。 |
 
 この module が所有する exhaustive public enum exception はない。
@@ -737,7 +738,7 @@ Frozen [C4C3 contract](../../task_contracts/ja/CHECKER-FRAENKEL-NESTED-BINDER-US
 existing Task257C ownerへ独立zero-semantic transactionを追加する。Completed C4C2 resolver collectionと
 exact normal `TypedAst`だけをconsumeし、exact-F5 C4A/C4B API/validatorをreuseまたはweakeningしない。
 
-Frozen implementationがexposeするexact public familyは`SourceNestedFraenkelBinderUseId`、
+Completed implementationがexposeするexact public familyは`SourceNestedFraenkelBinderUseId`、
 `SourceNestedFraenkelBinderUse`、`SourceNestedFraenkelBinderUseTable`、
 `SourceNestedFraenkelBinderUseHandoff`、non-exhaustive `SourceNestedFraenkelBinderUseError`、
 `SourceNestedFraenkelBinderUseProducer`。Rowはresolver use index/binding ID、outer binder
@@ -750,10 +751,10 @@ Exact handoff debug grammarは
 `source-nested-fraenkel-binder-use-v1|module=<package>.<path>|binder-uses=1`。
 Non-exhaustive errorはexact `EnvironmentMismatch`、`InvalidResolverDependency`、
 `InvalidTypedDependency`、`InvalidBinderUse { binder_use: SourceNestedFraenkelBinderUseId }`だけを
-このprecedenceで持つ予定である。
+このprecedenceで持つ。
 
 Producerはretained C4C2 exact `2 binding / 1 use`、unique normal Resolved→Typed mapping、typed structure/rangeを
-full authenticateし、row0 `mapper use0 x@94..95 -> outer binding1 x@136..137`だけをpublishする予定である。
+full authenticateし、row0 `mapper use0 x@94..95 -> outer binding1 x@136..137`だけをpublishする。
 Task252 occurrence、`BindingEnv`/checker binding、capture、formula、type/sethood、request/result、verdict、
-diagnostic、install、route、coverage creditは作らない予定である。Validation precedence/snapshot/default-deny/test/baselineは
-completion evidenceまでcontractがownする。
+diagnostic、install、route、coverage creditは作らない。Validation precedence/snapshot/default-deny/test/completion
+evidenceはcontractがownする。

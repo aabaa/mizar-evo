@@ -6587,7 +6587,7 @@ post-commit fresh inventoryからだけ選択する。
   [C4C3 contract](../../task_contracts/ja/CHECKER-FRAENKEL-NESTED-BINDER-USE-257C4C3.md)をfreezeする。
 - [x] Exact debug/error ABI、duplicate audit addendum、implementation tense findingを修正し、
   independent specification/contractとbilingual/boundary reviewを**NO FINDINGS**まで完了する。
-- [ ] Exact one-row C4C2 resolver→typed identity handoffとfrozen test 5件だけをimplementし、Task252、
+- [x] Exact one-row C4C2 resolver→typed identity handoffとfrozen test 5件だけをimplementし、Task252、
   capture、semantic、install、route、diagnostic、credit stateを追加しない。
 - [ ] Test/implementation/source-doc-API/bilingual-boundary/hard-gate/quality/staging/commit/clean
   fresh-inventory gateを完了する。

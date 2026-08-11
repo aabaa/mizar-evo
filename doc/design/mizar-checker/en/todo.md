@@ -7000,7 +7000,7 @@ selected only from fresh post-commit inventory.
 - [x] Complete independent specification/contract and bilingual/boundary
   reviews with **NO FINDINGS** after repairing the exact debug/error ABI,
   duplicate audit addendum, and implementation-tense findings.
-- [ ] Implement only the exact one-row C4C2 resolver-to-typed identity handoff
+- [x] Implement only the exact one-row C4C2 resolver-to-typed identity handoff
   and the five frozen tests; do not add Task-252, capture, semantic, install,
   route, diagnostic, or credit state.
 - [ ] Complete all test, implementation, source/docs/API, bilingual/boundary,

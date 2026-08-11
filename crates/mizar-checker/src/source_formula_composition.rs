@@ -2407,6 +2407,862 @@ fn atomic_edge_role_key(role: SourceFormulaAtomicEdgeRole) -> &'static str {
 
 dense_id!(SourceFraenkelGeneratorBindingContextId);
 dense_id!(SourceFraenkelGeneratorUsePositionId);
+dense_id!(SourceNestedFraenkelBinderUseId);
+
+/// One resolved nested Fraenkel mapper use and its distinct outer binder.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceNestedFraenkelBinderUse {
+    resolver_use_index: usize,
+    resolver_binding: FraenkelGeneratorVariableBindingId,
+    outer_binder: TypedNodeId,
+    inner_mapper_use: TypedNodeId,
+    source_ordinal: usize,
+}
+
+impl SourceNestedFraenkelBinderUse {
+    #[must_use]
+    pub const fn resolver_use_index(&self) -> usize {
+        self.resolver_use_index
+    }
+
+    #[must_use]
+    pub const fn resolver_binding(&self) -> FraenkelGeneratorVariableBindingId {
+        self.resolver_binding
+    }
+
+    #[must_use]
+    pub const fn outer_binder(&self) -> TypedNodeId {
+        self.outer_binder
+    }
+
+    #[must_use]
+    pub const fn inner_mapper_use(&self) -> TypedNodeId {
+        self.inner_mapper_use
+    }
+
+    #[must_use]
+    pub const fn source_ordinal(&self) -> usize {
+        self.source_ordinal
+    }
+}
+
+/// Dense nested Fraenkel binder-use rows.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceNestedFraenkelBinderUseTable {
+    rows: Vec<SourceNestedFraenkelBinderUse>,
+}
+
+impl SourceNestedFraenkelBinderUseTable {
+    #[must_use]
+    pub fn get(
+        &self,
+        id: SourceNestedFraenkelBinderUseId,
+    ) -> Option<&SourceNestedFraenkelBinderUse> {
+        self.rows.get(id.index())
+    }
+
+    pub fn iter(
+        &self,
+    ) -> impl Iterator<
+        Item = (
+            SourceNestedFraenkelBinderUseId,
+            &SourceNestedFraenkelBinderUse,
+        ),
+    > {
+        self.rows
+            .iter()
+            .enumerate()
+            .map(|(index, row)| (SourceNestedFraenkelBinderUseId::new(index), row))
+    }
+
+    #[must_use]
+    pub const fn len(&self) -> usize {
+        self.rows.len()
+    }
+
+    #[must_use]
+    pub const fn is_empty(&self) -> bool {
+        self.rows.is_empty()
+    }
+}
+
+/// A rejected nested Fraenkel binder-use handoff.
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum SourceNestedFraenkelBinderUseError {
+    EnvironmentMismatch,
+    InvalidResolverDependency,
+    InvalidTypedDependency,
+    InvalidBinderUse {
+        binder_use: SourceNestedFraenkelBinderUseId,
+    },
+}
+
+impl fmt::Display for SourceNestedFraenkelBinderUseError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::EnvironmentMismatch => {
+                formatter.write_str("nested Fraenkel binder-use environment mismatch")
+            }
+            Self::InvalidResolverDependency => {
+                formatter.write_str("nested Fraenkel binder-use resolver dependency is invalid")
+            }
+            Self::InvalidTypedDependency => {
+                formatter.write_str("nested Fraenkel binder-use typed dependency is invalid")
+            }
+            Self::InvalidBinderUse { binder_use } => write!(
+                formatter,
+                "nested Fraenkel binder use {} is invalid",
+                binder_use.index()
+            ),
+        }
+    }
+}
+
+impl Error for SourceNestedFraenkelBinderUseError {}
+
+const NESTED_FRAENKEL_BINDER_USE_SNAPSHOT_VERSION: &str =
+    "source-nested-fraenkel-binder-use-dependencies-v1";
+const NESTED_FRAENKEL_BINDER_USE_SNAPSHOT_DOMAIN: &str = "source-nested-fraenkel-binder-use";
+
+#[derive(Clone, PartialEq, Eq)]
+struct SourceNestedFraenkelBinderUseDependencies {
+    version: &'static str,
+    domain: &'static str,
+    resolver: FraenkelGeneratorVariableSourceCollection,
+    typed_ast: TypedAst,
+}
+
+/// Immutable nested Fraenkel binder-use identity transport.
+#[derive(Clone, PartialEq, Eq)]
+pub struct SourceNestedFraenkelBinderUseHandoff {
+    source_id: SourceId,
+    module_id: ModuleId,
+    resolver_summary: String,
+    binder_uses: SourceNestedFraenkelBinderUseTable,
+    dependencies: SourceNestedFraenkelBinderUseDependencies,
+}
+
+impl SourceNestedFraenkelBinderUseHandoff {
+    #[must_use]
+    pub const fn source_id(&self) -> SourceId {
+        self.source_id
+    }
+
+    #[must_use]
+    pub const fn module_id(&self) -> &ModuleId {
+        &self.module_id
+    }
+
+    #[must_use]
+    pub fn resolver_summary(&self) -> &str {
+        &self.resolver_summary
+    }
+
+    #[must_use]
+    pub const fn binder_uses(&self) -> &SourceNestedFraenkelBinderUseTable {
+        &self.binder_uses
+    }
+
+    #[must_use]
+    pub fn debug_text(&self) -> String {
+        format!(
+            "source-nested-fraenkel-binder-use-v1|module={}.{}|binder-uses={}",
+            self.module_id.package().as_str(),
+            self.module_id.path().as_str(),
+            self.binder_uses.len(),
+        )
+    }
+
+    fn validate(&self) -> Result<(), SourceNestedFraenkelBinderUseError> {
+        let dependencies = &self.dependencies;
+        if self.source_id != dependencies.resolver.source_id()
+            || self.source_id != dependencies.typed_ast.source_id()
+            || &self.module_id != dependencies.resolver.module()
+            || &self.module_id != dependencies.typed_ast.module_id()
+        {
+            return Err(SourceNestedFraenkelBinderUseError::EnvironmentMismatch);
+        }
+        let profile = validate_nested_fraenkel_resolver(&dependencies.resolver)
+            .ok_or(SourceNestedFraenkelBinderUseError::InvalidResolverDependency)?;
+        if dependencies.version != NESTED_FRAENKEL_BINDER_USE_SNAPSHOT_VERSION
+            || dependencies.domain != NESTED_FRAENKEL_BINDER_USE_SNAPSHOT_DOMAIN
+            || self.resolver_summary != dependencies.resolver.debug_text()
+        {
+            return Err(SourceNestedFraenkelBinderUseError::InvalidResolverDependency);
+        }
+        let typed = validate_nested_fraenkel_typed(&dependencies.typed_ast, profile)
+            .ok_or(SourceNestedFraenkelBinderUseError::InvalidTypedDependency)?;
+        validate_nested_fraenkel_binder_use_rows(&self.binder_uses, profile, typed)
+    }
+}
+
+/// Builds the single default-deny nested Fraenkel binder-use identity handoff.
+#[derive(Debug, Clone, Copy)]
+pub struct SourceNestedFraenkelBinderUseProducer;
+
+impl SourceNestedFraenkelBinderUseProducer {
+    pub fn build(
+        resolver: &FraenkelGeneratorVariableSourceCollection,
+        typed_ast: &TypedAst,
+    ) -> Result<SourceNestedFraenkelBinderUseHandoff, SourceNestedFraenkelBinderUseError> {
+        if resolver.source_id() != typed_ast.source_id()
+            || resolver.module() != typed_ast.module_id()
+        {
+            return Err(SourceNestedFraenkelBinderUseError::EnvironmentMismatch);
+        }
+        let dependencies = SourceNestedFraenkelBinderUseDependencies {
+            version: NESTED_FRAENKEL_BINDER_USE_SNAPSHOT_VERSION,
+            domain: NESTED_FRAENKEL_BINDER_USE_SNAPSHOT_DOMAIN,
+            resolver: resolver.clone(),
+            typed_ast: typed_ast.clone(),
+        };
+        let profile = validate_nested_fraenkel_resolver(&dependencies.resolver)
+            .ok_or(SourceNestedFraenkelBinderUseError::InvalidResolverDependency)?;
+        let typed = validate_nested_fraenkel_typed(&dependencies.typed_ast, profile)
+            .ok_or(SourceNestedFraenkelBinderUseError::InvalidTypedDependency)?;
+        let handoff = SourceNestedFraenkelBinderUseHandoff {
+            source_id: dependencies.resolver.source_id(),
+            module_id: dependencies.resolver.module().clone(),
+            resolver_summary: dependencies.resolver.debug_text(),
+            binder_uses: SourceNestedFraenkelBinderUseTable {
+                rows: vec![SourceNestedFraenkelBinderUse {
+                    resolver_use_index: 0,
+                    resolver_binding: profile.outer_binding,
+                    outer_binder: typed.outer_binder,
+                    inner_mapper_use: typed.inner_mapper_use,
+                    source_ordinal: 0,
+                }],
+            },
+            dependencies,
+        };
+        handoff.validate()?;
+        Ok(handoff)
+    }
+}
+
+#[derive(Clone, Copy)]
+struct NestedFraenkelResolverProfile {
+    definition_block: ResolvedNodeId,
+    functor_definition: ResolvedNodeId,
+    inner_comprehension: ResolvedNodeId,
+    inner_segment: ResolvedNodeId,
+    inner_binder: ResolvedNodeId,
+    outer_comprehension: ResolvedNodeId,
+    outer_segment: ResolvedNodeId,
+    outer_binder: ResolvedNodeId,
+    mapper_owner: ResolvedNodeId,
+    mapper_reference: ResolvedNodeId,
+    mapper_identifier: ResolvedNodeId,
+    outer_binding: FraenkelGeneratorVariableBindingId,
+}
+
+fn validate_nested_fraenkel_resolver(
+    resolver: &FraenkelGeneratorVariableSourceCollection,
+) -> Option<NestedFraenkelResolverProfile> {
+    let bindings = resolver.bindings().iter().collect::<Vec<_>>();
+    let [(inner_id, inner), (outer_id, outer)] = bindings.as_slice() else {
+        return None;
+    };
+    let uses = resolver.uses().iter().collect::<Vec<_>>();
+    let [mapper] = uses.as_slice() else {
+        return None;
+    };
+    if inner_id.index() != 0
+        || outer_id.index() != 1
+        || resolver.bindings().get(*inner_id) != Some(*inner)
+        || resolver.bindings().get(*outer_id) != Some(*outer)
+        || resolver
+            .bindings()
+            .get(FraenkelGeneratorVariableBindingId::new(2))
+            .is_some()
+        || resolver.uses().get(1).is_some()
+        || inner.spelling() != "y"
+        || outer.spelling() != "x"
+        || inner.source_ordinal() != 0
+        || outer.source_ordinal() != 1
+        || !exact_nested_resolver_range(inner.segment_range(), resolver.source_id(), 102, 121)
+        || !exact_nested_resolver_range(inner.binder_range(), resolver.source_id(), 102, 103)
+        || !exact_nested_resolver_range(outer.segment_range(), resolver.source_id(), 136, 155)
+        || !exact_nested_resolver_range(outer.binder_range(), resolver.source_id(), 136, 137)
+        || inner.definition_block() != outer.definition_block()
+        || inner.functor_definition() != outer.functor_definition()
+        || inner.comprehension() == outer.comprehension()
+        || inner.binder() == outer.binder()
+        || mapper.definition_block() != inner.definition_block()
+        || mapper.functor_definition() != inner.functor_definition()
+        || mapper.comprehension() != inner.comprehension()
+        || mapper.binding() != *outer_id
+        || mapper.role() != FraenkelGeneratorVariableUseRole::Mapper
+        || mapper.source_ordinal() != 0
+        || mapper.role_source_ordinal() != 0
+        || !exact_nested_resolver_range(mapper.identifier_range(), resolver.source_id(), 94, 95)
+    {
+        return None;
+    }
+    Some(NestedFraenkelResolverProfile {
+        definition_block: inner.definition_block(),
+        functor_definition: inner.functor_definition(),
+        inner_comprehension: inner.comprehension(),
+        inner_segment: inner.segment(),
+        inner_binder: inner.binder(),
+        outer_comprehension: outer.comprehension(),
+        outer_segment: outer.segment(),
+        outer_binder: outer.binder(),
+        mapper_owner: mapper.role_owner(),
+        mapper_reference: mapper.term_reference(),
+        mapper_identifier: mapper.identifier(),
+        outer_binding: *outer_id,
+    })
+}
+
+fn exact_nested_resolver_range(
+    range: SourceRange,
+    source_id: SourceId,
+    start: usize,
+    end: usize,
+) -> bool {
+    range
+        == SourceRange {
+            source_id,
+            start,
+            end,
+        }
+}
+
+#[derive(Clone, Copy)]
+struct NestedFraenkelTypedProfile {
+    outer_binder: TypedNodeId,
+    inner_mapper_use: TypedNodeId,
+}
+
+fn validate_nested_fraenkel_typed(
+    typed_ast: &TypedAst,
+    profile: NestedFraenkelResolverProfile,
+) -> Option<NestedFraenkelTypedProfile> {
+    if !has_complete_unique_normal_typed_projection(typed_ast) {
+        return None;
+    }
+    let definition =
+        exact_nested_typed_id(typed_ast, profile.definition_block, "DefinitionBlockItem")?;
+    let functor =
+        exact_nested_typed_id(typed_ast, profile.functor_definition, "FunctorDefinition")?;
+    let inner_comprehension = exact_nested_typed_node(
+        typed_ast,
+        profile.inner_comprehension,
+        "SetComprehension",
+        92,
+        123,
+    )?;
+    let inner_segment = exact_nested_typed_node(
+        typed_ast,
+        profile.inner_segment,
+        "ComprehensionVariableSegment",
+        102,
+        121,
+    )?;
+    let inner_binder =
+        exact_nested_typed_node(typed_ast, profile.inner_binder, "Identifier", 102, 103)?;
+    let outer_comprehension = exact_nested_typed_node(
+        typed_ast,
+        profile.outer_comprehension,
+        "SetComprehension",
+        90,
+        157,
+    )?;
+    let outer_segment = exact_nested_typed_node(
+        typed_ast,
+        profile.outer_segment,
+        "ComprehensionVariableSegment",
+        136,
+        155,
+    )?;
+    let outer_binder =
+        exact_nested_typed_node(typed_ast, profile.outer_binder, "Identifier", 136, 137)?;
+    let mapper_owner =
+        exact_nested_typed_node(typed_ast, profile.mapper_owner, "TermExpression", 94, 95)?;
+    let mapper_reference =
+        exact_nested_typed_node(typed_ast, profile.mapper_reference, "TermReference", 94, 95)?;
+    let mapper_identifier =
+        exact_nested_typed_node(typed_ast, profile.mapper_identifier, "Identifier", 94, 95)?;
+    if !exact_nested_typed_root(typed_ast, definition) {
+        return None;
+    }
+    let typed = [
+        definition,
+        functor,
+        inner_comprehension,
+        inner_segment,
+        inner_binder,
+        outer_comprehension,
+        outer_segment,
+        outer_binder,
+        mapper_owner,
+        mapper_reference,
+        mapper_identifier,
+    ];
+    let outer_mapper = exact_typed_child_containing(
+        typed_ast,
+        outer_comprehension,
+        "TermExpression",
+        inner_comprehension,
+    )?;
+    let definiens = exact_typed_child(typed_ast, functor, "TermDefiniens")?;
+    let definiens_expression =
+        exact_typed_child_containing(typed_ast, definiens, "TermExpression", outer_comprehension)?;
+    let inner_type = exact_nested_typed_type(typed_ast, inner_segment, 107, 121)?;
+    let outer_type = exact_nested_typed_type(typed_ast, outer_segment, 141, 155)?;
+    let definition_children = typed_children(typed_ast, definition)?;
+    let functor_children = typed_children(typed_ast, functor)?;
+    let definiens_children = typed_children(typed_ast, definiens)?;
+    let definiens_expression_children = typed_children(typed_ast, definiens_expression)?;
+    let outer_children = typed_children(typed_ast, outer_comprehension)?;
+    let outer_mapper_children = typed_children(typed_ast, outer_mapper)?;
+    let inner_children = typed_children(typed_ast, inner_comprehension)?;
+    let inner_segment_children = typed_children(typed_ast, inner_segment)?;
+    let outer_segment_children = typed_children(typed_ast, outer_segment)?;
+    let mapper_owner_children = typed_children(typed_ast, mapper_owner)?;
+    let mapper_reference_children = typed_children(typed_ast, mapper_reference)?;
+    if typed
+        .iter()
+        .enumerate()
+        .any(|(index, id)| typed[..index].contains(id))
+        || !has_typed_edge(typed_ast, definition, functor)
+        || !range_contains(
+            typed_range(typed_ast, definition)?,
+            typed_range(typed_ast, functor)?,
+        )
+        || !range_contains(
+            typed_range(typed_ast, functor)?,
+            typed_range(typed_ast, definiens)?,
+        )
+        || !range_contains(
+            typed_range(typed_ast, definiens)?,
+            typed_range(typed_ast, definiens_expression)?,
+        )
+        || !range_contains(
+            typed_range(typed_ast, definiens_expression)?,
+            typed_range(typed_ast, outer_comprehension)?,
+        )
+        || !has_typed_edge(typed_ast, functor, definiens)
+        || !has_typed_edge(typed_ast, definiens, definiens_expression)
+        || !has_typed_edge(typed_ast, definiens_expression, outer_comprehension)
+        || typed_range(typed_ast, outer_mapper)? != typed_range(typed_ast, inner_comprehension)?
+        || !has_typed_edge(typed_ast, outer_comprehension, outer_mapper)
+        || !has_typed_edge(typed_ast, outer_mapper, inner_comprehension)
+        || !has_typed_edge(typed_ast, inner_comprehension, inner_segment)
+        || !has_typed_edge(typed_ast, inner_segment, inner_binder)
+        || !has_typed_edge(typed_ast, inner_segment, inner_type)
+        || !has_typed_edge(typed_ast, outer_comprehension, outer_segment)
+        || !has_typed_edge(typed_ast, outer_segment, outer_binder)
+        || !has_typed_edge(typed_ast, outer_segment, outer_type)
+        || !has_typed_edge(typed_ast, inner_comprehension, mapper_owner)
+        || !has_typed_edge(typed_ast, mapper_owner, mapper_reference)
+        || !has_typed_edge(typed_ast, mapper_reference, mapper_identifier)
+        || !exact_nested_definition_children(typed_ast, definition_children, functor)
+        || !exact_nested_functor_children(typed_ast, functor_children, definiens)
+        || definiens_children != [definiens_expression]
+        || definiens_expression_children != [outer_comprehension]
+        || outer_children.len() != 5
+        || !exact_nested_token(typed_ast, outer_children[0], "ReservedSymbol", "{", 90, 91)
+        || outer_children[1] != outer_mapper
+        || !exact_nested_token(
+            typed_ast,
+            outer_children[2],
+            "ReservedWord",
+            "where",
+            130,
+            135,
+        )
+        || outer_children[3] != outer_segment
+        || !exact_nested_token(
+            typed_ast,
+            outer_children[4],
+            "ReservedSymbol",
+            "}",
+            156,
+            157,
+        )
+        || outer_mapper_children != [inner_comprehension]
+        || inner_children.len() != 5
+        || !exact_nested_token(typed_ast, inner_children[0], "ReservedSymbol", "{", 92, 93)
+        || inner_children[1] != mapper_owner
+        || !exact_nested_token(
+            typed_ast,
+            inner_children[2],
+            "ReservedWord",
+            "where",
+            96,
+            101,
+        )
+        || inner_children[3] != inner_segment
+        || !exact_nested_token(
+            typed_ast,
+            inner_children[4],
+            "ReservedSymbol",
+            "}",
+            122,
+            123,
+        )
+        || inner_segment_children.len() != 3
+        || inner_segment_children != [inner_binder, inner_segment_children[1], inner_type]
+        || !exact_nested_token(
+            typed_ast,
+            inner_segment_children[1],
+            "ReservedWord",
+            "is",
+            104,
+            106,
+        )
+        || outer_segment_children.len() != 3
+        || outer_segment_children != [outer_binder, outer_segment_children[1], outer_type]
+        || !exact_nested_token(
+            typed_ast,
+            outer_segment_children[1],
+            "ReservedWord",
+            "is",
+            138,
+            140,
+        )
+        || mapper_owner_children != [mapper_reference]
+        || mapper_reference_children != [mapper_identifier]
+    {
+        return None;
+    }
+    Some(NestedFraenkelTypedProfile {
+        outer_binder,
+        inner_mapper_use: mapper_identifier,
+    })
+}
+
+fn exact_nested_definition_children(
+    typed_ast: &TypedAst,
+    children: &[TypedNodeId],
+    functor: TypedNodeId,
+) -> bool {
+    match children {
+        [definition, found] => {
+            *found == functor
+                && exact_nested_token(typed_ast, *definition, "ReservedWord", "definition", 39, 49)
+        }
+        [definition, found, end, semicolon] => {
+            *found == functor
+                && exact_nested_token(typed_ast, *definition, "ReservedWord", "definition", 40, 50)
+                && exact_nested_token(typed_ast, *end, "ReservedWord", "end", 159, 162)
+                && exact_nested_token(typed_ast, *semicolon, "ReservedSymbol", ";", 162, 163)
+        }
+        _ => false,
+    }
+}
+
+fn exact_nested_functor_children(
+    typed_ast: &TypedAst,
+    children: &[TypedNodeId],
+    definiens: TypedNodeId,
+) -> bool {
+    match children {
+        [func, found] => {
+            *found == definiens
+                && exact_nested_token(typed_ast, *func, "ReservedWord", "func", 52, 56)
+        }
+        [func, pattern, arrow, result_type, equals, found, semicolon] => {
+            *found == definiens
+                && exact_nested_imported_functor_scaffold(typed_ast, *pattern, *result_type)
+                && exact_nested_token(typed_ast, *func, "ReservedWord", "func", 53, 57)
+                && exact_nested_token(typed_ast, *arrow, "ReservedSymbol", "->", 72, 74)
+                && typed_ast
+                    .nodes()
+                    .node(*result_type)
+                    .is_some_and(|node| node.kind.as_str() == "TypeExpression")
+                && exact_nested_token(typed_ast, *equals, "ReservedWord", "equals", 79, 85)
+                && exact_nested_token(typed_ast, *semicolon, "ReservedSymbol", ";", 157, 158)
+        }
+        _ => false,
+    }
+}
+
+fn exact_nested_imported_functor_scaffold(
+    typed_ast: &TypedAst,
+    pattern: TypedNodeId,
+    result_type: TypedNodeId,
+) -> bool {
+    let Some([pattern_identifier]) = typed_children(typed_ast, pattern) else {
+        return false;
+    };
+    let Some([head]) = typed_children(typed_ast, result_type) else {
+        return false;
+    };
+    let Some([set]) = typed_children(typed_ast, *head) else {
+        return false;
+    };
+    typed_ast
+        .nodes()
+        .node(pattern)
+        .is_some_and(|node| node.kind.as_str() == "FunctorPattern")
+        && typed_ast
+            .nodes()
+            .node(*pattern_identifier)
+            .is_some_and(|node| node.kind.as_str() == "Identifier")
+        && typed_range(typed_ast, *pattern_identifier)
+            == Some(SourceRange {
+                source_id: typed_ast.source_id(),
+                start: 58,
+                end: 71,
+            })
+        && typed_ast
+            .nodes()
+            .node(result_type)
+            .is_some_and(|node| node.kind.as_str() == "TypeExpression")
+        && typed_ast
+            .nodes()
+            .node(*head)
+            .is_some_and(|node| node.kind.as_str() == "TypeHead")
+        && exact_nested_token(typed_ast, *set, "ReservedWord", "set", 75, 78)
+}
+
+fn typed_children(typed_ast: &TypedAst, parent: TypedNodeId) -> Option<&[TypedNodeId]> {
+    Some(typed_ast.nodes().node(parent)?.children.as_slice())
+}
+
+fn exact_nested_typed_root(typed_ast: &TypedAst, definition: TypedNodeId) -> bool {
+    let Some(root) = typed_ast.nodes().root() else {
+        return false;
+    };
+    let Some(root_node) = typed_ast.nodes().node(root) else {
+        return false;
+    };
+    if root_node.kind.as_str() != "Root"
+        || root_node.recovery != NodeRecoveryState::Normal
+        || !all_typed_nodes_reachable_from_root(typed_ast, root)
+    {
+        return false;
+    }
+    match typed_range(typed_ast, root) {
+        Some(SourceRange {
+            source_id,
+            start: 0,
+            end: 164,
+        }) if source_id == typed_ast.source_id() => root_node.children.as_slice() == [definition],
+        Some(SourceRange {
+            source_id,
+            start: 0,
+            end: 163,
+        }) if source_id == typed_ast.source_id() => {
+            let Some((compilation_unit, raw_tokens)) = root_node.children.split_last() else {
+                return false;
+            };
+            if raw_tokens.len() != 31
+                || raw_tokens.iter().any(|child| {
+                    typed_ast
+                        .nodes()
+                        .node(*child)
+                        .is_none_or(|node| !node.children.is_empty())
+                })
+            {
+                return false;
+            }
+            let Some([item_list]) = typed_children(typed_ast, *compilation_unit) else {
+                return false;
+            };
+            let Some([import_item, found_definition]) = typed_children(typed_ast, *item_list)
+            else {
+                return false;
+            };
+            *found_definition == definition
+                && typed_ast
+                    .nodes()
+                    .node(*compilation_unit)
+                    .is_some_and(|node| {
+                        node.kind.as_str() == "CompilationUnit"
+                            && typed_range(typed_ast, *compilation_unit)
+                                == Some(SourceRange {
+                                    source_id,
+                                    start: 0,
+                                    end: 163,
+                                })
+                    })
+                && typed_ast.nodes().node(*item_list).is_some_and(|node| {
+                    node.kind.as_str() == "ItemList"
+                        && typed_range(typed_ast, *item_list)
+                            == Some(SourceRange {
+                                source_id,
+                                start: 0,
+                                end: 163,
+                            })
+                })
+                && typed_ast
+                    .nodes()
+                    .node(*import_item)
+                    .is_some_and(|node| node.kind.as_str() == "ImportItem")
+        }
+        _ => false,
+    }
+}
+
+fn all_typed_nodes_reachable_from_root(typed_ast: &TypedAst, root: TypedNodeId) -> bool {
+    let mut reachable = std::collections::BTreeSet::new();
+    let mut pending = vec![root];
+    while let Some(id) = pending.pop() {
+        if !reachable.insert(id) {
+            continue;
+        }
+        let Some(node) = typed_ast.nodes().node(id) else {
+            return false;
+        };
+        pending.extend(node.children.iter().copied());
+    }
+    reachable.len() == typed_ast.nodes().len()
+}
+
+fn exact_nested_token(
+    typed_ast: &TypedAst,
+    id: TypedNodeId,
+    token_kind: &str,
+    text: &str,
+    start: usize,
+    end: usize,
+) -> bool {
+    typed_ast.nodes().node(id).is_some_and(|node| {
+        node.kind.as_str()
+            == format!(r#"Token(SurfaceToken {{ kind: {token_kind}, text: "{text}" }})"#)
+            && node.recovery == NodeRecoveryState::Normal
+            && typed_range(typed_ast, id)
+                == Some(SourceRange {
+                    source_id: typed_ast.source_id(),
+                    start,
+                    end,
+                })
+    })
+}
+
+fn has_complete_unique_normal_typed_projection(typed_ast: &TypedAst) -> bool {
+    let mut resolved = std::collections::BTreeSet::new();
+    !typed_ast.nodes().is_empty()
+        && typed_ast.nodes().iter().all(|(_, node)| {
+            node.recovery == NodeRecoveryState::Normal
+                && node.resolved_node.is_some_and(|id| resolved.insert(id))
+        })
+}
+
+fn exact_nested_typed_type(
+    typed_ast: &TypedAst,
+    segment: TypedNodeId,
+    start: usize,
+    end: usize,
+) -> Option<TypedNodeId> {
+    let type_expression = exact_typed_child(typed_ast, segment, "TypeExpression")?;
+    let type_head = exact_typed_child(typed_ast, type_expression, "TypeHead")?;
+    let element_symbol = exact_typed_child(typed_ast, type_head, "QualifiedSymbol")?;
+    let arguments = exact_typed_child(typed_ast, type_head, "TypeArguments")?;
+    let nat_term = exact_typed_child(typed_ast, arguments, "TermExpression")?;
+    let nat_reference = exact_typed_child(typed_ast, nat_term, "TermReference")?;
+    let nat_symbol = exact_typed_child(typed_ast, nat_reference, "QualifiedSymbol")?;
+    let element_path = exact_typed_child(typed_ast, element_symbol, "PathSegment")?;
+    let nat_path = exact_typed_child(typed_ast, nat_symbol, "PathSegment")?;
+    let element_token = *typed_children(typed_ast, element_path)?.first()?;
+    let of_token = *typed_children(typed_ast, arguments)?.first()?;
+    let nat_token = *typed_children(typed_ast, nat_path)?.first()?;
+    let checks = [
+        (type_expression, "TypeExpression", start, end),
+        (type_head, "TypeHead", start, end),
+        (element_symbol, "QualifiedSymbol", start, start + 7),
+        (element_path, "PathSegment", start, start + 7),
+        (arguments, "TypeArguments", start + 8, end),
+        (nat_term, "TermExpression", start + 11, end),
+        (nat_reference, "TermReference", start + 11, end),
+        (nat_symbol, "QualifiedSymbol", start + 11, end),
+        (nat_path, "PathSegment", start + 11, end),
+    ];
+    (checks
+        .into_iter()
+        .all(|(id, kind, range_start, range_end)| {
+            typed_ast.nodes().node(id).is_some_and(|node| {
+                node.kind.as_str() == kind
+                    && node.recovery == NodeRecoveryState::Normal
+                    && typed_range(typed_ast, id)
+                        == Some(SourceRange {
+                            source_id: typed_ast.source_id(),
+                            start: range_start,
+                            end: range_end,
+                        })
+            })
+        })
+        && typed_children(typed_ast, type_expression)? == [type_head]
+        && typed_children(typed_ast, type_head)? == [element_symbol, arguments]
+        && typed_children(typed_ast, element_symbol)? == [element_path]
+        && typed_children(typed_ast, element_path)? == [element_token]
+        && exact_nested_token(
+            typed_ast,
+            element_token,
+            "UserSymbol",
+            "Element",
+            start,
+            start + 7,
+        )
+        && typed_children(typed_ast, arguments)? == [of_token, nat_term]
+        && exact_nested_token(
+            typed_ast,
+            of_token,
+            "ReservedWord",
+            "of",
+            start + 8,
+            start + 10,
+        )
+        && typed_children(typed_ast, nat_term)? == [nat_reference]
+        && typed_children(typed_ast, nat_reference)? == [nat_symbol]
+        && typed_children(typed_ast, nat_symbol)? == [nat_path]
+        && typed_children(typed_ast, nat_path)? == [nat_token]
+        && exact_nested_token(typed_ast, nat_token, "UserSymbol", "NAT", start + 11, end))
+    .then_some(type_expression)
+}
+
+fn exact_nested_typed_node(
+    typed_ast: &TypedAst,
+    resolved: ResolvedNodeId,
+    kind: &str,
+    start: usize,
+    end: usize,
+) -> Option<TypedNodeId> {
+    let id = typed_for_resolved(typed_ast, resolved)?;
+    let node = exact_stored_typed_node(typed_ast, id, kind)?;
+    let range = typed_range(typed_ast, id)?;
+    (node.resolved_node == Some(resolved) && range.start == start && range.end == end).then_some(id)
+}
+
+fn exact_nested_typed_id(
+    typed_ast: &TypedAst,
+    resolved: ResolvedNodeId,
+    kind: &str,
+) -> Option<TypedNodeId> {
+    let id = typed_for_resolved(typed_ast, resolved)?;
+    (exact_stored_typed_node(typed_ast, id, kind)?.resolved_node == Some(resolved)).then_some(id)
+}
+
+fn validate_nested_fraenkel_binder_use_rows(
+    rows: &SourceNestedFraenkelBinderUseTable,
+    profile: NestedFraenkelResolverProfile,
+    typed: NestedFraenkelTypedProfile,
+) -> Result<(), SourceNestedFraenkelBinderUseError> {
+    if rows.len() != 1 {
+        return Err(SourceNestedFraenkelBinderUseError::InvalidBinderUse {
+            binder_use: SourceNestedFraenkelBinderUseId::new(0),
+        });
+    }
+    let id = SourceNestedFraenkelBinderUseId::new(0);
+    let Some(row) = rows.get(id) else {
+        return Err(SourceNestedFraenkelBinderUseError::InvalidBinderUse { binder_use: id });
+    };
+    if rows.get(SourceNestedFraenkelBinderUseId::new(1)).is_some()
+        || row.resolver_use_index() != 0
+        || row.resolver_binding() != profile.outer_binding
+        || row.outer_binder() != typed.outer_binder
+        || row.inner_mapper_use() != typed.inner_mapper_use
+        || row.source_ordinal() != 0
+    {
+        return Err(SourceNestedFraenkelBinderUseError::InvalidBinderUse { binder_use: id });
+    }
+    Ok(())
+}
 
 /// One checked Fraenkel generator binding context.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -3965,6 +4821,550 @@ pub(crate) mod tests {
             resolver,
             typed_ast,
         }
+    }
+
+    struct Task257c4c3Fixture {
+        source: SourceId,
+        module: ModuleId,
+        resolver: FraenkelGeneratorVariableSourceCollection,
+        typed_ast: TypedAst,
+    }
+
+    fn task257c4c3_fixture() -> Task257c4c3Fixture {
+        let source = source_id();
+        let module = module();
+        let ast = task257c4c3_surface_ast(source);
+        let resolved = SurfaceResolvedArena::lower(&ast, &module).expect("Task257C4C3 resolver");
+        let resolver = FraenkelGeneratorVariableSourceCollector::new(&ast, &module, &resolved)
+            .expect("Task257C4C3 collector")
+            .collect()
+            .expect("Task257C4C3 collection");
+        let typed_ast = task257c4a_typed_ast(&ast, module.clone(), &resolved);
+        Task257c4c3Fixture {
+            source,
+            module,
+            resolver,
+            typed_ast,
+        }
+    }
+
+    fn task257c4c3_type(
+        builder: &mut syntax::SurfaceAstBuilder,
+        source: SourceId,
+        start: usize,
+    ) -> syntax::SurfaceBuilderNodeId {
+        let element = builder.add_token(
+            syntax::SurfaceTokenKind::UserSymbol,
+            "Element",
+            range(source, start, start + 7),
+        );
+        let element_path = builder.add_node(
+            syntax::SurfaceNodeKind::PathSegment,
+            range(source, start, start + 7),
+            vec![element],
+        );
+        let element_symbol = builder.add_node(
+            syntax::SurfaceNodeKind::QualifiedSymbol,
+            range(source, start, start + 7),
+            vec![element_path],
+        );
+        let of = builder.add_token(
+            syntax::SurfaceTokenKind::ReservedWord,
+            "of",
+            range(source, start + 8, start + 10),
+        );
+        let nat = builder.add_token(
+            syntax::SurfaceTokenKind::UserSymbol,
+            "NAT",
+            range(source, start + 11, start + 14),
+        );
+        let nat_path = builder.add_node(
+            syntax::SurfaceNodeKind::PathSegment,
+            range(source, start + 11, start + 14),
+            vec![nat],
+        );
+        let nat_symbol = builder.add_node(
+            syntax::SurfaceNodeKind::QualifiedSymbol,
+            range(source, start + 11, start + 14),
+            vec![nat_path],
+        );
+        let nat_reference = builder.add_node(
+            syntax::SurfaceNodeKind::TermReference,
+            range(source, start + 11, start + 14),
+            vec![nat_symbol],
+        );
+        let nat_term = builder.add_node(
+            syntax::SurfaceNodeKind::TermExpression,
+            range(source, start + 11, start + 14),
+            vec![nat_reference],
+        );
+        let arguments = builder.add_node(
+            syntax::SurfaceNodeKind::TypeArguments,
+            range(source, start + 8, start + 14),
+            vec![of, nat_term],
+        );
+        let head = builder.add_node(
+            syntax::SurfaceNodeKind::TypeHead,
+            range(source, start, start + 14),
+            vec![element_symbol, arguments],
+        );
+        builder.add_node(
+            syntax::SurfaceNodeKind::TypeExpression,
+            range(source, start, start + 14),
+            vec![head],
+        )
+    }
+
+    fn task257c4c3_surface_ast(source: SourceId) -> syntax::SurfaceAst {
+        let mut b = syntax::SurfaceAstBuilder::new(source);
+        let definition = b.add_token(
+            syntax::SurfaceTokenKind::ReservedWord,
+            "definition",
+            range(source, 39, 49),
+        );
+        let func = b.add_token(
+            syntax::SurfaceTokenKind::ReservedWord,
+            "func",
+            range(source, 52, 56),
+        );
+        let outer_open = b.add_token(
+            syntax::SurfaceTokenKind::ReservedSymbol,
+            "{",
+            range(source, 90, 91),
+        );
+        let inner_open = b.add_token(
+            syntax::SurfaceTokenKind::ReservedSymbol,
+            "{",
+            range(source, 92, 93),
+        );
+        let mapper_identifier = b.add_token(
+            syntax::SurfaceTokenKind::Identifier,
+            "x",
+            range(source, 94, 95),
+        );
+        let mapper_reference = b.add_node(
+            syntax::SurfaceNodeKind::TermReference,
+            range(source, 94, 95),
+            vec![mapper_identifier],
+        );
+        let mapper = b.add_node(
+            syntax::SurfaceNodeKind::TermExpression,
+            range(source, 94, 95),
+            vec![mapper_reference],
+        );
+        let inner_where = b.add_token(
+            syntax::SurfaceTokenKind::ReservedWord,
+            "where",
+            range(source, 96, 101),
+        );
+        let inner_binder = b.add_token(
+            syntax::SurfaceTokenKind::Identifier,
+            "y",
+            range(source, 102, 103),
+        );
+        let inner_is = b.add_token(
+            syntax::SurfaceTokenKind::ReservedWord,
+            "is",
+            range(source, 104, 106),
+        );
+        let inner_type = task257c4c3_type(&mut b, source, 107);
+        let inner_segment = b.add_node(
+            syntax::SurfaceNodeKind::ComprehensionVariableSegment,
+            range(source, 102, 121),
+            vec![inner_binder, inner_is, inner_type],
+        );
+        let inner_close = b.add_token(
+            syntax::SurfaceTokenKind::ReservedSymbol,
+            "}",
+            range(source, 122, 123),
+        );
+        let inner = b.add_node(
+            syntax::SurfaceNodeKind::SetComprehension,
+            range(source, 92, 123),
+            vec![inner_open, mapper, inner_where, inner_segment, inner_close],
+        );
+        let outer_mapper = b.add_node(
+            syntax::SurfaceNodeKind::TermExpression,
+            range(source, 92, 123),
+            vec![inner],
+        );
+        let outer_where = b.add_token(
+            syntax::SurfaceTokenKind::ReservedWord,
+            "where",
+            range(source, 130, 135),
+        );
+        let outer_binder = b.add_token(
+            syntax::SurfaceTokenKind::Identifier,
+            "x",
+            range(source, 136, 137),
+        );
+        let outer_is = b.add_token(
+            syntax::SurfaceTokenKind::ReservedWord,
+            "is",
+            range(source, 138, 140),
+        );
+        let outer_type = task257c4c3_type(&mut b, source, 141);
+        let outer_segment = b.add_node(
+            syntax::SurfaceNodeKind::ComprehensionVariableSegment,
+            range(source, 136, 155),
+            vec![outer_binder, outer_is, outer_type],
+        );
+        let outer_close = b.add_token(
+            syntax::SurfaceTokenKind::ReservedSymbol,
+            "}",
+            range(source, 156, 157),
+        );
+        let outer = b.add_node(
+            syntax::SurfaceNodeKind::SetComprehension,
+            range(source, 90, 157),
+            vec![
+                outer_open,
+                outer_mapper,
+                outer_where,
+                outer_segment,
+                outer_close,
+            ],
+        );
+        let definiens_expression = b.add_node(
+            syntax::SurfaceNodeKind::TermExpression,
+            range(source, 90, 157),
+            vec![outer],
+        );
+        let definiens = b.add_node(
+            syntax::SurfaceNodeKind::TermDefiniens,
+            range(source, 90, 157),
+            vec![definiens_expression],
+        );
+        let functor = b.add_node(
+            syntax::SurfaceNodeKind::FunctorDefinition,
+            range(source, 52, 158),
+            vec![func, definiens],
+        );
+        let block = b.add_node(
+            syntax::SurfaceNodeKind::DefinitionBlockItem,
+            range(source, 39, 164),
+            vec![definition, functor],
+        );
+        let root = b.add_node(
+            syntax::SurfaceNodeKind::Root,
+            range(source, 0, 164),
+            vec![block],
+        );
+        b.finish(Some(root), None)
+    }
+
+    #[test]
+    fn task257c4c3_builds_exact_nested_binder_use_handoff() {
+        let fixture = task257c4c3_fixture();
+        let handoff =
+            SourceNestedFraenkelBinderUseProducer::build(&fixture.resolver, &fixture.typed_ast)
+                .unwrap();
+        assert_eq!(handoff.source_id(), fixture.source);
+        assert_eq!(handoff.module_id(), &fixture.module);
+        assert_eq!(
+            handoff.resolver_summary(),
+            "fraenkel-generator-variable-source-v1|module=pkg.composition.fixture|bindings=2|uses=1"
+        );
+        assert_eq!(
+            handoff.debug_text(),
+            "source-nested-fraenkel-binder-use-v1|module=pkg.composition.fixture|binder-uses=1"
+        );
+        let row = handoff
+            .binder_uses()
+            .get(SourceNestedFraenkelBinderUseId::new(0))
+            .unwrap();
+        assert_eq!(row.resolver_use_index(), 0);
+        assert_eq!(row.resolver_binding().index(), 1);
+        assert_eq!(
+            typed_range(&fixture.typed_ast, row.outer_binder()),
+            Some(range(fixture.source, 136, 137))
+        );
+        assert_eq!(
+            typed_range(&fixture.typed_ast, row.inner_mapper_use()),
+            Some(range(fixture.source, 94, 95))
+        );
+        assert_eq!(row.source_ordinal(), 0);
+        assert_eq!(
+            handoff
+                .binder_uses()
+                .iter()
+                .map(|(id, value)| (id.index(), value.resolver_use_index()))
+                .collect::<Vec<_>>(),
+            vec![(0, 0)]
+        );
+        assert!(
+            handoff
+                .binder_uses()
+                .get(SourceNestedFraenkelBinderUseId::new(1))
+                .is_none()
+        );
+    }
+
+    #[test]
+    fn task257c4c3_rejects_environment_resolver_and_typed_dependency_corruption() {
+        let fixture = task257c4c3_fixture();
+        let handoff =
+            SourceNestedFraenkelBinderUseProducer::build(&fixture.resolver, &fixture.typed_ast)
+                .unwrap();
+        let mut environment = handoff.clone();
+        environment.source_id = other_source_id();
+        assert!(matches!(
+            environment.validate(),
+            Err(SourceNestedFraenkelBinderUseError::EnvironmentMismatch)
+        ));
+        let mut resolver = handoff.clone();
+        resolver.resolver_summary = "stale".to_owned();
+        assert!(matches!(
+            resolver.validate(),
+            Err(SourceNestedFraenkelBinderUseError::InvalidResolverDependency)
+        ));
+        let mut version = handoff.clone();
+        version.dependencies.version = "stale";
+        assert!(matches!(
+            version.validate(),
+            Err(SourceNestedFraenkelBinderUseError::InvalidResolverDependency)
+        ));
+        let mut domain = handoff.clone();
+        domain.dependencies.domain = "stale";
+        assert!(matches!(
+            domain.validate(),
+            Err(SourceNestedFraenkelBinderUseError::InvalidResolverDependency)
+        ));
+        let mut retained_empty_resolver = handoff.clone();
+        retained_empty_resolver.dependencies.resolver =
+            task257c4a_empty_resolver(fixture.source, &fixture.module);
+        assert!(matches!(
+            retained_empty_resolver.validate(),
+            Err(SourceNestedFraenkelBinderUseError::InvalidResolverDependency)
+        ));
+        let mut retained_f5_resolver = handoff.clone();
+        retained_f5_resolver.dependencies.resolver = task257c4a_fixture().resolver;
+        assert!(matches!(
+            retained_f5_resolver.validate(),
+            Err(SourceNestedFraenkelBinderUseError::InvalidResolverDependency)
+        ));
+        let mut typed = handoff.clone();
+        let ast = task257c4a_surface_ast(fixture.source);
+        let resolved = SurfaceResolvedArena::lower(&ast, &fixture.module).unwrap();
+        typed.dependencies.typed_ast =
+            task257c4a_typed_ast(&ast, fixture.module.clone(), &resolved);
+        assert!(matches!(
+            typed.validate(),
+            Err(SourceNestedFraenkelBinderUseError::InvalidTypedDependency)
+        ));
+        let profile = validate_nested_fraenkel_resolver(&fixture.resolver).unwrap();
+        let mapper = typed_for_resolved(&fixture.typed_ast, profile.mapper_identifier).unwrap();
+        let reference = typed_for_resolved(&fixture.typed_ast, profile.mapper_reference).unwrap();
+        let make_typed = |mut nodes: Vec<TypedNode>| {
+            task257c4a_typed_from_nodes(
+                fixture.source,
+                fixture.module.clone(),
+                fixture.typed_ast.nodes().root(),
+                std::mem::take(&mut nodes),
+            )
+        };
+        let original = fixture
+            .typed_ast
+            .nodes()
+            .iter()
+            .map(|(_, node)| node.clone())
+            .collect::<Vec<_>>();
+        let mut recovered = original.clone();
+        recovered[mapper.index()].recovery = NodeRecoveryState::Recovered;
+        let mut wrong_kind = original.clone();
+        wrong_kind[mapper.index()].kind = "TermReference".into();
+        let mut wrong_range = original.clone();
+        wrong_range[mapper.index()].anchor = SourceAnchor::Range(range(fixture.source, 94, 96));
+        let mut detached = original.clone();
+        detached[reference.index()].children.clear();
+        let type_expression = fixture
+            .typed_ast
+            .nodes()
+            .iter()
+            .find_map(|(id, node)| {
+                (node.kind.as_str() == "TypeExpression"
+                    && typed_range(&fixture.typed_ast, id) == Some(range(fixture.source, 107, 121)))
+                .then_some(id)
+            })
+            .unwrap();
+        let mut broken_type = original.clone();
+        broken_type[type_expression.index()].kind = "TermExpression".into();
+        let element_token = fixture
+            .typed_ast
+            .nodes()
+            .iter()
+            .find_map(|(id, node)| {
+                (node.kind.as_str()
+                    == r#"Token(SurfaceToken { kind: UserSymbol, text: "Element" })"#
+                    && typed_range(&fixture.typed_ast, id) == Some(range(fixture.source, 107, 114)))
+                .then_some(id)
+            })
+            .unwrap();
+        let functor = typed_for_resolved(&fixture.typed_ast, profile.functor_definition).unwrap();
+        let mut replaced_token = original.clone();
+        replaced_token[element_token.index()].kind =
+            r#"Token(SurfaceToken { kind: UserSymbol, text: "Other" })"#.into();
+        let mut extra_child = original.clone();
+        extra_child[reference.index()]
+            .children
+            .push(TypedNodeId::new(0));
+        let mut detached_functor = original.clone();
+        detached_functor[functor.index()].children.pop();
+        let definition = typed_for_resolved(&fixture.typed_ast, profile.definition_block).unwrap();
+        let root = fixture.typed_ast.nodes().root().unwrap();
+        let without_root = task257c4a_typed_from_nodes(
+            fixture.source,
+            fixture.module.clone(),
+            None,
+            original.clone(),
+        );
+        let wrong_root = task257c4a_typed_from_nodes(
+            fixture.source,
+            fixture.module.clone(),
+            Some(definition),
+            original.clone(),
+        );
+        let mut detached_definition_nodes = original.clone();
+        detached_definition_nodes[root.index()].children.clear();
+        let detached_definition = task257c4a_typed_from_nodes(
+            fixture.source,
+            fixture.module.clone(),
+            Some(root),
+            detached_definition_nodes,
+        );
+        for corrupted in [without_root, wrong_root, detached_definition] {
+            let mut value = handoff.clone();
+            value.dependencies.typed_ast = corrupted;
+            assert!(matches!(
+                value.validate(),
+                Err(SourceNestedFraenkelBinderUseError::InvalidTypedDependency)
+            ));
+        }
+        let mut duplicate = original;
+        duplicate[0].resolved_node = duplicate[mapper.index()].resolved_node;
+        for corrupted in [
+            recovered,
+            wrong_kind,
+            wrong_range,
+            detached,
+            broken_type,
+            replaced_token,
+            extra_child,
+            detached_functor,
+            duplicate,
+        ] {
+            let mut value = handoff.clone();
+            value.dependencies.typed_ast = make_typed(corrupted);
+            assert!(matches!(
+                value.validate(),
+                Err(SourceNestedFraenkelBinderUseError::InvalidTypedDependency)
+            ));
+        }
+        assert!(!exact_nested_resolver_range(
+            range(other_source_id(), 102, 121),
+            fixture.source,
+            102,
+            121
+        ));
+        let other = task257c4a_fixture();
+        assert!(matches!(
+            SourceNestedFraenkelBinderUseProducer::build(&fixture.resolver, &other.typed_ast),
+            Err(SourceNestedFraenkelBinderUseError::InvalidTypedDependency)
+        ));
+        let empty = task257c4a_empty_resolver(fixture.source, &fixture.module);
+        assert!(matches!(
+            SourceNestedFraenkelBinderUseProducer::build(&empty, &fixture.typed_ast),
+            Err(SourceNestedFraenkelBinderUseError::InvalidResolverDependency)
+        ));
+        let wrong_module =
+            ModuleId::new(PackageId::new("pkg"), ModulePath::new("composition.other"));
+        let module_mismatch = task257c4a_typed_from_nodes(
+            fixture.source,
+            wrong_module,
+            fixture.typed_ast.nodes().root(),
+            fixture
+                .typed_ast
+                .nodes()
+                .iter()
+                .map(|(_, node)| node.clone())
+                .collect(),
+        );
+        assert!(matches!(
+            SourceNestedFraenkelBinderUseProducer::build(&fixture.resolver, &module_mismatch),
+            Err(SourceNestedFraenkelBinderUseError::EnvironmentMismatch)
+        ));
+        let mut resolver_precedence = handoff.clone();
+        resolver_precedence.resolver_summary = "stale".to_owned();
+        resolver_precedence.binder_uses.rows.clear();
+        resolver_precedence.dependencies.typed_ast =
+            task257c4a_typed_ast(&ast, fixture.module.clone(), &resolved);
+        assert!(matches!(
+            resolver_precedence.validate(),
+            Err(SourceNestedFraenkelBinderUseError::InvalidResolverDependency)
+        ));
+        let mut typed_precedence = handoff.clone();
+        typed_precedence.binder_uses.rows.clear();
+        typed_precedence.dependencies.typed_ast =
+            task257c4a_typed_ast(&ast, fixture.module.clone(), &resolved);
+        assert!(matches!(
+            typed_precedence.validate(),
+            Err(SourceNestedFraenkelBinderUseError::InvalidTypedDependency)
+        ));
+        let mut precedence = handoff;
+        precedence.source_id = other_source_id();
+        precedence.resolver_summary = "stale".to_owned();
+        precedence.binder_uses.rows.clear();
+        assert!(matches!(
+            precedence.validate(),
+            Err(SourceNestedFraenkelBinderUseError::EnvironmentMismatch)
+        ));
+    }
+
+    #[test]
+    fn task257c4c3_rejects_row_cardinality_order_and_site_corruption() {
+        let fixture = task257c4c3_fixture();
+        let handoff =
+            SourceNestedFraenkelBinderUseProducer::build(&fixture.resolver, &fixture.typed_ast)
+                .unwrap();
+        let mut missing = handoff.clone();
+        missing.binder_uses.rows.clear();
+        let mut extra = handoff.clone();
+        extra
+            .binder_uses
+            .rows
+            .push(extra.binder_uses.rows[0].clone());
+        let mut order = handoff.clone();
+        order.binder_uses.rows[0].resolver_use_index = 1;
+        let mut site = handoff.clone();
+        site.binder_uses.rows[0].outer_binder = TypedNodeId::new(0);
+        let mut binding = handoff.clone();
+        binding.binder_uses.rows[0].resolver_binding = FraenkelGeneratorVariableBindingId::new(0);
+        let mut mapper = handoff.clone();
+        mapper.binder_uses.rows[0].inner_mapper_use = TypedNodeId::new(0);
+        let mut ordinal = handoff.clone();
+        ordinal.binder_uses.rows[0].source_ordinal = 1;
+        for corrupted in [missing, extra, order, site, binding, mapper, ordinal] {
+            assert!(
+                matches!(corrupted.validate(), Err(SourceNestedFraenkelBinderUseError::InvalidBinderUse { binder_use }) if binder_use.index() == 0)
+            );
+        }
+    }
+
+    #[test]
+    fn task257c4c3_replays_deterministically_and_rejects_f5_profiles() {
+        let fixture = task257c4c3_fixture();
+        let first =
+            SourceNestedFraenkelBinderUseProducer::build(&fixture.resolver, &fixture.typed_ast);
+        let second =
+            SourceNestedFraenkelBinderUseProducer::build(&fixture.resolver, &fixture.typed_ast);
+        assert!(
+            matches!((&first, &second), (Ok(left), Ok(right)) if left == right && left.debug_text() == right.debug_text())
+        );
+        let f5 = task257c4a_fixture();
+        assert!(matches!(
+            SourceNestedFraenkelBinderUseProducer::build(&f5.resolver, &f5.typed_ast),
+            Err(SourceNestedFraenkelBinderUseError::InvalidResolverDependency)
+        ));
     }
 
     fn task257c4a_surface_ast(source: SourceId) -> syntax::SurfaceAst {

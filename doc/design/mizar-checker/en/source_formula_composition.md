@@ -108,6 +108,7 @@ The dense ids are `SourceFormulaAtomicEdgeId` and
 | `SourceFormulaCompositionError` | `#[non_exhaustive]`; callers must not exhaustively match validation failures. |
 | `SourceFraenkelGeneratorBindingContextError` | `#[non_exhaustive]`; callers must not exhaustively match Fraenkel generator binding-context validation failures. |
 | `SourceFraenkelGeneratorBoundUseError` | `#[non_exhaustive]`; callers must not exhaustively match Fraenkel generator bound-use validation failures. |
+| `SourceNestedFraenkelBinderUseError` | `#[non_exhaustive]`; callers must not exhaustively match nested Fraenkel binder/use validation failures. |
 | `SourcePredicateChainCompositionError` | `#[non_exhaustive]`; callers must not exhaustively match predicate-chain composition validation failures. |
 
 No exhaustive public enum exceptions are owned by this module.
@@ -930,7 +931,7 @@ owner. It consumes only the completed C4C2 resolver collection and an exact
 normal `TypedAst`; C4A/C4B remain exact-F5 compatibility-negative profiles and
 their APIs and validators are not reused or weakened.
 
-The frozen implementation will expose exactly
+The completed implementation exposes exactly
 `SourceNestedFraenkelBinderUseId`,
 `SourceNestedFraenkelBinderUse`, `SourceNestedFraenkelBinderUseTable`,
 `SourceNestedFraenkelBinderUseHandoff`, non-exhaustive
@@ -943,18 +944,18 @@ summary, the table, and deterministic debug text.
 
 The resolver summary is exactly
 `fraenkel-generator-variable-source-v1|module=<package>.<path>|bindings=2|uses=1`
-and remains non-authoritative. The exact handoff debug grammar will be
+and remains non-authoritative. The exact handoff debug grammar is
 `source-nested-fraenkel-binder-use-v1|module=<package>.<path>|binder-uses=1`.
-The non-exhaustive error will contain exactly `EnvironmentMismatch`,
+The non-exhaustive error contains exactly `EnvironmentMismatch`,
 `InvalidResolverDependency`, `InvalidTypedDependency`, and
 `InvalidBinderUse { binder_use: SourceNestedFraenkelBinderUseId }`, in that
 validation precedence.
 
-The producer will authenticate the complete retained C4C2 two-binding/one-use
+The producer authenticates the complete retained C4C2 two-binding/one-use
 profile, unique normal resolved-to-typed mapping, exact typed structure and
-ranges, then publish exactly row 0 linking mapper use 0 at `x@94..95` to
-outer binding 1 at `x@136..137`. It will create no Task-252 occurrence,
+ranges, then publishes exactly row 0 linking mapper use 0 at `x@94..95` to
+outer binding 1 at `x@136..137`. It creates no Task-252 occurrence,
 `BindingEnv`, checker binding, capture, formula, type/sethood, request/result,
 verdict, diagnostic, installation, route, or coverage credit. Exact validation
-order, snapshot tags, default-deny matrix, tests, and baselines remain owned by
-the contract until completion evidence is recorded.
+order, snapshot tags, default-deny matrix, tests, and completion evidence are
+owned by the contract.

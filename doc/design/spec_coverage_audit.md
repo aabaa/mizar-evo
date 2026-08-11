@@ -7023,11 +7023,11 @@ parameters, production routing, and Task 277B remain deferred and zero-credit.
 ## Task 257C4C3 Zero-Credit Checker Identity Mapping
 
 The canonical [C4C3 contract](./task_contracts/en/CHECKER-FRAENKEL-NESTED-BINDER-USE-257C4C3.md)
-freezes the planned mapping of the completed C4C2 inner mapper use and distinct
+records the completed mapping of the C4C2 inner mapper use and distinct
 outer generator binding into one immutable checker-owned binder/use row.
 Durable design ownership is the
 [source-formula-composition section](./mizar-checker/en/source_formula_composition.md#task-257c4c3-nested-fraenkel-bindermapper-use-transport),
-and the sole planned consumer is the private
+and the sole current consumer is the private
 [mizar-test harness probe](./mizar-test/en/harness.md#checker-task-257c4c3-private-nested-binderuse-probe).
 
 This mapping changes no specification, `.miz`, expectation, trace

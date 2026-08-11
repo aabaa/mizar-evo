@@ -999,7 +999,8 @@ Generated public newtypes:
   `SourcePredicateChainNegationId`,
   `SourceFraenkelGeneratorBindingContextId`,
   `SourceFraenkelGeneratorUsePositionId`,
-  `SourceFraenkelGeneratorBoundUseId`
+  `SourceFraenkelGeneratorBoundUseId`,
+  `SourceNestedFraenkelBinderUseId`
 
 Literal top-level public items:
 
@@ -1036,7 +1037,12 @@ Literal top-level public items:
   `SourceFraenkelGeneratorBoundUseTable`,
   `SourceFraenkelGeneratorBoundUseError`,
   `SourceFraenkelGeneratorBoundUseHandoff`,
-  `SourceFraenkelGeneratorBoundUseProducer`.
+  `SourceFraenkelGeneratorBoundUseProducer`,
+  `SourceNestedFraenkelBinderUse`,
+  `SourceNestedFraenkelBinderUseTable`,
+  `SourceNestedFraenkelBinderUseError`,
+  `SourceNestedFraenkelBinderUseHandoff`,
+  `SourceNestedFraenkelBinderUseProducer`.
 
 Correspondence:
 
@@ -1047,7 +1053,8 @@ Correspondence:
 | B-family combined ownership, C2 condition ownership, and C3 predicate-chain ownership publish atomically, are mutually exclusive where frozen, and clone-preserve through final assembly. | `TypedAst` installers/getters and `ResolvedTypedAst` revalidation. | Legacy/combined partition, Task-248/A/B/C2/C3 exclusions, rollback/replay, debug order, and final clone tests. | Implemented without an intermediate AST state. |
 | C4A owns one binding-context table and one normalized-use-position table over the exact opaque R2/277C/`TypedAst` snapshot. | `SourceFraenkelGeneratorBindingContextId`, `SourceFraenkelGeneratorUsePositionId`, both row/table pairs, handoff, error, and producer. | The four exact C4A checker tests and private F5 probe. | Implemented without term/reference, capture, or semantic installation. |
 | C4B maps exactly the three C4A positions through `BindingEnv::lookup` to the one checker-local binding and publishes one dense table. | `SourceFraenkelGeneratorBoundUseId`, row/table/handoff, error, and producer. | The four exact C4B checker tests and private F5 bound-use probe. | Implemented with full retained C4A validation and zero semantic credit. |
-| Public enums remain forward-compatible. | `#[non_exhaustive]` on all six public enums. | `checker_public_enums_are_forward_compatible_and_documented`. | Guarded; no exhaustive exception. |
+| C4C3 authenticates the exact C4C2 nested two-binding/one-mapper-use relation against a retained normal `TypedAst` and publishes one immutable binder/use identity row. | `SourceNestedFraenkelBinderUseId`, row/table/handoff, error, producer, and private retained dependency validator. | The four exact C4C3 checker tests and private real imported-fixture probe. | Implemented with no Task-252 occurrence, semantic capture, installation, route, or coverage credit. |
+| Public enums remain forward-compatible. | `#[non_exhaustive]` on all seven public enums. | `checker_public_enums_are_forward_compatible_and_documented`. | Guarded; no exhaustive exception. |
 
 Bounded gaps: connective/quantifier/predicate truth, signature applicability,
 overload selection, formula facts/results, implicit theorem closure and

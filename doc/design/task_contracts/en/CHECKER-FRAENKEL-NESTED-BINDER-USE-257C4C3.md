@@ -11,7 +11,10 @@ and test [harness](../../mizar-test/en/harness.md#checker-task-257c4c3-private-n
 
 ## Status, purpose, and readiness
 
-**Status:** frozen and dependency-ready; implementation has not started.
+**Status:** pre-staging verification and final quality complete. All completed
+independent substantive reviews report **NO FINDINGS**, all `9/9` hard gates
+pass, and the valid quality score is `100/100`; exact staging/cached review,
+commit, and postcommit proof remain.
 
 Fresh read-only inventory at clean
 `HEAD e5ffc6bc036ed5d7ba3c173e23671f1c4511ba6a` selects this task as the
@@ -143,7 +146,7 @@ SourceNestedFraenkelBinderUseProducer::build(
 
 No public dependency getter, mutable accessor, unchecked constructor, role
 enum, capture flag, semantic value, or installation API is added. The sole
-planned consumer is one private `mizar-test` library regression in the existing
+current consumer is one private `mizar-test` library regression in the existing
 `fraenkel_nested_capture_identity.rs` leaf. Any production or semantic consumer
 requires a separate reviewed contract.
 
@@ -212,11 +215,11 @@ The checker owner adds exactly four tests:
 3. `task257c4c3_rejects_row_cardinality_order_and_site_corruption`; and
 4. `task257c4c3_replays_deterministically_and_rejects_f5_profiles`.
 
-The existing private leaf will add exactly
-`task257c4c3_real_imported_fixture_builds_checker_identity_handoff`. It will use
-the existing C4C1 frontend and typed-profile helpers, call the producer
-directly, assert the one public row and immutable dependencies, and remain
-library-test-only. It will not activate the sidecar or route.
+The existing private leaf adds exactly
+`task257c4c3_real_imported_fixture_builds_checker_identity_handoff`. It uses
+the existing C4C1 frontend and typed-profile helpers, calls the producer
+directly, asserts the one public row and immutable dependencies, and remains
+library-test-only. It does not activate the sidecar or route.
 
 Raw library counts project `mizar-checker 554 -> 558` and `mizar-test 619 ->
 620`. Baseline sorted raw test-list hashes are checker
@@ -270,6 +273,64 @@ grammar and exact error-variant-set statement; independent bilingual/boundary
 review found a duplicated audit addendum and premature implementation-tense
 wording. Those findings were repaired. Finding-specific re-reviews report
 **NO FINDINGS**. `git diff --check`, checker and mizar-test lint-policy suites,
-and all `137/137` metadata tests pass. Implementation remains pending and must
-not begin until this documentation prerequisite is committed and a clean fresh
-inventory confirms the frozen dependencies.
+and all `137/137` metadata tests pass. At that checkpoint implementation
+remained pending until the documentation prerequisite commit and its clean
+fresh inventory confirmed the frozen dependencies.
+
+## Precommit implementation completion evidence
+
+The documentation prerequisite is commit
+`f985c9337e1bf59f93a9276abda72c5827924544`. The implementation changes only
+the two frozen Rust paths. The checker owner retains private clones of the
+C4C2 resolver collection and `TypedAst`, authenticates the exact environment,
+snapshot tags, two-binding/one-use relation, full local typed child layout,
+`Element of NAT` token shape, normal one-to-one projection, and one dense row,
+then publishes only the frozen read-only identity surface. The private runner
+test calls that producer directly against the real imported fixture without
+installing or activating it.
+
+Final source measurements are:
+
+| Path | Lines | SHA-256 |
+|---|---:|---|
+| `crates/mizar-checker/src/source_formula_composition.rs` | `9358` | `eed8c480a2ddeceafd529ee4c37c333f6e36f8f23e62f4b53f782bc9df651b6c` |
+| `crates/mizar-test/src/runner/tests/type_elaboration/fraenkel_nested_capture_identity.rs` | `248` | `46bb3e63199d4b9794a9d56c214d76864a073cc35b0643ec64a8a1e412d5bb0a` |
+
+The raw library lists are exactly `558` checker tests and `620` mizar-test
+tests. Their raw-list SHA-256 values are respectively
+`aa1eccf5bd93c9574082f7c888918ccb2bbc76167aa5ef0c672a6db931e42d8f`
+and `95ff9e007bd474cad657e626f61424db408ec343f6f1a6c1b84d6fff50ee9a75`.
+Contract trees are `93/93`, and corpus source/sidecar pairs remain `344/344`.
+The protected source, inactive sidecar, and trace hashes remain the three
+frozen values above.
+
+The first test-sufficiency review found incomplete dependency-corruption,
+precedence, row-field, and dense-iterator coverage. The first implementation
+review found an incomplete typed containment/type subtree and missing resolver
+range source identity. Repair added complete local typed structure and token
+authentication, full-source-range checks, exact row/API validation, and the
+required corruption matrix. Follow-up findings for extra typed children,
+`Default`, module mismatch, direct retained-resolver corruption, exact root
+scaffolds/reachability, source-spec public inventory, harness replay ownership,
+lifecycle wording, and measurements were also repaired. Finding-specific test
+sufficiency, implementation, source/documentation/API, and bilingual/boundary
+re-reviews all report **NO FINDINGS**.
+
+The five focused tests pass, including checker `4/4` and private mizar-test
+`1/1`. Checker and mizar-test library totals pass `558/558` and `620/620`;
+their lint-policy suites pass `15/15`, metadata passes `137/137`, and the full
+workspace `cargo test` passes. `cargo fmt --all -- --check`, offline Cargo
+metadata, warnings-denied all-target/all-feature Clippy, and `git diff --check`
+pass. Plan/parse/declaration/type/proof CLI stdout hashes are respectively
+`2d2accef2c6fc32c1b3372530f6136af1299ac6ae7db6a0158798336b779c7e7`,
+`a8a7aa639d2ebc65eddc923c7e9369ea5637d50e935f808600f446da1bfbda56`,
+`71e83ba0b20d4015e07b3bd2c0c4db2837b6151d1251812caed7954530d53c74`,
+`4b2c7bd5ec3cc56e5672fb351126126230ec84fba9bd2bd9049a516d378fab7f`,
+and `ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`;
+each retains the existing `23` warnings and zero errors. All `9/9` hard gates
+pass by parent review. Independent final-quality review reports **NO
+FINDINGS**, no score cap, and `100/100`, split
+`20/20/15/15/10/10/5/5`. It independently reran the five focused tests and
+`git diff --check`, verified the exact 17-path scope, and authorized exact
+staging. Exact staging/cached review, commit, and postcommit proof remain to be
+recorded before the task is closed.

@@ -5781,17 +5781,18 @@ change, or executable coverage credit.
 
 ## Checker Task 257C4C3 Private Nested Binder/Use Probe
 
-The frozen [C4C3 contract](../../task_contracts/en/CHECKER-FRAENKEL-NESTED-BINDER-USE-257C4C3.md)
-will extend the existing private
+The implementation-complete [C4C3 contract](../../task_contracts/en/CHECKER-FRAENKEL-NESTED-BINDER-USE-257C4C3.md)
+extends the existing private
 `runner/tests/type_elaboration/fraenkel_nested_capture_identity.rs` leaf with
 exactly `task257c4c3_real_imported_fixture_builds_checker_identity_handoff`.
-It will reuse the C4C1 frontend/import helper and the existing test-only typed
-profile, call the public C4C3 producer directly, and assert only the one
+It reuses the C4C1 frontend/import helper and the existing test-only typed
+profile, calls the public C4C3 producer directly, and asserts only the one
 immutable resolver-use-to-typed-binder row, source/module/summary, dense
-absence, deterministic replay, and dependency non-mutation.
+absence, and dependency non-mutation. Deterministic replay remains covered by
+the checker-owner C4C3 test.
 
-This will be the sole planned API consumer and remain library-test-only. It will add no
+This is the sole current API consumer and remains library-test-only. It adds no
 registry include, production dispatch, active-stage route, Task-252 row,
 capture, semantic verdict, diagnostic, sidecar/trace mutation, or coverage
-credit. Frozen counts and exact completion evidence belong to the task
-contract.
+credit. Exact measurements, counts, and completion evidence remain in the
+language-local [task-contract checkpoint](../../task_contracts/en/CHECKER-FRAENKEL-NESTED-BINDER-USE-257C4C3.md#precommit-implementation-completion-evidence).
