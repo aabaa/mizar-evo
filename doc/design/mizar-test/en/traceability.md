@@ -2295,14 +2295,27 @@ current six parser diagnostics remain a lower lexical/import `source_drift`.
 ## Task 257C4C1 inactive trace repair
 
 The [C4C1 contract](../../task_contracts/en/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md)
-updates the existing nested-capture row note and sole sidecar note after exact
-explicit-import frontend admission. The requirement id, Chapter-13 source/
+now records the implemented update to the existing nested-capture row note and
+sole sidecar note after exact explicit-import frontend admission. The
+requirement id, Chapter-13 source/
 section, `advanced_semantics/covered/required/pass` fields, parser-only
 dependency, and sole sidecar remain unchanged. No row, backlink, active tag,
 failure field, route count, diagnostic credit, or semantic credit is added.
 The Chapter-13 audit row alone records lexical-blocker closure; Chapters
 2/3/7/10/11/12 receive no coverage credit. Resolver identities, capture
 transport, advanced execution, and Task 277B remain deferred.
+
+The final trace/audit/sidecar measurements and replay evidence are centralized
+in the contract's [precommit completion
+checkpoint](../../task_contracts/en/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md#precommit-implementation-completion-checkpoint).
+
+Independent source-documentation consistency and bilingual/boundary reviews
+ended with **NO FINDINGS**.
+Independent final-quality review also ended with **NO FINDINGS** and is linked
+through the canonical [precommit completion
+checkpoint](../../task_contracts/en/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md#precommit-implementation-completion-checkpoint).
+The exact staging/cached review recorded at that historical review-time
+checkpoint also ended with **NO FINDINGS**.
 
 ## Checker Task 249S Frozen Traceability No-Op
 

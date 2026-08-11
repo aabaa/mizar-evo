@@ -10,4 +10,4 @@ diagnostic_codes = []
 spec_refs = [
   "spec.en.13.set_expressions.nested_capture.semantic",
 ]
-notes = "Inactive advanced_semantics pass oracle derived from Chapter 13 sections 13.4.2, 13.4.4, and 13.8.6: the inner mapper x must capture the resolved outer generator x while inner y remains distinct. This fixes test intent only; current lexical/import admission, capture transport, execution, and Task 277B remain deferred."
+notes = "Inactive advanced_semantics pass oracle derived from Chapter 13 sections 13.4.2, 13.4.4, and 13.8.6: the inner mapper x must capture the resolved outer generator x while inner y remains distinct. The explicit parser.nested_capture_fixtures import now supplies fixture-backed Element/NAT lexical shapes and frontend admission has zero diagnostics. Resolver/checker capture transport, execution, and Task 277B remain deferred."

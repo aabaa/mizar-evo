@@ -17,11 +17,12 @@ mizar-test [harness](../../mizar-test/ja/harness.md#task-257c4c1-private-import-
 
 ## Status, authority, readiness
 
-**Status:** dependency-ready documentation prerequisite。Userはdedicated
-explicit-import test-intent repairだけを明示承認した。Required spelling 2件をone
-separate fixture moduleでdefineし、existing inactive C4C0 oracleからimportし、
-frontend lexical/parser admissionとpreprocessed import provenanceだけをproveしてstopする。
-Capture/semantic workはauthorizeしない。
+**Status:** exact seven-path implementationとexact staging/cached reviewを含む全
+precommit reviewはcomplete、remaining lifecycle gatesはin progress。Userはdedicated explicit-import test-intent
+repairだけを明示承認した。Required spelling 2件をone separate fixture moduleで
+defineし、existing inactive C4C0 oracleからimportし、frontend lexical/parser
+admissionとpreprocessed import provenanceだけをproveしてstopする。Capture/semantic
+workはauthorizeしない。
 
 Authority orderは次の通り。
 
@@ -210,6 +211,58 @@ Implementation時にRust 2 files、support/source/sidecar/trace/audit hashes、r
 metadata、CLI stdout 5本をremeasureする。Expected deltaはtest countとinactive artifact/doc
 bytesだけ。Corpus pair/metadata/active route/warning-error/executable-stage countsは不変で、
 replayなしのunchanged claimは禁止。
+
+## Precommit implementation completion checkpoint
+
+Exact seven-path implementationはcurrent precommit worktreeでcomplete。Private support
+module/provider profileを追加し、explicit importでinactive oracleをrepairし、許可された
+sidecar/trace/Chapter-13 audit deltaだけをrecordし、frozen tests 4件を追加した。Measured
+artifact/sourceは次の通り。
+
+- support fixture：`8` lines / `140` bytes / SHA-256
+  `dd721a48620f985d5612cc718a94aef576e87d616c239712b8deb2d65c84a11c`。
+- repaired source：`7` lines / `164` bytes / SHA-256
+  `c3b8bd62c16406ccedee2e64a71ef62a5c4b329d2319be33ad3834a9541af431`。
+- inactive sidecar：`13` lines / SHA-256
+  `9ed000a30c1d519bd665f338c636fb9e529e9848a285209bebe6728f19961b92`。
+- trace：`5924` lines / SHA-256
+  `d4d817e83aac78d19e729702b26c62604fc57581eec18672a5c26ec44efe7a81`。
+- coverage audit：`7005` lines / SHA-256
+  `931f0e4eb8d95998838dc115b8f3ad2a4f5c452e0e5eb0b384cc8d8d5351ac39`。
+- `import_fixtures.rs`：`490` lines / SHA-256
+  `b6e4112848710c75be254d9eff7fbcf5e8d5029d3e0544b7c790549dc9ef880b`。
+- `parse_only.rs`：`454` lines / SHA-256
+  `c73ede41962ecf135b18ceb6b020e35a6eb741d4795578bbf42b882e61079c59`。
+- raw mizar-test library list：`618` tests / SHA-256
+  `d145e5bf5c8ae3f8231ffe73ee034b639001d349c99dd4f00f3c60b6382db4c1`。
+
+Focused tests 4件とmizar-test library `618/618`はPASS。Metadata `137/137`、checker/
+mizar-test lint-policyは各`15/15`、`cargo fmt --all -- --check`、full-workspace
+`cargo clippy --all-targets --all-features -- -D warnings`、full `cargo test`はPASS。
+Replayed plan/parse/declaration/type/proof CLI stdout SHAは順に
+`2d2accef2c6fc32c1b3372530f6136af1299ac6ae7db6a0158798336b779c7e7`、
+`a8a7aa639d2ebc65eddc923c7e9369ea5637d50e935f808600f446da1bfbda56`、
+`71e83ba0b20d4015e07b3bd2c0c4db2837b6151d1251812caed7954530d53c74`、
+`4b2c7bd5ec3cc56e5672fb351126126230ec84fba9bd2bd9049a516d378fab7f`、
+`ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`、
+warnings/errorsは`23/0`。Corpus/metadata/executable-stage/active-route inventoryは不変。
+
+Independent test-sufficiency/implementation reviewは**NO FINDINGS**。本exact `20`-path
+Markdown completion-documentation deltaはpaired contractとexisting checker/
+mizar-test EN/JA owner docs 18件だけで、crate plans 4件はunchanged。Source-doc
+consistencyとbilingual/boundaryのindependent reviewも**NO FINDINGS**。Independent
+final-quality reviewも**NO FINDINGS**、hard gates `9/9` PASS、valid
+uncapped score `100/100`、split `20/20/15/15/10/10/5/5`。Pendingはtask-only
+commit、post-commit proof、fresh inventoryだけ。本taskは
+lexical-admission repairでstopし、resolver/capture/semantic/Task277B creditを与えず、
+successorをselectしない。
+
+本lifecycle documentation update直前のhistorical staging-review checkpointでは、cached
+scopeはexact `27` paths（seven implementation paths + twenty completion-doc paths）、new
+support `.miz`はexact one、review-time unstaged pathsはzero、
+`git diff --cached --check` PASS、cached statは`664` insertions / `41` deletionsだった。
+Exact staging/cached reviewは**NO FINDINGS**。これはreview-time historical factであり、
+post-review lifecycle docs update後のcurrent worktreeがunstaged zeroというclaimではない。
 
 ## Scope, prohibitions, reviews, and exit
 

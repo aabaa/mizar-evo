@@ -3164,8 +3164,8 @@ coverする。fixture/empty semantic detailはbyte-for-byte unchanged。
 ## Task 257C4C1 private import provider
 
 [C4C1 contract](../../task_contracts/ja/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md)は
-synthetic module `parser.nested_capture_fixtures`用crate-private
-`ParseOnlyImportProvider` branch 1件をfreezeする。Ordinal 0 import stub 1件は
+synthetic module `parser.nested_capture_fixtures`用にimplementedされたcrate-private
+`ParseOnlyImportProvider` branch 1件をownする。Ordinal 0 import stub 1件は
 fingerprint-1 summary 1件を作り、ordered shapesは`Element` Mode/exact-1/rank-0と
 `NAT` Functor/exact-0/rank-1。Testsがsole crate-local testdata sourceをsynthetic
 moduleへassociateしてdeclarationsをcross-validateし、providerはexact logical
@@ -3175,8 +3175,16 @@ module idだけをrecognizeする。Package/MML/prelude/manifest/general module 
 Tests 4件はexisting `runner/tests/parse_only.rs`に置く：physical declaration/hash/
 range、exact provider summary/unrelated isolation、exact ImportStub + zero-diagnostic/
 no-recovery frontend AST、historical 124-byte/6-diagnostic no-leakage baseline。
-Libraryは`614 -> 618`。Resolver augmentation allowlist/public dispatch/active route/
-semantic runner/checker outputはbyte-identical。
+Libraryは`618/618` PASS。Private discovery guardはresolver augmentationをexact legacy
+`parser.type_fixtures` profileへ保ち、C4C1 testはfull `SymbolEnv` no-opをproveする。
+Public dispatch/active route/semantic runner/checker outputはunchanged。Exact measurement/
+verificationはcontractの[precommit completion checkpoint](../../task_contracts/ja/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md#precommit-implementation-completion-checkpoint)がownする。
+
+Independent source-doc consistency/bilingual/boundary reviewは**NO FINDINGS**。
+Independent final-quality reviewも**NO FINDINGS**で、canonical [precommit completion
+checkpoint](../../task_contracts/ja/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md#precommit-implementation-completion-checkpoint)からlinkする。
+同historical review-time checkpointにrecordしたexact staging/cached reviewも
+**NO FINDINGS**。
 
 ## Checker Task 258A frozen harness boundary
 

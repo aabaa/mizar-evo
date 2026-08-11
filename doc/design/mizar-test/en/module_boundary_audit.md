@@ -11569,6 +11569,19 @@ Frontend/parser/resolver/checker public APIs, the resolver augmentation
 allowlist, Cargo, `tests.rs`, new leaves, public runner routes, and downstream
 semantic owners are excluded.
 
+The implemented exact seven-path slice respects this boundary: only the
+crate-private provider/discovery seam and existing test leaf changed in Rust,
+and the support file remains testdata-only. The focused and full verification
+evidence is centralized in the contract's [precommit completion
+checkpoint](../../task_contracts/en/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md#precommit-implementation-completion-checkpoint);
+independent source-documentation consistency and bilingual/boundary reviews
+ended with **NO FINDINGS**.
+Independent final-quality review also ended with **NO FINDINGS** and is linked
+through the canonical [precommit completion
+checkpoint](../../task_contracts/en/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md#precommit-implementation-completion-checkpoint).
+The exact staging/cached review recorded at that historical review-time
+checkpoint also ended with **NO FINDINGS**.
+
 ## Checker Task 258A Frozen-Contract Boundary
 
 This documentation prerequisite adds no runner source path and leaves the

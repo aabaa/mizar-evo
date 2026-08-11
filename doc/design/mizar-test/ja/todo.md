@@ -3655,10 +3655,18 @@ post-commit fresh inventoryからだけ選択する。
   exact 140-byte crate-local support module、one-summary/two-symbol provider、
   164-byte repaired oracle、historical 124-byte isolation baseline、exact seven
   implementation paths、tests 4件、counts/hashes/prohibitionsをfreezeする。
-- [ ] `import_fixtures.rs`とexisting `parse_only.rs`のexact private provider/frontend
+- [x] `import_fixtures.rs`とexisting `parse_only.rs`のexact private provider/frontend
   admissionだけをimplementし、resolver augmentation allowlistはbyte-identical。
-- [ ] Existing inactive source/sidecar/trace noteとChapter-13 audit rowだけをupdateし、
+- [x] Existing inactive source/sidecar/trace noteとChapter-13 audit rowだけをupdateし、
   `344/344`、metadata/route、parser-only dependency、zero executable/semantic/
   Task277B creditを保持する。
-- [ ] Contract verification/reviews/gatesとtask-only staging/commit/post-commit proof/
-  fresh inventoryを完了してからcapture successorを選定する。
+- [x] Contractの[precommit completion checkpoint](../../task_contracts/ja/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md#precommit-implementation-completion-checkpoint)に
+  recordしたfocused/full verificationとindependent test/implementation reviewを完了する。
+- [x] Independent source-doc consistency/bilingual/boundary reviewを**NO FINDINGS**で
+  完了し、canonical [checkpoint](../../task_contracts/ja/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md#precommit-implementation-completion-checkpoint)にrecordする。
+- [x] Independent final-quality reviewを**NO FINDINGS**、hard gates `9/9` PASS、valid
+  `100/100`で完了し、canonical [checkpoint](../../task_contracts/ja/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md#precommit-implementation-completion-checkpoint)にrecordする。
+- [x] Exact staging/cached reviewを**NO FINDINGS**で完了し、historical review-time
+  [checkpoint](../../task_contracts/ja/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md#precommit-implementation-completion-checkpoint)にrecordする。
+- [ ] Task-only commit、post-commit proof、fresh inventoryを完了してからsuccessorを
+  選定する。

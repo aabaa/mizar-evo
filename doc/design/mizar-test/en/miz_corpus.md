@@ -138,10 +138,21 @@ builtin-set variants are forbidden.
 ## Task 257C4C1 explicit-import corpus repair
 
 The [C4C1 contract](../../task_contracts/en/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md)
-modifies that existing oracle in place to the exact 164-byte explicit-import
+has modified that existing oracle in place to the exact 164-byte explicit-import
 source and updates only its inactive sidecar note. One separate 140-byte module
 at `crates/mizar-test/tests/testdata/parser/nested_capture_fixtures.miz`
 defines the ordered `Element`/`NAT` lexical shapes in separate definition
 blocks. It is crate-local testdata, not an ordinary corpus payload, and has no
 sidecar. Corpus pairs therefore remain `344/344`; active cases, outcomes,
 routes, warnings/errors, capture credit, and Task-277B credit do not change.
+The measured file hashes and unchanged inventories are recorded once in the
+contract's [precommit completion
+checkpoint](../../task_contracts/en/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md#precommit-implementation-completion-checkpoint).
+
+Independent source-documentation consistency and bilingual/boundary reviews
+ended with **NO FINDINGS**.
+Independent final-quality review also ended with **NO FINDINGS** and is linked
+through the canonical [precommit completion
+checkpoint](../../task_contracts/en/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md#precommit-implementation-completion-checkpoint).
+The exact staging/cached review recorded at that historical review-time
+checkpoint also ended with **NO FINDINGS**.

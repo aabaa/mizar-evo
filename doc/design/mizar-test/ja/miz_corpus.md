@@ -133,9 +133,16 @@ variantは禁止。
 ## Task 257C4C1 explicit-import corpus repair
 
 [C4C1 contract](../../task_contracts/ja/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md)は
-existing oracleをexact 164-byte explicit-import sourceへin-place updateし、inactive
+existing oracleをexact 164-byte explicit-import sourceへin-place update済みで、inactive
 sidecar noteだけを更新する。Separate 140-byte module
 `crates/mizar-test/tests/testdata/parser/nested_capture_fixtures.miz`はseparate
 definition blocksでordered `Element`/`NAT` lexical shapesをdefineする。Crate-local
 testdataでordinary corpus payloadではなくsidecarなし。Corpus pairsは`344/344`のまま、
 active cases/outcomes/routes/warnings-errors/capture/Task277B creditは不変。
+Measured file hashesとunchanged inventoriesはcontractの[precommit completion checkpoint](../../task_contracts/ja/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md#precommit-implementation-completion-checkpoint)に一度だけrecordする。
+
+Independent source-doc consistency/bilingual/boundary reviewは**NO FINDINGS**。
+Independent final-quality reviewも**NO FINDINGS**で、canonical [precommit completion
+checkpoint](../../task_contracts/ja/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md#precommit-implementation-completion-checkpoint)からlinkする。
+同historical review-time checkpointにrecordしたexact staging/cached reviewも
+**NO FINDINGS**。

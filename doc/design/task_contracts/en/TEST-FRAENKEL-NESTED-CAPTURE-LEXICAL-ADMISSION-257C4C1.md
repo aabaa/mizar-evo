@@ -17,12 +17,14 @@ mizar-test [harness](../../mizar-test/en/harness.md#task-257c4c1-private-import-
 
 ## Status, authority, and readiness
 
-**Status:** dependency-ready documentation prerequisite. The user explicitly
+**Status:** exact seven-path implementation and all precommit reviews,
+including exact staging/cached review, complete; the remaining lifecycle gates
+are in progress. The user explicitly
 authorizes only the dedicated explicit-import test-intent repair: define the two
 required imported spellings in one separate fixture module, import that module
 from the existing inactive C4C0 oracle, prove frontend lexical/parser admission
-and preprocessed import provenance, and stop. This authority closes the former human-owned
-choice without authorizing capture or semantic work.
+and preprocessed import provenance, and stop. This authority closes the former
+human-owned choice without authorizing capture or semantic work.
 
 Authority is, in order:
 
@@ -242,6 +244,66 @@ Only the test count and inactive artifact/document bytes are expected to
 change; corpus pair, metadata, active route, warning/error, and executable
 stage counts must remain unchanged. No count or unchanged-hash claim is
 accepted without replay.
+
+## Precommit implementation completion checkpoint
+
+The exact seven-path implementation is complete in the current precommit
+worktree. It adds the private support module and provider profile, repairs the
+inactive oracle through the explicit import, records only the permitted
+sidecar/trace/Chapter-13 audit deltas, and adds the four frozen tests. Measured
+artifacts and sources are:
+
+- support fixture: `8` lines / `140` bytes / SHA-256
+  `dd721a48620f985d5612cc718a94aef576e87d616c239712b8deb2d65c84a11c`;
+- repaired source: `7` lines / `164` bytes / SHA-256
+  `c3b8bd62c16406ccedee2e64a71ef62a5c4b329d2319be33ad3834a9541af431`;
+- inactive sidecar: `13` lines / SHA-256
+  `9ed000a30c1d519bd665f338c636fb9e529e9848a285209bebe6728f19961b92`;
+- trace: `5924` lines / SHA-256
+  `d4d817e83aac78d19e729702b26c62604fc57581eec18672a5c26ec44efe7a81`;
+- coverage audit: `7005` lines / SHA-256
+  `931f0e4eb8d95998838dc115b8f3ad2a4f5c452e0e5eb0b384cc8d8d5351ac39`;
+- `import_fixtures.rs`: `490` lines / SHA-256
+  `b6e4112848710c75be254d9eff7fbcf5e8d5029d3e0544b7c790549dc9ef880b`;
+- `parse_only.rs`: `454` lines / SHA-256
+  `c73ede41962ecf135b18ceb6b020e35a6eb741d4795578bbf42b882e61079c59`;
+- raw mizar-test library list: `618` tests / SHA-256
+  `d145e5bf5c8ae3f8231ffe73ee034b639001d349c99dd4f00f3c60b6382db4c1`.
+
+All four focused tests and all `618/618` mizar-test library tests pass.
+Metadata passes `137/137`; checker and mizar-test lint-policy suites each pass
+`15/15`; `cargo fmt --all -- --check`, full-workspace
+`cargo clippy --all-targets --all-features -- -D warnings`, and full
+`cargo test` pass. Replayed plan/parse/declaration/type/proof CLI stdout hashes
+are, respectively,
+`2d2accef2c6fc32c1b3372530f6136af1299ac6ae7db6a0158798336b779c7e7`,
+`a8a7aa639d2ebc65eddc923c7e9369ea5637d50e935f808600f446da1bfbda56`,
+`71e83ba0b20d4015e07b3bd2c0c4db2837b6151d1251812caed7954530d53c74`,
+`4b2c7bd5ec3cc56e5672fb351126126230ec84fba9bd2bd9049a516d378fab7f`,
+and `ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`,
+with `23` warnings and `0` errors. Corpus, metadata, executable-stage, and
+active-route inventories remain unchanged.
+
+Independent test-sufficiency and implementation reviews ended with **NO
+FINDINGS**. This exact `20`-path Markdown completion-documentation delta is limited
+to the paired contract and the eighteen existing checker/mizar-test EN/JA owner
+documents; the four crate plans remain unchanged. Independent
+source-documentation consistency and bilingual/boundary reviews also ended
+with **NO FINDINGS**. Independent final-quality review likewise ended with
+**NO FINDINGS**: all `9/9` hard gates pass and the valid uncapped score is
+`100/100`, split `20/20/15/15/10/10/5/5`. Only the task-only commit,
+post-commit proof, and fresh inventory remain pending.
+The task stops after this lexical-admission repair: it grants no resolver,
+capture, semantic, or Task-277B credit and selects no successor.
+
+At the historical staging-review checkpoint immediately before this lifecycle
+documentation update, the cached scope was exactly `27` paths: the seven
+implementation paths and these twenty completion-documentation paths. It
+contained exactly one new support `.miz`, had zero unstaged paths at review
+time, passed `git diff --cached --check`, and measured `664` insertions / `41`
+deletions. The exact staging/cached review ended with **NO FINDINGS**. These are
+review-time historical facts, not a claim that the current post-review
+lifecycle-documentation worktree has zero unstaged paths.
 
 ## Scope, prohibitions, reviews, and exit
 

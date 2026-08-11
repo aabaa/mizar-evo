@@ -1790,7 +1790,7 @@ depends_on = [
 tests = [
   "tests/miz/pass/types/pass_types_nested_comprehension_outer_generator_capture_001.expect.toml",
 ]
-notes = "Spec-derived positive nested-capture seed. The sidecar remains inactive until canonical Element/NAT lexical/import admission, resolver/checker capture transport, and an advanced_semantics runner exist. The covered status records test intent only and grants no execution, diagnostic, sethood, Task-252, C4A/C4B capture-table, or Task-277B credit."
+notes = "Spec-derived positive nested-capture seed. Under Chapter 12 sections 12.3 and 12.5, the explicit parser.nested_capture_fixtures test module supplies fixture-backed Element/NAT lexical shapes, and private tests cover zero-diagnostic frontend admission. The sidecar remains inactive until resolver/checker capture transport and an advanced_semantics runner exist. The covered status records test intent only and grants no execution, diagnostic, sethood, Task-252, C4A/C4B capture-table, or Task-277B credit."
 
 [[requirement]]
 id = "spec.en.13.set_expressions.parser"

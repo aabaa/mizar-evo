@@ -248,6 +248,9 @@ fn type_elaboration_imported_fixture_modules(
         let Ok(spelling) = module_path_spelling(ast, module_path) else {
             continue;
         };
+        if spelling != "parser.type_fixtures" {
+            continue;
+        }
         let frontend_module = ModuleId::new(spelling.as_str());
         if parse_only_fixture_symbols(&frontend_module).is_empty() {
             continue;
@@ -340,6 +343,24 @@ impl LexicalSummaryProvider for ParseOnlyImportProvider {
 }
 
 fn parse_only_fixture_symbols(module_id: &ModuleId) -> Vec<ExportedSymbolShape> {
+    if module_id.as_str() == "parser.nested_capture_fixtures" {
+        return [
+            ("Element", UserSymbolKind::Mode, UserSymbolArity::exact(1)),
+            ("NAT", UserSymbolKind::Functor, UserSymbolArity::exact(0)),
+        ]
+        .into_iter()
+        .enumerate()
+        .map(|(rank, (spelling, kind, arity))| ExportedSymbolShape {
+            spelling: spelling.to_owned(),
+            symbol_id: SymbolId::new(format!("{}#parse-only#{spelling}", module_id.as_str())),
+            source_module: module_id.clone(),
+            export_rank: ExportRank::new(rank as u32),
+            kind,
+            arity,
+            operator: None,
+        })
+        .collect();
+    }
     if module_id.as_str() != "parser.type_fixtures" {
         return Vec::new();
     }

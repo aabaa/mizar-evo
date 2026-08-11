@@ -3298,7 +3298,7 @@ semantic detail remain byte-for-byte unchanged.
 ## Task 257C4C1 private import provider
 
 The [C4C1 contract](../../task_contracts/en/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md)
-freezes one crate-private `ParseOnlyImportProvider` branch for synthetic module
+owns the implemented crate-private `ParseOnlyImportProvider` branch for synthetic module
 `parser.nested_capture_fixtures`. One import stub at ordinal 0 yields one
 fingerprint-1 summary with ordered `Element` Mode/exact-1/rank-0 and `NAT`
 Functor/exact-0/rank-1 shapes. The tests associate the sole crate-local
@@ -3310,8 +3310,20 @@ Four tests live in existing `runner/tests/parse_only.rs`: physical declaration
 and hash/range validation, exact provider-summary and unrelated-module
 isolation, exact ImportStub plus zero-diagnostic/no-recovery frontend AST, and
 the historical 124-byte/six-diagnostic no-leakage baseline. Library tests
-project `614 -> 618`. The resolver augmentation allowlist, public dispatch,
-active routes, semantic runners, and checker outputs remain byte-identical.
+now pass `618/618`. The private discovery guard keeps resolver augmentation on
+the exact legacy `parser.type_fixtures` profile, and the C4C1 test proves a
+full `SymbolEnv` no-op. Public dispatch, active routes, semantic runners, and
+checker outputs remain unchanged. Exact measurements and verification are
+owned by the contract's [precommit completion
+checkpoint](../../task_contracts/en/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md#precommit-implementation-completion-checkpoint).
+
+Independent source-documentation consistency and bilingual/boundary reviews
+ended with **NO FINDINGS**.
+Independent final-quality review also ended with **NO FINDINGS** and is linked
+through the canonical [precommit completion
+checkpoint](../../task_contracts/en/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md#precommit-implementation-completion-checkpoint).
+The exact staging/cached review recorded at that historical review-time
+checkpoint also ended with **NO FINDINGS**.
 
 ## Checker Task 258A Frozen Harness Boundary
 

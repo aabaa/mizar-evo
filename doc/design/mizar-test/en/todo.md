@@ -3964,12 +3964,22 @@ the successor is selected only from fresh post-commit inventory.
   exact 140-byte crate-local support module, one-summary/two-symbol provider,
   164-byte repaired oracle, historical 124-byte isolation baseline, exact
   seven implementation paths, four tests, counts, hashes, and prohibitions.
-- [ ] Implement only the exact private provider/frontend admission slice in
+- [x] Implement only the exact private provider/frontend admission slice in
   `import_fixtures.rs` and existing `parse_only.rs`; the resolver augmentation
   allowlist must remain byte-identical.
-- [ ] Update the existing inactive source/sidecar/trace note and Chapter-13
+- [x] Update the existing inactive source/sidecar/trace note and Chapter-13
   audit row only; preserve `344/344`, metadata/route counts, parser-only trace
   dependency, and zero executable/semantic/Task-277B credit.
-- [ ] Run all contract verification/reviews/gates and complete task-only
-  staging, commit, post-commit proof, and fresh inventory before selecting any
-  capture successor.
+- [x] Run the focused/full verification and complete independent test and
+  implementation reviews recorded in the contract's [precommit completion
+  checkpoint](../../task_contracts/en/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md#precommit-implementation-completion-checkpoint).
+- [x] Complete independent source-documentation consistency and
+  bilingual/boundary reviews with **NO FINDINGS**, as recorded in the canonical
+  [checkpoint](../../task_contracts/en/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md#precommit-implementation-completion-checkpoint).
+- [x] Complete independent final-quality review with **NO FINDINGS**, `9/9`
+  hard gates passing, and a valid `100/100`, as recorded in the canonical
+  [checkpoint](../../task_contracts/en/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md#precommit-implementation-completion-checkpoint).
+- [x] Complete exact staging/cached review with **NO FINDINGS**, as recorded at
+  the historical review-time [checkpoint](../../task_contracts/en/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md#precommit-implementation-completion-checkpoint).
+- [ ] Complete the task-only commit, post-commit proof, and fresh inventory
+  before selecting any successor.

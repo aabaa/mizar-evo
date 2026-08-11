@@ -6971,11 +6971,22 @@ selected only from fresh post-commit inventory.
   exact 140-byte crate-local support module, ordered two-shape summary, repaired
   164-byte C4C0 source, historical 124-byte/six-diagnostic isolation baseline,
   exact seven implementation paths, and four existing-leaf test names.
-- [ ] After a task-only docs commit, implement only frontend lexical/parser
+- [x] After the task-only docs commit, implement only frontend lexical/parser
   admission through `ParseOnlyImportProvider`; keep resolver augmentation and
   every checker/capture/semantic owner unchanged.
-- [ ] Update the inactive sidecar note, existing trace-row note, and Chapter-
+- [x] Update the inactive sidecar note, existing trace-row note, and Chapter-
   13 audit mapping without adding a row, active tag, route, diagnostic
   credit, semantic credit, or Task-277B readiness.
-- [ ] Complete all frozen focused/full verification, independent reviews, nine
-  hard gates, exact staging/commit, post-commit proof, and fresh inventory.
+- [x] Complete the focused/full verification and independent test and
+  implementation reviews recorded in the contract's [precommit completion
+  checkpoint](../../task_contracts/en/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md#precommit-implementation-completion-checkpoint).
+- [x] Complete independent source-documentation consistency and
+  bilingual/boundary reviews with **NO FINDINGS**, as recorded in the canonical
+  [checkpoint](../../task_contracts/en/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md#precommit-implementation-completion-checkpoint).
+- [x] Complete independent final-quality review with **NO FINDINGS**, `9/9`
+  hard gates passing, and a valid `100/100`, as recorded in the canonical
+  [checkpoint](../../task_contracts/en/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md#precommit-implementation-completion-checkpoint).
+- [x] Complete exact staging/cached review with **NO FINDINGS**, as recorded at
+  the historical review-time [checkpoint](../../task_contracts/en/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md#precommit-implementation-completion-checkpoint).
+- [ ] Complete the task-only commit, post-commit proof, and fresh inventory.
+  Do not select capture or semantic work here.

@@ -1,0 +1,8 @@
+definition
+  let S be set;
+  public mode ElementDef: Element of S is set;
+end;
+
+definition
+  public func NatDef: NAT -> set equals {};
+end;

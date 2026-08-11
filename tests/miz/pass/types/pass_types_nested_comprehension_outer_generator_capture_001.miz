@@ -1,3 +1,5 @@
+import parser.nested_capture_fixtures;
+
 definition
   func NestedCapture -> set equals
     { { x where y is Element of NAT }
