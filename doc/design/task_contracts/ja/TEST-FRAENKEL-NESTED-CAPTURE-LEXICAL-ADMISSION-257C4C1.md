@@ -118,10 +118,12 @@ One import stub/one summary。Significant rangesはmodule path `7..37`、
 first `Element@107..114`/`NAT@118..121`、outer generator `x@136..137`、
 second `Element@141..148`/`NAT@152..155`。
 
-Preprocess outputはexact one `ImportStub`を持つ：declaration span `0..38`、path
+Preprocess outputはexact one `ImportStub`を持つ：stub span `7..37`、path
 spelling `parser.nested_capture_fixtures`、path span `7..37`、components
-`parser@7..13`/`nested_capture_fixtures@14..37`、relative prefix/aliasなし。
-Providerはordinal `0` stubを上記exact one-summary/two-shape lexical environmentへ
+`parser`/`nested_capture_fixtures`、raw source segment一つ`7..37`、relative
+prefix/aliasなし。parsed ASTはcomponent ranges `parser@7..13` /
+`nested_capture_fixtures@14..37`を保持し、周囲のimport declarationは`0..38`で
+ある。Providerはordinal `0` stubを上記exact one-summary/two-shape lexical environmentへ
 resolveし、real frontend ASTはdiagnostic/recovery 0。本taskはresolver import
 augmentationをrun/extendしない。Resolver imported identity、use-site name reference、
 generator identity、capture readiness、type application、sethood、formula semanticsは

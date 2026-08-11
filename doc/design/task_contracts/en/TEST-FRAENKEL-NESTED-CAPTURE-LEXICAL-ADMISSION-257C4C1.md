@@ -128,10 +128,13 @@ path `7..37`, `NestedCapture@58..71`, inner mapper `x@94..95`, inner generator
 `y@102..103`, first `Element@107..114`, first `NAT@118..121`, outer generator
 `x@136..137`, second `Element@141..148`, and second `NAT@152..155`.
 
-Preprocessing must expose exactly one `ImportStub`: declaration span `0..38`,
+Preprocessing must expose exactly one `ImportStub`: stub span `7..37`,
 path spelling `parser.nested_capture_fixtures`, path span `7..37`, components
-`parser@7..13` and `nested_capture_fixtures@14..37`, no relative prefix, and no
-alias. The provider resolves that stub at ordinal `0` to the exact one-summary/
+`parser` and `nested_capture_fixtures`, one raw source segment `7..37`, no
+relative prefix, and no alias. The parsed AST retains component ranges
+`parser@7..13` and `nested_capture_fixtures@14..37`, while the surrounding
+import declaration is `0..38`. The provider resolves that stub at ordinal `0`
+to the exact one-summary/
 two-shape lexical environment above, after which the real frontend AST has zero
 diagnostics and no recovery. This task does not run or extend resolver import
 augmentation. Resolver imported identities, use-site name-reference
