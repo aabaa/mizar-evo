@@ -7003,5 +7003,7 @@ selected only from fresh post-commit inventory.
 - [x] Implement only the exact one-row C4C2 resolver-to-typed identity handoff
   and the five frozen tests; do not add Task-252, capture, semantic, install,
   route, diagnostic, or credit state.
-- [ ] Complete all test, implementation, source/docs/API, bilingual/boundary,
-  hard-gate, quality, staging, commit, and clean fresh-inventory gates.
+- [x] Complete all test, implementation, source/docs/API, bilingual/boundary,
+  hard-gate, quality, staging, commit, and clean fresh-inventory gates. The
+  implementation commit and accepted dependency STOP are recorded in the
+  language-local [postcommit checkpoint](../../task_contracts/en/CHECKER-FRAENKEL-NESTED-BINDER-USE-257C4C3.md#postcommit-proof-and-fresh-successor-inventory).

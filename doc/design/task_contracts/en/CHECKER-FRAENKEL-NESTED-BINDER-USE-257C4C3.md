@@ -11,10 +11,10 @@ and test [harness](../../mizar-test/en/harness.md#checker-task-257c4c3-private-n
 
 ## Status, purpose, and readiness
 
-**Status:** pre-staging verification and final quality complete. All completed
-independent substantive reviews report **NO FINDINGS**, all `9/9` hard gates
-pass, and the valid quality score is `100/100`; exact staging/cached review,
-commit, and postcommit proof remain.
+**Status:** complete. All independent substantive reviews report **NO
+FINDINGS**, all `9/9` hard gates pass, and the valid quality score is
+`100/100`. Exact staging/cached review, the task-only implementation commit,
+clean postcommit proof, and fresh successor inventory are recorded below.
 
 Fresh read-only inventory at clean
 `HEAD e5ffc6bc036ed5d7ba3c173e23671f1c4511ba6a` selects this task as the
@@ -332,5 +332,57 @@ pass by parent review. Independent final-quality review reports **NO
 FINDINGS**, no score cap, and `100/100`, split
 `20/20/15/15/10/10/5/5`. It independently reran the five focused tests and
 `git diff --check`, verified the exact 17-path scope, and authorized exact
-staging. Exact staging/cached review, commit, and postcommit proof remain to be
-recorded before the task is closed.
+staging.
+
+## Postcommit proof and fresh successor inventory
+
+The task-only implementation commit is
+`4028e694e0d522ed31c2d00416860c82f2fc87b7` (`feat(checker): transport
+nested Fraenkel binder use`) with documentation-prerequisite parent
+`f985c9337e1bf59f93a9276abda72c5827924544`. It changes exactly the frozen
+implementation/completion surface of 17 paths; the sorted committed path-list
+SHA-256 is
+`914eaf5b090955a8aefbe521cca952000fb9dd9f0fa967e1af35c300e512225c`,
+and `git show --check` passes. Immediately afterward the worktree was clean,
+`origin/main...HEAD` was `0/2`, and the pre-existing stash remained untouched
+at `f65cf4a13752ec380710814a9ac6392ccb9d75d4`. The protected source, inactive
+sidecar, and trace retained their frozen hashes.
+
+Fresh independent authority-, source-owner-, and boundary-oriented inventories
+all considered the required Task-252 mapper-primary occurrence first and found
+no uniquely dependency-ready implementation successor. C4C3 fixes only the
+one resolver/typed identity from mapper `x@94..95` to outer binder
+`x@136..137`. The existing Task-252 producer instead derives lookup order from
+bindings whose declaration ranges end before the occurrence and requires the
+winning binding declaration to precede that occurrence. It therefore rejects
+this deliberately forward-written Fraenkel binder unless a separately reviewed
+Fraenkel-specific occurrence rule and dependency are selected.
+
+A distinct zero-semantic nested binding-context transport is the most direct
+possible prerequisite, but its exact oracle is also not fixed. Current
+authority does not choose the context graph, whether the inner `y` is included,
+checker binding cardinality/order, the outer binding identity/visibility
+ordinal, mapper lookup context/ordinal, or whether this state belongs to a
+separate Task-257C handoff or a specialized Task-252 transaction. These choices
+also determine the later Task-252 occurrence test oracle and forward-binding
+admission, so they are not merely an interchangeable split of an otherwise
+frozen intermediate API.
+
+The missing derived owner/profile is `design_drift`, and the absent exact
+checker occurrence/binding oracle is a `test_gap`; checker source becomes
+`source_drift` only after that profile is frozen. Creating a `BindingEnv`,
+`BindingId`, Task-252 row, or capture table under an unselected profile, or
+reusing the exact-F5 C4A/C4B API, would be a `boundary_violation`. Actual
+capture, generated-core parameters, type/sethood, request/result, verdict,
+diagnostic, production installation, runner activation, coverage credit, and
+Task 277B all remain not ready and zero-credit.
+
+Resumption requires a human owner/oracle decision that freezes: the sole owner
+and consumer; exact context graph/ranges/order; one-versus-two binding rows and
+the status of inner `y`; the outer `x` checker identity and visibility; mapper
+lookup context, ordinal, and required result; the Task-252 forward-binding
+admission and exact one-row occurrence/reference oracle (or its explicit
+continued exclusion); validation/error precedence; and the same semantic,
+installation, route, and credit prohibitions. No specification, `.miz`,
+expectation, trace, active behavior, or semantic/coverage credit changes in this
+closeout.

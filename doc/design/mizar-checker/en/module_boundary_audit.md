@@ -64,7 +64,7 @@ No successor or boundary expansion is selected.
 
 ## Task 257C4C3 nested Fraenkel binder/use boundary
 
-The implementation-complete [C4C3 contract](../../task_contracts/en/CHECKER-FRAENKEL-NESTED-BINDER-USE-257C4C3.md)
+The completed [C4C3 contract](../../task_contracts/en/CHECKER-FRAENKEL-NESTED-BINDER-USE-257C4C3.md)
 keeps production changes in the existing cohesive
 `source_formula_composition.rs` owner. The only other Rust change is the
 existing private mizar-test nested-identity leaf. No checker module, facade,
@@ -112,7 +112,7 @@ The new and changed cohesive owners are measured in their rows below.
 | `src/source_context.rs` | 1727 | syntax-free source-item and binding-context producer | `source_context.md` | no | no | Cohesive Task-248 validation, table construction, recovery, handoff, and boundary tests; no split required. |
 | `src/source_atomic_formula.rs` | 8511 | syntax-free source atomic-formula producer | `source_atomic_formula.md` | no | no | Cohesive Task-256/257C1 nine-table association, resolver provenance, predicate-segment/shared-boundary validation, cross-family ownership/fingerprint validation, deterministic rendering, install checks, compatibility literals, and test-only dependency corruption seams; no split required. |
 | `src/source_composite_formula.rs` | 4700 | syntax-free source composite-formula/binder producer | `source_composite_formula.md` | no | no | Cohesive Task-257A/B1/B2/B3 exact profiles, binding extension, wrapper/tree validation, rendering, install checks, and corruption/profile tests; no split required. |
-| `src/source_formula_composition.rs` | 9358 | syntax-free cross-family formula composition producer | `source_formula_composition.md` | no | no | Cohesive Task-257B1/B2/B3 atomic-edge/bound-use associations, separate Task-257C2/C3 transactions, completed Task-257C4A/C4B exact-F5 transports, and implementation-complete Task-257C4C3 one-row nested binder/use identity transport with retained dependency validation and corruption tests; no split required. |
+| `src/source_formula_composition.rs` | 9358 | syntax-free cross-family formula composition producer | `source_formula_composition.md` | no | no | Cohesive Task-257B1/B2/B3 atomic-edge/bound-use associations, separate Task-257C2/C3 transactions, completed Task-257C4A/C4B exact-F5 transports, and completed Task-257C4C3 one-row nested binder/use identity transport with retained dependency validation and corruption tests; no split required. |
 | `src/source_attribute.rs` | 3074 | syntax-free source-attribute producer | `source_attribute.md` | no | no | Cohesive Task-250 flat tables, environment/parent/arena/provenance validation, deterministic rendering, and corruption tests; no split required. |
 | `src/source_attribute_definition.rs` | 1516 | syntax-free source attribute-definition producer | `source_attribute_definition.md` | no | no | Cohesive Task-261 four-table handoff, exact resolver/lower/context ownership, obligation-preserving one-shot validation, deterministic rendering, and Task-259/260 isolation; production remains syntax-free. |
 | `src/source_evidence.rs` | 2413 | syntax-free source-evidence request/reference producer | `source_evidence.md` | no | no | Cohesive Task-251 request/response tables, upstream association, catalog/payload validation, deterministic rendering, and corruption tests; no split required. |

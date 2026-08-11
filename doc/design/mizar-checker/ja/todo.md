@@ -6589,5 +6589,6 @@ post-commit fresh inventoryからだけ選択する。
   independent specification/contractとbilingual/boundary reviewを**NO FINDINGS**まで完了する。
 - [x] Exact one-row C4C2 resolver→typed identity handoffとfrozen test 5件だけをimplementし、Task252、
   capture、semantic、install、route、diagnostic、credit stateを追加しない。
-- [ ] Test/implementation/source-doc-API/bilingual-boundary/hard-gate/quality/staging/commit/clean
-  fresh-inventory gateを完了する。
+- [x] Test/implementation/source-doc-API/bilingual-boundary/hard-gate/quality/staging/commit/clean
+  fresh-inventory gateを完了する。Implementation commitとaccepted dependency STOPはlanguage-local
+  [postcommit checkpoint](../../task_contracts/ja/CHECKER-FRAENKEL-NESTED-BINDER-USE-257C4C3.md#postcommit-proof--fresh-successor-inventory)へrecordする。

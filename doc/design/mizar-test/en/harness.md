@@ -5781,7 +5781,7 @@ change, or executable coverage credit.
 
 ## Checker Task 257C4C3 Private Nested Binder/Use Probe
 
-The implementation-complete [C4C3 contract](../../task_contracts/en/CHECKER-FRAENKEL-NESTED-BINDER-USE-257C4C3.md)
+The completed [C4C3 contract](../../task_contracts/en/CHECKER-FRAENKEL-NESTED-BINDER-USE-257C4C3.md)
 extends the existing private
 `runner/tests/type_elaboration/fraenkel_nested_capture_identity.rs` leaf with
 exactly `task257c4c3_real_imported_fixture_builds_checker_identity_handoff`.
@@ -5795,4 +5795,4 @@ This is the sole current API consumer and remains library-test-only. It adds no
 registry include, production dispatch, active-stage route, Task-252 row,
 capture, semantic verdict, diagnostic, sidecar/trace mutation, or coverage
 credit. Exact measurements, counts, and completion evidence remain in the
-language-local [task-contract checkpoint](../../task_contracts/en/CHECKER-FRAENKEL-NESTED-BINDER-USE-257C4C3.md#precommit-implementation-completion-evidence).
+language-local [task-contract checkpoint](../../task_contracts/en/CHECKER-FRAENKEL-NESTED-BINDER-USE-257C4C3.md#postcommit-proof-and-fresh-successor-inventory).

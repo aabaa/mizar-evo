@@ -25,7 +25,7 @@ Implementation/test-sufficiency reviewは**NO FINDINGS**、focused/package verif
 
 ## Task 257C4C3 nested Fraenkel binder/use boundary
 
-Implementation-complete [C4C3 contract](../../task_contracts/ja/CHECKER-FRAENKEL-NESTED-BINDER-USE-257C4C3.md)は
+Completed [C4C3 contract](../../task_contracts/ja/CHECKER-FRAENKEL-NESTED-BINDER-USE-257C4C3.md)は
 production changeをexisting cohesive `source_formula_composition.rs` ownerだけに保つ。他のRust changeは
 existing private mizar-test nested-identity leafだけ。Checker module/facade、Task252/source-term、binding
 environment、Typed/Resolved install、resolver production、runner dispatch、Cargo、canonical artifact、active
@@ -67,7 +67,7 @@ new/changed cohesive ownerのmeasurementは下のrowに記録する。
 | `src/source_context.rs` | 1727 | syntax-free source-item / binding-context producer | `source_context.md` | no | no | cohesive な Task-248 validation、table construction、recovery、handoff、boundary test。split不要。 |
 | `src/source_atomic_formula.rs` | 8511 | syntax-free source atomic-formula producer | `source_atomic_formula.md` | no | no | cohesiveなTask-256/257C1 nine-table association、resolver provenance、predicate-segment/shared-boundary validation、cross-family ownership/fingerprint validation、deterministic rendering、install check、compatibility literal、test-only dependency corruption seam。split不要。 |
 | `src/source_composite_formula.rs` | 4700 | syntax-free source composite-formula/binder producer | `source_composite_formula.md` | no | no | exact Task-257A/B1/B2/B3 profiles、binding extension、wrapper/tree validation、rendering/install/corruption/profile testsを持つcohesive owner。 |
-| `src/source_formula_composition.rs` | 9358 | syntax-free cross-family formula composition producer | `source_formula_composition.md` | no | no | Task-257B1/B2/B3、Task-257C2/C3、completed Task-257C4A/C4B exact-F5 transport、implementation-complete Task-257C4C3 one-row nested binder/use identity transport、retained dependency validation/corruption testsを持つcohesive owner。 |
+| `src/source_formula_composition.rs` | 9358 | syntax-free cross-family formula composition producer | `source_formula_composition.md` | no | no | Task-257B1/B2/B3、Task-257C2/C3、completed Task-257C4A/C4B exact-F5 transport、completed Task-257C4C3 one-row nested binder/use identity transport、retained dependency validation/corruption testsを持つcohesive owner。 |
 | `src/source_attribute.rs` | 3074 | syntax-free source-attribute producer | `source_attribute.md` | no | no | cohesiveなTask-250 flat table、environment/parent/arena/provenance validation、deterministic rendering、corruption test。split不要。 |
 | `src/source_attribute_definition.rs` | 1516 | syntax-free source attribute-definition producer | `source_attribute_definition.md` | no | no | Task-261 four-table handoff、exact resolver/lower/context ownership、obligation-preserving one-shot validation、deterministic rendering、Task-259/260 isolationをcohesiveにownする。 |
 | `src/source_evidence.rs` | 2413 | syntax-free source-evidence request/reference producer | `source_evidence.md` | no | no | cohesiveなTask-251 request/response table、upstream association、catalog/payload validation、deterministic rendering、corruption test。split不要。 |
