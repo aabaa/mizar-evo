@@ -3951,5 +3951,9 @@ the successor is selected only from fresh post-commit inventory.
   Task-277B credit.
 - [x] Record the verified post-change metadata, all five CLI outputs, counts,
   and hashes in the central contract.
-- [ ] After the artifact commit, run fresh inventory and select a docs-first
-  lexical/import prelude prerequisite, not capture implementation.
+- [x] Close the task-only artifact commit, immediate post-commit proof, and
+  accepted fresh-inventory disposition at the language-local [historical
+  checkpoint](../../task_contracts/en/TEST-FRAENKEL-NESTED-CAPTURE-257C4C0.md#historical-immediate-post-artifact-checkpoint).
+  Fresh inventory ends in a human-owned blocking `spec_gap` STOP until test
+  intent or language-specification authority supplies the missing rule; no
+  lower or capture implementation is selected here.

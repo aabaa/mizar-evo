@@ -6553,5 +6553,8 @@ post-commit fresh inventoryからだけ選択する。
   count-guard repair 4件を追加し、capture/Task277B executable/semantic creditを0に保つ。
 - [x] Measured post-change metadata、5 CLI output、final trace/audit counts/hashesを
   central contractへrecordする。
-- [ ] Artifact commit後fresh inventoryを実行し、capture implementation前にlower
-  lexical/import prelude prerequisiteをfreezeする。
+- [x] Task-only artifact commit、immediate post-commit proof、accepted fresh-inventory
+  dispositionをlanguage-local [historical checkpoint](../../task_contracts/ja/TEST-FRAENKEL-NESTED-CAPTURE-257C4C0.md#historical-immediate-post-artifact-checkpoint)でcloseする。
+  Fresh inventoryはtest intentまたはlanguage specification authorityがmissing ruleを
+  供給するまでhuman-owned blocking `spec_gap` STOPであり、lower/capture implementationを
+  selectしない。

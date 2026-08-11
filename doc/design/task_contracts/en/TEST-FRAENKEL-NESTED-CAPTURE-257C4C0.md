@@ -18,7 +18,7 @@ mizar-test [corpus](../../mizar-test/en/miz_corpus.md#task-257c4c0-frozen-corpus
 **Status:** artifact, owner-document, and private count-guard implementation is
 complete; test/implementation and source-documentation/bilingual/boundary
 reviews are **NO FINDINGS**. Final quality is **NO FINDINGS**, `9/9` hard gates
-pass, and the valid uncapped score is `100/100`. Lifecycle closeout is pending.
+pass, and the valid uncapped score is `100/100`. Lifecycle closeout is complete.
 The exact 24-path completion adds the frozen `.miz`, inactive sidecar, sole
 trace row, Chapter-13 coverage-audit
 delta, 16 synchronized owner records, and four private global-count test
@@ -180,8 +180,8 @@ pass. The exact24 sorted-path SHA-256 is
 Independent artifact/test-sufficiency and implementation review ended with
 **NO FINDINGS**. Independent source-documentation, EN/JA, and boundary review
 also ended with **NO FINDINGS**; the exact24 measurements and zero-credit
-deferrals were reproduced. Final-quality scoring and commit lifecycle remain
-pending.
+deferrals were reproduced. Final-quality scoring and commit lifecycle are
+complete, with the commit lifecycle recorded in the historical checkpoint below.
 
 ## Scope, prohibitions, and deferrals
 
@@ -290,12 +290,11 @@ final quality is **NO FINDINGS**, all `9/9` hard gates pass, and the valid
 uncapped score is `100/100` (`20/20/15/15/10/10/5/5`). Current lifecycle
 status is recorded below.
 
-Exact staging/cached review is complete: the cache contains only these 24
-paths, including the two new artifacts and four private count guards, has zero
-unstaged paths, sorted path SHA-256
+Historical pre-commit staging/cached review is complete: the cache contained only these 24
+paths, including the two new artifacts and four private count guards, had zero
+unstaged paths at review time, had sorted path SHA-256
 `085737bdf48261cd81b84101aa89e84c9b7444b3c38b66c9fd98fb849d154a4e`,
-final stat `378/191`, and passes `git diff --cached --check`. Only the
-task-only commit, post-commit proof, and fresh inventory remain pending.
+final stat `378/191`, and passed `git diff --cached --check`.
 
 Historical prerequisite pre-staging evidence is closed. Independent authority/test-
 intent and bilingual/boundary reviews ended with **NO FINDINGS** after the
@@ -330,9 +329,48 @@ to exact24 for four global count guards. The selection did not authorize
 capture implementation or a lexical/import implementation choice. Task 277B
 remains not ready with zero credit.
 
-After this artifact task's commit, run fresh inventory and freeze the lower
-lexical/import prelude prerequisite; do not jump directly to capture
-implementation. Keep Sol at
+## Historical immediate post-artifact checkpoint
+
+Immediately after task-only artifact commit
+`eb2ff9d40427797d1946dc140c7ba9c3a83d4b90` with parent
+`4c3d012d7f330474b72d733bc05f405a00bf9cec`, read-only inventory observed
+`HEAD=eb2ff9d40427797d1946dc140c7ba9c3a83d4b90`, a clean worktree,
+`origin/main...HEAD=0/26`, and unchanged protected
+`stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4`. The commit contains exactly
+24 paths, `378` insertions and `191` deletions, with sorted path SHA-256
+`085737bdf48261cd81b84101aa89e84c9b7444b3c38b66c9fd98fb849d154a4e`;
+`git show --check HEAD` passed. This is a historical immediate-postimplementation,
+pre-closure observation, not a claim about the documentation-closure commit's
+current `HEAD` or worktree. It is distinct from the historical pre-commit cached
+review above even though their path inventory, stat, and hash are equal.
+
+The task-only artifact commit, immediate post-commit proof, and fresh successor
+inventory are closed. Fresh inventory concludes **protocol STOP** on a blocking,
+human-owned `spec_gap`: canonical authority names a built-in prelude but does
+not define its contents, lexical-seeding relationship, or the `Element`/`NAT`
+provider and module/export identities. Canonical
+[§2.10](../../../spec/en/02.lexical_structure.md#210-lexical-preprocessing) and
+[§12.3](../../../spec/en/12.modules_and_namespaces.md#123-import-statements)
+make imported lexical summaries source-import-prelude-driven, while
+[§11.2.4](../../../spec/en/11.symbol_management.md#1124-precedence-rules)
+separately includes a built-in prelude in semantic lookup and
+[§3.3](../../../spec/en/03.type_system.md#33-type-expressions) makes only
+`object` and `set` built-in type heads. The exact 124-byte source has no import,
+no canonical membership or module/export identity for `Element` or `NAT` in
+that prelude is frozen, and the frontend requires every resolved import to
+correspond to a source import stub.
+That frontend constraint is a non-normative observation, not authority for the
+missing rule. Implicit injection would cross the unresolved language and
+provider-provenance boundary; adding an explicit import would change the frozen
+source and test intent. This checkpoint selects no lower task, owner, API,
+module, or capture implementation. Task 277B remains not ready with zero credit.
+
+Resume only after human authority either separately approves reopening the test
+intent with exact replacement source/hash, explicit import, and canonical
+`Element`/`NAT` module/export identities, or specifies the canonical built-in-
+prelude contents, lexical seeding, and provider provenance. Sol may
+interpret that authority after it exists but must not invent either rule. Do not
+jump directly to capture implementation. Keep Sol at
 `xhigh` for authority, public-owner, or acceptance decisions. Terra `xhigh` is
 eligible for the bounded artifact implementation and independent reviews after
 the contract is frozen; return to Sol on ambiguity or scope expansion.

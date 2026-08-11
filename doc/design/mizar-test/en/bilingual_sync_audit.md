@@ -1971,6 +1971,11 @@ synchronize the implemented source/hash and paths, inactive sidecar/trace
 relation, `344/344` corpus, Chapter-13 audit delta, current six-diagnostic
 lexical/import blocker, measured metadata/five-CLI/hash evidence, zero active/
 executable/semantic/Task-277B credit, exact24 artifact-plus-private-count-guard
-boundary, and next prelude handoff. English is canonical; no exception exists.
+boundary, and human-owned STOP disposition. English is canonical; no exception exists.
 Independent bilingual/boundary/final-quality review ended with **NO FINDINGS**;
-all `9/9` hard gates pass with valid `100/100`. Closeout remains pending.
+all `9/9` hard gates pass with valid `100/100`. Task-only artifact commit,
+post-commit proof, and accepted fresh inventory are closed at the language-local
+[historical checkpoint](../../task_contracts/en/TEST-FRAENKEL-NESTED-CAPTURE-257C4C0.md#historical-immediate-post-artifact-checkpoint).
+Fresh inventory records a human-owned blocking `spec_gap` STOP until test-
+intent or language-specification authority supplies the missing rule; no lower
+or capture task is selected.

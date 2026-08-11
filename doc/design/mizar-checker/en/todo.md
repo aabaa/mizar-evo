@@ -6958,5 +6958,9 @@ selected only from fresh post-commit inventory.
   semantic credit.
 - [x] Record the measured post-change metadata, five-CLI outputs, and final
   trace/audit counts and hashes in the central contract.
-- [ ] After the artifact commit, run fresh inventory and freeze the lower
-  lexical/import prelude prerequisite before any capture implementation.
+- [x] Close the task-only artifact commit, immediate post-commit proof, and
+  accepted fresh-inventory disposition at the language-local [historical
+  checkpoint](../../task_contracts/en/TEST-FRAENKEL-NESTED-CAPTURE-257C4C0.md#historical-immediate-post-artifact-checkpoint).
+  Fresh inventory ends in a human-owned blocking `spec_gap` STOP until test
+  intent or language-specification authority supplies the missing rule; no
+  lower or capture implementation is selected here.
