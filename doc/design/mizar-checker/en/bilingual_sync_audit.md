@@ -1948,3 +1948,13 @@ post-commit proof, and accepted fresh semantic STOP are synchronized as closed
 at the language-local [historical
 checkpoint](../../task_contracts/en/CHECKER-FRAENKEL-GENERATOR-BOUND-USE-257C4B.md#historical-immediate-post-implementation-checkpoint).
 No successor is selected and no bilingual exception exists.
+
+## Task 257C4C0 frozen contract parity
+
+The [EN canonical](../../task_contracts/en/TEST-FRAENKEL-NESTED-CAPTURE-257C4C0.md)
+and [JA companion](../../task_contracts/ja/TEST-FRAENKEL-NESTED-CAPTURE-257C4C0.md)
+synchronize the future source/hash, inactive sidecar and sole trace row,
+six-diagnostic lexical/import `source_drift`, artifact-time audit and
+remeasurement duties, zero capture/Task-277B credit, exact20 boundary, and
+Sol/Terra handoff. English is canonical; no exception exists. Future artifacts
+and the lower prelude prerequisite remain pending.

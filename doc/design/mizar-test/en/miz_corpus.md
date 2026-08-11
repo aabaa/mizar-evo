@@ -124,3 +124,14 @@ the sidecar hash is
 `d82c8d3102ea34fdb4a32792167c4b109b96b9c05265d3f04e6310278178e8ac`.
 All existing `.miz` and expectations remain byte-identical. Cases are
 `426`, pass/fail is `233/193`, and active type cases are `203`.
+
+## Task 257C4C0 frozen corpus increment
+
+The [C4C0 contract](../../task_contracts/en/TEST-FRAENKEL-NESTED-CAPTURE-257C4C0.md)
+freezes one future handwritten pass pair under `tests/miz/pass/types/` for the
+Chapter 13 nested-comprehension outer-generator capture oracle. This docs-only
+prerequisite adds no corpus artifact. The later artifact changes the pair
+inventory from `343/343` to `344/344`, but remains inactive and earns no
+current parser, semantic, route, warning/error, or Task-277B credit. The exact
+source bytes/hash and sidecar are owned by the contract; local-lookalike and
+builtin-set variants are forbidden.

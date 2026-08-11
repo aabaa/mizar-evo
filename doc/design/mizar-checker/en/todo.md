@@ -6946,3 +6946,15 @@ selected only from fresh post-commit inventory.
   selecting no successor.
 - [x] Keep actual capture separately deferred and Task 277B not ready with
   zero semantic credit throughout.
+
+## Task 257C4C0 nested Fraenkel capture test intent
+
+- [x] Freeze the paired [C4C0 contract](../../task_contracts/en/TEST-FRAENKEL-NESTED-CAPTURE-257C4C0.md),
+  exact 124-byte source, inactive pass sidecar, sole trace row, protected
+  boundaries, counts/hashes, review gates, and model handoff.
+- [ ] Add the frozen `.miz`, sidecar, trace row, required
+  `spec_coverage_audit.md` delta, and exact 16 completion records in the
+  separate artifact task, with zero capture and Task-277B executable/semantic
+  credit.
+- [ ] After the artifact commit, run fresh inventory and freeze the lower
+  lexical/import prelude prerequisite before any capture implementation.

@@ -6542,3 +6542,14 @@ post-commit fresh inventoryからだけ選択する。
 - [x] Exact staging/cached reviewを23 paths（3 Rust/20 docs）、new private leaf 1件、review時unstaged 0、cached diff check PASS、cached stat `1096/123`で完了する。
 - [x] task-only implementation commit、immediate post-commit proof、accepted fresh semantic STOPをlanguage-local [historical checkpoint](../../task_contracts/ja/CHECKER-FRAENKEL-GENERATOR-BOUND-USE-257C4B.md#historical-immediate-post-implementation-checkpoint)でcloseし、successorをselectしない。
 - [x] actual captureはseparate deferred、Task277Bはnot-ready/zero creditを維持する。
+
+## Task 257C4C0 nested Fraenkel capture test intent
+
+- [x] Paired [C4C0 contract](../../task_contracts/ja/TEST-FRAENKEL-NESTED-CAPTURE-257C4C0.md)、
+  exact 124-byte source、inactive pass sidecar、sole trace row、protected boundary、
+  counts/hashes、review gates、model handoffをfreezeする。
+- [ ] Separate artifact taskでfrozen `.miz`/sidecar/trace row/required
+  `spec_coverage_audit.md` deltaとexact 16 completion recordsを追加し、
+  capture/Task277B executable/semantic creditを0に保つ。
+- [ ] Artifact commit後fresh inventoryを実行し、capture implementation前にlower
+  lexical/import prelude prerequisiteをfreezeする。

@@ -2175,6 +2175,22 @@ reciprocalに同requirementだけをnameする。source/sidecar/trace hashは
 active metadataは`425/393`、`232/193`、`101/7/202/1`、type `257/245`、
 warnings/errors `23/0`である。creditはexact transport/Pending obligation owner
 だけで、mixed structure gapと全semantic deferralは不変である。
+
+## Task 257C4C0 frozen traceability increment
+
+[C4C0 contract](../../task_contracts/ja/TEST-FRAENKEL-NESTED-CAPTURE-257C4C0.md)は
+future `advanced_semantics`/covered/required/pass requirement
+`spec.en.13.set_expressions.nested_capture.semantic` 1件をfreezeする。Dependencyは
+`spec.en.13.set_expressions.parser`だけ、testはfuture nested-capture pass sidecar
+だけ。Sidecarはpass/`type_check`、empty diagnostics、tags/failure fieldsなし、inactive。
+
+本prerequisiteでは`5908`-line traceとSHA-256
+`55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`は
+unchanged。Artifact taskがrowを追加し、`spec_coverage_audit.md`更新、metadata/
+全5 CLI rerun、全count/hash remeasureを行う。Active route-count/aggregate CLI
+warning-error/semantic/Task277B creditは0で、current parser diagnostic 6件はlower
+lexical/import `source_drift`のまま。
+
 ## Checker Task 249S frozen traceability no-op
 
 Task 249Sはrepresentation coverageだけを変更する。corpus source、sidecar、

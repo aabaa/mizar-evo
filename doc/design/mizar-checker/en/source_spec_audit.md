@@ -4354,6 +4354,23 @@ expectation rebaseline. No blocking `spec_gap`,
 `boundary_violation` remains; origin divergence is report-only
 `repo_metadata_conflict`.
 
+## Task 257C4C0 nested Fraenkel capture test intent
+
+The canonical [C4C0 contract](../../task_contracts/en/TEST-FRAENKEL-NESTED-CAPTURE-257C4C0.md)
+freezes the separate Chapter 13 §13.4.4 test-first oracle required by the C4B
+successor stop. Its future nested `Element of NAT` source makes the inner mapper
+`x` refer to the outer generator `x` by resolved identity while the inner
+generator is distinct `y`. This prerequisite closes only the missing derived
+test-intent record; the later artifact closes the capture `test_gap` as
+inactive intent.
+
+The exact source currently emits six parser diagnostics, first at `Element`
+`67..74`, so lower lexical/import admission remains `source_drift`. No builtin-
+`set` or local-lookalike substitute is authorized. Capture, Task-252 ownership,
+`CapturedFreeVariables`, type/sethood/request/verdict/diagnostic/install/route,
+and Task-277B credit remain unchanged. Only the later artifact task adds the
+sidecar/trace row and required `spec_coverage_audit.md` delta.
+
 ## Task 258A Frozen Surface Audit
 
 Chapter 4 §§4.3 and 4.7.1, Chapter 14 §14.5.2, Chapter 15 §§15.8 and

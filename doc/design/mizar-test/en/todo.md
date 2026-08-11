@@ -3939,3 +3939,14 @@ the successor is selected only from fresh post-commit inventory.
   implementation commit, post-commit proof, and fresh successor inventory are
   closed in the language-local [central historical checkpoint](../../task_contracts/en/CHECKER-FRAENKEL-TEMPLATE-STRUCTURAL-277C.md#historical-immediate-post-implementation-checkpoint).
   No successor is selected; Task 277B remains not ready with zero semantic credit.
+
+## Task 257C4C0 inactive capture oracle
+
+- [x] Freeze the [C4C0 contract](../../task_contracts/en/TEST-FRAENKEL-NESTED-CAPTURE-257C4C0.md),
+  future 124-byte source, exact inactive sidecar/trace row, `343/343 -> 344/344`
+  corpus impact, lower lexical/import blocker, and protected zero-credit scope.
+- [ ] In a separate artifact task, add the exact `.miz`, sidecar, trace row,
+  coverage-audit delta, and exact 16 completion records; remeasure metadata,
+  all five CLIs, counts, and hashes without adding active tags or routes.
+- [ ] After the artifact commit, run fresh inventory and select a docs-first
+  lexical/import prelude prerequisite, not capture implementation.

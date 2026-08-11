@@ -1817,3 +1817,12 @@ exceptionはない。successorはselectせず、Task 277Bはnot ready/semantic c
 ## Checker Task 257C4B frozen contract parity
 
 Completed [EN canonical](../../task_contracts/en/CHECKER-FRAENKEL-GENERATOR-BOUND-USE-257C4B.md)と[JA companion](../../task_contracts/ja/CHECKER-FRAENKEL-GENERATOR-BOUND-USE-257C4B.md)はimplemented one private leaf/include、sole exact test、`613 -> 614`、final `67/121` measurement/hash、existing F5 construction reuse、format/full-workspace Clippy/tests、metadata `137/137`、public-enum `2/2`、unchanged 5 CLI output、no-production/no-semantic/no-credit boundaryを同期する。harness/boundary/TODO/bilingual pairはexact20 completion review surface、全Task Index planはunchanged。exhaustive ABI/final hashはEnglish owner。exceptionなし、sole Low baseline/current wording repair後、independent bilingual/boundary reviewは**NO FINDINGS**。Task277Bはnot-ready/zero credit。final-qualityも**NO FINDINGS**、全`9/9` hard gate PASS、valid uncapped `100/100`（`20/20/15/15/10/10/5/5`）。exact 23-path staging/cached reviewもPASS。task-only commit/immediate post-commit proof/accepted fresh semantic STOPはlanguage-local [historical checkpoint](../../task_contracts/ja/CHECKER-FRAENKEL-GENERATOR-BOUND-USE-257C4B.md#historical-immediate-post-implementation-checkpoint)でsynchronized closedし、successorはselectしない。
+
+## Task 257C4C0 frozen contract parity
+
+[EN canonical](../../task_contracts/en/TEST-FRAENKEL-NESTED-CAPTURE-257C4C0.md)と
+[JA companion](../../task_contracts/ja/TEST-FRAENKEL-NESTED-CAPTURE-257C4C0.md)は
+future source/hash/path、inactive sidecar/trace relation、`343/343 -> 344/344`、
+current 6-diagnostic lexical/import blocker、artifact-time audit/metadata/all-5-CLI
+remeasurement、zero active/semantic/Task277B credit、exact20、next prelude handoffを
+同期する。English canonical、exceptionなし、future workをcompleteとclaimしない。
