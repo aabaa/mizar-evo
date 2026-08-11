@@ -17,9 +17,8 @@ mizar-test [harness](../../mizar-test/en/harness.md#task-257c4c1-private-import-
 
 ## Status, authority, and readiness
 
-**Status:** exact seven-path implementation and all precommit reviews,
-including exact staging/cached review, complete; the remaining lifecycle gates
-are in progress. The user explicitly
+**Status:** implementation lifecycle closed at the accepted explicit-import
+lexical-repair STOP; no semantic successor is selected. The user explicitly
 authorizes only the dedicated explicit-import test-intent repair: define the two
 required imported spellings in one separate fixture module, import that module
 from the existing inactive C4C0 oracle, prove frontend lexical/parser admission
@@ -46,16 +45,20 @@ Chapter 12 makes an import prelude file-scoped and makes public definitions
 part of a module signature. Chapter 13 requires the nested occurrence to refer
 to the outer generator by resolved identity. The approved repair supplies only
 the two imported lexical spellings needed to admit that already-frozen source.
-The current six parser diagnostics are `source_drift`; the absent dedicated
-support module/test is a `test_gap`; and the absent provider and owner record is
-`design_drift`. There is no remaining blocking `spec_gap`, no expectation
-rebaseline, and no public-API `boundary_violation` in this slice.
+At task freeze, the then-current six parser diagnostics were classified as
+`source_drift`; the then-absent dedicated support module/test was a `test_gap`;
+and the then-absent provider and owner record was `design_drift`. There was no
+blocking `spec_gap`, expectation rebaseline, or public-API `boundary_violation`
+in this slice. The exact C4C1 implementation and post-commit proof recorded
+below closed all three classified gaps.
 
-Dependencies are complete: C4C0 owns the inactive 124-byte historical oracle,
-the canonical import/public-definition rules are explicit, and the current
-frontend/provider seams already carry the required one-stub/one-summary
-transaction. C4C1 is therefore ready after this exact synchronized
-documentation prerequisite passes review and is committed separately.
+At task freeze, C4C0's inactive 124-byte historical oracle, the explicit
+canonical import/public-definition rules, and the existing frontend/provider
+one-stub/one-summary seams made C4C1 ready only after the exact synchronized
+documentation prerequisite passed review and was committed separately. That
+preimplementation readiness statement is historical: the prerequisite,
+implementation, and post-commit proof are complete, and the lifecycle now
+closes at the accepted STOP below.
 
 ## Exact support module and exported summary
 
@@ -247,8 +250,8 @@ accepted without replay.
 
 ## Precommit implementation completion checkpoint
 
-The exact seven-path implementation is complete in the current precommit
-worktree. It adds the private support module and provider profile, repairs the
+At the precommit completion checkpoint, the exact seven-path implementation
+was complete in the then-current worktree. It adds the private support module and provider profile, repairs the
 inactive oracle through the explicit import, records only the permitted
 sidecar/trace/Chapter-13 audit deltas, and adds the four frozen tests. Measured
 artifacts and sources are:
@@ -292,18 +295,43 @@ source-documentation consistency and bilingual/boundary reviews also ended
 with **NO FINDINGS**. Independent final-quality review likewise ended with
 **NO FINDINGS**: all `9/9` hard gates pass and the valid uncapped score is
 `100/100`, split `20/20/15/15/10/10/5/5`. Only the task-only commit,
-post-commit proof, and fresh inventory remain pending.
-The task stops after this lexical-admission repair: it grants no resolver,
-capture, semantic, or Task-277B credit and selects no successor.
+post-commit proof, and fresh inventory were then closed by the historical
+checkpoint below. The task stops after this lexical-admission repair: it grants
+no resolver, capture, semantic, or Task-277B credit and selects no successor.
 
-At the historical staging-review checkpoint immediately before this lifecycle
-documentation update, the cached scope was exactly `27` paths: the seven
+At the historical staging-review checkpoint before the final precommit
+lifecycle sync, the cached scope was exactly `27` paths: the seven
 implementation paths and these twenty completion-documentation paths. It
 contained exactly one new support `.miz`, had zero unstaged paths at review
 time, passed `git diff --cached --check`, and measured `664` insertions / `41`
 deletions. The exact staging/cached review ended with **NO FINDINGS**. These are
-review-time historical facts, not a claim that the current post-review
-lifecycle-documentation worktree has zero unstaged paths.
+review-time historical facts, not a claim that the current `HEAD` or worktree
+has zero unstaged paths.
+
+## Historical immediate-postimplementation pre-closure checkpoint
+
+Immediately after the task-only implementation commit and before this
+docs-only closure, commit
+`6371b9983efb1899cb4d4de28fe0bebfcaf47381` was observed as `HEAD`, with parent
+`f0845558c9b35af315462af0e1e60faf3770f62b`. The worktree was clean,
+`origin/main...HEAD` was `0/4`, and protected `stash@{0}` remained
+`f65cf4a13752ec380710814a9ac6392ccb9d75d4`. The commit contained exactly `27`
+paths, and the SHA-256 of its sorted path list was
+`26aa22a7ae0fbcd98692bd01252922e7eb56fb4ef5a31c51160889383ebfc3dc`.
+Its final stat was `716` insertions / `41` deletions, and
+`git show --check 6371b9983efb1899cb4d4de28fe0bebfcaf47381` passed.
+
+This final commit evidence is distinct from the historical review-time cached
+`27`-path / `664`-insertion / `41`-deletion checkpoint above. It is an
+immediate-postimplementation, pre-closure observation and is explicitly not a
+claim about the current `HEAD` or worktree after this documentation update.
+The task-only implementation commit and post-commit proof are closed.
+
+Fresh inventory closes with the user-approved protocol disposition **STOP**:
+the explicit-import lexical repair is complete, but this task selects no
+capture or resolver-semantic successor, no Task-252 work, and no Task-277B
+work. Capture transport, resolver semantics, Task 252, and Task 277B remain
+outside this task; Task 277B remains not ready and receives zero credit.
 
 ## Scope, prohibitions, reviews, and exit
 

@@ -17,8 +17,8 @@ mizar-test [harness](../../mizar-test/ja/harness.md#task-257c4c1-private-import-
 
 ## Status, authority, readiness
 
-**Status:** exact seven-path implementationとexact staging/cached reviewを含む全
-precommit reviewはcomplete、remaining lifecycle gatesはin progress。Userはdedicated explicit-import test-intent
+**Status:** implementation lifecycleはaccepted explicit-import lexical-repair STOPで
+closed、semantic successorはselectしない。Userはdedicated explicit-import test-intent
 repairだけを明示承認した。Required spelling 2件をone separate fixture moduleで
 defineし、existing inactive C4C0 oracleからimportし、frontend lexical/parser
 admissionとpreprocessed import provenanceだけをproveしてstopする。Capture/semantic
@@ -42,13 +42,17 @@ Authority orderは次の通り。
 Chapter 12はimport preludeをfile-scopedとしpublic definitionをmodule signatureに
 含める。Chapter 13はnested occurrenceがouter generatorをresolved identityで参照する
 ことを要求する。本repairは既存frozen sourceをadmitするimported lexical spelling
-2件だけを供給する。Current parser diagnostic 6件は`source_drift`、dedicated support
-module/test欠如は`test_gap`、provider/owner record欠如は`design_drift`。Blocking
-`spec_gap`、expectation rebaseline、public-API `boundary_violation`は残らない。
+2件だけを供給する。Task freeze時点では、then-current parser diagnostics 6件を
+`source_drift`、then-absent dedicated support module/testを`test_gap`、then-absent
+provider/owner recordを`design_drift`とclassifyした。このsliceにblocking `spec_gap`、
+expectation rebaseline、public-API `boundary_violation`はなかった。下記exact C4C1
+implementation/post-commit proofがclassified gaps 3件をすべてcloseした。
 
-C4C0、canonical import/public-definition rule、current one-stub/one-summary
-frontend/provider seamが揃っているため、exact synchronized docs prerequisiteのreview/
-separate commit後にC4C1はreadyである。
+Task freeze時点では、C4C0 inactive 124-byte historical oracle、explicit canonical
+import/public-definition rules、existing frontend/provider one-stub/one-summary seamsにより、
+exact synchronized docs prerequisiteのreview/separate commit後だけC4C1がreadyだった。
+このpreimplementation readiness statementはhistoricalであり、prerequisite/
+implementation/post-commit proofはcomplete、lifecycleは下記accepted STOPでclosed。
 
 ## Exact support module and exported summary
 
@@ -214,8 +218,8 @@ replayなしのunchanged claimは禁止。
 
 ## Precommit implementation completion checkpoint
 
-Exact seven-path implementationはcurrent precommit worktreeでcomplete。Private support
-module/provider profileを追加し、explicit importでinactive oracleをrepairし、許可された
+Precommit completion checkpointではexact seven-path implementationがthen-current
+worktreeでcompleteだった。Private support module/provider profileを追加し、explicit importでinactive oracleをrepairし、許可された
 sidecar/trace/Chapter-13 audit deltaだけをrecordし、frozen tests 4件を追加した。Measured
 artifact/sourceは次の通り。
 
@@ -252,17 +256,39 @@ Markdown completion-documentation deltaはpaired contractとexisting checker/
 mizar-test EN/JA owner docs 18件だけで、crate plans 4件はunchanged。Source-doc
 consistencyとbilingual/boundaryのindependent reviewも**NO FINDINGS**。Independent
 final-quality reviewも**NO FINDINGS**、hard gates `9/9` PASS、valid
-uncapped score `100/100`、split `20/20/15/15/10/10/5/5`。Pendingはtask-only
-commit、post-commit proof、fresh inventoryだけ。本taskは
+uncapped score `100/100`、split `20/20/15/15/10/10/5/5`。Task-only commit、
+post-commit proof、fresh inventoryは下記historical checkpointでclosed。本taskは
 lexical-admission repairでstopし、resolver/capture/semantic/Task277B creditを与えず、
 successorをselectしない。
 
-本lifecycle documentation update直前のhistorical staging-review checkpointでは、cached
-scopeはexact `27` paths（seven implementation paths + twenty completion-doc paths）、new
+Final precommit lifecycle sync前のhistorical staging-review checkpointでは、cached scopeは
+exact `27` paths（seven implementation paths + twenty completion-doc paths）、new
 support `.miz`はexact one、review-time unstaged pathsはzero、
 `git diff --cached --check` PASS、cached statは`664` insertions / `41` deletionsだった。
 Exact staging/cached reviewは**NO FINDINGS**。これはreview-time historical factであり、
-post-review lifecycle docs update後のcurrent worktreeがunstaged zeroというclaimではない。
+current `HEAD`/worktreeがunstaged zeroというclaimではない。
+
+## Historical immediate-postimplementation pre-closure checkpoint
+
+Task-only implementation commit直後かつ本docs-only closure前に、commit
+`6371b9983efb1899cb4d4de28fe0bebfcaf47381`を`HEAD`としてobserveし、parentは
+`f0845558c9b35af315462af0e1e60faf3770f62b`だった。Worktree clean、
+`origin/main...HEAD=0/4`、protected `stash@{0}`は
+`f65cf4a13752ec380710814a9ac6392ccb9d75d4` unchanged。Commit pathsはexact `27`、
+sorted path list SHA-256は
+`26aa22a7ae0fbcd98692bd01252922e7eb56fb4ef5a31c51160889383ebfc3dc`。
+Final statは`716` insertions / `41` deletions、
+`git show --check 6371b9983efb1899cb4d4de28fe0bebfcaf47381`はPASS。
+
+このfinal commit evidenceは上記historical review-time cached `27` paths / `664`
+insertions / `41` deletionsとdistinct。Immediate-postimplementation/pre-closureの
+observationであり、本docs update後のcurrent `HEAD`/worktree claimではない。
+Task-only implementation commitとpost-commit proofはclosed。
+
+Fresh inventoryはuser-approved protocol disposition **STOP**でcloseする。Explicit-
+import lexical repairはcompleteだが、本taskはcapture/resolver-semantic successor、
+Task252 work、Task277B workをselectしない。Capture transport、resolver semantics、
+Task252、Task277Bはtask外で、Task277Bはnot-ready/zero creditのまま。
 
 ## Scope, prohibitions, reviews, and exit
 

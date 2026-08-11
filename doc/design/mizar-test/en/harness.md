@@ -3324,6 +3324,10 @@ through the canonical [precommit completion
 checkpoint](../../task_contracts/en/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md#precommit-implementation-completion-checkpoint).
 The exact staging/cached review recorded at that historical review-time
 checkpoint also ended with **NO FINDINGS**.
+The task-only commit, post-commit proof, and accepted fresh-inventory STOP are
+closed at the language-local [historical postimplementation
+checkpoint](../../task_contracts/en/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md#historical-immediate-postimplementation-pre-closure-checkpoint).
+No capture/resolver-semantic or Task-277B successor is selected.
 
 ## Checker Task 258A Frozen Harness Boundary
 

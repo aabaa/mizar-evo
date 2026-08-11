@@ -3981,5 +3981,7 @@ the successor is selected only from fresh post-commit inventory.
   [checkpoint](../../task_contracts/en/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md#precommit-implementation-completion-checkpoint).
 - [x] Complete exact staging/cached review with **NO FINDINGS**, as recorded at
   the historical review-time [checkpoint](../../task_contracts/en/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md#precommit-implementation-completion-checkpoint).
-- [ ] Complete the task-only commit, post-commit proof, and fresh inventory
-  before selecting any successor.
+- [x] Close the task-only commit, post-commit proof, and accepted fresh-
+  inventory **STOP** at the language-local [historical postimplementation
+  checkpoint](../../task_contracts/en/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md#historical-immediate-postimplementation-pre-closure-checkpoint).
+  Select no capture/resolver-semantic, Task-252, or Task-277B successor.

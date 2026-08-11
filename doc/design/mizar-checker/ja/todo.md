@@ -6577,5 +6577,6 @@ post-commit fresh inventoryからだけ選択する。
   `100/100`で完了し、canonical [checkpoint](../../task_contracts/ja/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md#precommit-implementation-completion-checkpoint)にrecordする。
 - [x] Exact staging/cached reviewを**NO FINDINGS**で完了し、historical review-time
   [checkpoint](../../task_contracts/ja/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md#precommit-implementation-completion-checkpoint)にrecordする。
-- [ ] Task-only commit、post-commit proof、fresh inventoryを完了する。Capture/
-  semantic workはここでselectしない。
+- [x] Task-only commit、post-commit proof、accepted fresh-inventory **STOP**を
+  language-local [historical postimplementation checkpoint](../../task_contracts/ja/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md#historical-immediate-postimplementation-pre-closure-checkpoint)でcloseする。
+  Capture/resolver semantics、Task252、Task277B workはここでselectしない。
