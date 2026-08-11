@@ -730,3 +730,30 @@ Exact error/precedenceは`EnvironmentMismatch`、`InvalidBindingContextDependenc
 F5 row 0/1/2はC4A use position 0/1/2、binding-context0、resolver/source ordinal 0/1/2、lookup 1/2/3、context1、binding0で、全lookupが`Local(binding0)`。ordinal0はC4A `ForwardReference` probeでC4B rowではない。range/spellingからordinalをinferしない。default-denyでmissing/extra/reorder/duplicate/recovery/stale/non-local/nested/multiple/shadowをatomic rejectする。contractの4 exact checker testsがABI/oracle、full snapshot corruption、row/lookup+precedence、deterministic non-mutationをcoverし、raw listは`550 -> 554`。
 
 Implementationは本existing ownerでcompleteし、7958 lines / SHA-256 `90b339d9707f9f8d847b678721e8db0ef6a00e4a15dbb41474a0cf6980f47168`。上記exact family/getter、full retained C4A validation、three row、exact 4 checker testを実装した。Focused `4/4`、checker `554/554`、format、package/full-workspace Clippy、full workspace tests、metadata/public-enum suites、unchanged 5 CLI replay、diff checkはPASS。Structural/`TypedAst` dependency corruptionをexisting precedence testへ追加した後、implementation/test-sufficiency reviewは**NO FINDINGS**。sole Low baseline/current wording repair後、final source-doc reviewとindependent bilingual/boundary reviewも**NO FINDINGS**。final-qualityも**NO FINDINGS**、全`9/9` hard gate PASS、valid uncapped `100/100`（`20/20/15/15/10/10/5/5`）。contractのexact 23-path staging/cached reviewもPASS。task-only commit/immediate post-commit proof/accepted fresh semantic STOPはlanguage-local [historical checkpoint](../../task_contracts/ja/CHECKER-FRAENKEL-GENERATOR-BOUND-USE-257C4B.md#historical-immediate-post-implementation-checkpoint)でclosedし、successorはselectしない。
+
+## Task 257C4C3 nested Fraenkel binder/mapper-use transport
+
+Frozen [C4C3 contract](../../task_contracts/ja/CHECKER-FRAENKEL-NESTED-BINDER-USE-257C4C3.md)は
+existing Task257C ownerへ独立zero-semantic transactionを追加する。Completed C4C2 resolver collectionと
+exact normal `TypedAst`だけをconsumeし、exact-F5 C4A/C4B API/validatorをreuseまたはweakeningしない。
+
+Frozen implementationがexposeするexact public familyは`SourceNestedFraenkelBinderUseId`、
+`SourceNestedFraenkelBinderUse`、`SourceNestedFraenkelBinderUseTable`、
+`SourceNestedFraenkelBinderUseHandoff`、non-exhaustive `SourceNestedFraenkelBinderUseError`、
+`SourceNestedFraenkelBinderUseProducer`。Rowはresolver use index/binding ID、outer binder
+`TypedNodeId`、inner mapper-use `TypedNodeId`、source ordinalだけ。Tableはdense read-only
+`get`/`iter`/`len`/`is_empty`、handoffはsource/module/resolver summary/table/deterministic debugだけを公開する。
+
+Resolver summaryはexact
+`fraenkel-generator-variable-source-v1|module=<package>.<path>|bindings=2|uses=1`でnon-authoritative。
+Exact handoff debug grammarは
+`source-nested-fraenkel-binder-use-v1|module=<package>.<path>|binder-uses=1`。
+Non-exhaustive errorはexact `EnvironmentMismatch`、`InvalidResolverDependency`、
+`InvalidTypedDependency`、`InvalidBinderUse { binder_use: SourceNestedFraenkelBinderUseId }`だけを
+このprecedenceで持つ予定である。
+
+Producerはretained C4C2 exact `2 binding / 1 use`、unique normal Resolved→Typed mapping、typed structure/rangeを
+full authenticateし、row0 `mapper use0 x@94..95 -> outer binding1 x@136..137`だけをpublishする予定である。
+Task252 occurrence、`BindingEnv`/checker binding、capture、formula、type/sethood、request/result、verdict、
+diagnostic、install、route、coverage creditは作らない予定である。Validation precedence/snapshot/default-deny/test/baselineは
+completion evidenceまでcontractがownする。

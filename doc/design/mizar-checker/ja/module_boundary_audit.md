@@ -23,6 +23,19 @@ Full implementationはexact 3 Rust path（checker owner、mizar-test private reg
 
 Implementation/test-sufficiency reviewは**NO FINDINGS**、focused/package verification、format、package/full-workspace Clippy/tests、metadata/public-enum suites、unchanged 5 CLI replay、diff checkはboundary拡張なしでPASS。sole Low baseline/current wording repair後、independent bilingual/boundary reviewも**NO FINDINGS**。final-qualityも**NO FINDINGS**、全`9/9` hard gate PASS、valid uncapped `100/100`（`20/20/15/15/10/10/5/5`）。exact 23-path staging/cached reviewもPASS。task-only commit/immediate post-commit proof/accepted fresh semantic STOPはlanguage-local [historical checkpoint](../../task_contracts/ja/CHECKER-FRAENKEL-GENERATOR-BOUND-USE-257C4B.md#historical-immediate-post-implementation-checkpoint)でclosedし、successor/boundary expansionはselectしない。
 
+## Task 257C4C3 nested Fraenkel binder/use boundary
+
+Frozen [C4C3 contract](../../task_contracts/ja/CHECKER-FRAENKEL-NESTED-BINDER-USE-257C4C3.md)は
+production changeをexisting cohesive `source_formula_composition.rs` ownerだけに保つ。他のRust changeは
+existing private mizar-test nested-identity leafだけ。Checker module/facade、Task252/source-term、binding
+environment、Typed/Resolved install、resolver production、runner dispatch、Cargo、canonical artifact、active
+coverage surfaceは変更しない。
+
+Planned public familyはexact-F5 C4A/C4Bとdistinctで、authenticated C4C2 resolver-use/binder identity pair 1件と
+typed siteだけをtransportする予定である。C4A/C4B reuse/weakening、primary occurrence/checker binding creation、capture/
+type/sethood/request/result/verdict/diagnostic/route追加は`boundary_violation`。Implementation measurementまでは
+current source-layout countをcompleted C4B baselineのまま維持する。
+
 ## Split Gate
 
 behavior-neutral private module split が必要になるのは、checker-owned file が

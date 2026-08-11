@@ -1,0 +1,275 @@
+# Task CHECKER-FRAENKEL-NESTED-BINDER-USE-257C4C3: Nested Fraenkel Binder/Mapper-Use Transport
+
+> Canonical language: English. Japanese companion:
+> [../ja/CHECKER-FRAENKEL-NESTED-BINDER-USE-257C4C3.md](../ja/CHECKER-FRAENKEL-NESTED-BINDER-USE-257C4C3.md).
+
+Owning plans: [mizar-checker](../../mizar-checker/en/00.crate_plan.md#task-index)
+and [mizar-test](../../mizar-test/en/00.crate_plan.md#task-index).
+Durable owner sections: checker
+[source formula composition](../../mizar-checker/en/source_formula_composition.md#task-257c4c3-nested-fraenkel-bindermapper-use-transport)
+and test [harness](../../mizar-test/en/harness.md#checker-task-257c4c3-private-nested-binderuse-probe).
+
+## Status, purpose, and readiness
+
+**Status:** frozen and dependency-ready; implementation has not started.
+
+Fresh read-only inventory at clean
+`HEAD e5ffc6bc036ed5d7ba3c173e23671f1c4511ba6a` selects this task as the
+dependency-minimal successor to completed C4C2. The human owner decision fixes
+Task 257C and `source_formula_composition` as the first checker owner and
+requires a zero-semantic identity transport before any Task-252 primary
+occurrence. This task therefore maps the sole C4C2 inner mapper use to the
+distinct outer generator binder in one immutable checker handoff. It neither
+interprets nor installs that relation.
+
+There is no `spec_gap`: Chapter 13 fixes the resolved outer-binder identity and
+the existing `.miz`/inactive sidecar fix the exact positive profile. C4C2
+completed the resolver relation. The missing checker identity handoff is
+`source_drift`; its absent exact checker/private imported-fixture tests are a
+`test_gap`; and the previously undecided first checker owner was
+`design_drift`, now resolved by the human owner decision. Reusing exact-F5
+C4A/C4B, creating or copying Task-252 occurrences, or publishing capture or a
+semantic result is a `boundary_violation`.
+
+## Authority, dependencies, and protected artifacts
+
+Authority is, in order:
+
+1. canonical [Chapter 4 §4.6](../../../spec/en/04.variables_and_constants.md#46-scoping-and-shadowing)
+   and [Chapter 13 §§13.4.2, 13.4.4, and 13.8.6](../../../spec/en/13.term_expression.md#134-set-expressions);
+2. exact existing
+   [`pass_types_nested_comprehension_outer_generator_capture_001.miz`](../../../../tests/miz/pass/types/pass_types_nested_comprehension_outer_generator_capture_001.miz);
+3. its sole existing [trace row](../../../../tests/coverage/spec_trace.toml);
+4. its inactive [expectation](../../../../tests/miz/pass/types/pass_types_nested_comprehension_outer_generator_capture_001.expect.toml);
+5. completed [C4C0](TEST-FRAENKEL-NESTED-CAPTURE-257C4C0.md),
+   [C4C1](TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md), and
+   [C4C2](RESOLVE-FRAENKEL-NESTED-CAPTURE-257C4C2.md), followed by derived
+   design/source inventory.
+
+The source, inactive sidecar, and trace remain byte-identical with SHA-256
+`c3b8bd62c16406ccedee2e64a71ef62a5c4b329d2319be33ad3834a9541af431`,
+`9ed000a30c1d519bd665f338c636fb9e529e9848a285209bebe6728f19961b92`, and
+`d4d817e83aac78d19e729702b26c62604fc57581eec18672a5c26ec44efe7a81`.
+The sidecar stays inactive `advanced_semantics`, `pass/type_check`, with no
+diagnostic codes or active tags. The trace row remains test-intent-only and
+grants no execution or semantic credit.
+
+Dependencies are the clean C4C2 implementation/closeout commits
+`601db2ab8fbcfa736d4b619e0eacbbf1291cc800` and
+`e5ffc6bc036ed5d7ba3c173e23671f1c4511ba6a`, the exact imported frontend
+admission, the C4C2 `FraenkelGeneratorVariableSourceCollection`, and an
+unrecovered one-to-one `ResolvedNodeId` to `TypedNodeId` projection. C4A/C4B
+are compatibility-only negative profiles and are not dependencies.
+
+## Selected decomposition and forbidden alternatives
+
+The selected split is the smallest zero-semantic checker boundary: retain a
+private clone of the complete resolver collection and `TypedAst`, authenticate
+their environment and exact nested profile, and publish one row containing
+only the resolver use/binding identities and their two typed node sites. This
+unblocks a future separately contracted capture or occurrence consumer without
+choosing either semantic owner now.
+
+Rejected alternatives are:
+
+- extend C4A/C4B: those public families and validators are exact-F5-only and
+  require a different one-binding/three-use structural dependency;
+- create a Task-252 term/reference row first: explicitly excluded by the human
+  owner decision and not fixed by the current checker oracle;
+- construct a `BindingEnv`, `BindingId`, or `CapturedFreeVariables`: each would
+  add checker semantic state beyond identity transport;
+- install the handoff in `TypedAst`/`ResolvedTypedAst` or expose it through a
+  runner: no active consumer, request/result contract, or execution oracle
+  exists.
+
+## Frozen public API and ownership
+
+`crates/mizar-checker/src/source_formula_composition.rs` is the sole production
+owner. The exact new public family is:
+
+```rust
+SourceNestedFraenkelBinderUseId
+SourceNestedFraenkelBinderUse
+SourceNestedFraenkelBinderUseTable
+SourceNestedFraenkelBinderUseHandoff
+#[non_exhaustive] SourceNestedFraenkelBinderUseError
+SourceNestedFraenkelBinderUseProducer
+```
+
+The dense ID exposes only:
+
+```rust
+new(index: usize) -> Self
+index(self) -> usize
+```
+
+The immutable row exposes exactly:
+
+```rust
+resolver_use_index() -> usize
+resolver_binding() -> FraenkelGeneratorVariableBindingId
+outer_binder() -> TypedNodeId
+inner_mapper_use() -> TypedNodeId
+source_ordinal() -> usize
+```
+
+The table exposes exactly:
+
+```rust
+get(id: SourceNestedFraenkelBinderUseId) -> Option<&SourceNestedFraenkelBinderUse>
+iter() -> impl Iterator<Item = (SourceNestedFraenkelBinderUseId, &SourceNestedFraenkelBinderUse)>
+len() -> usize
+is_empty() -> bool
+```
+
+The handoff exposes exactly:
+
+```rust
+source_id() -> SourceId
+module_id() -> &ModuleId
+resolver_summary() -> &str
+binder_uses() -> &SourceNestedFraenkelBinderUseTable
+debug_text() -> String
+```
+
+The producer signature is exactly:
+
+```rust
+SourceNestedFraenkelBinderUseProducer::build(
+    resolver: &FraenkelGeneratorVariableSourceCollection,
+    typed_ast: &TypedAst,
+) -> Result<SourceNestedFraenkelBinderUseHandoff, SourceNestedFraenkelBinderUseError>
+```
+
+No public dependency getter, mutable accessor, unchecked constructor, role
+enum, capture flag, semantic value, or installation API is added. The sole
+planned consumer is one private `mizar-test` library regression in the existing
+`fraenkel_nested_capture_identity.rs` leaf. Any production or semantic consumer
+requires a separate reviewed contract.
+
+`resolver_summary()` is exactly the non-authoritative C4C2 string
+`fraenkel-generator-variable-source-v1|module=<package>.<path>|bindings=2|uses=1`;
+the retained resolver snapshot, not this string, is authoritative. The exact
+handoff debug grammar is
+`source-nested-fraenkel-binder-use-v1|module=<package>.<path>|binder-uses=1`.
+
+## Exact row, validation, and default deny
+
+The handoff contains exactly one row:
+
+| ID | Resolver use | Resolver binding | Outer binder | Inner mapper use | Source ordinal |
+|---:|---:|---:|---:|---:|---:|
+| `0` | `0` | `1` | typed node for `x@136..137` | typed node for `x@94..95` | `0` |
+
+The two typed sites are exact `TypedNodeId`s uniquely associated with C4C2
+resolved nodes. `outer_binder` is a normal `Identifier` whose source range is
+`136..137`; `inner_mapper_use` is the normal mapper identifier at `94..95`.
+The retained dependency validation also authenticates the shared
+definition/functor, distinct inner/outer comprehensions, both generator
+segments and binders, inner mapper owner/reference/identifier chain, C4C2
+binding order `inner y = 0`, `outer x = 1`, sole `Mapper` use 0 targeting
+binding 1, source/role ordinals 0, exact ranges, complete typed child edges,
+normal recovery, and unique resolved-to-typed mapping. The row never derives a
+binding from spelling or range; it copies the already resolved identity only
+after the complete relation validates.
+
+The private snapshot version/domain are exactly
+`source-nested-fraenkel-binder-use-dependencies-v1` and
+`source-nested-fraenkel-binder-use`. The non-exhaustive error enum has exactly
+these four variants, in this validation precedence:
+
+```rust
+EnvironmentMismatch
+InvalidResolverDependency
+InvalidTypedDependency
+InvalidBinderUse { binder_use: SourceNestedFraenkelBinderUseId }
+```
+
+Wrapper/dependency source or module mismatch wins. Invalid snapshot
+version/domain, wrong resolver count/field/order/summary, or a non-C4C2 profile
+is next. Missing, duplicate, recovered, wrongly typed, wrongly ranged, or
+detached resolved-to-typed nodes follow. Only then does the lowest invalid
+dense row return `InvalidBinderUse`; a wrong total count reports ID 0.
+
+Admission is atomic and default-deny. Missing/extra/reordered/duplicated
+binding or use rows, C4A/C4B F5 shapes, equal binders, alternate generator
+types, condition-bearing or extra nested comprehensions, recovery, duplicate
+resolved mappings, detached parent/child edges, stale summaries/snapshots,
+wrong sites, or partial matches publish no handoff.
+
+## Implementation, tests, counts, and audit impact
+
+Implementation changes exactly:
+
+1. `crates/mizar-checker/src/source_formula_composition.rs`; and
+2. existing private
+   `crates/mizar-test/src/runner/tests/type_elaboration/fraenkel_nested_capture_identity.rs`.
+
+The checker owner adds exactly four tests:
+
+1. `task257c4c3_builds_exact_nested_binder_use_handoff`;
+2. `task257c4c3_rejects_environment_resolver_and_typed_dependency_corruption`;
+3. `task257c4c3_rejects_row_cardinality_order_and_site_corruption`; and
+4. `task257c4c3_replays_deterministically_and_rejects_f5_profiles`.
+
+The existing private leaf will add exactly
+`task257c4c3_real_imported_fixture_builds_checker_identity_handoff`. It will use
+the existing C4C1 frontend and typed-profile helpers, call the producer
+directly, assert the one public row and immutable dependencies, and remain
+library-test-only. It will not activate the sidecar or route.
+
+Raw library counts project `mizar-checker 554 -> 558` and `mizar-test 619 ->
+620`. Baseline sorted raw test-list hashes are checker
+`78f0291fb13aed8a8adbbc5aa1db9df1a7415fc9d8cf35820e1ad9e40aad2ace`
+and mizar-test
+`ad70984d911bd6ef84fc5efa15a50815acc7b4cc7daab1c89235263e022aa00b`.
+The checker owner baseline is `7958` lines / SHA-256
+`90b339d9707f9f8d847b678721e8db0ef6a00e4a15dbb41474a0cf6980f47168`;
+the private leaf is `169` lines / SHA-256
+`fa70dc53fb92376fcbd71b4058d9830355ab12fc4e5d6f67050d129cb7f46ae9`.
+Contract trees project `92/92 -> 93/93`.
+
+`doc/design/spec_coverage_audit.md` receives a zero-credit design-mapping
+addendum because the first checker identity transport becomes covered by a
+durable design/API/test owner. Trace and expectation metadata remain unchanged:
+no executable, semantic, sethood, occurrence, capture, request/result,
+diagnostic, route, or Task-277B credit changes.
+
+## Reviews, verification, exit, and handoff
+
+Required independent reviews are specification/contract, test sufficiency,
+implementation, source/documentation/API, bilingual/boundary, and final
+hard-gate quality. Every material finding requires repair and re-review.
+
+Verification includes the five focused tests, checker and mizar-test library
+tests, both lint-policy suites, metadata tests, formatting, warnings-denied
+workspace Clippy, full workspace tests, five unchanged CLI replays, protected
+artifact hashes, exact scope/diff checks, and post-commit proof.
+
+Exit requires **NO FINDINGS**, all nine autonomous hard gates, valid quality
+`>=90/100`, a task-only implementation commit, clean/stash-invariant
+post-commit proof, and fresh successor inventory. Task 277B stays not-ready and
+zero-credit.
+
+The next inventory must first consider a separately owned Task-252
+mapper-primary-occurrence prerequisite because this task deliberately does not
+create one. It may select that or another zero-semantic structural transport
+only if authority, exact oracle, dependencies, and sole ownership are unique.
+Type/sethood, `CapturedFreeVariables`, generated-core parameters,
+request/result, verdicts, diagnostics, production installation, runner
+activation, and coverage credit remain deferred.
+
+Recommended routing: GPT-5.6 Sol at `xhigh` owns authority, public API and
+boundary acceptance, finding disposition, and final scoring. Terra at `high`
+or `xhigh` may perform frozen implementation and independent reviews.
+
+## Frozen documentation prerequisite checkpoint
+
+Independent specification/API review initially found the missing exact debug
+grammar and exact error-variant-set statement; independent bilingual/boundary
+review found a duplicated audit addendum and premature implementation-tense
+wording. Those findings were repaired. Finding-specific re-reviews report
+**NO FINDINGS**. `git diff --check`, checker and mizar-test lint-policy suites,
+and all `137/137` metadata tests pass. Implementation remains pending and must
+not begin until this documentation prerequisite is committed and a clean fresh
+inventory confirms the frozen dependencies.

@@ -6992,3 +6992,16 @@ selected only from fresh post-commit inventory.
   inventory **STOP** at the language-local [historical postimplementation
   checkpoint](../../task_contracts/en/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md#historical-immediate-postimplementation-pre-closure-checkpoint).
   Do not select capture/resolver semantics, Task-252, or Task-277B work here.
+
+## Task 257C4C3 nested binder/mapper-use transport
+
+- [x] Freeze the paired [C4C3 contract](../../task_contracts/en/CHECKER-FRAENKEL-NESTED-BINDER-USE-257C4C3.md)
+  from the human Task-257C owner decision and clean post-C4C2 inventory.
+- [x] Complete independent specification/contract and bilingual/boundary
+  reviews with **NO FINDINGS** after repairing the exact debug/error ABI,
+  duplicate audit addendum, and implementation-tense findings.
+- [ ] Implement only the exact one-row C4C2 resolver-to-typed identity handoff
+  and the five frozen tests; do not add Task-252, capture, semantic, install,
+  route, diagnostic, or credit state.
+- [ ] Complete all test, implementation, source/docs/API, bilingual/boundary,
+  hard-gate, quality, staging, commit, and clean fresh-inventory gates.

@@ -6580,3 +6580,14 @@ post-commit fresh inventoryからだけ選択する。
 - [x] Task-only commit、post-commit proof、accepted fresh-inventory **STOP**を
   language-local [historical postimplementation checkpoint](../../task_contracts/ja/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md#historical-immediate-postimplementation-pre-closure-checkpoint)でcloseする。
   Capture/resolver semantics、Task252、Task277B workはここでselectしない。
+
+## Task 257C4C3 nested binder/mapper-use transport
+
+- [x] 人間のTask257C owner判断とclean post-C4C2 inventoryからpaired
+  [C4C3 contract](../../task_contracts/ja/CHECKER-FRAENKEL-NESTED-BINDER-USE-257C4C3.md)をfreezeする。
+- [x] Exact debug/error ABI、duplicate audit addendum、implementation tense findingを修正し、
+  independent specification/contractとbilingual/boundary reviewを**NO FINDINGS**まで完了する。
+- [ ] Exact one-row C4C2 resolver→typed identity handoffとfrozen test 5件だけをimplementし、Task252、
+  capture、semantic、install、route、diagnostic、credit stateを追加しない。
+- [ ] Test/implementation/source-doc-API/bilingual-boundary/hard-gate/quality/staging/commit/clean
+  fresh-inventory gateを完了する。

@@ -62,6 +62,23 @@ semantic STOP are closed at the language-local [historical
 checkpoint](../../task_contracts/en/CHECKER-FRAENKEL-GENERATOR-BOUND-USE-257C4B.md#historical-immediate-post-implementation-checkpoint).
 No successor or boundary expansion is selected.
 
+## Task 257C4C3 nested Fraenkel binder/use boundary
+
+The frozen [C4C3 contract](../../task_contracts/en/CHECKER-FRAENKEL-NESTED-BINDER-USE-257C4C3.md)
+keeps production changes in the existing cohesive
+`source_formula_composition.rs` owner. The only other Rust change is the
+existing private mizar-test nested-identity leaf. No checker module, facade,
+Task-252/source-term owner, binding environment, Typed/Resolved installation,
+resolver production, runner dispatch, Cargo metadata, canonical artifact, or
+active coverage surface changes.
+
+The planned public family will be distinct from exact-F5 C4A/C4B and transport only
+one authenticated C4C2 resolver-use/binder identity pair plus typed sites.
+Reusing or weakening C4A/C4B, creating a primary occurrence or checker
+binding, or adding capture/type/sethood/request/result/verdict/diagnostic/route
+state would be a `boundary_violation`. Current source-layout counts remain the
+completed C4B baseline until implementation measurements replace them.
+
 ## Split Gate
 
 A behavior-neutral private module split is required only when a checker-owned
