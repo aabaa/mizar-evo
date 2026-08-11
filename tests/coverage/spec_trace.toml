@@ -1777,6 +1777,22 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.13.set_expressions.nested_capture.semantic"
+source = "doc/spec/en/13.term_expression.md"
+section = "13.4.4 Nested Comprehensions; with 13.8.6 Set Expression Encoding"
+stage = "advanced_semantics"
+status = "covered"
+required = true
+coverage = "pass"
+depends_on = [
+  "spec.en.13.set_expressions.parser",
+]
+tests = [
+  "tests/miz/pass/types/pass_types_nested_comprehension_outer_generator_capture_001.expect.toml",
+]
+notes = "Spec-derived positive nested-capture seed. The sidecar remains inactive until canonical Element/NAT lexical/import admission, resolver/checker capture transport, and an advanced_semantics runner exist. The covered status records test intent only and grants no execution, diagnostic, sethood, Task-252, C4A/C4B capture-table, or Task-277B credit."
+
+[[requirement]]
 id = "spec.en.13.set_expressions.parser"
 source = "doc/spec/en/13.term_expression.md"
 section = "13.4 Set Expressions"

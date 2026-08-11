@@ -1,0 +1,5 @@
+definition
+  func NestedCapture -> set equals
+    { { x where y is Element of NAT }
+      where x is Element of NAT };
+end;

@@ -1807,7 +1807,9 @@ Completed [EN canonical](../../task_contracts/en/CHECKER-FRAENKEL-GENERATOR-BOUN
 
 [EN canonical](../../task_contracts/en/TEST-FRAENKEL-NESTED-CAPTURE-257C4C0.md)と
 [JA companion](../../task_contracts/ja/TEST-FRAENKEL-NESTED-CAPTURE-257C4C0.md)は
-future source/hash、inactive sidecar/sole trace row、6-diagnostic lexical/import
-`source_drift`、artifact-time audit/remeasurement、zero capture/Task277B credit、
-exact20 boundary、Sol/Terra handoffを同期する。English canonical、exceptionなし。
-Future artifacts/lower prelude prerequisiteはpending。
+implemented source/hash、inactive sidecar/sole trace row、Chapter-13 audit delta、
+6-diagnostic lexical/import `source_drift`、measured metadata/5-CLI/hash evidence、
+zero executable/semantic/Task277B credit、exact24 artifact+private-count-guard
+boundary、Sol/Terra handoffを同期する。English canonical、exceptionなし。
+Independent bilingual/boundary/final-quality reviewは**NO FINDINGS**、全`9/9`
+hard gates PASS、valid `100/100`。Closeout/lower prelude prerequisiteだけがpending。

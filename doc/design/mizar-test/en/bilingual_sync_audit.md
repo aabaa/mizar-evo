@@ -1967,8 +1967,10 @@ No successor is selected and no bilingual exception exists.
 
 The [EN canonical](../../task_contracts/en/TEST-FRAENKEL-NESTED-CAPTURE-257C4C0.md)
 and [JA companion](../../task_contracts/ja/TEST-FRAENKEL-NESTED-CAPTURE-257C4C0.md)
-synchronize the future source/hash and paths, inactive sidecar/trace relation,
-`343/343 -> 344/344` projection, current six-diagnostic lexical/import blocker,
-artifact-time audit/metadata/five-CLI remeasurement, zero active/semantic/
-Task-277B credit, exact20 boundary, and next prelude handoff. English is
-canonical; no exception exists and future work is not reported complete.
+synchronize the implemented source/hash and paths, inactive sidecar/trace
+relation, `344/344` corpus, Chapter-13 audit delta, current six-diagnostic
+lexical/import blocker, measured metadata/five-CLI/hash evidence, zero active/
+executable/semantic/Task-277B credit, exact24 artifact-plus-private-count-guard
+boundary, and next prelude handoff. English is canonical; no exception exists.
+Independent bilingual/boundary/final-quality review ended with **NO FINDINGS**;
+all `9/9` hard gates pass with valid `100/100`. Closeout remains pending.

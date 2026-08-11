@@ -1,4 +1,4 @@
-# Task TEST-FRAENKEL-NESTED-CAPTURE-257C4C0: Nested Fraenkel Capture Test-Intent Prerequisite
+# Task TEST-FRAENKEL-NESTED-CAPTURE-257C4C0: Nested Fraenkel Capture Inactive Test Intent
 
 > canonical English: [../en/TEST-FRAENKEL-NESTED-CAPTURE-257C4C0.md](../en/TEST-FRAENKEL-NESTED-CAPTURE-257C4C0.md)。正本は英語です。
 
@@ -15,24 +15,31 @@ mizar-test [corpus](../../mizar-test/ja/miz_corpus.md#task-257c4c0-frozen-corpus
 
 ## Status, authority, readiness
 
-**Status:** docs-only prerequisite。このexact 20-Markdown-path changeはlater
-test-artifact taskだけをfreezeし、`.miz`/sidecar/trace row/coverage-audit/source/
-route/stage/semantic creditを追加しない。
+**Status:** artifact/owner-doc/private count-guard implementationはcomplete。
+Test/implementationおよびsource-doc/bilingual/boundary reviewは**NO FINDINGS**。
+Final qualityは**NO FINDINGS**、全`9/9` hard gates PASS、valid uncapped
+`100/100`。Lifecycle closeoutはpending。Exact24 completionはfrozen `.miz`、inactive sidecar、
+sole trace row、Chapter-13 coverage-audit delta、synchronized owner 16 recordsを
+追加し、private global-count test 4件をmechanically updateする。Active route/
+executable stage/capture semantics/diagnostic/Task277B
+creditは0で、4 crate-plan rowsはunchanged。
 
 Authority orderはcanonical Chapter 13 §13.4.4（§§13.4.2/13.8.6を併読）、
-future test-first `.miz`、future trace/sidecar、completed R2/C4A/C4B derived
-owners、最後にnon-normative current source observationである。Inner
+implemented test-first `.miz`、implemented trace requirement/inactive sidecar、
+completed R2/C4A/C4B derived owners、最後に
+non-normative current source observationである。Inner
 comprehensionのouter generator referenceはdisplay spellingではなくresolved
 binder identityをcaptureしなければならない。F5にはnested occurrenceがないため、
-本taskはmissing derived test-intent `design_drift`をcloseし、existing `test_gap`
-用future oracleだけをfreezeする。exact sourceは現在parser diagnostic 6件、first
-`Element` range `67..74`であり、lower lexical/import `source_drift`はopen。
-capture implementationはreadyでない。Task277Bはnot-ready/zero credit、
+docs prerequisiteはmissing derived test-intent `design_drift`をcloseし、本artifact
+completionはexisting `test_gap`をspec-derived inactive oracleでcloseする。exact
+implemented sourceは現在parser diagnostic 6件、first `Element` range `67..74`であり、
+lower lexical/import `source_drift`はopen。capture implementationはreadyでない。
+Task277Bはnot-ready/zero credit、
 `MC-G020`/`MC-G021`も不変。
 
-## Frozen future source/artifacts
+## Implemented source/artifacts
 
-Future pathsはexactly次の2件である。
+Implemented pathsはexactly次の2件である。
 
 - `tests/miz/pass/types/pass_types_nested_comprehension_outer_generator_capture_001.miz`
 - `tests/miz/pass/types/pass_types_nested_comprehension_outer_generator_capture_001.expect.toml`
@@ -53,7 +60,7 @@ inner mapper `x`はresolved binder identityでouter generator `x`をselectし、
 generator `y`はdistinct/unused。builtin-`set` rewrite、local `NAT`/`Element`
 lookalike、condition追加、rename/reformatは禁止。
 
-## Exact future sidecar
+## Exact implemented sidecar
 
 ```toml
 schema_version = 1
@@ -74,7 +81,7 @@ notes = "Inactive advanced_semantics pass oracle derived from Chapter 13 section
 `tags`と全failure-only fieldはabsent。inactive test intentであり、active tag/
 runnerなし。current parser diagnosticをsemantic expectationへrebaselineしない。
 
-## Exact future trace/coverage impact
+## Exact implemented trace/coverage impact
 
 ```toml
 [[requirement]]
@@ -96,29 +103,61 @@ notes = "Spec-derived positive nested-capture seed. The sidecar remains inactive
 
 dependency/sidecarは各1件だけ。notesはinactive/spec-derived test-intent coverage
 only、current execution/capture semantics/Task277B/verdict credit 0を明記する。
-Later artifact taskはmapping/trace/follow-upを変更するため
-`doc/design/spec_coverage_audit.md`を更新する。本prerequisiteではunchanged。
-Artifact taskが変更するのはChapter-13 rowだけであり、mappingにinactive positive
-capture oracleを追加し、statusは`partial`のまま、follow-upはexecutable capture
-credit 0とlexical/import admissionおよびlater resolver/checker capture transportの
-separate ownershipを保持する。他row/statusは変更しない。
+Artifactは`doc/design/spec_coverage_audit.md`のChapter-13 rowだけを更新し、mappingに
+inactive positive capture oracleを追加する。Statusは`partial`のまま、follow-upは
+executable capture credit 0とlexical/import admissionおよびlater resolver/checker
+capture transportのseparate ownershipを保持する。他row/statusは変更しない。
 
 Clean baseline HEADは`e0b86bc4ce9ba4adaedab3962057d5f28e368ad6`。
-corpus pair `343/343 -> 344/344`、contract trees `89/89 -> 90/90`。
+Implemented corpus pairは`344/344`、contract treesは`90/90`。
 trace baselineは`5908` lines、SHA-256
 `55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`。
 coverage audit baselineは`7005` lines、parent inventory frozen abbreviation
 ではなくfull SHA-256
 `a31f6fb3bd2b561610630497c58284484d00716dd0b7f210f55bef3bc4bfa6db`。
-Artifact taskのmetadata projectionはcases/requirements `428/395 -> 429/396`、
-pass/fail `235/193 -> 236/193`。Active route counts `101/7/205/1`とestablished
-aggregate CLI warnings/errors `23/0`はcreditなし/unchangedで、command-specific
-development outputとは区別する。Metadataとplan/parse/declaration/
-type/proof全5 CLIをrerunし、full measured counts/hashesをrecordする。
+Final measurementはsource `124` bytes/SHA-256
+`f1a35d2d7f6cb4a57ece3b1143a68c1a01ab9ac478960862057025cc9838cea7`、
+sidecar SHA-256
+`2c7d987baa988b9ea1ae179d6ed1a3b9c8df334694cdd9d43626342647d59701`、
+trace `5924` lines/SHA-256
+`d1df314665998fe5271a73d7102b6e6d6098fd6636d78e2a6ded779d5f44cbae`、audit
+`7005` lines/SHA-256
+`99720173f84f1713ed2bf63e9806566b2aa6a904d18d6855b20544bab96928a5`。
+Metadataは`137/137` PASS、cases/requirements `429/396`、pass/fail `236/193`、
+active routes `101/7/205/1`、aggregate warnings/errors `23/0`。First metadata runの
+requirement-ID order findingは`nested_capture`を`parser`前へ移してrepairし、final
+runはPASSした。CLI stdout SHA-256はplan
+`2d2accef2c6fc32c1b3372530f6136af1299ac6ae7db6a0158798336b779c7e7`、parse
+`a8a7aa639d2ebc65eddc923c7e9369ea5637d50e935f808600f446da1bfbda56`、
+declaration `71e83ba0b20d4015e07b3bd2c0c4db2837b6151d1251812caed7954530d53c74`、
+type `4b2c7bd5ec3cc56e5672fb351126126230ec84fba9bd2bd9049a516d378fab7f`、
+proof `ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`。
+Active route/aggregate warning-error countはexecution/semantic creditを与えず、
+command-specific development outputとは区別する。
+
+First full `cargo test`はstale count guard 4件へ到達して`610/614`でfailした。
+Exact tuple repair後の`cargo test -q -p mizar-test --lib`は`614/614` PASS。
+Final private-test file measurementは次の通り。
+
+| path | lines | SHA-256 |
+|---|---:|---|
+| `source_attribute_definition.rs` | `1113` | `ae59a65e2b899471967e37d597273d1705344ac17ba9d688003f549afb35968a` |
+| `source_functor_definition.rs` | `1674` | `d97abf2bd83e9af4e5c64b84bd8b05045b1df257bf3c56dad7bf7f7876a3b715` |
+| `source_mode_definition.rs` | `1242` | `701fca1a591973e54ffe121599d1e7de7596b3e968f3180d2bc120fa8aabee25` |
+| `source_property_implementation.rs` | `236` | `15db079c61dcfbde48b2922eaebb321ea126163e6368fdfa9e218395a6ebed83` |
+
+Post-repair `cargo fmt --all -- --check`、checker/mizar-test lint policy各
+`15/15`、full `cargo test`、full workspace all-target/all-feature Clippy
+`-D warnings`、metadata `137/137`、全5 CLI、`git diff --check`はPASS。Exact24
+sorted-path SHA-256は
+`085737bdf48261cd81b84101aa89e84c9b7444b3c38b66c9fd98fb849d154a4e`。
+Independent artifact/test-sufficiency/implementation reviewは**NO FINDINGS**。
+Independent source-doc/EN-JA/boundary reviewも**NO FINDINGS**で、exact24 measurement
+とzero-credit deferralをreproduceした。Final-quality scoringとcommit lifecycleはpending。
 
 ## Scope, prohibitions, deferrals
 
-本prerequisiteは次のexact 20 Markdown pathsだけを変更する。
+Historical docs prerequisiteは次のexact 20 Markdown pathsだけを変更した。
 
 ```text
 doc/design/task_contracts/en/TEST-FRAENKEL-NESTED-CAPTURE-257C4C0.md
@@ -143,9 +182,10 @@ doc/design/mizar-test/en/bilingual_sync_audit.md
 doc/design/mizar-test/ja/bilingual_sync_audit.md
 ```
 
-Later artifact-and-owner completion taskもexact 20 pathsだけを変更する。すなわち
+Artifact-and-owner completionはexact 24 pathsだけを変更する。すなわち
 上記new corpus 2 files、`tests/coverage/spec_trace.toml`、
-`doc/design/spec_coverage_audit.md`、および次の16 completion recordsである。
+`doc/design/spec_coverage_audit.md`、次の16 completion records、およびprivate
+count-guard test 4 pathsである。
 
 ```text
 doc/design/task_contracts/en/TEST-FRAENKEL-NESTED-CAPTURE-257C4C0.md
@@ -166,15 +206,32 @@ doc/design/mizar-test/en/bilingual_sync_audit.md
 doc/design/mizar-test/ja/bilingual_sync_audit.md
 ```
 
-Artifact completionでは4 plan rowsを変更しない。このowner updateでfuture corpus、
-trace、audit、gap、parity、lifecycle claimをcloseし、omissionによるderived-doc
-stalenessを防ぐ。
+```text
+crates/mizar-test/src/runner/tests/type_elaboration/source_attribute_definition.rs
+crates/mizar-test/src/runner/tests/type_elaboration/source_functor_definition.rs
+crates/mizar-test/src/runner/tests/type_elaboration/source_mode_definition.rs
+crates/mizar-test/src/runner/tests/type_elaboration/source_property_implementation.rs
+```
 
-Rust/Cargo/spec/existing fixture/expectation/
-trace/audit/protected artifact/route/active metadataはunchanged。
+First full `cargo test`はprerequisiteのexact20 scopeに`design_drift`を発見した。
+これら4 existing private testsはglobal metadata tupleを意図的にpinする。唯一
+authorizeするRust changeは各named fileでcases/requirements
+`(428, 395) -> (429, 396)`、pass/fail `(235, 193) -> (236, 193)`を1回ずつ
+updateすること。Active `[205; 6]`および`(101, 7, 205, 1)` route assertionは
+unchanged。これはtest-maintenanceだけで、production code/route/capture/semantic
+behaviorはbyte-unchanged。
 
-F5/R2/C4A/C4B/Task252/`CapturedFreeVariables`をedit/reinterpretしない。Future
-artifactを本taskで追加しない。builtin-set positive oracle/local lookalikeを作らない。
+Parentは`.miz`/sidecar/trace/coverage-audit 4 pathsをexclusiveにownし、本owner
+integrationは上記16 Markdown recordsだけを変更する。4 plan rowsはunchanged。
+Owner updateはfuture corpus/trace/audit/gap/parity/lifecycle claimをcloseする。
+
+Production Rust/Cargo/spec/existing fixture/expectation（exact new pair以外）、
+trace/audit state（exact recorded row delta以外）、protected artifact/route/active
+metadataはunchanged。
+
+F5/R2/C4A/C4B/Task252/`CapturedFreeVariables`をedit/reinterpretしない。Exact
+implemented source/sidecar/sole trace row/Chapter-13 audit delta以外を追加しない。
+builtin-set positive oracle/local lookalikeを作らない。
 capture、term/reference ownership、type/sethood/evidence/request/verdict/diagnostic、
 Typed/Resolved install、route、trace credit、Task277B activationを実装しない。
 parser diagnostic 6件はlower lexical/import `source_drift`でありexpectation driftでは
@@ -182,14 +239,22 @@ parser diagnostic 6件はlower lexical/import `source_drift`でありexpectation
 
 ## Reviews, verification, exit, handoff
 
-Authority/test intent、exact20、EN/JA parity、corpus/trace schema、links/fragments、
-protected no-op、future-status wordingをindependent reviewする。`git diff --check`と
-checker/mizar-test `lint_policy`を実行する。exact20、parity、zero artifact/source
-delta、checks PASS、全9 hard gate validでdocs prerequisiteをexitする。stage/commit/
-postcommit/fresh inventoryはseparate lifecycleであり、下記historical checkpointで
-closeした。
+Authority/test intent、exact24 artifact boundary、EN/JA parity、corpus/trace schema、
+links/fragments、protected no-op、truthful inactive statusをindependent reviewする。
+`git diff --check`とchecker/mizar-test `lint_policy`を実行する。exact4 artifact/audit
+paths + exact16 owner paths + exact4 private count-guard paths、parity、checks PASS、全9 hard gate validでartifact
+completionをexitする。Source-doc/bilingual/boundary reviewはcomplete。Pendingは
+下記current lifecycle recordで管理する。
+Final qualityは**NO FINDINGS**、全`9/9` hard gates PASS、valid uncapped scoreは
+`100/100`（`20/20/15/15/10/10/5/5`）。
 
-Pre-staging completion evidenceは完了した。Future owner-completion scopeとliteral
+Exact staging/cached reviewはcomplete。Cacheはnew artifact 2件/private count guard
+4件を含むこの24 pathsだけ、unstaged paths 0、sorted path SHA-256
+`085737bdf48261cd81b84101aa89e84c9b7444b3c38b66c9fd98fb849d154a4e`、final
+stat `378/191`で、`git diff --cached --check`をPASS。Pendingはtask-only
+commit、postcommit proof、fresh inventoryだけである。
+
+Historical prerequisite pre-staging completion evidenceは完了した。Future owner-completion scopeとliteral
 EN/JA `notes`をrepair後、independent authority/test-intentおよびbilingual/boundary
 reviewは**NO FINDINGS**。Exact20 sorted-path SHA-256は
 `9826854d25bdd239f1a0e568e4bf27bd8a06d23e2731aeb9222b9738f99e935d`、contract
@@ -215,9 +280,10 @@ exact 20 Markdown paths、`633` insertions/zero deletions、sorted path SHA-256
 later closeout commitのcurrent `HEAD`/worktree claimではない。
 
 Task-only commit、postcommit proof、fresh successor inventoryはclosed。Fresh
-inventoryは既にfreeze済みのexact20 artifact-and-owner completionだけをnext task
-としてacceptし、capture implementationまたはlexical/import implementation choiceを
-authorizeしない。Task277Bはnot-ready/zero creditのままである。
+inventoryは当時freeze済みのexact20 artifact-and-owner completionだけをnext task
+としてacceptし、current artifact reviewがglobal count guard 4件のためscopeを
+exact24へrepairした。このselectionはcapture implementationまたはlexical/import
+implementation choiceをauthorizeしない。Task277Bはnot-ready/zero creditのままである。
 
 次は上記exact artifact-and-owner completion task。そのcommit後fresh inventoryで
 lower lexical/import prelude prerequisiteをfreezeし、capture implementationへjump

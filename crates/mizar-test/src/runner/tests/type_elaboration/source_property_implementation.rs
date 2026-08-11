@@ -119,10 +119,10 @@ fn task264_two_case_trace_selection_and_mixed_boundaries_are_exact() {
     let mixed_source=std::fs::read_to_string(&mixed.source_path).expect("mixed source");
     let (ast,module,shells,symbols)=task253_ast_from_source_text(&mixed_source,264_200);
     assert!(source_property_implementation_output(&ast,module,&shells,&symbols,&mixed_source).is_none());
-    assert_eq!((plan.cases.len(), plan.manifest.requirements.len()), (428, 395));
+    assert_eq!((plan.cases.len(), plan.manifest.requirements.len()), (429, 396));
     assert_eq!(
         (plan.coverage_report.pass_fail_mix.pass, plan.coverage_report.pass_fail_mix.fail),
-        (235, 193)
+        (236, 193)
     );
     assert_eq!(
         (

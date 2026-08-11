@@ -2280,19 +2280,17 @@ ownership only; the mixed structure gap and all semantic deferrals are intact.
 ## Task 257C4C0 frozen traceability increment
 
 The [C4C0 contract](../../task_contracts/en/TEST-FRAENKEL-NESTED-CAPTURE-257C4C0.md)
-freezes one future `advanced_semantics`/covered/required/pass requirement,
+owns one implemented `advanced_semantics`/covered/required/pass requirement,
 `spec.en.13.set_expressions.nested_capture.semantic`. It depends only on
-`spec.en.13.set_expressions.parser` and names only the future nested-capture
+`spec.en.13.set_expressions.parser` and names only the nested-capture
 pass sidecar. The sidecar is pass/`type_check`, has empty diagnostics and no
 tags or failure fields, and remains inactive.
 
-This prerequisite leaves the `5908`-line trace and its
-`55b754c8c4d0d293a1c44e2ba4b0090f407bba1d429b461b6cb4d6ddca9ca2b3`
-hash unchanged. The artifact task adds the row and must update
-`spec_coverage_audit.md`, rerun metadata and all five CLIs, and remeasure all
-counts/hashes. It grants no active route-count, aggregate CLI warning/error,
-semantic, or Task-277B credit; the current six parser diagnostics remain a
-lower lexical/import `source_drift`.
+The row and required Chapter-13 `spec_coverage_audit.md` mapping are now
+present. Final trace/audit counts and hashes, metadata, and all five CLI
+measurements are recorded in the central contract. The row grants no active
+route-count, aggregate CLI warning/error, semantic, or Task-277B credit; the
+current six parser diagnostics remain a lower lexical/import `source_drift`.
 
 ## Checker Task 249S Frozen Traceability No-Op
 

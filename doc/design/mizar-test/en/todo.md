@@ -3945,8 +3945,11 @@ the successor is selected only from fresh post-commit inventory.
 - [x] Freeze the [C4C0 contract](../../task_contracts/en/TEST-FRAENKEL-NESTED-CAPTURE-257C4C0.md),
   future 124-byte source, exact inactive sidecar/trace row, `343/343 -> 344/344`
   corpus impact, lower lexical/import blocker, and protected zero-credit scope.
-- [ ] In a separate artifact task, add the exact `.miz`, sidecar, trace row,
-  coverage-audit delta, and exact 16 completion records; remeasure metadata,
-  all five CLIs, counts, and hashes without adding active tags or routes.
+- [x] Add the exact `.miz`, inactive sidecar, sole trace row, Chapter-13
+  coverage-audit delta, exact 16 completion records, and four private global-
+  count guard repairs without active tags, routes, executable semantics, or
+  Task-277B credit.
+- [x] Record the verified post-change metadata, all five CLI outputs, counts,
+  and hashes in the central contract.
 - [ ] After the artifact commit, run fresh inventory and select a docs-first
   lexical/import prelude prerequisite, not capture implementation.

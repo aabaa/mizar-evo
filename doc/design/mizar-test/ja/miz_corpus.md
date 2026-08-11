@@ -124,9 +124,8 @@ active type `203`である。
 ## Task 257C4C0 frozen corpus increment
 
 [C4C0 contract](../../task_contracts/ja/TEST-FRAENKEL-NESTED-CAPTURE-257C4C0.md)は
-Chapter 13 nested-comprehension outer-generator capture oracle用future handwritten
-pass pair 1件を`tests/miz/pass/types/`にfreezeする。本docs-only prerequisiteは
-corpus artifactを追加しない。Later artifactでpair inventoryは`343/343 -> 344/344`
-となるがinactiveであり、current parser/semantic/route/warning-error/Task277B creditは
+Chapter 13 nested-comprehension outer-generator capture oracle用implemented
+handwritten pass pair 1件を`tests/miz/pass/types/`でownする。Pair inventoryは
+`344/344`であるがinactiveであり、current parser/semantic/route/warning-error/Task277B creditは
 0。Exact source bytes/hash/sidecarはcontract ownerであり、local-lookalike/builtin-set
 variantは禁止。

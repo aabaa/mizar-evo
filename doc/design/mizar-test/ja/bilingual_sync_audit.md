@@ -1822,7 +1822,10 @@ Completed [EN canonical](../../task_contracts/en/CHECKER-FRAENKEL-GENERATOR-BOUN
 
 [EN canonical](../../task_contracts/en/TEST-FRAENKEL-NESTED-CAPTURE-257C4C0.md)と
 [JA companion](../../task_contracts/ja/TEST-FRAENKEL-NESTED-CAPTURE-257C4C0.md)は
-future source/hash/path、inactive sidecar/trace relation、`343/343 -> 344/344`、
-current 6-diagnostic lexical/import blocker、artifact-time audit/metadata/all-5-CLI
-remeasurement、zero active/semantic/Task277B credit、exact20、next prelude handoffを
-同期する。English canonical、exceptionなし、future workをcompleteとclaimしない。
+implemented source/hash/path、inactive sidecar/trace relation、`344/344` corpus、
+Chapter-13 audit delta、current 6-diagnostic lexical/import blocker、measured
+metadata/all-5-CLI/hash evidence、zero active/executable/semantic/Task277B credit、
+exact24 artifact+private-count-guard boundary、next prelude handoffを同期する。English canonical、
+exceptionなし。
+Independent bilingual/boundary/final-quality reviewは**NO FINDINGS**、全`9/9`
+hard gates PASS、valid `100/100`。Closeoutはpending。

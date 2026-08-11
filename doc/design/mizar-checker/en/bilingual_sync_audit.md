@@ -1953,8 +1953,11 @@ No successor is selected and no bilingual exception exists.
 
 The [EN canonical](../../task_contracts/en/TEST-FRAENKEL-NESTED-CAPTURE-257C4C0.md)
 and [JA companion](../../task_contracts/ja/TEST-FRAENKEL-NESTED-CAPTURE-257C4C0.md)
-synchronize the future source/hash, inactive sidecar and sole trace row,
-six-diagnostic lexical/import `source_drift`, artifact-time audit and
-remeasurement duties, zero capture/Task-277B credit, exact20 boundary, and
-Sol/Terra handoff. English is canonical; no exception exists. Future artifacts
-and the lower prelude prerequisite remain pending.
+synchronize the implemented source/hash, inactive sidecar and sole trace row,
+Chapter-13 audit delta, six-diagnostic lexical/import `source_drift`, completed
+review, measured metadata/five-CLI/hash evidence, zero executable/
+semantic/Task-277B credit, exact24 artifact-plus-private-count-guard boundary,
+and Sol/Terra handoff. English is canonical; no exception exists. Independent
+bilingual/boundary and final-quality review ended with **NO FINDINGS**; all
+`9/9` hard gates pass with valid `100/100`. Only closeout and the lower prelude
+prerequisite remain pending.

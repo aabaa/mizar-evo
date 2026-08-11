@@ -6952,9 +6952,11 @@ selected only from fresh post-commit inventory.
 - [x] Freeze the paired [C4C0 contract](../../task_contracts/en/TEST-FRAENKEL-NESTED-CAPTURE-257C4C0.md),
   exact 124-byte source, inactive pass sidecar, sole trace row, protected
   boundaries, counts/hashes, review gates, and model handoff.
-- [ ] Add the frozen `.miz`, sidecar, trace row, required
-  `spec_coverage_audit.md` delta, and exact 16 completion records in the
-  separate artifact task, with zero capture and Task-277B executable/semantic
-  credit.
+- [x] Add the frozen `.miz`, inactive sidecar, sole trace row, required
+  `spec_coverage_audit.md` Chapter-13 delta, exact 16 completion records, and
+  four private count-guard repairs, with zero capture and Task-277B executable/
+  semantic credit.
+- [x] Record the measured post-change metadata, five-CLI outputs, and final
+  trace/audit counts and hashes in the central contract.
 - [ ] After the artifact commit, run fresh inventory and freeze the lower
   lexical/import prelude prerequisite before any capture implementation.

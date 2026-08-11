@@ -3638,8 +3638,10 @@ post-commit fresh inventoryからだけ選択する。
 - [x] [C4C0 contract](../../task_contracts/ja/TEST-FRAENKEL-NESTED-CAPTURE-257C4C0.md)、
   future 124-byte source、exact inactive sidecar/trace row、`343/343 -> 344/344`
   corpus impact、lower lexical/import blocker、protected zero-credit scopeをfreezeする。
-- [ ] Separate artifact taskでexact `.miz`/sidecar/trace row/coverage-audit delta
-  とexact 16 completion recordsを追加し、active tag/routeなしでmetadata/全5
-  CLI/count/hashをremeasureする。
+- [x] Exact `.miz`/inactive sidecar/sole trace row/Chapter-13 coverage-audit
+  delta、exact 16 completion records、private global-count guard repair 4件を
+  active tag/route/executable semantics/Task277B creditなしで追加する。
+- [x] Verified post-change metadata、全5 CLI outputs、counts/hashesをcentral
+  contractへrecordする。
 - [ ] Artifact commit後fresh inventoryを行い、capture implementationではなく
   docs-first lexical/import prelude prerequisiteをselectする。

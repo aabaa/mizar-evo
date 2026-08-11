@@ -4132,17 +4132,20 @@ trace rowがplanned traceability deltaをcloseする。blocking `spec_gap`、
 ## Task 257C4C0 nested Fraenkel capture test intent
 
 Canonical [C4C0 contract](../../task_contracts/ja/TEST-FRAENKEL-NESTED-CAPTURE-257C4C0.md)は
-C4B successor STOPが要求したChapter 13 §13.4.4 test-first oracleをseparateにfreeze
-する。Future nested `Element of NAT` sourceではinner mapper `x`がresolved identityで
+C4B successor STOPが要求したChapter 13 §13.4.4 test-first oracleのimplemented
+ownerである。Nested `Element of NAT` sourceではinner mapper `x`がresolved identityで
 outer generator `x`を参照し、inner generatorはdistinct `y`である。本prerequisiteは
-missing derived test-intent recordだけをcloseし、later artifactがinactive intent
-としてcapture `test_gap`をcloseする。
+freezeしたderived test intentに続き、implemented source/inactive sidecar/sole trace
+row/Chapter-13 coverage-audit mappingがcapture `test_gap`をinactive intentとして
+closeする。
 
 Exact sourceは現在parser diagnostic 6件、first `Element` `67..74`であり、lower
 lexical/import admissionは`source_drift`のまま。builtin-`set`/local-lookalikeは
 禁止。Capture、Task252 ownership、`CapturedFreeVariables`、type/sethood/request/
-verdict/diagnostic/install/route、Task277B creditは不変。Later artifact taskだけが
-sidecar/trace rowとrequired `spec_coverage_audit.md` deltaを追加する。
+verdict/diagnostic/install/route、Task277B creditは不変。New trace rowはcovered/
+required/pass test intentだが、executable/semantic creditを与えない。
+
+Final source-doc/boundary reviewは**NO FINDINGS**。
 
 ## Task 258A frozen surface audit
 

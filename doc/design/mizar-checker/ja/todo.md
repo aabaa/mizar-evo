@@ -6548,8 +6548,10 @@ post-commit fresh inventoryからだけ選択する。
 - [x] Paired [C4C0 contract](../../task_contracts/ja/TEST-FRAENKEL-NESTED-CAPTURE-257C4C0.md)、
   exact 124-byte source、inactive pass sidecar、sole trace row、protected boundary、
   counts/hashes、review gates、model handoffをfreezeする。
-- [ ] Separate artifact taskでfrozen `.miz`/sidecar/trace row/required
-  `spec_coverage_audit.md` deltaとexact 16 completion recordsを追加し、
-  capture/Task277B executable/semantic creditを0に保つ。
+- [x] Frozen `.miz`/inactive sidecar/sole trace row/required
+  `spec_coverage_audit.md` Chapter-13 delta、exact 16 completion records、private
+  count-guard repair 4件を追加し、capture/Task277B executable/semantic creditを0に保つ。
+- [x] Measured post-change metadata、5 CLI output、final trace/audit counts/hashesを
+  central contractへrecordする。
 - [ ] Artifact commit後fresh inventoryを実行し、capture implementation前にlower
   lexical/import prelude prerequisiteをfreezeする。
