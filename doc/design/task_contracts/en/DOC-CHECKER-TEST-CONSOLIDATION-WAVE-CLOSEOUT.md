@@ -12,7 +12,7 @@ repository duplication has been removed and authorizes no new migration.
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-CHECKER-TEST-CONSOLIDATION-WAVE-CLOSEOUT` |
-| Status | Prerequisite, independent reviews, and verification complete; exact current-state closeout and clean postcommit proof pending. |
+| Status | Bounded wave implementation, reviews, and verification complete; transition commit and clean proof pending before checklist metadata. |
 | Authority | [`doc/design/todo.md` temporary consolidation gate](../../todo.md), [`AGENTS.md`](../../../../AGENTS.md), and [autonomous migration policy](../../autonomous_crate_development.md#migration-policy) |
 | Scope | Record final schema-2-safe wave totals, completed tasks, retained residual classes, protected no-ops, verification, and bounded handoff. |
 | No audit impact | `spec_coverage_audit.md` remains unchanged: no specification mapping, test intent, trace status, owner, deferral, or credit changed. |
@@ -86,8 +86,17 @@ test-sufficiency, source/documentation/bilingual/boundary reviews ended
 **NO FINDINGS** after correcting two plan line references. Recursive lint
 passed all 15 cases; `git diff --check`, formatting, warnings-denied
 all-target/all-feature workspace Clippy, and full workspace tests passed.
-Exact current-state staging/commit and clean postcommit Phase-B readiness proof
-remain; items 3-5 stay unchecked until that proof exists.
+At that checkpoint, exact current-state staging/commit and clean proof remained;
+items 3-5 therefore stayed unchecked.
+
+Evidence record `3041888340acb9d8cf1a411c2f69ea4bfdc54b6a` then
+committed the paired review/verification result alone. Its clean replay
+confirmed `origin/main...HEAD = 0/10`, the same protected stash, unchanged
+ledger hash/counts, and recursive lint. The bounded transition now records
+completed wave work, retained residuals, and protected no-ops while items 3-5
+remain unchecked. This metadata-only transition changes no protected surface
+or credit; its own commit and clean proof must precede the separate checklist
+metadata record. Item 6 remains open for the Phase-B authority inventory.
 
 ## Handoff
 
