@@ -4318,11 +4318,7 @@ harness contract is frozen; its future implementation remains planned
 `source_drift`/`test_gap`. Final quality, commit, post-commit, and fresh
 implementation inventory are pending.
 
-## Checker Task 258B3M2B2B3P Final Quality Status
-
-Final quality has **NO FINDINGS**, all nine hard gates PASS, and valid
-`98/100` (`20/20/15/14/10/10/5/4`). Only stage/commit, post-commit, and
-fresh implementation inventory remain pending.
+Completion evidence: [central Task-258B3M2B2B3P historical contract](../../task_contracts/en/258B3M2B2B3P.md#completion-evidence).
 
 ## Checker Task 258B3M2B2B3P Implemented Private Harness
 

@@ -13,7 +13,7 @@ active results、test intent、semantic/coverage creditを変更しない。
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-258B3M2B2B3P-RUNNER-FINAL-QUALITY-COMPACT` |
-| Status | frozen prerequisite。migration未開始。 |
+| Status | prerequisite committed。exact migration実装済み、independent reviewsとcommit/postcommit proof待ち。 |
 | Purpose | runner-side B3P final-quality H2 sections 6件をexisting paired historical ownerへのlanguage-local linksに置換する。 |
 | Historical owner | registered batch `DOC-258B3M2B2B3P-REVIEW-COMPACT`がcanonical ownershipする[Task 258B3M2B2B3P](./258B3M2B2B3P.md#completion-evidence) |
 | Dependencies | B3P prerequisite `285a1f11c310bb313c4c6b4feae914eb11f74754`、implementation `abbfedfc2cdbaa97d8294893859da8cd350ad9a8`、schema-2 task-ref owner、B3B closeout `b12fd7c693f2fe3622154b5a5e6984678cd751ef` |
@@ -79,6 +79,28 @@ delta `+6/-34`（net `-28`）。ledgerはone `batch`、one `task_ref`、6 `redir
 final global cardinalitiesは`34/45/5/648/316`、1,050 physical lines。migrationが
 final physical ledger hashをrecordする。
 
+## Migration Evidence
+
+prerequisiteは`51785984c685bde5caa59cfb145f352ff8d3b9a2`として単独commit済み。
+clean replayはHEAD、`origin/main...HEAD = 0/6`、unchanged protected stash、B3B後の
+unchanged ledger SHA-256
+`ff48f2627e6cd3e52be649ee893ab1bae16fe3ce97ec019c3e96ae77ccad9131`、
+1,038 lines、focused recursive lintを確認した。
+
+working migrationはexact 6 headingsをremoveし、12 anchorsを保持し、6
+language-local redirects、canonical 11 inventory rowsとone batch rowをinstallした。
+ledgerは1,050 lines、SHA-256
+`3145d558b93f85095693b99ea4f3a09198be9b2a0332945667d29ea7d5c96eb7`、
+cardinalities `34/45/5/648/316`。data rowsはbyte-sortedでgeneric recursive
+ledger/link/fragment lintはPASS。independent reviews、broad verification、exact
+staging、commit、clean postcommit proofが残る。
+
+independent specification/schema/equivalence、test-sufficiency/implementation、
+source/documentation/bilingual/boundary reviewsは**NO FINDINGS**。recursive lint
+15 cases、`git diff --check`、format、warnings-denied all-target/all-feature
+workspace Clippy、full workspace testsはPASSした。exact staging、final quality
+review、migration commit、clean postcommit proofが残る。
+
 ## Protected Boundaries And Exit
 
 canonical B3P historical ownerとoriginal batch/source inventoryを変更しない。another
@@ -94,3 +116,13 @@ verificationはsource/hash/anchor/disjointness replay、generic recursive ledger
 fragment lint、ledger hashes/counts、`git diff --check`、format、warnings-denied
 Clippy、full workspace tests、exact staging、task-only commits、clean postcommit
 origin/stash proof、fresh inventoryを含む。coverage audit impactはexplicitly none。
+
+## Handoff
+
+migration commit/clean replay後、fresh repository inventoryを実行し、他に
+dependency-ready familyがなければcurrent authorized schema-2-safe waveだけを
+closeする。residual分類とPhase-B authority ownershipにはfinal semantic judgmentが
+必要なためparentはGPT-5.6 Sol `xhigh`を維持し、bounded independent reviewにはTerra
+`high`を使う。disputed owner/oracle/schema boundaryならreview effortを`xhigh`へ上げ、
+scope/acceptance/semantics/creditを決定できないrepeatable count/hash/link checksだけ
+lower settingを許可する。

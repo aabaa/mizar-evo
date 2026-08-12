@@ -10948,11 +10948,7 @@ no-op verificationはPASS。four-file boundaryはfrozenで、future
 implementation `source_drift`/`test_gap`はplanned。final quality、
 commit、post-commit、fresh inventoryはpending。
 
-## Checker Task 258B3M2B2B3P final quality status
-
-final qualityは**NO FINDINGS**、全9 hard gates PASS、valid `98/100`
-（`20/20/15/14/10/10/5/4`）。pendingはstage/commit、post-commit、
-fresh implementation inventoryだけ。
+Completion evidence: [central Task-258B3M2B2B3P historical contract](../../task_contracts/ja/258B3M2B2B3P.md#completion-evidence)。
 
 ## Checker Task 258B3M2B2B3P implemented runner boundary
 

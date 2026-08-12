@@ -12,7 +12,7 @@ diagnostics, source, active results, test intent, or semantic/coverage credit.
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-258B3M2B2B3P-RUNNER-FINAL-QUALITY-COMPACT` |
-| Status | Frozen prerequisite; migration not started. |
+| Status | Prerequisite committed; exact migration implemented, with independent reviews and commit/postcommit proof pending. |
 | Purpose | Replace six runner-side B3P final-quality H2 sections with language-local links to the existing paired historical owner. |
 | Historical owner | [Task 258B3M2B2B3P](./258B3M2B2B3P.md#completion-evidence), canonically owned by registered batch `DOC-258B3M2B2B3P-REVIEW-COMPACT` |
 | Dependencies | B3P prerequisite `285a1f11c310bb313c4c6b4feae914eb11f74754`, implementation `abbfedfc2cdbaa97d8294893859da8cd350ad9a8`, schema-2 task-ref owner, and B3B closeout `b12fd7c693f2fe3622154b5a5e6984678cd751ef` |
@@ -80,6 +80,29 @@ is `7f2e494ebb807529320af7b3e812788bcff5e4e15dd95a9bde516fe51341f99a`.
 Final global cardinalities become `34/45/5/648/316` with 1,050 physical lines.
 The migration records the final physical ledger hash.
 
+## Migration Evidence
+
+The prerequisite was committed alone as
+`51785984c685bde5caa59cfb145f352ff8d3b9a2`. Clean replay confirmed HEAD,
+`origin/main...HEAD = 0/6`, the unchanged protected stash, unchanged B3B ledger
+SHA-256 `ff48f2627e6cd3e52be649ee893ab1bae16fe3ce97ec019c3e96ae77ccad9131`
+at 1,038 lines, and focused recursive lint.
+
+The working migration removes exactly the six headings, retains all twelve
+anchors, installs six language-local redirects, and adds the canonical 11
+inventory rows plus one batch row. The ledger is 1,050 lines with SHA-256
+`3145d558b93f85095693b99ea4f3a09198be9b2a0332945667d29ea7d5c96eb7`
+and cardinalities `34/45/5/648/316`. Its data rows remain byte-sorted and the
+generic recursive ledger/link/fragment lint passes. Independent reviews,
+broad verification, exact staging, commit, and clean postcommit proof remain.
+
+Independent specification/schema/equivalence, test-sufficiency/
+implementation, and source/documentation/bilingual/boundary reviews ended
+**NO FINDINGS**. Recursive lint passed all 15 cases; `git diff --check`,
+formatting, warnings-denied all-target/all-feature workspace Clippy, and full
+workspace tests passed. Exact staging, final quality review, migration commit,
+and clean postcommit proof remain.
+
 ## Protected Boundaries And Exit
 
 Do not edit the canonical B3P historical owner or its original batch/source
@@ -97,3 +120,14 @@ replay, generic recursive ledger/link/fragment lint, ledger hashes/counts,
 `git diff --check`, formatting, warnings-denied Clippy, full workspace tests,
 exact staging, task-only commits, clean postcommit origin/stash proof, and
 fresh inventory. Coverage audit impact is explicitly none.
+
+## Handoff
+
+After the migration commit and clean replay, run a fresh repository inventory
+and close only the currently authorized schema-2-safe wave if no other
+dependency-ready family remains. Keep the parent on GPT-5.6 Sol `xhigh`
+because residual classification and Phase-B authority ownership require final
+semantic judgment; use Terra `high` for bounded independent reviews. Raise
+review effort to `xhigh` for a disputed owner/oracle or schema boundary, and
+lower it only for repeatable count/hash/link checks that cannot decide scope,
+acceptance, semantics, or credit.
