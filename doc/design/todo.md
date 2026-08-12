@@ -266,7 +266,7 @@ repository-wide or program-wide consolidation-completion claim.
    Classify stale live lifecycle wording as `design_drift`. Report a genuine
    hash or repository-state disagreement as `repo_metadata_conflict` and do
    not repair it automatically.
-2. [ ] **Repair uniquely attributable lifecycle drift as a separate task.**
+2. [x] **Repair uniquely attributable lifecycle drift as a separate task.**
    Freeze a paired repair contract and update only fields that own current
    lifecycle state. Preserve historical precommit/postcommit checkpoint prose,
    unique evidence, owner links, and completed migration boundaries. Complete

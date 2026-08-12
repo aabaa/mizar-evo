@@ -13,7 +13,7 @@ intent、diagnostic、public API、active behavior、semantic/coverage creditを
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-LEGACY-COMPACTION-LIFECYCLE-REPAIR` |
-| Status | implementation、independent reviews、required verification完了。exact task-only commitとclean postcommit proofが残る。 |
+| Status | 完了。implementation commit `13b2e08ba27c69417ce9089bf88d3d4d2fb0017e`とclean postcommit proofを下記にrecordする。 |
 | Purpose | 全schema-2 registered compaction batchのlive status fieldを、既にcommittedなmigrationと整合させ、全historical checkpointを保存する。 |
 | Primary owners | repository documentation policyとchecker/test temporary consolidation gate |
 | Consumers | paired batch contracts、checker/test crate plans、schema-2 ledger consumer、successor inventory agents |
@@ -146,9 +146,32 @@ full workspace testsを含む。exitはexact task-only staging/commit、clean po
 worktree/origin/stash proof、fresh schema-2 family inventoryを必要とする。successor
 inventoryはunregistered familyの安全性を仮定しない。
 
+## Postcommit Completion Evidence
+
+task-only implementation commit
+`13b2e08ba27c69417ce9089bf88d3d4d2fb0017e`はfrozen 71 pathsを変更した。
+immediate postcommit worktreeはclean。local `origin/main...HEAD`は`0/1`であり、remote
+movementはreport-only。fetch、merge、reset、pushその他repairは行っていない。
+protected stash `f65cf4a13752ec380710814a9ac6392ccb9d75d4`は不変。
+
+postcommit recursive contract/ledger/link/fragment testはpass。ledgerは1,024 lines、
+SHA-256 `2a66d200a1976861600bcf7686388faa3efb19b2b42a43c756c9e689d7f27359`、
+cardinality `32/44/4/638/304`のまま。precommit focused/full lint policy、format、
+warnings-denied workspace Clippy、full workspace testsはpassした。independent
+specification/equivalence、test-sufficiency/implementation、source/documentation、
+bilingual/boundary、final-quality reviewsはfinding修正後 **NO FINDINGS**。全9 hard
+gatesはscore capなしvalid `100/100`（`20/20/15/15/10/10/5/5`）でpassする。
+
+fresh postcommit inventoryはschema-2 waveをcloseしなかった。dependency-readyな
+unregistered family 1件をselectした。Task `258B3M2B2B3B`はchecker/test EN/JA crate
+plans各1件にexact `Documentation Review and Final Quality` whole H2 sectionを持ち、
+4 files/4 sections/合計72 physical linesである。このselectionはinventory resultだけで
+deletionをauthorizeしない。exact mapping、anchor、hash、redirect、owner pair、ledger
+deltaはseparate batch contractでfreezeしてindependent reviewを必要とする。
+
 ## Handoff
 
-clean repair commit後にtemporary gateのschema-2-safe family inventoryを再実行する。
-dependency-ready familyがなければregistered totals/residual shape classesだけを記録する
-bounded closeoutをfreezeし、repository-wide consolidationをclaimしない。parent authority
-reasoningは`xhigh`、bounded independent reviewは`high`を推奨する。
+selected Task-`258B3M2B2B3B` four-section familyだけをfreeze/reviewし、prerequisite
+commit、fresh replay、migration commit、clean postcommit inventoryを行う。このselection
+からsecond familyのeligibilityを推測しない。parent authority reasoningは`xhigh`、bounded
+independent reviewは`high`を推奨する。

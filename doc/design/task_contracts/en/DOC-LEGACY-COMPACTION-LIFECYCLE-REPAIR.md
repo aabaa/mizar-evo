@@ -12,7 +12,7 @@ behavior, or semantic and coverage credit.
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-LEGACY-COMPACTION-LIFECYCLE-REPAIR` |
-| Status | Implementation, independent reviews, and required verification complete. Exact task-only commit and clean postcommit proof remain. |
+| Status | Complete. Implementation commit `13b2e08ba27c69417ce9089bf88d3d4d2fb0017e` and clean postcommit proof are recorded below. |
 | Purpose | Reconcile the live status field of every schema-2-registered compaction batch with its already committed migration while preserving all historical checkpoints. |
 | Primary owners | Repository documentation policy and the checker/test temporary consolidation gate |
 | Consumers | The paired batch contracts, checker/test crate plans, the schema-2 ledger consumer, and successor inventory agents |
@@ -156,10 +156,37 @@ clean postcommit worktree/origin/stash proof, and a fresh schema-2 family
 inventory. The successor inventory must not assume that any unregistered
 family is safe.
 
+## Postcommit Completion Evidence
+
+Task-only implementation commit
+`13b2e08ba27c69417ce9089bf88d3d4d2fb0017e` changes the frozen 71 paths.
+Its immediate postcommit worktree is clean. Local `origin/main...HEAD` is
+`0/1`; remote movement is report-only and no fetch, merge, reset, push, or
+other repair was performed. Protected stash
+`f65cf4a13752ec380710814a9ac6392ccb9d75d4` is unchanged.
+
+The postcommit recursive contract/ledger/link/fragment test passes. The ledger
+remains 1,024 lines with SHA-256
+`2a66d200a1976861600bcf7686388faa3efb19b2b42a43c756c9e689d7f27359`
+and cardinalities `32/44/4/638/304`. Precommit focused/full lint policy,
+formatting, warnings-denied workspace Clippy, and full workspace tests passed.
+Independent specification/equivalence, test-sufficiency/implementation,
+source/documentation, bilingual/boundary, and final-quality reviews ended
+**NO FINDINGS** after their findings were repaired. All nine hard gates pass
+without a score cap at valid `100/100` (`20/20/15/15/10/10/5/5`).
+
+Fresh postcommit inventory did not close the schema-2 wave. It selected one
+dependency-ready unregistered family: Task `258B3M2B2B3B` has an exact
+`Documentation Review and Final Quality` whole H2 section in each checker/test
+EN/JA crate plan, four files and four sections totaling 72 physical lines.
+The selection is only an inventory result. It does not authorize deletion;
+the exact mappings, anchors, hashes, redirects, owner pair, and ledger delta
+must be frozen and independently reviewed in a separate batch contract.
+
 ## Handoff
 
-After the clean repair commit, re-run the temporary gate's schema-2-safe family
-inventory. If no dependency-ready family exists, freeze a bounded closeout
-that records registered totals and residual shape classes without claiming
-repository-wide consolidation. Parent authority reasoning remains `xhigh`;
-bounded independent review may use `high`.
+Freeze and review only the selected Task-`258B3M2B2B3B` four-section family;
+then make a prerequisite commit, fresh replay, migration commit, and clean
+postcommit inventory. Do not infer eligibility for a second family from this
+selection. Parent authority reasoning remains `xhigh`; bounded independent
+review may use `high`.
