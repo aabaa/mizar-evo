@@ -7039,11 +7039,11 @@ Task 277B remain deferred and zero-credit.
 ## Task 257C4C4 Zero-Credit Mapper-Primary Mapping
 
 The canonical [C4C4 contract](./task_contracts/en/CHECKER-FRAENKEL-NESTED-MAPPER-PRIMARY-257C4C4.md)
-freezes the C4C3 inner-mapper/outer-binder identity as one specialized
+records the completed C4C3 inner-mapper/outer-binder identity projection as one specialized
 Task-252 primary occurrence, one checker binding reference, and zero numeric
 requests. Durable ownership is the checker
 [source-term section](./mizar-checker/en/source_term.md#task-257c4c4-nested-fraenkel-mapper-primary),
-and its sole planned consumer is the private
+and its sole current consumer is the private
 [mizar-test harness probe](./mizar-test/en/harness.md#checker-task-257c4c4-private-nested-mapper-primary-probe).
 
 This structural mapping changes no specification, `.miz`, expectation, trace

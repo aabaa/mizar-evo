@@ -5323,9 +5323,9 @@ completion evidenceはlanguage-local [task-contract checkpoint](../../task_contr
 
 ## Checker Task 257C4C4 private nested mapper primary probe
 
-Frozen [C4C4 contract](../../task_contracts/ja/CHECKER-FRAENKEL-NESTED-MAPPER-PRIMARY-257C4C4.md)は
+Implemented [C4C4 contract](../../task_contracts/ja/CHECKER-FRAENKEL-NESTED-MAPPER-PRIMARY-257C4C4.md)は
 same existing private leafへexact
-`task257c4c4_real_imported_fixture_builds_mapper_primary_handoff`を追加する。C4C1
+`task257c4c4_real_imported_fixture_builds_mapper_primary_handoff`を追加した。C4C1
 frontend helper、completed C4C2 collector、C4C3 typed profile、public C4C3/C4C4 producerを
 reuseし、retained C4C3 row、outer-x-only `3/1/0` binding projection、one-node Task252
 arena、exact `1/1/0` term/reference/requestをassertする。

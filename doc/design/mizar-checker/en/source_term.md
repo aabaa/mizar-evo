@@ -80,6 +80,7 @@ ordinal. `debug_text()` renders every table deterministically.
 | `SourceProofLocalGivenUseTermError` | `#[non_exhaustive]`; callers must not exhaustively match Task 269GU dependency, input, or installation failures. |
 | `SourceProofLocalGivenConditionUseTermError` | `#[non_exhaustive]`; callers must not exhaustively match Task 269GCU dependency, input, or installation failures. |
 | `SourceProofLocalGivenDescendantUseTermError` | `#[non_exhaustive]`; callers must not exhaustively match Task 269SDU dependency, input, or installation failures. |
+| `SourceNestedFraenkelMapperPrimaryError` | `#[non_exhaustive]`; callers must not exhaustively match C4C4 dependency, binding-environment, or source-term projection failures. |
 
 No exhaustive public enum exceptions are owned by this module.
 
@@ -161,12 +162,12 @@ remain with their explicit owners.
 
 ## Task 257C4C4 Nested Fraenkel Mapper Primary
 
-The frozen [C4C4 contract](../../task_contracts/en/CHECKER-FRAENKEL-NESTED-MAPPER-PRIMARY-257C4C4.md)
-will add one C4C3-dependent, zero-semantic specialized Task-252 transaction.
-Its exact public family will be
+The implemented [C4C4 contract](../../task_contracts/en/CHECKER-FRAENKEL-NESTED-MAPPER-PRIMARY-257C4C4.md)
+adds one C4C3-dependent, zero-semantic specialized Task-252 transaction.
+Its exact public family is
 `SourceNestedFraenkelMapperPrimaryHandoff`, non-exhaustive
 `SourceNestedFraenkelMapperPrimaryError`, and
-`SourceNestedFraenkelMapperPrimaryProducer`. The handoff will retain the
+`SourceNestedFraenkelMapperPrimaryProducer`. The handoff retains the
 complete C4C3 dependency, an exact three-context/one-outer-binding/zero-
 diagnostic `BindingEnv`, one exact immutable projection-arena node, and the
 existing `SourcePrimaryTermHandoff` with `1/1/0` rows.
@@ -180,12 +181,12 @@ ordinal `1` makes the authenticated generator visible even though its source
 declaration is written after the mapper. Inner generator `y` remains only in
 the revalidated C4C3 dependency and is not duplicated into Task 252.
 
-The private specialized profile will not weaken public generic Task-252
+The private specialized profile does not weaken public generic Task-252
 source-order derivation or forward-reference rejection. Exact public getters,
 debug grammar, three-error precedence, context/binding/arena/row oracle, and
 default-deny corruption matrix are owned once by the task contract. The only
-current consumer will be the existing private nested-capture library-test
-leaf. There will be no Typed/Resolved installation, active runner route,
+current consumer is the existing private nested-capture library-test
+leaf. There is no Typed/Resolved installation, active runner route,
 capture identity, generated-core parameter, type/sethood answer, semantic
 result, diagnostic, or coverage credit.
 

@@ -954,7 +954,10 @@ validation precedence.
 The producer authenticates the complete retained C4C2 two-binding/one-use
 profile, unique normal resolved-to-typed mapping, exact typed structure and
 ranges, then publishes exactly row 0 linking mapper use 0 at `x@94..95` to
-outer binding 1 at `x@136..137`. It creates no Task-252 occurrence,
+outer binding 1 at `x@136..137`. C4C4 adds only a crate-private
+`validate_complete()` reauthentication entry point; it exposes no retained
+resolver or typed-AST getter. The separate Task-252 owner consumes the complete
+C4C3 handoff by value and cannot bypass this validation. C4C3 itself creates no Task-252 occurrence,
 `BindingEnv`, checker binding, capture, formula, type/sethood, request/result,
 verdict, diagnostic, installation, route, or coverage credit. Exact validation
 order, snapshot tags, default-deny matrix, tests, and completion evidence are

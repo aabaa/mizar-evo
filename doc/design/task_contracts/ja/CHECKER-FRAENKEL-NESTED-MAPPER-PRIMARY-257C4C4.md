@@ -11,7 +11,8 @@ Owning planは[mizar-checker](../../mizar-checker/ja/00.crate_plan.md#task-index
 
 ## Status、目的、readiness
 
-**Status:** documentation prerequisite freeze済み、implementation pending。
+**Status:** pre-staging implementation/verification/final-quality review complete、exact
+staging、commit、postcommit proofが残る。
 
 Clean `HEAD 5578f7e51f5acfb60494dbacb41640b976c9c55c`のfresh read-only
 inventoryはcompleted C4C3のdependency-minimal successorとして本taskをselectする。
@@ -176,8 +177,42 @@ Routingはparent GPT-5.6 Sol `xhigh`、frozen implementation/reviewはTerra `hig
 
 ## Completion evidence
 
-Independent specification/APIとbilingual/owner/boundary reviewは**NO FINDINGS**。
-`git diff --check`、checker lint-policy `15/15`、mizar-test lint-policy `15/15`、metadata
-`137/137`がpass。Contract treesは`94/94`、protected/baseline hashは全てexactにreproduce。
-Documentation-prerequisite staging/commitはpendingで、implementationとそのreview/hard
-gateは未開始。
+Frozen documentation prerequisiteは
+`faa558276ff984ac20c8aef60caf0b7712e5554c`としてcommit済み。Independent
+specification/API、documentation-boundary、test-sufficiency、implementation reviewは、
+exact corruption matrix完成後に**NO FINDINGS**。Implementationはexact 3 Rust path内で、
+generic Task252 source-order rejectionを維持する。
+
+Final source measurement:
+
+| Path | Lines | SHA-256 |
+|---|---:|---|
+| `crates/mizar-checker/src/source_term.rs` | `7574` | `2ef60bd40d0ff147f1615d20bd3a9fff3980e916868da90f998b00c3b4d369fe` |
+| `crates/mizar-checker/src/source_formula_composition.rs` | `9411` | `2b982a6ab418e63ee6996c428aea2f8d5a4b3fc6bb55c9e830043f07fec73e56` |
+| `crates/mizar-test/src/runner/tests/type_elaboration/fraenkel_nested_capture_identity.rs` | `416` | `7760e98cb9b6fb3ea26f232b34551119d6d084c0f4785cd11b3af7cf829be1f1` |
+
+Checker productionは`32` paths / `196334` lines、path hash
+`9dc5b02f26679677e593ea755394d68533173d2be988b7ef1ddcfd84a41b9787`は不変、
+content-manifest hashは
+`783826a091b8a5892b88a7f5c34a2bfff55683befa3cc98248eaa6de19afc5c6`。
+Focused checker/mizar-testは`4/4`と`1/1`、full libraryは`562/562`と`621/621`。
+Raw-list SHA-256は順に
+`2abdadafce718a2cd05d3a38240f4c3a96939b5ccec3174511481be7ee562e78`と
+`a0d872b065dc98b8dd9caff1d964d8d58d8af372ef3a57cfec7455b31bce4f63`。
+Warnings-denied checker+mizar-test Clippy、format、`git diff --check`がpass。Contract treeは
+`94/94`、protected authority hash 3件はexact不変。Independent source/docs/API reviewは
+**NO FINDINGS**。Initial bilingual/boundary reviewのlifecycle-ordering finding 1件はreview
+完了後にcontract/TODOをsyncした。Full-workspace Clippyと`cargo test`はpass。
+Finding-specific bilingual/boundary re-reviewは**NO FINDINGS**。Independent final-quality
+reviewも**NO FINDINGS**、hard gate `9/9` pass、valid uncapped qualityは`100/100`
+（`20/20/15/15/10/10/5/5`）。Exact 20-path scopeを独立確認しtask-only stagingをauthorize。
+Exact staging/cached diff、commit、postcommit evidenceはpending。Unchanged
+plan/parse/declaration/type/proof
+CLI stdout hashは順に
+`2d2accef2c6fc32c1b3372530f6136af1299ac6ae7db6a0158798336b779c7e7`、
+`a8a7aa639d2ebc65eddc923c7e9369ea5637d50e935f808600f446da1bfbda56`、
+`71e83ba0b20d4015e07b3bd2c0c4db2837b6151d1251812caed7954530d53c74`、
+`4b2c7bd5ec3cc56e5672fb351126126230ec84fba9bd2bd9049a516d378fab7f`、
+`ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`。
+既存warning `23` / error `0`を維持する。Checker/mizar-test lint-policyは`15/15`、metadataは
+`137/137`。Score capはない。

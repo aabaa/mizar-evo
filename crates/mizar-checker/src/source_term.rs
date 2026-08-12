@@ -1,12 +1,19 @@
 //! Syntax-free transport for source primary-term occurrences.
 
 use crate::{
-    binding_env::{BindingEnv, BindingId, BindingKind, BindingLookupResult, BindingLookupSite},
+    binding_env::{
+        BinderIdentity, BindingContextDraft, BindingContextId, BindingContextLayer,
+        BindingContextOwner, BindingContextRecovery, BindingContextTable, BindingDiagnosticTable,
+        BindingDraft, BindingEnv, BindingEnvParts, BindingId, BindingKind, BindingLookupResult,
+        BindingLookupSite, BindingRecoveryState, BindingStatus, BindingTable, BindingTypeSite,
+        CapturedFreeVariables,
+    },
+    source_formula_composition::SourceNestedFraenkelBinderUseHandoff,
     source_type::{
         SourceProofLocalGivenConditionTypeHandoff, SourceProofLocalGivenDescendantTypeHandoff,
         SourceProofLocalGivenUseTypeHandoff,
     },
-    typed_ast::{NodeRecoveryState, TypedArena, TypedNodeId, TypedSiteRef, TypingState},
+    typed_ast::{NodeRecoveryState, TypedArena, TypedNode, TypedNodeId, TypedSiteRef, TypingState},
 };
 use mizar_lexer::is_identifier;
 use mizar_resolve::{names::LocalTermScope, resolved_ast::ModuleId};
@@ -1036,12 +1043,321 @@ impl fmt::Display for SourceProofLocalGivenConditionUseTermError {
 
 impl Error for SourceProofLocalGivenConditionUseTermError {}
 
+/// Immutable Task-252 projection of the single nested Fraenkel mapper primary.
+#[derive(Clone, PartialEq, Eq)]
+pub struct SourceNestedFraenkelMapperPrimaryHandoff {
+    source_id: SourceId,
+    module_id: ModuleId,
+    dependency: SourceNestedFraenkelBinderUseHandoff,
+    dependency_fingerprint: String,
+    binding_env: BindingEnv,
+    binding_fingerprint: String,
+    projection_arena: TypedArena,
+    source_term: SourcePrimaryTermHandoff,
+    source_term_fingerprint: String,
+}
+
+impl SourceNestedFraenkelMapperPrimaryHandoff {
+    #[must_use]
+    pub const fn source_id(&self) -> SourceId {
+        self.source_id
+    }
+
+    #[must_use]
+    pub const fn module_id(&self) -> &ModuleId {
+        &self.module_id
+    }
+
+    #[must_use]
+    pub const fn dependency(&self) -> &SourceNestedFraenkelBinderUseHandoff {
+        &self.dependency
+    }
+
+    #[must_use]
+    pub fn dependency_fingerprint(&self) -> &str {
+        &self.dependency_fingerprint
+    }
+
+    #[must_use]
+    pub const fn binding_env(&self) -> &BindingEnv {
+        &self.binding_env
+    }
+
+    #[must_use]
+    pub fn binding_fingerprint(&self) -> &str {
+        &self.binding_fingerprint
+    }
+
+    #[must_use]
+    pub const fn projection_arena(&self) -> &TypedArena {
+        &self.projection_arena
+    }
+
+    #[must_use]
+    pub const fn source_term(&self) -> &SourcePrimaryTermHandoff {
+        &self.source_term
+    }
+
+    #[must_use]
+    pub fn source_term_fingerprint(&self) -> &str {
+        &self.source_term_fingerprint
+    }
+
+    #[must_use]
+    pub fn debug_text(&self) -> String {
+        format!(
+            "source-nested-fraenkel-mapper-primary-debug-v1\nmodule: {}::{}\ndependency-fingerprint: {:?}\nbinding-fingerprint: {:?}\nprojection: nodes=1 root=0\nsource-term-fingerprint: {:?}\n",
+            self.module_id.package().as_str(),
+            self.module_id.path().as_str(),
+            self.dependency_fingerprint,
+            self.binding_fingerprint,
+            self.source_term_fingerprint,
+        )
+    }
+
+    fn validate(&self) -> Result<(), SourceNestedFraenkelMapperPrimaryError> {
+        if self.source_id != self.dependency.source_id()
+            || &self.module_id != self.dependency.module_id()
+            || self.dependency_fingerprint != self.dependency.debug_text()
+            || self.dependency.validate_complete().is_err()
+        {
+            return Err(SourceNestedFraenkelMapperPrimaryError::InvalidDependency);
+        }
+        let expected_bindings =
+            nested_fraenkel_mapper_primary_binding_env(self.source_id, self.module_id.clone())
+                .map_err(|_| SourceNestedFraenkelMapperPrimaryError::InvalidBindingEnvironment)?;
+        if self.binding_env != expected_bindings
+            || self.binding_fingerprint != self.binding_env.debug_text()
+            || !nested_fraenkel_mapper_primary_lookup_profile(&self.binding_env)
+        {
+            return Err(SourceNestedFraenkelMapperPrimaryError::InvalidBindingEnvironment);
+        }
+        let expected_arena = nested_fraenkel_mapper_primary_arena(self.source_id)
+            .map_err(|_| SourceNestedFraenkelMapperPrimaryError::InvalidSourceTerm)?;
+        if self.projection_arena != expected_arena {
+            return Err(SourceNestedFraenkelMapperPrimaryError::InvalidSourceTerm);
+        }
+        let expected_source_term = SourcePrimaryTermProducer::build_with_profile(
+            nested_fraenkel_mapper_primary_input(self.source_id, self.module_id.clone()),
+            &self.binding_env,
+            &self.projection_arena,
+            SourcePrimaryTermBindingProfile::NestedFraenkelMapperPrimary,
+        )
+        .map_err(|_| SourceNestedFraenkelMapperPrimaryError::InvalidSourceTerm)?;
+        if self.source_term != expected_source_term
+            || self.source_term_fingerprint != self.source_term.debug_text()
+        {
+            return Err(SourceNestedFraenkelMapperPrimaryError::InvalidSourceTerm);
+        }
+        Ok(())
+    }
+}
+
+/// A rejected nested Fraenkel mapper-primary transport.
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum SourceNestedFraenkelMapperPrimaryError {
+    InvalidDependency,
+    InvalidBindingEnvironment,
+    InvalidSourceTerm,
+}
+
+impl fmt::Display for SourceNestedFraenkelMapperPrimaryError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::InvalidDependency => {
+                formatter.write_str("nested Fraenkel mapper-primary dependency is invalid")
+            }
+            Self::InvalidBindingEnvironment => {
+                formatter.write_str("nested Fraenkel mapper-primary binding environment is invalid")
+            }
+            Self::InvalidSourceTerm => {
+                formatter.write_str("nested Fraenkel mapper-primary source term is invalid")
+            }
+        }
+    }
+}
+
+impl Error for SourceNestedFraenkelMapperPrimaryError {}
+
+/// Builds only the exact nested Fraenkel mapper-primary Task-252 transport.
+#[derive(Debug, Clone, Copy)]
+pub struct SourceNestedFraenkelMapperPrimaryProducer;
+
+impl SourceNestedFraenkelMapperPrimaryProducer {
+    pub fn build(
+        dependency: SourceNestedFraenkelBinderUseHandoff,
+    ) -> Result<SourceNestedFraenkelMapperPrimaryHandoff, SourceNestedFraenkelMapperPrimaryError>
+    {
+        dependency
+            .validate_complete()
+            .map_err(|_| SourceNestedFraenkelMapperPrimaryError::InvalidDependency)?;
+        let source_id = dependency.source_id();
+        let module_id = dependency.module_id().clone();
+        let binding_env = nested_fraenkel_mapper_primary_binding_env(source_id, module_id.clone())
+            .map_err(|_| SourceNestedFraenkelMapperPrimaryError::InvalidBindingEnvironment)?;
+        if !nested_fraenkel_mapper_primary_lookup_profile(&binding_env) {
+            return Err(SourceNestedFraenkelMapperPrimaryError::InvalidBindingEnvironment);
+        }
+        let projection_arena = nested_fraenkel_mapper_primary_arena(source_id)
+            .map_err(|_| SourceNestedFraenkelMapperPrimaryError::InvalidSourceTerm)?;
+        let source_term = SourcePrimaryTermProducer::build_with_profile(
+            nested_fraenkel_mapper_primary_input(source_id, module_id.clone()),
+            &binding_env,
+            &projection_arena,
+            SourcePrimaryTermBindingProfile::NestedFraenkelMapperPrimary,
+        )
+        .map_err(|_| SourceNestedFraenkelMapperPrimaryError::InvalidSourceTerm)?;
+        let handoff = SourceNestedFraenkelMapperPrimaryHandoff {
+            source_id,
+            module_id,
+            dependency_fingerprint: dependency.debug_text(),
+            dependency,
+            binding_fingerprint: binding_env.debug_text(),
+            binding_env,
+            projection_arena,
+            source_term_fingerprint: source_term.debug_text(),
+            source_term,
+        };
+        handoff.validate()?;
+        Ok(handoff)
+    }
+}
+
+fn nested_fraenkel_mapper_primary_range(
+    source_id: SourceId,
+    start: usize,
+    end: usize,
+) -> SourceRange {
+    SourceRange {
+        source_id,
+        start,
+        end,
+    }
+}
+
+fn nested_fraenkel_mapper_primary_binding_env(
+    source_id: SourceId,
+    module_id: ModuleId,
+) -> Result<BindingEnv, crate::binding_env::BindingEnvError> {
+    let module = BindingContextId::new(0);
+    let outer = BindingContextId::new(1);
+    let binding = BindingId::new(0);
+    let mut contexts = BindingContextTable::new();
+    contexts.insert(BindingContextDraft {
+        owner: BindingContextOwner::Module,
+        parent: None,
+        layer: BindingContextLayer::Module,
+        lexical_scope: None,
+        bindings: Vec::new(),
+        visible_bindings: Vec::new(),
+        recovery: BindingContextRecovery::Normal,
+    });
+    contexts.insert(BindingContextDraft {
+        owner: BindingContextOwner::SourceComprehension {
+            source_range: nested_fraenkel_mapper_primary_range(source_id, 90, 157),
+        },
+        parent: Some(module),
+        layer: BindingContextLayer::Expression,
+        lexical_scope: None,
+        bindings: vec![binding],
+        visible_bindings: vec![binding],
+        recovery: BindingContextRecovery::Normal,
+    });
+    contexts.insert(BindingContextDraft {
+        owner: BindingContextOwner::SourceComprehension {
+            source_range: nested_fraenkel_mapper_primary_range(source_id, 92, 123),
+        },
+        parent: Some(outer),
+        layer: BindingContextLayer::Expression,
+        lexical_scope: None,
+        bindings: Vec::new(),
+        visible_bindings: vec![binding],
+        recovery: BindingContextRecovery::Normal,
+    });
+    let mut bindings = BindingTable::new();
+    bindings.insert(BindingDraft {
+        spelling: "x".to_owned(),
+        kind: BindingKind::QuantifierBinder,
+        identity: BinderIdentity::SourceBound {
+            context: outer,
+            ordinal: 0,
+        },
+        owner_context: outer,
+        declaration_range: nested_fraenkel_mapper_primary_range(source_id, 136, 137),
+        visible_after_ordinal: 0,
+        type_site: BindingTypeSite::Source(nested_fraenkel_mapper_primary_range(
+            source_id, 141, 155,
+        )),
+        status: BindingStatus::Active,
+        captured: CapturedFreeVariables::default(),
+        diagnostics: Vec::new(),
+        recovery: BindingRecoveryState::Normal,
+    });
+    BindingEnv::try_new(BindingEnvParts {
+        source_id,
+        module_id,
+        contexts,
+        bindings,
+        diagnostics: BindingDiagnosticTable::new(),
+    })
+}
+
+fn nested_fraenkel_mapper_primary_lookup_profile(binding_env: &BindingEnv) -> bool {
+    let forward = BindingLookupSite::new("x", BindingContextId::new(2), None, 0);
+    let local = BindingLookupSite::new("x", BindingContextId::new(2), None, 1);
+    matches!(
+        binding_env.lookup(&forward),
+        Ok(BindingLookupResult::ForwardReference { candidates, .. }) if candidates == [BindingId::new(0)]
+    ) && matches!(binding_env.lookup(&local), Ok(BindingLookupResult::Local(binding)) if binding == BindingId::new(0))
+}
+
+fn nested_fraenkel_mapper_primary_arena(
+    source_id: SourceId,
+) -> Result<TypedArena, crate::typed_ast::TypedArenaError> {
+    TypedArena::try_new(
+        Some(TypedNodeId::new(0)),
+        vec![TypedNode::new(
+            "source.term.variable-reference",
+            SourceAnchor::Range(nested_fraenkel_mapper_primary_range(source_id, 94, 95)),
+        )],
+    )
+}
+
+fn nested_fraenkel_mapper_primary_input(
+    source_id: SourceId,
+    module_id: ModuleId,
+) -> SourcePrimaryTermHandoffInput {
+    SourcePrimaryTermHandoffInput {
+        source_id,
+        module_id,
+        terms: vec![SourcePrimaryTermInput {
+            site: TypedSiteRef::Node(TypedNodeId::new(0)),
+            source_range: nested_fraenkel_mapper_primary_range(source_id, 94, 95),
+            source_ordinal: 0,
+            context: BindingContextId::new(2),
+            recovery: SourcePrimaryTermRecovery::Normal,
+            spelling: "x".to_owned(),
+            kind: SourcePrimaryTermKind::VariableReference,
+            role: SourcePrimaryTermRole::Value,
+            parent: None,
+        }],
+        references: vec![SourcePrimaryTermReferenceInput {
+            term: SourcePrimaryTermId::new(0),
+            binding: BindingId::new(0),
+            role: SourcePrimaryTermReferenceRole::Variable,
+        }],
+        numeric_type_requests: Vec::new(),
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum SourcePrimaryTermBindingProfile {
     Generic,
     ProofLocalGivenUse,
     ProofLocalGivenConditionUse,
     ProofLocalGivenDescendantUse,
+    NestedFraenkelMapperPrimary,
 }
 
 #[derive(Debug, Clone, Copy, Default)]
@@ -1073,8 +1389,13 @@ impl SourcePrimaryTermProducer {
         }
 
         let terms = validate_terms(input.source_id, &input.terms, binding_env, arena)?;
-        let derived_ordinals =
-            derive_reference_ordinals(input.source_id, &input.references, &terms, binding_env)?;
+        let derived_ordinals = derive_reference_ordinals(
+            input.source_id,
+            &input.references,
+            &terms,
+            binding_env,
+            binding_profile,
+        )?;
         let references = validate_references(
             &input.references,
             &derived_ordinals,
@@ -1224,7 +1545,8 @@ fn validate_references(
         };
         if binding != input.binding
             || binding_row.spelling != term.spelling
-            || binding_row.declaration_range.end > term.source_range.start
+            || (binding_row.declaration_range.end > term.source_range.start
+                && binding_profile != SourcePrimaryTermBindingProfile::NestedFraenkelMapperPrimary)
             || !valid_binding_role(binding_row.kind, input.role, binding_profile)
         {
             return Err(SourcePrimaryTermError::InvalidReference { reference: id });
@@ -1322,7 +1644,15 @@ fn derive_reference_ordinals(
     references: &[SourcePrimaryTermReferenceInput],
     terms: &[SourcePrimaryTerm],
     binding_env: &BindingEnv,
+    binding_profile: SourcePrimaryTermBindingProfile,
 ) -> Result<Vec<usize>, SourcePrimaryTermError> {
+    if binding_profile == SourcePrimaryTermBindingProfile::NestedFraenkelMapperPrimary {
+        return (references.len() == 1 && terms.len() == 1)
+            .then_some(vec![1])
+            .ok_or(SourcePrimaryTermError::InvalidReference {
+                reference: SourcePrimaryTermReferenceId::new(0),
+            });
+    }
     let bindings = binding_env.bindings().iter().collect::<Vec<_>>();
     let mut group_start = 0;
     while group_start < bindings.len() {
@@ -6447,5 +6777,798 @@ mod tests {
         builder
             .finish(Some(if wrong_root { term } else { root }))
             .expect("arena")
+    }
+
+    fn task257c4c4_dependency() -> SourceNestedFraenkelBinderUseHandoff {
+        crate::source_formula_composition::tests::task257c4c3_handoff_for_test()
+    }
+
+    #[derive(Clone, Copy, PartialEq, Eq)]
+    enum Task257c4c4ContextVariant {
+        OwnerRange,
+        Scope,
+        Visibility,
+        Parent,
+        Layer,
+        Recovery,
+        ExtraContext,
+        Reordered,
+    }
+
+    fn task257c4c4_context_variant(
+        source: SourceId,
+        module: ModuleId,
+        variant: Task257c4c4ContextVariant,
+    ) -> BindingEnv {
+        let outer = BindingContextId::new(if variant == Task257c4c4ContextVariant::Reordered {
+            2
+        } else {
+            1
+        });
+        let binding = BindingId::new(0);
+        let mut contexts = BindingContextTable::new();
+        contexts.insert(BindingContextDraft {
+            owner: BindingContextOwner::Module,
+            parent: None,
+            layer: BindingContextLayer::Module,
+            lexical_scope: None,
+            bindings: Vec::new(),
+            visible_bindings: Vec::new(),
+            recovery: BindingContextRecovery::Normal,
+        });
+        let outer_draft = BindingContextDraft {
+            owner: BindingContextOwner::SourceComprehension {
+                source_range: nested_fraenkel_mapper_primary_range(
+                    source,
+                    if variant == Task257c4c4ContextVariant::OwnerRange {
+                        89
+                    } else {
+                        90
+                    },
+                    157,
+                ),
+            },
+            parent: Some(BindingContextId::new(0)),
+            layer: if variant == Task257c4c4ContextVariant::Layer {
+                BindingContextLayer::Block
+            } else {
+                BindingContextLayer::Expression
+            },
+            lexical_scope: None,
+            bindings: vec![binding],
+            visible_bindings: vec![binding],
+            recovery: BindingContextRecovery::Normal,
+        };
+        let inner_draft = BindingContextDraft {
+            owner: BindingContextOwner::SourceComprehension {
+                source_range: nested_fraenkel_mapper_primary_range(source, 92, 123),
+            },
+            parent: Some(if variant == Task257c4c4ContextVariant::Parent {
+                BindingContextId::new(0)
+            } else {
+                outer
+            }),
+            layer: BindingContextLayer::Expression,
+            lexical_scope: (variant == Task257c4c4ContextVariant::Scope)
+                .then(|| LocalTermScope::new(vec![0])),
+            bindings: Vec::new(),
+            visible_bindings: if matches!(
+                variant,
+                Task257c4c4ContextVariant::Visibility | Task257c4c4ContextVariant::Parent
+            ) {
+                Vec::new()
+            } else {
+                vec![binding]
+            },
+            recovery: if variant == Task257c4c4ContextVariant::Recovery {
+                BindingContextRecovery::Recovered
+            } else {
+                BindingContextRecovery::Normal
+            },
+        };
+        if variant == Task257c4c4ContextVariant::Reordered {
+            contexts.insert(inner_draft);
+            contexts.insert(outer_draft);
+        } else {
+            contexts.insert(outer_draft);
+            contexts.insert(inner_draft);
+        }
+        if variant == Task257c4c4ContextVariant::ExtraContext {
+            contexts.insert(BindingContextDraft {
+                owner: BindingContextOwner::Generated("extra".to_owned()),
+                parent: Some(BindingContextId::new(2)),
+                layer: BindingContextLayer::Expression,
+                lexical_scope: None,
+                bindings: Vec::new(),
+                visible_bindings: vec![binding],
+                recovery: BindingContextRecovery::Normal,
+            });
+        }
+        let mut bindings = BindingTable::new();
+        bindings.insert(BindingDraft {
+            spelling: "x".to_owned(),
+            kind: BindingKind::QuantifierBinder,
+            identity: BinderIdentity::SourceBound {
+                context: outer,
+                ordinal: 0,
+            },
+            owner_context: outer,
+            declaration_range: nested_fraenkel_mapper_primary_range(source, 136, 137),
+            visible_after_ordinal: 0,
+            type_site: BindingTypeSite::Source(nested_fraenkel_mapper_primary_range(
+                source, 141, 155,
+            )),
+            status: BindingStatus::Active,
+            captured: CapturedFreeVariables::default(),
+            diagnostics: Vec::new(),
+            recovery: BindingRecoveryState::Normal,
+        });
+        BindingEnv::try_new(BindingEnvParts {
+            source_id: source,
+            module_id: module,
+            contexts,
+            bindings,
+            diagnostics: BindingDiagnosticTable::new(),
+        })
+        .expect("structurally valid context variant")
+    }
+
+    #[derive(Clone)]
+    struct Task257c4c4BindingVariant {
+        spelling: &'static str,
+        kind: BindingKind,
+        identity: BinderIdentity,
+        owner_context: BindingContextId,
+        declaration_range: SourceRange,
+        visible_after_ordinal: usize,
+        type_site: BindingTypeSite,
+        status: BindingStatus,
+        captured: CapturedFreeVariables,
+        diagnostics: Vec<crate::binding_env::BindingDiagnosticId>,
+        recovery: BindingRecoveryState,
+    }
+
+    impl Task257c4c4BindingVariant {
+        fn exact(source: SourceId) -> Self {
+            Self {
+                spelling: "x",
+                kind: BindingKind::QuantifierBinder,
+                identity: BinderIdentity::SourceBound {
+                    context: BindingContextId::new(1),
+                    ordinal: 0,
+                },
+                owner_context: BindingContextId::new(1),
+                declaration_range: nested_fraenkel_mapper_primary_range(source, 136, 137),
+                visible_after_ordinal: 0,
+                type_site: BindingTypeSite::Source(nested_fraenkel_mapper_primary_range(
+                    source, 141, 155,
+                )),
+                status: BindingStatus::Active,
+                captured: CapturedFreeVariables::default(),
+                diagnostics: Vec::new(),
+                recovery: BindingRecoveryState::Normal,
+            }
+        }
+    }
+
+    fn task257c4c4_binding_variant(
+        source: SourceId,
+        module: ModuleId,
+        variant: Task257c4c4BindingVariant,
+    ) -> BindingEnv {
+        let mut env = nested_fraenkel_mapper_primary_binding_env(source, module)
+            .expect("exact C4C4 binding environment");
+        *env.binding_mut_for_test(BindingId::new(0)).unwrap() = crate::binding_env::BindingEntry {
+            id: BindingId::new(0),
+            spelling: variant.spelling.to_owned(),
+            kind: variant.kind,
+            identity: variant.identity,
+            owner_context: variant.owner_context,
+            declaration_range: variant.declaration_range,
+            visible_after_ordinal: variant.visible_after_ordinal,
+            type_site: variant.type_site,
+            status: variant.status,
+            captured: variant.captured,
+            diagnostics: variant.diagnostics,
+            recovery: variant.recovery,
+        };
+        env
+    }
+
+    #[test]
+    fn task257c4c4_builds_exact_nested_mapper_primary_handoff() {
+        let dependency = task257c4c4_dependency();
+        let expected_dependency = dependency.debug_text();
+        let handoff = SourceNestedFraenkelMapperPrimaryProducer::build(dependency).unwrap();
+
+        assert_eq!(handoff.source_id(), handoff.dependency().source_id());
+        assert_eq!(handoff.module_id(), handoff.dependency().module_id());
+        assert_eq!(handoff.dependency_fingerprint(), expected_dependency);
+        assert_eq!(handoff.binding_env().contexts().len(), 3);
+        assert_eq!(handoff.binding_env().bindings().len(), 1);
+        assert!(handoff.binding_env().diagnostics().is_empty());
+        assert_eq!(
+            handoff
+                .binding_env()
+                .contexts()
+                .get(BindingContextId::new(0))
+                .unwrap()
+                .owner,
+            BindingContextOwner::Module
+        );
+        assert_eq!(
+            handoff
+                .binding_env()
+                .contexts()
+                .get(BindingContextId::new(1))
+                .unwrap()
+                .owner,
+            BindingContextOwner::SourceComprehension {
+                source_range: nested_fraenkel_mapper_primary_range(handoff.source_id(), 90, 157),
+            }
+        );
+        let inner = handoff
+            .binding_env()
+            .contexts()
+            .get(BindingContextId::new(2))
+            .unwrap();
+        assert_eq!(inner.parent, Some(BindingContextId::new(1)));
+        assert!(inner.lexical_scope.is_none());
+        assert_eq!(inner.visible_bindings, vec![BindingId::new(0)]);
+        let binding = handoff
+            .binding_env()
+            .bindings()
+            .get(BindingId::new(0))
+            .unwrap();
+        assert_eq!(binding.spelling, "x");
+        assert_eq!(binding.kind, BindingKind::QuantifierBinder);
+        assert_eq!(
+            binding.identity,
+            BinderIdentity::SourceBound {
+                context: BindingContextId::new(1),
+                ordinal: 0,
+            }
+        );
+        assert_eq!(
+            binding.declaration_range,
+            nested_fraenkel_mapper_primary_range(handoff.source_id(), 136, 137)
+        );
+        assert_eq!(
+            binding.type_site,
+            BindingTypeSite::Source(nested_fraenkel_mapper_primary_range(
+                handoff.source_id(),
+                141,
+                155
+            ))
+        );
+        assert!(binding.captured.identities().is_empty());
+        assert!(binding.diagnostics.is_empty());
+        assert!(matches!(
+            handoff.binding_env().lookup(&BindingLookupSite::new(
+                "x",
+                BindingContextId::new(2),
+                None,
+                0,
+            )),
+            Ok(BindingLookupResult::ForwardReference { candidates, .. })
+                if candidates == vec![BindingId::new(0)]
+        ));
+        assert_eq!(
+            handoff.binding_env().lookup(&BindingLookupSite::new(
+                "x",
+                BindingContextId::new(2),
+                None,
+                1,
+            )),
+            Ok(BindingLookupResult::Local(BindingId::new(0)))
+        );
+        assert_eq!(
+            handoff.binding_fingerprint(),
+            handoff.binding_env().debug_text()
+        );
+        assert_eq!(handoff.projection_arena().len(), 1);
+        assert_eq!(handoff.projection_arena().root(), Some(TypedNodeId::new(0)));
+        let node = handoff
+            .projection_arena()
+            .node(TypedNodeId::new(0))
+            .unwrap();
+        assert_eq!(node.kind.as_str(), "source.term.variable-reference");
+        assert_eq!(
+            node.anchor,
+            SourceAnchor::Range(nested_fraenkel_mapper_primary_range(
+                handoff.source_id(),
+                94,
+                95
+            ))
+        );
+        assert!(node.resolved_node.is_none());
+        assert!(node.children.is_empty());
+        assert_eq!(node.typing, TypingState::Unknown);
+        assert_eq!(node.recovery, NodeRecoveryState::Normal);
+        assert_eq!(node.links, Default::default());
+        assert_eq!(handoff.source_term().terms().len(), 1);
+        assert_eq!(handoff.source_term().references().len(), 1);
+        assert!(handoff.source_term().numeric_type_requests().is_empty());
+        let term = handoff
+            .source_term()
+            .terms()
+            .get(SourcePrimaryTermId::new(0))
+            .unwrap();
+        assert_eq!(term.site(), &TypedSiteRef::Node(TypedNodeId::new(0)));
+        assert_eq!(
+            term.source_range(),
+            nested_fraenkel_mapper_primary_range(handoff.source_id(), 94, 95)
+        );
+        assert_eq!(term.source_ordinal(), 0);
+        assert_eq!(term.context(), BindingContextId::new(2));
+        assert_eq!(term.recovery(), SourcePrimaryTermRecovery::Normal);
+        assert_eq!(term.spelling(), "x");
+        assert_eq!(term.kind(), SourcePrimaryTermKind::VariableReference);
+        assert_eq!(term.role(), SourcePrimaryTermRole::Value);
+        assert_eq!(term.parent(), None);
+        let reference = handoff
+            .source_term()
+            .references()
+            .get(SourcePrimaryTermReferenceId::new(0))
+            .unwrap();
+        assert_eq!(reference.term(), SourcePrimaryTermId::new(0));
+        assert_eq!(reference.binding(), BindingId::new(0));
+        assert_eq!(reference.role(), SourcePrimaryTermReferenceRole::Variable);
+        assert!(reference.lexical_scope().is_none());
+        assert_eq!(reference.use_ordinal(), 1);
+        assert_eq!(
+            handoff.source_term_fingerprint(),
+            handoff.source_term().debug_text()
+        );
+        assert_eq!(
+            handoff.debug_text(),
+            format!(
+                "source-nested-fraenkel-mapper-primary-debug-v1\nmodule: {}::{}\ndependency-fingerprint: {:?}\nbinding-fingerprint: {:?}\nprojection: nodes=1 root=0\nsource-term-fingerprint: {:?}\n",
+                handoff.module_id().package().as_str(),
+                handoff.module_id().path().as_str(),
+                handoff.dependency_fingerprint(),
+                handoff.binding_fingerprint(),
+                handoff.source_term_fingerprint(),
+            )
+        );
+    }
+
+    #[test]
+    fn task257c4c4_rejects_dependency_and_binding_projection_corruption() {
+        use crate::source_formula_composition::tests::Task257c4c3HandoffCorruption;
+
+        for corruption in [
+            Task257c4c3HandoffCorruption::Source,
+            Task257c4c3HandoffCorruption::Module,
+            Task257c4c3HandoffCorruption::Summary,
+            Task257c4c3HandoffCorruption::Row,
+            Task257c4c3HandoffCorruption::RetainedResolver,
+            Task257c4c3HandoffCorruption::RetainedTypedAst,
+        ] {
+            assert!(matches!(
+                SourceNestedFraenkelMapperPrimaryProducer::build(
+                    crate::source_formula_composition::tests::task257c4c3_corrupted_handoff_for_test(
+                        corruption,
+                    ),
+                ),
+                Err(SourceNestedFraenkelMapperPrimaryError::InvalidDependency)
+            ));
+        }
+        let valid =
+            SourceNestedFraenkelMapperPrimaryProducer::build(task257c4c4_dependency()).unwrap();
+        let mut dependency = valid.clone();
+        dependency.dependency_fingerprint = "stale".to_owned();
+        assert!(matches!(
+            dependency.validate(),
+            Err(SourceNestedFraenkelMapperPrimaryError::InvalidDependency)
+        ));
+        let mut source = valid.clone();
+        source.source_id = other_source_id();
+        source.binding_fingerprint = "stale".to_owned();
+        assert!(matches!(
+            source.validate(),
+            Err(SourceNestedFraenkelMapperPrimaryError::InvalidDependency)
+        ));
+        let mut binding_fingerprint = valid.clone();
+        binding_fingerprint.binding_fingerprint = "stale".to_owned();
+        assert!(matches!(
+            binding_fingerprint.validate(),
+            Err(SourceNestedFraenkelMapperPrimaryError::InvalidBindingEnvironment)
+        ));
+        let mut context = valid.clone();
+        context.binding_env = binding_env(context.source_id, &context.module_id, Vec::new(), None);
+        assert!(matches!(
+            context.validate(),
+            Err(SourceNestedFraenkelMapperPrimaryError::InvalidBindingEnvironment)
+        ));
+        let mut binding = valid.clone();
+        binding
+            .binding_env
+            .binding_mut_for_test(BindingId::new(0))
+            .unwrap()
+            .spelling = "y".to_owned();
+        assert!(matches!(
+            binding.validate(),
+            Err(SourceNestedFraenkelMapperPrimaryError::InvalidBindingEnvironment)
+        ));
+        let source = valid.source_id;
+        let module = valid.module_id.clone();
+        let exact = Task257c4c4BindingVariant::exact(source);
+        let binding_variants = vec![
+            {
+                let mut variant = exact.clone();
+                variant.kind = BindingKind::LetBinding;
+                variant
+            },
+            {
+                let mut variant = exact.clone();
+                variant.identity = BinderIdentity::Generated {
+                    context: BindingContextId::new(1),
+                    counter: 0,
+                };
+                variant
+            },
+            {
+                let mut variant = exact.clone();
+                variant.owner_context = BindingContextId::new(0);
+                variant
+            },
+            {
+                let mut variant = exact.clone();
+                variant.declaration_range = nested_fraenkel_mapper_primary_range(source, 135, 137);
+                variant
+            },
+            {
+                let mut variant = exact.clone();
+                variant.visible_after_ordinal = 1;
+                variant
+            },
+            {
+                let mut variant = exact.clone();
+                variant.type_site = BindingTypeSite::Missing;
+                variant
+            },
+            {
+                let mut variant = exact.clone();
+                variant.status = BindingStatus::Reserved;
+                variant
+            },
+            {
+                let mut variant = exact.clone();
+                variant.captured = CapturedFreeVariables::new(vec![BinderIdentity::Generated {
+                    context: BindingContextId::new(1),
+                    counter: 1,
+                }]);
+                variant
+            },
+            {
+                let mut variant = exact.clone();
+                variant.diagnostics = vec![crate::binding_env::BindingDiagnosticId::new(0)];
+                variant
+            },
+            {
+                let mut variant = exact;
+                variant.recovery = BindingRecoveryState::Recovered;
+                variant
+            },
+        ];
+        for variant in binding_variants {
+            let mut corrupted = valid.clone();
+            corrupted.binding_env = task257c4c4_binding_variant(source, module.clone(), variant);
+            assert!(matches!(
+                corrupted.validate(),
+                Err(SourceNestedFraenkelMapperPrimaryError::InvalidBindingEnvironment)
+            ));
+        }
+        for variant in [
+            Task257c4c4ContextVariant::OwnerRange,
+            Task257c4c4ContextVariant::Scope,
+            Task257c4c4ContextVariant::Visibility,
+            Task257c4c4ContextVariant::Parent,
+            Task257c4c4ContextVariant::Layer,
+            Task257c4c4ContextVariant::Recovery,
+            Task257c4c4ContextVariant::ExtraContext,
+            Task257c4c4ContextVariant::Reordered,
+        ] {
+            let mut corrupted = valid.clone();
+            corrupted.binding_env =
+                task257c4c4_context_variant(valid.source_id, valid.module_id.clone(), variant);
+            assert!(matches!(
+                corrupted.validate(),
+                Err(SourceNestedFraenkelMapperPrimaryError::InvalidBindingEnvironment)
+            ));
+        }
+    }
+
+    #[test]
+    fn task257c4c4_rejects_arena_term_reference_and_precedence_corruption() {
+        let valid =
+            SourceNestedFraenkelMapperPrimaryProducer::build(task257c4c4_dependency()).unwrap();
+        let mut source_term_precedence = valid.clone();
+        source_term_precedence.binding_fingerprint = "stale".to_owned();
+        source_term_precedence.projection_arena = TypedArena::try_new(None, Vec::new()).unwrap();
+        assert!(matches!(
+            source_term_precedence.validate(),
+            Err(SourceNestedFraenkelMapperPrimaryError::InvalidBindingEnvironment)
+        ));
+        let mut arena = valid.clone();
+        arena.projection_arena = TypedArena::try_new(None, Vec::new()).unwrap();
+        assert!(matches!(
+            arena.validate(),
+            Err(SourceNestedFraenkelMapperPrimaryError::InvalidSourceTerm)
+        ));
+        let exact_node = || {
+            TypedNode::new(
+                "source.term.variable-reference",
+                SourceAnchor::Range(nested_fraenkel_mapper_primary_range(
+                    valid.source_id,
+                    94,
+                    95,
+                )),
+            )
+        };
+        let mut wrong_root = valid.clone();
+        wrong_root.projection_arena = TypedArena::try_new(None, vec![exact_node()]).unwrap();
+        assert!(matches!(
+            wrong_root.validate(),
+            Err(SourceNestedFraenkelMapperPrimaryError::InvalidSourceTerm)
+        ));
+        // Test-only corruption construction; production remains syntax-free.
+        use mizar_syntax as syntax;
+
+        let mut resolved_builder = mizar_resolve::resolved_ast::ResolvedArenaBuilder::new();
+        let resolved_node = resolved_builder
+            .push(mizar_resolve::resolved_ast::ResolvedNode::new(
+                syntax::SurfaceNodeKind::CompilationUnit,
+                Vec::new(),
+                SemanticOrigin::new(
+                    valid.source_id,
+                    valid.module_id.clone(),
+                    SourceAnchor::Range(nested_fraenkel_mapper_primary_range(
+                        valid.source_id,
+                        94,
+                        95,
+                    )),
+                    vec![0],
+                ),
+            ))
+            .expect("resolved-node corruption id");
+        for node in [
+            TypedNode::new(
+                "Identifier",
+                SourceAnchor::Range(nested_fraenkel_mapper_primary_range(
+                    valid.source_id,
+                    94,
+                    95,
+                )),
+            ),
+            TypedNode::new(
+                "source.term.variable-reference",
+                SourceAnchor::Range(nested_fraenkel_mapper_primary_range(
+                    valid.source_id,
+                    94,
+                    96,
+                )),
+            )
+            .with_recovery(NodeRecoveryState::Recovered),
+            TypedNode::new(
+                "source.term.variable-reference",
+                SourceAnchor::Range(nested_fraenkel_mapper_primary_range(
+                    valid.source_id,
+                    94,
+                    95,
+                )),
+            )
+            .with_resolved_node(resolved_node),
+            TypedNode::new(
+                "source.term.variable-reference",
+                SourceAnchor::Range(nested_fraenkel_mapper_primary_range(
+                    valid.source_id,
+                    94,
+                    95,
+                )),
+            )
+            .with_typing(TypingState::Successful),
+            TypedNode::new(
+                "source.term.variable-reference",
+                SourceAnchor::Range(nested_fraenkel_mapper_primary_range(
+                    valid.source_id,
+                    94,
+                    95,
+                )),
+            )
+            .with_links(crate::typed_ast::TypedNodeLinks {
+                context: None,
+                type_entry: None,
+                facts: Vec::new(),
+                coercions: Vec::new(),
+                initial_obligations: Vec::new(),
+                diagnostics: vec![crate::typed_ast::TypeDiagnosticId::new(0)],
+            }),
+        ] {
+            let mut corrupted = valid.clone();
+            corrupted.projection_arena =
+                TypedArena::try_new(Some(TypedNodeId::new(0)), vec![node]).unwrap();
+            assert!(matches!(
+                corrupted.validate(),
+                Err(SourceNestedFraenkelMapperPrimaryError::InvalidSourceTerm)
+            ));
+        }
+        let mut children = valid.clone();
+        children.projection_arena = TypedArena::try_new(
+            Some(TypedNodeId::new(0)),
+            vec![
+                TypedNode::new(
+                    "source.term.variable-reference",
+                    SourceAnchor::Range(nested_fraenkel_mapper_primary_range(
+                        valid.source_id,
+                        94,
+                        95,
+                    )),
+                )
+                .with_children(vec![TypedNodeId::new(1)]),
+                TypedNode::new(
+                    "source.term.variable-reference",
+                    SourceAnchor::Range(nested_fraenkel_mapper_primary_range(
+                        valid.source_id,
+                        94,
+                        95,
+                    )),
+                ),
+            ],
+        )
+        .unwrap();
+        assert!(matches!(
+            children.validate(),
+            Err(SourceNestedFraenkelMapperPrimaryError::InvalidSourceTerm)
+        ));
+        let mut term = valid.clone();
+        term.source_term
+            .corrupt_for_test(SourcePrimaryTermCorruptionForTest::Truncate(0));
+        assert!(matches!(
+            term.validate(),
+            Err(SourceNestedFraenkelMapperPrimaryError::InvalidSourceTerm)
+        ));
+        let mut duplicate_term = valid.clone();
+        duplicate_term
+            .source_term
+            .corrupt_for_test(SourcePrimaryTermCorruptionForTest::Duplicate(
+                SourcePrimaryTermId::new(0),
+            ));
+        assert!(matches!(
+            duplicate_term.validate(),
+            Err(SourceNestedFraenkelMapperPrimaryError::InvalidSourceTerm)
+        ));
+        let mut term_variants = Vec::new();
+        for mutate in [
+            |row: &mut SourcePrimaryTerm| row.site = TypedSiteRef::Node(TypedNodeId::new(1)),
+            |row: &mut SourcePrimaryTerm| row.source_range.end += 1,
+            |row: &mut SourcePrimaryTerm| row.source_ordinal = 1,
+            |row: &mut SourcePrimaryTerm| row.context = BindingContextId::new(1),
+            |row: &mut SourcePrimaryTerm| row.recovery = SourcePrimaryTermRecovery::Degraded,
+            |row: &mut SourcePrimaryTerm| row.spelling = "y".to_owned(),
+            |row: &mut SourcePrimaryTerm| row.kind = SourcePrimaryTermKind::ConstantReference,
+            |row: &mut SourcePrimaryTerm| row.role = SourcePrimaryTermRole::CurrentDefinitionResult,
+            |row: &mut SourcePrimaryTerm| row.parent = Some(SourcePrimaryTermId::new(0)),
+        ] {
+            let mut corrupted = valid.clone();
+            mutate(corrupted.source_term.terms.rows.get_mut(0).unwrap());
+            term_variants.push(corrupted);
+        }
+        for corrupted in term_variants {
+            assert!(matches!(
+                corrupted.validate(),
+                Err(SourceNestedFraenkelMapperPrimaryError::InvalidSourceTerm)
+            ));
+        }
+        let mut reference = valid.clone();
+        reference
+            .source_term
+            .set_reference_use_ordinal_for_test(SourcePrimaryTermReferenceId::new(0), 0);
+        assert!(matches!(
+            reference.validate(),
+            Err(SourceNestedFraenkelMapperPrimaryError::InvalidSourceTerm)
+        ));
+        let mut missing_reference = valid.clone();
+        missing_reference.source_term.references.rows.clear();
+        assert!(matches!(
+            missing_reference.validate(),
+            Err(SourceNestedFraenkelMapperPrimaryError::InvalidSourceTerm)
+        ));
+        let mut extra_reference = valid.clone();
+        extra_reference
+            .source_term
+            .references
+            .rows
+            .push(extra_reference.source_term.references.rows[0].clone());
+        assert!(matches!(
+            extra_reference.validate(),
+            Err(SourceNestedFraenkelMapperPrimaryError::InvalidSourceTerm)
+        ));
+        let mut reference_variants = Vec::new();
+        for mutate in [
+            |row: &mut SourcePrimaryTermReference| row.term = SourcePrimaryTermId::new(1),
+            |row: &mut SourcePrimaryTermReference| row.binding = BindingId::new(1),
+            |row: &mut SourcePrimaryTermReference| {
+                row.role = SourcePrimaryTermReferenceRole::LocalConstant
+            },
+            |row: &mut SourcePrimaryTermReference| {
+                row.lexical_scope = Some(LocalTermScope::new(vec![0]))
+            },
+        ] {
+            let mut corrupted = valid.clone();
+            mutate(corrupted.source_term.references.rows.get_mut(0).unwrap());
+            reference_variants.push(corrupted);
+        }
+        for corrupted in reference_variants {
+            assert!(matches!(
+                corrupted.validate(),
+                Err(SourceNestedFraenkelMapperPrimaryError::InvalidSourceTerm)
+            ));
+        }
+        let mut request = valid.clone();
+        request
+            .source_term
+            .numeric_type_requests
+            .rows
+            .push(SourceNumericTypeRequest {
+                term: SourcePrimaryTermId::new(0),
+                owner: TypedSiteRef::Node(TypedNodeId::new(0)),
+                source_range: nested_fraenkel_mapper_primary_range(valid.source_id, 94, 95),
+                spelling: "x".to_owned(),
+                request_ordinal: 0,
+            });
+        assert!(matches!(
+            request.validate(),
+            Err(SourceNestedFraenkelMapperPrimaryError::InvalidSourceTerm)
+        ));
+        let mut source_term_fingerprint = valid;
+        source_term_fingerprint.source_term_fingerprint = "stale".to_owned();
+        assert!(matches!(
+            source_term_fingerprint.validate(),
+            Err(SourceNestedFraenkelMapperPrimaryError::InvalidSourceTerm)
+        ));
+    }
+
+    #[test]
+    fn task257c4c4_replays_deterministically_and_preserves_generic_task252_rejection() {
+        let first = SourceNestedFraenkelMapperPrimaryProducer::build(task257c4c4_dependency());
+        let second = SourceNestedFraenkelMapperPrimaryProducer::build(task257c4c4_dependency());
+        assert!(
+            matches!((&first, &second), (Ok(left), Ok(right)) if left == right && left.debug_text() == right.debug_text())
+        );
+        let handoff = first.unwrap();
+        let generic = SourcePrimaryTermProducer::build(
+            nested_fraenkel_mapper_primary_input(handoff.source_id(), handoff.module_id().clone()),
+            handoff.binding_env(),
+            handoff.projection_arena(),
+        );
+        assert!(
+            generic.is_err(),
+            "generic forward-written mapper must be rejected: {generic:?}"
+        );
+        let raw_identifier_arena = TypedArena::try_new(
+            Some(TypedNodeId::new(0)),
+            vec![TypedNode::new(
+                "Identifier",
+                SourceAnchor::Range(nested_fraenkel_mapper_primary_range(
+                    handoff.source_id(),
+                    94,
+                    95,
+                )),
+            )],
+        )
+        .unwrap();
+        assert!(
+            SourcePrimaryTermProducer::build(
+                nested_fraenkel_mapper_primary_input(
+                    handoff.source_id(),
+                    handoff.module_id().clone()
+                ),
+                handoff.binding_env(),
+                &raw_identifier_arena,
+            )
+            .is_err()
+        );
     }
 }

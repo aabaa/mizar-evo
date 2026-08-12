@@ -73,6 +73,7 @@ deterministically renderする。
 | `SourceProofLocalGivenUseTermError` | `#[non_exhaustive]`。callerはTask 269GU dependency/input/installation failureをexhaustive matchしない。 |
 | `SourceProofLocalGivenConditionUseTermError` | `#[non_exhaustive]`。callerはTask 269GCU dependency/input/installation failureをexhaustive matchしない。 |
 | `SourceProofLocalGivenDescendantUseTermError` | `#[non_exhaustive]`。callerはTask 269SDU dependency/input/installation failureをexhaustive matchしない。 |
+| `SourceNestedFraenkelMapperPrimaryError` | `#[non_exhaustive]`。callerはC4C4 dependency/binding-environment/source-term projection failureをexhaustive matchしない。 |
 
 この module が所有する exhaustive public enum exception はない。
 
@@ -148,8 +149,8 @@ explicit ownerに残る。
 
 ## Task 257C4C4 nested Fraenkel mapper primary
 
-Frozen [C4C4 contract](../../task_contracts/ja/CHECKER-FRAENKEL-NESTED-MAPPER-PRIMARY-257C4C4.md)は
-C4C3-dependent/zero-semanticなspecialized Task252 transactionを1件追加する。
+Implemented [C4C4 contract](../../task_contracts/ja/CHECKER-FRAENKEL-NESTED-MAPPER-PRIMARY-257C4C4.md)は
+C4C3-dependent/zero-semanticなspecialized Task252 transactionを1件追加した。
 Exact public familyは`SourceNestedFraenkelMapperPrimaryHandoff`、non-exhaustive
 `SourceNestedFraenkelMapperPrimaryError`、
 `SourceNestedFraenkelMapperPrimaryProducer`。Handoffはcomplete C4C3 dependency、
@@ -165,7 +166,7 @@ context。Profile-scoped logical ordinal `1`だけがsource上後置されたgen
 Private specialized profileはpublic generic Task252 source-order derivation/forward rejectionを
 弱めない。Exact getter/debug/error precedence/context/binding/arena/row/default-deny matrixは
 task contractだけがownする。Sole current consumerはexisting private nested-capture library
-test leaf。Typed/Resolved installation、active route、capture identity、generated-core
+test leafである。Typed/Resolved installation、active route、capture identity、generated-core
 parameter、type/sethood answer、semantic result、diagnostic、coverage creditは追加しない。
 
 ## Task 257B1 Consumer Addendum

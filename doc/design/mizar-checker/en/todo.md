@@ -7013,12 +7013,13 @@ selected only from fresh post-commit inventory.
 - [x] Classify the specialized forward-written Task-252 profile as
   `design_drift`, its exact regressions as a `test_gap`, and freeze the paired
   [C4C4 contract](../../task_contracts/en/CHECKER-FRAENKEL-NESTED-MAPPER-PRIMARY-257C4C4.md).
-- [ ] Complete independent specification/API and bilingual/boundary reviews
+- [x] Complete independent specification/API and bilingual/boundary reviews
   with **NO FINDINGS**.
-- [ ] Implement only the C4C3-dependent outer-x binding projection and exact
+- [x] Implement only the C4C3-dependent outer-x binding projection and exact
   Task-252 `1/1/0` mapper primary plus five frozen tests. Preserve generic
   source-order rejection and add no capture, semantic, install, route,
   diagnostic, or credit state.
-- [ ] Complete all hard gates, quality review, task-only commit, clean
+- [ ] Complete source/docs and final-quality reviews, all hard gates, the
+  task-only commit, clean
   postcommit proof, and fresh readiness inventory; then stop per the user's
   one-task instruction even if a successor is ready.

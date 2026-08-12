@@ -12,7 +12,8 @@ and test
 
 ## Status, purpose, and readiness
 
-**Status:** frozen documentation prerequisite; implementation is pending.
+**Status:** pre-staging implementation, verification, and final-quality review
+complete; exact staging, commit, and postcommit proof remain.
 
 Fresh read-only inventory at clean
 `HEAD 5578f7e51f5acfb60494dbacb41640b976c9c55c` selects this task as the
@@ -269,9 +270,48 @@ or `xhigh` may perform frozen implementation and independent reviews.
 
 ## Completion evidence
 
-Independent specification/API and bilingual/owner/boundary reviews report
-**NO FINDINGS**. `git diff --check`, checker lint-policy `15/15`, mizar-test
-lint-policy `15/15`, and metadata `137/137` pass. Contract trees are `94/94`,
-and all protected/baseline hashes reproduce exactly. Documentation-prerequisite
-staging and commit remain pending; implementation and its reviews/hard gates
-have not started.
+The frozen documentation prerequisite committed as
+`faa558276ff984ac20c8aef60caf0b7712e5554c`. Independent specification/API,
+documentation-boundary, test-sufficiency, and implementation reviews report
+**NO FINDINGS** after the exact corruption matrix was completed. The
+implementation remains inside the exact three-Rust-path scope and preserves
+generic Task-252 source-order rejection.
+
+Final source measurements are:
+
+| Path | Lines | SHA-256 |
+|---|---:|---|
+| `crates/mizar-checker/src/source_term.rs` | `7574` | `2ef60bd40d0ff147f1615d20bd3a9fff3980e916868da90f998b00c3b4d369fe` |
+| `crates/mizar-checker/src/source_formula_composition.rs` | `9411` | `2b982a6ab418e63ee6996c428aea2f8d5a4b3fc6bb55c9e830043f07fec73e56` |
+| `crates/mizar-test/src/runner/tests/type_elaboration/fraenkel_nested_capture_identity.rs` | `416` | `7760e98cb9b6fb3ea26f232b34551119d6d084c0f4785cd11b3af7cf829be1f1` |
+
+Checker production remains `32` paths / `196334` lines with unchanged path
+hash `9dc5b02f26679677e593ea755394d68533173d2be988b7ef1ddcfd84a41b9787`
+and content-manifest hash
+`783826a091b8a5892b88a7f5c34a2bfff55683befa3cc98248eaa6de19afc5c6`.
+Focused tests pass `4/4` checker and `1/1` mizar-test; both full library suites
+pass `562/562` and `621/621`. Their raw-list SHA-256 values are respectively
+`2abdadafce718a2cd05d3a38240f4c3a96939b5ccec3174511481be7ee562e78`
+and `a0d872b065dc98b8dd9caff1d964d8d58d8af372ef3a57cfec7455b31bce4f63`.
+Warnings-denied checker+mizar-test Clippy,
+formatting, and `git diff --check` pass. Contract trees remain `94/94`, and all
+three protected authority hashes remain exact. Independent source/docs/API
+review reports **NO FINDINGS**. The initial bilingual/boundary review found one
+lifecycle-ordering mismatch; after that review completed, the contract and
+TODO were synchronized. Full-workspace Clippy and `cargo test` pass.
+Finding-specific bilingual/boundary re-review reports **NO FINDINGS**.
+Independent final-quality review reports **NO FINDINGS**, all `9/9` hard gates
+pass, and the valid uncapped quality score is `100/100`
+(`20/20/15/15/10/10/5/5`). It independently confirms the exact 20-path scope
+and authorizes task-only staging. Exact staging/cached-diff, commit, and
+postcommit evidence remain pending. The five unchanged
+plan/parse/declaration/type/proof CLI stdout
+hashes are respectively
+`2d2accef2c6fc32c1b3372530f6136af1299ac6ae7db6a0158798336b779c7e7`,
+`a8a7aa639d2ebc65eddc923c7e9369ea5637d50e935f808600f446da1bfbda56`,
+`71e83ba0b20d4015e07b3bd2c0c4db2837b6151d1251812caed7954530d53c74`,
+`4b2c7bd5ec3cc56e5672fb351126126230ec84fba9bd2bd9049a516d378fab7f`,
+and `ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`;
+all retain the existing `23` warnings and zero errors. Checker and mizar-test
+lint-policy suites pass `15/15`, metadata passes `137/137`, and no score cap
+applies.

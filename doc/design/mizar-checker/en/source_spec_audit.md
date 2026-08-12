@@ -612,7 +612,10 @@ Literal top-level public items:
   `SourceProofLocalGivenConditionUseTermError`,
   `SourceProofLocalGivenDescendantUseTermHandoff`,
   `SourceProofLocalGivenDescendantUseTermProducer`,
-  `SourceProofLocalGivenDescendantUseTermError`
+  `SourceProofLocalGivenDescendantUseTermError`,
+  `SourceNestedFraenkelMapperPrimaryHandoff`,
+  `SourceNestedFraenkelMapperPrimaryError`,
+  `SourceNestedFraenkelMapperPrimaryProducer`
 
 Correspondence:
 
@@ -624,8 +627,9 @@ Correspondence:
 | One exact proof-local `given` use-profile composition transports only the two later `y` variable references from the authenticated GUPT dependency. | `SourceProofLocalGivenUseTermHandoff`, `SourceProofLocalGivenUseTermProducer`, and `SourceProofLocalGivenUseTermError`. | Four checker and four dormant-runner exact/corruption/ownership/isolation tests. | Implemented for Task 269GU with zero active/semantic credit. |
 | One exact proof-local `given` condition composition transports only the two own-condition `y` variable references from the authenticated GCT dependency. | `SourceProofLocalGivenConditionUseTermHandoff`, `SourceProofLocalGivenConditionUseTermProducer`, and `SourceProofLocalGivenConditionUseTermError`. | Four checker and four dormant-runner exact/corruption/ownership/isolation tests. | Implemented for Task 269GCU with zero active/semantic credit. |
 | One exact proof-local descendant composition consumes the complete SDT handoff and transports only `y@118..119` as `term 0 -> binding 1`, atomically replacing standalone SDT ownership. | `SourceProofLocalGivenDescendantUseTermHandoff`, `SourceProofLocalGivenDescendantUseTermProducer`, and `SourceProofLocalGivenDescendantUseTermError`. | Four checker and four dormant-runner exact/corruption/ownership/isolation tests. | Implemented for Task 269SDU with zero active/semantic credit. |
+| One exact C4C3-dependent nested-Fraenkel transaction projects mapper `x@94..95` as one Task-252 variable primary selecting the distinct outer binder, without relaxing generic source-order rejection. | `SourceNestedFraenkelMapperPrimaryHandoff`, `SourceNestedFraenkelMapperPrimaryProducer`, private exact binding/profile/arena construction, and the crate-private complete C4C3 revalidation seam. | Four exact checker tests plus one private real imported-fixture regression cover `3/1/0` binding state, one arena node, `1/1/0` source-term state, dependency/default-deny corruption, lookup ordinals, and generic isolation. | Implemented for Task 257C4C4 with zero active/semantic credit and no installation. |
 | `TypedAst` owns the immutable handoff and `ResolvedTypedAst` only clone-preserves it. | Optional `SourcePrimaryTermHandoff` field, validated installer, and borrowed getters. | Production-runner ownership, replacement rejection, clone equality, and deterministic replay assertions. | Implemented; semantic typed/fact/downstream tables remain unchanged. |
-| Public enums remain forward-compatible. | `#[non_exhaustive]` on all public Task-252 enums. | `checker_public_enums_are_forward_compatible_and_documented`. | Guarded; no exhaustive exception. |
+| Public enums remain forward-compatible. | `#[non_exhaustive]` on all public Task-252 enums, including `SourceNestedFraenkelMapperPrimaryError`. | `checker_public_enums_are_forward_compatible_and_documented`. | Guarded; no exhaustive exception. |
 
 Bounded gaps: Task 252 transports only the five frozen primary-term source
 kinds and numeric requests. Applications and other term families, cross-family

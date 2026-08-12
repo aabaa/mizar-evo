@@ -755,6 +755,8 @@ Non-exhaustive errorはexact `EnvironmentMismatch`、`InvalidResolverDependency`
 
 Producerはretained C4C2 exact `2 binding / 1 use`、unique normal Resolved→Typed mapping、typed structure/rangeを
 full authenticateし、row0 `mapper use0 x@94..95 -> outer binding1 x@136..137`だけをpublishする。
-Task252 occurrence、`BindingEnv`/checker binding、capture、formula、type/sethood、request/result、verdict、
+C4C4はcrate-private `validate_complete()` reauthentication entryだけを追加し、retained resolver/TypedAst
+getterを公開しない。Separate Task252 ownerはcomplete C4C3 handoffをby-value consumeし、このvalidationを
+bypassできない。C4C3自身はTask252 occurrence、`BindingEnv`/checker binding、capture、formula、type/sethood、request/result、verdict、
 diagnostic、install、route、coverage creditは作らない。Validation precedence/snapshot/default-deny/test/completion
 evidenceはcontractがownする。

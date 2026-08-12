@@ -539,7 +539,10 @@ literal top-level public item:
   `SourceProofLocalGivenConditionUseTermError`,
   `SourceProofLocalGivenDescendantUseTermHandoff`,
   `SourceProofLocalGivenDescendantUseTermProducer`,
-  `SourceProofLocalGivenDescendantUseTermError`
+  `SourceProofLocalGivenDescendantUseTermError`,
+  `SourceNestedFraenkelMapperPrimaryHandoff`,
+  `SourceNestedFraenkelMapperPrimaryError`,
+  `SourceNestedFraenkelMapperPrimaryProducer`
 
 対応:
 
@@ -551,8 +554,9 @@ literal top-level public item:
 | exact proof-local `given` use-profile composition 1件がauthenticated GUPT dependencyからlater `y` variable reference 2件だけをtransportする。 | `SourceProofLocalGivenUseTermHandoff`、`SourceProofLocalGivenUseTermProducer`、`SourceProofLocalGivenUseTermError`。 | checker 4件/runner dormant 4件のexact/corruption/ownership/isolation test。 | Task 269GUで実装済み、active/semantic credit zero。 |
 | exact proof-local `given` condition composition 1件がauthenticated GCT dependencyからown-conditionの`y` variable reference 2件だけをtransportする。 | `SourceProofLocalGivenConditionUseTermHandoff`、`SourceProofLocalGivenConditionUseTermProducer`、`SourceProofLocalGivenConditionUseTermError`。 | checker 4件/runner dormant 4件のexact/corruption/ownership/isolation test。 | Task 269GCUで実装済み、active/semantic credit zero。 |
 | exact proof-local descendant composition 1件がcomplete SDT handoffをconsumeし、`y@118..119`だけを`term 0 -> binding 1`としてtransportしてstandalone SDT ownershipをatomicに置換する。 | `SourceProofLocalGivenDescendantUseTermHandoff`、`SourceProofLocalGivenDescendantUseTermProducer`、`SourceProofLocalGivenDescendantUseTermError`。 | checker 4件/runner dormant 4件のexact/corruption/ownership/isolation test。 | Task 269SDUで実装済み、active/semantic credit zero。 |
+| Exact C4C3-dependent nested-Fraenkel transaction 1件がmapper `x@94..95`をdistinct outer binderをselectするTask252 variable primary 1件へprojectし、generic source-order rejectionをrelaxしない。 | `SourceNestedFraenkelMapperPrimaryHandoff`、`SourceNestedFraenkelMapperPrimaryProducer`、private exact binding/profile/arena construction、crate-private complete C4C3 revalidation seam。 | Checker exact 4件とprivate real imported-fixture 1件が`3/1/0` binding、one-node arena、`1/1/0` source term、dependency/default-deny corruption、lookup ordinal、generic isolationをcoverする。 | Task257C4C4でimplementation済み、active/semantic credit zero、installationなし。 |
 | `TypedAst`がimmutable handoffをownし、`ResolvedTypedAst`はclone-preserveだけを行う。 | optional `SourcePrimaryTermHandoff` field、validated installer、borrowed getter。 | production-runner ownership、replacement rejection、clone equality、deterministic replay assertion。 | 実装済み。semantic typed/fact/downstream tableは不変。 |
-| public enumはforward-compatible。 | public Task-252 enumすべての`#[non_exhaustive]`。 | `checker_public_enums_are_forward_compatible_and_documented`。 | exhaustive exceptionなしでguard。 |
+| public enumはforward-compatible。 | `SourceNestedFraenkelMapperPrimaryError`を含むpublic Task252 enumすべての`#[non_exhaustive]`。 | `checker_public_enums_are_forward_compatible_and_documented`。 | exhaustive exceptionなしでguard。 |
 
 bounded gap: Task 252がtransportするのはfrozen five-kind primary-term sourceと
 numeric requestだけである。application/other term family、cross-family parent

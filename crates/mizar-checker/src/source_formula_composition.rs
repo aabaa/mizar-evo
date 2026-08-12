@@ -2595,6 +2595,15 @@ impl SourceNestedFraenkelBinderUseHandoff {
             .ok_or(SourceNestedFraenkelBinderUseError::InvalidTypedDependency)?;
         validate_nested_fraenkel_binder_use_rows(&self.binder_uses, profile, typed)
     }
+
+    /// Reauthenticates the complete retained resolver and typed snapshots.
+    ///
+    /// This is intentionally crate-private: later structural transports may
+    /// depend on the C4C3 identity relation, but must not inspect or expose its
+    /// retained resolver or typed-AST snapshots.
+    pub(crate) fn validate_complete(&self) -> Result<(), SourceNestedFraenkelBinderUseError> {
+        self.validate()
+    }
 }
 
 /// Builds the single default-deny nested Fraenkel binder-use identity handoff.
@@ -4846,6 +4855,50 @@ pub(crate) mod tests {
             resolver,
             typed_ast,
         }
+    }
+
+    pub(crate) fn task257c4c3_handoff_for_test() -> SourceNestedFraenkelBinderUseHandoff {
+        let fixture = task257c4c3_fixture();
+        SourceNestedFraenkelBinderUseProducer::build(&fixture.resolver, &fixture.typed_ast)
+            .expect("Task257C4C3 test dependency")
+    }
+
+    #[derive(Clone, Copy)]
+    pub(crate) enum Task257c4c3HandoffCorruption {
+        Source,
+        Module,
+        Summary,
+        Row,
+        RetainedResolver,
+        RetainedTypedAst,
+    }
+
+    pub(crate) fn task257c4c3_corrupted_handoff_for_test(
+        corruption: Task257c4c3HandoffCorruption,
+    ) -> SourceNestedFraenkelBinderUseHandoff {
+        let fixture = task257c4c3_fixture();
+        let mut handoff =
+            SourceNestedFraenkelBinderUseProducer::build(&fixture.resolver, &fixture.typed_ast)
+                .expect("Task257C4C3 test dependency");
+        match corruption {
+            Task257c4c3HandoffCorruption::Source => handoff.source_id = other_source_id(),
+            Task257c4c3HandoffCorruption::Module => {
+                handoff.module_id =
+                    ModuleId::new(PackageId::new("pkg"), ModulePath::new("composition.other"));
+            }
+            Task257c4c3HandoffCorruption::Summary => {
+                handoff.resolver_summary = "stale".to_owned();
+            }
+            Task257c4c3HandoffCorruption::Row => handoff.binder_uses.rows.clear(),
+            Task257c4c3HandoffCorruption::RetainedResolver => {
+                handoff.dependencies.resolver =
+                    task257c4a_empty_resolver(fixture.source, &fixture.module);
+            }
+            Task257c4c3HandoffCorruption::RetainedTypedAst => {
+                handoff.dependencies.typed_ast = task257c4a_fixture().typed_ast;
+            }
+        }
+        handoff
     }
 
     fn task257c4c3_type(

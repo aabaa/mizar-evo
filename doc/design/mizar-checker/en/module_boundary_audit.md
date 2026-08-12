@@ -83,11 +83,11 @@ facade and leaves the production path set at 32 paths; the cohesive owner is
 
 ## Task 257C4C4 Nested Mapper Primary Boundary
 
-The frozen [C4C4 contract](../../task_contracts/en/CHECKER-FRAENKEL-NESTED-MAPPER-PRIMARY-257C4C4.md)
-will keep its sole public production family in the existing cohesive
-`source_term.rs` Task-252 owner. `source_formula_composition.rs` will add only
-a crate-private complete-C4C3 validation seam, and the existing private
-mizar-test nested-capture leaf will remain the sole consumer. No new module,
+The implemented [C4C4 contract](../../task_contracts/en/CHECKER-FRAENKEL-NESTED-MAPPER-PRIMARY-257C4C4.md)
+keeps its sole public production family in the existing cohesive
+`source_term.rs` Task-252 owner. `source_formula_composition.rs` adds only a
+crate-private complete-C4C3 validation seam, and the existing private
+mizar-test nested-capture leaf remains the sole consumer. No new module,
 facade, Typed/Resolved owner, resolver owner, runner dispatch, Cargo metadata,
 canonical artifact, or active coverage surface is added.
 
@@ -96,8 +96,8 @@ immutable Task-252 arena node, and `1/1/0` primary/reference/request rows.
 Inner `y` stays dependency-only. Reusing C4A/C4B, changing public generic
 Task-252 ordering, installing the projection, or adding capture/type/sethood/
 request/result/verdict/diagnostic/route state would be a
-`boundary_violation`. Final line and content measurements remain contract-
-owned and will be synchronized after implementation.
+`boundary_violation`. Final line and content measurements are owned once by
+the task contract and reflected in the source-layout inventory below.
 
 ## Split Gate
 
@@ -115,11 +115,11 @@ remain aligned with their owning specifications.
 
 ## Source Layout Inventory
 
-Task 257C4C3 leaves the production layout at 32 paths / 195158 lines, with path
+Task 257C4C4 leaves the production layout at 32 paths / 196334 lines, with path
 SHA-256
 `9dc5b02f26679677e593ea755394d68533173d2be988b7ef1ddcfd84a41b9787`
 and current content SHA-256
-`076c06d7943a3af532b114fa15704374a3f1021c2f5a622621d3d21ec3dc81bf`.
+`783826a091b8a5892b88a7f5c34a2bfff55683befa3cc98248eaa6de19afc5c6`.
 The new and changed cohesive owners are measured in their rows below.
 
 | Path | Lines | Boundary label | Owning specification | Split required | Hard-gate finding | Decision |
@@ -130,11 +130,11 @@ The new and changed cohesive owners are measured in their rows below.
 | `src/source_context.rs` | 1727 | syntax-free source-item and binding-context producer | `source_context.md` | no | no | Cohesive Task-248 validation, table construction, recovery, handoff, and boundary tests; no split required. |
 | `src/source_atomic_formula.rs` | 8511 | syntax-free source atomic-formula producer | `source_atomic_formula.md` | no | no | Cohesive Task-256/257C1 nine-table association, resolver provenance, predicate-segment/shared-boundary validation, cross-family ownership/fingerprint validation, deterministic rendering, install checks, compatibility literals, and test-only dependency corruption seams; no split required. |
 | `src/source_composite_formula.rs` | 4700 | syntax-free source composite-formula/binder producer | `source_composite_formula.md` | no | no | Cohesive Task-257A/B1/B2/B3 exact profiles, binding extension, wrapper/tree validation, rendering, install checks, and corruption/profile tests; no split required. |
-| `src/source_formula_composition.rs` | 9358 | syntax-free cross-family formula composition producer | `source_formula_composition.md` | no | no | Cohesive Task-257B1/B2/B3 atomic-edge/bound-use associations, separate Task-257C2/C3 transactions, completed Task-257C4A/C4B exact-F5 transports, and completed Task-257C4C3 one-row nested binder/use identity transport with retained dependency validation and corruption tests; no split required. |
+| `src/source_formula_composition.rs` | 9411 | syntax-free cross-family formula composition producer | `source_formula_composition.md` | no | no | Cohesive Task-257B1/B2/B3 atomic-edge/bound-use associations, separate Task-257C2/C3 transactions, completed Task-257C4A/C4B exact-F5 transports, completed Task-257C4C3 one-row nested binder/use identity transport with retained dependency validation/corruption tests, and the crate-private C4C4 complete-validation seam; no split required. |
 | `src/source_attribute.rs` | 3074 | syntax-free source-attribute producer | `source_attribute.md` | no | no | Cohesive Task-250 flat tables, environment/parent/arena/provenance validation, deterministic rendering, and corruption tests; no split required. |
 | `src/source_attribute_definition.rs` | 1516 | syntax-free source attribute-definition producer | `source_attribute_definition.md` | no | no | Cohesive Task-261 four-table handoff, exact resolver/lower/context ownership, obligation-preserving one-shot validation, deterministic rendering, and Task-259/260 isolation; production remains syntax-free. |
 | `src/source_evidence.rs` | 2413 | syntax-free source-evidence request/reference producer | `source_evidence.md` | no | no | Cohesive Task-251 request/response tables, upstream association, catalog/payload validation, deterministic rendering, and corruption tests; no split required. |
-| `src/source_term.rs` | 6451 | syntax-free source primary-term producer | `source_term.md` | no | no | Cohesive Task-252 term/reference/request tables plus the exact Task-269GU/269GCU/269SDU proof-local term/reference composites, binding and parent validation, deterministic rendering, dependency/fingerprint/arena corruption matrices, and predecessor-ownership checks; production remains syntax-free and no split is required. |
+| `src/source_term.rs` | 7574 | syntax-free source primary-term producer | `source_term.md` | no | no | Cohesive Task-252 term/reference/request tables plus the exact Task-269GU/269GCU/269SDU proof-local composites and completed C4C4 nested-mapper `1/1/0` profile, binding and parent validation, deterministic rendering, dependency/fingerprint/arena corruption matrices, and predecessor-ownership checks; production remains syntax-free and no split is required. |
 | `src/source_application.rs` | 4001 | syntax-free source functor-application producer | `source_application.md` | no | no | Cohesive Task-253 application/wrapper/candidate/argument/request tables, dependency and provenance validation, deterministic rendering, and corruption tests; no split required. |
 | `src/source_functor_definition.rs` | 2237 | syntax-free source functor-definition producer | `source_functor_definition.md` | no | no | Cohesive Task-260 five-table handoff, baseline-preserving two-obligation projection, resolver/lower provenance validation, deterministic rendering, and typed/final Task-259 isolation checks; production remains syntax-free. |
 | `src/source_mode_definition.rs` | 1877 | syntax-free source mode-definition producer | `source_mode_definition.md` | no | no | Cohesive Task-262 six-table handoff, standalone-RHS fingerprint, unresolved inhabitation request, linked pending Sethood projection, deterministic rendering, and typed/final Tasks-259--261 isolation; production remains syntax-free. |

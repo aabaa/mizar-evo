@@ -39,7 +39,7 @@ type/sethood/request/result/verdict/diagnostic/route追加は`boundary_violation
 
 ## Task 257C4C4 nested mapper primary boundary
 
-Frozen [C4C4 contract](../../task_contracts/ja/CHECKER-FRAENKEL-NESTED-MAPPER-PRIMARY-257C4C4.md)は
+Implemented [C4C4 contract](../../task_contracts/ja/CHECKER-FRAENKEL-NESTED-MAPPER-PRIMARY-257C4C4.md)は
 sole public production familyをexisting cohesive `source_term.rs` Task252 ownerに置く。
 `source_formula_composition.rs`はcrate-private complete-C4C3 validation seamだけを追加し、
 existing private mizar-test nested-capture leafがsole consumerのまま。New module/facade、
@@ -50,7 +50,7 @@ Boundaryはexact C4C3-dependent outer-x binding projection 1件、immutable Task
 node 1件、primary/reference/request `1/1/0`。Inner `y`はdependency-only。C4A/C4B reuse、
 public generic Task252 ordering変更、installation、capture/type/sethood/request/result/
 verdict/diagnostic/route state追加は`boundary_violation`。Final line/content measurementは
-contractだけがownしimplementation後syncする。
+contractが一度だけownし、下記source-layout inventoryへ反映する。
 
 ## Split Gate
 
@@ -68,10 +68,10 @@ note として記録する。
 
 ## Source Layout Inventory
 
-Task 257C4C3後もproduction layoutは32 paths / 195158 linesで、path SHA-256は
+Task 257C4C4後もproduction layoutは32 paths / 196334 linesで、path SHA-256は
 `9dc5b02f26679677e593ea755394d68533173d2be988b7ef1ddcfd84a41b9787`、current
 content SHA-256は
-`076c06d7943a3af532b114fa15704374a3f1021c2f5a622621d3d21ec3dc81bf`である。
+`783826a091b8a5892b88a7f5c34a2bfff55683befa3cc98248eaa6de19afc5c6`である。
 new/changed cohesive ownerのmeasurementは下のrowに記録する。
 
 | Path | Lines | Boundary label | Owning specification | Split required | Hard-gate finding | Decision |
@@ -82,11 +82,11 @@ new/changed cohesive ownerのmeasurementは下のrowに記録する。
 | `src/source_context.rs` | 1727 | syntax-free source-item / binding-context producer | `source_context.md` | no | no | cohesive な Task-248 validation、table construction、recovery、handoff、boundary test。split不要。 |
 | `src/source_atomic_formula.rs` | 8511 | syntax-free source atomic-formula producer | `source_atomic_formula.md` | no | no | cohesiveなTask-256/257C1 nine-table association、resolver provenance、predicate-segment/shared-boundary validation、cross-family ownership/fingerprint validation、deterministic rendering、install check、compatibility literal、test-only dependency corruption seam。split不要。 |
 | `src/source_composite_formula.rs` | 4700 | syntax-free source composite-formula/binder producer | `source_composite_formula.md` | no | no | exact Task-257A/B1/B2/B3 profiles、binding extension、wrapper/tree validation、rendering/install/corruption/profile testsを持つcohesive owner。 |
-| `src/source_formula_composition.rs` | 9358 | syntax-free cross-family formula composition producer | `source_formula_composition.md` | no | no | Task-257B1/B2/B3、Task-257C2/C3、completed Task-257C4A/C4B exact-F5 transport、completed Task-257C4C3 one-row nested binder/use identity transport、retained dependency validation/corruption testsを持つcohesive owner。 |
+| `src/source_formula_composition.rs` | 9411 | syntax-free cross-family formula composition producer | `source_formula_composition.md` | no | no | Task-257B1/B2/B3、Task-257C2/C3、completed Task-257C4A/C4B exact-F5 transport、completed Task-257C4C3 one-row nested binder/use identity transport、retained dependency validation/corruption tests、crate-private C4C4 complete-validation seamを持つcohesive owner。 |
 | `src/source_attribute.rs` | 3074 | syntax-free source-attribute producer | `source_attribute.md` | no | no | cohesiveなTask-250 flat table、environment/parent/arena/provenance validation、deterministic rendering、corruption test。split不要。 |
 | `src/source_attribute_definition.rs` | 1516 | syntax-free source attribute-definition producer | `source_attribute_definition.md` | no | no | Task-261 four-table handoff、exact resolver/lower/context ownership、obligation-preserving one-shot validation、deterministic rendering、Task-259/260 isolationをcohesiveにownする。 |
 | `src/source_evidence.rs` | 2413 | syntax-free source-evidence request/reference producer | `source_evidence.md` | no | no | cohesiveなTask-251 request/response table、upstream association、catalog/payload validation、deterministic rendering、corruption test。split不要。 |
-| `src/source_term.rs` | 6451 | syntax-free source primary-term producer | `source_term.md` | no | no | cohesiveなTask-252 term/reference/request tableとexact Task-269GU/269GCU/269SDU proof-local term/reference composite、binding/parent validation、deterministic rendering、dependency/fingerprint/arena corruption matrix、predecessor-ownership check。productionはsyntax-freeでsplit不要。 |
+| `src/source_term.rs` | 7574 | syntax-free source primary-term producer | `source_term.md` | no | no | cohesiveなTask-252 term/reference/request table、exact Task-269GU/269GCU/269SDU proof-local composite、completed C4C4 nested-mapper `1/1/0` profile、binding/parent validation、deterministic rendering、dependency/fingerprint/arena corruption matrix、predecessor-ownership check。productionはsyntax-freeでsplit不要。 |
 | `src/source_application.rs` | 4001 | syntax-free source functor-application producer | `source_application.md` | no | no | cohesiveなTask-253 application/wrapper/candidate/argument/request table、dependency/provenance validation、deterministic rendering、corruption test。split不要。 |
 | `src/source_functor_definition.rs` | 2237 | syntax-free source functor-definition producer | `source_functor_definition.md` | no | no | cohesiveなTask-260 five-table handoff、baseline-preserving two-obligation projection、resolver/lower provenance validation、deterministic rendering、typed/final Task-259 isolation check。productionはsyntax-free。 |
 | `src/source_mode_definition.rs` | 1877 | syntax-free source mode-definition producer | `source_mode_definition.md` | no | no | cohesiveなTask-262 six-table handoff、standalone-RHS fingerprint、unresolved inhabitation request、linked Pending Sethood projection、deterministic rendering、typed/final Tasks-259--261 isolation。productionはsyntax-free。 |
