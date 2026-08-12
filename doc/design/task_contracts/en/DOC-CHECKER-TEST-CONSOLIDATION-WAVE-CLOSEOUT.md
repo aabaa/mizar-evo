@@ -12,7 +12,7 @@ repository duplication has been removed and authorizes no new migration.
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-CHECKER-TEST-CONSOLIDATION-WAVE-CLOSEOUT` |
-| Status | Clean bounded transition complete; checklist metadata implemented, with its commit/postcommit proof pending. |
+| Status | Complete: bounded schema-2-safe wave and checklist metadata have clean commit/replay proof; Phase B remains separate. |
 | Authority | [`doc/design/todo.md` temporary consolidation gate](../../todo.md), [`AGENTS.md`](../../../../AGENTS.md), and [autonomous migration policy](../../autonomous_crate_development.md#migration-policy) |
 | Scope | Record final schema-2-safe wave totals, completed tasks, retained residual classes, protected no-ops, verification, and bounded handoff. |
 | No audit impact | `spec_coverage_audit.md` remains unchanged: no specification mapping, test intent, trace status, owner, deferral, or credit changed. |
@@ -104,6 +104,16 @@ committed the paired transition alone. Clean replay confirmed HEAD,
 hash/counts, and recursive lint. The separate checklist metadata now checks
 items 3-5 and leaves item 6 open; its own commit and clean replay remain before
 the final Complete lifecycle record.
+
+Checklist metadata `73af59ea40c98e0a7099b05bef9f624f034503a3`
+committed exactly this pair plus `doc/design/todo.md`, with bounded transition
+`34cac2173d1b53d6ac089c302d973e2387c2e6d1` as parent. Clean replay confirmed
+HEAD at the metadata commit, `origin/main...HEAD = 0/12`, protected stash
+unchanged, ledger SHA-256
+`3145d558b93f85095693b99ea4f3a09198be9b2a0332945667d29ea7d5c96eb7`
+at 1,050 lines/cardinalities `34/45/5/648/316`, and recursive lint passing.
+Items 3-5 are now complete, item 6 remains open, and no protected surface or
+credit changed.
 
 ## Handoff
 

@@ -13,7 +13,7 @@ migrationをauthorizeしない。
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-CHECKER-TEST-CONSOLIDATION-WAVE-CLOSEOUT` |
-| Status | clean bounded transition完了。checklist metadata実装済み、own commit/postcommit proof待ち。 |
+| Status | complete。bounded schema-2-safe wave/checklist metadataにclean commit/replay proofあり。Phase Bはseparate。 |
 | Authority | [`doc/design/todo.md` temporary consolidation gate](../../todo.md)、[`AGENTS.md`](../../../../AGENTS.md)、[autonomous migration policy](../../autonomous_crate_development.md#migration-policy) |
 | Scope | final schema-2-safe wave totals、completed tasks、retained residual classes、protected no-ops、verification、bounded handoffをrecordする。 |
 | No audit impact | specification mapping、test intent、trace status、owner、deferral、creditは変わらないため`spec_coverage_audit.md`はunchanged。 |
@@ -96,6 +96,14 @@ transitionだけをcommitした。clean replayはHEAD、`origin/main...HEAD = 0/
 unchanged protected stash、unchanged ledger hash/counts、recursive lintを確認した。
 separate checklist metadataはitems 3-5をcheckしitem 6をopenに保つ。final Complete
 lifecycle recordの前に本metadata own commit/clean replayが残る。
+
+checklist metadata `73af59ea40c98e0a7099b05bef9f624f034503a3`は本pairと
+`doc/design/todo.md`だけをcommitし、parentはbounded transition
+`34cac2173d1b53d6ac089c302d973e2387c2e6d1`。clean replayはHEADが同metadata
+commit、`origin/main...HEAD = 0/12`、protected stash unchanged、ledger SHA-256
+`3145d558b93f85095693b99ea4f3a09198be9b2a0332945667d29ea7d5c96eb7`、
+1,050 lines/cardinalities `34/45/5/648/316`、recursive lint PASSを確認した。
+items 3-5はcomplete、item 6はopenで、protected surface/credit変更なし。
 
 ## Handoff
 
