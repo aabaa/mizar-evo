@@ -13,7 +13,7 @@ migrationをauthorizeしない。
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-CHECKER-TEST-CONSOLIDATION-WAVE-CLOSEOUT` |
-| Status | frozen closeout prerequisite。current-state update未開始。 |
+| Status | prerequisite、independent reviews、verification完了。exact current-state closeoutとclean postcommit proof待ち。 |
 | Authority | [`doc/design/todo.md` temporary consolidation gate](../../todo.md)、[`AGENTS.md`](../../../../AGENTS.md)、[autonomous migration policy](../../autonomous_crate_development.md#migration-policy) |
 | Scope | final schema-2-safe wave totals、completed tasks、retained residual classes、protected no-ops、verification、bounded handoffをrecordする。 |
 | No audit impact | specification mapping、test intent、trace status、owner、deferral、creditは変わらないため`spec_coverage_audit.md`はunchanged。 |
@@ -67,6 +67,21 @@ bilingual/boundary、final-quality reviewsを**NO FINDINGS**にし、recursive l
 totals/hash replay、`git diff --check`、format、warnings-denied Clippy、full workspace
 tests、exact staging、separate task-only commits、clean postcommit origin/stash proof、
 全9 hard gates/uncapped `>=90/100`を要求する。
+
+## Closeout Evidence
+
+prerequisiteは`04430bdca0a77282eb7f31573d4b761f9ca00e50`として単独commit済み。
+clean replayはHEAD、`origin/main...HEAD = 0/9`、protected stash
+`f65cf4a13752ec380710814a9ac6392ccb9d75d4` unchanged、ledger SHA-256
+`3145d558b93f85095693b99ea4f3a09198be9b2a0332945667d29ea7d5c96eb7`、
+1,050 lines/cardinalities `34/45/5/648/316`、focused recursive lint PASSを
+確認した。review済みcurrent-state deltaはtemporary-gate items 3-5だけをcheckし、本paired
+recordをupdateする。ledger、source section、protected surface、audit、credit変更なし。
+independent inventory/equivalence、test-sufficiency、source/documentation/bilingual/
+boundary reviewsはplan line references 2件の修正後**NO FINDINGS**。recursive lint
+15 cases、`git diff --check`、format、warnings-denied all-target/all-feature
+workspace Clippy、full workspace testsはPASSした。exact current-state staging/commitと
+clean postcommit Phase-B readiness proofが残り、そのproofまでitems 3-5はunchecked。
 
 ## Handoff
 

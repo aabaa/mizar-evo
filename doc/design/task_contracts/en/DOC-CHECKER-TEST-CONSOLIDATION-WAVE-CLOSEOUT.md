@@ -12,7 +12,7 @@ repository duplication has been removed and authorizes no new migration.
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-CHECKER-TEST-CONSOLIDATION-WAVE-CLOSEOUT` |
-| Status | Frozen closeout prerequisite; current-state update not started. |
+| Status | Prerequisite, independent reviews, and verification complete; exact current-state closeout and clean postcommit proof pending. |
 | Authority | [`doc/design/todo.md` temporary consolidation gate](../../todo.md), [`AGENTS.md`](../../../../AGENTS.md), and [autonomous migration policy](../../autonomous_crate_development.md#migration-policy) |
 | Scope | Record final schema-2-safe wave totals, completed tasks, retained residual classes, protected no-ops, verification, and bounded handoff. |
 | No audit impact | `spec_coverage_audit.md` remains unchanged: no specification mapping, test intent, trace status, owner, deferral, or credit changed. |
@@ -70,6 +70,24 @@ source/documentation/bilingual/boundary, and final-quality reviews ending
 format, warnings-denied Clippy, full workspace tests, exact staging, separate
 task-only commits, clean postcommit origin/stash proof, and all nine hard gates
 with an uncapped `>=90/100`.
+
+## Closeout Evidence
+
+The prerequisite committed alone as
+`04430bdca0a77282eb7f31573d4b761f9ca00e50`. Clean replay confirmed HEAD,
+`origin/main...HEAD = 0/9`, protected stash
+`f65cf4a13752ec380710814a9ac6392ccb9d75d4` unchanged, ledger SHA-256
+`3145d558b93f85095693b99ea4f3a09198be9b2a0332945667d29ea7d5c96eb7`,
+1,050 lines/cardinalities `34/45/5/648/316`, and focused recursive lint
+passing. The reviewed current-state delta will check only temporary-gate items
+3-5 and update this paired record; no ledger, source section, protected
+surface, audit, or credit changes. Independent inventory/equivalence,
+test-sufficiency, source/documentation/bilingual/boundary reviews ended
+**NO FINDINGS** after correcting two plan line references. Recursive lint
+passed all 15 cases; `git diff --check`, formatting, warnings-denied
+all-target/all-feature workspace Clippy, and full workspace tests passed.
+Exact current-state staging/commit and clean postcommit Phase-B readiness proof
+remain; items 3-5 stay unchecked until that proof exists.
 
 ## Handoff
 
