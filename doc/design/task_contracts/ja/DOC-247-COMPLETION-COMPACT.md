@@ -12,7 +12,7 @@ coverage、descendant-task ownershipを変更できない。
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-247-COMPLETION-COMPACT` |
-| Status | Documentation prerequisite commit済み。separately frozen migrationは実装・independent review済み。full verification/final quality PASS、exact staging/commit待ち。 |
+| Status | 完了。migrationはschema-2 ledgerに登録済みであり、task-local completion evidenceがcommitted migrationとclean replayを保存する。 |
 | Purpose | durable graph/audit/runner/trace/coverage/sequencing ownerを全て保持し、Task-247 plan/TODO completion section 4件を集約する。 |
 | Historical owner | [Task 247](./247.md#completion-evidence) |
 | Plan indexes | [checker plan](../../mizar-checker/ja/00.crate_plan.md#task-index)と[runner plan](../../mizar-test/ja/00.crate_plan.md#task-index) |

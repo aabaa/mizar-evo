@@ -12,7 +12,7 @@ coverage creditを追加・再解釈しない。
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-269GT-COMPACT` |
-| Status | exact migration、independent reviews、required verification、全9 hard gatesをuncapped 100/100で完了。exact staging、separate migration commitが残る。 |
+| Status | 完了。migrationはschema-2 ledgerに登録済みであり、task-local completion evidenceがcommitted migrationとclean replayを保存する。 |
 | Purpose | Task-269GT implementation-completion evidenceをcentralizeし、全prerequisite/verification/H2 product/runner/trace/TODO/semantic ownerを保持。 |
 | Owners | repository migration policy、[historical 269GT contract](./269GT.md#completion-evidence)、[checker plan](../../mizar-checker/ja/00.crate_plan.md#task-index)、[runner plan](../../mizar-test/ja/00.crate_plan.md#task-index) |
 | Consumers | checker-first EN/JA design documents 38件、Task Index 4件、post-migration schema-v1 ledger/lint |

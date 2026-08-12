@@ -8,7 +8,7 @@
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-258B3M2B1-B2A-IMPLEMENTATION-LEDGER-COMPACT` |
-| Status | exact frozen redirects/ledger rowsでmigration実装済み。migration reviews/full verification/independent final qualityはcomplete。exact staging、commit、clean replayがremaining。 |
+| Status | 完了。migrationはschema-2 ledgerに登録済みであり、task-local completion evidenceがcommitted migrationとclean replayを保存する。 |
 | Purpose | completed Task-258B3M2B1/Task-258B3M2B2A implementation checklistsを集約し、両frozen-contract ledgersと全durable checker/runner ownersを残す。 |
 | Historical owners | [Task 258B3M2B1](./258B3M2B1.md#completion-evidence)と[Task 258B3M2B2A](./258B3M2B2A.md#completion-evidence) |
 | Plan indexes | [checker plan](../../mizar-checker/ja/00.crate_plan.md#task-index)と[runner plan](../../mizar-test/ja/00.crate_plan.md#task-index) |

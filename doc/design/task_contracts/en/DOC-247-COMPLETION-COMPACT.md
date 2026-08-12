@@ -12,7 +12,7 @@ diagnostics, traceability state, coverage, or descendant-task ownership.
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-247-COMPLETION-COMPACT` |
-| Status | Documentation prerequisite committed; separately frozen migration implemented and independently reviewed. Full verification and final quality pass; exact staging and commit remain. |
+| Status | Complete. The migration is registered in the schema-2 ledger; task-local completion evidence below preserves the committed migration and clean replay. |
 | Purpose | Centralize four repeated Task-247 plan/TODO completion sections while retaining every durable graph, audit, runner, trace, coverage, and sequencing owner. |
 | Historical owner | [Task 247](./247.md#completion-evidence) |
 | Plan indexes | [checker plan](../../mizar-checker/en/00.crate_plan.md#task-index) and [runner plan](../../mizar-test/en/00.crate_plan.md#task-index) |

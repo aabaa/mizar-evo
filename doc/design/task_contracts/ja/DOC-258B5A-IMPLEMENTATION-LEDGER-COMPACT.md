@@ -8,7 +8,7 @@
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-258B5A-IMPLEMENTATION-LEDGER-COMPACT` |
-| Status | migration完了。exact stagingとdedicated migration commitがremaining。 |
+| Status | 完了。migrationはschema-2 ledgerに登録済みであり、task-local completion evidenceがcommitted migrationとclean replayを保存する。 |
 | Purpose | durable checker/runner ownerを変更せずhistorical Task 258B5Aのchecker TODO EN/JA implementation-completion checklistを集約する。 |
 | Historical owner | [Task 258B5A](./258B5A.md#completion-evidence) |
 | Plan indexes | [checker plan](../../mizar-checker/ja/00.crate_plan.md#task-index)と[runner plan](../../mizar-test/ja/00.crate_plan.md#task-index) |

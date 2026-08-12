@@ -12,7 +12,7 @@ test intent, API, diagnostics, traceability, or coverage credit.
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-269G-INTERMEDIATE-COMPACT` |
-| Status | Redirect migration, schema-v1 ledger expansion, independent reviews, full verification, and final quality review complete with all nine gates passing at 100/100; exact staging and commit remain. |
+| Status | Complete. The migration is registered in the schema-2 ledger; task-local completion evidence below preserves the committed migration and clean replay. |
 | Purpose | Centralize completion-only H3 records for the contiguous GUPT → GU → GCP → GC dependency chain while preserving every frozen H2 product owner. |
 | Owners | Repository migration policy, the four paired historical contracts, [checker plan](../../mizar-checker/en/00.crate_plan.md#task-index), and [runner plan](../../mizar-test/en/00.crate_plan.md#task-index) |
 | Consumers | 36 checker-first EN/JA design documents, `mizar-test` consumer documents, four Task Indexes, and the post-migration schema-v1 ledger/lint |

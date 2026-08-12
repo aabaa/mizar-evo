@@ -12,7 +12,7 @@ API、diagnostic、traceability、coverageを変更できない。
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-258B3M2B2B3P-REVIEW-COMPACT` |
-| Status | Documentation prerequisiteはcommitted、migrationはreviewed/fully verified/final-quality approved。exact staging、migration commitはpending。 |
+| Status | 完了。migrationはschema-2 ledgerに登録済みであり、task-local completion evidenceがcommitted migrationとclean replayを保存する。 |
 | Purpose | Task-258B3M2B2B3P documentation-prerequisite review evidenceを集約し、全final-quality/frozen/implementation/runner/todo/audit ownerを保持する。 |
 | Owners | migration policy、historical [258B3M2B2B3P](./258B3M2B2B3P.md#completion-evidence)、[checker plan](../../mizar-checker/ja/00.crate_plan.md#task-index)、[runner plan](../../mizar-test/ja/00.crate_plan.md#task-index) |
 | Consumers | checker source paths 12（EN/JA pairs 6）、Task Indexes 4、post-migration generic schema-v1 ledger/lint |

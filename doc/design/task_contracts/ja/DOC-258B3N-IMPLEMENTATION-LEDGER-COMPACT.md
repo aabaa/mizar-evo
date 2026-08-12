@@ -8,7 +8,7 @@
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-258B3N-IMPLEMENTATION-LEDGER-COMPACT` |
-| Status | migration reviews、final verification、independent final quality完了。exact staging、dedicated migration commit、clean post-commit replayがremaining。 |
+| Status | 完了。migrationはschema-2 ledgerに登録済みであり、task-local completion evidenceがcommitted migrationとclean replayを保存する。 |
 | Purpose | durable checker/runner ownerを変えずhistorical Task 258B3Nのchecker TODO EN/JA implementation checklistを集約する。 |
 | Historical owner | [Task 258B3N](./258B3N.md#completion-evidence) |
 | Plan indexes | [checker plan](../../mizar-checker/ja/00.crate_plan.md#task-index)と[runner plan](../../mizar-test/ja/00.crate_plan.md#task-index) |

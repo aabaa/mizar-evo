@@ -14,7 +14,7 @@ intent、diagnostic、public API、coverage creditを追加・上書きしない
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-269SD-COMPACT` |
-| Status | implementation/verification完了、task-only commit準備済み。immutable commit identityはpost-commit evidenceとする。 |
+| Status | 完了。migrationはschema-2 ledgerに登録済みであり、task-local completion evidenceがcommitted migrationとclean replayを保存する。 |
 | Purpose | 重複したTask-269SDP/269SDC completion evidenceをtaskごとの単一EN/JA historical contractへ移し、owner-local durable factをすべて保持し、同じcontract/link driftを今後防ぐ。 |
 | Primary owners | repository documentation policyと`mizar-test` lint policy |
 | Consumers | checker/test crate plan、checker/test owner-local design docs、audit、TODO、future autonomous-task agent |

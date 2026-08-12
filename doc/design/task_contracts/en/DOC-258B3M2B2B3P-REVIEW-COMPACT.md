@@ -12,7 +12,7 @@ behavior, test intent, API, diagnostics, traceability, or coverage.
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-258B3M2B2B3P-REVIEW-COMPACT` |
-| Status | Documentation prerequisite committed; migration reviewed, fully verified, and final-quality approved. Exact staging and the migration commit remain. |
+| Status | Complete. The migration is registered in the schema-2 ledger; task-local completion evidence below preserves the committed migration and clean replay. |
 | Purpose | Centralize repeated Task-258B3M2B2B3P documentation-prerequisite review evidence while retaining every final-quality, frozen, implementation, runner, todo, and audit owner. |
 | Owners | Migration policy, historical [258B3M2B2B3P](./258B3M2B2B3P.md#completion-evidence), [checker plan](../../mizar-checker/en/00.crate_plan.md#task-index), and [runner plan](../../mizar-test/en/00.crate_plan.md#task-index) |
 | Consumers | Twelve checker source paths (six EN/JA pairs), four Task Indexes, and the post-migration generic schema-v1 ledger/lint |

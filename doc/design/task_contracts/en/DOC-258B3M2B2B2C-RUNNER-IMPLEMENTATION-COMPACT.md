@@ -8,7 +8,7 @@
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-258B3M2B2B2C-RUNNER-IMPLEMENTATION-COMPACT` |
-| Status | Migration applied after link-correction prerequisite `41f053ef`; independent reviews, full verification, and final quality review pass. Exact staging and the dedicated commit remain. |
+| Status | Complete. The migration is registered in the schema-2 ledger; task-local completion evidence below preserves the committed migration and clean replay. |
 | Purpose | Centralize only the completed B2C runner implementation evidence duplicated by five paired runner documents. |
 | Historical owner | [Task 258B3M2B2B2C](./258B3M2B2B2C.md#completion-evidence) |
 | Plan indexes | [checker](../../mizar-checker/en/00.crate_plan.md#task-index) and [runner](../../mizar-test/en/00.crate_plan.md#task-index) plans |

@@ -13,7 +13,7 @@ or coverage credit.
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-258AB-COMPACT` |
-| Status | Documentation prerequisite committed; exact migration, independent reviews, required verification, and all nine hard gates complete at uncapped 100/100. Exact staging and the separate migration commit remain. |
+| Status | Complete. The migration is registered in the schema-2 ledger; task-local completion evidence below preserves the committed migration and clean replay. |
 | Purpose | Centralize completion-only evidence for Tasks 258A, 258B1, and 258B2 while retaining every frozen contract, owner-local invariant, semantic deferral, and verification owner. |
 | Owners | Repository migration policy, historical [258A](./258A.md#completion-evidence), [258B1](./258B1.md#completion-evidence), and [258B2](./258B2.md#completion-evidence) contracts, plus the [checker](../../mizar-checker/en/00.crate_plan.md#task-index) and [runner](../../mizar-test/en/00.crate_plan.md#task-index) Task Indexes |
 | Consumers | 18 checker/runner EN/JA design paths, four Task Indexes, and the post-migration generic schema-v1 ledger/lint |

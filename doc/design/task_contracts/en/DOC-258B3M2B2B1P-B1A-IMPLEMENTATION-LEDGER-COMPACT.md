@@ -8,7 +8,7 @@
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-258B3M2B2B1P-B1A-IMPLEMENTATION-LEDGER-COMPACT` |
-| Status | Migration implemented with the exact frozen redirects and ledger rows; all reviews, all nine hard gates, and full verification are complete with no findings and a valid `100/100`. Exact staging, commit, and clean replay remain. |
+| Status | Complete. The migration is registered in the schema-2 ledger; task-local completion evidence below preserves the committed migration and clean replay. |
 | Purpose | Centralize only the completed Task-258B3M2B2B1P and Task-258B3M2B2B1A checker implementation ledgers while retaining both frozen ledgers and every later task. |
 | Historical owners | [Task 258B3M2B2B1P](./258B3M2B2B1P.md#completion-evidence) and [Task 258B3M2B2B1A](./258B3M2B2B1A.md#completion-evidence) |
 | Plan indexes | [checker plan](../../mizar-checker/en/00.crate_plan.md#task-index) and [runner plan](../../mizar-test/en/00.crate_plan.md#task-index) |

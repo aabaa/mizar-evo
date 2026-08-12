@@ -256,7 +256,7 @@ ledger registered 32 batches, 44 canonical task rows, and 4 `task_ref` rows.
 Those values prove only the already registered migrations; they are not a
 repository-wide or program-wide consolidation-completion claim.
 
-1. [ ] **Audit lifecycle and commit state before deleting more evidence.**
+1. [x] **Audit lifecycle and commit state before deleting more evidence.**
    Read-only reconcile every registered batch's EN/JA contracts, ledger rows,
    links, current lifecycle fields, and reachable prerequisite and migration
    commits located from task-local evidence, ledger/source diffs, and Git

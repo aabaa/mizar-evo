@@ -12,7 +12,7 @@ language behavior, test intent, API, diagnostics, traceability, or coverage.
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-269CTGP-COMPACT` |
-| Status | Exact migration is ready for its separate commit; independent reviews, verification, and final quality gate are complete. |
+| Status | Complete. The migration is registered in the schema-2 ledger; task-local completion evidence below preserves the committed migration and clean replay. |
 | Purpose | Centralize completion evidence for 269CT and 269GP while retaining every prerequisite, durable owner, later authority, and semantic deferral. |
 | Owners | Migration policy, historical [269CT](./269CT.md#completion-evidence) and [269GP](./269GP.md#completion-evidence) records, [checker plan](../../mizar-checker/en/00.crate_plan.md#task-index), and [runner plan](../../mizar-test/en/00.crate_plan.md#task-index) |
 | Consumers | Eight EN/JA checker/runner design paths, four Task Indexes, and the post-migration generic schema-v1 ledger/lint |

@@ -12,7 +12,7 @@ API、diagnostic、traceability、coverageを変更しない。
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-258B5A-COMPACT` |
-| Status | Documentation prerequisite commit済み。exact migration、independent reviews、full verification、final quality完了。exact staging/commitが残る。 |
+| Status | 完了。migrationはschema-2 ledgerに登録済みであり、task-local completion evidenceがcommitted migrationとclean replayを保存する。 |
 | Purpose | repeated Task-258B5A documentation-review、verification、authority、boundary、bilingual evidenceを集約し、全durable/later ownerを保持する。 |
 | Owners | migration policy、historical [258B5A](./258B5A.md#completion-evidence)、[checker plan](../../mizar-checker/ja/00.crate_plan.md#task-index)、[runner plan](../../mizar-test/ja/00.crate_plan.md#task-index) |
 | Consumers | EN/JA checker/runner source 14 paths、Task Index 4件、post-migration generic schema-v1 ledger/lint |

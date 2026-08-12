@@ -12,7 +12,7 @@ coverageを変更できない。
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-260-DOC-REVIEW-COMPACT` |
-| Status | Documentation prerequisite committed。exact migration、全review、full verification complete。exact staging/commit pending。 |
+| Status | 完了。migrationはschema-2 ledgerに登録済みであり、task-local completion evidenceがcommitted migrationとclean replayを保存する。 |
 | Purpose | Task-260 documentation-prerequisite verification、bilingual sync、completed checklist evidenceをcentralizeし、implementation/durable component ownerをretainする。 |
 | Owners | migration policy、historical [260](./260.md#completion-evidence)、[checker plan](../../mizar-checker/ja/00.crate_plan.md#task-index)、[runner plan](../../mizar-test/ja/00.crate_plan.md#task-index) |
 | Consumers | checker source 6 path、Task Index 4件、post-migration schema-v1 ledger/lint |

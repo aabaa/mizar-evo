@@ -7,7 +7,7 @@
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-258B4A-COMPACT` |
-| Status | documentation/path-scoped lint prerequisite commit済み。frozen migration実装済み。全migration review/verification完了。exact staging/commit待ち。 |
+| Status | 完了。migrationはschema-2 ledgerに登録済みであり、task-local completion evidenceがcommitted migrationとclean replayを保存する。 |
 | Purpose | frozen contract/durable ownerを保持し、Task-258B4A implementation completion 4節を集約する。 |
 | Historical owner | [Task 258B4A](./258B4A.md#completion-evidence) |
 | Plan indexes | [checker plan](../../mizar-checker/ja/00.crate_plan.md#task-index) / [runner plan](../../mizar-test/ja/00.crate_plan.md#task-index) |

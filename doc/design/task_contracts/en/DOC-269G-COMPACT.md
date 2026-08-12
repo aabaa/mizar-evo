@@ -12,7 +12,7 @@ test intent, diagnostics, public API, or coverage credit.
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-269G-COMPACT` |
-| Status | Implementation, independent reviews, and final read-only quality review complete at `100/100` with all nine hard gates PASS and no score cap; ready for exact task-only staging and commit. |
+| Status | Complete. The migration is registered in the schema-2 ledger; task-local completion evidence below preserves the committed migration and clean replay. |
 | Purpose | Centralize the exact shared Task-269GUP/GCT/GCU completion sections while preserving every nonidentical plan, audit, trace-status, verification, boundary, and sequencing owner. |
 | Owners | Repository documentation policy and the data-driven `mizar-test` legacy-compaction lint |
 | Consumers | [checker plan](../../mizar-checker/en/00.crate_plan.md#task-index), [runner plan](../../mizar-test/en/00.crate_plan.md#task-index), 40 declared source documents, and the versioned compaction manifest |

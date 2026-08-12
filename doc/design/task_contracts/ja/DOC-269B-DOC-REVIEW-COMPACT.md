@@ -12,7 +12,7 @@ freezeする。language behavior、test intent、API、diagnostic、traceability
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-269B-DOC-REVIEW-COMPACT` |
-| Status | migration、全independent review、full verification、final quality完了。exact staging/commitがremaining。 |
+| Status | 完了。migrationはschema-2 ledgerに登録済みであり、task-local completion evidenceがcommitted migrationとclean replayを保存する。 |
 | Purpose | Task-269B implementation-completion evidenceをcentralizeし、全frozen/durable ownerとTODO 2件をretainする。 |
 | Owners | migration policy、historical [269B](./269B.md#completion-evidence)、[checker plan](../../mizar-checker/ja/00.crate_plan.md#task-index)、[runner plan](../../mizar-test/ja/00.crate_plan.md#task-index) |
 | Consumers | checker source 22 path、Task Index 4件、post-migration schema-v1 ledger/lint |

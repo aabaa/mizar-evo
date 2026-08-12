@@ -8,7 +8,7 @@
 | field | frozen value |
 |---|---|
 | task | `DOC-258B4B-COMPACT` |
-| status | documentation prerequisiteはcommitted。migration review/verificationはcomplete。exact staging/commitがremainingである。 |
+| status | 完了。migrationはschema-2 ledgerに登録済みであり、task-local completion evidenceがcommitted migrationとclean replayを保存する。 |
 | purpose | frozen contractとdurable checker/runner ownerを保持し、Task-258B4Bのtask-wide implementation-completion section 4件を集約する。 |
 | historical owner | [Task 258B4B](./258B4B.md#completion-evidence) |
 | plan indexes | [checker plan](../../mizar-checker/ja/00.crate_plan.md#task-index)と[runner plan](../../mizar-test/ja/00.crate_plan.md#task-index) |

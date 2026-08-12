@@ -8,7 +8,7 @@
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-258B3M2B2B2CP-IMPLEMENTATION-COMPACT` |
-| Status | Documentation prerequisite committed as `c3683921875a24e0efa3522cba47dbb676a9c7fe`; migration accepted at `98/100`, with dedicated commit and clean replay remaining. |
+| Status | Complete. The migration is registered in the schema-2 ledger; task-local completion evidence below preserves the committed migration and clean replay. |
 | Purpose | Centralize only the completed Task-258B3M2B2B2CP implementation evidence while retaining every frozen, correction, lower-route, successor, runner, TODO, audit, and semantic owner. |
 | Historical owner | [Task 258B3M2B2B2CP](./258B3M2B2B2CP.md#completion-evidence) |
 | Plan indexes | [checker plan](../../mizar-checker/en/00.crate_plan.md#task-index) and [runner plan](../../mizar-test/en/00.crate_plan.md#task-index) |

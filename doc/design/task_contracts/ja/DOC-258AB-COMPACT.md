@@ -12,7 +12,7 @@ diagnostic、traceability、coverage creditを導入・再解釈しない。
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-258AB-COMPACT` |
-| Status | Documentation prerequisite commit済み。exact migration、independent review、required verification、全9 hard gatesをuncapped 100/100で完了。exact staging、separate migration commitが未完。 |
+| Status | 完了。migrationはschema-2 ledgerに登録済みであり、task-local completion evidenceがcommitted migrationとclean replayを保存する。 |
 | Purpose | Tasks 258A/258B1/258B2のcompletion-only evidenceを集約し、全frozen contract、owner-local invariant、semantic deferral、verification ownerを保持する。 |
 | Owners | repository migration policy、historical [258A](./258A.md#completion-evidence)、[258B1](./258B1.md#completion-evidence)、[258B2](./258B2.md#completion-evidence) contracts、[checker](../../mizar-checker/ja/00.crate_plan.md#task-index)/[runner](../../mizar-test/ja/00.crate_plan.md#task-index) Task Index |
 | Consumers | checker/runner EN/JA design 18 paths、Task Index 4個、post-migration generic schema-v1 ledger/lint |

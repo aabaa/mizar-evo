@@ -13,7 +13,7 @@ contractであり、language behavior、test intent、diagnostic、public API、
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-269G-COMPACT` |
-| Status | implementation、independent review、final read-only quality reviewを完了。全9 hard gates PASS、score capなし`100/100`で、exact task-only staging/commit ready。 |
+| Status | 完了。migrationはschema-2 ledgerに登録済みであり、task-local completion evidenceがcommitted migrationとclean replayを保存する。 |
 | Purpose | exact shared Task-269GUP/GCT/GCU completion sectionをcentralizeし、全nonidentical plan/audit/trace-status/verification/boundary/sequencing ownerを保持する。 |
 | Owners | repository documentation policyとdata-driven `mizar-test` legacy-compaction lint |
 | Consumers | [checker plan](../../mizar-checker/ja/00.crate_plan.md#task-index)、[runner plan](../../mizar-test/ja/00.crate_plan.md#task-index)、declared source documents 40件、versioned compaction manifest |

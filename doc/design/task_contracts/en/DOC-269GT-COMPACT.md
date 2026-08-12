@@ -13,7 +13,7 @@ credit.
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-269GT-COMPACT` |
-| Status | Exact migration, independent reviews, required verification, and all nine hard gates complete at uncapped 100/100. Exact staging and the separate migration commit remain. |
+| Status | Complete. The migration is registered in the schema-2 ledger; task-local completion evidence below preserves the committed migration and clean replay. |
 | Purpose | Centralize Task-269GT implementation-completion evidence while retaining every prerequisite, verification, H2 product, runner, trace, TODO, and semantic owner. |
 | Owners | Repository migration policy, [historical 269GT contract](./269GT.md#completion-evidence), [checker plan](../../mizar-checker/en/00.crate_plan.md#task-index), and [runner plan](../../mizar-test/en/00.crate_plan.md#task-index) |
 | Consumers | 38 checker-first EN/JA design documents, four Task Indexes, and the post-migration schema-v1 ledger/lint |

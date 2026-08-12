@@ -11,7 +11,7 @@ language behavior、test intent、API、diagnostic、traceability、coverageを�
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-249PI-DOC-REVIEW-COMPACT` |
-| Status | Documentation prerequisite committed。exact migration、independent reviews、full verification、final quality complete。exact staging/commitが残る。 |
+| Status | 完了。migrationはschema-2 ledgerに登録済みであり、task-local completion evidenceがcommitted migrationとclean replayを保存する。 |
 | Purpose | 全durable implementation/runner ownerを保持し、repeated Task-249PI documentation-prerequisite/frozen-review evidenceをcentralizeする。 |
 | Owners | migration policy、historical [249PI](./249PI.md#completion-evidence)、[checker plan](../../mizar-checker/ja/00.crate_plan.md#task-index)、[runner plan](../../mizar-test/ja/00.crate_plan.md#task-index) |
 | Consumers | checker source paths 8件、Task Index 4件、post-migration schema-v1 ledger/lint |

@@ -8,7 +8,7 @@
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-258B3M2B2B2C-RUNNER-IMPLEMENTATION-COMPACT` |
-| Status | link-correction prerequisite `41f053ef`後にmigrationを適用し、independent reviews、full verification、final quality reviewがpass。exact stagingとdedicated commitが残る。 |
+| Status | 完了。migrationはschema-2 ledgerに登録済みであり、task-local completion evidenceがcommitted migrationとclean replayを保存する。 |
 | Purpose | paired runner documents 5組が重複するcompleted B2C runner implementation evidenceだけを集約する。 |
 | Historical owner | [Task 258B3M2B2B2C](./258B3M2B2B2C.md#completion-evidence) |
 | Plan indexes | [checker](../../mizar-checker/ja/00.crate_plan.md#task-index)と[runner](../../mizar-test/ja/00.crate_plan.md#task-index) plans |

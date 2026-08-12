@@ -13,7 +13,7 @@ diagnostics, traceability, or coverage credit.
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-258B3M2B2B3-ACDE-COMPACT` |
-| Status | Documentation prerequisite committed; migration, reviews, full verification, and final quality are complete. Exact staging and the migration commit remain. |
+| Status | Complete. The migration is registered in the schema-2 ledger; task-local completion evidence below preserves the committed migration and clean replay. |
 | Purpose | Centralize the completion-only payload-family evidence for Tasks 258B3M2B2B3A, C, D, and E while retaining every frozen/durable owner and the asymmetric B3B record. |
 | Owners | Migration policy; historical [A](./258B3M2B2B3A.md#completion-evidence), [C](./258B3M2B2B3C.md#completion-evidence), [D](./258B3M2B2B3D.md#completion-evidence), and [E](./258B3M2B2B3E.md#completion-evidence) contracts; [checker](../../mizar-checker/en/00.crate_plan.md#task-index) and [runner](../../mizar-test/en/00.crate_plan.md#task-index) indexes |
 | Consumers | Paired checker payload-family documents, four Task Indexes, and the post-migration generic schema-v1 ledger/lint |

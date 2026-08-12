@@ -13,7 +13,7 @@ behavior、test intent、API、diagnostic、traceability、coverage creditを導
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-258B3M2B2B3-ACDE-COMPACT` |
-| Status | Documentation prerequisiteはcommitted。migration、reviews、full verification、final qualityはcomplete。exact staging、migration commitはpending。 |
+| Status | 完了。migrationはschema-2 ledgerに登録済みであり、task-local completion evidenceがcommitted migrationとclean replayを保存する。 |
 | Purpose | Tasks 258B3M2B2B3A/C/D/Eのcompletion-only payload-family evidenceを集約し、全frozen/durable ownerとasymmetric B3B recordを保持する。 |
 | Owners | migration policy、historical [A](./258B3M2B2B3A.md#completion-evidence)/[C](./258B3M2B2B3C.md#completion-evidence)/[D](./258B3M2B2B3D.md#completion-evidence)/[E](./258B3M2B2B3E.md#completion-evidence) contracts、[checker](../../mizar-checker/ja/00.crate_plan.md#task-index)/[runner](../../mizar-test/ja/00.crate_plan.md#task-index) indexes |
 | Consumers | paired checker payload-family documents、4 Task Indexes、post-migration generic schema-v1 ledger/lint |

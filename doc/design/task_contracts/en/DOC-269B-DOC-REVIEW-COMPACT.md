@@ -12,7 +12,7 @@ diagnostics, traceability, or coverage.
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-269B-DOC-REVIEW-COMPACT` |
-| Status | Migration, all independent reviews, full verification, and final quality complete. Exact staging and commit remain. |
+| Status | Complete. The migration is registered in the schema-2 ledger; task-local completion evidence below preserves the committed migration and clean replay. |
 | Purpose | Centralize repeated Task-269B implementation-completion evidence while retaining every frozen/durable owner and both TODO records. |
 | Owners | Migration policy, historical [269B](./269B.md#completion-evidence), [checker plan](../../mizar-checker/en/00.crate_plan.md#task-index), and [runner plan](../../mizar-test/en/00.crate_plan.md#task-index) |
 | Consumers | Twenty-two checker source paths, four Task Indexes, and the post-migration schema-v1 ledger/lint |

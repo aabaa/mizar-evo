@@ -12,7 +12,7 @@ language behavior、test intent、API、diagnostics、traceability、coverageを
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-258B4C-DOC-REVIEW-COMPACT` |
-| Status | documentation prerequisiteはcommit済み。exact migration、independent migration reviews、full verification、final qualityは完了。exact staging/commitは未完。 |
+| Status | 完了。migrationはschema-2 ledgerに登録済みであり、task-local completion evidenceがcommitted migrationとclean replayを保存する。 |
 | Purpose | durable/runner ownerをすべて保持し、反復するTask-258B4C documentation-prerequisite review evidenceを集約する。 |
 | Owners | migration policy、historical [258B4C](./258B4C.md#completion-evidence)、[checker plan](../../mizar-checker/ja/00.crate_plan.md#task-index)、[runner plan](../../mizar-test/ja/00.crate_plan.md#task-index) |
 | Consumers | checker source 8 paths、4 Task Indexes、migration後のschema-v1 ledger/lint |

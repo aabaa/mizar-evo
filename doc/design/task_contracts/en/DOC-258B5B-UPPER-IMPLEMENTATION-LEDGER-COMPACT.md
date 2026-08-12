@@ -8,7 +8,7 @@
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-258B5B-UPPER-IMPLEMENTATION-LEDGER-COMPACT` |
-| Status | Migration reviews, final verification, and independent final quality complete; exact staging, the dedicated migration commit, and clean post-commit replay remain. |
+| Status | Complete. The migration is registered in the schema-2 ledger; task-local completion evidence below preserves the committed migration and clean replay. |
 | Purpose | Centralize the EN/JA checker TODO upper-implementation completion checklist for historical Task 258B5B without changing a durable checker or runner owner. |
 | Historical owner | [Task 258B5B](./258B5B.md#completion-evidence) |
 | Plan indexes | [checker plan](../../mizar-checker/en/00.crate_plan.md#task-index) and [runner plan](../../mizar-test/en/00.crate_plan.md#task-index) |

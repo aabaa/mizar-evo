@@ -12,7 +12,7 @@ API、diagnostic、traceability、coverage を変更できない。
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-258B3M2B2B2C-FINAL-REVIEW-COMPACT` |
-| Status | documentation prerequisite は commit 済み。exact migration、independent migration reviews、full verification、final quality は完了。exact staging と commit は未完。 |
+| Status | 完了。migrationはschema-2 ledgerに登録済みであり、task-local completion evidenceがcommitted migrationとclean replayを保存する。 |
 | Purpose | broad-verification、frozen、implementation、post-commit、runner、todo、audit owner をすべて保持し、反復する Task-258B3M2B2B2C final-review evidence を集約する。 |
 | Owners | migration policy、historical [258B3M2B2B2C](./258B3M2B2B2C.md#completion-evidence)、[checker plan](../../mizar-checker/ja/00.crate_plan.md#task-index)、[runner plan](../../mizar-test/ja/00.crate_plan.md#task-index) |
 | Consumers | checker source 18 paths（EN/JA 9 pairs）、4 Task Indexes、migration 後の generic schema-v1 ledger/lint |

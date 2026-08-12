@@ -12,7 +12,7 @@ creditを追加・再解釈しない。
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-269G-INTERMEDIATE-COMPACT` |
-| Status | redirect migration、schema-v1 ledger expansion、independent reviews、full verification、final quality review完了。全9 gates PASS、score capなし100/100。exact staging/commitが残る。 |
+| Status | 完了。migrationはschema-2 ledgerに登録済みであり、task-local completion evidenceがcommitted migrationとclean replayを保存する。 |
 | Purpose | contiguous GUPT → GU → GCP → GC chainのcompletion-only H3をcentralizeし、全frozen H2 product ownerを保持する。 |
 | Owners | repository migration policy、paired historical contracts 4件、[checker plan](../../mizar-checker/ja/00.crate_plan.md#task-index)、[runner plan](../../mizar-test/ja/00.crate_plan.md#task-index) |
 | Consumers | checker-first EN/JA design documents 36件、`mizar-test` consumer docs、Task Index 4件、post-migration schema-v1 ledger/lint |

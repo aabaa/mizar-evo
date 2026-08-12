@@ -12,7 +12,7 @@ traceability、coverageを変更できない。
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-249S-ACTIVE-EVIDENCE-COMPACT` |
-| Status | Documentation prerequisite commit済み。frozen migration、全review、full verification、final quality完了。exact staging、commit待ち。 |
+| Status | 完了。migrationはschema-2 ledgerに登録済みであり、task-local completion evidenceがcommitted migrationとclean replayを保存する。 |
 | Purpose | durable/frozen ownerと全mixed sectionを保持し、Task-249S active implementation/no-runner evidenceを集約する。 |
 | Owners | migration policy、historical [249S](./249S.md#completion-evidence)、[checker plan](../../mizar-checker/ja/00.crate_plan.md#task-index)、[runner plan](../../mizar-test/ja/00.crate_plan.md#task-index) |
 | Consumers | checker/runner source 24 paths、Task Index 4件、future schema-v1 ledger/lint |

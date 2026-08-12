@@ -12,7 +12,7 @@ diagnostic、traceability、coverageを変更しない。
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-269CTGP-COMPACT` |
-| Status | Exact migrationはseparate commit ready。independent review、verification、final quality gateは完了。 |
+| Status | 完了。migrationはschema-2 ledgerに登録済みであり、task-local completion evidenceがcommitted migrationとclean replayを保存する。 |
 | Purpose | 269CT/269GP completion evidenceを集約し、全prerequisite、durable owner、later authority、semantic deferralを保持する。 |
 | Owners | migration policy、historical [269CT](./269CT.md#completion-evidence)/[269GP](./269GP.md#completion-evidence)、[checker plan](../../mizar-checker/ja/00.crate_plan.md#task-index)、[runner plan](../../mizar-test/ja/00.crate_plan.md#task-index) |
 | Consumers | EN/JA checker/runner design 8 paths、Task Index 4件、post-migration generic schema-v1 ledger/lint |

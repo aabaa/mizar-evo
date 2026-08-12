@@ -8,7 +8,7 @@
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-258B4B-COMPACT` |
-| Status | Documentation prerequisite committed; migration reviews and verification complete; exact staging and commit remain. |
+| Status | Complete. The migration is registered in the schema-2 ledger; task-local completion evidence below preserves the committed migration and clean replay. |
 | Purpose | Centralize four repeated Task-258B4B task-wide implementation-completion sections while retaining frozen contracts and durable checker/runner owners. |
 | Historical owner | [Task 258B4B](./258B4B.md#completion-evidence) |
 | Plan indexes | [checker plan](../../mizar-checker/en/00.crate_plan.md#task-index) and [runner plan](../../mizar-test/en/00.crate_plan.md#task-index) |

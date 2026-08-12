@@ -13,7 +13,7 @@ authorized one coherent cleanup after Task 269SDT.
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-269SD-COMPACT` |
-| Status | Implementation and verification complete; ready for the task-only commit. The immutable commit identity is post-commit evidence. |
+| Status | Complete. The migration is registered in the schema-2 ledger; task-local completion evidence below preserves the committed migration and clean replay. |
 | Purpose | Replace duplicated Task-269SDP and Task-269SDC completion evidence with one paired historical contract per task, retain every owner-local durable fact, and prevent the same contract/link drift prospectively. |
 | Primary owners | Repository documentation policy and `mizar-test` lint policy |
 | Consumers | Checker/test crate plans, owner-local checker/test design documents, audits, TODOs, and future autonomous-task agents |

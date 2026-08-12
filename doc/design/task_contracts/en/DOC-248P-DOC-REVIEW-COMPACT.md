@@ -12,7 +12,7 @@ traceability, or coverage.
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-248P-DOC-REVIEW-COMPACT` |
-| Status | Documentation prerequisite committed; exact migration, independent migration reviews, full verification, and final quality complete. Exact staging and commit remain. |
+| Status | Complete. The migration is registered in the schema-2 ledger; task-local completion evidence below preserves the committed migration and clean replay. |
 | Purpose | Centralize repeated Task-248P documentation-prerequisite and frozen-review evidence while retaining every durable implementation and runner owner. |
 | Owners | Migration policy, historical [248P](./248P.md#completion-evidence), [checker plan](../../mizar-checker/en/00.crate_plan.md#task-index), and [runner plan](../../mizar-test/en/00.crate_plan.md#task-index) |
 | Consumers | Eight checker source paths, four Task Indexes, and the post-migration schema-v1 ledger/lint |

@@ -8,7 +8,7 @@
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-258B3M2B2B2CP-IMPLEMENTATION-COMPACT` |
-| Status | documentation prerequisiteは`c3683921875a24e0efa3522cba47dbb676a9c7fe`でcommit済み。migrationは`98/100`でaccept、dedicated commitとclean replayが残る。 |
+| Status | 完了。migrationはschema-2 ledgerに登録済みであり、task-local completion evidenceがcommitted migrationとclean replayを保存する。 |
 | Purpose | completed Task-258B3M2B2B2CP implementation evidenceだけをcentralizeし、全frozen/correction/lower-route/successor/runner/TODO/audit/semantic ownersをretainする。 |
 | Historical owner | [Task 258B3M2B2B2CP](./258B3M2B2B2CP.md#completion-evidence) |
 | Plan indexes | [checker plan](../../mizar-checker/ja/00.crate_plan.md#task-index)と[runner plan](../../mizar-test/ja/00.crate_plan.md#task-index) |

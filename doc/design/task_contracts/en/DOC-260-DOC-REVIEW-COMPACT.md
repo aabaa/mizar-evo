@@ -12,7 +12,7 @@ API, diagnostics, traceability, or coverage.
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-260-DOC-REVIEW-COMPACT` |
-| Status | Documentation prerequisite committed; exact migration, all reviews, and full verification complete. Exact staging and commit remain. |
+| Status | Complete. The migration is registered in the schema-2 ledger; task-local completion evidence below preserves the committed migration and clean replay. |
 | Purpose | Centralize repeated Task-260 documentation-prerequisite verification, bilingual synchronization, and completed-checklist evidence while retaining implementation and durable component owners. |
 | Owners | Migration policy, historical [260](./260.md#completion-evidence), [checker plan](../../mizar-checker/en/00.crate_plan.md#task-index), and [runner plan](../../mizar-test/en/00.crate_plan.md#task-index) |
 | Consumers | Six checker source paths, four Task Indexes, and the post-migration schema-v1 ledger/lint |

@@ -8,7 +8,7 @@
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-258B3M1-M2A-IMPLEMENTATION-LEDGER-COMPACT` |
-| Status | migrationはindependent final qualityまで完了し、全reviewはno findings、全9 hard gates PASS、score capなし、100/100。exact staging、commit、clean replayがremaining。 |
+| Status | 完了。migrationはschema-2 ledgerに登録済みであり、task-local completion evidenceがcommitted migrationとclean replayを保存する。 |
 | Purpose | Task-258B3M1/Task-258B3M2Aのcompleted implementation checklistsを集約し、documentation ledgersと全durable checker/runner ownersを残す。 |
 | Historical owners | [Task 258B3M1](./258B3M1.md#completion-evidence)と[Task 258B3M2A](./258B3M2A.md#completion-evidence) |
 | Plan indexes | [checker plan](../../mizar-checker/ja/00.crate_plan.md#task-index)と[runner plan](../../mizar-test/ja/00.crate_plan.md#task-index) |

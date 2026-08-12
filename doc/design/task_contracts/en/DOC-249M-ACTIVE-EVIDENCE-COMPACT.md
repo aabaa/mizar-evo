@@ -12,7 +12,7 @@ diagnostics, traceability, or coverage.
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-249M-ACTIVE-EVIDENCE-COMPACT` |
-| Status | Migration, all independent reviews, full verification, and final quality complete; exact staging and commit remain. |
+| Status | Complete. The migration is registered in the schema-2 ledger; task-local completion evidence below preserves the committed migration and clean replay. |
 | Purpose | Centralize repeated Task-249M active implementation evidence while retaining every durable/frozen owner and all excluded mixed evidence. |
 | Owners | Migration policy, historical [249M](./249M.md#completion-evidence), [checker plan](../../mizar-checker/en/00.crate_plan.md#task-index), and [runner plan](../../mizar-test/en/00.crate_plan.md#task-index) |
 | Consumers | Sixteen checker source paths, four Task Indexes, and the future schema-v1 ledger/lint |
