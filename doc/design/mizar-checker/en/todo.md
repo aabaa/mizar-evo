@@ -7019,7 +7019,7 @@ selected only from fresh post-commit inventory.
   Task-252 `1/1/0` mapper primary plus five frozen tests. Preserve generic
   source-order rejection and add no capture, semantic, install, route,
   diagnostic, or credit state.
-- [ ] Complete source/docs and final-quality reviews, all hard gates, the
+- [x] Complete source/docs and final-quality reviews, all hard gates, the
   task-only commit, clean
   postcommit proof, and fresh readiness inventory; then stop per the user's
   one-task instruction even if a successor is ready.

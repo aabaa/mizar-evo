@@ -6602,5 +6602,5 @@ post-commit fresh inventoryからだけ選択する。
 - [x] C4C3-dependent outer-x binding projection、exact Task252 `1/1/0` mapper primary、
   frozen tests 5件だけをimplementする。Generic source-order rejectionを保ち、capture、semantic、
   install、route、diagnostic、credit stateを追加しない。
-- [ ] Source/docs/final-quality review、hard gate、task-only commit、clean postcommit proof、fresh inventoryを完了し、
+- [x] Source/docs/final-quality review、hard gate、task-only commit、clean postcommit proof、fresh inventoryを完了し、
   successorがreadyでもuserのone-task指示に従いstopする。
