@@ -12,7 +12,7 @@ repository duplication has been removed and authorizes no new migration.
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-CHECKER-TEST-CONSOLIDATION-WAVE-CLOSEOUT` |
-| Status | Bounded wave implementation, reviews, and verification complete; transition commit and clean proof pending before checklist metadata. |
+| Status | Clean bounded transition complete; checklist metadata implemented, with its commit/postcommit proof pending. |
 | Authority | [`doc/design/todo.md` temporary consolidation gate](../../todo.md), [`AGENTS.md`](../../../../AGENTS.md), and [autonomous migration policy](../../autonomous_crate_development.md#migration-policy) |
 | Scope | Record final schema-2-safe wave totals, completed tasks, retained residual classes, protected no-ops, verification, and bounded handoff. |
 | No audit impact | `spec_coverage_audit.md` remains unchanged: no specification mapping, test intent, trace status, owner, deferral, or credit changed. |
@@ -97,6 +97,13 @@ completed wave work, retained residuals, and protected no-ops while items 3-5
 remain unchecked. This metadata-only transition changes no protected surface
 or credit; its own commit and clean proof must precede the separate checklist
 metadata record. Item 6 remains open for the Phase-B authority inventory.
+
+Bounded transition `34cac2173d1b53d6ac089c302d973e2387c2e6d1`
+committed the paired transition alone. Clean replay confirmed HEAD,
+`origin/main...HEAD = 0/11`, the unchanged protected stash, unchanged ledger
+hash/counts, and recursive lint. The separate checklist metadata now checks
+items 3-5 and leaves item 6 open; its own commit and clean replay remain before
+the final Complete lifecycle record.
 
 ## Handoff
 

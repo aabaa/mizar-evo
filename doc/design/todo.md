@@ -272,7 +272,7 @@ repository-wide or program-wide consolidation-completion claim.
    unique evidence, owner links, and completed migration boundaries. Complete
    reviews, verification, a task-only commit, and clean post-commit proof
    before selecting a compaction batch.
-3. [ ] **Run the schema-2-safe whole-section compaction wave.** After every
+3. [x] **Run the schema-2-safe whole-section compaction wave.** After every
    clean commit, fresh-inventory the remaining duplicates and select exactly
    one dependency-ready coherent family. Freeze its exact old-section-to-owner
    map, source/heading/anchor/count/hash baselines, language-local redirects,
@@ -284,14 +284,14 @@ repository-wide or program-wide consolidation-completion claim.
    task-only commit and clean post-commit inventory.
    Continue without stopping while the fresh inventory exposes another safe
    dependency-ready family.
-4. [ ] **Keep schema-2-inexpressible evidence intact.** Do not force a second
+4. [x] **Keep schema-2-inexpressible evidence intact.** Do not force a second
    same-task section from one source file, a mixed owner-local section, or a
    paragraph-only duplicate into the whole-section ledger. Classify every such
    residual by owner and blocking shape. Start a separate schema/ownership
    prerequisite only when its authority, preservation oracle, consumer, and
    validation are unique; otherwise record the exact blocker and leave the
    evidence unchanged.
-5. [ ] **Close only the schema-2-safe compaction wave.** When fresh inventory
+5. [x] **Close only the schema-2-safe compaction wave.** When fresh inventory
    finds no further safe batch or prerequisite, record the final registered
    batch/task/reference totals, all intentionally retained residual classes,
    lint and hard-gate evidence, clean worktree/origin state, and unchanged
