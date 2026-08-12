@@ -6592,3 +6592,15 @@ post-commit fresh inventoryからだけ選択する。
 - [x] Test/implementation/source-doc-API/bilingual-boundary/hard-gate/quality/staging/commit/clean
   fresh-inventory gateを完了する。Implementation commitとaccepted dependency STOPはlanguage-local
   [postcommit checkpoint](../../task_contracts/ja/CHECKER-FRAENKEL-NESTED-BINDER-USE-257C4C3.md#postcommit-proof--fresh-successor-inventory)へrecordする。
+
+## Task 257C4C4 nested mapper primary transport
+
+- [x] Specialized forward-written Task252 profileを`design_drift`、exact regression不在を
+  `test_gap`とclassifyし、paired
+  [C4C4 contract](../../task_contracts/ja/CHECKER-FRAENKEL-NESTED-MAPPER-PRIMARY-257C4C4.md)をfreezeする。
+- [ ] Independent specification/APIとbilingual/boundary reviewを**NO FINDINGS**まで完了する。
+- [ ] C4C3-dependent outer-x binding projection、exact Task252 `1/1/0` mapper primary、
+  frozen tests 5件だけをimplementする。Generic source-order rejectionを保ち、capture、semantic、
+  install、route、diagnostic、credit stateを追加しない。
+- [ ] Hard gate、quality review、task-only commit、clean postcommit proof、fresh inventoryを完了し、
+  successorがreadyでもuserのone-task指示に従いstopする。

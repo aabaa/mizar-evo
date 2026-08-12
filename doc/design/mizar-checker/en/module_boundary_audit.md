@@ -81,6 +81,24 @@ facade and leaves the production path set at 32 paths; the cohesive owner is
 `9358` lines / SHA-256
 `eed8c480a2ddeceafd529ee4c37c333f6e36f8f23e62f4b53f782bc9df651b6c`.
 
+## Task 257C4C4 Nested Mapper Primary Boundary
+
+The frozen [C4C4 contract](../../task_contracts/en/CHECKER-FRAENKEL-NESTED-MAPPER-PRIMARY-257C4C4.md)
+will keep its sole public production family in the existing cohesive
+`source_term.rs` Task-252 owner. `source_formula_composition.rs` will add only
+a crate-private complete-C4C3 validation seam, and the existing private
+mizar-test nested-capture leaf will remain the sole consumer. No new module,
+facade, Typed/Resolved owner, resolver owner, runner dispatch, Cargo metadata,
+canonical artifact, or active coverage surface is added.
+
+The boundary is one exact C4C3-dependent outer-x binding projection, one
+immutable Task-252 arena node, and `1/1/0` primary/reference/request rows.
+Inner `y` stays dependency-only. Reusing C4A/C4B, changing public generic
+Task-252 ordering, installing the projection, or adding capture/type/sethood/
+request/result/verdict/diagnostic/route state would be a
+`boundary_violation`. Final line and content measurements remain contract-
+owned and will be synchronized after implementation.
+
 ## Split Gate
 
 A behavior-neutral private module split is required only when a checker-owned

@@ -5796,3 +5796,19 @@ registry include, production dispatch, active-stage route, Task-252 row,
 capture, semantic verdict, diagnostic, sidecar/trace mutation, or coverage
 credit. Exact measurements, counts, and completion evidence remain in the
 language-local [task-contract checkpoint](../../task_contracts/en/CHECKER-FRAENKEL-NESTED-BINDER-USE-257C4C3.md#postcommit-proof-and-fresh-successor-inventory).
+
+## Checker Task 257C4C4 Private Nested Mapper Primary Probe
+
+The frozen [C4C4 contract](../../task_contracts/en/CHECKER-FRAENKEL-NESTED-MAPPER-PRIMARY-257C4C4.md)
+will extend the same existing private leaf with exactly
+`task257c4c4_real_imported_fixture_builds_mapper_primary_handoff`. The test
+will reuse the C4C1 frontend helper, completed C4C2 collector, C4C3 typed
+profile, and public C4C3/C4C4 producers. It will assert the retained C4C3 row,
+outer-x-only `3/1/0` binding projection, one-node Task-252 arena, and exact
+`1/1/0` primary/reference/request output.
+
+This will be the sole current C4C4 API consumer and will remain library-test-
+only. No registry include, production dispatch, active-stage route, Typed or
+Resolved installation, capture/type/sethood state, semantic verdict,
+diagnostic, sidecar/trace mutation, or coverage credit is added. The canonical
+contract owns exact counts, hashes, and completion evidence.

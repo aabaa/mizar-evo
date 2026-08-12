@@ -5320,3 +5320,17 @@ assertする。Deterministic replayはchecker-owner C4C3 testがcoverする。
 Sole current API consumerかつlibrary-test-onlyである。Registry include、production dispatch、active route、Task252
 row、capture、semantic verdict、diagnostic、sidecar/trace mutation、coverage creditなし。Exact measurement、count、
 completion evidenceはlanguage-local [task-contract checkpoint](../../task_contracts/ja/CHECKER-FRAENKEL-NESTED-BINDER-USE-257C4C3.md#postcommit-proof--fresh-successor-inventory)がownする。
+
+## Checker Task 257C4C4 private nested mapper primary probe
+
+Frozen [C4C4 contract](../../task_contracts/ja/CHECKER-FRAENKEL-NESTED-MAPPER-PRIMARY-257C4C4.md)は
+same existing private leafへexact
+`task257c4c4_real_imported_fixture_builds_mapper_primary_handoff`を追加する。C4C1
+frontend helper、completed C4C2 collector、C4C3 typed profile、public C4C3/C4C4 producerを
+reuseし、retained C4C3 row、outer-x-only `3/1/0` binding projection、one-node Task252
+arena、exact `1/1/0` term/reference/requestをassertする。
+
+Sole current C4C4 consumerかつlibrary-test-only。Registry、production dispatch、active
+route、Typed/Resolved installation、capture/type/sethood state、semantic verdict、diagnostic、
+sidecar/trace mutation、coverage creditを追加しない。Exact counts/hash/completion evidenceは
+canonical contractがownする。

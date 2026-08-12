@@ -146,6 +146,28 @@ definition result semantics、real proof-local constant production、numeric
 response、accepted fact/declaration/proof、downstream IR、Tasks 253+、Steps 6/7は
 explicit ownerに残る。
 
+## Task 257C4C4 nested Fraenkel mapper primary
+
+Frozen [C4C4 contract](../../task_contracts/ja/CHECKER-FRAENKEL-NESTED-MAPPER-PRIMARY-257C4C4.md)は
+C4C3-dependent/zero-semanticなspecialized Task252 transactionを1件追加する。
+Exact public familyは`SourceNestedFraenkelMapperPrimaryHandoff`、non-exhaustive
+`SourceNestedFraenkelMapperPrimaryError`、
+`SourceNestedFraenkelMapperPrimaryProducer`。Handoffはcomplete C4C3 dependency、
+exact 3-context/outer-x 1-binding/0-diagnostic `BindingEnv`、one-node immutable
+projection arena、existing `SourcePrimaryTermHandoff` `1/1/0`をretainする。
+
+Sole primaryはinner mapper `x@94..95`の`VariableReference`/`Value`。Sole referenceは
+C4C3 resolver binding `1` / outer binder `x@136..137`を表すprojection-local checker
+binding `0`をselectする。Binding ownerはouter-comprehension context、useはinner child
+context。Profile-scoped logical ordinal `1`だけがsource上後置されたgeneratorをvisibleに
+する。Inner `y`はrevalidated C4C3 dependencyだけに残りTask252へduplicateしない。
+
+Private specialized profileはpublic generic Task252 source-order derivation/forward rejectionを
+弱めない。Exact getter/debug/error precedence/context/binding/arena/row/default-deny matrixは
+task contractだけがownする。Sole current consumerはexisting private nested-capture library
+test leaf。Typed/Resolved installation、active route、capture identity、generated-core
+parameter、type/sethood answer、semantic result、diagnostic、coverage creditは追加しない。
+
 ## Task 257B1 Consumer Addendum
 
 Task 257B1はexact pass consumerへadditional `VariableReference`/`Value` row

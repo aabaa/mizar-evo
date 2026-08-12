@@ -159,6 +159,36 @@ result semantics, real proof-local constant production, numeric responses,
 accepted facts/declarations/proofs, downstream IR, Tasks 253+, and Steps 6/7
 remain with their explicit owners.
 
+## Task 257C4C4 Nested Fraenkel Mapper Primary
+
+The frozen [C4C4 contract](../../task_contracts/en/CHECKER-FRAENKEL-NESTED-MAPPER-PRIMARY-257C4C4.md)
+will add one C4C3-dependent, zero-semantic specialized Task-252 transaction.
+Its exact public family will be
+`SourceNestedFraenkelMapperPrimaryHandoff`, non-exhaustive
+`SourceNestedFraenkelMapperPrimaryError`, and
+`SourceNestedFraenkelMapperPrimaryProducer`. The handoff will retain the
+complete C4C3 dependency, an exact three-context/one-outer-binding/zero-
+diagnostic `BindingEnv`, one exact immutable projection-arena node, and the
+existing `SourcePrimaryTermHandoff` with `1/1/0` rows.
+
+The sole primary is the inner mapper `x@94..95`,
+`VariableReference`/`Value`, and its sole reference selects projection-local
+checker binding `0`, which represents C4C3 resolver binding `1` and outer
+binder `x@136..137`. The binding belongs to the outer-comprehension context;
+the use belongs to its inner-comprehension child. Profile-scoped logical
+ordinal `1` makes the authenticated generator visible even though its source
+declaration is written after the mapper. Inner generator `y` remains only in
+the revalidated C4C3 dependency and is not duplicated into Task 252.
+
+The private specialized profile will not weaken public generic Task-252
+source-order derivation or forward-reference rejection. Exact public getters,
+debug grammar, three-error precedence, context/binding/arena/row oracle, and
+default-deny corruption matrix are owned once by the task contract. The only
+current consumer will be the existing private nested-capture library-test
+leaf. There will be no Typed/Resolved installation, active runner route,
+capture identity, generated-core parameter, type/sethood answer, semantic
+result, diagnostic, or coverage credit.
+
 ## Task 257B1 Consumer Addendum
 
 Task 257B1 adds one exact pass consumer with two additional

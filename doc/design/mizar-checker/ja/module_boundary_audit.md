@@ -37,6 +37,21 @@ type/sethood/request/result/verdict/diagnostic/route追加は`boundary_violation
 32のまま、cohesive ownerは`9358` lines / SHA-256
 `eed8c480a2ddeceafd529ee4c37c333f6e36f8f23e62f4b53f782bc9df651b6c`である。
 
+## Task 257C4C4 nested mapper primary boundary
+
+Frozen [C4C4 contract](../../task_contracts/ja/CHECKER-FRAENKEL-NESTED-MAPPER-PRIMARY-257C4C4.md)は
+sole public production familyをexisting cohesive `source_term.rs` Task252 ownerに置く。
+`source_formula_composition.rs`はcrate-private complete-C4C3 validation seamだけを追加し、
+existing private mizar-test nested-capture leafがsole consumerのまま。New module/facade、
+Typed/Resolved/resolver owner、runner dispatch、Cargo metadata、canonical artifact、active
+coverage surfaceを追加しない。
+
+Boundaryはexact C4C3-dependent outer-x binding projection 1件、immutable Task252 arena
+node 1件、primary/reference/request `1/1/0`。Inner `y`はdependency-only。C4A/C4B reuse、
+public generic Task252 ordering変更、installation、capture/type/sethood/request/result/
+verdict/diagnostic/route state追加は`boundary_violation`。Final line/content measurementは
+contractだけがownしimplementation後syncする。
+
 ## Split Gate
 
 behavior-neutral private module split が必要になるのは、checker-owned file が
