@@ -12,7 +12,7 @@ diagnostics, source, active results, or semantic and coverage credit.
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-258B3M2B2B3B-DOC-REVIEW-COMPACT` |
-| Status | Frozen prerequisite; migration not started. |
+| Status | Prerequisite committed; exact migration, independent reviews, and verification complete, with commit/postcommit proof pending. |
 | Purpose | Replace four duplicated B3B documentation-review/final-quality H2 sections with language-local links to one paired historical owner. |
 | Primary owner | Repository documentation policy and schema-2 ledger |
 | Historical owner | [Task 258B3M2B2B3B](./258B3M2B2B3B.md#completion-evidence) |
@@ -75,12 +75,35 @@ checker/test EN/JA plan. It changes no source section or ledger row.
 After its dedicated prerequisite commit and clean replay, the migration changes
 exactly seven paths: the four selected plan sources, this EN/JA batch pair, and
 `legacy_compactions.tsv`. It replaces 72 lines with four redirects, exact
-source delta `+4/-72`. The ledger adds one `batch`, one canonical `task`, four
+Git source delta `+4/-68` (net `-64`). The ledger adds one `batch`, one canonical `task`, four
 `redirect`, and eight `index` rows; no `task_ref`. Declared batch counts are
 `1/4/4/8`, and the canonical 13-row expanded-inventory SHA-256 is
 `be67d601c91a3d00745ea982ae5aae9c6f6dd8d1eafbfed0e1573a28a38f4b73`.
 Final global ledger cardinalities become `33/45/4/642/312` with 1,038 physical
 lines. The migration commit records the final physical ledger hash.
+
+## Migration Evidence
+
+The prerequisite was committed alone as
+`65f6be06feafd324b727927da4681abbee0e862c`. Its clean postcommit replay
+confirmed HEAD, local origin divergence `0/3`, the unchanged protected stash,
+the unchanged 1,024-line ledger with SHA-256
+`2a66d200a1976861600bcf7686388faa3efb19b2b42a43c756c9e689d7f27359`,
+and the focused recursive contract/link lint.
+
+The working migration replay removes exactly the four frozen headings, keeps
+all eight neighboring anchors, installs four language-local redirects, and
+adds the canonical 13 ledger rows. The ledger is 1,038 lines with SHA-256
+`ff48f2627e6cd3e52be649ee893ab1bae16fe3ce97ec019c3e96ae77ccad9131`
+and cardinalities `33/45/4/642/312`. Independent migration reviews, broad
+verification, exact staging, commit, and clean postcommit proof remain.
+
+Independent specification/equivalence, test-sufficiency/schema/
+implementation, and source/documentation/bilingual/boundary reviews ended
+**NO FINDINGS**. Recursive lint passed all 15 cases; `git diff --check`,
+formatting, warnings-denied all-target/all-feature workspace Clippy, and the
+full workspace test suite passed. Exact staging, final read-only quality
+review, commit, and clean postcommit proof remain.
 
 ## Protected And Forbidden Changes
 

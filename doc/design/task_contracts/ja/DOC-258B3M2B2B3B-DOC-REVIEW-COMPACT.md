@@ -13,7 +13,7 @@ source、active results、semantic/coverage creditを変更しない。
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-258B3M2B2B3B-DOC-REVIEW-COMPACT` |
-| Status | frozen prerequisite。migration未開始。 |
+| Status | prerequisite committed。exact migration、independent reviews、verification完了、commit/postcommit proof待ち。 |
 | Purpose | 重複するB3B documentation-review/final-quality H2 sections 4件をpaired historical ownerへのlanguage-local linksに置換する。 |
 | Primary owner | repository documentation policyとschema-2 ledger |
 | Historical owner | [Task 258B3M2B2B3B](./258B3M2B2B3B.md#completion-evidence) |
@@ -73,12 +73,33 @@ ledger rowは変更しない。
 
 dedicated prerequisite commit/clean replay後、migrationはexact 7 paths、selected 4
 plan sources、本EN/JA batch pair、`legacy_compactions.tsv`を変更する。72 linesを4
-redirectへ置換し、exact source delta `+4/-72`。ledgerはone `batch`、one canonical
+redirectへ置換し、exact Git source deltaは`+4/-68`（net `-64`）。ledgerはone `batch`、one canonical
 `task`、4 `redirect`、8 `index` rowsを追加し`task_ref`なし。declared batch countsは
 `1/4/4/8`、canonical 13-row expanded-inventory SHA-256は
 `be67d601c91a3d00745ea982ae5aae9c6f6dd8d1eafbfed0e1573a28a38f4b73`。
 final global cardinalityは`33/45/4/642/312`、1,038 physical lines。final physical ledger
 hashはmigration commitへrecordする。
+
+## Migration Evidence
+
+prerequisiteは`65f6be06feafd324b727927da4681abbee0e862c`として単独commit済み。
+clean postcommit replayはHEAD、local origin divergence `0/3`、unchanged protected
+stash、SHA-256
+`2a66d200a1976861600bcf7686388faa3efb19b2b42a43c756c9e689d7f27359`の
+unchanged 1,024-line ledger、focused recursive contract/link lintを確認した。
+
+working migration replayはexact four frozen headingsをremoveし、8 neighboring anchorsを
+保持し、4 language-local redirectsとcanonical 13 ledger rowsをinstallした。ledgerは
+1,038 lines、SHA-256
+`ff48f2627e6cd3e52be649ee893ab1bae16fe3ce97ec019c3e96ae77ccad9131`、
+cardinalities `33/45/4/642/312`。independent migration reviews、broad verification、
+exact staging、commit、clean postcommit proofが残る。
+
+independent specification/equivalence、test-sufficiency/schema/implementation、
+source/documentation/bilingual/boundary reviewsは**NO FINDINGS**。recursive lint
+15 cases、`git diff --check`、format、warnings-denied all-target/all-feature
+workspace Clippy、full workspace test suiteはPASSした。exact staging、final
+read-only quality review、commit、clean postcommit proofが残る。
 
 ## Protected And Forbidden Changes
 
