@@ -12,7 +12,7 @@ diagnostics, source, active results, or semantic and coverage credit.
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-258B3M2B2B3B-DOC-REVIEW-COMPACT` |
-| Status | Prerequisite committed; exact migration, independent reviews, and verification complete, with commit/postcommit proof pending. |
+| Status | Complete: prerequisite and migration committed separately; clean postcommit proof and fresh successor inventory recorded. |
 | Purpose | Replace four duplicated B3B documentation-review/final-quality H2 sections with language-local links to one paired historical owner. |
 | Primary owner | Repository documentation policy and schema-2 ledger |
 | Historical owner | [Task 258B3M2B2B3B](./258B3M2B2B3B.md#completion-evidence) |
@@ -96,14 +96,32 @@ all eight neighboring anchors, installs four language-local redirects, and
 adds the canonical 13 ledger rows. The ledger is 1,038 lines with SHA-256
 `ff48f2627e6cd3e52be649ee893ab1bae16fe3ce97ec019c3e96ae77ccad9131`
 and cardinalities `33/45/4/642/312`. Independent migration reviews, broad
-verification, exact staging, commit, and clean postcommit proof remain.
+verification, exact staging, commit, and clean postcommit proof subsequently
+completed as recorded below.
 
 Independent specification/equivalence, test-sufficiency/schema/
 implementation, and source/documentation/bilingual/boundary reviews ended
 **NO FINDINGS**. Recursive lint passed all 15 cases; `git diff --check`,
 formatting, warnings-denied all-target/all-feature workspace Clippy, and the
 full workspace test suite passed. Exact staging, final read-only quality
-review, commit, and clean postcommit proof remain.
+review, migration commit, and clean postcommit proof then completed.
+
+## Postcommit Completion Evidence
+
+Migration commit `fbadbf5c3156496c672d09d55fccff91d1da4255` contains
+exactly the seven frozen paths and has prerequisite
+`65f6be06feafd324b727927da4681abbee0e862c` as its parent. The clean replay
+confirmed HEAD at that migration commit, `origin/main...HEAD = 0/4`, protected
+stash `f65cf4a13752ec380710814a9ac6392ccb9d75d4` unchanged, ledger SHA-256
+`ff48f2627e6cd3e52be649ee893ab1bae16fe3ce97ec019c3e96ae77ccad9131`,
+1,038 lines and cardinalities `33/45/4/642/312`, and focused recursive lint
+passing. No protected surface or credit changed.
+
+Fresh postcommit inventory retains a separate dependency-ready candidate:
+six runner-side Task 258B3M2B2B3P final-quality H2 sections in six disjoint
+`mizar-test` EN/JA plan, harness, and module-boundary files, 40 lines total.
+It can only be evaluated through a new paired batch contract and one schema-2
+`task_ref`; this completed B3B contract does not authorize that migration.
 
 ## Protected And Forbidden Changes
 

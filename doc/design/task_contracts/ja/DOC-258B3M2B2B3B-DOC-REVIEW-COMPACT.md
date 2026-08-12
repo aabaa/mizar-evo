@@ -13,7 +13,7 @@ source、active results、semantic/coverage creditを変更しない。
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-258B3M2B2B3B-DOC-REVIEW-COMPACT` |
-| Status | prerequisite committed。exact migration、independent reviews、verification完了、commit/postcommit proof待ち。 |
+| Status | complete。prerequisite/migrationをseparate commitし、clean postcommit proofとfresh successor inventoryをrecord済み。 |
 | Purpose | 重複するB3B documentation-review/final-quality H2 sections 4件をpaired historical ownerへのlanguage-local linksに置換する。 |
 | Primary owner | repository documentation policyとschema-2 ledger |
 | Historical owner | [Task 258B3M2B2B3B](./258B3M2B2B3B.md#completion-evidence) |
@@ -93,13 +93,30 @@ working migration replayはexact four frozen headingsをremoveし、8 neighborin
 1,038 lines、SHA-256
 `ff48f2627e6cd3e52be649ee893ab1bae16fe3ce97ec019c3e96ae77ccad9131`、
 cardinalities `33/45/4/642/312`。independent migration reviews、broad verification、
-exact staging、commit、clean postcommit proofが残る。
+exact staging、commit、clean postcommit proofは以下のrecordどおり後続でcompleteした。
 
 independent specification/equivalence、test-sufficiency/schema/implementation、
 source/documentation/bilingual/boundary reviewsは**NO FINDINGS**。recursive lint
 15 cases、`git diff --check`、format、warnings-denied all-target/all-feature
 workspace Clippy、full workspace test suiteはPASSした。exact staging、final
-read-only quality review、commit、clean postcommit proofが残る。
+read-only quality review、migration commit、clean postcommit proofも後続でcompleteした。
+
+## Postcommit Completion Evidence
+
+migration commit `fbadbf5c3156496c672d09d55fccff91d1da4255`はexact frozen 7
+pathsだけを含み、parentはprerequisite
+`65f6be06feafd324b727927da4681abbee0e862c`。clean replayはHEADが同migration
+commit、`origin/main...HEAD = 0/4`、protected stash
+`f65cf4a13752ec380710814a9ac6392ccb9d75d4` unchanged、ledger SHA-256
+`ff48f2627e6cd3e52be649ee893ab1bae16fe3ce97ec019c3e96ae77ccad9131`、
+1,038 lines/cardinalities `33/45/4/642/312`、focused recursive lint PASSを
+確認した。protected surface/creditは変更なし。
+
+fresh postcommit inventoryにはseparate dependency-ready candidateとして、disjointな
+`mizar-test` EN/JA plan、harness、module-boundary 6 filesのrunner-side Task
+258B3M2B2B3P final-quality H2 sections 6件、total 40 linesが残る。評価にはnew
+paired batch contractとschema-2 `task_ref` 1件が必要であり、completed B3B
+contractはそのmigrationをauthorizeしない。
 
 ## Protected And Forbidden Changes
 
