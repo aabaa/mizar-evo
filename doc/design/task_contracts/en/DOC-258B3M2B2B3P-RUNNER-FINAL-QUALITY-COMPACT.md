@@ -12,7 +12,7 @@ diagnostics, source, active results, test intent, or semantic/coverage credit.
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-258B3M2B2B3P-RUNNER-FINAL-QUALITY-COMPACT` |
-| Status | Prerequisite committed; exact migration implemented, with independent reviews and commit/postcommit proof pending. |
+| Status | Complete: prerequisite and migration committed separately; clean postcommit proof recorded. |
 | Purpose | Replace six runner-side B3P final-quality H2 sections with language-local links to the existing paired historical owner. |
 | Historical owner | [Task 258B3M2B2B3P](./258B3M2B2B3P.md#completion-evidence), canonically owned by registered batch `DOC-258B3M2B2B3P-REVIEW-COMPACT` |
 | Dependencies | B3P prerequisite `285a1f11c310bb313c4c6b4feae914eb11f74754`, implementation `abbfedfc2cdbaa97d8294893859da8cd350ad9a8`, schema-2 task-ref owner, and B3B closeout `b12fd7c693f2fe3622154b5a5e6984678cd751ef` |
@@ -101,7 +101,20 @@ implementation, and source/documentation/bilingual/boundary reviews ended
 **NO FINDINGS**. Recursive lint passed all 15 cases; `git diff --check`,
 formatting, warnings-denied all-target/all-feature workspace Clippy, and full
 workspace tests passed. Exact staging, final quality review, migration commit,
-and clean postcommit proof remain.
+and clean postcommit proof then completed.
+
+## Postcommit Completion Evidence
+
+Migration commit `80af8e4dfeefdd1f06983bf1d9358774a878eb9e` contains
+exactly the nine frozen paths and has prerequisite
+`51785984c685bde5caa59cfb145f352ff8d3b9a2` as its parent. Clean replay
+confirmed HEAD at that migration commit, `origin/main...HEAD = 0/7`, protected
+stash `f65cf4a13752ec380710814a9ac6392ccb9d75d4` unchanged, ledger SHA-256
+`3145d558b93f85095693b99ea4f3a09198be9b2a0332945667d29ea7d5c96eb7`,
+1,050 lines and cardinalities `34/45/5/648/316`, and focused recursive lint
+passing. No protected surface or credit changed. The fresh repository-wide
+inventory result is owned by the subsequent bounded wave closeout, not by this
+batch contract.
 
 ## Protected Boundaries And Exit
 

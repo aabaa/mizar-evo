@@ -13,7 +13,7 @@ active results、test intent、semantic/coverage creditを変更しない。
 | Field | Frozen value |
 |---|---|
 | Task | `DOC-258B3M2B2B3P-RUNNER-FINAL-QUALITY-COMPACT` |
-| Status | prerequisite committed。exact migration実装済み、independent reviewsとcommit/postcommit proof待ち。 |
+| Status | complete。prerequisite/migrationをseparate commitし、clean postcommit proofをrecord済み。 |
 | Purpose | runner-side B3P final-quality H2 sections 6件をexisting paired historical ownerへのlanguage-local linksに置換する。 |
 | Historical owner | registered batch `DOC-258B3M2B2B3P-REVIEW-COMPACT`がcanonical ownershipする[Task 258B3M2B2B3P](./258B3M2B2B3P.md#completion-evidence) |
 | Dependencies | B3P prerequisite `285a1f11c310bb313c4c6b4feae914eb11f74754`、implementation `abbfedfc2cdbaa97d8294893859da8cd350ad9a8`、schema-2 task-ref owner、B3B closeout `b12fd7c693f2fe3622154b5a5e6984678cd751ef` |
@@ -99,7 +99,19 @@ independent specification/schema/equivalence、test-sufficiency/implementation�
 source/documentation/bilingual/boundary reviewsは**NO FINDINGS**。recursive lint
 15 cases、`git diff --check`、format、warnings-denied all-target/all-feature
 workspace Clippy、full workspace testsはPASSした。exact staging、final quality
-review、migration commit、clean postcommit proofが残る。
+review、migration commit、clean postcommit proofも後続でcompleteした。
+
+## Postcommit Completion Evidence
+
+migration commit `80af8e4dfeefdd1f06983bf1d9358774a878eb9e`はexact frozen 9
+pathsだけを含み、parentはprerequisite
+`51785984c685bde5caa59cfb145f352ff8d3b9a2`。clean replayはHEADが同migration
+commit、`origin/main...HEAD = 0/7`、protected stash
+`f65cf4a13752ec380710814a9ac6392ccb9d75d4` unchanged、ledger SHA-256
+`3145d558b93f85095693b99ea4f3a09198be9b2a0332945667d29ea7d5c96eb7`、
+1,050 lines/cardinalities `34/45/5/648/316`、focused recursive lint PASSを
+確認した。protected surface/creditは変更なし。fresh repository-wide inventory
+resultは本batch contractでなく後続bounded wave closeoutがownする。
 
 ## Protected Boundaries And Exit
 
