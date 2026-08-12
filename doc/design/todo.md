@@ -98,8 +98,8 @@ is its task 1). "Next work" points into the
 | mizar-parser | Grammar, Pratt parsing, syntax recovery, parse-only corpus | [x] Tasks 1-48 plus bounded `PARSER-RECOVERY-B1B1P-P1` complete; historical post-Task-46 score 99/100 | no inferred Task 49; human-owned P-265-47D remains separate | [todo](./mizar-parser/en/todo.md) |
 | mizar-frontend | Source loading and phase 1-3 orchestration | [x] prior milestone plus `PARSER-RECOVERY-B1B1P-P1-FE` regression complete | — | [todo](./mizar-frontend/en/todo.md) |
 | mizar-resolve | Module graph, namespaces, symbols, labels, signatures | [~] complete through task 29, Checker Task 263R, and Task 264R implementation | Preserve Task-264R shell/no-symbol boundary through Checker Tasks 248P/264 | [todo](./mizar-resolve/en/todo.md) |
-| mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] foundation complete through task 22; Tasks 265-268, Core-31, dormant [Task 269SDT](./task_contracts/en/269SDT.md), and private [Task 269SDU](./task_contracts/en/269SDU.md) are implemented | Active dispatch remains excluded; Task-269SDU is complete in `3bddc5fd6383226bbb66d7d5757e7b77f80678d9`; select later work only from fresh inventory | [todo](./mizar-test/en/todo.md) |
-| mizar-checker | Type checking, cluster/registration resolution, overload resolution | [~] explicit-payload milestone and source producers/consumers through [Task 269SDU](./task_contracts/en/269SDU.md) are implemented | `z`/`q` capture stays blocked on `set` reconciliation; Task-269SDU is complete in `3bddc5fd6383226bbb66d7d5757e7b77f80678d9`; no semantic successor is assigned | [todo](./mizar-checker/en/todo.md) |
+| mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] foundation complete through task 22; Tasks 265-268, Core-31, dormant [Task 269SDT](./task_contracts/en/269SDT.md), private [Task 269SDU](./task_contracts/en/269SDU.md), and the private zero-semantic nested-Fraenkel consumer chain through [C4C4](./task_contracts/en/CHECKER-FRAENKEL-NESTED-MAPPER-PRIMARY-257C4C4.md) are implemented | Complete the temporary design-evidence consolidation gate; active dispatch remains excluded; afterward re-inventory from C4C4 without presuming a successor | [todo](./mizar-test/en/todo.md) |
+| mizar-checker | Type checking, cluster/registration resolution, overload resolution | [~] explicit-payload milestone, source producers/consumers through [Task 269SDU](./task_contracts/en/269SDU.md), and zero-semantic nested-Fraenkel structural transport through [C4C4](./task_contracts/en/CHECKER-FRAENKEL-NESTED-MAPPER-PRIMARY-257C4C4.md) are implemented | Complete the temporary consolidation gate; the C4C4 semantic successor retains cross-owner `design_drift` and `test_gap`; `z`/`q` capture stays blocked on `set` reconciliation; Task 277B remains not-ready/zero-credit | [todo](./mizar-checker/en/todo.md) |
 | mizar-core | Elaboration, binder-normalized core logic, control-flow preparation | [x] core/control-flow milestone, tasks 27-32 complete | step-5 Tasks 33-53 under the Task-32 graph | [todo](./mizar-core/en/todo.md) |
 | mizar-vc | VC IR, VC generation, deterministic pre-ATP discharge | [x] exact source-derived contradiction VC integration complete through task 31 | dependency-paced VC Tasks 32-55; VC 40/53 and S1 gates remain explicit | [todo](./mizar-vc/en/todo.md) |
 | mizar-kernel | Trusted certificate parsing and checking | [x] SAT-backed kernel milestone complete | step 4 task 35 resolved; task 32 parked; tasks 30-34 resolved | [todo](./mizar-kernel/en/todo.md) |
@@ -228,6 +228,87 @@ Implement the decisions from step 2 in checker and core. Depends on step 2.
 
 Exit: audited semantic corrections are implemented with their rejection
 corpora; the kernel soundness argument is re-checked against view terms.
+
+### Temporary gate — checker/test design-evidence consolidation [ ]
+
+Before selecting another Step 5 semantic task, complete the sequence below in
+one continuous autonomous thread. This gate does not reopen or reorder already
+completed Step 5 work. Each logical documentation task still receives its own
+paired contract, independent reviews, verification, task-only commit, and
+clean post-commit inventory. It must pass all nine protocol hard gates and a
+valid read-only quality evaluation of at least `90/100` before completion.
+
+This gate is limited to duplicated historical evidence in the derived
+`mizar-checker` / `mizar-test` `doc/design` documents and to the paired task
+contracts, crate-plan indexes, source inventories, and legacy-compaction ledger
+that own those migrations. A separately frozen schema prerequisite may also
+update only the generic non-production lint-policy consumer and its same-test
+validation; ordinary lifecycle repairs and compaction batches may not. The gate
+must not consolidate or edit `doc/spec`, existing `.miz` files, expectations,
+trace rows or status, production Rust, diagnostics, active behavior, test
+intent, or semantic/coverage credit.
+
+At the checkpoint that established this gate, HEAD was
+`7b53784a6f2525ebb35ce8d59230f07d1c9041bf`, the worktree and
+`origin/main...HEAD` were clean/`0/0`, protected stash
+`f65cf4a13752ec380710814a9ac6392ccb9d75d4` was unchanged, and the schema-2
+ledger registered 32 batches, 44 canonical task rows, and 4 `task_ref` rows.
+Those values prove only the already registered migrations; they are not a
+repository-wide or program-wide consolidation-completion claim.
+
+1. [ ] **Audit lifecycle and commit state before deleting more evidence.**
+   Read-only reconcile every registered batch's EN/JA contracts, ledger rows,
+   links, current lifecycle fields, and reachable prerequisite and migration
+   commits located from task-local evidence, ledger/source diffs, and Git
+   history. The initial inventory indicates that all 32 registered EN/JA batch
+   pairs retain stale top-level status wording; verify that result rather than
+   assuming it.
+   Classify stale live lifecycle wording as `design_drift`. Report a genuine
+   hash or repository-state disagreement as `repo_metadata_conflict` and do
+   not repair it automatically.
+2. [ ] **Repair uniquely attributable lifecycle drift as a separate task.**
+   Freeze a paired repair contract and update only fields that own current
+   lifecycle state. Preserve historical precommit/postcommit checkpoint prose,
+   unique evidence, owner links, and completed migration boundaries. Complete
+   reviews, verification, a task-only commit, and clean post-commit proof
+   before selecting a compaction batch.
+3. [ ] **Run the schema-2-safe whole-section compaction wave.** After every
+   clean commit, fresh-inventory the remaining duplicates and select exactly
+   one dependency-ready coherent family. Freeze its exact old-section-to-owner
+   map, source/heading/anchor/count/hash baselines, language-local redirects,
+   protected surfaces, and forbidden boundaries in a paired batch contract and
+   source inventory. Repeat evidence-equivalence, EN/JA, boundary,
+   test-sufficiency, source/documentation, and final-quality reviews to **NO
+   FINDINGS**; pass the generic ledger/link/fragment lint, all nine protocol
+   hard gates, and a valid quality evaluation of at least `90/100`; then make a
+   task-only commit and clean post-commit inventory.
+   Continue without stopping while the fresh inventory exposes another safe
+   dependency-ready family.
+4. [ ] **Keep schema-2-inexpressible evidence intact.** Do not force a second
+   same-task section from one source file, a mixed owner-local section, or a
+   paragraph-only duplicate into the whole-section ledger. Classify every such
+   residual by owner and blocking shape. Start a separate schema/ownership
+   prerequisite only when its authority, preservation oracle, consumer, and
+   validation are unique; otherwise record the exact blocker and leave the
+   evidence unchanged.
+5. [ ] **Close only the schema-2-safe compaction wave.** When fresh inventory
+   finds no further safe batch or prerequisite, record the final registered
+   batch/task/reference totals, all intentionally retained residual classes,
+   lint and hard-gate evidence, clean worktree/origin state, and unchanged
+   protected stash. This closeout means that no further currently authorized
+   schema-2-safe migration is ready; it must not claim that all historical
+   duplication in the repository has been removed.
+6. [ ] **Resume semantic readiness from the C4C4 postcommit proof.** Re-run the
+   authority-order inventory rather than carrying forward a presumed successor
+   ID, API, or oracle. Any Task-255/source-set capture or generated-core bridge
+   requires its own paired contract and uniquely owned dependencies before
+   implementation. Task 277B remains not-ready and zero-credit until its
+   recorded dependencies are complete.
+
+Exit: the schema-2-safe wave has the bounded closeout above, every protected
+semantic and coverage surface is unchanged, and the clean post-closeout
+inventory can select the next Step 5 task without competing documentation
+owners.
 
 ### Step 5 — Source-derived semantic bridge [ ]
 
