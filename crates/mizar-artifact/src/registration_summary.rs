@@ -2404,7 +2404,7 @@ fn parse_lower_hex_hash(hex: &str, path: &str) -> Result<Hash, RegistrationSumma
         });
     }
     let mut bytes = [0; Hash::BYTE_LEN];
-    for (index, pair) in hex.as_bytes().chunks_exact(2).enumerate() {
+    for (index, pair) in hex.as_bytes().as_chunks::<2>().0.iter().enumerate() {
         let high = parse_lower_hex_nibble(pair[0], path)?;
         let low = parse_lower_hex_nibble(pair[1], path)?;
         bytes[index] = (high << 4) | low;
