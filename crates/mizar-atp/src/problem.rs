@@ -1953,7 +1953,7 @@ fn stable_hash(bytes: &[u8]) -> Hash {
     lanes[3] ^= lanes[1].rotate_left(11);
 
     let mut output = [0_u8; Hash::BYTE_LEN];
-    for (chunk, lane) in output.chunks_exact_mut(8).zip(lanes) {
+    for (chunk, lane) in output.as_chunks_mut::<8>().0.iter_mut().zip(lanes) {
         chunk.copy_from_slice(&lane.to_be_bytes());
     }
     Hash::from_bytes(output)
