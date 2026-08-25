@@ -5330,3 +5330,16 @@ Sole current C4C4 consumerかつlibrary-test-only。Registry、production dispat
 route、Typed/Resolved installation、capture/type/sethood state、semantic verdict、diagnostic、
 sidecar/trace mutation、coverage creditを追加しない。Exact counts/hash/completion evidenceは
 canonical contractがownする。
+
+## Checker Task 257C4C5 private capture-identity receipt probe
+
+Implemented [C4C5 contract](../../task_contracts/ja/CHECKER-FRAENKEL-NESTED-CAPTURE-IDENTITY-257C4C5.md)は、
+existing private nested-capture leafへexact
+`task257c4c5_real_imported_fixture_builds_capture_identity_handoff`を追加する。
+Testはexact C4C1-C4C4 routeをreuseし、public C4C5 producerをdirect callして、inner
+context/mapper term/reference/checker bindingからresolver use `0`とresolved outer binding
+identity `1`へのsole public associationをassertする。
+
+Probeはlibrary-test-only。Registry include、production dispatch、active route、Typed/Resolved
+installation、semantic capture、Core origin/parameter、diagnostic、sidecar/trace mutation、
+coverage credit、Task277B readinessを追加しない。Default-deny corruption matrixはchecker-owner testがretainする。

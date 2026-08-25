@@ -5808,3 +5808,19 @@ only. No registry include, production dispatch, active-stage route, Typed or
 Resolved installation, capture/type/sethood state, semantic verdict,
 diagnostic, sidecar/trace mutation, or coverage credit is added. The canonical
 contract owns exact counts, hashes, and completion evidence.
+
+## Checker Task 257C4C5 Private Capture-Identity Receipt Probe
+
+The implemented [C4C5 contract](../../task_contracts/en/CHECKER-FRAENKEL-NESTED-CAPTURE-IDENTITY-257C4C5.md)
+adds exactly
+`task257c4c5_real_imported_fixture_builds_capture_identity_handoff` in the
+existing private nested-capture leaf. The test reuses the exact C4C1-C4C4
+route, calls the public C4C5 producer directly, and asserts the sole public association from inner context/mapper
+term/reference/checker binding to resolver use `0` and resolved outer binding
+identity `1`.
+
+The probe is library-test-only. It adds no registry include, production
+dispatch, active route, Typed/Resolved installation, semantic capture, Core
+origin or parameter, diagnostic, sidecar/trace mutation, coverage credit, or
+Task-277B readiness. Checker-owner tests retain the default-deny corruption
+matrix.

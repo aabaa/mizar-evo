@@ -925,7 +925,8 @@ owner/acceptance、proof、fact、downstream IRはTasks 257B/257C/258以降に�
   `SourceFraenkelGeneratorBindingContextId`、
   `SourceFraenkelGeneratorUsePositionId`、
   `SourceFraenkelGeneratorBoundUseId`、
-  `SourceNestedFraenkelBinderUseId`
+  `SourceNestedFraenkelBinderUseId`、
+  `SourceNestedFraenkelCaptureIdentityId`
 
 literal top-level public item:
 
@@ -967,7 +968,12 @@ literal top-level public item:
   `SourceNestedFraenkelBinderUseTable`、
   `SourceNestedFraenkelBinderUseError`、
   `SourceNestedFraenkelBinderUseHandoff`、
-  `SourceNestedFraenkelBinderUseProducer`。
+  `SourceNestedFraenkelBinderUseProducer`、
+  `SourceNestedFraenkelCaptureIdentity`、
+  `SourceNestedFraenkelCaptureIdentityTable`、
+  `SourceNestedFraenkelCaptureIdentityError`、
+  `SourceNestedFraenkelCaptureIdentityHandoff`、
+  `SourceNestedFraenkelCaptureIdentityProducer`。
 
 対応:
 
@@ -979,7 +985,8 @@ literal top-level public item:
 | C4Aはexact opaque R2/277C/`TypedAst` snapshot上のbinding-context tableとnormalized-use-position tableをownする。 | C4A ID 2件、row/table 2組、handoff/error/producer。 | exact C4A checker test 4件とprivate F5 probe。 | term/reference/capture/semantic installなしでimplemented。 |
 | C4BはC4A position 3件を`BindingEnv::lookup`でone checker-local bindingへmapしone dense tableをpublishする。 | `SourceFraenkelGeneratorBoundUseId`、row/table/handoff/error/producer。 | exact C4B checker test 4件とprivate F5 bound-use probe。 | full retained C4A validation/zero semantic creditでimplemented。 |
 | C4C3はexact C4C2 nested two-binding/one-mapper-use relationをretained normal `TypedAst`へauthenticateし、immutable binder/use identity row 1件をpublishする。 | `SourceNestedFraenkelBinderUseId`、row/table/handoff/error/producer、private retained dependency validator。 | exact C4C3 checker test 4件とprivate real imported-fixture probe。 | Task252 occurrence/semantic capture/install/route/coverage creditなしでimplemented。 |
-| public enumはforward-compatible。 | public enum 7件すべての`#[non_exhaustive]`。 | `checker_public_enums_are_forward_compatible_and_documented`。 | exhaustive exceptionなしでguard。 |
+| C4C5はcomplete C4C4 mapper transactionをby-value consume/retainし、inner owner/mapper/reference/checker bindingからresolver identityへのimmutable receipt 1件をpublishする。 | `SourceNestedFraenkelCaptureIdentityId`、row/table/handoff/two-variant error/producer、complete C4C4 revalidation seam。 | exact C4C5 checker test 4件とprivate real imported-fixture probe 1件が全row field/cardinality/precedence/display/replay/empty captured stateをcoverする。 | Task255 dependency、Typed/Resolved install、semantic capture、Core origin、route、diagnostic、coverage creditなしでimplemented。 |
+| public enumはforward-compatible。 | public enum 8件すべての`#[non_exhaustive]`。 | `checker_public_enums_are_forward_compatible_and_documented`。 | exhaustive exceptionなしでguard。 |
 
 bounded gap: connective/quantifier/predicate truth、signature applicability、
 overload selection、formula fact/result、implicit theorem closure/acceptance、

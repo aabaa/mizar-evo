@@ -109,6 +109,7 @@ The dense ids are `SourceFormulaAtomicEdgeId` and
 | `SourceFraenkelGeneratorBindingContextError` | `#[non_exhaustive]`; callers must not exhaustively match Fraenkel generator binding-context validation failures. |
 | `SourceFraenkelGeneratorBoundUseError` | `#[non_exhaustive]`; callers must not exhaustively match Fraenkel generator bound-use validation failures. |
 | `SourceNestedFraenkelBinderUseError` | `#[non_exhaustive]`; callers must not exhaustively match nested Fraenkel binder/use validation failures. |
+| `SourceNestedFraenkelCaptureIdentityError` | `#[non_exhaustive]`; callers must not exhaustively match nested Fraenkel capture-identity validation failures. |
 | `SourcePredicateChainCompositionError` | `#[non_exhaustive]`; callers must not exhaustively match predicate-chain composition validation failures. |
 
 No exhaustive public enum exceptions are owned by this module.
@@ -962,3 +963,33 @@ C4C3 handoff by value and cannot bypass this validation. C4C3 itself creates no 
 verdict, diagnostic, installation, route, or coverage credit. Exact validation
 order, snapshot tags, default-deny matrix, tests, and completion evidence are
 owned by the contract.
+
+## Task 257C4C5 nested Fraenkel capture-identity receipt
+
+The implemented [C4C5 contract](../../task_contracts/en/CHECKER-FRAENKEL-NESTED-CAPTURE-IDENTITY-257C4C5.md)
+selects this existing Task-257C module as the sole owner of the first
+post-C4C4 capture-identity receipt. Its exact public family is the dense
+`SourceNestedFraenkelCaptureIdentityId`, immutable row/table/handoff,
+non-exhaustive `SourceNestedFraenkelCaptureIdentityError`, and
+`SourceNestedFraenkelCaptureIdentityProducer`.
+
+The producer consumes and retains one complete C4C4 handoff by value
+and publishes exactly one immutable association row. Row 0 ties inner owner
+context `2` / range `92..123`, mapper term `0`, mapper reference `0`, checker
+binding `0`, resolver use `0`, resolver binding `1`, and source ordinal `0`.
+The resolver binding identity, not spelling `x` or equality between unrelated
+numeric IDs, authenticates the association. Missing, extra, duplicate,
+reordered, stale, recovered, or mismatched state fails closed.
+
+The standalone handoff is the complete destination for this task. There is no
+`TypedAst` or `ResolvedTypedAst` installation, generalized capture or Core
+parameter order, Task-255 dependency, Core adapter, generated origin, semantic
+capture, or change to C4C4's empty `BindingEntry::captured`. The exact API,
+validation precedence, corruption oracle, tests, Core-33/Core-35 boundary, and
+forbidden behavior are owned once by the paired contract.
+
+Four checker-owner tests cover the exact public/debug surface, dependency
+precedence and both error strings, owner corruption, cardinality and every row
+field, deterministic replay, by-value retention, and empty captured state. The
+sole current consumer is the existing private imported-fixture leaf; it calls
+the complete C4C1-C4C5 route without registry or active dispatch.

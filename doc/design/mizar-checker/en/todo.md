@@ -7023,3 +7023,18 @@ selected only from fresh post-commit inventory.
   task-only commit, clean
   postcommit proof, and fresh readiness inventory; then stop per the user's
   one-task instruction even if a successor is ready.
+
+## Task 257C4C5 nested capture-identity receipt
+
+- [x] Freeze the human owner/oracle decision in the paired
+  [C4C5 contract](../../task_contracts/en/CHECKER-FRAENKEL-NESTED-CAPTURE-IDENTITY-257C4C5.md)
+  and complete independent specification/equivalence and bilingual/boundary
+  reviews with **NO FINDINGS**.
+- [x] Implement only the exactly-one immutable Task-257C association receipt,
+  C4C4 complete-validation seam, four checker tests, and one private imported-
+  fixture probe.
+- [x] Preserve empty C4C4 captured state and add no Task-255 dependency,
+  Typed/Resolved installation, semantic capture, Core/GeneratedOrigin output,
+  active route, diagnostic, coverage credit, or Task-277B readiness.
+- [ ] Complete source/documentation and final-quality reviews, all verification
+  gates, task-only commit, and clean postcommit proof.

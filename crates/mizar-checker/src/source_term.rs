@@ -1151,6 +1151,15 @@ impl SourceNestedFraenkelMapperPrimaryHandoff {
         }
         Ok(())
     }
+
+    /// Reauthenticates the complete retained C4C4 transaction.
+    ///
+    /// This is intentionally crate-private: a later structural association may
+    /// retain the handoff, but cannot bypass its C4C3, binding, arena, or
+    /// primary-term validation.
+    pub(crate) fn validate_complete(&self) -> Result<(), SourceNestedFraenkelMapperPrimaryError> {
+        self.validate()
+    }
 }
 
 /// A rejected nested Fraenkel mapper-primary transport.

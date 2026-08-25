@@ -414,3 +414,106 @@ fn task257c4c4_real_imported_fixture_builds_mapper_primary_handoff() {
     assert_eq!(reference.use_ordinal(), 1);
     assert!(reference.lexical_scope().is_none());
 }
+
+#[test]
+fn task257c4c5_real_imported_fixture_builds_capture_identity_handoff() {
+    use mizar_checker::{
+        binding_env::{BindingContextId, BindingId},
+        source_formula_composition::{
+            SourceNestedFraenkelBinderUseProducer, SourceNestedFraenkelCaptureIdentityId,
+            SourceNestedFraenkelCaptureIdentityProducer,
+        },
+        source_term::SourceNestedFraenkelMapperPrimaryProducer,
+    };
+    use mizar_session::SourceRange;
+
+    let output = task257c4c1_frontend_output(TASK257C4C1_CANONICAL_SOURCE, 3);
+    assert!(output.diagnostics.is_empty());
+    let ast = output.ast.expect("C4C5 canonical imported AST");
+    let module = mizar_resolve::resolved_ast::ModuleId::new(
+        output.source.package_id,
+        output.source.module_path,
+    );
+    let resolved = mizar_resolve::resolved_ast::SurfaceResolvedArena::lower(&ast, &module)
+        .expect("C4C5 resolver arena should lower");
+    let resolver = FraenkelGeneratorVariableSourceCollector::new(&ast, &module, &resolved)
+        .expect("C4C5 collector should validate the resolver arena")
+        .collect()
+        .expect("C4C5 collector should collect the exact relation");
+    let profile = typed_ast_from_surface_resolved_profile(&ast, module.clone(), &resolved);
+    let c4c3 = SourceNestedFraenkelBinderUseProducer::build(&resolver, &profile.typed_ast)
+        .expect("C4C3 checker identity handoff should build");
+    let c4c4 = SourceNestedFraenkelMapperPrimaryProducer::build(c4c3)
+        .expect("C4C4 mapper primary handoff should build");
+    let expected_dependency = c4c4.debug_text();
+    let handoff = SourceNestedFraenkelCaptureIdentityProducer::build(c4c4)
+        .expect("C4C5 capture identity handoff should build");
+
+    assert_eq!(handoff.source_id(), ast.source_id);
+    assert_eq!(handoff.module_id(), &module);
+    assert_eq!(handoff.dependency_fingerprint(), expected_dependency);
+    assert_eq!(handoff.identities().len(), 1);
+    assert!(handoff
+        .identities()
+        .get(SourceNestedFraenkelCaptureIdentityId::new(1))
+        .is_none());
+    let identity = handoff
+        .identities()
+        .get(SourceNestedFraenkelCaptureIdentityId::new(0))
+        .expect("sole C4C5 identity");
+    assert_eq!(identity.owner_context(), BindingContextId::new(2));
+    assert_eq!(
+        identity.owner_range(),
+        SourceRange {
+            source_id: ast.source_id,
+            start: 92,
+            end: 123,
+        }
+    );
+    assert_eq!(
+        identity.mapper_term(),
+        mizar_checker::source_term::SourcePrimaryTermId::new(0)
+    );
+    assert_eq!(
+        identity.mapper_reference(),
+        mizar_checker::source_term::SourcePrimaryTermReferenceId::new(0)
+    );
+    assert_eq!(identity.projected_binding(), BindingId::new(0));
+    assert_eq!(identity.resolver_use_index(), 0);
+    assert_eq!(
+        identity.resolver_binding(),
+        FraenkelGeneratorVariableBindingId::new(1)
+    );
+    assert_eq!(identity.source_ordinal(), 0);
+    assert_eq!(
+        handoff
+            .dependency()
+            .source_term()
+            .references()
+            .get(identity.mapper_reference())
+            .expect("retained mapper reference")
+            .binding(),
+        identity.projected_binding()
+    );
+    assert_eq!(
+        handoff
+            .dependency()
+            .dependency()
+            .binder_uses()
+            .get(mizar_checker::source_formula_composition::SourceNestedFraenkelBinderUseId::new(
+                0,
+            ))
+            .expect("retained resolver association")
+            .resolver_binding(),
+        identity.resolver_binding()
+    );
+    assert!(handoff
+        .dependency()
+        .binding_env()
+        .bindings()
+        .get(identity.projected_binding())
+        .expect("retained outer-x binding")
+        .captured
+        .identities()
+        .is_empty());
+}

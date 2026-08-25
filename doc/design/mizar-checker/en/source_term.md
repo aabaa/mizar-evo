@@ -190,6 +190,12 @@ leaf. There is no Typed/Resolved installation, active runner route,
 capture identity, generated-core parameter, type/sethood answer, semantic
 result, diagnostic, or coverage credit.
 
+C4C5 adds only a crate-private `validate_complete()` reauthentication seam to
+this C4C4 handoff. The separate Task-257C formula-composition owner consumes
+and retains the complete C4C4 handoff by value; `source_term` publishes no
+capture-identity table and keeps the C4C4 projected binding's captured state
+empty.
+
 ## Task 257B1 Consumer Addendum
 
 Task 257B1 adds one exact pass consumer with two additional

@@ -7051,3 +7051,20 @@ row/status/backlink, active route, diagnostic, semantic result, or executable/
 semantic coverage credit. Capture state, generated-core parameters,
 type/sethood answers, request/result, verdicts, installation, runner
 activation, and Task 277B remain deferred and zero-credit.
+
+## Task 257C4C5 Zero-Credit Capture-Identity Receipt Mapping
+
+The canonical [C4C5 contract](./task_contracts/en/CHECKER-FRAENKEL-NESTED-CAPTURE-IDENTITY-257C4C5.md)
+records one immutable Task-257C association from the exact C4C4 inner owner,
+mapper primary/reference, and projection-local checker binding to the retained
+C4C3 outer-generator resolved binding identity. Durable ownership is the
+checker [source-formula-composition section](./mizar-checker/en/source_formula_composition.md#task-257c4c5-nested-fraenkel-capture-identity-receipt),
+and its sole current consumer is the private
+[mizar-test harness probe](./mizar-test/en/harness.md#checker-task-257c4c5-private-capture-identity-receipt-probe).
+
+This receipt installs no capture state and changes no specification, `.miz`,
+expectation, trace row/status/backlink, active route, diagnostic, semantic
+result, or executable/semantic coverage credit. C4C4's captured field remains
+empty; Typed/Resolved installation, Task-255 participation, generated-core
+parameters/origins, type/sethood answers, runner activation, and Task 277B
+remain deferred and zero-credit.

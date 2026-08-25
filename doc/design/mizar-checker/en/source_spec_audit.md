@@ -1004,7 +1004,8 @@ Generated public newtypes:
   `SourceFraenkelGeneratorBindingContextId`,
   `SourceFraenkelGeneratorUsePositionId`,
   `SourceFraenkelGeneratorBoundUseId`,
-  `SourceNestedFraenkelBinderUseId`
+  `SourceNestedFraenkelBinderUseId`,
+  `SourceNestedFraenkelCaptureIdentityId`
 
 Literal top-level public items:
 
@@ -1046,7 +1047,12 @@ Literal top-level public items:
   `SourceNestedFraenkelBinderUseTable`,
   `SourceNestedFraenkelBinderUseError`,
   `SourceNestedFraenkelBinderUseHandoff`,
-  `SourceNestedFraenkelBinderUseProducer`.
+  `SourceNestedFraenkelBinderUseProducer`,
+  `SourceNestedFraenkelCaptureIdentity`,
+  `SourceNestedFraenkelCaptureIdentityTable`,
+  `SourceNestedFraenkelCaptureIdentityError`,
+  `SourceNestedFraenkelCaptureIdentityHandoff`,
+  `SourceNestedFraenkelCaptureIdentityProducer`.
 
 Correspondence:
 
@@ -1058,7 +1064,8 @@ Correspondence:
 | C4A owns one binding-context table and one normalized-use-position table over the exact opaque R2/277C/`TypedAst` snapshot. | `SourceFraenkelGeneratorBindingContextId`, `SourceFraenkelGeneratorUsePositionId`, both row/table pairs, handoff, error, and producer. | The four exact C4A checker tests and private F5 probe. | Implemented without term/reference, capture, or semantic installation. |
 | C4B maps exactly the three C4A positions through `BindingEnv::lookup` to the one checker-local binding and publishes one dense table. | `SourceFraenkelGeneratorBoundUseId`, row/table/handoff, error, and producer. | The four exact C4B checker tests and private F5 bound-use probe. | Implemented with full retained C4A validation and zero semantic credit. |
 | C4C3 authenticates the exact C4C2 nested two-binding/one-mapper-use relation against a retained normal `TypedAst` and publishes one immutable binder/use identity row. | `SourceNestedFraenkelBinderUseId`, row/table/handoff, error, producer, and private retained dependency validator. | The four exact C4C3 checker tests and private real imported-fixture probe. | Implemented with no Task-252 occurrence, semantic capture, installation, route, or coverage credit. |
-| Public enums remain forward-compatible. | `#[non_exhaustive]` on all seven public enums. | `checker_public_enums_are_forward_compatible_and_documented`. | Guarded; no exhaustive exception. |
+| C4C5 consumes and retains the complete C4C4 mapper transaction by value and publishes one immutable inner-owner/mapper/reference/checker-binding-to-resolver-identity receipt. | `SourceNestedFraenkelCaptureIdentityId`, row/table/handoff, two-variant error, producer, and complete C4C4 revalidation seam. | Four exact C4C5 checker tests and one private real imported-fixture probe cover every row field, cardinality, precedence, display strings, replay, and empty captured state. | Implemented with no Task-255 dependency, Typed/Resolved installation, semantic capture, Core origin, route, diagnostic, or coverage credit. |
+| Public enums remain forward-compatible. | `#[non_exhaustive]` on all eight public enums. | `checker_public_enums_are_forward_compatible_and_documented`. | Guarded; no exhaustive exception. |
 
 Bounded gaps: connective/quantifier/predicate truth, signature applicability,
 overload selection, formula facts/results, implicit theorem closure and

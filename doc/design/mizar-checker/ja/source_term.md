@@ -169,6 +169,11 @@ task contractだけがownする。Sole current consumerはexisting private neste
 test leafである。Typed/Resolved installation、active route、capture identity、generated-core
 parameter、type/sethood answer、semantic result、diagnostic、coverage creditは追加しない。
 
+C4C5はこのC4C4 handoffへcrate-private `validate_complete()` reauthentication seamだけを
+追加する。Separate Task257C formula-composition ownerがcomplete C4C4 handoffをby-value
+consume/retainし、`source_term`はcapture-identity tableをpublishせず、C4C4 projected
+bindingのcaptured stateをemptyに保つ。
+
 ## Task 257B1 Consumer Addendum
 
 Task 257B1はexact pass consumerへadditional `VariableReference`/`Value` row

@@ -6604,3 +6604,17 @@ post-commit fresh inventoryからだけ選択する。
   install、route、diagnostic、credit stateを追加しない。
 - [x] Source/docs/final-quality review、hard gate、task-only commit、clean postcommit proof、fresh inventoryを完了し、
   successorがreadyでもuserのone-task指示に従いstopする。
+
+## Task 257C4C5 nested capture-identity receipt
+
+- [x] Human owner/oracle decisionをpaired
+  [C4C5 contract](../../task_contracts/ja/CHECKER-FRAENKEL-NESTED-CAPTURE-IDENTITY-257C4C5.md)へ
+  freezeし、independent specification/equivalenceとbilingual/boundary reviewを
+  **NO FINDINGS**まで完了する。
+- [x] Exactly-one immutable Task257C association receipt、C4C4 complete-validation seam、
+  checker test 4件、private imported-fixture probe 1件だけをimplementする。
+- [x] Empty C4C4 captured stateを維持し、Task255 dependency、Typed/Resolved installation、
+  semantic capture、Core/GeneratedOrigin output、active route、diagnostic、coverage credit、
+  Task277B readinessを追加しない。
+- [ ] Source/documentation/final-quality review、全verification gate、task-only commit、clean
+  postcommit proofを完了する。

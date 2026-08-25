@@ -103,6 +103,7 @@ tableは`get`/source-ordered `iter`/`len`/`is_empty`だけを公開する。
 | `SourceFraenkelGeneratorBindingContextError` | `#[non_exhaustive]`。callerはFraenkel generator binding-context validation failureをexhaustive matchしない。 |
 | `SourceFraenkelGeneratorBoundUseError` | `#[non_exhaustive]`。callerはFraenkel generator bound-use validation failureをexhaustive matchしない。 |
 | `SourceNestedFraenkelBinderUseError` | `#[non_exhaustive]`。callerはnested Fraenkel binder/use validation failureをexhaustive matchしない。 |
+| `SourceNestedFraenkelCaptureIdentityError` | `#[non_exhaustive]`。callerはnested Fraenkel capture-identity validation failureをexhaustive matchしない。 |
 | `SourcePredicateChainCompositionError` | `#[non_exhaustive]`。callerはpredicate-chain composition validation failureをexhaustive matchしない。 |
 
 この module が所有する exhaustive public enum exception はない。
@@ -760,3 +761,27 @@ getterを公開しない。Separate Task252 ownerはcomplete C4C3 handoffをby-v
 bypassできない。C4C3自身はTask252 occurrence、`BindingEnv`/checker binding、capture、formula、type/sethood、request/result、verdict、
 diagnostic、install、route、coverage creditは作らない。Validation precedence/snapshot/default-deny/test/completion
 evidenceはcontractがownする。
+
+## Task 257C4C5 nested Fraenkel capture-identity receipt
+
+Implemented [C4C5 contract](../../task_contracts/ja/CHECKER-FRAENKEL-NESTED-CAPTURE-IDENTITY-257C4C5.md)は、
+post-C4C4最初のcapture-identity receiptのsole ownerとしてexisting Task257C moduleを選択する。
+Exact public familyはdense `SourceNestedFraenkelCaptureIdentityId`、immutable row/table/handoff、
+non-exhaustive `SourceNestedFraenkelCaptureIdentityError`、
+`SourceNestedFraenkelCaptureIdentityProducer`。
+
+Producerはcomplete C4C4 handoff 1件をby-value consume/retainし、immutable association row
+exact 1件をpublishする。Row 0はinner owner context `2` / range `92..123`、mapper term `0`、
+mapper reference `0`、checker binding `0`、resolver use `0`、resolver binding `1`、source ordinal
+`0`を結ぶ。Associationをauthenticateするのはresolver binding identityであり、spelling `x`や
+unrelated numeric ID equalityではない。Missing/extra/duplicate/reordered/stale/recovered/mismatchはfail closed。
+
+Standalone handoffが本taskのcomplete destination。`TypedAst`/`ResolvedTypedAst` installation、
+general capture/Core parameter order、Task255 dependency、Core adapter、generated origin、semantic
+capture、C4C4 empty `BindingEntry::captured`の変更はない。Exact API、validation precedence、
+corruption oracle、tests、Core33/Core35 boundary、forbidden behaviorはpaired contractが一度だけownする。
+
+Checker-owner test 4件がexact public/debug surface、dependency precedence/error string 2件、
+owner corruption、cardinality/全row field、deterministic replay、by-value retention、empty
+captured stateをcoverする。Sole current consumerはexisting private imported-fixture leafで、
+registry/active dispatchなしにcomplete C4C1-C4C5 routeをcallする。

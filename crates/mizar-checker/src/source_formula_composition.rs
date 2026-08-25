@@ -36,9 +36,10 @@ use crate::{
         SourceTemplateFraenkelStructuralCompositionId,
     },
     source_term::{
-        SourceNumericTypeRequestId, SourcePrimaryTermHandoff, SourcePrimaryTermId,
-        SourcePrimaryTermKind, SourcePrimaryTermRecovery, SourcePrimaryTermReferenceId,
-        SourcePrimaryTermReferenceRole, SourcePrimaryTermRole,
+        SourceNestedFraenkelMapperPrimaryHandoff, SourceNumericTypeRequestId,
+        SourcePrimaryTermHandoff, SourcePrimaryTermId, SourcePrimaryTermKind,
+        SourcePrimaryTermRecovery, SourcePrimaryTermReferenceId, SourcePrimaryTermReferenceRole,
+        SourcePrimaryTermRole,
     },
     typed_ast::{NodeRecoveryState, TypedArena, TypedAst, TypedNode, TypedNodeId},
 };
@@ -2408,6 +2409,7 @@ fn atomic_edge_role_key(role: SourceFormulaAtomicEdgeRole) -> &'static str {
 dense_id!(SourceFraenkelGeneratorBindingContextId);
 dense_id!(SourceFraenkelGeneratorUsePositionId);
 dense_id!(SourceNestedFraenkelBinderUseId);
+dense_id!(SourceNestedFraenkelCaptureIdentityId);
 
 /// One resolved nested Fraenkel mapper use and its distinct outer binder.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -2648,6 +2650,341 @@ impl SourceNestedFraenkelBinderUseProducer {
         handoff.validate()?;
         Ok(handoff)
     }
+}
+
+/// One exact C4C4 mapper-to-resolved-binding identity association.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceNestedFraenkelCaptureIdentity {
+    owner_context: BindingContextId,
+    owner_range: SourceRange,
+    mapper_term: SourcePrimaryTermId,
+    mapper_reference: SourcePrimaryTermReferenceId,
+    projected_binding: BindingId,
+    resolver_use_index: usize,
+    resolver_binding: FraenkelGeneratorVariableBindingId,
+    source_ordinal: usize,
+}
+
+impl SourceNestedFraenkelCaptureIdentity {
+    #[must_use]
+    pub const fn owner_context(&self) -> BindingContextId {
+        self.owner_context
+    }
+
+    #[must_use]
+    pub const fn owner_range(&self) -> SourceRange {
+        self.owner_range
+    }
+
+    #[must_use]
+    pub const fn mapper_term(&self) -> SourcePrimaryTermId {
+        self.mapper_term
+    }
+
+    #[must_use]
+    pub const fn mapper_reference(&self) -> SourcePrimaryTermReferenceId {
+        self.mapper_reference
+    }
+
+    #[must_use]
+    pub const fn projected_binding(&self) -> BindingId {
+        self.projected_binding
+    }
+
+    #[must_use]
+    pub const fn resolver_use_index(&self) -> usize {
+        self.resolver_use_index
+    }
+
+    #[must_use]
+    pub const fn resolver_binding(&self) -> FraenkelGeneratorVariableBindingId {
+        self.resolver_binding
+    }
+
+    #[must_use]
+    pub const fn source_ordinal(&self) -> usize {
+        self.source_ordinal
+    }
+}
+
+/// Dense source-ordered C4C4 capture-identity associations.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceNestedFraenkelCaptureIdentityTable {
+    rows: Vec<SourceNestedFraenkelCaptureIdentity>,
+}
+
+impl SourceNestedFraenkelCaptureIdentityTable {
+    #[must_use]
+    pub fn get(
+        &self,
+        id: SourceNestedFraenkelCaptureIdentityId,
+    ) -> Option<&SourceNestedFraenkelCaptureIdentity> {
+        self.rows.get(id.index())
+    }
+
+    pub fn iter(
+        &self,
+    ) -> impl Iterator<
+        Item = (
+            SourceNestedFraenkelCaptureIdentityId,
+            &SourceNestedFraenkelCaptureIdentity,
+        ),
+    > {
+        self.rows
+            .iter()
+            .enumerate()
+            .map(|(index, row)| (SourceNestedFraenkelCaptureIdentityId::new(index), row))
+    }
+
+    #[must_use]
+    pub const fn len(&self) -> usize {
+        self.rows.len()
+    }
+
+    #[must_use]
+    pub const fn is_empty(&self) -> bool {
+        self.rows.is_empty()
+    }
+}
+
+/// A rejected nested Fraenkel capture-identity receipt.
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum SourceNestedFraenkelCaptureIdentityError {
+    InvalidDependency,
+    InvalidCaptureIdentity {
+        capture_identity: SourceNestedFraenkelCaptureIdentityId,
+    },
+}
+
+impl fmt::Display for SourceNestedFraenkelCaptureIdentityError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::InvalidDependency => {
+                formatter.write_str("nested Fraenkel capture-identity dependency is invalid")
+            }
+            Self::InvalidCaptureIdentity { capture_identity } => write!(
+                formatter,
+                "nested Fraenkel capture identity {} is invalid",
+                capture_identity.index()
+            ),
+        }
+    }
+}
+
+impl Error for SourceNestedFraenkelCaptureIdentityError {}
+
+/// Immutable first receipt of the exact nested Fraenkel capture identity.
+#[derive(Clone, PartialEq, Eq)]
+pub struct SourceNestedFraenkelCaptureIdentityHandoff {
+    source_id: SourceId,
+    module_id: ModuleId,
+    dependency: SourceNestedFraenkelMapperPrimaryHandoff,
+    dependency_fingerprint: String,
+    identities: SourceNestedFraenkelCaptureIdentityTable,
+}
+
+impl SourceNestedFraenkelCaptureIdentityHandoff {
+    #[must_use]
+    pub const fn source_id(&self) -> SourceId {
+        self.source_id
+    }
+
+    #[must_use]
+    pub const fn module_id(&self) -> &ModuleId {
+        &self.module_id
+    }
+
+    #[must_use]
+    pub const fn dependency(&self) -> &SourceNestedFraenkelMapperPrimaryHandoff {
+        &self.dependency
+    }
+
+    #[must_use]
+    pub fn dependency_fingerprint(&self) -> &str {
+        &self.dependency_fingerprint
+    }
+
+    #[must_use]
+    pub const fn identities(&self) -> &SourceNestedFraenkelCaptureIdentityTable {
+        &self.identities
+    }
+
+    #[must_use]
+    pub fn debug_text(&self) -> String {
+        format!(
+            "source-nested-fraenkel-capture-identity-v1|module={}.{}|identities=1|dependency-fingerprint={:?}",
+            self.module_id.package().as_str(),
+            self.module_id.path().as_str(),
+            self.dependency_fingerprint,
+        )
+    }
+
+    fn validate(&self) -> Result<(), SourceNestedFraenkelCaptureIdentityError> {
+        if self.source_id != self.dependency.source_id()
+            || &self.module_id != self.dependency.module_id()
+            || self.dependency_fingerprint != self.dependency.debug_text()
+            || self.dependency.validate_complete().is_err()
+        {
+            return Err(SourceNestedFraenkelCaptureIdentityError::InvalidDependency);
+        }
+
+        let identity_id = SourceNestedFraenkelCaptureIdentityId::new(0);
+        if self.identities.len() != 1
+            || self
+                .identities
+                .get(SourceNestedFraenkelCaptureIdentityId::new(1))
+                .is_some()
+        {
+            return Err(
+                SourceNestedFraenkelCaptureIdentityError::InvalidCaptureIdentity {
+                    capture_identity: identity_id,
+                },
+            );
+        }
+        let identity = self.identities.get(identity_id).ok_or(
+            SourceNestedFraenkelCaptureIdentityError::InvalidCaptureIdentity {
+                capture_identity: identity_id,
+            },
+        )?;
+        if !validate_nested_fraenkel_capture_identity(&self.dependency, identity) {
+            return Err(
+                SourceNestedFraenkelCaptureIdentityError::InvalidCaptureIdentity {
+                    capture_identity: identity_id,
+                },
+            );
+        }
+        Ok(())
+    }
+
+    /// Reauthenticates the complete retained C4C4 dependency and receipt.
+    pub(crate) fn validate_complete(&self) -> Result<(), SourceNestedFraenkelCaptureIdentityError> {
+        self.validate()
+    }
+}
+
+/// Builds only the exact nested Fraenkel capture-identity receipt.
+#[derive(Debug, Clone, Copy)]
+pub struct SourceNestedFraenkelCaptureIdentityProducer;
+
+impl SourceNestedFraenkelCaptureIdentityProducer {
+    pub fn build(
+        dependency: SourceNestedFraenkelMapperPrimaryHandoff,
+    ) -> Result<SourceNestedFraenkelCaptureIdentityHandoff, SourceNestedFraenkelCaptureIdentityError>
+    {
+        dependency
+            .validate_complete()
+            .map_err(|_| SourceNestedFraenkelCaptureIdentityError::InvalidDependency)?;
+        let source_id = dependency.source_id();
+        let module_id = dependency.module_id().clone();
+        let handoff = SourceNestedFraenkelCaptureIdentityHandoff {
+            source_id,
+            module_id,
+            dependency_fingerprint: dependency.debug_text(),
+            dependency,
+            identities: SourceNestedFraenkelCaptureIdentityTable {
+                rows: vec![SourceNestedFraenkelCaptureIdentity {
+                    owner_context: BindingContextId::new(2),
+                    owner_range: SourceRange {
+                        source_id,
+                        start: 92,
+                        end: 123,
+                    },
+                    mapper_term: SourcePrimaryTermId::new(0),
+                    mapper_reference: SourcePrimaryTermReferenceId::new(0),
+                    projected_binding: BindingId::new(0),
+                    resolver_use_index: 0,
+                    resolver_binding: FraenkelGeneratorVariableBindingId::new(1),
+                    source_ordinal: 0,
+                }],
+            },
+        };
+        handoff.validate_complete()?;
+        Ok(handoff)
+    }
+}
+
+fn validate_nested_fraenkel_capture_identity(
+    dependency: &SourceNestedFraenkelMapperPrimaryHandoff,
+    identity: &SourceNestedFraenkelCaptureIdentity,
+) -> bool {
+    let owner_context = BindingContextId::new(2);
+    let projected_binding = BindingId::new(0);
+    let mapper_term = SourcePrimaryTermId::new(0);
+    let mapper_reference = SourcePrimaryTermReferenceId::new(0);
+    if identity.owner_context != owner_context
+        || identity.mapper_term != mapper_term
+        || identity.mapper_reference != mapper_reference
+        || identity.projected_binding != projected_binding
+        || identity.resolver_use_index != 0
+        || identity.resolver_binding != FraenkelGeneratorVariableBindingId::new(1)
+        || identity.source_ordinal != 0
+        || !exact_nested_resolver_range(identity.owner_range, dependency.source_id(), 92, 123)
+    {
+        return false;
+    }
+
+    let Some(owner) = dependency.binding_env().contexts().get(owner_context) else {
+        return false;
+    };
+    if owner.id != owner_context
+        || !matches!(
+            &owner.owner,
+            BindingContextOwner::SourceComprehension { source_range }
+                if *source_range == identity.owner_range
+        )
+        || owner.parent != Some(BindingContextId::new(1))
+        || owner.layer != BindingContextLayer::Expression
+        || owner.lexical_scope.is_some()
+        || !owner.bindings.is_empty()
+        || owner.visible_bindings.as_slice() != [projected_binding]
+        || owner.recovery != BindingContextRecovery::Normal
+    {
+        return false;
+    }
+
+    let Some(term) = dependency.source_term().terms().get(mapper_term) else {
+        return false;
+    };
+    let Some(reference) = dependency.source_term().references().get(mapper_reference) else {
+        return false;
+    };
+    let Some(binding) = dependency.binding_env().bindings().get(projected_binding) else {
+        return false;
+    };
+    let binder_use_id = SourceNestedFraenkelBinderUseId::new(0);
+    let Some(binder_use) = dependency.dependency().binder_uses().get(binder_use_id) else {
+        return false;
+    };
+
+    term.context() == owner_context
+        && exact_nested_resolver_range(term.source_range(), dependency.source_id(), 94, 95)
+        && term.source_ordinal() == 0
+        && term.kind() == SourcePrimaryTermKind::VariableReference
+        && term.role() == SourcePrimaryTermRole::Value
+        && term.recovery() == SourcePrimaryTermRecovery::Normal
+        && term.parent().is_none()
+        && reference.term() == mapper_term
+        && reference.binding() == projected_binding
+        && reference.role() == SourcePrimaryTermReferenceRole::Variable
+        && reference.lexical_scope().is_none()
+        && reference.use_ordinal() == 1
+        && binding.id == projected_binding
+        && matches!(
+            &binding.identity,
+            BinderIdentity::SourceBound { context, ordinal }
+                if *context == BindingContextId::new(1) && *ordinal == 0
+        )
+        && binding.owner_context == BindingContextId::new(1)
+        && binding.captured.identities().is_empty()
+        && binder_use.resolver_use_index() == identity.resolver_use_index
+        && binder_use.resolver_binding() == identity.resolver_binding
+        && binder_use.source_ordinal() == identity.source_ordinal
+        && dependency
+            .dependency()
+            .binder_uses()
+            .get(SourceNestedFraenkelBinderUseId::new(1))
+            .is_none()
 }
 
 #[derive(Clone, Copy)]
@@ -4654,8 +4991,9 @@ pub(crate) mod tests {
             SourceTemplateTypeParameterAssociationProducer,
         },
         source_term::{
-            SourceNumericTypeRequestInput, SourcePrimaryTermHandoffInput, SourcePrimaryTermInput,
-            SourcePrimaryTermProducer, SourcePrimaryTermReferenceInput,
+            SourceNestedFraenkelMapperPrimaryProducer, SourceNumericTypeRequestInput,
+            SourcePrimaryTermHandoffInput, SourcePrimaryTermInput, SourcePrimaryTermProducer,
+            SourcePrimaryTermReferenceInput,
         },
         typed_ast::{
             CoercionTable, InitialObligationTable, LocalTypeContextTable, TypeDiagnosticTable,
@@ -5418,6 +5756,197 @@ pub(crate) mod tests {
             SourceNestedFraenkelBinderUseProducer::build(&f5.resolver, &f5.typed_ast),
             Err(SourceNestedFraenkelBinderUseError::InvalidResolverDependency)
         ));
+    }
+
+    fn task257c4c5_dependency() -> SourceNestedFraenkelMapperPrimaryHandoff {
+        SourceNestedFraenkelMapperPrimaryProducer::build(task257c4c3_handoff_for_test())
+            .expect("Task257C4C4 test dependency")
+    }
+
+    #[test]
+    fn task257c4c5_builds_exact_capture_identity_handoff() {
+        let dependency = task257c4c5_dependency();
+        let expected_dependency = dependency.debug_text();
+        let source = dependency.source_id();
+        let module = dependency.module_id().clone();
+        let handoff = SourceNestedFraenkelCaptureIdentityProducer::build(dependency).unwrap();
+
+        assert_eq!(handoff.source_id(), source);
+        assert_eq!(handoff.module_id(), &module);
+        assert_eq!(handoff.dependency_fingerprint(), expected_dependency);
+        assert_eq!(handoff.identities().len(), 1);
+        assert!(!handoff.identities().is_empty());
+        assert!(
+            handoff
+                .identities()
+                .get(SourceNestedFraenkelCaptureIdentityId::new(1))
+                .is_none()
+        );
+        let rows = handoff.identities().iter().collect::<Vec<_>>();
+        assert_eq!(rows.len(), 1);
+        assert_eq!(rows[0].0, SourceNestedFraenkelCaptureIdentityId::new(0));
+        let identity = rows[0].1;
+        assert_eq!(identity.owner_context(), BindingContextId::new(2));
+        assert_eq!(
+            identity.owner_range(),
+            SourceRange {
+                source_id: source,
+                start: 92,
+                end: 123,
+            }
+        );
+        assert_eq!(identity.mapper_term(), SourcePrimaryTermId::new(0));
+        assert_eq!(
+            identity.mapper_reference(),
+            SourcePrimaryTermReferenceId::new(0)
+        );
+        assert_eq!(identity.projected_binding(), BindingId::new(0));
+        assert_eq!(identity.resolver_use_index(), 0);
+        assert_eq!(
+            identity.resolver_binding(),
+            FraenkelGeneratorVariableBindingId::new(1)
+        );
+        assert_eq!(identity.source_ordinal(), 0);
+        assert_eq!(
+            handoff.debug_text(),
+            format!(
+                "source-nested-fraenkel-capture-identity-v1|module={}.{}|identities=1|dependency-fingerprint={expected_dependency:?}",
+                module.package().as_str(),
+                module.path().as_str(),
+            )
+        );
+        assert!(handoff.validate_complete().is_ok());
+    }
+
+    #[test]
+    fn task257c4c5_rejects_dependency_owner_and_precedence_corruption() {
+        let handoff =
+            SourceNestedFraenkelCaptureIdentityProducer::build(task257c4c5_dependency()).unwrap();
+
+        let mut source = handoff.clone();
+        source.source_id = other_source_id();
+        assert_eq!(
+            source.validate_complete().unwrap_err().to_string(),
+            "nested Fraenkel capture-identity dependency is invalid"
+        );
+        assert!(matches!(
+            source.validate_complete(),
+            Err(SourceNestedFraenkelCaptureIdentityError::InvalidDependency)
+        ));
+
+        let mut module = handoff.clone();
+        module.module_id =
+            ModuleId::new(PackageId::new("pkg"), ModulePath::new("composition.other"));
+        assert!(matches!(
+            module.validate_complete(),
+            Err(SourceNestedFraenkelCaptureIdentityError::InvalidDependency)
+        ));
+
+        let mut fingerprint = handoff.clone();
+        fingerprint.dependency_fingerprint = "stale".to_owned();
+        assert!(matches!(
+            fingerprint.validate_complete(),
+            Err(SourceNestedFraenkelCaptureIdentityError::InvalidDependency)
+        ));
+
+        let mut owner_context = handoff.clone();
+        owner_context.identities.rows[0].owner_context = BindingContextId::new(1);
+        let mut owner_range = handoff.clone();
+        owner_range.identities.rows[0].owner_range.start = 91;
+        assert_eq!(
+            owner_context.validate_complete().unwrap_err().to_string(),
+            "nested Fraenkel capture identity 0 is invalid"
+        );
+        for corrupted in [owner_context, owner_range] {
+            assert!(matches!(
+                corrupted.validate_complete(),
+                Err(SourceNestedFraenkelCaptureIdentityError::InvalidCaptureIdentity { capture_identity })
+                    if capture_identity == SourceNestedFraenkelCaptureIdentityId::new(0)
+            ));
+        }
+
+        let mut precedence = handoff;
+        precedence.source_id = other_source_id();
+        precedence.identities.rows.clear();
+        assert!(matches!(
+            precedence.validate_complete(),
+            Err(SourceNestedFraenkelCaptureIdentityError::InvalidDependency)
+        ));
+    }
+
+    #[test]
+    fn task257c4c5_rejects_identity_cardinality_order_and_field_corruption() {
+        let handoff =
+            SourceNestedFraenkelCaptureIdentityProducer::build(task257c4c5_dependency()).unwrap();
+        let mut missing = handoff.clone();
+        missing.identities.rows.clear();
+        let mut extra = handoff.clone();
+        extra.identities.rows.push(extra.identities.rows[0].clone());
+        let mut mapper_term = handoff.clone();
+        mapper_term.identities.rows[0].mapper_term = SourcePrimaryTermId::new(1);
+        let mut mapper_reference = handoff.clone();
+        mapper_reference.identities.rows[0].mapper_reference = SourcePrimaryTermReferenceId::new(1);
+        let mut projected_binding = handoff.clone();
+        projected_binding.identities.rows[0].projected_binding = BindingId::new(1);
+        let mut resolver_use = handoff.clone();
+        resolver_use.identities.rows[0].resolver_use_index = 1;
+        let mut resolver_binding = handoff.clone();
+        resolver_binding.identities.rows[0].resolver_binding =
+            FraenkelGeneratorVariableBindingId::new(0);
+        let mut source_ordinal = handoff;
+        source_ordinal.identities.rows[0].source_ordinal = 1;
+
+        for corrupted in [
+            missing,
+            extra,
+            mapper_term,
+            mapper_reference,
+            projected_binding,
+            resolver_use,
+            resolver_binding,
+            source_ordinal,
+        ] {
+            assert!(matches!(
+                corrupted.validate_complete(),
+                Err(SourceNestedFraenkelCaptureIdentityError::InvalidCaptureIdentity { capture_identity })
+                    if capture_identity == SourceNestedFraenkelCaptureIdentityId::new(0)
+            ));
+        }
+    }
+
+    #[test]
+    fn task257c4c5_replays_deterministically_and_preserves_empty_capture_and_installation() {
+        let dependency = task257c4c5_dependency();
+        let dependency_before = dependency.clone();
+        let first = SourceNestedFraenkelCaptureIdentityProducer::build(dependency).unwrap();
+        let second =
+            SourceNestedFraenkelCaptureIdentityProducer::build(task257c4c5_dependency()).unwrap();
+
+        assert!(first == second);
+        assert_eq!(first.debug_text(), second.debug_text());
+        assert!(first.dependency() == &dependency_before);
+        assert_eq!(first.dependency().projection_arena().len(), 1);
+        assert_eq!(first.dependency().source_term().terms().len(), 1);
+        assert_eq!(first.dependency().source_term().references().len(), 1);
+        assert!(
+            first
+                .dependency()
+                .source_term()
+                .numeric_type_requests()
+                .is_empty()
+        );
+        assert!(
+            first
+                .dependency()
+                .binding_env()
+                .bindings()
+                .get(BindingId::new(0))
+                .expect("retained outer-x binding")
+                .captured
+                .identities()
+                .is_empty()
+        );
+        assert!(first.validate_complete().is_ok());
     }
 
     fn task257c4a_surface_ast(source: SourceId) -> syntax::SurfaceAst {
