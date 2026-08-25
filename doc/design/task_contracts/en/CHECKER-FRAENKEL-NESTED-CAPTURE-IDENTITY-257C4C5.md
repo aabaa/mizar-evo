@@ -12,9 +12,7 @@ and test
 
 ## Status, decision, and purpose
 
-**Status:** implementation, reviews, and repository verification complete;
-exact staging, the task-only implementation commit, and its immediate clean
-postcommit proof remain.
+**Status:** complete.
 
 Independent specification/equivalence, bilingual/boundary, implementation,
 test-sufficiency, source/documentation/API, and final-quality reviews report
@@ -328,9 +326,16 @@ quality review passes all `9/9` hard gates with no score cap and assigns a
 valid uncapped `100/100` (`20/20/15/15/10/10/5/5`). It confirms the sole
 owner, exact by-value identity receipt, default-deny oracle, empty captured
 state, zero-credit audit treatment, and the absence of Typed/Resolved or Core
-installation. Task 277B remains not-ready and zero-credit. Exact staging, the
-task-only implementation commit, and its immediate clean postcommit proof
-remain transactional exit work.
+installation. Task 277B remains not-ready and zero-credit.
+
+The reviewed task-only implementation committed as
+`72662d38dc42df7943e1d1db9f187fe1eced0da6` over baseline
+`17b9af203fefe65d48ed88758d356ff8cdfcd0a3`. `git show --check` passed; the
+immediate worktree was clean; `origin/main...HEAD` was `0/1`; protected stash
+`f65cf4a13752ec380710814a9ac6392ccb9d75d4`, all three authority hashes, source
+measurements, and contract counts remained unchanged. The closure-record
+commit hash and its subsequent clean proof are reported in the final handoff
+because a commit cannot contain its own hash.
 
 ## Forbidden behavior, reviews, and exit
 

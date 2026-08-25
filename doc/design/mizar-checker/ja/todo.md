@@ -6616,5 +6616,5 @@ post-commit fresh inventoryからだけ選択する。
 - [x] Empty C4C4 captured stateを維持し、Task255 dependency、Typed/Resolved installation、
   semantic capture、Core/GeneratedOrigin output、active route、diagnostic、coverage credit、
   Task277B readinessを追加しない。
-- [ ] Source/documentation/final-quality review、全verification gate、task-only commit、clean
+- [x] Source/documentation/final-quality review、全verification gate、task-only commit、clean
   postcommit proofを完了する。

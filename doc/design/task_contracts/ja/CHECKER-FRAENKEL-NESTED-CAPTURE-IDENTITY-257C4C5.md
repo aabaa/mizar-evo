@@ -10,8 +10,7 @@ Owning plan: [mizar-checker](../../mizar-checker/ja/00.crate_plan.md#task-index)
 
 ## Status、決定、目的
 
-**Status:** implementation、review、repository verificationはcomplete。Exact staging、
-task-only implementation commit、そのimmediate clean postcommit proofが残る。
+**Status:** complete。
 
 Independent specification/equivalence、bilingual/boundary、implementation、
 test-sufficiency、source/documentation/API、final-quality reviewはrecorded repair後
@@ -270,9 +269,15 @@ exact一致し、`doc/spec`とprotected artifactにdiffはない。
 score capなしで全`9/9` hard gateをPASSし、valid uncapped `100/100`
 （`20/20/15/15/10/10/5/5`）。Sole owner、exact by-value identity receipt、
 default-deny oracle、empty captured state、zero-credit audit、Typed/Resolved/Core
-installation不在を確認した。Task277Bはnot-ready/zero-creditのまま。Exact staging、
-task-only implementation commit、そのimmediate clean postcommit proofはtransactional
-exit workとして残る。
+installation不在を確認した。Task277Bはnot-ready/zero-creditのまま。
+
+Reviewed task-only implementationはbaseline
+`17b9af203fefe65d48ed88758d356ff8cdfcd0a3`上の
+`72662d38dc42df7943e1d1db9f187fe1eced0da6`としてcommitした。
+`git show --check`はPASS、immediate worktreeはclean、`origin/main...HEAD`は`0/1`。
+Protected stash `f65cf4a13752ec380710814a9ac6392ccb9d75d4`、authority hash 3件、
+source measurement、contract countは不変。Commitは自己hashを含められないため、
+closure-record commit hashとその後のclean proofはfinal handoffで報告する。
 
 ## Forbidden behavior、reviews、exit
 

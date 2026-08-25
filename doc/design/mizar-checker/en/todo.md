@@ -7036,5 +7036,5 @@ selected only from fresh post-commit inventory.
 - [x] Preserve empty C4C4 captured state and add no Task-255 dependency,
   Typed/Resolved installation, semantic capture, Core/GeneratedOrigin output,
   active route, diagnostic, coverage credit, or Task-277B readiness.
-- [ ] Complete source/documentation and final-quality reviews, all verification
+- [x] Complete source/documentation and final-quality reviews, all verification
   gates, task-only commit, and clean postcommit proof.
