@@ -7105,3 +7105,20 @@ GeneratedOrigin, semantic result, or Task-277B credit. The checker Task-257C
 family retains later standalone Core-ID-free projection ownership; Core Task
 33 retains fresh identity allocation and durable association, while Core Task
 35 retains post-Task-34 lowering and generated-origin ownership.
+
+## Task 257C4C8R Zero-Credit Two-Capture Resolver Mapping
+
+The canonical [C4C8R contract](./task_contracts/en/RESOLVE-FRAENKEL-NESTED-MULTI-CAPTURE-257C4C8R.md)
+maps the exact inactive C4C7 source into the existing resolver R2/C4C2
+binding/use collection. It reuses the existing public API and source-order
+rules to expose three resolved generator declarations and the two inner-mapper
+links to the outer identities. The Chapter-13 summary remains `partial`, and
+the existing trace requirement/status/backlinks remain unchanged.
+
+This planned mapping targets only the exact resolver `source_drift` and
+private-unit `test_gap`; they remain open until the frozen implementation and
+tests pass. It grants no generalized checker graph, capture state/order,
+Typed/Resolved destination, active route, semantic result, diagnostic,
+Task-252 occurrence, type/sethood evidence, Core identity, generated
+parameter/argument, GeneratedOrigin, or Task-277B credit. Those remain with
+the checker C4C8 and Core 33--35 successors after fresh dependency inventory.

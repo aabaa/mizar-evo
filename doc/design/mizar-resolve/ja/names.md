@@ -425,3 +425,17 @@ malformed/recovered/ambiguous/shadowed/extra/unsupported nestingはdefault-deny�
 exact normal `Element of NAT` shapeでなければならず、alternate normal typeはこのsliceでadmitしない。
 checker capture、Task-252
 occurrence、type/sethood、request、verdict、diagnostic、installation、production routeは作らない。
+
+## Resolver Task 257C4C8R Exact Nested Multi-Capture Identity
+
+Canonical [C4C8R contract](../../task_contracts/ja/RESOLVE-FRAENKEL-NESTED-MULTI-CAPTURE-257C4C8R.md)は
+same existing R2/C4C2 collectionをpublic API変更なしで拡張する。Exact C4C7 sourceで
+inner `z`、outer `x`、outer `y`をexisting global source orderのbinding ID `0/1/2`、
+inner bracket mapperの`x`/`y`をID `1`/`2`へのexisting `Mapper` link、global/role
+ordinal `0/0`、`1/1`としてpublishする。
+
+Private candidateは2 condition-free nested comprehensions、3 exact `Element of NAT`
+generator segments、exact `[x, y]` mapperだけをdefault-denyでadmitする。Complete arena
+revalidation、resolved-node-only identity、dense order、debug grammar、F5、one-capture C4C2は
+不変。Capture table、checker graph、Task252 occurrence、type/sethood、diagnostic、active route、
+Core identity、generated parameter/originは作らない。

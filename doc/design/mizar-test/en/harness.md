@@ -5840,3 +5840,18 @@ dispatch, independent Resolved input, active route, semantic capture, Core
 origin/parameter, diagnostic, sidecar/trace mutation, coverage credit, or
 Task-277B readiness. Checker-owner tests retain the full rejection and final-
 assembly matrix.
+
+## Resolver Task 257C4C8R Private Two-Capture Probe
+
+The canonical [C4C8R contract](../../task_contracts/en/RESOLVE-FRAENKEL-NESTED-MULTI-CAPTURE-257C4C8R.md)
+adds exactly `task257c4c8r_real_imported_fixture_links_both_outer_generators`
+to the existing private nested-capture leaf. It runs the exact inactive C4C7
+source through the existing frontend and resolver lowering, calls the existing
+public resolver collector directly, and asserts the exact `z/x/y` binding and
+`x/y` mapper-link relation, resolved provenance, deterministic replay, and
+unchanged empty type-elaboration import augmentation.
+
+The probe is library-test-only. It adds no registry include, production
+dispatch, active route, checker capture/installation, semantic result,
+diagnostic, sidecar/trace mutation, Core identity/origin, coverage credit, or
+Task-277B readiness.

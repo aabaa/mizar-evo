@@ -5355,3 +5355,16 @@ deterministic debug chunk、clone equality、unchanged empty C4C4 captured state
 Probeはlibrary-test-only。Registry include、production dispatch、independent Resolved input、active route、
 semantic capture、Core origin/parameter、diagnostic、sidecar/trace mutation、coverage credit、Task277B
 readinessを追加しない。Full rejection/final-assembly matrixはchecker-owner testがretainする。
+
+## Resolver Task 257C4C8R Private Two-Capture Probe
+
+Canonical [C4C8R contract](../../task_contracts/ja/RESOLVE-FRAENKEL-NESTED-MULTI-CAPTURE-257C4C8R.md)は
+existing private nested-capture leafへexact
+`task257c4c8r_real_imported_fixture_links_both_outer_generators`を追加する。Exact inactive
+C4C7 sourceをexisting frontend/resolver lowerへ通し、existing public collectorをdirect callして
+exact `z/x/y` binding、`x/y` mapper link、resolved provenance、deterministic replay、
+unchanged empty type-elaboration import augmentationだけをassertする。
+
+Probeはlibrary-test-only。Registry include、production dispatch、active route、checker
+capture/installation、semantic result、diagnostic、sidecar/trace mutation、Core identity/origin、
+coverage credit、Task277B readinessは追加しない。

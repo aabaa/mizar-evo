@@ -469,3 +469,20 @@ normal `Element of NAT` shape; an alternate normal type is not admitted by this
 slice. It creates no checker capture, Task-252
 occurrence, type/sethood value, request, verdict, diagnostic, installation, or
 production route.
+
+## Resolver Task 257C4C8R Exact Nested Multi-Capture Identity
+
+The canonical [C4C8R contract](../../task_contracts/en/RESOLVE-FRAENKEL-NESTED-MULTI-CAPTURE-257C4C8R.md)
+extends the same existing R2/C4C2 collection without a public API change. For
+the exact C4C7 source it publishes inner `z`, outer `x`, and outer `y` as
+binding IDs `0/1/2` in existing global source order, then publishes the inner
+bracket mapper's `x` and `y` references as existing `Mapper` links to IDs `1`
+and `2` with global/role ordinals `0/0` and `1/1`.
+
+The private candidate remains exact and default-deny: two condition-free
+nested comprehensions, three exact `Element of NAT` generator segments, and
+the exact `[x, y]` inner mapper only. Complete arena revalidation,
+resolved-node-only identities, dense ordering, the debug grammar, F5, and the
+one-capture C4C2 branch remain unchanged. This extension creates no capture
+table, checker graph, Task-252 occurrence, type/sethood result, diagnostic,
+active route, Core identity, or generated parameter/origin.
