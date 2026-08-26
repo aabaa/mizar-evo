@@ -85,6 +85,19 @@ kernel、MVM execution、code extraction、Steps 6/7 promotion を禁止する�
 Core 39/40 は executable pending intake と gated activation/trace を、Core 38/41
 は direct role と missing role を分離し、1 logical task/commit 境界を守る。
 
+### Core 33のC4C8 prerequisite refinement
+
+[Task CORE-SOURCE-CONTEXT-33P](../../task_contracts/ja/CORE-SOURCE-CONTEXT-33P.md)は
+checker C4C8後に選択されたzero-semantic prerequisiteを記録する。Core 33は
+authenticated Core-item-to-C4C8 associationとfresh snapshot-local Core variable
+allocationのsole future ownerであり、Core 35はCore 34後にcomplete associationだけを
+consumeする。Checker 248だけではC4C8 sliceに不十分である。そのclosed context
+profileはC4C8 resolver binding graphをcontaining functor symbol/itemへassociateしない。
+Future associationはstandalone immutable seamとしてreserveするが、owner bridge、exact
+destination/API、allocator mapping、captured parameter/argument order、complete
+default-deny oracleは未決定。したがってCore 33はuncheckedのままで、semantic
+implementation、Typed/Resolved slot、route、test/trace credit、Task 277B creditを認可しない。
+
 ## Accepted Algorithm CoreIr Task Graph
 
 Chapter 20 は次の semantic family と negative boundary を命名するのに十分である。

@@ -407,6 +407,12 @@ field, adapter, installer, route, semantics, or credit is created here. This is
 `design_drift` plus a future source-derived `test_gap`, not authority to invent
 semantic parameter order. Task 277B remains not ready and receives zero credit.
 
+The accepted documentation-only successor is now recorded by paired
+[Core Task 33P](CORE-SOURCE-CONTEXT-33P.md). It reserves candidate 1's
+standalone immutable association boundary without selecting the later API,
+destination, allocator mapping, or oracle. Actual Core33/C4C8 transport remains
+not ready.
+
 The stale precommit wording in the paired checker plan, mizar-test harness,
 and TODO records is `design_drift`. This paired contract, those four EN/JA
 owner/TODO pairs, and no other files form the exact 10-document closure scope.

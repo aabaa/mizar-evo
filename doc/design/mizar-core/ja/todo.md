@@ -513,8 +513,17 @@ F8 の spec 本文は同一変更(`cef7e109`: spec 03、05、13、17、18)で修
       ownership wordingだけを変え、source/fixture/expectation/status/test list/
       runner/coverage creditを変更しない。
 
+33P. **C4C8 Core-context documentation prerequisite。** [x]
+    - Paired [task contract](../../task_contracts/ja/CORE-SOURCE-CONTEXT-33P.md)は
+      user-selected zero-semantic方向を記録する。Core 33がreserved standalone immutable
+      seamを通じてfuture authenticated item/graph associationとfresh Core-variable
+      allocationをownする。API/destination/allocator mapping/semantic route/test/trace
+      credit/Task 277B creditはfreezeしない。
 33. **Source-derived Core context/item/binder/source map。** [ ]
     - checker 248を`MT10-CIR-TE`でconsumeし、type/proof/algorithm bodyは扱わない。
+      C4C8についてchecker 248だけでは不十分で、containing-owner bridge、association
+      destination/API、allocator mapping、complete default-deny oracleがTask 33Pの下で
+      未決定。Fresh authorityが全choiceを一意にするまでそのsliceを実装しない。
 34. **Source-derived type/attribute/evidence/coercion/view lowering。** [ ]
     - checker 249-251/Core 33を`MT10-CIR-TE`でconsumeする。Reusable conversion
       のみで、source `reconsider`はCore 37。

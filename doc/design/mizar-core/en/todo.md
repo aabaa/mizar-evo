@@ -537,8 +537,19 @@ work. Every finding maps to a task or a recorded disposition:
       Deferred trace rows change ownership wording only; no source, fixture,
       expectation, status, test list, runner, or coverage credit changes.
 
+33P. **C4C8 Core-context documentation prerequisite.** [x]
+    - The paired [task contract](../../task_contracts/en/CORE-SOURCE-CONTEXT-33P.md)
+      records the user-selected zero-semantic direction: Core 33 owns the
+      future authenticated item/graph association and fresh Core-variable
+      allocation through a reserved standalone immutable seam. It freezes no
+      API, destination, allocator mapping, semantic route, test/trace credit,
+      or Task 277B credit.
 33. **Source-derived Core context, items, binders, and source maps.** [ ]
     - Consume checker 248 through `MT10-CIR-TE`; no type/proof/algorithm body.
+      For C4C8, checker 248 is not sufficient: the containing-owner bridge,
+      association destination/API, allocator mapping, and complete default-
+      deny oracle remain unresolved under Task 33P. Do not implement that slice
+      until fresh authority makes every choice unique.
 34. **Source-derived type, attribute, evidence, coercion, and view lowering.** [ ]
     - Consume checker 249-251 and Core 33 through `MT10-CIR-TE`; reusable
       conversion only, while source `reconsider` remains Core 37.

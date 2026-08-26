@@ -98,6 +98,21 @@ Core 39 and 40 remain separate logical tasks: pending registration intake is
 executable independently, while accepted activation and traces are gated.
 Core 38 and 41 likewise keep direct roles separate from missing roles.
 
+### C4C8 prerequisite refinement for Core 33
+
+[Task CORE-SOURCE-CONTEXT-33P](../../task_contracts/en/CORE-SOURCE-CONTEXT-33P.md)
+records the zero-semantic prerequisite selected after checker C4C8. Core 33 is
+the sole future owner of the authenticated Core-item-to-C4C8 association and
+fresh snapshot-local Core variable allocation; Core 35 may only consume that
+complete association after Core 34. Checker 248 alone is not sufficient for
+the C4C8 slice: its closed context profiles do not associate the C4C8 resolver
+binding graph with the containing functor symbol/item. The future association
+is reserved as a standalone immutable seam, but its owner bridge, exact
+destination/API, allocator mapping, captured parameter/argument order, and
+complete default-deny oracle remain unresolved. Therefore Core 33 remains
+unchecked and no semantic implementation, Typed/Resolved slot, route, test,
+trace credit, or Task 277B credit is authorized.
+
 ## Accepted Algorithm CoreIr Task Graph
 
 Chapter 20 is sufficient to name the following semantic families and negative
