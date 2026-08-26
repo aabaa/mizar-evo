@@ -3141,7 +3141,7 @@ impl Parser {
         let mut recovery_nodes = Vec::new();
         let mut cursor = symbol.next_position;
         if self.is_type_arguments_start_at(cursor) {
-            let arguments = self.parse_type_arguments_at(cursor);
+            let arguments = self.parse_type_arguments_at(cursor, None);
             cursor = arguments.next_position;
             children.push(arguments.id);
             recovery_nodes.extend(arguments.recovery_nodes);
@@ -8948,6 +8948,14 @@ impl Parser {
     }
 
     fn parse_type_expression_at(&mut self, position: usize) -> Option<ParsedTypeNode> {
+        self.parse_type_expression_at_with_policy(position, None)
+    }
+
+    fn parse_type_expression_at_with_policy(
+        &mut self,
+        position: usize,
+        policy: Option<RequiredTypePolicy>,
+    ) -> Option<ParsedTypeNode> {
         if self.is_type_expression_boundary_at(position) {
             return None;
         }
@@ -8984,7 +8992,7 @@ impl Parser {
             children.push(attribute_chain);
         }
 
-        let head = self.parse_type_head_at(cursor)?;
+        let head = self.parse_type_head_at(cursor, policy)?;
         cursor = head.next_position;
         children.push(head.id);
         recovery_nodes.extend(head.recovery_nodes);
@@ -9006,7 +9014,9 @@ impl Parser {
         position: usize,
         policy: RequiredTypePolicy,
     ) -> Option<ParsedTypeNode> {
-        if let Some(type_expression) = self.parse_type_expression_at(position) {
+        if let Some(type_expression) =
+            self.parse_type_expression_at_with_policy(position, Some(policy))
+        {
             return Some(type_expression);
         }
 
@@ -9100,7 +9110,11 @@ impl Parser {
         }
     }
 
-    fn parse_type_head_at(&mut self, position: usize) -> Option<ParsedTypeNode> {
+    fn parse_type_head_at(
+        &mut self,
+        position: usize,
+        policy: Option<RequiredTypePolicy>,
+    ) -> Option<ParsedTypeNode> {
         let mut children = Vec::new();
         let mut recovery_nodes = Vec::new();
         let mut cursor = position;
@@ -9113,7 +9127,7 @@ impl Parser {
             children.push(symbol.id);
             cursor = symbol.next_position;
             if self.is_type_arguments_start_at(cursor) {
-                let arguments = self.parse_type_arguments_at(cursor);
+                let arguments = self.parse_type_arguments_at(cursor, policy);
                 children.push(arguments.id);
                 recovery_nodes.extend(arguments.recovery_nodes);
                 cursor = arguments.next_position;
@@ -9952,9 +9966,13 @@ impl Parser {
         cursor
     }
 
-    fn parse_type_arguments_at(&mut self, position: usize) -> ParsedTypeNode {
+    fn parse_type_arguments_at(
+        &mut self,
+        position: usize,
+        policy: Option<RequiredTypePolicy>,
+    ) -> ParsedTypeNode {
         if self.is_reserved_word_at(position, "of") || self.is_reserved_word_at(position, "over") {
-            return self.parse_of_over_type_arguments_at(position);
+            return self.parse_of_over_type_arguments_at(position, policy);
         }
         self.parse_bracket_type_arguments_at(position)
     }
@@ -9969,27 +9987,34 @@ impl Parser {
         self.parse_bracket_type_arguments_at(position)
     }
 
-    fn parse_of_over_type_arguments_at(&mut self, position: usize) -> ParsedTypeNode {
-        self.parse_of_over_type_arguments_at_with_options(position, false)
+    fn parse_of_over_type_arguments_at(
+        &mut self,
+        position: usize,
+        policy: Option<RequiredTypePolicy>,
+    ) -> ParsedTypeNode {
+        self.parse_of_over_type_arguments_at_with_options(position, false, policy)
     }
 
     fn parse_of_over_type_arguments_before_structure_fields_at(
         &mut self,
         position: usize,
     ) -> ParsedTypeNode {
-        self.parse_of_over_type_arguments_at_with_options(position, true)
+        self.parse_of_over_type_arguments_at_with_options(position, true, None)
     }
 
     fn parse_of_over_type_arguments_at_with_options(
         &mut self,
         position: usize,
         stop_before_field_list: bool,
+        policy: Option<RequiredTypePolicy>,
     ) -> ParsedTypeNode {
         let mut children = vec![self.token_node_ids[position]];
         let mut recovery_nodes = Vec::new();
         let mut cursor = position + 1;
         let mut expecting_argument = true;
         let mut saw_argument = false;
+        let stop_before_comprehension_generator =
+            matches!(policy, Some(RequiredTypePolicy::ComprehensionGenerator));
         while cursor < self.request.tokens.len() && !self.is_term_argument_list_boundary_at(cursor)
         {
             if stop_before_field_list && self.is_structure_field_list_opener_at(cursor) {
@@ -10027,11 +10052,15 @@ impl Parser {
                 cursor = term.next_position;
                 expecting_argument = false;
                 saw_argument = true;
-                if self.is_reserved_symbol_at(cursor, ",") {
+                let comprehension_generator_separator = stop_before_comprehension_generator
+                    && self.is_comprehension_generator_separator_at(cursor);
+                if self.is_reserved_symbol_at(cursor, ",") && !comprehension_generator_separator {
                     children.push(self.token_node_ids[cursor]);
                     cursor += 1;
                     expecting_argument = true;
-                } else if stop_before_field_list && self.is_structure_field_list_opener_at(cursor) {
+                } else if (stop_before_field_list && self.is_structure_field_list_opener_at(cursor))
+                    || comprehension_generator_separator
+                {
                     break;
                 } else if !self.is_term_argument_list_boundary_at(cursor) {
                     self.diagnose_malformed_term_expression(
@@ -10909,7 +10938,7 @@ impl Parser {
         if self.is_type_expression_boundary_at(position) {
             return None;
         }
-        let head = self.parse_type_head_at(position)?;
+        let head = self.parse_type_head_at(position, None)?;
         let id = self.events.emit(SyntaxEvent::Node {
             kind: SurfaceNodeKind::TypeExpression,
             range: self.covering_token_range(position, head.next_position),
@@ -16498,6 +16527,12 @@ impl Parser {
             || self.is_reserved_symbol_at(position, "]")
             || self.is_reserved_symbol_at(position, "}")
             || self.is_item_start_at(position)
+    }
+
+    fn is_comprehension_generator_separator_at(&self, position: usize) -> bool {
+        self.is_reserved_symbol_at(position, ",")
+            && self.is_identifier_at(position + 1)
+            && self.is_reserved_word_at(position + 2, "is")
     }
 
     fn is_field_argument_start_at(&self, position: usize) -> bool {

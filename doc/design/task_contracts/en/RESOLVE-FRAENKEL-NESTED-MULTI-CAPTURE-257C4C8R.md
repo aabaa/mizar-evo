@@ -12,10 +12,11 @@ and test
 
 ## Status, purpose, and readiness
 
-**Status:** frozen but implementation-blocked on the separate parser
-[C4C8P prerequisite](PARSER-FRAENKEL-GENERATOR-DELIMITER-257C4C8P.md). The
-resolver contract reviews are complete; source work may start only after C4C8P
-commits and a fresh preflight proves the exact C4C7 AST unrecovered.
+**Status:** frozen; the separate parser
+[C4C8P prerequisite](PARSER-FRAENKEL-GENERATOR-DELIMITER-257C4C8P.md) is
+implementation-complete in its task-only commit. Resolver contract reviews are
+complete. Source work becomes ready after that commit and one fresh preflight
+proves the exact C4C7 AST diagnostics-free and unrecovered.
 
 This is the dependency-minimal successor selected by the clean post-C4C7
 inventory. It extends the existing resolver-owned

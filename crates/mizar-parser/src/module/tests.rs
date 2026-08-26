@@ -11378,6 +11378,323 @@ fn parser_parses_set_comprehension_terms() {
 }
 
 #[test]
+fn parser_parses_parameterized_multiple_comprehension_generators() {
+    let source_id = source_id(170);
+    let output = parse(ParseRequest::new(
+        source_id,
+        Edition::new("2026"),
+        token_sequence(
+            source_id,
+            &[
+                ("theorem", ParserTokenKind::ReservedWord),
+                ("NestedCaptureTwo", ParserTokenKind::Identifier),
+                (":", ParserTokenKind::ReservedSymbol),
+                ("{", ParserTokenKind::ReservedSymbol),
+                ("{", ParserTokenKind::ReservedSymbol),
+                ("[", ParserTokenKind::ReservedSymbol),
+                ("x", ParserTokenKind::Identifier),
+                (",", ParserTokenKind::ReservedSymbol),
+                ("y", ParserTokenKind::Identifier),
+                ("]", ParserTokenKind::ReservedSymbol),
+                ("where", ParserTokenKind::ReservedWord),
+                ("z", ParserTokenKind::Identifier),
+                ("is", ParserTokenKind::ReservedWord),
+                ("Element", ParserTokenKind::UserSymbol),
+                ("of", ParserTokenKind::ReservedWord),
+                ("NAT", ParserTokenKind::UserSymbol),
+                ("}", ParserTokenKind::ReservedSymbol),
+                ("where", ParserTokenKind::ReservedWord),
+                ("x", ParserTokenKind::Identifier),
+                ("is", ParserTokenKind::ReservedWord),
+                ("Element", ParserTokenKind::UserSymbol),
+                ("of", ParserTokenKind::ReservedWord),
+                ("NAT", ParserTokenKind::UserSymbol),
+                (",", ParserTokenKind::ReservedSymbol),
+                ("y", ParserTokenKind::Identifier),
+                ("is", ParserTokenKind::ReservedWord),
+                ("Element", ParserTokenKind::UserSymbol),
+                ("of", ParserTokenKind::ReservedWord),
+                ("NAT", ParserTokenKind::UserSymbol),
+                ("}", ParserTokenKind::ReservedSymbol),
+                ("=", ParserTokenKind::ReservedSymbol),
+                ("p", ParserTokenKind::Identifier),
+                (";", ParserTokenKind::ReservedSymbol),
+            ],
+        ),
+        Vec::new(),
+    ));
+
+    assert!(
+        output.diagnostics.is_empty(),
+        "parameterized generators should parse without diagnostics: {:?}",
+        output.diagnostics
+    );
+    let ast = output
+        .ast
+        .expect("parameterized generators should keep a full AST");
+    assert_eq!(
+        count_nodes(&ast, |kind| matches!(
+            kind,
+            SurfaceNodeKind::SetComprehension
+        )),
+        2
+    );
+    assert_eq!(
+        count_nodes(&ast, |kind| matches!(
+            kind,
+            SurfaceNodeKind::ComprehensionVariableSegment
+        )),
+        3
+    );
+    assert_eq!(
+        count_nodes(&ast, |kind| matches!(
+            kind,
+            SurfaceNodeKind::ApplicationTerm
+        )),
+        1
+    );
+    assert_eq!(
+        count_nodes(&ast, |kind| matches!(
+            kind,
+            SurfaceNodeKind::ErrorRecovery(_)
+        )),
+        0
+    );
+
+    let outer = set_comprehension_term_for_label(&ast, "NestedCaptureTwo");
+    let outer_segments = structural_children(&ast, outer)
+        .into_iter()
+        .filter(|child| matches!(child.kind, SurfaceNodeKind::ComprehensionVariableSegment))
+        .collect::<Vec<_>>();
+    assert_eq!(outer_segments.len(), 2);
+    assert_eq!(
+        outer_segments
+            .iter()
+            .map(|segment| direct_token_texts(&ast, segment))
+            .collect::<Vec<_>>(),
+        vec![vec!["x", "is"], vec!["y", "is"],]
+    );
+    assert_eq!(
+        outer_segments
+            .iter()
+            .map(|segment| {
+                let types = structural_children(&ast, segment)
+                    .into_iter()
+                    .filter(|child| matches!(child.kind, SurfaceNodeKind::TypeExpression))
+                    .collect::<Vec<_>>();
+                assert_eq!(types.len(), 1);
+                subtree_token_texts(&ast, types[0])
+            })
+            .collect::<Vec<_>>(),
+        vec![vec!["Element", "of", "NAT"], vec!["Element", "of", "NAT"],]
+    );
+
+    let inner = structural_children(&ast, outer)
+        .into_iter()
+        .find(|child| matches!(child.kind, SurfaceNodeKind::TermExpression))
+        .and_then(|mapper| {
+            structural_children(&ast, mapper)
+                .into_iter()
+                .find(|child| matches!(child.kind, SurfaceNodeKind::SetComprehension))
+        })
+        .expect("outer mapper should be the inner comprehension");
+    let inner_segments = structural_children(&ast, inner)
+        .into_iter()
+        .filter(|child| matches!(child.kind, SurfaceNodeKind::ComprehensionVariableSegment))
+        .collect::<Vec<_>>();
+    assert_eq!(inner_segments.len(), 1);
+    assert_eq!(direct_token_texts(&ast, inner_segments[0]), vec!["z", "is"]);
+
+    let bracket_mapper = structural_children(&ast, inner)
+        .into_iter()
+        .find(|child| matches!(child.kind, SurfaceNodeKind::TermExpression))
+        .expect("inner mapper term expression");
+    let bracket = structural_children(&ast, bracket_mapper);
+    assert_eq!(bracket.len(), 1);
+    assert!(matches!(bracket[0].kind, SurfaceNodeKind::ApplicationTerm));
+    assert_eq!(direct_token_texts(&ast, bracket[0]), vec!["[", ",", "]"]);
+    let bracket_terms = structural_children(&ast, bracket[0])
+        .into_iter()
+        .filter(|child| matches!(child.kind, SurfaceNodeKind::TermExpression))
+        .collect::<Vec<_>>();
+    assert_eq!(bracket_terms.len(), 2);
+    assert_eq!(
+        bracket_terms
+            .iter()
+            .map(|term| subtree_token_texts(&ast, term))
+            .collect::<Vec<_>>(),
+        vec![vec!["x"], vec!["y"]]
+    );
+}
+
+#[test]
+fn parser_keeps_non_generator_comma_in_comprehension_type_arguments() {
+    let source_id = source_id(171);
+    let output = parse(ParseRequest::new(
+        source_id,
+        Edition::new("2026"),
+        token_sequence(
+            source_id,
+            &[
+                ("theorem", ParserTokenKind::ReservedWord),
+                ("NonGeneratorComma", ParserTokenKind::Identifier),
+                (":", ParserTokenKind::ReservedSymbol),
+                ("{", ParserTokenKind::ReservedSymbol),
+                ("x", ParserTokenKind::Identifier),
+                ("where", ParserTokenKind::ReservedWord),
+                ("x", ParserTokenKind::Identifier),
+                ("is", ParserTokenKind::ReservedWord),
+                ("Element", ParserTokenKind::UserSymbol),
+                ("of", ParserTokenKind::ReservedWord),
+                ("NAT", ParserTokenKind::UserSymbol),
+                (",", ParserTokenKind::ReservedSymbol),
+                ("y", ParserTokenKind::Identifier),
+                ("}", ParserTokenKind::ReservedSymbol),
+                ("=", ParserTokenKind::ReservedSymbol),
+                ("p", ParserTokenKind::Identifier),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("theorem", ParserTokenKind::ReservedWord),
+                ("NonGeneratorOverComma", ParserTokenKind::Identifier),
+                (":", ParserTokenKind::ReservedSymbol),
+                ("{", ParserTokenKind::ReservedSymbol),
+                ("x", ParserTokenKind::Identifier),
+                ("where", ParserTokenKind::ReservedWord),
+                ("x", ParserTokenKind::Identifier),
+                ("is", ParserTokenKind::ReservedWord),
+                ("Element", ParserTokenKind::UserSymbol),
+                ("over", ParserTokenKind::ReservedWord),
+                ("NAT", ParserTokenKind::UserSymbol),
+                (",", ParserTokenKind::ReservedSymbol),
+                ("y", ParserTokenKind::Identifier),
+                ("}", ParserTokenKind::ReservedSymbol),
+                ("=", ParserTokenKind::ReservedSymbol),
+                ("p", ParserTokenKind::Identifier),
+                (";", ParserTokenKind::ReservedSymbol),
+            ],
+        ),
+        Vec::new(),
+    ));
+
+    assert!(
+        output.diagnostics.is_empty(),
+        "non-generator comma should remain a type-argument comma: {:?}",
+        output.diagnostics
+    );
+    let ast = output
+        .ast
+        .expect("non-generator comma should keep a full AST");
+    assert_eq!(
+        count_nodes(&ast, |kind| matches!(
+            kind,
+            SurfaceNodeKind::SetComprehension
+        )),
+        2
+    );
+    assert_eq!(
+        count_nodes(&ast, |kind| matches!(
+            kind,
+            SurfaceNodeKind::ComprehensionVariableSegment
+        )),
+        2
+    );
+    assert_eq!(
+        count_nodes(&ast, |kind| matches!(
+            kind,
+            SurfaceNodeKind::ErrorRecovery(_)
+        )),
+        0
+    );
+    let type_arguments = ast
+        .nodes()
+        .iter()
+        .filter(|node| matches!(node.kind, SurfaceNodeKind::TypeArguments))
+        .collect::<Vec<_>>();
+    assert_eq!(type_arguments.len(), 2);
+    assert!(type_arguments.iter().all(|type_arguments| {
+        type_arguments
+            .children
+            .iter()
+            .filter_map(|id| ast.node(*id))
+            .filter(|node| matches!(node.kind, SurfaceNodeKind::TermExpression))
+            .count()
+            == 2
+    }));
+
+    let malformed = parse(ParseRequest::new(
+        source_id,
+        Edition::new("2026"),
+        token_sequence(
+            source_id,
+            &[
+                ("theorem", ParserTokenKind::ReservedWord),
+                ("MalformedContextual", ParserTokenKind::Identifier),
+                (":", ParserTokenKind::ReservedSymbol),
+                ("{", ParserTokenKind::ReservedSymbol),
+                ("x", ParserTokenKind::Identifier),
+                ("where", ParserTokenKind::ReservedWord),
+                ("x", ParserTokenKind::Identifier),
+                ("is", ParserTokenKind::ReservedWord),
+                ("Element", ParserTokenKind::UserSymbol),
+                ("of", ParserTokenKind::ReservedWord),
+                ("NAT", ParserTokenKind::UserSymbol),
+                (",", ParserTokenKind::ReservedSymbol),
+                ("y", ParserTokenKind::Identifier),
+                ("is", ParserTokenKind::ReservedWord),
+                ("}", ParserTokenKind::ReservedSymbol),
+                ("=", ParserTokenKind::ReservedSymbol),
+                ("p", ParserTokenKind::Identifier),
+                (";", ParserTokenKind::ReservedSymbol),
+            ],
+        ),
+        Vec::new(),
+    ));
+    assert_eq!(malformed.diagnostics.len(), 1);
+    assert_eq!(
+        malformed.diagnostics[0].code,
+        SyntaxDiagnosticCode::MalformedTypeExpression
+    );
+    assert_eq!(
+        malformed.diagnostics[0].message.as_ref(),
+        "expected type after set-comprehension generator `is`"
+    );
+    assert_eq!(malformed.diagnostics[0].primary, range(source_id, 67, 68));
+    assert_eq!(
+        malformed.diagnostics[0].recovery_note.as_deref(),
+        Some("repair the type expression before continuing")
+    );
+    let malformed_ast = malformed
+        .ast
+        .expect("malformed contextual generator should keep an AST");
+    assert_eq!(
+        count_nodes(&malformed_ast, |kind| matches!(
+            kind,
+            SurfaceNodeKind::ErrorRecovery(SyntaxRecoveryKind::MissingTypeExpression)
+        )),
+        1
+    );
+    assert_eq!(
+        count_nodes(&malformed_ast, |kind| matches!(
+            kind,
+            SurfaceNodeKind::ErrorRecovery(_)
+        )),
+        1
+    );
+    assert_eq!(
+        count_nodes(&malformed_ast, |kind| matches!(
+            kind,
+            SurfaceNodeKind::ComprehensionVariableSegment
+        )),
+        2
+    );
+    let malformed_comprehension =
+        set_comprehension_term_for_label(&malformed_ast, "MalformedContextual");
+    assert_eq!(
+        direct_token_texts(&malformed_ast, malformed_comprehension),
+        vec!["{", "where", ",", "}"]
+    );
+}
+
+#[test]
 fn parser_recovers_malformed_set_comprehensions() {
     let source_id = source_id(169);
     let output = parse(ParseRequest::new(

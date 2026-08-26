@@ -11,8 +11,10 @@ Blocked consumer: resolver
 
 ## Status, purpose, and readiness
 
-**Status:** frozen documentation prerequisite; implementation is pending
-independent specification/equivalence and bilingual/boundary reviews.
+**Status:** implementation complete and task-only commit pending. The parser
+prerequisite is satisfied by the commit containing this completion record;
+resolver C4C8R then requires one fresh unrecovered-AST preflight before source
+work starts.
 
 Fresh C4C8R implementation preflight found that the exact C4C7 source is
 currently parsed with one recovered outer segment. The generic `of`/`over`
@@ -134,3 +136,51 @@ Exit requires `9/9` hard gates and a valid score of at least `90/100`, exact
 task-only commit, clean postcommit proof, and fresh inventory. Successful
 completion unblocks the already-frozen resolver C4C8R implementation; it does
 not make checker C4C8, Core 33/35, or Task 277B ready.
+
+## Precommit implementation completion evidence
+
+The documentation prerequisite is commit
+`7e8e2abba8ee05e60247958545b47fbaf189b92e`. The implementation changes only
+the two frozen Rust paths. A private `RequiredTypePolicy::ComprehensionGenerator`
+context now reaches unbracketed `of`/`over` parsing and leaves only a comma
+followed by identifier plus reserved `is` for the comprehension generator
+loop. All other callers retain the generic path, and no public API, AST kind,
+diagnostic, lexer, resolver/checker/Core identity, or semantic route changes.
+
+The two exact test functions cover the nested `x`/`y` mapper arguments, all
+three generator segments, the outer `Element of NAT` type trees, contextual
+non-generator commas for both `of` and `over`, and a contextual missing-type
+case with exact fail-closed diagnostic and recovery evidence. Final source
+measurements are:
+
+| Path | Lines / bytes | SHA-256 |
+|---|---:|---|
+| `crates/mizar-parser/src/module.rs` | `16846 / 630350` | `18694e3942668b6694d3dee62417d79b841023e70e304cd7d56af6b6db7d845b` |
+| `crates/mizar-parser/src/module/tests.rs` | `19241 / 735658` | `2c43239857b0dac74f6dd5d5b8fbe04b8e12867f29707f16cfe6e4de8bf4b133` |
+
+Parser library state is exactly `231` tests with sorted raw-list SHA-256
+`d8dd5c1c7c1508794fd662a70ffdd2bb5dbf81ff56a329a8e789f4a995e5981e`.
+The focused tests, parser library `231/231`, parser lint `14/14`, mizar-test
+metadata `137/137`, and mizar-test lint `15/15` pass. Workspace all-target,
+all-feature warnings-denied Clippy and full tests, including benchmark targets,
+formatting, offline Cargo metadata, and `git diff --check` also pass. Initial independent
+implementation review reported **NO FINDINGS**. Independent test-sufficiency
+review found three bounded oracle gaps; after strengthening the same two test
+functions, finding-specific re-review reported **NO FINDINGS**. Broad
+source/documentation/API review found one stale source measurement after the
+Clippy repair; the synchronized evidence was refreshed and finding-specific
+re-review reported **NO FINDINGS**. Independent bilingual/boundary review also
+reported **NO FINDINGS**. Independent final-quality review reported
+**NO FINDINGS**, all `9/9` hard gates pass, and the valid uncapped score is
+`100/100` (`20/20/15/15/10/10/5/5`). Exact staging and the task-only commit
+remain the precommit exit steps.
+
+The first warnings-denied Clippy run found adjacent identical `break` arms.
+Their already-frozen predicates were combined without changing behavior;
+focused tests, formatting, and workspace Clippy then pass. The final source
+measurement above is after that repair.
+
+The protected C4C7 source, sidecar, and trace hashes reproduce the frozen
+values. Contract trees are `104/104`. `doc/spec`, every `.miz` and expectation,
+trace metadata, C4C4 captured state, active results, and Task 277B remain
+unchanged; this task grants zero semantic or coverage credit.

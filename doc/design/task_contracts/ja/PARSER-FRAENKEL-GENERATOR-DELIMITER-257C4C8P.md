@@ -9,8 +9,9 @@ Blocked consumerはresolver [C4C8R](RESOLVE-FRAENKEL-NESTED-MULTI-CAPTURE-257C4C
 
 ## Status、目的、readiness
 
-**Status:** frozen documentation prerequisite。Independent specification/equivalenceと
-bilingual/boundary review後にimplementationする。
+**Status:** implementation complete、task-only commit pending。本completion recordを含む
+commitでparser prerequisiteを満たし、その後resolver C4C8Rはsource work前にfreshな
+unrecovered-AST preflightを1回必要とする。
 
 C4C8R preflightでexact C4C7 sourceのouter second generatorがrecoveryになることを発見した。
 Generic `of`/`over` type-argument parserがouter `y`前のcommaをadditional argumentとして
@@ -82,3 +83,42 @@ focused tests、parser lib/lint、mizar-test metadata/lint、fmt、offline metad
 warnings-denied Clippy/full tests、diff/hash/count/protected checksを実行。Exitは9/9、valid
 90/100以上、exact commit、clean postcommit、fresh inventory。Completionはfrozen resolver
 C4C8Rだけをunblockし、checker C4C8/Core 33/35/Task277Bはreadyにしない。
+
+## Precommit implementation completion evidence
+
+Documentation prerequisiteはcommit
+`7e8e2abba8ee05e60247958545b47fbaf189b92e`。Implementationはfrozen Rust 2 pathだけを
+変更した。Private `RequiredTypePolicy::ComprehensionGenerator` contextをunbracketed
+`of`/`over` parsingまで伝播し、comma + identifier + reserved `is`だけをcomprehension
+generator loopへ残す。他callerはgeneric pathを保持し、public API/AST kind/diagnostic/
+lexer/resolver/checker/Core identity/semantic routeは変更しない。
+
+Exact 2 test functionはnested `x`/`y` mapper arguments、3 generator segments、outer
+`Element of NAT` type tree、`of`/`over`両方のcontextual non-generator comma、exact
+fail-closed diagnostic/recovery付きcontextual missing-type caseをcoverする。Final sourceは
+`module.rs`が`16846 / 630350`、SHA
+`18694e3942668b6694d3dee62417d79b841023e70e304cd7d56af6b6db7d845b`、
+`module/tests.rs`が`19241 / 735658`、SHA
+`2c43239857b0dac74f6dd5d5b8fbe04b8e12867f29707f16cfe6e4de8bf4b133`。
+
+Parser libraryはexact `231` tests、sorted raw-list SHA
+`d8dd5c1c7c1508794fd662a70ffdd2bb5dbf81ff56a329a8e789f4a995e5981e`。
+Focused、parser lib `231/231`、parser lint `14/14`、mizar-test metadata `137/137`、
+mizar-test lint `15/15`はPASS。Workspace all-target/all-feature warnings-denied Clippyと
+benchmark targetを含むfull tests、fmt、offline Cargo metadata、`git diff --check`もPASS。
+Initial independent implementation reviewは
+**NO FINDINGS**。Test-sufficiency reviewのbounded oracle gap 3件はsame 2 test functionを
+strengthenして解消し、finding-specific re-reviewは**NO FINDINGS**。Broad source/docs/API
+reviewのClippy repair後source measurement 1件は同期evidenceをrefreshし、finding-specific
+re-reviewは**NO FINDINGS**。Independent bilingual/boundary reviewも**NO FINDINGS**。
+Independent final-quality reviewも**NO FINDINGS**、`9/9` hard gates PASS、valid uncapped
+scoreは`100/100`（`20/20/15/15/10/10/5/5`）。Exact stagingとtask-only commitは残る
+precommit exit step。
+
+最初のwarnings-denied Clippyはadjacentな同一`break` armを1件検出した。Frozen predicateを
+behavior不変のままOR統合し、focused tests/fmt/workspace Clippyはその後PASS。上記source
+measurementはrepair後のfinal値。
+
+Protected C4C7 source/sidecar/trace hashはfrozen値を再現し、contract treeは`104/104`。
+`doc/spec`、全`.miz`/expectation、trace metadata、C4C4 captured、active result、Task277Bは
+不変。本taskはsemantic/coverage creditを付与しない。

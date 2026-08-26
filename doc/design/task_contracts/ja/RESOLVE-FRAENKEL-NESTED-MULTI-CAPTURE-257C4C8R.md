@@ -10,10 +10,10 @@ mizar-test [harness](../../mizar-test/ja/harness.md#resolver-task-257c4c8r-priva
 
 ## Status、目的、readiness
 
-**Status:** frozenだがseparate parser
-[C4C8P prerequisite](PARSER-FRAENKEL-GENERATOR-DELIMITER-257C4C8P.md)でimplementation-blocked。
-Resolver contract reviewはcomplete。C4C8P commitとfresh preflightでexact C4C7 ASTが
-unrecoveredと証明された後だけsource workへ進む。
+**Status:** frozen。Separate parser
+[C4C8P prerequisite](PARSER-FRAENKEL-GENERATOR-DELIMITER-257C4C8P.md)はtask-only commit内で
+implementation-complete。Resolver contract reviewはcomplete。そのcommit後、fresh preflightで
+exact C4C7 ASTがdiagnostics-free/unrecoveredと証明されればsource workがreadyになる。
 
 Clean post-C4C7 inventoryが選んだdependency-minimal successor。既存resolver-owned
 `FraenkelGeneratorVariableSourceCollection`をexact C4C7 sourceだけに拡張する。Public
