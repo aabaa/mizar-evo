@@ -5824,3 +5824,19 @@ dispatch, active route, Typed/Resolved installation, semantic capture, Core
 origin or parameter, diagnostic, sidecar/trace mutation, coverage credit, or
 Task-277B readiness. Checker-owner tests retain the default-deny corruption
 matrix.
+
+## Checker Task 257C4C6 Private Capture-Identity Installation Probe
+
+The frozen [C4C6 contract](../../task_contracts/en/CHECKER-FRAENKEL-NESTED-CAPTURE-IDENTITY-INSTALLATION-257C4C6.md)
+adds exactly
+`task257c4c6_real_imported_fixture_installs_typed_capture_identity_receipt` to
+the existing private nested-capture leaf. It reuses the exact C4C1-C4C5 route,
+installs the public receipt once into its authenticated `TypedAst`, and checks
+the borrowed getter, deterministic debug chunk, clone equality, and unchanged
+empty C4C4 captured state.
+
+The probe stays library-test-only. It adds no registry include, production
+dispatch, independent Resolved input, active route, semantic capture, Core
+origin/parameter, diagnostic, sidecar/trace mutation, coverage credit, or
+Task-277B readiness. Checker-owner tests retain the full rejection and final-
+assembly matrix.

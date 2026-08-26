@@ -785,3 +785,17 @@ Checker-owner test 4件がexact public/debug surface、dependency precedence/err
 owner corruption、cardinality/全row field、deterministic replay、by-value retention、empty
 captured stateをcoverする。Sole current consumerはexisting private imported-fixture leafで、
 registry/active dispatchなしにcomplete C4C1-C4C5 routeをcallする。
+
+## Task 257C4C6 Capture-Identity Installation Boundary
+
+Frozen [C4C6 contract](../../task_contracts/ja/CHECKER-FRAENKEL-NESTED-CAPTURE-IDENTITY-INSTALLATION-257C4C6.md)は
+本moduleをcomplete C4C5 receiptのsole validatorに維持し、crate-private typed-owner
+validation seamを1件追加する。Seamはfull C4C5 transactionをreplayし、destinationをexact
+retained C4C3 pre-install `TypedAst`に対してauthenticateする。Source/module equalityだけでは
+不足し、retained snapshotやunchecked constructorをpublicにしない。
+
+C4C3はalready-installed C4C6 ownerとpopulated resolved root、local context、type、fact、
+coercion、initial-obligation、typed-diagnostic tableをrejectし、later receiptがanother receiptを
+recursive retainすることとsemantic typed stateをcarryすることを防ぐ。Captured state、
+semantic result、Core identity、generated parameter/origin、ordering ruleは追加しない。
+Exact AST storage/final clone/mutual exclusionはlinked Typed/Resolved ownerがownする。

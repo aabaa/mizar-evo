@@ -68,21 +68,32 @@ note として記録する。
 
 ## Source Layout Inventory
 
-Task 257C4C5後もproduction layoutは32 paths / 196872 linesで、path SHA-256は
+Task 257C4C6後もproduction layoutは32 paths / 197561 linesで、path SHA-256は
 `9dc5b02f26679677e593ea755394d68533173d2be988b7ef1ddcfd84a41b9787`、current
 content SHA-256は
-`47be280901c7feb00ce3454dc8d59d15fed71e741183b2f2201b034ef0e117a3`である。
+`a3d99114263d46552a59a14055e60b5938c683a4dd555423a1bc409335712ccc`である。
 new/changed cohesive ownerのmeasurementは下のrowに記録する。
+
+Implemented Task 257C4C6はmodule/file path/crate dependency/production ownerを変更しない。
+Existing cohesive `source_formula_composition.rs`、`typed_ast.rs`、
+`resolved_typed_ast.rs` boundaryへprivate validation seam/boxed ownerとfrozen
+Typed/Resolved public method/error variantを追加する。Affected row 3件のmeasurementと32-path
+total content hashは以下のfinal値で、path count/path-list hashを固定維持する。New public
+module/enum type、syntax/Core dependency、runner route、diagnostic
+boundary、private splitは追加しない。Paired
+[C4C6 contract](../../task_contracts/ja/CHECKER-FRAENKEL-NESTED-CAPTURE-IDENTITY-INSTALLATION-257C4C6.md)参照。
+Zero-semantic table guard/frozen-test repair後のindependent implementationと
+bilingual/boundary re-reviewは**NO FINDINGS**。
 
 | Path | Lines | Boundary label | Owning specification | Split required | Hard-gate finding | Decision |
 |---|---:|---|---|---|---|---|
 | `src/lib.rs` | 53 | crate boundary and public module exports | `00.crate_plan.md` and `source_spec_audit.md` | no | no | documented syntax-free formula-composition、definition、statement、proof-local declaration、Task-277A source-template、Task-277B-L association moduleをexportするcrate root。 |
-| `src/typed_ast.rs` | 6897 | typed AST data model | `typed_ast.md` | no | no | definition transaction、separate proof-local owner、neutral Task-277A source-template slotを含むcohesive typed-AST table/validation/rendering/one-shot handoff。 |
+| `src/typed_ast.rs` | 7094 | typed AST data model | `typed_ast.md` | no | no | definition transaction、separate proof-local owner、neutral Task-277A source-template slot、boxed C4C6 receipt destinationを含むcohesive typed-AST table/validation/rendering/one-shot handoff。 |
 | `src/binding_env.rs` | 3266 | binding environment and resolver shell boundary | `binding_env.md` | no | no | source-formula、Task-258B1 statement-context identity、Task-258B2 unchanged context contract、Task-269A/269G installed-local test、Task-257C4A source-comprehension/source-bound identityを含むcohesive data layer。split不要。 |
 | `src/source_context.rs` | 1727 | syntax-free source-item / binding-context producer | `source_context.md` | no | no | cohesive な Task-248 validation、table construction、recovery、handoff、boundary test。split不要。 |
 | `src/source_atomic_formula.rs` | 8511 | syntax-free source atomic-formula producer | `source_atomic_formula.md` | no | no | cohesiveなTask-256/257C1 nine-table association、resolver provenance、predicate-segment/shared-boundary validation、cross-family ownership/fingerprint validation、deterministic rendering、install check、compatibility literal、test-only dependency corruption seam。split不要。 |
 | `src/source_composite_formula.rs` | 4700 | syntax-free source composite-formula/binder producer | `source_composite_formula.md` | no | no | exact Task-257A/B1/B2/B3 profiles、binding extension、wrapper/tree validation、rendering/install/corruption/profile testsを持つcohesive owner。 |
-| `src/source_formula_composition.rs` | 9940 | syntax-free cross-family formula composition producer | `source_formula_composition.md` | no | no | Task-257B1/B2/B3、Task-257C2/C3、completed Task-257C4A/C4B exact-F5 transport、completed Task-257C4C3 one-row nested binder/use identity transport、completed Task-257C4C5 exactly-one capture-identity receipt、retained dependency validation/corruption testsを持つcohesive owner。 |
+| `src/source_formula_composition.rs` | 10342 | syntax-free cross-family formula composition producer | `source_formula_composition.md` | no | no | Task-257B1/B2/B3、Task-257C2/C3、completed Task-257C4A/C4B exact-F5 transport、completed Task-257C4C3 one-row nested binder/use identity transport、completed Task-257C4C5 exactly-one capture-identity receipt、C4C6 final-owner/zero-semantic validation/corruption testsを持つcohesive owner。 |
 | `src/source_attribute.rs` | 3074 | syntax-free source-attribute producer | `source_attribute.md` | no | no | cohesiveなTask-250 flat table、environment/parent/arena/provenance validation、deterministic rendering、corruption test。split不要。 |
 | `src/source_attribute_definition.rs` | 1516 | syntax-free source attribute-definition producer | `source_attribute_definition.md` | no | no | Task-261 four-table handoff、exact resolver/lower/context ownership、obligation-preserving one-shot validation、deterministic rendering、Task-259/260 isolationをcohesiveにownする。 |
 | `src/source_evidence.rs` | 2413 | syntax-free source-evidence request/reference producer | `source_evidence.md` | no | no | cohesiveなTask-251 request/response table、upstream association、catalog/payload validation、deterministic rendering、corruption test。split不要。 |
@@ -104,7 +115,7 @@ new/changed cohesive ownerのmeasurementは下のrowに記録する。
 | `src/registration_resolution.rs` | 5897 | phase-7 registration validation, activation, and existential gates | `registration_resolution.md` | no | no | cohesiveなregistration data layer、gate logic、Task-259/260/264 obligation-kind serializer。behavior-neutral splitは不要。 |
 | `src/cluster_trace.rs` | 3948 | cluster closure and reduction trace recording | `cluster_trace.md` | no | no | cohesive な trace/replay module。behavior-neutral split は不要。 |
 | `src/overload_resolution.rs` | 8004 | phase-8 overload pipeline | `overload_resolution.md` | no | no | overload collection、template expansion、viability、specificity、selection、rendering、test は大きいが cohesive。downstream 利用後の ergonomics を monitor する。 |
-| `src/resolved_typed_ast.rs` | 8908 | final resolved typed AST assembly | `resolved_typed_ast.md` | no | no | clone-preserving definition/proof-local handoffとneutral Task-277A source-template replayを含むcohesive final projection。 |
+| `src/resolved_typed_ast.rs` | 8998 | final resolved typed AST assembly | `resolved_typed_ast.md` | no | no | clone-preserving definition/proof-local handoff、neutral Task-277A source-template replay、syntax-only C4C6 receipt cloneを含むcohesive final projection。 |
 | `src/determinism_suite.rs` | 1101 | test-only cross-module determinism suite | `00.crate_plan.md` and `source_spec_audit.md` | no | no | private `#[cfg(test)]` crate support として維持する。 |
 | `tests/lint_policy.rs` | 1955 | cross-cutting policy and audit guards | `source_spec_audit.md`, `bilingual_sync_audit.md`, and `module_boundary_audit.md` | no | no | Task-259--264、Task-269A、Task-277A、Task-277B-L module/spec/public-enum coverage、unchanged syntax boundaryをcentral guardする。 |
 | `tests/support/source_attribute_definition_unit.rs` | 1070 | test-only Task-261 unit-test support | `source_attribute_definition.md` and this audit | no | no | exact producer、obligation preservation、corruption、ownership、replay、cfg(test)-only Task-262 reverse-isolation fixture用non-integration child support。 |

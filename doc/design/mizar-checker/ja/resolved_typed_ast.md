@@ -1923,3 +1923,15 @@ post-implementation checkpointは
 `stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4`をobserveした。Task 277Aはcomplete、
 umbrella Task 277はpartialのままで、successorはseparately frozen/reviewedでなければ
 ならない。
+
+## Task 257C4C6 Capture-Identity Installation
+
+[C4C6 contract](../../task_contracts/ja/CHECKER-FRAENKEL-NESTED-CAPTURE-IDENTITY-INSTALLATION-257C4C6.md)は
+`ResolvedTypedAst`へsame private boxed C4C5 receipt ownerとborrowed getterを追加する。
+`ResolvedTypedAstInputs`にreceipt fieldはなく、final assemblyはinstalled `TypedAst`をrevalidateし、
+frozen syntax-only input profileとC4C3-authenticated empty internal semantic tableを要求し、
+全check後だけownerをcloneする。
+
+Absent slotはold debug byteを維持し、present chunkは`TypedAst`と同じformula-composition位置に置く。
+Semantic table、capture state、diagnostic、Core payload、generated origin/parameter、active routeは追加せず、
+callerはassembly中にtyped receiptをreplaceできない。

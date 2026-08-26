@@ -7065,6 +7065,24 @@ and its sole current consumer is the private
 This receipt installs no capture state and changes no specification, `.miz`,
 expectation, trace row/status/backlink, active route, diagnostic, semantic
 result, or executable/semantic coverage credit. C4C4's captured field remains
-empty; Typed/Resolved installation, Task-255 participation, generated-core
+empty. C4C5 itself performs no Typed/Resolved installation; C4C6 owns only the
+later structural receipt destination. Task-255 participation, generated-core
 parameters/origins, type/sethood answers, runner activation, and Task 277B
 remain deferred and zero-credit.
+
+## Task 257C4C6 Zero-Credit Capture-Identity Installation Mapping
+
+The canonical [C4C6 contract](./task_contracts/en/CHECKER-FRAENKEL-NESTED-CAPTURE-IDENTITY-INSTALLATION-257C4C6.md)
+maps the completed C4C5 receipt into authenticated immutable checker-owned
+`TypedAst` and `ResolvedTypedAst` destinations. Durable ownership is split only
+across the checker [C4C5 validation seam](./mizar-checker/en/source_formula_composition.md#task-257c4c6-capture-identity-installation-boundary),
+[typed owner](./mizar-checker/en/typed_ast.md#task-257c4c6-capture-identity-installation),
+[resolved owner](./mizar-checker/en/resolved_typed_ast.md#task-257c4c6-capture-identity-installation),
+and its private [mizar-test probe](./mizar-test/en/harness.md#checker-task-257c4c6-private-capture-identity-installation-probe).
+
+This structural destination changes no specification, `.miz`, expectation,
+trace row/status/backlink, diagnostic, active route, semantic result, or
+executable/semantic coverage credit. C4C4 captured state remains empty;
+capture-set semantics, Task-255 participation, Core identity transport,
+generated parameters/origins, parameter ordering, type/sethood answers,
+runner activation, and Task 277B remain deferred and zero-credit.

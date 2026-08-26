@@ -2006,3 +2006,14 @@ The task-only commit, post-commit proof, and accepted fresh-inventory STOP are
 closed at the language-local [historical postimplementation
 checkpoint](../../task_contracts/en/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md#historical-immediate-postimplementation-pre-closure-checkpoint),
 with no semantic successor selected.
+
+## Task 257C4C6 Implemented Bilingual Surface
+
+The canonical [C4C6 EN contract](../../task_contracts/en/CHECKER-FRAENKEL-NESTED-CAPTURE-IDENTITY-INSTALLATION-257C4C6.md)
+and its [JA companion](../../task_contracts/ja/CHECKER-FRAENKEL-NESTED-CAPTURE-IDENTITY-INSTALLATION-257C4C6.md)
+synchronize the sole added private-leaf test, reused C4C1-C4C5 path, Typed
+installation assertions, empty captured-state check, and library-test-only
+zero-credit boundary. The paired mizar-test plan and harness sections form the
+runner review surface. English is canonical; no exception exists.
+Independent bilingual/boundary re-review reports **NO FINDINGS** after the
+private probe gained the frozen debug/clone assertions.

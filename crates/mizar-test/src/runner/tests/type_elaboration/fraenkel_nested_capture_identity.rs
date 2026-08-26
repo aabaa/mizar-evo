@@ -517,3 +517,73 @@ fn task257c4c5_real_imported_fixture_builds_capture_identity_handoff() {
         .identities()
         .is_empty());
 }
+
+#[test]
+fn task257c4c6_real_imported_fixture_installs_typed_capture_identity_receipt() {
+    use mizar_checker::source_formula_composition::{
+        SourceNestedFraenkelBinderUseProducer, SourceNestedFraenkelCaptureIdentityProducer,
+    };
+    use mizar_checker::source_term::SourceNestedFraenkelMapperPrimaryProducer;
+
+    let output = task257c4c1_frontend_output(TASK257C4C1_CANONICAL_SOURCE, 3);
+    assert!(output.diagnostics.is_empty());
+    let ast = output.ast.expect("C4C6 canonical imported AST");
+    let module = mizar_resolve::resolved_ast::ModuleId::new(
+        output.source.package_id,
+        output.source.module_path,
+    );
+    let resolved = mizar_resolve::resolved_ast::SurfaceResolvedArena::lower(&ast, &module)
+        .expect("C4C6 resolver arena should lower");
+    let resolver = FraenkelGeneratorVariableSourceCollector::new(&ast, &module, &resolved)
+        .expect("C4C6 collector should validate the resolver arena")
+        .collect()
+        .expect("C4C6 collector should collect the exact relation");
+    let profile = typed_ast_from_surface_resolved_profile(&ast, module.clone(), &resolved);
+    let c4c3 = SourceNestedFraenkelBinderUseProducer::build(&resolver, &profile.typed_ast)
+        .expect("C4C3 checker identity handoff should build");
+    let c4c4 = SourceNestedFraenkelMapperPrimaryProducer::build(c4c3)
+        .expect("C4C4 mapper primary handoff should build");
+    let handoff = SourceNestedFraenkelCaptureIdentityProducer::build(c4c4)
+        .expect("C4C5 capture identity handoff should build");
+    let typed_debug_before = profile.typed_ast.debug_text();
+    let typed = profile
+        .typed_ast
+        .with_source_nested_fraenkel_capture_identity(handoff.clone())
+        .expect("C4C6 typed owner should install");
+
+    let typed_debug = typed.debug_text();
+    assert_eq!(typed, typed.clone());
+    assert_eq!(typed_debug, typed.clone().debug_text());
+    let debug_insertion_before = typed_debug_before
+        .find("nodes:\n")
+        .expect("C4C6 pre-install typed debug node section");
+    assert_eq!(
+        typed_debug,
+        format!(
+            "{}{}\n{}",
+            &typed_debug_before[..debug_insertion_before],
+            handoff.debug_text(),
+            &typed_debug_before[debug_insertion_before..]
+        )
+    );
+    assert_eq!(typed_debug.matches(&handoff.debug_text()).count(), 1);
+    assert!(typed
+        .source_nested_fraenkel_capture_identity()
+        .is_some_and(|installed| installed == &handoff));
+    assert!(typed
+        .source_nested_fraenkel_capture_identity()
+        .unwrap()
+        .dependency()
+        .binding_env()
+        .bindings()
+        .get(mizar_checker::binding_env::BindingId::new(0))
+        .expect("C4C6 retained binding")
+        .captured
+        .identities()
+        .is_empty());
+    let resolved = assemble_empty_resolved_typed_ast(&typed, Vec::new())
+        .expect("C4C6 syntax-only final clone should assemble");
+    assert!(resolved
+        .source_nested_fraenkel_capture_identity()
+        .is_some_and(|installed| installed == &handoff));
+}

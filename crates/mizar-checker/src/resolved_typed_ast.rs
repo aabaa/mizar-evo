@@ -25,7 +25,7 @@ use crate::{
     source_evidence::SourceEvidenceHandoff,
     source_formula_composition::{
         SourceConditionFormulaCompositionHandoff, SourceFormulaCompositionHandoff,
-        SourcePredicateChainCompositionHandoff,
+        SourceNestedFraenkelCaptureIdentityHandoff, SourcePredicateChainCompositionHandoff,
     },
     source_functor_definition::SourceFunctorDefinitionHandoff,
     source_mode_definition::{
@@ -132,6 +132,32 @@ dense_id!(CheckedTerminalGoalId);
 string_key!(ExprId);
 string_key!(SourceNodeRole);
 
+#[derive(Clone, PartialEq, Eq)]
+struct InstalledSourceNestedFraenkelCaptureIdentity {
+    handoff: Box<SourceNestedFraenkelCaptureIdentityHandoff>,
+}
+
+impl InstalledSourceNestedFraenkelCaptureIdentity {
+    fn new(handoff: SourceNestedFraenkelCaptureIdentityHandoff) -> Self {
+        Self {
+            handoff: Box::new(handoff),
+        }
+    }
+
+    const fn handoff(&self) -> &SourceNestedFraenkelCaptureIdentityHandoff {
+        &self.handoff
+    }
+}
+
+impl fmt::Debug for InstalledSourceNestedFraenkelCaptureIdentity {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter
+            .debug_struct("InstalledSourceNestedFraenkelCaptureIdentity")
+            .field("debug_text", &self.handoff.debug_text())
+            .finish()
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ResolvedTypedAst {
     source_id: SourceId,
@@ -154,6 +180,7 @@ pub struct ResolvedTypedAst {
     source_predicate_definition: Option<SourcePredicateDefinitionHandoff>,
     source_composite_formula: Option<SourceCompositeFormulaHandoff>,
     source_formula_composition: Option<SourceFormulaCompositionHandoff>,
+    source_nested_fraenkel_capture_identity: Option<InstalledSourceNestedFraenkelCaptureIdentity>,
     source_condition_formula_composition: Option<SourceConditionFormulaCompositionHandoff>,
     source_predicate_chain_composition: Option<SourcePredicateChainCompositionHandoff>,
     source_statement: Option<SourceStatementHandoff>,
@@ -282,6 +309,15 @@ impl ResolvedTypedAst {
 
     pub const fn source_formula_composition(&self) -> Option<&SourceFormulaCompositionHandoff> {
         self.source_formula_composition.as_ref()
+    }
+
+    pub const fn source_nested_fraenkel_capture_identity(
+        &self,
+    ) -> Option<&SourceNestedFraenkelCaptureIdentityHandoff> {
+        match self.source_nested_fraenkel_capture_identity.as_ref() {
+            Some(owner) => Some(owner.handoff()),
+            None => None,
+        }
     }
 
     pub const fn source_condition_formula_composition(
@@ -591,6 +627,16 @@ impl ResolvedTypedAst {
         }
         if let Some(source_formula_composition) = &self.source_formula_composition {
             output.push_str(&source_formula_composition.debug_text());
+        }
+        if let Some(source_nested_fraenkel_capture_identity) =
+            &self.source_nested_fraenkel_capture_identity
+        {
+            output.push_str(
+                &source_nested_fraenkel_capture_identity
+                    .handoff()
+                    .debug_text(),
+            );
+            output.push('\n');
         }
         if let Some(source_condition_formula_composition) =
             &self.source_condition_formula_composition
@@ -1618,6 +1664,7 @@ pub enum ResolvedTypedAstError {
     InvalidSourcePredicateDefinition,
     InvalidSourceCompositeFormula,
     InvalidSourceFormulaComposition,
+    InvalidSourceNestedFraenkelCaptureIdentity,
     InvalidSourceConditionFormulaComposition,
     InvalidSourcePredicateChainComposition,
     InvalidSourceStatement,
@@ -1742,6 +1789,9 @@ impl fmt::Display for ResolvedTypedAstError {
                 .write_str("resolved typed AST source composite-formula handoff is inconsistent"),
             Self::InvalidSourceFormulaComposition => formatter.write_str(
                 "resolved typed AST source formula-composition handoff is inconsistent",
+            ),
+            Self::InvalidSourceNestedFraenkelCaptureIdentity => formatter.write_str(
+                "resolved typed AST source nested Fraenkel capture-identity handoff is inconsistent",
             ),
             Self::InvalidSourceConditionFormulaComposition => formatter.write_str(
                 "resolved typed AST source condition/formula-composition handoff is inconsistent",
@@ -1938,6 +1988,20 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
     fn assemble(self) -> Result<ResolvedTypedAst, ResolvedTypedAstError> {
         let source_id = self.inputs.typed_ast.source_id();
         let module_id = self.inputs.typed_ast.module_id().clone();
+        let source_nested_fraenkel_capture_identity_handoff = self
+            .inputs
+            .typed_ast
+            .source_nested_fraenkel_capture_identity()
+            .cloned();
+        if let Some(handoff) = &source_nested_fraenkel_capture_identity_handoff
+            && (!handoff.validate_typed_owner(self.inputs.typed_ast)
+                || !source_nested_fraenkel_capture_identity_inputs_are_syntax_only(&self.inputs))
+        {
+            return Err(ResolvedTypedAstError::InvalidSourceNestedFraenkelCaptureIdentity);
+        }
+        let source_nested_fraenkel_capture_identity =
+            source_nested_fraenkel_capture_identity_handoff
+                .map(InstalledSourceNestedFraenkelCaptureIdentity::new);
         let source_proof_local_let_type = self
             .inputs
             .typed_ast
@@ -2937,6 +3001,7 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
             source_predicate_definition,
             source_composite_formula,
             source_formula_composition,
+            source_nested_fraenkel_capture_identity,
             source_condition_formula_composition,
             source_predicate_chain_composition,
             source_statement,
@@ -2975,6 +3040,31 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
             initial_obligations,
         })
     }
+}
+
+fn source_nested_fraenkel_capture_identity_inputs_are_syntax_only(
+    inputs: &ResolvedTypedAstInputs<'_>,
+) -> bool {
+    inputs.cluster_facts.is_empty()
+        && inputs.overload_collection.sites().is_empty()
+        && inputs.overload_collection.candidates().is_empty()
+        && inputs.overload_collection.diagnostics().is_empty()
+        && inputs.template_expansion.candidates().is_empty()
+        && inputs.template_expansion.expansions().is_empty()
+        && inputs.template_expansion.diagnostics().is_empty()
+        && inputs.viability.candidates().is_empty()
+        && inputs.viability.decisions().is_empty()
+        && inputs.viability.diagnostics().is_empty()
+        && inputs.specificity.candidates().is_empty()
+        && inputs.specificity.graphs().is_empty()
+        && inputs.specificity.diagnostics().is_empty()
+        && inputs.overload_selection.results().is_empty()
+        && inputs.overload_selection.inserted_views().is_empty()
+        && inputs.overload_selection.diagnostics().is_empty()
+        && inputs.expressions.is_empty()
+        && inputs.node_hints.is_empty()
+        && inputs.statement_semantics.is_none()
+        && inputs.statement_proofs.is_none()
 }
 
 fn source_proof_local_let_binding_typed_profile_is_empty(typed_ast: &TypedAst) -> bool {

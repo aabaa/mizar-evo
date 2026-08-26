@@ -2076,3 +2076,20 @@ post-implementation checkpoint observed
 `stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4`. Task 277A is
 complete while umbrella Task 277 remains partial; any successor must be
 separately frozen and reviewed.
+
+## Task 257C4C6 Capture-Identity Installation
+
+The [C4C6 contract](../../task_contracts/en/CHECKER-FRAENKEL-NESTED-CAPTURE-IDENTITY-INSTALLATION-257C4C6.md)
+adds one private optional boxed C4C5 receipt owner to `TypedAst`. The public
+surface is exactly the borrowed
+`source_nested_fraenkel_capture_identity()` getter and consuming one-shot
+`with_source_nested_fraenkel_capture_identity(...)` installer. `TypedAstParts`
+does not change.
+
+Installation replays complete C4C5 validation and requires exact equality with
+its retained C4C3 pre-install typed snapshot. Every existing public source
+installer rejects a present receipt, and the new installer rejects a reverse-
+order sibling or table mismatch. The absent slot preserves old debug bytes; a
+present slot renders the existing C4C5 debug chunk plus one newline immediately
+after the formula-composition position. The owner creates no capture state,
+semantic table, diagnostic, Core payload, or active route.

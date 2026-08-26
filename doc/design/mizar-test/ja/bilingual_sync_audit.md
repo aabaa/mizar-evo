@@ -1853,3 +1853,13 @@ checkpoint](../../task_contracts/ja/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSI
 **NO FINDINGS**。
 Task-only commit、post-commit proof、accepted fresh-inventory STOPはlanguage-local
 [historical postimplementation checkpoint](../../task_contracts/ja/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md#historical-immediate-postimplementation-pre-closure-checkpoint)でclosedし、semantic successorはselectしない。
+
+## Task 257C4C6 Implemented Bilingual Surface
+
+Canonical [C4C6 EN contract](../../task_contracts/en/CHECKER-FRAENKEL-NESTED-CAPTURE-IDENTITY-INSTALLATION-257C4C6.md)と
+[JA companion](../../task_contracts/ja/CHECKER-FRAENKEL-NESTED-CAPTURE-IDENTITY-INSTALLATION-257C4C6.md)は
+sole added private-leaf test、reused C4C1-C4C5 path、Typed installation assertion、empty captured-state
+check、library-test-only zero-credit boundaryを同期する。Paired mizar-test plan/harness sectionがrunner
+review surface。English canonical、exceptionなし。
+Private probeにfrozen debug/clone assertionを追加した後のindependent bilingual/boundary
+re-reviewは**NO FINDINGS**。

@@ -7038,3 +7038,20 @@ selected only from fresh post-commit inventory.
   active route, diagnostic, coverage credit, or Task-277B readiness.
 - [x] Complete source/documentation and final-quality reviews, all verification
   gates, task-only commit, and clean postcommit proof.
+
+## Task 257C4C6 nested capture-identity installation
+
+- [x] Freeze the human-selected boxed Typed/Resolved destination, exact final-
+  typed owner authentication, public getter/installer/error surface, mutual-
+  exclusion matrix, syntax-only final clone, and zero-semantic boundary in the
+  paired [C4C6 contract](../../task_contracts/en/CHECKER-FRAENKEL-NESTED-CAPTURE-IDENTITY-INSTALLATION-257C4C6.md).
+- [x] Complete independent specification/equivalence and bilingual/boundary/API
+  reviews with no blocking or high findings.
+- [x] Implement only the frozen checker receipt destination and seven private
+  tests; preserve C4C4 empty captured state and add no Core/GeneratedOrigin,
+  active route, diagnostic, coverage credit, or Task-277B readiness.
+- [x] Complete implementation/test/source-documentation re-reviews and all
+  focused, package, workspace, metadata, formatting, and protected checks.
+- [x] Complete final-quality `9/9` hard-gate scoring at an uncapped `100/100`.
+- [ ] Complete exact staging, task-only commit, clean postcommit proof, and
+  fresh successor inventory.

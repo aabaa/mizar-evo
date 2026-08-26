@@ -5343,3 +5343,15 @@ identity `1`へのsole public associationをassertする。
 Probeはlibrary-test-only。Registry include、production dispatch、active route、Typed/Resolved
 installation、semantic capture、Core origin/parameter、diagnostic、sidecar/trace mutation、
 coverage credit、Task277B readinessを追加しない。Default-deny corruption matrixはchecker-owner testがretainする。
+
+## Checker Task 257C4C6 Private Capture-Identity Installation Probe
+
+Frozen [C4C6 contract](../../task_contracts/ja/CHECKER-FRAENKEL-NESTED-CAPTURE-IDENTITY-INSTALLATION-257C4C6.md)は
+existing private nested-capture leafへexact
+`task257c4c6_real_imported_fixture_installs_typed_capture_identity_receipt`を追加する。Exact
+C4C1-C4C5 routeをreuseし、public receiptをauthenticated `TypedAst`へ1回installしてborrowed getter、
+deterministic debug chunk、clone equality、unchanged empty C4C4 captured stateを確認する。
+
+Probeはlibrary-test-only。Registry include、production dispatch、independent Resolved input、active route、
+semantic capture、Core origin/parameter、diagnostic、sidecar/trace mutation、coverage credit、Task277B
+readinessを追加しない。Full rejection/final-assembly matrixはchecker-owner testがretainする。

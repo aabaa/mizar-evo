@@ -1940,3 +1940,16 @@ post-implementation checkpointは
 `stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4`をobserveした。Task 277Aはcomplete、
 umbrella Task 277はpartialのままで、successorはseparately frozen/reviewedでなければ
 ならない。
+
+## Task 257C4C6 Capture-Identity Installation
+
+[C4C6 contract](../../task_contracts/ja/CHECKER-FRAENKEL-NESTED-CAPTURE-IDENTITY-INSTALLATION-257C4C6.md)は
+`TypedAst`へprivate optional boxed C4C5 receipt ownerを1件追加する。Public surfaceはborrowed
+`source_nested_fraenkel_capture_identity()` getterとconsuming one-shot
+`with_source_nested_fraenkel_capture_identity(...)` installerだけ。`TypedAstParts`は変更しない。
+
+Installationはcomplete C4C5 validationをreplayし、retained C4C3 pre-install typed snapshotとの
+exact equalityを要求する。Every existing public source installerはpresent receiptをrejectし、new
+installerはreverse-order sibling/table mismatchをrejectする。Absent slotはold debug byteを維持し、
+present slotはformula-composition位置直後にexisting C4C5 debug chunkとnewline 1件をrenderする。
+Capture state、semantic table、diagnostic、Core payload、active routeは作らない。

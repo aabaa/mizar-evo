@@ -993,3 +993,19 @@ precedence and both error strings, owner corruption, cardinality and every row
 field, deterministic replay, by-value retention, and empty captured state. The
 sole current consumer is the existing private imported-fixture leaf; it calls
 the complete C4C1-C4C5 route without registry or active dispatch.
+
+## Task 257C4C6 Capture-Identity Installation Boundary
+
+The frozen [C4C6 contract](../../task_contracts/en/CHECKER-FRAENKEL-NESTED-CAPTURE-IDENTITY-INSTALLATION-257C4C6.md)
+keeps this module as sole validator of the complete C4C5 receipt and adds one
+crate-private typed-owner validation seam. The seam replays the full C4C5
+transaction and authenticates the destination against the exact retained C4C3
+pre-install `TypedAst`; source/module equality alone is insufficient. No
+retained snapshot or unchecked constructor becomes public.
+
+C4C3 rejects an already installed C4C6 owner and any populated resolved root,
+local context, type, fact, coercion, initial-obligation, or typed-diagnostic
+table, so a later receipt cannot recursively retain another receipt or carry
+semantic typed state. The seam installs no captured state, semantic result,
+Core identity, generated parameter/origin, or ordering rule. Exact AST storage,
+final clone, and mutual exclusion belong to the linked Typed/Resolved owners.

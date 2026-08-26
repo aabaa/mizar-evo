@@ -2861,6 +2861,13 @@ impl SourceNestedFraenkelCaptureIdentityHandoff {
     pub(crate) fn validate_complete(&self) -> Result<(), SourceNestedFraenkelCaptureIdentityError> {
         self.validate()
     }
+
+    pub(crate) fn validate_typed_owner(&self, typed_ast: &TypedAst) -> bool {
+        self.validate_complete().is_ok()
+            && typed_ast.matches_source_nested_fraenkel_capture_identity_snapshot(
+                &self.dependency.dependency().dependencies.typed_ast,
+            )
+    }
 }
 
 /// Builds only the exact nested Fraenkel capture-identity receipt.
@@ -3086,7 +3093,18 @@ fn validate_nested_fraenkel_typed(
     typed_ast: &TypedAst,
     profile: NestedFraenkelResolverProfile,
 ) -> Option<NestedFraenkelTypedProfile> {
-    if !has_complete_unique_normal_typed_projection(typed_ast) {
+    if typed_ast
+        .source_nested_fraenkel_capture_identity()
+        .is_some()
+        || typed_ast.resolved_root().is_some()
+        || !typed_ast.contexts().is_empty()
+        || !typed_ast.types().is_empty()
+        || !typed_ast.facts().is_empty()
+        || !typed_ast.coercions().is_empty()
+        || !typed_ast.initial_obligations().is_empty()
+        || !typed_ast.diagnostics().is_empty()
+        || !has_complete_unique_normal_typed_projection(typed_ast)
+    {
         return None;
     }
     let definition =
@@ -4973,7 +4991,10 @@ pub(crate) mod tests {
             OverloadSiteResolutionInput, SpecificityComparisonInput, SpecificityGraphOutput,
             TemplateExpansionOutput,
         },
-        resolved_typed_ast::{ResolvedTypedAst, ResolvedTypedAstInputs},
+        resolved_typed_ast::{
+            ResolvedNodeKindHint, ResolvedNodeKindHintKind, ResolvedTypedAst,
+            ResolvedTypedAstError, ResolvedTypedAstInputs, SourceNodeRole,
+        },
         source_atomic_formula::{
             SourceAtomicEdgeInput, SourceAtomicFormulaHandoffInput, SourceAtomicFormulaInput,
             SourceAtomicFormulaProducer, SourceAtomicRequestInput,
@@ -4996,9 +5017,10 @@ pub(crate) mod tests {
             SourcePrimaryTermReferenceInput,
         },
         typed_ast::{
-            CoercionTable, InitialObligationTable, LocalTypeContextTable, TypeDiagnosticTable,
-            TypeFactTable, TypeTable, TypedArenaBuilder, TypedAst, TypedAstError, TypedAstParts,
-            TypedNode, TypedNodeId, TypedSiteRef,
+            CoercionTable, InitialObligationTable, LocalTypeContextTable,
+            StatementTransportTableForTest, TypeDiagnosticTable, TypeFactTable, TypeTable,
+            TypedArenaBuilder, TypedAst, TypedAstError, TypedAstParts, TypedNode, TypedNodeId,
+            TypedSiteRef,
         },
     };
     use mizar_resolve::{
@@ -5761,6 +5783,386 @@ pub(crate) mod tests {
     fn task257c4c5_dependency() -> SourceNestedFraenkelMapperPrimaryHandoff {
         SourceNestedFraenkelMapperPrimaryProducer::build(task257c4c3_handoff_for_test())
             .expect("Task257C4C4 test dependency")
+    }
+
+    fn task257c4c6_handoff() -> SourceNestedFraenkelCaptureIdentityHandoff {
+        SourceNestedFraenkelCaptureIdentityProducer::build(task257c4c5_dependency())
+            .expect("Task257C4C5 test dependency")
+    }
+
+    fn task257c4c6_typed_and_handoff() -> (TypedAst, SourceNestedFraenkelCaptureIdentityHandoff) {
+        let fixture = task257c4c3_fixture();
+        let handoff = SourceNestedFraenkelCaptureIdentityProducer::build(
+            SourceNestedFraenkelMapperPrimaryProducer::build(
+                SourceNestedFraenkelBinderUseProducer::build(&fixture.resolver, &fixture.typed_ast)
+                    .expect("C4C3 test dependency"),
+            )
+            .expect("C4C4 test dependency"),
+        )
+        .expect("C4C5 test dependency");
+        (fixture.typed_ast, handoff)
+    }
+
+    fn task257c4c6_assemble_resolved(
+        typed_ast: &TypedAst,
+    ) -> Result<ResolvedTypedAst, ResolvedTypedAstError> {
+        task257c4c6_assemble_resolved_with_hints(typed_ast, Vec::new())
+    }
+
+    fn task257c4c6_assemble_resolved_with_hints(
+        typed_ast: &TypedAst,
+        node_hints: Vec<ResolvedNodeKindHint>,
+    ) -> Result<ResolvedTypedAst, ResolvedTypedAstError> {
+        let cluster_facts = ClusterFactTable::new();
+        let overload_collection = OverloadCollectionOutput::collect(
+            Vec::<OverloadSiteInput>::new(),
+            Vec::<OverloadCandidateInput>::new(),
+        );
+        let template_expansion = TemplateExpansionOutput::expand(&overload_collection);
+        let viability = CandidateViabilityOutput::filter(
+            &template_expansion,
+            Vec::<CandidateViabilityInput>::new(),
+        );
+        let specificity =
+            SpecificityGraphOutput::build(&viability, Vec::<SpecificityComparisonInput>::new());
+        let overload_selection = OverloadSelectionOutput::resolve(
+            &specificity,
+            Vec::<OverloadSiteResolutionInput>::new(),
+        );
+        ResolvedTypedAst::assemble(ResolvedTypedAstInputs {
+            typed_ast,
+            cluster_facts: &cluster_facts,
+            overload_collection: &overload_collection,
+            template_expansion: &template_expansion,
+            viability: &viability,
+            specificity: &specificity,
+            overload_selection: &overload_selection,
+            expressions: Vec::new(),
+            node_hints,
+            statement_semantics: None,
+            statement_proofs: None,
+        })
+    }
+
+    fn task257c4c6_assert_captured_empty(handoff: &SourceNestedFraenkelCaptureIdentityHandoff) {
+        assert!(
+            handoff
+                .dependency()
+                .binding_env()
+                .bindings()
+                .get(BindingId::new(0))
+                .is_some_and(|binding| binding.captured.identities().is_empty())
+        );
+    }
+
+    fn task257c4c6_assert_resolved_empty(resolved: &ResolvedTypedAst) {
+        assert!(resolved.expr_metadata().is_empty());
+        assert!(resolved.collection_candidates().is_empty());
+        assert!(resolved.expanded_candidates().is_empty());
+        assert!(resolved.template_expansions().is_empty());
+        assert!(resolved.viable_candidates().is_empty());
+        assert!(resolved.viability_decisions().is_empty());
+        assert!(resolved.specificity_graphs().is_empty());
+        assert!(resolved.resolved_overloads().is_empty());
+        assert!(resolved.inserted_coercions().is_empty());
+        assert!(resolved.cluster_facts().is_empty());
+        assert!(resolved.diagnostics().is_empty());
+        assert!(resolved.checked_formulas().is_empty());
+        assert!(resolved.statement_semantics().is_empty());
+        assert!(resolved.checked_proofs().is_empty());
+        assert!(resolved.checked_proof_nodes().is_empty());
+        assert!(resolved.checked_terminal_goals().is_empty());
+    }
+
+    #[test]
+    fn task257c4c6_installation_authenticates_exact_typed_snapshot() {
+        let (typed_ast, handoff) = task257c4c6_typed_and_handoff();
+        task257c4c6_assert_captured_empty(&handoff);
+        let installed = typed_ast
+            .with_source_nested_fraenkel_capture_identity(handoff.clone())
+            .expect("C4C6 exact typed snapshot");
+        assert!(
+            installed
+                .source_nested_fraenkel_capture_identity()
+                .is_some_and(|actual| actual == &handoff)
+        );
+        let second = installed
+            .clone()
+            .with_source_nested_fraenkel_capture_identity(handoff)
+            .expect_err("C4C6 is one-shot");
+        assert_eq!(
+            second,
+            TypedAstError::InvalidSourceNestedFraenkelCaptureIdentity
+        );
+        assert!(
+            installed
+                .source_nested_fraenkel_capture_identity()
+                .is_some()
+        );
+        task257c4c6_assert_captured_empty(
+            installed
+                .source_nested_fraenkel_capture_identity()
+                .expect("C4C6 retained receipt"),
+        );
+    }
+
+    #[test]
+    fn task257c4c6_typed_installation_is_boxed_one_shot_and_debug_stable() {
+        let (typed_ast, handoff) = task257c4c6_typed_and_handoff();
+        task257c4c6_assert_captured_empty(&handoff);
+        let absent_debug = typed_ast.debug_text();
+        assert!(!absent_debug.contains(&handoff.debug_text()));
+        let installed = typed_ast
+            .with_source_nested_fraenkel_capture_identity(handoff.clone())
+            .unwrap();
+        let insertion = absent_debug.find("nodes:\n").unwrap();
+        let expected = format!(
+            "{}{}\n{}",
+            &absent_debug[..insertion],
+            handoff.debug_text(),
+            &absent_debug[insertion..]
+        );
+        assert_eq!(installed.debug_text(), expected);
+        assert_eq!(
+            installed
+                .debug_text()
+                .matches(&handoff.debug_text())
+                .count(),
+            1
+        );
+        assert!(format!("{installed:?}").contains("InstalledSourceNestedFraenkelCaptureIdentity"));
+        assert_eq!(installed, installed.clone());
+        task257c4c6_assert_captured_empty(
+            installed
+                .clone()
+                .source_nested_fraenkel_capture_identity()
+                .expect("C4C6 cloned receipt"),
+        );
+    }
+
+    #[test]
+    fn task257c4c6_rejects_dependency_row_and_final_snapshot_corruption() {
+        let (typed_ast, handoff) = task257c4c6_typed_and_handoff();
+        let mut row_corrupt = handoff.clone();
+        row_corrupt.identities.rows.clear();
+        task257c4c6_assert_captured_empty(&row_corrupt);
+        assert!(matches!(
+            typed_ast
+                .clone()
+                .with_source_nested_fraenkel_capture_identity(row_corrupt),
+            Err(TypedAstError::InvalidSourceNestedFraenkelCaptureIdentity)
+        ));
+
+        let mut snapshot_corrupt = typed_ast.clone();
+        snapshot_corrupt
+            .occupy_statement_transport_table_for_test(StatementTransportTableForTest::Context);
+        let snapshot_handoff = handoff.clone();
+        assert!(matches!(
+            snapshot_corrupt.with_source_nested_fraenkel_capture_identity(snapshot_handoff.clone()),
+            Err(TypedAstError::InvalidSourceNestedFraenkelCaptureIdentity)
+        ));
+        task257c4c6_assert_captured_empty(&snapshot_handoff);
+    }
+
+    #[test]
+    fn task257c4c6_reciprocal_installation_exclusion_is_atomic() {
+        let fixture = task257c4c3_fixture();
+        let handoff = SourceNestedFraenkelCaptureIdentityProducer::build(
+            SourceNestedFraenkelMapperPrimaryProducer::build(
+                SourceNestedFraenkelBinderUseProducer::build(&fixture.resolver, &fixture.typed_ast)
+                    .unwrap(),
+            )
+            .unwrap(),
+        )
+        .unwrap();
+        task257c4c6_assert_captured_empty(&handoff);
+
+        let mut injected = fixture.typed_ast.clone();
+        injected.inject_source_nested_fraenkel_capture_identity_for_test(handoff.clone());
+        assert!(matches!(
+            SourceNestedFraenkelBinderUseProducer::build(&fixture.resolver, &injected),
+            Err(SourceNestedFraenkelBinderUseError::InvalidTypedDependency)
+        ));
+        assert!(
+            injected
+                .source_nested_fraenkel_capture_identity()
+                .is_some_and(|actual| actual == &handoff)
+        );
+        task257c4c6_assert_captured_empty(
+            injected
+                .source_nested_fraenkel_capture_identity()
+                .expect("test-only pre-C4C3 receipt remains installed"),
+        );
+
+        for table in [
+            StatementTransportTableForTest::Context,
+            StatementTransportTableForTest::Type,
+            StatementTransportTableForTest::Fact,
+            StatementTransportTableForTest::Coercion,
+            StatementTransportTableForTest::InitialObligation,
+            StatementTransportTableForTest::Diagnostic,
+        ] {
+            let mut populated = fixture.typed_ast.clone();
+            populated.occupy_statement_transport_table_for_test(table);
+            assert!(matches!(
+                SourceNestedFraenkelBinderUseProducer::build(&fixture.resolver, &populated),
+                Err(SourceNestedFraenkelBinderUseError::InvalidTypedDependency)
+            ));
+            assert!(
+                populated
+                    .source_nested_fraenkel_capture_identity()
+                    .is_none()
+            );
+        }
+
+        let installed = fixture
+            .typed_ast
+            .clone()
+            .with_source_nested_fraenkel_capture_identity(handoff.clone())
+            .unwrap();
+        let term = handoff.dependency().source_term().clone();
+        assert!(matches!(
+            installed.clone().with_source_term(term),
+            Err(TypedAstError::InvalidSourceTerm)
+        ));
+        assert!(
+            installed
+                .source_nested_fraenkel_capture_identity()
+                .is_some()
+        );
+        task257c4c6_assert_captured_empty(
+            installed
+                .source_nested_fraenkel_capture_identity()
+                .expect("C4C6 typed receipt after reciprocal rejection"),
+        );
+
+        let c4c3 = SourceNestedFraenkelBinderUseProducer::build(&fixture.resolver, &installed);
+        assert!(matches!(
+            c4c3,
+            Err(SourceNestedFraenkelBinderUseError::InvalidTypedDependency)
+        ));
+        assert!(
+            installed
+                .source_nested_fraenkel_capture_identity()
+                .is_some()
+        );
+        task257c4c6_assert_captured_empty(
+            installed
+                .source_nested_fraenkel_capture_identity()
+                .expect("C4C6 receipt remains after C4C3 rejection"),
+        );
+    }
+
+    #[test]
+    fn task257c4c6_resolved_clone_revalidates_and_preserves_receipt() {
+        let (typed_ast, handoff) = task257c4c6_typed_and_handoff();
+        task257c4c6_assert_captured_empty(&handoff);
+        let typed_ast = typed_ast
+            .with_source_nested_fraenkel_capture_identity(handoff.clone())
+            .unwrap();
+        task257c4c6_assert_captured_empty(
+            typed_ast
+                .source_nested_fraenkel_capture_identity()
+                .expect("C4C6 typed receipt"),
+        );
+        let resolved = task257c4c6_assemble_resolved(&typed_ast).unwrap();
+        assert!(
+            resolved
+                .source_nested_fraenkel_capture_identity()
+                .is_some_and(|actual| actual == &handoff)
+        );
+        task257c4c6_assert_captured_empty(
+            resolved
+                .source_nested_fraenkel_capture_identity()
+                .expect("C4C6 resolved receipt"),
+        );
+        task257c4c6_assert_resolved_empty(&resolved);
+        let resolved_clone = resolved.clone();
+        assert_eq!(resolved, resolved_clone);
+        assert_eq!(resolved.debug_text(), resolved_clone.debug_text());
+        task257c4c6_assert_captured_empty(
+            resolved_clone
+                .source_nested_fraenkel_capture_identity()
+                .expect("C4C6 cloned resolved receipt"),
+        );
+        let replay = task257c4c6_assemble_resolved(&typed_ast).unwrap();
+        assert_eq!(resolved, replay);
+        task257c4c6_assert_captured_empty(
+            replay
+                .source_nested_fraenkel_capture_identity()
+                .expect("C4C6 replayed resolved receipt"),
+        );
+        task257c4c6_assert_resolved_empty(&replay);
+    }
+
+    #[test]
+    fn task257c4c6_resolved_rejects_injected_stale_or_mismatched_receipt() {
+        let (typed_ast, handoff) = task257c4c6_typed_and_handoff();
+        task257c4c6_assert_captured_empty(&handoff);
+        let installed = typed_ast
+            .clone()
+            .with_source_nested_fraenkel_capture_identity(handoff.clone())
+            .unwrap();
+        task257c4c6_assert_captured_empty(
+            installed
+                .source_nested_fraenkel_capture_identity()
+                .expect("C4C6 installed receipt"),
+        );
+        let mut stale = installed.clone();
+        let mut stale_handoff = task257c4c6_handoff();
+        stale_handoff.identities.rows[0].source_ordinal = 1;
+        task257c4c6_assert_captured_empty(&stale_handoff);
+        stale.inject_source_nested_fraenkel_capture_identity_for_test(stale_handoff);
+        assert!(matches!(
+            task257c4c6_assemble_resolved(&stale),
+            Err(ResolvedTypedAstError::InvalidSourceNestedFraenkelCaptureIdentity)
+        ));
+        task257c4c6_assert_captured_empty(
+            stale
+                .source_nested_fraenkel_capture_identity()
+                .expect("stale receipt remains installed after rejection"),
+        );
+
+        let mut mismatched = installed;
+        let mut corrupted = handoff;
+        corrupted.source_id = other_source_id();
+        task257c4c6_assert_captured_empty(&corrupted);
+        mismatched.inject_source_nested_fraenkel_capture_identity_for_test(corrupted);
+        assert!(matches!(
+            task257c4c6_assemble_resolved(&mismatched),
+            Err(ResolvedTypedAstError::InvalidSourceNestedFraenkelCaptureIdentity)
+        ));
+        task257c4c6_assert_captured_empty(
+            mismatched
+                .source_nested_fraenkel_capture_identity()
+                .expect("mismatched receipt remains installed after rejection"),
+        );
+
+        let external_input = typed_ast
+            .with_source_nested_fraenkel_capture_identity(task257c4c6_handoff())
+            .unwrap();
+        let external_handoff = external_input
+            .source_nested_fraenkel_capture_identity()
+            .expect("external-input fixture receipt")
+            .clone();
+        task257c4c6_assert_captured_empty(&external_handoff);
+        assert!(matches!(
+            task257c4c6_assemble_resolved_with_hints(
+                &external_input,
+                vec![ResolvedNodeKindHint {
+                    typed_node: TypedNodeId::new(0),
+                    kind: ResolvedNodeKindHintKind::SourcePreserved {
+                        role: SourceNodeRole::new("task257c4c6.external-input"),
+                    },
+                }],
+            ),
+            Err(ResolvedTypedAstError::InvalidSourceNestedFraenkelCaptureIdentity)
+        ));
+        task257c4c6_assert_captured_empty(
+            external_input
+                .source_nested_fraenkel_capture_identity()
+                .expect("external-input receipt remains installed after rejection"),
+        );
     }
 
     #[test]

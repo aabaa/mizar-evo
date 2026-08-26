@@ -38,7 +38,7 @@ after this task.
 | `overload_resolution.md` | `../ja/overload_resolution.md` | `../en/overload_resolution.md` | phase-8 boundary, site/candidate collection, template expansion, viability, specificity, selection/views, diagnostics, public enum policy, deferred gaps | none |
 | `payload_family_decomposition.md` | `../ja/payload_family_decomposition.md` | `../en/payload_family_decomposition.md` | Task-247 authority/baseline, Tasks 248-264/269-279 scopes/dependencies/gates/consumers, Task-10 runner increments, literal Task-49 24-fixture reconciliation mapping, disagreement classes, exit criteria | none |
 | `registration_resolution.md` | `../ja/registration_resolution.md` | `../en/registration_resolution.md` | registration model, pending/activated database, validation, existential gates, cluster/reduction handoff, diagnostics, public enum policy, gap table | none |
-| `resolved_typed_ast.md` | `../ja/resolved_typed_ast.md` | `../en/resolved_typed_ast.md` | responsibility, inputs, data shape, metadata/summaries, overload/coercion/cluster tables, Task-258B1 paired final projection, failure/recovery, public enum policy, deferred gaps | none |
+| `resolved_typed_ast.md` | `../ja/resolved_typed_ast.md` | `../en/resolved_typed_ast.md` | responsibility, inputs, data shape, metadata/summaries, overload/coercion/cluster tables, Task-258B1 paired final projection, frozen C4C6 authenticated boxed receipt clone/getter/error/debug boundary, failure/recovery, public enum policy, deferred gaps | none |
 | `semantic_spec_audit.md` | `../ja/semantic_spec_audit.md` | `../en/semantic_spec_audit.md` | audit scope, severity legend, findings index/details, adversarial corpus table, traceability requirement ids, TODO impact | none |
 | `source_spec_audit.md` | `../ja/source_spec_audit.md` | `../en/source_spec_audit.md` | public surface inventory, behavior/test correspondence, MC-G reconciliation, task classification | none |
 | `source_context.md` | `../ja/source_context.md` | `../en/source_context.md` | Task-248 authority/boundary, projection model, validation/recovery/atomicity, Task-258A bidirectional exclusion, determinism, coverage, public enum policy | none |
@@ -49,7 +49,7 @@ after this task.
 | `source_application.md` | `../ja/source_application.md` | `../en/source_application.md` | Task-253 authority/boundary, five-table application/wrapper/candidate/argument/request transport, Task-252 fingerprint association, exact and synthetic consumers, exclusions, public enum policy | none |
 | `source_atomic_formula.md` | `../ja/source_atomic_formula.md` | `../en/source_atomic_formula.md` | Task-256/257C1 and Task-257C2/256C1 lower-compatibility authority and boundary, nine-table atomic-formula/segment/provenance/type/attribute/edge/request transport, Task-252/253/254/255 fingerprint association, eight base consumers plus exact C1 consumer, condition-container gate, exclusions, public enum policy | none |
 | `source_composite_formula.md` | `../ja/source_composite_formula.md` | `../en/source_composite_formula.md` | Task-257A authority/boundary, seven-table composite-formula/binder/type/edge/request transport, source-derived binding extension, exact consumer, exclusions, public enum policy | none |
-| `source_formula_composition.md` | `../ja/source_formula_composition.md` | `../en/source_formula_composition.md` | Task-257B1/B2/B3 and Task-257C2 plus completed C4A/C4B/C4C3 authority/boundary, composite/condition/predicate-chain composition, exact-F5 binding/use families, nested binder/use identity transport, dependency validation including the crate-private C4C4 replay seam, exact consumers, exclusions, public enum policy | none |
+| `source_formula_composition.md` | `../ja/source_formula_composition.md` | `../en/source_formula_composition.md` | Task-257B1/B2/B3 and Task-257C2 plus completed C4A/C4B/C4C3/C4C5 and frozen C4C6 authority/boundary, composite/condition/predicate-chain composition, exact-F5 binding/use families, nested binder/use and capture-identity receipt transport, dependency validation including C4C4 replay and exact retained-typed installation seams, exact consumers, exclusions, public enum policy | none |
 | `source_functor_definition.md` | `../ja/source_functor_definition.md` | `../en/source_functor_definition.md` | Task-260 authority/boundary, exact public definition/parameter/guard/definiens/correctness ABI and debug grammar, resolver provenance, Task-248--256 association, baseline-preserving initial-obligation append and orphan rejection, Task-259 mutual exclusion, TypedAst/ResolvedTypedAst installation, exact consumer, exclusions, public enum policy | none |
 | `source_predicate_definition.md` | `../ja/source_predicate_definition.md` | `../en/source_predicate_definition.md` | Task-259 authority/boundary, predicate-definition/parameter/guard/property/correctness tables, resolver provenance, Task-248/249/252/256 association, baseline-preserving initial-obligation append, TypedAst/ResolvedTypedAst installation, exact consumer, exclusions, public enum policy | none |
 | `source_proof_local_declaration.md` | `../ja/source_proof_local_declaration.md` | `../en/source_proof_local_declaration.md` | Task-269A Chapters-4/15/16 authority, exact Task-258B3N source/AST/lower profile, resolver-local provenance, definition-site binding/RHS association, binding-environment transition, fingerprints/debug grammar, Typed/final ownership, dormant consumer, tests/counts/exclusions/public enum policy | none |
@@ -63,7 +63,7 @@ after this task.
 | `source_term.md` | `../ja/source_term.md` | `../en/source_term.md` | Task-252 authority/boundary, three-table primary-term transport, binding lookup and parent/request validation, completed Task-257C4C4 specialized mapper primary, ownership, exact consumers, exclusions, public enum policy | none |
 | `source_type.md` | `../ja/source_type.md` | `../en/source_type.md` | Task-249 authority/boundary, flat application/expression/argument model, environment/arena/graph/provenance validation, ownership, consumers, exclusions, public enum policy | none |
 | `todo.md` | `../ja/todo.md` | `../en/todo.md` | module implementation table, prerequisites, resolved decisions, ordered task list, task statuses, verification, notes | none |
-| `typed_ast.md` | `../ja/typed_ast.md` | `../en/typed_ast.md` | purpose/boundary, top-level shape, arena/context/type/fact/coercion/obligation/diagnostic tables, Task-258B1 combined ownership, public enum policy, task classification | none |
+| `typed_ast.md` | `../ja/typed_ast.md` | `../en/typed_ast.md` | purpose/boundary, top-level shape, arena/context/type/fact/coercion/obligation/diagnostic tables, Task-258B1 combined ownership, frozen C4C6 boxed receipt getter/installer/error/debug and reciprocal exclusion, public enum policy, task classification | none |
 | `type_checker.md` | `../ja/type_checker.md` | `../en/type_checker.md` | phase-6 boundary, normalization, declaration checking, inference, coercions/obligations, fact queries, diagnostics, determinism, public enum policy, task classification | none |
 
 ## Task 33 Classification
@@ -1992,3 +1992,18 @@ The task-only commit, post-commit proof, and accepted fresh-inventory STOP are
 closed at the language-local [historical postimplementation
 checkpoint](../../task_contracts/en/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md#historical-immediate-postimplementation-pre-closure-checkpoint),
 with no semantic successor selected.
+
+## Task 257C4C6 Implemented Bilingual Surface
+
+The canonical [C4C6 EN contract](../../task_contracts/en/CHECKER-FRAENKEL-NESTED-CAPTURE-IDENTITY-INSTALLATION-257C4C6.md)
+and its [JA companion](../../task_contracts/ja/CHECKER-FRAENKEL-NESTED-CAPTURE-IDENTITY-INSTALLATION-257C4C6.md)
+synchronize the boxed Typed/Resolved receipt destination, exact retained-typed
+authentication, getter/installer/error/debug surface, reciprocal exclusion,
+syntax-only final clone, seven private tests, protected hashes, zero-semantic
+boundary, and deferred Core/order/Task-277B state.
+
+The paired checker plan, todo, source-formula-composition, TypedAst,
+ResolvedTypedAst, module-boundary, and source-spec owner documents are the
+required checker review surface. English is canonical; no exception exists.
+Independent bilingual/boundary re-review reports **NO FINDINGS** after the
+zero-semantic table guard and test-evidence repairs.

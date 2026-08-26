@@ -115,22 +115,34 @@ remain aligned with their owning specifications.
 
 ## Source Layout Inventory
 
-Task 257C4C5 leaves the production layout at 32 paths / 196872 lines, with path
+Task 257C4C6 leaves the production layout at 32 paths / 197561 lines, with path
 SHA-256
 `9dc5b02f26679677e593ea755394d68533173d2be988b7ef1ddcfd84a41b9787`
 and current content SHA-256
-`47be280901c7feb00ce3454dc8d59d15fed71e741183b2f2201b034ef0e117a3`.
+`a3d99114263d46552a59a14055e60b5938c683a4dd555423a1bc409335712ccc`.
 The new and changed cohesive owners are measured in their rows below.
+
+Implemented Task 257C4C6 changes no module, file path, crate dependency, or
+production owner. It extends the existing cohesive
+`source_formula_composition.rs`, `typed_ast.rs`, and
+`resolved_typed_ast.rs` boundaries with one private validation seam and boxed
+owner plus the frozen Typed/Resolved public methods and error variants. The
+three row measurements and 32-path content hash below are final; the path count
+and path-list hash remain fixed. No new public module or enum type, syntax/Core dependency, runner route,
+diagnostic boundary, or private split is introduced. See the paired
+[C4C6 contract](../../task_contracts/en/CHECKER-FRAENKEL-NESTED-CAPTURE-IDENTITY-INSTALLATION-257C4C6.md).
+Independent implementation and bilingual/boundary re-reviews report **NO
+FINDINGS** after the zero-semantic table guard and frozen-test repairs.
 
 | Path | Lines | Boundary label | Owning specification | Split required | Hard-gate finding | Decision |
 |---|---:|---|---|---|---|---|
 | `src/lib.rs` | 53 | crate boundary and public module exports | `00.crate_plan.md` and `source_spec_audit.md` | no | no | Keep as the crate root; it exports the documented syntax-free formula-composition, definition, statement, proof-local declaration, Task-277A source-template, and Task-277B-L association modules. |
-| `src/typed_ast.rs` | 6897 | typed AST data model | `typed_ast.md` | no | no | Large but cohesive typed-AST tables, validation, rendering, and one-shot handoffs, including definition transactions, separate proof-local owners, and the neutral Task-277A source-template slot; monitor ergonomics after downstream use. |
+| `src/typed_ast.rs` | 7094 | typed AST data model | `typed_ast.md` | no | no | Large but cohesive typed-AST tables, validation, rendering, and one-shot handoffs, including definition transactions, separate proof-local owners, the neutral Task-277A source-template slot, and the boxed C4C6 receipt destination; monitor ergonomics after downstream use. |
 | `src/binding_env.rs` | 3266 | binding environment and resolver shell boundary | `binding_env.md` | no | no | Cohesive binding/context data layer, including source-formula, Task-258B1 statement-context identity, the unchanged Task-258B2 context contract, exact Task-269A/269G installed-local tests, and Task-257C4A source-comprehension/source-bound identities; no behavior-neutral split required. |
 | `src/source_context.rs` | 1727 | syntax-free source-item and binding-context producer | `source_context.md` | no | no | Cohesive Task-248 validation, table construction, recovery, handoff, and boundary tests; no split required. |
 | `src/source_atomic_formula.rs` | 8511 | syntax-free source atomic-formula producer | `source_atomic_formula.md` | no | no | Cohesive Task-256/257C1 nine-table association, resolver provenance, predicate-segment/shared-boundary validation, cross-family ownership/fingerprint validation, deterministic rendering, install checks, compatibility literals, and test-only dependency corruption seams; no split required. |
 | `src/source_composite_formula.rs` | 4700 | syntax-free source composite-formula/binder producer | `source_composite_formula.md` | no | no | Cohesive Task-257A/B1/B2/B3 exact profiles, binding extension, wrapper/tree validation, rendering, install checks, and corruption/profile tests; no split required. |
-| `src/source_formula_composition.rs` | 9940 | syntax-free cross-family formula composition producer | `source_formula_composition.md` | no | no | Cohesive Task-257B1/B2/B3 atomic-edge/bound-use associations, separate Task-257C2/C3 transactions, completed Task-257C4A/C4B exact-F5 transports, completed Task-257C4C3 one-row nested binder/use identity transport, and completed Task-257C4C5 exactly-one capture-identity receipt with retained dependency validation/corruption tests; no split required. |
+| `src/source_formula_composition.rs` | 10342 | syntax-free cross-family formula composition producer | `source_formula_composition.md` | no | no | Cohesive Task-257B1/B2/B3 atomic-edge/bound-use associations, separate Task-257C2/C3 transactions, completed Task-257C4A/C4B exact-F5 transports, completed Task-257C4C3 one-row nested binder/use identity transport, completed Task-257C4C5 exactly-one capture-identity receipt, and C4C6 final-owner/zero-semantic validation with corruption tests; no split required. |
 | `src/source_attribute.rs` | 3074 | syntax-free source-attribute producer | `source_attribute.md` | no | no | Cohesive Task-250 flat tables, environment/parent/arena/provenance validation, deterministic rendering, and corruption tests; no split required. |
 | `src/source_attribute_definition.rs` | 1516 | syntax-free source attribute-definition producer | `source_attribute_definition.md` | no | no | Cohesive Task-261 four-table handoff, exact resolver/lower/context ownership, obligation-preserving one-shot validation, deterministic rendering, and Task-259/260 isolation; production remains syntax-free. |
 | `src/source_evidence.rs` | 2413 | syntax-free source-evidence request/reference producer | `source_evidence.md` | no | no | Cohesive Task-251 request/response tables, upstream association, catalog/payload validation, deterministic rendering, and corruption tests; no split required. |
@@ -152,7 +164,7 @@ The new and changed cohesive owners are measured in their rows below.
 | `src/registration_resolution.rs` | 5897 | phase-7 registration validation, activation, and existential gates | `registration_resolution.md` | no | no | Cohesive registration data layer, gate logic, and Task-259/260/264 obligation-kind serializers; no behavior-neutral split required. |
 | `src/cluster_trace.rs` | 3948 | cluster closure and reduction trace recording | `cluster_trace.md` | no | no | Cohesive trace/replay module; no behavior-neutral split required. |
 | `src/overload_resolution.rs` | 8004 | phase-8 overload pipeline | `overload_resolution.md` | no | no | Large but cohesive overload collection, template expansion, viability, specificity, selection, rendering, and tests; monitor ergonomics after downstream use. |
-| `src/resolved_typed_ast.rs` | 8908 | final resolved typed AST assembly | `resolved_typed_ast.md` | no | no | Cohesive final projection module, including clone-preserving definition and proof-local handoffs plus neutral Task-277A source-template replay; no behavior-neutral split required. |
+| `src/resolved_typed_ast.rs` | 8998 | final resolved typed AST assembly | `resolved_typed_ast.md` | no | no | Cohesive final projection module, including clone-preserving definition and proof-local handoffs, neutral Task-277A source-template replay, and the syntax-only C4C6 receipt clone; no behavior-neutral split required. |
 | `src/determinism_suite.rs` | 1101 | test-only cross-module determinism suite | `00.crate_plan.md` and `source_spec_audit.md` | no | no | Keep as private `#[cfg(test)]` crate support. |
 | `tests/lint_policy.rs` | 1955 | cross-cutting policy and audit guards | `source_spec_audit.md`, `bilingual_sync_audit.md`, and `module_boundary_audit.md` | no | no | Centralized policy guardrails include Task-259--264, Task-269A, Task-277A, and Task-277B-L module/spec/public-enum coverage and the unchanged production syntax boundary. |
 | `tests/support/source_attribute_definition_unit.rs` | 1070 | test-only Task-261 unit-test support | `source_attribute_definition.md` and this audit | no | no | Non-integration child support for the exact producer, obligation preservation, corruption, ownership, replay, and cfg(test)-only Task-262 reverse-isolation fixture. |

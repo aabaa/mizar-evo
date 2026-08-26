@@ -6618,3 +6618,17 @@ post-commit fresh inventoryからだけ選択する。
   Task277B readinessを追加しない。
 - [x] Source/documentation/final-quality review、全verification gate、task-only commit、clean
   postcommit proofを完了する。
+
+## Task 257C4C6 nested capture-identity installation
+
+- [x] Human-selected boxed Typed/Resolved destination、exact final-typed owner authentication、
+  public getter/installer/error、mutual-exclusion matrix、syntax-only final clone、zero-semantic
+  boundaryをpaired [C4C6 contract](../../task_contracts/ja/CHECKER-FRAENKEL-NESTED-CAPTURE-IDENTITY-INSTALLATION-257C4C6.md)へfreezeする。
+- [x] Independent specification/equivalenceとbilingual/boundary/API reviewをblocking/high
+  findingsなしで完了する。
+- [x] Frozen checker receipt destinationとprivate test 7件だけを実装し、C4C4 empty captured stateを
+  維持してCore/GeneratedOrigin、active route、diagnostic、coverage credit、Task277B readinessを追加しない。
+- [x] Implementation/test/source-documentation re-reviewとfocused/package/workspace/metadata/
+  formatting/protected checkを完了する。
+- [x] Final-quality `9/9` hard-gate scoreをuncapped `100/100`で完了する。
+- [ ] Exact staging、task-only commit、clean postcommit proof、fresh successor inventoryを完了する。
