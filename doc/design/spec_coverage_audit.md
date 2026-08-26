@@ -7122,3 +7122,19 @@ Typed/Resolved destination, active route, semantic result, diagnostic,
 Task-252 occurrence, type/sethood evidence, Core identity, generated
 parameter/argument, GeneratedOrigin, or Task-277B credit. Those remain with
 the checker C4C8 and Core 33--35 successors after fresh dependency inventory.
+
+## Task 257C4C8P Planned Zero-Credit Parser Delimiter Mapping
+
+The canonical [C4C8P contract](./task_contracts/en/PARSER-FRAENKEL-GENERATOR-DELIMITER-257C4C8P.md)
+owns the parser prerequisite discovered by C4C8R preflight. The exact C4C7
+source currently recovers because generic `of` type-argument parsing consumes
+the comma that Chapter 13 assigns to the next typed generator. The planned
+private comprehension-generator context and two Rust tests target only this
+parser `source_drift` and `test_gap`; both remain open until implementation and
+verification pass.
+
+The Chapter-13 summary remains `partial`, and no trace row/status/backlink,
+`.miz`, expectation, diagnostic contract, active route, resolver/checker/Core
+identity, semantic result, capture order, generated origin, or Task-277B
+credit changes. Resolver C4C8R remains blocked until this parser prerequisite
+commits and fresh preflight proves the exact AST unrecovered.

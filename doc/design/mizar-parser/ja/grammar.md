@@ -769,6 +769,20 @@ pass/fail fixture と `spec.en.13.set_expressions.parser` traceability がこの
 `set name =` binder statement ではなく type syntax として扱うため、set-comprehension
 fixture は active parse-only corpus で実行できる。
 
+## Task 257C4C8P Parameterized Comprehension Generator Delimiter
+
+Canonical [C4C8P contract](../../task_contracts/ja/PARSER-FRAENKEL-GENERATOR-DELIMITER-257C4C8P.md)は
+existing Task-15 grammarのcontextual ambiguity 1件をrepairする。Required comprehension-
+generator typeのparse中だけ、unbracketed `of`/`over` argument listはcomma +
+`identifier is`の直前でstopし、set-comprehension parserがそのcommaをnext
+`typed_var_list` separatorとしてretain/emitする。Generic `of`/`over` multi-argumentと
+`identifier is`が続かないcommaは不変。
+
+これはprivate parsing-context ruleでありnew grammar production/public APIではない。AST kind、
+diagnostic、recovery admission、binder identity、capture、semantic resultは追加しない。Exact
+C4C7 nested sourceはzero diagnostics/recovery、3 generator segments、preserved bracket mapperと
+なり、malformed generator recoveryはfail-closedのまま。
+
 ## Task 16: simple statement
 
 Task 16 は、Chapter 15 のうち、この増分では justification clause を持たない statement

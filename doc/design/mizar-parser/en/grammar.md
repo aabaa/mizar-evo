@@ -820,6 +820,22 @@ lexer scope skeleton also treats expression-level `is set` type words as type
 syntax rather than malformed `set name =` binder statements, so
 set-comprehension fixtures can run in the active parse-only corpus.
 
+## Task 257C4C8P Parameterized Comprehension Generator Delimiter
+
+The canonical [C4C8P contract](../../task_contracts/en/PARSER-FRAENKEL-GENERATOR-DELIMITER-257C4C8P.md)
+repairs one contextual ambiguity in the existing Task-15 grammar. While
+parsing a required comprehension-generator type, an unbracketed `of`/`over`
+argument list stops before a comma followed by `identifier is`; the
+set-comprehension parser retains and emits that comma as the next
+`typed_var_list` separator. Generic `of`/`over` multi-argument parsing and a
+comma not followed by `identifier is` remain unchanged.
+
+This is a private parsing-context rule, not a new grammar production or public
+API. It adds no AST kind, diagnostic, recovery admission, binder identity,
+capture, or semantic result. The exact C4C7 nested source must consequently be
+diagnostics-free and unrecovered with three generator segments and its bracket
+mapper preserved; malformed generator recovery remains fail-closed.
+
 ## Task 16: Simple Statements
 
 Task 16 starts S-013 statement syntax with the Chapter 15 statement forms that

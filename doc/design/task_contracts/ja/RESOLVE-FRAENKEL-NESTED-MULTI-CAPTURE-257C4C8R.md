@@ -10,8 +10,10 @@ mizar-test [harness](../../mizar-test/ja/harness.md#resolver-task-257c4c8r-priva
 
 ## Status、目的、readiness
 
-**Status:** frozen documentation prerequisite。Independent specification/equivalenceと
-bilingual/boundary review後にのみimplementationへ進む。
+**Status:** frozenだがseparate parser
+[C4C8P prerequisite](PARSER-FRAENKEL-GENERATOR-DELIMITER-257C4C8P.md)でimplementation-blocked。
+Resolver contract reviewはcomplete。C4C8P commitとfresh preflightでexact C4C7 ASTが
+unrecoveredと証明された後だけsource workへ進む。
 
 Clean post-C4C7 inventoryが選んだdependency-minimal successor。既存resolver-owned
 `FraenkelGeneratorVariableSourceCollection`をexact C4C7 sourceだけに拡張する。Public
@@ -34,6 +36,11 @@ existing two-capture `.miz`、existing trace/inactive sidecar、completed R2/C4C
 最後にnon-normative source inventory。Required commitsはC4C7 artifact
 `3d28af5f6678519fe8d764fb29f27eb664db8f39`とclosure
 `b4037c853632aed80a824d05b955e4ad6396f4e1`。C4C2 branchとC4C3--C4C6はprotected。
+
+Docs commit `5b165dd38e5f1a560eeaff80ef65aa8e5eab0539`後のimplementation preflightで、
+first outer generatorの`Element of NAT`がnext generator commaをconsumeし、exact sourceに
+parser recoveryがあることを発見した。このparser `source_drift`はC4C8Pだけがownし、resolverの
+reconstruction/repair/recovered-AST admissionは禁止。
 
 ## Frozen exact resolver relation
 

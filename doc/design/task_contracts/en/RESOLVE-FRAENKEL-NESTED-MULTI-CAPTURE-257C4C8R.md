@@ -12,8 +12,10 @@ and test
 
 ## Status, purpose, and readiness
 
-**Status:** frozen documentation prerequisite; implementation is pending its
-independent specification/equivalence and bilingual/boundary reviews.
+**Status:** frozen but implementation-blocked on the separate parser
+[C4C8P prerequisite](PARSER-FRAENKEL-GENERATOR-DELIMITER-257C4C8P.md). The
+resolver contract reviews are complete; source work may start only after C4C8P
+commits and a fresh preflight proves the exact C4C7 AST unrecovered.
 
 This is the dependency-minimal successor selected by the clean post-C4C7
 inventory. It extends the existing resolver-owned
@@ -56,6 +58,12 @@ Required commits are C4C7 artifact
 `b4037c853632aed80a824d05b955e4ad6396f4e1`. C4C2's one-capture branch and
 all C4C3--C4C6 checker artifacts are protected dependencies, not inputs to be
 generalized here.
+
+Implementation preflight after documentation commit `5b165dd38e5f1a560eeaff80ef65aa8e5eab0539`
+found the exact source currently contains parser recovery because the first
+outer generator's `Element of NAT` consumes the following generator comma.
+That parser `source_drift` is owned exclusively by C4C8P; resolver must not
+reconstruct, repair, or admit the recovered AST.
 
 ## Frozen exact resolver relation
 
