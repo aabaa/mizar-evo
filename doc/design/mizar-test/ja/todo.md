@@ -3686,8 +3686,8 @@ post-commit fresh inventoryからだけ選択する。
 
 ## Checker Task 257C4C8 normalized capture graph
 
-Status: implementation、required verification、final-quality reviewはcomplete。Commitと
-post-commit proofはpending。Paired [C4C8 contract](../../task_contracts/ja/CHECKER-FRAENKEL-NESTED-MULTI-CAPTURE-GRAPH-257C4C8.md)に従う。
+Status: implementation commit `c7595b60e7784728967cfbac9b02522f7290c942`でcomplete。
+Clean postcommit proofとfresh inventoryはpaired [C4C8 contract](../../task_contracts/ja/CHECKER-FRAENKEL-NESTED-MULTI-CAPTURE-GRAPH-257C4C8.md)にrecordする。
 
 - [x] Reserved private imported-fixture probeをexisting nested-capture leafへ追加する。ただしregistry
   inclusionとactive dispatchは追加しない。
@@ -3702,5 +3702,7 @@ post-commit proofはpending。Paired [C4C8 contract](../../task_contracts/ja/CHE
 - [x] Broad/full verificationとprotected count/hash checkを完了する。
 - [x] Final-quality reviewを**NO FINDINGS**、全9 hard gates PASS、valid uncapped
   `100/100`で完了する。
-- [ ] Exact staging、task-only commit、clean postcommit proof、successor inventoryを
-  完了する。
+- [x] Exact 15-path staging、task-only implementation commit、clean postcommit proof、
+  fresh successor inventoryを完了する。Semantic successorはselectせず、userは
+  documentation-only Core-33 prerequisite方向だけをacceptする。そのexact contractはfresh
+  inventoryを要する。Task277Bはnot-ready/zero-creditのまま。

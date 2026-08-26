@@ -4002,8 +4002,9 @@ the successor is selected only from fresh post-commit inventory.
 
 ## Checker Task 257C4C8 normalized capture graph
 
-Status: implementation, required verification, and final-quality review complete;
-commit and post-commit proof are pending. Follow the paired [C4C8
+Status: complete in implementation commit
+`c7595b60e7784728967cfbac9b02522f7290c942`; clean postcommit proof and fresh
+inventory are recorded in the paired [C4C8
 contract](../../task_contracts/en/CHECKER-FRAENKEL-NESTED-MULTI-CAPTURE-GRAPH-257C4C8.md).
 
 - [x] Add exactly the reserved private imported-fixture probe to the existing
@@ -4021,5 +4022,8 @@ contract](../../task_contracts/en/CHECKER-FRAENKEL-NESTED-MULTI-CAPTURE-GRAPH-25
 - [x] Complete broad/full verification and protected count/hash checks.
 - [x] Complete final-quality review with **NO FINDINGS**, all nine hard gates
   PASS, and a valid uncapped `100/100`.
-- [ ] Complete exact staging, task-only commit, clean postcommit proof, and
-  successor inventory.
+- [x] Complete exact 15-path staging, task-only implementation commit, clean
+  postcommit proof, and fresh successor inventory. No semantic successor is
+  selected; the user accepts only the documentation-only Core-33 prerequisite
+  direction, whose exact contract requires fresh inventory. Task 277B remains
+  not-ready/zero-credit.

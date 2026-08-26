@@ -12,8 +12,10 @@ and the private test
 
 ## Status, decision, and purpose
 
-**Status:** implementation, required verification, and final-quality review
-complete; exact staging, commit, and post-commit proof are pending.
+**Status:** complete. Implementation commit
+`c7595b60e7784728967cfbac9b02522f7290c942`, clean postcommit proof, and fresh
+successor inventory are closed below. This postimplementation documentation
+closure repairs stale lifecycle wording only.
 
 After clean resolver commit `a710b4f1d99fd2efea36aecf9c2b00cf81437c57`,
 fresh independent checker, Core/destination, and oracle inventories agreed that
@@ -364,7 +366,52 @@ crate exit gates pass with a valid uncapped `100/100`: specification
 completeness `20/20`, test contract and coverage `20/20`, traceability `15/15`,
 implementation correctness `15/15`, design/source synchronization `10/10`,
 boundary discipline `10/10`, verification health `5/5`, and handoff quality
-`5/5`. Exact staging, commit, and post-commit proof remain pending.
+`5/5`. Exact 15-path staging and cached-diff review passed, and task-only
+implementation commit `c7595b60e7784728967cfbac9b02522f7290c942` closed the
+source change.
+
+## Postimplementation closure and fresh successor inventory
+
+Immediately after the implementation commit the worktree was clean, HEAD was
+`c7595b60e7784728967cfbac9b02522f7290c942`, origin/main was
+`481a599877803e855307381901b82ae38365ce4a`, and divergence was `0/1`. The
+protected stash remained
+`f65cf4a13752ec380710814a9ac6392ccb9d75d4`; the protected C4C7 source,
+sidecar, and trace retained the hashes frozen above. The implementation commit
+contains exactly 15 paths with sorted path-list SHA-256
+`23c102b51678e49f0fd749f9689d4e12dbf85d06dc2cfa870c22623e20b2b541`.
+
+Fresh independent checker, Core, and oracle inventories select no uniquely
+ready semantic successor. They confirm the fixed direction: Core Task 33 owns
+context/item/binder identity, provenance, snapshot-local `CoreVarId`
+allocation, and the durable checker-graph association; Core Task 34 owns
+type/evidence/coercion/view lowering; Core Task 35 consumes the Task-33
+association and later owns term/formula/Fraenkel `GeneratedOrigin` lowering.
+They do not uniquely determine the exact Task-33 C4C8 handoff/API, allocator
+and owner mapping, captured parameter/argument surface and order, or the
+`GeneratedOrigin` key/functor/source corruption oracle. Reusing Typed/Resolved
+slots or numeric IDs, or making Core Task 35 allocate or infer the association,
+remains forbidden.
+
+The candidates were: (1) first freeze the generic Core-33 context/item/binder
+base contract with a reserved standalone immutable C4C8 association seam;
+(2) freeze a C4C8-specific private Core-33 association directly; or (3) extend
+the public `CoreContextInput`/`CoreContext` surface. Candidate 1 is recommended
+because the prerequisite allocator and owner map do not yet exist and it
+preserves a zero-semantic, default-deny boundary. Candidates 2 and 3 require a
+separate explicit API decision. The user accepted candidate 1 in the current
+continuation, selecting only the documentation-only Core-33 prerequisite
+direction; its exact task identity, API, files, and oracle remain subject to a
+fresh inventory and separately frozen contract. No successor task ID, API,
+field, adapter, installer, route, semantics, or credit is created here. This is
+`design_drift` plus a future source-derived `test_gap`, not authority to invent
+semantic parameter order. Task 277B remains not ready and receives zero credit.
+
+The stale precommit wording in the paired checker plan, mizar-test harness,
+and TODO records is `design_drift`. This paired contract, those four EN/JA
+owner/TODO pairs, and no other files form the exact 10-document closure scope.
+The closure changes no specification, test intent, traceability, expectation,
+source, public API, route, diagnostic, protected hash, or coverage credit.
 
 ## Core boundary, reviews, verification, and exit
 
@@ -389,7 +436,7 @@ compatibility, checker and mizar-test libraries, both lint-policy suites,
 metadata tests, formatting, offline Cargo metadata, full-workspace all-target/
 all-feature warnings-denied Clippy, full workspace tests, `git diff --check`,
 exact counts/hashes, protected surfaces, exact staging, and task-only commits.
-Exit requires all `9/9` hard gates, a valid score of at least `90/100`, clean
-postcommit proof, and fresh same-milestone successor inventory. Actual capture
-semantics, Typed/Resolved installation, Core Tasks 33--35, GeneratedOrigin,
-active execution, and Task 277B remain deferred.
+All `9/9` implementation hard gates passed with valid uncapped `100/100`; the
+clean postcommit proof and fresh same-milestone inventory above close this
+task. Actual capture semantics, Typed/Resolved installation, Core Tasks
+33--35, GeneratedOrigin, active execution, and Task 277B remain deferred.
