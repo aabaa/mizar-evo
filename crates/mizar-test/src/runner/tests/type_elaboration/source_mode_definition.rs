@@ -1031,7 +1031,7 @@ fn task262_mode_definition_justification_and_semantic_subtrees_are_not_published
     ], [205; 6]);
     assert_eq!(
         (plan.cases.len(), plan.manifest.requirements.len()),
-        (429, 396)
+        (430, 396)
     );
     assert_eq!(
         plan.cases.iter().fold((0, 0), |(pass, fail), case| {
@@ -1041,7 +1041,7 @@ fn task262_mode_definition_justification_and_semantic_subtrees_are_not_published
                 _ => (pass, fail),
             }
         }),
-        (236, 193)
+        (237, 193)
     );
     assert_eq!(
         (

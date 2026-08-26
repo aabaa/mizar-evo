@@ -1009,3 +1009,21 @@ table, so a later receipt cannot recursively retain another receipt or carry
 semantic typed state. The seam installs no captured state, semantic result,
 Core identity, generated parameter/origin, or ordering rule. Exact AST storage,
 final clone, and mutual exclusion belong to the linked Typed/Resolved owners.
+
+## Task 257C4C7 Multi-capture Projection Boundary
+
+The accepted [C4C7 contract](../../task_contracts/en/TEST-FRAENKEL-NESTED-MULTI-CAPTURE-257C4C7.md)
+keeps this existing Task-257C family as the sole future checker owner of a
+complete immutable, syntax-free, Core-ID-free nested-Fraenkel projection. It
+must authenticate association by resolved binder identity and cover the
+complete generator/mapper/optional-predicate/capture-occurrence graph with
+owner, context, and source provenance. Repeated occurrences of one identity
+form one distinct capture. Authenticated outer declaration/source order may be
+used only as a private deterministic transport convention.
+
+C4C7 creates no API or implementation. Its inactive two-capture oracle asserts
+only that both outer identities are captured and the inner generator is local;
+it does not assert order. A later contract must freeze the exact API and
+default-deny matrix. C4C6 remains the immutable Typed/Resolved receipt;
+standalone projection work must not add a second AST slot, reinterpret IDs, or
+move Core-33 allocation or Core-35 lowering/GeneratedOrigin ownership here.

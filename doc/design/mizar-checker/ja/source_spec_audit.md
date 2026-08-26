@@ -23,6 +23,17 @@ F5にnested-comprehension outer-generator useがないためactual capture cover
 
 Implementation/test-sufficiency reviewは**NO FINDINGS**。focused `4 + 1`、package library `554/554`/`614/614`、format、package/full-workspace Clippy、full workspace tests（metadata/public-enum suiteを含む）、unchanged 5 CLI replay、diff checkはPASS。sole Low baseline/current wording repair後、final source-doc reviewとindependent bilingual/boundary reviewも**NO FINDINGS**。final-qualityも**NO FINDINGS**、全`9/9` hard gate PASS、valid uncapped `100/100`（`20/20/15/15/10/10/5/5`）。exact 23-path staging/cached reviewもPASS。task-only commit/immediate post-commit proof/accepted fresh semantic STOPはlanguage-local [historical checkpoint](../../task_contracts/ja/CHECKER-FRAENKEL-GENERATOR-BOUND-USE-257C4B.md#historical-immediate-post-implementation-checkpoint)でclosedし、successorはselectしない。coverage audit/schema-v2 no-op decisionはcompleted transportでも不変。
 
+## Task 257C4C7 Two-capture Test Intent
+
+Canonical Chapter 13 §§13.4.3、13.4.4、13.8.6から、inner Fraenkel mapperが
+exact 2件のfree resolved outer-generator identityを参照し、自身のgeneratorがlocalに
+留まるoracleを導出できる。Paired [C4C7 contract](../../task_contracts/ja/TEST-FRAENKEL-NESTED-MULTI-CAPTURE-257C4C7.md)は
+この`test_gap`を閉じるinactive positive oracle 1件をfreezeする。Capture
+membership/cardinalityだけをassertしorderはassertしない。Generalized checker
+projection/corruption coverageは`design_drift`/`test_gap`、display-name/numeric-ID
+joinは`boundary_violation`、observable orderは`spec_gap`のまま。Spec、existing
+test、diagnostic、active route、semantic result、Task277B creditは変更しない。
+
 ## Task 269SDU Implemented Zero-Credit Mapping
 
 [central Task-269SDU contract](../../task_contracts/ja/269SDU.md) はChapters 4、13、

@@ -1863,3 +1863,12 @@ check、library-test-only zero-credit boundaryを同期する。Paired mizar-tes
 review surface。English canonical、exceptionなし。
 Private probeにfrozen debug/clone assertionを追加した後のindependent bilingual/boundary
 re-reviewは**NO FINDINGS**。
+
+## Task 257C4C7 Frozen Contract Parity
+
+[EN canonical](../../task_contracts/en/TEST-FRAENKEL-NESTED-MULTI-CAPTURE-257C4C7.md)と
+[JA companion](../../task_contracts/ja/TEST-FRAENKEL-NESTED-MULTI-CAPTURE-257C4C7.md)は、
+exact inactive pair、sole existing trace backlink、protected one-capture pair、
+metadata/count impact、zero active/order/Core/Task277B creditを同期する。Paired
+plan/corpus/traceability/TODO/本recordがmizar-test bilingual review surface。
+English canonical、exceptionなし。

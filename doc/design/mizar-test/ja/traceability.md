@@ -27,6 +27,15 @@ Traceability model は bidirectional である。
 
 Harness は両方向を validate する。
 
+### Task 257C4C7 Inactive Trace Increment
+
+Existing `spec.en.13.set_expressions.nested_capture.semantic` requirementがsole
+`advanced_semantics/covered/pass` ownerのまま。C4C7はsorted testsへinactive
+two-capture sidecar 1件だけをappendしnoteだけを更新する。Requirement/status/
+dependency/active stage/diagnostic/executable coverage/ordering rule/Core result/
+Task277B creditは追加しない。Exact baseline/final trace measurementはpaired
+[contract](../../task_contracts/ja/TEST-FRAENKEL-NESTED-MULTI-CAPTURE-257C4C7.md)がownする。
+
 ```text
 doc/spec/...                    pure specification text
 tests/coverage/spec_trace.toml  spec requirement -> tests

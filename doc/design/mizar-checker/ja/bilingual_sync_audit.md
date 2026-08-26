@@ -1832,6 +1832,15 @@ Paired completion recordはexact seven-path implementation result、focused test
 [precommit completion checkpoint](../../task_contracts/ja/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md#precommit-implementation-completion-checkpoint)で
 synchronizeする。Independent source-doc consistency/bilingual/boundary reviewは
 **NO FINDINGS**。
+
+## Task 257C4C7 Frozen Contract Parity
+
+[EN canonical](../../task_contracts/en/TEST-FRAENKEL-NESTED-MULTI-CAPTURE-257C4C7.md)と
+[JA companion](../../task_contracts/ja/TEST-FRAENKEL-NESTED-MULTI-CAPTURE-257C4C7.md)は、
+exact two-capture inactive source/sidecar、identity-only membership/cardinality
+intent、non-semantic private order、standalone future checker owner、Core-33/
+Core-35 boundary、count/hash impact、prohibition、zero-credit exitを同期する。
+English canonical、exceptionなし。
 Independent final-quality reviewも**NO FINDINGS**であり、canonical [precommit
 completion checkpoint](../../task_contracts/ja/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md#precommit-implementation-completion-checkpoint)にrecordする。
 同historical review-time checkpointにrecordしたexact staging/cached reviewも

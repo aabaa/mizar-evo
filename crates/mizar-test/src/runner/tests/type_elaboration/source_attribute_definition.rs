@@ -969,7 +969,7 @@ fn source_attribute_definition_route_publishes_no_semantic_outputs() {
     );
     assert_eq!(
         (plan.cases.len(), plan.manifest.requirements.len()),
-        (429, 396)
+        (430, 396)
     );
     assert_eq!(
         plan.cases.iter().fold((0, 0), |(pass, fail), case| {
@@ -979,7 +979,7 @@ fn source_attribute_definition_route_publishes_no_semantic_outputs() {
                 _ => (pass, fail),
             }
         }),
-        (236, 193)
+        (237, 193)
     );
     assert_eq!(
         (

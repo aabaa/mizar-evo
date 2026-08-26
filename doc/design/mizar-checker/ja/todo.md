@@ -6637,3 +6637,16 @@ post-commit fresh inventoryからだけ選択する。
   Inventoryはsuccessorを選択しない。Exact checker-final-projection to Core-33/Core-35 join、
   snapshot-local Core identity map、generalized parameter/argument order、corruption oracleには
   separate human decisionが必要。Task277Bはnot-ready/zero-creditのまま。
+
+## Task 257C4C7 two-capture prerequisite
+
+- [x] Checker Task-257Cをfuture complete Core-ID-free projectionのsole owner、
+  authenticated declaration/source orderをnon-semantic private convention、
+  Core-33をmapping owner、Core-35をlowering/GeneratedOrigin ownerとしてacceptする。
+- [x] Paired [C4C7 contract](../../task_contracts/ja/TEST-FRAENKEL-NESTED-MULTI-CAPTURE-257C4C7.md)をfreezeし独立reviewする。
+- [x] Exact inactive two-capture `.miz`/sidecar/backlink/auditとmechanical metadata
+  count guardだけを追加し、C4C2--C4C6とproduction codeを保持する。
+- [x] Pre-final review/focused-full verificationを完了し、active/Task277B creditを
+  付与しない。
+- [x] Final-quality scoringを`9/9`、valid uncapped `100/100`で完了する。
+- [ ] Task-only commit、fresh C4C8 readiness inventoryを完了する。

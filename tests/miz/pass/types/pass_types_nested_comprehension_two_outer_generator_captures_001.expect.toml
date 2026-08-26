@@ -1,0 +1,13 @@
+schema_version = 1
+id = "pass_types_nested_comprehension_two_outer_generator_captures_001"
+kind = "pass"
+stage = "advanced_semantics"
+domain = "set_expressions.nested_capture"
+source = "pass_types_nested_comprehension_two_outer_generator_captures_001.miz"
+expected_outcome = "pass"
+expected_phase = "type_check"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.13.set_expressions.nested_capture.semantic",
+]
+notes = "Inactive advanced_semantics pass oracle derived from Chapter 13 sections 13.4.3, 13.4.4, and 13.8.6: the inner mapper references both resolved outer generator identities x and y, while inner z remains local. It asserts capture membership/cardinality only, not generated-parameter/application-argument order. Frontend admission uses parser.nested_capture_fixtures; generalized resolver/checker capture transport, execution, Core lowering, and Task 277B remain deferred."

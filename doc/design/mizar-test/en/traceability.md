@@ -31,6 +31,16 @@ The traceability model is bidirectional:
 
 The harness validates both directions.
 
+### Task 257C4C7 Inactive Trace Increment
+
+The existing `spec.en.13.set_expressions.nested_capture.semantic` requirement
+remains the sole `advanced_semantics/covered/pass` owner. C4C7 appends exactly
+one inactive two-capture sidecar to its sorted tests and updates only the note.
+No requirement, status, dependency, active stage, diagnostic, executable
+coverage, ordering rule, Core result, or Task-277B credit is added. Exact
+baseline and final trace measurements belong to the paired
+[contract](../../task_contracts/en/TEST-FRAENKEL-NESTED-MULTI-CAPTURE-257C4C7.md).
+
 ```text
 doc/spec/...                    pure specification text
 tests/coverage/spec_trace.toml  spec requirement -> tests

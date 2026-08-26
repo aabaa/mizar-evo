@@ -2007,3 +2007,12 @@ ResolvedTypedAst, module-boundary, and source-spec owner documents are the
 required checker review surface. English is canonical; no exception exists.
 Independent bilingual/boundary re-review reports **NO FINDINGS** after the
 zero-semantic table guard and test-evidence repairs.
+
+## Task 257C4C7 Frozen Contract Parity
+
+The [EN canonical](../../task_contracts/en/TEST-FRAENKEL-NESTED-MULTI-CAPTURE-257C4C7.md)
+and [JA companion](../../task_contracts/ja/TEST-FRAENKEL-NESTED-MULTI-CAPTURE-257C4C7.md)
+synchronize the exact two-capture inactive source/sidecar, identity-only
+membership/cardinality intent, non-semantic private order, standalone future
+checker owner, Core-33/Core-35 boundary, count/hash impact, prohibitions, and
+zero-credit exit. English is canonical; no exception is recorded.

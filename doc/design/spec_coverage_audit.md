@@ -7086,3 +7086,22 @@ executable/semantic coverage credit. C4C4 captured state remains empty;
 capture-set semantics, Task-255 participation, Core identity transport,
 generated parameters/origins, parameter ordering, type/sethood answers,
 runner activation, and Task 277B remain deferred and zero-credit.
+
+## Task 257C4C7 Zero-Credit Two-Capture Test-Intent Mapping
+
+The canonical [C4C7 contract](./task_contracts/en/TEST-FRAENKEL-NESTED-MULTI-CAPTURE-257C4C7.md)
+adds one exact inactive Chapter-13 oracle alongside the protected one-capture
+seed. Its inner mapper references both resolved outer generator identities
+while its inner generator stays local. The existing nested-capture requirement
+remains the sole trace owner and gains only the second sidecar backlink and a
+clarifying note; requirement status and dependencies do not change. The
+Chapter-13 summary row therefore remains `partial`; this dedicated section is
+the exact mapping and follow-up delta.
+
+This mapping closes only the generalized membership/cardinality `test_gap`.
+It grants no ordering rule, parser/resolver/checker execution, active route,
+diagnostic, capture-state, Core-ID, generated-parameter/argument,
+GeneratedOrigin, semantic result, or Task-277B credit. The checker Task-257C
+family retains later standalone Core-ID-free projection ownership; Core Task
+33 retains fresh identity allocation and durable association, while Core Task
+35 retains post-Task-34 lowering and generated-origin ownership.

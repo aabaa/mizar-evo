@@ -7060,3 +7060,18 @@ selected only from fresh post-commit inventory.
   Core-33/Core-35 join, snapshot-local Core identity map, generalized
   parameter/argument order, and corruption oracle require a separate human
   decision. Task 277B remains not-ready and zero-credit.
+
+## Task 257C4C7 two-capture prerequisite
+
+- [x] Accept checker Task-257C as the sole future complete Core-ID-free
+  projection owner, private authenticated declaration/source order as a
+  non-semantic convention, Core-33 mapping ownership, and Core-35 lowering/
+  GeneratedOrigin ownership.
+- [x] Freeze and independently review the paired [C4C7 contract](../../task_contracts/en/TEST-FRAENKEL-NESTED-MULTI-CAPTURE-257C4C7.md).
+- [x] Add only the exact inactive two-capture `.miz`/sidecar/backlink/audit and
+  mechanical metadata-count guards; preserve C4C2--C4C6 and all production
+  code.
+- [x] Complete all pre-final reviews and focused/full verification without
+  granting active or Task-277B credit.
+- [x] Complete final-quality scoring at `9/9`, valid uncapped `100/100`.
+- [ ] Complete task-only commit and fresh C4C8 readiness inventory.

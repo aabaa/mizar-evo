@@ -3985,3 +3985,15 @@ the successor is selected only from fresh post-commit inventory.
   inventory **STOP** at the language-local [historical postimplementation
   checkpoint](../../task_contracts/en/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md#historical-immediate-postimplementation-pre-closure-checkpoint).
   Select no capture/resolver-semantic, Task-252, or Task-277B successor.
+
+## Task 257C4C7 two-capture inactive oracle
+
+- [x] Freeze and independently review the paired [C4C7 contract](../../task_contracts/en/TEST-FRAENKEL-NESTED-MULTI-CAPTURE-257C4C7.md).
+- [x] Add the exact new inactive pair and sole existing-requirement backlink;
+  update only the Chapter-13 audit state and four mechanical global count
+  guards.
+- [x] Preserve the existing one-capture pair, active routes, diagnostics,
+  production source, ordering neutrality, and Task-277B zero credit.
+- [x] Complete independent pre-final reviews and focused/full verification.
+- [x] Complete final-quality review at `9/9`, valid uncapped `100/100`.
+- [ ] Complete exact commit and clean postcommit inventory.

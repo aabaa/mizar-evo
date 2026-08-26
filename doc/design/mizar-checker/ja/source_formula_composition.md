@@ -799,3 +799,20 @@ coercion、initial-obligation、typed-diagnostic tableをrejectし、later recei
 recursive retainすることとsemantic typed stateをcarryすることを防ぐ。Captured state、
 semantic result、Core identity、generated parameter/origin、ordering ruleは追加しない。
 Exact AST storage/final clone/mutual exclusionはlinked Typed/Resolved ownerがownする。
+
+## Task 257C4C7 Multi-capture Projection Boundary
+
+Accepted [C4C7 contract](../../task_contracts/ja/TEST-FRAENKEL-NESTED-MULTI-CAPTURE-257C4C7.md)は
+existing Task-257C familyをfuture complete immutable syntax-free Core-ID-free
+nested-Fraenkel projectionのsole checker ownerに保つ。Associationはresolved binder
+identityでauthenticateし、complete generator/mapper/optional-predicate/capture-
+occurrence graphとowner/context/source provenanceをcoverする。同じidentityの複数
+occurrenceはdistinct capture 1件。Authenticated outer declaration/source orderは
+private deterministic transport conventionとしてだけ使用できる。
+
+C4C7はAPI/implementationを作らない。Inactive two-capture oracleは両outer identityが
+captureされinner generatorがlocalであることだけをassertし、orderはassertしない。
+Later contractがexact API/default-deny matrixをfreezeする。C4C6 immutable
+Typed/Resolved receiptを保持し、standalone projectionはsecond AST slot、ID
+reinterpretation、Core-33 allocationまたはCore-35 lowering/GeneratedOrigin ownerの
+checker移管を行わない。

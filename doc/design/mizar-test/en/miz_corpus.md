@@ -160,3 +160,15 @@ The task-only commit, post-commit proof, and accepted fresh-inventory STOP are
 closed at the language-local [historical postimplementation
 checkpoint](../../task_contracts/en/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md#historical-immediate-postimplementation-pre-closure-checkpoint).
 The inactive, zero-credit corpus disposition remains unchanged.
+
+## Task 257C4C7 Frozen Corpus Increment
+
+The [C4C7 contract](../../task_contracts/en/TEST-FRAENKEL-NESTED-MULTI-CAPTURE-257C4C7.md)
+owns one exact new inactive pair under `tests/miz/pass/types/`. Its 193-byte
+source combines the independently specified multiple-generator and nested-
+capture forms: inner mapper `[x, y]` references exactly two resolved outer
+generators, while inner `z` is local. The sidecar asserts membership/cardinality
+only and explicitly withholds ordering, execution, Core, and Task-277B credit.
+The completed increment projects corpus pairs `344/344 -> 345/345`; the
+existing one-capture pair remains byte-identical. Exact completion evidence is
+owned by the linked contract.

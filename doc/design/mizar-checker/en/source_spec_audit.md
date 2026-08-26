@@ -66,6 +66,18 @@ checkpoint](../../task_contracts/en/CHECKER-FRAENKEL-GENERATOR-BOUND-USE-257C4B.
 No successor is selected. The completed transport does not change the explicit
 coverage-audit or schema-v2 no-op decision.
 
+## Task 257C4C7 Two-capture Test Intent
+
+Canonical Chapter 13 §§13.4.3, 13.4.4, and 13.8.6 jointly derive an inner
+Fraenkel mapper with exactly two free resolved outer-generator identities while
+its own generator stays local. The paired [C4C7 contract](../../task_contracts/en/TEST-FRAENKEL-NESTED-MULTI-CAPTURE-257C4C7.md)
+freezes one inactive positive oracle for that `test_gap`. It asserts capture
+membership/cardinality, not ordering. Generalized checker projection and
+corruption coverage remain `design_drift`/`test_gap`; display-name or numeric-ID
+joins are a `boundary_violation`, and observable ordering would be a
+`spec_gap`. No specification, existing test, diagnostic, active route,
+semantic result, or Task-277B credit changes.
+
 ## Task 269SDU Implemented Zero-Credit Mapping
 
 The [central Task-269SDU contract](../../task_contracts/en/269SDU.md) implements one

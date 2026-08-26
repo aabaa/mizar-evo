@@ -2017,3 +2017,12 @@ zero-credit boundary. The paired mizar-test plan and harness sections form the
 runner review surface. English is canonical; no exception exists.
 Independent bilingual/boundary re-review reports **NO FINDINGS** after the
 private probe gained the frozen debug/clone assertions.
+
+## Task 257C4C7 Frozen Contract Parity
+
+The [EN canonical](../../task_contracts/en/TEST-FRAENKEL-NESTED-MULTI-CAPTURE-257C4C7.md)
+and [JA companion](../../task_contracts/ja/TEST-FRAENKEL-NESTED-MULTI-CAPTURE-257C4C7.md)
+synchronize the exact inactive pair, sole existing trace backlink, protected
+one-capture pair, metadata/count impact, and zero active/order/Core/Task-277B
+credit. The paired plan, corpus, traceability, TODO, and this record form the
+mizar-test bilingual review surface. English is canonical; no exception exists.

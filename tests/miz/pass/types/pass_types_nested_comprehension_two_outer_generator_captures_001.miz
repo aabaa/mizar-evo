@@ -1,0 +1,7 @@
+import parser.nested_capture_fixtures;
+
+definition
+  func NestedCaptureTwo -> set equals
+    { { [x, y] where z is Element of NAT }
+      where x is Element of NAT, y is Element of NAT };
+end;

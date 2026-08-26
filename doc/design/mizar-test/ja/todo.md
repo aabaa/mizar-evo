@@ -3671,3 +3671,14 @@ post-commit fresh inventoryからだけ選択する。
 - [x] Task-only commit、post-commit proof、accepted fresh-inventory **STOP**を
   language-local [historical postimplementation checkpoint](../../task_contracts/ja/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md#historical-immediate-postimplementation-pre-closure-checkpoint)でcloseする。
   Capture/resolver-semantic、Task252、Task277B successorはselectしない。
+
+## Task 257C4C7 two-capture inactive oracle
+
+- [x] Paired [C4C7 contract](../../task_contracts/ja/TEST-FRAENKEL-NESTED-MULTI-CAPTURE-257C4C7.md)をfreezeし独立reviewする。
+- [x] Exact new inactive pairとsole existing-requirement backlinkを追加し、Chapter-13
+  audit stateと4 mechanical global count guardだけを更新する。
+- [x] Existing one-capture pair、active route、diagnostic、production source、order
+  neutrality、Task277B zero creditを保持する。
+- [x] Independent pre-final reviewとfocused/full verificationを完了する。
+- [x] Final-quality reviewを`9/9`、valid uncapped `100/100`で完了する。
+- [ ] Exact commit、clean postcommit inventoryを完了する。

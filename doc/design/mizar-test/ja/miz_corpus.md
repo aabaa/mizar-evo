@@ -149,3 +149,14 @@ checkpoint](../../task_contracts/ja/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSI
 Task-only commit、post-commit proof、accepted fresh-inventory STOPはlanguage-local
 [historical postimplementation checkpoint](../../task_contracts/ja/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md#historical-immediate-postimplementation-pre-closure-checkpoint)でclosed。
 Inactive zero-credit corpus dispositionは不変。
+
+## Task 257C4C7 Frozen Corpus Increment
+
+[C4C7 contract](../../task_contracts/ja/TEST-FRAENKEL-NESTED-MULTI-CAPTURE-257C4C7.md)は
+`tests/miz/pass/types/`のexact new inactive pair 1件をownする。193-byte sourceは
+independently specifiedなmultiple-generator/nested-capture shapeを組み合わせ、inner
+mapper `[x, y]`がexact 2件のresolved outer generatorを参照しinner `z`はlocal。
+Sidecarはmembership/cardinalityだけをassertし、order/execution/Core/Task277B
+creditを明示的に付与しない。Completed incrementはcorpus pairを
+`344/344 -> 345/345`へ変更し、existing one-capture pairをbyte-identicalに保つ。
+Exact completion evidenceはlinked contractがownする。
