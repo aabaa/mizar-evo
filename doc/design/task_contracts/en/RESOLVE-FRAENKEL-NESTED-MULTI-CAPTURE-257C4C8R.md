@@ -12,11 +12,11 @@ and test
 
 ## Status, purpose, and readiness
 
-**Status:** frozen; the separate parser
-[C4C8P prerequisite](PARSER-FRAENKEL-GENERATOR-DELIMITER-257C4C8P.md) is
-implementation-complete in its task-only commit. Resolver contract reviews are
-complete. Source work becomes ready after that commit and one fresh preflight
-proves the exact C4C7 AST diagnostics-free and unrecovered.
+**Status:** implementation complete and task-only commit pending. The parser
+[C4C8P prerequisite](PARSER-FRAENKEL-GENERATOR-DELIMITER-257C4C8P.md) committed
+at `6bc8de3a007d0260d14d2c803dc335623b6aa912`, and the mandatory fresh
+exact-source preflight proved the C4C7 AST diagnostics-free and unrecovered
+before resolver source work began.
 
 This is the dependency-minimal successor selected by the clean post-C4C7
 inventory. It extends the existing resolver-owned
@@ -189,3 +189,53 @@ inventory. The next checker C4C8 projection may be frozen only if the committed
 resolver relation plus fresh checker/typed inventory uniquely fixes its
 standalone graph/API/cardinality/default-deny contract. Core Tasks 33/35 and
 Task 277B remain deferred.
+
+## Precommit implementation completion evidence
+
+Fresh post-C4C8P frontend preflight used the exact frozen C4C7 source and
+reported zero diagnostics and recovery nodes, `95` AST nodes, two set
+comprehensions, three generator segments, one bracket application, and the
+frozen mapper, segment, binder, and type ranges. Resolver implementation then
+changed only the three frozen Rust paths. It adds one private exact candidate,
+reuses every existing public R2/C4C2 type and table, maps uses to binder node
+identities before source-order ID assignment, and emits only resolver-owned
+resolved-node provenance.
+
+Final source measurements are:
+
+| Path | Lines / bytes | SHA-256 |
+|---|---:|---|
+| `crates/mizar-resolve/src/names.rs` | `4415 / 140538` | `663ec040a0b9525cb79b532fe7ae6a548f67acb7510b8713df3b0cfe2b8d6166` |
+| `crates/mizar-resolve/src/names/tests.rs` | `4798 / 153865` | `d53afc1d148b3ab55bdbf97a04d11f78f4fe454a0caf6ca43f8ea72d6a55c504` |
+| `crates/mizar-test/src/runner/tests/type_elaboration/fraenkel_nested_capture_identity.rs` | `704 / 27913` | `6a1717fec263e79d9295813b413d1ec323c3291297f9ee04e0bc7c8e59e2e754` |
+
+Resolver and mizar-test library states are exactly `164` and `624` tests with
+sorted raw-list SHA-256 values
+`a01c16a16aead9868d30257e358a4e742dd7633a8da4f61c864d9197d9c1f1c8`
+and
+`21196d1cb959c5b6bd7b38f19efb83d334978ec7f1d0c99e35da19cec8afe385`.
+All five exact C4C8R tests pass, as do the C4C2/R2 compatibility tests,
+resolver library `164/164` and lint `11/11`, mizar-test library `624/624`,
+metadata `137/137`, lint `15/15`, parser C4C8P compatibility, formatting,
+offline Cargo metadata, and `git diff --check`.
+
+Independent test-sufficiency and implementation reviews report
+**NO FINDINGS**. The first real-fixture execution exposed an implementation-
+local mismatch that rejected normal `end;` siblings; the candidate was aligned
+with the existing C4C2 one-functor child boundary before review, temporary
+debug output was removed, and the real fixture then passed. Broad workspace
+warnings-denied all-target/all-feature Clippy and full all-feature workspace
+tests pass. The bilingual/boundary review found one stale C4C8P audit sentence;
+after the sentence was aligned with this completed zero-credit mapping, its
+finding-specific re-review reported **NO FINDINGS**. Source/documentation/API
+review also reported **NO FINDINGS**, with exact scope, counts, hashes, public
+API, owner links, and protected boundaries confirmed. Final-quality scoring,
+performed independently against the autonomous-development rubric, reports
+**NO FINDINGS**, all `9/9` hard gates passing, and a valid uncapped `100/100`
+score. Exact staging and the task-only commit remain exit steps.
+
+The C4C7 source, sidecar, and trace reproduce their protected hashes, paired
+contract trees are `104/104`, and no `doc/spec`, `.miz`, expectation, trace,
+metadata, parser/checker/Core production, C4C4 captured state, diagnostic,
+active route, or Task 277B state changes. This task closes only the resolver
+`source_drift` and private `test_gap`; coverage credit remains zero.

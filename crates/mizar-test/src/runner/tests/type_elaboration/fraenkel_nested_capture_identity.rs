@@ -1,3 +1,9 @@
+const TASK257C4C8R_CANONICAL_SOURCE: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/../../tests/miz/pass/types/",
+    "pass_types_nested_comprehension_two_outer_generator_captures_001.miz"
+));
+
 #[test]
 fn task257c4c2_real_imported_fixture_links_inner_mapper_to_outer_generator() {
     let output = task257c4c1_frontend_output(TASK257C4C1_CANONICAL_SOURCE, 3);
@@ -169,6 +175,115 @@ fn task257c4c2_real_imported_fixture_links_inner_mapper_to_outer_generator() {
 
     let (type_ast, type_module, _, symbols) =
         task253_ast_from_source_text(TASK257C4C1_CANONICAL_SOURCE, 25_742);
+    let augmented =
+        augment_type_elaboration_import_summaries(&type_ast, &type_module, symbols.clone());
+    assert_eq!(augmented, symbols);
+}
+
+#[test]
+fn task257c4c8r_real_imported_fixture_links_both_outer_generators() {
+    let output = task257c4c1_frontend_output(TASK257C4C8R_CANONICAL_SOURCE, 4);
+    assert!(output.diagnostics.is_empty());
+    let ast = output.ast.expect("C4C8R canonical imported AST");
+    assert!(ast.nodes().iter().all(|node| !node.recovered));
+    let module = mizar_resolve::resolved_ast::ModuleId::new(
+        output.source.package_id,
+        output.source.module_path,
+    );
+    let resolved = mizar_resolve::resolved_ast::SurfaceResolvedArena::lower(&ast, &module)
+        .expect("C4C8R resolver arena should lower");
+    let collector = FraenkelGeneratorVariableSourceCollector::new(&ast, &module, &resolved)
+        .expect("C4C8R collector should validate the resolver arena");
+    let collection = collector.collect().expect("C4C8R collector should collect");
+
+    assert_eq!(collection.bindings().len(), 3);
+    assert_eq!(collection.uses().len(), 2);
+    assert_eq!(collection.source_id(), ast.source_id);
+    assert_eq!(collection.module(), &module);
+    assert!(collection.debug_text().ends_with("bindings=3|uses=2"));
+    let bindings = collection.bindings().iter().collect::<Vec<_>>();
+    assert_eq!(bindings[0].0, FraenkelGeneratorVariableBindingId::new(0));
+    assert_eq!(bindings[0].1.spelling(), "z");
+    assert_eq!(
+        (bindings[0].1.segment_range().start, bindings[0].1.segment_range().end),
+        (110, 129)
+    );
+    assert_eq!(
+        (bindings[0].1.binder_range().start, bindings[0].1.binder_range().end),
+        (110, 111)
+    );
+    assert_eq!(bindings[0].1.source_ordinal(), 0);
+    assert_eq!(bindings[1].0, FraenkelGeneratorVariableBindingId::new(1));
+    assert_eq!(bindings[1].1.spelling(), "x");
+    assert_eq!(
+        (bindings[1].1.segment_range().start, bindings[1].1.segment_range().end),
+        (144, 163)
+    );
+    assert_eq!(
+        (bindings[1].1.binder_range().start, bindings[1].1.binder_range().end),
+        (144, 145)
+    );
+    assert_eq!(bindings[1].1.source_ordinal(), 1);
+    assert_eq!(bindings[2].0, FraenkelGeneratorVariableBindingId::new(2));
+    assert_eq!(bindings[2].1.spelling(), "y");
+    assert_eq!(
+        (bindings[2].1.segment_range().start, bindings[2].1.segment_range().end),
+        (165, 184)
+    );
+    assert_eq!(
+        (bindings[2].1.binder_range().start, bindings[2].1.binder_range().end),
+        (165, 166)
+    );
+    assert_eq!(bindings[2].1.source_ordinal(), 2);
+    assert_ne!(
+        bindings[0].1.comprehension(),
+        bindings[1].1.comprehension()
+    );
+    assert_eq!(
+        bindings[1].1.comprehension(),
+        bindings[2].1.comprehension()
+    );
+
+    let links = collection.uses().iter().collect::<Vec<_>>();
+    assert_eq!(links[0].binding(), FraenkelGeneratorVariableBindingId::new(1));
+    assert_eq!(links[0].role(), FraenkelGeneratorVariableUseRole::Mapper);
+    assert_eq!(
+        (links[0].identifier_range().start, links[0].identifier_range().end),
+        (98, 99)
+    );
+    assert_eq!(
+        (links[0].source_ordinal(), links[0].role_source_ordinal()),
+        (0, 0)
+    );
+    assert_eq!(links[1].binding(), FraenkelGeneratorVariableBindingId::new(2));
+    assert_eq!(links[1].role(), FraenkelGeneratorVariableUseRole::Mapper);
+    assert_eq!(
+        (links[1].identifier_range().start, links[1].identifier_range().end),
+        (101, 102)
+    );
+    assert_eq!(
+        (links[1].source_ordinal(), links[1].role_source_ordinal()),
+        (1, 1)
+    );
+    assert!(links.iter().all(|link| {
+        link.comprehension() == bindings[0].1.comprehension()
+            && link.role_owner() != link.term_reference()
+            && matches!(
+                ast.nodes()[link.role_owner().index()].kind,
+                SurfaceNodeKind::TermExpression
+            )
+            && matches!(
+                ast.nodes()[link.term_reference().index()].kind,
+                SurfaceNodeKind::TermReference
+            )
+    }));
+    assert_eq!(
+        collection,
+        collector.collect().expect("C4C8R deterministic replay")
+    );
+
+    let (type_ast, type_module, _, symbols) =
+        task253_ast_from_source_text(TASK257C4C8R_CANONICAL_SOURCE, 25_743);
     let augmented =
         augment_type_elaboration_import_summaries(&type_ast, &type_module, symbols.clone());
     assert_eq!(augmented, symbols);

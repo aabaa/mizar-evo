@@ -7115,9 +7115,11 @@ rules to expose three resolved generator declarations and the two inner-mapper
 links to the outer identities. The Chapter-13 summary remains `partial`, and
 the existing trace requirement/status/backlinks remain unchanged.
 
-This planned mapping targets only the exact resolver `source_drift` and
-private-unit `test_gap`; they remain open until the frozen implementation and
-tests pass. It grants no generalized checker graph, capture state/order,
+This completed mapping closes only the exact resolver `source_drift` and
+private-unit `test_gap`. The exact source now publishes three resolved
+generator rows and two mapper links through the existing R2/C4C2 API with
+default-deny near-miss coverage and no semantic activation. It grants no
+generalized checker graph, capture state/order,
 Typed/Resolved destination, active route, semantic result, diagnostic,
 Task-252 occurrence, type/sethood evidence, Core identity, generated
 parameter/argument, GeneratedOrigin, or Task-277B credit. Those remain with
@@ -7137,6 +7139,7 @@ covered.
 The Chapter-13 summary remains `partial`, and no trace row/status/backlink,
 `.miz`, expectation, diagnostic contract, active route, resolver/checker/Core
 identity, semantic result, capture order, generated origin, or Task-277B
-credit changes. The task-only commit containing this completion record satisfies
-the parser prerequisite. Resolver C4C8R still requires a fresh exact-source
-preflight before its source work starts.
+credit changes. The task-only commit containing this completion record satisfied
+the parser prerequisite. The required fresh exact-source preflight and C4C8R
+resolver implementation are now complete under the separate zero-credit C4C8R
+mapping above.

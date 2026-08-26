@@ -707,6 +707,198 @@ fn task257c4c2_revalidates_arena_and_replays_deterministically() {
 }
 
 #[test]
+fn task257c4c8r_collects_exact_nested_multi_capture_relation() {
+    let source_id = source_id();
+    let module = module_id("pkg", "nested_multi_capture");
+    let ast = task257c4c8r_ast(source_id, Task257c4c8rShape::Exact);
+    let resolved = SurfaceResolvedArena::lower(&ast, &module).unwrap();
+    let collection = FraenkelGeneratorVariableSourceCollector::new(&ast, &module, &resolved)
+        .unwrap()
+        .collect()
+        .unwrap();
+
+    assert_eq!(
+        collection.debug_text(),
+        "fraenkel-generator-variable-source-v1|module=pkg.nested_multi_capture|bindings=3|uses=2"
+    );
+    assert_eq!(
+        collection
+            .bindings()
+            .iter()
+            .map(|(id, binding)| (
+                id.index(),
+                binding.spelling(),
+                binding.segment_range(),
+                binding.binder_range(),
+                binding.source_ordinal(),
+            ))
+            .collect::<Vec<_>>(),
+        vec![
+            (
+                0,
+                "z",
+                range(source_id, 110, 129),
+                range(source_id, 110, 111),
+                0,
+            ),
+            (
+                1,
+                "x",
+                range(source_id, 144, 163),
+                range(source_id, 144, 145),
+                1,
+            ),
+            (
+                2,
+                "y",
+                range(source_id, 165, 184),
+                range(source_id, 165, 166),
+                2,
+            ),
+        ]
+    );
+    assert_eq!(
+        collection
+            .uses()
+            .iter()
+            .map(|link| (
+                link.binding().index(),
+                link.role(),
+                link.source_ordinal(),
+                link.role_source_ordinal(),
+                link.identifier_range(),
+            ))
+            .collect::<Vec<_>>(),
+        vec![
+            (
+                1,
+                FraenkelGeneratorVariableUseRole::Mapper,
+                0,
+                0,
+                range(source_id, 98, 99),
+            ),
+            (
+                2,
+                FraenkelGeneratorVariableUseRole::Mapper,
+                1,
+                1,
+                range(source_id, 101, 102),
+            ),
+        ]
+    );
+}
+
+#[test]
+fn task257c4c8r_preserves_outer_scope_and_excludes_inner_generator() {
+    let source_id = source_id();
+    let module = module_id("pkg", "nested_multi_capture");
+    let ast = task257c4c8r_ast(source_id, Task257c4c8rShape::Exact);
+    let resolved = SurfaceResolvedArena::lower(&ast, &module).unwrap();
+    let collection = FraenkelGeneratorVariableSourceCollector::new(&ast, &module, &resolved)
+        .unwrap()
+        .collect()
+        .unwrap();
+    let inner = collection
+        .bindings()
+        .get(FraenkelGeneratorVariableBindingId::new(0))
+        .unwrap();
+    let outer_x = collection
+        .bindings()
+        .get(FraenkelGeneratorVariableBindingId::new(1))
+        .unwrap();
+    let outer_y = collection
+        .bindings()
+        .get(FraenkelGeneratorVariableBindingId::new(2))
+        .unwrap();
+    let links = collection.uses().iter().collect::<Vec<_>>();
+
+    assert_ne!(inner.comprehension(), outer_x.comprehension());
+    assert_eq!(outer_x.comprehension(), outer_y.comprehension());
+    assert!(links.iter().all(|link| {
+        link.comprehension() == inner.comprehension()
+            && link.role_owner() == links[0].role_owner()
+            && link.role() == FraenkelGeneratorVariableUseRole::Mapper
+    }));
+    assert!(
+        links
+            .iter()
+            .all(|link| link.binding() != FraenkelGeneratorVariableBindingId::new(0))
+    );
+    assert_eq!(
+        links[0].binding(),
+        FraenkelGeneratorVariableBindingId::new(1)
+    );
+    assert_eq!(
+        links[1].binding(),
+        FraenkelGeneratorVariableBindingId::new(2)
+    );
+    assert_eq!(links[0].identifier_range(), range(source_id, 98, 99));
+    assert_eq!(links[1].identifier_range(), range(source_id, 101, 102));
+}
+
+#[test]
+fn task257c4c8r_rejects_near_miss_profiles() {
+    let source_id = source_id();
+    let module = module_id("pkg", "nested_multi_capture");
+    for shape in [
+        Task257c4c8rShape::InnerAlternateType,
+        Task257c4c8rShape::OuterXAlternateType,
+        Task257c4c8rShape::OuterYAlternateType,
+        Task257c4c8rShape::EqualOuterBinders,
+        Task257c4c8rShape::WrongMapper,
+        Task257c4c8rShape::MissingMapperArgument,
+        Task257c4c8rShape::AdditionalMapperIdentifierRefs,
+        Task257c4c8rShape::Recovered,
+        Task257c4c8rShape::ConditionBearing,
+        Task257c4c8rShape::ExtraGenerator,
+        Task257c4c8rShape::MissingGenerator,
+        Task257c4c8rShape::ReorderedGenerator,
+        Task257c4c8rShape::ExtraNesting,
+        Task257c4c8rShape::NonExactWrapper,
+    ] {
+        let ast = task257c4c8r_ast(source_id, shape);
+        let resolved = SurfaceResolvedArena::lower(&ast, &module).unwrap();
+        let collection = FraenkelGeneratorVariableSourceCollector::new(&ast, &module, &resolved)
+            .unwrap()
+            .collect()
+            .unwrap();
+        assert!(collection.bindings().is_empty(), "{shape:?}");
+        assert!(collection.uses().is_empty(), "{shape:?}");
+    }
+}
+
+#[test]
+fn task257c4c8r_revalidates_arena_and_replays_deterministically() {
+    let source_id = source_id();
+    let module = module_id("pkg", "nested_multi_capture");
+    let ast = task257c4c8r_ast(source_id, Task257c4c8rShape::Exact);
+    let resolved = SurfaceResolvedArena::lower(&ast, &module).unwrap();
+    let collector =
+        FraenkelGeneratorVariableSourceCollector::new(&ast, &module, &resolved).unwrap();
+    assert_eq!(collector.collect().unwrap(), collector.collect().unwrap());
+
+    let wrong_module = module_id("pkg", "other");
+    assert!(matches!(
+        FraenkelGeneratorVariableSourceCollector::new(&ast, &wrong_module, &resolved),
+        Err(SurfaceResolvedArenaError::ModuleMismatch)
+    ));
+    let stale_ast = task257c4c2_ast(source_id, Task257c4c2Shape::Exact);
+    assert!(matches!(
+        FraenkelGeneratorVariableSourceCollector::new(&stale_ast, &module, &resolved),
+        Err(SurfaceResolvedArenaError::NodeCountMismatch)
+    ));
+    let stale_collector = FraenkelGeneratorVariableSourceCollector {
+        ast: &stale_ast,
+        module: &module,
+        resolved: &resolved,
+    };
+    assert!(matches!(
+        stale_collector.collect(),
+        Err(SurfaceResolvedArenaError::NodeCountMismatch)
+    ));
+}
+
+#[test]
 fn unqualified_lookup_uses_declaration_point_shadowing_and_builtins() {
     let source_id = source_id();
     let current = module_id("app", "main");
@@ -3490,6 +3682,325 @@ fn task257c4c2_ast(source_id: SourceId, shape: Task257c4c2Shape) -> SurfaceAst {
     );
     let root = builder.add_node(SurfaceNodeKind::Root, range(source_id, 0, 164), vec![block]);
     builder.finish(Some(root), None)
+}
+
+#[derive(Debug, Clone, Copy)]
+enum Task257c4c8rShape {
+    Exact,
+    InnerAlternateType,
+    OuterXAlternateType,
+    OuterYAlternateType,
+    EqualOuterBinders,
+    WrongMapper,
+    MissingMapperArgument,
+    AdditionalMapperIdentifierRefs,
+    Recovered,
+    ConditionBearing,
+    ExtraGenerator,
+    MissingGenerator,
+    ReorderedGenerator,
+    ExtraNesting,
+    NonExactWrapper,
+}
+
+fn task257c4c8r_ast(source_id: SourceId, shape: Task257c4c8rShape) -> SurfaceAst {
+    let mut builder = SurfaceAstBuilder::new(source_id);
+    let definition = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        "definition",
+        range(source_id, 39, 49),
+    );
+    let func = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        "func",
+        range(source_id, 52, 56),
+    );
+    let outer_open = if matches!(shape, Task257c4c8rShape::Recovered) {
+        builder.add_recovered_token(
+            SurfaceTokenKind::ReservedSymbol,
+            "{",
+            range(source_id, 93, 94),
+        )
+    } else {
+        builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            "{",
+            range(source_id, 93, 94),
+        )
+    };
+
+    let inner_open = builder.add_token(
+        SurfaceTokenKind::ReservedSymbol,
+        "{",
+        range(source_id, 95, 96),
+    );
+    let mapper_x_spelling = if matches!(shape, Task257c4c8rShape::WrongMapper) {
+        "z"
+    } else {
+        "x"
+    };
+    let mapper_x = task257c4c8r_identifier_term(&mut builder, source_id, mapper_x_spelling, 98);
+    let mapper_y = task257c4c8r_identifier_term(&mut builder, source_id, "y", 101);
+    let application_open = builder.add_token(
+        SurfaceTokenKind::ReservedSymbol,
+        "[",
+        range(source_id, 97, 98),
+    );
+    let application_comma = builder.add_token(
+        SurfaceTokenKind::ReservedSymbol,
+        ",",
+        range(source_id, 100, 101),
+    );
+    let application_close = builder.add_token(
+        SurfaceTokenKind::ReservedSymbol,
+        "]",
+        range(source_id, 102, 103),
+    );
+    let mut application_children = vec![
+        application_open,
+        mapper_x,
+        application_comma,
+        mapper_y,
+        application_close,
+    ];
+    if matches!(shape, Task257c4c8rShape::MissingMapperArgument) {
+        application_children.remove(3);
+    }
+    if matches!(shape, Task257c4c8rShape::AdditionalMapperIdentifierRefs) {
+        let extra_mapper = task257c4c8r_identifier_term(&mut builder, source_id, "x", 104);
+        let extra_comma = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ",",
+            range(source_id, 103, 104),
+        );
+        application_children.insert(4, extra_comma);
+        application_children.insert(5, extra_mapper);
+    }
+    if matches!(shape, Task257c4c8rShape::ExtraNesting) {
+        application_children = vec![task257c4c2_extra_nested_comprehension(
+            &mut builder,
+            source_id,
+        )];
+    }
+    let application = builder.add_node(
+        SurfaceNodeKind::ApplicationTerm,
+        range(source_id, 97, 103),
+        application_children,
+    );
+    let inner_mapper = builder.add_node(
+        SurfaceNodeKind::TermExpression,
+        range(source_id, 97, 103),
+        vec![application],
+    );
+    let inner_where = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        "where",
+        range(source_id, 104, 109),
+    );
+    let inner_binder = builder.add_token(
+        SurfaceTokenKind::Identifier,
+        "z",
+        range(source_id, 110, 111),
+    );
+    let inner_is = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        "is",
+        range(source_id, 112, 114),
+    );
+    let inner_type = task257c4c2_element_of_nat_type(
+        &mut builder,
+        source_id,
+        115,
+        matches!(shape, Task257c4c8rShape::InnerAlternateType),
+    );
+    let inner_segment = builder.add_node(
+        SurfaceNodeKind::ComprehensionVariableSegment,
+        range(source_id, 110, 129),
+        vec![inner_binder, inner_is, inner_type],
+    );
+    let inner_close = builder.add_token(
+        SurfaceTokenKind::ReservedSymbol,
+        "}",
+        range(source_id, 130, 131),
+    );
+    let mut inner_children = vec![
+        inner_open,
+        inner_mapper,
+        inner_where,
+        inner_segment,
+        inner_close,
+    ];
+    if matches!(shape, Task257c4c8rShape::ConditionBearing) {
+        let colon = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ":",
+            range(source_id, 131, 132),
+        );
+        inner_children.insert(4, colon);
+        inner_children.insert(5, task257c4c2_condition(&mut builder, source_id, 132));
+    }
+    let inner = builder.add_node(
+        SurfaceNodeKind::SetComprehension,
+        range(source_id, 95, 131),
+        inner_children,
+    );
+
+    let mut outer_mapper_children = vec![inner];
+    if matches!(shape, Task257c4c8rShape::NonExactWrapper) {
+        let wrapper_open = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            "(",
+            range(source_id, 94, 95),
+        );
+        let wrapper_close = builder.add_token(
+            SurfaceTokenKind::ReservedSymbol,
+            ")",
+            range(source_id, 131, 132),
+        );
+        let wrapper = builder.add_node(
+            SurfaceNodeKind::ParenthesizedTerm,
+            range(source_id, 94, 132),
+            vec![wrapper_open, inner, wrapper_close],
+        );
+        outer_mapper_children = vec![wrapper];
+    }
+    let outer_mapper = builder.add_node(
+        SurfaceNodeKind::TermExpression,
+        range(source_id, 95, 131),
+        outer_mapper_children,
+    );
+    let outer_where = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        "where",
+        range(source_id, 132, 137),
+    );
+    let outer_x_binder = builder.add_token(
+        SurfaceTokenKind::Identifier,
+        "x",
+        range(source_id, 144, 145),
+    );
+    let outer_x_is = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        "is",
+        range(source_id, 146, 148),
+    );
+    let outer_x_type = task257c4c2_element_of_nat_type(
+        &mut builder,
+        source_id,
+        149,
+        matches!(shape, Task257c4c8rShape::OuterXAlternateType),
+    );
+    let outer_x_segment = builder.add_node(
+        SurfaceNodeKind::ComprehensionVariableSegment,
+        range(source_id, 144, 163),
+        vec![outer_x_binder, outer_x_is, outer_x_type],
+    );
+    let outer_comma = builder.add_token(
+        SurfaceTokenKind::ReservedSymbol,
+        ",",
+        range(source_id, 164, 165),
+    );
+    let outer_y_binder = builder.add_token(
+        SurfaceTokenKind::Identifier,
+        if matches!(shape, Task257c4c8rShape::EqualOuterBinders) {
+            "x"
+        } else {
+            "y"
+        },
+        range(source_id, 165, 166),
+    );
+    let outer_y_is = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        "is",
+        range(source_id, 167, 169),
+    );
+    let outer_y_type = task257c4c2_element_of_nat_type(
+        &mut builder,
+        source_id,
+        170,
+        matches!(shape, Task257c4c8rShape::OuterYAlternateType),
+    );
+    let outer_y_segment = builder.add_node(
+        SurfaceNodeKind::ComprehensionVariableSegment,
+        range(source_id, 165, 184),
+        vec![outer_y_binder, outer_y_is, outer_y_type],
+    );
+    let outer_close = builder.add_token(
+        SurfaceTokenKind::ReservedSymbol,
+        "}",
+        range(source_id, 185, 186),
+    );
+    let mut outer_children = vec![
+        outer_open,
+        outer_mapper,
+        outer_where,
+        outer_x_segment,
+        outer_comma,
+        outer_y_segment,
+        outer_close,
+    ];
+    if matches!(shape, Task257c4c8rShape::MissingGenerator) {
+        outer_children.remove(5);
+    }
+    if matches!(shape, Task257c4c8rShape::ExtraGenerator) {
+        outer_children.insert(
+            6,
+            task257c4c2_extra_generator_segment(&mut builder, source_id),
+        );
+    }
+    if matches!(shape, Task257c4c8rShape::ReorderedGenerator) {
+        outer_children.swap(3, 5);
+    }
+    let outer = builder.add_node(
+        SurfaceNodeKind::SetComprehension,
+        range(source_id, 93, 186),
+        outer_children,
+    );
+    let definiens_expression = builder.add_node(
+        SurfaceNodeKind::TermExpression,
+        range(source_id, 93, 186),
+        vec![outer],
+    );
+    let definiens = builder.add_node(
+        SurfaceNodeKind::TermDefiniens,
+        range(source_id, 93, 186),
+        vec![definiens_expression],
+    );
+    let functor = builder.add_node(
+        SurfaceNodeKind::FunctorDefinition,
+        range(source_id, 52, 188),
+        vec![func, definiens],
+    );
+    let block = builder.add_node(
+        SurfaceNodeKind::DefinitionBlockItem,
+        range(source_id, 39, 191),
+        vec![definition, functor],
+    );
+    let root = builder.add_node(SurfaceNodeKind::Root, range(source_id, 0, 193), vec![block]);
+    builder.finish(Some(root), None)
+}
+
+fn task257c4c8r_identifier_term(
+    builder: &mut SurfaceAstBuilder,
+    source_id: SourceId,
+    spelling: &str,
+    start: usize,
+) -> mizar_syntax::SurfaceBuilderNodeId {
+    let identifier = builder.add_token(
+        SurfaceTokenKind::Identifier,
+        spelling,
+        range(source_id, start, start + 1),
+    );
+    let reference = builder.add_node(
+        SurfaceNodeKind::TermReference,
+        range(source_id, start, start + 1),
+        vec![identifier],
+    );
+    builder.add_node(
+        SurfaceNodeKind::TermExpression,
+        range(source_id, start, start + 1),
+        vec![reference],
+    )
 }
 
 fn task257c4c2_element_of_nat_type(

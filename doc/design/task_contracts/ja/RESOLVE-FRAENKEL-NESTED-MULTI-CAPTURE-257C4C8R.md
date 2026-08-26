@@ -10,10 +10,10 @@ mizar-test [harness](../../mizar-test/ja/harness.md#resolver-task-257c4c8r-priva
 
 ## Status、目的、readiness
 
-**Status:** frozen。Separate parser
-[C4C8P prerequisite](PARSER-FRAENKEL-GENERATOR-DELIMITER-257C4C8P.md)はtask-only commit内で
-implementation-complete。Resolver contract reviewはcomplete。そのcommit後、fresh preflightで
-exact C4C7 ASTがdiagnostics-free/unrecoveredと証明されればsource workがreadyになる。
+**Status:** implementation complete、task-only commit pending。Parser
+[C4C8P prerequisite](PARSER-FRAENKEL-GENERATOR-DELIMITER-257C4C8P.md)は
+`6bc8de3a007d0260d14d2c803dc335623b6aa912`でcommitされ、resolver source work前のmandatory
+fresh exact-source preflightはC4C7 ASTがdiagnostics-free/unrecoveredと証明した。
 
 Clean post-C4C7 inventoryが選んだdependency-minimal successor。既存resolver-owned
 `FraenkelGeneratorVariableSourceCollection`をexact C4C7 sourceだけに拡張する。Public
@@ -108,3 +108,44 @@ fmt、offline metadata、workspace warnings-denied Clippy/full tests、diff/hash
 checksを実行する。Exitは9/9 hard gates、valid 90/100以上、exact task-only commit、clean
 postcommit、fresh inventory。Checker C4C8はその時にgraph/API/cardinality/default-denyが
 一意ならfreezeする。Core 33/35とTask277Bはdefer。
+
+## Precommit implementation completion evidence
+
+Fresh post-C4C8P frontend preflightはexact frozen C4C7 sourceを使い、diagnostic/recovery 0、
+AST 95 nodes、2 set comprehension、3 generator segments、bracket application 1件とfrozen
+mapper/segment/binder/type rangeを確認した。Resolver implementationはfrozen Rust 3 pathだけを
+変更し、private exact candidate 1件を追加、existing public R2/C4C2 type/tableを全てreuse、
+source-order ID採番前にuseをbinder node identityへmapし、resolver-owned resolved-node
+provenanceだけをemitする。
+
+Final source measurementsは以下。
+
+| Path | Lines / bytes | SHA-256 |
+|---|---:|---|
+| `crates/mizar-resolve/src/names.rs` | `4415 / 140538` | `663ec040a0b9525cb79b532fe7ae6a548f67acb7510b8713df3b0cfe2b8d6166` |
+| `crates/mizar-resolve/src/names/tests.rs` | `4798 / 153865` | `d53afc1d148b3ab55bdbf97a04d11f78f4fe454a0caf6ca43f8ea72d6a55c504` |
+| `crates/mizar-test/src/runner/tests/type_elaboration/fraenkel_nested_capture_identity.rs` | `704 / 27913` | `6a1717fec263e79d9295813b413d1ec323c3291297f9ee04e0bc7c8e59e2e754` |
+
+Resolver/mizar-test libraryはexact `164`/`624` tests、sorted raw-list SHAは
+`a01c16a16aead9868d30257e358a4e742dd7633a8da4f61c864d9197d9c1f1c8`/
+`21196d1cb959c5b6bd7b38f19efb83d334978ec7f1d0c99e35da19cec8afe385`。
+Exact C4C8R 5 tests、C4C2/R2 compatibility、resolver lib `164/164`/lint `11/11`、
+mizar-test lib `624/624`/metadata `137/137`/lint `15/15`、parser C4C8P compatibility、
+fmt、offline Cargo metadata、`git diff --check`はPASS。
+
+Independent test-sufficiency/implementation reviewは**NO FINDINGS**。最初のreal-fixture
+executionはnormal `end;` siblingsを拒否するimplementation-local mismatchを発見したため、
+review前にexisting C4C2 one-functor child boundaryへ整合し、temporary debugを除去して
+real fixtureをPASSさせた。Broad workspace verification、source/docs/API・bilingual/boundary
+のうち、warnings-denied all-target/all-feature Clippyとfull all-feature workspace testsは
+PASS。Bilingual/boundary reviewがC4C8P auditのstale sentence 1件を発見し、このcompleted
+zero-credit mappingへ整合後のfinding-specific re-reviewは**NO FINDINGS**。Source/docs/API
+reviewも**NO FINDINGS**で、exact scope/count/hash/public API/owner link/protected boundaryを
+確認した。Autonomous-development rubricに対するindependent final-quality reviewも
+**NO FINDINGS**、hard gate `9/9` PASS、valid uncapped `100/100`。Exact stagingとtask-only
+commitだけが残るexit step。
+
+C4C7 source/sidecar/traceはprotected hashを再現し、paired contract treeは`104/104`。
+`doc/spec`、`.miz`、expectation、trace/metadata、parser/checker/Core production、C4C4
+captured、diagnostic、active route、Task277B stateは不変。本taskがcloseするのはresolver
+`source_drift`とprivate `test_gap`だけで、coverage creditはzeroのまま。
