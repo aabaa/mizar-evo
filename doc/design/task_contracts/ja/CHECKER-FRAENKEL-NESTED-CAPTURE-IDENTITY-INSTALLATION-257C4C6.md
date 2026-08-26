@@ -12,7 +12,7 @@ private test [harness](../../mizar-test/ja/harness.md#checker-task-257c4c6-priva
 
 ## Status、決定、目的
 
-**Status:** implementation/precommit hard gate完了、exact staging/commit待ち。
+**Status:** complete。
 
 Completed C4C5後の人間判断はchecker-only / zero-semantic successorを1件選択する。
 `TypedAst`と`ResolvedTypedAst`をalready-authenticated C4C5 receiptのimmutable destinationとする。
@@ -196,13 +196,61 @@ not-ready/zero-creditで、semantic/route/diagnostic/Core/GeneratedOrigin surfac
 final-quality reviewは**NO FINDINGS**、score capなしの`9/9` hard gate / valid uncapped
 `100/100` (`20/20/15/15/10/10/5/5`)。Finding-specific exact-scope correctionはapproved
 `29` paths = tracked modification `27` + new paired contract `2`を確認した。Exact staging、commit、
-clean postcommit proofがnext gate。
+clean postcommit proofが上記implementation snapshotのnext gateだった。
+
+## Postcommit proofとfresh successor inventory
+
+Reviewed task-only implementationはbaseline
+`ffc882675141a3e25bc78a47affc018bfe3685e1`上の
+`b17cbfe5dad0bcb11502b4c7feef814df6adf8fb`としてcommitした。
+`git show --check`はPASS、immediate worktreeはclean、`origin/main...HEAD`は`0/1`。
+Protected stash `f65cf4a13752ec380710814a9ac6392ccb9d75d4`、authority hash 3件、
+source measurement、contract count、C4C4 empty captured state、Task277B
+not-ready/zero-creditは不変。Commitは自己hashを含められないため、closure-record commit hashと
+その後のclean proofはfinal handoffで報告する。
+
+Freshなauthority/checker/Core independent inventoryは、同一milestone内の一意なsuccessorを
+選択しなかった。Canonical Chapter 13はresolved binder identityによるcaptureと、generated
+`params`がsurrounding free variablesであることを固定するが、一般化したcaptured-parameter order
+またはapplication-argument orderを固定しない。Exact fixtureからcaptured outer `x` 1件は導けるため、
+そのfixture内ではorderがvacuousだが、multi-capture ruleのauthorityにはならない。Core Task 33は
+future Core context/binder identity/provenance、Core Task 35はfuture term/formula/generated-origin
+loweringを所有し、未完了のCore Tasks 33/34へ依存する。Accepted Core descendant contractは
+両taskがchecker-owned / syntax-free / source-ordered final projectionをconsumeすることを既に
+要求する。しかしexact resolver-binding-to-`CoreVarId` joinまたは
+captured-parameter-to-application-argument positional joinはassignしない。
+
+Current explicit Core APIは`params: Vec<CoreVarId>`と
+`args: Vec<CoreTermSeedId>`を独立に受け取る。Argument orderを保持し、reused parameter equalityは
+checkするが、checker/resolver identityから`CoreVarId`へのauthenticated map、parameter/argument
+cardinality、positional correspondenceを認証しない。`GeneratedOriginUse`はlowering outputであり、
+durable `CoreIr` tableではない。C4C6はこれらのfield/ownerを意図的に供給しない。
+
+残るcandidateは次のとおり。
+
+| Candidate | Boundary assessment |
+|---|---|
+| Checker-owned complete/source-ordered final projectionを作り、後でCore-33/Core-35 consumerがconsume | **推奨かつaccepted Core descendant contractと整合。** `CoreVarId`を含めずauthenticated binder identityとcomplete generator/mapper/predicate provenanceを運ぶ。ただしexact field/cardinality/generalized capture order/corruption oracleはhuman freezeが必要。 |
+| Existing exact C4C6 receiptをcomplete Core projectionとして扱う | Minimalだが、C4C6はinner generator `y`、complete term graph、generated owner/key/functor、params/args、generalized order ruleを意図的に省く。 |
+| Missing associationをCore 33またはCore 35で直接allocate/infer | Current Core inputはcaller-assigned `CoreVarId`を受け取り、このsource joinをauthenticateしない。そこでのreconstructionはchecker-final-projection boundaryに違反し、Core 35では未完了Core 33/34 dependencyも迂回する。 |
+
+Unassigned exact joinと競合final-projection surfaceは`design_drift`、general cardinality/order/
+mapping/corruption test欠落は`test_gap`。One-row `source_ordinal`、checker/resolver numeric ID、またはcurrent
+Core vector orderをmissing ruleとして扱うことは`boundary_violation`。Canonical ordering ruleは
+absentであり、next contractがそのorderをprivate alpha-invariant Core conventionではなくnormative
+transportの一部にする場合、この欠落は`spec_gap`でもある。Authority contradictionと
+repository-metadata conflictはない。
+
+したがって、このinventoryはtask ID、API、field、adapter、installer、route、semantic
+implementationを作らない。Successorに必要な最小human decisionは、Core IDを含まないcomplete
+Core-facing projectionのsole ownerをcheckerとしてfreezeし、distinct captured identityをその
+authenticated binder declaration/source orderで並べ、later Core consumerにgenerated parameterと
+application argumentの同一position保持およびexact default-deny mismatch checkを要求するかどうかである。
 
 `doc/spec`、existing `.miz`/expectation/trace、diagnostic、C4C4 captured state、Task255、active behavior、
 semantic result、Task277B readinessを変更しない。Actual capture semantics、Core33/35 transport、numeric-ID
 reinterpretation、display-name join、parameter/argument order、generated origin、sort/repair/inference/
 unchecked admissionを追加しない。
 
-Completion後のfresh inventoryはcomplete binder provenance/snapshot/cardinality/public boundary/corruption
-oracleが一意な場合だけseparate checker-owned Core-facing identity projection prerequisiteを選べる。
-C4C5 `source_ordinal`をgeneral parameter orderへ昇格してはならない。
+Fresh inventoryは上記理由によりsuccessorを選択しなかった。C4C5 `source_ordinal`をgeneral
+parameter orderへ昇格してはならない。

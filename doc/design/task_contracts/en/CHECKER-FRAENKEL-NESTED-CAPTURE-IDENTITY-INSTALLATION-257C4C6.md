@@ -13,8 +13,7 @@ and the private test [harness](../../mizar-test/en/harness.md#checker-task-257c4
 
 ## Status, decision, and purpose
 
-**Status:** implementation and all precommit hard gates complete; exact staging
-and commit pending.
+**Status:** complete.
 
 The human decision after completed C4C5 selects one checker-only,
 zero-semantic successor. `TypedAst` and `ResolvedTypedAst` become the immutable
@@ -333,8 +332,67 @@ surface changed. Independent final-quality review reports **NO FINDINGS**;
 all `9/9` hard gates pass with no score cap at a valid uncapped `100/100`
 (`20/20/15/15/10/10/5/5`). Its finding-specific exact-scope correction
 confirms `29` approved paths: `27` tracked modifications and the `2` new paired
-contracts. Exact staging, commit, and clean postcommit proof remain the next
-gates.
+contracts. Exact staging, commit, and clean postcommit proof were the next
+gates for the implementation snapshot described above.
+
+## Postcommit proof and fresh successor inventory
+
+The reviewed task-only implementation committed as
+`b17cbfe5dad0bcb11502b4c7feef814df6adf8fb` over baseline
+`ffc882675141a3e25bc78a47affc018bfe3685e1`. `git show --check` passed; the
+immediate worktree was clean; `origin/main...HEAD` was `0/1`; and protected
+stash `f65cf4a13752ec380710814a9ac6392ccb9d75d4`, all three authority hashes,
+source measurements, contract counts, C4C4 empty captured state, and Task 277B
+not-ready/zero-credit status remained unchanged. The closure-record commit
+hash and its subsequent clean proof are reported in the final handoff because
+a commit cannot contain its own hash.
+
+Fresh independent authority, checker, and Core inventories select no unique
+same-milestone successor. Canonical Chapter 13 fixes capture by resolved binder
+identity and says generated `params` are the surrounding free variables, but
+does not fix a generalized captured-parameter or application-argument order.
+The exact fixture derives one captured outer `x`, so ordering is vacuous there;
+it cannot authorize a multi-capture rule. Core Task 33 owns future Core context,
+binder identity, and provenance, while Core Task 35 owns future term/formula
+and generated-origin lowering and depends on unfinished Core Tasks 33 and 34.
+The accepted Core descendant contract already requires both tasks to consume
+a checker-owned, syntax-free, source-ordered final projection. It does not
+assign the exact resolver-binding-to-`CoreVarId` or captured-parameter-to-
+application-argument positional join.
+
+The current explicit Core API independently accepts
+`params: Vec<CoreVarId>` and `args: Vec<CoreTermSeedId>`. It preserves argument
+order and checks reused parameter equality, but does not authenticate a
+checker/resolver-identity-to-`CoreVarId` map, parameter/argument cardinality,
+or positional correspondence. `GeneratedOriginUse` is a lowering output, not
+a durable `CoreIr` table. C4C6 deliberately supplies none of those fields or
+owners.
+
+The remaining candidates are:
+
+| Candidate | Boundary assessment |
+|---|---|
+| A checker-owned complete, source-ordered final projection, followed later by the Core-33/Core-35 consumers | **Recommended and aligned with the accepted Core descendant contract.** It carries authenticated binder identities and full generator/mapper/predicate provenance without `CoreVarId`; its exact fields, cardinality, generalized capture order, and corruption oracle still require a human freeze. |
+| Treat the existing exact C4C6 receipt as the complete Core projection | It is minimal, but C4C6 intentionally omits inner generator `y`, the complete term graph, generated owner/key/functor, params/args, and a generalized ordering rule. |
+| Allocate or infer the missing association directly in Core 33 or Core 35 | Current Core inputs accept caller-assigned `CoreVarId`s and do not authenticate this source join; reconstruction there would violate the checker-final-projection boundary, while Core 35 also bypasses unfinished Core 33/34 dependencies. |
+
+The unassigned exact join and competing final-projection surfaces are
+`design_drift`; missing general cardinality, order, mapping, and corruption
+tests are a `test_gap`.
+Treating the one-row `source_ordinal`, checker/resolver numeric IDs, or current
+Core vector order as the missing rule would be a `boundary_violation`. The
+canonical ordering rule is absent; if the next contract makes that order part
+of normative transport rather than a private alpha-invariant Core convention,
+the absence is also a `spec_gap`. There is no authority contradiction and no
+repository-metadata conflict.
+
+Therefore this inventory creates no task ID, API, field, adapter, installer,
+route, or semantic implementation. The smallest human decision needed for a
+successor is whether to freeze checker as sole owner of a complete Core-facing
+projection with no Core IDs, order its distinct captured identities by their
+authenticated binder declaration/source order, and require the later Core
+consumer to preserve that order positionally in generated parameters and
+application arguments with exact default-deny mismatch checks.
 
 ## Forbidden behavior and next handoff
 
@@ -345,8 +403,5 @@ Core33/35 transport, numeric-ID reinterpretation, display-name joins,
 parameter/argument order, generated origin, sorting, repair, inference, or
 unchecked admission.
 
-After completion, fresh inventory may select a separate checker-owned
-Core-facing identity projection prerequisite only if its complete binder
-provenance, snapshot ownership, cardinality, public boundary, and corruption
-oracle are unique. C4C5 `source_ordinal` must not be promoted to that task's
-general parameter order.
+Fresh inventory selected no successor for the reasons recorded above. C4C5
+`source_ordinal` must not be promoted to a general parameter order.
