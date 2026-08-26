@@ -3683,3 +3683,14 @@ post-commit fresh inventoryからだけ選択する。
 - [x] Final-quality reviewを`9/9`、valid uncapped `100/100`で完了する。
 - [x] Exact commitとclean postcommit inventoryを完了し、exact zero-semantic
   resolver C4C8R prerequisiteだけをselectする。Checker C4C8とTask277Bはdeferする。
+
+## Checker Task 257C4C8 normalized capture graph (planned)
+
+Status: planned、implementation未着手。Paired [C4C8 contract](../../task_contracts/ja/CHECKER-FRAENKEL-NESTED-MULTI-CAPTURE-GRAPH-257C4C8.md)に従う。
+
+- [ ] Reserved private imported-fixture probeをexisting nested-capture leafへ追加する。ただしregistry
+  inclusionとactive dispatchは追加しない。
+- [ ] Diagnostic-free/unrecovered admission、frozen `3/1/0/2/2` graph、resolver identity link、
+  private order、local-`z` exclusion、replay、unchanged empty import augmentationだけをassertする。
+- [ ] C4C7 fixture/sidecar/trace、production route、diagnostic、semantic、AST/Core boundary、coverage
+  credit、Task277B statusを保持する。

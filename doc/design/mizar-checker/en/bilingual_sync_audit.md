@@ -2016,3 +2016,14 @@ synchronize the exact two-capture inactive source/sidecar, identity-only
 membership/cardinality intent, non-semantic private order, standalone future
 checker owner, Core-33/Core-35 boundary, count/hash impact, prohibitions, and
 zero-credit exit. English is canonical; no exception is recorded.
+
+## Task 257C4C8 Frozen Contract Parity
+
+The [EN canonical](../../task_contracts/en/CHECKER-FRAENKEL-NESTED-MULTI-CAPTURE-GRAPH-257C4C8.md)
+and [JA companion](../../task_contracts/ja/CHECKER-FRAENKEL-NESTED-MULTI-CAPTURE-GRAPH-257C4C8.md)
+synchronize the frozen standalone normalized-graph owner and boundary, exact
+five-table family and `3/1/0/2/2` cardinality, validation precedence,
+resolver-identity/private-order constraints, planned status, and
+zero-credit/protected state. The paired checker plan, source-formula-
+composition, TODO, source-spec, and bilingual records are the required owner
+review surface. English is canonical; no exception exists.

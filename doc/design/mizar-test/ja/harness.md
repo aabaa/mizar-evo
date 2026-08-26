@@ -5368,3 +5368,17 @@ unchanged empty type-elaboration import augmentationだけをassertする。
 Probeはlibrary-test-only。Registry include、production dispatch、active route、checker
 capture/installation、semantic result、diagnostic、sidecar/trace mutation、Core identity/origin、
 coverage credit、Task277B readinessは追加しない。
+
+## Checker Task 257C4C8 Private Normalized Capture Graph Probe
+
+Canonical [C4C8 contract](../../task_contracts/ja/CHECKER-FRAENKEL-NESTED-MULTI-CAPTURE-GRAPH-257C4C8.md)は
+existing private nested-capture leafにexact
+`task257c4c8_real_imported_fixture_builds_exact_normalized_capture_graph`をreserveする。Planned
+probeはunchanged C4C7 sourceをexisting frontend/resolverへ通し、standalone graph producerを
+callして、diagnostic-free/unrecovered admission、frozen `3/1/0/2/2` normalized graph、
+resolver identity link、private deterministic order、local-`z` exclusion、replay、unchanged
+empty import augmentationだけをassertする。
+
+Probeはlibrary-test-onlyかつunregisteredのまま。Fixture、sidecar、trace、production route、
+semantic result、diagnostic、AST/Core installation、coverage credit、Task277B readinessのchangeは
+このreservationに含めず、default-deny matrixはchecker-owner testsがretainする。

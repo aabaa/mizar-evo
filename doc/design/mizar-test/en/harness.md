@@ -5855,3 +5855,20 @@ The probe is library-test-only. It adds no registry include, production
 dispatch, active route, checker capture/installation, semantic result,
 diagnostic, sidecar/trace mutation, Core identity/origin, coverage credit, or
 Task-277B readiness.
+
+## Checker Task 257C4C8 Private Normalized Capture Graph Probe
+
+The canonical [C4C8 contract](../../task_contracts/en/CHECKER-FRAENKEL-NESTED-MULTI-CAPTURE-GRAPH-257C4C8.md)
+reserves exactly
+`task257c4c8_real_imported_fixture_builds_exact_normalized_capture_graph` in
+the existing private nested-capture leaf. The planned probe will run the
+unchanged C4C7 source through the existing frontend and resolver, call the
+standalone graph producer, and assert only diagnostics-free and unrecovered
+admission, the frozen `3/1/0/2/2` normalized graph, resolver-identity links,
+private deterministic order, local-`z` exclusion, replay, and unchanged empty
+import augmentation.
+
+The probe remains library-test-only and unregistered. No fixture, sidecar,
+trace, production route, semantic result, diagnostic, AST/Core installation,
+coverage credit, or Task-277B readiness change is reserved here; the
+checker-owner tests retain the default-deny matrix.

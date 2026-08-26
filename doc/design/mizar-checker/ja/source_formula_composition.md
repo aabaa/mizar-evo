@@ -816,3 +816,30 @@ Later contractがexact API/default-deny matrixをfreezeする。C4C6 immutable
 Typed/Resolved receiptを保持し、standalone projectionはsecond AST slot、ID
 reinterpretation、Core-33 allocationまたはCore-35 lowering/GeneratedOrigin ownerの
 checker移管を行わない。
+
+## Task 257C4C8 Normalized Multi-capture Graph
+
+Frozen [C4C8 contract](../../task_contracts/ja/CHECKER-FRAENKEL-NESTED-MULTI-CAPTURE-GRAPH-257C4C8.md)は、
+existing `source_formula_composition` familyをstandalone immutable、syntax-free、Core-ID-free
+handoffのsole ownerに選択する。Normalized public familyはexact 5 dense ID type、generator/
+mapper/predicate/capture/occurrenceのimmutable row/table pair 5組、handoff/error/producer family
+1組である。Complete getter list、debug grammar、exact `3/1/0/2/2` cardinality、validation
+precedenceはcontractがownし、source implementationは未着手である。
+
+Producerはretained C4C8R resolver collectionだけをconsumeする。Provenanceはresolverが公開する
+generator binding/segment/binder dataとresolved owner/node identity、およびoccurrence identifier
+rangeだけに限定する。Inner `z`はlocal、outer `x`/`y`はdistinct capture 2件、mapper occurrence
+2件は同じresolved mapper-owner identityを共有する。Mapper/predicate/comprehension owner rangeは
+copyもvalidateもしない。Graph IDは別domainであり、numeric reinterpretationやdisplay-name joinで
+導出しない。Source/declaration orderはprivate deterministic transportだけである。
+
+Missing/extra/duplicate/reordered/stale/foreign/recovered/partial/mismatched stateはcontractの
+dependency→cardinality→layout→provenance→capture-identity→occurrence precedenceでatomic fail。
+Sort、repair、inference、merge、unchecked dedup、partial publishは禁止する。本sectionはsource
+familyが存在するまでpublic-enum policy entryを追加しない。
+
+C4C8は`TypedAst`/`ResolvedTypedAst`をreopenせずsecond slotを追加せず、C4C4 empty
+`BindingEntry::captured`を変更せず、capture semantics、Core ID/parameter/argument/origin/use、
+active routeをpublishしない。Core 33/34/35と`GeneratedOrigin`はlater owner、Task 277Bはdeferred/
+zero-creditのままである。Implementationとprivate imported-fixture probeだけがpaired contractの
+planned source changeである。

@@ -78,6 +78,21 @@ joins are a `boundary_violation`, and observable ordering would be a
 `spec_gap`. No specification, existing test, diagnostic, active route,
 semantic result, or Task-277B credit changes.
 
+## Task 257C4C8 Normalized Graph Planned Zero-Credit Mapping
+
+The frozen [C4C8 contract](../../task_contracts/en/CHECKER-FRAENKEL-NESTED-MULTI-CAPTURE-GRAPH-257C4C8.md)
+records the planned checker correspondence: `source_formula_composition` is
+the sole future owner of a standalone syntax-free, Core-ID-free normalized
+graph with exact generator/mapper/predicate/capture/occurrence shape
+`3/1/0/2/2`. The public source family and producer are not yet present;
+implementation remains `source_drift`, while the missing checker/private-
+fixture regressions remain a `test_gap`.
+
+This planned mapping grants no source/API/enum claim, Typed/Resolved slot,
+C4C4 captured-state change, Core 33/34/35 or `GeneratedOrigin` payload,
+semantic or active route, diagnostic, or Task-277B credit. C4C7 history,
+trace/expectation/status, and Chapter 13 `partial` coverage remain unchanged.
+
 ## Task 269SDU Implemented Zero-Credit Mapping
 
 The [central Task-269SDU contract](../../task_contracts/en/269SDU.md) implements one

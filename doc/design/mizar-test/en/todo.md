@@ -3999,3 +3999,16 @@ the successor is selected only from fresh post-commit inventory.
 - [x] Complete the exact commit and clean postcommit inventory; select only the
   exact zero-semantic resolver C4C8R prerequisite and leave checker C4C8 and
   Task 277B deferred.
+
+## Checker Task 257C4C8 normalized capture graph (planned)
+
+Status: planned; implementation has not started. Follow the paired [C4C8
+contract](../../task_contracts/en/CHECKER-FRAENKEL-NESTED-MULTI-CAPTURE-GRAPH-257C4C8.md).
+
+- [ ] Add exactly the reserved private imported-fixture probe to the existing
+  nested-capture leaf, without registry inclusion or active dispatch.
+- [ ] Assert only diagnostics-free and unrecovered admission, the frozen
+  `3/1/0/2/2` graph, resolver-identity links, private order, local-`z`
+  exclusion, replay, and unchanged empty import augmentation.
+- [ ] Preserve the C4C7 fixture/sidecar/trace, production routes, diagnostics,
+  semantics, AST/Core boundaries, coverage credit, and Task-277B status.

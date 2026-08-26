@@ -7077,3 +7077,20 @@ selected only from fresh post-commit inventory.
 - [x] Complete task-only commit and clean postcommit proof. Fresh inventory
   defers checker C4C8 and uniquely selects the exact no-new-public-API resolver
   prerequisite C4C8R; Task 277B remains not-ready/zero-credit.
+
+## Task 257C4C8 normalized nested capture graph
+
+- [x] Freeze the standalone normalized graph owner, exact five-table family,
+  `3/1/0/2/2` cardinality, resolver-identity association, private order, and
+  default-deny precedence in the paired
+  [C4C8 contract](../../task_contracts/en/CHECKER-FRAENKEL-NESTED-MULTI-CAPTURE-GRAPH-257C4C8.md).
+- [ ] Implement only the frozen `source_formula_composition` graph family and
+  its four checker tests; do not add the future public-enum policy entry before
+  the source family exists.
+- [ ] Add only the existing private imported-fixture probe and assert the exact
+  normalized graph, replay, local-`z` exclusion, and zero-credit boundary.
+- [ ] Preserve C4C4 captured state, C4C6 Typed/Resolved receipt ownership,
+  resolver identity domains, Core 33/34/35 and `GeneratedOrigin` ownership,
+  active routes, diagnostics, semantics, and Task 277B zero credit.
+- [ ] Complete independent reviews, focused/full verification, exact staging,
+  task-only commit, clean postcommit proof, and fresh successor inventory.

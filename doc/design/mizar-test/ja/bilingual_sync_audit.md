@@ -1872,3 +1872,11 @@ exact inactive pair、sole existing trace backlink、protected one-capture pair�
 metadata/count impact、zero active/order/Core/Task277B creditを同期する。Paired
 plan/corpus/traceability/TODO/本recordがmizar-test bilingual review surface。
 English canonical、exceptionなし。
+
+## Task 257C4C8 Frozen Contract Parity
+
+[EN canonical](../../task_contracts/en/CHECKER-FRAENKEL-NESTED-MULTI-CAPTURE-GRAPH-257C4C8.md)と
+[JA companion](../../task_contracts/ja/CHECKER-FRAENKEL-NESTED-MULTI-CAPTURE-GRAPH-257C4C8.md)は、reserved
+private probe name、unchanged C4C7 input、frozen `3/1/0/2/2` normalized graph、resolver
+identity/private-order/replay assertions、no-registration/no-semantic/no-credit boundaryを同期する。
+Paired mizar-test plan/harness/TODO/本recordがbilingual review surface。English canonical、exceptionなし。

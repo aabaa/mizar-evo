@@ -1860,3 +1860,13 @@ Paired checker plan/todo/source-formula-composition/TypedAst/ResolvedTypedAst/mo
 source-spec owner docがrequired checker review surface。English canonical、exceptionなし。
 Zero-semantic table guard/test-evidence repair後のindependent bilingual/boundary re-reviewは
 **NO FINDINGS**。
+
+## Task 257C4C8 Frozen Contract Parity
+
+[EN canonical](../../task_contracts/en/CHECKER-FRAENKEL-NESTED-MULTI-CAPTURE-GRAPH-257C4C8.md)と
+[JA companion](../../task_contracts/ja/CHECKER-FRAENKEL-NESTED-MULTI-CAPTURE-GRAPH-257C4C8.md)は、
+standalone normalized-graphのfrozen owner/boundary、exact 5-table familyと
+`3/1/0/2/2` cardinality、validation precedence、resolver-identity/private-order
+constraint、planned status、zero-credit/protected stateを同期する。Paired checker
+plan、source-formula-composition、TODO、source-spec、bilingual recordがrequired owner
+review surfaceである。English canonical、exceptionなし。

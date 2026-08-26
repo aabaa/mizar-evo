@@ -2026,3 +2026,13 @@ synchronize the exact inactive pair, sole existing trace backlink, protected
 one-capture pair, metadata/count impact, and zero active/order/Core/Task-277B
 credit. The paired plan, corpus, traceability, TODO, and this record form the
 mizar-test bilingual review surface. English is canonical; no exception exists.
+
+## Task 257C4C8 Frozen Contract Parity
+
+The [EN canonical](../../task_contracts/en/CHECKER-FRAENKEL-NESTED-MULTI-CAPTURE-GRAPH-257C4C8.md)
+and [JA companion](../../task_contracts/ja/CHECKER-FRAENKEL-NESTED-MULTI-CAPTURE-GRAPH-257C4C8.md)
+synchronize the reserved private probe name, unchanged C4C7 input, frozen
+`3/1/0/2/2` normalized graph, resolver-identity/private-order/replay
+assertions, and no-registration/no-semantic/no-credit boundary. The paired
+mizar-test plan, harness, TODO, and this record form the bilingual review
+surface. English is canonical; no exception exists.

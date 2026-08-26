@@ -1027,3 +1027,38 @@ it does not assert order. A later contract must freeze the exact API and
 default-deny matrix. C4C6 remains the immutable Typed/Resolved receipt;
 standalone projection work must not add a second AST slot, reinterpret IDs, or
 move Core-33 allocation or Core-35 lowering/GeneratedOrigin ownership here.
+
+## Task 257C4C8 Normalized Multi-capture Graph
+
+The frozen [C4C8 contract](../../task_contracts/en/CHECKER-FRAENKEL-NESTED-MULTI-CAPTURE-GRAPH-257C4C8.md)
+selects this existing `source_formula_composition` family as the sole owner of
+one standalone immutable, syntax-free, Core-ID-free handoff. Its normalized
+public family is exactly five dense ID types, five immutable row/table pairs
+for generators, mappers, predicates, captures, and occurrences, and one
+handoff/error/producer family. The contract owns the complete getter list,
+debug grammar, exact `3/1/0/2/2` cardinality, and validation precedence; source
+implementation is not yet present.
+
+The producer consumes only the retained C4C8R resolver collection. Provenance
+is limited to resolver-exposed generator binding/segment/binder data and
+resolved owner/node identities, plus occurrence identifier ranges. Inner `z`
+is local, outer `x` and `y` are the two distinct captures, and their two mapper
+occurrences share one resolved mapper-owner identity. Mapper/predicate/
+comprehension owner ranges are not copied or validated. Graph IDs are a
+separate domain and are never derived by numeric reinterpretation or
+display-name joining. Source and declaration order is private deterministic
+transport only.
+
+Missing, extra, duplicate, reordered, stale, foreign, recovered, partial, or
+mismatched dependency/graph state fails atomically in the contract's frozen
+dependency, cardinality, layout, provenance, capture-identity, and occurrence
+precedence. No sort, repair, inference, merge, unchecked deduplication, or
+partial publication is allowed. This section adds no public-enum policy entry
+until the frozen source family exists.
+
+C4C8 does not reopen `TypedAst` or `ResolvedTypedAst`, add a second slot, alter
+C4C4's empty `BindingEntry::captured`, publish capture semantics, create Core
+IDs/parameters/arguments/origins/uses, or activate a route. Core 33/34/35 and
+`GeneratedOrigin` remain later owners; Task 277B remains deferred and
+zero-credit. The implementation and private imported-fixture probe are the
+only planned source changes under the paired contract.

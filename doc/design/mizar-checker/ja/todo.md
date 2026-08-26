@@ -6652,3 +6652,18 @@ post-commit fresh inventoryからだけ選択する。
 - [x] Task-only commitとclean postcommit proofを完了する。Fresh inventoryはchecker
   C4C8をdeferし、exact no-new-public-API resolver prerequisite C4C8Rだけを一意に
   selectする。Task277Bはnot-ready/zero-creditのまま。
+
+## Task 257C4C8 normalized nested capture graph
+
+- [x] Standalone normalized graph owner、exact 5 table family、`3/1/0/2/2`
+  cardinality、resolver-identity association、private order、default-deny precedenceを
+  paired [C4C8 contract](../../task_contracts/ja/CHECKER-FRAENKEL-NESTED-MULTI-CAPTURE-GRAPH-257C4C8.md)へfreezeする。
+- [ ] Frozen `source_formula_composition` graph familyとchecker test 4件だけをimplementする。
+  Source familyが存在する前にfuture public-enum policy entryを追加しない。
+- [ ] Existing private imported-fixture probeだけを追加し、exact normalized graph、replay、
+  local-`z` exclusion、zero-credit boundaryをassertする。
+- [ ] C4C4 captured state、C4C6 Typed/Resolved receipt ownership、resolver identity domain、
+  Core 33/34/35と`GeneratedOrigin` ownership、active route、diagnostic、semantic、Task277B
+  zero creditを保持する。
+- [ ] Independent review、focused/full verification、exact staging、task-only commit、clean
+  postcommit proof、fresh successor inventoryを完了する。

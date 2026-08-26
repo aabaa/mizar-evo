@@ -7125,6 +7125,26 @@ Task-252 occurrence, type/sethood evidence, Core identity, generated
 parameter/argument, GeneratedOrigin, or Task-277B credit. Those remain with
 the checker C4C8 and Core 33--35 successors after fresh dependency inventory.
 
+## Task 257C4C8 Planned Zero-Credit Normalized Capture-Graph Mapping
+
+The canonical [C4C8 contract](./task_contracts/en/CHECKER-FRAENKEL-NESTED-MULTI-CAPTURE-GRAPH-257C4C8.md)
+records the human-selected standalone checker Task-257C owner after completed
+C4C8R. The planned immutable, syntax-free, Core-ID-free graph retains the exact
+resolver snapshot and normalizes `3` generator, `1` mapper, `0` predicate, `2`
+distinct-capture, and `2` occurrence rows. Inner `z` remains local; outer `x`
+and `y` associate only through authenticated resolver binding identity.
+
+This mapping is planned derived enforcement only and grants zero coverage or
+semantic credit. Private declaration/source order is not a language result.
+The existing C4C5/C4C6 receipt and Typed/Resolved installation remain exact-one
+and unchanged; no second AST slot, captured-state mutation, diagnostic, active
+route, Core identity, parameter/argument, generated origin, or Task-277B
+readiness is added. Core 33 retains later snapshot-local identity allocation,
+Core 34 retains type/evidence/view lowering, and Core 35 retains Fraenkel term/
+formula and generated-origin lowering. The Chapter-13 summary remains
+`partial`, and the existing `.miz`, expectation, trace row/status/backlinks,
+and protected hashes remain unchanged.
+
 ## Task 257C4C8P Completed Zero-Credit Parser Delimiter Mapping
 
 The canonical [C4C8P contract](./task_contracts/en/PARSER-FRAENKEL-GENERATOR-DELIMITER-257C4C8P.md)

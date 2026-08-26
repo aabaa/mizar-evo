@@ -34,6 +34,20 @@ projection/corruption coverageは`design_drift`/`test_gap`、display-name/numeri
 joinは`boundary_violation`、observable orderは`spec_gap`のまま。Spec、existing
 test、diagnostic、active route、semantic result、Task277B creditは変更しない。
 
+## Task 257C4C8 Normalized Graph Planned Zero-Credit Mapping
+
+Frozen [C4C8 contract](../../task_contracts/ja/CHECKER-FRAENKEL-NESTED-MULTI-CAPTURE-GRAPH-257C4C8.md)はplanned
+checker correspondenceをrecordする。`source_formula_composition`がexact
+generator/mapper/predicate/capture/occurrence shape `3/1/0/2/2`を持つ、standalone
+syntax-free、Core-ID-free normalized graphのfuture sole ownerである。Public source
+familyとproducerはまだ存在せず、implementationは`source_drift`のまま、missing
+checker/private-fixture regressionは`test_gap`のままである。
+
+このplanned mappingはsource/API/enum claim、Typed/Resolved slot、C4C4 captured-state
+変更、Core 33/34/35または`GeneratedOrigin` payload、semantic/active route、diagnostic、
+Task277B creditを与えない。C4C7 history、trace/expectation/status、Chapter 13
+`partial` coverageも変更しない。
+
 ## Task 269SDU Implemented Zero-Credit Mapping
 
 [central Task-269SDU contract](../../task_contracts/ja/269SDU.md) はChapters 4、13、
