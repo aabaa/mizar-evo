@@ -7084,13 +7084,20 @@ selected only from fresh post-commit inventory.
   `3/1/0/2/2` cardinality, resolver-identity association, private order, and
   default-deny precedence in the paired
   [C4C8 contract](../../task_contracts/en/CHECKER-FRAENKEL-NESTED-MULTI-CAPTURE-GRAPH-257C4C8.md).
-- [ ] Implement only the frozen `source_formula_composition` graph family and
-  its four checker tests; do not add the future public-enum policy entry before
-  the source family exists.
-- [ ] Add only the existing private imported-fixture probe and assert the exact
+- [x] Implement only the frozen `source_formula_composition` graph family and
+  its four checker tests; the exact public-enum policy entry is now recorded.
+- [x] Add only the existing private imported-fixture probe and assert the exact
   normalized graph, replay, local-`z` exclusion, and zero-credit boundary.
-- [ ] Preserve C4C4 captured state, C4C6 Typed/Resolved receipt ownership,
+- [x] Preserve C4C4 captured state, C4C6 Typed/Resolved receipt ownership,
   resolver identity domains, Core 33/34/35 and `GeneratedOrigin` ownership,
   active routes, diagnostics, semantics, and Task 277B zero credit.
-- [ ] Complete independent reviews, focused/full verification, exact staging,
-  task-only commit, clean postcommit proof, and fresh successor inventory.
+- [x] Complete independent implementation and test-sufficiency reviews with
+  **NO FINDINGS** after repair; focused `4 + 1`, Clippy, formatting, and diff
+  checks pass.
+- [x] Complete source/documentation/API and bilingual/boundary
+  finding-specific re-reviews after documentation repairs.
+- [x] Complete broad/full verification and protected count/hash checks.
+- [x] Complete final-quality review with **NO FINDINGS**, all nine hard gates
+  PASS, and a valid uncapped `100/100`.
+- [ ] Complete exact staging, task-only commit, clean postcommit proof, and
+  fresh successor inventory.

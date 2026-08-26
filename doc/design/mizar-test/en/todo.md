@@ -4000,15 +4000,26 @@ the successor is selected only from fresh post-commit inventory.
   exact zero-semantic resolver C4C8R prerequisite and leave checker C4C8 and
   Task 277B deferred.
 
-## Checker Task 257C4C8 normalized capture graph (planned)
+## Checker Task 257C4C8 normalized capture graph
 
-Status: planned; implementation has not started. Follow the paired [C4C8
+Status: implementation, required verification, and final-quality review complete;
+commit and post-commit proof are pending. Follow the paired [C4C8
 contract](../../task_contracts/en/CHECKER-FRAENKEL-NESTED-MULTI-CAPTURE-GRAPH-257C4C8.md).
 
-- [ ] Add exactly the reserved private imported-fixture probe to the existing
+- [x] Add exactly the reserved private imported-fixture probe to the existing
   nested-capture leaf, without registry inclusion or active dispatch.
-- [ ] Assert only diagnostics-free and unrecovered admission, the frozen
+- [x] Assert only diagnostics-free and unrecovered admission, the frozen
   `3/1/0/2/2` graph, resolver-identity links, private order, local-`z`
   exclusion, replay, and unchanged empty import augmentation.
-- [ ] Preserve the C4C7 fixture/sidecar/trace, production routes, diagnostics,
+- [x] Preserve the C4C7 fixture/sidecar/trace, production routes, diagnostics,
   semantics, AST/Core boundaries, coverage credit, and Task-277B status.
+- [x] Focused imported-fixture probe, package Clippy, formatting, and diff
+  checks pass; implementation/test-sufficiency reviews report **NO FINDINGS**
+  after the provenance-order repair.
+- [x] Complete source-documentation/API and bilingual/boundary
+  finding-specific re-reviews after documentation repairs.
+- [x] Complete broad/full verification and protected count/hash checks.
+- [x] Complete final-quality review with **NO FINDINGS**, all nine hard gates
+  PASS, and a valid uncapped `100/100`.
+- [ ] Complete exact staging, task-only commit, clean postcommit proof, and
+  successor inventory.

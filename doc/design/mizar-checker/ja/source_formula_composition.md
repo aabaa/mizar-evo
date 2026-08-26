@@ -104,6 +104,7 @@ tableは`get`/source-ordered `iter`/`len`/`is_empty`だけを公開する。
 | `SourceFraenkelGeneratorBoundUseError` | `#[non_exhaustive]`。callerはFraenkel generator bound-use validation failureをexhaustive matchしない。 |
 | `SourceNestedFraenkelBinderUseError` | `#[non_exhaustive]`。callerはnested Fraenkel binder/use validation failureをexhaustive matchしない。 |
 | `SourceNestedFraenkelCaptureIdentityError` | `#[non_exhaustive]`。callerはnested Fraenkel capture-identity validation failureをexhaustive matchしない。 |
+| `SourceNestedFraenkelCaptureGraphError` | `#[non_exhaustive]`。callerはnormalized nested Fraenkel capture-graph validation failureをexhaustive matchしない。 |
 | `SourcePredicateChainCompositionError` | `#[non_exhaustive]`。callerはpredicate-chain composition validation failureをexhaustive matchしない。 |
 
 この module が所有する exhaustive public enum exception はない。
@@ -821,25 +822,39 @@ checker移管を行わない。
 
 Frozen [C4C8 contract](../../task_contracts/ja/CHECKER-FRAENKEL-NESTED-MULTI-CAPTURE-GRAPH-257C4C8.md)は、
 existing `source_formula_composition` familyをstandalone immutable、syntax-free、Core-ID-free
-handoffのsole ownerに選択する。Normalized public familyはexact 5 dense ID type、generator/
-mapper/predicate/capture/occurrenceのimmutable row/table pair 5組、handoff/error/producer family
-1組である。Complete getter list、debug grammar、exact `3/1/0/2/2` cardinality、validation
-precedenceはcontractがownし、source implementationは未着手である。
+handoffのsole ownerに選択する。Normalized public familyは次の5 dense ID typeである:
+
+`SourceNestedFraenkelCaptureGraphGeneratorId`、
+`SourceNestedFraenkelCaptureGraphMapperId`、
+`SourceNestedFraenkelCaptureGraphPredicateId`、
+`SourceNestedFraenkelCaptureGraphCaptureId`、
+`SourceNestedFraenkelCaptureGraphOccurrenceId`。
+
+Immutable row/table itemはgenerator、mapper、predicate、capture、occurrenceの各row/table、
+合計10件。Companion familyは`SourceNestedFraenkelCaptureGraphHandoff`、
+`SourceNestedFraenkelCaptureGraphError`、`SourceNestedFraenkelCaptureGraphProducer`である。
+Complete getter list、debug grammar、exact `3/1/0/2/2` cardinality、validation precedenceは
+contractがownし、source implementationはこのownerでcompleteした。Public-enum inventoryは
+`8 -> 9`である。
 
 Producerはretained C4C8R resolver collectionだけをconsumeする。Provenanceはresolverが公開する
 generator binding/segment/binder dataとresolved owner/node identity、およびoccurrence identifier
 rangeだけに限定する。Inner `z`はlocal、outer `x`/`y`はdistinct capture 2件、mapper occurrence
 2件は同じresolved mapper-owner identityを共有する。Mapper/predicate/comprehension owner rangeは
 copyもvalidateもしない。Graph IDは別domainであり、numeric reinterpretationやdisplay-name joinで
-導出しない。Source/declaration orderはprivate deterministic transportだけである。
+導出しない。Source/declaration orderはprivate deterministic transportだけである。Provenanceは
+capture/occurrence stageより先にoccurrence node/range identityをauthenticateする。Occurrence
+stageはremaining associationを検証し、node/rangeをdefensiveに再検証してよい。
 
 Missing/extra/duplicate/reordered/stale/foreign/recovered/partial/mismatched stateはcontractの
 dependency→cardinality→layout→provenance→capture-identity→occurrence precedenceでatomic fail。
-Sort、repair、inference、merge、unchecked dedup、partial publishは禁止する。本sectionはsource
-familyが存在するまでpublic-enum policy entryを追加しない。
+Sort、repair、inference、merge、unchecked dedup、partial publishは禁止する。6 error displayと
+4 checker testがこのmatrixとprovenance-first precedenceをcoverする。
 
 C4C8は`TypedAst`/`ResolvedTypedAst`をreopenせずsecond slotを追加せず、C4C4 empty
 `BindingEntry::captured`を変更せず、capture semantics、Core ID/parameter/argument/origin/use、
 active routeをpublishしない。Core 33/34/35と`GeneratedOrigin`はlater owner、Task 277Bはdeferred/
-zero-creditのままである。Implementationとprivate imported-fixture probeだけがpaired contractの
-planned source changeである。
+zero-creditのままである。Implementationはcontract-scoped Rust 2 pathsでcompleteし、broad
+verificationはPASS、source-documentation/APIとbilingual/boundary re-reviewは**NO
+FINDINGS**。Final-qualityも全9 hard gates PASS、valid `100/100`。Workflow closureと
+commitだけがpendingである。

@@ -10,7 +10,8 @@ Owner planは[mizar-checker](../../mizar-checker/ja/00.crate_plan.md#task-index)
 
 ## Status、決定、目的
 
-**Status:** frozen documentation prerequisite。Implementation未着手。
+**Status:** implementation、required verification、final-quality reviewはcomplete。Exact
+staging、commit、post-commit proofはpending。
 
 Clean resolver commit `a710b4f1d99fd2efea36aecf9c2b00cf81437c57`後の独立inventoryでは
 owner/boundaryは一意だったがnormalized representationが2案残った。Userがparent推奨を採用し、
@@ -20,8 +21,12 @@ syntax-free/Core-ID-free destination、5 dense table `3 generators / 1 mapper /
 C4C8R resolver snapshot、private declaration/source order、dependency→cardinality→layout→
 provenance→capture identity→occurrence precedenceを人間決定としてfreezeした。
 
-これでchecker `design_drift`をcloseする。Missing checker/private-fixture regressionsは
-`test_gap`、未実装は本contractに対する`source_drift`。`spec_gap`/`repo_metadata_conflict`はない。
+これでchecker `design_drift`、bounded `source_drift`、checker/private-fixture `test_gap`をcloseする。
+Implementation/test-sufficiencyのindependent reviewはrepair後**NO FINDINGS**。
+Source-documentation/APIとbilingual/boundaryのfinding-specific re-reviewもdocumentation
+repair後**NO FINDINGS**で、required broad verificationはPASS。Independent final-quality
+reviewも**NO FINDINGS**、全9 hard gates PASS、valid uncapped scoreは`100/100`。
+`spec_gap`/`repo_metadata_conflict`はない。
 Capture semantics、C4C4 captured mutation、second AST slot、Core identity/origin、active route、
 diagnostic、Task277B creditは`boundary_violation`。
 
@@ -102,8 +107,9 @@ Errorとdisplayはexact:
 
 Validationはdependency/environment/version/domain/summary/exact C4C8R、`3/1/0/2/2`
 cardinality、dense/private order、all provenance、lowest invalid capture、lowest invalid
-occurrenceの順。Provenance rangeはdependencyが公開するgenerator segment/binderとoccurrence
-identifierだけを再検証し、全ownerはresolved node identityで再検証する。Missing/extra/
+occurrenceの順。Provenanceはcapture/occurrence stageより先にoccurrence node/rangeをauthenticateする。
+Dependencyが公開するgenerator segment/binderとoccurrence identifier rangeを再検証し、全ownerはresolved node identityで再検証する。
+Occurrence stageはremaining associationを検証し、node/rangeをdefensiveに再検証してよい。Missing/extra/
 duplicate/reordered/stale/foreign/recovered/partial/mismatch/
 numeric substitution/display-name joinはatomic fail。Sort/repair/inference/merge/unchecked
 dedup/mutation/partial publishは禁止。
@@ -134,7 +140,7 @@ Baseline HEAD `a710b4f1d99fd2efea36aecf9c2b00cf81437c57`、origin
 `f65cf4a13752ec380710814a9ac6392ccb9d75d4`。Source baselinesはchecker
 `10342/404395` SHA `dd27218581ebe6c252da33f6feb23480403afa88858de874970d88a9d1573d44`、
 private leaf `704/27913` SHA `6a1717fec263e79d9295813b413d1ec323c3291297f9ee04e0bc7c8e59e2e754`。
-Library testsはchecker `572->576`、mizar-test `624->625`、baseline raw hashes
+Library testsはchecker `572->576`、mizar-test `624->625`、current countsはchecker `576`/mizar-test `625`、baseline raw hashes
 `ac213696433d40a0649c3f6ca4eb7449ce7d053a40a7573209ef5c0af9716940`/
 `21196d1cb959c5b6bd7b38f19efb83d334978ec7f1d0c99e35da19cec8afe385`。
 Contract tree `104/104->105/105`。Checker productionは32 paths、path hash
@@ -146,6 +152,35 @@ C4C7 source/sidecar/trace hashesは
 `17bba212e5216256b5883ce641048de263cd045a12adf060ed354973a6ae6728`でprotected。
 `source_term.rs`、Typed/Resolved、C4C4 captured、Core、
 GeneratedOrigin、diagnostic、active route、Task277Bもprotected。
+
+## Implementation completion evidence
+
+Documentation prerequisite commitは`481a599877803e855307381901b82ae38365ce4a`。
+Current source measurementはchecker `12132 / 472546`、SHA-256
+`e7242ebf7344b1e89646fefe2dd9e1ad41d40be22b526c872327540ba7abad12`、private mizar-test leaf
+`816 / 32987`、SHA-256 `14f1db22b0d4a45cad31db5a1e11f4c28b89e0cab1047b6f8fd4982a8e7d8041`。
+Focused checker 4件 + imported-fixture probe 1件はPASS。Checker/mizar-test libraryは
+`576/576`と`625/625`、final sorted raw test-list SHA-256は
+`20a2a07a078580b3253a0fbcb5ac8387c42df19fe568d1e5a97b3a709a7bdcd3` /
+`6679e5558b1a8884baacaa4c0bb1d6c000d7352002b98c5ff33642034f68f49e`。
+Checker productionは`32` paths / `199351` lines、unchanged path SHA-256
+`9dc5b02f26679677e593ea755394d68533173d2be988b7ef1ddcfd84a41b9787`、final
+content-manifest SHA-256
+`9d41d59f42e05c46b084bb26e75b53091e8a4f59cbd83880cca4a91b46f8e5e0`。
+Contract treeは`105/105`、C4C7 protected 3 hashesはfrozen値と一致する。
+
+Implementation、test-sufficiency、source-documentation/API、bilingual/boundaryのindependent
+reviewはimplementation repair 2件とexact source-spec inventory/status repair後**NO
+FINDINGS**。Compatibility、両package library/lint、metadata、format、offline Cargo
+metadata、workspace all-target/all-feature warnings-denied Clippy、full all-feature workspace
+tests/doctests、diff/scope/count/hash/protected-surface checkはPASS。追加の`cargo test
+--workspace --all-targets --all-features`は通常test targetを失敗なしで完了したが、長時間の
+Criterion performance measurementだけを意図的に停止した。これはPASS済みrequired
+full-workspace test gateの代替として扱わない。Independent final-quality reviewは**NO
+FINDINGS**。全9 autonomous crate exit gatesはPASS、valid uncapped `100/100`（spec
+completeness `20/20`、test contract/coverage `20/20`、traceability `15/15`、implementation
+correctness `15/15`、design/source sync `10/10`、boundary `10/10`、verification `5/5`、
+handoff `5/5`）。Exact staging、commit、post-commit proofはpending。
 
 ## Core boundary、review、exit
 

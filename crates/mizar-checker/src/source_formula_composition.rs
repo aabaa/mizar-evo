@@ -79,6 +79,11 @@ dense_id!(SourceQuantifierBoundUseId);
 dense_id!(SourceConditionFormulaEdgeId);
 dense_id!(SourcePredicateChainConjunctionId);
 dense_id!(SourcePredicateChainNegationId);
+dense_id!(SourceNestedFraenkelCaptureGraphGeneratorId);
+dense_id!(SourceNestedFraenkelCaptureGraphMapperId);
+dense_id!(SourceNestedFraenkelCaptureGraphPredicateId);
+dense_id!(SourceNestedFraenkelCaptureGraphCaptureId);
+dense_id!(SourceNestedFraenkelCaptureGraphOccurrenceId);
 
 /// Complete input for one cross-family source formula composition transaction.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -2994,6 +2999,975 @@ fn validate_nested_fraenkel_capture_identity(
             .is_none()
 }
 
+/// One generator row in the standalone normalized nested-Fraenkel graph.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceNestedFraenkelCaptureGraphGenerator {
+    resolver_binding: FraenkelGeneratorVariableBindingId,
+    definition_block: ResolvedNodeId,
+    functor_definition: ResolvedNodeId,
+    comprehension: ResolvedNodeId,
+    segment: ResolvedNodeId,
+    binder: ResolvedNodeId,
+    segment_range: SourceRange,
+    binder_range: SourceRange,
+    source_ordinal: usize,
+    declaration_ordinal: usize,
+}
+
+impl SourceNestedFraenkelCaptureGraphGenerator {
+    #[must_use]
+    pub const fn resolver_binding(&self) -> FraenkelGeneratorVariableBindingId {
+        self.resolver_binding
+    }
+
+    #[must_use]
+    pub const fn definition_block(&self) -> ResolvedNodeId {
+        self.definition_block
+    }
+
+    #[must_use]
+    pub const fn functor_definition(&self) -> ResolvedNodeId {
+        self.functor_definition
+    }
+
+    #[must_use]
+    pub const fn comprehension(&self) -> ResolvedNodeId {
+        self.comprehension
+    }
+
+    #[must_use]
+    pub const fn segment(&self) -> ResolvedNodeId {
+        self.segment
+    }
+
+    #[must_use]
+    pub const fn binder(&self) -> ResolvedNodeId {
+        self.binder
+    }
+
+    #[must_use]
+    pub const fn segment_range(&self) -> SourceRange {
+        self.segment_range
+    }
+
+    #[must_use]
+    pub const fn binder_range(&self) -> SourceRange {
+        self.binder_range
+    }
+}
+
+/// Dense, source-ordered generator rows.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceNestedFraenkelCaptureGraphGeneratorTable {
+    rows: Vec<SourceNestedFraenkelCaptureGraphGenerator>,
+}
+
+impl SourceNestedFraenkelCaptureGraphGeneratorTable {
+    #[must_use]
+    pub fn get(
+        &self,
+        id: SourceNestedFraenkelCaptureGraphGeneratorId,
+    ) -> Option<&SourceNestedFraenkelCaptureGraphGenerator> {
+        self.rows.get(id.index())
+    }
+
+    pub fn iter(
+        &self,
+    ) -> impl Iterator<
+        Item = (
+            SourceNestedFraenkelCaptureGraphGeneratorId,
+            &SourceNestedFraenkelCaptureGraphGenerator,
+        ),
+    > {
+        self.rows
+            .iter()
+            .enumerate()
+            .map(|(index, row)| (SourceNestedFraenkelCaptureGraphGeneratorId::new(index), row))
+    }
+
+    #[must_use]
+    pub const fn len(&self) -> usize {
+        self.rows.len()
+    }
+
+    #[must_use]
+    pub const fn is_empty(&self) -> bool {
+        self.rows.is_empty()
+    }
+}
+
+/// One normalized mapper-owner row.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceNestedFraenkelCaptureGraphMapper {
+    definition_block: ResolvedNodeId,
+    functor_definition: ResolvedNodeId,
+    comprehension: ResolvedNodeId,
+    owner: ResolvedNodeId,
+    source_ordinal: usize,
+    role_ordinal: usize,
+}
+
+impl SourceNestedFraenkelCaptureGraphMapper {
+    #[must_use]
+    pub const fn definition_block(&self) -> ResolvedNodeId {
+        self.definition_block
+    }
+
+    #[must_use]
+    pub const fn functor_definition(&self) -> ResolvedNodeId {
+        self.functor_definition
+    }
+
+    #[must_use]
+    pub const fn comprehension(&self) -> ResolvedNodeId {
+        self.comprehension
+    }
+
+    #[must_use]
+    pub const fn owner(&self) -> ResolvedNodeId {
+        self.owner
+    }
+}
+
+/// Dense normalized mapper-owner rows.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceNestedFraenkelCaptureGraphMapperTable {
+    rows: Vec<SourceNestedFraenkelCaptureGraphMapper>,
+}
+
+impl SourceNestedFraenkelCaptureGraphMapperTable {
+    #[must_use]
+    pub fn get(
+        &self,
+        id: SourceNestedFraenkelCaptureGraphMapperId,
+    ) -> Option<&SourceNestedFraenkelCaptureGraphMapper> {
+        self.rows.get(id.index())
+    }
+
+    pub fn iter(
+        &self,
+    ) -> impl Iterator<
+        Item = (
+            SourceNestedFraenkelCaptureGraphMapperId,
+            &SourceNestedFraenkelCaptureGraphMapper,
+        ),
+    > {
+        self.rows
+            .iter()
+            .enumerate()
+            .map(|(index, row)| (SourceNestedFraenkelCaptureGraphMapperId::new(index), row))
+    }
+
+    #[must_use]
+    pub const fn len(&self) -> usize {
+        self.rows.len()
+    }
+
+    #[must_use]
+    pub const fn is_empty(&self) -> bool {
+        self.rows.is_empty()
+    }
+}
+
+/// One normalized predicate-owner row. The exact C4C8 graph has none.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceNestedFraenkelCaptureGraphPredicate {
+    definition_block: ResolvedNodeId,
+    functor_definition: ResolvedNodeId,
+    comprehension: ResolvedNodeId,
+    owner: ResolvedNodeId,
+}
+
+impl SourceNestedFraenkelCaptureGraphPredicate {
+    #[must_use]
+    pub const fn definition_block(&self) -> ResolvedNodeId {
+        self.definition_block
+    }
+
+    #[must_use]
+    pub const fn functor_definition(&self) -> ResolvedNodeId {
+        self.functor_definition
+    }
+
+    #[must_use]
+    pub const fn comprehension(&self) -> ResolvedNodeId {
+        self.comprehension
+    }
+
+    #[must_use]
+    pub const fn owner(&self) -> ResolvedNodeId {
+        self.owner
+    }
+}
+
+/// Dense normalized predicate-owner rows.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceNestedFraenkelCaptureGraphPredicateTable {
+    rows: Vec<SourceNestedFraenkelCaptureGraphPredicate>,
+}
+
+impl SourceNestedFraenkelCaptureGraphPredicateTable {
+    #[must_use]
+    pub fn get(
+        &self,
+        id: SourceNestedFraenkelCaptureGraphPredicateId,
+    ) -> Option<&SourceNestedFraenkelCaptureGraphPredicate> {
+        self.rows.get(id.index())
+    }
+
+    pub fn iter(
+        &self,
+    ) -> impl Iterator<
+        Item = (
+            SourceNestedFraenkelCaptureGraphPredicateId,
+            &SourceNestedFraenkelCaptureGraphPredicate,
+        ),
+    > {
+        self.rows
+            .iter()
+            .enumerate()
+            .map(|(index, row)| (SourceNestedFraenkelCaptureGraphPredicateId::new(index), row))
+    }
+
+    #[must_use]
+    pub const fn len(&self) -> usize {
+        self.rows.len()
+    }
+
+    #[must_use]
+    pub const fn is_empty(&self) -> bool {
+        self.rows.is_empty()
+    }
+}
+
+/// One distinct captured outer-generator identity.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceNestedFraenkelCaptureGraphCapture {
+    generator: SourceNestedFraenkelCaptureGraphGeneratorId,
+    resolver_binding: FraenkelGeneratorVariableBindingId,
+    mapper: SourceNestedFraenkelCaptureGraphMapperId,
+    owner_context: ResolvedNodeId,
+    source_ordinal: usize,
+}
+
+impl SourceNestedFraenkelCaptureGraphCapture {
+    #[must_use]
+    pub const fn generator(&self) -> SourceNestedFraenkelCaptureGraphGeneratorId {
+        self.generator
+    }
+
+    #[must_use]
+    pub const fn resolver_binding(&self) -> FraenkelGeneratorVariableBindingId {
+        self.resolver_binding
+    }
+
+    #[must_use]
+    pub const fn mapper(&self) -> SourceNestedFraenkelCaptureGraphMapperId {
+        self.mapper
+    }
+
+    #[must_use]
+    pub const fn owner_context(&self) -> ResolvedNodeId {
+        self.owner_context
+    }
+}
+
+/// Dense distinct-capture rows.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceNestedFraenkelCaptureGraphCaptureTable {
+    rows: Vec<SourceNestedFraenkelCaptureGraphCapture>,
+}
+
+impl SourceNestedFraenkelCaptureGraphCaptureTable {
+    #[must_use]
+    pub fn get(
+        &self,
+        id: SourceNestedFraenkelCaptureGraphCaptureId,
+    ) -> Option<&SourceNestedFraenkelCaptureGraphCapture> {
+        self.rows.get(id.index())
+    }
+
+    pub fn iter(
+        &self,
+    ) -> impl Iterator<
+        Item = (
+            SourceNestedFraenkelCaptureGraphCaptureId,
+            &SourceNestedFraenkelCaptureGraphCapture,
+        ),
+    > {
+        self.rows
+            .iter()
+            .enumerate()
+            .map(|(index, row)| (SourceNestedFraenkelCaptureGraphCaptureId::new(index), row))
+    }
+
+    #[must_use]
+    pub const fn len(&self) -> usize {
+        self.rows.len()
+    }
+
+    #[must_use]
+    pub const fn is_empty(&self) -> bool {
+        self.rows.is_empty()
+    }
+}
+
+/// One mapper occurrence associated with one distinct capture row.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceNestedFraenkelCaptureGraphOccurrence {
+    mapper: SourceNestedFraenkelCaptureGraphMapperId,
+    capture: SourceNestedFraenkelCaptureGraphCaptureId,
+    resolver_use_index: usize,
+    resolver_binding: FraenkelGeneratorVariableBindingId,
+    comprehension: ResolvedNodeId,
+    role_owner: ResolvedNodeId,
+    term_reference: ResolvedNodeId,
+    identifier: ResolvedNodeId,
+    role: FraenkelGeneratorVariableUseRole,
+    identifier_range: SourceRange,
+    source_ordinal: usize,
+    role_ordinal: usize,
+}
+
+impl SourceNestedFraenkelCaptureGraphOccurrence {
+    #[must_use]
+    pub const fn mapper(&self) -> SourceNestedFraenkelCaptureGraphMapperId {
+        self.mapper
+    }
+
+    #[must_use]
+    pub const fn capture(&self) -> SourceNestedFraenkelCaptureGraphCaptureId {
+        self.capture
+    }
+
+    #[must_use]
+    pub const fn resolver_use_index(&self) -> usize {
+        self.resolver_use_index
+    }
+
+    #[must_use]
+    pub const fn resolver_binding(&self) -> FraenkelGeneratorVariableBindingId {
+        self.resolver_binding
+    }
+
+    #[must_use]
+    pub const fn comprehension(&self) -> ResolvedNodeId {
+        self.comprehension
+    }
+
+    #[must_use]
+    pub const fn role_owner(&self) -> ResolvedNodeId {
+        self.role_owner
+    }
+
+    #[must_use]
+    pub const fn term_reference(&self) -> ResolvedNodeId {
+        self.term_reference
+    }
+
+    #[must_use]
+    pub const fn identifier(&self) -> ResolvedNodeId {
+        self.identifier
+    }
+
+    #[must_use]
+    pub const fn role(&self) -> FraenkelGeneratorVariableUseRole {
+        self.role
+    }
+
+    #[must_use]
+    pub const fn identifier_range(&self) -> SourceRange {
+        self.identifier_range
+    }
+}
+
+/// Dense source-ordered occurrence rows.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceNestedFraenkelCaptureGraphOccurrenceTable {
+    rows: Vec<SourceNestedFraenkelCaptureGraphOccurrence>,
+}
+
+impl SourceNestedFraenkelCaptureGraphOccurrenceTable {
+    #[must_use]
+    pub fn get(
+        &self,
+        id: SourceNestedFraenkelCaptureGraphOccurrenceId,
+    ) -> Option<&SourceNestedFraenkelCaptureGraphOccurrence> {
+        self.rows.get(id.index())
+    }
+
+    pub fn iter(
+        &self,
+    ) -> impl Iterator<
+        Item = (
+            SourceNestedFraenkelCaptureGraphOccurrenceId,
+            &SourceNestedFraenkelCaptureGraphOccurrence,
+        ),
+    > {
+        self.rows.iter().enumerate().map(|(index, row)| {
+            (
+                SourceNestedFraenkelCaptureGraphOccurrenceId::new(index),
+                row,
+            )
+        })
+    }
+
+    #[must_use]
+    pub const fn len(&self) -> usize {
+        self.rows.len()
+    }
+
+    #[must_use]
+    pub const fn is_empty(&self) -> bool {
+        self.rows.is_empty()
+    }
+}
+
+const NESTED_FRAENKEL_CAPTURE_GRAPH_SNAPSHOT_VERSION: &str =
+    "source-nested-fraenkel-capture-graph-dependencies-v1";
+const NESTED_FRAENKEL_CAPTURE_GRAPH_SNAPSHOT_DOMAIN: &str = "source-nested-fraenkel-capture-graph";
+
+#[derive(Clone, PartialEq, Eq)]
+struct SourceNestedFraenkelCaptureGraphDependencies {
+    version: &'static str,
+    domain: &'static str,
+    resolver: FraenkelGeneratorVariableSourceCollection,
+}
+
+/// Immutable syntax-free normalized nested-Fraenkel graph handoff.
+#[derive(Clone, PartialEq, Eq)]
+pub struct SourceNestedFraenkelCaptureGraphHandoff {
+    source_id: SourceId,
+    module_id: ModuleId,
+    resolver_summary: String,
+    generators: SourceNestedFraenkelCaptureGraphGeneratorTable,
+    mappers: SourceNestedFraenkelCaptureGraphMapperTable,
+    predicates: SourceNestedFraenkelCaptureGraphPredicateTable,
+    captures: SourceNestedFraenkelCaptureGraphCaptureTable,
+    occurrences: SourceNestedFraenkelCaptureGraphOccurrenceTable,
+    dependencies: SourceNestedFraenkelCaptureGraphDependencies,
+}
+
+impl SourceNestedFraenkelCaptureGraphHandoff {
+    #[must_use]
+    pub const fn source_id(&self) -> SourceId {
+        self.source_id
+    }
+
+    #[must_use]
+    pub const fn module_id(&self) -> &ModuleId {
+        &self.module_id
+    }
+
+    #[must_use]
+    pub fn resolver_summary(&self) -> &str {
+        &self.resolver_summary
+    }
+
+    #[must_use]
+    pub const fn generators(&self) -> &SourceNestedFraenkelCaptureGraphGeneratorTable {
+        &self.generators
+    }
+
+    #[must_use]
+    pub const fn mappers(&self) -> &SourceNestedFraenkelCaptureGraphMapperTable {
+        &self.mappers
+    }
+
+    #[must_use]
+    pub const fn predicates(&self) -> &SourceNestedFraenkelCaptureGraphPredicateTable {
+        &self.predicates
+    }
+
+    #[must_use]
+    pub const fn captures(&self) -> &SourceNestedFraenkelCaptureGraphCaptureTable {
+        &self.captures
+    }
+
+    #[must_use]
+    pub const fn occurrences(&self) -> &SourceNestedFraenkelCaptureGraphOccurrenceTable {
+        &self.occurrences
+    }
+
+    #[must_use]
+    pub fn debug_text(&self) -> String {
+        format!(
+            "source-nested-fraenkel-capture-graph-v1|module={}.{}|generators={}|mappers={}|predicates={}|captures={}|occurrences={}",
+            self.module_id.package().as_str(),
+            self.module_id.path().as_str(),
+            self.generators.len(),
+            self.mappers.len(),
+            self.predicates.len(),
+            self.captures.len(),
+            self.occurrences.len(),
+        )
+    }
+
+    fn validate(&self) -> Result<(), SourceNestedFraenkelCaptureGraphError> {
+        let dependencies = &self.dependencies;
+        if dependencies.version != NESTED_FRAENKEL_CAPTURE_GRAPH_SNAPSHOT_VERSION
+            || dependencies.domain != NESTED_FRAENKEL_CAPTURE_GRAPH_SNAPSHOT_DOMAIN
+            || self.source_id != dependencies.resolver.source_id()
+            || self.module_id != *dependencies.resolver.module()
+            || self.resolver_summary != dependencies.resolver.debug_text()
+        {
+            return Err(SourceNestedFraenkelCaptureGraphError::InvalidDependency);
+        }
+        let profile = validate_nested_fraenkel_capture_graph_dependency(dependencies)
+            .ok_or(SourceNestedFraenkelCaptureGraphError::InvalidDependency)?;
+        validate_nested_fraenkel_capture_graph_cardinality(self)?;
+        validate_nested_fraenkel_capture_graph_layout(self)?;
+        validate_nested_fraenkel_capture_graph_provenance(self, &profile)?;
+        validate_nested_fraenkel_capture_graph_captures(self, &profile)?;
+        validate_nested_fraenkel_capture_graph_occurrences(self, &profile)
+    }
+
+    /// Reauthenticates the retained resolver snapshot and all graph rows.
+    pub(crate) fn validate_complete(&self) -> Result<(), SourceNestedFraenkelCaptureGraphError> {
+        self.validate()
+    }
+}
+
+/// Default-deny errors for normalized nested-Fraenkel graph admission.
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum SourceNestedFraenkelCaptureGraphError {
+    InvalidDependency,
+    InvalidCardinality,
+    InvalidLayout,
+    InvalidProvenance,
+    InvalidCaptureIdentity {
+        capture: SourceNestedFraenkelCaptureGraphCaptureId,
+    },
+    InvalidOccurrence {
+        occurrence: SourceNestedFraenkelCaptureGraphOccurrenceId,
+    },
+}
+
+impl fmt::Display for SourceNestedFraenkelCaptureGraphError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::InvalidDependency => {
+                formatter.write_str("nested Fraenkel capture graph dependency is invalid")
+            }
+            Self::InvalidCardinality => {
+                formatter.write_str("nested Fraenkel capture graph cardinality is invalid")
+            }
+            Self::InvalidLayout => {
+                formatter.write_str("nested Fraenkel capture graph layout is invalid")
+            }
+            Self::InvalidProvenance => {
+                formatter.write_str("nested Fraenkel capture graph provenance is invalid")
+            }
+            Self::InvalidCaptureIdentity { capture } => write!(
+                formatter,
+                "nested Fraenkel capture graph identity {} is invalid",
+                capture.index()
+            ),
+            Self::InvalidOccurrence { occurrence } => write!(
+                formatter,
+                "nested Fraenkel capture graph occurrence {} is invalid",
+                occurrence.index()
+            ),
+        }
+    }
+}
+
+impl Error for SourceNestedFraenkelCaptureGraphError {}
+
+/// Builds the exact standalone normalized nested-Fraenkel graph.
+#[derive(Debug, Clone, Copy)]
+pub struct SourceNestedFraenkelCaptureGraphProducer;
+
+impl SourceNestedFraenkelCaptureGraphProducer {
+    pub fn build(
+        resolver: &FraenkelGeneratorVariableSourceCollection,
+    ) -> Result<SourceNestedFraenkelCaptureGraphHandoff, SourceNestedFraenkelCaptureGraphError>
+    {
+        let profile = validate_nested_fraenkel_capture_graph_dependency_from_resolver(resolver)
+            .ok_or(SourceNestedFraenkelCaptureGraphError::InvalidDependency)?;
+        let dependencies = SourceNestedFraenkelCaptureGraphDependencies {
+            version: NESTED_FRAENKEL_CAPTURE_GRAPH_SNAPSHOT_VERSION,
+            domain: NESTED_FRAENKEL_CAPTURE_GRAPH_SNAPSHOT_DOMAIN,
+            resolver: resolver.clone(),
+        };
+        let source_id = resolver.source_id();
+        let module_id = resolver.module().clone();
+        let bindings = resolver.bindings().iter().collect::<Vec<_>>();
+        let generators = bindings
+            .iter()
+            .map(
+                |(resolver_binding, binding)| SourceNestedFraenkelCaptureGraphGenerator {
+                    resolver_binding: *resolver_binding,
+                    definition_block: binding.definition_block(),
+                    functor_definition: binding.functor_definition(),
+                    comprehension: binding.comprehension(),
+                    segment: binding.segment(),
+                    binder: binding.binder(),
+                    segment_range: binding.segment_range(),
+                    binder_range: binding.binder_range(),
+                    source_ordinal: binding.source_ordinal(),
+                    declaration_ordinal: binding.source_ordinal(),
+                },
+            )
+            .collect();
+        let mapper = resolver
+            .uses()
+            .get(0)
+            .ok_or(SourceNestedFraenkelCaptureGraphError::InvalidDependency)?;
+        let mappers = SourceNestedFraenkelCaptureGraphMapperTable {
+            rows: vec![SourceNestedFraenkelCaptureGraphMapper {
+                definition_block: mapper.definition_block(),
+                functor_definition: mapper.functor_definition(),
+                comprehension: mapper.comprehension(),
+                owner: mapper.role_owner(),
+                source_ordinal: mapper.source_ordinal(),
+                role_ordinal: mapper.role_source_ordinal(),
+            }],
+        };
+        let captures = resolver
+            .uses()
+            .iter()
+            .enumerate()
+            .map(|(source_ordinal, use_link)| {
+                let generator = bindings
+                    .iter()
+                    .position(|(id, _)| *id == use_link.binding())
+                    .map(SourceNestedFraenkelCaptureGraphGeneratorId::new)
+                    .ok_or(SourceNestedFraenkelCaptureGraphError::InvalidDependency)?;
+                Ok(SourceNestedFraenkelCaptureGraphCapture {
+                    generator,
+                    resolver_binding: use_link.binding(),
+                    mapper: SourceNestedFraenkelCaptureGraphMapperId::new(0),
+                    owner_context: profile.inner_comprehension,
+                    source_ordinal,
+                })
+            })
+            .collect::<Result<Vec<_>, SourceNestedFraenkelCaptureGraphError>>()?;
+        let occurrences = resolver
+            .uses()
+            .iter()
+            .enumerate()
+            .map(
+                |(source_ordinal, use_link)| SourceNestedFraenkelCaptureGraphOccurrence {
+                    mapper: SourceNestedFraenkelCaptureGraphMapperId::new(0),
+                    capture: SourceNestedFraenkelCaptureGraphCaptureId::new(source_ordinal),
+                    resolver_use_index: source_ordinal,
+                    resolver_binding: use_link.binding(),
+                    comprehension: use_link.comprehension(),
+                    role_owner: use_link.role_owner(),
+                    term_reference: use_link.term_reference(),
+                    identifier: use_link.identifier(),
+                    role: use_link.role(),
+                    identifier_range: use_link.identifier_range(),
+                    source_ordinal: use_link.source_ordinal(),
+                    role_ordinal: use_link.role_source_ordinal(),
+                },
+            )
+            .collect();
+        let handoff = SourceNestedFraenkelCaptureGraphHandoff {
+            source_id,
+            module_id,
+            resolver_summary: resolver.debug_text(),
+            generators: SourceNestedFraenkelCaptureGraphGeneratorTable { rows: generators },
+            mappers,
+            predicates: SourceNestedFraenkelCaptureGraphPredicateTable { rows: Vec::new() },
+            captures: SourceNestedFraenkelCaptureGraphCaptureTable { rows: captures },
+            occurrences: SourceNestedFraenkelCaptureGraphOccurrenceTable { rows: occurrences },
+            dependencies,
+        };
+        handoff.validate_complete()?;
+        Ok(handoff)
+    }
+}
+
+#[derive(Clone, Copy)]
+struct NestedFraenkelCaptureGraphResolverProfile {
+    inner_binding: FraenkelGeneratorVariableBindingId,
+    outer_x_binding: FraenkelGeneratorVariableBindingId,
+    outer_y_binding: FraenkelGeneratorVariableBindingId,
+    inner_comprehension: ResolvedNodeId,
+    definition_block: ResolvedNodeId,
+    functor_definition: ResolvedNodeId,
+    mapper_owner: ResolvedNodeId,
+}
+
+fn validate_nested_fraenkel_capture_graph_dependency(
+    dependencies: &SourceNestedFraenkelCaptureGraphDependencies,
+) -> Option<NestedFraenkelCaptureGraphResolverProfile> {
+    if dependencies.version != NESTED_FRAENKEL_CAPTURE_GRAPH_SNAPSHOT_VERSION
+        || dependencies.domain != NESTED_FRAENKEL_CAPTURE_GRAPH_SNAPSHOT_DOMAIN
+    {
+        return None;
+    }
+    validate_nested_fraenkel_capture_graph_dependency_from_resolver(&dependencies.resolver)
+}
+
+fn validate_nested_fraenkel_capture_graph_dependency_from_resolver(
+    resolver: &FraenkelGeneratorVariableSourceCollection,
+) -> Option<NestedFraenkelCaptureGraphResolverProfile> {
+    let bindings = resolver.bindings().iter().collect::<Vec<_>>();
+    let [
+        (inner_id, inner),
+        (outer_x_id, outer_x),
+        (outer_y_id, outer_y),
+    ] = bindings.as_slice()
+    else {
+        return None;
+    };
+    let uses = resolver.uses().iter().collect::<Vec<_>>();
+    let [mapper_x, mapper_y] = uses.as_slice() else {
+        return None;
+    };
+    let expected_inner = FraenkelGeneratorVariableBindingId::new(0);
+    let expected_outer_x = FraenkelGeneratorVariableBindingId::new(1);
+    let expected_outer_y = FraenkelGeneratorVariableBindingId::new(2);
+    if *inner_id != expected_inner
+        || *outer_x_id != expected_outer_x
+        || *outer_y_id != expected_outer_y
+        || resolver
+            .bindings()
+            .get(FraenkelGeneratorVariableBindingId::new(3))
+            .is_some()
+        || resolver.bindings().get(*inner_id) != Some(*inner)
+        || resolver.bindings().get(*outer_x_id) != Some(*outer_x)
+        || resolver.bindings().get(*outer_y_id) != Some(*outer_y)
+        || resolver.uses().get(2).is_some()
+        || inner.spelling() != "z"
+        || outer_x.spelling() != "x"
+        || outer_y.spelling() != "y"
+        || inner.source_ordinal() != 0
+        || outer_x.source_ordinal() != 1
+        || outer_y.source_ordinal() != 2
+        || !exact_nested_resolver_range(inner.segment_range(), resolver.source_id(), 110, 129)
+        || !exact_nested_resolver_range(inner.binder_range(), resolver.source_id(), 110, 111)
+        || !exact_nested_resolver_range(outer_x.segment_range(), resolver.source_id(), 144, 163)
+        || !exact_nested_resolver_range(outer_x.binder_range(), resolver.source_id(), 144, 145)
+        || !exact_nested_resolver_range(outer_y.segment_range(), resolver.source_id(), 165, 184)
+        || !exact_nested_resolver_range(outer_y.binder_range(), resolver.source_id(), 165, 166)
+        || inner.definition_block() != outer_x.definition_block()
+        || inner.definition_block() != outer_y.definition_block()
+        || inner.functor_definition() != outer_x.functor_definition()
+        || inner.functor_definition() != outer_y.functor_definition()
+        || inner.comprehension() == outer_x.comprehension()
+        || inner.comprehension() == outer_y.comprehension()
+        || outer_x.comprehension() != outer_y.comprehension()
+        || inner.segment() == outer_x.segment()
+        || inner.segment() == outer_y.segment()
+        || outer_x.segment() == outer_y.segment()
+        || inner.binder() == outer_x.binder()
+        || inner.binder() == outer_y.binder()
+        || outer_x.binder() == outer_y.binder()
+        || mapper_x.definition_block() != inner.definition_block()
+        || mapper_x.functor_definition() != inner.functor_definition()
+        || mapper_x.comprehension() != inner.comprehension()
+        || mapper_y.definition_block() != inner.definition_block()
+        || mapper_y.functor_definition() != inner.functor_definition()
+        || mapper_y.comprehension() != inner.comprehension()
+        || mapper_x.role_owner() != mapper_y.role_owner()
+        || mapper_x.binding() != expected_outer_x
+        || mapper_y.binding() != expected_outer_y
+        || mapper_x.role() != FraenkelGeneratorVariableUseRole::Mapper
+        || mapper_y.role() != FraenkelGeneratorVariableUseRole::Mapper
+        || mapper_x.source_ordinal() != 0
+        || mapper_y.source_ordinal() != 1
+        || mapper_x.role_source_ordinal() != 0
+        || mapper_y.role_source_ordinal() != 1
+        || !exact_nested_resolver_range(mapper_x.identifier_range(), resolver.source_id(), 98, 99)
+        || !exact_nested_resolver_range(mapper_y.identifier_range(), resolver.source_id(), 101, 102)
+        || mapper_x.identifier() == mapper_y.identifier()
+        || mapper_x.term_reference() == mapper_y.term_reference()
+    {
+        return None;
+    }
+    Some(NestedFraenkelCaptureGraphResolverProfile {
+        inner_binding: expected_inner,
+        outer_x_binding: expected_outer_x,
+        outer_y_binding: expected_outer_y,
+        inner_comprehension: inner.comprehension(),
+        definition_block: inner.definition_block(),
+        functor_definition: inner.functor_definition(),
+        mapper_owner: mapper_x.role_owner(),
+    })
+}
+
+fn validate_nested_fraenkel_capture_graph_cardinality(
+    handoff: &SourceNestedFraenkelCaptureGraphHandoff,
+) -> Result<(), SourceNestedFraenkelCaptureGraphError> {
+    if handoff.generators.len() != 3
+        || handoff.mappers.len() != 1
+        || !handoff.predicates.is_empty()
+        || handoff.captures.len() != 2
+        || handoff.occurrences.len() != 2
+    {
+        return Err(SourceNestedFraenkelCaptureGraphError::InvalidCardinality);
+    }
+    Ok(())
+}
+
+fn validate_nested_fraenkel_capture_graph_layout(
+    handoff: &SourceNestedFraenkelCaptureGraphHandoff,
+) -> Result<(), SourceNestedFraenkelCaptureGraphError> {
+    for (index, (id, row)) in handoff.generators.iter().enumerate() {
+        if id.index() != index || row.source_ordinal != index || row.declaration_ordinal != index {
+            return Err(SourceNestedFraenkelCaptureGraphError::InvalidLayout);
+        }
+    }
+    for (index, (id, row)) in handoff.mappers.iter().enumerate() {
+        if id.index() != index || row.source_ordinal != index || row.role_ordinal != index {
+            return Err(SourceNestedFraenkelCaptureGraphError::InvalidLayout);
+        }
+    }
+    if handoff.predicates.iter().next().is_some() {
+        return Err(SourceNestedFraenkelCaptureGraphError::InvalidLayout);
+    }
+    for (index, (id, row)) in handoff.captures.iter().enumerate() {
+        if id.index() != index || row.source_ordinal != index {
+            return Err(SourceNestedFraenkelCaptureGraphError::InvalidLayout);
+        }
+    }
+    for (index, (id, row)) in handoff.occurrences.iter().enumerate() {
+        if id.index() != index || row.source_ordinal != index || row.role_ordinal != index {
+            return Err(SourceNestedFraenkelCaptureGraphError::InvalidLayout);
+        }
+    }
+    Ok(())
+}
+
+fn validate_nested_fraenkel_capture_graph_provenance(
+    handoff: &SourceNestedFraenkelCaptureGraphHandoff,
+    profile: &NestedFraenkelCaptureGraphResolverProfile,
+) -> Result<(), SourceNestedFraenkelCaptureGraphError> {
+    let resolver = &handoff.dependencies.resolver;
+    if handoff.source_id != resolver.source_id()
+        || &handoff.module_id != resolver.module()
+        || handoff.resolver_summary != resolver.debug_text()
+        || handoff.debug_text()
+            != format!(
+                "source-nested-fraenkel-capture-graph-v1|module={}.{}|generators=3|mappers=1|predicates=0|captures=2|occurrences=2",
+                handoff.module_id.package().as_str(),
+                handoff.module_id.path().as_str(),
+            )
+    {
+        return Err(SourceNestedFraenkelCaptureGraphError::InvalidProvenance);
+    }
+    let expected_bindings = [
+        profile.inner_binding,
+        profile.outer_x_binding,
+        profile.outer_y_binding,
+    ];
+    for (index, row) in handoff.generators.iter().map(|(_, row)| row).enumerate() {
+        let Some((resolver_binding, binding)) = resolver
+            .bindings()
+            .iter()
+            .find(|(id, _)| *id == row.resolver_binding)
+        else {
+            return Err(SourceNestedFraenkelCaptureGraphError::InvalidProvenance);
+        };
+        if row.resolver_binding != expected_bindings[index]
+            || resolver_binding != row.resolver_binding
+            || row.definition_block != binding.definition_block()
+            || row.functor_definition != binding.functor_definition()
+            || row.comprehension != binding.comprehension()
+            || row.segment != binding.segment()
+            || row.binder != binding.binder()
+            || row.segment_range != binding.segment_range()
+            || row.binder_range != binding.binder_range()
+        {
+            return Err(SourceNestedFraenkelCaptureGraphError::InvalidProvenance);
+        }
+    }
+    let Some(mapper) = handoff
+        .mappers
+        .get(SourceNestedFraenkelCaptureGraphMapperId::new(0))
+    else {
+        return Err(SourceNestedFraenkelCaptureGraphError::InvalidProvenance);
+    };
+    if mapper.definition_block != profile.definition_block
+        || mapper.functor_definition != profile.functor_definition
+        || mapper.comprehension != profile.inner_comprehension
+        || mapper.owner != profile.mapper_owner
+    {
+        return Err(SourceNestedFraenkelCaptureGraphError::InvalidProvenance);
+    }
+    for (index, row) in handoff.occurrences.iter().map(|(_, row)| row).enumerate() {
+        let Some(link) = resolver.uses().get(index) else {
+            return Err(SourceNestedFraenkelCaptureGraphError::InvalidProvenance);
+        };
+        if row.comprehension != link.comprehension()
+            || row.role_owner != link.role_owner()
+            || row.term_reference != link.term_reference()
+            || row.identifier != link.identifier()
+            || row.identifier_range != link.identifier_range()
+        {
+            return Err(SourceNestedFraenkelCaptureGraphError::InvalidProvenance);
+        }
+    }
+    Ok(())
+}
+
+fn validate_nested_fraenkel_capture_graph_captures(
+    handoff: &SourceNestedFraenkelCaptureGraphHandoff,
+    profile: &NestedFraenkelCaptureGraphResolverProfile,
+) -> Result<(), SourceNestedFraenkelCaptureGraphError> {
+    let expected = [
+        (
+            SourceNestedFraenkelCaptureGraphGeneratorId::new(1),
+            profile.outer_x_binding,
+        ),
+        (
+            SourceNestedFraenkelCaptureGraphGeneratorId::new(2),
+            profile.outer_y_binding,
+        ),
+    ];
+    for (index, row) in handoff.captures.iter().map(|(_, row)| row).enumerate() {
+        let id = SourceNestedFraenkelCaptureGraphCaptureId::new(index);
+        if (row.generator, row.resolver_binding) != expected[index]
+            || row.mapper != SourceNestedFraenkelCaptureGraphMapperId::new(0)
+            || row.owner_context != profile.inner_comprehension
+        {
+            return Err(
+                SourceNestedFraenkelCaptureGraphError::InvalidCaptureIdentity { capture: id },
+            );
+        }
+    }
+    Ok(())
+}
+
+fn validate_nested_fraenkel_capture_graph_occurrences(
+    handoff: &SourceNestedFraenkelCaptureGraphHandoff,
+    profile: &NestedFraenkelCaptureGraphResolverProfile,
+) -> Result<(), SourceNestedFraenkelCaptureGraphError> {
+    let resolver = &handoff.dependencies.resolver;
+    for (index, row) in handoff.occurrences.iter().map(|(_, row)| row).enumerate() {
+        let occurrence = SourceNestedFraenkelCaptureGraphOccurrenceId::new(index);
+        let Some(link) = resolver.uses().get(row.resolver_use_index) else {
+            return Err(SourceNestedFraenkelCaptureGraphError::InvalidOccurrence { occurrence });
+        };
+        let expected_binding = if index == 0 {
+            profile.outer_x_binding
+        } else {
+            profile.outer_y_binding
+        };
+        if row.mapper != SourceNestedFraenkelCaptureGraphMapperId::new(0)
+            || row.capture != SourceNestedFraenkelCaptureGraphCaptureId::new(index)
+            || row.resolver_use_index != index
+            || row.resolver_binding != expected_binding
+            || row.resolver_binding != link.binding()
+            || row.comprehension != link.comprehension()
+            || row.role_owner != link.role_owner()
+            || row.term_reference != link.term_reference()
+            || row.identifier != link.identifier()
+            || row.role != FraenkelGeneratorVariableUseRole::Mapper
+            || row.role != link.role()
+            || row.identifier_range != link.identifier_range()
+        {
+            return Err(SourceNestedFraenkelCaptureGraphError::InvalidOccurrence { occurrence });
+        }
+    }
+    Ok(())
+}
+
 #[derive(Clone, Copy)]
 struct NestedFraenkelResolverProfile {
     definition_block: ResolvedNodeId,
@@ -5780,6 +6754,244 @@ pub(crate) mod tests {
         ));
     }
 
+    fn task257c4c8_dependency() -> FraenkelGeneratorVariableSourceCollection {
+        let source = source_id();
+        let module = module();
+        let ast = task257c4c8_surface_ast_with_x_name(source, "x");
+        let resolved =
+            SurfaceResolvedArena::lower(&ast, &module).expect("Task257C4C8 resolver arena");
+        FraenkelGeneratorVariableSourceCollector::new(&ast, &module, &resolved)
+            .expect("Task257C4C8 collector")
+            .collect()
+            .expect("Task257C4C8 collection")
+    }
+
+    fn task257c4c8_display_near_miss_dependency() -> FraenkelGeneratorVariableSourceCollection {
+        let source = source_id();
+        let module = module();
+        let ast = task257c4c8_surface_ast_with_x_name(source, "renamed_x");
+        let resolved =
+            SurfaceResolvedArena::lower(&ast, &module).expect("Task257C4C8 near-miss arena");
+        FraenkelGeneratorVariableSourceCollector::new(&ast, &module, &resolved)
+            .expect("Task257C4C8 near-miss collector")
+            .collect()
+            .expect("Task257C4C8 near-miss collection")
+    }
+
+    fn task257c4c8_surface_ast_with_x_name(source: SourceId, x_name: &str) -> syntax::SurfaceAst {
+        let mut b = syntax::SurfaceAstBuilder::new(source);
+        let definition = b.add_token(
+            syntax::SurfaceTokenKind::ReservedWord,
+            "definition",
+            range(source, 39, 49),
+        );
+        let func = b.add_token(
+            syntax::SurfaceTokenKind::ReservedWord,
+            "func",
+            range(source, 52, 56),
+        );
+
+        let inner_open = b.add_token(
+            syntax::SurfaceTokenKind::ReservedSymbol,
+            "{",
+            range(source, 95, 96),
+        );
+        let application_open = b.add_token(
+            syntax::SurfaceTokenKind::ReservedSymbol,
+            "[",
+            range(source, 97, 98),
+        );
+        let x_identifier = b.add_token(
+            syntax::SurfaceTokenKind::Identifier,
+            x_name,
+            range(source, 98, 99),
+        );
+        let x_reference = b.add_node(
+            syntax::SurfaceNodeKind::TermReference,
+            range(source, 98, 99),
+            vec![x_identifier],
+        );
+        let x_term = b.add_node(
+            syntax::SurfaceNodeKind::TermExpression,
+            range(source, 98, 99),
+            vec![x_reference],
+        );
+        let application_comma = b.add_token(
+            syntax::SurfaceTokenKind::ReservedSymbol,
+            ",",
+            range(source, 100, 101),
+        );
+        let y_identifier = b.add_token(
+            syntax::SurfaceTokenKind::Identifier,
+            "y",
+            range(source, 101, 102),
+        );
+        let y_reference = b.add_node(
+            syntax::SurfaceNodeKind::TermReference,
+            range(source, 101, 102),
+            vec![y_identifier],
+        );
+        let y_term = b.add_node(
+            syntax::SurfaceNodeKind::TermExpression,
+            range(source, 101, 102),
+            vec![y_reference],
+        );
+        let application_close = b.add_token(
+            syntax::SurfaceTokenKind::ReservedSymbol,
+            "]",
+            range(source, 102, 103),
+        );
+        let application = b.add_node(
+            syntax::SurfaceNodeKind::ApplicationTerm,
+            range(source, 97, 103),
+            vec![
+                application_open,
+                x_term,
+                application_comma,
+                y_term,
+                application_close,
+            ],
+        );
+        let inner_mapper = b.add_node(
+            syntax::SurfaceNodeKind::TermExpression,
+            range(source, 97, 103),
+            vec![application],
+        );
+        let inner_where = b.add_token(
+            syntax::SurfaceTokenKind::ReservedWord,
+            "where",
+            range(source, 104, 109),
+        );
+        let inner_binder = b.add_token(
+            syntax::SurfaceTokenKind::Identifier,
+            "z",
+            range(source, 110, 111),
+        );
+        let inner_is = b.add_token(
+            syntax::SurfaceTokenKind::ReservedWord,
+            "is",
+            range(source, 112, 114),
+        );
+        let inner_type = task257c4c3_type(&mut b, source, 115);
+        let inner_segment = b.add_node(
+            syntax::SurfaceNodeKind::ComprehensionVariableSegment,
+            range(source, 110, 129),
+            vec![inner_binder, inner_is, inner_type],
+        );
+        let inner_close = b.add_token(
+            syntax::SurfaceTokenKind::ReservedSymbol,
+            "}",
+            range(source, 130, 131),
+        );
+        let inner = b.add_node(
+            syntax::SurfaceNodeKind::SetComprehension,
+            range(source, 95, 131),
+            vec![
+                inner_open,
+                inner_mapper,
+                inner_where,
+                inner_segment,
+                inner_close,
+            ],
+        );
+        let outer_open = b.add_token(
+            syntax::SurfaceTokenKind::ReservedSymbol,
+            "{",
+            range(source, 93, 94),
+        );
+        let outer_mapper = b.add_node(
+            syntax::SurfaceNodeKind::TermExpression,
+            range(source, 95, 131),
+            vec![inner],
+        );
+        let outer_where = b.add_token(
+            syntax::SurfaceTokenKind::ReservedWord,
+            "where",
+            range(source, 132, 137),
+        );
+        let outer_x_binder = b.add_token(
+            syntax::SurfaceTokenKind::Identifier,
+            x_name,
+            range(source, 144, 145),
+        );
+        let outer_x_is = b.add_token(
+            syntax::SurfaceTokenKind::ReservedWord,
+            "is",
+            range(source, 146, 148),
+        );
+        let outer_x_type = task257c4c3_type(&mut b, source, 149);
+        let outer_x_segment = b.add_node(
+            syntax::SurfaceNodeKind::ComprehensionVariableSegment,
+            range(source, 144, 163),
+            vec![outer_x_binder, outer_x_is, outer_x_type],
+        );
+        let outer_comma = b.add_token(
+            syntax::SurfaceTokenKind::ReservedSymbol,
+            ",",
+            range(source, 164, 165),
+        );
+        let outer_y_binder = b.add_token(
+            syntax::SurfaceTokenKind::Identifier,
+            "y",
+            range(source, 165, 166),
+        );
+        let outer_y_is = b.add_token(
+            syntax::SurfaceTokenKind::ReservedWord,
+            "is",
+            range(source, 167, 169),
+        );
+        let outer_y_type = task257c4c3_type(&mut b, source, 170);
+        let outer_y_segment = b.add_node(
+            syntax::SurfaceNodeKind::ComprehensionVariableSegment,
+            range(source, 165, 184),
+            vec![outer_y_binder, outer_y_is, outer_y_type],
+        );
+        let outer_close = b.add_token(
+            syntax::SurfaceTokenKind::ReservedSymbol,
+            "}",
+            range(source, 185, 186),
+        );
+        let outer = b.add_node(
+            syntax::SurfaceNodeKind::SetComprehension,
+            range(source, 93, 186),
+            vec![
+                outer_open,
+                outer_mapper,
+                outer_where,
+                outer_x_segment,
+                outer_comma,
+                outer_y_segment,
+                outer_close,
+            ],
+        );
+        let definiens_expression = b.add_node(
+            syntax::SurfaceNodeKind::TermExpression,
+            range(source, 93, 186),
+            vec![outer],
+        );
+        let definiens = b.add_node(
+            syntax::SurfaceNodeKind::TermDefiniens,
+            range(source, 93, 186),
+            vec![definiens_expression],
+        );
+        let functor = b.add_node(
+            syntax::SurfaceNodeKind::FunctorDefinition,
+            range(source, 52, 187),
+            vec![func, definiens],
+        );
+        let block = b.add_node(
+            syntax::SurfaceNodeKind::DefinitionBlockItem,
+            range(source, 39, 188),
+            vec![definition, functor],
+        );
+        let root = b.add_node(
+            syntax::SurfaceNodeKind::Root,
+            range(source, 0, 188),
+            vec![block],
+        );
+        b.finish(Some(root), None)
+    }
+
     fn task257c4c5_dependency() -> SourceNestedFraenkelMapperPrimaryHandoff {
         SourceNestedFraenkelMapperPrimaryProducer::build(task257c4c3_handoff_for_test())
             .expect("Task257C4C4 test dependency")
@@ -6349,6 +7561,584 @@ pub(crate) mod tests {
                 .is_empty()
         );
         assert!(first.validate_complete().is_ok());
+    }
+
+    #[test]
+    fn task257c4c8_builds_exact_normalized_capture_graph() {
+        let resolver = task257c4c8_dependency();
+        let source = resolver.source_id();
+        let module = resolver.module().clone();
+        let summary = resolver.debug_text();
+        let handoff = SourceNestedFraenkelCaptureGraphProducer::build(&resolver).unwrap();
+
+        assert_eq!(handoff.source_id(), source);
+        assert_eq!(handoff.module_id(), &module);
+        assert_eq!(handoff.resolver_summary(), summary);
+        assert_eq!(handoff.generators().len(), 3);
+        assert!(!handoff.generators().is_empty());
+        assert_eq!(handoff.mappers().len(), 1);
+        assert_eq!(handoff.predicates().len(), 0);
+        assert!(handoff.predicates().is_empty());
+        assert_eq!(handoff.captures().len(), 2);
+        assert_eq!(handoff.occurrences().len(), 2);
+        assert!(
+            handoff
+                .generators()
+                .get(SourceNestedFraenkelCaptureGraphGeneratorId::new(3))
+                .is_none()
+        );
+        assert!(
+            handoff
+                .mappers()
+                .get(SourceNestedFraenkelCaptureGraphMapperId::new(1))
+                .is_none()
+        );
+
+        let generator_rows = handoff.generators().iter().collect::<Vec<_>>();
+        let resolver_rows = resolver.bindings().iter().collect::<Vec<_>>();
+        assert_eq!(generator_rows.len(), 3);
+        for (index, ((graph_id, graph), (resolver_id, resolver_row))) in
+            generator_rows.iter().zip(resolver_rows.iter()).enumerate()
+        {
+            assert_eq!(graph_id.index(), index);
+            assert_eq!(graph.resolver_binding(), *resolver_id);
+            assert_eq!(graph.definition_block(), resolver_row.definition_block());
+            assert_eq!(
+                graph.functor_definition(),
+                resolver_row.functor_definition()
+            );
+            assert_eq!(graph.comprehension(), resolver_row.comprehension());
+            assert_eq!(graph.segment(), resolver_row.segment());
+            assert_eq!(graph.binder(), resolver_row.binder());
+            assert_eq!(graph.segment_range(), resolver_row.segment_range());
+            assert_eq!(graph.binder_range(), resolver_row.binder_range());
+            assert_eq!(graph.source_ordinal, index);
+            assert_eq!(graph.declaration_ordinal, index);
+        }
+
+        let mapper = handoff
+            .mappers()
+            .get(SourceNestedFraenkelCaptureGraphMapperId::new(0))
+            .unwrap();
+        let links = resolver.uses().iter().collect::<Vec<_>>();
+        assert_eq!(mapper.definition_block(), links[0].definition_block());
+        assert_eq!(mapper.functor_definition(), links[0].functor_definition());
+        assert_eq!(mapper.comprehension(), links[0].comprehension());
+        assert_eq!(mapper.owner(), links[0].role_owner());
+        assert_eq!(mapper.source_ordinal, 0);
+        assert_eq!(mapper.role_ordinal, 0);
+
+        let captures = handoff.captures().iter().collect::<Vec<_>>();
+        assert_eq!(
+            captures[0].0,
+            SourceNestedFraenkelCaptureGraphCaptureId::new(0)
+        );
+        assert_eq!(
+            captures[0].1.generator(),
+            SourceNestedFraenkelCaptureGraphGeneratorId::new(1)
+        );
+        assert_eq!(captures[0].1.resolver_binding(), links[0].binding());
+        assert_eq!(
+            captures[1].1.generator(),
+            SourceNestedFraenkelCaptureGraphGeneratorId::new(2)
+        );
+        assert_eq!(captures[1].1.resolver_binding(), links[1].binding());
+        assert_eq!(
+            captures[0].1.mapper(),
+            SourceNestedFraenkelCaptureGraphMapperId::new(0)
+        );
+        assert_eq!(
+            captures[1].1.mapper(),
+            SourceNestedFraenkelCaptureGraphMapperId::new(0)
+        );
+        assert_eq!(captures[0].1.owner_context(), links[0].comprehension());
+        assert_eq!(captures[1].1.owner_context(), links[0].comprehension());
+
+        let occurrences = handoff.occurrences().iter().collect::<Vec<_>>();
+        assert_eq!(occurrences.len(), 2);
+        for (index, ((graph_id, occurrence), link)) in
+            occurrences.iter().zip(links.iter()).enumerate()
+        {
+            assert_eq!(graph_id.index(), index);
+            assert_eq!(
+                occurrence.mapper(),
+                SourceNestedFraenkelCaptureGraphMapperId::new(0)
+            );
+            assert_eq!(
+                occurrence.capture(),
+                SourceNestedFraenkelCaptureGraphCaptureId::new(index)
+            );
+            assert_eq!(occurrence.resolver_use_index(), index);
+            assert_eq!(occurrence.resolver_binding(), link.binding());
+            assert_eq!(occurrence.comprehension(), link.comprehension());
+            assert_eq!(occurrence.role_owner(), link.role_owner());
+            assert_eq!(occurrence.term_reference(), link.term_reference());
+            assert_eq!(occurrence.identifier(), link.identifier());
+            assert_eq!(occurrence.role(), link.role());
+            assert_eq!(occurrence.identifier_range(), link.identifier_range());
+            assert_eq!(occurrence.source_ordinal, index);
+            assert_eq!(occurrence.role_ordinal, index);
+        }
+        assert_eq!(
+            handoff.debug_text(),
+            format!(
+                "source-nested-fraenkel-capture-graph-v1|module={}.{}|generators=3|mappers=1|predicates=0|captures=2|occurrences=2",
+                module.package().as_str(),
+                module.path().as_str(),
+            )
+        );
+        assert!(handoff.validate_complete().is_ok());
+    }
+
+    #[test]
+    fn task257c4c8_rejects_dependency_cardinality_layout_and_provenance() {
+        assert_eq!(
+            SourceNestedFraenkelCaptureGraphError::InvalidDependency.to_string(),
+            "nested Fraenkel capture graph dependency is invalid"
+        );
+        assert_eq!(
+            SourceNestedFraenkelCaptureGraphError::InvalidCardinality.to_string(),
+            "nested Fraenkel capture graph cardinality is invalid"
+        );
+        assert_eq!(
+            SourceNestedFraenkelCaptureGraphError::InvalidLayout.to_string(),
+            "nested Fraenkel capture graph layout is invalid"
+        );
+        assert_eq!(
+            SourceNestedFraenkelCaptureGraphError::InvalidProvenance.to_string(),
+            "nested Fraenkel capture graph provenance is invalid"
+        );
+        assert_eq!(
+            SourceNestedFraenkelCaptureGraphError::InvalidCaptureIdentity {
+                capture: SourceNestedFraenkelCaptureGraphCaptureId::new(1),
+            }
+            .to_string(),
+            "nested Fraenkel capture graph identity 1 is invalid"
+        );
+        assert_eq!(
+            SourceNestedFraenkelCaptureGraphError::InvalidOccurrence {
+                occurrence: SourceNestedFraenkelCaptureGraphOccurrenceId::new(1),
+            }
+            .to_string(),
+            "nested Fraenkel capture graph occurrence 1 is invalid"
+        );
+
+        let near_miss = task257c4c3_fixture();
+        assert!(matches!(
+            SourceNestedFraenkelCaptureGraphProducer::build(&near_miss.resolver),
+            Err(SourceNestedFraenkelCaptureGraphError::InvalidDependency)
+        ));
+        let display_near_miss = task257c4c8_display_near_miss_dependency();
+        assert!(matches!(
+            SourceNestedFraenkelCaptureGraphProducer::build(&display_near_miss),
+            Err(SourceNestedFraenkelCaptureGraphError::InvalidDependency)
+        ));
+
+        let handoff =
+            SourceNestedFraenkelCaptureGraphProducer::build(&task257c4c8_dependency()).unwrap();
+        let mut dependency = handoff.clone();
+        dependency.resolver_summary = "stale".to_owned();
+        assert!(matches!(
+            dependency.validate_complete(),
+            Err(SourceNestedFraenkelCaptureGraphError::InvalidDependency)
+        ));
+
+        let mut version = handoff.clone();
+        version.dependencies.version = "stale";
+        assert!(matches!(
+            version.validate_complete(),
+            Err(SourceNestedFraenkelCaptureGraphError::InvalidDependency)
+        ));
+
+        let mut domain = handoff.clone();
+        domain.dependencies.domain = "stale";
+        assert!(matches!(
+            domain.validate_complete(),
+            Err(SourceNestedFraenkelCaptureGraphError::InvalidDependency)
+        ));
+
+        let mut source = handoff.clone();
+        source.source_id = other_source_id();
+        assert!(matches!(
+            source.validate_complete(),
+            Err(SourceNestedFraenkelCaptureGraphError::InvalidDependency)
+        ));
+
+        let mut module = handoff.clone();
+        module.module_id =
+            ModuleId::new(PackageId::new("pkg"), ModulePath::new("composition.other"));
+        assert!(matches!(
+            module.validate_complete(),
+            Err(SourceNestedFraenkelCaptureGraphError::InvalidDependency)
+        ));
+
+        let mut retained_resolver = handoff.clone();
+        retained_resolver.dependencies.resolver = task257c4c3_fixture().resolver;
+        retained_resolver.source_id = retained_resolver.dependencies.resolver.source_id();
+        retained_resolver.module_id = retained_resolver.dependencies.resolver.module().clone();
+        retained_resolver.resolver_summary = retained_resolver.dependencies.resolver.debug_text();
+        assert!(matches!(
+            retained_resolver.validate_complete(),
+            Err(SourceNestedFraenkelCaptureGraphError::InvalidDependency)
+        ));
+
+        let mut cardinality = handoff.clone();
+        cardinality.generators.rows.pop();
+        assert!(matches!(
+            cardinality.validate_complete(),
+            Err(SourceNestedFraenkelCaptureGraphError::InvalidCardinality)
+        ));
+
+        let mut mapper_cardinality = handoff.clone();
+        mapper_cardinality.mappers.rows.clear();
+        assert!(matches!(
+            mapper_cardinality.validate_complete(),
+            Err(SourceNestedFraenkelCaptureGraphError::InvalidCardinality)
+        ));
+
+        let mut predicate_cardinality = handoff.clone();
+        let link = task257c4c8_dependency().uses().get(0).unwrap().clone();
+        predicate_cardinality
+            .predicates
+            .rows
+            .push(SourceNestedFraenkelCaptureGraphPredicate {
+                definition_block: link.definition_block(),
+                functor_definition: link.functor_definition(),
+                comprehension: link.comprehension(),
+                owner: link.role_owner(),
+            });
+        assert!(matches!(
+            predicate_cardinality.validate_complete(),
+            Err(SourceNestedFraenkelCaptureGraphError::InvalidCardinality)
+        ));
+
+        let mut capture_cardinality = handoff.clone();
+        capture_cardinality.captures.rows.pop();
+        assert!(matches!(
+            capture_cardinality.validate_complete(),
+            Err(SourceNestedFraenkelCaptureGraphError::InvalidCardinality)
+        ));
+
+        let mut occurrence_cardinality = handoff.clone();
+        occurrence_cardinality.occurrences.rows.pop();
+        assert!(matches!(
+            occurrence_cardinality.validate_complete(),
+            Err(SourceNestedFraenkelCaptureGraphError::InvalidCardinality)
+        ));
+
+        let mut layout = handoff.clone();
+        layout.generators.rows.swap(0, 1);
+        assert!(matches!(
+            layout.validate_complete(),
+            Err(SourceNestedFraenkelCaptureGraphError::InvalidLayout)
+        ));
+
+        let mut generator_ordinal = handoff.clone();
+        generator_ordinal.generators.rows[1].declaration_ordinal = 99;
+        assert!(matches!(
+            generator_ordinal.validate_complete(),
+            Err(SourceNestedFraenkelCaptureGraphError::InvalidLayout)
+        ));
+
+        let mut generator_source_ordinal = handoff.clone();
+        generator_source_ordinal.generators.rows[1].source_ordinal = 99;
+        assert!(matches!(
+            generator_source_ordinal.validate_complete(),
+            Err(SourceNestedFraenkelCaptureGraphError::InvalidLayout)
+        ));
+
+        let mut mapper_ordinal = handoff.clone();
+        mapper_ordinal.mappers.rows[0].role_ordinal = 99;
+        assert!(matches!(
+            mapper_ordinal.validate_complete(),
+            Err(SourceNestedFraenkelCaptureGraphError::InvalidLayout)
+        ));
+
+        let mut mapper_source_ordinal = handoff.clone();
+        mapper_source_ordinal.mappers.rows[0].source_ordinal = 99;
+        assert!(matches!(
+            mapper_source_ordinal.validate_complete(),
+            Err(SourceNestedFraenkelCaptureGraphError::InvalidLayout)
+        ));
+
+        let mut capture_ordinal = handoff.clone();
+        capture_ordinal.captures.rows.swap(0, 1);
+        assert!(matches!(
+            capture_ordinal.validate_complete(),
+            Err(SourceNestedFraenkelCaptureGraphError::InvalidLayout)
+        ));
+
+        let mut capture_source_ordinal = handoff.clone();
+        capture_source_ordinal.captures.rows[1].source_ordinal = 99;
+        assert!(matches!(
+            capture_source_ordinal.validate_complete(),
+            Err(SourceNestedFraenkelCaptureGraphError::InvalidLayout)
+        ));
+
+        let mut occurrence_ordinal = handoff.clone();
+        occurrence_ordinal.occurrences.rows.swap(0, 1);
+        assert!(matches!(
+            occurrence_ordinal.validate_complete(),
+            Err(SourceNestedFraenkelCaptureGraphError::InvalidLayout)
+        ));
+
+        let mut occurrence_source_ordinal = handoff.clone();
+        occurrence_source_ordinal.occurrences.rows[1].source_ordinal = 99;
+        assert!(matches!(
+            occurrence_source_ordinal.validate_complete(),
+            Err(SourceNestedFraenkelCaptureGraphError::InvalidLayout)
+        ));
+
+        let mut occurrence_role_ordinal = handoff.clone();
+        occurrence_role_ordinal.occurrences.rows[1].role_ordinal = 99;
+        assert!(matches!(
+            occurrence_role_ordinal.validate_complete(),
+            Err(SourceNestedFraenkelCaptureGraphError::InvalidLayout)
+        ));
+
+        let mut provenance = handoff.clone();
+        provenance.generators.rows[1].segment_range.start += 1;
+        assert!(matches!(
+            provenance.validate_complete(),
+            Err(SourceNestedFraenkelCaptureGraphError::InvalidProvenance)
+        ));
+
+        let mut generator_node = handoff.clone();
+        generator_node.generators.rows[1].definition_block =
+            generator_node.generators.rows[0].segment;
+        assert!(matches!(
+            generator_node.validate_complete(),
+            Err(SourceNestedFraenkelCaptureGraphError::InvalidProvenance)
+        ));
+
+        let mut mapper_node = handoff.clone();
+        mapper_node.mappers.rows[0].owner = mapper_node.mappers.rows[0].comprehension;
+        assert!(matches!(
+            mapper_node.validate_complete(),
+            Err(SourceNestedFraenkelCaptureGraphError::InvalidProvenance)
+        ));
+
+        let mut precedence = handoff;
+        precedence.source_id = other_source_id();
+        precedence.generators.rows.clear();
+        assert!(matches!(
+            precedence.validate_complete(),
+            Err(SourceNestedFraenkelCaptureGraphError::InvalidDependency)
+        ));
+
+        let mut cardinality_precedence =
+            SourceNestedFraenkelCaptureGraphProducer::build(&task257c4c8_dependency()).unwrap();
+        cardinality_precedence.generators.rows.pop();
+        cardinality_precedence.generators.rows.swap(0, 1);
+        assert!(matches!(
+            cardinality_precedence.validate_complete(),
+            Err(SourceNestedFraenkelCaptureGraphError::InvalidCardinality)
+        ));
+
+        let mut layout_precedence =
+            SourceNestedFraenkelCaptureGraphProducer::build(&task257c4c8_dependency()).unwrap();
+        layout_precedence.generators.rows.swap(0, 1);
+        layout_precedence.generators.rows[1].segment_range.start += 1;
+        assert!(matches!(
+            layout_precedence.validate_complete(),
+            Err(SourceNestedFraenkelCaptureGraphError::InvalidLayout)
+        ));
+
+        let mut provenance_precedence =
+            SourceNestedFraenkelCaptureGraphProducer::build(&task257c4c8_dependency()).unwrap();
+        provenance_precedence.generators.rows[1].segment_range.start += 1;
+        provenance_precedence.captures.rows[0].generator =
+            SourceNestedFraenkelCaptureGraphGeneratorId::new(0);
+        assert!(matches!(
+            provenance_precedence.validate_complete(),
+            Err(SourceNestedFraenkelCaptureGraphError::InvalidProvenance)
+        ));
+    }
+
+    #[test]
+    fn task257c4c8_rejects_capture_identity_and_occurrence_in_precedence() {
+        let handoff =
+            SourceNestedFraenkelCaptureGraphProducer::build(&task257c4c8_dependency()).unwrap();
+        let mut capture = handoff.clone();
+        capture.captures.rows[0].generator = SourceNestedFraenkelCaptureGraphGeneratorId::new(0);
+        assert!(matches!(
+            capture.validate_complete(),
+            Err(SourceNestedFraenkelCaptureGraphError::InvalidCaptureIdentity { capture })
+                if capture == SourceNestedFraenkelCaptureGraphCaptureId::new(0)
+        ));
+
+        let mut capture_binding = handoff.clone();
+        capture_binding.captures.rows[0].resolver_binding =
+            capture_binding.occurrences.rows[1].resolver_binding;
+        assert!(matches!(
+            capture_binding.validate_complete(),
+            Err(SourceNestedFraenkelCaptureGraphError::InvalidCaptureIdentity { capture })
+                if capture == SourceNestedFraenkelCaptureGraphCaptureId::new(0)
+        ));
+
+        let mut capture_mapper = handoff.clone();
+        capture_mapper.captures.rows[0].mapper = SourceNestedFraenkelCaptureGraphMapperId::new(1);
+        assert!(matches!(
+            capture_mapper.validate_complete(),
+            Err(SourceNestedFraenkelCaptureGraphError::InvalidCaptureIdentity { capture })
+                if capture == SourceNestedFraenkelCaptureGraphCaptureId::new(0)
+        ));
+
+        let mut capture_owner = handoff.clone();
+        capture_owner.captures.rows[0].owner_context = capture_owner.generators.rows[0].segment;
+        assert!(matches!(
+            capture_owner.validate_complete(),
+            Err(SourceNestedFraenkelCaptureGraphError::InvalidCaptureIdentity { capture })
+                if capture == SourceNestedFraenkelCaptureGraphCaptureId::new(0)
+        ));
+
+        let mut capture_one_fields = handoff.clone();
+        capture_one_fields.captures.rows[1].generator =
+            SourceNestedFraenkelCaptureGraphGeneratorId::new(0);
+        assert!(matches!(
+            capture_one_fields.validate_complete(),
+            Err(SourceNestedFraenkelCaptureGraphError::InvalidCaptureIdentity { capture })
+                if capture == SourceNestedFraenkelCaptureGraphCaptureId::new(1)
+        ));
+
+        let mut capture_one_binding = handoff.clone();
+        capture_one_binding.captures.rows[1].resolver_binding =
+            capture_one_binding.occurrences.rows[0].resolver_binding;
+        assert!(matches!(
+            capture_one_binding.validate_complete(),
+            Err(SourceNestedFraenkelCaptureGraphError::InvalidCaptureIdentity { capture })
+                if capture == SourceNestedFraenkelCaptureGraphCaptureId::new(1)
+        ));
+
+        let mut capture_one_mapper = handoff.clone();
+        capture_one_mapper.captures.rows[1].mapper =
+            SourceNestedFraenkelCaptureGraphMapperId::new(1);
+        assert!(matches!(
+            capture_one_mapper.validate_complete(),
+            Err(SourceNestedFraenkelCaptureGraphError::InvalidCaptureIdentity { capture })
+                if capture == SourceNestedFraenkelCaptureGraphCaptureId::new(1)
+        ));
+
+        let mut capture_one_owner = handoff.clone();
+        capture_one_owner.captures.rows[1].owner_context =
+            capture_one_owner.generators.rows[0].segment;
+        assert!(matches!(
+            capture_one_owner.validate_complete(),
+            Err(SourceNestedFraenkelCaptureGraphError::InvalidCaptureIdentity { capture })
+                if capture == SourceNestedFraenkelCaptureGraphCaptureId::new(1)
+        ));
+
+        let mut occurrence = handoff.clone();
+        occurrence.occurrences.rows[0].capture = SourceNestedFraenkelCaptureGraphCaptureId::new(1);
+        assert!(matches!(
+            occurrence.validate_complete(),
+            Err(SourceNestedFraenkelCaptureGraphError::InvalidOccurrence { occurrence })
+                if occurrence == SourceNestedFraenkelCaptureGraphOccurrenceId::new(0)
+        ));
+
+        let mut occurrence_mapper = handoff.clone();
+        occurrence_mapper.occurrences.rows[0].mapper =
+            SourceNestedFraenkelCaptureGraphMapperId::new(1);
+        assert!(matches!(
+            occurrence_mapper.validate_complete(),
+            Err(SourceNestedFraenkelCaptureGraphError::InvalidOccurrence { occurrence })
+                if occurrence == SourceNestedFraenkelCaptureGraphOccurrenceId::new(0)
+        ));
+
+        let mut occurrence_resolver_use = handoff.clone();
+        occurrence_resolver_use.occurrences.rows[0].resolver_use_index = 1;
+        assert!(matches!(
+            occurrence_resolver_use.validate_complete(),
+            Err(SourceNestedFraenkelCaptureGraphError::InvalidOccurrence { occurrence })
+                if occurrence == SourceNestedFraenkelCaptureGraphOccurrenceId::new(0)
+        ));
+
+        let mut occurrence_binding = handoff.clone();
+        occurrence_binding.occurrences.rows[0].resolver_binding =
+            occurrence_binding.occurrences.rows[1].resolver_binding;
+        assert!(matches!(
+            occurrence_binding.validate_complete(),
+            Err(SourceNestedFraenkelCaptureGraphError::InvalidOccurrence { occurrence })
+                if occurrence == SourceNestedFraenkelCaptureGraphOccurrenceId::new(0)
+        ));
+
+        let mut occurrence_role = handoff.clone();
+        occurrence_role.occurrences.rows[0].role = FraenkelGeneratorVariableUseRole::Condition;
+        assert!(matches!(
+            occurrence_role.validate_complete(),
+            Err(SourceNestedFraenkelCaptureGraphError::InvalidOccurrence { occurrence })
+                if occurrence == SourceNestedFraenkelCaptureGraphOccurrenceId::new(0)
+        ));
+
+        let mut lowest_occurrence = handoff.clone();
+        lowest_occurrence.occurrences.rows[0].mapper =
+            SourceNestedFraenkelCaptureGraphMapperId::new(1);
+        lowest_occurrence.occurrences.rows[1].capture =
+            SourceNestedFraenkelCaptureGraphCaptureId::new(0);
+        assert!(matches!(
+            lowest_occurrence.validate_complete(),
+            Err(SourceNestedFraenkelCaptureGraphError::InvalidOccurrence { occurrence })
+                if occurrence == SourceNestedFraenkelCaptureGraphOccurrenceId::new(0)
+        ));
+
+        let mut lowest = handoff.clone();
+        lowest.captures.rows[1].generator = SourceNestedFraenkelCaptureGraphGeneratorId::new(0);
+        lowest.occurrences.rows[0].capture = SourceNestedFraenkelCaptureGraphCaptureId::new(1);
+        assert!(matches!(
+            lowest.validate_complete(),
+            Err(SourceNestedFraenkelCaptureGraphError::InvalidCaptureIdentity { capture })
+                if capture == SourceNestedFraenkelCaptureGraphCaptureId::new(1)
+        ));
+    }
+
+    #[test]
+    fn task257c4c8_replays_immutably_and_rejects_near_miss_profiles() {
+        let resolver = task257c4c8_dependency();
+        let resolver_before = resolver.clone();
+        let first = SourceNestedFraenkelCaptureGraphProducer::build(&resolver).unwrap();
+        let second = SourceNestedFraenkelCaptureGraphProducer::build(&resolver).unwrap();
+        assert!(first == second);
+        assert_eq!(first.debug_text(), second.debug_text());
+        assert_eq!(resolver, resolver_before);
+        assert!(first.validate_complete().is_ok());
+
+        let mut near_miss = first.clone();
+        near_miss.occurrences.rows[1].identifier_range.end += 1;
+        assert!(matches!(
+            near_miss.validate_complete(),
+            Err(SourceNestedFraenkelCaptureGraphError::InvalidProvenance)
+        ));
+
+        let mut comprehension = first.clone();
+        comprehension.occurrences.rows[1].comprehension = comprehension.generators.rows[0].segment;
+        assert!(matches!(
+            comprehension.validate_complete(),
+            Err(SourceNestedFraenkelCaptureGraphError::InvalidProvenance)
+        ));
+
+        let mut role_owner = first.clone();
+        role_owner.occurrences.rows[1].role_owner = role_owner.generators.rows[0].binder;
+        assert!(matches!(
+            role_owner.validate_complete(),
+            Err(SourceNestedFraenkelCaptureGraphError::InvalidProvenance)
+        ));
+
+        let mut term_reference = first.clone();
+        term_reference.occurrences.rows[1].term_reference =
+            term_reference.occurrences.rows[0].term_reference;
+        assert!(matches!(
+            term_reference.validate_complete(),
+            Err(SourceNestedFraenkelCaptureGraphError::InvalidProvenance)
+        ));
+
+        let mut identifier = first.clone();
+        identifier.occurrences.rows[1].identifier = identifier.occurrences.rows[0].identifier;
+        assert!(matches!(
+            identifier.validate_complete(),
+            Err(SourceNestedFraenkelCaptureGraphError::InvalidProvenance)
+        ));
+        assert!(first.validate_complete().is_ok());
+        assert_eq!(first.debug_text(), second.debug_text());
     }
 
     fn task257c4a_surface_ast(source: SourceId) -> syntax::SurfaceAst {

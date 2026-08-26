@@ -78,17 +78,24 @@ joins are a `boundary_violation`, and observable ordering would be a
 `spec_gap`. No specification, existing test, diagnostic, active route,
 semantic result, or Task-277B credit changes.
 
-## Task 257C4C8 Normalized Graph Planned Zero-Credit Mapping
+## Task 257C4C8 Normalized Graph Completed Zero-Credit Mapping
 
 The frozen [C4C8 contract](../../task_contracts/en/CHECKER-FRAENKEL-NESTED-MULTI-CAPTURE-GRAPH-257C4C8.md)
-records the planned checker correspondence: `source_formula_composition` is
-the sole future owner of a standalone syntax-free, Core-ID-free normalized
-graph with exact generator/mapper/predicate/capture/occurrence shape
-`3/1/0/2/2`. The public source family and producer are not yet present;
-implementation remains `source_drift`, while the missing checker/private-
-fixture regressions remain a `test_gap`.
+records the completed checker correspondence: `source_formula_composition` is
+the sole owner of a standalone syntax-free, Core-ID-free normalized graph with
+exact generator/mapper/predicate/capture/occurrence shape `3/1/0/2/2`. The
+five dense IDs, ten row/table items, handoff/error/producer family, and
+`#[non_exhaustive]` graph error are implemented; the public-enum inventory is
+now `8 -> 9`. The bounded implementation and checker/private-fixture
+`test_gap` are closed.
 
-This planned mapping grants no source/API/enum claim, Typed/Resolved slot,
+Correspondence:
+
+| Requirement | Source and owner | Tests | Status |
+|---|---|---|---|
+| Standalone normalized graph preserves resolver identity, provenance, private order, exact cardinality, and default-deny precedence without semantic activation. | Five `SourceNestedFraenkelCaptureGraph*Id` types, five row/table pairs, `SourceNestedFraenkelCaptureGraphHandoff`, `SourceNestedFraenkelCaptureGraphError`, and `SourceNestedFraenkelCaptureGraphProducer` in `source_formula_composition.rs`; checker Task-257C is sole owner. | Four checker tests and the existing imported-fixture probe. | Implemented; occurrence node/range provenance is checked before remaining occurrence association, with defensive rechecks allowed. |
+
+This completed mapping grants no Typed/Resolved slot,
 C4C4 captured-state change, Core 33/34/35 or `GeneratedOrigin` payload,
 semantic or active route, diagnostic, or Task-277B credit. C4C7 history,
 trace/expectation/status, and Chapter 13 `partial` coverage remain unchanged.
@@ -1032,7 +1039,12 @@ Generated public newtypes:
   `SourceFraenkelGeneratorUsePositionId`,
   `SourceFraenkelGeneratorBoundUseId`,
   `SourceNestedFraenkelBinderUseId`,
-  `SourceNestedFraenkelCaptureIdentityId`
+  `SourceNestedFraenkelCaptureIdentityId`,
+  `SourceNestedFraenkelCaptureGraphGeneratorId`,
+  `SourceNestedFraenkelCaptureGraphMapperId`,
+  `SourceNestedFraenkelCaptureGraphPredicateId`,
+  `SourceNestedFraenkelCaptureGraphCaptureId`,
+  `SourceNestedFraenkelCaptureGraphOccurrenceId`
 
 Literal top-level public items:
 
@@ -1079,7 +1091,20 @@ Literal top-level public items:
   `SourceNestedFraenkelCaptureIdentityTable`,
   `SourceNestedFraenkelCaptureIdentityError`,
   `SourceNestedFraenkelCaptureIdentityHandoff`,
-  `SourceNestedFraenkelCaptureIdentityProducer`.
+  `SourceNestedFraenkelCaptureIdentityProducer`,
+  `SourceNestedFraenkelCaptureGraphGenerator`,
+  `SourceNestedFraenkelCaptureGraphGeneratorTable`,
+  `SourceNestedFraenkelCaptureGraphMapper`,
+  `SourceNestedFraenkelCaptureGraphMapperTable`,
+  `SourceNestedFraenkelCaptureGraphPredicate`,
+  `SourceNestedFraenkelCaptureGraphPredicateTable`,
+  `SourceNestedFraenkelCaptureGraphCapture`,
+  `SourceNestedFraenkelCaptureGraphCaptureTable`,
+  `SourceNestedFraenkelCaptureGraphOccurrence`,
+  `SourceNestedFraenkelCaptureGraphOccurrenceTable`,
+  `SourceNestedFraenkelCaptureGraphHandoff`,
+  `SourceNestedFraenkelCaptureGraphError`,
+  `SourceNestedFraenkelCaptureGraphProducer`.
 
 Correspondence:
 
@@ -1093,7 +1118,8 @@ Correspondence:
 | C4C3 authenticates the exact C4C2 nested two-binding/one-mapper-use relation against a retained normal `TypedAst` and publishes one immutable binder/use identity row. | `SourceNestedFraenkelBinderUseId`, row/table/handoff, error, producer, and private retained dependency validator. | The four exact C4C3 checker tests and private real imported-fixture probe. | Implemented with no Task-252 occurrence, semantic capture, installation, route, or coverage credit. |
 | C4C5 consumes and retains the complete C4C4 mapper transaction by value and publishes one immutable inner-owner/mapper/reference/checker-binding-to-resolver-identity receipt. | `SourceNestedFraenkelCaptureIdentityId`, row/table/handoff, two-variant error, producer, and complete C4C4 revalidation seam. | Four exact C4C5 checker tests and one private real imported-fixture probe cover every row field, cardinality, precedence, display strings, replay, and empty captured state. | Implemented with no Task-255 dependency, Typed/Resolved installation, semantic capture, Core origin, route, diagnostic, or coverage credit. |
 | C4C6 installs the complete C4C5 receipt into exact authenticated immutable Typed/Resolved destinations without capture semantics. | Crate-private retained-typed validation, boxed AST owners, one-shot Typed installer, borrowed Typed/Resolved getters, and final clone replay. | Six exact checker tests plus one private real imported-fixture installation probe cover exact owner equality, recursion rejection, semantic-table exclusion, mutual exclusion, debug/clone stability, final-input contamination, and empty captured state. | Implemented. No Core/order/route/diagnostic/coverage credit. |
-| Public enums remain forward-compatible. | `#[non_exhaustive]` on all eight public enums. | `checker_public_enums_are_forward_compatible_and_documented`. | Guarded; no exhaustive exception. |
+| C4C8 owns one standalone immutable normalized graph with exact `3/1/0/2/2` generator/mapper/predicate/capture/occurrence cardinality over the retained C4C8R resolver snapshot. | Five graph IDs, five row/table pairs, handoff, `#[non_exhaustive]` error, producer, and private complete validator. | Four exact checker tests and one private real imported-fixture probe cover API shape, identity links, provenance-first precedence, default-deny corruption, replay, and local-`z` exclusion. | Implemented with no Typed/Resolved slot, semantic capture, Core/GeneratedOrigin payload, route, diagnostic, or coverage credit. |
+| Public enums remain forward-compatible. | `#[non_exhaustive]` on all nine public enums. | `checker_public_enums_are_forward_compatible_and_documented`. | Guarded; no exhaustive exception. |
 
 Bounded gaps: connective/quantifier/predicate truth, signature applicability,
 overload selection, formula facts/results, implicit theorem closure and

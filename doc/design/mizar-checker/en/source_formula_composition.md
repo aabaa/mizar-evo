@@ -110,6 +110,7 @@ The dense ids are `SourceFormulaAtomicEdgeId` and
 | `SourceFraenkelGeneratorBoundUseError` | `#[non_exhaustive]`; callers must not exhaustively match Fraenkel generator bound-use validation failures. |
 | `SourceNestedFraenkelBinderUseError` | `#[non_exhaustive]`; callers must not exhaustively match nested Fraenkel binder/use validation failures. |
 | `SourceNestedFraenkelCaptureIdentityError` | `#[non_exhaustive]`; callers must not exhaustively match nested Fraenkel capture-identity validation failures. |
+| `SourceNestedFraenkelCaptureGraphError` | `#[non_exhaustive]`; callers must not exhaustively match normalized nested Fraenkel capture-graph validation failures. |
 | `SourcePredicateChainCompositionError` | `#[non_exhaustive]`; callers must not exhaustively match predicate-chain composition validation failures. |
 
 No exhaustive public enum exceptions are owned by this module.
@@ -1033,11 +1034,22 @@ move Core-33 allocation or Core-35 lowering/GeneratedOrigin ownership here.
 The frozen [C4C8 contract](../../task_contracts/en/CHECKER-FRAENKEL-NESTED-MULTI-CAPTURE-GRAPH-257C4C8.md)
 selects this existing `source_formula_composition` family as the sole owner of
 one standalone immutable, syntax-free, Core-ID-free handoff. Its normalized
-public family is exactly five dense ID types, five immutable row/table pairs
-for generators, mappers, predicates, captures, and occurrences, and one
-handoff/error/producer family. The contract owns the complete getter list,
-debug grammar, exact `3/1/0/2/2` cardinality, and validation precedence; source
-implementation is not yet present.
+public family is exactly these five dense IDs:
+
+`SourceNestedFraenkelCaptureGraphGeneratorId`,
+`SourceNestedFraenkelCaptureGraphMapperId`,
+`SourceNestedFraenkelCaptureGraphPredicateId`,
+`SourceNestedFraenkelCaptureGraphCaptureId`, and
+`SourceNestedFraenkelCaptureGraphOccurrenceId`.
+
+It has exactly these ten immutable row/table items: generator and generator
+table, mapper and mapper table, predicate and predicate table, capture and
+capture table, and occurrence and occurrence table. The companion family is
+`SourceNestedFraenkelCaptureGraphHandoff`,
+`SourceNestedFraenkelCaptureGraphError`, and
+`SourceNestedFraenkelCaptureGraphProducer`. The complete getter list, debug
+grammar, exact `3/1/0/2/2` cardinality, and validation precedence are frozen by
+the contract and implemented here; the public-enum inventory is now `8 -> 9`.
 
 The producer consumes only the retained C4C8R resolver collection. Provenance
 is limited to resolver-exposed generator binding/segment/binder data and
@@ -1047,18 +1059,24 @@ occurrences share one resolved mapper-owner identity. Mapper/predicate/
 comprehension owner ranges are not copied or validated. Graph IDs are a
 separate domain and are never derived by numeric reinterpretation or
 display-name joining. Source and declaration order is private deterministic
-transport only.
+transport only. Provenance authenticates occurrence node/range identity before
+capture and occurrence validation; the occurrence stage checks the remaining
+association and may defensively recheck node/range values.
 
 Missing, extra, duplicate, reordered, stale, foreign, recovered, partial, or
 mismatched dependency/graph state fails atomically in the contract's frozen
 dependency, cardinality, layout, provenance, capture-identity, and occurrence
 precedence. No sort, repair, inference, merge, unchecked deduplication, or
-partial publication is allowed. This section adds no public-enum policy entry
-until the frozen source family exists.
+partial publication is allowed. The six default-deny error displays and the
+four checker tests cover this matrix, including the repaired provenance-first
+precedence.
 
 C4C8 does not reopen `TypedAst` or `ResolvedTypedAst`, add a second slot, alter
 C4C4's empty `BindingEntry::captured`, publish capture semantics, create Core
 IDs/parameters/arguments/origins/uses, or activate a route. Core 33/34/35 and
 `GeneratedOrigin` remain later owners; Task 277B remains deferred and
-zero-credit. The implementation and private imported-fixture probe are the
-only planned source changes under the paired contract.
+zero-credit. Implementation is complete in the two contract-scoped Rust paths;
+source/documentation/API and bilingual/boundary re-reviews report **NO
+FINDINGS**, and required broad verification passes. Final-quality review and
+all nine hard gates also pass at a valid `100/100`; only workflow closure and
+commit remain pending.

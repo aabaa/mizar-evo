@@ -12,7 +12,8 @@ and the private test
 
 ## Status, decision, and purpose
 
-**Status:** frozen documentation prerequisite; implementation has not started.
+**Status:** implementation, required verification, and final-quality review
+complete; exact staging, commit, and post-commit proof are pending.
 
 After clean resolver commit `a710b4f1d99fd2efea36aecf9c2b00cf81437c57`,
 fresh independent checker, Core/destination, and oracle inventories agreed that
@@ -33,10 +34,16 @@ freezes this task's exact derived design decision:
 - validation fails in dependency, cardinality, layout, provenance, capture
   identity, then occurrence precedence.
 
-This closes the remaining checker `design_drift`. The absent checker and
-private-fixture regressions are a `test_gap`, and the absent implementation is
-`source_drift` relative to this frozen contract. There is no `spec_gap` or
-`repo_metadata_conflict`. Any capture semantics, C4C4 captured-state change,
+This closes the remaining checker `design_drift`, bounded `source_drift`, and
+the checker/private-fixture `test_gap`. Independent implementation and
+test-sufficiency reviews reported **NO FINDINGS** after the implementation
+repair. Independent source/documentation/API and bilingual/boundary
+finding-specific re-reviews also reported **NO FINDINGS** after the
+documentation repairs, and required broad verification passes. Independent
+final-quality review reports **NO FINDINGS**, all nine hard gates pass, and the
+valid uncapped score is `100/100`. There is no `spec_gap` or
+`repo_metadata_conflict`.
+Any capture semantics, C4C4 captured-state change,
 second AST slot, Core identity/origin, active route, diagnostic, or Task-277B
 credit is a `boundary_violation`.
 
@@ -241,11 +248,14 @@ Validation precedence is exact:
 3. dense IDs and private ordinals/order; any failure is `InvalidLayout`;
 4. every resolved owner/node identity, every dependency-exposed generator
    segment/binder and occurrence-identifier range, source/module, and
-   dependency association; any failure is `InvalidProvenance`;
+   dependency association; occurrence node/range provenance is authenticated
+   here before capture/occurrence validation; any failure is
+   `InvalidProvenance`;
 5. each capture's graph-generator/resolver-binding/mapper/inner-owner identity,
    reporting the lowest invalid capture; and
-6. each occurrence's mapper/capture/resolver-use/binding/node/role/range
-   association, reporting the lowest invalid occurrence.
+6. each occurrence's mapper/capture/resolver-use/binding/role association,
+   with defensive node/range rechecks permitted, reporting the lowest invalid
+   occurrence.
 
 Missing, extra, duplicate, reordered, stale, foreign, recovered, partial,
 mismatched, numeric-ID-substituted, or display-name-joined state fails
@@ -304,6 +314,7 @@ Their sorted baseline list hashes are
 `ac213696433d40a0649c3f6ca4eb7449ce7d053a40a7573209ef5c0af9716940`
 and
 `21196d1cb959c5b6bd7b38f19efb83d334978ec7f1d0c99e35da19cec8afe385`.
+The current library counts are checker `576` and mizar-test `625`.
 Paired contract trees project `104/104 -> 105/105`. Checker production remains
 32 paths; its path-list hash remains
 `9dc5b02f26679677e593ea755394d68533173d2be988b7ef1ddcfd84a41b9787`.
@@ -315,6 +326,45 @@ and `17bba212e5216256b5883ce641048de263cd045a12adf060ed354973a6ae6728`.
 `source_term.rs`, `typed_ast.rs`, `resolved_typed_ast.rs`, C4C4 captured state,
 Core, `GeneratedOrigin`, diagnostics, active routes, and Task 277B are
 protected.
+
+## Implementation completion evidence
+
+The documentation prerequisite is commit
+`481a599877803e855307381901b82ae38365ce4a`. Current measured source values
+are checker `12132 / 472546`, SHA-256
+`e7242ebf7344b1e89646fefe2dd9e1ad41d40be22b526c872327540ba7abad12`, and the
+private mizar-test leaf `816 / 32987`, SHA-256
+`14f1db22b0d4a45cad31db5a1e11f4c28b89e0cab1047b6f8fd4982a8e7d8041`.
+The focused four checker tests plus one imported-fixture probe pass. Checker
+and mizar-test libraries pass `576/576` and `625/625`; their final sorted raw
+test-list SHA-256 values are respectively
+`20a2a07a078580b3253a0fbcb5ac8387c42df19fe568d1e5a97b3a709a7bdcd3`
+and
+`6679e5558b1a8884baacaa4c0bb1d6c000d7352002b98c5ff33642034f68f49e`.
+Checker production measures `32` paths / `199351` lines, with unchanged path
+SHA-256
+`9dc5b02f26679677e593ea755394d68533173d2be988b7ef1ddcfd84a41b9787`
+and final content-manifest SHA-256
+`9d41d59f42e05c46b084bb26e75b53091e8a4f59cbd83880cca4a91b46f8e5e0`.
+The paired contract trees measure `105/105`, and all three protected C4C7
+hashes match the frozen values above.
+
+Independent implementation, test-sufficiency, source/documentation/API, and
+bilingual/boundary reviews report **NO FINDINGS** after the two implementation
+repairs and the exact source-spec inventory/status repair. Compatibility,
+both package libraries and lint suites, metadata, formatting, offline Cargo
+metadata, warnings-denied all-target/all-feature workspace Clippy, full
+all-feature workspace tests and doctests, diff, scope, count, hash, and
+protected-surface checks pass. An extra `cargo test --workspace --all-targets
+--all-features` run completed all ordinary test targets without failure but its
+long-running Criterion performance measurement was intentionally stopped; it
+is not substituted for the passing required full-workspace test gate.
+Independent final-quality review reports **NO FINDINGS**. All nine autonomous
+crate exit gates pass with a valid uncapped `100/100`: specification
+completeness `20/20`, test contract and coverage `20/20`, traceability `15/15`,
+implementation correctness `15/15`, design/source synchronization `10/10`,
+boundary discipline `10/10`, verification health `5/5`, and handoff quality
+`5/5`. Exact staging, commit, and post-commit proof remain pending.
 
 ## Core boundary, reviews, verification, and exit
 

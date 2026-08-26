@@ -6658,12 +6658,19 @@ post-commit fresh inventoryからだけ選択する。
 - [x] Standalone normalized graph owner、exact 5 table family、`3/1/0/2/2`
   cardinality、resolver-identity association、private order、default-deny precedenceを
   paired [C4C8 contract](../../task_contracts/ja/CHECKER-FRAENKEL-NESTED-MULTI-CAPTURE-GRAPH-257C4C8.md)へfreezeする。
-- [ ] Frozen `source_formula_composition` graph familyとchecker test 4件だけをimplementする。
-  Source familyが存在する前にfuture public-enum policy entryを追加しない。
-- [ ] Existing private imported-fixture probeだけを追加し、exact normalized graph、replay、
+- [x] Frozen `source_formula_composition` graph familyとchecker test 4件だけをimplementする。
+  Exact public-enum policy entryも記録済みである。
+- [x] Existing private imported-fixture probeだけを追加し、exact normalized graph、replay、
   local-`z` exclusion、zero-credit boundaryをassertする。
-- [ ] C4C4 captured state、C4C6 Typed/Resolved receipt ownership、resolver identity domain、
+- [x] C4C4 captured state、C4C6 Typed/Resolved receipt ownership、resolver identity domain、
   Core 33/34/35と`GeneratedOrigin` ownership、active route、diagnostic、semantic、Task277B
   zero creditを保持する。
-- [ ] Independent review、focused/full verification、exact staging、task-only commit、clean
-  postcommit proof、fresh successor inventoryを完了する。
+- [x] Independent implementation/test-sufficiency reviewをrepair後**NO FINDINGS**で完了し、
+  focused `4 + 1`、Clippy、format、diff checkをPASSする。
+- [x] Documentation repair後のsource-documentation/APIとbilingual/boundary
+  finding-specific re-reviewを完了する。
+- [x] Broad/full verificationとprotected count/hash checkを完了する。
+- [x] Final-quality reviewを**NO FINDINGS**、全9 hard gates PASS、valid uncapped
+  `100/100`で完了する。
+- [ ] Exact staging、task-only commit、clean postcommit proof、fresh successor
+  inventoryを完了する。

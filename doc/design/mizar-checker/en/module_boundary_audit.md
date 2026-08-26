@@ -99,6 +99,19 @@ request/result/verdict/diagnostic/route state would be a
 `boundary_violation`. Final line and content measurements are owned once by
 the task contract and reflected in the source-layout inventory below.
 
+## Task 257C4C8 Standalone Normalized Graph Boundary
+
+The completed [C4C8 contract](../../task_contracts/en/CHECKER-FRAENKEL-NESTED-MULTI-CAPTURE-GRAPH-257C4C8.md)
+keeps the standalone immutable, syntax-free, Core-ID-free normalized capture
+graph in the existing cohesive `source_formula_composition.rs` owner. The
+implementation adds no module, `lib.rs` export, dependency edge, Typed/Resolved
+slot, resolver API, Core identity/origin, `GeneratedOrigin`, diagnostic, active
+route, or semantic owner. The private mizar-test leaf is only a direct imported-
+fixture probe; parser/resolver source selection remains outside this checker
+boundary. The graph's five dense IDs and ten row/table items, retained resolver
+snapshot, exact `3/1/0/2/2` shape, provenance-first validation, and default-deny
+error family remain cohesive, so no behavior-neutral split is required.
+
 ## Split Gate
 
 A behavior-neutral private module split is required only when a checker-owned
@@ -142,7 +155,7 @@ FINDINGS** after the zero-semantic table guard and frozen-test repairs.
 | `src/source_context.rs` | 1727 | syntax-free source-item and binding-context producer | `source_context.md` | no | no | Cohesive Task-248 validation, table construction, recovery, handoff, and boundary tests; no split required. |
 | `src/source_atomic_formula.rs` | 8511 | syntax-free source atomic-formula producer | `source_atomic_formula.md` | no | no | Cohesive Task-256/257C1 nine-table association, resolver provenance, predicate-segment/shared-boundary validation, cross-family ownership/fingerprint validation, deterministic rendering, install checks, compatibility literals, and test-only dependency corruption seams; no split required. |
 | `src/source_composite_formula.rs` | 4700 | syntax-free source composite-formula/binder producer | `source_composite_formula.md` | no | no | Cohesive Task-257A/B1/B2/B3 exact profiles, binding extension, wrapper/tree validation, rendering, install checks, and corruption/profile tests; no split required. |
-| `src/source_formula_composition.rs` | 10342 | syntax-free cross-family formula composition producer | `source_formula_composition.md` | no | no | Cohesive Task-257B1/B2/B3 atomic-edge/bound-use associations, separate Task-257C2/C3 transactions, completed Task-257C4A/C4B exact-F5 transports, completed Task-257C4C3 one-row nested binder/use identity transport, completed Task-257C4C5 exactly-one capture-identity receipt, and C4C6 final-owner/zero-semantic validation with corruption tests; no split required. |
+| `src/source_formula_composition.rs` | 12132 | syntax-free cross-family formula composition producer | `source_formula_composition.md` | no | no | Cohesive Task-257B1/B2/B3 atomic-edge/bound-use associations, separate Task-257C2/C3 transactions, completed Task-257C4A/C4B exact-F5 transports, completed Task-257C4C3 one-row nested binder/use identity transport, completed Task-257C4C5 exactly-one capture-identity receipt, C4C6 final-owner/zero-semantic validation, and the C4C8 standalone normalized graph with provenance-first validation and corruption tests; no split required. |
 | `src/source_attribute.rs` | 3074 | syntax-free source-attribute producer | `source_attribute.md` | no | no | Cohesive Task-250 flat tables, environment/parent/arena/provenance validation, deterministic rendering, and corruption tests; no split required. |
 | `src/source_attribute_definition.rs` | 1516 | syntax-free source attribute-definition producer | `source_attribute_definition.md` | no | no | Cohesive Task-261 four-table handoff, exact resolver/lower/context ownership, obligation-preserving one-shot validation, deterministic rendering, and Task-259/260 isolation; production remains syntax-free. |
 | `src/source_evidence.rs` | 2413 | syntax-free source-evidence request/reference producer | `source_evidence.md` | no | no | Cohesive Task-251 request/response tables, upstream association, catalog/payload validation, deterministic rendering, and corruption tests; no split required. |

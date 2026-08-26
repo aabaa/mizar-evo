@@ -290,6 +290,118 @@ fn task257c4c8r_real_imported_fixture_links_both_outer_generators() {
 }
 
 #[test]
+fn task257c4c8_real_imported_fixture_builds_exact_normalized_capture_graph() {
+    let output = task257c4c1_frontend_output(TASK257C4C8R_CANONICAL_SOURCE, 4);
+    assert!(output.diagnostics.is_empty());
+    let ast = output.ast.expect("C4C8 canonical imported AST");
+    assert!(ast.nodes().iter().all(|node| !node.recovered));
+    let module = mizar_resolve::resolved_ast::ModuleId::new(
+        output.source.package_id,
+        output.source.module_path,
+    );
+    let resolved = mizar_resolve::resolved_ast::SurfaceResolvedArena::lower(&ast, &module)
+        .expect("C4C8 resolver arena should lower");
+    let resolver = FraenkelGeneratorVariableSourceCollector::new(&ast, &module, &resolved)
+        .expect("C4C8 collector should validate the resolver arena")
+        .collect()
+        .expect("C4C8 collector should collect");
+    let resolver_before = resolver.clone();
+    let graph =
+        mizar_checker::source_formula_composition::SourceNestedFraenkelCaptureGraphProducer::build(
+            &resolver,
+        )
+        .expect("C4C8 graph producer should build");
+
+    assert_eq!(graph.source_id(), ast.source_id);
+    assert_eq!(graph.module_id(), &module);
+    assert_eq!(graph.resolver_summary(), resolver.debug_text());
+    assert_eq!(graph.generators().len(), 3);
+    assert_eq!(graph.mappers().len(), 1);
+    assert_eq!(graph.predicates().len(), 0);
+    assert_eq!(graph.captures().len(), 2);
+    assert_eq!(graph.occurrences().len(), 2);
+    assert!(graph.predicates().is_empty());
+
+    let generator_rows = graph.generators().iter().collect::<Vec<_>>();
+    let resolver_bindings = resolver.bindings().iter().collect::<Vec<_>>();
+    assert_eq!(generator_rows.len(), resolver_bindings.len());
+    for (index, ((graph_id, graph_row), (resolver_id, resolver_row))) in generator_rows
+        .iter()
+        .zip(resolver_bindings.iter())
+        .enumerate()
+    {
+        assert_eq!(graph_id.index(), index);
+        assert_eq!(graph_row.resolver_binding(), *resolver_id);
+        assert_eq!(
+            graph_row.definition_block(),
+            resolver_row.definition_block()
+        );
+        assert_eq!(
+            graph_row.functor_definition(),
+            resolver_row.functor_definition()
+        );
+        assert_eq!(graph_row.comprehension(), resolver_row.comprehension());
+        assert_eq!(graph_row.segment(), resolver_row.segment());
+        assert_eq!(graph_row.binder(), resolver_row.binder());
+        assert_eq!(graph_row.segment_range(), resolver_row.segment_range());
+        assert_eq!(graph_row.binder_range(), resolver_row.binder_range());
+    }
+
+    let links = resolver.uses().iter().collect::<Vec<_>>();
+    let mapper = graph
+        .mappers()
+        .get(mizar_checker::source_formula_composition::SourceNestedFraenkelCaptureGraphMapperId::new(0))
+        .expect("C4C8 mapper row");
+    assert_eq!(mapper.definition_block(), links[0].definition_block());
+    assert_eq!(mapper.functor_definition(), links[0].functor_definition());
+    assert_eq!(mapper.comprehension(), links[0].comprehension());
+    assert_eq!(mapper.owner(), links[0].role_owner());
+
+    let captures = graph.captures().iter().collect::<Vec<_>>();
+    assert_eq!(captures[0].1.generator().index(), 1);
+    assert_eq!(captures[1].1.generator().index(), 2);
+    assert_eq!(captures[0].1.resolver_binding(), links[0].binding());
+    assert_eq!(captures[1].1.resolver_binding(), links[1].binding());
+    assert_ne!(
+        captures[0].1.resolver_binding(),
+        mizar_resolve::names::FraenkelGeneratorVariableBindingId::new(0)
+    );
+    assert_ne!(
+        captures[1].1.resolver_binding(),
+        mizar_resolve::names::FraenkelGeneratorVariableBindingId::new(0)
+    );
+
+    let occurrences = graph.occurrences().iter().collect::<Vec<_>>();
+    for (index, ((graph_id, occurrence), link)) in occurrences.iter().zip(links.iter()).enumerate()
+    {
+        assert_eq!(graph_id.index(), index);
+        assert_eq!(occurrence.resolver_use_index(), index);
+        assert_eq!(occurrence.resolver_binding(), link.binding());
+        assert_eq!(occurrence.comprehension(), link.comprehension());
+        assert_eq!(occurrence.role_owner(), link.role_owner());
+        assert_eq!(occurrence.term_reference(), link.term_reference());
+        assert_eq!(occurrence.identifier(), link.identifier());
+        assert_eq!(occurrence.role(), link.role());
+        assert_eq!(occurrence.identifier_range(), link.identifier_range());
+    }
+    assert_eq!(resolver, resolver_before);
+
+    let replay =
+        mizar_checker::source_formula_composition::SourceNestedFraenkelCaptureGraphProducer::build(
+            &resolver,
+        )
+        .expect("C4C8 graph deterministic replay");
+    assert!(graph == replay);
+    assert_eq!(graph.debug_text(), replay.debug_text());
+
+    let (type_ast, type_module, _, symbols) =
+        task253_ast_from_source_text(TASK257C4C8R_CANONICAL_SOURCE, 25_743);
+    let augmented =
+        augment_type_elaboration_import_summaries(&type_ast, &type_module, symbols.clone());
+    assert_eq!(augmented, symbols);
+}
+
+#[test]
 fn task257c4c3_real_imported_fixture_builds_checker_identity_handoff() {
     let output = task257c4c1_frontend_output(TASK257C4C1_CANONICAL_SOURCE, 3);
     assert!(output.diagnostics.is_empty());

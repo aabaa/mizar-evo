@@ -3684,13 +3684,23 @@ post-commit fresh inventoryからだけ選択する。
 - [x] Exact commitとclean postcommit inventoryを完了し、exact zero-semantic
   resolver C4C8R prerequisiteだけをselectする。Checker C4C8とTask277Bはdeferする。
 
-## Checker Task 257C4C8 normalized capture graph (planned)
+## Checker Task 257C4C8 normalized capture graph
 
-Status: planned、implementation未着手。Paired [C4C8 contract](../../task_contracts/ja/CHECKER-FRAENKEL-NESTED-MULTI-CAPTURE-GRAPH-257C4C8.md)に従う。
+Status: implementation、required verification、final-quality reviewはcomplete。Commitと
+post-commit proofはpending。Paired [C4C8 contract](../../task_contracts/ja/CHECKER-FRAENKEL-NESTED-MULTI-CAPTURE-GRAPH-257C4C8.md)に従う。
 
-- [ ] Reserved private imported-fixture probeをexisting nested-capture leafへ追加する。ただしregistry
+- [x] Reserved private imported-fixture probeをexisting nested-capture leafへ追加する。ただしregistry
   inclusionとactive dispatchは追加しない。
-- [ ] Diagnostic-free/unrecovered admission、frozen `3/1/0/2/2` graph、resolver identity link、
+- [x] Diagnostic-free/unrecovered admission、frozen `3/1/0/2/2` graph、resolver identity link、
   private order、local-`z` exclusion、replay、unchanged empty import augmentationだけをassertする。
-- [ ] C4C7 fixture/sidecar/trace、production route、diagnostic、semantic、AST/Core boundary、coverage
+- [x] C4C7 fixture/sidecar/trace、production route、diagnostic、semantic、AST/Core boundary、coverage
   credit、Task277B statusを保持する。
+- [x] Focused imported-fixture probe、package Clippy、format、diff checkはPASS。
+  Implementation/test-sufficiency reviewはprovenance-order repair後**NO FINDINGS**。
+- [x] Documentation repair後のsource-documentation/APIとbilingual/boundary
+  finding-specific re-reviewを完了する。
+- [x] Broad/full verificationとprotected count/hash checkを完了する。
+- [x] Final-quality reviewを**NO FINDINGS**、全9 hard gates PASS、valid uncapped
+  `100/100`で完了する。
+- [ ] Exact staging、task-only commit、clean postcommit proof、successor inventoryを
+  完了する。

@@ -34,16 +34,22 @@ projection/corruption coverageは`design_drift`/`test_gap`、display-name/numeri
 joinは`boundary_violation`、observable orderは`spec_gap`のまま。Spec、existing
 test、diagnostic、active route、semantic result、Task277B creditは変更しない。
 
-## Task 257C4C8 Normalized Graph Planned Zero-Credit Mapping
+## Task 257C4C8 Normalized Graph Completed Zero-Credit Mapping
 
-Frozen [C4C8 contract](../../task_contracts/ja/CHECKER-FRAENKEL-NESTED-MULTI-CAPTURE-GRAPH-257C4C8.md)はplanned
+Frozen [C4C8 contract](../../task_contracts/ja/CHECKER-FRAENKEL-NESTED-MULTI-CAPTURE-GRAPH-257C4C8.md)はcompleted
 checker correspondenceをrecordする。`source_formula_composition`がexact
-generator/mapper/predicate/capture/occurrence shape `3/1/0/2/2`を持つ、standalone
-syntax-free、Core-ID-free normalized graphのfuture sole ownerである。Public source
-familyとproducerはまだ存在せず、implementationは`source_drift`のまま、missing
-checker/private-fixture regressionは`test_gap`のままである。
+generator/mapper/predicate/capture/occurrence shape `3/1/0/2/2`を持つstandalone
+syntax-free、Core-ID-free normalized graphのsole ownerである。5 dense ID、10 row/table
+item、handoff/error/producer family、`#[non_exhaustive]` graph errorを実装し、public-enum
+inventoryは`8 -> 9`となった。Bounded implementationとchecker/private-fixture `test_gap`はclosedである。
 
-このplanned mappingはsource/API/enum claim、Typed/Resolved slot、C4C4 captured-state
+Correspondence:
+
+| Requirement | Source and owner | Tests | Status |
+|---|---|---|---|
+| Resolver identity、provenance、private order、exact cardinality、default-deny precedenceをsemantic activationなしで保持するstandalone normalized graph。 | `source_formula_composition.rs`の5 `SourceNestedFraenkelCaptureGraph*Id` type、5 row/table pair、`SourceNestedFraenkelCaptureGraphHandoff`、`SourceNestedFraenkelCaptureGraphError`、`SourceNestedFraenkelCaptureGraphProducer`。Task-257C checkerがsole owner。 | checker test 4件とexisting imported-fixture probe。 | 実装済み。Occurrence node/range provenanceはremaining occurrence associationより先に検証し、defensive recheckも許可する。 |
+
+このcompleted mappingはTyped/Resolved slot、C4C4 captured-state
 変更、Core 33/34/35または`GeneratedOrigin` payload、semantic/active route、diagnostic、
 Task277B creditを与えない。C4C7 history、trace/expectation/status、Chapter 13
 `partial` coverageも変更しない。
@@ -951,7 +957,12 @@ owner/acceptance、proof、fact、downstream IRはTasks 257B/257C/258以降に�
   `SourceFraenkelGeneratorUsePositionId`、
   `SourceFraenkelGeneratorBoundUseId`、
   `SourceNestedFraenkelBinderUseId`、
-  `SourceNestedFraenkelCaptureIdentityId`
+  `SourceNestedFraenkelCaptureIdentityId`、
+  `SourceNestedFraenkelCaptureGraphGeneratorId`、
+  `SourceNestedFraenkelCaptureGraphMapperId`、
+  `SourceNestedFraenkelCaptureGraphPredicateId`、
+  `SourceNestedFraenkelCaptureGraphCaptureId`、
+  `SourceNestedFraenkelCaptureGraphOccurrenceId`
 
 literal top-level public item:
 
@@ -998,7 +1009,20 @@ literal top-level public item:
   `SourceNestedFraenkelCaptureIdentityTable`、
   `SourceNestedFraenkelCaptureIdentityError`、
   `SourceNestedFraenkelCaptureIdentityHandoff`、
-  `SourceNestedFraenkelCaptureIdentityProducer`。
+  `SourceNestedFraenkelCaptureIdentityProducer`、
+  `SourceNestedFraenkelCaptureGraphGenerator`、
+  `SourceNestedFraenkelCaptureGraphGeneratorTable`、
+  `SourceNestedFraenkelCaptureGraphMapper`、
+  `SourceNestedFraenkelCaptureGraphMapperTable`、
+  `SourceNestedFraenkelCaptureGraphPredicate`、
+  `SourceNestedFraenkelCaptureGraphPredicateTable`、
+  `SourceNestedFraenkelCaptureGraphCapture`、
+  `SourceNestedFraenkelCaptureGraphCaptureTable`、
+  `SourceNestedFraenkelCaptureGraphOccurrence`、
+  `SourceNestedFraenkelCaptureGraphOccurrenceTable`、
+  `SourceNestedFraenkelCaptureGraphHandoff`、
+  `SourceNestedFraenkelCaptureGraphError`、
+  `SourceNestedFraenkelCaptureGraphProducer`。
 
 対応:
 
@@ -1012,7 +1036,8 @@ literal top-level public item:
 | C4C3はexact C4C2 nested two-binding/one-mapper-use relationをretained normal `TypedAst`へauthenticateし、immutable binder/use identity row 1件をpublishする。 | `SourceNestedFraenkelBinderUseId`、row/table/handoff/error/producer、private retained dependency validator。 | exact C4C3 checker test 4件とprivate real imported-fixture probe。 | Task252 occurrence/semantic capture/install/route/coverage creditなしでimplemented。 |
 | C4C5はcomplete C4C4 mapper transactionをby-value consume/retainし、inner owner/mapper/reference/checker bindingからresolver identityへのimmutable receipt 1件をpublishする。 | `SourceNestedFraenkelCaptureIdentityId`、row/table/handoff/two-variant error/producer、complete C4C4 revalidation seam。 | exact C4C5 checker test 4件とprivate real imported-fixture probe 1件が全row field/cardinality/precedence/display/replay/empty captured stateをcoverする。 | Task255 dependency、Typed/Resolved install、semantic capture、Core origin、route、diagnostic、coverage creditなしでimplemented。 |
 | C4C6はcomplete C4C5 receiptをexact authenticated immutable Typed/Resolved destinationへcapture semanticsなしでinstallする。 | Crate-private retained-typed validation、boxed AST owner、one-shot Typed installer、borrowed Typed/Resolved getter、final clone replay。 | Exact checker test 6件とprivate real imported-fixture installation probe 1件がexact owner equality、recursion rejection、semantic-table exclusion、mutual exclusion、debug/clone stability、final-input contamination、empty captured stateをcoverする。 | Implemented。Core/order/route/diagnostic/coverage creditなし。 |
-| public enumはforward-compatible。 | public enum 8件すべての`#[non_exhaustive]`。 | `checker_public_enums_are_forward_compatible_and_documented`。 | exhaustive exceptionなしでguard。 |
+| C4C8はretained C4C8R resolver snapshot上にexact `3/1/0/2/2` generator/mapper/predicate/capture/occurrence cardinalityを持つstandalone immutable normalized graphをownする。 | Graph ID 5件、row/table pair 5組、handoff、`#[non_exhaustive]` error、producer、private complete validator。 | Exact checker test 4件とprivate real imported-fixture probe 1件がAPI shape、identity link、provenance-first precedence、default-deny corruption、replay、local-`z` exclusionをcoverする。 | Typed/Resolved slot、semantic capture、Core/GeneratedOrigin payload、route、diagnostic、coverage creditなしでimplemented。 |
+| public enumはforward-compatible。 | public enum 9件すべての`#[non_exhaustive]`。 | `checker_public_enums_are_forward_compatible_and_documented`。 | exhaustive exceptionなしでguard。 |
 
 bounded gap: connective/quantifier/predicate truth、signature applicability、
 overload selection、formula fact/result、implicit theorem closure/acceptance、
