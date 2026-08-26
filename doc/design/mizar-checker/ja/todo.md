@@ -6649,4 +6649,6 @@ post-commit fresh inventoryからだけ選択する。
 - [x] Pre-final review/focused-full verificationを完了し、active/Task277B creditを
   付与しない。
 - [x] Final-quality scoringを`9/9`、valid uncapped `100/100`で完了する。
-- [ ] Task-only commit、fresh C4C8 readiness inventoryを完了する。
+- [x] Task-only commitとclean postcommit proofを完了する。Fresh inventoryはchecker
+  C4C8をdeferし、exact no-new-public-API resolver prerequisite C4C8Rだけを一意に
+  selectする。Task277Bはnot-ready/zero-creditのまま。

@@ -3681,4 +3681,5 @@ post-commit fresh inventoryからだけ選択する。
   neutrality、Task277B zero creditを保持する。
 - [x] Independent pre-final reviewとfocused/full verificationを完了する。
 - [x] Final-quality reviewを`9/9`、valid uncapped `100/100`で完了する。
-- [ ] Exact commit、clean postcommit inventoryを完了する。
+- [x] Exact commitとclean postcommit inventoryを完了し、exact zero-semantic
+  resolver C4C8R prerequisiteだけをselectする。Checker C4C8とTask277Bはdeferする。

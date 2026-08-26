@@ -3996,4 +3996,6 @@ the successor is selected only from fresh post-commit inventory.
   production source, ordering neutrality, and Task-277B zero credit.
 - [x] Complete independent pre-final reviews and focused/full verification.
 - [x] Complete final-quality review at `9/9`, valid uncapped `100/100`.
-- [ ] Complete exact commit and clean postcommit inventory.
+- [x] Complete the exact commit and clean postcommit inventory; select only the
+  exact zero-semantic resolver C4C8R prerequisite and leave checker C4C8 and
+  Task 277B deferred.

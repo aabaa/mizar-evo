@@ -18,9 +18,10 @@ mizar-test [corpus](../../mizar-test/en/miz_corpus.md#task-257c4c7-frozen-corpus
 
 ## Status, authority, and readiness
 
-**Status:** implementation, reviews, verification, and final-quality scoring
-complete; exact staging, commit, and postcommit proof remain. The
-user accepted the parent authority decision summarized below. This task adds
+**Status:** complete. Implementation, reviews, verification, final-quality
+scoring, exact staging, task-only commit, clean postcommit proof, and fresh
+successor inventory are complete. The user accepted the parent authority
+decision summarized below. This task adds
 only the exact inactive two-capture oracle, its metadata/backlink/audit records,
 and mechanical global count-guard maintenance. It adds no capture
 implementation or active route.
@@ -271,5 +272,41 @@ Independent final-quality review reports **NO FINDINGS**. Parent adjudication
 confirms all `9/9` hard gates pass with no score cap at valid uncapped
 `100/100` (`20/20/15/15/10/10/5/5`). The exact 30-path precommit status-path
 hash is `38fe0671baff256460020a1b650a657f679d33690b0cf0b20e751c43d610e860`.
-Exact task-only staging/cached review, commit, and clean postcommit/fresh-
-successor proof remain the final procedural gates.
+Exact task-only staging and cached review reported **NO FINDINGS**.
+
+## Postcommit proof and fresh successor inventory
+
+The task-only artifact commit is
+`3d28af5f6678519fe8d764fb29f27eb664db8f39` (`test(checker): add
+two-capture Fraenkel oracle`). It changes exactly the frozen 30 paths; their
+sorted path-list SHA-256 is
+`38fe0671baff256460020a1b650a657f679d33690b0cf0b20e751c43d610e860`,
+and `git show --check` passes. Immediately afterward the worktree was clean,
+`origin/main...HEAD` was `0/3`, origin/main remained
+`ffc882675141a3e25bc78a47affc018bfe3685e1`, and the protected stash remained
+untouched at `f65cf4a13752ec380710814a9ac6392ccb9d75d4`.
+
+Independent checker, Core, and oracle inventories agree that the complete
+checker C4C8 projection itself is not yet dependency-ready. The current C4C2
+resolver candidate admits exactly two generator segments and one identifier
+mapper use, whereas the C4C7 witness has inner `z`, outer `x`/`y`, and two
+identifier uses inside a bracket application. C4C3--C4C5 are also exact-one
+and C4C6's receipt is protected. Exact complete-projection fields,
+cardinalities, constructor/error precedence, and the later Core-33/35
+association therefore remain deferred; no checker C4C8 API or task contract
+is created here.
+
+The parent authority adjudication nevertheless finds one narrower
+dependency-minimal successor. The existing resolver R2/C4C2 collection is the
+sole owner that can authenticate the required resolved binding identities;
+its existing public multi-row tables and global source-order/dense-ordinal
+rules already determine the transport shape. A checker-private replacement
+would have to recreate or reinterpret resolver identity and is rejected as a
+`boundary_violation`. Therefore a separate exact, zero-semantic, no-new-public-
+API resolver prerequisite for this frozen witness is uniquely selected as
+`RESOLVE-FRAENKEL-NESTED-MULTI-CAPTURE-257C4C8R`: bindings are inner `z` then
+outer `x`, `y`, and mapper links are `x` then `y`, all in the existing
+authenticated source order. Current rejection is `source_drift`; missing
+resolver/private-real-fixture coverage is a `test_gap`; checker C4C8 remains
+`design_drift` until that prerequisite commits and a fresh inventory freezes
+its complete graph. Task 277B remains not-ready and zero-credit.

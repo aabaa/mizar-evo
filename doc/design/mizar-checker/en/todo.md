@@ -7074,4 +7074,6 @@ selected only from fresh post-commit inventory.
 - [x] Complete all pre-final reviews and focused/full verification without
   granting active or Task-277B credit.
 - [x] Complete final-quality scoring at `9/9`, valid uncapped `100/100`.
-- [ ] Complete task-only commit and fresh C4C8 readiness inventory.
+- [x] Complete task-only commit and clean postcommit proof. Fresh inventory
+  defers checker C4C8 and uniquely selects the exact no-new-public-API resolver
+  prerequisite C4C8R; Task 277B remains not-ready/zero-credit.
