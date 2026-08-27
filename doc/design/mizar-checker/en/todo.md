@@ -7105,3 +7105,21 @@ selected only from fresh post-commit inventory.
   successor is selected; the user accepts only the documentation-only Core-33
   prerequisite direction, whose exact contract requires fresh inventory.
   Task 277B remains not-ready/zero-credit.
+
+## Task 33C opaque capture-graph owner receipt
+
+- [x] Freeze the user-selected checker-owned scalar receipt, by-value C4C8 and
+  Task33R dependencies, exact public API, and graph-dependency then owner-
+  dependency then association precedence in the paired
+  [Task33C contract](../../task_contracts/en/CHECKER-FRAENKEL-CAPTURE-GRAPH-OWNER-33C.md).
+- [x] Complete independent specification/equivalence and bilingual/boundary
+  review with **NO FINDINGS** before Rust edits.
+- [x] Implement only the frozen handoff/error/producer, four checker tests,
+  public-enum policy guard, and one private real-fixture probe.
+- [x] Preserve C4C4/C4C5/C4C6, Typed/Resolved/Core ownership, parameter/order/
+  GeneratedOrigin deferrals, active routes, diagnostics, protected artifacts,
+  semantic coverage, and Task277B zero credit.
+- [x] Complete all post-source reviews, verification, and final-quality hard
+  gates with **NO FINDINGS**, `9/9` PASS, and valid uncapped `100/100`.
+- [ ] Complete exact task-only commit, clean postcommit proof, and fresh
+  inventory.

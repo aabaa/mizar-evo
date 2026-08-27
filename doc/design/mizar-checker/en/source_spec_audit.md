@@ -100,6 +100,24 @@ C4C4 captured-state change, Core 33/34/35 or `GeneratedOrigin` payload,
 semantic or active route, diagnostic, or Task-277B credit. C4C7 history,
 trace/expectation/status, and Chapter 13 `partial` coverage remain unchanged.
 
+## Task 33C Frozen Zero-Credit Graph-Owner Correspondence
+
+The paired [Task33C contract](../../task_contracts/en/CHECKER-FRAENKEL-CAPTURE-GRAPH-OWNER-33C.md)
+selects one checker-owned scalar receipt pairing the unchanged C4C8 graph with
+the unchanged Task33R resolver owner. The implemented public family is one
+handoff, one non-exhaustive error, and one producer in
+`source_formula_composition.rs`; the current public-enum inventory is `10`
+(from the pre-task baseline of `9`).
+Exact resolver equality and resolved definition-block/functor identities are
+the only cross-owner association keys.
+
+Implementation closes only derived `design_drift` and Rust/private-probe
+`test_gap`. It creates no new language requirement, fixture, trace row,
+expectation, diagnostic, semantic coverage, or active route. Chapter 13 remains
+`partial`; Typed/Resolved/Core installation, parameter/argument order,
+`GeneratedOrigin`, actual semantics, and Task277B remain deferred and zero-
+credit.
+
 ## Task 269SDU Implemented Zero-Credit Mapping
 
 The [central Task-269SDU contract](../../task_contracts/en/269SDU.md) implements one
@@ -1104,7 +1122,10 @@ Literal top-level public items:
   `SourceNestedFraenkelCaptureGraphOccurrenceTable`,
   `SourceNestedFraenkelCaptureGraphHandoff`,
   `SourceNestedFraenkelCaptureGraphError`,
-  `SourceNestedFraenkelCaptureGraphProducer`.
+  `SourceNestedFraenkelCaptureGraphProducer`,
+  `SourceNestedFraenkelCaptureGraphOwnerHandoff`,
+  `SourceNestedFraenkelCaptureGraphOwnerError`,
+  `SourceNestedFraenkelCaptureGraphOwnerProducer`.
 
 Correspondence:
 
@@ -1119,7 +1140,8 @@ Correspondence:
 | C4C5 consumes and retains the complete C4C4 mapper transaction by value and publishes one immutable inner-owner/mapper/reference/checker-binding-to-resolver-identity receipt. | `SourceNestedFraenkelCaptureIdentityId`, row/table/handoff, two-variant error, producer, and complete C4C4 revalidation seam. | Four exact C4C5 checker tests and one private real imported-fixture probe cover every row field, cardinality, precedence, display strings, replay, and empty captured state. | Implemented with no Task-255 dependency, Typed/Resolved installation, semantic capture, Core origin, route, diagnostic, or coverage credit. |
 | C4C6 installs the complete C4C5 receipt into exact authenticated immutable Typed/Resolved destinations without capture semantics. | Crate-private retained-typed validation, boxed AST owners, one-shot Typed installer, borrowed Typed/Resolved getters, and final clone replay. | Six exact checker tests plus one private real imported-fixture installation probe cover exact owner equality, recursion rejection, semantic-table exclusion, mutual exclusion, debug/clone stability, final-input contamination, and empty captured state. | Implemented. No Core/order/route/diagnostic/coverage credit. |
 | C4C8 owns one standalone immutable normalized graph with exact `3/1/0/2/2` generator/mapper/predicate/capture/occurrence cardinality over the retained C4C8R resolver snapshot. | Five graph IDs, five row/table pairs, handoff, `#[non_exhaustive]` error, producer, and private complete validator. | Four exact checker tests and one private real imported-fixture probe cover API shape, identity links, provenance-first precedence, default-deny corruption, replay, and local-`z` exclusion. | Implemented with no Typed/Resolved slot, semantic capture, Core/GeneratedOrigin payload, route, diagnostic, or coverage credit. |
-| Public enums remain forward-compatible. | `#[non_exhaustive]` on all nine public enums. | `checker_public_enums_are_forward_compatible_and_documented`. | Guarded; no exhaustive exception. |
+| Task33C pairs exactly one unchanged C4C8 graph with its exact Task33R containing-functor owner through retained-resolver equality and resolved owner identities. | Scalar `SourceNestedFraenkelCaptureGraphOwnerHandoff`, three-variant non-exhaustive error, producer, and private complete validator. | Four exact checker tests plus one private real-fixture probe cover API/debug, precedence, association corruption, replay, stale/display-independent pairing, and zero-semantic isolation. | Implemented; no table/id, Typed/Resolved/Core installation, order, GeneratedOrigin, route, diagnostic, or coverage credit. |
+| Public enums remain forward-compatible. | `#[non_exhaustive]` on all ten public enums. | `checker_public_enums_are_forward_compatible_and_documented`. | Guarded; no exhaustive exception. |
 
 Bounded gaps: connective/quantifier/predicate truth, signature applicability,
 overload selection, formula facts/results, implicit theorem closure and

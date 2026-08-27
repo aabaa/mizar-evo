@@ -62,6 +62,19 @@ Private mizar-test leafはimported-fixtureへのdirect probeだけであり、pa
 5 dense IDと10 row/table item、retained resolver snapshot、exact `3/1/0/2/2`、provenance-first validation、default-deny
 error familyはcohesiveで、behavior-neutral splitは不要である。
 
+## Task 33C Opaque Graph-Owner Receipt Boundary
+
+Frozen [Task33C contract](../../task_contracts/ja/CHECKER-FRAENKEL-CAPTURE-GRAPH-OWNER-33C.md)は
+one-to-one graph-owner receiptをexisting cohesive `source_formula_composition.rs` ownerに
+保つ。他のRust changeはchecker public-enum lint rowとexisting private mizar-test leafのtest
+1件だけ。Module、`lib.rs` export、Cargo edge、resolver production API、Typed/Resolved/Core
+field、installer、active route、diagnostic、semantic owner、protected artifactは変更しない。
+
+Boundaryはunchanged C4C8 graph/Task33R receiptをby valueでretainし、exact retained resolverと
+resolved owner identityだけを比較し、table/new id domainを作らない。Typed/Resolved/Coreへの
+移動、installer公開、parameter/argument/GeneratedOrigin transport選択は本taskの
+`boundary_violation`。Cohesive ownerが正しい配置で、behavior-neutral splitは不要。
+
 ## Split Gate
 
 behavior-neutral private module split が必要になるのは、checker-owned file が
@@ -103,7 +116,7 @@ bilingual/boundary re-reviewは**NO FINDINGS**。
 | `src/source_context.rs` | 1727 | syntax-free source-item / binding-context producer | `source_context.md` | no | no | cohesive な Task-248 validation、table construction、recovery、handoff、boundary test。split不要。 |
 | `src/source_atomic_formula.rs` | 8511 | syntax-free source atomic-formula producer | `source_atomic_formula.md` | no | no | cohesiveなTask-256/257C1 nine-table association、resolver provenance、predicate-segment/shared-boundary validation、cross-family ownership/fingerprint validation、deterministic rendering、install check、compatibility literal、test-only dependency corruption seam。split不要。 |
 | `src/source_composite_formula.rs` | 4700 | syntax-free source composite-formula/binder producer | `source_composite_formula.md` | no | no | exact Task-257A/B1/B2/B3 profiles、binding extension、wrapper/tree validation、rendering/install/corruption/profile testsを持つcohesive owner。 |
-| `src/source_formula_composition.rs` | 12132 | syntax-free cross-family formula composition producer | `source_formula_composition.md` | no | no | Task-257B1/B2/B3、Task-257C2/C3、completed Task-257C4A/C4B exact-F5 transport、completed Task-257C4C3 one-row nested binder/use identity transport、completed Task-257C4C5 exactly-one capture-identity receipt、C4C6 final-owner/zero-semantic validation、C4C8 standalone normalized graph/provenance-first validation/corruption testを持つcohesive owner。 |
+| `src/source_formula_composition.rs` | 12475 | syntax-free cross-family formula composition producer | `source_formula_composition.md` | no | no | Task-257B1/B2/B3、Task-257C2/C3、completed Task-257C4A/C4B exact-F5 transport、completed Task-257C4C3 one-row nested binder/use identity transport、completed Task-257C4C5 exactly-one capture-identity receipt、C4C6 final-owner/zero-semantic validation、C4C8 standalone graph、Task33C exact dependency/association scalar graph-owner receiptを持つcohesive owner。 |
 | `src/source_attribute.rs` | 3074 | syntax-free source-attribute producer | `source_attribute.md` | no | no | cohesiveなTask-250 flat table、environment/parent/arena/provenance validation、deterministic rendering、corruption test。split不要。 |
 | `src/source_attribute_definition.rs` | 1516 | syntax-free source attribute-definition producer | `source_attribute_definition.md` | no | no | Task-261 four-table handoff、exact resolver/lower/context ownership、obligation-preserving one-shot validation、deterministic rendering、Task-259/260 isolationをcohesiveにownする。 |
 | `src/source_evidence.rs` | 2413 | syntax-free source-evidence request/reference producer | `source_evidence.md` | no | no | cohesiveなTask-251 request/response table、upstream association、catalog/payload validation、deterministic rendering、corruption test。split不要。 |
@@ -127,7 +140,7 @@ bilingual/boundary re-reviewは**NO FINDINGS**。
 | `src/overload_resolution.rs` | 8004 | phase-8 overload pipeline | `overload_resolution.md` | no | no | overload collection、template expansion、viability、specificity、selection、rendering、test は大きいが cohesive。downstream 利用後の ergonomics を monitor する。 |
 | `src/resolved_typed_ast.rs` | 8998 | final resolved typed AST assembly | `resolved_typed_ast.md` | no | no | clone-preserving definition/proof-local handoff、neutral Task-277A source-template replay、syntax-only C4C6 receipt cloneを含むcohesive final projection。 |
 | `src/determinism_suite.rs` | 1101 | test-only cross-module determinism suite | `00.crate_plan.md` and `source_spec_audit.md` | no | no | private `#[cfg(test)]` crate support として維持する。 |
-| `tests/lint_policy.rs` | 1955 | cross-cutting policy and audit guards | `source_spec_audit.md`, `bilingual_sync_audit.md`, and `module_boundary_audit.md` | no | no | Task-259--264、Task-269A、Task-277A、Task-277B-L module/spec/public-enum coverage、unchanged syntax boundaryをcentral guardする。 |
+| `tests/lint_policy.rs` | 1989 | cross-cutting policy and audit guards | `source_spec_audit.md`, `bilingual_sync_audit.md`, and `module_boundary_audit.md` | no | no | Task-259--264、Task-269A、Task-277A、Task-277B-L module/spec/public-enum coverage、Task33C scalar/no-installer、unchanged syntax boundaryをcentral guardする。 |
 | `tests/support/source_attribute_definition_unit.rs` | 1070 | test-only Task-261 unit-test support | `source_attribute_definition.md` and this audit | no | no | exact producer、obligation preservation、corruption、ownership、replay、cfg(test)-only Task-262 reverse-isolation fixture用non-integration child support。 |
 | `tests/support/source_functor_definition_unit.rs` | 3798 | test-only Task-260 unit-test support | `source_functor_definition.md` and this audit | no | no | cfg(test)-only helperがactual Task-259/260 producerをTask-261/263 reverse-isolationにreuseしproduction ownershipを変えない。 |
 | `tests/support/source_mode_definition_unit.rs` | 1237 | test-only Task-262 unit-test support | `source_mode_definition.md` and this audit | no | no | exact row、obligation suffix、Typed/final replay、全sibling-family installation order、cfg(test)-only Task-263 mode projection/owner fixture用support。 |

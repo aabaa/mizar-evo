@@ -1870,3 +1870,16 @@ standalone normalized-graphのfrozen owner/boundary、exact 5-table familyと
 constraint、planned status、zero-credit/protected stateを同期する。Paired checker
 plan、source-formula-composition、TODO、source-spec、bilingual recordがrequired owner
 review surfaceである。English canonical、exceptionなし。
+
+## Task 33C Frozen Contract Parity
+
+[EN canonical](../../task_contracts/en/CHECKER-FRAENKEL-CAPTURE-GRAPH-OWNER-33C.md)と
+[JA companion](../../task_contracts/ja/CHECKER-FRAENKEL-CAPTURE-GRAPH-OWNER-33C.md)は、
+checker-owned scalar receipt、exact by-value dependency、complete 5-getter API、3-error
+precedence、public-enum `9 -> 10`、checker 4件 + private runner 1件、24-path scope、
+protected hash、全Typed/Resolved/Core/semantic/Task277B deferralを同期する。Paired checker
+plan、source-formula-composition、TODO、source-spec、module-boundary、本recordがchecker
+review surface。English canonical、exceptionなし。両言語で同じprecedence-test/audit-tense
+repair後のfinding-specific post-source re-reviewは**NO FINDINGS**、full-workspace verificationと
+protected checkはPASS。Final qualityは**NO FINDINGS**、hard gate `9/9` PASS、valid uncapped
+`100/100`。Commitはpending。

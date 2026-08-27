@@ -5888,3 +5888,18 @@ The probe adds no registry include, production dispatch, active route,
 checker receipt or installation, Typed/Resolved/Core field, generated
 parameter/origin, diagnostic, sidecar/trace mutation, semantic result,
 coverage credit, or Task-277B readiness.
+
+## Checker Task 33C Private Graph-Owner Probe
+
+The canonical [Task33C contract](../../task_contracts/en/CHECKER-FRAENKEL-CAPTURE-GRAPH-OWNER-33C.md)
+adds exactly `task33c_real_fixture_pairs_capture_graph_with_exact_functor_owner`
+to the existing private nested-capture leaf. The unregistered library test
+runs the unchanged C4C7 source through frontend and resolver lowering, builds
+the exact C4C8 graph and Task33R owner, consumes them into the checker receipt,
+and asserts borrowed graph/owner identity, common resolved owner ids,
+deterministic replay, local-`z` exclusion, and unchanged import augmentation.
+
+The probe adds no registry include, production dispatch, active route,
+Typed/Resolved/Core field or installer, parameter/origin, diagnostic,
+sidecar/trace mutation, semantic result, coverage credit, or Task277B
+readiness.

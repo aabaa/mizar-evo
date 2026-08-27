@@ -111,6 +111,7 @@ The dense ids are `SourceFormulaAtomicEdgeId` and
 | `SourceNestedFraenkelBinderUseError` | `#[non_exhaustive]`; callers must not exhaustively match nested Fraenkel binder/use validation failures. |
 | `SourceNestedFraenkelCaptureIdentityError` | `#[non_exhaustive]`; callers must not exhaustively match nested Fraenkel capture-identity validation failures. |
 | `SourceNestedFraenkelCaptureGraphError` | `#[non_exhaustive]`; callers must not exhaustively match normalized nested Fraenkel capture-graph validation failures. |
+| `SourceNestedFraenkelCaptureGraphOwnerError` | `#[non_exhaustive]`; callers must not exhaustively match opaque capture-graph/owner receipt validation failures. |
 | `SourcePredicateChainCompositionError` | `#[non_exhaustive]`; callers must not exhaustively match predicate-chain composition validation failures. |
 
 No exhaustive public enum exceptions are owned by this module.
@@ -1080,3 +1081,39 @@ source/documentation/API and bilingual/boundary re-reviews report **NO
 FINDINGS**, and required broad verification passes. Final-quality review and
 all nine hard gates also pass at a valid `100/100`; only workflow closure and
 commit remain pending.
+
+## Task 33C Opaque Capture-Graph Owner Receipt
+
+The frozen [Task33C contract](../../task_contracts/en/CHECKER-FRAENKEL-CAPTURE-GRAPH-OWNER-33C.md)
+keeps `source_formula_composition` as the sole owner of one standalone scalar
+receipt pairing the unchanged C4C8 normalized graph with the unchanged
+Task33R resolver owner receipt. The exact public family is
+`SourceNestedFraenkelCaptureGraphOwnerHandoff`, non-exhaustive
+`SourceNestedFraenkelCaptureGraphOwnerError`, and
+`SourceNestedFraenkelCaptureGraphOwnerProducer`. There is no new id, row,
+table, installer, adapter, or AST/Core field.
+
+The handoff retains both inputs by value and exposes only common source/module,
+borrowed graph/owner, and the frozen deterministic debug rendering. Its
+private scalar association contains common source/module and resolved
+definition-block/functor identities. Admission and complete revalidation use
+the exact precedence graph dependency, owner complete-plus-exact-retained-
+resolver dependency, then association. Every graph generator, mapper, and
+predicate row must have the Task33R definition-block and functor identities.
+No display spelling, range, or numeric-id reinterpretation participates in
+the join. Cardinality is one graph plus one owner, with no new observable
+order; the graph remains exact `3/1/0/2/2`.
+
+Missing, extra, duplicate, reordered, stale, foreign, recovered, partial,
+mismatched, corrupted, or cross-snapshot input fails closed. Sort, repair,
+inference, partial publication, and unchecked admission are forbidden. This
+prerequisite creates no Typed/Resolved/Core installation, C4C4 capture-state
+change, parameter/argument order, `GeneratedOrigin`, semantic result, active
+route, diagnostic, coverage credit, or Task277B readiness.
+
+The frozen public family and exact four checker tests are implemented; the
+private real-fixture probe and narrow scalar/no-installer lint guard also pass.
+Post-source independent reviews are **NO FINDINGS** after finding-specific
+repairs, and focused plus full-workspace verification and protected checks
+pass. Independent final quality is **NO FINDINGS**, with all nine hard gates
+passing at a valid uncapped `100/100`. Staging and commit remain pending.

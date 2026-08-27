@@ -5396,3 +5396,16 @@ augmentationを確認する。
 Registry include、production dispatch、active route、checker receipt/install、Typed/Resolved/Core
 field、generated parameter/origin、diagnostic、sidecar/trace mutation、semantic result、coverage
 credit、Task277B readinessは追加しない。
+
+## Checker Task 33C Private Graph-Owner Probe
+
+Canonical [Task33C contract](../../task_contracts/ja/CHECKER-FRAENKEL-CAPTURE-GRAPH-OWNER-33C.md)は
+existing private nested-capture leafへexact
+`task33c_real_fixture_pairs_capture_graph_with_exact_functor_owner`を追加する。Unregistered
+library testはunchanged C4C7をfrontend/resolver lowerへ通し、exact C4C8 graphとTask33R
+ownerをbuildしてchecker receiptへconsumeし、borrowed graph/owner identity、common resolved
+owner ids、deterministic replay、local-`z` exclusion、unchanged import augmentationをassertする。
+
+Registry include、production dispatch、active route、Typed/Resolved/Core field/installer、
+parameter/origin、diagnostic、sidecar/trace mutation、semantic result、coverage credit、Task277B
+readinessは追加しない。

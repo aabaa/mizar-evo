@@ -1892,3 +1892,14 @@ unregistered boundary、zero semantic/execution/coverage credit、production/act
 checker/Core installなし、fixture/expectation/trace unchanged、Task-277B not-readyを双方で保持する。
 Exact staging/task-only commitは残る。Exact identifier、count、hashはEnglish canonical、
 bilingual exceptionなし。
+
+## Checker Task 33C Bilingual Contract Parity
+
+[EN canonical](../../task_contracts/en/CHECKER-FRAENKEL-CAPTURE-GRAPH-OWNER-33C.md)と
+[JA companion](../../task_contracts/ja/CHECKER-FRAENKEL-CAPTURE-GRAPH-OWNER-33C.md)は、exact
+private probe、paired mizar-test plan/harness owner section、one-test `626 -> 627` impact、
+library-test-only boundary、unchanged fixture/expectation/trace、zero semantic/execution/
+coverage credit、Task277B not-readyを同期する。English canonical、exceptionなし。Private
+probe、lib/lint/metadata、full workspace test、protected checkはPASS、independent post-source
+reviewは**NO FINDINGS**。Final qualityも**NO FINDINGS**、hard gate `9/9` PASS、valid
+uncapped `100/100`。Commitはpending。

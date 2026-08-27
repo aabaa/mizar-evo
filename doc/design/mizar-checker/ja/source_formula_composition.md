@@ -105,6 +105,7 @@ tableは`get`/source-ordered `iter`/`len`/`is_empty`だけを公開する。
 | `SourceNestedFraenkelBinderUseError` | `#[non_exhaustive]`。callerはnested Fraenkel binder/use validation failureをexhaustive matchしない。 |
 | `SourceNestedFraenkelCaptureIdentityError` | `#[non_exhaustive]`。callerはnested Fraenkel capture-identity validation failureをexhaustive matchしない。 |
 | `SourceNestedFraenkelCaptureGraphError` | `#[non_exhaustive]`。callerはnormalized nested Fraenkel capture-graph validation failureをexhaustive matchしない。 |
+| `SourceNestedFraenkelCaptureGraphOwnerError` | `#[non_exhaustive]`。callerはopaque capture-graph/owner receipt validation failureをexhaustive matchしない。 |
 | `SourcePredicateChainCompositionError` | `#[non_exhaustive]`。callerはpredicate-chain composition validation failureをexhaustive matchしない。 |
 
 この module が所有する exhaustive public enum exception はない。
@@ -858,3 +859,32 @@ zero-creditのままである。Implementationはcontract-scoped Rust 2 pathsで
 verificationはPASS、source-documentation/APIとbilingual/boundary re-reviewは**NO
 FINDINGS**。Final-qualityも全9 hard gates PASS、valid `100/100`。Workflow closureと
 commitだけがpendingである。
+
+## Task 33C Opaque Capture-Graph Owner Receipt
+
+Frozen [Task33C contract](../../task_contracts/ja/CHECKER-FRAENKEL-CAPTURE-GRAPH-OWNER-33C.md)は
+`source_formula_composition`を、unchanged C4C8 normalized graphとunchanged Task33R resolver
+owner receiptをpairするstandalone scalar receiptのsole ownerとして保持する。Exact public familyは
+`SourceNestedFraenkelCaptureGraphOwnerHandoff`、non-exhaustive
+`SourceNestedFraenkelCaptureGraphOwnerError`、
+`SourceNestedFraenkelCaptureGraphOwnerProducer`。New id/row/table/installer/adapter/AST-Core
+fieldはない。
+
+Handoffはboth inputsをby valueでretainし、common source/module、borrowed graph/owner、frozen
+deterministic debugだけを公開する。Private scalar associationはcommon source/moduleとresolved
+definition-block/functor identityを持つ。Admission/complete revalidation precedenceはgraph
+dependency、owner complete + exact retained resolver dependency、association。全graph generator/
+mapper/predicate rowはTask33R definition-block/functor identityと一致しなければならない。
+Display spelling/range/numeric-id reinterpretはjoinに使わない。Cardinalityはone graph/one owner、
+new observable orderなし、graphのexact `3/1/0/2/2`は不変。
+
+Missing/extra/duplicate/reordered/stale/foreign/recovered/partial/mismatched/corrupt/cross-
+snapshot inputはfail closed。Sort/repair/inference/partial publish/unchecked admissionは禁止。
+Typed/Resolved/Core installation、C4C4 capture-state、parameter/argument order、
+`GeneratedOrigin`、semantic result、active route、diagnostic、coverage credit、Task277B readinessは
+作らない。
+
+Frozen public family/exact checker test 4件を実装済みで、private real-fixture probeとnarrow
+scalar/no-installer lint guardもPASS。Finding-specific repair後のpost-source independent reviewは
+**NO FINDINGS**、focused/full-workspace verificationとprotected checkはPASS。Final-quality、
+**NO FINDINGS**、hard gate `9/9` PASS、valid uncapped `100/100`。Staging/commitはpending。

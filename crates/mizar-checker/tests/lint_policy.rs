@@ -387,6 +387,40 @@ fn checker_public_enums_are_forward_compatible_and_documented() {
 }
 
 #[test]
+fn checker_task33c_public_family_remains_scalar_and_non_installing() {
+    let source = read_to_string(&crate_root().join("src/source_formula_composition.rs"));
+    assert_eq!(
+        source
+            .matches("pub struct SourceNestedFraenkelCaptureGraphOwnerHandoff")
+            .count(),
+        1,
+        "Task33C must expose one scalar graph-owner handoff"
+    );
+    assert_eq!(
+        source
+            .matches("pub enum SourceNestedFraenkelCaptureGraphOwnerError")
+            .count(),
+        1,
+        "Task33C must expose one graph-owner error family"
+    );
+    assert_eq!(
+        source
+            .matches("pub struct SourceNestedFraenkelCaptureGraphOwnerProducer")
+            .count(),
+        1,
+        "Task33C must expose one graph-owner producer"
+    );
+    assert!(
+        !source.contains("SourceNestedFraenkelCaptureGraphOwnerId"),
+        "Task33C must not introduce an owner id"
+    );
+    assert!(
+        !source.contains("with_source_nested_fraenkel_capture_graph_owner"),
+        "Task33C must not add an installer"
+    );
+}
+
+#[test]
 fn checker_source_spec_audit_covers_public_surface_and_gaps() {
     let root = crate_root();
     let docs_root = workspace_root().join("doc/design/mizar-checker");

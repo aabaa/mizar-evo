@@ -518,6 +518,82 @@ fn task33r_real_fixture_links_capture_graph_to_exact_functor_owner() {
 }
 
 #[test]
+fn task33c_real_fixture_pairs_capture_graph_with_exact_functor_owner() {
+    let output = task257c4c1_frontend_output(TASK257C4C8R_CANONICAL_SOURCE, 4);
+    assert!(output.diagnostics.is_empty());
+    let ast = output.ast.expect("Task33C canonical AST");
+    assert!(ast.nodes().iter().all(|node| !node.recovered));
+    let module = mizar_resolve::resolved_ast::ModuleId::new(
+        output.source.package_id,
+        output.source.module_path,
+    );
+    let resolved = mizar_resolve::resolved_ast::SurfaceResolvedArena::lower(&ast, &module)
+        .expect("Task33C resolver arena should lower");
+    let resolver = FraenkelGeneratorVariableSourceCollector::new(&ast, &module, &resolved)
+        .expect("Task33C collector should validate the resolver arena")
+        .collect()
+        .expect("Task33C collector should collect the exact relation");
+    let graph =
+        mizar_checker::source_formula_composition::SourceNestedFraenkelCaptureGraphProducer::build(
+            &resolver,
+        )
+        .expect("Task33C graph should build");
+    let owner = mizar_resolve::symbols::SourceNestedFraenkelFunctorOwnerProducer::build(
+        &ast, &module, &resolved, &resolver,
+    )
+    .expect("Task33C owner should build");
+    let graph_before = graph.clone();
+    let owner_before = owner.clone();
+    let receipt = mizar_checker::source_formula_composition::SourceNestedFraenkelCaptureGraphOwnerProducer::build(
+        graph.clone(),
+        owner.clone(),
+    )
+    .expect("Task33C graph-owner receipt should build");
+
+    assert_eq!(receipt.source_id(), ast.source_id);
+    assert_eq!(receipt.module_id(), &module);
+    assert!(receipt.graph() == &graph);
+    assert!(receipt.owner() == &owner);
+    assert_eq!(receipt.graph().captures().len(), 2);
+    assert_eq!(receipt.graph().occurrences().len(), 2);
+    assert!(
+        receipt
+            .graph()
+            .captures()
+            .iter()
+            .all(|(_, capture)| capture.generator().index() != 0)
+    );
+    assert!(receipt.graph().generators().iter().all(|(_, row)| {
+        row.definition_block() == receipt.owner().definition_block()
+            && row.functor_definition() == receipt.owner().functor_definition()
+    }));
+    assert!(receipt.graph().mappers().iter().all(|(_, row)| {
+        row.definition_block() == receipt.owner().definition_block()
+            && row.functor_definition() == receipt.owner().functor_definition()
+    }));
+    assert!(receipt.graph().predicates().iter().all(|(_, row)| {
+        row.definition_block() == receipt.owner().definition_block()
+            && row.functor_definition() == receipt.owner().functor_definition()
+    }));
+    assert!(graph == graph_before);
+    assert!(owner == owner_before);
+
+    let replay = mizar_checker::source_formula_composition::SourceNestedFraenkelCaptureGraphOwnerProducer::build(
+        graph,
+        owner,
+    )
+    .expect("Task33C graph-owner replay should build");
+    assert!(receipt == replay);
+    assert_eq!(receipt.debug_text(), replay.debug_text());
+
+    let (type_ast, type_module, _, symbols) =
+        task253_ast_from_source_text(TASK257C4C8R_CANONICAL_SOURCE, 25_743);
+    let augmented =
+        augment_type_elaboration_import_summaries(&type_ast, &type_module, symbols.clone());
+    assert_eq!(augmented, symbols);
+}
+
+#[test]
 fn task257c4c3_real_imported_fixture_builds_checker_identity_handoff() {
     let output = task257c4c1_frontend_output(TASK257C4C1_CANONICAL_SOURCE, 3);
     assert!(output.diagnostics.is_empty());

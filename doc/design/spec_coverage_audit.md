@@ -7179,10 +7179,27 @@ identity and the canonical symbol allocation path, never display spelling,
 ranges, or numeric-id reinterpretation.
 
 This is implemented derived enforcement with zero semantic or execution credit;
-independent review and verification evidence remain pending.
+its canonical contract records completed review and verification evidence.
 C4C8 remains standalone and unchanged; C4C5/C4C6 and C4C4 captured state remain
-unchanged; no checker receipt, Typed/Resolved/Core installation, active route,
+unchanged. The later Task33C checker receipt pairs C4C8 with this exact owner
+without Typed/Resolved/Core installation or an active route; no
 parameter/argument order, generated origin, semantic result, diagnostic,
 fixture/expectation/trace mutation, or Task-277B readiness is added. The
-Chapter-13 summary remains `partial`; the next checker pairing and Core33--35
-transport remain separately owner-gated.
+Chapter-13 summary remains `partial`. The checker pairing is completed by
+Task33C below, while Core33--35 transport remains separately owner-gated.
+
+## Task 33C Implemented Zero-Credit Checker Graph-Owner Mapping
+
+The canonical [Task33C contract](./task_contracts/en/CHECKER-FRAENKEL-CAPTURE-GRAPH-OWNER-33C.md)
+selects one derived checker receipt pairing the unchanged C4C8 normalized graph
+with the unchanged Task33R resolver owner. It retains both inputs by value and
+authenticates only exact retained-resolver equality plus common resolved
+definition-block/functor identities. It adds no table, id domain, ordering
+claim, or display-name association.
+
+This implemented mapping grants zero specification, execution, semantic, or
+coverage credit. Chapter 13 remains `partial`; the existing C4C7 source,
+expectation, trace status/backlinks, and protected hashes remain unchanged.
+Typed/Resolved/Core installation, Core Task33/35 free/generated-parameter
+transport and order, `GeneratedOrigin`, actual semantics, active routing,
+diagnostics, and Task277B readiness remain separately authority-gated.

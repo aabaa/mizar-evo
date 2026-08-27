@@ -6677,3 +6677,19 @@ post-commit fresh inventoryからだけ選択する。
   contractにrecordしたfresh successor inventoryを完了する。Semantic successorはselectせず、
   userはdocumentation-only Core-33 prerequisite方向だけをacceptする。そのexact contractは
   fresh inventoryを要する。Task277Bはnot-ready/zero-creditのまま。
+
+## Task 33C opaque capture-graph owner receipt
+
+- [x] User-selected checker-owned scalar receipt、by-value C4C8/Task33R dependency、exact
+  public API、graph-dependency→owner-dependency→association precedenceをpaired
+  [Task33C contract](../../task_contracts/ja/CHECKER-FRAENKEL-CAPTURE-GRAPH-OWNER-33C.md)へfreezeする。
+- [x] Rust edit前にindependent specification/equivalenceとbilingual/boundary reviewを
+  **NO FINDINGS**まで完了する。
+- [x] Frozen handoff/error/producer、checker test 4件、public-enum guard、private real-fixture
+  probe 1件だけをimplementする。
+- [x] C4C4/C4C5/C4C6、Typed/Resolved/Core ownership、parameter/order/GeneratedOrigin
+  deferral、active route、diagnostic、protected artifact、semantic coverage、Task277B zero creditを
+  preserveする。
+- [x] Post-source review、verification、final-quality hard gateを**NO FINDINGS**、`9/9`
+  PASS、valid uncapped `100/100`で完了する。
+- [ ] Exact task-only commit、clean postcommit proof、fresh inventoryを完了する。

@@ -2027,3 +2027,18 @@ resolver-identity/private-order constraints, planned status, and
 zero-credit/protected state. The paired checker plan, source-formula-
 composition, TODO, source-spec, and bilingual records are the required owner
 review surface. English is canonical; no exception exists.
+
+## Task 33C Frozen Contract Parity
+
+The [EN canonical](../../task_contracts/en/CHECKER-FRAENKEL-CAPTURE-GRAPH-OWNER-33C.md)
+and [JA companion](../../task_contracts/ja/CHECKER-FRAENKEL-CAPTURE-GRAPH-OWNER-33C.md)
+synchronize the checker-owned scalar receipt, exact by-value dependencies,
+complete five-getter API, three-error precedence, `9 -> 10` public-enum impact,
+four checker plus one private-runner tests, 24-path scope, protected hashes,
+and all Typed/Resolved/Core/semantic/Task277B deferrals. The paired checker
+plan, source-formula-composition, TODO, source-spec, module-boundary, and this
+record are the checker review surface. English is canonical; no exception is
+recorded. Finding-specific post-source re-review is **NO FINDINGS** after the
+same precedence-test and audit-tense repairs in both languages; full-workspace
+verification and protected checks pass. Final quality is **NO FINDINGS**, all
+nine hard gates PASS, and the valid uncapped score is `100/100`. Commit remains.

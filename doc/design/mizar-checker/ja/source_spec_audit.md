@@ -54,6 +54,20 @@ Correspondence:
 Task277B creditを与えない。C4C7 history、trace/expectation/status、Chapter 13
 `partial` coverageも変更しない。
 
+## Task 33C Frozen Zero-Credit Graph-Owner Correspondence
+
+Paired [Task33C contract](../../task_contracts/ja/CHECKER-FRAENKEL-CAPTURE-GRAPH-OWNER-33C.md)は
+unchanged C4C8 graphとunchanged Task33R resolver ownerをpairするchecker-owned scalar receipt
+1件を選択する。Implemented public familyは`source_formula_composition.rs`のhandoff 1件、non-
+exhaustive error 1件、producer 1件で、current public-enum inventoryは`10`
+（pre-task baselineは`9`）。Cross-owner
+association keyはexact resolver equalityとresolved definition-block/functor identityだけ。
+
+Implementationはderived `design_drift`とRust/private-probe `test_gap`だけをcloseする。New
+language requirement、fixture、trace row、expectation、diagnostic、semantic coverage、active
+routeは作らない。Chapter 13は`partial`、Typed/Resolved/Core install、parameter/argument order、
+`GeneratedOrigin`、actual semantics、Task277Bはdeferred/zero-credit。
+
 ## Task 269SDU Implemented Zero-Credit Mapping
 
 [central Task-269SDU contract](../../task_contracts/ja/269SDU.md) はChapters 4、13、
@@ -1022,7 +1036,10 @@ literal top-level public item:
   `SourceNestedFraenkelCaptureGraphOccurrenceTable`、
   `SourceNestedFraenkelCaptureGraphHandoff`、
   `SourceNestedFraenkelCaptureGraphError`、
-  `SourceNestedFraenkelCaptureGraphProducer`。
+  `SourceNestedFraenkelCaptureGraphProducer`、
+  `SourceNestedFraenkelCaptureGraphOwnerHandoff`、
+  `SourceNestedFraenkelCaptureGraphOwnerError`、
+  `SourceNestedFraenkelCaptureGraphOwnerProducer`。
 
 対応:
 
@@ -1037,7 +1054,8 @@ literal top-level public item:
 | C4C5はcomplete C4C4 mapper transactionをby-value consume/retainし、inner owner/mapper/reference/checker bindingからresolver identityへのimmutable receipt 1件をpublishする。 | `SourceNestedFraenkelCaptureIdentityId`、row/table/handoff/two-variant error/producer、complete C4C4 revalidation seam。 | exact C4C5 checker test 4件とprivate real imported-fixture probe 1件が全row field/cardinality/precedence/display/replay/empty captured stateをcoverする。 | Task255 dependency、Typed/Resolved install、semantic capture、Core origin、route、diagnostic、coverage creditなしでimplemented。 |
 | C4C6はcomplete C4C5 receiptをexact authenticated immutable Typed/Resolved destinationへcapture semanticsなしでinstallする。 | Crate-private retained-typed validation、boxed AST owner、one-shot Typed installer、borrowed Typed/Resolved getter、final clone replay。 | Exact checker test 6件とprivate real imported-fixture installation probe 1件がexact owner equality、recursion rejection、semantic-table exclusion、mutual exclusion、debug/clone stability、final-input contamination、empty captured stateをcoverする。 | Implemented。Core/order/route/diagnostic/coverage creditなし。 |
 | C4C8はretained C4C8R resolver snapshot上にexact `3/1/0/2/2` generator/mapper/predicate/capture/occurrence cardinalityを持つstandalone immutable normalized graphをownする。 | Graph ID 5件、row/table pair 5組、handoff、`#[non_exhaustive]` error、producer、private complete validator。 | Exact checker test 4件とprivate real imported-fixture probe 1件がAPI shape、identity link、provenance-first precedence、default-deny corruption、replay、local-`z` exclusionをcoverする。 | Typed/Resolved slot、semantic capture、Core/GeneratedOrigin payload、route、diagnostic、coverage creditなしでimplemented。 |
-| public enumはforward-compatible。 | public enum 9件すべての`#[non_exhaustive]`。 | `checker_public_enums_are_forward_compatible_and_documented`。 | exhaustive exceptionなしでguard。 |
+| Task33Cはunchanged C4C8 graph 1件をexact Task33R containing-functor ownerへretained-resolver equality/resolved owner identityでpairする。 | Scalar `SourceNestedFraenkelCaptureGraphOwnerHandoff`、3-variant non-exhaustive error、producer、private complete validator。 | Exact checker 4件 + private real-fixture 1件がAPI/debug、precedence、association corruption、replay、stale/display-independent pairing、zero-semantic isolationをcoverする。 | Implemented。Table/id、Typed/Resolved/Core install、order、GeneratedOrigin、route、diagnostic、coverage creditなし。 |
+| public enumはforward-compatible。 | public enum 10件すべての`#[non_exhaustive]`。 | `checker_public_enums_are_forward_compatible_and_documented`。 | exhaustive exceptionなしでguard。 |
 
 bounded gap: connective/quantifier/predicate truth、signature applicability、
 overload selection、formula fact/result、implicit theorem closure/acceptance、

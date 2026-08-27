@@ -2051,3 +2051,16 @@ credit, no production/active route or checker/Core installation, unchanged
 fixture/expectation/trace state, and Task-277B-not-ready status. Exact staging
 and the task-only commit remain. English is canonical for exact identifiers,
 counts, and hashes; no bilingual exception is recorded.
+
+## Checker Task 33C Bilingual Contract Parity
+
+The canonical [EN contract](../../task_contracts/en/CHECKER-FRAENKEL-CAPTURE-GRAPH-OWNER-33C.md)
+and [JA companion](../../task_contracts/ja/CHECKER-FRAENKEL-CAPTURE-GRAPH-OWNER-33C.md)
+synchronize the exact private probe, paired mizar-test plan and harness owner
+section, one-test `626 -> 627` impact, library-test-only boundary, unchanged
+fixture/expectation/trace state, zero semantic/execution/coverage credit, and
+Task277B-not-ready status. English is canonical; no exception is recorded.
+The private probe, library/lint/metadata suites, full workspace tests, and
+protected checks pass; independent post-source reviews are **NO FINDINGS**.
+Final quality is **NO FINDINGS**, all nine hard gates PASS, and the valid
+uncapped score is `100/100`. Commit remains.

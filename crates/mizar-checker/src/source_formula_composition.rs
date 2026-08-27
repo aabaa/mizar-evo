@@ -50,6 +50,7 @@ use mizar_resolve::{
         FraenkelGeneratorVariableUseRole,
     },
     resolved_ast::{ModuleId, ResolvedNodeId},
+    symbols::SourceNestedFraenkelFunctorOwnerHandoff,
 };
 use mizar_session::{SourceAnchor, SourceId, SourceRange};
 use std::{
@@ -3681,6 +3682,173 @@ impl SourceNestedFraenkelCaptureGraphProducer {
     }
 }
 
+/// Immutable checker-owned receipt pairing the normalized capture graph with
+/// the resolver-owned containing-functor owner.
+#[derive(Clone, PartialEq, Eq)]
+pub struct SourceNestedFraenkelCaptureGraphOwnerHandoff {
+    graph: SourceNestedFraenkelCaptureGraphHandoff,
+    owner: SourceNestedFraenkelFunctorOwnerHandoff,
+    association: SourceNestedFraenkelCaptureGraphOwnerAssociation,
+}
+
+#[derive(Clone, PartialEq, Eq)]
+struct SourceNestedFraenkelCaptureGraphOwnerAssociation {
+    source_id: SourceId,
+    module_id: ModuleId,
+    definition_block: ResolvedNodeId,
+    functor_definition: ResolvedNodeId,
+}
+
+impl SourceNestedFraenkelCaptureGraphOwnerHandoff {
+    /// Returns the source represented by this receipt.
+    #[must_use]
+    pub const fn source_id(&self) -> SourceId {
+        self.association.source_id
+    }
+
+    /// Returns the module represented by this receipt.
+    #[must_use]
+    pub const fn module_id(&self) -> &ModuleId {
+        &self.association.module_id
+    }
+
+    /// Returns the retained normalized capture graph.
+    #[must_use]
+    pub const fn graph(&self) -> &SourceNestedFraenkelCaptureGraphHandoff {
+        &self.graph
+    }
+
+    /// Returns the retained resolver-owned containing-functor owner.
+    #[must_use]
+    pub const fn owner(&self) -> &SourceNestedFraenkelFunctorOwnerHandoff {
+        &self.owner
+    }
+
+    /// Returns a deterministic diagnostics-free summary of this receipt.
+    #[must_use]
+    pub fn debug_text(&self) -> String {
+        format!(
+            "source-nested-fraenkel-capture-graph-owner-v1|module={}.{}|captures={}|occurrences={}|symbol={}|definition={}",
+            self.module_id().package().as_str(),
+            self.module_id().path().as_str(),
+            self.graph.captures().len(),
+            self.graph.occurrences().len(),
+            self.owner.symbol().fqn().as_str(),
+            self.owner.definition().index(),
+        )
+    }
+
+    fn validate(&self) -> Result<(), SourceNestedFraenkelCaptureGraphOwnerError> {
+        self.graph
+            .validate_complete()
+            .map_err(|_| SourceNestedFraenkelCaptureGraphOwnerError::InvalidGraphDependency)?;
+        self.owner
+            .validate_resolver_collection(&self.graph.dependencies.resolver)
+            .map_err(|_| SourceNestedFraenkelCaptureGraphOwnerError::InvalidOwnerDependency)?;
+
+        let association =
+            derive_nested_fraenkel_capture_graph_owner_association(&self.graph, &self.owner)?;
+        if self.association != association {
+            return Err(SourceNestedFraenkelCaptureGraphOwnerError::InvalidAssociation);
+        }
+        Ok(())
+    }
+
+    /// Revalidates both retained dependencies and their scalar association.
+    pub(crate) fn validate_complete(
+        &self,
+    ) -> Result<(), SourceNestedFraenkelCaptureGraphOwnerError> {
+        self.validate()
+    }
+}
+
+/// Default-deny errors for checker-owned capture-graph/owner admission.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum SourceNestedFraenkelCaptureGraphOwnerError {
+    InvalidGraphDependency,
+    InvalidOwnerDependency,
+    InvalidAssociation,
+}
+
+impl fmt::Display for SourceNestedFraenkelCaptureGraphOwnerError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let message = match self {
+            Self::InvalidGraphDependency => {
+                "nested Fraenkel capture graph-owner graph dependency is invalid"
+            }
+            Self::InvalidOwnerDependency => {
+                "nested Fraenkel capture graph-owner owner dependency is invalid"
+            }
+            Self::InvalidAssociation => {
+                "nested Fraenkel capture graph-owner association is invalid"
+            }
+        };
+        formatter.write_str(message)
+    }
+}
+
+impl Error for SourceNestedFraenkelCaptureGraphOwnerError {}
+
+/// Builds the checker-owned capture-graph/owner receipt.
+#[derive(Debug, Clone, Copy)]
+pub struct SourceNestedFraenkelCaptureGraphOwnerProducer;
+
+impl SourceNestedFraenkelCaptureGraphOwnerProducer {
+    /// Consumes exact validated graph and owner prerequisites by value.
+    pub fn build(
+        graph: SourceNestedFraenkelCaptureGraphHandoff,
+        owner: SourceNestedFraenkelFunctorOwnerHandoff,
+    ) -> Result<
+        SourceNestedFraenkelCaptureGraphOwnerHandoff,
+        SourceNestedFraenkelCaptureGraphOwnerError,
+    > {
+        graph
+            .validate_complete()
+            .map_err(|_| SourceNestedFraenkelCaptureGraphOwnerError::InvalidGraphDependency)?;
+        owner
+            .validate_resolver_collection(&graph.dependencies.resolver)
+            .map_err(|_| SourceNestedFraenkelCaptureGraphOwnerError::InvalidOwnerDependency)?;
+        let association = derive_nested_fraenkel_capture_graph_owner_association(&graph, &owner)?;
+        let handoff = SourceNestedFraenkelCaptureGraphOwnerHandoff {
+            graph,
+            owner,
+            association,
+        };
+        handoff.validate_complete()?;
+        Ok(handoff)
+    }
+}
+
+fn derive_nested_fraenkel_capture_graph_owner_association(
+    graph: &SourceNestedFraenkelCaptureGraphHandoff,
+    owner: &SourceNestedFraenkelFunctorOwnerHandoff,
+) -> Result<
+    SourceNestedFraenkelCaptureGraphOwnerAssociation,
+    SourceNestedFraenkelCaptureGraphOwnerError,
+> {
+    if graph.source_id != owner.source_id() || graph.module_id != *owner.module_id() {
+        return Err(SourceNestedFraenkelCaptureGraphOwnerError::InvalidAssociation);
+    }
+    let definition_block = owner.definition_block();
+    let functor_definition = owner.functor_definition();
+    if graph.generators.iter().any(|(_, row)| {
+        row.definition_block != definition_block || row.functor_definition != functor_definition
+    }) || graph.mappers.iter().any(|(_, row)| {
+        row.definition_block != definition_block || row.functor_definition != functor_definition
+    }) || graph.predicates.iter().any(|(_, row)| {
+        row.definition_block != definition_block || row.functor_definition != functor_definition
+    }) {
+        return Err(SourceNestedFraenkelCaptureGraphOwnerError::InvalidAssociation);
+    }
+    Ok(SourceNestedFraenkelCaptureGraphOwnerAssociation {
+        source_id: graph.source_id,
+        module_id: graph.module_id.clone(),
+        definition_block,
+        functor_definition,
+    })
+}
+
 #[derive(Clone, Copy)]
 struct NestedFraenkelCaptureGraphResolverProfile {
     inner_binding: FraenkelGeneratorVariableBindingId,
@@ -6778,6 +6946,44 @@ pub(crate) mod tests {
             .expect("Task257C4C8 near-miss collection")
     }
 
+    fn task33c_owner_for(
+        source: SourceId,
+        x_name: &str,
+    ) -> mizar_resolve::symbols::SourceNestedFraenkelFunctorOwnerHandoff {
+        let module = module();
+        let ast = task257c4c8_surface_ast_with_x_name(source, x_name);
+        let resolved = SurfaceResolvedArena::lower(&ast, &module).expect("Task33C resolver arena");
+        let resolver = FraenkelGeneratorVariableSourceCollector::new(&ast, &module, &resolved)
+            .expect("Task33C collector")
+            .collect()
+            .expect("Task33C collection");
+        mizar_resolve::symbols::SourceNestedFraenkelFunctorOwnerProducer::build(
+            &ast, &module, &resolved, &resolver,
+        )
+        .expect("Task33C owner handoff")
+    }
+
+    fn task33c_pair() -> (
+        SourceNestedFraenkelCaptureGraphHandoff,
+        mizar_resolve::symbols::SourceNestedFraenkelFunctorOwnerHandoff,
+    ) {
+        let source = source_id();
+        let module = module();
+        let ast = task257c4c8_surface_ast_with_x_name(source, "x");
+        let resolved = SurfaceResolvedArena::lower(&ast, &module).expect("Task33C resolver arena");
+        let resolver = FraenkelGeneratorVariableSourceCollector::new(&ast, &module, &resolved)
+            .expect("Task33C collector")
+            .collect()
+            .expect("Task33C collection");
+        let graph = SourceNestedFraenkelCaptureGraphProducer::build(&resolver)
+            .expect("Task33C graph handoff");
+        let owner = mizar_resolve::symbols::SourceNestedFraenkelFunctorOwnerProducer::build(
+            &ast, &module, &resolved, &resolver,
+        )
+        .expect("Task33C owner handoff");
+        (graph, owner)
+    }
+
     fn task257c4c8_surface_ast_with_x_name(source: SourceId, x_name: &str) -> syntax::SurfaceAst {
         let mut b = syntax::SurfaceAstBuilder::new(source);
         let definition = b.add_token(
@@ -8139,6 +8345,143 @@ pub(crate) mod tests {
         ));
         assert!(first.validate_complete().is_ok());
         assert_eq!(first.debug_text(), second.debug_text());
+    }
+
+    #[test]
+    fn task33c_builds_exact_graph_owner_handoff() {
+        let (graph, owner) = task33c_pair();
+        let source = graph.source_id();
+        let module = graph.module_id().clone();
+        let expected_debug = format!(
+            "source-nested-fraenkel-capture-graph-owner-v1|module={}.{}|captures=2|occurrences=2|symbol={}|definition={}",
+            module.package().as_str(),
+            module.path().as_str(),
+            owner.symbol().fqn().as_str(),
+            owner.definition().index(),
+        );
+        let handoff =
+            SourceNestedFraenkelCaptureGraphOwnerProducer::build(graph.clone(), owner.clone())
+                .expect("Task33C graph-owner handoff");
+
+        assert_eq!(handoff.source_id(), source);
+        assert_eq!(handoff.module_id(), &module);
+        assert!(handoff.graph() == &graph);
+        assert!(handoff.owner() == &owner);
+        assert_eq!(handoff.debug_text(), expected_debug);
+        assert!(handoff.validate_complete().is_ok());
+        assert_eq!(
+            SourceNestedFraenkelCaptureGraphOwnerError::InvalidGraphDependency.to_string(),
+            "nested Fraenkel capture graph-owner graph dependency is invalid"
+        );
+        assert_eq!(
+            SourceNestedFraenkelCaptureGraphOwnerError::InvalidOwnerDependency.to_string(),
+            "nested Fraenkel capture graph-owner owner dependency is invalid"
+        );
+        assert_eq!(
+            SourceNestedFraenkelCaptureGraphOwnerError::InvalidAssociation.to_string(),
+            "nested Fraenkel capture graph-owner association is invalid"
+        );
+    }
+
+    #[test]
+    fn task33c_rejects_graph_and_owner_dependencies_in_precedence() {
+        let (mut invalid_graph, owner) = task33c_pair();
+        invalid_graph.dependencies.version = "stale";
+        invalid_graph.generators.rows.clear();
+        assert!(matches!(
+            SourceNestedFraenkelCaptureGraphOwnerProducer::build(invalid_graph, owner),
+            Err(SourceNestedFraenkelCaptureGraphOwnerError::InvalidGraphDependency)
+        ));
+
+        let (graph, _) = task33c_pair();
+        let foreign_owner = task33c_owner_for(other_source_id(), "x");
+        assert!(matches!(
+            SourceNestedFraenkelCaptureGraphOwnerProducer::build(graph, foreign_owner),
+            Err(SourceNestedFraenkelCaptureGraphOwnerError::InvalidOwnerDependency)
+        ));
+
+        let (mut invalid_graph, _) = task33c_pair();
+        invalid_graph.dependencies.domain = "stale";
+        let foreign_owner = task33c_owner_for(other_source_id(), "x");
+        assert!(matches!(
+            SourceNestedFraenkelCaptureGraphOwnerProducer::build(invalid_graph, foreign_owner),
+            Err(SourceNestedFraenkelCaptureGraphOwnerError::InvalidGraphDependency)
+        ));
+
+        let (graph, owner) = task33c_pair();
+        let mut invalid_owner_and_association =
+            SourceNestedFraenkelCaptureGraphOwnerProducer::build(graph, owner).unwrap();
+        invalid_owner_and_association.owner = task33c_owner_for(other_source_id(), "x");
+        invalid_owner_and_association.association.source_id = other_source_id();
+        assert!(matches!(
+            invalid_owner_and_association.validate_complete(),
+            Err(SourceNestedFraenkelCaptureGraphOwnerError::InvalidOwnerDependency)
+        ));
+    }
+
+    #[test]
+    fn task33c_rejects_source_module_identity_and_retained_association_corruption() {
+        let (graph, owner) = task33c_pair();
+        let valid = SourceNestedFraenkelCaptureGraphOwnerProducer::build(graph, owner).unwrap();
+
+        let mut source = valid.clone();
+        source.association.source_id = other_source_id();
+        assert!(matches!(
+            source.validate_complete(),
+            Err(SourceNestedFraenkelCaptureGraphOwnerError::InvalidAssociation)
+        ));
+
+        let mut module = valid.clone();
+        module.association.module_id =
+            ModuleId::new(PackageId::new("pkg"), ModulePath::new("composition.other"));
+        assert!(matches!(
+            module.validate_complete(),
+            Err(SourceNestedFraenkelCaptureGraphOwnerError::InvalidAssociation)
+        ));
+
+        let mut definition = valid.clone();
+        definition.association.definition_block = definition.graph.generators.rows[0].segment;
+        assert!(matches!(
+            definition.validate_complete(),
+            Err(SourceNestedFraenkelCaptureGraphOwnerError::InvalidAssociation)
+        ));
+        let mut functor = valid.clone();
+        functor.association.functor_definition = functor.graph.generators.rows[0].binder;
+        assert!(matches!(
+            functor.validate_complete(),
+            Err(SourceNestedFraenkelCaptureGraphOwnerError::InvalidAssociation)
+        ));
+    }
+
+    #[test]
+    fn task33c_replays_immutably_and_rejects_stale_or_display_joined_pairs() {
+        let (graph, owner) = task33c_pair();
+        let graph_before = graph.clone();
+        let owner_before = owner.clone();
+        let first =
+            SourceNestedFraenkelCaptureGraphOwnerProducer::build(graph.clone(), owner.clone())
+                .unwrap();
+        let second = SourceNestedFraenkelCaptureGraphOwnerProducer::build(graph, owner).unwrap();
+        assert!(first == second);
+        assert_eq!(first.debug_text(), second.debug_text());
+        assert!(first.graph() == &graph_before);
+        assert!(first.owner() == &owner_before);
+
+        let mut stale = first.clone();
+        stale.graph.occurrences.rows[1].identifier_range.end += 1;
+        assert!(matches!(
+            stale.validate_complete(),
+            Err(SourceNestedFraenkelCaptureGraphOwnerError::InvalidGraphDependency)
+        ));
+        assert!(first.validate_complete().is_ok());
+
+        let (graph, owner) = task33c_pair();
+        let foreign_owner = task33c_owner_for(other_source_id(), "x");
+        assert_eq!(foreign_owner.symbol().fqn(), owner.symbol().fqn());
+        assert!(matches!(
+            SourceNestedFraenkelCaptureGraphOwnerProducer::build(graph, foreign_owner),
+            Err(SourceNestedFraenkelCaptureGraphOwnerError::InvalidOwnerDependency)
+        ));
     }
 
     fn task257c4a_surface_ast(source: SourceId) -> syntax::SurfaceAst {
