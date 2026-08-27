@@ -899,6 +899,56 @@ fn task257c4c8r_revalidates_arena_and_replays_deterministically() {
 }
 
 #[test]
+fn task33r_surface_fingerprint_binds_exact_ast_snapshot() {
+    let source_id = source_id();
+    let module = module_id("pkg", "nested_multi_capture");
+    let ast = task257c4c8r_ast(source_id, Task257c4c8rShape::Exact);
+    let resolved = SurfaceResolvedArena::lower(&ast, &module).unwrap();
+    let collection = FraenkelGeneratorVariableSourceCollector::new(&ast, &module, &resolved)
+        .unwrap()
+        .collect()
+        .unwrap();
+    let snapshot = ast.snapshot_text();
+
+    assert_eq!(collection.surface_fingerprint(), snapshot.as_str());
+    assert_eq!(collection.surface_fingerprint(), ast.snapshot_text());
+    assert_eq!(
+        collection.debug_text(),
+        "fraenkel-generator-variable-source-v1|module=pkg.nested_multi_capture|bindings=3|uses=2"
+    );
+}
+
+#[test]
+fn task33r_surface_fingerprint_distinguishes_stale_same_source_ast() {
+    let source_id = source_id();
+    let module = module_id("pkg", "nested_multi_capture");
+    let ast = task257c4c8r_ast(source_id, Task257c4c8rShape::Exact);
+    let stale_ast = task257c4c8r_ast(source_id, Task257c4c8rShape::StaleDefinitionSpelling);
+    let resolved = SurfaceResolvedArena::lower(&ast, &module).unwrap();
+    let stale_resolved = SurfaceResolvedArena::lower(&stale_ast, &module).unwrap();
+    let collection = FraenkelGeneratorVariableSourceCollector::new(&ast, &module, &resolved)
+        .unwrap()
+        .collect()
+        .unwrap();
+    let stale_collection =
+        FraenkelGeneratorVariableSourceCollector::new(&stale_ast, &module, &stale_resolved)
+            .unwrap()
+            .collect()
+            .unwrap();
+
+    assert_eq!(collection.source_id(), stale_collection.source_id());
+    assert_eq!(collection.module(), stale_collection.module());
+    assert_eq!(collection.bindings(), stale_collection.bindings());
+    assert_eq!(collection.uses(), stale_collection.uses());
+    assert_eq!(collection.debug_text(), stale_collection.debug_text());
+    assert_ne!(
+        collection.surface_fingerprint(),
+        stale_collection.surface_fingerprint()
+    );
+    assert_ne!(collection, stale_collection);
+}
+
+#[test]
 fn unqualified_lookup_uses_declaration_point_shadowing_and_builtins() {
     let source_id = source_id();
     let current = module_id("app", "main");
@@ -3687,6 +3737,7 @@ fn task257c4c2_ast(source_id: SourceId, shape: Task257c4c2Shape) -> SurfaceAst {
 #[derive(Debug, Clone, Copy)]
 enum Task257c4c8rShape {
     Exact,
+    StaleDefinitionSpelling,
     InnerAlternateType,
     OuterXAlternateType,
     OuterYAlternateType,
@@ -3707,7 +3758,11 @@ fn task257c4c8r_ast(source_id: SourceId, shape: Task257c4c8rShape) -> SurfaceAst
     let mut builder = SurfaceAstBuilder::new(source_id);
     let definition = builder.add_token(
         SurfaceTokenKind::ReservedWord,
-        "definition",
+        if matches!(shape, Task257c4c8rShape::StaleDefinitionSpelling) {
+            "Definition"
+        } else {
+            "definition"
+        },
         range(source_id, 39, 49),
     );
     let func = builder.add_token(

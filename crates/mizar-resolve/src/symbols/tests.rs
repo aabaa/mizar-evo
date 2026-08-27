@@ -8,6 +8,364 @@ use mizar_syntax::{
 };
 
 #[test]
+fn task33r_builds_exact_containing_functor_owner() {
+    let (ast, module, resolved, resolver) = task33r_owner_fixture();
+    let handoff =
+        SourceNestedFraenkelFunctorOwnerProducer::build(&ast, &module, &resolved, &resolver)
+            .unwrap();
+
+    assert_eq!(handoff.source_id(), ast.source_id);
+    assert_eq!(handoff.module_id(), &module);
+    assert_eq!(handoff.surface_fingerprint(), ast.snapshot_text());
+    assert_eq!(
+        handoff.debug_text(),
+        format!(
+            "source-nested-fraenkel-functor-owner-v1|module=pkg.nested_multi_capture|functor-node={}|symbol={}|definition={}",
+            handoff.functor_definition().index(),
+            handoff.symbol().fqn().as_str(),
+            handoff.definition().index(),
+        )
+    );
+    assert_eq!(
+        handoff.dependencies.allocation.shell,
+        handoff.declaration_shell()
+    );
+    assert_eq!(handoff.dependencies.allocation.symbol, *handoff.symbol());
+    assert_eq!(
+        handoff.dependencies.allocation.definition,
+        Some(handoff.definition())
+    );
+    assert_eq!(
+        handoff.dependencies.allocation.contribution,
+        handoff.contribution()
+    );
+    assert_eq!(handoff.dependencies.allocation.origin, *handoff.origin());
+    handoff.validate_complete().unwrap();
+    handoff.validate_resolver_collection(&resolver).unwrap();
+
+    fn assert_error<T: std::error::Error>() {}
+    assert_error::<SourceNestedFraenkelFunctorOwnerError>();
+    let displays = [
+        (
+            SourceNestedFraenkelFunctorOwnerError::InvalidDependency,
+            "nested Fraenkel functor owner dependency is invalid",
+        ),
+        (
+            SourceNestedFraenkelFunctorOwnerError::InvalidResolverProfile,
+            "nested Fraenkel functor owner resolver profile is invalid",
+        ),
+        (
+            SourceNestedFraenkelFunctorOwnerError::InvalidOwnerCardinality,
+            "nested Fraenkel functor owner cardinality is invalid",
+        ),
+        (
+            SourceNestedFraenkelFunctorOwnerError::InvalidOwnerProvenance,
+            "nested Fraenkel functor owner provenance is invalid",
+        ),
+        (
+            SourceNestedFraenkelFunctorOwnerError::InvalidSymbolAssociation,
+            "nested Fraenkel functor owner symbol association is invalid",
+        ),
+        (
+            SourceNestedFraenkelFunctorOwnerError::InvalidDefinitionAssociation,
+            "nested Fraenkel functor owner definition association is invalid",
+        ),
+        (
+            SourceNestedFraenkelFunctorOwnerError::InvalidAssociation,
+            "nested Fraenkel functor owner association is invalid",
+        ),
+    ];
+    for (error, display) in displays {
+        assert_eq!(error.to_string(), display);
+    }
+
+    let alternate_ast =
+        task33r_owner_ast_with_shape(ast.source_id, Task33rOwnerShape::AlternateSpelling);
+    let (alternate_resolved, alternate_resolver) = task33r_resolver_for(&alternate_ast, &module);
+    let alternate = SourceNestedFraenkelFunctorOwnerProducer::build(
+        &alternate_ast,
+        &module,
+        &alternate_resolved,
+        &alternate_resolver,
+    )
+    .unwrap();
+    assert_ne!(
+        alternate.surface_fingerprint(),
+        handoff.surface_fingerprint()
+    );
+    assert_ne!(alternate.symbol(), handoff.symbol());
+
+    let pressured_ast =
+        task33r_owner_ast_with_shape(ast.source_id, Task33rOwnerShape::PrecedingPredicate);
+    let (pressured_resolved, pressured_resolver) = task33r_resolver_for(&pressured_ast, &module);
+    let pressured = SourceNestedFraenkelFunctorOwnerProducer::build(
+        &pressured_ast,
+        &module,
+        &pressured_resolved,
+        &pressured_resolver,
+    )
+    .unwrap();
+    assert!(pressured.definition().index() > 0);
+    assert_eq!(
+        pressured.dependencies.allocation.definition,
+        Some(pressured.definition())
+    );
+}
+
+#[test]
+fn task33r_rejects_dependency_and_resolver_profile_mismatch() {
+    let (ast, module, resolved, resolver) = task33r_owner_fixture();
+    let wrong_module = ModuleId::new(PackageId::new("pkg"), ModulePath::new("other"));
+    assert_eq!(
+        SourceNestedFraenkelFunctorOwnerProducer::build(&ast, &wrong_module, &resolved, &resolver,)
+            .err()
+            .unwrap(),
+        SourceNestedFraenkelFunctorOwnerError::InvalidDependency
+    );
+
+    let foreign_ast = task33r_owner_ast(task33r_foreign_source_id());
+    let (foreign_resolved, foreign_resolver) = task33r_resolver_for(&foreign_ast, &module);
+    assert_eq!(
+        SourceNestedFraenkelFunctorOwnerProducer::build(
+            &ast,
+            &module,
+            &foreign_resolved,
+            &foreign_resolver,
+        )
+        .err()
+        .unwrap(),
+        SourceNestedFraenkelFunctorOwnerError::InvalidDependency
+    );
+
+    let stale_ast =
+        task33r_owner_ast_with_shape(ast.source_id, Task33rOwnerShape::StaleDefinitionSpelling);
+    let (stale_resolved, stale_resolver) = task33r_resolver_for(&stale_ast, &module);
+    assert_eq!(
+        SourceNestedFraenkelFunctorOwnerProducer::build(&stale_ast, &module, &resolved, &resolver,)
+            .err()
+            .unwrap(),
+        SourceNestedFraenkelFunctorOwnerError::InvalidDependency
+    );
+    let handoff =
+        SourceNestedFraenkelFunctorOwnerProducer::build(&ast, &module, &resolved, &resolver)
+            .unwrap();
+    assert_eq!(
+        handoff.validate_resolver_collection(&stale_resolver),
+        Err(SourceNestedFraenkelFunctorOwnerError::InvalidDependency)
+    );
+    assert!(
+        SourceNestedFraenkelFunctorOwnerProducer::build(
+            &stale_ast,
+            &module,
+            &stale_resolved,
+            &stale_resolver,
+        )
+        .is_ok()
+    );
+
+    let empty_ast = task33r_empty_ast(ast.source_id);
+    let empty_resolved = SurfaceResolvedArena::lower(&empty_ast, &module).unwrap();
+    let empty_resolver =
+        FraenkelGeneratorVariableSourceCollector::new(&empty_ast, &module, &empty_resolved)
+            .unwrap()
+            .collect()
+            .unwrap();
+    assert_eq!(
+        SourceNestedFraenkelFunctorOwnerProducer::build(
+            &empty_ast,
+            &module,
+            &empty_resolved,
+            &empty_resolver,
+        )
+        .err()
+        .unwrap(),
+        SourceNestedFraenkelFunctorOwnerError::InvalidResolverProfile
+    );
+
+    for shape in [
+        Task33rOwnerShape::MissingGenerator,
+        Task33rOwnerShape::ExtraGenerator,
+        Task33rOwnerShape::DuplicateGenerator,
+        Task33rOwnerShape::ReorderedGenerators,
+        Task33rOwnerShape::PartialMapper,
+        Task33rOwnerShape::OrphanedComprehension,
+    ] {
+        let malformed_ast = task33r_owner_ast_with_shape(ast.source_id, shape);
+        let (malformed_resolved, malformed_resolver) =
+            task33r_resolver_for(&malformed_ast, &module);
+        assert_eq!(
+            SourceNestedFraenkelFunctorOwnerProducer::build(
+                &malformed_ast,
+                &module,
+                &malformed_resolved,
+                &malformed_resolver,
+            )
+            .err()
+            .unwrap(),
+            SourceNestedFraenkelFunctorOwnerError::InvalidResolverProfile,
+            "unexpected disposition for {shape:?}",
+        );
+    }
+}
+
+#[test]
+fn task33r_rejects_owner_cardinality_and_provenance() {
+    let (ast, module, resolved, resolver) = task33r_owner_fixture();
+    assert!(exact_owner_profile(&resolver).is_some());
+
+    let mut handoff =
+        SourceNestedFraenkelFunctorOwnerProducer::build(&ast, &module, &resolved, &resolver)
+            .unwrap();
+    handoff.dependencies.shells = DeclarationShellSet::default();
+    assert_eq!(
+        handoff.validate_complete(),
+        Err(SourceNestedFraenkelFunctorOwnerError::InvalidDependency)
+    );
+
+    let cardinality_ast =
+        task33r_owner_ast_with_shape(ast.source_id, Task33rOwnerShape::ExtraFunctor);
+    let (cardinality_resolved, cardinality_resolver) =
+        task33r_resolver_for(&cardinality_ast, &module);
+    assert_eq!(
+        SourceNestedFraenkelFunctorOwnerProducer::build(
+            &cardinality_ast,
+            &module,
+            &cardinality_resolved,
+            &cardinality_resolver,
+        )
+        .err()
+        .unwrap(),
+        SourceNestedFraenkelFunctorOwnerError::InvalidOwnerCardinality
+    );
+
+    let recovered_ast =
+        task33r_owner_ast_with_shape(ast.source_id, Task33rOwnerShape::RecoveredOwner);
+    let (recovered_resolved, recovered_resolver) = task33r_resolver_for(&recovered_ast, &module);
+    assert_eq!(
+        SourceNestedFraenkelFunctorOwnerProducer::build(
+            &recovered_ast,
+            &module,
+            &recovered_resolved,
+            &recovered_resolver,
+        )
+        .err()
+        .unwrap(),
+        SourceNestedFraenkelFunctorOwnerError::InvalidResolverProfile
+    );
+
+    let wrong_module = ModuleId::new(PackageId::new("pkg"), ModulePath::new("other"));
+    let shells = DeclarationShellCollector::new(&ast, &wrong_module).collect();
+    let projections = SignatureProjectionExtractor::new(
+        &ast,
+        &shells,
+        NamespacePath::new(wrong_module.path().as_str()),
+    )
+    .extract();
+    let profile = exact_owner_profile(&resolver).unwrap();
+    let shell = shells
+        .declarations()
+        .iter()
+        .find(|shell| shell.kind() == DeclarationShellKind::FunctorDefinition)
+        .unwrap();
+    let parent = shells.declaration(shell.parent().unwrap()).unwrap();
+    let projection = projections
+        .iter()
+        .find(|projection| projection.shell() == shell.id())
+        .unwrap();
+    assert_eq!(
+        validate_owner_provenance(shell, parent, &module, &resolved, profile, projection,),
+        Err(SourceNestedFraenkelFunctorOwnerError::InvalidOwnerProvenance)
+    );
+}
+
+#[test]
+fn task33r_rejects_symbol_definition_and_retained_association_corruption() {
+    let (ast, module, resolved, resolver) = task33r_owner_fixture();
+    let mut handoff =
+        SourceNestedFraenkelFunctorOwnerProducer::build(&ast, &module, &resolved, &resolver)
+            .unwrap();
+    handoff.dependencies.allocation.definition = None;
+    assert_eq!(
+        handoff.validate_complete(),
+        Err(SourceNestedFraenkelFunctorOwnerError::InvalidAssociation)
+    );
+
+    let handoff =
+        SourceNestedFraenkelFunctorOwnerProducer::build(&ast, &module, &resolved, &resolver)
+            .unwrap();
+    let mut allocation = handoff.dependencies.allocation.clone();
+    allocation.symbol = SymbolId::new(
+        module.clone(),
+        LocalSymbolId::new("foreign"),
+        FullyQualifiedName::new("pkg.nested_multi_capture.foreign"),
+    );
+    assert_eq!(
+        validate_owner_allocation(
+            &handoff.dependencies.symbols,
+            &allocation,
+            &module,
+            ast.source_id,
+        ),
+        Err(SourceNestedFraenkelFunctorOwnerError::InvalidSymbolAssociation)
+    );
+
+    let mut allocation = handoff.dependencies.allocation.clone();
+    allocation.definition = None;
+    assert_eq!(
+        validate_owner_allocation(
+            &handoff.dependencies.symbols,
+            &allocation,
+            &module,
+            ast.source_id,
+        ),
+        Err(SourceNestedFraenkelFunctorOwnerError::InvalidDefinitionAssociation)
+    );
+
+    let mut handoff =
+        SourceNestedFraenkelFunctorOwnerProducer::build(&ast, &module, &resolved, &resolver)
+            .unwrap();
+    handoff.association.origin = handoff.association.origin.clone().recovered();
+    assert_eq!(
+        handoff.validate_complete(),
+        Err(SourceNestedFraenkelFunctorOwnerError::InvalidAssociation)
+    );
+}
+
+#[test]
+fn task33r_enforces_default_deny_precedence_and_replay() {
+    let (ast, module, resolved, resolver) = task33r_owner_fixture();
+    let mut handoff =
+        SourceNestedFraenkelFunctorOwnerProducer::build(&ast, &module, &resolved, &resolver)
+            .unwrap();
+    handoff.dependencies.version = "stale";
+    handoff.association.surface_fingerprint = "stale".to_owned();
+    assert_eq!(
+        handoff.validate_complete(),
+        Err(SourceNestedFraenkelFunctorOwnerError::InvalidDependency)
+    );
+
+    let mut handoff =
+        SourceNestedFraenkelFunctorOwnerProducer::build(&ast, &module, &resolved, &resolver)
+            .unwrap();
+    handoff.dependencies.domain = "stale";
+    assert_eq!(
+        handoff.validate_complete(),
+        Err(SourceNestedFraenkelFunctorOwnerError::InvalidDependency)
+    );
+
+    let rebuilt =
+        SourceNestedFraenkelFunctorOwnerProducer::build(&ast, &module, &resolved, &resolver)
+            .unwrap();
+    assert!(
+        rebuilt
+            == SourceNestedFraenkelFunctorOwnerProducer::build(
+                &ast, &module, &resolved, &resolver,
+            )
+            .unwrap()
+    );
+}
+
+#[test]
 fn registers_opaque_symbols_definitions_and_contribution_effects() {
     let source_id = source_id();
     let shells = shells_for(
@@ -3209,4 +3567,449 @@ const fn range(source_id: SourceId, start: usize, end: usize) -> SourceRange {
         start,
         end,
     }
+}
+
+fn task33r_owner_fixture() -> (
+    SurfaceAst,
+    ModuleId,
+    SurfaceResolvedArena,
+    FraenkelGeneratorVariableSourceCollection,
+) {
+    let source_id = source_id();
+    let module = ModuleId::new(
+        PackageId::new("pkg"),
+        ModulePath::new("nested_multi_capture"),
+    );
+    let ast = task33r_owner_ast(source_id);
+    let (resolved, resolver) = task33r_resolver_for(&ast, &module);
+    (ast, module, resolved, resolver)
+}
+
+fn task33r_resolver_for(
+    ast: &SurfaceAst,
+    module: &ModuleId,
+) -> (
+    SurfaceResolvedArena,
+    FraenkelGeneratorVariableSourceCollection,
+) {
+    let resolved = SurfaceResolvedArena::lower(ast, module).unwrap();
+    let resolver = FraenkelGeneratorVariableSourceCollector::new(ast, module, &resolved)
+        .unwrap()
+        .collect()
+        .unwrap();
+    (resolved, resolver)
+}
+
+fn task33r_foreign_source_id() -> SourceId {
+    let snapshot_id = BuildSnapshotId::from_published_schema_str(&format!(
+        "mizar-session-build-snapshot-v1:{}",
+        "06".repeat(Hash::BYTE_LEN)
+    ))
+    .unwrap();
+    let allocator = InMemorySessionIdAllocator::new();
+    let _original = allocator.next_source_id(snapshot_id).unwrap();
+    allocator.next_source_id(snapshot_id).unwrap()
+}
+
+fn task33r_empty_ast(source_id: SourceId) -> SurfaceAst {
+    let mut builder = SurfaceAstBuilder::new(source_id);
+    let root = builder.add_node(SurfaceNodeKind::Root, range(source_id, 0, 1), Vec::new());
+    builder.finish(Some(root), None)
+}
+
+fn task33r_owner_ast(source_id: SourceId) -> SurfaceAst {
+    task33r_owner_ast_with_shape(source_id, Task33rOwnerShape::Exact)
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Task33rOwnerShape {
+    Exact,
+    StaleDefinitionSpelling,
+    AlternateSpelling,
+    MissingGenerator,
+    ExtraGenerator,
+    DuplicateGenerator,
+    ReorderedGenerators,
+    PartialMapper,
+    OrphanedComprehension,
+    ExtraFunctor,
+    RecoveredOwner,
+    PrecedingPredicate,
+}
+
+fn task33r_owner_ast_with_shape(source_id: SourceId, shape: Task33rOwnerShape) -> SurfaceAst {
+    let mut builder = SurfaceAstBuilder::new(source_id);
+    let definition = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        if shape == Task33rOwnerShape::StaleDefinitionSpelling {
+            "definition-stale"
+        } else {
+            "definition"
+        },
+        range(source_id, 39, 49),
+    );
+    let func = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        if shape == Task33rOwnerShape::AlternateSpelling {
+            "func-alternate"
+        } else {
+            "func"
+        },
+        range(source_id, 52, 56),
+    );
+    let outer_open = builder.add_token(
+        SurfaceTokenKind::ReservedSymbol,
+        "{",
+        range(source_id, 93, 94),
+    );
+    let inner_open = builder.add_token(
+        SurfaceTokenKind::ReservedSymbol,
+        "{",
+        range(source_id, 95, 96),
+    );
+    let mapper_x = task33r_identifier(&mut builder, source_id, "x", 98);
+    let mapper_y = task33r_identifier(&mut builder, source_id, "y", 101);
+    let open = builder.add_token(
+        SurfaceTokenKind::ReservedSymbol,
+        "[",
+        range(source_id, 97, 98),
+    );
+    let comma = builder.add_token(
+        SurfaceTokenKind::ReservedSymbol,
+        ",",
+        range(source_id, 100, 101),
+    );
+    let close = builder.add_token(
+        SurfaceTokenKind::ReservedSymbol,
+        "]",
+        range(source_id, 102, 103),
+    );
+    let application_children = if shape == Task33rOwnerShape::PartialMapper {
+        vec![open, mapper_x, close]
+    } else {
+        vec![open, mapper_x, comma, mapper_y, close]
+    };
+    let application = builder.add_node(
+        SurfaceNodeKind::ApplicationTerm,
+        range(source_id, 97, 103),
+        application_children,
+    );
+    let inner_mapper = builder.add_node(
+        SurfaceNodeKind::TermExpression,
+        range(source_id, 97, 103),
+        vec![application],
+    );
+    let inner_where = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        "where",
+        range(source_id, 104, 109),
+    );
+    let inner_binder = builder.add_token(
+        SurfaceTokenKind::Identifier,
+        "z",
+        range(source_id, 110, 111),
+    );
+    let inner_is = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        "is",
+        range(source_id, 112, 114),
+    );
+    let inner_type = task33r_type(&mut builder, source_id, 115);
+    let inner_segment = builder.add_node(
+        SurfaceNodeKind::ComprehensionVariableSegment,
+        range(source_id, 110, 129),
+        vec![inner_binder, inner_is, inner_type],
+    );
+    let inner_close = builder.add_token(
+        SurfaceTokenKind::ReservedSymbol,
+        "}",
+        range(source_id, 130, 131),
+    );
+    let inner = builder.add_node(
+        SurfaceNodeKind::SetComprehension,
+        range(source_id, 95, 131),
+        vec![
+            inner_open,
+            inner_mapper,
+            inner_where,
+            inner_segment,
+            inner_close,
+        ],
+    );
+    let outer_mapper = builder.add_node(
+        SurfaceNodeKind::TermExpression,
+        range(source_id, 95, 131),
+        vec![inner],
+    );
+    let outer_where = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        "where",
+        range(source_id, 132, 137),
+    );
+    let outer_x_binder = builder.add_token(
+        SurfaceTokenKind::Identifier,
+        "x",
+        range(source_id, 144, 145),
+    );
+    let outer_x_is = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        "is",
+        range(source_id, 146, 148),
+    );
+    let outer_x_type = task33r_type(&mut builder, source_id, 149);
+    let outer_x_segment = builder.add_node(
+        SurfaceNodeKind::ComprehensionVariableSegment,
+        range(source_id, 144, 163),
+        vec![outer_x_binder, outer_x_is, outer_x_type],
+    );
+    let outer_comma = builder.add_token(
+        SurfaceTokenKind::ReservedSymbol,
+        ",",
+        range(source_id, 164, 165),
+    );
+    let outer_y_binder = builder.add_token(
+        SurfaceTokenKind::Identifier,
+        "y",
+        range(source_id, 165, 166),
+    );
+    let outer_y_is = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        "is",
+        range(source_id, 167, 169),
+    );
+    let outer_y_type = task33r_type(&mut builder, source_id, 170);
+    let outer_y_segment = builder.add_node(
+        SurfaceNodeKind::ComprehensionVariableSegment,
+        range(source_id, 165, 184),
+        vec![outer_y_binder, outer_y_is, outer_y_type],
+    );
+    let outer_extra_segment = if matches!(
+        shape,
+        Task33rOwnerShape::ExtraGenerator | Task33rOwnerShape::DuplicateGenerator
+    ) {
+        let extra_binder = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            if shape == Task33rOwnerShape::DuplicateGenerator {
+                "y"
+            } else {
+                "q"
+            },
+            range(source_id, 187, 188),
+        );
+        let extra_is = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "is",
+            range(source_id, 189, 191),
+        );
+        let extra_type = task33r_type(&mut builder, source_id, 192);
+        Some(builder.add_node(
+            SurfaceNodeKind::ComprehensionVariableSegment,
+            range(source_id, 187, 206),
+            vec![extra_binder, extra_is, extra_type],
+        ))
+    } else {
+        None
+    };
+    let outer_close = builder.add_token(
+        SurfaceTokenKind::ReservedSymbol,
+        "}",
+        range(source_id, 185, 186),
+    );
+    let mut outer_children = vec![outer_open, outer_mapper, outer_where];
+    match shape {
+        Task33rOwnerShape::MissingGenerator => outer_children.push(outer_x_segment),
+        Task33rOwnerShape::ReorderedGenerators => {
+            outer_children.extend([outer_y_segment, outer_comma, outer_x_segment]);
+        }
+        _ => {
+            outer_children.extend([outer_x_segment, outer_comma, outer_y_segment]);
+            if let Some(extra_segment) = outer_extra_segment {
+                let extra_comma = builder.add_token(
+                    SurfaceTokenKind::ReservedSymbol,
+                    ",",
+                    range(source_id, 186, 187),
+                );
+                outer_children.extend([extra_comma, extra_segment]);
+            }
+        }
+    }
+    outer_children.push(outer_close);
+    let outer = builder.add_node(
+        SurfaceNodeKind::SetComprehension,
+        range(source_id, 93, 186),
+        outer_children,
+    );
+    let definiens_expression = builder.add_node(
+        SurfaceNodeKind::TermExpression,
+        range(source_id, 93, 186),
+        vec![outer],
+    );
+    let definiens = builder.add_node(
+        SurfaceNodeKind::TermDefiniens,
+        range(source_id, 93, 186),
+        vec![definiens_expression],
+    );
+    let mut functor_children = vec![func, definiens];
+    if shape == Task33rOwnerShape::RecoveredOwner {
+        let recovery = builder.add_recovery(
+            SyntaxRecoveryKind::SkippedToken,
+            range(source_id, 187, 188),
+            Vec::new(),
+        );
+        functor_children.push(recovery);
+    }
+    let functor = builder.add_node(
+        if shape == Task33rOwnerShape::OrphanedComprehension {
+            SurfaceNodeKind::PredicateDefinition
+        } else {
+            SurfaceNodeKind::FunctorDefinition
+        },
+        range(source_id, 52, 188),
+        functor_children,
+    );
+    let block_children = vec![definition, functor];
+    let block = builder.add_node(
+        SurfaceNodeKind::DefinitionBlockItem,
+        range(source_id, 39, 191),
+        block_children,
+    );
+    let mut root_children = Vec::new();
+    if shape == Task33rOwnerShape::PrecedingPredicate {
+        let predicate_token = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "pred",
+            range(source_id, 1, 5),
+        );
+        let predicate = builder.add_node(
+            SurfaceNodeKind::PredicateDefinition,
+            range(source_id, 1, 5),
+            vec![predicate_token],
+        );
+        let predicate_block = builder.add_node(
+            SurfaceNodeKind::DefinitionBlockItem,
+            range(source_id, 0, 6),
+            vec![predicate],
+        );
+        root_children.push(predicate_block);
+    }
+    root_children.push(block);
+    if shape == Task33rOwnerShape::ExtraFunctor {
+        let extra_definition = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "definition",
+            range(source_id, 208, 218),
+        );
+        let extra_func = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "func-extra",
+            range(source_id, 219, 229),
+        );
+        let extra_functor = builder.add_node(
+            SurfaceNodeKind::FunctorDefinition,
+            range(source_id, 219, 229),
+            vec![extra_func],
+        );
+        let extra_block = builder.add_node(
+            SurfaceNodeKind::DefinitionBlockItem,
+            range(source_id, 208, 230),
+            vec![extra_definition, extra_functor],
+        );
+        root_children.push(extra_block);
+    }
+    let root = builder.add_node(
+        SurfaceNodeKind::Root,
+        range(source_id, 0, 221),
+        root_children,
+    );
+    builder.finish(Some(root), None)
+}
+
+fn task33r_identifier(
+    builder: &mut SurfaceAstBuilder,
+    source_id: SourceId,
+    spelling: &str,
+    start: usize,
+) -> SurfaceBuilderNodeId {
+    let identifier = builder.add_token(
+        SurfaceTokenKind::Identifier,
+        spelling,
+        range(source_id, start, start + 1),
+    );
+    let reference = builder.add_node(
+        SurfaceNodeKind::TermReference,
+        range(source_id, start, start + 1),
+        vec![identifier],
+    );
+    builder.add_node(
+        SurfaceNodeKind::TermExpression,
+        range(source_id, start, start + 1),
+        vec![reference],
+    )
+}
+
+fn task33r_type(
+    builder: &mut SurfaceAstBuilder,
+    source_id: SourceId,
+    start: usize,
+) -> SurfaceBuilderNodeId {
+    let element = builder.add_token(
+        SurfaceTokenKind::UserSymbol,
+        "Element",
+        range(source_id, start, start + 7),
+    );
+    let element_segment = builder.add_node(
+        SurfaceNodeKind::PathSegment,
+        range(source_id, start, start + 7),
+        vec![element],
+    );
+    let element_symbol = builder.add_node(
+        SurfaceNodeKind::QualifiedSymbol,
+        range(source_id, start, start + 7),
+        vec![element_segment],
+    );
+    let of = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        "of",
+        range(source_id, start + 8, start + 10),
+    );
+    let nat = builder.add_token(
+        SurfaceTokenKind::UserSymbol,
+        "NAT",
+        range(source_id, start + 11, start + 14),
+    );
+    let nat_segment = builder.add_node(
+        SurfaceNodeKind::PathSegment,
+        range(source_id, start + 11, start + 14),
+        vec![nat],
+    );
+    let nat_symbol = builder.add_node(
+        SurfaceNodeKind::QualifiedSymbol,
+        range(source_id, start + 11, start + 14),
+        vec![nat_segment],
+    );
+    let nat_reference = builder.add_node(
+        SurfaceNodeKind::TermReference,
+        range(source_id, start + 11, start + 14),
+        vec![nat_symbol],
+    );
+    let nat_expression = builder.add_node(
+        SurfaceNodeKind::TermExpression,
+        range(source_id, start + 11, start + 14),
+        vec![nat_reference],
+    );
+    let arguments = builder.add_node(
+        SurfaceNodeKind::TypeArguments,
+        range(source_id, start + 8, start + 14),
+        vec![of, nat_expression],
+    );
+    let head = builder.add_node(
+        SurfaceNodeKind::TypeHead,
+        range(source_id, start, start + 14),
+        vec![element_symbol, arguments],
+    );
+    builder.add_node(
+        SurfaceNodeKind::TypeExpression,
+        range(source_id, start, start + 14),
+        vec![head],
+    )
 }

@@ -5872,3 +5872,19 @@ The passing probe remains library-test-only and unregistered. No fixture, sideca
 trace, production route, semantic result, diagnostic, AST/Core installation,
 coverage credit, or Task-277B readiness change was made; the
 checker-owner tests retain the default-deny matrix.
+
+## Resolver Task 33R Private Containing-Owner Probe
+
+The canonical [Task 33R contract](../../task_contracts/en/RESOLVE-FRAENKEL-CONTAINING-OWNER-33R.md)
+adds exactly `task33r_real_fixture_links_capture_graph_to_exact_functor_owner`
+to the existing private nested-capture leaf. The unregistered library test
+runs the unchanged C4C7 source through frontend and resolver lowering, builds
+the existing C4C8 graph and the new resolver owner receipt, validates exact
+fingerprinted resolver equality, and checks the common resolved functor owner,
+final functor symbol/definition relation, deterministic replay, graph
+immutability, and unchanged empty import augmentation.
+
+The probe adds no registry include, production dispatch, active route,
+checker receipt or installation, Typed/Resolved/Core field, generated
+parameter/origin, diagnostic, sidecar/trace mutation, semantic result,
+coverage credit, or Task-277B readiness.

@@ -1880,3 +1880,15 @@ English canonical、exceptionなし。
 private probe name、unchanged C4C7 input、frozen `3/1/0/2/2` normalized graph、resolver
 identity/private-order/replay assertions、no-registration/no-semantic/no-credit boundaryを同期する。
 Paired mizar-test plan/harness/TODO/本recordがbilingual review surface。English canonical、exceptionなし。
+
+## Resolver Task 33R bilingual contract parity
+
+[EN canonical](../../task_contracts/en/RESOLVE-FRAENKEL-CONTAINING-OWNER-33R.md)と
+[JA companion](../../task_contracts/ja/RESOLVE-FRAENKEL-CONTAINING-OWNER-33R.md)は、exact private
+real-fixture probe、paired mizar-test plan/harness owner section、これらauditを含む23-path scope、
+precommit complete statusを同期する。Required reviewはすべて**NO FINDINGS**、verification
+PASS、hard gate `9/9` PASS、score capなしのvalid `100/100`。Library-test-only・
+unregistered boundary、zero semantic/execution/coverage credit、production/active routeや
+checker/Core installなし、fixture/expectation/trace unchanged、Task-277B not-readyを双方で保持する。
+Exact staging/task-only commitは残る。Exact identifier、count、hashはEnglish canonical、
+bilingual exceptionなし。

@@ -402,6 +402,122 @@ fn task257c4c8_real_imported_fixture_builds_exact_normalized_capture_graph() {
 }
 
 #[test]
+fn task33r_real_fixture_links_capture_graph_to_exact_functor_owner() {
+    let output = task257c4c1_frontend_output(TASK257C4C8R_CANONICAL_SOURCE, 4);
+    assert!(output.diagnostics.is_empty());
+    let ast = output.ast.expect("Task33R canonical C4C7 AST");
+    assert!(ast.nodes().iter().all(|node| !node.recovered));
+    let module = mizar_resolve::resolved_ast::ModuleId::new(
+        output.source.package_id,
+        output.source.module_path,
+    );
+    let resolved = mizar_resolve::resolved_ast::SurfaceResolvedArena::lower(&ast, &module)
+        .expect("Task33R resolver arena should lower");
+    let resolver = FraenkelGeneratorVariableSourceCollector::new(&ast, &module, &resolved)
+        .expect("Task33R collector should validate the resolver arena")
+        .collect()
+        .expect("Task33R collector should collect the exact relation");
+    let resolver_before = resolver.clone();
+    let graph =
+        mizar_checker::source_formula_composition::SourceNestedFraenkelCaptureGraphProducer::build(
+            &resolver,
+        )
+        .expect("Task33R C4C8 graph should build");
+    let graph_before = graph.clone();
+
+    let owner = mizar_resolve::symbols::SourceNestedFraenkelFunctorOwnerProducer::build(
+        &ast, &module, &resolved, &resolver,
+    )
+    .expect("Task33R containing-functor owner should build");
+    owner
+        .validate_complete()
+        .expect("Task33R owner complete validation");
+    owner
+        .validate_resolver_collection(&resolver)
+        .expect("Task33R owner exact resolver validation");
+
+    assert_eq!(owner.source_id(), ast.source_id);
+    assert_eq!(owner.module_id(), &module);
+    assert_eq!(owner.surface_fingerprint(), ast.snapshot_text());
+
+    let mapper = graph
+        .mappers()
+        .get(mizar_checker::source_formula_composition::SourceNestedFraenkelCaptureGraphMapperId::new(0))
+        .expect("Task33R C4C8 mapper row");
+    assert_eq!(owner.definition_block(), mapper.definition_block());
+    assert_eq!(owner.functor_definition(), mapper.functor_definition());
+
+    let shells = mizar_resolve::declarations::DeclarationShellCollector::new(&ast, &module)
+        .collect();
+    let owner_shell = shells
+        .declaration(owner.declaration_shell())
+        .expect("Task33R owner declaration shell");
+    assert_eq!(
+        owner_shell.kind(),
+        mizar_resolve::declarations::DeclarationShellKind::FunctorDefinition
+    );
+    assert_eq!(owner_shell.module(), &module);
+    assert!(!owner_shell.recovered());
+    assert_eq!(
+        resolved.resolved_node_for(owner_shell.node_id()),
+        Some(owner.functor_definition())
+    );
+
+    let projections = mizar_resolve::symbols::SignatureProjectionExtractor::new(
+        &ast,
+        &shells,
+        mizar_resolve::env::NamespacePath::new(module.path().as_str()),
+    )
+    .extract();
+    let symbol_result = mizar_resolve::symbols::SymbolCollector::new(
+        ast.source_id,
+        &module,
+        &shells,
+        &projections,
+    )
+    .collect();
+    assert!(symbol_result.diagnostics().is_empty());
+    let symbol_entry = symbol_result
+        .env()
+        .symbols()
+        .get(owner.symbol())
+        .expect("Task33R final functor symbol");
+    assert_eq!(symbol_entry.kind(), mizar_resolve::env::SymbolKind::Functor);
+    assert_eq!(symbol_entry.origin(), owner.origin());
+    assert_eq!(symbol_entry.contribution(), owner.contribution());
+    let definition_entry = symbol_result
+        .env()
+        .definitions()
+        .get(owner.definition())
+        .expect("Task33R final functor definition");
+    assert_eq!(
+        definition_entry.kind(),
+        mizar_resolve::env::DefinitionKind::Functor
+    );
+    assert_eq!(definition_entry.symbol(), owner.symbol());
+    assert_eq!(definition_entry.origin(), owner.origin());
+    assert_eq!(definition_entry.contribution(), owner.contribution());
+    assert_eq!(owner.origin().source_id(), ast.source_id);
+    assert_eq!(owner.origin().module_id(), &module);
+    assert!(!owner.origin().is_recovered());
+
+    assert!(graph == graph_before);
+    assert_eq!(resolver, resolver_before);
+    let replay = mizar_resolve::symbols::SourceNestedFraenkelFunctorOwnerProducer::build(
+        &ast, &module, &resolved, &resolver,
+    )
+    .expect("Task33R deterministic owner replay");
+    assert!(owner == replay);
+    assert_eq!(owner.debug_text(), replay.debug_text());
+
+    let (type_ast, type_module, _, symbols) =
+        task253_ast_from_source_text(TASK257C4C8R_CANONICAL_SOURCE, 25_743);
+    let augmented =
+        augment_type_elaboration_import_summaries(&type_ast, &type_module, symbols.clone());
+    assert_eq!(augmented, symbols);
+}
+
+#[test]
 fn task257c4c3_real_imported_fixture_builds_checker_identity_handoff() {
     let output = task257c4c1_frontend_output(TASK257C4C1_CANONICAL_SOURCE, 3);
     assert!(output.diagnostics.is_empty());

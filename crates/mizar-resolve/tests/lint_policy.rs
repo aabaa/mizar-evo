@@ -258,6 +258,11 @@ const PUBLIC_ENUM_DECISIONS: &[PublicEnumDecision] = &[
         spec_name: "symbols.md",
     },
     PublicEnumDecision {
+        relative_path: "src/symbols.rs",
+        enum_name: "SourceNestedFraenkelFunctorOwnerError",
+        spec_name: "symbols.md",
+    },
+    PublicEnumDecision {
         relative_path: "src/module_summary_reuse.rs",
         enum_name: "ModuleSummaryReuseReason",
         spec_name: "module_summary_reuse.md",

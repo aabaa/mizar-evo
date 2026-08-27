@@ -489,3 +489,51 @@ and falls back to `Point(0)` for property-only sources. Semantic sibling
 ordinals exclude them, preserving the recovery theorem's `theorem#1`,
 `[2, 1]`, `304..334`, `DefinitionId(1)`, and contribution-zero fingerprints.
 A fabricated projection still fails with `ContextOnlyShell`.
+
+## Resolver Task 33R Exact Containing-Functor Owner Receipt
+
+The canonical [Task 33R contract](../../task_contracts/en/RESOLVE-FRAENKEL-CONTAINING-OWNER-33R.md)
+adds one specialized zero-semantic association at the existing symbol and
+definition allocation boundary. `SourceNestedFraenkelFunctorOwnerProducer`
+accepts only the surface AST, module, complete structural resolver arena, and
+exact fingerprinted Fraenkel collection. It internally recollects declaration
+shells, parser-backed projections, and the symbol result, then selects exactly
+one unrecovered `FunctorDefinition` shell whose `node_id` maps through
+`SurfaceResolvedArena::resolved_node_for` to the C4C8R common functor identity.
+
+The opaque immutable `SourceNestedFraenkelFunctorOwnerHandoff` retains the
+entire derivation and exposes only immutable source/module/fingerprint,
+definition-block/functor resolved nodes, declaration shell, final `SymbolId`,
+`DefinitionId`, contribution, and origin getters. The non-exhaustive
+`SourceNestedFraenkelFunctorOwnerError` owns the seven contract-frozen
+default-deny classes. The public complete oracle and exact resolver-collection
+oracle rederive the row in fixed precedence. Exact return types are
+`SourceId`, `&ModuleId`, `&str`, two `ResolvedNodeId`s,
+`DeclarationShellId`, `&SymbolId`, `DefinitionId`, `SourceContributionId`,
+`&SemanticOrigin`, and `String`; both validators return
+`Result<(), SourceNestedFraenkelFunctorOwnerError>`. The task contract owns the
+complete signatures and exact fieldless error/display ABI.
+
+The existing public `SymbolCollector::collect()` remains unchanged and
+delegates to a private no-target path. The specialized producer supplies the
+already authenticated target shell to that same private path, which captures
+the exact `CollectedProjection::new` symbol/origin/contribution and the
+`DefinitionId` returned during insertion. This private in-flight allocation
+row is returned with the ordinary symbol result and rederived by the complete
+oracle; the association is never reconstructed by searching a finished
+environment.
+
+Association uses the existing `CollectedProjection::new` identity path and
+the final definition index, never display spelling, ranges, or numeric-id
+reinterpretation. Token text may remain inside the exact surface fingerprint
+or debug output but is not an association/admission key. Missing, extra,
+duplicate, reordered, stale, foreign,
+recovered, partial, mismatched, or corrupt input is rejected without sorting,
+repair, inference, or unchecked admission. This receipt is not installed in
+checker, Typed/Resolved, or Core and adds no semantic result, parameter order,
+generated origin, diagnostic, active route, coverage credit, or Task-277B
+readiness.
+
+The public-enum policy registration additionally includes:
+
+- `SourceNestedFraenkelFunctorOwnerError`

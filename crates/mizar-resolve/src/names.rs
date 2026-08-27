@@ -787,6 +787,7 @@ impl FraenkelGeneratorVariableUseLinkTable {
 pub struct FraenkelGeneratorVariableSourceCollection {
     source_id: SourceId,
     module: ModuleId,
+    surface_fingerprint: String,
     bindings: FraenkelGeneratorVariableBindingTable,
     uses: FraenkelGeneratorVariableUseLinkTable,
 }
@@ -802,6 +803,12 @@ impl FraenkelGeneratorVariableSourceCollection {
     #[must_use]
     pub const fn module(&self) -> &ModuleId {
         &self.module
+    }
+
+    /// Returns the exact surface snapshot consumed during collection.
+    #[must_use]
+    pub fn surface_fingerprint(&self) -> &str {
+        &self.surface_fingerprint
     }
 
     /// Returns admitted generator-variable bindings.
@@ -995,6 +1002,7 @@ impl<'a> FraenkelGeneratorVariableSourceCollector<'a> {
         Ok(FraenkelGeneratorVariableSourceCollection {
             source_id: self.ast.source_id,
             module: self.module.clone(),
+            surface_fingerprint: self.ast.snapshot_text(),
             bindings: FraenkelGeneratorVariableBindingTable { entries: bindings },
             uses: FraenkelGeneratorVariableUseLinkTable { entries: uses },
         })

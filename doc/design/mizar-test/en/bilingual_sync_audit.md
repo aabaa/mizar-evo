@@ -2036,3 +2036,18 @@ synchronize the reserved private probe name, unchanged C4C7 input, frozen
 assertions, and no-registration/no-semantic/no-credit boundary. The paired
 mizar-test plan, harness, TODO, and this record form the bilingual review
 surface. English is canonical; no exception exists.
+
+## Resolver Task 33R Bilingual Contract Parity
+
+The canonical [EN contract](../../task_contracts/en/RESOLVE-FRAENKEL-CONTAINING-OWNER-33R.md)
+and [JA companion](../../task_contracts/ja/RESOLVE-FRAENKEL-CONTAINING-OWNER-33R.md)
+synchronize the exact private real-fixture probe, paired mizar-test plan and
+harness owner section, 23-path scope including these audit files, and
+precommit-complete status: all required reviews are **NO FINDINGS**,
+verification passes, all `9/9` hard gates pass, and the valid uncapped score is
+`100/100`. Both preserve
+the library-test-only, unregistered boundary, zero semantic/execution/coverage
+credit, no production/active route or checker/Core installation, unchanged
+fixture/expectation/trace state, and Task-277B-not-ready status. Exact staging
+and the task-only commit remain. English is canonical for exact identifiers,
+counts, and hashes; no bilingual exception is recorded.

@@ -301,3 +301,19 @@ package and workspace Clippy, workspace tests, metadata, formatting, diff,
 five CLI hashes, and protected count/hash replay are complete; test-sufficiency
 and implementation reviews are **NO FINDINGS**. The dedicated bilingual
 integration review also reports **NO FINDINGS**.
+
+## Resolver Task 33R Bilingual Synchronization
+
+The canonical [EN contract](../../task_contracts/en/RESOLVE-FRAENKEL-CONTAINING-OWNER-33R.md)
+and [JA companion](../../task_contracts/ja/RESOLVE-FRAENKEL-CONTAINING-OWNER-33R.md)
+synchronize the exact surface-fingerprint extension, containing-functor owner
+handoff/producer/error API, seven resolver tests, private real-fixture probe,
+23-path scope including these paired audit files, and precommit-complete status:
+all required reviews are **NO FINDINGS**, verification passes, all `9/9` hard
+gates pass, and the valid uncapped score is `100/100`. The paired [names](./names.md#resolver-task-33r-exact-surface-fingerprint)
+and [symbols](./symbols.md#resolver-task-33r-exact-containing-functor-owner-receipt)
+sections form the resolver review surface. Both preserve zero semantic,
+execution, and coverage credit, no checker/Typed/Resolved/Core installation or
+active route, and Task-277B-not-ready status. Exact staging and the task-only
+commit remain. English remains canonical for exact identifiers, error strings,
+counts, and hashes; no synchronization exception is recorded.

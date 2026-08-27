@@ -447,3 +447,39 @@ anchorはleading property shellをskipし、property-only sourceでは`Point(0)`
 sibling ordinalから除外し、recovery theoremの`theorem#1`、`[2, 1]`、`304..334`、
 `DefinitionId(1)`、contribution zeroを保存する。fabricated projectionは引き続き
 `ContextOnlyShell`でrejectされる。
+
+## Resolver Task 33R Exact Containing-Functor Owner Receipt
+
+Canonical [Task 33R contract](../../task_contracts/ja/RESOLVE-FRAENKEL-CONTAINING-OWNER-33R.md)は
+existing symbol/definition allocation boundaryへspecialized zero-semantic association 1件を追加する。
+`SourceNestedFraenkelFunctorOwnerProducer`はsurface AST、module、complete structural resolver
+arena、exact fingerprinted Fraenkel collectionだけを受け、declaration shells、parser-backed
+projections、symbol resultをinternal recollectする。C4C8R common functor identityへ
+`resolved_node_for(node_id)`でmapするunrecovered `FunctorDefinition` shell exact 1件だけを選ぶ。
+
+Opaque immutable `SourceNestedFraenkelFunctorOwnerHandoff`はcomplete derivationをretainし、
+source/module/fingerprint、definition-block/functor resolved node、declaration shell、final
+`SymbolId`/`DefinitionId`、contribution、originのimmutable getterだけを公開する。Non-exhaustive
+`SourceNestedFraenkelFunctorOwnerError`はcontract-frozen default-deny class 7件をownし、public
+complete/exact-resolver oracleはfixed precedenceでrowをrederiveする。Exact return typeは
+`SourceId`、`&ModuleId`、`&str`、`ResolvedNodeId` 2件、`DeclarationShellId`、`&SymbolId`、
+`DefinitionId`、`SourceContributionId`、`&SemanticOrigin`、`String`。両validatorは
+`Result<(), SourceNestedFraenkelFunctorOwnerError>`を返し、complete signatureとfieldless
+error/display ABIはtask contractがownする。
+
+Existing public `SymbolCollector::collect()`は不変でprivate no-target pathへdelegateする。
+Specialized producerはauthenticated target shellをsame private pathへ渡し、exact
+`CollectedProjection::new` symbol/origin/contributionとinsert中に返る`DefinitionId`をprivate
+in-flight allocation rowへcaptureする。Rowはordinary symbol resultと共に返りcomplete oracleが
+rederiveする。Finished env searchからassociationを再構成しない。
+
+Associationはexisting `CollectedProjection::new` identity pathとfinal definition indexだけを使い、
+display spelling、range、numeric-id reinterpretationは禁止。Token textはexact surface
+fingerprint/debugに保持できるがassociation/admission keyではない。Missing/extra/duplicate/reordered/
+stale/foreign/recovered/partial/mismatched/corrupt inputをsort/repair/inference/unchecked admission
+なしでrejectする。Checker/Typed/Resolved/Core install、semantic result、parameter order、generated
+origin、diagnostic、active route、coverage credit、Task277B readinessは追加しない。
+
+Public-enum policy registrationには次も追加する:
+
+- `SourceNestedFraenkelFunctorOwnerError`

@@ -278,3 +278,16 @@ implementation、exact `4 + 1` regression、resolver/mizar-test library・lint s
 workspace Clippy、workspace test、metadata、format、diff、five CLI hash、protected count/hash replayは
 completeで、test-sufficiency / implementation reviewは**NO FINDINGS**。dedicated bilingual
 integration reviewも**NO FINDINGS**。
+
+## Resolver Task 33R bilingual synchronization
+
+canonical [EN contract](../../task_contracts/en/RESOLVE-FRAENKEL-CONTAINING-OWNER-33R.md)と
+[JA companion](../../task_contracts/ja/RESOLVE-FRAENKEL-CONTAINING-OWNER-33R.md)は、exact
+surface-fingerprint extension、containing-functor owner handoff/producer/error API、resolver
+test 7件、private real-fixture probe、これらpaired auditを含む23-path scope、precommit complete
+statusを同期する。Required reviewはすべて**NO FINDINGS**、verification PASS、hard gate `9/9`
+PASS、score capなしのvalid `100/100`。Paired [names](./names.md#resolver-task-33r-exact-surface-fingerprint)
+と [symbols](./symbols.md#resolver-task-33r-exact-containing-functor-owner-receipt) sectionがresolver
+review surface。Zero semantic/execution/coverage credit、checker/Typed/Resolved/Core installなし、
+active routeなし、Task-277B not-readyを双方で保持する。Exact staging/task-only commitは残る。
+Exact identifier、error string、count、hashはEnglish canonical、synchronization exceptionなし。

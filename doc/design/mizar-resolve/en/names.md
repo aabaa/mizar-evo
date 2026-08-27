@@ -486,3 +486,19 @@ resolved-node-only identities, dense ordering, the debug grammar, F5, and the
 one-capture C4C2 branch remain unchanged. This extension creates no capture
 table, checker graph, Task-252 occurrence, type/sethood result, diagnostic,
 active route, Core identity, or generated parameter/origin.
+
+## Resolver Task 33R Exact Surface Fingerprint
+
+The canonical [Task 33R contract](../../task_contracts/en/RESOLVE-FRAENKEL-CONTAINING-OWNER-33R.md)
+adds one private exact surface fingerprint to
+`FraenkelGeneratorVariableSourceCollection`. The fingerprint is the complete
+deterministic `SurfaceAst::snapshot_text()` consumed by the validated
+collector, not the existing count-only debug summary and not a lossy hash. The
+immutable `surface_fingerprint()` getter exposes that exact value; collection
+equality includes it while the existing `debug_text()` grammar, binding/use
+rows, ids, and ordering stay unchanged.
+
+This freshness coordinate lets a later owner receipt reject a structurally
+different AST that reuses the same `SourceId`, module, and count profile. It
+adds no lookup, display-name association, symbol/definition identity, checker
+capture, diagnostic, active route, semantic result, or coverage credit.

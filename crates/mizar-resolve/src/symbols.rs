@@ -4,22 +4,32 @@
 //! declaration projections. R-021 adds parser-backed per-kind spelling and
 //! opaque signature extraction for represented declaration shells.
 
+use crate::declarations::DeclarationShellCollector;
 use crate::declarations::{
     DeclarationShell, DeclarationShellId, DeclarationShellKind, DeclarationShellSet,
     DeclarationShellVisibilityState,
 };
 use crate::env::{
-    ContributionKind, DeclarationConflictClass, DefinitionKind, DefinitionShell,
+    ContributionKind, DeclarationConflictClass, DefinitionId, DefinitionKind, DefinitionShell,
     DiagnosticAnchorId, ExportStatus, LexicalSummaryKind, NamespacePath, OverloadKey,
     RegistrationKind, SignatureShell, SourceContributionId, SymbolEntry, SymbolEnv,
     SymbolEnvIndexes, SymbolKind, Visibility,
 };
+use crate::names::{
+    FraenkelGeneratorVariableBindingId, FraenkelGeneratorVariableSourceCollection,
+    FraenkelGeneratorVariableSourceCollector, FraenkelGeneratorVariableUseRole,
+};
 use crate::recovery::suppress_dependent_diagnostic_for_recovered_shell;
-use crate::resolved_ast::{FullyQualifiedName, LocalSymbolId, ModuleId, SemanticOrigin, SymbolId};
+use crate::resolved_ast::{
+    FullyQualifiedName, LocalSymbolId, ModuleId, ResolvedNodeId, SemanticOrigin,
+    SurfaceResolvedArena, SymbolId,
+};
 use mizar_session::{SourceAnchor, SourceId, SourceRange};
 use mizar_syntax::{SurfaceAst, SurfaceNodeKind, SurfaceNodeView, SurfaceTokenKind};
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, BTreeSet};
+use std::error::Error;
+use std::fmt;
 
 /// Duplicate and overload policy for an opaque declaration projection.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -345,6 +355,513 @@ impl SymbolCollectionResult {
     pub fn into_env(self) -> SymbolEnv {
         self.env
     }
+}
+
+const SOURCE_NESTED_FRAENKEL_FUNCTOR_OWNER_VERSION: &str =
+    "source-nested-fraenkel-functor-owner-v1";
+const SOURCE_NESTED_FRAENKEL_FUNCTOR_OWNER_DOMAIN: &str = "source-nested-fraenkel-functor-owner";
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct OwnerAllocation {
+    shell: DeclarationShellId,
+    symbol: SymbolId,
+    origin: SemanticOrigin,
+    contribution: SourceContributionId,
+    definition: Option<DefinitionId>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct OwnerAssociation {
+    source_id: SourceId,
+    module_id: ModuleId,
+    surface_fingerprint: String,
+    definition_block: ResolvedNodeId,
+    functor_definition: ResolvedNodeId,
+    declaration_shell: DeclarationShellId,
+    symbol: SymbolId,
+    definition: DefinitionId,
+    contribution: SourceContributionId,
+    origin: SemanticOrigin,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct OwnerDependencies {
+    version: &'static str,
+    domain: &'static str,
+    ast: SurfaceAst,
+    module: ModuleId,
+    resolved: SurfaceResolvedArena,
+    resolver: FraenkelGeneratorVariableSourceCollection,
+    shells: DeclarationShellSet,
+    projections: Vec<SymbolDeclarationProjection>,
+    symbols: SymbolCollectionResult,
+    allocation: OwnerAllocation,
+}
+
+/// Resolver-owned immutable association between the exact C4C8 resolver
+/// relation and its containing functor declaration identities.
+#[derive(Clone, PartialEq, Eq)]
+pub struct SourceNestedFraenkelFunctorOwnerHandoff {
+    association: OwnerAssociation,
+    dependencies: OwnerDependencies,
+}
+
+impl SourceNestedFraenkelFunctorOwnerHandoff {
+    /// Returns the source represented by this handoff.
+    #[must_use]
+    pub const fn source_id(&self) -> SourceId {
+        self.association.source_id
+    }
+
+    /// Returns the canonical module represented by this handoff.
+    #[must_use]
+    pub const fn module_id(&self) -> &ModuleId {
+        &self.association.module_id
+    }
+
+    /// Returns the exact surface snapshot consumed by the resolver collector.
+    #[must_use]
+    pub fn surface_fingerprint(&self) -> &str {
+        &self.association.surface_fingerprint
+    }
+
+    /// Returns the containing definition-block node.
+    #[must_use]
+    pub const fn definition_block(&self) -> ResolvedNodeId {
+        self.association.definition_block
+    }
+
+    /// Returns the containing functor-definition node.
+    #[must_use]
+    pub const fn functor_definition(&self) -> ResolvedNodeId {
+        self.association.functor_definition
+    }
+
+    /// Returns the declaration shell associated with the containing functor.
+    #[must_use]
+    pub const fn declaration_shell(&self) -> DeclarationShellId {
+        self.association.declaration_shell
+    }
+
+    /// Returns the final symbol identity allocated for the functor.
+    #[must_use]
+    pub const fn symbol(&self) -> &SymbolId {
+        &self.association.symbol
+    }
+
+    /// Returns the final definition identity allocated for the functor.
+    #[must_use]
+    pub const fn definition(&self) -> DefinitionId {
+        self.association.definition
+    }
+
+    /// Returns the source contribution carrying the functor.
+    #[must_use]
+    pub const fn contribution(&self) -> SourceContributionId {
+        self.association.contribution
+    }
+
+    /// Returns normalized resolver provenance for the functor.
+    #[must_use]
+    pub const fn origin(&self) -> &SemanticOrigin {
+        &self.association.origin
+    }
+
+    /// Returns a deterministic diagnostics-free summary.
+    #[must_use]
+    pub fn debug_text(&self) -> String {
+        format!(
+            "source-nested-fraenkel-functor-owner-v1|module={}.{}|functor-node={}|symbol={}|definition={}",
+            self.module_id().package().as_str(),
+            self.module_id().path().as_str(),
+            self.functor_definition().index(),
+            self.symbol().fqn().as_str(),
+            self.definition().index(),
+        )
+    }
+
+    /// Revalidates all retained resolver, declaration, allocation, and row
+    /// dependencies against a fresh targeted collection.
+    pub fn validate_complete(&self) -> Result<(), SourceNestedFraenkelFunctorOwnerError> {
+        if self.dependencies.version != SOURCE_NESTED_FRAENKEL_FUNCTOR_OWNER_VERSION
+            || self.dependencies.domain != SOURCE_NESTED_FRAENKEL_FUNCTOR_OWNER_DOMAIN
+        {
+            return Err(SourceNestedFraenkelFunctorOwnerError::InvalidDependency);
+        }
+
+        let fresh = SourceNestedFraenkelFunctorOwnerProducer::build(
+            &self.dependencies.ast,
+            &self.dependencies.module,
+            &self.dependencies.resolved,
+            &self.dependencies.resolver,
+        )?;
+        if self.dependencies.shells != fresh.dependencies.shells
+            || self.dependencies.projections != fresh.dependencies.projections
+            || self.dependencies.symbols != fresh.dependencies.symbols
+        {
+            return Err(SourceNestedFraenkelFunctorOwnerError::InvalidDependency);
+        }
+        if self.dependencies.allocation != fresh.dependencies.allocation
+            || self.association != fresh.association
+        {
+            return Err(SourceNestedFraenkelFunctorOwnerError::InvalidAssociation);
+        }
+        Ok(())
+    }
+
+    /// Revalidates the handoff and requires exact equality with the later
+    /// resolver collection supplied to a checker boundary.
+    pub fn validate_resolver_collection(
+        &self,
+        resolver: &FraenkelGeneratorVariableSourceCollection,
+    ) -> Result<(), SourceNestedFraenkelFunctorOwnerError> {
+        self.validate_complete()?;
+        if resolver != &self.dependencies.resolver {
+            return Err(SourceNestedFraenkelFunctorOwnerError::InvalidDependency);
+        }
+        Ok(())
+    }
+}
+
+/// Failure while constructing or validating an exact containing-functor
+/// owner handoff.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum SourceNestedFraenkelFunctorOwnerError {
+    /// A retained source, module, arena, fingerprint, or resolver dependency
+    /// is not the exact dependency supplied to the producer.
+    InvalidDependency,
+    /// The resolver collection is not the exact C4C8R relation.
+    InvalidResolverProfile,
+    /// The exact profile does not have one containing functor declaration.
+    InvalidOwnerCardinality,
+    /// The containing functor shell does not match its resolver provenance.
+    InvalidOwnerProvenance,
+    /// The final symbol allocation does not match the targeted projection.
+    InvalidSymbolAssociation,
+    /// The final definition allocation does not match the targeted symbol.
+    InvalidDefinitionAssociation,
+    /// A retained public association row differs from fresh derivation.
+    InvalidAssociation,
+}
+
+impl fmt::Display for SourceNestedFraenkelFunctorOwnerError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let message = match self {
+            Self::InvalidDependency => "nested Fraenkel functor owner dependency is invalid",
+            Self::InvalidResolverProfile => {
+                "nested Fraenkel functor owner resolver profile is invalid"
+            }
+            Self::InvalidOwnerCardinality => "nested Fraenkel functor owner cardinality is invalid",
+            Self::InvalidOwnerProvenance => "nested Fraenkel functor owner provenance is invalid",
+            Self::InvalidSymbolAssociation => {
+                "nested Fraenkel functor owner symbol association is invalid"
+            }
+            Self::InvalidDefinitionAssociation => {
+                "nested Fraenkel functor owner definition association is invalid"
+            }
+            Self::InvalidAssociation => "nested Fraenkel functor owner association is invalid",
+        };
+        formatter.write_str(message)
+    }
+}
+
+impl Error for SourceNestedFraenkelFunctorOwnerError {}
+
+/// Producer for the exact resolver-owned containing-functor owner handoff.
+#[derive(Debug, Clone, Copy)]
+pub struct SourceNestedFraenkelFunctorOwnerProducer;
+
+impl SourceNestedFraenkelFunctorOwnerProducer {
+    /// Builds an immutable owner handoff from the exact validated resolver
+    /// collection and canonical symbol/definition allocation path.
+    pub fn build(
+        ast: &SurfaceAst,
+        module: &ModuleId,
+        resolved: &SurfaceResolvedArena,
+        resolver: &FraenkelGeneratorVariableSourceCollection,
+    ) -> Result<SourceNestedFraenkelFunctorOwnerHandoff, SourceNestedFraenkelFunctorOwnerError>
+    {
+        let surface_fingerprint = ast.snapshot_text();
+        if ast.source_id != resolver.source_id()
+            || resolver.module() != module
+            || resolved.source_id() != ast.source_id
+            || resolved.module() != module
+            || resolver.surface_fingerprint() != surface_fingerprint
+            || resolved.validate_against(ast, module).is_err()
+        {
+            return Err(SourceNestedFraenkelFunctorOwnerError::InvalidDependency);
+        }
+
+        let fresh_resolver = FraenkelGeneratorVariableSourceCollector::new(ast, module, resolved)
+            .map_err(|_| SourceNestedFraenkelFunctorOwnerError::InvalidDependency)?
+            .collect()
+            .map_err(|_| SourceNestedFraenkelFunctorOwnerError::InvalidDependency)?;
+        if fresh_resolver != *resolver {
+            return Err(SourceNestedFraenkelFunctorOwnerError::InvalidDependency);
+        }
+
+        let profile = exact_owner_profile(resolver)
+            .ok_or(SourceNestedFraenkelFunctorOwnerError::InvalidResolverProfile)?;
+        let shells = DeclarationShellCollector::new(ast, module).collect();
+        let namespace = NamespacePath::new(module.path().as_str());
+        let projections = SignatureProjectionExtractor::new(ast, &shells, namespace).extract();
+
+        let functor_shells = shells
+            .declarations()
+            .iter()
+            .filter(|shell| shell.kind() == DeclarationShellKind::FunctorDefinition)
+            .collect::<Vec<_>>();
+        if functor_shells.len() != 1 {
+            return Err(SourceNestedFraenkelFunctorOwnerError::InvalidOwnerCardinality);
+        }
+        let matching_shells = functor_shells
+            .iter()
+            .copied()
+            .filter(|shell| {
+                resolved.resolved_node_for(shell.node_id()) == Some(profile.functor_definition)
+            })
+            .collect::<Vec<_>>();
+        if matching_shells.len() != 1 {
+            return Err(SourceNestedFraenkelFunctorOwnerError::InvalidOwnerCardinality);
+        }
+        let shell = matching_shells[0];
+        let matching_projections = projections
+            .iter()
+            .filter(|projection| {
+                projection.shell() == shell.id()
+                    && projection.symbol_kind() == SymbolKind::Functor
+                    && projection.definition_kind() == Some(DefinitionKind::Functor)
+            })
+            .collect::<Vec<_>>();
+        if matching_projections.len() != 1 {
+            return Err(SourceNestedFraenkelFunctorOwnerError::InvalidOwnerCardinality);
+        }
+        let projection = matching_projections[0];
+
+        let Some(parent_id) = shell.parent() else {
+            return Err(SourceNestedFraenkelFunctorOwnerError::InvalidOwnerProvenance);
+        };
+        let Some(parent) = shells.declaration(parent_id) else {
+            return Err(SourceNestedFraenkelFunctorOwnerError::InvalidOwnerProvenance);
+        };
+        validate_owner_provenance(shell, parent, module, resolved, profile, projection)?;
+
+        let (symbols, allocations) =
+            SymbolCollector::new(ast.source_id, module, &shells, &projections)
+                .collect_targeted(Some(shell.id()));
+        if !symbols.diagnostics().is_empty() || allocations.len() != 1 {
+            return Err(SourceNestedFraenkelFunctorOwnerError::InvalidSymbolAssociation);
+        }
+        let allocation = allocations
+            .first()
+            .expect("targeted collection has exactly one allocation");
+        if allocation.shell != shell.id() {
+            return Err(SourceNestedFraenkelFunctorOwnerError::InvalidSymbolAssociation);
+        }
+
+        let definition = validate_owner_allocation(&symbols, allocation, module, ast.source_id)?;
+
+        let association = OwnerAssociation {
+            source_id: ast.source_id,
+            module_id: module.clone(),
+            surface_fingerprint,
+            definition_block: profile.definition_block,
+            functor_definition: profile.functor_definition,
+            declaration_shell: shell.id(),
+            symbol: allocation.symbol.clone(),
+            definition,
+            contribution: allocation.contribution,
+            origin: allocation.origin.clone(),
+        };
+        let dependencies = OwnerDependencies {
+            version: SOURCE_NESTED_FRAENKEL_FUNCTOR_OWNER_VERSION,
+            domain: SOURCE_NESTED_FRAENKEL_FUNCTOR_OWNER_DOMAIN,
+            ast: ast.clone(),
+            module: module.clone(),
+            resolved: resolved.clone(),
+            resolver: resolver.clone(),
+            shells,
+            projections,
+            symbols,
+            allocation: allocation.clone(),
+        };
+        Ok(SourceNestedFraenkelFunctorOwnerHandoff {
+            association,
+            dependencies,
+        })
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+struct ExactOwnerProfile {
+    definition_block: ResolvedNodeId,
+    functor_definition: ResolvedNodeId,
+}
+
+fn exact_owner_profile(
+    resolver: &FraenkelGeneratorVariableSourceCollection,
+) -> Option<ExactOwnerProfile> {
+    if resolver.bindings().len() != 3 || resolver.uses().len() != 2 {
+        return None;
+    }
+    let binding_zero = resolver
+        .bindings()
+        .get(FraenkelGeneratorVariableBindingId::new(0))?;
+    let binding_one = resolver
+        .bindings()
+        .get(FraenkelGeneratorVariableBindingId::new(1))?;
+    let binding_two = resolver
+        .bindings()
+        .get(FraenkelGeneratorVariableBindingId::new(2))?;
+    let bindings = [binding_zero, binding_one, binding_two];
+    if bindings
+        .iter()
+        .enumerate()
+        .any(|(index, binding)| binding.source_ordinal() != index)
+        || binding_zero.comprehension() == binding_one.comprehension()
+        || binding_one.comprehension() != binding_two.comprehension()
+    {
+        return None;
+    }
+    if bindings.iter().any(|binding| {
+        binding.definition_block() != binding_zero.definition_block()
+            || binding.functor_definition() != binding_zero.functor_definition()
+    }) {
+        return None;
+    }
+
+    let use_zero = resolver.uses().get(0)?;
+    let use_one = resolver.uses().get(1)?;
+    let uses = [use_zero, use_one];
+    if uses.iter().enumerate().any(|(index, link)| {
+        link.source_ordinal() != index
+            || link.role_source_ordinal() != index
+            || link.role() != FraenkelGeneratorVariableUseRole::Mapper
+            || link.definition_block() != binding_zero.definition_block()
+            || link.functor_definition() != binding_zero.functor_definition()
+            || link.comprehension() != binding_zero.comprehension()
+            || link.role_owner() != use_zero.role_owner()
+    }) || use_zero.binding() != FraenkelGeneratorVariableBindingId::new(1)
+        || use_one.binding() != FraenkelGeneratorVariableBindingId::new(2)
+    {
+        return None;
+    }
+
+    Some(ExactOwnerProfile {
+        definition_block: binding_zero.definition_block(),
+        functor_definition: binding_zero.functor_definition(),
+    })
+}
+
+fn validate_owner_provenance(
+    shell: &DeclarationShell,
+    parent: &DeclarationShell,
+    module: &ModuleId,
+    resolved: &SurfaceResolvedArena,
+    profile: ExactOwnerProfile,
+    projection: &SymbolDeclarationProjection,
+) -> Result<(), SourceNestedFraenkelFunctorOwnerError> {
+    let shell_node = resolved.resolved_node_for(shell.node_id());
+    let parent_node = resolved.resolved_node_for(parent.node_id());
+    let Some(functor_node) = resolved.arena().node(profile.functor_definition) else {
+        return Err(SourceNestedFraenkelFunctorOwnerError::InvalidOwnerProvenance);
+    };
+    let Some(definition_block_node) = resolved.arena().node(profile.definition_block) else {
+        return Err(SourceNestedFraenkelFunctorOwnerError::InvalidOwnerProvenance);
+    };
+    if shell.kind() != DeclarationShellKind::FunctorDefinition
+        || shell.module() != module
+        || shell.recovered()
+        || parent.kind() != DeclarationShellKind::DefinitionBlock
+        || parent.module() != module
+        || parent.recovered()
+        || shell_node != Some(profile.functor_definition)
+        || parent_node != Some(profile.definition_block)
+        || !matches!(functor_node.kind(), SurfaceNodeKind::FunctorDefinition)
+        || !matches!(
+            definition_block_node.kind(),
+            SurfaceNodeKind::DefinitionBlockItem
+        )
+        || projection.shell() != shell.id()
+    {
+        return Err(SourceNestedFraenkelFunctorOwnerError::InvalidOwnerProvenance);
+    }
+    Ok(())
+}
+
+fn validate_owner_allocation(
+    symbols: &SymbolCollectionResult,
+    allocation: &OwnerAllocation,
+    module: &ModuleId,
+    source_id: SourceId,
+) -> Result<DefinitionId, SourceNestedFraenkelFunctorOwnerError> {
+    let symbol_entries = symbols
+        .env()
+        .symbols()
+        .iter()
+        .filter(|entry| entry.symbol() == &allocation.symbol)
+        .collect::<Vec<_>>();
+    if symbol_entries.len() != 1 {
+        return Err(SourceNestedFraenkelFunctorOwnerError::InvalidSymbolAssociation);
+    }
+    let symbol_entry = symbol_entries[0];
+    if symbol_entry.kind() != SymbolKind::Functor
+        || symbol_entry.contribution() != allocation.contribution
+        || symbol_entry.origin() != &allocation.origin
+        || symbol_entry.origin().is_recovered()
+    {
+        return Err(SourceNestedFraenkelFunctorOwnerError::InvalidSymbolAssociation);
+    }
+
+    let contributions = symbols
+        .env()
+        .contributions()
+        .iter()
+        .filter(|entry| entry.id() == allocation.contribution)
+        .collect::<Vec<_>>();
+    if contributions.len() != 1 {
+        return Err(SourceNestedFraenkelFunctorOwnerError::InvalidSymbolAssociation);
+    }
+    let contribution = contributions[0];
+    if contribution.module() != module
+        || !matches!(
+            contribution.kind(),
+            ContributionKind::LocalSource { source_id: actual } if *actual == source_id
+        )
+        || !contribution
+            .effects()
+            .symbols()
+            .contains(&allocation.symbol)
+    {
+        return Err(SourceNestedFraenkelFunctorOwnerError::InvalidSymbolAssociation);
+    }
+
+    let Some(definition) = allocation.definition else {
+        return Err(SourceNestedFraenkelFunctorOwnerError::InvalidDefinitionAssociation);
+    };
+    let definition_entries = symbols
+        .env()
+        .definitions()
+        .iter()
+        .filter(|entry| entry.symbol() == &allocation.symbol)
+        .collect::<Vec<_>>();
+    if definition_entries.len() != 1 {
+        return Err(SourceNestedFraenkelFunctorOwnerError::InvalidDefinitionAssociation);
+    }
+    let definition_entry = definition_entries[0];
+    if definition_entry.id() != definition
+        || definition_entry.kind() != DefinitionKind::Functor
+        || definition_entry.symbol() != &allocation.symbol
+        || definition_entry.contribution() != allocation.contribution
+        || definition_entry.origin() != &allocation.origin
+        || definition_entry.origin().is_recovered()
+        || definition_entry.conflict().is_some()
+        || !contribution.effects().definitions().contains(&definition)
+    {
+        return Err(SourceNestedFraenkelFunctorOwnerError::InvalidDefinitionAssociation);
+    }
+    Ok(definition)
 }
 
 /// Parser-backed per-kind signature projection extractor.
@@ -804,6 +1321,16 @@ impl<'a> SymbolCollector<'a> {
     /// Collects opaque symbol entries and duplicate/overload metadata.
     #[must_use]
     pub fn collect(self) -> SymbolCollectionResult {
+        self.collect_targeted(None).0
+    }
+
+    /// Collects symbols while optionally retaining the allocation row for one
+    /// already authenticated declaration shell. The public collection path
+    /// remains a count- and environment-only result by passing no target.
+    fn collect_targeted(
+        self,
+        target: Option<DeclarationShellId>,
+    ) -> (SymbolCollectionResult, Vec<OwnerAllocation>) {
         let mut indexes = SymbolEnvIndexes::default();
         let contribution = indexes.contributions.insert(
             self.module.clone(),
@@ -846,16 +1373,24 @@ impl<'a> SymbolCollector<'a> {
                 .add_diagnostic(contribution, diagnostic.id());
         }
 
+        let mut allocations = Vec::new();
         for item in &collected {
-            self.insert_symbol(&mut indexes, item, conflicts.get(&item.symbol));
+            if let Some(allocation) =
+                self.insert_symbol(&mut indexes, item, conflicts.get(&item.symbol), target)
+            {
+                allocations.push(allocation);
+            }
         }
 
         insert_overload_groups(&mut indexes, &collected, contribution, &diagnostic_by_group);
 
-        SymbolCollectionResult {
-            env: SymbolEnv::new(self.module.clone(), indexes),
-            diagnostics,
-        }
+        (
+            SymbolCollectionResult {
+                env: SymbolEnv::new(self.module.clone(), indexes),
+                diagnostics,
+            },
+            allocations,
+        )
     }
 
     fn contribution_anchor(&self) -> SourceAnchor {
@@ -875,7 +1410,8 @@ impl<'a> SymbolCollector<'a> {
         indexes: &mut SymbolEnvIndexes,
         item: &CollectedProjection,
         conflict: Option<&DeclarationConflictClass>,
-    ) {
+        target: Option<DeclarationShellId>,
+    ) -> Option<OwnerAllocation> {
         let signature = item.signature.clone();
         let mut symbol_entry = SymbolEntry::new(
             item.symbol.clone(),
@@ -909,6 +1445,7 @@ impl<'a> SymbolCollector<'a> {
                 .add_lexical_summary(item.contribution, summary);
         }
 
+        let mut definition_id = None;
         if let Some(definition_kind) = item.projection.definition_kind() {
             let mut definition = DefinitionShell::new(
                 item.symbol.clone(),
@@ -929,10 +1466,11 @@ impl<'a> SymbolCollector<'a> {
             } else if let Some(conflict) = conflict {
                 definition = definition.with_conflict(conflict.clone());
             }
-            let definition_id = indexes.definitions.insert(definition);
+            let allocated_definition_id = indexes.definitions.insert(definition);
+            definition_id = Some(allocated_definition_id);
             indexes
                 .contributions
-                .add_definition(item.contribution, definition_id);
+                .add_definition(item.contribution, allocated_definition_id);
         }
 
         if let Some(registration_kind) = item.projection.registration_kind() {
@@ -952,6 +1490,14 @@ impl<'a> SymbolCollector<'a> {
                 .contributions
                 .add_registration(item.contribution, registration_id);
         }
+
+        (target == Some(item.shell.id())).then(|| OwnerAllocation {
+            shell: item.shell.id(),
+            symbol: item.symbol.clone(),
+            origin: item.origin.clone(),
+            contribution: item.contribution,
+            definition: definition_id,
+        })
     }
 }
 

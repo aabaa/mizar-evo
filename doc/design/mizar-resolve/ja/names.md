@@ -439,3 +439,16 @@ generator segments、exact `[x, y]` mapperだけをdefault-denyでadmitする。
 revalidation、resolved-node-only identity、dense order、debug grammar、F5、one-capture C4C2は
 不変。Capture table、checker graph、Task252 occurrence、type/sethood、diagnostic、active route、
 Core identity、generated parameter/originは作らない。
+
+## Resolver Task 33R Exact Surface Fingerprint
+
+Canonical [Task 33R contract](../../task_contracts/ja/RESOLVE-FRAENKEL-CONTAINING-OWNER-33R.md)は
+`FraenkelGeneratorVariableSourceCollection`へprivate exact surface fingerprint 1件を追加する。
+Fingerprintはvalidated collectorがconsumeしたcomplete deterministic
+`SurfaceAst::snapshot_text()`であり、existing count-only debug summaryやlossy hashではない。
+Immutable `surface_fingerprint()` getterがexact valueを公開し、collection equalityはこれを含む。
+Existing `debug_text()` grammar、binding/use row、id、orderは不変。
+
+このfreshness coordinateにより、same `SourceId`/module/count profileをreuseする別structural
+ASTをlater owner receiptがrejectできる。Lookup、display-name association、symbol/definition
+identity、checker capture、diagnostic、active route、semantic result、coverage creditは追加しない。

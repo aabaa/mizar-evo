@@ -5382,3 +5382,17 @@ empty import augmentationだけをassertする。
 Passing probeはlibrary-test-onlyかつunregisteredのまま。Fixture、sidecar、trace、production route、
 semantic result、diagnostic、AST/Core installation、coverage credit、Task277B readinessのchangeは
 行っておらず、default-deny matrixはchecker-owner testsがretainする。
+
+## Resolver Task 33R Private Containing-Owner Probe
+
+Canonical [Task 33R contract](../../task_contracts/ja/RESOLVE-FRAENKEL-CONTAINING-OWNER-33R.md)は
+existing private nested-capture leafへexact
+`task33r_real_fixture_links_capture_graph_to_exact_functor_owner`を追加する。Unregistered library
+testはunchanged C4C7をfrontend/resolverへ通し、existing C4C8 graphとnew resolver owner receiptを
+buildし、exact fingerprinted resolver equality、common resolved functor owner、final functor
+symbol/definition relation、deterministic replay、graph immutability、unchanged empty import
+augmentationを確認する。
+
+Registry include、production dispatch、active route、checker receipt/install、Typed/Resolved/Core
+field、generated parameter/origin、diagnostic、sidecar/trace mutation、semantic result、coverage
+credit、Task277B readinessは追加しない。

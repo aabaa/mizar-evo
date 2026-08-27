@@ -7165,3 +7165,24 @@ credit changes. The task-only commit containing this completion record satisfied
 the parser prerequisite. The required fresh exact-source preflight and C4C8R
 resolver implementation are now complete under the separate zero-credit C4C8R
 mapping above.
+
+## Task 33R Implemented Zero-Credit Containing-Functor Owner Receipt
+
+The canonical [Task 33R contract](./task_contracts/en/RESOLVE-FRAENKEL-CONTAINING-OWNER-33R.md)
+maps the exact C4C8R resolver snapshot to exactly one containing functor's
+resolver-owned declaration shell, final `SymbolId`, `DefinitionId`, source
+contribution, and semantic origin. It adds an exact surface snapshot
+fingerprint to the retained Fraenkel collection and creates an immutable,
+fully revalidated resolver receipt at the existing symbol/definition
+allocation boundary. The mapping joins only through resolved declaration
+identity and the canonical symbol allocation path, never display spelling,
+ranges, or numeric-id reinterpretation.
+
+This is implemented derived enforcement with zero semantic or execution credit;
+independent review and verification evidence remain pending.
+C4C8 remains standalone and unchanged; C4C5/C4C6 and C4C4 captured state remain
+unchanged; no checker receipt, Typed/Resolved/Core installation, active route,
+parameter/argument order, generated origin, semantic result, diagnostic,
+fixture/expectation/trace mutation, or Task-277B readiness is added. The
+Chapter-13 summary remains `partial`; the next checker pairing and Core33--35
+transport remain separately owner-gated.
