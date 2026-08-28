@@ -1903,3 +1903,12 @@ coverage credit、Task277B not-readyを同期する。English canonical、except
 probe、lib/lint/metadata、full workspace test、protected checkはPASS、independent post-source
 reviewは**NO FINDINGS**。Final qualityも**NO FINDINGS**、hard gate `9/9` PASS、valid
 uncapped `100/100`。Commitはpending。
+
+## Core Task 33C4C8 Bilingual Contract Parity
+
+[EN canonical](../../task_contracts/en/CORE-FRAENKEL-CAPTURE-CONTEXT-33C4C8.md)と
+[JA companion](../../task_contracts/ja/CORE-FRAENKEL-CAPTURE-CONTEXT-33C4C8.md)は、private
+consumer 5 test、exact owner join、checked max-plus-one `x,y` allocation、local-`z`
+exclusion、library-test-only boundary、unchanged protected artifact、zero semantic/execution/
+coverage credit、Core35 deferral、Task277B not-readyを同期する。English canonical、exception
+なし。

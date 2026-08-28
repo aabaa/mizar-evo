@@ -593,6 +593,406 @@ fn task33c_real_fixture_pairs_capture_graph_with_exact_functor_owner() {
     assert_eq!(augmented, symbols);
 }
 
+fn task33c4c8_real_receipt(
+) -> mizar_checker::source_formula_composition::SourceNestedFraenkelCaptureGraphOwnerHandoff {
+    let output = task257c4c1_frontend_output(TASK257C4C8R_CANONICAL_SOURCE, 4);
+    assert!(output.diagnostics.is_empty());
+    let ast = output.ast.expect("Task33C4C8 canonical AST");
+    assert!(ast.nodes().iter().all(|node| !node.recovered));
+    let module = mizar_resolve::resolved_ast::ModuleId::new(
+        output.source.package_id,
+        output.source.module_path,
+    );
+    let resolved = mizar_resolve::resolved_ast::SurfaceResolvedArena::lower(&ast, &module)
+        .expect("Task33C4C8 resolver arena should lower");
+    let resolver = FraenkelGeneratorVariableSourceCollector::new(&ast, &module, &resolved)
+        .expect("Task33C4C8 collector should validate the resolver arena")
+        .collect()
+        .expect("Task33C4C8 collector should collect the exact relation");
+    let graph =
+        mizar_checker::source_formula_composition::SourceNestedFraenkelCaptureGraphProducer::build(
+            &resolver,
+        )
+        .expect("Task33C4C8 graph should build");
+    let owner = mizar_resolve::symbols::SourceNestedFraenkelFunctorOwnerProducer::build(
+        &ast, &module, &resolved, &resolver,
+    )
+    .expect("Task33C4C8 owner should build");
+    mizar_checker::source_formula_composition::SourceNestedFraenkelCaptureGraphOwnerProducer::build(
+        graph, owner,
+    )
+    .expect("Task33C4C8 graph-owner receipt should build")
+}
+
+fn task33c4c8_core_context(
+    receipt: &mizar_checker::source_formula_composition::SourceNestedFraenkelCaptureGraphOwnerHandoff,
+    module: mizar_resolve::resolved_ast::ModuleId,
+    owner_kind: Option<mizar_core::core_ir::CoreItemKind>,
+    existing_vars: &[usize],
+) -> mizar_core::elaborator::CoreContext {
+    task33c4c8_core_context_with_existing_role(
+        receipt,
+        module,
+        owner_kind,
+        existing_vars,
+        "existing-term",
+    )
+}
+
+fn task33c4c8_core_context_with_existing_role(
+    receipt: &mizar_checker::source_formula_composition::SourceNestedFraenkelCaptureGraphOwnerHandoff,
+    module: mizar_resolve::resolved_ast::ModuleId,
+    owner_kind: Option<mizar_core::core_ir::CoreItemKind>,
+    existing_vars: &[usize],
+    existing_role: &str,
+) -> mizar_core::elaborator::CoreContext {
+    use mizar_core::{
+        binder_normalization::{NormalizedVarClass, NormalizedVarSort},
+        core_ir::{CoreSourceRef, CoreVarId, GeneratedOriginKind},
+        elaborator::{
+            CheckerOwnedProvenance, CoreBinderSeed, CoreContextInput, CoreItemSeed,
+            CoreVariableSeed, GeneratedOriginSeed, ResolvedTypedAstSummary, prepare_core_context,
+        },
+    };
+
+    let mut input = CoreContextInput::new(ResolvedTypedAstSummary::new(
+        receipt.source_id(),
+        module,
+    ));
+    let owner_range = match receipt.owner().origin().anchor() {
+        mizar_session::SourceAnchor::Range(range) => *range,
+        other => panic!("Task33C4C8 owner needs a source range, found {other:?}"),
+    };
+    if let Some(kind) = owner_kind {
+        input.item_seeds.push(CoreItemSeed::new(
+            receipt.owner().symbol().clone(),
+            kind,
+            "public",
+            CoreSourceRef::direct(owner_range),
+            CheckerOwnedProvenance::resolver("task33c4c8.owner"),
+        ));
+    }
+    for &index in existing_vars {
+        let var = CoreVarId::new(index);
+        let provenance =
+            CheckerOwnedProvenance::checker(format!("task33c4c8.existing.{index}"));
+        input.variable_seeds.push(CoreVariableSeed::new(
+            var,
+            NormalizedVarClass::Free,
+            existing_role,
+            NormalizedVarSort::Term,
+            provenance.clone(),
+        ));
+        input.binder_seeds.push(CoreBinderSeed::new(
+            var,
+            CoreSourceRef::direct(owner_range)
+                .with_provenance(provenance.as_slice().to_vec()),
+            provenance,
+        ));
+    }
+    if let Some(&index) = existing_vars.iter().max() {
+        input.generated_origin_seeds.push(
+            GeneratedOriginSeed::new(
+                receipt.owner().symbol().clone(),
+                GeneratedOriginKind::StableChoice,
+                "task33c4c8-existing-generated-origin",
+                CoreSourceRef::direct(owner_range),
+                CheckerOwnedProvenance::checker("task33c4c8.existing.generated-origin"),
+            )
+            .with_params(vec![CoreVarId::new(index)]),
+        );
+    }
+    prepare_core_context(input).expect("Task33C4C8 Core context should prepare")
+}
+
+#[test]
+fn task33c4c8_real_fixture_installs_exact_capture_variables_deterministically() {
+    use mizar_core::{
+        binder_normalization::{NormalizedVarClass, NormalizedVarSort},
+        core_ir::{
+            CoreProvenance, CoreProvenanceKey, CoreProvenancePhase, CoreSourceAnchor, CoreVarId,
+        },
+        elaborator::SourceNestedFraenkelCaptureCoreContextProducer,
+    };
+
+    let receipt = task33c4c8_real_receipt();
+    let context = task33c4c8_core_context(
+        &receipt,
+        receipt.module_id().clone(),
+        Some(mizar_core::core_ir::CoreItemKind::Functor),
+        &[],
+    );
+    let original_item_registry = context.item_registry().clone();
+    let original_dependencies = context.dependency_summaries().clone();
+    let original_boundaries = context.definition_boundaries().clone();
+    let original_generated_origins = context.generated_origins().clone();
+    let original_source_map = context.source_map().clone();
+    let original_diagnostics = context.diagnostics().clone();
+    let original_worklist = context.worklist().clone();
+    let replay = SourceNestedFraenkelCaptureCoreContextProducer::build(
+        context.clone(),
+        receipt.clone(),
+    )
+    .expect("Task33C4C8 deterministic replay should build");
+    let handoff = SourceNestedFraenkelCaptureCoreContextProducer::build(context, receipt)
+        .expect("Task33C4C8 capture context should build");
+    assert!(handoff == replay);
+    assert_eq!(handoff.captured_variables().len(), 2);
+    assert!(!handoff.captured_variables().is_empty());
+    assert_eq!(handoff.context().generated_origins().table().len(), 0);
+    assert_eq!(handoff.context().item_registry(), &original_item_registry);
+    assert_eq!(handoff.context().dependency_summaries(), &original_dependencies);
+    assert_eq!(handoff.context().definition_boundaries(), &original_boundaries);
+    assert_eq!(handoff.context().generated_origins(), &original_generated_origins);
+    assert_eq!(handoff.context().source_map(), &original_source_map);
+    assert_eq!(handoff.context().diagnostics(), &original_diagnostics);
+    assert_eq!(handoff.context().worklist(), &original_worklist);
+
+    let rows = handoff.captured_variables().iter().collect::<Vec<_>>();
+    assert_eq!(rows[0].0.index(), 0);
+    assert_eq!(rows[1].0.index(), 1);
+    assert_eq!(rows[0].1.core_var(), CoreVarId::new(0));
+    assert_eq!(rows[1].1.core_var(), CoreVarId::new(1));
+    assert_eq!(rows[0].1.generator().index(), 1);
+    assert_eq!(rows[1].1.generator().index(), 2);
+    assert_eq!(rows[0].1.resolver_binding().index(), 1);
+    assert_eq!(rows[1].1.resolver_binding().index(), 2);
+    assert_ne!(rows[0].1.generator().index(), 0);
+    assert_ne!(rows[1].1.generator().index(), 0);
+
+    for (capture_id, row) in rows {
+        assert_eq!(capture_id, row.capture());
+        assert_eq!(
+            handoff
+                .context()
+                .binder_context()
+                .variable_classes
+                .get(&row.core_var()),
+            Some(&NormalizedVarClass::Free)
+        );
+        assert_eq!(
+            handoff
+                .context()
+                .binder_context()
+                .variable_sorts
+                .get(&row.core_var()),
+            Some(&NormalizedVarSort::Term)
+        );
+        assert_eq!(
+            handoff
+                .context()
+                .binder_context()
+                .variable_roles
+                .get(&row.core_var())
+                .map(|role| role.as_str()),
+            Some("fraenkel-captured-parameter")
+        );
+        assert!(handoff.context().binder_type_facts()[&row.core_var()].is_empty());
+        let source = handoff
+            .context()
+            .binder_sources()
+            .get(row.core_var())
+            .expect("Task33C4C8 installed binder source");
+        let generator = handoff
+            .checker_receipt()
+            .graph()
+            .generators()
+            .get(row.generator())
+            .expect("Task33C4C8 retained generator");
+        assert_eq!(
+            source.source.anchor,
+            CoreSourceAnchor::SourceRange(generator.binder_range())
+        );
+        let expected_key = CoreProvenanceKey::new(format!(
+            "source-nested-fraenkel-capture-core-variable-v1.capture.{}",
+            capture_id.index()
+        ));
+        let expected_provenance = CoreProvenance::new(
+            CoreProvenancePhase::Checker,
+            expected_key,
+        );
+        assert_eq!(source.source.provenance, vec![expected_provenance.clone()]);
+        assert_eq!(source.provenance.as_slice(), [expected_provenance]);
+    }
+    assert_eq!(
+        handoff
+            .context()
+            .item_registry()
+            .id_for_symbol(handoff.checker_receipt().owner().symbol()),
+        Some(handoff.owner_item())
+    );
+    assert!(handoff.debug_text().contains("captures=2|vars=0,1"));
+}
+
+#[test]
+fn task33c4c8_allocation_starts_above_existing_core_variables() {
+    use mizar_core::{
+        core_ir::CoreVarId,
+        elaborator::SourceNestedFraenkelCaptureCoreContextProducer,
+    };
+
+    let receipt = task33c4c8_real_receipt();
+    let context = task33c4c8_core_context(
+        &receipt,
+        receipt.module_id().clone(),
+        Some(mizar_core::core_ir::CoreItemKind::Functor),
+        &[2, 9],
+    );
+    let original_generated_origins = context.generated_origins().clone();
+    let original_source_map = context.source_map().clone();
+    let handoff = SourceNestedFraenkelCaptureCoreContextProducer::build(context, receipt)
+        .expect("Task33C4C8 populated context should build");
+    let vars = handoff
+        .captured_variables()
+        .iter()
+        .map(|(_, row)| row.core_var())
+        .collect::<Vec<_>>();
+    assert_eq!(vars, [CoreVarId::new(10), CoreVarId::new(11)]);
+    assert_eq!(handoff.context().generated_origins(), &original_generated_origins);
+    assert_eq!(handoff.context().source_map(), &original_source_map);
+    let (_, existing_origin) = handoff
+        .context()
+        .generated_origins()
+        .table()
+        .iter()
+        .next()
+        .expect("pre-existing generated origin is retained");
+    assert_eq!(existing_origin.params, vec![CoreVarId::new(9)]);
+}
+
+#[test]
+fn task33c4c8_rejects_environment_and_owner_mismatches() {
+    use mizar_core::elaborator::{
+        SourceNestedFraenkelCaptureCoreContextError,
+        SourceNestedFraenkelCaptureCoreContextProducer,
+    };
+
+    let receipt = task33c4c8_real_receipt();
+    let foreign_module = mizar_resolve::resolved_ast::ModuleId::new(
+        mizar_session::PackageId::new("task33c4c8-foreign"),
+        mizar_session::ModulePath::new("foreign.module"),
+    );
+    let foreign = task33c4c8_core_context(&receipt, foreign_module, None, &[]);
+    assert!(matches!(
+        SourceNestedFraenkelCaptureCoreContextProducer::build(foreign, receipt.clone()),
+        Err(SourceNestedFraenkelCaptureCoreContextError::EnvironmentMismatch)
+    ));
+
+    let missing = task33c4c8_core_context(
+        &receipt,
+        receipt.module_id().clone(),
+        None,
+        &[],
+    );
+    assert!(matches!(
+        SourceNestedFraenkelCaptureCoreContextProducer::build(missing, receipt.clone()),
+        Err(SourceNestedFraenkelCaptureCoreContextError::InvalidOwnerAssociation)
+    ));
+
+    let wrong_kind = task33c4c8_core_context(
+        &receipt,
+        receipt.module_id().clone(),
+        Some(mizar_core::core_ir::CoreItemKind::Predicate),
+        &[],
+    );
+    assert!(matches!(
+        SourceNestedFraenkelCaptureCoreContextProducer::build(wrong_kind, receipt),
+        Err(SourceNestedFraenkelCaptureCoreContextError::InvalidOwnerAssociation)
+    ));
+}
+
+#[test]
+fn task33c4c8_rejects_invalid_core_context_before_owner_association() {
+    use mizar_core::elaborator::{
+        SourceNestedFraenkelCaptureCoreContextError,
+        SourceNestedFraenkelCaptureCoreContextProducer,
+    };
+
+    let receipt = task33c4c8_real_receipt();
+    let invalid = task33c4c8_core_context_with_existing_role(
+        &receipt,
+        receipt.module_id().clone(),
+        Some(mizar_core::core_ir::CoreItemKind::Functor),
+        &[7],
+        "fraenkel-captured-parameter",
+    );
+    assert!(matches!(
+        SourceNestedFraenkelCaptureCoreContextProducer::build(invalid, receipt.clone()),
+        Err(SourceNestedFraenkelCaptureCoreContextError::InvalidCoreContext)
+    ));
+
+    let foreign_module = mizar_resolve::resolved_ast::ModuleId::new(
+        mizar_session::PackageId::new("task33c4c8-invalid-foreign"),
+        mizar_session::ModulePath::new("foreign.invalid"),
+    );
+    let invalid_foreign = task33c4c8_core_context_with_existing_role(
+        &receipt,
+        foreign_module,
+        None,
+        &[7],
+        "fraenkel-captured-parameter",
+    );
+    assert!(matches!(
+        SourceNestedFraenkelCaptureCoreContextProducer::build(invalid_foreign, receipt),
+        Err(SourceNestedFraenkelCaptureCoreContextError::EnvironmentMismatch)
+    ));
+}
+
+#[test]
+fn task33c4c8_rejects_allocator_overflow_and_has_stable_error_text() {
+    use mizar_core::{
+        core_ir::CoreVarId,
+        elaborator::{
+            SourceNestedFraenkelCaptureCoreContextError,
+            SourceNestedFraenkelCaptureCoreContextProducer,
+        },
+    };
+
+    let receipt = task33c4c8_real_receipt();
+    let context = task33c4c8_core_context(
+        &receipt,
+        receipt.module_id().clone(),
+        Some(mizar_core::core_ir::CoreItemKind::Functor),
+        &[usize::MAX],
+    );
+    assert!(matches!(
+        SourceNestedFraenkelCaptureCoreContextProducer::build(context, receipt),
+        Err(SourceNestedFraenkelCaptureCoreContextError::CoreVariableAllocationOverflow)
+    ));
+
+    let cases = [
+        (
+            SourceNestedFraenkelCaptureCoreContextError::EnvironmentMismatch,
+            "nested Fraenkel capture Core context environment is invalid".to_owned(),
+        ),
+        (
+            SourceNestedFraenkelCaptureCoreContextError::InvalidCoreContext,
+            "nested Fraenkel capture Core context is invalid".to_owned(),
+        ),
+        (
+            SourceNestedFraenkelCaptureCoreContextError::InvalidOwnerAssociation,
+            "nested Fraenkel capture Core owner association is invalid".to_owned(),
+        ),
+        (
+            SourceNestedFraenkelCaptureCoreContextError::CoreVariableAllocationOverflow,
+            "nested Fraenkel capture Core variable allocation overflowed".to_owned(),
+        ),
+        (
+            SourceNestedFraenkelCaptureCoreContextError::CoreVariableCollision {
+                var: CoreVarId::new(7),
+            },
+            "nested Fraenkel capture Core variable 7 collides".to_owned(),
+        ),
+        (
+            SourceNestedFraenkelCaptureCoreContextError::InvalidCaptureAssociation,
+            "nested Fraenkel capture Core association is invalid".to_owned(),
+        ),
+    ];
+    for (error, expected) in cases {
+        assert_eq!(error.to_string(), expected);
+    }
+}
+
 #[test]
 fn task257c4c3_real_imported_fixture_builds_checker_identity_handoff() {
     let output = task257c4c1_frontend_output(TASK257C4C1_CANONICAL_SOURCE, 3);

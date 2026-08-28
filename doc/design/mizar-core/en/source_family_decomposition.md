@@ -106,12 +106,16 @@ the sole future owner of the authenticated Core-item-to-C4C8 association and
 fresh snapshot-local Core variable allocation; Core 35 may only consume that
 complete association after Core 34. Checker 248 alone is not sufficient for
 the C4C8 slice: its closed context profiles do not associate the C4C8 resolver
-binding graph with the containing functor symbol/item. The future association
-is reserved as a standalone immutable seam, but its owner bridge, exact
-destination/API, allocator mapping, captured parameter/argument order, and
-complete default-deny oracle remain unresolved. Therefore Core 33 remains
-unchecked and no semantic implementation, Typed/Resolved slot, route, test,
-trace credit, or Task 277B credit is authorized.
+binding graph with the containing functor symbol/item. The later, user-adopted
+[Task CORE-FRAENKEL-CAPTURE-CONTEXT-33C4C8](../../task_contracts/en/CORE-FRAENKEL-CAPTURE-CONTEXT-33C4C8.md)
+selects the existing Task33C receipt as the sole checker capability and a
+standalone immutable Core handoff as the destination. Core joins the retained
+whole `SymbolId` to an existing `CoreItemId`, allocates only captured `x,y`
+above the checked maximum existing `CoreVarId`, and preserves C4C8 private
+capture order as non-semantic canonical transport. No Typed/Resolved or
+`CoreContextInput` slot, Core35 semantic lowering, parameter/argument,
+`GeneratedOrigin`, active route, test/trace credit, or Task277B credit is
+authorized.
 
 ## Accepted Algorithm CoreIr Task Graph
 

@@ -5409,3 +5409,17 @@ owner ids、deterministic replay、local-`z` exclusion、unchanged import augmen
 Registry include、production dispatch、active route、Typed/Resolved/Core field/installer、
 parameter/origin、diagnostic、sidecar/trace mutation、semantic result、coverage credit、Task277B
 readinessは追加しない。
+
+## Core Task 33C4C8 Private Capture-Context Probe
+
+Canonical [Core-33 C4C8 contract](../../task_contracts/ja/CORE-FRAENKEL-CAPTURE-CONTEXT-33C4C8.md)は
+existing unregistered nested-capture library leafをprivate test 5件で拡張する。Unchanged real
+C4C7 Task33C receiptをbuildしてexplicit Core contextをprepareし、exact whole-owner
+association、empty/populated checked max-plus-one allocation、deterministic retained `x,y`
+mapping、local `z` exclusion、exact binder source/provenance、unchanged generated-origin state、
+environment/invalid-context/owner default-deny failure、precedence、overflow、stable typed
+errorをverifyする。
+
+Registry include、production dispatch、active route、`CoreContextInput`/Typed/Resolved field、
+parameter/argument、generated origin、diagnostic、sidecar/trace mutation、semantic result、
+coverage credit、Task277B readinessは追加しない。

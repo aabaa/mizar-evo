@@ -2064,3 +2064,13 @@ The private probe, library/lint/metadata suites, full workspace tests, and
 protected checks pass; independent post-source reviews are **NO FINDINGS**.
 Final quality is **NO FINDINGS**, all nine hard gates PASS, and the valid
 uncapped score is `100/100`. Commit remains.
+
+## Core Task 33C4C8 Bilingual Contract Parity
+
+The canonical [EN contract](../../task_contracts/en/CORE-FRAENKEL-CAPTURE-CONTEXT-33C4C8.md)
+and [JA companion](../../task_contracts/ja/CORE-FRAENKEL-CAPTURE-CONTEXT-33C4C8.md)
+synchronize the five-test private consumer, exact owner join, checked
+max-plus-one `x,y` allocation, local-`z` exclusion, library-test-only boundary,
+unchanged protected artifacts, zero semantic/execution/coverage credit, Core35
+deferral, and Task277B-not-ready status. English is canonical; no exception is
+recorded.

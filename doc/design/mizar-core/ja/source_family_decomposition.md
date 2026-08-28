@@ -93,10 +93,14 @@ authenticated Core-item-to-C4C8 associationとfresh snapshot-local Core variable
 allocationのsole future ownerであり、Core 35はCore 34後にcomplete associationだけを
 consumeする。Checker 248だけではC4C8 sliceに不十分である。そのclosed context
 profileはC4C8 resolver binding graphをcontaining functor symbol/itemへassociateしない。
-Future associationはstandalone immutable seamとしてreserveするが、owner bridge、exact
-destination/API、allocator mapping、captured parameter/argument order、complete
-default-deny oracleは未決定。したがってCore 33はuncheckedのままで、semantic
-implementation、Typed/Resolved slot、route、test/trace credit、Task 277B creditを認可しない。
+後に利用者が採択した
+[Task CORE-FRAENKEL-CAPTURE-CONTEXT-33C4C8](../../task_contracts/ja/CORE-FRAENKEL-CAPTURE-CONTEXT-33C4C8.md)は
+existing Task33C receiptをsole checker capability、standalone immutable Core handoffを
+destinationとして選択する。Coreはretained whole `SymbolId`をexisting `CoreItemId`へjoinし、
+checked maximum existing `CoreVarId`より上へcaptured `x,y`だけをallocateし、C4C8 private
+capture orderをnon-semantic canonical transportとして保存する。Typed/Resolved/
+`CoreContextInput` slot、Core35 semantic lowering、parameter/argument、`GeneratedOrigin`、
+active route、test/trace credit、Task277B creditは認可しない。
 
 ## Accepted Algorithm CoreIr Task Graph
 

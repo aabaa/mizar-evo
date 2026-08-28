@@ -38,7 +38,7 @@ module specification と比較する。file size は reviewability signal であ
 | `src/lib.rs` | 9 | `todo.md` の module table | `binder_normalization`, `control_flow`, `core_ir`, `elaborator` だけを export する。drift なし。 |
 | `src/core_ir.rs` | 4016 | `core_ir.md` | 大きいがcohesiveなdata-shape module。Task 31はspecified pending-proof status variantだけを追加する。split不要。 |
 | `src/binder_normalization.rs` | 5828 | `binder_normalization.md` | 大きいが cohesive な binder/substitution/canonicalization module。future private helper extraction は optional。 |
-| `src/elaborator.rs` | 17132 | `elaborator.md` | 最大のreview-risk fileだが、sectionはowning specのsix elaboration stepに対応する。Task 31はgeneric proof lowering後にlocalized exact-adapter sectionとfail-closed test matrixを追加し、checker payloadをconsumeしてnew module responsibilityを導入しない。split不要。 |
+| `src/elaborator.rs` | 18124 | `elaborator.md` | 最大のreview-risk fileだが、sectionはowning specのsix elaboration stepに対応する。Task 31はgeneric proof lowering後にlocalized exact-adapter section/fail-closed test matrixを、Task 33C4C8はlocalized immutable capture-context association/private validation testを追加する。いずれもchecker payloadをconsumeし、new module responsibilityを導入しない。split不要。 |
 | `src/control_flow.rs` | 6718 | `control_flow.md` | 大きいが phase-10 CFG、contract、diagnostic、handoff section に対応する。この task で mandatory split はしない。 |
 | `tests/determinism_suite.rs` | 627 | `00.crate_plan.md`, task 20 | cross-module integration test。boundary issue なし。 |
 | `tests/lint_policy.rs` | 1215 | task 1, task 21, task 22, task 31 policy | policy/audit guard test。Task-31 exceptionは`elaborator.rs`のexact `ExportStatus`/`Visibility` importだけをstripし、`SymbolEnv`、resolver behavior、alias、他のresolver-environment APIを引き続きrejectする。 |
@@ -59,6 +59,12 @@ phase-9 elaborator module内に残り、raw syntaxではなくchecker-owned
 `ResolvedTypedAst` bundleに依存し、specified borrowed function/typed errorだけを
 公開する。narrow resolver metadata exceptionはstructural guardされ、`SymbolEnv`
 やname resolutionを許可しない。source fileのmove/additionはない。
+
+Task 33C4C8は`elaborator.rs`へlocalized Step-1 association 1件を追加した後にboundaryを
+再確認する。Immutable checker Task33C capabilityだけをconsumeし、moduleで既に許可された
+resolver/session identity typeを使い、raw syntax、Typed/Resolved installation、semantic
+lowering、downstream routeを公開しない。Existing moduleがowning boundaryのままでsplitは
+不要である。
 
 ## Classification
 

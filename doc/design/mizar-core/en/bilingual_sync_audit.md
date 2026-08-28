@@ -94,6 +94,12 @@ cross-crate ownership notes. Both languages preserve the 33-53 task split,
 prepared consumer stages, Gates A1/S1, VC-owned substitution boundary, and
 zero coverage promotion.
 
+Core Task 33C4C8 rechecks the changed plan, TODO, source-family, elaborator,
+source/spec audit, module-boundary audit, and contract pairs. Both languages
+preserve the sole Task33C capability, exact owner join, max-plus-one `x,y`
+allocation, private canonical order, zero-semantic boundary, Core35 deferral,
+and unchanged Task277B/protected artifacts.
+
 ## Guard Decision
 
 No new Rust lint guard is added in Task 23 or closeout. The file-pair set is

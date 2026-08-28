@@ -160,6 +160,21 @@ task 8 がこの section を実装する。
 task 8 の test は deterministic item id、dependency-summary absence、canonical id が raw spelling
 を使わないこと、failed overload/worklist preservation、source-map builder initialization を扱う。
 
+### Core-33 C4C8 capture-context prerequisite
+
+[Task CORE-FRAENKEL-CAPTURE-CONTEXT-33C4C8](../../task_contracts/ja/CORE-FRAENKEL-CAPTURE-CONTEXT-33C4C8.md)は
+standalone immutable Step-1 handoff 1個を追加する。Existing Task33C checker receiptと
+already prepared `CoreContext`をby-valueでconsumeし、retained whole owner `SymbolId`を
+existing valid functor itemへmapし、captured outer generator identity 2件だけをfresh free
+term `CoreVarId`としてinstallする。Allocationはchecker-authenticated private capture orderの
+checked max-plus-oneであり、local inner generatorは除外する。Handoffはexact source/checker
+provenanceとempty type factをretainedする。
+
+このAPIはzero-semantic Core-33 association boundaryである。`CoreContextInput`、Typed、
+Resolvedを拡張せず、parameter、argument、generated origin、term、formula、type evidence、
+diagnostic、active routeを作らない。Core 35は該当するCore-33 local-binder/Core-34
+prerequisite後にのみconsumeでき、allocate/infer/reorder/repairしてはならない。
+
 ## Step 2: type and fact lowering
 
 task 9 がこの section を実装する。
@@ -612,6 +627,7 @@ algorithm payload category を下流 crate の exhaustive match を壊さずに�
 | public enum | decision |
 |---|---|
 | `CoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `SourceNestedFraenkelCaptureCoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface。 |
 | `DefinitionBoundaryKind` | `#[non_exhaustive]` downstream forward-compatible surface。 |
 | `DefinitionBoundaryStatus` | `#[non_exhaustive]` downstream forward-compatible surface。 |
 | `CheckerSiteKind` | `#[non_exhaustive]` downstream forward-compatible surface。 |

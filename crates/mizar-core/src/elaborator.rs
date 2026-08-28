@@ -41,6 +41,9 @@ use mizar_checker::{
         ResolvedTypedNodeId, ResolvedTypedNodeKind, StatementSemanticId,
         TheoremJustificationIntent, TheoremPolicyIntent,
     },
+    source_formula_composition::{
+        SourceNestedFraenkelCaptureGraphCaptureId, SourceNestedFraenkelCaptureGraphOwnerHandoff,
+    },
     type_checker::{CheckedFormulaId, FormulaKind, FormulaStatus},
     typed_ast::{
         InitialObligationId, InitialObligationKind, NodeRecoveryState, NormalizedTypeId, Polarity,
@@ -48,6 +51,7 @@ use mizar_checker::{
     },
 };
 use mizar_resolve::env::{ExportStatus, Visibility};
+use mizar_resolve::names::FraenkelGeneratorVariableBindingId;
 use mizar_resolve::resolved_ast::{ModuleId, SemanticOrigin, SymbolId};
 use mizar_session::{SourceAnchor, SourceId, SourceRange};
 use std::{
@@ -1149,6 +1153,584 @@ fn push_checker_site_worklist(
             checker_diagnostics: site.diagnostics.clone(),
         });
     }
+}
+
+const NESTED_FRAENKEL_CAPTURE_CORE_ROLE: &str = "fraenkel-captured-parameter";
+const NESTED_FRAENKEL_CAPTURE_CORE_PROVENANCE_PREFIX: &str =
+    "source-nested-fraenkel-capture-core-variable-v1.capture";
+
+/// One immutable Core variable associated with one checker-authenticated
+/// nested-Fraenkel capture row.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceNestedFraenkelCaptureCoreVariable {
+    capture: SourceNestedFraenkelCaptureGraphCaptureId,
+    generator:
+        mizar_checker::source_formula_composition::SourceNestedFraenkelCaptureGraphGeneratorId,
+    resolver_binding: FraenkelGeneratorVariableBindingId,
+    core_var: CoreVarId,
+}
+
+impl SourceNestedFraenkelCaptureCoreVariable {
+    #[must_use]
+    pub const fn capture(&self) -> SourceNestedFraenkelCaptureGraphCaptureId {
+        self.capture
+    }
+
+    #[must_use]
+    pub const fn generator(
+        &self,
+    ) -> mizar_checker::source_formula_composition::SourceNestedFraenkelCaptureGraphGeneratorId
+    {
+        self.generator
+    }
+
+    #[must_use]
+    pub const fn resolver_binding(&self) -> FraenkelGeneratorVariableBindingId {
+        self.resolver_binding
+    }
+
+    #[must_use]
+    pub const fn core_var(&self) -> CoreVarId {
+        self.core_var
+    }
+}
+
+/// Immutable table of Core variables keyed by checker capture identity.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceNestedFraenkelCaptureCoreVariableTable {
+    rows: BTreeMap<
+        SourceNestedFraenkelCaptureGraphCaptureId,
+        SourceNestedFraenkelCaptureCoreVariable,
+    >,
+}
+
+impl SourceNestedFraenkelCaptureCoreVariableTable {
+    fn empty() -> Self {
+        Self {
+            rows: BTreeMap::new(),
+        }
+    }
+
+    #[must_use]
+    pub fn get(
+        &self,
+        id: SourceNestedFraenkelCaptureGraphCaptureId,
+    ) -> Option<&SourceNestedFraenkelCaptureCoreVariable> {
+        self.rows.get(&id)
+    }
+
+    pub fn iter(
+        &self,
+    ) -> impl Iterator<
+        Item = (
+            SourceNestedFraenkelCaptureGraphCaptureId,
+            &SourceNestedFraenkelCaptureCoreVariable,
+        ),
+    > {
+        self.rows.iter().map(|(id, row)| (*id, row))
+    }
+
+    #[must_use]
+    pub fn len(&self) -> usize {
+        self.rows.len()
+    }
+
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.rows.is_empty()
+    }
+}
+
+/// Errors raised while associating a checker capture receipt with Core.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum SourceNestedFraenkelCaptureCoreContextError {
+    EnvironmentMismatch,
+    InvalidCoreContext,
+    InvalidOwnerAssociation,
+    CoreVariableAllocationOverflow,
+    CoreVariableCollision { var: CoreVarId },
+    InvalidCaptureAssociation,
+}
+
+impl fmt::Display for SourceNestedFraenkelCaptureCoreContextError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::EnvironmentMismatch => {
+                formatter.write_str("nested Fraenkel capture Core context environment is invalid")
+            }
+            Self::InvalidCoreContext => {
+                formatter.write_str("nested Fraenkel capture Core context is invalid")
+            }
+            Self::InvalidOwnerAssociation => {
+                formatter.write_str("nested Fraenkel capture Core owner association is invalid")
+            }
+            Self::CoreVariableAllocationOverflow => {
+                formatter.write_str("nested Fraenkel capture Core variable allocation overflowed")
+            }
+            Self::CoreVariableCollision { var } => write!(
+                formatter,
+                "nested Fraenkel capture Core variable {} collides",
+                var.index()
+            ),
+            Self::InvalidCaptureAssociation => {
+                formatter.write_str("nested Fraenkel capture Core association is invalid")
+            }
+        }
+    }
+}
+
+impl Error for SourceNestedFraenkelCaptureCoreContextError {}
+
+/// Immutable Core handoff for the checker-authenticated nested capture.
+#[derive(Clone, PartialEq, Eq)]
+pub struct SourceNestedFraenkelCaptureCoreContextHandoff {
+    context: CoreContext,
+    checker_receipt: SourceNestedFraenkelCaptureGraphOwnerHandoff,
+    owner_item: CoreItemId,
+    captured_variables: SourceNestedFraenkelCaptureCoreVariableTable,
+}
+
+impl SourceNestedFraenkelCaptureCoreContextHandoff {
+    #[must_use]
+    pub const fn source_id(&self) -> SourceId {
+        self.context.source_id()
+    }
+
+    #[must_use]
+    pub const fn module_id(&self) -> &ModuleId {
+        self.context.module_id()
+    }
+
+    #[must_use]
+    pub const fn context(&self) -> &CoreContext {
+        &self.context
+    }
+
+    #[must_use]
+    pub const fn checker_receipt(&self) -> &SourceNestedFraenkelCaptureGraphOwnerHandoff {
+        &self.checker_receipt
+    }
+
+    #[must_use]
+    pub const fn owner_item(&self) -> CoreItemId {
+        self.owner_item
+    }
+
+    #[must_use]
+    pub const fn captured_variables(&self) -> &SourceNestedFraenkelCaptureCoreVariableTable {
+        &self.captured_variables
+    }
+
+    #[must_use]
+    pub fn debug_text(&self) -> String {
+        let vars = self
+            .captured_variables
+            .iter()
+            .map(|(_, row)| row.core_var().index().to_string())
+            .collect::<Vec<_>>()
+            .join(",");
+        format!(
+            "source-nested-fraenkel-capture-core-context-v1|module={}.{}|captures={}|vars={}|owner={}",
+            self.module_id().package().as_str(),
+            self.module_id().path().as_str(),
+            self.captured_variables.len(),
+            vars,
+            self.checker_receipt.owner().symbol().fqn().as_str(),
+        )
+    }
+
+    fn validate(&self) -> Result<(), SourceNestedFraenkelCaptureCoreContextError> {
+        if self.source_id() != self.checker_receipt.source_id()
+            || self.module_id() != self.checker_receipt.module_id()
+        {
+            return Err(SourceNestedFraenkelCaptureCoreContextError::EnvironmentMismatch);
+        }
+        let allowed = capture_vars(&self.captured_variables);
+        let used = validate_core_context_shape(&self.context, &allowed)?;
+        let owner_item = validate_owner_association(&self.context, &self.checker_receipt)?;
+        if owner_item != self.owner_item {
+            return Err(SourceNestedFraenkelCaptureCoreContextError::InvalidOwnerAssociation);
+        }
+        validate_capture_association(
+            &self.context,
+            &self.checker_receipt,
+            &self.captured_variables,
+            &used,
+        )
+    }
+}
+
+/// Builds the standalone immutable Core capture-context handoff.
+#[derive(Debug, Clone, Copy)]
+pub struct SourceNestedFraenkelCaptureCoreContextProducer;
+
+impl SourceNestedFraenkelCaptureCoreContextProducer {
+    pub fn build(
+        mut context: CoreContext,
+        checker_receipt: SourceNestedFraenkelCaptureGraphOwnerHandoff,
+    ) -> Result<
+        SourceNestedFraenkelCaptureCoreContextHandoff,
+        SourceNestedFraenkelCaptureCoreContextError,
+    > {
+        if context.source_id() != checker_receipt.source_id()
+            || context.module_id() != checker_receipt.module_id()
+        {
+            return Err(SourceNestedFraenkelCaptureCoreContextError::EnvironmentMismatch);
+        }
+        let used = validate_core_context_shape(&context, &BTreeSet::new())?;
+        let owner_item = validate_owner_association(&context, &checker_receipt)?;
+        let allocated =
+            allocate_capture_core_vars(&used, checker_receipt.graph().captures().len())?;
+        let associations = capture_associations(&checker_receipt)?;
+        if allocated.len() != associations.len() {
+            return Err(SourceNestedFraenkelCaptureCoreContextError::InvalidCaptureAssociation);
+        }
+
+        let mut captured_variables = SourceNestedFraenkelCaptureCoreVariableTable::empty();
+        for (association, core_var) in associations.into_iter().zip(allocated) {
+            let key = capture_provenance_key(association.capture);
+            let provenance = CoreProvenance::new(CoreProvenancePhase::Checker, key.clone());
+            let source =
+                CoreSourceRef::direct(association.binder_range).with_provenance(vec![provenance]);
+            context.binder_context.declare_variable(
+                core_var,
+                NormalizedVarClass::Free,
+                NESTED_FRAENKEL_CAPTURE_CORE_ROLE,
+                NormalizedVarSort::Term,
+            );
+            context.binder_type_facts.insert(core_var, Vec::new());
+            context
+                .binder_sources
+                .insert(BinderSourceRecord {
+                    var: core_var,
+                    source,
+                    provenance: CheckerOwnedProvenance::checker(key),
+                })
+                .map_err(|_| {
+                    SourceNestedFraenkelCaptureCoreContextError::CoreVariableCollision {
+                        var: core_var,
+                    }
+                })?;
+            if captured_variables
+                .rows
+                .insert(
+                    association.capture,
+                    SourceNestedFraenkelCaptureCoreVariable {
+                        capture: association.capture,
+                        generator: association.generator,
+                        resolver_binding: association.resolver_binding,
+                        core_var,
+                    },
+                )
+                .is_some()
+            {
+                return Err(SourceNestedFraenkelCaptureCoreContextError::InvalidCaptureAssociation);
+            }
+        }
+
+        let handoff = SourceNestedFraenkelCaptureCoreContextHandoff {
+            context,
+            checker_receipt,
+            owner_item,
+            captured_variables,
+        };
+        handoff.validate()?;
+        Ok(handoff)
+    }
+}
+
+#[derive(Clone, Copy)]
+struct CaptureAssociation {
+    capture: SourceNestedFraenkelCaptureGraphCaptureId,
+    generator:
+        mizar_checker::source_formula_composition::SourceNestedFraenkelCaptureGraphGeneratorId,
+    resolver_binding: FraenkelGeneratorVariableBindingId,
+    binder_range: SourceRange,
+}
+
+fn capture_provenance_key(capture: SourceNestedFraenkelCaptureGraphCaptureId) -> CoreProvenanceKey {
+    CoreProvenanceKey::new(format!(
+        "{NESTED_FRAENKEL_CAPTURE_CORE_PROVENANCE_PREFIX}.{}",
+        capture.index()
+    ))
+}
+
+fn capture_vars(table: &SourceNestedFraenkelCaptureCoreVariableTable) -> BTreeSet<CoreVarId> {
+    table.iter().map(|(_, row)| row.core_var()).collect()
+}
+
+fn validate_core_context_shape(
+    context: &CoreContext,
+    allowed_capture_vars: &BTreeSet<CoreVarId>,
+) -> Result<BTreeSet<CoreVarId>, SourceNestedFraenkelCaptureCoreContextError> {
+    let binder_context = context.binder_context();
+    let declared = &binder_context.free_variables;
+    let class_keys = binder_context
+        .variable_classes
+        .keys()
+        .copied()
+        .collect::<BTreeSet<_>>();
+    let role_keys = binder_context
+        .variable_roles
+        .keys()
+        .copied()
+        .collect::<BTreeSet<_>>();
+    let sort_keys = binder_context
+        .variable_sorts
+        .keys()
+        .copied()
+        .collect::<BTreeSet<_>>();
+    let type_fact_keys = context
+        .binder_type_facts
+        .keys()
+        .copied()
+        .collect::<BTreeSet<_>>();
+    if class_keys != *declared
+        || role_keys != *declared
+        || sort_keys != *declared
+        || type_fact_keys != *declared
+    {
+        return Err(SourceNestedFraenkelCaptureCoreContextError::InvalidCoreContext);
+    }
+    if binder_context.variable_roles.iter().any(|(var, role)| {
+        role.as_str() == NESTED_FRAENKEL_CAPTURE_CORE_ROLE && !allowed_capture_vars.contains(var)
+    }) {
+        return Err(SourceNestedFraenkelCaptureCoreContextError::InvalidCoreContext);
+    }
+
+    let mut used = declared.clone();
+    for (var, record) in context.binder_sources.iter() {
+        if var != record.var || !declared.contains(&var) {
+            return Err(SourceNestedFraenkelCaptureCoreContextError::InvalidCoreContext);
+        }
+        if validate_checker_owned_provenance("binder source", record.provenance.as_slice()).is_err()
+        {
+            return Err(SourceNestedFraenkelCaptureCoreContextError::InvalidCoreContext);
+        }
+        used.insert(var);
+    }
+    for frame in &binder_context.frames {
+        if !declared.contains(&frame.original_var) {
+            return Err(SourceNestedFraenkelCaptureCoreContextError::InvalidCoreContext);
+        }
+        used.insert(frame.original_var);
+    }
+    for (_, origin) in context.generated_origins.table().iter() {
+        for var in &origin.params {
+            if !declared.contains(var) {
+                return Err(SourceNestedFraenkelCaptureCoreContextError::InvalidCoreContext);
+            }
+            used.insert(*var);
+        }
+    }
+    Ok(used)
+}
+
+fn validate_owner_association(
+    context: &CoreContext,
+    checker_receipt: &SourceNestedFraenkelCaptureGraphOwnerHandoff,
+) -> Result<CoreItemId, SourceNestedFraenkelCaptureCoreContextError> {
+    let origin = checker_receipt.owner().origin();
+    let owner_range = validate_owner_origin(context, origin)?;
+    validate_owner_item(context, checker_receipt.owner().symbol(), owner_range)
+}
+
+fn validate_owner_origin(
+    context: &CoreContext,
+    origin: &SemanticOrigin,
+) -> Result<SourceRange, SourceNestedFraenkelCaptureCoreContextError> {
+    let Some(owner_range) = (match origin.anchor() {
+        SourceAnchor::Range(range) => Some(*range),
+        _ => None,
+    }) else {
+        return Err(SourceNestedFraenkelCaptureCoreContextError::InvalidOwnerAssociation);
+    };
+    if origin.source_id() != context.source_id()
+        || origin.module_id() != context.module_id()
+        || origin.is_recovered()
+        || origin.import_edge().is_some()
+    {
+        return Err(SourceNestedFraenkelCaptureCoreContextError::InvalidOwnerAssociation);
+    }
+    Ok(owner_range)
+}
+
+fn validate_owner_item(
+    context: &CoreContext,
+    symbol: &SymbolId,
+    owner_range: SourceRange,
+) -> Result<CoreItemId, SourceNestedFraenkelCaptureCoreContextError> {
+    let Some(item_id) = context.item_registry.id_for_symbol(symbol) else {
+        return Err(SourceNestedFraenkelCaptureCoreContextError::InvalidOwnerAssociation);
+    };
+    let Some(item) = context.item_registry.items().get(item_id) else {
+        return Err(SourceNestedFraenkelCaptureCoreContextError::InvalidOwnerAssociation);
+    };
+    if item.symbol != *symbol
+        || item.kind != CoreItemKind::Functor
+        || item.status != CoreItemStatus::Valid
+        || context.source_map.item_sources.get(&item_id) != Some(&item.source)
+    {
+        return Err(SourceNestedFraenkelCaptureCoreContextError::InvalidOwnerAssociation);
+    }
+    if !matches!(
+        &item.source.anchor,
+        CoreSourceAnchor::SourceRange(range) if *range == owner_range
+    ) {
+        return Err(SourceNestedFraenkelCaptureCoreContextError::InvalidOwnerAssociation);
+    }
+    Ok(item_id)
+}
+
+fn allocate_capture_core_vars(
+    used: &BTreeSet<CoreVarId>,
+    count: usize,
+) -> Result<Vec<CoreVarId>, SourceNestedFraenkelCaptureCoreContextError> {
+    let next = match used.iter().next_back() {
+        Some(var) => var
+            .index()
+            .checked_add(1)
+            .ok_or(SourceNestedFraenkelCaptureCoreContextError::CoreVariableAllocationOverflow)?,
+        None => 0,
+    };
+    let mut allocated = Vec::with_capacity(count);
+    let mut reserved = used.clone();
+    for offset in 0..count {
+        let index = next
+            .checked_add(offset)
+            .ok_or(SourceNestedFraenkelCaptureCoreContextError::CoreVariableAllocationOverflow)?;
+        let var = CoreVarId::new(index);
+        if !reserved.insert(var) {
+            return Err(SourceNestedFraenkelCaptureCoreContextError::CoreVariableCollision { var });
+        }
+        allocated.push(var);
+    }
+    Ok(allocated)
+}
+
+fn capture_associations(
+    checker_receipt: &SourceNestedFraenkelCaptureGraphOwnerHandoff,
+) -> Result<Vec<CaptureAssociation>, SourceNestedFraenkelCaptureCoreContextError> {
+    let graph = checker_receipt.graph();
+    if graph.generators().len() != 3 || graph.captures().len() != 2 {
+        return Err(SourceNestedFraenkelCaptureCoreContextError::InvalidCaptureAssociation);
+    }
+    let Some((local_generator, _)) = graph.generators().iter().next() else {
+        return Err(SourceNestedFraenkelCaptureCoreContextError::InvalidCaptureAssociation);
+    };
+    let mut associations = Vec::with_capacity(2);
+    let mut seen_generators = BTreeSet::new();
+    let mut seen_bindings = BTreeSet::new();
+    for (capture_id, capture) in graph.captures().iter() {
+        if capture.generator() == local_generator
+            || !seen_generators.insert(capture.generator())
+            || !seen_bindings.insert(capture.resolver_binding())
+        {
+            return Err(SourceNestedFraenkelCaptureCoreContextError::InvalidCaptureAssociation);
+        }
+        let Some(generator) = graph.generators().get(capture.generator()) else {
+            return Err(SourceNestedFraenkelCaptureCoreContextError::InvalidCaptureAssociation);
+        };
+        if generator.resolver_binding() != capture.resolver_binding() {
+            return Err(SourceNestedFraenkelCaptureCoreContextError::InvalidCaptureAssociation);
+        }
+        associations.push(CaptureAssociation {
+            capture: capture_id,
+            generator: capture.generator(),
+            resolver_binding: capture.resolver_binding(),
+            binder_range: generator.binder_range(),
+        });
+    }
+    Ok(associations)
+}
+
+fn validate_capture_association(
+    context: &CoreContext,
+    checker_receipt: &SourceNestedFraenkelCaptureGraphOwnerHandoff,
+    captured_variables: &SourceNestedFraenkelCaptureCoreVariableTable,
+    used: &BTreeSet<CoreVarId>,
+) -> Result<(), SourceNestedFraenkelCaptureCoreContextError> {
+    let associations = capture_associations(checker_receipt)?;
+    validate_capture_rows(context, captured_variables, used, &associations)
+}
+
+fn validate_capture_rows(
+    context: &CoreContext,
+    captured_variables: &SourceNestedFraenkelCaptureCoreVariableTable,
+    used: &BTreeSet<CoreVarId>,
+    associations: &[CaptureAssociation],
+) -> Result<(), SourceNestedFraenkelCaptureCoreContextError> {
+    if captured_variables.len() != associations.len() {
+        return Err(SourceNestedFraenkelCaptureCoreContextError::InvalidCaptureAssociation);
+    }
+    let capture_vars = capture_vars(captured_variables);
+    if capture_vars.len() != captured_variables.len() {
+        return Err(
+            SourceNestedFraenkelCaptureCoreContextError::CoreVariableCollision {
+                var: captured_variables
+                    .iter()
+                    .find_map(|(_, row)| {
+                        let var = row.core_var();
+                        (captured_variables
+                            .iter()
+                            .filter(|(_, other)| other.core_var() == var)
+                            .count()
+                            > 1)
+                        .then_some(var)
+                    })
+                    .unwrap_or_else(|| CoreVarId::new(0)),
+            },
+        );
+    }
+    let non_capture_used = used
+        .iter()
+        .copied()
+        .filter(|var| !capture_vars.contains(var))
+        .collect::<BTreeSet<_>>();
+    let allocated = allocate_capture_core_vars(&non_capture_used, captured_variables.len())?;
+    for (association, expected_var) in associations.iter().zip(allocated) {
+        let Some(row) = captured_variables.get(association.capture) else {
+            return Err(SourceNestedFraenkelCaptureCoreContextError::InvalidCaptureAssociation);
+        };
+        if row.capture() != association.capture
+            || row.generator() != association.generator
+            || row.resolver_binding() != association.resolver_binding
+            || row.core_var() != expected_var
+        {
+            return Err(SourceNestedFraenkelCaptureCoreContextError::InvalidCaptureAssociation);
+        }
+        let Some(record) = context.binder_sources.get(row.core_var()) else {
+            return Err(SourceNestedFraenkelCaptureCoreContextError::InvalidCaptureAssociation);
+        };
+        let key = capture_provenance_key(association.capture);
+        if record.source.anchor != CoreSourceAnchor::SourceRange(association.binder_range)
+            || record.source.provenance.as_slice()
+                != [CoreProvenance::new(
+                    CoreProvenancePhase::Checker,
+                    key.clone(),
+                )]
+            || record.provenance.as_slice()
+                != [CoreProvenance::new(CoreProvenancePhase::Checker, key)]
+        {
+            return Err(SourceNestedFraenkelCaptureCoreContextError::InvalidCaptureAssociation);
+        }
+        if context.binder_context.variable_classes.get(&row.core_var())
+            != Some(&NormalizedVarClass::Free)
+            || context.binder_context.variable_sorts.get(&row.core_var())
+                != Some(&NormalizedVarSort::Term)
+            || context
+                .binder_context
+                .variable_roles
+                .get(&row.core_var())
+                .map(CoreVarRole::as_str)
+                != Some(NESTED_FRAENKEL_CAPTURE_CORE_ROLE)
+            || context.binder_type_facts.get(&row.core_var()) != Some(&Vec::new())
+        {
+            return Err(SourceNestedFraenkelCaptureCoreContextError::InvalidCaptureAssociation);
+        }
+    }
+    Ok(())
 }
 
 fn diagnostic(
@@ -17128,5 +17710,415 @@ mod tests {
                 phase: CoreProvenancePhase::Generated
             })
         ));
+    }
+
+    fn task33c4c8_variable_seed(var: CoreVarId, role: &str) -> CoreVariableSeed {
+        CoreVariableSeed::new(
+            var,
+            NormalizedVarClass::Free,
+            role,
+            NormalizedVarSort::Term,
+            provenance(format!("checker:task33c4c8:var:{}", var.index()).as_str()),
+        )
+    }
+
+    fn task33c4c8_context_with_complete_used_inventory() -> CoreContext {
+        let owner = symbol("CaptureOwner");
+        let mut input = input_with_items(vec![CoreItemSeed::new(
+            owner.clone(),
+            CoreItemKind::Functor,
+            "public",
+            direct(20, 30),
+            provenance("checker:task33c4c8:owner"),
+        )]);
+        for index in [2, 9] {
+            let var = CoreVarId::new(index);
+            input
+                .variable_seeds
+                .push(task33c4c8_variable_seed(var, "existing-term"));
+            input.binder_seeds.push(CoreBinderSeed::new(
+                var,
+                direct(30 + index, 31 + index),
+                provenance(format!("checker:task33c4c8:binder:{index}").as_str()),
+            ));
+        }
+        input.generated_origin_seeds.push(
+            GeneratedOriginSeed::new(
+                owner,
+                GeneratedOriginKind::StableChoice,
+                "task33c4c8-existing-origin",
+                direct(50, 55),
+                provenance("checker:task33c4c8:origin"),
+            )
+            .with_params(vec![CoreVarId::new(9)]),
+        );
+        let mut context = prepare_core_context(input).expect("Task33C4C8 unit context");
+        context
+            .binder_context
+            .frames
+            .push(crate::binder_normalization::BinderFrame::new(
+                0,
+                CoreVarId::new(2),
+                "existing-frame",
+                direct(60, 61),
+            ));
+        context
+    }
+
+    #[test]
+    fn task33c4c8_core_context_shape_is_complete_and_fail_closed() {
+        let context = task33c4c8_context_with_complete_used_inventory();
+        let used = validate_core_context_shape(&context, &BTreeSet::new())
+            .expect("complete used-variable inventory");
+        assert_eq!(used, BTreeSet::from([CoreVarId::new(2), CoreVarId::new(9)]));
+        assert_eq!(
+            allocate_capture_core_vars(&used, 2).expect("checked max-plus-one allocation"),
+            [CoreVarId::new(10), CoreVarId::new(11)]
+        );
+
+        let mut missing_sort = context.clone();
+        missing_sort
+            .binder_context
+            .variable_sorts
+            .remove(&CoreVarId::new(2));
+        assert_eq!(
+            validate_core_context_shape(&missing_sort, &BTreeSet::new()),
+            Err(SourceNestedFraenkelCaptureCoreContextError::InvalidCoreContext)
+        );
+
+        let mut reserved_role = context.clone();
+        reserved_role.binder_context.variable_roles.insert(
+            CoreVarId::new(2),
+            CoreVarRole::new(NESTED_FRAENKEL_CAPTURE_CORE_ROLE),
+        );
+        assert_eq!(
+            validate_core_context_shape(&reserved_role, &BTreeSet::new()),
+            Err(SourceNestedFraenkelCaptureCoreContextError::InvalidCoreContext)
+        );
+
+        let mut undeclared_frame = context.clone();
+        undeclared_frame.binder_context.frames[0].original_var = CoreVarId::new(99);
+        assert_eq!(
+            validate_core_context_shape(&undeclared_frame, &BTreeSet::new()),
+            Err(SourceNestedFraenkelCaptureCoreContextError::InvalidCoreContext)
+        );
+
+        let mut undeclared_generated_param = context.clone();
+        undeclared_generated_param
+            .generated_origins
+            .table
+            .get_mut(GeneratedOriginId::new(0))
+            .expect("existing origin")
+            .params = vec![CoreVarId::new(99)];
+        assert_eq!(
+            validate_core_context_shape(&undeclared_generated_param, &BTreeSet::new()),
+            Err(SourceNestedFraenkelCaptureCoreContextError::InvalidCoreContext)
+        );
+
+        let mut mismatched_binder_record = context;
+        mismatched_binder_record
+            .binder_sources
+            .by_var
+            .get_mut(&CoreVarId::new(2))
+            .expect("binder record")
+            .var = CoreVarId::new(9);
+        assert_eq!(
+            validate_core_context_shape(&mismatched_binder_record, &BTreeSet::new()),
+            Err(SourceNestedFraenkelCaptureCoreContextError::InvalidCoreContext)
+        );
+    }
+
+    #[test]
+    fn task33c4c8_owner_origin_and_item_checks_are_exact() {
+        let owner_range = range(20, 30);
+        let context = prepare_core_context(input_with_items(vec![CoreItemSeed::new(
+            symbol("CaptureOwner"),
+            CoreItemKind::Functor,
+            "public",
+            CoreSourceRef::direct(owner_range),
+            provenance("checker:task33c4c8:owner"),
+        )]))
+        .expect("Task33C4C8 owner context");
+        let owner_id = context
+            .item_registry
+            .id_for_symbol(&symbol("CaptureOwner"))
+            .expect("owner item");
+        let origin = SemanticOrigin::new(
+            source_id(),
+            module_id(),
+            SourceAnchor::Range(owner_range),
+            Vec::new(),
+        );
+        assert_eq!(validate_owner_origin(&context, &origin), Ok(owner_range));
+        assert_eq!(
+            validate_owner_item(&context, &symbol("CaptureOwner"), owner_range),
+            Ok(owner_id)
+        );
+
+        let source_allocator = InMemorySessionIdAllocator::new();
+        let source_snapshot = BuildSnapshotId::from_published_schema_str(&format!(
+            "mizar-session-build-snapshot-v1:{}",
+            "09".repeat(32)
+        ))
+        .expect("valid alternate snapshot id");
+        let _discarded = source_allocator
+            .next_source_id(source_snapshot)
+            .expect("first alternate source id");
+        let alternate_source = source_allocator
+            .next_source_id(source_snapshot)
+            .expect("second alternate source id");
+        let wrong_source_origin = SemanticOrigin::new(
+            alternate_source,
+            module_id(),
+            SourceAnchor::Range(owner_range),
+            Vec::new(),
+        );
+        let wrong_module_origin = SemanticOrigin::new(
+            source_id(),
+            external_module_id(),
+            SourceAnchor::Range(owner_range),
+            Vec::new(),
+        );
+        let point_origin = SemanticOrigin::new(
+            source_id(),
+            module_id(),
+            SourceAnchor::Point {
+                source_id: source_id(),
+                offset: owner_range.start,
+            },
+            Vec::new(),
+        );
+        for invalid in [
+            wrong_source_origin,
+            wrong_module_origin,
+            point_origin,
+            origin.recovered(),
+        ] {
+            assert_eq!(
+                validate_owner_origin(&context, &invalid),
+                Err(SourceNestedFraenkelCaptureCoreContextError::InvalidOwnerAssociation)
+            );
+        }
+
+        let mut invalid_status = context.clone();
+        invalid_status
+            .item_registry
+            .items
+            .get_mut(owner_id)
+            .expect("owner")
+            .status = CoreItemStatus::Partial;
+        let mut wrong_range = context.clone();
+        wrong_range
+            .item_registry
+            .items
+            .get_mut(owner_id)
+            .expect("owner")
+            .source = direct(21, 30);
+        wrong_range
+            .source_map
+            .item_sources
+            .insert(owner_id, direct(21, 30));
+        let mut missing_source_map = context.clone();
+        missing_source_map.source_map.item_sources.remove(&owner_id);
+        let mut near_match = context;
+        near_match
+            .item_registry
+            .items
+            .get_mut(owner_id)
+            .expect("owner")
+            .symbol = SymbolId::new(
+            module_id(),
+            LocalSymbolId::new("CaptureOwner"),
+            FullyQualifiedName::new("pkg::main::CaptureOwnerDisplayNearMatch"),
+        );
+        for invalid in [invalid_status, wrong_range, missing_source_map, near_match] {
+            assert_eq!(
+                validate_owner_item(&invalid, &symbol("CaptureOwner"), owner_range),
+                Err(SourceNestedFraenkelCaptureCoreContextError::InvalidOwnerAssociation)
+            );
+        }
+    }
+
+    fn task33c4c8_capture_validation_fixture() -> (
+        CoreContext,
+        SourceNestedFraenkelCaptureCoreVariableTable,
+        Vec<CaptureAssociation>,
+        BTreeSet<CoreVarId>,
+    ) {
+        let mut input = CoreContextInput::new(summary());
+        for index in [2, 9, 10, 11] {
+            let var = CoreVarId::new(index);
+            let capture = index.checked_sub(10);
+            let role = if capture.is_some() {
+                NESTED_FRAENKEL_CAPTURE_CORE_ROLE
+            } else {
+                "existing-term"
+            };
+            input
+                .variable_seeds
+                .push(task33c4c8_variable_seed(var, role));
+            let (source, binder_provenance) = if let Some(capture) = capture {
+                let capture_id = SourceNestedFraenkelCaptureGraphCaptureId::new(capture);
+                let key = capture_provenance_key(capture_id);
+                (
+                    CoreSourceRef::direct(range(100 + capture, 101 + capture)).with_provenance(
+                        vec![CoreProvenance::new(
+                            CoreProvenancePhase::Checker,
+                            key.clone(),
+                        )],
+                    ),
+                    CheckerOwnedProvenance::checker(key),
+                )
+            } else {
+                (
+                    direct(70 + index, 71 + index),
+                    provenance(format!("checker:task33c4c8:binder:{index}").as_str()),
+                )
+            };
+            input
+                .binder_seeds
+                .push(CoreBinderSeed::new(var, source, binder_provenance));
+        }
+        let context = prepare_core_context(input).expect("Task33C4C8 capture validation context");
+        let associations = vec![
+            CaptureAssociation {
+                capture: SourceNestedFraenkelCaptureGraphCaptureId::new(0),
+                generator: mizar_checker::source_formula_composition::SourceNestedFraenkelCaptureGraphGeneratorId::new(1),
+                resolver_binding: FraenkelGeneratorVariableBindingId::new(1),
+                binder_range: range(100, 101),
+            },
+            CaptureAssociation {
+                capture: SourceNestedFraenkelCaptureGraphCaptureId::new(1),
+                generator: mizar_checker::source_formula_composition::SourceNestedFraenkelCaptureGraphGeneratorId::new(2),
+                resolver_binding: FraenkelGeneratorVariableBindingId::new(2),
+                binder_range: range(101, 102),
+            },
+        ];
+        let mut table = SourceNestedFraenkelCaptureCoreVariableTable::empty();
+        for (association, core_var) in associations
+            .iter()
+            .zip([CoreVarId::new(10), CoreVarId::new(11)])
+        {
+            table.rows.insert(
+                association.capture,
+                SourceNestedFraenkelCaptureCoreVariable {
+                    capture: association.capture,
+                    generator: association.generator,
+                    resolver_binding: association.resolver_binding,
+                    core_var,
+                },
+            );
+        }
+        let allowed = capture_vars(&table);
+        let used = validate_core_context_shape(&context, &allowed)
+            .expect("Task33C4C8 capture validation used inventory");
+        (context, table, associations, used)
+    }
+
+    #[test]
+    fn task33c4c8_capture_row_postvalidation_is_fail_closed() {
+        let (context, table, associations, used) = task33c4c8_capture_validation_fixture();
+        assert_eq!(
+            validate_capture_rows(&context, &table, &used, &associations),
+            Ok(())
+        );
+
+        let mut missing = table.clone();
+        missing
+            .rows
+            .remove(&SourceNestedFraenkelCaptureGraphCaptureId::new(0));
+        let mut extra = table.clone();
+        extra.rows.insert(
+            SourceNestedFraenkelCaptureGraphCaptureId::new(2),
+            SourceNestedFraenkelCaptureCoreVariable {
+                capture: SourceNestedFraenkelCaptureGraphCaptureId::new(2),
+                generator: mizar_checker::source_formula_composition::SourceNestedFraenkelCaptureGraphGeneratorId::new(3),
+                resolver_binding: FraenkelGeneratorVariableBindingId::new(3),
+                core_var: CoreVarId::new(12),
+            },
+        );
+        let mut reordered = table.clone();
+        reordered
+            .rows
+            .get_mut(&SourceNestedFraenkelCaptureGraphCaptureId::new(0))
+            .expect("capture row")
+            .core_var = CoreVarId::new(11);
+        reordered
+            .rows
+            .get_mut(&SourceNestedFraenkelCaptureGraphCaptureId::new(1))
+            .expect("capture row")
+            .core_var = CoreVarId::new(10);
+        let mut mismatched = table.clone();
+        mismatched
+            .rows
+            .get_mut(&SourceNestedFraenkelCaptureGraphCaptureId::new(1))
+            .expect("capture row")
+            .resolver_binding = FraenkelGeneratorVariableBindingId::new(1);
+        for invalid in [missing, extra, reordered, mismatched] {
+            assert_eq!(
+                validate_capture_rows(&context, &invalid, &used, &associations),
+                Err(SourceNestedFraenkelCaptureCoreContextError::InvalidCaptureAssociation)
+            );
+        }
+
+        let mut duplicate_var = table.clone();
+        duplicate_var
+            .rows
+            .get_mut(&SourceNestedFraenkelCaptureGraphCaptureId::new(1))
+            .expect("capture row")
+            .core_var = CoreVarId::new(10);
+        assert_eq!(
+            validate_capture_rows(&context, &duplicate_var, &used, &associations),
+            Err(
+                SourceNestedFraenkelCaptureCoreContextError::CoreVariableCollision {
+                    var: CoreVarId::new(10)
+                }
+            )
+        );
+
+        let mut bad_provenance = context.clone();
+        bad_provenance
+            .binder_sources
+            .by_var
+            .get_mut(&CoreVarId::new(10))
+            .expect("capture binder")
+            .source
+            .provenance
+            .clear();
+        assert_eq!(
+            validate_capture_rows(&bad_provenance, &table, &used, &associations),
+            Err(SourceNestedFraenkelCaptureCoreContextError::InvalidCaptureAssociation)
+        );
+
+        let mut stale_role = context;
+        stale_role
+            .binder_context
+            .variable_roles
+            .insert(CoreVarId::new(11), CoreVarRole::new("stale-capture-role"));
+        assert_eq!(
+            validate_capture_rows(&stale_role, &table, &used, &associations),
+            Err(SourceNestedFraenkelCaptureCoreContextError::InvalidCaptureAssociation)
+        );
+    }
+
+    #[test]
+    fn task33c4c8_allocator_is_zero_based_checked_and_deterministic() {
+        assert_eq!(
+            allocate_capture_core_vars(&BTreeSet::new(), 2).expect("empty allocation"),
+            [CoreVarId::new(0), CoreVarId::new(1)]
+        );
+        let used = BTreeSet::from([CoreVarId::new(2), CoreVarId::new(9)]);
+        assert_eq!(
+            allocate_capture_core_vars(&used, 2).expect("populated allocation"),
+            [CoreVarId::new(10), CoreVarId::new(11)]
+        );
+        assert_eq!(
+            allocate_capture_core_vars(&BTreeSet::from([CoreVarId::new(usize::MAX)]), 1),
+            Err(SourceNestedFraenkelCaptureCoreContextError::CoreVariableAllocationOverflow)
+        );
+        assert_eq!(
+            allocate_capture_core_vars(&BTreeSet::from([CoreVarId::new(usize::MAX - 1)]), 2),
+            Err(SourceNestedFraenkelCaptureCoreContextError::CoreVariableAllocationOverflow)
+        );
     }
 }

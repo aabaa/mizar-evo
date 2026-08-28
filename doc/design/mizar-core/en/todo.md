@@ -544,12 +544,18 @@ work. Every finding maps to a task or a recorded disposition:
       allocation through a reserved standalone immutable seam. It freezes no
       API, destination, allocator mapping, semantic route, test/trace credit,
       or Task 277B credit.
+33C4C8. **C4C8 Core capture-context association.** [x]
+    - The paired [task contract](../../task_contracts/en/CORE-FRAENKEL-CAPTURE-CONTEXT-33C4C8.md)
+      freezes the adopted zero-semantic implementation. Task33C is the sole
+      checker capability; Core 33 owns the exact owner-item association and
+      fresh `x,y` Core variables in authenticated capture order. It creates no
+      Core35 semantics, parameters/arguments, `GeneratedOrigin`, active route,
+      coverage credit, or Task277B readiness.
 33. **Source-derived Core context, items, binders, and source maps.** [ ]
     - Consume checker 248 through `MT10-CIR-TE`; no type/proof/algorithm body.
-      For C4C8, checker 248 is not sufficient: the containing-owner bridge,
-      association destination/API, allocator mapping, and complete default-
-      deny oracle remain unresolved under Task 33P. Do not implement that slice
-      until fresh authority makes every choice unique.
+      For C4C8, checker 248 remains insufficient; Task 33C4C8 owns only the
+      separately authorized capture-context prerequisite. The general Core-33
+      source family remains open.
 34. **Source-derived type, attribute, evidence, coercion, and view lowering.** [ ]
     - Consume checker 249-251 and Core 33 through `MT10-CIR-TE`; reusable
       conversion only, while source `reconsider` remains Core 37.

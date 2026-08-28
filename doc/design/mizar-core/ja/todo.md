@@ -519,11 +519,17 @@ F8 の spec 本文は同一変更(`cef7e109`: spec 03、05、13、17、18)で修
       seamを通じてfuture authenticated item/graph associationとfresh Core-variable
       allocationをownする。API/destination/allocator mapping/semantic route/test/trace
       credit/Task 277B creditはfreezeしない。
+33C4C8. **C4C8 Core capture-context association。** [x]
+    - Paired [task contract](../../task_contracts/ja/CORE-FRAENKEL-CAPTURE-CONTEXT-33C4C8.md)は
+      adopted zero-semantic implementationをfreezeする。Task33Cをsole checker
+      capabilityとし、Core 33がexact owner-item associationとauthenticated capture
+      orderのfresh `x,y` Core variableをownする。Core35 semantics、parameter/argument、
+      `GeneratedOrigin`、active route、coverage credit、Task277B readinessは作らない。
 33. **Source-derived Core context/item/binder/source map。** [ ]
     - checker 248を`MT10-CIR-TE`でconsumeし、type/proof/algorithm bodyは扱わない。
-      C4C8についてchecker 248だけでは不十分で、containing-owner bridge、association
-      destination/API、allocator mapping、complete default-deny oracleがTask 33Pの下で
-      未決定。Fresh authorityが全choiceを一意にするまでそのsliceを実装しない。
+      C4C8についてchecker 248だけでは不十分なままであり、Task 33C4C8はseparately
+      authorized capture-context prerequisiteだけをownする。General Core-33 source
+      familyはopenのまま。
 34. **Source-derived type/attribute/evidence/coercion/view lowering。** [ ]
     - checker 249-251/Core 33を`MT10-CIR-TE`でconsumeする。Reusable conversion
       のみで、source `reconsider`はCore 37。

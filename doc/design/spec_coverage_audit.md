@@ -7203,3 +7203,22 @@ expectation, trace status/backlinks, and protected hashes remain unchanged.
 Typed/Resolved/Core installation, Core Task33/35 free/generated-parameter
 transport and order, `GeneratedOrigin`, actual semantics, active routing,
 diagnostics, and Task277B readiness remain separately authority-gated.
+
+## Task CORE-FRAENKEL-CAPTURE-CONTEXT-33C4C8 Zero-Credit Core Association
+
+The canonical [Core-33 C4C8 contract](./task_contracts/en/CORE-FRAENKEL-CAPTURE-CONTEXT-33C4C8.md)
+selects the existing immutable Task33C receipt as the sole checker admission
+capability and installs one standalone immutable Core association. The Core
+producer joins the retained whole owner `SymbolId` to the existing valid
+functor `CoreItemId`, then allocates exactly captured `x,y` as fresh free term
+Core variables above the checked maximum existing Core variable identity in
+the checker-authenticated private capture order. Inner `z` remains outside the
+capture transport. Resolver, checker, and Core numeric IDs are never
+reinterpreted.
+
+This derived enforcement remains zero semantic and execution credit. It adds
+no `CoreContextInput`, Typed, or Resolved slot, parameter/argument,
+`GeneratedOrigin`, Core35 term/formula lowering, active route, diagnostic, or
+snapshot. Chapter 13 remains `partial`; the C4C7 source, expectation, trace
+row/status/backlinks, C4C4 captured state, and protected hashes remain
+unchanged. Task277B remains not ready and receives zero credit.

@@ -171,6 +171,23 @@ Tests for task 8 must cover deterministic item ids, dependency-summary absence,
 canonical ids never using raw spelling, failed overload/worklist preservation,
 and source-map builder initialization.
 
+### Core-33 C4C8 capture-context prerequisite
+
+[Task CORE-FRAENKEL-CAPTURE-CONTEXT-33C4C8](../../task_contracts/en/CORE-FRAENKEL-CAPTURE-CONTEXT-33C4C8.md)
+adds one standalone immutable Step-1 handoff. It consumes the existing Task33C
+checker receipt and an already prepared `CoreContext` by value, maps the
+retained whole owner `SymbolId` to the existing valid functor item, and installs
+only the two captured outer generator identities as fresh free term
+`CoreVarId`s. Allocation is checked max-plus-one in the checker-authenticated
+private capture order; the local inner generator is excluded. The handoff
+retains exact source and checker provenance and empty type facts.
+
+This API is a zero-semantic Core-33 association boundary. It does not extend
+`CoreContextInput`, Typed, or Resolved; it creates no parameter, argument,
+generated origin, term, formula, type evidence, diagnostic, or active route.
+Core 35 may later consume it only after applicable Core-33 local-binder and
+Core-34 prerequisites and may not allocate, infer, reorder, or repair it.
+
 ## Step 2: Type And Fact Lowering
 
 Task 9 implements this section.
@@ -677,6 +694,7 @@ payload categories can be added without breaking downstream exhaustive matches.
 | Public enum | Decision |
 |---|---|
 | `CoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `SourceNestedFraenkelCaptureCoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `DefinitionBoundaryKind` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `DefinitionBoundaryStatus` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `CheckerSiteKind` | `#[non_exhaustive]` downstream forward-compatible surface. |

@@ -5903,3 +5903,19 @@ The probe adds no registry include, production dispatch, active route,
 Typed/Resolved/Core field or installer, parameter/origin, diagnostic,
 sidecar/trace mutation, semantic result, coverage credit, or Task277B
 readiness.
+
+## Core Task 33C4C8 Private Capture-Context Probe
+
+The canonical [Core-33 C4C8 contract](../../task_contracts/en/CORE-FRAENKEL-CAPTURE-CONTEXT-33C4C8.md)
+extends the existing unregistered nested-capture library leaf with five private
+tests. They build the unchanged real C4C7 Task33C receipt, prepare explicit Core
+contexts, and verify exact whole-owner association, empty and populated checked
+max-plus-one allocation, deterministic retained `x,y` mappings, exclusion of
+local `z`, exact binder source/provenance, unchanged generated-origin state,
+environment/invalid-context/owner default-deny failures, precedence, overflow,
+and stable typed errors.
+
+The probe adds no registry include, production dispatch, active route,
+`CoreContextInput`/Typed/Resolved field, parameter/argument, generated origin,
+diagnostic, sidecar/trace mutation, semantic result, coverage credit, or
+Task277B readiness.

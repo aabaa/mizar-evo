@@ -90,6 +90,11 @@ source audit、module spec、ledger、cross-crate ownership noteを同期する�
 33-53 task split、prepared consumer stage、Gates A1/S1、VC-owned substitution
 boundary、zero coverage promotionを保持する。
 
+Core Task 33C4C8はchanged plan、TODO、source-family、elaborator、source/spec audit、
+module-boundary audit、contract pairを再確認する。両言語はsole Task33C capability、exact
+owner join、max-plus-one `x,y` allocation、private canonical order、zero-semantic boundary、
+Core35 deferral、unchanged Task277B/protected artifactを保持する。
+
 ## Guard Decision
 
 Task 23 または closeout では新しい Rust lint guard は追加しない。file-pair set は小さく、現在の
