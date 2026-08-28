@@ -42,6 +42,28 @@ For each task, complete these phases in order:
 13. Prepare a handoff prompt for the next task so it can be started in a separate chat. Include a recommended reasoning setting for the next task, a short rationale, and any conditions that would justify raising or lowering that setting.
 14. Inspect the worktree, prepare a commit message, and commit the completed change when the user invoked this full workflow or requested autonomous crate development, unless the user asks not to commit. For tasks outside this workflow, commit only when the user explicitly requested committing, for example by saying `commit`, `commitまで`, or `コミットまで`.
 
+## Delivery Efficiency And Implementation Minimality
+
+Release throughput is a quality constraint. Implement the smallest change that
+fully satisfies the frozen scope and required gates.
+
+- Do not add speculative generality, premature abstractions, compatibility
+  layers, adapters, fields, tests, documentation, or refactors unless required
+  by authority, frozen acceptance criteria, a reproducible defect, or an
+  in-scope review finding.
+- Reviews must separate blocking in-scope findings from optional follow-up.
+  Fix blocking findings, but do not expand the active task for optional polish
+  or reopen settled decisions without new contradictory evidence.
+- Every additional probe or verification rerun must resolve a stated
+  uncertainty. Prefer focused checks first; after a documentation-only or
+  evidence-only edit, do not rerun unchanged broad suites unless policy, CI
+  parity, or changed risk requires it.
+- Once the acceptance criteria and required gates pass with no blocking
+  findings, stage and complete promptly. "While here" cleanup is a separate
+  task.
+- These limits never relax the authority order, soundness, fail-closed
+  behavior, protected artifacts, required independent reviews, or hard gates.
+
 ## Specification-Driven Autonomous Crate Development
 
 For crate-wide autonomous development, follow the protocol in
@@ -195,6 +217,8 @@ Review-only sub-agents must use a code-review stance:
 - Order findings by severity.
 - Include file and line references where applicable.
 - Focus on bugs, behavioral regressions, specification mismatches, missing tests, and documentation drift.
+- Do not label optional polish or an out-of-scope improvement as a finding;
+  report it separately as optional follow-up.
 - If there are no findings, say so clearly.
 - Mention residual risk or unrun tests briefly.
 

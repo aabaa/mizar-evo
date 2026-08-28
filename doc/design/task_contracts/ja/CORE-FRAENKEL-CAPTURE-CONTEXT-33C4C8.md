@@ -3,8 +3,9 @@
 > 正本は英語です。canonical English:
 > [../en/CORE-FRAENKEL-CAPTURE-CONTEXT-33C4C8.md](../en/CORE-FRAENKEL-CAPTURE-CONTEXT-33C4C8.md)。
 
-状態: precommit implementation complete。exact stagingとtask-only commitが残る。
-本taskはchecker Task33Cに続くdependency-minimalなzero-semantic Core-33 successorである。利用者は
+状態: task-only commit `774a4781ccaedfbba2b5c9ecbf7bf26b79724616`でcomplete。
+必須のfresh inventoryで一意にreadyなsuccessorは見つからなかった。本taskは
+checker Task33Cに続くdependency-minimalなzero-semantic Core-33 successorである。利用者は
 [CORE-SOURCE-CONTEXT-33P](CORE-SOURCE-CONTEXT-33P.md)が記録した未決定choiceの
 review後に本contractを採択した。
 
@@ -195,5 +196,30 @@ source/lintはそれぞれ
 `4aea1816db81c1625b7353f4e7829528020ec2d69f054360004234ea28201103`のまま。
 Specification、existing `.miz`/expectation/trace、checker、C4C4 capture、manifest、
 Typed/Resolved、diagnostic、semantic route、generated origin、coverage credit、Task277B stateは
-変更していない。Exact staging、cached review、parent final hard-gate scoring、task-only commit、
-clean postcommit proof、fresh successor inventoryがexit operationとして残る。
+変更していない。
+
+Exact task-only commitは`774a4781ccaedfbba2b5c9ecbf7bf26b79724616`。Sorted path 25件の
+SHA-256は`64e9e45ea2e53832b8785e365c517cd1c408f4d86240eadcee78f8a92ee0f44f`。
+Parent final scoringはhard gate `9/9`をすべてpassし、`100/100`。Postcommit worktreeは
+clean、`HEAD`と`origin/main`は該当task commitでdivergence `0/0`、protected stash
+`f65cf4a13752ec380710814a9ac6392ccb9d75d4`は不変。
+
+Fresh read-only inventoryで一意にreadyなsuccessorはなかった。General Core 33、34、35は
+openのままで、Core 35は33と34の両方に依存する。Generated-origin key、functor、
+source、sethood、parameter/argument oracleのexactな形は未freeze。第2のTyped/Resolved
+slotは禁止され、Core 35へ直接進むとboundary violationになる。残るgapは
+`design_drift`、`source_drift`、`test_gap`。Parameter orderをnormativeにする場合だけ
+`spec_gap`が生じる。Authority contradictionと`repo_metadata_conflict`は見つからなかった。
+Task277Bはnot ready / zero creditのまま。
+
+## next handoff
+
+別chatでは、Checker 248と`MT10-CIR-TE`向けgeneral Core-33 source-derived context /
+local-binder transportをfreezeするread-only auditから開始する。本standalone C4C8 handoffを
+維持する。Owner、dependency、scope、API、default-deny oracleが一意になるまで、第2の
+Typed/Resolved slot、Core-34/35 semantics、generated-origin transport、active routeは追加しない。
+Authority/boundary判断はGPT-5.6 Sol `xhigh`、freeze後のmechanical inventoryとfirst-pass
+reviewはLuna `xhigh`を使う。最初のdecisionがpublic ownership、API、soundness boundaryを
+freezeし得るため、Solは`xhigh`を維持する。Lunaの引下げはrepresentativeな
+no-regression trial後のdeterministic inventoryだけとする。Cross-module精度gapはTerra
+`high`、authorityの曖昧さはSolへescalateする。
