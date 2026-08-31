@@ -1934,5 +1934,16 @@ exceptionなし。
 
 ## Core Task 33I260 bilingual contract parity
 
-Implementation/verification は complete、exact task-only commit は pending。[EN canonical](../../task_contracts/en/CORE-SOURCE-FUNCTOR-ITEM-CONTEXT-33I260.md) と
+Implementation/verification/exact task-only commit `f8e9fc21` は complete。[EN canonical](../../task_contracts/en/CORE-SOURCE-FUNCTOR-ITEM-CONTEXT-33I260.md) と
 [JA companion](../../task_contracts/ja/CORE-SOURCE-FUNCTOR-ITEM-CONTEXT-33I260.md) が probe、boundary、review、verification、protected artifact、deferral の詳細 evidence を所有する。Final bilingual review は no findings。English canonical、exceptionなし。
+
+## Core Task 33I261 bilingual contract parity
+
+Freeze済みの [EN contract](../../task_contracts/en/CORE-SOURCE-ATTRIBUTE-ITEM-CONTEXT-33I261.md) と
+[JA companion](../../task_contracts/ja/CORE-SOURCE-ATTRIBUTE-ITEM-CONTEXT-33I261.md) は、private
+Task261 real-source probeとone-row ordinary-attribute Core associationを同じ内容で指定する。
+両言語はby-value handoff、exact identity/source-orderとdefault-deny boundaryを保持する。
+Implementation/verification complete、final review no findings、task-only commit pending。Probeはzero
+semantic/execution/coverage creditのままで、production runner、installer、generic API/slot、
+fixture/expectation/trace/metadataの変更なし。Core34--36、`GeneratedOrigin`、`MT10-CIR-TE`、
+Task277Bはdeferred/not-ready。English canonical、exceptionなし。

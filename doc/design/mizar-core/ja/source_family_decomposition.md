@@ -133,7 +133,11 @@ semantics、`GeneratedOrigin`、active snapshot、diagnostic、trace、coverage�
 
 ### Task-260固有 functor item context
 
-完了した [CORE-SOURCE-FUNCTOR-ITEM-CONTEXT-33I260 contract](../../task_contracts/ja/CORE-SOURCE-FUNCTOR-ITEM-CONTEXT-33I260.md) が、Task260固有二行 Core-33 item-context successor と source-order、identity、provenance、default-deny invariant を所有する。Implementation/verification は complete、exact task-only commit は pending。これは zero-semantic/zero-credit の private-probe slice であり、production install、general multi-definition policy、complete Core33、Core34--36、`MT10-CIR-TE`、diagnostic、Task277B は deferred のままである。
+完了した [CORE-SOURCE-FUNCTOR-ITEM-CONTEXT-33I260 contract](../../task_contracts/ja/CORE-SOURCE-FUNCTOR-ITEM-CONTEXT-33I260.md) が、Task260固有二行 Core-33 item-context successor と source-order、identity、provenance、default-deny invariant を所有する。Implementation/verification/exact task-only commit `f8e9fc21` は complete。これは zero-semantic/zero-credit の private-probe slice であり、production install、general multi-definition policy、complete Core33、Core34--36、`MT10-CIR-TE`、diagnostic、Task277B は deferred のままである。
+
+### Task-261固有 attribute item context
+
+Freeze済みの [CORE-SOURCE-ATTRIBUTE-ITEM-CONTEXT-33I261 contract](../../task_contracts/ja/CORE-SOURCE-ATTRIBUTE-ITEM-CONTEXT-33I261.md) が、one-row ordinary-attribute Core-33 mappingを所有する。Exact context linkがsource itemを選び、retained whole `SymbolId`がvalid public `Attribute` item 1件を選ぶ。Immutable association tableはtyped `SourceAttributeDefinitionId`をkeyとし、source order、inner definition range、provenanceでvalidationする。Name、range、numeric id、iteration orderはjoinではない。Implementation/verification complete、final review no findings、task-only commit pending。これはzero-semantic/zero-credit・private-probe-onlyであり、generic definition-family policy、production install、Core34--36 semantics、`GeneratedOrigin`、`MT10-CIR-TE`、diagnostic、Task277B readinessを追加しない。
 
 ## Accepted Algorithm CoreIr Task Graph
 

@@ -157,10 +157,24 @@ Task277B remain deferred.
 The completed [CORE-SOURCE-FUNCTOR-ITEM-CONTEXT-33I260 contract](../../task_contracts/en/CORE-SOURCE-FUNCTOR-ITEM-CONTEXT-33I260.md)
 owns the Task-260-specific two-row Core-33 item-context successor and its
 source-order, identity, provenance, and default-deny invariants. Implementation
-and verification are complete; the exact task-only commit is pending. This is a
+and verification are complete in exact task-only commit `f8e9fc21`. This is a
 zero-semantic/zero-credit private-probe slice; production installation,
 general multi-definition policy, complete Core 33, Core 34--36, `MT10-CIR-TE`,
 diagnostics, and Task277B remain deferred.
+
+### Task-261-specific attribute item context
+
+The frozen [CORE-SOURCE-ATTRIBUTE-ITEM-CONTEXT-33I261 contract](../../task_contracts/en/CORE-SOURCE-ATTRIBUTE-ITEM-CONTEXT-33I261.md)
+owns the one-row ordinary-attribute Core-33 mapping: the exact context link
+selects its source item and the retained whole `SymbolId` selects one valid
+public `Attribute` item. The immutable association table is keyed by typed
+`SourceAttributeDefinitionId`, source ordered, and validated with the inner
+definition range and provenance; names, ranges, numeric ids, or iteration
+order are not joins. Implementation and verification are complete; final
+reviews have no findings and the task-only commit is pending. This is zero-semantic/zero-
+credit and private-probe-only, with no generic definition-family policy,
+production install, Core 34--36 semantics, `GeneratedOrigin`, `MT10-CIR-TE`,
+diagnostics, or Task277B readiness.
 
 ## Accepted Algorithm CoreIr Task Graph
 

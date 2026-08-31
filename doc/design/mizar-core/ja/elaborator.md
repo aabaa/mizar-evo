@@ -207,7 +207,11 @@ closed。Field/installerを追加せず、one definition blockをmultiple semant
 
 ### Core-33 Task260 functor item context
 
-完了した [CORE-SOURCE-FUNCTOR-ITEM-CONTEXT-33I260 contract](../../task_contracts/ja/CORE-SOURCE-FUNCTOR-ITEM-CONTEXT-33I260.md) が、Task260固有二行 Core-context association、immutable handoff、error surface、producer boundary と詳細 invariant を所有する。Implementation/verification は complete、exact task-only commit は pending。下記 public enum inventory に `SourceFunctorCoreContextError` を含める。これは zero-semantic/zero-credit の private-probe slice であり、production install、`CoreIr`、Core34--36、`MT10-CIR-TE`、diagnostic、Task277B は deferred のままである。
+完了した [CORE-SOURCE-FUNCTOR-ITEM-CONTEXT-33I260 contract](../../task_contracts/ja/CORE-SOURCE-FUNCTOR-ITEM-CONTEXT-33I260.md) が、Task260固有二行 Core-context association、immutable handoff、error surface、producer boundary と詳細 invariant を所有する。Implementation/verification/exact task-only commit `f8e9fc21` は complete。下記 public enum inventory に `SourceFunctorCoreContextError` を含める。これは zero-semantic/zero-credit の private-probe slice であり、production install、`CoreIr`、Core34--36、`MT10-CIR-TE`、diagnostic、Task277B は deferred のままである。
+
+### Core-33 Task261 attribute item context
+
+Freeze済みの [CORE-SOURCE-ATTRIBUTE-ITEM-CONTEXT-33I261 contract](../../task_contracts/ja/CORE-SOURCE-ATTRIBUTE-ITEM-CONTEXT-33I261.md) が、immutable `SourceAttributeCoreItemAssociation` row/table、`SourceAttributeCoreContextHandoff`、non-exhaustive error、producerとdurable invariantを所有する。Producerはcomplete 33LB、Task248 source context、Task261 checker handoffをby-valueでretainし、complete validation後だけpublishする。Admitするmappingはwhole `SymbolId`で選んだordinary public `Attribute` item 1件と、`SourceAttributeDefinitionId`をkeyとするsource-ordered association row 1件であり、source order、inner definition range、versioned provenanceはjoin keyではなくvalidation対象である。Implementation/verification complete、final review no findings、task-only commit pending。これはzero-semantic/zero-credit・private-probe-onlyであり、generic definition-family API、`CoreContextInput`/Typed/Resolved/CoreIr slot、installer、production route、Core34--36 semantics、`GeneratedOrigin`、`MT10-CIR-TE`、diagnostic、Task277B readinessを追加しない。
 
 ## Step 2: type and fact lowering
 
@@ -665,6 +669,7 @@ algorithm payload category を下流 crate の exhaustive match を壊さずに�
 | `SourceBindingCoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface。 |
 | `SourcePredicateCoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface。 |
 | `SourceFunctorCoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `SourceAttributeCoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface。 |
 | `DefinitionBoundaryKind` | `#[non_exhaustive]` downstream forward-compatible surface。 |
 | `DefinitionBoundaryStatus` | `#[non_exhaustive]` downstream forward-compatible surface。 |
 | `CheckerSiteKind` | `#[non_exhaustive]` downstream forward-compatible surface。 |

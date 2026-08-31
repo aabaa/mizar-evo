@@ -169,7 +169,11 @@ top-level public API group:
   `SourceFunctorCoreItemAssociation`、
   `SourceFunctorCoreItemAssociationTable`、
   `SourceFunctorCoreContextHandoff`、`SourceFunctorCoreContextError`、
-  `SourceFunctorCoreContextProducer`
+  `SourceFunctorCoreContextProducer`、
+  `SourceAttributeCoreItemAssociation`、
+  `SourceAttributeCoreItemAssociationTable`、
+  `SourceAttributeCoreContextHandoff`、`SourceAttributeCoreContextError`、
+  `SourceAttributeCoreContextProducer`
 - Type and fact lowering: `TypeAndFactResult`, `TypeAndFactLoweringError`,
   `TypeAndFactLoweringInput`, `TypePredicateSeed`,
   `DeclaredBinderTypeSeed`, `AttributeChainSeed`, `ModeExpansionSeed`,
@@ -324,7 +328,11 @@ serializeせず、general multi-definition Core-33 inventoryをcloseしない。
 
 ## Core-33 Task260 functor item context mapping
 
-完了した [CORE-SOURCE-FUNCTOR-ITEM-CONTEXT-33I260 contract](../../task_contracts/ja/CORE-SOURCE-FUNCTOR-ITEM-CONTEXT-33I260.md) が、Task260固有二行 Core mapping、identity/provenance と default-deny invariant、review、verification の詳細 evidence を所有する。Implementation/verification は complete、exact task-only commit は pending。これは zero semantic/execution/coverage credit の private-probe-only mapping であり、specification、test intent、trace、coverage state は不変である。
+完了した [CORE-SOURCE-FUNCTOR-ITEM-CONTEXT-33I260 contract](../../task_contracts/ja/CORE-SOURCE-FUNCTOR-ITEM-CONTEXT-33I260.md) が、Task260固有二行 Core mapping、identity/provenance と default-deny invariant、review、verification の詳細 evidence を所有する。Implementation/verification/exact task-only commit `f8e9fc21` は complete。これは zero semantic/execution/coverage credit の private-probe-only mapping であり、specification、test intent、trace、coverage state は不変である。
+
+## Core-33 Task261 attribute item context mapping
+
+Freeze済みの [CORE-SOURCE-ATTRIBUTE-ITEM-CONTEXT-33I261 contract](../../task_contracts/ja/CORE-SOURCE-ATTRIBUTE-ITEM-CONTEXT-33I261.md) は、canonical ordinary attribute-definition/source-context identityをvalid public Core `Attribute` item 1件とtyped・source-ordered `SourceAttributeDefinitionId` association row 1件へmapする。Exact context linkとwhole symbol identityがjoinであり、source order、inner range、provenanceはvalidation boundaryである。Implementation/verification complete、final review no findings、task-only commit pending。このmappingはzero semantic/execution/coverage credit・private-probe-only。Specification、test intent、trace status/backlink、coverage stateは変更しない。Core34--36、`GeneratedOrigin`、production/`MT10-CIR-TE` install、generic API/slot/installer、Task277Bはdeferred/not-readyのままとする。
 
 ## Source-Undocumented Behavior Pass
 

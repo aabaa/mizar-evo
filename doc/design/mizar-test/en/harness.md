@@ -5028,11 +5028,26 @@ blocks and Task-260+ owner families remain separate.
 The completed [Core Task 33I260 contract](../../task_contracts/en/CORE-SOURCE-FUNCTOR-ITEM-CONTEXT-33I260.md)
 owns the existing private Task-260 real-source probe, its two-row Core
 association, default-deny boundary, review, and verification evidence.
-Implementation and verification are complete; the exact task-only commit is
-pending. The probe remains private-probe-only with zero semantic/execution/
+Implementation, verification, and exact task-only commit `f8e9fc21` are
+complete. The probe remains private-probe-only with zero semantic/execution/
 coverage credit; no production route, active `MT10-CIR-TE`, or Task277B
 readiness is introduced, and deferred Core 34--36 and mixed-family ownership
 remain unchanged.
+
+### Core Task 33I261 private item-context probe
+
+The frozen [Core Task 33I261 contract](../../task_contracts/en/CORE-SOURCE-ATTRIBUTE-ITEM-CONTEXT-33I261.md)
+assigns the existing private Task-261 real-source test leaf as the sole probe.
+It may derive the one Core `Attribute` item seed from the authenticated
+definition, prepare the Core context, apply 33LB to the retained complete
+`BindingEnv`, and invoke the standalone producer. The probe plan asserts
+retained inputs, the exact one-row association, complete item/source-map/
+boundary/worklist state, deterministic replay, and the default-deny mutation
+matrix. The two probes and required verification are complete, final reviews
+have no findings, and the task-only commit is pending. No production runner branch, installer,
+`.miz`, expectation, trace, active metadata, diagnostic, snapshot, or
+coverage credit changes; Core 34--36, `GeneratedOrigin`, `MT10-CIR-TE`, and
+Task277B remain deferred/not-ready.
 
 ## Checker Task 260 Frozen Functor-Definition Route
 

@@ -542,9 +542,16 @@ F8 の spec 本文は同一変更(`cef7e109`: spec 03、05、13、17、18)で修
       trace/coverage credit、Task277Bはdeferする。
 33I260. **Task260 functor item context prerequisite。** [x]
     - [Task contract](../../task_contracts/ja/CORE-SOURCE-FUNCTOR-ITEM-CONTEXT-33I260.md) の
-      implementation/verification は complete、exact task-only commit は pending。
+      implementation/verification/exact task-only commit `f8e9fc21` は complete。
     - Task260固有二行 Core association は zero-semantic/zero-credit のまま。Production install、
       active `MT10-CIR-TE`、Core34--36 semantics、diagnostic、coverage、Task277B readiness は deferred。
+33I261. **Task261 attribute item context prerequisite。** [x]
+    - [Task contract](../../task_contracts/ja/CORE-SOURCE-ATTRIBUTE-ITEM-CONTEXT-33I261.md) は
+      implementation/verification complete、final review no findings、task-only commit pending。
+    - Coreはordinary public attribute item向けtyped `SourceAttributeDefinitionId` association
+      row 1件だけをownする。semantic/execution/coverage creditはzero。Production install、generic
+      API/slot/installer、Core34--36、`GeneratedOrigin`、active `MT10-CIR-TE`、diagnostic、
+      Task277B readinessはdeferred/not-readyのままとする。
 33. **Source-derived Core context/item/binder/source map。** [ ]
     - checker 248を`MT10-CIR-TE`でconsumeし、type/proof/algorithm bodyは扱わない。
       C4C8についてchecker 248だけでは不十分なままであり、Task 33C4C8はseparately

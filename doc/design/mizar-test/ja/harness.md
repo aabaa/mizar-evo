@@ -4756,7 +4756,11 @@ owner familyはseparateのまま。
 
 ### Core Task 33I260 private item-context probe
 
-完了した [Core Task 33I260 contract](../../task_contracts/ja/CORE-SOURCE-FUNCTOR-ITEM-CONTEXT-33I260.md) が既存 private Task260 real-source probe、その二行 Core association、default-deny boundary、review、verification evidence を所有する。Implementation/verification は complete、exact task-only commit は pending。Probe は private-probe-only、semantic/execution/coverage credit は zero のままで、production route、active `MT10-CIR-TE`、Task277B readiness は追加せず、deferred Core34--36 と mixed-family ownership も不変である。
+完了した [Core Task 33I260 contract](../../task_contracts/ja/CORE-SOURCE-FUNCTOR-ITEM-CONTEXT-33I260.md) が既存 private Task260 real-source probe、その二行 Core association、default-deny boundary、review、verification evidence を所有する。Implementation/verification/exact task-only commit `f8e9fc21` は complete。Probe は private-probe-only、semantic/execution/coverage credit は zero のままで、production route、active `MT10-CIR-TE`、Task277B readiness は追加せず、deferred Core34--36 と mixed-family ownership も不変である。
+
+### Core Task 33I261 private item-context probe
+
+Freeze済みの [Core Task 33I261 contract](../../task_contracts/ja/CORE-SOURCE-ATTRIBUTE-ITEM-CONTEXT-33I261.md) は existing private Task261 real-source test leafをsole probeとして指定する。Authenticated definitionからCore `Attribute` item seed 1件をderiveし、Core contextをprepareし、retained complete `BindingEnv`へ33LBをapplyしてstandalone producerをinvokeできる。Two probesはretained input、exact one-row association、complete item/source-map/boundary/worklist state、deterministic replay、default-deny mutation matrixをassertする。Implementation/required verification complete、final review no findings、task-only commit pending。Production runner branch、installer、`.miz`、expectation、trace、active metadata、diagnostic、snapshot、coverage creditは変更しない。Core34--36、`GeneratedOrigin`、`MT10-CIR-TE`、Task277Bはdeferred/not-readyのままとする。
 
 ## Checker Task 260 frozen functor-definition route
 

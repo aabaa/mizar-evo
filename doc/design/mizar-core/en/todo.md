@@ -569,10 +569,19 @@ work. Every finding maps to a task or a recorded disposition:
       snapshots, diagnostics, trace/coverage credit, and Task277B deferred.
 33I260. **Task260 functor item context prerequisite.** [x]
     - [Task contract](../../task_contracts/en/CORE-SOURCE-FUNCTOR-ITEM-CONTEXT-33I260.md)
-      implementation and verification are complete; exact task-only commit is pending.
+      implementation, verification, and exact task-only commit `f8e9fc21` are complete.
     - Task-260-specific two-row Core association remains zero-semantic/zero-credit;
       production installation, active `MT10-CIR-TE`, Core 34--36 semantics,
       diagnostics, coverage, and Task277B readiness remain deferred.
+33I261. **Task261 attribute item context prerequisite.** [x]
+    - [Task contract](../../task_contracts/en/CORE-SOURCE-ATTRIBUTE-ITEM-CONTEXT-33I261.md)
+      implementation and verification are complete; final reviews have no
+      findings and the task-only commit is pending.
+    - Core owns one exact typed `SourceAttributeDefinitionId` association row for
+      the ordinary public attribute item, with zero semantic/execution/coverage
+      credit. Production installation, generic API/slot/installer, Core 34--36,
+      `GeneratedOrigin`, active `MT10-CIR-TE`, diagnostics, and Task277B readiness
+      remain deferred/not-ready.
 33. **Source-derived Core context, items, binders, and source maps.** [ ]
     - Consume checker 248 through `MT10-CIR-TE`; no type/proof/algorithm body.
       For C4C8, checker 248 remains insufficient; Task 33C4C8 owns only the

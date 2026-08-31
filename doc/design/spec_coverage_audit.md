@@ -7263,8 +7263,24 @@ snapshot remain deferred. Task277B remains not ready and receives zero credit.
 
 The completed [Core-33 Task260 item contract](./task_contracts/en/CORE-SOURCE-FUNCTOR-ITEM-CONTEXT-33I260.md)
 owns the detailed two-row Core mapping, boundary, review, verification,
-protected-artifact, and deferral evidence. Implementation and verification are
-complete; the exact task-only commit is pending. This remains a zero-credit,
+protected-artifact, and deferral evidence. Implementation, verification, and
+exact task-only commit `f8e9fc21` are complete. This remains a zero-credit,
 private-probe-only mapping with no specification, test-intent, trace, or
 coverage change. Existing Task-248/Task-260 checker ownership and protected
 coverage state remain unchanged.
+
+## Task CORE-SOURCE-ATTRIBUTE-ITEM-CONTEXT-33I261 Zero-Credit Core Association
+
+The frozen [Core-33 Task261 item contract](./task_contracts/en/CORE-SOURCE-ATTRIBUTE-ITEM-CONTEXT-33I261.md)
+owns the exact ordinary-attribute one-row mapping, immutable handoff/error/
+producer boundary, and default-deny identity/provenance validation. The exact
+context link selects the source item and the retained whole symbol selects the
+valid public Core `Attribute`; no generic family API, numeric/range/name join,
+Core context slot, or installer is authorized. Implementation and verification
+are complete; final reviews have no findings and the task-only commit is pending.
+
+This central audit records only zero-credit mapping and narrowed follow-up
+ownership. It adds no specification, test intent, trace status/backlink,
+metadata, or coverage credit. Production/`MT10-CIR-TE` installation, Core
+34--36 semantics, `GeneratedOrigin`, diagnostics, and Task277B remain
+deferred/not-ready.

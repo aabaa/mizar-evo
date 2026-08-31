@@ -1111,3 +1111,400 @@ fn source_attribute_definition_route_publishes_no_semantic_outputs() {
         );
     }
 }
+
+#[test]
+fn task261_core_item_context_association_is_exact_and_deterministic() {
+    let (ast, module, shells, symbols) =
+        task253_ast_from_source_text(SOURCE_ATTRIBUTE_DEFINITION_TEXT, 261_200);
+    let output = source_attribute_definition_output(
+        &ast,
+        module,
+        &shells,
+        &symbols,
+        SOURCE_ATTRIBUTE_DEFINITION_TEXT,
+    )
+    .expect("Task261 selector")
+    .expect("Task261 route");
+    let source_context = output
+        .typed_ast
+        .source_context()
+        .expect("Task248 source context")
+        .clone();
+    let checker_owner = output
+        .typed_ast
+        .source_attribute_definition()
+        .expect("Task261 checker owner")
+        .clone();
+    let source_bindings = task261_source_binding_core_handoff(&source_context, &checker_owner);
+    let expected_source_bindings = source_bindings.clone();
+    let first = mizar_core::elaborator::SourceAttributeCoreContextProducer::build(
+        source_bindings.clone(),
+        source_context.clone(),
+        checker_owner.clone(),
+    )
+    .expect("Task261 Core item context");
+    let second = mizar_core::elaborator::SourceAttributeCoreContextProducer::build(
+        source_bindings,
+        source_context.clone(),
+        checker_owner.clone(),
+    )
+    .expect("Task261 deterministic replay");
+    assert_eq!(first, second);
+    assert_eq!(first.source_id(), source_context.source_id());
+    assert_eq!(first.module_id(), source_context.module_id());
+    assert_eq!(first.source_bindings(), &expected_source_bindings);
+    assert_eq!(
+        first.source_bindings().binding_env(),
+        source_context.binding_env()
+    );
+    assert_eq!(first.source_context(), &source_context);
+    assert_eq!(first.checker_owner(), &checker_owner);
+    assert_eq!(first.items().len(), 1);
+    assert!(!first.items().is_empty());
+
+    let definition = checker_owner
+        .definitions()
+        .get(mizar_checker::source_attribute_definition::SourceAttributeDefinitionId::new(0))
+        .expect("Task261 definition");
+    let source_item = source_context
+        .context_links()
+        .get(definition.context())
+        .expect("Task248 definition link")
+        .item
+        .expect("Task248 containing source item");
+    let association = first
+        .items()
+        .get(definition.id())
+        .expect("Task261 association");
+    assert_eq!(association.definition(), definition.id());
+    assert_eq!(association.source_item(), source_item);
+    assert_eq!(association.symbol(), definition.symbol());
+    let core_item = first
+        .context()
+        .item_registry()
+        .id_for_symbol(definition.symbol())
+        .expect("Core attribute item");
+    assert_eq!(association.core_item(), core_item);
+    assert_eq!(
+        first
+            .items()
+            .iter()
+            .map(|(id, row)| (id, row.source_item(), row.symbol().clone(), row.core_item()))
+            .collect::<Vec<_>>(),
+        vec![(definition.id(), source_item, definition.symbol().clone(), core_item)]
+    );
+    assert_eq!(first.context().item_registry().items().len(), 1);
+    assert!(first.context().dependency_summaries().is_empty());
+    assert!(first.context().generated_origins().table().is_empty());
+    assert!(first.context().diagnostics().is_empty());
+
+    let item = first
+        .context()
+        .item_registry()
+        .items()
+        .get(core_item)
+        .expect("Core attribute row");
+    assert_eq!(item.symbol, *definition.symbol());
+    assert_eq!(item.kind, mizar_core::core_ir::CoreItemKind::Attribute);
+    assert_eq!(item.visibility.as_str(), "public");
+    assert_eq!(item.status, mizar_core::core_ir::CoreItemStatus::Valid);
+    assert!(item.dependencies.is_empty());
+    assert!(item.diagnostics.is_empty());
+    assert_eq!(
+        item.source.anchor,
+        mizar_core::core_ir::CoreSourceAnchor::SourceRange(definition.source_range())
+    );
+    assert_eq!(
+        item.source.provenance,
+        vec![mizar_core::core_ir::CoreProvenance::new(
+            mizar_core::core_ir::CoreProvenancePhase::Checker,
+            "source-attribute-core-item-v1.definition.0",
+        )]
+    );
+    let boundary = first
+        .context()
+        .definition_boundaries()
+        .get_by_item(core_item)
+        .expect("pending definition boundary");
+    assert_eq!(
+        boundary.kind,
+        mizar_core::elaborator::DefinitionBoundaryKind::DefinitionalItem
+    );
+    assert_eq!(
+        boundary.status,
+        mizar_core::elaborator::DefinitionBoundaryStatus::PendingBody
+    );
+    assert_eq!(boundary.item, core_item);
+    assert_eq!(boundary.symbol, *definition.symbol());
+    assert_eq!(boundary.source, item.source);
+    assert_eq!(
+        boundary.provenance.as_slice(),
+        &[mizar_core::core_ir::CoreProvenance::new(
+            mizar_core::core_ir::CoreProvenancePhase::Checker,
+            "source-attribute-core-item-v1.definition.0",
+        )]
+    );
+    let source_map = first.context().source_map();
+    assert_eq!(source_map.item_sources.len(), 1);
+    assert_eq!(source_map.item_sources.get(&core_item), Some(&item.source));
+    assert!(source_map.term_sources.is_empty());
+    assert!(source_map.formula_sources.is_empty());
+    assert!(source_map.definition_sources.is_empty());
+    assert!(source_map.proof_sources.is_empty());
+    assert!(source_map.algorithm_sources.is_empty());
+    assert!(source_map.generated_sources.is_empty());
+    assert!(source_map.obligation_sources.is_empty());
+    assert_eq!(
+        first.context().worklist().entries(),
+        &[mizar_core::elaborator::ElaborationWorkItem {
+            kind: mizar_core::elaborator::ElaborationWorkItemKind::Item(core_item),
+            status: mizar_core::elaborator::ElaborationWorkStatus::Pending,
+            source: item.source.clone(),
+            diagnostics: Vec::new(),
+            checker_diagnostics: Vec::new(),
+        }]
+    );
+}
+
+#[test]
+fn task261_core_item_context_default_deny_mutations_and_foreign_environment() {
+    let (ast, module, shells, symbols) =
+        task253_ast_from_source_text(SOURCE_ATTRIBUTE_DEFINITION_TEXT, 261_210);
+    let output = source_attribute_definition_output(
+        &ast,
+        module,
+        &shells,
+        &symbols,
+        SOURCE_ATTRIBUTE_DEFINITION_TEXT,
+    )
+    .expect("Task261 selector")
+    .expect("Task261 route");
+    let source_context = output
+        .typed_ast
+        .source_context()
+        .expect("Task248 source context")
+        .clone();
+    let checker_owner = output
+        .typed_ast
+        .source_attribute_definition()
+        .expect("Task261 checker owner")
+        .clone();
+    for mutation in [
+        Task261CoreContextMutation::MissingItem,
+        Task261CoreContextMutation::ExtraItem,
+        Task261CoreContextMutation::WrongKind,
+        Task261CoreContextMutation::WrongVisibility,
+        Task261CoreContextMutation::WrongSource,
+        Task261CoreContextMutation::WrongProvenance,
+        Task261CoreContextMutation::MissingBoundary,
+        Task261CoreContextMutation::WrongBoundary,
+        Task261CoreContextMutation::UnexpectedDependency,
+        Task261CoreContextMutation::InvalidStatus,
+    ] {
+        let source_bindings =
+            task261_source_binding_core_handoff_with_mutation(&source_context, &checker_owner, mutation);
+        let error = mizar_core::elaborator::SourceAttributeCoreContextProducer::build(
+            source_bindings,
+            source_context.clone(),
+            checker_owner.clone(),
+        )
+        .expect_err("Core mutation must fail closed");
+        assert_eq!(
+            error,
+            mizar_core::elaborator::SourceAttributeCoreContextError::InvalidCoreContext,
+            "{mutation:?}"
+        );
+    }
+
+    let (foreign_ast, foreign_module, foreign_shells, foreign_symbols) =
+        task253_ast_from_source_text(SOURCE_ATTRIBUTE_DEFINITION_TEXT, 261_211);
+    let foreign_output = source_attribute_definition_output(
+        &foreign_ast,
+        foreign_module,
+        &foreign_shells,
+        &foreign_symbols,
+        SOURCE_ATTRIBUTE_DEFINITION_TEXT,
+    )
+    .expect("foreign Task261 selector")
+    .expect("foreign Task261 route");
+    let foreign_context = foreign_output
+        .typed_ast
+        .source_context()
+        .expect("foreign source context")
+        .clone();
+    let foreign_owner = foreign_output
+        .typed_ast
+        .source_attribute_definition()
+        .expect("foreign checker owner")
+        .clone();
+    let base_bindings = task261_source_binding_core_handoff(&source_context, &checker_owner);
+    let foreign_bindings = task261_source_binding_core_handoff(&foreign_context, &foreign_owner);
+    for (bindings, context, owner) in [
+        (
+            base_bindings.clone(),
+            foreign_context.clone(),
+            foreign_owner.clone(),
+        ),
+        (
+            base_bindings.clone(),
+            foreign_context.clone(),
+            checker_owner.clone(),
+        ),
+        (
+            base_bindings.clone(),
+            source_context.clone(),
+            foreign_owner.clone(),
+        ),
+        (foreign_bindings, source_context, checker_owner),
+    ] {
+        let error = mizar_core::elaborator::SourceAttributeCoreContextProducer::build(
+            bindings, context, owner,
+        )
+        .expect_err("foreign environment must fail closed");
+        assert_eq!(
+            error,
+            mizar_core::elaborator::SourceAttributeCoreContextError::EnvironmentMismatch
+        );
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Task261CoreContextMutation {
+    Baseline,
+    MissingItem,
+    ExtraItem,
+    WrongKind,
+    WrongVisibility,
+    WrongSource,
+    WrongProvenance,
+    MissingBoundary,
+    WrongBoundary,
+    UnexpectedDependency,
+    InvalidStatus,
+}
+
+fn task261_source_binding_core_handoff(
+    source_context: &mizar_checker::source_context::SourceBindingContextHandoff,
+    checker_owner: &mizar_checker::source_attribute_definition::SourceAttributeDefinitionHandoff,
+) -> mizar_core::elaborator::SourceBindingCoreContextHandoff {
+    task261_source_binding_core_handoff_with_mutation(
+        source_context,
+        checker_owner,
+        Task261CoreContextMutation::Baseline,
+    )
+}
+
+fn task261_source_binding_core_handoff_with_mutation(
+    source_context: &mizar_checker::source_context::SourceBindingContextHandoff,
+    checker_owner: &mizar_checker::source_attribute_definition::SourceAttributeDefinitionHandoff,
+    mutation: Task261CoreContextMutation,
+) -> mizar_core::elaborator::SourceBindingCoreContextHandoff {
+    let definition = checker_owner
+        .definitions()
+        .get(mizar_checker::source_attribute_definition::SourceAttributeDefinitionId::new(0))
+        .expect("Task261 definition");
+    let source_range = if mutation == Task261CoreContextMutation::WrongSource {
+        mizar_session::SourceRange {
+            source_id: source_context.source_id(),
+            start: definition.source_range().start + 1,
+            end: definition.source_range().end,
+        }
+    } else {
+        definition.source_range()
+    };
+    let provenance_key = if mutation == Task261CoreContextMutation::WrongProvenance {
+        "wrong-task261-provenance"
+    } else {
+        "source-attribute-core-item-v1.definition.0"
+    };
+    let source = mizar_core::core_ir::CoreSourceRef::direct(source_range).with_provenance(vec![
+        mizar_core::core_ir::CoreProvenance::new(
+            mizar_core::core_ir::CoreProvenancePhase::Checker,
+            provenance_key,
+        ),
+    ]);
+    let kind = if mutation == Task261CoreContextMutation::WrongKind {
+        mizar_core::core_ir::CoreItemKind::Predicate
+    } else {
+        mizar_core::core_ir::CoreItemKind::Attribute
+    };
+    let visibility = if mutation == Task261CoreContextMutation::WrongVisibility {
+        "private"
+    } else {
+        "public"
+    };
+    let mut input = mizar_core::elaborator::CoreContextInput::new(
+        mizar_core::elaborator::ResolvedTypedAstSummary::new(
+            source_context.source_id(),
+            source_context.module_id().clone(),
+        ),
+    );
+    let seed = mizar_core::elaborator::CoreItemSeed::new(
+        definition.symbol().clone(),
+        kind,
+        visibility,
+        source,
+        mizar_core::elaborator::CheckerOwnedProvenance::checker(provenance_key),
+    );
+    let seed = if mutation == Task261CoreContextMutation::MissingBoundary {
+        seed
+    } else if mutation == Task261CoreContextMutation::WrongBoundary {
+        seed.with_definition_boundary(mizar_core::elaborator::DefinitionBoundaryKind::Theorem)
+    } else {
+        seed.with_definition_boundary(
+            mizar_core::elaborator::DefinitionBoundaryKind::DefinitionalItem,
+        )
+    };
+    let seed = if mutation == Task261CoreContextMutation::UnexpectedDependency {
+        seed.with_dependencies(vec![definition.symbol().clone()])
+    } else if mutation == Task261CoreContextMutation::InvalidStatus {
+        seed.with_dependencies(vec![mizar_resolve::resolved_ast::SymbolId::new(
+            definition.symbol().module().clone(),
+            mizar_resolve::resolved_ast::LocalSymbolId::new("task261-missing"),
+            mizar_resolve::resolved_ast::FullyQualifiedName::new(format!(
+                "{}.task261-missing",
+                definition.symbol().fqn().as_str()
+            )),
+        )])
+    } else {
+        seed
+    };
+    if mutation != Task261CoreContextMutation::MissingItem {
+        input.item_seeds.push(seed);
+    }
+    if mutation == Task261CoreContextMutation::ExtraItem {
+        let extra_symbol = mizar_resolve::resolved_ast::SymbolId::new(
+            definition.symbol().module().clone(),
+            mizar_resolve::resolved_ast::LocalSymbolId::new("task261-extra"),
+            mizar_resolve::resolved_ast::FullyQualifiedName::new(format!(
+                "{}.task261-extra",
+                definition.symbol().fqn().as_str()
+            )),
+        );
+        input.item_seeds.push(
+            mizar_core::elaborator::CoreItemSeed::new(
+                extra_symbol,
+                mizar_core::core_ir::CoreItemKind::Attribute,
+                "public",
+                mizar_core::core_ir::CoreSourceRef::direct(definition.source_range())
+                    .with_provenance(vec![mizar_core::core_ir::CoreProvenance::new(
+                        mizar_core::core_ir::CoreProvenancePhase::Checker,
+                        "source-attribute-core-item-v1.definition.extra",
+                    )]),
+                mizar_core::elaborator::CheckerOwnedProvenance::checker(
+                    "source-attribute-core-item-v1.definition.extra",
+                ),
+            )
+            .with_definition_boundary(
+                mizar_core::elaborator::DefinitionBoundaryKind::DefinitionalItem,
+            ),
+        );
+    }
+    let context = mizar_core::elaborator::prepare_core_context(input)
+        .expect("Task261 Core context seed should prepare");
+    mizar_core::elaborator::SourceBindingCoreContextProducer::build(
+        context,
+        source_context.binding_env().clone(),
+    )
+    .expect("Task261 33LB handoff should build")
+}

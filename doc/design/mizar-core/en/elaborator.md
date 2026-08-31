@@ -229,11 +229,28 @@ definition block to multiple semantic owners.
 
 The completed [CORE-SOURCE-FUNCTOR-ITEM-CONTEXT-33I260 contract](../../task_contracts/en/CORE-SOURCE-FUNCTOR-ITEM-CONTEXT-33I260.md)
 owns the Task-260-specific two-row Core-context association, immutable handoff,
-error surface, producer boundary, and detailed invariants. Implementation and
-verification are complete; the exact task-only commit is pending. The public
+error surface, producer boundary, and detailed invariants. Implementation,
+verification, and the exact task-only commit `f8e9fc21` are complete. The public
 enum inventory below includes `SourceFunctorCoreContextError`. This remains a
 zero-semantic/zero-credit private-probe slice; production installation,
 `CoreIr`, Core 34--36, `MT10-CIR-TE`, diagnostics, and Task277B remain deferred.
+
+### Core-33 Task261 attribute item context
+
+The frozen [CORE-SOURCE-ATTRIBUTE-ITEM-CONTEXT-33I261 contract](../../task_contracts/en/CORE-SOURCE-ATTRIBUTE-ITEM-CONTEXT-33I261.md)
+owns the immutable `SourceAttributeCoreItemAssociation` row/table,
+`SourceAttributeCoreContextHandoff`, non-exhaustive error, producer, and their
+durable invariants. The producer retains the complete 33LB, Task-248 source
+context, and Task-261 checker handoff by value, and publishes only after
+complete validation. The admitted mapping is one ordinary public `Attribute`
+item selected by its whole `SymbolId`, with one source-ordered association row
+keyed by `SourceAttributeDefinitionId`; source order, the inner definition
+range, and versioned provenance are validated rather than used as join keys.
+Implementation and verification are complete; final reviews have no findings
+and the task-only commit is pending. This is zero-semantic/zero-credit and private-
+probe-only: no generic definition-family API, `CoreContextInput`/Typed/
+Resolved/CoreIr slot, installer, production route, Core 34--36 semantics,
+`GeneratedOrigin`, `MT10-CIR-TE`, diagnostics, or Task277B readiness is added.
 
 ## Step 2: Type And Fact Lowering
 
@@ -745,6 +762,7 @@ payload categories can be added without breaking downstream exhaustive matches.
 | `SourceBindingCoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `SourcePredicateCoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `SourceFunctorCoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `SourceAttributeCoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `DefinitionBoundaryKind` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `DefinitionBoundaryStatus` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `CheckerSiteKind` | `#[non_exhaustive]` downstream forward-compatible surface. |

@@ -118,12 +118,25 @@ link identity join, whole-symbol Core lookup, standalone 33LB composition,
 default-deny boundary, multi-definition deferral, zero credit, and unchanged
 Task277B/protected artifacts.
 
-Core Task 33I260 implementation and verification are complete; the exact
-task-only commit is pending. The canonical
+Core Task 33I260 implementation, verification, and exact task-only commit
+`f8e9fc21` are complete. The canonical
 [`CORE-SOURCE-FUNCTOR-ITEM-CONTEXT-33I260`](../../task_contracts/en/CORE-SOURCE-FUNCTOR-ITEM-CONTEXT-33I260.md)
 contract and [Japanese companion](../../task_contracts/ja/CORE-SOURCE-FUNCTOR-ITEM-CONTEXT-33I260.md)
 own the detailed profile, boundary, review, verification, protected-artifact,
 and deferral evidence. Final bilingual review has no findings.
+
+## Core Task 33I261 Bilingual Contract Parity
+
+The frozen [EN contract](../../task_contracts/en/CORE-SOURCE-ATTRIBUTE-ITEM-CONTEXT-33I261.md)
+and [JA companion](../../task_contracts/ja/CORE-SOURCE-ATTRIBUTE-ITEM-CONTEXT-33I261.md)
+define the same one-row ordinary-attribute Core association, immutable
+handoff/error/producer surface, exact identity and source-order boundary, and
+default-deny validation. Implementation and verification are complete; final
+reviews have no findings and the task-only commit is pending. Both languages preserve
+zero semantic/execution/coverage credit, no production install or generic API/
+slot/installer, deferred Core 34--36/`GeneratedOrigin`/`MT10-CIR-TE` work, and
+Task277B not-ready/zero-credit status. English is canonical; no exception is
+recorded.
 
 ## Guard Decision
 

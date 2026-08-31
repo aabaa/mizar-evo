@@ -110,11 +110,21 @@ recheckする。両言語はexact Task259 one-predicate cardinality、context-li
 whole-symbol Core lookup、standalone 33LB composition、default-deny boundary、
 multi-definition deferral、zero credit、unchanged Task277B/protected artifactを保持する。
 
-Core Task 33I260 の implementation/verification は complete、exact task-only commit は
-pending である。Canonical [`CORE-SOURCE-FUNCTOR-ITEM-CONTEXT-33I260`](../../task_contracts/en/CORE-SOURCE-FUNCTOR-ITEM-CONTEXT-33I260.md)
+Core Task 33I260 の implementation/verification/exact task-only commit
+`f8e9fc21` は complete である。Canonical [`CORE-SOURCE-FUNCTOR-ITEM-CONTEXT-33I260`](../../task_contracts/en/CORE-SOURCE-FUNCTOR-ITEM-CONTEXT-33I260.md)
 contract と[日本語companion](../../task_contracts/ja/CORE-SOURCE-FUNCTOR-ITEM-CONTEXT-33I260.md) が
 profile、boundary、review、verification、protected artifact、deferral の詳細 evidence を所有する。
 Final bilingual review は no findings である。
+
+## Core Task 33I261 bilingual contract parity
+
+[EN contract](../../task_contracts/en/CORE-SOURCE-ATTRIBUTE-ITEM-CONTEXT-33I261.md) と
+[JA companion](../../task_contracts/ja/CORE-SOURCE-ATTRIBUTE-ITEM-CONTEXT-33I261.md) は、ordinary
+attributeのone-row Core association、immutable handoff/error/producer surface、exact identity/
+source-order boundary、default-deny validationを同じ内容で定義する。Implementation/
+verification complete、final review no findings、task-only commit pending。両言語はzero semantic/execution/coverage
+credit、production installなし、generic API/slot/installerなし、Core34--36/`GeneratedOrigin`/
+`MT10-CIR-TE` deferred、Task277B not-ready/zero-creditを保持する。English canonical、exceptionなし。
 
 ## Guard Decision
 

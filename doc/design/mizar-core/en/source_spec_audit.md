@@ -170,7 +170,11 @@ Top-level public API groups:
   `SourceFunctorCoreItemAssociation`,
   `SourceFunctorCoreItemAssociationTable`,
   `SourceFunctorCoreContextHandoff`, `SourceFunctorCoreContextError`,
-  `SourceFunctorCoreContextProducer`
+  `SourceFunctorCoreContextProducer`,
+  `SourceAttributeCoreItemAssociation`,
+  `SourceAttributeCoreItemAssociationTable`,
+  `SourceAttributeCoreContextHandoff`, `SourceAttributeCoreContextError`,
+  `SourceAttributeCoreContextProducer`
 - Type and fact lowering: `TypeAndFactResult`, `TypeAndFactLoweringError`,
   `TypeAndFactLoweringInput`, `TypePredicateSeed`,
   `DeclaredBinderTypeSeed`, `AttributeChainSeed`, `ModeExpansionSeed`,
@@ -333,9 +337,23 @@ follow-ups and the first complete `MT10-CIR-TE` snapshot.
 The completed [CORE-SOURCE-FUNCTOR-ITEM-CONTEXT-33I260 contract](../../task_contracts/en/CORE-SOURCE-FUNCTOR-ITEM-CONTEXT-33I260.md)
 owns the detailed Task-260-specific two-row Core mapping, identity/provenance
 and default-deny invariants, reviews, and verification evidence. Implementation
-and verification are complete; the exact task-only commit is pending. This
+and verification are complete in exact task-only commit `f8e9fc21`. This
 mapping remains zero semantic/execution/coverage credit and private-probe-only;
 the specification, test intent, trace, and coverage state are unchanged.
+
+## Core-33 Task261 Attribute Item Context Mapping
+
+The frozen [CORE-SOURCE-ATTRIBUTE-ITEM-CONTEXT-33I261 contract](../../task_contracts/en/CORE-SOURCE-ATTRIBUTE-ITEM-CONTEXT-33I261.md)
+maps the canonical ordinary attribute-definition/source-context identity to one
+valid public Core `Attribute` item and one typed, source-ordered
+`SourceAttributeDefinitionId` association row. The exact context link and whole
+symbol identity are the joins; source order, inner range, and provenance are
+validation boundaries. Implementation and verification are complete; final
+reviews have no findings and the task-only commit is pending. This mapping is zero
+semantic/execution/coverage credit and private-probe-only. No specification,
+test intent, trace status/backlink, or coverage state changes; Core 34--36,
+`GeneratedOrigin`, production/`MT10-CIR-TE` installation, generic APIs/slots/
+installers, and Task277B remain deferred/not-ready.
 
 ## Source-Undocumented Behavior Pass
 
