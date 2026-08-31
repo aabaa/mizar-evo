@@ -247,10 +247,31 @@ item selected by its whole `SymbolId`, with one source-ordered association row
 keyed by `SourceAttributeDefinitionId`; source order, the inner definition
 range, and versioned provenance are validated rather than used as join keys.
 Implementation and verification are complete; final reviews have no findings
-and the task-only commit is pending. This is zero-semantic/zero-credit and private-
+and the exact task-only commit `4c6ecafc2a9bee7a4eb6e3f27336733fc672bd57` are complete. This is zero-semantic/zero-credit and private-
 probe-only: no generic definition-family API, `CoreContextInput`/Typed/
 Resolved/CoreIr slot, installer, production route, Core 34--36 semantics,
 `GeneratedOrigin`, `MT10-CIR-TE`, diagnostics, or Task277B readiness is added.
+
+### Core-33 Task262 mode item context
+
+The frozen [CORE-SOURCE-MODE-ITEM-CONTEXT-33I262 contract](../../task_contracts/en/CORE-SOURCE-MODE-ITEM-CONTEXT-33I262.md)
+owns the immutable `SourceModeCoreItemAssociation` row/table,
+`SourceModeCoreContextHandoff`, non-exhaustive error, producer, and durable
+invariants. The by-value handoff retains the complete 33LB, Task-248 source
+context, and Task-262 checker handoff; all fields publish only after complete
+postvalidation. The admitted mapping is one valid public `Mode` selected by
+whole `SymbolId` and one source-ordered row keyed by `SourceModeDefinitionId`,
+with inner range and versioned provenance used for validation, not joins. The
+error precedence is `EnvironmentMismatch`, `InvalidSourceBindingContext`,
+`InvalidCheckerOwner`, `InvalidCoreContext`, `InvalidItemAssociation`; the
+producer signature is
+`SourceModeCoreContextProducer::build(SourceBindingCoreContextHandoff, SourceBindingContextHandoff, SourceModeDefinitionHandoff) -> Result<SourceModeCoreContextHandoff, SourceModeCoreContextError>`.
+Implementation and verification are complete; final reviews have no findings
+after documentation repairs. This
+is zero-semantic/zero-credit and private-probe-only; the RHS, inhabitation,
+`sethood`, computation justification, pending obligation, generic APIs/slots,
+installer, production route, Core 34--36 semantics, `GeneratedOrigin`,
+`MT10-CIR-TE`, diagnostics, and Task277B remain deferred/not-ready.
 
 ## Step 2: Type And Fact Lowering
 
@@ -763,6 +784,7 @@ payload categories can be added without breaking downstream exhaustive matches.
 | `SourcePredicateCoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `SourceFunctorCoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `SourceAttributeCoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `SourceModeCoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `DefinitionBoundaryKind` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `DefinitionBoundaryStatus` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `CheckerSiteKind` | `#[non_exhaustive]` downstream forward-compatible surface. |

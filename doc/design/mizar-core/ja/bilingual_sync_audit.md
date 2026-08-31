@@ -122,9 +122,20 @@ Final bilingual review は no findings である。
 [JA companion](../../task_contracts/ja/CORE-SOURCE-ATTRIBUTE-ITEM-CONTEXT-33I261.md) は、ordinary
 attributeのone-row Core association、immutable handoff/error/producer surface、exact identity/
 source-order boundary、default-deny validationを同じ内容で定義する。Implementation/
-verification complete、final review no findings、task-only commit pending。両言語はzero semantic/execution/coverage
+verification/exact task-only commit `4c6ecafc2a9bee7a4eb6e3f27336733fc672bd57` はcomplete。両言語はzero semantic/execution/coverage
 credit、production installなし、generic API/slot/installerなし、Core34--36/`GeneratedOrigin`/
 `MT10-CIR-TE` deferred、Task277B not-ready/zero-creditを保持する。English canonical、exceptionなし。
+
+## Core Task 33I262 bilingual contract parity
+
+[EN contract](../../task_contracts/en/CORE-SOURCE-MODE-ITEM-CONTEXT-33I262.md) と
+[JA companion](../../task_contracts/ja/CORE-SOURCE-MODE-ITEM-CONTEXT-33I262.md) は、ordinary
+modeのone-row Core association、immutable handoff/error/producer surface、exact identity/
+source-order boundary、default-deny validationを同じ内容で定義する。Implementation/
+verification complete、documentation repair後の全independent reviewはno findings。両言語は
+zero semantic/execution/coverage credit、checker doc変更なし、production install/generic API/
+slot/installerなし、Core34--36/`GeneratedOrigin`/`MT10-CIR-TE` deferred、Task277B
+not-ready/zero-creditを保持する。English canonical、exceptionなし。
 
 ## Guard Decision
 

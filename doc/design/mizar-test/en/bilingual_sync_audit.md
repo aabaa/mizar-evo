@@ -2113,9 +2113,23 @@ The frozen [EN contract](../../task_contracts/en/CORE-SOURCE-ATTRIBUTE-ITEM-CONT
 and [JA companion](../../task_contracts/ja/CORE-SOURCE-ATTRIBUTE-ITEM-CONTEXT-33I261.md)
 assign the same private Task-261 real-source probe and one-row ordinary-
 attribute Core association. Both languages preserve the by-value handoff,
-exact identity/source-order and default-deny boundaries. Implementation and
-verification are complete, final reviews have no findings, and the task-only commit is pending. The
+exact identity/source-order and default-deny boundaries. Implementation,
+verification, and the exact task-only commit `4c6ecafc2a9bee7a4eb6e3f27336733fc672bd57` are complete. The
 probe remains zero semantic/execution/coverage credit with no production
 runner, installer, generic API/slot, or fixture/expectation/trace/metadata
 change; Core 34--36, `GeneratedOrigin`, `MT10-CIR-TE`, and Task277B remain
 deferred/not-ready. English is canonical; no exception is recorded.
+
+## Core Task 33I262 Bilingual Contract Parity
+
+The frozen [EN contract](../../task_contracts/en/CORE-SOURCE-MODE-ITEM-CONTEXT-33I262.md)
+and [JA companion](../../task_contracts/ja/CORE-SOURCE-MODE-ITEM-CONTEXT-33I262.md)
+assign the same private Task-262 real-source probe and one-row ordinary-mode
+Core association. Both languages preserve the by-value handoff, exact
+identity/source-order and default-deny boundaries. Implementation and
+verification are complete; final reviews have no findings after documentation
+repairs. The probe remains zero semantic/execution/coverage credit
+with no checker-doc, production runner, installer, generic API/slot, or
+fixture/expectation/trace/metadata change; Core 34--36, `GeneratedOrigin`,
+`MT10-CIR-TE`, and Task277B remain deferred/not-ready. English is canonical;
+no exception is recorded.

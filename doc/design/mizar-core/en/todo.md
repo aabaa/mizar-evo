@@ -576,12 +576,24 @@ work. Every finding maps to a task or a recorded disposition:
 33I261. **Task261 attribute item context prerequisite.** [x]
     - [Task contract](../../task_contracts/en/CORE-SOURCE-ATTRIBUTE-ITEM-CONTEXT-33I261.md)
       implementation and verification are complete; final reviews have no
-      findings and the task-only commit is pending.
+      findings; committed in `4c6ecafc2a9bee7a4eb6e3f27336733fc672bd57`.
     - Core owns one exact typed `SourceAttributeDefinitionId` association row for
       the ordinary public attribute item, with zero semantic/execution/coverage
       credit. Production installation, generic API/slot/installer, Core 34--36,
       `GeneratedOrigin`, active `MT10-CIR-TE`, diagnostics, and Task277B readiness
       remain deferred/not-ready.
+33I262. **Task262 mode item context prerequisite.** [x]
+    - The frozen [task contract](../../task_contracts/en/CORE-SOURCE-MODE-ITEM-CONTEXT-33I262.md)
+      is implemented and verified; final reviews have no findings after
+      documentation repairs and the task-only commit is pending. It consumes
+      complete 33LB, exact Task-248
+      Profile-B context, and the active Task-262 mode-definition handoff; the
+      exact context link and whole `SymbolId` admit one public Core `Mode` item
+      and one typed source-ordered association row.
+    - This remains zero semantic/execution/coverage credit with no checker-doc
+      change, production route/installer, `.miz`, expectation, trace, metadata,
+      diagnostic, or `MT10-CIR-TE` change. Task-259--261 are protected
+      precedents, not inputs; Core 34--36 and Task277B remain deferred/not-ready.
 33. **Source-derived Core context, items, binders, and source maps.** [ ]
     - Consume checker 248 through `MT10-CIR-TE`; no type/proof/algorithm body.
       For C4C8, checker 248 remains insufficient; Task 33C4C8 owns only the

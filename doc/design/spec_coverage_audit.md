@@ -7276,11 +7276,27 @@ owns the exact ordinary-attribute one-row mapping, immutable handoff/error/
 producer boundary, and default-deny identity/provenance validation. The exact
 context link selects the source item and the retained whole symbol selects the
 valid public Core `Attribute`; no generic family API, numeric/range/name join,
-Core context slot, or installer is authorized. Implementation and verification
-are complete; final reviews have no findings and the task-only commit is pending.
+Core context slot, or installer is authorized. Implementation, verification, and
+the exact task-only commit `4c6ecafc2a9bee7a4eb6e3f27336733fc672bd57` are complete.
 
 This central audit records only zero-credit mapping and narrowed follow-up
 ownership. It adds no specification, test intent, trace status/backlink,
 metadata, or coverage credit. Production/`MT10-CIR-TE` installation, Core
 34--36 semantics, `GeneratedOrigin`, diagnostics, and Task277B remain
 deferred/not-ready.
+
+## Task CORE-SOURCE-MODE-ITEM-CONTEXT-33I262 Zero-Credit Core Association
+
+The frozen [Core-33 Task262 mode contract](./task_contracts/en/CORE-SOURCE-MODE-ITEM-CONTEXT-33I262.md)
+owns the exact ordinary-mode one-row mapping, immutable handoff/error/producer
+boundary, and default-deny identity/provenance validation. The exact context
+link selects the source item and the retained whole symbol selects the valid
+public Core `Mode`; no generic family API, numeric/range/name join, Core
+context slot, or installer is authorized. Implementation and verification are
+complete; final reviews have no findings after documentation repairs.
+
+This central audit records only zero-credit mapping and narrowed follow-up
+ownership. It adds no specification, test intent, trace status/backlink,
+metadata, or coverage credit. Production/`MT10-CIR-TE` installation, Core
+34--36 mode/RHS/type/inhabitation/sethood semantics, `GeneratedOrigin`,
+diagnostics, and Task277B remain deferred/not-ready.

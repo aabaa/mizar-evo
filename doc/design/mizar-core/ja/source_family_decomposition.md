@@ -137,7 +137,11 @@ semantics、`GeneratedOrigin`、active snapshot、diagnostic、trace、coverage�
 
 ### Task-261固有 attribute item context
 
-Freeze済みの [CORE-SOURCE-ATTRIBUTE-ITEM-CONTEXT-33I261 contract](../../task_contracts/ja/CORE-SOURCE-ATTRIBUTE-ITEM-CONTEXT-33I261.md) が、one-row ordinary-attribute Core-33 mappingを所有する。Exact context linkがsource itemを選び、retained whole `SymbolId`がvalid public `Attribute` item 1件を選ぶ。Immutable association tableはtyped `SourceAttributeDefinitionId`をkeyとし、source order、inner definition range、provenanceでvalidationする。Name、range、numeric id、iteration orderはjoinではない。Implementation/verification complete、final review no findings、task-only commit pending。これはzero-semantic/zero-credit・private-probe-onlyであり、generic definition-family policy、production install、Core34--36 semantics、`GeneratedOrigin`、`MT10-CIR-TE`、diagnostic、Task277B readinessを追加しない。
+Freeze済みの [CORE-SOURCE-ATTRIBUTE-ITEM-CONTEXT-33I261 contract](../../task_contracts/ja/CORE-SOURCE-ATTRIBUTE-ITEM-CONTEXT-33I261.md) が、one-row ordinary-attribute Core-33 mappingを所有する。Exact context linkがsource itemを選び、retained whole `SymbolId`がvalid public `Attribute` item 1件を選ぶ。Immutable association tableはtyped `SourceAttributeDefinitionId`をkeyとし、source order、inner definition range、provenanceでvalidationする。Name、range、numeric id、iteration orderはjoinではない。Implementation/verification/exact task-only commit `4c6ecafc2a9bee7a4eb6e3f27336733fc672bd57` はcomplete。これはzero-semantic/zero-credit・private-probe-onlyであり、generic definition-family policy、production install、Core34--36 semantics、`GeneratedOrigin`、`MT10-CIR-TE`、diagnostic、Task277B readinessを追加しない。
+
+### Task-262固有 mode item context
+
+Freeze済みの [CORE-SOURCE-MODE-ITEM-CONTEXT-33I262 contract](../../task_contracts/ja/CORE-SOURCE-MODE-ITEM-CONTEXT-33I262.md) が、one-row ordinary-mode Core-33 mappingを所有する。Exact context linkがsource itemを選び、retained whole `SymbolId`がvalid public `Mode` item 1件を選ぶ。Immutable association tableはtyped `SourceModeDefinitionId`をkeyとし、source order、inner range、provenanceでvalidationする。Name、range、numeric id、seed/map/worklist orderはjoinではない。Implementation/verification complete、documentation repair後final review no findings。このmappingはzero-semantic/zero-credit・private-probe-onlyであり、RHS/inhabitation/`sethood`、generic definition-family policy、production install、Core34--36 semantics、`GeneratedOrigin`、`MT10-CIR-TE`、diagnostic、Task277Bはdeferred/not-ready。
 
 ## Accepted Algorithm CoreIr Task Graph
 

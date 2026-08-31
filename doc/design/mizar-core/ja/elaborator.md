@@ -211,7 +211,11 @@ closed。Field/installerを追加せず、one definition blockをmultiple semant
 
 ### Core-33 Task261 attribute item context
 
-Freeze済みの [CORE-SOURCE-ATTRIBUTE-ITEM-CONTEXT-33I261 contract](../../task_contracts/ja/CORE-SOURCE-ATTRIBUTE-ITEM-CONTEXT-33I261.md) が、immutable `SourceAttributeCoreItemAssociation` row/table、`SourceAttributeCoreContextHandoff`、non-exhaustive error、producerとdurable invariantを所有する。Producerはcomplete 33LB、Task248 source context、Task261 checker handoffをby-valueでretainし、complete validation後だけpublishする。Admitするmappingはwhole `SymbolId`で選んだordinary public `Attribute` item 1件と、`SourceAttributeDefinitionId`をkeyとするsource-ordered association row 1件であり、source order、inner definition range、versioned provenanceはjoin keyではなくvalidation対象である。Implementation/verification complete、final review no findings、task-only commit pending。これはzero-semantic/zero-credit・private-probe-onlyであり、generic definition-family API、`CoreContextInput`/Typed/Resolved/CoreIr slot、installer、production route、Core34--36 semantics、`GeneratedOrigin`、`MT10-CIR-TE`、diagnostic、Task277B readinessを追加しない。
+Freeze済みの [CORE-SOURCE-ATTRIBUTE-ITEM-CONTEXT-33I261 contract](../../task_contracts/ja/CORE-SOURCE-ATTRIBUTE-ITEM-CONTEXT-33I261.md) が、immutable `SourceAttributeCoreItemAssociation` row/table、`SourceAttributeCoreContextHandoff`、non-exhaustive error、producerとdurable invariantを所有する。Producerはcomplete 33LB、Task248 source context、Task261 checker handoffをby-valueでretainし、complete validation後だけpublishする。Admitするmappingはwhole `SymbolId`で選んだordinary public `Attribute` item 1件と、`SourceAttributeDefinitionId`をkeyとするsource-ordered association row 1件であり、source order、inner definition range、versioned provenanceはjoin keyではなくvalidation対象である。Implementation/verification/exact task-only commit `4c6ecafc2a9bee7a4eb6e3f27336733fc672bd57` はcomplete。これはzero-semantic/zero-credit・private-probe-onlyであり、generic definition-family API、`CoreContextInput`/Typed/Resolved/CoreIr slot、installer、production route、Core34--36 semantics、`GeneratedOrigin`、`MT10-CIR-TE`、diagnostic、Task277B readinessを追加しない。
+
+### Core-33 Task262 mode item context
+
+Freeze済みの [CORE-SOURCE-MODE-ITEM-CONTEXT-33I262 contract](../../task_contracts/ja/CORE-SOURCE-MODE-ITEM-CONTEXT-33I262.md) が、immutable `SourceModeCoreItemAssociation` row/table、`SourceModeCoreContextHandoff`、non-exhaustive error、producerとdurable invariantを所有する。Producerはcomplete 33LB、Task248 source context、Task262 checker handoff、association tableをby-valueでretainし、complete postvalidation後だけpublishする。Admitするmappingはwhole `SymbolId`で選んだvalid public `Mode` item 1件と、`SourceModeDefinitionId`をkeyとするsource-ordered association row 1件であり、inner rangeとversioned provenanceはjoin keyではなくvalidation対象である。Error precedenceは`EnvironmentMismatch`、`InvalidSourceBindingContext`、`InvalidCheckerOwner`、`InvalidCoreContext`、`InvalidItemAssociation`。Build signatureは`SourceModeCoreContextProducer::build(SourceBindingCoreContextHandoff, SourceBindingContextHandoff, SourceModeDefinitionHandoff) -> Result<SourceModeCoreContextHandoff, SourceModeCoreContextError>`。Implementation/verification complete、documentation repair後final review no findings。これはzero-semantic/zero-credit・private-probe-onlyであり、RHS、inhabitation、`sethood`、computation justification、pending obligation、generic API/slot、installer、production route、Core34--36 semantics、`GeneratedOrigin`、`MT10-CIR-TE`、diagnostic、Task277Bはdeferred/not-ready。
 
 ## Step 2: type and fact lowering
 
@@ -670,6 +674,7 @@ algorithm payload category を下流 crate の exhaustive match を壊さずに�
 | `SourcePredicateCoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface。 |
 | `SourceFunctorCoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface。 |
 | `SourceAttributeCoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `SourceModeCoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface。 |
 | `DefinitionBoundaryKind` | `#[non_exhaustive]` downstream forward-compatible surface。 |
 | `DefinitionBoundaryStatus` | `#[non_exhaustive]` downstream forward-compatible surface。 |
 | `CheckerSiteKind` | `#[non_exhaustive]` downstream forward-compatible surface。 |

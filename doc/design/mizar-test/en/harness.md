@@ -5044,10 +5044,26 @@ definition, prepare the Core context, apply 33LB to the retained complete
 retained inputs, the exact one-row association, complete item/source-map/
 boundary/worklist state, deterministic replay, and the default-deny mutation
 matrix. The two probes and required verification are complete, final reviews
-have no findings, and the task-only commit is pending. No production runner branch, installer,
+have no findings, and the exact task-only commit
+`4c6ecafc2a9bee7a4eb6e3f27336733fc672bd57` is complete. No production runner branch, installer,
 `.miz`, expectation, trace, active metadata, diagnostic, snapshot, or
 coverage credit changes; Core 34--36, `GeneratedOrigin`, `MT10-CIR-TE`, and
 Task277B remain deferred/not-ready.
+
+### Core Task 33I262 private item-context probe
+
+The frozen [Core Task 33I262 contract](../../task_contracts/en/CORE-SOURCE-MODE-ITEM-CONTEXT-33I262.md)
+assigns the existing private Task-262 real-source test leaf as the sole probe.
+It may derive the one Core `Mode` item seed from the authenticated definition,
+prepare the Core context, apply 33LB to the retained complete `BindingEnv`, and
+invoke the standalone producer. The two tests assert retained inputs, the exact
+one-row association, complete item/source-map/boundary/worklist state,
+deterministic replay, ten Core mutations, and four foreign-environment
+combinations. Implementation and required verification are complete; final
+reviews have no findings after documentation repairs. No
+production runner branch, installer, `.miz`, expectation, trace,
+active metadata, diagnostic, snapshot, or coverage credit changes; Core 34--36,
+`GeneratedOrigin`, `MT10-CIR-TE`, and Task277B remain deferred/not-ready.
 
 ## Checker Task 260 Frozen Functor-Definition Route
 

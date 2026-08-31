@@ -174,7 +174,9 @@ Top-level public API groups:
   `SourceAttributeCoreItemAssociation`,
   `SourceAttributeCoreItemAssociationTable`,
   `SourceAttributeCoreContextHandoff`, `SourceAttributeCoreContextError`,
-  `SourceAttributeCoreContextProducer`
+  `SourceAttributeCoreContextProducer`, `SourceModeCoreItemAssociation`,
+  `SourceModeCoreItemAssociationTable`, `SourceModeCoreContextHandoff`,
+  `SourceModeCoreContextError`, `SourceModeCoreContextProducer`
 - Type and fact lowering: `TypeAndFactResult`, `TypeAndFactLoweringError`,
   `TypeAndFactLoweringInput`, `TypePredicateSeed`,
   `DeclaredBinderTypeSeed`, `AttributeChainSeed`, `ModeExpansionSeed`,
@@ -348,12 +350,26 @@ maps the canonical ordinary attribute-definition/source-context identity to one
 valid public Core `Attribute` item and one typed, source-ordered
 `SourceAttributeDefinitionId` association row. The exact context link and whole
 symbol identity are the joins; source order, inner range, and provenance are
-validation boundaries. Implementation and verification are complete; final
-reviews have no findings and the task-only commit is pending. This mapping is zero
+validation boundaries. Implementation, verification, and the exact task-only
+commit `4c6ecafc2a9bee7a4eb6e3f27336733fc672bd57` are complete. This mapping is zero
 semantic/execution/coverage credit and private-probe-only. No specification,
 test intent, trace status/backlink, or coverage state changes; Core 34--36,
 `GeneratedOrigin`, production/`MT10-CIR-TE` installation, generic APIs/slots/
 installers, and Task277B remain deferred/not-ready.
+
+## Core-33 Task262 Mode Item Context Mapping
+
+The frozen [CORE-SOURCE-MODE-ITEM-CONTEXT-33I262 contract](../../task_contracts/en/CORE-SOURCE-MODE-ITEM-CONTEXT-33I262.md)
+maps the ordinary mode-definition/source-context identity to one valid public
+Core `Mode` item and one typed, source-ordered `SourceModeDefinitionId`
+association row. The exact context link and whole-symbol identity are the
+joins; source order, inner range, and provenance are validation boundaries.
+Implementation and verification are complete; final reviews have no findings
+after documentation repairs. This
+mapping is zero semantic/execution/coverage credit and private-probe-only; no
+specification, test intent, trace status/backlink, or coverage state changes.
+Core 34--36, `GeneratedOrigin`, production/`MT10-CIR-TE` installation, generic
+APIs/slots/installers, and Task277B remain deferred/not-ready.
 
 ## Source-Undocumented Behavior Pass
 

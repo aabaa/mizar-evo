@@ -547,11 +547,20 @@ F8 の spec 本文は同一変更(`cef7e109`: spec 03、05、13、17、18)で修
       active `MT10-CIR-TE`、Core34--36 semantics、diagnostic、coverage、Task277B readiness は deferred。
 33I261. **Task261 attribute item context prerequisite。** [x]
     - [Task contract](../../task_contracts/ja/CORE-SOURCE-ATTRIBUTE-ITEM-CONTEXT-33I261.md) は
-      implementation/verification complete、final review no findings、task-only commit pending。
+      implementation/verification complete、final review no findings。`4c6ecafc2a9bee7a4eb6e3f27336733fc672bd57`でcommit済み。
     - Coreはordinary public attribute item向けtyped `SourceAttributeDefinitionId` association
       row 1件だけをownする。semantic/execution/coverage creditはzero。Production install、generic
       API/slot/installer、Core34--36、`GeneratedOrigin`、active `MT10-CIR-TE`、diagnostic、
       Task277B readinessはdeferred/not-readyのままとする。
+33I262. **Task262 mode item context prerequisite。** [x]
+    - Freeze済みの [task contract](../../task_contracts/ja/CORE-SOURCE-MODE-ITEM-CONTEXT-33I262.md) は
+      implementation/verification complete、documentation repair後final review no findings、task-only
+      commit pending。Complete 33LB、exact Task248 Profile-B context、active
+      Task262 mode-definition handoffをconsumeし、exact context linkとwhole `SymbolId`で
+      public Core `Mode` item 1件とtyped source-ordered association row 1件だけをadmitする。
+    - semantic/execution/coverage creditはzeroで、checker doc、production route/installer、`.miz`、
+      expectation、trace、metadata、diagnostic、`MT10-CIR-TE`は変更しない。Task259--261は
+      protected precedentでありinputではなく、Core34--36とTask277Bはdeferred/not-readyのままとする。
 33. **Source-derived Core context/item/binder/source map。** [ ]
     - checker 248を`MT10-CIR-TE`でconsumeし、type/proof/algorithm bodyは扱わない。
       C4C8についてchecker 248だけでは不十分なままであり、Task 33C4C8はseparately

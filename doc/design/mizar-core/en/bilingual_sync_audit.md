@@ -131,12 +131,25 @@ The frozen [EN contract](../../task_contracts/en/CORE-SOURCE-ATTRIBUTE-ITEM-CONT
 and [JA companion](../../task_contracts/ja/CORE-SOURCE-ATTRIBUTE-ITEM-CONTEXT-33I261.md)
 define the same one-row ordinary-attribute Core association, immutable
 handoff/error/producer surface, exact identity and source-order boundary, and
-default-deny validation. Implementation and verification are complete; final
-reviews have no findings and the task-only commit is pending. Both languages preserve
+default-deny validation. Implementation, verification, and the exact task-only
+commit `4c6ecafc2a9bee7a4eb6e3f27336733fc672bd57` are complete. Both languages preserve
 zero semantic/execution/coverage credit, no production install or generic API/
 slot/installer, deferred Core 34--36/`GeneratedOrigin`/`MT10-CIR-TE` work, and
 Task277B not-ready/zero-credit status. English is canonical; no exception is
 recorded.
+
+## Core Task 33I262 Bilingual Contract Parity
+
+The frozen [EN contract](../../task_contracts/en/CORE-SOURCE-MODE-ITEM-CONTEXT-33I262.md)
+and [JA companion](../../task_contracts/ja/CORE-SOURCE-MODE-ITEM-CONTEXT-33I262.md)
+define the same one-row ordinary-mode Core association, immutable
+handoff/error/producer surface, exact identity/source-order boundary, and
+default-deny validation. Implementation and verification are complete; all
+independent reviews ended with no findings after documentation repairs. Both
+languages preserve zero semantic/execution/coverage credit, no checker-doc or
+production install/generic API/slot/installer change, deferred Core 34--36/
+`GeneratedOrigin`/`MT10-CIR-TE` work, and Task277B not-ready/zero-credit status.
+English is canonical; no exception is recorded.
 
 ## Guard Decision
 

@@ -1943,7 +1943,18 @@ Freeze済みの [EN contract](../../task_contracts/en/CORE-SOURCE-ATTRIBUTE-ITEM
 [JA companion](../../task_contracts/ja/CORE-SOURCE-ATTRIBUTE-ITEM-CONTEXT-33I261.md) は、private
 Task261 real-source probeとone-row ordinary-attribute Core associationを同じ内容で指定する。
 両言語はby-value handoff、exact identity/source-orderとdefault-deny boundaryを保持する。
-Implementation/verification complete、final review no findings、task-only commit pending。Probeはzero
+Implementation/verification/exact task-only commit `4c6ecafc2a9bee7a4eb6e3f27336733fc672bd57` はcomplete。Probeはzero
 semantic/execution/coverage creditのままで、production runner、installer、generic API/slot、
 fixture/expectation/trace/metadataの変更なし。Core34--36、`GeneratedOrigin`、`MT10-CIR-TE`、
 Task277Bはdeferred/not-ready。English canonical、exceptionなし。
+
+## Core Task 33I262 bilingual contract parity
+
+Freeze済みの [EN contract](../../task_contracts/en/CORE-SOURCE-MODE-ITEM-CONTEXT-33I262.md) と
+[JA companion](../../task_contracts/ja/CORE-SOURCE-MODE-ITEM-CONTEXT-33I262.md) は、private
+Task262 real-source probeとone-row ordinary-mode Core associationを同じ内容で指定する。両言語は
+by-value handoff、exact identity/source-orderとdefault-deny boundaryを保持する。Implementation/
+verification complete、documentation repair後final review no findings。
+Probeはzero semantic/execution/coverage creditのままで、checker doc、production runner、installer、
+generic API/slot、fixture/expectation/trace/metadataの変更なし。Core34--36、`GeneratedOrigin`、
+`MT10-CIR-TE`、Task277Bはdeferred/not-ready。English canonical、exceptionなし。

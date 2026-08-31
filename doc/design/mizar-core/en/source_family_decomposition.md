@@ -170,11 +170,24 @@ selects its source item and the retained whole `SymbolId` selects one valid
 public `Attribute` item. The immutable association table is keyed by typed
 `SourceAttributeDefinitionId`, source ordered, and validated with the inner
 definition range and provenance; names, ranges, numeric ids, or iteration
-order are not joins. Implementation and verification are complete; final
-reviews have no findings and the task-only commit is pending. This is zero-semantic/zero-
+order are not joins. Implementation, verification, and the exact task-only
+commit `4c6ecafc2a9bee7a4eb6e3f27336733fc672bd57` are complete. This is zero-semantic/zero-
 credit and private-probe-only, with no generic definition-family policy,
 production install, Core 34--36 semantics, `GeneratedOrigin`, `MT10-CIR-TE`,
 diagnostics, or Task277B readiness.
+
+### Task-262-specific mode item context
+
+The frozen [CORE-SOURCE-MODE-ITEM-CONTEXT-33I262 contract](../../task_contracts/en/CORE-SOURCE-MODE-ITEM-CONTEXT-33I262.md)
+owns the one-row ordinary-mode Core-33 mapping. Its exact context link selects
+the source item and retained whole `SymbolId` selects one valid public `Mode`
+item; the typed `SourceModeDefinitionId` row is source ordered, with inner
+range and provenance validated rather than used as joins. Implementation and
+verification are complete; final reviews have no findings after documentation
+repairs. This remains
+zero-semantic/zero-credit and private-probe-only; RHS/inhabitation/`sethood`,
+generic family policy, production installation, Core 34--36 semantics,
+`GeneratedOrigin`, `MT10-CIR-TE`, diagnostics, and Task277B remain deferred.
 
 ## Accepted Algorithm CoreIr Task Graph
 

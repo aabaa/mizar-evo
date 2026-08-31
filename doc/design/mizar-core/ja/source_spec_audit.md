@@ -173,7 +173,9 @@ top-level public API group:
   `SourceAttributeCoreItemAssociation`、
   `SourceAttributeCoreItemAssociationTable`、
   `SourceAttributeCoreContextHandoff`、`SourceAttributeCoreContextError`、
-  `SourceAttributeCoreContextProducer`
+  `SourceAttributeCoreContextProducer`、`SourceModeCoreItemAssociation`、
+  `SourceModeCoreItemAssociationTable`、`SourceModeCoreContextHandoff`、
+  `SourceModeCoreContextError`、`SourceModeCoreContextProducer`
 - Type and fact lowering: `TypeAndFactResult`, `TypeAndFactLoweringError`,
   `TypeAndFactLoweringInput`, `TypePredicateSeed`,
   `DeclaredBinderTypeSeed`, `AttributeChainSeed`, `ModeExpansionSeed`,
@@ -332,7 +334,11 @@ serializeせず、general multi-definition Core-33 inventoryをcloseしない。
 
 ## Core-33 Task261 attribute item context mapping
 
-Freeze済みの [CORE-SOURCE-ATTRIBUTE-ITEM-CONTEXT-33I261 contract](../../task_contracts/ja/CORE-SOURCE-ATTRIBUTE-ITEM-CONTEXT-33I261.md) は、canonical ordinary attribute-definition/source-context identityをvalid public Core `Attribute` item 1件とtyped・source-ordered `SourceAttributeDefinitionId` association row 1件へmapする。Exact context linkとwhole symbol identityがjoinであり、source order、inner range、provenanceはvalidation boundaryである。Implementation/verification complete、final review no findings、task-only commit pending。このmappingはzero semantic/execution/coverage credit・private-probe-only。Specification、test intent、trace status/backlink、coverage stateは変更しない。Core34--36、`GeneratedOrigin`、production/`MT10-CIR-TE` install、generic API/slot/installer、Task277Bはdeferred/not-readyのままとする。
+Freeze済みの [CORE-SOURCE-ATTRIBUTE-ITEM-CONTEXT-33I261 contract](../../task_contracts/ja/CORE-SOURCE-ATTRIBUTE-ITEM-CONTEXT-33I261.md) は、canonical ordinary attribute-definition/source-context identityをvalid public Core `Attribute` item 1件とtyped・source-ordered `SourceAttributeDefinitionId` association row 1件へmapする。Exact context linkとwhole symbol identityがjoinであり、source order、inner range、provenanceはvalidation boundaryである。Implementation/verification/exact task-only commit `4c6ecafc2a9bee7a4eb6e3f27336733fc672bd57` はcomplete。このmappingはzero semantic/execution/coverage credit・private-probe-only。Specification、test intent、trace status/backlink、coverage stateは変更しない。Core34--36、`GeneratedOrigin`、production/`MT10-CIR-TE` install、generic API/slot/installer、Task277Bはdeferred/not-readyのままとする。
+
+## Core-33 Task262 mode item context mapping
+
+Freeze済みの [CORE-SOURCE-MODE-ITEM-CONTEXT-33I262 contract](../../task_contracts/ja/CORE-SOURCE-MODE-ITEM-CONTEXT-33I262.md) は、canonical ordinary mode-definition/source-context identityをvalid public Core `Mode` item 1件とtyped・source-ordered `SourceModeDefinitionId` association row 1件へmapする。Exact context linkとwhole symbol identityがjoinであり、source order、inner range、provenanceはvalidation boundaryである。Implementation/verification complete、documentation repair後final review no findings。このmappingはzero semantic/execution/coverage credit・private-probe-only。Specification、test intent、trace status/backlink、coverage stateは変更しない。Core34--36、`GeneratedOrigin`、production/`MT10-CIR-TE` install、generic API/slot/installer、Task277Bはdeferred/not-readyのままとする。
 
 ## Source-Undocumented Behavior Pass
 

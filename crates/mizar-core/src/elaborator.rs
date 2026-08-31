@@ -3793,6 +3793,816 @@ fn validate_attribute_item_association(
     Ok(())
 }
 
+const SOURCE_MODE_CORE_ITEM_PROVENANCE_KEY: &str = "source-mode-core-item-v1.definition.0";
+
+/// One immutable association between a checker source item, its mode
+/// definition, the definition's whole symbol, and the corresponding Core
+/// item.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceModeCoreItemAssociation {
+    source_item: SourceItemId,
+    definition: mizar_checker::source_mode_definition::SourceModeDefinitionId,
+    symbol: SymbolId,
+    core_item: CoreItemId,
+}
+
+impl SourceModeCoreItemAssociation {
+    #[must_use]
+    pub const fn source_item(&self) -> SourceItemId {
+        self.source_item
+    }
+
+    #[must_use]
+    pub const fn definition(
+        &self,
+    ) -> mizar_checker::source_mode_definition::SourceModeDefinitionId {
+        self.definition
+    }
+
+    #[must_use]
+    pub const fn symbol(&self) -> &SymbolId {
+        &self.symbol
+    }
+
+    #[must_use]
+    pub const fn core_item(&self) -> CoreItemId {
+        self.core_item
+    }
+}
+
+/// Immutable source-ordered table of mode/Core item associations.
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct SourceModeCoreItemAssociationTable {
+    rows: Vec<SourceModeCoreItemAssociation>,
+}
+
+impl SourceModeCoreItemAssociationTable {
+    fn empty() -> Self {
+        Self::default()
+    }
+
+    #[must_use]
+    pub fn get(
+        &self,
+        definition: mizar_checker::source_mode_definition::SourceModeDefinitionId,
+    ) -> Option<&SourceModeCoreItemAssociation> {
+        self.rows.iter().find(|row| row.definition() == definition)
+    }
+
+    pub fn iter(
+        &self,
+    ) -> impl Iterator<
+        Item = (
+            mizar_checker::source_mode_definition::SourceModeDefinitionId,
+            &SourceModeCoreItemAssociation,
+        ),
+    > {
+        self.rows.iter().map(|row| (row.definition(), row))
+    }
+
+    #[must_use]
+    pub fn len(&self) -> usize {
+        self.rows.len()
+    }
+
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.rows.is_empty()
+    }
+}
+
+/// Errors raised while building the exact Task-262 mode/Core context.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum SourceModeCoreContextError {
+    EnvironmentMismatch,
+    InvalidSourceBindingContext,
+    InvalidCheckerOwner,
+    InvalidCoreContext,
+    InvalidItemAssociation,
+}
+
+impl fmt::Display for SourceModeCoreContextError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::EnvironmentMismatch => {
+                formatter.write_str("mode Core context environment is invalid")
+            }
+            Self::InvalidSourceBindingContext => {
+                formatter.write_str("mode Core source-binding context is invalid")
+            }
+            Self::InvalidCheckerOwner => formatter.write_str("mode Core checker owner is invalid"),
+            Self::InvalidCoreContext => formatter.write_str("mode Core context is invalid"),
+            Self::InvalidItemAssociation => {
+                formatter.write_str("mode Core item association is invalid")
+            }
+        }
+    }
+}
+
+impl Error for SourceModeCoreContextError {}
+
+/// Immutable Core context handoff for the exact checker-authenticated
+/// Task-262 mode definition.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceModeCoreContextHandoff {
+    source_bindings: SourceBindingCoreContextHandoff,
+    source_context: SourceBindingContextHandoff,
+    checker_owner: mizar_checker::source_mode_definition::SourceModeDefinitionHandoff,
+    items: SourceModeCoreItemAssociationTable,
+}
+
+impl SourceModeCoreContextHandoff {
+    #[must_use]
+    pub const fn source_id(&self) -> SourceId {
+        self.source_bindings.source_id()
+    }
+
+    #[must_use]
+    pub const fn module_id(&self) -> &ModuleId {
+        self.source_bindings.module_id()
+    }
+
+    #[must_use]
+    pub const fn context(&self) -> &CoreContext {
+        self.source_bindings.context()
+    }
+
+    #[must_use]
+    pub const fn source_bindings(&self) -> &SourceBindingCoreContextHandoff {
+        &self.source_bindings
+    }
+
+    #[must_use]
+    pub const fn source_context(&self) -> &SourceBindingContextHandoff {
+        &self.source_context
+    }
+
+    #[must_use]
+    pub const fn checker_owner(
+        &self,
+    ) -> &mizar_checker::source_mode_definition::SourceModeDefinitionHandoff {
+        &self.checker_owner
+    }
+
+    #[must_use]
+    pub const fn items(&self) -> &SourceModeCoreItemAssociationTable {
+        &self.items
+    }
+
+    #[must_use]
+    pub fn debug_text(&self) -> String {
+        let associations = self
+            .items
+            .iter()
+            .map(|(definition, association)| {
+                format!(
+                    "{}:{}:{}:{}",
+                    definition.index(),
+                    association.source_item().index(),
+                    association.symbol().fqn().as_str(),
+                    association.core_item().index(),
+                )
+            })
+            .collect::<Vec<_>>()
+            .join(",");
+        format!(
+            "source-mode-core-item-context-v1|module={}.{}|source-bindings={}|definitions={}|items={}",
+            self.module_id().package().as_str(),
+            self.module_id().path().as_str(),
+            self.source_bindings.binding_env().bindings().len(),
+            self.checker_owner.definitions().len(),
+            associations,
+        )
+    }
+
+    fn validate(&self) -> Result<(), SourceModeCoreContextError> {
+        validate_mode_core_environment(
+            &self.source_bindings,
+            &self.source_context,
+            &self.checker_owner,
+        )?;
+        self.source_bindings
+            .validate()
+            .map_err(|_| SourceModeCoreContextError::InvalidSourceBindingContext)?;
+        let definition = validate_mode_checker_owner(&self.source_context, &self.checker_owner)?;
+        let core_item = validate_mode_core_shape(
+            self.source_bindings.context(),
+            definition.symbol(),
+            definition.source_range(),
+        )?;
+        validate_mode_item_association(
+            &self.source_context,
+            &self.checker_owner,
+            &self.items,
+            definition,
+            core_item,
+        )
+    }
+}
+
+/// Builds the standalone immutable Task-262 mode/Core context handoff.
+#[derive(Debug, Clone, Copy)]
+pub struct SourceModeCoreContextProducer;
+
+impl SourceModeCoreContextProducer {
+    pub fn build(
+        source_bindings: SourceBindingCoreContextHandoff,
+        source_context: SourceBindingContextHandoff,
+        checker_owner: mizar_checker::source_mode_definition::SourceModeDefinitionHandoff,
+    ) -> Result<SourceModeCoreContextHandoff, SourceModeCoreContextError> {
+        validate_mode_core_environment(&source_bindings, &source_context, &checker_owner)?;
+        source_bindings
+            .validate()
+            .map_err(|_| SourceModeCoreContextError::InvalidSourceBindingContext)?;
+        let definition = validate_mode_checker_owner(&source_context, &checker_owner)?;
+        let core_item = validate_mode_core_shape(
+            source_bindings.context(),
+            definition.symbol(),
+            definition.source_range(),
+        )?;
+        let source_item = source_context
+            .context_links()
+            .get(definition.context())
+            .and_then(|link| link.item)
+            .ok_or(SourceModeCoreContextError::InvalidItemAssociation)?;
+        let mut items = SourceModeCoreItemAssociationTable::empty();
+        items.rows.push(SourceModeCoreItemAssociation {
+            source_item,
+            definition: definition.id(),
+            symbol: definition.symbol().clone(),
+            core_item,
+        });
+        let handoff = SourceModeCoreContextHandoff {
+            source_bindings,
+            source_context,
+            checker_owner,
+            items,
+        };
+        handoff.validate()?;
+        Ok(handoff)
+    }
+}
+
+fn validate_mode_core_environment(
+    source_bindings: &SourceBindingCoreContextHandoff,
+    source_context: &SourceBindingContextHandoff,
+    checker_owner: &mizar_checker::source_mode_definition::SourceModeDefinitionHandoff,
+) -> Result<(), SourceModeCoreContextError> {
+    let source_id = source_bindings.source_id();
+    let module_id = source_bindings.module_id();
+    if source_context.source_id() != source_id
+        || source_context.module_id() != module_id
+        || checker_owner.source_id() != source_id
+        || checker_owner.module_id() != module_id
+        || source_bindings.binding_env().source_id() != source_id
+        || source_bindings.binding_env().module_id() != module_id
+        || source_context.binding_env().source_id() != source_id
+        || source_context.binding_env().module_id() != module_id
+        || source_context.binding_env() != source_bindings.binding_env()
+        || source_bindings.context().source_id() != source_id
+        || source_bindings.context().module_id() != module_id
+    {
+        return Err(SourceModeCoreContextError::EnvironmentMismatch);
+    }
+    Ok(())
+}
+
+fn validate_mode_checker_owner<'a>(
+    source_context: &SourceBindingContextHandoff,
+    checker_owner: &'a mizar_checker::source_mode_definition::SourceModeDefinitionHandoff,
+) -> Result<
+    &'a mizar_checker::source_mode_definition::SourceModeDefinition,
+    SourceModeCoreContextError,
+> {
+    if checker_owner.source_context_fingerprint() != source_context.debug_text()
+        || checker_owner.source_type_fingerprint().is_empty()
+        || checker_owner.base_initial_obligation_count() != 0
+        || source_context.items().len() != 1
+        || source_context.declarations().len() != 2
+        || source_context.context_links().len() != 2
+        || source_context.local_contexts().len() != 2
+        || source_context.binding_env().contexts().len() != 2
+        || source_context.binding_env().bindings().len() != 2
+        || !source_context.binding_env().diagnostics().is_empty()
+    {
+        return Err(SourceModeCoreContextError::InvalidCheckerOwner);
+    }
+
+    let source_item = source_context
+        .items()
+        .get(SourceItemId::new(0))
+        .ok_or(SourceModeCoreContextError::InvalidCheckerOwner)?;
+    if source_item.id != SourceItemId::new(0)
+        || source_item.shell.index() != 0
+        || source_item.role != SourceItemRole::DefinitionBlock
+        || source_item.shell_ordinal != 0
+        || source_item.visibility != SourceItemVisibility::Unspecified
+        || source_item.recovery != SourceItemRecovery::Normal
+        || source_item.parent.is_some()
+        || source_item
+            .local_scope
+            .as_ref()
+            .is_none_or(|scope| scope.path() != [0])
+        || source_item.predecessor.is_some()
+        || source_item.binding_context != BindingContextId::new(1)
+        || source_item.local_context != mizar_checker::typed_ast::LocalTypeContextId::new(1)
+        || source_item.source_range
+            != (SourceRange {
+                source_id: source_context.source_id(),
+                start: 0,
+                end: 140,
+            })
+        || source_item.site
+            != mizar_checker::typed_ast::TypedSiteRef::Node(
+                mizar_checker::typed_ast::TypedNodeId::new(50),
+            )
+    {
+        return Err(SourceModeCoreContextError::InvalidCheckerOwner);
+    }
+
+    let module_context = source_context
+        .binding_env()
+        .contexts()
+        .get(BindingContextId::new(0))
+        .ok_or(SourceModeCoreContextError::InvalidCheckerOwner)?;
+    let definition_context = source_context
+        .binding_env()
+        .contexts()
+        .get(BindingContextId::new(1))
+        .ok_or(SourceModeCoreContextError::InvalidCheckerOwner)?;
+    if module_context.id != BindingContextId::new(0)
+        || !is_normal_module_context(module_context)
+        || definition_context.id != BindingContextId::new(1)
+        || !is_normal_declaration_context(definition_context)
+        || definition_context.owner != BindingContextOwner::DeclarationShell(source_item.shell)
+        || definition_context.parent != Some(BindingContextId::new(0))
+        || definition_context.lexical_scope != source_item.local_scope
+        || !module_context.bindings.is_empty()
+        || !module_context.visible_bindings.is_empty()
+    {
+        return Err(SourceModeCoreContextError::InvalidCheckerOwner);
+    }
+
+    let declaration_rows = source_context.declarations().iter().collect::<Vec<_>>();
+    if declaration_rows.len() != 2 {
+        return Err(SourceModeCoreContextError::InvalidCheckerOwner);
+    }
+    let expected_parameter_ranges = [(13, 26, 17, 18, 22, 25), (29, 42, 33, 34, 38, 41)];
+    let expected_parameter_sites = [37, 41];
+    let expected_parameter_spelling = ["x", "y"];
+    for (index, (id, declaration)) in declaration_rows.iter().enumerate() {
+        let expected_source_range = SourceRange {
+            source_id: source_context.source_id(),
+            start: expected_parameter_ranges[index].0,
+            end: expected_parameter_ranges[index].1,
+        };
+        let expected_declaration_range = SourceRange {
+            source_id: source_context.source_id(),
+            start: expected_parameter_ranges[index].2,
+            end: expected_parameter_ranges[index].3,
+        };
+        let expected_written_type_range = SourceRange {
+            source_id: source_context.source_id(),
+            start: expected_parameter_ranges[index].4,
+            end: expected_parameter_ranges[index].5,
+        };
+        let SourceBindingSiteRole::DefinitionParameter { local } = &declaration.role else {
+            return Err(SourceModeCoreContextError::InvalidCheckerOwner);
+        };
+        if *id != SourceDeclarationId::new(index)
+            || declaration.id != *id
+            || declaration.item != source_item.id
+            || declaration.binding != BindingId::new(index)
+            || declaration.source_ordinal != index
+            || declaration.spelling != expected_parameter_spelling[index]
+            || declaration.declaration_range != expected_declaration_range
+            || declaration.written_type_range != expected_written_type_range
+            || declaration.site
+                != mizar_checker::typed_ast::TypedSiteRef::Node(
+                    mizar_checker::typed_ast::TypedNodeId::new(expected_parameter_sites[index]),
+                )
+            || declaration.binding_context != BindingContextId::new(1)
+            || declaration.local_context != mizar_checker::typed_ast::LocalTypeContextId::new(1)
+            || declaration.shadowed_binding.is_some()
+            || declaration.predecessor != index.checked_sub(1).map(SourceDeclarationId::new)
+            || local.spelling() != expected_parameter_spelling[index]
+            || local.scope().path() != [0]
+            || local.declaration_range() != expected_declaration_range
+            || local.visible_after_ordinal() != index
+            || !range_contains(source_item.source_range, expected_source_range)
+        {
+            return Err(SourceModeCoreContextError::InvalidCheckerOwner);
+        }
+
+        let binding = source_context
+            .binding_env()
+            .bindings()
+            .get(declaration.binding)
+            .ok_or(SourceModeCoreContextError::InvalidCheckerOwner)?;
+        let BinderIdentity::ResolverLocal {
+            scope,
+            ordinal,
+            declaration_range,
+        } = &binding.identity
+        else {
+            return Err(SourceModeCoreContextError::InvalidCheckerOwner);
+        };
+        if binding.id != BindingId::new(index)
+            || binding.spelling != expected_parameter_spelling[index]
+            || binding.kind != BindingKind::DefinitionParameter
+            || binding.owner_context != BindingContextId::new(1)
+            || binding.declaration_range != expected_declaration_range
+            || binding.visible_after_ordinal != index
+            || binding.type_site != BindingTypeSite::Source(expected_written_type_range)
+            || binding.status != BindingStatus::Active
+            || !binding.captured.identities().is_empty()
+            || !binding.diagnostics.is_empty()
+            || binding.recovery != BindingRecoveryState::Normal
+            || scope.path() != [0]
+            || *ordinal != index
+            || *declaration_range != expected_declaration_range
+        {
+            return Err(SourceModeCoreContextError::InvalidCheckerOwner);
+        }
+    }
+    let expected_bindings = vec![BindingId::new(0), BindingId::new(1)];
+    if definition_context.bindings != expected_bindings
+        || definition_context.visible_bindings != expected_bindings
+    {
+        return Err(SourceModeCoreContextError::InvalidCheckerOwner);
+    }
+
+    let module_local_context = source_context
+        .local_contexts()
+        .get(mizar_checker::typed_ast::LocalTypeContextId::new(0))
+        .ok_or(SourceModeCoreContextError::InvalidCheckerOwner)?;
+    let definition_local_context = source_context
+        .local_contexts()
+        .get(mizar_checker::typed_ast::LocalTypeContextId::new(1))
+        .ok_or(SourceModeCoreContextError::InvalidCheckerOwner)?;
+    let expected_local_bindings = declaration_rows
+        .iter()
+        .map(|(_, declaration)| BindingTypeRef::Site(declaration.site.clone()))
+        .collect::<Vec<_>>();
+    if module_local_context.id != mizar_checker::typed_ast::LocalTypeContextId::new(0)
+        || module_local_context.parent.is_some()
+        || module_local_context.owner
+            != mizar_checker::typed_ast::TypedSiteRef::Node(
+                mizar_checker::typed_ast::TypedNodeId::new(53),
+            )
+        || module_local_context.layer != mizar_checker::typed_ast::TypeContextLayer::Module
+        || module_local_context.recovery != mizar_checker::typed_ast::ContextRecoveryState::Normal
+        || !module_local_context.bindings.is_empty()
+        || !module_local_context.introduced_assumptions.is_empty()
+        || !module_local_context.visible_facts.is_empty()
+        || definition_local_context.id != mizar_checker::typed_ast::LocalTypeContextId::new(1)
+        || definition_local_context.owner != source_item.site
+        || definition_local_context.parent
+            != Some(mizar_checker::typed_ast::LocalTypeContextId::new(0))
+        || definition_local_context.layer != mizar_checker::typed_ast::TypeContextLayer::Declaration
+        || definition_local_context.recovery
+            != mizar_checker::typed_ast::ContextRecoveryState::Normal
+        || definition_local_context.bindings != expected_local_bindings
+        || !definition_local_context.introduced_assumptions.is_empty()
+        || !definition_local_context.visible_facts.is_empty()
+    {
+        return Err(SourceModeCoreContextError::InvalidCheckerOwner);
+    }
+
+    for (index, (link_id, link)) in source_context.context_links().iter().enumerate() {
+        let expected_item = (index == 1).then_some(source_item.id);
+        if link_id != index
+            || link.binding_context != BindingContextId::new(index)
+            || link.local_context != mizar_checker::typed_ast::LocalTypeContextId::new(index)
+            || link.item != expected_item
+        {
+            return Err(SourceModeCoreContextError::InvalidCheckerOwner);
+        }
+    }
+
+    if checker_owner.definitions().len() != 1
+        || checker_owner.parameters().len() != 2
+        || checker_owner.applications().len() != 1
+        || checker_owner.expansions().len() != 1
+        || checker_owner.inhabitation_requests().len() != 1
+        || checker_owner.properties().len() != 1
+    {
+        return Err(SourceModeCoreContextError::InvalidCheckerOwner);
+    }
+    let definition = checker_owner
+        .definitions()
+        .get(mizar_checker::source_mode_definition::SourceModeDefinitionId::new(0))
+        .ok_or(SourceModeCoreContextError::InvalidCheckerOwner)?;
+    let definition_range = SourceRange {
+        source_id: source_context.source_id(),
+        start: 45,
+        end: 135,
+    };
+    if definition.id() != mizar_checker::source_mode_definition::SourceModeDefinitionId::new(0)
+        || definition.definition().index() != 0
+        || definition.contribution().index() != 0
+        || definition.site()
+            != &mizar_checker::typed_ast::TypedSiteRef::Node(
+                mizar_checker::typed_ast::TypedNodeId::new(49),
+            )
+        || definition.source_range() != definition_range
+        || definition.source_ordinal() != 0
+        || definition.context() != BindingContextId::new(1)
+        || definition.recovery()
+            != mizar_checker::source_mode_definition::SourceModeDefinitionRecovery::Normal
+        || definition.spelling()
+            != "mode Task262ModeDefinition: Task262Mode [x, y] is set;\n  sethood by computation(steps: 1);"
+        || definition.application()
+            != mizar_checker::source_mode_definition::SourceModeApplicationId::new(0)
+        || definition.expansion()
+            != mizar_checker::source_mode_definition::SourceModeExpansionId::new(0)
+        || definition.inhabitation_request()
+            != mizar_checker::source_mode_definition::SourceModeInhabitationRequestId::new(0)
+        || definition.property()
+            != Some(mizar_checker::source_mode_definition::SourceModePropertyId::new(0))
+        || definition.symbol().module() != source_context.module_id()
+        || definition.origin().source_id() != source_context.source_id()
+        || definition.origin().module_id() != source_context.module_id()
+        || definition.origin().is_recovered()
+        || definition.origin().import_edge().is_some()
+        || definition.origin().anchor() != &SourceAnchor::Range(definition_range)
+        || definition.origin().structural_path() != [4, 0, 10, 0]
+        || !range_contains(source_item.source_range, definition_range)
+    {
+        return Err(SourceModeCoreContextError::InvalidCheckerOwner);
+    }
+
+    let parameter_spelling = ["let x be set;", "let y be set;"];
+    for (index, (parameter_id, parameter)) in checker_owner.parameters().iter().enumerate() {
+        let declaration = declaration_rows[index].1;
+        let expected_source_range = SourceRange {
+            source_id: source_context.source_id(),
+            start: expected_parameter_ranges[index].0,
+            end: expected_parameter_ranges[index].1,
+        };
+        if parameter_id.index() != index
+            || parameter.id().index() != index
+            || parameter.owner() != definition.id()
+            || parameter.ordinal() != index
+            || parameter.binding() != BindingId::new(index)
+            || parameter.written_type().index() != index
+            || parameter.site() != &declaration.site
+            || parameter.source_range() != expected_source_range
+            || parameter.declaration_range() != declaration.declaration_range
+            || parameter.pattern_range()
+                != (SourceRange {
+                    source_id: source_context.source_id(),
+                    start: if index == 0 { 86 } else { 89 },
+                    end: if index == 0 { 87 } else { 90 },
+                })
+            || parameter.context() != BindingContextId::new(1)
+            || parameter.recovery()
+                != mizar_checker::source_mode_definition::SourceModeDefinitionRecovery::Normal
+            || parameter.spelling() != parameter_spelling[index]
+        {
+            return Err(SourceModeCoreContextError::InvalidCheckerOwner);
+        }
+    }
+
+    let application = checker_owner
+        .applications()
+        .get(mizar_checker::source_mode_definition::SourceModeApplicationId::new(0))
+        .ok_or(SourceModeCoreContextError::InvalidCheckerOwner)?;
+    if application.id() != mizar_checker::source_mode_definition::SourceModeApplicationId::new(0)
+        || application.owner() != definition.id()
+        || application.ordinal() != 0
+        || application.parameters()
+            != [
+                mizar_checker::source_mode_definition::SourceModeParameterId::new(0),
+                mizar_checker::source_mode_definition::SourceModeParameterId::new(1),
+            ]
+        || application.site()
+            != &mizar_checker::typed_ast::TypedSiteRef::Node(
+                mizar_checker::typed_ast::TypedNodeId::new(42),
+            )
+        || application.source_range()
+            != (SourceRange {
+                source_id: source_context.source_id(),
+                start: 73,
+                end: 91,
+            })
+        || application.context() != BindingContextId::new(1)
+        || application.recovery()
+            != mizar_checker::source_mode_definition::SourceModeDefinitionRecovery::Normal
+        || application.spelling() != "Task262Mode [ x , y ]"
+    {
+        return Err(SourceModeCoreContextError::InvalidCheckerOwner);
+    }
+
+    let expansion = checker_owner
+        .expansions()
+        .get(mizar_checker::source_mode_definition::SourceModeExpansionId::new(0))
+        .ok_or(SourceModeCoreContextError::InvalidCheckerOwner)?;
+    if expansion.id() != mizar_checker::source_mode_definition::SourceModeExpansionId::new(0)
+        || expansion.owner() != definition.id()
+        || expansion.ordinal() != 0
+        || expansion.rhs() != mizar_checker::source_type::SourceTypeModeRhsId::new(0)
+        || expansion.site()
+            != &mizar_checker::typed_ast::TypedSiteRef::Node(
+                mizar_checker::typed_ast::TypedNodeId::new(44),
+            )
+        || expansion.source_range()
+            != (SourceRange {
+                source_id: source_context.source_id(),
+                start: 95,
+                end: 98,
+            })
+        || expansion.context() != BindingContextId::new(1)
+        || expansion.recovery()
+            != mizar_checker::source_mode_definition::SourceModeDefinitionRecovery::Normal
+        || expansion.spelling() != "set"
+    {
+        return Err(SourceModeCoreContextError::InvalidCheckerOwner);
+    }
+
+    let request = checker_owner
+        .inhabitation_requests()
+        .get(mizar_checker::source_mode_definition::SourceModeInhabitationRequestId::new(0))
+        .ok_or(SourceModeCoreContextError::InvalidCheckerOwner)?;
+    if request.id()
+        != mizar_checker::source_mode_definition::SourceModeInhabitationRequestId::new(0)
+        || request.owner() != definition.id()
+        || request.ordinal() != 0
+        || request.expansion() != expansion.id()
+        || request.kind()
+            != mizar_checker::source_mode_definition::SourceModeInhabitationRequestKind::Rhs
+        || request.site() != expansion.site()
+        || request.source_range() != expansion.source_range()
+        || request.context() != BindingContextId::new(1)
+        || request.recovery()
+            != mizar_checker::source_mode_definition::SourceModeDefinitionRecovery::Normal
+        || request.spelling() != "set"
+    {
+        return Err(SourceModeCoreContextError::InvalidCheckerOwner);
+    }
+
+    let property = checker_owner
+        .properties()
+        .get(mizar_checker::source_mode_definition::SourceModePropertyId::new(0))
+        .ok_or(SourceModeCoreContextError::InvalidCheckerOwner)?;
+    if property.id() != mizar_checker::source_mode_definition::SourceModePropertyId::new(0)
+        || property.owner() != definition.id()
+        || property.ordinal() != 0
+        || property.kind() != mizar_checker::source_mode_definition::SourceModePropertyKind::Sethood
+        || property.site()
+            != &mizar_checker::typed_ast::TypedSiteRef::Node(
+                mizar_checker::typed_ast::TypedNodeId::new(48),
+            )
+        || property.source_range()
+            != (SourceRange {
+                source_id: source_context.source_id(),
+                start: 102,
+                end: 135,
+            })
+        || property.justification()
+            != &SourceAnchor::Range(SourceRange {
+                source_id: source_context.source_id(),
+                start: 113,
+                end: 134,
+            })
+        || property.recovery()
+            != mizar_checker::source_mode_definition::SourceModeDefinitionRecovery::Normal
+        || property.spelling() != "sethood by computation(steps: 1);"
+        || property.obligation().index() != 0
+    {
+        return Err(SourceModeCoreContextError::InvalidCheckerOwner);
+    }
+    Ok(definition)
+}
+
+fn validate_mode_core_shape(
+    context: &CoreContext,
+    symbol: &SymbolId,
+    source_range: SourceRange,
+) -> Result<CoreItemId, SourceModeCoreContextError> {
+    if validate_core_context_shape(context, &BTreeSet::new()).is_err()
+        || !context.dependency_summaries.is_empty()
+        || !context.generated_origins.table().is_empty()
+        || !context.generated_origins.by_key.is_empty()
+        || !context.diagnostics.is_empty()
+        || context.source_map.item_sources.len() != 1
+        || !context.source_map.term_sources.is_empty()
+        || !context.source_map.formula_sources.is_empty()
+        || !context.source_map.definition_sources.is_empty()
+        || !context.source_map.proof_sources.is_empty()
+        || !context.source_map.algorithm_sources.is_empty()
+        || !context.source_map.generated_sources.is_empty()
+        || !context.source_map.obligation_sources.is_empty()
+        || context.item_registry.items.len() != 1
+        || context.item_registry.by_symbol.len() != 1
+        || context.item_registry.dependencies.len() != 1
+        || context.definition_boundaries.by_item.len() != 1
+        || context.definition_boundaries.by_symbol.len() != 1
+        || context.worklist.entries.len() != 1
+    {
+        return Err(SourceModeCoreContextError::InvalidCoreContext);
+    }
+    let core_item = context
+        .item_registry
+        .id_for_symbol(symbol)
+        .ok_or(SourceModeCoreContextError::InvalidCoreContext)?;
+    let item = context
+        .item_registry
+        .items
+        .get(core_item)
+        .ok_or(SourceModeCoreContextError::InvalidCoreContext)?;
+    let expected_provenance = CoreProvenance::new(
+        CoreProvenancePhase::Checker,
+        SOURCE_MODE_CORE_ITEM_PROVENANCE_KEY,
+    );
+    let expected_source =
+        CoreSourceRef::direct(source_range).with_provenance(vec![expected_provenance.clone()]);
+    if item.symbol != *symbol
+        || item.kind != CoreItemKind::Mode
+        || item.visibility.as_str() != "public"
+        || item.status != CoreItemStatus::Valid
+        || !item.dependencies.is_empty()
+        || !item.diagnostics.is_empty()
+        || item.source != expected_source
+        || context.source_map.item_sources.get(&core_item) != Some(&item.source)
+    {
+        return Err(SourceModeCoreContextError::InvalidCoreContext);
+    }
+    let dependency = context
+        .item_registry
+        .dependencies
+        .get(&core_item)
+        .ok_or(SourceModeCoreContextError::InvalidCoreContext)?;
+    if !dependency.local.is_empty()
+        || !dependency.external.is_empty()
+        || !dependency.missing.is_empty()
+    {
+        return Err(SourceModeCoreContextError::InvalidCoreContext);
+    }
+    let boundary = context
+        .definition_boundaries
+        .by_item
+        .get(&core_item)
+        .ok_or(SourceModeCoreContextError::InvalidCoreContext)?;
+    if context.definition_boundaries.by_symbol.get(symbol) != Some(&core_item)
+        || boundary.item != core_item
+        || boundary.symbol != *symbol
+        || boundary.kind != DefinitionBoundaryKind::DefinitionalItem
+        || boundary.status != DefinitionBoundaryStatus::PendingBody
+        || boundary.source != expected_source
+        || boundary.provenance.as_slice() != [expected_provenance.clone()]
+    {
+        return Err(SourceModeCoreContextError::InvalidCoreContext);
+    }
+    let work_item = context
+        .worklist
+        .entries
+        .first()
+        .ok_or(SourceModeCoreContextError::InvalidCoreContext)?;
+    if work_item.kind != ElaborationWorkItemKind::Item(core_item)
+        || work_item.status != ElaborationWorkStatus::Pending
+        || work_item.source != expected_source
+        || !work_item.diagnostics.is_empty()
+        || !work_item.checker_diagnostics.is_empty()
+    {
+        return Err(SourceModeCoreContextError::InvalidCoreContext);
+    }
+    Ok(core_item)
+}
+
+fn validate_mode_item_association(
+    source_context: &SourceBindingContextHandoff,
+    checker_owner: &mizar_checker::source_mode_definition::SourceModeDefinitionHandoff,
+    items: &SourceModeCoreItemAssociationTable,
+    definition: &mizar_checker::source_mode_definition::SourceModeDefinition,
+    core_item: CoreItemId,
+) -> Result<(), SourceModeCoreContextError> {
+    if items.len() != checker_owner.definitions().len() || items.len() != 1 {
+        return Err(SourceModeCoreContextError::InvalidItemAssociation);
+    }
+    let source_item = source_context
+        .context_links()
+        .get(definition.context())
+        .and_then(|link| link.item)
+        .ok_or(SourceModeCoreContextError::InvalidItemAssociation)?;
+    let association = items
+        .get(definition.id())
+        .ok_or(SourceModeCoreContextError::InvalidItemAssociation)?;
+    if association.definition() != definition.id()
+        || association.source_item() != source_item
+        || association.symbol() != definition.symbol()
+        || association.core_item() != core_item
+        || items
+            .iter()
+            .next()
+            .is_none_or(|(id, row)| id != definition.id() || row != association)
+    {
+        return Err(SourceModeCoreContextError::InvalidItemAssociation);
+    }
+    Ok(())
+}
+
 /// One immutable Core variable associated with one checker-authenticated
 /// nested-Fraenkel capture row.
 #[derive(Debug, Clone, PartialEq, Eq)]
