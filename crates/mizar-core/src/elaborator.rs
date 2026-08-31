@@ -52,6 +52,10 @@ use mizar_checker::{
     source_formula_composition::{
         SourceNestedFraenkelCaptureGraphCaptureId, SourceNestedFraenkelCaptureGraphOwnerHandoff,
     },
+    source_functor_definition::{
+        SourceFunctorCorrectnessKind, SourceFunctorDefiniensTarget, SourceFunctorDefinitionHandoff,
+        SourceFunctorDefinitionId, SourceFunctorDefinitionRecovery, SourceFunctorDefinitionStyle,
+    },
     source_predicate_definition::{
         SourcePredicateDefinitionHandoff, SourcePredicateDefinitionId,
         SourcePredicateDefinitionRecovery,
@@ -2235,6 +2239,821 @@ fn validate_predicate_item_association(
             .is_none_or(|(id, row)| id != definition.id() || row != association)
     {
         return Err(SourcePredicateCoreContextError::InvalidItemAssociation);
+    }
+    Ok(())
+}
+
+const SOURCE_FUNCTOR_CORE_ITEM_PROVENANCE_KEYS: [&str; 2] = [
+    "source-functor-core-item-v1.definition.0",
+    "source-functor-core-item-v1.definition.1",
+];
+
+/// One immutable association between a checker source item, its functor
+/// definition, the definition's whole symbol, and the corresponding Core
+/// item.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceFunctorCoreItemAssociation {
+    source_item: SourceItemId,
+    definition: SourceFunctorDefinitionId,
+    symbol: SymbolId,
+    core_item: CoreItemId,
+}
+
+impl SourceFunctorCoreItemAssociation {
+    #[must_use]
+    pub const fn source_item(&self) -> SourceItemId {
+        self.source_item
+    }
+
+    #[must_use]
+    pub const fn definition(&self) -> SourceFunctorDefinitionId {
+        self.definition
+    }
+
+    #[must_use]
+    pub const fn symbol(&self) -> &SymbolId {
+        &self.symbol
+    }
+
+    #[must_use]
+    pub const fn core_item(&self) -> CoreItemId {
+        self.core_item
+    }
+}
+
+/// Immutable source-ordered table of functor/Core item associations.
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct SourceFunctorCoreItemAssociationTable {
+    rows: Vec<SourceFunctorCoreItemAssociation>,
+}
+
+impl SourceFunctorCoreItemAssociationTable {
+    fn empty() -> Self {
+        Self::default()
+    }
+
+    #[must_use]
+    pub fn get(
+        &self,
+        definition: SourceFunctorDefinitionId,
+    ) -> Option<&SourceFunctorCoreItemAssociation> {
+        self.rows.iter().find(|row| row.definition() == definition)
+    }
+
+    pub fn iter(
+        &self,
+    ) -> impl Iterator<Item = (SourceFunctorDefinitionId, &SourceFunctorCoreItemAssociation)> {
+        self.rows.iter().map(|row| (row.definition(), row))
+    }
+
+    #[must_use]
+    pub fn len(&self) -> usize {
+        self.rows.len()
+    }
+
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.rows.is_empty()
+    }
+}
+
+/// Errors raised while building the exact Task-260 functor/Core context.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum SourceFunctorCoreContextError {
+    EnvironmentMismatch,
+    InvalidSourceBindingContext,
+    InvalidCheckerOwner,
+    InvalidCoreContext,
+    InvalidItemAssociation,
+}
+
+impl fmt::Display for SourceFunctorCoreContextError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::EnvironmentMismatch => {
+                formatter.write_str("functor Core context environment is invalid")
+            }
+            Self::InvalidSourceBindingContext => {
+                formatter.write_str("functor Core source-binding context is invalid")
+            }
+            Self::InvalidCheckerOwner => {
+                formatter.write_str("functor Core checker owner is invalid")
+            }
+            Self::InvalidCoreContext => formatter.write_str("functor Core context is invalid"),
+            Self::InvalidItemAssociation => {
+                formatter.write_str("functor Core item association is invalid")
+            }
+        }
+    }
+}
+
+impl Error for SourceFunctorCoreContextError {}
+
+/// Immutable Core context handoff for the exact checker-authenticated
+/// Task-260 functor definitions.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceFunctorCoreContextHandoff {
+    source_bindings: SourceBindingCoreContextHandoff,
+    source_context: SourceBindingContextHandoff,
+    checker_owner: SourceFunctorDefinitionHandoff,
+    items: SourceFunctorCoreItemAssociationTable,
+}
+
+impl SourceFunctorCoreContextHandoff {
+    #[must_use]
+    pub const fn source_id(&self) -> SourceId {
+        self.source_bindings.source_id()
+    }
+
+    #[must_use]
+    pub const fn module_id(&self) -> &ModuleId {
+        self.source_bindings.module_id()
+    }
+
+    #[must_use]
+    pub const fn context(&self) -> &CoreContext {
+        self.source_bindings.context()
+    }
+
+    #[must_use]
+    pub const fn source_bindings(&self) -> &SourceBindingCoreContextHandoff {
+        &self.source_bindings
+    }
+
+    #[must_use]
+    pub const fn source_context(&self) -> &SourceBindingContextHandoff {
+        &self.source_context
+    }
+
+    #[must_use]
+    pub const fn checker_owner(&self) -> &SourceFunctorDefinitionHandoff {
+        &self.checker_owner
+    }
+
+    #[must_use]
+    pub const fn items(&self) -> &SourceFunctorCoreItemAssociationTable {
+        &self.items
+    }
+
+    #[must_use]
+    pub fn debug_text(&self) -> String {
+        let associations = self
+            .items
+            .iter()
+            .map(|(definition, association)| {
+                format!(
+                    "{}:{}:{}:{}",
+                    definition.index(),
+                    association.source_item().index(),
+                    association.symbol().fqn().as_str(),
+                    association.core_item().index(),
+                )
+            })
+            .collect::<Vec<_>>()
+            .join(",");
+        format!(
+            "source-functor-core-item-context-v1|module={}.{}|source-bindings={}|definitions={}|items={}",
+            self.module_id().package().as_str(),
+            self.module_id().path().as_str(),
+            self.source_bindings.binding_env().bindings().len(),
+            self.checker_owner.definitions().len(),
+            associations,
+        )
+    }
+
+    fn validate(&self) -> Result<(), SourceFunctorCoreContextError> {
+        validate_functor_core_environment(
+            &self.source_bindings,
+            &self.source_context,
+            &self.checker_owner,
+        )?;
+        self.source_bindings
+            .validate()
+            .map_err(|_| SourceFunctorCoreContextError::InvalidSourceBindingContext)?;
+        validate_functor_checker_owner(&self.source_context, &self.checker_owner)?;
+        let core_items =
+            validate_functor_core_shape(self.source_bindings.context(), &self.checker_owner)?;
+        validate_functor_item_association(
+            &self.source_context,
+            &self.checker_owner,
+            &self.items,
+            &core_items,
+        )
+    }
+}
+
+/// Builds the standalone immutable Task-260 functor/Core context handoff.
+#[derive(Debug, Clone, Copy)]
+pub struct SourceFunctorCoreContextProducer;
+
+impl SourceFunctorCoreContextProducer {
+    pub fn build(
+        source_bindings: SourceBindingCoreContextHandoff,
+        source_context: SourceBindingContextHandoff,
+        checker_owner: SourceFunctorDefinitionHandoff,
+    ) -> Result<SourceFunctorCoreContextHandoff, SourceFunctorCoreContextError> {
+        validate_functor_core_environment(&source_bindings, &source_context, &checker_owner)?;
+        source_bindings
+            .validate()
+            .map_err(|_| SourceFunctorCoreContextError::InvalidSourceBindingContext)?;
+        validate_functor_checker_owner(&source_context, &checker_owner)?;
+        let core_items = validate_functor_core_shape(source_bindings.context(), &checker_owner)?;
+        let mut items = SourceFunctorCoreItemAssociationTable::empty();
+        for ((definition_id, definition), core_item) in
+            checker_owner.definitions().iter().zip(core_items)
+        {
+            let source_item = source_context
+                .context_links()
+                .get(definition.context())
+                .and_then(|link| link.item)
+                .ok_or(SourceFunctorCoreContextError::InvalidItemAssociation)?;
+            items.rows.push(SourceFunctorCoreItemAssociation {
+                source_item,
+                definition: definition_id,
+                symbol: definition.symbol().clone(),
+                core_item,
+            });
+        }
+        let handoff = SourceFunctorCoreContextHandoff {
+            source_bindings,
+            source_context,
+            checker_owner,
+            items,
+        };
+        handoff.validate()?;
+        Ok(handoff)
+    }
+}
+
+fn validate_functor_core_environment(
+    source_bindings: &SourceBindingCoreContextHandoff,
+    source_context: &SourceBindingContextHandoff,
+    checker_owner: &SourceFunctorDefinitionHandoff,
+) -> Result<(), SourceFunctorCoreContextError> {
+    let source_id = source_bindings.source_id();
+    let module_id = source_bindings.module_id();
+    if source_context.source_id() != source_id
+        || source_context.module_id() != module_id
+        || checker_owner.source_id() != source_id
+        || checker_owner.module_id() != module_id
+        || source_bindings.binding_env().source_id() != source_id
+        || source_bindings.binding_env().module_id() != module_id
+        || source_context.binding_env().source_id() != source_id
+        || source_context.binding_env().module_id() != module_id
+        || source_context.binding_env() != source_bindings.binding_env()
+        || source_bindings.context().source_id() != source_id
+        || source_bindings.context().module_id() != module_id
+    {
+        return Err(SourceFunctorCoreContextError::EnvironmentMismatch);
+    }
+    Ok(())
+}
+
+fn validate_functor_checker_owner(
+    source_context: &SourceBindingContextHandoff,
+    checker_owner: &SourceFunctorDefinitionHandoff,
+) -> Result<(), SourceFunctorCoreContextError> {
+    if checker_owner.source_context_fingerprint() != source_context.debug_text()
+        || checker_owner.source_type_fingerprint().is_empty()
+        || checker_owner.source_term_fingerprint().is_empty()
+        || checker_owner.application_fingerprint().is_some()
+        || checker_owner.structure_fingerprint().is_some()
+        || checker_owner.set_term_fingerprint().is_some()
+        || checker_owner
+            .atomic_formula_fingerprint()
+            .is_none_or(str::is_empty)
+        || source_context.items().len() != 1
+        || source_context.declarations().len() != 2
+        || source_context.context_links().len() != 2
+        || source_context.local_contexts().len() != 2
+        || source_context.binding_env().contexts().len() != 2
+        || source_context.binding_env().bindings().len() != 2
+        || !source_context.binding_env().diagnostics().is_empty()
+    {
+        return Err(SourceFunctorCoreContextError::InvalidCheckerOwner);
+    }
+
+    let source_item = source_context
+        .items()
+        .get(SourceItemId::new(0))
+        .ok_or(SourceFunctorCoreContextError::InvalidCheckerOwner)?;
+    if source_item.id != SourceItemId::new(0)
+        || source_item.role != SourceItemRole::DefinitionBlock
+        || source_item.shell_ordinal != 0
+        || source_item.visibility != SourceItemVisibility::Unspecified
+        || source_item.recovery != SourceItemRecovery::Normal
+        || source_item.parent.is_some()
+        || source_item
+            .local_scope
+            .as_ref()
+            .is_none_or(|scope| scope.path() != [0])
+        || source_item.predecessor.is_some()
+        || source_item.binding_context != BindingContextId::new(1)
+        || source_item.local_context != mizar_checker::typed_ast::LocalTypeContextId::new(1)
+        || source_item.source_range
+            != (SourceRange {
+                source_id: source_context.source_id(),
+                start: 0,
+                end: 261,
+            })
+        || source_item.site
+            != mizar_checker::typed_ast::TypedSiteRef::Node(
+                mizar_checker::typed_ast::TypedNodeId::new(104),
+            )
+        || source_item.source_range.source_id != source_context.source_id()
+    {
+        return Err(SourceFunctorCoreContextError::InvalidCheckerOwner);
+    }
+
+    let module_context = source_context
+        .binding_env()
+        .contexts()
+        .get(BindingContextId::new(0))
+        .ok_or(SourceFunctorCoreContextError::InvalidCheckerOwner)?;
+    let definition_context = source_context
+        .binding_env()
+        .contexts()
+        .get(BindingContextId::new(1))
+        .ok_or(SourceFunctorCoreContextError::InvalidCheckerOwner)?;
+    if module_context.id != BindingContextId::new(0)
+        || !is_normal_module_context(module_context)
+        || definition_context.id != BindingContextId::new(1)
+        || !is_normal_declaration_context(definition_context)
+        || definition_context.owner != BindingContextOwner::DeclarationShell(source_item.shell)
+        || definition_context.parent != Some(BindingContextId::new(0))
+        || definition_context.lexical_scope != source_item.local_scope
+    {
+        return Err(SourceFunctorCoreContextError::InvalidCheckerOwner);
+    }
+
+    let declaration_rows = source_context.declarations().iter().collect::<Vec<_>>();
+    let declaration_validity = declaration_rows
+        .iter()
+        .map(|(id, declaration)| {
+            declaration.id == *id
+                && declaration.item == source_item.id
+                && declaration.binding_context == BindingContextId::new(1)
+                && declaration.local_context == mizar_checker::typed_ast::LocalTypeContextId::new(1)
+                && declaration.predecessor
+                    == id.index().checked_sub(1).map(SourceDeclarationId::new)
+                && declaration.declaration_range.source_id == source_context.source_id()
+                && declaration.written_type_range.source_id == source_context.source_id()
+                && matches!(
+                    declaration.role,
+                    SourceBindingSiteRole::DefinitionParameter { .. }
+                )
+        })
+        .collect::<Vec<_>>();
+    if declaration_rows.len() != 2
+        || declaration_validity.iter().any(|valid| !valid)
+        || declaration_rows[0].1.source_ordinal != 0
+        || declaration_rows[1].1.source_ordinal != 1
+        || declaration_rows[0].1.source_ordinal >= declaration_rows[1].1.source_ordinal
+        || definition_context.bindings
+            != declaration_rows
+                .iter()
+                .map(|(_, row)| row.binding)
+                .collect::<Vec<_>>()
+        || definition_context.visible_bindings != definition_context.bindings
+    {
+        return Err(SourceFunctorCoreContextError::InvalidCheckerOwner);
+    }
+    for (index, (_, declaration)) in declaration_rows.iter().enumerate() {
+        let binding = source_context
+            .binding_env()
+            .bindings()
+            .get(declaration.binding)
+            .ok_or(SourceFunctorCoreContextError::InvalidCheckerOwner)?;
+        if declaration.binding != binding.id
+            || binding.owner_context != BindingContextId::new(1)
+            || binding.kind != BindingKind::DefinitionParameter
+            || binding.status != BindingStatus::Active
+            || binding.recovery != BindingRecoveryState::Normal
+            || binding.declaration_range != declaration.declaration_range
+            || binding.visible_after_ordinal != declaration.source_ordinal
+            || binding.spelling != declaration.spelling
+            || index != declaration.source_ordinal
+        {
+            return Err(SourceFunctorCoreContextError::InvalidCheckerOwner);
+        }
+    }
+
+    let module_local_context = source_context
+        .local_contexts()
+        .get(mizar_checker::typed_ast::LocalTypeContextId::new(0))
+        .ok_or(SourceFunctorCoreContextError::InvalidCheckerOwner)?;
+    let definition_local_context = source_context
+        .local_contexts()
+        .get(mizar_checker::typed_ast::LocalTypeContextId::new(1))
+        .ok_or(SourceFunctorCoreContextError::InvalidCheckerOwner)?;
+    let expected_local_bindings = declaration_rows
+        .iter()
+        .map(|(_, declaration)| BindingTypeRef::Site(declaration.site.clone()))
+        .collect::<Vec<_>>();
+    if module_local_context.id != mizar_checker::typed_ast::LocalTypeContextId::new(0)
+        || module_local_context.parent.is_some()
+        || module_local_context.layer != mizar_checker::typed_ast::TypeContextLayer::Module
+        || module_local_context.recovery != mizar_checker::typed_ast::ContextRecoveryState::Normal
+        || !module_local_context.bindings.is_empty()
+        || !module_local_context.introduced_assumptions.is_empty()
+        || !module_local_context.visible_facts.is_empty()
+        || definition_local_context.id != mizar_checker::typed_ast::LocalTypeContextId::new(1)
+        || definition_local_context.owner != source_item.site
+        || definition_local_context.parent
+            != Some(mizar_checker::typed_ast::LocalTypeContextId::new(0))
+        || definition_local_context.layer != mizar_checker::typed_ast::TypeContextLayer::Declaration
+        || definition_local_context.recovery
+            != mizar_checker::typed_ast::ContextRecoveryState::Normal
+        || definition_local_context.bindings != expected_local_bindings
+        || !definition_local_context.introduced_assumptions.is_empty()
+        || !definition_local_context.visible_facts.is_empty()
+    {
+        return Err(SourceFunctorCoreContextError::InvalidCheckerOwner);
+    }
+
+    for (index, (link_id, link)) in source_context.context_links().iter().enumerate() {
+        let expected_item = (index == 1).then_some(source_item.id);
+        if link_id != index
+            || link.binding_context != BindingContextId::new(index)
+            || link.local_context != mizar_checker::typed_ast::LocalTypeContextId::new(index)
+            || link.item != expected_item
+        {
+            return Err(SourceFunctorCoreContextError::InvalidCheckerOwner);
+        }
+    }
+
+    if checker_owner.definitions().len() != 2
+        || checker_owner.parameters().len() != 2
+        || checker_owner.guards().len() != 1
+        || checker_owner.definientia().len() != 2
+        || checker_owner.correctness().len() != 2
+    {
+        return Err(SourceFunctorCoreContextError::InvalidCheckerOwner);
+    }
+    let definitions = [
+        checker_owner
+            .definitions()
+            .get(SourceFunctorDefinitionId::new(0))
+            .ok_or(SourceFunctorCoreContextError::InvalidCheckerOwner)?,
+        checker_owner
+            .definitions()
+            .get(SourceFunctorDefinitionId::new(1))
+            .ok_or(SourceFunctorCoreContextError::InvalidCheckerOwner)?,
+    ];
+    let expected_ranges = [(61, 118), (121, 179)];
+    let expected_sites = [84, 95];
+    let expected_styles = [
+        SourceFunctorDefinitionStyle::Equals,
+        SourceFunctorDefinitionStyle::Means,
+    ];
+    let expected_spelling = [
+        "func Task260EqualsDef: task260_equals(x) -> set equals x;",
+        "func Task260MeansDef: task260_means(y) -> set means x = y;",
+    ];
+    for (index, definition) in definitions.into_iter().enumerate() {
+        let expected_range = SourceRange {
+            source_id: source_context.source_id(),
+            start: expected_ranges[index].0,
+            end: expected_ranges[index].1,
+        };
+        let expected_origin_path = [4_u32, 0, 9, index as u32];
+        if definition.id() != SourceFunctorDefinitionId::new(index)
+            || definition.definition().index() != index
+            || definition.contribution().index() != 0
+            || definition.source_ordinal() != index
+            || definition.context() != BindingContextId::new(1)
+            || definition.recovery() != SourceFunctorDefinitionRecovery::Normal
+            || definition.source_range() != expected_range
+            || definition.site()
+                != &mizar_checker::typed_ast::TypedSiteRef::Node(
+                    mizar_checker::typed_ast::TypedNodeId::new(expected_sites[index]),
+                )
+            || definition.spelling() != expected_spelling[index]
+            || definition.style() != expected_styles[index]
+            || definition.return_type().index() != index
+            || definition.definiens().index() != index
+            || definition.origin().source_id() != source_context.source_id()
+            || definition.origin().module_id() != source_context.module_id()
+            || definition.origin().is_recovered()
+            || definition.origin().import_edge().is_some()
+            || definition.origin().anchor() != &SourceAnchor::Range(expected_range)
+            || definition.origin().structural_path() != expected_origin_path
+        {
+            return Err(SourceFunctorCoreContextError::InvalidCheckerOwner);
+        }
+    }
+
+    let parameter_ranges = [(13, 26, 17, 18), (29, 42, 33, 34)];
+    let parameter_sites = [65, 69];
+    let parameter_spelling = ["let x be set;", "let y be set;"];
+    for (index, (_, parameter)) in checker_owner.parameters().iter().enumerate() {
+        let (_, declaration) = declaration_rows
+            .get(index)
+            .ok_or(SourceFunctorCoreContextError::InvalidCheckerOwner)?;
+        let source_range = SourceRange {
+            source_id: source_context.source_id(),
+            start: parameter_ranges[index].0,
+            end: parameter_ranges[index].1,
+        };
+        let declaration_range = SourceRange {
+            source_id: source_context.source_id(),
+            start: parameter_ranges[index].2,
+            end: parameter_ranges[index].3,
+        };
+        if parameter.id().index() != index
+            || parameter.ordinal() != index
+            || parameter.binding() != declaration.binding
+            || parameter.written_type().index() != index
+            || parameter.site()
+                != &mizar_checker::typed_ast::TypedSiteRef::Node(
+                    mizar_checker::typed_ast::TypedNodeId::new(parameter_sites[index]),
+                )
+            || parameter.site() != &declaration.site
+            || parameter.source_range() != source_range
+            || parameter.declaration_range() != declaration_range
+            || parameter.declaration_range() != declaration.declaration_range
+            || parameter.context() != BindingContextId::new(1)
+            || parameter.recovery() != SourceFunctorDefinitionRecovery::Normal
+            || parameter.spelling() != parameter_spelling[index]
+        {
+            return Err(SourceFunctorCoreContextError::InvalidCheckerOwner);
+        }
+    }
+
+    let guard = checker_owner
+        .guards()
+        .get(mizar_checker::source_functor_definition::SourceFunctorGuardId::new(0))
+        .ok_or(SourceFunctorCoreContextError::InvalidCheckerOwner)?;
+    if guard.id() != mizar_checker::source_functor_definition::SourceFunctorGuardId::new(0)
+        || guard.ordinal() != 0
+        || guard.formula().index() != 0
+        || guard.site()
+            != &mizar_checker::typed_ast::TypedSiteRef::Node(
+                mizar_checker::typed_ast::TypedNodeId::new(77),
+            )
+        || guard.source_range()
+            != (SourceRange {
+                source_id: source_context.source_id(),
+                start: 45,
+                end: 58,
+            })
+        || guard.context() != BindingContextId::new(1)
+        || guard.recovery() != SourceFunctorDefinitionRecovery::Normal
+        || guard.spelling() != "assume x = x;"
+    {
+        return Err(SourceFunctorCoreContextError::InvalidCheckerOwner);
+    }
+
+    let definiens_targets = [
+        SourceFunctorDefiniensTarget::Primary(
+            mizar_checker::source_term::SourcePrimaryTermId::new(2),
+        ),
+        SourceFunctorDefiniensTarget::AtomicFormula(
+            mizar_checker::source_atomic_formula::SourceAtomicFormulaId::new(1),
+        ),
+    ];
+    let definiens_sites = [83, 94];
+    let definiens_ranges = [(116, 117), (173, 178)];
+    let definiens_spelling = ["x", "x = y"];
+    for (index, (_, definiens)) in checker_owner.definientia().iter().enumerate() {
+        if definiens.id().index() != index
+            || definiens.owner() != SourceFunctorDefinitionId::new(index)
+            || definiens.ordinal() != index
+            || definiens.target() != definiens_targets[index]
+            || definiens.site()
+                != &mizar_checker::typed_ast::TypedSiteRef::Node(
+                    mizar_checker::typed_ast::TypedNodeId::new(definiens_sites[index]),
+                )
+            || definiens.source_range()
+                != (SourceRange {
+                    source_id: source_context.source_id(),
+                    start: definiens_ranges[index].0,
+                    end: definiens_ranges[index].1,
+                })
+            || definiens.context() != BindingContextId::new(1)
+            || definiens.recovery() != SourceFunctorDefinitionRecovery::Normal
+            || definiens.spelling() != definiens_spelling[index]
+        {
+            return Err(SourceFunctorCoreContextError::InvalidCheckerOwner);
+        }
+    }
+
+    let correctness_kinds = [
+        SourceFunctorCorrectnessKind::Existence,
+        SourceFunctorCorrectnessKind::Uniqueness,
+    ];
+    let correctness_sites = [99, 103];
+    let correctness_ranges = [(182, 217, 192, 216), (220, 256, 231, 255)];
+    let correctness_spelling = [
+        "existence by computation(steps: 1);",
+        "uniqueness by computation(steps: 1);",
+    ];
+    for (index, (_, correctness)) in checker_owner.correctness().iter().enumerate() {
+        let source_range = SourceRange {
+            source_id: source_context.source_id(),
+            start: correctness_ranges[index].0,
+            end: correctness_ranges[index].1,
+        };
+        let justification = SourceRange {
+            source_id: source_context.source_id(),
+            start: correctness_ranges[index].2,
+            end: correctness_ranges[index].3,
+        };
+        if correctness.id().index() != index
+            || correctness.owner() != SourceFunctorDefinitionId::new(1)
+            || correctness.ordinal() != index
+            || correctness.kind() != correctness_kinds[index]
+            || correctness.site()
+                != &mizar_checker::typed_ast::TypedSiteRef::Node(
+                    mizar_checker::typed_ast::TypedNodeId::new(correctness_sites[index]),
+                )
+            || correctness.source_range() != source_range
+            || correctness.justification() != &SourceAnchor::Range(justification)
+            || correctness.recovery() != SourceFunctorDefinitionRecovery::Normal
+            || correctness.spelling() != correctness_spelling[index]
+            || correctness.obligation().index() != index
+        {
+            return Err(SourceFunctorCoreContextError::InvalidCheckerOwner);
+        }
+    }
+    Ok(())
+}
+
+fn functor_core_provenance_key(definition: SourceFunctorDefinitionId) -> Option<CoreProvenanceKey> {
+    if definition == SourceFunctorDefinitionId::new(0) {
+        Some(CoreProvenanceKey::new(
+            SOURCE_FUNCTOR_CORE_ITEM_PROVENANCE_KEYS[0],
+        ))
+    } else if definition == SourceFunctorDefinitionId::new(1) {
+        Some(CoreProvenanceKey::new(
+            SOURCE_FUNCTOR_CORE_ITEM_PROVENANCE_KEYS[1],
+        ))
+    } else {
+        None
+    }
+}
+
+fn validate_functor_core_shape(
+    context: &CoreContext,
+    checker_owner: &SourceFunctorDefinitionHandoff,
+) -> Result<[CoreItemId; 2], SourceFunctorCoreContextError> {
+    if validate_core_context_shape(context, &BTreeSet::new()).is_err()
+        || !context.dependency_summaries.is_empty()
+        || !context.generated_origins.table().is_empty()
+        || !context.generated_origins.by_key.is_empty()
+        || !context.diagnostics.is_empty()
+        || context.source_map.item_sources.len() != 2
+        || !context.source_map.term_sources.is_empty()
+        || !context.source_map.formula_sources.is_empty()
+        || !context.source_map.definition_sources.is_empty()
+        || !context.source_map.proof_sources.is_empty()
+        || !context.source_map.algorithm_sources.is_empty()
+        || !context.source_map.generated_sources.is_empty()
+        || !context.source_map.obligation_sources.is_empty()
+        || context.item_registry.items.len() != 2
+        || context.item_registry.by_symbol.len() != 2
+        || context.item_registry.dependencies.len() != 2
+        || context.definition_boundaries.by_item.len() != 2
+        || context.definition_boundaries.by_symbol.len() != 2
+        || context.worklist.entries.len() != 2
+    {
+        return Err(SourceFunctorCoreContextError::InvalidCoreContext);
+    }
+    let definitions = [
+        checker_owner
+            .definitions()
+            .get(SourceFunctorDefinitionId::new(0))
+            .ok_or(SourceFunctorCoreContextError::InvalidCoreContext)?,
+        checker_owner
+            .definitions()
+            .get(SourceFunctorDefinitionId::new(1))
+            .ok_or(SourceFunctorCoreContextError::InvalidCoreContext)?,
+    ];
+    let mut core_items = [CoreItemId::new(0), CoreItemId::new(0)];
+    for (index, definition) in definitions.into_iter().enumerate() {
+        let core_item = context
+            .item_registry
+            .id_for_symbol(definition.symbol())
+            .ok_or(SourceFunctorCoreContextError::InvalidCoreContext)?;
+        if index == 1 && core_item == core_items[0] {
+            return Err(SourceFunctorCoreContextError::InvalidCoreContext);
+        }
+        core_items[index] = core_item;
+        let key = functor_core_provenance_key(definition.id())
+            .ok_or(SourceFunctorCoreContextError::InvalidCoreContext)?;
+        let provenance = CoreProvenance::new(CoreProvenancePhase::Checker, key.clone());
+        let expected_source = CoreSourceRef::direct(definition.source_range())
+            .with_provenance(vec![provenance.clone()]);
+        let item = context
+            .item_registry
+            .items
+            .get(core_item)
+            .ok_or(SourceFunctorCoreContextError::InvalidCoreContext)?;
+        if item.symbol != *definition.symbol()
+            || item.kind != CoreItemKind::Functor
+            || item.visibility.as_str() != "public"
+            || item.status != CoreItemStatus::Valid
+            || !item.dependencies.is_empty()
+            || !item.diagnostics.is_empty()
+            || item.source != expected_source
+            || context.source_map.item_sources.get(&core_item) != Some(&item.source)
+        {
+            return Err(SourceFunctorCoreContextError::InvalidCoreContext);
+        }
+        let dependency = context
+            .item_registry
+            .dependencies
+            .get(&core_item)
+            .ok_or(SourceFunctorCoreContextError::InvalidCoreContext)?;
+        if !dependency.local.is_empty()
+            || !dependency.external.is_empty()
+            || !dependency.missing.is_empty()
+        {
+            return Err(SourceFunctorCoreContextError::InvalidCoreContext);
+        }
+        let boundary = context
+            .definition_boundaries
+            .by_item
+            .get(&core_item)
+            .ok_or(SourceFunctorCoreContextError::InvalidCoreContext)?;
+        if context
+            .definition_boundaries
+            .by_symbol
+            .get(definition.symbol())
+            != Some(&core_item)
+            || boundary.item != core_item
+            || boundary.symbol != *definition.symbol()
+            || boundary.kind != DefinitionBoundaryKind::DefinitionalItem
+            || boundary.status != DefinitionBoundaryStatus::PendingBody
+            || boundary.source != expected_source
+            || boundary.provenance.as_slice() != [provenance.clone()]
+        {
+            return Err(SourceFunctorCoreContextError::InvalidCoreContext);
+        }
+    }
+    for (index, core_item) in core_items.into_iter().enumerate() {
+        let definition = definitions[index];
+        let key = functor_core_provenance_key(definition.id())
+            .ok_or(SourceFunctorCoreContextError::InvalidCoreContext)?;
+        let expected_source = CoreSourceRef::direct(definition.source_range())
+            .with_provenance(vec![CoreProvenance::new(CoreProvenancePhase::Checker, key)]);
+        let work_item = context
+            .worklist
+            .entries
+            .get(index)
+            .ok_or(SourceFunctorCoreContextError::InvalidCoreContext)?;
+        if work_item.kind != ElaborationWorkItemKind::Item(core_item)
+            || work_item.status != ElaborationWorkStatus::Pending
+            || work_item.source != expected_source
+            || !work_item.diagnostics.is_empty()
+            || !work_item.checker_diagnostics.is_empty()
+        {
+            return Err(SourceFunctorCoreContextError::InvalidCoreContext);
+        }
+    }
+    Ok(core_items)
+}
+
+fn validate_functor_item_association(
+    source_context: &SourceBindingContextHandoff,
+    checker_owner: &SourceFunctorDefinitionHandoff,
+    items: &SourceFunctorCoreItemAssociationTable,
+    core_items: &[CoreItemId; 2],
+) -> Result<(), SourceFunctorCoreContextError> {
+    if items.len() != 2 || items.is_empty() || checker_owner.definitions().len() != 2 {
+        return Err(SourceFunctorCoreContextError::InvalidItemAssociation);
+    }
+    let source_item = SourceItemId::new(0);
+    for (index, core_item) in core_items.iter().copied().enumerate() {
+        let definition_id = SourceFunctorDefinitionId::new(index);
+        let definition = checker_owner
+            .definitions()
+            .get(definition_id)
+            .ok_or(SourceFunctorCoreContextError::InvalidItemAssociation)?;
+        let link = source_context
+            .context_links()
+            .get(definition.context())
+            .ok_or(SourceFunctorCoreContextError::InvalidItemAssociation)?;
+        if link.item != Some(source_item) {
+            return Err(SourceFunctorCoreContextError::InvalidItemAssociation);
+        }
+        let association = items
+            .get(definition_id)
+            .ok_or(SourceFunctorCoreContextError::InvalidItemAssociation)?;
+        if association.definition() != definition_id
+            || association.source_item() != source_item
+            || association.symbol() != definition.symbol()
+            || association.core_item() != core_item
+        {
+            return Err(SourceFunctorCoreContextError::InvalidItemAssociation);
+        }
+        let Some((row_id, row)) = items.iter().nth(index) else {
+            return Err(SourceFunctorCoreContextError::InvalidItemAssociation);
+        };
+        if row_id != definition_id || row != association {
+            return Err(SourceFunctorCoreContextError::InvalidItemAssociation);
+        }
     }
     Ok(())
 }

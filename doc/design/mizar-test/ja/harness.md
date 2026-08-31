@@ -4754,6 +4754,10 @@ Production runner branch、installer、`.miz`、expectation、trace、active met
 diagnostic、snapshot、coverage creditは変更しない。Multi-definition blockとTask260+
 owner familyはseparateのまま。
 
+### Core Task 33I260 private item-context probe
+
+完了した [Core Task 33I260 contract](../../task_contracts/ja/CORE-SOURCE-FUNCTOR-ITEM-CONTEXT-33I260.md) が既存 private Task260 real-source probe、その二行 Core association、default-deny boundary、review、verification evidence を所有する。Implementation/verification は complete、exact task-only commit は pending。Probe は private-probe-only、semantic/execution/coverage credit は zero のままで、production route、active `MT10-CIR-TE`、Task277B readiness は追加せず、deferred Core34--36 と mixed-family ownership も不変である。
+
 ## Checker Task 260 frozen functor-definition route
 
 future private routeは

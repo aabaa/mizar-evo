@@ -567,6 +567,12 @@ work. Every finding maps to a task or a recorded disposition:
       retained whole predicate `SymbolId` to one existing Core item.
     - Multi-definition blocks, Task-260+ families, Core 34/35/36 semantics,
       snapshots, diagnostics, trace/coverage credit, and Task277B deferred.
+33I260. **Task260 functor item context prerequisite.** [x]
+    - [Task contract](../../task_contracts/en/CORE-SOURCE-FUNCTOR-ITEM-CONTEXT-33I260.md)
+      implementation and verification are complete; exact task-only commit is pending.
+    - Task-260-specific two-row Core association remains zero-semantic/zero-credit;
+      production installation, active `MT10-CIR-TE`, Core 34--36 semantics,
+      diagnostics, coverage, and Task277B readiness remain deferred.
 33. **Source-derived Core context, items, binders, and source maps.** [ ]
     - Consume checker 248 through `MT10-CIR-TE`; no type/proof/algorithm body.
       For C4C8, checker 248 remains insufficient; Task 33C4C8 owns only the

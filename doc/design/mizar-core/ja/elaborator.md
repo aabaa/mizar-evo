@@ -205,6 +205,10 @@ definition table、range/provenanceはidentity-selected itemのvalidation専用�
 Missing/extra/duplicate/reordered/stale/mismatch/recovered/diagnostic/partial/orphanはfail
 closed。Field/installerを追加せず、one definition blockをmultiple semantic ownerへgeneralizeしない。
 
+### Core-33 Task260 functor item context
+
+完了した [CORE-SOURCE-FUNCTOR-ITEM-CONTEXT-33I260 contract](../../task_contracts/ja/CORE-SOURCE-FUNCTOR-ITEM-CONTEXT-33I260.md) が、Task260固有二行 Core-context association、immutable handoff、error surface、producer boundary と詳細 invariant を所有する。Implementation/verification は complete、exact task-only commit は pending。下記 public enum inventory に `SourceFunctorCoreContextError` を含める。これは zero-semantic/zero-credit の private-probe slice であり、production install、`CoreIr`、Core34--36、`MT10-CIR-TE`、diagnostic、Task277B は deferred のままである。
+
 ## Step 2: type and fact lowering
 
 task 9 がこの section を実装する。
@@ -660,6 +664,7 @@ algorithm payload category を下流 crate の exhaustive match を壊さずに�
 | `SourceNestedFraenkelCaptureCoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface。 |
 | `SourceBindingCoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface。 |
 | `SourcePredicateCoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `SourceFunctorCoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface。 |
 | `DefinitionBoundaryKind` | `#[non_exhaustive]` downstream forward-compatible surface。 |
 | `DefinitionBoundaryStatus` | `#[non_exhaustive]` downstream forward-compatible surface。 |
 | `CheckerSiteKind` | `#[non_exhaustive]` downstream forward-compatible surface。 |

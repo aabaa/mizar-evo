@@ -540,6 +540,11 @@ F8 の spec 本文は同一変更(`cef7e109`: spec 03、05、13、17、18)で修
       Core item 1件へjoinする。
     - Multi-definition block、Task260+ family、Core34/35/36 semantics、snapshot、diagnostic、
       trace/coverage credit、Task277Bはdeferする。
+33I260. **Task260 functor item context prerequisite。** [x]
+    - [Task contract](../../task_contracts/ja/CORE-SOURCE-FUNCTOR-ITEM-CONTEXT-33I260.md) の
+      implementation/verification は complete、exact task-only commit は pending。
+    - Task260固有二行 Core association は zero-semantic/zero-credit のまま。Production install、
+      active `MT10-CIR-TE`、Core34--36 semantics、diagnostic、coverage、Task277B readiness は deferred。
 33. **Source-derived Core context/item/binder/source map。** [ ]
     - checker 248を`MT10-CIR-TE`でconsumeし、type/proof/algorithm bodyは扱わない。
       C4C8についてchecker 248だけでは不十分なままであり、Task 33C4C8はseparately

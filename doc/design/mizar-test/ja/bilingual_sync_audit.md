@@ -1931,3 +1931,8 @@ context-linkとwhole-symbol identity join、complete 33LB composition、default-
 unchanged fixture/expectation/trace/active route、zero semantic/execution/coverage credit、
 multi-definition/Core34--36 deferral、Task277B not-readyを同期する。English canonical、
 exceptionなし。
+
+## Core Task 33I260 bilingual contract parity
+
+Implementation/verification は complete、exact task-only commit は pending。[EN canonical](../../task_contracts/en/CORE-SOURCE-FUNCTOR-ITEM-CONTEXT-33I260.md) と
+[JA companion](../../task_contracts/ja/CORE-SOURCE-FUNCTOR-ITEM-CONTEXT-33I260.md) が probe、boundary、review、verification、protected artifact、deferral の詳細 evidence を所有する。Final bilingual review は no findings。English canonical、exceptionなし。

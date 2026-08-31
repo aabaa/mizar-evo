@@ -225,6 +225,16 @@ mismatched, recovered, diagnostic-bearing, partial, or orphan state fails
 closed. The API adds no field or installer and does not generalize one
 definition block to multiple semantic owners.
 
+### Core-33 Task260 functor item context
+
+The completed [CORE-SOURCE-FUNCTOR-ITEM-CONTEXT-33I260 contract](../../task_contracts/en/CORE-SOURCE-FUNCTOR-ITEM-CONTEXT-33I260.md)
+owns the Task-260-specific two-row Core-context association, immutable handoff,
+error surface, producer boundary, and detailed invariants. Implementation and
+verification are complete; the exact task-only commit is pending. The public
+enum inventory below includes `SourceFunctorCoreContextError`. This remains a
+zero-semantic/zero-credit private-probe slice; production installation,
+`CoreIr`, Core 34--36, `MT10-CIR-TE`, diagnostics, and Task277B remain deferred.
+
 ## Step 2: Type And Fact Lowering
 
 Task 9 implements this section.
@@ -734,6 +744,7 @@ payload categories can be added without breaking downstream exhaustive matches.
 | `SourceNestedFraenkelCaptureCoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `SourceBindingCoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `SourcePredicateCoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `SourceFunctorCoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `DefinitionBoundaryKind` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `DefinitionBoundaryStatus` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `CheckerSiteKind` | `#[non_exhaustive]` downstream forward-compatible surface. |

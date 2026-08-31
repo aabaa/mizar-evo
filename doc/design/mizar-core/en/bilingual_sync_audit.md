@@ -118,6 +118,13 @@ link identity join, whole-symbol Core lookup, standalone 33LB composition,
 default-deny boundary, multi-definition deferral, zero credit, and unchanged
 Task277B/protected artifacts.
 
+Core Task 33I260 implementation and verification are complete; the exact
+task-only commit is pending. The canonical
+[`CORE-SOURCE-FUNCTOR-ITEM-CONTEXT-33I260`](../../task_contracts/en/CORE-SOURCE-FUNCTOR-ITEM-CONTEXT-33I260.md)
+contract and [Japanese companion](../../task_contracts/ja/CORE-SOURCE-FUNCTOR-ITEM-CONTEXT-33I260.md)
+own the detailed profile, boundary, review, verification, protected-artifact,
+and deferral evidence. Final bilingual review has no findings.
+
 ## Guard Decision
 
 No new Rust lint guard is added in Task 23 or closeout. The file-pair set is

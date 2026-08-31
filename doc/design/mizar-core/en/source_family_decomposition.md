@@ -152,6 +152,16 @@ shell ordinal, seed order, or map iteration. Core 34/35/36 semantics,
 `GeneratedOrigin`, active snapshots, diagnostics, trace, coverage, and
 Task277B remain deferred.
 
+### Task-260-specific functor item context
+
+The completed [CORE-SOURCE-FUNCTOR-ITEM-CONTEXT-33I260 contract](../../task_contracts/en/CORE-SOURCE-FUNCTOR-ITEM-CONTEXT-33I260.md)
+owns the Task-260-specific two-row Core-33 item-context successor and its
+source-order, identity, provenance, and default-deny invariants. Implementation
+and verification are complete; the exact task-only commit is pending. This is a
+zero-semantic/zero-credit private-probe slice; production installation,
+general multi-definition policy, complete Core 33, Core 34--36, `MT10-CIR-TE`,
+diagnostics, and Task277B remain deferred.
+
 ## Accepted Algorithm CoreIr Task Graph
 
 Chapter 20 is sufficient to name the following semantic families and negative

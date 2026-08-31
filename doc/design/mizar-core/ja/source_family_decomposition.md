@@ -131,6 +131,10 @@ owner family、complete Core-33 item inventoryはseparate descendantに残す。
 range-only、numeric id、shell ordinal、seed order、map iteration joinは禁止。Core34/35/36
 semantics、`GeneratedOrigin`、active snapshot、diagnostic、trace、coverage、Task277Bはdeferする。
 
+### Task-260固有 functor item context
+
+完了した [CORE-SOURCE-FUNCTOR-ITEM-CONTEXT-33I260 contract](../../task_contracts/ja/CORE-SOURCE-FUNCTOR-ITEM-CONTEXT-33I260.md) が、Task260固有二行 Core-33 item-context successor と source-order、identity、provenance、default-deny invariant を所有する。Implementation/verification は complete、exact task-only commit は pending。これは zero-semantic/zero-credit の private-probe slice であり、production install、general multi-definition policy、complete Core33、Core34--36、`MT10-CIR-TE`、diagnostic、Task277B は deferred のままである。
+
 ## Accepted Algorithm CoreIr Task Graph
 
 Chapter 20 は次の semantic family と negative boundary を命名するのに十分である。

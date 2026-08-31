@@ -2097,3 +2097,12 @@ joins, complete 33LB composition, default-deny corruption matrix, unchanged
 fixture/expectation/trace/active route, zero semantic/execution/coverage
 credit, multi-definition and Core34--36 deferrals, and Task277B-not-ready
 status. English is canonical; no exception is recorded.
+
+## Core Task 33I260 Bilingual Contract Parity
+
+Implementation and verification are complete; the exact task-only commit is
+pending. The canonical [EN contract](../../task_contracts/en/CORE-SOURCE-FUNCTOR-ITEM-CONTEXT-33I260.md)
+and [JA companion](../../task_contracts/ja/CORE-SOURCE-FUNCTOR-ITEM-CONTEXT-33I260.md)
+own the detailed probe, boundary, review, verification, protected-artifact,
+and deferral evidence. Final bilingual review has no findings; English is
+canonical and no exception is recorded.

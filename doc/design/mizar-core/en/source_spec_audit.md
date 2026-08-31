@@ -166,7 +166,11 @@ Top-level public API groups:
   `SourceBindingCoreContextProducer`, `SourcePredicateCoreItemAssociation`,
   `SourcePredicateCoreItemAssociationTable`,
   `SourcePredicateCoreContextHandoff`,
-  `SourcePredicateCoreContextError`, `SourcePredicateCoreContextProducer`
+  `SourcePredicateCoreContextError`, `SourcePredicateCoreContextProducer`,
+  `SourceFunctorCoreItemAssociation`,
+  `SourceFunctorCoreItemAssociationTable`,
+  `SourceFunctorCoreContextHandoff`, `SourceFunctorCoreContextError`,
+  `SourceFunctorCoreContextProducer`
 - Type and fact lowering: `TypeAndFactResult`, `TypeAndFactLoweringError`,
   `TypeAndFactLoweringInput`, `TypePredicateSeed`,
   `DeclaredBinderTypeSeed`, `AttributeChainSeed`, `ModeExpansionSeed`,
@@ -323,6 +327,15 @@ This is Rust/private real-source boundary evidence with zero new corpus or
 trace credit. It neither serializes the handoff nor closes the general
 multi-definition Core-33 inventory; `CORE-AUDIT-G001`/`G002` retain those
 follow-ups and the first complete `MT10-CIR-TE` snapshot.
+
+## Core-33 Task260 Functor Item Context Mapping
+
+The completed [CORE-SOURCE-FUNCTOR-ITEM-CONTEXT-33I260 contract](../../task_contracts/en/CORE-SOURCE-FUNCTOR-ITEM-CONTEXT-33I260.md)
+owns the detailed Task-260-specific two-row Core mapping, identity/provenance
+and default-deny invariants, reviews, and verification evidence. Implementation
+and verification are complete; the exact task-only commit is pending. This
+mapping remains zero semantic/execution/coverage credit and private-probe-only;
+the specification, test intent, trace, and coverage state are unchanged.
 
 ## Source-Undocumented Behavior Pass
 

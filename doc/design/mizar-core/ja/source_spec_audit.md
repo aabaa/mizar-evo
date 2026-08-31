@@ -165,7 +165,11 @@ top-level public API group:
   `SourceBindingCoreContextProducer`、`SourcePredicateCoreItemAssociation`、
   `SourcePredicateCoreItemAssociationTable`、
   `SourcePredicateCoreContextHandoff`、
-  `SourcePredicateCoreContextError`、`SourcePredicateCoreContextProducer`
+  `SourcePredicateCoreContextError`、`SourcePredicateCoreContextProducer`、
+  `SourceFunctorCoreItemAssociation`、
+  `SourceFunctorCoreItemAssociationTable`、
+  `SourceFunctorCoreContextHandoff`、`SourceFunctorCoreContextError`、
+  `SourceFunctorCoreContextProducer`
 - Type and fact lowering: `TypeAndFactResult`, `TypeAndFactLoweringError`,
   `TypeAndFactLoweringInput`, `TypePredicateSeed`,
   `DeclaredBinderTypeSeed`, `AttributeChainSeed`, `ModeExpansionSeed`,
@@ -317,6 +321,10 @@ valid public Core predicate item 1件へのjoinを証明する。
 これはzero corpus/trace creditのRust/private real-source boundary evidenceである。Handoffを
 serializeせず、general multi-definition Core-33 inventoryをcloseしない。
 `CORE-AUDIT-G001`/`G002`はそのfollow-upとfirst complete `MT10-CIR-TE` snapshotをretainする。
+
+## Core-33 Task260 functor item context mapping
+
+完了した [CORE-SOURCE-FUNCTOR-ITEM-CONTEXT-33I260 contract](../../task_contracts/ja/CORE-SOURCE-FUNCTOR-ITEM-CONTEXT-33I260.md) が、Task260固有二行 Core mapping、identity/provenance と default-deny invariant、review、verification の詳細 evidence を所有する。Implementation/verification は complete、exact task-only commit は pending。これは zero semantic/execution/coverage credit の private-probe-only mapping であり、specification、test intent、trace、coverage state は不変である。
 
 ## Source-Undocumented Behavior Pass
 

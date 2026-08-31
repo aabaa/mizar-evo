@@ -5023,6 +5023,17 @@ No production runner branch, installer, `.miz`, expectation, trace, active
 metadata, diagnostic, snapshot, or coverage credit changes. Multi-definition
 blocks and Task-260+ owner families remain separate.
 
+### Core Task 33I260 private item-context probe
+
+The completed [Core Task 33I260 contract](../../task_contracts/en/CORE-SOURCE-FUNCTOR-ITEM-CONTEXT-33I260.md)
+owns the existing private Task-260 real-source probe, its two-row Core
+association, default-deny boundary, review, and verification evidence.
+Implementation and verification are complete; the exact task-only commit is
+pending. The probe remains private-probe-only with zero semantic/execution/
+coverage credit; no production route, active `MT10-CIR-TE`, or Task277B
+readiness is introduced, and deferred Core 34--36 and mixed-family ownership
+remain unchanged.
+
 ## Checker Task 260 Frozen Functor-Definition Route
 
 The future private route is selected only by the exact 262-byte source and

@@ -7258,3 +7258,13 @@ and active route remain unchanged and receive no new credit. Multi-definition
 blocks, Task-260+ owner families, complete Core 33, Core 34--36 semantics,
 `GeneratedOrigin`, C4C8 composition, and the first complete `MT10-CIR-TE`
 snapshot remain deferred. Task277B remains not ready and receives zero credit.
+
+## Task CORE-SOURCE-FUNCTOR-ITEM-CONTEXT-33I260 Zero-Credit Core Association
+
+The completed [Core-33 Task260 item contract](./task_contracts/en/CORE-SOURCE-FUNCTOR-ITEM-CONTEXT-33I260.md)
+owns the detailed two-row Core mapping, boundary, review, verification,
+protected-artifact, and deferral evidence. Implementation and verification are
+complete; the exact task-only commit is pending. This remains a zero-credit,
+private-probe-only mapping with no specification, test-intent, trace, or
+coverage change. Existing Task-248/Task-260 checker ownership and protected
+coverage state remain unchanged.
