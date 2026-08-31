@@ -102,6 +102,21 @@ capture orderをnon-semantic canonical transportとして保存する。Typed/Re
 `CoreContextInput` slot、Core35 semantic lowering、parameter/argument、`GeneratedOrigin`、
 active route、test/trace credit、Task277B creditは認可しない。
 
+### Core 33のstandalone local-binder prerequisite
+
+[Task CORE-SOURCE-LOCAL-BINDER-CONTEXT-33LB](../../task_contracts/ja/CORE-SOURCE-LOCAL-BINDER-CONTEXT-33LB.md)は
+user-adopted general local-binder prerequisiteである。Coreはchecker-owned `BindingEnv`を
+consumeし、そのbinding/context identity orderを保持して、admitされたreserve/defaultまたは
+definition-parameter rowごとにexplicit fresh Core variableをallocateする。Immutable handoffは
+checker payloadとcomplete associationをretainし、source itemをreconstructせずCore/Typed/
+Resolvedへfieldを追加しない。
+
+本taskがcloseするのはzero-semantic local-binder transportとexisting reserve runnerの
+numeric-domain violationだけである。General source-item/Core-item association、complete
+Core-33 result、最初のreal `MT10-CIR-TE` snapshotはopenのまま。両方必要な場合、
+local-binder handoffはseparate C4C8 handoffより先に実行する。Core 34/35、generated origin、
+active route、diagnostic、expectation、trace、coverage stateは変更しない。
+
 ## Accepted Algorithm CoreIr Task Graph
 
 Chapter 20 は次の semantic family と negative boundary を命名するのに十分である。

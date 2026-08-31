@@ -525,6 +525,14 @@ F8 の spec 本文は同一変更(`cef7e109`: spec 03、05、13、17、18)で修
       capabilityとし、Core 33がexact owner-item associationとauthenticated capture
       orderのfresh `x,y` Core variableをownする。Core35 semantics、parameter/argument、
       `GeneratedOrigin`、active route、coverage credit、Task277B readinessは作らない。
+33LB. **Standalone source local-binder context prerequisite。** [x]
+    - Paired [task contract](../../task_contracts/ja/CORE-SOURCE-LOCAL-BINDER-CONTEXT-33LB.md)は
+      user-adopted zero-semantic seamをfreezeする。Coreはcomplete checker `BindingEnv`を
+      consumeし、exact binding/context identity orderを保持し、fresh `CoreVarId`
+      allocationとimmutable associationをownする。
+    - Complete: reserve runnerのnumeric `BindingId`/`CoreVarId` reinterpretationを置換し、Checker-248
+      Profile Aをsource/expectation/trace/active route/coverage state変更なしでexerciseする。
+      General Core 33 item ownershipと`MT10-CIR-TE`はopenのまま。
 33. **Source-derived Core context/item/binder/source map。** [ ]
     - checker 248を`MT10-CIR-TE`でconsumeし、type/proof/algorithm bodyは扱わない。
       C4C8についてchecker 248だけでは不十分なままであり、Task 33C4C8はseparately

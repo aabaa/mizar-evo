@@ -159,7 +159,10 @@ top-level public API group:
   `SourceNestedFraenkelCaptureCoreVariableTable`、
   `SourceNestedFraenkelCaptureCoreContextHandoff`、
   `SourceNestedFraenkelCaptureCoreContextError`、
-  `SourceNestedFraenkelCaptureCoreContextProducer`
+  `SourceNestedFraenkelCaptureCoreContextProducer`、
+  `SourceBindingCoreVariable`、`SourceBindingCoreVariableTable`、
+  `SourceBindingCoreContextHandoff`、`SourceBindingCoreContextError`、
+  `SourceBindingCoreContextProducer`
 - Type and fact lowering: `TypeAndFactResult`, `TypeAndFactLoweringError`,
   `TypeAndFactLoweringInput`, `TypePredicateSeed`,
   `DeclaredBinderTypeSeed`, `AttributeChainSeed`, `ModeExpansionSeed`,
@@ -281,6 +284,23 @@ literal top-level public item:
 | `crates/mizar-core/tests/determinism_suite.rs`。 | fresh public-API fixture rebuild、structural equality、byte-stable rendering、binder canonicalization、CFG と handoff ordering。 | task 20 の active Rust coverage。 |
 | `crates/mizar-core/tests/lint_policy.rs`。 | workspace/crate boundary、public module/spec pairing、frontend/downstream boundary、public enum policy、source/spec audit coverage。 | Active guard coverage。 |
 | `tests/coverage/spec_trace.toml`。 | exact Task-180 `type_elaboration` CoreIr snapshotと、broader source-derived `type_elaboration` / `proof_verification` seamのdeferred記録。 | Core Task-31 covered rowとtask-19 broad deferred row。 |
+
+## Core-33 standalone source local-binder mapping
+
+Canonical [CORE-SOURCE-LOCAL-BINDER-CONTEXT-33LB contract](../../task_contracts/ja/CORE-SOURCE-LOCAL-BINDER-CONTEXT-33LB.md)は
+`src/elaborator.rs`へ`SourceBindingCoreVariable`、immutable ordered table、
+`SourceBindingCoreContextHandoff`、non-exhaustive error、
+`SourceBindingCoreContextProducer`を追加する。Producerはcomplete checker `BindingEnv`
+1個をconsumeし、normal reserve/defaultおよびresolver-local definition-parameter rowだけを
+validateし、complete checked used-ID inventoryより上へfresh Core variableをallocateして、
+postvalidation後だけexact `BindingId` associationを公開する。
+
+Core unit test 4件がdeterministic metadata/provenance、populated max-plus-one allocation、
+private malformed-association rejection、environment/unsupported/overflow rejectionをcoverする。
+Existing private mizar-test consumerはreserve-only readinessとexact Task-248 Profile-A
+reserve/local-shadow handoffをcoverする。これはactive Rust/private real-source boundary
+evidenceだけで、Core item、`CoreIr`、snapshot、trace credit、active route、Task277B readinessを
+作らない。General Core 33と`MT10-CIR-TE`は`CORE-AUDIT-G001`/`G002`に残る。
 
 ## Source-Undocumented Behavior Pass
 

@@ -26,7 +26,11 @@ use crate::{
     },
 };
 use mizar_checker::{
-    binding_env::BindingContextId,
+    binding_env::{
+        BinderIdentity, BindingContextId, BindingContextLayer, BindingContextOwner,
+        BindingContextRecovery, BindingEnv, BindingId, BindingKind, BindingRecoveryState,
+        BindingStatus,
+    },
     cluster_trace::ClusterFactId,
     overload_resolution::{QuaPathKey, TemplateInstantiationKey, TemplateParameterKey},
     registration_resolution::{
@@ -1159,6 +1163,419 @@ const NESTED_FRAENKEL_CAPTURE_CORE_ROLE: &str = "fraenkel-captured-parameter";
 const NESTED_FRAENKEL_CAPTURE_CORE_PROVENANCE_PREFIX: &str =
     "source-nested-fraenkel-capture-core-variable-v1.capture";
 
+const SOURCE_BINDING_CORE_RESERVED_ROLE: &str = "reserved-variable";
+const SOURCE_BINDING_CORE_PARAMETER_ROLE: &str = "definition-parameter";
+const SOURCE_BINDING_CORE_PROVENANCE_PREFIX: &str = "source-binding-core-variable-v1.binding";
+
+/// One immutable Core variable associated with one checker-authenticated
+/// source binding row.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceBindingCoreVariable {
+    binding: BindingId,
+    core_var: CoreVarId,
+}
+
+impl SourceBindingCoreVariable {
+    #[must_use]
+    pub const fn binding(&self) -> BindingId {
+        self.binding
+    }
+
+    #[must_use]
+    pub const fn core_var(&self) -> CoreVarId {
+        self.core_var
+    }
+}
+
+/// Immutable Core variables in exact checker binding-table order.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceBindingCoreVariableTable {
+    rows: Vec<(BindingId, SourceBindingCoreVariable)>,
+}
+
+impl SourceBindingCoreVariableTable {
+    fn empty() -> Self {
+        Self { rows: Vec::new() }
+    }
+
+    #[must_use]
+    pub fn get(&self, binding: BindingId) -> Option<&SourceBindingCoreVariable> {
+        self.rows
+            .iter()
+            .find_map(|(id, row)| (*id == binding).then_some(row))
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = (BindingId, &SourceBindingCoreVariable)> {
+        self.rows.iter().map(|(binding, row)| (*binding, row))
+    }
+
+    #[must_use]
+    pub fn len(&self) -> usize {
+        self.rows.len()
+    }
+
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.rows.is_empty()
+    }
+}
+
+/// Errors raised while associating checker source bindings with Core.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum SourceBindingCoreContextError {
+    EnvironmentMismatch,
+    InvalidCoreContext,
+    InvalidBindingEnvironment,
+    CoreVariableAllocationOverflow,
+    CoreVariableCollision { var: CoreVarId },
+    InvalidBindingAssociation,
+}
+
+impl fmt::Display for SourceBindingCoreContextError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::EnvironmentMismatch => {
+                formatter.write_str("source binding Core context environment is invalid")
+            }
+            Self::InvalidCoreContext => {
+                formatter.write_str("source binding Core context is invalid")
+            }
+            Self::InvalidBindingEnvironment => formatter
+                .write_str("source binding environment is invalid for Core context transport"),
+            Self::CoreVariableAllocationOverflow => {
+                formatter.write_str("source binding Core variable allocation overflowed")
+            }
+            Self::CoreVariableCollision { var } => {
+                write!(
+                    formatter,
+                    "source binding Core variable {} collides",
+                    var.index()
+                )
+            }
+            Self::InvalidBindingAssociation => {
+                formatter.write_str("source binding Core variable association is invalid")
+            }
+        }
+    }
+}
+
+impl Error for SourceBindingCoreContextError {}
+
+/// Immutable Core context handoff for checker-authenticated source bindings.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceBindingCoreContextHandoff {
+    context: CoreContext,
+    binding_env: BindingEnv,
+    variables: SourceBindingCoreVariableTable,
+}
+
+impl SourceBindingCoreContextHandoff {
+    #[must_use]
+    pub const fn source_id(&self) -> SourceId {
+        self.context.source_id()
+    }
+
+    #[must_use]
+    pub const fn module_id(&self) -> &ModuleId {
+        self.context.module_id()
+    }
+
+    #[must_use]
+    pub const fn context(&self) -> &CoreContext {
+        &self.context
+    }
+
+    #[must_use]
+    pub const fn binding_env(&self) -> &BindingEnv {
+        &self.binding_env
+    }
+
+    #[must_use]
+    pub const fn variables(&self) -> &SourceBindingCoreVariableTable {
+        &self.variables
+    }
+
+    #[must_use]
+    pub fn debug_text(&self) -> String {
+        let variables = self
+            .variables
+            .iter()
+            .map(|(binding, row)| format!("{}:{}", binding.index(), row.core_var().index()))
+            .collect::<Vec<_>>()
+            .join(",");
+        format!(
+            "source-binding-core-context-v1|module={}.{}|bindings={}|variables={}",
+            self.module_id().package().as_str(),
+            self.module_id().path().as_str(),
+            self.binding_env.bindings().len(),
+            variables,
+        )
+    }
+
+    fn validate(&self) -> Result<(), SourceBindingCoreContextError> {
+        if self.source_id() != self.binding_env.source_id()
+            || self.module_id() != self.binding_env.module_id()
+        {
+            return Err(SourceBindingCoreContextError::EnvironmentMismatch);
+        }
+        let allowed = source_binding_vars(&self.variables);
+        let used = validate_source_binding_core_context_shape(&self.context, &allowed)?;
+        validate_source_binding_environment(&self.binding_env)?;
+        validate_source_binding_association(
+            &self.context,
+            &self.binding_env,
+            &self.variables,
+            &used,
+        )
+    }
+}
+
+/// Builds the standalone immutable Core source-binding handoff.
+#[derive(Debug, Clone, Copy)]
+pub struct SourceBindingCoreContextProducer;
+
+impl SourceBindingCoreContextProducer {
+    pub fn build(
+        mut context: CoreContext,
+        binding_env: BindingEnv,
+    ) -> Result<SourceBindingCoreContextHandoff, SourceBindingCoreContextError> {
+        if context.source_id() != binding_env.source_id()
+            || context.module_id() != binding_env.module_id()
+        {
+            return Err(SourceBindingCoreContextError::EnvironmentMismatch);
+        }
+        let used = validate_source_binding_core_context_shape(&context, &BTreeSet::new())?;
+        validate_source_binding_environment(&binding_env)?;
+        let allocated = allocate_source_binding_core_vars(&used, binding_env.bindings().len())?;
+        let mut variables = SourceBindingCoreVariableTable::empty();
+
+        for ((binding, entry), core_var) in binding_env.bindings().iter().zip(allocated) {
+            let key = source_binding_provenance_key(binding);
+            let provenance = CoreProvenance::new(CoreProvenancePhase::Checker, key.clone());
+            let source =
+                CoreSourceRef::direct(entry.declaration_range).with_provenance(vec![provenance]);
+            let role = match entry.kind {
+                BindingKind::ReservedVariable => SOURCE_BINDING_CORE_RESERVED_ROLE,
+                BindingKind::DefinitionParameter => SOURCE_BINDING_CORE_PARAMETER_ROLE,
+                _ => return Err(SourceBindingCoreContextError::InvalidBindingEnvironment),
+            };
+            context.binder_context.declare_variable(
+                core_var,
+                NormalizedVarClass::Free,
+                role,
+                NormalizedVarSort::Term,
+            );
+            context.binder_type_facts.insert(core_var, Vec::new());
+            context
+                .binder_sources
+                .insert(BinderSourceRecord {
+                    var: core_var,
+                    source,
+                    provenance: CheckerOwnedProvenance::checker(key),
+                })
+                .map_err(|_| SourceBindingCoreContextError::CoreVariableCollision {
+                    var: core_var,
+                })?;
+            variables
+                .rows
+                .push((binding, SourceBindingCoreVariable { binding, core_var }));
+        }
+
+        let handoff = SourceBindingCoreContextHandoff {
+            context,
+            binding_env,
+            variables,
+        };
+        handoff.validate()?;
+        Ok(handoff)
+    }
+}
+
+fn source_binding_vars(table: &SourceBindingCoreVariableTable) -> BTreeSet<CoreVarId> {
+    table.iter().map(|(_, row)| row.core_var()).collect()
+}
+
+fn source_binding_provenance_key(binding: BindingId) -> CoreProvenanceKey {
+    CoreProvenanceKey::new(format!(
+        "{SOURCE_BINDING_CORE_PROVENANCE_PREFIX}.{}",
+        binding.index()
+    ))
+}
+
+fn validate_source_binding_core_context_shape(
+    context: &CoreContext,
+    allowed_source_binding_vars: &BTreeSet<CoreVarId>,
+) -> Result<BTreeSet<CoreVarId>, SourceBindingCoreContextError> {
+    let used = validate_core_context_shape(context, &BTreeSet::new())
+        .map_err(|_| SourceBindingCoreContextError::InvalidCoreContext)?;
+    if context
+        .binder_context
+        .variable_roles
+        .iter()
+        .any(|(var, role)| {
+            matches!(
+                role.as_str(),
+                SOURCE_BINDING_CORE_RESERVED_ROLE | SOURCE_BINDING_CORE_PARAMETER_ROLE
+            ) && !allowed_source_binding_vars.contains(var)
+        })
+    {
+        return Err(SourceBindingCoreContextError::InvalidCoreContext);
+    }
+    Ok(used)
+}
+
+fn validate_source_binding_environment(
+    binding_env: &BindingEnv,
+) -> Result<(), SourceBindingCoreContextError> {
+    if binding_env.contexts().is_empty()
+        || binding_env.bindings().is_empty()
+        || !binding_env.diagnostics().is_empty()
+    {
+        return Err(SourceBindingCoreContextError::InvalidBindingEnvironment);
+    }
+    let Some(module_context) = binding_env.contexts().get(BindingContextId::new(0)) else {
+        return Err(SourceBindingCoreContextError::InvalidBindingEnvironment);
+    };
+    if !is_normal_module_context(module_context) {
+        return Err(SourceBindingCoreContextError::InvalidBindingEnvironment);
+    }
+    for (context_id, context) in binding_env.contexts().iter() {
+        let invalid = if context_id == BindingContextId::new(0) {
+            !is_normal_module_context(context)
+        } else {
+            !is_normal_declaration_context(context)
+        };
+        if invalid {
+            return Err(SourceBindingCoreContextError::InvalidBindingEnvironment);
+        }
+    }
+
+    for (_, binding) in binding_env.bindings().iter() {
+        if binding.status == BindingStatus::Degraded
+            || binding.status == BindingStatus::Omitted
+            || binding.recovery != BindingRecoveryState::Normal
+            || !binding.captured.identities().is_empty()
+            || !binding.diagnostics.is_empty()
+        {
+            return Err(SourceBindingCoreContextError::InvalidBindingEnvironment);
+        }
+        let Some(owner_context) = binding_env.contexts().get(binding.owner_context) else {
+            return Err(SourceBindingCoreContextError::InvalidBindingEnvironment);
+        };
+        match (&binding.kind, &binding.identity, binding.status) {
+            (
+                BindingKind::ReservedVariable,
+                BinderIdentity::ReservedVariable {
+                    spelling,
+                    declaration_range,
+                },
+                BindingStatus::Reserved,
+            ) if binding.owner_context == BindingContextId::new(0)
+                && is_normal_module_context(owner_context)
+                && spelling == &binding.spelling
+                && *declaration_range == binding.declaration_range => {}
+            (
+                BindingKind::DefinitionParameter,
+                BinderIdentity::ResolverLocal {
+                    scope,
+                    ordinal,
+                    declaration_range,
+                },
+                BindingStatus::Active,
+            ) if is_normal_declaration_context(owner_context)
+                && owner_context.lexical_scope.as_ref() == Some(scope)
+                && *ordinal == binding.visible_after_ordinal
+                && *declaration_range == binding.declaration_range => {}
+            _ => return Err(SourceBindingCoreContextError::InvalidBindingEnvironment),
+        }
+    }
+    Ok(())
+}
+
+fn is_normal_module_context(context: &mizar_checker::binding_env::BindingContext) -> bool {
+    context.owner == BindingContextOwner::Module
+        && context.parent.is_none()
+        && context.layer == BindingContextLayer::Module
+        && context.lexical_scope.is_none()
+        && context.recovery == BindingContextRecovery::Normal
+}
+
+fn is_normal_declaration_context(context: &mizar_checker::binding_env::BindingContext) -> bool {
+    matches!(context.owner, BindingContextOwner::DeclarationShell(_))
+        && context.parent.is_some()
+        && context.layer == BindingContextLayer::Declaration
+        && context.lexical_scope.is_some()
+        && context.recovery == BindingContextRecovery::Normal
+}
+
+fn validate_source_binding_association(
+    context: &CoreContext,
+    binding_env: &BindingEnv,
+    variables: &SourceBindingCoreVariableTable,
+    used: &BTreeSet<CoreVarId>,
+) -> Result<(), SourceBindingCoreContextError> {
+    if variables.len() != binding_env.bindings().len() {
+        return Err(SourceBindingCoreContextError::InvalidBindingAssociation);
+    }
+    let mut row_vars = BTreeSet::new();
+    for (_, row) in variables.iter() {
+        if !row_vars.insert(row.core_var()) {
+            return Err(SourceBindingCoreContextError::CoreVariableCollision {
+                var: row.core_var(),
+            });
+        }
+    }
+    let non_source_used = used
+        .iter()
+        .copied()
+        .filter(|var| !row_vars.contains(var))
+        .collect::<BTreeSet<_>>();
+    let allocated = allocate_source_binding_core_vars(&non_source_used, variables.len())?;
+
+    for (((binding, entry), row), expected_var) in binding_env
+        .bindings()
+        .iter()
+        .zip(variables.iter())
+        .zip(allocated)
+    {
+        if row.0 != binding || row.1.binding() != binding || row.1.core_var() != expected_var {
+            return Err(SourceBindingCoreContextError::InvalidBindingAssociation);
+        }
+        let Some(record) = context.binder_sources.get(row.1.core_var()) else {
+            return Err(SourceBindingCoreContextError::InvalidBindingAssociation);
+        };
+        let key = source_binding_provenance_key(binding);
+        let expected_provenance = CoreProvenance::new(CoreProvenancePhase::Checker, key.clone());
+        if record.source.anchor != CoreSourceAnchor::SourceRange(entry.declaration_range)
+            || record.source.provenance.as_slice() != [expected_provenance.clone()]
+            || record.provenance.as_slice()
+                != [CoreProvenance::new(CoreProvenancePhase::Checker, key)]
+            || context
+                .binder_context
+                .variable_classes
+                .get(&row.1.core_var())
+                != Some(&NormalizedVarClass::Free)
+            || context.binder_context.variable_sorts.get(&row.1.core_var())
+                != Some(&NormalizedVarSort::Term)
+            || context
+                .binder_context
+                .variable_roles
+                .get(&row.1.core_var())
+                .map(CoreVarRole::as_str)
+                != Some(match entry.kind {
+                    BindingKind::ReservedVariable => SOURCE_BINDING_CORE_RESERVED_ROLE,
+                    BindingKind::DefinitionParameter => SOURCE_BINDING_CORE_PARAMETER_ROLE,
+                    _ => return Err(SourceBindingCoreContextError::InvalidBindingAssociation),
+                })
+            || context.binder_type_facts.get(&row.1.core_var()) != Some(&Vec::new())
+        {
+            return Err(SourceBindingCoreContextError::InvalidBindingAssociation);
+        }
+    }
+    Ok(())
+}
+
 /// One immutable Core variable associated with one checker-authenticated
 /// nested-Fraenkel capture row.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -1587,22 +2004,46 @@ fn allocate_capture_core_vars(
     used: &BTreeSet<CoreVarId>,
     count: usize,
 ) -> Result<Vec<CoreVarId>, SourceNestedFraenkelCaptureCoreContextError> {
+    allocate_core_vars(
+        used,
+        count,
+        SourceNestedFraenkelCaptureCoreContextError::CoreVariableAllocationOverflow,
+        |var| SourceNestedFraenkelCaptureCoreContextError::CoreVariableCollision { var },
+    )
+}
+
+fn allocate_source_binding_core_vars(
+    used: &BTreeSet<CoreVarId>,
+    count: usize,
+) -> Result<Vec<CoreVarId>, SourceBindingCoreContextError> {
+    allocate_core_vars(
+        used,
+        count,
+        SourceBindingCoreContextError::CoreVariableAllocationOverflow,
+        |var| SourceBindingCoreContextError::CoreVariableCollision { var },
+    )
+}
+
+fn allocate_core_vars<E>(
+    used: &BTreeSet<CoreVarId>,
+    count: usize,
+    overflow: E,
+    collision: impl Fn(CoreVarId) -> E,
+) -> Result<Vec<CoreVarId>, E>
+where
+    E: Clone,
+{
     let next = match used.iter().next_back() {
-        Some(var) => var
-            .index()
-            .checked_add(1)
-            .ok_or(SourceNestedFraenkelCaptureCoreContextError::CoreVariableAllocationOverflow)?,
+        Some(var) => var.index().checked_add(1).ok_or_else(|| overflow.clone())?,
         None => 0,
     };
     let mut allocated = Vec::with_capacity(count);
     let mut reserved = used.clone();
     for offset in 0..count {
-        let index = next
-            .checked_add(offset)
-            .ok_or(SourceNestedFraenkelCaptureCoreContextError::CoreVariableAllocationOverflow)?;
+        let index = next.checked_add(offset).ok_or_else(|| overflow.clone())?;
         let var = CoreVarId::new(index);
         if !reserved.insert(var) {
-            return Err(SourceNestedFraenkelCaptureCoreContextError::CoreVariableCollision { var });
+            return Err(collision(var));
         }
         allocated.push(var);
     }
@@ -9608,7 +10049,16 @@ mod tests {
         CoreAlgorithmStmtTable, CoreAlgorithmTable, CoreDefinitionTable, CoreIr, CoreIrParts,
         CoreProofNodeTable, CoreProofTable,
     };
-    use mizar_checker::typed_ast::TypeRole;
+    use mizar_checker::{
+        binding_env::{
+            BindingContextDraft, BindingContextTable, BindingDiagnosticClass,
+            BindingDiagnosticDraft, BindingDiagnosticRecovery, BindingDiagnosticSeverity,
+            BindingDiagnosticTable, BindingDraft, BindingEnvParts, BindingTable, BindingTypeSite,
+            CapturedFreeVariables,
+        },
+        typed_ast::TypeRole,
+    };
+    use mizar_resolve::names::LocalTermScope;
     use mizar_resolve::resolved_ast::{FullyQualifiedName, LocalSymbolId};
     use mizar_session::{
         BuildSnapshotId, InMemorySessionIdAllocator, ModulePath, PackageId, SessionIdAllocator,
@@ -9627,6 +10077,21 @@ mod tests {
 
     fn source_id() -> SourceId {
         source_id_for("08")
+    }
+
+    fn alternate_source_id() -> SourceId {
+        let snapshot = BuildSnapshotId::from_published_schema_str(&format!(
+            "mizar-session-build-snapshot-v1:{}",
+            "09".repeat(32)
+        ))
+        .expect("valid alternate snapshot id");
+        let allocator = InMemorySessionIdAllocator::new();
+        let _discarded = allocator
+            .next_source_id(snapshot)
+            .expect("first alternate source id");
+        allocator
+            .next_source_id(snapshot)
+            .expect("second alternate source id")
     }
 
     fn range(start: usize, end: usize) -> SourceRange {
@@ -9671,6 +10136,155 @@ mod tests {
 
     fn summary() -> ResolvedTypedAstSummary {
         ResolvedTypedAstSummary::new(source_id(), module_id())
+    }
+
+    fn source_binding_env_with_one(
+        source_id: SourceId,
+        module_id: ModuleId,
+        kind: BindingKind,
+        identity: BinderIdentity,
+        status: BindingStatus,
+    ) -> BindingEnv {
+        let declaration_range = SourceRange {
+            source_id,
+            start: 10,
+            end: 11,
+        };
+        let mut bindings = BindingTable::new();
+        let binding = bindings.insert(BindingDraft {
+            spelling: "x".to_owned(),
+            kind,
+            identity,
+            owner_context: BindingContextId::new(0),
+            declaration_range,
+            visible_after_ordinal: 0,
+            type_site: BindingTypeSite::Source(SourceRange {
+                source_id,
+                start: 12,
+                end: 15,
+            }),
+            status,
+            captured: CapturedFreeVariables::default(),
+            diagnostics: Vec::new(),
+            recovery: BindingRecoveryState::Normal,
+        });
+        let mut contexts = BindingContextTable::new();
+        contexts.insert(BindingContextDraft {
+            owner: BindingContextOwner::Module,
+            parent: None,
+            layer: BindingContextLayer::Module,
+            lexical_scope: None,
+            bindings: vec![binding],
+            visible_bindings: vec![binding],
+            recovery: BindingContextRecovery::Normal,
+        });
+        BindingEnv::try_new(BindingEnvParts {
+            source_id,
+            module_id,
+            contexts,
+            bindings,
+            diagnostics: mizar_checker::binding_env::BindingDiagnosticTable::new(),
+        })
+        .expect("valid test binding environment")
+    }
+
+    fn source_binding_reserved_draft() -> BindingDraft {
+        let declaration_range = range(10, 11);
+        BindingDraft {
+            spelling: "x".to_owned(),
+            kind: BindingKind::ReservedVariable,
+            identity: BinderIdentity::ReservedVariable {
+                spelling: "x".to_owned(),
+                declaration_range,
+            },
+            owner_context: BindingContextId::new(0),
+            declaration_range,
+            visible_after_ordinal: 0,
+            type_site: BindingTypeSite::Source(range(12, 15)),
+            status: BindingStatus::Reserved,
+            captured: CapturedFreeVariables::default(),
+            diagnostics: Vec::new(),
+            recovery: BindingRecoveryState::Normal,
+        }
+    }
+
+    fn source_binding_second_reserved_draft() -> BindingDraft {
+        let declaration_range = range(20, 21);
+        BindingDraft {
+            spelling: "y".to_owned(),
+            kind: BindingKind::ReservedVariable,
+            identity: BinderIdentity::ReservedVariable {
+                spelling: "y".to_owned(),
+                declaration_range,
+            },
+            owner_context: BindingContextId::new(0),
+            declaration_range,
+            visible_after_ordinal: 1,
+            type_site: BindingTypeSite::Source(range(22, 25)),
+            status: BindingStatus::Reserved,
+            captured: CapturedFreeVariables::default(),
+            diagnostics: Vec::new(),
+            recovery: BindingRecoveryState::Normal,
+        }
+    }
+
+    fn source_binding_env_with_options(
+        module_recovery: BindingContextRecovery,
+        first: BindingDraft,
+        second: BindingDraft,
+        diagnostics: BindingDiagnosticTable,
+    ) -> BindingEnv {
+        let mut contexts = BindingContextTable::new();
+        contexts.insert(BindingContextDraft {
+            owner: BindingContextOwner::Module,
+            parent: None,
+            layer: BindingContextLayer::Module,
+            lexical_scope: None,
+            bindings: vec![BindingId::new(0), BindingId::new(1)],
+            visible_bindings: vec![BindingId::new(0), BindingId::new(1)],
+            recovery: module_recovery,
+        });
+        let mut bindings = BindingTable::new();
+        bindings.insert(first);
+        bindings.insert(second);
+        BindingEnv::try_new(BindingEnvParts {
+            source_id: source_id(),
+            module_id: module_id(),
+            contexts,
+            bindings,
+            diagnostics,
+        })
+        .expect("valid test binding environment")
+    }
+
+    fn source_binding_env() -> BindingEnv {
+        source_binding_env_with_options(
+            BindingContextRecovery::Normal,
+            source_binding_reserved_draft(),
+            source_binding_second_reserved_draft(),
+            BindingDiagnosticTable::new(),
+        )
+    }
+
+    fn empty_source_binding_env() -> BindingEnv {
+        let mut contexts = BindingContextTable::new();
+        contexts.insert(BindingContextDraft {
+            owner: BindingContextOwner::Module,
+            parent: None,
+            layer: BindingContextLayer::Module,
+            lexical_scope: None,
+            bindings: Vec::new(),
+            visible_bindings: Vec::new(),
+            recovery: BindingContextRecovery::Normal,
+        });
+        BindingEnv::try_new(BindingEnvParts {
+            source_id: source_id(),
+            module_id: module_id(),
+            contexts,
+            bindings: BindingTable::new(),
+            diagnostics: BindingDiagnosticTable::new(),
+        })
+        .expect("valid empty binding environment")
     }
 
     fn input_with_items(item_seeds: Vec<CoreItemSeed>) -> CoreContextInput {
@@ -18119,6 +18733,591 @@ mod tests {
         assert_eq!(
             allocate_capture_core_vars(&BTreeSet::from([CoreVarId::new(usize::MAX - 1)]), 2),
             Err(SourceNestedFraenkelCaptureCoreContextError::CoreVariableAllocationOverflow)
+        );
+    }
+
+    #[test]
+    fn source_binding_core_context_builds_exact_checker_order_and_metadata() {
+        let context =
+            prepare_core_context(CoreContextInput::new(summary())).expect("empty Core context");
+        let first = SourceBindingCoreContextProducer::build(context, source_binding_env())
+            .expect("source binding Core handoff");
+        let second = SourceBindingCoreContextProducer::build(
+            prepare_core_context(CoreContextInput::new(summary())).expect("empty Core context"),
+            source_binding_env(),
+        )
+        .expect("deterministic source binding Core handoff");
+
+        assert_eq!(first, second);
+        assert_eq!(
+            first.debug_text(),
+            "source-binding-core-context-v1|module=pkg.main|bindings=2|variables=0:0,1:1"
+        );
+        let rows = first.variables().iter().collect::<Vec<_>>();
+        let [(first_binding, first_row), (second_binding, second_row)] = rows.as_slice() else {
+            panic!("two source binding rows expected");
+        };
+        assert_eq!(*first_binding, BindingId::new(0));
+        assert_eq!(*second_binding, BindingId::new(1));
+        assert_eq!(first_row.binding(), BindingId::new(0));
+        assert_eq!(second_row.binding(), BindingId::new(1));
+        assert_eq!(first_row.core_var(), CoreVarId::new(0));
+        assert_eq!(second_row.core_var(), CoreVarId::new(1));
+        assert_eq!(first.variables().get(BindingId::new(0)), Some(*first_row));
+        assert_eq!(first.variables().get(BindingId::new(1)), Some(*second_row));
+
+        let context = first.context();
+        for (binding, row, declaration_range, role) in [
+            (
+                BindingId::new(0),
+                *first_row,
+                range(10, 11),
+                SOURCE_BINDING_CORE_RESERVED_ROLE,
+            ),
+            (
+                BindingId::new(1),
+                *second_row,
+                range(20, 21),
+                SOURCE_BINDING_CORE_RESERVED_ROLE,
+            ),
+        ] {
+            let var = row.core_var();
+            let key = source_binding_provenance_key(binding);
+            let expected_provenance =
+                CoreProvenance::new(CoreProvenancePhase::Checker, key.clone());
+            assert_eq!(
+                context.binder_context().variable_classes.get(&var),
+                Some(&NormalizedVarClass::Free)
+            );
+            assert_eq!(
+                context.binder_context().variable_sorts.get(&var),
+                Some(&NormalizedVarSort::Term)
+            );
+            assert_eq!(
+                context.binder_context().variable_roles.get(&var),
+                Some(&CoreVarRole::new(role))
+            );
+            assert_eq!(context.binder_type_facts().get(&var), Some(&Vec::new()));
+            let record = context
+                .binder_sources()
+                .get(var)
+                .expect("source binding binder source");
+            assert_eq!(
+                record.source,
+                CoreSourceRef::direct(declaration_range).with_provenance(vec![expected_provenance])
+            );
+            assert_eq!(record.provenance, CheckerOwnedProvenance::checker(key));
+        }
+
+        let reserved = first
+            .binding_env()
+            .bindings()
+            .get(BindingId::new(0))
+            .expect("reserved binding");
+        assert_eq!(reserved.kind, BindingKind::ReservedVariable);
+        assert_eq!(reserved.status, BindingStatus::Reserved);
+        assert_eq!(reserved.owner_context, BindingContextId::new(0));
+        let second_reserved = first
+            .binding_env()
+            .bindings()
+            .get(BindingId::new(1))
+            .expect("second reserved binding");
+        assert_eq!(second_reserved.kind, BindingKind::ReservedVariable);
+        assert_eq!(second_reserved.status, BindingStatus::Reserved);
+        assert_eq!(second_reserved.owner_context, BindingContextId::new(0));
+        assert_eq!(
+            second_reserved.identity,
+            BinderIdentity::ReservedVariable {
+                spelling: "y".to_owned(),
+                declaration_range: range(20, 21),
+            }
+        );
+        let module_context = first
+            .binding_env()
+            .contexts()
+            .get(BindingContextId::new(0))
+            .expect("module context");
+        assert_eq!(
+            module_context.bindings,
+            vec![BindingId::new(0), BindingId::new(1)]
+        );
+        assert_eq!(module_context.visible_bindings, module_context.bindings);
+    }
+
+    #[test]
+    fn source_binding_core_context_allocates_above_complete_used_inventory() {
+        let handoff = SourceBindingCoreContextProducer::build(
+            task33c4c8_context_with_complete_used_inventory(),
+            source_binding_env(),
+        )
+        .expect("source binding Core handoff above existing variables");
+        let rows = handoff
+            .variables()
+            .iter()
+            .map(|(binding, row)| (binding, row.core_var()))
+            .collect::<Vec<_>>();
+        assert_eq!(
+            rows,
+            vec![
+                (BindingId::new(0), CoreVarId::new(10)),
+                (BindingId::new(1), CoreVarId::new(11))
+            ]
+        );
+        assert!(
+            handoff
+                .context()
+                .binder_context()
+                .free_variables
+                .is_superset(&BTreeSet::from([
+                    CoreVarId::new(2),
+                    CoreVarId::new(9),
+                    CoreVarId::new(10),
+                    CoreVarId::new(11),
+                ]))
+        );
+        for (binding, var, role) in [
+            (
+                BindingId::new(0),
+                CoreVarId::new(10),
+                SOURCE_BINDING_CORE_RESERVED_ROLE,
+            ),
+            (
+                BindingId::new(1),
+                CoreVarId::new(11),
+                SOURCE_BINDING_CORE_RESERVED_ROLE,
+            ),
+        ] {
+            assert_eq!(
+                handoff.context().binder_sources().get(var).unwrap().var,
+                var
+            );
+            assert_eq!(
+                handoff.context().binder_context().variable_roles.get(&var),
+                Some(&CoreVarRole::new(role))
+            );
+            assert_eq!(handoff.variables().get(binding).unwrap().core_var(), var);
+        }
+    }
+
+    #[test]
+    fn source_binding_core_context_postvalidation_rejects_malformed_association() {
+        let context =
+            prepare_core_context(CoreContextInput::new(summary())).expect("empty Core context");
+        let baseline = SourceBindingCoreContextProducer::build(context, source_binding_env())
+            .expect("source binding Core handoff");
+
+        let mut missing = baseline.clone();
+        missing.variables.rows.remove(0);
+        assert_eq!(
+            missing.validate(),
+            Err(SourceBindingCoreContextError::InvalidCoreContext)
+        );
+
+        let mut extra_orphan = baseline.clone();
+        extra_orphan.variables.rows.push((
+            BindingId::new(99),
+            SourceBindingCoreVariable {
+                binding: BindingId::new(99),
+                core_var: CoreVarId::new(99),
+            },
+        ));
+        assert_eq!(
+            extra_orphan.validate(),
+            Err(SourceBindingCoreContextError::InvalidBindingAssociation)
+        );
+
+        let mut duplicate_core_var = baseline.clone();
+        duplicate_core_var.variables.rows[1].1.core_var = CoreVarId::new(0);
+        duplicate_core_var
+            .context
+            .binder_context
+            .variable_roles
+            .insert(CoreVarId::new(1), CoreVarRole::new("existing-term"));
+        assert_eq!(
+            duplicate_core_var.validate(),
+            Err(SourceBindingCoreContextError::CoreVariableCollision {
+                var: CoreVarId::new(0)
+            })
+        );
+
+        let mut reordered = baseline.clone();
+        reordered.variables.rows.swap(0, 1);
+        assert_eq!(
+            reordered.validate(),
+            Err(SourceBindingCoreContextError::InvalidBindingAssociation)
+        );
+
+        let mut stale = baseline.clone();
+        stale.variables.rows[0].1.binding = BindingId::new(1);
+        assert_eq!(
+            stale.validate(),
+            Err(SourceBindingCoreContextError::InvalidBindingAssociation)
+        );
+
+        let mut mismatched_key = baseline.clone();
+        mismatched_key.variables.rows[0].0 = BindingId::new(1);
+        assert_eq!(
+            mismatched_key.validate(),
+            Err(SourceBindingCoreContextError::InvalidBindingAssociation)
+        );
+
+        let mut wrong_role = baseline.clone();
+        wrong_role
+            .context
+            .binder_context
+            .variable_roles
+            .insert(CoreVarId::new(0), CoreVarRole::new("wrong-role"));
+        assert_eq!(
+            wrong_role.validate(),
+            Err(SourceBindingCoreContextError::InvalidBindingAssociation)
+        );
+
+        let mut wrong_class = baseline.clone();
+        wrong_class
+            .context
+            .binder_context
+            .variable_classes
+            .insert(CoreVarId::new(0), NormalizedVarClass::Schematic);
+        assert_eq!(
+            wrong_class.validate(),
+            Err(SourceBindingCoreContextError::InvalidBindingAssociation)
+        );
+
+        let mut wrong_sort = baseline.clone();
+        wrong_sort
+            .context
+            .binder_context
+            .variable_sorts
+            .insert(CoreVarId::new(0), NormalizedVarSort::Formula);
+        assert_eq!(
+            wrong_sort.validate(),
+            Err(SourceBindingCoreContextError::InvalidBindingAssociation)
+        );
+
+        let mut wrong_range = baseline.clone();
+        wrong_range
+            .context
+            .binder_sources
+            .by_var
+            .get_mut(&CoreVarId::new(0))
+            .expect("reserved binder source")
+            .source
+            .anchor = CoreSourceAnchor::SourceRange(range(11, 12));
+        assert_eq!(
+            wrong_range.validate(),
+            Err(SourceBindingCoreContextError::InvalidBindingAssociation)
+        );
+
+        let mut wrong_provenance = baseline.clone();
+        wrong_provenance
+            .context
+            .binder_sources
+            .by_var
+            .get_mut(&CoreVarId::new(0))
+            .expect("reserved binder source")
+            .provenance = CheckerOwnedProvenance::checker("wrong-source-binding-provenance");
+        assert_eq!(
+            wrong_provenance.validate(),
+            Err(SourceBindingCoreContextError::InvalidBindingAssociation)
+        );
+
+        let mut nonempty_facts = baseline;
+        nonempty_facts
+            .context
+            .binder_type_facts
+            .insert(CoreVarId::new(0), vec![TypeFactId::new(0)]);
+        assert_eq!(
+            nonempty_facts.validate(),
+            Err(SourceBindingCoreContextError::InvalidBindingAssociation)
+        );
+    }
+
+    #[test]
+    fn source_binding_core_context_rejects_mismatch_unsupported_and_overflow() {
+        let source_mismatch = source_binding_env_with_one(
+            alternate_source_id(),
+            module_id(),
+            BindingKind::ReservedVariable,
+            BinderIdentity::ReservedVariable {
+                spelling: "x".to_owned(),
+                declaration_range: SourceRange {
+                    source_id: alternate_source_id(),
+                    start: 10,
+                    end: 11,
+                },
+            },
+            BindingStatus::Reserved,
+        );
+        assert_eq!(
+            SourceBindingCoreContextProducer::build(
+                prepare_core_context(CoreContextInput::new(summary())).expect("Core context"),
+                source_mismatch,
+            ),
+            Err(SourceBindingCoreContextError::EnvironmentMismatch)
+        );
+
+        let module_mismatch = source_binding_env_with_one(
+            source_id(),
+            external_module_id(),
+            BindingKind::ReservedVariable,
+            BinderIdentity::ReservedVariable {
+                spelling: "x".to_owned(),
+                declaration_range: range(10, 11),
+            },
+            BindingStatus::Reserved,
+        );
+        assert_eq!(
+            SourceBindingCoreContextProducer::build(
+                prepare_core_context(CoreContextInput::new(summary())).expect("Core context"),
+                module_mismatch,
+            ),
+            Err(SourceBindingCoreContextError::EnvironmentMismatch)
+        );
+
+        assert_eq!(
+            SourceBindingCoreContextProducer::build(
+                prepare_core_context(CoreContextInput::new(summary())).expect("Core context"),
+                empty_source_binding_env(),
+            ),
+            Err(SourceBindingCoreContextError::InvalidBindingEnvironment)
+        );
+
+        let mut diagnostics = BindingDiagnosticTable::new();
+        diagnostics.insert(BindingDiagnosticDraft {
+            source_range: Some(range(1, 2)),
+            class: BindingDiagnosticClass::UnsupportedSourceShape,
+            severity: BindingDiagnosticSeverity::Error,
+            message_key: "source-binding-test-diagnostic".to_owned(),
+            recovery: BindingDiagnosticRecovery::Degraded,
+        });
+        assert_eq!(
+            SourceBindingCoreContextProducer::build(
+                prepare_core_context(CoreContextInput::new(summary())).expect("Core context"),
+                source_binding_env_with_options(
+                    BindingContextRecovery::Normal,
+                    source_binding_reserved_draft(),
+                    source_binding_second_reserved_draft(),
+                    diagnostics,
+                ),
+            ),
+            Err(SourceBindingCoreContextError::InvalidBindingEnvironment)
+        );
+
+        assert_eq!(
+            SourceBindingCoreContextProducer::build(
+                prepare_core_context(CoreContextInput::new(summary())).expect("Core context"),
+                source_binding_env_with_options(
+                    BindingContextRecovery::Recovered,
+                    source_binding_reserved_draft(),
+                    source_binding_second_reserved_draft(),
+                    BindingDiagnosticTable::new(),
+                ),
+            ),
+            Err(SourceBindingCoreContextError::InvalidBindingEnvironment)
+        );
+        assert_eq!(
+            SourceBindingCoreContextProducer::build(
+                prepare_core_context(CoreContextInput::new(summary())).expect("Core context"),
+                source_binding_env_with_options(
+                    BindingContextRecovery::Degraded,
+                    source_binding_reserved_draft(),
+                    source_binding_second_reserved_draft(),
+                    BindingDiagnosticTable::new(),
+                ),
+            ),
+            Err(SourceBindingCoreContextError::InvalidBindingEnvironment)
+        );
+
+        let mut recovered_binding = source_binding_reserved_draft();
+        recovered_binding.recovery = BindingRecoveryState::Recovered;
+        assert_eq!(
+            SourceBindingCoreContextProducer::build(
+                prepare_core_context(CoreContextInput::new(summary())).expect("Core context"),
+                source_binding_env_with_options(
+                    BindingContextRecovery::Normal,
+                    recovered_binding,
+                    source_binding_second_reserved_draft(),
+                    BindingDiagnosticTable::new(),
+                ),
+            ),
+            Err(SourceBindingCoreContextError::InvalidBindingEnvironment)
+        );
+
+        let mut degraded_binding = source_binding_reserved_draft();
+        degraded_binding.recovery = BindingRecoveryState::Degraded;
+        assert_eq!(
+            SourceBindingCoreContextProducer::build(
+                prepare_core_context(CoreContextInput::new(summary())).expect("Core context"),
+                source_binding_env_with_options(
+                    BindingContextRecovery::Normal,
+                    degraded_binding,
+                    source_binding_second_reserved_draft(),
+                    BindingDiagnosticTable::new(),
+                ),
+            ),
+            Err(SourceBindingCoreContextError::InvalidBindingEnvironment)
+        );
+
+        let mut degraded_status = source_binding_reserved_draft();
+        degraded_status.status = BindingStatus::Degraded;
+        assert_eq!(
+            SourceBindingCoreContextProducer::build(
+                prepare_core_context(CoreContextInput::new(summary())).expect("Core context"),
+                source_binding_env_with_options(
+                    BindingContextRecovery::Normal,
+                    degraded_status,
+                    source_binding_second_reserved_draft(),
+                    BindingDiagnosticTable::new(),
+                ),
+            ),
+            Err(SourceBindingCoreContextError::InvalidBindingEnvironment)
+        );
+
+        let mut captured_binding = source_binding_reserved_draft();
+        captured_binding.captured =
+            CapturedFreeVariables::new(vec![BinderIdentity::ReservedVariable {
+                spelling: "captured".to_owned(),
+                declaration_range: range(30, 31),
+            }]);
+        assert_eq!(
+            SourceBindingCoreContextProducer::build(
+                prepare_core_context(CoreContextInput::new(summary())).expect("Core context"),
+                source_binding_env_with_options(
+                    BindingContextRecovery::Normal,
+                    captured_binding,
+                    source_binding_second_reserved_draft(),
+                    BindingDiagnosticTable::new(),
+                ),
+            ),
+            Err(SourceBindingCoreContextError::InvalidBindingEnvironment)
+        );
+
+        let mut status_mismatch = source_binding_reserved_draft();
+        status_mismatch.status = BindingStatus::Active;
+        assert_eq!(
+            SourceBindingCoreContextProducer::build(
+                prepare_core_context(CoreContextInput::new(summary())).expect("Core context"),
+                source_binding_env_with_options(
+                    BindingContextRecovery::Normal,
+                    status_mismatch,
+                    source_binding_second_reserved_draft(),
+                    BindingDiagnosticTable::new(),
+                ),
+            ),
+            Err(SourceBindingCoreContextError::InvalidBindingEnvironment)
+        );
+
+        let mut omitted_status = source_binding_reserved_draft();
+        omitted_status.status = BindingStatus::Omitted;
+        assert_eq!(
+            SourceBindingCoreContextProducer::build(
+                prepare_core_context(CoreContextInput::new(summary())).expect("Core context"),
+                source_binding_env_with_options(
+                    BindingContextRecovery::Normal,
+                    omitted_status,
+                    source_binding_second_reserved_draft(),
+                    BindingDiagnosticTable::new(),
+                ),
+            ),
+            Err(SourceBindingCoreContextError::InvalidBindingEnvironment)
+        );
+
+        let mut binding_diagnostics = BindingDiagnosticTable::new();
+        let binding_diagnostic = binding_diagnostics.insert(BindingDiagnosticDraft {
+            source_range: Some(range(10, 11)),
+            class: BindingDiagnosticClass::UnsupportedSourceShape,
+            severity: BindingDiagnosticSeverity::Error,
+            message_key: "source-binding-test-row-diagnostic".to_owned(),
+            recovery: BindingDiagnosticRecovery::Degraded,
+        });
+        let mut diagnostic_binding = source_binding_reserved_draft();
+        diagnostic_binding.diagnostics.push(binding_diagnostic);
+        assert_eq!(
+            SourceBindingCoreContextProducer::build(
+                prepare_core_context(CoreContextInput::new(summary())).expect("Core context"),
+                source_binding_env_with_options(
+                    BindingContextRecovery::Normal,
+                    diagnostic_binding,
+                    source_binding_second_reserved_draft(),
+                    binding_diagnostics,
+                ),
+            ),
+            Err(SourceBindingCoreContextError::InvalidBindingEnvironment)
+        );
+
+        let unsupported = source_binding_env_with_one(
+            source_id(),
+            module_id(),
+            BindingKind::LocalAbbreviation,
+            BinderIdentity::ResolverLocal {
+                scope: LocalTermScope::new(vec![0]),
+                ordinal: 0,
+                declaration_range: range(10, 11),
+            },
+            BindingStatus::Active,
+        );
+        assert_eq!(
+            SourceBindingCoreContextProducer::build(
+                prepare_core_context(CoreContextInput::new(summary())).expect("Core context"),
+                unsupported,
+            ),
+            Err(SourceBindingCoreContextError::InvalidBindingEnvironment)
+        );
+
+        let mut invalid_existing_input = CoreContextInput::new(summary());
+        invalid_existing_input
+            .variable_seeds
+            .push(CoreVariableSeed::new(
+                CoreVarId::new(7),
+                NormalizedVarClass::Free,
+                "existing-term",
+                NormalizedVarSort::Term,
+                provenance("checker:source-binding:invalid-existing"),
+            ));
+        let mut invalid_existing_context =
+            prepare_core_context(invalid_existing_input).expect("invalid-existing context");
+        invalid_existing_context
+            .binder_context
+            .variable_sorts
+            .remove(&CoreVarId::new(7));
+        assert_eq!(
+            SourceBindingCoreContextProducer::build(invalid_existing_context, source_binding_env()),
+            Err(SourceBindingCoreContextError::InvalidCoreContext)
+        );
+
+        let mut unauthenticated_role_input = CoreContextInput::new(summary());
+        unauthenticated_role_input
+            .variable_seeds
+            .push(CoreVariableSeed::new(
+                CoreVarId::new(7),
+                NormalizedVarClass::Free,
+                SOURCE_BINDING_CORE_RESERVED_ROLE,
+                NormalizedVarSort::Term,
+                provenance("checker:source-binding:unauthenticated-role"),
+            ));
+        let unauthenticated_role_context =
+            prepare_core_context(unauthenticated_role_input).expect("reserved-role context");
+        assert_eq!(
+            SourceBindingCoreContextProducer::build(
+                unauthenticated_role_context,
+                source_binding_env()
+            ),
+            Err(SourceBindingCoreContextError::InvalidCoreContext)
+        );
+
+        let mut overflow_input = CoreContextInput::new(summary());
+        overflow_input.variable_seeds.push(CoreVariableSeed::new(
+            CoreVarId::new(usize::MAX),
+            NormalizedVarClass::Free,
+            "existing-term",
+            NormalizedVarSort::Term,
+            provenance("checker:source-binding:overflow"),
+        ));
+        let overflow_context =
+            prepare_core_context(overflow_input).expect("overflow source binding context");
+        assert_eq!(
+            SourceBindingCoreContextProducer::build(overflow_context, source_binding_env()),
+            Err(SourceBindingCoreContextError::CoreVariableAllocationOverflow)
         );
     }
 }

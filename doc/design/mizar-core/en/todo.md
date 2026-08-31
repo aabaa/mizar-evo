@@ -551,6 +551,15 @@ work. Every finding maps to a task or a recorded disposition:
       fresh `x,y` Core variables in authenticated capture order. It creates no
       Core35 semantics, parameters/arguments, `GeneratedOrigin`, active route,
       coverage credit, or Task277B readiness.
+33LB. **Standalone source local-binder context prerequisite.** [x]
+    - The paired [task contract](../../task_contracts/en/CORE-SOURCE-LOCAL-BINDER-CONTEXT-33LB.md)
+      freezes the user-adopted zero-semantic seam. Core consumes a complete
+      checker `BindingEnv`, preserves exact binding/context identity order, and
+      owns fresh `CoreVarId` allocation plus the immutable association.
+    - Completed: replaced the reserve runner's numeric `BindingId`/`CoreVarId`
+      reinterpretation and exercised Checker-248 Profile A without changing any
+      source, expectation, trace, active route, or coverage state. General Core
+      33 item ownership and `MT10-CIR-TE` remain open.
 33. **Source-derived Core context, items, binders, and source maps.** [ ]
     - Consume checker 248 through `MT10-CIR-TE`; no type/proof/algorithm body.
       For C4C8, checker 248 remains insufficient; Task 33C4C8 owns only the

@@ -188,6 +188,25 @@ generated origin, term, formula, type evidence, diagnostic, or active route.
 Core 35 may later consume it only after applicable Core-33 local-binder and
 Core-34 prerequisites and may not allocate, infer, reorder, or repair it.
 
+### Core-33 standalone source local-binder prerequisite
+
+[Task CORE-SOURCE-LOCAL-BINDER-CONTEXT-33LB](../../task_contracts/en/CORE-SOURCE-LOCAL-BINDER-CONTEXT-33LB.md)
+adds a separate immutable Step-1 handoff. It consumes an already prepared
+`CoreContext` and one complete checker `BindingEnv` by value. For each admitted
+reserve/default or definition-parameter binding, Core allocates a fresh free
+term variable above the checked existing maximum, installs exact declaration
+range and checker provenance with empty type facts, and records an explicit
+`BindingId`-to-`CoreVarId` row in checker binding order.
+
+The handoff retains the complete `BindingEnv`, so context parentage, local
+scope, visibility, identity, and source provenance remain checker-owned and do
+not depend on names or ranges as joins. Its default-deny oracle rejects
+unsupported/recovered/partial binding state and any missing, extra, duplicate,
+reordered, stale, or mismatched Core association. The API neither reconstructs
+source items nor extends `CoreContextInput`, `CoreContext`, `CoreIr`, Typed, or
+Resolved. It is zero-semantic and zero-credit; general Core-33 item association
+and `MT10-CIR-TE` remain deferred.
+
 ## Step 2: Type And Fact Lowering
 
 Task 9 implements this section.
@@ -695,6 +714,7 @@ payload categories can be added without breaking downstream exhaustive matches.
 |---|---|
 | `CoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `SourceNestedFraenkelCaptureCoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `SourceBindingCoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `DefinitionBoundaryKind` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `DefinitionBoundaryStatus` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `CheckerSiteKind` | `#[non_exhaustive]` downstream forward-compatible surface. |

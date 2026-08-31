@@ -1912,3 +1912,12 @@ consumer 5 test、exact owner join、checked max-plus-one `x,y` allocation、loc
 exclusion、library-test-only boundary、unchanged protected artifact、zero semantic/execution/
 coverage credit、Core35 deferral、Task277B not-readyを同期する。English canonical、exception
 なし。
+
+## Core Task 33LB Bilingual Contract Parity
+
+[EN canonical](../../task_contracts/en/CORE-SOURCE-LOCAL-BINDER-CONTEXT-33LB.md)と
+[JA companion](../../task_contracts/ja/CORE-SOURCE-LOCAL-BINDER-CONTEXT-33LB.md)は、existing
+private consumer 2件、complete checker-owned `BindingEnv`、exact binding identity/order、
+checked fresh Core allocation、standalone immutable handoff、default-deny validation、
+separate C4C8 boundary、zero semantic/execution/coverage credit、deferred Core 33--35と
+`MT10-CIR-TE`、Task277B not-readyを同期する。English canonical、exceptionなし。

@@ -7222,3 +7222,21 @@ no `CoreContextInput`, Typed, or Resolved slot, parameter/argument,
 snapshot. Chapter 13 remains `partial`; the C4C7 source, expectation, trace
 row/status/backlinks, C4C4 captured state, and protected hashes remain
 unchanged. Task277B remains not ready and receives zero credit.
+
+## Task CORE-SOURCE-LOCAL-BINDER-CONTEXT-33LB Zero-Credit Core Association
+
+The canonical [Core-33 local-binder contract](./task_contracts/en/CORE-SOURCE-LOCAL-BINDER-CONTEXT-33LB.md)
+selects the checker-owned `BindingEnv` as the common immutable input for the
+existing reserve-only readiness route and Checker Task 248. The Core producer
+preserves exact checker binding/context identity order, allocates explicit
+fresh `CoreVarId`s above the checked existing maximum, and retains a complete
+`BindingId` association without numeric reinterpretation, display-name/range
+joins, sorting, recovery, repair, or partial publication.
+
+This closes only a zero-semantic Core-33 local-binder prerequisite and the
+runner's prior numeric-domain boundary violation. Existing reserve and
+Task-248 `.miz` files, expectations, trace rows/status/backlinks, diagnostics,
+active routes, and coverage credit remain unchanged. The standalone C4C8
+handoff remains separate; general source-item/Core-item association, complete
+Core 33, Core 34/35, `GeneratedOrigin`, and the first real `MT10-CIR-TE`
+snapshot remain deferred. Task277B remains not ready and receives zero credit.

@@ -2074,3 +2074,14 @@ max-plus-one `x,y` allocation, local-`z` exclusion, library-test-only boundary,
 unchanged protected artifacts, zero semantic/execution/coverage credit, Core35
 deferral, and Task277B-not-ready status. English is canonical; no exception is
 recorded.
+
+## Core Task 33LB Bilingual Contract Parity
+
+The canonical [EN contract](../../task_contracts/en/CORE-SOURCE-LOCAL-BINDER-CONTEXT-33LB.md)
+and [JA companion](../../task_contracts/ja/CORE-SOURCE-LOCAL-BINDER-CONTEXT-33LB.md)
+synchronize the two existing private consumers, complete checker-owned
+`BindingEnv`, exact binding identity/order, checked fresh Core allocation,
+standalone immutable handoff, default-deny validation, separate C4C8 boundary,
+zero semantic/execution/coverage credit, deferred Core 33--35 and
+`MT10-CIR-TE`, and Task277B-not-ready status. English is canonical; no
+exception is recorded.

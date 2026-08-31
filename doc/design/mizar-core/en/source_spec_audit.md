@@ -160,7 +160,10 @@ Top-level public API groups:
   `SourceNestedFraenkelCaptureCoreVariableTable`,
   `SourceNestedFraenkelCaptureCoreContextHandoff`,
   `SourceNestedFraenkelCaptureCoreContextError`,
-  `SourceNestedFraenkelCaptureCoreContextProducer`
+  `SourceNestedFraenkelCaptureCoreContextProducer`,
+  `SourceBindingCoreVariable`, `SourceBindingCoreVariableTable`,
+  `SourceBindingCoreContextHandoff`, `SourceBindingCoreContextError`,
+  `SourceBindingCoreContextProducer`
 - Type and fact lowering: `TypeAndFactResult`, `TypeAndFactLoweringError`,
   `TypeAndFactLoweringInput`, `TypePredicateSeed`,
   `DeclaredBinderTypeSeed`, `AttributeChainSeed`, `ModeExpansionSeed`,
@@ -282,6 +285,26 @@ Correspondence:
 | `crates/mizar-core/tests/determinism_suite.rs`. | Fresh public-API fixture rebuilds, structural equality, byte-stable renderings, binder canonicalization, CFG and handoff ordering. | Active Rust coverage from task 20. |
 | `crates/mizar-core/tests/lint_policy.rs`. | Workspace/crate boundaries, public module/spec pairing, frontend/downstream boundary, public enum policy, and source/spec audit coverage. | Active guard coverage. |
 | `tests/coverage/spec_trace.toml`. | Exact Task-180 `type_elaboration` CoreIr snapshot plus deferred broader source-derived `type_elaboration` and `proof_verification` seams. | Core Task-31 covered row and task-19 broad deferred rows. |
+
+## Core-33 Standalone Source Local-Binder Mapping
+
+The canonical [CORE-SOURCE-LOCAL-BINDER-CONTEXT-33LB contract](../../task_contracts/en/CORE-SOURCE-LOCAL-BINDER-CONTEXT-33LB.md)
+adds `SourceBindingCoreVariable`, its immutable ordered table,
+`SourceBindingCoreContextHandoff`, the non-exhaustive error, and
+`SourceBindingCoreContextProducer` in `src/elaborator.rs`. The producer consumes
+one complete checker `BindingEnv`, validates only normal reserve/default and
+resolver-local definition-parameter rows, allocates fresh Core variables above
+the complete checked used-ID inventory, and publishes an exact `BindingId`
+association only after postvalidation.
+
+Four Core unit tests cover deterministic metadata/provenance, populated
+max-plus-one allocation, private malformed-association rejection, and
+environment/unsupported/overflow rejection. Existing private mizar-test
+consumers cover reserve-only readiness and the exact Task-248 Profile-A
+reserve/local-shadow handoff. This is active Rust and private real-source
+boundary evidence only: it creates no Core item, `CoreIr`, snapshot, trace
+credit, active route, or Task277B readiness. General Core 33 and
+`MT10-CIR-TE` remain in `CORE-AUDIT-G001`/`G002`.
 
 ## Source-Undocumented Behavior Pass
 

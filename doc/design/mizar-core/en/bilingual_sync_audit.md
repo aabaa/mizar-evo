@@ -100,6 +100,15 @@ preserve the sole Task33C capability, exact owner join, max-plus-one `x,y`
 allocation, private canonical order, zero-semantic boundary, Core35 deferral,
 and unchanged Task277B/protected artifacts.
 
+Core Task 33LB rechecks the changed plan, TODO, source-family, elaborator,
+source/spec audit, and the canonical
+[`CORE-SOURCE-LOCAL-BINDER-CONTEXT-33LB`](../../task_contracts/en/CORE-SOURCE-LOCAL-BINDER-CONTEXT-33LB.md)
+contract with its [Japanese companion](../../task_contracts/ja/CORE-SOURCE-LOCAL-BINDER-CONTEXT-33LB.md).
+Both languages preserve checker binding identity/order, checked fresh Core
+allocation, the standalone immutable handoff, default-deny validation, the
+separate C4C8 boundary, zero semantic/coverage credit, deferred Core 33--35
+and `MT10-CIR-TE`, and unchanged Task277B/protected artifacts.
+
 ## Guard Decision
 
 No new Rust lint guard is added in Task 23 or closeout. The file-pair set is

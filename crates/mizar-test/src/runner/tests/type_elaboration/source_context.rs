@@ -2146,6 +2146,62 @@ fn active_source_binding_context_fixture_preserves_the_final_checker_handoff() {
     assert_eq!(handoff.binding_env().bindings().len(), 2);
     assert_eq!(handoff.binding_env().contexts().len(), 2);
     assert_eq!(handoff.local_contexts(), first.typed_ast.contexts());
+    let first_core_context = mizar_core::elaborator::prepare_core_context(
+        mizar_core::elaborator::CoreContextInput::new(
+            mizar_core::elaborator::ResolvedTypedAstSummary::new(
+                handoff.source_id(),
+                handoff.module_id().clone(),
+            ),
+        ),
+    )
+    .expect("Task 248 first empty Core context");
+    let replay_source_context = second
+        .resolved
+        .source_context()
+        .expect("Task 248 replay source context");
+    let second_core_context = mizar_core::elaborator::prepare_core_context(
+        mizar_core::elaborator::CoreContextInput::new(
+            mizar_core::elaborator::ResolvedTypedAstSummary::new(
+                replay_source_context.source_id(),
+                replay_source_context.module_id().clone(),
+            ),
+        ),
+    )
+    .expect("Task 248 replay empty Core context");
+    let first_core = mizar_core::elaborator::SourceBindingCoreContextProducer::build(
+        first_core_context,
+        handoff.binding_env().clone(),
+    )
+    .expect("Task 248 first source-binding Core handoff");
+    let second_binding_env = replay_source_context.binding_env().clone();
+    let second_core = mizar_core::elaborator::SourceBindingCoreContextProducer::build(
+        second_core_context,
+        second_binding_env,
+    )
+    .expect("Task 248 replay source-binding Core handoff");
+    assert!(first_core == second_core);
+    assert_eq!(first_core.variables().len(), 2);
+    let core_rows = first_core.variables().iter().collect::<Vec<_>>();
+    assert_eq!(core_rows.len(), 2);
+    assert_eq!(
+        core_rows[0].0,
+        mizar_checker::binding_env::BindingId::new(0)
+    );
+    assert_eq!(
+        core_rows[1].0,
+        mizar_checker::binding_env::BindingId::new(1)
+    );
+    assert_eq!(
+        core_rows[0].1.core_var(),
+        mizar_core::core_ir::CoreVarId::new(0)
+    );
+    assert_eq!(
+        core_rows[1].1.core_var(),
+        mizar_core::core_ir::CoreVarId::new(1)
+    );
+    assert!(first_core.context().item_registry().items().is_empty());
+    assert!(first_core.context().diagnostics().is_empty());
+    assert!(first_core.context().worklist().entries().is_empty());
     let reserve_item = handoff
         .items()
         .get(mizar_checker::source_context::SourceItemId::new(0))
@@ -2281,6 +2337,62 @@ fn active_source_binding_context_fixture_preserves_the_final_checker_handoff() {
             declaration_range: parameter_name_range,
         }
     );
+    assert_eq!(core_rows[0].0, reserve.binding);
+    assert_eq!(core_rows[0].1.binding(), reserve.binding);
+    assert_eq!(core_rows[1].0, parameter.binding);
+    assert_eq!(core_rows[1].1.binding(), parameter.binding);
+    for (binding, row, role, declaration_range) in [
+        (
+            reserve.binding,
+            core_rows[0].1,
+            "reserved-variable",
+            reserve_name_range,
+        ),
+        (
+            parameter.binding,
+            core_rows[1].1,
+            "definition-parameter",
+            parameter_name_range,
+        ),
+    ] {
+        let var = row.core_var();
+        assert_eq!(
+            first_core.context().binder_context().variable_classes.get(&var),
+            Some(&mizar_core::binder_normalization::NormalizedVarClass::Free)
+        );
+        assert_eq!(
+            first_core.context().binder_context().variable_sorts.get(&var),
+            Some(&mizar_core::binder_normalization::NormalizedVarSort::Term)
+        );
+        assert_eq!(
+            first_core.context().binder_context().variable_roles.get(&var),
+            Some(&mizar_core::core_ir::CoreVarRole::new(role))
+        );
+        assert!(matches!(
+            first_core.context().binder_type_facts().get(&var),
+            Some(facts) if facts.is_empty()
+        ));
+        let record = first_core
+            .context()
+            .binder_sources()
+            .get(var)
+            .expect("Task 248 Core binder source");
+        assert_eq!(
+            record.source.anchor,
+            mizar_core::core_ir::CoreSourceAnchor::SourceRange(declaration_range)
+        );
+        let expected_key = format!(
+            "source-binding-core-variable-v1.binding.{}",
+            binding.index()
+        );
+        assert_eq!(record.source.provenance.len(), 1);
+        assert_eq!(
+            record.source.provenance[0].phase,
+            mizar_core::core_ir::CoreProvenancePhase::Checker
+        );
+        assert_eq!(record.source.provenance[0].key.as_str(), expected_key);
+        assert_eq!(record.provenance.as_slice(), record.source.provenance);
+    }
 
     let module_context = handoff
         .binding_env()

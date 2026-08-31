@@ -175,6 +175,22 @@ Resolvedを拡張せず、parameter、argument、generated origin、term、formu
 diagnostic、active routeを作らない。Core 35は該当するCore-33 local-binder/Core-34
 prerequisite後にのみconsumeでき、allocate/infer/reorder/repairしてはならない。
 
+### Core-33 standalone source local-binder prerequisite
+
+[Task CORE-SOURCE-LOCAL-BINDER-CONTEXT-33LB](../../task_contracts/ja/CORE-SOURCE-LOCAL-BINDER-CONTEXT-33LB.md)は
+separate immutable Step-1 handoffを追加する。Already prepared `CoreContext`とcomplete checker
+`BindingEnv` 1個をby-valueでconsumeする。Admitされたreserve/defaultまたは
+definition-parameter bindingごとに、Coreはchecked existing maximumより上へfresh free term
+variableをallocateし、exact declaration range/checker provenance/empty type factをinstallし、
+checker binding orderでexplicit `BindingId`-to-`CoreVarId` rowを記録する。
+
+Handoffはcomplete `BindingEnv`をretainするため、context parentage、local scope、visibility、
+identity、source provenanceはchecker ownerのままで、name/range joinへ依存しない。
+Default-deny oracleはunsupported/recovered/partial binding stateおよびmissing/extra/duplicate/
+reordered/stale/mismatched Core associationをrejectする。Source itemをreconstructせず、
+`CoreContextInput`、`CoreContext`、`CoreIr`、Typed、Resolvedを拡張しない。Zero-semantic/
+zero-creditであり、general Core-33 item associationと`MT10-CIR-TE`はdeferredのまま。
+
 ## Step 2: type and fact lowering
 
 task 9 がこの section を実装する。
@@ -628,6 +644,7 @@ algorithm payload category を下流 crate の exhaustive match を壊さずに�
 |---|---|
 | `CoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface。 |
 | `SourceNestedFraenkelCaptureCoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `SourceBindingCoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface。 |
 | `DefinitionBoundaryKind` | `#[non_exhaustive]` downstream forward-compatible surface。 |
 | `DefinitionBoundaryStatus` | `#[non_exhaustive]` downstream forward-compatible surface。 |
 | `CheckerSiteKind` | `#[non_exhaustive]` downstream forward-compatible surface。 |

@@ -95,6 +95,14 @@ module-boundary audit、contract pairを再確認する。両言語はsole Task3
 owner join、max-plus-one `x,y` allocation、private canonical order、zero-semantic boundary、
 Core35 deferral、unchanged Task277B/protected artifactを保持する。
 
+Core Task 33LBはchanged plan、TODO、source-family、elaborator、source/spec auditと、
+canonical [`CORE-SOURCE-LOCAL-BINDER-CONTEXT-33LB`](../../task_contracts/en/CORE-SOURCE-LOCAL-BINDER-CONTEXT-33LB.md)
+contractおよび[日本語companion](../../task_contracts/ja/CORE-SOURCE-LOCAL-BINDER-CONTEXT-33LB.md)を
+再確認する。両言語はchecker binding identity/order、checked fresh Core allocation、
+standalone immutable handoff、default-deny validation、separate C4C8 boundary、zero
+semantic/coverage credit、deferred Core 33--35と`MT10-CIR-TE`、unchanged Task277B/
+protected artifactを保持する。
+
 ## Guard Decision
 
 Task 23 または closeout では新しい Rust lint guard は追加しない。file-pair set は小さく、現在の

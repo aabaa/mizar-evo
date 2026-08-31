@@ -173,7 +173,7 @@ No exhaustive public enum exceptions are owned by this module.
 | metadata plan | discover sidecars and validate layout, expectation schema, and traceability without executing payloads |
 | parse-only | run active `.miz` parse-only cases through `mizar-frontend` and `MizarParserSeam` |
 | declaration-symbol | run active `.miz` declaration-symbol cases through frontend parsing and resolver declaration/symbol collection |
-| type-elaboration | run active `.miz` type-elaboration cases through frontend parsing and resolver declaration/symbol collection, extract supported reserve-only declaration payloads, delegate checker-owned `BindingEnv`/`DeclarationInput`/`DeclarationChecker` handoff production to the syntax-free `mizar-checker` seam, continue successful bare-builtin, task-55 bare local-mode-expansion, task-56 one-edge local-mode chain, and task-74 structural bare local-mode chain cases through `TypedAst` and `ResolvedTypedAst`, confirm `mizar-core` summary-readiness through `ResolvedTypedAstSummary::from_ast`, prepare binder-only `CoreContext` input from the same reserve bindings, surface same-module attributed reserve declarations, local structure reserve heads, attributed local structure reserve heads, task-57 real local-mode expansions with local structure RHSs, task-58 real local-mode expansions with attributed builtin RHSs, task-59 attributed local-mode reserve heads with real direct bare-builtin expansions, task-60 attributed local-mode reserve heads with real direct local-structure RHS expansions, task-61 attributed local-mode reserve heads with real direct attributed-builtin RHS expansions, task-62 one-edge bare local-mode chains ending in local structure RHSs, task-63 one-edge bare local-mode chains ending in attributed builtin RHSs, task-64 attributed local-mode reserve heads with one-edge bare-builtin chains, task-65 attributed local-mode reserve heads with one-edge structure-RHS chains, and task-66 attributed local-mode reserve heads with one-edge attributed-builtin-RHS chains as checker evidence-query gaps, surface same-module local mode reserve heads that lack the narrow task-55/task-56/task-57/task-58/task-59/task-60/task-61/task-62/task-63/task-64/task-65/task-66/task-74 expansion slices, including mixed attributed/bare local-mode sources, attributed chain dependencies, and chains that violate task-74 structural guards, as checker mode-expansion payload gaps, surface task-67 structure-qualified attribute references, task-68 argument-bearing local-mode reserve heads, task-69 argument-bearing local-structure reserve heads, task-70 bracket-form local-mode reserve heads, and task-71 bracket-form local-structure reserve heads as source-to-checker extraction-gap boundary cases, surface task-75 forward local-mode reserve heads, task-76 forward local-structure reserve heads, and task-77 forward local-attribute reserve type expressions as lower-stage active-range boundary cases before checker handoff, and surface unsupported checker payload families as stable external dependency gaps |
+| type-elaboration | run active `.miz` type-elaboration cases through frontend parsing and resolver declaration/symbol collection, extract supported reserve-only declaration payloads, delegate checker-owned `BindingEnv`/`DeclarationInput`/`DeclarationChecker` handoff production to the syntax-free `mizar-checker` seam, continue successful bare-builtin, task-55 bare local-mode-expansion, task-56 one-edge local-mode chain, and task-74 structural bare local-mode chain cases through `TypedAst` and `ResolvedTypedAst`, confirm `mizar-core` summary-readiness through `ResolvedTypedAstSummary::from_ast`, pass the complete checker-owned `BindingEnv` to `SourceBindingCoreContextProducer` for a binder-only `CoreContext` handoff, surface same-module attributed reserve declarations, local structure reserve heads, attributed local structure reserve heads, task-57 real local-mode expansions with local structure RHSs, task-58 real local-mode expansions with attributed builtin RHSs, task-59 attributed local-mode reserve heads with real direct bare-builtin expansions, task-60 attributed local-mode reserve heads with real direct local-structure RHS expansions, task-61 attributed local-mode reserve heads with real direct attributed-builtin RHS expansions, task-62 one-edge bare local-mode chains ending in local structure RHSs, task-63 one-edge bare local-mode chains ending in attributed builtin RHSs, task-64 attributed local-mode reserve heads with one-edge bare-builtin chains, task-65 attributed local-mode reserve heads with one-edge structure-RHS chains, and task-66 attributed local-mode reserve heads with one-edge attributed-builtin-RHS chains as checker evidence-query gaps, surface same-module local mode reserve heads that lack the narrow task-55/task-56/task-57/task-58/task-59/task-60/task-61/task-62/task-63/task-64/task-65/task-66/task-74 expansion slices, including mixed attributed/bare local-mode sources, attributed chain dependencies, and chains that violate task-74 structural guards, as checker mode-expansion payload gaps, surface task-67 structure-qualified attribute references, task-68 argument-bearing local-mode reserve heads, task-69 argument-bearing local-structure reserve heads, task-70 bracket-form local-mode reserve heads, and task-71 bracket-form local-structure reserve heads as source-to-checker extraction-gap boundary cases, surface task-75 forward local-mode reserve heads, task-76 forward local-structure reserve heads, and task-77 forward local-attribute reserve type expressions as lower-stage active-range boundary cases before checker handoff, and surface unsupported checker payload families as stable external dependency gaps |
 | proof-verification | run only the exact Task-180 active proof-verification source through source-to-checker-to-Core-to-VC twice and compare the complete `VcSet` debug baseline; broader proof-verification families remain deferred |
 | pass/fail | run `.miz` cases and match expected outcome |
 | snapshot | compare canonical snapshot hashes |
@@ -2097,12 +2097,13 @@ declaration expression metadata. The runner then passes that real
 `ResolvedTypedAst` payload to `mizar-core`'s
 `ResolvedTypedAstSummary::from_ast` and checks that the summary preserves the
 source/module identity and has no checker recovery/diagnostic sites for the
-successful reserve-only slice. It then prepares binder-only `CoreContextInput`
-from the same real reserve bindings, with one `CoreVariableSeed` and one
-`CoreBinderSeed` per extracted binding, no `CoreItemSeed`, and checks
-source/module identity, binder source ranges, checker provenance, empty item
-registry, empty core diagnostics, and an empty core worklist. This is a
-summary/context readiness check only: it does not construct `CoreIr`,
+successful reserve-only slice. It then gives the same complete checker
+`BindingEnv` to the standalone Core-33 local-binder producer. Core allocates
+one fresh variable per binding without reinterpreting `BindingId`, and the
+runner checks the explicit association, source/module identity, binder source
+ranges, checker provenance, empty item registry, empty core diagnostics, and
+an empty core worklist. This is a summary/context readiness check only: it does
+not construct `CoreIr`,
 `ControlFlowIr`, obligation seeds, VCs, or proof rows.
 Active pass cases may assert this supported
 source-derived slice with empty detail keys only when the source contains at
@@ -2658,8 +2659,14 @@ same immutable `SourceBindingContextHandoff` in `TypedAst` and
 `ResolvedTypedAst`, including distinct same-spelling reserve/local identities
 and the structural shadow link.
 
+The private Profile-A consumer also passes the retained `BindingEnv` to the
+standalone Core-33 local-binder producer twice and verifies the exact two-row
+reserve/definition-parameter association, fresh Core identities in checker
+binding order, source/context provenance, deterministic equality, and empty
+semantic Core state. This adds zero route or coverage credit.
+
 This route emits no type result, expression, fact, obligation, formula,
-statement, proof, Core, CFG, or VC payload. Invalid matched payloads fail with
+statement, proof, `CoreIr`, CFG, or VC payload. Invalid matched payloads fail with
 one task-local internal detail key; they do not allocate a public diagnostic.
 The exact requirement is a new bounded covered pass row, while the broad
 payload-extraction row remains unchanged.

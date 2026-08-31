@@ -117,6 +117,23 @@ capture order as non-semantic canonical transport. No Typed/Resolved or
 `GeneratedOrigin`, active route, test/trace credit, or Task277B credit is
 authorized.
 
+### Standalone local-binder prerequisite for Core 33
+
+[Task CORE-SOURCE-LOCAL-BINDER-CONTEXT-33LB](../../task_contracts/en/CORE-SOURCE-LOCAL-BINDER-CONTEXT-33LB.md)
+is the user-adopted general local-binder prerequisite. Core consumes the
+checker-owned `BindingEnv`, preserves its binding/context identity order, and
+allocates an explicit fresh Core variable for every admitted reserve/default or
+definition-parameter row. The immutable handoff retains the checker payload and
+the complete association; it does not reconstruct source items or install a
+new field in Core, Typed, or Resolved.
+
+This closes only zero-semantic local-binder transport and the existing reserve
+runner's numeric-domain violation. General source-item/Core-item association,
+a complete Core-33 result, and the first real `MT10-CIR-TE` snapshot remain
+open. The local-binder handoff runs before the separate C4C8 handoff when both
+are needed. No Core 34/35, generated-origin, active-route, diagnostic,
+expectation, trace, or coverage state changes.
+
 ## Accepted Algorithm CoreIr Task Graph
 
 Chapter 20 is sufficient to name the following semantic families and negative

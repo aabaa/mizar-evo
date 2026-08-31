@@ -34,10 +34,10 @@ use mizar_checker::typed_ast::{
 };
 use mizar_core::{
     binder_normalization::{NormalizedVarClass, NormalizedVarSort},
-    core_ir::{CoreSourceRef, CoreVarId, CoreVarRole},
+    core_ir::{CoreSourceRef, CoreVarRole},
     elaborator::{
-        CheckerOwnedProvenance, CoreBinderSeed, CoreContextInput, CoreVariableSeed,
-        ResolvedTypedAstSummary, prepare_core_context,
+        CoreContextInput, ResolvedTypedAstSummary, SourceBindingCoreContextProducer,
+        prepare_core_context,
     },
 };
 use mizar_resolve::env::{ExportStatus, NamespacePath, SymbolEnv, SymbolKind, Visibility};
@@ -1082,39 +1082,11 @@ pub(in crate::runner) fn assert_source_reserve_core_context_readiness(
     source_reserve: &SourceReserveDeclarationBridge,
 ) -> Result<(), String> {
     let summary = ResolvedTypedAstSummary::from_ast(&handoff.resolved);
-    let mut input = CoreContextInput::new(summary);
-
-    for (index, source_binding) in source_reserve.bindings().iter().enumerate() {
-        let binding_id = BindingId::new(index);
-        let binding = handoff
-            .binding_env
-            .bindings()
-            .get(binding_id)
-            .ok_or_else(|| format!("missing source reserve binding {index}"))?;
-        if binding.kind != BindingKind::ReservedVariable
-            || binding.declaration_range != source_binding.binding_range
-            || binding.status != BindingStatus::Reserved
-        {
-            return Err(format!("source reserve binding {index} is not core-ready"));
-        }
-
-        let var = CoreVarId::new(binding_id.index());
-        let provenance = CheckerOwnedProvenance::checker(format!("source.reserve.binding.{index}"));
-        let source = CoreSourceRef::direct(binding.declaration_range)
-            .with_provenance(provenance.as_slice().to_vec());
-        input.variable_seeds.push(CoreVariableSeed::new(
-            var,
-            NormalizedVarClass::Free,
-            CoreVarRole::new("reserved-variable"),
-            NormalizedVarSort::Term,
-            provenance.clone(),
-        ));
-        input
-            .binder_seeds
-            .push(CoreBinderSeed::new(var, source, provenance));
-    }
-
-    let context = prepare_core_context(input).map_err(|error| error.to_string())?;
+    let context =
+        prepare_core_context(CoreContextInput::new(summary)).map_err(|error| error.to_string())?;
+    let core = SourceBindingCoreContextProducer::build(context, handoff.binding_env.clone())
+        .map_err(|error| error.to_string())?;
+    let context = core.context();
     if context.source_id() != handoff.resolved.source_id() {
         return Err("core context source mismatch".to_owned());
     }
@@ -1127,14 +1099,26 @@ pub(in crate::runner) fn assert_source_reserve_core_context_readiness(
     {
         return Err("core context promoted unsupported work".to_owned());
     }
-    if context.binder_sources().iter().count() != source_reserve.bindings().len()
+    if core.binding_env() != &handoff.binding_env
+        || core.variables().len() != source_reserve.bindings().len()
+        || context.binder_sources().iter().count() != source_reserve.bindings().len()
         || context.binder_context().free_variables.len() != source_reserve.bindings().len()
     {
         return Err("core context binding count mismatch".to_owned());
     }
 
     for (index, source_binding) in source_reserve.bindings().iter().enumerate() {
-        let var = CoreVarId::new(index);
+        let binding_id = BindingId::new(index);
+        let association = core
+            .variables()
+            .get(binding_id)
+            .ok_or_else(|| format!("missing core binding association {index}"))?;
+        if association.binding() != binding_id {
+            return Err(format!(
+                "core binding association {index} identity mismatch"
+            ));
+        }
+        let var = association.core_var();
         let binder_source = context
             .binder_sources()
             .get(var)
@@ -1148,6 +1132,8 @@ pub(in crate::runner) fn assert_source_reserve_core_context_readiness(
         }
         if context.binder_context().variable_roles.get(&var)
             != Some(&CoreVarRole::new("reserved-variable"))
+            || context.binder_context().variable_classes.get(&var)
+                != Some(&NormalizedVarClass::Free)
             || context.binder_context().variable_sorts.get(&var) != Some(&NormalizedVarSort::Term)
             || !matches!(context.binder_type_facts().get(&var), Some(facts) if facts.is_empty())
         {
