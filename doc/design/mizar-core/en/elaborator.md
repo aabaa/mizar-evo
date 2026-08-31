@@ -207,6 +207,24 @@ source items nor extends `CoreContextInput`, `CoreContext`, `CoreIr`, Typed, or
 Resolved. It is zero-semantic and zero-credit; general Core-33 item association
 and `MT10-CIR-TE` remain deferred.
 
+### Core-33 Task259 predicate item context prerequisite
+
+[Task CORE-SOURCE-PREDICATE-ITEM-CONTEXT-33I259](../../task_contracts/en/CORE-SOURCE-PREDICATE-ITEM-CONTEXT-33I259.md)
+adds the first nonempty standalone item association after 33LB. It consumes the
+complete 33LB handoff, the exact Task-248 Profile-B source context, and the
+active Task-259 predicate owner by value. The predicate definition's exact
+`BindingContextId` selects one `SourceContextLink` and containing
+`SourceItemId`; its retained whole `SymbolId` selects one existing valid public
+predicate `CoreItemId`. The association retains all four identities.
+
+The admitted profile is exactly one predicate and one Core item with one
+pending definitional boundary. Source order comes from the checker definition
+table; source range and checker provenance validate the identity-selected item
+but are never join keys. Missing, extra, duplicate, reordered, stale,
+mismatched, recovered, diagnostic-bearing, partial, or orphan state fails
+closed. The API adds no field or installer and does not generalize one
+definition block to multiple semantic owners.
+
 ## Step 2: Type And Fact Lowering
 
 Task 9 implements this section.
@@ -715,6 +733,7 @@ payload categories can be added without breaking downstream exhaustive matches.
 | `CoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `SourceNestedFraenkelCaptureCoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `SourceBindingCoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `SourcePredicateCoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `DefinitionBoundaryKind` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `DefinitionBoundaryStatus` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `CheckerSiteKind` | `#[non_exhaustive]` downstream forward-compatible surface. |

@@ -163,7 +163,10 @@ Top-level public API groups:
   `SourceNestedFraenkelCaptureCoreContextProducer`,
   `SourceBindingCoreVariable`, `SourceBindingCoreVariableTable`,
   `SourceBindingCoreContextHandoff`, `SourceBindingCoreContextError`,
-  `SourceBindingCoreContextProducer`
+  `SourceBindingCoreContextProducer`, `SourcePredicateCoreItemAssociation`,
+  `SourcePredicateCoreItemAssociationTable`,
+  `SourcePredicateCoreContextHandoff`,
+  `SourcePredicateCoreContextError`, `SourcePredicateCoreContextProducer`
 - Type and fact lowering: `TypeAndFactResult`, `TypeAndFactLoweringError`,
   `TypeAndFactLoweringInput`, `TypePredicateSeed`,
   `DeclaredBinderTypeSeed`, `AttributeChainSeed`, `ModeExpansionSeed`,
@@ -305,6 +308,21 @@ reserve/local-shadow handoff. This is active Rust and private real-source
 boundary evidence only: it creates no Core item, `CoreIr`, snapshot, trace
 credit, active route, or Task277B readiness. General Core 33 and
 `MT10-CIR-TE` remain in `CORE-AUDIT-G001`/`G002`.
+
+## Core-33 Task259 Predicate Item Context Mapping
+
+The canonical [CORE-SOURCE-PREDICATE-ITEM-CONTEXT-33I259 contract](../../task_contracts/en/CORE-SOURCE-PREDICATE-ITEM-CONTEXT-33I259.md)
+owns the first nonempty source-item/Core-item association. The public Core
+surface is the immutable association row/table, standalone handoff,
+non-exhaustive error, and producer in `src/elaborator.rs`. The exact real
+Task-259 private consumer proves the identity chain from predicate definition
+context through the Task-248 context link to one source item, then from the
+whole predicate `SymbolId` to one valid public Core predicate item.
+
+This is Rust/private real-source boundary evidence with zero new corpus or
+trace credit. It neither serializes the handoff nor closes the general
+multi-definition Core-33 inventory; `CORE-AUDIT-G001`/`G002` retain those
+follow-ups and the first complete `MT10-CIR-TE` snapshot.
 
 ## Source-Undocumented Behavior Pass
 

@@ -1857,6 +1857,7 @@ the two mizar-test test paths, one named test, `608 -> 609`, and the strict
 absence of production routing, checker state, active metadata, diagnostics,
 or semantic coverage. English owns exact identifiers and bytes; no bilingual
 exception is recorded.
+
 The implementation keeps the same parity, including the exact `609` library
 count, leaf/registry hashes, and zero production/active/semantic delta.
 Independent bilingual and source/documentation reviews report **NO FINDINGS**;
@@ -2085,3 +2086,14 @@ standalone immutable handoff, default-deny validation, separate C4C8 boundary,
 zero semantic/execution/coverage credit, deferred Core 33--35 and
 `MT10-CIR-TE`, and Task277B-not-ready status. English is canonical; no
 exception is recorded.
+
+## Core Task 33I259 Bilingual Contract Parity
+
+The canonical [EN contract](../../task_contracts/en/CORE-SOURCE-PREDICATE-ITEM-CONTEXT-33I259.md)
+and [JA companion](../../task_contracts/ja/CORE-SOURCE-PREDICATE-ITEM-CONTEXT-33I259.md)
+synchronize the existing exact Task-259 real-source consumer, one predicate/
+source-item/Core-item association, context-link plus whole-symbol identity
+joins, complete 33LB composition, default-deny corruption matrix, unchanged
+fixture/expectation/trace/active route, zero semantic/execution/coverage
+credit, multi-definition and Core34--36 deferrals, and Task277B-not-ready
+status. English is canonical; no exception is recorded.

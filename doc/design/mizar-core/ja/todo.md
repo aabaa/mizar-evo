@@ -533,6 +533,13 @@ F8 の spec 本文は同一変更(`cef7e109`: spec 03、05、13、17、18)で修
     - Complete: reserve runnerのnumeric `BindingId`/`CoreVarId` reinterpretationを置換し、Checker-248
       Profile Aをsource/expectation/trace/active route/coverage state変更なしでexerciseする。
       General Core 33 item ownershipと`MT10-CIR-TE`はopenのまま。
+33I259. **Task259 predicate item context prerequisite。** [x]
+    - Frozen [task contract](../../task_contracts/ja/CORE-SOURCE-PREDICATE-ITEM-CONTEXT-33I259.md)を
+      complete。Complete 33LB、Task248 Profile-B、active Task259 handoffをconsumeし、exact
+      context linkからcontaining source item 1件を選び、whole predicate `SymbolId`をexisting
+      Core item 1件へjoinする。
+    - Multi-definition block、Task260+ family、Core34/35/36 semantics、snapshot、diagnostic、
+      trace/coverage credit、Task277Bはdeferする。
 33. **Source-derived Core context/item/binder/source map。** [ ]
     - checker 248を`MT10-CIR-TE`でconsumeし、type/proof/algorithm bodyは扱わない。
       C4C8についてchecker 248だけでは不十分なままであり、Task 33C4C8はseparately

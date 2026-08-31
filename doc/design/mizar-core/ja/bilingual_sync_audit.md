@@ -103,6 +103,13 @@ standalone immutable handoff、default-deny validation、separate C4C8 boundary�
 semantic/coverage credit、deferred Core 33--35と`MT10-CIR-TE`、unchanged Task277B/
 protected artifactを保持する。
 
+Core Task 33I259はplan、TODO、source-family、elaborator、source/spec audit、ledgerと、
+canonical [`CORE-SOURCE-PREDICATE-ITEM-CONTEXT-33I259`](../../task_contracts/en/CORE-SOURCE-PREDICATE-ITEM-CONTEXT-33I259.md)
+contractおよび[日本語companion](../../task_contracts/ja/CORE-SOURCE-PREDICATE-ITEM-CONTEXT-33I259.md)を
+recheckする。両言語はexact Task259 one-predicate cardinality、context-link identity join、
+whole-symbol Core lookup、standalone 33LB composition、default-deny boundary、
+multi-definition deferral、zero credit、unchanged Task277B/protected artifactを保持する。
+
 ## Guard Decision
 
 Task 23 または closeout では新しい Rust lint guard は追加しない。file-pair set は小さく、現在の

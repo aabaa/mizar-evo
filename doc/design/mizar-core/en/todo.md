@@ -560,6 +560,13 @@ work. Every finding maps to a task or a recorded disposition:
       reinterpretation and exercised Checker-248 Profile A without changing any
       source, expectation, trace, active route, or coverage state. General Core
       33 item ownership and `MT10-CIR-TE` remain open.
+33I259. **Task259 predicate item context prerequisite.** [x]
+    - Completed the frozen [task contract](../../task_contracts/en/CORE-SOURCE-PREDICATE-ITEM-CONTEXT-33I259.md):
+      consume complete 33LB, Task-248 Profile-B, and active Task-259 handoffs;
+      follow the exact context link to one containing source item and join the
+      retained whole predicate `SymbolId` to one existing Core item.
+    - Multi-definition blocks, Task-260+ families, Core 34/35/36 semantics,
+      snapshots, diagnostics, trace/coverage credit, and Task277B deferred.
 33. **Source-derived Core context, items, binders, and source maps.** [ ]
     - Consume checker 248 through `MT10-CIR-TE`; no type/proof/algorithm body.
       For C4C8, checker 248 remains insufficient; Task 33C4C8 owns only the

@@ -1921,3 +1921,13 @@ private consumer 2件、complete checker-owned `BindingEnv`、exact binding iden
 checked fresh Core allocation、standalone immutable handoff、default-deny validation、
 separate C4C8 boundary、zero semantic/execution/coverage credit、deferred Core 33--35と
 `MT10-CIR-TE`、Task277B not-readyを同期する。English canonical、exceptionなし。
+
+## Core Task 33I259 bilingual contract parity
+
+[EN canonical](../../task_contracts/en/CORE-SOURCE-PREDICATE-ITEM-CONTEXT-33I259.md)と
+[JA companion](../../task_contracts/ja/CORE-SOURCE-PREDICATE-ITEM-CONTEXT-33I259.md)は、existing
+exact Task259 real-source consumer、predicate/source-item/Core-item各1件のassociation、
+context-linkとwhole-symbol identity join、complete 33LB composition、default-deny matrix、
+unchanged fixture/expectation/trace/active route、zero semantic/execution/coverage credit、
+multi-definition/Core34--36 deferral、Task277B not-readyを同期する。English canonical、
+exceptionなし。

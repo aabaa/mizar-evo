@@ -5008,6 +5008,21 @@ The four runner tests are
 change is an independently reviewed `198 -> 199` in two source-statement
 selection tests, whose empty-selection assertions remain unchanged.
 
+### Core Task 33I259 private item-context probe
+
+The canonical [Core Task 33I259 contract](../../task_contracts/en/CORE-SOURCE-PREDICATE-ITEM-CONTEXT-33I259.md)
+extends only the existing private Task-259 test leaf. The probe derives one
+Core predicate seed from the authenticated Task-259 definition, applies the
+completed 33LB producer to the retained Task-248 `BindingEnv`, then invokes the
+standalone Core item-context producer with the retained Task-248 and Task-259
+handoffs. It asserts the exact definition-context to source-item link, whole
+`SymbolId` to `CoreItemId` lookup, pending definitional boundary, deterministic
+replay, and default-deny mutations.
+
+No production runner branch, installer, `.miz`, expectation, trace, active
+metadata, diagnostic, snapshot, or coverage credit changes. Multi-definition
+blocks and Task-260+ owner families remain separate.
+
 ## Checker Task 260 Frozen Functor-Definition Route
 
 The future private route is selected only by the exact 262-byte source and

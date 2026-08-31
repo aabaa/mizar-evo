@@ -7240,3 +7240,21 @@ active routes, and coverage credit remain unchanged. The standalone C4C8
 handoff remains separate; general source-item/Core-item association, complete
 Core 33, Core 34/35, `GeneratedOrigin`, and the first real `MT10-CIR-TE`
 snapshot remain deferred. Task277B remains not ready and receives zero credit.
+
+## Task CORE-SOURCE-PREDICATE-ITEM-CONTEXT-33I259 Zero-Credit Core Association
+
+The canonical [Core-33 Task259 item contract](./task_contracts/en/CORE-SOURCE-PREDICATE-ITEM-CONTEXT-33I259.md)
+selects the existing active Task-259 predicate handoff as the first nonempty
+checker-authenticated item owner after 33LB. The Core producer follows the
+predicate definition's exact binding-context identity through the retained
+Task-248 `SourceContextLink` to one containing `SourceItemId`, then joins the
+retained whole `SymbolId` to one existing valid public predicate `CoreItemId`.
+It retains one immutable association without display-name, FQN-only,
+range-only, numeric-id, shell-ordinal, seed-order, or map-iteration joins.
+
+This is a zero-semantic Core-33 prerequisite only. The existing Task-259 and
+Task-248 `.miz` files, expectations, trace rows/status/backlinks, diagnostics,
+and active route remain unchanged and receive no new credit. Multi-definition
+blocks, Task-260+ owner families, complete Core 33, Core 34--36 semantics,
+`GeneratedOrigin`, C4C8 composition, and the first complete `MT10-CIR-TE`
+snapshot remain deferred. Task277B remains not ready and receives zero credit.

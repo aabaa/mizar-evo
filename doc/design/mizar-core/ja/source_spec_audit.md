@@ -162,7 +162,10 @@ top-level public API group:
   `SourceNestedFraenkelCaptureCoreContextProducer`、
   `SourceBindingCoreVariable`、`SourceBindingCoreVariableTable`、
   `SourceBindingCoreContextHandoff`、`SourceBindingCoreContextError`、
-  `SourceBindingCoreContextProducer`
+  `SourceBindingCoreContextProducer`、`SourcePredicateCoreItemAssociation`、
+  `SourcePredicateCoreItemAssociationTable`、
+  `SourcePredicateCoreContextHandoff`、
+  `SourcePredicateCoreContextError`、`SourcePredicateCoreContextProducer`
 - Type and fact lowering: `TypeAndFactResult`, `TypeAndFactLoweringError`,
   `TypeAndFactLoweringInput`, `TypePredicateSeed`,
   `DeclaredBinderTypeSeed`, `AttributeChainSeed`, `ModeExpansionSeed`,
@@ -301,6 +304,19 @@ Existing private mizar-test consumerはreserve-only readinessとexact Task-248 P
 reserve/local-shadow handoffをcoverする。これはactive Rust/private real-source boundary
 evidenceだけで、Core item、`CoreIr`、snapshot、trace credit、active route、Task277B readinessを
 作らない。General Core 33と`MT10-CIR-TE`は`CORE-AUDIT-G001`/`G002`に残る。
+
+## Core-33 Task259 predicate item context mapping
+
+Canonical [CORE-SOURCE-PREDICATE-ITEM-CONTEXT-33I259 contract](../../task_contracts/ja/CORE-SOURCE-PREDICATE-ITEM-CONTEXT-33I259.md)が
+first nonempty source-item/Core-item associationを所有する。Public Core surfaceは
+`src/elaborator.rs`のimmutable association row/table、standalone handoff、non-exhaustive
+error、producerである。Exact real Task259 private consumerがpredicate definition contextから
+Task248 context linkを通るsource item 1件へのidentity chainと、whole predicate `SymbolId`から
+valid public Core predicate item 1件へのjoinを証明する。
+
+これはzero corpus/trace creditのRust/private real-source boundary evidenceである。Handoffを
+serializeせず、general multi-definition Core-33 inventoryをcloseしない。
+`CORE-AUDIT-G001`/`G002`はそのfollow-upとfirst complete `MT10-CIR-TE` snapshotをretainする。
 
 ## Source-Undocumented Behavior Pass
 

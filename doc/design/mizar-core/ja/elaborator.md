@@ -191,6 +191,20 @@ reordered/stale/mismatched Core associationをrejectする。Source itemをrecon
 `CoreContextInput`、`CoreContext`、`CoreIr`、Typed、Resolvedを拡張しない。Zero-semantic/
 zero-creditであり、general Core-33 item associationと`MT10-CIR-TE`はdeferredのまま。
 
+### Core-33 Task259 predicate item context prerequisite
+
+[Task CORE-SOURCE-PREDICATE-ITEM-CONTEXT-33I259](../../task_contracts/ja/CORE-SOURCE-PREDICATE-ITEM-CONTEXT-33I259.md)は
+33LB後のfirst nonempty standalone item associationを追加する。Complete 33LB handoff、exact
+Task248 Profile-B source context、active Task259 predicate ownerをby-valueでconsumeする。
+Predicate definitionのexact `BindingContextId`から`SourceContextLink`とcontaining
+`SourceItemId` 1件を選び、retained whole `SymbolId`からexisting valid public predicate
+`CoreItemId` 1件を選ぶ。Associationは4 identity全てをretainする。
+
+Admit profileはpredicate/Core item/pending definitional boundary各1件だけ。Orderはchecker
+definition table、range/provenanceはidentity-selected itemのvalidation専用でjoin keyではない。
+Missing/extra/duplicate/reordered/stale/mismatch/recovered/diagnostic/partial/orphanはfail
+closed。Field/installerを追加せず、one definition blockをmultiple semantic ownerへgeneralizeしない。
+
 ## Step 2: type and fact lowering
 
 task 9 がこの section を実装する。
@@ -645,6 +659,7 @@ algorithm payload category を下流 crate の exhaustive match を壊さずに�
 | `CoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface。 |
 | `SourceNestedFraenkelCaptureCoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface。 |
 | `SourceBindingCoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `SourcePredicateCoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface。 |
 | `DefinitionBoundaryKind` | `#[non_exhaustive]` downstream forward-compatible surface。 |
 | `DefinitionBoundaryStatus` | `#[non_exhaustive]` downstream forward-compatible surface。 |
 | `CheckerSiteKind` | `#[non_exhaustive]` downstream forward-compatible surface。 |

@@ -134,6 +134,24 @@ open. The local-binder handoff runs before the separate C4C8 handoff when both
 are needed. No Core 34/35, generated-origin, active-route, diagnostic,
 expectation, trace, or coverage state changes.
 
+### First nonempty source-item association for Core 33
+
+[Task CORE-SOURCE-PREDICATE-ITEM-CONTEXT-33I259](../../task_contracts/en/CORE-SOURCE-PREDICATE-ITEM-CONTEXT-33I259.md)
+is the dependency-minimal first item-shell slice after 33LB. The active
+Task-259 predicate handoff authenticates one full `SymbolId` and its exact
+Task-248 Profile-B definition context. Core follows the retained
+`BindingContextId` through `SourceContextLink` to the containing
+`SourceItemId`, then performs an exact whole-symbol registry lookup for the
+existing `CoreItemId`. The standalone immutable handoff retains that one-row
+association and the complete 33LB/source-context/Task-259 inputs.
+
+This is not a generic definition-block policy. Multiple definitions sharing a
+block, Task-260+ owner families, and the complete Core-33 item inventory remain
+separate descendants. No join uses a name, FQN alone, range alone, numeric id,
+shell ordinal, seed order, or map iteration. Core 34/35/36 semantics,
+`GeneratedOrigin`, active snapshots, diagnostics, trace, coverage, and
+Task277B remain deferred.
+
 ## Accepted Algorithm CoreIr Task Graph
 
 Chapter 20 is sufficient to name the following semantic families and negative

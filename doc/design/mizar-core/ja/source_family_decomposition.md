@@ -117,6 +117,20 @@ Core-33 result、最初のreal `MT10-CIR-TE` snapshotはopenのまま。両方�
 local-binder handoffはseparate C4C8 handoffより先に実行する。Core 34/35、generated origin、
 active route、diagnostic、expectation、trace、coverage stateは変更しない。
 
+### Core 33のfirst nonempty source-item association
+
+[Task CORE-SOURCE-PREDICATE-ITEM-CONTEXT-33I259](../../task_contracts/ja/CORE-SOURCE-PREDICATE-ITEM-CONTEXT-33I259.md)は
+33LB後のdependency-minimal first item-shell sliceである。Active Task259 predicate handoffが
+whole `SymbolId` 1件とexact Task248 Profile-B definition contextをauthenticateする。
+Coreはretained `BindingContextId`を`SourceContextLink`からcontaining `SourceItemId`へ
+辿り、whole-symbol exact registry lookupでexisting `CoreItemId`を選ぶ。Standalone immutable
+handoffはこのone-row associationとcomplete 33LB/source-context/Task259 inputをretainする。
+
+これはgeneric definition-block policyではない。One block内のmultiple definition、Task260+
+owner family、complete Core-33 item inventoryはseparate descendantに残す。Name、FQN-only、
+range-only、numeric id、shell ordinal、seed order、map iteration joinは禁止。Core34/35/36
+semantics、`GeneratedOrigin`、active snapshot、diagnostic、trace、coverage、Task277Bはdeferする。
+
 ## Accepted Algorithm CoreIr Task Graph
 
 Chapter 20 は次の semantic family と negative boundary を命名するのに十分である。

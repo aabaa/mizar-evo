@@ -109,6 +109,15 @@ allocation, the standalone immutable handoff, default-deny validation, the
 separate C4C8 boundary, zero semantic/coverage credit, deferred Core 33--35
 and `MT10-CIR-TE`, and unchanged Task277B/protected artifacts.
 
+Core Task 33I259 rechecks the plan, TODO, source-family, elaborator,
+source/spec audit, ledger, and canonical
+[`CORE-SOURCE-PREDICATE-ITEM-CONTEXT-33I259`](../../task_contracts/en/CORE-SOURCE-PREDICATE-ITEM-CONTEXT-33I259.md)
+contract with its [Japanese companion](../../task_contracts/ja/CORE-SOURCE-PREDICATE-ITEM-CONTEXT-33I259.md).
+Both languages preserve the exact Task-259 one-predicate cardinality, context-
+link identity join, whole-symbol Core lookup, standalone 33LB composition,
+default-deny boundary, multi-definition deferral, zero credit, and unchanged
+Task277B/protected artifacts.
+
 ## Guard Decision
 
 No new Rust lint guard is added in Task 23 or closeout. The file-pair set is

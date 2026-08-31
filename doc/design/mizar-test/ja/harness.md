@@ -4740,6 +4740,20 @@ PASSし、full runner library countは`512`である。adjacent active-count変�
 source-statement selection test 2件のindependently reviewed `198 -> 199`だけで、
 empty-selection assertionは不変である。
 
+### Core Task 33I259 private item-context probe
+
+Canonical [Core Task 33I259 contract](../../task_contracts/ja/CORE-SOURCE-PREDICATE-ITEM-CONTEXT-33I259.md)は
+existing private Task259 test leafだけをextendする。Probeはauthenticated Task259
+definitionからCore predicate seed 1件をderiveし、retained Task248 `BindingEnv`へcompleted
+33LB producerを適用してから、retained Task248/Task259 handoffとstandalone Core
+item-context producerをcallする。Exact definition-context/source-item link、whole
+`SymbolId`/`CoreItemId` lookup、pending definitional boundary、deterministic replay、
+default-deny mutationをassertする。
+
+Production runner branch、installer、`.miz`、expectation、trace、active metadata、
+diagnostic、snapshot、coverage creditは変更しない。Multi-definition blockとTask260+
+owner familyはseparateのまま。
+
 ## Checker Task 260 frozen functor-definition route
 
 future private routeは
