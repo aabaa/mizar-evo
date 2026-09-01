@@ -1,0 +1,13 @@
+schema_version = 1
+id = "pass_type_elaboration_mode_property_impl_equals_001"
+kind = "pass"
+stage = "type_elaboration"
+domain = "modes.property_implementation"
+source = "pass_type_elaboration_mode_property_impl_equals_001.miz"
+expected_outcome = "pass"
+expected_phase = "type_check"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.07.modes.property_implementation.equals",
+]
+notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. An equals-form property implementation supplies a struct property value directly by a term with no existence/uniqueness obligations (spec 7.4.1)."

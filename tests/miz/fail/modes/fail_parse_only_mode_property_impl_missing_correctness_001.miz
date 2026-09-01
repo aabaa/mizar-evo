@@ -1,0 +1,11 @@
+definition
+  struct U2Box where
+    field data -> set;
+    property mark2 -> set;
+  end;
+end;
+
+definition
+  let B be U2Box;
+  property B.mark2 means it = B.data;
+end;

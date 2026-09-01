@@ -1,0 +1,6 @@
+theorem DupSet1: for x being object holds x = x
+proof
+  let x be object;
+  set y = x, y = x;
+  thus x = x;
+end;

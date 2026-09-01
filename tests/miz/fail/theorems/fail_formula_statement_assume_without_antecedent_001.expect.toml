@@ -1,0 +1,15 @@
+schema_version = 1
+id = "fail_formula_statement_assume_without_antecedent_001"
+kind = "fail"
+stage = "formula_statement"
+domain = "theorems.skeleton"
+source = "fail_formula_statement_assume_without_antecedent_001.miz"
+expected_outcome = "fail"
+expected_phase = "statement_check"
+failure_category = "proof_failure"
+stable_detail_key = "theorems.skeleton.assumption_without_antecedent"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.16.theorems.skeleton.thesis_tracking",
+]
+notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. assume is only legal while the pending thesis carries an antecedent to consume (spec 15.3, 16.3)."

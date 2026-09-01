@@ -1,0 +1,13 @@
+schema_version = 1
+id = "pass_type_elaboration_func_builtin_bracket_pair_001"
+kind = "pass"
+stage = "type_elaboration"
+domain = "functors.bracket_application"
+source = "pass_type_elaboration_func_builtin_bracket_pair_001.miz"
+expected_outcome = "pass"
+expected_phase = "type_check"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.10.functors.bracket_application.builtin",
+]
+notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. The builtin bracket-functor delimiter pair forms a term at a term-primary position (spec 10.1, A.2, A.13)."

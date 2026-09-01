@@ -1,0 +1,13 @@
+schema_version = 1
+id = "pass_declaration_symbol_private_theorem_visibility_001"
+kind = "pass"
+stage = "declaration_symbol"
+domain = "modules.visibility"
+source = "pass_declaration_symbol_private_theorem_visibility_001.miz"
+expected_outcome = "pass"
+expected_phase = "resolve"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.12.modules.visibility.private_local",
+]
+notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. A private theorem is visible to later statements of the same module while staying unexported (spec 12.x visibility; A.12)."

@@ -1,0 +1,11 @@
+definition
+  struct RBox where
+    field d -> set;
+  end;
+end;
+
+definition
+  let X be set;
+  func BadWrapDef: wrapbox X -> RBox equals X;
+  coherence;
+end;

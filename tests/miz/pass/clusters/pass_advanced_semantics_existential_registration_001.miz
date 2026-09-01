@@ -1,0 +1,13 @@
+definition
+  let X be set;
+  attr CMDef: X is cmarked means X = X;
+end;
+
+registration
+  cluster CReg1: cmarked set;
+  existence
+  proof
+    take the set;
+    thus the set is cmarked;
+  end;
+end;

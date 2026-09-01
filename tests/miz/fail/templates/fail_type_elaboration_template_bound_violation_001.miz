@@ -1,0 +1,12 @@
+definition
+  let T be type extends set;
+  let x be T;
+  func TId3Def: tid3[T] x -> set equals x;
+  coherence;
+end;
+
+theorem TId3Bad1: for a being object holds tid3[object] a = a
+proof
+  let a be object;
+  thus tid3[object] a = a by TId3Def;
+end;

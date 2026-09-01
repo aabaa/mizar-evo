@@ -1,0 +1,9 @@
+reserve A for set;
+
+theorem CompMember1: for A for x being object st x in A holds
+  x in { z where z is object : z in A }
+proof
+  let A;
+  let x be object such that A1: x in A;
+  thus x in { z where z is object : z in A } by A1;
+end;

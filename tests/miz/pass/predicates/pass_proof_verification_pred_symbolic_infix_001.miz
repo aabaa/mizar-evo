@@ -1,0 +1,11 @@
+definition
+  let X, Y be set;
+  pred SubsetLikeDef: X <<= Y means
+    for z being object st z in X holds z in Y;
+end;
+
+theorem SubsetRefl1: for X being set holds X <<= X
+proof
+  let X be set;
+  thus X <<= X;
+end;

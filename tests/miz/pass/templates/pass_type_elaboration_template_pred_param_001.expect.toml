@@ -1,0 +1,13 @@
+schema_version = 1
+id = "pass_type_elaboration_template_pred_param_001"
+kind = "pass"
+stage = "type_elaboration"
+domain = "templates.predicate_parameter"
+source = "pass_type_elaboration_template_pred_param_001.miz"
+expected_outcome = "pass"
+expected_phase = "type_check"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.18.templates.predicate_parameter.declaration",
+]
+notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. A template may take a predicate parameter and use its inline application in the definiens (spec 18.x; A.18 pred_param)."

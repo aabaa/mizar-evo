@@ -1,0 +1,11 @@
+definition
+  let X be set;
+  mode MemberKind5Def: MemberKind5 of X is set;
+end;
+
+definition
+  let X be set;
+  func IdemDef: idembox X -> MemberKind5 of X means it = X;
+  existence;
+  uniqueness;
+end;

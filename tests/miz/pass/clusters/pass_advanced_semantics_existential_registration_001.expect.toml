@@ -1,0 +1,13 @@
+schema_version = 1
+id = "pass_advanced_semantics_existential_registration_001"
+kind = "pass"
+stage = "advanced_semantics"
+domain = "clusters.existential"
+source = "pass_advanced_semantics_existential_registration_001.miz"
+expected_outcome = "pass"
+expected_phase = "cluster_resolution"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.17.clusters.existential.registration",
+]
+notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. An existential registration proves the attributed type inhabited and activates it for later declarations (spec 17.3)."

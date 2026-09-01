@@ -1,0 +1,5 @@
+theorem IffPar1: for X being set holds (X = X iff X = X)
+proof
+  let X be set;
+  thus (X = X iff X = X);
+end;

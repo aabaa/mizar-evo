@@ -1,0 +1,8 @@
+definition
+  let a be object;
+  terminating algorithm idalgo(a) -> object
+    ensures result = a
+  do
+    return a;
+  end;
+end;

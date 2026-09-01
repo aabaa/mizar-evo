@@ -1,0 +1,1 @@
+theorem FreeVar1: for X being set holds X = Y;

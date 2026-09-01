@@ -1,0 +1,6 @@
+definition
+  struct PairBox where
+    field first -> set;
+    field second -> set;
+  end;
+end;

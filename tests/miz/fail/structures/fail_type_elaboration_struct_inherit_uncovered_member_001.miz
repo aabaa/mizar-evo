@@ -1,0 +1,11 @@
+definition
+  struct FBase2 where
+    field data -> set;
+  end;
+
+  struct FChild2 where
+    field extra -> set;
+  end;
+
+  inherit FChild2 extends FBase2;
+end;

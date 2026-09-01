@@ -1,0 +1,15 @@
+definition
+  let X be set;
+  struct SliceBox[X] where
+    field part -> set;
+  end;
+end;
+
+reserve A for set;
+
+theorem SliceUse1: for A for s being SliceBox[A] holds s = s
+proof
+  let A;
+  let s be SliceBox[A];
+  thus s = s;
+end;

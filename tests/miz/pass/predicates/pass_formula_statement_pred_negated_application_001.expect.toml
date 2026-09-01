@@ -1,0 +1,13 @@
+schema_version = 1
+id = "pass_formula_statement_pred_negated_application_001"
+kind = "pass"
+stage = "formula_statement"
+domain = "predicates.negation"
+source = "pass_formula_statement_pred_negated_application_001.miz"
+expected_outcome = "pass"
+expected_phase = "statement_check"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.09.predicates.application.negation",
+]
+notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. The does-not form negates a user predicate application (spec 9.1, A.9 negation)."

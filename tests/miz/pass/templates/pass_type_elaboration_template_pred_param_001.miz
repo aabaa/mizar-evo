@@ -1,0 +1,5 @@
+definition
+  let T be type;
+  let P be pred(T);
+  pred THoldsDef: tholds[T, P] means for x being T holds P(x);
+end;

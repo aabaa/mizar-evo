@@ -1,0 +1,11 @@
+theorem PerCases1: for X being set holds X = X or not X = X
+proof
+  let X be set;
+  per cases;
+  suppose A1: X = X;
+    thus X = X or not X = X by A1;
+  end;
+  suppose A2: not X = X;
+    thus X = X or not X = X by A2;
+  end;
+end;

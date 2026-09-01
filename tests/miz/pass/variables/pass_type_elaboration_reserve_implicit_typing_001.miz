@@ -1,0 +1,7 @@
+reserve X for set;
+
+theorem ReserveUse1: for X holds X = X
+proof
+  let X;
+  thus X = X;
+end;

@@ -1,0 +1,13 @@
+schema_version = 1
+id = "pass_formula_statement_then_hence_linking_001"
+kind = "pass"
+stage = "formula_statement"
+domain = "theorems.linking"
+source = "pass_formula_statement_then_hence_linking_001.miz"
+expected_outcome = "pass"
+expected_phase = "statement_check"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.15.statements.linking.then_hence",
+]
+notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. then links the preceding statement as an implicit premise and hence combines linking with a conclusion (spec 15.4, 15.8)."

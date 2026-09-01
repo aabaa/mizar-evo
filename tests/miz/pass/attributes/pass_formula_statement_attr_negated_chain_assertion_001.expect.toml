@@ -1,0 +1,13 @@
+schema_version = 1
+id = "pass_formula_statement_attr_negated_chain_assertion_001"
+kind = "pass"
+stage = "formula_statement"
+domain = "attributes.test_chain"
+source = "pass_formula_statement_attr_negated_chain_assertion_001.miz"
+expected_outcome = "pass"
+expected_phase = "statement_check"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.06.attributes.test_chain.negation",
+]
+notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. An is-assertion may test a chain of attributes including a non-negated member (spec 6.3, 14.5 attribute test chains)."

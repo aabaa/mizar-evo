@@ -1,0 +1,13 @@
+schema_version = 1
+id = "pass_formula_statement_let_such_that_assumption_001"
+kind = "pass"
+stage = "formula_statement"
+domain = "variables.let_such_that"
+source = "pass_formula_statement_let_such_that_assumption_001.miz"
+expected_outcome = "pass"
+expected_phase = "statement_check"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.04.variables.let_such_that.semantic",
+]
+notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. A let generalization with a such-that condition consumes the st antecedent of the universal thesis (spec 4.2, 15.2)."

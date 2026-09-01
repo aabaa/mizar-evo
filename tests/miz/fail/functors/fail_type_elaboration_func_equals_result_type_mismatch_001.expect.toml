@@ -1,0 +1,15 @@
+schema_version = 1
+id = "fail_type_elaboration_func_equals_result_type_mismatch_001"
+kind = "fail"
+stage = "type_elaboration"
+domain = "functors.equals_definition"
+source = "fail_type_elaboration_func_equals_result_type_mismatch_001.miz"
+expected_outcome = "fail"
+expected_phase = "type_check"
+failure_category = "type_error"
+stable_detail_key = "functors.equals.result_type_mismatch"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.10.functors.definition.equals",
+]
+notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. An equals-form definiens must inhabit the declared return type; a set term cannot inhabit a structure return type (spec 10.3, 10.6 coherence)."

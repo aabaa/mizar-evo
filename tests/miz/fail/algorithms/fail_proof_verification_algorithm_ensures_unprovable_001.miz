@@ -1,0 +1,8 @@
+definition
+  let a be object;
+  terminating algorithm badalgo(a) -> object
+    ensures result = a
+  do
+    return the set;
+  end;
+end;

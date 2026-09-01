@@ -1,0 +1,1 @@
+theorem IffChain1: for X being set holds X = X iff X = X iff X = X;

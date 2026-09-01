@@ -1,0 +1,8 @@
+definition
+  let a be object;
+  terminating algorithm badbreak(a) -> object
+  do
+    break;
+    return a;
+  end;
+end;

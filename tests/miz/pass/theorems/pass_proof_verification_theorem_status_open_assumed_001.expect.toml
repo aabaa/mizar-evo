@@ -1,0 +1,13 @@
+schema_version = 1
+id = "pass_proof_verification_theorem_status_open_assumed_001"
+kind = "pass"
+stage = "proof_verification"
+domain = "theorems.status"
+source = "pass_proof_verification_theorem_status_open_assumed_001.miz"
+expected_outcome = "pass"
+expected_phase = "statement_check"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.16.theorems.status.open_assumed",
+]
+notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. open and assumed theorem statuses admit registered statements without proofs; their acceptance is a policy projection, not a verification claim (spec 16.1)."

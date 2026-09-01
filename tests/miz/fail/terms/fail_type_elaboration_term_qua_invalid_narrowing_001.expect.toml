@@ -1,0 +1,15 @@
+schema_version = 1
+id = "fail_type_elaboration_term_qua_invalid_narrowing_001"
+kind = "fail"
+stage = "type_elaboration"
+domain = "terms.qua_qualification"
+source = "fail_type_elaboration_term_qua_invalid_narrowing_001.miz"
+expected_outcome = "fail"
+expected_phase = "type_check"
+failure_category = "type_error"
+stable_detail_key = "terms.qua.invalid_narrowing"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.13.terms.qua.widening",
+]
+notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. qua cannot forge a narrowing to a structure type that the term does not statically inhabit (spec 13.6)."

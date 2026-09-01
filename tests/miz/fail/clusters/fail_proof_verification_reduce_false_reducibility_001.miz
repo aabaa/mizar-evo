@@ -1,0 +1,14 @@
+definition
+  let X be set;
+  func CBox4Def: cbox4 X -> set equals X;
+  coherence;
+end;
+
+registration
+  let X be set;
+  reduce CRed2: cbox4 X to {X};
+  reducibility
+  proof
+    thus thesis;
+  end;
+end;

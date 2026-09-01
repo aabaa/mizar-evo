@@ -1,0 +1,15 @@
+schema_version = 1
+id = "fail_type_elaboration_reconsider_unjustified_narrowing_001"
+kind = "fail"
+stage = "type_elaboration"
+domain = "variables.reconsider"
+source = "fail_type_elaboration_reconsider_unjustified_narrowing_001.miz"
+expected_outcome = "fail"
+expected_phase = "type_check"
+failure_category = "type_error"
+stable_detail_key = "variables.reconsider.unjustified_narrowing"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.04.variables.reconsider.narrowing_justification",
+]
+notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. Reconsider to a strictly narrower adjective type requires justification; silently accepting the narrowing is unsound (spec 4.4, 3.5)."

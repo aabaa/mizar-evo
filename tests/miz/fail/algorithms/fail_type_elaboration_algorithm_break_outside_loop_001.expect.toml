@@ -1,0 +1,15 @@
+schema_version = 1
+id = "fail_type_elaboration_algorithm_break_outside_loop_001"
+kind = "fail"
+stage = "type_elaboration"
+domain = "algorithms.control_flow"
+source = "fail_type_elaboration_algorithm_break_outside_loop_001.miz"
+expected_outcome = "fail"
+expected_phase = "elaboration"
+failure_category = "type_error"
+stable_detail_key = "algorithms.control_flow.break_outside_loop"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.20.algorithms.control_flow.loop_scope",
+]
+notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. break is only legal inside a loop body; a top-level break in an algorithm body is a static control-flow error (spec 20.2)."

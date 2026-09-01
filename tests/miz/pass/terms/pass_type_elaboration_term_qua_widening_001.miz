@@ -1,0 +1,5 @@
+theorem QuaWiden1: for X being set holds (X qua object) = X
+proof
+  let X be set;
+  thus (X qua object) = X;
+end;

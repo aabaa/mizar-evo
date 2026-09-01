@@ -1,0 +1,8 @@
+reserve A for set;
+
+theorem CompBad1: for A holds A = A
+proof
+  let A;
+  set S = { w where z is object : z in A };
+  thus A = A;
+end;

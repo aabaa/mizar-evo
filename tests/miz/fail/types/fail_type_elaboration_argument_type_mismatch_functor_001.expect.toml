@@ -1,0 +1,15 @@
+schema_version = 1
+id = "fail_type_elaboration_argument_type_mismatch_functor_001"
+kind = "fail"
+stage = "type_elaboration"
+domain = "types.application"
+source = "fail_type_elaboration_argument_type_mismatch_functor_001.miz"
+expected_outcome = "fail"
+expected_phase = "type_check"
+failure_category = "type_error"
+stable_detail_key = "types.application.argument_type_mismatch"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.03.types.widening.argument_position",
+]
+notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. A functor whose locus requires a structure type rejects a builtin-set argument; set does not widen to a structure (spec 3.5, 8.3)."

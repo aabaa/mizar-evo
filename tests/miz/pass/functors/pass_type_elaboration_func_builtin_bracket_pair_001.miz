@@ -1,0 +1,5 @@
+theorem BracketPair1: for x, y being object holds [x, y] = [x, y]
+proof
+  let x, y be object;
+  thus [x, y] = [x, y];
+end;

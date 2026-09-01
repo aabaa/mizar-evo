@@ -1,0 +1,3 @@
+open theorem OpenT1: for X being set holds X = X;
+
+assumed theorem AxT1: for X being set holds X = X;

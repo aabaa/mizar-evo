@@ -1,0 +1,13 @@
+definition
+  let a be object;
+  algorithm loopalgo(a) -> object
+    ensures result = a
+  do
+    var x := a;
+    while not x = a do
+      invariant x = x;
+      x := a;
+    end;
+    return x;
+  end;
+end;

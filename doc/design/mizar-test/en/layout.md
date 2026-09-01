@@ -53,6 +53,17 @@ tests/miz/pass/types/
 tests/miz/pass/attributes/
 tests/miz/pass/clusters/
 tests/miz/pass/theorems/
+tests/miz/pass/variables/
+tests/miz/pass/structures/
+tests/miz/pass/modes/
+tests/miz/pass/predicates/
+tests/miz/pass/functors/
+tests/miz/pass/terms/
+tests/miz/pass/formulas/
+tests/miz/pass/overload/
+tests/miz/pass/templates/
+tests/miz/pass/algorithms/
+tests/miz/pass/resolve/
 
 tests/miz/fail/parser/
 tests/miz/fail/types/
@@ -60,6 +71,18 @@ tests/miz/fail/clusters/
 tests/miz/fail/overload/
 tests/miz/fail/substitution/
 tests/miz/fail/soundness/
+tests/miz/fail/variables/
+tests/miz/fail/structures/
+tests/miz/fail/attributes/
+tests/miz/fail/modes/
+tests/miz/fail/predicates/
+tests/miz/fail/functors/
+tests/miz/fail/terms/
+tests/miz/fail/formulas/
+tests/miz/fail/theorems/
+tests/miz/fail/templates/
+tests/miz/fail/resolve/
+tests/miz/fail/algorithms/
 
 tests/generated/
 tests/fuzz/

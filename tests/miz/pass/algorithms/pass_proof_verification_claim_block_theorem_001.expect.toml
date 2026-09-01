@@ -1,0 +1,13 @@
+schema_version = 1
+id = "pass_proof_verification_claim_block_theorem_001"
+kind = "pass"
+stage = "proof_verification"
+domain = "algorithms.claim"
+source = "pass_proof_verification_claim_block_theorem_001.miz"
+expected_outcome = "pass"
+expected_phase = "vc_generation"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.20.algorithms.claim.block",
+]
+notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. A claim block groups theorem items about algorithms or terms into one named unit (spec 20.6; A.20 claim_block)."

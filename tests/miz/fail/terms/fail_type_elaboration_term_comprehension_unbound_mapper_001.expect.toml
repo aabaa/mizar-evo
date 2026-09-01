@@ -1,0 +1,15 @@
+schema_version = 1
+id = "fail_type_elaboration_term_comprehension_unbound_mapper_001"
+kind = "fail"
+stage = "type_elaboration"
+domain = "terms.set_comprehension"
+source = "fail_type_elaboration_term_comprehension_unbound_mapper_001.miz"
+expected_outcome = "fail"
+expected_phase = "resolve"
+failure_category = "resolve_error"
+stable_detail_key = "terms.comprehension.unbound_mapper_variable"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.13.terms.set_comprehension.guarded",
+]
+notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. The comprehension mapper term may reference only bound comprehension variables and outer scope; an unbound mapper identifier is rejected (spec 13.4)."

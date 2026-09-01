@@ -1,0 +1,13 @@
+definition
+  struct PairBox3 where
+    field first -> set;
+    field second -> set;
+  end;
+end;
+
+theorem WithUpdate1: for a, b, c being set holds
+  (PairBox3(first: a, second: b) with (second := c)).second = c
+proof
+  let a, b, c be set;
+  thus (PairBox3(first: a, second: b) with (second := c)).second = c;
+end;

@@ -1,0 +1,9 @@
+definition
+  let a be object;
+  terminating algorithm ghostleak(a) -> object
+  do
+    ghost var g := a;
+    var x := g;
+    return x;
+  end;
+end;

@@ -1,0 +1,10 @@
+definition
+  let X, Y be set;
+  pred LikesDef: X likes Y means X = Y;
+end;
+
+theorem LikesSelf1: for X being set holds X likes X
+proof
+  let X be set;
+  thus X likes X;
+end;

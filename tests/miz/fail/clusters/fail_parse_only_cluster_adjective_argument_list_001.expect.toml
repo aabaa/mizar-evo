@@ -1,0 +1,15 @@
+schema_version = 1
+id = "fail_parse_only_cluster_adjective_argument_list_001"
+kind = "fail"
+stage = "parse_only"
+domain = "clusters.adjective_restriction"
+source = "fail_parse_only_cluster_adjective_argument_list_001.miz"
+expected_outcome = "fail"
+expected_phase = "parse"
+failure_category = "syntax_error"
+stable_detail_key = "clusters.adjective.argument_list_form"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.17.clusters.adjective.restricted_form",
+]
+notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. Cluster registrations use the restricted adjective production, which excludes the attribute argument-list form so cluster closure stays finite (spec 17.7, A.17)."

@@ -1,0 +1,13 @@
+schema_version = 1
+id = "pass_type_elaboration_term_numeral_equality_001"
+kind = "pass"
+stage = "type_elaboration"
+domain = "terms.numeral"
+source = "pass_type_elaboration_term_numeral_equality_001.miz"
+expected_outcome = "pass"
+expected_phase = "type_check"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.13.terms.numeral.typing",
+]
+notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. A numeral literal is a well-typed term primary; reflexive equality over it is accepted (spec 13.1)."

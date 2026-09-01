@@ -1,0 +1,15 @@
+schema_version = 1
+id = "fail_type_elaboration_synonym_loci_mismatch_001"
+kind = "fail"
+stage = "type_elaboration"
+domain = "notation.synonym"
+source = "fail_type_elaboration_synonym_loci_mismatch_001.miz"
+expected_outcome = "fail"
+expected_phase = "resolve"
+failure_category = "resolve_error"
+stable_detail_key = "notation.synonym.loci_mismatch"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.11.symbols.synonym.functor",
+]
+notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. A synonym pattern must match the loci arity of its original pattern (spec 11.x synonym; A.11)."

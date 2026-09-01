@@ -1,0 +1,11 @@
+theorem Consider1: for x being object holds x = x
+proof
+  let x be object;
+  A1: ex y being object st y = x
+  proof
+    take x;
+    thus x = x;
+  end;
+  consider z being object such that A2: z = x by A1;
+  thus x = x;
+end;

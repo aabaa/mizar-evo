@@ -1,0 +1,8 @@
+theorem BadCases1: for X being set holds X = X
+proof
+  let X be set;
+  per cases;
+  suppose not X = X;
+    thus X = X;
+  end;
+end;

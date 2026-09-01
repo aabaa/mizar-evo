@@ -1,0 +1,13 @@
+schema_version = 1
+id = "pass_type_elaboration_term_choice_builtin_001"
+kind = "pass"
+stage = "type_elaboration"
+domain = "terms.choice_operator"
+source = "pass_type_elaboration_term_choice_builtin_001.miz"
+expected_outcome = "pass"
+expected_phase = "type_check"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.13.terms.choice.inhabited_type",
+]
+notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. The choice operator applied to the inhabited builtin set type produces a well-typed term (spec 13.5)."

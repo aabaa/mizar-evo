@@ -1,0 +1,15 @@
+schema_version = 1
+id = "fail_type_elaboration_attr_duplicate_same_subject_001"
+kind = "fail"
+stage = "type_elaboration"
+domain = "attributes.definition"
+source = "fail_type_elaboration_attr_duplicate_same_subject_001.miz"
+expected_outcome = "fail"
+expected_phase = "resolve"
+failure_category = "resolve_error"
+stable_detail_key = "attributes.definition.duplicate_same_subject"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.06.attributes.definition.uniqueness",
+]
+notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. Two attribute definitions with the same name and the same subject type in one module conflict (spec 6.1, 6.6)."

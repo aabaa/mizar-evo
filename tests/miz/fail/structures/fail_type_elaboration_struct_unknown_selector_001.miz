@@ -1,0 +1,12 @@
+definition
+  struct PairBox5 where
+    field first -> set;
+    field second -> set;
+  end;
+end;
+
+theorem SelBad1: for a, b being set holds PairBox5(first: a, second: b).third = a
+proof
+  let a, b be set;
+  thus PairBox5(first: a, second: b).third = a;
+end;

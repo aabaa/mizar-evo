@@ -1,0 +1,15 @@
+schema_version = 1
+id = "fail_proof_verification_per_cases_incomplete_001"
+kind = "fail"
+stage = "proof_verification"
+domain = "theorems.case_reasoning"
+source = "fail_proof_verification_per_cases_incomplete_001.miz"
+expected_outcome = "fail"
+expected_phase = "verification"
+failure_category = "proof_failure"
+stable_detail_key = "theorems.per_cases.incomplete_case_split"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.15.statements.per_cases.completeness_obligation",
+]
+notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. per-cases reasoning generates a case-completeness obligation; a single non-exhaustive suppose branch must fail verification (spec 15.6, 16.6)."

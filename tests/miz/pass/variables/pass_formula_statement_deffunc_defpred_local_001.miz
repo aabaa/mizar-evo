@@ -1,0 +1,8 @@
+theorem InlineDefs1: for x being object holds x = x
+proof
+  deffunc F(y being object) -> object equals y;
+  defpred P(y being object) means y = y;
+  let x be object;
+  A1: P(x);
+  thus F(x) = x;
+end;

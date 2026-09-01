@@ -1,0 +1,23 @@
+definition
+  let X be set;
+  func Ov1Def: ovbox X -> set equals X;
+  coherence;
+end;
+
+definition
+  struct OvBox where
+    field d -> set;
+  end;
+end;
+
+definition
+  let B be OvBox;
+  func Ov2Def: ovbox B -> set equals B.d;
+  coherence;
+end;
+
+theorem OvUse1: for X being set holds ovbox X = X
+proof
+  let X be set;
+  thus ovbox X = X by Ov1Def;
+end;

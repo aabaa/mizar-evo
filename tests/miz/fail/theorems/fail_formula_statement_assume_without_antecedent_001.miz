@@ -1,0 +1,6 @@
+theorem BadAssume1: for X being set holds X = X
+proof
+  let X be set;
+  assume A1: X = X;
+  thus X = X;
+end;

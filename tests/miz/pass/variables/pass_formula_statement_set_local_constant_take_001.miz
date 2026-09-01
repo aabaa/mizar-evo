@@ -1,0 +1,7 @@
+theorem SetTake1: for x being object ex y being object st y = x
+proof
+  let x be object;
+  set y0 = x;
+  take y0;
+  thus y0 = x;
+end;

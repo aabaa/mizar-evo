@@ -1,0 +1,15 @@
+schema_version = 1
+id = "fail_proof_verification_algorithm_ensures_unprovable_001"
+kind = "fail"
+stage = "proof_verification"
+domain = "algorithms.contracts"
+source = "fail_proof_verification_algorithm_ensures_unprovable_001.miz"
+expected_outcome = "fail"
+expected_phase = "verification"
+failure_category = "proof_failure"
+stable_detail_key = "algorithms.ensures.unprovable"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.20.algorithms.contracts.ensures",
+]
+notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. An algorithm returning a value unrelated to its ensures contract must fail the postcondition obligation (spec 20.4)."

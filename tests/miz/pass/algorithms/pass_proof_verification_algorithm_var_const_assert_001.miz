@@ -1,0 +1,12 @@
+definition
+  let a be object;
+  terminating algorithm swapalgo(a) -> object
+    ensures result = a
+  do
+    var x := a;
+    const c := a;
+    x := c;
+    assert x = a;
+    return x;
+  end;
+end;

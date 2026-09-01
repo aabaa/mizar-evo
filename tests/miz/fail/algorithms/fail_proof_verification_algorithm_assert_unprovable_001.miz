@@ -1,0 +1,8 @@
+definition
+  let a be object;
+  terminating algorithm badassert(a) -> object
+  do
+    assert not a = a;
+    return a;
+  end;
+end;

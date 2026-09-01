@@ -1,0 +1,15 @@
+schema_version = 1
+id = "fail_proof_verification_functorial_false_coherence_001"
+kind = "fail"
+stage = "proof_verification"
+domain = "clusters.functorial"
+source = "fail_proof_verification_functorial_false_coherence_001.miz"
+expected_outcome = "fail"
+expected_phase = "verification"
+failure_category = "proof_failure"
+stable_detail_key = "clusters.functorial.false_coherence"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.17.clusters.functorial.false_coherence",
+]
+notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. A functorial registration whose consequent adjective is unsatisfiable must fail its coherence obligation (spec 17.5, 17.9)."

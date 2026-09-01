@@ -1,0 +1,8 @@
+theorem Diffuse1: for X being set holds X = X
+proof
+  let X be set;
+  A1: now
+    thus X = X;
+  end;
+  thus X = X by A1;
+end;

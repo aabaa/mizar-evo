@@ -1,0 +1,4 @@
+theorem NumeralEq1: 0 = 0
+proof
+  thus 0 = 0;
+end;

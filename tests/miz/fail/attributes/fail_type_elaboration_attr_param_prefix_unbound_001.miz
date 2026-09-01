@@ -1,0 +1,4 @@
+definition
+  let X be set;
+  attr PDef: X is k-scaled means X = X;
+end;

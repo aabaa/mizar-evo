@@ -1403,7 +1403,7 @@ fn task260_route_publishes_no_proof_fact_acceptance_or_vc() {
     assert_eq!(active_type_consumer_counts, [205; 6]);
     assert_eq!(
         (plan.cases.len(), plan.manifest.requirements.len()),
-        (430, 396)
+        (550, 499)
     );
     assert_eq!(
         plan.cases.iter().fold((0, 0), |(pass, fail), case| {
@@ -1413,7 +1413,7 @@ fn task260_route_publishes_no_proof_fact_acceptance_or_vc() {
                 _ => (pass, fail),
             }
         }),
-        (237, 193)
+        (307, 243)
     );
     assert_eq!(
         (
@@ -1430,7 +1430,7 @@ fn task260_route_publishes_no_proof_fact_acceptance_or_vc() {
         .iter()
         .find(|stage| stage.stage == crate::staged_model::Stage::TypeElaboration)
         .expect("Task260 type-elaboration coverage stage");
-    assert_eq!((type_stage.requirements, type_stage.covered), (259, 247));
+    assert_eq!((type_stage.requirements, type_stage.covered), (307, 295));
     assert_eq!((plan.warning_count(), plan.error_count()), (23, 0));
 
     let (ast, module, shells, symbols) =

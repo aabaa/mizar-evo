@@ -1,0 +1,14 @@
+definition
+  struct MSBox where
+    field carrier -> set;
+  end;
+end;
+
+definition
+  let M be MSBox;
+  attr FineDef: M is fine means M.carrier = M.carrier;
+end;
+
+definition
+  mode FineSpaceDef: FineSpace is fine MSBox;
+end;

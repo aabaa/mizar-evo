@@ -1,0 +1,11 @@
+definition
+  let n be object;
+  let X be set;
+  attr DimDef: X is n-graded means X = X;
+end;
+
+theorem GradedUse1: for X being set holds X is 0-graded
+proof
+  let X be set;
+  thus X is 0-graded;
+end;

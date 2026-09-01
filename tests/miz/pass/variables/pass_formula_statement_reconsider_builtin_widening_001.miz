@@ -1,0 +1,6 @@
+theorem Reconsider1: for X being set holds X is object
+proof
+  let X be set;
+  reconsider Y = X as object;
+  thus X is object;
+end;

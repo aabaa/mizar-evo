@@ -1,0 +1,16 @@
+definition
+  struct PredBox where
+    field d -> set;
+  end;
+end;
+
+definition
+  let P, Q be PredBox;
+  pred MatchesDef: P matches Q means P.d = Q.d;
+end;
+
+theorem BadMatch1: for X being set holds X matches X
+proof
+  let X be set;
+  thus X matches X;
+end;

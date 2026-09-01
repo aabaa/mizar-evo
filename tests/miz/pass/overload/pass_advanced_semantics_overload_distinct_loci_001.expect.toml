@@ -1,0 +1,13 @@
+schema_version = 1
+id = "pass_advanced_semantics_overload_distinct_loci_001"
+kind = "pass"
+stage = "advanced_semantics"
+domain = "overload.resolution"
+source = "pass_advanced_semantics_overload_distinct_loci_001.miz"
+expected_outcome = "pass"
+expected_phase = "overload_resolution"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.19.overload.resolution.distinct_loci",
+]
+notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. One functor symbol overloaded on disjoint loci types resolves by argument type (spec 19.4)."

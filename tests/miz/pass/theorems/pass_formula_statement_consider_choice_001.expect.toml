@@ -1,0 +1,13 @@
+schema_version = 1
+id = "pass_formula_statement_consider_choice_001"
+kind = "pass"
+stage = "formula_statement"
+domain = "theorems.choice_statement"
+source = "pass_formula_statement_consider_choice_001.miz"
+expected_outcome = "pass"
+expected_phase = "statement_check"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.15.statements.consider.choice",
+]
+notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. consider introduces a witness from an established existential statement, justified by its label; a compact statement may carry a nested proof block (spec 15.2, 15.8)."

@@ -1,0 +1,13 @@
+schema_version = 1
+id = "pass_formula_statement_connective_precedence_001"
+kind = "pass"
+stage = "formula_statement"
+domain = "formulas.connective_precedence"
+source = "pass_formula_statement_connective_precedence_001.miz"
+expected_outcome = "pass"
+expected_phase = "statement_check"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.14.formulas.connectives.precedence",
+]
+notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. Conjunction binds tighter than disjunction; the unparenthesized mixed formula is grouped accordingly (spec 14.3, 14.6)."

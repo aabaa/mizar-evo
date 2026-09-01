@@ -1,0 +1,13 @@
+schema_version = 1
+id = "pass_type_elaboration_struct_diamond_consistent_001"
+kind = "pass"
+stage = "type_elaboration"
+domain = "structures.inheritance"
+source = "pass_type_elaboration_struct_diamond_consistent_001.miz"
+expected_outcome = "pass"
+expected_phase = "type_check"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.05.structures.inherit.diamond_consistency",
+]
+notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. Diamond inheritance is accepted when both inheritance paths map each top member to the same base member (spec 5.4; sample loopstr.miz)."

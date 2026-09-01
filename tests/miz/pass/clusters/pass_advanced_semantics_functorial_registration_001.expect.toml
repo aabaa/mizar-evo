@@ -1,0 +1,13 @@
+schema_version = 1
+id = "pass_advanced_semantics_functorial_registration_001"
+kind = "pass"
+stage = "advanced_semantics"
+domain = "clusters.functorial"
+source = "pass_advanced_semantics_functorial_registration_001.miz"
+expected_outcome = "pass"
+expected_phase = "cluster_resolution"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.17.clusters.functorial.registration",
+]
+notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. A functorial registration attaches consequent adjectives to a functor result type (spec 17.5)."

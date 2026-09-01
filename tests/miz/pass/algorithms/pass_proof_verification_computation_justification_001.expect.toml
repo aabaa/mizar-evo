@@ -1,0 +1,13 @@
+schema_version = 1
+id = "pass_proof_verification_computation_justification_001"
+kind = "pass"
+stage = "proof_verification"
+domain = "algorithms.computation"
+source = "pass_proof_verification_computation_justification_001.miz"
+expected_outcome = "pass"
+expected_phase = "vc_generation"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.20.algorithms.computation.justification",
+]
+notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. by computation with bounded options justifies a ground equation through the computation checker (spec 20.9; A.20 computation_proof)."

@@ -1,0 +1,13 @@
+schema_version = 1
+id = "pass_proof_verification_struct_with_update_001"
+kind = "pass"
+stage = "proof_verification"
+domain = "structures.functional_update"
+source = "pass_proof_verification_struct_with_update_001.miz"
+expected_outcome = "pass"
+expected_phase = "vc_generation"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.05.structures.with_update.semantic",
+]
+notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. A with-update produces a copy whose updated selector reads back the new value (spec 5.7)."

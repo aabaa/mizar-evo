@@ -1,0 +1,13 @@
+schema_version = 1
+id = "pass_proof_verification_algorithm_while_invariant_001"
+kind = "pass"
+stage = "proof_verification"
+domain = "algorithms.loops"
+source = "pass_proof_verification_algorithm_while_invariant_001.miz"
+expected_outcome = "pass"
+expected_phase = "vc_generation"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.20.algorithms.loops.while_invariant",
+]
+notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. A while loop carries invariant annotations that generate preservation obligations; this loop is never entered and the ensures holds on exit (spec 20.2, 20.5)."

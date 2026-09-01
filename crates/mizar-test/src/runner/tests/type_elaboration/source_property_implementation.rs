@@ -141,10 +141,10 @@ fn task264_two_case_trace_selection_and_mixed_boundaries_are_exact() {
     let mixed_source=std::fs::read_to_string(&mixed.source_path).expect("mixed source");
     let (ast,module,shells,symbols)=task253_ast_from_source_text(&mixed_source,264_200);
     assert!(source_property_implementation_output(&ast,module,&shells,&symbols,&mixed_source).is_none());
-    assert_eq!((plan.cases.len(), plan.manifest.requirements.len()), (430, 396));
+    assert_eq!((plan.cases.len(), plan.manifest.requirements.len()), (550, 499));
     assert_eq!(
         (plan.coverage_report.pass_fail_mix.pass, plan.coverage_report.pass_fail_mix.fail),
-        (237, 193)
+        (307, 243)
     );
     assert_eq!(
         (
@@ -161,7 +161,7 @@ fn task264_two_case_trace_selection_and_mixed_boundaries_are_exact() {
         .iter()
         .find(|row| row.stage == crate::staged_model::Stage::TypeElaboration)
         .expect("Task264 type coverage stage");
-    assert_eq!((type_stage.requirements, type_stage.covered), (259, 247));
+    assert_eq!((type_stage.requirements, type_stage.covered), (307, 295));
     assert_eq!((plan.warning_count(), plan.error_count()), (23, 0));
 
     let inactive = plan

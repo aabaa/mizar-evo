@@ -1,0 +1,25 @@
+definition
+  struct QBoxA where
+    field data -> set;
+  end;
+
+  struct QBoxB where
+    field data -> set;
+  end;
+end;
+
+definition
+  let X be QBoxA;
+  attr QADef: X is loaded means X.data = X.data;
+end;
+
+definition
+  let X be QBoxB;
+  attr QBDef: X is loaded means X.data = X.data;
+end;
+
+theorem QualifiedAttr1: for X being QBoxA holds X is QBoxA.loaded
+proof
+  let X be QBoxA;
+  thus X is QBoxA.loaded;
+end;

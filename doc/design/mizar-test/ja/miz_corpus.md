@@ -160,3 +160,18 @@ Sidecarはmembership/cardinalityだけをassertし、order/execution/Core/Task27
 creditを明示的に付与しない。Completed incrementはcorpus pairを
 `344/344 -> 345/345`へ変更し、existing one-capture pairをbyte-identicalに保つ。
 Exact completion evidenceはlinked contractがownする。
+
+## 2026年9月 監査1 意味論ブリッジ・オラクル増分
+
+2026年9月の監査ウェーブで、仕様第3〜20章にわたる手書き非活性オラクル
+120ペア（pass 60 / fail 60、要求103行）を章対応のpass/failサブディレクトリ
+（[layout.md](./layout.md) 参照）に追加した。全ペアは Task 257C4C0 の
+非活性シード規約（`active_*` タグなし・現行クレジットなし）に従う。
+対応表と規約・仕様発見事項は
+[semantic_bridge_corpus_map.md](../en/semantic_bridge_corpus_map.md)、
+フロントエンドギャップにブロックされる29ソースの台帳は
+[semantic_bridge_frontend_gaps.md](../en/semantic_bridge_frontend_gaps.md)
+と `tests/coverage/audit1_frontend_gaps.tsv` が所有する（うち1件はパーサ
+panicを再現するため、G5解消までコーパス全走査ツールは全 `.miz` のパース
+可能性を仮定してはならない）。コーパスペアは `345/345 -> 465/465`、発見
+ケースは `430 -> 550` に増加。

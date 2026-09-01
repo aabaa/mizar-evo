@@ -1,0 +1,17 @@
+definition
+  struct WBox2 where
+    field d -> set;
+  end;
+end;
+
+definition
+  let B be WBox2;
+  func WGetDef: wget B -> set equals B.d;
+  coherence;
+end;
+
+theorem WidenBad1: for X being set holds wget X = X
+proof
+  let X be set;
+  thus wget X = X;
+end;

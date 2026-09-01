@@ -1,0 +1,6 @@
+theorem ExMulti1: for x being object ex y, z being object st y = x & z = x
+proof
+  let x be object;
+  take x, x;
+  thus x = x & x = x;
+end;

@@ -1,0 +1,7 @@
+import parser.type_fixtures as dupx, parser.nested_capture_fixtures as dupx;
+
+theorem DupAlias1: for X being set holds X = X
+proof
+  let X be set;
+  thus X = X;
+end;

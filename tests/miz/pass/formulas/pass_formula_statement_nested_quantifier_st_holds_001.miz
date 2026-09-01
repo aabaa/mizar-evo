@@ -1,0 +1,7 @@
+theorem NestedQuant1: for X being set st X = X
+  for y being object st y in X holds y in X
+proof
+  let X be set such that A1: X = X;
+  let y be object such that A2: y in X;
+  thus y in X by A2;
+end;

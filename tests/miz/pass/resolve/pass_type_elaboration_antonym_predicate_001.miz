@@ -1,0 +1,15 @@
+definition
+  let X, Y be set;
+  pred ApartDef: X apartfrom Y means not X = Y;
+end;
+
+definition
+  let X, Y be set;
+  antonym X closeto Y for X apartfrom Y;
+end;
+
+theorem AntUse1: for X being set holds X closeto X
+proof
+  let X be set;
+  thus X closeto X;
+end;

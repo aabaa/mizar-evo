@@ -1,0 +1,13 @@
+schema_version = 1
+id = "pass_formula_statement_per_cases_suppose_001"
+kind = "pass"
+stage = "formula_statement"
+domain = "theorems.case_reasoning"
+source = "pass_formula_statement_per_cases_suppose_001.miz"
+expected_outcome = "pass"
+expected_phase = "statement_check"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.15.statements.per_cases.suppose",
+]
+notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. per-cases reasoning with two suppose branches concludes the shared thesis in each branch (spec 15.6, A.15 case_reasoning)."

@@ -1,0 +1,9 @@
+definition
+  let X be set;
+  attr D1Def: X is dupmarked means X = X;
+end;
+
+definition
+  let Y be set;
+  attr D2Def: Y is dupmarked means Y = Y;
+end;

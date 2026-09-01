@@ -1,0 +1,1 @@
+theorem Comp1: 0 = 0 by computation(steps: 8);

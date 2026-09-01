@@ -1,0 +1,23 @@
+definition
+  let X be set;
+  attr OAADef: X is oamarked means X = X;
+  attr OBBDef: X is obmarked means X = X;
+end;
+
+definition
+  let X be oamarked set;
+  func Ov3Def: ovpick X -> set equals X;
+  coherence;
+end;
+
+definition
+  let X be obmarked set;
+  func Ov4Def: ovpick X -> set equals X;
+  coherence;
+end;
+
+theorem OvBad1: for X being oamarked obmarked set holds ovpick X = X
+proof
+  let X be oamarked obmarked set;
+  thus ovpick X = X;
+end;

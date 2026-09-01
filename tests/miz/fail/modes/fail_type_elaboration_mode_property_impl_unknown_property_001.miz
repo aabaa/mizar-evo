@@ -1,0 +1,10 @@
+definition
+  struct U3Box where
+    field data -> set;
+  end;
+end;
+
+definition
+  let B be U3Box;
+  property B.ghostslot equals B.data;
+end;

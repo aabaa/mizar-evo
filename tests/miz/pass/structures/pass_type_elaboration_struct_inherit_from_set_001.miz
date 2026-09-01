@@ -1,0 +1,9 @@
+definition
+  struct CarrierBox where
+    field carrier -> set;
+  end;
+
+  inherit CarrierBox extends set where
+    field carrier from it;
+  end;
+end;

@@ -1,0 +1,16 @@
+definition
+  let X, Y be set;
+  func SynBaseDef: X synbase Y -> set equals X;
+  coherence;
+end;
+
+definition
+  let X, Y be set;
+  synonym X synalt Y for X synbase Y;
+end;
+
+theorem SynUse1: for X, Y being set holds X synalt Y = X
+proof
+  let X, Y be set;
+  thus X synalt Y = X by SynBaseDef;
+end;

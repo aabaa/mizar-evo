@@ -1,0 +1,15 @@
+schema_version = 1
+id = "fail_type_elaboration_struct_duplicate_member_001"
+kind = "fail"
+stage = "type_elaboration"
+domain = "structures.definition"
+source = "fail_type_elaboration_struct_duplicate_member_001.miz"
+expected_outcome = "fail"
+expected_phase = "resolve"
+failure_category = "resolve_error"
+stable_detail_key = "structures.definition.duplicate_member"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.05.structures.definition.fields",
+]
+notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. A struct definition may not declare two members with the same name (spec 5.2)."

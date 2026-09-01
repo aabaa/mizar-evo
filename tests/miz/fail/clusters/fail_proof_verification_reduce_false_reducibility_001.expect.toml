@@ -1,0 +1,15 @@
+schema_version = 1
+id = "fail_proof_verification_reduce_false_reducibility_001"
+kind = "fail"
+stage = "proof_verification"
+domain = "clusters.reduction"
+source = "fail_proof_verification_reduce_false_reducibility_001.miz"
+expected_outcome = "fail"
+expected_phase = "verification"
+failure_category = "proof_failure"
+stable_detail_key = "clusters.reduce.false_reducibility"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.17.clusters.reduce.false_reducibility",
+]
+notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. A reduction registration whose two sides are not provably equal must fail its reducibility obligation (spec 17.6, 17.9)."

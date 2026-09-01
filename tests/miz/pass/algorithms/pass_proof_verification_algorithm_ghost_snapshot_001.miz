@@ -1,0 +1,10 @@
+definition
+  let a be object;
+  terminating algorithm ghostalgo(a) -> object
+    ensures result = a
+  do
+    ghost var g := a;
+    snapshot s0;
+    return a;
+  end;
+end;

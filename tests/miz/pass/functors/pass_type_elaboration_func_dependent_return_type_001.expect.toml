@@ -1,0 +1,13 @@
+schema_version = 1
+id = "pass_type_elaboration_func_dependent_return_type_001"
+kind = "pass"
+stage = "type_elaboration"
+domain = "functors.dependent_return"
+source = "pass_type_elaboration_func_dependent_return_type_001.miz"
+expected_outcome = "pass"
+expected_phase = "type_check"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.10.functors.dependent_return.semantic",
+]
+notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. A functor return type may depend on a locus through a dependent mode (spec 10.5)."
