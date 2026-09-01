@@ -1536,6 +1536,13 @@ tests 4件、reciprocal pass sidecars 2件、covered trace row 1件、metadata
 overlap/coherence seedはinactive、goal/guard/proof/discharge/acceptance/fact/
 Core/CFG/VCはすべてdeferredのままである。
 
+## Core Task 33I264 private-probe synchronization
+
+EN/JAはexisting private Task264 assertion leafだけにCore-context test 2件を追加することで
+一致する。Production route、active selection、fixture、expectation、trace、metadata、
+diagnostic、CLI byte、semantic output、CoreIr snapshot、coverage creditは不変。Testはsame
+syntax-free checker handoffをconsumeし、raw sourceをCoreへ公開しない。
+
 ## Checker Task 269A frozen dormant-consumer synchronization
 
 EN/JAはexact B3N source/hash/51-node selector、resolver-local `y`、immutable

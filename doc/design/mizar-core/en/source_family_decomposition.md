@@ -317,6 +317,19 @@ Structure members, fields-only constructor semantics, mappings/views,
 coherence, obligations, definitions, production installation, complete Core
 33, Core 34--36, and `MT10-CIR-TE` remain separately owned and deferred.
 
+## Task 33I264 Task264 Carrier Item Context Slice
+
+The frozen [Task 33I264 contract](../../task_contracts/en/CORE-SOURCE-PROPERTY-CARRIER-ITEM-CONTEXT-33I264.md)
+consumes committed Task264C and adds only a same-source singleton Core-33
+association. Exact whole-symbol lookup maps `Task264Carrier` to one prepared
+public valid Core `Structure` item with no dependencies. The complete checker
+handoff remains retained so Core34 can later authenticate `carrier`/`marker`,
+but this slice creates no member or property-shell item.
+
+It is private-probe-only and zero credit. Selector/type ownership remains
+Core34; terms/formulas remain Core35; property body/correctness remains Core36.
+Generic Core33 installation and `MT10-CIR-TE` remain deferred.
+
 ## Task 36P264 Property-Implementation Owner Disposition
 
 The frozen [Task 36P264 contract](../../task_contracts/en/CORE-SOURCE-PROPERTY-IMPLEMENTATION-OWNER-36P264.md)
@@ -329,9 +342,9 @@ dependency may be synthesized from them.
 Task264 therefore remains exclusively in the accepted Core-36 definition row,
 after exact same-source Core 33--35 prerequisites. Because current
 `CoreDefinition` requires a `CoreItemId`, Core 36 is additionally hard-blocked
-until a lower checker task supplies Task264's same-source carrier/member
-identity and separately reviewed Core-33/34 tasks supply an authenticated
-selector owner, or a separately reviewed CoreIR task changes the owner model.
-Task263 is a different-source precedent and is not an input. This disposition
-is docs-only and zero-credit. It changes no checker contract, source, test,
-expectation, trace, metadata, runner, or snapshot state.
+until committed Task264C supplies the same-source carrier/member identity,
+Task33I264 supplies the carrier item association, and Core34 supplies an
+authenticated selector/type owner compatible with `CoreDefinition.item`.
+Task263 is a different-source precedent and is not an input. No CoreIR
+owner-model change is selected. This disposition remains zero-credit and
+changes no specification, test intent, expectation, trace, or snapshot state.

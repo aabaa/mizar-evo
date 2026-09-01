@@ -11750,6 +11750,11 @@ Cargo edge、public route API、expectation-schema owner、proof runner、parser
 moduleは変更しない。raw-source/Surface consumerはこのrouteだけで、checkerへは
 syntax-free handoffだけを渡す。
 
+Core Task33I264はexisting private Task264 assertion leafだけを258 lineからexactly 2 testで
+699 lineへ拡張し、全production fileと`36/69417` production selectionを不変にする。Core
+associationはstandalone/test-onlyで、final leafは31,668 bytes、SHA-256
+`e45ac5bdbcbbab3fb0eeb4a281058dc2bad8330235db6590b432b76cb69c3d48`である。
+
 ## Checker Task 269A frozen dormant runner boundary
 
 `runner/type_elaboration`下private leaf 1件とincluded test leaf 1件がrunnerの

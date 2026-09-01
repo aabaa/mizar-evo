@@ -786,6 +786,7 @@ payload categories can be added without breaking downstream exhaustive matches.
 | `SourceAttributeCoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `SourceModeCoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `SourceStructureCoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `SourcePropertyCarrierCoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `DefinitionBoundaryKind` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `DefinitionBoundaryStatus` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `CheckerSiteKind` | `#[non_exhaustive]` downstream forward-compatible surface. |
@@ -847,6 +848,40 @@ Task-248 and 33LB are not inputs. Member, constructor, mapping, view,
 coherence, obligation, and acceptance artifacts remain validation-only or
 deferred. No generic adapter, context/IR slot, installer, or production route
 is introduced.
+
+## Task 33I264 Task264 Carrier Item Context
+
+The canonical [Task 33I264 contract](../../task_contracts/en/CORE-SOURCE-PROPERTY-CARRIER-ITEM-CONTEXT-33I264.md)
+owns a separate singleton association for the same-source Task264 carrier. It
+does not reuse or generalize Task263's different-source two-row API.
+
+The durable public surface is exactly
+`SourcePropertyCarrierCoreContextHandoff`, non-exhaustive
+`SourcePropertyCarrierCoreContextError`, and
+`SourcePropertyCarrierCoreContextProducer`. The handoff retains a prepared
+`CoreContext` and complete `SourcePropertyImplementationHandoff` by value plus
+one private `CoreItemId`. Its getters are `source_id()`, `module_id()`,
+`context()`, `checker_owner()`, `carrier_item()`, and `debug_text()`; no public
+association row or table is added. The producer's only entry point is
+`build(CoreContext, SourcePropertyImplementationHandoff)`.
+
+The producer rechecks the immutable three-role carrier receipt, target/property
+link, source/module environment, and one-item Core shape. Exact whole-symbol
+lookup must select one public valid `Structure` item with range `13..101`, no
+dependency or diagnostic, checker provenance
+`source-property-carrier-core-item-v1.structure`, one exact item-source row,
+one pending `DefinitionalItem` boundary, and one pending worklist entry.
+Binder/checker-site/dependency-summary/generated-origin and every other Core or
+source-map domain are empty. Validation order is environment, checker owner,
+Core context, then scalar association; complete postvalidation precedes
+publication.
+
+The exact debug value is
+`source-property-carrier-core-item-context-v1|module=<package>.<path>|carrier=<whole-fqn>:0:0|item=<id>`
+with no final LF. It is non-authoritative. The property-implementation shell,
+field, and property receive no Core item; Core34 retains selector/type
+ownership. No dependency, item-kind change, semantic lowering, installer, or
+production route is introduced.
 
 ## Forbidden Behavior
 

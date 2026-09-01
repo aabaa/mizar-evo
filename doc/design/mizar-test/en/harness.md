@@ -5229,6 +5229,19 @@ type/term/structure/formula/property/arena owners. The route cannot select the
 Parser Task-48 cases, inactive coherence seed, Task-259 cases, or mixed
 predicate/functor gap, and it publishes no semantic result beyond transport.
 
+## Core Task 33I264 Private Task264 Carrier Probe
+
+The paired [Core Task33I264 contract](../../task_contracts/en/CORE-SOURCE-PROPERTY-CARRIER-ITEM-CONTEXT-33I264.md)
+extends only the existing private Task264 assertion leaf with two Core-context
+tests. The production selector/route remains unchanged. The leaf prepares one
+Core `Structure` seed from the checker-authenticated carrier identity, invokes
+the standalone Core producer, and checks means/equals replay plus a complete
+Core-shape and foreign-environment mutation matrix.
+
+No raw source crosses into Core. No active dispatch, facade key, fixture,
+sidecar, expectation, trace, metadata, diagnostic, CLI output, property
+semantics, CoreIr snapshot, or coverage credit changes.
+
 ## Checker Task 269A Frozen Dormant Harness
 
 The new helper matches exact `SOURCE_STATEMENT_B3N_TEXT` only after the

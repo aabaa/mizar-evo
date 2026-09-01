@@ -64,6 +64,10 @@ use mizar_checker::{
         SourcePredicateDefinitionHandoff, SourcePredicateDefinitionId,
         SourcePredicateDefinitionRecovery,
     },
+    source_property_implementation::{
+        SourcePropertyCarrierIdentity, SourcePropertyImplementationHandoff,
+        SourcePropertyImplementationStyle,
+    },
     source_structure_definition::{
         SourceStructureDefinitionHandoff, SourceStructureDefinitionId,
         SourceStructureDefinitionRecovery, SourceStructureMemberKind,
@@ -5196,6 +5200,390 @@ fn validate_structure_item_associations(
         {
             return Err(SourceStructureCoreContextError::InvalidItemAssociation);
         }
+    }
+    Ok(())
+}
+
+const SOURCE_PROPERTY_CARRIER_CORE_ITEM_PROVENANCE_KEY: &str =
+    "source-property-carrier-core-item-v1.structure";
+
+/// Immutable Core context for one checker-authenticated Task-264 carrier item.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourcePropertyCarrierCoreContextHandoff {
+    context: CoreContext,
+    checker_owner: SourcePropertyImplementationHandoff,
+    carrier_item: CoreItemId,
+}
+
+impl SourcePropertyCarrierCoreContextHandoff {
+    #[must_use]
+    pub const fn source_id(&self) -> SourceId {
+        self.context.source_id()
+    }
+
+    #[must_use]
+    pub const fn module_id(&self) -> &ModuleId {
+        self.context.module_id()
+    }
+
+    #[must_use]
+    pub const fn context(&self) -> &CoreContext {
+        &self.context
+    }
+
+    #[must_use]
+    pub const fn checker_owner(&self) -> &SourcePropertyImplementationHandoff {
+        &self.checker_owner
+    }
+
+    #[must_use]
+    pub const fn carrier_item(&self) -> CoreItemId {
+        self.carrier_item
+    }
+
+    #[must_use]
+    pub fn debug_text(&self) -> String {
+        let identity = self.checker_owner.carrier_identity();
+        format!(
+            "source-property-carrier-core-item-context-v1|module={}.{}|carrier={}:{}:{}|item={}",
+            self.module_id().package().as_str(),
+            self.module_id().path().as_str(),
+            identity.structure_symbol().fqn().as_str(),
+            identity.structure_definition().index(),
+            identity.structure_contribution().index(),
+            self.carrier_item.index(),
+        )
+    }
+
+    fn validate(&self) -> Result<(), SourcePropertyCarrierCoreContextError> {
+        validate_property_carrier_environment(&self.context, &self.checker_owner)?;
+        let identity = validate_property_carrier_checker_owner(&self.checker_owner)?;
+        let carrier_item = validate_property_carrier_core_shape(&self.context, identity)?;
+        validate_property_carrier_item_association(
+            &self.context,
+            identity,
+            self.carrier_item,
+            carrier_item,
+        )
+    }
+}
+
+/// Errors raised while building the exact Task-264 carrier/Core context.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum SourcePropertyCarrierCoreContextError {
+    EnvironmentMismatch,
+    InvalidCheckerOwner,
+    InvalidCoreContext,
+    InvalidItemAssociation,
+}
+
+impl fmt::Display for SourcePropertyCarrierCoreContextError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::EnvironmentMismatch => {
+                formatter.write_str("property carrier Core context environment is invalid")
+            }
+            Self::InvalidCheckerOwner => {
+                formatter.write_str("property carrier Core checker owner is invalid")
+            }
+            Self::InvalidCoreContext => {
+                formatter.write_str("property carrier Core context is invalid")
+            }
+            Self::InvalidItemAssociation => {
+                formatter.write_str("property carrier Core item association is invalid")
+            }
+        }
+    }
+}
+
+impl Error for SourcePropertyCarrierCoreContextError {}
+
+/// Builds the standalone immutable Task-264 carrier/Core context handoff.
+#[derive(Debug, Clone, Copy)]
+pub struct SourcePropertyCarrierCoreContextProducer;
+
+impl SourcePropertyCarrierCoreContextProducer {
+    pub fn build(
+        context: CoreContext,
+        checker_owner: SourcePropertyImplementationHandoff,
+    ) -> Result<SourcePropertyCarrierCoreContextHandoff, SourcePropertyCarrierCoreContextError>
+    {
+        validate_property_carrier_environment(&context, &checker_owner)?;
+        let identity = validate_property_carrier_checker_owner(&checker_owner)?;
+        let carrier_item = validate_property_carrier_core_shape(&context, identity)?;
+        let handoff = SourcePropertyCarrierCoreContextHandoff {
+            context,
+            checker_owner,
+            carrier_item,
+        };
+        handoff.validate()?;
+        Ok(handoff)
+    }
+}
+
+fn validate_property_carrier_environment(
+    context: &CoreContext,
+    checker_owner: &SourcePropertyImplementationHandoff,
+) -> Result<(), SourcePropertyCarrierCoreContextError> {
+    if context.source_id() != checker_owner.source_id()
+        || context.module_id() != checker_owner.module_id()
+    {
+        return Err(SourcePropertyCarrierCoreContextError::EnvironmentMismatch);
+    }
+    Ok(())
+}
+
+fn validate_property_carrier_checker_owner(
+    checker_owner: &SourcePropertyImplementationHandoff,
+) -> Result<&SourcePropertyCarrierIdentity, SourcePropertyCarrierCoreContextError> {
+    let mut implementations = checker_owner.implementations().iter();
+    let (implementation_id, implementation) = implementations
+        .next()
+        .ok_or(SourcePropertyCarrierCoreContextError::InvalidCheckerOwner)?;
+    let is_means = implementation.style() == SourcePropertyImplementationStyle::Means;
+    let is_equals = implementation.style() == SourcePropertyImplementationStyle::Equals;
+    let optional_profile_matches = if is_means {
+        checker_owner.source_structure_fingerprint().is_none()
+            && checker_owner
+                .source_atomic_formula_fingerprint()
+                .is_some_and(|value| !value.is_empty())
+            && checker_owner.correctness().len() == 2
+    } else if is_equals {
+        checker_owner
+            .source_structure_fingerprint()
+            .is_some_and(|value| !value.is_empty())
+            && checker_owner.source_atomic_formula_fingerprint().is_none()
+            && checker_owner.correctness().is_empty()
+    } else {
+        false
+    };
+    if implementation_id.index() != 0
+        || implementation.id().index() != 0
+        || implementation.target().index() != 0
+        || implementations.next().is_some()
+        || checker_owner.parameters().len() != 1
+        || checker_owner.targets().len() != 1
+        || checker_owner.definientia().len() != 1
+        || checker_owner.source_context_fingerprint().is_empty()
+        || checker_owner.source_type_fingerprint().is_empty()
+        || checker_owner.source_term_fingerprint().is_empty()
+        || checker_owner
+            .source_functor_application_fingerprint()
+            .is_some()
+        || checker_owner.source_set_term_fingerprint().is_some()
+        || !optional_profile_matches
+    {
+        return Err(SourcePropertyCarrierCoreContextError::InvalidCheckerOwner);
+    }
+
+    let identity = checker_owner.carrier_identity();
+    let symbols = [
+        identity.structure_symbol(),
+        identity.field_symbol(),
+        identity.property_symbol(),
+    ];
+    let definitions = [
+        identity.structure_definition(),
+        identity.field_definition(),
+        identity.property_definition(),
+    ];
+    let contributions = [
+        identity.structure_contribution(),
+        identity.field_contribution(),
+        identity.property_contribution(),
+    ];
+    let origins = [
+        identity.structure_origin(),
+        identity.field_origin(),
+        identity.property_origin(),
+    ];
+    let ranges = [(13, 101), (45, 66), (71, 94)];
+    let paths: [&[u32]; 3] = [&[4, 0, 11, 0], &[4, 0, 11, 0, 18, 0], &[4, 0, 11, 0, 19, 1]];
+    for index in 0..3 {
+        if definitions[index].index() != index
+            || contributions[index].index() != 0
+            || symbols[index].module() != checker_owner.module_id()
+            || !is_exact_property_carrier_origin(
+                origins[index],
+                checker_owner.source_id(),
+                checker_owner.module_id(),
+                SourceRange {
+                    source_id: checker_owner.source_id(),
+                    start: ranges[index].0,
+                    end: ranges[index].1,
+                },
+                paths[index],
+            )
+        {
+            return Err(SourcePropertyCarrierCoreContextError::InvalidCheckerOwner);
+        }
+    }
+    if symbols[0] == symbols[1] || symbols[0] == symbols[2] || symbols[1] == symbols[2] {
+        return Err(SourcePropertyCarrierCoreContextError::InvalidCheckerOwner);
+    }
+
+    let mut targets = checker_owner.targets().iter();
+    let (target_id, target) = targets
+        .next()
+        .ok_or(SourcePropertyCarrierCoreContextError::InvalidCheckerOwner)?;
+    if target_id.index() != 0
+        || target.id().index() != 0
+        || target.owner().index() != 0
+        || target.ordinal() != 0
+        || target.symbol() != identity.property_symbol()
+        || target.definition() != identity.property_definition()
+        || target.contribution() != identity.property_contribution()
+        || target.origin() != identity.property_origin()
+        || targets.next().is_some()
+    {
+        return Err(SourcePropertyCarrierCoreContextError::InvalidCheckerOwner);
+    }
+    Ok(identity)
+}
+
+fn is_exact_property_carrier_origin(
+    origin: &SemanticOrigin,
+    source_id: SourceId,
+    module_id: &ModuleId,
+    source_range: SourceRange,
+    structural_path: &[u32],
+) -> bool {
+    origin.source_id() == source_id
+        && origin.module_id() == module_id
+        && !origin.is_recovered()
+        && origin.import_edge().is_none()
+        && origin.anchor() == &SourceAnchor::Range(source_range)
+        && origin.structural_path() == structural_path
+}
+
+fn validate_property_carrier_core_shape(
+    context: &CoreContext,
+    identity: &SourcePropertyCarrierIdentity,
+) -> Result<CoreItemId, SourcePropertyCarrierCoreContextError> {
+    let binder_context = context.binder_context();
+    if validate_core_context_shape(context, &BTreeSet::new()).is_err()
+        || !binder_context.frames.is_empty()
+        || !binder_context.free_variables.is_empty()
+        || !binder_context.variable_classes.is_empty()
+        || !binder_context.variable_roles.is_empty()
+        || !binder_context.variable_sorts.is_empty()
+        || context.binder_sources.iter().next().is_some()
+        || !context.binder_type_facts.is_empty()
+        || !context.dependency_summaries.is_empty()
+        || !context.generated_origins.table().is_empty()
+        || !context.generated_origins.by_key.is_empty()
+        || !context.diagnostics.is_empty()
+        || context.source_map.item_sources.len() != 1
+        || !context.source_map.term_sources.is_empty()
+        || !context.source_map.formula_sources.is_empty()
+        || !context.source_map.definition_sources.is_empty()
+        || !context.source_map.proof_sources.is_empty()
+        || !context.source_map.algorithm_sources.is_empty()
+        || !context.source_map.generated_sources.is_empty()
+        || !context.source_map.obligation_sources.is_empty()
+        || context.item_registry.items.len() != 1
+        || context.item_registry.by_symbol.len() != 1
+        || context.item_registry.dependencies.len() != 1
+        || context.definition_boundaries.by_item.len() != 1
+        || context.definition_boundaries.by_symbol.len() != 1
+        || context.worklist.entries.len() != 1
+    {
+        return Err(SourcePropertyCarrierCoreContextError::InvalidCoreContext);
+    }
+
+    let carrier_item = context
+        .item_registry
+        .id_for_symbol(identity.structure_symbol())
+        .ok_or(SourcePropertyCarrierCoreContextError::InvalidCoreContext)?;
+    let item = context
+        .item_registry
+        .items
+        .get(carrier_item)
+        .ok_or(SourcePropertyCarrierCoreContextError::InvalidCoreContext)?;
+    let expected_provenance = CoreProvenance::new(
+        CoreProvenancePhase::Checker,
+        SOURCE_PROPERTY_CARRIER_CORE_ITEM_PROVENANCE_KEY,
+    );
+    let expected_source = CoreSourceRef::direct(SourceRange {
+        source_id: context.source_id(),
+        start: 13,
+        end: 101,
+    })
+    .with_provenance(vec![expected_provenance.clone()]);
+    if item.symbol != *identity.structure_symbol()
+        || item.kind != CoreItemKind::Structure
+        || item.visibility.as_str() != "public"
+        || item.status != CoreItemStatus::Valid
+        || !item.dependencies.is_empty()
+        || !item.diagnostics.is_empty()
+        || item.source != expected_source
+        || context.source_map.item_sources.get(&carrier_item) != Some(&item.source)
+    {
+        return Err(SourcePropertyCarrierCoreContextError::InvalidCoreContext);
+    }
+
+    let dependency = context
+        .item_registry
+        .dependencies
+        .get(&carrier_item)
+        .ok_or(SourcePropertyCarrierCoreContextError::InvalidCoreContext)?;
+    if !dependency.local.is_empty()
+        || !dependency.external.is_empty()
+        || !dependency.missing.is_empty()
+    {
+        return Err(SourcePropertyCarrierCoreContextError::InvalidCoreContext);
+    }
+
+    let boundary = context
+        .definition_boundaries
+        .by_item
+        .get(&carrier_item)
+        .ok_or(SourcePropertyCarrierCoreContextError::InvalidCoreContext)?;
+    if context
+        .definition_boundaries
+        .by_symbol
+        .get(identity.structure_symbol())
+        != Some(&carrier_item)
+        || boundary.item != carrier_item
+        || boundary.symbol != *identity.structure_symbol()
+        || boundary.kind != DefinitionBoundaryKind::DefinitionalItem
+        || boundary.status != DefinitionBoundaryStatus::PendingBody
+        || boundary.source != expected_source
+        || boundary.provenance.as_slice() != [expected_provenance]
+    {
+        return Err(SourcePropertyCarrierCoreContextError::InvalidCoreContext);
+    }
+
+    let work_item = context
+        .worklist
+        .entries
+        .first()
+        .ok_or(SourcePropertyCarrierCoreContextError::InvalidCoreContext)?;
+    if work_item.kind != ElaborationWorkItemKind::Item(carrier_item)
+        || work_item.status != ElaborationWorkStatus::Pending
+        || work_item.source != expected_source
+        || !work_item.diagnostics.is_empty()
+        || !work_item.checker_diagnostics.is_empty()
+    {
+        return Err(SourcePropertyCarrierCoreContextError::InvalidCoreContext);
+    }
+    Ok(carrier_item)
+}
+
+fn validate_property_carrier_item_association(
+    context: &CoreContext,
+    identity: &SourcePropertyCarrierIdentity,
+    carrier_item: CoreItemId,
+    expected_item: CoreItemId,
+) -> Result<(), SourcePropertyCarrierCoreContextError> {
+    if carrier_item != expected_item
+        || context
+            .item_registry
+            .id_for_symbol(identity.structure_symbol())
+            != Some(carrier_item)
+    {
+        return Err(SourcePropertyCarrierCoreContextError::InvalidItemAssociation);
     }
     Ok(())
 }

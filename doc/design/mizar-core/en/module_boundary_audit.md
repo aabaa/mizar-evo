@@ -39,7 +39,7 @@ exposes unexpected public APIs, or blocks safe review of future work.
 | `src/lib.rs` | 9 | module table in `todo.md` | Exports exactly `binder_normalization`, `control_flow`, `core_ir`, and `elaborator`. No drift. |
 | `src/core_ir.rs` | 4016 | `core_ir.md` | Large but cohesive data-shape module. Task 31 adds only the specified pending-proof status variant. No split required. |
 | `src/binder_normalization.rs` | 5828 | `binder_normalization.md` | Large but cohesive binder/substitution/canonicalization module. Future private helper extraction is optional. |
-| `src/elaborator.rs` | 18124 | `elaborator.md` | Largest review-risk file, but its sections map to the six elaboration steps in the owning spec. Task 31 adds one localized exact-adapter section and its fail-closed test matrix after generic proof lowering; Task 33C4C8 adds one localized immutable capture-context association and private validation tests. Both consume checker payloads without introducing a new module responsibility. No split is required. |
+| `src/elaborator.rs` | 23335 | `elaborator.md` | Largest review-risk file, but its sections map to the six elaboration steps in the owning spec. Tasks 31, 33C4C8, 33LB, and 33I259--264 are localized owner-specific adapters/contexts. Task33I264 adds the same Step-1 shape for one Task264 carrier without a new responsibility. No split is required in this task. |
 | `src/control_flow.rs` | 6718 | `control_flow.md` | Large but maps to phase-10 CFG, contracts, diagnostics, and handoff sections. No mandatory split in this task. |
 | `tests/determinism_suite.rs` | 627 | `00.crate_plan.md`, task 20 | Cross-module integration test; no boundary issue. |
 | `tests/lint_policy.rs` | 1215 | task 1, task 21, task 22, task 31 policies | Policy/audit guard test; the Task-31 exception strips only the exact `ExportStatus`/`Visibility` import in `elaborator.rs` and continues to reject `SymbolEnv`, resolver behavior, aliases, and all other resolver-environment APIs. |
@@ -69,6 +69,12 @@ uses existing resolver/session identity types already permitted by the module,
 and exposes no raw-syntax, Typed/Resolved installation, semantic lowering, or
 downstream route. The existing module remains the owning boundary and no split
 is required.
+
+Task33I264 repairs the stale pre-33LB/33I259--263 line count above and adds only
+one localized singleton carrier-context section beside the existing Core-33
+associations. The public module boundary remains `elaborator`; Task263 is not
+generalized, and no production runner or new module responsibility appears.
+The final line count is remeasured after implementation.
 
 ## Classification
 

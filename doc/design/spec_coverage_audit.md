@@ -7348,8 +7348,26 @@ output, and coverage credit remain unchanged.
 
 This closes the lower checker identity `source_drift` and its bounded test gap.
 It does not create a Core item or property-implementation semantic identity.
-After Task264C, follow-up ownership advances to the still-missing same-source
-Core-33 carrier context and Core-34 selector/type owner required by the
+Task264C advances follow-up ownership to the same-source Core-33 carrier
+context and Core-34 selector/type owner required by the
 [Core36 disposition](./task_contracts/en/CORE-SOURCE-PROPERTY-IMPLEMENTATION-OWNER-36P264.md).
-Core36 semantics, production installation, proof/discharge/acceptance, and
-Task277B remain deferred/not-ready with zero new coverage credit.
+Task33I264 now owns the former; Core34 remains next. Core36 semantics,
+production installation, proof/discharge/acceptance, and Task277B remain
+deferred/not-ready with zero new coverage credit.
+
+## Task CORE-SOURCE-PROPERTY-CARRIER-ITEM-CONTEXT-33I264 Zero-Credit Core Association
+
+The canonical
+[Task33I264 contract](./task_contracts/en/CORE-SOURCE-PROPERTY-CARRIER-ITEM-CONTEXT-33I264.md)
+maps only the checker-authenticated same-source `Task264Carrier` whole symbol
+to one prepared public valid Core `Structure` item. The complete Task264
+checker handoff remains retained for later consumers, but the property-
+implementation shell, `carrier`, and `marker` receive no Core item or semantic
+association in this task.
+
+This closes only bounded Core-33 `design_drift` and private `test_gap`. It adds
+no execution or coverage credit and changes no chapter status, fixture,
+expectation, trace backlink/status, metadata, diagnostic, runner selection, or
+accepted semantic result. Follow-up ownership advances to Core34 authenticated
+selector/type ownership; Core35/36, production installation, proof/discharge/
+acceptance, and Task277B remain deferred/not-ready.

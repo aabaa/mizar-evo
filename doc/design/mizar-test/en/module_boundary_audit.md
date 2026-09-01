@@ -13063,6 +13063,12 @@ parser/resolver module changed. The route remains the sole raw-source/Surface
 consumer and passes only syntax-free handoffs into the checker.
 The generic mixed gap and sibling production routes are unchanged.
 
+Core Task33I264 changes only the existing private Task264 assertion leaf,
+growing it from 258 to 699 lines with exactly two tests while leaving every
+production file and the `36/69417` production selection unchanged. The Core
+association is standalone and test-only; the final leaf is 31,668 bytes with
+SHA-256 `e45ac5bdbcbbab3fb0eeb4a281058dc2bad8330235db6590b432b76cb69c3d48`.
+
 ## Checker Task 264R No-Runner Module Boundary
 
 No `mizar-test` source, test, manifest, or Cargo target changes. The resolver

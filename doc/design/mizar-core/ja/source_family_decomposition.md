@@ -264,6 +264,17 @@ Structure member、fields-only constructor semantics、mapping/view、coherence�
 obligation、definition、production install、complete Core33、Core34--36、
 `MT10-CIR-TE`はseparate ownerへdeferする。
 
+## Task 33I264 Task264 carrier item context slice
+
+Frozen [Task 33I264 contract](../../task_contracts/ja/CORE-SOURCE-PROPERTY-CARRIER-ITEM-CONTEXT-33I264.md)
+はcommitted Task264Cをconsumeし、same-source singleton Core33 associationだけを追加する。
+Exact whole-symbol lookupで`Task264Carrier`をdependencyなしのprepared public valid Core
+`Structure` item 1件へmapする。Complete checker handoffはlater Core34が`carrier`/`marker`を
+authenticateできるようretainするが、本sliceはmember/property-shell itemを作らない。
+
+Private-probe-only/zero credit。Selector/typeはCore34、term/formulaはCore35、property
+body/correctnessはCore36。Generic Core33 install/`MT10-CIR-TE`はdeferred。
+
 ## Task 36P264 property-implementation owner disposition
 
 Frozen [Task 36P264 contract](../../task_contracts/ja/CORE-SOURCE-PROPERTY-IMPLEMENTATION-OWNER-36P264.md)は
@@ -274,8 +285,8 @@ Core item/item kind/association/dependencyを合成しない。
 
 Task264はexact same-source Core33--35 prerequisite後のaccepted Core36 definition rowに
 exclusiveに残る。Current `CoreDefinition`は`CoreItemId`必須なので、separately reviewed
-lower checker taskがTask264 same-source carrier/member identityを供給し、separately
-reviewed Core33/34 taskがauthenticated selector ownerを供給するか、separately reviewed
-CoreIR taskがowner modelを変更するまでCore36は追加でhard-blocked。Task263はdifferent-
-source precedentでinputではない。Docs-only/zero-creditでchecker contract、source、test、
-expectation、trace、metadata、runner、snapshot stateを変更しない。
+committed Task264Cがsame-source carrier/member identityを、Task33I264がcarrier item
+associationを、Core34が`CoreDefinition.item`互換のauthenticated selector/type ownerを
+供給するまでCore36はhard-blocked。Task263はdifferent-source precedentでinputではない。
+CoreIR owner-model changeは選ばない。Zero-creditでspec/test intent/expectation/trace/
+snapshot stateは変更しない。

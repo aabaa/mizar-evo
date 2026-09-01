@@ -4911,6 +4911,17 @@ Surface/shell/resolver/context/type/term/structure/formula/property/arena owner�
 Parser Task48 case、inactive coherence seed、Task259 case、mixed predicate/functor gapを
 selectせず、transport以外のsemantic resultをpublishしない。
 
+## Core Task 33I264 private Task264 carrier probe
+
+Paired [Core Task33I264 contract](../../task_contracts/ja/CORE-SOURCE-PROPERTY-CARRIER-ITEM-CONTEXT-33I264.md)
+はexisting private Task264 assertion leafにCore-context test 2件だけを追加する。Production
+selector/routeは不変。Leafはchecker-authenticated carrier identityからCore `Structure`
+seed 1件をprepareし、standalone Core producerを呼び、means/equals replayとcomplete
+Core-shape/foreign-environment mutation matrixを検証する。
+
+Raw sourceはCoreへcrossしない。Active dispatch/facade key/fixture/sidecar/expectation/
+trace/metadata/diagnostic/CLI/property semantics/CoreIr snapshot/coverage credit変更なし。
+
 ## Checker Task 269A frozen dormant harness
 
 new helperはexisting named-witness extractorが全51 nodesを認証した後のexact

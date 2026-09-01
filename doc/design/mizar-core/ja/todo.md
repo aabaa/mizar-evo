@@ -570,17 +570,25 @@ F8 の spec 本文は同一変更(`cef7e109`: spec 03、05、13、17、18)で修
     - User-selected direct inheritanceをDerived→Base local item dependency exactly 1本へ
       materializeする。Task248/33LB、member/view/constructor/coherence semantics、production
       install、coverage、`MT10-CIR-TE`、Task277B readinessはabsent/deferredのまま。
+33I264. **Task264 same-source carrier item context prerequisite。** [x]
+    - Paired [task contract](../../task_contracts/ja/CORE-SOURCE-PROPERTY-CARRIER-ITEM-CONTEXT-33I264.md)
+      はimplementation/verification complete。Prepared one-item Core contextとcommitted
+      Task264 checker handoffをconsumeし、retained whole `Task264Carrier` symbolだけを
+      public valid Core `Structure` item 1件へjoinして、private scalar item associationを
+      complete postvalidation後にretainする。
+    - Private Task264 Core probe exactly 2件がpassした。Shell/member item、selector
+      alias、dependency、semantics、installation、trace/coverage creditは追加していない。
+      次はCore34 selector/type ownerで、Core36はblockedのまま。
 36P264. **Task264 Core owner disposition。** [x]
     - Frozen [task contract](../../task_contracts/ja/CORE-SOURCE-PROPERTY-IMPLEMENTATION-OWNER-36P264.md)は、
       context-only property-implementation shellにsymbol/definition identityがなく、
       Core33 itemをownできないことを記録する。Target selector alias、speculative item
       kind、carrier identity reconstructionは禁止。
-    - Task264はexact same-source Core33--35 context/type/term/formula prerequisite後の
-      Core36 definition-lowering inputのまま。Lower checker taskがTask264自身のcarrier/
-      member identityを先にpublishし、Task263 different-source contextをinputにしない。
-      Current `CoreDefinition.item`向けにCore34のdistinct authenticated selector ownerまたは
-      separately reviewed owner-model changeも必須。Docs-onlyでsource/test/trace/metadata/
-      coverage stateを変更しない。
+    - Committed Task264Cがsame-source carrier/member identityを供給済みで、Task33I264が
+      carrier/Core associationをownする。Task263 different-source contextはinputでない。
+      Task264はCore34が`CoreDefinition.item`互換のdistinct authenticated selector/type ownerを
+      供給し、applicable Core35 inputが存在した後だけCore36 definition-lowering inputになる。
+      Shell item/owner-model changeはauthorizeしない。
 33. **Source-derived Core context/item/binder/source map。** [ ]
     - checker 248を`MT10-CIR-TE`でconsumeし、type/proof/algorithm bodyは扱わない。
       C4C8についてchecker 248だけでは不十分なままであり、Task 33C4C8はseparately

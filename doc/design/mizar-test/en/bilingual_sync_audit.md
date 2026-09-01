@@ -1599,6 +1599,14 @@ covered trace row, `428/395` metadata, `101/7/205/1` active stages, and
 transport-only credit. Both keep the overlap/coherence seed inactive and every
 goal, guard, proof, discharge, acceptance, fact, Core/CFG/VC behavior deferred.
 
+## Core Task 33I264 Private-Probe Synchronization
+
+EN/JA agree that only the existing private Task264 assertion leaf gains two
+Core-context tests. Both preserve the production route, active selection,
+fixtures, expectations, trace, metadata, diagnostics, CLI bytes, semantic
+output, CoreIr snapshots, and coverage credit. The tests consume the same
+syntax-free checker handoff and do not expose raw source to Core.
+
 ## Checker Task 269A Frozen Dormant-Consumer Synchronization
 
 EN/JA agree on the exact B3N source/hash/51-node selector, resolver-local `y`,

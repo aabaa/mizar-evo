@@ -180,7 +180,10 @@ Top-level public API groups:
   `SourceStructureCoreItemAssociation`,
   `SourceStructureCoreItemAssociationTable`,
   `SourceStructureCoreContextHandoff`, `SourceStructureCoreContextError`,
-  `SourceStructureCoreContextProducer`
+  `SourceStructureCoreContextProducer`,
+  `SourcePropertyCarrierCoreContextHandoff`,
+  `SourcePropertyCarrierCoreContextError`,
+  `SourcePropertyCarrierCoreContextProducer`
 - Type and fact lowering: `TypeAndFactResult`, `TypeAndFactLoweringError`,
   `TypeAndFactLoweringInput`, `TypePredicateSeed`,
   `DeclaredBinderTypeSeed`, `AttributeChainSeed`, `ModeExpansionSeed`,
@@ -433,3 +436,18 @@ This closes bounded Core association `design_drift` and its private `test_gap`
 without changing specification, test intent, trace status, expectation, or
 coverage. Constructor/member/view/coherence semantics, Core 34--36,
 production installation, and `MT10-CIR-TE` remain open.
+
+## Task 33I264 Source/Specification Boundary
+
+The canonical [Task 33I264 contract](../../task_contracts/en/CORE-SOURCE-PROPERTY-CARRIER-ITEM-CONTEXT-33I264.md)
+maps only the checker-authenticated same-source `Task264Carrier` identity to one
+existing public valid Core `Structure` item. Exact whole `SymbolId` lookup is
+the join; definition/contribution/origin, the target/property link, and Core
+source/provenance/boundary/worklist shape are validation evidence.
+
+This closes the bounded carrier-association `design_drift` and private
+`test_gap` with zero semantic or coverage credit. It does not assign a Core
+item to the property-implementation shell, field, or property. Selector/type
+ownership remains Core34; definition body/correctness remains Core36 after the
+applicable Core35 prerequisites. Specification, test intent, trace status,
+expectations, diagnostics, and acceptance remain unchanged.

@@ -162,6 +162,15 @@ structure association 2行、sole Derived→Base local dependency、standalone b
 API、default-deny boundary、prohibited semantics、protected artifact、zero-credit
 status、Task277B deferralを同期する。English canonical、exceptionなし。
 
+## Task 33I264 bilingual contract parity
+
+[EN contract](../../task_contracts/en/CORE-SOURCE-PROPERTY-CARRIER-ITEM-CONTEXT-33I264.md)と
+[JA companion](../../task_contracts/ja/CORE-SOURCE-PROPERTY-CARRIER-ITEM-CONTEXT-33I264.md)は、
+singleton Task264 carrier/Core association、complete by-value checker owner、scalar
+`carrier_item()` API、error precedence、default-deny oracle、exact debug、private two-test
+boundary、Core34 handoff、zero-credit status、semantic exclusionを同期する。English
+canonical、exceptionなし。
+
 ## Task 36P264 bilingual contract parity
 
 [EN contract](../../task_contracts/en/CORE-SOURCE-PROPERTY-IMPLEMENTATION-OWNER-36P264.md)と

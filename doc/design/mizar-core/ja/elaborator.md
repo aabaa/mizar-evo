@@ -676,6 +676,7 @@ algorithm payload category を下流 crate の exhaustive match を壊さずに�
 | `SourceAttributeCoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface。 |
 | `SourceModeCoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface。 |
 | `SourceStructureCoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `SourcePropertyCarrierCoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface。 |
 | `DefinitionBoundaryKind` | `#[non_exhaustive]` downstream forward-compatible surface。 |
 | `DefinitionBoundaryStatus` | `#[non_exhaustive]` downstream forward-compatible surface。 |
 | `CheckerSiteKind` | `#[non_exhaustive]` downstream forward-compatible surface。 |
@@ -734,6 +735,33 @@ dependencyとしてmaterializeする。
 Task248/33LBはinputではない。Member/constructor/mapping/view/coherence/
 obligation/acceptance artifactはvalidation-onlyまたはdeferred。Generic adapter、
 context/IR slot、installer、production routeは追加しない。
+
+## Task 33I264 Task264 carrier item context
+
+Canonical [Task 33I264 contract](../../task_contracts/ja/CORE-SOURCE-PROPERTY-CARRIER-ITEM-CONTEXT-33I264.md)
+がsame-source Task264 carrier向けseparate singleton associationをownする。Task263の
+different-source two-row APIはreuse/generalizeしない。
+
+Durable public surfaceは`SourcePropertyCarrierCoreContextHandoff`、non-exhaustive
+`SourcePropertyCarrierCoreContextError`、
+`SourcePropertyCarrierCoreContextProducer`だけ。Handoffはprepared `CoreContext`、
+complete `SourcePropertyImplementationHandoff`、private `CoreItemId` 1件をby-value
+retainする。Getterは`source_id()`、`module_id()`、`context()`、`checker_owner()`、
+`carrier_item()`、`debug_text()`で、public association row/tableはない。Producer entryは
+`build(CoreContext, SourcePropertyImplementationHandoff)`だけである。
+
+Producerはimmutable three-role receipt、target/property link、source/module、one-item Core
+shapeをrecheckする。Exact whole-symbol lookupがrange `13..101`、dependency/diagnosticなし、
+checker provenance `source-property-carrier-core-item-v1.structure`のpublic valid
+`Structure` item 1件を選ぶ。Item source、pending `DefinitionalItem`、pending worklistは
+各1件で、binder/checker site/dependency summary/generated origin/other Core/source-map
+domainはempty。Environment→checker→Core→scalar association順にvalidateし、complete
+postvalidation後だけpublishする。
+
+Exact no-final-LF debugは
+`source-property-carrier-core-item-context-v1|module=<package>.<path>|carrier=<whole-fqn>:0:0|item=<id>`。
+Property-implementation shell/field/propertyにはCore itemを作らず、selector/type ownerは
+Core34に残す。Dependency/item-kind/semantic lowering/installer/production route変更なし。
 
 ## 禁止事項
 

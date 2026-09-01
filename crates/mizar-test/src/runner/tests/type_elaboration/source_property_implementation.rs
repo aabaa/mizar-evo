@@ -256,3 +256,444 @@ fn task264_preserves_proof_subtrees_without_semantic_publication() {
         }
     }
 }
+
+#[test]
+fn task264_carrier_core_item_context_is_exact_for_means_and_equals() {
+    for (ordinal, source) in [
+        SOURCE_PROPERTY_IMPLEMENTATION_MEANS_TEXT,
+        SOURCE_PROPERTY_IMPLEMENTATION_EQUALS_TEXT,
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let (ast, module, shells, symbols) =
+            task253_ast_from_source_text(source, 264_400 + ordinal);
+        let output = source_property_implementation_output(
+            &ast, module, &shells, &symbols, source,
+        )
+        .expect("Task264 selector")
+        .unwrap_or_else(|error| panic!("Task264 Core profile {ordinal}: {error}"));
+        let checker_owner = output
+            .typed_ast
+            .source_property_implementation()
+            .expect("Task264 checker owner")
+            .clone();
+        let context = task264_carrier_core_context(&checker_owner);
+        let expected_context = context.clone();
+        let first = mizar_core::elaborator::SourcePropertyCarrierCoreContextProducer::build(
+            context.clone(),
+            checker_owner.clone(),
+        )
+        .expect("Task264 carrier Core context");
+        let second = mizar_core::elaborator::SourcePropertyCarrierCoreContextProducer::build(
+            context,
+            checker_owner.clone(),
+        )
+        .expect("Task264 carrier deterministic replay");
+        assert_eq!(first, second);
+        assert_eq!(first.source_id(), checker_owner.source_id());
+        assert_eq!(first.module_id(), checker_owner.module_id());
+        assert_eq!(first.context(), &expected_context);
+        assert_eq!(first.checker_owner(), &checker_owner);
+
+        let identity = checker_owner.carrier_identity();
+        let carrier_item = first.carrier_item();
+        assert_eq!(
+            first
+                .context()
+                .item_registry()
+                .id_for_symbol(identity.structure_symbol()),
+            Some(carrier_item)
+        );
+        assert_eq!(first.context().item_registry().items().len(), 1);
+        assert!(first.context().dependency_summaries().is_empty());
+        assert!(first.context().generated_origins().table().is_empty());
+        assert!(first.context().diagnostics().is_empty());
+        assert_eq!(
+            first.debug_text(),
+            format!(
+                "source-property-carrier-core-item-context-v1|module={}.{}|carrier={}:0:0|item=0",
+                checker_owner.module_id().package().as_str(),
+                checker_owner.module_id().path().as_str(),
+                identity.structure_symbol().fqn().as_str(),
+            )
+        );
+
+        let item = first
+            .context()
+            .item_registry()
+            .items()
+            .get(carrier_item)
+            .expect("Task264 carrier Core item");
+        assert_eq!(item.symbol, *identity.structure_symbol());
+        assert_eq!(item.kind, mizar_core::core_ir::CoreItemKind::Structure);
+        assert_eq!(item.visibility.as_str(), "public");
+        assert_eq!(item.status, mizar_core::core_ir::CoreItemStatus::Valid);
+        assert!(item.dependencies.is_empty());
+        assert!(item.diagnostics.is_empty());
+        assert_eq!(
+            item.source.anchor,
+            mizar_core::core_ir::CoreSourceAnchor::SourceRange(mizar_session::SourceRange {
+                source_id: checker_owner.source_id(),
+                start: 13,
+                end: 101,
+            })
+        );
+        assert_eq!(
+            item.source.provenance,
+            vec![mizar_core::core_ir::CoreProvenance::new(
+                mizar_core::core_ir::CoreProvenancePhase::Checker,
+                "source-property-carrier-core-item-v1.structure",
+            )]
+        );
+        let dependency = first
+            .context()
+            .item_registry()
+            .dependencies(carrier_item)
+            .expect("Task264 carrier dependency row");
+        assert!(dependency.local.is_empty());
+        assert!(dependency.external.is_empty());
+        assert!(dependency.missing.is_empty());
+        assert_eq!(
+            first.context().source_map().item_sources.get(&carrier_item),
+            Some(&item.source)
+        );
+        assert_eq!(first.context().source_map().item_sources.len(), 1);
+        assert!(first.context().source_map().term_sources.is_empty());
+        assert!(first.context().source_map().formula_sources.is_empty());
+        assert!(first.context().source_map().definition_sources.is_empty());
+        assert!(first.context().source_map().proof_sources.is_empty());
+        assert!(first.context().source_map().algorithm_sources.is_empty());
+        assert!(first.context().source_map().generated_sources.is_empty());
+        assert!(first.context().source_map().obligation_sources.is_empty());
+
+        let boundary = first
+            .context()
+            .definition_boundaries()
+            .get_by_item(carrier_item)
+            .expect("Task264 carrier pending boundary");
+        assert_eq!(boundary.item, carrier_item);
+        assert_eq!(boundary.symbol, *identity.structure_symbol());
+        assert_eq!(
+            boundary.kind,
+            mizar_core::elaborator::DefinitionBoundaryKind::DefinitionalItem
+        );
+        assert_eq!(
+            boundary.status,
+            mizar_core::elaborator::DefinitionBoundaryStatus::PendingBody
+        );
+        assert_eq!(boundary.source, item.source);
+        assert_eq!(
+            boundary.provenance.as_slice(),
+            item.source.provenance.as_slice()
+        );
+        assert_eq!(
+            first.context().worklist().entries(),
+            &[mizar_core::elaborator::ElaborationWorkItem {
+                kind: mizar_core::elaborator::ElaborationWorkItemKind::Item(carrier_item),
+                status: mizar_core::elaborator::ElaborationWorkStatus::Pending,
+                source: item.source.clone(),
+                diagnostics: Vec::new(),
+                checker_diagnostics: Vec::new(),
+            }]
+        );
+    }
+}
+
+#[test]
+fn task264_carrier_core_context_mutations_and_foreign_environment_fail_closed() {
+    let (ast, module, shells, symbols) = task253_ast_from_source_text(
+        SOURCE_PROPERTY_IMPLEMENTATION_MEANS_TEXT,
+        264_500,
+    );
+    let output = source_property_implementation_output(
+        &ast,
+        module,
+        &shells,
+        &symbols,
+        SOURCE_PROPERTY_IMPLEMENTATION_MEANS_TEXT,
+    )
+    .expect("Task264 selector")
+    .expect("Task264 means route");
+    let checker_owner = output
+        .typed_ast
+        .source_property_implementation()
+        .expect("Task264 checker owner")
+        .clone();
+
+    for mutation in [
+        Task264CarrierCoreContextMutation::MissingItem,
+        Task264CarrierCoreContextMutation::ExtraItem,
+        Task264CarrierCoreContextMutation::WrongKind,
+        Task264CarrierCoreContextMutation::WrongVisibility,
+        Task264CarrierCoreContextMutation::WrongSymbol,
+        Task264CarrierCoreContextMutation::WrongSource,
+        Task264CarrierCoreContextMutation::WrongProvenance,
+        Task264CarrierCoreContextMutation::WrongBoundaryProvenance,
+        Task264CarrierCoreContextMutation::MissingBoundary,
+        Task264CarrierCoreContextMutation::WrongBoundary,
+        Task264CarrierCoreContextMutation::UnexpectedDependency,
+        Task264CarrierCoreContextMutation::UnexpectedGeneratedOrigin,
+        Task264CarrierCoreContextMutation::UnexpectedCheckerSite,
+        Task264CarrierCoreContextMutation::UnexpectedBinder,
+    ] {
+        let context = task264_carrier_core_context_with_mutation(&checker_owner, mutation);
+        let error = mizar_core::elaborator::SourcePropertyCarrierCoreContextProducer::build(
+            context,
+            checker_owner.clone(),
+        )
+        .expect_err("Task264 carrier Core mutation must fail closed");
+        assert_eq!(
+            error,
+            mizar_core::elaborator::SourcePropertyCarrierCoreContextError::InvalidCoreContext,
+            "{mutation:?}"
+        );
+    }
+
+    let (foreign_ast, foreign_module, foreign_shells, foreign_symbols) =
+        task253_ast_from_source_text(SOURCE_PROPERTY_IMPLEMENTATION_MEANS_TEXT, 264_501);
+    let foreign_output = source_property_implementation_output(
+        &foreign_ast,
+        foreign_module,
+        &foreign_shells,
+        &foreign_symbols,
+        SOURCE_PROPERTY_IMPLEMENTATION_MEANS_TEXT,
+    )
+    .expect("foreign Task264 selector")
+    .expect("foreign Task264 route");
+    let foreign_owner = foreign_output
+        .typed_ast
+        .source_property_implementation()
+        .expect("foreign Task264 checker owner")
+        .clone();
+    for (context, owner) in [
+        (
+            task264_carrier_core_context(&checker_owner),
+            foreign_owner.clone(),
+        ),
+        (
+            task264_carrier_core_context(&foreign_owner),
+            checker_owner.clone(),
+        ),
+    ] {
+        assert_eq!(
+            mizar_core::elaborator::SourcePropertyCarrierCoreContextProducer::build(
+                context, owner,
+            )
+            .expect_err("foreign Task264 carrier environment must fail closed"),
+            mizar_core::elaborator::SourcePropertyCarrierCoreContextError::EnvironmentMismatch
+        );
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Task264CarrierCoreContextMutation {
+    Baseline,
+    MissingItem,
+    ExtraItem,
+    WrongKind,
+    WrongVisibility,
+    WrongSymbol,
+    WrongSource,
+    WrongProvenance,
+    WrongBoundaryProvenance,
+    MissingBoundary,
+    WrongBoundary,
+    UnexpectedDependency,
+    UnexpectedGeneratedOrigin,
+    UnexpectedCheckerSite,
+    UnexpectedBinder,
+}
+
+fn task264_carrier_core_context(
+    checker_owner: &mizar_checker::source_property_implementation::SourcePropertyImplementationHandoff,
+) -> mizar_core::elaborator::CoreContext {
+    task264_carrier_core_context_with_mutation(
+        checker_owner,
+        Task264CarrierCoreContextMutation::Baseline,
+    )
+}
+
+fn task264_carrier_core_context_with_mutation(
+    checker_owner: &mizar_checker::source_property_implementation::SourcePropertyImplementationHandoff,
+    mutation: Task264CarrierCoreContextMutation,
+) -> mizar_core::elaborator::CoreContext {
+    let identity = checker_owner.carrier_identity();
+    let summary = mizar_core::elaborator::ResolvedTypedAstSummary::new(
+        checker_owner.source_id(),
+        checker_owner.module_id().clone(),
+    );
+    let summary = if mutation == Task264CarrierCoreContextMutation::UnexpectedCheckerSite {
+        summary.with_checker_sites(vec![
+            mizar_core::elaborator::CheckerSiteSummary::failed_overload(
+                mizar_checker::resolved_typed_ast::OverloadResolutionId::new(0),
+                mizar_core::core_ir::CoreSourceRef::direct(mizar_session::SourceRange {
+                    source_id: checker_owner.source_id(),
+                    start: 13,
+                    end: 101,
+                }),
+            ),
+        ])
+    } else {
+        summary
+    };
+    let mut input = mizar_core::elaborator::CoreContextInput::new(summary);
+    if mutation != Task264CarrierCoreContextMutation::MissingItem {
+        let provenance_key =
+            if mutation == Task264CarrierCoreContextMutation::WrongProvenance {
+                "wrong-task264-carrier-provenance"
+            } else {
+                "source-property-carrier-core-item-v1.structure"
+            };
+        let boundary_provenance_key =
+            if mutation == Task264CarrierCoreContextMutation::WrongBoundaryProvenance {
+                "wrong-task264-carrier-boundary-provenance"
+            } else {
+                "source-property-carrier-core-item-v1.structure"
+            };
+        let source_range = if mutation == Task264CarrierCoreContextMutation::WrongSource {
+            mizar_session::SourceRange {
+                source_id: checker_owner.source_id(),
+                start: 14,
+                end: 101,
+            }
+        } else {
+            mizar_session::SourceRange {
+                source_id: checker_owner.source_id(),
+                start: 13,
+                end: 101,
+            }
+        };
+        let source = mizar_core::core_ir::CoreSourceRef::direct(source_range).with_provenance(vec![
+            mizar_core::core_ir::CoreProvenance::new(
+                mizar_core::core_ir::CoreProvenancePhase::Checker,
+                provenance_key,
+            ),
+        ]);
+        let symbol = if mutation == Task264CarrierCoreContextMutation::WrongSymbol {
+            task264_carrier_extra_symbol(checker_owner, "task264-carrier-wrong")
+        } else {
+            identity.structure_symbol().clone()
+        };
+        let kind = if mutation == Task264CarrierCoreContextMutation::WrongKind {
+            mizar_core::core_ir::CoreItemKind::Mode
+        } else {
+            mizar_core::core_ir::CoreItemKind::Structure
+        };
+        let visibility = if mutation == Task264CarrierCoreContextMutation::WrongVisibility {
+            "private"
+        } else {
+            "public"
+        };
+        let mut seed = mizar_core::elaborator::CoreItemSeed::new(
+            symbol,
+            kind,
+            visibility,
+            source,
+            mizar_core::elaborator::CheckerOwnedProvenance::checker(
+                boundary_provenance_key,
+            ),
+        );
+        if mutation != Task264CarrierCoreContextMutation::MissingBoundary {
+            seed = seed.with_definition_boundary(
+                if mutation == Task264CarrierCoreContextMutation::WrongBoundary {
+                    mizar_core::elaborator::DefinitionBoundaryKind::Theorem
+                } else {
+                    mizar_core::elaborator::DefinitionBoundaryKind::DefinitionalItem
+                },
+            );
+        }
+        if mutation == Task264CarrierCoreContextMutation::UnexpectedDependency {
+            seed = seed.with_dependencies(vec![task264_carrier_extra_symbol(
+                checker_owner,
+                "task264-carrier-missing",
+            )]);
+        }
+        input.item_seeds.push(seed);
+    }
+    if mutation == Task264CarrierCoreContextMutation::ExtraItem {
+        input.item_seeds.push(
+            mizar_core::elaborator::CoreItemSeed::new(
+                task264_carrier_extra_symbol(checker_owner, "task264-carrier-extra"),
+                mizar_core::core_ir::CoreItemKind::Structure,
+                "public",
+                mizar_core::core_ir::CoreSourceRef::direct(mizar_session::SourceRange {
+                    source_id: checker_owner.source_id(),
+                    start: 13,
+                    end: 101,
+                })
+                .with_provenance(vec![mizar_core::core_ir::CoreProvenance::new(
+                    mizar_core::core_ir::CoreProvenancePhase::Checker,
+                    "source-property-carrier-core-item-v1.extra",
+                )]),
+                mizar_core::elaborator::CheckerOwnedProvenance::checker(
+                    "source-property-carrier-core-item-v1.extra",
+                ),
+            )
+            .with_definition_boundary(
+                mizar_core::elaborator::DefinitionBoundaryKind::DefinitionalItem,
+            ),
+        );
+    }
+    if mutation == Task264CarrierCoreContextMutation::UnexpectedGeneratedOrigin {
+        input.generated_origin_seeds.push(
+            mizar_core::elaborator::GeneratedOriginSeed::new(
+                identity.structure_symbol().clone(),
+                mizar_core::core_ir::GeneratedOriginKind::StableChoice,
+                "task264-carrier-unexpected-generated-origin",
+                mizar_core::core_ir::CoreSourceRef::direct(mizar_session::SourceRange {
+                    source_id: checker_owner.source_id(),
+                    start: 13,
+                    end: 101,
+                }),
+                mizar_core::elaborator::CheckerOwnedProvenance::checker(
+                    "task264-carrier-unexpected-generated-origin",
+                ),
+            ),
+        );
+    }
+    if mutation == Task264CarrierCoreContextMutation::UnexpectedBinder {
+        let var = mizar_core::core_ir::CoreVarId::new(0);
+        input
+            .variable_seeds
+            .push(mizar_core::elaborator::CoreVariableSeed::new(
+                var,
+                mizar_core::binder_normalization::NormalizedVarClass::Free,
+                "task264-carrier-unexpected-binder",
+                mizar_core::binder_normalization::NormalizedVarSort::Term,
+                mizar_core::elaborator::CheckerOwnedProvenance::checker(
+                    "task264-carrier-unexpected-binder",
+                ),
+            ));
+        input
+            .binder_seeds
+            .push(mizar_core::elaborator::CoreBinderSeed::new(
+                var,
+                mizar_core::core_ir::CoreSourceRef::direct(mizar_session::SourceRange {
+                    source_id: checker_owner.source_id(),
+                    start: 13,
+                    end: 101,
+                }),
+                mizar_core::elaborator::CheckerOwnedProvenance::checker(
+                    "task264-carrier-unexpected-binder",
+                ),
+            ));
+    }
+    mizar_core::elaborator::prepare_core_context(input)
+        .expect("Task264 carrier Core context seed should prepare")
+}
+
+fn task264_carrier_extra_symbol(
+    checker_owner: &mizar_checker::source_property_implementation::SourcePropertyImplementationHandoff,
+    local: &str,
+) -> mizar_resolve::resolved_ast::SymbolId {
+    mizar_resolve::resolved_ast::SymbolId::new(
+        checker_owner.module_id().clone(),
+        mizar_resolve::resolved_ast::LocalSymbolId::new(local),
+        mizar_resolve::resolved_ast::FullyQualifiedName::new(format!(
+            "{}.{}",
+            checker_owner.module_id().path().as_str(),
+            local,
+        )),
+    )
+}

@@ -186,3 +186,13 @@ synchronize the same two structure associations, sole Derived-to-Base local
 dependency, standalone by-value API, default-deny boundary, prohibited
 semantics, protected artifacts, zero-credit status, and Task277B deferral.
 English is canonical; no exception is recorded.
+
+## Task 33I264 Bilingual Contract Parity
+
+The [EN contract](../../task_contracts/en/CORE-SOURCE-PROPERTY-CARRIER-ITEM-CONTEXT-33I264.md)
+and [JA companion](../../task_contracts/ja/CORE-SOURCE-PROPERTY-CARRIER-ITEM-CONTEXT-33I264.md)
+synchronize the same singleton Task264 carrier/Core association, complete
+by-value checker owner, scalar `carrier_item()` API, error precedence,
+default-deny oracle, exact debug grammar, private two-test boundary, Core34
+handoff, zero-credit status, and semantic exclusions. English is canonical;
+no exception is recorded.

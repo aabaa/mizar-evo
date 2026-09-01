@@ -605,20 +605,29 @@ work. Every finding maps to a task or a recorded disposition:
       Derived-to-Base item dependency. Task-248/33LB, member/view/constructor/
       coherence semantics, production installation, coverage, `MT10-CIR-TE`,
       and Task277B readiness remain absent or deferred.
+33I264. **Task264 same-source carrier item context prerequisite.** [x]
+    - The paired [task contract](../../task_contracts/en/CORE-SOURCE-PROPERTY-CARRIER-ITEM-CONTEXT-33I264.md)
+      is implemented and verified. A prepared one-item Core context and the
+      committed Task264 checker handoff join only the retained whole
+      `Task264Carrier` symbol to one public valid Core `Structure` item and
+      retain one private scalar item association after complete postvalidation.
+    - Exactly two private Task264 Core probes pass. No shell/member item,
+      selector alias, dependency, semantics, installation, trace, or coverage
+      credit was added. Core34 selector/type ownership is the next prerequisite;
+      Core36 remains blocked.
 36P264. **Task264 Core owner disposition.** [x]
     - The frozen [task contract](../../task_contracts/en/CORE-SOURCE-PROPERTY-IMPLEMENTATION-OWNER-36P264.md)
       records that the context-only property-implementation shell has no
       symbol/definition identity and therefore cannot own a Core-33 item.
       Target-selector aliasing, a speculative item kind, and carrier identity
       reconstruction are forbidden.
-    - Task264 remains a Core-36 definition-lowering input after exact
-      same-source Core 33--35 context/type/term/formula prerequisites. A lower
-      checker task must first publish Task264's own carrier/member identities;
-      Task263's different-source context is not an input. Current
-      `CoreDefinition.item` then requires a distinct authenticated selector
-      owner from Core 34 or a separately reviewed owner-model change. This
-      docs-only disposition changes no source, test, trace, metadata, or
-      coverage state.
+    - Committed Task264C now supplies Task264's same-source carrier/member
+      identities and Task33I264 owns the carrier/Core association. Task263's
+      different-source context is not an input. Task264 remains a Core-36
+      definition-lowering input only after Core34 supplies a distinct
+      authenticated selector/type owner compatible with `CoreDefinition.item`
+      and the applicable Core35 inputs exist. No shell item or owner-model
+      change is authorized.
 33. **Source-derived Core context, items, binders, and source maps.** [ ]
     - Consume checker 248 through `MT10-CIR-TE`; no type/proof/algorithm body.
       For C4C8, checker 248 remains insufficient; Task 33C4C8 owns only the

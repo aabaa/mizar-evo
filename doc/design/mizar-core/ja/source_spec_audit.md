@@ -179,7 +179,10 @@ top-level public API group:
   `SourceStructureCoreItemAssociation`、
   `SourceStructureCoreItemAssociationTable`、
   `SourceStructureCoreContextHandoff`、`SourceStructureCoreContextError`、
-  `SourceStructureCoreContextProducer`
+  `SourceStructureCoreContextProducer`、
+  `SourcePropertyCarrierCoreContextHandoff`、
+  `SourcePropertyCarrierCoreContextError`、
+  `SourcePropertyCarrierCoreContextProducer`
 - Type and fact lowering: `TypeAndFactResult`, `TypeAndFactLoweringError`,
   `TypeAndFactLoweringInput`, `TypePredicateSeed`,
   `DeclaredBinderTypeSeed`, `AttributeChainSeed`, `ModeExpansionSeed`,
@@ -398,3 +401,16 @@ shape/visibilityだけをauthenticateする。
 Bounded Core association `design_drift`とprivate `test_gap`だけを閉じ、spec、test
 intent、trace status、expectation、coverageは変更しない。Constructor/member/view/
 coherence semantics、Core34--36、production install、`MT10-CIR-TE`はopenのまま。
+
+## Task 33I264 source/specification boundary
+
+Canonical [Task 33I264 contract](../../task_contracts/ja/CORE-SOURCE-PROPERTY-CARRIER-ITEM-CONTEXT-33I264.md)
+はchecker-authenticated same-source `Task264Carrier` identityだけをexisting public valid
+Core `Structure` item 1件へmapする。Exact whole `SymbolId` lookupだけがjoinで、
+definition/contribution/origin、target/property link、Core source/provenance/boundary/worklist
+shapeはvalidation evidenceである。
+
+Bounded carrier-association `design_drift`/private `test_gap`をzero semantic/coverage creditで
+閉じる。Property-implementation shell/field/propertyにCore itemは割り当てない。
+Selector/type ownerはCore34、definition body/correctnessはapplicable Core35後のCore36。
+Spec、test intent、trace status、expectation、diagnostic、acceptanceは不変。
