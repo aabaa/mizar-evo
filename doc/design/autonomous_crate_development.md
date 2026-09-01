@@ -70,6 +70,49 @@ implementation:
 Such changes must be represented in `doc/spec`, tests, or traceability metadata
 as appropriate.
 
+## Autonomous Design Decisions And Stop Conditions
+
+Within an explicitly requested autonomous crate-development run, the parent
+agent must not stop merely because more than one derived implementation design
+is possible. It may choose module ownership, API names and shapes, immutable
+data representation, validation order, task sequencing, private test matrices,
+and documentation placement without additional user confirmation when all of
+the following hold:
+
+- the choice does not change language behavior, test intent, diagnostics,
+  parser recovery, soundness boundaries, proof or acceptance policy, or another
+  higher-authority requirement;
+- the choice stays within the requested crate/task scope and existing
+  responsibility boundaries;
+- the relevant specification and tests are present and non-contradictory;
+- the selected design is the smallest fail-closed implementation that satisfies
+  the frozen acceptance criteria; and
+- the decision is recorded in the paired task contract or owning design
+  document and passes the required independent reviews.
+
+When several derived designs remain valid, prefer the option that adds the
+least semantic surface, preserves existing public artifacts, avoids premature
+generalization, and defers unowned semantics explicitly. A bounded derived
+`design_drift`, `source_drift`, or `test_gap` is work to resolve, not by itself
+a reason to request a design decision from the user.
+
+Stop and request user or human-authority input only when continued work would
+require at least one of the following:
+
+- resolving a `spec_gap` or contradiction by choosing language or proof
+  behavior not fixed by current higher-authority artifacts;
+- changing existing `.miz` test intent, expectations, trace status, public
+  diagnostics, parser recovery, or a soundness/acceptance boundary;
+- overriding a `repo_metadata_conflict` or another protected artifact;
+- expanding to a materially different task, external system, permission, or
+  destructive action not already authorized; or
+- choosing among alternatives whose observable semantic consequences cannot be
+  separated or safely deferred by a minimal fail-closed design.
+
+If a later milestone has unowned semantics but a safe derived prerequisite or
+documentation-only deferral decision is available, complete that bounded work
+and continue fresh inventory instead of stopping at the first design fork.
+
 ## Crate Kickoff
 
 Before crate-wide autonomous development starts, create or update:
