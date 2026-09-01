@@ -7430,3 +7430,15 @@ production route, or semantic result. Specification, protected `.miz` and
 expectation intent, trace/metadata, snapshot, runner selection, and chapter
 status remain unchanged. Core35 owns the later term/formula body input;
 Core36 definition/correctness/coherence and Task277B remain deferred/not-ready.
+
+## Checker Task264D Equals Selector Identity Association
+
+The paired [Task264D contract](task_contracts/en/CHECKER-SOURCE-PROPERTY-EQUALS-SELECTOR-IDENTITY-264D.md)
+adds a zero-credit checker receipt for the exact Task264 equals
+`M.carrier` occurrence. Construction borrows the existing resolver environment
+to authenticate the whole local field symbol and retains the complete property,
+term, and structure handoffs by value. Existing Task264 private tests assert
+the receipt and fail-closed profile mixing. Specification, `.miz`, expectation,
+trace, metadata, snapshot, runner selection, diagnostics, obligations, semantics,
+and coverage credit remain unchanged. Core35 parameter/current-result/owner
+prerequisites and Core36 definition/correctness remain deferred.

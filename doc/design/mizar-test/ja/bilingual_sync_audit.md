@@ -1997,3 +1997,9 @@ generic API/slot、fixture/expectation/trace/metadataの変更なし。Core34--3
 private Task263 probe 2件、definition/Core-item row 2行、sole Derived→Base local
 dependency、standalone input、default-deny matrix、zero-credit status、semantic/
 production deferralを同期する。English canonical、exceptionなし。
+
+## Checker Task264D private-probe synchronization
+
+Paired Task264D contract/harnessはsame existing Task264 selector/type tests 2件、equals
+receipt assertion、means/mixed rejection、unchanged test count、zero-credit boundaryを
+assignする。English canonical/Japanese logical syncを維持する。

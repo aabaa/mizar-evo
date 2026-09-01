@@ -161,6 +161,26 @@ property value, or an accepted semantic fact. Its deterministic debug format
 is `source-property-implementation-debug-v2` with structure, field, and
 property identity rows before the existing payload rows.
 
+### Equals selector identity association
+
+The representation-only
+[Task264D contract](../../task_contracts/en/CHECKER-SOURCE-PROPERTY-EQUALS-SELECTOR-IDENTITY-264D.md)
+adds a separate branded handoff without widening the existing Task264 owner.
+It consumes the complete property, primary-term, and structure handoffs by
+value, uses an explicit `SymbolEnv` during construction, and publishes the
+exact equals-only chain from implementation and
+definiens 0 through structure term/member/member-identity request 0 to base
+term/reference/binding 0 and the whole authenticated `carrier` field symbol.
+
+The producer rejects means, mixed-profile, foreign, fingerprint-mismatched,
+and malformed associations before publication. It does not generically
+resolve Task254 requests generally and does not infer a symbol from spelling
+alone: the environment, whole resolver identity, and normal origin jointly
+authenticate this one result. The existing Task264 handoff and its v2 debug
+bytes stay unchanged; the new handoff
+has its own deterministic v1 debug representation. This is a Core35
+prerequisite only, not a term, property value, or semantic result.
+
 ## Frozen Lower Bundle And Mandatory Type Prerequisite
 
 The exact profiles consume these lower owners:
@@ -793,6 +813,7 @@ count/hash verification, and one dedicated logical-task commit.
 | `SourcePropertyCorrectnessKind` | `#[non_exhaustive]`; callers must tolerate later explicitly frozen correctness kinds. |
 | `SourcePropertyImplementationRecovery` | `#[non_exhaustive]`; callers must tolerate later recovery classes. |
 | `SourcePropertyImplementationError` | `#[non_exhaustive]`; callers must not exhaustively match validation failures. |
+| `SourcePropertyEqualsSelectorIdentityError` | `#[non_exhaustive]`; callers must tolerate later fail-closed association failures. |
 
 No exhaustive public enum exceptions are owned by this module.
 

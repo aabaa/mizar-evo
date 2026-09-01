@@ -6711,3 +6711,20 @@ post-commit fresh inventoryからだけ選択する。
   **NO FINDINGS**、hard gate `9/9` PASS、valid uncapped `100/100`で完了する。
 - [x] Exact 20-path task-only commitを作成し、completed Task264C recordをamendせずに
   clean postcommit proofとfresh same-source Core33 inventoryを直後に実施する。
+
+## Task 264D equals selector identity association
+
+- [x] Missing typed `M.carrier` occurrence-to-field-symbol edgeをbounded
+  `source_drift`/`test_gap`、`spec_gap`なしと分類する。
+- [x] Separate by-value equals-only handoffとdefault-deny APIをpaired
+  [Task264D contract](../../task_contracts/ja/CHECKER-SOURCE-PROPERTY-EQUALS-SELECTOR-IDENTITY-264D.md)
+  へfreezeする。
+- [x] Pre-source specification/APIとbilingual/boundary reviewをblocking findingなしで
+  完了する。
+- [x] Existing owner API/debug/protected artifactを変更せずexact associationとfocused
+  checker/private Task264 testsを実装する。
+- [x] Post-source reviewとhard gateを**NO FINDINGS**、`9/9` PASS、valid uncapped
+  `100/100`で完了する。
+- [x] Exact task-only commitをprepareし、clean postcommit proofとfresh parameter/
+  Core-variable prerequisite inventoryはself-referential task commitでなくoperational
+  handoffへ記録する。

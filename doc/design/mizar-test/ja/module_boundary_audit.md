@@ -11771,6 +11771,10 @@ Test/module/include/production path/facade route/Cargo edge/fixture/snapshotは�
 Final leaf size/hashはtask contractへpost-source measurementとして記録し、production
 ownership/selectionは不変。
 
+Checker Task264Dもsame existing private Task264 leafのassertionだけを変更する。
+Runner producer、public harness API、fixture/expectation/trace/metadata、dispatch、
+snapshot、Cargo graph、downstream Core routeはexcludeしたままである。
+
 ## Checker Task 269A frozen dormant runner boundary
 
 `runner/type_elaboration`下private leaf 1件とincluded test leaf 1件がrunnerの

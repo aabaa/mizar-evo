@@ -5438,6 +5438,13 @@ Probeはlibrary-test-only。Registry include、production dispatch、active rout
 capture/installation、semantic result、diagnostic、sidecar/trace mutation、Core identity/origin、
 coverage credit、Task277B readinessは追加しない。
 
+## Checker Task264D private equals selector identity probe
+
+Existing Task264 selector/type testsはreal equals routeからchecker Task264D handoffを
+constructし、deterministic replayとexact scalar/whole-symbol associationをassertし、
+means/mixed lower profileをrejectする。Test count、fixture、expectation、trace、metadata、
+selection、production route、semantic result、coverage creditは変更しない。
+
 ## Checker Task 257C4C8 Private Normalized Capture Graph Probe
 
 Canonical [C4C8 contract](../../task_contracts/ja/CHECKER-FRAENKEL-NESTED-MULTI-CAPTURE-GRAPH-257C4C8.md)は

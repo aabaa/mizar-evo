@@ -315,6 +315,22 @@ Representation-only/zero credit。Normalized type/guard、binder、term/formula�
 definition、correctness/coherence seed、production route、semanticsは追加しない。
 Core35はlater Task264 term/formula body inputをownし、Core36はseparate ownerのまま。
 
+## Task 264D Task264 Core35 selector readiness
+
+Frozen checker
+[Task264D contract](../../task_contracts/ja/CHECKER-SOURCE-PROPERTY-EQUALS-SELECTOR-IDENTITY-264D.md)
+はlater Task264 Core35 body inputのrequired equals-only identity prerequisiteである。
+Constructionでexact Task264 `SymbolEnv`をborrowし、complete property/primary-term/
+structure handoffをby-value retainして、authenticated `M.carrier`
+occurrence-to-whole-field-symbol receiptだけをpublishする。Coreはmember spellingや
+unresolved Task254 requestからこのedgeをreconstructしない。
+
+Task264DだけではCore35 loweringはreadyにならない。Separate Core33 parameter/
+Core-variable associationが必要で、meansにはexplicit current-definition-result
+representation、generic Core35 ownerにはproperty itemをinventせずexisting
+`CoreDefinitionOwner`を扱う設計が必要である。本checker prerequisiteはterm/formula/
+definition/semantics/route/coverage creditを追加しない。
+
 ## Task 36P264 property-implementation owner disposition
 
 Frozen [Task 36P264 contract](../../task_contracts/ja/CORE-SOURCE-PROPERTY-IMPLEMENTATION-OWNER-36P264.md)は

@@ -6029,6 +6029,14 @@ The probe adds no registry include, production dispatch, active route,
 diagnostic, sidecar/trace mutation, semantic result, coverage credit, or
 Task277B readiness.
 
+## Checker Task264D Private Equals Selector Identity Probe
+
+The existing Task264 selector/type tests now construct the checker Task264D
+handoff from the real equals route, assert deterministic replay and exact
+scalar/whole-symbol associations, and reject means plus mixed lower profiles.
+No test count, fixture, expectation, trace, metadata, selection, production
+route, semantic result, or coverage credit changes.
+
 ## Core Task 33I263 Private Structure-Context Probe
 
 The canonical [Task 33I263 contract](../../task_contracts/en/CORE-SOURCE-STRUCTURE-ITEM-CONTEXT-33I263.md)

@@ -725,6 +725,50 @@ fn task264_selector_type_context_is_exact_for_means_and_equals() {
             )
         );
         assert_eq!(source_type.debug_text(), checker_owner.source_type_fingerprint());
+        if ordinal == 1 {
+            let terms = output
+                .typed_ast
+                .source_term()
+                .expect("Task264 equals primary terms")
+                .clone();
+            let structures = output
+                .typed_ast
+                .source_structure()
+                .expect("Task264 equals structure")
+                .clone();
+            let first = mizar_checker::source_property_implementation::SourcePropertyEqualsSelectorIdentityProducer::build(
+                &symbols,
+                checker_owner.clone(),
+                terms.clone(),
+                structures.clone(),
+            )
+            .expect("Task264D equals selector identity");
+            let second = mizar_checker::source_property_implementation::SourcePropertyEqualsSelectorIdentityProducer::build(
+                &symbols,
+                checker_owner.clone(),
+                terms.clone(),
+                structures.clone(),
+            )
+            .expect("Task264D equals selector replay");
+            assert_eq!(first, second);
+            assert_eq!(first.property(), &checker_owner);
+            assert_eq!(first.terms(), &terms);
+            assert_eq!(first.structures(), &structures);
+            let selector = first.association();
+            assert_eq!(selector.implementation().index(), 0);
+            assert_eq!(selector.definiens().index(), 0);
+            assert_eq!(selector.structure_term().index(), 0);
+            assert_eq!(selector.member().index(), 0);
+            assert_eq!(selector.member_request().index(), 0);
+            assert_eq!(selector.base_edge().index(), 0);
+            assert_eq!(selector.base_term().index(), 0);
+            assert_eq!(selector.base_reference().index(), 0);
+            assert_eq!(selector.base_binding().index(), 0);
+            assert_eq!(selector.selector_symbol(), identity.field_symbol());
+            assert!(first
+                .debug_text()
+                .starts_with("source-property-equals-selector-identity-debug-v1\n"));
+        }
     }
 }
 
@@ -777,8 +821,43 @@ fn task264_selector_type_cross_profile_and_foreign_transactions_fail_closed() {
         .source_type()
         .expect("Task264 equals type")
         .clone();
+    let means_terms = means_output
+        .typed_ast
+        .source_term()
+        .expect("Task264 means terms")
+        .clone();
+    let equals_terms = equals_output
+        .typed_ast
+        .source_term()
+        .expect("Task264 equals terms")
+        .clone();
+    let equals_structure = equals_output
+        .typed_ast
+        .source_structure()
+        .expect("Task264 equals structure")
+        .clone();
     assert_eq!(means_owner.source_id(), equals_owner.source_id());
     assert_eq!(means_owner.module_id(), equals_owner.module_id());
+    assert_eq!(
+        mizar_checker::source_property_implementation::SourcePropertyEqualsSelectorIdentityProducer::build(
+            &equals_symbols,
+            means_owner.clone(),
+            equals_terms.clone(),
+            equals_structure.clone(),
+        )
+        .expect_err("Task264D means profile must remain unsupported"),
+        mizar_checker::source_property_implementation::SourcePropertyEqualsSelectorIdentityError::UnsupportedProfile
+    );
+    assert_eq!(
+        mizar_checker::source_property_implementation::SourcePropertyEqualsSelectorIdentityProducer::build(
+            &equals_symbols,
+            equals_owner.clone(),
+            means_terms,
+            equals_structure,
+        )
+        .expect_err("Task264D mixed lower profile must fail closed"),
+        mizar_checker::source_property_implementation::SourcePropertyEqualsSelectorIdentityError::DependencyMismatch
+    );
     for (carrier, source_type) in [
         (task264_carrier_core_handoff(&means_owner), equals_type.clone()),
         (task264_carrier_core_handoff(&equals_owner), means_type.clone()),

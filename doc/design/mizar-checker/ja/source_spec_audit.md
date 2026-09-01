@@ -791,6 +791,10 @@ literal top-level public item:
   `SourcePropertyImplementationProjection`、
   `SourcePropertyImplementationError`、
   `SourcePropertyImplementationProducer`
+- `SourcePropertyEqualsSelectorAssociation`、
+  `SourcePropertyEqualsSelectorIdentityHandoff`、
+  `SourcePropertyEqualsSelectorIdentityError`、
+  `SourcePropertyEqualsSelectorIdentityProducer`
 
 対応:
 
@@ -799,7 +803,7 @@ literal top-level public item:
 | immutable syntax-free table 5個がexact struct-property implementation、parameter、resolver-backed target、definiens、profile-dependent correctness rowを保持する。 | `src/source_property_implementation.rs`のpublic input/row/dense ID/table/getter。 | exact equals/means checker testとreal-source runner consumer 2件。 | means `1/1/1/1/2`、equals `1/1/1/1/0`としてimplemented。 |
 | producerはTask248P/249PI/252/254/256 lower owner、3件のexact carrier/member resolver identity、declared return row、typed arena、complete fingerprintをauthenticateする。 | `SourcePropertyCarrierIdentity`、`SourcePropertyImplementationProducer::build`、replay validation、fail-closed error。 | independent row/lower/resolver/carrier-identity/return/fingerprint/arena corruption test。 | syntax parsing/semantic goal compositionなしでimplemented。 |
 | Meansはretained baselineへPending existence/uniquenessをappendしEqualsはzero、Typed/final ownerはatomic install/replayする。 | projection、`TypedAst::with_source_property_implementation`、final getter。 | nonempty-baseline transaction、orphan/extra rejection、deterministic replay、Task259 isolation。 | mutually exclusive Task264 ownership。 |
-| public surface/enumはdocumented/forward-compatibleである。 | 上記5 ID、6 input、4 data enum、5 row/table、carrier identity、handoff、projection、error、producer。全public enumはnon-exhaustive。 | public-enum/source-spec-audit lint policy。 | production syntax-dependency exceptionなしでguard。 |
+| public surface/enumはdocumented/forward-compatibleである。 | 上記5 ID、6 input、4 data enum、5 row/table、carrier identity、equals-selector association/handoff、projection、error群、producer群。全public enumはnon-exhaustive。 | public-enum/source-spec-audit lint policy。 | production syntax-dependency exceptionなしでguard。 |
 
 bounded gap: goal/guard/return/definiens composition、`it` substitution、proof/
 justification verification、discharge、acceptance、fact/axiom、property-value
@@ -6025,3 +6029,12 @@ LocalAbbreviation/captureにはblockingな`spec_gap`。既存`.miz`/
 expectation/trace/coverage status/diagnosticは不変で、新fixtureは不要。
 
 Completion evidence: [central Task-269SDC historical contract](../../task_contracts/ja/269SDC.md#completion-evidence)。
+
+### Task264D equals selector identity receipt
+
+[Task264D contract](../../task_contracts/ja/CHECKER-SOURCE-PROPERTY-EQUALS-SELECTOR-IDENTITY-264D.md)
+はexact equals lower graphとresolver-authenticated whole `carrier` field symbol間の
+checker `source_drift`だけをcloseする。Chapter 7はdirect-term equals form、existing
+Task264 `.miz`は`M.carrier`をownする。Construction-only explicit `SymbolEnv`がbounded
+resultをauthenticateし、3 complete handoffとprivate scalar associationがreplay用に
+preserveする。Semantic/trace/metadata/coverage creditは追加しない。

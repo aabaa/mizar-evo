@@ -7143,3 +7143,19 @@ selected only from fresh post-commit inventory.
 - [x] Complete the exact twenty-path task-only commit; perform its clean
   postcommit proof and fresh same-source Core-33 inventory immediately after
   creating the commit, without amending the completed Task264C record.
+
+## Task 264D equals selector identity association
+
+- [x] Classify the missing typed `M.carrier` occurrence-to-field-symbol edge as
+  bounded `source_drift`/`test_gap`, with no `spec_gap`.
+- [x] Freeze the separate by-value equals-only handoff and default-deny API in
+  the paired [Task264D contract](../../task_contracts/en/CHECKER-SOURCE-PROPERTY-EQUALS-SELECTOR-IDENTITY-264D.md).
+- [x] Complete independent pre-source specification/API and bilingual/boundary
+  reviews with no blocking findings.
+- [x] Implement the exact association and focused checker/private Task264 tests
+  without changing the existing owner API/debug or protected artifacts.
+- [x] Complete all post-source reviews and hard gates with **NO FINDINGS**,
+  `9/9` PASS, and valid uncapped `100/100`.
+- [x] Prepare the exact task-only commit; record clean postcommit proof and the
+  fresh parameter/Core-variable prerequisite inventory in the operational
+  handoff rather than the self-referential task commit.

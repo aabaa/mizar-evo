@@ -874,6 +874,10 @@ Literal top-level public items:
   `SourcePropertyImplementationProjection`,
   `SourcePropertyImplementationError`,
   `SourcePropertyImplementationProducer`
+- `SourcePropertyEqualsSelectorAssociation`,
+  `SourcePropertyEqualsSelectorIdentityHandoff`,
+  `SourcePropertyEqualsSelectorIdentityError`,
+  `SourcePropertyEqualsSelectorIdentityProducer`
 
 Correspondence:
 
@@ -882,7 +886,7 @@ Correspondence:
 | Five immutable syntax-free tables retain one exact struct-property implementation, parameter, resolver-backed target, definiens, and profile-dependent correctness rows. | Public inputs, rows, dense IDs, tables, and getters in `src/source_property_implementation.rs`. | Exact equals/means checker test plus the two real-source runner consumers. | Implemented as `1/1/1/1/2` means or `1/1/1/1/0` equals. |
 | The producer authenticates Task-248P/249PI/252/254/256 lower owners, all three exact carrier/member resolver identities, declared return row, typed arena, and complete fingerprints. | `SourcePropertyCarrierIdentity`, `SourcePropertyImplementationProducer::build`, replay validation, and fail-closed errors. | Independent row/lower/resolver/carrier-identity/return/fingerprint/arena corruption tests. | Implemented without syntax parsing or semantic goal composition. |
 | Means appends Pending existence/uniqueness rows to a retained baseline while equals appends zero; Typed/final owners install and replay atomically. | Projection, `TypedAst::with_source_property_implementation`, and final getter. | Nonempty-baseline transaction, orphan/extra rejection, deterministic replay, and Task-259 isolation. | Mutually exclusive Task-264 ownership. |
-| Public surface and enums remain documented and forward-compatible. | Five IDs, six inputs, four data enums, five rows/tables, carrier identity, handoff, projection, error, and producer above; every public enum is non-exhaustive. | Public-enum and source/spec-audit lint policies. | Guarded with no production syntax-dependency exception. |
+| Public surface and enums remain documented and forward-compatible. | Five IDs, six inputs, four data enums, five rows/tables, carrier identity, equals-selector association/handoff, projection, errors, and producers above; every public enum is non-exhaustive. | Public-enum and source/spec-audit lint policies. | Guarded with no production syntax-dependency exception. |
 
 Bounded gaps: goal/guard/return/definiens composition, `it` substitution,
 proof/justification verification, discharge, acceptance, facts/axioms,
@@ -6388,3 +6392,13 @@ coverage status, and diagnostics remain authoritative and unchanged; no new
 fixture is required for this dormant exact-source consumer.
 
 Completion evidence: [central Task-269SDC historical contract](../../task_contracts/en/269SDC.md#completion-evidence).
+
+### Task264D equals selector identity receipt
+
+The [Task264D contract](../../task_contracts/en/CHECKER-SOURCE-PROPERTY-EQUALS-SELECTOR-IDENTITY-264D.md)
+closes only the checker `source_drift` between the exact equals lower graph and
+the resolver-authenticated whole `carrier` field symbol. Chapter 7 owns the
+direct-term equals form; the existing Task264 `.miz` owns `M.carrier`. An
+explicit construction-only `SymbolEnv` authenticates the bounded result, while
+the three complete handoffs and private scalar association preserve it for
+replay. This adds no semantic, trace, metadata, or coverage credit.

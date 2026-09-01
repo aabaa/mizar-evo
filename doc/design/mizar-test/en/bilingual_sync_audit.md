@@ -2179,3 +2179,10 @@ assign the same two private Task-263 probes, two definition/Core-item rows,
 sole Derived-to-Base local dependency, standalone inputs, default-deny matrix,
 zero-credit status, and complete semantic/production deferrals. English is
 canonical; no exception is recorded.
+
+## Checker Task264D Private-Probe Synchronization
+
+The paired Task264D contracts and harness sections assign the same existing two
+Task264 selector/type tests, equals receipt assertions, means/mixed rejection,
+unchanged test count, and zero-credit boundary. English is canonical; Japanese
+is logically synchronized.

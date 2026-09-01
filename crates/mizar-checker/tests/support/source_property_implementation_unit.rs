@@ -445,6 +445,260 @@ fn task_264_exact_means_equals_tables_fingerprints_debug_and_obligations() {
 }
 
 #[test]
+fn task_264d_equals_selector_identity_is_exact_and_deterministic() {
+    let fixture = fixture(TestProfile::Equals);
+    let projection = fixture.projection(&InitialObligationTable::new());
+    let property = projection.handoff().clone();
+    let structures = fixture.structure.clone().expect("Task264 equals structure");
+    let first = SourcePropertyEqualsSelectorIdentityProducer::build(
+        &fixture.env,
+        property.clone(),
+        fixture.terms.clone(),
+        structures.clone(),
+    )
+    .expect("Task264D equals selector identity");
+    let second = SourcePropertyEqualsSelectorIdentityProducer::build(
+        &fixture.env,
+        property.clone(),
+        fixture.terms.clone(),
+        structures.clone(),
+    )
+    .expect("Task264D deterministic replay");
+    assert_eq!(first, second);
+    assert_eq!(first.source_id(), fixture.source);
+    assert_eq!(first.module_id(), &fixture.module);
+    assert_eq!(first.property(), &property);
+    assert_eq!(first.terms(), &fixture.terms);
+    assert_eq!(first.structures(), &structures);
+
+    let association = first.association();
+    assert_eq!(association.implementation().index(), 0);
+    assert_eq!(association.definiens().index(), 0);
+    assert_eq!(association.structure_term().index(), 0);
+    assert_eq!(association.member().index(), 0);
+    assert_eq!(association.member_request().index(), 0);
+    assert_eq!(association.base_edge().index(), 0);
+    assert_eq!(association.base_term().index(), 0);
+    assert_eq!(association.base_reference().index(), 0);
+    assert_eq!(association.base_binding().index(), 0);
+    assert_eq!(
+        association.selector_symbol(),
+        property.carrier_identity().field_symbol()
+    );
+    assert_eq!(
+        first.debug_text(),
+        format!(
+            concat!(
+                "source-property-equals-selector-identity-debug-v1\n",
+                "module: {}\n",
+                "property-fingerprint: {:?}\n",
+                "primary-term-fingerprint: {:?}\n",
+                "structure-fingerprint: {:?}\n",
+                "association implementation=0 definiens=0 structure-term=0 member=0 ",
+                "member-request=0 base-edge=0 base-term=0 base-reference=0 base-binding=0 selector={:?}\n",
+            ),
+            fixture.module.path().as_str(),
+            property.debug_text(),
+            fixture.terms.debug_text(),
+            structures.debug_text(),
+            property.carrier_identity().field_symbol().fqn().as_str(),
+        )
+    );
+    assert_eq!(property.debug_text(), expected_debug(&fixture));
+}
+
+#[test]
+fn task_264d_equals_selector_identity_fails_closed() {
+    let equals = fixture(TestProfile::Equals);
+    let projection = equals.projection(&InitialObligationTable::new());
+    let property = projection.handoff().clone();
+    let structures = equals.structure.clone().expect("Task264 equals structure");
+
+    let mut wrong_profile = property.clone();
+    wrong_profile.implementations.rows[0].style = SourcePropertyImplementationStyle::Means;
+    assert_eq!(
+        SourcePropertyEqualsSelectorIdentityProducer::build(
+            &equals.env,
+            wrong_profile,
+            equals.terms.clone(),
+            structures.clone(),
+        ),
+        Err(SourcePropertyEqualsSelectorIdentityError::UnsupportedProfile)
+    );
+
+    let mut wrong_fingerprint = property.clone();
+    wrong_fingerprint.source_term_fingerprint.push_str("forged");
+    assert_eq!(
+        SourcePropertyEqualsSelectorIdentityProducer::build(
+            &equals.env,
+            wrong_fingerprint,
+            equals.terms.clone(),
+            structures.clone(),
+        ),
+        Err(SourcePropertyEqualsSelectorIdentityError::DependencyMismatch)
+    );
+
+    let mut wrong_terms = equals.terms.clone();
+    wrong_terms.set_reference_use_ordinal_for_test(SourcePrimaryTermReferenceId::new(0), 0);
+    assert_eq!(
+        SourcePropertyEqualsSelectorIdentityProducer::build(
+            &equals.env,
+            property.clone(),
+            wrong_terms,
+            structures.clone(),
+        ),
+        Err(SourcePropertyEqualsSelectorIdentityError::DependencyMismatch)
+    );
+    let mut wrong_term_row = equals.terms.clone();
+    wrong_term_row.corrupt_for_test(SourcePrimaryTermCorruptionForTest::Rewrite {
+        term: SourcePrimaryTermId::new(0),
+        site_and_range: None,
+        spelling: None,
+        kind_and_role: Some((
+            SourcePrimaryTermKind::It,
+            SourcePrimaryTermRole::CurrentDefinitionResult,
+        )),
+    });
+    assert_eq!(
+        SourcePropertyEqualsSelectorIdentityProducer::build(
+            &equals.env,
+            property.clone(),
+            wrong_term_row,
+            structures.clone(),
+        ),
+        Err(SourcePropertyEqualsSelectorIdentityError::DependencyMismatch)
+    );
+
+    let (wrong_env, _) = resolver_env_with_spelling_override(
+        equals.source,
+        equals.module.clone(),
+        Some((1, "forged")),
+    );
+    assert_eq!(
+        SourcePropertyEqualsSelectorIdentityProducer::build(
+            &wrong_env,
+            property.clone(),
+            equals.terms.clone(),
+            structures.clone(),
+        ),
+        Err(SourcePropertyEqualsSelectorIdentityError::InvalidSelectorIdentity)
+    );
+    for mutation in [
+        Task264ResolverEnvMutation::FieldPrivate,
+        Task264ResolverEnvMutation::FieldLocalOnly,
+        Task264ResolverEnvMutation::FieldWrongOrigin,
+        Task264ResolverEnvMutation::MissingFieldEffects,
+    ] {
+        let (wrong_env, _) =
+            resolver_env_with_mutation(equals.source, equals.module.clone(), mutation);
+        assert_eq!(
+            SourcePropertyEqualsSelectorIdentityProducer::build(
+                &wrong_env,
+                property.clone(),
+                equals.terms.clone(),
+                structures.clone(),
+            ),
+            Err(SourcePropertyEqualsSelectorIdentityError::InvalidSelectorIdentity)
+        );
+    }
+    for mutation in [
+        Task264ResolverEnvMutation::ExtraContribution,
+        Task264ResolverEnvMutation::ExtraSymbol,
+        Task264ResolverEnvMutation::ExtraDefinition,
+    ] {
+        let (wrong_env, _) =
+            resolver_env_with_mutation(equals.source, equals.module.clone(), mutation);
+        assert_eq!(
+            SourcePropertyEqualsSelectorIdentityProducer::build(
+                &wrong_env,
+                property.clone(),
+                equals.terms.clone(),
+                structures.clone(),
+            ),
+            Err(SourcePropertyEqualsSelectorIdentityError::EnvironmentMismatch)
+        );
+    }
+    let (same_module_foreign_source, _) =
+        resolver_env(source_id(TestProfile::Means), equals.module.clone());
+    assert_eq!(
+        SourcePropertyEqualsSelectorIdentityProducer::build(
+            &same_module_foreign_source,
+            property.clone(),
+            equals.terms.clone(),
+            structures.clone(),
+        ),
+        Err(SourcePropertyEqualsSelectorIdentityError::EnvironmentMismatch)
+    );
+
+    let foreign = fixture(TestProfile::Means);
+    assert_eq!(
+        SourcePropertyEqualsSelectorIdentityProducer::build(
+            &foreign.env,
+            property.clone(),
+            equals.terms.clone(),
+            structures.clone(),
+        ),
+        Err(SourcePropertyEqualsSelectorIdentityError::EnvironmentMismatch)
+    );
+
+    let mut handoff = SourcePropertyEqualsSelectorIdentityProducer::build(
+        &equals.env,
+        property.clone(),
+        equals.terms.clone(),
+        structures,
+    )
+    .expect("Task264D baseline");
+    let exact = handoff.clone();
+    handoff.association.structure_term = SourceStructureTermId::new(1);
+    assert_eq!(
+        handoff.validate(),
+        Err(SourcePropertyEqualsSelectorIdentityError::InvalidSelectorIdentity)
+    );
+    handoff = exact.clone();
+    handoff.association.member = SourceStructureMemberId::new(1);
+    assert_eq!(
+        handoff.validate(),
+        Err(SourcePropertyEqualsSelectorIdentityError::InvalidSelectorIdentity)
+    );
+    handoff = exact.clone();
+    handoff.association.base_edge = SourceStructureEdgeId::new(1);
+    assert_eq!(
+        handoff.validate(),
+        Err(SourcePropertyEqualsSelectorIdentityError::InvalidSelectorIdentity)
+    );
+    handoff = exact.clone();
+    handoff.association.member_request = SourceStructureRequestId::new(1);
+    assert_eq!(
+        handoff.validate(),
+        Err(SourcePropertyEqualsSelectorIdentityError::InvalidSelectorIdentity)
+    );
+    handoff = exact.clone();
+    handoff.association.base_term = SourcePrimaryTermId::new(1);
+    assert_eq!(
+        handoff.validate(),
+        Err(SourcePropertyEqualsSelectorIdentityError::InvalidSelectorIdentity)
+    );
+    handoff = exact.clone();
+    handoff.association.base_reference = SourcePrimaryTermReferenceId::new(1);
+    assert_eq!(
+        handoff.validate(),
+        Err(SourcePropertyEqualsSelectorIdentityError::InvalidSelectorIdentity)
+    );
+    handoff = exact.clone();
+    handoff.association.base_binding = BindingId::new(1);
+    assert_eq!(
+        handoff.validate(),
+        Err(SourcePropertyEqualsSelectorIdentityError::InvalidSelectorIdentity)
+    );
+    handoff = exact;
+    handoff.association.selector_symbol = property.carrier_identity().property_symbol().clone();
+    assert_eq!(
+        handoff.validate(),
+        Err(SourcePropertyEqualsSelectorIdentityError::InvalidSelectorIdentity)
+    );
+}
+
+#[test]
 fn task_264_row_style_it_structure_and_correctness_corruption_fail_closed() {
     let means = fixture(TestProfile::Means);
     for mutate in [
@@ -1069,9 +1323,13 @@ fn source_id(profile: TestProfile) -> SourceId {
         byte.repeat(Hash::BYTE_LEN)
     ))
     .expect("Task 264 snapshot");
-    InMemorySessionIdAllocator::new()
-        .next_source_id(snapshot)
-        .expect("Task 264 source")
+    let allocator = InMemorySessionIdAllocator::new();
+    if profile == TestProfile::Equals {
+        allocator
+            .next_source_id(snapshot)
+            .expect("Task 264 reserved source");
+    }
+    allocator.next_source_id(snapshot).expect("Task 264 source")
 }
 
 fn property_shell(source: SourceId, module: &ModuleId, profile: TestProfile) -> DeclarationShellId {
@@ -1122,13 +1380,40 @@ fn property_shell(source: SourceId, module: &ModuleId, profile: TestProfile) -> 
 }
 
 fn resolver_env(source: SourceId, module: ModuleId) -> (SymbolEnv, [ResolverIdentity; 3]) {
-    resolver_env_with_spelling_override(source, module, None)
+    resolver_env_with_mutation(source, module, Task264ResolverEnvMutation::None)
 }
 
 fn resolver_env_with_spelling_override(
     source: SourceId,
     module: ModuleId,
     spelling_override: Option<(usize, &str)>,
+) -> (SymbolEnv, [ResolverIdentity; 3]) {
+    resolver_env_with_mutation(
+        source,
+        module,
+        spelling_override.map_or(Task264ResolverEnvMutation::None, |(role, spelling)| {
+            Task264ResolverEnvMutation::Spelling(role, spelling)
+        }),
+    )
+}
+
+#[derive(Clone, Copy)]
+enum Task264ResolverEnvMutation<'a> {
+    None,
+    Spelling(usize, &'a str),
+    FieldPrivate,
+    FieldLocalOnly,
+    FieldWrongOrigin,
+    MissingFieldEffects,
+    ExtraContribution,
+    ExtraSymbol,
+    ExtraDefinition,
+}
+
+fn resolver_env_with_mutation(
+    source: SourceId,
+    module: ModuleId,
+    mutation: Task264ResolverEnvMutation<'_>,
 ) -> (SymbolEnv, [ResolverIdentity; 3]) {
     let mut indexes = SymbolEnvIndexes::default();
     let contribution = indexes.contributions.insert(
@@ -1166,13 +1451,20 @@ fn resolver_env_with_spelling_override(
     for (index, (spelling, symbol_kind, definition_kind, start, end, path)) in
         specs.into_iter().enumerate()
     {
-        let spelling = spelling_override
-            .filter(|(role, _)| *role == index)
-            .map_or(spelling, |(_, spelling)| spelling);
+        let spelling = match mutation {
+            Task264ResolverEnvMutation::Spelling(role, value) if role == index => value,
+            _ => spelling,
+        };
+        let origin_start =
+            if index == 1 && matches!(mutation, Task264ResolverEnvMutation::FieldWrongOrigin) {
+                start + 1
+            } else {
+                start
+            };
         let origin = SemanticOrigin::new(
             source,
             module.clone(),
-            SourceAnchor::Range(range(source, start, end)),
+            SourceAnchor::Range(range(source, origin_start, end)),
             path,
         );
         let symbol = SymbolId::new(
@@ -1180,30 +1472,102 @@ fn resolver_env_with_spelling_override(
             LocalSymbolId::new(format!("task264-{index}-{spelling}")),
             FullyQualifiedName::new(format!("pkg::task264::{spelling}")),
         );
+        let mut symbol_entry = SymbolEntry::new(
+            symbol.clone(),
+            symbol_kind,
+            NamespacePath::new(module.path().as_str()),
+            spelling,
+            origin.clone(),
+            contribution,
+        );
+        symbol_entry = symbol_entry.with_visibility(
+            if index == 1 && matches!(mutation, Task264ResolverEnvMutation::FieldPrivate) {
+                Visibility::Private
+            } else {
+                Visibility::Public
+            },
+        );
+        symbol_entry = symbol_entry.with_export_status(
+            if index == 1 && matches!(mutation, Task264ResolverEnvMutation::FieldLocalOnly) {
+                ExportStatus::LocalOnly
+            } else {
+                ExportStatus::Exported
+            },
+        );
+        indexes.symbols.insert(symbol_entry);
+        let definition = indexes.definitions.insert(
+            DefinitionShell::new(symbol.clone(), definition_kind, origin, contribution)
+                .with_visibility(
+                    if index == 1 && matches!(mutation, Task264ResolverEnvMutation::FieldPrivate) {
+                        Visibility::Private
+                    } else {
+                        Visibility::Public
+                    },
+                ),
+        );
+        assert_eq!(definition.index(), index);
+        if index != 1 || !matches!(mutation, Task264ResolverEnvMutation::MissingFieldEffects) {
+            indexes
+                .contributions
+                .add_symbol(contribution, symbol.clone());
+            indexes
+                .contributions
+                .add_definition(contribution, definition);
+        }
+        identities.push((symbol, definition, contribution));
+    }
+    if matches!(mutation, Task264ResolverEnvMutation::ExtraContribution) {
+        indexes.contributions.insert(
+            module.clone(),
+            ContributionKind::LocalSource { source_id: source },
+            SourceAnchor::Range(range(source, 0, 1)),
+        );
+    }
+    if matches!(mutation, Task264ResolverEnvMutation::ExtraSymbol) {
+        let origin = SemanticOrigin::new(
+            source,
+            module.clone(),
+            SourceAnchor::Range(range(source, 0, 1)),
+            vec![9],
+        );
+        let symbol = SymbolId::new(
+            module.clone(),
+            LocalSymbolId::new("task264-extra"),
+            FullyQualifiedName::new("pkg::task264::extra"),
+        );
         indexes.symbols.insert(
             SymbolEntry::new(
                 symbol.clone(),
-                symbol_kind,
+                SymbolKind::Selector,
                 NamespacePath::new(module.path().as_str()),
-                spelling,
-                origin.clone(),
+                "extra",
+                origin,
                 contribution,
             )
             .with_visibility(Visibility::Public)
             .with_export_status(ExportStatus::Exported),
         );
-        let definition = indexes.definitions.insert(
-            DefinitionShell::new(symbol.clone(), definition_kind, origin, contribution)
-                .with_visibility(Visibility::Public),
+        indexes.contributions.add_symbol(contribution, symbol);
+    }
+    if matches!(mutation, Task264ResolverEnvMutation::ExtraDefinition) {
+        let origin = SemanticOrigin::new(
+            source,
+            module.clone(),
+            SourceAnchor::Range(range(source, 0, 1)),
+            vec![10],
         );
-        assert_eq!(definition.index(), index);
-        indexes
-            .contributions
-            .add_symbol(contribution, symbol.clone());
+        let definition = indexes.definitions.insert(
+            DefinitionShell::new(
+                identities[1].0.clone(),
+                DefinitionKind::Selector,
+                origin,
+                contribution,
+            )
+            .with_visibility(Visibility::Public),
+        );
         indexes
             .contributions
             .add_definition(contribution, definition);
-        identities.push((symbol, definition, contribution));
     }
     (
         SymbolEnv::new(module, indexes),

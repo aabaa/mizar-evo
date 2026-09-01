@@ -125,7 +125,7 @@ bilingual/boundary re-reviewは**NO FINDINGS**。
 | `src/source_functor_definition.rs` | 2237 | syntax-free source functor-definition producer | `source_functor_definition.md` | no | no | cohesiveなTask-260 five-table handoff、baseline-preserving two-obligation projection、resolver/lower provenance validation、deterministic rendering、typed/final Task-259 isolation check。productionはsyntax-free。 |
 | `src/source_mode_definition.rs` | 1877 | syntax-free source mode-definition producer | `source_mode_definition.md` | no | no | cohesiveなTask-262 six-table handoff、standalone-RHS fingerprint、unresolved inhabitation request、linked Pending Sethood projection、deterministic rendering、typed/final Tasks-259--261 isolation。productionはsyntax-free。 |
 | `src/source_predicate_definition.rs` | 1794 | syntax-free source predicate-definition producer | `source_predicate_definition.md` | no | no | cohesiveなTask-259 five-table handoff、baseline-preserving pending-obligation projection、resolver/lower provenance validation、deterministic rendering、typed/final installation checkを所有し、production sourceはsyntax-freeのまま。 |
-| `src/source_property_implementation.rs` | 2625 | syntax-free source property-implementation producer | `source_property_implementation.md` | no | no | cohesiveなTask264 five-table equals/means handoff、exact carrier/member identity receipt、resolver/return/lower/arena validation、baseline-preserving pending-obligation projection、deterministic rendering、typed/final sibling isolation。productionはsyntax-free。 |
+| `src/source_property_implementation.rs` | 3095 | syntax-free source property-implementation producer | `source_property_implementation.md` | no | no | cohesiveなTask264 five-table equals/means handoff、exact carrier/member identity receipt、equals-selector identity association、resolver/return/lower/arena validation、baseline-preserving pending-obligation projection、deterministic rendering、typed/final sibling isolation。productionはsyntax-free。 |
 | `src/source_set_term.rs` | 6806 | syntax-free source set-term producer | `source_set_term.md` | no | no | cohesiveなTask-255/255C1 seven-table association、condition-subtree exclusion、cross-family ownership/fingerprint validation、deterministic rendering、install check、corruption test。split不要。 |
 | `src/source_statement.rs` | 52266 | syntax-free source statement producer | `source_statement.md` | no | no | cohesiveなTask-258 statement/witness transactionとcorruption matrix。同じTask-269 test 4件がprivate exact B3N/B3M1 fixtureをreuseしてall-field arenaとisolated cross-profile rejectionを含め、production proof-local ownershipはdedicated moduleに置く。 |
 | `src/source_proof_local_declaration.rs` | 8606 | syntax-free proof-local declaration producer | `source_proof_local_declaration.md` | no | no | cohesiveなTask-269A/B named-witness、Task-269C proof-`let`、Task-269G proof-`given`、Task-269GUP/269GC/269SDC binding transaction、exact lower/independent theorem authentication、resolver-local lexical binding/context transition/lookup replay、deterministic rendering、exhaustive corruption replay、owner validation。syntax/type/occurrence/Set binding/capture/condition/fact/proof semantic ownershipなし。 |
@@ -145,7 +145,7 @@ bilingual/boundary re-reviewは**NO FINDINGS**。
 | `tests/support/source_functor_definition_unit.rs` | 3798 | test-only Task-260 unit-test support | `source_functor_definition.md` and this audit | no | no | cfg(test)-only helperがactual Task-259/260 producerをTask-261/263 reverse-isolationにreuseしproduction ownershipを変えない。 |
 | `tests/support/source_mode_definition_unit.rs` | 1237 | test-only Task-262 unit-test support | `source_mode_definition.md` and this audit | no | no | exact row、obligation suffix、Typed/final replay、全sibling-family installation order、cfg(test)-only Task-263 mode projection/owner fixture用support。 |
 | `tests/support/source_predicate_definition_unit.rs` | 1979 | test-only Task-259 unit-test support | `source_predicate_definition.md` and this audit | no | no | 既存test-only syntax dependencyを維持し、cfg(test)-only Task-263 predicate projection fixtureだけを追加する。production import、lint exception、public resolver API、semantic ownerは追加しない。 |
-| `tests/support/source_property_implementation_unit.rs` | 2152 | test-only Task-264 unit-test support | `source_property_implementation.md` and this audit | no | no | exact equals/means construction、carrier-identity corruption、nonempty-baseline transactionality、final replay、orphan/extra rejection、actual Task259 isolation用support。 |
+| `tests/support/source_property_implementation_unit.rs` | 2516 | test-only Task-264 unit-test support | `source_property_implementation.md` and this audit | no | no | exact equals/means construction、carrier-identity/equals-selector-identity corruption、nonempty-baseline transactionality、final replay、orphan/extra rejection、actual Task259 isolation用support。 |
 | `tests/support/source_structure_definition_unit.rs` | 1502 | test-only Task-263 unit-test support | `source_structure_definition.md` and this audit | no | no | complete exact row/debug bytes、resolver/row/metadata/shape corruption、12 adjacent precedence category、contribution/baseline transactionality、Tasks-259--262双方向Typed/final isolation用support。 |
 
 ## Task 277C frozen module boundary
@@ -1579,6 +1579,12 @@ new ownerは2460 line、external test supportは2004 line。`lib.rs`、`typed_as
 `source_term.rs`、`type_checker.rs`、`registration_resolution.rs`、
 `resolved_typed_ast.rs`、lint policyはそれぞれ50、5455、2263、13244、5897、7727、
 1931 lineである。
+
+Task264Dはsame `source_property_implementation.rs` owner内に留まる。Constructionは
+existing resolver environmentをborrowし、complete syntax-free checker handoffと
+private identity receiptだけをretainする。Existing Task264 producer、Task254 generic
+owner、Typed/Resolved destination、Core、runner production route、Cargo graph、
+protected artifactは不変である。
 
 Completion evidence: [central Task-269A historical contract](../../task_contracts/ja/269A.md#completion-evidence)。
 

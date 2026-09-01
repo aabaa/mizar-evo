@@ -14,13 +14,15 @@ use crate::{
     },
     source_set_term::{SourceSetTermHandoff, SourceSetTermId},
     source_structure::{
-        SourceStructureEdgeRole, SourceStructureHandoff, SourceStructureMemberId,
-        SourceStructureMemberRole, SourceStructureRequestKind, SourceStructureTarget,
-        SourceStructureTermId, SourceStructureTermKind,
+        SourceStructureEdgeId, SourceStructureEdgeRole, SourceStructureHandoff,
+        SourceStructureMemberId, SourceStructureMemberRole, SourceStructureRequestId,
+        SourceStructureRequestKind, SourceStructureTarget, SourceStructureTermId,
+        SourceStructureTermKind,
     },
     source_term::{
         SourcePrimaryTermHandoff, SourcePrimaryTermId, SourcePrimaryTermKind,
-        SourcePrimaryTermRecovery, SourcePrimaryTermReferenceRole, SourcePrimaryTermRole,
+        SourcePrimaryTermRecovery, SourcePrimaryTermReferenceId, SourcePrimaryTermReferenceRole,
+        SourcePrimaryTermRole,
     },
     source_type::{
         SourceTypeApplicationForm, SourceTypeApplicationHandoff, SourceTypeApplicationId,
@@ -846,6 +848,474 @@ impl SourcePropertyImplementationHandoff {
             arena,
         )
     }
+}
+
+/// Exact Task-264 equals selector occurrence associated with its authenticated field symbol.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourcePropertyEqualsSelectorAssociation {
+    implementation: SourcePropertyImplementationId,
+    definiens: SourcePropertyDefiniensId,
+    structure_term: SourceStructureTermId,
+    member: SourceStructureMemberId,
+    member_request: SourceStructureRequestId,
+    base_edge: SourceStructureEdgeId,
+    base_term: SourcePrimaryTermId,
+    base_reference: SourcePrimaryTermReferenceId,
+    base_binding: BindingId,
+    selector_symbol: SymbolId,
+}
+
+impl SourcePropertyEqualsSelectorAssociation {
+    pub const fn implementation(&self) -> SourcePropertyImplementationId {
+        self.implementation
+    }
+
+    pub const fn definiens(&self) -> SourcePropertyDefiniensId {
+        self.definiens
+    }
+
+    pub const fn structure_term(&self) -> SourceStructureTermId {
+        self.structure_term
+    }
+
+    pub const fn member(&self) -> SourceStructureMemberId {
+        self.member
+    }
+
+    pub const fn member_request(&self) -> SourceStructureRequestId {
+        self.member_request
+    }
+
+    pub const fn base_edge(&self) -> SourceStructureEdgeId {
+        self.base_edge
+    }
+
+    pub const fn base_term(&self) -> SourcePrimaryTermId {
+        self.base_term
+    }
+
+    pub const fn base_reference(&self) -> SourcePrimaryTermReferenceId {
+        self.base_reference
+    }
+
+    pub const fn base_binding(&self) -> BindingId {
+        self.base_binding
+    }
+
+    pub const fn selector_symbol(&self) -> &SymbolId {
+        &self.selector_symbol
+    }
+}
+
+/// Immutable Task-264 equals-only selector identity handoff.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourcePropertyEqualsSelectorIdentityHandoff {
+    property: SourcePropertyImplementationHandoff,
+    terms: SourcePrimaryTermHandoff,
+    structures: SourceStructureHandoff,
+    association: SourcePropertyEqualsSelectorAssociation,
+}
+
+impl SourcePropertyEqualsSelectorIdentityHandoff {
+    pub const fn source_id(&self) -> SourceId {
+        self.property.source_id()
+    }
+
+    pub const fn module_id(&self) -> &ModuleId {
+        self.property.module_id()
+    }
+
+    pub const fn property(&self) -> &SourcePropertyImplementationHandoff {
+        &self.property
+    }
+
+    pub const fn terms(&self) -> &SourcePrimaryTermHandoff {
+        &self.terms
+    }
+
+    pub const fn structures(&self) -> &SourceStructureHandoff {
+        &self.structures
+    }
+
+    pub const fn association(&self) -> &SourcePropertyEqualsSelectorAssociation {
+        &self.association
+    }
+
+    pub fn debug_text(&self) -> String {
+        format!(
+            concat!(
+                "source-property-equals-selector-identity-debug-v1\n",
+                "module: {}\n",
+                "property-fingerprint: {:?}\n",
+                "primary-term-fingerprint: {:?}\n",
+                "structure-fingerprint: {:?}\n",
+                "association implementation={} definiens={} structure-term={} member={} ",
+                "member-request={} base-edge={} base-term={} base-reference={} base-binding={} selector={:?}\n",
+            ),
+            self.module_id().path().as_str(),
+            self.property.debug_text(),
+            self.terms.debug_text(),
+            self.structures.debug_text(),
+            self.association.implementation.index(),
+            self.association.definiens.index(),
+            self.association.structure_term.index(),
+            self.association.member.index(),
+            self.association.member_request.index(),
+            self.association.base_edge.index(),
+            self.association.base_term.index(),
+            self.association.base_reference.index(),
+            self.association.base_binding.index(),
+            self.association.selector_symbol.fqn().as_str(),
+        )
+    }
+
+    fn validate(&self) -> Result<(), SourcePropertyEqualsSelectorIdentityError> {
+        validate_equals_selector_environment(&self.property, &self.terms, &self.structures)?;
+        validate_equals_selector_profile(&self.property)?;
+        validate_equals_selector_dependencies(&self.property, &self.terms, &self.structures)?;
+        validate_equals_selector_association(
+            &self.property,
+            &self.terms,
+            &self.structures,
+            &self.association,
+        )
+    }
+}
+
+/// Errors raised while authenticating the exact Task-264 equals selector identity.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum SourcePropertyEqualsSelectorIdentityError {
+    EnvironmentMismatch,
+    UnsupportedProfile,
+    DependencyMismatch,
+    InvalidSelectorIdentity,
+}
+
+impl fmt::Display for SourcePropertyEqualsSelectorIdentityError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::EnvironmentMismatch => {
+                formatter.write_str("property equals selector environment is invalid")
+            }
+            Self::UnsupportedProfile => {
+                formatter.write_str("property equals selector profile is unsupported")
+            }
+            Self::DependencyMismatch => {
+                formatter.write_str("property equals selector dependency is invalid")
+            }
+            Self::InvalidSelectorIdentity => {
+                formatter.write_str("property equals selector identity is invalid")
+            }
+        }
+    }
+}
+
+impl Error for SourcePropertyEqualsSelectorIdentityError {}
+
+/// Builds the immutable Task-264 equals selector identity handoff.
+pub struct SourcePropertyEqualsSelectorIdentityProducer;
+
+impl SourcePropertyEqualsSelectorIdentityProducer {
+    pub fn build(
+        env: &SymbolEnv,
+        property: SourcePropertyImplementationHandoff,
+        terms: SourcePrimaryTermHandoff,
+        structures: SourceStructureHandoff,
+    ) -> Result<
+        SourcePropertyEqualsSelectorIdentityHandoff,
+        SourcePropertyEqualsSelectorIdentityError,
+    > {
+        validate_equals_selector_build_environment(env, &property)?;
+        validate_equals_selector_environment(&property, &terms, &structures)?;
+        validate_equals_selector_profile(&property)?;
+        validate_equals_selector_dependencies(&property, &terms, &structures)?;
+        validate_equals_selector_resolver(env, &property, &structures)?;
+        let association = SourcePropertyEqualsSelectorAssociation {
+            implementation: SourcePropertyImplementationId::new(0),
+            definiens: SourcePropertyDefiniensId::new(0),
+            structure_term: SourceStructureTermId::new(0),
+            member: SourceStructureMemberId::new(0),
+            member_request: SourceStructureRequestId::new(0),
+            base_edge: SourceStructureEdgeId::new(0),
+            base_term: SourcePrimaryTermId::new(0),
+            base_reference: SourcePrimaryTermReferenceId::new(0),
+            base_binding: BindingId::new(0),
+            selector_symbol: property.carrier_identity().field_symbol().clone(),
+        };
+        validate_equals_selector_association(&property, &terms, &structures, &association)?;
+        let handoff = SourcePropertyEqualsSelectorIdentityHandoff {
+            property,
+            terms,
+            structures,
+            association,
+        };
+        handoff.validate()?;
+        Ok(handoff)
+    }
+}
+
+fn validate_equals_selector_build_environment(
+    env: &SymbolEnv,
+    property: &SourcePropertyImplementationHandoff,
+) -> Result<(), SourcePropertyEqualsSelectorIdentityError> {
+    let contribution = env
+        .contributions()
+        .get(property.carrier_identity().field_contribution())
+        .ok_or(SourcePropertyEqualsSelectorIdentityError::EnvironmentMismatch)?;
+    if env.module_id() != property.module_id()
+        || env.symbols().len() != 3
+        || env.definitions().len() != 3
+        || env.contributions().len() != 1
+        || contribution.module() != property.module_id()
+        || !matches!(
+            contribution.kind(),
+            ContributionKind::LocalSource { source_id } if *source_id == property.source_id()
+        )
+    {
+        return Err(SourcePropertyEqualsSelectorIdentityError::EnvironmentMismatch);
+    }
+    Ok(())
+}
+
+fn validate_equals_selector_environment(
+    property: &SourcePropertyImplementationHandoff,
+    terms: &SourcePrimaryTermHandoff,
+    structures: &SourceStructureHandoff,
+) -> Result<(), SourcePropertyEqualsSelectorIdentityError> {
+    if property.source_id() != terms.source_id()
+        || property.source_id() != structures.source_id()
+        || property.module_id() != terms.module_id()
+        || property.module_id() != structures.module_id()
+    {
+        return Err(SourcePropertyEqualsSelectorIdentityError::EnvironmentMismatch);
+    }
+    Ok(())
+}
+
+fn validate_equals_selector_profile(
+    property: &SourcePropertyImplementationHandoff,
+) -> Result<(), SourcePropertyEqualsSelectorIdentityError> {
+    let Some((implementation_id, implementation)) = property.implementations().iter().next() else {
+        return Err(SourcePropertyEqualsSelectorIdentityError::DependencyMismatch);
+    };
+    if implementation.style() != SourcePropertyImplementationStyle::Equals {
+        return Err(SourcePropertyEqualsSelectorIdentityError::UnsupportedProfile);
+    }
+    if property.implementations().len() != 1
+        || property.parameters().len() != 1
+        || property.targets().len() != 1
+        || property.definientia().len() != 1
+        || !property.correctness().is_empty()
+        || implementation_id != SourcePropertyImplementationId::new(0)
+        || implementation.id() != implementation_id
+        || implementation.definiens() != SourcePropertyDefiniensId::new(0)
+        || property.source_functor_application_fingerprint().is_some()
+        || property.source_structure_fingerprint().is_none()
+        || property.source_set_term_fingerprint().is_some()
+        || property.source_atomic_formula_fingerprint().is_some()
+    {
+        return Err(SourcePropertyEqualsSelectorIdentityError::DependencyMismatch);
+    }
+    Ok(())
+}
+
+fn validate_equals_selector_dependencies(
+    property: &SourcePropertyImplementationHandoff,
+    terms: &SourcePrimaryTermHandoff,
+    structures: &SourceStructureHandoff,
+) -> Result<(), SourcePropertyEqualsSelectorIdentityError> {
+    let term_fingerprint = terms.debug_text();
+    let structure_fingerprint = structures.debug_text();
+    if property.source_term_fingerprint() != term_fingerprint
+        || property.source_structure_fingerprint() != Some(structure_fingerprint.as_str())
+        || structures.primary_term_fingerprint() != term_fingerprint
+        || structures.application_fingerprint().is_some()
+    {
+        return Err(SourcePropertyEqualsSelectorIdentityError::DependencyMismatch);
+    }
+    Ok(())
+}
+
+fn validate_equals_selector_resolver(
+    env: &SymbolEnv,
+    property: &SourcePropertyImplementationHandoff,
+    structures: &SourceStructureHandoff,
+) -> Result<(), SourcePropertyEqualsSelectorIdentityError> {
+    let identity = property.carrier_identity();
+    let symbol = env
+        .symbols()
+        .get(identity.field_symbol())
+        .ok_or(SourcePropertyEqualsSelectorIdentityError::InvalidSelectorIdentity)?;
+    let definition = env
+        .definitions()
+        .get(identity.field_definition())
+        .ok_or(SourcePropertyEqualsSelectorIdentityError::InvalidSelectorIdentity)?;
+    let member = structures
+        .members()
+        .get(SourceStructureMemberId::new(0))
+        .ok_or(SourcePropertyEqualsSelectorIdentityError::InvalidSelectorIdentity)?;
+    let contribution = env
+        .contributions()
+        .get(identity.field_contribution())
+        .ok_or(SourcePropertyEqualsSelectorIdentityError::InvalidSelectorIdentity)?;
+    if env.module_id() != property.module_id()
+        || !resolver_identity_matches(
+            symbol,
+            definition,
+            property.source_id(),
+            property.module_id(),
+            identity.field_contribution(),
+            SymbolKind::Selector,
+            DefinitionKind::Selector,
+            member.spelling(),
+            range(property.source_id(), 45, 66),
+            &[4, 0, 11, 0, 18, 0],
+        )
+        || symbol.symbol() != identity.field_symbol()
+        || definition.id() != identity.field_definition()
+        || definition.contribution() != identity.field_contribution()
+        || definition.origin() != identity.field_origin()
+        || contribution.module() != property.module_id()
+        || !matches!(
+            contribution.kind(),
+            ContributionKind::LocalSource { source_id } if *source_id == property.source_id()
+        )
+        || contribution.effects().symbols().len() != 3
+        || contribution.effects().definitions().len() != 3
+        || !contribution
+            .effects()
+            .symbols()
+            .contains(identity.field_symbol())
+        || !contribution
+            .effects()
+            .definitions()
+            .contains(&identity.field_definition())
+    {
+        return Err(SourcePropertyEqualsSelectorIdentityError::InvalidSelectorIdentity);
+    }
+    Ok(())
+}
+
+fn validate_equals_selector_association(
+    property: &SourcePropertyImplementationHandoff,
+    terms: &SourcePrimaryTermHandoff,
+    structures: &SourceStructureHandoff,
+    association: &SourcePropertyEqualsSelectorAssociation,
+) -> Result<(), SourcePropertyEqualsSelectorIdentityError> {
+    let implementation = property
+        .implementations()
+        .get(association.implementation())
+        .ok_or(SourcePropertyEqualsSelectorIdentityError::InvalidSelectorIdentity)?;
+    let definiens = property
+        .definientia()
+        .get(association.definiens())
+        .ok_or(SourcePropertyEqualsSelectorIdentityError::InvalidSelectorIdentity)?;
+    let parameter = property
+        .parameters()
+        .iter()
+        .next()
+        .map(|(_, row)| row)
+        .ok_or(SourcePropertyEqualsSelectorIdentityError::InvalidSelectorIdentity)?;
+    let target = property
+        .targets()
+        .iter()
+        .next()
+        .map(|(_, row)| row)
+        .ok_or(SourcePropertyEqualsSelectorIdentityError::InvalidSelectorIdentity)?;
+    let base_term = terms
+        .terms()
+        .get(association.base_term())
+        .ok_or(SourcePropertyEqualsSelectorIdentityError::InvalidSelectorIdentity)?;
+    let base_reference = terms
+        .references()
+        .get(association.base_reference())
+        .ok_or(SourcePropertyEqualsSelectorIdentityError::InvalidSelectorIdentity)?;
+    let structure_term = structures
+        .terms()
+        .get(association.structure_term())
+        .ok_or(SourcePropertyEqualsSelectorIdentityError::InvalidSelectorIdentity)?;
+    let member = structures
+        .members()
+        .get(association.member())
+        .ok_or(SourcePropertyEqualsSelectorIdentityError::InvalidSelectorIdentity)?;
+    let edge = structures
+        .edges()
+        .get(association.base_edge())
+        .ok_or(SourcePropertyEqualsSelectorIdentityError::InvalidSelectorIdentity)?;
+    let member_request = structures
+        .requests()
+        .get(association.member_request())
+        .ok_or(SourcePropertyEqualsSelectorIdentityError::InvalidSelectorIdentity)?;
+    if terms.terms().len() != 1
+        || terms.references().len() != 1
+        || !terms.numeric_type_requests().is_empty()
+        || structures.terms().len() != 1
+        || !structures.wrappers().is_empty()
+        || !structures.roots().is_empty()
+        || structures.members().len() != 1
+        || !structures.field_updates().is_empty()
+        || structures.edges().len() != 1
+        || structures.requests().len() != 3
+        || association.implementation() != SourcePropertyImplementationId::new(0)
+        || association.definiens() != SourcePropertyDefiniensId::new(0)
+        || association.structure_term() != SourceStructureTermId::new(0)
+        || association.member() != SourceStructureMemberId::new(0)
+        || association.member_request() != SourceStructureRequestId::new(0)
+        || association.base_edge() != SourceStructureEdgeId::new(0)
+        || association.base_term() != SourcePrimaryTermId::new(0)
+        || association.base_reference() != SourcePrimaryTermReferenceId::new(0)
+        || association.base_binding() != BindingId::new(0)
+        || association.selector_symbol() != property.carrier_identity().field_symbol()
+        || implementation.definiens() != association.definiens()
+        || definiens.owner() != association.implementation()
+        || definiens.target()
+            != SourcePropertyDefiniensTarget::Structure(association.structure_term())
+        || parameter.binding() != association.base_binding()
+        || target.subject() != association.base_binding()
+        || base_term.kind() != SourcePrimaryTermKind::VariableReference
+        || base_term.role() != SourcePrimaryTermRole::Value
+        || base_term.recovery() != SourcePrimaryTermRecovery::Normal
+        || base_term.parent().is_some()
+        || base_term.source_ordinal() != 0
+        || base_term.context() != BindingContextId::new(1)
+        || base_term.site() != &TypedSiteRef::Node(TypedNodeId::new(48))
+        || base_term.source_range() != range(property.source_id(), 173, 174)
+        || base_term.spelling() != "M"
+        || base_reference.term() != association.base_term()
+        || base_reference.binding() != association.base_binding()
+        || base_reference.role() != SourcePrimaryTermReferenceRole::Variable
+        || base_reference
+            .lexical_scope()
+            .is_none_or(|scope| scope.path() != [4])
+        || base_reference.use_ordinal() != 1
+        || structure_term.kind() != SourceStructureTermKind::SelectorAccess
+        || structure_term.recovery() != crate::source_structure::SourceStructureRecovery::Normal
+        || structure_term.source_ordinal() != 0
+        || structure_term.context() != BindingContextId::new(1)
+        || structure_term.site() != &TypedSiteRef::Node(TypedNodeId::new(49))
+        || structure_term.source_range() != range(property.source_id(), 173, 182)
+        || structure_term.spelling() != "M.carrier"
+        || member.term() != association.structure_term()
+        || member.ordinal() != 0
+        || member.role() != SourceStructureMemberRole::Selector
+        || member.parent().is_some()
+        || member.site() != &TypedSiteRef::Node(TypedNodeId::new(31))
+        || member.source_range() != range(property.source_id(), 175, 182)
+        || member.spelling() != "carrier"
+        || edge.term() != association.structure_term()
+        || edge.ordinal() != 0
+        || edge.role() != SourceStructureEdgeRole::SelectorBase
+        || edge.member().is_some()
+        || edge.target() != SourceStructureTarget::Primary(association.base_term())
+        || member_request.term() != association.structure_term()
+        || member_request.member() != Some(association.member())
+        || member_request.request_ordinal() != 0
+        || member_request.kind() != SourceStructureRequestKind::MemberIdentity
+    {
+        return Err(SourcePropertyEqualsSelectorIdentityError::InvalidSelectorIdentity);
+    }
+    Ok(())
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

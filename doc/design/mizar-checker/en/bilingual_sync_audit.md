@@ -2053,3 +2053,12 @@ source/API audit entries, and module-boundary inventory rows freeze the same
 one-value/twelve-getter ABI, `3/3/1` resolver identity, v2 debug order,
 default-deny boundary, and zero-credit deferrals. English remains canonical;
 Japanese is logically synchronized.
+
+## Task264D Equals Selector Identity Synchronization
+
+The paired [EN contract](../../task_contracts/en/CHECKER-SOURCE-PROPERTY-EQUALS-SELECTOR-IDENTITY-264D.md)
+and [JA contract](../../task_contracts/ja/CHECKER-SOURCE-PROPERTY-EQUALS-SELECTOR-IDENTITY-264D.md),
+plan, property design, TODO, source/API, and boundary entries freeze the same
+construction-only `SymbolEnv`, three by-value handoffs, ten-field private
+association, four-variant non-exhaustive error, v1 debug, and zero-credit
+boundary. English remains canonical and Japanese is logically synchronized.

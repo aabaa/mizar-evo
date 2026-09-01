@@ -126,6 +126,22 @@ semantic factではない。Deterministic debugは
 `source-property-implementation-debug-v2`で、existing payload row前にstructure/field/
 property identity rowを出す。
 
+### Equals selector identity association
+
+Representation-only
+[Task264D contract](../../task_contracts/ja/CHECKER-SOURCE-PROPERTY-EQUALS-SELECTOR-IDENTITY-264D.md)
+はexisting Task264 ownerをwidenせずseparate branded handoffを追加する。Complete
+property/primary-term/structure handoffをby-value consumeし、constructionでexplicit
+`SymbolEnv`を使い、implementation/definiens 0、
+structure term/member/member-identity request 0、base term/reference/binding 0、whole
+authenticated `carrier` field symbolまでのexact equals-only chainをpublishする。
+
+Producerはmeans、mixed profile、foreign、fingerprint mismatch、malformed associationを
+publish前にrejectする。Task254 requestをgeneric resolveせず、environment/whole resolver
+identity/normal originでjoint authenticationし、spelling aloneからsymbolをinferしない。
+Existing Task264 handoffとv2 debug bytesは不変で、新handoffだけが独自v1
+debugを持つ。これはCore35 prerequisiteであり、term/property value/semantic resultではない。
+
 ## Public contract / rows
 
 New moduleはdense IDs
@@ -376,6 +392,7 @@ exact count/hash、one logical commitを満たします。
 | `SourcePropertyCorrectnessKind` | `#[non_exhaustive]`。callerはlater explicitly-frozen correctness kindを許容する。 |
 | `SourcePropertyImplementationRecovery` | `#[non_exhaustive]`。callerはlater recovery classを許容する。 |
 | `SourcePropertyImplementationError` | `#[non_exhaustive]`。callerはvalidation failureをexhaustive matchしない。 |
+| `SourcePropertyEqualsSelectorIdentityError` | `#[non_exhaustive]`。callerはlater fail-closed association failureを許容する。 |
 
 この module が所有する exhaustive public enum exception はない。
 

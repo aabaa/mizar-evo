@@ -375,6 +375,24 @@ or guard, binder, term, formula, definition, correctness/coherence seed,
 production route, or semantics. Core35 now owns the later Task264 term/formula
 body input; Core36 remains separately owned.
 
+## Task 264D Task264 Core35 Selector Readiness
+
+The frozen checker
+[Task264D contract](../../task_contracts/en/CHECKER-SOURCE-PROPERTY-EQUALS-SELECTOR-IDENTITY-264D.md)
+is the required equals-only identity prerequisite for the later Task264 Core35
+body input. It borrows the exact Task264 `SymbolEnv` during construction and
+retains the complete property, primary-term, and structure handoffs by value,
+publishing only the authenticated `M.carrier` occurrence-to-whole-field-symbol
+receipt. Core does not reconstruct this edge from member spelling or an
+unresolved Task254 request.
+
+Task264D does not itself make Core35 lowering ready. A separate Core33
+parameter/Core-variable association is still required; means also requires an
+explicit current-definition-result representation, and generic Core35
+ownership must accept the existing property `CoreDefinitionOwner` without
+inventing a property item. No term, formula, definition, semantics, route, or
+coverage credit is added by this checker prerequisite.
+
 ## Task 36P264 Property-Implementation Owner Disposition
 
 The frozen [Task 36P264 contract](../../task_contracts/en/CORE-SOURCE-PROPERTY-IMPLEMENTATION-OWNER-36P264.md)

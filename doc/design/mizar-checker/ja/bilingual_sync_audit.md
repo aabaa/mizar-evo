@@ -1892,3 +1892,11 @@ crate-plan index、property-implementation owner、TODO、source/API audit、mod
 inventoryは同じone-value/12-getter ABI、`3/3/1` resolver identity、v2 debug order、
 default-deny boundary、zero-credit deferralをfreezeする。English canonicalとJapanese
 logical syncを維持する。
+
+## Task264D equals selector identity synchronization
+
+Paired [EN contract](../../task_contracts/en/CHECKER-SOURCE-PROPERTY-EQUALS-SELECTOR-IDENTITY-264D.md)
+と [JA contract](../../task_contracts/ja/CHECKER-SOURCE-PROPERTY-EQUALS-SELECTOR-IDENTITY-264D.md)、
+plan/property design/TODO/source-API/boundaryはsame construction-only `SymbolEnv`、
+3 by-value handoff、10-field private association、4-variant non-exhaustive error、v1 debug、
+zero-credit boundaryをfreezeする。English canonical/Japanese logical syncを維持する。

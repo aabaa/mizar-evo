@@ -13087,6 +13087,11 @@ route, Cargo edge, fixture, or snapshot. The final leaf size/hash is recorded
 as a post-source measurement in the task contract; production ownership and
 selection remain unchanged.
 
+Checker Task264D likewise changes assertions only in this existing private
+Task264 leaf. The runner producer, public harness API, fixture/expectation/
+trace/metadata files, dispatch, snapshots, Cargo graph, and downstream Core
+route remain excluded.
+
 ## Checker Task 264R No-Runner Module Boundary
 
 No `mizar-test` source, test, manifest, or Cargo target changes. The resolver
