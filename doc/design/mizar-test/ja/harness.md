@@ -4937,6 +4937,18 @@ Production selector/routeは不変。Core selector item、`CoreDefinition` row/b
 type、semantic result、fixture、expectation、trace、metadata、diagnostic、snapshot、coverage
 creditを追加しない。
 
+## Core Task 34D264 private Task264 domain/return type probe
+
+Paired [Core Task34D264 contract](../../task_contracts/ja/CORE-SOURCE-PROPERTY-DOMAIN-RETURN-TYPE-34D264.md)
+はtest/routeを追加せずexisting means/equals positive assertionを拡張する。両profileで
+parameter binding 0とproperty target subjectの一致、written-type application 0からdomain
+root 0へのedge、そのrootのexact `Task264Carrier` identity、registryからcarrier item 0への
+lookupを証明する。Existing return member/root `1/2`、deterministic replay、v1 debug byteは
+exactのままで、cross-profile/foreign transaction testがfail-closed boundaryを維持する。
+
+Production selector、fixture、`.miz`、expectation、trace、metadata、snapshot、normalized
+type、semantic Core row、diagnostic、obligation、coverage creditは変更しない。
+
 ## Checker Task 269A frozen dormant harness
 
 new helperはexisting named-witness extractorが全51 nodesを認証した後のexact

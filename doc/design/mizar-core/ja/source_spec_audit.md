@@ -183,6 +183,7 @@ top-level public API group:
   `SourcePropertyCarrierCoreContextHandoff`、
   `SourcePropertyCarrierCoreContextError`、
   `SourcePropertyCarrierCoreContextProducer`、
+  `SourcePropertyDomainTypeAssociation`、
   `SourcePropertySelectorTypeAssociation`、
   `SourcePropertySelectorTypeContextHandoff`、
   `SourcePropertySelectorTypeContextError`、
@@ -379,6 +380,19 @@ mismatch、foreign source/module、carrier aliasをrejectする。Rust testはfu
 debug bytes、Task264 means/equals owner output、mechanical VC fixture compatibilityをcoverする。
 Derived `design_drift`/`test_gap`だけを閉じ、property item、definition row/body、source-derived
 semantics、trace/coverage creditを追加せず、Core35/36はdeferredのまま。
+
+## Core-34D264 Task264 domain/return type input mapping
+
+Completed [Task34D264 contract](../../task_contracts/ja/CORE-SOURCE-PROPERTY-DOMAIN-RETURN-TYPE-34D264.md)
+はcomplete Task34I264 capabilityへmissing durable domain sideを追加する。Checker
+parameter binding 0からwritten-type application 0/root 0を辿り、property target 0が
+same subjectを使うことを証明し、exact whole `Task264Carrier` symbolをretained Core
+carrier itemへjoinする。Existing `marker` return associationはmember/root `1/2`のまま。
+
+Bounded Core34 `design_drift`/`source_drift`/derived Rust `test_gap`だけを閉じる。
+Normalized type/guardは作らず、protected test intent、trace status、snapshot、semantic
+coverage、production routeは不変。Core35がlater term/formula body inputをownし、
+Core36 definition/correctness/coherenceはdeferred。
 
 ## Source-Undocumented Behavior Pass
 

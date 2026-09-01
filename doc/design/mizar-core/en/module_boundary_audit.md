@@ -92,6 +92,12 @@ mechanical ordinary-owner migrations. Final `core_ir.rs` is 4,393 lines and
 `elaborator.rs` is 23,685 lines. No move-only split is required for this
 bounded prerequisite.
 
+Task34D264 adds one private-field association and accessors beside the existing
+Task34I264 validation in `elaborator`; it adds no module, Cargo edge, producer,
+error type, or cross-crate responsibility. The same private mizar-test leaf is
+extended only with assertions. Post-source line counts are recorded in the task
+contract, and no move-only split is required for this bounded prerequisite.
+
 ## Classification
 
 | ID | Class | Evidence | Action |

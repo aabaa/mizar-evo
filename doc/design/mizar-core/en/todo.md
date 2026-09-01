@@ -626,6 +626,14 @@ work. Every finding maps to a task or a recorded disposition:
     - This is zero-credit authentication only. No selector/member item,
       Core type/fact/term/formula/`CoreDefinition` row/body, or production route
       was added. IR264 now supplies the owner value; Core35/36 remain separate.
+34D264. **Task264 domain/return type input prerequisite.** [x]
+    - The completed [Task34D264 contract](../../task_contracts/en/CORE-SOURCE-PROPERTY-DOMAIN-RETURN-TYPE-34D264.md)
+      extends the complete Task34I264 capability with one private immutable
+      parameter-binding/application/root/carrier-item domain association. It
+      retains the existing property return member/root association and does
+      not invent normalized types or guards.
+    - This is the Core34 owner for domain/return type identity. Core35 remains
+      term/formula lowering, and Core36 definition/correctness stays deferred.
 IR264. **Authenticated structure-property definition owner.** [x]
     - The paired [task contract](../../task_contracts/en/CORE-STRUCTURE-PROPERTY-DEFINITION-OWNER-IR264.md)
       is implemented, verified, and independently reviewed with hard gates

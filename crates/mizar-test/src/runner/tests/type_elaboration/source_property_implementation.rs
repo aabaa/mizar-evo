@@ -647,12 +647,54 @@ fn task264_selector_type_context_is_exact_for_means_and_equals() {
             );
         }
 
-        let association = first.association();
+        let (parameter_id, parameter) = checker_owner
+            .parameters()
+            .iter()
+            .next()
+            .expect("Task264 property parameter row");
         let (target_id, target) = checker_owner
             .targets()
             .iter()
             .next()
             .expect("Task264 property target row");
+        assert_eq!(parameter_id.index(), 0);
+        assert_eq!(parameter.id().index(), 0);
+        assert_eq!(parameter.binding().index(), 0);
+        assert_eq!(target.subject(), parameter.binding());
+
+        let domain = first.domain();
+        assert_eq!(domain.binding(), parameter.binding());
+        assert_eq!(domain.application(), parameter.written_type());
+        assert_eq!(domain.application(), application.id());
+        assert_eq!(application.binding(), domain.binding());
+        assert_eq!(domain.root(), application.root());
+        let domain_expression = source_type
+            .expressions()
+            .get(domain.root())
+            .expect("Task264 property domain root");
+        assert_eq!(domain_expression.id(), domain.root());
+        match domain_expression.head() {
+            mizar_checker::source_type::SourceTypeHead::Symbol {
+                symbol,
+                contribution,
+            } => {
+                assert_eq!(symbol, identity.structure_symbol());
+                assert_eq!(*contribution, identity.structure_contribution());
+            }
+            other => panic!("unexpected Task264 domain head: {other:?}"),
+        }
+        assert_eq!(domain.carrier_item(), first.carrier_item());
+        assert_eq!(domain.carrier_item().index(), 0);
+        assert_eq!(
+            first
+                .carrier_context()
+                .context()
+                .item_registry()
+                .id_for_symbol(identity.structure_symbol()),
+            Some(domain.carrier_item())
+        );
+
+        let association = first.association();
         assert_eq!(target_id.index(), 0);
         assert_eq!(target.id().index(), 0);
         assert_eq!(target.symbol(), identity.property_symbol());

@@ -13081,6 +13081,12 @@ leaf is 1,022 lines / 44,699 bytes with SHA-256
 `e584e3a36d8c8911d4e5f49209128cb35e81d0c93d254419476b93557a86fdca`.
 No runner path constructs a `CoreDefinition` row or property body.
 
+Core Task34D264 extends those same positive assertions with typed domain and
+registry checks. It adds no test, module, include, production path, facade
+route, Cargo edge, fixture, or snapshot. The final leaf size/hash is recorded
+as a post-source measurement in the task contract; production ownership and
+selection remain unchanged.
+
 ## Checker Task 264R No-Runner Module Boundary
 
 No `mizar-test` source, test, manifest, or Cargo target changes. The resolver

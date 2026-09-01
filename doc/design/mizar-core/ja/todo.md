@@ -589,6 +589,13 @@ F8 の spec 本文は同一変更(`cef7e109`: spec 03、05、13、17、18)で修
     - Zero-credit authenticationのみ。Selector/member item、Core type/fact/term/formula/
       `CoreDefinition` row/body、production routeは追加していない。IR264がowner valueを
       供給済みで、Core35/36はseparate。
+34D264. **Task264 domain/return type input prerequisite。** [x]
+    - Completed [Task34D264 contract](../../task_contracts/ja/CORE-SOURCE-PROPERTY-DOMAIN-RETURN-TYPE-34D264.md)は
+      complete Task34I264 capabilityへprivate immutableなparameter-binding/application/
+      root/carrier-item domain association 1件を追加する。Existing property return
+      member/root associationをretainし、normalized type/guardをinventしない。
+    - Domain/return type identityのownerはCore34。Core35はterm/formula lowering、
+      Core36 definition/correctnessはdeferredのまま。
 IR264. **Authenticated structure-property definition owner。** [x]
     - Paired [task contract](../../task_contracts/ja/CORE-STRUCTURE-PROPERTY-DEFINITION-OWNER-IR264.md)
       はimplemented/verified、independent reviewはhard gate `9/9`、valid uncapped quality

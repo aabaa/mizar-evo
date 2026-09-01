@@ -190,6 +190,15 @@ validation order/reason、ordinary-row debug compatibility、exact property-row 
 CoreIR validation matrix 1件、mechanical ordinary-owner migration、protected artifact、
 zero-credit status、Core35/36 deferralを同期する。English canonical、exceptionなし。
 
+## Task 34D264 bilingual contract parity
+
+[EN contract](../../task_contracts/en/CORE-SOURCE-PROPERTY-DOMAIN-RETURN-TYPE-34D264.md)と
+[JA companion](../../task_contracts/ja/CORE-SOURCE-PROPERTY-DOMAIN-RETURN-TYPE-34D264.md)は、
+same private domain association、typed parameter/target/application/root/registry validation、
+unchanged return association/v1 debug byte、Core34 ownership、derived Rust assertion拡張、
+protected test-intent invariance、exact write/no-impact surface、zero-credit status、
+Core35/36 deferralを同期する。English canonical、exceptionなし。
+
 ## Task 36P264 bilingual contract parity
 
 [EN contract](../../task_contracts/en/CORE-SOURCE-PROPERTY-IMPLEMENTATION-OWNER-36P264.md)と

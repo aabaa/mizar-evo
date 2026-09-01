@@ -361,6 +361,20 @@ This slice is representation-only and zero credit. It adds no property item,
 field owner, `CoreDefinition` row/body, normalized type, term, formula,
 obligation, production route, or semantics. Core35/36 remain separately owned.
 
+## Task 34D264 Task264 Domain/Return Type Input Slice
+
+The completed [Task34D264 contract](../../task_contracts/en/CORE-SOURCE-PROPERTY-DOMAIN-RETURN-TYPE-34D264.md)
+extends the complete Task34I264 capability with the exact Core34 domain
+association: parameter binding 0, written-type application 0, root 0, and the
+retained `Task264Carrier` Core item 0. Property target 0 must use the same
+subject binding. The existing return association remains `marker` member/root
+`1/2`; field member 0 remains unauthenticated and excluded.
+
+This slice is representation-only and zero credit. It adds no normalized type
+or guard, binder, term, formula, definition, correctness/coherence seed,
+production route, or semantics. Core35 now owns the later Task264 term/formula
+body input; Core36 remains separately owned.
+
 ## Task 36P264 Property-Implementation Owner Disposition
 
 The frozen [Task 36P264 contract](../../task_contracts/en/CORE-SOURCE-PROPERTY-IMPLEMENTATION-OWNER-36P264.md)
@@ -372,10 +386,10 @@ dependency may be synthesized from them.
 
 Task264 therefore remains exclusively in a future accepted Core-36 definition
 row after exact same-source Core 33--35 prerequisites. Task264C, Task33I264,
-Task34I264, and IR264 now supply identity, carrier item, selector/type edge, and
-an authenticated `CoreDefinition.owner` value. Core36 remains hard-blocked on
-applicable Core35 domain/return-type inputs and a separately reviewed property
-body/correctness seed.
+Task34I264, IR264, and Task34D264 now supply identity, carrier item,
+selector/return edge, authenticated `CoreDefinition.owner`, and the Core34
+domain/return type input. Core36 remains hard-blocked on an applicable Core35
+term/formula body input and a separately reviewed Core36 body/correctness seed.
 Task263 is a different-source precedent and is not an input. No CoreIR
 semantic lowering is selected here. This disposition remains zero-credit and
 changes no specification, `.miz` intent, expectation, trace, or snapshot state.

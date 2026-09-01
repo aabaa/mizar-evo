@@ -7408,6 +7408,25 @@ This closes only the derived owner-model `design_drift` and its bounded Rust
 normalized domain or return type, value, correctness/coherence obligation,
 fact, diagnostic, production route, semantic acceptance, trace change, or
 coverage credit. Existing `.miz`, expectations, snapshots, trace metadata,
-runner behavior, and chapter status are unchanged. Follow-up ownership now
-advances to fresh Core35 property domain/return-type input inventory or Core36
-property body lowering; Task277B remains deferred/not-ready.
+runner behavior, and chapter status are unchanged. Task34D264 now owns the
+Core34 domain/return type identity input; Core35 term/formula body input and
+Core36 body/correctness lowering remain deferred. Task277B remains
+deferred/not-ready.
+
+## Task CORE-SOURCE-PROPERTY-DOMAIN-RETURN-TYPE-34D264 Zero-Credit Input
+
+The canonical
+[Task34D264 contract](./task_contracts/en/CORE-SOURCE-PROPERTY-DOMAIN-RETURN-TYPE-34D264.md)
+extends the authenticated Task34I264 handoff with one private domain
+association. It follows parameter binding 0 through written-type application
+0/root 0, requires target subject 0 to be the same binding, and joins the exact
+whole `Task264Carrier` symbol to retained Core item 0. The return side remains
+the existing `marker` member/root `1/2` association.
+
+This closes bounded Core34 `design_drift`, `source_drift`, and derived Rust
+`test_gap` with zero execution or coverage credit. It creates no normalized
+type/guard, field association, binder, term, formula, definition, obligation,
+production route, or semantic result. Specification, protected `.miz` and
+expectation intent, trace/metadata, snapshot, runner selection, and chapter
+status remain unchanged. Core35 owns the later term/formula body input;
+Core36 definition/correctness/coherence and Task277B remain deferred/not-ready.

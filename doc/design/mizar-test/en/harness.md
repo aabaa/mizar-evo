@@ -5259,6 +5259,21 @@ The probe adds no Core selector item, `CoreDefinition` row/body, normalized
 type, semantic result, fixture, expectation, trace, metadata, diagnostic,
 snapshot, or coverage credit.
 
+## Core Task 34D264 Private Task264 Domain/Return Type Probe
+
+The paired [Core Task34D264 contract](../../task_contracts/en/CORE-SOURCE-PROPERTY-DOMAIN-RETURN-TYPE-34D264.md)
+extends the existing means/equals positive assertions without adding a test or
+route. Both profiles prove parameter binding 0 equals the property target
+subject, written-type application 0 reaches domain root 0, that root retains
+the exact `Task264Carrier` identity, and registry lookup reaches carrier item
+0. The existing return member/root `1/2`, deterministic replay, and v1 debug
+bytes remain exact; the cross-profile and foreign transaction test remains the
+fail-closed boundary.
+
+No production selector, fixture, `.miz`, expectation, trace, metadata,
+snapshot, normalized type, semantic Core row, diagnostic, obligation, or
+coverage credit changes.
+
 ## Checker Task 269A Frozen Dormant Harness
 
 The new helper matches exact `SOURCE_STATEMENT_B3N_TEXT` only after the

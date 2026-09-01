@@ -1626,6 +1626,16 @@ preserve production routing, fixtures, expectations, trace, metadata,
 diagnostics, snapshots, semantic output, and coverage credit. No
 `CoreDefinition` row or property body is produced by the runner.
 
+## Core Task 34D264 Private-Probe Synchronization
+
+EN/JA agree that the same Task264 positive assertions gain only the private
+domain relation: parameter binding equals target subject, written-type
+application reaches root 0, and the exact carrier symbol reaches Core item 0.
+The existing return association, replay/debug, and negative transaction test
+remain unchanged. Both preserve production routing, protected test intent,
+fixtures, expectations, trace, metadata, diagnostics, snapshots, semantic
+output, and coverage credit.
+
 ## Checker Task 269A Frozen Dormant-Consumer Synchronization
 
 EN/JA agree on the exact B3N source/hash/51-node selector, resolver-local `y`,

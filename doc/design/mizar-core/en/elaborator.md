@@ -923,6 +923,23 @@ and only the authenticated property symbol. This is a zero-credit owner value,
 not a selector item, `CoreDefinition` row/body, normalized type, term, formula,
 obligation, production route, or semantic result. Core35/36 remain separate.
 
+## Task 34D264 Task264 Domain/Return Type Input
+
+The canonical [Task34D264 contract](../../task_contracts/en/CORE-SOURCE-PROPERTY-DOMAIN-RETURN-TYPE-34D264.md)
+extends the complete Task34I264 handoff with one private immutable
+`SourcePropertyDomainTypeAssociation`. Its accessors expose only the checker
+parameter binding, written-type application, domain root, and the existing
+Task33I264 carrier item. The existing selector association remains the return
+side and continues to expose only `marker` and return member/root `1/2`.
+
+Construction follows parameter 0 to binding/application/root `0/0/0`, requires
+property target 0's subject to be the same binding, replays the whole
+`Task264Carrier` symbol/contribution, and requires exact registry lookup to the
+retained carrier item 0. Postvalidation repeats every link before publication.
+The existing v1 debug bytes are unchanged. This Core34 input creates no
+normalized type, predicate/guard, binder, field/member association, term,
+formula, definition, obligation, route, or semantic result.
+
 ## Forbidden Behavior
 
 `elaborator` must not:

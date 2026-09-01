@@ -796,6 +796,21 @@ Private Task264 testはmeans/equals handoffがcarrier item 0とauthenticated pro
 normalized type、term/formula/obligation/production route/semantic resultではない。
 Core35/36はseparateのまま。
 
+## Task 34D264 Task264 domain/return type input
+
+Canonical [Task34D264 contract](../../task_contracts/ja/CORE-SOURCE-PROPERTY-DOMAIN-RETURN-TYPE-34D264.md)
+はcomplete Task34I264 handoffへprivate immutable
+`SourcePropertyDomainTypeAssociation` 1件を追加する。Accessorはchecker parameter
+binding、written-type application、domain root、existing Task33I264 carrier itemだけを
+公開する。Existing selector associationはreturn sideのままで、`marker`とreturn
+member/root `1/2`だけを公開する。
+
+Constructionはparameter 0からbinding/application/root `0/0/0`を辿り、property target
+0のsubjectがsame bindingであること、whole `Task264Carrier` symbol/contributionのreplay、
+retained carrier item 0へのexact registry lookupを要求する。Postvalidationはpublish前に
+全linkを再検証する。Existing v1 debug byteは不変。Normalized type、predicate/guard、
+binder、field/member association、term/formula/definition/obligation/route/semanticsは作らない。
+
 ## 禁止事項
 
 `elaborator` は以下をしてはならない。

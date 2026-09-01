@@ -1559,6 +1559,14 @@ property-definition ownerを追加し、carrier item 0、ordinary item ownerな�
 route、fixture、expectation、trace、metadata、diagnostic、snapshot、semantic output、coverage
 creditは不変。Runnerは`CoreDefinition` row/property bodyを生成しない。
 
+## Core Task 34D264 private-probe synchronization
+
+EN/JAはsame Task264 positive assertionへprivate domain relationだけを追加することで一致する:
+parameter bindingとtarget subjectの一致、written-type applicationからroot 0へのedge、
+exact carrier symbolからCore item 0へのlookup。Existing return association、replay/debug、
+negative transaction testは不変。Production routing、protected test intent、fixture、
+expectation、trace、metadata、diagnostic、snapshot、semantic output、coverage creditを保持する。
+
 ## Checker Task 269A frozen dormant-consumer synchronization
 
 EN/JAはexact B3N source/hash/51-node selector、resolver-local `y`、immutable

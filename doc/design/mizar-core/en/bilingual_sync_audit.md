@@ -218,3 +218,13 @@ compatibility, exact property-row grammar, one CoreIR validation matrix,
 mechanical ordinary-owner migrations, protected artifacts, zero-credit
 status, and Core35/36 deferral. English is canonical; no exception is
 recorded.
+
+## Task 34D264 Bilingual Contract Parity
+
+The [EN contract](../../task_contracts/en/CORE-SOURCE-PROPERTY-DOMAIN-RETURN-TYPE-34D264.md)
+and [JA companion](../../task_contracts/ja/CORE-SOURCE-PROPERTY-DOMAIN-RETURN-TYPE-34D264.md)
+synchronize the same private domain association, typed parameter/target/
+application/root/registry validation, unchanged return association and v1
+debug bytes, Core34 ownership, derived Rust assertion extension, protected
+test-intent invariance, exact write/no-impact surfaces, zero-credit status,
+and Core35/36 deferrals. English is canonical; no exception is recorded.

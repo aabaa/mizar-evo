@@ -5592,6 +5592,37 @@ fn validate_property_carrier_item_association(
     Ok(())
 }
 
+/// One immutable Task-264 implementation domain associated with its Core carrier.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourcePropertyDomainTypeAssociation {
+    binding: BindingId,
+    application: SourceTypeApplicationId,
+    root: SourceTypeExpressionId,
+    carrier_item: CoreItemId,
+}
+
+impl SourcePropertyDomainTypeAssociation {
+    #[must_use]
+    pub const fn binding(&self) -> BindingId {
+        self.binding
+    }
+
+    #[must_use]
+    pub const fn application(&self) -> SourceTypeApplicationId {
+        self.application
+    }
+
+    #[must_use]
+    pub const fn root(&self) -> SourceTypeExpressionId {
+        self.root
+    }
+
+    #[must_use]
+    pub const fn carrier_item(&self) -> CoreItemId {
+        self.carrier_item
+    }
+}
+
 /// One immutable Task-264 selector identity associated with its written type.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SourcePropertySelectorTypeAssociation {
@@ -5622,6 +5653,7 @@ impl SourcePropertySelectorTypeAssociation {
 pub struct SourcePropertySelectorTypeContextHandoff {
     carrier_context: SourcePropertyCarrierCoreContextHandoff,
     source_type: SourceTypeApplicationHandoff,
+    domain: SourcePropertyDomainTypeAssociation,
     association: SourcePropertySelectorTypeAssociation,
 }
 
@@ -5649,6 +5681,11 @@ impl SourcePropertySelectorTypeContextHandoff {
     #[must_use]
     pub const fn carrier_item(&self) -> CoreItemId {
         self.carrier_context.carrier_item()
+    }
+
+    #[must_use]
+    pub const fn domain(&self) -> &SourcePropertyDomainTypeAssociation {
+        &self.domain
     }
 
     #[must_use]
@@ -5682,6 +5719,7 @@ impl SourcePropertySelectorTypeContextHandoff {
         validate_property_selector_type_associations(
             &self.carrier_context,
             &self.source_type,
+            &self.domain,
             &self.association,
         )
     }
@@ -5735,15 +5773,38 @@ impl SourcePropertySelectorTypeContextProducer {
         validate_property_selector_source_type(&carrier_context, &source_type)?;
 
         let identity = carrier_context.checker_owner().carrier_identity();
+        let parameter = carrier_context
+            .checker_owner()
+            .parameters()
+            .iter()
+            .next()
+            .map(|(_, row)| row)
+            .ok_or(SourcePropertySelectorTypeContextError::InvalidSourceType)?;
+        let application = source_type
+            .applications()
+            .get(parameter.written_type())
+            .ok_or(SourcePropertySelectorTypeContextError::InvalidSourceType)?;
+        let domain = SourcePropertyDomainTypeAssociation {
+            binding: parameter.binding(),
+            application: application.id(),
+            root: application.root(),
+            carrier_item: carrier_context.carrier_item(),
+        };
         let association = SourcePropertySelectorTypeAssociation {
             symbol: identity.property_symbol().clone(),
             member_type: SourceTypeStructureMemberId::new(1),
             root: SourceTypeExpressionId::new(2),
         };
-        validate_property_selector_type_associations(&carrier_context, &source_type, &association)?;
+        validate_property_selector_type_associations(
+            &carrier_context,
+            &source_type,
+            &domain,
+            &association,
+        )?;
         let handoff = SourcePropertySelectorTypeContextHandoff {
             carrier_context,
             source_type,
+            domain,
             association,
         };
         handoff.validate()?;
@@ -5895,6 +5956,7 @@ fn validate_property_selector_source_type(
         || target.id().index() != 0
         || target.owner().index() != 0
         || target.ordinal() != 0
+        || target.subject() != parameter.binding()
         || target.symbol() != identity.property_symbol()
         || target.definition() != identity.property_definition()
         || target.contribution() != identity.property_contribution()
@@ -5908,9 +5970,25 @@ fn validate_property_selector_source_type(
 fn validate_property_selector_type_associations(
     carrier_context: &SourcePropertyCarrierCoreContextHandoff,
     source_type: &SourceTypeApplicationHandoff,
+    domain: &SourcePropertyDomainTypeAssociation,
     association: &SourcePropertySelectorTypeAssociation,
 ) -> Result<(), SourcePropertySelectorTypeContextError> {
     let identity = carrier_context.checker_owner().carrier_identity();
+    let parameter = carrier_context
+        .checker_owner()
+        .parameters()
+        .iter()
+        .next()
+        .map(|(_, row)| row)
+        .ok_or(SourcePropertySelectorTypeContextError::InvalidAssociation)?;
+    let application = source_type
+        .applications()
+        .get(parameter.written_type())
+        .ok_or(SourcePropertySelectorTypeContextError::InvalidAssociation)?;
+    let domain_expression = source_type
+        .expressions()
+        .get(application.root())
+        .ok_or(SourcePropertySelectorTypeContextError::InvalidAssociation)?;
     let target = carrier_context
         .checker_owner()
         .targets()
@@ -5922,7 +6000,29 @@ fn validate_property_selector_type_associations(
         .structure_members()
         .get(target.return_type())
         .ok_or(SourcePropertySelectorTypeContextError::InvalidAssociation)?;
-    if association.symbol() != identity.property_symbol()
+    let domain_head_matches = matches!(
+        domain_expression.head(),
+        SourceTypeHead::Symbol {
+            symbol,
+            contribution,
+        } if symbol == identity.structure_symbol()
+            && *contribution == identity.structure_contribution()
+    );
+    if domain.binding() != parameter.binding()
+        || domain.application() != parameter.written_type()
+        || domain.application() != application.id()
+        || application.binding() != domain.binding()
+        || domain.root() != application.root()
+        || domain.root() != domain_expression.id()
+        || !domain_head_matches
+        || domain.carrier_item() != carrier_context.carrier_item()
+        || carrier_context
+            .context()
+            .item_registry()
+            .id_for_symbol(identity.structure_symbol())
+            != Some(domain.carrier_item())
+        || target.subject() != domain.binding()
+        || association.symbol() != identity.property_symbol()
         || association.symbol() != target.symbol()
         || association.member_type() != target.return_type()
         || association.member_type() != SourceTypeStructureMemberId::new(1)

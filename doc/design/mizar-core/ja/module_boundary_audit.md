@@ -84,6 +84,11 @@ authenticated Task34I264 handoff inherent methodだけがmintできる。Validat
 Final `core_ir.rs`は4,393 line、`elaborator.rs`は23,685 line。本bounded prerequisiteで
 move-only split不要。
 
+Task34D264はexisting Task34I264 validationの隣にprivate-field association/accessorだけを
+`elaborator`へ追加し、module、Cargo edge、producer、error type、cross-crate responsibilityを
+追加しない。Same private mizar-test leafへassertionだけを追加する。Final line countはtask
+contractへpost-source measurementとして記録し、本bounded prerequisiteでmove-only split不要。
+
 ## Classification
 
 | ID | Class | Evidence | Action |

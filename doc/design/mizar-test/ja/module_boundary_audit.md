@@ -11766,6 +11766,11 @@ edgeは追加しない。Final leafは1,022 line / 44,699 bytes、SHA-256
 `e584e3a36d8c8911d4e5f49209128cb35e81d0c93d254419476b93557a86fdca`。
 Runner pathは`CoreDefinition` row/property bodyをconstructしない。
 
+Core Task34D264はsame positive assertionへtyped domain/registry checkだけを追加する。
+Test/module/include/production path/facade route/Cargo edge/fixture/snapshotは追加しない。
+Final leaf size/hashはtask contractへpost-source measurementとして記録し、production
+ownership/selectionは不変。
+
 ## Checker Task 269A frozen dormant runner boundary
 
 `runner/type_elaboration`下private leaf 1件とincluded test leaf 1件がrunnerの

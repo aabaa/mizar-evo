@@ -184,6 +184,7 @@ Top-level public API groups:
   `SourcePropertyCarrierCoreContextHandoff`,
   `SourcePropertyCarrierCoreContextError`,
   `SourcePropertyCarrierCoreContextProducer`,
+  `SourcePropertyDomainTypeAssociation`,
   `SourcePropertySelectorTypeAssociation`,
   `SourcePropertySelectorTypeContextHandoff`,
   `SourcePropertySelectorTypeContextError`,
@@ -414,6 +415,21 @@ Task264 means/equals owner output, and mechanical VC fixture compatibility.
 This closes only derived `design_drift`/`test_gap`: no property item,
 definition row/body, source-derived semantics, trace, or coverage credit is
 added, and Core35/36 remain deferred.
+
+## Core-34D264 Task264 Domain/Return Type Input Mapping
+
+The completed [Task34D264 contract](../../task_contracts/en/CORE-SOURCE-PROPERTY-DOMAIN-RETURN-TYPE-34D264.md)
+adds the missing durable domain side to the complete Task34I264 capability.
+It follows checker parameter binding 0 through written-type application 0 and
+root 0, proves property target 0 uses that same subject, and joins the exact
+whole `Task264Carrier` symbol to the retained Core carrier item. The existing
+`marker` return association remains member/root `1/2`.
+
+This closes only the bounded Core34 `design_drift`, `source_drift`, and derived
+Rust `test_gap`. It creates no normalized type or guard and changes no
+protected test intent, trace status, snapshot, semantic coverage, or production
+route. Core35 owns the later term/formula body input; Core36 definition and
+correctness/coherence remain deferred.
 
 ## Source-Undocumented Behavior Pass
 

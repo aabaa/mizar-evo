@@ -302,6 +302,19 @@ Representation-only/zero credit。Property item、field owner、`CoreDefinition`
 normalized type、term/formula/obligation/production route/semanticsを追加しない。Core35/36は
 separate ownerのまま。
 
+## Task 34D264 Task264 domain/return type input slice
+
+Completed [Task34D264 contract](../../task_contracts/ja/CORE-SOURCE-PROPERTY-DOMAIN-RETURN-TYPE-34D264.md)
+はcomplete Task34I264 capabilityへexact Core34 domain associationを追加する:
+parameter binding 0、written-type application 0、root 0、retained
+`Task264Carrier` Core item 0。Property target 0はsame subject bindingを使う。
+Existing return associationは`marker` member/root `1/2`で、field member 0は
+unauthenticated/excludedのまま。
+
+Representation-only/zero credit。Normalized type/guard、binder、term/formula、
+definition、correctness/coherence seed、production route、semanticsは追加しない。
+Core35はlater Task264 term/formula body inputをownし、Core36はseparate ownerのまま。
+
 ## Task 36P264 property-implementation owner disposition
 
 Frozen [Task 36P264 contract](../../task_contracts/ja/CORE-SOURCE-PROPERTY-IMPLEMENTATION-OWNER-36P264.md)は
@@ -311,9 +324,10 @@ property-implementation shellはsymbol/definition/contribution/semantic origin�
 Core item/item kind/association/dependencyを合成しない。
 
 Task264はexact same-source Core33--35 prerequisite後のfuture accepted Core36 definition rowに
-exclusiveに残る。Task264C/Task33I264/Task34I264/IR264がidentity、carrier item、selector/type
-edge、authenticated `CoreDefinition.owner` valueを供給済み。Core36はapplicable Core35
-domain/return-type inputとseparately reviewed property body/correctness seedまでhard-blocked。
+exclusiveに残る。Task264C/Task33I264/Task34I264/IR264/Task34D264がidentity、carrier item、
+selector/return edge、authenticated `CoreDefinition.owner`、Core34 domain/return type inputを
+供給済み。Core36はapplicable Core35 term/formula body inputとseparately reviewed Core36
+body/correctness seedまでhard-blocked。
 Task263はdifferent-source precedentでinputではない。
 本dispositionではCoreIR semantic loweringを選ばない。Zero-creditでspec/`.miz` intent/
 expectation/trace/snapshot stateは変更しない。
