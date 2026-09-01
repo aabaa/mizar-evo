@@ -167,3 +167,12 @@ Docs-only verification for this task:
 
 - `git diff --check` before staging.
 - `git diff --cached --check` after explicit path staging.
+
+## Task 33I263 Bilingual Contract Parity
+
+The [EN contract](../../task_contracts/en/CORE-SOURCE-STRUCTURE-ITEM-CONTEXT-33I263.md)
+and [JA companion](../../task_contracts/ja/CORE-SOURCE-STRUCTURE-ITEM-CONTEXT-33I263.md)
+synchronize the same two structure associations, sole Derived-to-Base local
+dependency, standalone by-value API, default-deny boundary, prohibited
+semantics, protected artifacts, zero-credit status, and Task277B deferral.
+English is canonical; no exception is recorded.

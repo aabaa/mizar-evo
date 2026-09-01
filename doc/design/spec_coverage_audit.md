@@ -7300,3 +7300,17 @@ ownership. It adds no specification, test intent, trace status/backlink,
 metadata, or coverage credit. Production/`MT10-CIR-TE` installation, Core
 34--36 mode/RHS/type/inhabitation/sethood semantics, `GeneratedOrigin`,
 diagnostics, and Task277B remain deferred/not-ready.
+
+## Task CORE-SOURCE-STRUCTURE-ITEM-CONTEXT-33I263 Zero-Credit Core Association
+
+The implemented [Core-33 Task263 structure contract](./task_contracts/en/CORE-SOURCE-STRUCTURE-ITEM-CONTEXT-33I263.md)
+maps the existing exact `2/4/1/2/0` checker transport to two valid public Core
+`Structure` item shells and two typed definition associations. The one direct
+child-1/parent-0 inheritance is materialized only as the Derived item's sole
+local dependency on Base. Task-248 and 33LB are not inputs.
+
+This audit change records design mapping and follow-up ownership only. It adds
+no specification, test intent, trace status/backlink, metadata, or coverage
+credit. Member/constructor/view/coherence semantics, obligations, production
+installation, complete Core 33, Core 34--36, `MT10-CIR-TE`, diagnostics, and
+Task277B remain deferred/not-ready.

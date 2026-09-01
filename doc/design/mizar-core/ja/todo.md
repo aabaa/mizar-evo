@@ -555,12 +555,21 @@ F8 の spec 本文は同一変更(`cef7e109`: spec 03、05、13、17、18)で修
 33I262. **Task262 mode item context prerequisite。** [x]
     - Freeze済みの [task contract](../../task_contracts/ja/CORE-SOURCE-MODE-ITEM-CONTEXT-33I262.md) は
       implementation/verification complete、documentation repair後final review no findings、task-only
-      commit pending。Complete 33LB、exact Task248 Profile-B context、active
+      commit `5c048838`。Complete 33LB、exact Task248 Profile-B context、active
       Task262 mode-definition handoffをconsumeし、exact context linkとwhole `SymbolId`で
       public Core `Mode` item 1件とtyped source-ordered association row 1件だけをadmitする。
     - semantic/execution/coverage creditはzeroで、checker doc、production route/installer、`.miz`、
       expectation、trace、metadata、diagnostic、`MT10-CIR-TE`は変更しない。Task259--261は
       protected precedentでありinputではなく、Core34--36とTask277Bはdeferred/not-readyのままとする。
+33I263. **Task263 structure item context prerequisite。** [x]
+    - [Task contract](../../task_contracts/ja/CORE-SOURCE-STRUCTURE-ITEM-CONTEXT-33I263.md) は
+      task-only commit時点でcomplete。全review/verification pass、hard gate `9/9`、
+      valid quality `98/100`。Prepared Core contextとactive exact
+      Task263 handoffだけをconsumeし、public Core `Structure` 2件とtyped source-ordered
+      association 2行をadmitする。
+    - User-selected direct inheritanceをDerived→Base local item dependency exactly 1本へ
+      materializeする。Task248/33LB、member/view/constructor/coherence semantics、production
+      install、coverage、`MT10-CIR-TE`、Task277B readinessはabsent/deferredのまま。
 33. **Source-derived Core context/item/binder/source map。** [ ]
     - checker 248を`MT10-CIR-TE`でconsumeし、type/proof/algorithm bodyは扱わない。
       C4C8についてchecker 248だけでは不十分なままであり、Task 33C4C8はseparately

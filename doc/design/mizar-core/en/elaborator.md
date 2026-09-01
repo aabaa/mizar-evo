@@ -785,6 +785,7 @@ payload categories can be added without breaking downstream exhaustive matches.
 | `SourceFunctorCoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `SourceAttributeCoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `SourceModeCoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `SourceStructureCoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `DefinitionBoundaryKind` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `DefinitionBoundaryStatus` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `CheckerSiteKind` | `#[non_exhaustive]` downstream forward-compatible surface. |
@@ -832,6 +833,20 @@ syntax-free final projection, and this crate lowers it. Core 34 owns reusable
 conversion/evidence APIs while Core 37 owns source `reconsider`. Core 46 carries
 call/result substitution requests only; substitution results and VCs remain
 downstream.
+
+## Task 33I263 Standalone Structure Item Context
+
+The canonical [Task 33I263 contract](../../task_contracts/en/CORE-SOURCE-STRUCTURE-ITEM-CONTEXT-33I263.md)
+owns the standalone `SourceStructureCoreContextProducer`, immutable two-row
+definition/Core-item association, handoff, and typed failure surface. The
+producer consumes only a prepared `CoreContext` and the exact Task-263 checker
+handoff. It authenticates two public valid `Structure` items and materializes
+the direct inheritance as the Derived item's sole local dependency on Base.
+
+Task-248 and 33LB are not inputs. Member, constructor, mapping, view,
+coherence, obligation, and acceptance artifacts remain validation-only or
+deferred. No generic adapter, context/IR slot, installer, or production route
+is introduced.
 
 ## Forbidden Behavior
 

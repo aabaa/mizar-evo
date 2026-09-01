@@ -675,6 +675,7 @@ algorithm payload category を下流 crate の exhaustive match を壊さずに�
 | `SourceFunctorCoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface。 |
 | `SourceAttributeCoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface。 |
 | `SourceModeCoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `SourceStructureCoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface。 |
 | `DefinitionBoundaryKind` | `#[non_exhaustive]` downstream forward-compatible surface。 |
 | `DefinitionBoundaryStatus` | `#[non_exhaustive]` downstream forward-compatible surface。 |
 | `CheckerSiteKind` | `#[non_exhaustive]` downstream forward-compatible surface。 |
@@ -720,6 +721,19 @@ vertical taskであり、ASTは`mizar-test`だけが読み、checkerはsyntax-fr
 projectionをemitし、このcrateがlowerする。Core 34はreusable conversion/evidence
 API、Core 37はsource `reconsider`を所有する。Core 46はcall/result substitution
 requestだけを搬送し、substitution result/VCはdownstreamに残す。
+
+## Task 33I263 standalone structure item context
+
+Canonical [Task 33I263 contract](../../task_contracts/ja/CORE-SOURCE-STRUCTURE-ITEM-CONTEXT-33I263.md)
+がstandalone `SourceStructureCoreContextProducer`、immutable two-row
+definition/Core-item association、handoff、typed failure surfaceをownする。
+Prepared `CoreContext`とexact Task263 checker handoffだけをconsumeし、public valid
+`Structure` 2件をauthenticateしてdirect inheritanceをDerivedからBaseへのsole local
+dependencyとしてmaterializeする。
+
+Task248/33LBはinputではない。Member/constructor/mapping/view/coherence/
+obligation/acceptance artifactはvalidation-onlyまたはdeferred。Generic adapter、
+context/IR slot、installer、production routeは追加しない。
 
 ## 禁止事項
 

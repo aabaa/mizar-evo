@@ -304,3 +304,15 @@ or tests. Concrete call/result substitution remains VC-owned. Core 40/A1
 remains blocked, and no VC descendant may
 treat any unimplemented Core row, status, trace, formula, or context as
 available. This backlink adds ownership only and no Core/VC coverage.
+
+## Task 33I263 Structure Item Context Slice
+
+The implemented [Task 33I263 contract](../../task_contracts/en/CORE-SOURCE-STRUCTURE-ITEM-CONTEXT-33I263.md)
+adds only the Task-263-specific Core-33 association: two structure definition
+rows join by whole symbol to two valid public Core items, and the exact direct
+inheritance becomes one Derived-to-Base local dependency. This slice consumes
+neither Task-248 nor 33LB and remains private-probe-only and zero credit.
+
+Structure members, fields-only constructor semantics, mappings/views,
+coherence, obligations, definitions, production installation, complete Core
+33, Core 34--36, and `MT10-CIR-TE` remain separately owned and deferred.

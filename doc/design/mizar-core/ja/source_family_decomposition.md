@@ -251,3 +251,15 @@ concrete call/result substitution は VC-owned のまま。Core 40/A1 は blocke
 どの VC descendant も未実装 Core row、
 status、trace、formula、context を available と扱えない。この backlink は ownership
 だけを追加し、Core/VC coverage を追加しない。
+
+## Task 33I263 structure item context slice
+
+Implemented [Task 33I263 contract](../../task_contracts/ja/CORE-SOURCE-STRUCTURE-ITEM-CONTEXT-33I263.md)
+はTask263固有Core33 associationだけを追加する。Structure definition 2行をwhole
+symbolでpublic valid Core item 2件へjoinし、exact direct inheritanceをDerived→Base
+local dependency 1本へmaterializeする。Task248/33LBをconsumeせず、private-probe-only/
+zero-creditのまま。
+
+Structure member、fields-only constructor semantics、mapping/view、coherence、
+obligation、definition、production install、complete Core33、Core34--36、
+`MT10-CIR-TE`はseparate ownerへdeferする。

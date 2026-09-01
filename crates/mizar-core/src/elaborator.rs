@@ -64,6 +64,10 @@ use mizar_checker::{
         SourcePredicateDefinitionHandoff, SourcePredicateDefinitionId,
         SourcePredicateDefinitionRecovery,
     },
+    source_structure_definition::{
+        SourceStructureDefinitionHandoff, SourceStructureDefinitionId,
+        SourceStructureDefinitionRecovery, SourceStructureMemberKind,
+    },
     type_checker::{CheckedFormulaId, FormulaKind, FormulaStatus},
     typed_ast::{
         BindingTypeRef, InitialObligationId, InitialObligationKind, NodeRecoveryState,
@@ -4599,6 +4603,599 @@ fn validate_mode_item_association(
             .is_none_or(|(id, row)| id != definition.id() || row != association)
     {
         return Err(SourceModeCoreContextError::InvalidItemAssociation);
+    }
+    Ok(())
+}
+
+const SOURCE_STRUCTURE_CORE_ITEM_PROVENANCE_KEYS: [&str; 2] = [
+    "source-structure-core-item-v1.definition.0",
+    "source-structure-core-item-v1.definition.1",
+];
+
+/// One immutable association between a checker structure definition, its
+/// whole symbol, and the corresponding Core item.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceStructureCoreItemAssociation {
+    definition: SourceStructureDefinitionId,
+    symbol: SymbolId,
+    core_item: CoreItemId,
+}
+
+impl SourceStructureCoreItemAssociation {
+    #[must_use]
+    pub const fn definition(&self) -> SourceStructureDefinitionId {
+        self.definition
+    }
+
+    #[must_use]
+    pub const fn symbol(&self) -> &SymbolId {
+        &self.symbol
+    }
+
+    #[must_use]
+    pub const fn core_item(&self) -> CoreItemId {
+        self.core_item
+    }
+}
+
+/// Immutable source-ordered table of structure/Core item associations.
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct SourceStructureCoreItemAssociationTable {
+    rows: Vec<SourceStructureCoreItemAssociation>,
+}
+
+impl SourceStructureCoreItemAssociationTable {
+    fn empty() -> Self {
+        Self::default()
+    }
+
+    #[must_use]
+    pub fn get(
+        &self,
+        definition: SourceStructureDefinitionId,
+    ) -> Option<&SourceStructureCoreItemAssociation> {
+        self.rows.iter().find(|row| row.definition() == definition)
+    }
+
+    pub fn iter(
+        &self,
+    ) -> impl Iterator<
+        Item = (
+            SourceStructureDefinitionId,
+            &SourceStructureCoreItemAssociation,
+        ),
+    > {
+        self.rows.iter().map(|row| (row.definition(), row))
+    }
+
+    #[must_use]
+    pub fn len(&self) -> usize {
+        self.rows.len()
+    }
+
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.rows.is_empty()
+    }
+}
+
+/// Errors raised while building the exact Task-263 structure/Core context.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum SourceStructureCoreContextError {
+    EnvironmentMismatch,
+    InvalidCheckerOwner,
+    InvalidCoreContext,
+    InvalidItemAssociation,
+}
+
+impl fmt::Display for SourceStructureCoreContextError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::EnvironmentMismatch => {
+                formatter.write_str("structure Core context environment is invalid")
+            }
+            Self::InvalidCheckerOwner => {
+                formatter.write_str("structure Core checker owner is invalid")
+            }
+            Self::InvalidCoreContext => formatter.write_str("structure Core context is invalid"),
+            Self::InvalidItemAssociation => {
+                formatter.write_str("structure Core item association is invalid")
+            }
+        }
+    }
+}
+
+impl Error for SourceStructureCoreContextError {}
+
+/// Immutable Core context handoff for the exact checker-authenticated
+/// Task-263 structure definitions.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceStructureCoreContextHandoff {
+    context: CoreContext,
+    checker_owner: SourceStructureDefinitionHandoff,
+    items: SourceStructureCoreItemAssociationTable,
+}
+
+impl SourceStructureCoreContextHandoff {
+    #[must_use]
+    pub const fn source_id(&self) -> SourceId {
+        self.context.source_id()
+    }
+
+    #[must_use]
+    pub const fn module_id(&self) -> &ModuleId {
+        self.context.module_id()
+    }
+
+    #[must_use]
+    pub const fn context(&self) -> &CoreContext {
+        &self.context
+    }
+
+    #[must_use]
+    pub const fn checker_owner(&self) -> &SourceStructureDefinitionHandoff {
+        &self.checker_owner
+    }
+
+    #[must_use]
+    pub const fn items(&self) -> &SourceStructureCoreItemAssociationTable {
+        &self.items
+    }
+
+    #[must_use]
+    pub fn debug_text(&self) -> String {
+        let associations = self
+            .items
+            .iter()
+            .map(|(definition, association)| {
+                format!(
+                    "{}:{}:{}",
+                    definition.index(),
+                    association.symbol().fqn().as_str(),
+                    association.core_item().index(),
+                )
+            })
+            .collect::<Vec<_>>()
+            .join(",");
+        format!(
+            "source-structure-core-item-context-v1|module={}.{}|definitions={}|inheritances={}|items={}",
+            self.module_id().package().as_str(),
+            self.module_id().path().as_str(),
+            self.checker_owner.definitions().len(),
+            self.checker_owner.inheritances().len(),
+            associations,
+        )
+    }
+
+    fn validate(&self) -> Result<(), SourceStructureCoreContextError> {
+        validate_structure_core_environment(&self.context, &self.checker_owner)?;
+        let definitions = validate_structure_checker_owner(&self.checker_owner)?;
+        let core_items = validate_structure_core_shape(&self.context, definitions)?;
+        validate_structure_item_associations(
+            &self.checker_owner,
+            &self.items,
+            definitions,
+            core_items,
+        )
+    }
+}
+
+/// Builds the standalone immutable Task-263 structure/Core context handoff.
+#[derive(Debug, Clone, Copy)]
+pub struct SourceStructureCoreContextProducer;
+
+impl SourceStructureCoreContextProducer {
+    pub fn build(
+        context: CoreContext,
+        checker_owner: SourceStructureDefinitionHandoff,
+    ) -> Result<SourceStructureCoreContextHandoff, SourceStructureCoreContextError> {
+        validate_structure_core_environment(&context, &checker_owner)?;
+        let definitions = validate_structure_checker_owner(&checker_owner)?;
+        let core_items = validate_structure_core_shape(&context, definitions)?;
+        let mut items = SourceStructureCoreItemAssociationTable::empty();
+        for (definition, core_item) in definitions.into_iter().zip(core_items) {
+            items.rows.push(SourceStructureCoreItemAssociation {
+                definition: definition.id(),
+                symbol: definition.symbol().clone(),
+                core_item,
+            });
+        }
+        let handoff = SourceStructureCoreContextHandoff {
+            context,
+            checker_owner,
+            items,
+        };
+        handoff.validate()?;
+        Ok(handoff)
+    }
+}
+
+fn validate_structure_core_environment(
+    context: &CoreContext,
+    checker_owner: &SourceStructureDefinitionHandoff,
+) -> Result<(), SourceStructureCoreContextError> {
+    if context.source_id() != checker_owner.source_id()
+        || context.module_id() != checker_owner.module_id()
+    {
+        return Err(SourceStructureCoreContextError::EnvironmentMismatch);
+    }
+    Ok(())
+}
+
+fn validate_structure_checker_owner(
+    checker_owner: &SourceStructureDefinitionHandoff,
+) -> Result<
+    [&mizar_checker::source_structure_definition::SourceStructureDefinition; 2],
+    SourceStructureCoreContextError,
+> {
+    if checker_owner.source_type_fingerprint().is_empty()
+        || checker_owner.base_initial_obligation_count() != 0
+        || checker_owner.definitions().len() != 2
+        || checker_owner.members().len() != 4
+        || checker_owner.inheritances().len() != 1
+        || checker_owner.mappings().len() != 2
+        || !checker_owner.coherence_requests().is_empty()
+    {
+        return Err(SourceStructureCoreContextError::InvalidCheckerOwner);
+    }
+
+    let definitions = [
+        checker_owner
+            .definitions()
+            .get(SourceStructureDefinitionId::new(0))
+            .ok_or(SourceStructureCoreContextError::InvalidCheckerOwner)?,
+        checker_owner
+            .definitions()
+            .get(SourceStructureDefinitionId::new(1))
+            .ok_or(SourceStructureCoreContextError::InvalidCheckerOwner)?,
+    ];
+    let definition_ids = [0, 3];
+    let definition_sites = [57, 65];
+    let definition_ranges = [(13, 98), (102, 190)];
+    let definition_members = [[0, 1], [2, 3]];
+    let definition_fields = [0, 2];
+    let definition_paths: [&[u32]; 2] = [&[4, 0, 11, 0], &[4, 0, 11, 1]];
+    let definition_spellings = [
+        "struct Task263Base where\n    field carrier -> set;\n    property marker -> set;\n  end;",
+        "struct Task263Derived where\n    field carrier -> set;\n    property marker -> set;\n  end;",
+    ];
+    for (index, definition) in definitions.iter().enumerate() {
+        let source_range = SourceRange {
+            source_id: checker_owner.source_id(),
+            start: definition_ranges[index].0,
+            end: definition_ranges[index].1,
+        };
+        let expected_members = definition_members[index].map(SourceStructureDefinitionId::new);
+        let expected_members = expected_members.map(|id| {
+            mizar_checker::source_structure_definition::SourceStructureMemberId::new(id.index())
+        });
+        let expected_field =
+            mizar_checker::source_structure_definition::SourceStructureMemberId::new(
+                definition_fields[index],
+            );
+        if definition.id() != SourceStructureDefinitionId::new(index)
+            || definition.definition().index() != definition_ids[index]
+            || definition.contribution().index() != 0
+            || definition.site() != &TypedSiteRef::Node(TypedNodeId::new(definition_sites[index]))
+            || definition.source_range() != source_range
+            || definition.source_ordinal() != index
+            || definition.recovery() != SourceStructureDefinitionRecovery::Normal
+            || definition.spelling() != definition_spellings[index]
+            || definition.members() != expected_members
+            || definition.constructor_fields() != [expected_field]
+            || definition.symbol().module() != checker_owner.module_id()
+            || !is_exact_structure_origin(
+                definition.origin(),
+                checker_owner.source_id(),
+                checker_owner.module_id(),
+                source_range,
+                definition_paths[index],
+            )
+        {
+            return Err(SourceStructureCoreContextError::InvalidCheckerOwner);
+        }
+    }
+    if definitions[0].symbol() == definitions[1].symbol() {
+        return Err(SourceStructureCoreContextError::InvalidCheckerOwner);
+    }
+
+    let member_definition_ids = [1, 2, 4, 5];
+    let member_owners = [0, 0, 1, 1];
+    let member_ordinals = [0, 1, 0, 1];
+    let member_kinds = [
+        SourceStructureMemberKind::Field,
+        SourceStructureMemberKind::Property,
+        SourceStructureMemberKind::Field,
+        SourceStructureMemberKind::Property,
+    ];
+    let member_sites = [53, 56, 61, 64];
+    let member_ranges = [(42, 63), (68, 91), (134, 155), (160, 183)];
+    let member_spellings = [
+        "field carrier -> set;",
+        "property marker -> set;",
+        "field carrier -> set;",
+        "property marker -> set;",
+    ];
+    let member_constructor_ordinals = [Some(0), None, Some(0), None];
+    let member_paths: [&[u32]; 4] = [
+        &[4, 0, 11, 0, 18, 0],
+        &[4, 0, 11, 0, 19, 1],
+        &[4, 0, 11, 1, 18, 0],
+        &[4, 0, 11, 1, 19, 1],
+    ];
+    let mut member_symbols = BTreeSet::new();
+    for index in 0..4 {
+        let member = checker_owner
+            .members()
+            .get(mizar_checker::source_structure_definition::SourceStructureMemberId::new(index))
+            .ok_or(SourceStructureCoreContextError::InvalidCheckerOwner)?;
+        let source_range = SourceRange {
+            source_id: checker_owner.source_id(),
+            start: member_ranges[index].0,
+            end: member_ranges[index].1,
+        };
+        if member.id().index() != index
+            || member.definition().index() != member_definition_ids[index]
+            || member.contribution().index() != 0
+            || member.owner() != SourceStructureDefinitionId::new(member_owners[index])
+            || member.ordinal() != member_ordinals[index]
+            || member.kind() != member_kinds[index]
+            || member.site() != &TypedSiteRef::Node(TypedNodeId::new(member_sites[index]))
+            || member.source_range() != source_range
+            || member.recovery() != SourceStructureDefinitionRecovery::Normal
+            || member.spelling() != member_spellings[index]
+            || member.written_type().index() != index
+            || member.constructor_ordinal() != member_constructor_ordinals[index]
+            || member.symbol().module() != checker_owner.module_id()
+            || !member_symbols.insert(member.symbol())
+            || !is_exact_structure_origin(
+                member.origin(),
+                checker_owner.source_id(),
+                checker_owner.module_id(),
+                source_range,
+                member_paths[index],
+            )
+        {
+            return Err(SourceStructureCoreContextError::InvalidCheckerOwner);
+        }
+    }
+
+    let inheritance = checker_owner
+        .inheritances()
+        .get(mizar_checker::source_structure_definition::SourceStructureInheritanceId::new(0))
+        .ok_or(SourceStructureCoreContextError::InvalidCheckerOwner)?;
+    let inheritance_range = SourceRange {
+        source_id: checker_owner.source_id(),
+        start: 194,
+        end: 314,
+    };
+    if inheritance.id().index() != 0
+        || inheritance.child() != SourceStructureDefinitionId::new(1)
+        || inheritance.parent() != SourceStructureDefinitionId::new(0)
+        || inheritance.site() != &TypedSiteRef::Node(TypedNodeId::new(70))
+        || inheritance.source_range() != inheritance_range
+        || inheritance.source_ordinal() != 0
+        || inheritance.recovery() != SourceStructureDefinitionRecovery::Normal
+        || inheritance.spelling()
+            != "inherit Task263Derived extends Task263Base where\n    field carrier from carrier;\n    property marker from marker;\n  end;"
+        || inheritance.mappings()
+            != [
+                mizar_checker::source_structure_definition::SourceStructureMappingId::new(0),
+                mizar_checker::source_structure_definition::SourceStructureMappingId::new(1),
+            ]
+    {
+        return Err(SourceStructureCoreContextError::InvalidCheckerOwner);
+    }
+
+    let mapping_definition_ids = [6, 7];
+    let mapping_kinds = [
+        SourceStructureMemberKind::Field,
+        SourceStructureMemberKind::Property,
+    ];
+    let mapping_view_members = [2, 3];
+    let mapping_parent_members = [0, 1];
+    let mapping_sites = [68, 69];
+    let mapping_ranges = [(247, 274), (279, 307)];
+    let mapping_spellings = [
+        "field carrier from carrier;",
+        "property marker from marker;",
+    ];
+    let mapping_paths: [&[u32]; 2] = [&[4, 0, 20, 2, 21, 0], &[4, 0, 20, 2, 22, 1]];
+    for index in 0..2 {
+        let mapping = checker_owner
+            .mappings()
+            .get(mizar_checker::source_structure_definition::SourceStructureMappingId::new(index))
+            .ok_or(SourceStructureCoreContextError::InvalidCheckerOwner)?;
+        let source_range = SourceRange {
+            source_id: checker_owner.source_id(),
+            start: mapping_ranges[index].0,
+            end: mapping_ranges[index].1,
+        };
+        if mapping.id().index() != index
+            || mapping.definition().index() != mapping_definition_ids[index]
+            || mapping.contribution().index() != 0
+            || mapping.inheritance() != inheritance.id()
+            || mapping.ordinal() != index
+            || mapping.kind() != mapping_kinds[index]
+            || mapping.view_member().index() != mapping_view_members[index]
+            || mapping.parent_member().index() != mapping_parent_members[index]
+            || mapping.root_member().index() != mapping_parent_members[index]
+            || mapping.path() != [inheritance.id()]
+            || mapping.site() != &TypedSiteRef::Node(TypedNodeId::new(mapping_sites[index]))
+            || mapping.source_range() != source_range
+            || mapping.recovery() != SourceStructureDefinitionRecovery::Normal
+            || mapping.spelling() != mapping_spellings[index]
+            || mapping.symbol().module() != checker_owner.module_id()
+            || !is_exact_structure_origin(
+                mapping.origin(),
+                checker_owner.source_id(),
+                checker_owner.module_id(),
+                source_range,
+                mapping_paths[index],
+            )
+        {
+            return Err(SourceStructureCoreContextError::InvalidCheckerOwner);
+        }
+    }
+    Ok(definitions)
+}
+
+fn is_exact_structure_origin(
+    origin: &SemanticOrigin,
+    source_id: SourceId,
+    module_id: &ModuleId,
+    source_range: SourceRange,
+    structural_path: &[u32],
+) -> bool {
+    origin.source_id() == source_id
+        && origin.module_id() == module_id
+        && !origin.is_recovered()
+        && origin.import_edge().is_none()
+        && origin.anchor() == &SourceAnchor::Range(source_range)
+        && origin.structural_path() == structural_path
+}
+
+fn validate_structure_core_shape(
+    context: &CoreContext,
+    definitions: [&mizar_checker::source_structure_definition::SourceStructureDefinition; 2],
+) -> Result<[CoreItemId; 2], SourceStructureCoreContextError> {
+    let binder_context = context.binder_context();
+    if validate_core_context_shape(context, &BTreeSet::new()).is_err()
+        || !binder_context.frames.is_empty()
+        || !binder_context.free_variables.is_empty()
+        || !binder_context.variable_classes.is_empty()
+        || !binder_context.variable_roles.is_empty()
+        || !binder_context.variable_sorts.is_empty()
+        || context.binder_sources.iter().next().is_some()
+        || !context.binder_type_facts.is_empty()
+        || !context.dependency_summaries.is_empty()
+        || !context.generated_origins.table().is_empty()
+        || !context.generated_origins.by_key.is_empty()
+        || !context.diagnostics.is_empty()
+        || context.source_map.item_sources.len() != 2
+        || !context.source_map.term_sources.is_empty()
+        || !context.source_map.formula_sources.is_empty()
+        || !context.source_map.definition_sources.is_empty()
+        || !context.source_map.proof_sources.is_empty()
+        || !context.source_map.algorithm_sources.is_empty()
+        || !context.source_map.generated_sources.is_empty()
+        || !context.source_map.obligation_sources.is_empty()
+        || context.item_registry.items.len() != 2
+        || context.item_registry.by_symbol.len() != 2
+        || context.item_registry.dependencies.len() != 2
+        || context.definition_boundaries.by_item.len() != 2
+        || context.definition_boundaries.by_symbol.len() != 2
+        || context.worklist.entries.len() != 2
+    {
+        return Err(SourceStructureCoreContextError::InvalidCoreContext);
+    }
+    let core_items = [
+        context
+            .item_registry
+            .id_for_symbol(definitions[0].symbol())
+            .ok_or(SourceStructureCoreContextError::InvalidCoreContext)?,
+        context
+            .item_registry
+            .id_for_symbol(definitions[1].symbol())
+            .ok_or(SourceStructureCoreContextError::InvalidCoreContext)?,
+    ];
+    if core_items[0] == core_items[1] {
+        return Err(SourceStructureCoreContextError::InvalidCoreContext);
+    }
+    for index in 0..2 {
+        let core_item = core_items[index];
+        let definition = definitions[index];
+        let item = context
+            .item_registry
+            .items
+            .get(core_item)
+            .ok_or(SourceStructureCoreContextError::InvalidCoreContext)?;
+        let expected_provenance = CoreProvenance::new(
+            CoreProvenancePhase::Checker,
+            SOURCE_STRUCTURE_CORE_ITEM_PROVENANCE_KEYS[index],
+        );
+        let expected_source = CoreSourceRef::direct(definition.source_range())
+            .with_provenance(vec![expected_provenance.clone()]);
+        let expected_dependencies: &[CoreItemId] = if index == 0 { &[] } else { &core_items[..1] };
+        if item.symbol != *definition.symbol()
+            || item.kind != CoreItemKind::Structure
+            || item.visibility.as_str() != "public"
+            || item.status != CoreItemStatus::Valid
+            || item.dependencies != expected_dependencies
+            || !item.diagnostics.is_empty()
+            || item.source != expected_source
+            || context.source_map.item_sources.get(&core_item) != Some(&item.source)
+        {
+            return Err(SourceStructureCoreContextError::InvalidCoreContext);
+        }
+        let dependency = context
+            .item_registry
+            .dependencies
+            .get(&core_item)
+            .ok_or(SourceStructureCoreContextError::InvalidCoreContext)?;
+        if dependency.local != expected_dependencies
+            || !dependency.external.is_empty()
+            || !dependency.missing.is_empty()
+        {
+            return Err(SourceStructureCoreContextError::InvalidCoreContext);
+        }
+        let boundary = context
+            .definition_boundaries
+            .by_item
+            .get(&core_item)
+            .ok_or(SourceStructureCoreContextError::InvalidCoreContext)?;
+        if context
+            .definition_boundaries
+            .by_symbol
+            .get(definition.symbol())
+            != Some(&core_item)
+            || boundary.item != core_item
+            || boundary.symbol != *definition.symbol()
+            || boundary.kind != DefinitionBoundaryKind::DefinitionalItem
+            || boundary.status != DefinitionBoundaryStatus::PendingBody
+            || boundary.source != expected_source
+            || boundary.provenance.as_slice() != [expected_provenance]
+        {
+            return Err(SourceStructureCoreContextError::InvalidCoreContext);
+        }
+        let work_item = &context.worklist.entries[index];
+        if work_item.kind != ElaborationWorkItemKind::Item(core_item)
+            || work_item.status != ElaborationWorkStatus::Pending
+            || work_item.source != expected_source
+            || !work_item.diagnostics.is_empty()
+            || !work_item.checker_diagnostics.is_empty()
+        {
+            return Err(SourceStructureCoreContextError::InvalidCoreContext);
+        }
+    }
+    Ok(core_items)
+}
+
+fn validate_structure_item_associations(
+    checker_owner: &SourceStructureDefinitionHandoff,
+    items: &SourceStructureCoreItemAssociationTable,
+    definitions: [&mizar_checker::source_structure_definition::SourceStructureDefinition; 2],
+    core_items: [CoreItemId; 2],
+) -> Result<(), SourceStructureCoreContextError> {
+    if items.len() != checker_owner.definitions().len() || items.len() != 2 {
+        return Err(SourceStructureCoreContextError::InvalidItemAssociation);
+    }
+    for index in 0..2 {
+        let definition = definitions[index];
+        let association = items
+            .get(definition.id())
+            .ok_or(SourceStructureCoreContextError::InvalidItemAssociation)?;
+        if association.definition() != definition.id()
+            || association.symbol() != definition.symbol()
+            || association.core_item() != core_items[index]
+            || items
+                .iter()
+                .nth(index)
+                .is_none_or(|(id, row)| id != definition.id() || row != association)
+        {
+            return Err(SourceStructureCoreContextError::InvalidItemAssociation);
+        }
     }
     Ok(())
 }

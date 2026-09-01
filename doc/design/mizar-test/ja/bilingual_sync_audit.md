@@ -1958,3 +1958,11 @@ verification complete、documentation repair後final review no findings。
 Probeはzero semantic/execution/coverage creditのままで、checker doc、production runner、installer、
 generic API/slot、fixture/expectation/trace/metadataの変更なし。Core34--36、`GeneratedOrigin`、
 `MT10-CIR-TE`、Task277Bはdeferred/not-ready。English canonical、exceptionなし。
+
+## Core Task 33I263 bilingual contract parity
+
+[EN contract](../../task_contracts/en/CORE-SOURCE-STRUCTURE-ITEM-CONTEXT-33I263.md)と
+[JA companion](../../task_contracts/ja/CORE-SOURCE-STRUCTURE-ITEM-CONTEXT-33I263.md)は、
+private Task263 probe 2件、definition/Core-item row 2行、sole Derived→Base local
+dependency、standalone input、default-deny matrix、zero-credit status、semantic/
+production deferralを同期する。English canonical、exceptionなし。

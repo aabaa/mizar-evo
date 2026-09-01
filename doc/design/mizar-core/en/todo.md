@@ -585,7 +585,7 @@ work. Every finding maps to a task or a recorded disposition:
 33I262. **Task262 mode item context prerequisite.** [x]
     - The frozen [task contract](../../task_contracts/en/CORE-SOURCE-MODE-ITEM-CONTEXT-33I262.md)
       is implemented and verified; final reviews have no findings after
-      documentation repairs and the task-only commit is pending. It consumes
+      documentation repairs and the task-only commit is `5c048838`. It consumes
       complete 33LB, exact Task-248
       Profile-B context, and the active Task-262 mode-definition handoff; the
       exact context link and whole `SymbolId` admit one public Core `Mode` item
@@ -594,6 +594,17 @@ work. Every finding maps to a task or a recorded disposition:
       change, production route/installer, `.miz`, expectation, trace, metadata,
       diagnostic, or `MT10-CIR-TE` change. Task-259--261 are protected
       precedents, not inputs; Core 34--36 and Task277B remain deferred/not-ready.
+33I263. **Task263 structure item context prerequisite.** [x]
+    - The [task contract](../../task_contracts/en/CORE-SOURCE-STRUCTURE-ITEM-CONTEXT-33I263.md)
+      is complete on its task-only commit: all reviews and verification pass,
+      with hard gates `9/9` and valid quality `98/100`. It consumes only a
+      prepared Core context and the active
+      exact Task-263 handoff, admitting two public Core `Structure` items and
+      two typed source-ordered association rows.
+    - The user-selected direct inheritance materializes exactly one local
+      Derived-to-Base item dependency. Task-248/33LB, member/view/constructor/
+      coherence semantics, production installation, coverage, `MT10-CIR-TE`,
+      and Task277B readiness remain absent or deferred.
 33. **Source-derived Core context, items, binders, and source maps.** [ ]
     - Consume checker 248 through `MT10-CIR-TE`; no type/proof/algorithm body.
       For C4C8, checker 248 remains insufficient; Task 33C4C8 owns only the

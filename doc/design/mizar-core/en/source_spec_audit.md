@@ -176,7 +176,11 @@ Top-level public API groups:
   `SourceAttributeCoreContextHandoff`, `SourceAttributeCoreContextError`,
   `SourceAttributeCoreContextProducer`, `SourceModeCoreItemAssociation`,
   `SourceModeCoreItemAssociationTable`, `SourceModeCoreContextHandoff`,
-  `SourceModeCoreContextError`, `SourceModeCoreContextProducer`
+  `SourceModeCoreContextError`, `SourceModeCoreContextProducer`,
+  `SourceStructureCoreItemAssociation`,
+  `SourceStructureCoreItemAssociationTable`,
+  `SourceStructureCoreContextHandoff`, `SourceStructureCoreContextError`,
+  `SourceStructureCoreContextProducer`
 - Type and fact lowering: `TypeAndFactResult`, `TypeAndFactLoweringError`,
   `TypeAndFactLoweringInput`, `TypePredicateSeed`,
   `DeclaredBinderTypeSeed`, `AttributeChainSeed`, `ModeExpansionSeed`,
@@ -416,3 +420,16 @@ now implement that mapping for the exact source and its committed snapshot.
 pending/Active status forbids verified-premise, acceptance, discharge, or
 accepted-artifact publication. VC, all non-Task-180 Core/CFG families, and
 Steps 6/7 remain deferred until their owning tasks land.
+
+## Task 33I263 Source/Specification Boundary
+
+The canonical [Task 33I263 contract](../../task_contracts/en/CORE-SOURCE-STRUCTURE-ITEM-CONTEXT-33I263.md)
+maps the existing Chapter-5 Task-263 transport to two structural Core item
+shells. Exact checker definition identity selects each whole-symbol Core item;
+the authenticated child-1/parent-0 inheritance selects the Derived-to-Base
+local dependency. `Valid` authenticates only item shape and visibility.
+
+This closes bounded Core association `design_drift` and its private `test_gap`
+without changing specification, test intent, trace status, expectation, or
+coverage. Constructor/member/view/coherence semantics, Core 34--36,
+production installation, and `MT10-CIR-TE` remain open.

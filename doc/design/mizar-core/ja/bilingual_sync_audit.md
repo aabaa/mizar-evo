@@ -153,3 +153,11 @@ bilingual guard を後続で追加できる。しかしここで追加すると�
 
 - stage 前の `git diff --check`。
 - 明示 path stage 後の `git diff --cached --check`。
+
+## Task 33I263 bilingual contract parity
+
+[EN contract](../../task_contracts/en/CORE-SOURCE-STRUCTURE-ITEM-CONTEXT-33I263.md)と
+[JA companion](../../task_contracts/ja/CORE-SOURCE-STRUCTURE-ITEM-CONTEXT-33I263.md)は、
+structure association 2行、sole Derived→Base local dependency、standalone by-value
+API、default-deny boundary、prohibited semantics、protected artifact、zero-credit
+status、Task277B deferralを同期する。English canonical、exceptionなし。

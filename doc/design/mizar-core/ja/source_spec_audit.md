@@ -175,7 +175,11 @@ top-level public API group:
   `SourceAttributeCoreContextHandoff`、`SourceAttributeCoreContextError`、
   `SourceAttributeCoreContextProducer`、`SourceModeCoreItemAssociation`、
   `SourceModeCoreItemAssociationTable`、`SourceModeCoreContextHandoff`、
-  `SourceModeCoreContextError`、`SourceModeCoreContextProducer`
+  `SourceModeCoreContextError`、`SourceModeCoreContextProducer`、
+  `SourceStructureCoreItemAssociation`、
+  `SourceStructureCoreItemAssociationTable`、
+  `SourceStructureCoreContextHandoff`、`SourceStructureCoreContextError`、
+  `SourceStructureCoreContextProducer`
 - Type and fact lowering: `TypeAndFactResult`, `TypeAndFactLoweringError`,
   `TypeAndFactLoweringInput`, `TypePredicateSeed`,
   `DeclaredBinderTypeSeed`, `AttributeChainSeed`, `ModeExpansionSeed`,
@@ -382,3 +386,15 @@ snapshotについて実装済みである。`Valid`/public item metadataはstruc
 visibilityだけで、pending/Active statusはverified-premise、acceptance、discharge、
 accepted-artifact publicationを禁止する。VC、non-Task-180 Core/CFG全family、
 Steps 6/7はowning taskまでdeferred。
+
+## Task 33I263 source/specification boundary
+
+Canonical [Task 33I263 contract](../../task_contracts/ja/CORE-SOURCE-STRUCTURE-ITEM-CONTEXT-33I263.md)
+はexisting Chapter5 Task263 transportをstructural Core item shell 2件へmapする。
+Exact checker definition identityがwhole-symbol Core itemを選び、authenticated
+child1/parent0 inheritanceがDerived→Base local dependencyを選ぶ。`Valid`はitem
+shape/visibilityだけをauthenticateする。
+
+Bounded Core association `design_drift`とprivate `test_gap`だけを閉じ、spec、test
+intent、trace status、expectation、coverageは変更しない。Constructor/member/view/
+coherence semantics、Core34--36、production install、`MT10-CIR-TE`はopenのまま。

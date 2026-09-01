@@ -5454,3 +5454,16 @@ errorをverifyする。
 Registry include、production dispatch、active route、`CoreContextInput`/Typed/Resolved field、
 parameter/argument、generated origin、diagnostic、sidecar/trace mutation、semantic result、
 coverage credit、Task277B readinessは追加しない。
+
+## Core Task 33I263 private structure-context probe
+
+Canonical [Task 33I263 contract](../../task_contracts/ja/CORE-SOURCE-STRUCTURE-ITEM-CONTEXT-33I263.md)
+はexisting private Task263 real-source leafをexactly two testsで拡張する。Authenticated
+definitionからCore `Structure` seed 2件をprepareし、exact Derived→Base dependencyだけを
+attachして、retained checker owner、deterministic two-row association、local dependency、
+item/source-map/boundary/worklist、Core corruption rejection、foreign source/module rejectionを
+verifyする。
+
+Task248/33LB composition、registry include、production dispatch、active snapshot、member/
+view/constructor/coherence semantics、diagnostic、fixture/sidecar/trace/metadata mutation、
+coverage credit、Task277B readinessは追加しない。

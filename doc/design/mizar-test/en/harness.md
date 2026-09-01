@@ -5983,3 +5983,18 @@ The probe adds no registry include, production dispatch, active route,
 `CoreContextInput`/Typed/Resolved field, parameter/argument, generated origin,
 diagnostic, sidecar/trace mutation, semantic result, coverage credit, or
 Task277B readiness.
+
+## Core Task 33I263 Private Structure-Context Probe
+
+The canonical [Task 33I263 contract](../../task_contracts/en/CORE-SOURCE-STRUCTURE-ITEM-CONTEXT-33I263.md)
+extends the existing private Task-263 real-source leaf with exactly two tests.
+They prepare two Core `Structure` seeds from the authenticated definitions,
+attach only the exact Derived-to-Base dependency, and verify retained checker
+ownership, deterministic two-row association, local dependency resolution,
+item/source-map/boundary/worklist state, Core corruption rejection, and foreign
+source/module rejection.
+
+The probe adds no Task-248/33LB composition, registry include, production
+dispatch, active snapshot, member/view/constructor/coherence semantics,
+diagnostic, fixture/sidecar/trace/metadata mutation, coverage credit, or
+Task277B readiness.

@@ -2133,3 +2133,12 @@ with no checker-doc, production runner, installer, generic API/slot, or
 fixture/expectation/trace/metadata change; Core 34--36, `GeneratedOrigin`,
 `MT10-CIR-TE`, and Task277B remain deferred/not-ready. English is canonical;
 no exception is recorded.
+
+## Core Task 33I263 Bilingual Contract Parity
+
+The [EN contract](../../task_contracts/en/CORE-SOURCE-STRUCTURE-ITEM-CONTEXT-33I263.md)
+and [JA companion](../../task_contracts/ja/CORE-SOURCE-STRUCTURE-ITEM-CONTEXT-33I263.md)
+assign the same two private Task-263 probes, two definition/Core-item rows,
+sole Derived-to-Base local dependency, standalone inputs, default-deny matrix,
+zero-credit status, and complete semantic/production deferrals. English is
+canonical; no exception is recorded.
