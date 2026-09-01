@@ -1134,6 +1134,262 @@ fn task264_parameter_core_context_rejects_mixed_and_foreign_transactions() {
     );
 }
 
+#[test]
+fn task264_equals_selector_term_seeds_are_exact_and_deterministic() {
+    let (ast, module, shells, symbols) = task253_ast_from_source_text(
+        SOURCE_PROPERTY_IMPLEMENTATION_EQUALS_TEXT,
+        265_000,
+    );
+    let output = source_property_implementation_output(
+        &ast,
+        module,
+        &shells,
+        &symbols,
+        SOURCE_PROPERTY_IMPLEMENTATION_EQUALS_TEXT,
+    )
+    .expect("Task35E264 selector")
+    .expect("Task35E264 equals route");
+    let checker_owner = output
+        .typed_ast
+        .source_property_implementation()
+        .expect("Task35E264 checker owner")
+        .clone();
+    let selector_identity = mizar_checker::source_property_implementation::SourcePropertyEqualsSelectorIdentityProducer::build(
+        &symbols,
+        checker_owner.clone(),
+        output
+            .typed_ast
+            .source_term()
+            .expect("Task35E264 primary term")
+            .clone(),
+        output
+            .typed_ast
+            .source_structure()
+            .expect("Task35E264 structure term")
+            .clone(),
+    )
+    .expect("Task35E264 selector identity");
+    let selector_context = task264_selector_type_handoff(&output);
+    let parameter_context =
+        mizar_core::elaborator::SourcePropertyParameterCoreContextProducer::build(
+            selector_context.clone(),
+            output
+                .typed_ast
+                .source_context()
+                .expect("Task35E264 source context")
+                .clone(),
+        )
+        .expect("Task35E264 parameter context");
+    let first = mizar_core::elaborator::SourcePropertyEqualsSelectorTermSeedProducer::build(
+        parameter_context.clone(),
+        selector_identity.clone(),
+    )
+    .expect("Task35E264 term seeds");
+    let second = mizar_core::elaborator::SourcePropertyEqualsSelectorTermSeedProducer::build(
+        parameter_context.clone(),
+        selector_identity.clone(),
+    )
+    .expect("Task35E264 deterministic replay");
+
+    assert_eq!(first, second);
+    assert_eq!(first.source_id(), parameter_context.source_id());
+    assert_eq!(first.module_id(), parameter_context.module_id());
+    assert_eq!(first.parameter_context(), &parameter_context);
+    assert_eq!(first.selector_identity(), &selector_identity);
+    assert_eq!(first.definition_owner(), &selector_context.definition_owner());
+    assert_eq!(first.definition_owner().anchor_item().index(), 0);
+    assert_eq!(first.definition_owner().item(), None);
+    assert_eq!(
+        first.definition_owner().property_symbol(),
+        Some(checker_owner.carrier_identity().property_symbol())
+    );
+
+    let association = first.association();
+    assert_eq!(association.parameter().index(), 0);
+    assert_eq!(association.binding().index(), 0);
+    assert_eq!(association.core_var().index(), 0);
+    assert_eq!(association.source_base().index(), 0);
+    assert_eq!(association.base_seed().index(), 0);
+    assert_eq!(association.source_selector().index(), 0);
+    assert_eq!(association.selector_seed().index(), 1);
+
+    let terms = first.terms();
+    assert_eq!(terms.len(), 2);
+    assert_eq!(
+        terms[0].kind,
+        mizar_core::elaborator::CoreTermSeedKind::Var(
+            mizar_core::core_ir::CoreVarId::new(0)
+        )
+    );
+    assert_eq!(
+        terms[0].source.anchor,
+        mizar_core::core_ir::CoreSourceAnchor::SourceRange(mizar_session::SourceRange {
+            source_id: first.source_id(),
+            start: 173,
+            end: 174,
+        })
+    );
+    assert!(terms[0].source.provenance.is_empty());
+    assert_eq!(terms[0].provenance.as_slice().len(), 1);
+    assert_eq!(
+        terms[0].provenance.as_slice()[0].phase,
+        mizar_core::core_ir::CoreProvenancePhase::Checker
+    );
+    assert_eq!(
+        terms[0].provenance.as_slice()[0].key.as_str(),
+        "source-property-equals-selector-term-seed-v1.base"
+    );
+    assert_eq!(
+        terms[1].kind,
+        mizar_core::elaborator::CoreTermSeedKind::Select {
+            selector: checker_owner.carrier_identity().field_symbol().clone(),
+            base: mizar_core::elaborator::CoreTermSeedId::new(0),
+        }
+    );
+    assert_eq!(
+        terms[1].source.anchor,
+        mizar_core::core_ir::CoreSourceAnchor::SourceRange(mizar_session::SourceRange {
+            source_id: first.source_id(),
+            start: 173,
+            end: 182,
+        })
+    );
+    assert!(terms[1].source.provenance.is_empty());
+    assert_eq!(terms[1].provenance.as_slice().len(), 1);
+    assert_eq!(
+        terms[1].provenance.as_slice()[0].phase,
+        mizar_core::core_ir::CoreProvenancePhase::Checker
+    );
+    assert_eq!(
+        terms[1].provenance.as_slice()[0].key.as_str(),
+        "source-property-equals-selector-term-seed-v1.selector"
+    );
+    assert_eq!(
+        first.debug_text(),
+        format!(
+            concat!(
+                "source-property-equals-selector-term-seeds-v1|module={}.{}|",
+                "owner-anchor=0|property={}|selector={}|source=0:0|seed=0:1|",
+                "parameter=0:0:0"
+            ),
+            first.module_id().package().as_str(),
+            first.module_id().path().as_str(),
+            checker_owner
+                .carrier_identity()
+                .property_symbol()
+                .fqn()
+                .as_str(),
+            checker_owner
+                .carrier_identity()
+                .field_symbol()
+                .fqn()
+                .as_str(),
+        )
+    );
+    assert!(!first.debug_text().ends_with('\n'));
+}
+
+#[test]
+fn task264_equals_selector_term_seeds_reject_mixed_and_foreign_transactions() {
+    let shared_ordinal = 265_100;
+    let (means_ast, means_module, means_shells, means_symbols) = task253_ast_from_source_text(
+        SOURCE_PROPERTY_IMPLEMENTATION_MEANS_TEXT,
+        shared_ordinal,
+    );
+    let means_output = source_property_implementation_output(
+        &means_ast,
+        means_module,
+        &means_shells,
+        &means_symbols,
+        SOURCE_PROPERTY_IMPLEMENTATION_MEANS_TEXT,
+    )
+    .expect("Task35E264 means selector")
+    .expect("Task35E264 means route");
+    let (equals_ast, equals_module, equals_shells, equals_symbols) = task253_ast_from_source_text(
+        SOURCE_PROPERTY_IMPLEMENTATION_EQUALS_TEXT,
+        shared_ordinal,
+    );
+    let equals_output = source_property_implementation_output(
+        &equals_ast,
+        equals_module,
+        &equals_shells,
+        &equals_symbols,
+        SOURCE_PROPERTY_IMPLEMENTATION_EQUALS_TEXT,
+    )
+    .expect("Task35E264 equals selector")
+    .expect("Task35E264 equals route");
+    let means_parameter =
+        mizar_core::elaborator::SourcePropertyParameterCoreContextProducer::build(
+            task264_selector_type_handoff(&means_output),
+            means_output
+                .typed_ast
+                .source_context()
+                .expect("Task35E264 means source context")
+                .clone(),
+        )
+        .expect("Task35E264 means parameter context");
+    let equals_owner = equals_output
+        .typed_ast
+        .source_property_implementation()
+        .expect("Task35E264 equals owner")
+        .clone();
+    let equals_identity = mizar_checker::source_property_implementation::SourcePropertyEqualsSelectorIdentityProducer::build(
+        &equals_symbols,
+        equals_owner,
+        equals_output
+            .typed_ast
+            .source_term()
+            .expect("Task35E264 equals primary term")
+            .clone(),
+        equals_output
+            .typed_ast
+            .source_structure()
+            .expect("Task35E264 equals structure term")
+            .clone(),
+    )
+    .expect("Task35E264 equals selector identity");
+    assert_eq!(means_parameter.source_id(), equals_identity.source_id());
+    assert_eq!(means_parameter.module_id(), equals_identity.module_id());
+    assert_eq!(
+        mizar_core::elaborator::SourcePropertyEqualsSelectorTermSeedProducer::build(
+            means_parameter,
+            equals_identity.clone(),
+        )
+        .expect_err("same-environment mixed Task35E264 transaction must fail closed"),
+        mizar_core::elaborator::SourcePropertyEqualsSelectorTermSeedError::InvalidSelectorIdentity
+    );
+
+    let (foreign_ast, foreign_module, foreign_shells, foreign_symbols) =
+        task253_ast_from_source_text(SOURCE_PROPERTY_IMPLEMENTATION_EQUALS_TEXT, 265_101);
+    let foreign_output = source_property_implementation_output(
+        &foreign_ast,
+        foreign_module,
+        &foreign_shells,
+        &foreign_symbols,
+        SOURCE_PROPERTY_IMPLEMENTATION_EQUALS_TEXT,
+    )
+    .expect("foreign Task35E264 selector")
+    .expect("foreign Task35E264 equals route");
+    let foreign_parameter =
+        mizar_core::elaborator::SourcePropertyParameterCoreContextProducer::build(
+            task264_selector_type_handoff(&foreign_output),
+            foreign_output
+                .typed_ast
+                .source_context()
+                .expect("foreign Task35E264 source context")
+                .clone(),
+        )
+        .expect("foreign Task35E264 parameter context");
+    assert_eq!(
+        mizar_core::elaborator::SourcePropertyEqualsSelectorTermSeedProducer::build(
+            foreign_parameter,
+            equals_identity,
+        )
+        .expect_err("foreign Task35E264 transaction must fail closed"),
+        mizar_core::elaborator::SourcePropertyEqualsSelectorTermSeedError::EnvironmentMismatch
+    );
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Task264CarrierCoreContextMutation {
     Baseline,

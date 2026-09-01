@@ -2194,3 +2194,11 @@ private Task264 tests, complete selector/source inputs, deterministic Task33LB
 reuse, exact `0/0/0` association and provenance assertions, foreign/default-
 deny rejection, and zero-credit boundary. English is canonical; Japanese is
 logically synchronized.
+
+## Core Task 35E264 Private-Probe Synchronization
+
+The paired Task35E264 contracts and harness sections assign the same two
+private Task264 tests, complete Task33P264/Task264D inputs, authenticated
+property owner, exact ordered seed/source/provenance assertions, mixed/foreign
+default-deny rejection, and zero-credit boundary. English is canonical;
+Japanese is logically synchronized.

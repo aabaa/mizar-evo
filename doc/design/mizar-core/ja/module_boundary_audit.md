@@ -38,7 +38,7 @@ module specification と比較する。file size は reviewability signal であ
 | `src/lib.rs` | 9 | `todo.md` の module table | `binder_normalization`, `control_flow`, `core_ir`, `elaborator` だけを export する。drift なし。 |
 | `src/core_ir.rs` | 4393 | `core_ir.md` | 大きいがcohesiveなdata-shape/validation module。IR264はprivate-field owner sum representation、validation、compatible debug、unit-test matrix 1件を追加するだけでnew module responsibilityはない。split不要。 |
 | `src/binder_normalization.rs` | 5828 | `binder_normalization.md` | 大きいが cohesive な binder/substitution/canonicalization module。future private helper extraction は optional。 |
-| `src/elaborator.rs` | 24256 | `elaborator.md` | 最大のreview-risk fileだが、sectionはowning specのsix elaboration stepに対応する。Tasks 31/33C4C8/33LB/33I259--264/33P264/34I264/IR264はlocalized owner-specific adapter/context。Task33P264はexisting Task33LB producerをproperty-parameter association 1件へreuseし、IR264はauthenticated property-owner initializerを`core_ir.rs`に保つ。New elaborator responsibility/splitはない。 |
+| `src/elaborator.rs` | 24788 | `elaborator.md` | 最大のreview-risk fileだが、sectionはowning specのsix elaboration stepに対応する。Tasks 31/33C4C8/33LB/33I259--264/33P264/34I264/IR264/35E264はlocalized owner-specific adapter/context。Task33P264はexisting Task33LB producerをproperty-parameter association 1件へreuseし、IR264はauthenticated property-owner initializerを`core_ir.rs`に保ち、Task35E264はloweringなしでexisting seed shape 2件をretainする。New elaborator responsibility/splitはない。 |
 | `src/control_flow.rs` | 6718 | `control_flow.md` | 大きいが phase-10 CFG、contract、diagnostic、handoff section に対応する。この task で mandatory split はしない。 |
 | `tests/determinism_suite.rs` | 627 | `00.crate_plan.md`, task 20 | cross-module integration test。boundary issue なし。 |
 | `tests/lint_policy.rs` | 1215 | task 1, task 21, task 22, task 31 policy | policy/audit guard test。Task-31 exceptionは`elaborator.rs`のexact `ExportStatus`/`Visibility` importだけをstripし、`SymbolEnv`、resolver behavior、alias、他のresolver-environment APIを引き続きrejectする。 |
@@ -92,6 +92,11 @@ contractへpost-source measurementとして記録し、本bounded prerequisite�
 Task33P264も`elaborator`内localized Core33 associationである。Cloned carrier context上で
 existing 33LB producerをreuseし、module/Cargo edge/raw-syntax dependency/destination slot/
 semantic lowering/production routeを追加しない。Test consumerはprivate Task264 leafだけ。
+
+Task35E264も`elaborator`内localized Core35-input adapterである。Existing public handoffと
+existing `CoreTermSeed` 2件をretainするだけで、module/Cargo edge/CoreIR type/raw-syntax・
+resolver dependency/generic lowering owner/production route/destination slotを追加しない。
+Same private Task264 leafだけがtest consumerで、split不要。
 
 ## Classification
 

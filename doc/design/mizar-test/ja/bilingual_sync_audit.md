@@ -2010,3 +2010,10 @@ Paired Task33P264 contract/harnessはsame private Task264 test 2件、complete s
 input、deterministic Task33LB reuse、exact `0/0/0` association/provenance assertion、foreign/
 default-deny rejection、zero-credit boundaryをassignする。English canonical/Japanese logical
 syncを維持する。
+
+## Core Task 35E264 private-probe synchronization
+
+Paired Task35E264 contract/harnessはsame private Task264 test 2件、complete
+Task33P264/Task264D input、authenticated property owner、exact ordered seed/source/
+provenance assertion、mixed/foreign default-deny rejection、zero-credit boundaryをassignする。
+English canonical/Japanese logical syncを維持する。

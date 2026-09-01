@@ -6043,6 +6043,19 @@ No fixture, expectation, trace, metadata, selection, production route,
 snapshot, normalized type, term/formula, `it`, definition, semantic result,
 coverage credit, or Task277B readiness changes.
 
+## Core Task 35E264 Private Task264 Equals Seed Probe
+
+The frozen [Task35E264 contract](../../task_contracts/en/CORE-SOURCE-PROPERTY-EQUALS-SELECTOR-SEEDS-35E264.md)
+adds exactly two tests to the same private Task264 leaf. The positive probe
+combines the complete Task33P264 and Task264D handoffs and asserts the retained
+property owner, deterministic ordered `Var(0)`/`Select(field, seed0)` rows,
+exact use-site sources/checker provenance, association, and debug bytes. The
+negative probe rejects mixed/foreign transactions before publication.
+
+No generic lowering, `CoreTermId`, source map, fixture, expectation, trace,
+metadata, selection, snapshot, production route, semantic result, coverage
+credit, or Task277B readiness changes.
+
 ## Checker Task264D Private Equals Selector Identity Probe
 
 The existing Task264 selector/type tests now construct the checker Task264D

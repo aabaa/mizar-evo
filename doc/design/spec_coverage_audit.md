@@ -7440,8 +7440,9 @@ to authenticate the whole local field symbol and retains the complete property,
 term, and structure handoffs by value. Existing Task264 private tests assert
 the receipt and fail-closed profile mixing. Specification, `.miz`, expectation,
 trace, metadata, snapshot, runner selection, diagnostics, obligations, semantics,
-and coverage credit remain unchanged. Core35 parameter/current-result/owner
-prerequisites and Core36 definition/correctness remain deferred.
+and coverage credit remain unchanged. Task33P264 now supplies the parameter
+edge; means current-result, owner-aware Core35 lowering, and Core36
+definition/correctness remain deferred.
 
 ## Core Task33P264 Task264 Parameter Context Audit
 
@@ -7454,6 +7455,20 @@ language or semantic result. Its two private assertions close the bounded
 
 Coverage remains unchanged. No `.miz`, expectation, trace, metadata, stage,
 requirement status, active route, diagnostic, obligation, or Task277B credit
-changes. Equals Core35 remains separately gated by Task264D and this parameter
-prerequisite; means additionally remains gated by explicit current-result
-`it` representation.
+changes. Completed Task264D and this parameter prerequisite now feed frozen
+Task35E264; means remains gated by explicit current-result `it` representation.
+
+## Core Task35E264 Task264 Equals Selector Seed Audit
+
+The implemented [Task35E264 contract](task_contracts/en/CORE-SOURCE-PROPERTY-EQUALS-SELECTOR-SEEDS-35E264.md)
+combines the now-complete Task264D and Task33P264 receipts with the authenticated
+IR264 property owner. It publishes a standalone two-row local seed graph for
+`Var(M)` then `Select(carrier, seed0)` and explicitly stops before generic
+lowering because the existing lowerer owns terms by ordinary `CoreItemId`.
+
+The handoff and its two private assertions close the bounded
+`design_drift`/`source_drift`/`test_gap`, with no `spec_gap`. Coverage remains
+unchanged: no `.miz`, expectation, trace, metadata, stage, requirement status,
+snapshot, active route, semantic result, diagnostic, obligation, or Task277B
+credit changes. Property-owner-aware lowering, means `it`, and Core36 remain
+separate deferred owners.

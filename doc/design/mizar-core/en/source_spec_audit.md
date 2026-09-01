@@ -192,7 +192,11 @@ Top-level public API groups:
   `SourcePropertyParameterCoreVariableAssociation`,
   `SourcePropertyParameterCoreContextHandoff`,
   `SourcePropertyParameterCoreContextError`,
-  `SourcePropertyParameterCoreContextProducer`
+  `SourcePropertyParameterCoreContextProducer`,
+  `SourcePropertyEqualsSelectorTermSeedAssociation`,
+  `SourcePropertyEqualsSelectorTermSeedHandoff`,
+  `SourcePropertyEqualsSelectorTermSeedError`,
+  `SourcePropertyEqualsSelectorTermSeedProducer`
 - Type and fact lowering: `TypeAndFactResult`, `TypeAndFactLoweringError`,
   `TypeAndFactLoweringInput`, `TypePredicateSeed`,
   `DeclaredBinderTypeSeed`, `AttributeChainSeed`, `ModeExpansionSeed`,
@@ -447,6 +451,19 @@ The implemented family and two focused assertions close the bounded
 `source_drift`, `test_gap`, and `design_drift`. There is no
 `spec_gap`, protected test-intent change, trace/metadata change, semantic
 credit, or production route. Core35 body lowering and Core36 remain deferred.
+
+## Core-35E264 Task264 Equals Selector Seed Input
+
+The implemented [Task35E264 contract](../../task_contracts/en/CORE-SOURCE-PROPERTY-EQUALS-SELECTOR-SEEDS-35E264.md)
+joins completed Task33P264 and Task264D with the authenticated IR264 property
+owner. The source publishes exactly two local `CoreTermSeed` rows for
+`Var(M)` and `Select(carrier, seed0)`; it publishes no lowered term id/table or
+source map and does not attribute the property body to carrier item 0.
+
+The implemented handoff and two private assertions close the bounded
+`design_drift`/`source_drift`/`test_gap`. There is no `spec_gap` or protected
+test-intent/trace/metadata change. Owner-aware Core35 lowering, means `it`,
+Core36, production routing, and coverage credit remain deferred.
 
 ## Source-Undocumented Behavior Pass
 

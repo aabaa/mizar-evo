@@ -789,6 +789,7 @@ payload categories can be added without breaking downstream exhaustive matches.
 | `SourcePropertyCarrierCoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `SourcePropertySelectorTypeContextError` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `SourcePropertyParameterCoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `SourcePropertyEqualsSelectorTermSeedError` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `DefinitionBoundaryKind` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `DefinitionBoundaryStatus` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `CheckerSiteKind` | `#[non_exhaustive]` downstream forward-compatible surface. |
@@ -956,6 +957,24 @@ compares it completely. The resulting context keeps carrier item 0 and adds
 only free term variable 0, its checker declaration-source record, and an empty
 type-fact entry. No binder frame, normalized type, term, formula, `it`,
 definition, route, diagnostic, obligation, or semantic credit is created.
+
+## Task 35E264 Task264 Equals Selector Term Seeds
+
+The canonical [Task35E264 contract](../../task_contracts/en/CORE-SOURCE-PROPERTY-EQUALS-SELECTOR-SEEDS-35E264.md)
+adds one standalone Core35-input handoff. It retains the complete Task33P264
+parameter context, complete Task264D equals-selector identity, and the IR264
+property definition owner. It publishes exactly two immutable local seeds:
+`Var(CoreVarId(0))` for the authenticated `M` use, followed by
+`Select { selector: <whole carrier-field SymbolId>, base: seed 0 }` for
+`M.carrier`.
+
+The handoff does not call generic term/formula lowering. The generic input
+still takes an ordinary `CoreItemId`, whereas IR264 deliberately represents the
+property as a non-item definition owner. Carrier item 0 is therefore retained
+only as the owner's anchor and is never substituted as the property owner.
+Seed-local ids, exact use-site sources, and checker provenance are inputs for a
+later owner-aware lowerer; no `CoreTermId`, term table, source map, formula,
+definition body, route, or semantic credit is published here.
 
 ## Forbidden Behavior
 

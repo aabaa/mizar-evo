@@ -325,11 +325,11 @@ structure handoffをby-value retainして、authenticated `M.carrier`
 occurrence-to-whole-field-symbol receiptだけをpublishする。Coreはmember spellingや
 unresolved Task254 requestからこのedgeをreconstructしない。
 
-Task264DだけではCore35 loweringはreadyにならない。Separate Core33 parameter/
-Core-variable associationが必要で、meansにはexplicit current-definition-result
-representation、generic Core35 ownerにはproperty itemをinventせずexisting
-`CoreDefinitionOwner`を扱う設計が必要である。本checker prerequisiteはterm/formula/
-definition/semantics/route/coverage creditを追加しない。
+Task264DだけではCore35 inputはreadyにならなかった。Completed Task33P264がseparate
+Core33 parameter/Core-variable associationを供給済み。Meansにはexplicit
+current-definition-result representation、generic Core35 loweringにはproperty itemを
+inventせずexisting `CoreDefinitionOwner`を扱う設計が必要。本checker prerequisiteは
+term/formula/definition/semantics/route/coverage creditを追加しない。
 
 ## Task 33P264 Task264 parameter Core context
 
@@ -340,9 +340,22 @@ producerをreuseして、complete replay validation後にparameter/binding/Core-
 `0/0/0`だけをpublishする。
 
 Means/equals両方のparameter-side Core35 readiness gapだけをcloseし、bodyはlowerしない。
-Equalsはseparate Core35 selector-term taskでTask264Dを必要とし、meansはexplicit `it`
+EqualsはTask35E264でcompleted Task264Dと本handoffをcombineし、meansはexplicit `it`
 representationを必要とする。Normalized type、binder frame、term/formula/definition/route/
 semantics/coverage creditは追加しない。
+
+## Task 35E264 Task264 equals selector seed input
+
+Implemented [Task35E264 contract](../../task_contracts/ja/CORE-SOURCE-PROPERTY-EQUALS-SELECTOR-SEEDS-35E264.md)
+はcompleted equals-only seed-input prerequisite。Complete Task33P264/Task264D handoffとIR264
+property ownerをretainし、exact use-site source/checker provenance付きordered local seed graph
+`Var(M)`→`Select(carrier-field-symbol, seed0)`だけをpublishする。
+
+Current generic inputはordinary `CoreItemId`でtermをownする一方、authenticated property owner
+はnon-itemなのでgeneric lowering前で停止する。Carrier item 0をownerへ代用せず、
+`CoreTermId`/`CoreSourceMap`/formula/definition/route/semantic creditもpublishしない。
+Property-owner-aware loweringがnext derived design task。Means `it`、Core36 body/correctness、
+Task277Bはseparate/not-ready。
 
 ## Task 36P264 property-implementation owner disposition
 
@@ -353,10 +366,11 @@ property-implementation shellはsymbol/definition/contribution/semantic origin�
 Core item/item kind/association/dependencyを合成しない。
 
 Task264はexact same-source Core33--35 prerequisite後のfuture accepted Core36 definition rowに
-exclusiveに残る。Task264C/Task33I264/Task34I264/IR264/Task34D264がidentity、carrier item、
-selector/return edge、authenticated `CoreDefinition.owner`、Core34 domain/return type inputを
-供給済み。Core36はapplicable Core35 term/formula body inputとseparately reviewed Core36
-body/correctness seedまでhard-blocked。
+exclusiveに残る。Task264C/Task33I264/Task34I264/IR264/Task34D264/Task264D/Task33P264が
+identity、carrier item、selector/return edge、authenticated `CoreDefinition.owner`、Core34
+domain/return type、equals selector identity、parameter variableを供給済み。Task35E264がseed
+inputを供給する。Core36はproperty-owner-aware Core35 loweringとseparately reviewed
+Core36 body/correctness seedまでhard-blocked。
 Task263はdifferent-source precedentでinputではない。
 本dispositionではCoreIR semantic loweringを選ばない。Zero-creditでspec/`.miz` intent/
 expectation/trace/snapshot stateは変更しない。

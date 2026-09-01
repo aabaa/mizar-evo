@@ -191,7 +191,11 @@ top-level public API group:
   `SourcePropertyParameterCoreVariableAssociation`、
   `SourcePropertyParameterCoreContextHandoff`、
   `SourcePropertyParameterCoreContextError`、
-  `SourcePropertyParameterCoreContextProducer`
+  `SourcePropertyParameterCoreContextProducer`、
+  `SourcePropertyEqualsSelectorTermSeedAssociation`、
+  `SourcePropertyEqualsSelectorTermSeedHandoff`、
+  `SourcePropertyEqualsSelectorTermSeedError`、
+  `SourcePropertyEqualsSelectorTermSeedProducer`
 - Type and fact lowering: `TypeAndFactResult`, `TypeAndFactLoweringError`,
   `TypeAndFactLoweringInput`, `TypePredicateSeed`,
   `DeclaredBinderTypeSeed`, `AttributeChainSeed`, `ModeExpansionSeed`,
@@ -409,6 +413,17 @@ carrier Core context、deterministic 33LB outputがassociation
 Implemented family/test 2件がbounded `source_drift`/`test_gap`/`design_drift`をcloseする。
 `spec_gap`、protected test-intent/trace/metadata change、semantic credit、
 production routeなし。Core35 body lowering/Core36はdeferred。
+
+## Core-35E264 Task264 equals selector seed input
+
+Implemented [Task35E264 contract](../../task_contracts/ja/CORE-SOURCE-PROPERTY-EQUALS-SELECTOR-SEEDS-35E264.md)
+はcompleted Task33P264/Task264Dをauthenticated IR264 property ownerとjoinする。Sourceは
+`Var(M)`/`Select(carrier, seed0)`のlocal `CoreTermSeed` 2件だけをpublishし、
+lowered term id/table/source mapは作らず、property bodyをcarrier item 0へattributeしない。
+
+Implemented handoff/private assertion 2件がbounded `design_drift`/`source_drift`/
+`test_gap`をcloseする。`spec_gap`/protected test-intent/trace/metadata changeなし。
+Owner-aware Core35 lowering、means `it`、Core36、production route、coverage creditはdeferred。
 
 ## Source-Undocumented Behavior Pass
 

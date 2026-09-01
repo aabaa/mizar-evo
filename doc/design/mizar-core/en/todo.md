@@ -649,6 +649,19 @@ work. Every finding maps to a task or a recorded disposition:
     - [x] Prepare the exact task-only commit; record clean postcommit proof and
       fresh next-prerequisite inventory in the operational handoff rather than
       the self-referential task commit.
+35E264. **Task264 equals selector seed-input prerequisite.** [x]
+    - [x] Freeze the complete Task33P264 + Task264D inputs, IR264 property
+      owner, exact ordered `Var(0)`/`Select(field, seed0)` graph, provenance,
+      private API, two-test scope, and zero-credit boundary in the paired
+      [Task35E264 contract](../../task_contracts/en/CORE-SOURCE-PROPERTY-EQUALS-SELECTOR-SEEDS-35E264.md).
+    - [x] Complete independent pre-source specification/API and bilingual/
+      boundary reviews with no blocking finding.
+    - [x] Implement only the frozen two-seed handoff and private tests. Do not
+      call generic lowering, substitute carrier item ownership, or publish
+      `CoreTermId`, means `it`, Core36, routes, or coverage.
+    - [x] Complete post-source reviews and hard gates, and prepare the exact
+      task-only commit. Record clean postcommit proof and fresh owner-aware-
+      lowering inventory in the operational handoff.
 IR264. **Authenticated structure-property definition owner.** [x]
     - The paired [task contract](../../task_contracts/en/CORE-STRUCTURE-PROPERTY-DEFINITION-OWNER-IR264.md)
       is implemented, verified, and independently reviewed with hard gates

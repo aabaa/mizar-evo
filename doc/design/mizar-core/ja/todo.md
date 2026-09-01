@@ -610,6 +610,18 @@ F8 の spec 本文は同一変更(`cef7e109`: spec 03、05、13、17、18)で修
     - [x] Exact task-only commitをprepareし、clean postcommit proof/fresh
       next-prerequisite inventoryはself-referential task commitでなくoperational handoffへ
       記録する。
+35E264. **Task264 equals selector seed-input prerequisite。** [x]
+    - [x] Complete Task33P264 + Task264D input、IR264 property owner、exact ordered
+      `Var(0)`/`Select(field, seed0)` graph/provenance/private API/test 2件/
+      zero-credit boundaryをpaired
+      [Task35E264 contract](../../task_contracts/ja/CORE-SOURCE-PROPERTY-EQUALS-SELECTOR-SEEDS-35E264.md)
+      へfreezeする。
+    - [x] Pre-source specification/API/bilingual/boundary reviewをblocking findingなしで
+      完了する。
+    - [x] Frozen two-seed handoff/private testだけをimplementする。Generic lowering、
+      carrier-item owner substitution、`CoreTermId`、means `it`、Core36、route、coverageなし。
+    - [x] Post-source review/hard gateを完了し、exact task-only commitをprepareする。
+      Clean postcommit proof/fresh owner-aware-lowering inventoryはoperational handoffへ記録する。
 IR264. **Authenticated structure-property definition owner。** [x]
     - Paired [task contract](../../task_contracts/ja/CORE-STRUCTURE-PROPERTY-DEFINITION-OWNER-IR264.md)
       はimplemented/verified、independent reviewはhard gate `9/9`、valid uncapped quality

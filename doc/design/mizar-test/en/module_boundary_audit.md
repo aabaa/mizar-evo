@@ -13096,6 +13096,11 @@ Core Task33P264 adds only two tests in that same private Task264 leaf. It calls
 existing checker/Core APIs and adds no production path, facade route, public
 harness API, fixture, metadata, Cargo edge, snapshot, or downstream owner.
 
+Core Task35E264 adds only two more tests in that same private Task264 leaf. It
+combines existing branded handoffs and inspects immutable seeds; no production
+path, generic lowering route, facade/public harness API, fixture, metadata,
+Cargo edge, snapshot, or downstream owner is added.
+
 ## Checker Task 264R No-Runner Module Boundary
 
 No `mizar-test` source, test, manifest, or Cargo target changes. The resolver

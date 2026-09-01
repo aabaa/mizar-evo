@@ -679,6 +679,7 @@ algorithm payload category を下流 crate の exhaustive match を壊さずに�
 | `SourcePropertyCarrierCoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface。 |
 | `SourcePropertySelectorTypeContextError` | `#[non_exhaustive]` downstream forward-compatible surface。 |
 | `SourcePropertyParameterCoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `SourcePropertyEqualsSelectorTermSeedError` | `#[non_exhaustive]` downstream forward-compatible surface。 |
 | `DefinitionBoundaryKind` | `#[non_exhaustive]` downstream forward-compatible surface。 |
 | `DefinitionBoundaryStatus` | `#[non_exhaustive]` downstream forward-compatible surface。 |
 | `CheckerSiteKind` | `#[non_exhaustive]` downstream forward-compatible surface。 |
@@ -825,6 +826,21 @@ Replayは33LB valueをdeterministically rebuildしてcomplete compareする。Re
 carrier item 0を維持し、free term variable 0/checker declaration source/empty type-factだけを
 追加する。Binder frame、normalized type、term/formula/`it`/definition/route/diagnostic/
 obligation/semantic creditは作らない。
+
+## Task 35E264 Task264 equals selector term seeds
+
+Canonical [Task35E264 contract](../../task_contracts/ja/CORE-SOURCE-PROPERTY-EQUALS-SELECTOR-SEEDS-35E264.md)
+はstandalone Core35-input handoffを追加する。Complete Task33P264 parameter context、
+Task264D equals-selector identity、IR264 property definition ownerをretainし、exact two
+immutable local seedだけをpublishする。Seed 0はauthenticated `M` useの
+`Var(CoreVarId(0))`、seed 1は`M.carrier`のwhole carrier-field symbolを使う
+`Select { base: seed 0 }`。
+
+Generic term/formula loweringはcallしない。Generic inputはordinary `CoreItemId`を要求するが、
+IR264 property ownerは意図的にnon-itemである。Carrier item 0はowner anchorとしてretainする
+だけでproperty ownerに代用しない。Seed-local id/use-site source/checker provenanceはlater
+owner-aware lowerer向けinputであり、`CoreTermId`/term table/source map/formula/definition body/
+route/semantic creditはpublishしない。
 
 ## 禁止事項
 

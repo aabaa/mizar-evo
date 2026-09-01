@@ -215,3 +215,12 @@ canonical、exceptionなし。
 complete selector/source input、Task33LB deterministic reuse、private parameter/binding/
 Core-variable `0/0/0` association、exact public API/debug/error precedence、test 2件、
 zero-credit state、Core35/36/`it` deferralを同期する。English canonical、exceptionなし。
+
+## Task 35E264 bilingual contract parity
+
+[EN contract](../../task_contracts/en/CORE-SOURCE-PROPERTY-EQUALS-SELECTOR-SEEDS-35E264.md)と
+[JA companion](../../task_contracts/ja/CORE-SOURCE-PROPERTY-EQUALS-SELECTOR-SEEDS-35E264.md)は、
+complete Task33P264/Task264D input、authenticated property owner、exact two-seed graph/
+provenance、private API/error precedence、test 2件、direct lowering/carrier-owner exclusion、
+zero-credit state、owner-aware lowering/means/Core36 deferralを同期する。English canonical、
+exceptionなし。

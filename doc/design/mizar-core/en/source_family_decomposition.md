@@ -386,10 +386,10 @@ publishing only the authenticated `M.carrier` occurrence-to-whole-field-symbol
 receipt. Core does not reconstruct this edge from member spelling or an
 unresolved Task254 request.
 
-Task264D does not itself make Core35 lowering ready. A separate Core33
-parameter/Core-variable association is still required; means also requires an
-explicit current-definition-result representation, and generic Core35
-ownership must accept the existing property `CoreDefinitionOwner` without
+Task264D did not itself make Core35 input ready. Completed Task33P264 now
+supplies the separate parameter/Core-variable association. Means still needs
+an explicit current-definition-result representation, and generic Core35
+lowering must accept the existing property `CoreDefinitionOwner` without
 inventing a property item. No term, formula, definition, semantics, route, or
 coverage credit is added by this checker prerequisite.
 
@@ -402,10 +402,26 @@ existing 33LB producer over the carrier context, and publishes only
 parameter/binding/Core-variable `0/0/0` after complete replay validation.
 
 This closes the parameter-side Core35 readiness gap for both means and equals
-without lowering either body. Equals still needs Task264D at its separately
-frozen Core35 selector-term task; means still needs an explicit `it`
+without lowering either body. Equals now combines this completed handoff with
+completed Task264D in Task35E264; means still needs an explicit `it`
 representation. No normalized type, binder frame, term, formula, definition,
 route, semantics, or coverage credit is added.
+
+## Task 35E264 Task264 Equals Selector Seed Input
+
+The implemented [Task35E264 contract](../../task_contracts/en/CORE-SOURCE-PROPERTY-EQUALS-SELECTOR-SEEDS-35E264.md)
+is the completed equals-only seed-input prerequisite. It retains complete
+Task33P264 and Task264D handoffs plus the IR264 property owner, then publishes
+only the ordered local seed graph `Var(M)` and
+`Select(carrier-field-symbol, seed0)` with exact use-site sources and checker
+provenance.
+
+This task deliberately stops before generic lowering because its current
+input owns terms by ordinary `CoreItemId`, while the authenticated property
+owner is non-item. It neither substitutes carrier item 0 as owner nor publishes
+`CoreTermId`, `CoreSourceMap`, formula, definition, route, or semantic credit.
+Property-owner-aware lowering is the next derived design task. Means `it`,
+Core36 body/correctness, and Task277B remain separate/not-ready.
 
 ## Task 36P264 Property-Implementation Owner Disposition
 
@@ -418,10 +434,12 @@ dependency may be synthesized from them.
 
 Task264 therefore remains exclusively in a future accepted Core-36 definition
 row after exact same-source Core 33--35 prerequisites. Task264C, Task33I264,
-Task34I264, IR264, and Task34D264 now supply identity, carrier item,
-selector/return edge, authenticated `CoreDefinition.owner`, and the Core34
-domain/return type input. Core36 remains hard-blocked on an applicable Core35
-term/formula body input and a separately reviewed Core36 body/correctness seed.
+Task34I264, IR264, Task34D264, Task264D, and Task33P264 now supply identity,
+carrier item, selector/return edge, authenticated `CoreDefinition.owner`,
+Core34 domain/return type input, equals selector identity, and parameter
+variable. Task35E264 now supplies the seed input. Core36 remains hard-blocked
+on property-owner-aware Core35 lowering and a separately reviewed Core36
+body/correctness seed.
 Task263 is a different-source precedent and is not an input. No CoreIR
 semantic lowering is selected here. This disposition remains zero-credit and
 changes no specification, `.miz` intent, expectation, trace, or snapshot state.

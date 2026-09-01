@@ -237,3 +237,13 @@ synchronize the same complete selector/source inputs, Task33LB deterministic
 reuse, private parameter/binding/Core-variable `0/0/0` association, exact
 public API/debug/error precedence, two-test boundary, zero-credit state, and
 Core35/36/`it` deferrals. English is canonical; no exception is recorded.
+
+## Task 35E264 Bilingual Contract Parity
+
+The [EN contract](../../task_contracts/en/CORE-SOURCE-PROPERTY-EQUALS-SELECTOR-SEEDS-35E264.md)
+and [JA companion](../../task_contracts/ja/CORE-SOURCE-PROPERTY-EQUALS-SELECTOR-SEEDS-35E264.md)
+synchronize the same complete Task33P264/Task264D inputs, authenticated property
+owner, exact two-seed graph and provenance, private API/error precedence,
+two-test boundary, direct-lowering and carrier-owner exclusions, zero-credit
+state, and owner-aware-lowering/means/Core36 deferrals. English is canonical;
+no exception is recorded.

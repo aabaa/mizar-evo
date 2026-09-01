@@ -5450,6 +5450,17 @@ failする。
 Fixture/expectation/trace/metadata/selection/production route/snapshot/normalized type/
 term/formula/`it`/definition/semantic result/coverage credit/Task277B readinessは不変。
 
+## Core Task 35E264 private Task264 equals seed probe
+
+Frozen [Task35E264 contract](../../task_contracts/ja/CORE-SOURCE-PROPERTY-EQUALS-SELECTOR-SEEDS-35E264.md)
+はsame private Task264 leafへexactly 2 testsを追加する。Positive probeはcomplete
+Task33P264/Task264D handoffをcombineし、retained property owner、deterministic ordered
+`Var(0)`/`Select(field, seed0)` row、exact use-site source/checker provenance、association、
+debug byteをassertする。Negative probeはmixed/foreign transactionをpublish前にrejectする。
+
+Generic lowering、`CoreTermId`、source map、fixture/expectation/trace/metadata/selection/
+snapshot/production route/semantic result/coverage credit/Task277B readinessは不変。
+
 ## Checker Task264D private equals selector identity probe
 
 Existing Task264 selector/type testsはreal equals routeからchecker Task264D handoffを

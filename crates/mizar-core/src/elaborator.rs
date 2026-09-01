@@ -65,12 +65,23 @@ use mizar_checker::{
         SourcePredicateDefinitionRecovery,
     },
     source_property_implementation::{
-        SourcePropertyCarrierIdentity, SourcePropertyImplementationHandoff,
-        SourcePropertyImplementationStyle, SourcePropertyParameterId,
+        SourcePropertyCarrierIdentity, SourcePropertyEqualsSelectorIdentityHandoff,
+        SourcePropertyImplementationHandoff, SourcePropertyImplementationStyle,
+        SourcePropertyParameterId,
+    },
+    source_structure::{
+        SourceStructureEdgeId, SourceStructureEdgeRole, SourceStructureMemberId,
+        SourceStructureMemberRole, SourceStructureRecovery, SourceStructureRequestId,
+        SourceStructureRequestKind, SourceStructureTarget, SourceStructureTermId,
+        SourceStructureTermKind,
     },
     source_structure_definition::{
         SourceStructureDefinitionHandoff, SourceStructureDefinitionId,
         SourceStructureDefinitionRecovery, SourceStructureMemberKind,
+    },
+    source_term::{
+        SourcePrimaryTermId, SourcePrimaryTermKind, SourcePrimaryTermRecovery,
+        SourcePrimaryTermReferenceId, SourcePrimaryTermReferenceRole, SourcePrimaryTermRole,
     },
     source_type::{
         SourceTypeApplicationForm, SourceTypeApplicationHandoff, SourceTypeApplicationId,
@@ -6502,6 +6513,527 @@ fn validate_property_parameter_association(
         ) != Some(selector_context.carrier_item())
     {
         return Err(SourcePropertyParameterCoreContextError::InvalidAssociation);
+    }
+    Ok(())
+}
+
+const SOURCE_PROPERTY_EQUALS_SELECTOR_BASE_TERM_SEED_PROVENANCE_KEY: &str =
+    "source-property-equals-selector-term-seed-v1.base";
+const SOURCE_PROPERTY_EQUALS_SELECTOR_TERM_SEED_PROVENANCE_KEY: &str =
+    "source-property-equals-selector-term-seed-v1.selector";
+
+/// Exact Task-264 source-term rows associated with their local Core term seeds.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourcePropertyEqualsSelectorTermSeedAssociation {
+    parameter: SourcePropertyParameterId,
+    binding: BindingId,
+    core_var: CoreVarId,
+    source_base: SourcePrimaryTermId,
+    base_seed: CoreTermSeedId,
+    source_selector: SourceStructureTermId,
+    selector_seed: CoreTermSeedId,
+}
+
+impl SourcePropertyEqualsSelectorTermSeedAssociation {
+    #[must_use]
+    pub const fn parameter(&self) -> SourcePropertyParameterId {
+        self.parameter
+    }
+
+    #[must_use]
+    pub const fn binding(&self) -> BindingId {
+        self.binding
+    }
+
+    #[must_use]
+    pub const fn core_var(&self) -> CoreVarId {
+        self.core_var
+    }
+
+    #[must_use]
+    pub const fn source_base(&self) -> SourcePrimaryTermId {
+        self.source_base
+    }
+
+    #[must_use]
+    pub const fn base_seed(&self) -> CoreTermSeedId {
+        self.base_seed
+    }
+
+    #[must_use]
+    pub const fn source_selector(&self) -> SourceStructureTermId {
+        self.source_selector
+    }
+
+    #[must_use]
+    pub const fn selector_seed(&self) -> CoreTermSeedId {
+        self.selector_seed
+    }
+}
+
+/// Immutable, property-owner-aware input for later Task-264 equals lowering.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourcePropertyEqualsSelectorTermSeedHandoff {
+    definition_owner: CoreDefinitionOwner,
+    parameter_context: SourcePropertyParameterCoreContextHandoff,
+    selector_identity: SourcePropertyEqualsSelectorIdentityHandoff,
+    terms: Vec<CoreTermSeed>,
+    association: SourcePropertyEqualsSelectorTermSeedAssociation,
+}
+
+impl SourcePropertyEqualsSelectorTermSeedHandoff {
+    #[must_use]
+    pub const fn source_id(&self) -> SourceId {
+        self.parameter_context.source_id()
+    }
+
+    #[must_use]
+    pub const fn module_id(&self) -> &ModuleId {
+        self.parameter_context.module_id()
+    }
+
+    #[must_use]
+    pub const fn definition_owner(&self) -> &CoreDefinitionOwner {
+        &self.definition_owner
+    }
+
+    #[must_use]
+    pub const fn parameter_context(&self) -> &SourcePropertyParameterCoreContextHandoff {
+        &self.parameter_context
+    }
+
+    #[must_use]
+    pub const fn selector_identity(&self) -> &SourcePropertyEqualsSelectorIdentityHandoff {
+        &self.selector_identity
+    }
+
+    #[must_use]
+    pub fn terms(&self) -> &[CoreTermSeed] {
+        &self.terms
+    }
+
+    #[must_use]
+    pub const fn association(&self) -> &SourcePropertyEqualsSelectorTermSeedAssociation {
+        &self.association
+    }
+
+    #[must_use]
+    pub fn debug_text(&self) -> String {
+        format!(
+            concat!(
+                "source-property-equals-selector-term-seeds-v1|module={}.{}|",
+                "owner-anchor={}|property={}|selector={}|source={}:{}|seed={}:{}|",
+                "parameter={}:{}:{}"
+            ),
+            self.module_id().package().as_str(),
+            self.module_id().path().as_str(),
+            self.definition_owner.anchor_item().index(),
+            self.definition_owner
+                .property_symbol()
+                .expect("validated property owner")
+                .fqn()
+                .as_str(),
+            self.selector_identity
+                .association()
+                .selector_symbol()
+                .fqn()
+                .as_str(),
+            self.association.source_base().index(),
+            self.association.source_selector().index(),
+            self.association.base_seed().index(),
+            self.association.selector_seed().index(),
+            self.association.parameter().index(),
+            self.association.binding().index(),
+            self.association.core_var().index(),
+        )
+    }
+
+    fn validate(&self) -> Result<(), SourcePropertyEqualsSelectorTermSeedError> {
+        validate_property_equals_selector_term_seed_environment(
+            &self.parameter_context,
+            &self.selector_identity,
+        )?;
+        self.parameter_context
+            .validate()
+            .map_err(|_| SourcePropertyEqualsSelectorTermSeedError::InvalidParameterContext)?;
+        validate_property_equals_selector_identity(
+            &self.parameter_context,
+            &self.selector_identity,
+        )?;
+        validate_property_equals_selector_definition_owner(
+            &self.parameter_context,
+            &self.definition_owner,
+        )?;
+        validate_property_equals_selector_term_seeds(
+            &self.parameter_context,
+            &self.selector_identity,
+            &self.terms,
+            &self.association,
+        )
+    }
+}
+
+/// Errors raised while retaining the exact Task-264 equals selector term seeds.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum SourcePropertyEqualsSelectorTermSeedError {
+    EnvironmentMismatch,
+    InvalidParameterContext,
+    InvalidSelectorIdentity,
+    InvalidDefinitionOwner,
+    InvalidTermSeeds,
+}
+
+impl fmt::Display for SourcePropertyEqualsSelectorTermSeedError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::EnvironmentMismatch => {
+                formatter.write_str("property equals selector term seed environment is invalid")
+            }
+            Self::InvalidParameterContext => {
+                formatter.write_str("property equals selector parameter context is invalid")
+            }
+            Self::InvalidSelectorIdentity => {
+                formatter.write_str("property equals selector identity is invalid")
+            }
+            Self::InvalidDefinitionOwner => {
+                formatter.write_str("property equals selector definition owner is invalid")
+            }
+            Self::InvalidTermSeeds => {
+                formatter.write_str("property equals selector term seeds are invalid")
+            }
+        }
+    }
+}
+
+impl Error for SourcePropertyEqualsSelectorTermSeedError {}
+
+/// Builds the standalone Task-264 equals selector term-seed handoff.
+#[derive(Debug, Clone, Copy)]
+pub struct SourcePropertyEqualsSelectorTermSeedProducer;
+
+impl SourcePropertyEqualsSelectorTermSeedProducer {
+    pub fn build(
+        parameter_context: SourcePropertyParameterCoreContextHandoff,
+        selector_identity: SourcePropertyEqualsSelectorIdentityHandoff,
+    ) -> Result<
+        SourcePropertyEqualsSelectorTermSeedHandoff,
+        SourcePropertyEqualsSelectorTermSeedError,
+    > {
+        validate_property_equals_selector_term_seed_environment(
+            &parameter_context,
+            &selector_identity,
+        )?;
+        parameter_context
+            .validate()
+            .map_err(|_| SourcePropertyEqualsSelectorTermSeedError::InvalidParameterContext)?;
+        validate_property_equals_selector_identity(&parameter_context, &selector_identity)?;
+
+        let definition_owner = parameter_context.selector_context().definition_owner();
+        validate_property_equals_selector_definition_owner(&parameter_context, &definition_owner)?;
+
+        let association = SourcePropertyEqualsSelectorTermSeedAssociation {
+            parameter: SourcePropertyParameterId::new(0),
+            binding: BindingId::new(0),
+            core_var: CoreVarId::new(0),
+            source_base: SourcePrimaryTermId::new(0),
+            base_seed: CoreTermSeedId::new(0),
+            source_selector: SourceStructureTermId::new(0),
+            selector_seed: CoreTermSeedId::new(1),
+        };
+        let base = selector_identity
+            .terms()
+            .terms()
+            .get(association.source_base())
+            .ok_or(SourcePropertyEqualsSelectorTermSeedError::InvalidTermSeeds)?;
+        let selector = selector_identity
+            .structures()
+            .terms()
+            .get(association.source_selector())
+            .ok_or(SourcePropertyEqualsSelectorTermSeedError::InvalidTermSeeds)?;
+        let terms = vec![
+            CoreTermSeed::new(
+                CoreTermSeedKind::Var(association.core_var()),
+                CoreSourceRef::direct(base.source_range()),
+                CheckerOwnedProvenance::checker(
+                    SOURCE_PROPERTY_EQUALS_SELECTOR_BASE_TERM_SEED_PROVENANCE_KEY,
+                ),
+            ),
+            CoreTermSeed::new(
+                CoreTermSeedKind::Select {
+                    selector: selector_identity.association().selector_symbol().clone(),
+                    base: association.base_seed(),
+                },
+                CoreSourceRef::direct(selector.source_range()),
+                CheckerOwnedProvenance::checker(
+                    SOURCE_PROPERTY_EQUALS_SELECTOR_TERM_SEED_PROVENANCE_KEY,
+                ),
+            ),
+        ];
+        validate_property_equals_selector_term_seeds(
+            &parameter_context,
+            &selector_identity,
+            &terms,
+            &association,
+        )?;
+
+        let handoff = SourcePropertyEqualsSelectorTermSeedHandoff {
+            definition_owner,
+            parameter_context,
+            selector_identity,
+            terms,
+            association,
+        };
+        handoff.validate()?;
+        Ok(handoff)
+    }
+}
+
+fn validate_property_equals_selector_term_seed_environment(
+    parameter_context: &SourcePropertyParameterCoreContextHandoff,
+    selector_identity: &SourcePropertyEqualsSelectorIdentityHandoff,
+) -> Result<(), SourcePropertyEqualsSelectorTermSeedError> {
+    if parameter_context.source_id() != selector_identity.source_id()
+        || parameter_context.module_id() != selector_identity.module_id()
+    {
+        return Err(SourcePropertyEqualsSelectorTermSeedError::EnvironmentMismatch);
+    }
+    Ok(())
+}
+
+fn validate_property_equals_selector_identity(
+    parameter_context: &SourcePropertyParameterCoreContextHandoff,
+    selector_identity: &SourcePropertyEqualsSelectorIdentityHandoff,
+) -> Result<(), SourcePropertyEqualsSelectorTermSeedError> {
+    let property = selector_identity.property();
+    let association = selector_identity.association();
+    let implementation = property
+        .implementations()
+        .iter()
+        .next()
+        .map(|(_, row)| row)
+        .ok_or(SourcePropertyEqualsSelectorTermSeedError::InvalidSelectorIdentity)?;
+    let base = selector_identity
+        .terms()
+        .terms()
+        .get(association.base_term())
+        .ok_or(SourcePropertyEqualsSelectorTermSeedError::InvalidSelectorIdentity)?;
+    let reference = selector_identity
+        .terms()
+        .references()
+        .get(association.base_reference())
+        .ok_or(SourcePropertyEqualsSelectorTermSeedError::InvalidSelectorIdentity)?;
+    let selector = selector_identity
+        .structures()
+        .terms()
+        .get(association.structure_term())
+        .ok_or(SourcePropertyEqualsSelectorTermSeedError::InvalidSelectorIdentity)?;
+    let member = selector_identity
+        .structures()
+        .members()
+        .get(association.member())
+        .ok_or(SourcePropertyEqualsSelectorTermSeedError::InvalidSelectorIdentity)?;
+    let edge = selector_identity
+        .structures()
+        .edges()
+        .get(association.base_edge())
+        .ok_or(SourcePropertyEqualsSelectorTermSeedError::InvalidSelectorIdentity)?;
+    let request = selector_identity
+        .structures()
+        .requests()
+        .get(association.member_request())
+        .ok_or(SourcePropertyEqualsSelectorTermSeedError::InvalidSelectorIdentity)?;
+    let source_id = parameter_context.source_id();
+    let parameter = parameter_context.association();
+
+    if parameter_context
+        .selector_context()
+        .carrier_context()
+        .checker_owner()
+        != property
+        || implementation.style() != SourcePropertyImplementationStyle::Equals
+        || property.implementations().len() != 1
+        || property.parameters().len() != 1
+        || property.targets().len() != 1
+        || property.definientia().len() != 1
+        || !property.correctness().is_empty()
+        || property.source_functor_application_fingerprint().is_some()
+        || property.source_structure_fingerprint()
+            != Some(selector_identity.structures().debug_text().as_str())
+        || property.source_term_fingerprint() != selector_identity.terms().debug_text()
+        || property.source_set_term_fingerprint().is_some()
+        || property.source_atomic_formula_fingerprint().is_some()
+        || selector_identity.structures().primary_term_fingerprint()
+            != selector_identity.terms().debug_text()
+        || selector_identity
+            .structures()
+            .application_fingerprint()
+            .is_some()
+        || association.implementation().index() != 0
+        || association.definiens().index() != 0
+        || association.structure_term() != SourceStructureTermId::new(0)
+        || association.member() != SourceStructureMemberId::new(0)
+        || association.member_request() != SourceStructureRequestId::new(0)
+        || association.base_edge() != SourceStructureEdgeId::new(0)
+        || association.base_term() != SourcePrimaryTermId::new(0)
+        || association.base_reference() != SourcePrimaryTermReferenceId::new(0)
+        || association.base_binding() != BindingId::new(0)
+        || association.base_binding() != parameter.binding()
+        || association.selector_symbol() != property.carrier_identity().field_symbol()
+        || selector_identity.terms().terms().len() != 1
+        || selector_identity.terms().references().len() != 1
+        || !selector_identity.terms().numeric_type_requests().is_empty()
+        || base.kind() != SourcePrimaryTermKind::VariableReference
+        || base.role() != SourcePrimaryTermRole::Value
+        || base.recovery() != SourcePrimaryTermRecovery::Normal
+        || base.parent().is_some()
+        || base.source_ordinal() != 0
+        || base.context() != BindingContextId::new(1)
+        || base.site() != &TypedSiteRef::Node(TypedNodeId::new(48))
+        || base.source_range()
+            != (SourceRange {
+                source_id,
+                start: 173,
+                end: 174,
+            })
+        || base.spelling() != "M"
+        || reference.term() != association.base_term()
+        || reference.binding() != association.base_binding()
+        || reference.role() != SourcePrimaryTermReferenceRole::Variable
+        || reference
+            .lexical_scope()
+            .is_none_or(|scope| scope.path() != [4])
+        || reference.use_ordinal() != 1
+        || selector_identity.structures().terms().len() != 1
+        || !selector_identity.structures().wrappers().is_empty()
+        || !selector_identity.structures().roots().is_empty()
+        || selector_identity.structures().members().len() != 1
+        || !selector_identity.structures().field_updates().is_empty()
+        || selector_identity.structures().edges().len() != 1
+        || selector_identity.structures().requests().len() != 3
+        || selector.kind() != SourceStructureTermKind::SelectorAccess
+        || selector.recovery() != SourceStructureRecovery::Normal
+        || selector.source_ordinal() != 0
+        || selector.context() != BindingContextId::new(1)
+        || selector.site() != &TypedSiteRef::Node(TypedNodeId::new(49))
+        || selector.source_range()
+            != (SourceRange {
+                source_id,
+                start: 173,
+                end: 182,
+            })
+        || selector.spelling() != "M.carrier"
+        || member.term() != association.structure_term()
+        || member.ordinal() != 0
+        || member.role() != SourceStructureMemberRole::Selector
+        || member.parent().is_some()
+        || member.site() != &TypedSiteRef::Node(TypedNodeId::new(31))
+        || member.source_range()
+            != (SourceRange {
+                source_id,
+                start: 175,
+                end: 182,
+            })
+        || member.spelling() != "carrier"
+        || edge.term() != association.structure_term()
+        || edge.ordinal() != 0
+        || edge.role() != SourceStructureEdgeRole::SelectorBase
+        || edge.member().is_some()
+        || edge.target() != SourceStructureTarget::Primary(association.base_term())
+        || request.term() != association.structure_term()
+        || request.member() != Some(association.member())
+        || request.request_ordinal() != 0
+        || request.kind() != SourceStructureRequestKind::MemberIdentity
+    {
+        return Err(SourcePropertyEqualsSelectorTermSeedError::InvalidSelectorIdentity);
+    }
+    Ok(())
+}
+
+fn validate_property_equals_selector_definition_owner(
+    parameter_context: &SourcePropertyParameterCoreContextHandoff,
+    owner: &CoreDefinitionOwner,
+) -> Result<(), SourcePropertyEqualsSelectorTermSeedError> {
+    let expected = parameter_context.selector_context().definition_owner();
+    if owner != &expected
+        || owner.anchor_item() != parameter_context.selector_context().carrier_item()
+        || owner.anchor_item() != CoreItemId::new(0)
+        || owner.item().is_some()
+        || owner.property_symbol()
+            != Some(parameter_context.selector_context().association().symbol())
+    {
+        return Err(SourcePropertyEqualsSelectorTermSeedError::InvalidDefinitionOwner);
+    }
+    Ok(())
+}
+
+fn validate_property_equals_selector_term_seeds(
+    parameter_context: &SourcePropertyParameterCoreContextHandoff,
+    selector_identity: &SourcePropertyEqualsSelectorIdentityHandoff,
+    terms: &[CoreTermSeed],
+    association: &SourcePropertyEqualsSelectorTermSeedAssociation,
+) -> Result<(), SourcePropertyEqualsSelectorTermSeedError> {
+    let parameter = parameter_context.association();
+    let selector = selector_identity.association();
+    let source_base = selector_identity
+        .terms()
+        .terms()
+        .get(association.source_base())
+        .ok_or(SourcePropertyEqualsSelectorTermSeedError::InvalidTermSeeds)?;
+    let source_selector = selector_identity
+        .structures()
+        .terms()
+        .get(association.source_selector())
+        .ok_or(SourcePropertyEqualsSelectorTermSeedError::InvalidTermSeeds)?;
+    let [base, selected] = terms else {
+        return Err(SourcePropertyEqualsSelectorTermSeedError::InvalidTermSeeds);
+    };
+    let base_provenance = CoreProvenance::new(
+        CoreProvenancePhase::Checker,
+        SOURCE_PROPERTY_EQUALS_SELECTOR_BASE_TERM_SEED_PROVENANCE_KEY,
+    );
+    let selector_provenance = CoreProvenance::new(
+        CoreProvenancePhase::Checker,
+        SOURCE_PROPERTY_EQUALS_SELECTOR_TERM_SEED_PROVENANCE_KEY,
+    );
+
+    if association.parameter() != SourcePropertyParameterId::new(0)
+        || association.parameter() != parameter.parameter()
+        || association.binding() != BindingId::new(0)
+        || association.binding() != parameter.binding()
+        || association.binding() != selector.base_binding()
+        || association.core_var() != CoreVarId::new(0)
+        || association.core_var() != parameter.core_var()
+        || association.source_base() != SourcePrimaryTermId::new(0)
+        || association.source_base() != selector.base_term()
+        || association.base_seed() != CoreTermSeedId::new(0)
+        || association.source_selector() != SourceStructureTermId::new(0)
+        || association.source_selector() != selector.structure_term()
+        || association.selector_seed() != CoreTermSeedId::new(1)
+        || base.kind != CoreTermSeedKind::Var(association.core_var())
+        || base.source != CoreSourceRef::direct(source_base.source_range())
+        || !base.source.provenance.is_empty()
+        || base.provenance.as_slice() != [base_provenance]
+        || selected.kind
+            != (CoreTermSeedKind::Select {
+                selector: selector.selector_symbol().clone(),
+                base: association.base_seed(),
+            })
+        || selected.source != CoreSourceRef::direct(source_selector.source_range())
+        || !selected.source.provenance.is_empty()
+        || selected.provenance.as_slice() != [selector_provenance]
+        || validate_checker_owned_provenance(
+            "property equals base term seed",
+            base.provenance.as_slice(),
+        )
+        .is_err()
+        || validate_checker_owned_provenance(
+            "property equals selector term seed",
+            selected.provenance.as_slice(),
+        )
+        .is_err()
+    {
+        return Err(SourcePropertyEqualsSelectorTermSeedError::InvalidTermSeeds);
     }
     Ok(())
 }

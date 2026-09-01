@@ -11779,6 +11779,10 @@ Core Task33P264はsame private Task264 leafへtest 2件だけを追加する。E
 APIを呼び、production path/facade route/public harness API/fixture/metadata/Cargo edge/
 snapshot/downstream ownerを追加しない。
 
+Core Task35E264はsame private Task264 leafへtest 2件だけを追加する。Existing branded
+handoffをcombineしてimmutable seedをinspectするだけで、production path/generic lowering
+route/facade/public harness API/fixture/metadata/Cargo edge/snapshot/downstream ownerなし。
+
 ## Checker Task 269A frozen dormant runner boundary
 
 `runner/type_elaboration`下private leaf 1件とincluded test leaf 1件がrunnerの
