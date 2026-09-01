@@ -605,6 +605,20 @@ work. Every finding maps to a task or a recorded disposition:
       Derived-to-Base item dependency. Task-248/33LB, member/view/constructor/
       coherence semantics, production installation, coverage, `MT10-CIR-TE`,
       and Task277B readiness remain absent or deferred.
+36P264. **Task264 Core owner disposition.** [x]
+    - The frozen [task contract](../../task_contracts/en/CORE-SOURCE-PROPERTY-IMPLEMENTATION-OWNER-36P264.md)
+      records that the context-only property-implementation shell has no
+      symbol/definition identity and therefore cannot own a Core-33 item.
+      Target-selector aliasing, a speculative item kind, and carrier identity
+      reconstruction are forbidden.
+    - Task264 remains a Core-36 definition-lowering input after exact
+      same-source Core 33--35 context/type/term/formula prerequisites. A lower
+      checker task must first publish Task264's own carrier/member identities;
+      Task263's different-source context is not an input. Current
+      `CoreDefinition.item` then requires a distinct authenticated selector
+      owner from Core 34 or a separately reviewed owner-model change. This
+      docs-only disposition changes no source, test, trace, metadata, or
+      coverage state.
 33. **Source-derived Core context, items, binders, and source maps.** [ ]
     - Consume checker 248 through `MT10-CIR-TE`; no type/proof/algorithm body.
       For C4C8, checker 248 remains insufficient; Task 33C4C8 owns only the

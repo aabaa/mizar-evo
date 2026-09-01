@@ -570,6 +570,17 @@ F8 の spec 本文は同一変更(`cef7e109`: spec 03、05、13、17、18)で修
     - User-selected direct inheritanceをDerived→Base local item dependency exactly 1本へ
       materializeする。Task248/33LB、member/view/constructor/coherence semantics、production
       install、coverage、`MT10-CIR-TE`、Task277B readinessはabsent/deferredのまま。
+36P264. **Task264 Core owner disposition。** [x]
+    - Frozen [task contract](../../task_contracts/ja/CORE-SOURCE-PROPERTY-IMPLEMENTATION-OWNER-36P264.md)は、
+      context-only property-implementation shellにsymbol/definition identityがなく、
+      Core33 itemをownできないことを記録する。Target selector alias、speculative item
+      kind、carrier identity reconstructionは禁止。
+    - Task264はexact same-source Core33--35 context/type/term/formula prerequisite後の
+      Core36 definition-lowering inputのまま。Lower checker taskがTask264自身のcarrier/
+      member identityを先にpublishし、Task263 different-source contextをinputにしない。
+      Current `CoreDefinition.item`向けにCore34のdistinct authenticated selector ownerまたは
+      separately reviewed owner-model changeも必須。Docs-onlyでsource/test/trace/metadata/
+      coverage stateを変更しない。
 33. **Source-derived Core context/item/binder/source map。** [ ]
     - checker 248を`MT10-CIR-TE`でconsumeし、type/proof/algorithm bodyは扱わない。
       C4C8についてchecker 248だけでは不十分なままであり、Task 33C4C8はseparately

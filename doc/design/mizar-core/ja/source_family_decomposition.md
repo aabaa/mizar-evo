@@ -263,3 +263,19 @@ zero-creditのまま。
 Structure member、fields-only constructor semantics、mapping/view、coherence、
 obligation、definition、production install、complete Core33、Core34--36、
 `MT10-CIR-TE`はseparate ownerへdeferする。
+
+## Task 36P264 property-implementation owner disposition
+
+Frozen [Task 36P264 contract](../../task_contracts/ja/CORE-SOURCE-PROPERTY-IMPLEMENTATION-OWNER-36P264.md)は
+attempted Core33 classificationをcloseする。Checker Task264のcontext-only
+property-implementation shellはsymbol/definition/contribution/semantic originを持たず、
+`marker` selector targetと`Task264Carrier` use-site headはshell identityではない。
+Core item/item kind/association/dependencyを合成しない。
+
+Task264はexact same-source Core33--35 prerequisite後のaccepted Core36 definition rowに
+exclusiveに残る。Current `CoreDefinition`は`CoreItemId`必須なので、separately reviewed
+lower checker taskがTask264 same-source carrier/member identityを供給し、separately
+reviewed Core33/34 taskがauthenticated selector ownerを供給するか、separately reviewed
+CoreIR taskがowner modelを変更するまでCore36は追加でhard-blocked。Task263はdifferent-
+source precedentでinputではない。Docs-only/zero-creditでchecker contract、source、test、
+expectation、trace、metadata、runner、snapshot stateを変更しない。

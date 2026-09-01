@@ -316,3 +316,22 @@ neither Task-248 nor 33LB and remains private-probe-only and zero credit.
 Structure members, fields-only constructor semantics, mappings/views,
 coherence, obligations, definitions, production installation, complete Core
 33, Core 34--36, and `MT10-CIR-TE` remain separately owned and deferred.
+
+## Task 36P264 Property-Implementation Owner Disposition
+
+The frozen [Task 36P264 contract](../../task_contracts/en/CORE-SOURCE-PROPERTY-IMPLEMENTATION-OWNER-36P264.md)
+closes the attempted Core-33 classification. Checker Task264's context-only
+property-implementation shell has no symbol, definition, contribution, or
+semantic origin; its `marker` selector target and `Task264Carrier` use-site
+head are not shell identities. No Core item, item kind, association, or
+dependency may be synthesized from them.
+
+Task264 therefore remains exclusively in the accepted Core-36 definition row,
+after exact same-source Core 33--35 prerequisites. Because current
+`CoreDefinition` requires a `CoreItemId`, Core 36 is additionally hard-blocked
+until a lower checker task supplies Task264's same-source carrier/member
+identity and separately reviewed Core-33/34 tasks supply an authenticated
+selector owner, or a separately reviewed CoreIR task changes the owner model.
+Task263 is a different-source precedent and is not an input. This disposition
+is docs-only and zero-credit. It changes no checker contract, source, test,
+expectation, trace, metadata, runner, or snapshot state.

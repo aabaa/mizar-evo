@@ -151,6 +151,16 @@ production install/generic API/slot/installer change, deferred Core 34--36/
 `GeneratedOrigin`/`MT10-CIR-TE` work, and Task277B not-ready/zero-credit status.
 English is canonical; no exception is recorded.
 
+## Task 36P264 Bilingual Contract Parity
+
+The [EN contract](../../task_contracts/en/CORE-SOURCE-PROPERTY-IMPLEMENTATION-OWNER-36P264.md)
+and [JA companion](../../task_contracts/ja/CORE-SOURCE-PROPERTY-IMPLEMENTATION-OWNER-36P264.md)
+synchronize the same no-Core-33-item disposition, Core-36 ownership,
+selector/carrier anti-alias boundary, gap classifications, protected artifacts,
+zero-credit state, same-source lower-checker prerequisite, Task263 exclusion,
+and later Core-33/34 owner handoff. English is canonical; no exception is
+recorded.
+
 ## Guard Decision
 
 No new Rust lint guard is added in Task 23 or closeout. The file-pair set is

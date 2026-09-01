@@ -7314,3 +7314,23 @@ no specification, test intent, trace status/backlink, metadata, or coverage
 credit. Member/constructor/view/coherence semantics, obligations, production
 installation, complete Core 33, Core 34--36, `MT10-CIR-TE`, diagnostics, and
 Task277B remain deferred/not-ready.
+
+## Task CORE-SOURCE-PROPERTY-IMPLEMENTATION-OWNER-36P264 Ownership Disposition
+
+Fresh post-Task263 inventory records the
+[Core Task264 owner contract](./task_contracts/en/CORE-SOURCE-PROPERTY-IMPLEMENTATION-OWNER-36P264.md).
+The checker property-implementation shell has no semantic symbol or definition,
+and its target selector and carrier use-site identity cannot be reclassified as
+a Core item. No Core-33 item kind, association, dependency, or source identity
+is added. Task264 remains an input to Core 36 after a lower checker task
+publishes its own same-source carrier/member identity, exact same-source Core
+33--35 prerequisites exist, and a distinct authenticated selector owner is
+compatible with the current `CoreDefinition.item`, or a separately reviewed
+CoreIR owner-model change lands. Task263 is a different-source precedent and is
+not an input. Core 36 is hard-blocked while this chain is incomplete.
+
+This is a zero-credit ownership correction only. It changes no specification,
+test intent, fixture, expectation, trace backlink/status, metadata, runner,
+snapshot, or coverage state. Core 34--36 implementation, correctness references,
+property values, proof/discharge/acceptance, production installation, and
+Task277B remain deferred/not-ready.

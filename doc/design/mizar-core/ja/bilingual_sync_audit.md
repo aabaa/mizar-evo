@@ -161,3 +161,12 @@ bilingual guard を後続で追加できる。しかしここで追加すると�
 structure association 2行、sole Derived→Base local dependency、standalone by-value
 API、default-deny boundary、prohibited semantics、protected artifact、zero-credit
 status、Task277B deferralを同期する。English canonical、exceptionなし。
+
+## Task 36P264 bilingual contract parity
+
+[EN contract](../../task_contracts/en/CORE-SOURCE-PROPERTY-IMPLEMENTATION-OWNER-36P264.md)と
+[JA companion](../../task_contracts/ja/CORE-SOURCE-PROPERTY-IMPLEMENTATION-OWNER-36P264.md)は、
+no-Core33-item disposition、Core36 ownership、selector/carrier anti-alias boundary、gap
+classification、protected artifact、zero-credit state、same-source lower-checker
+prerequisite、Task263 exclusion、later Core33/34 owner handoffを同期する。English
+canonical、exceptionなし。
