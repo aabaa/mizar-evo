@@ -787,6 +787,7 @@ payload categories can be added without breaking downstream exhaustive matches.
 | `SourceModeCoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `SourceStructureCoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `SourcePropertyCarrierCoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `SourcePropertySelectorTypeContextError` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `DefinitionBoundaryKind` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `DefinitionBoundaryStatus` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `CheckerSiteKind` | `#[non_exhaustive]` downstream forward-compatible surface. |
@@ -882,6 +883,32 @@ with no final LF. It is non-authoritative. The property-implementation shell,
 field, and property receive no Core item; Core34 retains selector/type
 ownership. No dependency, item-kind change, semantic lowering, installer, or
 production route is introduced.
+
+## Task 34I264 Task264 Selector/Type Context
+
+The canonical [Task 34I264 contract](../../task_contracts/en/CORE-SOURCE-PROPERTY-SELECTOR-TYPE-CONTEXT-34I264.md)
+owns a separate immutable Core34 authentication context. It consumes the
+complete Task33I264 handoff plus the exact Task249PI
+`SourceTypeApplicationHandoff`, validates the retained fingerprint against the
+complete typed rows, and derives the sole authenticated selector/type edge:
+the checker target's `marker` property to its explicit return member/root
+`1/2`. No lower handoff authenticates `carrier` field to member 0, so no field
+association is published.
+
+The durable public surface is `SourcePropertySelectorTypeAssociation`,
+`SourcePropertySelectorTypeContextHandoff`, the non-exhaustive error, and its
+unit producer. Both complete inputs are retained by value. Validation order is
+environment, carrier context, source type, association, and complete
+postvalidation precedes publication.
+The association exposes whole `SymbolId`, member id, and root id only;
+typed definition/contribution identities remain in the retained checker owner
+and are validated there, so resolver-environment types do not enter Core's
+public boundary.
+
+This context publishes no selector item or `CoreDefinition` owner and does not
+create `CoreTypePredicate`, normalized types, facts, coercions, views, binders,
+terms, formulas, diagnostics, or semantics. The current definition-owner model
+remains a separately reviewed prerequisite before Core35/36.
 
 ## Forbidden Behavior
 

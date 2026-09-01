@@ -269,11 +269,26 @@ obligation、definition、production install、complete Core33、Core34--36、
 Frozen [Task 33I264 contract](../../task_contracts/ja/CORE-SOURCE-PROPERTY-CARRIER-ITEM-CONTEXT-33I264.md)
 はcommitted Task264Cをconsumeし、same-source singleton Core33 associationだけを追加する。
 Exact whole-symbol lookupで`Task264Carrier`をdependencyなしのprepared public valid Core
-`Structure` item 1件へmapする。Complete checker handoffはlater Core34が`carrier`/`marker`を
-authenticateできるようretainするが、本sliceはmember/property-shell itemを作らない。
+`Structure` item 1件へmapする。Complete checker handoffはretainされ、完了済み
+Task34I264はchecker-authenticated `marker` targetだけをreturn member 1/root 2へ辿り、
+`carrier` field→member 0 edgeをinventしない。本sliceはmember/property-shell itemを作らない。
 
-Private-probe-only/zero credit。Selector/typeはCore34、term/formulaはCore35、property
-body/correctnessはCore36。Generic Core33 install/`MT10-CIR-TE`はdeferred。
+Private-probe-only/zero credit。Authenticated property selector/type edgeはTask34I264が
+ownし、normalized typeはgeneral Core34、term/formulaはCore35、property body/correctnessは
+Core36。CoreIR definition-owner model、generic Core33 install、`MT10-CIR-TE`はdeferred。
+
+## Task 34I264 Task264 selector/type context slice
+
+Frozen [Task34I264 contract](../../task_contracts/ja/CORE-SOURCE-PROPERTY-SELECTOR-TYPE-CONTEXT-34I264.md)
+はretained `marker` checker targetからTask264 return-member type row 1/root 2への
+exact associationだけを追加する。Complete Task33I264 carrier contextと
+complete source-type handoffを別々にretain/revalidateし、checker fingerprintはreplay
+evidenceだけに使う。Unauthenticated `carrier` field→row 0 joinはpublishしない。
+
+Private-probe-only/zero semantic/coverage credit。Selector item、normalized Core type、
+definition、fact、term、formula、obligationをemitしない。Structure memberを
+`CoreDefinition.item`互換にするseparate CoreIR owner-model prerequisiteが必要で、
+その完了までCore35/36はdeferred。
 
 ## Task 36P264 property-implementation owner disposition
 
@@ -286,7 +301,8 @@ Core item/item kind/association/dependencyを合成しない。
 Task264はexact same-source Core33--35 prerequisite後のaccepted Core36 definition rowに
 exclusiveに残る。Current `CoreDefinition`は`CoreItemId`必須なので、separately reviewed
 committed Task264Cがsame-source carrier/member identityを、Task33I264がcarrier item
-associationを、Core34が`CoreDefinition.item`互換のauthenticated selector/type ownerを
-供給するまでCore36はhard-blocked。Task263はdifferent-source precedentでinputではない。
+associationを、Task34I264がexact selector/type associationを、separately reviewed
+CoreIR prerequisiteが`CoreDefinition.item`互換ownerを供給するまでCore36はhard-blocked。
+Task263はdifferent-source precedentでinputではない。
 CoreIR owner-model changeは選ばない。Zero-creditでspec/test intent/expectation/trace/
 snapshot stateは変更しない。

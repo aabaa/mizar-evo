@@ -486,6 +486,314 @@ fn task264_carrier_core_context_mutations_and_foreign_environment_fail_closed() 
     }
 }
 
+#[test]
+fn task264_selector_type_context_is_exact_for_means_and_equals() {
+    for (ordinal, source) in [
+        SOURCE_PROPERTY_IMPLEMENTATION_MEANS_TEXT,
+        SOURCE_PROPERTY_IMPLEMENTATION_EQUALS_TEXT,
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let (ast, module, shells, symbols) =
+            task253_ast_from_source_text(source, 264_600 + ordinal);
+        let output = source_property_implementation_output(
+            &ast, module, &shells, &symbols, source,
+        )
+        .expect("Task264 selector")
+        .unwrap_or_else(|error| panic!("Task264 selector/type profile {ordinal}: {error}"));
+        let checker_owner = output
+            .typed_ast
+            .source_property_implementation()
+            .expect("Task264 checker owner")
+            .clone();
+        let source_type = output
+            .typed_ast
+            .source_type()
+            .expect("Task264 complete source type")
+            .clone();
+        let carrier_context = task264_carrier_core_handoff(&checker_owner);
+        let first =
+            mizar_core::elaborator::SourcePropertySelectorTypeContextProducer::build(
+                carrier_context.clone(),
+                source_type.clone(),
+            )
+            .expect("Task264 selector/type context");
+        let second =
+            mizar_core::elaborator::SourcePropertySelectorTypeContextProducer::build(
+                carrier_context.clone(),
+                source_type.clone(),
+            )
+            .expect("Task264 selector/type replay");
+        assert_eq!(first, second);
+        assert_eq!(first.source_id(), checker_owner.source_id());
+        assert_eq!(first.module_id(), checker_owner.module_id());
+        assert_eq!(first.carrier_context(), &carrier_context);
+        assert_eq!(first.source_type(), &source_type);
+        assert_eq!(first.carrier_item(), carrier_context.carrier_item());
+
+        let identity = checker_owner.carrier_identity();
+        assert_eq!(source_type.applications().len(), 1);
+        assert_eq!(source_type.expressions().len(), 3);
+        assert!(source_type.arguments().is_empty());
+        assert!(source_type.definition_returns().is_empty());
+        assert!(source_type.mode_rhs().is_empty());
+        assert_eq!(source_type.structure_members().len(), 2);
+        let application = source_type
+            .applications()
+            .get(mizar_checker::source_type::SourceTypeApplicationId::new(0))
+            .expect("Task264 parameter type application");
+        assert_eq!(application.id().index(), 0);
+        assert_eq!(application.binding().index(), 0);
+        assert_eq!(application.source_ordinal(), 0);
+        assert_eq!(application.root().index(), 0);
+
+        let (application_site, application_head_site, member_sites) = if ordinal == 0 {
+            (63, 64, [56, 59])
+        } else {
+            (45, 46, [38, 41])
+        };
+        for (index, (site, head_site, start, end)) in [
+            (application_site, application_head_site, 130, 144),
+            (member_sites[0] - 1, member_sites[0] - 2, 62, 65),
+            (member_sites[1] - 1, member_sites[1] - 2, 90, 93),
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            let expression = source_type
+                .expressions()
+                .get(mizar_checker::source_type::SourceTypeExpressionId::new(index))
+                .expect("Task264 exact type expression");
+            let expected_range = mizar_session::SourceRange {
+                source_id: checker_owner.source_id(),
+                start,
+                end,
+            };
+            assert_eq!(expression.id().index(), index);
+            assert_eq!(expression.source_id(), checker_owner.source_id());
+            assert_eq!(expression.module_id(), checker_owner.module_id());
+            assert_eq!(
+                expression.site(),
+                &mizar_checker::typed_ast::TypedSiteRef::Node(
+                    mizar_checker::typed_ast::TypedNodeId::new(site)
+                )
+            );
+            assert_eq!(expression.source_range(), expected_range);
+            assert_eq!(
+                expression.head_site(),
+                &mizar_checker::typed_ast::TypedSiteRef::Node(
+                    mizar_checker::typed_ast::TypedNodeId::new(head_site)
+                )
+            );
+            assert_eq!(expression.head_range(), expected_range);
+            assert_eq!(
+                expression.form(),
+                mizar_checker::source_type::SourceTypeApplicationForm::Bare
+            );
+            assert_eq!(
+                expression.recovery(),
+                mizar_checker::typed_ast::NodeRecoveryState::Normal
+            );
+            if index == 0 {
+                assert_eq!(expression.spelling(), "Task264Carrier");
+                assert_eq!(expression.head_spelling(), "Task264Carrier");
+                match expression.head() {
+                    mizar_checker::source_type::SourceTypeHead::Symbol {
+                        symbol,
+                        contribution,
+                    } => {
+                        assert_eq!(symbol, identity.structure_symbol());
+                        assert_eq!(*contribution, identity.structure_contribution());
+                    }
+                    other => panic!("unexpected Task264 carrier type head: {other:?}"),
+                }
+            } else {
+                assert_eq!(expression.spelling(), "set");
+                assert_eq!(expression.head_spelling(), "set");
+                assert_eq!(
+                    expression.head(),
+                    &mizar_checker::source_type::SourceTypeHead::BuiltinSet
+                );
+            }
+        }
+        for (index, (site, start, end, root)) in [
+            (member_sites[0], 45, 66, 1),
+            (member_sites[1], 71, 94, 2),
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            let member = source_type
+                .structure_members()
+                .get(mizar_checker::source_type::SourceTypeStructureMemberId::new(index))
+                .expect("Task264 exact member type row");
+            assert_eq!(member.id().index(), index);
+            assert_eq!(member.source_ordinal(), index);
+            assert_eq!(member.root().index(), root);
+            assert_eq!(
+                member.member_site(),
+                &mizar_checker::typed_ast::TypedSiteRef::Node(
+                    mizar_checker::typed_ast::TypedNodeId::new(site)
+                )
+            );
+            assert_eq!(
+                member.member_range(),
+                mizar_session::SourceRange {
+                    source_id: checker_owner.source_id(),
+                    start,
+                    end,
+                }
+            );
+        }
+
+        let association = first.association();
+        let (target_id, target) = checker_owner
+            .targets()
+            .iter()
+            .next()
+            .expect("Task264 property target row");
+        assert_eq!(target_id.index(), 0);
+        assert_eq!(target.id().index(), 0);
+        assert_eq!(target.symbol(), identity.property_symbol());
+        assert_eq!(target.return_type(), association.member_type());
+        assert_eq!(association.symbol(), identity.property_symbol());
+        assert_eq!(association.member_type().index(), 1);
+        assert_eq!(association.root().index(), 2);
+        assert_eq!(
+            source_type
+                .structure_members()
+                .get(association.member_type())
+                .expect("Task264 property return member row")
+                .root(),
+            association.root()
+        );
+        assert_eq!(
+            first.debug_text(),
+            format!(
+                "source-property-selector-type-context-v1|module={}.{}|carrier-item=0|property={}:2:0:1:2",
+                checker_owner.module_id().package().as_str(),
+                checker_owner.module_id().path().as_str(),
+                identity.property_symbol().fqn().as_str(),
+            )
+        );
+        assert_eq!(source_type.debug_text(), checker_owner.source_type_fingerprint());
+    }
+}
+
+#[test]
+fn task264_selector_type_cross_profile_and_foreign_transactions_fail_closed() {
+    let shared_ordinal = 264_700;
+    let (means_ast, means_module, means_shells, means_symbols) = task253_ast_from_source_text(
+        SOURCE_PROPERTY_IMPLEMENTATION_MEANS_TEXT,
+        shared_ordinal,
+    );
+    let means_output = source_property_implementation_output(
+        &means_ast,
+        means_module,
+        &means_shells,
+        &means_symbols,
+        SOURCE_PROPERTY_IMPLEMENTATION_MEANS_TEXT,
+    )
+    .expect("Task264 means selector")
+    .expect("Task264 means route");
+    let (equals_ast, equals_module, equals_shells, equals_symbols) = task253_ast_from_source_text(
+        SOURCE_PROPERTY_IMPLEMENTATION_EQUALS_TEXT,
+        shared_ordinal,
+    );
+    let equals_output = source_property_implementation_output(
+        &equals_ast,
+        equals_module,
+        &equals_shells,
+        &equals_symbols,
+        SOURCE_PROPERTY_IMPLEMENTATION_EQUALS_TEXT,
+    )
+    .expect("Task264 equals selector")
+    .expect("Task264 equals route");
+    let means_owner = means_output
+        .typed_ast
+        .source_property_implementation()
+        .expect("Task264 means owner")
+        .clone();
+    let equals_owner = equals_output
+        .typed_ast
+        .source_property_implementation()
+        .expect("Task264 equals owner")
+        .clone();
+    let means_type = means_output
+        .typed_ast
+        .source_type()
+        .expect("Task264 means type")
+        .clone();
+    let equals_type = equals_output
+        .typed_ast
+        .source_type()
+        .expect("Task264 equals type")
+        .clone();
+    assert_eq!(means_owner.source_id(), equals_owner.source_id());
+    assert_eq!(means_owner.module_id(), equals_owner.module_id());
+    for (carrier, source_type) in [
+        (task264_carrier_core_handoff(&means_owner), equals_type.clone()),
+        (task264_carrier_core_handoff(&equals_owner), means_type.clone()),
+    ] {
+        assert_eq!(
+            mizar_core::elaborator::SourcePropertySelectorTypeContextProducer::build(
+                carrier,
+                source_type,
+            )
+            .expect_err("same-environment mixed Task264 profile must fail at source type"),
+            mizar_core::elaborator::SourcePropertySelectorTypeContextError::InvalidSourceType
+        );
+    }
+
+    let (foreign_ast, foreign_module, foreign_shells, foreign_symbols) =
+        task253_ast_from_source_text(SOURCE_PROPERTY_IMPLEMENTATION_MEANS_TEXT, 264_701);
+    let foreign_output = source_property_implementation_output(
+        &foreign_ast,
+        foreign_module,
+        &foreign_shells,
+        &foreign_symbols,
+        SOURCE_PROPERTY_IMPLEMENTATION_MEANS_TEXT,
+    )
+    .expect("foreign Task264 selector")
+    .expect("foreign Task264 route");
+    let foreign_owner = foreign_output
+        .typed_ast
+        .source_property_implementation()
+        .expect("foreign Task264 owner")
+        .clone();
+    let foreign_type = foreign_output
+        .typed_ast
+        .source_type()
+        .expect("foreign Task264 type")
+        .clone();
+    for (carrier, source_type) in [
+        (task264_carrier_core_handoff(&means_owner), foreign_type),
+        (task264_carrier_core_handoff(&foreign_owner), means_type.clone()),
+    ] {
+        assert_eq!(
+            mizar_core::elaborator::SourcePropertySelectorTypeContextProducer::build(
+                carrier,
+                source_type,
+            )
+            .expect_err("foreign Task264 selector/type environment must fail closed"),
+            mizar_core::elaborator::SourcePropertySelectorTypeContextError::EnvironmentMismatch
+        );
+    }
+
+    let valid_means = mizar_core::elaborator::SourcePropertySelectorTypeContextProducer::build(
+        task264_carrier_core_handoff(&means_owner),
+        means_type,
+    )
+    .expect("valid means transaction remains isolated");
+    let valid_equals = mizar_core::elaborator::SourcePropertySelectorTypeContextProducer::build(
+        task264_carrier_core_handoff(&equals_owner),
+        equals_type,
+    )
+    .expect("valid equals transaction remains isolated");
+    assert_ne!(valid_means.source_type(), valid_equals.source_type());
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Task264CarrierCoreContextMutation {
     Baseline,
@@ -512,6 +820,16 @@ fn task264_carrier_core_context(
         checker_owner,
         Task264CarrierCoreContextMutation::Baseline,
     )
+}
+
+fn task264_carrier_core_handoff(
+    checker_owner: &mizar_checker::source_property_implementation::SourcePropertyImplementationHandoff,
+) -> mizar_core::elaborator::SourcePropertyCarrierCoreContextHandoff {
+    mizar_core::elaborator::SourcePropertyCarrierCoreContextProducer::build(
+        task264_carrier_core_context(checker_owner),
+        checker_owner.clone(),
+    )
+    .expect("Task264 carrier Core handoff")
 }
 
 fn task264_carrier_core_context_with_mutation(

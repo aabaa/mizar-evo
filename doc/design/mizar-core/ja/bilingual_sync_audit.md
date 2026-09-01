@@ -171,6 +171,16 @@ singleton Task264 carrier/Core association、complete by-value checker owner、s
 boundary、Core34 handoff、zero-credit status、semantic exclusionを同期する。English
 canonical、exceptionなし。
 
+## Task 34I264 bilingual contract parity
+
+[EN contract](../../task_contracts/en/CORE-SOURCE-PROPERTY-SELECTOR-TYPE-CONTEXT-34I264.md)と
+[JA companion](../../task_contracts/ja/CORE-SOURCE-PROPERTY-SELECTOR-TYPE-CONTEXT-34I264.md)は、
+authenticated `marker` target/return-member association 1件、field association exclusion、
+complete by-value input、environment-first default-deny oracle、exact debug grammar、
+private two-test boundary、semantic lowering禁止、
+zero-credit status、separate CoreIR owner-model follow-upを同期する。English canonical、
+exceptionなし。
+
 ## Task 36P264 bilingual contract parity
 
 [EN contract](../../task_contracts/en/CORE-SOURCE-PROPERTY-IMPLEMENTATION-OWNER-36P264.md)と

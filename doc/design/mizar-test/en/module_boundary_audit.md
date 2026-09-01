@@ -13069,6 +13069,11 @@ production file and the `36/69417` production selection unchanged. The Core
 association is standalone and test-only; the final leaf is 31,668 bytes with
 SHA-256 `e45ac5bdbcbbab3fb0eeb4a281058dc2bad8330235db6590b432b76cb69c3d48`.
 
+Core Task34I264 remains in that same private leaf and projects exactly two
+additional tests. It adds no module, include, production path, facade route, or
+Cargo edge. The final leaf is 1,017 lines / 44,370 bytes with SHA-256
+`23ad08e3ac46e36ee34121cee49873b90f796fd50a18ad632aeca032598e79b6`.
+
 ## Checker Task 264R No-Runner Module Boundary
 
 No `mizar-test` source, test, manifest, or Cargo target changes. The resolver

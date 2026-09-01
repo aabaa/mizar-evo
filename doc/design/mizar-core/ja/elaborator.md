@@ -677,6 +677,7 @@ algorithm payload category を下流 crate の exhaustive match を壊さずに�
 | `SourceModeCoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface。 |
 | `SourceStructureCoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface。 |
 | `SourcePropertyCarrierCoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `SourcePropertySelectorTypeContextError` | `#[non_exhaustive]` downstream forward-compatible surface。 |
 | `DefinitionBoundaryKind` | `#[non_exhaustive]` downstream forward-compatible surface。 |
 | `DefinitionBoundaryStatus` | `#[non_exhaustive]` downstream forward-compatible surface。 |
 | `CheckerSiteKind` | `#[non_exhaustive]` downstream forward-compatible surface。 |
@@ -762,6 +763,26 @@ Exact no-final-LF debugは
 `source-property-carrier-core-item-context-v1|module=<package>.<path>|carrier=<whole-fqn>:0:0|item=<id>`。
 Property-implementation shell/field/propertyにはCore itemを作らず、selector/type ownerは
 Core34に残す。Dependency/item-kind/semantic lowering/installer/production route変更なし。
+
+## Task 34I264 Task264 selector/type context
+
+Canonical [Task 34I264 contract](../../task_contracts/ja/CORE-SOURCE-PROPERTY-SELECTOR-TYPE-CONTEXT-34I264.md)
+がseparate immutable Core34 authentication contextをownする。Complete Task33I264
+handoffとexact Task249PI `SourceTypeApplicationHandoff`をconsumeし、retained
+fingerprintをcomplete typed rowへreplay validateして、checker targetの`marker`
+propertyからexplicit return member/root `1/2`へのsole authenticated edgeをderiveする。
+Lower handoffは`carrier` field→member 0をauthenticateしないためfield associationなし。
+
+Durable public surfaceはassociation、handoff、non-exhaustive error、unit
+producer。両complete inputをby-value retainし、environment→carrier→source type→
+association順のcomplete postvalidation後だけpublishする。
+Associationはwhole `SymbolId`、member id、root idだけをexposeする。Typed
+definition/contribution identityはretained checker owner内でvalidateし、resolver-
+environment typeをCore public boundaryへ入れない。
+
+Selector item/`CoreDefinition` owner、`CoreTypePredicate`、normalized type、fact/
+coercion/view/binder/term/formula/diagnostic/semanticsはpublishしない。Current
+definition-owner modelはCore35/36前のseparate reviewed prerequisiteとして残る。
 
 ## 禁止事項
 

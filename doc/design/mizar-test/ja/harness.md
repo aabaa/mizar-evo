@@ -4922,6 +4922,19 @@ Core-shape/foreign-environment mutation matrixを検証する。
 Raw sourceはCoreへcrossしない。Active dispatch/facade key/fixture/sidecar/expectation/
 trace/metadata/diagnostic/CLI/property semantics/CoreIr snapshot/coverage credit変更なし。
 
+## Core Task 34I264 private Task264 selector/type probe
+
+Paired [Core Task34I264 contract](../../task_contracts/ja/CORE-SOURCE-PROPERTY-SELECTOR-TYPE-CONTEXT-34I264.md)
+はsame private Task264 assertion leafをexactly two testsで拡張する。Complete Task33I264
+carrier contextとseparately retained source-type handoffを組み合わせ、means/equalsのexact
+`marker` target/return-member associationと全retained type rowをauthenticateし、foreign/
+cross-profile transactionをrejectした後もvalid constructionが汚染されないことを確認する。
+Unauthenticated `carrier` field associationは作らない。
+
+Production selector/routeは不変。Core selector item、normalized type、definition owner、
+semantic result、fixture、expectation、trace、metadata、diagnostic、snapshot、coverage creditを
+追加しない。
+
 ## Checker Task 269A frozen dormant harness
 
 new helperはexisting named-witness extractorが全51 nodesを認証した後のexact

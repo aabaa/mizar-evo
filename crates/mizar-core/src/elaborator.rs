@@ -72,6 +72,10 @@ use mizar_checker::{
         SourceStructureDefinitionHandoff, SourceStructureDefinitionId,
         SourceStructureDefinitionRecovery, SourceStructureMemberKind,
     },
+    source_type::{
+        SourceTypeApplicationForm, SourceTypeApplicationHandoff, SourceTypeApplicationId,
+        SourceTypeExpressionId, SourceTypeHead, SourceTypeStructureMemberId,
+    },
     type_checker::{CheckedFormulaId, FormulaKind, FormulaStatus},
     typed_ast::{
         BindingTypeRef, InitialObligationId, InitialObligationKind, NodeRecoveryState,
@@ -5584,6 +5588,349 @@ fn validate_property_carrier_item_association(
             != Some(carrier_item)
     {
         return Err(SourcePropertyCarrierCoreContextError::InvalidItemAssociation);
+    }
+    Ok(())
+}
+
+/// One immutable Task-264 selector identity associated with its written type.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourcePropertySelectorTypeAssociation {
+    symbol: SymbolId,
+    member_type: SourceTypeStructureMemberId,
+    root: SourceTypeExpressionId,
+}
+
+impl SourcePropertySelectorTypeAssociation {
+    #[must_use]
+    pub const fn symbol(&self) -> &SymbolId {
+        &self.symbol
+    }
+
+    #[must_use]
+    pub const fn member_type(&self) -> SourceTypeStructureMemberId {
+        self.member_type
+    }
+
+    #[must_use]
+    pub const fn root(&self) -> SourceTypeExpressionId {
+        self.root
+    }
+}
+
+/// Immutable exact Task-264 carrier/selector/type association context.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourcePropertySelectorTypeContextHandoff {
+    carrier_context: SourcePropertyCarrierCoreContextHandoff,
+    source_type: SourceTypeApplicationHandoff,
+    association: SourcePropertySelectorTypeAssociation,
+}
+
+impl SourcePropertySelectorTypeContextHandoff {
+    #[must_use]
+    pub const fn source_id(&self) -> SourceId {
+        self.carrier_context.source_id()
+    }
+
+    #[must_use]
+    pub const fn module_id(&self) -> &ModuleId {
+        self.carrier_context.module_id()
+    }
+
+    #[must_use]
+    pub const fn carrier_context(&self) -> &SourcePropertyCarrierCoreContextHandoff {
+        &self.carrier_context
+    }
+
+    #[must_use]
+    pub const fn source_type(&self) -> &SourceTypeApplicationHandoff {
+        &self.source_type
+    }
+
+    #[must_use]
+    pub const fn carrier_item(&self) -> CoreItemId {
+        self.carrier_context.carrier_item()
+    }
+
+    #[must_use]
+    pub const fn association(&self) -> &SourcePropertySelectorTypeAssociation {
+        &self.association
+    }
+
+    #[must_use]
+    pub fn debug_text(&self) -> String {
+        let property = &self.association;
+        let identity = self.carrier_context.checker_owner().carrier_identity();
+        format!(
+            "source-property-selector-type-context-v1|module={}.{}|carrier-item={}|property={}:{}:{}:{}:{}",
+            self.module_id().package().as_str(),
+            self.module_id().path().as_str(),
+            self.carrier_item().index(),
+            property.symbol().fqn().as_str(),
+            identity.property_definition().index(),
+            identity.property_contribution().index(),
+            property.member_type().index(),
+            property.root().index(),
+        )
+    }
+
+    fn validate(&self) -> Result<(), SourcePropertySelectorTypeContextError> {
+        validate_property_selector_type_environment(&self.carrier_context, &self.source_type)?;
+        self.carrier_context
+            .validate()
+            .map_err(|_| SourcePropertySelectorTypeContextError::InvalidCarrierContext)?;
+        validate_property_selector_source_type(&self.carrier_context, &self.source_type)?;
+        validate_property_selector_type_associations(
+            &self.carrier_context,
+            &self.source_type,
+            &self.association,
+        )
+    }
+}
+
+/// Errors raised while authenticating the exact Task-264 selector/type rows.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum SourcePropertySelectorTypeContextError {
+    EnvironmentMismatch,
+    InvalidCarrierContext,
+    InvalidSourceType,
+    InvalidAssociation,
+}
+
+impl fmt::Display for SourcePropertySelectorTypeContextError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::EnvironmentMismatch => {
+                formatter.write_str("property selector/type context environment is invalid")
+            }
+            Self::InvalidCarrierContext => {
+                formatter.write_str("property selector/type carrier context is invalid")
+            }
+            Self::InvalidSourceType => {
+                formatter.write_str("property selector/type source type is invalid")
+            }
+            Self::InvalidAssociation => {
+                formatter.write_str("property selector/type association is invalid")
+            }
+        }
+    }
+}
+
+impl Error for SourcePropertySelectorTypeContextError {}
+
+/// Builds the standalone immutable Task-264 selector/type context handoff.
+#[derive(Debug, Clone, Copy)]
+pub struct SourcePropertySelectorTypeContextProducer;
+
+impl SourcePropertySelectorTypeContextProducer {
+    pub fn build(
+        carrier_context: SourcePropertyCarrierCoreContextHandoff,
+        source_type: SourceTypeApplicationHandoff,
+    ) -> Result<SourcePropertySelectorTypeContextHandoff, SourcePropertySelectorTypeContextError>
+    {
+        validate_property_selector_type_environment(&carrier_context, &source_type)?;
+        carrier_context
+            .validate()
+            .map_err(|_| SourcePropertySelectorTypeContextError::InvalidCarrierContext)?;
+        validate_property_selector_source_type(&carrier_context, &source_type)?;
+
+        let identity = carrier_context.checker_owner().carrier_identity();
+        let association = SourcePropertySelectorTypeAssociation {
+            symbol: identity.property_symbol().clone(),
+            member_type: SourceTypeStructureMemberId::new(1),
+            root: SourceTypeExpressionId::new(2),
+        };
+        validate_property_selector_type_associations(&carrier_context, &source_type, &association)?;
+        let handoff = SourcePropertySelectorTypeContextHandoff {
+            carrier_context,
+            source_type,
+            association,
+        };
+        handoff.validate()?;
+        Ok(handoff)
+    }
+}
+
+fn validate_property_selector_type_environment(
+    carrier_context: &SourcePropertyCarrierCoreContextHandoff,
+    source_type: &SourceTypeApplicationHandoff,
+) -> Result<(), SourcePropertySelectorTypeContextError> {
+    if carrier_context.source_id() != source_type.source_id()
+        || carrier_context.module_id() != source_type.module_id()
+    {
+        return Err(SourcePropertySelectorTypeContextError::EnvironmentMismatch);
+    }
+    Ok(())
+}
+
+fn validate_property_selector_source_type(
+    carrier_context: &SourcePropertyCarrierCoreContextHandoff,
+    source_type: &SourceTypeApplicationHandoff,
+) -> Result<(), SourcePropertySelectorTypeContextError> {
+    let checker_owner = carrier_context.checker_owner();
+    if source_type.debug_text() != checker_owner.source_type_fingerprint()
+        || source_type.applications().len() != 1
+        || source_type.expressions().len() != 3
+        || !source_type.arguments().is_empty()
+        || !source_type.definition_returns().is_empty()
+        || !source_type.mode_rhs().is_empty()
+        || source_type.structure_members().len() != 2
+    {
+        return Err(SourcePropertySelectorTypeContextError::InvalidSourceType);
+    }
+
+    let application = source_type
+        .applications()
+        .get(SourceTypeApplicationId::new(0))
+        .ok_or(SourcePropertySelectorTypeContextError::InvalidSourceType)?;
+    if application.id().index() != 0
+        || application.binding() != BindingId::new(0)
+        || application.source_ordinal() != 0
+        || application.root() != SourceTypeExpressionId::new(0)
+    {
+        return Err(SourcePropertySelectorTypeContextError::InvalidSourceType);
+    }
+
+    let implementation = checker_owner
+        .implementations()
+        .iter()
+        .next()
+        .map(|(_, row)| row)
+        .ok_or(SourcePropertySelectorTypeContextError::InvalidSourceType)?;
+    let (application_site, application_head_site, member_sites) = match implementation.style() {
+        SourcePropertyImplementationStyle::Means => (63, 64, [56, 59]),
+        SourcePropertyImplementationStyle::Equals => (45, 46, [38, 41]),
+        _ => return Err(SourcePropertySelectorTypeContextError::InvalidSourceType),
+    };
+    let identity = checker_owner.carrier_identity();
+    for (index, (site, head_site, start, end)) in [
+        (application_site, application_head_site, 130, 144),
+        (member_sites[0] - 1, member_sites[0] - 2, 62, 65),
+        (member_sites[1] - 1, member_sites[1] - 2, 90, 93),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let expression = source_type
+            .expressions()
+            .get(SourceTypeExpressionId::new(index))
+            .ok_or(SourcePropertySelectorTypeContextError::InvalidSourceType)?;
+        let expected_range = SourceRange {
+            source_id: source_type.source_id(),
+            start,
+            end,
+        };
+        let head_matches = match (index, expression.head()) {
+            (
+                0,
+                SourceTypeHead::Symbol {
+                    symbol,
+                    contribution,
+                },
+            ) => {
+                symbol == identity.structure_symbol()
+                    && *contribution == identity.structure_contribution()
+            }
+            (1 | 2, SourceTypeHead::BuiltinSet) => true,
+            _ => false,
+        };
+        let spelling = if index == 0 { "Task264Carrier" } else { "set" };
+        if expression.id().index() != index
+            || expression.source_id() != source_type.source_id()
+            || expression.module_id() != source_type.module_id()
+            || expression.site() != &TypedSiteRef::Node(TypedNodeId::new(site))
+            || expression.source_range() != expected_range
+            || expression.spelling() != spelling
+            || expression.head_site() != &TypedSiteRef::Node(TypedNodeId::new(head_site))
+            || expression.head_range() != expected_range
+            || expression.head_spelling() != spelling
+            || expression.form() != SourceTypeApplicationForm::Bare
+            || expression.recovery() != NodeRecoveryState::Normal
+            || !head_matches
+        {
+            return Err(SourcePropertySelectorTypeContextError::InvalidSourceType);
+        }
+    }
+
+    for (index, (site, start, end)) in [(member_sites[0], 45, 66), (member_sites[1], 71, 94)]
+        .into_iter()
+        .enumerate()
+    {
+        let member = source_type
+            .structure_members()
+            .get(SourceTypeStructureMemberId::new(index))
+            .ok_or(SourcePropertySelectorTypeContextError::InvalidSourceType)?;
+        if member.id().index() != index
+            || member.member_site() != &TypedSiteRef::Node(TypedNodeId::new(site))
+            || member.member_range()
+                != (SourceRange {
+                    source_id: source_type.source_id(),
+                    start,
+                    end,
+                })
+            || member.source_ordinal() != index
+            || member.root() != SourceTypeExpressionId::new(index + 1)
+        {
+            return Err(SourcePropertySelectorTypeContextError::InvalidSourceType);
+        }
+    }
+
+    let parameter = checker_owner
+        .parameters()
+        .iter()
+        .next()
+        .map(|(_, row)| row)
+        .ok_or(SourcePropertySelectorTypeContextError::InvalidSourceType)?;
+    let target = checker_owner
+        .targets()
+        .iter()
+        .next()
+        .map(|(_, row)| row)
+        .ok_or(SourcePropertySelectorTypeContextError::InvalidSourceType)?;
+    if parameter.id().index() != 0
+        || parameter.owner().index() != 0
+        || parameter.ordinal() != 0
+        || parameter.binding() != BindingId::new(0)
+        || parameter.written_type() != SourceTypeApplicationId::new(0)
+        || target.id().index() != 0
+        || target.owner().index() != 0
+        || target.ordinal() != 0
+        || target.symbol() != identity.property_symbol()
+        || target.definition() != identity.property_definition()
+        || target.contribution() != identity.property_contribution()
+        || target.return_type() != SourceTypeStructureMemberId::new(1)
+    {
+        return Err(SourcePropertySelectorTypeContextError::InvalidSourceType);
+    }
+    Ok(())
+}
+
+fn validate_property_selector_type_associations(
+    carrier_context: &SourcePropertyCarrierCoreContextHandoff,
+    source_type: &SourceTypeApplicationHandoff,
+    association: &SourcePropertySelectorTypeAssociation,
+) -> Result<(), SourcePropertySelectorTypeContextError> {
+    let identity = carrier_context.checker_owner().carrier_identity();
+    let target = carrier_context
+        .checker_owner()
+        .targets()
+        .iter()
+        .next()
+        .map(|(_, row)| row)
+        .ok_or(SourcePropertySelectorTypeContextError::InvalidAssociation)?;
+    let member = source_type
+        .structure_members()
+        .get(target.return_type())
+        .ok_or(SourcePropertySelectorTypeContextError::InvalidAssociation)?;
+    if association.symbol() != identity.property_symbol()
+        || association.symbol() != target.symbol()
+        || association.member_type() != target.return_type()
+        || association.member_type() != SourceTypeStructureMemberId::new(1)
+        || association.root() != member.root()
+        || association.root() != SourceTypeExpressionId::new(2)
+        || association.symbol().module() != carrier_context.module_id()
+    {
+        return Err(SourcePropertySelectorTypeContextError::InvalidAssociation);
     }
     Ok(())
 }

@@ -11755,6 +11755,11 @@ Core Task33I264はexisting private Task264 assertion leafだけを258 lineから
 associationはstandalone/test-onlyで、final leafは31,668 bytes、SHA-256
 `e45ac5bdbcbbab3fb0eeb4a281058dc2bad8330235db6590b432b76cb69c3d48`である。
 
+Core Task34I264もsame private leaf内に留まり、exactly two testsを追加するprojectである。
+Module/include/production path/facade route/Cargo edgeは追加しない。Final leaf size/hashは
+1,017 line / 44,370 bytes、SHA-256
+`23ad08e3ac46e36ee34121cee49873b90f796fd50a18ad632aeca032598e79b6`。
+
 ## Checker Task 269A frozen dormant runner boundary
 
 `runner/type_elaboration`下private leaf 1件とincluded test leaf 1件がrunnerの

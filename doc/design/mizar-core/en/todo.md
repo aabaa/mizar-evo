@@ -613,8 +613,20 @@ work. Every finding maps to a task or a recorded disposition:
       retain one private scalar item association after complete postvalidation.
     - Exactly two private Task264 Core probes pass. No shell/member item,
       selector alias, dependency, semantics, installation, trace, or coverage
-      credit was added. Core34 selector/type ownership is the next prerequisite;
+      credit was added. Task34I264 has since authenticated the property
+      selector/type edge; the CoreIR owner-model prerequisite is next and
       Core36 remains blocked.
+34I264. **Task264 selector/member-type authentication prerequisite.** [x]
+    - The paired [task contract](../../task_contracts/en/CORE-SOURCE-PROPERTY-SELECTOR-TYPE-CONTEXT-34I264.md)
+      is implemented and verified. It retains the complete Task33I264 carrier
+      context and exact Task249PI source-type handoff, then derives the sole
+      checker-authenticated `marker` property/return-member association after
+      full replay validation. It does not join `carrier` field to member 0
+      because no lower authenticated edge exists.
+    - This is zero-credit authentication only. No selector/member item,
+      Core type/fact/term/formula/definition, or production route was added. A separate
+      CoreIR owner-model prerequisite remains before Core35/36 can consume the
+      property owner.
 36P264. **Task264 Core owner disposition.** [x]
     - The frozen [task contract](../../task_contracts/en/CORE-SOURCE-PROPERTY-IMPLEMENTATION-OWNER-36P264.md)
       records that the context-only property-implementation shell has no
@@ -624,10 +636,10 @@ work. Every finding maps to a task or a recorded disposition:
     - Committed Task264C now supplies Task264's same-source carrier/member
       identities and Task33I264 owns the carrier/Core association. Task263's
       different-source context is not an input. Task264 remains a Core-36
-      definition-lowering input only after Core34 supplies a distinct
-      authenticated selector/type owner compatible with `CoreDefinition.item`
-      and the applicable Core35 inputs exist. No shell item or owner-model
-      change is authorized.
+      definition-lowering input only after Task34I264 authenticates the
+      property-selector/return-member identity, a separate reviewed CoreIR owner model makes that
+      identity definition-compatible, and applicable Core35 inputs exist. No
+      shell item or unreviewed owner-model change is authorized.
 33. **Source-derived Core context, items, binders, and source maps.** [ ]
     - Consume checker 248 through `MT10-CIR-TE`; no type/proof/algorithm body.
       For C4C8, checker 248 remains insufficient; Task 33C4C8 owns only the

@@ -39,7 +39,7 @@ exposes unexpected public APIs, or blocks safe review of future work.
 | `src/lib.rs` | 9 | module table in `todo.md` | Exports exactly `binder_normalization`, `control_flow`, `core_ir`, and `elaborator`. No drift. |
 | `src/core_ir.rs` | 4016 | `core_ir.md` | Large but cohesive data-shape module. Task 31 adds only the specified pending-proof status variant. No split required. |
 | `src/binder_normalization.rs` | 5828 | `binder_normalization.md` | Large but cohesive binder/substitution/canonicalization module. Future private helper extraction is optional. |
-| `src/elaborator.rs` | 23335 | `elaborator.md` | Largest review-risk file, but its sections map to the six elaboration steps in the owning spec. Tasks 31, 33C4C8, 33LB, and 33I259--264 are localized owner-specific adapters/contexts. Task33I264 adds the same Step-1 shape for one Task264 carrier without a new responsibility. No split is required in this task. |
+| `src/elaborator.rs` | 23682 | `elaborator.md` | Largest review-risk file, but its sections map to the six elaboration steps in the owning spec. Tasks 31, 33C4C8, 33LB, 33I259--264, and 34I264 are localized owner-specific adapters/contexts. Task34I264 adds one authenticated property-target/type edge without a new responsibility. No split is required in this task. |
 | `src/control_flow.rs` | 6718 | `control_flow.md` | Large but maps to phase-10 CFG, contracts, diagnostics, and handoff sections. No mandatory split in this task. |
 | `tests/determinism_suite.rs` | 627 | `00.crate_plan.md`, task 20 | Cross-module integration test; no boundary issue. |
 | `tests/lint_policy.rs` | 1215 | task 1, task 21, task 22, task 31 policies | Policy/audit guard test; the Task-31 exception strips only the exact `ExportStatus`/`Visibility` import in `elaborator.rs` and continues to reject `SymbolEnv`, resolver behavior, aliases, and all other resolver-environment APIs. |
@@ -75,6 +75,12 @@ one localized singleton carrier-context section beside the existing Core-33
 associations. The public module boundary remains `elaborator`; Task263 is not
 generalized, and no production runner or new module responsibility appears.
 The final line count is remeasured after implementation.
+
+Task34I264 adds a second localized association context to the same
+`elaborator` owner and two assertions to the existing private Task264 leaf. It
+does not edit `core_ir.rs`, add a module or Cargo edge, or move raw syntax into
+Core. The final source is 23,682 lines; no split is required for this bounded
+task.
 
 ## Classification
 

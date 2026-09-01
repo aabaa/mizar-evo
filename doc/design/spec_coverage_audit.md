@@ -7351,9 +7351,10 @@ It does not create a Core item or property-implementation semantic identity.
 Task264C advances follow-up ownership to the same-source Core-33 carrier
 context and Core-34 selector/type owner required by the
 [Core36 disposition](./task_contracts/en/CORE-SOURCE-PROPERTY-IMPLEMENTATION-OWNER-36P264.md).
-Task33I264 now owns the former; Core34 remains next. Core36 semantics,
-production installation, proof/discharge/acceptance, and Task277B remain
-deferred/not-ready with zero new coverage credit.
+Task33I264 now owns the former; Task34I264 owns the exact property-selector/type
+association, while a separate CoreIR owner-model prerequisite remains next.
+Core36 semantics, production installation, proof/discharge/acceptance, and
+Task277B remain deferred/not-ready with zero new coverage credit.
 
 ## Task CORE-SOURCE-PROPERTY-CARRIER-ITEM-CONTEXT-33I264 Zero-Credit Core Association
 
@@ -7369,5 +7370,25 @@ This closes only bounded Core-33 `design_drift` and private `test_gap`. It adds
 no execution or coverage credit and changes no chapter status, fixture,
 expectation, trace backlink/status, metadata, diagnostic, runner selection, or
 accepted semantic result. Follow-up ownership advances to Core34 authenticated
-selector/type ownership; Core35/36, production installation, proof/discharge/
-acceptance, and Task277B remain deferred/not-ready.
+selector/type association; CoreDefinition owner compatibility, Core35/36,
+production installation, proof/discharge/acceptance, and Task277B remain
+deferred/not-ready.
+
+## Task CORE-SOURCE-PROPERTY-SELECTOR-TYPE-CONTEXT-34I264 Zero-Credit Association
+
+The canonical
+[Task34I264 contract](./task_contracts/en/CORE-SOURCE-PROPERTY-SELECTOR-TYPE-CONTEXT-34I264.md)
+associates only the retained Task264 `marker` checker target with its explicit
+source-type return-member row 1/root 2. It consumes and revalidates the
+complete Task33I264 carrier context and complete source-type handoff; the
+checker fingerprint is replay evidence and is never parsed to recover rows.
+It does not connect `carrier` to member row 0 because no lower authenticated
+identity edge exists.
+
+This closes a bounded Core-34 `design_drift` and private `test_gap` with zero
+execution or coverage credit. It changes no specification, `.miz`, fixture,
+expectation, trace backlink/status, metadata, runner, diagnostic, snapshot, or
+accepted semantic result. It creates no selector item, normalized Core type,
+definition, fact, term, formula, or obligation. Follow-up ownership advances
+to the separately reviewed CoreIR definition-owner model, then Core35/36;
+Task277B remains deferred/not-ready.

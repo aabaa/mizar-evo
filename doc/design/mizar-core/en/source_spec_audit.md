@@ -183,7 +183,11 @@ Top-level public API groups:
   `SourceStructureCoreContextProducer`,
   `SourcePropertyCarrierCoreContextHandoff`,
   `SourcePropertyCarrierCoreContextError`,
-  `SourcePropertyCarrierCoreContextProducer`
+  `SourcePropertyCarrierCoreContextProducer`,
+  `SourcePropertySelectorTypeAssociation`,
+  `SourcePropertySelectorTypeContextHandoff`,
+  `SourcePropertySelectorTypeContextError`,
+  `SourcePropertySelectorTypeContextProducer`
 - Type and fact lowering: `TypeAndFactResult`, `TypeAndFactLoweringError`,
   `TypeAndFactLoweringInput`, `TypePredicateSeed`,
   `DeclaredBinderTypeSeed`, `AttributeChainSeed`, `ModeExpansionSeed`,
@@ -377,6 +381,23 @@ mapping is zero semantic/execution/coverage credit and private-probe-only; no
 specification, test intent, trace status/backlink, or coverage state changes.
 Core 34--36, `GeneratedOrigin`, production/`MT10-CIR-TE` installation, generic
 APIs/slots/installers, and Task277B remain deferred/not-ready.
+
+## Core-34 Task264 Selector/Type Context Mapping
+
+The frozen [Task34I264 contract](../../task_contracts/en/CORE-SOURCE-PROPERTY-SELECTOR-TYPE-CONTEXT-34I264.md)
+owns the zero-credit association between the authenticated Task264 `marker`
+target and its explicit return-member row 1/root 2. It consumes the complete
+Task33I264 carrier context and the complete
+source-type handoff separately, validates their common environment and exact
+typed profile, and retains both inputs by value. Debug text is replay evidence,
+never a row reconstruction source. The complete profile includes member row 0,
+but no field-to-row-0 association is claimed without a lower authenticated edge.
+
+This representation-only slice adds no normalized Core type, selector item,
+definition owner, term, formula, fact, obligation, production route, trace, or
+coverage credit. A separately reviewed CoreIR owner-model prerequisite remains
+before Core35/36 can use a `CoreDefinition.item`-compatible property owner.
+Task277B remains not-ready.
 
 ## Source-Undocumented Behavior Pass
 

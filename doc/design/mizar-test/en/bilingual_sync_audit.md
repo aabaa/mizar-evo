@@ -1607,6 +1607,15 @@ fixtures, expectations, trace, metadata, diagnostics, CLI bytes, semantic
 output, CoreIr snapshots, and coverage credit. The tests consume the same
 syntax-free checker handoff and do not expose raw source to Core.
 
+## Core Task 34I264 Private-Probe Synchronization
+
+EN/JA agree that the same private Task264 leaf gains exactly two selector/type
+context tests. Both retain complete carrier and source-type handoffs, validate
+the same authenticated `marker` target/return-member association, exclude a
+field association, and preserve the cross-profile default-deny
+boundary, and preserve production routing, semantic output, fixtures,
+expectations, trace, metadata, diagnostics, snapshots, and coverage credit.
+
 ## Checker Task 269A Frozen Dormant-Consumer Synchronization
 
 EN/JA agree on the exact B3N source/hash/51-node selector, resolver-local `y`,

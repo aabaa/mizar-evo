@@ -5242,6 +5242,20 @@ No raw source crosses into Core. No active dispatch, facade key, fixture,
 sidecar, expectation, trace, metadata, diagnostic, CLI output, property
 semantics, CoreIr snapshot, or coverage credit changes.
 
+## Core Task 34I264 Private Task264 Selector/Type Probe
+
+The paired [Core Task34I264 contract](../../task_contracts/en/CORE-SOURCE-PROPERTY-SELECTOR-TYPE-CONTEXT-34I264.md)
+extends the same private Task264 assertion leaf with exactly two tests. They
+combine the complete Task33I264 carrier context with the separately retained
+source-type handoff, authenticate the exact `marker` target/return-member
+association and all retained type rows for means and equals, and reject foreign or
+cross-profile transactions without contaminating later valid construction.
+They make no unauthenticated `carrier` field association.
+
+The production selector and route remain unchanged. The probe adds no Core
+selector item, normalized type, definition owner, semantic result, fixture,
+expectation, trace, metadata, diagnostic, snapshot, or coverage credit.
+
 ## Checker Task 269A Frozen Dormant Harness
 
 The new helper matches exact `SOURCE_STATEMENT_B3N_TEXT` only after the

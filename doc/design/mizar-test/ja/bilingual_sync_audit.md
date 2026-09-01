@@ -1543,6 +1543,14 @@ EN/JAはexisting private Task264 assertion leafだけにCore-context test 2件�
 diagnostic、CLI byte、semantic output、CoreIr snapshot、coverage creditは不変。Testはsame
 syntax-free checker handoffをconsumeし、raw sourceをCoreへ公開しない。
 
+## Core Task 34I264 private-probe synchronization
+
+EN/JAはsame private Task264 leafにexactly two selector/type context testsを追加することで
+一致する。Complete carrier/source-type handoffをretainし、same authenticated `marker`
+target/return-member association 1件をvalidateし、field associationをexcludeして、
+cross-profile default-deny boundaryを保持する。Production route、semantic output、
+fixture、expectation、trace、metadata、diagnostic、snapshot、coverage creditは不変。
+
 ## Checker Task 269A frozen dormant-consumer synchronization
 
 EN/JAはexact B3N source/hash/51-node selector、resolver-local `y`、immutable

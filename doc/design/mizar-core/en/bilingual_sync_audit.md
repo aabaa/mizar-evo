@@ -196,3 +196,14 @@ by-value checker owner, scalar `carrier_item()` API, error precedence,
 default-deny oracle, exact debug grammar, private two-test boundary, Core34
 handoff, zero-credit status, and semantic exclusions. English is canonical;
 no exception is recorded.
+
+## Task 34I264 Bilingual Contract Parity
+
+The [EN contract](../../task_contracts/en/CORE-SOURCE-PROPERTY-SELECTOR-TYPE-CONTEXT-34I264.md)
+and [JA companion](../../task_contracts/ja/CORE-SOURCE-PROPERTY-SELECTOR-TYPE-CONTEXT-34I264.md)
+synchronize the same authenticated `marker` target/return-member association,
+explicit field-association exclusion, complete by-value inputs,
+environment-first default-deny oracle, exact debug grammar, private
+two-test boundary, forbidden semantic lowering, zero-credit status, and
+separate CoreIR owner-model follow-up. English is canonical; no exception is
+recorded.

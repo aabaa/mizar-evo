@@ -182,7 +182,11 @@ top-level public API group:
   `SourceStructureCoreContextProducer`、
   `SourcePropertyCarrierCoreContextHandoff`、
   `SourcePropertyCarrierCoreContextError`、
-  `SourcePropertyCarrierCoreContextProducer`
+  `SourcePropertyCarrierCoreContextProducer`、
+  `SourcePropertySelectorTypeAssociation`、
+  `SourcePropertySelectorTypeContextHandoff`、
+  `SourcePropertySelectorTypeContextError`、
+  `SourcePropertySelectorTypeContextProducer`
 - Type and fact lowering: `TypeAndFactResult`, `TypeAndFactLoweringError`,
   `TypeAndFactLoweringInput`, `TypePredicateSeed`,
   `DeclaredBinderTypeSeed`, `AttributeChainSeed`, `ModeExpansionSeed`,
@@ -346,6 +350,21 @@ Freeze済みの [CORE-SOURCE-ATTRIBUTE-ITEM-CONTEXT-33I261 contract](../../task_
 ## Core-33 Task262 mode item context mapping
 
 Freeze済みの [CORE-SOURCE-MODE-ITEM-CONTEXT-33I262 contract](../../task_contracts/ja/CORE-SOURCE-MODE-ITEM-CONTEXT-33I262.md) は、canonical ordinary mode-definition/source-context identityをvalid public Core `Mode` item 1件とtyped・source-ordered `SourceModeDefinitionId` association row 1件へmapする。Exact context linkとwhole symbol identityがjoinであり、source order、inner range、provenanceはvalidation boundaryである。Implementation/verification complete、documentation repair後final review no findings。このmappingはzero semantic/execution/coverage credit・private-probe-only。Specification、test intent、trace status/backlink、coverage stateは変更しない。Core34--36、`GeneratedOrigin`、production/`MT10-CIR-TE` install、generic API/slot/installer、Task277Bはdeferred/not-readyのままとする。
+
+## Core-34 Task264 selector/type context mapping
+
+Frozen [Task34I264 contract](../../task_contracts/ja/CORE-SOURCE-PROPERTY-SELECTOR-TYPE-CONTEXT-34I264.md)
+はauthenticated Task264 `marker` targetとexplicit return member row 1/root 2の
+zero-credit associationを所有する。Complete Task33I264 carrier contextとcomplete
+source-type handoffを別々にconsumeし、共通environmentとexact typed profileをvalidateし、
+両inputをby-value retainする。Debug textはreplay evidenceでありrow reconstruction source
+ではない。Complete profileはmember row 0も含むが、lower authenticated edgeなしに
+field→row 0 associationをclaimしない。
+
+Representation-only sliceで、normalized Core type、selector item、definition owner、term、
+formula、fact、obligation、production route、trace、coverage creditを追加しない。
+Core35/36が`CoreDefinition.item`互換property ownerを使う前に、separately reviewed CoreIR
+owner-model prerequisiteが残る。Task277Bはnot-ready。
 
 ## Source-Undocumented Behavior Pass
 

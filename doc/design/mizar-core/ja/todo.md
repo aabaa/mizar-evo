@@ -578,7 +578,17 @@ F8 の spec 本文は同一変更(`cef7e109`: spec 03、05、13、17、18)で修
       complete postvalidation後にretainする。
     - Private Task264 Core probe exactly 2件がpassした。Shell/member item、selector
       alias、dependency、semantics、installation、trace/coverage creditは追加していない。
-      次はCore34 selector/type ownerで、Core36はblockedのまま。
+      Task34I264がproperty selector/type edgeをauthenticate済みで、次はCoreIR
+      owner-model prerequisite、Core36はblockedのまま。
+34I264. **Task264 selector/member-type authentication prerequisite。** [x]
+    - Paired [task contract](../../task_contracts/ja/CORE-SOURCE-PROPERTY-SELECTOR-TYPE-CONTEXT-34I264.md)
+      はimplementation/verification complete。Complete Task33I264 carrier contextと
+      exact Task249PI source-type handoffをretainし、full replay validation後に唯一の
+      checker-authenticated `marker` property/return-member associationをderiveする。
+      Lower authenticated edgeがないため`carrier` fieldをmember 0へjoinしない。
+    - Zero-credit authenticationのみ。Selector/member item、Core type/fact/term/formula/
+      definition、production routeは追加していない。Core35/36がproperty ownerをconsumeする
+      前にseparate CoreIR owner-model prerequisiteが残る。
 36P264. **Task264 Core owner disposition。** [x]
     - Frozen [task contract](../../task_contracts/ja/CORE-SOURCE-PROPERTY-IMPLEMENTATION-OWNER-36P264.md)は、
       context-only property-implementation shellにsymbol/definition identityがなく、
@@ -586,9 +596,9 @@ F8 の spec 本文は同一変更(`cef7e109`: spec 03、05、13、17、18)で修
       kind、carrier identity reconstructionは禁止。
     - Committed Task264Cがsame-source carrier/member identityを供給済みで、Task33I264が
       carrier/Core associationをownする。Task263 different-source contextはinputでない。
-      Task264はCore34が`CoreDefinition.item`互換のdistinct authenticated selector/type ownerを
-      供給し、applicable Core35 inputが存在した後だけCore36 definition-lowering inputになる。
-      Shell item/owner-model changeはauthorizeしない。
+      Task264はTask34I264がproperty-selector/return-member identityをauthenticateし、separate reviewed
+      CoreIR owner modelがdefinition-compatibleにし、applicable Core35 inputが存在した後だけ
+      Core36 inputになる。Shell item/unreviewed owner-model changeはauthorizeしない。
 33. **Source-derived Core context/item/binder/source map。** [ ]
     - checker 248を`MT10-CIR-TE`でconsumeし、type/proof/algorithm bodyは扱わない。
       C4C8についてchecker 248だけでは不十分なままであり、Task 33C4C8はseparately
