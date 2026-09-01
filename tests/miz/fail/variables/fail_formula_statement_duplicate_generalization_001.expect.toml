@@ -1,0 +1,15 @@
+schema_version = 1
+id = "fail_formula_statement_duplicate_generalization_001"
+kind = "fail"
+stage = "formula_statement"
+domain = "variables.let_generalization"
+source = "fail_formula_statement_duplicate_generalization_001.miz"
+expected_outcome = "fail"
+expected_phase = "statement_check"
+failure_category = "proof_failure"
+stable_detail_key = "variables.let.duplicate_generalization"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.04.variables.scoping.duplicate_generalization",
+]
+notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. A second let for the same identifier in one proof scope has no remaining universal thesis to consume and redeclares the binder (spec 4.6, 16.3)."

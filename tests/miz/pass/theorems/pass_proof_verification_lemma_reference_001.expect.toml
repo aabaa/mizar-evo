@@ -1,0 +1,13 @@
+schema_version = 1
+id = "pass_proof_verification_lemma_reference_001"
+kind = "pass"
+stage = "proof_verification"
+domain = "theorems.reference"
+source = "pass_proof_verification_lemma_reference_001.miz"
+expected_outcome = "pass"
+expected_phase = "vc_generation"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.16.theorems.reference.lemma_citation",
+]
+notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. A lemma is proved and then cited by label in a later theorem justification (spec 16.1, 16.5)."

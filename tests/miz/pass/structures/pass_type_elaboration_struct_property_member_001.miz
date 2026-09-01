@@ -1,0 +1,6 @@
+definition
+  struct PointedBox where
+    field carrier -> set;
+    property base -> set;
+  end;
+end;

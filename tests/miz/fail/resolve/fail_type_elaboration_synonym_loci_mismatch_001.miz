@@ -1,0 +1,10 @@
+definition
+  let X, Y be set;
+  func SynBase2Def: X synbase2 Y -> set equals X;
+  coherence;
+end;
+
+definition
+  let X, Y, Z be set;
+  synonym synbad(X, Y, Z) for X synbase2 Y;
+end;

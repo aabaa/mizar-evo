@@ -1,0 +1,15 @@
+schema_version = 1
+id = "fail_parse_only_mode_property_impl_missing_correctness_001"
+kind = "fail"
+stage = "parse_only"
+domain = "modes.property_implementation"
+source = "fail_parse_only_mode_property_impl_missing_correctness_001.miz"
+expected_outcome = "fail"
+expected_phase = "parse"
+failure_category = "syntax_error"
+stable_detail_key = "modes.property_implementation.missing_existence_uniqueness"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.07.modes.property_implementation.means_missing_correctness",
+]
+notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. The grammar makes existence and uniqueness blocks mandatory for a means-form property implementation, so their omission is a syntax rejection (spec 7.4.1, A.7 property_means_impl)."

@@ -1,0 +1,13 @@
+schema_version = 1
+id = "pass_proof_verification_algorithm_ensures_return_001"
+kind = "pass"
+stage = "proof_verification"
+domain = "algorithms.contracts"
+source = "pass_proof_verification_algorithm_ensures_return_001.miz"
+expected_outcome = "pass"
+expected_phase = "vc_generation"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.20.algorithms.contracts.ensures",
+]
+notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. A terminating loop-free algorithm with an ensures contract generates and satisfies its postcondition obligation at the return site (spec 20.1, 20.4)."

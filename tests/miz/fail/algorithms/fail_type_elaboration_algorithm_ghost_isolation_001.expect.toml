@@ -1,0 +1,15 @@
+schema_version = 1
+id = "fail_type_elaboration_algorithm_ghost_isolation_001"
+kind = "fail"
+stage = "type_elaboration"
+domain = "algorithms.ghost"
+source = "fail_type_elaboration_algorithm_ghost_isolation_001.miz"
+expected_outcome = "fail"
+expected_phase = "elaboration"
+failure_category = "type_error"
+stable_detail_key = "algorithms.ghost.isolation_violation"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.20.algorithms.ghost.isolation_static",
+]
+notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. Real state may not depend on ghost state; initializing a real var from a ghost var violates static ghost isolation (spec 20.6; Core ghost-isolation boundary)."

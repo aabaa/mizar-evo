@@ -1,0 +1,16 @@
+definition
+  let X be set;
+  attr WMDef: X is wmarked means X = X;
+end;
+
+definition
+  let X be set;
+  func WBoxDef: wbox X -> set equals X;
+  coherence;
+end;
+
+theorem WidenArg1: for X being wmarked set holds wbox X = X
+proof
+  let X be wmarked set;
+  thus wbox X = X by WBoxDef;
+end;

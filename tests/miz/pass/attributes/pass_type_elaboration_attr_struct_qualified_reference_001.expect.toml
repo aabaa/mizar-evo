@@ -1,0 +1,13 @@
+schema_version = 1
+id = "pass_type_elaboration_attr_struct_qualified_reference_001"
+kind = "pass"
+stage = "type_elaboration"
+domain = "attributes.disambiguation"
+source = "pass_type_elaboration_attr_struct_qualified_reference_001.miz"
+expected_outcome = "pass"
+expected_phase = "type_check"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.06.attributes.disambiguation.struct_qualified",
+]
+notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. A structure-qualified attribute reference selects between same-named attributes declared on different structure subjects (spec 6.6, A.3 attribute_ref)."

@@ -1,0 +1,12 @@
+definition
+  let X be set;
+  func ChoiceBoxDef: choicebox X -> set means it = X;
+  existence;
+  uniqueness;
+end;
+
+theorem ChoiceBox1: for X being set holds choicebox X = X
+proof
+  let X be set;
+  thus choicebox X = X;
+end;

@@ -1,0 +1,15 @@
+schema_version = 1
+id = "fail_parse_only_iff_unparenthesized_chain_001"
+kind = "fail"
+stage = "parse_only"
+domain = "formulas.iff"
+source = "fail_parse_only_iff_unparenthesized_chain_001.miz"
+expected_outcome = "fail"
+expected_phase = "parse"
+failure_category = "syntax_error"
+stable_detail_key = "formulas.iff.unparenthesized_chain"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.14.formulas.iff.non_associative",
+]
+notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. iff is non-associative; chaining iff without parentheses is a syntax error (spec 14.6, A.14)."

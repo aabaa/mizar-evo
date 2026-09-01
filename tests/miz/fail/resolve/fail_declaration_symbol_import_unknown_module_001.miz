@@ -1,0 +1,7 @@
+import parser.no_such_module;
+
+theorem NoModule1: for X being set holds X = X
+proof
+  let X be set;
+  thus X = X;
+end;

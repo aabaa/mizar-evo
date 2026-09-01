@@ -1,0 +1,15 @@
+schema_version = 1
+id = "fail_proof_verification_algorithm_assert_unprovable_001"
+kind = "fail"
+stage = "proof_verification"
+domain = "algorithms.assertions"
+source = "fail_proof_verification_algorithm_assert_unprovable_001.miz"
+expected_outcome = "fail"
+expected_phase = "verification"
+failure_category = "proof_failure"
+stable_detail_key = "algorithms.assert.unprovable"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.20.algorithms.state.var_const_assert",
+]
+notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. An assert whose formula is unsatisfiable in the current state must fail its obligation (spec 20.4)."

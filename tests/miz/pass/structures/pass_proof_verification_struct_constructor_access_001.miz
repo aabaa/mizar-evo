@@ -1,0 +1,12 @@
+definition
+  struct PairBox2 where
+    field first -> set;
+    field second -> set;
+  end;
+end;
+
+theorem PairAccess1: for a, b being set holds PairBox2(first: a, second: b).first = a
+proof
+  let a, b be set;
+  thus PairBox2(first: a, second: b).first = a;
+end;

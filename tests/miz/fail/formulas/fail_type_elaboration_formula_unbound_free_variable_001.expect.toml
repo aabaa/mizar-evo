@@ -1,0 +1,15 @@
+schema_version = 1
+id = "fail_type_elaboration_formula_unbound_free_variable_001"
+kind = "fail"
+stage = "type_elaboration"
+domain = "formulas.free_variables"
+source = "fail_type_elaboration_formula_unbound_free_variable_001.miz"
+expected_outcome = "fail"
+expected_phase = "resolve"
+failure_category = "resolve_error"
+stable_detail_key = "formulas.free_variable_unbound"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.14.formulas.free_variables.binding",
+]
+notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. Every variable occurrence in a formula must be bound by a quantifier, a proof-local binder, or an active reservation (spec 14.1, 4.5)."

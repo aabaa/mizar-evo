@@ -1,0 +1,11 @@
+definition
+  let X, Y be set;
+  func PairJoinDef: X \*\ Y -> set equals {X, Y};
+  coherence;
+  commutativity
+  proof
+    thus thesis;
+  end;
+end;
+
+infix_operator("\\*\\", left, 90);

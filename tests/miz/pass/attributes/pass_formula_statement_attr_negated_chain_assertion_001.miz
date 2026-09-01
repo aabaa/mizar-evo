@@ -1,0 +1,11 @@
+definition
+  let X be set;
+  attr AMDef: X is alpha_marked means X = X;
+  attr BMDef: X is beta_marked means not X = X;
+end;
+
+theorem ChainUse1: for X being set holds X is alpha_marked non beta_marked
+proof
+  let X be set;
+  thus X is alpha_marked non beta_marked;
+end;

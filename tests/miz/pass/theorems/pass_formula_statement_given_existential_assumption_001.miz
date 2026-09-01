@@ -1,0 +1,8 @@
+theorem Given1: for A being set st (ex y being object st y in A) holds
+  ex z being object st z in A
+proof
+  let A be set;
+  given y0 being object such that A1: y0 in A;
+  take y0;
+  thus y0 in A by A1;
+end;

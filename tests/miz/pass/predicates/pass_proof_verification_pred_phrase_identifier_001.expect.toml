@@ -1,0 +1,13 @@
+schema_version = 1
+id = "pass_proof_verification_pred_phrase_identifier_001"
+kind = "pass"
+stage = "proof_verification"
+domain = "predicates.phrase_definition"
+source = "pass_proof_verification_pred_phrase_identifier_001.miz"
+expected_outcome = "pass"
+expected_phase = "vc_generation"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.09.predicates.definition.phrase",
+]
+notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. An identifier-spelled phrase predicate with left and right loci is defined and applied (spec 9.3, A.9 pred_pattern)."

@@ -1,0 +1,4 @@
+definition
+  let X be set;
+  func NcDef: ncbox X -> set means it = X;
+end;

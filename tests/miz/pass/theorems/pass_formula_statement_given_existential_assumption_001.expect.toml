@@ -1,0 +1,13 @@
+schema_version = 1
+id = "pass_formula_statement_given_existential_assumption_001"
+kind = "pass"
+stage = "formula_statement"
+domain = "theorems.existential_assumption"
+source = "pass_formula_statement_given_existential_assumption_001.miz"
+expected_outcome = "pass"
+expected_phase = "statement_check"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.15.statements.given.existential_assumption",
+]
+notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. given consumes an existential st antecedent by naming its witness (spec 15.2, A.15 existential_assumption)."

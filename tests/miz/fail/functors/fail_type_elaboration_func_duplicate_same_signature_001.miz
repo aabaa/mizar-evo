@@ -1,0 +1,11 @@
+definition
+  let X be set;
+  func DupF1Def: dupbox X -> set equals X;
+  coherence;
+end;
+
+definition
+  let X be set;
+  func DupF2Def: dupbox X -> set equals X;
+  coherence;
+end;

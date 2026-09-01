@@ -1,0 +1,13 @@
+schema_version = 1
+id = "pass_formula_statement_set_local_constant_take_001"
+kind = "pass"
+stage = "formula_statement"
+domain = "variables.local_constant"
+source = "pass_formula_statement_set_local_constant_take_001.miz"
+expected_outcome = "pass"
+expected_phase = "statement_check"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.04.variables.local_constant_set.witness_use",
+]
+notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. A set-introduced local constant is a definitionally transparent alias usable as an existential witness via take (spec 4.4, 15.4)."

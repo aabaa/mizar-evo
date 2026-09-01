@@ -1,0 +1,13 @@
+schema_version = 1
+id = "pass_formula_statement_iterative_equality_001"
+kind = "pass"
+stage = "formula_statement"
+domain = "theorems.iterative_equality"
+source = "pass_formula_statement_iterative_equality_001.miz"
+expected_outcome = "pass"
+expected_phase = "statement_check"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.15.statements.iterative_equality.chain",
+]
+notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. An iterative equality chains .= steps and yields the outer equation; the chain here is functor-free so the construct is isolated from notation activation (spec 15.7)."

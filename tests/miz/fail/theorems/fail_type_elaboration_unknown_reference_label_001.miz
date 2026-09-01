@@ -1,0 +1,5 @@
+theorem BadRef1: for X being set holds X = X
+proof
+  let X be set;
+  thus X = X by NoSuchLabel;
+end;

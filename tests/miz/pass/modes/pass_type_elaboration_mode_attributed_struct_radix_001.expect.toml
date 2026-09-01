@@ -1,0 +1,13 @@
+schema_version = 1
+id = "pass_type_elaboration_mode_attributed_struct_radix_001"
+kind = "pass"
+stage = "type_elaboration"
+domain = "modes.attributed_radix"
+source = "pass_type_elaboration_mode_attributed_struct_radix_001.miz"
+expected_outcome = "pass"
+expected_phase = "type_check"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.07.modes.attributed_radix.struct",
+]
+notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. A mode may abbreviate an attribute chain over a structure radix type (spec 7.2, 7.5; sample group.miz GroupDef)."

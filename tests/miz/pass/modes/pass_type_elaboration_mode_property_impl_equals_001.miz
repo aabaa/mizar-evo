@@ -1,0 +1,11 @@
+definition
+  struct LenBox where
+    field data -> set;
+    property size -> set;
+  end;
+end;
+
+definition
+  let B be LenBox;
+  property B.size equals B.data;
+end;

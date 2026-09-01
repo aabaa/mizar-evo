@@ -1,0 +1,11 @@
+definition
+  let X be set;
+  attr Marked1Def: X is marked1 means X = X;
+end;
+
+theorem Narrow1: for X being set holds X = X
+proof
+  let X be set;
+  reconsider Y = X as marked1 set;
+  thus X = X;
+end;

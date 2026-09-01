@@ -1,0 +1,13 @@
+schema_version = 1
+id = "pass_formula_statement_is_type_assertion_001"
+kind = "pass"
+stage = "formula_statement"
+domain = "formulas.is_assertion"
+source = "pass_formula_statement_is_type_assertion_001.miz"
+expected_outcome = "pass"
+expected_phase = "statement_check"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.14.formulas.is_assertion.type",
+]
+notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. An is-assertion against a type expression is a well-formed atomic formula (spec 14.5, A.14 is_assertion)."

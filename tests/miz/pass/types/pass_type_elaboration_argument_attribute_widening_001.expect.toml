@@ -1,0 +1,13 @@
+schema_version = 1
+id = "pass_type_elaboration_argument_attribute_widening_001"
+kind = "pass"
+stage = "type_elaboration"
+domain = "types.widening"
+source = "pass_type_elaboration_argument_attribute_widening_001.miz"
+expected_outcome = "pass"
+expected_phase = "type_check"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.03.types.widening.argument_position",
+]
+notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. An attributed set argument widens to the bare set loci type at an application site (spec 3.5, 8.2)."

@@ -1,0 +1,15 @@
+schema_version = 1
+id = "fail_type_elaboration_unknown_reference_label_001"
+kind = "fail"
+stage = "type_elaboration"
+domain = "theorems.reference"
+source = "fail_type_elaboration_unknown_reference_label_001.miz"
+expected_outcome = "fail"
+expected_phase = "resolve"
+failure_category = "resolve_error"
+stable_detail_key = "theorems.reference.unknown_label"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.16.theorems.reference.module_local_label",
+]
+notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. A by reference must resolve to a visible statement label or imported theorem (spec 16.5)."

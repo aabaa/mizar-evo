@@ -1,0 +1,13 @@
+schema_version = 1
+id = "pass_proof_verification_func_means_prefix_001"
+kind = "pass"
+stage = "proof_verification"
+domain = "functors.means_definition"
+source = "pass_proof_verification_func_means_prefix_001.miz"
+expected_outcome = "pass"
+expected_phase = "vc_generation"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.10.functors.means.definitional_unfolding",
+]
+notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. A means-form prefix functor binds it and carries existence and uniqueness obligations (spec 10.3, 10.6)."

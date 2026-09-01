@@ -3411,8 +3411,18 @@ fn repository_corpus_plan_succeeds() {
         .requirements
         .iter()
         .filter(|requirement| {
+            // September 2026 audit-1 semantic-bridge oracle rows use numeric
+            // spec-chapter ids (`spec.en.NN....`) and are inactive seeds; the
+            // exact-only VC Task-31 guard below applies to the legacy rows.
+            let audit1_row = requirement
+                .id
+                .0
+                .split('.')
+                .nth(2)
+                .is_some_and(|seg| seg.len() == 2 && seg.chars().all(|c| c.is_ascii_digit()));
             requirement.stage == Stage::ProofVerification
                 && requirement.id.0 != EXACT_VC_TASK31_SNAPSHOT_SPEC_REF
+                && !audit1_row
         })
         .collect::<Vec<_>>();
     assert_eq!(deferred_proof_rows.len(), 3);

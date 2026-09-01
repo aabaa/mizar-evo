@@ -1,0 +1,12 @@
+import parser.{type_fixtures};
+
+theorem BranchImportUse1: 1 divides 2 or not 1 divides 2
+proof
+  per cases;
+  suppose A1: 1 divides 2;
+    thus thesis by A1;
+  end;
+  suppose A2: not 1 divides 2;
+    thus thesis by A2;
+  end;
+end;

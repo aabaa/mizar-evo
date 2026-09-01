@@ -1,0 +1,13 @@
+schema_version = 1
+id = "pass_advanced_semantics_conditional_registration_001"
+kind = "pass"
+stage = "advanced_semantics"
+domain = "clusters.conditional"
+source = "pass_advanced_semantics_conditional_registration_001.miz"
+expected_outcome = "pass"
+expected_phase = "cluster_resolution"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.17.clusters.conditional.registration",
+]
+notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. A conditional registration propagates consequent adjectives over antecedent adjectives for the stated radix (spec 17.4)."

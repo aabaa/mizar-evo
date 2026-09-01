@@ -1,0 +1,15 @@
+schema_version = 1
+id = "fail_advanced_semantics_overload_ambiguous_candidates_001"
+kind = "fail"
+stage = "advanced_semantics"
+domain = "overload.resolution"
+source = "fail_advanced_semantics_overload_ambiguous_candidates_001.miz"
+expected_outcome = "fail"
+expected_phase = "overload_resolution"
+failure_category = "overload_error"
+stable_detail_key = "overload.resolution.ambiguous_candidates"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.19.overload.resolution.ambiguity",
+]
+notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. Two overload candidates on independent attributed types are ambiguous for an argument carrying both attributes (spec 19.4)."

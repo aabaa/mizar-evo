@@ -1,0 +1,10 @@
+definition
+  let n be object;
+  let X be set;
+  attr G2Def: X is n-graded2 means X = X;
+end;
+
+registration
+  cluster CBad1: graded2(0) set;
+  existence;
+end;

@@ -1,0 +1,10 @@
+definition
+  let X, Y be set;
+  pred StrangerDef: X strangerto Y means not X = Y;
+end;
+
+theorem NotStranger1: for X being set holds X does not strangerto X
+proof
+  let X be set;
+  thus X does not strangerto X;
+end;

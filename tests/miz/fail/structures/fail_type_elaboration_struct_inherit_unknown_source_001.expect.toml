@@ -1,0 +1,15 @@
+schema_version = 1
+id = "fail_type_elaboration_struct_inherit_unknown_source_001"
+kind = "fail"
+stage = "type_elaboration"
+domain = "structures.inheritance"
+source = "fail_type_elaboration_struct_inherit_unknown_source_001.miz"
+expected_outcome = "fail"
+expected_phase = "type_check"
+failure_category = "type_error"
+stable_detail_key = "structures.inherit.unknown_source_member"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.05.structures.inherit.rename",
+]
+notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. A field-from rename must name an existing base member; an unknown source member is rejected (spec 5.3)."

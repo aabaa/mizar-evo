@@ -682,6 +682,141 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.03.types.widening.argument_position"
+source = "doc/spec/en/03.type_system.md"
+section = "3.5 Subtyping and Widening"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "pass_and_fail"
+tests = [
+  "tests/miz/fail/types/fail_type_elaboration_argument_type_mismatch_functor_001.expect.toml",
+  "tests/miz/pass/types/pass_type_elaboration_argument_attribute_widening_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.04.variables.inline_deffunc_defpred.semantic"
+source = "doc/spec/en/04.variables_and_constants.md"
+section = "4.4 Local Constants (set, reconsider, take, deffunc, defpred)"
+stage = "formula_statement"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/variables/pass_formula_statement_deffunc_defpred_local_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.04.variables.let_such_that.semantic"
+source = "doc/spec/en/04.variables_and_constants.md"
+section = "4.2 Variable Declarations (let)"
+stage = "formula_statement"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/variables/pass_formula_statement_let_such_that_assumption_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.04.variables.local_constant_set.semantic"
+source = "doc/spec/en/04.variables_and_constants.md"
+section = "4.4 Local Constants (set, reconsider, take, deffunc, defpred)"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "fail"
+tests = [
+  "tests/miz/fail/variables/fail_type_elaboration_set_duplicate_local_constant_001.expect.toml",
+  "tests/miz/fail/variables/fail_type_elaboration_set_forward_reference_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.04.variables.local_constant_set.witness_use"
+source = "doc/spec/en/04.variables_and_constants.md"
+section = "4.4 Local Constants (set, reconsider, take, deffunc, defpred)"
+stage = "formula_statement"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/variables/pass_formula_statement_set_local_constant_take_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.04.variables.reconsider.narrowing_justification"
+source = "doc/spec/en/04.variables_and_constants.md"
+section = "4.4 Local Constants (set, reconsider, take, deffunc, defpred)"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "fail"
+tests = [
+  "tests/miz/fail/variables/fail_type_elaboration_reconsider_unjustified_narrowing_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.04.variables.reconsider.widening"
+source = "doc/spec/en/04.variables_and_constants.md"
+section = "4.4 Local Constants (set, reconsider, take, deffunc, defpred)"
+stage = "formula_statement"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/variables/pass_formula_statement_reconsider_builtin_widening_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.04.variables.reserve.explicit_override"
+source = "doc/spec/en/04.variables_and_constants.md"
+section = "4.3 Reserved Variables (reserve)"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/variables/pass_type_elaboration_reserve_shadow_explicit_type_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.04.variables.reserve.implicit_typing"
+source = "doc/spec/en/04.variables_and_constants.md"
+section = "4.3 Reserved Variables (reserve)"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "pass_and_fail"
+tests = [
+  "tests/miz/fail/variables/fail_type_elaboration_unreserved_implicit_variable_001.expect.toml",
+  "tests/miz/pass/variables/pass_type_elaboration_reserve_implicit_typing_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.04.variables.scoping.duplicate_generalization"
+source = "doc/spec/en/04.variables_and_constants.md"
+section = "4.6 Scoping and Shadowing"
+stage = "formula_statement"
+status = "covered"
+required = true
+coverage = "fail"
+tests = [
+  "tests/miz/fail/variables/fail_formula_statement_duplicate_generalization_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.04.variables.take_exemplification.semantic"
+source = "doc/spec/en/04.variables_and_constants.md"
+section = "4.4 Local Constants (set, reconsider, take, deffunc, defpred)"
+stage = "formula_statement"
+status = "covered"
+required = true
+coverage = "fail"
+tests = [
+  "tests/miz/fail/variables/fail_formula_statement_take_non_existential_thesis_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.04.variables_and_constants.binders.lexical_shapes"
 source = "doc/spec/en/04.variables_and_constants.md"
 section = "4 Variables and Constants"
@@ -847,6 +982,30 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.05.structures.constructor.beta_projection"
+source = "doc/spec/en/05.structures.md"
+section = "5.5 Constructors"
+stage = "proof_verification"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/structures/pass_proof_verification_struct_constructor_access_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.05.structures.constructor.field_access"
+source = "doc/spec/en/05.structures.md"
+section = "5.5 Constructors"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "fail"
+tests = [
+  "tests/miz/fail/structures/fail_type_elaboration_struct_constructor_missing_field_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.05.structures.constructor_fields_only.semantic"
 source = "doc/spec/en/05.structures.md"
 section = "5.5.1 Default Constructor; 5.8.4 Constructor Axioms; 5.8.5 Extensionality; with 7.4.1 Property Implementation"
@@ -861,6 +1020,43 @@ depends_on = [
 ]
 tests = [
   "tests/miz/fail/structures/fail_structure_constructor_property_arg_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.05.structures.definition.fields"
+source = "doc/spec/en/05.structures.md"
+section = "5.2 Syntax"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "pass_and_fail"
+tests = [
+  "tests/miz/fail/structures/fail_type_elaboration_struct_duplicate_member_001.expect.toml",
+  "tests/miz/pass/structures/pass_type_elaboration_struct_definition_basic_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.05.structures.definition.properties"
+source = "doc/spec/en/05.structures.md"
+section = "5.2 Syntax"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/structures/pass_type_elaboration_struct_property_member_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.05.structures.dependent.bracket_parameters"
+source = "doc/spec/en/05.structures.md"
+section = "5.6 Dependent Structures"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/structures/pass_type_elaboration_struct_dependent_bracket_params_001.expect.toml",
 ]
 
 [[requirement]]
@@ -886,6 +1082,56 @@ required = true
 coverage = "diagnostic"
 deferred_reason = "Tasks 83 and 97 supersede the documented parser.type_fixtures `R` and `TypeCaseStruct` fixtures by carrying imported structure provenance/type-head payloads to the checker evidence-query diagnostic. Broader imported structure heads, including generic imported structures outside those fixtures, still lack real imported type-head payload extraction and should use this row when new source-derived cases are added."
 tests = []
+
+[[requirement]]
+id = "spec.en.05.structures.inherit.diamond_consistency"
+source = "doc/spec/en/05.structures.md"
+section = "5.4 Multiple and Diamond Inheritance"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "pass_and_fail"
+tests = [
+  "tests/miz/fail/structures/fail_type_elaboration_struct_diamond_inconsistent_001.expect.toml",
+  "tests/miz/pass/structures/pass_type_elaboration_struct_diamond_consistent_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.05.structures.inherit.from_set"
+source = "doc/spec/en/05.structures.md"
+section = "5.3 Inheritance"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/structures/pass_type_elaboration_struct_inherit_from_set_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.05.structures.inherit.member_coverage"
+source = "doc/spec/en/05.structures.md"
+section = "5.3 Inheritance"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "fail"
+tests = [
+  "tests/miz/fail/structures/fail_type_elaboration_struct_inherit_uncovered_member_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.05.structures.inherit.rename"
+source = "doc/spec/en/05.structures.md"
+section = "5.3 Inheritance"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "pass_and_fail"
+tests = [
+  "tests/miz/fail/structures/fail_type_elaboration_struct_inherit_unknown_source_001.expect.toml",
+  "tests/miz/pass/structures/pass_type_elaboration_struct_inherit_rename_001.expect.toml",
+]
 
 [[requirement]]
 id = "spec.en.05.structures.inheritance.semantic"
@@ -920,6 +1166,18 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.05.structures.selector.resolution"
+source = "doc/spec/en/05.structures.md"
+section = "5.7 Field Access (Selectors)"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "fail"
+tests = [
+  "tests/miz/fail/structures/fail_type_elaboration_struct_unknown_selector_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.05.structures.type_elaboration_payload_gap"
 source = "doc/spec/en/05.structures.md"
 section = "5.2 Syntax; 5.5 Structure Constructors; 5.7 Selectors; 5.9 Complete Syntax (EBNF)"
@@ -932,6 +1190,18 @@ tests = [
   "tests/miz/fail/types/fail_type_elaboration_mode_structure_definition_gap_001.expect.toml",
 ]
 notes = "Task 254 adds source-transport-only coverage for written structure construction and selector occurrences. Constructor/member/view semantics, field/property identity, coverage/default checks, result typing, facts, and acceptance remain deferred to Task 263."
+
+[[requirement]]
+id = "spec.en.05.structures.with_update.semantic"
+source = "doc/spec/en/05.structures.md"
+section = "5.7 Field Access (Selectors)"
+stage = "proof_verification"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/structures/pass_proof_verification_struct_with_update_001.expect.toml",
+]
 
 [[requirement]]
 id = "spec.en.06.attribute_definitions.parser"
@@ -997,6 +1267,30 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.06.attributes.definition.uniqueness"
+source = "doc/spec/en/06.attributes.md"
+section = "6.1 Definition and Purpose"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "fail"
+tests = [
+  "tests/miz/fail/attributes/fail_type_elaboration_attr_duplicate_same_subject_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.06.attributes.disambiguation.struct_qualified"
+source = "doc/spec/en/06.attributes.md"
+section = "6.6 Disambiguation"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/attributes/pass_type_elaboration_attr_struct_qualified_reference_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.06.attributes.imported_attribute_evidence_payload_gap"
 source = "doc/spec/en/06.attributes.md"
 section = "6.2 Syntax; 6.9 Complete Syntax"
@@ -1035,6 +1329,30 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.06.attributes.param_prefix.declaration"
+source = "doc/spec/en/06.attributes.md"
+section = "6.2 Syntax"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/attributes/pass_type_elaboration_attr_param_prefix_declaration_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.06.attributes.param_prefix.lexicon_rejection"
+source = "doc/spec/en/06.attributes.md"
+section = "6.2 Syntax"
+stage = "parse_only"
+status = "covered"
+required = true
+coverage = "fail"
+tests = [
+  "tests/miz/fail/attributes/fail_type_elaboration_attr_param_prefix_unbound_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.06.attributes.parameterized_attribute_declaration_symbol"
 source = "doc/spec/en/06.attributes.md"
 section = "6.2 Syntax; 6.9 Complete Syntax"
@@ -1044,6 +1362,42 @@ required = true
 coverage = "pass"
 tests = [
   "tests/miz/pass/resolve/pass_resolve_parameterized_local_attribute_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.06.attributes.redefine.coherence"
+source = "doc/spec/en/06.attributes.md"
+section = "6.7 Redefinition"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/attributes/pass_type_elaboration_attr_redefine_narrower_subject_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.06.attributes.reference.symbol_class"
+source = "doc/spec/en/06.attributes.md"
+section = "6.3 Usage"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "fail"
+tests = [
+  "tests/miz/fail/attributes/fail_type_elaboration_attr_non_attribute_symbol_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.06.attributes.test_chain.negation"
+source = "doc/spec/en/06.attributes.md"
+section = "6.3 Usage"
+stage = "formula_statement"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/attributes/pass_formula_statement_attr_negated_chain_assertion_001.expect.toml",
 ]
 
 [[requirement]]
@@ -1081,6 +1435,31 @@ required = true
 coverage = "diagnostic"
 tests = [
   "tests/miz/fail/types/fail_type_elaboration_local_mode_forward_reference_gap_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.07.modes.attributed_radix.struct"
+source = "doc/spec/en/07.modes.md"
+section = "7.2 Syntax for Declaring and Using Modes"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/modes/pass_type_elaboration_mode_attributed_struct_radix_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.07.modes.dependent.of_parameters"
+source = "doc/spec/en/07.modes.md"
+section = "7.7 Dependent Modes"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "pass_and_fail"
+tests = [
+  "tests/miz/fail/modes/fail_type_elaboration_mode_dependent_arity_mismatch_001.expect.toml",
+  "tests/miz/pass/modes/pass_type_elaboration_mode_dependent_of_params_001.expect.toml",
 ]
 
 [[requirement]]
@@ -1132,6 +1511,42 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.07.modes.property_implementation.equals"
+source = "doc/spec/en/07.modes.md"
+section = "7.4.1 Property Implementation"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/modes/pass_type_elaboration_mode_property_impl_equals_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.07.modes.property_implementation.means"
+source = "doc/spec/en/07.modes.md"
+section = "7.4.1 Property Implementation"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/modes/pass_type_elaboration_mode_property_impl_means_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.07.modes.property_implementation.means_missing_correctness"
+source = "doc/spec/en/07.modes.md"
+section = "7.4.1 Property Implementation"
+stage = "parse_only"
+status = "covered"
+required = true
+coverage = "fail"
+tests = [
+  "tests/miz/fail/modes/fail_parse_only_mode_property_impl_missing_correctness_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.07.modes.property_implementation.not_constructor_source.semantic"
 source = "doc/spec/en/07.modes.md"
 section = "7.4.1 Property Implementation; with 5.5.1 fields-only constructors"
@@ -1161,6 +1576,30 @@ notes = "Parser Task 48 implements the complete property implementation as the t
 tests = [
   "tests/miz/pass/parser/pass_parser_property_implementations_001.expect.toml",
   "tests/miz/fail/parser/fail_parser_property_implementations_recovery_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.07.modes.property_implementation.subject"
+source = "doc/spec/en/07.modes.md"
+section = "7.4.1 Property Implementation"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "fail"
+tests = [
+  "tests/miz/fail/modes/fail_type_elaboration_mode_property_impl_unknown_property_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.07.modes.sethood.property"
+source = "doc/spec/en/07.modes.md"
+section = "7.8 Correctness Conditions"
+stage = "proof_verification"
+status = "covered"
+required = true
+coverage = "fail"
+tests = [
+  "tests/miz/fail/modes/fail_proof_verification_mode_sethood_unprovable_001.expect.toml",
 ]
 
 [[requirement]]
@@ -1205,6 +1644,91 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.09.predicates.application.negation"
+source = "doc/spec/en/09.predicates.md"
+section = "9.1 Overview and Syntax"
+stage = "formula_statement"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/predicates/pass_formula_statement_pred_negated_application_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.09.predicates.application.typing"
+source = "doc/spec/en/09.predicates.md"
+section = "9.4 Dependent and Typed Parameters"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "fail"
+tests = [
+  "tests/miz/fail/predicates/fail_type_elaboration_pred_argument_type_mismatch_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.09.predicates.definition.phrase"
+source = "doc/spec/en/09.predicates.md"
+section = "9.3 Definition Styles: Symbolic vs Phrase"
+stage = "proof_verification"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/predicates/pass_proof_verification_pred_phrase_identifier_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.09.predicates.definition.symbolic"
+source = "doc/spec/en/09.predicates.md"
+section = "9.3 Definition Styles: Symbolic vs Phrase"
+stage = "proof_verification"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/predicates/pass_proof_verification_pred_symbolic_infix_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.09.predicates.definition.uniqueness"
+source = "doc/spec/en/09.predicates.md"
+section = "9.8 Symbol Resolution and Imports"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "fail"
+tests = [
+  "tests/miz/fail/predicates/fail_type_elaboration_pred_duplicate_same_signature_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.09.predicates.properties.declaration"
+source = "doc/spec/en/09.predicates.md"
+section = "9.5 Correctness Conditions"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "pass_and_fail"
+tests = [
+  "tests/miz/fail/predicates/fail_type_elaboration_pred_property_arity_mismatch_001.expect.toml",
+  "tests/miz/pass/predicates/pass_type_elaboration_pred_properties_declaration_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.09.predicates.redefine.coherence"
+source = "doc/spec/en/09.predicates.md"
+section = "9.6 Predicate Redefinition"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/predicates/pass_type_elaboration_pred_redefine_narrower_loci_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.10.functor_definitions.parser"
 source = "doc/spec/en/10.functors.md"
 section = "10.1 Functor Definitions; 10.3 Definition Styles: `equals` vs `means`; 10.5 Conditional Functor Definitions; 10.6 Correctness Conditions for Functors; 10.8 Functor Patterns and Notation; 10.13 Grammar"
@@ -1231,6 +1755,103 @@ tests = [
   "tests/miz/fail/types/fail_type_elaboration_local_set_choice_qua_term_gap_001.expect.toml",
 ]
 notes = "Task 255 adds only source-transport coverage for four local functor definientia after authenticating their set-enumeration, condition-free independent-comprehension, choice, and qua source terms. Functor-definition intake and acceptance remain deferred to Task 260."
+
+[[requirement]]
+id = "spec.en.10.functors.bracket_application.builtin"
+source = "doc/spec/en/10.functors.md"
+section = "10.1 Overview and Syntax"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/functors/pass_type_elaboration_func_builtin_bracket_pair_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.10.functors.definition.equals"
+source = "doc/spec/en/10.functors.md"
+section = "10.3 Definition Styles: equals vs means"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "fail"
+tests = [
+  "tests/miz/fail/functors/fail_type_elaboration_func_equals_result_type_mismatch_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.10.functors.definition.means"
+source = "doc/spec/en/10.functors.md"
+section = "10.3 Definition Styles: equals vs means"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "fail"
+tests = [
+  "tests/miz/fail/functors/fail_type_elaboration_func_means_missing_correctness_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.10.functors.definition.uniqueness"
+source = "doc/spec/en/10.functors.md"
+section = "10.10 Symbol Resolution and Imports"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "fail"
+tests = [
+  "tests/miz/fail/functors/fail_type_elaboration_func_duplicate_same_signature_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.10.functors.dependent_return.semantic"
+source = "doc/spec/en/10.functors.md"
+section = "10.5 Dependent Return Types"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/functors/pass_type_elaboration_func_dependent_return_type_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.10.functors.equals.definitional_unfolding"
+source = "doc/spec/en/10.functors.md"
+section = "10.3 Definition Styles: equals vs means"
+stage = "proof_verification"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/functors/pass_proof_verification_func_equals_infix_operator_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.10.functors.means.definitional_unfolding"
+source = "doc/spec/en/10.functors.md"
+section = "10.3 Definition Styles: equals vs means"
+stage = "proof_verification"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/functors/pass_proof_verification_func_means_prefix_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.10.functors.properties.declaration"
+source = "doc/spec/en/10.functors.md"
+section = "10.6 Correctness Conditions"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "pass_and_fail"
+tests = [
+  "tests/miz/fail/functors/fail_type_elaboration_func_property_arity_mismatch_001.expect.toml",
+  "tests/miz/pass/functors/pass_type_elaboration_func_commutativity_property_001.expect.toml",
+]
 
 [[requirement]]
 id = "spec.en.10.operator_declarations.parser"
@@ -1441,6 +2062,31 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.11.symbols.antonym.predicate"
+source = "doc/spec/en/11.symbol_management.md"
+section = "11.1 Synonyms and Antonyms"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/resolve/pass_type_elaboration_antonym_predicate_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.11.symbols.synonym.functor"
+source = "doc/spec/en/11.symbol_management.md"
+section = "11.1 Synonyms and Antonyms"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "pass_and_fail"
+tests = [
+  "tests/miz/fail/resolve/fail_type_elaboration_synonym_loci_mismatch_001.expect.toml",
+  "tests/miz/pass/resolve/pass_type_elaboration_synonym_functor_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.12.modules.compilation_unit_skeleton"
 source = "doc/spec/en/12.modules_and_namespaces.md"
 section = "12.7 Complete Syntax (EBNF)"
@@ -1474,6 +2120,42 @@ tests = [
   "tests/miz/fail/parser/fail_parser_visibility_dangling_001.expect.toml",
   "tests/miz/fail/parser/fail_parser_visibility_duplicate_001.expect.toml",
   "tests/miz/fail/parser/fail_parser_visibility_invalid_target_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.12.modules.import.alias"
+source = "doc/spec/en/12.modules_and_namespaces.md"
+section = "12.3 Import Statements"
+stage = "declaration_symbol"
+status = "covered"
+required = true
+coverage = "fail"
+tests = [
+  "tests/miz/fail/resolve/fail_declaration_symbol_import_duplicate_alias_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.12.modules.import.branch_form"
+source = "doc/spec/en/12.modules_and_namespaces.md"
+section = "12.3 Import Statements"
+stage = "declaration_symbol"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/resolve/pass_declaration_symbol_branch_import_form_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.12.modules.import.resolution"
+source = "doc/spec/en/12.modules_and_namespaces.md"
+section = "12.3 Import Statements"
+stage = "declaration_symbol"
+status = "covered"
+required = true
+coverage = "fail"
+tests = [
+  "tests/miz/fail/resolve/fail_declaration_symbol_import_unknown_module_001.expect.toml",
 ]
 
 [[requirement]]
@@ -1664,6 +2346,18 @@ tests = [
   "tests/miz/fail/types/fail_type_elaboration_imported_attribute_assertion_formula_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_imported_non_empty_attribute_assertion_formula_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_imported_predicate_functor_gap_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.12.modules.visibility.private_local"
+source = "doc/spec/en/12.modules_and_namespaces.md"
+section = "12.5 Visibility Control (Private/Public)"
+stage = "declaration_symbol"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/resolve/pass_declaration_symbol_private_theorem_visibility_001.expect.toml",
 ]
 
 [[requirement]]
@@ -1996,6 +2690,80 @@ tests = [
 notes = "Tasks 119-169 add exact pass coverage for reserved-variable identifier terms whose binding and result/expected type payloads come from real source reserve declarations: equality and inequality own linked result/expected roles, membership owns two results and only the right expected-set role, and type assertion owns one ready result plus an independently source-anchored asserted type. Task 123 preserves distinct bindings over one shared multi-name set range; task 124 preserves two written set ranges across four raw inputs while they intern to one semantic identity; task 125 preserves a left object result plus right result/expected set inputs across two semantic identities; task 126 preserves four raw local-mode result/expected inputs while normalizing through the real direct bare-set expansion; task 127 preserves four raw outer-mode inputs while recursively consuming a real one-edge expansion chain to the terminal set RHS; task 128 preserves four raw object-mode inputs while consuming the real direct bare-object expansion and anchoring the normalized identity at its RHS; task 129 preserves four raw outer-mode inputs while consuming two real expansions and anchoring the normalized identity at the terminal object RHS; task 130 preserves four raw local-mode result/expected inputs while consuming one real expansion and anchoring the normalized identity at the terminal set RHS for pre-desugaring inequality; task 131 preserves four raw local object-mode result/expected inputs while consuming one real expansion and anchoring the normalized builtin-object identity at the terminal object RHS for the same pre-desugaring boundary; task 132 preserves four raw outer-mode result/expected inputs while consuming both real set-terminal chain links and anchoring the normalized builtin-set identity at the terminal RHS for that boundary; task 133 preserves four raw outer-mode result/expected inputs while consuming both real object-terminal chain links and anchoring the normalized builtin-object identity at the terminal RHS for the same boundary. Task 134 preserves four raw outer-mode inputs while recursively consuming three real two-edge set-terminal chain expansions and anchoring the normalized builtin-set identity at the terminal RHS. Task 135 preserves four raw outer-mode inputs while recursively consuming three real two-edge object-terminal chain expansions and anchoring the normalized builtin-object identity at the terminal RHS. Task 136 preserves four raw outer-mode inputs while recursively consuming three real two-edge set-terminal chain expansions and anchoring the normalized builtin-set identity at the terminal RHS for pre-desugaring inequality. Task 137 preserves four raw outer-mode inputs while recursively consuming three real two-edge object-terminal chain expansions and anchoring the normalized builtin-object identity at the terminal RHS for pre-desugaring inequality. Task 138 adds one raw local-mode subject result plus an independently source-anchored builtin-set asserted type, consumes the real direct expansion, and checks their normalized reflexive identity. Task 139 adds a raw local-mode left result plus independent right result and sole expected-set input, consumes one real expansion, and normalizes all three roles to one terminal-RHS builtin-set identity with no left expected type. Task 140 adds a raw local object-mode left result plus independent right result and sole expected-set input, consumes one real expansion, and preserves distinct terminal-RHS builtin-object and explicit-reserve builtin-set identities with no left expected type. Task 141 adds a raw outer-mode left result plus independent right result and sole expected-set input, consumes both real one-edge chain expansions, and normalizes all three roles to one terminal-RHS builtin-set identity with no left expected type. Task 142 adds a raw outer-mode left result plus independent right result and sole expected-set input, consumes both real one-edge object-terminal chain expansions, and preserves distinct terminal-RHS builtin-object and explicit-reserve builtin-set identities with no left expected type. Task 143 adds the exact two-edge set-terminal local-mode-chain left membership, consumes all three real expansions, and preserves one terminal-RHS builtin-set identity across the left result and right-only result/expected roles with no left expected type. Task 144 adds the exact two-edge object-terminal local-mode-chain left membership, consumes all three real expansions, and preserves distinct terminal-object-RHS builtin-object and explicit-reserve builtin-set identities across the left result and right-only result/expected roles with no left expected type. Task 145 adds the exact direct object-terminal local-mode reserved-variable type assertion, preserves the raw mode subject and independent formula-side builtin-object provenance, consumes one real expansion, and records normalized reflexive identity at the terminal object RHS without general reachability or object/set coercion. Task 146 adds the exact one-edge set-terminal local-mode-chain type assertion, consumes both real expansions, and checks normalized reflexive identity at the terminal set RHS. Task 147 adds the matching one-edge object-terminal chain, consuming both real expansions and checking normalized reflexive identity at the terminal object RHS without general reachability or object/set coercion. Task 148 adds the two-edge set-terminal chain, consuming all three real expansions and checking normalized reflexive identity at the terminal set RHS without general reachability. Task 149 adds the matching object-terminal chain, consuming all three real expansions and checking normalized reflexive identity at the terminal object RHS without general reachability or object/set coercion. Task 150 adds the three-edge set-terminal chain, consumes all four real expansions, and checks normalized reflexive identity at the terminal set RHS without general reachability. Task 151 adds the matching three-edge object-terminal chain, consumes all four real expansions, and checks normalized reflexive identity at the terminal object RHS without general reachability or object/set coercion. Task 152 adds the four-edge set-terminal chain, consumes all five real expansions, and checks normalized reflexive identity at the terminal set RHS without general reachability. Task 153 adds the matching four-edge object-terminal chain with the raw outermost-mode subject and independent formula-side builtin-object source, consumes all five real expansions, and checks terminal object-RHS normalized reflexive identity without general reachability or object/set coercion. Task 154 adds the three-edge set-terminal equality with four raw outer-mode result/expected inputs, all four real expansions, and one terminal set-RHS normalized identity. Task 155 adds the matching three-edge object-terminal equality with four raw outer-mode result/expected inputs, all four real expansions, and one terminal object-RHS normalized identity. Task 156 adds the three-edge set-terminal inequality with four raw outer-mode result/expected inputs, all four real expansions, and one terminal set-RHS normalized identity for pre-desugaring inequality. Task 157 adds the matching object-terminal inequality with four raw outer-mode result/expected inputs, all four real expansions, and one terminal object-RHS normalized identity for pre-desugaring inequality. Task 158 adds the three-edge set-terminal left membership, consumes all four real expansions, and preserves one terminal-RHS builtin-set identity across the raw outer-mode left result and right-only explicit-set result/expected roles with no left expected type. Task 159 adds the exact distinct-binding shared-reserve membership, preserves one written set range across both bindings and the three left-result/right-result/right-expected roles, and records a right-only expected constraint with no left expected type. Task 160 adds the exact active distinct-binding shared-reserve inequality contract, preserving the same written set range across both bindings and all four operand result/expected roles before one shared-source identity, two `Inferred` variables, and a fact-free pre-desugaring `Checked` inequality with two ordered constraints. Production routing, full near-miss/corruption coverage, and the real frontend/resolver sidecar guard the exact contract. Task 161 adds the exact active multiple-reserve-declaration inequality contract, preserving distinct written set ranges across the two bindings and four operand result/expected roles before one canonical builtin-set identity and the same fact-free two-constraint pre-desugaring inequality. Production routing, full near-miss/corruption coverage, and the real frontend/resolver sidecar guard the exact contract. Task 162 adds the exact active multiple-reserve-declaration membership contract: distinct written set ranges remain on the left result and right result/sole right expected input, no left expected input exists, and all three roles normalize to one earlier-x-anchored canonical builtin-set identity before two Inferred variables and one fact-free Checked Membership with exactly one right-owned constraint. Production routing, full near-miss/corruption coverage, and the real frontend/resolver sidecar guard the exact contract. Task 163 adds the matching three-edge object-terminal left membership, consumes all four real expansions, and preserves distinct terminal-object-RHS builtin-object and explicit-reserve builtin-set identities across the raw outer-mode left result and right-only explicit-set result/expected roles with no left expected type or object/set coercion. Task 164 adds the four-edge set-terminal left membership, consumes all five real expansions, and preserves one terminal-RHS builtin-set identity across the raw outermost-mode left result and right-only explicit-set result/expected roles with no left expected type. Task 165 adds the matching four-edge object-terminal left membership, consumes all five real expansions, and preserves distinct terminal-object-RHS builtin-object and explicit-reserve builtin-set identities across the raw outermost-mode left result and right-only explicit-set result/expected roles with no left expected type or object/set coercion. Task 166 adds the four-edge set-terminal equality with four raw outermost-mode result/expected inputs, consumes all five real expansions, and preserves one terminal-set-RHS normalized identity before two Inferred variables, one fact/deferred-free Checked Equality, and two ordered operand-owned expected constraints. Task 167 adds the matching four-edge object-terminal equality with four raw outermost-mode result/expected inputs, consumes all five real expansions, and preserves one terminal-object-RHS normalized identity before two Inferred variables, one fact/deferred-free Checked Equality, and two ordered operand-owned expected constraints without object/set coercion. Task 168 adds the four-edge set-terminal inequality with four raw outermost-mode result/expected inputs, consumes all five real expansions, and preserves one terminal-set-RHS normalized identity before two Inferred variables, one fact/deferred-free pre-desugaring Checked Inequality, and two ordered operand-owned expected constraints. Task 169 adds the matching four-edge object-terminal inequality with four raw outermost-mode result/expected inputs, consumes all five real expansions, and preserves one terminal-object-RHS normalized identity before two Inferred variables, one fact/deferred-free pre-desugaring Checked Inequality, and two ordered operand-owned expected constraints without object/set coercion. Task 122 checks only normalized reflexive identity. Task 111 supersedes task 105 only for the exact `SetEnumerationPayloadBoundary: {1, 2} = {1, 2}` source by passing real checker payloads for four numeral item terms and two set-enumeration terms before failing closed on missing numeric and result-type payloads. Broader identifier, numeral, functor, type reachability/widening, coercion, and set-enumeration term extraction and semantics remain deferred. Task 254 adds only the exact source-structure transport for three local definientia and eight Task-252 numeral children; constructor/member/view semantics, coverage/default decisions, selector/update results, facts, and acceptance remain deferred to Task 263."
 
 [[requirement]]
+id = "spec.en.13.terms.choice.inhabited_type"
+source = "doc/spec/en/13.term_expression.md"
+section = "13.5 The Choice Operator (the)"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "pass_and_fail"
+tests = [
+  "tests/miz/fail/terms/fail_type_elaboration_term_choice_uninhabited_001.expect.toml",
+  "tests/miz/pass/terms/pass_type_elaboration_term_choice_builtin_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.13.terms.numeral.typing"
+source = "doc/spec/en/13.term_expression.md"
+section = "13.1 Primary Expressions"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/terms/pass_type_elaboration_term_numeral_equality_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.13.terms.qua.widening"
+source = "doc/spec/en/13.term_expression.md"
+section = "13.6 Type Qualification (qua)"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "pass_and_fail"
+tests = [
+  "tests/miz/fail/terms/fail_type_elaboration_term_qua_invalid_narrowing_001.expect.toml",
+  "tests/miz/pass/terms/pass_type_elaboration_term_qua_widening_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.13.terms.set_comprehension.guarded"
+source = "doc/spec/en/13.term_expression.md"
+section = "13.4 Set Expressions"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "fail"
+tests = [
+  "tests/miz/fail/terms/fail_type_elaboration_term_comprehension_unbound_mapper_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.13.terms.set_comprehension.membership"
+source = "doc/spec/en/13.term_expression.md"
+section = "13.4 Set Expressions"
+stage = "proof_verification"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/terms/pass_proof_verification_term_comprehension_guarded_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.13.terms.set_enumeration.semantic"
+source = "doc/spec/en/13.term_expression.md"
+section = "13.4 Set Expressions"
+stage = "proof_verification"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/terms/pass_proof_verification_term_set_enumeration_membership_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.14.atomic_formula.parser"
 source = "doc/spec/en/14.formulas.md"
 section = "14.2 Atomic Formulas; Appendix A.9 Predicates"
@@ -2026,6 +2794,90 @@ tests = [
   "tests/miz/fail/parser/fail_parser_formula_missing_st_001.expect.toml",
   "tests/miz/fail/parser/fail_parser_formula_nonassoc_iff_001.expect.toml",
   "tests/miz/fail/parser/fail_parser_formula_unmatched_grouping_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.14.formulas.connectives.precedence"
+source = "doc/spec/en/14.formulas.md"
+section = "14.6 Precedence and Associativity"
+stage = "formula_statement"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/formulas/pass_formula_statement_connective_precedence_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.14.formulas.free_variables.binding"
+source = "doc/spec/en/14.formulas.md"
+section = "14.1 Overview"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "fail"
+tests = [
+  "tests/miz/fail/formulas/fail_type_elaboration_formula_unbound_free_variable_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.14.formulas.iff.non_associative"
+source = "doc/spec/en/14.formulas.md"
+section = "14.6 Precedence and Associativity"
+stage = "parse_only"
+status = "covered"
+required = true
+coverage = "fail"
+tests = [
+  "tests/miz/fail/formulas/fail_parse_only_iff_unparenthesized_chain_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.14.formulas.iff.parenthesized_form"
+source = "doc/spec/en/14.formulas.md"
+section = "14.6 Precedence and Associativity"
+stage = "formula_statement"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/formulas/pass_formula_statement_iff_parenthesized_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.14.formulas.is_assertion.type"
+source = "doc/spec/en/14.formulas.md"
+section = "14.5 Special Formula Forms"
+stage = "formula_statement"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/formulas/pass_formula_statement_is_type_assertion_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.14.formulas.quantifiers.existential_multi"
+source = "doc/spec/en/14.formulas.md"
+section = "14.4 Quantified Formulas"
+stage = "formula_statement"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/formulas/pass_formula_statement_existential_multi_witness_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.14.formulas.quantifiers.nesting"
+source = "doc/spec/en/14.formulas.md"
+section = "14.4 Quantified Formulas"
+stage = "formula_statement"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/formulas/pass_formula_statement_nested_quantifier_st_holds_001.expect.toml",
 ]
 
 [[requirement]]
@@ -2210,6 +3062,54 @@ tests = [
 notes = "Parser Task 47 active syntax-only coverage: a reconsider proof tail reuses the existing ProofBlock node for `proof`, reasoning, and `end`, while ReconsiderStatement owns the final semicolon. No proof acceptance or semantic evidence is credited."
 
 [[requirement]]
+id = "spec.en.15.statements.consider.choice"
+source = "doc/spec/en/15.statements.md"
+section = "15.2 Variable and Constant Introduction"
+stage = "formula_statement"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/theorems/pass_formula_statement_consider_choice_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.15.statements.diffuse.now"
+source = "doc/spec/en/15.statements.md"
+section = "15.6 Proof Organization"
+stage = "formula_statement"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/theorems/pass_formula_statement_now_diffuse_statement_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.15.statements.given.existential_assumption"
+source = "doc/spec/en/15.statements.md"
+section = "15.3 Assumptions and Assertions"
+stage = "formula_statement"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/theorems/pass_formula_statement_given_existential_assumption_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.15.statements.hereby.diffuse_conclusion"
+source = "doc/spec/en/15.statements.md"
+section = "15.4 Conclusions and Derivations"
+stage = "formula_statement"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/theorems/pass_formula_statement_hereby_diffuse_conclusion_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.15.statements.inline_definition_payload_gap"
 source = "doc/spec/en/15.statements.md"
 section = "15.2.3 Inline Function Definition (`deffunc`); 15.2.4 Inline Predicate Definition (`defpred`); 15.12 Complete Syntax"
@@ -2219,6 +3119,54 @@ required = true
 coverage = "diagnostic"
 tests = [
   "tests/miz/fail/types/fail_type_elaboration_inline_definition_gap_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.15.statements.iterative_equality.chain"
+source = "doc/spec/en/15.statements.md"
+section = "15.7 Iterative Equality"
+stage = "formula_statement"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/theorems/pass_formula_statement_iterative_equality_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.15.statements.linking.then_hence"
+source = "doc/spec/en/15.statements.md"
+section = "15.4 Conclusions and Derivations"
+stage = "formula_statement"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/theorems/pass_formula_statement_then_hence_linking_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.15.statements.per_cases.completeness_obligation"
+source = "doc/spec/en/15.statements.md"
+section = "15.6 Proof Organization"
+stage = "proof_verification"
+status = "covered"
+required = true
+coverage = "fail"
+tests = [
+  "tests/miz/fail/theorems/fail_proof_verification_per_cases_incomplete_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.15.statements.per_cases.suppose"
+source = "doc/spec/en/15.statements.md"
+section = "15.6 Proof Organization"
+stage = "formula_statement"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/theorems/pass_formula_statement_per_cases_suppose_001.expect.toml",
 ]
 
 [[requirement]]
@@ -2334,6 +3282,56 @@ tests = [
   "tests/miz/pass/parser/pass_parser_definition_attributes_001.expect.toml",
   "tests/miz/pass/parser/pass_parser_theorems_proofs_001.expect.toml",
   "tests/miz/fail/parser/fail_parser_theorems_proofs_recovery_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.16.theorems.reference.lemma_citation"
+source = "doc/spec/en/16.theorems_and_proofs.md"
+section = "16.5 Proof Justification (by)"
+stage = "proof_verification"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/theorems/pass_proof_verification_lemma_reference_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.16.theorems.reference.module_local_label"
+source = "doc/spec/en/16.theorems_and_proofs.md"
+section = "16.5 Proof Justification (by)"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "fail"
+tests = [
+  "tests/miz/fail/theorems/fail_type_elaboration_unknown_reference_label_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.16.theorems.skeleton.thesis_tracking"
+source = "doc/spec/en/16.theorems_and_proofs.md"
+section = "16.3 Proof Skeleton and Natural Deduction"
+stage = "formula_statement"
+status = "covered"
+required = true
+coverage = "fail"
+tests = [
+  "tests/miz/fail/theorems/fail_formula_statement_assume_without_antecedent_001.expect.toml",
+  "tests/miz/fail/theorems/fail_formula_statement_conclusion_mismatch_001.expect.toml",
+  "tests/miz/fail/theorems/fail_formula_statement_incomplete_proof_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.16.theorems.status.open_assumed"
+source = "doc/spec/en/16.theorems_and_proofs.md"
+section = "16.1 Theorem Roles and Status"
+stage = "proof_verification"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/theorems/pass_proof_verification_theorem_status_open_assumed_001.expect.toml",
 ]
 
 [[requirement]]
@@ -2598,6 +3596,66 @@ tests = [
 notes = "Task 117 supersedes task 115 for the exact formula-only theorem by passing the source-derived `thesis` formula constant as FormulaKind::Thesis before failing closed on missing formula payload, and extends task 112 by passing the exact connective/quantifier theorem's contradiction constants as FormulaKind::Contradiction payloads alongside the existing shells. Checker Task 257A transports the exact source formula tree and explicit universal binder into an unassigned formula root with a source-derived body context; it assigns no theorem owner, status, fact, proof, or acceptance. Task 180 separately checks only the exact standalone SourceDerivedContradictionConstantBoundary leaf for formula type/well-formedness. The theorem declaration remains unaccepted and lacks formula_statement execution, recorded facts, proof skeletons, constant truth values and thesis semantics, quantifier semantics, and downstream semantic payloads."
 
 [[requirement]]
+id = "spec.en.17.clusters.adjective.restricted_form"
+source = "doc/spec/en/17.clusters_and_registrations.md"
+section = "17.7 Cluster Resolution Rules"
+stage = "parse_only"
+status = "covered"
+required = true
+coverage = "fail"
+tests = [
+  "tests/miz/fail/clusters/fail_parse_only_cluster_adjective_argument_list_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.17.clusters.conditional.registration"
+source = "doc/spec/en/17.clusters_and_registrations.md"
+section = "17.4 Conditional Clusters"
+stage = "advanced_semantics"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/clusters/pass_advanced_semantics_conditional_registration_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.17.clusters.existential.registration"
+source = "doc/spec/en/17.clusters_and_registrations.md"
+section = "17.3 Existential Clusters"
+stage = "advanced_semantics"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/clusters/pass_advanced_semantics_existential_registration_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.17.clusters.functorial.false_coherence"
+source = "doc/spec/en/17.clusters_and_registrations.md"
+section = "17.5 Functorial Clusters"
+stage = "proof_verification"
+status = "covered"
+required = true
+coverage = "fail"
+tests = [
+  "tests/miz/fail/clusters/fail_proof_verification_functorial_false_coherence_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.17.clusters.functorial.registration"
+source = "doc/spec/en/17.clusters_and_registrations.md"
+section = "17.5 Functorial Clusters"
+stage = "advanced_semantics"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/clusters/pass_advanced_semantics_functorial_registration_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.17.clusters.functorial_for_guard.semantic"
 source = "doc/spec/en/17.clusters_and_registrations.md"
 section = "17.5 Functorial Clusters; 17.8.3 Clusters and Proof Obligations; 17.9.3 Functorial Cluster Encoding"
@@ -2627,6 +3685,30 @@ depends_on = [
 ]
 tests = [
   "tests/miz/fail/clusters/fail_cluster_contradictory_consequent_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.17.clusters.reduce.false_reducibility"
+source = "doc/spec/en/17.clusters_and_registrations.md"
+section = "17.6 Reduction Registrations"
+stage = "proof_verification"
+status = "covered"
+required = true
+coverage = "fail"
+tests = [
+  "tests/miz/fail/clusters/fail_proof_verification_reduce_false_reducibility_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.17.clusters.reduce.registration"
+source = "doc/spec/en/17.clusters_and_registrations.md"
+section = "17.6 Reduction Registrations"
+stage = "advanced_semantics"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/clusters/pass_advanced_semantics_reduce_registration_001.expect.toml",
 ]
 
 [[requirement]]
@@ -2748,6 +3830,55 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.18.templates.instantiation.arity"
+source = "doc/spec/en/18.templates.md"
+section = "18.2 Template Declarations"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "fail"
+tests = [
+  "tests/miz/fail/templates/fail_type_elaboration_template_arity_mismatch_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.18.templates.predicate_parameter.declaration"
+source = "doc/spec/en/18.templates.md"
+section = "18.6 Template for Predicates (pred)"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/templates/pass_type_elaboration_template_pred_param_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.18.templates.type_parameter.extends_bound"
+source = "doc/spec/en/18.templates.md"
+section = "18.2 Template Declarations"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "pass_and_fail"
+tests = [
+  "tests/miz/fail/templates/fail_type_elaboration_template_bound_violation_001.expect.toml",
+  "tests/miz/pass/templates/pass_type_elaboration_template_extends_bound_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.18.templates.type_parameter.functor"
+source = "doc/spec/en/18.templates.md"
+section = "18.7 Template for Functors (func)"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/templates/pass_type_elaboration_template_type_param_functor_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.19.overload.ambiguity.semantic"
 source = "doc/spec/en/19.overload_resolution.md"
 section = "19.2.3 Specificity Ordering; 19.4.4 Ambiguity Errors; 19.2.2 Structure Inheritance Upcasting; 19.6.1 Template Parameter Inference; 19.6.2 Multiple Inheritance Paths"
@@ -2797,6 +3928,30 @@ depends_on = [
 ]
 tests = [
   "tests/miz/fail/resolve/fail_resolve_same_signature_same_return_conflict_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.19.overload.resolution.ambiguity"
+source = "doc/spec/en/19.overload_resolution.md"
+section = "19.4 Overload Resolution Algorithm"
+stage = "advanced_semantics"
+status = "covered"
+required = true
+coverage = "fail"
+tests = [
+  "tests/miz/fail/overload/fail_advanced_semantics_overload_ambiguous_candidates_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.19.overload.resolution.distinct_loci"
+source = "doc/spec/en/19.overload_resolution.md"
+section = "19.4 Overload Resolution Algorithm"
+stage = "advanced_semantics"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/overload/pass_advanced_semantics_overload_distinct_loci_001.expect.toml",
 ]
 
 [[requirement]]
@@ -2857,6 +4012,104 @@ coverage = "pass_and_fail"
 tests = [
   "tests/miz/pass/parser/pass_parser_algorithm_verification_001.expect.toml",
   "tests/miz/fail/parser/fail_parser_algorithm_verification_recovery_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.20.algorithms.claim.block"
+source = "doc/spec/en/20.algorithm_and_verification.md"
+section = "20.6 Snapshot and Claim"
+stage = "proof_verification"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/algorithms/pass_proof_verification_claim_block_theorem_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.20.algorithms.computation.justification"
+source = "doc/spec/en/20.algorithm_and_verification.md"
+section = "20.9 Execution Model and Computability"
+stage = "proof_verification"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/algorithms/pass_proof_verification_computation_justification_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.20.algorithms.contracts.ensures"
+source = "doc/spec/en/20.algorithm_and_verification.md"
+section = "20.4 Contracts (requires, ensures, assert)"
+stage = "proof_verification"
+status = "covered"
+required = true
+coverage = "pass_and_fail"
+tests = [
+  "tests/miz/fail/algorithms/fail_proof_verification_algorithm_ensures_unprovable_001.expect.toml",
+  "tests/miz/pass/algorithms/pass_proof_verification_algorithm_ensures_return_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.20.algorithms.control_flow.loop_scope"
+source = "doc/spec/en/20.algorithm_and_verification.md"
+section = "20.2 Control Flow"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "fail"
+tests = [
+  "tests/miz/fail/algorithms/fail_type_elaboration_algorithm_break_outside_loop_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.20.algorithms.ghost.isolation_static"
+source = "doc/spec/en/20.algorithm_and_verification.md"
+section = "20.6 Snapshot and Claim"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "fail"
+tests = [
+  "tests/miz/fail/algorithms/fail_type_elaboration_algorithm_ghost_isolation_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.20.algorithms.ghost.snapshot"
+source = "doc/spec/en/20.algorithm_and_verification.md"
+section = "20.6 Snapshot and Claim"
+stage = "proof_verification"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/algorithms/pass_proof_verification_algorithm_ghost_snapshot_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.20.algorithms.loops.while_invariant"
+source = "doc/spec/en/20.algorithm_and_verification.md"
+section = "20.5 Loop Verification"
+stage = "proof_verification"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/algorithms/pass_proof_verification_algorithm_while_invariant_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.20.algorithms.state.var_const_assert"
+source = "doc/spec/en/20.algorithm_and_verification.md"
+section = "20.1 Algorithm Syntax"
+stage = "proof_verification"
+status = "covered"
+required = true
+coverage = "pass_and_fail"
+tests = [
+  "tests/miz/fail/algorithms/fail_proof_verification_algorithm_assert_unprovable_001.expect.toml",
+  "tests/miz/pass/algorithms/pass_proof_verification_algorithm_var_const_assert_001.expect.toml",
 ]
 
 [[requirement]]

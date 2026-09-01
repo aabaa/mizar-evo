@@ -1,0 +1,5 @@
+theorem LetSuchThat1: for X being set st X = X holds X = X
+proof
+  let X be set such that A1: X = X;
+  thus X = X by A1;
+end;

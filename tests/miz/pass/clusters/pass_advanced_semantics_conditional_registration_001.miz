@@ -1,0 +1,13 @@
+definition
+  let X be set;
+  attr C2ADef: X is c2marked means X = X;
+  attr C2BDef: X is d2marked means X = X;
+end;
+
+registration
+  cluster CReg2: c2marked -> d2marked for set;
+  coherence
+  proof
+    thus thesis;
+  end;
+end;

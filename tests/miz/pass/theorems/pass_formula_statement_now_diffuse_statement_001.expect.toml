@@ -1,0 +1,13 @@
+schema_version = 1
+id = "pass_formula_statement_now_diffuse_statement_001"
+kind = "pass"
+stage = "formula_statement"
+domain = "theorems.diffuse_statement"
+source = "pass_formula_statement_now_diffuse_statement_001.miz"
+expected_outcome = "pass"
+expected_phase = "statement_check"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.15.statements.diffuse.now",
+]
+notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. A labeled now block proves its inner conclusion diffusely and is referencable afterwards (spec 15.6, A.15 diffuse_statement)."

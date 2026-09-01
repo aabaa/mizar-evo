@@ -1,0 +1,19 @@
+definition
+  let X be set;
+  attr C3Def: X is e3marked means X = X;
+end;
+
+definition
+  let X be set;
+  func CBoxDef: cbox X -> set equals X;
+  coherence
+  proof
+    thus thesis;
+  end;
+end;
+
+registration
+  let X be set;
+  cluster CReg3: cbox X -> e3marked for set;
+  coherence;
+end;

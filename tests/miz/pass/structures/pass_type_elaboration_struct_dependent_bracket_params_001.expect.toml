@@ -1,0 +1,13 @@
+schema_version = 1
+id = "pass_type_elaboration_struct_dependent_bracket_params_001"
+kind = "pass"
+stage = "type_elaboration"
+domain = "structures.dependent"
+source = "pass_type_elaboration_struct_dependent_bracket_params_001.miz"
+expected_outcome = "pass"
+expected_phase = "type_check"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.05.structures.dependent.bracket_parameters",
+]
+notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. A dependent structure takes let-typed parameters in the canonical bracket form and is used with bracket arguments (spec 5.6)."

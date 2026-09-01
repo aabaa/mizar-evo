@@ -1,0 +1,13 @@
+definition
+  struct FBase1 where
+    field data -> set;
+  end;
+
+  struct FChild1 where
+    field content -> set;
+  end;
+
+  inherit FChild1 extends FBase1 where
+    field content from payload;
+  end;
+end;

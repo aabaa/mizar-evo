@@ -1,0 +1,13 @@
+schema_version = 1
+id = "pass_type_elaboration_struct_inherit_rename_001"
+kind = "pass"
+stage = "type_elaboration"
+domain = "structures.inheritance"
+source = "pass_type_elaboration_struct_inherit_rename_001.miz"
+expected_outcome = "pass"
+expected_phase = "type_check"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.05.structures.inherit.rename",
+]
+notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. inherit ... extends with a field-from rename maps the child member onto the base member (spec 5.3)."

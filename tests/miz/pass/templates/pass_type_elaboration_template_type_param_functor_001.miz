@@ -1,0 +1,12 @@
+definition
+  let T be type;
+  let x be T;
+  func TIdDef: tid[T] x -> T equals x;
+  coherence;
+end;
+
+theorem TIdUse1: for A being set holds tid[set] A = A
+proof
+  let A be set;
+  thus tid[set] A = A by TIdDef;
+end;

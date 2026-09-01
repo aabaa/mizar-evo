@@ -1,0 +1,9 @@
+definition
+  let X be set;
+  func SoloFDef: solobox X -> set equals X;
+  coherence;
+  commutativity
+  proof
+    thus thesis;
+  end;
+end;

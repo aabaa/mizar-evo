@@ -1,0 +1,13 @@
+definition
+  let X, Y be set;
+  func FirstOfDef: X \+\ Y -> set equals X;
+  coherence;
+end;
+
+infix_operator("\\+\\", left, 80);
+
+theorem FirstOf1: for X, Y being set holds X \+\ Y = X
+proof
+  let X, Y be set;
+  thus X \+\ Y = X;
+end;

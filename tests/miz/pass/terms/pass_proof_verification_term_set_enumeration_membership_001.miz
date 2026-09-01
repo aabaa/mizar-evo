@@ -1,0 +1,5 @@
+theorem EnumMember1: for x, y being object holds x in {x, y}
+proof
+  let x, y be object;
+  thus x in {x, y};
+end;

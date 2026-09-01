@@ -1,0 +1,13 @@
+schema_version = 1
+id = "pass_proof_verification_algorithm_ghost_snapshot_001"
+kind = "pass"
+stage = "proof_verification"
+domain = "algorithms.ghost"
+source = "pass_proof_verification_algorithm_ghost_snapshot_001.miz"
+expected_outcome = "pass"
+expected_phase = "vc_generation"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.20.algorithms.ghost.snapshot",
+]
+notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. Ghost state and snapshot markers are verification-only constructs that never influence real control flow (spec 20.6; ghost isolation)."

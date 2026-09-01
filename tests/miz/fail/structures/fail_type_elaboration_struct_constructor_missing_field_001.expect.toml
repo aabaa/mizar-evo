@@ -1,0 +1,15 @@
+schema_version = 1
+id = "fail_type_elaboration_struct_constructor_missing_field_001"
+kind = "fail"
+stage = "type_elaboration"
+domain = "structures.constructor"
+source = "fail_type_elaboration_struct_constructor_missing_field_001.miz"
+expected_outcome = "fail"
+expected_phase = "type_check"
+failure_category = "type_error"
+stable_detail_key = "structures.constructor.missing_field_argument"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.05.structures.constructor.field_access",
+]
+notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. A constructor literal must supply every stored field; a missing field argument is rejected (spec 5.5)."

@@ -1,0 +1,13 @@
+schema_version = 1
+id = "pass_type_elaboration_attr_param_prefix_declaration_001"
+kind = "pass"
+stage = "type_elaboration"
+domain = "attributes.param_prefix"
+source = "pass_type_elaboration_attr_param_prefix_declaration_001.miz"
+expected_outcome = "pass"
+expected_phase = "type_check"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.06.attributes.param_prefix.declaration",
+]
+notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. A parameterized attribute is declared with an in-scope parameter as its param_prefix and applied with a numeral prefix at a use site (spec 6.2, A.2 param_prefix rules)."

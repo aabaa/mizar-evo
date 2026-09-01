@@ -1,0 +1,13 @@
+schema_version = 1
+id = "pass_proof_verification_algorithm_var_const_assert_001"
+kind = "pass"
+stage = "proof_verification"
+domain = "algorithms.state"
+source = "pass_proof_verification_algorithm_var_const_assert_001.miz"
+expected_outcome = "pass"
+expected_phase = "vc_generation"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.20.algorithms.state.var_const_assert",
+]
+notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. var and const declarations, assignment, and an assert obligation compose inside an algorithm body (spec 20.1, 20.4)."

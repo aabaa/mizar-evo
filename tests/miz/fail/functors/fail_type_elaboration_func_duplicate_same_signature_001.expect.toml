@@ -1,0 +1,15 @@
+schema_version = 1
+id = "fail_type_elaboration_func_duplicate_same_signature_001"
+kind = "fail"
+stage = "type_elaboration"
+domain = "functors.definition"
+source = "fail_type_elaboration_func_duplicate_same_signature_001.miz"
+expected_outcome = "fail"
+expected_phase = "resolve"
+failure_category = "resolve_error"
+stable_detail_key = "functors.definition.duplicate_same_signature"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.10.functors.definition.uniqueness",
+]
+notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. Two functor definitions with the same symbol and loci signature in one module conflict (spec 10.10)."

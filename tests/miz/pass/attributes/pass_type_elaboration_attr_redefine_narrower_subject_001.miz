@@ -1,0 +1,13 @@
+definition
+  let X be set;
+  attr RMDef: X is rmarked means X = X;
+end;
+
+definition
+  let X be rmarked set;
+  redefine attr RM2Def: X is rmarked means X = X;
+  coherence
+  proof
+    thus thesis;
+  end;
+end;

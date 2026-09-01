@@ -1,0 +1,8 @@
+definition
+  let X be set;
+  mode TinyOfDef: TinyOf of X is set;
+  sethood
+  proof
+    thus thesis;
+  end;
+end;

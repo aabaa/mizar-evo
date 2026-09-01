@@ -1,0 +1,15 @@
+schema_version = 1
+id = "fail_type_elaboration_term_choice_uninhabited_001"
+kind = "fail"
+stage = "type_elaboration"
+domain = "terms.choice_operator"
+source = "fail_type_elaboration_term_choice_uninhabited_001.miz"
+expected_outcome = "fail"
+expected_phase = "type_check"
+failure_category = "type_error"
+stable_detail_key = "terms.choice.missing_inhabitation"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.13.terms.choice.inhabited_type",
+]
+notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. The choice operator requires inhabitation evidence for its type; an attribute with no existential registration is rejected (spec 13.5, 17.3)."

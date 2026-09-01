@@ -1,0 +1,13 @@
+schema_version = 1
+id = "pass_formula_statement_hereby_diffuse_conclusion_001"
+kind = "pass"
+stage = "formula_statement"
+domain = "theorems.diffuse_conclusion"
+source = "pass_formula_statement_hereby_diffuse_conclusion_001.miz"
+expected_outcome = "pass"
+expected_phase = "statement_check"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.15.statements.hereby.diffuse_conclusion",
+]
+notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. hereby concludes part of the thesis by a diffuse block (spec 15.4, A.15 diffuse_conclusion)."

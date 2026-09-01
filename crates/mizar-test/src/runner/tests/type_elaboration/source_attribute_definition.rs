@@ -969,7 +969,7 @@ fn source_attribute_definition_route_publishes_no_semantic_outputs() {
     );
     assert_eq!(
         (plan.cases.len(), plan.manifest.requirements.len()),
-        (430, 396)
+        (550, 499)
     );
     assert_eq!(
         plan.cases.iter().fold((0, 0), |(pass, fail), case| {
@@ -979,7 +979,7 @@ fn source_attribute_definition_route_publishes_no_semantic_outputs() {
                 _ => (pass, fail),
             }
         }),
-        (237, 193)
+        (307, 243)
     );
     assert_eq!(
         (
@@ -996,7 +996,7 @@ fn source_attribute_definition_route_publishes_no_semantic_outputs() {
         .iter()
         .find(|stage| stage.stage == crate::staged_model::Stage::TypeElaboration)
         .expect("Task261 type coverage stage");
-    assert_eq!((type_stage.requirements, type_stage.covered), (259, 247));
+    assert_eq!((type_stage.requirements, type_stage.covered), (307, 295));
     assert_eq!(
         (plan.warning_count(), plan.error_count()),
         (23, 0),

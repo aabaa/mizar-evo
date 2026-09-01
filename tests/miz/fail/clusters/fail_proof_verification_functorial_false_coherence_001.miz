@@ -1,0 +1,19 @@
+definition
+  let X be set;
+  attr C4Def: X is f4marked means not X = X;
+end;
+
+definition
+  let X be set;
+  func CBox3Def: cbox3 X -> set equals X;
+  coherence
+  proof
+    thus thesis;
+  end;
+end;
+
+registration
+  let X be set;
+  cluster CReg4: cbox3 X -> f4marked for set;
+  coherence;
+end;

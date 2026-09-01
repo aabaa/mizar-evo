@@ -1,0 +1,13 @@
+definition
+  struct BaseBox where
+    field data -> set;
+  end;
+
+  struct NamedBox where
+    field content -> set;
+  end;
+
+  inherit NamedBox extends BaseBox where
+    field content from data;
+  end;
+end;

@@ -1,0 +1,15 @@
+schema_version = 1
+id = "fail_type_elaboration_attr_param_prefix_unbound_001"
+kind = "fail"
+stage = "parse_only"
+domain = "attributes.param_prefix"
+source = "fail_type_elaboration_attr_param_prefix_unbound_001.miz"
+expected_outcome = "fail"
+expected_phase = "parse"
+failure_category = "syntax_error"
+stable_detail_key = "attributes.param_prefix.unbound_parameter"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.06.attributes.param_prefix.lexicon_rejection",
+]
+notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. A param_prefix split requires an in-scope parameter; otherwise the whole spelling must match the active lexicon, so an unbound prefix spelling is a lexical/parse rejection (spec 6.2, A.2)."

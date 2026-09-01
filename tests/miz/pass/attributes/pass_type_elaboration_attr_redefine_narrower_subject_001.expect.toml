@@ -1,0 +1,13 @@
+schema_version = 1
+id = "pass_type_elaboration_attr_redefine_narrower_subject_001"
+kind = "pass"
+stage = "type_elaboration"
+domain = "attributes.redefinition"
+source = "pass_type_elaboration_attr_redefine_narrower_subject_001.miz"
+expected_outcome = "pass"
+expected_phase = "type_check"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.06.attributes.redefine.coherence",
+]
+notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. An attribute may be redefined for a narrower subject type with a coherence obligation tying the definitions together (spec 6.7)."

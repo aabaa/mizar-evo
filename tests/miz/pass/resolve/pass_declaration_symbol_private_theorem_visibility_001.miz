@@ -1,0 +1,11 @@
+private theorem PrivT1: for X being set holds X = X
+proof
+  let X be set;
+  thus X = X;
+end;
+
+theorem UsePriv1: for X being set holds X = X
+proof
+  let X be set;
+  thus X = X by PrivT1;
+end;

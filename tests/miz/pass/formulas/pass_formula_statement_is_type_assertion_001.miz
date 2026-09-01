@@ -1,0 +1,5 @@
+theorem IsType1: for X being set holds X is set
+proof
+  let X be set;
+  thus X is set;
+end;

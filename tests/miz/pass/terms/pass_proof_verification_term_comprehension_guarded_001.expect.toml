@@ -1,0 +1,13 @@
+schema_version = 1
+id = "pass_proof_verification_term_comprehension_guarded_001"
+kind = "pass"
+stage = "proof_verification"
+domain = "terms.set_comprehension"
+source = "pass_proof_verification_term_comprehension_guarded_001.miz"
+expected_outcome = "pass"
+expected_phase = "vc_generation"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.13.terms.set_comprehension.membership",
+]
+notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. A guarded object-typed comprehension over a set admits the members that satisfy the guard (spec 13.4)."

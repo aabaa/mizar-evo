@@ -1,0 +1,8 @@
+definition
+  let X be set;
+  pred SoloDef: solo X means X = X;
+  symmetry
+  proof
+    thus thesis;
+  end;
+end;

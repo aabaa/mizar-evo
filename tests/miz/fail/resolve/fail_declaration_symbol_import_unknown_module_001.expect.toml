@@ -1,0 +1,15 @@
+schema_version = 1
+id = "fail_declaration_symbol_import_unknown_module_001"
+kind = "fail"
+stage = "declaration_symbol"
+domain = "modules.import"
+source = "fail_declaration_symbol_import_unknown_module_001.miz"
+expected_outcome = "fail"
+expected_phase = "resolve"
+failure_category = "resolve_error"
+stable_detail_key = "modules.import.unknown_module"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.12.modules.import.resolution",
+]
+notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. An import must resolve to an existing module in the workspace or dependency set (spec 12.x import resolution)."

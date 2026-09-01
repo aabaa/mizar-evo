@@ -1,0 +1,15 @@
+schema_version = 1
+id = "fail_type_elaboration_mode_property_impl_unknown_property_001"
+kind = "fail"
+stage = "type_elaboration"
+domain = "modes.property_implementation"
+source = "fail_type_elaboration_mode_property_impl_unknown_property_001.miz"
+expected_outcome = "fail"
+expected_phase = "type_check"
+failure_category = "type_error"
+stable_detail_key = "modes.property_implementation.unknown_property"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.07.modes.property_implementation.subject",
+]
+notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. A property implementation must target a declared property of the subject type; an unknown property slot is rejected (spec 7.4.1, 5.2)."

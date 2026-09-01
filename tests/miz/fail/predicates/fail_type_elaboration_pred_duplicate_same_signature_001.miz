@@ -1,0 +1,9 @@
+definition
+  let X, Y be set;
+  pred Dup1Def: X duppred Y means X = Y;
+end;
+
+definition
+  let X, Y be set;
+  pred Dup2Def: X duppred Y means Y = X;
+end;

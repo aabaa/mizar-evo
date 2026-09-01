@@ -4027,3 +4027,16 @@ contract](../../task_contracts/en/CHECKER-FRAENKEL-NESTED-MULTI-CAPTURE-GRAPH-25
   selected; the user accepts only the documentation-only Core-33 prerequisite
   direction, whose exact contract requires fresh inventory. Task 277B remains
   not-ready/zero-credit.
+
+## September 2026 Audit-1 Semantic-Bridge Oracle Corpus Increment
+
+The September 2026 audit wave (user-directed, outside the frozen-contract
+task chain) committed a grammar-complete inactive oracle corpus for the
+Step-5 semantic bridge: 120 pairs, 103 traceability requirements, zero
+active credit. Owner documents:
+[semantic_bridge_corpus_map.md](./semantic_bridge_corpus_map.md) (coverage,
+conventions, spec findings) and
+[semantic_bridge_frontend_gaps.md](./semantic_bridge_frontend_gaps.md)
+(frontend gaps G1-G9 with a blocked-source ledger). Activation and task
+binding are deferred to the Step-5 re-decomposition (audit 2); no case may
+be activated or weakened to match current behavior.

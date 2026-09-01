@@ -1,0 +1,6 @@
+definition
+  struct DupBox where
+    field data -> set;
+    field data -> set;
+  end;
+end;

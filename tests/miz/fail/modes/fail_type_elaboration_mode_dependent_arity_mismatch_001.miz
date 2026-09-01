@@ -1,0 +1,9 @@
+definition
+  let X be set;
+  mode MK3Def: MK3 of X is set;
+end;
+
+definition
+  let X, Y be set;
+  mode MK4Def: MK4 of X, Y is MK3 of X, Y;
+end;

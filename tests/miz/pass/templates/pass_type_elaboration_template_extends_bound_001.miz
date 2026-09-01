@@ -1,0 +1,6 @@
+definition
+  let T be type extends set;
+  let x be T;
+  func TId2Def: tid2[T] x -> set equals x;
+  coherence;
+end;

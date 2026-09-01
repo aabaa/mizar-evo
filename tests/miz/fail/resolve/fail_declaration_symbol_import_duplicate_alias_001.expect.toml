@@ -1,0 +1,15 @@
+schema_version = 1
+id = "fail_declaration_symbol_import_duplicate_alias_001"
+kind = "fail"
+stage = "declaration_symbol"
+domain = "modules.import"
+source = "fail_declaration_symbol_import_duplicate_alias_001.miz"
+expected_outcome = "fail"
+expected_phase = "resolve"
+failure_category = "resolve_error"
+stable_detail_key = "modules.import.duplicate_alias"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.12.modules.import.alias",
+]
+notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. Two module aliases with the same name in one import prelude conflict (spec 12.x import aliasing)."

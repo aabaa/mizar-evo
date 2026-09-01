@@ -1,0 +1,13 @@
+schema_version = 1
+id = "pass_declaration_symbol_branch_import_form_001"
+kind = "pass"
+stage = "declaration_symbol"
+domain = "modules.import"
+source = "pass_declaration_symbol_branch_import_form_001.miz"
+expected_outcome = "pass"
+expected_phase = "resolve"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.12.modules.import.branch_form",
+]
+notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. A branch import names sibling modules in one statement and activates their exported notation (spec 12.x import; A.12 module_branch_import)."

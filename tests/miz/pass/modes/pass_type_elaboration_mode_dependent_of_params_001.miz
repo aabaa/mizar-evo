@@ -1,0 +1,13 @@
+definition
+  let X be set;
+  mode MemberKindDef: MemberKind of X is set;
+end;
+
+reserve A for set;
+
+theorem MemberKindUse1: for A for m being MemberKind of A holds m = m
+proof
+  let A;
+  let m be MemberKind of A;
+  thus m = m;
+end;

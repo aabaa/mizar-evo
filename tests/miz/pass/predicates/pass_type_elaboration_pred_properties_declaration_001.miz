@@ -1,0 +1,12 @@
+definition
+  let X, Y be set;
+  pred TwinDef: X twin Y means X = Y;
+  symmetry
+  proof
+    thus thesis;
+  end;
+  reflexivity
+  proof
+    thus thesis;
+  end;
+end;

@@ -172,3 +172,19 @@ only and explicitly withholds ordering, execution, Core, and Task-277B credit.
 The completed increment projects corpus pairs `344/344 -> 345/345`; the
 existing one-capture pair remains byte-identical. Exact completion evidence is
 owned by the linked contract.
+
+## September 2026 Audit-1 Semantic-Bridge Oracle Increment
+
+The September 2026 audit wave added 120 handwritten inactive oracle pairs
+(60 pass / 60 fail) spanning spec chapters 3-20, with 103 traceability
+requirements, under the chapter-aligned pass/fail subdirectories listed in
+[layout.md](./layout.md). All pairs follow the Task 257C4C0 inactive-seed
+convention: no `active_*` tag, no current runner credit. Coverage,
+conventions, and spec findings are owned by
+[semantic_bridge_corpus_map.md](./semantic_bridge_corpus_map.md); the 29
+sources currently blocked by frontend gaps are inventoried in
+[semantic_bridge_frontend_gaps.md](./semantic_bridge_frontend_gaps.md) and
+`tests/coverage/audit1_frontend_gaps.tsv` (note: one blocked source
+reproduces a parser panic, so corpus-wide tooling must not assume every
+committed `.miz` parses until gap G5 closes). Corpus pairs move
+`345/345 -> 465/465`; discovered cases move `430 -> 550`.

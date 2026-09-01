@@ -1,0 +1,12 @@
+definition
+  struct PairBox4 where
+    field first -> set;
+    field second -> set;
+  end;
+end;
+
+theorem CtorBad1: for a being set holds PairBox4(first: a).first = a
+proof
+  let a be set;
+  thus PairBox4(first: a).first = a;
+end;

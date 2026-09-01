@@ -1,0 +1,32 @@
+definition
+  struct MBase where
+    field op -> set;
+  end;
+
+  struct MAdd where
+    field addop -> set;
+  end;
+
+  inherit MAdd extends MBase where
+    field addop from op;
+  end;
+
+  struct MLoop where
+    field op -> set;
+    property u -> set;
+  end;
+
+  inherit MLoop extends MBase;
+
+  struct MAddLoop where
+    field addop -> set;
+    property z -> set;
+  end;
+
+  inherit MAddLoop extends MLoop where
+    field addop from op;
+    property z from u;
+  end;
+
+  inherit MAddLoop extends MAdd;
+end;

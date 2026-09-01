@@ -1,0 +1,9 @@
+definition
+  let X be set;
+  attr EmptyishDef: X is emptyish means not X = X;
+end;
+
+theorem ChoiceBad1: the emptyish set = the emptyish set
+proof
+  thus the emptyish set = the emptyish set;
+end;

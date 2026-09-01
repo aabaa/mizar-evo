@@ -1,0 +1,7 @@
+theorem ThenChain1: for X being set st X = X holds X = X
+proof
+  let X be set;
+  assume A1: X = X;
+  then X = X;
+  hence X = X;
+end;

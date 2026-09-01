@@ -1,0 +1,13 @@
+schema_version = 1
+id = "pass_type_elaboration_antonym_predicate_001"
+kind = "pass"
+stage = "type_elaboration"
+domain = "notation.antonym"
+source = "pass_type_elaboration_antonym_predicate_001.miz"
+expected_outcome = "pass"
+expected_phase = "type_check"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.11.symbols.antonym.predicate",
+]
+notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. A predicate antonym introduces the negated notation for an existing predicate constructor (spec 11.x antonym; A.11)."

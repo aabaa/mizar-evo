@@ -1,0 +1,11 @@
+definition
+  struct HBox where
+    field data -> set;
+  end;
+end;
+
+theorem BadChain1: for X being set holds X is HBox set
+proof
+  let X be set;
+  thus X is HBox set;
+end;

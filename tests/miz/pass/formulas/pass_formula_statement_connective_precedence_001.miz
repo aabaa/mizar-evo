@@ -1,0 +1,5 @@
+theorem Precedence1: for X being set holds X = X or not X = X & X = X
+proof
+  let X be set;
+  thus X = X or not X = X & X = X;
+end;

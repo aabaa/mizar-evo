@@ -3706,3 +3706,13 @@ Clean postcommit proofとfresh inventoryはpaired [C4C8 contract](../../task_con
   fresh successor inventoryを完了する。Semantic successorはselectせず、userは
   documentation-only Core-33 prerequisite方向だけをacceptする。そのexact contractはfresh
   inventoryを要する。Task277Bはnot-ready/zero-creditのまま。
+
+## 2026年9月 監査1 意味論ブリッジ・オラクルコーパス増分
+
+2026年9月の監査ウェーブ（ユーザー指示・凍結契約チェーン外）で、Step-5
+意味論ブリッジ向けの文法網羅・非活性オラクルコーパス（120ペア、要求103行、
+活性クレジットなし）をコミットした。所有文書は
+[semantic_bridge_corpus_map.md](../en/semantic_bridge_corpus_map.md) と
+[semantic_bridge_frontend_gaps.md](../en/semantic_bridge_frontend_gaps.md)
+（いずれも英語版が正典）。活性化とタスク結線は Step-5 再分解（監査2）に
+委ねる。現行挙動に合わせたケースの活性化・弱体化は禁止。
