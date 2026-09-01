@@ -106,6 +106,26 @@ parameter `63/64`、field `55/54`、property `58/57`、Equalsがparameter
 `45/46`、field `37/36`、property `40/39`です。各transactionの3 expressionsは
 normal、argument-free、current-module source typeです。
 
+### Carrier identity transport
+
+Representation-only
+[Task264C contract](../../task_contracts/ja/CHECKER-SOURCE-PROPERTY-CARRIER-IDENTITY-264C.md)
+はexisting handoffにimmutable `SourcePropertyCarrierIdentity`を1個追加する。
+Private fieldはexact structure/field/property resolver tupleを保持し、12個の
+role-specific getterがwhole symbol/definition/contribution/semantic originを公開し、
+`SourcePropertyImplementationHandoff::carrier_identity()`がaggregateを公開する。
+Producerはexisting `SymbolEnv`からderiveし、signatureとTyped/Resolved installation
+APIは不変である。
+
+Constructionは3 resolver rowとsole contribution effectsをexact validateする。Replayは
+retained normal origin、common module/contribution、parameter type head、retained propertyと
+target row 0の一致をvalidateし、failureはexisting
+`InvalidResolverTarget { index: 0 }`を使う。このaggregateはauthenticated transport
+だけであり、property-implementation shell identity、Core item、property value、accepted
+semantic factではない。Deterministic debugは
+`source-property-implementation-debug-v2`で、existing payload row前にstructure/field/
+property identity rowを出す。
+
 ## Public contract / rows
 
 New moduleはdense IDs
@@ -187,9 +207,27 @@ set/atomic、base obligations、arenaをexplicitにconsumeし、atomic projectio
 ありません。Handoff getter surfaceはexactly次です。
 
 ```rust
+pub struct SourcePropertyCarrierIdentity { /* private fields */ }
+
+impl SourcePropertyCarrierIdentity {
+    pub fn structure_symbol(&self) -> &SymbolId;
+    pub const fn structure_definition(&self) -> DefinitionId;
+    pub const fn structure_contribution(&self) -> SourceContributionId;
+    pub const fn structure_origin(&self) -> &SemanticOrigin;
+    pub fn field_symbol(&self) -> &SymbolId;
+    pub const fn field_definition(&self) -> DefinitionId;
+    pub const fn field_contribution(&self) -> SourceContributionId;
+    pub const fn field_origin(&self) -> &SemanticOrigin;
+    pub fn property_symbol(&self) -> &SymbolId;
+    pub const fn property_definition(&self) -> DefinitionId;
+    pub const fn property_contribution(&self) -> SourceContributionId;
+    pub const fn property_origin(&self) -> &SemanticOrigin;
+}
+
 impl SourcePropertyImplementationHandoff {
     pub const fn source_id(&self) -> SourceId;
     pub const fn module_id(&self) -> &ModuleId;
+    pub const fn carrier_identity(&self) -> &SourcePropertyCarrierIdentity;
     pub fn source_context_fingerprint(&self) -> &str;
     pub fn source_type_fingerprint(&self) -> &str;
     pub fn source_term_fingerprint(&self) -> &str;
@@ -216,7 +254,7 @@ standard escaped `{:?}`、optional absentはunquoted `none`、presentは
 `atomic-formula#<id>`のexactly oneです。
 
 ```text
-source-property-implementation-debug-v1
+source-property-implementation-debug-v2
 module: <ModuleId.path>
 source-context-fingerprint: <Rust-debug String>
 source-type-fingerprint: <Rust-debug String>
@@ -225,6 +263,9 @@ source-functor-application-fingerprint: <none|some(Rust-debug String)>
 source-structure-fingerprint: <none|some(Rust-debug String)>
 source-set-term-fingerprint: <none|some(Rust-debug String)>
 source-atomic-formula-fingerprint: <none|some(Rust-debug String)>
+carrier-identity#0 role=structure symbol=<Rust-debug FQN string> definition=<id> contribution=<id> origin_range=<start>..<end> origin_path=<Rust-debug [u32]>
+carrier-identity#1 role=field symbol=<Rust-debug FQN string> definition=<id> contribution=<id> origin_range=<start>..<end> origin_path=<Rust-debug [u32]>
+carrier-identity#2 role=property symbol=<Rust-debug FQN string> definition=<id> contribution=<id> origin_range=<start>..<end> origin_path=<Rust-debug [u32]>
 implementation#<id> shell=<id> range=<start>..<end> site=node#<id> ordinal=<n> context=<id> recovery=<normal|degraded> spelling=<Rust-debug String> style=<equals|means> parameter=<id> target=<id> definiens=<id>
 parameter#<id> owner=<id> ordinal=<n> binding=<id> written_type=<id> range=<start>..<end> declaration_range=<start>..<end> site=node#<id> context=<id> recovery=<normal|degraded> spelling=<Rust-debug String>
 target#<id> owner=<id> ordinal=<n> subject=<id> symbol=<Rust-debug FQN string> definition=<id> contribution=<id> range=<start>..<end> subject_range=<start>..<end> name_range=<start>..<end> site=role#<node>:source.property-implementation.target spelling=<Rust-debug String> return_type=<id> origin_range=<start>..<end> origin_path=<Rust-debug [u32]>

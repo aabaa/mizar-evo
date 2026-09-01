@@ -158,7 +158,7 @@ fn optional_fingerprint(value: Option<&str>) -> String {
 fn expected_debug(fixture: &Fixture) -> String {
     let header = format!(
         concat!(
-            "source-property-implementation-debug-v1\n",
+            "source-property-implementation-debug-v2\n",
             "module: {}\n",
             "source-context-fingerprint: {:?}\n",
             "source-type-fingerprint: {:?}\n",
@@ -166,7 +166,10 @@ fn expected_debug(fixture: &Fixture) -> String {
             "source-functor-application-fingerprint: {}\n",
             "source-structure-fingerprint: {}\n",
             "source-set-term-fingerprint: {}\n",
-            "source-atomic-formula-fingerprint: {}\n"
+            "source-atomic-formula-fingerprint: {}\n",
+            "carrier-identity#0 role=structure symbol=\"pkg::task264::Task264Carrier\" definition=0 contribution=0 origin_range=13..101 origin_path=[4, 0, 11, 0]\n",
+            "carrier-identity#1 role=field symbol=\"pkg::task264::carrier\" definition=1 contribution=0 origin_range=45..66 origin_path=[4, 0, 11, 0, 18, 0]\n",
+            "carrier-identity#2 role=property symbol=\"pkg::task264::marker\" definition=2 contribution=0 origin_range=71..94 origin_path=[4, 0, 11, 0, 19, 1]\n"
         ),
         fixture.module.path().as_str(),
         fixture.context.debug_text(),
@@ -208,11 +211,54 @@ fn expected_debug(fixture: &Fixture) -> String {
     header + rows
 }
 
+fn assert_carrier_identity_replay_rejected(
+    fixture: &Fixture,
+    projection: &SourcePropertyImplementationProjection,
+    mutate: impl FnOnce(&mut SourcePropertyCarrierIdentity),
+) {
+    let mut handoff = projection.handoff().clone();
+    mutate(&mut handoff.carrier_identity);
+    assert_eq!(
+        fixture.validate_handoff(&handoff, projection.initial_obligations(), &fixture.arena,),
+        Err(SourcePropertyImplementationError::InvalidResolverTarget { index: 0 })
+    );
+}
+
 fn assert_exact_rows(
     fixture: &Fixture,
     handoff: &SourcePropertyImplementationHandoff,
     obligations: &InitialObligationTable,
 ) {
+    let identity = handoff.carrier_identity();
+    let definitions = (0..3)
+        .map(|index| {
+            fixture
+                .env
+                .definitions()
+                .iter()
+                .find(|row| row.id().index() == index)
+                .expect("Task264 definition identity")
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(identity.structure_symbol(), definitions[0].symbol());
+    assert_eq!(identity.structure_definition(), definitions[0].id());
+    assert_eq!(
+        identity.structure_contribution(),
+        definitions[0].contribution()
+    );
+    assert_eq!(identity.structure_origin(), definitions[0].origin());
+    assert_eq!(identity.field_symbol(), definitions[1].symbol());
+    assert_eq!(identity.field_definition(), definitions[1].id());
+    assert_eq!(identity.field_contribution(), definitions[1].contribution());
+    assert_eq!(identity.field_origin(), definitions[1].origin());
+    assert_eq!(identity.property_symbol(), definitions[2].symbol());
+    assert_eq!(identity.property_definition(), definitions[2].id());
+    assert_eq!(
+        identity.property_contribution(),
+        definitions[2].contribution()
+    );
+    assert_eq!(identity.property_origin(), definitions[2].origin());
+
     let implementation = handoff
         .implementations()
         .get(SourcePropertyImplementationId::new(0))
@@ -581,6 +627,20 @@ fn task_264_resolver_return_fingerprint_arena_and_obligation_corruption_fail_clo
         corrupt.build(&InitialObligationTable::new()),
         Err(SourcePropertyImplementationError::InvalidResolverTarget { index: 0 })
     );
+    for role in 0..3 {
+        let mut corrupt = fixture.clone();
+        corrupt.env = resolver_env_with_spelling_override(
+            fixture.source,
+            fixture.module.clone(),
+            Some((role, "forged")),
+        )
+        .0;
+        assert_eq!(
+            corrupt.build(&InitialObligationTable::new()),
+            Err(SourcePropertyImplementationError::InvalidResolverTarget { index: 0 }),
+            "resolver role {role} must remain exact"
+        );
+    }
     let mut corrupt = fixture.clone();
     corrupt.input.targets[0].return_type = SourceTypeStructureMemberId::new(0);
     assert_eq!(
@@ -589,6 +649,69 @@ fn task_264_resolver_return_fingerprint_arena_and_obligation_corruption_fail_clo
     );
 
     let projection = fixture.projection(&InitialObligationTable::new());
+    let exact_identity = projection.handoff().carrier_identity.clone();
+    let other_contribution = alternate_contribution(fixture.source, &fixture.module);
+    assert_carrier_identity_replay_rejected(&fixture, &projection, |identity| {
+        identity.structure.symbol = SymbolId::new(
+            fixture.module.clone(),
+            LocalSymbolId::new("task264-forged-structure"),
+            FullyQualifiedName::new("pkg::task264::forged-structure"),
+        );
+    });
+    assert_carrier_identity_replay_rejected(&fixture, &projection, |identity| {
+        identity.structure.definition = exact_identity.field.definition;
+    });
+    assert_carrier_identity_replay_rejected(&fixture, &projection, |identity| {
+        identity.structure.contribution = other_contribution;
+    });
+    assert_carrier_identity_replay_rejected(&fixture, &projection, |identity| {
+        identity.structure.origin = exact_identity.field.origin.clone();
+    });
+    assert_carrier_identity_replay_rejected(&fixture, &projection, |identity| {
+        identity.field.symbol = exact_identity.property.symbol.clone();
+    });
+    assert_carrier_identity_replay_rejected(&fixture, &projection, |identity| {
+        let foreign_module = ModuleId::new(
+            PackageId::new("foreign"),
+            ModulePath::new("task264.foreign"),
+        );
+        identity.field.symbol = SymbolId::new(
+            foreign_module,
+            LocalSymbolId::new("task264-foreign-field"),
+            FullyQualifiedName::new("foreign::task264::carrier"),
+        );
+    });
+    assert_carrier_identity_replay_rejected(&fixture, &projection, |identity| {
+        identity.field.definition = exact_identity.structure.definition;
+    });
+    assert_carrier_identity_replay_rejected(&fixture, &projection, |identity| {
+        identity.field.contribution = other_contribution;
+    });
+    assert_carrier_identity_replay_rejected(&fixture, &projection, |identity| {
+        identity.field.origin = exact_identity.property.origin.clone();
+    });
+    assert_carrier_identity_replay_rejected(&fixture, &projection, |identity| {
+        identity.property.symbol = exact_identity.field.symbol.clone();
+    });
+    assert_carrier_identity_replay_rejected(&fixture, &projection, |identity| {
+        identity.property.definition = exact_identity.field.definition;
+    });
+    assert_carrier_identity_replay_rejected(&fixture, &projection, |identity| {
+        identity.property.contribution = other_contribution;
+    });
+    assert_carrier_identity_replay_rejected(&fixture, &projection, |identity| {
+        identity.property.origin = exact_identity.field.origin.clone();
+    });
+    let mut corrupt_target_link = projection.handoff().clone();
+    corrupt_target_link.targets.rows[0].symbol = exact_identity.field.symbol.clone();
+    assert_eq!(
+        fixture.validate_handoff(
+            &corrupt_target_link,
+            projection.initial_obligations(),
+            &fixture.arena,
+        ),
+        Err(SourcePropertyImplementationError::InvalidResolverTarget { index: 0 })
+    );
     let mut corrupt_handoff = projection.handoff().clone();
     corrupt_handoff.source_term_fingerprint.push_str("forged");
     assert_eq!(
@@ -999,6 +1122,14 @@ fn property_shell(source: SourceId, module: &ModuleId, profile: TestProfile) -> 
 }
 
 fn resolver_env(source: SourceId, module: ModuleId) -> (SymbolEnv, [ResolverIdentity; 3]) {
+    resolver_env_with_spelling_override(source, module, None)
+}
+
+fn resolver_env_with_spelling_override(
+    source: SourceId,
+    module: ModuleId,
+    spelling_override: Option<(usize, &str)>,
+) -> (SymbolEnv, [ResolverIdentity; 3]) {
     let mut indexes = SymbolEnvIndexes::default();
     let contribution = indexes.contributions.insert(
         module.clone(),
@@ -1035,6 +1166,9 @@ fn resolver_env(source: SourceId, module: ModuleId) -> (SymbolEnv, [ResolverIden
     for (index, (spelling, symbol_kind, definition_kind, start, end, path)) in
         specs.into_iter().enumerate()
     {
+        let spelling = spelling_override
+            .filter(|(role, _)| *role == index)
+            .map_or(spelling, |(_, spelling)| spelling);
         let origin = SemanticOrigin::new(
             source,
             module.clone(),
@@ -1074,6 +1208,20 @@ fn resolver_env(source: SourceId, module: ModuleId) -> (SymbolEnv, [ResolverIden
     (
         SymbolEnv::new(module, indexes),
         identities.try_into().expect("three Task 264 identities"),
+    )
+}
+
+fn alternate_contribution(source: SourceId, module: &ModuleId) -> SourceContributionId {
+    let mut indexes = SymbolEnvIndexes::default();
+    indexes.contributions.insert(
+        module.clone(),
+        ContributionKind::LocalSource { source_id: source },
+        SourceAnchor::Range(range(source, 0, 1)),
+    );
+    indexes.contributions.insert(
+        module.clone(),
+        ContributionKind::LocalSource { source_id: source },
+        SourceAnchor::Range(range(source, 1, 2)),
     )
 }
 

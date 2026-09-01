@@ -53,11 +53,33 @@ fn task264_exact_sources_surface_resolver_lower_and_outputs_are_stable() {
             .typed_ast
             .source_property_implementation()
             .expect("Task264 typed handoff");
+        let definitions = (0..3)
+            .map(|index| {
+                symbols
+                    .definitions()
+                    .iter()
+                    .find(|row| row.id().index() == index)
+                    .expect("Task264 definition identity")
+            })
+            .collect::<Vec<_>>();
+        let carrier = handoff.carrier_identity();
+        assert_eq!(carrier.structure_symbol(), definitions[0].symbol());
+        assert_eq!(carrier.structure_definition(), definitions[0].id());
+        assert_eq!(carrier.structure_contribution(), definitions[0].contribution());
+        assert_eq!(carrier.structure_origin(), definitions[0].origin());
+        assert_eq!(carrier.field_symbol(), definitions[1].symbol());
+        assert_eq!(carrier.field_definition(), definitions[1].id());
+        assert_eq!(carrier.field_contribution(), definitions[1].contribution());
+        assert_eq!(carrier.field_origin(), definitions[1].origin());
+        assert_eq!(carrier.property_symbol(), definitions[2].symbol());
+        assert_eq!(carrier.property_definition(), definitions[2].id());
+        assert_eq!(carrier.property_contribution(), definitions[2].contribution());
+        assert_eq!(carrier.property_origin(), definitions[2].origin());
         assert_eq!((handoff.implementations().len(), handoff.parameters().len(), handoff.targets().len(), handoff.definientia().len(), handoff.correctness().len()), (1, 1, 1, 1, obligations));
         assert_eq!(output.typed_ast.initial_obligations().len(), obligations);
         assert_eq!(output.typed_ast.source_property_implementation(), output.resolved.source_property_implementation());
-        assert_eq!(output.typed_ast.debug_text().matches("source-property-implementation-debug-v1").count(), 1);
-        assert_eq!(output.resolved.debug_text().matches("source-property-implementation-debug-v1").count(), 1);
+        assert_eq!(output.typed_ast.debug_text().matches("source-property-implementation-debug-v2").count(), 1);
+        assert_eq!(output.resolved.debug_text().matches("source-property-implementation-debug-v2").count(), 1);
     }
 }
 

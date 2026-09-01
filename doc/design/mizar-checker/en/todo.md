@@ -7123,3 +7123,23 @@ selected only from fresh post-commit inventory.
   gates with **NO FINDINGS**, `9/9` PASS, and valid uncapped `100/100`.
 - [ ] Complete exact task-only commit, clean postcommit proof, and fresh
   inventory.
+
+## Task 264C property carrier identity transport
+
+- [x] Classify the missing Task264 same-source carrier/member handoff as
+  `source_drift` plus bounded `test_gap`, with no `spec_gap`.
+- [x] Freeze the one-value, twelve-getter public API and zero-semantic boundary
+  in the paired [Task264C contract](../../task_contracts/en/CHECKER-SOURCE-PROPERTY-CARRIER-IDENTITY-264C.md).
+- [x] Complete independent pre-source specification/API and bilingual/boundary
+  reviews with no blocking findings.
+- [x] Implement exact structure/field/property retention, v2 deterministic
+  debug, and construction/replay default-deny assertions in the existing five
+  checker and four private runner tests.
+- [x] Complete post-source test, implementation, source/documentation/API, and
+  bilingual/boundary reviews plus focused/package/workspace verification.
+- [x] Complete final quality scoring with **NO FINDINGS**, all nine hard gates
+  PASS, and a valid uncapped `100/100` after repairing the exact EN/JA owner
+  API/debug blocks and stable contract links.
+- [x] Complete the exact twenty-path task-only commit; perform its clean
+  postcommit proof and fresh same-source Core-33 inventory immediately after
+  creating the commit, without amending the completed Task264C record.

@@ -2042,3 +2042,14 @@ recorded. Finding-specific post-source re-review is **NO FINDINGS** after the
 same precedence-test and audit-tense repairs in both languages; full-workspace
 verification and protected checks pass. Final quality is **NO FINDINGS**, all
 nine hard gates PASS, and the valid uncapped score is `100/100`. Commit remains.
+
+## Task264C Carrier Identity Synchronization
+
+The paired
+[EN contract](../../task_contracts/en/CHECKER-SOURCE-PROPERTY-CARRIER-IDENTITY-264C.md)
+and [JA contract](../../task_contracts/ja/CHECKER-SOURCE-PROPERTY-CARRIER-IDENTITY-264C.md),
+crate-plan index rows, property-implementation owner sections, TODO entries,
+source/API audit entries, and module-boundary inventory rows freeze the same
+one-value/twelve-getter ABI, `3/3/1` resolver identity, v2 debug order,
+default-deny boundary, and zero-credit deferrals. English remains canonical;
+Japanese is logically synchronized.

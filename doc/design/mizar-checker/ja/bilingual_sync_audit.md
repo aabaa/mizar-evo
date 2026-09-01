@@ -1883,3 +1883,12 @@ review surface。English canonical、exceptionなし。両言語で同じprecede
 repair後のfinding-specific post-source re-reviewは**NO FINDINGS**、full-workspace verificationと
 protected checkはPASS。Final qualityは**NO FINDINGS**、hard gate `9/9` PASS、valid uncapped
 `100/100`。Commitはpending。
+
+## Task264C Carrier Identity Synchronization
+
+Paired [EN contract](../../task_contracts/en/CHECKER-SOURCE-PROPERTY-CARRIER-IDENTITY-264C.md)
+と [JA contract](../../task_contracts/ja/CHECKER-SOURCE-PROPERTY-CARRIER-IDENTITY-264C.md)、
+crate-plan index、property-implementation owner、TODO、source/API audit、module-boundary
+inventoryは同じone-value/12-getter ABI、`3/3/1` resolver identity、v2 debug order、
+default-deny boundary、zero-credit deferralをfreezeする。English canonicalとJapanese
+logical syncを維持する。

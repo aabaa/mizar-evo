@@ -6693,3 +6693,21 @@ post-commit fresh inventoryからだけ選択する。
 - [x] Post-source review、verification、final-quality hard gateを**NO FINDINGS**、`9/9`
   PASS、valid uncapped `100/100`で完了する。
 - [ ] Exact task-only commit、clean postcommit proof、fresh inventoryを完了する。
+
+## Task 264C property carrier identity transport
+
+- [x] Missing Task264 same-source carrier/member handoffを`source_drift`とbounded
+  `test_gap`に分類し、`spec_gap`なしを確認した。
+- [x] One-value/12-getter public APIとzero-semantic boundaryをpaired
+  [Task264C contract](../../task_contracts/ja/CHECKER-SOURCE-PROPERTY-CARRIER-IDENTITY-264C.md)
+  にfreezeした。
+- [x] Pre-source specification/API/bilingual/boundary independent reviewをno blocking
+  findingsで完了する。
+- [x] Exact structure/field/property retention、v2 deterministic debug、existing checker
+  5 test/private runner 4 test内のconstruction/replay default-deny assertionを実装する。
+- [x] Post-source test/implementation/source-doc/API/bilingual/boundary reviewとfocused/
+  package/workspace verificationを完了する。
+- [x] Exact EN/JA owner API/debug blockとstable contract linkのrepair後、final qualityを
+  **NO FINDINGS**、hard gate `9/9` PASS、valid uncapped `100/100`で完了する。
+- [x] Exact 20-path task-only commitを作成し、completed Task264C recordをamendせずに
+  clean postcommit proofとfresh same-source Core33 inventoryを直後に実施する。

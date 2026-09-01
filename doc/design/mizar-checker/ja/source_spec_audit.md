@@ -787,7 +787,7 @@ literal top-level public item:
 - `SourcePropertyImplementationTable`、`SourcePropertyParameterTable`、
   `SourcePropertyTargetTable`、`SourcePropertyDefiniensTable`、
   `SourcePropertyCorrectnessTable`
-- `SourcePropertyImplementationHandoff`、
+- `SourcePropertyCarrierIdentity`、`SourcePropertyImplementationHandoff`、
   `SourcePropertyImplementationProjection`、
   `SourcePropertyImplementationError`、
   `SourcePropertyImplementationProducer`
@@ -797,9 +797,9 @@ literal top-level public item:
 | spec promise | source evidence | test evidence | status |
 |---|---|---|---|
 | immutable syntax-free table 5個がexact struct-property implementation、parameter、resolver-backed target、definiens、profile-dependent correctness rowを保持する。 | `src/source_property_implementation.rs`のpublic input/row/dense ID/table/getter。 | exact equals/means checker testとreal-source runner consumer 2件。 | means `1/1/1/1/2`、equals `1/1/1/1/0`としてimplemented。 |
-| producerはTask248P/249PI/252/254/256 lower owner、resolver provenance、declared return row、typed arena、complete fingerprintをauthenticateする。 | `SourcePropertyImplementationProducer::build`、replay validation、fail-closed error。 | independent row/lower/resolver/return/fingerprint/arena corruption test。 | syntax parsing/semantic goal compositionなしでimplemented。 |
+| producerはTask248P/249PI/252/254/256 lower owner、3件のexact carrier/member resolver identity、declared return row、typed arena、complete fingerprintをauthenticateする。 | `SourcePropertyCarrierIdentity`、`SourcePropertyImplementationProducer::build`、replay validation、fail-closed error。 | independent row/lower/resolver/carrier-identity/return/fingerprint/arena corruption test。 | syntax parsing/semantic goal compositionなしでimplemented。 |
 | Meansはretained baselineへPending existence/uniquenessをappendしEqualsはzero、Typed/final ownerはatomic install/replayする。 | projection、`TypedAst::with_source_property_implementation`、final getter。 | nonempty-baseline transaction、orphan/extra rejection、deterministic replay、Task259 isolation。 | mutually exclusive Task264 ownership。 |
-| public surface/enumはdocumented/forward-compatibleである。 | 上記5 ID、6 input、4 data enum、5 row/table、handoff、projection、error、producer。全public enumはnon-exhaustive。 | public-enum/source-spec-audit lint policy。 | production syntax-dependency exceptionなしでguard。 |
+| public surface/enumはdocumented/forward-compatibleである。 | 上記5 ID、6 input、4 data enum、5 row/table、carrier identity、handoff、projection、error、producer。全public enumはnon-exhaustive。 | public-enum/source-spec-audit lint policy。 | production syntax-dependency exceptionなしでguard。 |
 
 bounded gap: goal/guard/return/definiens composition、`it` substitution、proof/
 justification verification、discharge、acceptance、fact/axiom、property-value
@@ -5769,6 +5769,18 @@ orphan-extra obligation/Task259 isolation gapをcloseする。Parameter declarat
 anchorとEquals selector-member ownershipの修正はderived designを既存frozen
 Task248P/254 public APIへ整合させる。`doc/spec`、existing `.miz`、existing
 expectation intentは変更せず、このbounded transactionにblocking `spec_gap`はない。
+
+### Task264C public carrier-identity receipt
+
+Paired
+[Task264C contract](../../task_contracts/ja/CHECKER-SOURCE-PROPERTY-CARRIER-IDENTITY-264C.md)
+はpublic source inventoryに`SourcePropertyCarrierIdentity`と
+`SourcePropertyImplementationHandoff::carrier_identity()`を追加する。Private fieldと
+role-specific getterはexact `Task264Carrier`、`carrier`、`marker`のwhole symbol/
+definition/contribution/normal originを保持する。Existing producerはexact `3/3/1`
+resolver envからderiveし、final replayはparameter type head/target rowに照合する。
+New enum/error/producer input/Typed・Resolved slot/diagnostic/semantic output/coverage claimを
+持たないadditive syntax-free fail-closed transportである。
 
 Completion evidence: [central Task-269A historical contract](../../task_contracts/ja/269A.md#completion-evidence)。
 

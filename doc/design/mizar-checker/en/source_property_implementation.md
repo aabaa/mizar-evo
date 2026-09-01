@@ -139,6 +139,28 @@ through the Task-248P context handoff and validates the referenced property
 only through definition 2. Opaque signature text is not parsed to recover a
 return type or property identity.
 
+### Carrier identity transport
+
+The representation-only
+[Task264C contract](../../task_contracts/en/CHECKER-SOURCE-PROPERTY-CARRIER-IDENTITY-264C.md)
+extends the existing handoff with one immutable
+`SourcePropertyCarrierIdentity`. Its private fields retain the exact
+structure/field/property resolver tuples described above; twelve role-specific
+getters expose each whole symbol, definition, contribution, and semantic
+origin, and `SourcePropertyImplementationHandoff::carrier_identity()` exposes
+the aggregate. The producer derives the value from its existing `SymbolEnv`;
+its signature and all Typed/Resolved installation APIs remain unchanged.
+
+Construction validates all three exact resolver rows and their sole
+contribution effects. Replay validates the retained normal origins, common
+module/contribution, parameter type head, and equality between the retained
+property and target row 0. All failures use the existing
+`InvalidResolverTarget { index: 0 }`. The aggregate is authenticated transport
+only: it is not the property-implementation shell's identity, a Core item, a
+property value, or an accepted semantic fact. Its deterministic debug format
+is `source-property-implementation-debug-v2` with structure, field, and
+property identity rows before the existing payload rows.
+
 ## Frozen Lower Bundle And Mandatory Type Prerequisite
 
 The exact profiles consume these lower owners:
@@ -406,11 +428,29 @@ exposes only `get(id) -> Option<&Row>`,
 The handoff surface is exact:
 
 ```rust
+pub struct SourcePropertyCarrierIdentity { /* private fields */ }
+
+impl SourcePropertyCarrierIdentity {
+    pub fn structure_symbol(&self) -> &SymbolId;
+    pub const fn structure_definition(&self) -> DefinitionId;
+    pub const fn structure_contribution(&self) -> SourceContributionId;
+    pub const fn structure_origin(&self) -> &SemanticOrigin;
+    pub fn field_symbol(&self) -> &SymbolId;
+    pub const fn field_definition(&self) -> DefinitionId;
+    pub const fn field_contribution(&self) -> SourceContributionId;
+    pub const fn field_origin(&self) -> &SemanticOrigin;
+    pub fn property_symbol(&self) -> &SymbolId;
+    pub const fn property_definition(&self) -> DefinitionId;
+    pub const fn property_contribution(&self) -> SourceContributionId;
+    pub const fn property_origin(&self) -> &SemanticOrigin;
+}
+
 pub struct SourcePropertyImplementationHandoff { /* private fields */ }
 
 impl SourcePropertyImplementationHandoff {
     pub const fn source_id(&self) -> SourceId;
     pub const fn module_id(&self) -> &ModuleId;
+    pub const fn carrier_identity(&self) -> &SourcePropertyCarrierIdentity;
     pub fn source_context_fingerprint(&self) -> &str;
     pub fn source_type_fingerprint(&self) -> &str;
     pub fn source_term_fingerprint(&self) -> &str;
@@ -440,7 +480,7 @@ when absent and `some(<Rust-debug String>)` when present. Role sites use the
 literal role frozen above.
 
 ```text
-source-property-implementation-debug-v1
+source-property-implementation-debug-v2
 module: <ModuleId.path>
 source-context-fingerprint: <Rust-debug String>
 source-type-fingerprint: <Rust-debug String>
@@ -449,6 +489,9 @@ source-functor-application-fingerprint: <none|some(Rust-debug String)>
 source-structure-fingerprint: <none|some(Rust-debug String)>
 source-set-term-fingerprint: <none|some(Rust-debug String)>
 source-atomic-formula-fingerprint: <none|some(Rust-debug String)>
+carrier-identity#0 role=structure symbol=<Rust-debug FQN string> definition=<id> contribution=<id> origin_range=<start>..<end> origin_path=<Rust-debug [u32]>
+carrier-identity#1 role=field symbol=<Rust-debug FQN string> definition=<id> contribution=<id> origin_range=<start>..<end> origin_path=<Rust-debug [u32]>
+carrier-identity#2 role=property symbol=<Rust-debug FQN string> definition=<id> contribution=<id> origin_range=<start>..<end> origin_path=<Rust-debug [u32]>
 implementation#<id> shell=<id> range=<start>..<end> site=node#<id> ordinal=<n> context=<id> recovery=<normal|degraded> spelling=<Rust-debug String> style=<equals|means> parameter=<id> target=<id> definiens=<id>
 parameter#<id> owner=<id> ordinal=<n> binding=<id> written_type=<id> range=<start>..<end> declaration_range=<start>..<end> site=node#<id> context=<id> recovery=<normal|degraded> spelling=<Rust-debug String>
 target#<id> owner=<id> ordinal=<n> subject=<id> symbol=<Rust-debug FQN string> definition=<id> contribution=<id> range=<start>..<end> subject_range=<start>..<end> name_range=<start>..<end> site=role#<node>:source.property-implementation.target spelling=<Rust-debug String> return_type=<id> origin_range=<start>..<end> origin_path=<Rust-debug [u32]>

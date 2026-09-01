@@ -13054,7 +13054,7 @@ leaf. Current affected sizes are `runner.rs` 2717,
 `runner/type_elaboration.rs` 881,
 `runner/type_elaboration/source_property_implementation.rs` 1460,
 `runner/tests.rs` 59, and
-`runner/tests/type_elaboration/source_property_implementation.rs` 236 lines.
+`runner/tests/type_elaboration/source_property_implementation.rs` 258 lines.
 The complete production selection is `36/69417`, with path/content hashes
 `38a20909d1f89aa2a4c325fb47126cc911bb943b7fe1190dc668713f64ad49e2` /
 `72cc9036654639dff5933dced07e79ec6132696b5f92eca5e0149085f4651d91`.

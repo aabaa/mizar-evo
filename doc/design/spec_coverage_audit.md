@@ -7334,3 +7334,22 @@ test intent, fixture, expectation, trace backlink/status, metadata, runner,
 snapshot, or coverage state. Core 34--36 implementation, correctness references,
 property values, proof/discharge/acceptance, production installation, and
 Task277B remain deferred/not-ready.
+
+## Task CHECKER-SOURCE-PROPERTY-CARRIER-IDENTITY-264C Zero-Credit Transport
+
+The canonical
+[Task264C contract](./task_contracts/en/CHECKER-SOURCE-PROPERTY-CARRIER-IDENTITY-264C.md)
+retains the exact existing Task264 resolver identities for `Task264Carrier`,
+`carrier`, and `marker` in the property-implementation handoff. It adds only an
+immutable syntax-free receipt, deterministic debug evidence, and fail-closed
+construction/replay assertions. Existing Task264 fixtures, expectations, trace
+row/status/backlinks, runner selection, diagnostics, obligations, semantic
+output, and coverage credit remain unchanged.
+
+This closes the lower checker identity `source_drift` and its bounded test gap.
+It does not create a Core item or property-implementation semantic identity.
+After Task264C, follow-up ownership advances to the still-missing same-source
+Core-33 carrier context and Core-34 selector/type owner required by the
+[Core36 disposition](./task_contracts/en/CORE-SOURCE-PROPERTY-IMPLEMENTATION-OWNER-36P264.md).
+Core36 semantics, production installation, proof/discharge/acceptance, and
+Task277B remain deferred/not-ready with zero new coverage credit.

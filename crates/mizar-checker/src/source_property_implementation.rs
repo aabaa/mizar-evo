@@ -35,8 +35,8 @@ use crate::{
 use mizar_resolve::{
     declarations::DeclarationShellId,
     env::{
-        ContributionKind, DefinitionId, DefinitionKind, ExportStatus, SourceContributionId,
-        SymbolEnv, SymbolKind, Visibility,
+        ContributionKind, DefinitionEntry, DefinitionId, DefinitionKind, ExportStatus,
+        SourceContributionId, SymbolEntry, SymbolEnv, SymbolKind, Visibility,
     },
     resolved_ast::{ModuleId, SemanticOrigin, SymbolId},
 };
@@ -501,10 +501,56 @@ struct SourcePropertyResolverIdentity {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourcePropertyCarrierIdentity {
+    structure: SourcePropertyResolverIdentity,
+    field: SourcePropertyResolverIdentity,
+    property: SourcePropertyResolverIdentity,
+}
+
+impl SourcePropertyCarrierIdentity {
+    pub fn structure_symbol(&self) -> &SymbolId {
+        &self.structure.symbol
+    }
+    pub const fn structure_definition(&self) -> DefinitionId {
+        self.structure.definition
+    }
+    pub const fn structure_contribution(&self) -> SourceContributionId {
+        self.structure.contribution
+    }
+    pub const fn structure_origin(&self) -> &SemanticOrigin {
+        &self.structure.origin
+    }
+    pub fn field_symbol(&self) -> &SymbolId {
+        &self.field.symbol
+    }
+    pub const fn field_definition(&self) -> DefinitionId {
+        self.field.definition
+    }
+    pub const fn field_contribution(&self) -> SourceContributionId {
+        self.field.contribution
+    }
+    pub const fn field_origin(&self) -> &SemanticOrigin {
+        &self.field.origin
+    }
+    pub fn property_symbol(&self) -> &SymbolId {
+        &self.property.symbol
+    }
+    pub const fn property_definition(&self) -> DefinitionId {
+        self.property.definition
+    }
+    pub const fn property_contribution(&self) -> SourceContributionId {
+        self.property.contribution
+    }
+    pub const fn property_origin(&self) -> &SemanticOrigin {
+        &self.property.origin
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SourcePropertyImplementationHandoff {
     source_id: SourceId,
     module_id: ModuleId,
-    resolver_identity: SourcePropertyResolverIdentity,
+    carrier_identity: SourcePropertyCarrierIdentity,
     source_context_fingerprint: String,
     source_type_fingerprint: String,
     source_term_fingerprint: String,
@@ -525,6 +571,9 @@ impl SourcePropertyImplementationHandoff {
     }
     pub const fn module_id(&self) -> &ModuleId {
         &self.module_id
+    }
+    pub const fn carrier_identity(&self) -> &SourcePropertyCarrierIdentity {
+        &self.carrier_identity
     }
     pub fn source_context_fingerprint(&self) -> &str {
         &self.source_context_fingerprint
@@ -564,7 +613,7 @@ impl SourcePropertyImplementationHandoff {
     }
 
     pub fn debug_text(&self) -> String {
-        let mut output = String::from("source-property-implementation-debug-v1\n");
+        let mut output = String::from("source-property-implementation-debug-v2\n");
         let _ = writeln!(output, "module: {}", self.module_id.path().as_str());
         let _ = writeln!(
             output,
@@ -601,6 +650,14 @@ impl SourcePropertyImplementationHandoff {
             "source-atomic-formula-fingerprint",
             self.source_atomic_formula_fingerprint(),
         );
+        write_carrier_identity(
+            &mut output,
+            0,
+            "structure",
+            &self.carrier_identity.structure,
+        );
+        write_carrier_identity(&mut output, 1, "field", &self.carrier_identity.field);
+        write_carrier_identity(&mut output, 2, "property", &self.carrier_identity.property);
         for (id, row) in self.implementations.iter() {
             let _ = write!(
                 output,
@@ -916,7 +973,7 @@ impl SourcePropertyImplementationProducer {
         }
         validate_shape(&input)?;
         validate_baseline(base_initial_obligations)?;
-        let origin = validate_resolver_target(&input, env, source_type)?;
+        let carrier_identity = validate_resolver_target(&input, env, source_type)?;
         validate_input(
             &input,
             source_context,
@@ -1019,7 +1076,7 @@ impl SourcePropertyImplementationProducer {
                     name_range: row.name_range,
                     spelling: row.spelling,
                     return_type: row.return_type,
-                    origin: origin.clone(),
+                    origin: carrier_identity.property_origin().clone(),
                 })
                 .collect(),
         };
@@ -1061,17 +1118,10 @@ impl SourcePropertyImplementationProducer {
                 })
                 .collect(),
         };
-        let target = &targets.rows[0];
-        let resolver_identity = SourcePropertyResolverIdentity {
-            symbol: target.symbol.clone(),
-            definition: target.definition,
-            contribution: target.contribution,
-            origin: target.origin.clone(),
-        };
         let handoff = SourcePropertyImplementationHandoff {
             source_id: input.source_id,
             module_id: input.module_id,
-            resolver_identity,
+            carrier_identity,
             source_context_fingerprint: source_context.debug_text(),
             source_type_fingerprint: source_type.debug_text(),
             source_term_fingerprint: source_term.debug_text(),
@@ -1211,33 +1261,90 @@ fn validate_resolver_target(
     input: &SourcePropertyImplementationHandoffInput,
     env: &SymbolEnv,
     source_type: &SourceTypeApplicationHandoff,
-) -> Result<SemanticOrigin, SourcePropertyImplementationError> {
+) -> Result<SourcePropertyCarrierIdentity, SourcePropertyImplementationError> {
     if env.symbols().len() != 3 || env.definitions().len() != 3 || env.contributions().len() != 1 {
         return Err(SourcePropertyImplementationError::InvalidResolverTarget { index: 0 });
     }
     let row = &input.targets[0];
-    let symbol = env
-        .symbols()
-        .get(&row.symbol)
-        .ok_or(SourcePropertyImplementationError::InvalidResolverTarget { index: 0 })?;
-    let definition = env
-        .definitions()
-        .get(row.definition)
-        .ok_or(SourcePropertyImplementationError::InvalidResolverTarget { index: 0 })?;
-    let carrier_definition = env
-        .definitions()
-        .iter()
-        .find(|row| row.id().index() == 0)
-        .ok_or(SourcePropertyImplementationError::InvalidResolverTarget { index: 0 })?;
-    let carrier_symbol = env
-        .symbols()
-        .get(carrier_definition.symbol())
-        .ok_or(SourcePropertyImplementationError::InvalidResolverTarget { index: 0 })?;
     let contribution = env
         .contributions()
         .get(row.contribution)
         .ok_or(SourcePropertyImplementationError::InvalidResolverTarget { index: 0 })?;
-    let expected_origin_range = range(input.source_id, 71, 94);
+    let mut rows = Vec::with_capacity(3);
+    for index in 0..3 {
+        let definition = env
+            .definitions()
+            .iter()
+            .find(|row| row.id().index() == index)
+            .ok_or(SourcePropertyImplementationError::InvalidResolverTarget { index: 0 })?;
+        let symbol = env
+            .symbols()
+            .get(definition.symbol())
+            .ok_or(SourcePropertyImplementationError::InvalidResolverTarget { index: 0 })?;
+        rows.push((symbol, definition));
+    }
+    let expected = [
+        (
+            SymbolKind::Structure,
+            DefinitionKind::Structure,
+            "Task264Carrier",
+            range(input.source_id, 13, 101),
+            &[4, 0, 11, 0][..],
+        ),
+        (
+            SymbolKind::Selector,
+            DefinitionKind::Selector,
+            "carrier",
+            range(input.source_id, 45, 66),
+            &[4, 0, 11, 0, 18, 0][..],
+        ),
+        (
+            SymbolKind::Selector,
+            DefinitionKind::Selector,
+            "marker",
+            range(input.source_id, 71, 94),
+            &[4, 0, 11, 0, 19, 1][..],
+        ),
+    ];
+    if row.definition.index() != 2
+        || row.contribution.index() != 0
+        || contribution.module() != &input.module_id
+        || contribution.kind()
+            != &(ContributionKind::LocalSource {
+                source_id: input.source_id,
+            })
+        || contribution.effects().symbols().len() != 3
+        || contribution.effects().definitions().len() != 3
+        || rows
+            .iter()
+            .enumerate()
+            .any(|(index, (symbol, definition))| {
+                let (symbol_kind, definition_kind, spelling, source_range, path) = expected[index];
+                !resolver_identity_matches(
+                    symbol,
+                    definition,
+                    input.source_id,
+                    &input.module_id,
+                    row.contribution,
+                    symbol_kind,
+                    definition_kind,
+                    spelling,
+                    source_range,
+                    path,
+                ) || !contribution
+                    .effects()
+                    .symbols()
+                    .contains(definition.symbol())
+                    || !contribution
+                        .effects()
+                        .definitions()
+                        .contains(&definition.id())
+            })
+        || row.symbol != *rows[2].1.symbol()
+        || row.definition != rows[2].1.id()
+    {
+        return Err(SourcePropertyImplementationError::InvalidResolverTarget { index: 0 });
+    }
     let carrier_head_matches = matches!(
         source_type
             .expressions()
@@ -1246,76 +1353,65 @@ fn validate_resolver_target(
         Some(SourceTypeHead::Symbol {
             symbol,
             contribution,
-        }) if symbol == carrier_definition.symbol()
-            && *contribution == carrier_definition.contribution()
+        }) if symbol == rows[0].1.symbol()
+            && *contribution == rows[0].1.contribution()
     );
-    if row.definition.index() != 2
-        || row.contribution.index() != 0
-        || row.symbol.module() != &input.module_id
-        || symbol.symbol() != &row.symbol
-        || symbol.kind() != SymbolKind::Selector
-        || symbol.visibility() != Visibility::Public
-        || symbol.export_status() != ExportStatus::Exported
-        || symbol.primary_spelling() != "marker"
-        || symbol.contribution() != row.contribution
-        || symbol.origin() != definition.origin()
-        || definition.id() != row.definition
-        || definition.symbol() != &row.symbol
-        || definition.kind() != DefinitionKind::Selector
-        || definition.visibility() != Visibility::Public
-        || definition.contribution() != row.contribution
-        || definition.conflict().is_some()
-        || contribution.module() != &input.module_id
-        || contribution.kind()
-            != &(ContributionKind::LocalSource {
-                source_id: input.source_id,
-            })
-        || contribution.effects().symbols().len() != 3
-        || contribution.effects().definitions().len() != 3
-        || !contribution.effects().symbols().contains(&row.symbol)
-        || !contribution
-            .effects()
-            .definitions()
-            .contains(&row.definition)
-        || !normal_origin(
-            definition.origin(),
-            input.source_id,
-            &input.module_id,
-            expected_origin_range,
-            &[4, 0, 11, 0, 19, 1],
-        )
-        || carrier_definition.id().index() != 0
-        || carrier_definition.kind() != DefinitionKind::Structure
-        || carrier_definition.visibility() != Visibility::Public
-        || carrier_definition.conflict().is_some()
-        || carrier_definition.contribution() != row.contribution
-        || carrier_symbol.symbol() != carrier_definition.symbol()
-        || carrier_symbol.kind() != SymbolKind::Structure
-        || carrier_symbol.visibility() != Visibility::Public
-        || carrier_symbol.export_status() != ExportStatus::Exported
-        || carrier_symbol.primary_spelling() != "Task264Carrier"
-        || carrier_symbol.origin() != carrier_definition.origin()
-        || carrier_symbol.contribution() != row.contribution
-        || !contribution
-            .effects()
-            .symbols()
-            .contains(carrier_definition.symbol())
-        || !contribution
-            .effects()
-            .definitions()
-            .contains(&carrier_definition.id())
-        || !normal_origin(
-            carrier_definition.origin(),
-            input.source_id,
-            &input.module_id,
-            range(input.source_id, 13, 101),
-            &[4, 0, 11, 0],
-        )
-        || !carrier_head_matches
-    {
+    if !carrier_head_matches {
         return Err(SourcePropertyImplementationError::InvalidResolverTarget { index: 0 });
     }
-    Ok(definition.origin().clone())
+    let identities = rows
+        .into_iter()
+        .map(|(symbol, definition)| SourcePropertyResolverIdentity {
+            symbol: symbol.symbol().clone(),
+            definition: definition.id(),
+            contribution: definition.contribution(),
+            origin: definition.origin().clone(),
+        })
+        .collect::<Vec<_>>();
+    let [structure, field, property]: [SourcePropertyResolverIdentity; 3] =
+        identities
+            .try_into()
+            .map_err(|_| SourcePropertyImplementationError::InvalidResolverTarget { index: 0 })?;
+    Ok(SourcePropertyCarrierIdentity {
+        structure,
+        field,
+        property,
+    })
+}
+
+// Rationale: the fixed resolver role check keeps every authenticated field explicit.
+#[allow(clippy::too_many_arguments)]
+fn resolver_identity_matches(
+    symbol: &SymbolEntry,
+    definition: &DefinitionEntry,
+    source_id: SourceId,
+    module_id: &ModuleId,
+    contribution: SourceContributionId,
+    symbol_kind: SymbolKind,
+    definition_kind: DefinitionKind,
+    spelling: &str,
+    source_range: SourceRange,
+    path: &[u32],
+) -> bool {
+    symbol.symbol() == definition.symbol()
+        && symbol.symbol().module() == module_id
+        && symbol.kind() == symbol_kind
+        && symbol.visibility() == Visibility::Public
+        && symbol.export_status() == ExportStatus::Exported
+        && symbol.primary_spelling() == spelling
+        && symbol.contribution() == contribution
+        && symbol.origin() == definition.origin()
+        && definition.kind() == definition_kind
+        && definition.visibility() == Visibility::Public
+        && definition.contribution() == contribution
+        && definition.conflict().is_none()
+        && normal_origin(
+            definition.origin(),
+            source_id,
+            module_id,
+            source_range,
+            path,
+        )
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -2260,22 +2356,70 @@ fn validate_handoff(
         atomic_formulas,
         arena,
     )?;
+    validate_carrier_identity(handoff, source_type)?;
+    validate_obligations(handoff, obligations)
+}
+
+fn validate_carrier_identity(
+    handoff: &SourcePropertyImplementationHandoff,
+    source_type: &SourceTypeApplicationHandoff,
+) -> Result<(), SourcePropertyImplementationError> {
+    let identity = &handoff.carrier_identity;
     let target = &handoff.targets.rows[0];
-    if target.symbol != handoff.resolver_identity.symbol
-        || target.definition != handoff.resolver_identity.definition
-        || target.contribution != handoff.resolver_identity.contribution
-        || target.origin != handoff.resolver_identity.origin
+    let contribution = identity.structure.contribution;
+    let distinct_symbols = identity.structure.symbol != identity.field.symbol
+        && identity.structure.symbol != identity.property.symbol
+        && identity.field.symbol != identity.property.symbol;
+    let structure_head_matches = matches!(
+        source_type
+            .expressions()
+            .get(SourceTypeExpressionId::new(0))
+            .map(|row| row.head()),
+        Some(SourceTypeHead::Symbol {
+            symbol,
+            contribution: head_contribution,
+        }) if symbol == &identity.structure.symbol && *head_contribution == contribution
+    );
+    if identity.structure.definition.index() != 0
+        || identity.field.definition.index() != 1
+        || identity.property.definition.index() != 2
+        || contribution.index() != 0
+        || identity.field.contribution != contribution
+        || identity.property.contribution != contribution
+        || identity.structure.symbol.module() != &handoff.module_id
+        || identity.field.symbol.module() != &handoff.module_id
+        || identity.property.symbol.module() != &handoff.module_id
+        || !distinct_symbols
         || !normal_origin(
-            &target.origin,
+            &identity.structure.origin,
+            handoff.source_id,
+            &handoff.module_id,
+            range(handoff.source_id, 13, 101),
+            &[4, 0, 11, 0],
+        )
+        || !normal_origin(
+            &identity.field.origin,
+            handoff.source_id,
+            &handoff.module_id,
+            range(handoff.source_id, 45, 66),
+            &[4, 0, 11, 0, 18, 0],
+        )
+        || !normal_origin(
+            &identity.property.origin,
             handoff.source_id,
             &handoff.module_id,
             range(handoff.source_id, 71, 94),
             &[4, 0, 11, 0, 19, 1],
         )
+        || target.symbol != identity.property.symbol
+        || target.definition != identity.property.definition
+        || target.contribution != identity.property.contribution
+        || target.origin != identity.property.origin
+        || !structure_head_matches
     {
         return Err(SourcePropertyImplementationError::InvalidResolverTarget { index: 0 });
     }
-    validate_obligations(handoff, obligations)
+    Ok(())
 }
 
 fn validate_obligations(
@@ -2440,6 +2584,27 @@ fn write_anchor(output: &mut String, anchor: &SourceAnchor) {
         SourceAnchor::Generated(_) => output.push_str("generated"),
         _ => output.push_str("unsupported"),
     }
+}
+
+fn write_carrier_identity(
+    output: &mut String,
+    index: usize,
+    role: &str,
+    identity: &SourcePropertyResolverIdentity,
+) {
+    let _ = write!(
+        output,
+        "carrier-identity#{index} role={role} symbol={:?} definition={} contribution={} origin_range=",
+        identity.symbol.fqn().as_str(),
+        identity.definition.index(),
+        identity.contribution.index(),
+    );
+    write_anchor_range(output, identity.origin.anchor());
+    let _ = writeln!(
+        output,
+        " origin_path={:?}",
+        identity.origin.structural_path()
+    );
 }
 
 fn write_anchor_range(output: &mut String, anchor: &SourceAnchor) {

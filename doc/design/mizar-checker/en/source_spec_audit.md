@@ -870,7 +870,7 @@ Literal top-level public items:
 - `SourcePropertyImplementationTable`, `SourcePropertyParameterTable`,
   `SourcePropertyTargetTable`, `SourcePropertyDefiniensTable`,
   `SourcePropertyCorrectnessTable`
-- `SourcePropertyImplementationHandoff`,
+- `SourcePropertyCarrierIdentity`, `SourcePropertyImplementationHandoff`,
   `SourcePropertyImplementationProjection`,
   `SourcePropertyImplementationError`,
   `SourcePropertyImplementationProducer`
@@ -880,9 +880,9 @@ Correspondence:
 | Specification promise | Source evidence | Test evidence | Status |
 |---|---|---|---|
 | Five immutable syntax-free tables retain one exact struct-property implementation, parameter, resolver-backed target, definiens, and profile-dependent correctness rows. | Public inputs, rows, dense IDs, tables, and getters in `src/source_property_implementation.rs`. | Exact equals/means checker test plus the two real-source runner consumers. | Implemented as `1/1/1/1/2` means or `1/1/1/1/0` equals. |
-| The producer authenticates Task-248P/249PI/252/254/256 lower owners, resolver provenance, declared return row, typed arena, and complete fingerprints. | `SourcePropertyImplementationProducer::build`, replay validation, and fail-closed errors. | Independent row/lower/resolver/return/fingerprint/arena corruption tests. | Implemented without syntax parsing or semantic goal composition. |
+| The producer authenticates Task-248P/249PI/252/254/256 lower owners, all three exact carrier/member resolver identities, declared return row, typed arena, and complete fingerprints. | `SourcePropertyCarrierIdentity`, `SourcePropertyImplementationProducer::build`, replay validation, and fail-closed errors. | Independent row/lower/resolver/carrier-identity/return/fingerprint/arena corruption tests. | Implemented without syntax parsing or semantic goal composition. |
 | Means appends Pending existence/uniqueness rows to a retained baseline while equals appends zero; Typed/final owners install and replay atomically. | Projection, `TypedAst::with_source_property_implementation`, and final getter. | Nonempty-baseline transaction, orphan/extra rejection, deterministic replay, and Task-259 isolation. | Mutually exclusive Task-264 ownership. |
-| Public surface and enums remain documented and forward-compatible. | Five IDs, six inputs, four data enums, five rows/tables, handoff, projection, error, and producer above; every public enum is non-exhaustive. | Public-enum and source/spec-audit lint policies. | Guarded with no production syntax-dependency exception. |
+| Public surface and enums remain documented and forward-compatible. | Five IDs, six inputs, four data enums, five rows/tables, carrier identity, handoff, projection, error, and producer above; every public enum is non-exhaustive. | Public-enum and source/spec-audit lint policies. | Guarded with no production syntax-dependency exception. |
 
 Bounded gaps: goal/guard/return/definiens composition, `it` substitution,
 proof/justification verification, discharge, acceptance, facts/axioms,
@@ -6081,6 +6081,20 @@ member ownership corrections align derived design with the already-frozen
 Task-248P/254 public APIs. No `doc/spec`, pre-existing `.miz`, or pre-existing
 expectation intent changed, and no blocking `spec_gap` remains in this bounded
 transaction.
+
+### Task264C public carrier-identity receipt
+
+The paired
+[Task264C contract](../../task_contracts/en/CHECKER-SOURCE-PROPERTY-CARRIER-IDENTITY-264C.md)
+adds `SourcePropertyCarrierIdentity` and
+`SourcePropertyImplementationHandoff::carrier_identity()` to the public source
+inventory. The value has private fields and role-specific getters for the
+whole symbol, definition, contribution, and normal origin of exact
+`Task264Carrier`, `carrier`, and `marker`. The existing producer derives it
+from the exact `3/3/1` resolver environment and final replay validates it
+against the parameter type head and target row. This is additive,
+syntax-free, fail-closed transport with no new enum, error, producer input,
+Typed/Resolved slot, diagnostic, semantic output, or coverage claim.
 
 Completion evidence: [central Task-269A historical contract](../../task_contracts/en/269A.md#completion-evidence).
 
