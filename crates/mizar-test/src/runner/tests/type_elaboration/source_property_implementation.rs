@@ -1390,6 +1390,264 @@ fn task264_equals_selector_term_seeds_reject_mixed_and_foreign_transactions() {
     );
 }
 
+fn task264_equals_selector_term_seed_handoff(
+    output: &SourcePropertyImplementationRouteOutput,
+    symbols: &mizar_resolve::env::SymbolEnv,
+) -> mizar_core::elaborator::SourcePropertyEqualsSelectorTermSeedHandoff {
+    let checker_owner = output
+        .typed_ast
+        .source_property_implementation()
+        .expect("Task35L264 checker owner")
+        .clone();
+    let selector_identity = mizar_checker::source_property_implementation::SourcePropertyEqualsSelectorIdentityProducer::build(
+        symbols,
+        checker_owner,
+        output
+            .typed_ast
+            .source_term()
+            .expect("Task35L264 primary term")
+            .clone(),
+        output
+            .typed_ast
+            .source_structure()
+            .expect("Task35L264 structure term")
+            .clone(),
+    )
+    .expect("Task35L264 selector identity");
+    let parameter_context =
+        mizar_core::elaborator::SourcePropertyParameterCoreContextProducer::build(
+            task264_selector_type_handoff(output),
+            output
+                .typed_ast
+                .source_context()
+                .expect("Task35L264 source context")
+                .clone(),
+        )
+        .expect("Task35L264 parameter context");
+    mizar_core::elaborator::SourcePropertyEqualsSelectorTermSeedProducer::build(
+        parameter_context,
+        selector_identity,
+    )
+    .expect("Task35L264 term seeds")
+}
+
+#[test]
+fn task264_equals_selector_term_lowering_is_exact_and_deterministic() {
+    let (ast, module, shells, symbols) = task253_ast_from_source_text(
+        SOURCE_PROPERTY_IMPLEMENTATION_EQUALS_TEXT,
+        265_200,
+    );
+    let output = source_property_implementation_output(
+        &ast,
+        module,
+        &shells,
+        &symbols,
+        SOURCE_PROPERTY_IMPLEMENTATION_EQUALS_TEXT,
+    )
+    .expect("Task35L264 selector")
+    .expect("Task35L264 equals route");
+    let seed_handoff = task264_equals_selector_term_seed_handoff(&output, &symbols);
+    let first =
+        mizar_core::elaborator::SourcePropertyEqualsSelectorTermLoweringProducer::build(
+            seed_handoff.clone(),
+        )
+        .expect("Task35L264 lowering");
+    let second =
+        mizar_core::elaborator::SourcePropertyEqualsSelectorTermLoweringProducer::build(
+            seed_handoff.clone(),
+        )
+        .expect("Task35L264 deterministic replay");
+
+    assert_eq!(first, second);
+    assert_eq!(first.seed_handoff(), &seed_handoff);
+    assert_eq!(first.source_id(), seed_handoff.source_id());
+    assert_eq!(first.module_id(), seed_handoff.module_id());
+    assert_eq!(first.definition_owner(), seed_handoff.definition_owner());
+    assert_eq!(first.definition_owner().anchor_item().index(), 0);
+    assert_eq!(first.definition_owner().item(), None);
+
+    let association = first.association();
+    assert_eq!(association.base_seed().index(), 0);
+    assert_eq!(association.base_term().index(), 0);
+    assert_eq!(association.selector_seed().index(), 1);
+    assert_eq!(association.selector_term().index(), 1);
+    assert_eq!(association.root_term().index(), 1);
+
+    let base = first
+        .terms()
+        .get(association.base_term())
+        .expect("Task35L264 base term");
+    let selector = first
+        .terms()
+        .get(association.selector_term())
+        .expect("Task35L264 selector term");
+    assert_eq!(first.terms().len(), 2);
+    assert_eq!(
+        base.kind,
+        mizar_core::core_ir::CoreTermKind::Var(mizar_core::core_ir::CoreVarId::new(0))
+    );
+    assert_eq!(
+        base.source.anchor,
+        mizar_core::core_ir::CoreSourceAnchor::SourceRange(mizar_session::SourceRange {
+            source_id: first.source_id(),
+            start: 173,
+            end: 174,
+        })
+    );
+    assert_eq!(base.source.provenance.len(), 1);
+    assert_eq!(
+        base.source.provenance[0].phase,
+        mizar_core::core_ir::CoreProvenancePhase::Checker
+    );
+    assert_eq!(
+        base.source.provenance[0].key.as_str(),
+        "source-property-equals-selector-term-seed-v1.base"
+    );
+    assert_eq!(
+        selector.kind,
+        mizar_core::core_ir::CoreTermKind::Select {
+            selector: seed_handoff
+                .selector_identity()
+                .association()
+                .selector_symbol()
+                .clone(),
+            base: association.base_term(),
+        }
+    );
+    assert_eq!(
+        selector.source.anchor,
+        mizar_core::core_ir::CoreSourceAnchor::SourceRange(mizar_session::SourceRange {
+            source_id: first.source_id(),
+            start: 173,
+            end: 182,
+        })
+    );
+    assert_eq!(selector.source.provenance.len(), 1);
+    assert_eq!(
+        selector.source.provenance[0].phase,
+        mizar_core::core_ir::CoreProvenancePhase::Checker
+    );
+    assert_eq!(
+        selector.source.provenance[0].key.as_str(),
+        "source-property-equals-selector-term-seed-v1.selector"
+    );
+
+    let source_map = first.source_map();
+    assert_eq!(source_map.term_sources.len(), 2);
+    assert_eq!(
+        source_map.term_sources.get(&association.base_term()),
+        Some(&base.source)
+    );
+    assert_eq!(
+        source_map.term_sources.get(&association.selector_term()),
+        Some(&selector.source)
+    );
+    assert!(source_map.item_sources.is_empty());
+    assert!(source_map.formula_sources.is_empty());
+    assert!(source_map.definition_sources.is_empty());
+    assert!(source_map.proof_sources.is_empty());
+    assert!(source_map.algorithm_sources.is_empty());
+    assert!(source_map.generated_sources.is_empty());
+    assert!(source_map.obligation_sources.is_empty());
+    assert_eq!(
+        first.debug_text(),
+        format!(
+            concat!(
+                "source-property-equals-selector-term-lowering-v1|module={}.{}|",
+                "owner-anchor=0|property={}|seed=0:1|term=0:1|root=1"
+            ),
+            first.module_id().package().as_str(),
+            first.module_id().path().as_str(),
+            first
+                .definition_owner()
+                .property_symbol()
+                .expect("Task35L264 property owner")
+                .fqn()
+                .as_str(),
+        )
+    );
+    assert!(!first.debug_text().ends_with('\n'));
+}
+
+#[test]
+fn task264_equals_selector_term_lowerings_are_unattached_and_transaction_local() {
+    let (first_ast, first_module, first_shells, first_symbols) =
+        task253_ast_from_source_text(SOURCE_PROPERTY_IMPLEMENTATION_EQUALS_TEXT, 265_300);
+    let first_output = source_property_implementation_output(
+        &first_ast,
+        first_module,
+        &first_shells,
+        &first_symbols,
+        SOURCE_PROPERTY_IMPLEMENTATION_EQUALS_TEXT,
+    )
+    .expect("first Task35L264 selector")
+    .expect("first Task35L264 equals route");
+    let (second_ast, second_module, second_shells, second_symbols) =
+        task253_ast_from_source_text(SOURCE_PROPERTY_IMPLEMENTATION_EQUALS_TEXT, 265_301);
+    let second_output = source_property_implementation_output(
+        &second_ast,
+        second_module,
+        &second_shells,
+        &second_symbols,
+        SOURCE_PROPERTY_IMPLEMENTATION_EQUALS_TEXT,
+    )
+    .expect("second Task35L264 selector")
+    .expect("second Task35L264 equals route");
+
+    let first_seed =
+        task264_equals_selector_term_seed_handoff(&first_output, &first_symbols);
+    let second_seed =
+        task264_equals_selector_term_seed_handoff(&second_output, &second_symbols);
+    let first =
+        mizar_core::elaborator::SourcePropertyEqualsSelectorTermLoweringProducer::build(
+            first_seed,
+        )
+        .expect("first Task35L264 lowering");
+    let second =
+        mizar_core::elaborator::SourcePropertyEqualsSelectorTermLoweringProducer::build(
+            second_seed,
+        )
+        .expect("second Task35L264 lowering");
+
+    assert_ne!(first.module_id(), second.module_id());
+    assert_ne!(first.seed_handoff(), second.seed_handoff());
+    assert_ne!(first.terms(), second.terms());
+    assert!(!std::ptr::eq(first.terms(), second.terms()));
+    assert!(!std::ptr::eq(first.source_map(), second.source_map()));
+    assert_ne!(
+        first
+            .seed_handoff()
+            .selector_identity()
+            .association()
+            .selector_symbol(),
+        second
+            .seed_handoff()
+            .selector_identity()
+            .association()
+            .selector_symbol()
+    );
+    for lowering in [&first, &second] {
+        assert_eq!(lowering.terms().len(), 2);
+        assert_eq!(lowering.association().base_term().index(), 0);
+        assert_eq!(lowering.association().selector_term().index(), 1);
+        assert_eq!(lowering.association().root_term().index(), 1);
+        assert_eq!(lowering.source_map().term_sources.len(), 2);
+        assert!(lowering.definition_owner().item().is_none());
+        assert!(lowering.source_map().item_sources.is_empty());
+        assert!(lowering.source_map().definition_sources.is_empty());
+        assert!(lowering.source_map().formula_sources.is_empty());
+        assert!(lowering.source_map().generated_sources.is_empty());
+        assert!(lowering.source_map().obligation_sources.is_empty());
+        assert!(lowering.source_map().term_sources.values().all(|source| {
+            matches!(
+                source.anchor,
+                mizar_core::core_ir::CoreSourceAnchor::SourceRange(range)
+                    if range.source_id == lowering.source_id()
+            )
+        }));
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Task264CarrierCoreContextMutation {
     Baseline,

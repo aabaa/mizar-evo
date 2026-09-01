@@ -680,6 +680,7 @@ algorithm payload category を下流 crate の exhaustive match を壊さずに�
 | `SourcePropertySelectorTypeContextError` | `#[non_exhaustive]` downstream forward-compatible surface。 |
 | `SourcePropertyParameterCoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface。 |
 | `SourcePropertyEqualsSelectorTermSeedError` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `SourcePropertyEqualsSelectorTermLoweringError` | `#[non_exhaustive]` downstream forward-compatible surface。 |
 | `DefinitionBoundaryKind` | `#[non_exhaustive]` downstream forward-compatible surface。 |
 | `DefinitionBoundaryStatus` | `#[non_exhaustive]` downstream forward-compatible surface。 |
 | `CheckerSiteKind` | `#[non_exhaustive]` downstream forward-compatible surface。 |
@@ -841,6 +842,23 @@ IR264 property ownerは意図的にnon-itemである。Carrier item 0はowner an
 だけでproperty ownerに代用しない。Seed-local id/use-site source/checker provenanceはlater
 owner-aware lowerer向けinputであり、`CoreTermId`/term table/source map/formula/definition body/
 route/semantic creditはpublishしない。
+
+## Task 35L264 Task264 equals selector term lowering
+
+Implemented [Task35L264 contract](../../task_contracts/ja/CORE-SOURCE-PROPERTY-EQUALS-SELECTOR-LOWERING-35L264.md)
+はcomplete Task35E264 capability上のspecialized pure-term lowerer 1件をownする。
+Authenticated non-item property ownerをdelegateし、local dense term tableへterm 0
+`Var(CoreVarId(0))`、term 1
+`Select { selector: <whole carrier-field SymbolId>, base: term 0 }`をpublishする。
+Seed/term/root associationは`0->0`、`1->1`、root 1。
+
+各`CoreTerm.source`はTask35E264 checker provenanceをexact direct sourceへmergeする。
+Term-only `CoreSourceMap`はsame term source 2件だけを持つ。Table/idはunattached local
+lowering resultで、CoreIr install/definition-body attachment/carrier item owner substitutionはない。
+
+Generic term/formula loweringはcall/changeしない。同pathはgenerated origin/diagnostic/
+obligation向けordinary item ownerをrequireし続ける。Formula/generated origin/diagnostic/
+obligation/definition/route/acceptance/fact/coverage creditなし。
 
 ## 禁止事項
 

@@ -790,6 +790,7 @@ payload categories can be added without breaking downstream exhaustive matches.
 | `SourcePropertySelectorTypeContextError` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `SourcePropertyParameterCoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `SourcePropertyEqualsSelectorTermSeedError` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `SourcePropertyEqualsSelectorTermLoweringError` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `DefinitionBoundaryKind` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `DefinitionBoundaryStatus` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `CheckerSiteKind` | `#[non_exhaustive]` downstream forward-compatible surface. |
@@ -975,6 +976,26 @@ only as the owner's anchor and is never substituted as the property owner.
 Seed-local ids, exact use-site sources, and checker provenance are inputs for a
 later owner-aware lowerer; no `CoreTermId`, term table, source map, formula,
 definition body, route, or semantic credit is published here.
+
+## Task 35L264 Task264 Equals Selector Term Lowering
+
+The implemented [Task35L264 contract](../../task_contracts/en/CORE-SOURCE-PROPERTY-EQUALS-SELECTOR-LOWERING-35L264.md)
+owns one specialized pure-term lowerer over the complete Task35E264 capability.
+It delegates the authenticated non-item property owner and publishes a local
+dense term table with `Var(CoreVarId(0))` at term 0 and
+`Select { selector: <whole carrier-field SymbolId>, base: term 0 }` at term 1.
+The seed/term/root association is `0->0`, `1->1`, root 1.
+
+Each `CoreTerm.source` merges the Task35E264 checker provenance into its exact
+direct source. A term-only `CoreSourceMap` repeats those two term sources and
+keeps every other domain empty. The table and ids are an unattached local
+lowering result: they are not installed in `CoreIr`, term 1 is not yet a
+definition body, and carrier item 0 is not substituted as property owner.
+
+The task does not call or change generic term/formula lowering. That path
+continues to require an ordinary item owner for generated origins, diagnostics,
+and obligations. No formula, generated origin, diagnostic, obligation,
+definition, route, acceptance, fact, or coverage credit is created.
 
 ## Forbidden Behavior
 

@@ -662,6 +662,19 @@ work. Every finding maps to a task or a recorded disposition:
     - [x] Complete post-source reviews and hard gates, and prepare the exact
       task-only commit. Record clean postcommit proof and fresh owner-aware-
       lowering inventory in the operational handoff.
+35L264. **Task264 equals selector term lowering.** [x]
+    - [x] Freeze the complete Task35E264 input, delegated IR264 owner, exact
+      local two-term table, seed/term/root association, term-only source map,
+      two-test scope, and unattached zero-credit boundary in the paired
+      [Task35L264 contract](../../task_contracts/en/CORE-SOURCE-PROPERTY-EQUALS-SELECTOR-LOWERING-35L264.md).
+    - [x] Complete independent pre-source specification/API and bilingual/
+      boundary reviews with no blocking finding.
+    - [x] Implement only the specialized pure-term lowerer and two private
+      tests. Do not modify generic owner semantics, substitute carrier item
+      ownership, install CoreIr, attach Core36, or add active route/coverage.
+    - [x] Complete post-source reviews and hard gates and prepare the exact
+      task-only commit. Clean postcommit proof belongs to the operational
+      handoff; the user-directed checker CI repair precedes any Core36 work.
 IR264. **Authenticated structure-property definition owner.** [x]
     - The paired [task contract](../../task_contracts/en/CORE-STRUCTURE-PROPERTY-DEFINITION-OWNER-IR264.md)
       is implemented, verified, and independently reviewed with hard gates

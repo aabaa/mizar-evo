@@ -247,3 +247,12 @@ owner, exact two-seed graph and provenance, private API/error precedence,
 two-test boundary, direct-lowering and carrier-owner exclusions, zero-credit
 state, and owner-aware-lowering/means/Core36 deferrals. English is canonical;
 no exception is recorded.
+
+## Task 35L264 Bilingual Contract Parity
+
+The [EN contract](../../task_contracts/en/CORE-SOURCE-PROPERTY-EQUALS-SELECTOR-LOWERING-35L264.md)
+and [JA companion](../../task_contracts/ja/CORE-SOURCE-PROPERTY-EQUALS-SELECTOR-LOWERING-35L264.md)
+synchronize the same specialized two-term lowering, delegated non-item owner,
+exact association/source-map/debug contract, validation order, two private
+tests, unattached boundary, generic-lowerer exclusion, and zero-credit status.
+English is canonical; no exception is recorded.

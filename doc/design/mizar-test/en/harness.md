@@ -6056,6 +6056,18 @@ No generic lowering, `CoreTermId`, source map, fixture, expectation, trace,
 metadata, selection, snapshot, production route, semantic result, coverage
 credit, or Task277B readiness changes.
 
+## Core Task 35L264 Private Task264 Equals Term Lowering Probe
+
+The implemented [Task35L264 contract](../../task_contracts/en/CORE-SOURCE-PROPERTY-EQUALS-SELECTOR-LOWERING-35L264.md)
+adds exactly two tests to the same private Task264 leaf. The first builds the
+complete Task35E264 handoff and asserts deterministic local terms 0/1, seed-to-
+term/root association, merged checker provenance, term-only source map, and
+exact debug bytes. The second proves two valid source/module transactions keep
+their unattached tables and sources isolated.
+
+No fixture, expectation, trace, metadata, selection, snapshot, production
+route, definition body, semantic acceptance, or coverage credit changes.
+
 ## Checker Task264D Private Equals Selector Identity Probe
 
 The existing Task264 selector/type tests now construct the checker Task264D

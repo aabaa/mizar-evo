@@ -423,6 +423,22 @@ owner is non-item. It neither substitutes carrier item 0 as owner nor publishes
 Property-owner-aware lowering is the next derived design task. Means `it`,
 Core36 body/correctness, and Task277B remain separate/not-ready.
 
+## Task 35L264 Task264 Equals Selector Term Lowering
+
+The implemented [Task35L264 contract](../../task_contracts/en/CORE-SOURCE-PROPERTY-EQUALS-SELECTOR-LOWERING-35L264.md)
+owns the smallest property-owner-safe Core35 lowering over the complete
+Task35E264 capability. It delegates the authenticated non-item owner and
+publishes only local dense terms 0/1 for `Var(M)` and
+`Select(carrier-field-symbol, term0)`, their exact merged sources, a term-only
+source map, and root term 1.
+
+The result is unattached: it is not installed in `CoreIr`, is not attributed
+to carrier item 0, and does not yet form a definition body. The generic
+term/formula lowerer remains unchanged. No formula, definition, diagnostic,
+obligation, route, behavior, or coverage credit is added. Core36 still requires
+a separately frozen property definition/body input
+and correctness disposition; means `it` remains a separate prerequisite.
+
 ## Task 36P264 Property-Implementation Owner Disposition
 
 The frozen [Task 36P264 contract](../../task_contracts/en/CORE-SOURCE-PROPERTY-IMPLEMENTATION-OWNER-36P264.md)
@@ -437,9 +453,9 @@ row after exact same-source Core 33--35 prerequisites. Task264C, Task33I264,
 Task34I264, IR264, Task34D264, Task264D, and Task33P264 now supply identity,
 carrier item, selector/return edge, authenticated `CoreDefinition.owner`,
 Core34 domain/return type input, equals selector identity, and parameter
-variable. Task35E264 now supplies the seed input. Core36 remains hard-blocked
-on property-owner-aware Core35 lowering and a separately reviewed Core36
-body/correctness seed.
+variable. Task35E264 supplies the seed input and frozen Task35L264 owns its
+unattached two-term lowering. Core36 remains hard-blocked on completed
+Task35L264 and a separately reviewed Core36 body/correctness seed.
 Task263 is a different-source precedent and is not an input. No CoreIR
 semantic lowering is selected here. This disposition remains zero-credit and
 changes no specification, `.miz` intent, expectation, trace, or snapshot state.

@@ -5461,6 +5461,17 @@ debug byteをassertする。Negative probeはmixed/foreign transactionをpublish
 Generic lowering、`CoreTermId`、source map、fixture/expectation/trace/metadata/selection/
 snapshot/production route/semantic result/coverage credit/Task277B readinessは不変。
 
+## Core Task 35L264 private Task264 equals term lowering probe
+
+Implemented [Task35L264 contract](../../task_contracts/ja/CORE-SOURCE-PROPERTY-EQUALS-SELECTOR-LOWERING-35L264.md)
+はsame private Task264 leafへexactly 2 testsを追加する。First testはcomplete Task35E264
+handoffをbuildし、deterministic local term 0/1、seed-to-term/root association、merged
+Checker provenance、term-only source map、exact debug bytesをassertする。Second testはvalidな
+source/module transaction 2件のunattached table/source isolationを証明する。
+
+Fixture、expectation、trace、metadata、selection、snapshot、production route、definition
+body、semantic acceptance、coverage creditは変更しない。
+
 ## Checker Task264D private equals selector identity probe
 
 Existing Task264 selector/type testsはreal equals routeからchecker Task264D handoffを

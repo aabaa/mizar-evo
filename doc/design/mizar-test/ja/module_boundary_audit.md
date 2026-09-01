@@ -11783,6 +11783,11 @@ Core Task35E264はsame private Task264 leafへtest 2件だけを追加する。E
 handoffをcombineしてimmutable seedをinspectするだけで、production path/generic lowering
 route/facade/public harness API/fixture/metadata/Cargo edge/snapshot/downstream ownerなし。
 
+Core Task35L264はsame private leafへtest 2件だけを追加する。Specialized Core producerを
+callしてimmutable unattached table/mapをinspectするだけで、module/include/production
+path/generic lowering route/facade/public harness API/fixture/metadata/Cargo edge/snapshot/
+downstream ownerなし。
+
 ## Checker Task 269A frozen dormant runner boundary
 
 `runner/type_elaboration`下private leaf 1件とincluded test leaf 1件がrunnerの

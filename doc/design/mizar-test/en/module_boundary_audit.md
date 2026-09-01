@@ -13101,6 +13101,12 @@ combines existing branded handoffs and inspects immutable seeds; no production
 path, generic lowering route, facade/public harness API, fixture, metadata,
 Cargo edge, snapshot, or downstream owner is added.
 
+Core Task35L264 adds only two further tests in the same private leaf. It calls
+the specialized Core producer and inspects immutable unattached tables/maps;
+no module, include, production path, generic lowering route, facade/public
+harness API, fixture, metadata, Cargo edge, snapshot, or downstream owner is
+added.
+
 ## Checker Task 264R No-Runner Module Boundary
 
 No `mizar-test` source, test, manifest, or Cargo target changes. The resolver

@@ -195,7 +195,11 @@ top-level public API group:
   `SourcePropertyEqualsSelectorTermSeedAssociation`、
   `SourcePropertyEqualsSelectorTermSeedHandoff`、
   `SourcePropertyEqualsSelectorTermSeedError`、
-  `SourcePropertyEqualsSelectorTermSeedProducer`
+  `SourcePropertyEqualsSelectorTermSeedProducer`、
+  `SourcePropertyEqualsSelectorTermLoweringAssociation`、
+  `SourcePropertyEqualsSelectorTermLoweringHandoff`、
+  `SourcePropertyEqualsSelectorTermLoweringError`、
+  `SourcePropertyEqualsSelectorTermLoweringProducer`
 - Type and fact lowering: `TypeAndFactResult`, `TypeAndFactLoweringError`,
   `TypeAndFactLoweringInput`, `TypePredicateSeed`,
   `DeclaredBinderTypeSeed`, `AttributeChainSeed`, `ModeExpansionSeed`,
@@ -424,6 +428,18 @@ lowered term id/table/source mapは作らず、property bodyをcarrier item 0へ
 Implemented handoff/private assertion 2件がbounded `design_drift`/`source_drift`/
 `test_gap`をcloseする。`spec_gap`/protected test-intent/trace/metadata changeなし。
 Owner-aware Core35 lowering、means `it`、Core36、production route、coverage creditはdeferred。
+
+## Core-35L264 Task264 equals selector term lowering
+
+Implemented [Task35L264 contract](../../task_contracts/ja/CORE-SOURCE-PROPERTY-EQUALS-SELECTOR-LOWERING-35L264.md)
+はcomplete Task35E264 handoff向けspecialized pure-term consumerを選ぶ。Exactly `Var(M)`と
+`Select(carrier, term0)`をunattached two-row `CoreTermTable`へlowerし、merged sourceを
+term-only `CoreSourceMap`へrepeatし、authenticated non-item property ownerをdelegateする。
+
+Specialized lowerer/private assertion 2件がbounded `design_drift`/`source_drift`/
+`test_gap`をcloseする。`spec_gap`なし。Generic lowerer、
+`CoreIr`、definition/body state、active route、protected artifact、trace/metadata、behavior、
+coverage creditは不変。
 
 ## Source-Undocumented Behavior Pass
 

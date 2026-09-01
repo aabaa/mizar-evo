@@ -98,6 +98,11 @@ existing `CoreTermSeed` 2件をretainするだけで、module/Cargo edge/CoreIR 
 resolver dependency/generic lowering owner/production route/destination slotを追加しない。
 Same private Task264 leafだけがtest consumerで、split不要。
 
+Implemented Task35L264は対応するlocalized pure-term adapterである。Complete Task35E264
+capabilityだけをconsumeし、unattached two-row term table、term-only source map、local
+associationだけをownする。Ordinary-item generic lowererのgeneralize、`CoreIr` install、
+definition/route ownershipは行わないため、module split/topology changeは選ばない。
+
 ## Classification
 
 | ID | Class | Evidence | Action |

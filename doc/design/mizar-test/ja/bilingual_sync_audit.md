@@ -2017,3 +2017,9 @@ Paired Task35E264 contract/harnessはsame private Task264 test 2件、complete
 Task33P264/Task264D input、authenticated property owner、exact ordered seed/source/
 provenance assertion、mixed/foreign default-deny rejection、zero-credit boundaryをassignする。
 English canonical/Japanese logical syncを維持する。
+
+## Core Task 35L264 private-probe synchronization
+
+Paired Task35L264 contract/harnessはsame private Task264 test 2件、exact two-term table/
+association/source-map/debug assertion、valid foreign-transaction isolation、unattached
+boundary、zero-credit statusをassignする。English canonical/Japanese logical syncを維持する。

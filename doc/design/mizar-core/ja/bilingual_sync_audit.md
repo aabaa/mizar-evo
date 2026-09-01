@@ -224,3 +224,11 @@ complete Task33P264/Task264D input、authenticated property owner、exact two-se
 provenance、private API/error precedence、test 2件、direct lowering/carrier-owner exclusion、
 zero-credit state、owner-aware lowering/means/Core36 deferralを同期する。English canonical、
 exceptionなし。
+
+## Task 35L264 bilingual contract parity
+
+[EN contract](../../task_contracts/en/CORE-SOURCE-PROPERTY-EQUALS-SELECTOR-LOWERING-35L264.md)と
+[JA companion](../../task_contracts/ja/CORE-SOURCE-PROPERTY-EQUALS-SELECTOR-LOWERING-35L264.md)は、
+same specialized two-term lowering、delegated non-item owner、exact association/source-map/
+debug contract、validation order、private test 2件、unattached boundary、generic-lowerer
+exclusion、zero-credit statusを同期する。English canonicalでexceptionなし。

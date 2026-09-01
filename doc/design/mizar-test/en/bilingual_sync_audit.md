@@ -2202,3 +2202,10 @@ private Task264 tests, complete Task33P264/Task264D inputs, authenticated
 property owner, exact ordered seed/source/provenance assertions, mixed/foreign
 default-deny rejection, and zero-credit boundary. English is canonical;
 Japanese is logically synchronized.
+
+## Core Task 35L264 Private-Probe Synchronization
+
+The paired Task35L264 contracts and harness sections assign the same two
+private Task264 tests, exact two-term table/association/source-map/debug
+assertions, valid foreign-transaction isolation, unattached boundary, and
+zero-credit status. English is canonical; Japanese is logically synchronized.

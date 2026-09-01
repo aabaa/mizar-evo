@@ -7472,3 +7472,19 @@ unchanged: no `.miz`, expectation, trace, metadata, stage, requirement status,
 snapshot, active route, semantic result, diagnostic, obligation, or Task277B
 credit changes. Property-owner-aware lowering, means `it`, and Core36 remain
 separate deferred owners.
+
+## Core Task35L264 Task264 Equals Selector Term Lowering Audit
+
+The implemented [Task35L264 contract](task_contracts/en/CORE-SOURCE-PROPERTY-EQUALS-SELECTOR-LOWERING-35L264.md)
+selects a specialized consumer for the complete Task35E264 capability. It
+publish only unattached local terms 0/1 for `Var(M)` and
+`Select(carrier, term0)`, their exact merged checker sources, a term-only
+source map, and root term 1 while delegating the authenticated non-item owner.
+
+The lowerer and its two private assertions close bounded `design_drift`,
+`source_drift`, and `test_gap`; there is no `spec_gap`. Coverage-plan counts
+remain `430/396/0/23`. No `.miz`, expectation,
+trace, metadata, stage, requirement status, snapshot, active route, diagnostic,
+obligation, semantic acceptance, or Task277B credit changes. Core36 property
+definition/body/correctness, means `it`, and production routing remain separate
+deferred owners.

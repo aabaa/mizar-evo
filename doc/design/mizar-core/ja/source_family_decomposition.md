@@ -357,6 +357,20 @@ Current generic inputはordinary `CoreItemId`でtermをownする一方、authent
 Property-owner-aware loweringがnext derived design task。Means `it`、Core36 body/correctness、
 Task277Bはseparate/not-ready。
 
+## Task 35L264 Task264 equals selector term lowering
+
+Implemented [Task35L264 contract](../../task_contracts/ja/CORE-SOURCE-PROPERTY-EQUALS-SELECTOR-LOWERING-35L264.md)
+はcomplete Task35E264 capability上のsmallest property-owner-safe Core35 loweringをownする。
+Authenticated non-item ownerをdelegateし、`Var(M)`と
+`Select(carrier-field-symbol, term0)`のlocal dense term 0/1、exact merged source、
+term-only source map、root term 1だけをpublishする。
+
+Resultはunattachedで、`CoreIr`へinstallせず、carrier item 0へattributeせず、definition
+bodyにもまだしない。Generic term/formula lowererは変更しない。Formula、definition、
+diagnostic、obligation、route、behavior、coverage creditなし。Core36は引き続きseparately
+frozen property definition/body inputとcorrectness dispositionを必要とし、means
+`it`もseparate prerequisiteのままである。
+
 ## Task 36P264 property-implementation owner disposition
 
 Frozen [Task 36P264 contract](../../task_contracts/ja/CORE-SOURCE-PROPERTY-IMPLEMENTATION-OWNER-36P264.md)は
@@ -369,8 +383,8 @@ Task264はexact same-source Core33--35 prerequisite後のfuture accepted Core36 
 exclusiveに残る。Task264C/Task33I264/Task34I264/IR264/Task34D264/Task264D/Task33P264が
 identity、carrier item、selector/return edge、authenticated `CoreDefinition.owner`、Core34
 domain/return type、equals selector identity、parameter variableを供給済み。Task35E264がseed
-inputを供給する。Core36はproperty-owner-aware Core35 loweringとseparately reviewed
-Core36 body/correctness seedまでhard-blocked。
+inputを供給し、frozen Task35L264がそのunattached two-term loweringをownする。Core36は
+completed Task35L264とseparately reviewed Core36 body/correctness seedまでhard-blocked。
 Task263はdifferent-source precedentでinputではない。
 本dispositionではCoreIR semantic loweringを選ばない。Zero-creditでspec/`.miz` intent/
 expectation/trace/snapshot stateは変更しない。

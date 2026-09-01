@@ -7038,6 +7038,326 @@ fn validate_property_equals_selector_term_seeds(
     Ok(())
 }
 
+/// Local Task-264 seed-to-term and root association.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourcePropertyEqualsSelectorTermLoweringAssociation {
+    base_seed: CoreTermSeedId,
+    base_term: CoreTermId,
+    selector_seed: CoreTermSeedId,
+    selector_term: CoreTermId,
+    root_term: CoreTermId,
+}
+
+impl SourcePropertyEqualsSelectorTermLoweringAssociation {
+    #[must_use]
+    pub const fn base_seed(&self) -> CoreTermSeedId {
+        self.base_seed
+    }
+
+    #[must_use]
+    pub const fn base_term(&self) -> CoreTermId {
+        self.base_term
+    }
+
+    #[must_use]
+    pub const fn selector_seed(&self) -> CoreTermSeedId {
+        self.selector_seed
+    }
+
+    #[must_use]
+    pub const fn selector_term(&self) -> CoreTermId {
+        self.selector_term
+    }
+
+    #[must_use]
+    pub const fn root_term(&self) -> CoreTermId {
+        self.root_term
+    }
+}
+
+/// Immutable unattached Task-264 equals selector term lowering.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourcePropertyEqualsSelectorTermLoweringHandoff {
+    seed_handoff: SourcePropertyEqualsSelectorTermSeedHandoff,
+    terms: CoreTermTable,
+    source_map: CoreSourceMap,
+    association: SourcePropertyEqualsSelectorTermLoweringAssociation,
+}
+
+impl SourcePropertyEqualsSelectorTermLoweringHandoff {
+    #[must_use]
+    pub const fn source_id(&self) -> SourceId {
+        self.seed_handoff.source_id()
+    }
+
+    #[must_use]
+    pub const fn module_id(&self) -> &ModuleId {
+        self.seed_handoff.module_id()
+    }
+
+    #[must_use]
+    pub const fn definition_owner(&self) -> &CoreDefinitionOwner {
+        self.seed_handoff.definition_owner()
+    }
+
+    #[must_use]
+    pub const fn seed_handoff(&self) -> &SourcePropertyEqualsSelectorTermSeedHandoff {
+        &self.seed_handoff
+    }
+
+    #[must_use]
+    pub const fn terms(&self) -> &CoreTermTable {
+        &self.terms
+    }
+
+    #[must_use]
+    pub const fn source_map(&self) -> &CoreSourceMap {
+        &self.source_map
+    }
+
+    #[must_use]
+    pub const fn association(&self) -> &SourcePropertyEqualsSelectorTermLoweringAssociation {
+        &self.association
+    }
+
+    #[must_use]
+    pub fn debug_text(&self) -> String {
+        format!(
+            concat!(
+                "source-property-equals-selector-term-lowering-v1|module={}.{}|",
+                "owner-anchor={}|property={}|seed={}:{}|term={}:{}|root={}"
+            ),
+            self.module_id().package().as_str(),
+            self.module_id().path().as_str(),
+            self.definition_owner().anchor_item().index(),
+            self.definition_owner()
+                .property_symbol()
+                .expect("validated property owner")
+                .fqn()
+                .as_str(),
+            self.association.base_seed().index(),
+            self.association.selector_seed().index(),
+            self.association.base_term().index(),
+            self.association.selector_term().index(),
+            self.association.root_term().index(),
+        )
+    }
+
+    fn validate(&self) -> Result<(), SourcePropertyEqualsSelectorTermLoweringError> {
+        self.seed_handoff
+            .validate()
+            .map_err(|_| SourcePropertyEqualsSelectorTermLoweringError::InvalidSeedHandoff)?;
+        validate_property_equals_selector_term_lowering_owner(&self.seed_handoff)?;
+        validate_property_equals_selector_term_lowering_association(&self.association)?;
+        validate_property_equals_selector_term_lowering_terms(
+            &self.seed_handoff,
+            &self.terms,
+            &self.association,
+        )?;
+        validate_property_equals_selector_term_lowering_source_map(
+            &self.terms,
+            &self.source_map,
+            &self.association,
+        )
+    }
+}
+
+/// Errors raised while lowering the exact Task-264 equals selector term graph.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum SourcePropertyEqualsSelectorTermLoweringError {
+    InvalidSeedHandoff,
+    InvalidTermLowering,
+}
+
+impl fmt::Display for SourcePropertyEqualsSelectorTermLoweringError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::InvalidSeedHandoff => {
+                formatter.write_str("property equals selector term seed handoff is invalid")
+            }
+            Self::InvalidTermLowering => {
+                formatter.write_str("property equals selector term lowering is invalid")
+            }
+        }
+    }
+}
+
+impl Error for SourcePropertyEqualsSelectorTermLoweringError {}
+
+/// Builds the standalone Task-264 equals selector term lowering.
+#[derive(Debug, Clone, Copy)]
+pub struct SourcePropertyEqualsSelectorTermLoweringProducer;
+
+impl SourcePropertyEqualsSelectorTermLoweringProducer {
+    pub fn build(
+        seed_handoff: SourcePropertyEqualsSelectorTermSeedHandoff,
+    ) -> Result<
+        SourcePropertyEqualsSelectorTermLoweringHandoff,
+        SourcePropertyEqualsSelectorTermLoweringError,
+    > {
+        seed_handoff
+            .validate()
+            .map_err(|_| SourcePropertyEqualsSelectorTermLoweringError::InvalidSeedHandoff)?;
+        validate_property_equals_selector_term_lowering_owner(&seed_handoff)?;
+
+        let association = SourcePropertyEqualsSelectorTermLoweringAssociation {
+            base_seed: CoreTermSeedId::new(0),
+            base_term: CoreTermId::new(0),
+            selector_seed: CoreTermSeedId::new(1),
+            selector_term: CoreTermId::new(1),
+            root_term: CoreTermId::new(1),
+        };
+        validate_property_equals_selector_term_lowering_association(&association)?;
+
+        let [base_seed, selector_seed] = seed_handoff.terms() else {
+            return Err(SourcePropertyEqualsSelectorTermLoweringError::InvalidTermLowering);
+        };
+        let base_source = normalized_source(source_with_provenance(
+            base_seed.source.clone(),
+            &base_seed.provenance,
+        ));
+        let selector_source = normalized_source(source_with_provenance(
+            selector_seed.source.clone(),
+            &selector_seed.provenance,
+        ));
+        let mut terms = CoreTermTable::new();
+        let base_term = terms.insert(CoreTerm::new(
+            CoreTermKind::Var(CoreVarId::new(0)),
+            base_source.clone(),
+        ));
+        let selector_term = terms.insert(CoreTerm::new(
+            CoreTermKind::Select {
+                selector: seed_handoff
+                    .selector_identity()
+                    .association()
+                    .selector_symbol()
+                    .clone(),
+                base: base_term,
+            },
+            selector_source.clone(),
+        ));
+        if base_term != association.base_term() || selector_term != association.selector_term() {
+            return Err(SourcePropertyEqualsSelectorTermLoweringError::InvalidTermLowering);
+        }
+
+        let mut source_map = CoreSourceMap::new();
+        source_map.term_sources.insert(base_term, base_source);
+        source_map
+            .term_sources
+            .insert(selector_term, selector_source);
+        validate_property_equals_selector_term_lowering_terms(&seed_handoff, &terms, &association)?;
+        validate_property_equals_selector_term_lowering_source_map(
+            &terms,
+            &source_map,
+            &association,
+        )?;
+
+        let handoff = SourcePropertyEqualsSelectorTermLoweringHandoff {
+            seed_handoff,
+            terms,
+            source_map,
+            association,
+        };
+        handoff.validate()?;
+        Ok(handoff)
+    }
+}
+
+fn validate_property_equals_selector_term_lowering_owner(
+    seed_handoff: &SourcePropertyEqualsSelectorTermSeedHandoff,
+) -> Result<(), SourcePropertyEqualsSelectorTermLoweringError> {
+    validate_property_equals_selector_definition_owner(
+        seed_handoff.parameter_context(),
+        seed_handoff.definition_owner(),
+    )
+    .map_err(|_| SourcePropertyEqualsSelectorTermLoweringError::InvalidTermLowering)
+}
+
+fn validate_property_equals_selector_term_lowering_association(
+    association: &SourcePropertyEqualsSelectorTermLoweringAssociation,
+) -> Result<(), SourcePropertyEqualsSelectorTermLoweringError> {
+    if association.base_seed() != CoreTermSeedId::new(0)
+        || association.base_term() != CoreTermId::new(0)
+        || association.selector_seed() != CoreTermSeedId::new(1)
+        || association.selector_term() != CoreTermId::new(1)
+        || association.root_term() != association.selector_term()
+    {
+        return Err(SourcePropertyEqualsSelectorTermLoweringError::InvalidTermLowering);
+    }
+    Ok(())
+}
+
+fn validate_property_equals_selector_term_lowering_terms(
+    seed_handoff: &SourcePropertyEqualsSelectorTermSeedHandoff,
+    terms: &CoreTermTable,
+    association: &SourcePropertyEqualsSelectorTermLoweringAssociation,
+) -> Result<(), SourcePropertyEqualsSelectorTermLoweringError> {
+    let [base_seed, selector_seed] = seed_handoff.terms() else {
+        return Err(SourcePropertyEqualsSelectorTermLoweringError::InvalidTermLowering);
+    };
+    let base = terms
+        .get(association.base_term())
+        .ok_or(SourcePropertyEqualsSelectorTermLoweringError::InvalidTermLowering)?;
+    let selector = terms
+        .get(association.selector_term())
+        .ok_or(SourcePropertyEqualsSelectorTermLoweringError::InvalidTermLowering)?;
+    let expected_base_source = normalized_source(source_with_provenance(
+        base_seed.source.clone(),
+        &base_seed.provenance,
+    ));
+    let expected_selector_source = normalized_source(source_with_provenance(
+        selector_seed.source.clone(),
+        &selector_seed.provenance,
+    ));
+
+    if terms.len() != 2
+        || base.kind != CoreTermKind::Var(CoreVarId::new(0))
+        || base.source != expected_base_source
+        || selector.kind
+            != (CoreTermKind::Select {
+                selector: seed_handoff
+                    .selector_identity()
+                    .association()
+                    .selector_symbol()
+                    .clone(),
+                base: association.base_term(),
+            })
+        || selector.source != expected_selector_source
+    {
+        return Err(SourcePropertyEqualsSelectorTermLoweringError::InvalidTermLowering);
+    }
+    Ok(())
+}
+
+fn validate_property_equals_selector_term_lowering_source_map(
+    terms: &CoreTermTable,
+    source_map: &CoreSourceMap,
+    association: &SourcePropertyEqualsSelectorTermLoweringAssociation,
+) -> Result<(), SourcePropertyEqualsSelectorTermLoweringError> {
+    let base = terms
+        .get(association.base_term())
+        .ok_or(SourcePropertyEqualsSelectorTermLoweringError::InvalidTermLowering)?;
+    let selector = terms
+        .get(association.selector_term())
+        .ok_or(SourcePropertyEqualsSelectorTermLoweringError::InvalidTermLowering)?;
+
+    if source_map.term_sources.len() != 2
+        || source_map.term_sources.get(&association.base_term()) != Some(&base.source)
+        || source_map.term_sources.get(&association.selector_term()) != Some(&selector.source)
+        || !source_map.item_sources.is_empty()
+        || !source_map.formula_sources.is_empty()
+        || !source_map.definition_sources.is_empty()
+        || !source_map.proof_sources.is_empty()
+        || !source_map.algorithm_sources.is_empty()
+        || !source_map.generated_sources.is_empty()
+        || !source_map.obligation_sources.is_empty()
+    {
+        return Err(SourcePropertyEqualsSelectorTermLoweringError::InvalidTermLowering);
+    }
+    Ok(())
+}
+
 /// One immutable Core variable associated with one checker-authenticated
 /// nested-Fraenkel capture row.
 #[derive(Debug, Clone, PartialEq, Eq)]

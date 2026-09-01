@@ -109,6 +109,12 @@ a module, Cargo edge, CoreIR type, raw-syntax/resolver dependency, generic
 lowering owner, production route, or destination slot. The same private
 Task264 leaf is the only test consumer; no split is required.
 
+Implemented Task35L264 is the matching localized pure-term adapter. It consumes the
+complete Task35E264 capability and owns only an unattached two-row term table,
+term-only source map, and local association. It does not generalize the
+ordinary-item generic lowerer, install `CoreIr`, or add definition/route
+ownership, so no module split or topology change is selected.
+
 ## Classification
 
 | ID | Class | Evidence | Action |

@@ -622,6 +622,20 @@ F8 の spec 本文は同一変更(`cef7e109`: spec 03、05、13、17、18)で修
       carrier-item owner substitution、`CoreTermId`、means `it`、Core36、route、coverageなし。
     - [x] Post-source review/hard gateを完了し、exact task-only commitをprepareする。
       Clean postcommit proof/fresh owner-aware-lowering inventoryはoperational handoffへ記録する。
+35L264. **Task264 equals selector term lowering。** [x]
+    - [x] Complete Task35E264 input、delegated IR264 owner、exact local two-term table、
+      seed/term/root association、term-only source map、test 2件、unattached zero-credit
+      boundaryをpaired
+      [Task35L264 contract](../../task_contracts/ja/CORE-SOURCE-PROPERTY-EQUALS-SELECTOR-LOWERING-35L264.md)
+      へfreezeする。
+    - [x] Pre-source specification/API/bilingual/boundary reviewをblocking findingなしで
+      完了する。
+    - [x] Specialized pure-term lowerer/private test 2件だけをimplementする。Generic owner
+      semantics変更、carrier owner substitution、CoreIr install、Core36 attachment、route/
+      coverageなし。
+    - [x] Post-source review/hard gateを完了し、exact task-only commitをprepareする。Clean
+      postcommit proofはoperational handoffへ記録し、user-directed checker CI repairを
+      Core36 workより先に行う。
 IR264. **Authenticated structure-property definition owner。** [x]
     - Paired [task contract](../../task_contracts/ja/CORE-STRUCTURE-PROPERTY-DEFINITION-OWNER-IR264.md)
       はimplemented/verified、independent reviewはhard gate `9/9`、valid uncapped quality

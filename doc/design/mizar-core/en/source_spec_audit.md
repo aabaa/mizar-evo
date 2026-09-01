@@ -196,7 +196,11 @@ Top-level public API groups:
   `SourcePropertyEqualsSelectorTermSeedAssociation`,
   `SourcePropertyEqualsSelectorTermSeedHandoff`,
   `SourcePropertyEqualsSelectorTermSeedError`,
-  `SourcePropertyEqualsSelectorTermSeedProducer`
+  `SourcePropertyEqualsSelectorTermSeedProducer`,
+  `SourcePropertyEqualsSelectorTermLoweringAssociation`,
+  `SourcePropertyEqualsSelectorTermLoweringHandoff`,
+  `SourcePropertyEqualsSelectorTermLoweringError`,
+  `SourcePropertyEqualsSelectorTermLoweringProducer`
 - Type and fact lowering: `TypeAndFactResult`, `TypeAndFactLoweringError`,
   `TypeAndFactLoweringInput`, `TypePredicateSeed`,
   `DeclaredBinderTypeSeed`, `AttributeChainSeed`, `ModeExpansionSeed`,
@@ -464,6 +468,20 @@ The implemented handoff and two private assertions close the bounded
 `design_drift`/`source_drift`/`test_gap`. There is no `spec_gap` or protected
 test-intent/trace/metadata change. Owner-aware Core35 lowering, means `it`,
 Core36, production routing, and coverage credit remain deferred.
+
+## Core-35L264 Task264 Equals Selector Term Lowering
+
+The implemented [Task35L264 contract](../../task_contracts/en/CORE-SOURCE-PROPERTY-EQUALS-SELECTOR-LOWERING-35L264.md)
+selects a specialized pure-term consumer for the complete Task35E264 handoff.
+It must lower exactly `Var(M)` and `Select(carrier, term0)` into an unattached
+two-row `CoreTermTable`, repeat their merged sources in a term-only
+`CoreSourceMap`, and delegate the authenticated non-item property owner.
+
+The specialized lowerer and two private assertions close the bounded
+`design_drift`, `source_drift`, and `test_gap`. There is no `spec_gap`. The
+generic lowerer, `CoreIr`, definition/body state,
+active route, protected artifacts, trace/metadata, behavior, and coverage
+credit remain unchanged.
 
 ## Source-Undocumented Behavior Pass
 
