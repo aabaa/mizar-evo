@@ -43982,6 +43982,12 @@ citation#0 statement=1 context=1 target=imported label_ref=0 scope=[0] range=136
             .expect("clean replay after all dependency mutations");
     }
 
+    // Keep each macro-expanded fixture matrix below libtest's default thread stack.
+    #[inline(never)]
+    fn run_in_isolated_test_stack_frame(operation: impl FnOnce()) {
+        operation();
+    }
+
     #[test]
     fn task258b3m2b2b3a_combined_ownership_hybrids_and_all_family_orders_are_atomic() {
         let fixture = B3M2B2B3AFixture::new(233);
@@ -44066,67 +44072,69 @@ citation#0 statement=1 context=1 target=imported label_ref=0 scope=[0] range=136
 
         macro_rules! reject_plain_witness_family_for_b3a {
             ($label:literal, $family:expr) => {{
-                let family = $family;
-                let family_statement = family.statement();
-                let family_witnesses = family
-                    .witnesses(&family_statement, family.witness_input())
-                    .expect(concat!($label, " witnesses"));
-                let family_base = family.empty_typed();
-                let family_installed = family_base
-                    .clone()
-                    .with_source_statement_witnesses(
-                        family_statement.clone(),
-                        family_witnesses.clone(),
-                    )
-                    .expect(concat!($label, " installed"));
-                assert_eq!(
-                    base.clone().with_source_statement_witnesses(
-                        family_statement.clone(),
-                        family_witnesses.clone(),
-                    ),
-                    Err(TypedAstError::InvalidSourceStatement),
-                    concat!("B3A base then ", $label)
-                );
-                assert_eq!(
-                    typed.clone().with_source_statement_witnesses(
-                        family_statement.clone(),
-                        family_witnesses.clone(),
-                    ),
-                    Err(TypedAstError::InvalidSourceStatement),
-                    concat!("installed B3A then ", $label)
-                );
-                assert_eq!(
-                    family_base
+                run_in_isolated_test_stack_frame(|| {
+                    let family = $family;
+                    let family_statement = family.statement();
+                    let family_witnesses = family
+                        .witnesses(&family_statement, family.witness_input())
+                        .expect(concat!($label, " witnesses"));
+                    let family_base = family.empty_typed();
+                    let family_installed = family_base
                         .clone()
-                        .with_source_set_term_statement_witnesses(
-                            fixture.set_terms.clone(),
-                            statement.clone(),
-                            witnesses.clone(),
+                        .with_source_statement_witnesses(
+                            family_statement.clone(),
+                            family_witnesses.clone(),
+                        )
+                        .expect(concat!($label, " installed"));
+                    assert_eq!(
+                        base.clone().with_source_statement_witnesses(
+                            family_statement.clone(),
+                            family_witnesses.clone(),
                         ),
-                    Err(TypedAstError::InvalidSourceStatement),
-                    concat!($label, " base then B3A")
-                );
-                assert_eq!(
-                    family_installed
-                        .clone()
-                        .with_source_set_term_statement_witnesses(
-                            fixture.set_terms.clone(),
-                            statement.clone(),
-                            witnesses.clone(),
+                        Err(TypedAstError::InvalidSourceStatement),
+                        concat!("B3A base then ", $label)
+                    );
+                    assert_eq!(
+                        typed.clone().with_source_statement_witnesses(
+                            family_statement.clone(),
+                            family_witnesses.clone(),
                         ),
-                    Err(TypedAstError::InvalidSourceStatement),
-                    concat!("installed ", $label, " then B3A")
-                );
-                assert_eq!(
-                    family_base.with_source_set_term(fixture.set_terms.clone()),
-                    Err(TypedAstError::InvalidSourceSetTerm),
-                    concat!($label, " base rejects set injection")
-                );
-                assert_eq!(
-                    family_installed.with_source_set_term(fixture.set_terms.clone()),
-                    Err(TypedAstError::InvalidSourceSetTerm),
-                    concat!("installed ", $label, " rejects set injection")
-                );
+                        Err(TypedAstError::InvalidSourceStatement),
+                        concat!("installed B3A then ", $label)
+                    );
+                    assert_eq!(
+                        family_base
+                            .clone()
+                            .with_source_set_term_statement_witnesses(
+                                fixture.set_terms.clone(),
+                                statement.clone(),
+                                witnesses.clone(),
+                            ),
+                        Err(TypedAstError::InvalidSourceStatement),
+                        concat!($label, " base then B3A")
+                    );
+                    assert_eq!(
+                        family_installed
+                            .clone()
+                            .with_source_set_term_statement_witnesses(
+                                fixture.set_terms.clone(),
+                                statement.clone(),
+                                witnesses.clone(),
+                            ),
+                        Err(TypedAstError::InvalidSourceStatement),
+                        concat!("installed ", $label, " then B3A")
+                    );
+                    assert_eq!(
+                        family_base.with_source_set_term(fixture.set_terms.clone()),
+                        Err(TypedAstError::InvalidSourceSetTerm),
+                        concat!($label, " base rejects set injection")
+                    );
+                    assert_eq!(
+                        family_installed.with_source_set_term(fixture.set_terms.clone()),
+                        Err(TypedAstError::InvalidSourceSetTerm),
+                        concat!("installed ", $label, " rejects set injection")
+                    );
+                });
             }};
         }
         reject_plain_witness_family_for_b3a!("B3", B3Fixture::new(233));
@@ -44138,70 +44146,72 @@ citation#0 statement=1 context=1 target=imported label_ref=0 scope=[0] range=136
 
         macro_rules! reject_application_witness_family_for_b3a {
             ($label:literal, $family:expr) => {{
-                let family = $family;
-                let family_statement = family.statement();
-                let family_witnesses = family
-                    .witnesses(&family_statement, family.witness_input())
-                    .expect(concat!($label, " witnesses"));
-                let family_base = family.empty_typed();
-                let family_installed = family_base
-                    .clone()
-                    .with_source_application_statement_witnesses(
-                        family.application.clone(),
-                        family_statement.clone(),
-                        family_witnesses.clone(),
-                    )
-                    .expect(concat!($label, " installed"));
-                assert_eq!(
-                    base.clone().with_source_application_statement_witnesses(
-                        family.application.clone(),
-                        family_statement.clone(),
-                        family_witnesses.clone(),
-                    ),
-                    Err(TypedAstError::InvalidSourceStatement),
-                    concat!("B3A base then ", $label)
-                );
-                assert_eq!(
-                    typed.clone().with_source_application_statement_witnesses(
-                        family.application.clone(),
-                        family_statement.clone(),
-                        family_witnesses.clone(),
-                    ),
-                    Err(TypedAstError::InvalidSourceStatement),
-                    concat!("installed B3A then ", $label)
-                );
-                assert_eq!(
-                    family_base
+                run_in_isolated_test_stack_frame(|| {
+                    let family = $family;
+                    let family_statement = family.statement();
+                    let family_witnesses = family
+                        .witnesses(&family_statement, family.witness_input())
+                        .expect(concat!($label, " witnesses"));
+                    let family_base = family.empty_typed();
+                    let family_installed = family_base
                         .clone()
-                        .with_source_set_term_statement_witnesses(
-                            fixture.set_terms.clone(),
-                            statement.clone(),
-                            witnesses.clone(),
+                        .with_source_application_statement_witnesses(
+                            family.application.clone(),
+                            family_statement.clone(),
+                            family_witnesses.clone(),
+                        )
+                        .expect(concat!($label, " installed"));
+                    assert_eq!(
+                        base.clone().with_source_application_statement_witnesses(
+                            family.application.clone(),
+                            family_statement.clone(),
+                            family_witnesses.clone(),
                         ),
-                    Err(TypedAstError::InvalidSourceStatement),
-                    concat!($label, " base then B3A")
-                );
-                assert_eq!(
-                    family_installed
-                        .clone()
-                        .with_source_set_term_statement_witnesses(
-                            fixture.set_terms.clone(),
-                            statement.clone(),
-                            witnesses.clone(),
+                        Err(TypedAstError::InvalidSourceStatement),
+                        concat!("B3A base then ", $label)
+                    );
+                    assert_eq!(
+                        typed.clone().with_source_application_statement_witnesses(
+                            family.application.clone(),
+                            family_statement.clone(),
+                            family_witnesses.clone(),
                         ),
-                    Err(TypedAstError::InvalidSourceStatement),
-                    concat!("installed ", $label, " then B3A")
-                );
-                assert_eq!(
-                    family_base.with_source_set_term(fixture.set_terms.clone()),
-                    Err(TypedAstError::InvalidSourceSetTerm),
-                    concat!($label, " base rejects set injection")
-                );
-                assert_eq!(
-                    family_installed.with_source_set_term(fixture.set_terms.clone()),
-                    Err(TypedAstError::InvalidSourceSetTerm),
-                    concat!("installed ", $label, " rejects set injection")
-                );
+                        Err(TypedAstError::InvalidSourceStatement),
+                        concat!("installed B3A then ", $label)
+                    );
+                    assert_eq!(
+                        family_base
+                            .clone()
+                            .with_source_set_term_statement_witnesses(
+                                fixture.set_terms.clone(),
+                                statement.clone(),
+                                witnesses.clone(),
+                            ),
+                        Err(TypedAstError::InvalidSourceStatement),
+                        concat!($label, " base then B3A")
+                    );
+                    assert_eq!(
+                        family_installed
+                            .clone()
+                            .with_source_set_term_statement_witnesses(
+                                fixture.set_terms.clone(),
+                                statement.clone(),
+                                witnesses.clone(),
+                            ),
+                        Err(TypedAstError::InvalidSourceStatement),
+                        concat!("installed ", $label, " then B3A")
+                    );
+                    assert_eq!(
+                        family_base.with_source_set_term(fixture.set_terms.clone()),
+                        Err(TypedAstError::InvalidSourceSetTerm),
+                        concat!($label, " base rejects set injection")
+                    );
+                    assert_eq!(
+                        family_installed.with_source_set_term(fixture.set_terms.clone()),
+                        Err(TypedAstError::InvalidSourceSetTerm),
+                        concat!("installed ", $label, " rejects set injection")
+                    );
+                });
             }};
         }
         reject_application_witness_family_for_b3a!("B1A", B3M2B2B1AFixture::new(233));
@@ -44209,70 +44219,72 @@ citation#0 statement=1 context=1 target=imported label_ref=0 scope=[0] range=136
 
         macro_rules! reject_structure_witness_family_for_b3a {
             ($label:literal, $family:expr) => {{
-                let family = $family;
-                let family_statement = family.statement();
-                let family_witnesses = family
-                    .witnesses(&family_statement, family.witness_input())
-                    .expect(concat!($label, " witnesses"));
-                let family_base = family.empty_typed();
-                let family_installed = family_base
-                    .clone()
-                    .with_source_structure_statement_witnesses(
-                        family.structure.clone(),
-                        family_statement.clone(),
-                        family_witnesses.clone(),
-                    )
-                    .expect(concat!($label, " installed"));
-                assert_eq!(
-                    base.clone().with_source_structure_statement_witnesses(
-                        family.structure.clone(),
-                        family_statement.clone(),
-                        family_witnesses.clone(),
-                    ),
-                    Err(TypedAstError::InvalidSourceStatement),
-                    concat!("B3A base then ", $label)
-                );
-                assert_eq!(
-                    typed.clone().with_source_structure_statement_witnesses(
-                        family.structure.clone(),
-                        family_statement.clone(),
-                        family_witnesses.clone(),
-                    ),
-                    Err(TypedAstError::InvalidSourceStatement),
-                    concat!("installed B3A then ", $label)
-                );
-                assert_eq!(
-                    family_base
+                run_in_isolated_test_stack_frame(|| {
+                    let family = $family;
+                    let family_statement = family.statement();
+                    let family_witnesses = family
+                        .witnesses(&family_statement, family.witness_input())
+                        .expect(concat!($label, " witnesses"));
+                    let family_base = family.empty_typed();
+                    let family_installed = family_base
                         .clone()
-                        .with_source_set_term_statement_witnesses(
-                            fixture.set_terms.clone(),
-                            statement.clone(),
-                            witnesses.clone(),
+                        .with_source_structure_statement_witnesses(
+                            family.structure.clone(),
+                            family_statement.clone(),
+                            family_witnesses.clone(),
+                        )
+                        .expect(concat!($label, " installed"));
+                    assert_eq!(
+                        base.clone().with_source_structure_statement_witnesses(
+                            family.structure.clone(),
+                            family_statement.clone(),
+                            family_witnesses.clone(),
                         ),
-                    Err(TypedAstError::InvalidSourceStatement),
-                    concat!($label, " base then B3A")
-                );
-                assert_eq!(
-                    family_installed
-                        .clone()
-                        .with_source_set_term_statement_witnesses(
-                            fixture.set_terms.clone(),
-                            statement.clone(),
-                            witnesses.clone(),
+                        Err(TypedAstError::InvalidSourceStatement),
+                        concat!("B3A base then ", $label)
+                    );
+                    assert_eq!(
+                        typed.clone().with_source_structure_statement_witnesses(
+                            family.structure.clone(),
+                            family_statement.clone(),
+                            family_witnesses.clone(),
                         ),
-                    Err(TypedAstError::InvalidSourceStatement),
-                    concat!("installed ", $label, " then B3A")
-                );
-                assert_eq!(
-                    family_base.with_source_set_term(fixture.set_terms.clone()),
-                    Err(TypedAstError::InvalidSourceSetTerm),
-                    concat!($label, " base rejects set injection")
-                );
-                assert_eq!(
-                    family_installed.with_source_set_term(fixture.set_terms.clone()),
-                    Err(TypedAstError::InvalidSourceSetTerm),
-                    concat!("installed ", $label, " rejects set injection")
-                );
+                        Err(TypedAstError::InvalidSourceStatement),
+                        concat!("installed B3A then ", $label)
+                    );
+                    assert_eq!(
+                        family_base
+                            .clone()
+                            .with_source_set_term_statement_witnesses(
+                                fixture.set_terms.clone(),
+                                statement.clone(),
+                                witnesses.clone(),
+                            ),
+                        Err(TypedAstError::InvalidSourceStatement),
+                        concat!($label, " base then B3A")
+                    );
+                    assert_eq!(
+                        family_installed
+                            .clone()
+                            .with_source_set_term_statement_witnesses(
+                                fixture.set_terms.clone(),
+                                statement.clone(),
+                                witnesses.clone(),
+                            ),
+                        Err(TypedAstError::InvalidSourceStatement),
+                        concat!("installed ", $label, " then B3A")
+                    );
+                    assert_eq!(
+                        family_base.with_source_set_term(fixture.set_terms.clone()),
+                        Err(TypedAstError::InvalidSourceSetTerm),
+                        concat!($label, " base rejects set injection")
+                    );
+                    assert_eq!(
+                        family_installed.with_source_set_term(fixture.set_terms.clone()),
+                        Err(TypedAstError::InvalidSourceSetTerm),
+                        concat!("installed ", $label, " rejects set injection")
+                    );
+                });
             }};
         }
         reject_structure_witness_family_for_b3a!("B2A", B3M2B2B2AFixture::new(233));
@@ -46564,67 +46576,69 @@ citation#0 statement=1 context=1 target=imported label_ref=0 scope=[0] range=136
 
         macro_rules! reject_plain_witness_family_for_b3c {
             ($label:literal, $family:expr) => {{
-                let family = $family;
-                let family_statement = family.statement();
-                let family_witnesses = family
-                    .witnesses(&family_statement, family.witness_input())
-                    .expect(concat!($label, " witnesses"));
-                let family_base = family.empty_typed();
-                let family_installed = family_base
-                    .clone()
-                    .with_source_statement_witnesses(
-                        family_statement.clone(),
-                        family_witnesses.clone(),
-                    )
-                    .expect(concat!($label, " installed"));
-                assert_eq!(
-                    base.clone().with_source_statement_witnesses(
-                        family_statement.clone(),
-                        family_witnesses.clone(),
-                    ),
-                    Err(TypedAstError::InvalidSourceStatement),
-                    concat!("B3C base then ", $label)
-                );
-                assert_eq!(
-                    typed.clone().with_source_statement_witnesses(
-                        family_statement.clone(),
-                        family_witnesses.clone(),
-                    ),
-                    Err(TypedAstError::InvalidSourceStatement),
-                    concat!("installed B3C then ", $label)
-                );
-                assert_eq!(
-                    family_base
+                run_in_isolated_test_stack_frame(|| {
+                    let family = $family;
+                    let family_statement = family.statement();
+                    let family_witnesses = family
+                        .witnesses(&family_statement, family.witness_input())
+                        .expect(concat!($label, " witnesses"));
+                    let family_base = family.empty_typed();
+                    let family_installed = family_base
                         .clone()
-                        .with_source_set_term_statement_witnesses(
-                            fixture.set_terms.clone(),
-                            statement.clone(),
-                            witnesses.clone(),
+                        .with_source_statement_witnesses(
+                            family_statement.clone(),
+                            family_witnesses.clone(),
+                        )
+                        .expect(concat!($label, " installed"));
+                    assert_eq!(
+                        base.clone().with_source_statement_witnesses(
+                            family_statement.clone(),
+                            family_witnesses.clone(),
                         ),
-                    Err(TypedAstError::InvalidSourceStatement),
-                    concat!($label, " base then B3C")
-                );
-                assert_eq!(
-                    family_installed
-                        .clone()
-                        .with_source_set_term_statement_witnesses(
-                            fixture.set_terms.clone(),
-                            statement.clone(),
-                            witnesses.clone(),
+                        Err(TypedAstError::InvalidSourceStatement),
+                        concat!("B3C base then ", $label)
+                    );
+                    assert_eq!(
+                        typed.clone().with_source_statement_witnesses(
+                            family_statement.clone(),
+                            family_witnesses.clone(),
                         ),
-                    Err(TypedAstError::InvalidSourceStatement),
-                    concat!("installed ", $label, " then B3C")
-                );
-                assert_eq!(
-                    family_base.with_source_set_term(fixture.set_terms.clone()),
-                    Err(TypedAstError::InvalidSourceSetTerm),
-                    concat!($label, " base rejects B3C set injection")
-                );
-                assert_eq!(
-                    family_installed.with_source_set_term(fixture.set_terms.clone()),
-                    Err(TypedAstError::InvalidSourceSetTerm),
-                    concat!("installed ", $label, " rejects B3C set injection")
-                );
+                        Err(TypedAstError::InvalidSourceStatement),
+                        concat!("installed B3C then ", $label)
+                    );
+                    assert_eq!(
+                        family_base
+                            .clone()
+                            .with_source_set_term_statement_witnesses(
+                                fixture.set_terms.clone(),
+                                statement.clone(),
+                                witnesses.clone(),
+                            ),
+                        Err(TypedAstError::InvalidSourceStatement),
+                        concat!($label, " base then B3C")
+                    );
+                    assert_eq!(
+                        family_installed
+                            .clone()
+                            .with_source_set_term_statement_witnesses(
+                                fixture.set_terms.clone(),
+                                statement.clone(),
+                                witnesses.clone(),
+                            ),
+                        Err(TypedAstError::InvalidSourceStatement),
+                        concat!("installed ", $label, " then B3C")
+                    );
+                    assert_eq!(
+                        family_base.with_source_set_term(fixture.set_terms.clone()),
+                        Err(TypedAstError::InvalidSourceSetTerm),
+                        concat!($label, " base rejects B3C set injection")
+                    );
+                    assert_eq!(
+                        family_installed.with_source_set_term(fixture.set_terms.clone()),
+                        Err(TypedAstError::InvalidSourceSetTerm),
+                        concat!("installed ", $label, " rejects B3C set injection")
+                    );
+                });
             }};
         }
         reject_plain_witness_family_for_b3c!("B3", B3Fixture::new(238));
@@ -46636,70 +46650,72 @@ citation#0 statement=1 context=1 target=imported label_ref=0 scope=[0] range=136
 
         macro_rules! reject_application_witness_family_for_b3c {
             ($label:literal, $family:expr) => {{
-                let family = $family;
-                let family_statement = family.statement();
-                let family_witnesses = family
-                    .witnesses(&family_statement, family.witness_input())
-                    .expect(concat!($label, " witnesses"));
-                let family_base = family.empty_typed();
-                let family_installed = family_base
-                    .clone()
-                    .with_source_application_statement_witnesses(
-                        family.application.clone(),
-                        family_statement.clone(),
-                        family_witnesses.clone(),
-                    )
-                    .expect(concat!($label, " installed"));
-                assert_eq!(
-                    base.clone().with_source_application_statement_witnesses(
-                        family.application.clone(),
-                        family_statement.clone(),
-                        family_witnesses.clone(),
-                    ),
-                    Err(TypedAstError::InvalidSourceStatement),
-                    concat!("B3C base then ", $label)
-                );
-                assert_eq!(
-                    typed.clone().with_source_application_statement_witnesses(
-                        family.application.clone(),
-                        family_statement.clone(),
-                        family_witnesses.clone(),
-                    ),
-                    Err(TypedAstError::InvalidSourceStatement),
-                    concat!("installed B3C then ", $label)
-                );
-                assert_eq!(
-                    family_base
+                run_in_isolated_test_stack_frame(|| {
+                    let family = $family;
+                    let family_statement = family.statement();
+                    let family_witnesses = family
+                        .witnesses(&family_statement, family.witness_input())
+                        .expect(concat!($label, " witnesses"));
+                    let family_base = family.empty_typed();
+                    let family_installed = family_base
                         .clone()
-                        .with_source_set_term_statement_witnesses(
-                            fixture.set_terms.clone(),
-                            statement.clone(),
-                            witnesses.clone(),
+                        .with_source_application_statement_witnesses(
+                            family.application.clone(),
+                            family_statement.clone(),
+                            family_witnesses.clone(),
+                        )
+                        .expect(concat!($label, " installed"));
+                    assert_eq!(
+                        base.clone().with_source_application_statement_witnesses(
+                            family.application.clone(),
+                            family_statement.clone(),
+                            family_witnesses.clone(),
                         ),
-                    Err(TypedAstError::InvalidSourceStatement),
-                    concat!($label, " base then B3C")
-                );
-                assert_eq!(
-                    family_installed
-                        .clone()
-                        .with_source_set_term_statement_witnesses(
-                            fixture.set_terms.clone(),
-                            statement.clone(),
-                            witnesses.clone(),
+                        Err(TypedAstError::InvalidSourceStatement),
+                        concat!("B3C base then ", $label)
+                    );
+                    assert_eq!(
+                        typed.clone().with_source_application_statement_witnesses(
+                            family.application.clone(),
+                            family_statement.clone(),
+                            family_witnesses.clone(),
                         ),
-                    Err(TypedAstError::InvalidSourceStatement),
-                    concat!("installed ", $label, " then B3C")
-                );
-                assert_eq!(
-                    family_base.with_source_set_term(fixture.set_terms.clone()),
-                    Err(TypedAstError::InvalidSourceSetTerm),
-                    concat!($label, " base rejects B3C set injection")
-                );
-                assert_eq!(
-                    family_installed.with_source_set_term(fixture.set_terms.clone()),
-                    Err(TypedAstError::InvalidSourceSetTerm),
-                    concat!("installed ", $label, " rejects B3C set injection")
-                );
+                        Err(TypedAstError::InvalidSourceStatement),
+                        concat!("installed B3C then ", $label)
+                    );
+                    assert_eq!(
+                        family_base
+                            .clone()
+                            .with_source_set_term_statement_witnesses(
+                                fixture.set_terms.clone(),
+                                statement.clone(),
+                                witnesses.clone(),
+                            ),
+                        Err(TypedAstError::InvalidSourceStatement),
+                        concat!($label, " base then B3C")
+                    );
+                    assert_eq!(
+                        family_installed
+                            .clone()
+                            .with_source_set_term_statement_witnesses(
+                                fixture.set_terms.clone(),
+                                statement.clone(),
+                                witnesses.clone(),
+                            ),
+                        Err(TypedAstError::InvalidSourceStatement),
+                        concat!("installed ", $label, " then B3C")
+                    );
+                    assert_eq!(
+                        family_base.with_source_set_term(fixture.set_terms.clone()),
+                        Err(TypedAstError::InvalidSourceSetTerm),
+                        concat!($label, " base rejects B3C set injection")
+                    );
+                    assert_eq!(
+                        family_installed.with_source_set_term(fixture.set_terms.clone()),
+                        Err(TypedAstError::InvalidSourceSetTerm),
+                        concat!("installed ", $label, " rejects B3C set injection")
+                    );
+                });
             }};
         }
         reject_application_witness_family_for_b3c!("B1A", B3M2B2B1AFixture::new(238));
@@ -46707,70 +46723,72 @@ citation#0 statement=1 context=1 target=imported label_ref=0 scope=[0] range=136
 
         macro_rules! reject_structure_witness_family_for_b3c {
             ($label:literal, $family:expr) => {{
-                let family = $family;
-                let family_statement = family.statement();
-                let family_witnesses = family
-                    .witnesses(&family_statement, family.witness_input())
-                    .expect(concat!($label, " witnesses"));
-                let family_base = family.empty_typed();
-                let family_installed = family_base
-                    .clone()
-                    .with_source_structure_statement_witnesses(
-                        family.structure.clone(),
-                        family_statement.clone(),
-                        family_witnesses.clone(),
-                    )
-                    .expect(concat!($label, " installed"));
-                assert_eq!(
-                    base.clone().with_source_structure_statement_witnesses(
-                        family.structure.clone(),
-                        family_statement.clone(),
-                        family_witnesses.clone(),
-                    ),
-                    Err(TypedAstError::InvalidSourceStatement),
-                    concat!("B3C base then ", $label)
-                );
-                assert_eq!(
-                    typed.clone().with_source_structure_statement_witnesses(
-                        family.structure.clone(),
-                        family_statement.clone(),
-                        family_witnesses.clone(),
-                    ),
-                    Err(TypedAstError::InvalidSourceStatement),
-                    concat!("installed B3C then ", $label)
-                );
-                assert_eq!(
-                    family_base
+                run_in_isolated_test_stack_frame(|| {
+                    let family = $family;
+                    let family_statement = family.statement();
+                    let family_witnesses = family
+                        .witnesses(&family_statement, family.witness_input())
+                        .expect(concat!($label, " witnesses"));
+                    let family_base = family.empty_typed();
+                    let family_installed = family_base
                         .clone()
-                        .with_source_set_term_statement_witnesses(
-                            fixture.set_terms.clone(),
-                            statement.clone(),
-                            witnesses.clone(),
+                        .with_source_structure_statement_witnesses(
+                            family.structure.clone(),
+                            family_statement.clone(),
+                            family_witnesses.clone(),
+                        )
+                        .expect(concat!($label, " installed"));
+                    assert_eq!(
+                        base.clone().with_source_structure_statement_witnesses(
+                            family.structure.clone(),
+                            family_statement.clone(),
+                            family_witnesses.clone(),
                         ),
-                    Err(TypedAstError::InvalidSourceStatement),
-                    concat!($label, " base then B3C")
-                );
-                assert_eq!(
-                    family_installed
-                        .clone()
-                        .with_source_set_term_statement_witnesses(
-                            fixture.set_terms.clone(),
-                            statement.clone(),
-                            witnesses.clone(),
+                        Err(TypedAstError::InvalidSourceStatement),
+                        concat!("B3C base then ", $label)
+                    );
+                    assert_eq!(
+                        typed.clone().with_source_structure_statement_witnesses(
+                            family.structure.clone(),
+                            family_statement.clone(),
+                            family_witnesses.clone(),
                         ),
-                    Err(TypedAstError::InvalidSourceStatement),
-                    concat!("installed ", $label, " then B3C")
-                );
-                assert_eq!(
-                    family_base.with_source_set_term(fixture.set_terms.clone()),
-                    Err(TypedAstError::InvalidSourceSetTerm),
-                    concat!($label, " base rejects B3C set injection")
-                );
-                assert_eq!(
-                    family_installed.with_source_set_term(fixture.set_terms.clone()),
-                    Err(TypedAstError::InvalidSourceSetTerm),
-                    concat!("installed ", $label, " rejects B3C set injection")
-                );
+                        Err(TypedAstError::InvalidSourceStatement),
+                        concat!("installed B3C then ", $label)
+                    );
+                    assert_eq!(
+                        family_base
+                            .clone()
+                            .with_source_set_term_statement_witnesses(
+                                fixture.set_terms.clone(),
+                                statement.clone(),
+                                witnesses.clone(),
+                            ),
+                        Err(TypedAstError::InvalidSourceStatement),
+                        concat!($label, " base then B3C")
+                    );
+                    assert_eq!(
+                        family_installed
+                            .clone()
+                            .with_source_set_term_statement_witnesses(
+                                fixture.set_terms.clone(),
+                                statement.clone(),
+                                witnesses.clone(),
+                            ),
+                        Err(TypedAstError::InvalidSourceStatement),
+                        concat!("installed ", $label, " then B3C")
+                    );
+                    assert_eq!(
+                        family_base.with_source_set_term(fixture.set_terms.clone()),
+                        Err(TypedAstError::InvalidSourceSetTerm),
+                        concat!($label, " base rejects B3C set injection")
+                    );
+                    assert_eq!(
+                        family_installed.with_source_set_term(fixture.set_terms.clone()),
+                        Err(TypedAstError::InvalidSourceSetTerm),
+                        concat!("installed ", $label, " rejects B3C set injection")
+                    );
+                });
             }};
         }
         reject_structure_witness_family_for_b3c!("B2A", B3M2B2B2AFixture::new(238));
