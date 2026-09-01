@@ -614,8 +614,8 @@ work. Every finding maps to a task or a recorded disposition:
     - Exactly two private Task264 Core probes pass. No shell/member item,
       selector alias, dependency, semantics, installation, trace, or coverage
       credit was added. Task34I264 has since authenticated the property
-      selector/type edge; the CoreIR owner-model prerequisite is next and
-      Core36 remains blocked.
+      selector/type edge and IR264 supplies its authenticated owner value;
+      Core36 remains blocked on Core35 and body/correctness inputs.
 34I264. **Task264 selector/member-type authentication prerequisite.** [x]
     - The paired [task contract](../../task_contracts/en/CORE-SOURCE-PROPERTY-SELECTOR-TYPE-CONTEXT-34I264.md)
       is implemented and verified. It retains the complete Task33I264 carrier
@@ -624,9 +624,18 @@ work. Every finding maps to a task or a recorded disposition:
       full replay validation. It does not join `carrier` field to member 0
       because no lower authenticated edge exists.
     - This is zero-credit authentication only. No selector/member item,
-      Core type/fact/term/formula/definition, or production route was added. A separate
-      CoreIR owner-model prerequisite remains before Core35/36 can consume the
-      property owner.
+      Core type/fact/term/formula/`CoreDefinition` row/body, or production route
+      was added. IR264 now supplies the owner value; Core35/36 remain separate.
+IR264. **Authenticated structure-property definition owner.** [x]
+    - The paired [task contract](../../task_contracts/en/CORE-STRUCTURE-PROPERTY-DEFINITION-OWNER-IR264.md)
+      is implemented, verified, and independently reviewed with hard gates
+      `9/9` and valid uncapped quality `100/100`. Private-field `CoreDefinitionOwner`
+      preserves ordinary item owners and lets only the Task34I264 handoff mint
+      the exact source/module/carrier/`marker` property form.
+    - CoreIR validates structure/status/symbol/environment/alias invariants and
+      preserves legacy item debug bytes. This is zero-credit owner compatibility:
+      no property item, field owner, definition row/body, semantics, route, or
+      coverage is added; Core35/36 remain deferred.
 36P264. **Task264 Core owner disposition.** [x]
     - The frozen [task contract](../../task_contracts/en/CORE-SOURCE-PROPERTY-IMPLEMENTATION-OWNER-36P264.md)
       records that the context-only property-implementation shell has no
@@ -636,10 +645,10 @@ work. Every finding maps to a task or a recorded disposition:
     - Committed Task264C now supplies Task264's same-source carrier/member
       identities and Task33I264 owns the carrier/Core association. Task263's
       different-source context is not an input. Task264 remains a Core-36
-      definition-lowering input only after Task34I264 authenticates the
-      property-selector/return-member identity, a separate reviewed CoreIR owner model makes that
-      identity definition-compatible, and applicable Core35 inputs exist. No
-      shell item or unreviewed owner-model change is authorized.
+      definition-lowering input only after applicable Core35 inputs and a
+      reviewed property body/correctness seed exist. Task34I264 and IR264 now
+      provide the authenticated selector/type edge and definition-owner value.
+      No shell item or unreviewed semantic change is authorized.
 33. **Source-derived Core context, items, binders, and source maps.** [ ]
     - Consume checker 248 through `MT10-CIR-TE`; no type/proof/algorithm body.
       For C4C8, checker 248 remains insufficient; Task 33C4C8 owns only the

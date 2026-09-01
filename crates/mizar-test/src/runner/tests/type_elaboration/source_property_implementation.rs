@@ -660,6 +660,11 @@ fn task264_selector_type_context_is_exact_for_means_and_equals() {
         assert_eq!(association.symbol(), identity.property_symbol());
         assert_eq!(association.member_type().index(), 1);
         assert_eq!(association.root().index(), 2);
+        let definition_owner = first.definition_owner();
+        assert_eq!(definition_owner.anchor_item(), first.carrier_item());
+        assert_eq!(definition_owner.anchor_item().index(), 0);
+        assert_eq!(definition_owner.item(), None);
+        assert_eq!(definition_owner.property_symbol(), Some(association.symbol()));
         assert_eq!(
             source_type
                 .structure_members()

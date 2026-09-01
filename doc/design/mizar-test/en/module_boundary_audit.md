@@ -13074,6 +13074,13 @@ additional tests. It adds no module, include, production path, facade route, or
 Cargo edge. The final leaf is 1,017 lines / 44,370 bytes with SHA-256
 `23ad08e3ac46e36ee34121cee49873b90f796fd50a18ad632aeca032598e79b6`.
 
+Core Task IR264 extends only the two existing positive assertions in that
+private leaf with the authenticated definition-owner projection. It adds no
+test, module, include, production path, facade route, or Cargo edge. The final
+leaf is 1,022 lines / 44,699 bytes with SHA-256
+`e584e3a36d8c8911d4e5f49209128cb35e81d0c93d254419476b93557a86fdca`.
+No runner path constructs a `CoreDefinition` row or property body.
+
 ## Checker Task 264R No-Runner Module Boundary
 
 No `mizar-test` source, test, manifest, or Cargo target changes. The resolver

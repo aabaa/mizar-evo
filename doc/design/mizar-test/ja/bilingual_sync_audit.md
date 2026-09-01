@@ -1551,6 +1551,14 @@ target/return-member association 1件をvalidateし、field associationをexclud
 cross-profile default-deny boundaryを保持する。Production route、semantic output、
 fixture、expectation、trace、metadata、diagnostic、snapshot、coverage creditは不変。
 
+## Core Task IR264 private-probe synchronization
+
+EN/JAはsame private Task264 leafのexisting means/equals positive assertionへauthenticated
+property-definition ownerを追加し、carrier item 0、ordinary item ownerなし、property symbolは
+`marker`だけで一致する。Complete checker/Core33/Core34 replay boundaryをretainし、production
+route、fixture、expectation、trace、metadata、diagnostic、snapshot、semantic output、coverage
+creditは不変。Runnerは`CoreDefinition` row/property bodyを生成しない。
+
 ## Checker Task 269A frozen dormant-consumer synchronization
 
 EN/JAはexact B3N source/hash/51-node selector、resolver-local `y`、immutable

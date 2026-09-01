@@ -330,8 +330,8 @@ authenticated `marker` target to return member 1/root 2 and does not invent a
 It is private-probe-only and zero credit. Task34I264 now owns the authenticated
 property selector/type edge; normalized types remain general Core34,
 terms/formulas remain Core35, and property body/correctness remains Core36.
-The CoreIR definition-owner model, generic Core33 installation, and
-`MT10-CIR-TE` remain deferred.
+IR264 now supplies the authenticated definition-owner value; generic Core33
+installation and `MT10-CIR-TE` remain deferred.
 
 ## Task 34I264 Task264 Selector/Type Context Slice
 
@@ -343,10 +343,23 @@ retained and revalidated; the checker fingerprint is replay evidence only.
 No unauthenticated `carrier` field-to-row-0 join is published.
 
 This private-probe-only slice has zero semantic and coverage credit. It emits
-no selector item, normalized Core type, definition, fact, term, formula, or
-obligation. A separate CoreIR owner-model prerequisite must make a structure
-member compatible with `CoreDefinition.item`; Core35/36 remain deferred until
-then.
+no selector item, normalized Core type, `CoreDefinition` row/body, fact, term, formula, or
+obligation. IR264 now makes the authenticated property compatible with
+`CoreDefinition.owner`; Core35/36 semantic inputs remain deferred.
+
+## Task IR264 Structure-Property Definition Owner Slice
+
+The frozen [IR264 contract](../../task_contracts/en/CORE-STRUCTURE-PROPERTY-DEFINITION-OWNER-IR264.md)
+replaces item-only definition ownership with a private-field value. Ordinary
+definitions still use `for_item`; only the Task34I264 handoff can mint the
+property form from exact source/module, carrier item, and authenticated
+`marker`. CoreIR validation rejects invalid structure/status/symbol/environment
+or alias shapes before body validation, and legacy item debug bytes remain
+unchanged.
+
+This slice is representation-only and zero credit. It adds no property item,
+field owner, `CoreDefinition` row/body, normalized type, term, formula,
+obligation, production route, or semantics. Core35/36 remain separately owned.
 
 ## Task 36P264 Property-Implementation Owner Disposition
 
@@ -357,13 +370,12 @@ semantic origin; its `marker` selector target and `Task264Carrier` use-site
 head are not shell identities. No Core item, item kind, association, or
 dependency may be synthesized from them.
 
-Task264 therefore remains exclusively in the accepted Core-36 definition row,
-after exact same-source Core 33--35 prerequisites. Because current
-`CoreDefinition` requires a `CoreItemId`, Core 36 is additionally hard-blocked
-until committed Task264C supplies the same-source carrier/member identity,
-Task33I264 supplies the carrier item association, Task34I264 supplies the exact
-selector/type association, and a separately reviewed CoreIR prerequisite
-supplies an owner compatible with `CoreDefinition.item`.
+Task264 therefore remains exclusively in a future accepted Core-36 definition
+row after exact same-source Core 33--35 prerequisites. Task264C, Task33I264,
+Task34I264, and IR264 now supply identity, carrier item, selector/type edge, and
+an authenticated `CoreDefinition.owner` value. Core36 remains hard-blocked on
+applicable Core35 domain/return-type inputs and a separately reviewed property
+body/correctness seed.
 Task263 is a different-source precedent and is not an input. No CoreIR
-owner-model change is selected. This disposition remains zero-credit and
-changes no specification, test intent, expectation, trace, or snapshot state.
+semantic lowering is selected here. This disposition remains zero-credit and
+changes no specification, `.miz` intent, expectation, trace, or snapshot state.

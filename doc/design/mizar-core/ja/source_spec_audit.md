@@ -74,7 +74,7 @@ literal top-level public item:
 
 - `CoreIr`, `CoreIrParts`, `CoreItem`, `CoreItemKind`, `CoreItemStatus`,
   `CoreTerm`, `CoreTermKind`, `CoreFormula`, `CoreFormulaKind`,
-  `CoreBinder`, `CoreDefinition`, `DefinitionBody`,
+  `CoreBinder`, `CoreDefinitionOwner`, `CoreDefinition`, `DefinitionBody`,
   `GuardedDefinitionBranch`, `DefinitionBranchBody`, `ExpansionPolicy`,
   `CoreProof`, `CoreProofStatus`, `CoreProofNode`, `CoreProofNodeKind`,
   `CoreJustification`, `CoreCitation`, `ProofBranchKind`, `CoreAlgorithm`,
@@ -361,10 +361,24 @@ source-type handoffを別々にconsumeし、共通environmentとexact typed prof
 ではない。Complete profileはmember row 0も含むが、lower authenticated edgeなしに
 field→row 0 associationをclaimしない。
 
-Representation-only sliceで、normalized Core type、selector item、definition owner、term、
-formula、fact、obligation、production route、trace、coverage creditを追加しない。
-Core35/36が`CoreDefinition.item`互換property ownerを使う前に、separately reviewed CoreIR
-owner-model prerequisiteが残る。Task277Bはnot-ready。
+Representation-only sliceで、normalized Core type、selector item、`CoreDefinition` row/body、
+term/formula/fact/obligation/production route/trace/coverage creditを追加しない。IR264が
+authenticated owner valueを供給済みで、Core35/36 semantic inputはseparate。Task277Bは
+not-ready。
+
+## CoreIR IR264 Structure-Property Definition Owner Mapping
+
+Frozen [IR264 contract](../../task_contracts/ja/CORE-STRUCTURE-PROPERTY-DEFINITION-OWNER-IR264.md)
+はitem-only `CoreDefinition` ownershipをprivate-field `CoreDefinitionOwner`へ置換する。
+Ordinary item ownership/Step4 item-keyed mapは不変。Property formは`core_ir.rs`内の
+Task34I264 handoff inherent methodだけがmintし、exact source/module、carrier structure item、
+authenticated `marker` symbolをretainする。
+
+CoreIR validationはbodyより前にinvalid/missing anchor、non-valid/non-structure anchor、symbol
+mismatch、foreign source/module、carrier aliasをrejectする。Rust testはfull matrix、legacy item
+debug bytes、Task264 means/equals owner output、mechanical VC fixture compatibilityをcoverする。
+Derived `design_drift`/`test_gap`だけを閉じ、property item、definition row/body、source-derived
+semantics、trace/coverage creditを追加せず、Core35/36はdeferredのまま。
 
 ## Source-Undocumented Behavior Pass
 

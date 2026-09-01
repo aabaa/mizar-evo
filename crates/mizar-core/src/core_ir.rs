@@ -391,9 +391,87 @@ pub struct CoreBinder {
     pub source: CoreSourceRef,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
+pub struct CoreDefinitionOwner {
+    anchor_item: CoreItemId,
+    property: Option<StructurePropertyDefinitionOwner>,
+}
+
+#[derive(Clone, PartialEq, Eq)]
+struct StructurePropertyDefinitionOwner {
+    source_id: SourceId,
+    module_id: ModuleId,
+    property_symbol: SymbolId,
+}
+
+impl CoreDefinitionOwner {
+    #[must_use]
+    pub const fn for_item(item: CoreItemId) -> Self {
+        Self {
+            anchor_item: item,
+            property: None,
+        }
+    }
+
+    #[must_use]
+    pub const fn anchor_item(&self) -> CoreItemId {
+        self.anchor_item
+    }
+
+    #[must_use]
+    pub const fn item(&self) -> Option<CoreItemId> {
+        if self.property.is_none() {
+            Some(self.anchor_item)
+        } else {
+            None
+        }
+    }
+
+    #[must_use]
+    pub const fn property_symbol(&self) -> Option<&SymbolId> {
+        match &self.property {
+            Some(property) => Some(&property.property_symbol),
+            None => None,
+        }
+    }
+}
+
+impl fmt::Debug for CoreDefinitionOwner {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match &self.property {
+            None => formatter
+                .debug_tuple("Item")
+                .field(&self.anchor_item)
+                .finish(),
+            Some(property) => formatter
+                .debug_struct("StructureProperty")
+                .field("anchor_item", &self.anchor_item)
+                .field("source_id", &property.source_id)
+                .field("module_id", &property.module_id)
+                .field("property_symbol", &property.property_symbol)
+                .finish(),
+        }
+    }
+}
+
+impl crate::elaborator::SourcePropertySelectorTypeContextHandoff {
+    /// Returns the non-forgeable Core definition owner authenticated by Task IR264.
+    #[must_use]
+    pub fn definition_owner(&self) -> CoreDefinitionOwner {
+        CoreDefinitionOwner {
+            anchor_item: self.carrier_item(),
+            property: Some(StructurePropertyDefinitionOwner {
+                source_id: self.source_id(),
+                module_id: self.module_id().clone(),
+                property_symbol: self.association().symbol().clone(),
+            }),
+        }
+    }
+}
+
+#[derive(Clone, PartialEq, Eq)]
 pub struct CoreDefinition {
-    pub item: CoreItemId,
+    pub owner: CoreDefinitionOwner,
     pub symbol: SymbolId,
     pub params: Vec<CoreBinder>,
     pub body: DefinitionBody,
@@ -401,6 +479,26 @@ pub struct CoreDefinition {
     pub correctness: Vec<ObligationSeedId>,
     pub generated_dependencies: Vec<GeneratedOriginId>,
     pub source: CoreSourceRef,
+}
+
+impl fmt::Debug for CoreDefinition {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut debug = formatter.debug_struct("CoreDefinition");
+        if let Some(item) = self.owner.item() {
+            debug.field("item", &item);
+        } else {
+            debug.field("owner", &self.owner);
+        }
+        debug
+            .field("symbol", &self.symbol)
+            .field("params", &self.params)
+            .field("body", &self.body)
+            .field("expansion", &self.expansion)
+            .field("correctness", &self.correctness)
+            .field("generated_dependencies", &self.generated_dependencies)
+            .field("source", &self.source)
+            .finish()
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -1123,6 +1221,10 @@ pub enum CoreIrError {
         symbol: Box<SymbolId>,
         kind: CoreItemKind,
     },
+    InvalidDefinitionOwner {
+        definition: CoreDefinitionId,
+        reason: &'static str,
+    },
 }
 
 impl fmt::Display for CoreIrError {
@@ -1235,6 +1337,13 @@ impl fmt::Display for CoreIrError {
                 write!(
                     formatter,
                     "proof citation references non-proof symbol {symbol:?} with kind {kind:?}"
+                )
+            }
+            Self::InvalidDefinitionOwner { definition, reason } => {
+                write!(
+                    formatter,
+                    "invalid definition owner for definition {}: {reason}",
+                    definition.index()
                 )
             }
         }
@@ -1420,7 +1529,7 @@ fn validate_core_ir(parts: &CoreIrParts) -> Result<(), CoreIrError> {
             parts.source_map.definition_sources.get(&id),
             parts,
         )?;
-        validate_index("item", definition.item.index(), parts.items.len())?;
+        validate_definition_owner(id, definition, parts)?;
         validate_binders(&definition.params, parts)?;
         validate_definition_body(&definition.body, parts)?;
         for seed in &definition.correctness {
@@ -1578,6 +1687,51 @@ fn validate_core_ir(parts: &CoreIrParts) -> Result<(), CoreIrError> {
         parts.obligation_seeds.len(),
     )?;
 
+    Ok(())
+}
+
+fn validate_definition_owner(
+    id: CoreDefinitionId,
+    definition: &CoreDefinition,
+    parts: &CoreIrParts,
+) -> Result<(), CoreIrError> {
+    let anchor = definition.owner.anchor_item();
+    validate_index("item", anchor.index(), parts.items.len())?;
+    let Some(property) = &definition.owner.property else {
+        return Ok(());
+    };
+    let anchor_item = parts
+        .items
+        .get(anchor)
+        .expect("validated definition owner anchor");
+    if anchor_item.kind != CoreItemKind::Structure || anchor_item.status != CoreItemStatus::Valid {
+        return Err(CoreIrError::InvalidDefinitionOwner {
+            definition: id,
+            reason: "property-anchor-not-valid-structure",
+        });
+    }
+    if property.property_symbol != definition.symbol {
+        return Err(CoreIrError::InvalidDefinitionOwner {
+            definition: id,
+            reason: "property-symbol-mismatch",
+        });
+    }
+    if property.source_id != parts.source_id
+        || property.module_id != parts.module_id
+        || anchor_item.symbol.module() != &parts.module_id
+        || property.property_symbol.module() != &parts.module_id
+    {
+        return Err(CoreIrError::InvalidDefinitionOwner {
+            definition: id,
+            reason: "property-environment-mismatch",
+        });
+    }
+    if property.property_symbol == anchor_item.symbol {
+        return Err(CoreIrError::InvalidDefinitionOwner {
+            definition: id,
+            reason: "property-symbol-aliases-anchor",
+        });
+    }
     Ok(())
 }
 
@@ -2218,6 +2372,19 @@ mod tests {
         source_id_for("00")
     }
 
+    fn different_source_id() -> SourceId {
+        let snapshot = BuildSnapshotId::from_published_schema_str(&format!(
+            "mizar-session-build-snapshot-v1:{}",
+            "01".repeat(32)
+        ))
+        .expect("valid snapshot id");
+        let allocator = InMemorySessionIdAllocator::new();
+        let _ = allocator.next_source_id(snapshot).expect("first source id");
+        allocator
+            .next_source_id(snapshot)
+            .expect("different source id")
+    }
+
     fn range(source_id: SourceId, start: usize, end: usize) -> SourceRange {
         SourceRange {
             source_id,
@@ -2250,6 +2417,22 @@ mod tests {
             LocalSymbolId::new(name),
             FullyQualifiedName::new(format!("pkg::dep::{name}")),
         )
+    }
+
+    fn structure_property_owner(
+        source_id: SourceId,
+        module_id: ModuleId,
+        carrier: CoreItemId,
+        property_symbol: SymbolId,
+    ) -> CoreDefinitionOwner {
+        CoreDefinitionOwner {
+            anchor_item: carrier,
+            property: Some(StructurePropertyDefinitionOwner {
+                source_id,
+                module_id,
+                property_symbol,
+            }),
+        }
     }
 
     fn direct(source_id: SourceId, start: usize, end: usize) -> CoreSourceRef {
@@ -2356,6 +2539,16 @@ mod tests {
                 index: actual_index,
                 ..
             }) if actual_table == table && actual_index == index
+        ));
+    }
+
+    fn assert_invalid_definition_owner(parts: CoreIrParts, reason: &'static str) {
+        assert!(matches!(
+            CoreIr::try_new(parts),
+            Err(CoreIrError::InvalidDefinitionOwner {
+                definition,
+                reason: actual_reason,
+            }) if definition == CoreDefinitionId::new(0) && actual_reason == reason
         ));
     }
 
@@ -2478,6 +2671,190 @@ mod tests {
     }
 
     #[test]
+    fn structure_property_definition_owner_is_non_forgeable_and_fails_closed() {
+        let mut valid_parts = minimal_parts();
+        let carrier = CoreItemId::new(0);
+        let carrier_symbol = symbol("Task264Carrier");
+        let property_symbol = symbol("marker");
+        let source = valid_parts
+            .items
+            .get(carrier)
+            .expect("carrier fixture")
+            .source
+            .clone();
+        let carrier_item = valid_parts.items.get_mut(carrier).expect("carrier fixture");
+        carrier_item.symbol = carrier_symbol.clone();
+        carrier_item.kind = CoreItemKind::Structure;
+        carrier_item.status = CoreItemStatus::Valid;
+        let owner = structure_property_owner(
+            valid_parts.source_id,
+            valid_parts.module_id.clone(),
+            carrier,
+            property_symbol.clone(),
+        );
+        let definition = valid_parts.definitions.insert(CoreDefinition {
+            owner: owner.clone(),
+            symbol: property_symbol.clone(),
+            params: Vec::new(),
+            body: DefinitionBody::Term(CoreTermId::new(0)),
+            expansion: ExpansionPolicy::Opaque,
+            correctness: Vec::new(),
+            generated_dependencies: Vec::new(),
+            source: source.clone(),
+        });
+        valid_parts
+            .source_map
+            .definition_sources
+            .insert(definition, source.clone());
+
+        let first = CoreIr::try_new(valid_parts.clone()).expect("valid property owner");
+        let second = CoreIr::try_new(valid_parts.clone()).expect("replayed property owner");
+        assert_eq!(first.items().len(), 1);
+        assert_eq!(first.debug_text(), second.debug_text());
+        let row = first.definitions().get(definition).expect("definition row");
+        assert_eq!(row.owner, owner);
+        assert_eq!(row.owner.anchor_item(), carrier);
+        assert_eq!(row.owner.item(), None);
+        assert_eq!(row.owner.property_symbol(), Some(&property_symbol));
+        let owner_debug = format!(
+            "StructureProperty {{ anchor_item: {carrier:?}, source_id: {:?}, module_id: {:?}, property_symbol: {property_symbol:?} }}",
+            valid_parts.source_id, valid_parts.module_id,
+        );
+        assert_eq!(format!("{:?}", row.owner), owner_debug);
+        assert_eq!(
+            format!("{row:?}"),
+            format!(
+                "CoreDefinition {{ owner: {owner_debug}, symbol: {property_symbol:?}, params: [], body: Term(CoreTermId(0)), expansion: Opaque, correctness: [], generated_dependencies: [], source: {source:?} }}"
+            )
+        );
+        let ordinary = CoreDefinition {
+            owner: CoreDefinitionOwner::for_item(carrier),
+            symbol: property_symbol.clone(),
+            params: Vec::new(),
+            body: DefinitionBody::Term(CoreTermId::new(0)),
+            expansion: ExpansionPolicy::Opaque,
+            correctness: Vec::new(),
+            generated_dependencies: Vec::new(),
+            source: source.clone(),
+        };
+        assert_eq!(
+            format!("{:?}", ordinary.owner),
+            format!("Item({carrier:?})")
+        );
+        assert_eq!(
+            format!("{ordinary:?}"),
+            format!(
+                "CoreDefinition {{ item: {carrier:?}, symbol: {property_symbol:?}, params: [], body: Term(CoreTermId(0)), expansion: Opaque, correctness: [], generated_dependencies: [], source: {source:?} }}"
+            )
+        );
+
+        let mut source_map_precedence = valid_parts.clone();
+        source_map_precedence
+            .source_map
+            .definition_sources
+            .remove(&definition);
+        source_map_precedence
+            .definitions
+            .get_mut(definition)
+            .expect("definition")
+            .owner
+            .anchor_item = CoreItemId::new(99);
+        assert!(matches!(
+            CoreIr::try_new(source_map_precedence),
+            Err(CoreIrError::MissingSourceMap {
+                table: "definition",
+                index: 0,
+            })
+        ));
+
+        let mut invalid_anchor = valid_parts.clone();
+        invalid_anchor
+            .definitions
+            .get_mut(definition)
+            .expect("definition")
+            .owner
+            .anchor_item = CoreItemId::new(99);
+        assert_invalid_reference(invalid_anchor, "item", 99);
+
+        let mut non_structure = valid_parts.clone();
+        non_structure.items.get_mut(carrier).expect("carrier").kind = CoreItemKind::Theorem;
+        assert_invalid_definition_owner(non_structure, "property-anchor-not-valid-structure");
+
+        let mut non_valid = valid_parts.clone();
+        non_valid.items.get_mut(carrier).expect("carrier").status = CoreItemStatus::Partial;
+        assert_invalid_definition_owner(non_valid, "property-anchor-not-valid-structure");
+
+        let mut symbol_mismatch = valid_parts.clone();
+        symbol_mismatch
+            .definitions
+            .get_mut(definition)
+            .expect("definition")
+            .symbol = symbol("other_marker");
+        assert_invalid_definition_owner(symbol_mismatch, "property-symbol-mismatch");
+
+        let mut foreign_source = valid_parts.clone();
+        foreign_source
+            .definitions
+            .get_mut(definition)
+            .expect("definition")
+            .owner
+            .property
+            .as_mut()
+            .expect("property owner")
+            .source_id = different_source_id();
+        assert_invalid_definition_owner(foreign_source, "property-environment-mismatch");
+
+        let mut foreign_private_module = valid_parts.clone();
+        foreign_private_module
+            .definitions
+            .get_mut(definition)
+            .expect("definition")
+            .owner
+            .property
+            .as_mut()
+            .expect("property owner")
+            .module_id = external_module_id();
+        assert_invalid_definition_owner(foreign_private_module, "property-environment-mismatch");
+
+        let mut foreign_anchor_symbol = valid_parts.clone();
+        foreign_anchor_symbol
+            .items
+            .get_mut(carrier)
+            .expect("carrier")
+            .symbol = external_symbol("Task264Carrier");
+        assert_invalid_definition_owner(foreign_anchor_symbol, "property-environment-mismatch");
+
+        let mut foreign_property_symbol = valid_parts.clone();
+        let foreign_symbol = external_symbol("marker");
+        let foreign_definition = foreign_property_symbol
+            .definitions
+            .get_mut(definition)
+            .expect("definition");
+        foreign_definition.symbol = foreign_symbol.clone();
+        foreign_definition
+            .owner
+            .property
+            .as_mut()
+            .expect("property owner")
+            .property_symbol = foreign_symbol;
+        assert_invalid_definition_owner(foreign_property_symbol, "property-environment-mismatch");
+
+        let mut aliases_anchor = valid_parts;
+        let alias_definition = aliases_anchor
+            .definitions
+            .get_mut(definition)
+            .expect("definition");
+        alias_definition.symbol = carrier_symbol.clone();
+        alias_definition
+            .owner
+            .property
+            .as_mut()
+            .expect("property owner")
+            .property_symbol = carrier_symbol;
+        assert_invalid_definition_owner(aliases_anchor, "property-symbol-aliases-anchor");
+    }
+
+    #[test]
     fn dense_ids_are_stable_for_inserted_nodes() {
         let source_id = source_id();
         let source = direct(source_id, 0, 1);
@@ -2539,7 +2916,7 @@ mod tests {
         let mut parts = minimal_parts();
         let source = direct(parts.source_id, 8, 9);
         let definition = parts.definitions.insert(CoreDefinition {
-            item: CoreItemId::new(0),
+            owner: CoreDefinitionOwner::for_item(CoreItemId::new(0)),
             symbol: symbol("BadDefinition"),
             params: Vec::new(),
             body: DefinitionBody::Term(CoreTermId::new(0)),
@@ -2878,7 +3255,7 @@ mod tests {
         let mut parts = minimal_parts();
         let source = direct(parts.source_id, 33, 34);
         let definition = parts.definitions.insert(CoreDefinition {
-            item: CoreItemId::new(0),
+            owner: CoreDefinitionOwner::for_item(CoreItemId::new(0)),
             symbol: symbol("MissingDefinitionSource"),
             params: Vec::new(),
             body: DefinitionBody::Term(CoreTermId::new(0)),

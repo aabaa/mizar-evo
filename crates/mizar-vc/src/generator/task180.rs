@@ -575,13 +575,14 @@ mod tests {
     use mizar_core::control_flow::{ControlFlowObligationSite, ControlFlowObligationSiteKind};
     use mizar_core::core_ir::{
         CoreAlgorithm, CoreAlgorithmStmt, CoreAlgorithmStmtKind, CoreAlgorithmStmtTable,
-        CoreAlgorithmTable, CoreCitation, CoreContractSet, CoreDefinition, CoreDefinitionTable,
-        CoreDiagnostic, CoreDiagnosticClass, CoreDiagnosticTable, CoreFormula, CoreFormulaTable,
-        CoreIrParts, CoreItem, CoreItemTable, CoreLabelRef, CoreProof, CoreProofNode,
-        CoreProofNodeTable, CoreProofTable, CoreProvenance, CoreProvenanceKey, CoreSourceMap,
-        CoreSourceRef, CoreTerm, CoreTermKind, CoreTermTable, DefinitionBody, ExpansionPolicy,
-        GeneratedOrigin, GeneratedOriginKey, GeneratedOriginKind, GeneratedOriginTable,
-        LocalProofOrProgramPath, NormalizedSemanticOrigin, ObligationSeed, ObligationSeedTable,
+        CoreAlgorithmTable, CoreCitation, CoreContractSet, CoreDefinition, CoreDefinitionOwner,
+        CoreDefinitionTable, CoreDiagnostic, CoreDiagnosticClass, CoreDiagnosticTable, CoreFormula,
+        CoreFormulaTable, CoreIrParts, CoreItem, CoreItemTable, CoreLabelRef, CoreProof,
+        CoreProofNode, CoreProofNodeTable, CoreProofTable, CoreProvenance, CoreProvenanceKey,
+        CoreSourceMap, CoreSourceRef, CoreTerm, CoreTermKind, CoreTermTable, DefinitionBody,
+        ExpansionPolicy, GeneratedOrigin, GeneratedOriginKey, GeneratedOriginKind,
+        GeneratedOriginTable, LocalProofOrProgramPath, NormalizedSemanticOrigin, ObligationSeed,
+        ObligationSeedTable,
     };
     use mizar_resolve::resolved_ast::{FullyQualifiedName, LocalSymbolId, ModuleId, SymbolId};
     use mizar_session::snapshot::{ModulePath, PackageId};
@@ -924,7 +925,7 @@ mod tests {
             Box::new(|parts| {
                 let source = parts.items.get(CoreItemId::new(0)).unwrap().source.clone();
                 let id = parts.definitions.insert(CoreDefinition {
-                    item: CoreItemId::new(0),
+                    owner: CoreDefinitionOwner::for_item(CoreItemId::new(0)),
                     symbol: symbol(&parts.module_id, "ExtraDefinition"),
                     params: Vec::new(),
                     body: DefinitionBody::Formula(CoreFormulaId::new(0)),

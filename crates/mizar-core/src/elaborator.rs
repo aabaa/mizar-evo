@@ -9,8 +9,8 @@ use crate::{
         CoreAlgorithm, CoreAlgorithmId, CoreAlgorithmMatchArm, CoreAlgorithmStmt,
         CoreAlgorithmStmtId, CoreAlgorithmStmtKind, CoreAlgorithmStmtTable, CoreAlgorithmTable,
         CoreBinder, CoreCitation, CoreContractSet, CoreDefinition, CoreDefinitionId,
-        CoreDefinitionTable, CoreDiagnostic, CoreDiagnosticClass, CoreDiagnosticId,
-        CoreDiagnosticMessageKey, CoreDiagnosticRecovery, CoreDiagnosticSeverity,
+        CoreDefinitionOwner, CoreDefinitionTable, CoreDiagnostic, CoreDiagnosticClass,
+        CoreDiagnosticId, CoreDiagnosticMessageKey, CoreDiagnosticRecovery, CoreDiagnosticSeverity,
         CoreDiagnosticTable, CoreFormula, CoreFormulaId, CoreFormulaKind, CoreFormulaTable, CoreIr,
         CoreIrParts, CoreItem, CoreItemId, CoreItemKind, CoreItemStatus, CoreItemTable,
         CoreJustification, CoreLabelRef, CoreNodeRef, CorePlace, CoreProof, CoreProofId,
@@ -10954,7 +10954,7 @@ impl DefinitionLoweringState {
     ) -> CoreDefinitionId {
         let source = source_with_provenance(seed.source, &seed.provenance);
         let definition = CoreDefinition {
-            item: seed.owner,
+            owner: CoreDefinitionOwner::for_item(seed.owner),
             symbol: seed.symbol,
             params: seed.params,
             body,
@@ -19105,6 +19105,9 @@ mod tests {
             .get(obligation_id)
             .expect("correctness obligation");
 
+        assert_eq!(definition.owner.anchor_item(), owner);
+        assert_eq!(definition.owner.item(), Some(owner));
+        assert_eq!(definition.owner.property_symbol(), None);
         assert!(matches!(definition.body, DefinitionBody::Term(actual) if actual == term));
         assert_eq!(definition.expansion, ExpansionPolicy::Opaque);
         assert_eq!(definition.params[0].ty_guard, Some(goal));

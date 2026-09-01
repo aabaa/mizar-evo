@@ -905,10 +905,23 @@ typed definition/contribution identities remain in the retained checker owner
 and are validated there, so resolver-environment types do not enter Core's
 public boundary.
 
-This context publishes no selector item or `CoreDefinition` owner and does not
-create `CoreTypePredicate`, normalized types, facts, coercions, views, binders,
-terms, formulas, diagnostics, or semantics. The current definition-owner model
-remains a separately reviewed prerequisite before Core35/36.
+This context publishes no selector item or `CoreDefinition` row/body and does
+not create `CoreTypePredicate`, normalized types, facts, coercions, views,
+binders, terms, formulas, diagnostics, or semantics.
+
+## Task IR264 Authenticated Property Definition Owner
+
+The frozen [IR264 contract](../../task_contracts/en/CORE-STRUCTURE-PROPERTY-DEFINITION-OWNER-IR264.md)
+adds `SourcePropertySelectorTypeContextHandoff::definition_owner`. Its inherent
+implementation lives in `core_ir.rs`, where the property-form owner fields are
+private, so no other module can mint an owner from raw values. It copies the
+already validated source, module, carrier item, and sole `marker` symbol into a
+`CoreDefinitionOwner`; callers receive no field-owner constructor or mutator.
+
+The private Task264 tests prove the means/equals handoffs return carrier item 0
+and only the authenticated property symbol. This is a zero-credit owner value,
+not a selector item, `CoreDefinition` row/body, normalized type, term, formula,
+obligation, production route, or semantic result. Core35/36 remain separate.
 
 ## Forbidden Behavior
 

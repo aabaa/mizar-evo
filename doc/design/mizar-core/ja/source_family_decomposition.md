@@ -275,7 +275,8 @@ Task34I264はchecker-authenticated `marker` targetだけをreturn member 1/root 
 
 Private-probe-only/zero credit。Authenticated property selector/type edgeはTask34I264が
 ownし、normalized typeはgeneral Core34、term/formulaはCore35、property body/correctnessは
-Core36。CoreIR definition-owner model、generic Core33 install、`MT10-CIR-TE`はdeferred。
+Core36。IR264がauthenticated definition-owner valueを供給済みで、generic Core33 install、
+`MT10-CIR-TE`はdeferred。
 
 ## Task 34I264 Task264 selector/type context slice
 
@@ -286,9 +287,20 @@ complete source-type handoffを別々にretain/revalidateし、checker fingerpri
 evidenceだけに使う。Unauthenticated `carrier` field→row 0 joinはpublishしない。
 
 Private-probe-only/zero semantic/coverage credit。Selector item、normalized Core type、
-definition、fact、term、formula、obligationをemitしない。Structure memberを
-`CoreDefinition.item`互換にするseparate CoreIR owner-model prerequisiteが必要で、
-その完了までCore35/36はdeferred。
+`CoreDefinition` row/body、fact、term、formula、obligationをemitしない。Structure memberを
+`CoreDefinition.owner`互換にするIR264は完了し、Core35/36 semantic inputはdeferred。
+
+## Task IR264 Structure-Property Definition Owner Slice
+
+Frozen [IR264 contract](../../task_contracts/ja/CORE-STRUCTURE-PROPERTY-DEFINITION-OWNER-IR264.md)
+はitem-only definition ownershipをprivate-field valueへ置換する。Ordinary definitionは
+`for_item`を維持し、Task34I264 handoffだけがexact source/module、carrier item、authenticated
+`marker`からproperty formをmintする。CoreIR validationはbodyより前にinvalid structure/
+status/symbol/environment/alias shapeをrejectし、legacy item debug byteは不変。
+
+Representation-only/zero credit。Property item、field owner、`CoreDefinition` row/body、
+normalized type、term/formula/obligation/production route/semanticsを追加しない。Core35/36は
+separate ownerのまま。
 
 ## Task 36P264 property-implementation owner disposition
 
@@ -298,11 +310,10 @@ property-implementation shellはsymbol/definition/contribution/semantic origin�
 `marker` selector targetと`Task264Carrier` use-site headはshell identityではない。
 Core item/item kind/association/dependencyを合成しない。
 
-Task264はexact same-source Core33--35 prerequisite後のaccepted Core36 definition rowに
-exclusiveに残る。Current `CoreDefinition`は`CoreItemId`必須なので、separately reviewed
-committed Task264Cがsame-source carrier/member identityを、Task33I264がcarrier item
-associationを、Task34I264がexact selector/type associationを、separately reviewed
-CoreIR prerequisiteが`CoreDefinition.item`互換ownerを供給するまでCore36はhard-blocked。
+Task264はexact same-source Core33--35 prerequisite後のfuture accepted Core36 definition rowに
+exclusiveに残る。Task264C/Task33I264/Task34I264/IR264がidentity、carrier item、selector/type
+edge、authenticated `CoreDefinition.owner` valueを供給済み。Core36はapplicable Core35
+domain/return-type inputとseparately reviewed property body/correctness seedまでhard-blocked。
 Task263はdifferent-source precedentでinputではない。
-CoreIR owner-model changeは選ばない。Zero-creditでspec/test intent/expectation/trace/
-snapshot stateは変更しない。
+本dispositionではCoreIR semantic loweringを選ばない。Zero-creditでspec/`.miz` intent/
+expectation/trace/snapshot stateは変更しない。

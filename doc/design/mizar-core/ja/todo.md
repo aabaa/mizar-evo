@@ -578,8 +578,8 @@ F8 の spec 本文は同一変更(`cef7e109`: spec 03、05、13、17、18)で修
       complete postvalidation後にretainする。
     - Private Task264 Core probe exactly 2件がpassした。Shell/member item、selector
       alias、dependency、semantics、installation、trace/coverage creditは追加していない。
-      Task34I264がproperty selector/type edgeをauthenticate済みで、次はCoreIR
-      owner-model prerequisite、Core36はblockedのまま。
+      Task34I264がproperty selector/type edgeをauthenticateし、IR264がauthenticated owner
+      valueを供給する。Core36はCore35/body/correctness input待ちでblocked。
 34I264. **Task264 selector/member-type authentication prerequisite。** [x]
     - Paired [task contract](../../task_contracts/ja/CORE-SOURCE-PROPERTY-SELECTOR-TYPE-CONTEXT-34I264.md)
       はimplementation/verification complete。Complete Task33I264 carrier contextと
@@ -587,8 +587,16 @@ F8 の spec 本文は同一変更(`cef7e109`: spec 03、05、13、17、18)で修
       checker-authenticated `marker` property/return-member associationをderiveする。
       Lower authenticated edgeがないため`carrier` fieldをmember 0へjoinしない。
     - Zero-credit authenticationのみ。Selector/member item、Core type/fact/term/formula/
-      definition、production routeは追加していない。Core35/36がproperty ownerをconsumeする
-      前にseparate CoreIR owner-model prerequisiteが残る。
+      `CoreDefinition` row/body、production routeは追加していない。IR264がowner valueを
+      供給済みで、Core35/36はseparate。
+IR264. **Authenticated structure-property definition owner。** [x]
+    - Paired [task contract](../../task_contracts/ja/CORE-STRUCTURE-PROPERTY-DEFINITION-OWNER-IR264.md)
+      はimplemented/verified、independent reviewはhard gate `9/9`、valid uncapped quality
+      `100/100`。Private-field `CoreDefinitionOwner`がordinary item ownerを
+      保持し、Task34I264 handoffだけがexact source/module/carrier/`marker` property formをmintする。
+    - CoreIRはstructure/status/symbol/environment/alias invariantをvalidateし、legacy item
+      debug byteを維持する。Zero-credit owner compatibilityだけで、property item、field owner、
+      definition row/body、semantics、route、coverageなし。Core35/36はdeferred。
 36P264. **Task264 Core owner disposition。** [x]
     - Frozen [task contract](../../task_contracts/ja/CORE-SOURCE-PROPERTY-IMPLEMENTATION-OWNER-36P264.md)は、
       context-only property-implementation shellにsymbol/definition identityがなく、
@@ -596,9 +604,9 @@ F8 の spec 本文は同一変更(`cef7e109`: spec 03、05、13、17、18)で修
       kind、carrier identity reconstructionは禁止。
     - Committed Task264Cがsame-source carrier/member identityを供給済みで、Task33I264が
       carrier/Core associationをownする。Task263 different-source contextはinputでない。
-      Task264はTask34I264がproperty-selector/return-member identityをauthenticateし、separate reviewed
-      CoreIR owner modelがdefinition-compatibleにし、applicable Core35 inputが存在した後だけ
-      Core36 inputになる。Shell item/unreviewed owner-model changeはauthorizeしない。
+      Task264はapplicable Core35 inputとreviewed property body/correctness seed後だけCore36
+      inputになる。Task34I264/IR264がauthenticated selector/type edgeとdefinition-owner valueを
+      供給済み。Shell item/unreviewed semantic changeはauthorizeしない。
 33. **Source-derived Core context/item/binder/source map。** [ ]
     - checker 248を`MT10-CIR-TE`でconsumeし、type/proof/algorithm bodyは扱わない。
       C4C8についてchecker 248だけでは不十分なままであり、Task 33C4C8はseparately

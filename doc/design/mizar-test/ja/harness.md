@@ -4931,9 +4931,11 @@ carrier contextとseparately retained source-type handoffを組み合わせ、me
 cross-profile transactionをrejectした後もvalid constructionが汚染されないことを確認する。
 Unauthenticated `carrier` field associationは作らない。
 
-Production selector/routeは不変。Core selector item、normalized type、definition owner、
-semantic result、fixture、expectation、trace、metadata、diagnostic、snapshot、coverage creditを
-追加しない。
+IR264はexisting positive assertionだけを拡張し、authenticated handoffがcarrier item 0を
+anchorとして`marker`だけを公開するprivate-field `CoreDefinitionOwner`をmintすることを確認する。
+Production selector/routeは不変。Core selector item、`CoreDefinition` row/body、normalized
+type、semantic result、fixture、expectation、trace、metadata、diagnostic、snapshot、coverage
+creditを追加しない。
 
 ## Checker Task 269A frozen dormant harness
 

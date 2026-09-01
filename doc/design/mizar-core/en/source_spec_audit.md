@@ -75,7 +75,7 @@ Literal top-level public items:
 
 - `CoreIr`, `CoreIrParts`, `CoreItem`, `CoreItemKind`, `CoreItemStatus`,
   `CoreTerm`, `CoreTermKind`, `CoreFormula`, `CoreFormulaKind`,
-  `CoreBinder`, `CoreDefinition`, `DefinitionBody`,
+  `CoreBinder`, `CoreDefinitionOwner`, `CoreDefinition`, `DefinitionBody`,
   `GuardedDefinitionBranch`, `DefinitionBranchBody`, `ExpansionPolicy`,
   `CoreProof`, `CoreProofStatus`, `CoreProofNode`, `CoreProofNodeKind`,
   `CoreJustification`, `CoreCitation`, `ProofBranchKind`, `CoreAlgorithm`,
@@ -394,10 +394,26 @@ never a row reconstruction source. The complete profile includes member row 0,
 but no field-to-row-0 association is claimed without a lower authenticated edge.
 
 This representation-only slice adds no normalized Core type, selector item,
-definition owner, term, formula, fact, obligation, production route, trace, or
-coverage credit. A separately reviewed CoreIR owner-model prerequisite remains
-before Core35/36 can use a `CoreDefinition.item`-compatible property owner.
-Task277B remains not-ready.
+`CoreDefinition` row/body, term, formula, fact, obligation, production route,
+trace, or coverage credit. IR264 now supplies its authenticated owner value;
+Core35/36 semantic inputs remain separate. Task277B remains not-ready.
+
+## CoreIR IR264 Structure-Property Definition Owner Mapping
+
+The frozen [IR264 contract](../../task_contracts/en/CORE-STRUCTURE-PROPERTY-DEFINITION-OWNER-IR264.md)
+replaces item-only `CoreDefinition` ownership with a private-field
+`CoreDefinitionOwner`. Ordinary item ownership and Step-4 item-keyed maps are
+unchanged. The property form can be minted only by the Task34I264 handoff's
+inherent method in `core_ir.rs` and retains its exact source/module, carrier
+structure item, and authenticated `marker` symbol.
+
+CoreIR validation rejects invalid/missing anchors, non-valid/non-structure
+anchors, symbol mismatch, foreign source/module, and carrier aliasing before
+body validation. Rust tests cover the full matrix, legacy item debug bytes,
+Task264 means/equals owner output, and mechanical VC fixture compatibility.
+This closes only derived `design_drift`/`test_gap`: no property item,
+definition row/body, source-derived semantics, trace, or coverage credit is
+added, and Core35/36 remain deferred.
 
 ## Source-Undocumented Behavior Pass
 

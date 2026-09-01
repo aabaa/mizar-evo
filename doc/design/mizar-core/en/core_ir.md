@@ -252,9 +252,11 @@ provenance for that module to run without inspecting source syntax.
 can be unfolded by later phases.
 
 ```rust
+struct CoreDefinitionOwner { /* private fields */ }
+
 struct CoreDefinition {
     id: CoreDefinitionId,
-    item: CoreItemId,
+    owner: CoreDefinitionOwner,
     symbol: SymbolId,
     params: Vec<CoreBinder>,
     body: DefinitionBody,
@@ -264,6 +266,30 @@ struct CoreDefinition {
     source: CoreSourceRef,
 }
 ```
+
+### Structure-Property Definition Owners
+
+The frozen [IR264 contract](../../task_contracts/en/CORE-STRUCTURE-PROPERTY-DEFINITION-OWNER-IR264.md)
+replaces the definition's single item field with a private-field owner value.
+`CoreDefinitionOwner::for_item` preserves ordinary item ownership and exposes
+`anchor_item`, optional `item`, and optional `property_symbol` accessors. The
+only property initializer is the `core_ir.rs` implementation of
+`SourcePropertySelectorTypeContextHandoff::definition_owner`; no raw-value,
+generic member, or field constructor is public or crate-visible.
+
+The property form privately binds the carrier `Structure` item, authenticated
+property symbol, and exact source/module environment. `CoreIr::try_new`
+validates the anchor reference, `Valid` structure kind/status, equality with the
+definition symbol, source/module identity, and non-aliasing with the carrier
+symbol before body references. Invalid shapes fail as `InvalidReference` or
+`InvalidDefinitionOwner`; they never publish a partial `CoreIr`.
+
+Ordinary Step-4 seeds and their item-keyed maps remain unchanged and construct
+`for_item` owners. Manual debug rendering preserves every legacy item-owned
+`core-ir-debug-v1` definition row byte-for-byte; only the previously
+unrepresentable property form renders `StructureProperty { anchor_item,
+source_id, module_id, property_symbol }`. This owner value is zero-credit: it
+does not create a property item, definition row/body, obligation, or semantics.
 
 `DefinitionBody` distinguishes term definiens, formula equivalence, guarded
 definiens branches, algorithm-backed computable bodies, and unavailable/error

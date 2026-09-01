@@ -178,8 +178,17 @@ canonical、exceptionなし。
 authenticated `marker` target/return-member association 1件、field association exclusion、
 complete by-value input、environment-first default-deny oracle、exact debug grammar、
 private two-test boundary、semantic lowering禁止、
-zero-credit status、separate CoreIR owner-model follow-upを同期する。English canonical、
+zero-credit status、IR264 CoreIR owner-model handoffを同期する。English canonical、
 exceptionなし。
+
+## Task IR264 bilingual contract parity
+
+[EN contract](../../task_contracts/en/CORE-STRUCTURE-PROPERTY-DEFINITION-OWNER-IR264.md)と
+[JA companion](../../task_contracts/ja/CORE-STRUCTURE-PROPERTY-DEFINITION-OWNER-IR264.md)は、
+same private-field `CoreDefinitionOwner`、sole authenticated property initializer、
+validation order/reason、ordinary-row debug compatibility、exact property-row grammar、
+CoreIR validation matrix 1件、mechanical ordinary-owner migration、protected artifact、
+zero-credit status、Core35/36 deferralを同期する。English canonical、exceptionなし。
 
 ## Task 36P264 bilingual contract parity
 

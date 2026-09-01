@@ -238,9 +238,11 @@ node はその module が source syntax を見ずに実行できるだけの bin
 記録する。
 
 ```rust
+struct CoreDefinitionOwner { /* private fields */ }
+
 struct CoreDefinition {
     id: CoreDefinitionId,
-    item: CoreItemId,
+    owner: CoreDefinitionOwner,
     symbol: SymbolId,
     params: Vec<CoreBinder>,
     body: DefinitionBody,
@@ -250,6 +252,27 @@ struct CoreDefinition {
     source: CoreSourceRef,
 }
 ```
+
+### Structure-Property Definition Owners
+
+Frozen [IR264 contract](../../task_contracts/ja/CORE-STRUCTURE-PROPERTY-DEFINITION-OWNER-IR264.md)
+はdefinitionのsingle item fieldをprivate-field owner valueへ置換する。
+`CoreDefinitionOwner::for_item`はordinary item ownershipを維持し、`anchor_item`、optional
+`item`、optional `property_symbol` accessorを公開する。Property initializerは
+`core_ir.rs`で実装する`SourcePropertySelectorTypeContextHandoff::definition_owner`だけで、
+raw-value/generic member/field constructorをpublic/crate-visibleにしない。
+
+Property formはcarrier `Structure` item、authenticated property symbol、exact source/module
+environmentをprivateにbindする。`CoreIr::try_new`はbody referenceより前にanchor reference、
+`Valid` structure kind/status、definition symbol一致、source/module identity、carrier symbolとの
+non-aliasをvalidateする。Invalid shapeは`InvalidReference`/`InvalidDefinitionOwner`でfailし、
+partial `CoreIr`をpublishしない。
+
+Ordinary Step4 seed/item-keyed mapは不変で`for_item` ownerをconstructする。Manual debugは
+legacy item-owned `core-ir-debug-v1` definition rowをbyte-identicalに保ち、previously
+unrepresentable property formだけが`StructureProperty { anchor_item, source_id, module_id,
+property_symbol }`をrenderする。このowner valueはzero-creditで、property item、definition
+row/body、obligation、semanticsを作らない。
 
 `DefinitionBody` は term definiens、formula equivalence、guarded definiens branch、
 algorithm-backed computable body、unavailable/error body を区別する。

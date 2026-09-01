@@ -5252,9 +5252,12 @@ association and all retained type rows for means and equals, and reject foreign 
 cross-profile transactions without contaminating later valid construction.
 They make no unauthenticated `carrier` field association.
 
-The production selector and route remain unchanged. The probe adds no Core
-selector item, normalized type, definition owner, semantic result, fixture,
-expectation, trace, metadata, diagnostic, snapshot, or coverage credit.
+IR264 extends only the existing positive assertions: the authenticated handoff
+mints a private-field `CoreDefinitionOwner` anchored at carrier item 0 and
+exposing only `marker`. The production selector and route remain unchanged.
+The probe adds no Core selector item, `CoreDefinition` row/body, normalized
+type, semantic result, fixture, expectation, trace, metadata, diagnostic,
+snapshot, or coverage credit.
 
 ## Checker Task 269A Frozen Dormant Harness
 

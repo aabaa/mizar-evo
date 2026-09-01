@@ -205,5 +205,16 @@ synchronize the same authenticated `marker` target/return-member association,
 explicit field-association exclusion, complete by-value inputs,
 environment-first default-deny oracle, exact debug grammar, private
 two-test boundary, forbidden semantic lowering, zero-credit status, and
-separate CoreIR owner-model follow-up. English is canonical; no exception is
+IR264 CoreIR owner-model handoff. English is canonical; no exception is
+recorded.
+
+## Task IR264 Bilingual Contract Parity
+
+The [EN contract](../../task_contracts/en/CORE-STRUCTURE-PROPERTY-DEFINITION-OWNER-IR264.md)
+and [JA companion](../../task_contracts/ja/CORE-STRUCTURE-PROPERTY-DEFINITION-OWNER-IR264.md)
+synchronize the same private-field `CoreDefinitionOwner`, sole authenticated
+property initializer, validation order and reasons, ordinary-row debug
+compatibility, exact property-row grammar, one CoreIR validation matrix,
+mechanical ordinary-owner migrations, protected artifacts, zero-credit
+status, and Core35/36 deferral. English is canonical; no exception is
 recorded.

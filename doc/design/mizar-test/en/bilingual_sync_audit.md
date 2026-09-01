@@ -1616,6 +1616,16 @@ field association, and preserve the cross-profile default-deny
 boundary, and preserve production routing, semantic output, fixtures,
 expectations, trace, metadata, diagnostics, snapshots, and coverage credit.
 
+## Core Task IR264 Private-Probe Synchronization
+
+EN/JA agree that the same private Task264 leaf extends its existing means and
+equals positive assertions with the authenticated property-definition owner:
+carrier item 0, no ordinary item owner, and only `marker` as the property
+symbol. Both retain the complete checker/Core33/Core34 replay boundary and
+preserve production routing, fixtures, expectations, trace, metadata,
+diagnostics, snapshots, semantic output, and coverage credit. No
+`CoreDefinition` row or property body is produced by the runner.
+
 ## Checker Task 269A Frozen Dormant-Consumer Synchronization
 
 EN/JA agree on the exact B3N source/hash/51-node selector, resolver-local `y`,

@@ -780,9 +780,21 @@ Associationはwhole `SymbolId`、member id、root idだけをexposeする。Type
 definition/contribution identityはretained checker owner内でvalidateし、resolver-
 environment typeをCore public boundaryへ入れない。
 
-Selector item/`CoreDefinition` owner、`CoreTypePredicate`、normalized type、fact/
-coercion/view/binder/term/formula/diagnostic/semanticsはpublishしない。Current
-definition-owner modelはCore35/36前のseparate reviewed prerequisiteとして残る。
+Selector item/`CoreDefinition` row/body、`CoreTypePredicate`、normalized type、fact/
+coercion/view/binder/term/formula/diagnostic/semanticsはpublishしない。
+
+## Task IR264 Authenticated Property Definition Owner
+
+Frozen [IR264 contract](../../task_contracts/ja/CORE-STRUCTURE-PROPERTY-DEFINITION-OWNER-IR264.md)
+は`SourcePropertySelectorTypeContextHandoff::definition_owner`を追加する。Inherent
+implementationはproperty-form owner fieldをprivateにownする`core_ir.rs`内にあり、他moduleは
+raw valueからownerをmintできない。Validated source/module/carrier item/sole `marker` symbol
+だけを`CoreDefinitionOwner`へcopyし、field-owner constructor/mutatorは公開しない。
+
+Private Task264 testはmeans/equals handoffがcarrier item 0とauthenticated property symbolだけを
+返すことを証明する。Zero-credit owner valueであり、selector item、`CoreDefinition` row/body、
+normalized type、term/formula/obligation/production route/semantic resultではない。
+Core35/36はseparateのまま。
 
 ## 禁止事項
 

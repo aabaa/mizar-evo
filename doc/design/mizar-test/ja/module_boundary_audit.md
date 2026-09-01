@@ -11760,6 +11760,12 @@ Module/include/production path/facade route/Cargo edgeは追加しない。Final
 1,017 line / 44,370 bytes、SHA-256
 `23ad08e3ac46e36ee34121cee49873b90f796fd50a18ad632aeca032598e79b6`。
 
+Core Task IR264はsame private leafのexisting positive assertion 2件だけにauthenticated
+definition-owner projectionを追加する。Test/module/include/production path/facade route/Cargo
+edgeは追加しない。Final leafは1,022 line / 44,699 bytes、SHA-256
+`e584e3a36d8c8911d4e5f49209128cb35e81d0c93d254419476b93557a86fdca`。
+Runner pathは`CoreDefinition` row/property bodyをconstructしない。
+
 ## Checker Task 269A frozen dormant runner boundary
 
 `runner/type_elaboration`下private leaf 1件とincluded test leaf 1件がrunnerの
