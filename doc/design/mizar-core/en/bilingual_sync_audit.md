@@ -228,3 +228,12 @@ application/root/registry validation, unchanged return association and v1
 debug bytes, Core34 ownership, derived Rust assertion extension, protected
 test-intent invariance, exact write/no-impact surfaces, zero-credit status,
 and Core35/36 deferrals. English is canonical; no exception is recorded.
+
+## Task 33P264 Bilingual Contract Parity
+
+The [EN contract](../../task_contracts/en/CORE-SOURCE-PROPERTY-PARAMETER-CONTEXT-33P264.md)
+and [JA companion](../../task_contracts/ja/CORE-SOURCE-PROPERTY-PARAMETER-CONTEXT-33P264.md)
+synchronize the same complete selector/source inputs, Task33LB deterministic
+reuse, private parameter/binding/Core-variable `0/0/0` association, exact
+public API/debug/error precedence, two-test boundary, zero-credit state, and
+Core35/36/`it` deferrals. English is canonical; no exception is recorded.

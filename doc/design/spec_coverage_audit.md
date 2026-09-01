@@ -7442,3 +7442,18 @@ the receipt and fail-closed profile mixing. Specification, `.miz`, expectation,
 trace, metadata, snapshot, runner selection, diagnostics, obligations, semantics,
 and coverage credit remain unchanged. Core35 parameter/current-result/owner
 prerequisites and Core36 definition/correctness remain deferred.
+
+## Core Task33P264 Task264 Parameter Context Audit
+
+The implemented paired [Task33P264 contract](task_contracts/en/CORE-SOURCE-PROPERTY-PARAMETER-CONTEXT-33P264.md)
+maps the already-covered Task264 definition parameter `M` to the existing
+Core33 source-binding variable representation. It consumes only complete
+checker/Core handoffs, reuses Task33LB deterministically, and publishes no
+language or semantic result. Its two private assertions close the bounded
+`design_drift`, `source_drift`, and `test_gap`; there is no `spec_gap`.
+
+Coverage remains unchanged. No `.miz`, expectation, trace, metadata, stage,
+requirement status, active route, diagnostic, obligation, or Task277B credit
+changes. Equals Core35 remains separately gated by Task264D and this parameter
+prerequisite; means additionally remains gated by explicit current-result
+`it` representation.

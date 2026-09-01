@@ -6029,6 +6029,20 @@ The probe adds no registry include, production dispatch, active route,
 diagnostic, sidecar/trace mutation, semantic result, coverage credit, or
 Task277B readiness.
 
+## Core Task 33P264 Private Task264 Parameter Probe
+
+The frozen [Task33P264 contract](../../task_contracts/en/CORE-SOURCE-PROPERTY-PARAMETER-CONTEXT-33P264.md)
+adds exactly two tests to the existing private Task264 leaf. They build the
+real means/equals selector contexts, reuse each complete checker source
+context through Core's existing 33LB producer, and assert deterministic
+parameter/binding/Core-variable `0/0/0`, exact declaration provenance, empty
+type facts, and unchanged carrier item state. Cross-profile and foreign inputs
+must fail before publication.
+
+No fixture, expectation, trace, metadata, selection, production route,
+snapshot, normalized type, term/formula, `it`, definition, semantic result,
+coverage credit, or Task277B readiness changes.
+
 ## Checker Task264D Private Equals Selector Identity Probe
 
 The existing Task264 selector/type tests now construct the checker Task264D

@@ -187,7 +187,11 @@ top-level public API group:
   `SourcePropertySelectorTypeAssociation`、
   `SourcePropertySelectorTypeContextHandoff`、
   `SourcePropertySelectorTypeContextError`、
-  `SourcePropertySelectorTypeContextProducer`
+  `SourcePropertySelectorTypeContextProducer`、
+  `SourcePropertyParameterCoreVariableAssociation`、
+  `SourcePropertyParameterCoreContextHandoff`、
+  `SourcePropertyParameterCoreContextError`、
+  `SourcePropertyParameterCoreContextProducer`
 - Type and fact lowering: `TypeAndFactResult`, `TypeAndFactLoweringError`,
   `TypeAndFactLoweringInput`, `TypePredicateSeed`,
   `DeclaredBinderTypeSeed`, `AttributeChainSeed`, `ModeExpansionSeed`,
@@ -393,6 +397,18 @@ Bounded Core34 `design_drift`/`source_drift`/derived Rust `test_gap`だけを閉
 Normalized type/guardは作らず、protected test intent、trace status、snapshot、semantic
 coverage、production routeは不変。Core35がlater term/formula body inputをownし、
 Core36 definition/correctness/coherenceはdeferred。
+
+## Core-33P264 Task264 parameter Core context mapping
+
+Implemented [Task33P264 contract](../../task_contracts/ja/CORE-SOURCE-PROPERTY-PARAMETER-CONTEXT-33P264.md)
+はexisting Task264 definition parameter `M`をexisting Task33LB free-term Core-variable
+representationへmapする。Complete checker source context、property parameter/domain row、
+carrier Core context、deterministic 33LB outputがassociation
+`parameter/binding/core-var=0/0/0`をauthenticateする。
+
+Implemented family/test 2件がbounded `source_drift`/`test_gap`/`design_drift`をcloseする。
+`spec_gap`、protected test-intent/trace/metadata change、semantic credit、
+production routeなし。Core35 body lowering/Core36はdeferred。
 
 ## Source-Undocumented Behavior Pass
 

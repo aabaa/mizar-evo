@@ -788,6 +788,7 @@ payload categories can be added without breaking downstream exhaustive matches.
 | `SourceStructureCoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `SourcePropertyCarrierCoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `SourcePropertySelectorTypeContextError` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `SourcePropertyParameterCoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `DefinitionBoundaryKind` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `DefinitionBoundaryStatus` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `CheckerSiteKind` | `#[non_exhaustive]` downstream forward-compatible surface. |
@@ -939,6 +940,22 @@ retained carrier item 0. Postvalidation repeats every link before publication.
 The existing v1 debug bytes are unchanged. This Core34 input creates no
 normalized type, predicate/guard, binder, field/member association, term,
 formula, definition, obligation, route, or semantic result.
+
+## Task 33P264 Task264 Parameter Core Context
+
+The canonical [Task33P264 contract](../../task_contracts/en/CORE-SOURCE-PROPERTY-PARAMETER-CONTEXT-33P264.md)
+adds one private-field association from checker property parameter 0/binding 0
+to the existing Task33LB free term Core variable. The producer consumes the
+complete Task34I264/34D264 selector context and exact Task264 source context,
+then invokes the existing `SourceBindingCoreContextProducer` on an exact clone
+of the retained carrier context and binding environment.
+
+The handoff retains both complete inputs, the complete derived 33LB handoff,
+and association `0/0/0`. Replay rebuilds the 33LB value deterministically and
+compares it completely. The resulting context keeps carrier item 0 and adds
+only free term variable 0, its checker declaration-source record, and an empty
+type-fact entry. No binder frame, normalized type, term, formula, `it`,
+definition, route, diagnostic, obligation, or semantic credit is created.
 
 ## Forbidden Behavior
 

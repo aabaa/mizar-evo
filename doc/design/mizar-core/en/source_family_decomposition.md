@@ -393,6 +393,20 @@ ownership must accept the existing property `CoreDefinitionOwner` without
 inventing a property item. No term, formula, definition, semantics, route, or
 coverage credit is added by this checker prerequisite.
 
+## Task 33P264 Task264 Parameter Core Context
+
+The frozen [Task33P264 contract](../../task_contracts/en/CORE-SOURCE-PROPERTY-PARAMETER-CONTEXT-33P264.md)
+owns the missing Core33 parameter association. It retains the complete
+Task34I264/34D264 selector context and exact Task264 source context, reuses the
+existing 33LB producer over the carrier context, and publishes only
+parameter/binding/Core-variable `0/0/0` after complete replay validation.
+
+This closes the parameter-side Core35 readiness gap for both means and equals
+without lowering either body. Equals still needs Task264D at its separately
+frozen Core35 selector-term task; means still needs an explicit `it`
+representation. No normalized type, binder frame, term, formula, definition,
+route, semantics, or coverage credit is added.
+
 ## Task 36P264 Property-Implementation Owner Disposition
 
 The frozen [Task 36P264 contract](../../task_contracts/en/CORE-SOURCE-PROPERTY-IMPLEMENTATION-OWNER-36P264.md)

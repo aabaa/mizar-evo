@@ -188,7 +188,11 @@ Top-level public API groups:
   `SourcePropertySelectorTypeAssociation`,
   `SourcePropertySelectorTypeContextHandoff`,
   `SourcePropertySelectorTypeContextError`,
-  `SourcePropertySelectorTypeContextProducer`
+  `SourcePropertySelectorTypeContextProducer`,
+  `SourcePropertyParameterCoreVariableAssociation`,
+  `SourcePropertyParameterCoreContextHandoff`,
+  `SourcePropertyParameterCoreContextError`,
+  `SourcePropertyParameterCoreContextProducer`
 - Type and fact lowering: `TypeAndFactResult`, `TypeAndFactLoweringError`,
   `TypeAndFactLoweringInput`, `TypePredicateSeed`,
   `DeclaredBinderTypeSeed`, `AttributeChainSeed`, `ModeExpansionSeed`,
@@ -430,6 +434,19 @@ Rust `test_gap`. It creates no normalized type or guard and changes no
 protected test intent, trace status, snapshot, semantic coverage, or production
 route. Core35 owns the later term/formula body input; Core36 definition and
 correctness/coherence remain deferred.
+
+## Core-33P264 Task264 Parameter Core Context Mapping
+
+The implemented [Task33P264 contract](../../task_contracts/en/CORE-SOURCE-PROPERTY-PARAMETER-CONTEXT-33P264.md)
+maps the existing Task264 definition parameter `M` to the existing Task33LB
+free-term Core-variable representation. The complete checker source context,
+property parameter/domain rows, carrier Core context, and deterministic 33LB
+output authenticate association `parameter/binding/core-var = 0/0/0`.
+
+The implemented family and two focused assertions close the bounded
+`source_drift`, `test_gap`, and `design_drift`. There is no
+`spec_gap`, protected test-intent change, trace/metadata change, semantic
+credit, or production route. Core35 body lowering and Core36 remain deferred.
 
 ## Source-Undocumented Behavior Pass
 

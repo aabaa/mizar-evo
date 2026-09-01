@@ -678,6 +678,7 @@ algorithm payload category を下流 crate の exhaustive match を壊さずに�
 | `SourceStructureCoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface。 |
 | `SourcePropertyCarrierCoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface。 |
 | `SourcePropertySelectorTypeContextError` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `SourcePropertyParameterCoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface。 |
 | `DefinitionBoundaryKind` | `#[non_exhaustive]` downstream forward-compatible surface。 |
 | `DefinitionBoundaryStatus` | `#[non_exhaustive]` downstream forward-compatible surface。 |
 | `CheckerSiteKind` | `#[non_exhaustive]` downstream forward-compatible surface。 |
@@ -810,6 +811,20 @@ Constructionはparameter 0からbinding/application/root `0/0/0`を辿り、prop
 retained carrier item 0へのexact registry lookupを要求する。Postvalidationはpublish前に
 全linkを再検証する。Existing v1 debug byteは不変。Normalized type、predicate/guard、
 binder、field/member association、term/formula/definition/obligation/route/semanticsは作らない。
+
+## Task 33P264 Task264 parameter Core context
+
+Canonical [Task33P264 contract](../../task_contracts/ja/CORE-SOURCE-PROPERTY-PARAMETER-CONTEXT-33P264.md)
+はchecker property parameter 0/binding 0からexisting Task33LB free term Core variableへの
+private-field association 1件を追加する。Producerはcomplete Task34I264/34D264 selector
+contextとexact Task264 source contextをconsumeし、retained carrier context/binding envの
+exact clone上でexisting `SourceBindingCoreContextProducer`を呼ぶ。
+
+Handoffはcomplete input 2件、complete derived 33LB handoff、association `0/0/0`をretain。
+Replayは33LB valueをdeterministically rebuildしてcomplete compareする。Result contextは
+carrier item 0を維持し、free term variable 0/checker declaration source/empty type-factだけを
+追加する。Binder frame、normalized type、term/formula/`it`/definition/route/diagnostic/
+obligation/semantic creditは作らない。
 
 ## 禁止事項
 

@@ -5438,6 +5438,18 @@ Probeはlibrary-test-only。Registry include、production dispatch、active rout
 capture/installation、semantic result、diagnostic、sidecar/trace mutation、Core identity/origin、
 coverage credit、Task277B readinessは追加しない。
 
+## Core Task 33P264 private Task264 parameter probe
+
+Frozen [Task33P264 contract](../../task_contracts/ja/CORE-SOURCE-PROPERTY-PARAMETER-CONTEXT-33P264.md)
+はexisting private Task264 leafへexactly 2 testsを追加する。Real means/equals selector
+contextをbuildし、各complete checker source contextをCore existing 33LB producerでreuseして、
+deterministic parameter/binding/Core-variable `0/0/0`、exact declaration provenance、empty
+type fact、unchanged carrier item stateをassertする。Cross-profile/foreign inputはpublish前に
+failする。
+
+Fixture/expectation/trace/metadata/selection/production route/snapshot/normalized type/
+term/formula/`it`/definition/semantic result/coverage credit/Task277B readinessは不変。
+
 ## Checker Task264D private equals selector identity probe
 
 Existing Task264 selector/type testsはreal equals routeからchecker Task264D handoffを

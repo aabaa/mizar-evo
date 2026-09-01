@@ -596,6 +596,20 @@ F8 の spec 本文は同一変更(`cef7e109`: spec 03、05、13、17、18)で修
       member/root associationをretainし、normalized type/guardをinventしない。
     - Domain/return type identityのownerはCore34。Core35はterm/formula lowering、
       Core36 definition/correctnessはdeferredのまま。
+33P264. **Task264 parameter Core context prerequisite。** [x]
+    - [x] Complete selector/source context input、Task33LB reuse、association `0/0/0`、
+      public API/debug/default-deny order、test 2件、zero-credit boundaryをpaired
+      [Task33P264 contract](../../task_contracts/ja/CORE-SOURCE-PROPERTY-PARAMETER-CONTEXT-33P264.md)
+      へfreezeする。
+    - [x] Pre-source specification/API/bilingual/boundary reviewをblocking findingなしで
+      完了する。
+    - [x] Frozen associationとexisting-leaf private Task264 test 2件だけをimplementし、
+      Core35/36、`it`、semantics、route、protected artifactをdeferする。
+    - [x] Post-source review/hard gateをremaining findingなし、`9/9` PASS、valid
+      uncapped `100/100`で完了する。
+    - [x] Exact task-only commitをprepareし、clean postcommit proof/fresh
+      next-prerequisite inventoryはself-referential task commitでなくoperational handoffへ
+      記録する。
 IR264. **Authenticated structure-property definition owner。** [x]
     - Paired [task contract](../../task_contracts/ja/CORE-STRUCTURE-PROPERTY-DEFINITION-OWNER-IR264.md)
       はimplemented/verified、independent reviewはhard gate `9/9`、valid uncapped quality

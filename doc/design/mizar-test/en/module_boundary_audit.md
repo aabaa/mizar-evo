@@ -13092,6 +13092,10 @@ Task264 leaf. The runner producer, public harness API, fixture/expectation/
 trace/metadata files, dispatch, snapshots, Cargo graph, and downstream Core
 route remain excluded.
 
+Core Task33P264 adds only two tests in that same private Task264 leaf. It calls
+existing checker/Core APIs and adds no production path, facade route, public
+harness API, fixture, metadata, Cargo edge, snapshot, or downstream owner.
+
 ## Checker Task 264R No-Runner Module Boundary
 
 No `mizar-test` source, test, manifest, or Cargo target changes. The resolver

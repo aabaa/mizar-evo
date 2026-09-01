@@ -11775,6 +11775,10 @@ Checker Task264Dもsame existing private Task264 leafのassertionだけを変更
 Runner producer、public harness API、fixture/expectation/trace/metadata、dispatch、
 snapshot、Cargo graph、downstream Core routeはexcludeしたままである。
 
+Core Task33P264はsame private Task264 leafへtest 2件だけを追加する。Existing checker/Core
+APIを呼び、production path/facade route/public harness API/fixture/metadata/Cargo edge/
+snapshot/downstream ownerを追加しない。
+
 ## Checker Task 269A frozen dormant runner boundary
 
 `runner/type_elaboration`下private leaf 1件とincluded test leaf 1件がrunnerの

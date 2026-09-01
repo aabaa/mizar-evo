@@ -2186,3 +2186,11 @@ The paired Task264D contracts and harness sections assign the same existing two
 Task264 selector/type tests, equals receipt assertions, means/mixed rejection,
 unchanged test count, and zero-credit boundary. English is canonical; Japanese
 is logically synchronized.
+
+## Core Task 33P264 Private-Probe Synchronization
+
+The paired Task33P264 contracts and harness sections assign the same two
+private Task264 tests, complete selector/source inputs, deterministic Task33LB
+reuse, exact `0/0/0` association and provenance assertions, foreign/default-
+deny rejection, and zero-credit boundary. English is canonical; Japanese is
+logically synchronized.

@@ -331,6 +331,19 @@ representation、generic Core35 ownerにはproperty itemをinventせずexisting
 `CoreDefinitionOwner`を扱う設計が必要である。本checker prerequisiteはterm/formula/
 definition/semantics/route/coverage creditを追加しない。
 
+## Task 33P264 Task264 parameter Core context
+
+Frozen [Task33P264 contract](../../task_contracts/ja/CORE-SOURCE-PROPERTY-PARAMETER-CONTEXT-33P264.md)
+がmissing Core33 parameter associationをownする。Complete Task34I264/34D264 selector
+contextとexact Task264 source contextをretainし、carrier context上でexisting 33LB
+producerをreuseして、complete replay validation後にparameter/binding/Core-variable
+`0/0/0`だけをpublishする。
+
+Means/equals両方のparameter-side Core35 readiness gapだけをcloseし、bodyはlowerしない。
+Equalsはseparate Core35 selector-term taskでTask264Dを必要とし、meansはexplicit `it`
+representationを必要とする。Normalized type、binder frame、term/formula/definition/route/
+semantics/coverage creditは追加しない。
+
 ## Task 36P264 property-implementation owner disposition
 
 Frozen [Task 36P264 contract](../../task_contracts/ja/CORE-SOURCE-PROPERTY-IMPLEMENTATION-OWNER-36P264.md)は

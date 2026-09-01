@@ -39,7 +39,7 @@ exposes unexpected public APIs, or blocks safe review of future work.
 | `src/lib.rs` | 9 | module table in `todo.md` | Exports exactly `binder_normalization`, `control_flow`, `core_ir`, and `elaborator`. No drift. |
 | `src/core_ir.rs` | 4393 | `core_ir.md` | Large but cohesive data-shape and validation module. IR264 adds one private-field owner sum representation, its validation, compatible debug rendering, and one unit-test matrix without a new module responsibility. No split required. |
 | `src/binder_normalization.rs` | 5828 | `binder_normalization.md` | Large but cohesive binder/substitution/canonicalization module. Future private helper extraction is optional. |
-| `src/elaborator.rs` | 23685 | `elaborator.md` | Largest review-risk file, but its sections map to the six elaboration steps in the owning spec. Tasks 31, 33C4C8, 33LB, 33I259--264, 34I264, and IR264 are localized owner-specific adapters/contexts. IR264 mechanically migrates the ordinary definition constructor and keeps the authenticated property-owner initializer in `core_ir.rs`; no new elaborator responsibility or split is required. |
+| `src/elaborator.rs` | 24256 | `elaborator.md` | Largest review-risk file, but its sections map to the six elaboration steps in the owning spec. Tasks 31, 33C4C8, 33LB, 33I259--264, 33P264, 34I264, and IR264 are localized owner-specific adapters/contexts. Task33P264 reuses the existing Task33LB producer for one property-parameter association; IR264 keeps the authenticated property-owner initializer in `core_ir.rs`. No new elaborator responsibility or split is required. |
 | `src/control_flow.rs` | 6718 | `control_flow.md` | Large but maps to phase-10 CFG, contracts, diagnostics, and handoff sections. No mandatory split in this task. |
 | `tests/determinism_suite.rs` | 627 | `00.crate_plan.md`, task 20 | Cross-module integration test; no boundary issue. |
 | `tests/lint_policy.rs` | 1215 | task 1, task 21, task 22, task 31 policies | Policy/audit guard test; the Task-31 exception strips only the exact `ExportStatus`/`Visibility` import in `elaborator.rs` and continues to reject `SymbolEnv`, resolver behavior, aliases, and all other resolver-environment APIs. |
@@ -97,6 +97,11 @@ Task34I264 validation in `elaborator`; it adds no module, Cargo edge, producer,
 error type, or cross-crate responsibility. The same private mizar-test leaf is
 extended only with assertions. Post-source line counts are recorded in the task
 contract, and no move-only split is required for this bounded prerequisite.
+
+Task33P264 remains another localized Core33 association in `elaborator`. It
+reuses the existing 33LB producer over a cloned carrier context and adds no
+module, Cargo edge, raw-syntax dependency, destination slot, semantic lowering,
+or production route. The private Task264 leaf is the only test consumer.
 
 ## Classification
 

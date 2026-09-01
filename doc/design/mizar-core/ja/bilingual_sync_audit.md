@@ -207,3 +207,11 @@ no-Core33-item disposition、Core36 ownership、selector/carrier anti-alias boun
 classification、protected artifact、zero-credit state、same-source lower-checker
 prerequisite、Task263 exclusion、later Core33/34 owner handoffを同期する。English
 canonical、exceptionなし。
+
+## Task 33P264 bilingual contract parity
+
+[EN contract](../../task_contracts/en/CORE-SOURCE-PROPERTY-PARAMETER-CONTEXT-33P264.md)と
+[JA companion](../../task_contracts/ja/CORE-SOURCE-PROPERTY-PARAMETER-CONTEXT-33P264.md)は、
+complete selector/source input、Task33LB deterministic reuse、private parameter/binding/
+Core-variable `0/0/0` association、exact public API/debug/error precedence、test 2件、
+zero-credit state、Core35/36/`it` deferralを同期する。English canonical、exceptionなし。

@@ -66,7 +66,7 @@ use mizar_checker::{
     },
     source_property_implementation::{
         SourcePropertyCarrierIdentity, SourcePropertyImplementationHandoff,
-        SourcePropertyImplementationStyle,
+        SourcePropertyImplementationStyle, SourcePropertyParameterId,
     },
     source_structure_definition::{
         SourceStructureDefinitionHandoff, SourceStructureDefinitionId,
@@ -6031,6 +6031,477 @@ fn validate_property_selector_type_associations(
         || association.symbol().module() != carrier_context.module_id()
     {
         return Err(SourcePropertySelectorTypeContextError::InvalidAssociation);
+    }
+    Ok(())
+}
+
+/// One immutable Core variable associated with the exact Task-264 property
+/// parameter.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourcePropertyParameterCoreVariableAssociation {
+    parameter: SourcePropertyParameterId,
+    binding: BindingId,
+    core_var: CoreVarId,
+}
+
+impl SourcePropertyParameterCoreVariableAssociation {
+    #[must_use]
+    pub const fn parameter(&self) -> SourcePropertyParameterId {
+        self.parameter
+    }
+
+    #[must_use]
+    pub const fn binding(&self) -> BindingId {
+        self.binding
+    }
+
+    #[must_use]
+    pub const fn core_var(&self) -> CoreVarId {
+        self.core_var
+    }
+}
+
+/// Immutable Task-264 parameter/Core context built from complete branded
+/// checker and Core handoffs.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourcePropertyParameterCoreContextHandoff {
+    selector_context: SourcePropertySelectorTypeContextHandoff,
+    source_context: SourceBindingContextHandoff,
+    source_bindings: SourceBindingCoreContextHandoff,
+    association: SourcePropertyParameterCoreVariableAssociation,
+}
+
+impl SourcePropertyParameterCoreContextHandoff {
+    #[must_use]
+    pub const fn source_id(&self) -> SourceId {
+        self.selector_context.source_id()
+    }
+
+    #[must_use]
+    pub const fn module_id(&self) -> &ModuleId {
+        self.selector_context.module_id()
+    }
+
+    #[must_use]
+    pub const fn context(&self) -> &CoreContext {
+        self.source_bindings.context()
+    }
+
+    #[must_use]
+    pub const fn selector_context(&self) -> &SourcePropertySelectorTypeContextHandoff {
+        &self.selector_context
+    }
+
+    #[must_use]
+    pub const fn source_context(&self) -> &SourceBindingContextHandoff {
+        &self.source_context
+    }
+
+    #[must_use]
+    pub const fn source_bindings(&self) -> &SourceBindingCoreContextHandoff {
+        &self.source_bindings
+    }
+
+    #[must_use]
+    pub const fn association(&self) -> &SourcePropertyParameterCoreVariableAssociation {
+        &self.association
+    }
+
+    #[must_use]
+    pub fn debug_text(&self) -> String {
+        format!(
+            "source-property-parameter-core-context-v1|module={}.{}|carrier-item={}|bindings={}|parameter={}:{}:{}",
+            self.module_id().package().as_str(),
+            self.module_id().path().as_str(),
+            self.selector_context.carrier_item().index(),
+            self.source_bindings.binding_env().bindings().len(),
+            self.association.parameter().index(),
+            self.association.binding().index(),
+            self.association.core_var().index(),
+        )
+    }
+
+    fn validate(&self) -> Result<(), SourcePropertyParameterCoreContextError> {
+        validate_property_parameter_environment(&self.selector_context, &self.source_context)?;
+        self.selector_context
+            .validate()
+            .map_err(|_| SourcePropertyParameterCoreContextError::InvalidSelectorContext)?;
+        validate_property_parameter_source_context(&self.selector_context, &self.source_context)?;
+        let expected =
+            build_property_parameter_source_bindings(&self.selector_context, &self.source_context)?;
+        if self.source_bindings != expected {
+            return Err(SourcePropertyParameterCoreContextError::InvalidBindingContext);
+        }
+        validate_property_parameter_association(
+            &self.selector_context,
+            &self.source_context,
+            &self.source_bindings,
+            &self.association,
+        )
+    }
+}
+
+/// Errors raised while associating the exact Task-264 parameter with Core.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum SourcePropertyParameterCoreContextError {
+    EnvironmentMismatch,
+    InvalidSelectorContext,
+    InvalidSourceContext,
+    InvalidBindingContext,
+    InvalidAssociation,
+}
+
+impl fmt::Display for SourcePropertyParameterCoreContextError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::EnvironmentMismatch => {
+                formatter.write_str("property parameter Core environment is invalid")
+            }
+            Self::InvalidSelectorContext => {
+                formatter.write_str("property parameter selector context is invalid")
+            }
+            Self::InvalidSourceContext => {
+                formatter.write_str("property parameter source context is invalid")
+            }
+            Self::InvalidBindingContext => {
+                formatter.write_str("property parameter Core binding context is invalid")
+            }
+            Self::InvalidAssociation => {
+                formatter.write_str("property parameter Core association is invalid")
+            }
+        }
+    }
+}
+
+impl Error for SourcePropertyParameterCoreContextError {}
+
+/// Builds the standalone immutable Task-264 parameter/Core context handoff.
+#[derive(Debug, Clone, Copy)]
+pub struct SourcePropertyParameterCoreContextProducer;
+
+impl SourcePropertyParameterCoreContextProducer {
+    pub fn build(
+        selector_context: SourcePropertySelectorTypeContextHandoff,
+        source_context: SourceBindingContextHandoff,
+    ) -> Result<SourcePropertyParameterCoreContextHandoff, SourcePropertyParameterCoreContextError>
+    {
+        validate_property_parameter_environment(&selector_context, &source_context)?;
+        selector_context
+            .validate()
+            .map_err(|_| SourcePropertyParameterCoreContextError::InvalidSelectorContext)?;
+        validate_property_parameter_source_context(&selector_context, &source_context)?;
+        let source_bindings =
+            build_property_parameter_source_bindings(&selector_context, &source_context)?;
+        let parameter = selector_context
+            .carrier_context()
+            .checker_owner()
+            .parameters()
+            .iter()
+            .next()
+            .map(|(_, row)| row)
+            .ok_or(SourcePropertyParameterCoreContextError::InvalidAssociation)?;
+        let variable = source_bindings
+            .variables()
+            .get(parameter.binding())
+            .ok_or(SourcePropertyParameterCoreContextError::InvalidAssociation)?;
+        let association = SourcePropertyParameterCoreVariableAssociation {
+            parameter: parameter.id(),
+            binding: parameter.binding(),
+            core_var: variable.core_var(),
+        };
+        validate_property_parameter_association(
+            &selector_context,
+            &source_context,
+            &source_bindings,
+            &association,
+        )?;
+        let handoff = SourcePropertyParameterCoreContextHandoff {
+            selector_context,
+            source_context,
+            source_bindings,
+            association,
+        };
+        handoff.validate()?;
+        Ok(handoff)
+    }
+}
+
+fn validate_property_parameter_environment(
+    selector_context: &SourcePropertySelectorTypeContextHandoff,
+    source_context: &SourceBindingContextHandoff,
+) -> Result<(), SourcePropertyParameterCoreContextError> {
+    let source_id = selector_context.source_id();
+    let module_id = selector_context.module_id();
+    if source_context.source_id() != source_id
+        || source_context.module_id() != module_id
+        || source_context.binding_env().source_id() != source_id
+        || source_context.binding_env().module_id() != module_id
+        || selector_context.carrier_context().source_id() != source_id
+        || selector_context.carrier_context().module_id() != module_id
+        || selector_context.source_type().source_id() != source_id
+        || selector_context.source_type().module_id() != module_id
+    {
+        return Err(SourcePropertyParameterCoreContextError::EnvironmentMismatch);
+    }
+    Ok(())
+}
+
+fn validate_property_parameter_source_context(
+    selector_context: &SourcePropertySelectorTypeContextHandoff,
+    source_context: &SourceBindingContextHandoff,
+) -> Result<(), SourcePropertyParameterCoreContextError> {
+    let checker_owner = selector_context.carrier_context().checker_owner();
+    let implementation = checker_owner
+        .implementations()
+        .iter()
+        .next()
+        .map(|(_, row)| row)
+        .ok_or(SourcePropertyParameterCoreContextError::InvalidSourceContext)?;
+    let parameter = checker_owner
+        .parameters()
+        .iter()
+        .next()
+        .map(|(_, row)| row)
+        .ok_or(SourcePropertyParameterCoreContextError::InvalidSourceContext)?;
+    let target = checker_owner
+        .targets()
+        .iter()
+        .next()
+        .map(|(_, row)| row)
+        .ok_or(SourcePropertyParameterCoreContextError::InvalidSourceContext)?;
+    if source_context.debug_text() != checker_owner.source_context_fingerprint()
+        || source_context.items().len() != 1
+        || source_context.declarations().len() != 1
+        || source_context.context_links().len() != 2
+        || source_context.local_contexts().len() != 2
+        || source_context.binding_env().contexts().len() != 2
+        || source_context.binding_env().bindings().len() != 1
+        || !source_context.binding_env().diagnostics().is_empty()
+        || checker_owner.implementations().len() != 1
+        || checker_owner.parameters().len() != 1
+        || checker_owner.targets().len() != 1
+        || parameter.id() != SourcePropertyParameterId::new(0)
+        || parameter.owner().index() != 0
+        || parameter.ordinal() != 0
+        || parameter.binding() != BindingId::new(0)
+        || parameter.written_type() != selector_context.domain().application()
+        || parameter.binding() != selector_context.domain().binding()
+        || target.subject() != parameter.binding()
+        || implementation.parameter() != parameter.id()
+    {
+        return Err(SourcePropertyParameterCoreContextError::InvalidSourceContext);
+    }
+
+    let item = source_context
+        .items()
+        .get(SourceItemId::new(0))
+        .ok_or(SourcePropertyParameterCoreContextError::InvalidSourceContext)?;
+    let declaration = source_context
+        .declarations()
+        .get(SourceDeclarationId::new(0))
+        .ok_or(SourcePropertyParameterCoreContextError::InvalidSourceContext)?;
+    let SourceBindingSiteRole::DefinitionParameter { local } = &declaration.role else {
+        return Err(SourcePropertyParameterCoreContextError::InvalidSourceContext);
+    };
+    if item.id != SourceItemId::new(0)
+        || item.shell != implementation.shell()
+        || item.shell_ordinal != implementation.shell().index()
+        || item.role != SourceItemRole::PropertyImplementation
+        || item.source_range != implementation.source_range()
+        || item.parent.is_some()
+        || item.visibility != SourceItemVisibility::Unspecified
+        || item.site != *implementation.site()
+        || item
+            .local_scope
+            .as_ref()
+            .is_none_or(|scope| scope.path() != [4])
+        || item.recovery != SourceItemRecovery::Normal
+        || item.binding_context != BindingContextId::new(1)
+        || item.local_context != mizar_checker::typed_ast::LocalTypeContextId::new(1)
+        || item.predecessor.is_some()
+        || declaration.id != SourceDeclarationId::new(0)
+        || declaration.item != item.id
+        || declaration.binding != parameter.binding()
+        || declaration.source_ordinal != parameter.ordinal()
+        || declaration.spelling != "M"
+        || declaration.declaration_range != parameter.declaration_range()
+        || declaration.written_type_range.start != 130
+        || declaration.written_type_range.end != 144
+        || declaration.site != *parameter.site()
+        || declaration.binding_context != parameter.context()
+        || declaration.local_context != mizar_checker::typed_ast::LocalTypeContextId::new(1)
+        || declaration.shadowed_binding.is_some()
+        || declaration.predecessor.is_some()
+        || local.spelling() != "M"
+        || local.scope().path() != [4]
+        || local.declaration_range() != parameter.declaration_range()
+        || local.visible_after_ordinal() != 0
+    {
+        return Err(SourcePropertyParameterCoreContextError::InvalidSourceContext);
+    }
+
+    let module_context = source_context
+        .binding_env()
+        .contexts()
+        .get(BindingContextId::new(0))
+        .ok_or(SourcePropertyParameterCoreContextError::InvalidSourceContext)?;
+    let definition_context = source_context
+        .binding_env()
+        .contexts()
+        .get(BindingContextId::new(1))
+        .ok_or(SourcePropertyParameterCoreContextError::InvalidSourceContext)?;
+    let binding = source_context
+        .binding_env()
+        .bindings()
+        .get(parameter.binding())
+        .ok_or(SourcePropertyParameterCoreContextError::InvalidSourceContext)?;
+    let BinderIdentity::ResolverLocal {
+        scope,
+        ordinal,
+        declaration_range,
+    } = &binding.identity
+    else {
+        return Err(SourcePropertyParameterCoreContextError::InvalidSourceContext);
+    };
+    if module_context.id != BindingContextId::new(0)
+        || !is_normal_module_context(module_context)
+        || !module_context.bindings.is_empty()
+        || !module_context.visible_bindings.is_empty()
+        || definition_context.id != BindingContextId::new(1)
+        || !is_normal_declaration_context(definition_context)
+        || definition_context.owner != BindingContextOwner::DeclarationShell(item.shell)
+        || definition_context.parent != Some(BindingContextId::new(0))
+        || definition_context
+            .lexical_scope
+            .as_ref()
+            .is_none_or(|scope| scope.path() != [4])
+        || definition_context.bindings != [parameter.binding()]
+        || definition_context.visible_bindings != [parameter.binding()]
+        || binding.id != parameter.binding()
+        || binding.spelling != "M"
+        || binding.kind != BindingKind::DefinitionParameter
+        || binding.owner_context != BindingContextId::new(1)
+        || binding.declaration_range != parameter.declaration_range()
+        || binding.visible_after_ordinal != 0
+        || binding.type_site != BindingTypeSite::Source(declaration.written_type_range)
+        || binding.status != BindingStatus::Active
+        || !binding.captured.identities().is_empty()
+        || !binding.diagnostics.is_empty()
+        || binding.recovery != BindingRecoveryState::Normal
+        || scope.path() != [4]
+        || *ordinal != 0
+        || *declaration_range != parameter.declaration_range()
+    {
+        return Err(SourcePropertyParameterCoreContextError::InvalidSourceContext);
+    }
+
+    for index in 0..2 {
+        let link = source_context
+            .context_links()
+            .get(BindingContextId::new(index))
+            .ok_or(SourcePropertyParameterCoreContextError::InvalidSourceContext)?;
+        if link.binding_context != BindingContextId::new(index)
+            || link.local_context != mizar_checker::typed_ast::LocalTypeContextId::new(index)
+            || link.item != (index == 1).then_some(item.id)
+        {
+            return Err(SourcePropertyParameterCoreContextError::InvalidSourceContext);
+        }
+    }
+    Ok(())
+}
+
+fn build_property_parameter_source_bindings(
+    selector_context: &SourcePropertySelectorTypeContextHandoff,
+    source_context: &SourceBindingContextHandoff,
+) -> Result<SourceBindingCoreContextHandoff, SourcePropertyParameterCoreContextError> {
+    SourceBindingCoreContextProducer::build(
+        selector_context.carrier_context().context().clone(),
+        source_context.binding_env().clone(),
+    )
+    .map_err(|_| SourcePropertyParameterCoreContextError::InvalidBindingContext)
+}
+
+fn validate_property_parameter_association(
+    selector_context: &SourcePropertySelectorTypeContextHandoff,
+    source_context: &SourceBindingContextHandoff,
+    source_bindings: &SourceBindingCoreContextHandoff,
+    association: &SourcePropertyParameterCoreVariableAssociation,
+) -> Result<(), SourcePropertyParameterCoreContextError> {
+    source_bindings
+        .validate()
+        .map_err(|_| SourcePropertyParameterCoreContextError::InvalidBindingContext)?;
+    let parameter = selector_context
+        .carrier_context()
+        .checker_owner()
+        .parameters()
+        .get(association.parameter())
+        .ok_or(SourcePropertyParameterCoreContextError::InvalidAssociation)?;
+    let variable = source_bindings
+        .variables()
+        .get(association.binding())
+        .ok_or(SourcePropertyParameterCoreContextError::InvalidAssociation)?;
+    let source_record = source_bindings
+        .context()
+        .binder_sources()
+        .get(association.core_var())
+        .ok_or(SourcePropertyParameterCoreContextError::InvalidAssociation)?;
+    let expected_key = source_binding_provenance_key(association.binding());
+    let expected_provenance =
+        CoreProvenance::new(CoreProvenancePhase::Checker, expected_key.clone());
+    if association.parameter() != SourcePropertyParameterId::new(0)
+        || association.parameter() != parameter.id()
+        || association.binding() != BindingId::new(0)
+        || association.binding() != parameter.binding()
+        || association.binding() != selector_context.domain().binding()
+        || association.core_var() != CoreVarId::new(0)
+        || association.core_var() != variable.core_var()
+        || source_bindings.variables().len() != 1
+        || source_bindings.binding_env() != source_context.binding_env()
+        || !source_bindings.context().binder_context().frames.is_empty()
+        || source_bindings.context().binder_context().free_variables
+            != BTreeSet::from([association.core_var()])
+        || source_bindings
+            .context()
+            .binder_context()
+            .variable_classes
+            .get(&association.core_var())
+            != Some(&NormalizedVarClass::Free)
+        || source_bindings
+            .context()
+            .binder_context()
+            .variable_roles
+            .get(&association.core_var())
+            .map(CoreVarRole::as_str)
+            != Some(SOURCE_BINDING_CORE_PARAMETER_ROLE)
+        || source_bindings
+            .context()
+            .binder_context()
+            .variable_sorts
+            .get(&association.core_var())
+            != Some(&NormalizedVarSort::Term)
+        || source_bindings
+            .context()
+            .binder_type_facts()
+            .get(&association.core_var())
+            != Some(&Vec::new())
+        || source_record.source.anchor
+            != CoreSourceAnchor::SourceRange(parameter.declaration_range())
+        || source_record.source.provenance.as_slice() != [expected_provenance.clone()]
+        || source_record.provenance.as_slice()
+            != [CoreProvenance::new(
+                CoreProvenancePhase::Checker,
+                expected_key,
+            )]
+        || source_bindings.context().item_registry().id_for_symbol(
+            selector_context
+                .carrier_context()
+                .checker_owner()
+                .carrier_identity()
+                .structure_symbol(),
+        ) != Some(selector_context.carrier_item())
+    {
+        return Err(SourcePropertyParameterCoreContextError::InvalidAssociation);
     }
     Ok(())
 }

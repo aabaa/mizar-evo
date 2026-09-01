@@ -920,6 +920,220 @@ fn task264_selector_type_cross_profile_and_foreign_transactions_fail_closed() {
     assert_ne!(valid_means.source_type(), valid_equals.source_type());
 }
 
+#[test]
+fn task264_parameter_core_context_is_exact_for_means_and_equals() {
+    for (ordinal, source) in [
+        SOURCE_PROPERTY_IMPLEMENTATION_MEANS_TEXT,
+        SOURCE_PROPERTY_IMPLEMENTATION_EQUALS_TEXT,
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let (ast, module, shells, symbols) =
+            task253_ast_from_source_text(source, 264_800 + ordinal);
+        let output = source_property_implementation_output(
+            &ast, module, &shells, &symbols, source,
+        )
+        .expect("Task264 parameter selector")
+        .unwrap_or_else(|error| panic!("Task264 parameter profile {ordinal}: {error}"));
+        let selector_context = task264_selector_type_handoff(&output);
+        let source_context = output
+            .typed_ast
+            .source_context()
+            .expect("Task264 parameter source context")
+            .clone();
+        let first = mizar_core::elaborator::SourcePropertyParameterCoreContextProducer::build(
+            selector_context.clone(),
+            source_context.clone(),
+        )
+        .expect("Task264 parameter Core context");
+        let second = mizar_core::elaborator::SourcePropertyParameterCoreContextProducer::build(
+            selector_context.clone(),
+            source_context.clone(),
+        )
+        .expect("Task264 parameter Core replay");
+        assert_eq!(first, second);
+        assert_eq!(first.source_id(), selector_context.source_id());
+        assert_eq!(first.module_id(), selector_context.module_id());
+        assert_eq!(first.selector_context(), &selector_context);
+        assert_eq!(first.source_context(), &source_context);
+        assert_eq!(first.context(), first.source_bindings().context());
+        assert_eq!(first.source_bindings().binding_env(), source_context.binding_env());
+
+        let association = first.association();
+        assert_eq!(association.parameter().index(), 0);
+        assert_eq!(association.binding().index(), 0);
+        assert_eq!(association.core_var().index(), 0);
+        let variable = first
+            .source_bindings()
+            .variables()
+            .get(association.binding())
+            .expect("Task264 parameter Core variable");
+        assert_eq!(variable.binding(), association.binding());
+        assert_eq!(variable.core_var(), association.core_var());
+        assert_eq!(first.source_bindings().variables().len(), 1);
+        assert_eq!(first.context().binder_context().free_variables.len(), 1);
+        assert!(first
+            .context()
+            .binder_context()
+            .free_variables
+            .contains(&association.core_var()));
+        assert_eq!(
+            first
+                .context()
+                .binder_context()
+                .variable_classes
+                .get(&association.core_var()),
+            Some(&mizar_core::binder_normalization::NormalizedVarClass::Free)
+        );
+        assert_eq!(
+            first
+                .context()
+                .binder_context()
+                .variable_roles
+                .get(&association.core_var())
+                .expect("Task264 parameter role")
+                .as_str(),
+            "definition-parameter"
+        );
+        assert_eq!(
+            first
+                .context()
+                .binder_context()
+                .variable_sorts
+                .get(&association.core_var()),
+            Some(&mizar_core::binder_normalization::NormalizedVarSort::Term)
+        );
+        assert_eq!(
+            first
+                .context()
+                .binder_type_facts()
+                .get(&association.core_var()),
+            Some(&Vec::new())
+        );
+        assert!(first.context().binder_context().frames.is_empty());
+        let source_record = first
+            .context()
+            .binder_sources()
+            .get(association.core_var())
+            .expect("Task264 parameter binder source");
+        assert_eq!(
+            source_record.source.anchor,
+            mizar_core::core_ir::CoreSourceAnchor::SourceRange(mizar_session::SourceRange {
+                source_id: first.source_id(),
+                start: 125,
+                end: 126,
+            })
+        );
+        assert_eq!(source_record.source.provenance.len(), 1);
+        assert_eq!(source_record.provenance.as_slice().len(), 1);
+        assert_eq!(
+            source_record.source.provenance[0].key.as_str(),
+            "source-binding-core-variable-v1.binding.0"
+        );
+        assert_eq!(
+            source_record.provenance.as_slice()[0].key.as_str(),
+            "source-binding-core-variable-v1.binding.0"
+        );
+        let carrier_symbol = selector_context
+            .carrier_context()
+            .checker_owner()
+            .carrier_identity()
+            .structure_symbol();
+        assert_eq!(
+            first.context().item_registry().id_for_symbol(carrier_symbol),
+            Some(selector_context.carrier_item())
+        );
+        assert_eq!(first.context().item_registry().items().len(), 1);
+        assert_eq!(
+            first.debug_text(),
+            format!(
+                "source-property-parameter-core-context-v1|module={}.{}|carrier-item=0|bindings=1|parameter=0:0:0",
+                first.module_id().package().as_str(),
+                first.module_id().path().as_str(),
+            )
+        );
+    }
+}
+
+#[test]
+fn task264_parameter_core_context_rejects_mixed_and_foreign_transactions() {
+    let shared_ordinal = 264_900;
+    let (means_ast, means_module, means_shells, means_symbols) = task253_ast_from_source_text(
+        SOURCE_PROPERTY_IMPLEMENTATION_MEANS_TEXT,
+        shared_ordinal,
+    );
+    let means_output = source_property_implementation_output(
+        &means_ast,
+        means_module,
+        &means_shells,
+        &means_symbols,
+        SOURCE_PROPERTY_IMPLEMENTATION_MEANS_TEXT,
+    )
+    .expect("Task264 parameter means selector")
+    .expect("Task264 parameter means route");
+    let (equals_ast, equals_module, equals_shells, equals_symbols) = task253_ast_from_source_text(
+        SOURCE_PROPERTY_IMPLEMENTATION_EQUALS_TEXT,
+        shared_ordinal,
+    );
+    let equals_output = source_property_implementation_output(
+        &equals_ast,
+        equals_module,
+        &equals_shells,
+        &equals_symbols,
+        SOURCE_PROPERTY_IMPLEMENTATION_EQUALS_TEXT,
+    )
+    .expect("Task264 parameter equals selector")
+    .expect("Task264 parameter equals route");
+    let means_selector = task264_selector_type_handoff(&means_output);
+    let equals_selector = task264_selector_type_handoff(&equals_output);
+    let means_context = means_output
+        .typed_ast
+        .source_context()
+        .expect("Task264 means source context")
+        .clone();
+    let equals_context = equals_output
+        .typed_ast
+        .source_context()
+        .expect("Task264 equals source context")
+        .clone();
+    assert_eq!(means_selector.source_id(), equals_selector.source_id());
+    assert_eq!(means_selector.module_id(), equals_selector.module_id());
+    for (selector, context) in [
+        (means_selector.clone(), equals_context),
+        (equals_selector.clone(), means_context.clone()),
+    ] {
+        assert_eq!(
+            mizar_core::elaborator::SourcePropertyParameterCoreContextProducer::build(
+                selector, context,
+            )
+            .expect_err("mixed Task264 parameter context must fail closed"),
+            mizar_core::elaborator::SourcePropertyParameterCoreContextError::InvalidSourceContext
+        );
+    }
+
+    let (foreign_ast, foreign_module, foreign_shells, foreign_symbols) =
+        task253_ast_from_source_text(SOURCE_PROPERTY_IMPLEMENTATION_MEANS_TEXT, 264_901);
+    let foreign_output = source_property_implementation_output(
+        &foreign_ast,
+        foreign_module,
+        &foreign_shells,
+        &foreign_symbols,
+        SOURCE_PROPERTY_IMPLEMENTATION_MEANS_TEXT,
+    )
+    .expect("foreign Task264 parameter selector")
+    .expect("foreign Task264 parameter route");
+    let foreign_selector = task264_selector_type_handoff(&foreign_output);
+    assert_eq!(
+        mizar_core::elaborator::SourcePropertyParameterCoreContextProducer::build(
+            foreign_selector,
+            means_context,
+        )
+        .expect_err("foreign Task264 parameter environment must fail closed"),
+        mizar_core::elaborator::SourcePropertyParameterCoreContextError::EnvironmentMismatch
+    );
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Task264CarrierCoreContextMutation {
     Baseline,
@@ -956,6 +1170,26 @@ fn task264_carrier_core_handoff(
         checker_owner.clone(),
     )
     .expect("Task264 carrier Core handoff")
+}
+
+fn task264_selector_type_handoff(
+    output: &SourcePropertyImplementationRouteOutput,
+) -> mizar_core::elaborator::SourcePropertySelectorTypeContextHandoff {
+    let checker_owner = output
+        .typed_ast
+        .source_property_implementation()
+        .expect("Task264 checker owner")
+        .clone();
+    let source_type = output
+        .typed_ast
+        .source_type()
+        .expect("Task264 source type")
+        .clone();
+    mizar_core::elaborator::SourcePropertySelectorTypeContextProducer::build(
+        task264_carrier_core_handoff(&checker_owner),
+        source_type,
+    )
+    .expect("Task264 selector/type context")
 }
 
 fn task264_carrier_core_context_with_mutation(

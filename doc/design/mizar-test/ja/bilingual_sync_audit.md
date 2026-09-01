@@ -2003,3 +2003,10 @@ production deferralを同期する。English canonical、exceptionなし。
 Paired Task264D contract/harnessはsame existing Task264 selector/type tests 2件、equals
 receipt assertion、means/mixed rejection、unchanged test count、zero-credit boundaryを
 assignする。English canonical/Japanese logical syncを維持する。
+
+## Core Task 33P264 private-probe synchronization
+
+Paired Task33P264 contract/harnessはsame private Task264 test 2件、complete selector/source
+input、deterministic Task33LB reuse、exact `0/0/0` association/provenance assertion、foreign/
+default-deny rejection、zero-credit boundaryをassignする。English canonical/Japanese logical
+syncを維持する。
