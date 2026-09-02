@@ -8,6 +8,11 @@
 - [~] in progress
 - [x] done
 
+## Step 5 Frontend Gap Closure
+
+1. [ ] **Step 5A.4 / G3** — active; see the
+   [task contract](../../task_contracts/en/STEP5A4-G3-THEN-LINKING.md).
+
 ## Module Implementation
 
 | Module | Spec | Source | Status |
