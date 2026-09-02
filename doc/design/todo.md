@@ -95,7 +95,7 @@ is its task 1). "Next work" points into the
 | mizar-session | Source identity, source maps, source loading, build snapshots, retention | [x] complete | — | [todo](./mizar-session/en/todo.md) |
 | mizar-lexer | Raw scan, scope skeletons, lexical environments, token disambiguation | [x] complete plus Step 5A.2/5A.3 increments | — | [todo](./mizar-lexer/en/todo.md) |
 | mizar-syntax | Rowan-backed `SurfaceAst`, trivia, recovery, typed views | [x] historical milestone plus parser Tasks 48/46 increments, S-026 dense views, and Step 5A.1 complete | S-021 remains the sole deferred syntax task | [todo](./mizar-syntax/en/todo.md) |
-| mizar-parser | Grammar, Pratt parsing, syntax recovery, parse-only corpus | [x] Tasks 1-48 plus bounded `PARSER-RECOVERY-B1B1P-P1` complete; historical post-Task-46 score 99/100 | Step 5A.4-5A.7 (G3/G4/G6/G9); no inferred Task 49; human-owned P-265-47D remains separate | [todo](./mizar-parser/en/todo.md) |
+| mizar-parser | Grammar, Pratt parsing, syntax recovery, parse-only corpus | [x] Tasks 1-48 plus bounded `PARSER-RECOVERY-B1B1P-P1` and Step 5A.4 complete; historical post-Task-46 score 99/100 | Step 5A.5-5A.7 (G4/G6/G9); no inferred Task 49; human-owned P-265-47D remains separate | [todo](./mizar-parser/en/todo.md) |
 | mizar-frontend | Source loading and phase 1-3 orchestration | [x] prior milestone plus Step 5A.2/5A.3 increments | Step 5A.6 (G6) with mizar-parser | [todo](./mizar-frontend/en/todo.md) |
 | mizar-resolve | Module graph, namespaces, symbols, labels, signatures | [~] complete through task 29, Checker Task 263R, and Task 264R implementation | Preserve Task-264R shell/no-symbol boundary through Checker Tasks 248P/264 | [todo](./mizar-resolve/en/todo.md) |
 | mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] foundation complete through task 22; Tasks 265-268, Core-31, dormant [Task 269SDT](./task_contracts/en/269SDT.md), private [Task 269SDU](./task_contracts/en/269SDU.md), and the private zero-semantic nested-Fraenkel consumer chain through [C4C4](./task_contracts/en/CHECKER-FRAENKEL-NESTED-MAPPER-PRIMARY-257C4C4.md) are implemented | Complete the temporary design-evidence consolidation gate; active dispatch remains excluded; afterward re-inventory from C4C4 without presuming a successor | [todo](./mizar-test/en/todo.md) |
@@ -404,9 +404,9 @@ stay binding and must not be weakened.
 3. [x] **5A.3 (G2)** — `mizar-lexer`: closed declaration-site tokenization
    for the immutable ledger's three symbolic user-symbol rows without semantic
    activation. Evidence: [STEP5A3-G2-SYMBOLIC-USER-SYMBOLS](./task_contracts/en/STEP5A3-G2-SYMBOLIC-USER-SYMBOLS.md).
-4. [ ] **5A.4 (G3)** — `mizar-parser`: accept the `then`
-   statement-linking prefix per A.15 (`[then] linkable_statement`);
-   `hence`/`thus ... by` already parse. Deps: none.
+4. [x] **5A.4 (G3)** — `mizar-parser`: accepts omitted-justification
+   compact statements beneath `[then] linkable_statement` without semantic
+   activation. Evidence: [STEP5A4-G3-THEN-LINKING](./task_contracts/en/STEP5A4-G3-THEN-LINKING.md).
 5. [ ] **5A.5 (G4)** — `mizar-parser`: parse `synonym`/`antonym`
    notation declarations (both identifier and, after 5A.3, symbolic
    spellings on both patterns). Deps: 5A.3 for symbolic-spelling cases.

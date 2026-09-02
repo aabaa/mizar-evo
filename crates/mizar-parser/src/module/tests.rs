@@ -17675,6 +17675,161 @@ fn parser_parses_task19_conclusion_then_iterative_nodes() {
 }
 
 #[test]
+fn step5a4_parses_omitted_compact_justifications_with_and_without_then() {
+    let source_id = source_id(254);
+    let tokens = token_sequence(
+        source_id,
+        &[
+            ("A1", ParserTokenKind::Identifier),
+            (":", ParserTokenKind::ReservedSymbol),
+            ("x", ParserTokenKind::Identifier),
+            ("=", ParserTokenKind::ReservedSymbol),
+            ("x", ParserTokenKind::Identifier),
+            (";", ParserTokenKind::ReservedSymbol),
+            ("x", ParserTokenKind::Identifier),
+            ("=", ParserTokenKind::ReservedSymbol),
+            ("x", ParserTokenKind::Identifier),
+            (";", ParserTokenKind::ReservedSymbol),
+            ("then", ParserTokenKind::ReservedWord),
+            ("A2", ParserTokenKind::Identifier),
+            (":", ParserTokenKind::ReservedSymbol),
+            ("x", ParserTokenKind::Identifier),
+            ("=", ParserTokenKind::ReservedSymbol),
+            ("x", ParserTokenKind::Identifier),
+            (";", ParserTokenKind::ReservedSymbol),
+            ("then", ParserTokenKind::ReservedWord),
+            ("x", ParserTokenKind::Identifier),
+            ("=", ParserTokenKind::ReservedSymbol),
+            ("x", ParserTokenKind::Identifier),
+            (";", ParserTokenKind::ReservedSymbol),
+            ("then", ParserTokenKind::ReservedWord),
+            ("x", ParserTokenKind::Identifier),
+            ("=", ParserTokenKind::ReservedSymbol),
+            ("x", ParserTokenKind::Identifier),
+            ("by", ParserTokenKind::ReservedWord),
+            ("A1", ParserTokenKind::Identifier),
+            (";", ParserTokenKind::ReservedSymbol),
+        ],
+    );
+    let compact_ranges = [(0, 5), (6, 9), (11, 16), (18, 21), (23, 28)]
+        .map(|(first, last)| range(source_id, tokens[first].span.start, tokens[last].span.end));
+    let then_ranges = [(10, 16), (17, 21), (22, 28)]
+        .map(|(first, last)| range(source_id, tokens[first].span.start, tokens[last].span.end));
+    let output = parse(ParseRequest::new(
+        source_id,
+        Edition::new("2026"),
+        tokens,
+        Vec::new(),
+    ));
+
+    assert!(output.diagnostics.is_empty(), "{:#?}", output.diagnostics);
+    let ast = output
+        .ast
+        .expect("omitted compact statements should keep an AST");
+    let mut compacts = ast
+        .nodes()
+        .iter()
+        .filter(|node| matches!(node.kind, SurfaceNodeKind::CompactStatement))
+        .collect::<Vec<_>>();
+    compacts.sort_by_key(|node| node.range.start);
+    assert_eq!(
+        compacts.iter().map(|node| node.range).collect::<Vec<_>>(),
+        compact_ranges
+    );
+    for compact in &compacts[..4] {
+        assert_eq!(direct_token_texts(&ast, compact), vec![";"]);
+        assert!(
+            structural_children(&ast, compact)
+                .iter()
+                .all(|child| !matches!(child.kind, SurfaceNodeKind::JustificationClause))
+        );
+    }
+    assert!(
+        structural_children(&ast, compacts[4])
+            .iter()
+            .any(|child| matches!(child.kind, SurfaceNodeKind::JustificationClause))
+    );
+
+    let mut then_statements = ast
+        .nodes()
+        .iter()
+        .filter(|node| matches!(node.kind, SurfaceNodeKind::ThenStatement))
+        .collect::<Vec<_>>();
+    then_statements.sort_by_key(|node| node.range.start);
+    assert_eq!(
+        then_statements
+            .iter()
+            .map(|node| node.range)
+            .collect::<Vec<_>>(),
+        then_ranges
+    );
+    assert!(then_statements.iter().all(|node| {
+        let children = structural_children(&ast, node);
+        children.len() == 1 && matches!(children[0].kind, SurfaceNodeKind::CompactStatement)
+    }));
+}
+
+#[test]
+fn step5a4_preserves_then_rejection_and_missing_semicolon_recovery() {
+    let source_id = source_id(255);
+    let output = parse(ParseRequest::new(
+        source_id,
+        Edition::new("2026"),
+        token_sequence(
+            source_id,
+            &[
+                ("then", ParserTokenKind::ReservedWord),
+                ("let", ParserTokenKind::ReservedWord),
+                ("x", ParserTokenKind::Identifier),
+                ("be", ParserTokenKind::ReservedWord),
+                ("set", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("then", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("then", ParserTokenKind::ReservedWord),
+                ("x", ParserTokenKind::Identifier),
+                ("=", ParserTokenKind::ReservedSymbol),
+                ("x", ParserTokenKind::Identifier),
+                ("by", ParserTokenKind::ReservedWord),
+                ("A", ParserTokenKind::Identifier),
+            ],
+        ),
+        Vec::new(),
+    ));
+
+    assert!(
+        output.diagnostics.iter().any(|diagnostic| {
+            diagnostic.code == SyntaxDiagnosticCode::MalformedFormulaExpression
+        })
+    );
+    assert!(
+        output
+            .diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.code == SyntaxDiagnosticCode::MissingSemicolon)
+    );
+    let ast = output.ast.expect("then recovery should retain an AST");
+    assert_eq!(
+        count_nodes(&ast, |kind| matches!(kind, SurfaceNodeKind::ThenStatement)),
+        3
+    );
+    assert_eq!(
+        count_nodes(&ast, |kind| matches!(
+            kind,
+            SurfaceNodeKind::ErrorRecovery(SyntaxRecoveryKind::MissingStatement)
+        )),
+        2
+    );
+    assert_eq!(
+        count_nodes(&ast, |kind| matches!(
+            kind,
+            SurfaceNodeKind::CompactStatement
+        )),
+        1
+    );
+}
+
+#[test]
 fn parser_recovers_task19_conclusion_then_iterative_gaps() {
     let source_id = source_id(96);
     let output = parse(ParseRequest::new(

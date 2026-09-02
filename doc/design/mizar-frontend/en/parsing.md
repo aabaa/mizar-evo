@@ -356,3 +356,11 @@ moves `MIZAR_PARSER_CACHE_KEY_VERSION` from v3 to v4. Local functor defaults
 enter the existing `ParserInputs` fixity table, and prefix template applications
 preserve template arguments before the operand. The seam API and token
 adaptation remain unchanged; completion state is contract-owned.
+
+## Step 5A.4 Then-Linking Parser Version
+
+The [central contract](../../task_contracts/en/STEP5A4-G3-THEN-LINKING.md)
+moves `MIZAR_PARSER_CACHE_KEY_VERSION` from v4 to v5. The same token stream now
+produces a complete omitted-justification compact statement, including beneath
+`then`, instead of parser recovery. The seam API and token adaptation remain
+unchanged; completion state is contract-owned.

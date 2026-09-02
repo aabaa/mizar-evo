@@ -21,7 +21,7 @@ be closed by weakening the corpus expectations.
 |---|---|---|
 | G1 | closed by 5A.2 (20 ledger rows) | Same-module local notation activation is implemented; see the [task contract](../../task_contracts/en/STEP5A2-G1-LOCAL-NOTATION.md). Mixed-row G2/G6 diagnostics and all semantic activation remain with their named owners. |
 | G2 | closed by 5A.3 (3 ledger rows) | Symbolic functor/predicate declaration sites now tokenize per A.2; see the [task contract](../../task_contracts/en/STEP5A3-G2-SYMBOLIC-USER-SYMBOLS.md). Semantic activation remains with the named 5C owners. |
-| G3 | medium | The `then` statement-linking prefix is rejected, although A.15 admits `[then] linkable_statement`; `hence`/`thus ... by` parse cleanly. |
+| G3 | closed by 5A.4 (1 ledger row) | Omitted-justification compact statements now parse beneath `[then] linkable_statement`; see the [task contract](../../task_contracts/en/STEP5A4-G3-THEN-LINKING.md). Semantic activation remains with 5C.9. |
 | G4 | medium | `synonym`/`antonym` notation declarations fail to parse even with identifier spellings on both patterns. |
 | G5 | closed by 5A.1 | Root-reachable AST validation removes the `term qua <structure type>` SurfaceAstBuilder panic; see the [task contract](../../task_contracts/en/STEP5A1-G5-QUA-STRUCTURE.md). Semantic activation remains owned by 5C. |
 | G6 | medium | Argument-bearing local dependent-mode use (`QMode of A`) fails in binder/type positions although the declaration parses (imported argument-bearing modes are handled by the existing task-68 boundary). |

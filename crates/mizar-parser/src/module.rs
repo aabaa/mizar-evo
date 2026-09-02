@@ -1353,10 +1353,11 @@ impl Parser {
         children.push(proposition.id);
         recovery_nodes.extend(proposition.recovery_nodes);
 
-        let justification = self.parse_general_justification_at(cursor, true)?;
-        cursor = justification.next_position;
-        children.push(justification.id);
-        recovery_nodes.extend(justification.recovery_nodes);
+        if let Some(justification) = self.parse_general_justification_at(cursor, true) {
+            cursor = justification.next_position;
+            children.push(justification.id);
+            recovery_nodes.extend(justification.recovery_nodes);
+        }
 
         Some(self.finish_simple_statement_node(
             position,
@@ -13750,14 +13751,17 @@ impl Parser {
 
     fn is_compact_statement_start_at(&self, position: usize) -> bool {
         let body_start = self.statement_label_body_start_at(position);
-        self.can_start_formula_at(body_start)
-            && self.top_level_general_justification_before_statement_boundary_at(body_start)
+        if !self.can_start_formula_at(body_start) {
+            return false;
+        }
+        let Some((boundary, has_justification)) = self.compact_statement_boundary_at(body_start)
+        else {
+            return false;
+        };
+        self.proposition_consumes_compact_body(position, boundary, !has_justification)
     }
 
-    fn top_level_general_justification_before_statement_boundary_at(
-        &self,
-        position: usize,
-    ) -> bool {
+    fn compact_statement_boundary_at(&self, position: usize) -> Option<(usize, bool)> {
         let mut cursor = position;
         let mut paren_depth = 0_usize;
         let mut bracket_depth = 0_usize;
@@ -13770,14 +13774,16 @@ impl Parser {
                     && (self.is_reserved_word_at(cursor, "by")
                         || self.is_reserved_word_at(cursor, "proof"))
                 {
-                    return true;
+                    return Some((cursor, true));
                 }
-                if self.is_semicolon_at(cursor)
-                    || self.is_end_keyword_at(cursor)
+                if self.is_semicolon_at(cursor) {
+                    return Some((cursor, false));
+                }
+                if self.is_end_keyword_at(cursor)
                     || self.is_item_start_at(cursor)
                     || (cursor > position && self.is_statement_boundary_keyword_at(cursor))
                 {
-                    return false;
+                    return None;
                 }
             }
 
@@ -13785,27 +13791,55 @@ impl Parser {
                 paren_depth += 1;
             } else if self.is_reserved_symbol_at(cursor, ")") {
                 if paren_depth == 0 {
-                    return false;
+                    return None;
                 }
                 paren_depth -= 1;
             } else if self.is_reserved_symbol_at(cursor, "[") {
                 bracket_depth += 1;
             } else if self.is_reserved_symbol_at(cursor, "]") {
                 if bracket_depth == 0 {
-                    return false;
+                    return None;
                 }
                 bracket_depth -= 1;
             } else if self.is_reserved_symbol_at(cursor, "{") {
                 brace_depth += 1;
             } else if self.is_reserved_symbol_at(cursor, "}") {
                 if brace_depth == 0 {
-                    return false;
+                    return None;
                 }
                 brace_depth -= 1;
             }
             cursor += 1;
         }
-        false
+        None
+    }
+
+    fn proposition_consumes_compact_body(
+        &self,
+        position: usize,
+        boundary: usize,
+        require_clean: bool,
+    ) -> bool {
+        if boundary <= position {
+            return false;
+        }
+        if require_clean && boundary > position && self.infix_operator_at(boundary - 1).is_some() {
+            return false;
+        }
+        let request = crate::ParseRequest::new(
+            self.request.source_id,
+            self.request.edition.clone(),
+            self.request.tokens[position..boundary].to_vec(),
+            self.request.operator_fixity.clone(),
+        )
+        .with_string_required_context(self.request.string_required_context);
+        let expected_end = request.tokens.len();
+        let mut probe = Parser::new(request);
+        probe.add_token_nodes();
+        let proposition = probe.parse_proposition_at(0);
+        proposition.next_position == expected_end
+            && (!require_clean
+                || (proposition.recovery_nodes.is_empty() && probe.diagnostics.is_empty()))
     }
 
     fn definition_parameter_tail_justification_position_at(

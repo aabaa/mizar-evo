@@ -5754,6 +5754,7 @@ fn repository_parse_only_cases_separate_active_runner_seeds_from_future_metadata
             "pass_parser_symbolic_user_symbol_declarations_001",
             "pass_parser_template_arguments_001",
             "pass_parser_template_references_001",
+            "pass_parser_then_linkable_omitted_justification_001",
             "pass_parser_theorems_proofs_001",
             "pass_parser_type_expressions_001",
         ]
@@ -6237,8 +6238,8 @@ fn repository_parse_only_runner_executes_active_minimal_parser_seeds() {
     let report = run_parse_only_corpus(&config).unwrap();
 
     assert_eq!(report.error_count(), 0, "{:#?}", report.diagnostics);
-    assert_eq!(report.results.len(), 104);
-    assert_eq!(report.passed_count(), 104);
+    assert_eq!(report.results.len(), 105);
+    assert_eq!(report.passed_count(), 105);
     assert_eq!(report.failed_count(), 0);
     assert!(report.results.iter().any(|result| {
         result.id.0 == "pass_parser_algorithm_control_flow_001"
@@ -6974,6 +6975,36 @@ fn step5a3_gap_ledger_selects_exact_g2_inventory_shape() {
     }
 
     assert_eq!((g2_rows, g1_g2, g2_only), (3, 2, 1));
+}
+
+#[test]
+fn step5a4_gap_ledger_selects_exact_g3_inventory_shape() {
+    let path = repository_config()
+        .workspace_root
+        .join("tests/coverage/audit1_frontend_gaps.tsv");
+    let input = fs::read_to_string(path).unwrap();
+    let mut lines = input.lines();
+    assert_eq!(lines.next(), Some("source\tgaps"));
+
+    let mut g3_rows = 0;
+    for line in lines {
+        let (source, gaps) = line
+            .split_once('\t')
+            .expect("gap-ledger rows must contain exactly one tab-separated gap field");
+        assert!(!source.is_empty());
+        assert!(!gaps.contains('\t'));
+        if !gaps.split(',').any(|gap| gap == "G3") {
+            continue;
+        }
+        g3_rows += 1;
+        assert_eq!(
+            source,
+            "tests/miz/pass/theorems/pass_formula_statement_then_hence_linking_001.miz"
+        );
+        assert_eq!(gaps, "G3");
+    }
+
+    assert_eq!(g3_rows, 1);
 }
 
 #[test]
@@ -9571,8 +9602,8 @@ fn parse_only_cli_reports_active_runner_summary() {
         String::from_utf8_lossy(&output.stderr)
     );
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("parse-only cases: 104"));
-    assert!(stdout.contains("passed: 104"));
+    assert!(stdout.contains("parse-only cases: 105"));
+    assert!(stdout.contains("passed: 105"));
     assert!(stdout.contains("failed: 0"));
 }
 

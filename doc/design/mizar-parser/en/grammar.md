@@ -2310,3 +2310,13 @@ and positions outside the definition remain strict. No binding, type lookup,
 or public parser input is added. For a prefix operator, a following bracket
 group becomes `TemplateArguments` only when another term operand follows;
 otherwise the bracket group remains the built-in bracket-functor operand.
+
+## Step 5A.4 Omitted Compact Justification
+
+The [central contract](../../task_contracts/en/STEP5A4-G3-THEN-LINKING.md)
+aligns `CompactStatement` with Chapter 15 and Appendix A.15: its proposition
+may be followed directly by `;` when the optional simple justification is
+omitted. The same semicolon-bounded recognition applies beneath `then`, so the
+wrapper owns `then` and one compact child without inventing a justification
+node. Explicit justification/proof forms and invalid `then` prefixes retain
+their existing parsing and local recovery.

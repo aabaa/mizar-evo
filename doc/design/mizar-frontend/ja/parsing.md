@@ -235,3 +235,11 @@ central [JA contract](../../task_contracts/ja/STEP5A2-G1-LOCAL-NOTATION.md) に�
 既存 `ParserInputs` fixity table に入り、prefix template application は operand 前の
 template arguments を保持する。seam API と token adaptation は不変であり、
 completion state は contract が所有する。
+
+## Step 5A.4 Then-Linking Parser Version
+
+[central contract](../../task_contracts/ja/STEP5A4-G3-THEN-LINKING.md) に従い、
+`MIZAR_PARSER_CACHE_KEY_VERSION` を v4 から v5 に変更する。同じ token stream が、
+`then` 配下を含む omitted-justification compact statement を parser recovery ではなく
+complete AST として生成する。seam API と token adaptation は不変であり、completion
+state は contract が所有する。

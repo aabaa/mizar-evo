@@ -17,7 +17,7 @@ pub const DEFAULT_PARSER_CACHE_KEY_VERSION: &str = "mizar-frontend/parser-seam/c
 /// Cache-key version used by the stub parser seam.
 pub const STUB_PARSER_CACHE_KEY_VERSION: &str = "mizar-frontend/stub-parser/no-ast-v1";
 /// Cache-key version used by the real Mizar parser seam.
-pub const MIZAR_PARSER_CACHE_KEY_VERSION: &str = "mizar-parser/surface-ast-v4";
+pub const MIZAR_PARSER_CACHE_KEY_VERSION: &str = "mizar-parser/surface-ast-v5";
 
 /// Parser request containing a token stream and parser inputs.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -726,6 +726,74 @@ mod tests {
                     end: 11,
                 },
             ]
+        );
+    }
+
+    #[test]
+    fn real_parser_seam_accepts_then_compact_without_justification_under_v5() {
+        let source_id = source_id(34);
+        let tokens = token_stream(
+            source_id,
+            vec![
+                token(source_id, TokenKind::ReservedWord, "then", 0, 4),
+                token(source_id, TokenKind::Identifier, "A", 5, 6),
+                token(source_id, TokenKind::ReservedSymbol, ":", 6, 7),
+                token(source_id, TokenKind::Identifier, "x", 8, 9),
+                token(source_id, TokenKind::ReservedSymbol, "=", 10, 11),
+                token(source_id, TokenKind::Identifier, "x", 12, 13),
+                token(source_id, TokenKind::ReservedSymbol, ";", 13, 14),
+            ],
+        );
+        let inputs = ParserInputs::new(
+            Edition::new("2026"),
+            OperatorFixityTable::empty(),
+            StringRequiredContext::None,
+        );
+        let seam = MizarParserSeam;
+
+        let output = seam.parse(ParseRequest::new(&tokens, inputs));
+
+        assert!(output.diagnostics.is_empty(), "{:#?}", output.diagnostics);
+        let ast = output
+            .ast
+            .expect("then compact statement should keep an AST");
+        let then_statement = ast
+            .nodes()
+            .iter()
+            .find(|node| matches!(node.kind, SurfaceNodeKind::ThenStatement))
+            .expect("then wrapper should be present");
+        let compact = then_statement
+            .children
+            .iter()
+            .filter_map(|child| ast.node(*child))
+            .find(|node| matches!(node.kind, SurfaceNodeKind::CompactStatement))
+            .expect("then wrapper should own a compact statement");
+        assert_eq!(
+            then_statement.range,
+            SourceRange {
+                source_id,
+                start: 0,
+                end: 14,
+            }
+        );
+        assert_eq!(
+            compact.range,
+            SourceRange {
+                source_id,
+                start: 5,
+                end: 14,
+            }
+        );
+        assert!(
+            compact
+                .children
+                .iter()
+                .filter_map(|child| ast.node(*child))
+                .all(|node| !matches!(node.kind, SurfaceNodeKind::JustificationClause))
+        );
+        assert_eq!(
+            seam.cache_key_version().version.as_ref(),
+            "mizar-parser/surface-ast-v5"
         );
     }
 

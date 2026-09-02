@@ -1,0 +1,9 @@
+theorem ThenLinkableOmitted: for x being set st x = x holds x = x
+proof
+  let x be set;
+  assume A1: x = x;
+  A2: x = x;
+  then A3: x = x;
+  then x = x by A1;
+  hence x = x;
+end;

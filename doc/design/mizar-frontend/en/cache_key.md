@@ -274,4 +274,13 @@ The [central contract](../../task_contracts/en/STEP5A3-G2-SYMBOLIC-USER-SYMBOLS.
 requires the token-stream namespace to advance from v1 to v2 because the same
 source and imported environment can now produce a different token stream at
 local punctuation-shaped Functor/Predicate declaration starts. The parser seam
-remains v4; no AST cache-key shape or storage policy changes.
+remained v4 for that tokenization-only change; no AST cache-key shape or storage
+policy changed.
+
+## Step 5A.4 Then-Linking Cache Assessment
+
+The [central contract](../../task_contracts/en/STEP5A4-G3-THEN-LINKING.md)
+requires v4-to-v5 invalidation because omitted-justification compact statements
+now produce a different AST/diagnostic result for the same token and parser
+inputs. The token-stream namespace remains v2; cache-key shape and storage
+policy do not change.

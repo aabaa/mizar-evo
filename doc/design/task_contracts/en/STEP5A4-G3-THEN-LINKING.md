@@ -11,7 +11,7 @@ cache namespace.
 
 | Field | Value |
 |---|---|
-| Status | Frozen; pre-implementation |
+| Status | Completed; full gates |
 | Tier | Full: parser-visible grammar, AST/diagnostic output, parser-cache identity, and test-first `.miz` |
 | Owner / consumers | `mizar-parser` owns statement recognition and `ThenStatement`/`CompactStatement`; `mizar-frontend` owns the real-parser cache-key version; later statement checking consumes the AST |
 | Dependencies | Step 5A frozen order selects 5A.4 after completed 5A.3; no semantic dependency |
@@ -101,3 +101,22 @@ reviews; focused parser/frontend/parse-only checks; metadata/link/ledger lints;
 format, warnings-denied workspace Clippy, and full tests. Exit requires 9/9
 hard gates, a valid read-only score of at least 90/100, exact task-only staging,
 local commit, clean postcommit proof, and fresh selection of 5A.5/G4.
+
+## Completion evidence
+
+The immutable G3 source and the new regression parse without diagnostics. The
+active parse-only corpus is 105/105; repository metadata is 554 cases / 499
+requirements with 23 expected warnings. The G3 AST has one `ThenStatement`
+owning one semicolon-bounded `CompactStatement` without an invented
+justification, while the full parser regression suite preserves legacy
+recovery and expression ownership.
+
+Independent specification, boundary, test-sufficiency, implementation, and
+source/docs/API reviews ended with no findings after finding-specific repair.
+Focused parser/frontend checks, metadata and lint-policy tests, the repository
+plan, `cargo fmt --check`, warnings-denied workspace Clippy, and full
+`cargo test` pass. All 9 hard gates pass. The independent read-only quality
+score is 100/100. No semantic oracle or trace state was activated; the trace
+delta is only the frozen parse-only backlink, and the activation map, gap
+ledger, coverage audit, and archive remain unchanged. G4/G6/G7/G9 and all
+semantic activation remain deferred to their named tasks.

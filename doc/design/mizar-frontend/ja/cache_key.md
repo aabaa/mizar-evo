@@ -206,4 +206,8 @@ hash に入るが、cache-key structure と storage policy は変更しない。
 
 ## Step 5A.3 Declaration-Site Symbolic User Symbols
 
-[central contract](../../task_contracts/ja/STEP5A3-G2-SYMBOLIC-USER-SYMBOLS.md) は、ローカルな句読点形 Functor/Predicate の宣言開始位置で token stream が変わり得るため、token-stream namespace を v1 から v2 へ進めることを要求する。parser seam は v4 のままであり、AST cache-key の shape と storage policy は変更しない。
+[central contract](../../task_contracts/ja/STEP5A3-G2-SYMBOLIC-USER-SYMBOLS.md) は、ローカルな句読点形 Functor/Predicate の宣言開始位置で token stream が変わり得るため、token-stream namespace を v1 から v2 へ進めることを要求した。その tokenization-only change では parser seam は v4 のままであり、AST cache-key の shape と storage policy は変更しなかった。
+
+## Step 5A.4 Then-Linking Cache Assessment
+
+[central contract](../../task_contracts/ja/STEP5A4-G3-THEN-LINKING.md) は、同じ token と parser input に対する omitted-justification compact statement の AST/diagnostic result が変わるため、v4 から v5 への invalidation を要求する。token-stream namespace は v2 のままであり、cache-key shape と storage policy は変更しない。

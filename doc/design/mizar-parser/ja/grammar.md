@@ -2167,3 +2167,12 @@ required type へ拡張する。strict parse 失敗後、bare `Identifier` 1 tok
 する。binding、type lookup、public parser input は追加しない。prefix operator 直後の
 bracket group は、さらに term operand が続く場合だけ `TemplateArguments` とし、
 それ以外では built-in bracket-functor operand のまま保持する。
+
+## Step 5A.4 Omitted Compact Justification
+
+[central contract](../../task_contracts/ja/STEP5A4-G3-THEN-LINKING.md) に従い、
+`CompactStatement` を Chapter 15 と Appendix A.15 に整合させる。optional simple
+justification を省略した場合、proposition の直後に `;` を置ける。同じ
+semicolon-bounded recognition を `then` 配下にも適用し、wrapper は `then` と一つの
+compact child を所有するが justification node は捏造しない。明示 justification/proof
+form と不正な `then` prefix は既存 parsing と local recovery を維持する。

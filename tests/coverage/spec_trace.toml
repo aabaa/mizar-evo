@@ -3250,6 +3250,7 @@ tests = [
   "tests/miz/fail/parser/fail_parser_block_statements_recovery_001.expect.toml",
   "tests/miz/fail/parser/fail_parser_inline_definitions_recovery_001.expect.toml",
   "tests/miz/pass/parser/pass_parser_local_notation_activation_001.expect.toml",
+  "tests/miz/pass/parser/pass_parser_then_linkable_omitted_justification_001.expect.toml",
 ]
 
 [[requirement]]

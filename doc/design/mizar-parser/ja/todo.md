@@ -10,7 +10,7 @@
 
 ## Step 5 Frontend Gap Closure
 
-1. [ ] **Step 5A.4 / G3** — active。詳細は
+1. [x] **Step 5A.4 / G3** — 完了。詳細は
    [task contract](../../task_contracts/ja/STEP5A4-G3-THEN-LINKING.md)。
 
 ## モジュール実装

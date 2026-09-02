@@ -982,7 +982,7 @@ mod tests {
     }
 
     #[test]
-    fn real_parser_frontend_merges_nested_missing_end_and_uses_parser_v4_cache_key() {
+    fn real_parser_frontend_merges_nested_missing_end_and_uses_parser_v5_cache_key() {
         let fixture = PackageFixture::new();
         fixture.write(
             "src/nested_missing_end.miz",
@@ -1021,8 +1021,8 @@ mod tests {
             MIZAR_PARSER_CACHE_KEY_VERSION
         );
         assert_eq!(
-            MIZAR_PARSER_CACHE_KEY_VERSION, "mizar-parser/surface-ast-v4",
-            "Step 5A.2 parser output semantics must not reuse the v3 AST cache namespace"
+            MIZAR_PARSER_CACHE_KEY_VERSION, "mizar-parser/surface-ast-v5",
+            "Step 5A.4 parser output semantics must not reuse the v4 AST cache namespace"
         );
     }
 
@@ -1097,7 +1097,7 @@ mod tests {
                 .parser_version
                 .version
                 .as_ref(),
-            "mizar-parser/surface-ast-v4"
+            "mizar-parser/surface-ast-v5"
         );
         assert_eq!(target.ast, target_replay.ast);
         assert_eq!(target.diagnostics, target_replay.diagnostics);
@@ -1156,7 +1156,7 @@ mod tests {
                 .parser_version
                 .version
                 .as_ref(),
-            "mizar-parser/surface-ast-v4"
+            "mizar-parser/surface-ast-v5"
         );
         assert_eq!(control.ast, control_replay.ast);
         assert_eq!(control.diagnostics, control_replay.diagnostics);

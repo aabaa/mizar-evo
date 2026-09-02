@@ -969,7 +969,7 @@ fn source_attribute_definition_route_publishes_no_semantic_outputs() {
     );
     assert_eq!(
         (plan.cases.len(), plan.manifest.requirements.len()),
-        (553, 499)
+        (554, 499)
     );
     assert_eq!(
         plan.cases.iter().fold((0, 0), |(pass, fail), case| {
@@ -979,7 +979,7 @@ fn source_attribute_definition_route_publishes_no_semantic_outputs() {
                 _ => (pass, fail),
             }
         }),
-        (310, 243)
+        (311, 243)
     );
     assert_eq!(
         (
@@ -988,7 +988,7 @@ fn source_attribute_definition_route_publishes_no_semantic_outputs() {
             active_type_elaboration_cases(&plan).count(),
             crate::active_proof_verification_cases(&plan).count(),
         ),
-        (104, 7, 205, 1)
+        (105, 7, 205, 1)
     );
     let type_stage = plan
         .coverage_report
