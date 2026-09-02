@@ -2299,3 +2299,14 @@ speculative type parsing. The target produces the exact complete 57-node AST
 with zero syntax diagnostics/recovery, and the three focused parser tests pass.
 No binding, resolution, sethood, public API, or diagnostic-vocabulary behavior
 was added; final task-closure evidence remains owned by the central contract.
+
+## Step 5A.2 Template-Local Binder Type
+
+The [central contract](../../task_contracts/en/STEP5A2-G1-LOCAL-NOTATION.md)
+extends the same parse-local template-definition boundary to a required type
+after `be`/`being` in a quantified binder. After strict parsing fails, exactly
+one bare `Identifier` is preserved as `TypeHead`; speculative type positions
+and positions outside the definition remain strict. No binding, type lookup,
+or public parser input is added. For a prefix operator, a following bracket
+group becomes `TemplateArguments` only when another term operand follows;
+otherwise the bracket group remains the built-in bracket-functor operand.

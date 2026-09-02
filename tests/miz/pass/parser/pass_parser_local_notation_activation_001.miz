@@ -1,0 +1,30 @@
+definition
+  let X, Y be set;
+  pred LocalLikesDef: X local_likes Y means X = Y;
+  func LocalPrefixDef: local_prefix X -> set equals X;
+  coherence proof thus thesis; end;
+  func LocalInfixDef: X local_join Y -> set equals X;
+  coherence proof thus thesis; end;
+  attr LocalMarkedDef: X is local_marked means thesis;
+end; definition
+  let T be type; let x be T;
+  func LocalTemplateDef: local_tid[T] x -> T equals x;
+  coherence proof thus thesis; end;
+end;
+theorem LocalPhraseUse: for X, Y being set holds X local_likes Y by Ref;
+theorem LocalPrefixUse: for X being set holds local_prefix X = X by Ref;
+theorem LocalInfixUse: for X, Y being set holds X local_join Y = X by Ref;
+theorem LocalTemplateUse: for X being set holds local_tid[set] X = X by Ref;
+theorem InlineDefinitionUse: for X being set holds X = X proof
+  let X be set;
+  deffunc F(Y be set) -> set equals Y;
+  defpred P(Y be set) means Y = Y;
+  A1: P(X) by Ref;
+  thus F(X) = X by Ref;
+end;
+registration let X be set;
+  cluster LocalCluster: local_prefix X -> local_marked for set;
+  coherence proof thus thesis; end;
+  reduce LocalReduction: local_prefix X to X;
+  reducibility proof thus thesis; end;
+end;

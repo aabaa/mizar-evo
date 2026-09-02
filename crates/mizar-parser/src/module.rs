@@ -72,6 +72,7 @@ enum QuaTargetGrammar {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum RequiredTypePolicy {
     ComprehensionGenerator,
+    TemplateLocalBinder,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -9022,6 +9023,7 @@ impl Parser {
 
         match policy {
             RequiredTypePolicy::ComprehensionGenerator
+            | RequiredTypePolicy::TemplateLocalBinder
                 if self.template_definition_depth > 0 && self.is_identifier_at(position) =>
             {
                 let range = self.covering_token_range(position, position + 1);
@@ -9556,7 +9558,9 @@ impl Parser {
         if self.is_reserved_word_at(cursor, "be") || self.is_reserved_word_at(cursor, "being") {
             children.push(self.token_node_ids[cursor]);
             cursor += 1;
-            if let Some(type_expression) = self.parse_type_expression_at(cursor) {
+            if let Some(type_expression) = self
+                .parse_required_type_expression_at(cursor, RequiredTypePolicy::TemplateLocalBinder)
+            {
                 cursor = type_expression.next_position;
                 children.push(type_expression.id);
                 recovery_nodes.extend(type_expression.recovery_nodes);
@@ -10702,9 +10706,23 @@ impl Parser {
         operator: OperatorFixityEntry,
         stop_before_structure_field_list: bool,
     ) -> ParsedTypeNode {
-        let operand_position = position + 1;
         let mut children = vec![self.token_node_ids[position]];
         let mut recovery_nodes = Vec::new();
+        let mut operand_position = position + 1;
+        if self
+            .template_arguments_end_at(operand_position)
+            .is_some_and(|arguments_end| {
+                self.can_start_term_operator_operand_at(
+                    arguments_end,
+                    stop_before_structure_field_list,
+                )
+            })
+        {
+            let arguments = self.parse_template_arguments_at(operand_position);
+            operand_position = arguments.next_position;
+            children.push(arguments.id);
+            recovery_nodes.extend(arguments.recovery_nodes);
+        }
         let (operand, cursor) = match self.parse_term_operator_expression_at(
             operand_position,
             u32::from(operator.precedence),
@@ -15977,6 +15995,11 @@ impl Parser {
         if self.predicate_negation_end_at(position).is_some() {
             return true;
         }
+        if self.prefix_operator_at(position).is_some()
+            && self.prefix_operator_has_builtin_predicate_tail_at(position)
+        {
+            return false;
+        }
         let Some(head_end) = self.predicate_head_next_at(position) else {
             return false;
         };
@@ -15995,6 +16018,48 @@ impl Parser {
             && !self.is_builtin_predicate_at(after_head)
             && !self.is_reserved_word_at(after_head, "is")
             && !self.is_reserved_symbol_at(head_end, "(")
+    }
+
+    fn prefix_operator_has_builtin_predicate_tail_at(&self, position: usize) -> bool {
+        let mut cursor = position + 1;
+        let mut paren_depth = 0usize;
+        let mut bracket_depth = 0usize;
+        let mut brace_depth = 0usize;
+        while cursor < self.request.tokens.len() {
+            let at_top_level = paren_depth == 0 && bracket_depth == 0 && brace_depth == 0;
+            if at_top_level {
+                if self.is_builtin_predicate_at(cursor) || self.is_reserved_word_at(cursor, "is") {
+                    return true;
+                }
+                if self.is_formula_expression_boundary_at(cursor) {
+                    return false;
+                }
+            }
+            if self.is_reserved_symbol_at(cursor, "(") {
+                paren_depth += 1;
+            } else if self.is_reserved_symbol_at(cursor, ")") {
+                if paren_depth == 0 {
+                    return false;
+                }
+                paren_depth -= 1;
+            } else if self.is_reserved_symbol_at(cursor, "[") {
+                bracket_depth += 1;
+            } else if self.is_reserved_symbol_at(cursor, "]") {
+                if bracket_depth == 0 {
+                    return false;
+                }
+                bracket_depth -= 1;
+            } else if self.is_reserved_symbol_at(cursor, "{") {
+                brace_depth += 1;
+            } else if self.is_reserved_symbol_at(cursor, "}") {
+                if brace_depth == 0 {
+                    return false;
+                }
+                brace_depth -= 1;
+            }
+            cursor += 1;
+        }
+        false
     }
 
     fn template_arguments_end_at(&self, position: usize) -> Option<usize> {

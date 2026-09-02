@@ -348,3 +348,11 @@ diagnostics, so v2 cannot identify both artifacts. The seam API and token
 adaptation are unchanged, and this cache change does not interpret template
 parameters. The focused real-seam replay/control test passes; final closure
 state remains owned by the central contract.
+
+## Step 5A.2 Local Notation Parser Version
+
+The [central contract](../../task_contracts/en/STEP5A2-G1-LOCAL-NOTATION.md)
+moves `MIZAR_PARSER_CACHE_KEY_VERSION` from v3 to v4. Local functor defaults
+enter the existing `ParserInputs` fixity table, and prefix template applications
+preserve template arguments before the operand. The seam API and token
+adaptation remain unchanged; completion state is contract-owned.

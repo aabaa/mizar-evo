@@ -1629,6 +1629,7 @@ coverage = "pass_and_fail"
 tests = [
   "tests/miz/pass/parser/pass_parser_predicate_definitions_001.expect.toml",
   "tests/miz/fail/parser/fail_parser_predicate_definitions_recovery_001.expect.toml",
+  "tests/miz/pass/parser/pass_parser_local_notation_activation_001.expect.toml",
 ]
 
 [[requirement]]
@@ -1739,6 +1740,7 @@ coverage = "pass_and_fail"
 tests = [
   "tests/miz/pass/parser/pass_parser_functor_definitions_001.expect.toml",
   "tests/miz/fail/parser/fail_parser_functor_definitions_recovery_001.expect.toml",
+  "tests/miz/pass/parser/pass_parser_local_notation_activation_001.expect.toml",
 ]
 
 [[requirement]]
@@ -2396,6 +2398,7 @@ coverage = "pass_and_fail"
 tests = [
   "tests/miz/pass/parser/pass_parser_primary_terms_001.expect.toml",
   "tests/miz/fail/parser/fail_parser_primary_terms_missing_delimiter_001.expect.toml",
+  "tests/miz/pass/parser/pass_parser_local_notation_activation_001.expect.toml",
 ]
 
 [[requirement]]
@@ -2410,6 +2413,7 @@ tests = [
   "tests/miz/pass/parser/pass_parser_operator_terms_001.expect.toml",
   "tests/miz/fail/parser/fail_parser_operator_dangling_001.expect.toml",
   "tests/miz/fail/parser/fail_parser_operator_nonassoc_001.expect.toml",
+  "tests/miz/pass/parser/pass_parser_local_notation_activation_001.expect.toml",
 ]
 
 [[requirement]]
@@ -2776,6 +2780,7 @@ tests = [
   "tests/miz/pass/parser/pass_parser_atomic_formulas_001.expect.toml",
   "tests/miz/fail/parser/fail_parser_atomic_formula_missing_rhs_001.expect.toml",
   "tests/miz/fail/parser/fail_parser_atomic_formula_mixed_chain_001.expect.toml",
+  "tests/miz/pass/parser/pass_parser_local_notation_activation_001.expect.toml",
 ]
 
 [[requirement]]
@@ -3242,6 +3247,7 @@ tests = [
   "tests/miz/fail/parser/fail_parser_conclusions_iterative_recovery_001.expect.toml",
   "tests/miz/fail/parser/fail_parser_block_statements_recovery_001.expect.toml",
   "tests/miz/fail/parser/fail_parser_inline_definitions_recovery_001.expect.toml",
+  "tests/miz/pass/parser/pass_parser_local_notation_activation_001.expect.toml",
 ]
 
 [[requirement]]
@@ -3753,6 +3759,7 @@ coverage = "pass_and_fail"
 tests = [
   "tests/miz/pass/parser/pass_parser_registrations_001.expect.toml",
   "tests/miz/fail/parser/fail_parser_registrations_recovery_001.expect.toml",
+  "tests/miz/pass/parser/pass_parser_local_notation_activation_001.expect.toml",
 ]
 
 [[requirement]]
@@ -7152,6 +7159,7 @@ tests = [
   "tests/miz/pass/parser/pass_parser_template_arguments_001.expect.toml",
   "tests/miz/pass/parser/pass_parser_template_references_001.expect.toml",
   "tests/miz/fail/parser/fail_parser_template_arguments_chained_iff_001.expect.toml",
+  "tests/miz/pass/parser/pass_parser_local_notation_activation_001.expect.toml",
 ]
 
 [[requirement]]

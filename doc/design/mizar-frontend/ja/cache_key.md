@@ -194,3 +194,10 @@ recoverable v2 AST を持ち、parser は現在その tree/range/diagnostic を�
 real-parser key は v3 へ入る。focused replay test は pass し、source の v3 と unchanged
 control の exact stable AST behavior を証明する。token-stream、parser-input、edition、
 storage、public cache-key shape は不変である。
+
+## Step 5A.2 Local Notation Cache Assessment
+
+central [JA contract](../../task_contracts/ja/STEP5A2-G1-LOCAL-NOTATION.md) は、
+already-valid fixity input に対する prefix template AST semantics が変わるため、
+v3 から v4 への invalidation を要求する。local default metadata も既存の parser-input
+hash に入るが、cache-key structure と storage policy は変更しない。

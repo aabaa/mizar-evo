@@ -227,3 +227,11 @@ diagnostic の exact complete AST を返すため、v2 は両 artifact を識別
 と token adaptation は不変であり、この cache change は template parameter を
 interpretしない。focused real-seam replay/control test は pass し、final closure state
 は central contract が所有する。
+
+## Step 5A.2 Local Notation Parser Version
+
+central [JA contract](../../task_contracts/ja/STEP5A2-G1-LOCAL-NOTATION.md) に従い、
+`MIZAR_PARSER_CACHE_KEY_VERSION` を v3 から v4 に変更する。local functor default は
+既存 `ParserInputs` fixity table に入り、prefix template application は operand 前の
+template arguments を保持する。seam API と token adaptation は不変であり、
+completion state は contract が所有する。

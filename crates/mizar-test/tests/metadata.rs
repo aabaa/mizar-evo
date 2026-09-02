@@ -5732,6 +5732,7 @@ fn repository_parse_only_cases_separate_active_runner_seeds_from_future_metadata
             "pass_parser_import_items_001",
             "pass_parser_inline_definitions_001",
             "pass_parser_justifications_001",
+            "pass_parser_local_notation_activation_001",
             "pass_parser_minimal_token_stream_001",
             "pass_parser_mode_definitions_001",
             "pass_parser_module_skeleton_001",
@@ -5772,6 +5773,9 @@ fn repository_parse_only_cases_separate_active_runner_seeds_from_future_metadata
             PathBuf::from(
                 "tests/miz/fail/parser/fail_parser_template_arguments_chained_iff_001.expect.toml"
             ),
+            PathBuf::from(
+                "tests/miz/pass/parser/pass_parser_local_notation_activation_001.expect.toml"
+            ),
         ]
     );
 
@@ -5788,6 +5792,9 @@ fn repository_parse_only_cases_separate_active_runner_seeds_from_future_metadata
             PathBuf::from("tests/miz/pass/parser/pass_parser_operator_terms_001.expect.toml"),
             PathBuf::from("tests/miz/fail/parser/fail_parser_operator_dangling_001.expect.toml"),
             PathBuf::from("tests/miz/fail/parser/fail_parser_operator_nonassoc_001.expect.toml"),
+            PathBuf::from(
+                "tests/miz/pass/parser/pass_parser_local_notation_activation_001.expect.toml"
+            ),
         ]
     );
 
@@ -5857,6 +5864,9 @@ fn repository_parse_only_cases_separate_active_runner_seeds_from_future_metadata
             PathBuf::from(
                 "tests/miz/fail/parser/fail_parser_atomic_formula_mixed_chain_001.expect.toml"
             ),
+            PathBuf::from(
+                "tests/miz/pass/parser/pass_parser_local_notation_activation_001.expect.toml"
+            ),
         ]
     );
 
@@ -5924,6 +5934,9 @@ fn repository_parse_only_cases_separate_active_runner_seeds_from_future_metadata
             PathBuf::from(
                 "tests/miz/fail/parser/fail_parser_predicate_definitions_recovery_001.expect.toml"
             ),
+            PathBuf::from(
+                "tests/miz/pass/parser/pass_parser_local_notation_activation_001.expect.toml"
+            ),
         ]
     );
 
@@ -5940,6 +5953,9 @@ fn repository_parse_only_cases_separate_active_runner_seeds_from_future_metadata
             PathBuf::from("tests/miz/pass/parser/pass_parser_functor_definitions_001.expect.toml"),
             PathBuf::from(
                 "tests/miz/fail/parser/fail_parser_functor_definitions_recovery_001.expect.toml"
+            ),
+            PathBuf::from(
+                "tests/miz/pass/parser/pass_parser_local_notation_activation_001.expect.toml"
             ),
         ]
     );
@@ -6063,6 +6079,9 @@ fn repository_parse_only_cases_separate_active_runner_seeds_from_future_metadata
             PathBuf::from("tests/miz/pass/parser/pass_parser_registrations_001.expect.toml"),
             PathBuf::from(
                 "tests/miz/fail/parser/fail_parser_registrations_recovery_001.expect.toml"
+            ),
+            PathBuf::from(
+                "tests/miz/pass/parser/pass_parser_local_notation_activation_001.expect.toml"
             ),
         ]
     );
@@ -6211,8 +6230,8 @@ fn repository_parse_only_runner_executes_active_minimal_parser_seeds() {
     let report = run_parse_only_corpus(&config).unwrap();
 
     assert_eq!(report.error_count(), 0, "{:#?}", report.diagnostics);
-    assert_eq!(report.results.len(), 102);
-    assert_eq!(report.passed_count(), 102);
+    assert_eq!(report.results.len(), 103);
+    assert_eq!(report.passed_count(), 103);
     assert_eq!(report.failed_count(), 0);
     assert!(report.results.iter().any(|result| {
         result.id.0 == "pass_parser_algorithm_control_flow_001"
@@ -6247,6 +6266,10 @@ fn repository_parse_only_runner_executes_active_minimal_parser_seeds() {
     }));
     assert!(report.results.iter().any(|result| {
         result.id.0 == "pass_parser_definition_attributes_001"
+            && result.actual_diagnostic_codes.is_empty()
+    }));
+    assert!(report.results.iter().any(|result| {
+        result.id.0 == "pass_parser_local_notation_activation_001"
             && result.actual_diagnostic_codes.is_empty()
     }));
     assert!(report.results.iter().any(|result| {
@@ -6874,6 +6897,40 @@ fn repository_parse_only_runner_executes_active_minimal_parser_seeds() {
         result.id.0 == "fail_parser_type_expression_missing_bracket_001"
             && result.actual_diagnostic_codes == vec!["malformed_type_expression".to_owned()]
     }));
+}
+
+#[test]
+fn step5a2_gap_ledger_selects_exact_g1_inventory_shape() {
+    let path = repository_config()
+        .workspace_root
+        .join("tests/coverage/audit1_frontend_gaps.tsv");
+    let input = fs::read_to_string(path).unwrap();
+    let mut lines = input.lines();
+    assert_eq!(lines.next(), Some("source\tgaps"));
+
+    let mut g1_rows = 0;
+    let mut g1_only = 0;
+    let mut g1_g2 = 0;
+    let mut g1_g6 = 0;
+    for line in lines {
+        let (source, gaps) = line
+            .split_once('\t')
+            .expect("gap-ledger rows must contain exactly one tab-separated gap field");
+        assert!(!source.is_empty());
+        assert!(!gaps.contains('\t'));
+        if !gaps.split(',').any(|gap| gap == "G1") {
+            continue;
+        }
+        g1_rows += 1;
+        match gaps {
+            "G1" => g1_only += 1,
+            "G1,G2" => g1_g2 += 1,
+            "G1,G6" => g1_g6 += 1,
+            other => panic!("unexpected G1 overlap classification: {other}"),
+        }
+    }
+
+    assert_eq!((g1_rows, g1_only, g1_g2, g1_g6), (20, 17, 2, 1));
 }
 
 #[test]
@@ -9471,8 +9528,8 @@ fn parse_only_cli_reports_active_runner_summary() {
         String::from_utf8_lossy(&output.stderr)
     );
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("parse-only cases: 102"));
-    assert!(stdout.contains("passed: 102"));
+    assert!(stdout.contains("parse-only cases: 103"));
+    assert!(stdout.contains("passed: 103"));
     assert!(stdout.contains("failed: 0"));
 }
 

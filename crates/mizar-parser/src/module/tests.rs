@@ -10282,6 +10282,141 @@ fn parser_groups_active_operator_terms_before_qua() {
 }
 
 #[test]
+fn parser_keeps_template_arguments_between_prefix_operator_and_operand() {
+    let source_id = source_id(189);
+    let tokens = token_sequence(
+        source_id,
+        &[
+            ("theorem", ParserTokenKind::ReservedWord),
+            ("PrefixTemplate", ParserTokenKind::Identifier),
+            (":", ParserTokenKind::ReservedSymbol),
+            ("local_tid", ParserTokenKind::UserSymbol),
+            ("[", ParserTokenKind::ReservedSymbol),
+            ("set", ParserTokenKind::ReservedWord),
+            ("]", ParserTokenKind::ReservedSymbol),
+            ("x", ParserTokenKind::Identifier),
+            ("=", ParserTokenKind::ReservedSymbol),
+            ("x", ParserTokenKind::Identifier),
+            ("by", ParserTokenKind::ReservedWord),
+            ("Ref", ParserTokenKind::Identifier),
+            (";", ParserTokenKind::ReservedSymbol),
+        ],
+    );
+    let output = parse(ParseRequest::new(
+        source_id,
+        Edition::new("2026"),
+        tokens,
+        vec![OperatorFixityEntry::prefix("local_tid", 64)],
+    ));
+
+    assert!(
+        output.diagnostics.is_empty(),
+        "prefix template application should parse: {:?}",
+        output.diagnostics
+    );
+    let ast = output
+        .ast
+        .expect("prefix template application should keep an AST");
+    let prefix = single_node(&ast, |kind| {
+        matches!(kind, SurfaceNodeKind::PrefixExpression(_))
+    });
+    assert_eq!(prefix.children.len(), 3);
+    assert!(matches!(
+        &ast.node(prefix.children[0]).unwrap().kind,
+        SurfaceNodeKind::Token(_)
+    ));
+    assert!(matches!(
+        &ast.node(prefix.children[1]).unwrap().kind,
+        SurfaceNodeKind::TemplateArguments
+    ));
+    assert!(matches!(
+        &ast.node(prefix.children[2]).unwrap().kind,
+        SurfaceNodeKind::TermReference
+    ));
+}
+
+#[test]
+fn parser_keeps_bracket_functor_as_prefix_operand_without_trailing_term() {
+    let source_id = source_id(192);
+    let tokens = token_sequence(
+        source_id,
+        &[
+            ("theorem", ParserTokenKind::ReservedWord),
+            ("PrefixBracket", ParserTokenKind::Identifier),
+            (":", ParserTokenKind::ReservedSymbol),
+            ("local_prefix", ParserTokenKind::UserSymbol),
+            ("[", ParserTokenKind::ReservedSymbol),
+            ("x", ParserTokenKind::Identifier),
+            ("]", ParserTokenKind::ReservedSymbol),
+            ("=", ParserTokenKind::ReservedSymbol),
+            ("x", ParserTokenKind::Identifier),
+            ("by", ParserTokenKind::ReservedWord),
+            ("Ref", ParserTokenKind::Identifier),
+            (";", ParserTokenKind::ReservedSymbol),
+        ],
+    );
+    let output = parse(ParseRequest::new(
+        source_id,
+        Edition::new("2026"),
+        tokens,
+        vec![OperatorFixityEntry::prefix("local_prefix", 64)],
+    ));
+
+    assert!(
+        output.diagnostics.is_empty(),
+        "bracket functor operand should parse: {:?}",
+        output.diagnostics
+    );
+    let ast = output
+        .ast
+        .expect("bracket functor operand should keep an AST");
+    let prefix = single_node(&ast, |kind| {
+        matches!(kind, SurfaceNodeKind::PrefixExpression(_))
+    });
+    assert!(direct_child_has_kind(&ast, prefix, |kind| {
+        matches!(kind, SurfaceNodeKind::ApplicationTerm)
+    }));
+}
+
+#[test]
+fn parser_retains_head_first_predicate_when_same_spelling_has_prefix_fixity() {
+    let source_id = source_id(193);
+    let tokens = token_sequence(
+        source_id,
+        &[
+            ("theorem", ParserTokenKind::ReservedWord),
+            ("OverloadedHead", ParserTokenKind::Identifier),
+            (":", ParserTokenKind::ReservedSymbol),
+            ("shared_head", ParserTokenKind::UserSymbol),
+            ("x", ParserTokenKind::Identifier),
+            ("by", ParserTokenKind::ReservedWord),
+            ("Ref", ParserTokenKind::Identifier),
+            (";", ParserTokenKind::ReservedSymbol),
+        ],
+    );
+    let output = parse(ParseRequest::new(
+        source_id,
+        Edition::new("2026"),
+        tokens,
+        vec![OperatorFixityEntry::prefix("shared_head", 64)],
+    ));
+
+    assert!(
+        output.diagnostics.is_empty(),
+        "head-first predicate fallback should parse: {:?}",
+        output.diagnostics
+    );
+    let ast = output
+        .ast
+        .expect("head-first predicate fallback should keep an AST");
+    assert!(
+        ast.nodes()
+            .iter()
+            .any(|node| matches!(node.kind, SurfaceNodeKind::PredicateApplication))
+    );
+}
+
+#[test]
 fn parser_diagnoses_non_associative_operator_terms() {
     let source_id = source_id(161);
     let tokens = token_sequence(
@@ -12033,6 +12168,99 @@ fn parser_scopes_required_identifier_type_fallback_to_template_definitions() {
             .iter()
             .any(|child| matches!(child.kind, SurfaceNodeKind::QualifiedSymbol))
     );
+}
+
+#[test]
+fn parser_preserves_template_local_identifier_type_in_quantified_binder() {
+    let template_source_id = source_id(190);
+    let tokens = token_sequence(
+        template_source_id,
+        &[
+            ("definition", ParserTokenKind::ReservedWord),
+            ("let", ParserTokenKind::ReservedWord),
+            ("T", ParserTokenKind::Identifier),
+            ("be", ParserTokenKind::ReservedWord),
+            ("type", ParserTokenKind::ReservedWord),
+            (";", ParserTokenKind::ReservedSymbol),
+            ("let", ParserTokenKind::ReservedWord),
+            ("P", ParserTokenKind::Identifier),
+            ("be", ParserTokenKind::ReservedWord),
+            ("pred", ParserTokenKind::ReservedWord),
+            ("(", ParserTokenKind::ReservedSymbol),
+            ("T", ParserTokenKind::Identifier),
+            (")", ParserTokenKind::ReservedSymbol),
+            (";", ParserTokenKind::ReservedSymbol),
+            ("pred", ParserTokenKind::ReservedWord),
+            ("THoldsDef", ParserTokenKind::Identifier),
+            (":", ParserTokenKind::ReservedSymbol),
+            ("tholds", ParserTokenKind::Identifier),
+            ("[", ParserTokenKind::ReservedSymbol),
+            ("T", ParserTokenKind::Identifier),
+            (",", ParserTokenKind::ReservedSymbol),
+            ("P", ParserTokenKind::Identifier),
+            ("]", ParserTokenKind::ReservedSymbol),
+            ("means", ParserTokenKind::ReservedWord),
+            ("for", ParserTokenKind::ReservedWord),
+            ("x", ParserTokenKind::Identifier),
+            ("being", ParserTokenKind::ReservedWord),
+            ("T", ParserTokenKind::Identifier),
+            ("holds", ParserTokenKind::ReservedWord),
+            ("P", ParserTokenKind::Identifier),
+            ("(", ParserTokenKind::ReservedSymbol),
+            ("x", ParserTokenKind::Identifier),
+            (")", ParserTokenKind::ReservedSymbol),
+            (";", ParserTokenKind::ReservedSymbol),
+            ("end", ParserTokenKind::ReservedWord),
+            (";", ParserTokenKind::ReservedSymbol),
+        ],
+    );
+    let binder_type_range = nth_token_range(&tokens, "T", 3);
+    let output = parse(ParseRequest::new(
+        template_source_id,
+        Edition::new("2026"),
+        tokens,
+        Vec::new(),
+    ));
+
+    assert!(
+        output.diagnostics.is_empty(),
+        "template-local binder type should parse: {:?}",
+        output.diagnostics
+    );
+    let ast = output
+        .ast
+        .expect("template-local binder should keep an AST");
+    assert!(ast.nodes().iter().any(|node| {
+        node.range == binder_type_range && matches!(node.kind, SurfaceNodeKind::TypeHead)
+    }));
+
+    let outside_source_id = source_id(191);
+    let outside_tokens = token_sequence(
+        outside_source_id,
+        &[
+            ("theorem", ParserTokenKind::ReservedWord),
+            ("for", ParserTokenKind::ReservedWord),
+            ("x", ParserTokenKind::Identifier),
+            ("being", ParserTokenKind::ReservedWord),
+            ("T", ParserTokenKind::Identifier),
+            ("holds", ParserTokenKind::ReservedWord),
+            ("x", ParserTokenKind::Identifier),
+            ("=", ParserTokenKind::ReservedSymbol),
+            ("x", ParserTokenKind::Identifier),
+            (";", ParserTokenKind::ReservedSymbol),
+        ],
+    );
+    let outside_type_range = nth_token_range(&outside_tokens, "T", 0);
+    let outside_output = parse(ParseRequest::new(
+        outside_source_id,
+        Edition::new("2026"),
+        outside_tokens,
+        Vec::new(),
+    ));
+    assert!(outside_output.diagnostics.iter().any(|diagnostic| {
+        diagnostic.code == SyntaxDiagnosticCode::MalformedTypeExpression
+            && diagnostic.primary == outside_type_range
+    }));
 }
 
 #[test]

@@ -19,7 +19,7 @@ be closed by weakening the corpus expectations.
 
 | Id | Severity | Description |
 |---|---|---|
-| G1 | high (blocks 19 sources) | Locally declared functor/predicate notation symbols (identifier or symbolic spelling) are not activated for same-module use sites: the declaration parses, but term/formula positions applying the symbol emit malformed_term/formula cascades. Includes inline `deffunc`/`defpred` applications, template functor applications (`tid[set] A`), and `functor_term` heads inside functorial/reduce registrations. Imported symbols work (lexical summaries), so the gap is same-module notation activation. |
+| G1 | closed by 5A.2 (20 ledger rows) | Same-module local notation activation is implemented; see the [task contract](../../task_contracts/en/STEP5A2-G1-LOCAL-NOTATION.md). Mixed-row G2/G6 diagnostics and all semantic activation remain with their named owners. |
 | G2 | medium | Symbolic user-symbol spellings (`<<=`, `\\+\\`, `<+>`) are unlexable even at their own declaration site (`Lexer(NoValidTokenCandidate)`), although spec A.2 admits any ASCII-graphic spelling except `@`. |
 | G3 | medium | The `then` statement-linking prefix is rejected, although A.15 admits `[then] linkable_statement`; `hence`/`thus ... by` parse cleanly. |
 | G4 | medium | `synonym`/`antonym` notation declarations fail to parse even with identifier spellings on both patterns. |

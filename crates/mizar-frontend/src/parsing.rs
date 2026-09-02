@@ -17,7 +17,7 @@ pub const DEFAULT_PARSER_CACHE_KEY_VERSION: &str = "mizar-frontend/parser-seam/c
 /// Cache-key version used by the stub parser seam.
 pub const STUB_PARSER_CACHE_KEY_VERSION: &str = "mizar-frontend/stub-parser/no-ast-v1";
 /// Cache-key version used by the real Mizar parser seam.
-pub const MIZAR_PARSER_CACHE_KEY_VERSION: &str = "mizar-parser/surface-ast-v3";
+pub const MIZAR_PARSER_CACHE_KEY_VERSION: &str = "mizar-parser/surface-ast-v4";
 
 /// Parser request containing a token stream and parser inputs.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -563,7 +563,7 @@ mod tests {
     #[test]
     fn parser_inputs_copy_local_operator_fixity_with_mapped_activation() {
         let source = concat!(
-            "func Plus: x + y -> set;\n",
+            "func Plus: +(x, y) -> set;\n",
             "infix_operator(\"+\", left, 80);\n",
             "a + b;\n"
         );
@@ -589,6 +589,55 @@ mod tests {
                 precedence: 80,
                 active_from: lexical_activation + 100,
             }]
+        );
+    }
+
+    #[test]
+    fn parser_inputs_map_local_functor_defaults_without_resolver_state() {
+        let source = concat!(
+            "definition\n",
+            "let X, Y be set;\n",
+            "func PrefixDef: local_prefix X -> set equals X;\n",
+            "func InfixDef: X local_join Y -> set equals X;\n",
+            "end;\n"
+        );
+        let raw = mizar_lexer::scan_raw(source).expect("source should raw scan");
+        let locals =
+            mizar_lexer::collect_local_lexical_declarations(&raw, ModuleId::new("fixture.current"));
+        let environment = environment_without_imports();
+        let activation = |spelling: &str| {
+            locals
+                .user_symbols
+                .iter()
+                .find(|declaration| declaration.spelling == spelling)
+                .expect("local functor declaration")
+                .activation_start
+        };
+
+        let inputs = ParserInputs::try_from_active_environment_and_local_declarations(
+            Edition::new("2026"),
+            &environment,
+            &locals,
+            |position| Ok::<usize, ()>(position + 100),
+        )
+        .expect("activation mapping should succeed");
+
+        assert_eq!(
+            inputs.operator_fixity.entries,
+            vec![
+                OperatorFixityEntry {
+                    spelling: Arc::<str>::from("local_join"),
+                    fixity: OperatorFixity::Infix(OperatorAssociativity::NonAssociative),
+                    precedence: 64,
+                    active_from: activation("local_join") + 100,
+                },
+                OperatorFixityEntry {
+                    spelling: Arc::<str>::from("local_prefix"),
+                    fixity: OperatorFixity::Prefix,
+                    precedence: 64,
+                    active_from: activation("local_prefix") + 100,
+                },
+            ]
         );
     }
 

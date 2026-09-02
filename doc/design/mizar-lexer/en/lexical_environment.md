@@ -234,8 +234,10 @@ Current implementation notes:
   conservative spelling fallback. Local prefix, postfix, and infix functor
   patterns publish their source-position-sensitive default parser metadata
   (precedence 64; infix non-associative) with the completed declaration;
-  template loci are excluded from term-operand placement. Predicates and
-  functional, nullary, or circumfix functors publish no default Pratt entry.
+  template loci are excluded and each occupied side has exactly one term locus.
+  The existing one-character lowercase fallback applies without a preceding
+  `let`. Predicates and functional, nullary, multi-locus, or circumfix functors
+  publish no default Pratt entry.
 - For local `mode`, `attr`, and `struct` declarations, the prepass records
   only constructor-name spellings. Contiguous readable hyphenated constructor
   names are recorded as whole spellings, and operator-like symbolic names are

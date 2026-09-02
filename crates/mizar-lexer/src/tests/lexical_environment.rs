@@ -393,6 +393,151 @@ fn local_declaration_prepass_activates_symbols_only_after_declaring_item() {
 }
 
 #[test]
+fn local_declaration_prepass_excludes_uppercase_definition_loci_from_notation_names() {
+    let source = concat!(
+        "definition\n",
+        "let X, Y be set;\n",
+        "pred LikesDef: X local_likes Y means X = Y;\n",
+        "func PrefixDef: local_prefix X -> set equals X;\n",
+        "func InfixDef: X local_join Y -> set equals X;\n",
+        "end;\n"
+    );
+    let raw = scan_raw(source).expect("source should raw scan");
+    let locals = collect_local_lexical_declarations(&raw, module_id("current"));
+
+    assert_eq!(
+        locals
+            .user_symbols
+            .iter()
+            .map(|declaration| (declaration.spelling.as_str(), declaration.kind))
+            .collect::<Vec<_>>(),
+        vec![
+            ("local_likes", UserSymbolKind::Predicate),
+            ("local_prefix", UserSymbolKind::Functor),
+            ("local_join", UserSymbolKind::Functor),
+        ]
+    );
+    assert!(locals.user_symbols("X", source.len()).is_empty());
+    assert!(locals.user_symbols("Y", source.len()).is_empty());
+}
+
+#[test]
+fn local_functor_patterns_publish_only_bounded_default_operator_shapes() {
+    let source = concat!(
+        "definition\n",
+        "let T be type; let X, Y be set;\n",
+        "func PrefixDef: local_prefix X -> set;\n",
+        "func PostfixDef: X local_postfix -> set;\n",
+        "func InfixDef: X local_join Y -> set;\n",
+        "func TemplateDef: local_tid[T] X -> set;\n",
+        "func CallDef: local_call(X, Y) -> set;\n",
+        "func NullaryDef: local_zero -> set;\n",
+        "func MultiPrefixDef: local_multi X Y -> set;\n",
+        "func CircumfixDef: |. X .| -> set;\n",
+        "pred PredicateDef: X local_pred Y means thesis;\n",
+        "func FallbackDef: x local_fallback y -> set;\n",
+        "end;\n"
+    );
+    let raw = scan_raw(source).expect("source should raw scan");
+    let locals = collect_local_lexical_declarations(&raw, module_id("current"));
+    let operator = |spelling: &str| {
+        locals
+            .user_symbols
+            .iter()
+            .find(|declaration| declaration.spelling == spelling)
+            .and_then(|declaration| declaration.operator)
+    };
+
+    assert_eq!(
+        operator("local_prefix"),
+        Some(ExportedOperatorMetadata {
+            fixity: ExportedOperatorFixity::Prefix,
+            precedence: 64,
+        })
+    );
+    assert_eq!(
+        operator("local_postfix"),
+        Some(ExportedOperatorMetadata {
+            fixity: ExportedOperatorFixity::Postfix,
+            precedence: 64,
+        })
+    );
+    assert_eq!(
+        operator("local_join"),
+        Some(ExportedOperatorMetadata {
+            fixity: ExportedOperatorFixity::Infix(ExportedOperatorAssociativity::NonAssociative),
+            precedence: 64,
+        })
+    );
+    assert_eq!(operator("local_tid"), operator("local_prefix"));
+    assert_eq!(
+        locals
+            .user_symbols
+            .iter()
+            .find(|declaration| declaration.spelling == "local_tid")
+            .map(|declaration| declaration.arity),
+        Some(UserSymbolArity::exact(1)),
+        "template loci must not count as term operands"
+    );
+    assert_eq!(operator("local_call"), None);
+    assert_eq!(operator("local_zero"), None);
+    assert_eq!(operator("local_multi"), None);
+    assert_eq!(operator("|."), None);
+    assert_eq!(operator(".|"), None);
+    assert_eq!(operator("local_pred"), None);
+    assert_eq!(
+        operator("local_fallback"),
+        Some(ExportedOperatorMetadata {
+            fixity: ExportedOperatorFixity::Infix(ExportedOperatorAssociativity::NonAssociative),
+            precedence: 64,
+        })
+    );
+}
+
+#[test]
+fn local_default_operator_activation_yields_to_later_explicit_metadata_and_overloads() {
+    let source = concat!(
+        "X local_join Y;\n",
+        "definition let X, Y be set;\n",
+        "func FirstDef: X local_join Y -> set;\n",
+        "end;\n",
+        "infix_operator(\"local_join\", left, 80);\n",
+        "definition let X, Y be set;\n",
+        "func OverloadDef: X local_join Y -> set;\n",
+        "end;\n",
+        "X local_join Y;\n"
+    );
+    let raw = scan_raw(source).expect("source should raw scan");
+    let locals = collect_local_lexical_declarations(&raw, module_id("current"));
+    let env = build_lexical_environment(&[], &[]).expect("environment should build");
+    let before_declaration = nth_index(source, "local_join", 0);
+    let after_overload = nth_index(source, "local_join", 4);
+
+    assert!(
+        env.operator_metadata_at("local_join", before_declaration, &locals)
+            .is_empty()
+    );
+    let metadata = env.operator_metadata_at("local_join", after_overload, &locals);
+    assert_eq!(metadata.len(), 2);
+    assert_eq!(
+        metadata[0].operator,
+        ExportedOperatorMetadata {
+            fixity: ExportedOperatorFixity::Infix(ExportedOperatorAssociativity::Left),
+            precedence: 80,
+        }
+    );
+    assert_eq!(
+        locals
+            .user_symbols("local_join", after_overload)
+            .iter()
+            .filter(|candidate| candidate.operator.is_some())
+            .count(),
+        1,
+        "a later overload must not reintroduce the synthesized default"
+    );
+}
+
+#[test]
 fn local_declarations_preserve_same_spelling_import_candidates() {
     let env = build_lexical_environment(
         &[resolved_import("std.imported")],
@@ -1140,7 +1285,7 @@ fn imported_operator_metadata_is_active_from_start() {
 #[test]
 fn local_operator_metadata_is_active_only_after_declaration_completion() {
     let source = concat!(
-        "func Plus: x + y -> set;\n",
+        "func Plus: +(x, y) -> set;\n",
         "a + b;\n",
         "infix_operator(\"+\", left, 80);\n",
         "a + b;\n"
@@ -1173,7 +1318,7 @@ fn local_operator_metadata_is_active_only_after_declaration_completion() {
 fn local_operator_metadata_does_not_forward_reference_later_functors() {
     let source = concat!(
         "infix_operator(\"+\", left, 80);\n",
-        "func Plus: x + y -> set;\n",
+        "func Plus: +(x, y) -> set;\n",
         "a + b;\n"
     );
     let raw = scan_raw(source).expect("source should raw scan");
@@ -1191,7 +1336,7 @@ fn local_operator_metadata_does_not_forward_reference_later_functors() {
 #[test]
 fn local_operator_metadata_requires_active_functor_with_matching_arity() {
     let source = concat!(
-        "func Unary: + x -> set;\n",
+        "func Unary: +(x) -> set;\n",
         "infix_operator(\"+\", left, 80);\n",
         "a + b;\n"
     );
@@ -1220,7 +1365,7 @@ fn local_operator_metadata_requires_active_functor_with_matching_arity() {
 #[test]
 fn local_operator_metadata_ignores_visibility_keywords_for_lexing() {
     let source = concat!(
-        "private func Plus: x + y -> set;\n",
+        "private func Plus: +(x, y) -> set;\n",
         "public infix_operator(\"+\", left, 80);\n",
         "a + b;\n"
     );
@@ -1247,7 +1392,7 @@ fn local_operator_metadata_preserves_same_spelling_overload_candidates() {
     )
     .expect("environment should build");
     let source = concat!(
-        "func Plus: x + y -> set;\n",
+        "func Plus: +(x, y) -> set;\n",
         "infix_operator(\"+\", left, 80);\n",
         "a + b;\n"
     );

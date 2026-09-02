@@ -334,8 +334,9 @@ the activation-map ledger
 binding each of the 120 inactive oracle pairs to its owner task below. Tests
 are binding per the AGENTS.md authority order: no oracle case may be
 activated, and no gap closed, by matching expectations to current behavior.
-Corpus-wide tooling must not assume every committed `.miz` parses until
-task 5A.2 (G1) closes. Step 5A.1's completion evidence is owned by its
+The 5A.9 smoke guard remains the owner of the eventual all-source parse claim;
+5A.2 closure makes read-only inventory safe without claiming every source is
+parse-clean. Step 5A.1's completion evidence is owned by its
 [task contract](./task_contracts/en/STEP5A1-G5-QUA-STRUCTURE.md).
 
 **Completed micro-task record.** The 2026 micro-slice narrative for
@@ -395,15 +396,11 @@ stay binding and must not be weakened.
    `pass_type_elaboration_synonym_functor_001`. Deps: none. Full gates
    (crash on the syntax trust path). Evidence:
    [STEP5A1-G5-QUA-STRUCTURE](./task_contracts/en/STEP5A1-G5-QUA-STRUCTURE.md).
-2. [ ] **5A.2 (G1, high)** — `mizar-frontend` with `mizar-lexer`:
-   activate locally declared functor/predicate notation symbols
-   (identifier or symbolic spelling) for same-module term/formula use
-   sites, including inline `deffunc`/`defpred` applications, template
-   functor applications, and `functor_term` heads inside
-   functorial/reduce registrations. Imported symbols already work via
-   lexical summaries; the gap is same-module notation activation. Blocks
-   19 of the 29 sources and most notation-bearing 5C families. Deps:
-   none.
+2. [x] **5A.2 (G1, high)** — `mizar-frontend` with `mizar-lexer`:
+   closed the G1 component in the immutable ledger's 20 rows (17 G1-only,
+   two G1+G2, one G1+G6). Mixed-row residuals and semantic activation stay
+   with their named owners. Evidence:
+   [STEP5A2-G1-LOCAL-NOTATION](./task_contracts/en/STEP5A2-G1-LOCAL-NOTATION.md).
 3. [ ] **5A.3 (G2)** — `mizar-lexer`: lex symbolic user-symbol spellings
    (`<<=`, `\+\`, `<+>`) per spec A.2 (any ASCII-graphic spelling except
    `@`); today they fail with `Lexer(NoValidTokenCandidate)` at their own

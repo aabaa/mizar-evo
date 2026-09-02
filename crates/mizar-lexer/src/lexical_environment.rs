@@ -142,6 +142,7 @@ pub struct LocalUserSymbolDeclaration {
     pub export_rank: ExportRank,
     pub kind: UserSymbolKind,
     pub arity: UserSymbolArity,
+    pub operator: Option<ExportedOperatorMetadata>,
     pub declared_at: SourceSpan,
     pub activation_start: SourcePos,
 }
@@ -736,13 +737,21 @@ impl LocalLexicalDeclarations {
         position: SourcePos,
     ) -> Vec<ActiveOperatorMetadata> {
         let mut metadata = self
-            .operator_declarations
+            .user_symbols
             .iter()
             .filter(|declaration| {
                 declaration.spelling == spelling && declaration.activation_start <= position
             })
-            .filter_map(|declaration| declaration.active_metadata(environment, self))
+            .filter_map(LocalUserSymbolDeclaration::active_metadata)
             .collect::<Vec<_>>();
+        metadata.extend(
+            self.operator_declarations
+                .iter()
+                .filter(|declaration| {
+                    declaration.spelling == spelling && declaration.activation_start <= position
+                })
+                .filter_map(|declaration| declaration.active_metadata(environment, self)),
+        );
         sort_operator_metadata(&mut metadata);
         dedup_operator_metadata(&mut metadata);
         metadata
@@ -754,11 +763,17 @@ impl LocalLexicalDeclarations {
         position: SourcePos,
     ) -> Vec<ActiveOperatorMetadata> {
         let mut metadata = self
-            .operator_declarations
+            .user_symbols
             .iter()
             .filter(|declaration| declaration.activation_start <= position)
-            .filter_map(|declaration| declaration.active_metadata(environment, self))
+            .filter_map(LocalUserSymbolDeclaration::active_metadata)
             .collect::<Vec<_>>();
+        metadata.extend(
+            self.operator_declarations
+                .iter()
+                .filter(|declaration| declaration.activation_start <= position)
+                .filter_map(|declaration| declaration.active_metadata(environment, self)),
+        );
         sort_operator_metadata(&mut metadata);
         dedup_operator_metadata(&mut metadata);
         metadata
@@ -776,8 +791,18 @@ impl LocalUserSymbolDeclaration {
             export_rank: self.export_rank,
             kind: self.kind,
             arity: self.arity,
-            operator: None,
+            operator: self.operator,
         }
+    }
+
+    fn active_metadata(&self) -> Option<ActiveOperatorMetadata> {
+        Some(ActiveOperatorMetadata {
+            spelling: self.spelling.clone(),
+            source_module: self.source_module.clone(),
+            declared_at: self.declared_at,
+            activation_start: self.activation_start,
+            operator: self.operator?,
+        })
     }
 }
 
@@ -1227,34 +1252,80 @@ impl LocalDeclarationCollector {
             return;
         };
         let pattern = &self.pieces[colon + 1..pattern_end];
+        let parameter_names = self.definition_parameter_names_before(keyword_index);
         if let Some(selection) = select_hyphenated_notation_spelling(pattern) {
             let arity = pattern_arity_excluding_range(
                 pattern,
                 selection.relative_start,
                 selection.relative_end,
             );
-            self.push_user_symbol_shape(
+            let operator = default_functor_operator_metadata(
+                kind,
+                pattern,
+                selection.relative_start,
+                selection.relative_end,
+                &parameter_names,
+            );
+            self.push_user_symbol_shape_with_operator(
                 selection.spelling,
                 selection.span,
                 kind,
                 arity,
                 completion.activation_start,
+                operator,
             );
             return;
         }
         let symbol_selections = select_symbol_spelling_pieces(pattern);
         if symbol_selections.is_empty() {
-            let Some(selection) = select_notation_spelling(pattern) else {
+            let Some(selection) =
+                select_notation_spelling_with_parameters(pattern, &parameter_names)
+            else {
                 return;
             };
             let arity = pattern_arity(pattern, selection.relative_index);
             let absolute_index = colon + 1 + selection.relative_index;
-            self.push_user_symbol(absolute_index, kind, arity, completion.activation_start);
+            let operator = default_functor_operator_metadata(
+                kind,
+                pattern,
+                selection.relative_index,
+                selection.relative_index + 1,
+                &parameter_names,
+            );
+            self.push_user_symbol_with_operator(
+                absolute_index,
+                kind,
+                arity,
+                completion.activation_start,
+                operator,
+            );
         } else {
             let arity = pattern_arity_without_symbol_pieces(pattern);
-            for selection in symbol_selections {
+            let single_selection = (symbol_selections.len() == 1).then_some(symbol_selections[0]);
+            let selections = symbol_selections
+                .into_iter()
+                .map(|selection| {
+                    let operator = single_selection.and_then(|selection| {
+                        default_functor_operator_metadata(
+                            kind,
+                            pattern,
+                            selection.relative_index,
+                            selection.relative_index + 1,
+                            &parameter_names,
+                        )
+                    });
+                    (selection, operator)
+                })
+                .collect::<Vec<_>>();
+            for (selection, operator) in selections {
                 let absolute_index = colon + 1 + selection.relative_index;
-                self.push_user_symbol(absolute_index, kind, arity, completion.activation_start);
+                self.push_user_symbol_with_operator(
+                    absolute_index,
+                    kind,
+                    arity,
+                    completion.activation_start,
+                    operator,
+                );
             }
         }
     }
@@ -1294,7 +1365,7 @@ impl LocalDeclarationCollector {
         let name_end = self
             .find_word(is_index + 1, completion.piece_index, "means")
             .unwrap_or(completion.piece_index);
-        let parameter_names = self.attribute_parameter_names_before(keyword_index);
+        let parameter_names = self.definition_parameter_names_before(keyword_index);
         let Some(selection) = select_attribute_constructor_spelling(
             &self.pieces[is_index + 1..name_end],
             &parameter_names,
@@ -1461,13 +1532,25 @@ impl LocalDeclarationCollector {
         arity: UserSymbolArity,
         activation_start: SourcePos,
     ) {
+        self.push_user_symbol_with_operator(piece_index, kind, arity, activation_start, None);
+    }
+
+    fn push_user_symbol_with_operator(
+        &mut self,
+        piece_index: usize,
+        kind: UserSymbolKind,
+        arity: UserSymbolArity,
+        activation_start: SourcePos,
+        operator: Option<ExportedOperatorMetadata>,
+    ) {
         let piece = &self.pieces[piece_index];
-        self.push_user_symbol_shape(
+        self.push_user_symbol_shape_with_operator(
             piece.text.clone(),
             piece.span,
             kind,
             arity,
             activation_start,
+            operator,
         );
     }
 
@@ -1479,9 +1562,34 @@ impl LocalDeclarationCollector {
         arity: UserSymbolArity,
         activation_start: SourcePos,
     ) {
+        self.push_user_symbol_shape_with_operator(
+            spelling,
+            span,
+            kind,
+            arity,
+            activation_start,
+            None,
+        );
+    }
+
+    fn push_user_symbol_shape_with_operator(
+        &mut self,
+        spelling: String,
+        span: SourceSpan,
+        kind: UserSymbolKind,
+        arity: UserSymbolArity,
+        activation_start: SourcePos,
+        operator: Option<ExportedOperatorMetadata>,
+    ) {
         if !is_local_lexical_entry_spelling(kind, &spelling) || !arity.is_valid() {
             return;
         }
+
+        let operator = operator.filter(|_| {
+            !self.user_symbols.iter().any(|declaration| {
+                declaration.spelling == spelling && declaration.operator.is_some()
+            })
+        });
 
         let rank = ExportRank(self.next_rank);
         self.next_rank += 1;
@@ -1497,12 +1605,13 @@ impl LocalDeclarationCollector {
             export_rank: rank,
             kind,
             arity,
+            operator,
             declared_at: span,
             activation_start,
         });
     }
 
-    fn attribute_parameter_names_before(&self, keyword_index: usize) -> BTreeSet<String> {
+    fn definition_parameter_names_before(&self, keyword_index: usize) -> BTreeSet<String> {
         let mut names = BTreeSet::new();
         let block_start = self
             .pieces
@@ -1687,12 +1796,18 @@ struct MultiPieceSelection {
 }
 
 fn select_notation_spelling(pieces: &[DeclarationPiece]) -> Option<SpellingSelection> {
-    if pieces
-        .first()
-        .is_some_and(|piece| piece.kind == DeclarationPieceKind::Word)
-        && pieces
-            .get(1)
-            .is_some_and(|piece| piece.kind == DeclarationPieceKind::Symbol && piece.text == "(")
+    select_notation_spelling_with_parameters(pieces, &BTreeSet::new())
+}
+
+fn select_notation_spelling_with_parameters(
+    pieces: &[DeclarationPiece],
+    parameter_names: &BTreeSet<String>,
+) -> Option<SpellingSelection> {
+    if pieces.first().is_some_and(|piece| {
+        piece.kind == DeclarationPieceKind::Word && !parameter_names.contains(piece.text.as_str())
+    }) && pieces
+        .get(1)
+        .is_some_and(|piece| piece.kind == DeclarationPieceKind::Symbol && piece.text == "(")
     {
         return Some(SpellingSelection { relative_index: 0 });
     }
@@ -1707,7 +1822,9 @@ fn select_notation_spelling(pieces: &[DeclarationPiece]) -> Option<SpellingSelec
                 .iter()
                 .enumerate()
                 .filter(|(_, piece)| {
-                    piece.kind == DeclarationPieceKind::Word && !is_reserved_word(&piece.text)
+                    piece.kind == DeclarationPieceKind::Word
+                        && !is_reserved_word(&piece.text)
+                        && !parameter_names.contains(piece.text.as_str())
                 })
                 .map(|(index, _)| index)
                 .collect::<Vec<_>>();
@@ -1739,6 +1856,58 @@ fn select_notation_spelling(pieces: &[DeclarationPiece]) -> Option<SpellingSelec
             }
         })
         .map(|relative_index| SpellingSelection { relative_index })
+}
+
+fn default_functor_operator_metadata(
+    kind: UserSymbolKind,
+    pieces: &[DeclarationPiece],
+    spelling_start: usize,
+    spelling_end: usize,
+    parameter_names: &BTreeSet<String>,
+) -> Option<ExportedOperatorMetadata> {
+    if kind != UserSymbolKind::Functor {
+        return None;
+    }
+
+    let mut depth = 0usize;
+    let mut left_operands = 0usize;
+    let mut right_operands = 0usize;
+    for (index, piece) in pieces.iter().enumerate() {
+        match piece.text.as_str() {
+            "(" | "[" | "{" => {
+                depth += 1;
+                continue;
+            }
+            ")" | "]" | "}" => {
+                depth = depth.saturating_sub(1);
+                continue;
+            }
+            _ => {}
+        }
+        if depth != 0
+            || piece.kind != DeclarationPieceKind::Word
+            || (!parameter_names.contains(piece.text.as_str())
+                && !is_likely_locus_word(&piece.text))
+        {
+            continue;
+        }
+        if index < spelling_start {
+            left_operands += 1;
+        } else if index >= spelling_end {
+            right_operands += 1;
+        }
+    }
+
+    let fixity = match (left_operands, right_operands) {
+        (0, 1) => ExportedOperatorFixity::Prefix,
+        (1, 0) => ExportedOperatorFixity::Postfix,
+        (1, 1) => ExportedOperatorFixity::Infix(ExportedOperatorAssociativity::NonAssociative),
+        _ => return None,
+    };
+    Some(ExportedOperatorMetadata {
+        fixity,
+        precedence: 64,
+    })
 }
 
 fn select_symbol_spelling_pieces(pieces: &[DeclarationPiece]) -> Vec<SpellingSelection> {
@@ -2159,6 +2328,7 @@ fn pattern_arity(pieces: &[DeclarationPiece], spelling_index: usize) -> UserSymb
             *index != spelling_index
                 && piece.kind == DeclarationPieceKind::Word
                 && !is_reserved_word(&piece.text)
+                && !is_inside_template_loci(pieces, *index)
         })
         .count();
     UserSymbolArity::exact(arity.min(u16::MAX as usize) as u16)
@@ -2176,6 +2346,7 @@ fn pattern_arity_excluding_range(
             (*index < spelling_start || *index >= spelling_end)
                 && piece.kind == DeclarationPieceKind::Word
                 && !is_reserved_word(&piece.text)
+                && !is_inside_template_loci(pieces, *index)
         })
         .count();
     UserSymbolArity::exact(arity.min(u16::MAX as usize) as u16)
@@ -2184,9 +2355,26 @@ fn pattern_arity_excluding_range(
 fn pattern_arity_without_symbol_pieces(pieces: &[DeclarationPiece]) -> UserSymbolArity {
     let arity = pieces
         .iter()
-        .filter(|piece| piece.kind == DeclarationPieceKind::Word && !is_reserved_word(&piece.text))
+        .enumerate()
+        .filter(|(index, piece)| {
+            piece.kind == DeclarationPieceKind::Word
+                && !is_reserved_word(&piece.text)
+                && !is_inside_template_loci(pieces, *index)
+        })
         .count();
     UserSymbolArity::exact(arity.min(u16::MAX as usize) as u16)
+}
+
+fn is_inside_template_loci(pieces: &[DeclarationPiece], index: usize) -> bool {
+    let mut depth = 0usize;
+    for piece in &pieces[..index] {
+        match piece.text.as_str() {
+            "[" => depth += 1,
+            "]" => depth = depth.saturating_sub(1),
+            _ => {}
+        }
+    }
+    depth > 0
 }
 
 fn declaration_pieces(raw: &RawTokenStream) -> Vec<DeclarationPiece> {

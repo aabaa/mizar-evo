@@ -253,3 +253,11 @@ tree/ranges/diagnostics. The real-parser key therefore enters v3. The one
 focused replay test passes and proves v3 for that source plus the exact stable
 AST behavior of an unchanged control; token-stream, parser-input, edition,
 storage, and public cache-key shape remain unchanged.
+
+## Step 5A.2 Local Notation Cache Assessment
+
+The [central contract](../../task_contracts/en/STEP5A2-G1-LOCAL-NOTATION.md)
+requires v3-to-v4 invalidation because prefix template parsing changes AST
+semantics for an already valid fixity input. Local default metadata also enters
+the existing parser-input hash; cache-key structure and storage policy do not
+change.

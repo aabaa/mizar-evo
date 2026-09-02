@@ -2157,3 +2157,13 @@ speculative type parse を広げず frozen generator `Identifier` を保存す�
 syntax diagnostic/recovery 0 の exact complete 57-node AST を生成し、focused parser
 test 3件は pass。binding、resolution、sethood、public API、diagnostic vocabulary は
 追加していない。final task-closure evidence は central contract が所有する。
+
+## Step 5A.2 Template-Local Binder Type
+
+central [JA contract](../../task_contracts/ja/STEP5A2-G1-LOCAL-NOTATION.md) は、同じ
+parse-local template-definition boundary を quantified binder の `be`/`being` 後の
+required type へ拡張する。strict parse 失敗後、bare `Identifier` 1 token だけを
+`TypeHead` として保持し、speculative type position と definition 外は strict のままに
+する。binding、type lookup、public parser input は追加しない。prefix operator 直後の
+bracket group は、さらに term operand が続く場合だけ `TemplateArguments` とし、
+それ以外では built-in bracket-functor operand のまま保持する。

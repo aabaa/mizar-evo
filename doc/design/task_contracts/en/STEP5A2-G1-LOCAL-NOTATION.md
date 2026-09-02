@@ -10,7 +10,7 @@ Owning plans: [mizar-frontend](../../mizar-frontend/en/00.crate_plan.md) and
 
 | Field | Value |
 |---|---|
-| Status | Frozen; pre-implementation |
+| Status | Completed; implementation and full-gate evidence recorded below |
 | Tier | Full: production lexing/parser-input behavior, public lexer DTO, parser AST/cache semantics, and test-first `.miz` |
 | Owner / consumers | `mizar-lexer` local declaration prepass and `mizar-frontend::ParserInputs` / `mizar-parser`, registrations, later semantic stages |
 | Dependencies | None; Step 5A frozen order selects 5A.2 after completed 5A.1 |
@@ -33,10 +33,13 @@ bindings, including uppercase one-letter loci, before using its existing
 conservative fallback. A completed local `func` declaration publishes its
 parser-facing default shape at the same activation point as its user-symbol
 candidate: prefix, postfix, or non-associative infix at precedence 64. Template
-loci do not count as term operands. Functional, nullary, and circumfix shapes
-do not synthesize a Pratt entry. A local `pred` publishes only the correctly
-selected predicate spelling. A later explicit operator declaration continues
-to supersede an earlier default by source-position ordering.
+loci do not count as term operands, and each occupied side must contain exactly
+one term locus; the existing one-character lowercase fallback applies when no
+preceding `let` inventory is available. Functional, nullary, multi-locus, and
+circumfix shapes do not synthesize a Pratt entry. A local `pred` publishes only
+the correctly selected predicate spelling. A later explicit operator
+declaration continues to supersede an earlier default by source-position
+ordering.
 
 `LocalUserSymbolDeclaration` gains exactly
 `operator: Option<ExportedOperatorMetadata>`; its candidate and range-aware
@@ -45,7 +48,12 @@ proof, registration, or semantic activation enters lexer/frontend state.
 `ParserInputs` remains the sole frontend adapter and adds no API. The parser
 continues to invent no fixity: when a supplied prefix entry is followed by
 template arguments, it preserves `TemplateArguments` between the operator token
-and its term operand. This changes real AST output, so
+and its term operand. A bracket group is treated as those arguments only when a
+term operand follows it; otherwise it remains the built-in bracket-functor
+operand. Within a parser-recognized template definition only, a
+grammar-required quantified-binder type may preserve one bare `Identifier`
+`TypeHead` after strict type parsing fails; this is structural preservation,
+not binding or symbol classification. These changes affect real AST output, so
 `MIZAR_PARSER_CACHE_KEY_VERSION` advances from v3 to v4.
 
 Inline `deffunc`/`defpred` names remain ordinary proof-local identifiers and use
@@ -77,15 +85,17 @@ and requirement count stay unchanged.
 
 Focused Rust tests must pin binder-aware spelling selection, default metadata
 activation/no-forward-reference, explicit-metadata precedence, template-prefix
-AST children, frontend source-coordinate mapping, cache-key versioning, and the
-20-row G1 inventory classification. Existing `.miz`, expectations, semantic
+AST children, bounded template-local binder type fallback, frontend
+source-coordinate mapping, cache-key versioning, and the 20-row G1 inventory
+classification. Existing `.miz`, expectations, semantic
 oracle pairs, trace states, activation map, gap ledger, coverage audit, Cargo
 metadata, and `doc/design/archive/` are immutable.
 
 Implementation scope is limited to the lexer local-declaration producer,
-frontend parser-input/cache-version adapter, parser prefix consumer, their
-focused tests, the new parse-only pair and count assertions, trace backlinks,
-the paired owner documents, this contract, and concise live Step 5 indexes.
+frontend parser-input/cache-version adapter, parser prefix and template-local
+required-binder-type consumers, their focused tests, the new parse-only pair
+and count assertions, trace backlinks, the paired owner documents, this
+contract, and concise live Step 5 indexes.
 `doc/design/spec_coverage_audit.md` has no impact because no requirement's
 coverage status, owner, or deferred rationale changes.
 
@@ -105,3 +115,21 @@ lexer/parser/frontend/parse-only checks; metadata/link/ledger lints; fmt,
 warnings-denied workspace Clippy, and full tests. Exit requires 9/9 hard gates,
 a valid read-only score of at least 90/100, exact task-only staging, local
 commit, clean postcommit proof, and fresh selection of 5A.3/G2.
+
+## Completion evidence
+
+The exact 20-row read-only probe reports no remaining G1 diagnostic; the two
+G1+G2 rows retain only G2, the G1+G6 row retains only G6, and independently
+observed G7 diagnostics remain with 5A.8. The new corpus case passes and raises
+the totals to 552 cases / 499 requirements / 103 active parse-only cases.
+Independent spec/equivalence, boundary, test-sufficiency, implementation, and
+source/docs/API reviews ended with no findings after finding-specific repairs.
+
+Focused crate and corpus checks, metadata/link/ledger lints, `cargo fmt --check`,
+warnings-denied workspace Clippy, full `cargo test`, and the read-only corpus
+plan pass; the plan retains the expected 23 baseline warnings. The parent
+records 9/9 hard gates passed. No semantic oracle or trace state was activated,
+and all four protected hashes above remain unchanged. The final independent
+read-only review applies no cap and assigns `100/100`
+(`20/20/15/15/10/10/5/5`). The local commit identity remains owned by Git
+history rather than duplicated in another status owner.
