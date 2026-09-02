@@ -46,7 +46,7 @@ rendering、artifact-facing schema、`.miz` fixture、expectation は変更し�
 
 ## Source Layout Inventory
 
-本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/checker_module_boundary_audit_sections.md).
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [live ledger](../checker_source_inventory.tsv) / [archive](../../archive/checker_module_boundary_audit_sections.md).
 
 ## Task 277C frozen module boundary
 
@@ -530,4 +530,3 @@ Completion evidence: [central Task-269SDP historical contract](../../task_contra
 
 Completion evidence: [central Task-269SDC historical contract](../../task_contracts/ja/269SDC.md#completion-evidence)。
 本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/checker_module_boundary_audit_sections.md).
-

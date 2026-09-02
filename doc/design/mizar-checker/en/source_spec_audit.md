@@ -84,7 +84,8 @@ theorem transaction; broader statement semantics remain deferred.
 Result: no blocking `source_drift`, `design_drift`, or
 `source_undocumented_behavior` is observed for implemented explicit-payload
 APIs. Remaining uncovered source-derived behavior is intentionally deferred by
-the gap rows reconciled below.
+the [Known Gaps And Drift](./00.crate_plan.md#known-gaps-and-drift) table owned
+by the crate plan.
 
 Post-audit source-derived bridge note: `mizar-test` now exercises a bounded
 reserve-only declaration bridge by constructing explicit checker-owned
@@ -191,11 +192,13 @@ Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_
 
 ## Crate Module Exports
 
-Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
+Current mechanical inventory: [checker_source_inventory.tsv](../checker_source_inventory.tsv).
+Historical details: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Public Surface Inventory
 
-Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
+Current mechanical inventory: [checker_source_inventory.tsv](../checker_source_inventory.tsv).
+Historical details: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Cross-Cutting Test And Policy Evidence
 
@@ -203,7 +206,8 @@ Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_
 
 ## Gap Reconciliation
 
-Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
+Current status owner: [Known Gaps And Drift](./00.crate_plan.md#known-gaps-and-drift).
+Historical details: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 32 Classification
 
@@ -918,4 +922,3 @@ Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_
 
 Completion evidence: [central Task-269SDC historical contract](../../task_contracts/en/269SDC.md#completion-evidence).
 Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
-

@@ -46,7 +46,8 @@ Details archived: [checker_module_boundary_audit_sections.md](../../archive/chec
 
 ## Source Layout Inventory
 
-Details archived: [checker_module_boundary_audit_sections.md](../../archive/checker_module_boundary_audit_sections.md).
+Current mechanical inventory: [checker_source_inventory.tsv](../checker_source_inventory.tsv).
+Historical details: [checker_module_boundary_audit_sections.md](../../archive/checker_module_boundary_audit_sections.md).
 
 ## Task 277C Frozen Module Boundary
 
@@ -530,4 +531,3 @@ Details archived: [checker_module_boundary_audit_sections.md](../../archive/chec
 
 Completion evidence: [central Task-269SDC historical contract](../../task_contracts/en/269SDC.md#completion-evidence).
 Details archived: [checker_module_boundary_audit_sections.md](../../archive/checker_module_boundary_audit_sections.md).
-

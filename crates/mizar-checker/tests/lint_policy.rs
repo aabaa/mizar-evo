@@ -1,5 +1,5 @@
 use std::{
-    collections::{BTreeMap, BTreeSet},
+    collections::BTreeSet,
     fs,
     path::{Path, PathBuf},
 };
@@ -421,153 +421,14 @@ fn checker_task33c_public_family_remains_scalar_and_non_installing() {
 }
 
 #[test]
-fn checker_source_spec_audit_covers_public_surface_and_gaps() {
+fn checker_live_source_inventory_matches_repository() {
     let root = crate_root();
-    let docs_root = workspace_root().join("doc/design/mizar-checker");
-    let en_path = docs_root.join("en/source_spec_audit.md");
-    let ja_path = docs_root.join("ja/source_spec_audit.md");
-    let en_audit = read_to_string(&en_path);
-    let ja_audit = read_to_string(&ja_path);
-    let modules = [
-        ("src/typed_ast.rs", "typed_ast"),
-        ("src/binding_env.rs", "binding_env"),
-        ("src/source_context.rs", "source_context"),
-        ("src/source_type.rs", "source_type"),
-        ("src/source_attribute.rs", "source_attribute"),
-        (
-            "src/source_attribute_definition.rs",
-            "source_attribute_definition",
-        ),
-        ("src/source_application.rs", "source_application"),
-        ("src/source_atomic_formula.rs", "source_atomic_formula"),
-        (
-            "src/source_predicate_definition.rs",
-            "source_predicate_definition",
-        ),
-        (
-            "src/source_functor_definition.rs",
-            "source_functor_definition",
-        ),
-        (
-            "src/source_property_implementation.rs",
-            "source_property_implementation",
-        ),
-        ("src/source_mode_definition.rs", "source_mode_definition"),
-        ("src/source_set_term.rs", "source_set_term"),
-        (
-            "src/source_proof_local_declaration.rs",
-            "source_proof_local_declaration",
-        ),
-        ("src/source_structure.rs", "source_structure"),
-        (
-            "src/source_structure_definition.rs",
-            "source_structure_definition",
-        ),
-        ("src/source_template.rs", "source_template"),
-        (
-            "src/source_template_type_parameter_association.rs",
-            "source_template_type_parameter_association",
-        ),
-        ("src/source_term.rs", "source_term"),
-        ("src/type_checker.rs", "type_checker"),
-        ("src/registration_resolution.rs", "registration_resolution"),
-        ("src/cluster_trace.rs", "cluster_trace"),
-        ("src/overload_resolution.rs", "overload_resolution"),
-        ("src/resolved_typed_ast.rs", "resolved_typed_ast"),
-    ];
-    let mut violations = Vec::new();
-
-    let public_modules = public_module_exports(&read_to_string(&root.join("src/lib.rs")));
-    let public_module_set = public_modules.iter().cloned().collect::<BTreeSet<_>>();
-    push_module_export_drift(
-        &en_path,
-        &public_module_set,
-        &audit_module_exports(&en_audit),
-        &mut violations,
-    );
-    push_module_export_drift(
-        &ja_path,
-        &public_module_set,
-        &audit_module_exports(&ja_audit),
-        &mut violations,
-    );
-
-    for (source_path, module_name) in modules {
-        let source_path = root.join(source_path);
-        let public_items = public_surface_names(&read_to_string(&source_path));
-        assert!(
-            !public_items.is_empty(),
-            "{} should expose audited public items",
-            source_path.display()
-        );
-
-        let heading = format!("### `{module_name}`");
-        let en_section = markdown_heading_section(&en_audit, &heading).unwrap_or_else(|| {
-            panic!(
-                "{} must contain a source/spec audit section for `{module_name}`",
-                en_path.display()
-            )
-        });
-        let ja_section = markdown_heading_section(&ja_audit, &heading).unwrap_or_else(|| {
-            panic!(
-                "{} must contain a source/spec audit section for `{module_name}`",
-                ja_path.display()
-            )
-        });
-
-        let public_item_set = public_items.iter().cloned().collect::<BTreeSet<_>>();
-        push_audit_inventory_drift(
-            &en_path,
-            module_name,
-            &public_item_set,
-            &audit_inventory_entries(en_section),
-            &mut violations,
-        );
-        push_audit_inventory_drift(
-            &ja_path,
-            module_name,
-            &public_item_set,
-            &audit_inventory_entries(ja_section),
-            &mut violations,
-        );
-
-        for public_item in &public_items {
-            let needle = format!("`{public_item}`");
-            if !en_section.contains(&needle) {
-                violations.push(format!(
-                    "{}: `{module_name}` audit must include public item {needle}",
-                    en_path.display()
-                ));
-            }
-            if !ja_section.contains(&needle) {
-                violations.push(format!(
-                    "{}: `{module_name}` audit must include public item {needle}",
-                    ja_path.display()
-                ));
-            }
-        }
-    }
-
-    let en_plan = read_to_string(&docs_root.join("en/00.crate_plan.md"));
-    let expected_gap_ids = mc_gap_ids(&en_plan);
-    let en_reconciled_gap_ids = reconciled_mc_gap_ids(&en_audit);
-    let ja_reconciled_gap_ids = reconciled_mc_gap_ids(&ja_audit);
-    push_gap_reconciliation_drift(
-        &en_path,
-        &expected_gap_ids,
-        &en_reconciled_gap_ids,
-        &mut violations,
-    );
-    push_gap_reconciliation_drift(
-        &ja_path,
-        &expected_gap_ids,
-        &ja_reconciled_gap_ids,
-        &mut violations,
-    );
+    let path = workspace_root().join("doc/design/mizar-checker/checker_source_inventory.tsv");
+    let violations = validate_checker_source_inventory(&root, &read_to_string(&path));
 
     assert!(
         violations.is_empty(),
-        "checker source/spec audit drift:\n{}",
+        "checker live source inventory drift:\n{}",
         violations.join("\n")
     );
 }
@@ -675,116 +536,162 @@ fn checker_bilingual_sync_audit_covers_design_doc_pairs() {
 }
 
 #[test]
-fn checker_module_boundary_audit_covers_source_layout() {
+fn checker_live_source_inventory_boundary_matches_repository() {
     let root = crate_root();
-    let docs_root = workspace_root().join("doc/design/mizar-checker");
-    let expected_files = checker_rust_target_files(&root)
-        .into_iter()
-        .map(|path| {
-            let relative = relative_path_string(&root, &path);
-            let lines = read_to_string(&path).lines().count();
-            (relative, lines)
-        })
-        .collect::<BTreeMap<_, _>>();
-    let required_classes = [
-        "spec_gap",
-        "test_gap",
-        "design_drift",
-        "source_drift",
-        "source_undocumented_behavior",
-        "boundary_violation",
-        "external_dependency_gap",
-        "deferred",
-    ];
-    let mut violations = Vec::new();
-
-    for audit_path in [
-        docs_root.join("en/module_boundary_audit.md"),
-        docs_root.join("ja/module_boundary_audit.md"),
-    ] {
-        let audit = read_to_string(&audit_path);
-        if !audit.contains("## Split Gate") {
-            violations.push(format!(
-                "{}: module-boundary audit must contain `## Split Gate`",
-                audit_path.display()
-            ));
-        }
-        let rows = module_boundary_audit_rows(&audit_path, &audit, &mut violations);
-        push_source_layout_inventory_drift(&audit_path, &expected_files, &rows, &mut violations);
-
-        for row in &rows {
-            if let Some(expected_lines) = expected_files.get(&row.path)
-                && row.lines != *expected_lines
-            {
-                violations.push(format!(
-                    "{}: Source Layout Inventory row `{}` must record {expected_lines} lines, not {}",
-                    audit_path.display(),
-                    row.path,
-                    row.lines
-                ));
-            }
-            if row.boundary_label.trim().is_empty() {
-                violations.push(format!(
-                    "{}: Source Layout Inventory row `{}` must record a boundary label",
-                    audit_path.display(),
-                    row.path
-                ));
-            }
-            if row.owning_specification.trim().is_empty() {
-                violations.push(format!(
-                    "{}: Source Layout Inventory row `{}` must record an owning specification",
-                    audit_path.display(),
-                    row.path
-                ));
-            }
-            if row.split_required != "no" {
-                violations.push(format!(
-                    "{}: Source Layout Inventory row `{}` must not leave a required split unresolved: {}",
-                    audit_path.display(),
-                    row.path,
-                    row.split_required
-                ));
-            }
-            if row.hard_gate_finding != "no" {
-                violations.push(format!(
-                    "{}: Source Layout Inventory row `{}` must not leave a hard-gate finding unresolved: {}",
-                    audit_path.display(),
-                    row.path,
-                    row.hard_gate_finding
-                ));
-            }
-            if row.decision.trim().is_empty() {
-                violations.push(format!(
-                    "{}: Source Layout Inventory row `{}` must record a decision",
-                    audit_path.display(),
-                    row.path
-                ));
-            }
-        }
-
-        let classification = markdown_heading_section(&audit, "## Task 34 Classification")
-            .unwrap_or_else(|| {
-                panic!(
-                    "{} must contain `## Task 34 Classification`",
-                    audit_path.display()
-                )
-            });
-        for class in required_classes {
-            let needle = format!("| `{class}` |");
-            if !classification.contains(&needle) {
-                violations.push(format!(
-                    "{}: Task 34 Classification must include `{class}`",
-                    audit_path.display()
-                ));
-            }
-        }
-    }
+    let path = workspace_root().join("doc/design/mizar-checker/checker_source_inventory.tsv");
+    let violations = validate_checker_source_inventory(&root, &read_to_string(&path));
 
     assert!(
         violations.is_empty(),
-        "checker module-boundary audit drift:\n{}",
+        "checker live module-boundary inventory drift:\n{}",
         violations.join("\n")
     );
+}
+
+#[test]
+fn checker_live_source_inventory_rejects_in_memory_mutations() {
+    let root = crate_root();
+    let path = workspace_root().join("doc/design/mizar-checker/checker_source_inventory.tsv");
+    let inventory = read_to_string(&path);
+    let lines = inventory.lines().collect::<Vec<_>>();
+    let mut missing_row = lines.clone();
+    missing_row.remove(4);
+    let mut extra_row = inventory.clone();
+    extra_row.push_str("src/extra.rs\t1\ttest-support\tdoc/design/mizar-checker/en/00.crate_plan.md\tno\tno\tkeep-test-support\tnone\n");
+    let mut duplicate_row = lines.clone();
+    duplicate_row.insert(5, lines[4]);
+    let mut reordered_rows = lines.clone();
+    reordered_rows.swap(4, 5);
+    let seven_field_row = lines[4]
+        .rsplit_once('\t')
+        .expect("inventory row has a public-surface field")
+        .0;
+
+    let mutations = [
+        (
+            "missing generator comment",
+            inventory.replacen(
+                "# generator: crates/mizar-checker/tests/lint_policy.rs::checker_live_source_inventory_matches_repository\n",
+                "",
+                1,
+            ),
+        ),
+        (
+            "malformed generator comment",
+            inventory.replacen("# generator:", "# generator-mismatch:", 1),
+        ),
+        (
+            "missing source-of-truth comment",
+            inventory.replacen(
+                "# source-of-truth: crates/mizar-checker/{src,tests,benches,examples}/**/*.rs plus crates/mizar-checker/build.rs when present\n",
+                "",
+                1,
+            ),
+        ),
+        (
+            "malformed source-of-truth comment",
+            inventory.replacen("# source-of-truth:", "# source:", 1),
+        ),
+        ("missing schema", inventory.replacen("schema\t1\n", "", 1)),
+        (
+            "malformed schema",
+            inventory.replacen("schema\t1\n", "schema\t2\n", 1),
+        ),
+        (
+            "missing header",
+            inventory.replacen(&format!("{CHECKER_SOURCE_INVENTORY_HEADER}\n"), "", 1),
+        ),
+        (
+            "malformed header",
+            inventory.replacen("path\tlines\tboundary", "path\tline_count\tboundary", 1),
+        ),
+        (
+            "missing final newline",
+            inventory.trim_end_matches('\n').to_owned(),
+        ),
+        (
+            "seven-field row",
+            inventory.replacen(lines[4], seven_field_row, 1),
+        ),
+        (
+            "nine-field row",
+            inventory.replacen(lines[4], &format!("{}\textra", lines[4]), 1),
+        ),
+        (
+            "empty field",
+            mutate_first_row_cell(&inventory, 2, ""),
+        ),
+        (
+            "nonnumeric line count",
+            mutate_first_row_cell(&inventory, 1, "NaN"),
+        ),
+        ("missing row", format!("{}\n", missing_row.join("\n"))),
+        ("extra row", extra_row),
+        ("duplicate row", format!("{}\n", duplicate_row.join("\n"))),
+        (
+            "reordered rows",
+            format!("{}\n", reordered_rows.join("\n")),
+        ),
+        (
+            "stale line count",
+            mutate_first_row_cell(&inventory, 1, "0"),
+        ),
+        (
+            "archive owner",
+            mutate_first_row_cell(&inventory, 3, "doc/design/archive/stale.md"),
+        ),
+        (
+            "traversal owner",
+            mutate_first_row_cell(&inventory, 3, "../outside.md"),
+        ),
+        (
+            "wrong owner",
+            mutate_first_row_cell(
+                &inventory,
+                3,
+                "doc/design/mizar-checker/en/todo.md",
+            ),
+        ),
+        (
+            "nonexistent owner",
+            mutate_first_row_cell(
+                &inventory,
+                3,
+                "doc/design/mizar-checker/en/no-such-owner.md",
+            ),
+        ),
+        (
+            "wrong boundary",
+            mutate_first_row_cell(&inventory, 2, "wrong-boundary"),
+        ),
+        (
+            "open split finding",
+            mutate_first_row_cell(&inventory, 4, "yes"),
+        ),
+        (
+            "open hard-gate finding",
+            mutate_first_row_cell(&inventory, 5, "yes"),
+        ),
+        (
+            "wrong decision",
+            mutate_first_row_cell(&inventory, 6, "split-required"),
+        ),
+        (
+            "wrong public surface",
+            mutate_first_row_cell(&inventory, 7, "none"),
+        ),
+        (
+            "wrong crate module exports",
+            mutate_inventory_row_cell(&inventory, "src/lib.rs", 7, "modules:"),
+        ),
+    ];
+
+    for (label, mutated) in mutations {
+        assert!(
+            !validate_checker_source_inventory(&root, &mutated).is_empty(),
+            "inventory mutation `{label}` must fail closed"
+        );
+    }
 }
 
 #[test]
@@ -1037,51 +944,6 @@ fn public_module_exports(source: &str) -> Vec<String> {
         .collect()
 }
 
-fn audit_module_exports(document: &str) -> Vec<String> {
-    let section = markdown_heading_section(document, "## Crate Module Exports")
-        .expect("source/spec audit must contain Crate Module Exports section");
-    let inventory = section
-        .split("\nEvidence:")
-        .next()
-        .unwrap_or(section)
-        .split("\n根拠:")
-        .next()
-        .unwrap_or(section);
-
-    inventory
-        .lines()
-        .filter_map(|line| {
-            let trimmed = line.trim();
-            let rest = trimmed.strip_prefix("- `")?;
-            let (name, _) = rest.split_once('`')?;
-            Some(name.to_owned())
-        })
-        .collect()
-}
-
-fn push_module_export_drift(
-    path: &Path,
-    expected: &BTreeSet<String>,
-    actual: &[String],
-    violations: &mut Vec<String>,
-) {
-    let actual_set = actual.iter().cloned().collect::<BTreeSet<_>>();
-    push_duplicate_entries(path, "Crate Module Exports inventory", actual, violations);
-
-    for missing in expected.difference(&actual_set) {
-        violations.push(format!(
-            "{}: Crate Module Exports inventory must include `{missing}`",
-            path.display()
-        ));
-    }
-    for extra in actual_set.difference(expected) {
-        violations.push(format!(
-            "{}: Crate Module Exports inventory must not include stale `{extra}`",
-            path.display()
-        ));
-    }
-}
-
 fn public_surface_names(source: &str) -> Vec<String> {
     let mut names = BTreeSet::new();
 
@@ -1126,127 +988,257 @@ fn public_surface_names(source: &str) -> Vec<String> {
     names.into_iter().collect()
 }
 
-fn audit_inventory_entries(section: &str) -> Vec<String> {
-    let inventory = section
-        .split("\nCorrespondence:")
-        .next()
-        .unwrap_or(section)
-        .split("\n対応:")
-        .next()
-        .unwrap_or(section);
+const CHECKER_SOURCE_INVENTORY_GENERATOR: &str = "# generator: crates/mizar-checker/tests/lint_policy.rs::checker_live_source_inventory_matches_repository";
+const CHECKER_SOURCE_INVENTORY_SOURCE: &str = "# source-of-truth: crates/mizar-checker/{src,tests,benches,examples}/**/*.rs plus crates/mizar-checker/build.rs when present";
+const CHECKER_SOURCE_INVENTORY_SCHEMA: &str = "schema\t1";
+const CHECKER_SOURCE_INVENTORY_HEADER: &str =
+    "path\tlines\tboundary\towner_doc\tsplit_required\thard_gate_finding\tdecision\tpublic_surface";
+const CHECKER_PLAN_OWNER: &str = "doc/design/mizar-checker/en/00.crate_plan.md";
 
-    code_spans(
-        inventory
-            .lines()
-            .skip(1)
-            .collect::<Vec<_>>()
-            .join("\n")
-            .as_str(),
-    )
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct CheckerSourceInventoryRow {
+    path: String,
+    lines: usize,
+    boundary: String,
+    owner_doc: String,
+    split_required: String,
+    hard_gate_finding: String,
+    decision: String,
+    public_surface: String,
 }
 
-fn code_spans(text: &str) -> Vec<String> {
-    let mut entries = Vec::new();
-    let mut rest = text;
+fn validate_checker_source_inventory(root: &Path, document: &str) -> Vec<String> {
+    let inventory_path = Path::new("checker_source_inventory.tsv");
+    let mut violations = Vec::new();
+    let lines = document.lines().collect::<Vec<_>>();
+    let required_prefix = [
+        CHECKER_SOURCE_INVENTORY_GENERATOR,
+        CHECKER_SOURCE_INVENTORY_SOURCE,
+        CHECKER_SOURCE_INVENTORY_SCHEMA,
+        CHECKER_SOURCE_INVENTORY_HEADER,
+    ];
 
-    while let Some(start) = rest.find('`') {
-        rest = &rest[start + 1..];
-        let Some(end) = rest.find('`') else {
-            break;
-        };
-        entries.push(rest[..end].to_owned());
-        rest = &rest[end + 1..];
+    if !document.ends_with('\n') {
+        violations.push("checker source inventory must end with a newline".to_owned());
     }
-
-    entries
-}
-
-fn push_audit_inventory_drift(
-    path: &Path,
-    module_name: &str,
-    expected: &BTreeSet<String>,
-    actual: &[String],
-    violations: &mut Vec<String>,
-) {
-    let actual_set = actual.iter().cloned().collect::<BTreeSet<_>>();
-    push_duplicate_entries(
-        path,
-        &format!("`{module_name}` source/spec audit inventory"),
-        actual,
-        violations,
-    );
-
-    for missing in expected.difference(&actual_set) {
-        violations.push(format!(
-            "{}: `{module_name}` source/spec audit inventory must include `{missing}`",
-            path.display()
-        ));
-    }
-    for extra in actual_set.difference(expected) {
-        violations.push(format!(
-            "{}: `{module_name}` source/spec audit inventory must not include stale `{extra}`",
-            path.display()
-        ));
-    }
-}
-
-fn reconciled_mc_gap_ids(document: &str) -> Vec<String> {
-    let gap_section = markdown_heading_section(document, "## Gap Reconciliation")
-        .or_else(|| markdown_heading_section(document, "## Gap Reconciliation"))
-        .expect("source/spec audit must contain Gap Reconciliation section");
-    let mut ids = Vec::new();
-
-    for line in gap_section.lines() {
-        let trimmed = line.trim();
-        let Some(rest) = trimmed.strip_prefix("| MC-G") else {
-            continue;
-        };
-        let Some((digits, _)) = rest.split_once(" |") else {
-            continue;
-        };
-        if digits.len() == 3 && digits.chars().all(|character| character.is_ascii_digit()) {
-            ids.push(format!("MC-G{digits}"));
+    for (index, expected) in required_prefix.iter().enumerate() {
+        if lines.get(index) != Some(expected) {
+            violations.push(format!(
+                "checker source inventory line {} must be exactly `{expected}`",
+                index + 1
+            ));
         }
     }
 
-    for resolved_prefix in [
-        "Resolved setup-history rows remain closed:",
-        "Resolved setup-history row は closed のまま:",
-    ] {
-        let Some((_, resolved)) = gap_section.split_once(resolved_prefix) else {
+    let mut rows = Vec::new();
+    for (index, line) in lines.iter().enumerate().skip(required_prefix.len()) {
+        let cells = line.split('\t').collect::<Vec<_>>();
+        if cells.len() != 8 {
+            violations.push(format!(
+                "checker source inventory line {} must have exactly 8 tab-separated fields",
+                index + 1
+            ));
             continue;
-        };
-        let resolved = resolved
-            .split("\n## Task 32 Classification")
-            .next()
-            .unwrap_or(resolved);
-        ids.extend(mc_gap_ids(resolved));
+        }
+        if cells.iter().any(|cell| cell.is_empty()) {
+            violations.push(format!(
+                "checker source inventory line {} must not contain an empty field",
+                index + 1
+            ));
+        }
+        let parsed_lines = cells[1].parse::<usize>().unwrap_or_else(|_| {
+            violations.push(format!(
+                "checker source inventory line {} has a non-numeric line count",
+                index + 1
+            ));
+            usize::MAX
+        });
+        rows.push(CheckerSourceInventoryRow {
+            path: cells[0].to_owned(),
+            lines: parsed_lines,
+            boundary: cells[2].to_owned(),
+            owner_doc: cells[3].to_owned(),
+            split_required: cells[4].to_owned(),
+            hard_gate_finding: cells[5].to_owned(),
+            decision: cells[6].to_owned(),
+            public_surface: cells[7].to_owned(),
+        });
     }
 
-    ids
+    let expected_rows = checker_rust_target_files(root)
+        .iter()
+        .map(|path| expected_checker_source_inventory_row(root, path))
+        .collect::<Vec<_>>();
+    let actual_paths = rows.iter().map(|row| row.path.clone()).collect::<Vec<_>>();
+    let expected_paths = expected_rows
+        .iter()
+        .map(|row| row.path.clone())
+        .collect::<Vec<_>>();
+    push_duplicate_entries(
+        inventory_path,
+        "checker source inventory rows",
+        &actual_paths,
+        &mut violations,
+    );
+
+    let actual_set = actual_paths.iter().cloned().collect::<BTreeSet<_>>();
+    let expected_set = expected_paths.iter().cloned().collect::<BTreeSet<_>>();
+    for missing in expected_set.difference(&actual_set) {
+        violations.push(format!("checker source inventory must include `{missing}`"));
+    }
+    for extra in actual_set.difference(&expected_set) {
+        violations.push(format!(
+            "checker source inventory must not include stale `{extra}`"
+        ));
+    }
+    if actual_paths != expected_paths {
+        violations
+            .push("checker source inventory rows must use exact lexical path order".to_owned());
+    }
+
+    let workspace = root
+        .parent()
+        .and_then(Path::parent)
+        .expect("checker crate lives under crates/<name>");
+    for row in &rows {
+        if invalid_inventory_relative_path(&row.path) {
+            violations.push(format!(
+                "checker source inventory path `{}` must be a normalized relative path",
+                row.path
+            ));
+        }
+        if invalid_inventory_relative_path(&row.owner_doc)
+            || row.owner_doc.starts_with("doc/design/archive/")
+        {
+            violations.push(format!(
+                "checker source inventory owner `{}` must be a normalized live path",
+                row.owner_doc
+            ));
+        } else if !workspace.join(&row.owner_doc).is_file() {
+            violations.push(format!(
+                "checker source inventory owner `{}` must exist",
+                row.owner_doc
+            ));
+        }
+        if row.split_required != "no" {
+            violations.push(format!(
+                "checker source inventory row `{}` must keep split_required=no",
+                row.path
+            ));
+        }
+        if row.hard_gate_finding != "no" {
+            violations.push(format!(
+                "checker source inventory row `{}` must keep hard_gate_finding=no",
+                row.path
+            ));
+        }
+    }
+
+    for (index, (actual, expected)) in rows.iter().zip(&expected_rows).enumerate() {
+        if actual != expected {
+            violations.push(format!(
+                "checker source inventory row {} mismatch: expected {expected:?}, found {actual:?}",
+                index + 1
+            ));
+        }
+    }
+    if rows.len() != expected_rows.len() {
+        violations.push(format!(
+            "checker source inventory must contain {} rows, not {}",
+            expected_rows.len(),
+            rows.len()
+        ));
+    }
+
+    violations
 }
 
-fn push_gap_reconciliation_drift(
-    path: &Path,
-    expected: &BTreeSet<String>,
-    actual: &[String],
-    violations: &mut Vec<String>,
-) {
-    let actual_set = actual.iter().cloned().collect::<BTreeSet<_>>();
-    push_duplicate_entries(path, "Gap Reconciliation MC-G rows", actual, violations);
+fn expected_checker_source_inventory_row(root: &Path, path: &Path) -> CheckerSourceInventoryRow {
+    let relative = relative_path_string(root, path);
+    let source = read_to_string(path);
+    let (boundary, owner_doc, decision, public_surface) = if relative == "src/lib.rs" {
+        (
+            "crate-exports".to_owned(),
+            CHECKER_PLAN_OWNER.to_owned(),
+            "keep-current-boundary".to_owned(),
+            format!("modules:{}", public_module_exports(&source).join(",")),
+        )
+    } else if relative.starts_with("src/") {
+        let stem = path
+            .file_stem()
+            .and_then(|stem| stem.to_str())
+            .expect("Rust source path has a UTF-8 stem");
+        let module_owner = format!("doc/design/mizar-checker/en/{stem}.md");
+        let workspace = root
+            .parent()
+            .and_then(Path::parent)
+            .expect("checker crate lives under crates/<name>");
+        let owner_doc = if workspace.join(&module_owner).is_file() {
+            module_owner
+        } else {
+            CHECKER_PLAN_OWNER.to_owned()
+        };
+        (
+            format!("module:{stem}"),
+            owner_doc,
+            "keep-current-boundary".to_owned(),
+            format!("items:{}", public_surface_names(&source).join(",")),
+        )
+    } else {
+        (
+            "test-support".to_owned(),
+            CHECKER_PLAN_OWNER.to_owned(),
+            "keep-test-support".to_owned(),
+            "none".to_owned(),
+        )
+    };
 
-    for missing in expected.difference(&actual_set) {
-        violations.push(format!(
-            "{}: Gap Reconciliation must include {missing}",
-            path.display()
-        ));
+    CheckerSourceInventoryRow {
+        path: relative,
+        lines: source.lines().count(),
+        boundary,
+        owner_doc,
+        split_required: "no".to_owned(),
+        hard_gate_finding: "no".to_owned(),
+        decision,
+        public_surface,
     }
-    for extra in actual_set.difference(expected) {
-        violations.push(format!(
-            "{}: Gap Reconciliation must not include stale {extra}",
-            path.display()
-        ));
-    }
+}
+
+fn invalid_inventory_relative_path(path: &str) -> bool {
+    path.is_empty()
+        || path.starts_with('/')
+        || path.contains('\\')
+        || path.split('/').any(|component| component == "..")
+}
+
+fn mutate_first_row_cell(document: &str, column: usize, replacement: &str) -> String {
+    let first_path = document
+        .lines()
+        .nth(4)
+        .and_then(|line| line.split('\t').next())
+        .expect("inventory has a first data row");
+    mutate_inventory_row_cell(document, first_path, column, replacement)
+}
+
+fn mutate_inventory_row_cell(
+    document: &str,
+    target_path: &str,
+    column: usize,
+    replacement: &str,
+) -> String {
+    let mut lines = document.lines().map(str::to_owned).collect::<Vec<_>>();
+    let target = lines
+        .iter()
+        .position(|line| line.split('\t').next() == Some(target_path))
+        .expect("target inventory row exists");
+    let mut cells = lines[target]
+        .split('\t')
+        .map(str::to_owned)
+        .collect::<Vec<_>>();
+    cells[column] = replacement.to_owned();
+    lines[target] = cells.join("\t");
+    format!("{}\n", lines.join("\n"))
 }
 
 fn markdown_file_names(dir: &Path) -> BTreeSet<String> {
@@ -1412,130 +1404,6 @@ fn push_bilingual_pair_inventory_drift(
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-struct ModuleBoundaryAuditRow {
-    path: String,
-    lines: usize,
-    boundary_label: String,
-    owning_specification: String,
-    split_required: String,
-    hard_gate_finding: String,
-    decision: String,
-}
-
-fn module_boundary_audit_rows(
-    path: &Path,
-    document: &str,
-    violations: &mut Vec<String>,
-) -> Vec<ModuleBoundaryAuditRow> {
-    let Some(section) = markdown_heading_section(document, "## Source Layout Inventory") else {
-        violations.push(format!(
-            "{}: module-boundary audit must contain `## Source Layout Inventory`",
-            path.display()
-        ));
-        return Vec::new();
-    };
-    let mut rows = Vec::new();
-    let mut saw_header = false;
-    let mut saw_delimiter = false;
-
-    for line in section.lines() {
-        let Some(cells) = markdown_table_cells(line) else {
-            continue;
-        };
-        if cells
-            == [
-                "Path",
-                "Lines",
-                "Boundary label",
-                "Owning specification",
-                "Split required",
-                "Hard-gate finding",
-                "Decision",
-            ]
-        {
-            saw_header = true;
-            continue;
-        }
-        if cells == ["---", "---:", "---", "---", "---", "---", "---"] {
-            saw_delimiter = true;
-            continue;
-        }
-        if cells.len() != 7 {
-            violations.push(format!(
-                "{}: Source Layout Inventory row must have exactly 7 columns: {}",
-                path.display(),
-                line.trim()
-            ));
-            continue;
-        }
-        let Some(row_path) = single_code_span(&cells[0]) else {
-            violations.push(format!(
-                "{}: Source Layout Inventory path must be a code-spanned relative path: {}",
-                path.display(),
-                line.trim()
-            ));
-            continue;
-        };
-        let Ok(lines) = cells[1].parse::<usize>() else {
-            violations.push(format!(
-                "{}: Source Layout Inventory row `{row_path}` must record a numeric line count",
-                path.display()
-            ));
-            continue;
-        };
-        rows.push(ModuleBoundaryAuditRow {
-            path: row_path,
-            lines,
-            boundary_label: cells[2].clone(),
-            owning_specification: cells[3].clone(),
-            split_required: cells[4].clone(),
-            hard_gate_finding: cells[5].clone(),
-            decision: cells[6].clone(),
-        });
-    }
-
-    if !saw_header {
-        violations.push(format!(
-            "{}: Source Layout Inventory must use exact header `| Path | Lines | Boundary label | Owning specification | Split required | Hard-gate finding | Decision |`",
-            path.display()
-        ));
-    }
-    if !saw_delimiter {
-        violations.push(format!(
-            "{}: Source Layout Inventory must use exact delimiter `|---|---:|---|---|---|---|---|`",
-            path.display()
-        ));
-    }
-
-    rows
-}
-
-fn push_source_layout_inventory_drift(
-    path: &Path,
-    expected: &BTreeMap<String, usize>,
-    rows: &[ModuleBoundaryAuditRow],
-    violations: &mut Vec<String>,
-) {
-    let actual = rows.iter().map(|row| row.path.clone()).collect::<Vec<_>>();
-    let actual_set = actual.iter().cloned().collect::<BTreeSet<_>>();
-    let expected_set = expected.keys().cloned().collect::<BTreeSet<_>>();
-    push_duplicate_entries(path, "Source Layout Inventory rows", &actual, violations);
-
-    for missing in expected_set.difference(&actual_set) {
-        violations.push(format!(
-            "{}: Source Layout Inventory must include `{missing}`",
-            path.display()
-        ));
-    }
-    for stale in actual_set.difference(&expected_set) {
-        violations.push(format!(
-            "{}: Source Layout Inventory must not include stale `{stale}`",
-            path.display()
-        ));
-    }
-}
-
 fn push_duplicate_entries(
     path: &Path,
     label: &str,
@@ -1694,20 +1562,6 @@ fn markdown_heading_level(line: &str) -> Option<usize> {
     let trimmed = line.trim_start();
     let level = trimmed.bytes().take_while(|byte| *byte == b'#').count();
     (level > 0 && trimmed.as_bytes().get(level) == Some(&b' ')).then_some(level)
-}
-
-fn mc_gap_ids(document: &str) -> BTreeSet<String> {
-    document
-        .split(|character: char| !(character.is_ascii_alphanumeric() || character == '-'))
-        .filter(|token| {
-            token.len() == "MC-G000".len()
-                && token.starts_with("MC-G")
-                && token["MC-G".len()..]
-                    .chars()
-                    .all(|character| character.is_ascii_digit())
-        })
-        .map(str::to_owned)
-        .collect()
 }
 
 fn undocumented_allow_line_numbers(source: &str) -> Vec<usize> {

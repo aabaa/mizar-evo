@@ -82,8 +82,8 @@ transactionをownし、broader statement semanticsはdeferredのまま。
 
 結果: 実装済み explicit-payload API について、blocking な `source_drift`、
 `design_drift`、`source_undocumented_behavior` は観測していない。残る
-source-derived behavior の未 coverage は、下記の gap row により意図的に
-defer されている。
+source-derived behavior の未 coverage は、英語正本 crate plan の
+[Known Gaps And Drift](../en/00.crate_plan.md#known-gaps-and-drift) が所有する。
 
 Post-audit source-derived bridge note: `mizar-test` は対応済み `.miz` source から
 explicit checker-owned `BindingEnv`、`DeclarationInput`、`TypedAst`、
@@ -170,11 +170,11 @@ ControlFlowIr、VC payload、proof evidence の AST-wide source-to-checker gap �
 
 ## Crate Module Exports
 
-本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [live ledger](../checker_source_inventory.tsv) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Public Surface Inventory
 
-本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [live ledger](../checker_source_inventory.tsv) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Cross-Cutting Test And Policy Evidence
 
@@ -182,7 +182,7 @@ ControlFlowIr、VC payload、proof evidence の AST-wide source-to-checker gap �
 
 ## Gap Reconciliation
 
-本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
+current status owner: [Known Gaps And Drift](../en/00.crate_plan.md#known-gaps-and-drift) / historical [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 32 Classification
 
@@ -897,4 +897,3 @@ Completion evidence: [central Task-269SDP historical contract](../../task_contra
 
 Completion evidence: [central Task-269SDC historical contract](../../task_contracts/ja/269SDC.md#completion-evidence)。
 本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
-
