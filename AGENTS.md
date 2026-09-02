@@ -69,59 +69,37 @@ fully satisfies the frozen scope and required gates.
 For crate-wide autonomous development, follow the protocol in
 [`doc/design/autonomous_crate_development.md`](doc/design/autonomous_crate_development.md).
 That protocol constrains the workflow above when the task touches language
-behavior or crate-level implementation scope.
+behavior or crate-level implementation scope, and it is the canonical owner
+of: the authority order (`doc/spec/en/` > `tests/**/*.miz` >
+`tests/coverage/spec_trace.toml` > `tests/**/*.expect.toml` > `doc/design/`
+> `crates/`), the test-first `.miz` addition rules, the
+no-chat-only-language-changes list, crate kickoff and the Crate Plan
+(create or update `doc/design/<crate>/en/00.crate_plan.md` before starting;
+do not begin implementation if the plan finds blocking specification
+problems; keep the plan a compact index and put task orchestration in the
+paired task contract), drift and gap classification (classify before
+editing; `repo_metadata_conflict` is report-only), Gate Tiering, the crate
+exit gates, and the quality score. Read those protocol sections rather than
+relying on this summary.
 
-For language behavior, the authority order is:
+Non-negotiables restated for convenience (the protocol text is canonical):
 
-1. `doc/spec/en/`
-2. `tests/**/*.miz`
-3. `tests/coverage/spec_trace.toml`
-4. `tests/**/*.expect.toml`
-5. `doc/design/`
-6. `crates/`
-
-`doc/spec/en/` and `.miz` tests are the primary human-reviewed artifacts.
-`doc/design/` and `crates/` are derived artifacts. Source behavior may be
-observed during inventory, but it is not normative. If derived artifacts
-disagree with the specification or tests, repair the derived artifacts toward
-the specification and tests.
-
-Agents must not modify `doc/spec`, existing `.miz` tests, or test expectations
-merely to match current implementation behavior. Test-first `.miz` additions
-are allowed only under the protocol rules when they are derived from existing
-`doc/spec/en/` requirements or close a classified `test_gap`; expectation and
-traceability metadata for those new tests may be added when they express the
-spec-derived test intent.
-
-Changes to syntax, static semantics, proof semantics, type behavior, name
-resolution, overload behavior, diagnostics, parser recovery, existing test
-expectations, or soundness-boundary behavior must be represented in `doc/spec`,
-tests, or traceability metadata as appropriate, and are allowed only when the
-task explicitly changes specification or test intent.
-
-Before crate-wide autonomous work starts, create or update
-`doc/design/<crate>/en/00.crate_plan.md`. The plan must cover crate
-responsibility, specification references, relevant tests, design/source
-inventory, known gaps and drift, task decomposition, the expected impact on
-`doc/design/spec_coverage_audit.md`, and exit criteria. Do not begin
-implementation if the plan finds missing or contradictory specification that
-blocks the crate. Keep the plan as a compact crate-level index. For a
-non-trivial logical task, put detailed task-specific orchestration in the
-paired task contract described under Documentation Expectations and link it
-from the plan instead of copying the contract into the plan and multiple
-component documents.
-
-Before editing, classify disagreements as `spec_gap`, `test_gap`,
-`design_drift`, `source_drift`, `source_undocumented_behavior`,
-`test_expectation_drift`, `boundary_violation`, or `repo_metadata_conflict`.
-Report `repo_metadata_conflict` only; do not repair it automatically.
-
-Crate-wide autonomous work is complete only when the gates for its declared
-tier pass (see Gate Tiering in the protocol): full-tier work needs all hard
-gates plus a read-only quality score of at least 90/100 (a score is invalid if
-any hard gate fails); zero-credit structural transport may use the documented
-light tier, with one-way promotion to full gates the moment the task gains
-semantic credit or touches a protected surface.
+- `doc/spec/en/` and `.miz` tests are the primary human-reviewed artifacts;
+  `doc/design/` and `crates/` are derived. Observed source behavior is not
+  normative; repair derived artifacts toward the specification and tests,
+  never the reverse.
+- Never modify `doc/spec`, existing `.miz` tests, or test expectations
+  merely to match current implementation behavior. Changes to language
+  behavior (syntax, semantics, types, resolution, overloads, diagnostics,
+  parser recovery, expectations, soundness boundaries) must be represented
+  in `doc/spec`, tests, or traceability metadata, and are allowed only when
+  the task explicitly changes specification or test intent.
+- Work is complete only when the gates for its declared tier pass: full
+  tier needs all hard gates plus a read-only quality score of at least
+  90/100 (a score is invalid if any hard gate fails); zero-credit
+  structural transport may use the documented light tier, with one-way
+  promotion to full gates the moment the task gains semantic credit or
+  touches a protected surface.
 
 ## Agent Delegation
 
@@ -268,90 +246,38 @@ Follow the repository documentation policy:
 
 ### Canonical Task Contracts And Minimal Deltas
 
-For an autonomous logical task that needs a frozen contract, crosses owner
-documents, or carries exact API, test, file, diagnostic, count, or hash
-requirements, create one paired task-contract record:
+Task contracts, the single-owner documentation rule, the migration policy,
+and the `legacy_compactions.tsv` ledger (schema 2) are owned by the
+protocol: see "Canonical Task Contracts", "Single-owner documentation
+rule", and "Migration policy" in
+[`doc/design/autonomous_crate_development.md`](doc/design/autonomous_crate_development.md),
+plus
+[`doc/design/documentation_compaction_rules.md`](doc/design/documentation_compaction_rules.md)
+for status-fact ownership, tabular ledgers, archive splits, and the
+language scope. Read those sections rather than relying on this summary.
 
-```text
-doc/design/task_contracts/en/<task-id>.md
-doc/design/task_contracts/ja/<task-id>.md
-```
+In brief (the protocol text is canonical):
 
-The English file is canonical and the Japanese companion must be logically
-synchronized in the same change. Use the same task id in both trees, matching
-`[A-Za-z0-9][A-Za-z0-9._-]*`. These files are derived planning and review
-records; they do not override `doc/spec/en/`, `.miz` tests, traceability
-metadata, expectations, or the authority order.
+- A non-trivial autonomous task uses one paired record
+  `doc/design/task_contracts/{en,ja}/<task-id>.md` (same id in both trees,
+  English canonical; the synchronized pair is one logical derived owner).
+  Contracts are derived orchestration records and never override
+  `doc/spec/en/`, `.miz` tests, traceability metadata, expectations, or
+  the authority order.
+- Each derived fact has exactly one live owner; other documents link to it.
+  There is no required documentation fan-out count; update a document only
+  when its owned durable state changes, and record an explicit no-impact
+  decision in the contract instead of making no-op audit edits.
+- Historical task sections are frozen logs. They are migrated only by
+  separately reviewed compaction batches that preserve every unique fact
+  with a live owner, and whole-section migrations are registered in
+  `doc/design/task_contracts/legacy_compactions.tsv` (schema 2; the ledger
+  records approved migrations and cannot itself authorize deletion).
 
-Document each fact once in its owning derived document:
-
-- the task contract owns task identity, authority links, dependencies,
-  readiness or blockers, primary and lower-stage owners, consumers, relevant
-  existing or test-first tests, gap classifications, scope, forbidden behavior,
-  semantic deferrals, affected-artifact index, audit-impact decision, review
-  and verification plans, baseline and expected count/hash impact, exit
-  criteria, completion evidence, status, stable owner-section links, and next
-  handoff
-- the crate plan owns stable crate responsibility, crate-level readiness, and
-  the ordered compact task-link index
-- a module design document owns durable module API, invariants, validation,
-  ownership, and module-local test design
-- a runner or harness document owns only its private route and consumer delta
-- todo, boundary, bilingual, traceability, source, semantic, and coverage
-  audits record only changes to the state they own, or remain unchanged
-- baseline and expected count/hash impact are frozen in the task contract;
-  final measured counts and hashes are recorded once in the contract or
-  required exit report and linked rather than copied into every affected
-  document
-
-The synchronized EN/JA contract pair is one logical derived owner for this
-rule, not two competing sources.
-
-There is no required documentation fan-out count. Do not append an identical
-task narrative to every component document merely to demonstrate
-synchronization. Update a document only when its owned durable state changes,
-and use stable links to the task contract and owner-local sections for shared
-context. An explicit no-impact decision belongs in the task contract; it does
-not require a no-op edit to the corresponding audit.
-
-Apply this structure prospectively. An ordinary semantic task must not
-bulk-rewrite historical task logs. Migrate an active or reopened task only in a
-separately reviewed documentation change that preserves every unique API,
-test-intent, classification, deferral, and traceability claim before removing
-duplicates.
-
-An explicitly user-authorized legacy-evidence compaction may batch multiple
-completed tasks in one logical documentation task only when they form one
-coherent duplication family. Freeze the exact old-section-to-new-owner redirect
-map and baseline counts first; create a paired EN/JA contract for each migrated
-task; preserve every adjacent owner-local API, invariant, runner, audit,
-traceability, coverage, and sequencing fact; replace only the mapped shared
-evidence with language-local links; validate local targets and fragments; and
-prove that specification, test intent, trace status, coverage credit, source,
-and active behavior are unchanged. The batch needs its own paired contract,
-equivalence and bilingual reviews, hard gates, and task-only commit. It does not
-authorize a repository-wide historical rewrite or let a semantic task absorb
-unrelated documentation cleanup.
-
-Record every completed whole-section legacy compaction in
-`doc/design/task_contracts/legacy_compactions.tsv`; keep the lint consumer
-generic rather than adding task IDs, file lists, or index rows to Rust. Schema
-version 2 covers only exact whole ATX H2-H6 section replacements with explicit
-source paths, forbidden headings, language-local redirects, neighboring
-heading anchors, Task Index rows, counts, and an expanded-inventory hash. One
-global `task` row remains the sole historical-contract owner. A later batch may
-declare a `task_ref` to that owner only when its source-file set is disjoint
-from every other batch for the task; the reference participates in the later
-batch's task count and inventory hash, does not duplicate historical Task Index
-ownership, and cannot authorize deletion. Do not force same-task sections from
-one source file, a mixed owner-local section, or paragraph-only cleanup into
-this schema. Extend the schema only in a separately reviewed prerequisite. The
-manifest is derived enforcement data and cannot authorize a migration that its
-paired task contracts and equivalence review did not already approve.
-
-When a component first links a central task contract, include that EN/JA pair
-in the component's bilingual review surface. Claim recursive task-contract or
-local-link enforcement only after the repository lint that performs it passes.
+When a component first links a central task contract, include that EN/JA
+pair in the component's bilingual review surface. Claim recursive
+task-contract or local-link enforcement only after the repository lint
+that performs it passes.
 
 ## Commit Expectations
 

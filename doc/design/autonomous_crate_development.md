@@ -245,7 +245,9 @@ For `repo_metadata_conflict`, report only. Do not repair it automatically.
 
 ## Canonical Task Contracts
 
-Use one paired task contract for a non-trivial autonomous task:
+Use one paired task contract for a non-trivial autonomous task — one that
+needs a frozen contract, crosses owner documents, or carries exact API,
+test, file, diagnostic, count, or hash requirements:
 
 ```text
 doc/design/task_contracts/en/<task-id>.md
@@ -280,8 +282,9 @@ The contract must identify:
 Each derived fact has one live owner. The task contract owns orchestration and
 indexes owner-local details; it does not become a second copy of module design.
 The synchronized English/Japanese pair counts as one logical derived owner.
-Module documents own durable public/private API and invariants, harness
-documents own runner routes, traceability documents own manifest relationships,
+Module documents own durable public/private API, invariants, validation,
+ownership, and module-local test design; harness documents own only their
+private routes and consumer deltas; traceability documents own manifest relationships,
 coverage audits own coverage status and follow-up ownership, boundary audits
 own module-layout decisions, bilingual audits own parity evidence, and todo
 documents own concise sequencing status. Crate-plan task entries contain only
