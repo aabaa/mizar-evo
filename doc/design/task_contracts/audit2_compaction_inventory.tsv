@@ -1,0 +1,21 @@
+# Audit-2 documentation-compaction migration inventory (2026-09-02).
+# Rules: doc/design/documentation_compaction_rules.md. Each row = one Codex
+# light-tier batch (one coherent duplication family, one task-only commit).
+# Whole-ATX-section migrations also register in legacy_compactions.tsv
+# (schema 2); schema-2-inexpressible residuals are classified in the batch
+# contract and left intact. measure_lines are 2026-09-02 baselines.
+# est_commits sizes the batch for Codex execution; execute in batch_id order
+# unless a row's notes say otherwise.
+batch_id	rule	source_paths	measure_lines	destination	est_commits	notes
+CPT-01	archive-split	doc/design/todo.md (Step 5 Task 201+ addenda and Checker Task 258/259/260-269* H2 sections, lines 850-3819)	2970	doc/design/archive/step5_task_addenda.md; doc/design/archive/checker_task_prerequisite_log.md	2	Verbatim moves; leave one pointer line per archive file in todo.md. Frozen logs; no content edits.
+CPT-02	single-ownership	doc/design/mizar-checker/en/todo.md; doc/design/mizar-checker/ja/todo.md	13891	sequencing rows + contract links; narratives to task contracts or archive	4-6	Target <1500 lines per file. JA becomes pointer stub per Rule 4 after EN compaction.
+CPT-03	single-ownership	doc/design/mizar-checker/en/*.md review-outcome boilerplate (503x "NO FINDINGS"); same pattern repo-wide (287 files)	n/a	one review row per task contract	3-5	Mechanical deletion + contract link; do not touch quoted review requirements in protocol docs.
+CPT-04	single-ownership	doc/design/mizar-checker/en/00.crate_plan.md; doc/design/mizar-checker/ja/00.crate_plan.md	17786(en)	ordered task/contract index + plan-owned sections only	4-6	Protocol already forbids copying contracts into plans; move stranded facts to their owners first.
+CPT-05	archive-split	doc/design/mizar-test/en/module_boundary_audit.md; doc/design/mizar-test/ja/module_boundary_audit.md	13430(en)	live summary + doc/design/archive/mizar_test_boundary_audit_waves.md	3-4	Frozen audit waves move; live boundary decisions stay.
+CPT-06	single-ownership	doc/design/mizar-test/en/00.crate_plan.md; doc/design/mizar-test/ja/00.crate_plan.md	8578(en)	ordered task/contract index + plan-owned sections only	2-3	As CPT-04.
+CPT-07	archive-split	doc/design/mizar-test/en/harness.md; doc/design/mizar-test/ja/harness.md	6092(en)	durable runner contracts stay; historical route diaries to archive	2-3	Harness doc owns private routes; keep those.
+CPT-08	tabular-ledger	doc/design/mizar-checker/en/source_spec_audit.md; doc/design/mizar-checker/ja/source_spec_audit.md	6404(en)	TSV ledger + short prose preamble	2	Convert per-case audit rows to a ledger; prose keeps only decisions.
+CPT-09	single-ownership	doc/design/mizar-checker/en/source_proof_local_declaration.md; doc/design/mizar-checker/en/source_statement.md (+ja)	8440(en)	dedupe repeated task evidence to contracts; module API/invariants stay	3-4	Module docs remain durable product contracts.
+CPT-10	single-ownership	doc/design/mizar-test/en/todo.md; doc/design/mizar-test/ja/todo.md	7760	sequencing rows + contract links	2-3	As CPT-02.
+CPT-11	ja-pointer-stub	doc/design/mizar-*/ja/{todo,bilingual_sync_audit,crate_exit_report,module_boundary_audit,source_spec_audit,semantic_spec_audit}.md	~20464 (ja todos alone)	pointer stubs linking canonical EN files	3-5	Status/audit companions only (Rule 4); module design docs stay paired. Depends on the matching EN compaction batch landing first.
+CPT-12	ledger-registration	doc/design/task_contracts/en+ja remaining whole-section duplicates	125 pairs / 3.5MB	legacy_compactions.tsv schema-2 batches	2-4	Continue the temporary-gate wave pattern; classify schema-2-inexpressible residuals, do not force them.

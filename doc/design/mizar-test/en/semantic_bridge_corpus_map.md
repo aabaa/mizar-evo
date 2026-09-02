@@ -286,9 +286,13 @@ the 205 active type-elaboration cases) is not restated here.
 
 ## Follow-Ups
 
-- Audit 2 binds each requirement family above to bounded coarse owner tasks
-  and defines activation order; no case here may be activated by matching
-  expectations to current behavior.
+- Audit 2 (2026-09-02) bound each requirement family above to the bounded
+  coarse owner tasks in the revised Step 5 of
+  [../../todo.md](../../todo.md); the per-case binding, including blocking
+  gaps, is the ledger
+  [`tests/coverage/step5_activation_map.tsv`](../../../../tests/coverage/step5_activation_map.tsv).
+  No case here may be activated by matching expectations to current
+  behavior.
 - The 29 parse-blocked sources become immediately usable syntax regression
   material for the gap-closure tasks in
   [semantic_bridge_frontend_gaps.md](./semantic_bridge_frontend_gaps.md).

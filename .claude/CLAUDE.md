@@ -3,11 +3,13 @@
 ## Documentation Maintenance
 
 - English is the canonical documentation language.
-- When updating bilingual documentation, maintain both the English canonical document and the Japanese companion document in the same change.
+- Bilingual EN/JA maintenance is mandatory only for `doc/spec/{en,ja}` and `doc/design/architecture/{en,ja}` (language-scope decision, user-approved 2026-09-01).
+- When updating documentation in those bilingual areas, maintain both the English canonical document and the Japanese companion document in the same change.
 - For language specifications, update matching files under `doc/spec/en/` and `doc/spec/ja/`.
 - For architecture specifications, update matching files under `doc/design/architecture/en/` and `doc/design/architecture/ja/`.
+- Status, audit, process, roadmap, and archive documents elsewhere under `doc/design/` are English-only; where a Japanese companion path exists or a bilingual crate-tree layout expects one, add or keep a pointer stub that links the canonical English file (precedent: `doc/design/mizar-test/ja/semantic_bridge_corpus_map.md`). Module design documents in existing bilingual crate trees keep their current pairing; see `doc/design/documentation_compaction_rules.md`.
 - Keep file names aligned across language directories whenever possible.
-- If an English document changes but the Japanese companion cannot be updated in the same change, explicitly note the reason and mark the Japanese document as needing synchronization.
+- If an English document in a bilingual area changes but the Japanese companion cannot be updated in the same change, explicitly note the reason and mark the Japanese document as needing synchronization.
 - When adding a new English documentation file in a bilingual area, add the corresponding Japanese companion or a clearly marked Japanese placeholder that links to the canonical English file.
 
 ## Commit Message Suggestions
