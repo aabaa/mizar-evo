@@ -1,5 +1,14 @@
 # Module-Boundary Audit: mizar-test Runner
 
+> 2026-09-02 圧縮（batch CPT-05、規則は
+> [../../documentation_compaction_rules.md](../../documentation_compaction_rules.md)）:
+> ステータス文書の言語方針（2026-09-01 承認）に基づき、exit-criteria 以降の
+> タスクセクション本文の正本は英語版および英語アーカイブ
+> [../../archive/mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md)
+> に一本化した。以下には全 H2 見出しと登録済み redirect 行が残る。
+> 各タスクの詳細の正本は [../../task_contracts/ja/](../../task_contracts/ja/)
+> 配下の対応契約文書。
+
 Task 277A completion-state evidence: new private production leaf（315 lines）、
 test-only facade（977）、test leaf（313）、test registry（61）がdormant targetless
 routeをimplementする。test leaf physical SHA-256は
@@ -14,12042 +23,1779 @@ dispatch、CLI、corpus/trace/metadata、Cargo、semantic publication、coverage
 
 ## Checker Task 257C4A frozen module boundary
 
-completed [C4A contract](../../task_contracts/ja/CHECKER-FRAENKEL-GENERATOR-BINDING-257C4A.md)が実装したmizar-test changeは
-`runner/tests.rs`とnew private type-elaboration leafだけ。leafはchecker handoffをconsumeし、missing lower dependencyをcreate/normalizeしない。public runner schema/dispatch/production checker path/Cargo/fixture/expectation/trace-coverage/metadata/diagnostic/active stage/downstream crateはexclude。
-measured 2-path test-only boundaryは66/156 linesでproduction inventory変更なし。implementation/test reviewはno findings、broad workspace verificationはPASS、independent bilingual/boundary/final-quality reviewは**NO FINDINGS**。final-qualityは全`9/9` hard gates PASS、valid uncapped `100/100`（`20/20/15/15/10/10/5/5`）。historical pre-commit exact staging/cached reviewは28 paths（Rust 4、documentation 24）、new private leaf 1件、review時unstaged path 0件でPASSし、cached diff checkも2435 insertions / 101 deletionsでPASSした。task-only commit/immediate post-commit proof/accepted fresh-inventory dispositionはlanguage-local [historical checkpoint](../../task_contracts/ja/CHECKER-FRAENKEL-GENERATOR-BINDING-257C4A.md#historical-immediate-post-implementation-checkpoint)でclosed。C4Bはunselectedでseparate post-closure docs prerequisite freezeが必要。Task277Bはnot-ready/zero creditのまま。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 257C4B frozen module boundary
 
-Completed [C4B contract](../../task_contracts/ja/CHECKER-FRAENKEL-GENERATOR-BOUND-USE-257C4B.md)のmizar-test changeは`runner/tests.rs`とnew private type-elaboration leafだけ。existing inactive F5 constructionからchecker APIをconsumeし、missing dependencyをcreate/repair/normalize/publishしない。productionは38 paths/80090 lines/hash unchanged。
-
-Public runner schema/dispatch/active stage/Cargo/fixture/expectation/trace-coverage/metadata/diagnostic/verdict/production checker/downstream crateはexclude。exact test-only deltaはone include/one test（`613 -> 614`）。registryは67 lines / `94bc44e8ba47ca568670adeec74d20f6738b3fc337da2422871095137040e8c4`、leafは121 lines / `bea54489cf0c85d3026f950d080a0ffc609719fda28520b9e7b2f59d5fc162bc`。focused/privateと`614/614` library、full-workspace Clippy/tests、metadata/public-enum suites、unchanged 5 CLI replayはproduction boundary変更なしでPASS、implementation/test reviewは**NO FINDINGS**。sole Low baseline/current wording repair後、independent bilingual/boundary reviewも**NO FINDINGS**。final-qualityも**NO FINDINGS**、全`9/9` hard gate PASS、valid uncapped `100/100`（`20/20/15/15/10/10/5/5`）。exact 23-path staging/cached reviewもPASS。task-only commit/immediate post-commit proof/accepted fresh semantic STOPはlanguage-local [historical checkpoint](../../task_contracts/ja/CHECKER-FRAENKEL-GENERATOR-BOUND-USE-257C4B.md#historical-immediate-post-implementation-checkpoint)でclosedし、production-boundary expansion/successorはselectしない。Task277Bはnot-ready/zero-credit。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Resolver Task 277R2 test module boundary
 
-[Task 277R2](../../task_contracts/ja/RESOLVE-FRAENKEL-GENERATOR-VAR-277R2.md) は
-`src/runner/tests.rs` registrationとnew private
-`src/runner/tests/type_elaboration/fraenkel_generator_variable_identity.rs` leafだけを許す。
-existing parser/frontend/resolver APIでimmutable F5をobserveするが、production runner module/
-route/dispatcher/facade/detail key/checker handoff/Typed-Resolved output/Cargo edge/fixture stage/
-metadata-trace owner/diagnostic/semantic publicationは追加しない。production runnerはprotected
-38 paths / 80,090 linesのまま。implemented test-only boundaryはexact fixture testとfocused
-verificationをPASSし、final independent boundary reviewは**NO FINDINGS**。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 277C frozen module boundary
 
-[277C contract](../../task_contracts/ja/CHECKER-FRAENKEL-TEMPLATE-STRUCTURAL-277C.md) はmizar-testに
-completeしたinactive private F5 probeと`tests.rs` registrationだけを与える。checker composition outputを
-direct private testでconsumeするだけでproduction plumbingを作らず、fixture、expectation、traceability、coverage、
-diagnostic、Typed/Resolved install、active dispatchを変更しない。existing F5 parse/lower helperとmizar-test
-38-path / 80090-line production baselineはprotectedのままである。broad verificationはPASSし、independent
-boundary reviewは**NO FINDINGS**、final-quality reviewも**NO FINDINGS**、全9 hard gateはscore capなしvalid
-`100/100`（`20/20/15/15/10/10/5/5`）でPASS。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 257B1 formula-composition current-state addendum
 
-Task 257B1はcohesiveな540-line private `source_formula_composition.rs`
-consumer leaf、326-line private runner test leaf、2,848-line
-`source_formula.rs`へのbounded extraction extensionを追加する。raw `SurfaceAst`
-traversalはprivateに残り、checkerへはsyntax-free Task-252/256/257と`1/2`
-composition inputだけを渡す。`runner.rs`は2,455 lines、type-elaboration facadeは
-654 lines。
-
-measured coverage boundaryはplan `415/381`、type-elaboration `247/235`、
-pass/fail `225/190`、active parse/declaration/type/proof `101/5/194/1`、
-warnings/errors `23/0`。new corpus consumerはexact 79-byte pass fixtureだけである。
-production manifestは29 paths / 31,374 lines、path/content hashは
-`ee27e3796008fdd180ad8fdfbedfd5b370cb76a0d0f87356487bc82cc5a8f9f6` /
-`8b101e3a0a94fcac1dcfd385d311b31d07f6e9f29cbc47b39f42fb51ac71f0ca`。
-338-test raw/normalized list hashは
-`2900152f79beca3c1046343b3cce4d559093efb552fc2930b8356760b91c8734` /
-`3ed20d0a843900cc540c30821532a971a89ca15269307be7de5cebb0dfae7d94`。
-plan/parse/declaration/type/proof CLI hashは
-`73e71d3a40136e1ae4c47db6e3a296a5370b3bcd461e3b60da36b3b3f8157aab`、
-`a8a7aa639d2ebc65eddc923c7e9369ea5637d50e935f808600f446da1bfbda56`、
-`210055108c257ff65c6f45fb654c82e506653ec4617b68d111893bb3aa1da5a8`、
-`142837a7bd9df3bdda1ec49ffa3fb5a9da46ced96cdd310b58c10d1b2b2457ef`、
-`ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 257C3 frozen boundary recheck
 
-本prerequisiteではproduction path/lineを変更しない。future complete routeは
-loaded-source traversal/resolver selectionを`source_formula.rs`、
-Task-252/256 lower builderを`source_atomic_formula.rs`、complete-route
-orchestrationだけを`source_formula_composition.rs`に置き、testsはpaired
-leafに置く。cohesive manifestは29 paths /
-34,064 lines、path/content hash
-`ee27e3796008fdd180ad8fdfbedfd5b370cb76a0d0f87356487bc82cc5a8f9f6` /
-`c153fa786ac5efcbd72d51441cbdfb52d30c8fcd2947134cb8c10cf9fa389127`を
-保持する。split不要。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 257C3 implementation boundary recheck
 
-production pathは追加していない。public dispatcherは2,475 lines、private
-type-elaboration facadeは665、reused atomic lower ownerは1,068 lines。
-composition ownerは1,853 linesでbounded C3 input/installation routeをownし、
-paired test leafはtest-only 2,528 lines。29-path production layoutは34,290
-linesでcohesiveなまま、path/content hashは
-`ee27e3796008fdd180ad8fdfbedfd5b370cb76a0d0f87356487bc82cc5a8f9f6` /
-`ac85812af57234cbd1af88de729da4b7fe438dc22efe23dd234f3cd10967ca2c`。
-
-runner libraryは365 tests、raw/normalized hashは
-`8194474d60e02ce0c96e69b69957cd0133147b996e3b7cb0acad6ea11b7afd5b` /
-`517ae63c0c7335c1b5c763119e9664c5d6efa3defa7265b7f1fed21e6ea964c3`。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 257C2 implementation boundary recheck
 
-Task 257C2はproduction pathを追加しない。complete exact routeはexisting
-`source_formula_composition.rs` leaf（現在1,632 lines）に留まり、public
-dispatcherは2,472 lines、type-elaboration facadeは662 linesである。paired
-formula-composition test leafはtest-only 2,011 lines。loaded-source selection、
-resolver provenance、same-arena lower composition、atomic equality
-construction、condition association、diagnostic preservationはbehavior-coupled
-であり、splitは不要。
-
-production manifestは29 paths / 34,064 lines、path/content hashは
-`ee27e3796008fdd180ad8fdfbedfd5b370cb76a0d0f87356487bc82cc5a8f9f6` /
-`c153fa786ac5efcbd72d51441cbdfb52d30c8fcd2947134cb8c10cf9fa389127`。
-361-test raw/normalized list hashは
-`ca64354eba9a6b54f7a7d83f505e8116379069d61bfb58021642e1864bc14d8b` /
-`0a3d92a16403d01e7642e2a2dfeee60cbae096ec373f85dafddd61ac4ef28c57`。
-plan/parse/declaration/type/proof CLI hashは
-`403c09c44638d8d309f41288076c8ee84ddf74b6452fd38d9587b8c876824614`、
-`a8a7aa639d2ebc65eddc923c7e9369ea5637d50e935f808600f446da1bfbda56`、
-`210055108c257ff65c6f45fb654c82e506653ec4617b68d111893bb3aa1da5a8`、
-`f87a743b914d2d51d6b9a8dbcf3c8d93bbc1403b44907fd85123a1865f84edd5`、
-`ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`
-である。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 256C1 frozen boundary recheck
 
-mizar-test production/test ownerは変更しない。manifest 29 paths / 33,725
-lines、library 357 tests、latest Task-255C1 boundary recheckの
-production/test-list/5 CLI hashをauthorityとして保持する。implemented
-compatibility predicate/tests 3件は
-`mizar-checker/src/source_atomic_formula.rs`だけがownし、checker両installation
-orderはpassする。このhistorical C1 exitではfrozen Task-257C2 runner routeが
-deferredだったが、later C2 implementationを上記に記録する。本taskは
-runner-owned artifactを変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 257C2 frozen boundary
 
-本prerequisiteではproduction path/lineを変更しない。future complete routeは
-existing private formula-composition leafに留まり、source-set、
-source-application、atomic-formula leafのbounded seamをreuseする。raw
-traversal/resolver workは`mizar-test`に残し、checkerはsyntax-free handoffだけを
-受ける。current 29-path/33,725-line manifest、357-test list、全recorded hashを
-documentation baselineとして保持する。separate Task 256C1はchecker
-atomic-formula owner内で本runner leafを変更せずcompleteした。later
-Task-257C2 implementationはfresh preflightをpassし、pathを追加せずexisting
-cohesive leafをextendした。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 257A source-composite-formula current-state addendum
 
-Checker Task 257Aはcohesiveなprivate `source_composite_formula` consumer leaf
-1件と既存`source_formula` extractor recordへのbounded extensionを追加する。raw
-`SurfaceAst` traversalはprivateのままで、checkerへはsyntax-free seven-table
-transactionとresolver-shaped binder identityだけを渡す。`runner.rs`は2,447行で
-top-level orchestrationを維持する。646行のtype-elaboration facadeはprivate leaf
-21件へdispatchし、`source_formula.rs`は2,684行、new ownerは451行である。
-
-production manifestは28 paths / 30,654 linesで、sorted path hashは
-`425c41292c569afecfc30961c59b3b1a9b7fd5844c4ab1141968b62382ecf0b1`、
-ordered content-manifest hashは
-`e31dee03e0a14c21f6a5811d6bdcec91479794efea24548e1c76f89f24ad8b1f`
-である。new production pathはprivate source-composite-formula leafだけである。
-
-bounded trace rowによりplan 414/380、type-elaboration 246/234、pass/fail
-224/190、active parse/declaration/type/proof 101/5/193/1、warnings/errors
-23/0となる。plan/parse/declaration/type/proof stdout hashは
-`88c1c276cae2d5d927a43c94f4032a297ea7daa02c8f90a9f893ec45064ace8c`、
-`a8a7aa639d2ebc65eddc923c7e9369ea5637d50e935f808600f446da1bfbda56`、
-`210055108c257ff65c6f45fb654c82e506653ec4617b68d111893bb3aa1da5a8`、
-`afccc76e9714da9ae79eb4b1dbc60dde0ec339301ae0cb17a2ecc4b43d2d4eb8`、
-`ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`
-である。library testは333件、raw/normalized sorted-list hashは
-`588d513b32f8ded332c86303d17d63a9e828fb6c76d8ba1f8ac31d23b48c6c24` /
-`727a1d54aa967f3973338956dae9269945730e6abe32b572a198d71377aea53b`
-である。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 253 source-application current-state addendum
 
-Checker Task 253はcohesiveなprivate `source_application` consumer/extractor
-leafを1件追加する。raw `SurfaceAst` traversalはprivateのままで、checkerへは
-syntax-freeなapplication、wrapper、candidate、argument、request tableだけを
-渡す。`runner.rs`は2,412行でfacade/top-level orchestration onlyを維持する。
-614行のtype-elaboration facadeはprivate leaf 17件へdispatchし、sibling leafに
-必要なbounded raw-term partsだけを公開した`source_term.rs`は777行、new ownerは
-1,309行である。
-
-production manifestは24 paths / 25,607 linesである。sorted path hashは
-`5cc36b8a2ee72572003893d975a81ffa356d0790674b05d85d6f99f7e45ffca0`、
-ordered content-manifest hashは
-`b9b6c678e129e543e3e5047d6c053db2a45616f286927ce9a1fe0433dc0b62a8`
-である。new production pathはprivate source-application leafだけである。
-
-exact incrementはplan 412/376、type-elaboration coverage 242/230、pass/fail
-224/188、parse/declaration/type/proof admission 101/5/191/1、
-warnings/errors 23/0となる。plan/parse/declaration/type/proofの5 CLI stdout
-hashは
-`3a7f500e120a799dd7fbd9e639920096d71e2087a4aaac0ff99e1a3775eed9c5`、
-`a8a7aa639d2ebc65eddc923c7e9369ea5637d50e935f808600f446da1bfbda56`、
-`210055108c257ff65c6f45fb654c82e506653ec4617b68d111893bb3aa1da5a8`、
-`c17f55bc5e85429f1d4abb5913d255a31c7747b1559090c427769eb13cb05b59`、
-`ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`
-である。library testsは303件で、raw/normalized sorted-list hashは
-`a81f44fb92196ce486e10e6cfc0901cd611159968dea43d13191df19a3c253b8` /
-`1a621c560a525cac18fac4a1ec4efa0f27986a60e0da40eb5701fe4325ac4cdd`
-である。Tasks 254+、260、270、277-278、Steps 6/7はunpromotedのままである。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 252 source-term current-state addendum
 
-Checker Task 252はcohesiveなprivate `source_term` consumer/extractor leafを1件
-追加する。raw `SurfaceAst` traversalはprivateのままで、checkerはsyntax-free
-term/reference/request inputだけを受ける。`runner.rs`は2,400 linesの
-facade/top-level orchestrationだけを維持する。605-line type-elaboration facadeは
-private leaf 16件へdispatchし、new ownerは620 linesである。
-
-production manifestは23 paths / 24,120 linesである。sorted path hashは
-`562224fc62e93a256f5d3891e3a466a45ec23c24055e3a9f3f83848a0672a16b`、
-ordered content-manifest hashは
-`8a4b76e37a8a6921ed89e98372ccb037cd64ed583ac0bbe26466924ef0c4b028`である。
-new production pathはprivate source-term leafだけである。
-
-exact incrementはplan 411/375、type-elaboration coverage 241/229、pass/fail
-224/187、parse/declaration/type/proof admission 101/5/190/1、
-warnings/errors 23/0である。plan/parse/declaration/type/proof CLI stdout hashは
-`abb786efba14d64f1e64086be3b2092691ed12555fcfac8a5875dd6f41b84924`,
-`a8a7aa639d2ebc65eddc923c7e9369ea5637d50e935f808600f446da1bfbda56`,
-`210055108c257ff65c6f45fb654c82e506653ec4617b68d111893bb3aa1da5a8`,
-`7a7aad76e29124d085c5bf2787660b7a2c8b377e27db3a1e6c98f6e60616e2c8`,
-`ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`
-である。library testsは291件で、raw/normalized sorted-list hashは
-`d46edefebc54a2f2f170cbfce8143ed036fa7ce339ebb3a746d89b55293931e5` /
-`f7b5babbf33e1e3e3afe4c49018744a4a0fe42968fd2e5edc411eb7bc49fc0a6`である。
-Task 253以降のdependency-paced producerはopenで、Tasks 260/264/269とSteps
-6/7はunpromotedのままである。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 251 source-evidence current-state addendum
 
-Checker Task 251はcohesiveなprivate `source_evidence` consumer leaf 1件を
-追加する。raw `SurfaceAst` traversalはexisting source-type/source-attribute
-leafに残り、new leafはexact request association、dependency-input dispatch、
-checker publication、outcome projectionだけをownする。`runner.rs`は2,393行の
-facade/top-level orchestration onlyを維持する。599行のtype-elaboration facadeは
-private leaf 15件へdispatchし、new ownerは283行、narrowly reusable
-source-attribute ownerは1,586行である。
-
-production manifestは22 path / 23,487行。sorted path hashは
-`e51258a0b4c0d0fe40f6f8b6be9eeede276eb3de261cc2c2d48585b47dcf47f2`、
-ordered content-manifest hashは
-`17bc79a43b70f61f20e7d9829643d63725e6699cc277d3ea46bd5e22370df1b2`。
-new production pathはprivate source-evidence leafだけである。
-
-exact incrementはplan 411/374、type-elaboration coverage 240/228、
-pass/fail 224/187、parse/declaration/type/proof admission 101/5/190/1、
-warnings/errors 23/0。plan/parse/declaration/type/proof CLI stdout hashは
-`39840ba2adea76a2a3f801bd4c31fb7a6c2681de94bc2aebfc17476372673fb9`、
-`a8a7aa639d2ebc65eddc923c7e9369ea5637d50e935f808600f446da1bfbda56`、
-`210055108c257ff65c6f45fb654c82e506653ec4617b68d111893bb3aa1da5a8`、
-`7a7aad76e29124d085c5bf2787660b7a2c8b377e27db3a1e6c98f6e60616e2c8`、
-`ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`。
-library testは287件、raw/normalized sorted-list hashは
-`c62c9a1634e74a576577339ee3e96e9263a1cbf98d4c6127b73b4526c91b88f2` /
-`eba9d6dd386275c2e11c9e4b825668b1ae885fefde079414e27e0c9d77e20f49`。
-Task 252以降のdependency-paced producerはopen、Steps 6/7はdeferredのままである。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 250 source-attribute current-state addendum
 
-Checker Task 250はcohesiveなprivate `source_attribute` consumer leaf 1件を追加する。
-raw `SurfaceAst` traversalは`mizar-test`に保持し、leafはsyntax-free
-chain/attribute/qualifier/group/actual tableだけを`mizar-checker`へ渡す。
-`runner.rs`は2,390行のfacade/top-level orchestration onlyを維持する。593行の
-type-elaboration facadeはnew 1,575行ownerを含むprivate leaf 14件へdispatchする。
-
-production manifestは21 path / 23,184行。sorted path hashは
-`bd42d60f45e40526a785a6ebcc0df910b99f33a8a8b19371f678070b51bac1d6`、
-ordered content-manifest hashは
-`d1421834a7c7613150634735c47aa2700ddf17a7ca2ffebd94f596664ee3a8eb`。
-new production pathはprivate source-attribute leafだけである。
-
-exact incrementはplan 411/373、type-elaboration coverage 239/227、
-pass/fail 224/187、parse/declaration/type/proof admission 101/5/190/1、
-warnings/errors 23/0をproduceする。plan/parse/declaration/type/proof CLI stdout
-hashは
-`f50c4cac37451b794e81ca39a7a8392182e6f1720d538dfcbcafd8a030716ca7`,
-`a8a7aa639d2ebc65eddc923c7e9369ea5637d50e935f808600f446da1bfbda56`,
-`210055108c257ff65c6f45fb654c82e506653ec4617b68d111893bb3aa1da5a8`,
-`7a7aad76e29124d085c5bf2787660b7a2c8b377e27db3a1e6c98f6e60616e2c8`,
-`ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`。
-library testは283件、raw/normalized sorted-list hashは
-`7299131f5b6fb342bb58a90afa4398df94ddd0ad7add0a6e06ef279bcd580157` /
-`ea186ced8875648729bd84d0c1204c8b642765de33507ee184110ee1a66c8fbd`。
-Tasks 251+/269+とSteps 6/7はdeferredのままである。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 249 source-type current-state addendum
 
-Checker Task 249はcohesiveなprivate `source_type` consumer leaf 1件を追加する。
-raw `SurfaceAst` traversalは`mizar-test`に保持し、新しいleafはdenseなsyntax-free
-application/expression/head/argument tableだけを`mizar-checker`へ渡す。
-`runner.rs`は2,387行のfacade/top-level orchestration onlyを維持する。589行の
-type-elaboration facadeは、新しい793行ownerを含むprivate leaf 13件へdispatchする。
-existing `source_context.rs` leafはTask-248 2/2/0 dependency co-consumerのinstall
-だけで591行となり、`checker_handoff.rs`はlegacy empty handoff constructionを
-explicitに保つためだけに1,297行となる。
-
-production manifestは20 paths / 21,598 linesである。sorted path hashは
-`be25d20f70bf838897d4cc7ba84cd52b32b98b925eb2a1ff7a30a79942600746`、
-ordered content-manifest hashは
-`31757cf5e206b324c8ae625b9328e5e8759d9778bc397ff6deda0726fa89dad3`である。
-new production pathはprivate source-type leaf 1件だけである。
-
-exact increment後はplan 411/372、type-elaboration coverage 238/226、
-pass/fail 224/187、parse/declaration/type/proof admission 101/5/190/1、
-warnings/errors 23/0となる。5 CLI hashは
-`89261c4ba01276dbb8d262952e99aa91017e138aa8a22c644494274d7524b355`、
-`a8a7aa639d2ebc65eddc923c7e9369ea5637d50e935f808600f446da1bfbda56`、
-`210055108c257ff65c6f45fb654c82e506653ec4617b68d111893bb3aa1da5a8`、
-`7a7aad76e29124d085c5bf2787660b7a2c8b377e27db3a1e6c98f6e60616e2c8`、
-`ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`
-である。library testは279、raw/normalized sorted-list hashは
-`6644c709efb5e728388b3f35ede61e4bc9866f2582d899803545084ab86c800f` /
-`30fbeb816c9e9ab98b0f5ef36779e9f99332766fcfd7b43d76199e32edf0e2a3`
-となる。Tasks 250+/269+、Steps 6/7はdeferredのままである。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 248 source/binding-context current-state addendum
 
-Checker Task 248はMT-AUDIT-022をreopenせず、cohesiveなprivate semantic consumer
-1件を追加する。raw `SurfaceAst` inspectionとresolver-shell matchingは`mizar-test`に
-保持し、新しい`src/runner/type_elaboration/source_context.rs` leafは
-`mizar-checker`が受理するsyntax-free inputだけをprojectする。`runner.rs`は2,382行の
-facade/top-level orchestratorのままである。585行のtype-elaboration facadeは、新しい
-509行ownerを含むprivate leaf 12件へdispatchする。`shared.rs`はresolver shell setを
-保持し、`checker_handoff.rs`はlater-payload-emptyなgeneric assembly seamを提供する。
-
-このためproduction manifestは19 paths / 20,651 linesとなる。sorted path hashは
-`e723ef5a2a0648afec15052b7733265aadd93ffbb45d83e7af5c2fb9e3178b61`、
-ordered content-manifest hashは
-`24b7d3963a0a7e0e7085dec24a08c9618cfe5ad1d8d26cd2da981b905017c182`である。
-新しいproduction pathはprivate source-context leaf 1件だけである。
-
-exact active increment後はplan 410/371、type-elaboration coverage 237/225、
-pass/fail 224/186、parse/declaration/type/proof admission 101/5/189/1、
-warnings/errors 23/0となる。5 CLI hashは
-`ce8cc33b2c14c1790a66281c889f448487d0da9c8109a92775ea61c4344b9213`、
-`a8a7aa639d2ebc65eddc923c7e9369ea5637d50e935f808600f446da1bfbda56`、
-`210055108c257ff65c6f45fb654c82e506653ec4617b68d111893bb3aa1da5a8`、
-`f3f27bc5e0d45c3d34c120a1d6985e4f3ddf9e528eec49fb8a9d2a2848b937f9`、
-`ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`である。
-library testは277、raw/normalized sorted-list hashは
-`15656abf9fc369b9849727ee03bca8c3f9cbc0da066a894fd5e81dcb6159ac88` /
-`3094579dfa683c362ce2846c2329cee25ca039de30e7e3109e52a75bf733099a`となる。
-Task 249以降のproducer routeはadmitせず、Steps 6/7はdeferredのままである。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Parser Task 46 parse-only current-state addendum
 
-Task 46は`mizar-test` production pathやproduction source lineを変更しない。runner
-admission、exact trace backlink、count assertion、reserved-word audit、real-runner checkは
-test metadataだけに存在する。したがってexisting facade/private-leaf boundaryは
-unchangedである。
-
-production manifestは18 paths / 20,088 lines、path/content hashは
-`63e4e770b0d10872415548410d417071c1901f3ffa5aea964a81d2dbbc572ed0` /
-`7e5adca22db2b73f94f04c406f10788f2cd49ba48109bb105a3fd076c339d560`のまま。
-`runner.rs`はfacade/top-level orchestrator、private leaf 11件はunchanged。library
-testは276、raw/normalized test-list hashは
-`967495e78e1068f592e64834ea3ffb9eac9c25692ea5cbd4f11006a679c66590` /
-`1be4ae09188b27a40814adc6597de4806dabb13bcac019b294154e1455072adf`のまま。
-active countはplan 409/370、parse/declaration/type/proof 101/5/188/1、parse
-coverage 44/44、pass/fail 223/186、warnings/errors 23/0。5 CLI hashは
-`9b1e3058bde355163b1153339250647633beef9920456615cf6661c4140a93cf`、
-`a8a7aa639d2ebc65eddc923c7e9369ea5637d50e935f808600f446da1bfbda56`、
-`210055108c257ff65c6f45fb654c82e506653ec4617b68d111893bb3aa1da5a8`、
-`1dadbeabb219f5853c713ad53aa1cc7cd720a0e80abd7f882e9e0a5ea7802625`、
-`ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`。
-
-> 正本は英語です。英語版:
-> [../en/module_boundary_audit.md](../en/module_boundary_audit.md)。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 248 Gate
 
-Task 248 は source move の前に active runner 実装を監査する。この maintenance
-series は source layout と reviewability の `design_drift` を修復するものであり、
-Mizar language behavior、runner admission、public API、diagnostic、detail key、
-payload、ordering、expectation meaning、traceability credit は変更しない。
-
-authority order は `doc/spec/en` > `.miz` tests > `spec_trace.toml` >
-expectations > design > source のままである。Chapter 03、04、07、13、14、16
-と既存 executable intent は runner への input であり、この refactor の変更対象
-ではない。[harness.md](./harness.md)、[minimal_crate.md](./minimal_crate.md)、
-[expectation_schema.md](./expectation_schema.md)、
-[internal 07](../../internal/ja/07.crate_module_layout.md) が derived harness と
-ownership boundary を定義する。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Baseline
 
-Task 248 inventory 時点:
-
-- `src/runner.rs` は 111,262 行。
-- pre-test prefix は 17,142 行目で終わり、public runner facade、private phase
-  helper、137 個の `#[cfg(test)]` helper attribute を含む。
-- private `mod tests` は 17,143 行目から始まり、約 94,120 行。
-- private module は `#[test]` attribute 272 個を持つ。direct scope が 244 個、
-  既存 nested task module が 28 個。
-- direct test は parse-only import-provider test 1 個と type-elaboration の
-  source extraction、payload、fixture、corruption、cross-owner isolation family。
-- declaration-symbol runner test は `tests/metadata.rs` が integration owner。
-  move すべき private declaration-symbol test は存在しない。
-- active type-elaboration runner は 188 cases、metadata plan は 403 cases /
-  367 requirements、type-elaboration coverage は 235 / 223、pass/fail は
-  219 / 184、unit-test count は 272。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 249 Move Result
 
-Task 249 は inline module を private `#[cfg(test)]`、
-`#[rustfmt::skip] mod tests;` に置換し、body を byte-for-byte で
-`src/runner/tests.rs` へ移動した。formatter guard により、この move-only task
-中に newly top-level となった test import と body が reorder/reflow されない。
-runner file は 17,144 行、test module は 94,118 行となった。exact extracted
-body hash は
-`ab658ad10bcbb2d415778f6289cbb9ae2bed48e21c19b5496fa8f676309d3b69`、
-sorted 272-test list は
-`5e41e4dbfcc303322c246a612de61926a628957a168589b45864d0a5070bb07e`
-のままである。module privacy、qualified test name、public API、active-runner
-count、diagnostic、payload、ordering、fail-closed behavior は不変である。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 250 Move Result
 
-Task 250 は wrapper module を作らず `src/runner/tests/support.rs` を
-root-include した。6,546 行の fragment は 17 import group と、連続した shared
-environment、fixture specification、AST builder、corruption、range、id support
-（non-test function 201 個、type/constant item 24 個）を含む。exact moved hash は
-`b880b4605345b1156f125292134d62aff91a32799b5f5834fe7d2a1e5de068a8`。
-retained 87,572 行は byte-identical のままで hash は
-`197f2d6dc31da2130674954667383bb9aec502a613f3e5b1c33bf0299ea2959b`、
-結果の 87,574 行の `tests.rs` hash は
-`7d85a8ecd4dffcb0475afc53693e581af661ccbb01b44eab974e030abb046a66`
-である。272 tests はすべて同じ sorted-name hash で `runner::tests` に残る。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 251 Move Result
 
-Task 251 は wrapper module を作らず `src/runner/tests/parse_only.rs` を
-root-include した。byte-identical な 111 行の fragment は
-`parse_only_provider_resolves_every_stub_and_deduplicates_fixture_summaries`
-だけを含み、hash は
-`3cddce85155b72597cfc4c2ea5841dbf3fe5f88d0c8123d98ba9cb958f90a3a8`。
-separator blank を含む retained 87,463 行は byte-identical のままで hash は
-`010f86378bca27c0620998c0de0242d6376fb8b3c37c002d0ca430fb01f7e35c`、
-結果の 87,464 行の `tests.rs` hash は
-`16480c65416a611c732153360775f10180f609b012027b0a0a970cff1f5a3d84`
-である。fully qualified test name と sorted 272-test list は不変である。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 252 Move Result
 
-Task 252 は wrapper module を作らず
-`src/runner/tests/type_elaboration/source_extraction.rs` を root-include した。
-byte-identical な 3,680 行の fragment は baseline reserve extraction、
-local-mode expansion-chain extraction、real declaration-checked
-`ResolvedTypedAst` handoff の 3 tests を含み、hash は
-`aa9a16c3ed36439ac8c5a4756e3818d6e5f0abd7e076e2e2df8b46487e88c358`。
-Task 253 前の separator を含む retained 83,784 行は byte-identical のままで
-hash は
-`2d9ef7d8369c4d654af3bd91598d306c8a9777c9d0981454ce9396095c8a6d79`、
-結果の 83,785 行の `tests.rs` hash は
-`16f3d6ceb1e75655ea39825f0294896393e676d0a7391bb2a409e14b3b904d22`
-である。3 fully qualified names と sorted 272-test list は不変である。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 253A Move Result
 
-Task 253A は wrapper module を作らず
-`src/runner/tests/type_elaboration/reserved_binary.rs` を root-include した。
-byte-identical な 9,982 行の fragment は、監査済み Task 189/246 ownership
-exception を含む先頭の baseline reserved-variable / binary-formula bridge
-23 tests を含み、hash は
-`88f1a793e139ea808c823fd68956d0dc9863735905ae3fb34e214efa86a11d8e`。
-Task 254 前の separator を含む retained 73,803 行は byte-identical のままで
-hash は
-`faf592952a4c871b840b6a1cbbb977ca3f1bbddc98def4f99d54c1a900fdcb06`、
-結果の 73,804 行の `tests.rs` hash は
-`97d05a3dc35774246af301ad7b4dc6601d2ab85ca669bebfdbcfa140767d150f`。
-23 fully qualified names、元の order 位置、canonical raw/secondary normalized
-272-test list hash はすべて不変である。Task 253 は Task 253B まで pending。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 254 Move Result
 
-Task 254 は wrapper module を作らず
-`src/runner/tests/type_elaboration/mode_chain.rs` を root-include した。
-byte-identical な 10,232 行の fragment は監査済み non-long-chain
-local-mode/object-mode 26 tests を含み、hash は
-`2989031d64871c726f325a5d5bd2ebb4ed4b9a078b83bab3c4f04f456cf3225f`。
-Task 253B 前の separator を含む retained 63,572 行は byte-identical のままで
-hash は
-`6725980d7842af5c398f58139ce371ac64d8912ba744f4417ac20c88165d5d81`、
-結果の 63,573 行の `tests.rs` hash は
-`7e5d0f5735c551be19ac13b2dc96732bf4a9f3cd7088317beb22c760e0d03b68`。
-26 fully qualified names、元の order 位置、Task 253B boundary、両 272-test list
-hash はすべて不変である。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 253B Move Result
 
-Task 253B は wrapper module を作らず
-`src/runner/tests/type_elaboration/reserved_direct.rs` を root-include した。
-byte-identical な 284 行の fragment は監査済み direct reserved-variable
-membership/inequality 2 tests を含み、hash は
-`c65a5f27463950979368bc702e36f42fa0398884029cff450b54b31095f30e4e`。
-Task 255 前の separator を含む retained 63,289 行は byte-identical のままで
-hash は
-`fffe06106cca615e370bb4c2da222da5a4bc21a264cadb5ae8c2d79ed7fdbcce`、
-結果の 63,290 行の `tests.rs` hash は
-`c90905d94abd1a43c0d65d4abffe8bc970262eee2d64e22da1db4024d614bbf4`。
-2 fully qualified names、元の order 位置、Task 255 boundary、両 272-test list
-hash はすべて不変である。parent Task 253 は完了。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 255A Move Result
 
-Task 255A は wrapper module を作らず
-`src/runner/tests/type_elaboration/asserted_head_base.rs` を root-include した。
-byte-identical な 6,653 行の fragment は監査済み先頭 source test 12件と専用
-Task 205 isolation helper 2件を含み、hash は
-`9ecea3c52ae64b83d6d5de9b825307f31c7d331e3ba29d78bb69cd931709d020`。
-Task 255B 前の separator を含む retained 56,637 行は byte-identical のままで
-hash は
-`d9f772962e590f49d188ca1d0cbe8cf5863b7dd84bb9e73606f878f33036007a`、
-結果の 56,638 行の `tests.rs` hash は
-`535968a53524b3741d9adeed0ee6e42f2e4c45184af285a2bae077810b3bd682`。
-12 fully qualified names、helper ownership、元の order 位置、Task 255B
-boundary、両 272-test list hash はすべて不変である。parent Task 255 は pending。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 255B Move Result
 
-Task 255B は wrapper module を作らず
-`src/runner/tests/type_elaboration/asserted_head_four_edge_radix.rs` を
-root-include した。byte-identical な 3,303 行の fragment は監査済み four-edge
-radix source test 2件と専用 Task 208/207 helper function 4件を含み、hash は
-`5fcc4240fff400bda08e3d6678a61f3db444f0a8c6c055802d7ba7bea961092e`。
-Task 255C 前の separator を含む retained 53,335 行は byte-identical のままで
-hash は
-`16d36bc1978973931a673a7620c569c70b021fe4ed210e19540a0ee8fa7c7d9d`、
-結果の 53,336 行の `tests.rs` hash は
-`78594f98a92a30445d251cf0fb394e5537ecab73cf9b8e9c67c357e4a0135389`。
-2 fully qualified names、4 helper owner、元の order 位置、Task 255C boundary、
-両 272-test list hash はすべて不変である。parent Task 255 は pending。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 255C Move Result
 
-Task 255C は wrapper module を作らず
-`src/runner/tests/type_elaboration/asserted_head_three_edge_object_radix.rs` を
-root-include した。byte-identical な 1,278 行の fragment は監査済み three-edge
-object-radix source test 1件と専用 Task 206 helper function 2件を含み、hash は
-`c5c1b04ab663fe3557e24c86b551352d6d1c54c5511870ba224edb7538f95442`。
-Task 255D 前の separator を含む retained 52,058 行は byte-identical のままで
-hash は
-`e841b80390d879d910bfc50a34547ef56b8b2ab40c6c4b9681e8b07f707dc12b`、
-結果の 52,059 行の `tests.rs` hash は
-`23caa0585a96be2db997295fccad436de5bfefdbe033fdd4516ca8e30dacea9f`。
-fully qualified name、2 helper owner、元の order 位置、Task 255D boundary、両
-272-test list hash はすべて不変である。parent Task 255 は pending。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 255D Move Result
 
-Task 255D は wrapper module を作らず
-`src/runner/tests/type_elaboration/asserted_head_two_edge_object_radix.rs` を
-root-include した。byte-identical な 1,046 行の fragment は監査済み two-edge
-object-radix source test 1件と専用 Task 204 helper function を含み、hash は
-`e20a04ba33ffc1f344da0aa990795576b7096eb6a016a69d730d0d29377349f4`。
-Task 255E 前の separator を含む retained 51,013 行は byte-identical のままで
-hash は
-`16d6ec2333861ac9d78d3694efe76a71bb9a9830f16def60c4a425fb7da63dc7`、
-結果の 51,014 行の `tests.rs` hash は
-`68bf3cf08b26a449f46aee00d7fe8f716d1663ac9aeb7005b311f4f7c6c15906`。
-fully qualified name、helper owner、元の order 位置、Task 255E boundary、両
-272-test list hash はすべて不変である。parent Task 255 は pending。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 255E Move Result
 
-Task 255E は wrapper module を作らず
-`src/runner/tests/type_elaboration/asserted_head_type_assertion.rs` を
-root-include した。byte-identical な 7,649 行の fragment は監査済み最後の
-non-long-chain type-assertion/asserted-head source test 16件を含み、helper
-function は含まない。hash は
-`27bb8b3f17cabfce79ec9e32e390fbad3c9356c845dab4c7fb53dfd9f3b5160a`。
-最初の active fixture 前の separator を含む retained 43,365 行は
-byte-identical のままで hash は
-`b0465c9378a8f0151e0c58ba4986876f3de163ceb5918b7ceb49db4462b6d1c3`、
-結果の 43,366 行の `tests.rs` hash は
-`75fc0ff2b4a48362a1184185ea1315c0d8dab90b9b5a9b45a3fafe13b14d7278`。
-16 fully qualified names、元の order 位置、assertion、直後の active-fixture
-boundary、両 272-test list hash はすべて不変である。parent Task 255 は完了。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 256 Move Result
 
-Task 256 は wrapper module を作らず
-`src/runner/tests/type_elaboration/long_chain.rs` を root-include した。
-byte-identical な 20,977 行の fragment は監査済み long-chain source/active
-seven-expansion test 44件をすべて含む。12件の `next_permutation` function は
-test-local finite guard として nested のままであり、module-level helper や
-無関係な item は移動していない。fragment hash は
-`c4bcb161ac7bbb03593beff0fd55c6fbf8bc1960618a92263d127856e709d8b0`。
-retained 22,389 行は byte-identical のままで hash は
-`d737b5160458533039c7535423cffa03265deacb719d167e486897a612d7afbf`、
-結果の 22,390 行の `tests.rs` hash は
-`603263b325a00d45a41ec3087dafab05ab4ebe448fe3be70a7c0d107f907df8d`。
-44 fully qualified names、元の order 位置、finite guard、assertion、両
-272-test list hash はすべて不変である。直前の four-edge equality test と
-直後の four-edge inequality test は `tests.rs` に残り、Task 257 の nested
-Task 216-222 module も fragment 外のままである。Task 256 は完了し、Task 257
-が次である。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 257A Move Result
 
-Task 257 の fresh inventory により、残る test 141件を contiguous かつ
-order-preserving な8 family に分割する。Task 257A は binary-route test 18件、
-Task 257B は builtin-object reserve fixture 3件、Task 257C は専用 trace intent
-を持つ Task 180 standalone contradiction formula-constant fixture 1件だけを
-分離する。Task 257D は distinct/multiple/heterogeneous reserve fixture 11件、
-Task 257E は mode-chain fixture 26件、Task 257F は active
-reserve/asserted-head/type-assertion fixture 35件と interleaved owner-route
-isolation guard 4件、Task 257G は source-gap/equality test 3件、Task 257H は
-root source/active bridge fixture 9件、root synthetic/route-isolation test
-3件、既存 Task 216-222 module 内 nested test 28件を含む。8 count の合計は
-残る root test 113件と nested test 28件に一致する。parent Task 257 は 257H
-まで pending。
-
-Task 257A は wrapper module を作らず
-`src/runner/tests/type_elaboration/binary_route_fixtures.rs` を root-include
-した。byte-identical な 2,960 行の fragment は監査済み binary/parenthesized
-active-fixture/route-isolation test 18件を含み、module-level helper や無関係な
-item は含まない。hash は
-`b00af949465486166f8a5d012dce6b02345aad29b2e576c4b574cf1c6ea23eee`。
-Task 257B 前の separator を含む retained 19,430 行は byte-identical のままで
-hash は
-`d07c5006c01b8975342d95a5fff8c447106c38e8754ddaac2f87be442c7d07a5`、
-結果の 19,431 行の `tests.rs` hash は
-`e2f877ddf29c6f9e2e22225e97ff4294d7e27affda04145f78a950e567022e5e`。
-18 fully qualified names、元の order 位置、assertion、Task 257B boundary、両
-272-test list hash はすべて不変である。Task 257A は完了し、parent Task 257
-は pending。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 257B Move Result
 
-Task 257B は wrapper module を作らず
-`src/runner/tests/type_elaboration/reserve_object_fixtures.rs` を
-root-include した。byte-identical な 156 行の fragment は監査済み Task
-188/190/189 builtin-object reserve equality/inequality/type-assertion active
-fixture 3件だけを含む。hash は
-`9cfb91fad7f537fbe790ac8e8206e383b0068a8bdcb14158c554219702d9446f`。
-Task 257C 前の separator を含む retained 19,275 行は byte-identical のままで
-hash は
-`c4459d3170895c98e4d6018ae491adce8889f12351a9a4b834c8669e84eb285d`、
-結果の 19,276 行の `tests.rs` hash は
-`509d784ce5f2b23c98675fdfcb74324dfede166204067c8c3bdd0a1339ba6d18`。
-3 fully qualified names、元の order 位置、assertion、両 272-test list hash は
-すべて不変である。Task 180 contradiction fixture は Task 257C の先頭 item
-として `tests.rs` に残る。Task 257B は完了し、parent Task 257 は pending。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 257C Move Result
 
-Task 257C は wrapper module を作らず
-`src/runner/tests/type_elaboration/formula_constant_fixture.rs` を
-root-include した。byte-identical な 53 行の fragment は監査済み Task 180
-standalone contradiction active fixture と exact checked
-`FormulaKind::Contradiction` payload assertion だけを含む。hash は
-`986b9120d84a487093c4ce3392a11eba03d65441cfb66d09ec9c34bc72dc03c5`。
-Task 257D 前の separator を含む retained 19,223 行は byte-identical のままで
-hash は
-`e271687874a614c317a3d0a6a7ff3da5b1081235c9ec18233ddefc91167122a0`、
-結果の 19,224 行の `tests.rs` hash は
-`a8140de0a533cb4e2f3d4093155d14f188abcef707094a2b10fe5dda469958ad`。
-fully qualified name、元の order 位置、assertion、両 reserve-family boundary、
-両 272-test list hash はすべて不変である。Task 257C は完了し、Task 257D が
-次であり、parent Task 257 は pending。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 257D Move Result
 
-Task 257D は wrapper module を作らず
-`src/runner/tests/type_elaboration/reserve_fixtures.rs` を root-include した。
-byte-identical な 739 行の fragment は監査済み distinct、multiple-declaration、
-heterogeneous reserve active fixture 11件を含み、module-level helper や無関係な
-item は含まない。hash は
-`24b4811f26418afe9de5efbf0cf3d7ea54be329ddf1255f89bafc38546301b40`。
-Task 257E 前の separator を含む retained 18,485 行は byte-identical のままで
-hash は
-`5dfbf14737caf47e36f7a0c6bb6a1cab58bea8d608da41c0d74cf1fd58eeda4f`、
-結果の 18,486 行の `tests.rs` hash は
-`4e40491533df5102655f803e899c032d20adbcaf4c68c6e4980867da87849cf0`。
-11 fully qualified names、元の order 位置、assertion、Task 257E mode-chain
-boundary、両 272-test list hash はすべて不変である。Task 257D は完了し、
-parent Task 257 は pending。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 257E Move Result
 
-Task 257E は wrapper module を作らず
-`src/runner/tests/type_elaboration/mode_chain_fixtures.rs` を root-include
-した。byte-identical な 1,578 行の fragment は監査済み non-long-chain
-local-mode/object-mode active membership/equality/inequality fixture 26件を
-含み、helper や無関係な item は含まない。hash は
-`9e3c1a6e11b01dc257982002379d884f9de24ec5093982d7604e9a988dc2e593`。
-Task 257F 前の separator を含む retained 16,908 行は byte-identical のままで
-hash は
-`dd144c50d0b24adfc690e99f160e5ab73362f6b972107ac71ff6bed0513a3774`、
-結果の 16,909 行の `tests.rs` hash は
-`cacc1dd5a5fcd2e14526bac47e277d900b0c0f9b56c6cc1bee2b7ea2e7229c3f`。
-26 fully qualified names、元の order 位置、assertion、Task 257F boundary、両
-272-test list hash はすべて不変である。Task 257E は完了し、parent Task 257
-は pending。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 257F Move Result
 
-Task 257F は wrapper module を作らず
-`src/runner/tests/type_elaboration/asserted_head_fixtures.rs` を root-include
-した。byte-identical な 3,374 行の fragment は監査済み active
-reserve/asserted-head/type-assertion fixture 35件と interleaved two-hop
-owner-route isolation guard 4件を含む。helper、無関係な item、long-chain test
-は含まない。hash は
-`19623c52e34c57fc664f01370139ce253a834513c47fe0f6b7b2563f7684bf26`。
-Task 257G 前の separator を含む retained 13,535 行は byte-identical のままで
-hash は
-`4c19658998190c21cbd8a72efa112e29659664d55a7c5b3040ef54ec7cbbb3e8`、
-結果の 13,536 行の `tests.rs` hash は
-`9e3bb0de8742d0371e4e686815ba70337b8c278a1e26799069baef8758e093ec`。
-39 fully qualified names、元の order 位置、expansion/payload/prior-owner
-rejection assertion、Task 257G boundary、両 272-test list hash はすべて不変で
-ある。Task 257F は完了し、parent Task 257 は pending。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 257G Move Result
 
-Task 257G は wrapper module を作らず
-`src/runner/tests/type_elaboration/source_gap_and_equality.rs` を root-include
-した。byte-identical な 2,923 行の fragment は source-reserve gap/evidence
-fail-closed test と four-edge local-mode equality source/active pair だけを含む。
-hash は
-`7726ee451322c547406da5c5b3800be2527685df41ca2de4dc60d47644164487`。
-retained 10,613 行は byte-identical のままで hash は
-`2ebb32f99fa9001d0a5d303deb5f477a369074b54b3b71ba2ea690aa3f38e49c`、
-結果の 10,614 行の `tests.rs` hash は
-`b1a22962fefb7a2cc54aa37ff5f601c9995bce432d78fa499cfca8e6c35423bf`。
-3 fully qualified names、元の order 位置、detail-key/fail-closed assertion、
-直後の `long_chain.rs` include、Task 257H start、両 272-test list hash はすべて
-不変である。Task 257G は完了し、parent Task 257 は pending。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 257H Move Result
 
-Task 257H は wrapper module を作らず
-`src/runner/tests/type_elaboration/remaining_bridges_and_nested_isolation.rs`
-を root-include した。byte-identical な 10,578 行の fragment は、最後の root
-source/active bridge fixture 9件、root synthetic/route-isolation test 3件、既存
-Task 216-222 module 7個の内側にある nested test 28件をすべて含む。hash は
-`96a64963bc06ec3f6f076d00296ebb48450611fb6a512d5f16283c2999e43d50`。
-retained 36行は byte-identical のままで hash は
-`a3cba5854fc315b6c9c3dd20be2fdeaf7a5e972cb7a626299d2dcb2bb6c56f06`、
-結果の37行の `tests.rs` hash は
-`0e9b7e861a13fe593435ee8169c28658b5290f054789a3e2f73b896fa2b39061`。
-40 fully qualified names、元の order 位置、nested module name 7件、bridge/
-isolation assertion、両 canonical 272-test list hash はすべて不変である。
-Task 257H と parent Task 257 は完了し、private test layout は安定した。次は
-Task 258 である。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 258 Move Result
 
-Task 258 は private owner `src/runner/shared.rs` を作成し、cohesive な
-source/frontend staging fragment 2個を `runner.rs` から移動した。元の30行の
-frontend execution/result fragment hash は
-`7d03c8561f87b95d5b777beba830998f44c0cd1cbe72a245c29573a64fa1b0f6`、
-元の89行の package/root/path/snapshot fragment hash は
-`34fd4b86829394b95f5ae3125c5bf2f010b0ca0357254ea93446e50e7f384672`。
-direct dependency import を含む結果の138行の `shared.rs` hash は
-`11a52bf7fb0e729ac680df33dfa4b7fd65b9fdd922ee9aca6e9ba4a96d7f8f56`、
-17,022行の `runner.rs` hash は
-`dde9e23dfb8092be02f3b1139b59dbfddcbb8e55c0c21eac7ad70e1f1fcbda04`。
-`run_frontend`、`FrontendRun` とその field、root normalization、共有 module-
-path projection だけが parent-only `pub(super)` visibility を使い、package
-preparation/cleanup、temp naming、snapshot identity は `shared.rs` private の
-ままである。direct import により owner は facade namespace から独立し、明示
-import した parent-owned `ParseOnlyImportProvider` だけを generalize や早期移動
-せず、Task 261 までの一時 parent dependency として保持する。public surface hash
-`0cb48ae8ac2ccdf14595112df24b8a4c083a989a631580e9044707aa514a267e`、
-4 CLI byte hash、両 272-test list hash、count、payload、diagnostic、ordering、
-fail-closed behavior はすべて不変である。Task 258 は完了し、次は Task 259。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 259 Move Result
 
-Task 259 は private owner `src/runner/parse_only.rs` を作成し、cohesive な
-parse-only fragment 3個を `runner.rs` から移動した。元の51行の case-execution
-fragment hash は
-`6ff68ec8610c9e5ded44f69369850e11d7adfbaf1685f540398fd465d58f4361`、
-元の24行の failure-projection fragment hash は
-`2504fbeae49d240c8897f50f00303124ab7c0c3d4bde56393a316dc2419d4275`、
-元の32行の Surface-AST snapshot comparison fragment hash は
-`e8e1698aa3af9e86e80baf03f799af89490782e3202c20ab22a58011f6d65176`。
-direct dependency import を含む結果の121行の `parse_only.rs` hash は
-`d1c1dd0f0c322f3bd4a6e829e66bf6aeaf0dc01b46d60dd177a7fe8e4619ae5a`、
-16,913行の `runner.rs` hash は
-`5579a126eccfbbb937e36149d74a940e146619254c1bb8301dca57d191cdfec9`。
-case runner と failure projection だけが parent-only `pub(super)` visibility を
-使い、snapshot comparison は private のままである。この owner は sibling
-`shared::run_frontend` を直接呼び、Task 263 までの明示的な一時 parent diagnostic
-dependency として `assertion_diagnostic_codes` と `frontend_error_code` だけを
-保持する。fixture import provider と adapter は Task 261 のため `runner.rs` に
-残し、fixture ownership を早期移動していない。public surface hash
-`0cb48ae8ac2ccdf14595112df24b8a4c083a989a631580e9044707aa514a267e`、
-4 CLI byte hash、両 272-test list hash、count、payload、diagnostic、ordering、
-fail-closed behavior はすべて不変である。Task 259 は完了し、次は Task 260。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 260A Move Result
 
-fresh Task 260 review は元の production-helper task を、cross-phase resolver
-collection leaf の Task 260A と、その declaration-symbol caller の Task 260B という
-独立 ownership move 2個へ分割した。Task 260A は shared leaf を先に移動した。元の
-29行の `ResolverSymbolCollection` と shell/projection/collection fragment hash は
-`b7f13156c77bfc75d5f6a4f1682fe752b4fe9dfd12b3c7c0cd3913cef44458e0`、
-元の18行の resolver module-id/diagnostic projection fragment hash は
-`d1bed7b1c59ab13e997a72ed492fdfdabf38466a9921c0254be64934846e1c61`、
-元の9行の diagnostic-class key fragment hash は
-`363ae1321d663c1d597cdf033c449fe0226c87672e2eefd3bf92b819458cb0e0`。
-結果の203行の `shared.rs` hash は
-`0cd2eb09c043e564470b4003a34dfc4f9e89cb695b1d2df1404b76dd7e8bc299`、
-16,851行の `runner.rs` hash は
-`72340a9aeca93ec338375b8bfc51beeb47a2499325faf452733c3e1dec48bbab`。
-`resolver_symbol_collection`、その result type、既存 declaration/type consumer が
-使う result field 3個だけが parent-only `pub(super)` visibility を持ち、module
-identity と diagnostic projection は `shared.rs` private のままである。両 caller は
-移動も変更もしていない。public surface hash
-`0cb48ae8ac2ccdf14595112df24b8a4c083a989a631580e9044707aa514a267e`、
-4 CLI byte hash、両 272-test list hash、count、payload、diagnostic、ordering、
-fail-closed behavior はすべて不変である。Task 260A は完了し、次は Task 260B。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 260B Move Result
 
-Task 260B は、Task 260A が shared resolver prerequisite を移動した後に private owner
-`src/runner/declaration_symbol.rs` を作成した。元の37行の case-execution fragment
-hash は
-`b58aebc17cd350c5107775b9027d78037b32e0bb1d72782e101746dd6c2d318f`、
-元の36行の observation fragment hash は
-`8e9bb3e70c1368aa1882bf623b13664ea12129ffc9f6f44a079148f5eee29631`、
-元の125行の payload encoding/classification/expected-value projection fragment
-hash は
-`02df2d29157e2469ca8139178dec9cabd199d25fdfa554749d999556b2b05376`、
-元の19行の failure-diagnostic fragment hash は
-`3b366648f438663e7412c2e567bb307ff7245b92739f9bbed38a16fd8862573e`。
-direct dependency import を含む結果の231行の `declaration_symbol.rs` hash は
-`cf29e362d3109fc8a45e366c8abaa9f98baae7329f83c3556fe8452ec3347232`、
-16,632行の `runner.rs` hash は
-`a6e9d547d68e18e1de2d22ce4393552cf760e8f6b8081fe608f8ffdcab67005d`。
-case runner と failure projection だけが parent-only `pub(super)` visibility を
-使い、observation、payload encoding/classification、expected-value projection は
-private のままである。この owner は `shared::run_frontend` と
-`shared::resolver_symbol_collection` を直接 consume する。唯一の一時 parent
-dependency `frontend_detail_keys` は child module から parent private item に access
-できるため plain private visibility を維持し、Task 263 で common diagnostic family
-を移動する。既存 `tests/metadata.rs` integration ownership は不変。public surface
-hash `0cb48ae8ac2ccdf14595112df24b8a4c083a989a631580e9044707aa514a267e`、
-4 CLI byte hash、両 272-test list hash、count、payload、diagnostic、ordering、
-fail-closed behavior はすべて不変である。Tasks 260A-260B は完了し、次は Task 261。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 261 Move Result
 
-Task 261 は単一の `parser.type_fixtures` vocabulary を共有する family 2個を移動し、
-private owner `src/runner/import_fixtures.rs` を作成した。元の161行の
-type-elaboration import-summary adapter fragment hash は
-`98d9ebc8ff104583bca469f66a89c5f90dfd91085f811012fc06d173b6224d8b`、
-元の167行の lexical-summary provider/15-symbol vocabulary fragment hash は
-`3097dc061f34ef0d08482aa785f7827b38b17a8b15dbc8f9fc0e7ca876a49c34`。
-direct dependency import を含む結果の349行の `import_fixtures.rs` hash は
-`bb2d10572184600c2121ae680ff936586a8b525eaea7e2a358f1d3b4305bc04d`、
-16,293行の `runner.rs` hash は
-`5e878da91e11b7d69709e94dfc9ad851e298fe7b46ed111c174696c2e2b12363`。
-`ParseOnlyImportProvider`、type import-summary adapter entry、Task 262 parent
-caller がまだ consume する module-path projection だけが parent-only `pub(super)`
-visibility を使い、vocabulary、environment clone、imported module discovery、
-symbol-kind mapping は private のままである。parent private alias を維持し、
-`shared.rs` と既存 test support の import を test edit なしで保持した。stub の
-order/span identity、per-module deduplication、fingerprint、exact 15-symbol の
-kind/arity/operator/rank order、resolver symbol/provenance order、diagnostic は不変。
-public surface hash
-`0cb48ae8ac2ccdf14595112df24b8a4c083a989a631580e9044707aa514a267e`、
-4 CLI byte hash、両 272-test list hash、count、payload、diagnostic、ordering、
-fail-closed behavior はすべて不変である。Task 261 は完了し、次は Task 262。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 262A Move Result
 
-Task 262 の fresh inventory により、reserve/formula extractor owner の双方より先に
-移す common source-AST leaf が確認された。Task 262A は private
-`src/runner/type_elaboration.rs` phase facade と private
-`src/runner/type_elaboration/source_ast.rs` leaf を作り、exact
-compilation-item-list recognizer、structural-child projection、direct-token
-projection、checker-site projection、recursive recovery predicate を移動した。
-元 fragment hash は順に
-`84bf7a706ff2295e0087484fda11f210a6f363f4bfa386567004b1b291abcb1b`、
-`5684a8ad7fa11893580921465265d7343a6cd1d9824ad5a9b9b6443153380981`、
-`3c7621566d18a891f2390be433cf292ee67affcebbc2ea591ee09ffddb1bc5d3`、
-`a12398685131398da0a9a3a0200d1b7e988be6d1e12ea7dc6a9fe9019eab7bb4`、
-`9aa975ae84b5bed868095e19969b5db18f59a113d96963f21656f2358fb87326`。
-結果の63行の `source_ast.rs` hash は
-`e785097028171a78e3f8764618ac4bced422756b4c1a985e72de3138ae46a1ed`、
-6行の facade hash は
-`a5d786f3fce6b7d6b5661918e4fb46a3116b41f33fe307adebed4ddefe2e3efa`、
-16,240行の `runner.rs` hash は
-`01990093ec8ac5b2360bf174e8b1d13b21550f599c3b51ab3fd0e02725762bd9`。
-Rust は child の `pub(super)` item を grandparent へ re-export できないため、
-leaf function は runner subtree 限定の明示的な `pub(in crate::runner)` scope を使い、private
-phase facade は `pub(super)` で re-export する。private `runner.rs` alias により
-全 production/test caller を維持する。function body、traversal/filter order、
-recovery recursion、typed-site identity、exact-shape rejection、fail-closed behavior
-は不変。Task 262A は完了し、parent Task 262 は残る bounded source-extraction
-family のため open のまま。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 262B Move Result
 
-Task 262A 後の fresh inventory により、formula/reserve extractor が共有する
-AST-only projection がさらに2個確認された。Task 262B は private recursive helper
-を含む preorder node-kind collector と exact qualified-symbol spelling projection を
-`source_ast.rs` へ移動した。元 fragment hash は
-`e06bf8e9c5252a3bfefea3ff16804414fe813cbc903cd0afcdfd0d237a1185c5`
-と
-`8ab94eafe97e9b28c7a236efd3071834b36ba02a2fce1988d721123f19272f7e`。
-結果の113行の `source_ast.rs` hash は
-`d9bff4c1c4bbeb2bd988502db2bff2a7370dbf9b61d7e817e6e82077878da78a`、
-6行の facade hash は
-`f89edc2b2dcd2065c9445aae9a7b05084750d7689f8a2029c4e78050a7c797c9`、
-16,193行の `runner.rs` hash は
-`fea5c857a73a6f7429c2517b187b354fa321c0e6be14ffd64922eb10d57c42d0`。
-caller-facing function 2個は parent-only facade re-export を介した runner
-subtree 限定 `pub(in crate::runner)` visibility を維持し、recursive collector は
-`source_ast.rs` private のまま。traversal order、token/path validation、spelling
-assembly、全 caller、全 test import は不変。visible-symbol resolution、source-text
-assembly、range merge、reserve/mode extraction は Task 262C のため `runner.rs` に
-保持する。Task 262B は完了し、parent Task 262 は open のまま。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 262C Move Result
 
-Task 262B 後の fresh inventory により、reserve type-expression/symbol-projection
-family を declaration segmentation と mode expansion から分離した。Task 262C は
-private `src/runner/type_elaboration/source_reserve.rs` leaf を作り、
-`SourceTypeExpression` transport、exact builtin/symbol type-expression projection、
-visible attribute/type-head resolution、local/imported-fixture admission、recursive
-source-text assembly を移動した。元の8行 transport fragment hash は
-`6b95aec82269efe807537832e551e0bac37480cb653ad02cd3492e7ccd304afe`、
-元の266行 type-expression/resolution fragment hash は
-`918d2e22b0c18555cc0bffe1c2721f1563bc22427e7902959e7b7dcb56328f0e`、
-元の89行 provenance/source-text fragment hash は
-`8b06c6b116d5f420a40a645a274516051052a56908a2974c3e25efa43af80e2a`。
-direct dependency import を含む結果の370行の `source_reserve.rs` hash は
-`16b9a05842b3db5c22468d9674526bd7efc6739572d933ebf57e6ba0b69e34fb`、
-14行の facade hash は
-`e768f927bbf7263a7930f2ae73dcc8787b4df29f019f9f81ed50ec799f5d1f9d`、
-15,834行の `runner.rs` hash は
-`0574cd3bbdbf4df09c02a2a9be07af07b9732c5dc1d5036feb9919641c3a6007`。
-transport と4 field、extraction entry は parent-only facade re-export 経由で
-runner-subtree-only visibility を維持する。visible resolver entry 2個は、leaf 外の
-caller が既存 private preservation test だけなので、test-only facade/runner alias
-を使う。保持した Task 262E declaration/mode caller がまだ consume する3 helper、
-`source_reserve_symbol_head_kind`、`is_imported_fixture_reserve_attribute`、
-`imported_fixture_reserve_attribute_spelling` も同じ temporary scope を使い、Task
-262E で caller を移した時点で narrow しなければならない。他の type-head、
-attribute、admission、source-text helper は leaf-private のまま。exact AST shape/
-recovery rejection、local-before-imported ambiguity handling、symbol kind/provenance
-admission、attribute polarity/order、spelling/range、fail-closed behavior は不変。
-formula-only resolution、range merge、reserve declaration segmentation、local-mode
-traversal/expansion は Task 262E と後続 bounded inventory のため `runner.rs` に保持する。
-Task 262C は完了し、parent Task 262 は open のまま。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 262D Move Result
 
-fresh dependency inventory により、exact `parser.type_fixtures` import-item
-recognizer が formula caller 2個と保持した reserve caller で共有されることを確認した。
-Task 262D は reserve family より先に、この common source-AST prerequisite を
-`src/runner/type_elaboration/source_ast.rs` へ移動した。元の28行 fragment hash は
-`d137915a4bac8d6922ea86d34975b07004b4cef389a5ea9d008fb955f3f83bdc`。
-結果の147行の `source_ast.rs` hash は
-`baf131e5f82846df2286ad68c6e8bad9d2642af2ce530f7b8c7362900ef2aa9e`、
-15行の facade hash は
-`10db1015db9d0a653f511ffaa5a48a2a708b9c1b3d254a194894f44430ff384f`、
-15,803行の `runner.rs` hash は
-`4dfc36f6f8f204b705688c5762d42281be949ce7c7eae2751e12d1aeb84c13d6`。
-不変の370行の `source_reserve.rs` hash は
-`16b9a05842b3db5c22468d9674526bd7efc6739572d933ebf57e6ba0b69e34fb`。
-`source_ast` は fixture owner に runner-subtree visibility で残す
-`import_fixtures::module_path_spelling` を直接 consume し、child-to-parent runner
-helper dependency は残らない。recognizer は runner-subtree-only
-`pub(in crate::runner)` visibility、parent-only facade re-export、3 caller 用 private
-`runner.rs` alias を使う。この visibility と rustfmt signature wrapping 以外は本体を
-変更していない。ImportItem/ImportAliasDecl/path cardinality、direct-token filtering、
-recovery rejection、exact module spelling、caller order、fail-closed behavior は不変。
-Task 262D は完了し、parent Task 262 は open、次は Task 262E。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 262E Pre-Move Inventory and Specification
 
-fresh inventory では、`runner.rs` に残る reserve family の配置を
-`design_drift` と分類する。exact source-derived declaration/local-mode
-payload producer は既存 private owner
-`type_elaboration/source_reserve.rs` と cohesive であり、現在の parent 配置は
-その ownership を表現していない。language、test、expectation、trace、metadata
-間の不一致は見つからなかった。移動対象は `SourceReserveExtraction` から
-`extract_builtin_reserve_segment` までの連続 1,074 行で、hash は
-`31f8e27a1835ea31e6d65ff67acbfa8fcc040fc588df7f24453ff848e0bd690b`、
-さらに独立した 10 行の `merge_optional_range` helper で、hash は
-`aa186a9105816e62352473111ffe3b9958a332086e9d1fc459c024fbc2cfac5c`。
-
-move では runner-subtree transport boundary を1つ維持する。
-`SourceReserveExtraction` と `bridge`/`mode_expansions` field、および既存の
-test-only accessor である。加えて runner-subtree helper boundary を4つ維持する:
-`extract_builtin_source_reserve_declarations`、
-`extract_builtin_source_reserve_declarations_after_node_guard`、
-`source_mode_symbol_spelling`、`mode_definition_pattern_spelling`。private phase
-facade はこの5 boundary item だけを parent へ re-export し、`runner.rs` は
-unchanged caller 用の private alias を保持する。それ以外の moved item は
-leaf-private のまま、または leaf-private になる。残る caller の移動後、
-Task 262C の temporary helper
-`source_reserve_symbol_head_kind`、
-`is_imported_fixture_reserve_attribute`、
-`imported_fixture_reserve_attribute_spelling` は leaf-private にする。
-
-`source_reserve` は Task 262D fixture-import recognizer を含む common
-source-AST projection を直接 consume し、child-to-parent dependency なしで
-自身の Task 262C type-expression/symbol projection を引き続き consume する。
-`SourceReserveHandoff`、`source_module_binding_env`、formula-only imported
-term/formula resolution、checker handoff/validation、後続 orchestration は
-`runner.rs` に保持する。preservation matrix は exact AST/import shape、node
-allowlist、recovery rejection、traversal budget/order、dependency/provenance
-admission、attribute polarity/order、spelling/range、payload contents、
-diagnostic/detail key、fail-closed behavior である。この task は test body/name、
-public API、spec/trace/expectation artifact、harness count、specification-coverage
-credit を変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 262E Move Result
 
-Task 262E では inventory 済みの両 fragment を既存 private owner
-`src/runner/type_elaboration/source_reserve.rs` へ移動した。rustfmt と最小の
-import/visibility adjustment 後、`runner.rs` は 14,718 行、hash は
-`f38352151d71474b676fb3c2a50e313c33f6de6dad5a09097c28aa9de729ce62`、
-phase facade は 16 行、hash は
-`07c19a11381d002cd3a6503470df6e1e63d09a2b435350608b1cc8fe1724a50a`、
-`source_reserve.rs` は 1,474 行、hash は
-`88cf0cf08de2e61b2e6342aacc36ee01e20e00606d0c51f4bf7b5c64495253db`。
-unchanged の `source_ast.rs` は 147 行、hash
-`baf131e5f82846df2286ad68c6e8bad9d2642af2ce530f7b8c7362900ef2aa9e`
-を維持する。
-
-extraction transport、その2 field/test-only accessor、2 extraction entry、
-2 spelling helper は runner-subtree visibility、parent-only facade re-export、
-private `runner.rs` alias を使う。Task 262C の temporary helper 3個は
-leaf-private になった。`source_reserve` は common source-AST primitive と
-fixture-import recognizer を直接 consume し、child-to-parent source dependency
-は導入していない。`SourceReserveHandoff`、module binding environment、
-formula-only imported symbol resolver、checker handoff/validation、orchestration
-は `runner.rs` に保持する。
-
-moved declaration/import gate、node allowlist、recovery check、traversal budget、
-dependency order、expansion provenance、segment/range assembly、fail-closed branch
-は、必要な visibility と rustfmt wrapping 以外は不変。unit test 272件は全成功し、
-sorted raw/normalized test-list hash は
-`5e41e4dbfcc303322c246a612de61926a628957a168589b45864d0a5070bb07e` と
-`c0c2b80f8b4e6c84cd25d77573fda722c4d1846fed168cd4a478781cdb42775e`
-を維持する。Task 262E は完了。parent Task 262 は残る formula-extraction family
-の fresh inventory のため open のまま。behavior、test、trace credit、owner crate
-が不変なので `spec_coverage_audit.md` 更新は不要。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 262F Pre-Move Inventory and Specification
 
-fresh inventory では、最初に残る formula family の配置を同じ
-`design_drift` と分類する。exact standalone formula-constant AST projection は
-cohesive private source-extraction leaf だが、その transport、extraction、node
-policy は `runner.rs` 内で分離している。Task 262F は private
-`src/runner/type_elaboration/source_formula.rs` を作り、3 fragment だけを移動する:
-6 行の `SourceFormulaStatement` transport、hash
-`8ab3f277e5a8e0dabe1caacf76e5f54d81804c3619209bf94ac88ed01ebbc5e7`、
-84 行の `thesis`/`contradiction` entry と common exact extractor family、hash
-`eb1927127ca995ad3e9f090cb04aaf2b0326aac240b58dcbc14cfb731666061c`、
-12 行の dedicated theorem-node allowlist、hash
-`acc01a4adb0ee02529a2fce8d8f0772c944f1b606f108bbde4e4096cc143c840`。
-
-transport とその2 field は runner-subtree-only visibility を使い、caller は
-type alias なしで inferred return payload を consume する。2 extraction entry は
-runner-subtree-only visibility、parent-only facade re-export、private `runner.rs`
-alias を使う。common exact extractor と node allowlist は leaf-private のまま。new leaf は既存 common
-source-AST の token、structural-child、recovery、node-kind、site projection を
-直接 consume する。real consumer である `source_formula_statement_output`、
-`source_contradiction_formula_output`、それらの detail-key path、module binding
-environment、checker inference は caller body 不変で `runner.rs` に保持する。
-
-これは move-only task である。exact theorem label/token/cardinality、
-formula-expression/constant kind と spelling、recovery/node rejection、real AST
-site/range、`FormulaKind`、deferred reason、checker output、diagnostic/detail-key
-ordering、fail-closed behavior を維持する。reserved-variable/binary、
-builtin/imported formula、set-enumeration、connective/quantifier extraction、
-formula semantics、child graph、theorem acceptance、fact、proof、CoreIr、
-ControlFlowIr、VC は対象外。既存 exact、near-miss、corruption、active-fixture、
-detail-key、route-isolation test を preservation matrix とし、
-spec/test/trace/expectation と specification-coverage credit は変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 262F Move Result
 
-Task 262F は private
-`src/runner/type_elaboration/source_formula.rs` leaf を作り、inventory 済みの
-3 fragment をすべて移動した。rustfmt と最小 visibility/import adjustment 後、
-`runner.rs` は 14,615 行、hash は
-`b0d19f08a642b8b29e0f6c74e063b35909c3a9fbac30f9c1ee713de9fefa57f2`、
-phase facade は 20 行、hash は
-`59f458f5336f60be419c9d8e86b4a2dbed8f01dcc7ddc087cc437a25e72f3e7a`、
-new leaf は 116 行、hash は
-`d13b2ca47ad8c1580f38f363fac79881b304bcc5425e557ec7bdc6bd7a8264c2`。
-unchanged の 147 行 `source_ast.rs` と 1,474 行 `source_reserve.rs` は hash
-`baf131e5f82846df2286ad68c6e8bad9d2642af2ce530f7b8c7362900ef2aa9e` と
-`88cf0cf08de2e61b2e6342aacc36ee01e20e00606d0c51f4bf7b5c64495253db`
-を維持する。
-
-transport と field は2 entry の return type を通じた runner-subtree visibility
-だけを持つ。compiler-confirmed minimal facade/private alias surface は2 entry のみ。
-common exact extractor と node allowlist は leaf-private で、leaf は
-`source_ast` に直接依存する。両 checker consumer body、detail-key path、module
-binding environment は `runner.rs` に保持した。必要な visibility、import、
-rustfmt wrapping 以外、3 moved body は不変。
-
-unit test 272件は全成功。sorted raw/normalized test-list hash は
-`5e41e4dbfcc303322c246a612de61926a628957a168589b45864d0a5070bb07e` と
-`c0c2b80f8b4e6c84cd25d77573fda722c4d1846fed168cd4a478781cdb42775e`
-を維持する。Task 262F は完了し、parent Task 262 は残る reserved/binary、
-builtin/imported、enumeration、connective/quantifier formula family の fresh
-inventory のため open のまま。behavior、test、trace credit、owner crate が
-不変なので `spec_coverage_audit.md` 更新は不要。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 262G Pre-Move Inventory and Specification
 
-fresh inventory では shared exact numeral projection を同じ `design_drift` と
-分類する。その3つの AST-only helper は formula-source policy だが、まだ
-`runner.rs` に残る。47行の contiguous fragment の hash は
-`b415692ed2ee250be1bd4b66bfe90d21cc5cb444124eb249cca8890d1d488631`。
-`exact_numeral_term_operand` は builtin binary、builtin type-assertion、imported
-predicate/functor、imported attribute、set-enumeration extractor に7 retained
-call site を持つ。`exact_numeral_term_node_or_expression` は imported infix-functor
-projection に2 retained call site を持ち、common
-`exact_numeral_term_node` recognizer は他の2 helper だけから呼ばれる。
-connective/quantifier と standalone constant family はこの prerequisite を
-consume しない。
-
-Task 262G はその fragment だけを既存 private
-`src/runner/type_elaboration/source_formula.rs` leaf へ移動する。operand と
-node-or-expression entry は runner-subtree-only visibility、parent-only facade
-re-export、private `runner.rs` alias を持ち、numeral-node recognizer は
-leaf-private に保つ。leaf は `SurfaceAst`、`SurfaceNodeId`、`SurfaceNodeKind`、
-`SourceRange` と、既存 common source-AST の token、structural-child、recovery
-projection を引き続き直接 consume する。5 caller family、その transport/config、
-resolver use、node allowlist、checker consumer、detail key、diagnostic、failure
-assembly は body 不変で `runner.rs` に保持する。
-
-これは move-only prerequisite である。exact `TermExpression` wrapper と
-single-child cardinality、recovery rejection、`NumeralTerm` kind、各 caller が
-要求する direct token spelling (`1`/`2`)、empty structural-child requirement、
-returned real node identity/range、caller order、fail-closed behavior を維持する。
-既存 spec-derived `.miz` source、trace/expectation row、exact/near-miss/corruption
-matrix、active fixture、bidirectional route isolation を preservation matrix とする。
-test-first 追加は不適切で、spec、test、trace、expectation、API、public surface、
-`spec_coverage_audit.md` の変更は禁止する。formula-family move、helper の
-rename/dedup/generalization、semantic payload change、theorem acceptance、fact、
-proof、CoreIr、ControlFlowIr、VC は対象外。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 262G Move Result
 
-Task 262G は inventory 済み3-helper fragment を既存 private
-`source_formula.rs` leaf へ移動した。必要な visibility qualifier を除くと、moved
-47行は original hash
-`b415692ed2ee250be1bd4b66bfe90d21cc5cb444124eb249cca8890d1d488631`
-を維持する。`runner.rs` は 14,569 行、hash
-`f3858539557d392e1d85fcf98bbfac615ef2564c1b3b9475c522994e7a6d94d4`、
-phase facade は 21 行、hash
-`702a81c671cc435d8dd1c1c4e1444070823372340308e319eeaf8790a0fcb8db`、
-source-formula leaf は 165 行、hash
-`ffbb81c4b76339f26c23423785e1139260d92426b6b56fc9295c0065635ab3f6`。
-unchanged の 147 行 source-AST と 1,474 行 source-reserve leaf は hash
-`baf131e5f82846df2286ad68c6e8bad9d2642af2ce530f7b8c7362900ef2aa9e` と
-`88cf0cf08de2e61b2e6342aacc36ee01e20e00606d0c51f4bf7b5c64495253db`
-を維持する。
-
-exact numeral-node recognizer は leaf-private。operand と node-or-expression
-entry だけが parent-only facade を横断し、7+2 retained caller site はすべて
-original order で `runner.rs` に残る。caller body、transport/config、resolver
-dependency、node allowlist、checker consumer、detail key、diagnostic、failure
-assembly は不変。focused preservation と active type 188件は全成功。unit test
-272件と relevant-crate suite は全成功し、sorted raw/normalized test-list hash は
-`5e41e4dbfcc303322c246a612de61926a628957a168589b45864d0a5070bb07e` と
-`c0c2b80f8b4e6c84cd25d77573fda722c4d1846fed168cd4a478781cdb42775e`
-を維持する。
-
-Task 262G は完了。parent Task 262 は残る reserved/binary、builtin/imported、
-enumeration、connective/quantifier formula family の fresh bounded inventory の
-ため open のまま。behavior、test、trace credit、owner crate が不変なので
-`spec_coverage_audit.md` 更新は不要。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 262H Pre-Move Inventory and Specification
 
-fresh inventory では builtin equality/inequality/membership formula family を
-同じ `design_drift` と分類する。3つの cohesive fragment が `runner.rs` 内で
-分離している: 43行 config/source transport、hash
-`cd7bf9a595ba8d6b73c1cafa567da306092c1953e92e9695c3bf67c5c653336d`、
-84行 exact extractor、hash
-`ce691c4917fc00c8b4fe0799f02f8e252e4cf005d3a3a1082ae01c8c0e35bc3c`、
-17行 dedicated node allowlist、hash
-`979560644d3d5827e2abbb016d2b5ea5da22a21cf71f3c35feca89404f3b29d8`。
-3 config は `TermFormulaPayloadBoundary`、`BuiltinInequalityPayloadBoundary`、
-`BuiltinMembershipPayloadBoundary` だけを exact operator、numeral spelling、
-`FormulaKind` へ対応付ける。production extractor の caller は
-`source_builtin_binary_term_formula_detail_keys` 1個。private preservation matrix
-も config constant とその label、left、operator、right field を読み、
-status-prefixed near miss を reject する。
-
-Task 262H はこの3 fragment だけを既存 private `source_formula.rs` leaf へ移動する。
-source transport と全 field、extraction entry、config type、test が consume する
-4 config field、config constant は runner-subtree-only visibility を持つ。
-config の `formula_kind` field、extractor implementation、node allowlist は可能な
-限り leaf-private。facade は extraction entry を unconditional に expose し、config
-constant は facade re-export と `runner.rs` import の両方に `#[cfg(test)]` を使う。
-inferred transport/config type に parent alias は不要。leaf は `FormulaKind` を
-直接 import し、既存 local exact-numeral helper と common source-AST の token、
-structural-child、recovery、node-kind、site projection を consume する。
-production checker/detail consumer と private test code は `runner.rs` とその test
-subtree に byte-for-byte 保持する。
-
-Task 262H は move-only task のまま。3-entry config order/value、exact theorem
-label/token/cardinality、single formula-expression/two-term shape、operator/numeral
-spelling、recovery/node rejection、real AST site/range、formula kind、checker
-payload/detail-key ordering、fail-closed behavior を維持する。canonical `.miz`
-source とその spec/trace/expectation intent、Task 262H0 で strengthen した
-exact/near-miss/corruption matrix、active case 3件、route isolation を
-preservation matrix とする。Task 262H 自体は test を追加せず、spec、trace、
-expectation、public API、`spec_coverage_audit.md` を変更しない。config edit、
-rename/dedup/generalization、reserved-variable formula、builtin type assertion、
-imported/enumeration/connective formula、checker/detail move、semantic checking、
-fact、theorem acceptance、proof、CoreIr、ControlFlowIr、VC は対象外。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 262H0 Test-Gap Inventory and Specification
 
-Task 262H の test-sufficiency review は production move 前に独立 `test_gap` を
-分類した。既存 test は3 active source が期待する fail-closed detail key へ到達し、
-status、wrong label、wrong operator、wrong right numeral、extra root を reject
-することを証明する。一方、extracted formula/left/right site/range、各 config が
-生む `FormulaKind`、3-entry config order を直接 assert しない。また wrong left
-numeral、recovered theorem/formula、duplicate theorem、duplicate formula
-expression、extra operand cardinality rejection が欠ける。そのため、move が
-source provenance/config mapping を壊しても同じ final detail key を維持できる。
-
-Task 262H0 は Task 262H に先行する test-only repair である。new test を追加せず、
-既存 `source_reserve_bridge_reports_gap_or_evidence_detail_for_unsupported_shapes`
-を拡張する。3 config を canonical order で列挙し、exact label/left/operator/right
-value を assert、各 exact payload を extract して `FormulaKind`、formula/operand
-`TypedSiteRef`、hard source-derived range を比較する。recovered label/operator
-token、duplicate theorem、duplicate formula expression、extra term expression の
-bounded synthetic builder state と、各 config の wrong-left case を加え、すべて
-既存 payload-extraction boundary で fail させる。test support はこの matrix に
-必要な最小 corruption flag/builder だけを追加してよい。
-
-Task 262H0 では production source、`.miz`、expectation、trace、spec、public API、
-diagnostic、payload behavior、test name、test count を変更しない。既存 behavior
-が test subject であり新 intent ではない。assertion は strengthen だけを許す。
-focused test、unit 272件と unchanged list hash、active type 188件、relevant-crate
-test、workspace fmt/Clippy/test、diff check を必須とする。この test-only task は
-move-only Task 262H より前に別 commit とする。coverage credit、owner crate、
-authority artifact が不変なので `spec_coverage_audit.md` 更新は不要。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 262H0 Test Repair Result
 
-Task 262H0 は test の追加・rename なしで既存 test を strengthen した。canonical
-config loop は3 entry 全件を order、exact label/left/operator/right value、resulting
-`FormulaKind`、独立計算した formula/operand range と対応する real AST site まで
-固定する。各 config に wrong-left rejection も追加した。5つの bounded
-corruption は recovered theorem label、recovered formula operator、duplicate
-theorem、duplicate formula expression、extra operand cardinality を cover する。
-synthetic duplicate/extra node は独立 ownership の allowlisted node kind を使い、
-early node-policy guard ではなく意図した extractor cardinality branch へ到達する。
-
-default/status-bearing builder は従来の exact token kind/text、child order、range、
-offset、root construction を維持する。production extractor の import は private
-test subtree だけ。`support.rs` は 6,655 行、hash
-`5db1b0dc66f8149050d04f3f487c7e9efb201b990e871e8766cafbfca77b7d97`、
-`source_gap_and_equality.rs` は 3,067 行、hash
-`0178a217c935d42d4f229a30e3875989ac1aa9ae6bcd56057e931b7b05d7660a`。
-production source、`.miz`、spec、trace、expectation、public API、diagnostic、
-payload behavior、test name、test count は不変。
-
-focused test と unit test 272件、active type 188件は全成功し、raw/normalized
-test-list hash は
-`5e41e4dbfcc303322c246a612de61926a628957a168589b45864d0a5070bb07e` と
-`c0c2b80f8b4e6c84cd25d77573fda722c4d1846fed168cd4a478781cdb42775e`
-を維持する。Task 262H0 は完了し、Task 262H で後続 production move も完了した。
-test intent、coverage credit、owner crate が不変なので
-`spec_coverage_audit.md` 更新は不要。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 262H Move Result
 
-Task 262H は inventory 済み builtin-binary 3 fragment を既存 private
-`source_formula.rs` leaf へ移動した。review normalization により、config/transport、
-extractor、allowlist body は必要な runner-subtree visibility と rustfmt whitespace
-だけを除けば HEAD と同一。3 config entry は exact order、label、operator、
-numeral spelling、`FormulaKind` value を維持する。
-
-`runner.rs` は 14,430 行、hash
-`c0f358ac368f31c560f204df8e89e8885144366c9871f288a0306fa84e2ae981`、
-24行 phase facade は hash
-`d3b9de31b1bf6c2b68d4bafd088c7b88addab6db083a5b5adff93e581f1981d4`、
-310行 source-formula leaf は hash
-`32978c9783b913439e9f8e94d326789c13aefff4d5e8326c669cb1a7d9745d6c`。
-unchanged の147行 source-AST と1,474行 source-reserve leaf は hash
-`baf131e5f82846df2286ad68c6e8bad9d2642af2ce530f7b8c7362900ef2aa9e` と
-`88cf0cf08de2e61b2e6342aacc36ee01e20e00606d0c51f4bf7b5c64495253db`
-を維持する。
-
-extraction entry は private facade を unconditional に横断する。config constant
-は `#[cfg(test)]` のときだけ横断し、config type と test-consumed field 4個は
-runner-subtree visibility、`formula_kind` と node allowlist は leaf-private。
-inferred transport/field は facade type alias なしで runner-subtree-visible。
-production detail/checker caller と H0 test/support code は byte-for-byte 不変。
-unit test 272件と relevant-crate test、active type 188件は全成功し、
-raw/normalized test-list hash は
-`5e41e4dbfcc303322c246a612de61926a628957a168589b45864d0a5070bb07e` と
-`c0c2b80f8b4e6c84cd25d77573fda722c4d1846fed168cd4a478781cdb42775e`
-を維持する。
-
-Task 262H は完了。parent Task 262 は reserved-variable/binary、builtin
-type-assertion、imported、set-enumeration、connective/quantifier formula family の
-fresh bounded inventory のため open のまま。behavior、authority、coverage
-credit、owner crate が不変なので `spec_coverage_audit.md` 更新は不要。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 262I Pre-Move Inventory and Specification
 
-clean HEAD `628b3272` の fresh inventory により、builtin type-assertion formula
-family を `runner.rs` の連続する3 fragment として分離した。
-
-- lines 1,649-1,656 の8行 `SourceBuiltinTypeAssertionFormula` transport、hash
-  `88bc334c400dd92327d5fdc25e90efef1560cc097f5f2ecd6a5a822883082da4`。
-- lines 12,988-13,069 の82行
-  `extract_source_builtin_type_assertion_formula` entry、hash
-  `c4d2a3911147e0ceefdb6d4f0b767e19ea829cc66e8f52d67fb5c146e2b3540d`。
-- lines 13,686-13,701 の16行 dedicated node allowlist、hash
-  `1e7c125594df441e775eac25259e0dd5c3a1081896ac461a5c441fb53748a844`。
-
-この family は Chapter 14.2.3 type-assertion shape と active
-`fail_type_elaboration_builtin_type_assertion_formula_gap_001.miz` sidecar の
-exact source-derived slice を実装する。trace/expectation は real numeral term、
-type-assertion formula、builtin-set type payload の後、numeric-type/partial-formula
-diagnostic で fail closed することを要求する。production checker/detail caller は
-`runner.rs` に保持する。
-
-Task 262I はこの3 fragment だけを既存 private `source_formula.rs` leaf へ移動する。
-extractor は既存 lower-level `source_reserve.rs` leaf の `SourceTypeExpression` と
-`extract_builtin_source_type_expression` を直接 consume する。これにより acyclic
-`source_formula -> source_reserve` projection dependency を確立し、
-`source_reserve` からの reverse dependency はない。extraction entry は phase
-facade を unconditional に横断する。inferred transport と consume される6 field
-は runner-subtree visibility、allowlist は leaf-private とし、config、test-only
-re-export、facade type alias は不要。
-
-Task 262I は move-only とする。theorem label/token、recovery policy、structural
-cardinality、numeral spelling、asserted builtin-set constraint、payload site/range、
-checker output、detail key、ordering、fail-closed behavior は不変。helper rename、
-deduplication、generalization、semantic edit、test rewrite は行わない。exact active
-source、trace、expectation、Task 262I0 matrix、route-isolation case、active type
-188件、272-test list を preservation oracle とする。coverage credit、owner crate、
-deferred status は不変なので `spec_coverage_audit.md` 更新は不要。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 262I0 Test-Gap Inventory and Specification
 
-Task 262I test-sufficiency review により、production move 前に修復すべき独立
-`test_gap` が見つかった。既存 positive unit test は checker kind/status を確認し、
-formula/subject site と asserted range を同じ extraction payload の値へ比較するが、
-formula、subject、asserted-type の `TypedSiteRef` と source range を独立固定せず、
-`payload.asserted_type_site` と payload-level builtin-set spelling/head/empty
-attributes も直接確認していない。
-
-negative matrix は wrong label、status prefix、wrong numeral、builtin `object`、
-attributed `set`、extra reserve/root content を reject するが、exact theorem label
-または `is` token の recovery、duplicate theorem/formula-expression、extra formula
-child、negation/wrong direct formula token、extra assertion operand を検査しない。
-これらは Task 262I が保持すべき exact recovery、singleton、token、two-operand
-contract の branch である。
-
-Task 262I0 は test-only repair とする。既存 shared synthetic builder に bounded
-builtin type-assertion corruption shape を追加し、既存
-`source_reserve_bridge_reports_gap_or_evidence_detail_for_unsupported_shapes` test を
-strengthen する。fixed theorem label、numeral、`is`、`set` spelling から expected
-source offset を独立導出し、formula/subject/asserted type の source/node kind と
-exact site/range、payload spelling/head/attributes、checker handoff を assertion する。
-各 recovery/duplicate/token/cardinality corruption は extraction なし、かつ既存
-payload extraction-gap detail key のままでなければならない。
-
-Task 262I0 は test を追加せず、production source、`.miz`、expectation、trace、
-specification、public API、diagnostic、payload behavior、test name/count を変更しない。
-move-only Task 262I より前の独立 commit とする。preservation coverage だけの修復
-なので `spec_coverage_audit.md` は変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 262I0 Test Repair Result
 
-Task 262I0 は test を追加・rename せず既存 test を strengthen した。positive
-matrix は exact label、subject、`is`、`set` spelling から formula、numeral-subject、
-asserted-type range を導出し、node kind/range で各 expected site を独立選択し、
-extraction payload の全 field を固定する。checker type-entry cardinality を2件に
-固定し、asserted-type site owner の entry が厳密に1件、subject term entry が
-subject site owner であることを要求し、checked formula と normalized asserted
-type を独立 source expectation に anchor する。
-
-bounded corruption builder は default-off の recovery、duplicate、token-shape、
-structural-cardinality control だけを追加する。negative matrix は recovered exact
-label、recovered `is`、duplicate theorem、duplicate formula expression、extra
-formula child、negation、extra assertion operand を検査する。全 case は extraction
-なしで、既存
-`type_elaboration.external_dependency.ast_payload_extraction` detail key を維持する。
-
-`support.rs` は6,765行、hash
-`757e507c998c0a0acdc6334b3d9ea1c68a0dbe9b87bb0eb623fca93e49942b4b`、
-`source_gap_and_equality.rs` は3,250行、hash
-`ed70cdc2536d6f44362c56b303cedee4ac0c666809abc4c1189b283963ce4b90`。
-production source、`.miz`、specification、trace、expectation、public API、
-diagnostic、payload behavior、test name/count は不変。
-
-focused test、relevant-crate test、unit test 272件、active type 188件、format、
-all-target/all-feature Clippy、workspace test は全成功。plan/count 403/367、type
-coverage 235/223、pass/fail 219/184、raw/normalized test-list hash と4 CLI hash は
-不変。Task 262I0 は完了し、move-only Task 262I で後続 production move も完了した。
-behavior、test intent、coverage credit、owner crate が不変なので
-`spec_coverage_audit.md` 更新は不要。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 262I Move Result
 
-Task 262I は inventory 済み builtin type-assertion 3 fragment を既存 private
-`source_formula.rs` leaf へ移動した。review normalization により transport、
-extractor、allowlist body は必要な runner-subtree visibility だけを除けば HEAD
-`1b113e8b` と byte-equivalent。strengthen 済み Task 262I0 test/support file と
-production checker/detail consumer はすべて byte-for-byte 不変。
-
-`runner.rs` は14,320行、hash
-`7d347e8a932ec5a4115540a6e6822b0ee23a6e41e919300ec56c04e5511303e4`、
-24行 phase facade は hash
-`61b5b82055f4f726d3b5209e2e6b57a176d0acaac5fbef9e1614780490306270`、
-423行 source-formula leaf は hash
-`a055d6e2220961f5445bbf4b5394b2ffc72738160dbd228af399e267241ec43d`。
-unchanged の147行 source-AST と1,474行 source-reserve leaf は hash
-`baf131e5f82846df2286ad68c6e8bad9d2642af2ce530f7b8c7362900ef2aa9e` と
-`88cf0cf08de2e61b2e6342aacc36ee01e20e00606d0c51f4bf7b5c64495253db`
-を維持する。
-
-extraction entry は private phase facade を unconditional に横断する。inferred
-transport と runner が consume する6 field は facade type alias なしの
-runner-subtree visibility、dedicated allowlist は leaf-private。
-`source_formula` は既存 `source_reserve` の `SourceTypeExpression` と builtin
-type-expression projection を直接 consume し、reverse import がないため dependency
-は acyclic。checker payload construction、detail rendering、route ordering、top-level
-orchestration は `runner.rs` に保持する。
-
-focused preservation test、relevant-crate test、unit test 272件、active type 188件は
-全成功。plan/count 403/367、type coverage 235/223、pass/fail 219/184、
-raw/normalized test-list と4 CLI hash は不変。format、all-target/all-feature
-Clippy、workspace test、diff cleanliness も成功。Task 262I は完了した。behavior、
-authority、coverage credit、owner crate、deferred status を変更しないため
-`spec_coverage_audit.md` は不変。parent Task 262 は残る formula family の fresh
-bounded inventory のため open のまま。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Tasks 262J1-J2 Pre-Move Inventory and Specification
 
-clean HEAD `fdce5d8a` の fresh inventory により、imported predicate/functor
-formula work を `runner.rs` の5 fragment に分離した。
-
-- lines 1,648-1,662 の15行 transport、hash
-  `474b345cfa983e95fcce895a08a56c89a51bd1d3b8cf542b0fbacb16c42fe76e`。
-- lines 12,978-13,104 の127行 family extractor、hash
-  `6b967aff4d407f448cd8fd72aac205e88824c327f0048bb325786ef9a73e8bd4`。
-- lines 13,486-13,546 の61行 exact infix transport/helper、hash
-  `9b6b8d4f5fd417f6654f4232448514a279f006309c1308219514024bee4421b2`。
-- lines 13,593-13,615 の23行 dedicated allowlist、hash
-  `2daf39d17bde7186fe4a7fff4ad7fe6270ffc7a71e6ec1bdb44dbc2ba03fdafa`。
-- lines 13,706-13,748 の43行 shared imported symbol resolver/provenance pair、
-  hash `fc4914d1c4a557f1401db035032c22e84430faf0ac9355b8d3a1cf3716761955`。
-
-exact active sidecar は imported visibility/conflict、import-prelude、
-parenthesized infix term surface、predicate application syntax に従う。real imported
-`divides` predicate と `++` functor symbol、numeral site 3個、infix functor site
-1個、predicate formula 1個を渡した後、missing numeric/signature/
-predicate-signature payload と partial formula checking で fail closed する。
-
-shared resolver はこの family の predicate/functor resolution と、保持する
-imported-attribute extractor の計3 caller を持つ。Task 262J1 は resolver/provenance
-pair だけを先に移動する。resolver entry は runner-subtree visibility と
-unconditional parent-facade alias、provenance predicate は leaf-private とし、全
-caller は不変。
-
-J1 後の Task 262J2 は transport、exact family extractor、exact infix projection、
-dedicated allowlist だけを移動する。extractor は facade を unconditional に横断し、
-transport と12 field は facade type alias なしの runner-subtree visibility、infix
-transport/helper と allowlist は leaf-private。checker/detail/orchestration caller と
-imported-attribute family は `runner.rs` に保持する。両 task は move-only で、
-rename、deduplication、generalization、accepted-shape/symbol-admission change、
-operator metadata change、diagnostic/detail/order change、test、authority edit を禁止。
-dependency は `source_formula -> source_ast` と既存 `source_formula -> source_reserve`
-edgeにより acyclic のまま。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 262J0 Test-Gap Inventory and Specification
 
-J1/J2 test-sufficiency review により独立 `test_gap` を確認した。現 positive matrix
-は extractor-returned site で checker term/formula を探索し、imported symbol は
-module path だけを確認する。formula、outer numeral、infix term、両 infix operand の
-site/range、12 transport field、exact symbol kind/spelling/module/contribution
-provenance、checker ordering を独立固定しない。
-
-既存 negative matrix は source near-miss 12件と symbol-env case 6件を持つが、
-direct extractor assertion、bounded recovery/duplicate、predicate segment/head
-cardinality、parenthesized/infix cardinality、imported-contribution provenance
-corruption を持たない。Task 262J0 は test-only repair とし、既存
-builder/environment support に default-off bounded corruption control を追加し、
-既存 test を independently derived source expectation と exact checker handoff/order
-で strengthen する。全 negative case は extraction なし、かつ既存 extraction-gap
-detail key を維持しなければならない。
-
-Task 262J0 は test を追加せず、production source、`.miz`、expectation、trace、
-specification、public API、diagnostic、payload behavior、test name/count を変更しない。
-move-only J1/J2 より前の独立 commit とする。coverage credit、owner crate、follow-up
-ownership、deferred rationale は不変なので `spec_coverage_audit.md` は変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 262J0 Test Repair Result
 
-Task 262J0 は test の追加・rename なしで既存 imported predicate/functor test を
-strengthen した。positive matrix は formula、outer numeral、infix term、infix の両
-operand、predicate formula の site/range を source spelling から独立導出する。12
-extraction transport field 全て、imported predicate/functor の exact kind、spelling、
-module、contribution provenance、checker term order、checked formula/term site handoff
-を固定した。
-
-default-off bounded corruption builder は recovered label/functor、duplicate
-theorem/formula、formula/segment/head cardinality、parenthesized/infix cardinality、
-imported-contribution provenance を網羅する。既存 source near miss 12件、structural
-corruption 11件、既存 symbol-environment case 6件、isolated local-contribution case
-は全て direct extraction なし、かつ不変の
-`type_elaboration.external_dependency.ast_payload_extraction` detail key となる。
-
-`support.rs` は6,943行、hash
-`68e90fa32900462fbeac2065209d183762d85e4e32ddbe16d261680d564eed98`、
-`source_gap_and_equality.rs` は3,525行、hash
-`69e2a9f82e83d95247f5ec1d88244b38a071db1a09bcae34ed4772401b35924d`。
-production source、`.miz`、specification、trace、expectation、public API、diagnostic、
-payload behavior、test name/count は不変。
-
-focused test、relevant-crate test、unit test 272件、active type case 188件は成功。
-plan/count は403/367、type coverage 235/223、pass/fail 219/184、raw/normalized
-test-list と4 CLI hash は不変。format、all-target/all-feature Clippy、workspace test、
-diff cleanliness も成功した。Task 262J0 は完了し、move-only Task 262J1 が次。
-behavior、test intent、coverage credit、owner crate、deferred status は不変なので
-`spec_coverage_audit.md` は変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 262J1 Move Result
 
-Task 262J1 は inventory 済み shared imported formula symbol resolver/provenance pair
-だけを既存 private `source_formula.rs` leaf へ移動した。resolver entry に必要な
-`pub(in crate::runner)` visibility を除いて正規化した43行 moved body は baseline
-hash `fc4914d1c4a557f1401db035032c22e84430faf0ac9355b8d3a1cf3716761955`
-を保持する。predicate、functor、imported-attribute の caller body と順序は不変。
-
-resolver entry だけが unconditional parent-only alias で private phase facade を
-横断し、provenance predicate は leaf-private のまま。`ContributionKind` と
-`NamespacePath` は implementation と共に移動し、runner-owned `SymbolEnv`、
-`SymbolKind`、`ResolverSymbolId` use は `runner.rs` に保持した。既存の
-`source_formula -> source_ast` と `source_formula -> source_reserve` dependency は
-reverse edge なしで acyclic のまま。
-
-`runner.rs` は14,277行、hash
-`8d4e3ec02e275e3a5e69f3599285270cc176496b52321af72e29e063ca10fade`、
-25行 phase facade は hash
-`a969e263beb6eee47cbd111ff3efc25ef71122af1e7c7a8ae32a63c5c75dbd25`、
-467行 source-formula leaf は hash
-`eb6ef963457cf16625e00b03fc81795ff89772e253f5c0b3a45a7c592e324bcf`。
-test、authority artifact、checker/detail consumer、public API、diagnostic、payload、
-ordering、fail-closed behavior は不変。
-
-focused preservation test、relevant-crate test、unit test 272件、active type case
-188件は成功。plan/count は403/367、type coverage 235/223、pass/fail 219/184、
-raw/normalized test-list と4 CLI hash は不変。format、all-target/all-feature Clippy、
-workspace test、diff cleanliness も成功した。Task 262J1 は完了し、move-only Task
-262J2 が次。behavior、authority、coverage credit、owner crate、deferred status は
-不変なので `spec_coverage_audit.md` は変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 262J2 Move Result
 
-Task 262J2 は inventory 済み imported predicate/functor fragment 4個だけを既存
-private `source_formula.rs` leaf へ移動した。必要な runner-subtree visibility だけを
-除いて正規化すると、15行 transport、127行 extractor、61行 exact infix
-projection、23行 allowlist は baseline hash
-`474b345cfa983e95fcce895a08a56c89a51bd1d3b8cf542b0fbacb16c42fe76e`、
-`6b967aff4d407f448cd8fd72aac205e88824c327f0048bb325786ef9a73e8bd4`、
-`9b6b8d4f5fd417f6654f4232448514a279f006309c1308219514024bee4421b2`、
-`2daf39d17bde7186fe4a7fff4ad7fe6270ffc7a71e6ec1bdb44dbc2ba03fdafa`
-を保持する。
-
-extractor だけが private phase facade を unconditional に横断する。transport と12
-field は facade type alias なしの runner-subtree visibility、exact infix
-transport/helper と dedicated allowlist は leaf-private。checker/detail/orchestration
-caller と imported-attribute family は `runner.rs` で不変、moved extractor は Task
-262J1 の leaf-owned resolver と direct source-AST projection を再利用する。sole
-external caller が leaf 内へ移動したため未使用となった
-`exact_numeral_term_node_or_expression` facade/runner alias は削除したが、
-implementation と visibility は不変。
-
-`runner.rs` は14,047行、hash
-`9e47a64eedd35ae7e66629bdfefdaa39a86389d5002925af3887a2b7282222d0`、
-25行 phase facade は hash
-`2fad12f17b75a9ec51e97132846fbe926abeeeffb9f8c32eb78df93d0eab1330`、
-698行 source-formula leaf は hash
-`a4d3fbe9708eade5d3b6ca3db965f3fd119aff8723c30d6ed6fbf9ccd982f049`。
-test、authority artifact、public API、diagnostic、payload、ordering、accepted shape、
-fail-closed behavior は不変。
-
-focused preservation test、relevant-crate test、unit test 272件、active type case
-188件は成功。plan/count は403/367、type coverage 235/223、pass/fail 219/184、
-raw/normalized test-list と4 CLI hash は不変。format、all-target/all-feature Clippy、
-workspace test、diff cleanliness も成功した。Task 262J2 は完了し、parent Task 262
-は残る formula family の fresh bounded inventory のため open のまま。behavior、
-authority、coverage credit、owner crate、deferred status は不変なので
-`spec_coverage_audit.md` は変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Tasks 262K0-K Pre-Move Inventory and Specification
 
-clean HEAD `9625d0a1` の fresh inventory により、exact imported attribute
-assertion family を `runner.rs` の3 fragment に分離した。
-
-- lines 1,649-1,656 の8行 five-field transport、hash
-  `f6b78fea06f451c61eac5286ea41b8f85e33bfa80d4b392cfd68d65e9117f5ca`。
-- lines 12,963-13,103 の141行 exact `empty`/`non empty` two-entry/shared-shape
-  extractor、hash
-  `a7aa82e3b3a97cbdcf2b7506920bda40cf7d4ddeef2feb5a1124c5d7e3b93c05`。
-- lines 13,388-13,408 の21行 dedicated node allowlist、hash
-  `3f13f99cd6fe64cd8baddceefdeed904e4b118d2132c6cecd06a2fe7187f0e76`。
-
-exact active bridge は positive `empty` と attribute-level `non empty` を区別し、
-後者は formula-level negation ではない。両者は `parser.type_fixtures` を import し、
-imported `empty` attribute を要求し、real source-derived numeral 1個と attribute-
-assertion formula 1個を checker へ渡した後、missing numeric および
-formula/attribute semantic payload で fail closed する。Chapter 14 と canonical
-harness はこの polarity boundary を保持し、broader attribute semantics を deferred
-のままにする。
-
-Task 262K は K0 後にこの3 fragment だけを移動する。exact extractor entry 2個は
-runner-subtree visibility と unconditional parent-facade alias、shared-shape extractor
-と allowlist は leaf-private。transport と5 field は runner-subtree visibility とし、
-retained checker helper が transport を引数型として明示するため、transport も
-parent-only type re-export で facade を横断する。これにより consumer の変更・複製を
-避ける。checker/detail/orchestration consumer は `runner.rs` に保持する。moved family
-は leaf-owned imported-symbol resolver、exact numeral projection、source-AST projection
-を再利用する。last external caller の移動後、
-K は `exact_compilation_item_list`、`is_exact_parser_type_fixtures_import`、
-`qualified_symbol_spelling`、`resolve_imported_fixture_term_formula_symbol` の obsolete
-runner/facade alias と runner-only `SymbolKind` import だけも削除する。leaf
-implementation/visibility は不変で、new reverse dependency はない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 262K0 Test-Gap Inventory and Specification
 
-K test-sufficiency review により独立 `test_gap` を確認した。現 positive matrix 2個は
-extractor-returned site で checker term/formula を探索し、imported provenance は
-module path だけを確認する。formula/subject site/range、5 transport field、exact
-`AttributeRef` polarity、symbol kind/spelling/module/contribution provenance、singleton
-checker ordering と formula-to-subject handoff を独立固定しない。
-
-既存 source/environment near miss は rendered gap detail だけを確認し、direct
-extractor rejection、recovery、duplicate theorem/formula expression、formula/
-assertion/attribute-chain/attribute-ref/qualified-symbol/numeral cardinality corruption、
-duplicate/mismatched `non`、isolated imported-contribution-kind corruption を持たない。
-Task 262K0 は test-only repair とし、既存 support に default-off family-specific
-corruption control を追加し、両 variant の既存 test を independently derived source
-expectation、exact provenance/order、direct `None`、不変の
-`type_elaboration.external_dependency.ast_payload_extraction` detail key で strengthen
-する。
-
-Task 262K0 は test を追加せず、production source、`.miz`、expectation、trace、
-specification、public API、diagnostic、payload behavior、test name/count を変更しない。
-move-only K より前の独立 commit とする。coverage credit、owner crate、follow-up
-ownership、deferred rationale は不変なので `spec_coverage_audit.md` は変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 262K0 Test Repair Result
 
-Task 262K0 は test の追加・rename なしで既存 imported attribute assertion variant
-2個を strengthen した。各 positive matrix は exact source spelling から formula/
-subject range を導出し、`IsAssertion`/`NumeralTerm` site を独立選択し、5 transport
-field 全て、direct `AttributeRef` polarity（`[]` と `["non"]`）、exact imported
-attribute kind/spelling/module/contribution provenance を固定する。singleton checker
-term/formula order と formula-to-subject handoff はこの independent site に固定した。
-
-default-off bounded builder は両 variant の recovered label/attribute symbol、duplicate
-theorem/formula expression、formula/assertion/attribute-chain/attribute-ref/qualified-
-symbol/numeral cardinality、unexpected/duplicate `non` を網羅する。既存 source/
-environment near miss と corruption case 22件は全て direct extraction なし、かつ不変の
-`type_elaboration.external_dependency.ast_payload_extraction` detail key となる。shared
-boolean environment builder により、otherwise-identical ImportedSource control の
-extraction 成功後に LocalSource contribution twin が拒否されることも固定した。
-
-`support.rs` は7,146行、hash
-`46340ae9aa4ac03b7e5e458a515814bea4db86de177625c97b57762d894a8025`、
-`source_gap_and_equality.rs` は3,974行、hash
-`101fb755532276a12ce2202f297c318ad77249eab9aa27ce2670fe59e08ab47c`。
-production source、`.miz`、specification、trace、expectation、public API、diagnostic、
-payload behavior、test name/count は不変。
-
-focused test、relevant-crate test、unit test 272件、active type case 188件は成功。
-plan/count は403/367、type coverage 235/223、pass/fail 219/184、raw/normalized
-test-list と4 CLI hash は不変。format、all-target/all-feature Clippy、workspace test、
-diff cleanliness も成功した。Task 262K0 は完了し、move-only Task 262K が次。
-behavior、test intent、coverage credit、owner crate、deferred status は不変なので
-`spec_coverage_audit.md` は変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 262K Move Result
 
-Task 262K は inventory 済み imported attribute assertion fragment 3個だけを既存
-private `source_formula.rs` leaf へ移動した。必要な runner-subtree visibility だけを
-除いて正規化すると、8行 transport、141行 two-entry/shared extractor、21行
-allowlist は baseline hash
-`f6b78fea06f451c61eac5286ea41b8f85e33bfa80d4b392cfd68d65e9117f5ca`、
-`a7aa82e3b3a97cbdcf2b7506920bda40cf7d4ddeef2feb5a1124c5d7e3b93c05`、
-`3f13f99cd6fe64cd8baddceefdeed904e4b118d2132c6cecd06a2fe7187f0e76`
-を保持する。
-
-exact extractor entry 2個は private phase facade を unconditional に横断し、shared
-shape extractor と allowlist は leaf-private。transport と5 field は runner-subtree
-visibility、transport は unchanged checker helper が引数型として明示するため1個の
-parent-only type re-export を持つ。checker/detail/orchestration consumer と順序は
-`runner.rs` で byte-identical のまま。
-
-moved family は leaf-owned imported-symbol resolver、exact numeral projection、
-source-AST projection を直接再利用する。final external caller の移動後、
-`exact_compilation_item_list`、`is_exact_parser_type_fixtures_import`、
-`qualified_symbol_spelling`、`resolve_imported_fixture_term_formula_symbol` の obsolete
-facade/runner alias と runner の unused `SymbolKind` import だけを削除した。leaf
-implementation/visibility は不変で、dependency は acyclic のまま。
-
-`runner.rs` は13,874行、hash
-`d03812923d461dc718cb4236ee5568dfa03ac07e3bfb0f5995627d46f345b2c6`、
-26行 phase facade は hash
-`8e5b39254a2ca468d62db55d3ba7a69bdfaea5248881d5a5c62ca8d3eed526dd`、
-871行 source-formula leaf は hash
-`f1a6888ca7c10bfbf1a8a868261e34d31fa74003512250cdbe5b117e018f19de`。
-test、authority artifact、public API、diagnostic、payload、polarity、ordering、
-accepted shape、fail-closed behavior は不変。
-
-focused preservation test、relevant-crate test、unit test 272件、active type case
-188件は成功。plan/count は403/367、type coverage 235/223、pass/fail 219/184、
-raw/normalized test-list と4 CLI hash は不変。format、all-target/all-feature Clippy、
-workspace test、diff cleanliness も成功した。Task 262K は完了し、parent Task 262 は
-残る formula family の fresh bounded inventory のため open のまま。behavior、
-authority、coverage credit、owner crate、deferred status は不変なので
-`spec_coverage_audit.md` は変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Tasks 262L0-L Pre-Move Inventory and Specification
 
-clean HEAD `be7a2c6e` の fresh inventory により、exact set-enumeration formula
-family を `runner.rs` の4 fragment に分離した。
-
-- lines 1,649-1,659 の11行 eight-field transport、hash
-  `5aa3f3e859cc0313f935e80011ef7be4e05299a0763f97de572eccc500fd71c8`。
-- lines 12,954-13,010 の57行 exact extractor、hash
-  `f05ab26f14f3d28e2f721575ca7a53c74fae9dfeebb0779906fd0a6d45b7fc99`。
-- lines 13,148-13,190 の43行 private exact-set transport/projection、hash
-  `45c155d6556740807b395b0e1a8114094db074ac6768ee7d892b7e0eb2d26036`。
-- lines 13,237-13,251 の15行 dedicated node allowlist、hash
-  `461650cdedc2f56cdf072e95e1ef0243bc7be1a3c7323e0628c652ad562b6dd1`。
-
-exact active bridge は
-`SetEnumerationPayloadBoundary: {1, 2} = {1, 2}` だけを認識し、real source AST
-から numeral item 4個、set-enumeration term 2個、equality formula 1個を投影した後、
-missing numeric type payload、missing set result-type payload、partial formula checking
-で fail closed する。canonical Chapter 13、exact `.miz`、trace row、expectation、
-harness は一致し、broader set-enumeration extraction/semantics は deferred のまま。
-
-Task 262L は L0 後にこの4 fragment だけを移動する。eight-field transport と全 field
-は runner-subtree visibility、exact extraction entry だけは unconditional parent-facade
-alias とする。exact-set transport、projection helper、allowlist は leaf-private。
-checker/detail consumer `source_set_enumeration_formula_output` は `runner.rs` に
-byte-identical で保持する。この consumer は transport type を名指ししないため、
-facade type re-export は不要。moved family は leaf-owned exact numeral/source-AST
-projection を直接再利用し、reverse dependency を導入しない。last external exact-
-numeral caller の移動後、L は obsolete `exact_numeral_term_operand` facade alias と
-runner import だけを削除し、leaf implementation/visibility は変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 262L0 Test-Gap Inventory and Specification
 
-L test-sufficiency review により独立 `test_gap` を確認した。positive matrix は8
-transport field を独立固定する一方、left/right item vector を結合し、checker term
-6個を unordered search で探し、formula handoff を extractor-returned site と比較する。
-そのため 2+2 item grouping、両方の exact punctuation triple、deterministic checker
-six-term output order と対応する exact term-kind order、formula の independently
-derived site と `[left_set, right_set]` handoff を独立固定しない。
-
-既存 near-miss matrix は rendered extraction-gap detail だけを確認し、extractor を
-direct call せず、left item mismatch 2個を結合する。isolated four-position numeral
-near miss と、formula-expression/formula/operand、term-wrapper/set/item、punctuation、
-numeral-child の allowlisted kind/cardinality corruption がない。Task 262L0 は
-test-only repair とし、既存 support に default-off family-specific corruption control
-を追加し、既存 test を independent grouping/punctuation/order expectation、direct
-`None`、不変の `type_elaboration.external_dependency.ast_payload_extraction` detail key
-で strengthen する。
-
-Task 262L0 は test を追加せず、production source、`.miz`、expectation、trace、
-specification、public API、diagnostic、payload behavior、test name/count を変更しない。
-move-only L より前の独立 commit とする。coverage credit、owner crate、follow-up
-ownership、deferred rationale は不変なので `spec_coverage_audit.md` は変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 262L0 Test Repair Result
 
-Task 262L0 は test の追加・rename なしで既存 exact set-enumeration matrix を
-strengthen した。positive path は separate 2+2 item group と両 punctuation triple を
-固定し、deterministic six-site/six-kind checker output、equality formula site と ordered
-set term を independently derived source site に固定する。8 transport field は全て
-independent に固定したまま。
-
-item-spelling near miss 4件は left-first、left-second、right-first、right-second を
-個別に isolate する。全既存 source near miss は不変の gap detail を確認する前に
-extractor を direct call する。default-off/allowlisted corruption variant 11件は formula-
-expression cardinality/kind、formula child/kind/operand cardinality、term-wrapper
-kind/cardinality、set kind/punctuation/item cardinality、numeral-child cardinality を
-独立に網羅し、各 case は direct extraction なし、かつ不変の
-`type_elaboration.external_dependency.ast_payload_extraction` detail key となる。
-
-`support.rs` は7,330行、hash
-`451611d56191b98685fc27fd9a87eec36090f7b1dba11aa3a7a7f8e8d9e801e6`、
-`source_gap_and_equality.rs` は4,079行、hash
-`e1836ed29e9b6593970047b5e68f746def70cbd86f9fd98b11aad7841459afb7`。
-production source、`.miz`、specification、trace、expectation、public API、diagnostic、
-payload behavior、test name/count は不変。
-
-focused test、relevant-crate test、unit test 272件、active type case 188件は成功。
-plan/count は403/367、type coverage 235/223、pass/fail 219/184、raw/normalized
-test-list と4 CLI hash は不変。format、all-target/all-feature Clippy、workspace test、
-diff cleanliness も成功した。Task 262L0 は完了し、move-only Task 262L が次。
-behavior、test intent、coverage credit、owner crate、deferred status は不変なので
-`spec_coverage_audit.md` は変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 262L Move Result
 
-Task 262L は inventory 済み set-enumeration fragment 4個だけを既存 private
-`source_formula.rs` leaf へ移動した。required runner-subtree visibility と wrapped
-public extraction signature だけを normalize すると、11行 transport、57行 extractor、
-43行 exact-set projection、15行 allowlist は baseline hash
-`5aa3f3e859cc0313f935e80011ef7be4e05299a0763f97de572eccc500fd71c8`、
-`f05ab26f14f3d28e2f721575ca7a53c74fae9dfeebb0779906fd0a6d45b7fc99`、
-`45c155d6556740807b395b0e1a8114094db074ac6768ee7d892b7e0eb2d26036`、
-`461650cdedc2f56cdf072e95e1ef0243bc7be1a3c7323e0628c652ad562b6dd1`
-をそれぞれ維持する。
-
-transport と8 field は runner-subtree visibility、exact extractor だけが phase facade
-を越える。exact-set transport/helper/allowlist は leaf-private のままで、transport
-type alias は追加しない。保持した `source_set_enumeration_formula_output` checker/
-detail consumer は hash
-`710f25b9f406aad51eeb99c105abd79f9477e0c18b60ea3f27124a1b81330355`
-で HEAD と byte-identical。final external caller の移動後、obsolete
-`exact_numeral_term_operand` facade alias/runner import だけを削除し、leaf
-implementation/visibility/body は不変。
-
-`runner.rs` は13,744行、hash
-`2fa77cd1126d591f37c13e2e7c0fb2522a3e9a269ecb81dbb26f86ffcd93f234`、
-25行 phase facade は hash
-`8aca34293b02fad31567ec4b3d2865e8c8fac95c333d060718885d462c19b8af`、
-1,003行 source-formula leaf は hash
-`4bbe60d38ca7af3a320ab97c8b4f6e2aa61abd50dc41c68c6431e0fb7684af01`。
-test、authority artifact、public API、diagnostic、payload、ordering、accepted shape、
-fail-closed behavior は不変。
-
-focused preservation test、relevant-crate test、unit test 272件、active type case 188件は
-成功。plan/count は403/367、type coverage 235/223、pass/fail 219/184、raw/
-normalized test-list と4 CLI hash は不変。format、all-target/all-feature Clippy、
-workspace test、diff cleanliness も成功した。Task 262L は完了し、parent Task 262 は
-残る formula family の fresh bounded inventory のため open のまま。behavior、
-authority、coverage credit、owner crate、deferred status は不変なので
-`spec_coverage_audit.md` は変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Tasks 262M0-M Pre-Move Inventory and Specification
 
-clean HEAD `334b83e2` の fresh inventory により、exact formula connective/
-quantifier family を `runner.rs` の3 fragment に分離した。
-
-- lines 1,649-1,661 の13行 ten-field transport、hash
-  `98f4a9a771cebc18faa43d1b266dd78f931f00a7d9435c7f6606cfd807a6e424`。
-- lines 12,942-13,076 の135行 exact extractor、hash
-  `a64080512c757a0a8f85357ec5a086285d7139257bd816bdbb85a5ae19bcd56f`。
-- lines 13,123-13,140 の18行 dedicated node allowlist、hash
-  `80c39e182da04f34e2598f0670fcba4c17785dbea34373ef7d7847e3488cce1f`。
-
-exact active bridge は contradiction premise が universal `set`-typed binder を
-含み、その body が negated contradiction である形だけを認識する。real source AST
-から contradiction constant 2個と implication/quantified/negation shell を投影し、
-missing formula/quantifier payload で fail closed する。canonical Chapter 14、exact
-`.miz`、trace row、expectation、harness は一致し、broader connective、binder、child-
-formula、theorem semantics は deferred のまま。
-
-Task 262M は M0 後にこの3 fragment だけを移動する。ten-field transport と全 field
-は runner-subtree visibility、exact extraction entry だけは unconditional parent-
-facade alias とし、allowlist は leaf-private。checker/detail consumer
-`source_formula_connective_quantifier_output` は `runner.rs` に byte-identical で保持する。
-consumer は transport type を名指ししないため facade type re-export は不要。moved
-extractor は leaf-owned source-AST projection と `source_reserve` builtin type-
-expression projection を直接再利用し、dependency direction は acyclic のまま。move
-後は production runner で unused となる `SurfaceFormulaConnective`、
-`SurfaceFormulaConstant`、`SurfaceFormulaPrefixOperator`、`SurfaceQuantifierKind` import
-4個だけを削除し、test-support import は独立して保持する。他 runner caller が必要な
-`extract_builtin_source_type_expression`、`TypeHeadInput`、全 source-AST facade alias
-は保持する。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 262M0 Test-Gap Inventory and Specification
 
-M test-sufficiency review により独立 `test_gap` を確認した。positive matrix は10
-transport field と5 shell state を独立固定する一方、extractor-returned site による
-unordered search で checker formula を探す。deterministic five-site/five-kind output
-order と complete diagnostic provenance を固定せず、2 contradiction-constant formula
-diagnostic だけを source anchor し、implication/quantified/negation diagnostic key/range
-pair を確認しない。binder segment/type-expression/head shape と direct `x being` / `set`
-token も independently assert しない。
-
-既存 near-miss matrix は rendered extraction-gap detail だけを確認し、extractor を
-direct call しない。formula-expression、implication/repetition/token/operand、premise
-constant、universal token/child、binder segment/token/child、negation token/child、body
-constant、recovered inner node の allowlisted corruption がない。attributed-set binder
-は `AttributeChain`、`QualifiedSymbol`、`PathSegment` が current family allowlist を
-必ず失敗するため、別の non-allowlisted near miss とする。M0 は production boundary
-を広げず、後段 attributes-empty guard の isolate を主張しない。Task 262M0 は test-
-only repair とし、既存 support に default-off family-specific allowlisted corruption
-control と別の attributed-set near miss を追加し、既存 test を independent binder、
-output-order/state、diagnostic key/range、direct `None`、不変の
-`type_elaboration.external_dependency.ast_payload_extraction` detail-key assertion で
-strengthen する。default-off corruption は family allowlist と preceding guard を保持し、
-rejection を isolate する。
-
-Task 262M0 は test を追加せず、production source、`.miz`、expectation、trace、
-specification、public API、diagnostic、payload behavior、test name/count を変更しない。
-move-only M より前の独立 commit とする。coverage credit、owner crate、follow-up
-ownership、deferred rationale は不変なので `spec_coverage_audit.md` は変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 262M0 Test Repair Result
 
-Task 262M0 は test の追加・rename なしで既存 exact connective/quantifier matrix を
-strengthen した。positive path は binder segment/type-expression/type-head range と
-direct `x`、`being`、`set` token を固定する。10 transport field は全て independent
-に anchor したまま。実測 deterministic checker order は body contradiction、
-negation、quantified shell、implication、premise contradiction で、5 entry 全ての
-exact site/kind/context/partial status/deferred reason を固定する。formula-payload 4件と
-quantifier-payload 1件の diagnostic key/range pair は complete multiset として固定する。
-
-全既存 connective/quantifier near miss は不変の detail key より先に direct extractor
-rejection を確認する。attributed-set binder は production を広げず、後段 attributes-
-empty guard の isolate を主張しない explicit non-allowlisted near miss とする。
-default-off/allowlisted corruption 18件は theorem/formula-expression shape、implication
-repetition/token/operand、premise kind/token、universal token/child、binder segment
-kind/token/child、negation token/child、body kind/token、descendant recovery を独立に
-網羅する。各 case は direct extraction なし、かつ不変の
-`type_elaboration.external_dependency.ast_payload_extraction` detail key となる。
-
-`support.rs` は7,551行、hash
-`7315c2d22d5d0e7dbf27c2086e34f3177e6b1fba6c57f3e9db0cd51660081af0`、
-`source_gap_and_equality.rs` は4,260行、hash
-`dd39dcbaf71644d6e6a9d0035fb9d838925e6d2db0892b58009c53e495fe6369`。
-production source、`.miz`、specification、trace、expectation、public API、diagnostic、
-payload behavior、test name/count は不変。
-
-focused test、relevant-crate test、unit test 272件、active type case 188件は成功。
-plan/count は403/367、type coverage 235/223、pass/fail 219/184、raw/normalized
-test-list と4 CLI hash は不変。format、all-target/all-feature Clippy、workspace test、
-diff cleanliness も成功した。Task 262M0 は完了し、move-only Task 262M が次。
-behavior、test intent、coverage credit、owner crate、deferred status は不変なので
-`spec_coverage_audit.md` は変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 262M Move Result
 
-Task 262M は inventory 済み formula connective/quantifier fragment 3個だけを既存
-private `source_formula.rs` leaf へ移動した。required runner-subtree visibility だけを
-除去すると、13行 transport、135行 extractor、18行 allowlist は baseline hash
-`98f4a9a771cebc18faa43d1b266dd78f931f00a7d9435c7f6606cfd807a6e424`、
-`a64080512c757a0a8f85357ec5a086285d7139257bd816bdbb85a5ae19bcd56f`、
-`80c39e182da04f34e2598f0670fcba4c17785dbea34373ef7d7847e3488cce1f`
-を維持する。
-
-transport と10 field は runner-subtree visibility、exact extractor だけが phase facade
-を越え、transport type alias は追加せず、allowlist は leaf-private のまま。保持した
-`source_formula_connective_quantifier_output` checker/detail consumer は hash
-`7bc5d0899674fda17899b4c78463ac1d83e9ed8ad99196a4b0bb2eaf11f844f0`
-で HEAD と byte-identical。production runner で unused となった syntax-enum import
-4個だけを削除し、test support、`TypeHeadInput`、builtin type-expression extractor、
-still-used source-AST facade alias は全て不変。dependency direction は acyclic。
-
-`runner.rs` は13,573行、hash
-`1ea8e97e9f87e92bbcdd5b9e17e8a1d829b46f34f14c1a53d983529ece9ce58f`、
-26行 phase facade は hash
-`1eb16a6815df883433ef6de6e7814cba7102e5962c8b5425ac875caba0c5fb69`、
-1,173行 source-formula leaf は hash
-`d418905106d5b6313fe62644c4145c83428c056880f2f9b2d74cc2eb2d00760d`。
-test、authority artifact、public API、diagnostic、payload、ordering、accepted shape、
-fail-closed behavior は不変。
-
-focused preservation test、relevant-crate test、unit test 272件、active type case 188件は
-成功。plan/count は403/367、type coverage 235/223、pass/fail 219/184、raw/
-normalized test-list と4 CLI hash は不変。format、all-target/all-feature Clippy、
-workspace test、diff cleanliness も成功した。Task 262M は完了し、parent Task 262 は
-残る formula family の fresh bounded inventory のため open のまま。behavior、
-authority、coverage credit、owner crate、deferred status は不変なので
-`spec_coverage_audit.md` は変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Tasks 262N0-262Q Reserved-Variable Formula Fresh Inventory
 
-Task 262M 後の fresh inventory は、残る source-formula code を 1つの shared
-reserved-variable source model/substrate と、その後の 3 bounded extraction owner
-（direct binary、parenthesized binary、type assertion）に分類する。checker-output
-transport、builder、validator、detail key、diagnostic は Task 263 のままにする。
-concrete config と thin named route wrapper は、source extraction を Task 263 が
-consume する result-role / invalid-detail-key contract に結合せず移動できる後続
-inventory まで、paired のまま `runner.rs` に保持する。
-
-shared source substrate は reserved-variable config/model の type definition/schema
-（concrete config value/static ではない）、builtin/mode projection predicate、
-asserted-head relation check、exact mode-definition/expansion check、shared identifier
-operand projection、source-use ordinal calculation から成る。single-parenthesized
-operand projection は Task 262P、3 family-specific node allowlist はそれぞれ Tasks
-262O-262Q の generic core と一緒に保持する。`runner.rs:12974` までとした最初の
-family 候補範囲は `source_module_binding_env` の開始を含むため review で却下され、
-reserved-variable helper/allowlist region 全体の clean endpoint は 12969 行目であり、
-各 task は割り当てられた subfragment だけを選ぶ。projection predicate を model type
-definition より先に移すと runner-owned source configuration への ownership direction
-が逆転する。したがって Task 262N はそれらの definition と shared substrate を一緒に
-移し、保持 validator が必要とする alias だけを parent-only で公開する。concrete
-config value/static と thin named wrapper は Task 263 contract boundary の後続 inventory
-まで paired のまま `runner.rs` に保持する。
-
-独立 test review はこの move 前に bounded `test_gap` を確認した。既存 exact equality
-bridge は real checker handoff と多数の detail-key failure を証明するが、全 config
-field、formula と 2 operand の site/range、既存 near-miss matrix に対する direct
-extractor rejection、allowlisted expression/predicate/term kind/cardinality corruption
-を独立固定していない。Task 262N0 は test-only とし、既存 equality test とその
-default-off private AST builder にこれらの preservation assertion を追加する。test
-追加、production source、`.miz`、expectation、trace、specification、public API、
-behavior、coverage credit の変更は行わない。N0 の review/verification 後だけ Task
-262N へ進む。続く Tasks 262O/262P/262Q は direct-binary、parenthesized-binary、
-type-assertion source core をそれぞれ移し、262Q 前には fresh test-sufficiency review
-を行う。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 262N0 Test Repair Result
 
-Task 262N0 は test の追加・rename なしで既存 exact reserved-variable equality test
-を強化した。formula と 2 operand の site/range を AST から独立導出して固定し、全
-binary config field、保持する 13 near miss の direct rejection、16 default-off
-corruption rejection を固定した。corruption matrix は formula-expression/predicate
-kind/cardinality、左右 term-expression/reference kind/cardinality、左右/operator
-recovery を独立 cover する。default path は従来の node/token sequence、kind、range、
-order、ID を維持する。
-
-production source、`.miz`、expectation、trace、specification、API、diagnostic、
-payload、ordering、coverage artifact は変更していない。focused exact test、unit test
-272件、active type case 188件、relevant-crate test、workspace test は成功した。
-plan/count 403/367、type coverage 235/223、pass/fail 219/184 は不変で、raw/normalized
-test-list と 4 CLI hash も不変。format、all-target/all-feature Clippy、diff cleanliness
-も成功した。Task 262N0 は完了し、次は move-only Task 262N。authority、behavior、
-coverage credit、owner crate、deferred status は不変なので
-`spec_coverage_audit.md` は変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 262N Pre-Move Inventory and Specification
 
-Task 262N は `runner.rs` から既存 private
-`type_elaboration/source_formula.rs` leaf へ次の 4 source-substrate fragment だけを
-移動する。
-
-- reserved-variable config/model type definition/method 136行、hash
-  `2c3ebcfe343f60ddae3bb2124f4f15f942c0f8236f54b42954ed4453766e2ac1`。
-- builtin/mode projection predicate、asserted-head relation check、terminal-mode
-  traversal 562行、hash
-  `ffe1ae491ff3b7548171410a840e4ea6ea5edbdf69cee595b6c18b74e4612da6`。
-- exact mode-definition/expansion check と shared direct identifier operand
-  projection 115行、hash
-  `eb5d150c267e2f7e3a1259ecb75b7e985caab81aba973be0b71ed15522d8cfcb`。
-- source binding/use ordinal validation 50行、hash
-  `4bdef09433003048b6b439f7dd2ee3bc154fa8c3cc63082aedae7a8bcb44b3a0`。
-
-移動する 863行は、保持 concrete config、validator、後続 generic core が必要とする
-最小 `pub(in crate::runner)` visibility 以外 byte-preserve する。
-`source_mode_expansion_for_spelling` は leaf-private のまま。phase facade は移動した
-model schema/helper のうち `runner.rs` が保持 consume するものだけを re-export する。
-Task 262N は concrete config value/static、thin named wrapper、source transport、
-generic extractor、single-parenthesized operand projection、family allowlist、checker/
-output transport/body、detail key、diagnostic を移動・編集しない。rename、deduplication、
-generalization、semantic cleanup を禁止する。
-
-完了条件は visibility-only prefix を除いた normalized moved-fragment equivalence、
-strengthened N0 test、全 direct/parenthesized/asserted-head/type-assertion/long-chain/
-cross-owner isolation test、272-name raw/normalized test list 不変、active type 188件、
-plan/count、coverage、pass/fail、4 CLI hash 不変、format、Clippy、relevant-crate/
-workspace test、diff cleanliness、visibility/dependency direction/behavior/paired
-source-doc consistency の no-findings review。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 262N Move Result
 
-Task 262N は inventory した 4 reserved-variable source-substrate fragment だけを
-既存 private `source_formula.rs` leaf へ移動した。runner-scoped visibility qualifier
-を除くと、model、predicate、mode/identifier、ordinal fragment の hash はそれぞれ
-`2c3ebcfe343f60dd...`、`ffe1ae491ff3b754...`、`eb5d150c267e2f7...`、
-`4bdef09433003048...` を維持する。review により `spelling` と `input_head` は
-leaf-private に戻し、`source_mode_expansion_for_spelling` も leaf-private のまま。
-他の runner-scoped type/field/method/helper/facade alias には保持 consumer がある。
-formula leaf だけが使う reserve spelling projection 2個は production facade alias を
-削除し、private test が引き続き使う 1 spelling helper は `#[cfg(test)]` のみ公開する。
-
-concrete config value/static と thin named wrapper、source transport、generic direct/
-parenthesized/type-assertion core、single-parenthesized operand projection、3 family
-allowlist、checker/output transport/body、detail key、diagnostic は `runner.rs` に保持。
-dependency direction は acyclic で、`source_formula` は sibling source-AST/source-
-reserve leaf に依存し、保持 runner code は 35行 phase facade 経由だけで consume する。
-
-結果の `runner.rs` は 12,717行、hash
-`2a20df9e786bac81e30a60fdd1824b44fc87dbd38eeb20ba97bdeb3862a0a33a`、
-35行 facade は hash
-`65d8c6a8bbd1421f827888d9444502c41ae7f2e7e69c1eb15928ea34f347b2e2`、
-2,044行 source-formula leaf は hash
-`8fabf38e9dea88b7fc1387508ce21a6d29080659af1148fb694c2da74c8aae49`。
-focused N0 test、unit test 272件、relevant-crate test、workspace test、active type
-188件は成功した。plan/count 403/367、type coverage 235/223、pass/fail 219/184、
-raw/normalized test-list と 4 CLI hash は不変。format、all-target/all-feature Clippy、
-diff cleanliness も成功した。Task 262N は完了し、次は Task 262O。authority、behavior、
-coverage credit、owner crate、deferred status は不変なので
-`spec_coverage_audit.md` は変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 262O Pre-Move Inventory and Specification
 
-Task 262O は `runner.rs` から既存 private `source_formula.rs` leaf へ次の 3 direct
-reserved-variable binary source-core fragment だけを移動する。
-
-- source transport 16行、hash
-  `d7c400d8c6c6d101c40159a3f76b910a27113a6f9092c4b6672ef4bd1e41a303`。
-- generic direct-binary extractor 126行、hash
-  `9f7e12badc208e4a7686bcabffb0da648748b9be7b672a2706f846690c42f4c3`。
-- direct-binary node allowlist 19行、hash
-  `8b6d0b2e43a4346121e3b571246210b16d487a635a618c5ff66eeefe05fb1a77`。
-
-161行は最小 runner-scoped visibility だけを追加し normalized equivalence で移動する。
-source transport/extractor は保持 named route wrapper と checker/output validator が
-引き続き consume する。binary allowlist は保持 parenthesized allowlist が delegate
-するため一時 parent-only alias を持ち、parenthesized core を移す Task 262P でその
-alias を削除する。Task 262O は formula leaf に direct reserve-extraction dependency
-を追加するが、concrete config/wrapper、parenthesized/type-assertion transport/core/
-allowlist、single-parenthesized operand projection、checker/output transport/body、
-detail key、diagnostic は移動しない。
-
-Task 262N0 と既存 direct binary route/source/corruption/isolation matrix は十分であり、
-新規 test は不要。完了条件は 3 normalized hash、最小 visibility、fail-closed shape/
-order と payload provenance 維持、272-name list と active 188件不変、plan/count/
-coverage/pass-fail/CLI hash 不変、全 Rust verification、diff cleanliness、
-implementation/source-doc no-findings review。rename、deduplication、generalization、
-semantic cleanup を禁止する。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 262O Move Result
 
-Task 262O は inventory した direct reserved-variable binary source-core fragment
-3個だけを既存 private `source_formula.rs` leaf へ移動した。transport と extractor は
-追加した runner-scoped visibility を除くと original hash を維持する。allowlist は同じ
-visibility normalization と rustfmt による signature wrapping だけを戻すと original
-hash を維持する。formula leaf は sibling reserve-extraction entry を直接 consume し、
-phase facade は transport、extractor、および一時的に binary allowlist を保持 runner
-consumer へ公開する。最後の alias は保持 parenthesized allowlist だけが使用し、Task
-262P で削除しなければならない。
-
-結果の `runner.rs` は 12,558行、hash
-`25eff814585b074fc137f87f8da8172dadef3aa02b703bab1b35b5287156c920`、
-38行 facade は hash
-`5083cf8a6bcc49144c0f8f594b1a1a4d30007a1d4c2da840b8bda136c0d2dce4`、
-2,209行 source-formula leaf は hash
-`88132f00f4f925c9293142310660b495e688f6a1d65659e88ec1dcc51ea83c14`。
-concrete config/wrapper、parenthesized/type-assertion transport/core/allowlist、
-single-parenthesized operand projection、checker/output/detail/diagnostic code は
-`runner.rs` に不変で残る。
-
-unit test 272件と active type case 188件は全成功。plan/count は 403/367、type
-coverage は 235/223、pass/fail は 219/184 のまま。raw/normalized test-list と4つの
-CLI hash も不変。formatting、all-target/all-feature Clippy、workspace test、diff
-cleanliness は成功した。Task 262O は完了し、次は Task 262P。authority、behavior、
-coverage credit、owner crate、deferred status は不変なので
-`spec_coverage_audit.md` は変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 262P Pre-Move Inventory and Specification
 
-Task 262P は `runner.rs` から既存 private `source_formula.rs` leaf へ次の4つの
-parenthesized reserved-variable binary source-core fragment だけを移動する。
-
-- source-side wrapper enum/transport 13行、hash
-  `9574d330441d576284cfabaadcb9963efb1bf4ff441a1c88bff631a68706ab00`。
-- generic parenthesized extractor 184行、hash
-  `a252111f84228774ed187e4bfc22ddaa4f297171f7f23dad4e16e0971745f080`。
-- exact single-parenthesized identifier projection 52行、hash
-  `b776ca58fb0873f1bb050d15b9ab90a878b02809f980a00c6f05433ceb57cab2`。
-- parenthesized node allowlist 6行、hash
-  `c45e2f1d15cd1dfc503df711dd58615291f909faff37433d49bca8a741f71157`。
-
-255行は enum、source transport と保持 consumer が使う4 field、generic extractor
-だけに最小 runner-scoped visibility を追加し normalized equivalence で移動する。
-single-parenthesized projection と parenthesized allowlist は leaf-private になる。
-後者の移動により Task 262O の direct-binary allowlist 用 temporary facade alias と
-runner import を削除し、その direct allowlist 自体も leaf-private visibility へ戻す。
-formula leaf から common source-AST と sibling reserve-extraction leaf への dependency
-は acyclic のまま。
-
-named route wrapper 8個、concrete config、source-output transport、checker/output
-conversion/validation、detail key、diagnostic、test は `runner.rs` に不変で残す。
-既存 exact left/right-parenthesized active slice とその direct source、wrapper/range/
-provenance corruption、near-miss、cross-route isolation、immutable-output、real frontend/
-resolver sidecar coverage は十分で、test-only prerequisite や新規 test は不要。
-完了条件は4 normalized hash、temporary allowlist alias と visibility 削除、wrapper
-side/site/range と inner operand ordering 維持、fail-closed behavior と272-name/active
-188件 inventory 不変、plan/count/coverage/pass-fail/CLI hash 不変、全 Rust
-verification、diff cleanliness、implementation/source-doc no-findings review。rename、
-deduplication、generalization、semantic cleanup、checker/output move を禁止する。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 262P Move Result
 
-Task 262P は inventory した parenthesized reserved-variable binary source-core
-fragment 4個だけを既存 private `source_formula.rs` leaf へ移動した。追加した
-runner-scoped visibility を除くと enum/transport と generic extractor は hash
-`9574d330...`、`a252111f...` を維持し、leaf-private single-parenthesized projection
-と allowlist は hash `b776ca58...`、`c45e2f1d...` をそのまま維持する。direct-
-binary/parenthesized allowlist は両方とも leaf-private。Task 262O の temporary facade
-alias、runner import、direct-allowlist visibility はすべて削除した。
-
-結果の `runner.rs` は 12,300行、hash
-`563bb974845d95da52e723f1c3e853b79beb55c02e283e1cd10707589d1e5b70`、
-39行 facade は hash
-`5082a9a6a52c72ed8c95482b425823161bad64b5d75cfb8f14b4143110745c6f`、
-2,466行 source-formula leaf は hash
-`a09c2c1d757f00c3e27ddb993d78f5aeed06dd08ef0f20aa27c7b080334c9c28`。
-named wrapper/config 8個、output transport、checker conversion/validation、detail key、
-diagnostic、test は `runner.rs` に残り、moved helper により未使用となった
-`SurfaceNodeId` import だけを削除した。
-
-unit test 272件と active type case 188件は全成功。plan/count は 403/367、type
-coverage は 235/223、pass/fail は 219/184 のまま。raw/normalized test-list と4つの
-CLI hash も不変。formatting、all-target/all-feature Clippy、workspace test、diff
-cleanliness は成功した。Task 262P は完了し、次は Task 262Q。authority、behavior、
-coverage credit、owner crate、deferred status は不変なので
-`spec_coverage_audit.md` は変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 262Q Pre-Move Inventory and Specification
 
-fresh test-sufficiency/source inventory は Task 262Q の残る reserved-variable type-
-assertion source-core fragment を次の3つだけと特定する。
-
-- source transport 13行、hash
-  `1a8d06350de32059528b6af1240457874a323a24cb17cbedce128f560c50b00e`。
-- generic type-assertion extractor 121行、hash
-  `9334dbda0d88f8efbd75a7597471f08777df7f651761c132af4672034bcdf89e`。
-- type-assertion node allowlist 18行、hash
-  `2fd9587c78d740ffa0893baac5dfc18031ff43296e76bfa69819c2e2ba6b41d1`。
-
-152行は `runner.rs` から既存 private `source_formula.rs` leaf へ normalized
-equivalence で移動する。source transport とその10 field、generic extractor だけに
-runner-scoped visibility を追加し、allowlist は leaf-private のまま。formula leaf の
-既存 common source-AST、source-reserve、mode-expansion、exact identifier dependency
-だけを使うため dependency direction は acyclic のまま。
-
-concrete config/named route wrapper 58個、source-output transport、checker/output
-conversion/validation、detail key、diagnostic、test は `runner.rs` に不変で残す。
-既存 base/object、local-mode、asserted-head、two-through-six-hop、long-chain、exact/
-near-miss、source/range/ordinal/head/provenance corruption、immutable-output、cross-route
-isolation、real frontend/resolver coverage は paired active `.miz` slice 58件と対応する
-unit-test name 137件を含む。fresh review は実装前にこの matrix が十分か確認し、bounded
-preservation gap があれば別 test-only prerequisite task/commit を 262Q より先に行う。
-
-完了条件は3 normalized hash、最小 visibility、accepted shape と exact asserted-head
-relation 維持、fail-closed behavior と272-name/active 188件 inventory 不変、plan/
-count/coverage/pass-fail/CLI hash 不変、全 Rust verification、diff cleanliness、
-implementation/source-doc no-findings review。chain generalization、config/wrapper split、
-rename、deduplication、semantic cleanup、checker/output move を禁止する。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 262Q0 Test Repair Specification
 
-必須 fresh review は Task 262Q の前に bounded `test_gap` を確認した。既存 base
-reserved-variable type-assertion test は synthetic AST から real source extractor/checker
-handoff に到達するが、source transport 10 field と config identity をすべて独立固定
-せず、15 near miss を aggregate detail key だけで観測し、既に model 済みの
-structural corruption 4個を identifier-subject generic extractor に適用していない。
-broader active family が real frontend/resolver sidecar を担うが、move 後の generic-core
-regression を別 extraction route が隠す可能性は残る。
-
-Task 262Q0 は test-only。既存 private identifier type-assertion AST builder の
-corruption argument を default-off wrapper から利用可能にし、
-`source_reserved_variable_type_assertion_bridge_checks_reflexive_admissibility` だけを
-強化する。positive assertion は formula/subject/asserted-type site/range を AST から
-独立導出し、exact config identity と全 config field、reserve、spelling、ordinal、
-asserted type、distinct-range payload を固定する。既存 near miss はすべて named
-extractor が直接 `None` を返すことを aggregate extraction-gap key より先に確認する。
-identifier route の bounded corruption 4個—recovered `is`、duplicate formula
-expression、extra formula child、extra assertion operand—にも同じ direct/aggregate
-rejection assertion を行う。
-
-Q0 は test を追加せず、production source、`.miz`、expectation、trace、specification、
-public API、behavior、diagnostic、coverage credit を変更しない。test name/count hash、
-active case、repository count、CLI output は不変でなければならない。Task 262Q は Q0
-review と全 verification の後だけ開始できる。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 262Q0 Test Repair Result
 
-Task 262Q0 は既存 base reflexive-admissibility test とその private default-off AST
-builder だけを強化した。test は source transport 10 field を AST から導出して固定し、
-named extractor route を通じて config 9 value、reserve payload、spelling、ordinal、
-asserted type、distinct source range を固定する。既存 near miss 15件はすべて aggregate
-gap check より先に named extractor で直接 reject する。recovered `is`、duplicate
-formula expression、extra formula child、extra assertion operand corruption にも同じ
-direct/aggregate rejection を追加した。
-
-production source、`.miz`、expectation、trace、specification、public API、behavior、
-diagnostic、coverage credit、test name、test count は変更していない。unit test 272件と
-active type case 188件は全成功。plan/count は 403/367、type coverage は 235/223、
-pass/fail は 219/184 のまま。raw/normalized test-list と4つの CLI hash も不変。
-formatting、all-target/all-feature Clippy、workspace test、diff cleanliness は成功した。
-Task 262Q0 は完了し、次は move-only Task 262Q。authority、behavior、coverage credit、
-owner crate、deferred status は不変なので `spec_coverage_audit.md` は変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 262Q Move Result
 
-Task 262Q は inventory した reserved-variable type-assertion source-core fragment 3個
-だけを既存 private `source_formula.rs` leaf へ移動した。追加した runner-scoped
-visibility を除くと transport/generic extractor は hash `1a8d0635...`、
-`9334dbda...` を維持し、leaf-private allowlist は hash `2fd9587c...` をそのまま
-維持する。transport、その10 field、generic extractor だけを runner-scoped とした。
-concrete config/named wrapper 58個と output/checker/validation/detail/diagnostic code は
-`runner.rs` に不変で残る。
-
-結果の `runner.rs` は 12,144行、hash
-`0454931d868a11b6cdfd90b845b8b091f2cd636add4fc8fb6c7aaf43a64cd6e4`、
-40行 facade は hash
-`a9f7b768ad32e6c51337f3b764db5243a80fc6cf2c16a7d97e57d1e99ef3a770`、
-2,621行 source-formula leaf は hash
-`a7ffd9dad1e60a7e7890e494e9abc5bafb38e2f9cb11f62d14a03f617fe32b21`。
-moved core により obsolete となった import/facade alias は削除した。private test だけが
-使う alias 6個は、その direct unit test が使う reserve-extraction guard entry を含め
-明示的に `#[cfg(test)]` とした。
-
-unit test 272件と active type case 188件は全成功。plan/count は 403/367、type
-coverage は 235/223、pass/fail は 219/184 のまま。raw/normalized test-list と4つの
-CLI hash も不変。formatting、all-target/all-feature Clippy、workspace test、diff
-cleanliness は成功した。Task 262Q は完了し、次は Task 263。authority、behavior、
-coverage credit、owner crate、deferred status は不変なので
-`spec_coverage_audit.md` は変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263A Pre-Move Inventory and Specification
 
-fresh Task 263 inventory は、保持された checker-handoff substrate を最初の acyclic
-bounded family と分類する。正確な `runner.rs:11542-12047` fragment は506行、hash
-`95532967e13e1ab39b4ebc23c3403ffe15e57b5a73bda2810d915ccf170175f0`。
-`source_module_binding_env` から `typing_for_type_entry` までで、empty module
-binding environment、`SourceReserveHandoff` transport、reserve declaration から
-`TypedAst`/`ResolvedTypedAst` への assembly、handoff validation、bounded Core
-context readiness check、test-only complete handoff entry を所有する。
-
-Task 263A はこの fragment を新しい private
-`type_elaboration/checker_handoff.rs` へ機械的に移動する。この leaf は checker、Core、
-resolver、session、syntax input と、test-only entry 用の sibling
-`SourceReserveExtraction` transport だけに依存する。concrete route config、named
-source extractor、detail key、expected-output projection、failure diagnostic、top-level
-orchestration は参照しない。これにより後続 Task 263 family より先に
-`source_reserve -> checker_handoff -> retained checker/output and orchestration
-consumer` という acyclic direction を確立する。
-
-consumer が `runner.rs` に残る間、runner-scoped visibility は
-`source_module_binding_env`、`SourceReserveHandoff` とその4 field、
-`assemble_source_reserve_checker_handoff`、`assert_source_reserve_handoff`、
-`assert_source_reserve_core_summary_readiness`、
-`assert_source_reserve_core_context_readiness` に限定する。test-only
-`assemble_source_checker_handoff` は `#[cfg(test)]` の場合だけ expose する。
-resolved/typed assembly と type-entry projection helper は leaf-private のままにする。
-
-これは move-only `design_drift` で、test prerequisite はない。既存
-`source_extraction.rs` direct handoff test、generic output validator/corruption matrix、
-unit test 272件、active type case 188件を preservation matrix とする。config、named
-wrapper、source extraction、payload、detail key、diagnostic、ordering、fail-closed
-behavior、public API、test、authority artifact は変更しない。behavior、coverage
-credit、owner crate、deferred status は変わらないため
-`spec_coverage_audit.md` は変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263A Move Result
 
-Task 263A は inventory 済み checker-handoff substrate を新しい private
-`type_elaboration/checker_handoff.rs` leaf へ移動した。review 済み runner-scoped
-visibility だけを除去し、元 separator newline を復元すると、moved fragment は exact
-hash `95532967e13e1ab39b4ebc23c3403ffe15e57b5a73bda2810d915ccf170175f0`
-を維持する。body、control-flow branch、validation string、payload、ordering は変更して
-いない。resolved/typed assembly と type-entry helper は leaf-private のまま、complete
-handoff entry と sibling source-reserve dependency は `#[cfg(test)]` の場合だけ存在する。
-
-結果の `runner.rs` は11,617行、hash
-`4c0aa87165f31fe66816666f1fc33f47b64643e7d644d30db21e8e8f4eb4ed8b`、
-46行 phase facade は hash
-`daf8415255a5af402436c792414c5fd635b32c5cf397deaff051efbfb16d7ece`、
-550行 checker-handoff leaf は hash
-`a7cf9bcd076dbc68098ddecbab6c58eca988ecdd8ea378324bad44a32cf5288b`。
-`runner.rs` から moved-only import だけを削除した。既存
-`SourceReserveDeclarationBridge` test namespace alias は不変 corruption test のため
-明示的 `#[cfg(test)]` のまま保持した。
-
-direct handoff test、unit test 272件、active type case 188件は全成功。plan/count は
-403/367、type coverage は235/223、pass/fail は219/184 のまま。raw/normalized
-test-list hash と4つの CLI byte hash は不変。formatting、all-target/all-feature
-Clippy、workspace test、diff cleanliness は成功した。Task 263A は完了し、fresh
-Task 263 inventory で次の bounded family を選ぶ。authority、behavior、coverage
-credit、owner crate、deferred status は不変なので `spec_coverage_audit.md` は変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263B Pre-Move Inventory and Specification
 
-fresh inventory は common frontend diagnostic projection を次の acyclic bounded family
-として選ぶ。正確な `runner.rs` fragment 3個で構成する: line 78 の1行 recovery-tag
-constant、lines 794-800 の7行 `frontend_detail_keys` fragment は hash
-`394797911f19bd3904b4f66d8beed648d418bec9c6f172218f7e8912d21d2038`、lines
-11528-11568 の41行 diagnostic-code/assertion/error fragment は hash
-`ea3f9ffb0862e0a37575de150b82a3d654000778e87fa5abd0d9d41a40ff50a3`。
-recovery-tag の full hash は
-`381e1d7f0e9ab985a0ce5436a8b6e19f63ca169da43f54c35fcfb42d68972b04`。
-source order で連結すると49行、hash
-`0a4d80ff40dbf1d936ea0f5a965047e1a5f3a961812ede65deca56a8866a4ba5`。
-
-Task 263B はこの fragment を、`FrontendRun` を所有し `FrontendDiagnostic` と
-`TestCase` を直接 import 済みの既存 private `runner/shared.rs` へ機械的に移動し、
-frontend import に `DiagnosticCode` を追加する。
-recovery tag と `frontend_diagnostic_code` は leaf-private のままにする。
-`frontend_detail_keys`、`assertion_diagnostic_codes`、`frontend_error_code` だけを
-parent-only entry とする。parse-only と declaration-symbol は shared sibling entry 3個を
-直接 import し、`runner.rs` は保持 type consumer のため shared detail-key entry を
-import して now-unused `DiagnosticCode`/`FrontendDiagnostic` import を削除する。
-child-to-parent/checker dependency なしで `shared frontend/diagnostic projection ->
-phase consumer` を確立する。
-
-これは move-only `design_drift` で、Task 263B0 test prerequisite はない。recovery-tag
-case を含む active parse matrix、declaration/type lower-stage case、active-runner byte-
-stability/repository execution test、4つの CLI projection が code mapping、key prefix、
-ordering、fallback behavior を保持する。test、expectation、public API、diagnostic、
-payload、source behavior、authority artifact は変更しない。source file は追加しないため
-paired Source Inventory file list は不変。coverage credit、owner crate、deferred status
-は変わらないため `spec_coverage_audit.md` は変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263B Move Result
 
-Task 263B は正確な common frontend diagnostic family を既存 private `shared.rs` へ
-移動した。review 済み `pub(super)` modifier 3個を除去し、whitespace と rustfmt の
-optional trailing signature comma を正規化すると、旧/moved family はともに hash
-`f7b793a4a93ec14cb24869c5de1e8b87ad35c79012185308c7ebaaf06d2f994b`
-となる。recovery tag と fallback mapper は leaf-private のまま。parse-only と
-declaration-symbol は shared entry を直接 import し、保持 type consumer は runner
-owner 経由で `frontend_detail_keys` だけを import する。
-
-結果の `runner.rs` は11,566行、hash
-`6cc0b8a7a70f4298761df02f1d8be755ba22416625cffd8e8fcf6d8660dc5f59`、
-260行 `shared.rs` は hash
-`1c5f780fbb0df10faf8f363594e5b19fbd7eb19abc852ece67308559141689b8`。
-diagnostic string、match arm、syntax/non-syntax branch、iteration order、prefix、
-wildcard fallback、frontend-error formatting は変更していない。
-
-unit test 272件、active parse 96件、declaration-symbol 4件、type-elaboration 188件は
-全成功。plan/count は403/367、type coverage は235/223、pass/fail は219/184 のまま。
-raw/normalized test-list hash と4つの CLI byte hash は不変。formatting、all-target/
-all-feature Clippy、workspace test、diff cleanliness は成功した。Task 263B は完了し、
-fresh Task 263 inventory で次の bounded family を選ぶ。file、authority、behavior、
-coverage credit、owner crate、deferred status は不変なので Source Inventory と
-`spec_coverage_audit.md` の変更は不要。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263C Pre-Move Inventory and Specification
 
-fresh inventory は `runner.rs:11512-11535` の正確な24行 expected-result/failure-
-projection family を選ぶ。`expected_type_elaboration_detail_keys` と
-`type_elaboration_failure_diagnostic` を含み、raw hash は
-`b9efaec531ff58c52d028b413f8ea644640a5f0aeccaf57da3682cd7c5d1317c`。
-direct dependency は `TestCase`、`ValidationDiagnostic`、stable public
-`TypeElaborationCaseResult` DTO だけ。
-
-Task 263C はこの family を新しい private `type_elaboration/result.rs` へ機械的に
-移動する。両 function を type-elaboration facade 経由の parent-only entry とし、他の
-export は作らない。stable runner result DTO への leaf dependency は明示的な facade-
-contract edge とする。payload list を stable key より優先する順序、failure
-code/key/text、expected/actual formatting、vector order を正確に維持する。
-
-`run_type_elaboration_case` は large retained actual-detail dispatcher に依存するため
-この task では `runner.rs` に残す。今移動すると result-leaf から parent-private への
-reverse edge を作るか、後続 detail/output family と混ざる。generic output validator
-も current output/config/source-helper dependency graph の separate bounded inventory が
-必要なため pending のままにする。
-
-これは move-only `design_drift` で、Task 263C0 prerequisite はない。stable-detail
-fallback test、active type case 188件、repository/CLI byte-stability、normalized exact-
-body equivalence により result matching/failure assembly を保持する。test、expectation、
-diagnostic、API、payload、behavior、authority artifact は変更しない。新しい source
-path は move と同時に paired Source Inventory へ追加する。coverage credit、owner
-crate、deferred status は変わらないため `spec_coverage_audit.md` は変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263C Move Result
 
-Task 263C は正確な24行 expected-result/failure-projection family を新しい private
-`type_elaboration/result.rs` へ移動した。必要な
-`pub(in crate::runner)` visibility qualifier 2個だけを除去すると、旧/moved body は
-ともに hash
-`b9efaec531ff58c52d028b413f8ea644640a5f0aeccaf57da3682cd7c5d1317c`
-となる。facade はこの2 entry だけを parent-only expose する。case execution と
-actual-detail dispatcher は `runner.rs` に残すため、reverse dependency を導入せず
-public API も変更しない。
-
-結果の `runner.rs` は11,541行、hash
-`2e6bc713114f726af47de08d7ceb622f9d0f79282d00994be458f7f35e0c435e`、
-50行 `type_elaboration.rs` facade は hash
-`44634b3b24f645bbb49ea66c1569cf251c8f11db505c94de252877e9112c02cc`、
-新しい29行 `result.rs` は hash
-`608b458dd0d7491d7af1d6ef9261e468ec548b39966ecfa8acbc81bd8b7bd4c2`。
-payload-list precedence、stable-key fallback、failure code/key/text、expected/actual
-formatting、vector order、fail-closed caller flow は不変。
-
-unit test 272件、active parse 96件、declaration-symbol 4件、type-elaboration
-188件は全成功。plan/count は403/367、type coverage は235/223、pass/fail は
-219/184 のまま。raw/normalized test-list hash と4つの CLI byte hash は不変。
-paired Source Inventory に新しい leaf を追加した。Task 263C は完了し、fresh Task
-263 inventory で次の bounded validation/detail family を選ぶ。authority、behavior、
-coverage credit、owner crate、deferred status は不変なので
-`spec_coverage_audit.md` の変更は不要。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263D Pre-Move Inventory and Specification
 
-fresh inventory は type-elaboration active-admission family を正確な4 fragment として
-選ぶ。1行 `ACTIVE_TYPE_ELABORATION_TAG` constant
-(`4629969fa68b61384e96b345b2a646d786b6f843ca5ad128fa17723d473d68ac`)、
-13行 runnable predicate
-(`5303e0c27405121d8aeefb7c6e2163dfcd288419c44b6e44779b1df4e0a41c9d`)、
-6行 tag predicate
-(`c91740986c91df19297de24f8c6f7441fed4886de246e18c65b5361e4a1fdd5b`)、
-30行 gate validator
-(`b0cb1652b4046473ce2bc12285ac09a69411c08d32b6a7144a501a9f27818945`)
-である。source order で連結した正確な50行の hash は
-`937c032b2504225dbe5e79f5526545d969929afbd8dbfc9c09faf4cc5ad7a429`。
-
-Task 263D はこの family を新しい private `type_elaboration/admission.rs` へ機械的に
-移動する。tag constant と tag predicate は leaf-private のままにする。
-`is_active_type_elaboration` と `validate_active_type_elaboration_tags` だけを
-type-elaboration facade 経由の parent-only entry とする。public
-`active_type_elaboration_cases` iterator と corpus-level orchestration は
-`runner.rs` に残す。direct dependency は `ValidationDiagnostic`、`ExpectedOutcome`、
-`PipelinePhase`、`TestCase`、`TestPlan`、`Stage` だけで、source、checker、output、
-parent DTO dependency はない。
-
-これは move-only `design_drift` で、Task 263D0 prerequisite はない。既存の non-type、
-wrong-phase、public-diagnostic-code gate test が gate branch、diagnostic code、silent-
-skip rejection を直接保持する。normalized exact-body equivalence と repository/report/
-CLI byte-stability が detail key、text、order、active case 188件の iteration behavior を
-保持する。test、
-expectation、diagnostic、API、payload、behavior、authority artifact は変更しない。
-新しい source path は move と同時に paired Source Inventory へ追加する。coverage
-credit、owner crate、deferred status は変わらないため
-`spec_coverage_audit.md` は変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263D Move Result
 
-Task 263D は正確な4 fragment/50行 type active-admission family を新しい private
-`type_elaboration/admission.rs` へ移動した。必要な
-`pub(in crate::runner)` visibility qualifier 2個だけを除去し、ASCII whitespace を
-fold し、rustfmt の trailing `TestPlan` signature comma だけを正規化すると、旧/moved
-family はともに hash
-`ea1a50947f895bcbc5bcca417432b3860369174677ea9b8b4b7626ca651157c4`
-となる。tag constant/tag predicate は leaf-private のまま、facade は runnable
-predicate と gate validator だけを parent-only expose する。public iterator と corpus
-orchestration は `runner.rs` に残す。
-
-結果の `runner.rs` は11,490行、hash
-`5d58dcfe62d1d724a731f5421ad6547d7e8e7757581297efe7b6a000adec2230`、
-52行 `type_elaboration.rs` facade は hash
-`b06293cc471453df1bb373a53b51cbba2d8b3991ec5206c5b0ecd719047839e7`、
-新しい60行 `admission.rs` は hash
-`b5261a23dae29eb656ba6f414a622a4cc40501dabd0fcf457fedf53b23aba150`。
-admission branch、diagnostic code/key/text、case内 diagnostic order、silent-skip
-rejection は不変。
-
-focused gate test 3件、unit test 272件、active parse 96件、declaration-symbol 4件、
-type-elaboration 188件は全成功。plan/count は403/367、type coverage は235/223、
-pass/fail は219/184 のまま。raw/normalized test-list hash と4つの CLI byte hash は
-不変。paired Source Inventory に新しい leaf を追加した。Task 263D は完了し、fresh
-Task 263 inventory で次の bounded validation/detail family を選ぶ。authority、
-behavior、coverage credit、owner crate、deferred status は不変なので
-`spec_coverage_audit.md` の変更は不要。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263E Pre-Move Inventory and Specification
 
-fresh dependency inventory は `runner.rs:5361-5393` の正確な連続33行 checker-output
-transport substrate を選ぶ。binary-formula、parenthesized-binary-formula、type-
-assertion output struct 3個と22 field で、raw family hash は
-`e5da36674f0779384d90fa35a7f42ee209dfbca2049efe76b2893c0b36705ce0`。
-production/test の type reference 153個、named output/validator test reference 346個を
-持つ real transport であり、empty/synthetic owner ではない。
-
-Task 263E はこの3 transport だけを新しい private
-`type_elaboration/output.rs` へ機械的に移動する。3 type と22 field は、保持 builder、
-validator、named output helper、既存 corruption test が必要とする最小
-`pub(in crate::runner)` visibility とし、type-elaboration facade は3 type だけを
-parent-only re-export する。direct dependency は sibling source payload transport と
-checker handoff、および checker/session typed input/inference output である。builder、
-validator、detail projection、named wrapper、config、全 call site は separate bounded
-task のため `runner.rs` に残す。
-
-これは後続 output-owner task の move-only `design_drift` prerequisite で、Task 263E0
-prerequisite はない。既存 field-level payload/corruption matrix と normalized exact-body
-equivalence が全 field/type/order/debug shape を保持する。272-test list、active case
-188件、repository/report/CLI byte-stability、全 gate が API、payload、diagnostic、order、
-fail-closed behavior を保持する。test、expectation、semantic helper、source behavior、
-authority artifact は変更しない。新しい source path は move と同時に paired Source
-Inventory へ追加する。coverage credit、owner crate、deferred status は変わらないため
-`spec_coverage_audit.md` は変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263E Move Result
 
-Task 263E は正確な33行3 transport checker-output substrate を新しい private
-`type_elaboration/output.rs` へ移動した。3 type と22 field に必要な25個の
-`pub(in crate::runner)` qualifier だけを除去すると、moved lines 11-43 は元の raw
-hash を byte-for-byte 再現する:
-`e5da36674f0779384d90fa35a7f42ee209dfbca2049efe76b2893c0b36705ce0`。
-facade は3 transport だけを parent-only re-export する。builder、validator、detail
-projection、named wrapper、config、call site は `runner.rs` に残し、now-unused parent
-`SourceRange`/`SourceReserveHandoff` import だけを削除した。
-
-結果の `runner.rs` は11,457行、hash
-`d43d0f6a62cff726fffc88ebe2452932371626a71a9e13aa9bae09eb8168708e`、
-57行 `type_elaboration.rs` facade は hash
-`0c068fd8a7bca6f7d0194e06cda9723eb0bfe8d39b1bc3d3c6553c5a6cb61c86`、
-新しい43行 `output.rs` は hash
-`bb056c40bdafeb2d3f60821da8cf4fa908045b16dc0230defbff85bc27bdb350`。
-derive、field type/order、debug shape、payload、fail-closed behavior は不変。
-
-focused output test 4件、unit test 272件、active parse 96件、declaration-symbol 4件、
-type-elaboration 188件は全成功。plan/count は403/367、type coverage は235/223、
-pass/fail は219/184 のまま。raw/normalized test-list hash と4つの CLI byte hash は
-不変。paired Source Inventory に新しい leaf を追加した。Task 263E は完了し、fresh
-Task 263 inventory で次の bounded builder/validator/detail family を選ぶ。authority、
-behavior、coverage credit、owner crate、deferred status は不変なので
-`spec_coverage_audit.md` の変更は不要。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263F Pre-Move Inventory and Specification
 
-fresh dependency inventory は `runner.rs:8441-8701` の連続 checker-output builder 3個
-（261行、hash
-`cb4396e080d9f31f79e57feebfd5de5badad92f3aedfdf358b0eb277eb416b25`）と、それら
-だけが使う `runner.rs:9473-9488` の16行 `source_reserved_type_projection` helper
-（hash `c450e8588af637f3f3a8dc04f522ef988dc470a54b4d005001c4ba5f102f33b0`）
-を選ぶ。source order で連結した正確な277行 producer family の hash は
-`b4939bbe52118a6b6e1d268bff26c6fa11e2994e14e0bb0b4e7215e94a41efaa`。
-
-Task 263F はこの family を既存 private `type_elaboration/output.rs` transport owner へ
-機械的に移動する。type-assertion、binary-formula、parenthesized-binary builder entry
-を type-elaboration facade 経由の parent-only とし、projection helper は leaf-private
-のままにする。direct dependency は Task 263E output transport、sibling source
-payload/config transport、sibling checker-handoff assembly、resolver symbol、checker
-binding/type/formula input API である。保持 validator、detail projection、named wrapper、
-active orchestration、public result DTO への dependency はない。
-
-これは move-only `design_drift` で、Task 263F0 prerequisite はない。既存 source-
-output、field-provenance、lookup-ordinal、checker-payload、corruption、active fixture
-matrix が3 builder と fail-closed branch を実行する。exact-body equivalence、272-test、
-active case 188件、repository/report/CLI byte-stability、全 gate が construction order、
-error string、source range、binding identity、input、payload、failure boundary を保持する。
-test、expectation、validator、detail key、config、semantic behavior、authority artifact は
-変更しない。既存 `output.rs` owner の拡張なので Source Inventory は不変。coverage
-credit、owner crate、deferred status は変わらないため
-`spec_coverage_audit.md` は変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263F Move Result
 
-Task 263F は正確な3 builder/sole projection-helper producer family を既存 private
-`type_elaboration/output.rs` へ移動した。必要な3個の
-`pub(in crate::runner)` builder qualifier だけを除去すると、moved lines 51-311 は
-hash `cb4396e080d9f31f79e57feebfd5de5badad92f3aedfdf358b0eb277eb416b25`、
-private helper lines 313-328 は hash
-`c450e8588af637f3f3a8dc04f522ef988dc470a54b4d005001c4ba5f102f33b0`、
-source-order combination は
-`b4939bbe52118a6b6e1d268bff26c6fa11e2994e14e0bb0b4e7215e94a41efaa`
-を維持する。facade は3 builder だけを parent-only expose する。validator、detail
-projection、named wrapper、config、call site は `runner.rs` に残す。
-
-結果の `runner.rs` は11,180行、hash
-`cfefc3b316fe7d9ff33153475ed42540fcf8605a16ad11132f4380c7ca0350a7`、
-60行 `type_elaboration.rs` facade は hash
-`c673946fddb223a2ae566073205bffaac56ce34ccbb393ae0e755ad6d5c15658`、
-328行 `output.rs` は hash
-`41a151db0d3e6fc4ba45c04989e1bbf577cfc4a8ae55ba9d570998794c90bbcd`。
-construction order、error text、source range、binding identity、checker input、payload、
-fail-closed flow は不変。
-
-focused builder test 4件、unit test 272件、active parse 96件、declaration-symbol 4件、
-type-elaboration 188件は全成功。初回 full-crate run では無関係な `/tmp` fixture path
-missing が一時発生したが、exact failing route-isolation test と full crate rerun は両方
-成功した。plan/count は403/367、type coverage は235/223、pass/fail は219/184 の
-まま。raw/normalized test-list hash と4つの CLI byte hash は不変。Task 263F は完了し、
-fresh Task 263 inventory で次の bounded validator/detail family を選ぶ。path、authority、
-behavior、coverage credit、owner crate、deferred status は変わらないため Source
-Inventory と `spec_coverage_audit.md` は不変。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263G Pre-Move Inventory and Specification
 
-fresh dependency inventory は `runner.rs:8443-8656` の正確な type-assertion output
-validator と private role-entry helper（214行、hash
-`17ad7203816094ef55580f9356388510e6164cdc2f4a38412639d496db1b623c`）、および
-`runner.rs:9197-9211` の shared normalized-builtin-type predicate（15行、hash
-`c1e417207bcc04654fdeb3fee13a00985a5aff63181298d1b65d149d3d6f15aa`）を選ぶ。
-source order で連結した正確な229行 family の hash は
-`b6557af65c99430f112772b665c36a3545bdb39f48541e1c817f06eadfc0b10f`。
-
-Task 263G はこの family を既存 private `type_elaboration/output.rs` へ機械的に移動する。
-type-assertion validator は parent-only、role-entry helper は leaf-private とし、
-normalized-type predicate は保持 binary-formula validator に既存 call site が2個あるため
-一時的に parent-only とする。dependency は Tasks 263E/F output/checker-handoff owner、
-exact source-formula predicate、checker typed-output API だけである。binary/parenthesized
-validator、detail-key projection、named wrapper、config、call site、orchestration は
-`runner.rs` に残す。
-
-これは move-only `design_drift` で、Task 263G0 prerequisite はない。production
-detail-result path と既存10 test module の212 direct validator assertion が exact success、
-provenance、lookup ordinal、checker count/identity、canonical source、corruption rejection、
-route isolation、fail-closed behavior を固定する。exact-body equivalence、272-test、
-active case 188件、repository/report/CLI byte-stability、全 gate により、全 error string、
-comparison、ordering decision、detail key、payload、failure boundary を保持する。test、
-expectation、config、wrapper、validator logic、semantic behavior、authority artifact は
-変更しない。既存 `output.rs` path を拡張し、coverage credit、owner crate、deferred
-status は変わらないため Source Inventory と `spec_coverage_audit.md` は不変。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263G Move Result
 
-Task 263G は正確な type-assertion validator、private role-entry helper、shared
-normalized-type predicate を既存 private `type_elaboration/output.rs` へ移動した。必要な
-2個の `pub(in crate::runner)` qualifier だけを除去すると、moved lines 337-550 は
-hash `17ad7203816094ef55580f9356388510e6164cdc2f4a38412639d496db1b623c`、
-lines 552-566 は hash
-`c1e417207bcc04654fdeb3fee13a00985a5aff63181298d1b65d149d3d6f15aa`、
-source-order combination は
-`b6557af65c99430f112772b665c36a3545bdb39f48541e1c817f06eadfc0b10f`
-を維持する。facade は validator と一時 shared predicate だけを parent-only expose し、
-role helper は leaf-private のまま。保持 binary validator は元の predicate call 2個だけを
-引き続き持つ。
-
-結果の `runner.rs` は10,948行、hash
-`97247c5bedcee1baebaec2f5caae2d332dea5de246e18671992db4ddbc64e2aa`、
-61行 `type_elaboration.rs` facade は hash
-`c36560ef2972e383d2a0d59aa1021fb8341d0bfbf8c79ebded0e1dbc16d2df0c`、
-566行 `output.rs` は hash
-`01c75f7906b759308c9c52f36768dbd46b1d3f8fd462507bc448f538601224d5`。
-全 validation branch、error string、comparison、checker lookup、normalized-type identity
-check、canonical-source check、fail-closed return は不変。
-
-focused type-assertion test 47件、unit test 272件、active parse 96件、
-declaration-symbol 4件、type-elaboration 188件は全成功。plan/count は403/367、type
-coverage は235/223、pass/fail は219/184 のまま。272行 raw/normalized test-list hash と
-4つの CLI byte hash は不変。Task 263G は完了し、fresh Task 263 inventory で次の
-bounded binary/parenthesized-validator または detail family を選ぶ。path、authority、
-behavior、coverage credit、owner crate、deferred status は変わらないため Source
-Inventory と `spec_coverage_audit.md` は不変。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263H Pre-Move Inventory and Specification
 
-fresh dependency inventory は `runner.rs:8442-8779` の正確な binary-formula output
-validator（338行、hash
-`528876adb6cda98d2030df317d2589733799917682f9bdcf0d04f1333ff46ddf`）、
-`runner.rs:8937-8953` の source-type projection predicate（17行、hash
-`4317df8d93687b6357cc2f5943cd4c1b248fc69e2092c02586588c00bfa40170`）、
-`runner.rs:8955-8979` の type-entry validator（25行、hash
-`135354e0b3aa68dbd5435a869134722b2617b0e65faea16810ff9a3ad657f43e`）
-を選ぶ。source order で連結した正確な380行 family の hash は
-`76fcab1f8c068b9b0ee0bd552b106e9a23cce794e7ff0f9134120e2285de7836`。
-
-Task 263H はこの family を既存 private `type_elaboration/output.rs` へ機械的に移動する。
-binary validator は保持 production detail/parenthesized-validator consumer のため
-parent-only、helper predicate 2個は leaf-private とする。Task 263G normalized-type
-predicate の call 2個も一緒に移るため、その predicate は一時 parent-only から
-leaf-private に狭めて facade から除去する。parenthesized validator、detail projection、
-named wrapper、config、call site、orchestration は `runner.rs` に残す。
-
-これは move-only `design_drift` で、Task 263H0 prerequisite はない。production
-detail path、保持 parenthesized consumer、既存11 test module の104 direct validator
-assertion が exact success、binding/provenance/ordinal identity、expected/result constraint、
-checker count/order、semantic type sharing、canonical source、corruption rejection、route
-isolation、fail-closed behavior を固定する。exact-body equivalence、272-test、active case
-188件、repository/report/CLI byte-stability、全 gate により、全 error string、comparison、
-ordering decision、detail key、payload、failure boundary を保持する。test、expectation、
-config、wrapper、validator logic、semantic behavior、authority artifact は変更しない。
-既存 `output.rs` path を拡張し、coverage credit、owner crate、deferred status は変わらない
-ため Source Inventory と `spec_coverage_audit.md` は不変。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263H Move Result
 
-Task 263H は正確な binary-formula validator と private helper 2個を既存 private
-`type_elaboration/output.rs` へ移動した。必要な validator の
-`pub(in crate::runner)` qualifier だけを除去すると、moved lines 570-907 は hash
-`528876adb6cda98d2030df317d2589733799917682f9bdcf0d04f1333ff46ddf`、
-lines 909-925 は hash
-`4317df8d93687b6357cc2f5943cd4c1b248fc69e2092c02586588c00bfa40170`、
-lines 927-951 は hash
-`135354e0b3aa68dbd5435a869134722b2617b0e65faea16810ff9a3ad657f43e`、
-source-order combination は
-`76fcab1f8c068b9b0ee0bd552b106e9a23cce794e7ff0f9134120e2285de7836`
-を維持する。validator だけ parent-only。helper 2個と normalized-type predicate は
-leaf-private で、一時 normalized predicate facade alias は除去した。parenthesized
-validator、detail projection、config、wrapper、call site は `runner.rs` に残す。
-
-結果の `runner.rs` は10,558行、hash
-`2440c1f2cce788ed4f58437338124639f36327b88572105b4b3a80c4e4679446`、
-62行 `type_elaboration.rs` facade は hash
-`1ff372989d8ccce83ce68645ac054e245ec4c85f90cf1c2919fb56fac3c8216f`、
-951行 `output.rs` は hash
-`2fe4650c4be3c5560ab991278dcc701e32581c75b8ab7429c90d95ccc86a9689`。
-全 validation branch、error string、collection order、lookup、expected/result constraint、
-semantic identity check、canonical-source choice、fail-closed return は不変。
-
-focused reserved-variable test 123件、unit test 272件、active parse 96件、
-declaration-symbol 4件、type-elaboration 188件は全成功。plan/count は403/367、type
-coverage は235/223、pass/fail は219/184 のまま。272行 raw/normalized test-list hash と
-4つの CLI byte hash は不変。Task 263H は完了し、fresh Task 263 inventory で次の
-bounded parenthesized-validator または detail family を選ぶ。path、authority、behavior、
-coverage credit、owner crate、deferred status は変わらないため Source Inventory と
-`spec_coverage_audit.md` は不変。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263I Pre-Move Inventory and Specification
 
-fresh dependency inventory は config-independent shared parenthesized-binary validator core
-`runner.rs:8523-8589` だけを選ぶ（67行、hash
-`2de635a7524ac3734edb15c9d953dab6fc73b4800f5d3804866c0cffba7e5d88`）。
-これは sole parenthesized wrapper/range/typed-output isolation predicate で、Task 263H
-binary validator を直接呼ぶ。
-
-Task 263I はこの exact core を既存 private `type_elaboration/output.rs` へ機械的に移動し、
-保持 named test wrapper 8個と production detail consumer のため parent-only entry 1個を
-設ける。concrete config、named validator、detail projection、output wrapper、call site、
-orchestration は `runner.rs` に残し、同時移動による config-independent core boundary
-越境を避ける。
-
-これは move-only `design_drift` で、Task 263I0 prerequisite はない。named wrapper 8個は
-既存2 test module に16 direct assertion を持ち、active/report detail path が production
-consumer を実行する。left/right wrapper side、config identity、source/copied wrapper
-site/range equality、distinct typed site、source-id/range containment、term/type entry/formula
-からの exclusion、corruption rejection、route isolation、fail-closed behavior を固定する。
-exact-body equivalence、272-test、active case 188件、repository/report/CLI byte-stability、
-全 gate により、全 error string、comparison、ordering decision、detail key、payload、
-failure boundary を保持する。test、expectation、config、wrapper logic、semantic behavior、
-authority artifact は変更しない。既存 `output.rs` path を拡張し、coverage credit、owner
-crate、deferred status は変わらないため Source Inventory と `spec_coverage_audit.md` は
-不変。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263I Move Result
 
-Task 263I は正確な config-independent parenthesized-binary validator core だけを既存
-private `type_elaboration/output.rs` へ移動した。必要な `pub(in crate::runner)` qualifier
-を除去すると、moved lines 954-1020 は hash
-`2de635a7524ac3734edb15c9d953dab6fc73b4800f5d3804866c0cffba7e5d88`
-を維持する。facade はこの validator 1個だけを parent-only expose する。named
-validator 8個、concrete config、detail projection、output wrapper、call site はすべて
-`runner.rs` に残し、leaf は generic config type だけを import する。
-
-結果の `runner.rs` は10,491行、hash
-`3d75554d7cc1c45b5cdbab06ce27a30bd660cb01a4cd5e9311157442c5a43205`、
-63行 `type_elaboration.rs` facade は hash
-`dfd15b3390d53dd6c84decf0babb117077e53ce400b4325126757faff3061453`、
-1,020行 `output.rs` は hash
-`0c18a5d1244da77a85d73368d622dda2699b95463b015e980cd98604b79a6a16`。
-wrapper-side selection、pointer identity、source/copy site/range check、containment、
-typed-output exclusion、error text、fail-closed return は不変。
-
-focused parenthesized test 25件、unit test 272件、active parse 96件、
-declaration-symbol 4件、type-elaboration 188件は全成功。plan/count は403/367、type
-coverage は235/223、pass/fail は219/184 のまま。272行 raw/normalized test-list hash と
-4つの CLI byte hash は不変。Task 263I は完了し、fresh Task 263 inventory で次の
-bounded detail または config/named-wrapper family を選ぶ。path、authority、behavior、
-coverage credit、owner crate、deferred status は変わらないため Source Inventory と
-`spec_coverage_audit.md` は不変。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263J Pre-Move Inventory and Specification
 
-fresh dependency inventory は `runner.rs:6973-7018` の正確な type-assertion
-result/detail core を選ぶ（46行、hash
-`3d4f7e8ce9ff1b60d0960e33fb8e1689fb4862a1730cf3144137e720db053fb8`）。
-parent 向け result projection は既存 consumer 125個を持ち、output diagnostic collector
-は選択 core 内だけで使われる。
-
-Task 263J はこの family を既存 private `type_elaboration/output.rs` へ機械的に移動する。
-result projection は保持 named detail wrapper のため parent-only、collector は Task 263G
-validator/output transport の隣で leaf-private とする。binary/parenthesized detail core、
-config、named wrapper、output wrapper、call site、orchestration は `runner.rs` に残す。
-
-これは move-only `design_drift` で、Task 263J0 prerequisite はない。既存8 test module
-の direct matrix と active/report consumer が validator-first rejection、invalid-key
-fallback、binding/declaration/formula diagnostic collection、checker prefix、canonical
-iteration、sort/dedup、empty success、corruption rejection、fail-closed behavior を固定する。
-exact-body equivalence、272-test、active case 188件、repository/report/CLI byte-stability、
-全 gate により、全 key、fallback、ordering decision、payload、failure boundary を保持する。
-test、expectation、config、wrapper logic、semantic behavior、authority artifact は変更しない。
-既存 `output.rs` path を拡張し、coverage credit、owner crate、deferred status は変わらない
-ため Source Inventory と `spec_coverage_audit.md` は不変。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263J Move Result
 
-Task 263J は正確な type-assertion result/detail core だけを既存 private
-`type_elaboration/output.rs` へ移動した。必要な `pub(in crate::runner)` qualifier を
-除去すると、moved lines 536-581 は hash
-`3d4f7e8ce9ff1b60d0960e33fb8e1689fb4862a1730cf3144137e720db053fb8`
-を維持する。result projection は parent-only、diagnostic collector は leaf-private。
-production detail consumer は result projection だけを使うため、facade/runner の direct
-validator/output type alias は test-only に gate した。binary/parenthesized detail、config、
-named/output wrapper、call site は `runner.rs` に残す。
-
-結果の `runner.rs` は10,444行、hash
-`66bda6fe475617e30298b8dfb9384b92d55a033a23ee11726ada2e8ba9e6a8c2`、
-68行 `type_elaboration.rs` facade は hash
-`5a2412bfbf81a7505ccc03d68a12266a9ce5ec238247ed2c583c5cf08666ec4a`、
-1,067行 `output.rs` は hash
-`0afb49bbd16b8eb320e70d6997818302290cf1352fefe0b2c7ad3a3a2e9be1df`。
-validator-first rejection、fallback selection、diagnostic source/prefix、canonical
-iteration、sort/dedup、empty success、fail-closed behavior は不変。
-
-focused type-assertion test 47件、unit test 272件、active parse 96件、
-declaration-symbol 4件、type-elaboration 188件は全成功。plan/count は403/367、type
-coverage は235/223、pass/fail は219/184 のまま。272行 raw/normalized test-list hash と
-4つの CLI byte hash は不変。Task 263J は完了し、fresh Task 263 inventory で次の
-bounded binary/parenthesized detail または config/named-wrapper family を選ぶ。path、
-authority、behavior、coverage credit、owner crate、deferred status は変わらないため
-Source Inventory と `spec_coverage_audit.md` は不変。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263K 移動前 Inventory と仕様
 
-fresh dependency inventory は `runner.rs:6973-7008` の正確な binary-formula
-result/detail core（36行、hash
-`be8659f6d1bd22caba5270f0ea180521a90375e8b37c8f1a7b9e8f0cb4068b37`）を選ぶ。
-result projection は保持 production consumer 52個を持ち、その diagnostic collector
-は保持 shared parenthesized-detail core からも使われる。shared-support import 2個を
-除き、test module 6個が両 entry を直接145回参照する。
-
-Task 263K はこの2 function だけを既存 private `type_elaboration/output.rs` へ機械的に
-移動する。保持 runner consumer が両方を呼ぶため、両 entry は parent-only となる。
-production collector が binary validator と同じ leaf へ移動した後、facade と runner
-の direct validator/output type alias は test-only gate する。parenthesized detail、
-全 config と named/output wrapper、全 call site は `runner.rs` に保持する。
-
-これは move-only `design_drift` であり、Task 263K0 prerequisite は不要。既存 direct
-result/output matrix は validator-first rejection、設定済み invalid-key fallback、
-declaration/formula diagnostic source、checker-key prefix、canonical iteration、
-sort/dedup、empty success を cover する。preservation matrix は必要な visibility を
-除く exact function-body equivalence、stable key/diagnostic payload order 不変、272 test
-の raw/normalized list 不変、active type 188件と plan/count byte 不変、`.miz`、
-expectation、trace、spec、API、config、wrapper、call-site edit なしとする。
-
-authority inventory に canonical contradiction はない。`doc/spec/en`、既存 `.miz`
-corpus、`spec_trace.toml`、expectation は従来 intent を保持し、`harness.md` と
-`expectation_schema.md` は active runner と deterministic detail contract を引き続き
-定義し、source は修正対象の derived layout にすぎない。既存 `output.rs` path、
-authority、behavior、credit、owner crate、deferred status は変わらないため、Source
-Inventory と `spec_coverage_audit.md` は変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263K Move Result
 
-Task 263K は正確な binary-formula result/detail core だけを既存 private
-`type_elaboration/output.rs` へ移動した。必要な2個の `pub(in crate::runner)` qualifier
-を除去すると、moved lines 957-992 は hash
-`be8659f6d1bd22caba5270f0ea180521a90375e8b37c8f1a7b9e8f0cb4068b37` を維持する。
-両 projection は parent-only。最初の non-test crate build により、validator alias に
-加えて direct binary output-type alias も test-only になったことを検出したため、paired
-inventory を精密化し、facade/runner の両 alias を `#[cfg(test)]` にした。
-parenthesized detail、全 config と named/output wrapper、全 call site は `runner.rs` に
-保持する。
-
-結果の `runner.rs` は10,411行、hash
-`bc7d9d3dc7536c8311eb9b7c5c6131657114ad1b3bdc2f5a3b13149642ccc1b3`、69行
-`type_elaboration.rs` facade は hash
-`3411dfac21ea4872bdbea24466a64c7cdaafc27c54828b397913f483ed00e2e7`、1,104行
-`output.rs` は hash
-`94a0aa92cacfacf2ef32bc0b5b8e336f7340c19a3bcc4ef505052e568b3b69e9`。
-builder-error fallback、validator-first rejection、設定済み invalid-key fallback、
-declaration/formula diagnostic source、checker-key prefix、canonical iteration、
-sort/dedup、empty success、fail-closed behavior は不変。
-
-focused source-reserved-variable test 4件、unit test 272件、relevant crate integration
-test、active parse 96件、declaration-symbol 4件、type-elaboration 188件は全成功。
-plan/count は403/367、type coverage は235/223、pass/fail は219/184、warning/error は
-23/0 のまま。raw/normalized test-list hash と4つの CLI byte hash は不変。format、
-warning deny の all-target/all-feature Clippy、workspace test、diff cleanliness は成功。
-Task 263K は完了し、fresh Task 263 inventory は次の bounded parenthesized-detail または
-config/named-wrapper family を選ぶ。path、authority、behavior、coverage credit、owner
-crate、deferred status は変わらないため Source Inventory と
-`spec_coverage_audit.md` は不変。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263L 移動前 Inventory と仕様
 
-fresh dependency inventory は `runner.rs:7065-7080` の正確な shared
-parenthesized-binary output-detail core（16行、hash
-`700b2283f7a6ea7b61c97ec59a27166404a72eccdce8f8e7aa7c681dd9003e47`）を選ぶ。
-sole production caller は parenthesized active route 8個すべてを担う保持 payload-detail
-wrapper。保持 test-only named wrapper 8個も同じ core を呼び、`reserved_binary.rs` に
-direct assertion 26個がある。
-
-Task 263L はこの shared core だけを既存 private `type_elaboration/output.rs` へ機械的に
-移動する。保持 payload/named-wrapper caller のため parent-only となる。parenthesized
-validator と同じ leaf へ移動した後、facade と runner の direct parenthesized
-validator/output-type alias と direct binary detail-collector alias は test-only gate
-する。payload-detail wrapper、config 8個、全 named detail/validator/output wrapper、
-全 call site は `runner.rs` に保持する。
-
-これは move-only `design_drift` であり、Task 263L0 prerequisite は不要。既存 active/
-direct matrix は保持 caller の builder fallback、validator-first wrapper rejection、
-設定済み invalid-key fallback、nested binary diagnostic projection、left/right wrapper
-identity、fail-closed behavior を cover する。preservation matrix は必要な visibility を
-除く exact function-body equivalence、272 test の raw/normalized list 不変、active/CLI
-byte 不変、`.miz`、expectation、trace、spec、API、config、wrapper、payload-detail、
-call-site edit なしとする。
-
-authority inventory に canonical contradiction はない。既存 `output.rs` path/owner は
-不変で、authority、behavior、coverage credit、deferred status は変わらないため、
-Source Inventory と `spec_coverage_audit.md` は変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263L Move Result
 
-Task 263L は正確な shared parenthesized-binary output-detail core だけを既存 private
-`type_elaboration/output.rs` へ移動した。必要な `pub(in crate::runner)` qualifier を
-除去すると、moved lines 1106-1121 は hash
-`700b2283f7a6ea7b61c97ec59a27166404a72eccdce8f8e7aa7c681dd9003e47` を維持する。
-shared core は parent-only。最初の non-test build で、parenthesized core の移動後は
-direct binary detail-collector alias も test-only になったことを検出したため、paired
-inventory を精密化し、その alias と direct parenthesized validator/output-type alias
-を `#[cfg(test)]` にした。payload-detail wrapper、config 8個、named detail/validator/
-output wrapper、全 call site は `runner.rs` に保持する。
-
-結果の `runner.rs` は10,395行、hash
-`46338bc436d6fac02ed5ecd33ef454bed44e4ea8ed55427723e0781be0fadd44`、70行
-`type_elaboration.rs` facade は hash
-`720cecb3656838d7b2362db0c8c37a5fbc836d9e5b40e7713aa418ebe42b2576`、1,121行
-`output.rs` は hash
-`c07eec9a8e118462998ac9d99e0c983ed140bf1197c3bfd3125a0ed2a34c70c3`。
-builder fallback は保持 caller に残り、validator-first rejection、設定済み fallback、
-nested binary detail projection、left/right wrapper identity、fail-closed behavior は
-moved core で不変。
-
-focused parenthesized test 25件、unit test 272件、relevant crate integration test、
-active parse 96件、declaration-symbol 4件、type-elaboration 188件は全成功。plan/count は
-403/367、type coverage は235/223、pass/fail は219/184、warning/error は23/0 のまま。
-raw/normalized test-list hash と4つの CLI byte hash は不変。format、warning deny の
-all-target/all-feature Clippy、workspace test、diff cleanliness は成功。Task 263L は
-完了し、fresh Task 263 inventory は残る payload-detail または config/named-wrapper
-family を選ぶ。path、authority、behavior、coverage credit、owner crate、deferred
-status は変わらないため Source Inventory と `spec_coverage_audit.md` は不変。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263M 移動前 Inventory と仕様
 
-fresh dependency inventory は `runner.rs:5508-5524` の正確な parenthesized-binary
-payload-detail wrapper（17行、hash
-`5807184d2ce9cfa8f7fb5a9be4d8401b8a538a335f28d07768a251840a169605`）を選ぶ。
-production route wrapper 8個と `reserved_binary.rs` の direct assertion 8個がこの
-entry を呼ぶ。
-
-Task 263M はこの wrapper だけを既存 private `type_elaboration/output.rs` へ機械的に
-移動する。保持 route/test caller のため parent-only となる。builder と shared output-
-detail core は production で leaf-internal になるため、facade/runner alias は test-only
-となる。config 8個、全 named route/detail/validator/output wrapper、named extractor、
-全 call site は `runner.rs` に保持する。
-
-これは move-only `design_drift` であり、Task 263M0 prerequisite は不要。既存 active/
-direct matrix は builder-error fallback、設定済み invalid-key selection、validator-first
-rejection、nested binary diagnostic、side identity、fail-closed behavior を cover する。
-preservation matrix は必要な visibility を除く exact function-body equivalence、272 test
-list と active/CLI byte 不変、`.miz`、expectation、trace、spec、API、config、wrapper、
-extractor、call-site edit なしとする。
-
-authority inventory に canonical contradiction はない。既存 `output.rs` path/owner は
-不変で、authority、behavior、coverage credit、deferred status は変わらないため、
-Source Inventory と `spec_coverage_audit.md` は変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263M Move Result
 
-Task 263M は正確な parenthesized-binary payload-detail wrapper だけを既存 private
-`type_elaboration/output.rs` へ移動した。必要な `pub(in crate::runner)` qualifier を
-除去すると、moved lines 1123-1139 は hash
-`5807184d2ce9cfa8f7fb5a9be4d8401b8a538a335f28d07768a251840a169605` を維持する。
-wrapper は parent-only。direct parenthesized builder/shared-detail alias は test-only と
-なり、config、named route/detail/validator/output wrapper、named extractor、全 call site
-は `runner.rs` に保持する。
-
-結果の `runner.rs` は10,377行、hash
-`ee5ce9753442a91cea9642c32941f0bda71f05c956ad13b49d36d90d17639e35`、71行
-`type_elaboration.rs` facade は hash
-`62bd63a6aaaac7fbf83f8783b90bfa4546dfab99308b4ff420fd66803ebc9678`、1,139行
-`output.rs` は hash
-`55fd0eae01f417d011a3800d532f65eed1a2fd76d60d7387e9630fe3d9c92e57`。
-builder-error fallback、設定済み invalid-key selection、success delegation、nested
-binary diagnostic、side identity、fail-closed behavior は不変。
-
-focused parenthesized test 25件、unit test 272件、relevant crate integration test、
-active parse 96件、declaration-symbol 4件、type-elaboration 188件は全成功。plan/count は
-403/367、type coverage は235/223、pass/fail は219/184、warning/error は23/0 のまま。
-raw/normalized test-list hash と4つの CLI byte hash は不変。format、warning deny の
-all-target/all-feature Clippy、workspace test、diff cleanliness は成功。Task 263M は
-完了し、fresh Task 263 inventory は残る config/named-wrapper family を選ぶ。path、
-authority、behavior、coverage credit、owner crate、deferred status は変わらないため
-Source Inventory と `spec_coverage_audit.md` は不変。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263N 移動前 Inventory と仕様
 
-fresh dependency inventory は `runner.rs` の正確な7 fragmentからなる cohesive private
-parenthesized route owner を選ぶ。invalid key 220-235（16行、`f0a67ec1...`）、config
-8個 3099-3298（200、`d374247d...`）、production detail route 8個 5374-5506
-（133、`683e4c79...`）、test-only named detail wrapper 6960-7046（87、
-`08f628be...`）、output wrapper 7058-7142（85、`9139389e...`）、validator wrapper
-8322-8408（87、`87d26ecb...`）、source extractor 8個 8819-8930（112、
-`95dce665...`）で合計720行。
-
-Task 263N はこれらだけを新規 private `type_elaboration/parenthesized_routes.rs` へ機械的に
-移動する。config と thin source/detail/test wrapper を同じownerに置き、source/output
-ownershipの逆依存を避ける。normal phase facadeを跨ぐのはproduction detail route 8個
-だけで、configとtest消費wrapper/extractorは`#[cfg(test)]`で跨ぐ。call site、name、
-config value、key、payload、ordering、fallback、fail-closed behaviorは変更しない。
-既存active routeと`reserved_binary.rs`/`binary_route_fixtures.rs`のmatrixをoracleとする。
-
-これはmove-only `design_drift`でN0は不要。新規real pathはmoveと同時にpaired Source
-Inventoryへ追加し、paired target layoutには追加済みとする。authority、behavior、
-coverage credit、owner crate、deferred statusは
-変わらないため`spec_coverage_audit.md`は不変。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263N 移動結果
 
-移動した7 fragment は normalized hash `f0a67ec1...`、`d374247d...`、
-`683e4c79...`、`08f628be...`、`9139389e...`、`87d26ecb...`、
-`95dce665...` を正確に維持し、combined normalized hash は `93a45180...`。
-新規 private owner は745行/raw hash `490cc42b...`、`runner.rs` は9,721行/raw
-hash `9cb5f972...`。invalid-key constant は leaf-private のまま。既存 runner test
-名はconfig由来test-only aliasで解決し、config、named test wrapper 24個、extractor
-8個はtest facadeだけを跨ぐ。normal facadeがexposeするのはproduction detail route
-8個だけ。
-
-focused parenthesized test 25個とcrate unit test 272個は全成功。raw/normalized
-272-name list hash、4 CLI byte hash、active count 96/4/188、plan 403/367、type
-coverage 235/223、pass/fail 219/184、warning 23/error 0は不変。format、warning deny
-all-target/all-feature Clippy、workspace test、diff cleanlinessは成功。Task 263Nは完了し、
-fresh Task 263 inventoryは残るnon-parenthesized route-owner familyへ戻る。paired Source
-Inventoryは新しいreal pathを含み、authority、behavior、coverage credit、owner crate、
-deferred statusは変わらないため`spec_coverage_audit.md`は不変。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263O 移動前 Inventory と仕様
 
-fresh dependency inventory はleading direct-binary ownerを選ぶ。対象はreserved-variable
-equality、reserved-object-variable equality/inequality、distinct reserved-object-variable
-equality/inequality、distinct reserved-variable equality/membership/inequality、heterogeneous
-reserve membership。`runner.rs` の正確な8 fragment、invalid key 6個 150-161（12行、
-`d3c61a92...`）、invalid key 3個 287-292（6、`6c3ab931...`）、先頭config 5個
-3131-3244（114、`aca11227...`）、distinct config 3個 3287-3359（73、
-`7febfe4a...`）、heterogeneous config 3484-3507（24、`abe7d7f1...`）、production
-detail route 9個 5214-5322（109、`3d564030...`）、test-only output wrapper 9個
-6678-6768（91、`475ab5d7...`）、source extractor 9個 8262-8378（117、
-`5499a8cb...`）で合計546行、combined hash `f2271cc0...`。
-
-Task 263O はこれらだけを新規 private `type_elaboration/binary_routes.rs` へ機械的に
-移動する。leaf は既存 `source_formula` config/extractor substrate と `output`
-builder/detail coreを直接consumeし、両siblingからnew leafへの依存はないためacyclic。
-normal phase facadeを跨ぐのはproduction detail route 9個だけ。config、test消費output、
-extractorは`#[cfg(test)]`だけを跨ぎ、invalid-key constantはleaf-privateのまま、config由来
-runner test aliasで既存name/valueを維持する。call site、name、config value、key、payload、
-ordering、fallback、fail-closed behaviorは変更しない。
-
-`reserved_binary.rs`、`binary_route_fixtures.rs`、`reserve_fixtures.rs`、
-`reserve_object_fixtures.rs`、shared test supportの既存direct occurrence 187件
-（output/extractor reference 162件とinvalid-key reference 25件）がsource exactness、
-checker payload、invalid-key fallback、active real fixture、route isolationを覆う。よって
-move-only `design_drift`でO0 test taskは不要。new real pathはmoveと同時にpaired Source
-Inventory/target layoutへ追加する。authority、behavior、coverage credit、owner crate、
-deferred statusは変わらないため`spec_coverage_audit.md`は不変。route-set expansion、
-direct-family regrouping、config/key/role edit、wrapper generalization、assertion weakening、
-test/expectation edit、later binary/type-assertion/formula route moveは禁止。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263O 移動結果
 
-移動した8 fragment はoriginal raw hash `d3c61a92...`、`6c3ab931...`、
-`aca11227...`、`7febfe4a...`、`abe7d7f1...`、`3d564030...`、`475ab5d7...`、
-`5499a8cb...` をpre-move oracleとして維持する。必要なrunner visibilityとformat空白だけを
-除くと全old/new fragment pairはtoken-identicalで、combined normalized hashは
-`86bf7cad...`。新規private ownerは559行/raw hash `c4546956...`、`runner.rs`は
-9,234行/raw hash `8a55c57d...`。invalid-key constantはleaf-privateのまま。既存runner
-test名はconfig由来test-only aliasで解決し、config、test output wrapper 9個、extractor
-9個はtest facadeだけを跨ぐ。normal facadeがexposeするのはproduction detail route
-9個だけ。
-
-selected-family focused filterとcrate unit test 272個は全成功。raw/normalized 272-name
-list hash、4 CLI byte hash、active count 96/4/188、plan 403/367、type coverage
-235/223、pass/fail 219/184、warning 23/error 0は不変。format、warning deny
-all-target/all-feature Clippy、workspace test、diff cleanlinessは成功。Task 263Oは完了し、
-fresh Task 263 inventoryは後続direct-binary route-owner familyへ戻る。paired Source
-Inventory/target layoutは新しいreal pathを含み、authority、behavior、coverage credit、
-owner crate、deferred statusは変わらないため`spec_coverage_audit.md`は不変。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263P 移動前 Inventory と仕様
 
-fresh dependency inventoryはmultiple-reserve declaration binary route 5個、set
-equality/inequality/membershipとobject equality/inequalityを選ぶ。`runner.rs`の正確な
-5 fragment、invalid key 324-333（10行、`c1091c1b...`）、config 5個 3214-3337
-（124、`85224887...`）、production detail route 5個 5522-5583（62、
-`518d4e55...`）、test-only output wrapper 5個 6805-6856（52、`1af7a5ab...`）、
-source extractor 5個 8360-8424（65、`55bb8ec4...`）で合計313行、combined
-hash `790eba84...`。
-
-Task 263Pはこれらだけを既存private `type_elaboration/binary_routes.rs`へ機械的に
-追記する。dependencyはTask 263Oの`source_formula`/`output`へのacyclic graphを維持。
-normal phase facadeを跨ぐのはproduction detail route 5個だけ。config、test消費output、
-extractorは`#[cfg(test)]`だけを跨ぎ、invalid-key constantはleaf-privateのまま、config由来
-runner test aliasで既存name/valueを維持する。call site、name、config value、key、payload、
-ordering、fallback、fail-closed behaviorは変更しない。
-
-`reserved_binary.rs`、`binary_route_fixtures.rs`、`reserve_fixtures.rs`、shared test
-supportの既存direct occurrence 104件（output/extractor reference 96件、invalid-key
-reference 8件）がsource exactness、checker payload、invalid-key fallback、active real
-fixture、route isolationを覆う。よってmove-only `design_drift`でP0 test taskは不要。
-new source pathはなく、paired target layoutはowner拡張を記録する。authority、behavior、
-coverage credit、owner crate、deferred statusは変わらないため`spec_coverage_audit.md`は
-不変。route-set expansion、config/key/role edit、wrapper generalization、assertion
-weakening、test/expectation edit、base/mode-chain/type-assertion/formula route moveは禁止。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263P 移動結果
 
-移動した5 fragmentは訂正済みoriginal raw hash `c1091c1b...`、`85224887...`、
-`518d4e55...`、`1af7a5ab...`、`55bb8ec4...`をpre-move oracleとして維持する。
-最初のcompile-mode verificationでdraftのoutput範囲6805-6857が次の未移動routeの
-`#[cfg(test)]`を含むと判明したため、完了前に6805-6856へ訂正し、attributeを元routeへ
-戻し、最初の移動extractorをnormal leaf visibilityへ戻した。必要なrunner visibilityと
-format空白だけを除くと全訂正済みold/new fragment pairはtoken-identicalで、combined
-normalized hashは`340d2658...`。
-
-拡張後private ownerは872行/raw hash `883042d7...`、`runner.rs`は8,956行/raw hash
-`48ba9d05...`。invalid-key constantはleaf-privateのまま。既存runner test名はconfig由来
-test-only aliasで解決し、config、test output wrapper 5個、extractor 5個はtest facade
-だけを跨ぐ。normal facadeが追加するのはproduction detail route 5個だけで、phaseは
-private leaf 9個を維持する。
-
-focused multiple-reserve test 10個とcrate unit test 272個は全成功。raw/normalized
-272-name list hash、4 CLI byte hash、active count 96/4/188、plan 403/367、type
-coverage 235/223、pass/fail 219/184、warning 23/error 0は不変。format、warning deny
-all-target/all-feature Clippy、workspace test、diff cleanlinessは成功。Task 263Pは完了し、
-fresh Task 263 inventoryは残るbase/mode-chain binary route-owner familyへ戻る。new source
-pathはなく、authority、behavior、coverage credit、owner crate、deferred statusは
-変わらないため`spec_coverage_audit.md`は不変。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263Q 移動前 Inventory と仕様
 
-fresh dependency inventoryはbase reserved-variable membership/inequality binary routeを
-選ぶ。`runner.rs`の正確な5 fragment、invalid key 361-364（4行、`5d41a022...`）、
-config 2個 3197-3238（42、`aa8213c1...`）、production detail route 2個
-5423-5446（24、`81da3344...`）、test-only output wrapper 2個 6644-6663
-（20、`ae5f0131...`）、source extractor 2個 8147-8172（26、`1b44be5a...`）
-で合計116行、combined hash `ec7a766a...`。
-
-Task 263Qはこれらだけを既存private `type_elaboration/binary_routes.rs`へ機械的に
-追記する。dependencyはTasks 263O-263Pの`source_formula`/`output`へのacyclic graphを
-維持。normal phase facadeを跨ぐのはproduction detail route 2個だけ。config、test消費
-output、extractorは`#[cfg(test)]`だけを跨ぎ、invalid-key constantはleaf-privateのまま、
-config由来runner test aliasで既存name/valueを維持する。call site、name、config value、
-key、payload、ordering、fallback、fail-closed behaviorは変更しない。
-
-`reserved_direct.rs`、`reserved_binary.rs`、`binary_route_fixtures.rs`、
-`asserted_head_fixtures.rs`、shared test supportの既存direct occurrence 38件
-（output/extractor reference 34件、invalid-key reference 4件）がsource exactness、checker
-payload、invalid-key fallback、active real fixture、route isolationを覆う。よってmove-only
-`design_drift`でQ0 test taskは不要。new source pathはなく、paired target layoutはowner
-拡張を記録する。authority、behavior、coverage credit、owner crate、deferred statusは
-変わらないため`spec_coverage_audit.md`は不変。route-set expansion、config/key/role
-edit、wrapper generalization、assertion weakening、test/expectation edit、mode-chain/
-type-assertion/formula route moveは禁止。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263Q 移動結果
 
-Task 263Qは承認済みの5 fragment、合計116行だけを既存private
-`type_elaboration/binary_routes.rs`へ移動し、original raw hash
-`5d41a022...`、`aa8213c1...`、`81da3344...`、`ae5f0131...`、
-`1b44be5a...`をpre-move oracleとして維持した。必要なrunner visibilityとformat空白
-だけを除くと全old/new fragment pairはtoken-identicalで、combined normalized hashは
-`e8c45cf1...`。次のtype-assertion output attribute/bodyと次のextractorは`runner.rs`に
-残り、後続routeはboundaryを跨いでいない。
-
-拡張後private ownerは988行/raw hash `087967cc...`、`runner.rs`は8,851行/raw hash
-`a039be76...`。invalid-key constantはleaf-privateのまま。既存runner test名はconfig由来
-test-only aliasで解決し、config、test output wrapper 2個、extractor 2個はtest facade
-だけを跨ぐ。normal facadeが追加するのはproduction detail route 2個だけで、phaseは
-private leaf 9個を維持し、dependency graphはacyclicのまま。
-
-membership/inequalityのfocused filter 2本はそれぞれ33件/31件成功し、crate unit test
-272件も全成功。raw/normalized 272-name list hash、4 CLI byte hash、active count
-96/4/188、plan 403/367、type coverage 235/223、pass/fail 219/184、warning 23/error 0は
-不変。format、warning deny all-target/all-feature Clippy、workspace test、diff cleanlinessは
-成功。Task 263Qは完了し、fresh Task 263 inventoryは残るmode-chain binary route-owner
-familyへ戻る。new source pathはなく、authority、behavior、coverage credit、owner crate、
-deferred statusは変わらないため`spec_coverage_audit.md`は不変。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263R 移動前 Inventory と仕様
 
-fresh dependency inventoryはdirect local-mode membership/equality/inequality binary routeを
-次のbounded familyとして選ぶ。`runner.rs`の正確な10 fragment、membership invalid key
-255-256（2行、`c4db5ce6...`）、equality/inequality invalid key 276-279（4、
-`70a954f2...`）、membership config 3204-3231（28、`77ebd7a7...`）、
-equality/inequality config 3626-3675（50、`81a2369d...`）、membership production
-detail route 4910-4920（11、`6545f96f...`）、equality/inequality detail route
-5043-5065（23、`74305b0b...`）、membership test-only output 6179-6187（9、
-`a0c62cc0...`）、equality/inequality test-only output 6292-6310（19、
-`0367ba53...`）、membership extractor 7600-7611（12、`508569dd...`）、
-equality/inequality extractor 7730-7754（25、`c1e52d0c...`）で合計183行、
-combined raw hash `16bcea2e...`。
-
-Task 263Rはこれらだけを既存private `type_elaboration/binary_routes.rs`へ機械的に
-追記する。leafは既存`source_formula`/`output` ownerだけに依存し続ける。normal phase
-facadeを跨ぐのはproduction detail route 3個だけ。config、test消費output、extractorは
-`#[cfg(test)]`だけを跨ぎ、invalid-key constantはleaf-privateのまま、config由来runner
-test aliasで既存name/valueを維持する。call site、name、config value、mode-definition
-chain、key、payload、ordering、fallback、fail-closed behaviorは変更しない。
-
-`support.rs`、`binary_route_fixtures.rs`、`mode_chain.rs`、
-`mode_chain_fixtures.rs`の既存direct test occurrence 52件がexact real source expansion、
-checker payload、invalid-key fallback、active fixture、route isolationを覆う。active
-`.miz`/expectation pair 3組とcovered trace requirementがcanonical reserved variableとatomic
-equality/inequality/membership intentおよびexact source-derived checker seamを直接保持する。
-よってmove-only `design_drift`でR0 test taskは不要。new source pathはなく、paired target
-layoutはowner拡張を記録する。authority、behavior、coverage credit、owner crate、deferred
-statusは変わらないため`spec_coverage_audit.md`は不変。route-set expansion、config/key/
-role/mode edit、wrapper generalization、assertion weakening、test/expectation edit、object-mode/
-deeper-chain/type-assertion/formula route moveは禁止。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263R 移動結果
 
-Task 263Rは承認済みの10 fragment、合計183行だけを既存private
-`type_elaboration/binary_routes.rs`へ移動し、original raw hash `c4db5ce6...`、
-`70a954f2...`、`77ebd7a7...`、`81a2369d...`、`6545f96f...`、
-`74305b0b...`、`a0c62cc0...`、`0367ba53...`、`508569dd...`、
-`c1e52d0c...`をpre-move oracleとして維持した。必要なrunner visibilityとformat空白
-だけを除くと全old/new fragment pairはtoken-identicalで、combined normalized hashは
-`be8e0e9b...`。隣接chained membership、local-object inequality、全deeper-chain config、
-route、output attribute/body、extractorは`runner.rs`に残る。
-
-拡張後private ownerは1,181行/raw hash `70feaa70...`、`runner.rs`は8,681行/raw hash
-`7131c8b7...`。invalid-key constantはleaf-privateのまま。既存runner test名はconfig由来
-test-only aliasで解決し、config、test output wrapper 3個、extractor 3個はtest facade
-だけを跨ぐ。normal facadeが追加するのはproduction detail route 3個だけで、phaseは
-private leaf 9個を維持し、dependency graphはacyclicのまま。
-
-membership/equality/inequalityのfocused filterはそれぞれ10件/12件/10件成功し、crate
-unit test 272件も全成功。raw/normalized 272-name list hash、4 CLI byte hash、active count
-96/4/188、plan 403/367、type coverage 235/223、pass/fail 219/184、warning 23/error 0は
-不変。format、warning deny all-target/all-feature Clippy、workspace test、diff cleanlinessは
-成功。Task 263Rは完了し、fresh Task 263 inventoryは残るobject-mode/deeper-chain binary
-route-owner familyへ戻る。new source pathはなく、authority、behavior、coverage credit、
-owner crate、deferred statusは変わらないため`spec_coverage_audit.md`は不変。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263S 移動前 Inventory と仕様
 
-fresh dependency inventoryはdirect local-object-mode membership/equality/inequality binary
-routeを次のbounded familyとして選ぶ。`runner.rs`の正確な10 fragment、membership/
-inequality invalid key 293-296（4行、`0c2d5a85...`）、equality invalid key 383-384
-（2、`759fc61a...`）、membership/inequality config 3583-3636（54、
-`bf587e0d...`）、equality config 4819-4843（25、`ff4ef313...`）、membership/
-inequality production detail route 4953-4977（25、`08141211...`）、equality detail
-route 5274-5285（12、`7c4207cd...`）、membership/inequality test-only output
-6170-6190（21、`d67627c1...`）、equality test-only output 6443-6452（10、
-`1b1d490e...`）、membership/inequality extractor 7573-7597（25、`889aa420...`）、
-equality extractor 7885-7896（12、`3cfd12b2...`）で合計190行、combined raw hash
-`3e39b474...`。
-
-Task 263Sはこれらだけを既存private `type_elaboration/binary_routes.rs`へ機械的に
-追記する。leafは既存`source_formula`/`output` ownerだけに依存し続ける。normal phase
-facadeを跨ぐのはproduction detail route 3個だけ。config、test消費output、extractorは
-`#[cfg(test)]`だけを跨ぎ、invalid-key constantはleaf-privateのまま、config由来runner
-test aliasで既存name/valueを維持する。call site、name、config value、mode-definition
-chain、key、payload、ordering、fallback、fail-closed behaviorは変更しない。
-
-`support.rs`、`binary_route_fixtures.rs`、`mode_chain.rs`、
-`mode_chain_fixtures.rs`の既存direct test occurrence 52件（output/extractor reference 44件、
-invalid-key reference 8件）がexact real source expansion、checker payload、invalid-key
-fallback、active fixture、route isolationを覆う。active `.miz`/expectation pair 3組とcovered
-trace requirementがcanonical reserved variableとatomic equality/inequality/membership intent
-およびexact source-derived checker seamを直接保持する。よってmove-only `design_drift`で
-S0 test taskは不要。new source pathはなく、paired target layoutはowner拡張を記録する。
-authority、behavior、coverage credit、owner crate、deferred statusは変わらないため
-`spec_coverage_audit.md`は不変。route-set expansion、config/key/role/mode edit、wrapper
-generalization、assertion weakening、test/expectation edit、chained/deeper-chain/
-type-assertion/formula route moveは禁止。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263S 移動結果
 
-Task 263Sは承認済みの10 fragment、合計190行だけを既存private
-`type_elaboration/binary_routes.rs`へ移動し、original raw hash `0c2d5a85...`、
-`759fc61a...`、`bf587e0d...`、`ff4ef313...`、`08141211...`、
-`7c4207cd...`、`d67627c1...`、`1b1d490e...`、`889aa420...`、
-`3cfd12b2...`をpre-move oracleとして維持した。必要なrunner visibilityとformat空白
-だけを除くと全old/new fragment pairはtoken-identicalで、combined normalized hashは
-`e0590337...`。隣接chained familyと次のtype-assertion detail、output attribute/body、
-extractorは`runner.rs`に残る。
-
-拡張後private ownerは1,380行/raw hash `2b7e1aef...`、`runner.rs`は8,504行/raw hash
-`f5080dee...`。invalid-key constantはleaf-privateのまま。既存runner test名はconfig由来
-test-only aliasで解決し、config、test output wrapper 3個、extractor 3個はtest facade
-だけを跨ぐ。normal facadeが追加するのはproduction detail route 3個だけで、phaseは
-private leaf 9個を維持し、dependency graphはacyclicのまま。
-
-membership/equality/inequalityのfocused filterは各10件成功し、crate unit test 272件も
-全成功。raw/normalized 272-name list hash、4 CLI byte hash、active count 96/4/188、plan
-403/367、type coverage 235/223、pass/fail 219/184、warning 23/error 0は不変。format、
-warning deny all-target/all-feature Clippy、workspace test、diff cleanlinessは成功。Task
-263Sは完了し、fresh Task 263 inventoryは残るchained/deeper-chain binary route-owner
-familyへ戻る。new source pathはなく、authority、behavior、coverage credit、owner crate、
-deferred statusは変わらないため`spec_coverage_audit.md`は不変。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263T 移動前 Inventory と仕様
 
-fresh dependency inventoryはchained local-mode membership/equality/inequality binary routeを
-次のbounded familyとして選ぶ。`runner.rs`の正確な14 fragment、membership invalid key
-297-298（2行、`3547f56d...`）、equality/inequality invalid key 314-317（4、
-`a33a4243...`）、membership/equality/inequality config 3234-3268（35、
-`9266cead...`）、3598-3629（32、`ff54a0ed...`）、4672-4703（32、
-`b624f397...`）、production detail route 3個 4779-4790（12、`77d10775...`）、
-4887-4898（12、`fd4ddd74...`）、5142-5153（12、`603f4e69...`）、test-only
-output 3個 5973-5982（10、`5214fdac...`）、6065-6074（10、`e26f53b0...`）、
-6282-6291（10、`dd43dd7a...`）、source extractor 3個 7331-7342（12、
-`77c8abb7...`）、7435-7446（12、`54f042db...`）、7682-7693（12、
-`92c2a218...`）で合計207行、combined raw hash `dd7a8b0c...`。
-
-Task 263Tはこれらだけを既存private `type_elaboration/binary_routes.rs`へ機械的に
-追記する。leafは既存`source_formula`/`output` ownerだけに依存し続ける。normal phase
-facadeを跨ぐのはproduction detail route 3個だけ。config、test消費output、extractorは
-`#[cfg(test)]`だけを跨ぎ、invalid-key constantはleaf-privateのまま、config由来runner
-test aliasで既存name/valueを維持する。call site、name、config value、2-definition chain、
-key、payload、ordering、fallback、fail-closed behaviorは変更しない。
-
-`support.rs`、`binary_route_fixtures.rs`、`mode_chain.rs`、
-`mode_chain_fixtures.rs`の既存direct test occurrence 50件（output/extractor reference 43件、
-invalid-key reference 7件）がexact real two-expansion source chain、checker payload、
-invalid-key fallback、active fixture、route isolationを覆う。active `.miz`/expectation pair
-3組とcovered trace requirementがcanonical reserved-variable atomic-formula intentとexact
-source-derived checker seamを保持する。よってmove-only `design_drift`でT0 test taskは
-不要。new source pathはなく、paired target layoutはowner拡張を記録する。authority、
-behavior、coverage credit、owner crate、deferred statusは変わらないため
-`spec_coverage_audit.md`は不変。route-set expansion、config/key/role/mode edit、chain
-generalization、assertion weakening、test/expectation edit、chained object-mode/deeper-chain/
-type-assertion/formula route moveは禁止。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263T 移動結果
 
-Task 263Tは承認済みの14 fragment、合計207行だけを既存private
-`type_elaboration/binary_routes.rs`へ移動し、original raw hash `3547f56d...`、
-`a33a4243...`、`9266cead...`、`ff54a0ed...`、`b624f397...`、
-`77d10775...`、`fd4ddd74...`、`603f4e69...`、`5214fdac...`、
-`e26f53b0...`、`dd43dd7a...`、`77c8abb7...`、`54f042db...`、
-`92c2a218...`をpre-move oracleとして維持した。必要なrunner visibilityとformat空白
-だけを除くと全old/new fragment pairはtoken-identicalで、combined normalized hashは
-`aa98a27d...`。隣接chained-object、two-/three-/deeper-edge、type-assertion、他route
-familyは`runner.rs`に残る。
-
-拡張後private ownerは1,600行/raw hash `03d9236d...`、`runner.rs`は8,306行/raw hash
-`3f73039e...`。invalid-key constantはleaf-privateのまま。既存runner test名はconfig由来
-test-only aliasで解決し、config、test output wrapper 3個、extractor 3個はtest facade
-だけを跨ぐ。normal facadeが追加するのはproduction detail route 3個だけで、phaseは
-private leaf 9個を維持し、dependency graphはacyclicのまま。
-
-membership/equality/inequalityのfocused filterは各2件成功し、crate unit test 272件も
-全成功。raw/normalized 272-name list hash、4 CLI byte hash、active count 96/4/188、plan
-403/367、type coverage 235/223、pass/fail 219/184、warning 23/error 0は不変。format、
-warning deny all-target/all-feature Clippy、workspace test、diff cleanlinessは成功。Task
-263Tは完了し、fresh Task 263 inventoryは残るchained object-mode/deeper-chain binary
-route-owner familyへ戻る。new source pathはなく、authority、behavior、coverage credit、
-owner crate、deferred statusは変わらないため`spec_coverage_audit.md`は不変。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263U 移動前 Inventory と仕様
 
-fresh dependency inventoryはchained local-object-mode membership/equality/inequality binary
-routeを次のbounded familyとして選ぶ。`runner.rs`の正確な9 fragment、invalid key 3個
-331-338（8行、`972beff3...`）、membership config 3537-3575（39、`71bb150f...`）、
-equality/inequality config 4618-4690（73、`32f853aa...`）、membership production
-detail route 4773-4785（13、`84c8bd3d...`）、equality/inequality detail route
-5029-5054（26、`4fc8b564...`）、membership test-only output 5916-5926（11、
-`5b884de2...`）、equality/inequality test-only output 6134-6155（22、
-`7c165117...`）、membership extractor 7250-7261（12、`c84f51e1...`）、
-equality/inequality extractor 7497-7521（25、`2240a58d...`）で合計229行、combined
-raw hash `ae0066dd...`。
-
-Task 263Uはこれらだけを既存private `type_elaboration/binary_routes.rs`へ機械的に
-追記する。leafは既存`source_formula`/`output` ownerだけに依存し続ける。normal phase
-facadeを跨ぐのはproduction detail route 3個だけ。config、test消費output、extractorは
-`#[cfg(test)]`だけを跨ぎ、invalid-key constantはleaf-privateのまま、config由来runner
-test aliasで既存name/valueを維持する。call site、name、config value、2-definition
-object chain、key、payload、ordering、fallback、fail-closed behaviorは変更しない。
-
-`support.rs`、`binary_route_fixtures.rs`、`mode_chain.rs`、
-`mode_chain_fixtures.rs`の既存direct test occurrence 48件（output/extractor reference 41件、
-invalid-key reference 7件）がexact real two-expansion object-mode source chain、checker
-payload、invalid-key fallback、active fixture、route isolationを覆う。active `.miz`/
-expectation pair 3組とcovered trace requirementがcanonical reserved-variable atomic-formula
-intentとexact source-derived checker seamを保持する。よってmove-only `design_drift`でU0
-test taskは不要。new source pathはなく、paired target layoutはowner拡張を記録する。
-authority、behavior、coverage credit、owner crate、deferred statusは変わらないため
-`spec_coverage_audit.md`は不変。route-set expansion、config/key/role/mode edit、chain
-generalization、assertion weakening、test/expectation edit、deeper-chain/type-assertion/formula
-route moveは禁止。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263U 移動結果
 
-Task 263Uは承認済み9 fragment、合計229行だけを既存private
-`type_elaboration/binary_routes.rs`へ移動し、移動前oracleのoriginal raw hash
-`972beff3...`、`71bb150f...`、`32f853aa...`、`84c8bd3d...`、
-`4fc8b564...`、`5b884de2...`、`7c165117...`、`c84f51e1...`、
-`2240a58d...`を維持した。必要なrunner visibilityとformatting whitespaceだけを
-除くと全old/new fragment pairはtoken-identicalで、combined normalized hashは
-`a6b1bb6b...`。隣接するtwo-/three-/four-edge、long/deeper-chain、type-assertion、
-formula、他route familyは`runner.rs`に残る。
-
-拡張後private ownerは1,838行、raw hash `4e4c0125...`、`runner.rs`は8,090行、
-raw hash `687c85be...`、phase facadeは235行、raw hash `8980cdd9...`。
-invalid-key constantはleaf-privateのまま。既存runner test nameはconfig由来test-only
-aliasで解決し、config、test output wrapper 3個、extractor 3個はtest facadeだけを
-跨ぐ。normal facadeが追加するのはproduction detail route 3個だけで、phaseは
-引き続きprivate leaf 9個を所有しdependency graphはacyclic。
-
-focused membership/equality/inequality filterは各2 test、crate unit test 272件は全成功。
-raw/normalized 272-name list hash、4 CLI byte hash、active count 96/4/188、plan
-403/367、type coverage 235/223、pass/fail 219/184、warning/error 23/0は不変。
-formatting、warning deny all-target/all-feature Clippy、workspace test、diff cleanlinessは
-成功。Task 263Uは完了し、fresh Task 263 inventoryはdeeper-chain binary route-owner
-familyへ戻る。new source pathはなく、authority、behavior、coverage credit、owner crate、
-deferred statusは変わらないため`spec_coverage_audit.md`は不変。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263V 移動前 Inventory と仕様
 
-fresh dependency inventoryはtwo-edge local-mode membership/equality/inequality binary
-routeを次のbounded familyとして選ぶ。`runner.rs`の正確な15 fragment、membership/
-equality/inequality invalid key 339-340（2行、`f02fb8e4...`）、352-353（2、
-`ac20181b...`）、422-423（2、`a40e0c6f...`）、config 3262-3301（40、
-`54b49166...`）、3550-3586（37、`0694dde7...`）、4469-4505（37、
-`30030132...`）、production detail route 4591-4602（12、`bc4a798e...`）、
-4672-4683（12、`b6bb868b...`）、4874-4885（12、`815c915b...`）、test-only
-output 5705-5714（10、`d4bb53d3...`）、5774-5783（10、`65190120...`）、
-5946-5955（10、`99a8c9c1...`）、source extractor 6995-7006（12、
-`a17900f5...`）、7073-7084（12、`f77cfcd9...`）、7268-7279（12、
-`fbe87d76...`）で合計222行、combined raw hash `f680fb91...`。
-
-Task 263Vはこれらだけを既存private `type_elaboration/binary_routes.rs`へ機械的に
-追記する。leafは既存`source_formula`/`output` ownerだけに依存し続ける。normal phase
-facadeを跨ぐのはproduction detail route 3個だけ。config、test消費output、extractorは
-`#[cfg(test)]`だけを跨ぎ、invalid-key constantはleaf-privateのまま、config由来runner
-test aliasで既存name/valueを維持する。call site、name、config value、正確な
-3-definition chain、key、payload、ordering、fallback、fail-closed behaviorは変更しない。
-
-`support.rs`、`binary_route_fixtures.rs`、`mode_chain.rs`、
-`mode_chain_fixtures.rs`、`reserved_binary.rs`の既存direct test occurrence 54件
-（output/extractor reference 46件、invalid-key reference 7件、config reference 1件）が
-exact real three-expansion source chain、checker payload、invalid-key fallback、active
-fixture、cross-route isolation、direct/parenthesized owner boundaryを覆う。active `.miz`/
-expectation pair 3組とcovered trace requirementがcanonical reserved-variable atomic-formula
-intentとexact source-derived checker seamを保持する。よってmove-only `design_drift`でV0
-test taskは不要。new source pathはなく、paired target layoutはowner拡張を記録する。
-authority、behavior、coverage credit、owner crate、deferred statusは変わらないため
-`spec_coverage_audit.md`は不変。route-set expansion、config/key/role/mode edit、chain
-generalization、assertion weakening、test/expectation edit、object-mode、three-/four-edge、
-long-chain、type-assertion、formula route moveは禁止。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263V 移動結果
 
-Task 263Vは承認済み15 fragment、合計222行だけを既存private
-`type_elaboration/binary_routes.rs`へ移動し、移動前oracleのoriginal raw hash
-`f02fb8e4...`、`ac20181b...`、`a40e0c6f...`、`54b49166...`、
-`0694dde7...`、`30030132...`、`bc4a798e...`、`b6bb868b...`、
-`815c915b...`、`d4bb53d3...`、`65190120...`、`99a8c9c1...`、
-`a17900f5...`、`f77cfcd9...`、`fbe87d76...`を維持した。必要なrunner
-visibilityとformatting whitespaceだけを除くと全old/new fragment pairはtoken-identical
-で、combined normalized hashは`53865bd6...`。隣接するobject-mode、three-/four-edge、
-long-chain、type-assertion、formula、他route familyは`runner.rs`に残る。
-
-拡張後private ownerは2,073行、raw hash `024f1b74...`、`runner.rs`は7,877行、
-raw hash `e609ff69...`、phase facadeは247行、raw hash `8d12176a...`。
-invalid-key constantはleaf-privateのまま。既存runner test nameと保持direct
-parenthesized corruption consumerはconfig由来test-only aliasで解決する。config、test
-output wrapper 3個、extractor 3個はtest facadeだけを跨ぎ、normal facadeが追加するのは
-production detail route 3個だけ。phaseは引き続きprivate leaf 9個を所有しdependency
-graphはacyclic。
-
-focused membership/equality/inequality filterはparenthesized boundary test 2件を含め
-2/4/2 test、crate unit test 272件は全成功。raw/normalized 272-name list hash、4 CLI byte
-hash、active count 96/4/188、plan 403/367、type coverage 235/223、pass/fail 219/184、
-warning/error 23/0は不変。formatting、warning deny all-target/all-feature Clippy、workspace
-test、diff cleanlinessは成功。Task 263Vは完了し、fresh Task 263 inventoryはtwo-edge
-object-modeと残るthree-/four-edge/long-chain binary route-owner familyへ戻る。new source
-pathはなく、authority、behavior、coverage credit、owner crate、deferred statusは
-変わらないため`spec_coverage_audit.md`は不変。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263W 移動前 Inventory と仕様
 
-fresh dependency inventoryはtwo-edge local-object-mode membership/equality/inequality
-binary routeを次のbounded familyとして選ぶ。`runner.rs`の正確な11 fragment、membership
-invalid key 369-370（2行、`d572e286...`）、inequality/equality invalid key 439-442
-（4、`d571dc2e...`）、config 3479-3522（44、`2f964b21...`）、4405-4447
-（43、`9438d880...`）、4449-4487（39、`246a2852...`）、membership production
-detail route 4543-4555（13、`7277fccf...`）、inequality/equality detail route
-4746-4771（26、`041e760f...`）、membership test-only output 5610-5620（11、
-`1231694c...`）、inequality/equality test-only output 5783-5804（22、
-`2d5ae89e...`）、membership extractor 6873-6884（12、`82ab31ea...`）、
-inequality/equality extractor 7068-7092（25、`63fa9c8a...`）で合計241行、combined
-raw hash `a57c6acd...`。
-
-Task 263Wはこれらだけを既存private `type_elaboration/binary_routes.rs`へ機械的に
-追記する。leafは既存`source_formula`/`output` ownerだけに依存し続ける。normal phase
-facadeを跨ぐのはproduction detail route 3個だけ。config、test消費output、extractorは
-`#[cfg(test)]`だけを跨ぎ、invalid-key constantはleaf-privateのまま、config由来runner
-test aliasで既存name/valueを維持する。call site、name、config value、正確な
-3-definition object chain、key、payload、ordering、fallback、fail-closed behaviorは
-変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 249PI implemented no-runner boundary
 
-implementationは`mizar-test` file/moduleを変更しない。runner productionは
-`35/67939`、path/contentは
-`4218936ff3ee3baaceb7c0723307ad266d722d0a2473e8b7f82e11c75aeb2b6e` /
-`a543608c5075ffed97141626ebbf8d952a847051a34d6782097329b44aa1d09e`。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 249PI no-runner module boundary
 
-prerequisiteはchecker `source_type.rs`とsynchronized design recordだけを変更する。
-`mizar-test` leaf/facade import/selector/dispatch/test module/production line/Cargo dependencyは
-追加しない。runner library/productionはexact hash込み`528` / `35/67939`のまま。
-checker-only implementation/fresh inventory完了までfrozen Task264 routeはabsent。
-
-`support.rs`、`binary_route_fixtures.rs`、`mode_chain.rs`、
-`mode_chain_fixtures.rs`の既存direct test occurrence 50件（output/extractor reference
-43件、invalid-key reference 7件）がexact real three-expansion object-mode source chain、
-checker payload、invalid-key fallback、active fixture、cross-route isolation、object/set
-identity boundaryを覆う。active `.miz`/expectation pair 3組とcovered trace requirementが
-canonical reserved-variable atomic-formula intentとexact source-derived checker seamを保持
-する。よってmove-only `design_drift`でW0 test taskは不要。new source pathはなく、
-paired target layoutはowner拡張を記録する。authority、behavior、coverage credit、owner
-crate、deferred statusは変わらないため`spec_coverage_audit.md`は不変。route-set
-expansion、config/key/role/mode edit、chain generalization、object/set coercion、assertion
-weakening、test/expectation edit、three-/four-edge、long-chain、type-assertion、formula
-route moveは禁止。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263W 移動結果
 
-Task 263Wは承認済み11 fragment、合計241行だけを既存private
-`type_elaboration/binary_routes.rs`へ移動し、移動前oracleのoriginal raw hash
-`d572e286...`、`d571dc2e...`、`2f964b21...`、`9438d880...`、
-`246a2852...`、`7277fccf...`、`041e760f...`、`1231694c...`、
-`2d5ae89e...`、`82ab31ea...`、`63fa9c8a...`を維持した。必要なrunner
-visibilityとformatting whitespaceだけを除くと全old/new fragment pairはtoken-identical
-で、combined normalized hashは`0e58ae98...`。隣接するthree-/four-edge、long-chain、
-type-assertion、formula、他route familyは`runner.rs`に残る。
-
-拡張後private ownerは2,324行、raw hash `9ef34cf7...`、`runner.rs`は7,649行、
-raw hash `394ebbe8...`、phase facadeは259行、raw hash `361f6e9c...`。
-invalid-key constantはleaf-privateのまま。既存runner test nameはconfig由来test-only
-aliasで解決し、config、test output wrapper 3個、extractor 3個はtest facadeだけを跨ぐ。
-normal facadeが追加するのはproduction detail route 3個だけで、phaseは引き続きprivate
-leaf 9個を所有しdependency graphはacyclic。
-
-focused membership/equality/inequality filterは各2 test、crate unit test 272件は全成功。
-raw/normalized 272-name list hash、4 CLI byte hash、active count 96/4/188、plan
-403/367、type coverage 235/223、pass/fail 219/184、warning/error 23/0は不変。
-formatting、warning deny all-target/all-feature Clippy、workspace test、diff cleanlinessは
-成功。Task 263Wは完了し、fresh Task 263 inventoryは残るthree-/four-edge/long-chain
-binary route-owner familyへ戻る。new source pathはなく、authority、behavior、coverage
-credit、owner crate、deferred statusは変わらないため`spec_coverage_audit.md`は不変。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263X 移動前 Inventory と仕様
 
-fresh dependency inventoryはthree-edge local-mode membership/equality/inequality binary
-routeを次のbounded familyとして選ぶ。`runner.rs`の正確な15 fragment、invalid key
-382-384（3行、`3d3783b9...`）、391-392（2、`24d4d6cc...`）、454-456
-（3、`57a14811...`）、config 3293-3337（45、`9d05006c...`）、3495-3536
-（42、`86200198...`）、4284-4325（42、`8163a029...`）、production detail route
-4376-4387（12、`11980a6b...`）、4430-4441（12、`09665060...`）、4592-4603
-（12、`7f640564...`）、test-only output 5410-5420（11、`0973c2cd...`）、
-5456-5466（11、`3b6b99b8...`）、5594-5604（11、`063e707f...`）、extractor
-6632-6643（12、`a9540df8...`）、6684-6695（12、`127e3811...`）、6840-6851
-（12、`00752953...`）で合計242行、combined raw hash `4af1d41e...`、whitespace-
-normalized pre-move hash `1cb58abe...`。
-
-Task 263Xはこれらだけを既存private `type_elaboration/binary_routes.rs`へ機械的に
-追記する。leafは既存`source_formula`/`output` ownerだけに依存し続ける。normal phase
-facadeを跨ぐのはproduction detail route 3個だけ。config、test消費output、extractorは
-`#[cfg(test)]`だけを跨ぎ、invalid-key constantはleaf-privateのまま、config由来runner
-test aliasで既存name/valueを維持する。call site、name、config value、正確な
-four-expansion set-terminal chain、key、payload、ordering、fallback、fail-closed behaviorは
-変更しない。
-
-canonical `doc/spec/en`はtop-level reserveによるdefault type/implicit theorem closure、
-type inferenceでのmode radix展開、`=`、`<>`、`in`をsingle built-in atomic formulaとして
-扱うことを要求する。active `.miz`/expectation pair 3組とcovered trace requirementはreal
-source AST、resolver environment、mode expansion 4個、checker outputを通じてそのintentを
-具体化する。`support.rs`、`binary_route_fixtures.rs`、`mode_chain.rs`、
-`mode_chain_fixtures.rs`の既存direct test symbol reference 50件（output/extractor 43件、
-invalid-key 7件）がexact payload、source provenance、invalid-key fallback、active fixture、
-cross-route isolationを保護する。よってmove-only `design_drift`でX0 test taskは不要。
-new source pathはなく、paired target layoutはowner拡張を記録する。authority、behavior、
-coverage credit、owner crate、deferred statusは変わらないため
-`spec_coverage_audit.md`は不変。route-set expansion、config/key/role/mode edit、chain
-generalization、object/set coercion、assertion weakening、test/expectation edit、隣接する
-object-mode、four-edge、long-chain、type-assertion、formula route moveは禁止。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263X 移動結果
 
-Task 263Xは承認済み15 fragment、合計242行だけを既存private
-`type_elaboration/binary_routes.rs`へ移動し、移動前oracleのoriginal raw hash
-`3d3783b9...`、`24d4d6cc...`、`57a14811...`、`9d05006c...`、
-`86200198...`、`8163a029...`、`11980a6b...`、`09665060...`、
-`7f640564...`、`0973c2cd...`、`3b6b99b8...`、`063e707f...`、
-`a9540df8...`、`127e3811...`、`00752953...`を維持した。必要なrunner
-visibilityとformatting whitespaceだけを除くと全old/new fragment pairはtoken-identical
-で、combined normalized hashは`1cb58abe...`。隣接するthree-edge object-mode、
-four-edge、long-chain、type-assertion、formula、他route familyは`runner.rs`に残る。
-
-拡張後private ownerは2,578行、raw hash `75d75cb7...`、`runner.rs`は7,419行、
-raw hash `68c7c44d...`、phase facadeは271行、raw hash `7934071f...`。
-invalid-key constantはleaf-privateのまま。既存runner test nameはconfig由来test-only
-aliasで解決し、config、test output wrapper 3個、extractor 3個はtest facadeだけを跨ぐ。
-normal facadeが追加するのはproduction detail route 3個だけで、phaseは引き続きprivate
-leaf 9個を所有しdependency graphはacyclic。
-
-focused membership/equality/inequality filterは各2 test、crate unit test 272件は全成功。
-raw/normalized 272-name list hash、4 CLI byte hash、active count 96/4/188、plan
-403/367、type coverage 235/223、pass/fail 219/184、warning/error 23/0は不変。
-formatting、warning deny all-target/all-feature Clippy、workspace test、diff cleanlinessは
-成功。Task 263Xは完了し、fresh Task 263 inventoryはthree-edge object-mode、four-edge、
-long-chain binary route-owner familyへ戻る。new source pathはなく、authority、behavior、
-coverage credit、owner crate、deferred statusは変わらないため
-`spec_coverage_audit.md`は不変。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263Y 移動前 Inventory と仕様
 
-fresh dependency inventoryはthree-edge local-object-mode membership/equality/inequality
-binary routeを次のbounded familyとして選ぶ。`runner.rs`の正確な11 fragment、membership
-invalid key 407-408（2行、`280af2bf...`）、equality/inequality invalid key 468-471
-（4、`9c823dee...`）、config 3412-3460（49、`dfaab518...`）、4163-4206
-（44、`e9d7705a...`）、4208-4255（48、`a9e040ec...`）、membership production
-detail route 4284-4296（13、`78cef703...`）、equality/inequality detail route
-4433-4459（27、`014d3897...`）、membership test-only output 5275-5285（11、
-`dd7e079e...`）、equality/inequality test-only output 5402-5424（23、
-`60f64f3d...`）、membership extractor 6467-6478（12、`44e666e7...`）、
-equality/inequality extractor 6610-6634（25、`d868202c...`）で合計258行、combined
-raw hash `21918677...`、whitespace-normalized pre-move hash `ad754ac3...`。
-
-Task 263Yはこれらだけを既存private `type_elaboration/binary_routes.rs`へ機械的に
-追記する。leafは既存`source_formula`/`output` ownerだけに依存し続ける。normal phase
-facadeを跨ぐのはproduction detail route 3個だけ。config、test消費output、extractorは
-`#[cfg(test)]`だけを跨ぎ、invalid-key constantはleaf-privateのまま、config由来runner
-test aliasで既存name/valueを維持する。call site、name、config value、正確な
-four-expansion object-terminal chain、key、payload、ordering、fallback、fail-closed
-behaviorは変更しない。
-
-Task 263Xでinventoriedしたcanonical reserve/mode/built-in atomic-formula requirementが
-そのまま適用される。active `.miz`/expectation pair 3組とcovered trace requirementはreal
-source AST、resolver environment、object-mode expansion 4個、checker outputを通じてその
-intentを具体化する。`support.rs`、`binary_route_fixtures.rs`、`mode_chain.rs`、
-`mode_chain_fixtures.rs`の既存direct test symbol reference 50件（output/extractor 43件、
-invalid-key 7件）がexact payload、source provenance、invalid-key fallback、active fixture、
-cross-route isolation、object/set identity boundaryを保護する。よってmove-only
-`design_drift`でY0 test taskは不要。new source pathはなく、paired target layoutはowner
-拡張を記録する。authority、behavior、coverage credit、owner crate、deferred statusは
-変わらないため`spec_coverage_audit.md`は不変。route-set expansion、config/key/role/mode
-edit、chain generalization、object/set coercion、assertion weakening、test/expectation edit、
-隣接するfour-edge、long-chain、type-assertion、formula route moveは禁止。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263Y 移動結果
 
-Task 263Yは承認済み11 fragment、合計258行だけを既存private
-`type_elaboration/binary_routes.rs`へ移動し、移動前oracleのoriginal raw hash
-`280af2bf...`、`9c823dee...`、`dfaab518...`、`e9d7705a...`、
-`a9e040ec...`、`78cef703...`、`014d3897...`、`dd7e079e...`、
-`60f64f3d...`、`44e666e7...`、`d868202c...`を維持した。必要なrunner
-visibilityとformatting whitespaceだけを除くと全old/new fragment pairはtoken-identical
-で、combined normalized hashは`ad754ac3...`。隣接するfour-edge、long-chain、
-type-assertion、formula、他route familyは`runner.rs`に残る。
-
-拡張後private ownerは2,847行、raw hash `1e4fc792...`、`runner.rs`は7,173行、
-raw hash `51cb7b50...`、phase facadeは283行、raw hash `a2b84b11...`。
-invalid-key constantはleaf-privateのまま。既存runner test nameはconfig由来test-only
-aliasで解決し、config、test output wrapper 3個、extractor 3個はtest facadeだけを跨ぐ。
-normal facadeが追加するのはproduction detail route 3個だけで、phaseは引き続きprivate
-leaf 9個を所有しdependency graphはacyclic。
-
-focused membership/equality/inequality filterは各2 test、crate unit test 272件は全成功。
-raw/normalized 272-name list hash、4 CLI byte hash、active count 96/4/188、plan
-403/367、type coverage 235/223、pass/fail 219/184、warning/error 23/0は不変。
-formatting、warning deny all-target/all-feature Clippy、workspace test、diff cleanlinessは
-成功。Task 263Yは完了し、fresh Task 263 inventoryはfour-edge/long-chain binary
-route-owner familyへ戻る。new source pathはなく、authority、behavior、coverage credit、
-owner crate、deferred statusは変わらないため`spec_coverage_audit.md`は不変。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263Z 移動前 Inventory と仕様
 
-fresh dependency inventoryはfour-edge local-mode membership/equality/inequality binary
-routeを次のbounded familyとして選ぶ。`runner.rs`の正確な15 fragment、invalid key
-424-425（2行、`8f324bb2...`）、428-429（2、`29c5996b...`）、481-482
-（2、`25ab8aa5...`）、config 3321-3370（50、`bbe09f99...`）、3427-3473
-（47、`7688c6b6...`）、3976-4022（47、`2b8d6ce0...`）、production detail route
-4128-4139（12、`5ecba726...`）、4155-4166（12、`1153ec2e...`）、4249-4260
-（12、`d8f7be05...`）、test-only output 5081-5090（10、`9b36914d...`）、
-5104-5113（10、`b06499a8...`）、5184-5193（10、`fd3deb01...`）、extractor
-6234-6245（12、`032d0570...`）、6260-6271（12、`31eae655...`）、6351-6362
-（12、`8ae80c4f...`）で合計252行、combined raw hash `139c5d9b...`、
-whitespace-normalized pre-move hash `e1865620...`。
-
-Task 263Zはこれらだけを既存private `type_elaboration/binary_routes.rs`へ機械的に
-追記する。leafは既存`source_formula`/`output` ownerだけに依存し続ける。normal phase
-facadeを跨ぐのはproduction detail route 3個だけ。config、test消費output、extractorは
-`#[cfg(test)]`だけを跨ぎ、invalid-key constantはleaf-privateのまま、config由来runner
-test aliasで既存name/valueを維持する。call site、name、config value、正確な
-five-expansion set-terminal chain、key、payload、ordering、fallback、fail-closed behaviorは
-変更しない。
-
-canonical reserve/mode/built-in atomic-formula requirementがそのまま適用される。active
-`.miz`/expectation pair 3組とcovered trace requirementはreal source AST、resolver
-environment、set-terminal mode expansion 5個、checker outputを通じてそのintentを具体化
-する。`support.rs`、`binary_route_fixtures.rs`、`mode_chain.rs`、
-`mode_chain_fixtures.rs`、`remaining_bridges_and_nested_isolation.rs`、
-`source_gap_and_equality.rs`の既存direct test symbol reference 56件
-（output/extractor 47件、invalid-key 9件）がexact payload、source provenance、invalid-key
-fallback、active fixture、cross-route isolationを保護する。よってmove-only
-`design_drift`でZ0 test taskは不要。new source pathはなく、paired target layoutはowner
-拡張を記録する。authority、behavior、coverage credit、owner crate、deferred statusは
-変わらないため`spec_coverage_audit.md`は不変。route-set expansion、config/key/role/mode
-edit、chain generalization、object/set coercion、assertion weakening、test/expectation edit、
-隣接するfour-edge object-mode、long-chain、type-assertion、formula route moveは禁止。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263Z 移動結果
 
-Task 263Zは承認済み15 fragment、合計252行だけを既存private
-`type_elaboration/binary_routes.rs`へ移動し、移動前oracleのoriginal raw hash
-`8f324bb2...`、`29c5996b...`、`25ab8aa5...`、`bbe09f99...`、
-`7688c6b6...`、`2b8d6ce0...`、`5ecba726...`、`1153ec2e...`、
-`d8f7be05...`、`9b36914d...`、`b06499a8...`、`fd3deb01...`、
-`032d0570...`、`31eae655...`、`8ae80c4f...`を維持した。必要なrunner
-visibilityとformatting whitespaceだけを除くと全old/new fragment pairはtoken-identical
-で、combined normalized hashは`e1865620...`。隣接するfour-edge object-mode、
-long-chain、type-assertion、formula、他route familyは`runner.rs`に残る。
-
-拡張後private ownerは3,114行、raw hash `73de594a...`、`runner.rs`は6,930行、
-raw hash `fb4a4a2b...`、phase facadeは295行、raw hash `f0ed4b4e...`。
-invalid-key constantはleaf-privateのまま。既存runner test nameはconfig由来test-only
-aliasで解決し、config、test output wrapper 3個、extractor 3個はtest facadeだけを跨ぐ。
-normal facadeが追加するのはproduction detail route 3個だけで、phaseは引き続きprivate
-leaf 9個を所有しdependency graphはacyclic。
-
-focused membership/equality/inequality filterは各2 test、crate unit test 272件は全成功。
-raw/normalized 272-name list hash、4 CLI byte hash、active count 96/4/188、plan
-403/367、type coverage 235/223、pass/fail 219/184、warning/error 23/0は不変。
-formatting、warning deny all-target/all-feature Clippy、workspace test、diff cleanlinessは
-成功。Task 263Zは完了し、fresh Task 263 inventoryはfour-edge object-mode/long-chain
-binary route-owner familyへ戻る。new source pathはなく、authority、behavior、coverage
-credit、owner crate、deferred statusは変わらないため`spec_coverage_audit.md`は不変。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZA 移動前 Inventory と仕様
 
-fresh dependency inventoryはfour-edge local-object-mode membership/equality/
-inequality binary routeを次のbounded familyとして選ぶ。`runner.rs`の正確な11 fragment、
-membership invalid key 445-446（2行、`7ff1e465...`）、equality/inequality key
-498-501（4、`e096a1f5...`）、config 3336-3389（54、`d2cd8eea...`）、
-3892-3940（49、`51430aa3...`）、3942-3994（53、`1b676067...`）、production
-detail route 3996-4008（13、`11986cb6...`）、4091-4117（27、`538b9ee7...`）、
-test-only output 4910-4920（11、`3f508c4d...`）、4991-5013（23、
-`3523e34b...`）、extractor 6030-6041（12、`d3f59d9a...`）、6121-6145
-（25、`2f6a0d86...`）で合計273行、combined raw hash `39ad5285...`、
-whitespace-normalized pre-move hash `594c1e49...`。
-
-Task 263ZAはこれらだけを既存private `type_elaboration/binary_routes.rs`へ機械的に
-追記する。leafは既存`source_formula`/`output` ownerだけに依存し続ける。normal phase
-facadeを跨ぐのはproduction detail route 3個だけ。config、test消費output、extractorは
-`#[cfg(test)]`だけを跨ぎ、invalid-key constantはleaf-privateのまま、config由来runner
-test aliasで既存name/valueを維持する。call site、name、config value、正確な
-five-expansion object-terminal chain、key、payload、ordering、fallback、fail-closed
-behaviorは変更しない。
-
-canonical reserve/mode/built-in atomic-formula requirementがそのまま適用される。active
-`.miz`/expectation pair 3組とcovered trace requirementはreal source AST、resolver
-environment、object-terminal mode expansion 5個、checker outputを通じてそのintentを
-具体化する。`support.rs`、`binary_route_fixtures.rs`、`mode_chain.rs`、
-`mode_chain_fixtures.rs`、`remaining_bridges_and_nested_isolation.rs`の既存direct test
-symbol reference 56件（output/extractor 47件、invalid-key 9件）がexact payload、source
-provenance、invalid-key fallback、active fixture、cross-route isolationを保護する。よって
-move-only `design_drift`でZA0 test taskは不要。new source pathはなく、paired target
-layoutはowner拡張を記録する。authority、behavior、coverage credit、owner crate、
-deferred statusは変わらないため`spec_coverage_audit.md`は不変。route-set expansion、
-config/key/role/mode edit、chain generalization、object/set coercion、assertion weakening、
-test/expectation edit、隣接するlong-chain、type-assertion、formula route moveは禁止。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZA 移動結果
 
-Task 263ZAは承認済み11 fragment、合計273行だけを既存private
-`type_elaboration/binary_routes.rs`へ移動し、移動前oracleのoriginal raw hash
-`7ff1e465...`、`e096a1f5...`、`d2cd8eea...`、`51430aa3...`、
-`1b676067...`、`11986cb6...`、`538b9ee7...`、`3f508c4d...`、
-`3523e34b...`、`d3f59d9a...`、`2f6a0d86...`を維持した。必要なrunner
-visibilityとformatting whitespaceだけを除くと全old/new fragment pairはtoken-identical
-で、combined normalized hashは`594c1e49...`。隣接するlong-chain、type-assertion、
-formula、他route familyは`runner.rs`に残る。
-
-拡張後private ownerは3,398行、raw hash `8fd56903...`、`runner.rs`は6,669行、
-raw hash `6f8b9737...`、phase facadeは307行、raw hash `59ae62b4...`。
-invalid-key constantはleaf-privateのまま。既存runner test nameはconfig由来test-only
-aliasで解決し、config、test output wrapper 3個、extractor 3個はtest facadeだけを跨ぐ。
-normal facadeが追加するのはproduction detail route 3個だけで、phaseは引き続きprivate
-leaf 9個を所有しdependency graphはacyclic。
-
-focused membership/equality/inequality filterは各2 test、crate unit test 272件は全成功。
-raw/normalized 272-name list hash、4 CLI byte hash、active count 96/4/188、plan
-403/367、type coverage 235/223、pass/fail 219/184、warning/error 23/0は不変。
-formatting、warning deny all-target/all-feature Clippy、workspace test、diff cleanlinessは
-成功。Task 263ZAは完了し、fresh Task 263 inventoryはlong-chain binary route-owner familyへ
-戻る。new source pathはなく、authority、behavior、coverage credit、owner crate、
-deferred statusは変わらないため`spec_coverage_audit.md`は不変。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZB 移動前 Inventory と仕様
 
-fresh dependency inventoryによりlong-chain binary routeはまだ独立移動できないことが
-分かった。set-terminal/object-terminalのseven-expansion tableはそれぞれproduction
-config 11個（binary 3、reserved-variable type-assertion 1、asserted-head 7）に共有される。
-tableをbinary familyだけと動かすとchild-to-parent dependencyかroute family混在になる。
-よってTask 263ZBは共有definition table 2個をbounded prerequisite ownerとして選ぶ。
-`runner.rs` 3351-3387（37行、`b9ef5e33...`）、3411-3447（37、
-`23d65f84...`）、合計74行、combined raw hash `3941ea98...`、whitespace-normalized
-pre-move hash `ab85b7ea...`。
-
-Task 263ZBはこれらtableだけを新規nonempty private
-`type_elaboration/long_chain_config.rs` leafへ機械的に移動する。leafは既存
-`source_formula` config typeだけに依存する。phase facadeは保持中の`runner.rs`
-production consumer 22個へtable 2個だけを一時的にexposeし、後続long-chain
-route-owner taskはsiblingを直接importしてfacade surfaceを縮小する。name、table order、
-label、spelling、builtin terminal、radix、cardinality、全consumerは不変。このtaskでは
-binary、type-assertion、asserted-head、detail、output、extractor、dispatch、test itemを
-移動しない。
-
-canonical mode/radixとreserve/formula requirementは不変。cohesive long-chain ownerの
-unit test 44件、active `.miz`/expectation pair 23組、active metadata integration testが
-binary、type-assertion、asserted-head全consumerを通じて両方の正確なseven-expansion
-tableを実行する。よってmove-only `design_drift`でZB0 test taskは不要。paired source
-layoutはreal shared ownerを追加する。authority、behavior、coverage credit、owner crate、
-deferred statusは変わらないため`spec_coverage_audit.md`は不変。table dedup/generalization、
-spelling/radix edit、accepted-shape expansion、assertion weakening、test/expectation edit、
-consumer route移動は禁止。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZB 移動結果
 
-Task 263ZBは承認済みdefinition-table fragment 2個、合計74行だけを新規private
-`type_elaboration/long_chain_config.rs`へ移動し、移動前oracleのraw hash
-`b9ef5e33...`と`23d65f84...`を維持した。必要なrunner visibilityとformatting
-whitespaceだけを除くと両old/new table pairはtoken-identicalで、combined normalized
-hashは`ab85b7ea...`。binary、type-assertion、asserted-head config consumer 22個は
-value/order不変のまま全て`runner.rs`に残る。
-
-new real ownerは82行、raw hash `3b0e2638...`、`runner.rs`は6,594行、raw hash
-`5f8c17de...`、phase facadeは311行、raw hash `453068d3...`。leafは既存
-`source_formula` config type 3個だけをimportし、runner-only visibilityでtable 2個だけを
-exportし、public APIは追加しない。phase facadeは保持production consumerへtableを
-一時re-exportし、dependencyはacyclic。
-
-focused long-chain unit test 44件とfocused metadata integration test、crate unit test
-272件は全成功。raw/normalized 272-name list hash、4 CLI byte hash、active count
-96/4/188、plan 403/367、type coverage 235/223、pass/fail 219/184、warning/error
-23/0は不変。formatting、warning deny all-target/all-feature Clippy、workspace test、diff
-cleanlinessは成功。Task 263ZBは完了し、fresh Task 263 inventoryはsibling dependencyで
-local-mode/local-object-mode long-chain binary route familyを分割できる。
-authority、behavior、coverage credit、owner crate、deferred statusは変わらないため
-`spec_coverage_audit.md`は不変。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZC 移動前 Inventory と仕様
 
-Task 263ZBがshared tableを所有したため、fresh dependency inventoryはlocal-mode
-long-chain membership/equality/inequality binary routeを次のbounded familyとして選ぶ。
-`runner.rs`の正確な15 fragment、invalid key 467-468（2行、`18b60fd0...`）、
-475-477（3、`1a844717...`）、478-480（3、`ed156484...`）、config
-3352-3372（21、`387e7f5e...`）、3449-3469（21、`684fa9a6...`）、
-3471-3494（24、`745185c5...`）、production detail route 3777-3788（12、
-`8a480a24...`）、3832-3843（12、`1567378c...`）、3845-3856（12、
-`d8c1184a...`）、test-only output 4649-4658（10、`6ed554fb...`）、
-4696-4705（10、`2b4ffa33...`）、4707-4716（10、`58399ffd...`）、extractor
-5733-5744（12、`543bd8cd...`）、5785-5796（12、`d1365809...`）、
-5798-5809（12、`5baa8351...`）、合計176行、combined raw hash
-`076d8561...`、whitespace-normalized pre-move hash `8859b993...`。
-
-Task 263ZCはこれらだけを既存private `type_elaboration/binary_routes.rs`へ機械的に
-追記し、shared set-terminal tableをsibling `long_chain_config`から直接importする。
-normal phase facadeを跨ぐのはproduction detail route 3個だけ。config、test消費output、
-extractorは`#[cfg(test)]`だけを跨ぎ、invalid-key constantはleaf-privateのまま、config由来
-runner test aliasで既存name/valueを維持する。call site、name、config value、正確な
-seven-expansion set-terminal chain、key、payload、ordering、fallback、fail-closed
-behaviorは変更しない。
-
-canonical reserve/mode/built-in atomic-formula requirementは不変。active
-`.miz`/expectation pair 3組とcovered trace requirementはreal source AST、resolver
-environment、set-terminal mode expansion 7個、checker outputを実行する。
-`support.rs`、`binary_route_fixtures.rs`、`long_chain.rs`のdirect test symbol referenceは
-54件（output/extractor 48件、invalid-key 6件）で、exact payload、source provenance、
-invalid-key fallback、active fixture、cross-route isolationを保護する。よってmove-only
-`design_drift`でZC0 test taskは不要。authority、behavior、coverage credit、owner crate、
-deferred statusは変わらないため`spec_coverage_audit.md`は不変。route-set expansion、
-config/key/role/mode edit、chain generalization、object/set coercion、assertion weakening、
-test/expectation edit、隣接local-object-mode、type-assertion、asserted-head、formula route
-moveは禁止。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZC 移動結果
 
-Task 263ZCは承認済み15 fragment、合計176行だけを既存private
-`type_elaboration/binary_routes.rs`へ移動し、移動前oracleのoriginal raw hash
-`18b60fd0...`、`1a844717...`、`ed156484...`、`387e7f5e...`、
-`684fa9a6...`、`745185c5...`、`8a480a24...`、`1567378c...`、
-`d8c1184a...`、`6ed554fb...`、`2b4ffa33...`、`58399ffd...`、
-`543bd8cd...`、`d1365809...`、`5baa8351...`を維持した。必要なrunner
-visibilityとformatting whitespaceだけを除くと全old/new fragment pairはtoken-identical
-で、combined normalized hashは`8859b993...`。隣接local-object-mode、type-assertion、
-asserted-head、formula、他route familyは`runner.rs`に残る。
-
-拡張後private ownerは3,590行、raw hash `6f8f8c73...`、`runner.rs`は6,427行、
-raw hash `d1f5b9bb...`、phase facadeは323行、raw hash `2e757879...`。
-`long_chain_config.rs`は82行、hash `3b0e2638...`のまま。invalid-key constantは
-leaf-private、config、test output wrapper 3個、extractor 3個はtest facadeだけを跨ぐ。
-normal facadeが追加するのはproduction detail route 3個だけで、`binary_routes`はshared
-set-terminal tableをsiblingから直接importする。
-
-focused membership/equality/inequality filterは各2 test、crate unit test 272件は全成功。
-raw/normalized 272-name list hash、4 CLI byte hash、active count 96/4/188、plan
-403/367、type coverage 235/223、pass/fail 219/184、warning/error 23/0は不変。
-formatting、warning deny all-target/all-feature Clippy、workspace test、diff cleanlinessは
-成功。Task 263ZCは完了し、fresh Task 263 inventoryはlocal-object-mode long-chain binary
-route familyへ戻る。authority、behavior、coverage credit、owner crate、deferred statusは
-変わらないため`spec_coverage_audit.md`は不変。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZD 移動前 Inventory と仕様
 
-fresh dependency inventoryはlocal-object-mode long-chain membership/equality/
-inequality binary routeを次のbounded familyとして選ぶ。`runner.rs`の正確な15 fragment、
-invalid key 488-489（2行、`c9abd07e...`）、490-491（2、`76c6badc...`）、
-492-493（2、`274e8231...`）、config 3365-3385（21、`da89ee91...`）、
-3387-3411（25、`24c13cf8...`）、3413-3438（26、`9bbfb507...`）、production
-detail route 3721-3733（13、`a3646c63...`）、3735-3747（13、`ebfd9b1f...`）、
-3749-3761（13、`c392ea7b...`）、test-only output 4554-4564（11、
-`29d99bb5...`）、4566-4576（11、`432ad380...`）、4578-4588（11、
-`c1e39c32...`）、extractor 5605-5616（12、`591afb95...`）、5618-5629
-（12、`f1750caf...`）、5631-5642（12、`cd31b66d...`）、合計186行、
-combined raw hash `073769aa...`、whitespace-normalized pre-move hash
-`de18e68c...`。
-
-Task 263ZDはこれらだけを既存private `type_elaboration/binary_routes.rs`へ機械的に
-追記し、shared object-terminal tableをsibling `long_chain_config`から直接importする。
-normal phase facadeを跨ぐのはproduction detail route 3個だけ。config、test消費output、
-extractorは`#[cfg(test)]`だけを跨ぎ、invalid-key constantはleaf-privateのまま、config由来
-runner test aliasで既存name/valueを維持する。call site、name、config value、正確な
-seven-expansion object-terminal chain、key、payload、ordering、fallback、fail-closed
-behaviorは変更しない。
-
-canonical reserve/mode/built-in atomic-formula requirementは不変。active
-`.miz`/expectation pair 3組とcovered trace requirementはreal source AST、resolver
-environment、object-terminal mode expansion 7個、checker outputを実行する。
-`support.rs`、`binary_route_fixtures.rs`、`long_chain.rs`のdirect test symbol referenceは
-55件（output/extractor 49件、invalid-key 6件）で、exact payload、source provenance、
-invalid-key fallback、active fixture、cross-route isolationを保護する。よってmove-only
-`design_drift`でZD0 test taskは不要。authority、behavior、coverage credit、owner crate、
-deferred statusは変わらないため`spec_coverage_audit.md`は不変。route-set expansion、
-config/key/role/mode edit、chain generalization、object/set coercion、assertion weakening、
-test/expectation edit、隣接type-assertion、asserted-head、formula route moveは禁止。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZD 移動結果
 
-Task 263ZDは承認済み15 fragment、合計186行だけを既存private
-`type_elaboration/binary_routes.rs`へ移動し、移動前oracleのoriginal raw hash
-`c9abd07e...`、`76c6badc...`、`274e8231...`、`da89ee91...`、
-`24c13cf8...`、`9bbfb507...`、`a3646c63...`、`ebfd9b1f...`、
-`c392ea7b...`、`29d99bb5...`、`432ad380...`、`c1e39c32...`、
-`591afb95...`、`f1750caf...`、`cd31b66d...`を維持した。必要なrunner
-visibilityとformatting whitespaceだけを除くと全old/new fragment pairはtoken-identical
-で、combined normalized hashは`de18e68c...`。隣接type-assertion、asserted-head、
-formula、他route familyは`runner.rs`に残る。
-
-拡張後private ownerは3,791行、raw hash `3ce5e2f4...`、`runner.rs`は6,246行、
-raw hash `e10f439e...`、phase facadeは333行、raw hash `e94c8b71...`。
-`long_chain_config.rs`は82行、hash `3b0e2638...`のまま。invalid-key constantは
-leaf-private、config、test output wrapper 3個、extractor 3個はtest facadeだけを跨ぐ。
-normal facadeが追加するのはproduction detail route 3個だけで、`binary_routes`はshared
-object-terminal tableをsiblingから直接importする。必要なimport cleanupは`runner.rs`に
-production consumerがなくなったgeneric binary source/output helperだけを狭め、binary
-source type 2個はproduction `output.rs` sibling用にnormal availabilityを維持する。
-
-focused membership/equality/inequality filterは各2 test、crate unit test 272件は全成功。
-raw/normalized 272-name list hash、4 CLI byte hash、active count 96/4/188、plan
-403/367、type coverage 235/223、pass/fail 219/184、warning/error 23/0は不変。
-formatting、warning deny all-target/all-feature Clippy、workspace test、diff cleanlinessは
-成功。Task 263ZDは完了し、fresh Task 263 inventoryは残るlong-chain type-assertion/
-asserted-head route familyへ戻る。authority、behavior、coverage credit、owner crate、
-deferred statusは変わらないため`spec_coverage_audit.md`は不変。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZE 移動前 Inventory と仕様
 
-fresh dependency inventoryはlocal-mode long-chain reserved-variable type-assertion routeだけを
-private `type_elaboration/type_assertion_routes.rs` leafの最初のbounded ownerとして選ぶ。
-`runner.rs`の正確な5 fragment、invalid key 505-506（2行、`74d62809...`）、config
-3376-3388（13、`e0f14b5b...`）、production detail route 4185-4198（14、
-`79da5ff1...`）、test-only output 4860-4870（11、`83d3b15e...`）、extractor
-5970-5981（12、`a9c40c0d...`）、合計52行、combined raw hash `5e321346...`、
-whitespace-normalized pre-move hash `2f3d7241...`。
-
-Task 263ZEはこれらだけを新規private leafへ機械的に移動し、shared set-terminal tableを
-sibling `long_chain_config`から直接importする。normal phase facadeを跨ぐのはproduction
-detail route 1個だけ。config、test消費output、extractorは`#[cfg(test)]`だけを跨ぎ、
-invalid-key constantはleaf-privateのまま、config由来runner test aliasで既存name/valueを
-維持する。call site、name、config value、正確なseven-expansion set-terminal chain、
-asserted builtin head、key、payload、ordering、fallback、fail-closed behaviorは変更しない。
-
-canonical reserve/mode/type-assertion requirementは不変。active `.miz`/expectation pair
-1組とcovered trace requirementはreal source AST、resolver environment、set-terminal mode
-expansion 7個、asserted builtin-set head、checker outputを実行する。`support.rs`、
-`asserted_head_base.rs`、`long_chain.rs`、`remaining_bridges_and_nested_isolation.rs`のdirect
-test symbol referenceは69件で、exact payload、source provenance、invalid-key fallback、
-active fixture、cross-route isolationを保護する。よってmove-only `design_drift`でZE0 test
-taskは不要。authority、behavior、coverage credit、owner crate、deferred statusは変わらない
-ため`spec_coverage_audit.md`は不変。config/key/role/mode edit、chain/asserted-head
-generalization、object/set coercion、assertion weakening、test/expectation edit、asserted-head
-またはlocal-object-mode routeの移動は禁止。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZE 移動結果
 
-Task 263ZEは承認済み5 fragment、合計52行だけを新規private
-`type_elaboration/type_assertion_routes.rs`へ移動し、移動前oracleのoriginal raw hash
-`74d62809...`、`e0f14b5b...`、`79da5ff1...`、`83d3b15e...`、
-`a9c40c0d...`を維持した。必要なrunner visibilityとformatting whitespaceだけを除くと
-全old/new fragment pairはtoken-identicalで、combined normalized hashは
-`2f3d7241...`。全asserted-head routeと隣接local-object-mode type-assertion routeは
-`runner.rs`に残る。
-
-新private ownerは73行、raw hash `36549372...`、`runner.rs`は6,197行、raw hash
-`a2c5aa11...`、phase facadeは341行、raw hash `2d6c1c85...`。不変の
-`long_chain_config.rs`は82行、hash `3b0e2638...`を維持する。invalid-key constantは
-leaf-privateで、config、test消費output、extractorはtest facadeだけを跨ぐ。normal
-facadeが追加するのはproduction detail routeだけで、ownerはshared set-terminal tableを
-siblingから直接importする。runner test aliasは移動済みconfigから不変のkeyを導出する。
-
-focused filter 2 testとcrate unit test 272件は全成功。raw/normalized 272-name list hash、
-4 CLI byte hash、active count 96/4/188、plan 403/367、type coverage 235/223、
-pass/fail 219/184、warning/error 23/0は不変。formatting、warning deny
-all-target/all-feature Clippy、workspace test、diff cleanliness、review-only checkは成功。
-Task 263ZEは完了し、fresh Task 263 inventoryは残るlong-chain asserted-headと
-local-object-mode type-assertion route familyへ戻る。authority、behavior、coverage credit、
-owner crate、deferred statusは変わらないため`spec_coverage_audit.md`は不変。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZF 移動前 Inventory と仕様
 
-fresh authority、test、trace、expectation、design、source、real-consumer inventoryは
-local-mode long-chain same-`ChainMode6` asserted-head routeだけをprivate
-`type_elaboration/type_assertion_routes.rs`への次のbounded additionとして選ぶ。
-`runner.rs`の正確な5 fragment、invalid key 512-513（2行、`e4633687...`）、config
-3381-3393（13、`1f16fdb8...`）、production detail route 4176-4187（12、
-`a027a240...`）、test-only output 4836-4844（9、`42f4bfc7...`）、extractor
-5934-5945（12、`6b1f2ecb...`）、合計48行、combined raw hash `85282759...`、
-whitespace-normalized pre-move hash `5ed24905...`。
-
-Task 263ZFはこれらだけを既存private ownerへ機械的に移動する。ownerはshared
-set-terminal tableをsibling `long_chain_config`から既に直接importする。normal phase
-facadeを跨ぐのはproduction detail route 1個だけ。config、test消費output、extractorは
-`#[cfg(test)]`だけを跨ぎ、invalid-key constantはleaf-privateのまま、config由来runner
-test aliasで既存name/valueを維持する。call site、name、config value、正確な
-seven-expansion set-terminal chain、same-mode asserted-head relation、key、payload、ordering、
-fallback、fail-closed behaviorは変更しない。
-
-canonical reserved-theorem-variable/static type-assertion requirementは不変。active
-`.miz`/expectation pair 1組とdedicated covered checker requirementはreal source AST/resolver
-data、set-terminal expansion 7個、独立したreserve/asserted `ChainMode6` source site、real
-checker outputを実行する。private test file 4個はfamily-name occurrence 94件
-（`asserted_head_base.rs` 3、`asserted_head_fixtures.rs` 4、`long_chain.rs` 70、
-`remaining_bridges_and_nested_isolation.rs` 17）を保持し、exact payload、provenance、key
-fallback、active fixture、corruption matrix、cross-route isolationを保護する。よって
-move-only `design_drift`でZF0 test taskは不要。authority、behavior、coverage credit、
-owner crate、deferred statusは変わらないため`spec_coverage_audit.md`は不変。
-config/key/role/mode edit、asserted-head generalization、radix/multi-hop/local-object-mode route
-move、object/set coercion、assertion weakening、test/expectation editは禁止。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZF 移動結果
 
-Task 263ZFは承認済み5 fragment、合計48行だけを既存private
-`type_elaboration/type_assertion_routes.rs`へ移動し、移動前oracleのoriginal raw hash
-`e4633687...`、`1f16fdb8...`、`a027a240...`、`42f4bfc7...`、`6b1f2ecb...`を
-維持した。必要なrunner visibilityとformatting whitespaceだけを除くと全old/new
-fragment pairはtoken-identicalで、combined normalized hashは`5ed24905...`。radix、
-multi-hop、local-object-mode、その他の隣接routeはすべて`runner.rs`に残る。
-
-拡張後private ownerは125行、raw hash `e3d046a9...`、`runner.rs`は6,152行、raw
-hash `dd4cb898...`、phase facadeは347行、raw hash `737c890e...`。不変の82行
-`long_chain_config.rs`はhash `3b0e2638...`を維持する。invalid-key constantは
-leaf-privateで、config、test消費output、extractorはtest facadeだけを跨ぐ。normal
-facadeが追加するのはproduction detail routeだけで、ownerはdirect sibling table importを
-維持し、runner test aliasは移動済みconfigから不変のkeyを導出する。production dispatch
-order/call identityは不変。
-
-focused filter 2 testとcrate unit test 272件は全成功。raw/normalized 272-name list hash、
-4 CLI byte hash、active count 96/4/188、plan 403/367、type coverage 235/223、pass/fail
-219/184、warning/error 23/0は不変。formatting、warning deny all-target/all-feature Clippy、
-workspace test、diff cleanliness、review-only checkは成功。Task 263ZFは完了し、fresh
-Task 263 inventoryはradix、multi-hop、local-object-mode long-chain asserted-head routeへ
-戻る。authority、behavior、coverage credit、owner crate、deferred statusは変わらないため
-`spec_coverage_audit.md`は不変。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZG 移動前 Inventory と仕様
 
-fresh authority、test、trace、expectation、design、source、real-consumer inventoryは
-local-mode long-chain immediate-radix asserted-head routeだけをprivate
-`type_elaboration/type_assertion_routes.rs`への次のbounded additionとして選ぶ。
-`runner.rs`の正確な5 fragment、invalid key 519-520（2行、`1c51cc95...`）、config
-3386-3400（15、`f573f4d7...`）、production detail route 4167-4178（12、
-`59f89066...`）、test-only output 4814-4822（9、`66381eab...`）、extractor
-5902-5913（12、`c58a33b1...`）、合計50行、combined raw hash `9de63d06...`、
-whitespace-normalized pre-move hash `bfcb5927...`。
-
-Task 263ZGはこれらだけを既存private ownerへ機械的に移動する。ownerはshared
-set-terminal tableをsibling `long_chain_config`から既に直接importする。normal phase
-facadeを跨ぐのはproduction detail route 1個だけ。config、test消費output、extractorは
-`#[cfg(test)]`だけを跨ぎ、invalid-key constantはleaf-privateのまま、config由来runner
-test aliasで既存name/valueを維持する。call site、name、config value、正確なseven-
-expansion set-terminal chain、immediate `ChainMode6 -> ChainMode5` relation、key、payload、
-ordering、fallback、fail-closed behaviorは変更しない。
-
-canonical reserved-theorem-variable/static type-assertion requirementは不変。active
-`.miz`/expectation pair 1組とdedicated Task 209 covered checker requirementはreal source
-AST/resolver data、set-terminal expansion 7個、独立したreserve `ChainMode6`とasserted
-`ChainMode5` source site、immediate bare radix edge、real checker outputを実行する。
-private test file 5個はfamily-name occurrence 73件（`support.rs` 1、
-`asserted_head_base.rs` 3、`asserted_head_fixtures.rs` 4、`long_chain.rs` 48、
-`remaining_bridges_and_nested_isolation.rs` 17）を保持し、exact payload、provenance、
-all-order corruption matrix、key fallback、active fixture、cross-route isolationを保護する。
-よってmove-only `design_drift`でZG0 test taskは不要。authority、behavior、coverage
-credit、owner crate、deferred statusは変わらないため`spec_coverage_audit.md`は不変。
-config/key/role/mode edit、relation/chain generalization、same-mode/multi-hop/local-object-mode
-route move、object/set coercion、assertion weakening、test/expectation editは禁止。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZG 移動結果
 
-Task 263ZGは承認済み5 fragment、合計50行だけを既存private
-`type_elaboration/type_assertion_routes.rs`へ移動し、移動前oracleのoriginal raw hash
-`1c51cc95...`、`f573f4d7...`、`59f89066...`、`66381eab...`、`c58a33b1...`を
-維持した。必要なrunner visibilityとformatting whitespaceだけを除くと全old/new
-fragment pairはtoken-identicalで、combined normalized hashは`bfcb5927...`。multi-hop、
-local-object-mode、その他の隣接routeはすべて`runner.rs`に残る。
-
-拡張後private ownerは180行、raw hash `0a99d34d...`、`runner.rs`は6,105行、raw
-hash `dd4c9b2a...`、phase facadeは351行、raw hash `7e16d5dc...`。不変の82行
-`long_chain_config.rs`はhash `3b0e2638...`を維持する。invalid-key constantは
-leaf-privateで、config、test消費output、extractorはtest facadeだけを跨ぐ。normal
-facadeが追加するのはproduction detail routeだけで、ownerはdirect sibling table importを
-維持し、runner test aliasは移動済みconfigから不変のkeyを導出する。production dispatch
-order、正確なimmediate radix relation、call identityは不変。
-
-focused filter 2 testとcrate unit test 272件は全成功。raw/normalized 272-name list hash、
-4 CLI byte hash、active count 96/4/188、plan 403/367、type coverage 235/223、pass/fail
-219/184、warning/error 23/0は不変。formatting、warning deny all-target/all-feature Clippy、
-workspace test、diff cleanliness、review-only checkは成功。Task 263ZGは完了し、fresh
-Task 263 inventoryはmulti-hop/local-object-mode long-chain asserted-head routeへ戻る。
-authority、behavior、coverage credit、owner crate、deferred statusは変わらないため
-`spec_coverage_audit.md`は不変。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZH 移動前 Inventory と仕様
 
-fresh authority、test、trace、expectation、design、source、real-consumer inventoryは
-local-mode long-chain two-hop asserted-head routeだけをprivate
-`type_elaboration/type_assertion_routes.rs`への次のbounded additionとして選ぶ。
-`runner.rs`の正確な5 fragment、invalid key 526-527（2行、`99d058e8...`）、config
-3391-3406（16、`2691b2e7...`）、production detail route 4156-4167（12、
-`15b0a146...`）、test-only output 4790-4798（9、`032f065d...`）、extractor
-5868-5879（12、`c645fca8...`）、合計51行、combined raw hash `a9e3c846...`、
-whitespace-normalized pre-move hash `b22e9463...`。
-
-Task 263ZHはこれらだけを既存private ownerへ機械的に移動し、direct sibling
-`long_chain_config` dependencyを維持する。normal phase facadeを跨ぐのはproduction detail
-route 1個だけ。config、test消費output、extractorは`#[cfg(test)]`だけを跨ぎ、invalid-key
-constantはleaf-privateのまま、config由来runner test aliasで既存name/valueを維持する。
-call site、name、config value、正確なseven-expansion set-terminal chain、two-hop
-`ChainMode6 -> ChainMode5 -> ChainMode4` relation、key、payload、ordering、fallback、
-fail-closed behaviorは変更しない。
-
-canonical reserved-theorem-variable/static type-assertion requirementは不変。active
-`.miz`/expectation pair 1組とdedicated Task 224 covered checker requirementはreal source
-AST/resolver data、set-terminal expansion 7個、独立したreserve `ChainMode6`とasserted
-`ChainMode4` source site、正確なbare relation edge 2個、real checker outputを実行する。
-`long_chain.rs`はfamily-name occurrence 50件を全て保持し、exact payload、provenance、
-all-order corruption、key fallback、active fixture、cross-route isolationを保護する。よって
-move-only `design_drift`でZH0 test taskは不要。authority、behavior、coverage credit、
-owner crate、deferred statusは変わらないため`spec_coverage_audit.md`は不変。
-config/key/role/mode edit、relation/chain generalization、immediate/deeper-hop/
-local-object-mode route move、object/set coercion、assertion weakening、test/expectation editは禁止。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZH 移動結果
 
-Task 263ZHは承認済み5 fragment、合計51行だけを既存private
-`type_elaboration/type_assertion_routes.rs`へ移動し、移動前oracleのoriginal raw hash
-`99d058e8...`、`2691b2e7...`、`15b0a146...`、`032f065d...`、`c645fca8...`を
-維持した。必要なrunner visibilityとformatting whitespaceだけを除くと全old/new
-fragment pairはtoken-identicalで、combined normalized hashは`b22e9463...`。既に移動済みの
-immediate-radix routeは`type_assertion_routes.rs`内で不変。deeper-hop、
-local-object-mode、その他の隣接routeはすべて`runner.rs`に残る。
-
-拡張後private ownerは236行、raw hash `ce9630bc...`、`runner.rs`は6,057行、raw
-hash `d9c02f6a...`、phase facadeは355行、raw hash `c74a5326...`。不変の82行
-`long_chain_config.rs`はhash `3b0e2638...`を維持する。invalid-key constantは
-leaf-privateで、config、test消費output、extractorはtest facadeだけを跨ぐ。normal
-facadeが追加するのはproduction detail routeだけで、ownerはdirect sibling table importを
-維持し、runner test aliasは移動済みconfigから不変のkeyを導出する。production dispatch
-order、正確なtwo-hop relation、call identityは不変。
-
-focused filter 2 testとcrate unit test 272件は全成功。raw/normalized 272-name list hash、
-4 CLI byte hash、active count 96/4/188、plan 403/367、type coverage 235/223、pass/fail
-219/184、warning/error 23/0は不変。formatting、warning deny all-target/all-feature Clippy、
-workspace test、diff cleanliness、review-only checkは成功。Task 263ZHは完了し、fresh
-Task 263 inventoryはdeeper-hop/local-object-mode long-chain asserted-head routeへ戻る。
-authority、behavior、coverage credit、owner crate、deferred statusは変わらないため
-`spec_coverage_audit.md`は不変。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZI 移動前 Inventory と仕様
 
-fresh authority、test、trace、expectation、design、source、API、real producer/consumer
-inventoryはlocal-mode long-chain three-hop asserted-head routeだけをprivate
-`type_elaboration/type_assertion_routes.rs`への次のbounded additionとして選ぶ。
-`runner.rs`の正確な5 fragment、invalid key 533-534（2行、`6265db24...`）、config
-3396-3412（17、`84937c90...`）、production detail route 4144-4156（13、
-`6393cffc...`）、test-only output 4765-4774（10、`ee67b1d6...`）、extractor
-5833-5844（12、`bda2d7a2...`）、合計54行、combined raw hash `32c6f854...`、
-whitespace-normalized pre-move hash `0082cb9f...`。
-
-Task 263ZIはこれらだけを既存private ownerへ機械的に移動し、direct sibling
-`long_chain_config` dependencyを維持する。normal phase facadeを跨ぐのはproduction detail
-route 1個だけ。config、test消費output、extractorは`#[cfg(test)]`だけを跨ぎ、invalid-key
-constantはleaf-privateのまま、config由来runner test aliasで既存name/valueを維持する。
-public API、call site、name、config value、正確なseven-expansion set-terminal chain、
-three-hop `ChainMode6 -> ChainMode5 -> ChainMode4 -> ChainMode3` relation、key、payload、
-ordering、fallback、fail-closed behaviorは変更しない。
-
-canonical reserved-theorem-variable/static type-assertion requirementは不変。active
-`.miz`/expectation pair 1組とdedicated Task 226 covered checker requirementはreal source
-AST/resolver data、set-terminal expansion 7個、独立したreserve `ChainMode6`とasserted
-`ChainMode3` source site、正確なbare relation edge 3個、real checker outputを実行する。
-`long_chain.rs`はfamily-name occurrence 42件を全て保持し、exact payload、provenance、
-all-order corruption、key fallback、active fixture、cross-route isolationを保護する。よって
-move-only `design_drift`でZI0 test taskは不要。authority、behavior、coverage credit、
-owner crate、deferred statusは変わらないため`spec_coverage_audit.md`は不変。
-config/key/role/mode edit、relation/chain generalization、immediate/two-hop/four-or-deeper/
-local-object-mode route move、object/set coercion、assertion weakening、test/expectation editは禁止。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZI 移動結果
 
-Task 263ZIは承認済み5 fragment、合計54行だけを既存private
-`type_elaboration/type_assertion_routes.rs`へ移動し、移動前oracleのoriginal raw hash
-`6265db24...`、`84937c90...`、`6393cffc...`、`ee67b1d6...`、`bda2d7a2...`を
-維持した。必要なrunner visibilityとformatting whitespaceだけを除くと全old/new
-fragment pairはtoken-identicalで、combined normalized hashは`0082cb9f...`。既に移動済みの
-immediate/two-hop routeは`type_assertion_routes.rs`内で不変。four-or-deeper、
-local-object-mode、その他の隣接routeはすべて`runner.rs`に残る。
-
-拡張後private ownerは295行、raw hash `f6dbf168...`、`runner.rs`は6,006行、raw
-hash `48b37dfe...`、phase facadeは359行、raw hash `b44f5910...`。不変の82行
-`long_chain_config.rs`はhash `3b0e2638...`を維持する。invalid-key constantは
-leaf-privateで、config、test消費output、extractorはtest facadeだけを跨ぐ。normal
-facadeが追加するのはproduction detail routeだけで、ownerはdirect sibling table importを
-維持し、runner test aliasは移動済みconfigから不変のkeyを導出する。production dispatch
-order、正確なthree-hop relation、call identityは不変。
-
-focused filter 2 testとcrate unit test 272件は全成功。raw/normalized 272-name list hash、
-4 CLI byte hash、active count 96/4/188、plan 403/367、type coverage 235/223、pass/fail
-219/184、warning/error 23/0は不変。formatting、warning deny all-target/all-feature Clippy、
-workspace test、diff cleanliness、review-only checkは成功。Task 263ZIは完了し、fresh
-Task 263 inventoryはfour-or-deeper/local-object-mode long-chain asserted-head routeへ戻る。
-authority、behavior、coverage credit、owner crate、deferred statusは変わらないため
-`spec_coverage_audit.md`は不変。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZJ 移動前 Inventory と仕様
 
-fresh authority、test、trace、expectation、design、source、API、real producer/consumer
-inventoryはlocal-mode long-chain four-hop asserted-head routeだけをprivate
-`type_elaboration/type_assertion_routes.rs`への次のbounded additionとして選ぶ。
-`runner.rs`の正確な5 fragment、invalid key 540-541（2行、`4b7810fc...`）、config
-3401-3418（18、`f6832e47...`）、production detail route 4131-4143（13、
-`4d5e0688...`）、test-only output 4738-4747（10、`2066549a...`）、extractor
-5795-5806（12、`150e478c...`）、合計55行、combined raw hash `9a44e3fb...`、
-whitespace-normalized pre-move hash `23488d36...`。
-
-Task 263ZJはこれらだけを既存private ownerへ機械的に移動し、direct sibling
-`long_chain_config` dependencyを維持する。normal phase facadeを跨ぐのはproduction detail
-route 1個だけ。config、test消費output、extractorは`#[cfg(test)]`だけを跨ぎ、invalid-key
-constantはleaf-privateのまま、config由来runner test aliasで既存name/valueを維持する。
-public API、call site、name、config value、正確なseven-expansion set-terminal chain、
-four-hop `ChainMode6 -> ChainMode5 -> ChainMode4 -> ChainMode3 -> ChainMode2` relation、key、
-payload、ordering、fallback、fail-closed behaviorは変更しない。
-
-canonical reserved-theorem-variable/static type-assertion requirementは不変。active
-`.miz`/expectation pair 1組とdedicated Task 228 covered checker requirementはreal source
-AST/resolver data、set-terminal expansion 7個、独立したreserve `ChainMode6`とasserted
-`ChainMode2` source site、正確なbare relation edge 4個、real checker outputを実行する。
-`long_chain.rs`はfamily-name occurrence 34件を全て保持し、exact payload、provenance、
-all-order corruption、key fallback、active fixture、cross-route isolationを保護する。よって
-move-only `design_drift`でZJ0 test taskは不要。authority、behavior、coverage credit、
-owner crate、deferred statusは変わらないため`spec_coverage_audit.md`は不変。
-config/key/role/mode edit、relation/chain generalization、immediate/two/three/five/six-hop/
-local-object-mode route move、object/set coercion、assertion weakening、test/expectation editは禁止。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZJ 移動結果
 
-Task 263ZJは承認済み5 fragment、合計55行だけを既存private
-`type_elaboration/type_assertion_routes.rs`へ移動し、移動前oracleのoriginal raw hash
-`4b7810fc...`、`f6832e47...`、`4d5e0688...`、`2066549a...`、`150e478c...`を
-維持した。必要なrunner visibilityとformatting whitespaceだけを除くと全old/new
-fragment pairはtoken-identicalで、combined normalized hashは`23488d36...`。既に移動済みの
-immediate/two/three-hop routeは`type_assertion_routes.rs`内で不変。five/six-hop、
-local-object-mode、その他の隣接routeはすべて`runner.rs`に残る。
-
-拡張後private ownerは355行、raw hash `7dc607a4...`、`runner.rs`は5,954行、raw
-hash `db5857bd...`、phase facadeは363行、raw hash `51a3b0d4...`。不変の82行
-`long_chain_config.rs`はhash `3b0e2638...`を維持する。invalid-key constantは
-leaf-privateで、config、test消費output、extractorはtest facadeだけを跨ぐ。normal
-facadeが追加するのはproduction detail routeだけで、ownerはdirect sibling table importを
-維持し、runner test aliasは移動済みconfigから不変のkeyを導出する。production dispatch
-order、正確なfour-hop relation、call identityは不変。
-
-focused filter 2 testとcrate unit test 272件は全成功。raw/normalized 272-name list hash、
-4 CLI byte hash、active count 96/4/188、plan 403/367、type coverage 235/223、pass/fail
-219/184、warning/error 23/0は不変。formatting、warning deny all-target/all-feature Clippy、
-workspace test、diff cleanliness、review-only checkは成功。Task 263ZJは完了し、fresh
-Task 263 inventoryはfive/six-hop/local-object-mode long-chain asserted-head routeへ戻る。
-authority、behavior、coverage credit、owner crate、deferred statusは変わらないため
-`spec_coverage_audit.md`は不変。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZK 移動前 Inventory と仕様
 
-fresh authority、test、trace、expectation、design、source、API、real producer/consumer
-inventoryはlocal-mode long-chain five-hop asserted-head routeだけをprivate
-`type_elaboration/type_assertion_routes.rs`への次のbounded additionとして選ぶ。
-`runner.rs`の正確な5 fragment、invalid key 547-548（2行、`1d5a5452...`）、config
-3406-3424（19、`abf23b93...`）、production detail route 4117-4129（13、
-`448393c6...`）、test-only output 4710-4719（10、`81db1ea3...`）、extractor
-5756-5767（12、`432bb0d3...`）、合計56行、combined raw hash `cacef95c...`、
-whitespace-normalized pre-move hash `2266a3d0...`。
-
-Task 263ZKはこれらだけを既存private ownerへ機械的に移動し、direct sibling
-`long_chain_config` dependencyを維持する。normal phase facadeを跨ぐのはproduction detail
-route 1個だけ。config、test消費output、extractorは`#[cfg(test)]`だけを跨ぎ、invalid-key
-constantはleaf-privateのまま、config由来runner test aliasで既存name/valueを維持する。
-public API、call site、name、config value、正確なseven-expansion set-terminal chain、
-five-hop `ChainMode6 -> ChainMode5 -> ChainMode4 -> ChainMode3 -> ChainMode2 ->
-ChainMode1` relation、key、payload、ordering、fallback、fail-closed behaviorは変更しない。
-
-canonical reserved-theorem-variable/static type-assertion requirementは不変。active
-`.miz`/expectation pair 1組とdedicated Task 230 covered checker requirementはreal source
-AST/resolver data、set-terminal expansion 7個、独立したreserve `ChainMode6`とasserted
-`ChainMode1` source site、正確なbare relation edge 5個、real checker outputを実行する。
-`long_chain.rs`はsnake-case family-name occurrence 25件を全て保持し、exact payload、provenance、
-all-order corruption、key fallback、active fixture、cross-route isolationを保護する。よって
-move-only `design_drift`でZK0 test taskは不要。authority、behavior、coverage credit、
-owner crate、deferred statusは変わらないため`spec_coverage_audit.md`は不変。
-config/key/role/mode edit、relation/chain generalization、immediate/two/three/four/six-hop/
-local-object-mode route move、object/set coercion、assertion weakening、test/expectation editは禁止。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZK 移動結果
 
-Task 263ZKは承認済み5 fragment、合計56行だけを既存private
-`type_elaboration/type_assertion_routes.rs`へ移動し、移動前oracleのoriginal raw hash
-`1d5a5452...`、`abf23b93...`、`448393c6...`、`81db1ea3...`、`432bb0d3...`を
-維持した。必要なrunner visibilityとformatting whitespaceだけを除くと全old/new
-fragment pairはtoken-identicalで、combined normalized hashは`2266a3d0...`。既に移動済みの
-immediate/two/three/four-hop routeは`type_assertion_routes.rs`内で不変。six-hop、全
-local-object-mode、その他の隣接routeはすべて`runner.rs`に残る。
-
-拡張後private ownerは416行、raw hash `2395aed6...`、`runner.rs`は5,901行、raw
-hash `bbe6b7f2...`、phase facadeは367行、raw hash `9ca398f8...`。不変の82行
-`long_chain_config.rs`はhash `3b0e2638...`を維持する。invalid-key constantは
-leaf-privateで、config、test消費output、extractorはtest facadeだけを跨ぐ。normal
-facadeが追加するのはproduction detail routeだけで、ownerはdirect sibling table importを
-維持し、runner test aliasは移動済みconfigから不変のkeyを導出する。production dispatch
-order、正確なfive-hop relation、call identity、terminal fail-closed fallbackは不変。
-
-focused filter 2 testとcrate unit test 272件は全成功。raw/normalized 272-name list hash、
-4 CLI byte hash、active count 96/4/188、plan 403/367、type coverage 235/223、pass/fail
-219/184、warning/error 23/0は不変。formatting、warning deny all-target/all-feature Clippy、
-workspace test、diff cleanliness、review-only checkは成功。Task 263ZKは完了し、fresh
-Task 263 inventoryはsix-hop/local-object-mode long-chain asserted-head routeへ戻る。
-authority、behavior、coverage credit、owner crate、deferred statusは変わらないため
-`spec_coverage_audit.md`は不変。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZL 移動前 Inventory と仕様
 
-fresh authority、test、trace、expectation、design、source、API、real producer/consumer
-inventoryはlocal-mode long-chain six-hop asserted-head routeだけをprivate
-`type_elaboration/type_assertion_routes.rs`への次のbounded additionとして選ぶ。
-`runner.rs`の正確な5 fragment、invalid key 554-555（2行、`ec22ef78...`）、config
-3411-3430（20、`582d2c60...`）、production detail route 4102-4113（12、
-`f8349031...`）、test-only output 4681-4689（9、`aa261362...`）、extractor
-5716-5727（12、`575ead8d...`）、合計55行、combined raw hash `7f677c2e...`、
-whitespace-normalized pre-move hash `b8fba0fe...`。
-
-Task 263ZLはこれらだけを既存private ownerへ機械的に移動し、direct sibling
-`long_chain_config` dependencyを維持する。normal phase facadeを跨ぐのはproduction detail
-route 1個だけ。config、test消費output、extractorは`#[cfg(test)]`だけを跨ぎ、invalid-key
-constantはleaf-privateのまま、config由来runner test aliasで既存name/valueを維持する。
-public API、call site、name、config value、正確なseven-expansion set-terminal chain、
-full-distance six-hop `ChainMode6 -> ChainMode5 -> ChainMode4 -> ChainMode3 ->
-ChainMode2 -> ChainMode1 -> BaseMode` relation、key、payload、ordering、fallback、fail-
-closed behaviorは変更しない。
-
-canonical reserved-theorem-variable/static type-assertion requirementは不変。active
-`.miz`/expectation pair 1組とdedicated Task 234 covered checker requirementはreal source
-AST/resolver data、set-terminal expansion 7個、独立したreserve `ChainMode6`とasserted
-`BaseMode` source site、正確なbare relation edge 6個、real checker outputを実行する。
-`long_chain.rs`はsnake-case family-name occurrence 18件に加え、全5,039-order finite
-corruption matrix、全56 prior-owner isolation、immutable output、key fallback、active
-fixture、real sidecarを保持する。よってmove-only `design_drift`でZL0 test taskは不要。
-authority、behavior、coverage credit、owner crate、deferred statusは変わらないため
-`spec_coverage_audit.md`は不変。config/key/role/mode edit、relation/chain generalization、
-same-mode/immediate/two/three/four/five-hop/local-object-mode route move、object/set coercion、
-assertion weakening、test/expectation editは禁止。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZL 移動結果
 
-Task 263ZLは承認済み5 fragment、合計55行だけを既存private
-`type_elaboration/type_assertion_routes.rs`へ移動し、移動前oracleのoriginal raw hash
-`ec22ef78...`、`582d2c60...`、`f8349031...`、`aa261362...`、`575ead8d...`を
-維持した。必要なrunner visibilityとformatting whitespaceだけを除くと全old/new
-fragment pairはtoken-identicalで、combined normalized hashは`b8fba0fe...`。既に移動済みの
-local-mode routeはすべて`type_assertion_routes.rs`内で不変。全local-object-modeと
-その他の隣接routeは`runner.rs`に残る。
-
-拡張後private ownerは476行、raw hash `095eab00...`、`runner.rs`は5,849行、raw
-hash `952a1d7f...`、phase facadeは369行、raw hash `2b473071...`。不変の82行
-`long_chain_config.rs`はhash `3b0e2638...`を維持する。invalid-key constantは
-leaf-privateで、config、test消費output、extractorはtest facadeだけを跨ぐ。normal
-facadeが追加するのはproduction detail routeだけで、ownerはdirect sibling table importを
-維持し、runner test aliasは移動済みconfigから不変のkeyを導出する。production dispatch
-order、正確なsix-hop relation、call identity、terminal fail-closed fallbackは不変。
-
-最初のfocused compileは、このmoveにより`runner.rs`の
-`SOURCE_LOCAL_MODE_LONG_CHAIN_DEFINITIONS` consumerが最後まで消えたため正しく失敗した。
-修復はstale runner importとphase-facade re-exportだけを除去した。`binary_routes.rs`と
-`type_assertion_routes.rs`のdirect sibling consumerは残り、local-object tableは保持runner
-consumer向けにexposeしたまま。修復後focused 2 testとcrate unit test 272件は全成功。
-raw/normalized 272-name list hash、4 CLI byte hash、active count 96/4/188、plan
-403/367、type coverage 235/223、pass/fail 219/184、warning/error 23/0は不変。
-formatting、warning deny all-target/all-feature Clippy、workspace test、diff cleanliness、
-review-only checkは成功。Task 263ZLは完了し、fresh Task 263 inventoryはlocal-object-mode
-long-chain asserted-head routeだけへ戻る。authority、behavior、coverage credit、owner
-crate、deferred statusは変わらないため`spec_coverage_audit.md`は不変。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZM 移動前 Inventory と仕様
 
-fresh authority、test、trace、expectation、design、source、API、real producer/consumer
-inventoryはlocal-object-mode long-chain six-hop asserted-head routeだけをprivate
-`type_elaboration/type_assertion_routes.rs`への次のbounded additionとして選ぶ。
-`runner.rs`の正確な5 fragment、invalid key 561-563（3行、`ac31b964...`）、config
-3416-3435（20、`56bf0820...`）、production detail route 4086-4098（13、
-`8011c4b0...`）、test-only output 4652-4661（10、`b24222d0...`）、extractor
-5677-5688（12、`dc57ecdb...`）、合計58行、combined raw hash `770ab2db...`、
-whitespace-normalized pre-move hash `a489a76f...`。
-
-Task 263ZMはこれらだけを既存private ownerへ機械的に移動し、direct sibling
-`long_chain_config`のlocal-object table dependencyを追加する。normal phase facadeを
-跨ぐのはproduction detail route 1個だけ。config、test消費output、extractorは
-`#[cfg(test)]`だけを跨ぎ、invalid-key constantはleaf-privateのまま、config由来runner
-test aliasで既存name/valueを維持する。public API、call site、name、config value、正確な
-seven-expansion object-terminal chain、full-distance six-hop `ChainObjectMode6 ->
-ChainObjectMode5 -> ChainObjectMode4 -> ChainObjectMode3 -> ChainObjectMode2 ->
-ChainObjectMode1 -> BaseObjectMode` relation、key、payload、ordering、fallback、fail-
-closed behaviorは変更しない。
-
-canonical reserved-theorem-variable/static type-assertion requirementは不変。active
-`.miz`/expectation pair 1組とdedicated Task 236 covered checker requirementはreal source
-AST/resolver data、object-terminal expansion 7個、独立したreserve `ChainObjectMode6`と
-asserted `BaseObjectMode` source site、正確なbare relation edge 6個、object/set coercion
-なしのreal checker outputを実行する。`long_chain.rs`はsnake-case family-name occurrence
-14件に加え、全5,039-order finite corruption matrix、全57 prior-owner isolation、immutable
-output、key fallback、active fixture、real sidecarを保持する。よってmove-only
-`design_drift`でZM0 test taskは不要。authority、behavior、coverage credit、owner crate、
-deferred statusは変わらないため`spec_coverage_audit.md`は不変。config/key/role/mode
-edit、relation/chain generalization、local-modeまたは他local-object-mode route move、
-object/set coercion、assertion weakening、test/expectation editは禁止。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZM 移動結果
 
-Task 263ZMは承認済み5 fragment、合計58行だけを既存private
-`type_elaboration/type_assertion_routes.rs`へ移動し、移動前oracleのoriginal raw hash
-`ac31b964...`、`56bf0820...`、`8011c4b0...`、`b24222d0...`、`dc57ecdb...`を
-維持した。必要なrunner visibilityとformatting whitespaceだけを除くと全old/new
-fragment pairはtoken-identicalで、combined normalized hashは`a489a76f...`。既に移動済みの
-local-mode routeはすべて`type_assertion_routes.rs`内で不変。その他のlocal-object-modeと
-隣接routeはすべて`runner.rs`に残る。
-
-拡張後private ownerは541行、raw hash `04c02f75...`、`runner.rs`は5,794行、raw
-hash `721574ab...`、phase facadeは373行、raw hash `bf96abb3...`。不変の82行
-`long_chain_config.rs`はhash `3b0e2638...`を維持する。invalid-key constantは
-leaf-privateで、config、test消費output、extractorはtest facadeだけを跨ぐ。normal
-facadeが追加するのはproduction detail routeだけ。ownerはobject-terminal tableをdirect
-sibling importし、runner test aliasは移動済みconfigから不変のkeyを導出する。production
-dispatch order、正確なobject-terminal six-hop relation、call identity、terminal fail-
-closed fallbackは不変。
-
-focused 2 test、crate unit test 272件、full relevant-crate suiteは全成功。raw/normalized
-272-name list hash、4 CLI byte hash、active count 96/4/188、plan 403/367、type
-coverage 235/223、pass/fail 219/184、warning/error 23/0は不変。formatting、warning deny
-all-target/all-feature Clippy、workspace test、diff cleanliness、review-only checkは成功。
-Task 263ZMは完了し、fresh Task 263 inventoryは残るlocal-object-mode long-chain asserted-
-head routeへ戻る。authority、behavior、coverage credit、owner crate、deferred statusは
-変わらないため`spec_coverage_audit.md`は不変。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZN 移動前 Inventory と仕様
 
-fresh authority、test、trace、expectation、design、source、API、real producer/consumer
-inventoryはlocal-object-mode long-chain five-hop asserted-head routeだけをprivate
-`type_elaboration/type_assertion_routes.rs`への次のbounded additionとして選ぶ。
-`runner.rs`の正確な5 fragment、invalid key 568-570（3行、`fde751f2...`）、config
-3420-3438（19、`a2e917f5...`）、production detail route 4069-4081（13、
-`b4e0cd1e...`）、test-only output 4621-4630（10、`9c0fa75e...`）、extractor
-5635-5646（12、`4be72697...`）、合計57行、combined raw hash `a1e6e85b...`、
-whitespace-normalized pre-move hash `66a0a9c1...`。
-
-Task 263ZNはこれらだけを既存private ownerへ機械的に移動し、direct sibling
-`long_chain_config`のobject-table dependencyを維持する。normal phase facadeを跨ぐのは
-production detail route 1個だけ。config、test消費output、extractorは`#[cfg(test)]`だけを
-跨ぎ、invalid-key constantはleaf-privateのまま、config由来runner test aliasで既存
-name/valueを維持する。public API、call site、name、config value、正確なseven-expansion
-object-terminal chain、five-hop `ChainObjectMode6 -> ChainObjectMode5 ->
-ChainObjectMode4 -> ChainObjectMode3 -> ChainObjectMode2 -> ChainObjectMode1`
-relation、terminal-only `ChainObjectMode1 -> BaseObjectMode -> object` normalization、
-key、payload、ordering、fallback、fail-closed behaviorは変更しない。
-
-canonical reserved-theorem-variable/static type-assertion requirementは不変。active
-`.miz`/expectation pair 1組とdedicated Task 231 covered checker requirementはreal source
-AST/resolver data、object-terminal expansion 7個、独立したreserve `ChainObjectMode6`と
-asserted `ChainObjectMode1` source site、正確なbare relation edge 5個、object/set coercion
-なしのreal checker outputを実行する。`long_chain.rs`はsnake-case family-name occurrence
-22件に加え、全5,039-order finite corruption matrix、全55 prior-owner isolation、immutable
-output、key fallback、active fixture、real sidecarを保持する。よってmove-only
-`design_drift`でZN0 test taskは不要。authority、behavior、coverage credit、owner crate、
-deferred statusは変わらないため`spec_coverage_audit.md`は不変。config/key/role/mode
-edit、relation/chain generalization、local-modeまたは他local-object-mode route move、
-object/set coercion、assertion weakening、test/expectation editは禁止。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZN 移動結果
 
-Task 263ZNは承認済み5 fragment、合計57行だけを既存private
-`type_elaboration/type_assertion_routes.rs`へ移動し、移動前oracleのoriginal raw hash
-`fde751f2...`、`a2e917f5...`、`b4e0cd1e...`、`9c0fa75e...`、`4be72697...`を
-維持した。必要なrunner visibilityとformatting whitespaceだけを除くと全old/new
-fragment pairはtoken-identicalで、combined normalized hashは`66a0a9c1...`。既に移動済みの
-local-modeとlocal-object-mode six-hop routeは`type_assertion_routes.rs`内で不変。
-その他のlocal-object-modeと隣接routeはすべて`runner.rs`に残る。
-
-拡張後private ownerは603行、raw hash `e9fb3b88...`、`runner.rs`は5,740行、raw
-hash `e35165d1...`、phase facadeは377行、raw hash `946dcebe...`。不変の82行
-`long_chain_config.rs`はhash `3b0e2638...`を維持する。invalid-key constantは
-leaf-privateで、config、test消費output、extractorはtest facadeだけを跨ぐ。normal
-facadeが追加するのはproduction detail routeだけ。ownerはdirect object-terminal table
-importを維持し、runner test aliasは移動済みconfigから不変のkeyを導出する。production
-dispatch order、正確なobject-terminal five-hop relation、call identity、terminal fail-
-closed fallbackは不変。
-
-focused 2 test、crate unit test 272件、full relevant-crate suiteは全成功。raw/normalized
-272-name list hash、4 CLI byte hash、active count 96/4/188、plan 403/367、type
-coverage 235/223、pass/fail 219/184、warning/error 23/0は不変。formatting、warning deny
-all-target/all-feature Clippy、workspace test、diff cleanliness、review-only checkは成功。
-Task 263ZNは完了し、fresh Task 263 inventoryは残るlocal-object-mode long-chain asserted-
-head routeへ戻る。authority、behavior、coverage credit、owner crate、deferred statusは
-変わらないため`spec_coverage_audit.md`は不変。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZO 移動前 Inventory と仕様
 
-fresh authority、test、trace、expectation、design、source、API、real producer/consumer
-inventoryはlocal-object-mode long-chain four-hop asserted-head routeだけをprivate
-`type_elaboration/type_assertion_routes.rs`への次のbounded additionとして選ぶ。
-`runner.rs`の正確な5 fragment、invalid key 575-577（3行、`c73a1ed8...`）、config
-3475-3492（18、`aa4574ef...`）、production detail route 4095-4107（13、
-`be90c9c8...`）、test-only output 4624-4633（10、`b09aa3cd...`）、extractor
-5633-5644（12、`e89973e7...`）、合計56行、combined raw hash `2a5cb09a...`、
-whitespace-normalized pre-move hash `9452ed92...`。
-
-Task 263ZOはこれらだけを既存private ownerへ機械的に移動し、direct sibling
-`long_chain_config`のobject-table dependencyを維持する。normal phase facadeを跨ぐのは
-production detail route 1個だけ。config、test消費output、extractorは`#[cfg(test)]`だけを
-跨ぎ、invalid-key constantはleaf-privateのまま、config由来runner test aliasで既存
-name/valueを維持する。public API、call site、name、config value、正確なseven-expansion
-object-terminal chain、four-hop `ChainObjectMode6 -> ChainObjectMode5 ->
-ChainObjectMode4 -> ChainObjectMode3 -> ChainObjectMode2` relation、terminal-only
-`ChainObjectMode2 -> ChainObjectMode1 -> BaseObjectMode -> object` normalization、key、
-payload、ordering、fallback、fail-closed behaviorは変更しない。
-
-canonical reserved-theorem-variable/static type-assertion requirementは不変。active
-`.miz`/expectation pair 1組とdedicated Task 229 covered checker requirementはreal source
-AST/resolver data、object-terminal expansion 7個、独立したreserve `ChainObjectMode6`と
-asserted `ChainObjectMode2` source site、正確なbare relation edge 4個、object/set coercion
-なしのreal checker outputを実行する。`long_chain.rs`はsnake-case family-name occurrence
-28件に加え、全5,039-order finite corruption matrix、全53 prior-owner isolation、immutable
-output、key fallback、active fixture、real sidecarを保持する。よってmove-only
-`design_drift`でZO0 test taskは不要。authority、behavior、coverage credit、owner crate、
-deferred statusは変わらないため`spec_coverage_audit.md`は不変。config/key/role/mode
-edit、relation/chain generalization、local-modeまたは他local-object-mode route move、
-object/set coercion、assertion weakening、test/expectation editは禁止。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZO 移動結果
 
-Task 263ZOは承認済み5 fragment、合計56行だけを既存private
-`type_elaboration/type_assertion_routes.rs`へ移動し、移動前oracleのoriginal raw hash
-`c73a1ed8...`、`aa4574ef...`、`be90c9c8...`、`b09aa3cd...`、`e89973e7...`を
-維持した。必要なrunner visibilityとformatting whitespaceだけを除くと全old/new
-fragment pairはtoken-identicalで、combined normalized hashは`9452ed92...`。既に移動済みの
-local-modeとlocal-object-mode six-/five-hop routeは`type_assertion_routes.rs`内で不変。
-その他のlocal-object-modeと隣接routeはすべて`runner.rs`に残る。
-
-拡張後private ownerは664行、raw hash `9da1dffd...`、`runner.rs`は5,687行、raw
-hash `eb33ccce...`、phase facadeは381行、raw hash `4ca061cc...`。不変の82行
-`long_chain_config.rs`はhash `3b0e2638...`を維持する。invalid-key constantは
-leaf-privateで、config、test消費output、extractorはtest facadeだけを跨ぐ。normal
-facadeが追加するのはproduction detail routeだけ。ownerはdirect object-terminal table
-importを維持し、runner test aliasは移動済みconfigから不変のkeyを導出する。production
-dispatch order、正確なobject-terminal four-hop relation、call identity、terminal fail-
-closed fallbackは不変。
-
-focused 2 test、crate unit test 272件、full relevant-crate suiteは全成功。raw/normalized
-272-name list hash、4 CLI byte hash、active count 96/4/188、plan 403/367、type
-coverage 235/223、pass/fail 219/184、warning/error 23/0は不変。formatting、warning deny
-all-target/all-feature Clippy、workspace test、diff cleanliness、review-only implementation
-checkは成功。Task 263ZOは完了し、fresh Task 263 inventoryは残るlocal-object-mode
-long-chain asserted-head routeへ戻る。authority、behavior、coverage credit、owner crate、
-deferred statusは変わらないため`spec_coverage_audit.md`は不変。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZP 移動前 Inventory と仕様
 
-fresh authority、test、trace、expectation、design、source、API、real producer/consumer
-inventoryはlocal-object-mode long-chain three-hop asserted-head routeだけをprivate
-`type_elaboration/type_assertion_routes.rs`への次のbounded additionとして選ぶ。
-`runner.rs`の正確な5 fragment、invalid key 587-589（3行、`787cf360...`）、config
-3461-3477（17、`94ceb3f4...`）、production detail route 4066-4078（13、
-`94b06181...`）、test-only output 4584-4593（10、`bd960eb3...`）、extractor
-5580-5591（12、`45e07c6a...`）、合計55行、combined raw hash `4af642ff...`、
-whitespace-normalized pre-move hash `ecc4d42e...`。
-
-Task 263ZPはこれらだけを既存private ownerへ機械的に移動し、direct sibling
-`long_chain_config`のobject-table dependencyを維持する。normal phase facadeを跨ぐのは
-production detail route 1個だけ。config、test消費output、extractorは`#[cfg(test)]`だけを
-跨ぎ、invalid-key constantはleaf-privateのまま、config由来runner test aliasで既存
-name/valueを維持する。public API、call site、name、config value、正確なseven-expansion
-object-terminal chain、three-hop `ChainObjectMode6 -> ChainObjectMode5 ->
-ChainObjectMode4 -> ChainObjectMode3` relation、terminal-only `ChainObjectMode3 ->
-ChainObjectMode2 -> ChainObjectMode1 -> BaseObjectMode -> object` normalization、key、
-payload、ordering、fallback、fail-closed behaviorは変更しない。
-
-canonical reserved-theorem-variable/static type-assertion requirementは不変。active
-`.miz`/expectation pair 1組とdedicated Task 227 covered checker requirementはreal source
-AST/resolver data、object-terminal expansion 7個、独立したreserve `ChainObjectMode6`と
-asserted `ChainObjectMode3` source site、正確なbare relation edge 3個、object/set coercion
-なしのreal checker outputを実行する。`long_chain.rs`はsnake-case family-name occurrence
-36件に加え、全5,039-order finite corruption matrix、全51 prior-owner isolation、immutable
-output、key fallback、active fixture、real sidecarを保持する。よってmove-only
-`design_drift`でZP0 test taskは不要。authority、behavior、coverage credit、owner crate、
-deferred statusは変わらないため`spec_coverage_audit.md`は不変。config/key/role/mode
-edit、relation/chain generalization、local-modeまたは他local-object-mode route move、
-object/set coercion、assertion weakening、test/expectation editは禁止。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZP 移動結果
 
-Task 263ZPは承認済み5 fragment、合計55行だけを既存private
-`type_elaboration/type_assertion_routes.rs`へ移動し、移動前oracleのoriginal raw hash
-`787cf360...`、`94ceb3f4...`、`94b06181...`、`bd960eb3...`、`45e07c6a...`を
-維持した。必要なrunner visibilityとformatting whitespaceだけを除くと全old/new
-fragment pairはtoken-identicalで、combined normalized hashは`ecc4d42e...`。既に移動済みの
-local-modeとlocal-object-mode six-/five-/four-hop routeは
-`type_assertion_routes.rs`内で不変。その他のlocal-object-modeと隣接routeはすべて
-`runner.rs`に残る。
-
-拡張後private ownerは724行、raw hash `a3e7d1be...`、`runner.rs`は5,635行、raw
-hash `aea9e1af...`、phase facadeは385行、raw hash `76309099...`。不変の82行
-`long_chain_config.rs`はhash `3b0e2638...`を維持する。invalid-key constantは
-leaf-privateで、config、test消費output、extractorはtest facadeだけを跨ぐ。normal
-facadeが追加するのはproduction detail routeだけ。ownerはdirect object-terminal table
-importを維持し、runner test aliasは移動済みconfigから不変のkeyを導出する。production
-dispatch order、正確なobject-terminal three-hop relation、call identity、terminal fail-
-closed fallbackは不変。
-
-focused 2 test、crate unit test 272件、full relevant-crate suiteは全成功。raw/normalized
-272-name list hash、4 CLI byte hash、active count 96/4/188、plan 403/367、type
-coverage 235/223、pass/fail 219/184、warning/error 23/0は不変。formatting、warning deny
-all-target/all-feature Clippy、workspace test、diff cleanliness、review-only implementation
-checkは成功。Task 263ZPは完了し、fresh Task 263 inventoryは残るlocal-object-mode
-long-chain asserted-head routeへ戻る。authority、behavior、coverage credit、owner crate、
-deferred statusは変わらないため`spec_coverage_audit.md`は不変。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZQ 移動前 Inventory と仕様
 
-fresh authority、test、trace、expectation、design、source、API、real producer/consumer
-inventoryはlocal-object-mode long-chain two-hop asserted-head routeだけをprivate
-`type_elaboration/type_assertion_routes.rs`への次のbounded additionとして選ぶ。
-`runner.rs`の正確な5 fragment、invalid key 588-590（3行、`afb54f75...`）、config
-3448-3463（16、`96edc075...`）、production detail route 4038-4050（13、
-`e88f6a56...`）、test-only output 4545-4554（10、`d8d67f83...`）、extractor
-5528-5539（12、`09ea9384...`）、合計54行、combined raw hash `87f3069b...`、
-whitespace-normalized pre-move hash `18f90f83...`。
-
-Task 263ZQはこれらだけを既存private ownerへ機械的に移動し、direct sibling
-`long_chain_config`のobject-table dependencyを維持する。normal phase facadeを跨ぐのは
-production detail route 1個だけ。config、test消費output、extractorは`#[cfg(test)]`だけを
-跨ぎ、invalid-key constantはleaf-privateのまま、config由来runner test aliasで既存
-name/valueを維持する。public API、call site、name、config value、正確なseven-expansion
-object-terminal chain、two-hop `ChainObjectMode6 -> ChainObjectMode5 ->
-ChainObjectMode4` relation、terminal-only `ChainObjectMode4 -> ChainObjectMode3 ->
-ChainObjectMode2 -> ChainObjectMode1 -> BaseObjectMode -> object` normalization、key、
-payload、ordering、fallback、fail-closed behaviorは変更しない。
-
-canonical reserved-theorem-variable/static type-assertion requirementは不変。active
-`.miz`/expectation pair 1組とdedicated Task 225 covered checker requirementはreal source
-AST/resolver data、object-terminal expansion 7個、独立したreserve `ChainObjectMode6`と
-asserted `ChainObjectMode4` source site、正確なbare relation edge 2個、object/set coercion
-なしのreal checker outputを実行する。`long_chain.rs`はsnake-case family-name occurrence
-44件に加え、全5,039-order finite corruption matrix、全49 prior-owner isolation、immutable
-output、key fallback、active fixture、real sidecarを保持する。よってmove-only
-`design_drift`でZQ0 test taskは不要。authority、behavior、coverage credit、owner crate、
-deferred statusは変わらないため`spec_coverage_audit.md`は不変。config/key/role/mode
-edit、relation/chain generalization、local-modeまたは他local-object-mode route move、
-object/set coercion、assertion weakening、test/expectation editは禁止。
-
-Tasks 262N0-262Q は authority、behavior、coverage credit、owner crate、deferred
-status を維持するため `spec_coverage_audit.md` は変更しない。accepted-shape expansion、
-route generalization、config/result-role edit、payload/detail/diagnostic/order change、
-assertion weakening、test deletion/ignore、checker/output move を禁止する。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZQ 移動結果
 
-Task 263ZQは承認済み5 fragment、合計54行だけを既存private
-`type_elaboration/type_assertion_routes.rs`へ移動し、移動前oracleのoriginal raw hash
-`afb54f75...`、`96edc075...`、`e88f6a56...`、`d8d67f83...`、`09ea9384...`を
-維持した。必要なrunner visibilityとformatting whitespaceだけを除くと全old/new
-fragment pairはtoken-identicalで、combined normalized hashは`18f90f83...`。既に移動済みの
-local-modeとlocal-object-mode six-/five-/four-/three-hop routeは
-`type_assertion_routes.rs`内で不変。その他のlocal-object-modeと隣接routeはすべて
-`runner.rs`に残る。
-
-拡張後private ownerは783行、raw hash `4d72d185...`、`runner.rs`は5,584行、raw
-hash `44a2b129...`、phase facadeは389行、raw hash `32d06bf1...`。不変の82行
-`long_chain_config.rs`はhash `3b0e2638...`を維持する。invalid-key constantは
-leaf-privateで、config、test消費output、extractorはtest facadeだけを跨ぐ。normal
-facadeが追加するのはproduction detail routeだけ。ownerはdirect object-terminal table
-importを維持し、runner test aliasは移動済みconfigから不変のkeyを導出する。production
-dispatch order、正確なobject-terminal two-hop relation、call identity、terminal fail-
-closed fallbackは不変。
-
-focused 2 test、crate unit test 272件、full relevant-crate suiteは全成功。raw/normalized
-272-name list hash、4 CLI byte hash、active count 96/4/188、plan 403/367、type
-coverage 235/223、pass/fail 219/184、warning/error 23/0は不変。formatting、warning deny
-all-target/all-feature Clippy、workspace test、diff cleanliness、review-only implementation
-checkは成功。Task 263ZQは完了し、fresh Task 263 inventoryは残るlocal-object-mode
-long-chain asserted-head routeへ戻る。authority、behavior、coverage credit、owner crate、
-deferred statusは変わらないため`spec_coverage_audit.md`は不変。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZR 移動前 Inventory と仕様
 
-fresh authority、test、trace、expectation、design、source、API、real producer/consumer
-inventoryはlocal-object-mode long-chain immediate-radix asserted-head routeだけをprivate
-`type_elaboration/type_assertion_routes.rs`への次のbounded additionとして選ぶ。
-`runner.rs`の正確な5 fragment、invalid key 590-591（2行、`85c28a03...`）、config
-3436-3450（15、`9c530a6d...`）、production detail route 4011-4023（13、
-`6906e0c0...`）、test-only output 4507-4516（10、`56abaa93...`）、extractor
-5477-5488（12、`e0e40074...`）、合計52行、combined raw hash `a0b3d996...`、
-whitespace-normalized pre-move hash `a533b453...`。
-
-Task 263ZRはこれらだけを既存private ownerへ機械的に移動し、direct sibling
-`long_chain_config`のobject-table dependencyを維持する。normal phase facadeを跨ぐのは
-production detail route 1個だけ。config、test消費output、extractorは`#[cfg(test)]`だけを
-跨ぎ、invalid-key constantはleaf-privateのまま、config由来runner test aliasで既存
-name/valueを維持する。public API、call site、name、config value、正確なseven-expansion
-object-terminal chain、immediate `ChainObjectMode6 -> ChainObjectMode5` relation、
-terminal-only `ChainObjectMode5 -> ChainObjectMode4 -> ChainObjectMode3 ->
-ChainObjectMode2 -> ChainObjectMode1 -> BaseObjectMode -> object` normalization、key、
-payload、ordering、fallback、fail-closed behaviorは変更しない。
-
-canonical reserved-theorem-variable/static type-assertion requirementは不変。active
-`.miz`/expectation pair 1組とdedicated Task 210 covered checker requirementはreal source
-AST/resolver data、object-terminal expansion 7個、独立したreserve `ChainObjectMode6`と
-asserted `ChainObjectMode5` source site、正確なbare immediate relation edge、object/set
-coercionなしのreal checker outputを実行する。`long_chain.rs`はsnake-case family-name
-occurrence 43件に加え、全5,039-order finite corruption matrix、全35 pre-existing owner
-isolation、immutable output、key fallback、active fixture、real sidecarを保持する。よって
-move-only `design_drift`でZR0 test taskは不要。authority、behavior、coverage credit、
-owner crate、deferred statusは変わらないため`spec_coverage_audit.md`は不変。
-config/key/role/mode edit、relation/chain generalization、local-modeまたは他local-object-
-mode route move、object/set coercion、assertion weakening、test/expectation editは禁止。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZR 移動結果
 
-Task 263ZRは承認済み5 fragment、合計52行だけを既存private
-`type_elaboration/type_assertion_routes.rs`へ移動し、移動前oracleのoriginal raw hash
-`85c28a03...`、`9c530a6d...`、`6906e0c0...`、`56abaa93...`、`e0e40074...`を
-維持した。必要なrunner visibilityとformatting whitespaceだけを除くと全old/new
-fragment pairはtoken-identicalで、combined normalized hashは`a533b453...`。既に移動済みの
-local-modeとlocal-object-mode multi-hop routeは`type_assertion_routes.rs`内で不変。
-その他のlocal-object-modeと隣接routeはすべて`runner.rs`に残る。
-
-拡張後private ownerは840行、raw hash `820ebd92...`、`runner.rs`は5,535行、raw
-hash `710da0a6...`、phase facadeは393行、raw hash `21abdde1...`。不変の82行
-`long_chain_config.rs`はhash `3b0e2638...`を維持する。invalid-key constantは
-leaf-privateで、config、test消費output、extractorはtest facadeだけを跨ぐ。normal
-facadeが追加するのはproduction detail routeだけ。ownerはdirect object-terminal table
-importを維持し、runner test aliasは移動済みconfigから不変のkeyを導出する。production
-dispatch order、正確なobject-terminal immediate-radix relation、call identity、terminal
-fail-closed fallbackは不変。
-
-focused 2 test、crate unit test 272件、full relevant-crate suiteは全成功。raw/normalized
-272-name list hash、4 CLI byte hash、active count 96/4/188、plan 403/367、type
-coverage 235/223、pass/fail 219/184、warning/error 23/0は不変。formatting、warning deny
-all-target/all-feature Clippy、workspace test、diff cleanliness、review-only implementation
-checkは成功。Task 263ZRは完了し、fresh Task 263 inventoryは残るlocal-object-mode
-long-chain asserted-head routeへ戻る。authority、behavior、coverage credit、owner crate、
-deferred statusは変わらないため`spec_coverage_audit.md`は不変。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZS 移動前 Inventory と仕様
 
-fresh authority、test、trace、expectation、design、source、API、real producer/consumer
-inventoryはlocal-object-mode long-chain same-mode asserted-head routeだけをprivate
-`type_elaboration/type_assertion_routes.rs`への次のbounded additionとして選ぶ。
-`runner.rs`の正確な5 fragment、invalid key 603-604（2行、`f61c9584...`）、config
-3441-3455（15、`99a3d76e...`）、production detail route 4000-4011（12、
-`e9a8a538...`）、test-only output 4482-4490（9、`4cc05280...`）、extractor
-5441-5452（12、`306510d5...`）、合計50行、combined raw hash `7a22a451...`、
-whitespace-normalized pre-move hash `3d08750b...`。
-
-Task 263ZSはこれらだけを既存private ownerへ機械的に移動する。normal phase facadeを
-跨ぐのはproduction detail route 1個だけ。config、test消費output、extractorは
-`#[cfg(test)]`だけを跨ぎ、invalid-key constantはleaf-privateのまま、config由来runner
-test aliasで既存name/valueを維持する。public API、call site、name、config value、
-正確なseven-expansion object-terminal chain、same-symbol `ChainObjectMode6` relation、
-terminal object normalization、key、payload、ordering、fallback、fail-closed behaviorは
-変更しない。
-
-canonical reserved-theorem-variable/static type-assertion requirementは不変。active
-`.miz`/expectation pairとcovered Task 200 checker requirementはreal source AST/resolver
-data、同じ`ChainObjectMode6` symbolへ解決する独立reserve/asserted site、object-terminal
-expansion 7個、general reachability/widening/`qua`/object-set coercionなしのreal checker
-outputを実行する。`long_chain.rs`はsnake-case family-name occurrence 61件、full-reverse/
-connected-deeper rejection、正確なstructural/provenance/corruption/immutable-output guard、
-active fixture、real sidecarを保持する。よってmove-only `design_drift`でZS0 test taskは
-不要。authority、behavior、coverage credit、owner crate、deferred statusは変わらない
-ため`spec_coverage_audit.md`は不変。config/key/role/mode edit、relation/chain
-generalization、他route move、object/set coercion、assertion weakening、test/expectation
-editは禁止。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZS 移動結果
 
-Task 263ZSは承認済み5 fragment、合計50行だけを既存private
-`type_elaboration/type_assertion_routes.rs`へ移動し、移動前oracleのoriginal raw hash
-`f61c9584...`、`99a3d76e...`、`e9a8a538...`、`4cc05280...`、`306510d5...`を
-維持した。必要なrunner visibilityとformatting whitespaceだけを除くと全old/new
-fragment pairはtoken-identicalで、combined normalized hashは`3d08750b...`。既に移動済みの
-local-modeとlocal-object-mode routeは`type_assertion_routes.rs`内で不変。その他の
-local-object-modeと隣接routeはすべて`runner.rs`に残る。
-
-拡張後private ownerは895行、raw hash `1905d645...`、`runner.rs`は5,488行、raw
-hash `b893a626...`、phase facadeは397行、raw hash `3135dcb0...`。不変の82行
-`long_chain_config.rs`はhash `3b0e2638...`を維持する。invalid-key constantは
-leaf-privateで、config、test消費output、extractorはtest facadeだけを跨ぐ。normal
-facadeが追加するのはproduction detail routeだけ。ownerはdirect object-terminal table
-importを維持し、runner test aliasは移動済みconfigから不変のkeyを導出する。production
-dispatch order、正確なobject-terminal same-mode relation、call identity、terminal object
-normalization、fail-closed fallbackは不変。
-
-focused 2 test、crate unit test 272件、full relevant-crate suiteは全成功。raw/normalized
-272-name list hash、4 CLI byte hash、active count 96/4/188、plan 403/367、type
-coverage 235/223、pass/fail 219/184、warning/error 23/0は不変。formatting、warning deny
-all-target/all-feature Clippy、workspace test、diff cleanliness、review-only implementation
-checkは成功。Task 263ZSは完了し、fresh Task 263 inventoryは残るlocal-object-mode
-long-chain asserted-head routeへ戻る。authority、behavior、coverage credit、owner crate、
-deferred statusは変わらないため`spec_coverage_audit.md`は不変。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZT 移動前 Inventory と仕様
 
-fresh authority、test、trace、expectation、design、source、API、real producer/consumer
-inventoryはlocal-object-mode long-chain reserved-variable builtin type-assertion routeだけを
-private `type_elaboration/type_assertion_routes.rs`への次のbounded additionとして選ぶ。
-`runner.rs`の正確な5 fragment、invalid key 610-611（2行、`78b08029...`）、config
-3446-3459（14、`b61e1cfe...`）、production detail route 3989-4002（14、
-`1d970933...`）、test-only output 4459-4468（10、`9b8192d2...`）、extractor
-5407-5418（12、`ee3fefe6...`）、合計52行、combined raw hash `7dc2d7ba...`、
-whitespace-normalized pre-move hash `a5a24f13...`。
-
-Task 263ZTはこれらだけを既存private ownerへ機械的に移動する。ownerはsibling
-`long_chain_config`からshared object-terminal tableを直接importする。normal phase
-facadeを跨ぐのはproduction detail route 1個だけ。config、test消費output、extractorは
-`#[cfg(test)]`だけを跨ぎ、invalid-key constantはleaf-privateのまま、config由来runner
-test aliasで既存name/valueを維持する。public API、call site、name、config value、正確な
-seven-expansion object-terminal chain、builtin-object asserted head、key、payload、ordering、
-fallback、fail-closed behaviorは変更しない。
-
-canonical reserved-theorem-variable/static type-assertion requirementは不変。active
-`.miz`/expectation pairとcovered Task 179 checker requirementはreal source AST/resolver
-data、`ChainObjectMode6` reserved subject、独立したformula-side builtin `object` input、
-object-terminal expansion 7個、terminal builtin-object normalization、general reachability/
-widening/`qua`/object-set coercionなしのreal checker outputを実行する。`long_chain.rs`は
-snake-case family-name occurrence 62件、正確なstructural/provenance/removal/corruption
-guard、immutable-output/route-isolation coverage、active fixture、real sidecarを保持する。
-focused source/active test 2件は移動前に成功。よってmove-only `design_drift`でZT0 test
-taskは不要。authority、behavior、coverage credit、owner crate、deferred statusは変わら
-ないため`spec_coverage_audit.md`は不変。config/key/role/mode edit、chain/asserted-head
-generalization、他route move、object/set coercion、assertion weakening、test/expectation
-editは禁止。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZT 移動結果
 
-Task 263ZTは承認済み5 fragment、合計52行だけを既存private
-`type_elaboration/type_assertion_routes.rs`へ移動し、移動前oracleのoriginal raw hash
-`78b08029...`、`b61e1cfe...`、`1d970933...`、`9b8192d2...`、`ee3fefe6...`を
-維持した。必要なrunner visibilityとformatting whitespaceだけを除くと全old/new
-fragment pairはtoken-identicalで、combined normalized hashは`a5a24f13...`。既に移動済みの
-type-assertion/asserted-head routeはowner内で不変。その他のrouteはすべて`runner.rs`に
-残る。
-
-拡張後private ownerは953行、raw hash `701e2c3f...`、`runner.rs`は5,437行、raw
-hash `9a1ea949...`、phase facadeは400行、raw hash `08cc2834...`。不変の82行
-`long_chain_config.rs`はhash `3b0e2638...`を維持する。invalid-key constantは
-leaf-privateで、config、test消費output、extractorはtest facadeだけを跨ぎ、normal
-facadeが追加するのはproduction detail routeだけ。ownerはdirect object-terminal table
-importを維持し、staleになったrunner table importとphase-facade re-exportを除去した。
-runner test aliasは移動済みconfigから不変のkeyを導出する。production dispatch order、
-正確なseven-expansion builtin-object relation、call identity、terminal object normalization、
-fail-closed fallbackは不変。
-
-focused source/active test、crate unit test 272件、full relevant-crate suite、workspace
-testは全成功。raw/normalized 272-name list hash、4 CLI byte hash、active count
-96/4/188、plan 403/367、type coverage 235/223、pass/fail 219/184、warning/error 23/0は
-不変。formatting、warning deny all-target/all-feature Clippy、diff cleanliness、review-only
-implementation checkは成功。Task 263ZTは完了し、fresh Task 263 inventoryは残るlocal-
-object-mode type-assertion/asserted-head/formula route familyへ戻る。authority、behavior、
-coverage credit、owner crate、deferred statusは変わらないため`spec_coverage_audit.md`は
-不変。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZU 移動前 Inventory と仕様
 
-fresh authority、test、trace、expectation、design、source、API、real producer/consumer
-inventoryはdirect local-object-mode reserved-variable builtin type-assertion routeだけを
-private `type_elaboration/type_assertion_routes.rs`への次のbounded additionとして選ぶ。
-`runner.rs`の正確な5 fragment、invalid key 705-707（3行、`807489f0...`）、config
-3432-3448（17、`fc5e75dc...`）、production detail route 4007-4018（12、
-`f80bea53...`）、test-only output 4456-4464（9、`eed40e5a...`）、extractor
-5395-5406（12、`ac4e4e34...`）、合計53行、combined raw hash `2eeb8849...`、
-whitespace-normalized pre-move hash `e62fac61...`。
-
-Task 263ZUはこれらだけを既存private ownerへ機械的に移動する。normal phase facadeを
-跨ぐのはproduction detail route 1個だけ。config、test消費output、extractorは
-`#[cfg(test)]`だけを跨ぎ、invalid-key constantはleaf-privateのまま、config由来runner
-test aliasで既存name/valueを維持する。public API、call site、name、config value、正確な
-direct object-terminal expansion、builtin-object asserted head、key、payload、ordering、
-fallback、fail-closed behaviorは変更しない。
-
-canonical reserved-theorem-variable/static type-assertion requirementは不変。active
-`.miz`/expectation pairとcovered Task 145 checker requirementはreal source AST/resolver
-data、正確なbare `LocalObjectModeTypeAssertion -> object` definition 1個、reserved
-subject、独立したformula-side builtin `object` input、terminal builtin-object normalization、
-ordinal 1の`BindingId(0)`、general reachability/widening/`qua`/object-set coercionなしのreal
-checker outputを実行する。既存testは8つのsupport/source/active-fixture/long-chain/
-isolation fileにdirect extractor/output/invalid-key reference 65件、exact source、definition-
-label、expansion-corruption、immutable-output、active real sidecar、cross-route guardを保持
-する。focused source/active testは移動前に成功。よってmove-only `design_drift`でZU0
-test taskは不要。authority、behavior、coverage credit、owner crate、deferred statusは
-変わらないため`spec_coverage_audit.md`は不変。config/key/role/mode edit、route/asserted-
-head generalization、他route move、object/set coercion、assertion weakening、test/
-expectation editは禁止。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZU 移動結果
 
-Task 263ZUは承認済み5 fragment、合計53行だけを既存private
-`type_elaboration/type_assertion_routes.rs`へ移動し、移動前oracleのoriginal raw hash
-`807489f0...`、`fc5e75dc...`、`f80bea53...`、`eed40e5a...`、`ac4e4e34...`を
-維持した。必要なrunner visibilityとformatting whitespaceだけを除くと全old/new
-fragment pairはtoken-identicalで、combined normalized hashは`e62fac61...`。既に移動済みの
-routeはowner内で不変。その他のtype-assertion/asserted-head routeはすべて`runner.rs`に
-残る。
-
-拡張後private ownerは1,013行、raw hash `511425dc...`、`runner.rs`は5,386行、raw
-hash `6b33f91a...`、phase facadeは404行、raw hash `2120f54a...`。invalid-key constantは
-leaf-privateで、config、test消費output、extractorはtest facadeだけを跨ぎ、normal
-facadeが追加するのはproduction detail routeだけ。ownerが追加するのは移動したinline
-definitionに必要なmode-definition/radix importだけ。runner test aliasは移動済みconfig
-から不変のkeyを導出する。production dispatch order、正確なone-expansion builtin-object
-relation、call identity、terminal object normalization、fail-closed fallbackは不変。
-
-focused source/active test、crate unit test 272件、full relevant-crate suite、workspace
-testは全成功。raw/normalized 272-name list hash、4 CLI byte hash、active count
-96/4/188、plan 403/367、type coverage 235/223、pass/fail 219/184、warning/error 23/0は
-不変。formatting、warning deny all-target/all-feature Clippy、diff cleanliness、review-only
-implementation checkは成功。Task 263ZUは完了し、fresh Task 263 inventoryは残るlocal-
-object-mode type-assertion/asserted-head/formula route familyへ戻る。authority、behavior、
-coverage credit、owner crate、deferred statusは変わらないため`spec_coverage_audit.md`は
-不変。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZV 移動前 Inventory と仕様
 
-authority、test、trace、expectation、design、source、API、real producer/consumerのfresh
-inventoryにより、chained local-object-mode reserved-variable builtin type-assertion route
-だけをprivate `type_elaboration/type_assertion_routes.rs`への次のbounded additionとして
-選ぶ。これは`runner.rs`の正確な5 fragment、invalid key 693-695行（3行、
-`98c1b75c...`）、config 3183-3209行（27行、`7a694885...`）、production detail
-route 3890-3903行（14行、`479515b0...`）、test-only output 4346-4356行（11行、
-`afd6acbb...`）、extractor 5266-5277行（12行、`b751e7be...`）から成る。合計67行、
-combined raw hashは`13f33de7...`、whitespace-normalized pre-move hashは
-`92f527a2...`。
-
-Task 263ZVはこれらだけを既存private ownerへ機械的に移動する。normal phase facadeを
-越えるのはproduction detail routeだけで、config、test-consumed output、extractorは
-`#[cfg(test)]`で越える。invalid-key constantはleaf-privateを保ち、config-derived runner
-test aliasが既存名と値を保持する。public API/call site、name、config value、正確なtwo-
-expansion object-terminal chain、builtin-object asserted head、key、payload、ordering、
-fallback、fail-closed behaviorは変更しない。
-
-canonical builtin-type、reserved-theorem-variable、mode-chain、static type-assertion要件は
-不変のまま適用する。active `.miz`/expectation pairとcovered Task 147 checker requirementは、
-real source AST/resolver data、正確な`ChainObjectModeTypeAssertion ->
-BaseObjectModeTypeAssertion -> object`定義、reserved subject、独立したformula-side builtin
-`object` input、terminal builtin-object normalization、subject ordinal 1の`BindingId(0)`、
-general reachability/widening/`qua`/object-set coercionなしのreal checker outputを検証する。
-既存testは9個のsupport/source/active-fixture/long-chain/isolation fileにわたるextractor/
-output/invalid-keyのdirect reference 67件を保持し、exact source、definition label、両方の
-expansion corruption、immutable output、active real sidecar、cross-route guardを備える。
-focused source/active testsは移動前に成功した。したがってmove-only `design_drift`であり、
-ZV0 test taskは不要。authority、behavior、coverage credit、owner crate、deferred statusを
-変更しないため`spec_coverage_audit.md`は不変。config/key/role/mode edit、routeまたは
-asserted-head generalization、他route move、object/set coercion、assertion weakening、
-test/expectation editは禁止する。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZV 移動結果
 
-Task 263ZVは承認済み5 fragment、合計67行だけを既存private
-`type_elaboration/type_assertion_routes.rs`へ移動し、original raw hash
-`98c1b75c...`、`7a694885...`、`479515b0...`、`afd6acbb...`、`b751e7be...`をpre-
-move oracleとして保持した。必要なrunner visibilityとformatting whitespaceだけを除くと、
-すべてのold/new fragment pairはtoken-identicalで、combined raw hashは
-`13f33de7...`、combined normalized hashは`92f527a2...`。owner内の移動済みrouteは
-すべて不変で、その他のtype-assertion/asserted-head routeは`runner.rs`に残る。
-
-拡張後private ownerは1,085行、raw hash `41caa325...`、`runner.rs`は5,323行、raw
-hash `b51bfae1...`、phase facadeは408行、raw hash `3bd1f0cd...`。invalid-key constantは
-leaf-privateで、config、test消費output、extractorはtest facadeだけを跨ぎ、normal
-facadeが追加するのはproduction detail routeだけ。runner test aliasは移動済みconfig
-から不変のkeyを導出する。production dispatch position、正確なtwo-expansion builtin-
-object relation、call identity、terminal object normalization、fail-closed fallbackは不変。
-
-focused source/active test、crate unit test 272件、full relevant-crate suite、workspace
-testは全成功。raw/normalized 272-name list hash、4 CLI byte hash、active count
-96/4/188、plan 403/367、type coverage 235/223、pass/fail 219/184、warning/error 23/0は
-不変。formatting、warning deny all-target/all-feature Clippy、diff cleanliness、review-only
-implementation checkは成功。Task 263ZVは完了し、fresh Task 263 inventoryは残るlocal-
-object-mode type-assertion/asserted-head/formula route familyへ戻る。authority、behavior、
-coverage credit、owner crate、deferred statusは変わらないため`spec_coverage_audit.md`は
-不変。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZW 移動前 Inventory と仕様
 
-authority、test、trace、expectation、design、source、API、real producer/consumerのfresh
-inventoryにより、two-edge local-object-mode reserved-variable builtin type-assertion route
-だけをprivate `type_elaboration/type_assertion_routes.rs`への次のbounded additionとして
-選ぶ。これは`runner.rs`の正確な5 fragment、invalid key 704-705行（2行、
-`1c780da5...`）、config 3218-3249行（32行、`977e0e8e...`）、production detail
-route 3881-3894行（14行、`05bdafd9...`）、test-only output 4319-4329行（11行、
-`e1765982...`）、extractor 5229-5240行（12行、`c241f489...`）から成る。合計71行、
-combined raw hashは`b4862644...`、whitespace-normalized pre-move hashは
-`f87b44d4...`。
-
-Task 263ZWはこれらだけを既存private ownerへ機械的に移動する。normal phase facadeを
-越えるのはproduction detail routeだけで、config、test-consumed output、extractorは
-`#[cfg(test)]`で越える。invalid-key constantはleaf-privateを保ち、config-derived runner
-test aliasが既存名と値を保持する。public API/call site、name、config value、正確なthree-
-expansion object-terminal chain、builtin-object asserted head、key、payload、ordering、
-fallback、fail-closed behaviorは変更しない。
-
-canonical builtin-type、reserved-theorem-variable、mode-chain、static type-assertion要件は
-不変のまま適用する。active `.miz`/expectation pairとcovered Task 149 checker requirementは、
-real source AST/resolver data、正確な`OuterTwoEdgeObjectModeTypeAssertion ->
-MiddleTwoEdgeObjectModeTypeAssertion -> BaseTwoEdgeObjectModeTypeAssertion -> object`定義、
-reserved subject、独立したformula-side builtin `object` input、terminal builtin-object
-normalization、subject ordinal 1の`BindingId(0)`、general reachability/widening/`qua`/
-object-set coercionなしのreal checker outputを検証する。既存testは9個のsupport/source/
-active-fixture/long-chain/isolation fileにわたるextractor/output/invalid-keyのdirect
-reference 67件を保持し、exact source、definition label、3 expansionすべてのcorruption、
-immutable output、active real sidecar、cross-route guardを備える。focused source/active
-testsは移動前に成功した。したがってmove-only `design_drift`であり、ZW0 test taskは不要。
-authority、behavior、coverage credit、owner crate、deferred statusを変更しないため
-`spec_coverage_audit.md`は不変。config/key/role/mode edit、routeまたはasserted-head
-generalization、他route move、object/set coercion、assertion weakening、test/expectation
-editは禁止する。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZW 移動結果
 
-Task 263ZWは承認済み5 fragment、合計71行だけを既存private
-`type_elaboration/type_assertion_routes.rs`へ移動し、original raw hash
-`1c780da5...`、`977e0e8e...`、`05bdafd9...`、`e1765982...`、`c241f489...`をpre-
-move oracleとして保持した。必要なrunner visibilityとformatting whitespaceだけを除くと、
-すべてのold/new fragment pairはtoken-identicalで、combined raw hashは
-`b4862644...`、combined normalized hashは`f87b44d4...`。owner内の移動済みrouteは
-すべて不変で、その他のtype-assertion/asserted-head routeは`runner.rs`に残る。
-
-拡張後private ownerは1,161行、raw hash `869e95b0...`、`runner.rs`は5,256行、raw
-hash `5189e88c...`、phase facadeは412行、raw hash `c1f79141...`。invalid-key constantは
-leaf-privateで、config、test消費output、extractorはtest facadeだけを跨ぎ、normal
-facadeが追加するのはproduction detail routeだけ。runner test aliasは移動済みconfig
-から不変のkeyを導出する。production dispatch position、正確なthree-expansion builtin-
-object relation、call identity、terminal object normalization、fail-closed fallbackは不変。
-
-focused source/active test、crate unit test 272件、full relevant-crate suite、workspace
-testは全成功。raw/normalized 272-name list hash、4 CLI byte hash、active count
-96/4/188、plan 403/367、type coverage 235/223、pass/fail 219/184、warning/error 23/0は
-不変。formatting、warning deny all-target/all-feature Clippy、diff cleanliness、review-only
-implementation checkは成功。Task 263ZWは完了し、fresh Task 263 inventoryは残るlocal-
-object-mode type-assertion/asserted-head/formula route familyへ戻る。authority、behavior、
-coverage credit、owner crate、deferred statusは変わらないため`spec_coverage_audit.md`は
-不変。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZX 移動前 Inventory と仕様
 
-authority、test、trace、expectation、design、source、API、real producer/consumerのfresh
-inventoryにより、three-edge local-object-mode reserved-variable builtin type-assertion route
-だけをprivate `type_elaboration/type_assertion_routes.rs`への次のbounded additionとして
-選ぶ。これは`runner.rs`の正確な5 fragment、invalid key 714-715行（2行、
-`c2f2ffca...`）、config 3259-3301行（43行、`b9016704...`）、production detail
-route 3869-3882行（14行、`1f9c6902...`）、test-only output 4289-4299行（11行、
-`0e10026b...`）、extractor 5188-5199行（12行、`f273cd7a...`）から成る。合計82行、
-combined raw hashは`236c4a64...`、whitespace-normalized pre-move hashは
-`f0d95b00...`。
-
-Task 263ZXはこれらだけを既存private ownerへ機械的に移動する。normal phase facadeを
-越えるのはproduction detail routeだけで、config、test-consumed output、extractorは
-`#[cfg(test)]`で越える。invalid-key constantはleaf-privateを保ち、config-derived runner
-test aliasが既存名と値を保持する。public API/call site、name、config value、正確なfour-
-expansion object-terminal chain、builtin-object asserted head、key、payload、ordering、
-fallback、fail-closed behaviorは変更しない。
-
-canonical builtin-type、reserved-theorem-variable、mode-chain、static type-assertion要件は
-不変のまま適用する。active `.miz`/expectation pairとcovered Task 151 checker requirementは、
-real source AST/resolver data、正確な`OuterThreeEdgeObjectModeTypeAssertion ->
-MiddleThreeEdgeObjectModeTypeAssertion -> InnerThreeEdgeObjectModeTypeAssertion ->
-BaseThreeEdgeObjectModeTypeAssertion -> object`定義、reserved subject、独立したformula-
-side builtin `object` input、terminal builtin-object normalization、subject ordinal 1の
-`BindingId(0)`、general reachability/widening/`qua`/object-set coercionなしのreal checker
-outputを検証する。既存testは8個のsupport/source/active-fixture/long-chain/isolation fileに
-わたるextractor/output/invalid-keyのdirect reference 64件を保持し、exact source、
-definition label、4 expansionすべてのcorruption、immutable output、active real sidecar、
-cross-route guardを備える。focused source/active testsは移動前に成功した。したがって
-move-only `design_drift`であり、ZX0 test taskは不要。authority、behavior、coverage
-credit、owner crate、deferred statusを変更しないため`spec_coverage_audit.md`は不変。
-config/key/role/mode edit、routeまたはasserted-head generalization、他route move、object/set
-coercion、assertion weakening、test/expectation editは禁止する。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZX 移動結果
 
-Task 263ZXは承認済み5 fragment、合計82行だけを既存private
-`type_elaboration/type_assertion_routes.rs`へ移動し、original raw hash
-`c2f2ffca...`、`b9016704...`、`1f9c6902...`、`0e10026b...`、`f273cd7a...`を
-pre-move oracleとして維持した。必要なrunner visibilityとformatting whitespaceだけを
-除くと、全old/new fragment pairはtoken-identicalで、combined raw hashは
-`236c4a64...`、combined normalized hashは`f0d95b00...`。移動済みrouteはowner内で
-不変であり、その他のtype-assertion/asserted-head routeは`runner.rs`に残した。
-
-拡張後private ownerは1,248行、raw hash `53b13b9b...`、`runner.rs`は5,178行、raw
-hash `39377f32...`、phase facadeは416行、raw hash `3a713a42...`。invalid-key
-constantはleaf-privateで、config、test-consumed output、extractorはtest facadeだけを
-越え、normal facadeはproduction detail routeだけを追加した。runner test aliasは移動済み
-configから不変keyを導出し、production dispatch position、正確なfour-expansion builtin-
-object relation、call identity、terminal object normalization、fail-closed fallbackは不変。
-
-focused source/active test、crate unit test 272件、relevant-crate全suite、workspace testは
-成功した。raw/normalized 272-name list hash、CLI byte hash 4個、active count 96/4/188、
-plan 403/367、type coverage 235/223、pass/fail 219/184、warning 23/error 0は不変。
-formatting、warning denyのall-target/all-feature Clippy、diff cleanliness、review-only
-implementation checkは成功。Task 263ZXは完了し、fresh Task 263 inventoryは残るlocal-
-object-mode type-assertion/asserted-head/formula route familyへ戻る。authority、behavior、
-coverage credit、owner crate、deferred statusは変わらないため`spec_coverage_audit.md`は
-不変。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZY 移動前 Inventory と仕様
 
-authority、test、trace、expectation、design、source、API、real producer/consumerのfresh
-inventoryにより、four-edge local-object-mode reserved-variable builtin type-assertion route
-だけをprivate `type_elaboration/type_assertion_routes.rs`への次のbounded additionとして
-選ぶ。これは`runner.rs`の正確な5 fragment、invalid key 724-725行（2行、
-`38ec55aa...`）、config 3305-3346行（42行、`e665b971...`）、production detail
-route 3845-3858行（14行、`547d8019...`）、test-only output 4247-4257行（11行、
-`e36b7f6d...`）、extractor 5136-5147行（12行、`1ee94ac5...`）から成る。合計81行、
-combined raw hashは`f0a97fef...`、whitespace-normalized pre-move hashは
-`135373d6...`。
-
-Task 263ZYはこれらだけを既存private ownerへ機械的に移動する。normal phase facadeを
-越えるのはproduction detail routeだけで、config、test-consumed output、extractorは
-`#[cfg(test)]`で越える。invalid-key constantはleaf-privateを保ち、config-derived runner
-test aliasが既存名と値を保持する。public API/call site、name、config value、正確なfive-
-expansion object-terminal chain、builtin-object asserted head、key、payload、ordering、
-fallback、fail-closed behaviorは変更しない。
-
-canonical builtin-type、reserved-theorem-variable、mode-chain、static type-assertion要件は
-不変のまま適用する。active `.miz`/expectation pairとcovered Task 153 checker requirementは、
-real source AST/resolver data、正確な`TooDeepFourEdgeObjectModeTypeAssertion ->
-OuterFourEdgeObjectModeTypeAssertion -> MiddleFourEdgeObjectModeTypeAssertion ->
-InnerFourEdgeObjectModeTypeAssertion -> BaseFourEdgeObjectModeTypeAssertion -> object`定義、
-reserved subject、独立したformula-side builtin `object` input、terminal builtin-object
-normalization、subject ordinal 1の`BindingId(0)`、general reachability/widening/`qua`/
-object-set coercionなしのreal checker outputを検証する。既存testは7個のsupport/source/
-active-fixture/long-chain/isolation fileにわたるextractor/output/invalid-keyのdirect
-reference 60件を保持し、exact source、definition label、5 expansionすべてのcorruption、
-immutable output、active real sidecar、cross-route guardを備える。focused source/active
-testsは移動前に成功した。したがってmove-only `design_drift`であり、ZY0 test taskは
-不要。authority、behavior、coverage credit、owner crate、deferred statusを変更しない
-ため`spec_coverage_audit.md`は不変。config/key/role/mode edit、routeまたはasserted-head
-generalization、他route move、object/set coercion、assertion weakening、test/expectation
-editは禁止する。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZY 移動結果
 
-Task 263ZYは承認済み5 fragment、合計81行だけを既存private
-`type_elaboration/type_assertion_routes.rs`へ移動し、original raw hash
-`38ec55aa...`、`e665b971...`、`547d8019...`、`e36b7f6d...`、`1ee94ac5...`を
-pre-move oracleとして維持した。必要なrunner visibilityとformatting whitespaceだけを
-除くと、全old/new fragment pairはtoken-identicalで、combined raw hashは
-`f0a97fef...`、combined normalized hashは`135373d6...`。移動済みrouteはowner内で
-不変であり、その他のtype-assertion/asserted-head routeは`runner.rs`に残した。
-
-拡張後private ownerは1,334行、raw hash `defe8960...`、`runner.rs`は5,101行、raw
-hash `c337cb04...`、phase facadeは420行、raw hash `62b82681...`。invalid-key
-constantはleaf-privateで、config、test-consumed output、extractorはtest facadeだけを
-越え、normal facadeはproduction detail routeだけを追加した。runner test aliasは移動済み
-configから不変keyを導出し、production dispatch position、正確なfive-expansion builtin-
-object relation、call identity、terminal object normalization、fail-closed fallbackは不変。
-
-focused source/active test、crate unit test 272件、relevant-crate全suite、workspace testは
-成功した。raw/normalized 272-name list hash、CLI byte hash 4個、active count 96/4/188、
-plan 403/367、type coverage 235/223、pass/fail 219/184、warning 23/error 0は不変。
-formatting、warning denyのall-target/all-feature Clippy、diff cleanliness、review-only
-implementation checkは成功。Task 263ZYは完了し、fresh Task 263 inventoryは残るlocal-
-object-mode type-assertion/asserted-head/formula route familyへ戻る。authority、behavior、
-coverage credit、owner crate、deferred statusは変わらないため`spec_coverage_audit.md`は
-不変。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZ 移動前 Inventory と仕様
 
-authority、test、trace、expectation、design、source、API、real producer/consumerのfresh
-inventoryにより、direct local-object-mode same-mode asserted-head routeだけをprivate
-`type_elaboration/type_assertion_routes.rs`への次のbounded additionとして選ぶ。これは
-`runner.rs`の正確な5 fragment、invalid key 644-645行（2行、`7e20cddf...`）、config
-2040-2059行（20行、`315d6705...`）、production detail route 3362-3373行（12行、
-`98767002...`）、test-only output 3848-3856行（9行、`5faad673...`）、extractor
-4643-4654行（12行、`e4a9dc46...`）から成る。合計55行、combined raw hashは
-`2f87f6dd...`、whitespace-normalized pre-move hashは`e5a22380...`。
-
-Task 263ZZはこれらだけを既存private ownerへ機械的に移動する。normal phase facadeを
-越えるのはproduction detail routeだけで、config、test-consumed output、extractorは
-`#[cfg(test)]`で越える。invalid-key constantはleaf-privateを保ち、config-derived runner
-test aliasが既存名と値を保持する。public API/call site、name、config value、正確なone-
-expansion object-terminal same-mode relation、key、payload、ordering、fallback、fail-closed
-behaviorは変更しない。
-
-canonical builtin-type、reserved-theorem-variable、mode-expansion、static type-assertion要件は
-不変のまま適用する。active `.miz`/expectation pairとcovered Task 183 checker requirementは、
-real source AST/resolver data、正確な`LocalObjectModeAssertedHead -> object`定義、reserved
-subject、同じlocal modeへの独立formula-side reference、terminal builtin-object
-normalization、subject ordinal 1の`BindingId(0)`、general reachability/widening/`qua`/
-object-set coercionなしのreal checker outputを検証する。既存testは5個のsupport/source/
-active-fixture/long-chain/isolation fileにわたるextractor/output/invalid-keyのdirect
-reference 60件を保持し、exact source、definition label/radix、corruption/near-miss coverage、
-immutable output、active real sidecar、cross-route guardを備える。focused source/active
-testsは移動前に成功した。したがってmove-only `design_drift`であり、ZZ0 test taskは
-不要。authority、behavior、coverage credit、owner crate、deferred statusを変更しない
-ため`spec_coverage_audit.md`は不変。config/key/role/mode edit、routeまたはasserted-head
-generalization、他route move、object/set coercion、assertion weakening、test/expectation
-editは禁止する。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZ 移動結果
 
-Task 263ZZは承認済み5 fragment、合計55行だけを既存private
-`type_elaboration/type_assertion_routes.rs` ownerへ移動した。invalid-key fragmentはleaf-
-private、config/output/extractorはtest-only facade importを保ち、normal phase facadeを
-越えるのはproduction detail routeだけである。config-derived runner test aliasも同じ
-name/valueを保つ。
-
-移動に必要な`pub(in crate::runner)` visibilityを除けば、old/new fragment pairのraw hashは
-`7e20cddf...`、`315d6705...`、`98767002...`、`5faad673...`、
-`e4a9dc46...`のまま完全一致し、combined raw hashは`2f87f6dd...`、combined
-whitespace-normalized hashは`e5a22380...`のままである。移動後configの直前にあるitem-
-scoped `#[rustfmt::skip]`はこの55行oracleの外側で、owner側indentationでも元のmultiline
-trailing-comma token形を保持するためだけのものであり、runtime effectはない。
-
-移動後ownerは1,395行、SHA-256 `5db40505...`、`runner.rs`は5,049行、
-`7ace5217...`、phase facadeは424行、`639de742...`である。focused source/active-
-fixture test、272件のcrate unit-test suite、raw/normalized test-list hash、4個のCLI report
-hashは不変。review-only test-sufficiency/implementation/source-documentation consistency
-checkはfindingなしで、workspace全体のformat/Clippy/test/diff gateは成功。API、name、
-test、expectation、trace、diagnostic、key、payload、ordering、
-fallback、fail-closed behaviorは変更していない。authority、behavior、coverage credit、
-owner crate、deferred statusは変わらないため`spec_coverage_audit.md`は不変。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZA 移動前 Inventory と仕様
 
-authority、test、trace、expectation、design、source、API、real producer/consumerのfresh
-inventoryにより、chained local-object-mode same-mode asserted-head routeだけをprivate
-`type_elaboration/type_assertion_routes.rs`への次のbounded additionとして選ぶ。これは
-`runner.rs`の正確な5 fragment、invalid key 697-698行（2行、`87ab7a13...`）、config
-2903-2930行（28行、`84bcf48a...`）、production detail route 3631-3642行（12行、
-`fcc6d9c8...`）、test-only output 4041-4049行（9行、`f108ebaa...`）、extractor
-4877-4888行（12行、`f34d5bec...`）から成る。合計63行、combined raw hashは
-`c19bc3a5...`、whitespace-normalized pre-move hashは`43acc3c2...`。
-
-Task 263ZZAはこれらだけを既存private ownerへ機械的に移動する。normal phase facadeを
-越えるのはproduction detail routeだけで、config、test-consumed output、extractorは
-`#[cfg(test)]`で越える。invalid-key constantはleaf-privateを保ち、config-derived runner
-test aliasが既存名と値を保持する。public API/call site、name、config value、正確なtwo-
-expansion object-terminal same-mode relation、key、payload、ordering、fallback、fail-closed
-behaviorは変更しない。
-
-canonical mode unfolding、builtin-object、reserved-theorem-variable、static type-assertion
-要件は不変のまま適用する。active `.miz`/expectation pairとcovered Task 185 checker
-requirementは、real source-derived ordered definition 2個、
-`BaseObjectModeAssertedHead -> object`と`ChainObjectModeAssertedHead ->
-BaseObjectModeAssertedHead`、reserved subject、同じouter modeへの独立formula-side
-referenceを検証する。routeはdistinct source site/rangeを保持し、正確に2 expansionを
-消費し、known type entry 3個をterminal base-definition-RHS builtin-object identityへ
-normalizeし、subject ordinal 1を`BindingId(0)`へ解決し、general reachability、widening、
-`qua`、object/set coercionなしでinferred variable 1個とfact/deferred-free checked type
-assertion 1個を生成する。既存testは6個のsupport/source/active-fixture/long-chain/
-isolation test fileにわたるextractor/output/invalid-key direct reference 63件を保持する。
-`runner.rs`のdefinition/internal call 6件を含めると、pre-move repository全体では7個の
-source/test fileに69 occurrenceである。testはexact source、expansion、definition
-label/radix、corruption、near-miss、immutable output、real
-sidecar、cross-route guardを備える。focused source/active-fixture testは移動前に両方成功。
-したがってmove-only `design_drift`であり、ZZA0 test taskは不要。authority、behavior、
-coverage credit、owner crate、deferred statusを変更しないため`spec_coverage_audit.md`は
-不変。config/key/role/mode edit、routeまたはasserted-head generalization、他route move、
-object/set coercion、assertion weakening、test/expectation editは禁止する。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZA 移動結果
 
-Task 263ZZAは承認済み5 fragment、合計63行だけを既存private
-`type_elaboration/type_assertion_routes.rs` ownerへ移動した。invalid-key fragmentはleaf-
-private、config/output/extractorはtest-only facade importを保ち、normal phase facadeを
-越えるのはproduction detail routeだけである。config-derived runner test aliasも同じ
-name/valueを保つ。
-
-移動に必要な`pub(in crate::runner)` visibilityを除けば、old/new fragment pairのraw hashは
-`87ab7a13...`、`84bcf48a...`、`fcc6d9c8...`、`f108ebaa...`、
-`f34d5bec...`のまま完全一致し、combined raw hashは`c19bc3a5...`、combined
-whitespace-normalized hashは`43acc3c2...`のままである。移動後configの直前にあるitem-
-scoped `#[rustfmt::skip]`はこの63行oracleの外側で、必要なowner visibility追加後も元の
-config token layoutを保持するためだけのものであり、runtime effectはない。
-
-移動後ownerは1,464行、SHA-256 `366eff9a...`、`runner.rs`は4,989行、
-`9c01b80f...`、phase facadeは428行、`03cff9d4...`である。focused test 2件、272件の
-crate unit-test suite、raw/normalized test-list hash、4個のCLI report hashは不変。
-review-only implementation/test-sufficiency checkにsource/test findingはなく、唯一の
-completion-state documentation findingはこのpaired updateで修正した。workspace全体の
-format/Clippy/test/diff gateは成功。API、name、test、expectation、trace、diagnostic、
-key、payload、ordering、fallback、fail-closed behaviorは変更していない。authority、
-behavior、coverage credit、owner crate、deferred statusは変わらないため
-`spec_coverage_audit.md`は不変。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZB 移動前 Inventory と仕様
 
-authority、test、trace、expectation、design、source、API、real producer/consumerのfresh
-inventoryにより、chained local-object-mode immediate-radix asserted-head routeだけを
-private `type_elaboration/type_assertion_routes.rs`への次のbounded additionとして選ぶ。
-これは`runner.rs`の正確な5 fragment、invalid key 659-660行（2行、`9c789614...`）、
-config 2105-2132行（28行、`dd489077...`）、production detail route 3348-3360行
-（13行、`fbf581af...`）、test-only output 3802-3811行（10行、`16c15d04...`）、
-extractor 4583-4594行（12行、`a452ccd2...`）から成る。合計65行、combined raw hashは
-`350810f3...`、whitespace-normalized pre-move hashは`606b46b8...`。
-
-Task 263ZZBはこれらだけを既存private ownerへ機械的に移動する。normal phase facadeを
-越えるのはproduction detail routeだけで、config、test-consumed output、extractorは
-`#[cfg(test)]`で越える。invalid-key constantはleaf-privateを保ち、config-derived runner
-test aliasが既存名と値を保持する。public API/call site、name、config value、正確なtwo-
-expansion object-terminal immediate-radix relation、key、payload、ordering、fallback、
-fail-closed behaviorは変更しない。
-
-canonical mode unfolding、builtin-object、reserved-theorem-variable、static type-assertion
-要件は不変のまま適用する。active `.miz`/expectation pairとcovered Task 202 checker
-requirementは、real source-derived ordered definition 2個、
-`BaseObjectModeRadixAssertedHead -> object`と`OuterObjectModeRadixAssertedHead ->
-BaseObjectModeRadixAssertedHead`、outer-mode reserved subject、outer expansionのimmediate
-radixへの独立formula-side referenceを検証する。routeはdistinct outer/base symbolとsource
-site/rangeを保持し、正確に2 expansionを消費し、known type entry 3個をterminal base-
-definition-RHS builtin-object identityへnormalizeし、subject ordinal 1を`BindingId(0)`へ
-解決し、general reachability、widening、`qua`、object/set coercionなしでinferred variable
-1個、expected constraint 0個、fact/candidate/diagnostic/deferred-free checked type assertion
-1個を生成する。既存testは9 test fileのextractor/output/invalid-key direct reference 73件を
-保持し、`runner.rs`のdefinition/internal call 6件を含めるとpre-move repository全体では
-10 source/test fileに79 occurrenceである。exact source、expansion、definition label/
-radix、relation、corruption、near-miss、immutable output、real sidecar、cross-route guardを
-備える。focused source/active-fixture testは移動前に両方成功。したがってmove-only
-`design_drift`であり、ZZB0 test taskは不要。authority、behavior、coverage credit、owner
-crate、deferred statusを変更しないため`spec_coverage_audit.md`は不変。config/key/role/
-mode/relation edit、routeまたはasserted-head generalization、他route move、object/set
-coercion、assertion weakening、test/expectation editは禁止する。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZB 移動結果
 
-Task 263ZZBは承認済み5 fragment、合計65行だけを既存private
-`type_elaboration/type_assertion_routes.rs` ownerへ移動した。invalid-key fragmentはleaf-
-private、config/output/extractorはtest-only facade importを保ち、normal phase facadeを
-越えるのはproduction detail routeだけである。config-derived runner test aliasも同じ
-name/valueを保つ。
-
-移動に必要な`pub(in crate::runner)` visibilityを除けば、old/new fragment pairのraw hashは
-`9c789614...`、`dd489077...`、`fbf581af...`、`16c15d04...`、
-`a452ccd2...`のまま完全一致し、combined raw hashは`350810f3...`、combined
-whitespace-normalized hashは`606b46b8...`のままである。移動後configの直前にあるitem-
-scoped `#[rustfmt::skip]`はこの65行oracleの外側で、必要なowner visibility追加後も元の
-config token layoutを保持するためだけのものであり、runtime effectはない。
-
-移動後ownerは1,535行、SHA-256 `7ae4fa4d...`、`runner.rs`は4,927行、
-`171aa7c4...`、phase facadeは432行、`dfa5b65a...`である。focused test 2件、272件の
-crate unit-test suite、raw/normalized test-list hash、4個のCLI report hashは不変。
-review-only implementation/test-sufficiency checkにsource/test findingはなく、唯一の
-completion-state documentation findingはこのpaired updateで修正した。workspace全体の
-format/Clippy/test/diff gateは成功。API、name、relation、test、expectation、trace、
-diagnostic、key、payload、ordering、fallback、fail-closed behaviorは変更していない。
-authority、behavior、coverage credit、owner crate、deferred statusは変わらないため
-`spec_coverage_audit.md`は不変。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZC 移動前 Inventory と仕様
 
-authority、test、trace、expectation、design、source、API、real producer/consumerのfresh
-inventoryにより、次のprivate `type_elaboration/type_assertion_routes.rs`へのbounded
-additionはtwo-edge local-object-mode same-mode asserted-head routeだけとする。これは
-`runner.rs`の正確な5 fragment、invalid key 719-720（2行、`cc5d93c2...`）、config
-3083-3115（33行、`74710488...`）、production detail route 3634-3645（12行、
-`c487e895...`）、test-only output 4005-4013（9行、`33561a0b...`）、extractor
-4833-4844（12行、`694b6312...`）から成る。合計68行、combined raw hashは
-`d3f42ec4...`、whitespace-normalized pre-move hashは`38599f34...`である。
-
-Task 263ZZCはこれらだけを既存private ownerへ機械的に移動する。orchestration callと
-dispatch orderは`runner.rs`に残す。normal phase facadeを越えるのはproduction detail
-routeだけであり、config、test-consumed output、extractorは`#[cfg(test)]`下で越える。
-invalid-key constantはleaf-privateを保ち、config-derived runner test aliasが既存name/
-valueを保持する。public API/call site、helper name、config value、正確なthree-expansion
-object-terminal same-mode relation、key、payload、ordering、fallback、fail-closed behaviorを
-変更しない。
-
-canonical mode unfolding、builtin-object、reserved-theorem-variable、static type-assertion
-requirementは不変。active `.miz`/expectation pairとcovered Task 187 checker requirementは、
-`BaseTwoEdgeObjectModeAssertedHead -> object`、
-`MiddleTwoEdgeObjectModeAssertedHead -> BaseTwoEdgeObjectModeAssertedHead`、
-`OuterTwoEdgeObjectModeAssertedHead -> MiddleTwoEdgeObjectModeAssertedHead`というsource-
-derived definition 3個、および異なるsite/rangeで同じouter symbolを参照するreserve-side/
-formula-side inputを実行する。routeは正確に3 expansionを消費し、known type entry 3個を
-terminal base-definition-RHS builtin-object identityへnormalizeし、subject ordinal 1を
-`BindingId(0)`へresolveし、expected constraint 0件、fact/candidate/diagnostic/deferred 0件の
-inferred variable 1個とchecked type assertion 1個を生成する。general reachability、
-widening、`qua`、object/set coercionは使わない。既存testは7 test fileでdirect symbol
-reference 66件を保持し、`runner.rs`内のdefinition/internal call 10件を含むpre-move
-repository occurrenceは8 source/test fileで76件である。exact source/expansion/
-definition-label/radix/relation、corruption、near-miss、immutable-output、real-sidecar、
-cross-route guardが存在し、focused source/active-fixture test 2件は移動前に成功した。
-したがってmove-only `design_drift`でありZZC0 test taskは不要。authority、behavior、
-coverage credit、owner crate、deferred statusを変えないため`spec_coverage_audit.md`は不変。
-config/key/role/mode/relation edit、route/asserted-head generalization、他route move、object/
-set coercion、assertion weakening、test/expectation editは禁止する。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZC 移動結果
 
-Task 263ZZCは承認済み5 fragment、合計68行だけを既存private
-`type_elaboration/type_assertion_routes.rs` ownerへ移動した。orchestration callは元の位置で
-byte/order-stableを保つ。invalid-key fragmentはleaf-private、config/output/extractorは
-test-only facade importを保ち、normal phase facadeを越えるのはproduction detail route
-だけである。config-derived runner test aliasも同じname/valueを保つ。
-
-移動に必要な`pub(in crate::runner)` visibilityを除けば、old/new fragment pairのraw hashは
-`cc5d93c2...`、`74710488...`、`c487e895...`、`33561a0b...`、
-`694b6312...`のまま完全一致し、combined raw hashは`d3f42ec4...`、combined
-whitespace-normalized hashは`38599f34...`のままである。移動後configの直前にあるitem-
-scoped `#[rustfmt::skip]`はこの68行oracleの外側で、必要なowner visibility追加後も元の
-config token layoutを保持するためだけのものであり、runtime effectはない。
-
-移動後ownerは1,609行、SHA-256 `2ebb1d54...`、`runner.rs`は4,862行、
-`a05d72b2...`、phase facadeは436行、`1b892834...`である。focused test 2件、272件の
-crate unit-test suite、test-list raw hash `5e41e4db...`とnormalized hash
-`c0c2b80f...`、4個のCLI report hashは不変。review-only implementation/test-
-sufficiency checkはfindingなし。workspace全体のformat/Clippy/test/diff gateは成功した。
-API、name、relation、test、expectation、trace、diagnostic、key、payload、ordering、
-fallback、fail-closed behaviorは変更していない。authority、behavior、coverage credit、
-owner crate、deferred statusは変わらないため`spec_coverage_audit.md`は不変。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZD 移動前 Inventory と仕様
 
-authority、test、trace、expectation、design、source、API、real producer/consumerのfresh
-inventoryにより、次のprivate `type_elaboration/type_assertion_routes.rs`へのbounded
-additionはtwo-edge local-object-mode immediate-radix asserted-head routeだけとする。
-これは`runner.rs`の正確な5 fragment、invalid key 700-701（2行、`d4a69d79...`）、
-config 2679-2713（35行、`8325c905...`）、production detail route 3472-3484
-（13行、`44b42bc2...`）、test-only output 3860-3869（10行、`c910581b...`）、
-extractor 4651-4662（12行、`dfb26d72...`）から成る。合計72行、combined raw hashは
-`10087773...`、whitespace-normalized pre-move hashは`d24a1e53...`である。
-
-Task 263ZZDはこれらだけを既存private ownerへ機械的に移動する。orchestration callと
-dispatch orderは`runner.rs`に残す。normal phase facadeを越えるのはproduction detail
-routeだけであり、config、test-consumed output、extractorは`#[cfg(test)]`下で越える。
-invalid-key constantはleaf-privateを保ち、config-derived runner test aliasが既存name/
-valueを保持する。public API/call site、helper name、config value、正確なthree-expansion
-object-terminal immediate-radix relation、key、payload、ordering、fallback、fail-closed
-behaviorを変更しない。
-
-canonical mode unfolding、builtin-object、reserved-theorem-variable、static type-assertion
-requirementは不変。active `.miz`/expectation pairとcovered Task 204 checker requirementは、
-`BaseTwoEdgeObjectModeRadixAssertedHead -> object`、
-`MiddleTwoEdgeObjectModeRadixAssertedHead -> BaseTwoEdgeObjectModeRadixAssertedHead`、
-`OuterTwoEdgeObjectModeRadixAssertedHead -> MiddleTwoEdgeObjectModeRadixAssertedHead`という
-source-derived definition 3個を実行する。reserve subjectはouter symbolを保持し、formula-
-side asserted typeは異なるsite/rangeでmiddle symbolを独立にresolveし、outer expansionの
-immediate radixと一致しなければならない。routeは正確に3 expansionを消費し、known type
-entry 3個をterminal base-definition-RHS builtin-object identityへnormalizeし、subject
-ordinal 1を`BindingId(0)`へresolveし、expected constraint 0件、fact/candidate/diagnostic/
-deferred 0件のinferred variable 1個とchecked type assertion 1個を生成する。two-hop/
-general reachability、widening、`qua`、object/set coercionは使わない。既存testは8 test
-fileでdirect symbol reference 75件を保持し、`runner.rs`内のdefinition/internal call
-10件を含むpre-move repository occurrenceは9 source/test fileで85件である。exact source/
-expansion/definition-label/radix/relation、corruption、near-miss、immutable-output、real-
-sidecar、cross-route guardが存在し、focused source/active-fixture test 2件は移動前に成功。
-したがってmove-only `design_drift`でありZZD0 test taskは不要。authority、behavior、
-coverage credit、owner crate、deferred statusを変えないため`spec_coverage_audit.md`は不変。
-config/key/role/mode/relation edit、route/asserted-head generalization、他route move、object/
-set coercion、assertion weakening、test/expectation editは禁止する。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZD 移動結果
 
-Task 263ZZDは承認済み5 fragment、合計72行だけを既存private
-`type_elaboration/type_assertion_routes.rs` ownerへ移動した。orchestration callは元の位置で
-byte/order-stableを保つ。invalid-key fragmentはleaf-private、config/output/extractorは
-test-only facade importを保ち、normal phase facadeを越えるのはproduction detail route
-だけである。config-derived runner test aliasも同じname/valueを保つ。
-
-移動に必要な`pub(in crate::runner)` visibilityを除けば、old/new fragment pairのraw hashは
-`d4a69d79...`、`8325c905...`、`44b42bc2...`、`c910581b...`、
-`dfb26d72...`のまま完全一致し、combined raw hashは`10087773...`、combined
-whitespace-normalized hashは`d24a1e53...`のままである。移動後configの直前にあるitem-
-scoped `#[rustfmt::skip]`はこの72行oracleの外側で、必要なowner visibility追加後も元の
-config token layoutを保持するためだけのものであり、runtime effectはない。
-
-移動後ownerは1,687行、SHA-256 `4a98420b...`、`runner.rs`は4,793行、
-`e3c01671...`、phase facadeは440行、`d3243e97...`である。focused test 2件、272件の
-crate unit-test suite、test-list raw hash `5e41e4db...`とnormalized hash
-`c0c2b80f...`、4個のCLI report hashは不変。review-only implementation/test-
-sufficiency checkはfindingなし。workspace全体のformat/Clippy/test/diff gateは成功した。
-API、name、relation、test、expectation、trace、diagnostic、key、payload、ordering、
-fallback、fail-closed behaviorは変更していない。authority、behavior、coverage credit、
-owner crate、deferred statusは変わらないため`spec_coverage_audit.md`は不変。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZE 移動前 Inventory と仕様
 
-authority、test、trace、expectation、design、source、API、real producer/consumerのfresh
-inventoryにより、次のprivate `type_elaboration/type_assertion_routes.rs`へのbounded
-additionはtwo-edge local-object-mode two-hop asserted-head routeだけとする。これは
-`runner.rs`の正確な5 fragment、invalid key 678-679（2行、`a8adcfca...`）、config
-2185-2218（34行、`de8ce647...`）、production detail route 3290-3302（13行、
-`77f965e5...`）、test-only output 3697-3706（10行、`23463041...`）、extractor
-4452-4463（12行、`71947b90...`）から成る。合計71行、combined raw hashは
-`55b319a2...`、whitespace-normalized pre-move hashは`af5eb98a...`である。
-
-Task 263ZZEはこれらだけを既存private ownerへ機械的に移動する。orchestration callと
-dispatch orderは`runner.rs`に残す。normal phase facadeを越えるのはproduction detail
-routeだけであり、config、test-consumed output、extractorは`#[cfg(test)]`下で越える。
-invalid-key constantはleaf-privateを保ち、config-derived runner test aliasが既存name/
-valueを保持する。public API/call site、helper name、config value、正確なthree-expansion
-object-terminal two-hop relation、key、payload、ordering、fallback、fail-closed behaviorを
-変更しない。
-
-canonical mode unfolding、builtin-object、reserved-theorem-variable、static type-assertion
-requirementは不変。active `.miz`/expectation pairとcovered Task 212 checker requirementは、
-`BaseTwoHopObjectModeAssertedHead -> object`、`MiddleTwoHopObjectModeAssertedHead ->
-BaseTwoHopObjectModeAssertedHead`、`OuterTwoHopObjectModeAssertedHead ->
-MiddleTwoHopObjectModeAssertedHead`というsource-derived definition 3個を実行する。独立な
-raw reserve-subject Outerとformula-side asserted Base inputは異なるsymbol/site/rangeを
-保持する。closed `BindingTwoHopRadix` relationはgeneric terminal traversalをrelation
-evidenceにせず、pairwise-distinctなOuter-to-MiddleとMiddle-to-Baseのbare linkを明示的に
-validateする。routeは正確に3 expansionを消費し、known type entry 3個をterminal base-
-definition-RHS builtin-object identityへnormalizeし、subject ordinal 1を`BindingId(0)`へ
-resolveし、expected constraint 0件、fact/candidate/diagnostic/deferred 0件のinferred
-variable 1個とchecked type assertion 1個を生成する。general reachability、widening、
-`qua`、object/set coercionは使わない。既存testは5 test fileでdirect symbol reference
-40件を保持し、`runner.rs`内のdefinition/internal call 10件を含むpre-move repository
-occurrenceは6 source/test fileで50件である。5個すべてのnonidentity definition order、
-structural/provenance/corruption guard、37-owner isolation、immutable output、real frontend/
-resolver sidecarが存在し、focused source/active-fixture test 2件は移動前に成功した。
-したがってmove-only `design_drift`でありZZE0 test taskは不要。authority、behavior、
-coverage credit、owner crate、deferred statusを変えないため`spec_coverage_audit.md`は不変。
-config/key/role/mode/relation edit、route/asserted-head generalization、他route move、object/
-set coercion、assertion weakening、test/expectation editは禁止する。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZE 移動結果
 
-Task 263ZZEは承認済み5 fragment、合計71行だけを既存private
-`type_elaboration/type_assertion_routes.rs` ownerへ移動した。orchestration callは
-元の位置に残り、byte/orderは安定している。invalid-key fragmentはleaf-private、config、
-output、extractorはtest-only facade importを維持し、production detail routeだけがnormal
-phase facadeを通る。config-derived runner test aliasは同じ名前と値を維持する。
-
-移動fragmentから必要な`pub(in crate::runner)` visibilityを除去して比較すると、全old/
-new fragment pairのexact raw hashは`a8adcfca...`、`de8ce647...`、
-`77f965e5...`、`23463041...`、`71947b90...`を維持した。combined raw hashは
-`55b319a2...`、combined whitespace-normalized hashは`af5eb98a...`のままである。
-移動config直前のitem-scoped `#[rustfmt::skip]`はこの71行oracleの外側にあり、必要なowner
-visibility追加後もoriginal config token layoutを保持するだけでruntime effectはない。
-
-移動後ownerは1,764行、SHA-256 `35de4952...`、`runner.rs`は4,724行、
-`e62ee9af...`、phase facadeは444行、`edc843d9...`である。focused test 2件、
-272-unit-test crate suite、test listのraw hash `5e41e4db...`とnormalized hash
-`c0c2b80f...`、4 CLI report hashはすべて不変。review-only implementation/test-
-sufficiency checkはsource/test findingなしで、completion docs drift findingはpaired EN/JA
-文書で修正した。workspace全体のformat、Clippy、test、diff gateは成功した。API、name、
-relation、test、expectation、trace、diagnostic、key、payload、ordering、fallback、fail-
-closed behaviorは変更していない。authority、behavior、coverage credit、owner crate、
-deferred statusを変えないため`spec_coverage_audit.md`は不変である。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZF 移動前 Inventory と仕様
 
-fresh authority、test、trace、expectation、design、source、API、real producer/consumer
-inventoryは、private `type_elaboration/type_assertion_routes.rs`へ次に追加するbounded
-familyとしてthree-edge local-object-mode two-hop asserted-head routeだけを選ぶ。
-`runner.rs`の正確な5 fragmentはinvalid key 686-688（3行、`1992a9ee...`）、config
-2227-2271（45、`92b10e49...`）、production detail route 3272-3284（13、
-`1b9c1049...`）、test-only output 3662-3671（10、`36138905...`）、extractor
-4409-4420（12、`bc67d644...`）である。合計83行、combined raw hashは
-`e7cc3312...`、whitespace-normalized pre-move hashは`44bf94d5...`。
-
-Task 263ZZFはこれらだけを既存private ownerへ機械的に移動する。orchestration callと
-dispatch orderは`runner.rs`に残す。production detail routeだけがnormal phase facadeを
-通る。config、test-consumed output、extractorは`#[cfg(test)]`で通し、invalid-key constant
-はleaf-privateのまま、config-derived runner test aliasは既存の名前と値を保持する。
-public API/call site、helper名、config値、正確なfour-expansion object-terminal two-hop
-relation、key、payload、ordering、fallback、fail-closed behaviorは変更しない。
-
-canonical mode unfolding、builtin-object、reserved-theorem-variable、static type-assertion
-requirementは不変に適用する。active `.miz`/expectation pairとcovered Task 214 checker
-requirementは、`BaseThreeEdgeObjectModeTwoHopAssertedHead -> object`、
-`InnerThreeEdgeObjectModeTwoHopAssertedHead -> BaseThreeEdgeObjectModeTwoHopAssertedHead`、
-`MiddleThreeEdgeObjectModeTwoHopAssertedHead -> InnerThreeEdgeObjectModeTwoHopAssertedHead`、
-`OuterThreeEdgeObjectModeTwoHopAssertedHead -> MiddleThreeEdgeObjectModeTwoHopAssertedHead`
-という4個のordered real source-derived definitionを使う。独立したraw reserve-subject
-Outerとformula-side asserted Inner inputはdistinct symbol/site/rangeを保持する。closed
-`BindingTwoHopRadix` relationはpairwise-distinctなOuter-to-MiddleとMiddle-to-Innerのbare
-linkを明示的にvalidateし、残るInner-to-Base-to-object tailはterminal-normalization
-evidenceだけでありgeneric relation evidenceにはしない。routeは正確に4 expansionを
-消費し、known type entry 3個をterminal base-definition-RHS builtin-object identityへ
-normalizeし、subject ordinal 1を`BindingId(0)`へresolveし、expected constraint 0件、
-fact/candidate/diagnostic/deferred 0件のinferred variable 1個とchecked type assertion 1個を
-生成する。general reachability、widening、`qua`、object/set coercionは使わない。既存
-testは4 test fileでdirect symbol reference 39件を保持し、`runner.rs`内のdefinition/
-internal call 10件を含むpre-move repository occurrenceは5 source/test fileで49件で
-ある。23個すべてのnonidentity definition order、structural/provenance/corruption guard、
-39-owner isolation、immutable output、real frontend/resolver sidecarが存在し、focused
-source/active-fixture test 2件は移動前に成功した。したがってmove-only `design_drift`で
-ありZZF0 test taskは不要。authority、behavior、coverage credit、owner crate、deferred
-statusを変えないため`spec_coverage_audit.md`は不変。config/key/role/mode/relation edit、
-route/asserted-head generalization、他route move、object/set coercion、assertion weakening、
-test/expectation editは禁止する。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZF 移動結果
 
-Task 263ZZFは承認済み5 fragment、合計83行だけを既存private
-`type_elaboration/type_assertion_routes.rs` ownerへ移動した。orchestration callは
-元の位置に残り、byte/orderは安定している。invalid-key fragmentはleaf-private、config、
-output、extractorはtest-only facade importを維持し、production detail routeだけがnormal
-phase facadeを通る。config-derived runner test aliasは同じ名前と値を維持する。
-
-移動fragmentから必要な`pub(in crate::runner)` visibilityを除去して比較すると、全old/
-new fragment pairのexact raw hashは`1992a9ee...`、`92b10e49...`、
-`1b9c1049...`、`36138905...`、`bc67d644...`を維持した。combined raw hashは
-`e7cc3312...`、combined whitespace-normalized hashは`44bf94d5...`のままである。
-移動config直前のitem-scoped `#[rustfmt::skip]`はこの83行oracleの外側にあり、必要なowner
-visibility追加後もoriginal config token layoutを保持するだけでruntime effectはない。
-
-移動後ownerは1,853行、SHA-256 `cc72d6a6...`、`runner.rs`は4,644行、
-`5136a010...`、phase facadeは448行、`6de8b48e...`である。focused test 2件、
-272-unit-test crate suite、test listのraw hash `5e41e4db...`とnormalized hash
-`c0c2b80f...`、4 CLI report hashはすべて不変。review-only implementation/test-
-sufficiency checkはsource/test findingなしで、completion docs drift findingはpaired EN/JA
-文書で修正した。workspace全体のformat、Clippy、test、diff gateは成功した。API、name、
-relation、test、expectation、trace、diagnostic、key、payload、ordering、fallback、fail-
-closed behaviorは変更していない。authority、behavior、coverage credit、owner crate、
-deferred statusを変えないため`spec_coverage_audit.md`は不変である。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZG 移動前 Inventory と仕様
 
-fresh authority、test、trace、expectation、design、source、API、real producer/consumer
-inventoryは、private `type_elaboration/type_assertion_routes.rs`へ次に追加するbounded
-familyとしてfour-edge local-object-mode two-hop asserted-head routeだけを選ぶ。
-`runner.rs`の正確な5 fragmentはinvalid key 695-696（2行、`875cc99e...`）、config
-2274-2325（52、`21f37ed8...`）、production detail route 3243-3255（13、
-`c38d179a...`）、test-only output 3616-3625（10、`3acc53a2...`）、extractor
-4355-4366（12、`1ff744db...`）である。合計89行、combined raw hashは
-`c786476b...`、whitespace-normalized pre-move hashは`70b18cc8...`。
-
-Task 263ZZGはこれらだけを既存private ownerへ機械的に移動する。orchestration callと
-dispatch orderは`runner.rs`に残す。production detail routeだけがnormal phase facadeを
-通る。config、test-consumed output、extractorは`#[cfg(test)]`で通し、invalid-key constant
-はleaf-privateのまま、config-derived runner test aliasは既存の名前と値を保持する。
-public API/call site、helper名、config値、正確なfive-expansion object-terminal two-hop
-relation、key、payload、ordering、fallback、fail-closed behaviorは変更しない。
-
-canonical mode unfolding、builtin-object、reserved-theorem-variable、static type-assertion
-requirementは不変に適用する。active `.miz`/expectation pairとcovered Task 216 checker
-requirementは、`BaseFourEdgeObjectModeTwoHopAssertedHead -> object`、
-`InnerFourEdgeObjectModeTwoHopAssertedHead -> BaseFourEdgeObjectModeTwoHopAssertedHead`、
-`MiddleFourEdgeObjectModeTwoHopAssertedHead -> InnerFourEdgeObjectModeTwoHopAssertedHead`、
-`OuterFourEdgeObjectModeTwoHopAssertedHead -> MiddleFourEdgeObjectModeTwoHopAssertedHead`、
-`TooDeepFourEdgeObjectModeTwoHopAssertedHead -> OuterFourEdgeObjectModeTwoHopAssertedHead`
-という5個のordered real source-derived definitionを使う。独立したraw reserve-subject
-TooDeepとformula-side asserted Middle inputはdistinct symbol/site/rangeを保持する。closed
-`BindingTwoHopRadix` relationはpairwise-distinctなTooDeep-to-OuterとOuter-to-Middleのbare
-linkを明示的にvalidateし、残るMiddle-to-Inner-to-Base-to-object tailはterminal-
-normalization evidenceだけでありgeneric relation evidenceにはしない。routeは正確に5
-expansionを消費し、known type entry 3個をterminal base-definition-RHS builtin-object
-identityへnormalizeし、subject ordinal 1を`BindingId(0)`へresolveし、expected constraint
-0件、fact/candidate/diagnostic/deferred 0件のinferred variable 1個とchecked type assertion
-1個を生成する。general reachability、widening、`qua`、object/set coercionは使わない。
-既存testは3 test fileでdirect symbol reference 37件を保持し、`runner.rs`内のdefinition/
-internal call 10件を含むpre-move repository occurrenceは4 source/test fileで47件で
-ある。119個すべてのnonidentity definition order、structural/provenance/corruption guard、
-41-owner isolation、immutable output、real frontend/resolver sidecarが存在し、focused
-source/active-fixture test 2件は移動前に成功した。したがってmove-only `design_drift`で
-ありZZG0 test taskは不要。authority、behavior、coverage credit、owner crate、deferred
-statusを変えないため`spec_coverage_audit.md`は不変。config/key/role/mode/relation edit、
-route/asserted-head generalization、他route move、object/set coercion、assertion weakening、
-test/expectation editは禁止する。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZG 移動結果
 
-Task 263ZZGは承認済み5 fragment、合計89行だけを既存private
-`type_elaboration/type_assertion_routes.rs` ownerへ移動した。orchestration callは
-元の位置に残り、byte/orderは安定している。invalid-key fragmentはleaf-private、config、
-output、extractorはtest-only facade importを維持し、production detail routeだけがnormal
-phase facadeを通る。config-derived runner test aliasは同じ名前と値を維持する。
-
-移動fragmentから必要な`pub(in crate::runner)` visibilityを除去して比較すると、全old/
-new fragment pairのexact raw hashは`875cc99e...`、`21f37ed8...`、
-`c38d179a...`、`3acc53a2...`、`1ff744db...`を維持した。combined raw hashは
-`c786476b...`、combined whitespace-normalized hashは`70b18cc8...`のままである。
-移動config直前のitem-scoped `#[rustfmt::skip]`はこの89行oracleの外側にあり、必要なowner
-visibility追加後もoriginal config token layoutを保持するだけでruntime effectはない。
-
-移動後ownerは1,948行、SHA-256 `1ffac900...`、`runner.rs`は4,558行、
-`cc6c99ea...`、phase facadeは452行、`0058287b...`である。focused test 2件、
-272-unit-test crate suite、test listのraw hash `5e41e4db...`とnormalized hash
-`c0c2b80f...`、4 CLI report hashはすべて不変。review-only implementation/test-
-sufficiency checkはsource/test findingなしで、completion docs drift findingはpaired EN/JA
-文書で修正した。workspace全体のformat、Clippy、test、diff gateは成功した。API、name、
-relation、test、expectation、trace、diagnostic、key、payload、ordering、fallback、fail-
-closed behaviorは変更していない。authority、behavior、coverage credit、owner crate、
-deferred statusを変えないため`spec_coverage_audit.md`は不変である。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZH Pre-Move Inventory and Specification
 
-authority、test、trace、expectation、design、source、API、real producer/consumerの
-fresh inventoryにより、private `type_elaboration/type_assertion_routes.rs`への次の
-bounded追加としてthree-edge local-object-mode three-hop asserted-head routeだけを
-選ぶ。これは`runner.rs`の正確な5 fragment、すなわちinvalid key 704-706行
-（3行、`200f40ee...`）、config 2318-2363行（46行、`45c230ab...`）、production
-detail route 3209-3221行（13行、`43a51871...`）、test-only output 3565-3574行
-（10行、`0bf5b9ec...`）、extractor 4295-4306行（12行、`7a10d6e3...`）から成る。
-合計84行、combined raw hashは`da6e9082...`、whitespace-normalized pre-move hashは
-`2858ac57...`である。
-
-Task 263ZZHはこれらのfragmentだけを既存private ownerへ機械的に移動する。
-orchestration callとdispatch orderは`runner.rs`に残す。normal phase facadeを通るのは
-production detail routeだけである。config、test consumer向けoutput、extractorは
-`#[cfg(test)]`で通し、invalid-key constantはleaf-privateのままとし、config由来の
-runner test aliasが既存name/valueを維持する。public API/call site、helper name、
-config value、正確なfour-expansion object-terminal three-hop relation、key、payload、
-ordering、fallback、fail-closed behaviorは変更しない。
-
-canonical mode unfolding、builtin-object、reserved-theorem-variable、static type-
-assertion requirementは不変に適用する。active `.miz`/expectation pairとcovered
-Task 218 checker requirementは、`BaseThreeEdgeObjectModeThreeHopAssertedHead ->
-object`、`InnerThreeEdgeObjectModeThreeHopAssertedHead ->
-BaseThreeEdgeObjectModeThreeHopAssertedHead`、
-`MiddleThreeEdgeObjectModeThreeHopAssertedHead ->
-InnerThreeEdgeObjectModeThreeHopAssertedHead`、
-`OuterThreeEdgeObjectModeThreeHopAssertedHead ->
-MiddleThreeEdgeObjectModeThreeHopAssertedHead`という4個のordered real source-derived
-definitionをexerciseする。独立したraw reserve-subject Outerとformula-side asserted
-Base inputはdistinct symbol/site/rangeを維持する。closed `BindingThreeHopRadix`
-relationはpairwise-distinctなOuter-to-Middle、Middle-to-Inner、Inner-to-Base bare linkを
-明示的にvalidateし、Base-to-objectはterminal-normalization evidenceだけでgeneric
-relation evidenceではない。routeは正確に4 expansionを消費し、3 known type entryを
-base-definition-RHS builtin-object identityへnormalizeし、subject ordinal 1を
-`BindingId(0)`へresolveし、1 inferred variableとzero expected constraintかつfact/
-candidate/diagnostic/deferred-freeのchecked type assertionを生成する。general
-reachability、widening、`qua`、object/set coercionは導入しない。既存testは3 test
-fileに35 direct symbol referenceを保持し、`runner.rs`の10 definition/internal callを
-含めるとpre-move repositoryには4 source/test fileに45 occurrenceがある。23個の
-nonidentity definition order、structural/provenance/corruption guard、43-owner
-isolation、immutable output、real frontend/resolver sidecarが存在し、focused source/
-active-fixture testはmove前に成功する。したがってmove-only `design_drift`であり、
-ZZH0 test taskは不要である。authority、behavior、coverage credit、owner crate、
-deferred statusを変更しないため`spec_coverage_audit.md`は不変である。config/key/
-role/mode/relation edit、route/asserted-head generalization、他route move、object/set
-coercion、assertion weakening、test/expectation editを禁止する。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZH Move Result
 
-Task 263ZZHは承認済み5 fragment合計84行だけを既存private
-`type_elaboration/type_assertion_routes.rs` ownerへ移動した。orchestration callは
-元の位置に残り、byte/order-stableである。invalid-key fragmentはleaf-private、
-config/output/extractorはtest-only facade importを維持し、normal phase facadeを通る
-のはproduction detail routeだけである。config由来のrunner test aliasは同じname/
-valueを維持する。
-
-moved fragmentから必要な`pub(in crate::runner)` visibilityを除くと、各old/new
-fragment pairはexact raw hash `200f40ee...`、`45c230ab...`、`43a51871...`、
-`0bf5b9ec...`、`7a10d6e3...`を維持する。combined raw hashは`da6e9082...`、
-combined whitespace-normalized hashは`2858ac57...`のままである。moved configの
-直前にあるitem-scoped `#[rustfmt::skip]`は84行oracle外であり、required owner
-visibility追加後にoriginal config token layoutを維持するだけでruntime effectはない。
-
-post-move ownerは2,038行/SHA-256 `839ec141...`、`runner.rs`は4,477行/
-`caefe049...`、phase facadeは456行/`e6fb91cd...`である。focused test 2件、
-272-unit-test crate suite、test-list raw hash `5e41e4db...`/normalized hash
-`c0c2b80f...`、4個のCLI report hashはすべて不変である。review-only implementation/
-test-sufficiency checkはsource/test findingなしで、completion-doc drift findingをpaired
-EN/JA documentで修復した。workspace全体のformat、Clippy、test、diff gateは成功した。
-API、name、relation、test、expectation、trace、diagnostic、key、payload、ordering、
-fallback、fail-closed behaviorは変更していない。authority、behavior、coverage credit、
-owner crate、deferred statusを変更していないため、`spec_coverage_audit.md`は不変である。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZI Pre-Move Inventory and Specification
 
-authority、test、trace、expectation、design、source、API、real producer/consumerの
-fresh inventoryにより、private `type_elaboration/type_assertion_routes.rs`への次の
-bounded追加としてfour-edge local-object-mode three-hop asserted-head routeだけを
-選ぶ。これは`runner.rs`の正確な5 fragment、すなわちinvalid key 718-720行
-（3行、`edb310ad...`）、config 2366-2418行（53行、`d0731bdf...`）、production
-detail route 3180-3192行（13行、`e3a909cd...`）、test-only output 3519-3528行
-（10行、`ca4a50d5...`）、extractor 4240-4251行（12行、`e1ef45a6...`）から成る。
-合計91行、combined raw hashは`532110f6...`、whitespace-normalized pre-move hashは
-`5b0b96fa...`である。
-
-Task 263ZZIはこれらのfragmentだけを既存private ownerへ機械的に移動する。
-orchestration callとdispatch orderは`runner.rs`に残す。normal phase facadeを通るのは
-production detail routeだけである。config、test consumer向けoutput、extractorは
-`#[cfg(test)]`で通し、invalid-key constantはleaf-privateのままとし、config由来の
-runner test aliasが既存name/valueを維持する。public API/call site、helper name、
-config value、正確なfive-expansion object-terminal three-hop relation、key、payload、
-ordering、fallback、fail-closed behaviorは変更しない。
-
-canonical mode unfolding、builtin-object、reserved-theorem-variable、static type-
-assertion requirementは不変に適用する。active `.miz`/expectation pairとcovered
-Task 220 checker requirementは、`BaseFourEdgeObjectModeThreeHopAssertedHead ->
-object`、`InnerFourEdgeObjectModeThreeHopAssertedHead ->
-BaseFourEdgeObjectModeThreeHopAssertedHead`、
-`MiddleFourEdgeObjectModeThreeHopAssertedHead ->
-InnerFourEdgeObjectModeThreeHopAssertedHead`、
-`OuterFourEdgeObjectModeThreeHopAssertedHead ->
-MiddleFourEdgeObjectModeThreeHopAssertedHead`、
-`TooDeepFourEdgeObjectModeThreeHopAssertedHead ->
-OuterFourEdgeObjectModeThreeHopAssertedHead`という5個のordered real source-derived
-definitionをexerciseする。独立したraw reserve-subject TooDeepとformula-side asserted
-Inner inputはdistinct symbol/site/rangeを維持する。closed `BindingThreeHopRadix`
-relationはpairwise-distinctなTooDeep-to-Outer、Outer-to-Middle、Middle-to-Inner bare
-linkを明示的にvalidateし、Inner-to-Base-to-objectはterminal-normalization evidence
-だけでgeneric relation evidenceではない。routeは正確に5 expansionを消費し、3
-known type entryをbase-definition-RHS builtin-object identityへnormalizeし、subject
-ordinal 1を`BindingId(0)`へresolveし、1 inferred variableとzero expected constraint
-かつfact/candidate/diagnostic/deferred-freeのchecked type assertionを生成する。
-general reachability、widening、`qua`、object/set coercionは導入しない。既存testは
-3 test fileに33 direct symbol referenceを保持し、`runner.rs`の10 definition/internal
-callを含めるとpre-move repositoryには4 source/test fileに43 occurrenceがある。
-119個のnonidentity definition order、独立したunconnected deeper/connected sixth-edge
-guard、structural/provenance/corruption guard、45-owner isolation、focused Tasks 208と
-211-219 regression、immutable output、real frontend/resolver sidecarが存在し、focused
-active-fixture/synthetic-exactness testはmove前に成功する。したがってmove-only
-`design_drift`であり、ZZI0 test taskは不要である。authority、behavior、coverage
-credit、owner crate、deferred statusを変更しないため`spec_coverage_audit.md`は不変
-である。config/key/role/mode/relation edit、route/asserted-head generalization、他route
-move、object/set coercion、assertion weakening、test/expectation editを禁止する。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZI Move Result
 
-Task 263ZZIでは承認済みの5 fragment、合計91行だけを既存private
-`type_elaboration/type_assertion_routes.rs` ownerへ移動した。orchestration callは
-元の位置でbyte/order-stableを維持する。invalid-key fragmentはleaf-private、config、
-output、extractorはtest-only facade importのままであり、normal phase facadeを通る
-のはproduction detail routeだけである。config由来のrunner test aliasも同じname/
-valueを維持する。
-
-移動fragmentから必要な`pub(in crate::runner)` visibilityを除くと、全old/new fragment
-pairのexact raw hashは`edb310ad...`、`d0731bdf...`、`e3a909cd...`、
-`ca4a50d5...`、`e1ef45a6...`を維持した。combined raw hashは`532110f6...`、
-combined whitespace-normalized hashは`5b0b96fa...`を維持した。移動config直前の
-item-scoped `#[rustfmt::skip]`はこの91行oracleの外側にあり、必要なowner visibility
-追加後も元のconfig token layoutを保持するだけでruntime effectはない。
-
-移動後ownerは2,135行、SHA-256 `009a2787...`、`runner.rs`は4,389行、
-`ef501d02...`、phase facadeは460行、`791d0685...`である。focused test 2件、
-272-unit-test crate suite、test listのraw hash `5e41e4db...`とnormalized hash
-`c0c2b80f...`、CLI report 4件のhashはすべて不変である。review-onlyの
-implementation/test-sufficiency checkはsource/test findingなしで完了し、completion-
-doc drift findingはpaired EN/JA documentで修正した。workspace全体のformat、Clippy、
-test、diff gateは成功した。API、name、relation、test、expectation、trace、diagnostic、
-key、payload、ordering、fallback、fail-closed behaviorは変更していない。authority、
-behavior、coverage credit、owner crate、deferred statusを変更しないため
-`spec_coverage_audit.md`は不変である。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZJ Pre-Move Inventory and Specification
 
-fresh authority、test、trace、expectation、design、source、API、real producer/consumer
-inventoryにより、private `type_elaboration/type_assertion_routes.rs`への次のbounded
-additionとしてfour-edge local-object-mode four-hop asserted-head routeだけを選ぶ。
-これは`runner.rs`のinvalid key 719-721行（3行、`74c201e4...`）、config 2415-
-2468行（54行、`11d9b1e0...`）、production detail route 3143-3155行（13行、
-`106f10db...`）、attached `#[cfg(test)]`を含むtest-only output 3465-3474行
-（10行、`58454b88...`）、extractor 4178-4189行（12行、`d18d2fca...`）という
-正確な5 fragmentから成る。合計92行、combined raw hashは`a6b73ffc...`、
-whitespace-normalized pre-move hashは`61f5421e...`である。
-
-Task 263ZZJはこれらのfragmentだけを既存private ownerへ機械的に移動する。
-orchestration callとdispatch orderは`runner.rs`に残す。normal phase facadeを通るのは
-production detail routeだけである。config、test consumer向けoutput、extractorは
-`#[cfg(test)]`で通し、invalid-key constantはleaf-privateのままとし、config由来の
-runner test aliasが既存name/valueを維持する。public API/call site、helper name、
-config value、正確なfive-expansion object-terminal four-hop relation、key、payload、
-ordering、fallback、fail-closed behaviorは変更しない。
-
-canonical reserved-variable closure、mode unfolding、builtin-object、static type-
-assertion requirementは不変に適用する。active `.miz`/expectation pairとcovered
-Task 222 checker requirementは、`BaseFourEdgeObjectModeFourHopAssertedHead ->
-object`、`InnerFourEdgeObjectModeFourHopAssertedHead ->
-BaseFourEdgeObjectModeFourHopAssertedHead`、
-`MiddleFourEdgeObjectModeFourHopAssertedHead ->
-InnerFourEdgeObjectModeFourHopAssertedHead`、
-`OuterFourEdgeObjectModeFourHopAssertedHead ->
-MiddleFourEdgeObjectModeFourHopAssertedHead`、
-`TooDeepFourEdgeObjectModeFourHopAssertedHead ->
-OuterFourEdgeObjectModeFourHopAssertedHead`という5個のordered real source-derived
-definitionをexerciseする。独立したraw reserve-subject TooDeepとformula-side asserted
-Base inputはdistinct symbol/site/rangeを維持する。closed `BindingFourHopRadix`
-relationはpairwise-distinctなTooDeep-to-Outer、Outer-to-Middle、Middle-to-Inner、
-Inner-to-Base bare linkを明示的にvalidateし、Base-to-objectはterminal-normalization
-evidenceだけでgeneric relation evidenceではない。routeは正確に5 expansionを消費し、
-3 known type entryをbase-definition-RHS builtin-object identityへnormalizeし、subject
-ordinal 1を`BindingId(0)`へresolveし、1 inferred variableとzero expected constraint
-かつfact/candidate/diagnostic/deferred-freeのchecked type assertionを生成する。
-general reachability、widening、`qua`、object/set coercionは導入しない。既存testは
-3 test fileに31 direct symbol referenceを保持し、`runner.rs`の10 definition/internal
-callを含めるとpre-move repositoryには4 source/test fileに41 occurrenceがある。
-119個のnonidentity definition order、独立したunconnected deeper/connected sixth-
-definition/fifth-link guard、structural/provenance/corruption guard、47-owner isolation、
-focused Task 208とTasks 211-221 regression、immutable output、real frontend/resolver
-sidecarが存在し、focused active-fixture/synthetic-exactness testはmove前に成功する。
-したがってmove-only `design_drift`であり、ZZJ0 test taskは不要である。authority、
-behavior、coverage credit、owner crate、deferred statusを変更しないため
-`spec_coverage_audit.md`は不変である。config/key/role/mode/relation edit、route/
-asserted-head generalization、他route move、object/set coercion、assertion weakening、
-test/expectation editを禁止する。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZJ Move Result
 
-Task 263ZZJでは承認済みの5 fragment、合計92行だけを既存private
-`type_elaboration/type_assertion_routes.rs` ownerへ移動した。orchestration callは
-元の位置でbyte/order-stableを維持する。invalid-key fragmentはleaf-private、config、
-output、extractorはtest-only facade importのままであり、normal phase facadeを通る
-のはproduction detail routeだけである。config由来のrunner test aliasも同じname/
-valueを維持する。
-
-移動fragmentから必要な`pub(in crate::runner)` visibilityを除くと、全old/new fragment
-pairのexact raw hashは`74c201e4...`、`11d9b1e0...`、`106f10db...`、
-`58454b88...`、`d18d2fca...`を維持した。combined raw hashは`a6b73ffc...`、
-combined whitespace-normalized hashは`61f5421e...`を維持した。output fragmentの
-attached `#[cfg(test)]`は92行oracleに含まれ、test-only visibilityを維持する。
-移動config直前のitem-scoped `#[rustfmt::skip]`はこのoracleの外側にあり、必要な
-owner visibility追加後も元のconfig token layoutを保持するだけでruntime effectは
-ない。
-
-移動後ownerは2,233行、SHA-256 `407a215c...`、`runner.rs`は4,300行、
-`de2a5351...`、phase facadeは464行、`a1424de3...`である。focused test 2件、
-272-unit-test crate suite、test listのraw hash `5e41e4db...`とnormalized hash
-`c0c2b80f...`、CLI report 4件のhashはすべて不変である。pre-implementation
-reviewのsemantic `#[cfg(test)]` boundary findingはmove前に修正した。workspace
-全体のformat、Clippy、test、diff gateは成功した。API、name、relation、test、
-expectation、trace、diagnostic、key、payload、ordering、fallback、fail-closed behavior
-は変更していない。authority、behavior、coverage credit、owner crate、deferred status
-を変更しないため`spec_coverage_audit.md`は不変である。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZK Pre-Move Inventory and Specification
 
-fresh authority、test、trace、expectation、design、source、API、real producer/consumer
-inventoryにより、private `type_elaboration/type_assertion_routes.rs`への次のbounded
-additionとしてthree-edge local-object-mode immediate-radix asserted-head routeだけを
-選ぶ。これはTask 263ZZJ後の物理的に次の未所有local-object routeであり、`runner.rs`
-のinvalid key 734-735行（2行、`65bca3b2...`）、config 2456-2499行（44行、
-`736e409a...`）、production detail route 3105-3117行（13行、`dd971d62...`）、
-attached `#[cfg(test)]`を含むtest-only output 3410-3419行（10行、
-`0d343a10...`）、extractor 4115-4126行（12行、`fc9ad737...`）という正確な5
-fragmentから成る。合計81行、combined raw hashは`92ee1ca1...`、whitespace-
-normalized pre-move hashは`07df31bc...`である。
-
-Task 263ZZKはこれらのfragmentだけを既存private ownerへ機械的に移動する。
-orchestration callとdispatch orderは`runner.rs`に残す。normal phase facadeを通るのは
-production detail routeだけである。config、test consumer向けoutput、extractorは
-`#[cfg(test)]`で通し、invalid-key constantはleaf-privateのままとし、config由来の
-runner test aliasが既存name/valueを維持する。public API/call site、helper name、
-config value、正確なfour-expansion object-terminal immediate-radix relation、key、
-payload、ordering、fallback、fail-closed behaviorは変更しない。
-
-canonical reserved-variable closure、mode unfolding、builtin-object、static type-
-assertion requirementは不変に適用する。active `.miz`/expectation pairとcovered
-Task 206 checker requirementは、`BaseThreeEdgeObjectModeRadixAssertedHead -> object`、
-`InnerThreeEdgeObjectModeRadixAssertedHead ->
-BaseThreeEdgeObjectModeRadixAssertedHead`、
-`MiddleThreeEdgeObjectModeRadixAssertedHead ->
-InnerThreeEdgeObjectModeRadixAssertedHead`、
-`OuterThreeEdgeObjectModeRadixAssertedHead ->
-MiddleThreeEdgeObjectModeRadixAssertedHead`という4個のordered real source-derived
-definitionをexerciseする。独立したraw reserve-subject Outerとformula-side asserted
-Middle inputはdistinct symbol/site/rangeを維持する。closed `BindingImmediateRadix`
-relationは正確なOuter-to-Middle bare linkだけをvalidateし、Middle-to-Inner-to-Base-to-
-objectはterminal-normalization evidenceだけでmulti-hop/general reachability evidence
-ではない。routeは正確に4 expansionを消費し、3 known type entryをbase-definition-
-RHS builtin-object identityへnormalizeし、subject ordinal 1を`BindingId(0)`へresolveし、
-1 inferred variableとzero expected constraintかつfact/candidate/diagnostic/deferred-free
-のchecked type assertionを生成する。widening、`qua`、object/set coercionは導入しない。
-既存testは7 test fileに61 direct symbol referenceを保持し、`runner.rs`の10
-definition/internal callを含めるとpre-move repositoryには8 source/test fileに71
-occurrenceがある。23個のnonidentity definition order、exact structural/provenance/
-corruptionとper-definition near-miss guard、documented Task 206 bidirectional owner
-isolationと全later cross-owner regression、immutable output、real frontend/resolver
-sidecarが存在し、focused exhaustive-source/active-fixture testはmove前に成功する。
-したがってmove-only `design_drift`であり、ZZK0 test taskは不要である。authority、
-behavior、coverage credit、owner crate、deferred statusを変更しないため
-`spec_coverage_audit.md`は不変である。config/key/role/mode/relation edit、route/
-asserted-head generalization、他route move、object/set coercion、assertion weakening、
-test/expectation editを禁止する。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZK Move Result
 
-Task 263ZZKでは承認済みの5 fragment、合計81行だけを既存private
-`type_elaboration/type_assertion_routes.rs` ownerへ移動した。orchestration callと
-dispatch orderは元の位置でbyte/order-stableを維持した。invalid-key fragmentは
-leaf-private、config/output/extractorはtest-only facade consumerのままであり、normal
-facadeを通るのはproduction detail routeだけである。outputに付着する`#[cfg(test)]`
-はpreservation oracle内、format controlはoracle外のまま維持した。
-
-必要な`pub(in crate::runner)` visibilityだけを除くと、移動後5 fragmentは元のhash
-`65bca3b2...`、`736e409a...`、`dd971d62...`、`0d343a10...`、`fc9ad737...`を保持し、
-combined raw hashは`92ee1ca1...`、事前記録したnormalized oracleは`07df31bc...`
-のままである。source inventoryは`runner.rs` 4,222行 / `cfd9724b...`、phase facade
-468行 / `5982f427...`、route owner 2,320行 / `2f59862b...`となった。
-
-focused route test 2件とcrate unit test 272件はすべて成功した。raw/normalized
-discovered-test hashは`5e41e4db...`/`c0c2b80f...`、plan/parse-only/declaration-
-symbol/type-elaboration CLI hashは`f3424007...`/`57d0fba9...`/`08b00a9f...`/
-`1dadbeab...`を維持した。format、warning deny付きClippy、workspace test、diff
-checkは成功した。API、test名、diagnostic、detail key、payload、ordering、fail-
-closed behavior、authority、coverage credit、owner crate、deferred statusは変更
-していないため、`spec_coverage_audit.md`は不変である。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZL Pre-Move Inventory and Specification
 
-fresh authority、test、trace、expectation、design、source、API、real producer/consumer
-inventoryにより、private `type_elaboration/type_assertion_routes.rs`への次のbounded
-additionとしてfour-edge local-object-mode immediate-radix asserted-head routeだけを
-選ぶ。これはTask 263ZZK後の物理的に次の未所有local-object routeであり、`runner.rs`
-のinvalid key 743-744行（2行、`64203412...`）、config 2503-2551行（49行、
-`b5026b6d...`）、production detail route 3078-3090行（13行、`f9452a31...`）、
-attached `#[cfg(test)]`を含むtest-only output 3366-3375行（10行、
-`873600da...`）、extractor 4063-4074行（12行、`2327bfa0...`）という正確な5
-fragmentから成る。合計86行、combined raw hashは`ca2003e8...`、whitespace-
-normalized pre-move hashは`f9a8696a...`である。
-
-Task 263ZZLはこれらのfragmentだけを既存private ownerへ機械的に移動する。
-orchestration callとdispatch orderは`runner.rs`に残す。normal phase facadeを通るのは
-production detail routeだけである。config、test consumer向けoutput、extractorは
-`#[cfg(test)]`で通し、invalid-key constantはleaf-privateのままとし、config由来の
-runner test aliasが既存name/valueを維持する。機械的なline wrapを防ぐ目的だけで
-preservation oracle外にformat control attributeを追加できる。public API/call site、
-helper name、config value、正確なfive-expansion object-terminal immediate-radix
-relation、key、payload、ordering、fallback、fail-closed behaviorは変更しない。
-
-canonical reserved-variable closure、mode unfolding、builtin-object、static type-
-assertion requirementは不変に適用する。active `.miz`/expectation pairとcovered
-Task 208 checker requirementは、Base-to-object、Inner-to-Base、Middle-to-Inner、
-Outer-to-Middle、TooDeep-to-Outerという5個のordered real source-derived definitionを
-exerciseする。独立したraw reserve-subject TooDeepとformula-side asserted Outer input
-はdistinct symbol/site/rangeを維持する。closed `BindingImmediateRadix` relationは
-正確なTooDeep-to-Outer bare linkだけをvalidateし、Outer-to-Middle-to-Inner-to-Base-
-to-objectはterminal-normalization evidenceだけでmulti-hop/general reachability
-evidenceではない。routeは正確に5 expansionを消費し、3 known type entryをBase-
-definition-RHS builtin-object identityへnormalizeし、subject ordinal 1を
-`BindingId(0)`へresolveし、1 inferred variableとzero expected constraintかつfact/
-candidate/diagnostic/deferred-freeのchecked type assertionを生成する。widening、
-`qua`、object/set coercionは導入しない。
-
-既存testは6 test fileに90 direct symbol referenceを保持し、`runner.rs`の11
-definition/internal callを含めるとpre-move repositoryには7 source/test fileに101
-occurrenceがある。119個のnonidentity definition order、全per-definition structural
-near miss、exact reserve/formula/provenance/corruption guard、unrelated-import positive、
-documented Task 208 bidirectional 21-owner isolationと全later cross-owner regression、
-immutable output、real frontend/resolver sidecarが存在し、focused exhaustive-source/
-active-fixture testはmove前に成功する。したがってmove-only `design_drift`であり、
-ZZL0 test taskは不要である。authority、behavior、coverage credit、owner crate、
-deferred statusを変更しないため`spec_coverage_audit.md`は不変である。config/key/
-role/mode/relation edit、route/asserted-head generalization、他route move、object/set
-coercion、assertion weakening、test/expectation editを禁止する。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZL Move Result
 
-Task 263ZZLでは承認済みの5 fragment、合計86行だけを既存private
-`type_elaboration/type_assertion_routes.rs` ownerへ移動した。orchestration callと
-dispatch orderは元の位置でbyte/order-stableを維持した。invalid-key fragmentは
-leaf-private、config/output/extractorはtest-only facade consumerのままであり、normal
-facadeを通るのはproduction detail routeだけである。outputに付着する`#[cfg(test)]`
-はpreservation oracle内、format controlはoracle外のまま維持した。
-
-必要な`pub(in crate::runner)` visibilityだけを除くと、移動後5 fragmentは元のhash
-`64203412...`、`b5026b6d...`、`f9452a31...`、`873600da...`、`2327bfa0...`を保持し、
-combined raw hashは`ca2003e8...`、whitespace-normalized hashは`f9a8696a...`の
-ままである。source inventoryは`runner.rs` 4,139行 / `a579a85b...`、phase facade
-472行 / `e112d13f...`、route owner 2,412行 / `639fe1e3...`となった。
-
-focused route test 2件とcrate unit test 272件はすべて成功した。raw/normalized
-discovered-test hashは`5e41e4db...`/`c0c2b80f...`、plan/parse-only/declaration-
-symbol/type-elaboration CLI hashは`f3424007...`/`57d0fba9...`/`08b00a9f...`/
-`1dadbeab...`を維持した。format、warning deny付きClippy、workspace test、diff
-checkは成功した。API、test名、diagnostic、detail key、payload、ordering、fail-
-closed behavior、authority、coverage credit、owner crate、deferred statusは変更
-していないため、`spec_coverage_audit.md`は不変である。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZM Pre-Move Inventory and Specification
 
-fresh authority、test、trace、expectation、design、source、API、real producer/consumer
-inventoryにより、private `type_elaboration/type_assertion_routes.rs`への次のbounded
-additionとしてfour-edge local-object-mode same-mode asserted-head routeだけを選ぶ。
-これはTask 263ZZL後の物理的に次の未所有local-object routeであり、`runner.rs`の
-invalid key 759-760行（2行、`add00c27...`）、config 2624-2666行（43行、
-`505227af...`）、production detail route 3072-3083行（12行、`36a66d9e...`）、
-attached `#[cfg(test)]`を含むtest-only output 3337-3345行（9行、
-`5db69ba1...`）、extractor 4032-4043行（12行、`39cf9bb6...`）という正確な5
-fragmentから成る。合計78行、combined raw hashは`78c7de49...`、whitespace-
-normalized pre-move hashは`57e5b178...`である。
-
-Task 263ZZMはこれらのfragmentだけを既存private ownerへ機械的に移動する。
-orchestration callとdispatch orderは`runner.rs`に残す。normal phase facadeを通るのは
-production detail routeだけである。config、test consumer向けoutput、extractorは
-`#[cfg(test)]`で通し、invalid-key constantはleaf-privateのままとし、config由来の
-runner test aliasが既存name/valueを維持する。機械的なline wrapを防ぐ目的だけで
-preservation oracle外にformat control attributeを追加できる。public API/call site、
-helper name、config value、正確なfive-expansion object-terminal same-mode relation、
-key、payload、ordering、fallback、fail-closed behaviorは変更しない。
-
-canonical reserved-variable closure、mode unfolding、builtin-object、static type-
-assertion requirementは不変に適用する。active `.miz`/expectation pairとcovered
-Task 198 checker requirementは、Base-to-object、Inner-to-Base、Middle-to-Inner、
-Outer-to-Middle、TooDeep-to-Outerという5個のordered real source-derived definitionを
-exerciseする。独立したraw reserve-subjectとformula-side asserted inputはdistinct
-site/rangeを維持しながら同じTooDeep symbolへresolveする。closed `SameMode` relation
-は正確なoutermost identityだけをvalidateし、TooDeep-to-Outer-to-Middle-to-Inner-to-
-Base-to-object chainはterminal-normalization evidenceだけでreachability evidenceでは
-ない。routeは正確に5 expansionを消費し、3 known type entryをBase-definition-RHS
-builtin-object identityへnormalizeし、subject ordinal 1を`BindingId(0)`へresolveし、
-1 inferred variableとzero expected constraintかつfact/candidate/diagnostic/deferred-
-freeのchecked type assertionを生成する。widening、`qua`、object/set coercionは導入
-しない。
-
-既存testは6 test fileに90 direct symbol referenceを保持し、`runner.rs`の11
-definition/internal callを含めるとpre-move repositoryには7 source/test fileに101
-occurrenceがある。exact route、reversed-definition-order near miss、structural/
-provenance/connected-deeper/corruption guard、unrelated-local/imported/ambiguous
-rejection、route isolationとlater cross-owner regression、immutable output、real
-frontend/resolver sidecarが存在し、focused source/active-fixture testはmove前に成功する。
-したがってmove-only `design_drift`であり、ZZM0 test taskは不要である。authority、
-behavior、coverage credit、owner crate、deferred statusを変更しないため
-`spec_coverage_audit.md`は不変である。config/key/role/mode/relation edit、route/
-asserted-head generalization、他route move、object/set coercion、assertion weakening、
-test/expectation editを禁止する。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZM Move Result
 
-Task 263ZZMでは承認済みの5 fragment、合計78行だけを既存private
-`type_elaboration/type_assertion_routes.rs` ownerへ移動した。orchestration callと
-dispatch orderは元の位置でbyte/order-stableを維持した。invalid-key fragmentは
-leaf-private、config/output/extractorはtest-only facade consumerのままであり、normal
-facadeを通るのはproduction detail routeだけである。outputに付着する`#[cfg(test)]`
-はpreservation oracle内、format controlはoracle外のまま維持した。
-
-必要な`pub(in crate::runner)` visibilityだけを除くと、移動後5 fragmentは元のhash
-`add00c27...`、`505227af...`、`36a66d9e...`、`5db69ba1...`、`39cf9bb6...`を保持し、
-combined raw hashは`78c7de49...`、whitespace-normalized hashは`57e5b178...`の
-ままである。source inventoryは`runner.rs` 4,064行 / `3f936d4b...`、phase facade
-476行 / `fac3321e...`、route owner 2,496行 / `7417a532...`となった。
-
-focused route test 2件とcrate unit test 272件はすべて成功した。raw/normalized
-discovered-test hashは`5e41e4db...`/`c0c2b80f...`、plan/parse-only/declaration-
-symbol/type-elaboration CLI hashは`f3424007...`/`57d0fba9...`/`08b00a9f...`/
-`1dadbeab...`を維持した。format、warning deny付きClippy、workspace test、diff
-checkは成功した。API、test名、diagnostic、detail key、payload、ordering、fail-
-closed behavior、authority、coverage credit、owner crate、deferred statusは変更
-していないため、`spec_coverage_audit.md`は不変である。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZN Pre-Move Inventory and Specification
 
-fresh authority、test、trace、expectation、design、source、API、real producer/consumer
-inventoryにより、private `type_elaboration/type_assertion_routes.rs`への次のbounded
-additionとしてthree-edge local-object-mode same-mode asserted-head routeだけを選ぶ。
-これはTask 263ZZM後に残る唯一の物理的local-object-mode asserted-head routeであり、
-`runner.rs`のinvalid key 766-767行（2行、`6e51f2c0...`）、config 2629-2666行
-（38行、`de329e8b...`）、production detail route 3033-3044行（12行、
-`f63419c2...`）、attached `#[cfg(test)]`を含むtest-only output 3285-3293行
-（9行、`122526ab...`）、extractor 3970-3981行（12行、`38ea6cf4...`）という
-正確な5 fragmentから成る。合計73行、combined raw hashは`6f192ef1...`、
-whitespace-normalized pre-move hashは`1cbaff18...`である。
-
-Task 263ZZNはこれらのfragmentだけを既存private ownerへ機械的に移動する。
-orchestration callとdispatch orderは`runner.rs`に残す。normal phase facadeを通るのは
-production detail routeだけである。config、test consumer向けoutput、extractorは
-`#[cfg(test)]`で通し、invalid-key constantはleaf-privateのままとし、config由来の
-runner test aliasが既存name/valueを維持する。機械的なline wrapを防ぐ目的だけで
-preservation oracle外にformat control attributeを追加できる。public API/call site、
-helper name、config value、正確なfour-expansion object-terminal same-mode relation、
-key、payload、ordering、fallback、fail-closed behaviorは変更しない。
-
-canonical reserved-variable closure、mode unfolding、builtin-object、static type-
-assertion requirementは不変に適用する。active `.miz`/expectation pairとcovered
-Task 196 checker requirementは、Base-to-object、Inner-to-Base、Middle-to-Inner、
-Outer-to-Middleという4個のordered real source-derived definitionをexerciseする。
-独立したraw reserve-subjectとformula-side asserted inputはdistinct site/rangeを維持
-しながら同じOuter symbolへresolveする。closed `SameMode` relationは正確な
-outermost identityだけをvalidateし、Outer-to-Middle-to-Inner-to-Base-to-object
-chainはterminal-normalization evidenceだけでreachability evidenceではない。routeは
-正確に4 expansionを消費し、3 known type entryをBase-definition-RHS builtin-object
-identityへnormalizeし、subject ordinal 1を`BindingId(0)`へresolveし、1 inferred
-variableとexpected constraint/fact/candidate/diagnostic/deferred reason 0個のchecked
-type assertion 1個をwidening、`qua`、object/set coercionなしで生成する。
-
-既存testは8 test fileに99 direct symbol referenceを保持し、`runner.rs`の11
-definition/internal callを含めるとpre-move repositoryには9 source/test fileに110
-occurrenceがある。exact route、reversed-definition-order near miss、per-definition
-missing/label/recovery guard、finite radix/shape/provenance/corruption guard、unrelated-
-local/imported/ambiguous rejection、route isolationとlater cross-owner regression、
-immutable output、real frontend/resolver sidecarが存在し、focused source/active-
-fixture testはmove前に成功する。したがってmove-only `design_drift`であり、ZZN0
-test taskは不要である。authority、behavior、coverage credit、owner crate、deferred
-statusを変更しないため`spec_coverage_audit.md`は不変である。config/key/role/mode/
-relation edit、route/asserted-head generalization、他route move、object/set coercion、
-assertion weakening、test/expectation editを禁止する。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZN Move Result
 
-Task 263ZZNでは承認済みの5 fragment、合計73行だけを既存private
-`type_elaboration/type_assertion_routes.rs` ownerへ移動した。orchestration callと
-dispatch orderは元の位置でbyte/order-stableを維持した。invalid-key fragmentは
-leaf-private、config/output/extractorはtest-only facade consumerのままであり、normal
-facadeを通るのはproduction detail routeだけである。outputに付着する`#[cfg(test)]`
-はpreservation oracle内、format controlはoracle外のまま維持した。
-
-必要な`pub(in crate::runner)` visibilityだけを除くと、移動後5 fragmentは元のhash
-`6e51f2c0...`、`de329e8b...`、`f63419c2...`、`122526ab...`、`38ea6cf4...`を保持し、
-combined raw hashは`6f192ef1...`、whitespace-normalized hashは`1cbaff18...`の
-ままである。source inventoryは`runner.rs` 3,994行 / `65dfa58a...`、phase facade
-480行 / `ea7f945d...`、route owner 2,575行 / `d117131d...`となった。
-
-focused route test 2件とcrate unit test 272件はすべて成功した。raw/normalized
-discovered-test hashは`5e41e4db...`/`c0c2b80f...`、plan/parse-only/declaration-
-symbol/type-elaboration CLI hashは`f3424007...`/`57d0fba9...`/`08b00a9f...`/
-`1dadbeab...`を維持した。format、warning deny付きClippy、workspace test、diff
-checkは成功した。API、test名、diagnostic、detail key、payload、ordering、fail-
-closed behavior、authority、coverage credit、owner crate、deferred statusは変更
-していないため、`spec_coverage_audit.md`は不変である。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZO Pre-Move Inventory and Specification
 
-fresh authority/test/trace/expectation/design/source/API/real producer-consumer
-inventoryは、private `type_elaboration/type_assertion_routes.rs`へ次に追加する
-bounded familyとしてdirect local-mode same-mode asserted-head routeだけを選ぶ。
-Task 263ZZNがlocal-object-mode asserted-head familyを完了した後、これは残る
-物理的local-mode asserted-head routeの先頭である。正確な`runner.rs` fragmentは、
-invalid key 701-702（2行、`a98d34ff...`）、config 2091-2108（18、
-`ee053f39...`）、production detail route 2802-2813（12、`bf8b4ec4...`）、
-attached `#[cfg(test)]`込みtest-only output 3086-3094（9、`0f7575ab...`）、
-extractor 3718-3729（12、`9d1d5ace...`）の5個/53行である。combined raw hashは
-`8e438726...`、whitespace-normalized pre-move hashは`1cd18da9...`である。
-
-Task 263ZZOはこれらのfragmentだけを既存private ownerへ機械的に移動する。
-orchestration callとdispatch orderは`runner.rs`に残す。normal phase facadeを通る
-のはproduction detail routeだけであり、config/test-consumed output/extractorは
-`#[cfg(test)]`で通す。invalid-key constantはleaf-privateのままとし、config-derived
-runner test aliasで既存名/valueを維持する。mechanical line wrapを防ぐためだけに、
-preservation oracle外へformatting-control attributeを追加してよい。public API/
-call site/helper名/config value/正確なone-expansion set-terminal same-mode relation/
-key/payload/order/fallback/fail-closed behaviorを変更しない。
-
-canonical reserved-variable closure、mode unfolding、builtin-set、static type-
-assertion requirementは不変である。active `.miz`/expectation pairとcovered Task
-182 checker requirementは、`LocalModeAssertedHead`から`set`へのreal source-
-derived definition 1個、このmodeへのreserve `x`、`x is LocalModeAssertedHead`
-を検証する。independent raw reserve-subject/formula-side asserted inputはdistinct
-site/rangeを保持しながら同じmode symbolへresolveする。closed `SameMode` relation
-はその正確なsymbol identityだけをvalidateし、mode-to-set expansion 1個はterminal
-normalization evidenceであってgeneral reachability evidenceではない。routeは
-exactly one expansionを消費し、known type entry 3個をdefinition-RHS builtin-set
-identityへnormalizeし、subject ordinal 1を`BindingId(0)`へresolveし、widening/
-`qua`なしで1 inferred variableと、expected constraint/fact/candidate/diagnostic/
-deferred reasonがゼロのchecked type assertion 1個を生成する。
-
-既存testは5 test fileにdirect symbol reference 59件を保持し、`runner.rs`内の
-definition/internal call 10件を含むpre-move repository occurrenceは6 source/test
-fileに69件である。exact route、finite wrong-terminal/attributed/contextual/
-parameterized/recovered/missing/duplicate/label/order/reserve/asserted-head/subject/
-corruption guard、unrelated/imported/ambiguous rejection、route isolationと後続cross-
-owner regression、immutable output、real frontend/resolver sidecarが存在する。
-focused source/active-fixture testはmove前に両方成功する。したがってmove-only
-`design_drift`でありZZO0 test taskは不要である。authority/behavior/coverage
-credit/owner crate/deferred statusは変わらないため`spec_coverage_audit.md`は変更
-しない。config/key/role/mode/relation edit、route/asserted-head generalization、他
-route move、assertion weakening、test/expectation editは禁止する。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZO Move Result
 
-Task 263ZZOでは承認済みの5 fragment、合計53行だけを既存private
-`type_elaboration/type_assertion_routes.rs` ownerへ移動した。orchestration callと
-dispatch orderは元の場所でbyte/order-stableのままである。invalid-key fragmentは
-leaf-private、config/output/extractorはtest-only facade consumerのままにし、normal
-facadeを通るのはproduction detail routeだけである。outputのattached
-`#[cfg(test)]`はpreservation oracle内、formatting controlはその外に保った。
-
-必要な`pub(in crate::runner)` visibilityだけを除くと、post-move fragment 5個は
-original hash `a98d34ff...`、`ee053f39...`、`bf8b4ec4...`、`0f7575ab...`、
-`9d1d5ace...`、combined raw hash `8e438726...`、whitespace-normalized hash
-`1cd18da9...`を維持した。resulting source inventoryは`runner.rs` 3,941行 /
-`54b944e7...`、phase facade 481行 / `7547111b...`、route owner 2,634行 /
-`0b25856f...`となった。
-
-focused route test 2件とcrate unit test 272件はすべて成功した。raw/normalized
-discovered-test hashは`5e41e4db...`/`c0c2b80f...`、plan/parse-only/declaration-
-symbol/type-elaboration CLI hashは`f3424007...`/`57d0fba9...`/`08b00a9f...`/
-`1dadbeab...`を維持した。format、warning deny付きClippy、workspace test、diff
-checkは成功した。API、test名、diagnostic、detail key、payload、ordering、fail-
-closed behavior、authority、coverage credit、owner crate、deferred statusは変更
-していないため、`spec_coverage_audit.md`は不変である。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZP Pre-Move Inventory and Specification
 
-fresh authority/test/trace/expectation/design/source/API/real producer-consumer
-inventoryは、private `type_elaboration/type_assertion_routes.rs`へ次に追加する
-bounded familyとしてchained local-mode same-mode asserted-head routeだけを選ぶ。
-immediate-radix siblingは`runner.rs`に残す。正確な`runner.rs` fragmentはinvalid
-key 708-709（2行、`e9e51f4b...`）、config 2093-2119（27、`0fe975ea...`）、
-production detail route 2785-2796（12、`81a2621e...`）、attached
-`#[cfg(test)]`込みtest-only output 3056-3064（9、`d5504bc0...`）、extractor
-3678-3689（12、`06cb3e8d...`）の5個/62行である。combined raw hashは
-`5bb9fafa...`、whitespace-normalized pre-move hashは`05989d8d...`である。
-
-Task 263ZZPはこれらのfragmentだけを既存private ownerへ機械的に移動する。
-orchestration callとdispatch orderは`runner.rs`に残す。normal phase facadeを通る
-のはproduction detail routeだけであり、config/test-consumed output/extractorは
-`#[cfg(test)]`で通す。invalid-key constantはleaf-privateのままとし、config-derived
-runner test aliasで既存名/valueを維持する。mechanical line wrapを防ぐためだけに
-preservation oracle外へformatting-control attributeを追加してよい。public API/
-call site/helper名/config value/正確なtwo-expansion set-terminal same-mode relation/
-key/payload/order/fallback/fail-closed behaviorを変更しない。
-
-canonical reserved-variable closure、mode unfolding、builtin-set、static type-
-assertion requirementは不変である。active `.miz`/expectation pairとcovered Task
-184 checker requirementは、Baseからset、ChainからBaseへのordered real source-
-derived definition 2個、Chainへのreserve `x`、`x is Chain`を検証する。
-independent raw reserve-subject/formula-side asserted inputはdistinct site/rangeを
-保持しながら同じChain symbolへresolveする。closed `SameMode` relationはその
-正確なouter identityだけをvalidateし、Chain-to-Base-to-set pathはterminal
-normalization evidenceであってgeneral reachability evidenceではない。routeは
-exactly two expansionsを消費し、known type entry 3個をBase-definition-RHS builtin-
-set identityへnormalizeし、subject ordinal 1を`BindingId(0)`へresolveし、
-widening/`qua`なしで1 inferred variableと、expected constraint/fact/candidate/
-diagnostic/deferred reasonがゼロのchecked type assertion 1個を生成する。
-
-既存testは5 test fileにdirect symbol reference 61件を保持し、`runner.rs`内の
-definition/internal call 10件を含むpre-move repository occurrenceは6 source/test
-fileに71件である。exact、finite wrong-link/terminal/order/depthとasserted-head/
-attribute/argument/recovery/extra-item/provenance/corruption guard、unrelated/
-imported/ambiguous rejection、route isolationと後続cross-owner regression、
-immutable output、real frontend/resolver sidecarが存在する。focused source/
-active-fixture testはmove前に両方成功する。したがってmove-only `design_drift`で
-ありZZP0 test taskは不要である。authority/behavior/coverage credit/owner crate/
-deferred statusは変わらないため`spec_coverage_audit.md`は変更しない。config/key/
-role/mode/relation edit、route/asserted-head generalization、immediate-radix/他route
-move、assertion weakening、test/expectation editは禁止する。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZP Move Result
 
-Task 263ZZPでは承認済みの5 fragment、合計62行だけを既存private
-`type_elaboration/type_assertion_routes.rs` ownerへ移動した。orchestration callと
-dispatch orderは元の場所でbyte/order-stableのままである。invalid-key fragmentは
-leaf-private、config/output/extractorはtest-only facade consumerのままにし、normal
-facadeを通るのはproduction detail routeだけである。outputのattached
-`#[cfg(test)]`はpreservation oracle内、formatting controlはその外に保った。
-immediate-radix siblingは完全に`runner.rs`へ残した。
-
-必要な`pub(in crate::runner)` visibilityだけを除くと、post-move fragment 5個は
-original hash `e9e51f4b...`、`0fe975ea...`、`81a2621e...`、`d5504bc0...`、
-`06cb3e8d...`、combined raw hash `5bb9fafa...`、whitespace-normalized hash
-`05989d8d...`を維持した。resulting source inventoryは`runner.rs` 3,881行 /
-`5be84fd5...`、phase facade 485行 / `8d494019...`、route owner 2,702行 /
-`2d965979...`となった。
-
-focused route test 2件とcrate unit test 272件はすべて成功した。raw/normalized
-discovered-test hashは`5e41e4db...`/`c0c2b80f...`、plan/parse-only/declaration-
-symbol/type-elaboration CLI hashは`f3424007...`/`57d0fba9...`/`08b00a9f...`/
-`1dadbeab...`を維持した。format、warning deny付きClippy、workspace test、diff
-checkは成功した。API、test名、diagnostic、detail key、payload、ordering、fail-
-closed behavior、authority、coverage credit、owner crate、deferred statusは変更
-していないため、`spec_coverage_audit.md`は不変である。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZQ Pre-Move Inventory and Specification
 
-fresh authority/test/trace/expectation/design/source/API/real producer-consumer
-inventoryは、private `type_elaboration/type_assertion_routes.rs`へ次に追加する
-bounded familyとしてchained local-mode immediate-radix asserted-head routeだけを
-選ぶ。two-edge siblingは`runner.rs`に残す。正確な`runner.rs` fragmentはinvalid
-key 714-715（2行、`a51d057c...`）、config 2097-2122（26、`817c0b69...`）、
-production detail route 2761-2772（12、`800eb7fa...`）、attached
-`#[cfg(test)]`込みtest-only output 3019-3027（9、`ce1ccdd...`）、extractor
-3631-3642（12、`8ef8b75d...`）の5個/61行である。combined raw hashは
-`f7295f7f...`、whitespace-normalized pre-move hashは`65c8051c...`である。
-
-Task 263ZZQはこれらのfragmentだけを既存private ownerへ機械的に移動する。
-orchestration callとdispatch orderは`runner.rs`に残す。normal phase facadeを通る
-のはproduction detail routeだけであり、config/test-consumed output/extractorは
-`#[cfg(test)]`で通す。invalid-key constantはleaf-privateのままとし、config-derived
-runner test aliasで既存名/valueを維持する。mechanical line wrapを防ぐためだけに
-preservation oracle外へformatting-control attributeを追加してよい。public API/
-call site/helper名/config value/正確なtwo-expansion set-terminal immediate-radix
-relation/key/payload/order/fallback/fail-closed behaviorを変更しない。
-
-canonical reserved-variable closure、mode unfolding、builtin-set、static type-
-assertion requirementは不変である。active `.miz`/expectation pairとcovered Task
-201 checker requirementは、Baseからset、OuterからBaseへのordered real source-
-derived definition 2個、Outerへのreserve `x`、`x is Base`を検証する。independent
-raw Outer reserve-subject/Base formula-side asserted inputはdistinct site/rangeと
-symbol identityを保持する。closed `BindingImmediateRadix` relationは正確なOuter-
-to-Base edgeだけをvalidateし、Base-to-set pathはterminal normalization evidenceで
-あってgeneral reachability evidenceではない。routeはexactly two expansionsを
-消費し、known type entry 3個をBase-definition-RHS builtin-set identityへnormalize
-し、subject ordinal 1を`BindingId(0)`へresolveし、widening/`qua`なしで1 inferred
-variableと、expected constraint/fact/candidate/diagnostic/deferred reasonがゼロの
-checked type assertion 1個を生成する。
-
-既存testは8 test fileにdirect symbol reference 70件を保持し、`runner.rs`内の
-definition/internal call 10件を含むpre-move repository occurrenceは9 source/test
-fileに80件である。exact finite structural/provenance/corruption guard、Task 146/184
-route isolation、immutable output、unrelated/imported/attribute/argument/deeper-path
-rejection、real frontend/resolver sidecarが存在する。focused source/active-fixture
-testはmove前に両方成功する。したがってmove-only `design_drift`でありZZQ0 test
-taskは不要である。authority/behavior/coverage credit/owner crate/deferred statusは
-変わらないため`spec_coverage_audit.md`は変更しない。config/key/role/mode/
-relation edit、route/asserted-head generalization、two-edge/他route move、assertion
-weakening、test/expectation editは禁止する。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZQ Move Result
 
-Task 263ZZQでは承認済みの5 fragment、合計61行だけを既存private
-`type_elaboration/type_assertion_routes.rs` ownerへ移動した。orchestration callと
-dispatch orderは元の場所でbyte/order-stableのままである。invalid-key fragmentは
-leaf-private、config/output/extractorはtest-only facade consumerのままにし、normal
-facadeを通るのはproduction detail routeだけである。outputのattached
-`#[cfg(test)]`はpreservation oracle内、formatting controlはその外に保った。two-
-edge siblingは完全に`runner.rs`へ残した。
-
-必要な`pub(in crate::runner)` visibilityだけを除くと、post-move fragment 5個は
-original full hash
-`a51d057c030ded012c8d8a612c20343986bddd3b9ce936e36f3e7438e86f7387`、
-`817c0b69aa8eb396a1adba42e8f77d9e5304cb14f12976010059133c29fb106c`、
-`800eb7faa34d3032e5ef81a93436e0d84c1a6cdeaa2e5b477b1d132554bc43b4`、
-`ce1ccddcfadfe0fa2a01b46300fd9d581cc6b73a265e1377f14d656bbf238350`、
-`8ef8b75deeb62a06e983aaca5a933f8f67f30f1744faf37774a499b90d9c7e63`、
-combined raw hash
-`f7295f7fbcfe8ff362ec958fc716a40b19e4f6b1bdb6da7e28c16a5e1b01a526`、
-whitespace-normalized hash
-`65c8051ce27d689c2a5c1ff8222a21e81485bbd8888be6c656f07460e004d130`
-を維持した。resulting source inventoryは`runner.rs` 3,823行 /
-`304d92e741373a8d327a54c2717a21f818595a0c7990a84da48acfcc32e41f4b`、
-phase facade 489行 /
-`8112e7a69ac5b03464c5812e8dfec0e53a4fa34170195f20bc4b32f6d8f218b7`、
-route owner 2,769行 /
-`52eece2e87355254462dbbcd85650efa0492d72982a352f0917ae797447f1aa2`
-となった。
-
-focused route test 2件とcrate unit test 272件はすべて成功した。raw/normalized
-discovered-test hashは`5e41e4db...`/`c0c2b80f...`、plan/parse-only/declaration-
-symbol/type-elaboration CLI hashは`f3424007...`/`57d0fba9...`/`08b00a9f...`/
-`1dadbeab...`を維持した。既知のplan diagnosticはwarning 23件/error 0件のままで
-ある。API、test名、diagnostic、detail key、payload、ordering、fail-closed behavior、
-authority、coverage credit、owner crate、deferred statusは変更していないため、
-`spec_coverage_audit.md`は不変である。format、warning deny付きClippy、workspace
-test、diff checkは成功した。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZR Pre-Move Inventory and Specification
 
-fresh authority/test/trace/expectation/design/source/API/real producer-consumer
-inventoryは、private `type_elaboration/type_assertion_routes.rs`へ次に追加する
-bounded familyとしてtwo-edge local-mode immediate-radix asserted-head routeだけを
-選ぶ。two-hop siblingは`runner.rs`に残す。正確な`runner.rs` fragmentはinvalid
-key 724-725（2行、`ffaf7791...`）、config 2102-2132（31、`7c857e90...`）、
-production detail route 2739-2750（12、`7f65e0c8...`）、attached
-`#[cfg(test)]`込みtest-only output 2984-2992（9、`324ff080...`）、extractor
-3586-3597（12、`a2162d71...`）の5個/66行である。combined raw hashは
-`f29621c1...`、whitespace-normalized pre-move hashは`cb75bb40...`である。
-
-Task 263ZZRはこれらのfragmentだけを既存private ownerへ機械的に移動する。
-orchestration callとdispatch orderは`runner.rs`に残す。normal phase facadeを通る
-のはproduction detail routeだけであり、config/test-consumed output/extractorは
-`#[cfg(test)]`で通す。invalid-key constantはleaf-privateのままとし、config-derived
-runner test aliasで既存名/valueを維持する。mechanical line wrapを防ぐためだけに
-preservation oracle外へformatting-control attributeを追加してよい。public API/
-call site/helper名/config value/正確なthree-expansion set-terminal immediate-radix
-relation/key/payload/order/fallback/fail-closed behaviorを変更しない。
-
-canonical reserved-variable closure、mode unfolding、builtin-set、static type-
-assertion requirementは不変である。active `.miz`/expectation pairとcovered Task
-203 checker requirementは、Baseからset、MiddleからBase、OuterからMiddleへの
-ordered real source-derived definition 3個、Outerへのreserve `x`、`x is Middle`を
-検証する。independent raw Outer reserve-subject/Middle formula-side asserted inputは
-distinct site/rangeとsymbol identityを保持する。closed `BindingImmediateRadix`
-relationは正確なOuter-to-Middle edgeだけをvalidateし、両linkを跨ぐBase assertionは
-rejectしたままである。routeはexactly three expansionsを消費し、known type entry
-3個をBase-definition-RHS builtin-set identityへnormalizeし、subject ordinal 1を
-`BindingId(0)`へresolveし、two-hop reachability/widening/`qua`なしで1 inferred
-variableと、expected constraint/fact/candidate/diagnostic/deferred reasonがゼロの
-checked type assertion 1個を生成する。
-
-既存testは8 test fileにdirect symbol reference 75件を保持し、`runner.rs`内の
-definition/internal call 10件を含むpre-move repository occurrenceは9 source/test
-fileに85件である。exact finite structural/provenance/corruption guard、全nonidentity
-definition reordering、duplicate/spelling/imported/ambiguous/deeper near miss、Tasks
-122/148/149/186/187/201/202 route isolation、immutable output、real frontend/
-resolver sidecarが存在する。focused source/active-fixture testはmove前に両方成功
-する。したがってmove-only `design_drift`でありZZR0 test taskは不要である。
-authority/behavior/coverage credit/owner crate/deferred statusは変わらないため
-`spec_coverage_audit.md`は変更しない。config/key/role/mode/relation edit、route/
-asserted-head generalization、two-hop/他route move、assertion weakening、test/
-expectation editは禁止する。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZR Move Result
 
-Task 263ZZRでは承認済みの5 fragment、合計66行だけを既存private
-`type_elaboration/type_assertion_routes.rs` ownerへ移動した。orchestration callと
-dispatch orderは元の場所でbyte/order-stableのままである。invalid-key fragmentは
-leaf-private、config/output/extractorはtest-only facade consumerのままにし、normal
-facadeを通るのはproduction detail routeだけである。outputのattached
-`#[cfg(test)]`はpreservation oracle内、formatting controlはその外に保った。two-
-hop siblingは完全に`runner.rs`へ残した。
-
-必要な`pub(in crate::runner)` visibilityだけを除くと、post-move fragment 5個は
-original full hash
-`ffaf7791b98c7e4060bee444591c780e42a647c69334d4991298dc09b8e65047`、
-`7c857e904821d620d2c7ab5e9fb3a698fa32acdc1b33172c7a2afd30e3af5202`、
-`7f65e0c8e7e720f62b02e55505430c4519db502de64a1d8db4eed454fe2fdf0d`、
-`324ff080387cbc939f469f467350f67963aa69fdcefbffc3d9ef2cc5d59a1212`、
-`a2162d716bbfc77184f9d6865e7a3d60567adf0b86c499645aa5b44065afdc97`、
-combined raw hash
-`f29621c10d4cf43314489b48011a94be66cf9725bb5c2e570756eb42cd29b7ac`、
-whitespace-normalized hash
-`cb75bb4045b6c68b94973965264b9c3bed614cefa5eadff490f462224a16da89`
-を維持した。resulting source inventoryは`runner.rs` 3,760行 /
-`4b63c419c740043eca744958ae5def8c37ac45beeed0744cb46abe9c64945473`、
-phase facade 493行 /
-`fe99192692c32a8ede826c1f22fdf35702372a541bf9d7502bfd3f1b70fe7810`、
-route owner 2,841行 /
-`8ea62f4be5549413ef9e8e88f83540f04468797cb8fe100b53655008bf6d3916`
-となった。
-
-focused route test 2件とcrate unit test 272件はすべて成功した。raw/normalized
-discovered-test hashは`5e41e4db...`/`c0c2b80f...`、plan/parse-only/declaration-
-symbol/type-elaboration CLI hashは`f3424007...`/`57d0fba9...`/`08b00a9f...`/
-`1dadbeab...`を維持した。既知のplan diagnosticはwarning 23件/error 0件のままで
-ある。API、test名、diagnostic、detail key、payload、ordering、fail-closed behavior、
-authority、coverage credit、owner crate、deferred statusは変更していないため、
-`spec_coverage_audit.md`は不変である。format、warning deny付きClippy、workspace
-test、diff checkは成功した。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZS Pre-Move Inventory and Specification
 
-fresh authority/test/trace/expectation/design/source/API/real producer-consumer
-inventoryは、private `type_elaboration/type_assertion_routes.rs`へ次に追加する
-bounded familyとしてtwo-edge local-mode two-hop asserted-head routeだけを選ぶ。
-three-edge siblingは`runner.rs`に残す。正確な`runner.rs` fragmentはinvalid key
-731-732（2行、`8d2918fd...`）、config 2107-2138（32、`01b0aa7b...`）、
-production detail route 2712-2723（12、`f02f7c58...`）、attached
-`#[cfg(test)]`込みtest-only output 2944-2952（9、`aab9fed7...`）、extractor
-3536-3547（12、`d6310ee0...`）の5個/67行である。combined raw hashは
-`4cde8b0b...`、whitespace-normalized pre-move hashは`4fdcb694...`である。
-
-Task 263ZZSはこれらのfragmentだけを既存private ownerへ機械的に移動する。
-orchestration callとdispatch orderは`runner.rs`に残す。normal phase facadeを通る
-のはproduction detail routeだけであり、config/test-consumed output/extractorは
-`#[cfg(test)]`で通す。invalid-key constantはleaf-privateのままとし、config-derived
-runner test aliasで既存名/valueを維持する。mechanical line wrapを防ぐためだけに
-preservation oracle外へformatting-control attributeを追加してよい。public API/
-call site/helper名/config value/正確なthree-expansion set-terminal two-hop relation/
-key/payload/order/fallback/fail-closed behaviorを変更しない。
-
-canonical reserved-variable closure、mode unfolding、builtin-set、static type-
-assertion requirementは不変である。active `.miz`/expectation pairとcovered Task
-211 checker requirementは、Baseからset、MiddleからBase、OuterからMiddleへの
-ordered real source-derived definition 3個、Outerへのreserve `x`、`x is Base`を
-検証する。independent raw Outer reserve-subject/Base formula-side asserted inputは
-distinct site/rangeとsymbol identityを保持する。closed `BindingTwoHopRadix`
-relationはpairwise-distinctなOuter-to-MiddleとMiddle-to-Baseの正確な2 linkを直接
-validateし、Base-to-setはterminal normalization evidenceだけでrelation/general
-reachability evidenceではない。routeはexactly three expansionsを消費し、known
-type entry 3個をBase-definition-RHS builtin-set identityへnormalizeし、subject
-ordinal 1を`BindingId(0)`へresolveし、widening/`qua`なしで1 inferred variableと、
-expected constraint/fact/candidate/diagnostic/deferred reasonがゼロのchecked type
-assertion 1個を生成する。
-
-既存testは5 test fileにdirect symbol reference 41件を保持し、`runner.rs`内の
-definition/internal call 10件を含むpre-move repository occurrenceは6 source/test
-fileに51件である。全5 nonidentity definition order、finite structural/provenance/
-corruption matrix、prior owner 36個に対するbidirectional isolation、immutable
-output、real frontend/resolver sidecarが存在する。focused source/active-fixture
-testはmove前に両方成功する。したがってmove-only `design_drift`でありZZS0 test
-taskは不要である。authority/behavior/coverage credit/owner crate/deferred statusは
-変わらないため`spec_coverage_audit.md`は変更しない。config/key/role/mode/
-relation edit、route/asserted-head generalization、three-edge/他route move、assertion
-weakening、test/expectation editは禁止する。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZS Move Result
 
-Task 263ZZSでは承認済みの5 fragment、合計67行だけを既存private
-`type_elaboration/type_assertion_routes.rs` ownerへ移動した。orchestration callと
-dispatch orderは元の場所でbyte/order-stableのままである。invalid-key fragmentは
-leaf-private、config/output/extractorはtest-only facade consumerのままにし、normal
-facadeを通るのはproduction detail routeだけである。outputのattached
-`#[cfg(test)]`はpreservation oracle内、formatting controlはその外に保った。three-
-edge siblingは完全に`runner.rs`へ残した。
-
-必要な`pub(in crate::runner)` visibilityだけを除くと、post-move fragment 5個は
-original full hash
-`8d2918fd07d267b734abc49b056aa25adb4b86d307d759feebcf58054a5514c0`、
-`01b0aa7b66802966e5cddf4211b9b7499d7fcc56b7629da74dc99e004198176a`、
-`f02f7c58560bfe2f85ad34870743c146c7741285295a1f09b14f18462b67294f`、
-`aab9fed70f5268ca84a32ac81052097acb85ae2ae5347c8cd4106695e79db70c`、
-`d6310ee09776eaf6a40f6adba664495f3d4aa0d7f506a9fc6512153e3e24b2ea`、
-combined raw hash
-`4cde8b0b625452fb495678a12b69342da2c5f11902ed87706006f4519d91bb06`、
-whitespace-normalized hash
-`4fdcb694321ddf165efe08201b14b7e989f51db8beea99fb4418fbf30fd47ec4`
-を維持した。resulting source inventoryは`runner.rs` 3,696行 /
-`07491a7d598ffd38a3499ed4d8b061319c354c585297106a604f1808a6ee5a47`、
-phase facade 497行 /
-`982a872450403dfbc9c4f50c8abec129410fa5e8d4a08cd2e77bfb6b6238232e`、
-route owner 2,914行 /
-`50fa21592dfde166747c7e812063f49a554def5f317c62f10d9c303c8c1b2c84`
-となった。
-
-focused route test 2件とcrate unit test 272件はすべて成功した。raw/normalized
-discovered-test hashは`5e41e4db...`/`c0c2b80f...`、plan/parse-only/declaration-
-symbol/type-elaboration CLI hashは`f3424007...`/`57d0fba9...`/`08b00a9f...`/
-`1dadbeab...`を維持した。既知のplan diagnosticはwarning 23件/error 0件のままで
-ある。API、test名、diagnostic、detail key、payload、ordering、fail-closed behavior、
-authority、coverage credit、owner crate、deferred statusは変更していないため、
-`spec_coverage_audit.md`は不変である。final format、warning deny付きClippy、
-workspace test、diff checkはすべて成功した。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZT Pre-Move Inventory and Specification
 
-fresh authority/test/trace/expectation/design/source/API/real producer-consumer
-inventoryは、private `type_elaboration/type_assertion_routes.rs`へ次に追加する
-bounded familyとしてthree-edge local-mode two-hop asserted-head routeだけを選ぶ。
-four-edge siblingは`runner.rs`に残す。正確な`runner.rs` fragmentはinvalid key
-741-742（2行、`11960978...`）、config 2112-2148（37、`57d4c156...`）、production
-detail route 2684-2695（12、`5f7cf50e...`）、attached `#[cfg(test)]`込みtest-only
-output 2903-2911（9、`ffa4ec43...`）、extractor 3485-3496（12、
-`2fbf279a...`）の5個/72行である。combined raw hashは`659b786b...`、whitespace-
-normalized pre-move hashは`4d663162...`である。
-
-Task 263ZZTはこれらのfragmentだけを既存private ownerへ機械的に移動する。
-orchestration callとdispatch orderは`runner.rs`に残す。normal phase facadeを通る
-のはproduction detail routeだけであり、config/test-consumed output/extractorは
-`#[cfg(test)]`で通す。invalid-key constantはleaf-privateのままとし、config-derived
-runner test aliasで既存名/valueを維持する。mechanical line wrapを防ぐためだけに
-preservation oracle外へformatting-control attributeを追加してよい。public API/
-call site/helper名/config value/正確なfour-expansion set-terminal two-hop relation/
-key/payload/order/fallback/fail-closed behaviorを変更しない。
-
-canonical reserved-variable closure、mode unfolding、builtin-set、static type-
-assertion requirementは不変である。active `.miz`/expectation pairとcovered Task
-213 checker requirementは、Baseからset、InnerからBase、MiddleからInner、Outerから
-Middleへのordered real source-derived definition 4個、Outerへのreserve `x`、
-`x is Inner`を検証する。independent raw Outer reserve-subject/Inner formula-side
-asserted inputはdistinct site/rangeとsymbol identityを保持する。closed
-`BindingTwoHopRadix` relationはpairwise-distinctなOuter-to-MiddleとMiddle-to-Innerの
-正確な2 linkを直接validateし、Inner-to-Base-to-set tailはterminal normalization
-evidenceだけでrelation/general reachability evidenceではない。routeはexactly four
-expansionsを消費し、known type entry 3個をBase-definition-RHS builtin-set identityへ
-normalizeし、subject ordinal 1を`BindingId(0)`へresolveし、widening/`qua`なしで
-1 inferred variableと、expected constraint/fact/candidate/diagnostic/deferred reasonが
-ゼロのchecked type assertion 1個を生成する。
-
-既存testは5 test fileにdirect symbol reference 70件を保持し、`runner.rs`内の
-definition/internal call 11件を含むpre-move repository occurrenceは6 source/test
-fileに81件である。全23 nonidentity definition order、finite structural/provenance/
-corruption matrix、focused Task 211/212 regression、prior owner 38個に対する
-bidirectional isolation、immutable output、real frontend/resolver sidecarが存在する。
-focused source/active-fixture testはmove前に両方成功する。したがってmove-only
-`design_drift`でありZZT0 test taskは不要である。authority/behavior/coverage credit/
-owner crate/deferred statusは変わらないため`spec_coverage_audit.md`は変更しない。
-config/key/role/mode/relation edit、route/asserted-head generalization、four-edge/他route
-move、assertion weakening、test/expectation editは禁止する。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZT Move Result
 
-Task 263ZZTでは承認済みの5 fragment、合計72行だけを既存private
-`type_elaboration/type_assertion_routes.rs` ownerへ移動した。orchestration callと
-dispatch orderは元の場所でbyte/order-stableのままである。invalid-key fragmentは
-leaf-private、config/output/extractorはtest-only facade consumerのままにし、normal
-facadeを通るのはproduction detail routeだけである。outputのattached
-`#[cfg(test)]`はpreservation oracle内、formatting controlはその外に保った。four-
-edge siblingは完全に`runner.rs`へ残した。
-
-必要な`pub(in crate::runner)` visibilityだけを除くと、post-move fragment 5個は
-original full hash
-`1196097899e5dfe2596a13b901a0550dd9864f013a9fd820bd2815120991a714`、
-`57d4c156e7d782096b45903309b56a9471490bee7675946f1c931cf02185067d`、
-`5f7cf50ea3b8f7b69748023434b10911c56f095468fe6da1393b683579829cfd`、
-`ffa4ec439ddda912122b0115f009f5c7534a9311357d5c85a39fa5b1586baa40`、
-`2fbf279ae0a789b4e3551dcff455ff5bc0da29f10f5a8d995c095e993986d5de`、
-combined raw hash
-`659b786b5d67157b7ce8e6b600caa615fe9e2d29a12724c18f633bd96719ac12`、
-whitespace-normalized hash
-`4d66316234a0245f58fef1aadccedc4ba1f7b7d3c92f6d8af48bf0e37cbc12be`
-を維持した。resulting source inventoryは`runner.rs` 3,627行 /
-`09770cb8a04b5f5bfdc9f86c830177d345e04f421ea72a658f7b04bfc042f2e9`、
-phase facade 501行 /
-`d32757edb47813337a101aff07e27ea86d82c0c47a7c86624a34bd61eb8350d8`、
-route owner 2,992行 /
-`375a27a4dc0ce6a14d8c4a7cf74674cb6858f2de86e1c3f561cf3060da4db867`
-となった。
-
-focused route test 2件とcrate unit test 272件はすべて成功した。raw/normalized
-discovered-test hashは`5e41e4db...`/`c0c2b80f...`、plan/parse-only/declaration-
-symbol/type-elaboration CLI hashは`f3424007...`/`57d0fba9...`/`08b00a9f...`/
-`1dadbeab...`を維持した。既知のplan diagnosticはwarning 23件/error 0件のままで
-ある。API、test名、diagnostic、detail key、payload、ordering、fail-closed behavior、
-authority、coverage credit、owner crate、deferred statusは変更していないため、
-`spec_coverage_audit.md`は不変である。final format、warning deny付きClippy、
-workspace test、diff checkはすべて成功した。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZU Pre-Move Inventory and Specification
 
-fresh authority/test/trace/expectation/design/source/API/real producer-consumer
-inventoryは、private `type_elaboration/type_assertion_routes.rs`へ次に追加する
-bounded familyとしてfour-edge local-mode two-hop asserted-head routeだけを選ぶ。
-three-hop/他routeは`runner.rs`に残す。正確な`runner.rs` fragmentはinvalid key
-751-752（2行、`7cbfd828...`）、config 2117-2158（42、`21bb0f84...`）、production
-detail route 2651-2662（12、`2a80a99a...`）、attached `#[cfg(test)]`込みtest-only
-output 2857-2865（9、`dd1655c7...`）、extractor 3429-3440（12、
-`d040986a...`）の5個/77行である。combined raw hashは`1a66c98d...`、whitespace-
-normalized pre-move hashは`e6798044...`である。
-
-Task 263ZZUはこれらのfragmentだけを既存private ownerへ機械的に移動する。
-orchestration callとdispatch orderは`runner.rs`に残す。normal phase facadeを通る
-のはproduction detail routeだけであり、config/test-consumed output/extractorは
-`#[cfg(test)]`で通す。invalid-key constantはleaf-privateのままとし、config-derived
-runner test aliasで既存名/valueを維持する。mechanical line wrapを防ぐためだけに
-preservation oracle外へformatting-control attributeを追加してよい。public API/
-call site/helper名/config value/正確なfive-expansion set-terminal two-hop relation/
-key/payload/order/fallback/fail-closed behaviorを変更しない。
-
-canonical reserved-variable closure、mode unfolding、builtin-set、static type-
-assertion requirementは不変である。active `.miz`/expectation pairとcovered Task
-215 checker requirementは、Baseからset、InnerからBase、MiddleからInner、Outerから
-Middle、TooDeepからOuterへのordered real source-derived definition 5個、TooDeepへの
-reserve `x`、`x is Middle`を検証する。independent raw TooDeep reserve-subject/
-Middle formula-side asserted inputはdistinct site/rangeとsymbol identityを保持する。
-closed `BindingTwoHopRadix` relationはpairwise-distinctなTooDeep-to-OuterとOuter-to-
-Middleの正確な2 linkを直接validateし、Middle-to-Inner-to-Base-to-set tailはterminal
-normalization evidenceだけでrelation/general reachability evidenceではない。routeは
-exactly five expansionsを消費し、known type entry 3個をBase-definition-RHS builtin-
-set identityへnormalizeし、subject ordinal 1を`BindingId(0)`へresolveし、widening/
-`qua`なしで1 inferred variableと、expected constraint/fact/candidate/diagnostic/
-deferred reasonがゼロのchecked type assertion 1個を生成する。
-
-既存testは3 test fileにdirect symbol reference 68件を保持し、`runner.rs`内の
-definition/internal call 11件を含むpre-move repository occurrenceは4 source/test
-fileに79件である。全119 nonidentity definition order、finite structural/provenance/
-corruption matrix、focused Task 211/212/213/214 regression、prior owner 40個に対する
-bidirectional isolation、immutable output、real frontend/resolver sidecarが存在する。
-focused source/active-fixture testはmove前に両方成功する。したがってmove-only
-`design_drift`でありZZU0 test taskは不要である。authority/behavior/coverage credit/
-owner crate/deferred statusは変わらないため`spec_coverage_audit.md`は変更しない。
-config/key/role/mode/relation edit、route/asserted-head generalization、three-hop/他route
-move、assertion weakening、test/expectation editは禁止する。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZU Move Result
 
-Task 263ZZUでは承認済みの5 fragment、合計77行だけを既存private
-`type_elaboration/type_assertion_routes.rs` ownerへ移動した。orchestration callと
-dispatch orderは元の場所でbyte/order-stableのままである。invalid-key fragmentは
-leaf-private、config/output/extractorはtest-only facade consumerのままにし、normal
-facadeを通るのはproduction detail routeだけである。outputのattached
-`#[cfg(test)]`はpreservation oracle内、formatting controlはその外に保った。全
-three-hop/他routeは完全に`runner.rs`へ残した。
-
-必要な`pub(in crate::runner)` visibilityだけを除くと、post-move fragment 5個は
-original full hash
-`7cbfd8281192a366a86fd611075a4662fc74cddd59627ac65256d06444177394`、
-`21bb0f848078ea625f2c8421576df5ae8e2cbc705ab60056279290607e0c2a88`、
-`2a80a99a130369e40dae020f775688198f3cea5514637d192d0e9f570733a62d`、
-`dd1655c7a49683901a4149d7d40d9a1973e13fc3b6a51082e3f83ff333425b97`、
-`d040986a36f7593ad3c036ec2fca600e7c96ee435c4ce9b83cacbd04676c5c2c`、
-combined raw hash
-`1a66c98de0cd41f13135edfa328bf9fac021caf6bafdc3cec69d6aa7b06f50d2`、
-whitespace-normalized hash
-`e67980444da7019a4c1d3f8b5d2a2e065eba3fa597b2de864c2da12d59afe06d`
-を維持した。resulting source inventoryは`runner.rs` 3,553行 /
-`6412b0b19d5dc38ffd2ccf77f1e6b080ed6e8abff82439c8b7ab844545566533`、
-phase facade 505行 /
-`9e296f31dc18487bc479fcd74aa0457bbd78797269ff73b1bb622fa61a2df704`、
-route owner 3,075行 /
-`2e1e2c5a65ac2a98755d5e45a9fe67d92a2e61a87da351dc7b4d4e60d04bddfc`
-となった。
-
-focused route test 2件とcrate unit test 272件はすべて成功した。raw/normalized
-discovered-test hashは`5e41e4db...`/`c0c2b80f...`、plan/parse-only/declaration-
-symbol/type-elaboration CLI hashは`f3424007...`/`57d0fba9...`/`08b00a9f...`/
-`1dadbeab...`を維持した。既知のplan diagnosticはwarning 23件/error 0件のままで
-ある。API、test名、diagnostic、detail key、payload、ordering、fail-closed behavior、
-authority、coverage credit、owner crate、deferred statusは変更していないため、
-`spec_coverage_audit.md`は不変である。final format、warning deny付きClippy、
-workspace test、diff checkはすべて成功した。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZV Pre-Move Inventory and Specification
 
-fresh authority/test/trace/expectation/design/source/API/real producer-consumer
-inventoryは、private `type_elaboration/type_assertion_routes.rs`へ次に追加する
-bounded familyとしてthree-edge local-mode three-hop asserted-head routeだけを選ぶ。
-four-edge/他routeは`runner.rs`に残す。正確な`runner.rs` fragmentはinvalid key
-761-762（2行、`52589423...`）、config 2122-2159（38、`ee987ab6...`）、production
-detail route 2613-2625（13、`c0b9a874...`）、attached `#[cfg(test)]`込みtest-only
-output 2806-2815（10、`bba2a5bc...`）、extractor 3368-3379（12、
-`d4b6df24...`）の5個/75行である。combined raw hashは`9f03f366...`、whitespace-
-normalized pre-move hashは`2f166f1c...`である。
-
-Task 263ZZVはこれらのfragmentだけを既存private ownerへ機械的に移動する。
-orchestration callとdispatch orderは`runner.rs`に残す。normal phase facadeを通る
-のはproduction detail routeだけであり、config/test-consumed output/extractorは
-`#[cfg(test)]`で通す。invalid-key constantはleaf-privateのままとし、config-derived
-runner test aliasで既存名/valueを維持する。mechanical line wrapを防ぐためだけに
-preservation oracle外へformatting-control attributeを追加してよい。public API/
-call site/helper名/config value/正確なfour-expansion set-terminal three-hop relation/
-key/payload/order/fallback/fail-closed behaviorを変更しない。
-
-canonical reserved-variable closure、mode unfolding、builtin-set、static type-
-assertion requirementは不変である。active `.miz`/expectation pairとcovered Task
-217 checker requirementは、Baseからset、InnerからBase、MiddleからInner、Outerから
-Middleへのordered real source-derived definition 4個、Outerへのreserve `x`、`x is
-Base`を検証する。independent raw Outer reserve-subject/Base formula-side asserted
-inputはdistinct site/rangeとsymbol identityを保持する。closed
-`BindingThreeHopRadix` relationはpairwise-distinctなOuter-to-Middle、Middle-to-
-Inner、Inner-to-Baseの正確な3 linkを直接validateし、Base-to-setはterminal
-normalization evidenceだけでrelation/general reachability evidenceではない。routeは
-exactly four expansionsを消費し、known type entry 3個をBase-definition-RHS builtin-
-set identityへnormalizeし、subject ordinal 1を`BindingId(0)`へresolveし、widening/
-`qua`なしで1 inferred variableと、expected constraint/fact/candidate/diagnostic/
-deferred reasonがゼロのchecked type assertion 1個を生成する。
-
-既存testは3 test fileにdirect symbol reference 58件を保持し、`runner.rs`内の
-definition/internal call 10件を含むpre-move repository occurrenceは4 source/test
-fileに68件である。全23 nonidentity definition order、finite structural/provenance/
-corruption matrix、focused Tasks 211-216 regression、prior owner 42個に対する
-bidirectional isolation、immutable output、real frontend/resolver sidecarが存在する。
-focused Task 217 route test 4件はmove前にすべて成功する。したがってmove-only
-`design_drift`でありZZV0 test taskは不要である。authority/behavior/coverage credit/
-owner crate/deferred statusは変わらないため`spec_coverage_audit.md`は変更しない。
-config/key/role/mode/relation edit、route/asserted-head generalization、four-edge/他route
-move、assertion weakening、test/expectation editは禁止する。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZV Move Result
 
-Task 263ZZVでは承認済みの5 fragment、合計75行だけを既存private
-`type_elaboration/type_assertion_routes.rs` ownerへ移動した。orchestration callと
-dispatch orderは元の場所でbyte/order-stableのままである。invalid-key fragmentは
-leaf-private、config/output/extractorはtest-only facade consumerのままにし、normal
-facadeを通るのはproduction detail routeだけである。outputのattached
-`#[cfg(test)]`はpreservation oracle内、formatting controlはその外に保った。four-
-edge sibling/他routeは完全に`runner.rs`へ残した。
-
-必要な`pub(in crate::runner)` visibilityだけを除くと、post-move fragment 5個は
-original full hash
-`525894235f29ad4842e56b8d99d9565588a2dc7d665023c93f6ec3b5ba4caf69`、
-`ee987ab6d6e9f64384af68a43d424af3e1f608b780929ddb4668fe1d9f500abc`、
-`c0b9a8740402c5e6cc1504dca6698ca53b8c06100b3a98ada6be7052db8fcec1`、
-`bba2a5bc9d79f347e5f8e5bd7177098af3806fa4fb4de4a3da71c5d9693bad7e`、
-`d4b6df2405aa27f3bcec229a8211d8dd66714ff67100dc65f7de2b0eb5d24282`、
-combined raw hash
-`9f03f366868ef6e707a7d6da47150732cceb108854fdfde33b85a2f1b8f9b2e6`、
-whitespace-normalized hash
-`2f166f1ce1d5d6024293627259f2541cff256aa628b17fa128d2c6356ef5e011`
-を維持した。resulting source inventoryは`runner.rs` 3,481行 /
-`33006b730ffa29bc4e3cf8600931c85f3b92c0f080bc26e8c0d9f40ff08094bd`、
-phase facade 509行 /
-`d64bddb6f026148229aa28b442a858429949cc08fe29ebd91f058253d6594bec`、
-route owner 3,156行 /
-`68f11d2563cf5cb9bd379c49d2799d52feb9ef53caa1a1cc49527f4b2543e89f`
-となった。
-
-focused Task 217 route test 4件とcrate unit test 272件はすべて成功した。raw/
-normalized discovered-test hashは`5e41e4db...`/`c0c2b80f...`、plan/parse-only/
-declaration-symbol/type-elaboration CLI hashは`f3424007...`/`57d0fba9...`/
-`08b00a9f...`/`1dadbeab...`を維持した。active countは96/4/188、plan/countは
-403/367、type-elaboration coverageは235/223、pass/failは219/184のままである。
-既知のplan diagnosticはwarning 23件/error 0件を維持した。API、test名、
-diagnostic、detail key、payload、ordering、fail-closed behavior、authority、coverage
-credit、owner crate、deferred statusは変更していないため、
-`spec_coverage_audit.md`は不変である。final format、warning deny付きClippy、
-workspace test、diff checkはすべて成功した。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZW Pre-Move Inventory and Specification
 
-fresh authority/test/trace/expectation/design/source/API/real producer-consumer
-inventoryは、private `type_elaboration/type_assertion_routes.rs`へ次に追加する
-bounded familyとしてfour-edge local-mode three-hop asserted-head routeだけを選ぶ。
-four-hop/他routeは`runner.rs`に残す。正確な`runner.rs` fragmentはinvalid key
-771-772（2行、`849b87cb...`）、config 2127-2169（43、`9432f71c...`）、production
-detail route 2579-2591（13、`5bb3dca1...`）、attached `#[cfg(test)]`込みtest-only
-output 2758-2767（10、`6f2dd038...`）、extractor 3309-3320（12、
-`b42e30cb...`）の5個/80行である。combined raw hashは`367e7f81...`、whitespace-
-normalized pre-move hashは`30f3f31c...`である。
-
-Task 263ZZWはこれらのfragmentだけを既存private ownerへ機械的に移動する。
-orchestration callとdispatch orderは`runner.rs`に残す。normal phase facadeを通る
-のはproduction detail routeだけであり、config/test-consumed output/extractorは
-`#[cfg(test)]`で通す。invalid-key constantはleaf-privateのままとし、config-derived
-runner test aliasで既存名/valueを維持する。mechanical line wrapを防ぐためだけに
-preservation oracle外へformatting-control attributeを追加してよい。public API/
-call site/helper名/config value/正確なfive-expansion set-terminal three-hop relation/
-key/payload/order/fallback/fail-closed behaviorを変更しない。
-
-canonical reserved-variable closure、mode unfolding、builtin-set、static type-
-assertion requirementは不変である。active `.miz`/expectation pairとcovered Task
-219 checker requirementは、Baseからset、InnerからBase、MiddleからInner、Outerから
-Middle、TooDeepからOuterへのordered real source-derived definition 5個、TooDeepへの
-reserve `x`、`x is Inner`を検証する。independent raw TooDeep reserve-subject/Inner
-formula-side asserted inputはdistinct site/rangeとsymbol identityを保持する。closed
-`BindingThreeHopRadix` relationはpairwise-distinctなTooDeep-to-Outer、Outer-to-
-Middle、Middle-to-Innerの正確な3 linkを直接validateし、Inner-to-Base-to-set tailは
-terminal normalization evidenceだけでrelation/general reachability evidenceではない。
-routeはexactly five expansionsを消費し、known type entry 3個をBase-definition-RHS
-builtin-set identityへnormalizeし、subject ordinal 1を`BindingId(0)`へresolveし、
-widening/`qua`なしで1 inferred variableと、expected constraint/fact/candidate/
-diagnostic/deferred reasonがゼロのchecked type assertion 1個を生成する。
-
-既存testは3 test fileにdirect symbol reference 52件を保持し、`runner.rs`内の
-definition/internal call 10件を含むpre-move repository occurrenceは4 source/test
-fileに62件である。全119 nonidentity definition order、unconnected-unsupported/
-connected-sixth-edge guardを分けたfinite structural/provenance/corruption matrix、
-focused Task 207/Tasks 211-218 regression、prior owner 44個に対するbidirectional
-isolation、immutable output、real frontend/resolver sidecarが存在する。focused Task
-219 route test 4件はmove前にすべて成功する。したがってmove-only `design_drift`で
-ありZZW0 test taskは不要である。authority/behavior/coverage credit/owner crate/
-deferred statusは変わらないため`spec_coverage_audit.md`は変更しない。config/key/
-role/mode/relation edit、route/asserted-head generalization、four-hop/他route move、
-assertion weakening、test/expectation editは禁止する。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZW Move Result
 
-Task 263ZZWでは承認済みの5 fragment、合計80行だけを既存private
-`type_elaboration/type_assertion_routes.rs` ownerへ移動した。orchestration callと
-dispatch orderは元の場所でbyte/order-stableのままである。invalid-key fragmentは
-leaf-private、config/output/extractorはtest-only facade consumerのままにし、normal
-facadeを通るのはproduction detail routeだけである。outputのattached
-`#[cfg(test)]`はpreservation oracle内、formatting controlはその外に保った。four-
-hop sibling/他routeは完全に`runner.rs`へ残した。
-
-必要な`pub(in crate::runner)` visibilityだけを除くと、post-move fragment 5個は
-original full hash
-`849b87cbe3f5da657170767074ed640a315b93ac32b91593828090a209a963ed`、
-`9432f71c19f39099ddee2cc4423cd2fd4831d18aa5b2416a3781ea92fcd499cb`、
-`5bb3dca141ef889f7772e1c49d70f2f89b7a62b131b8bea3a1203c7bd5520bbc`、
-`6f2dd038f5818ef7a370602710a9b4357902826d6340c2d47919d66027690314`、
-`b42e30cb6e8b538e4353c29154e3308ec0f0bd67dce215aa1a95ae9ba12fcc4f`、
-combined raw hash
-`367e7f814dd82f82e9c059284a9ac409912b0b6e270867310d908bf8b082734d`、
-whitespace-normalized hash
-`30f3f31c67a68d6a65059658bab7e0903f7aabb83a2508b584a6b59e5490ca1c`
-を維持した。resulting source inventoryは`runner.rs` 3,404行 /
-`a03d945ce965ab88ddadf54afe6b56ba009606ff6610a23321a71847a2a4fe5e`、
-phase facade 513行 /
-`0e910a7c56ac99b5b6724dac1c008edebdb1cdaa462baab5f74ef59c4fdda633`、
-route owner 3,242行 /
-`2b504e7059e47c0a8368d12a699e67184f31a566578571fb1e62505d530788be`
-となった。
-
-focused Task 219 route test 4件とcrate unit test 272件はすべて成功した。raw/
-normalized discovered-test hashは`5e41e4db...`/`c0c2b80f...`、plan/parse-only/
-declaration-symbol/type-elaboration CLI hashは`f3424007...`/`57d0fba9...`/
-`08b00a9f...`/`1dadbeab...`を維持した。active countは96/4/188、plan/countは
-403/367、type-elaboration coverageは235/223、pass/failは219/184のままである。
-既知のplan diagnosticはwarning 23件/error 0件を維持した。API、test名、
-diagnostic、detail key、payload、ordering、fail-closed behavior、authority、coverage
-credit、owner crate、deferred statusは変更していないため、
-`spec_coverage_audit.md`は不変である。final format、warning deny付きClippy、
-workspace test、diff checkはすべて成功した。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZX Pre-Move Inventory and Specification
 
-fresh authority/test/trace/expectation/design/source/API/real producer-consumer
-inventoryは、private `type_elaboration/type_assertion_routes.rs`へ次に追加する
-bounded familyとしてfour-edge local-mode four-hop asserted-head routeだけを選ぶ。
-他routeはすべて`runner.rs`に残す。正確なfragmentはinvalid key 778-779（2行、
-`28fd6209...`）、config 2132-2175（44、`7c55b77c...`）、production detail
-2540-2551（12、`167ffe4e...`）、attached `#[cfg(test)]`込みtest-only output
-2705-2713（9、`659160a3...`）、extractor 3245-3256（12、`f9ec6b6c...`）の
-5個/79行である。combined raw hashは`a2e855b4...`、whitespace-normalized hashは
-`9d179fc9...`である。
-
-Task 263ZZXはこれらだけを既存private ownerへ機械的に移動する。orchestration/
-dispatchは`runner.rs`に残す。normal facadeを通るのはproduction detailだけで、
-config/test output/extractorは`#[cfg(test)]`で通す。invalid keyはleaf-private、
-runner test aliasはconfig-derivedで既存名/valueを維持する。formatting controlは
-mechanical wrap防止のためoracle外だけに追加できる。API/call site/helper名/config/
-five-expansion set-terminal four-hop relation/key/payload/order/fallback/fail-closed
-behaviorを変更しない。
-
-active Task 221 authority sliceはBase-to-set、Inner-to-Base、Middle-to-Inner、Outer-
-to-Middle、TooDeep-to-Outerのreal definition、TooDeepへのreserve `x`、`x is Base`
-を持つ。closed `BindingFourHopRadix`はpairwise-distinctなTooDeep-to-Outer、Outer-
-to-Middle、Middle-to-Inner、Inner-to-Baseを直接validateし、Base-to-setはterminal
-normalization evidenceだけである。exactly five expansionsはknown entry 3個をBase-
-definition-RHS builtin-set identityへnormalizeし、ordinal 1を`BindingId(0)`へresolve
-して、constraint/fact/candidate/diagnostic/deferredがゼロ、widening/`qua`なしの
-inferred variable 1個とchecked assertion 1個を生成する。
-
-testは3 fileにdirect symbol reference 46件、runner definition/internal call 10件を
-加えて4 source/test fileに56件を保持する。全119 nonidentity order、独立した
-unconnected-deeper/connected fifth-link guard、finite structural/provenance/corruption
-matrix、focused Task 207/Tasks 211-220、prior owner 46個へのbidirectional isolation、
-immutable output、real sidecarが存在し、focused Task 221 test 4件はpre-moveで成功
-する。move-only `design_drift`でZZX0は不要、`spec_coverage_audit.md`は不変である。
-rename/dedup/generalization、他route move、relation/semantic change、assertion
-weakening、test/expectation editは禁止する。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZX Move Result
 
-Task 263ZZXでは承認済み5 fragment/79行だけを既存private
-`type_elaboration/type_assertion_routes.rs`へ移動した。keyはleaf-private、config/
-output/extractorはtest-only facade consumer、detailだけnormal consumerのままで、
-orchestration/orderと他routeは`runner.rs`に残る。attached `#[cfg(test)]`はoracle内、
-formatting controlはoracle外である。
-
-`pub(in crate::runner)`だけを除くとfull hashは
-`28fd620939967df3cd3223c7b535c4e401cb2bdff5013bc75ecc627ceda0ca48`、
-`7c55b77c29767a98841fff67095bff121ac3186793bb45a2e32fc1cb7312cde1`、
-`167ffe4e617475a864572ec341c4f78c590ee3258b087cb2b2330aeafed334b2`、
-`659160a32410c18277e53527dc12e70e79da9fa3d9e82902d59270ac5501253a`、
-`f9ec6b6ca6fbf091308ae2fffa9edb6ddb4911547023963bffb1cb6a3ff61cb5`、
-combined `a2e855b48b2412159b64abea387c6ca431aa8d185856f94c81e3819d347de2c5`、
-normalized `9d179fc9c571a7fe7d9f789f0617396a55f3b67614e724a222fc86d681bf4ac8`
-を維持した。inventoryはrunner 3,328 /
-`0f638d02ea6c3fe71d52fd60394663c3504aff770cfe60613525b3393ebafc3f`、
-facade 517 / `0b2fce4f3cf61a8e2a6f54034b6aee561c4a1ed6090b38b0519197a3b6171358`、
-owner 3,327 / `b90548eb7421450603363f22c025cba7447a1a4b34f4f35163d00b9df5ffc9c6`
-である。
-
-focused Task 221とcrate test 272件は成功し、test-list/4 CLI hash/countはcanonical
-96/4/188、403/367、235/223、219/184、warning 23/error 0を維持した。API/test名/
-diagnostic/key/payload/order/fail-closed/authority/coverage/deferredは不変で、
-`spec_coverage_audit.md`も不変である。final fmt、warning deny Clippy、workspace
-test、diff checkはすべて成功した。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZY Pre-Move Inventory and Specification
 
-fresh authority/test/trace/expectation/design/source/API/real producer-consumer
-inventoryにより、次のbounded incrementとしてdirect builtin-set reserved-variable
-type-assertion routeだけをprivate
-`type_elaboration/type_assertion_routes.rs`へ追加する。他siblingはすべて
-`runner.rs`に残す。routeは正確な`runner.rs` 5 fragmentから成る。invalid keyは
-733-734（2行、`6b36b357...`）、configは2092-2103（12、`02b33fa3...`）、
-production detail routeは2462-2473（12、`6e8cc816...`）、attached
-`#[cfg(test)]`を含むtest-only outputは2622-2630（9、`b3fc8a49...`）、
-extractorは3143-3154（12、`4b1129d2...`）。合計47行、combined raw hashは
-`98bbfb38...`、whitespace-normalized pre-move hashは`bdc0d6f0...`。
-
-Task 263ZZYはこれらだけを既存private ownerへ機械的に移動する。orchestration/
-dispatchは`runner.rs`に残す。normal phase facadeを通るのはproduction detail
-routeだけとし、config/test-consumed output/extractorは`#[cfg(test)]`でのみ通す。
-invalid keyはleaf-privateを維持する。API、call site、helper名、config、key、
-payload、ordering、fallback、fail-closed behaviorは変更しない。builtin-object、
-local-mode、chained、他type-assertion/asserted-head、formula familyは移動しない。
-
-active Task 122 authority sliceは正確に`reserve x for set; theorem
-ReservedVariableTypeAssertionPayloadBoundary: x is set;`である。reserve由来subject
-resultと独立したformula-side asserted typeは別source site/rangeを維持し、同じ
-builtin-set identityへnormalizeする。checkerはnormalized reflexive identityだけを
-admitし、inferred reserved-variable term 1件とfact/deferred-free checked type
-assertion 1件を生成する。reachability、widening、theorem acceptance、proof、CoreIr、
-ControlFlowIr、VC behaviorは導入しない。
-
-testには7 fileでdirect route-symbol reference 68件が残り、runnerのdefinition/
-internal call 10件を加えると8 source/test fileで78 occurrenceとなる。Task 122の
-source exactness/corruption matrix、real active fixture、later-owner rejection guard、
-immutable output、frontend/resolver sidecarは存在し、focused Task 122 test 2件は
-pre-moveでpassする。これはmove-only `design_drift`で、ZZY0 test taskは不要、
-`spec_coverage_audit.md`は変更しない。rename/dedup/generalization、object/local-
-mode/他route move、reachability/widening change、test/expectation/trace/spec editを
-禁止する。paired Source Layout Inventoryには既存owner pathを記録し、owner、
-coverage credit、deferred rationaleを変えずpath-list driftを修正する。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZY Move Result
 
-Task 263ZZYでは承認済み5 fragment/47行だけを既存private
-`type_elaboration/type_assertion_routes.rs` ownerへ移動した。keyはleaf-privateで、
-config由来test-only aliasがrunner testの名前と値を維持する。normal facadeを通る
-のはdetailだけで、config/output/extractorは`cfg(test)`で通る。orchestration、
-dispatch、全sibling、全call siteは元の位置を維持する。oracle外の
-`rustfmt::skip` controlにより元のconfig spellingを維持した。
-
-`pub(in crate::runner)`だけを除去すると、5 full hashは
-`6b36b357845d4ce902067d1e25cb52c98411238de9af6d0b2c0071aede48fbeb`、
-`02b33fa38ebe9f563733ffd045760551258785a30e030f80879b3fe220e372d5`、
-`6e8cc816bb6a5cda91475d9e0140d1ffa407a926ab2f18e44a290fb7e0cf2507`、
-`b3fc8a4910475ec4a70373953c9d4a33b3fb3c0fe1098d0c37038cb543a7e918`、
-`4b1129d21114397128d06e5d934954eee73bdc6c21b1aee2949e9743e43e59e2`
-のままである。combined rawは
-`98bbfb383958957dc65e5aca16ebf456ed20bbe764c7b2033df60da54b0d95e7`、
-normalizedは
-`bdc0d6f0b5e215ecf80d778f196a935230733d1c873dd0dbb2d9aedcdd13ff3f`
-のままである。resulting inventoryは`runner.rs` 3,284 /
-`0c207e843bfa37202b67c808e5dfc6307cfeec629ba02e099e07bab6b282a7ea`、
-facade 521 /
-`5bee5ded1da24d71c85e4c04b3ba2e5e49e2727d30cc4fbd394116682e05ff13`、
-owner 3,380 /
-`8d9e0c45349fc51e34bf85bc70cbc9978ceba4de3a05e8748b535bc0f6412853`。
-
-focused Task 122 test 2件とcrate test 272件はpassした。raw/normalized
-test-list hashは`5e41e4db...`/`c0c2b80f...`、plan/parse-only/declaration-
-symbol/type-elaboration CLI hashは`f3424007...`、`57d0fba9...`、
-`08b00a9f...`、`1dadbeab...`を維持する。active countは96/4/188、plan/count
-403/367、type coverage 235/223、pass/fail 219/184、diagnostic 23 warning/0
-errorのままである。API、test name、diagnostic、key、payload、ordering、fail-
-closed behavior、authority、coverage、deferred stateは不変で、
-`spec_coverage_audit.md`は変更しない。最終format、deny-warning Clippy、
-workspace test、diff checkはpassした。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZ Pre-Move Inventory and Specification
 
-fresh authority/test/trace/expectation/design/source/API/real producer-
-consumer inventoryは、次のbounded production-helper moveとしてshared
-term/formula diagnostic-key projectionだけを選ぶ。正確な`runner.rs` fragmentは
-2825-2834の`term_formula_output_detail_keys`で、10行、raw hashは
-`70bede8293d57a58a1a9360c80b775c126dbdadd5fb776308da45138e9822458`、
-whitespace-normalized hashは
-`b7a0eb7327dc52681a911edddd4235644a8bb5463def99c7aefa9784b11ab010`。
-2722、2731、2767、2776、2785、2794、2804、2813、2822のremaining
-formula-detail wrapper 9個がconsumerである。dependency-first private ownerは
-`TermFormulaInferenceOutput` transport/build/validation surfaceを既に所有する
-既存`type_elaboration/output.rs`とする。
-
-Task 263ZZZはその1 fragmentだけを機械的に移動する。helperは既存parent
-consumer 9個のためだけに`pub(in crate::runner)` visibilityでprivate phase
-facadeを越える。output algorithmは正確に維持する: checker diagnosticを
-canonical orderで走査し、不変の各`message_key`へ
-`type_elaboration.checker.` prefixを付け、rendered keyをsort/dedupして返す。
-wrapper、producer、dispatch call、output payload、test helperは移動しない。
-
-authority sliceは`harness.md`と`expectation_schema.md`のdeterministic detail-key/
-diagnostic projection contract、formula-gap expectation、
-`runner/tests/type_elaboration/source_gap_and_equality.rs`のdirect ordered-key
-assertionである。これらは全represented formula diagnostic familyをexerciseし、
-active contradiction fixtureがempty-key pathをexerciseする。272-test raw/
-normalized list oracleと4 CLI stdout hashがdiscovery/end-to-end byte stabilityを
-coverする。move-only `design_drift`のtest sufficiencyは十分で、ZZZ0 prerequisite
-testは不要である。
-
-prefix、message-key source、canonical traversal、sort、dedup、key text/order、
-diagnostic、payload、fail-closed behavior、consumer body、test/expectation/trace/
-spec intent、deferred stateの変更を禁止する。このtaskはspecification coverage、
-design mapping、follow-up owner、trace credit、deferred rationaleを変えないため、
-`spec_coverage_audit.md`は変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZ Move Result
 
-Task 263ZZZは承認済み10行helperだけを既存private
-`type_elaboration/output.rs`へ移動した。functionは不変のparent consumer 9個の
-ためだけに`pub(in crate::runner)`と`pub(super)`でphase facadeを越える。
-`#[rustfmt::skip]` controlはoracle外で、元のone-line signatureを維持する。
-`pub(in crate::runner)`だけを除去すると、moved fragmentはbyte-identicalで、
-raw hashは
-`70bede8293d57a58a1a9360c80b775c126dbdadd5fb776308da45138e9822458`、
-whitespace-normalized hashは
-`b7a0eb7327dc52681a911edddd4235644a8bb5463def99c7aefa9784b11ab010`
-のままである。resulting inventoryは`runner.rs` 3,274 /
-`794d9602195c9b8791fe2d94da31af4bb2461e41fd15b98b67b1d3a7fc00e4e2`、
-phase facade 521 /
-`e42f8fd2db3ea725c080b71631ae2fe71d3200193a8177363b4d9aa7152b8b27`、
-`output.rs` 1,153 /
-`7f107a2cae8166ebf0cb53e8ae0f0ac93d7ce5c0e44e231ee16ed823b1e0c7b3`。
-
-focused formula-gap ordered-key testとactive contradiction empty-key testはpass
-した。crate unit test 272件はすべてpassし、raw/normalized test-list hashは
-`5e41e4dbfcc303322c246a612de61926a628957a168589b45864d0a5070bb07e`
-と
-`c0c2b80f8b4e6c84cd25d77573fda722c4d1846fed168cd4a478781cdb42775e`
-のままである。plan/parse-only/declaration-symbol/type-elaboration CLI hashは
-`f34240072564dfafacf7b0d914a8204037bbfc042dea375326ae757774f63759`、
-`57d0fba9be95644890b80bfa4ec2cd992e47bb8ad4b67c130f5194ea73aa0273`、
-`08b00a9f6fe70d94fe2c1b2bdebbdb5603bcee39bf3ceb460abe53f403bba7b5`、
-`1dadbeabb219f5853c713ad53aa1cc7cd720a0e80abd7f882e9e0a5ea7802625`
-を維持する。countは96/4/188、403/367、235/223、219/184、diagnosticは
-23 warning/0 errorのままである。format、deny-warning Clippy、crate/workspace
-test、diff checkはpassした。test-sufficiency/implementation reviewはfindingなし。
-API、consumer body、key、prefix、diagnostic、payload、ordering、fail-closed
-behavior、coverage、deferred stateは不変で、`spec_coverage_audit.md`は変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZA Pre-Move Inventory and Specification
 
-authority、test、trace、expectation、design、source、API、real producer/consumer
-のfresh inventoryは、次のbounded production-helper moveとしてdirect builtin-
-object reserved-variable type-assertion routeだけを選ぶ。正確な`runner.rs`
-fragmentは、736-737の2行invalid-payload key
-(`e630bf42051e415b283e6f9e474ee0feb3f539353cf9c30368cbaa4c04301651`)、
-2098-2110の13行config
-(`45b1e08f72600db7dd53595a2a1048bf721a7c86d11913d33dfa19c149020002`)、
-2455-2465の11行production detail route
-(`c443614d0a8881b56b84f98bac97c6709d349d5b6b0d008436f6dcd4f699bd99`)、
-attached `cfg(test)`を含む2602-2610の9行test output
-(`c8c3cbbcf40138ce6b11fb03020af6622f5f0164aa352643d8a2f023a51721de`)、
-3102-3113の12行extractor
-(`e85819f4d61def169da12ed7055983ab03b06fd3789cef046c548d76544cb849`)
-である。正確な5 fragment/47行combined raw hashは
-`07e79516d8355781d8c49ed5cb63777a21d975ae3c78c98235614880d0ddaf5b`、
-whitespace-normalized hashは
-`4dc680bc043727f08f782ef329669c7aa7a5b5211d12ccc2332211905c050dd3`
-である。test 9 fileにdirect route-symbol reference 70件、source/test 10 fileに
-81 occurrenceがある。dependency-first ownerは既存private
-`type_elaboration/type_assertion_routes.rs`である。
-
-Task 263ZZZAはその5 fragmentだけを機械的に移動する。invalid keyはleaf-
-private、production detail routeだけが通常時にprivate phase facadeを越え、
-config/output/extractorは`cfg(test)`時だけ越える。config-derived test aliasは
-second source of truthを作らずinvalid keyを公開してよい。current inventoryは
-`runner.rs` 3,274 /
-`794d9602195c9b8791fe2d94da31af4bb2461e41fd15b98b67b1d3a7fc00e4e2`、
-521行phase facade /
-`e42f8fd2db3ea725c080b71631ae2fe71d3200193a8177363b4d9aa7152b8b27`、
-3,380行route owner /
-`8d9e0c45349fc51e34bf85bc70cbc9978ceba4de3a05e8748b535bc0f6412853`
-である。
-
-authority sliceはTask 189の正確なsource
-`reserve x for object; theorem ReservedObjectVariableTypeAssertionPayloadBoundary: x is object;`
-とcanonical `harness.md`のsource-derived payload contractであり、
-`spec.en.checker.type_elaboration.reserved_object_variable_type_assertion_source_bridge`
-からactive fixture/expectationへtraceされる。このrouteはordinal 1から
-`BindingId(0)`、独立したreserve-subject/formula-side asserted-object site/range、
-両sideのraw `BuiltinObject`、reserveをanchorとするnormalized object identity 1個、
-inferred term 1個、known-type entry 3個、expected constraintなし、fact/deferredなし
-のchecked `TypeAssertion` 1個を維持する。direct source bridge/output testとactive-
-fixture payload testがexact transportとreal-checker resultを固定し、272-test raw/
-normalized list oracleと4 CLI stdout hashがdiscovery/end-to-end byte stabilityを
-覆う。したがってmove-only `design_drift`にはtest sufficiencyが十分で、ZZZA0
-prerequisite testは不要である。
-
-rename、dedup、generalization、builtin-set/local-mode/chained/他siblingの移動、
-reachability、widening、`qua`、object/set coercion、truth/facts/closure/order/theorem
-acceptance、proof、CoreIr、ControlFlowIr、verification-condition behavior、API、
-test name、expectation、diagnostic、key、payload、ordering、fail-closed behavior、
-coverage、trace/spec intent、deferred stateの変更を禁止する。
-`spec_coverage_audit.md`はspecification coverage、design mapping、follow-up owner、
-trace credit、deferred rationaleを変えないため変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZA Move Result
 
-Task 263ZZZAは承認済み5 fragment/47行direct builtin-object reserved-variable
-type-assertion routeだけを既存private
-`type_elaboration/type_assertion_routes.rs`へ移動した。invalid-payload keyは
-leaf-private、production detail routeだけが通常時にphase facadeを越え、config、
-output、extractorは`cfg(test)`時だけ越える。runnerに残すtest keyは移動済み
-configから導出する。`#[rustfmt::skip]` controlはconfig oracleの外にあり、元の
-layoutを維持する。
-
-`pub(in crate::runner)`だけを除くと、移動済みfragmentのraw hashは
-`e630bf42051e415b283e6f9e474ee0feb3f539353cf9c30368cbaa4c04301651`、
-`45b1e08f72600db7dd53595a2a1048bf721a7c86d11913d33dfa19c149020002`、
-`c443614d0a8881b56b84f98bac97c6709d349d5b6b0d008436f6dcd4f699bd99`、
-`c8c3cbbcf40138ce6b11fb03020af6622f5f0164aa352643d8a2f023a51721de`、
-`e85819f4d61def169da12ed7055983ab03b06fd3789cef046c548d76544cb849`
-を維持する。combined raw hashは
-`07e79516d8355781d8c49ed5cb63777a21d975ae3c78c98235614880d0ddaf5b`、
-whitespace-normalized hashは
-`4dc680bc043727f08f782ef329669c7aa7a5b5211d12ccc2332211905c050dd3`
-のままである。resulting inventoryは`runner.rs` 3,230 /
-`94706f70852b1f4207151cfc7d6b50ced43908f9fd81510ab77bee85b29fb96c`、
-525行phase facade /
-`75ac599add4469dcc5dd68e8d00c600c07c600d049e5511e46a2507d974d8acc`、
-3,433行route owner /
-`2aaf52d1865df538d2c1ae19c038dc3ee1e5a241c8706797ef4db9e6e95549ff`
-である。
-
-exact source bridge testとactive-fixture real-checker testはpassした。crate unit
-test 272件はすべてpassし、raw/normalized test-list hashは
-`5e41e4dbfcc303322c246a612de61926a628957a168589b45864d0a5070bb07e`と
-`c0c2b80f8b4e6c84cd25d77573fda722c4d1846fed168cd4a478781cdb42775e`
-のままである。plan/parse-only/declaration-symbol/type-elaboration CLI hashは
-`f34240072564dfafacf7b0d914a8204037bbfc042dea375326ae757774f63759`、
-`57d0fba9be95644890b80bfa4ec2cd992e47bb8ad4b67c130f5194ea73aa0273`、
-`08b00a9f6fe70d94fe2c1b2bdebbdb5603bcee39bf3ceb460abe53f403bba7b5`、
-`1dadbeabb219f5853c713ad53aa1cc7cd720a0e80abd7f882e9e0a5ea7802625`
-を維持する。countは96/4/188、403/367、235/223、219/184、diagnosticは
-23 warning/0 errorのままである。format、deny-warning Clippy、crate/workspace
-test、diff checkはpassした。specification、test-sufficiency、implementation
-reviewはfindingなし。sibling route、behavior、API、test name、expectation、
-diagnostic、key、payload、ordering、fail-closed behavior、coverage、deferred state
-は不変で、`spec_coverage_audit.md`は変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZB Pre-Move Inventory and Specification
 
-authority、test、trace、expectation、design、source、API、real producer/consumer
-のfresh inventoryは、残る全production-helper familyを比較し、standalone
-contradiction formula output/detail pairだけを選ぶ。これは28行で、30行formula-
-statement pairと最小の残存52行route familyより小さい最小cohesive familyである。
-正確な`runner.rs` fragmentは、2695-2702の8行
-`source_contradiction_formula_detail_keys`でraw hash
-`491f8ae31131b146fb4743641a909a82aa3777dfcd1611064548a51a11e842e7`、
-2818-2837の20行`source_contradiction_formula_output`でraw hash
-`72b129ff0f1413b0bc1ca8ece6cf3e46365317d5ac3901a2aa92c21011748de9`
-である。combined raw hashは
-`61ca02cac3608f02e5c1048df0ef1d34d8bb94db0f6b9750cf091fd0aa49fde1`、
-whitespace-normalized hashは
-`7688d6cefe9529a3406799b7742093485859195498aa31a66fc95782b62b2e88`
-である。route symbol 2個は`runner.rs`とtest 3 fileに7 occurrenceを持つ。
-dependency-first ownerはshared term/formula diagnostic-key projectionとchecker-
-output transport/build/validation logicをすでに所有する既存private
-`type_elaboration/output.rs`である。
-
-Task 263ZZZBはその2 fragmentだけを機械的に移動する。production detail entryは
-通常時にprivate phase facadeを越える。output producerはそのdetail entryがowner
-内部で使用し、既存direct consumerのため`cfg(test)`時だけfacadeを越える。
-必要なowner importは既存source extractor、module-binding-env producer、AST/
-resolver identifier、checker context typeだけで、reverse dependencyを導入しない。
-current inventoryは`runner.rs` 3,230 /
-`94706f70852b1f4207151cfc7d6b50ced43908f9fd81510ab77bee85b29fb96c`、
-525行phase facade /
-`75ac599add4469dcc5dd68e8d00c600c07c600d049e5511e46a2507d974d8acc`、
-`output.rs` 1,153 /
-`7f107a2cae8166ebf0cb53e8ae0f0ac93d7ce5c0e44e231ee16ed823b1e0c7b3`
-である。
-
-authority sliceはTask 180の正確なsource
-`theorem SourceDerivedContradictionConstantBoundary: contradiction;`、canonical
-`harness.md`のsource-derived payload contract、active fixture/expectationへtrace
-されるrequirement
-`spec.en.checker.type_elaboration.contradiction_formula_constant_source_bridge`
-である。producerはreal formula leaf site/rangeとmodule-root
-`BindingContextId(0)`を維持し、checkerへ正確に1個の
-`FormulaKind::Contradiction`を渡し、term、asserted type、expected constraint、
-candidate、fact、deferred reason、diagnosticなしの`Checked` formula 1個を返す。
-exact bridge testはprovenance、shape、status、empty payload surface、ordered detail
-outputを覆い、active-fixture testはreal frontend/resolver discovery/checker payload
-を覆う。既存near-miss matrixはfail-closedのままである。272-test raw/normalized
-list oracleと4 CLI stdout hashがdiscovery/end-to-end byte stabilityを覆うため、
-move-only `design_drift`にはtest sufficiencyが十分で、ZZZB0 prerequisite testは
-不要である。
-
-`FormulaKind`変更、deferred reason追加、truth/fact publication、theorem
-acceptance、proof-goal closure、child graph、`formula_statement`、proof、CoreIr、
-ControlFlowIr、verification condition、extractor shape、diagnostic、key、payload、
-ordering、fail-closed behavior、API、test name、expectation、trace/spec intent、
-coverage、deferred state、他formula family、route siblingの変更を禁止する。
-`spec_coverage_audit.md`はspecification coverage、design mapping、follow-up owner、
-trace credit、deferred rationaleを変えないため変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZB Move Result
 
-Task 263ZZZBは承認済み2 fragment/28行standalone contradiction formula
-output/detail familyだけを既存private `type_elaboration/output.rs`へ移動した。
-detail entryは通常時にphase facadeを越える。output producerとそのsource
-extractorは`cfg(test)`時だけfacadeから利用でき、ownerはextractorとmodule-
-binding-env producerをreverse dependencyなしで直接importする。初回compile
-checkで未使用になったnormal parent extractor importを検出し、既存parent
-consumerを`cfg(test)`へ狭めて削除した。
-
-`pub(in crate::runner)`だけを除くと、8行detail fragmentのraw hashは
-`491f8ae31131b146fb4743641a909a82aa3777dfcd1611064548a51a11e842e7`、
-20行outputのraw hashは
-`72b129ff0f1413b0bc1ca8ece6cf3e46365317d5ac3901a2aa92c21011748de9`、
-combined raw hashは
-`61ca02cac3608f02e5c1048df0ef1d34d8bb94db0f6b9750cf091fd0aa49fde1`、
-whitespace-normalized hashは
-`7688d6cefe9529a3406799b7742093485859195498aa31a66fc95782b62b2e88`
-のままである。resulting inventoryは`runner.rs` 3,202 /
-`282cfbec687307a0b623abecc811cf08781ee03f65a5164e15bf64b35c0a8104`、
-524行phase facade /
-`7e058025d3b96135576841a2f2749a256eb95747dead1d3f8e477b8bf984262c`、
-`output.rs` 1,188 /
-`40c93a2a65a1b7b0feb05d616dedfe8bf1b9851d59ad302053bfe44bd31fc590`
-である。
-
-exact source-gap/detail testとactive-fixture real-checker testはpassした。crate
-unit test 272件はすべてpassし、raw/normalized test-list hashは
-`5e41e4dbfcc303322c246a612de61926a628957a168589b45864d0a5070bb07e`と
-`c0c2b80f8b4e6c84cd25d77573fda722c4d1846fed168cd4a478781cdb42775e`
-のままである。plan/parse-only/declaration-symbol/type-elaboration CLI hashは
-`f34240072564dfafacf7b0d914a8204037bbfc042dea375326ae757774f63759`、
-`57d0fba9be95644890b80bfa4ec2cd992e47bb8ad4b67c130f5194ea73aa0273`、
-`08b00a9f6fe70d94fe2c1b2bdebbdb5603bcee39bf3ceb460abe53f403bba7b5`、
-`1dadbeabb219f5853c713ad53aa1cc7cd720a0e80abd7f882e9e0a5ea7802625`
-を維持する。countは96/4/188、403/367、235/223、219/184、diagnosticは
-23 warning/0 errorのままである。format、deny-warning Clippy、crate/workspace
-test、diff checkはpassした。specification reviewはfresh-inventory comparatorを
-53行から52行へ修正後findingなしで終了し、test-sufficiency/implementation
-reviewもfindingなし。sibling、behavior、API、test name、expectation、diagnostic、
-key、payload、ordering、fail-closed behavior、coverage、deferred stateは不変で、
-`spec_coverage_audit.md`は変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZC Pre-Move Inventory and Specification
 
-authority、test、trace、expectation、design、source、API、real producer/consumer
-のfresh inventoryは、次の最小dependency-closed production familyとしてformula-
-statement output/detail pairだけを選ぶ。30行は最小の残存52行route familyより
-小さく、producerがparent保持helperへ依存するさらに小さいdetail wrapperは独立
-cohesive moveではない。正確な`runner.rs` fragmentは、2688-2695の8行
-`source_formula_statement_detail_keys`でraw hash
-`b506c3cbe5350c6c9f0ca30bba6c69bd06c9027347f62a64cd3eebe4ae0247cf`、
-2788-2809の22行`source_formula_statement_output`でraw hash
-`f88816b3bc16629234533e49bd7919fc3b70106a51b8ded0f339da9aad006924`
-である。combined raw hashは
-`04555b8fb3e6711cf72edd047466247fc7df6a137cc5c7d455d906da32ab976f`、
-whitespace-normalized hashは
-`9f35d8fa9b7da983779d5b0aef41022bcfe74bb8e111b5189bdd6d1d0d3ef389`
-である。route symbol 2個は`runner.rs`とtest 2 fileに6 occurrenceを持つ。
-dependency-first ownerは既存private `type_elaboration/output.rs`である。
-
-Task 263ZZZCはその2 fragmentだけを機械的に移動する。production detail entryは
-通常時にprivate phase facadeを越える。output producerはそのdetail entryがowner
-内部で使用し、既存direct consumerのため`cfg(test)`時だけfacadeを越える。
-source extractorもownerが直接importした後はfacadeでtest-onlyとなる。必要なowner
-変更は`FormulaDeferredReason`とそのextractorだけで、AST、resolver、checker
-context、module-binding-env producer、shared detail projection dependencyはTask
-263ZZZBで確立済みである。reverse dependencyは導入しない。current inventoryは
-`runner.rs` 3,202 /
-`282cfbec687307a0b623abecc811cf08781ee03f65a5164e15bf64b35c0a8104`、
-524行phase facade /
-`7e058025d3b96135576841a2f2749a256eb95747dead1d3f8e477b8bf984262c`、
-`output.rs` 1,188 /
-`40c93a2a65a1b7b0feb05d616dedfe8bf1b9851d59ad302053bfe44bd31fc590`
-である。
-
-authority sliceはTask 117の正確なsource
-`theorem FormulaPayloadBoundary: thesis;`、canonical `harness.md`、active fail
-fixture/expectationへtraceされるrequirement
-`spec.en.checker.type_elaboration.payload_extraction.formula_statement_gap`
-である。producerはreal thesis site/rangeとmodule-root `BindingContextId(0)`を維持し、
-正確に1個の`FormulaKind::Thesis`を渡し、term/factなし、正確に1個の
-`MissingFormulaPayload` deferred reason、thesis rangeにanchorされた不変の
-`checker.formula.external.formula_payload` diagnosticを持つ`Partial` formula 1個を
-維持する。direct bridge testがextraction、checker payload、diagnostic range/key、
-detail orderingを固定し、active CLI fixtureとraw/normalized 272-test/4 CLI hash
-oracleがdiscovery/end-to-end byte stabilityを保護する。非exact formula-only shape
-はfail-closedのままである。move-only `design_drift`にはtest sufficiencyが十分で、
-ZZZC0 prerequisite testは不要である。
-
-`FormulaKind`、status、deferred reason、diagnostic key/range/order、formula constant
-semantics、child graph、theorem acceptance、fact、proof、CoreIr、ControlFlowIr、
-verification condition、`formula_statement` execution、extractor shape、API、test
-name、expectation、trace/spec intent、coverage、deferred state、他formula family、
-routeの変更を禁止する。`spec_coverage_audit.md`はspecification coverage、design
-mapping、follow-up owner、trace credit、deferred rationaleを変えないため変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZC Move Result
 
-Task 263ZZZCは承認された2 fragment/30行formula-statement output/detail familyだけを
-既存private `type_elaboration/output.rs`へ移動した。detail entryはphase facadeを
-通常時に越える。output producerとsource extractorは`cfg(test)`時だけfacadeを
-越え、ownerはreverse dependencyなしでextractorを直接importする。
-
-`pub(in crate::runner)`だけを除去すると、8行detail fragmentのraw hash
-`b506c3cbe5350c6c9f0ca30bba6c69bd06c9027347f62a64cd3eebe4ae0247cf`、
-22行outputのraw hash
-`f88816b3bc16629234533e49bd7919fc3b70106a51b8ded0f339da9aad006924`、
-combined raw hash
-`04555b8fb3e6711cf72edd047466247fc7df6a137cc5c7d455d906da32ab976f`、
-whitespace-normalized hash
-`9f35d8fa9b7da983779d5b0aef41022bcfe74bb8e111b5189bdd6d1d0d3ef389`
-をすべて維持する。resulting inventoryは`runner.rs` 3,170 /
-`507fcea5e8aa70be4e5e83e1379058182b11f4a5b5b43e613568c4247adf6398`、
-527行phase facade /
-`d53e5c1bc06f6c5b685e65687a60cb0b993560bd65369aadd1086649d6687ed5`、
-`output.rs` 1,221 /
-`e491d6614e715c3a51872bc8f0224ac759e02a5506c5f976949deeb03c581710`
-である。
-
-正確なsource-gap/detail testはpassした。crate unit test 272件はすべてpassし、raw/
-normalized test-list hashは
-`5e41e4dbfcc303322c246a612de61926a628957a168589b45864d0a5070bb07e`と
-`c0c2b80f8b4e6c84cd25d77573fda722c4d1846fed168cd4a478781cdb42775e`
-を維持する。plan、parse-only、declaration-symbol、type-elaboration CLI hashは
-`f34240072564dfafacf7b0d914a8204037bbfc042dea375326ae757774f63759`、
-`57d0fba9be95644890b80bfa4ec2cd992e47bb8ad4b67c130f5194ea73aa0273`、
-`08b00a9f6fe70d94fe2c1b2bdebbdb5603bcee39bf3ceb460abe53f403bba7b5`、
-`1dadbeabb219f5853c713ad53aa1cc7cd720a0e80abd7f882e9e0a5ea7802625`
-を維持する。countは96/4/188、403/367、235/223、219/184、warning 23、
-error 0のままである。format、denied-warning Clippy、crate/workspace test、diff
-checkはpassした。specification、test-sufficiency、implementation reviewはfinding
-なし。sibling、behavior、API、test name、expectation、diagnostic、key、payload、
-ordering、fail-closed behavior、coverage、deferred stateは不変で、
-`spec_coverage_audit.md`は変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZD Pre-Move Inventory and Specification
 
-authority、test、trace、expectation、design、source、API、real producer/consumer
-のfresh inventoryは、次の最小dependency-closed production familyとしてinline
-builtin-binary term/formula checker/detail producerだけを選ぶ。35行は43行builtin
-type-assertion formula pairと最小の残存52行route familyより小さい。さらに小さい
-formula detail wrapperは保持output producerへ依存し、独立cohesive moveではない。
-正確な`runner.rs` fragmentは2688-2722の
-`source_builtin_binary_term_formula_detail_keys`で、raw hash
-`6fa5f283dcfafb2d72a6250cae873f881d759ea06e29060d7624d91f58d51c7a`、
-whitespace-normalized hash
-`4dc99d61d81d6798efcaaa90667f7b8ff11976df7b776590ba6da04576ad540c`
-である。production symbolは`runner.rs`に2 occurrence、extractorは5 source/test
-fileに8 occurrenceを持つ。dependency-first ownerは既存private
-`type_elaboration/output.rs`である。
-
-Task 263ZZZDはそのfragmentだけを機械的に移動する。production detail entryは
-通常時にprivate phase facadeを越える。source extractorはownerが直接importした
-後、facadeでtest-onlyとなる。ownerは他のAST、resolver、checker context/input、
-module-binding-env、detail-projection dependencyをすでに持つため、必要なowner
-importはextractorだけで、reverse dependencyは導入しない。current inventoryは
-`runner.rs` 3,170 /
-`507fcea5e8aa70be4e5e83e1379058182b11f4a5b5b43e613568c4247adf6398`、
-527行phase facade /
-`d53e5c1bc06f6c5b685e65687a60cb0b993560bd65369aadd1086649d6687ed5`、
-`output.rs` 1,221 /
-`e491d6614e715c3a51872bc8f0224ac759e02a5506c5f976949deeb03c581710`
-である。
-
-authority sliceはTasks 106/107/108の正確なsource
-`theorem TermFormulaPayloadBoundary: 1 = 1;`、
-`theorem BuiltinInequalityPayloadBoundary: 1 <> 2;`、
-`theorem BuiltinMembershipPayloadBoundary: 1 in 1;`、canonical `harness.md`、
-3 active fail fixture/expectationへtraceされるrequirements
-`spec.en.checker.type_elaboration.payload_extraction.term_formula_gap`、
-`spec.en.checker.type_elaboration.payload_extraction.builtin_inequality_formula_gap`、
-`spec.en.checker.type_elaboration.payload_extraction.builtin_membership_formula_gap`
-である。producerはreal left/right numeralとformulaのsite/range、module-root
-`BindingContextId(0)`、正確に2個のordered `TermKind::Numeral` input、正確に1個の
-source-selected equality/inequality/membership `FormulaInput`、ordered
-`[left, right]` term referenceを維持する。3 caseすべてpartial formula checkingと
-numeric type payload欠落でfail-closedを維持し、正確なordered/deduplicated detail
-key `type_elaboration.checker.checker.formula.term.partial`、次に
-`type_elaboration.checker.checker.term.external.numeric_type_payload`を返す。
-
-direct source-gap/detail matrixは3 config、extractor provenance、source-selected
-formula kind、ordered term payload、result key、bounded near-miss matrixを固定する。
-3 active CLI fixtureとraw/normalized 272-test/4 CLI hash oracleがdiscovery/end-to-
-end byte stabilityを保護する。move-only `design_drift`にはtest sufficiencyが十分で、
-ZZZD0 prerequisite testは不要である。
-
-term/formula kind、site、range、order、reference、binding context、checker invocation、
-numeric type/expected-type synthesis、fact、theorem acceptance、proof、CoreIr、
-ControlFlowIr、verification condition、`formula_statement` execution、extractor
-config/shape、diagnostic、key、payload、ordering/deduplication、fail-closed behavior、
-API、test name、expectation、trace/spec intent、coverage、deferred state、他formula
-family、routeの変更を禁止する。`spec_coverage_audit.md`はspecification coverage、
-design mapping、follow-up owner、trace credit、deferred rationaleを変えないため
-変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZD Move Result
 
-Task 263ZZZDは承認された35行inline builtin-binary term/formula checker/detail
-producerだけを既存private `type_elaboration/output.rs`へ移動した。detail entryは
-通常時にphase facadeを越える。source extractorはownerが直接importした後、
-`cfg(test)`時だけfacadeを越え、reverse dependencyは導入しない。初回focused
-compileは保持production dispatchにnormal root importがないことを検出したため、
-移動bodyやvisibilityを変えず既存facade経由で追加した。
-
-`pub(in crate::runner)`だけを除去すると、fragmentはraw hash
-`6fa5f283dcfafb2d72a6250cae873f881d759ea06e29060d7624d91f58d51c7a`と
-whitespace-normalized hash
-`4dc99d61d81d6798efcaaa90667f7b8ff11976df7b776590ba6da04576ad540c`
-を維持する。resulting inventoryは`runner.rs` 3,134 /
-`07834113d2bc34800bfcef767b8de749d7682110db7a2b2dced4678a17e2919d`、
-528行phase facade /
-`12ce472f8653de4294400d66b8fe83aad5c61a6c225f6f48876086433bfa9c93`、
-`output.rs` 1,258 /
-`dca5e89e28034e8efa5779f803cbcc36d5e8f88898554eb2b70133fb20a8e843`
-である。
-
-正確な3-config source-gap/detail testはpassした。crate unit test 272件はすべて
-passし、raw/normalized test-list hashは
-`5e41e4dbfcc303322c246a612de61926a628957a168589b45864d0a5070bb07e`と
-`c0c2b80f8b4e6c84cd25d77573fda722c4d1846fed168cd4a478781cdb42775e`
-を維持する。plan、parse-only、declaration-symbol、type-elaboration CLI hashは
-`f34240072564dfafacf7b0d914a8204037bbfc042dea375326ae757774f63759`、
-`57d0fba9be95644890b80bfa4ec2cd992e47bb8ad4b67c130f5194ea73aa0273`、
-`08b00a9f6fe70d94fe2c1b2bdebbdb5603bcee39bf3ceb460abe53f403bba7b5`、
-`1dadbeabb219f5853c713ad53aa1cc7cd720a0e80abd7f882e9e0a5ea7802625`
-を維持する。countは96/4/188、403/367、235/223、219/184、warning 23、
-error 0のままである。format、denied-warning Clippy、crate/workspace test、diff
-checkはpassした。specification、test-sufficiency、implementation reviewはfinding
-なし。sibling、behavior、API、test name、expectation、diagnostic、key、payload、
-ordering、fail-closed behavior、coverage、deferred stateは不変で、
-`spec_coverage_audit.md`は変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZE Pre-Move Inventory and Specification
 
-authority、test、trace、expectation、design、source、API、real producer/consumer
-のfresh inventoryは、次の最小dependency-closed production familyとしてbuiltin
-type-assertion formula output/detail pairだけを選ぶ。43行は最小の残存52行route
-familyより小さく、さらに小さいdetail wrapperは保持output producerへ依存する。
-正確な`runner.rs` fragmentは2688-2695の8行
-`source_builtin_type_assertion_formula_detail_keys`でraw hash
-`cd9a4e9816cd559d41d680fa964c88bedbaa3cf505df9578e54f55238948bd12`、
-2743-2777の35行`source_builtin_type_assertion_formula_output`でraw hash
-`d98347da1d3b2cb41653c7c26c61a1f3dded18e20c59e31e3ad2b0600a56e706`
-である。combined raw hashは
-`45ab1786afd01b4c30d4aa964a11684163e601dd1f9f59c3e58404ddb02b3656`、
-whitespace-normalized hashは
-`f75c410adfa7afb1f3a3af075d7a2ad911ab467328a541a541b463d525894853`
-である。production symbol 2個は3 source/test fileに6 occurrence、extractorは
-5 fileに7 occurrenceを持つ。ownerは既存private `type_elaboration/output.rs`である。
-
-Task 263ZZZEはその2 fragmentだけを機械的に移動する。detail entryは通常時に
-private phase facadeを越える。output/extractorはownerがextractorを直接importした
-後、`cfg(test)`時だけ越える。他dependencyはすべてownerに既存で、reverse
-dependencyは導入しない。current inventoryは`runner.rs` 3,134 /
-`07834113d2bc34800bfcef767b8de749d7682110db7a2b2dced4678a17e2919d`、
-528行phase facade /
-`12ce472f8653de4294400d66b8fe83aad5c61a6c225f6f48876086433bfa9c93`、
-`output.rs` 1,258 /
-`dca5e89e28034e8efa5779f803cbcc36d5e8f88898554eb2b70133fb20a8e843`
-である。
-
-authority sliceはTask 109の正確なsource
-`theorem BuiltinTypeAssertionPayloadBoundary: 1 is set;`、canonical
-`harness.md`、active fail fixture/expectationを持つrequirement
-`spec.en.checker.type_elaboration.payload_extraction.builtin_type_assertion_formula_gap`
-である。real formula/subject/asserted-type site/range、module-root
-`BindingContextId(0)`、`TermKind::Numeral` 1個、そのtermを持つ
-`FormulaKind::TypeAssertion` 1個、spelling/head/空attributeを含むsource-derived
-builtin-set `TypeExpressionInput`を維持する。checker outputはpartial term 1個、
-partial formula 1個、type entry 2個、normalized builtin-set asserted type 1個、正確な
-ordered/deduplicated partial-formula、次にnumeric-type-payload keyを維持する。
-numeric type payload、broader asserted type、semantic fact、theorem acceptanceは
-synthesizeしない。
-
-direct source/detail/output matrixはextractor provenance、type-entry ownership、
-term/formula kind/status/site/reference、normalized asserted typeを固定し、bounded
-near-miss matrixはfail-closed extractionを保護する。active fixtureとraw/normalized
-272-test/4-CLI hashがend-to-end behaviorを保護する。move-only `design_drift`には
-test sufficiencyが十分で、ZZZE0 prerequisiteは不要である。
-
-site、range、kind、status、input/reference order、asserted-type payload、type-entry
-ownership、normalized type、binding context、diagnostic、key、ordering/deduplication、
-fail-closed behavior、API、test/expectation/trace、coverage、deferred state、semantic
-fact、theorem acceptance、proof、`formula_statement`、CoreIr、ControlFlowIr、
-verification condition、他formula family、routeの変更を禁止する。
-`spec_coverage_audit.md`はcoverage mapping、owner、credit、deferred rationaleを
-変えないため変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZE Move Result
 
-Task 263ZZZEは承認された2 fragment/43行builtin type-assertion formula output/
-detail familyだけを既存private `type_elaboration/output.rs`へ移動した。detailは
-通常時、output/extractorは`cfg(test)`時だけfacadeを越える。ownerはreverse
-dependencyなしでextractorを直接importする。初回focused compileは最後のparent
-use移動後に不要となったnormal parent `TypeExpressionInput` importを除去した。
-
-`pub(in crate::runner)`だけを除去するとdetail/output raw hashは
-`cd9a4e9816cd559d41d680fa964c88bedbaa3cf505df9578e54f55238948bd12`と
-`d98347da1d3b2cb41653c7c26c61a1f3dded18e20c59e31e3ad2b0600a56e706`、
-combined raw hashは
-`45ab1786afd01b4c30d4aa964a11684163e601dd1f9f59c3e58404ddb02b3656`、
-normalized hashは
-`f75c410adfa7afb1f3a3af075d7a2ad911ab467328a541a541b463d525894853`
-を維持する。resulting inventoryは`runner.rs` 3,092 /
-`42494a32f694f0508a06500796c66bf6a7df0c1f49a2ba4f8591393a5a38a876`、
-529行facade /
-`78cf264f9d0b1b5c917b3051210f7653861f7600f5a768d368fc67432174c31a`、
-`output.rs` 1,303 /
-`fdc30d1225f9f69848e4547e73f8449e828aae74d481d45bb2c600a7d7897182`
-である。
-
-正確なsource/detail/output testとcrate unit test 272件はすべてpassした。raw/
-normalized test-list hashは
-`5e41e4dbfcc303322c246a612de61926a628957a168589b45864d0a5070bb07e`と
-`c0c2b80f8b4e6c84cd25d77573fda722c4d1846fed168cd4a478781cdb42775e`
-を維持する。plan/parse-only/declaration-symbol/type-elaboration CLI hashは
-`f34240072564dfafacf7b0d914a8204037bbfc042dea375326ae757774f63759`、
-`57d0fba9be95644890b80bfa4ec2cd992e47bb8ad4b67c130f5194ea73aa0273`、
-`08b00a9f6fe70d94fe2c1b2bdebbdb5603bcee39bf3ceb460abe53f403bba7b5`、
-`1dadbeabb219f5853c713ad53aa1cc7cd720a0e80abd7f882e9e0a5ea7802625`
-を維持する。countは96/4/188、403/367、235/223、219/184、warning 23、error 0。
-format、denied-warning Clippy、crate/workspace test、diff checkはpassした。
-specification/test-sufficiency/implementation reviewはfindingなし。semantic、API、
-test、expectation、diagnostic、payload、ordering、fail-closed behavior、coverage、
-deferred stateは不変で、`spec_coverage_audit.md`は変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZF Pre-Move Inventory and Specification
 
-authority/test/trace/expectation/design/source/API/consumerのfresh inventoryは、
-direct local-mode reserved-variable type-assertion routeだけを次の最小dependency-
-closed familyとして選ぶ。正確な5 fragment/raw hashは、751-752の2行invalid key /
-`5258078239e26a500115f93efe79673660eed4e5393b040d694da65d50926bbe`、
-2108-2124の17行config /
-`fb192c60053aea989229b3f6c78ea1a4574464cec5472fef1990ed586d7663ed`、
-2451-2462の12行detail /
-`30364f80e7a71e0520da44d3ff5a607b59cd645bd4a36ac80e9be0a3056a3cbb`、
-2586-2594の9行test output /
-`9236dc4164607d724b30ffa036be776a60e085752de41749b58695cc3863541a`、
-2933-2944の12行extractor /
-`0d85e18b5c130a9a750071beaa12c22b2366d8027ff2a07741dfc632a6c8df8f`
-である。combined rawは
-`a70def231fb553cc658af48d2f08ee8ede14dea212008c6ed91d9250f6691238`、
-normalizedは
-`686d1ab2f69c79156f55442fdf485873a2bcf74d7194cf407a99fa4d91a37903`。
-5 symbolは`runner.rs`と7 test fileに73 occurrenceを持つ。ownerは既存private
-`type_elaboration/type_assertion_routes.rs`である。
-
-その52行だけを移動する。invalid keyはleaf-privateとし、root test名はconfig由来
-`cfg(test)` aliasで保持する。detailは通常時、config/output/extractorは`cfg(test)`
-時だけphase facadeを越える。reverse dependencyやsibling moveは禁止する。
-current inventoryは`runner.rs` 3,092 /
-`42494a32f694f0508a06500796c66bf6a7df0c1f49a2ba4f8591393a5a38a876`、
-facade 529 /
-`78cf264f9d0b1b5c917b3051210f7653861f7600f5a768d368fc67432174c31a`、
-`type_assertion_routes.rs` 3,433 /
-`2aaf52d1865df538d2c1ae19c038dc3ee1e5a241c8706797ef4db9e6e95549ff`。
-
-authorityはTask 138の正確なsource、すなわちbare-set local-mode definition 1個、
-`reserve x for LocalModeTypeAssertion;`、
-`theorem LocalModeReservedVariableTypeAssertionPayloadBoundary: x is set;`、
-canonical `harness.md`、active pass fixture/expectationを持つrequirement
-`spec.en.checker.type_elaboration.local_mode_reserved_variable_type_assertion_source_bridge`
-である。raw local-mode subjectと独立builtin-set asserted input、real expansion 1個、
-ordinal 1 / `BindingId(0)`、terminal-definition-RHS builtin-set normalization、
-`Inferred` variable 1個、fact/deferredなし`Checked` type assertion 1個を維持する。
-direct exact/output/corruption matrixと7-file isolation referenceがprovenance、output
-validation、immutable failure projection、near miss、fail-closed boundaryを保護する。
-coverageは十分で、ZZZF0 testは不要である。
-
-config、source shape/provenance、expansion、normalization、binding、status、fact、
-diagnostic/key/order、general reachability/widening/`qua`、mode declaration semantics、
-theorem/proof/downstream payload、API、test name、expectation、trace intent、coverage/
-deferred state、他route、formula familyの変更を禁止する。`spec_coverage_audit.md`
-はowner path、coverage mapping、trace credit、deferred rationale不変のため変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZF Move Result
 
-Task 263ZZZFは承認された正確な5 fragment/52行direct local-mode reserved-
-variable type-assertion routeだけを既存private
-`type_elaboration/type_assertion_routes.rs`へ移動した。invalid-payload keyはleaf-
-privateを維持し、root test名はconfig由来`cfg(test)` aliasである。detailは通常時、
-config/output/extractorは`cfg(test)`時だけfacadeを越える。reverse dependencyや
-sibling moveは導入していない。
-
-`pub(in crate::runner)`だけを除去した5 raw hashは
-`5258078239e26a500115f93efe79673660eed4e5393b040d694da65d50926bbe`、
-`fb192c60053aea989229b3f6c78ea1a4574464cec5472fef1990ed586d7663ed`、
-`30364f80e7a71e0520da44d3ff5a607b59cd645bd4a36ac80e9be0a3056a3cbb`、
-`9236dc4164607d724b30ffa036be776a60e085752de41749b58695cc3863541a`、
-`0d85e18b5c130a9a750071beaa12c22b2366d8027ff2a07741dfc632a6c8df8f`
-のままである。combined rawは
-`a70def231fb553cc658af48d2f08ee8ede14dea212008c6ed91d9250f6691238`、
-normalizedは
-`686d1ab2f69c79156f55442fdf485873a2bcf74d7194cf407a99fa4d91a37903`
-のままである。resulting inventoryは`runner.rs` 3,043 /
-`6753a749bc418fe0d419c8477bd41d3c6544f45abe7d877666f67a0b8f8bc786`、
-533行facade /
-`dd9d067be513353ee5dd8aa3cf8dde22a925b6fbdcf918394cc5c93e10f264c0`、
-`type_assertion_routes.rs` 3,490 /
-`7cab1a47e130a9cd4a200c58c3af72dc131e52ebb4a5c90ac6aaa24e8c9b5481`。
-
-exact source testとcrate unit test 272件はpassした。raw/normalized test-list hashは
-`5e41e4dbfcc303322c246a612de61926a628957a168589b45864d0a5070bb07e`と
-`c0c2b80f8b4e6c84cd25d77573fda722c4d1846fed168cd4a478781cdb42775e`。
-plan、parse-only、declaration-symbol、type-elaboration CLI hashは
-`f34240072564dfafacf7b0d914a8204037bbfc042dea375326ae757774f63759`、
-`57d0fba9be95644890b80bfa4ec2cd992e47bb8ad4b67c130f5194ea73aa0273`、
-`08b00a9f6fe70d94fe2c1b2bdebbdb5603bcee39bf3ceb460abe53f403bba7b5`、
-`1dadbeabb219f5853c713ad53aa1cc7cd720a0e80abd7f882e9e0a5ea7802625`
-のままである。countは96/4/188、403/367、235/223、219/184、warning 23、
-error 0。format、denied-warning Clippy、crate/workspace test、diff checkはpassした。
-specification reviewの文書owner指摘1件を修正した後、再specification review、test-
-sufficiency review、implementation reviewはfindingなし。semantic、API、test、
-expectation、diagnostic、key、payload、ordering、fail-closed behavior、coverage、
-deferred stateは不変で、`spec_coverage_audit.md`は変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZG Pre-Move Inventory and Specification
 
-最初のspecification review後に修正したauthority/test/trace/expectation/design/
-source/API/consumerのfresh inventoryは、shared imported-attribute assertion
-checker-output coreだけを次の最小dependency-closed production helperとして選ぶ。
-2770-2798の正確な29行
-`source_imported_attribute_assertion_formula_output_from_payload`はraw hash
-`5783af1eb43f6211f6fc16274b2c005d5c953e0b062e3c5df29974626c0c11b1`、
-whitespace-normalized hash
-`7f559eb4a72bae9ef777f02c4435dcaf3bea89719dcf180bd7401e47208d051a`。
-`runner.rs`にdefinitionとpositive/attribute-level-negative wrapper consumer 2個の
-正確な3 occurrenceを持つ。dependency-first ownerは既存private
-`type_elaboration/output.rs`である。
-
-その29行だけを移動する。wrapper 2個はproduction-ownedのまま`runner.rs`に残すため、
-helperはnormal parent-only entry 1個でprivate phase facadeを越える。ownerはsibling
-`source_formula.rs`から`SourceImportedAttributeAssertionFormula`を直接importし、
-reverse dependencyを導入しない。両wrapper/extractor/detail familyと全formula/route
-siblingは保持する。current inventoryは
-`runner.rs` 3,043 /
-`6753a749bc418fe0d419c8477bd41d3c6544f45abe7d877666f67a0b8f8bc786`、
-facade 533 /
-`dd9d067be513353ee5dd8aa3cf8dde22a925b6fbdcf918394cc5c93e10f264c0`、
-`output.rs` 1,303 /
-`fdc30d1225f9f69848e4547e73f8449e828aae74d481d45bb2c600a7d7897182`。
-
-authority sliceはcanonical `doc/spec/en/14.formulas.md` §14.2.4とattribute-level
-`non` distinction、canonical `harness.md`のTasks 113/114、正確なactive source
-`ImportedAttributeAssertionPayloadBoundary: 1 is empty`と
-`ImportedNonEmptyAttributeAssertionPayloadBoundary: 1 is non empty`、両expectation、
-末尾が`imported_attribute_assertion_formula_gap`と
-`imported_non_empty_attribute_assertion_formula_gap`のtraced requirementである。
-保持する各wrapperが選ぶextracted payload、binding context zero、source-derived
-numeral `TermInput` 1個、そのsubject siteを参照する`AttributeAssertion`
-`FormulaInput` 1個、正確な`MissingFormulaPayload` deferred reasonを維持する。
-`AttributeInput`/attribute-chain semanticsを合成せずpayload内のimported `empty`
-symbol provenance、正確なsorted/deduplicated diagnostic key 3個、partial term/formula
-status、empty fact、theorem acceptance/proof/CoreIr/ControlFlowIr/VC payloadを合成しない
-境界を維持する。
-
-`source_reserve_bridge_reports_gap_or_evidence_detail_for_unsupported_shapes`の
-direct exact source/output matrix、bounded near-miss/corruptionとcross-family
-isolation matrix、2 active fixture/expectationがpositive/attribute-level-negative
-payload provenance、checker status、diagnostic、fail-closed boundaryを保護する。
-coverageは十分で、ZZZG0 testは不要。wrapper/extractor、input/site/range/order、
-kind/status/reference、diagnostic content/order/deduplication、deferred/fact state、
-attribute-chain/admissibility semantics、API、test name、expectation、trace intent、
-coverage/deferred state、他formula family、routeの変更を禁止する。
-`spec_coverage_audit.md`はcoverage mapping、owner crate、
-trace credit、follow-up ownership、deferred rationale不変のため変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZG Move Result
 
-Task 263ZZZGは承認された正確な29行shared imported-attribute assertion checker-
-output coreだけを既存private `type_elaboration/output.rs`へ移動した。ownerはpayload
-typeをsibling `source_formula.rs`から直接importし、normal parent-only entry 1個だけが
-phase facadeを越える。positive/attribute-level-negative wrapperは両方token-
-identicalのまま`runner.rs`に残し、extractor、detail wrapper、sibling formula family、
-routeは移動していない。
-
-`pub(in crate::runner)`だけを除去したraw hashは
-`5783af1eb43f6211f6fc16274b2c005d5c953e0b062e3c5df29974626c0c11b1`、
-whitespace-normalized hashは
-`7f559eb4a72bae9ef777f02c4435dcaf3bea89719dcf180bd7401e47208d051a`
-のままである。resulting inventoryは`runner.rs` 3,013 /
-`290e5457611677dcd3f8dce1e45291e103a5897c6efa4e75eefdfd2c3692ce9c`、
-534行facade /
-`ccd6b359d80bb8302a049d08872a0614b9fa5b34e101e2a3b202970bdf5afede`、
-`output.rs` 1,334 /
-`e3658b209b728054d73a0668bd19cc6acc34e71daa5309609094c880eca3771c`。
-
-exact shared positive/negative source testとcrate unit test 272件はpassした。raw/
-normalized test-list hashは
-`5e41e4dbfcc303322c246a612de61926a628957a168589b45864d0a5070bb07e`と
-`c0c2b80f8b4e6c84cd25d77573fda722c4d1846fed168cd4a478781cdb42775e`。
-plan、parse-only、declaration-symbol、type-elaboration CLI hashは
-`f34240072564dfafacf7b0d914a8204037bbfc042dea375326ae757774f63759`、
-`57d0fba9be95644890b80bfa4ec2cd992e47bb8ad4b67c130f5194ea73aa0273`、
-`08b00a9f6fe70d94fe2c1b2bdebbdb5603bcee39bf3ceb460abe53f403bba7b5`、
-`1dadbeabb219f5853c713ad53aa1cc7cd720a0e80abd7f882e9e0a5ea7802625`
-のままである。countは96/4/188、403/367、235/223、219/184、warning 23、
-error 0。format、denied-warning Clippy、crate/workspace test、diff checkはpassした。
-最初のspecification reviewのsmaller-family inventory指摘を修正した後、再
-specification review、test-sufficiency review、full implementation reviewはfinding
-なし。semantic、API、test name、expectation、diagnostic、payload、ordering、
-deferred/fact state、fail-closed behavior、coverage、deferred roadmap stateは不変で、
-`spec_coverage_audit.md`は変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZH Pre-Move Inventory and Specification
 
-authority/test/trace/expectation/design/source/API/consumerのfresh inventoryは、
-positive imported-attribute assertion output wrapperだけを次の最小dependency-
-closed helperとして選ぶ。2751-2758の正確な8行
-`source_imported_attribute_assertion_formula_output`はraw hash
-`7ebeefb4b8836105930a4c2e4bbdd2aa6aa4394ba2da06fccbdf5640a80e86ea`、
-whitespace-normalized hash
-`6edf9b88d571e9bb3a61ffe343f0b1214123b817e90e07eb4ff0eaee733f374a`。
-`runner.rs`、test support、direct source testの3 fileに4 occurrence、extractorは
-5 source/test fileに10 occurrenceを持つ。shared coreを既に所有する既存private
-`type_elaboration/output.rs`がdependency-first ownerである。
-
-その8行だけを移動する。detail wrapperは`runner.rs`のproduction consumerとして
-残るため、wrapperはnormal parent-only entry 1個でprivate phase facadeを越える。
-ownerはpositive extractorをsibling `source_formula.rs`から直接importする。detail
-wrapper、attribute-level-negative wrapper/extractor、shared core、全formula/route
-siblingは保持する。current inventoryは`runner.rs` 3,013 /
-`290e5457611677dcd3f8dce1e45291e103a5897c6efa4e75eefdfd2c3692ce9c`、
-facade 534 /
-`ccd6b359d80bb8302a049d08872a0614b9fa5b34e101e2a3b202970bdf5afede`、
-`output.rs` 1,334 /
-`e3658b209b728054d73a0668bd19cc6acc34e71daa5309609094c880eca3771c`。
-
-authority sliceはcanonical `doc/spec/en/14.formulas.md` §14.2.4、canonical
-`harness.md`のTask 113、正確なactive source
-`ImportedAttributeAssertionPayloadBoundary: 1 is empty`、そのexpectation、末尾が
-`imported_attribute_assertion_formula_gap`のtraced requirementである。borrowした
-module identityによる正確なpositive extractorだけの選択、そのsource-derived
-numeral subject、formula site/range、imported `empty` symbol provenanceのshared core
-への不変forwardingを維持する。結果のpartial numeral 1個、
-`MissingFormulaPayload`を持つpartial `AttributeAssertion` formula 1個、正確な
-diagnostic key 3個、empty fact、`non empty`/local/wrong/ambiguous contributionと全
-structural near missのfail-closed rejectionを維持する。attribute semantics/payloadは
-合成しない。
-
-direct Task113 source/output assertion、bounded near-miss/corruptionとcross-family
-isolation matrix、active fixture/expectationがwrapper selection、forwarding、status、
-diagnostic、fail-closed behaviorを保護する。coverageは十分で、ZZZH0 testは不要。
-detail/non-empty wrapper、両extractor、shared core、module borrowing、payload field、
-diagnostic、deferred/fact state、attribute semantics、API、test name、expectation、
-trace intent、coverage/deferred state、他formula family、routeの変更を禁止する。
-`spec_coverage_audit.md`はcoverage mapping、owner crate、trace credit、follow-up
-ownership、deferred rationale不変のため変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZH Move Result
 
-Task 263ZZZHは承認された正確な8行positive imported-attribute assertion output
-wrapperだけを既存private `type_elaboration/output.rs`へ移動した。ownerはpositive
-extractorをsibling `source_formula.rs`から直接importし、extractorのfacade/root
-accessは`cfg(test)`に狭めた。normal parent-only wrapper entry 1個が保持する
-production detail consumerをserveする。detail wrapper、attribute-level-negative
-family、shared core、全formula/route siblingは保持する。
-
-`pub(in crate::runner)`だけを除去したraw hashは
-`7ebeefb4b8836105930a4c2e4bbdd2aa6aa4394ba2da06fccbdf5640a80e86ea`、
-whitespace-normalized hashは
-`6edf9b88d571e9bb3a61ffe343f0b1214123b817e90e07eb4ff0eaee733f374a`
-のままである。resulting inventoryは`runner.rs` 3,005 /
-`ddc45011dd3665744f7d4051c1247818d928fd68a6f12b5b2981481d5e3e15b1`、
-533行facade /
-`fd6e79a6b6b1e6ea95b1232cbf7c3d7afc8a52749b779c947b65b23113b7c2e9`、
-`output.rs` 1,343 /
-`da64c29064810e686662fa3c9097a23ef996c27aeb2f2ee84b2f012a6a39baf2`。
-
-exact Task113 source/output testとcrate unit test 272件はpassした。raw/normalized
-test-list hashは
-`5e41e4dbfcc303322c246a612de61926a628957a168589b45864d0a5070bb07e`と
-`c0c2b80f8b4e6c84cd25d77573fda722c4d1846fed168cd4a478781cdb42775e`。
-plan、parse-only、declaration-symbol、type-elaboration CLI hashは
-`f34240072564dfafacf7b0d914a8204037bbfc042dea375326ae757774f63759`、
-`57d0fba9be95644890b80bfa4ec2cd992e47bb8ad4b67c130f5194ea73aa0273`、
-`08b00a9f6fe70d94fe2c1b2bdebbdb5603bcee39bf3ceb460abe53f403bba7b5`、
-`1dadbeabb219f5853c713ad53aa1cc7cd720a0e80abd7f882e9e0a5ea7802625`
-のままである。countは96/4/188、403/367、235/223、219/184、warning 23、
-error 0。format、denied-warning Clippy、crate/workspace test、diff checkはpassした。
-specification、test-sufficiency、full implementation reviewはfindingなし。
-semantic、API、test name、expectation、diagnostic、payload、ordering、deferred/fact
-state、fail-closed behavior、coverage、deferred roadmap stateは不変で、
-`spec_coverage_audit.md`は変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZI Pre-Move Inventory and Specification
 
-authority/test/trace/expectation/design/source/API/consumerのfresh inventoryは、
-positive imported-attribute assertion detail wrapperだけを次の最小dependency-
-closed helperとして選ぶ。2665-2672の正確な8行
-`source_imported_attribute_assertion_formula_detail_keys`はraw hash
-`65736030fe1aa501026b840718949fb558da9048e4f21dffc05abd8dd1e9492f`、
-whitespace-normalized hash
-`d38e2d1b16bd412dee1bce1d281f89e610678c0bd3a786406d377b0956334d41`。
-`runner.rs`にdefinition/production dispatchの2 occurrenceを持つ。既存private
-`type_elaboration/output.rs`が両dependencyを既に所有する。
-
-その8行だけを移動する。detailは通常時、test-onlyになったoutput wrapperと
-positive extractorは`cfg(test)`時だけfacade/rootを越え、ownerは両方を直接呼ぶ。
-shared core、non-empty family、全formula/route siblingは保持する。current
-inventoryは`runner.rs` 3,005 /
-`ddc45011dd3665744f7d4051c1247818d928fd68a6f12b5b2981481d5e3e15b1`、
-facade 533 / `fd6e79a6b6b1e6ea95b1232cbf7c3d7afc8a52749b779c947b65b23113b7c2e9`、
-`output.rs` 1,343 /
-`da64c29064810e686662fa3c9097a23ef996c27aeb2f2ee84b2f012a6a39baf2`。
-
-authorityはcanonical §14.2.4、Task113、正確な`1 is empty` source、expectation、
-trace requirementのままである。wrapper selection/outputとshared canonical term/
-formula diagnostic traversal、prefix、sort、deduplicationを維持し、同じ3 keyを得る。
-direct Task113 output/detail assertion、near-miss/corruption/isolation matrix、active
-fixtureが境界を保護し、ZZZI0 testは不要。output/core/non-empty wrapper、両
-extractor、payload/status/diagnostic/order、deferred/fact state、attribute semantics、
-API/test/expectation/trace、coverage/deferred state、他formula family、routeの変更を
-禁止する。`spec_coverage_audit.md`はcoverage、owner、credit、follow-up、deferred
-rationale不変のため変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZI Move Result
 
-Task 263ZZZIは承認された正確な8行positive imported-attribute assertion detail
-wrapperだけを既存private `type_elaboration/output.rs`へ移動した。detailは通常時、
-positive output wrapper/extractorは`cfg(test)`時だけ越え、ownerは両方を直接呼ぶ。
-shared core、non-empty family、全siblingは保持する。
-
-`pub(in crate::runner)`だけを除去したraw hashは
-`65736030fe1aa501026b840718949fb558da9048e4f21dffc05abd8dd1e9492f`、
-whitespace-normalized hashは
-`d38e2d1b16bd412dee1bce1d281f89e610678c0bd3a786406d377b0956334d41`。
-resulting inventoryは`runner.rs` 2,997 /
-`82a93e8d090f5cbc33f585f0f3cfde6bdb2c9b7466a08470f0c4490403db0799`、
-facade 534 / `4f4b829567e2462ee03e4e00a5f8a3fb9d8a38088680b00e6304ceb84069e5c2`、
-`output.rs` 1,352 /
-`eb6b831e6fda03b56cc02d6241bbf2ac5f36c1e1328c5ea31a1b0aa55459b425`。
-
-focused Task113 testとunit test 272件はpassした。raw/normalized test-list hashは
-`5e41e4dbfcc303322c246a612de61926a628957a168589b45864d0a5070bb07e`と
-`c0c2b80f8b4e6c84cd25d77573fda722c4d1846fed168cd4a478781cdb42775e`。
-4 CLI hashは`f34240072564dfafacf7b0d914a8204037bbfc042dea375326ae757774f63759`、
-`57d0fba9be95644890b80bfa4ec2cd992e47bb8ad4b67c130f5194ea73aa0273`、
-`08b00a9f6fe70d94fe2c1b2bdebbdb5603bcee39bf3ceb460abe53f403bba7b5`、
-`1dadbeabb219f5853c713ad53aa1cc7cd720a0e80abd7f882e9e0a5ea7802625`。
-countは96/4/188、403/367、235/223、219/184、warning 23、error 0。format、
-denied-warning Clippy、crate/workspace test、diff checkはpassし、3 reviewはfinding
-なし。semantic、API、diagnostic、payload、ordering、deferred/fact state、fail-
-closed behavior、coverage、roadmapは不変で、`spec_coverage_audit.md`は変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZJ 移動前 inventory と仕様
 
-authority/test/trace/expectation/design/source/API/consumer の fresh inventory
-により、次の最小 dependency-closed helper として attribute-level-negative
-imported-attribute assertion output wrapper だけを選ぶ。2744-2752 行の正確な
-9行 `source_imported_non_empty_attribute_assertion_formula_output` の raw hash
-は `1377322d6f1efcf71977d932b23156d6cc9aae510c1a9c07489a1a6637bc321f`、
-whitespace-normalized hash は
-`74b44431416683b547202eab73f5946c899ae88859c1865064f2867bbe200d3a`
-である。`runner.rs` と test file 2個に計4 occurrence があり、definition、
-保持するproduction detail consumer、Task114 direct output matrix、test-support
-importである。既存private `type_elaboration/output.rs`がshared checker-output
-coreを、`source_formula.rs`がexact extractorをすでに所有する。
-
-この9行だけを既存private `type_elaboration/output.rs`へ移す。保持するproduction
-detail consumerは`runner.rs`に残るためwrapperはphase facadeとrunner rootを通常時
-に越える。ownerはexact extractorを`source_formula.rs`から直接importし、保持する
-direct testのためfacade/rootを`cfg(test)`時だけ追加で越える。detail wrapper、
-set-enumeration family、他の全formula/route siblingはその場に残す。現inventoryは
-`runner.rs` 2,997 /
-`82a93e8d090f5cbc33f585f0f3cfde6bdb2c9b7466a08470f0c4490403db0799`、
-facade 534 /
-`4f4b829567e2462ee03e4e00a5f8a3fb9d8a38088680b00e6304ceb84069e5c2`、
-`output.rs` 1,352 /
-`eb6b831e6fda03b56cc02d6241bbf2ac5f36c1e1328c5ea31a1b0aa55459b425`
-である。
-
-authorityはcanonical Chapter 6 attribute negation/composition、§14.2.4、
-Task114のexact `1 is non empty` source、そのexpectation、trace requirementで
-ある。direct-`non` extractor selection、imported `empty` provenance、shared
-checker coreへの不変payload forwarding、同じ3個のordered/deduplicated
-diagnostic keyを保存する。既存Task114 source/output/detail assertion、bounded
-near-miss/corruption/isolation matrix、active fixture、全byte/hash oracleで境界は
-十分であり、ZZZJ0 testは不要である。detail wrapper、shared core、positive
-wrapper 2個、extractor behavior、input/module/payload/status/diagnostic/order、
-deferred/fact state、attribute semantics、API/test name/expectation/trace、
-coverage/deferred state、他formula family、routeの変更を禁止する。
-coverage/owner/credit/follow-up/deferred rationaleを変えないため
-`spec_coverage_audit.md`は変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZJ 移動結果
 
-Task 263ZZZJは承認された正確な9行attribute-level-negative imported-attribute
-assertion output wrapperだけを既存private `type_elaboration/output.rs`へ移した。
-保持するproduction detail consumerのためwrapperは通常時に越え、exact extractor
-はfacade/rootを`cfg(test)`時だけ越える。shared coreはfacade/rootを越えなく
-なった。detail wrapper、set-enumeration family、全siblingはその場に残る。
-
-`pub(in crate::runner)`だけを除去したraw hashは
-`1377322d6f1efcf71977d932b23156d6cc9aae510c1a9c07489a1a6637bc321f`、
-whitespace-normalized hashは
-`74b44431416683b547202eab73f5946c899ae88859c1865064f2867bbe200d3a`
-を維持する。結果inventoryは`runner.rs` 2,987 /
-`70078201c777fb75e581e769934a7266f11b5b945b9896e76161c86f78a0fe90`、
-facade 534 /
-`cf2d6f775fccdf1e2efb7c27bd4e7409348d0cf8f83a109850fa02c5c330a278`、
-`output.rs` 1,363 /
-`5855ec61dd781ad8cfa1e82f4b440420627d9bc04388000fc548c988878498bf`
-である。
-
-focused Task114 testとunit test 272件はpassした。raw/normalized test-list hashは
-`5e41e4dbfcc303322c246a612de61926a628957a168589b45864d0a5070bb07e`と
-`c0c2b80f8b4e6c84cd25d77573fda722c4d1846fed168cd4a478781cdb42775e`。
-4 CLI hashは`f34240072564dfafacf7b0d914a8204037bbfc042dea375326ae757774f63759`、
-`57d0fba9be95644890b80bfa4ec2cd992e47bb8ad4b67c130f5194ea73aa0273`、
-`08b00a9f6fe70d94fe2c1b2bdebbdb5603bcee39bf3ceb460abe53f403bba7b5`、
-`1dadbeabb219f5853c713ad53aa1cc7cd720a0e80abd7f882e9e0a5ea7802625`。
-countは96/4/188、403/367、235/223、219/184、warning 23、error 0。format、
-denied-warning Clippy、crate/workspace test、diff checkはpassした。最終specification、
-test-sufficiency、implementation、source/documentation consistency reviewはfinding
-なし。semantic、API、test name、expectation、diagnostic、payload、ordering、
-deferred/fact state、fail-closed behavior、coverage、roadmapは不変で、
-`spec_coverage_audit.md`は変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZK 移動前 inventory と仕様
 
-authority/test/trace/expectation/design/source/API/consumerのfresh inventoryに
-より、次の最小dependency-closed helperとしてattribute-level-negative
-imported-attribute assertion detail wrapperだけを選ぶ。2666-2674行の正確な9行
-`source_imported_non_empty_attribute_assertion_formula_detail_keys`のraw hashは
-`db8b9053883cfacd797222d2844c8cf761a401ca5d19278cdb1512f795b529c8`、
-whitespace-normalized hashは
-`c46e5fbe9775604cf3d2c60ce76841bd4b9471963b00a2111142af5a726144b3`
-である。`runner.rs`にdefinitionとproduction dispatchの正確に2 occurrenceが
-ある。既存private `type_elaboration/output.rs`がoutput wrapperとcanonical
-diagnostic-key dependencyをすでに所有する。
-
-この9行だけを既存private `type_elaboration/output.rs`へ移す。detailはphase
-facade/rootを通常時に越える。output wrapperは保持するTask114 direct matrixの
-ため`cfg(test)`時だけ越えるようになり、exact extractorもfacade/rootを
-`cfg(test)`時だけ越える一方、ownerは直接importする。set-enumeration family、
-他の全formula/route siblingはその場に残す。現inventoryは`runner.rs` 2,987 /
-`70078201c777fb75e581e769934a7266f11b5b945b9896e76161c86f78a0fe90`、
-facade 534 /
-`cf2d6f775fccdf1e2efb7c27bd4e7409348d0cf8f83a109850fa02c5c330a278`、
-`output.rs` 1,363 /
-`5855ec61dd781ad8cfa1e82f4b440420627d9bc04388000fc548c988878498bf`
-である。
-
-authorityはcanonical Chapter 6 attribute negation/composition、§14.2.4、
-Task114のexact `1 is non empty` source、そのexpectation、trace requirementで
-ある。exact output-to-canonical-key projectionと同じ3個のordered/deduplicated
-diagnosticを保存する。既存Task114 source/output/detail assertion、bounded
-near-miss/corruption/isolation matrix、active fixture、全byte/hash oracleで境界は
-十分であり、ZZZK0 testは不要である。output/core/positive wrapper、extractor
-2個、payload/status/diagnostic/order、deferred/fact state、attribute semantics、
-API/test name/expectation/trace、coverage/deferred state、他formula family、route
-の変更を禁止する。coverage/owner/credit/follow-up/deferred rationaleを変えない
-ため`spec_coverage_audit.md`は変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZK 移動結果
 
-Task 263ZZZKは承認された正確な9行attribute-level-negative imported-attribute
-assertion detail wrapperだけを既存private `type_elaboration/output.rs`へ移した。
-detailは通常時、output wrapperとexact extractorはfacade/rootを`cfg(test)`時だけ
-越え、ownerはextractorを直接importする。set-enumeration family、全siblingは
-その場に残る。
-
-`pub(in crate::runner)`だけを除去したraw hashは
-`db8b9053883cfacd797222d2844c8cf761a401ca5d19278cdb1512f795b529c8`、
-whitespace-normalized hashは
-`c46e5fbe9775604cf3d2c60ce76841bd4b9471963b00a2111142af5a726144b3`
-を維持する。結果inventoryは`runner.rs` 2,978 /
-`375964fe40c9f0a9716beb7aa27f24433e95be4cb4953856ff37024dc6f7da22`、
-facade 535 /
-`4133ab105202a928dec81c59833cfcf2d7291b4dab4946ea33b3e43039e84e6b`、
-`output.rs` 1,373 /
-`573ddc0bb6c421cb0ed4e1501d644eb938222282fa8c787fc7cc6556b7110274`
-である。
-
-focused Task114 testとunit test 272件はpassした。raw/normalized test-list hashは
-`5e41e4dbfcc303322c246a612de61926a628957a168589b45864d0a5070bb07e`と
-`c0c2b80f8b4e6c84cd25d77573fda722c4d1846fed168cd4a478781cdb42775e`。
-4 CLI hashは`f34240072564dfafacf7b0d914a8204037bbfc042dea375326ae757774f63759`、
-`57d0fba9be95644890b80bfa4ec2cd992e47bb8ad4b67c130f5194ea73aa0273`、
-`08b00a9f6fe70d94fe2c1b2bdebbdb5603bcee39bf3ceb460abe53f403bba7b5`、
-`1dadbeabb219f5853c713ad53aa1cc7cd720a0e80abd7f882e9e0a5ea7802625`。
-countは96/4/188、403/367、235/223、219/184、warning 23、error 0。format、
-denied-warning Clippy、crate/workspace test、diff checkはpassした。最終specification、
-test-sufficiency、implementation、source/documentation consistency reviewはfinding
-なし。semantic、API、test name、expectation、diagnostic、payload、ordering、
-deferred/fact state、fail-closed behavior、coverage、roadmapは不変で、
-`spec_coverage_audit.md`は変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZL 移動前 inventory と仕様
 
-authority/test/trace/expectation/design/source/API/consumerのfresh inventoryに
-より、次の最小dependency-closed familyとしてset-enumeration checker-output
-producerを選ぶ。2735-2777行の正確な43行
-`source_set_enumeration_formula_output`のraw hashは
-`710f25b9f406aad51eeb99c105abd79f9477e0c18b60ea3f27124a1b81330355`、
-whitespace-normalized hashは
-`8ce0c819e585f6a8c9c2dd98a4d34799d31d2fff3db34264b33e8f3c947c8cb2`
-である。`runner.rs`とtest file 2個にdefinition、保持するproduction detail
-consumer、Task111 direct output matrix、test-support importの計4 occurrenceが
-ある。既存private `type_elaboration/output.rs`がchecker type、binding-env
-projection、diagnostic-key helperを、`source_formula.rs`がexact extractorを所有する。
-
-この43行だけを既存private `type_elaboration/output.rs`へ移す。保持するdetail
-consumerとdirect testのためproducerはphase facade/rootを通常時に越える。ownerは
-exact extractorを`source_formula.rs`から直接importし、保持するdirect extraction
-testのためfacade/rootを`cfg(test)`時だけ追加で越える。detail wrapper、
-imported-predicate/connective-quantifier family、全route siblingはその場に残す。現
-inventoryは`runner.rs` 2,978 /
-`375964fe40c9f0a9716beb7aa27f24433e95be4cb4953856ff37024dc6f7da22`、
-facade 535 /
-`4133ab105202a928dec81c59833cfcf2d7291b4dab4946ea33b3e43039e84e6b`、
-`output.rs` 1,373 /
-`573ddc0bb6c421cb0ed4e1501d644eb938222282fa8c787fc7cc6556b7110274`
-である。
-
-authorityはcanonical Chapters 13、14、Task111のexact source
-`{1, 2} = {1, 2}`、そのexpectation、trace requirementである。ordered numeral-
-item input 4個とその後のleft/right set-enumeration input、set site 2個に対する
-equality、binding context zero、exact diagnostic order/deduplication、empty fact
-stateを保存する。既存Task111 source/output/detail assertionとbounded near-miss/
-corruption/isolation matrixで境界は十分であり、ZZZL0 testは不要である。detail
-wrapper、extractor、term/formula inputのcount/order/kind/site/range、binding
-context、payload/status/diagnostic、deferred/fact
-state、API/test name/expectation/trace、coverage/deferred state、他formula family、
-routeの変更を禁止する。coverage/owner/credit/follow-up/deferred rationaleを
-変えないため`spec_coverage_audit.md`は変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZL 移動結果
 
-Task 263ZZZLは承認された正確な43行set-enumeration checker-output producer
-だけを既存private `type_elaboration/output.rs`へ移した。producerは保持する
-production detail consumerとdirect testのため通常時に越え、exact extractorは
-facade/rootを`cfg(test)`時だけ越える一方、ownerは直接importする。detail wrapper、
-imported-predicate/connective-quantifier family、全siblingはその場に残る。
-
-`pub(in crate::runner)`だけを除去したraw hashは
-`710f25b9f406aad51eeb99c105abd79f9477e0c18b60ea3f27124a1b81330355`、
-whitespace-normalized hashは
-`8ce0c819e585f6a8c9c2dd98a4d34799d31d2fff3db34264b33e8f3c947c8cb2`
-を維持する。結果inventoryは`runner.rs` 2,935 /
-`a2a26271930816da1aae265c7e08a2f67e7d4f0ced0acd6dcf032d99afd389fd`、
-facade 536 /
-`b3ae2356a62c72c1652eb237f94013b7c69c8ac3e0b0bd7d9703680b901ba044`、
-`output.rs` 1,418 /
-`17411f0eb48ac5493767e43bf739e83a8804ab9aaafee4ac82260f9af37e9a01`
-である。
-
-focused Task111 matrixとunit test 272件はpassした。raw/normalized test-list hashは
-`5e41e4dbfcc303322c246a612de61926a628957a168589b45864d0a5070bb07e`と
-`c0c2b80f8b4e6c84cd25d77573fda722c4d1846fed168cd4a478781cdb42775e`。
-4 CLI hashは`f34240072564dfafacf7b0d914a8204037bbfc042dea375326ae757774f63759`、
-`57d0fba9be95644890b80bfa4ec2cd992e47bb8ad4b67c130f5194ea73aa0273`、
-`08b00a9f6fe70d94fe2c1b2bdebbdb5603bcee39bf3ceb460abe53f403bba7b5`、
-`1dadbeabb219f5853c713ad53aa1cc7cd720a0e80abd7f882e9e0a5ea7802625`。
-countは96/4/188、403/367、235/223、219/184、warning 23、error 0。format、
-denied-warning Clippy、crate/workspace test、diff checkはpassした。最終specification、
-test-sufficiency、implementation、source/documentation consistency reviewはfinding
-なし。semantic、API、test name、expectation、diagnostic、payload、ordering、
-deferred/fact state、fail-closed behavior、coverage、roadmapは不変で、
-`spec_coverage_audit.md`は変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZM 移動前 inventory と仕様
 
-authority/test/trace/expectation/design/source/API/consumerのfresh inventoryに
-より、次の最小dependency-closed production helperとしてset-enumeration formula
-detail wrapperだけを選ぶ。2668-2675行の正確な8行
-`source_set_enumeration_formula_detail_keys`のraw hashは
-`f74ec9f6bafcb821a63055a3af3915fd94c2a343b95b7f8717912b33e0504f8b`、
-whitespace-normalized hashは
-`267c53605f17e3e1622ab28d6a063a2e6f17659927e9600afb28b9b9a2eb385e`
-である。`runner.rs`にdefinitionとproduction dispatchの正確に2 occurrenceが
-ある。既存private `type_elaboration/output.rs`がoutput producerとcanonical
-diagnostic-key projectionをすでに所有する。
-
-この8行だけを既存private `type_elaboration/output.rs`へ移す。detailはphase
-facade/rootを通常時に越える。output producerは保持するTask111 direct matrixの
-ためfacade/rootを`cfg(test)`時だけ越え、exact extractorもownerが直接importした
-ままfacade/rootを`cfg(test)`時だけ越える。imported-predicate/connective-quantifier family、
-他の全route siblingはその場に残す。現inventoryは`runner.rs` 2,935 /
-`a2a26271930816da1aae265c7e08a2f67e7d4f0ced0acd6dcf032d99afd389fd`、
-facade 536 /
-`b3ae2356a62c72c1652eb237f94013b7c69c8ac3e0b0bd7d9703680b901ba044`、
-`output.rs` 1,418 /
-`17411f0eb48ac5493767e43bf739e83a8804ab9aaafee4ac82260f9af37e9a01`
-である。
-
-authorityはcanonical Chapters 13、14、Task111のexact source
-`{1, 2} = {1, 2}`、そのexpectation、trace requirementである。exact output-to-
-canonical-key projectionと同じ3個のordered/deduplicated diagnosticを保存する。
-既存Task111 source/output/detail assertionとbounded near-miss/corruption/isolation
-matrixで境界は十分であり、ZZZM0 testは不要である。output producer、extractor、
-term/formula input、context、payload/status/diagnostic/order、deferred/fact state、
-API/test name/expectation/trace、coverage/deferred state、他formula family、routeの
-変更を禁止する。coverage/owner/credit/follow-up/deferred rationaleを変えないため
-`spec_coverage_audit.md`は変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZM 移動結果
 
-Task 263ZZZMは承認された正確な8行set-enumeration formula detail wrapperだけを
-既存private `type_elaboration/output.rs`へ移した。detailは通常時、output producer
-とexact extractorはfacade/rootを`cfg(test)`時だけ越え、ownerはextractorを直接
-importする。imported-predicate/connective-quantifier family、全siblingはその場に
-残る。
-
-`pub(in crate::runner)`だけを除去したraw hashは
-`f74ec9f6bafcb821a63055a3af3915fd94c2a343b95b7f8717912b33e0504f8b`、
-whitespace-normalized hashは
-`267c53605f17e3e1622ab28d6a063a2e6f17659927e9600afb28b9b9a2eb385e`
-を維持する。結果inventoryは`runner.rs` 2,927 /
-`6187ce68d51fde79b686029e92131f83dad94ccb230452149554ca8c814c5cd5`、
-facade 536 /
-`ce7c6c7a1b598bc9eb56546329a607c7cb8b6254eb9dbceabedded947e79dffb`、
-`output.rs` 1,427 /
-`e08a86cdce43198d45db57fb23897a782999dd433b7c915d12e5dc22bbc4638f`
-である。
-
-focused Task111 matrixとunit test 272件はpassした。raw/normalized test-list hashは
-`5e41e4dbfcc303322c246a612de61926a628957a168589b45864d0a5070bb07e`と
-`c0c2b80f8b4e6c84cd25d77573fda722c4d1846fed168cd4a478781cdb42775e`。
-4 CLI hashは`f34240072564dfafacf7b0d914a8204037bbfc042dea375326ae757774f63759`、
-`57d0fba9be95644890b80bfa4ec2cd992e47bb8ad4b67c130f5194ea73aa0273`、
-`08b00a9f6fe70d94fe2c1b2bdebbdb5603bcee39bf3ceb460abe53f403bba7b5`、
-`1dadbeabb219f5853c713ad53aa1cc7cd720a0e80abd7f882e9e0a5ea7802625`。
-countは96/4/188、403/367、235/223、219/184、warning 23、error 0。format、
-denied-warning Clippy、crate/workspace test、diff checkはpassした。最終specification、
-test-sufficiency、implementation、source/documentation consistency reviewはfinding
-なし。semantic、API、test name、expectation、diagnostic、payload、ordering、
-deferred/fact state、fail-closed behavior、coverage、roadmapは不変で、
-`spec_coverage_audit.md`は変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZN 移動前 inventory と仕様
 
-authority/test/trace/expectation/design/source/API/consumerのfresh inventoryに
-より、次の最小dependency-closed familyとしてimported predicate/functor checker-
-output producerを選ぶ。2678-2726行の正確な49行
-`source_imported_predicate_functor_formula_output`のraw hashは
-`f6cd24d9727310205ecf6bccd2ef8d305dda6151aeb1830a56281f04609b2f2c`、
-whitespace-normalized hashは
-`85be481df55ca82de1bea0199a3062596d24942e95114105a5c8f875d556ceac`
-である。`runner.rs`とtest file 2個にdefinition、保持するproduction detail
-consumer、Task110 direct output matrix、test-support importの4 occurrenceがある。
-既存private `type_elaboration/output.rs`がchecker input/output type、binding-
-environment projection、canonical diagnostic-key helperをすでに所有し、
-`source_formula.rs`がexact extractorを所有する。
-
-この49行だけを既存private `type_elaboration/output.rs`へ移す。producerは保持する
-detail consumerとdirect testのためphase facade/rootを通常時に越える。ownerは
-exact extractorを`source_formula.rs`から直接importし、extractor accessは保持する
-direct extraction testのためfacade/rootを`cfg(test)`時だけ越える。detail wrapper、
-connective-quantifier family、他の全route siblingはその場に残す。現inventoryは
-`runner.rs` 2,927 /
-`6187ce68d51fde79b686029e92131f83dad94ccb230452149554ca8c814c5cd5`、
-facade 536 /
-`ce7c6c7a1b598bc9eb56546329a607c7cb8b6254eb9dbceabedded947e79dffb`、
-`output.rs` 1,427 /
-`e08a86cdce43198d45db57fb23897a782999dd433b7c915d12e5dc22bbc4638f`
-である。
-
-authorityはcanonical Chapters 11、12、13、14、16、Task110のexact imported
-source `1 divides (1 ++ 2)`、そのexpectation、trace requirementである。ordered
-numeral input 3個、その後のsymbol reference付きimported functor-application input、
-left numeral/functor siteに対するpredicate-application formula、imported symbol
-provenance 2個、binding context zero、exact diagnostic order/deduplication、empty
-fact stateを保存する。既存Task110 source/output/detail assertionとbounded near-
-miss/corruption/provenance/isolation matrixで境界は十分であり、ZZZN0 testは不要で
-ある。detail wrapper、extractor、term/formula inputのcount/order/kind/site/range/
-reference、symbol provenance、binding context、payload/status/diagnostic、deferred/
-fact state、API/test name/expectation/trace、coverage/deferred state、他formula
-family、routeの変更を禁止する。coverage/owner/credit/follow-up/deferred rationaleを
-変えないため`spec_coverage_audit.md`は変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZN 移動結果
 
-Task 263ZZZNは承認された正確な49行imported predicate/functor checker-output
-producerだけを既存private `type_elaboration/output.rs`へ移した。producerは保持する
-production detail consumerとdirect testのため通常時に越え、exact extractorは
-facade/rootを`cfg(test)`時だけ越える一方、ownerは直接importする。detail wrapper、
-connective-quantifier family、全siblingはその場に残る。
-
-`pub(in crate::runner)`だけを除去したraw hashは
-`f6cd24d9727310205ecf6bccd2ef8d305dda6151aeb1830a56281f04609b2f2c`、
-whitespace-normalized hashは
-`85be481df55ca82de1bea0199a3062596d24942e95114105a5c8f875d556ceac`
-を維持する。結果inventoryは`runner.rs` 2,877 /
-`82a02705035ed776ea7d56dd8a5c46deae83aa159f1675ee804d573c7d68c4cb`、
-facade 536 /
-`13e44ae1df6ebd80d7d1ec24d8ebb4fbbdf9cf2adade14272d6c65b1a5da4119`、
-`output.rs` 1,477 /
-`840b57f9d0dfc67113458795a772c2817d512926ec88bf5e91016b2212e3d746`
-である。
-
-focused Task110 matrixとunit test 272件はpassした。raw/normalized test-list hashは
-`5e41e4dbfcc303322c246a612de61926a628957a168589b45864d0a5070bb07e`と
-`c0c2b80f8b4e6c84cd25d77573fda722c4d1846fed168cd4a478781cdb42775e`。
-4 CLI hashは`f34240072564dfafacf7b0d914a8204037bbfc042dea375326ae757774f63759`、
-`57d0fba9be95644890b80bfa4ec2cd992e47bb8ad4b67c130f5194ea73aa0273`、
-`08b00a9f6fe70d94fe2c1b2bdebbdb5603bcee39bf3ceb460abe53f403bba7b5`、
-`1dadbeabb219f5853c713ad53aa1cc7cd720a0e80abd7f882e9e0a5ea7802625`。
-countは96/4/188、403/367、235/223、219/184、warning 23、error 0。format、
-denied-warning Clippy、crate/workspace test、diff checkはpassした。最終specification、
-test-sufficiency、implementation、source/documentation consistency reviewはfinding
-なし。semantic、API、test name、expectation、diagnostic、payload、ordering、
-deferred/fact state、fail-closed behavior、coverage、roadmapは不変で、
-`spec_coverage_audit.md`は変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZO 移動前 inventory と仕様
 
-authority/test/trace/expectation/design/source/API/consumerのfresh inventoryに
-より、次の最小dependency-closed production helperとしてimported predicate/
-functor formula detail wrapperだけを選ぶ。2660-2667行の正確な8行
-`source_imported_predicate_functor_formula_detail_keys`のraw hashは
-`eec832831f01a1c9f0e21d1f81eef4632794bb6d0f09b995771539a4ee3624ed`、
-whitespace-normalized hashは
-`a8de584e21d4efcb7ed4248bd822b1badeceaeeba839069ee1873c5bdff192d5`
-である。`runner.rs`にdefinitionとproduction dispatchの正確に2 occurrenceが
-ある。既存private `type_elaboration/output.rs`がoutput producerとcanonical
-diagnostic-key projectionをすでに所有する。
-
-この8行だけを既存private `type_elaboration/output.rs`へ移す。detailはphase
-facade/rootを通常時に越える。output producerは保持するTask110 direct matrixの
-ためfacade/rootを`cfg(test)`時だけ越え、exact extractorもownerが直接importした
-ままfacade/rootを`cfg(test)`時だけ越える。connective-quantifier family、他の全
-route siblingはその場に残す。現inventoryは`runner.rs` 2,877 /
-`82a02705035ed776ea7d56dd8a5c46deae83aa159f1675ee804d573c7d68c4cb`、
-facade 536 /
-`13e44ae1df6ebd80d7d1ec24d8ebb4fbbdf9cf2adade14272d6c65b1a5da4119`、
-`output.rs` 1,477 /
-`840b57f9d0dfc67113458795a772c2817d512926ec88bf5e91016b2212e3d746`
-である。
-
-authorityはcanonical Chapters 11、12、13、14、16、Task110のexact imported
-source `1 divides (1 ++ 2)`、そのexpectation、trace requirementである。exact
-output-to-canonical-key projectionと同じ4個のordered/deduplicated diagnosticを
-保存する。既存Task110 source/output/detail assertionとbounded near-miss/
-corruption/provenance/isolation matrixで境界は十分であり、ZZZO0 testは不要で
-ある。output producer、extractor、term/formula input、symbol provenance、
-context、payload/status/diagnostic/order、deferred/fact state、API/test name/
-expectation/trace、coverage/deferred state、他formula family、routeの変更を禁止
-する。coverage/owner/credit/follow-up/deferred rationaleを変えないため
-`spec_coverage_audit.md`は変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZO 移動結果
 
-Task 263ZZZOは承認された正確な8行imported predicate/functor formula detail
-wrapperだけを既存private `type_elaboration/output.rs`へ移した。detailは通常時、
-output producerとexact extractorはfacade/rootを`cfg(test)`時だけ越え、ownerは
-extractorを直接importする。connective-quantifier family、全siblingはその場に
-残る。
-
-`pub(in crate::runner)`だけを除去したraw hashは
-`eec832831f01a1c9f0e21d1f81eef4632794bb6d0f09b995771539a4ee3624ed`、
-whitespace-normalized hashは
-`a8de584e21d4efcb7ed4248bd822b1badeceaeeba839069ee1873c5bdff192d5`
-を維持する。結果inventoryは`runner.rs` 2,870 /
-`162eef438a976cd427b820d42544ab7661ef7486712d7b67f43dbe45e9275dc0`、
-facade 537 /
-`47df7ebca6bd19644654314b07dfdfb7b4eb5a4170555f634d99be643af165e6`、
-`output.rs` 1,486 /
-`3e0a1870cce557958c008e0ade5cf10d4f2e9c4ad7910800e11f4f3ceb8e8921`
-である。
-
-focused Task110 matrixとunit test 272件はpassした。raw/normalized test-list hashは
-`5e41e4dbfcc303322c246a612de61926a628957a168589b45864d0a5070bb07e`と
-`c0c2b80f8b4e6c84cd25d77573fda722c4d1846fed168cd4a478781cdb42775e`。
-4 CLI hashは`f34240072564dfafacf7b0d914a8204037bbfc042dea375326ae757774f63759`、
-`57d0fba9be95644890b80bfa4ec2cd992e47bb8ad4b67c130f5194ea73aa0273`、
-`08b00a9f6fe70d94fe2c1b2bdebbdb5603bcee39bf3ceb460abe53f403bba7b5`、
-`1dadbeabb219f5853c713ad53aa1cc7cd720a0e80abd7f882e9e0a5ea7802625`。
-countは96/4/188、403/367、235/223、219/184、warning 23、error 0。format、
-denied-warning Clippy、crate/workspace test、diff checkはpassした。最終specification、
-test-sufficiency、implementation、source/documentation consistency reviewはfinding
-なし。semantic、API、test name、expectation、diagnostic、payload、ordering、
-deferred/fact state、fail-closed behavior、coverage、roadmapは不変で、
-`spec_coverage_audit.md`は変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZP 移動前 inventory と仕様
 
-authority/test/trace/expectation/design/source/API/consumerのfresh inventoryに
-より、次の最小dependency-closed familyとしてformula connective/quantifier
-checker-output producerを選ぶ。2671-2722行の正確な52行
-`source_formula_connective_quantifier_output`のraw hashは
-`7bc5d0899674fda17899b4c78463ac1d83e9ed8ad99196a4b0bb2eaf11f844f0`、
-whitespace-normalized hashは
-`48917fea48ed055b8419855622005eae3670216beb527dfa38cca502a5d31907`
-である。`runner.rs`とtest file 2個にdefinition、保持するproduction detail
-consumer、Task112/117 direct output matrix、test-support importの4 occurrenceが
-ある。既存private `type_elaboration/output.rs`がchecker type、binding-environment
-projection、canonical diagnostic-key renderingをすでに所有し、
-`source_formula.rs`がexact extractorを所有する。
-
-この52行だけを既存private `type_elaboration/output.rs`へ移す。producerは保持する
-detail consumerとdirect testのためphase facade/rootを通常時に越える。ownerは
-exact extractorを`source_formula.rs`から直接importし、extractor accessはfacade/
-rootを`cfg(test)`時だけ越える。detail wrapper、他の全route siblingはその場に
-残す。現inventoryは`runner.rs` 2,870 /
-`162eef438a976cd427b820d42544ab7661ef7486712d7b67f43dbe45e9275dc0`、
-facade 537 /
-`47df7ebca6bd19644654314b07dfdfb7b4eb5a4170555f634d99be643af165e6`、
-`output.rs` 1,486 /
-`3e0a1870cce557958c008e0ade5cf10d4f2e9c4ad7910800e11f4f3ceb8e8921`
-である。
-
-authorityはcanonical Chapters 14、16、Tasks112/117のexact source
-`contradiction implies for x being set holds not contradiction`、そのexpectation、
-trace requirementである。ordered formula input 5個（premise contradiction、
-implication、universal quantification、negation、body contradiction）、正確なsite/
-range/kind、empty term input、binding context zero、`MissingFormulaPayload`と
-`MissingQuantifierPayload`のdeferred reason、exact diagnostic order/deduplication、
-empty fact stateを保存する。既存Tasks112/117 source/output/detail assertionと
-bounded near-miss/corruption/isolation matrixで境界は十分であり、ZZZP0 testは
-不要である。detail wrapper、extractor、formula inputのcount/order/kind/site/
-range/deferred reason、context、payload/status/diagnostic、fact、API/test name/
-expectation/trace、coverage/deferred state、他formula family、routeの変更を禁止
-する。coverage/owner/credit/follow-up/deferred rationaleを変えないため
-`spec_coverage_audit.md`は変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZP 移動結果
 
-Task 263ZZZPは承認された正確な52行formula connective/quantifier checker-output
-producerだけを既存private `type_elaboration/output.rs`へ移した。producerは保持する
-production detail consumerとdirect testのため通常時に越え、exact extractorは
-facade/rootを`cfg(test)`時だけ越える一方、ownerは直接importする。detail wrapper、
-全sibling routeはその場に残る。
-
-`pub(in crate::runner)`だけを除去したraw hashは
-`7bc5d0899674fda17899b4c78463ac1d83e9ed8ad99196a4b0bb2eaf11f844f0`、
-whitespace-normalized hashは
-`48917fea48ed055b8419855622005eae3670216beb527dfa38cca502a5d31907`
-を維持する。結果inventoryは`runner.rs` 2,814 /
-`b92f1f17161eaf7f8280e21604b5595201b0ba436e571ac4e7fa5cb8810a79af`、
-facade 538 /
-`2a35f57235aeb687971fdbc602c21ee4a9c0acc9ffee662c396aa22afcc27982`、
-`output.rs` 1,540 /
-`9e122ecc7dd4677eaaf09f572832096b17c62305e8b80d60b6e09bac0b82c766`
-である。
-
-focused Tasks112/117 matrixとunit test 272件はpassした。raw/normalized test-list
-hashは`5e41e4dbfcc303322c246a612de61926a628957a168589b45864d0a5070bb07e`と
-`c0c2b80f8b4e6c84cd25d77573fda722c4d1846fed168cd4a478781cdb42775e`。
-4 CLI hashは`f34240072564dfafacf7b0d914a8204037bbfc042dea375326ae757774f63759`、
-`57d0fba9be95644890b80bfa4ec2cd992e47bb8ad4b67c130f5194ea73aa0273`、
-`08b00a9f6fe70d94fe2c1b2bdebbdb5603bcee39bf3ceb460abe53f403bba7b5`、
-`1dadbeabb219f5853c713ad53aa1cc7cd720a0e80abd7f882e9e0a5ea7802625`。
-countは96/4/188、403/367、235/223、219/184、warning 23、error 0。format、
-denied-warning Clippy、crate/workspace test、diff checkはpassした。最終specification、
-test-sufficiency、implementation、source/documentation consistency reviewはfinding
-なし。semantic、API、test name、expectation、diagnostic、payload、ordering、
-deferred/fact state、fail-closed behavior、coverage、roadmapは不変で、
-`spec_coverage_audit.md`は変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZQ 移動前 inventory と仕様
 
-fresh inventoryは次の最小dependency-closed production helperとして2659-2666行の
-正確な8行`source_formula_connective_quantifier_detail_keys`だけを選ぶ。raw hashは
-`8ae5c6cda6bfa84dfb8c12794c02744a11f7d9ff331e7bfed5c8e2fac8e87de7`、
-whitespace-normalized hashは
-`96cb8e88e9645baf665e690951c2d03439d04196b8b3b9e73e785c6fbd2dd86d`。
-`runner.rs`にdefinitionとproduction dispatchの正確に2 occurrenceがあり、private
-`output.rs`がproducerとcanonical key projectionをすでに所有する。
-
-この8行だけを`output.rs`へ移す。detailは通常時、output/extractorはfacade/rootを
-`cfg(test)`時だけ越え、ownerはextractorを直接importする。全route siblingは
-その場に残す。現inventoryは`runner.rs` 2,814 /
-`b92f1f17161eaf7f8280e21604b5595201b0ba436e571ac4e7fa5cb8810a79af`、
-facade 538 / `2a35f57235aeb687971fdbc602c21ee4a9c0acc9ffee662c396aa22afcc27982`、
-`output.rs` 1,540 /
-`9e122ecc7dd4677eaaf09f572832096b17c62305e8b80d60b6e09bac0b82c766`。
-authorityはcanonical Chapters 14/16とTasks112/117のexact source、expectation、
-traceである。exact output-to-key projectionと同じ2個のordered/deduplicated
-diagnosticを保存する。既存exact/near-miss/corruption/isolation coverageで十分で、
-ZZZQ0 testは不要。output/extractor、payload/status/diagnostic/order/deferred/fact、
-semantic/test/expectation/trace/coverage change、sibling move、route changeを禁止する。
-`spec_coverage_audit.md`は変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZQ 移動結果
 
-Task 263ZZZQは承認された正確な8行formula connective/quantifier detail wrapper
-だけを既存private `type_elaboration/output.rs`へ移した。detailはproduction dispatch
-のためfacade/rootを通常時に越え、producerとextractorは`cfg(test)`時だけ越える
-一方、ownerはextractorを直接importする。全sibling routeはその場に残る。
-parent-owned production consumerが残らないため、不要になったcanonical-keyの
-facade/root crossingは除去した。
-
-`pub(in crate::runner)`だけを除去したraw hashは
-`8ae5c6cda6bfa84dfb8c12794c02744a11f7d9ff331e7bfed5c8e2fac8e87de7`、
-whitespace-normalized hashは
-`96cb8e88e9645baf665e690951c2d03439d04196b8b3b9e73e785c6fbd2dd86d`
-を維持する。結果inventoryは`runner.rs` 2,805 /
-`a040da9ecd2f64aa7387c10973676fc9d78c589041c9bc55b03acfe8860e9a14`、
-facade 538 /
-`ecca05c63e4807334dd4ef9ac82436b85f11931cdf1217a575d791eab2d413aa`、
-`output.rs` 1,549 /
-`579474efbddf3c85d337be053d83c45bd9beceedecc0c0758314b9c94652d6d1`
-である。
-
-focused Tasks112/117 matrixとunit test 272件はpassした。raw/normalized test-list
-hashは`5e41e4dbfcc303322c246a612de61926a628957a168589b45864d0a5070bb07e`と
-`c0c2b80f8b4e6c84cd25d77573fda722c4d1846fed168cd4a478781cdb42775e`。
-4 CLI hashは`f34240072564dfafacf7b0d914a8204037bbfc042dea375326ae757774f63759`、
-`57d0fba9be95644890b80bfa4ec2cd992e47bb8ad4b67c130f5194ea73aa0273`、
-`08b00a9f6fe70d94fe2c1b2bdebbdb5603bcee39bf3ceb460abe53f403bba7b5`、
-`1dadbeabb219f5853c713ad53aa1cc7cd720a0e80abd7f882e9e0a5ea7802625`。
-countは96/4/188、403/367、235/223、219/184、warning 23、error 0。format、
-denied-warning Clippy、crate/workspace test、diff checkはpassした。specification、
-test-sufficiency、implementation、source/documentation consistency reviewはfinding
-なし。semantic、API、test name、expectation、diagnostic、payload、ordering、
-deferred/fact state、fail-closed behavior、coverage、roadmapは不変で、
-`spec_coverage_audit.md`は変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZR 移動前 inventory と仕様
 
-fresh inventoryは`runner.rs`に残るproduction-helper route family 9個を比較し、
-chained local-mode reserved-variable type-assertion routeを最小dependency-closed
-familyとして選ぶ。正確な5 fragmentは847-849行のinvalid key（3行、
-`3212882d7df523a3ff28fd6c31f18b90f0f5ece6ce022b99798505f953937d36`）、
-2312-2335行のconfig（24行、
-`b8171beaf084d7ee5e227f3db564761772d2f96fe35f7c04b4047a9689b4d035`）、
-2507-2519行のproduction detail（13行、
-`0b2e08b229c12ba5960f3c7d9a844e7d3af33c930980032183d20b70c63c16db`）、
-attached `#[cfg(test)]`を含む2614-2623行のtest-only output（10行、
-`06dea4867a4ec086386550c3e51946ad4c56e74d41c45327ebe40fea3215cc7c`）、
-2724-2735行のextractor（12行、
-`7f9033fb21b29d95791524f906de68941afad052518c1545bd8c8d343347d749`）
-である。合計62行、combined raw hashは
-`ff9708ab2017614e37fb5cdc865428380a42f30fb93e51feacf34e19a2979554`、
-whitespace-normalized hashは
-`7e0c913b86d5f3af83b85d76a210c981116eaa1aaca4b0fb899227c844e4eae7`。
-9 source/test fileにsymbol occurrence 75件がある。現inventoryは`runner.rs`
-2,805 / `a040da9ecd2f64aa7387c10973676fc9d78c589041c9bc55b03acfe8860e9a14`、
-facade 538 / `ecca05c63e4807334dd4ef9ac82436b85f11931cdf1217a575d791eab2d413aa`、
-`type_assertion_routes.rs` 3,490 /
-`7cab1a47e130a9cd4a200c58c3af72dc131e52ebb4a5c90ac6aaa24e8c9b5481`。
-
-Task 263ZZZRはこの5 fragmentだけを既存private
-`type_elaboration/type_assertion_routes.rs`へ機械的に移す。invalid keyは
-leaf-privateとなり、config-derived test aliasがrunner name/valueを保持する。
-production detail routeだけがphase facadeを通常時に越え、config、test output、
-extractorは`cfg(test)`時だけ越える。orchestration、dispatch、全sibling routeは
-`runner.rs`に残す。token-identical fragmentを保つ目的だけでoracle外にformatting
-controlを追加してよい。
-
-authorityはcanonical Chapters 3、4、13、14、16とTask 146のexact `.miz` source、
-expectation、trace requirement、checker-boundary testである。routeはBase-to-setと
-Chain-to-Baseのreal definitionを保持し、`x`を`ChainModeTypeAssertion`用にreserveし、
-独立したformula-side builtin `set` assertionをcheckする。両expansionはsubjectを
-terminal definition-RHS builtin-set identityへ再帰normalizeし、checkerはordinal 1を
-`BindingId(0)`へresolveし、inferred variable 1個とchecked/fact-free/deferred-free type
-assertion 1個を生成する。既存exact-source、real-fixture、corruption、near-miss、
-cross-owner isolation matrixでmoveは十分に保護され、ZZZR0 testは不要である。
-
-key、label、spelling、mode definition、relation、source range、normalization/
-provenance、binding identity、asserted input、result role、payload、diagnostic、ordering、
-fallback、fail-closed behavior、API/test name、expectation/trace、coverage/deferred state、
-sibling route、semantic behaviorの変更を禁止する。move-only `design_drift`であり、
-coverage owner/credit/follow-up/deferred rationaleを変えないため
-`spec_coverage_audit.md`は変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZR 移動結果
 
-Task 263ZZZRは承認された正確な5 fragment/62行だけを既存private
-`type_elaboration/type_assertion_routes.rs`へ移した。invalid keyはleaf-privateで、
-config-derived runner aliasは`cfg(test)`下でname/valueを保持する。detailだけが通常時に
-越え、config、output、extractorはfacade/rootを`cfg(test)`時だけ越える。
-orchestration、dispatch、全sibling routeはその場に残る。oracle外の
-`#[rustfmt::skip]`はconfig fragmentを変更せずに保持する。
-
-`pub(in crate::runner)`だけを除去した5 raw hashは
-`3212882d7df523a3ff28fd6c31f18b90f0f5ece6ce022b99798505f953937d36`、
-`b8171beaf084d7ee5e227f3db564761772d2f96fe35f7c04b4047a9689b4d035`、
-`0b2e08b229c12ba5960f3c7d9a844e7d3af33c930980032183d20b70c63c16db`、
-`06dea4867a4ec086386550c3e51946ad4c56e74d41c45327ebe40fea3215cc7c`、
-`7f9033fb21b29d95791524f906de68941afad052518c1545bd8c8d343347d749`
-を維持する。combined rawは
-`ff9708ab2017614e37fb5cdc865428380a42f30fb93e51feacf34e19a2979554`、
-normalizedは
-`7e0c913b86d5f3af83b85d76a210c981116eaa1aaca4b0fb899227c844e4eae7`
-を維持する。結果inventoryは`runner.rs` 2,746 /
-`f07576500f26d941a94660165c2e2a5f517935d1b3cc5a52cf54b5b402af930d`、
-facade 542 /
-`3f616815d12c1ffd36db25f5e54deca93702d0c9284dee29a9cd7f384f8759f1`、
-`type_assertion_routes.rs` 3,558 /
-`52399cb11873a05b493edd0cb37468841f864abc3e6dc29865a98e62d3e745d3`。
-
-focused Task 146 test 2件とunit test 272件はpassした。raw/normalized test-list
-hashは`5e41e4dbfcc303322c246a612de61926a628957a168589b45864d0a5070bb07e`と
-`c0c2b80f8b4e6c84cd25d77573fda722c4d1846fed168cd4a478781cdb42775e`。
-4 CLI hashは`f34240072564dfafacf7b0d914a8204037bbfc042dea375326ae757774f63759`、
-`57d0fba9be95644890b80bfa4ec2cd992e47bb8ad4b67c130f5194ea73aa0273`、
-`08b00a9f6fe70d94fe2c1b2bdebbdb5603bcee39bf3ceb460abe53f403bba7b5`、
-`1dadbeabb219f5853c713ad53aa1cc7cd720a0e80abd7f882e9e0a5ea7802625`。
-countは96/4/188、403/367、235/223、219/184、warning 23、error 0。format、
-denied-warning Clippy、crate/workspace test、diff checkはpassした。specification、
-test-sufficiency、implementation、source/documentation consistency reviewはfinding
-なし。semantic、API、test name、expectation、diagnostic、key、payload、ordering、
-fail-closed behavior、coverage/deferred state、roadmapは不変で、
-`spec_coverage_audit.md`は変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZS 移動前 inventory と仕様
 
-fresh inventoryは`runner.rs`に残るproduction-helper route family 8個を比較し、
-two-edge local-mode reserved-variable builtin type-assertion routeを最小dependency-
-closed familyとして選ぶ。正確な5 fragmentは858-860行のinvalid key（3行、
-`56c165de564a32cd1559a791a4a6e1cf60daa4b7f1961c7b65cf3631344df47d`）、
-2316-2344行のconfig（29行、
-`30e2876adc14fcc02ab960bb96abfef2c08ff4a25fa2857fb63173596c7538f8`）、
-2486-2498行のproduction detail（13行、
-`2a936496e968833d2904979677825d3200c62b54e4849fbdff89650497f35e55`）、
-`#[cfg(test)]`を含む2579-2588行のtest-only output（10行、
-`8b43240b093e4356da67380159df1b7efb4c344de710de512f9bffbb85b179a5`）、
-2678-2689行のextractor（12行、
-`eaac2cdc665ec73b319e203e6cdee774d006b1df880a3f5c1ddea718663ff580`）。
-合計67行、combined raw hashは
-`2b643569345812daea3b6c6a258da0f81f8e607e761eb34c4ca1c1b1073e09fe`、
-whitespace-normalized hashは
-`3290e481e8eb72f44db244db1dd58638dd60060f10499ee315ea0d92e381864c`。
-10 source/test fileにsymbol occurrence 77件がある。現inventoryは`runner.rs`
-2,746 / `f07576500f26d941a94660165c2e2a5f517935d1b3cc5a52cf54b5b402af930d`、
-facade 542 / `3f616815d12c1ffd36db25f5e54deca93702d0c9284dee29a9cd7f384f8759f1`、
-`type_assertion_routes.rs` 3,558 /
-`52399cb11873a05b493edd0cb37468841f864abc3e6dc29865a98e62d3e745d3`。
-
-Task 263ZZZSはこの5 fragmentだけを既存private
-`type_elaboration/type_assertion_routes.rs`へ移す。keyはleaf-privateとなり、
-config-derived test aliasがrunner name/valueを保持する。detailだけが通常時、config、
-output、extractorは`cfg(test)`時だけ越える。全sibling、dispatch、orchestration routeは
-`runner.rs`に残し、oracle外のformatting controlでtoken identityを保持してよい。
-
-authorityはcanonical Chapters 3、4、13、14、16とTask 148のexact `.miz` source、
-expectation、trace requirement、checker-boundary testである。Base-to-set、
-Middle-to-Base、Outer-to-Middle definition、raw Outer subjectと独立したformula-side
-builtin-set input/site/range、ordinal 1と`BindingId(0)`、terminal definition-RHS
-builtin-set identityへnormalizeするreal expansion 3個、general reachabilityなしの
-inferred variable 1個とchecked/fact-free/deferred-free type assertion 1個を保存する。
-既存exact、fixture、corruption、near-miss、cross-owner isolation matrixで十分であり、
-ZZZS0 testは不要。
-
-key/config/label/spelling/definition/relation/range/normalization/provenance/binding/input/
-result/payload/diagnostic/order/fallback/fail-closed/API/test/expectation/trace/coverage/
-deferred、semantic、sibling、route変更を禁止する。move-only `design_drift`であり、
-`spec_coverage_audit.md`は変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZS 移動結果
 
-仕様reviewで当初候補を実際のminimum familyへ修正した後、Task 263ZZZSは承認された
-正確な5 fragment/67行だけを既存private
-`type_elaboration/type_assertion_routes.rs`へ移した。keyはleaf-privateであり、
-production detail routeだけが通常時に越え、config、output、extractorは
-`cfg(test)`時だけfacade/rootを越える。runnerはtest-onlyのconfig-derived key
-aliasを保持する。全sibling route、production dispatch site、top-level
-orchestration pathは元の場所に残る。oracle外の`#[rustfmt::skip]`によりconfig
-fragment自体を変更せず保持した。
-
-`pub(in crate::runner)`だけを除いた5個のraw hashは
-`56c165de564a32cd1559a791a4a6e1cf60daa4b7f1961c7b65cf3631344df47d`、
-`30e2876adc14fcc02ab960bb96abfef2c08ff4a25fa2857fb63173596c7538f8`、
-`2a936496e968833d2904979677825d3200c62b54e4849fbdff89650497f35e55`、
-`8b43240b093e4356da67380159df1b7efb4c344de710de512f9bffbb85b179a5`、
-`eaac2cdc665ec73b319e203e6cdee774d006b1df880a3f5c1ddea718663ff580`
-のままである。combined rawは
-`2b643569345812daea3b6c6a258da0f81f8e607e761eb34c4ca1c1b1073e09fe`、
-normalizedは
-`3290e481e8eb72f44db244db1dd58638dd60060f10499ee315ea0d92e381864c`
-のままである。結果inventoryは`runner.rs` 2,682 /
-`604ce1fda2733caca8eab4284477bc0808b3d436336e7fdcb05d15d6c318b719`、
-facade 546 /
-`55beab14b00b144083ac21a3b5161c2a0dd10fa85ac3e11253a0af7bbd2a5b45`、
-`type_assertion_routes.rs` 3,631 /
-`e80710b069e6b65e31573837a8970dc69a33e33da57e8aecd3e1db20dfd3fa11`。
-
-focused Task 148 test 2件とunit test 272件がpassした。raw/normalized test-list
-hashは
-`5e41e4dbfcc303322c246a612de61926a628957a168589b45864d0a5070bb07e`と
-`c0c2b80f8b4e6c84cd25d77573fda722c4d1846fed168cd4a478781cdb42775e`
-のままである。4 CLI hashは
-`f34240072564dfafacf7b0d914a8204037bbfc042dea375326ae757774f63759`、
-`57d0fba9be95644890b80bfa4ec2cd992e47bb8ad4b67c130f5194ea73aa0273`、
-`08b00a9f6fe70d94fe2c1b2bdebbdb5603bcee39bf3ceb460abe53f403bba7b5`、
-`1dadbeabb219f5853c713ad53aa1cc7cd720a0e80abd7f882e9e0a5ea7802625`
-のままである。countは96/4/188、403/367、235/223、219/184、warning 23、
-error 0のままである。format、denied-warning Clippy、crate/workspace test、diff
-checkはpassした。仕様、test-sufficiency、implementation、source/documentation
-consistency reviewはfindingなし。semantic、API、test name、expectation、
-diagnostic、key、payload、ordering、
-fail-closed behavior、coverage/deferred state、roadmapは不変であり、
-`spec_coverage_audit.md`は変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZT 移動前 inventory と仕様
 
-fresh inventoryで`runner.rs`に残るproduction-helper route family 7個を比較し、
-Task 186 two-edge local-mode same-mode asserted-head routeを最小のdependency-closed
-family 67行として選ぶ。次候補は71行である。正確な5 fragmentはinvalid key
-840-841（2行、
-`0ea970fb21dd8ba2848c0c55025d443116fe708b979771c86d018fe0b2b07377`）、
-config 2204-2235（32、
-`403b2813cbaeb22bd3af7f8d1410d7bbfeab02f5de49e9d3913a6350deca002f`）、
-production detail 2421-2432（12、
-`ea7028ee7f3a8231a76281251ab7a70be84e4318da262bb8f4ef42698970f1e6`）、
-`#[cfg(test)]`込みtest-only output 2509-2517（9、
-`be6b32fb5b4dbfa69fac9adf2412e1a0a5e406f20127c5c4d23469f885210742`）、
-extractor 2588-2599（12、
-`d8815f2dc9f2ebac5959e88245742b65436863cfdddc794187ab8e3245bad0a8`）。
-combined raw hashは
-`86ed5b9099827f75934806bd701d4f2b5f77b8fa897ea8acb8e95d650c468bd2`、
-whitespace-normalized hashは
-`1e886d0c36f4f822c5fed3679be655a7720f0fabfb3ab7a3bf7fe12ca055ae2e`。
-8 source/test fileにsymbol occurrence 76件がある。現inventoryは`runner.rs`
-2,682 / `604ce1fda2733caca8eab4284477bc0808b3d436336e7fdcb05d15d6c318b719`、
-facade 546 / `55beab14b00b144083ac21a3b5161c2a0dd10fa85ac3e11253a0af7bbd2a5b45`、
-`type_assertion_routes.rs` 3,631 /
-`e80710b069e6b65e31573837a8970dc69a33e33da57e8aecd3e1db20dfd3fa11`。
-
-Task 263ZZZTはこの5 fragmentだけを既存private
-`type_elaboration/type_assertion_routes.rs`へ移す。keyはleaf-privateとなり、
-config-derived test aliasがrunner name/valueを保持する。detailだけが通常時、config、
-output、extractorは`cfg(test)`時だけ越える。全sibling、dispatch、orchestration
-routeは`runner.rs`に残し、oracle外のformatting controlでtoken identityを保持してよい。
-
-authorityはcanonical Chapters 3、4、13、14、16とTask 186のexact `.miz` source、
-expectation、trace requirement、checker-boundary testである。Base-to-set、
-Middle-to-Base、Outer-to-Middle definition、raw Outer subjectと独立したformula-side
-same-Outer asserted inputのdistinct site/range、ordinal 1と`BindingId(0)`、real
-expansion 3個とterminal Base-definition-RHS builtin-set identityへnormalizeするknown
-type entry 3個、general reachability/widening/quaなしのinferred variable 1個と
-checked/fact-free/deferred-free type assertion 1個を保存する。既存exact、fixture、
-corruption、near-miss、cross-owner isolation matrixで十分であり、ZZZT0 testは不要。
-
-key/config/label/spelling/definition/relation/range/normalization/provenance/binding/input/
-result/payload/diagnostic/order/fallback/fail-closed/API/test/expectation/trace/coverage/
-deferred、semantic、sibling、route変更を禁止する。move-only `design_drift`であり、
-`spec_coverage_audit.md`は変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZT 移動結果
 
-Task 263ZZZTは承認された正確な5 fragment/67行だけを既存private
-`type_elaboration/type_assertion_routes.rs`へ移した。keyはleaf-privateであり、
-production detail routeだけが通常時に越え、config、output、extractorは
-`cfg(test)`時だけfacade/rootを越える。runnerはtest-onlyのconfig-derived key
-aliasを保持する。全sibling route、production dispatch site、top-level
-orchestration pathは元の場所に残る。oracle外の`#[rustfmt::skip]`によりconfig
-fragment自体を変更せず保持した。
-
-`pub(in crate::runner)`だけを除いた5個のraw hashは
-`0ea970fb21dd8ba2848c0c55025d443116fe708b979771c86d018fe0b2b07377`、
-`403b2813cbaeb22bd3af7f8d1410d7bbfeab02f5de49e9d3913a6350deca002f`、
-`ea7028ee7f3a8231a76281251ab7a70be84e4318da262bb8f4ef42698970f1e6`、
-`be6b32fb5b4dbfa69fac9adf2412e1a0a5e406f20127c5c4d23469f885210742`、
-`d8815f2dc9f2ebac5959e88245742b65436863cfdddc794187ab8e3245bad0a8`
-のままである。combined rawは
-`86ed5b9099827f75934806bd701d4f2b5f77b8fa897ea8acb8e95d650c468bd2`、
-normalizedは
-`1e886d0c36f4f822c5fed3679be655a7720f0fabfb3ab7a3bf7fe12ca055ae2e`
-のままである。結果inventoryは`runner.rs` 2,618 /
-`0a9124014367e84c55676d73bee25a0755cae0a60380ae1b1ee5eeae748c494e`、
-facade 550 /
-`ab1232c8f0ef2685f440ef0f324b266a878c6ebfb4198a3ddd817851cba04717`、
-`type_assertion_routes.rs` 3,704 /
-`d4d9ca8b16153faa7442dc3d3c4406c86e081b7024ff00484806dd46c2f41c67`。
-
-focused Task 186 test 2件とunit test 272件がpassした。raw/normalized test-list
-hashは
-`5e41e4dbfcc303322c246a612de61926a628957a168589b45864d0a5070bb07e`と
-`c0c2b80f8b4e6c84cd25d77573fda722c4d1846fed168cd4a478781cdb42775e`
-のままである。4 CLI hashは
-`f34240072564dfafacf7b0d914a8204037bbfc042dea375326ae757774f63759`、
-`57d0fba9be95644890b80bfa4ec2cd992e47bb8ad4b67c130f5194ea73aa0273`、
-`08b00a9f6fe70d94fe2c1b2bdebbdb5603bcee39bf3ceb460abe53f403bba7b5`、
-`1dadbeabb219f5853c713ad53aa1cc7cd720a0e80abd7f882e9e0a5ea7802625`
-のままである。countは96/4/188、403/367、235/223、219/184、warning 23、
-error 0のままである。format、denied-warning Clippy、crate/workspace test、diff
-checkはpassした。仕様、test-sufficiency、implementation、source/documentation
-consistency reviewはfindingなし。semantic、API、test name、expectation、diagnostic、
-key、payload、ordering、fail-closed behavior、
-coverage/deferred state、roadmapは不変であり、`spec_coverage_audit.md`は変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZU 移動前 inventory と仕様
 
-fresh inventoryで`runner.rs`に残るproduction-helper route family 6個を比較し、
-Task 205 three-edge local-mode immediate-radix asserted-head routeを最小の
-dependency-closed family 71行として選ぶ。次候補は73行である。正確な5 fragmentは
-invalid key 831-832（2行、
-`1e00a7374e8dc254e9b620970ef6928750e10be5af74ce82cb0d2a9a8961df67`）、
-config 2130-2165（36、
-`407a8ee8d60299b04a287db6e0a5e4bb0b7c3c6c5a45017d821f2d276a7ae5aa`）、
-production detail 2367-2378（12、
-`cdf63a5611563eab8aad5c888a6af6dcd21f34066e4d29f5d2559cfc0cf4c351`）、
-`#[cfg(test)]`込みtest-only output 2448-2456（9、
-`d96f13607b5ef7dfaf59e1a22c076d84a4dcaf93611d9e2effbb7c336ab59516`）、
-extractor 2511-2522（12、
-`374c7e6030afa70bd4a0697186e05faa6289ec5c184ce71980e36056d57230a8`）。
-combined raw hashは
-`69f927e13c371443d047469621be0f44a3cb21fafc4bdcba5408ab377f68a00c`、
-whitespace-normalized hashは
-`f577f162e6dc8789121b6d257db52533813e4268ece665378fe6f81126c98a31`。
-8 source/test fileにsymbol occurrence 73件がある。現inventoryは`runner.rs`
-2,618 / `0a9124014367e84c55676d73bee25a0755cae0a60380ae1b1ee5eeae748c494e`、
-facade 550 / `ab1232c8f0ef2685f440ef0f324b266a878c6ebfb4198a3ddd817851cba04717`、
-`type_assertion_routes.rs` 3,704 /
-`d4d9ca8b16153faa7442dc3d3c4406c86e081b7024ff00484806dd46c2f41c67`。
-
-Task 263ZZZUはこの5 fragmentだけを既存private
-`type_elaboration/type_assertion_routes.rs`へ移す。keyはleaf-privateとなり、
-config-derived test aliasがrunner name/valueを保持する。detailだけが通常時、config、
-output、extractorは`cfg(test)`時だけ越える。全sibling、dispatch、orchestration
-routeは`runner.rs`に残し、oracle外のformatting controlでtoken identityを保持してよい。
-
-authorityはcanonical Chapters 3、4、13、14、16とTask 205のexact `.miz` source、
-expectation、trace requirement、checker-boundary testである。Base-to-set、
-Inner-to-Base、Middle-to-Inner、Outer-to-Middle definition、raw Outer subjectと
-独立したformula-side Middle immediate-radix asserted inputのdistinct symbol/site/
-range、ordinal 1と`BindingId(0)`、real expansion 4個とterminal Base-definition-RHS
-builtin-set identityへnormalizeするknown type entry 3個、multi-hop/general
-reachability/widening/quaなしのinferred variable 1個とzero-constraint/fact/candidate/
-diagnostic/deferred checked type assertion 1個を保存する。既存exact、fixture、
-corruption、near-miss、cross-owner isolation matrixで十分であり、ZZZU0 testは不要。
-
-key/config/label/spelling/definition/relation/range/normalization/provenance/binding/input/
-result/payload/diagnostic/order/fallback/fail-closed/API/test/expectation/trace/coverage/
-deferred、semantic、sibling、route変更を禁止する。move-only `design_drift`であり、
-`spec_coverage_audit.md`は変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZU 移動結果
 
-Task 263ZZZUは承認された正確な5 fragment/71行だけを既存private
-`type_elaboration/type_assertion_routes.rs`へ移した。keyはleaf-privateであり、
-production detail routeだけが通常時に越え、config、output、extractorは
-`cfg(test)`時だけfacade/rootを越える。runnerはtest-onlyのconfig-derived key
-aliasを保持する。全sibling route、production dispatch site、top-level
-orchestration pathは元の場所に残る。oracle外の`#[rustfmt::skip]`によりconfig
-fragment自体を変更せず保持した。
-
-`pub(in crate::runner)`だけを除いた5個のraw hashは
-`1e00a7374e8dc254e9b620970ef6928750e10be5af74ce82cb0d2a9a8961df67`、
-`407a8ee8d60299b04a287db6e0a5e4bb0b7c3c6c5a45017d821f2d276a7ae5aa`、
-`cdf63a5611563eab8aad5c888a6af6dcd21f34066e4d29f5d2559cfc0cf4c351`、
-`d96f13607b5ef7dfaf59e1a22c076d84a4dcaf93611d9e2effbb7c336ab59516`、
-`374c7e6030afa70bd4a0697186e05faa6289ec5c184ce71980e36056d57230a8`
-のままである。combined rawは
-`69f927e13c371443d047469621be0f44a3cb21fafc4bdcba5408ab377f68a00c`、
-normalizedは
-`f577f162e6dc8789121b6d257db52533813e4268ece665378fe6f81126c98a31`
-のままである。結果inventoryは`runner.rs` 2,549 /
-`e5fc7f7de5984ad599d5d5584d65aa68eaa1fb6339051c2fcc459d1cc8f0f70d`、
-facade 554 /
-`6e6580f488de9252b1e8d90a5bf63ababe0a6cdfa63592c4a79bcd0dd4aa6b7b`、
-`type_assertion_routes.rs` 3,781 /
-`d0d3ca99cd4496cb48f3fd741fcbf91ff5a71575eb8384842dec459f35744760`。
-
-focused Task 205 test 2件とunit test 272件がpassした。raw/normalized test-list
-hashは
-`5e41e4dbfcc303322c246a612de61926a628957a168589b45864d0a5070bb07e`と
-`c0c2b80f8b4e6c84cd25d77573fda722c4d1846fed168cd4a478781cdb42775e`
-のままである。4 CLI hashは
-`f34240072564dfafacf7b0d914a8204037bbfc042dea375326ae757774f63759`、
-`57d0fba9be95644890b80bfa4ec2cd992e47bb8ad4b67c130f5194ea73aa0273`、
-`08b00a9f6fe70d94fe2c1b2bdebbdb5603bcee39bf3ceb460abe53f403bba7b5`、
-`1dadbeabb219f5853c713ad53aa1cc7cd720a0e80abd7f882e9e0a5ea7802625`
-のままである。countは96/4/188、403/367、235/223、219/184、warning 23、
-error 0のままである。format、denied-warning Clippy、crate/workspace test、diff
-checkはpassした。仕様、test-sufficiency、implementation、source/documentation
-consistency reviewはfindingなし。semantic、API、test name、expectation、diagnostic、
-key、payload、ordering、
-fail-closed behavior、
-coverage/deferred state、roadmapは不変であり、`spec_coverage_audit.md`は変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZV 移動前 inventory と仕様
 
-fresh inventoryで`runner.rs`に残るproduction-helper route family 5個を比較する。
-2 familyが73行で同率のため、Task 263ZZZVは9 source/test fileにoccurrence 74件と
-同率same-mode familyの78件よりconsumer surfaceが小さいTask 150 three-edge
-local-mode reserved-variable builtin type-assertion routeを選ぶ。正確な5 fragmentは
-invalid key 878-879（2行、
-`1923c716329281623dde1ab207d3448b24bdc526ba0c52a2897c6ff2a7e316d2`）、
-config 2259-2292（34、
-`bdb8dcb192a3b24d568c3b9f6bfc9aa206c2e05ac4018860dae051b552441d8e`）、
-production detail 2373-2386（14、
-`78da43fb497ee476060355b7aec8fd7d8bfd1e33634a15d2ad2ee1b8e9e17107`）、
-`#[cfg(test)]`込みtest-only output 2432-2442（11、
-`2ff24b4e08659ef570c05cca919b26b4fd847b5786e3a72a02e9bb1ff0430796`）、
-extractor 2494-2505（12、
-`3dd8dbbb9871a4939253068e7e68ab8f050de59c12fe01ca2689c9de6a932a12`）。
-combined raw hashは
-`0e62d61b172fc59782b9bb804aa30ebc13ed15e88b7aa042dd5cee4c4fff1c65`、
-whitespace-normalized hashは
-`1b0e79a0e90229105af5dac89fa575cb0843ca2155662f2d3400b678f44bd14d`。
-現inventoryは`runner.rs` 2,549 /
-`e5fc7f7de5984ad599d5d5584d65aa68eaa1fb6339051c2fcc459d1cc8f0f70d`、
-facade 554 / `6e6580f488de9252b1e8d90a5bf63ababe0a6cdfa63592c4a79bcd0dd4aa6b7b`、
-`type_assertion_routes.rs` 3,781 /
-`d0d3ca99cd4496cb48f3fd741fcbf91ff5a71575eb8384842dec459f35744760`。
-
-Task 263ZZZVはこの5 fragmentだけを既存private
-`type_elaboration/type_assertion_routes.rs`へ移す。keyはleaf-privateとなり、
-config-derived test aliasがrunner name/valueを保持する。detailだけが通常時、config、
-output、extractorは`cfg(test)`時だけ越える。全sibling、dispatch、orchestration
-routeは`runner.rs`に残し、oracle外のformatting controlでtoken identityを保持してよい。
-
-authorityはcanonical Chapters 3、4、13、14、16とTask 150のexact `.miz` source、
-expectation、trace requirement、checker-boundary testである。Base-to-set、
-Inner-to-Base、Middle-to-Inner、Outer-to-Middle definition、raw Outer subjectと
-独立したformula-side builtin-set inputのdistinct site/range、ordinal 1と
-`BindingId(0)`、terminal Base-definition-RHS builtin-set identityへnormalizeするreal
-expansion 4個、general reachability/widening/quaなしのinferred variable 1個と
-zero-constraint/fact/candidate/diagnostic/deferred checked type assertion 1個を保存する。
-既存exact、fixture、corruption、near-miss、cross-owner isolation matrixで十分であり、
-ZZZV0 testは不要。
-
-key/config/label/spelling/definition/relation/range/normalization/provenance/binding/input/
-result/payload/diagnostic/order/fallback/fail-closed/API/test/expectation/trace/coverage/
-deferred、semantic、sibling、route変更を禁止する。move-only `design_drift`であり、
-`spec_coverage_audit.md`は変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZV 移動結果
 
-Task 263ZZZVは承認された正確な5 fragment/73行だけを既存private
-`type_elaboration/type_assertion_routes.rs`へ移した。keyはleaf-privateであり、
-production detail routeだけが通常時に越え、config、output、extractorは
-`cfg(test)`時だけfacade/rootを越える。runnerはtest-onlyのconfig-derived key
-aliasを保持する。全sibling route、production dispatch site、top-level
-orchestration pathは元の場所に残る。oracle外の`#[rustfmt::skip]`によりconfig
-fragment自体を変更せず保持した。
-
-`pub(in crate::runner)`だけを除いた5個のraw hashは
-`1923c716329281623dde1ab207d3448b24bdc526ba0c52a2897c6ff2a7e316d2`、
-`bdb8dcb192a3b24d568c3b9f6bfc9aa206c2e05ac4018860dae051b552441d8e`、
-`78da43fb497ee476060355b7aec8fd7d8bfd1e33634a15d2ad2ee1b8e9e17107`、
-`2ff24b4e08659ef570c05cca919b26b4fd847b5786e3a72a02e9bb1ff0430796`、
-`3dd8dbbb9871a4939253068e7e68ab8f050de59c12fe01ca2689c9de6a932a12`
-のままである。combined rawは
-`0e62d61b172fc59782b9bb804aa30ebc13ed15e88b7aa042dd5cee4c4fff1c65`、
-normalizedは
-`1b0e79a0e90229105af5dac89fa575cb0843ca2155662f2d3400b678f44bd14d`
-のままである。結果inventoryは`runner.rs` 2,479 /
-`de85a8e7885c3077262391085e7f5f8c1ce7a4709c9edbcdc5aff746feaa315c`、
-facade 558 /
-`336054f759b96e091f6a223c155a8b61281794fe11ba3c461ad96fec62beae50`、
-`type_assertion_routes.rs` 3,860 /
-`1225ba0d4b83da43421ab15c13bf324035c8a9a908f99b7e29d674c43a511517`。
-
-focused Task 150 test 2件とunit test 272件がpassした。raw/normalized test-list
-hashは
-`5e41e4dbfcc303322c246a612de61926a628957a168589b45864d0a5070bb07e`と
-`c0c2b80f8b4e6c84cd25d77573fda722c4d1846fed168cd4a478781cdb42775e`
-のままである。4 CLI hashは
-`f34240072564dfafacf7b0d914a8204037bbfc042dea375326ae757774f63759`、
-`57d0fba9be95644890b80bfa4ec2cd992e47bb8ad4b67c130f5194ea73aa0273`、
-`08b00a9f6fe70d94fe2c1b2bdebbdb5603bcee39bf3ceb460abe53f403bba7b5`、
-`1dadbeabb219f5853c713ad53aa1cc7cd720a0e80abd7f882e9e0a5ea7802625`
-のままである。countは96/4/188、403/367、235/223、219/184、warning 23、
-error 0のままである。format、denied-warning Clippy、crate/workspace test、diff
-checkはpassした。仕様、test-sufficiency、implementation、source/documentation
-consistency reviewはfindingなし。semantic、API、test name、expectation、diagnostic、
-key、payload、ordering、
-fail-closed behavior、
-coverage/deferred state、roadmapは不変であり、`spec_coverage_audit.md`は変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZW 移動前 inventory と仕様
 
-fresh inventory は `runner.rs` に残る4個のproduction-helper route familyを比較する。
-Task 263ZZZWは最小のTask 195 exact three-edge local-mode same-mode asserted-head
-routeを選ぶ。合計73行で、9 source/test fileにoccurrence 78件である。正確な5
-fragmentはinvalid key 855-856（2行、
-`793a12fe49e493d7a5140578f499266a8ba1d645f491caa6e3f64b3def6d86bd`）、
-config 2181-2218（38行、
-`232a724164a5383eaa302b60439fb02a7bd88629cd9256b7d53c6646565a5171`）、
-production detail 2317-2328（12行、
-`80dcfe7b995c1f78df8767282e5e9b96c8be8c5cf6d1abc2d439f42ec2f2d7fa`）、
-`#[cfg(test)]`を含むtest-only output 2367-2375（9行、
-`f96e29daa2ba09e66b21d1fd7e60b3ec1691c6da292984381324177bd9e7161d`）、
-extractor 2411-2422（12行、
-`3f7a7a4b1d7071e270c0dec24265cc9f2b1db84fab2128058661c3a352af375c`）
-である。combined raw hashは
-`97a9c9fddcdd42bf0ddfc37272f8cb0dd64a838112ce3381ad04abe80c27c17f`、
-whitespace-normalized hashは
-`c06eb209e4852ed82f4a4d06600d06d9bb3d658ef4b8f9eefcec32d5beab0707`
-である。現在のinventoryは`runner.rs` 2,479 /
-`de85a8e7885c3077262391085e7f5f8c1ce7a4709c9edbcdc5aff746feaa315c`、
-facade 558 /
-`336054f759b96e091f6a223c155a8b61281794fe11ba3c461ad96fec62beae50`、
-`type_assertion_routes.rs` 3,860 /
-`1225ba0d4b83da43421ab15c13bf324035c8a9a908f99b7e29d674c43a511517`
-である。
-
-Task 263ZZZWはこの5 fragmentだけを既存private
-`type_elaboration/type_assertion_routes.rs`へ移す。keyはleaf-privateとし、
-config-derived test aliasがrunnerでの名前と値を保つ。detailだけを通常時に越え、
-config、output、extractorは`cfg(test)`時だけ越える。全sibling、dispatch、
-orchestration routeは`runner.rs`に残し、oracle外のformatting controlだけでtoken
-identityを保存してよい。
-
-authorityはcanonical Chapters 3、4、13、14、16とTask 195のexact `.miz` source、
-expectation、trace requirement、checker-boundary testsである。Base-to-set、
-Inner-to-Base、Middle-to-Inner、Outer-to-Middle definition、同じOuter symbolに対する
-独立したraw reserve-subjectとformula-side asserted inputおよび異なるsite/range、
-ordinal 1と`BindingId(0)`、4個のreal expansion、terminal Base-definition-RHS
-builtin-set identityへnormalizeされる3個のknown entry、1個のinferred variable、
-そしてconstraint/fact/candidate/diagnostic/deferredがゼロのchecked type assertionを
-保存し、general reachability、widening、quaを導入しない。既存exact、fixture、
-corruption、near-miss、cross-owner isolation matrixで十分であり、ZZZW0 testは不要
-である。
-
-key/config/label/spelling/definition/relation/range/normalization/provenance/
-binding/input/result/payload/diagnostic/order/fallback/fail-closed/API/test/
-expectation/trace/coverage/deferred、semantic、sibling、routeの変更を禁止する。
-これはmove-only `design_drift`であり、`spec_coverage_audit.md`は変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZW 移動結果
 
-Task 263ZZZWは承認された正確な5 fragment/73行だけを既存private
-`type_elaboration/type_assertion_routes.rs`へ移した。keyはleaf-privateであり、
-production detail routeだけが通常時に越え、config、output、extractorはfacade/root
-を`cfg(test)`時だけ越える。runnerにはtest-only config-derived key aliasを残した。
-全sibling route、production dispatch site、top-level orchestration pathは元の位置に
-残る。oracle外の`#[rustfmt::skip]`はconfig fragmentを変更せず保存する。
-
-`pub(in crate::runner)`だけを除くと、5個のraw hashは
-`793a12fe49e493d7a5140578f499266a8ba1d645f491caa6e3f64b3def6d86bd`、
-`232a724164a5383eaa302b60439fb02a7bd88629cd9256b7d53c6646565a5171`、
-`80dcfe7b995c1f78df8767282e5e9b96c8be8c5cf6d1abc2d439f42ec2f2d7fa`、
-`f96e29daa2ba09e66b21d1fd7e60b3ec1691c6da292984381324177bd9e7161d`、
-`3f7a7a4b1d7071e270c0dec24265cc9f2b1db84fab2128058661c3a352af375c`
-のままである。combined rawは
-`97a9c9fddcdd42bf0ddfc37272f8cb0dd64a838112ce3381ad04abe80c27c17f`、
-normalizedは
-`c06eb209e4852ed82f4a4d06600d06d9bb3d658ef4b8f9eefcec32d5beab0707`
-のままである。結果inventoryは`runner.rs` 2,408 /
-`f350b189c49f0b31f16a1c3eb939be565f734301f1a3961456ffe8b5e48d75f9`、
-facade 562 /
-`486242212ba208bbf20aa408fd64c7c230ba595da840572a07cb2f767c31107e`、
-`type_assertion_routes.rs` 3,939 /
-`864c9a450d568d8a4e6fb428c46285ac876d203e9197ab91e35e45c8242a8260`
-である。予期したforwardingにより5 symbol inventoryは9 source/test fileの78件から
-11 source/facade/test fileの88件になった。
-
-focused Task 195 test 2件とunit test 272件がpassした。raw/normalized test-list
-hashは
-`5e41e4dbfcc303322c246a612de61926a628957a168589b45864d0a5070bb07e`と
-`c0c2b80f8b4e6c84cd25d77573fda722c4d1846fed168cd4a478781cdb42775e`
-のままである。4 CLI hashは
-`f34240072564dfafacf7b0d914a8204037bbfc042dea375326ae757774f63759`、
-`57d0fba9be95644890b80bfa4ec2cd992e47bb8ad4b67c130f5194ea73aa0273`、
-`08b00a9f6fe70d94fe2c1b2bdebbdb5603bcee39bf3ceb460abe53f403bba7b5`、
-`1dadbeabb219f5853c713ad53aa1cc7cd720a0e80abd7f882e9e0a5ea7802625`
-のままである。countは96/4/188、403/367、235/223、219/184、warning 23、
-error 0のままである。format、denied-warning Clippy、crate/workspace test、diff
-checkはpassした。仕様、test-sufficiency、implementation、source/documentation
-consistency reviewはfindingなし。semantic、API、test name、expectation、diagnostic、
-key、payload、ordering、fail-closed behavior、coverage/deferred state、roadmapは不変で
-あり、`spec_coverage_audit.md`は変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZX 移動前 inventory と仕様
 
-fresh inventoryは`runner.rs`に残る3個のproduction-helper route familyを比較し、
-合計は76、76、78行である。Task 263ZZZXは76行のminimum tieからTask 207 exact
-four-edge local-mode immediate-radix asserted-head routeを選ぶ。source/test fileで
-他方の70件よりconsumer surfaceが小さい69件だからである。正確な5 fragmentは
-invalid key 847-848（2行、
-`e7453ea087d66a9320ec79d81ca900032513edec79f178f2be2c6815d8cedf80`）、
-config 2143-2183（41行、
-`bef2ef3f2e222141c69d50a69f65dd40dd460721e5fad64c1d1e93b6934a8f43`）、
-production detail 2269-2280（12行、
-`c7f1cb9a5af1c9a558f78e62dd4201959502e352a8153a8dde97fd808cf6fe5c`）、
-`#[cfg(test)]`を含むtest-only output 2309-2317（9行、
-`1f3c94b9916f9851f2f59f7fa100545d97e421f38609da2de4bf5e097377df8f`）、
-extractor 2340-2351（12行、
-`df53c8a5465503c75c75514f41af49d403ef31e374bdb47baeaf2a5ad997671f`）
-である。combined raw hashは
-`3a0ccd25abacf096552cee7b415d01e00fd72800450e2a6a8fc0e0abbbf0f8a8`、
-whitespace-normalized hashは
-`9365ee9d43fe31f3378a558490023236e8a0676545b1b372c12d1a6aad890544`
-である。現在のinventoryは`runner.rs` 2,408 /
-`f350b189c49f0b31f16a1c3eb939be565f734301f1a3961456ffe8b5e48d75f9`、
-facade 562 /
-`486242212ba208bbf20aa408fd64c7c230ba595da840572a07cb2f767c31107e`、
-`type_assertion_routes.rs` 3,939 /
-`864c9a450d568d8a4e6fb428c46285ac876d203e9197ab91e35e45c8242a8260`
-である。
-
-Task 263ZZZXはこの5 fragmentだけを既存private
-`type_elaboration/type_assertion_routes.rs`へ移す。keyはleaf-privateとし、
-config-derived test aliasがrunnerでの名前と値を保つ。detailだけを通常時に越え、
-config、output、extractorは`cfg(test)`時だけ越える。全sibling、dispatch、
-orchestration routeは`runner.rs`に残し、oracle外のformatting controlだけでtoken
-identityを保存してよい。
-
-authorityはcanonical Chapters 3、4、13、14、16とTask 207のexact `.miz` source、
-expectation、trace requirement、checker-boundary testsである。Base-to-set、
-Inner-to-Base、Middle-to-Inner、Outer-to-Middle、TooDeep-to-Outer definition、独立した
-raw TooDeep reserve-subjectとOuter formula-side asserted inputおよび異なるsite/range、
-ordinal 1と`BindingId(0)`、5個のreal expansion、terminal Base-definition-RHS
-builtin-set identityへnormalizeされる3個のknown entry、1個のinferred variable、
-そしてconstraint/fact/candidate/diagnostic/deferredがゼロのchecked type assertionを
-保存する。asserted headはbindingのexact immediate radixであり、multi-hop/general
-reachability、widening、quaを導入しない。既存exact、全119 order、fixture、
-corruption、near-miss、cross-owner isolation matrixで十分であり、ZZZX0 testは
-不要である。
-
-key/config/label/spelling/definition/relation/range/normalization/provenance/
-binding/input/result/payload/diagnostic/order/fallback/fail-closed/API/test/
-expectation/trace/coverage/deferred、semantic、sibling、routeの変更を禁止する。
-これはmove-only `design_drift`であり、`spec_coverage_audit.md`は変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZX 移動結果
 
-Task 263ZZZXは承認された正確な5 fragment/76行だけを既存private
-`type_elaboration/type_assertion_routes.rs`へ移した。keyはleaf-privateであり、
-production detail routeだけが通常時に越え、config、output、extractorはfacade/root
-を`cfg(test)`時だけ越える。runnerにはtest-only config-derived key aliasを残した。
-全sibling route、production dispatch site、top-level orchestration pathは元の位置に
-残る。oracle外の`#[rustfmt::skip]`はconfig fragmentを変更せず保存する。
-
-`pub(in crate::runner)`だけを除くと、5個のraw hashは
-`e7453ea087d66a9320ec79d81ca900032513edec79f178f2be2c6815d8cedf80`、
-`bef2ef3f2e222141c69d50a69f65dd40dd460721e5fad64c1d1e93b6934a8f43`、
-`c7f1cb9a5af1c9a558f78e62dd4201959502e352a8153a8dde97fd808cf6fe5c`、
-`1f3c94b9916f9851f2f59f7fa100545d97e421f38609da2de4bf5e097377df8f`、
-`df53c8a5465503c75c75514f41af49d403ef31e374bdb47baeaf2a5ad997671f`
-のままである。combined rawは
-`3a0ccd25abacf096552cee7b415d01e00fd72800450e2a6a8fc0e0abbbf0f8a8`、
-normalizedは
-`9365ee9d43fe31f3378a558490023236e8a0676545b1b372c12d1a6aad890544`
-のままである。結果inventoryは`runner.rs` 2,335 /
-`eac1a1f196a938dbcd49105756d91dabea88a3c974e3a1c058b68f7f8e32cb23`、
-facade 566 /
-`22abf42b79d785366a70792e458a7bbdaee03251792c4a394d73851ff560ff29`、
-`type_assertion_routes.rs` 4,021 /
-`6005a0cb3ca53355f6469bb1ce7cd782df8a991f34f393e288f7eb077143e309`
-である。予期したforwardingにより5 symbol inventoryは7 source/test fileの69件から
-9 source/facade/test fileの79件になった。
-
-focused Task 207 test 2件とunit test 272件がpassした。raw/normalized test-list
-hashは
-`5e41e4dbfcc303322c246a612de61926a628957a168589b45864d0a5070bb07e`と
-`c0c2b80f8b4e6c84cd25d77573fda722c4d1846fed168cd4a478781cdb42775e`
-のままである。4 CLI hashは
-`f34240072564dfafacf7b0d914a8204037bbfc042dea375326ae757774f63759`、
-`57d0fba9be95644890b80bfa4ec2cd992e47bb8ad4b67c130f5194ea73aa0273`、
-`08b00a9f6fe70d94fe2c1b2bdebbdb5603bcee39bf3ceb460abe53f403bba7b5`、
-`1dadbeabb219f5853c713ad53aa1cc7cd720a0e80abd7f882e9e0a5ea7802625`
-のままである。countは96/4/188、403/367、235/223、219/184、warning 23、
-error 0のままである。format、denied-warning Clippy、crate/workspace test、diff
-checkはpassした。仕様、test-sufficiency、implementation、source/documentation
-consistency reviewはfindingなし。semantic、API、test name、expectation、diagnostic、
-key、payload、ordering、fail-closed behavior、coverage/deferred state、roadmapは不変で
-あり、`spec_coverage_audit.md`は変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZY 移動前 inventory と仕様
 
-修正済みfresh inventoryは`runner.rs`に残る2個のproduction-helper route familyを
-比較し、合計は76、78行である。Task 263ZZZYは一意の最小であるTask 152 exact
-four-edge local-mode reserved-variable builtin type-assertion routeを選ぶ。合計76行で、
-8 source/test fileにoccurrence 70件である。正確な5 fragmentはinvalid key
-898-899（2行、
-`a67174987a91290cb0d66b13f740b4ace6a303fac18ffd9dc5977e0c0c5536b5`）、
-config 2192-2230（39行、
-`0b402f826dc0c24e3382f6ad0140bb500574bf830657d3da506006bd3b3a8a07`）、
-production detail 2245-2257（13行、
-`82a05ef79e82c1cda1a770970cd9bab4880c5e0ccfa863ab85c2197e7f617a07`）、
-`#[cfg(test)]`を含むtest-only output 2269-2278（10行、
-`27a25fd70008218df86bec216e8f3fd08926ac2b25da664a3535602f7d6a4996`）、
-extractor 2293-2304（12行、
-`fa1061836f967115b098e0328b8a810a407098c3a41ff72203ce5072afe7383e`）
-である。combined raw hashは
-`e0fa5934cd53044681debcec2664948f21dc15b24ffa0b563c6cf4b82ecfa698`、
-whitespace-normalized hashは
-`dab9d154332071fd501038ab375bdfd2b9c1a2f1c71b92093de0e5bf37c5179f`
-である。現在のinventoryは`runner.rs` 2,335 /
-`eac1a1f196a938dbcd49105756d91dabea88a3c974e3a1c058b68f7f8e32cb23`、
-facade 566 /
-`22abf42b79d785366a70792e458a7bbdaee03251792c4a394d73851ff560ff29`、
-`type_assertion_routes.rs` 4,021 /
-`6005a0cb3ca53355f6469bb1ce7cd782df8a991f34f393e288f7eb077143e309`
-である。
-
-Task 263ZZZYはこの5 fragmentだけを既存private
-`type_elaboration/type_assertion_routes.rs`へ移す。keyはleaf-privateとし、
-config-derived test aliasがrunnerでの名前と値を保つ。detailだけを通常時に越え、
-config、output、extractorは`cfg(test)`時だけ越える。全sibling、dispatch、
-orchestration routeは`runner.rs`に残し、oracle外のformatting controlだけでtoken
-identityを保存してよい。
-
-authorityはcanonical Chapters 3、4、13、14、16とTask 152のexact `.miz` source、
-expectation、trace requirement、checker-boundary testsである。Base-to-set、
-Inner-to-Base、Middle-to-Inner、Outer-to-Middle、TooDeep-to-Outer definition、独立した
-raw TooDeep reserve-subjectとformula-side builtin-set inputおよび異なるsite/range、
-ordinal 1と`BindingId(0)`、5個のreal expansion、terminal Base-definition-RHS
-builtin-set identityへnormalizeされるsubject/asserted input、1個のinferred
-variable、そしてconstraint/fact/candidate/diagnostic/deferredがゼロのchecked type
-assertionを保存する。asserted relationはexact builtin identityのままとし、general
-reachability、widening、qua、formula-side local-mode asserted headを導入しない。既存
-exact、fixture、corruption、near-miss、long-chain、cross-owner isolation matrixで十分で
-あり、ZZZY0 testは不要である。
-
-key/config/label/spelling/definition/relation/range/normalization/provenance/
-binding/input/result/payload/diagnostic/order/fallback/fail-closed/API/test/
-expectation/trace/coverage/deferred、semantic、sibling、routeの変更を禁止する。
-これはmove-only `design_drift`であり、`spec_coverage_audit.md`は変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZY 移動結果
 
-Task 263ZZZYは承認された正確な5 fragment/76行だけを既存private
-`type_elaboration/type_assertion_routes.rs`へ移した。keyはleaf-privateであり、
-production detail routeだけが通常時に越え、config、output、extractorはfacade/root
-を`cfg(test)`時だけ越える。runnerにはtest-only config-derived key aliasを残した。
-全sibling route、production dispatch site、top-level orchestration pathは元の位置に
-残る。oracle外の`#[rustfmt::skip]`はconfig fragmentを変更せず保存する。
-
-`pub(in crate::runner)`だけを除くと、5個のraw hashは
-`a67174987a91290cb0d66b13f740b4ace6a303fac18ffd9dc5977e0c0c5536b5`、
-`0b402f826dc0c24e3382f6ad0140bb500574bf830657d3da506006bd3b3a8a07`、
-`82a05ef79e82c1cda1a770970cd9bab4880c5e0ccfa863ab85c2197e7f617a07`、
-`27a25fd70008218df86bec216e8f3fd08926ac2b25da664a3535602f7d6a4996`、
-`fa1061836f967115b098e0328b8a810a407098c3a41ff72203ce5072afe7383e`
-のままである。combined rawは
-`e0fa5934cd53044681debcec2664948f21dc15b24ffa0b563c6cf4b82ecfa698`、
-normalizedは
-`dab9d154332071fd501038ab375bdfd2b9c1a2f1c71b92093de0e5bf37c5179f`
-のままである。結果inventoryは`runner.rs` 2,262 /
-`1eb119b58ddab93e6069e442005e9610ddb6062fdfda6f70661f4ea4ae9ae4c0`、
-facade 570 /
-`bf7b0f78e0a168ead0349491fa469bfa3909b674fd23eaa77cecb63d81dbb33a`、
-`type_assertion_routes.rs` 4,103 /
-`4aecdd97b07d9362f4b64367d954835e2942387937972803bdb4b8833acc6755`
-である。予期したforwardingにより5 symbol inventoryは8 source/test fileの70件から
-10 source/facade/test fileの80件になった。
-
-focused Task 152 test 2件とunit test 272件がpassした。raw/normalized test-list
-hashは
-`5e41e4dbfcc303322c246a612de61926a628957a168589b45864d0a5070bb07e`と
-`c0c2b80f8b4e6c84cd25d77573fda722c4d1846fed168cd4a478781cdb42775e`
-のままである。4 CLI hashは
-`f34240072564dfafacf7b0d914a8204037bbfc042dea375326ae757774f63759`、
-`57d0fba9be95644890b80bfa4ec2cd992e47bb8ad4b67c130f5194ea73aa0273`、
-`08b00a9f6fe70d94fe2c1b2bdebbdb5603bcee39bf3ceb460abe53f403bba7b5`、
-`1dadbeabb219f5853c713ad53aa1cc7cd720a0e80abd7f882e9e0a5ea7802625`
-のままである。countは96/4/188、403/367、235/223、219/184、warning 23、
-error 0のままである。format、denied-warning Clippy、crate/workspace test、diff
-checkはpassした。仕様、test-sufficiency、implementation、source/documentation
-consistency reviewはfindingなし。semantic、API、test name、expectation、diagnostic、
-key、payload、ordering、fail-closed behavior、coverage/deferred state、roadmapは不変で
-あり、`spec_coverage_audit.md`は変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZZ 移動前 inventory と仕様
 
-fresh inventoryは`runner.rs`に残るproduction-helper route familyが1個であることを
-確認した。Task 263ZZZZはTask 197 exact four-edge local-mode same-mode asserted-head
-routeを選ぶ。合計78行で、7 source/test fileにoccurrence 76件である。正確な5
-fragmentはinvalid key 870-871（2行、
-`459337d900d146bfe68c5bcb861528e904a65e87b7ab06004b331627b8b71e13`）、
-config 2153-2195（43行、
-`709bab1418e8e92020109ecbf1a759e6c857c6b2af40c72b07468c7e732be123`）、
-production detail 2197-2208（12行、
-`3a6c2c3022ac1eb4605949aed093a0b9b42826abf1701a2b6f2769dc628d00ff`）、
-`#[cfg(test)]`を含むtest-only output 2210-2218（9行、
-`e0555cf69fe52610104a23d39b191bfed9cd87404303b4bf7c81011a6f5b1cfd`）、
-extractor 2220-2231（12行、
-`47161633cb33b57fca71d3e62c7946ee40e8aad78c19d8247d066b38f25e0965`）
-である。combined raw hashは
-`cfde493b9baed229b7df3bc7e8d36c1b06bd10de4a25cf452fd24f7cf72e88ee`、
-whitespace-normalized hashは
-`02035a2bc932b51253afdbace34c1f1e73d19b5d54e5550f746176b5d95226eb`
-である。現在のinventoryは`runner.rs` 2,262 /
-`1eb119b58ddab93e6069e442005e9610ddb6062fdfda6f70661f4ea4ae9ae4c0`、
-facade 570 /
-`bf7b0f78e0a168ead0349491fa469bfa3909b674fd23eaa77cecb63d81dbb33a`、
-`type_assertion_routes.rs` 4,103 /
-`4aecdd97b07d9362f4b64367d954835e2942387937972803bdb4b8833acc6755`
-である。
-
-Task 263ZZZZはこの5 fragmentだけを既存private
-`type_elaboration/type_assertion_routes.rs`へ移す。keyはleaf-privateとし、
-config-derived test aliasがrunnerでの名前と値を保つ。detailだけを通常時に越え、
-config、output、extractorは`cfg(test)`時だけ越える。全dispatch、orchestration
-routeは`runner.rs`に残し、oracle外のformatting controlだけでtoken identityを
-保存してよい。
-
-authorityはcanonical Chapters 4、13、14、16とTask 197のexact `.miz` source、
-expectation、trace requirement、checker-boundary testsである。Base-to-set、
-Inner-to-Base、Middle-to-Inner、Outer-to-Middle、TooDeep-to-Outer definition、同じ
-TooDeep symbolに対する独立したraw reserve-subjectとformula-side asserted input
-および異なるsite/range、ordinal 1と`BindingId(0)`、5個のreal expansion、terminal
-Base-definition-RHS builtin-set identityへnormalizeされる3個のknown entry、1個の
-inferred variable、そしてconstraint/fact/candidate/diagnostic/deferredがゼロの
-checked type assertionを保存する。asserted relationはexact same-mode identityの
-ままとし、general reachability、widening、quaを導入しない。既存exact、fixture、
-corruption、near-miss、long-chain、cross-owner isolation matrixで十分であり、
-ZZZZ0 testは不要である。
-
-key/config/label/spelling/definition/relation/range/normalization/provenance/
-binding/input/result/payload/diagnostic/order/fallback/fail-closed/API/test/
-expectation/trace/coverage/deferred、semantic、dispatch、routeの変更を禁止する。
-これはmove-only `design_drift`であり、`spec_coverage_audit.md`は変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZZ 移動結果
 
-Task 263ZZZZは承認された正確な5 fragment/78行だけを既存private
-`type_elaboration/type_assertion_routes.rs`へ移した。keyはleaf-privateであり、
-production detail routeだけが通常時に越え、config、output、extractorはfacade/root
-を`cfg(test)`時だけ越える。runnerにはtest-only config-derived key aliasを残した。
-最終visibility cleanupは新たに未使用となったnormal route/model/builder crossingだけを
-除き、`cfg(test)`のtest compatibilityとdirect private-module dependencyを保持する。
-production dispatch siteとtop-level orchestration pathは元の位置に残り、oracle外の
-`#[rustfmt::skip]`はconfig fragmentを変更せず保存する。
-
-`pub(in crate::runner)`だけを除くと、5個のraw hashは
-`459337d900d146bfe68c5bcb861528e904a65e87b7ab06004b331627b8b71e13`、
-`709bab1418e8e92020109ecbf1a759e6c857c6b2af40c72b07468c7e732be123`、
-`3a6c2c3022ac1eb4605949aed093a0b9b42826abf1701a2b6f2769dc628d00ff`、
-`e0555cf69fe52610104a23d39b191bfed9cd87404303b4bf7c81011a6f5b1cfd`、
-`47161633cb33b57fca71d3e62c7946ee40e8aad78c19d8247d066b38f25e0965`
-のままである。combined rawは
-`cfde493b9baed229b7df3bc7e8d36c1b06bd10de4a25cf452fd24f7cf72e88ee`、
-normalizedは
-`02035a2bc932b51253afdbace34c1f1e73d19b5d54e5550f746176b5d95226eb`
-のままである。結果inventoryは`runner.rs` 2,185 /
-`e1f8b5ef40e441f26a3601e07c435c72afd60c2ebb8687170211d9a874a003b1`、
-facade 573 /
-`e541b3870f1d0a01d43adfb5957781927408a153a48b6a2e043171a5ea252ad6`、
-`type_assertion_routes.rs` 4,187 /
-`cf0a242ec346ba7bea87dfc82c41545358ea2d33dada3c379acaf2819d85bcf4`
-である。予期したforwardingにより5 symbol inventoryは7 source/test fileの76件から
-9 source/facade/test fileの86件になった。
-
-focused Task 197 test 2件とunit test 272件がpassした。raw/normalized test-list
-hashは
-`5e41e4dbfcc303322c246a612de61926a628957a168589b45864d0a5070bb07e`と
-`c0c2b80f8b4e6c84cd25d77573fda722c4d1846fed168cd4a478781cdb42775e`
-のままである。4 CLI hashは
-`f34240072564dfafacf7b0d914a8204037bbfc042dea375326ae757774f63759`、
-`57d0fba9be95644890b80bfa4ec2cd992e47bb8ad4b67c130f5194ea73aa0273`、
-`08b00a9f6fe70d94fe2c1b2bdebbdb5603bcee39bf3ceb460abe53f403bba7b5`、
-`1dadbeabb219f5853c713ad53aa1cc7cd720a0e80abd7f882e9e0a5ea7802625`
-のままである。countは96/4/188、403/367、235/223、219/184、warning 23、
-error 0のままである。format、denied-warning Clippy、crate/workspace test、diff
-checkはpassした。仕様、test-sufficiency、implementation、source/documentation
-consistency reviewはfindingなし。semantic、API、test name、expectation、diagnostic、
-key、payload、ordering、fail-closed behavior、coverage/deferred state、roadmapは不変で
-あり、`spec_coverage_audit.md`は変更しない。fresh production-helper inventoryは
-`runner.rs`にroute/config/extractor/output familyがないことを確認し、唯一のprivate
-`source_*` functionはtop-level `source_type_elaboration_detail_keys` dispatch chainで
-ある。Task 263は完了し、seriesは独立Task 264 closeoutへ進む。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 264 Closeout Inventory And Specification
 
-Task 264 は canonical English crate plan/todo の Task 264 行、本 audit の exit
-criteria、および変更しない上位 authority `doc/spec/en/`、既存 `.miz` test、
-traceability metadata、expectation に従う documentation-only closeout である。
-対象 fragment は paired English/Japanese crate-plan inventory/task row、todo
-entry、harness source-path table、本 module-boundary ownership/exit audit だけで
-ある。consumer は architecture reviewer と次の fresh Step 5 inventory であり、
-source visibility/runtime consumer は変えない。
-
-clean HEAD `f8bd2e0d499517316e4bfdaa7b462804339e3fc3` での最終 source oracle:
-
-- `src/runner.rs`: 2,185行、
-  `e1f8b5ef40e441f26a3601e07c435c72afd60c2ebb8687170211d9a874a003b1`。
-- `src/runner/type_elaboration.rs`: 573行、
-  `e541b3870f1d0a01d43adfb5957781927408a153a48b6a2e043171a5ea252ad6`。
-- `src/runner/type_elaboration/type_assertion_routes.rs`: 4,187行、
-  `cf0a242ec346ba7bea87dfc82c41545358ea2d33dada3c379acaf2819d85bcf4`。
-- production runner path 17個、production合計18,952行。harness tableのpathは
-  crate-relativeで、hash inputは`crates/mizar-test/` prefixを持つ対応する
-  repository-relative path listである。repository rootから
-  `crates/mizar-test/src/runner.rs`と`crates/mizar-test/src/runner`のtracked pathを
-  選び、`tests.rs`と`tests/`配下を除外してsortする。その正確なnewline-
-  delimited listのSHA-256は
-  `b36d96fed3207b415c95de27be11ade57654c6573a2f0637aa2d0a3d56aca01d`。
-  同じrepository-relative pathを順に`sha256sum`し、そのordered output lineを
-  hashした値は
-  `62d30627cddba5ec67279de0c0cea571baf6144602d52fa01896649e1d4a0ea0`。
-
-production `runner.rs` の ownership は public report/status、`run_*` corpus
-orchestration、public active-case iterator、parse/declaration admission helper、
-type-case execution、top-level detail dispatch に限定する。多数のroute aliasと
-derived keyはtest-onlyで、production route config/extractor/output builder/detail
-wrapperは所有しない。private type-elaboration facadeはprivate leafを正確に11個
-declareする。`runner.rs`の唯一のprivate production `source_*` functionは
-top-level `source_type_elaboration_detail_keys` dispatch chainである。
-
-禁止範囲は全production/test source、`doc/spec`、`.miz`、expectation、
-traceability edit、semantic cleanup、API/test-name/diagnostic/key/payload/order/
-fail-closed/coverage/deferred-state change、Steps 6/7 promotionである。この
-documentation-only taskにnew testは不要である。既存ownership/isolation test、
-focused lint-policy、format、denied-warning Clippy、crate/workspace test、4 CLI
-oracle、raw/normalized test-list hash、source path/content manifest、diff checkで
-十分である。実装前review-only specification auditはfindingなしだった。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Current Ownership
 
-このcompact Task 264 tableをcanonical final stateとする。後続の累積tableは
-per-move historical ledgerとしてだけ保持する。
-
-| Current area | Final owner and boundary |
-|---|---|
-| public runner surface | `src/runner.rs`はpublic report/status、`run_*` corpus orchestration、public active iterator、parse/declaration admission、type-case execution、top-level detail dispatchだけを所有。 |
-| shared staging | private `shared.rs`がcross-phase source/frontend/resolver staging、private `import_fixtures.rs`がfixture summary adapterを所有。 |
-| parse/declaration phase | private `parse_only.rs`と`declaration_symbol.rs`が各case execution、observation、payload/failure projection、phase-specific helperを所有。 |
-| type-elaboration facade | private `type_elaboration.rs`が正確に11個のprivate leafへdispatchし、最小parent/test seamだけをexpose。 |
-| type source owner | private `source_ast.rs`、`source_formula.rs`、`source_reserve.rs`がcommon exact source projection、route-specific extractorは`binary_routes.rs`、`parenthesized_routes.rs`、`type_assertion_routes.rs`と同居。 |
-| type checker/result owner | private `checker_handoff.rs`、`admission.rs`、`result.rs`、`output.rs`がchecker assembly、admission、stable failure/result projection、validation、checker output、detail key、diagnosticを所有。 |
-| type route/config owner | private `binary_routes.rs`、`parenthesized_routes.rs`、`type_assertion_routes.rs`、`long_chain_config.rs`が全route config、extractor、output/detail wrapper、shared long-chain tableを所有。 |
-| tests | `runner/tests.rs`、`runner/tests/`、既存integration testが全discovered name、nesting boundary、owner-isolation matrixを維持。 |
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Ownership Guards
 
-- sorted production path listは正確に17 entryで上記path/content hashを持ち、
-  paired harness tableが全entryを列挙する。
-- `type_elaboration.rs`はprivate `mod` declarationを正確に11個持ち、leafは
-  runner implementation外へpublicでない。
-- production `runner.rs`はroute config、source extractor、output builder、
-  detail-wrapper definitionを持たず、test compatibility aliasは`cfg(test)`配下。
-- public API、272-name discovered unit-test list、4 CLI byte、preservation
-  matrixの全count/hashはimmutable closeout oracleである。
-- 後続ownership changeにはnew nonempty canonical taskが必要で、Task 264は
-  semantic cleanupまたはSteps 6/7 promotionを許可しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Historical Cumulative Ownership Ledger
 
-task rangeが263ZZXで終わる累積行はhistorical baseである。明示的263ZZYから
-263ZZZZまでのdelta行はtype-assertion/diagnostic-detail ownership surfaceが上の
-最終Task 264 stateへ到達した履歴を記録する。siblingが`runner.rs`に残るとの
-記述は各move時点のsnapshotである。
-
-| Current area | Responsibility | Dependency direction | Audit decision |
-|---|---|---|---|
-| public report/result/status type と `run_*_corpus` function | stable public runner facade と corpus-level orchestration | plan/discovery から phase execution | `runner.rs` に残す。 |
-| source/frontend と resolver staging | source package preparation/cleanup、root/path/snapshot identity、frontend execution/result transport、common frontend diagnostic projection、resolver shell/projection/symbol collection | 適用範囲で parse、declaration-symbol、type-elaboration が共有 | frontend staging は Task 258、declaration/type resolver collection は Task 260A、common frontend diagnostic projection は Task 263B で最小 parent-only visibility の private `shared.rs` へ移動済み。 |
-| active-case admission と stable failure assembly | tag/phase gate、expected-output matching、deterministic failure diagnostic | phase-specific facade-to-owner transition | Tasks 259/260B で parse-only/declaration case/failure boundary は移動済み。Task 263C で type expected-key/failure projection を private `type_elaboration/result.rs`、Task 263D で type tag/runnable/gate admission を private `type_elaboration/admission.rs` へ移動し、type case execution/actual-detail dispatch は fresh Task 263 inventory のため `runner.rs` に保持。 |
-| parse-only execution | Surface-AST snapshot と parse-only failure projection | shared frontend から parse-only result | Task 259 で最小 parent-only visibility の private `parse_only.rs` へ移動済み。 |
-| fixture import provider | parser fixture lexical summary と type import-summary adapter | active phase が共有する parser/frontend seam | Task 261 で private `import_fixtures.rs` へ移動済み。後段 phase は同じ provider/adapter path を維持。 |
-| declaration-symbol observation | shared resolver result を consume し、deterministic payload、expected-value、failure projection を組み立てる | shared resolver output から declaration-symbol result | Task 260B で private `declaration_symbol.rs` へ移動済み。既存 integration test は `tests/metadata.rs` に残す。 |
-| type-elaboration admission/execution | lower-stage fail-closed gate と checker/core handoff dispatch | resolver output から source bridge | Task 263A で generic checker-handoff assembly/validation を private `checker_handoff.rs`、Task 263C で expected-key/failure projection を private `result.rs`、Task 263D で active admission を private `admission.rs`、Tasks 263E-263F で checker-output transport/builder、Tasks 263G-263I で type-assertion/binary/shared-parenthesized validation、Tasks 263J-263M で type-assertion/binary/parenthesized detail/payload-detail core を private `output.rs`、Task 263Nでcohesive parenthesized route ownerをprivate `parenthesized_routes.rs`、Tasks 263O-263ZDでleadingからlong-chain binary両familyまでのroute ownerをprivate `binary_routes.rs`、Task 263ZBで共有long-chain definition table 2個をprivate `long_chain_config.rs`へ移動し、Tasks 263ZE-263ZZWでdirect/chained/two-edge/three-edge/four-edge/long-chain builtin reserved-variable type-assertionに加えてdirect/chained/two-edge/three-edge/four-edge same-mode、chained/two-edge/three-edge/four-edge immediate-radix、two-edge/three-edge/four-edge two-hop、three-edge/four-edge three-hop、four-edge four-hop、およびlong-chain same-mode、immediate-radix、six-/five-/four-/three-/two-hop object-terminal routeとdirect/chained local-mode same-mode、chained/two-edge local-mode immediate-radix、two-edge/three-edge/four-edge local-mode two-hop、およびthree-edge/four-edge local-mode three-hop asserted-head routeまでtype-assertion/asserted-head route ownerを開始。top-level case execution/dispatch、残るlocal-mode type-assertion/asserted-head/formula config/named wrapper、他のoutput consumerは`runner.rs`に残り、phase facadeはprivate leaf 11個を所有する。 |
-| source extraction | exact source-shape recognition と real AST/resolver payload construction | syntax/resolver input から checker input | Tasks 262A-262B で common source-AST primitive/projection、Task 262D で shared exact fixture-import projection を private `type_elaboration/source_ast.rs`、Tasks 262C/262E で reserve type-expression/symbol projection、declaration segmentation、local-mode expansion を private `type_elaboration/source_reserve.rs`、Tasks 262F-262Q で standalone formula constant、shared exact numeral、builtin binary/type-assertion formula、shared imported-formula symbol resolver/provenance pair、imported predicate/functor、imported attribute assertion、set-enumeration、connective/quantifier family、shared/direct-binary/parenthesized/type-assertion reserved-variable source substrate を private `type_elaboration/source_formula.rs` へ移動済み。formula source extractionは完了し、Tasks 263N-263ZZWでlong-chain binary両family、全local-mode long-chain type-assertion/asserted-head route、local-object-mode direct/chained/two-edge/three-edge/four-edge/long-chain builtin reserved-variable type-assertionとdirect/chained/two-edge/three-edge/four-edge same-mode、chained/two-edge/three-edge/four-edge immediate-radix、two-edge/three-edge/four-edge two-hop、three-edge/four-edge three-hop、four-edge four-hop、およびlong-chain same-mode/immediate-radix/six-/five-/four-/three-/two-hop routeに加え、direct/chained local-mode same-mode、chained/two-edge local-mode immediate-radix、two-edge/three-edge/four-edge local-mode two-hop、およびthree-edge/four-edge local-mode three-hop routeのnamed extractorをownerと同居させた。残るlocal-mode type-assertion/asserted-head/formula route config/wrapper、checker/output consumerはTask 263 inventoryのため`runner.rs`に残す。 |
-| payload validation と detail-key rendering | exact checker/core output validation、expected/actual matching、deterministic key、diagnostic | source bridge output から runner result | Tasks 263E-263I で shared output transport/builder 3個と type-assertion/binary/shared-parenthesized validator/private helper を private `type_elaboration/output.rs` へ移動。Tasks 263J-263Mでtype-assertion/binary/shared parenthesized result/detailとpayload-detail core、Tasks 263N-263ZZWでparenthesizedからlong-chain binary両family、全local-mode long-chain type-assertion/asserted-head、local-object-mode direct/chained/two-edge/three-edge/four-edge/long-chain builtin reserved-variable type-assertionとdirect/chained/two-edge/three-edge/four-edge same-mode、chained/two-edge/three-edge/four-edge immediate-radix、two-edge/three-edge/four-edge two-hop、three-edge/four-edge three-hop、four-edge four-hop、およびlong-chain same-mode/immediate-radix/six-/five-/four-/three-/two-hop configまでのnamed detail/output wrapperとdirect/chained local-mode same-mode、chained/two-edge local-mode immediate-radix、two-edge/three-edge/four-edge local-mode two-hop、およびthree-edge/four-edge local-mode three-hop config/wrapperを各route leafへ移動。残るlocal-mode type-assertion/asserted-head/formula named wrapper/configは後続bounded workに残す。key/order は編集しない。 |
-| fixture builder と corruption probe | AST/env/sidecar builder と finite negative matrix | test support から private production seam | private test support/fragment のみ。 |
-| Task 263ZZX four-hop ownership delta | 正確なfour-edge local-mode four-hop config/extractor/detail/test outputが上のadmission/source/payload累積行をTask 263ZZXまで拡張する。 | real source/checker routeからfacade consumer | private `type_assertion_routes.rs`が所有し、normal consumerはdetailだけ、config/output/extractorは`cfg(test)`だけで、他routeは`runner.rs`に残る。 |
-| Task 263ZZY direct builtin-set type-assertion ownership delta | 正確なdirect reserved-variable config/extractor/detail/test outputが上のadmission/source/payload累積行をTask 263ZZYまで拡張する。 | real source/checker routeからfacade consumer | private `type_assertion_routes.rs`が所有し、keyはleaf-private、normal consumerはdetailだけ、config/output/extractorは`cfg(test)`だけで、全siblingは`runner.rs`に残る。 |
-| Task 263ZZZ shared diagnostic-key projection ownership delta | 正確なcanonical diagnostic-message-key prefix/sort/dedup helperがconsumer wrapperを移動せず上のpayload-rendering行を拡張する。 | checker term/formula diagnosticからfacade所有formula detail wrapper 9個 | private `output.rs`が所有し、parent-only entry 1個だけがphase facadeを越え、全wrapperは`runner.rs`に残る。 |
-| Task 263ZZZA direct builtin-object type-assertion ownership delta | 正確なdirect reserved-object-variable config/extractor/detail/test outputが上のadmission/source/payload累積行をTask 263ZZZAまで拡張する。 | real source/checker routeからfacade consumer | private `type_assertion_routes.rs`が所有し、keyはleaf-private、normal consumerはdetailだけ、config/output/extractorは`cfg(test)`だけで、全siblingは`runner.rs`に残る。 |
-| Task 263ZZZB contradiction output/detail ownership delta | 正確なstandalone contradiction checker producerとdeterministic detail projectionが上のpayload-rendering行をTask 263ZZZBまで拡張する。 | real source leafからchecker outputを経てfacade detail/test consumerへ | private `output.rs`が所有し、detailは通常時、outputとextractorは`cfg(test)`時だけfacadeを越え、他formula familyは`runner.rs`に残る。 |
-| Task 263ZZZC formula-statement output/detail ownership delta | 正確なformula-statement checker producerとdeterministic detail projectionが上のpayload-rendering行をTask 263ZZZCまで拡張する。 | real source thesisからchecker outputを経てfacade detail/test consumerへ | private `output.rs`が所有し、detailは通常時、outputとextractorは`cfg(test)`時だけfacadeを越え、他formula familyは`runner.rs`に残る。 |
-| Task 263ZZZD builtin-binary term/formula detail ownership delta | 正確なinline two-term checker producerとdeterministic detail projectionが上のpayload-rendering行をTask 263ZZZDまで拡張する。 | real source numeral/builtin formulaからchecker outputを経てfacade detail consumerへ | private `output.rs`が所有し、detailは通常時、extractorは`cfg(test)`時だけfacadeを越え、他formula familyは`runner.rs`に残る。 |
-| Task 263ZZZE builtin type-assertion formula ownership delta | 正確なasserted-type checker producerとdeterministic detail projectionが上のpayload-rendering行をTask 263ZZZEまで拡張する。 | real source numeral/formula/typeからchecker outputを経てfacade detail/test consumerへ | private `output.rs`が所有し、detailは通常時、output/extractorは`cfg(test)`時だけ越え、他formula familyは`runner.rs`に残る。 |
-| Task 263ZZZF direct local-mode reserved-variable type-assertion ownership delta | 正確なconfig、extractor、detail、test output、leaf-private keyが上のadmission/execution、source-extraction、payload-rendering行をTask 263ZZZFまで拡張する。 | real local-mode source/checker routeからfacade consumerへ | private `type_assertion_routes.rs`が所有し、detailだけ通常時、config/output/extractorとconfig由来key aliasは`cfg(test)`時だけfacadeを越え、全siblingは`runner.rs`に残る。 |
-| Task 263ZZZG shared imported-attribute output-core ownership delta | 正確なshared checker producerがpositive/attribute-level-negative wrapperを両方保持したまま上のpayload-rendering行をTask 263ZZZGまで拡張する。 | wrapper-selected imported-attribute source payloadからchecker outputへ | private `output.rs`が所有し、normal parent-only entry 1個だけがfacadeを越え、payload typeは`source_formula.rs`から直接importし、全wrapper/siblingは`runner.rs`に残る。 |
-| Task 263ZZZH positive imported-attribute output-wrapper ownership delta | 正確なpositive extractor-to-core wrapperがdetail consumerを保持したまま上のpayload-rendering行をTask 263ZZZHまで拡張する。 | exact positive source extractionからshared checker coreへ | private `output.rs`が所有し、normal parent-only wrapper entry 1個だけがfacadeを越え、extractor accessは`cfg(test)`時だけ越え、detail/non-empty familyは`runner.rs`に残る。 |
-| Task 263ZZZI positive imported-attribute detail ownership delta | 正確なoutput-to-canonical-key wrapperがpayload renderingをTask 263ZZZIまで拡張する。 | positive checker outputからproduction detail dispatchへ | private `output.rs`が所有し、detailは通常時、output/extractorは`cfg(test)`時だけ越え、non-empty familyは`runner.rs`に残る。 |
-| Task 263ZZZJ attribute-level-negative imported-attribute output ownership delta | 正確なdirect-`non` extractor-to-core wrapperがpayload renderingをTask 263ZZZJまで拡張する。 | exact attribute-level-negative source extractionからshared checker coreへ | private `output.rs`が所有し、保持するdetail consumerのためwrapperは通常時に越え、extractor accessはfacade/rootを`cfg(test)`時だけ越え、shared coreは越えなくなり、detail/set-enumeration familyは`runner.rs`に残る。 |
-| Task 263ZZZK attribute-level-negative imported-attribute detail ownership delta | 正確なoutput-to-canonical-key wrapperがpayload renderingをTask 263ZZZKまで拡張する。 | attribute-level-negative checker outputからproduction detail dispatchへ | private `output.rs`が所有し、detailは通常時、output/extractorはfacade/rootを`cfg(test)`時だけ越え、set-enumeration familyは`runner.rs`に残る。 |
-| Task 263ZZZL set-enumeration output ownership delta | 正確なfour-numeral/two-set equality checker producerがpayload renderingをTask 263ZZZLまで拡張する。 | exact set-enumeration source extractionからchecker outputへ | private `output.rs`が所有し、保持するdetail/direct testのためproducerは通常時に越え、extractor accessはfacade/rootを`cfg(test)`時だけ越え、detail/imported-predicate/connective familyは`runner.rs`に残る。 |
-| Task 263ZZZM set-enumeration detail ownership delta | 正確なoutput-to-canonical-key wrapperがpayload renderingをTask 263ZZZMまで拡張する。 | set-enumeration checker outputからproduction detail dispatchへ | private `output.rs`が所有し、detailは通常時、output/extractorはfacade/rootを`cfg(test)`時だけ越え、imported-predicate/connective familyは`runner.rs`に残る。 |
-| Task 263ZZZN imported predicate/functor output ownership delta | 正確なimported-symbol checker producerがpayload renderingをTask 263ZZZNまで拡張する。 | exact imported predicate/functor source extractionからchecker outputへ | private `output.rs`が所有し、producerは保持するdetail/direct testのため通常時、extractorはfacade/rootを`cfg(test)`時だけ越え、detail/connective familyは`runner.rs`に残る。 |
-| Task 263ZZZO imported predicate/functor detail ownership delta | 正確なoutput-to-canonical-key wrapperがpayload renderingをTask 263ZZZOまで拡張する。 | imported predicate/functor checker outputからproduction detail dispatchへ | private `output.rs`が所有し、detailは通常時、output/extractorはfacade/rootを`cfg(test)`時だけ越え、connective familyは`runner.rs`に残る。 |
-| Task 263ZZZP formula connective/quantifier output ownership delta | 正確なfive-shell checker producerがpayload renderingをTask 263ZZZPまで拡張する。 | exact connective/quantifier source extractionからchecker outputへ | private `output.rs`が所有し、producerは保持するdetail/direct testのため通常時、extractorはfacade/rootを`cfg(test)`時だけ越え、detailは`runner.rs`に残る。 |
-| Task 263ZZZQ formula connective/quantifier detail ownership delta | 正確なoutput-to-key wrapperがpayload renderingをTask 263ZZZQまで拡張する。 | connective/quantifier checker outputからproduction detail dispatchへ | private `output.rs`が所有し、detailは通常時、output/extractorは`cfg(test)`時だけ越える。 |
-| Task 263ZZZR chained local-mode type-assertion ownership delta | 正確なkey/config/extractor/detail/test-output routeがadmission/execution、source extraction、payload renderingをTask 263ZZZRまで拡張する。 | real chained local-mode source/checker routeからfacade consumerへ | private `type_assertion_routes.rs`が所有し、keyはleaf-private、detailだけが通常時、config/output/extractorとconfig-derived aliasは`cfg(test)`時だけ越え、全siblingは`runner.rs`に残る。 |
-| Task 263ZZZS two-edge local-mode type-assertion ownership delta | 正確なkey/config/extractor/detail/test-output routeがadmission/execution、source extraction、payload renderingをTask 263ZZZSまで拡張する。 | real two-edge local-mode source/checker routeからfacade consumerへ | private `type_assertion_routes.rs`が所有し、keyはleaf-private、detailだけが通常時、config/output/extractorとconfig-derived aliasは`cfg(test)`時だけ越え、全siblingは`runner.rs`に残る。 |
-| Task 263ZZZT two-edge local-mode same-mode ownership delta | 正確なkey/config/extractor/detail/test-output routeがadmission/execution、source extraction、payload renderingをTask 263ZZZTまで拡張する。 | real two-edge local-mode same-Outer source/checker routeからfacade consumerへ | private `type_assertion_routes.rs`が所有し、keyはleaf-private、detailだけが通常時、config/output/extractorとconfig-derived aliasは`cfg(test)`時だけ越え、全siblingは`runner.rs`に残る。 |
-| Task 263ZZZU three-edge local-mode immediate-radix ownership delta | 正確なkey/config/extractor/detail/test-output routeがadmission/execution、source extraction、payload renderingをTask 263ZZZUまで拡張する。 | real three-edge local-mode Outer-to-Middle source/checker routeからfacade consumerへ | private `type_assertion_routes.rs`が所有し、keyはleaf-private、detailだけが通常時、config/output/extractorとconfig-derived aliasは`cfg(test)`時だけ越え、全siblingは`runner.rs`に残る。 |
-| Task 263ZZZV three-edge local-mode builtin type-assertion ownership delta | 正確なkey/config/extractor/detail/test-output routeがadmission/execution、source extraction、payload renderingをTask 263ZZZVまで拡張する。 | real three-edge local-mode source/checker routeからfacade consumerへ | private `type_assertion_routes.rs`が所有し、keyはleaf-private、detailだけが通常時、config/output/extractorとconfig-derived aliasは`cfg(test)`時だけ越え、全siblingは`runner.rs`に残る。 |
-| Task 263ZZZW three-edge local-mode same-mode ownership delta | 正確なkey/config/extractor/detail/test-output routeがadmission/execution、source extraction、payload renderingをTask 263ZZZWまで拡張する。 | real three-edge local-mode same-Outer source/checker routeからfacade consumerへ | private `type_assertion_routes.rs`が所有し、keyはleaf-private、detailだけが通常時、config/output/extractorとconfig-derived aliasは`cfg(test)`時だけ越え、全siblingは`runner.rs`に残る。 |
-| Task 263ZZZX four-edge local-mode immediate-radix ownership delta | 正確なkey/config/extractor/detail/test-output routeがadmission/execution、source extraction、payload renderingをTask 263ZZZXまで拡張する。 | real four-edge local-mode TooDeep-to-Outer source/checker routeからfacade consumerへ | private `type_assertion_routes.rs`が所有し、keyはleaf-private、detailだけが通常時、config/output/extractorとconfig-derived aliasは`cfg(test)`時だけ越え、全siblingは`runner.rs`に残る。 |
-| Task 263ZZZY four-edge local-mode builtin type-assertion ownership delta | 正確なkey/config/extractor/detail/test-output routeがadmission/execution、source extraction、payload renderingをTask 263ZZZYまで拡張する。 | real four-edge local-mode builtin-set source/checker routeからfacade consumerへ | private `type_assertion_routes.rs`が所有し、keyはleaf-private、detailだけが通常時、config/output/extractorとconfig-derived aliasは`cfg(test)`時だけ越え、全siblingは`runner.rs`に残る。 |
-| Task 263ZZZZ four-edge local-mode same-mode ownership delta | 正確なkey/config/extractor/detail/test-output routeがTask 263ZZZZまでのsource-route ownershipを完了する。 | real four-edge local-mode same-TooDeep source/checker routeからfacade consumerへ | private `type_assertion_routes.rs`が所有し、keyはleaf-private、detailだけが通常時、config/output/extractorとconfig-derived aliasは`cfg(test)`時だけ越え、`runner.rs`にはtop-level detail dispatchだけが残る。 |
-| cross-owner isolation test | bidirectional route rejection と immutable/module guard | 全 supported source-bridge owner | cohesive fragment として保持して移す。 |
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Dependency Map
 
-許可する dependency direction:
-
-```text
-public runner facade
-  -> parse-only owner
-     -> shared plan/admission/source/frontend/diagnostic staging
-        -> fixture/import-summary owner (lexical provider)
-  -> declaration-symbol owner
-     -> shared plan/admission/source/frontend/diagnostic/resolver staging
-        -> fixture/import-summary owner (lexical provider)
-  -> type-elaboration owner
-     -> active tag、runnable-admission、gate validation
-     -> shared plan/admission/source/frontend/diagnostic/resolver staging
-        -> fixture/import-summary owner (lexical provider)
-     -> fixture/import-summary owner (resolver adapter)
-     -> source extraction
-        -> common source-AST primitives
-           -> fixture/import-summary owner (module-path projection)
-        -> reserve type-expression, declaration, and local-mode projection
-        -> standalone formula-constant, shared exact numeral, builtin binary/type-assertion,
-           shared imported-symbol, imported predicate/functor, imported attribute,
-           set-enumeration、connective/quantifier、shared/direct-binary/parenthesized/
-           type-assertion reserved-variable source projection
-     -> checker-handoff assembly と readiness validation
-     -> checker-output transport、builder、validation、type-assertion detail projection
-     -> expected-result と failure projection
-     -> checker/core payload validation と deterministic actual-detail keys
-
-private runner::tests
-  -> shared test support and fixture builders
-  -> the same private phase seams
-```
-
-leaf helper は caller より先に移す。phase module は shared staging に依存してよいが、
-parse-only と declaration-symbol は checker/core payload validation に依存しては
-ならない。metadata `plan` は payload-free のままにする。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Historical Target Source Layout Ledger
 
-このtableはTasks 249-263で用いたordered target/delta historyを保持する。
-Task 264後は上のcompact current-ownership tableとpaired harness source-path
-tableをcanonicalとする。empty/synthetic owner moduleは作成されなかった。
-
-| Target path | Ownership |
-|---|---|
-| `src/runner.rs` | public facade、public report/result/status type、public active-case iterator、top-level corpus orchestration のみ。 |
-| `src/runner/shared.rs` | private source package preparation、frontend execution、common frontend diagnostic projection、admission support、真に cross-phase な helper。 |
-| `src/runner/parse_only.rs` | parse-only case execution、snapshot、parse-only failure projection。 |
-| `src/runner/declaration_symbol.rs` | declaration-symbol case execution、resolver observation、payload key、failure projection。 |
-| `src/runner/import_fixtures.rs` | active phase が使う既存 parser fixture summary/adapter。 |
-| `src/runner/type_elaboration.rs` と `src/runner/type_elaboration/` | type-elaboration orchestration と private source-extraction、checker-handoff、payload-validation/detail/diagnostic leaf。 |
-| `src/runner/type_elaboration/binary_routes.rs` | leading、multiple-reserve declaration、base membership/inequality、direct local-mode、direct local-object-mode、chained local-mode、chained local-object-mode、two-edge local-mode、two-edge local-object-mode、three-edge local-mode、three-edge local-object-mode、four-edge local-mode、four-edge local-object-mode、local-mode/local-object-mode long-chain両方のmembership/equality/inequality binary configとthin source/detail/test route wrapper。 |
-| `src/runner/type_elaboration/long_chain_config.rs` | long-chain binary、type-assertion、asserted-head routeが共有する正確なset-terminal/object-terminal seven-expansion definition table。 |
-| `src/runner/type_elaboration/type_assertion_routes.rs` | reserved-variable type-assertion/asserted-head configとthin source/detail/test route wrapperのactive owner。Tasks 263ZE-263ZZWがlocal-mode long-chain builtin/same-mode/immediate-radix/two-hop/three-hop/four-hop/five-hop/six-hop routeすべて、direct/chained local-mode same-mode、chained/two-edge local-mode immediate-radix、two-edge/three-edge/four-edge local-mode two-hop、およびthree-edge/four-edge local-mode three-hop asserted-head route、local-object-mode direct/chained/two-edge/three-edge/four-edge/long-chain builtin reserved-variable type-assertion、direct/chained/two-edge/three-edge/four-edge same-mode、chained/two-edge/three-edge/four-edge immediate-radix、two-edge/three-edge/four-edge two-hop、three-edge/four-edge three-hop、four-edge four-hop、およびlong-chain same-mode/immediate-radix/six-/five-/four-/three-/two-hop asserted-head routeを所有。 |
-| `src/runner/type_elaboration/parenthesized_routes.rs` | cohesive parenthesized reserved-variable config と thin source/detail/test route wrapper。 |
-| `src/runner/type_elaboration/type_assertion_routes.rs` Task 263ZZX delta | 直前の累積owner行へ正確なfour-edge local-mode four-hop asserted-head config/extractor/detail/test-output routeを追加する。 |
-| `src/runner/type_elaboration/type_assertion_routes.rs` Task 263ZZY delta | 直前の累積owner行へ正確なdirect builtin-set reserved-variable type-assertion config/extractor/detail/test-output routeを追加する。 |
-| `src/runner/type_elaboration/output.rs` Task 263ZZZ delta | 正確なshared term/formula diagnostic-key projectionを追加し、formula wrapper 9個は`runner.rs`に残す。 |
-| `src/runner/type_elaboration/type_assertion_routes.rs` Task 263ZZZA delta | 直前の累積owner行へ正確なdirect builtin-object reserved-variable type-assertion config/extractor/detail/test-output routeを追加する。 |
-| `src/runner/type_elaboration/output.rs` Task 263ZZZB delta | 正確なstandalone contradiction checker-output producer/detail wrapperを追加し、他formula familyは`runner.rs`に残す。 |
-| `src/runner/type_elaboration/output.rs` Task 263ZZZC delta | 正確なformula-statement checker-output producer/detail wrapperを追加し、他formula familyは`runner.rs`に残す。 |
-| `src/runner/type_elaboration/output.rs` Task 263ZZZD delta | 正確なinline builtin-binary term/formula checker/detail producerを追加し、他formula familyは`runner.rs`に残す。 |
-| `src/runner/type_elaboration/output.rs` Task 263ZZZE delta | 正確なbuiltin type-assertion formula checker-output/detail familyを追加し、他formula familyは`runner.rs`に残す。 |
-| `src/runner/type_elaboration/type_assertion_routes.rs` Task 263ZZZF delta | 正確なdirect local-mode reserved-variable type-assertion routeを追加し、全sibling route/formula familyは`runner.rs`に残す。 |
-| `src/runner/type_elaboration/output.rs` Task 263ZZZG delta | 正確なshared imported-attribute assertion checker-output coreを追加し、両wrapperと全sibling formula familyは`runner.rs`に残す。 |
-| `src/runner/type_elaboration/output.rs` Task 263ZZZH delta | 正確なpositive imported-attribute assertion output wrapperを追加し、そのdetail consumer、non-empty family、全siblingは`runner.rs`に残す。 |
-| `src/runner/type_elaboration/output.rs` Task 263ZZZI delta | 正確なpositive imported-attribute assertion detail wrapperを追加し、non-empty family、全siblingは`runner.rs`に残す。 |
-| `src/runner/type_elaboration/output.rs` Task 263ZZZJ delta | 正確なattribute-level-negative imported-attribute assertion output wrapperを追加し、そのdetail consumer、set-enumeration family、全siblingは`runner.rs`に残す。 |
-| `src/runner/type_elaboration/output.rs` Task 263ZZZK delta | 正確なattribute-level-negative imported-attribute assertion detail wrapperを追加し、set-enumeration family、全siblingは`runner.rs`に残す。 |
-| `src/runner/type_elaboration/output.rs` Task 263ZZZL delta | 正確なset-enumeration checker-output producerを追加し、そのdetail consumer、imported-predicate/connective family、全siblingは`runner.rs`に残す。 |
-| `src/runner/type_elaboration/output.rs` Task 263ZZZM delta | 正確なset-enumeration detail wrapperを追加し、output/extractorのfacade crossingを`cfg(test)`へ狭め、imported-predicate/connective family、全siblingは`runner.rs`に残す。 |
-| `src/runner/type_elaboration/output.rs` Task 263ZZZN delta | 正確なimported predicate/functor checker-output producerを追加し、そのdetail consumer、connective family、全siblingは`runner.rs`に残す。 |
-| `src/runner/type_elaboration/output.rs` Task 263ZZZO delta | 正確なimported predicate/functor detail wrapperを追加し、output/extractorのfacade crossingを`cfg(test)`へ狭め、connective family、全siblingは`runner.rs`に残す。 |
-| `src/runner/type_elaboration/output.rs` Task 263ZZZP delta | 正確なformula connective/quantifier checker-output producerを追加し、そのdetail consumer、全siblingは`runner.rs`に残す。 |
-| `src/runner/type_elaboration/output.rs` Task 263ZZZQ delta | 正確なconnective/quantifier detail wrapperを追加し、output/extractor crossingを`cfg(test)`へ狭め、不要なcanonical-key facade/root importを除去する。 |
-| `src/runner/type_elaboration/type_assertion_routes.rs` Task 263ZZZR delta | 正確なchained local-mode reserved-variable type-assertion config/extractor/detail/test-output routeを追加し、全siblingは`runner.rs`に残す。 |
-| `src/runner/type_elaboration/type_assertion_routes.rs` Task 263ZZZS delta | 正確なtwo-edge local-mode reserved-variable builtin type-assertion config/extractor/detail/test-output routeを追加し、全siblingは`runner.rs`に残す。 |
-| `src/runner/type_elaboration/type_assertion_routes.rs` Task 263ZZZT delta | 正確なtwo-edge local-mode same-mode asserted-head config/extractor/detail/test-output routeを追加し、全siblingは`runner.rs`に残す。 |
-| `src/runner/type_elaboration/type_assertion_routes.rs` Task 263ZZZU delta | 正確なthree-edge local-mode immediate-radix asserted-head config/extractor/detail/test-output routeを追加し、全siblingは`runner.rs`に残す。 |
-| `src/runner/type_elaboration/type_assertion_routes.rs` Task 263ZZZV delta | 正確なthree-edge local-mode reserved-variable builtin type-assertion config/extractor/detail/test-output routeを追加し、全siblingは`runner.rs`に残す。 |
-| `src/runner/type_elaboration/type_assertion_routes.rs` Task 263ZZZW delta | 正確なthree-edge local-mode same-mode asserted-head config/extractor/detail/test-output routeを追加し、全siblingは`runner.rs`に残す。 |
-| `src/runner/type_elaboration/type_assertion_routes.rs` Task 263ZZZX delta | 正確なfour-edge local-mode immediate-radix asserted-head config/extractor/detail/test-output routeを追加し、全siblingは`runner.rs`に残す。 |
-| `src/runner/type_elaboration/type_assertion_routes.rs` Task 263ZZZY delta | 正確なfour-edge local-mode reserved-variable builtin type-assertion config/extractor/detail/test-output routeを追加し、全siblingは`runner.rs`に残す。 |
-| `src/runner/type_elaboration/type_assertion_routes.rs` Task 263ZZZZ delta | 最後の正確なfour-edge local-mode same-mode asserted-head config/extractor/detail/test-output routeを追加し、`runner.rs`にはtop-level detail dispatchだけを残す。 |
-| `src/runner/tests.rs` | 単一 private `runner::tests` module と root-level `include!` declaration。 |
-| `src/runner/tests/support.rs` | shared test import、builder、environment、id、corruption helper。 |
-| `src/runner/tests/parse_only.rs` | nonempty parse-only private test family。 |
-| `src/runner/tests/type_elaboration/*.rs` | nonempty cohesive source-extraction、reserved/binary、mode-chain、asserted-head、long-chain、isolation family。 |
-| `tests/metadata.rs` | 既存 declaration-symbol integration-test owner。後の独立 inventory が nonempty move を正当化しない限り不変。 |
-
-test fragment は new wrapper module を作らず、`runner::tests` root へ直接 include
-する。これにより既存 qualified test name と Task 216-222 の nested module name を
-保持する。discovered test list を変える child-module split は禁止する。
-
-Task 253 の fresh inventory により、reserved/binary owner を Task 254 の
-mode-chain block の前後にある 2 個の物理的かつ order-preserving な fragment へ
-分割する。Task 253A は先頭の baseline reserve/binary 23-test block である。
-Task 189 の reserved-object type-assertion test は baseline reserved-object bridge
-boundary に埋め込まれ、その owner であるため、この block に保持する。Task 246
-の parenthesized two-edge local-mode equality も parenthesized binary route に属する
-ため、この block に保持する。この分類によって両 test を広い asserted-head または
-mode-chain family へ移管するものではない。253A 後も Task 253 は pending とし、
-Task 254 で間の local-mode/object-mode chain block を移動後、Task 253B で直後の
-direct reserved-variable membership/inequality test を移動する。Task 255 は direct
-reserved-variable type-assertion test から始まる。この順序で source/discovery order
-を保持する。
-
-Task 254 の fresh inventory により、この間の block を 26 complete tests に固定
-する。これは direct から four-edge までの non-long-chain set/object membership、
-equality、inequality family で、long-chain test や non-test helper/item を含まない。
-block 後の separator を retained とし、その直後から Task 253B が始まる。Task 254
-はこの contiguous block だけを
-`src/runner/tests/type_elaboration/mode_chain.rs` へ移動する。
-
-Task 253B の fresh inventory により、次の block を 2 complete direct
-reserved-variable tests（membership と inequality）に固定する。non-test
-helper/item は含まない。直後の separator を retained とし、その後の direct
-reserved-variable type-assertion test から Task 255 が始まる。Task 253B はこの
-284-line block だけを
-`src/runner/tests/type_elaboration/reserved_direct.rs` へ移動し、この move の完了で
-parent Task 253 を完了する。
-
-Task 255 の fresh inventory により、non-long-chain type-assertion/asserted-head
-source family を 5 個の物理的かつ order-preserving な block へ分割する。Task 255A
-は 6,653 行で、three-edge set-side radix owner までの先頭 source test 12件と、
-それらだけが consume する専用 Task 205 isolation helper 2件を含む。Task 255B は
-3,303 行で、four-edge set/object radix test 2件と専用 Task 208/207 helper を含む。
-Task 255C/255D はそれぞれ single three-edge/two-edge object-radix source test と
-専用 Task 206/204 helper を一緒に保持する。Task 255E は最後の contiguous source
-test 16件を含み、active-fixture block 前で停止する。各 block 間の separator は
-`tests.rs` に残す。これら専用 helper item は owner test と一緒に移動し、standalone
-active-fixture/cross-owner-isolation test は後続の fresh inventory に残す。Task 255
-subtask は long-chain test を含まない。parent Task 255 は Task 255E まで pending。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Ordered Move Tasks
 
-| Task | Bounded action |
-|---|---|
-| 248 | paired audit を追加し、paired crate plan と preservation matrix を更新。source move なし。 |
-| 249 | 完了: inline private `mod tests` body 全体を `src/runner/tests.rs` へ機械的に移動。 |
-| 250 | 完了: nonempty shared test support を root-included support fragment へ移動。 |
-| 251 | 完了: nonempty parse-only private test family を root-included fragment へ移動。 |
-| 252 | 完了: baseline type-elaboration source-extraction / real handoff test を移動。 |
-| 253A | 完了: 先頭の baseline reserved-variable/binary-formula 23-test block を移動。Task 253 は pending のまま。 |
-| 254 | 完了: 26-test non-long-chain local-mode/object-mode chain bridge block を移動し、直後の Task 253B boundary を保持。 |
-| 253B | 完了: 2 direct reserved-variable membership/inequality test を `reserved_direct.rs` へ移動し、直後の Task 255 boundary を保持して Task 253 を完了。 |
-| 255A | 完了: 先頭 type-assertion/asserted-head source test 12件と専用 Task 205 helper 2件を `asserted_head_base.rs` へ移動。 |
-| 255B | 完了: four-edge radix source test 2件と専用 Task 208/207 helper を `asserted_head_four_edge_radix.rs` へ移動。 |
-| 255C | 完了: three-edge object-radix source test と専用 Task 206 helper を移動。 |
-| 255D | 完了: two-edge object-radix source test と専用 Task 204 helper を移動。 |
-| 255E | 完了: 最後の non-long-chain source test 16件を移動し、active-fixture boundary を保持して Task 255 を完了。 |
-| 256 | 完了: long-chain source/active bridge test 44件と test-local finite guard 12件を `long_chain.rs` へ移動し、両隣の four-edge boundary を保持。 |
-| 257 | 完了: inventory 済みの残る fixture、bridge-gap、corruption、isolation 8 family を Task 257H までにすべて移動。 |
-| 257A | 完了: 先頭 binary/parenthesized fixture/route-isolation test 18件を `binary_route_fixtures.rs` へ移動し、Task 257B separator を保持。 |
-| 257B | 完了: builtin-object reserve active fixture 3件を `reserve_object_fixtures.rs` へ移動し、Task 257C separator を保持。 |
-| 257C | 完了: Task 180 standalone contradiction fixture だけを `formula_constant_fixture.rs` へ移動し、両 reserve-family boundary を保持。 |
-| 257D | 完了: distinct/multiple/heterogeneous reserve fixture 11件を `reserve_fixtures.rs` へ移動し、Task 257E separator を保持。 |
-| 257E | 完了: non-long-chain active mode-chain fixture test 26件を `mode_chain_fixtures.rs` へ移動し、Task 257F separator を保持。 |
-| 257F | 完了: active reserve/asserted-head/type-assertion fixture 35件と interleaved owner-route isolation guard 4件を `asserted_head_fixtures.rs` へ移動し、Task 257G separator を保持。 |
-| 257G | 完了: source-gap/four-edge-equality test 3件を `source_gap_and_equality.rs` へ移動し、直後の long-chain include と Task 257H boundary を保持。 |
-| 257H | 完了: 最後の root bridge fixture 9件、root isolation test 3件、nested test 28件を `remaining_bridges_and_nested_isolation.rs` へ移動し、Task 216-222 module を保持して Task 257 を完了。 |
-| 258 | 完了: test layout 安定後、shared source/frontend staging helper を private `shared.rs` へ移動。 |
-| 259 | 完了: parse-only case execution、Surface-AST snapshot comparison、failure projection を private `parse_only.rs` へ移動。 |
-| 260A | 完了: cross-phase resolver shell/projection/symbol collection leaf を declaration/type caller より先に private `shared.rs` へ移動。 |
-| 260B | 完了: 既存 declaration-symbol case/observation/payload/expectation/failure helper を private `declaration_symbol.rs` へ移動。integration test は不変。 |
-| 261 | 完了: lexical provider、exact fixture vocabulary、type import-summary adapter を private `import_fixtures.rs` へ移動。 |
-| 262 | Tasks 262N0-262Q までで完了。inventory 済み type-elaboration formula source-extraction leaf をすべて移動し、checker/output consumer は Task 263 に残す。 |
-| 262A | 完了: common exact source-AST primitive 5個を private type-elaboration phase facade 配下へ移動。 |
-| 262B | 完了: shared node-kind traversal と qualified-symbol spelling projection を common source-AST leaf へ移動。 |
-| 262C | 完了: reserve type-expression、visible symbol/admission、source-text projection を private source-reserve leaf へ移動し、declaration/mode caller は Task 262E のため保持。 |
-| 262D | 完了: shared exact `parser.type_fixtures` import-item AST projection を formula/reserve caller より先に common source-AST leaf へ移動。 |
-| 262E | 完了: bounded reserve declaration-segmentation/local-mode traversal/expansion family を移動し、handoff/formula ownership を保持して Task 262C temporary helper 3個を narrow。 |
-| 262F | 完了: standalone `thesis`/`contradiction` formula-constant transport、exact extractor、dedicated node allowlist だけを new private source-formula leaf へ移動し、2 entry だけを facade alias にした。 |
-| 262G | 完了: shared 3-helper exact numeral AST projection だけを private source-formula leaf へ移動し、5 caller family はすべて `runner.rs` に保持。 |
-| 262H0 | 完了: production/test count 不変で既存 builtin-binary unit matrix に config order、payload provenance、recovery、duplicate、cardinality preservation を追加。 |
-| 262H | 完了: builtin equality/inequality/membership config、source transport、exact extractor、dedicated allowlist だけを private source-formula leaf へ移動。 |
-| 262I0 | 完了: production/test count 不変で既存 builtin type-assertion unit matrix に independently derived payload/checker provenance、recovery、duplicate、token-shape、cardinality preservation を追加。 |
-| 262I | 完了: builtin type-assertion transport、exact extractor、dedicated allowlist だけを private source-formula leaf へ移動。 |
-| 262J0 | 完了: production/test count 不変で既存 imported predicate/functor matrix に independent payload/checker/import provenance、recovery、duplicate、structural-cardinality preservation を追加。 |
-| 262J1 | 完了: shared imported formula symbol resolver/provenance pair だけを3 caller 不変で private source-formula leaf へ移動。 |
-| 262J2 | 完了: imported predicate/functor transport、exact extractor、exact infix projection、dedicated allowlist だけを private source-formula leaf へ移動。 |
-| 262K0 | 完了: production/test count 不変で既存 imported attribute assertion variant 2個に independent five-field payload/provenance/order preservation と bounded direct-rejection corruption coverage を追加。 |
-| 262K | 完了: imported attribute assertion transport、two-entry/shared extractor、dedicated allowlist だけを private source-formula leaf へ移動。 |
-| 262L0 | 完了: production/test count 不変で既存 exact set-enumeration matrix に independent eight-field grouping/punctuation/order preservation と bounded direct-rejection corruption coverage を追加。 |
-| 262L | 完了: set-enumeration transport、exact extractor、exact-set projection、dedicated allowlist だけを private source-formula leaf へ移動。 |
-| 262M0 | 完了: production/test count 不変で既存 exact connective/quantifier matrix に independent ten-field binder/output/diagnostic preservation と bounded direct-rejection corruption coverage を追加。 |
-| 262M | 完了: connective/quantifier transport、exact extractor、dedicated allowlist だけを private source-formula leaf へ移動。 |
-| 262N0 | 完了: production/test count 不変で既存 exact reserved-variable equality matrix に全 config field、独立導出 formula/operand provenance、direct near-miss rejection、16 bounded default-off corruption を追加。 |
-| 262N | 完了: 4 normalized shared reserved-variable config/model、predicate、mode/identifier、ordinal substrate fragment を最小 runner-scoped visibility で移動。 |
-| 262O | 完了: direct reserved-variable binary source transport、generic extractor、family allowlist だけを private source-formula leaf へ移動。temporary allowlist alias は Task 262P の保持 parenthesized family 専用。 |
-| 262P | 完了: parenthesized reserved-variable source enum/transport、generic extractor、single-parenthesized operand projection、family allowlist だけを移動し、binary allowlist 2個は両方 leaf-private。 |
-| 262Q0 | 完了: test count/production 不変で既存 base reserved-variable type-assertion test に source field 10個、exact config、near miss 15件の direct rejection、bounded structural corruption 4個を追加。 |
-| 262Q | 完了: Q0 後に reserved-variable type-assertion source transport、generic extractor、family allowlist だけを移動し、config/wrapper 58個と checker/output consumer を保持。 |
-| 263 | 完了: checker-handoff、payload-validation、detail-key、expected-output、failure-diagnostic、全source-route production-helper familyをbounded dependency orderで移動し、`runner.rs`にはfacade/top-level orchestrationだけを残す。 |
-| 263A | 完了: 正確な506行 checker-handoff substrate を最小 runner-scoped visibility で private `type_elaboration/checker_handoff.rs` へ移動。 |
-| 263B | 完了: 正確な49行 common frontend diagnostic projection を parent-only entry 3個で既存 private `shared.rs` へ移動。 |
-| 263C | 完了: 正確な24行 expected-result/failure-projection family を parent-only entry 2個で private `type_elaboration/result.rs` へ移動し、exact-body/byte-stability を維持。 |
-| 263D | 完了: 正確な4 fragment/50行 type active-admission gate を parent-only entry 2個で private `type_elaboration/admission.rs` へ移動し、exact-body/byte-stability を維持。 |
-| 263E | 完了: 正確な33行3 transport checker-output substrate を runner-scoped field visibility で private `type_elaboration/output.rs` へ移動し、exact-body/byte-stability を維持。 |
-| 263F | 完了: 正確な277行3 builder/output-projection producer family を parent-only builder entry 3個で既存 private `type_elaboration/output.rs` へ移動し、exact-body/byte-stability を維持。 |
-| 263G | 完了: 正確な229行 type-assertion validator/private role helper/shared normalized-type predicate family だけを既存 private `type_elaboration/output.rs` へ移動。validator と一時 shared predicate は parent-only、role helper は leaf-private、全 preservation gate 成功。 |
-| 263H | 完了: 正確な380行 binary-formula validator/source-projection/type-entry-helper family だけを既存 private `type_elaboration/output.rs` へ移動。validator だけ parent-only、全 helper は leaf-private、全 preservation gate 成功。 |
-| 263I | 完了: 正確な67行 config-independent parenthesized-binary validator core だけを parent-only entry 1個で既存 private `type_elaboration/output.rs` へ移動。全 config、named wrapper、detail、call site を保持し、全 preservation gate 成功。 |
-| 263J | 完了: 正確な46行 type-assertion result/detail core だけを既存 private `type_elaboration/output.rs` へ移動。result projection は parent-only、collector は leaf-private、direct validator/output alias は test-only、全 preservation gate 成功。 |
-| 263K | 完了: 正確な36行 binary-formula result/detail core だけを既存 private `type_elaboration/output.rs` へ移動。両 entry は parent-only、direct validator/output alias は test-only、全 parenthesized/config/wrapper/call-site work を保持し、全 preservation gate 成功。 |
-| 263L | 完了: 正確な16行 shared parenthesized-binary output-detail core だけを既存 private `type_elaboration/output.rs` へ移動。shared core は parent-only、direct parenthesized validator/output と binary detail-collector alias は test-only、全 payload/config/wrapper/call-site work を保持し、全 preservation gate 成功。 |
-| 263M | 完了: 正確な17行 parenthesized-binary payload-detail wrapper だけを既存 private `type_elaboration/output.rs` へ移動。wrapper は parent-only、direct builder/shared-detail alias は test-only、全 config/named-wrapper/extractor/call-site work を保持し、全 preservation gate 成功。 |
-| 263N | 完了: 正確な7 fragment/720行 parenthesized config/named-route family だけを新規 private `type_elaboration/parenthesized_routes.rs` へ移動。normal facade はdetail route 8個、test facadeは保持test consumerだけを exposeし、全 preservation gate成功。 |
-| 263O | 完了: 正確な8 fragment/546行 leading direct-binary route family だけを新規 private `type_elaboration/binary_routes.rs` へ移動。normal facade はdetail route 9個、test facadeは保持test consumerだけを exposeし、全preservation gate成功。 |
-| 263P | 完了: 訂正済み正確な5 fragment/313行 multiple-reserve declaration binary route family だけを既存 private `type_elaboration/binary_routes.rs` へ移動。normal facade はdetail route 5個、test facadeは保持test consumerだけを exposeし、全preservation gate成功。 |
-| 263Q | 完了: 正確な5 fragment/116行 base reserved-variable membership/inequality route family だけを既存 private `type_elaboration/binary_routes.rs` へ移動。normal facade はdetail route 2個、test facadeは保持test consumerだけを exposeし、全preservation gate成功。 |
-| 263R | 完了: 正確な10 fragment/183行 direct local-mode membership/equality/inequality route family だけを既存 private `type_elaboration/binary_routes.rs` へ移動。normal facade はdetail route 3個、test facadeは保持test consumerだけを exposeし、全preservation gate成功。 |
-| 263S | 完了: 正確な10 fragment/190行 direct local-object-mode membership/equality/inequality route family だけを既存 private `type_elaboration/binary_routes.rs` へ移動。normal facade はdetail route 3個、test facadeは保持test consumerだけを exposeし、全preservation gate成功。 |
-| 263T | 完了: 正確な14 fragment/207行 chained local-mode membership/equality/inequality route family だけを既存 private `type_elaboration/binary_routes.rs` へ移動。normal facade はdetail route 3個、test facadeは保持test consumerだけを exposeし、全preservation gate成功。 |
-| 263U | 完了: 正確な9 fragment/229行 chained local-object-mode membership/equality/inequality route family だけを既存 private `type_elaboration/binary_routes.rs` へ移動。normal facade はdetail route 3個、test facadeは保持test consumerだけを expose。 |
-| 263V | 完了: 正確な15 fragment/222行 two-edge local-mode membership/equality/inequality route family だけを既存 private `type_elaboration/binary_routes.rs` へ移動。normal facade はdetail route 3個、test facadeは保持test consumerだけを expose。 |
-| 263W | 完了: 正確な11 fragment/241行 two-edge local-object-mode membership/equality/inequality route family だけを既存 private `type_elaboration/binary_routes.rs` へ移動。normal facade はdetail route 3個、test facadeは保持test consumerだけを expose。 |
-| 263X | 完了: 正確な15 fragment/242行 three-edge local-mode membership/equality/inequality route family だけを既存 private `type_elaboration/binary_routes.rs` へ移動。normal facadeはdetail route 3個、test facadeは保持test consumerだけをexpose。 |
-| 263Y | 完了: 正確な11 fragment/258行 three-edge local-object-mode membership/equality/inequality route family だけを既存 private `type_elaboration/binary_routes.rs` へ移動。normal facadeはdetail route 3個、test facadeは保持test consumerだけをexpose。 |
-| 263Z | 完了: 正確な15 fragment/252行 four-edge local-mode membership/equality/inequality route family だけを既存 private `type_elaboration/binary_routes.rs` へ移動。normal facadeはdetail route 3個、test facadeは保持test consumerだけをexpose。 |
-| 263ZA | 完了: 正確な11 fragment/273行 four-edge local-object-mode membership/equality/inequality route family だけを既存 private `type_elaboration/binary_routes.rs` へ移動。normal facadeはdetail route 3個、test facadeは保持test consumerだけをexposeし、全preservation gate成功。 |
-| 263ZB | 完了prerequisite: 正確な2 fragment/74行の共有long-chain seven-expansion tableだけを新規private `type_elaboration/long_chain_config.rs`へ移動。consumer config/route 22個は全て保持し、全preservation gate成功。 |
-| 263ZC | 完了: 正確な15 fragment/176行 local-mode long-chain membership/equality/inequality route familyだけを既存private `type_elaboration/binary_routes.rs`へ移動。sibling table importと全preservation gate成功。 |
-| 263ZD | 完了: 正確な15 fragment/186行 local-object-mode long-chain membership/equality/inequality route familyだけを既存private `type_elaboration/binary_routes.rs`へ移動。sibling table importと全preservation gate成功。 |
-| 263ZE | 完了: 正確な5 fragment/52行 local-mode long-chain reserved-variable type-assertion routeだけを新規private `type_elaboration/type_assertion_routes.rs`へ移動。asserted-head/local-object-mode routeはすべて保持し、全preservation gate成功。 |
-| 263ZF | 完了: 正確な5 fragment/48行 local-mode long-chain same-mode asserted-head routeだけを既存private `type_elaboration/type_assertion_routes.rs`へ移動。radix/multi-hop/local-object-mode routeはすべて保持し、全preservation gate成功。 |
-| 263ZG | 完了: 正確な5 fragment/50行 local-mode long-chain immediate-radix asserted-head routeだけを既存private `type_elaboration/type_assertion_routes.rs`へ移動。multi-hop/local-object-mode routeはすべて保持し、全preservation gate成功。 |
-| 263ZH | 完了: 正確な5 fragment/51行 local-mode long-chain two-hop asserted-head routeだけを既存private `type_elaboration/type_assertion_routes.rs`へ移動。deeper-hop/local-object-mode routeはすべて保持し、全preservation gate成功。 |
-| 263ZI | 完了: 正確な5 fragment/54行 local-mode long-chain three-hop asserted-head routeだけを既存private `type_elaboration/type_assertion_routes.rs`へ移動。four-or-deeper/local-object-mode routeはすべて保持し、全preservation gate成功。 |
-| 263ZJ | 完了: 正確な5 fragment/55行 local-mode long-chain four-hop asserted-head routeだけを既存private `type_elaboration/type_assertion_routes.rs`へ移動。five/six-hop/local-object-mode routeはすべて保持し、全preservation gate成功。 |
-| 263ZK | 完了: 正確な5 fragment/56行 local-mode long-chain five-hop asserted-head routeだけを既存private `type_elaboration/type_assertion_routes.rs`へ移動。six-hopと全local-object-mode routeを保持し、全preservation gate成功。 |
-| 263ZL | 完了: 正確な5 fragment/55行 local-mode long-chain six-hop asserted-head routeだけを既存private `type_elaboration/type_assertion_routes.rs`へ移動。全local-object-mode routeを保持し、全preservation gate成功。 |
-| 263ZM | 完了: 正確な5 fragment/58行 local-object-mode long-chain six-hop asserted-head routeだけを既存private `type_elaboration/type_assertion_routes.rs`へ移動。その他のlocal-object-mode routeをすべて保持し、全preservation gate成功。 |
-| 263ZN | 完了: 正確な5 fragment/57行 local-object-mode long-chain five-hop asserted-head routeだけを既存private `type_elaboration/type_assertion_routes.rs`へ移動。その他のlocal-object-mode routeをすべて保持し、全preservation gate成功。 |
-| 263ZO | 完了: 正確な5 fragment/56行 local-object-mode long-chain four-hop asserted-head routeだけを既存private `type_elaboration/type_assertion_routes.rs`へ移動。その他のlocal-object-mode routeをすべて保持し、全preservation gate成功。 |
-| 263ZP | 完了: 正確な5 fragment/55行 local-object-mode long-chain three-hop asserted-head routeだけを既存private `type_elaboration/type_assertion_routes.rs`へ移動。その他のlocal-object-mode routeをすべて保持し、全preservation gate成功。 |
-| 263ZQ | 完了: 正確な5 fragment/54行 local-object-mode long-chain two-hop asserted-head routeだけを既存private `type_elaboration/type_assertion_routes.rs`へ移動し、その他のlocal-object-mode routeをすべて保持。 |
-| 263ZR | 完了: 正確な5 fragment/52行 local-object-mode long-chain immediate-radix asserted-head routeだけを既存private `type_elaboration/type_assertion_routes.rs`へ移動し、その他のlocal-object-mode routeをすべて保持。 |
-| 263ZS | 完了: 正確な5 fragment/50行 local-object-mode long-chain same-mode asserted-head routeだけを既存private `type_elaboration/type_assertion_routes.rs`へ移動し、その他のlocal-object-mode routeをすべて保持。 |
-| 263ZT | 完了: 正確な5 fragment/52行 local-object-mode long-chain reserved-variable builtin type-assertion routeだけを既存private `type_elaboration/type_assertion_routes.rs`へ移動し、その他のrouteをすべて保持。 |
-| 263ZU | 完了: 正確な5 fragment/53行 direct local-object-mode reserved-variable builtin type-assertion routeだけを既存private `type_elaboration/type_assertion_routes.rs`へ移動し、その他のrouteをすべて保持。 |
-| 263ZV | 完了: 正確な5 fragment/67行 chained local-object-mode reserved-variable builtin type-assertion routeだけを既存private `type_elaboration/type_assertion_routes.rs`へ移動し、その他のrouteをすべて保持。 |
-| 263ZW | 完了: 正確な5 fragment/71行 two-edge local-object-mode reserved-variable builtin type-assertion routeだけを既存private `type_elaboration/type_assertion_routes.rs`へ移動し、その他のrouteをすべて保持。 |
-| 263ZX | 完了: 正確な5 fragment/82行 three-edge local-object-mode reserved-variable builtin type-assertion routeだけを既存private `type_elaboration/type_assertion_routes.rs`へ移動し、その他のrouteをすべて保持。 |
-| 263ZY | 完了: 正確な5 fragment/81行 four-edge local-object-mode reserved-variable builtin type-assertion routeだけを既存private `type_elaboration/type_assertion_routes.rs`へ移動し、その他のrouteをすべて保持。 |
-| 263ZZ | 完了: 正確な5 fragment/55行 direct local-object-mode same-mode asserted-head routeだけを既存private `type_elaboration/type_assertion_routes.rs`へ移動し、その他のrouteをすべて保持。 |
-| 263ZZA | 完了: 正確な5 fragment/63行 chained local-object-mode same-mode asserted-head routeだけを既存private `type_elaboration/type_assertion_routes.rs`へ移動し、その他のrouteをすべて保持。 |
-| 263ZZB | 完了: 正確な5 fragment/65行 chained local-object-mode immediate-radix asserted-head routeだけを既存private `type_elaboration/type_assertion_routes.rs`へ移動し、その他のrouteをすべて保持。 |
-| 263ZZC | 完了: 正確な5 fragment/68行 two-edge local-object-mode same-mode asserted-head routeだけを既存private `type_elaboration/type_assertion_routes.rs`へ移動し、その他のrouteをすべて保持。 |
-| 263ZZD | 完了: 正確な5 fragment/72行 two-edge local-object-mode immediate-radix asserted-head routeだけを既存private `type_elaboration/type_assertion_routes.rs`へ移動し、その他のrouteをすべて保持。 |
-| 263ZZE | 完了: 正確な5 fragment/71行 two-edge local-object-mode two-hop asserted-head routeだけを既存private `type_elaboration/type_assertion_routes.rs`へ移動し、その他のrouteをすべて保持。 |
-| 263ZZF | 完了: 正確な5 fragment/83行 three-edge local-object-mode two-hop asserted-head routeだけを既存private `type_elaboration/type_assertion_routes.rs`へ移動し、その他のrouteをすべて保持。 |
-| 263ZZG | 完了: 正確な5 fragment/89行 four-edge local-object-mode two-hop asserted-head routeだけを既存private `type_elaboration/type_assertion_routes.rs`へ移動し、その他のrouteをすべて保持。 |
-| 263ZZH | 完了: 正確な5 fragment/84行 three-edge local-object-mode three-hop asserted-head routeだけを既存private `type_elaboration/type_assertion_routes.rs`へ移動し、その他のrouteをすべて保持。 |
-| 263ZZI | 完了: 正確な5 fragment/91行 four-edge local-object-mode three-hop asserted-head routeだけを既存private `type_elaboration/type_assertion_routes.rs`へ移動し、その他のrouteをすべて保持。 |
-| 263ZZJ | 完了: 正確な5 fragment/92行 four-edge local-object-mode four-hop asserted-head routeだけを既存private `type_elaboration/type_assertion_routes.rs`へ移動し、その他のrouteをすべて保持。 |
-| 263ZZK | 完了: 正確な5 fragment/81行 three-edge local-object-mode immediate-radix asserted-head routeだけを既存private `type_elaboration/type_assertion_routes.rs`へ移動し、その他のrouteをすべて保持。 |
-| 263ZZL | 完了: 正確な5 fragment/86行 four-edge local-object-mode immediate-radix asserted-head routeだけを既存private `type_elaboration/type_assertion_routes.rs`へ移動し、その他のrouteをすべて保持。 |
-| 263ZZM | 完了: 正確な5 fragment/78行 four-edge local-object-mode same-mode asserted-head routeだけを既存private `type_elaboration/type_assertion_routes.rs`へ移動し、その他のrouteをすべて保持。 |
-| 263ZZN | 完了: 正確な5 fragment/73行 three-edge local-object-mode same-mode asserted-head routeだけを既存private `type_elaboration/type_assertion_routes.rs`へ移動し、その他のrouteをすべて保持。 |
-| 263ZZO | 完了: 正確な5 fragment/53行 direct local-mode same-mode asserted-head routeだけを既存private `type_elaboration/type_assertion_routes.rs`へ移動し、その他のrouteをすべて保持。 |
-| 263ZZP | 完了: 正確な5 fragment/62行 chained local-mode same-mode asserted-head routeだけを既存private `type_elaboration/type_assertion_routes.rs`へ移動し、immediate-radix siblingとその他のrouteをすべて保持。 |
-| 263ZZQ | 完了: 正確な5 fragment/61行 chained local-mode immediate-radix asserted-head routeだけを既存private `type_elaboration/type_assertion_routes.rs`へ移動し、two-edge siblingとその他のrouteをすべて保持。 |
-| 263ZZR | 完了: 正確な5 fragment/66行 two-edge local-mode immediate-radix asserted-head routeだけを既存private `type_elaboration/type_assertion_routes.rs`へ移動し、two-hop siblingとその他のrouteをすべて保持。 |
-| 263ZZS | 完了: 正確な5 fragment/67行 two-edge local-mode two-hop asserted-head routeだけを既存private `type_elaboration/type_assertion_routes.rs`へ移動し、three-edge siblingとその他のrouteをすべて保持。 |
-| 263ZZT | 完了: 正確な5 fragment/72行 three-edge local-mode two-hop asserted-head routeだけを既存private `type_elaboration/type_assertion_routes.rs`へ移動し、four-edge siblingとその他のrouteをすべて保持。 |
-| 263ZZU | 完了: 正確な5 fragment/77行 four-edge local-mode two-hop asserted-head routeだけを既存private `type_elaboration/type_assertion_routes.rs`へ移動し、全three-hop/他routeを保持。 |
-| 263ZZV | 完了: 正確な5 fragment/75行 three-edge local-mode three-hop asserted-head routeだけを既存private `type_elaboration/type_assertion_routes.rs`へ移動し、four-edge/他routeをすべて保持。 |
-| 263ZZW | 完了: 正確な5 fragment/80行 four-edge local-mode three-hop asserted-head routeだけを既存private `type_elaboration/type_assertion_routes.rs`へ移動し、four-hop/他routeをすべて保持。 |
-| 263ZZX | 完了: 正確な5 fragment/79行 four-edge local-mode four-hop asserted-head routeだけを既存private `type_elaboration/type_assertion_routes.rs`へ移動し、他routeをすべて保持。 |
-| 263ZZY | 完了: 正確な5 fragment/47行 direct builtin-set reserved-variable type-assertion routeだけを既存private `type_elaboration/type_assertion_routes.rs`へ移動し、builtin-object、local-mode、chained、他routeをすべて保持。 |
-| 263ZZZ | 完了: 正確な10行shared term/formula diagnostic-key projectionだけを既存private `type_elaboration/output.rs`へ移動し、parent wrapper 9個と全other production helperを元の位置に保持。 |
-| 263ZZZA | 完了: 正確な5 fragment/47行 direct builtin-object reserved-variable type-assertion routeだけを既存private `type_elaboration/type_assertion_routes.rs`へ移動し、builtin-set、local-mode、chained、他routeをすべて保持。 |
-| 263ZZZB | 完了: 正確な2 fragment/28行standalone contradiction formula output/detail familyだけを既存private `type_elaboration/output.rs`へ移動し、他formula family/routeをすべて保持。 |
-| 263ZZZC | 完了: 正確な2 fragment/30行formula-statement output/detail familyだけを既存private `type_elaboration/output.rs`へ移動し、他formula family/routeをすべて保持。 |
-| 263ZZZD | 完了: 正確な35行inline builtin-binary term/formula checker/detail producerだけを既存private `type_elaboration/output.rs`へ移動し、他formula family/routeをすべて保持。 |
-| 263ZZZE | 完了: 正確な2 fragment/43行builtin type-assertion formula output/detail familyだけを既存private `type_elaboration/output.rs`へ移動し、他formula family/routeをすべて保持。 |
-| 263ZZZF | 完了: 正確な5 fragment/52行direct local-mode reserved-variable type-assertion routeだけを既存private `type_elaboration/type_assertion_routes.rs`へ移動し、他route/formula familyをすべて保持。 |
-| 263ZZZG | inventory指摘1件を修正して完了: 正確な29行shared imported-attribute assertion checker-output coreだけを既存private `type_elaboration/output.rs`へ移動し、両wrapperと他formula family/routeをすべて保持。 |
-| 263ZZZH | 完了: 正確な8行positive imported-attribute assertion output wrapperだけを既存private `type_elaboration/output.rs`へ移動し、detail wrapper、non-empty family、他formula/routeをすべて保持。 |
-| 263ZZZI | 完了: 正確な8行positive imported-attribute assertion detail wrapperだけを既存private `type_elaboration/output.rs`へ移動し、non-empty family、他formula/routeをすべて保持。 |
-| 263ZZZJ | 完了: 正確な9行attribute-level-negative imported-attribute assertion output wrapperだけを既存private `type_elaboration/output.rs`へ移動し、そのdetail wrapper、他formula/routeをすべて保持。 |
-| 263ZZZK | 完了: 正確な9行attribute-level-negative imported-attribute assertion detail wrapperだけを既存private `type_elaboration/output.rs`へ移動し、set-enumeration family、他formula/routeをすべて保持。 |
-| 263ZZZL | 修正済みinventoryで完了: 正確な43行set-enumeration checker-output producerだけを既存private `type_elaboration/output.rs`へ移動し、そのdetail wrapper、他formula/routeをすべて保持。 |
-| 263ZZZM | 完了: 正確な8行set-enumeration formula detail wrapperだけを既存private `type_elaboration/output.rs`へ移動し、そのoutput/extractorはfacade/rootを`cfg(test)`時だけ越え、他formula/routeをすべて保持。 |
-| 263ZZZN | 完了: 正確な49行imported predicate/functor checker-output producerだけを既存private `type_elaboration/output.rs`へ移動し、そのdetail wrapper、他formula/routeをすべて保持。 |
-| 263ZZZO | 完了: 正確な8行imported predicate/functor formula detail wrapperだけを既存private `type_elaboration/output.rs`へ移動し、output/extractorはfacade/rootを`cfg(test)`時だけ越え、他formula/routeをすべて保持。 |
-| 263ZZZP | 完了: 正確な52行formula connective/quantifier checker-output producerだけを既存private `type_elaboration/output.rs`へ移動し、そのdetail wrapper、他routeをすべて保持。 |
-| 263ZZZQ | 完了: 正確な8行formula connective/quantifier detail wrapperだけをprivate `output.rs`へ移動し、output/extractorは`cfg(test)`時だけ越え、全routeを保持。 |
-| 263ZZZR | 完了: 正確な5 fragment/62行chained local-mode reserved-variable type-assertion routeだけをprivate `type_elaboration/type_assertion_routes.rs`へ移動し、全siblingを保持。 |
-| 263ZZZS | 完了: 正確な5 fragment/67行two-edge local-mode reserved-variable builtin type-assertion routeだけをprivate `type_elaboration/type_assertion_routes.rs`へ移動し、全siblingを保持。 |
-| 263ZZZT | 完了: 正確な5 fragment/67行two-edge local-mode same-mode asserted-head routeだけをprivate `type_elaboration/type_assertion_routes.rs`へ移動し、全siblingを保持。 |
-| 263ZZZU | 完了: 正確な5 fragment/71行three-edge local-mode immediate-radix asserted-head routeだけをprivate `type_elaboration/type_assertion_routes.rs`へ移動し、全siblingを保持。 |
-| 263ZZZV | 完了: 正確な5 fragment/73行three-edge local-mode reserved-variable builtin type-assertion routeだけをprivate `type_elaboration/type_assertion_routes.rs`へ移動し、全siblingを保持。 |
-| 263ZZZW | 完了: 正確な5 fragment/73行three-edge local-mode same-mode asserted-head routeだけをprivate `type_elaboration/type_assertion_routes.rs`へ移動し、全siblingを保持。 |
-| 263ZZZX | 完了: 正確な5 fragment/76行four-edge local-mode immediate-radix asserted-head routeだけをprivate `type_elaboration/type_assertion_routes.rs`へ移動し、全siblingを保持。 |
-| 263ZZZY | 完了: 正確な5 fragment/76行four-edge local-mode reserved-variable builtin type-assertion routeだけをprivate `type_elaboration/type_assertion_routes.rs`へ移動し、全siblingを保持。 |
-| 263ZZZZ | 完了: 最後の正確な5 fragment/78行four-edge local-mode same-mode asserted-head routeだけをprivate `type_elaboration/type_assertion_routes.rs`へ移動し、`runner.rs`にはtop-level detail dispatchだけを残す。 |
-| 264 | 完了: paired source-layout inventory、path table、todo/plan state、ownership guardをcloseoutし、fresh canonical Step 5 inventoryは次のnonempty taskなし。 |
-
-各 source-moving task は nonempty でなければならない。fresh inventory により
-smaller family が必要なら編集前に bounded subtask を追加し、no-op commit は
-作らない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Preservation Matrix
 
-| Surface | Required invariant |
-|---|---|
-| public API | `mizar_test::runner` re-export、signature、enum attribute、CLI behavior は不変。 |
-| tests | function name、fully qualified discovered name、nested module name、discovery order/set、272 tests は不変。 |
-| corpus/trace | active runner 188、plan 403/367、type 235/223、pass/fail 219/184、backlink、requirement、expectation meaning は不変。 |
-| diagnostics | code、stable detail key、fallback key、text、source identity、ordering は byte-for-byte 不変。 |
-| payloads | key、value、shape、provenance、source range、binding identity、deterministic ordering、immutable output は不変。 |
-| fail-closed behavior | unsupported、malformed、ambiguous、imported-gap、evidence-gap、lower-stage case は同じ boundary で reject。 |
-| authority | move の都合だけで `doc/spec`、`.miz`、expectation、traceability を編集しない。 |
-
-各 move の前後で test 実行に加え、
-`cargo test -p mizar-test --lib -- --list` の exact sorted test line を
-capture/compare する。`: test` suffix を含む canonical raw-list oracle は 272 行で、
-hash は
-`5e41e4dbfcc303322c246a612de61926a628957a168589b45864d0a5070bb07e`。
-suffix を除いた normalized-name list は secondary oracle に限り、Task 253A 前の
-hash は
-`c0c2b80f8b4e6c84cd25d77573fda722c4d1846fed168cd4a478781cdb42775e`。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Classification And Coverage-Audit Impact
 
-| Class | Result |
-|---|---|
-| `design_drift` | repaired。Tasks 249-264がbehavior変更なしでphase/ownership review boundaryを明示し、MT-AUDIT-022をcloseした。 |
-| `test_gap` | Tasks 262H0/262I0/262J0/262K0/262L0/262M0/262N0/262Q0 で対応する move-only task 前の bounded preservation-matrix gap を修復する。behavior/coverage credit は不変。 |
-| `spec_gap`、`source_drift`、`test_expectation_drift` | この series が導入または修復するものはない。 |
-| `source_undocumented_behavior`、`boundary_violation` | new finding なし。既存 runner behavior は paired harness plan と上位 authority に従う。 |
-| `repo_metadata_conflict` | finding なし。 |
-
-`doc/design/spec_coverage_audit.md` は変更しない。この series は specification
-chapter coverage、design mapping、traceability status、owner crate、follow-up
-ownership、deferred rationale を変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Per-Task Review And Verification
 
-各 source move で review-only により visibility drift、test-discovery drift、
-owner-boundary drift、source/documentation inconsistency、accidental behavior
-change を確認する。required command:
-
-```text
-cargo test -p mizar-test
-cargo run -q -p mizar-test -- plan --tests-root tests --manifest tests/coverage/spec_trace.toml
-cargo run -q -p mizar-test -- parse-only --tests-root tests --manifest tests/coverage/spec_trace.toml
-cargo run -q -p mizar-test -- declaration-symbol --tests-root tests --manifest tests/coverage/spec_trace.toml
-cargo run -q -p mizar-test -- type-elaboration --tests-root tests --manifest tests/coverage/spec_trace.toml
-cargo fmt --check
-cargo clippy --all-targets --all-features -- -D warnings
-cargo test
-git diff --check
-```
-
-active CLI preservation count は parse-only 96、declaration-symbol 4、
-type-elaboration 188。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Exit Criteria
 
-Task 264はexit criteriaを満たす。`runner.rs`はpublic facade/top-level
-orchestrationだけに限定され、各private ownerのvisibilityは最小、preservation
-matrixは成功し、paired source layout、crate plan、todo、harness path table、
-bilingual/ownership guard documentは同期し、全required verificationはgreenで
-ある。countは96/4/188、403/367、235/223、219/184、warning 23、error 0、unit
-test 272件。plan、parse-only、declaration-symbol、type-elaboration CLI stdout
-hashは順に
-`f34240072564dfafacf7b0d914a8204037bbfc042dea375326ae757774f63759`、
-`57d0fba9be95644890b80bfa4ec2cd992e47bb8ad4b67c130f5194ea73aa0273`、
-`08b00a9f6fe70d94fe2c1b2bdebbdb5603bcee39bf3ceb460abe53f403bba7b5`、
-`1dadbeabb219f5853c713ad53aa1cc7cd720a0e80abd7f882e9e0a5ea7802625`、
-raw/normalized test-list hashは
-`5e41e4dbfcc303322c246a612de61926a628957a168589b45864d0a5070bb07e`/
-`c0c2b80f8b4e6c84cd25d77573fda722c4d1846fed168cd4a478781cdb42775e`
-のままである。specification、test-sufficiency、implementation、
-source/documentation consistency reviewはfindingなし。`spec_coverage_audit.md`は
-変更しない。fresh canonical todo inventoryに次のnonempty Step 5 taskはなく、
-Steps 6/7は既存dependency gate成立までdeferredのままである。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 265 Authority-Only Current-State Addendum
 
-上のTask-264 statementは当時のfresh inventoryの正しいhistorical resultである。
-Task 265は後からhuman-authorizedされたdocs/traceability-only workであり、次task
-不在だけをsupersedeする。canonical roadmapはTasks 266-268とnamed owner/
-decomposition taskを開く。completed module-boundary seriesをreopenせず、17-path/
-18,952-line layout、private leaf、count、hash、source ownership、test、expectation、
-coverageを変更しない。次のexecutable taskはTask 266で、Steps 6/7はdeferred。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 266 current-state addendum
 
-Task 266 は既存 ownership layout 内の semantic handoff task であり module split
-ではない。production manifest は同じ17 path、path hash
-`b36d96fed3207b415c95de27be11ade57654c6573a2f0637aa2d0a3d56aca01d`
-のまま、合計19,262 line、content-manifest hash
-`e920dbaef82c7192d5b451ed1ab9d4a5766f2abc82b4f5314ae9ed7bb6a47825`
-となる。変更production ownerは`runner.rs` 2,188 line、
-`type_elaboration.rs` 577、`checker_handoff.rs` 856、`output.rs` 1,538、
-`source_formula.rs` 2,629。`runner.rs` はfacade/top-level orchestration only、
-facadeはprivate leaf 11件のまま。
-
-exact Task-180 route はreal formula site/range/recoveryを保持し、real theorem
-surface siteでresolver-owner rangeをvalidateし、resolver owner、typed tree、
-final checker identityを保持する。real theorem ownerのないsynthetic inputは
-fail closedのまま。`.miz`、expectation、stage、test name、CLI byte、trace status、
-broader ownershipは変更しない。次のauthorized taskはTask 267、Steps 6/7 deferred。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 267 current-state addendum
 
-Task 267はdocumentation-onlyで、production owner/visibility/path/line count/hash
-を変更しない。exact Task-268 input/output authorityを確定し、`mizar-test`が
-absent theorem annotation/justificationを分類してexplicit
-`Unmodified`/`Omitted` intentをemitし、checker/coreはintentを再構築しない。
-targetはatomic `PendingAutomaticProof` 1件、direct terminal goal、empty
-context/citations、local path `proof/0`で、その後future exact non-accepting Core
-Task-31 projectionへ渡す。productionは17 path/19,262 line、path hash
-`b36d96fe...`、content hash `e920dbae...`、全runner/count/CLI/test-list hashは
-不変。次のexecutable taskはTask 268、Core Task 31はgated、Steps 6/7はdeferred。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 268 current-state addendum
 
-Task 268は同じsource-extraction/checker-handoff owner内のbehaviorを変更し、
-production pathのsplit/addは行わない。`source_formula.rs`はexact annotationなし、
-justificationなし、proof-blockなしのTask-180 theoremだけを分類し、
-`checker_handoff.rs`はそのexplicit syntax-free proof intent/checker tableを構築・
-assertする。`runner.rs`はfacade/top-level orchestration only、facadeのprivate leafは
-11件のままである。
-
-production manifestは17 path、path hash
-`b36d96fed3207b415c95de27be11ade57654c6573a2f0637aa2d0a3d56aca01d`のまま、
-合計19,581 line、content-manifest hash
-`888cd8a0cadc7e0f96d803f3629c8f97f3771c0e9ffd26e57639e5b8dede6d46`となる。
-`checker_handoff.rs`は1,153 line、`source_formula.rs`は2,651 lineで、その他
-production owner/visibility boundaryは不変。existing `.miz`、expectation、trace
-status/test list、active runner/count、4 CLI bytesは不変。Core Task 31はexecutable、
-Steps 6/7はdeferredのままである。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Core Task 31 / Task-10 consumer current-state addendum
 
-Core Task 31はexisting top-level orchestration、type-elaboration output、
-result-projection owner内だけでbehaviorを変更し、production path/private leafを
-追加しない。`runner.rs`はfacade/top-level orchestrationのみで、type-elaboration
-facadeはprivate leaf 11件を維持する。exact Task-180 output ownerはborrowed core
-adapterを2回callし、top-level orchestrationはsingular verify-only baseline comparison、
-result leafはsnapshot failureのstable diagnostic identityを所有する。
-
-production manifestは17 path、path hash
-`b36d96fed3207b415c95de27be11ade57654c6573a2f0637aa2d0a3d56aca01d`のまま。
-total 19,803行、content-manifest hash
-`5f9e716169964a861b71576957c05e2dc2538b5e0ff9d1025ef51a4bea6aa306`、
-`runner.rs` 2,266行、`type_elaboration.rs` 578行、`checker_handoff.rs` 1,259行、
-`output.rs` 1,566行、
-`result.rs` 38行となる。active
-parse/declaration/type countは96/4/188、272-test name listは不変。new exact
-snapshot requirementによりplanは意図的に403/368、type coverageは236/224となり、
-pass/failは219/184のまま。existing `.miz`、pass outcome、phase、diagnostic、
-broader trace rowは不変。non-Task-180 CoreIr/ControlFlowIr全familyはdeferredのままで、
-Steps 6/7はpromoteしない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## VC Task 31 / Task-10 consumer current-state addendum
 
-VC Task 31 は completed move-only series を reopen せず、bounded production path
-`src/runner/proof_verification.rs` を1件追加する。production は18 path / 20,085 line。
-`runner.rs` は2,372 lineで facade/top-level orchestration only を維持し、new 170-line
-leaf が exact admission、source-to-VC execution、deterministic rerun、snapshot
-comparison、failure projection を所有する。type-elaboration facade はprivate leaf 11件
-のままで、reusable exact CoreIr export だけが1 line変わり、`output.rs` は1,571 line。
-
-sorted production path hash は
-`63e4e770b0d10872415548410d417071c1901f3ffa5aea964a81d2dbbc572ed0`、ordered
-content-manifest hash は
-`a7745e222032a5b6dfeda5ec7a90888c569270134d316166914c959a1684c14c`。
-
-new runner は cohesive semantic consumer で、oversized-route split/ownership leak では
-ない。public report/iterator/orchestration は `runner.rs`、exact implementation はprivate
-に残る。active count は parse/declaration/type/proof 96/4/188/1、plan 404/369、proof
-coverage 4/1、pass/fail 220/184、mizar-test library test 276。broad proof-verification と
-VC 32-55 はこの leaf の外で、Steps 6/7 はpromoteしない。
-
-plan/parse/declaration/type/proof CLI hash はそれぞれ
-`572873f4f678d446b5b383c3a466bd657df218590b088f1d32b10a98c87ce6ae`、
-`57d0fba9be95644890b80bfa4ec2cd992e47bb8ad4b67c130f5194ea73aa0273`、
-`08b00a9f6fe70d94fe2c1b2bdebbdb5603bcee39bf3ceb460abe53f403bba7b5`、
-`1dadbeabb219f5853c713ad53aa1cc7cd720a0e80abd7f882e9e0a5ea7802625`、
-`ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`。
-raw/normalized 276-test-list hash は
-`967495e78e1068f592e64834ea3ffb9eac9c25692ea5cbd4f11006a679c66590` /
-`1be4ae09188b27a40814adc6597de4806dabb13bcac019b294154e1455072adf`。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Resolver R-031 declaration-symbol current-state addendum
 
-R-031はexisting ownership layout内のbehaviorだけを変更し、pathを追加しない。private
-cross-phase `shared.rs` ownerはappendしたresolver internal classをexact declaration-symbol
-keyへmapするためだけに260行から263行へ増える。`runner.rs`は2,372行のfacade/top-level
-orchestrator、`declaration_symbol.rs`は231行のprivate case/report ownerのままである。
-production manifestは18 pathのまま20,088行となる。sorted path hashは
-`63e4e770b0d10872415548410d417071c1901f3ffa5aea964a81d2dbbc572ed0`を維持し、
-ordered content-manifest hashは
-`7e5adca22db2b73f94f04c406f10788f2cd49ba48109bb105a3fd076c339d560`である。
-
-active countはparse/declaration/type/proof 96/5/188/1、plan 404/369、declaration
-coverage 10/5、pass/fail 220/184、warnings/errors 23/0、mizar-test library test 276である。
-plan/parse/declaration/type/proof CLI stdout hashは順に
-`69cf3aa717ec5c85b15b613a16faf75efeaf476737677aa5aecc98ea016f763e`、
-`57d0fba9be95644890b80bfa4ec2cd992e47bb8ad4b67c130f5194ea73aa0273`、
-`210055108c257ff65c6f45fb654c82e506653ec4617b68d111893bb3aa1da5a8`、
-`1dadbeabb219f5853c713ad53aa1cc7cd720a0e80abd7f882e9e0a5ea7802625`、
-`ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`である。
-raw/normalized 276-test-list hashは
-`967495e78e1068f592e64834ea3ffb9eac9c25692ea5cbd4f11006a679c66590` /
-`1be4ae09188b27a40814adc6597de4806dabb13bcac019b294154e1455072adf`を維持する。
-変わるbytesはplanとdeclaration-symbolだけで、parse/type/proof/test-list/path、
-facade/leaf ownership、Steps 6/7 statusはstableである。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Parser Task 47 parse-only current-state addendum
 
-Task 47は`mizar-test` production path/source lineを変更しない。production manifestは
-18 path / 20,088 line、path hash
-`63e4e770b0d10872415548410d417071c1901f3ffa5aea964a81d2dbbc572ed0`、ordered content hash
-`7e5adca22db2b73f94f04c406f10788f2cd49ba48109bb105a3fd076c339d560`のままである。
-`runner.rs`は2,372-line facade/top-level orchestrator、private-leaf ownershipも不変である。
-
-active countはparse/declaration/type/proof 97/5/188/1、plan 405/369、parse coverage
-43/42、pass/fail 221/184、warnings/errors 23/0、mizar-test library test 276である。
-plan/parse/declaration/type/proof stdout hashは
-`b23ef45284bbdde020431ec1f8a2b6a92c27940b4f5c0ca5117a6b5331d653ab`、
-`b824094f5bb4b57fb0cd976d669034aa5a3b294eaa8dc40264d8fb5bf3e48959`、
-`210055108c257ff65c6f45fb654c82e506653ec4617b68d111893bb3aa1da5a8`、
-`1dadbeabb219f5853c713ad53aa1cc7cd720a0e80abd7f882e9e0a5ea7802625`、
-`ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`である。
-raw/normalized test-list hashは
-`967495e78e1068f592e64834ea3ffb9eac9c25692ea5cbd4f11006a679c66590` /
-`1be4ae09188b27a40814adc6597de4806dabb13bcac019b294154e1455072adf`のままである。
-変わるbytesはplan/parseだけで、production ownershipとSteps 6/7はstableである。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Parser Task 48 parse-only current-state addendum
 
-Task 48は`mizar-test` production path/source lineを変更しない。production manifestは
-18 path / 20,088 line、path hash
-`63e4e770b0d10872415548410d417071c1901f3ffa5aea964a81d2dbbc572ed0`、ordered content hash
-`7e5adca22db2b73f94f04c406f10788f2cd49ba48109bb105a3fd076c339d560`のままである。
-`runner.rs`はfacade/top-level orchestratorのままで、private-leaf ownershipも不変である。
-
-active countはparse/declaration/type/proof 99/5/188/1、plan 407/369、pass/fail
-222/185、warnings/errors 23/0、mizar-test library test 276である。raw/normalized
-276-test-list hashは
-`967495e78e1068f592e64834ea3ffb9eac9c25692ea5cbd4f11006a679c66590` /
-`1be4ae09188b27a40814adc6597de4806dabb13bcac019b294154e1455072adf`のままである。
-plan/parse/declaration/type/proofの5 CLI hashは
-`2957a40b91a4cf64206301b4bf91d1c42ecdac2a564b70af370d2e52333ab57b`、
-`c9dcbcef79e727f31720d46532febe5a20e02a7710cf691e49d89fcfb69bccfa`、
-`210055108c257ff65c6f45fb654c82e506653ec4617b68d111893bb3aa1da5a8`、
-`1dadbeabb219f5853c713ad53aa1cc7cd720a0e80abd7f882e9e0a5ea7802625`、
-`ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`である。
-変更するのはplan/parse corpus bytesだけである。declaration/type/proof ownership、
-production layout、inactive semantic Task-39 seed、Steps 6/7はstableで、新しいcreditは
-parser/syntax-onlyである。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 254 current-layout addendum
 
-Task 254はprivate production leaf
-`src/runner/type_elaboration/source_structure.rs`（1,689 line）とtest-only leaf
-（1,716 line）を1件ずつ追加する。`runner.rs`は2,424-line public facade/top-level
-dispatcher、`type_elaboration.rs`は623-line private facadeのままである。raw
-structure syntax、declaration-shell intake、Task-248 context projection、
-Task-252 composition、checker input assembly、frozen outcome projectionはnew
-private leaf内でbehavior-coupledである。
-
-production manifestは25 path / 27,317 line、sorted path hashは
-`e81c3b08ff6f6e7159bac50543fda701a2f41724ecc825d2556f964bc6286d44`、
-ordered content-manifest hashは
-`3046ae270e7d2c72a1ed4f96fcbc6cbcc87aa494ae883a6e31e192ccf16d7b12`。
-active parse/declaration/type/proofは101/5/192/1、planは413/377、type coverageは
-243/231、pass/failは224/189、warnings/errorsは23/0である。raw/normalized
-312-test-list hashは
-`b7f56668669bbc4b5f5b1ab30440032dc67ec202ef5d087d08ce6fa51b9949dd` /
-`09acdf12c4cd034ea3c2a049d1f03c631d35b176db8e488f530d1cf16a4c9bf1`。
-plan/parse/declaration/type/proof CLI hashは
-`c42674aa6b6ad222a2b3f4b5c4154f553e06bd66738589436caf112d06659bb7`、
-`a8a7aa639d2ebc65eddc923c7e9369ea5637d50e935f808600f446da1bfbda56`、
-`210055108c257ff65c6f45fb654c82e506653ec4617b68d111893bb3aa1da5a8`、
-`0a7225c92a91e96264bec5172948ea82fc7d6be771fc05d0c3f83c615713648c`、
-`ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`
-である。Task 263 semanticsとSteps 6/7はこのlayout increment外に残る。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 255 current-layout addendum
 
-Task 255はprivate production leaf
-`src/runner/type_elaboration/source_set_term.rs`（1,804 lines）とtest-only leaf
-1件（1,224 lines）を追加する。`runner.rs`は2,433-line public facade/top-level
-dispatcher、`type_elaboration.rs`は631-line private facadeのままである。raw
-set/comprehension/choice/`qua` syntax、Task-248 context reuse、Task-252
-composition、recursive generator/type-site normalization、checker input
-assembly、frozen outcome projectionはprivate leaf内でbehavior-coupledである。
-
-production manifestは26 paths / 29,138 lines、sorted path hashは
-`fa5d6e533d6c7c953d77f4146929f91d04443d5a9247b8867f8ee50e9ac64bbe`、
-ordered content-manifest hashは
-`4e8cfc6772d8e791f51c35fb2ffe22279b9d5c0c0fadf370ec1ce64a3efa7ba1`である。
-active parse/declaration/type/proofは101/5/193/1、plan 414/378、type
-244/232、pass/fail 224/190、warnings/errors 23/0である。raw/normalized
-320-test-list hashは
-`41b639004b41102aca6d03882510bd37c1b19d6a6e04d36f10a1037d0aeab16a` /
-`62e2ed916bdd13657f0214e46865105166bd1c1ca08ec8587db612de184fc4ec`である。
-plan/parse/declaration/type/proof CLI hashは
-`ae998fc21eb147ebe43f9db180970d883d928d7bfc307ceea431dcec5c4f2f3f`、
-`a8a7aa639d2ebc65eddc923c7e9369ea5637d50e935f808600f446da1bfbda56`、
-`210055108c257ff65c6f45fb654c82e506653ec4617b68d111893bb3aa1da5a8`、
-`afccc76e9714da9ae79eb4b1dbc60dde0ec339301ae0cb17a2ecc4b43d2d4eb8`、
-`ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`
-である。Tasks 256-257と全semantic set/choice/`qua` decisionは本layout
-increment外に残す。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 256 current-layout addendum
 
-Task 256はprivate production leaf
-`src/runner/type_elaboration/source_atomic_formula.rs`（894 lines）とtest-only
-leaf 1件（902 lines）を追加する。`runner.rs`は2,439-line public facade/
-top-level dispatcher、`type_elaboration.rs`は638-line private facadeのままで
-ある。raw atomic-formula selection、complete same-arena Task-252 union、
-narrow Task-253/255 helper composition、resolver/source provenance projection、
-checker input assembly、不変semantic outcome projectionはprivate leaf内で
-behavior-coupledである。
-
-production manifestは27 paths / 30,154 lines、sorted path hashは
-`0cae4e1f347b2ff3b8eb08afb8ad01aaeba42c98628875fbea08659dfdb28322`、
-ordered content-manifest hashは
-`f3242ccb13c43aedb38a713bcc1d166bf631444f6a75b5067428da9ca5793557`である。
-active parse/declaration/type/proofは101/5/193/1、plan 414/379、type
-245/233、pass/fail 224/190、warnings/errors 23/0である。raw/normalized
-328-test-list hashは
-`95ce3ccf81eea2bd206d99dbbe470f86cfbc3ff6abc9d0490adff195fa928a81` /
-`e6b78257a4939145e5ee40a394b1f22c68149a0e4f190a0d4ce9057ffe0ed72e`。
-plan/parse/declaration/type/proof CLI hashは
-`5fa9ea19ce4cf201117c7d3c7d228449297020df4b61198c212449b6c2615906`、
-`a8a7aa639d2ebc65eddc923c7e9369ea5637d50e935f808600f446da1bfbda56`、
-`210055108c257ff65c6f45fb654c82e506653ec4617b68d111893bb3aa1da5a8`、
-`afccc76e9714da9ae79eb4b1dbc60dde0ec339301ae0cb17a2ecc4b43d2d4eb8`、
-`ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`
-である。Task 257と全deferred semantic formula decisionは本layout increment外
-に残す。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 257B2 Boundary Recheck
 
-production pathは追加しない。selector/payloadは
-`type_elaboration/source_formula.rs`、arena construction/producer sequencingは
-既存`source_formula_composition.rs` leaf、testsはpaired test leafに留める。
-manifestは29 paths / 32,064 linesであり、このbounded second consumerのための
-追加splitは不要。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 257B3 boundary recheck
 
-production pathは追加しない。B3 payload/extractorは`source_formula.rs`、
-producer sequencingは`source_formula_composition.rs`、testsはpaired test
-leafに残す。`runner.rs`は2,462-line public facade、
-`type_elaboration.rs`は657-line private facade、`source_formula.rs`は
-3,500 lines、`source_formula_composition.rs`は1,311 lines、paired test
-leafはtest-only 1,452 linesである。existing 29-path layoutはproduction
-32,809 linesでcohesiveなまま。path/content hashは
-`ee27e3796008fdd180ad8fdfbedfd5b370cb76a0d0f87356487bc82cc5a8f9f6` /
-`2e0b08093af337b154a278646cd61218b0bedbc5e9505f07744e81eccd9692f8`。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 257C1 boundary recheck
 
-production pathは追加していない。exact predicate-chain extractionは
-`source_formula.rs`（3,690 lines）、Task-252 assembly/Task-256 input
-constructionは`source_atomic_formula.rs`（1,069 lines）に留める。public
-dispatcher/private facadeは`runner.rs`（2,467）/
-`type_elaboration.rs`（659）、paired atomic-formula test leafはtest-only
-1,458 linesであり、existing ownership boundaryはcohesiveなまま。
-
-production manifestは29 paths / 33,184 lines、path/content hashは
-`ee27e3796008fdd180ad8fdfbedfd5b370cb76a0d0f87356487bc82cc5a8f9f6` /
-`60799e517f7a59ae9485e3b1fd4a3843a4fc9b2e927d0ed6d1d953ece799bdbd`。
-libraryは353 tests、raw/normalized hashは
-`61f3ae8d76f3f3425d41abad07b095c44a632e3444449efd229681369cb72497` /
-`b729bc119ad536dbded0c2d41ffefe44fc40d78a7a2c05d20154349f76dac557`。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 255C1 boundary recheck
 
-production pathは追加していない。public dispatcherは2,469 lines、private
-type-elaboration facadeは660、bounded reusable Task-253 owner
-`source_application.rs`は1,518、conditioned-comprehension owner
-`source_set_term.rs`は2,242 linesである。paired source-set test leafは
-test-only 1,772 lines。raw traversal、resolver selection、dependency
-composition、exact selector guardはこれらprivate owner内でcohesiveである。
-
-production manifestは29 pathsのまま33,725 linesとなる。path/content hashは
-`ee27e3796008fdd180ad8fdfbedfd5b370cb76a0d0f87356487bc82cc5a8f9f6` /
-`c039f32b8d4401feca775189573ffe8b965394eaf56570e93443f05ad4000fca`。
-libraryは357 tests、raw/normalized hashは
-`7565cbb0c853433363420a0ea825adca4cebd627c67396951dfb68c5ee84c132` /
-`d4af543f0f14fe274e89fc8f4d92e4b38f3d73d75057bcdaeb1ec868b6b01f9c`。
-plan/parse/declaration/type/proof CLI hashは
-`c38c1e4f4572702034b2600d60b6fa0efaf3fa92143ce164da04cfbe74bbb1a0`、
-`a8a7aa639d2ebc65eddc923c7e9369ea5637d50e935f808600f446da1bfbda56`、
-`210055108c257ff65c6f45fb654c82e506653ec4617b68d111893bb3aa1da5a8`、
-`f87a743b914d2d51d6b9a8dbcf3c8d93bbc1403b44907fd85123a1865f84edd5`、
-`ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 257C4C1 crate-local testdata boundary
 
-[C4C1 contract](../../task_contracts/ja/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md)は
-`crates/mizar-test/tests/testdata/parser/`のone file、
-`runner/import_fixtures.rs`のprivate provider branch 1件、existing
-`runner/tests/parse_only.rs`のtests 4件だけをownする。Support fileは`tests/miz`/
-production source manifest外、sidecarなし、ordinary corpus payloadとしてdiscover
-されない。Testsがphysical evidence fileをsynthetic moduleへassociateして
-cross-validateし、providerはlogical module idだけをrecognizeする。Package/MML/
-implicit-prelude behaviorをadmitしない。
-
-Frontend/parser/resolver/checker public API、resolver augmentation allowlist、Cargo、
-`tests.rs`、new leaf、public runner route、downstream semantic ownerはexclude。
-
-Implemented exact seven-path sliceはこのboundaryを保持し、Rust deltaはcrate-private
-provider/discovery seamとexisting test leafだけ、support fileはtestdata-only。Focused/
-full verification evidenceはcontractの[precommit completion checkpoint](../../task_contracts/ja/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md#precommit-implementation-completion-checkpoint)へcentralizeし、
-independent source-doc consistency/bilingual/boundary reviewは**NO FINDINGS**。
-Independent final-quality reviewも**NO FINDINGS**で、canonical [precommit completion
-checkpoint](../../task_contracts/ja/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md#precommit-implementation-completion-checkpoint)からlinkする。
-同historical review-time checkpointにrecordしたexact staging/cached reviewも
-**NO FINDINGS**。
-Task-only commit、post-commit proof、accepted fresh-inventory STOPはlanguage-local
-[historical postimplementation checkpoint](../../task_contracts/ja/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md#historical-immediate-postimplementation-pre-closure-checkpoint)でclosedし、boundary expansion/
-semantic successorはない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 258A frozen-contract boundary
 
-このdocumentation prerequisiteはrunner source pathを追加せず、29-path /
-34,290-line production manifestと全hashを不変に保つ。future exact
-`MT10-FS` selectorはexisting type-elaboration facade配下のdedicated private
-`source_statement.rs` leaf 1件としてfreezeする。raw statement selectionと
-syntax-free input assemblyだけをownし、validation/immutable publicationは
-checkerがownする。planned leafはcohesiveでpre-implementation splitを要せず、
-proof/acceptance/trace/fixture/active-corpus ownershipを取り込んではならない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 258A implementation boundary recheck
 
-planned private production leafは642 lines、paired test-only leafは883 lines。
-exact loaded-source/AST selection、resolver label projection、Task-48/252/256
-input assembly、dormant checker transactionをcohesively ownする。
-`runner.rs`は2,489-line public facade、`type_elaboration.rs`は674-line
-private facadeのまま。proof/acceptance/fixture/sidecar/trace/active-corpus
-ownershipはleafへ入らず、追加splitは不要。
-
-productionは30 paths / 34,955 lines、path/content hashは
-`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
-`dd399648aecadf2e7a63f685ad87577b7ebae9a9064fbfaba429a07d25ed9912`。
-libraryは369 tests、raw/normalized hashは
-`c5764bb1600242fe44db8c44b9c6bb18f39203a0de9ff60e301cbc6f172037f6` /
-`1fd27b9bff190f95ac23d6de714a919a192fb0b7830aa3c98f960d4224c084aa`。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 258B1 implementation boundary recheck
 
-既存private `type_elaboration/source_statement.rs` ownerは1,499 linesとなり、
-exact Task-258A/B1 source selection、resolver projection/replay、binding/lower
-assembly、immutable statement publicationだけをcohesively所有する。
-`source_term.rs`はper-context root helper追加後817 lines、private facadeは
-676 lines、`runner.rs`は2,489 linesのまま、paired statement test leafは
-2,145 lines。frozen one-source transactionはnew module/splitを正当化しない。
-
-production topologyは30 paths / 35,854 linesのまま。path/content hashは
-`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
-`f2d133e6fc42bd62058e95c274944aa03d80e9f8f2b5a0394a4d11e58ec3a66e`。
-libraryは374 tests、raw/normalized hashは
-`e8b5f54f219f8aa091014557c38ff8018d229ffbbc01cfa449bdc215826ca105` /
-`99e6b7199e007707d1b4074b7079885e58378c4900a6811a7e1eb6cc02f9a2bf`。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 258B2 planned boundary
 
-本documentation prerequisiteはproduction moduleを追加せず、30-path /
-35,854-line manifestとhashを不変に保つ。planned exact B2 routeはsource
-selection、resolver authentication、lower-stage assembly、immutable
-statement publicationをTask 258A/B1と共有するため、既存private
-`type_elaboration/source_statement.rs` leafがownする。raw syntaxはprivateに
-留まりchecker moduleはsyntax-free ownershipを保持する。new dependency
-direction/semantic ownerは導入しないため、implementation前のsplitは不要。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 258B2 implemented boundary
 
-existing boundaryを保持する。`runner.rs` 2,491 linesと678-line facadeが
-private 2,120-line statement leafをexposeし、2,884-line test leafがraw
-parser/resolver assertionをownする。30-path production topologyは不変。
-checkerはsyntax-free handoffとauthenticated provenanceだけを受けるため、
-new module、dependency direction、semantic ownerは不要である。
-
-### Task 258B3 frozen boundary result
-
-existing private statement leafがsole raw-parser/resolver ownerを維持し、
-exact B3 selector、lower bridge、paired assemblyを追加できる。existing
-facade/`runner.rs`はselector precedenceだけ、existing statement test leafは
-全raw kind/parity/mutation checkをownする。new runner module/production
-pathは不要。
-
-checkerはsource/module ID、syntax-free typed site、fingerprinted
-base/primary handoff、dense witness data、authenticated theorem/binding
-provenanceだけを受ける。本prerequisiteはproduction topology 30 paths /
-36,479 lines、line baselines `2120/678/2491/2884`を不変に保つ。
-
-### Task 258B3 implemented boundary
-
-planned boundaryを維持した。existing statement production leafは2,806
-lines、private facade 681、`runner.rs` 2,495、paired test leaf 4,291。
-productionは30 paths / 37,172 lines、path hash
-`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275`
-は不変、content hashは
-`adfc81c21e69a91b194161525856aa40eb0e3ea76facfc2146dcb00b473ab3c2`。
-new module/dependency direction/semantic ownerは導入していない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 258B3N planned consumer boundary
 
-named-witness selector、assembly、compound tests 5本はexisting
-`type_elaboration/source_statement.rs` production/test ownerに残す。
-production topologyは30 pathsのまま。本documentation prerequisiteは全
-37,172 production linesとhashを変更しない。new semantic routeや
-dependency directionはauthorizeしない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 258B3N consumer boundary結果
 
-implementationは既存statement leaf、facade 2件、runner root、statement test
-leafに留まる。production topologyは30 paths、sizeはproduction
-`3183/684/2498` lines、test leaf 5,799 lines。new module、public harness route、
-external detail key、dependency direction、semantic ownerは追加しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 258B3M1 planned consumer boundary
 
-exact selector、extraction、lower assembly、tests 5本はexisting
-`type_elaboration/source_statement.rs` production/test leavesとexisting
-facade/rootに留める。production topologyは30 paths。本documentation taskは
-statement leaf/facade/root/test sizes `3183/684/2498/5799`と37,555-line
-production manifestを不変に保つ。public route、external key、module
-split、dependency direction、semantic ownerはauthorizeしない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 258B3M1 consumer boundary結果
 
-implementationはplanned statement production/test leafとexisting
-facade/root内に維持した。production topologyは30 paths、statement
-leaf/facade/root/test sizesは`3724/688/2501/7246`、production manifestは
-38,103 linesである。raw parser/resolver objectはrunner-privateのまま、
-checkerにはsyntax-free authenticated tableだけを渡す。public route、
-mutation API、external key、module split、dependency direction、semantic
-ownerは追加していない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 258B3M2A planned consumer boundary
 
-exact numeral selector、raw parser/resolver authentication、lower-table
-assembly、five testsはexisting
-`type_elaboration/source_statement.rs` production/test leafとexisting
-facade/root内に留める。checkerにはsyntax-free authenticated tableだけを
-渡し、Task-252 numeral/numeric-request ownershipをduplicateせずreuseする。
-production topologyは30 paths。本documentation taskはstatement
-leaf/facade/root/test sizes `3724/688/2501/7246`と38,103-line production
-manifestを維持する。public route、external key、mutation API、module
-split、dependency direction、binding、semantic ownerはauthorizeしない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 258B3M2A consumer boundary result
 
-implementationはexisting statement production/test leaves、facades、
-runner root内に維持した。raw parser/resolver objectsはrunner-privateで、
-checkerにはsyntax-free authenticated tablesだけを渡し、Task-252
-numeral/request ownershipをreuseする。production topologyは30 paths、
-statement leaf/facade/root/test sizesは`4185/691/2505/8611`、
-production manifestは38,571 lines。public route、external key、mutation
-API、module split、dependency direction、binding、semantic ownerは追加して
-いない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 258B3M2B1 planned runner boundary
 
-docs prerequisiteはsource moduleなし。future private workはexisting
-`type_elaboration/source_statement.rs`、facade/root dispatch、statement test
-leaf内。raw parser/resolverはrunner-private、syntax-free Task-48/252/256/
-base/witnessだけcheckerへ渡す。private consumerはfive roots/six primaryを
-分離。topology 30 paths / 38,571 lines、sizes
-`4185/691/2505/8611`を維持。public route/key/mutation API/module split/
-dependency direction/binding/semantic ownerなし。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 258B3M2B1 implemented runner boundary
 
-implementationはprivate statement leaf、type-elaboration facade、root
-dispatch imports、statement/application test support内。raw parser/resolverは
-runner-privateで、exact syntax-free handoffだけcheckerへ渡す。
-five-root/six-primary、diagnostics 0、Tasks 253–255 bidirectional isolationは
-test-owned。statement leaf/facade/root/test sizesは
-`4676/695/2508/9902`、productionは30 paths / 39,069 lines。public
-route/key/mutation API、module split、crate edge、dependency direction、
-binding、active route、semantic ownerは不変。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 258B3M2B2A frozen runner boundary
 
-future dormant selectorはexisting statement leaf/facades/root内、testsは
-paired statement/application support leaf内。raw parser/resolverはprivateで、
-exact Task-48/252/256/base/witness handoffだけcheckerへ渡す。
-five-root/seven-primary、diagnostics 0、both wrapper links、bidirectional
-family isolationはtest-owned。prerequisiteはsource/module/public route/key/
-crate edge/dependency direction/binding/active/semantic ownerを変更せず、
-runner sizesと30-path/39,069-line baselineも不変。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 258B3M2B2A implemented runner boundary
 
-implementationはprivate statement leaf、existing type-elaboration
-facade/root dispatch、statement test leaf内。leaf/facade/root/test sizesは
-`5188/699/2513/11234`、unchanged 30-path production manifestは39,590
-lines、path/content hashesは
-`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
-`291da8a26e90f75e7f54e221314c1fcb9ebba375c238a07b02a161f7af6dfe66`。
-public route/key、module split、crate edge、dependency direction、active
-route、binding、semantic owner changeなし。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 258B3M2B2B1P frozen module boundary
 
-既存cohesive `runner/type_elaboration/source_application.rs` leafがprivate
-context-aware Task-253 reuse entry pointとtests 2件をownする。new module、
-public re-export、checker dependency、statement-leaf extraction duplicate、
-crate edgeはauthorizeしない。legacy context-0 entry pointは既存consumersの
-compatibility ownerのまま。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 258B3M2B2B1P implemented module boundary
 
-implementationは既存private `type_elaboration/source_application.rs` leaf、
-private facade/root imports、paired test leaf内に留まり、module/production
-pathを追加しない。Task-253 leaf/facade/root/test sizesは
-`1782/701/2514/2799`、30-path production manifestは39,857 lines。
-sorted path/content hashesは
-`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
-`cab6ee03a37966c3ac2661202601aec62969d9270cad73496eb5d61309df3f3c`。
-raw/normalized 411-test hashesは
-`14e796901abe489acbf8fb6e348e38a02ce5f19de2b36a0803a483cb53858d58` /
-`eadc56309093afd96427c0d26d0c252a7d20cb8fa0c289d983b265098b1ae2ea`。
-public re-export、checker dependency、statement extraction、active route、
-binding、semantic ownerは不変。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 258B3M2B2B1A frozen module boundary
 
-future write scopeは既存private `type_elaboration::source_statement`
-consumer/test moduleと、tests 5件のfacade/root registrationだけ。existing
-private B1P context-aware helperを`source_application`からcallし、
-extractor/candidate/argument/request logicをmove/duplicateしない。checkerが
-additive public witness target/fingerprintとatomic installationをownする。
-
-docs taskはRust moduleを変更しない。baselineは30 production paths /
-39,857 lines、path/content hashes
-`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
-`cab6ee03a37966c3ac2661202601aec62969d9270cad73496eb5d61309df3f3c`、
-411-test hashes
-`14e796901abe489acbf8fb6e348e38a02ce5f19de2b36a0803a483cb53858d58` /
-`eadc56309093afd96427c0d26d0c252a7d20cb8fa0c289d983b265098b1ae2ea`。
-public route、active dispatch、fixture、expectation、sidecar、trace、
-binding、semantic ownerは不変。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 258B3M2B2B1A implementation boundary
 
-implementationはexisting private
-`type_elaboration/source_statement.rs` leaf、facade/root dispatch、paired
-statement test leaf内に留まる。raw parser/resolver objectsはrunner-privateで、
-authenticated syntax-free Task-48/252/253/256/base/witness handoffsだけが
-checkerへcrossする。statement leaf/facade/root/test sizesは
-`5618/706/2520/11945`、unchanged production manifestは30 paths /
-40,298 lines。path/content hashesは
-`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
-`201868442e6a9b6c20188a9f4ed9a65698d12a595cfef1ddd082071b9f090b41`。
-module split、dependency direction、public/active route、fixture、
-expectation、sidecar、trace、binding、semantic ownerは不変。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 258B3M2B2B1B1P frozen module boundary
 
-後続implementationのwrite scopeは、existing private
-`runner/type_elaboration/source_application.rs` leaf、必要ならそのprivate
-facade/root imports、`runner/tests/type_elaboration/source_application.rs`
-に限定する。new module/production pathを追加してはならない。statement
-leafはlater B1B1 frozen contract後に限りconsumerとなり、B1B1Pでは
-unchangedでなければならない。
-
-docs taskはRust moduleを変更しない。baselinesはTask-253
-leaf/facade/root/test `1782/706/2520/2799`、runner tests 416、
-production 30 paths / 40,298 lines、path/content hashes
-`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
-`201868442e6a9b6c20188a9f4ed9a65698d12a595cfef1ddd082071b9f090b41`。
-public re-export、checker dependency、active route、fixture、trace、
-binding、semantic ownerを変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 258B3M2B2B1B1P implemented module boundary
 
-implementationはexisting private
-`runner/type_elaboration/source_application.rs` leaf、そのprivate
-facade/root imports、paired source-application test leafに限定した。
-module、production path、checker dependency、public re-export、statement
-consumer、active routeは追加していない。leaf/facade/root/test sizesは
-`2652/708/2523/3727`、production manifestは30 pathsのままで41,173
-lines。sorted path/content hashesは
-`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
-`ec189d8b9cf1004ae720be75b33365d2348897e34f780fa202f9f3d03a336f66`、
-raw/normalized 418-test hashesは
-`becc23c77b37b858edca581d11e396efc431f1f47f4cc80d859d6d06d1f19c37` /
-`66089f0f420203a4cf24c182315b77ce58775ce35c50285041823bcc0700248b`。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 258B3M2B2B1B1 frozen module boundary
 
-existing source-statement leafがnew private B1B1 selectorをownし、existing
-wrapped source-application seamをcallする。source-application leafは後続で
-helperのdead-code allowanceをremoveするだけで、public surface/testsは
-変更しない。existing facade/root modulesはnew public dispatch/detail key
-なしにdormant consumerをinternal exposeする。checkerはprivate
-statement/typed/final profile enumerationだけを後続変更する。
-
-new module、crate dependency、checker public API、active fixture route、
-trace/expectation/sidecar owner、semantic dependencyは追加しない。
-baseline sizes `5618/2652/708/2523/11945/3727`と全hashesはこの
-prerequisiteのmeasured documentation invariants。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 258B3M2B2B1B1 implemented module boundary
 
-implementationはexisting statement/application leaves、type-elaboration
-facade、root orchestration、statement-test leaf内に留まった。final sizesは
-`5962/2638/713/2528/13381/3727`、productionは30 paths / 41,513 lines、
-path hashは不変、content hashは
-`02ee5d2ab4a49effb70cd758eb540af5945a38dbf8b76688eef36c9ca2c1e2ed`。
-new module、dependency、public/active route、source-application test、
-trace owner、semantic boundaryは追加していない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 258B3M2B2B2P frozen module boundary
 
-later B2P implementation write scopeはexisting private
-`runner/type_elaboration/source_structure.rs` leaf、そのprivate facade/root
-imports、`runner/tests/type_elaboration/source_structure.rs`に限定する。
-exact-source owned-kind selector 1件とexisting-context/shared-source-term
-parts reuse seam 1件だけを追加できる。module/production pathは追加しない。
-
-source-statement leafはunchangedのまま。B2PはTask-258 statement/witnessを
-publishせず、checker API/co-installation pathも追加しない。raw surface
-nodes/resolver projectionsはrunner-privateに保ち、syntax-free
-Task-48/252/254 handoffsだけがexisting public Task-254 producer経由で
-checker boundaryをcrossする。
-
-documentation baselineはchecker/runner tests `378/423`。
-source-structure leaf/facade/root/test sizesは`1689/713/2528/1716`。
-productionは30 paths / 41,513 lines、path/content hashesは
-`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
-`02ee5d2ab4a49effb70cd758eb540af5945a38dbf8b76688eef36c9ca2c1e2ed`、
-runner raw/normalized test hashesは
-`fa026adf9ebc5bdf7aa3f00ea84f88ffd8f620dbc9af47ee896952b3c4e7ab88` /
-`56a661b2d79b6f866008df3684e263feeca5ef069d5e1ea097e6c3404095872d`。
-implementationはrunner tests 425をprojectし、全changed size/hashを
-再実測する。
-
-crate dependency、public re-export、active route、fixture、expectation、
-sidecar、trace owner、semantic dependency、statement consumer、checker
-testはauthorizeしない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 258B3M2B2B2P implemented module boundary
 
-implementationはfrozen 4 files、すなわちexisting source-structure leaf、
-private facade/root imports、source-structure test leaf内に留まった。
-production path、dependency、public re-export、active route、statement
-consumer、checker API/test、semantic boundaryは追加していない。final
-sizesは`2857/715/2531/2991`、productionは30 paths / 42,686 lines、
-path hashは不変、content hashは
-`d15292becaa5aac33c23a559aff7085ee8cb9116e44a034b80148a7d65acb155`。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 258B3M2B2B2A frozen runner boundary
 
-future implementationはexisting private
-`runner/type_elaboration/source_statement.rs` leaf、private facade/root
-registration、`runner/tests/type_elaboration/source_statement.rs`と、下記の
-mechanically limited `source_structure.rs` allowanceに限定する。
-existing B2P `source_structure` seamとTask-48/252/254/256/Task-258 base
-producersをconsumeし、duplicate/moveしない。raw parser/resolver
-projectionsはrunner-privateで、authenticated syntax-free handoffsだけが
-checkerへcrossする。
-
-`source_structure.rs` extractor/row constructionはunchanged。new consumerが
-existing private seamをliveにする場合のB2P-only dead-code allowance removal
-だけをこのleafに許可し、public visibilityやsecond extractorは追加しない。
-
-checkerだけがadditive `Structure` witness target、structure fingerprint、
-full structure-aware builder、full atomic structure/statement/witness
-installer、validation、debug、final projectionをownする。exact API
-names/signaturesはcanonical checker planでfreezeしたもの。new runner
-module/production path/crate dependency/public re-export/active route/
-fixture/sidecar/expectation/trace owner/binding owner/semantic dependencyは
-authorizeしない。documentation baselinesはtests `378/425`、
-statement/structure/facade/root/statement-test/structure-test sizesは
-`5962/2857/715/2531/13381/2991`。productionは30 paths / 42,686 lines、
-path/content hashesは
-`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
-`d15292becaa5aac33c23a559aff7085ee8cb9116e44a034b80148a7d65acb155`、
-raw/normalized runner-test hashesは
-`b78230532c45f58ba96e70810d9613d96098ab0ec975a7317c7d6d0a548956ab` /
-`97e68290a6b5a3e81373084293461eda85ab0c508d7ce3002e988ebf27806c38`。
-implementationは`382/430` testsをprojectし、全changed size/count/hashを
-remeasureする。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 258B3M2B2B2A implemented runner boundary
 
-implementationはexisting private source-statement leaf、facade/root
-registration、statement test leaf内。source-structure leafはprivate seamが
-liveになった後のB2P-only dead-code allowance removalだけで、extractor/
-visibility/rowsはunchanged。module、production path、dependency、public
-re-export、active route、fixture、sidecar、expectation、trace/semantic owner
-は追加なし。
-
-final statement/structure/facade/root/statement-test sizesは
-`6414/2843/720/2537/15058`。30-path production layoutは43,135 lines、
-path/content hashesは
-`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
-`26debcb7201bdd49828bfd06b2bcee7e775867462f8f6003755f4f8676dd4869`。
-runner test-list hashesは
-`da5ef4a681303797f208849dc15bd76e545bedf23319ed634c16b00fa9a60d55` /
-`7fe2eb9d8e8f7a920e8eb2043a60bc9eed61cfa2081cce27f84a57b6af4ccf3b`。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 258B3M2B2B2BP frozen runner boundary
 
-B2BPはexisting `type_elaboration/source_structure.rs` private leaf、
-facade/root test visibility、`tests/type_elaboration/source_structure.rs`
-内に留まる。private site shape 1件とexact selector reuse functions 2件を
-追加できるが、module、production path、dependency、public re-export、
-active route、checker surfaceは追加しない。statement leafとchecker
-typed/final modulesはownerでない。
-
-current statement/structure/facade/root/statement-test/structure-test sizes
-は`6414/2843/720/2537/15058/2991`。productionは30 paths / 43,135 lines、
-path/content hashes
-`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
-`26debcb7201bdd49828bfd06b2bcee7e775867462f8f6003755f4f8676dd4869`。
-implementationはexisting ownersだけをgrowしrunner tests `432`をproject。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 258B3M2B2B2BP runner boundary completion
 
-implementationはfrozen 4 existing files内に留まり、module、production
-path、dependency、public re-export、active route、checker surfaceを追加
-しない。final statement/structure/facade/root/statement-test/
-structure-test sizesは`6414/4514/722/2538/15058/4315`。30-path
-production layoutは44,809 lines、path/content hashesは
-`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
-`6a0586185a5959f842f914e869e70d53b75fa08298661295e52919b205ad16c0`。
-runner test listは432、raw/normalized hashesは
-`913a06523e707dacff403dc14ccaeef92d3f23ae6a4084d213b5a991e82bdfd6` /
-`a00cadb8916d53cd541f90e654a2beb0fc1596d94482d741dc15214aa27e0ba6`。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 258B3M2B2B2B frozen runner boundary
 
-runner implementationはexisting 5 filesに限定する。
-`type_elaboration/source_statement.rs`がprivate B2BP seamをconsume、
-`type_elaboration/source_structure.rs`はobsolete B2BP `dead_code`
-allowancesだけremove可能、`type_elaboration.rs`/`runner.rs`はexisting
-production-private pathをinternally expose、
-`tests/type_elaboration/source_statement.rs`がexact tests 5件をownする。
-checker側のseparate ownersは`source_statement.rs`、`typed_ast.rs`、
-`resolved_typed_ast.rs`だけ。
-
-module、production path、dependency、public re-export、active runner route、
-fixture、sidecar、expectation、trace entry、debug grammarは追加しない。
-current runner statement/structure/facade/root/statement-test/
-structure-test sizesは`6414/4514/722/2538/15058/4315`。productionは
-30 paths / 44,809 lines、path/content hashes
-`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
-`6a0586185a5959f842f914e869e70d53b75fa08298661295e52919b205ad16c0`
-のまま。implementationはcanonical/active artifactsを変えずchecker/
-runner testsを`382/432`から`386/437`へprojectする。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 258B3M2B2B2B implemented runner boundary
 
-implementationはfrozen eight filesにexactに留まる。checker
-`source_statement.rs`、`typed_ast.rs`、`resolved_typed_ast.rs`と、
-runner `type_elaboration/source_statement.rs`、
-`type_elaboration/source_structure.rs`、`type_elaboration.rs`、
-`runner.rs`、`tests/type_elaboration/source_statement.rs`だけ。
-source-statement leafはauthorized B2BP owned-kind/handoff seamsだけを
-consumeし、source-structure leafはextraction/visibility/row ownershipを
-変更せずobsolete future-consumer allowancesだけをremoveする。
-
-module、production path、dependency、public re-export、active route、
-fixture、sidecar、expectation、trace entry、debug grammar、semantic ownerは
-追加なし。final runner statement/structure/facade/root/statement-test/
-structure-test sizesは`6826/4506/728/2543/17120/4315`。30-path
-production layoutは45,224 lines、path/content hashesは
-`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
-`8c46908c8a53b3c4e0746455de938aae0b086fdf550f6cea1da59acf25a10b96`。
-runner test listは`437`、raw/normalized hashesは
-`51c77289004113121e7b89ff17af9f528558366df28237bb76f13adbb3ce53a7` /
-`2302d4f14b055539b7b35a4e27f70bced41d8c717246a99abf9400b7024227eb`。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 258B3M2B2B2CP frozen runner boundary
 
-B2B commit `8311502c`はcompleteし、fresh clean inventoryはB2Cより先に
-B2CPをinsertする。
-
-B2CPがchangeできるのはexisting runner files 4件だけ:
-`type_elaboration/source_structure.rs`、`type_elaboration.rs`、
-`runner.rs`、`tests/type_elaboration/source_structure.rs`。
-source-structure leafはexact-source selection、imported-root/owned-kind
-authentication、proof-context Task-254 reuse seamをownし、facade/rootは
-private production/test plumbingだけ、test leafはexact tests 2件をown。
-
-new private siblingsは`ImportedStructureUpdateSite`、
-`imported_structure_update_owned_node_kinds`、
-`imported_structure_update_handoff_in_context`だけ。future B2C
-consumerへexact Task-254 update/`FieldUpdate` lower bytesをexposeするが、
-Task-256/258、statement/witness installation、semantic resultsはownしない。
-
-checker source、source-statement modules/tests、public re-exports、active
-dispatch、dependencies、fixtures、expectations、sidecars、trace metadata、
-new modules/production paths、debug grammar、semantic ownersはscope外。
-functional-copy/update evaluation、type/result identity、proof acceptance、
-goals、IRはdeferred。current runner sizesは
-`6826/4506/728/2543/17120/4315`、productionは30 paths / 45,224 lines、
-path/content hashesは
-`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
-`8c46908c8a53b3c4e0746455de938aae0b086fdf550f6cea1da59acf25a10b96`。
-runner raw/normalized test-list hashesは
-`51c77289004113121e7b89ff17af9f528558366df28237bb76f13adbb3ce53a7` /
-`2302d4f14b055539b7b35a4e27f70bced41d8c717246a99abf9400b7024227eb`。
-implementationはrunner libraryだけ437から439へprojectする。independent
-pre-commit reviews 4件はfindingsなしだが、concurrent commit
-`817bb92b`はこのmodule table外でrejected `spec_gap` classificationを
-restoreした。later quality reviewはhard-gate/`98/100` claimsをinvalidate。
-docs-only correction Task `258B3M2B2B2CPC1`はmodule boundaryを変更しない。
-repeated reviewsはfindingsなし、全9 hard gatesがPASS、final qualityは
-valid `98/100`。live broad rerunはunrelated incomplete source workでblock
-されるため明示的にjustify。残るのはdedicated correction commitとfresh
-implementation inventoryだけ。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 258B3M2B2B2CP implemented runner boundary
 
-CPC1 correction commit `ee267d9c`はcomplete。B2CPはfrozen runner files
-4件だけを変更し、private dormantなupdate selection/authentication/
-handoff plumbingとpassing tests exactly 2件だけを追加する。
-prerequisite `design_drift`、bounded `source_drift`、`test_gap`はcloseし、
-final test-sufficiency/implementation re-reviewsはfindingsなし。checker
-source/public API、active dispatch、dependencies、fixtures、expectations、
-sidecars、trace metadata、production paths、semantic ownersはuntouched。
-
-final runner sizesは`6826/6065/730/2546/17120/5848`。productionは
-30 paths / 46,788 lines、path/content hashesは
-`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
-`bbcc55ab769fb5b725de83a27ae13243000a1610a12064907c06187417e45b5f`。
-checker/runner librariesは`386/439`、raw/normalized runner test-list
-hashesは
-`ea3e854c1b741ab4b642000df6610a15e521f0849b39e7480820ca86680a1d0e` /
-`11e6de35b422b913c235d8193fb2629da5aff39d1cf251af1c6cec2824301c8d`。
-checker/corpus/CLI hashesはunchanged。
-
-formula rowは`deferred`、`tests = []`、audit impactはnarrative-only。
-B2C/public/activeとsemantic/proof/goal/IR deferralはunchanged。
-concurrent ownershipはreport-only `repo_metadata_conflict`でmetadata
-repairなし。fmt、Clippy、tests、全count/hash gatesはPASS。
-final source/documentation re-reviewはfindingsなし。independent final
-qualityはfindingsなし、全9 hard gates PASS、valid `98/100`。B2CP
-implementation commit `b146f0f72dceac2233c9d679b7820e264974b227`は
-complete、clean B2C fresh inventoryがnext step。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 258B3M2B2B2C frozen runner boundary
 
-B2CP implementation commit
-`b146f0f72dceac2233c9d679b7820e264974b227`はcomplete。clean fresh
-inventoryはB2Cをselect。future implementationはexisting 8 filesに限定。
-
-checker ownersは`crates/mizar-checker/src/source_statement.rs`、
-`typed_ast.rs`、`resolved_typed_ast.rs`。runner ownersは
-`crates/mizar-test/src/runner/type_elaboration/source_statement.rs`、
-`source_structure.rs`（obsolete B2CP allowance cleanup only）、
-`type_elaboration.rs`、`runner.rs`、
-`tests/type_elaboration/source_statement.rs`。
-
-statement leafはexisting private B2CP site/owned-kind/proof-context
-handoffをunchanged consume。checker filesはexisting API内のprivate B2C
-profile enumerationとtyped/final validationだけをadd。checker tests
-exactly 4、runner tests exactly 5。
-
-module/production path/dependency/public API/re-export/active dispatch/
-fixture/expectation/sidecar/trace/debug grammar/semantic ownerは追加なし。
-Task 252/254/256はexisting ownership、Task-258 baseは82/80、B2Cは72/71
-とwitness-to-`Structure(0)`だけ。
-
-checker/runner librariesは`386/439`、projection `390/444`。runner sizes
-`6826/6065/730/2546/17120/5848`、30 paths / 46,788 lines、hashes
-`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
-`bbcc55ab769fb5b725de83a27ae13243000a1610a12064907c06187417e45b5f`、
-test-list hashes
-`ea3e854c1b741ab4b642000df6610a15e521f0849b39e7480820ca86680a1d0e` /
-`11e6de35b422b913c235d8193fb2629da5aff39d1cf251af1c6cec2824301c8d`。
-
-checker sizes `29941/4830/7244/5036`、23-path/124,016-line hashes
-`c2eea2db9187c48dd830a010eff37f09b90467f9012a9fe6b3ac669b6d1dac42` /
-`df0c806d8adf6283b2ac3341e11bab62a0f11ef216d48729852e98c40079d7d1`、
-test-list hashes
-`c95eabdba15da88712434600fa5a855d1f0d5e356381608d65395d0502ca2920` /
-`48e755cf92b832f0f516c27fecdc41e6812784ab2946b4a10932756d71de482e`
-はdocs-only taskでunchanged。4 independent reviewsはfindingsなしで、
-complete documentation/count/hash verificationもPASS。independent final
-qualityはfindingsなし、全9 hard gates PASS、valid `98/100`。docs commitと
-implementation inventoryはopen。
-
 Completion evidence: [central Task-258B3M2B2B2C historical contract](../../task_contracts/ja/258B3M2B2B2C.md#completion-evidence)。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 258B3M2B2B2C broad runner-boundary verification
 
-fmt、workspace Clippy、両crate/policy suites、full workspace tests、
-focused `4/4`/`5/5`、sibling `12/12`/`21/21` suitesはunchanged
-counts/hashesでPASS。runner module/dependency/path/public/active-route/
-semantic boundary変更なし。independent final consistency/quality、
-commit/post-commit gatesはpending。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 258B3M2B2B2C final runner-boundary review status
 
-independent final source/docs consistency/final qualityはどちらも
-**NO FINDINGS**。全9 hard gates PASS、valid score `98/100`で、exact
-module-boundary evidenceはunchanged。pendingはcached-diff/staging audit、
-implementation commit、post-commit inventory/fresh-next-task gatesだけ。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 258B3M2B2B3P frozen runner boundary
 
-B2Cは`e8373c683448e524cb98edde83fdf8de83a125cd`でclose。clean
-post-commit inventoryはB3Pをselect。future write scopeはexisting runner
-files exactly 4件:
-
-- `crates/mizar-test/src/runner/type_elaboration/source_set_term.rs`
-- `crates/mizar-test/src/runner/type_elaboration.rs`
-- `crates/mizar-test/src/runner.rs`
-- `crates/mizar-test/src/runner/tests/type_elaboration/source_set_term.rs`
-
-production leafはprivate explicit-context siblingだけをown。facade/rootは
-existing private/test-only patternだけでexposeし、test leafはcompound tests
-exactly 2件をown。context-0 helper/legacy outputはbyte-identicalに保つ。
-
-checker file、module、dependency、path、public re-export/API、active
-dispatch、fixture、expectation、sidecar、trace metadata、diagnostic owner、
-Task256/258 table、upper B3A witness owner、semantic owner、adjacent term
-form ownerを追加しない。このboundaryはbounded `source_drift` +
-`test_gap`でありmodule split authorizationではない。
-
-2 testsは同じtest leaf内で117-byte/LF variants、57-node/resolver/lower
-table fields、owner partition、precedence/replay/rollback/clone、empty
-family outputをexhaustする。independent Task111 legacy hashes 3件をliteral
-assertし、追加test/fileはauthorizeしない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 258B3M2B2B3P documentation review status
 
-specification/documentation、test-sufficiency、implementation-boundary、
-source/documentation consistency reviewsは**NO FINDINGS**。scope、
-source/hash、lint/library、production/test-list/CLI hashes、diff、trace
-no-op verificationはPASS。four-file boundaryはfrozenで、future
-implementation `source_drift`/`test_gap`はplanned。final quality、
-commit、post-commit、fresh inventoryはpending。
-
 Completion evidence: [central Task-258B3M2B2B3P historical contract](../../task_contracts/ja/258B3M2B2B3P.md#completion-evidence)。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 258B3M2B2B3P implemented runner boundary
 
-prerequisite `285a1f11c310bb313c4c6b4feae914eb11f74754`はfrozen boundaryを
-拡張せずimplemented。変更はexact 4 existing runner files、新規
-file/path/dependency/module/public API/active route/checker sourceはゼロ。
-production seamは`pub(super)` explicit-context siblingとpreserved
-context-0 delegateだけ、testsもexisting set-term leafのexact 2件だけ。
-
-runner productionは30 paths / 49472 lines、path hash
-`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275`、
-content hash
-`814290d6a53b9dfb6061cb301d7728eff3a7c78e1e87a1d0bd5d75839bbc9a5a`。
-test-sufficiency/implementation/source-docs consistency repeat/
-documentation-boundary repeatは**NO FINDINGS**。lint-policy `15/14`、
-metadata `137`、focused/library/fmt、workspace Clippy/tests、5 CLI/current
-manifest/test-list hashes、diff、exact30 scopeはPASS。independent final
-qualityは**NO FINDINGS**、全9 hard gates PASS、valid `98/100`
-（`20/20/15/14/10/10/5/4`）。pendingはcommit/post-commit、fresh B3A
-inventoryだけ。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 258B3M2B2B3A frozen runner boundary
 
-later runner editはexisting `type_elaboration/source_statement.rs`、
-`type_elaboration.rs`、`runner.rs`、
-`runner/tests/type_elaboration/source_statement.rs`のexact4。unchanged B3P
-`source_set_term_output_with_source_term_in_context`をconsumeし、runner
-`type_elaboration/source_set_term.rs`はexplicitly forbidden。new file/
-module/dependency/route/fixture/expectation/sidecar/trace/diagnostic/corpusなし。
-
-paired checkerは`source_statement.rs`、`typed_ast.rs`、
-`resolved_typed_ast.rs`のexact3、total7。prerequisite自体はexact32 design
-docs。publishはwitness1/names0とsource transportだけでsemantic/proof/
-goal surfacesはempty。
-independent documentation/boundaryとsource/docs consistency repeatは
-**NO FINDINGS**。final qualityも**NO FINDINGS**、全9 hard gates PASS、
-valid `98/100`。documentation-only commitとpostcommit/fresh implementation
-inventoryのみpending。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 258B3M2B2B3A implementation boundary closure
 
-production path追加なし。bounded runner ownersは
-`source_statement.rs` `8305`、set-term leaf `4517`、type-elaboration facade
-`752`、root `2567`、statement test leaf `21241`、unchanged set-term test
-leaf `2528` lines。productionは`30` paths / `50559` lines、path/content
-hashes
-`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
-`bc8c3d7e56ffc14608bc6e69863859a44487b19137bb8b90938878ec6c73ca4f`。
-runner test libraryは`451`、raw/normalized list hashes
-`a1e31aaa7919f1efe500dcdc7a194211026674e6f2a07bb9fd3bae8e0d538a07` /
-`5a6a65168298e2a398eac59df50d3cf75dad65a9905e5f0116b54cbe05b7fb18`。
-
-implementationはfrozen runner4 filesとpaired checker3 filesだけを変更し、
-両set-term source owner、topology、visibility、dependenciesはunchanged。
-implementation reviewは**NO FINDINGS**でtargeted boundary checksはPASS。
-2回目のsource/documentation consistency repeatとfinal documentation/
-boundary rereadも**NO FINDINGS**で、crate plans記載のparent final
-verificationはexact `39`-file scopeを含めPASS。independent final
-read-only quality reviewは**NO FINDINGS**。全9 hard gates PASS、score
-capなし、valid `98/100`（`20/20/15/14/10/10/5/4`）。記載済み
-semantic/coverage deferralsはunchanged residual risk。pendingは
-dedicated implementation commit、postcommit invariant verification、
-fresh next-task inventoryだけ。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 258B3M2B2B3B runner boundary audit
 
-future runner editがownするのは
-`type_elaboration/source_statement.rs`、そのfacade/root modules 2件、
-statement runner test moduleだけである。generic Task-255
-explicit-context helperはread-only dependency。parser/resolver crates、
-set-term owners、active corpus/metadata、expectations、sidecars、trace rows、
-semantic/proof/goal runnersはout of scopeである。このboundaryにより
-language behavior/test intentを変更せずexact source transport testsを
-行える。
-
-repeatしたboundary/implementation-scope reviewsは**NO FINDINGS**。
-exact-32 documentation-only scope、forbidden paths unchanged、全9 hard
-gatesはPASSし、independent final qualityはvalid `98/100`である。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 258B3M2B2B3B implemented runner boundary
 
-frozen runner owners 4件だけを変更した。generic Task-255 producer、
-parser/resolver、active corpus/metadata、expectations、sidecars、trace
-rows、semantic/proof/goal runners、B4/B5はunchanged。routeはprivate/
-dormantで、public API/error/debug/dependency/active-discovery boundaryは
-移動しない。追加lower-field test-gap remediationもalready authorizedな
-runner statement source/test owners内に限定する。final measured sizesは
-statement `9423`、unchanged set leaf `4517`、facade `766`、root `2581`、
-statement tests `22384`、unchanged set tests `2528`である。全
-test-sufficiency repeatsとfinal implementation repeatは
-**NO FINDINGS**、workspace verificationはPASS。source/documentation
-consistency repeatはexact scope、metrics/hashes、authority、trace、
-lower-owner no-opをindependently confirmして**NO FINDINGS**。final
-documentation/boundary、independent quality reviewsも**NO FINDINGS**、
-全hard gates PASS、valid `98/100`。cached-diff/staging、commit、
-post-commit、fresh inventoryはpending。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 258B3M2B2B3C documentation boundary
 
-このtaskはdocs-only。future runner ownershipは
-`type_elaboration/source_statement.rs`、`type_elaboration.rs`、`runner.rs`、
-`tests/type_elaboration/source_statement.rs`のexact 4 files、checkerは
-paired 3 files。`source_set_term.rs`、fixture、expectation、trace metadata、
-active routing、public API、semanticsはboundary外。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 258B3M2B2B3C implemented runner boundary
 
-frozen runner 4 ownersとpaired checker 3 ownersだけを変更した。generic
-Task-255 producer、parser/resolver、active corpus/metadata、expectation、
-sidecar、trace row、semantic/proof/goal runnerはunchanged。private dormant
-routeはpublic API/error/debug/dependency/active discovery surfaceを追加しない。
-
-final runner sizesはstatement `10305`、unchanged set leaf `4517`、facade
-`779`、root `2595`、statement tests `23583`、unchanged set tests `2528`。
-productionは30 paths/52,614 lines。bounded finding remediationはauthorized
-source/test owners内に留まり、repeat test/implementation reviewsは
-**NO FINDINGS**。final documentation/boundaryとindependent quality reviewsも
-**NO FINDINGS**、全9 hard gates PASS、valid `98/100`。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 258B3M2B2B3D documentation boundary
 
-future changeはexisting runner statement/facade/root/test consumers 4件と
-paired checker owners 3件の範囲内に留まる。generic set-term leaf、
-parser/resolver/binding modules、active dispatcher、corpus metadata、
-semantic phasesはunchanged。current sizes/manifestsはexact B3C closure
-baselineのままで、splitまたはownership transferをauthorizeしない。
-
-final measurementsはrunner 6 file sizes、`30/52614`、production hashes
-2件を再現した。focused、package、format、Clippy、workspace verificationは
-forbidden ownerに触れずPASSした。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 258B3M2B2B3D implemented runner boundary
 
-frozen runner 4 consumersとpaired checker 3 consumersだけを変更する。
-generic Task-255 producer、両`source_set_term.rs`、parser/resolver/binding、
-active corpus/metadata、expectation、sidecar、trace row、semantic/proof/
-goal ownersはunchanged。private dormant routeはpublic API/error/debug/
-dependency/active discovery surfaceを追加しない。
-
-final runner sizesはstatement `11266`、unchanged set leaf `4517`、facade
-`793`、root `2609`、statement tests `24769`、unchanged set tests `2528`。
-productionは30 paths/53,603 lines、path hash unchanged、content hash
-`b51af09030a5b4903b5693fa3808adc613bed65f0a074a2b8b75697c6229a33a`。
-focused/package/format/Clippy checksはPASSし、test-sufficiency reviewは
-**NO FINDINGS**。independent implementation reviewも**NO FINDINGS**。
-bounded wording/status remediation後のsource/docs consistencyとfinal
-boundary repeatも**NO FINDINGS**。full workspace tests、5 CLI/count/hash
-rerunsを含むfinal verificationはPASS。
-
-independent final read-only quality reviewは**NO FINDINGS**、全9 hard
-gates PASS、score capなし、valid `100/100`
-（`20/20/15/15/10/10/5/5`）。CLI `23/0` warnings/errorsとlarge
-repeated-test diff review volumeはnonblocking residual。残るboundary
-gatesはstaging/cached diff、commit、post-commit/fresh-nextだけ。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 258B3M2B2B3E documentation boundary
 
-future runner editはexisting consumers
-`type_elaboration/source_statement.rs`、`type_elaboration.rs`、
-`runner.rs`、`tests/type_elaboration/source_statement.rs`のexact 4 filesと
-paired checker 3 filesに限定する。private dormant routeは139-byte/
-60-node source、Task-255 `1/0/1/1/0/1/2` comprehension handoff、
-upper witness edge、`32/70/53/72/62/21` mutations、five-family `120`
-ordersだけをownする。
-
-generic Task-255 checker/runner `source_set_term.rs` leaves、
-parser/resolver/binding owners、active dispatcher/corpus metadata、
-expectations/sidecars/trace rows、CLI/diagnostic/coverage、
-semantic/proof/goal runnersはunchangedである。generator segment node
-`42`はunownedのままで、binding/reference rowまたはsemantic ownerへ
-transferしない。public API/error/debug/dependency/active discovery、
-module topology、lower prerequisite、splitを追加しない。boundary reviewと
-verificationは**NO FINDINGS** / PASSでcloseした。future implementation
-boundary reviewはseparate taskに残す。independent final qualityは
-**NO FINDINGS**、全9 hard gates PASS、valid `100/100`である。
-staging/commit、post-commitだけがpendingである。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 258B3M2B2B3E implemented runner boundary inventory
 
-frozen runner 4＋paired checker 3 ownersだけを変更する。final sizeは
-`12206/4517/807/2623/26141/2528`、productionは30 paths/54,571
-lines、set leaf/testは`4517/2528`でunchanged。
-parser/resolver/binding、Task-255 leaves、active/corpus/public/error/debug/
-dependency/trace/semantic ownersはunchanged。reviewは**NO FINDINGS**で、
-split/ownership transferは不要である。3件のdesign correction後のfinal
-consistencyとindependent qualityは**NO FINDINGS**、complete verificationと
-全9 gatesはvalid `100/100`でPASSした。staging/post-commit gatesは
-implementation commit
-`e4479691db3b0a8785bb16e94d386bd71a394274`でcloseし、fresh inventoryは
-Task 258B4Aをselectした。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 258B4A runner boundary freeze
 
-future runner write scopeはexactに
-`type_elaboration/source_formula_composition.rs`、
-`type_elaboration/source_statement.rs`、`type_elaboration.rs`、`runner.rs`、
-`runner/tests/type_elaboration/source_statement.rs`である。最初のfileは
-existing production helper visibilityを`pub(in crate::runner)`へ変更する
-だけで、他4 ownersがprivate selector、stage wiring、5 testsをownする。
-lower row/signature/debug/selector/behavior、parser/resolver/binding owner、
-corpus artifact、public runner schema、trace ownerを変更せず、
-split/ownership transferも不要である。
-fresh read-only documentation boundary reviewは**NO FINDINGS**である。
-single visibility seamはexisting validated handoffだけをexposeし、lower
-ownershipを移動しない。implementation boundary reviewはlater separate
-taskである。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 258B4A implemented runner boundary
 
-exact runner owners 5件は`1,853`、`12,737`、`810`、`2,627`、
-`27,349` linesである。最初のfileはfrozen crate-private visibility change
-だけを含み、他4 filesがselector、orchestration、testsをownする。runner
-production totalは30 paths/55,109 lines。public runner enum/error/key/
-dependency、parser/resolver/binding owner、lower row、corpus artifact、
-trace owner、semantic phaseは変更していない。independent implementation
-reviewは**NO FINDINGS**で、ownership transfer/module splitは不要である。
-
-bounded documentation correction後のfinal source/documentation/boundary
-consistencyは**NO FINDINGS**である。complete verificationはPASSした。
-independent final qualityは**NO FINDINGS**、全9 hard gates PASS、valid
-`100/100`で、remainingはstaging、commit、post-commit inventoryだけである。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 258B4B runner boundary freeze
 
-runnerが変更できるのは`type_elaboration/source_statement.rs`、その
-test-only facade re-exportsである`type_elaboration.rs`/`runner.rs`、
-existing statement test leafだけである。Task-257B2 output helperはB4Aに
-よってalready crate-privateで、`source_formula_composition.rs`と全lower
-extractor/producerはexplicit no-opである。checker ownershipはexisting
-statement/typed/final consumers 3件に限定する。
-
-corpus、expectations、sidecars、trace、parser/resolver/binding modules、
-public runner API、semantic phasesはscope外である。このseparationはlower
-source occurrence ownershipをpreserveし、167-byte dormant upper routeを
-independently removableにする。repeated read-only boundary/
-source-documentation consistency reviewは**NO FINDINGS**である。
-implementation boundary reviewはseparate later taskのままである。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 258B4B implemented runner boundary
 
-predecessorは
-`b8a7b8257a682f7c88de943ceaa35b67c0585bc4`である。runner changesは
-frozen `type_elaboration/source_statement.rs` `13,629` lines、
-test-only facade owners `type_elaboration.rs` `814` lines /
-`runner.rs` `2,629` lines、test leaf `28,408` linesだけである。checker
-3 ownersと合わせたwrite setはexact seven filesである。
-`source_formula_composition.rs`は1,853 linesのno-opで、validated
-Task-257B2 helper、lower rows、parser/resolver/binding ownersに変更はない。
-
-private routeはraw label-free resolverをB4B branchだけでguardし、
-generic theorem-label enrichmentを変更せず`1/1/1/1/0`へenrichする。
-rootless 124-node lower arenaと`42/1/81` partition、upper
-`1/1/1/0/1`、private `0/0/[]` telemetryをpublishする。public runner
-schema/semantic/active/corpus/trace ownershipはunchangedである。separate
-implementation reviewは**NO FINDINGS**、split/ownership transferは不要
-である。final boundary/source-documentation/bilingual consistency repeatも
-**NO FINDINGS**で、broad verification、exact count/hash reproduction、
-seven-file scope、audit no-op、unchanged-stash gatesはPASSした。
-independent final qualityは**NO FINDINGS**、全9 hard gates PASS、capなし、
-valid `100/100`（`20/20/15/15/10/10/5/5`）である。exact
-staging/cached-diff review、implementation commit、post-commit
-invariants、fresh-B4C inventoryはpendingである。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 258B4C runner boundary freeze
 
-B4B boundaryはimplementation commit
-`752c17ae7d552d5268d1028612b8174e480b6f3e`、続くclean
-ahead-1/behind-0 inventory、unchanged stashでcloseした。B4Cはstrictly
-ordered、independently reviewed/committedなboundary 2件をrequireする。
-
-最初はlower-stage prerequisiteで、entire write scopeは
-`crates/mizar-test/src/runner/type_elaboration/source_formula.rs`と
-`crates/mizar-test/src/runner/tests/type_elaboration/source_formula_composition.rs`
-である。existing exact Task-257B3 source guardをactive
-138-byte/one-LF spellingから、そのspellingとprivate 139-byte/two-LF
-spellingのexact unionにbroadenすることだけを許す。zero/three trailing
-LFはrejectする。production
-`crates/mizar-test/src/runner/type_elaboration/source_formula_composition.rs`、
-全checker files、fixture、sidecar、expectation、trace、public/semantic
-ownersはno-opである。test countはfresh inventoryでmeasureし、ここでは
-projectしない。
-
-そのcommitとfresh inventory後だけ、B4C upper taskはB4Bと同じ7 ownersを
-writeできる。checker `source_statement.rs`、`typed_ast.rs`、
-`resolved_typed_ast.rs`、runner `source_statement.rs`、test-only facade
-`type_elaboration.rs`/`runner.rs`、statement test leafである。private
-139-byte B4C selector、exact resolver enrichment、lower-handoff validation、
-upper `1/1/1/0/1` rows、`24/1/41` ownership、telemetry
-`2/2/[2,2,4,4,4,4]`、checker 4/runner 5 testsだけを追加できる。
-
-lower profiles `4/4/0`、`6/6/0`、`3/0/0/0/0/0/0/6/6`、
-`3/0/1/3/3/2/6`、`3/6`はexisting owner cratesをretainする。
-parser/resolver/binding modules、production lower composition、public API、
-active/corpus/expectation/sidecar/trace/coverage owners、diagnostics、
-semantic/proof phasesは両write scope外である。B5はdeferredで、
-module split/ownership transferはauthorizeしない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 258B4C documentation boundary review
 
-raw authenticationをrunner selector/statement producerへ帰属し、checker
-installersをhandoff/fingerprint/arena validationに限定した後、repeated
-boundary/source-documentation reviewは**NO FINDINGS**。exact docs-only
-scope、future two-file then seven-file separation、forbidden no-op、
-verification、counts/hashes、stash invarianceはPASS。independent final
-qualityは**NO FINDINGS**、全9 hard gates PASS、capなし、valid
-`100/100`。pendingはstaging/commit/post-commit gatesである。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 258B4C 実装済み Runner Boundary
 
-runner change は `type_elaboration/source_statement.rs`（`14,479` lines）、
-test-only facade `type_elaboration.rs`（`820`）と `runner.rs`（`2,635`）、
-statement test leaf（`29,948`）、および frozen checker 3 consumer に限定
-される。production lower composition は `1,853` lines のまま unchanged。
-
-route は parser、resolver、binding、lower semantics の owner を移さずに
-Task-257B3 ownership を reuse する。public facade、corpus artifact、
-expectation、sidecar、trace mapping、diagnostic、semantic result は追加しない。
-independent test-sufficiency/implementation review は **NO FINDINGS** で、
-module split と ownership transfer は不要である。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 258B5A frozen runner boundary
 
-future runner changeはprivate statement producer
-`type_elaboration/source_statement.rs`、re-export
-`type_elaboration.rs`/`runner.rs`、existing statement test leaf、および
-frozen checker 3 consumersに限定する。parser、resolver、BindingEnv、
-Task-252/256 producer module、他lower family、CLI/public harness、corpus、
-expectation、sidecar、trace metadata、semanticsはno-op。
-
-routeはrunnerでname resolutionを実装せず、existing resolver scope-prefix
-evidenceをconsumeする。B5B imported summaryとB5C negative diagnosticは
-excludeする。exact 20/73 ownershipによりlabel/citation/proof-block/wrapper
-nodeをchecker-owned syntax-free tableへ移動しない。
-
 Completion evidence: [central Task-258B5A historical contract](../../task_contracts/ja/258B5A.md#completion-evidence)。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 258B5A implemented runner boundary
 
-runner implementationは`type_elaboration/source_statement.rs`、private
-facadeの`type_elaboration.rs`/`runner.rs`、existing statement test leaf、
-three checker consumersに限定する。frozen source/resolver/lower/upper
-transactionをauthenticateするためのexact private route、mutation seam、
-test-only facadeだけを追加する。
-
-parser、resolver、BindingEnv、Task-252/256 producer module、sibling lower
-family、CLI/public harness、corpus、expectation、sidecar、trace metadata、
-semanticsはunchanged。exact `20/73` ownershipによりlabel/citation/
-proof-block/wrapper nodeをsyntax-free ownerへ移動しない。B5B/B5Cは
-excludedのままで、public facade/module split/ownership transferを
-導入しない。
-
-post-format runner ownerは
-`type_elaboration/source_statement.rs=15927`、
-`type_elaboration.rs=826`、`runner.rs=2642`、statement test leaf
-`32282`をmeasureし、production boundaryは30 paths/58333 linesを維持する。
-これらのmeasurementはownership decisionを変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 258B5B frozen three-commit boundary
 
-documentation prerequisiteはdesignだけをownする。mandatory lower taskは
-`runner/import_fixtures.rs`とstatement test leafだけをownし、crate-private
-opt-in `Ref` helperを追加してnormal augmentation/checkerをunchangedに保つ。
-そのcommit後だけ、upper taskはB5Aと同じchecker 3/runner 4 consumersを
-変更できる。
-
-upper producerはsource/Surface/import/resolver/lower authenticationと
-`1/2/2/2/2 + 0/1`をownする。checker APIは
-`SourceStatementCitationTarget::{Local, Imported}`、`SimpleImported`、
-projection validation、installation/final revalidationをownする。runner
-facadeはtest-only、public runner/CLI schemaはunchanged。parser、resolver、
-artifact、BindingEnv、Tasks 252/256、fixtures、expectations、sidecars、
-trace metadata、active behavior、B5C、semantics、proof、downstream IRは
-全3 write scope外。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 258B5B implemented runner boundary
 
-lower prerequisiteは`46dd9db5`としてseparate commit済みで、upper
-implementationはfrozen checker 3/runner 4 Rust consumersだけを変更する。
-required EN/JA plan、ledger、component document、audit、この
-module-boundary resultはderived implementation outputであり、seven-consumer
-code boundaryのexpansionではない。
-
-runnerはexisting `source_statement` leaf/facade内にexact-source opt-in、
-construction、mutation seam、testsを追加する。parser、resolver、
-imported-summary、BindingEnv、Task-252/256、public harness/CLI、trace、
-semantic ownershipをmoveしない。`8/49` partitionはother 49 Surface nodesを
-provenanceとして残すため、module split/ownership transferは不要。
-
-post-format owner sizeは
-`type_elaboration/source_statement.rs=17256`、
-`type_elaboration.rs=834`、`runner.rs=2658`、statement test leaf
-`34915`。productionは30 paths/59745 lines。measured increaseはexisting
-private runner owner内でcohesiveで、boundary decisionを変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 258B5C frozen resolver/runner boundary
 
-resolver R-032Aだけがstructural Surface-to-resolved mapをownする。
-`SurfaceResolvedArena::lower(&SurfaceAst, &ModuleId)`はvalidated
-one-to-one same-index arenaまたは`SurfaceResolvedArenaError`を返し、total
-accessor/`validate_against`はwrong source/module/shape/node、stale state、
-recovery/root mismatch、checked structural-path overflowをfail closedする。
-`ResolutionStateMismatch`/`ReferenceKeyMismatch`を含み、全node/child
-payloadは`SurfaceNodeId`。
-later write scopeはexact `resolved_ast.rs` / `resolved_ast/tests.rs` /
-sole R-026 `SurfaceResolvedArenaError` owning-spec entry用
-`tests/lint_policy.rs`。
-
-proof scope、ordinal、label provenance derivationはresolver R-032Bだけが
-ownする。exact `impl<'a> ProofLabelSourceCollector<'a>::new`はast/resolvedを
-`'a`でborrowし、moduleをvalidation-only/not stored、namespace/contributionを
-ownedとして`Result<Self, ...>`を返す。`collect(&self)`がcollectionを返す。
-public non-exhaustive errorはarena errorをwrapし、checked scope/path
-overflow nodeは`SurfaceNodeId`。
-`projections()`/`references()`がresultをexposeする。implementation write
-scopeはexact `labels.rs`、`labels/tests.rs`、`tests/lint_policy.rs`で、last
-fileはsole `ProofLabelSourceCollectionError` / `labels.md` R-026 owning-spec
-decisionに限定する。collector/runnerはresolved node、scope component、
-ordinal、originをfabricateできない。
-
-later `mizar-test` ownerはprivate declaration-symbol consumer、
-`runner/declaration_symbol.rs`、`runner/tests.rs`、new
-`runner/tests/declaration_symbol.rs`だけ。R-032A validation、R-032B
-collection、`LabelResolver`をinvokeし、exact unresolved resultをauthenticate
-して`declaration_symbol.label.proof_scope_confinement`へmapする。proof
-topology walk、scope component/statement ordinal assignment、origin
-construction、visibility reimplementationは行わない。
-
-consumer branchはsource byte+normal ASTだけでselectしmetadataではselect
-しない。shared resolver outputからenv/module、namespace derivation、exact
-single local-source contribution/source-id/id-0 provenanceをproveする。
-corruptionは`proof_scope_input`だけ、authenticated unresolved confinement
-だけを`proof_scope_confinement`へmapする。
-
-checker source-statement、resolved/typed installation、statement/citation
-DTO、parser/frontend production、public runner/CLI API、type/proof/
-Core/CFG/VC ownerはexcluded。特にchecker
-`SourceStatementReferenceHandoff`はunresolved inputをrejectするため、
-negative 2件をconsumeできない。structural mapはknown R-032A
-prerequisiteで、conditional runner concernではない。
-
-committed B5C frozen-contract task は exact 48 paired/global design files を
-ownした。S-026 documentation prerequisite は exact 45 design files をownし、
-separate implementation は exact 25 files、すなわち dense syntax Rust 2 files、
-paired syntax design 12、paired resolver design 4、paired checker TODO 2、
-paired `mizar-test` design 4、global design TODO 1をownする。その後
-R-032Aはseparate exact three-Rust-file implementation commit。R-032Bは
-separate lint-policy docs correction、その後exact three-Rust-file
-implementation commitをownする。
-active B5C task はnew fixture/sidecar pair 2件、trace row 2件、runner files
-3件、synchronized derived documentsだけをownする。このeffective seven-task
-split はinventoried potential `boundary_violation`を回避し、module split/
-ownership transferをauthorizeしない。
-
-追加したR-032A lint-policy ownerはimplementation preflightで見つかったHigh
-`design_drift`をcorrectする。semantic `spec_gap`ではなくruntime/runner
-ownershipを追加しない。fresh inventoryとimplementationの前にseparate同期
-documentation commitをlandする。
-
-R-032B preflightもomitted mandatory R-026 enum-decision ownerをsemantic
-`spec_gap`ではなくHigh `design_drift`と分類する。separate synchronized
-correctionはexact 31 design filesをownし、source、behavior、fixture、
-expectation、sidecar、trace/status/count/coverage、public diagnostic code、
-Cargo metadata、active runnerを変更しない。coverage auditはintentional
-no-op。そのcorrectionとfresh inventory後、R-032B implementationは上記exact
-three Rust ownerだけを変更できる。
-
-R-032Bはexact
-`Root -> CompilationUnit -> ItemList -> direct TheoremItem -> direct
-ProofBlock` upper chain、remaining closed Surface edge allowlist、positive
-edge/forbidden-relocation/mixed-reference-list testをexclusiveにownする。
-Root/CompilationUnitは各exact one normal structural childをrequireし、
-ItemListはdirect normal theorem childだけをscanしてall otherをskip/
-no-descendする。upper negativeはmissing/additional/wrong child、direct Root/
-Compilation theorem relocation、`VisibleItem` wrappingをcoverする。
-default-denied formula/
-token/wrapper、unsupported/recovered/malformed、qualified/grouped/bulk、
-template nodeはordinalもdescentも受けない。runnerはresultをconsumeするが
-tableをbroadenしない。
-
-runner boundaryは`env.module_id() == resolver.module`、module-path-derived
-namespace、matching record module/public `ast.source_id`を持つexact one id-0
-LocalSource contribution、全projection module/namespace/contributionを
-authenticateする。environment module、projection module/namespace/
-contribution、contribution cardinality zero/multiple、id、
-`ImportedSource`/`Summary`/`Builtin` kind、record module、LocalSource source
-idのindependent mutationはすべて
-`declaration_symbol.label.proof_scope_input`だけへmapし、confinement/public
-codeへmapしない。selectionはsource-bytes-plus-normal-ASTだけのまま。
-
-S-026 は dense syntax view だけを所有し runner を select/execute できない。
-R-032A/R-032B は resolver owner、active B5C は後続 mizar-test consumer。
-separate commit が3 boundary を保持する。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 258B5C implemented boundary result
 
-R-032A/R-032B prerequisiteはcommit済みで、R-032Bは
-`b3a7e79a6b60db2974e911c69bb56ff5f4609064`。B5Cが変更するのはprivate
-`mizar-test` declaration-symbol consumer、そのtest、new fixture/sidecar 2
-組、trace row 2件、synchronized derived recordだけ。resolver-owned
-structural arena、label projection、reference candidate、resolution resultを
-consumeし、そのownershipをbroadenしない。
-
-sole frozen-scope correctionはexisting
-`crates/mizar-test/tests/metadata.rs` count consumerで、summary assertion 4
-箇所をalready-authorized `5 -> 7`へ変更する。これは
-`test_expectation_drift`/`design_drift`をcloseし、runtime ownerは追加しない。
-
-checker handoffはどちらのunresolved referenceもacceptしない。
-parser/frontend、resolver、checker、public harness/CLI schema、type/proof/
-Core/CFG/VC、semantic-result ownerはunchanged。したがってboundary reviewは
-ownership transfer/`boundary_violation`なしと記録する。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 259 Frozen Consumer Boundary
 
-`mizar-test`はexact source/AST selectionとparser/resolver observationからの
-syntax-free Task-259 input extractionだけをownする。authenticated
-`BindingEnv`をownするextended Task-248 `SourceBindingContextHandoff`とreal
-Task-249/252/256 handoffをreuseしなければならない。binding
-reconstruction、empty resolver parameter shellからのpredicate arity
-inference、generic property projectionの再解釈、obligation semantics作成、
-proof/fact/VC result publicationは禁止する。
-
-checkerはfive immutable table、dependency-fingerprint validation、
-obligation insertion、atomic typed/final installationをすべてownする。
-Task 272はproperty-justification proof ownershipをretainする。public runner
-facade、CLI schema、diagnostic、parser、resolver、mixed Task-260 routeはこの
-documentation prerequisiteで変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 248 Two-Parameter Lower Boundary
 
-runnerはsource-shaped authenticationだけをownする。private helperは
-Task-259-selected definition node、real resolver state、caller-owned
-shared-arena siteを受け、syntax-free constructionをcheckerへdelegateする。route
-output/typed/final ownerは返さず、checkerがsole `BindingEnv`/handoff ownerの
-ままである。
-
-current active Profile-A functionをwidenまたはselectorとしてreuseしない。Task 259
-はlater whole-source dispatch/arena composition、Tasks 249/252/256/272はexisting
-payload/proof boundaryをownする。このseparate lower commitはrunner/Task-259-owned
-binding reconstructionを防ぐ。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 259 Corrected Consumer Boundary
 
-completed Task-248 helperはchecker-owned definition-parameter `BindingEnv`
-へのsole runner bridgeのままであり、Task 259はreconstruct/replaceできない。
-new private Task-259 leafはraw exact-source、same-block sibling、resolver、
-subtree authenticationとshared-arena compositionだけをownする。five immutable
-table、fingerprint、obligation allocation、typed/final installationはすべて
-checker-ownedのままである。
-
-`runner.rs`が追加するのはearlier exact-route dispatchだけ。parent
-`type_elaboration.rs`、test include、metadata count assertionはmechanical
-consumerで、public runner API、CLI schema、diagnostic、expectation selectionは
-変更しない。new sidecar 1件はnormal source routeでselectされ、expected outcome
-では選択されない。mixed Task 260とproof Task 272 ownershipは不変である。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 259 active consumer boundary
 
-`src/runner/type_elaboration/source_predicate_definition.rs`はsole new
-private runner ownerである。exact 165-byte source、dense 71-row surface
-profile、direct definition-block sibling、raw predicate resolver identity、excluded
-pattern/label/justification descendantをauthenticateする。その後one
-caller-owned arena上でexisting Task-248 Profile-B projection、Task 249
-`2/2/0`、Task 252 `4/4/0`、Task 256 `2/0/0/0/0/0/0/4/4`、Task 259
-`1/2/1/1/1` plus one pending obligationをcomposeする。checker-owned
-`BindingEnv`をreconstructせず、semantic predicate/property proof decisionや
-mixed Task-260 route dispatchをownしない。
-
-`src/runner/type_elaboration.rs`はchildをdeclareし、`src/runner.rs`はgeneric
-type-gap fallbackの前にそのnarrow transport selectorをinvokeし、
-`src/runner/tests.rs`はone four-test leafをincludeする。そのleaf外のexisting
-test editはindependently reviewed source-statement selection test 2件のactive-type
-count `198 -> 199`だけで、両方のempty-selection checkは不変である。
-fixture/sidecar/trace additionはmetadata ownershipであり、new semantic
-ownershipではない。
-
-checker unit-test bodyはexternal non-integration `tests/support` child moduleに置く。
-このtest-only boundaryはopaque resolver shell構築のためalready declared
-syntax dev-dependencyを使えるが、physical production import、lint exception、
-public resolver helper、runner-owned semantic identityは追加しない。これにより
-candidate `boundary_violation`はcloseし、current implementation scopeに
-unresolved boundary findingはない。
-
-fresh final source-review valueはchecker producer/test-support `1794`/`1974`
-lines、runner production/test leaf `1233`/`517`である。checker productionは
-`24/147030`、path/content
-`022586d6096dfa2eb05d6b0b9e91bf6dea71e5fc0a036f54a3bb462c7af16ac5` /
-`14ab798c611d954f9ea346367547240e58e9c5d0e04ec8a4ae68e2f20b71860b`、
-runnerは`31/63248`、
-`0d6edf22a94efd3497423f427accaf34341d223f4339a0adf9c4a7a523271e89` /
-`a9abe9fcbc4a9b04e84fcb6402e13b95cdcd71e7ed2952dbf1a8fb2e1b551a9f`である。
-final boundary reviewはno findingsで完了し、quality reviewは全9 hard gateを
-PASSしてscore capなしの`100/100`である。commit/post-commit gateは残る。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 260 frozen consumer boundary
 
-Task 260は`src/runner/type_elaboration/`にone narrow private
-functor-definition transport routeを追加する。runnerはexact source/surface/
-resolver authenticationとalready frozen lower-stage public APIのcompositionを
-ownし、checkerはsyntax-free Task-260 extractor、table validation、fingerprint、
-pending initial obligation、transactional installationをownする。raw syntax/
-raw syntax typeはrunner privateのままで、checkerはsyntax dependencyを追加せず
-existing resolver/session dependencyだけを使う。
-
-implementation write boundaryはTask-260 checker module/test support、`lib.rs`、
-typed/final owner、`typed_ast.rs` / `type_checker.rs` /
-`registration_resolution.rs`のexhaustive serializer、lint policy、Task-260
-runner leaf/declaration、new pass fixture/sidecar 1件、new reciprocal trace row、
-mechanical active-count consumer 6箇所に限定する。existing Task-259 predicate
-code/artifactはisolation test以外read-onlyである。proof/discharge/acceptance/
-fact/VC ownershipと全computation-justification subtreeはlater owner向けにexclude
-する。
-
-current production inventoryはchecker `24/147030`、path/content hash
-`022586d6096dfa2eb05d6b0b9e91bf6dea71e5fc0a036f54a3bb462c7af16ac5` /
-`14ab798c611d954f9ea346367547240e58e9c5d0e04ec8a4ae68e2f20b71860b`、
-runner `31/63248`、hash
-`0d6edf22a94efd3497423f427accaf34341d223f4339a0adf9c4a7a523271e89` /
-`a9abe9fcbc4a9b04e84fcb6402e13b95cdcd71e7ed2952dbf1a8fb2e1b551a9f`
-のままである。このdocumentation prerequisiteはどの値も変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 249R no-runner boundary
 
-Task 249Rはchecker-ownedである。`mizar-test`にprivate route/facade/selector/
-fixture/sidecar/trace backlink/test/count assertion/production byteを追加しない。
-frozen Task-260 routeは後でchecker-produced combined `2/4/0/2` handoffをconsumeし、
-return-type bindingをinventせずrejectする。両Task-249R commitでrunner inventory/
-hashは不変である。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 260 active runner boundary
 
-Task 260はprivate production leaf
-`runner/type_elaboration/source_functor_definition.rs` (`1446` lines) 1件と
-paired test leaf (`1674` lines) 1件、bounded facade/root registrationだけを追加する。
-leafはraw SurfaceAstとresolver environment/projection/symbol/definition/contribution
-authenticationをprivateに保ち、syntax-free lower ID/site/range/context/spelling/
-fingerprintだけをcheckerへ渡す。Task-259 helperのgeneralize/modifyはない。
-
-runner productionは`32/64711`、path/content
-`17c6979703afa2b6a7e98209741d655ac5f3d3355479221cc97bea88bff7e78a` /
-`5e3d216f76df2d97d776fb1dc702dccdcb26349b6d9a6297b6bc534e85c12792`。
-source/profile selection、mutation ownership、lower composition、checker output
-validationが同じexact frozen oracleをshareするためnew leafはcohesiveである。
-proof/acceptance/fact/IR/VCはboundary外のままである。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 261 Frozen Runner Boundary
 
-Task 261は`runner/type_elaboration/source_attribute_definition.rs`のprivate
-production leaf exactly 1件とpaired test leaf 1件、bounded facade/root
-registrationだけを追加する。runnerはexact 116-byte source check、45-row Surface
-oracle、resolver environment/projection/symbol/definition/contribution
-authentication、raw-subtree exclusion、lower Tasks 248/249/252/256
-compositionをexclusiveにownする。checker producerへはsyntax-free ID、site、
-range、context、spelling、fingerprintだけを渡す。
-
-future leafはTask-259 predicate routeおよびTask-260 functor routeとseparateで、
-それらのselector/mutation matrixをbroadenできない。one definition、two
-parameter、one subject、one definiensをpublishし、initial-obligation tableは
-byte-identicalに保つ。formula meaning、equivalence、acceptance、facts、proof、
-Core、CFG、VCはboundary外のままである。本docs prerequisiteはproduction/test
-inventory rowまたはmeasured line countを作らず、implementationでfresh-measure
-する。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 261 Active Runner Boundary
 
-implemented private producer/test leafは`1224/1113` linesである。producerだけが
-literal source/Surface/resolver selectionとlower compositionをownし、checkerは
-syntax-free inputだけをreceiveする。valid-but-stale node-42 context mutationは
-checker consumerまで到達し、node-44 mutationはTask-248 preflight failureのまま。
-runner productionは`33/65952`、hashはcrate planにrecordする。pass sidecar/trace
-rowはexact transport creditだけをactivateし、semantic exclusionはunchanged。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 262 frozen runner boundary
 
-Task 262はprivate production leaf
-`runner/type_elaboration/source_mode_definition.rs`とpaired test leaf各1個、
-bounded facade/root registrationを追加する。runnerだけがexact 141-byte
-source/final-LF check、literal 54-row Surface oracle、two-shell resolver
-authentication、raw-subtree exclusion、post-prerequisite lower
-Task-248/249/249M compositionをownする。
-checkerへはsyntax-free ID/association/anchor/context/spelling/fingerprintだけを
-渡す。
-
-checker-only Task 249MがTask-249 handoff経由でconsumeするstandalone mode-RHS
-rowを追加/freezeするまでleafはlandできない。runnerはそのlower ownerをimplement
-せず、binding-linked applicationをfabricateしない。
-
-leafはTasks 259--261からisolatedで、mixed mode/structure gap routeより前だが
-supersedeしない。RHS requestへの回答、computation justification実行、
-acceptance/expansion/sethood fact/proof/Core/CFG/VC publishはできない。本
-prerequisiteはproduction/test inventory row/measured line countを作らず、
-implementationでfresh-measureする。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 249M no-runner boundary
 
-Task 249Mはchecker `source_type.rs`とsynchronized docsだけを変更する。existing
-runner treeはrecorded hashと`33/65952`を保ち、facade/leaf/selector/mutation/
-output/fixture/trace consumerをauthorizeしない。later runner/corpus deltaは
-Task 262だけがownする。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 249M active boundary no-op
 
-implementationはchecker `source_type.rs`とsynchronized design recordだけを変更した。
-runner productionは`33/65952`、path/content hashは
-`f24ae3f53e283dd81fbc61961c57dcb3456473390073e25955c37840e374fcd1` /
-`c4ceb938ae7cc1bfcbf87e95ec654f3a275eff6351eba80a354eeea4a6dafd74`。
-runner API/file/test/fixture/trace rowは追加しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 262 active runner boundary
 
-new private production leaf
-`runner/type_elaboration/source_mode_definition.rs`は`1118`行、paired test leafは
-`1242`行である。bounded facade/root registrationはgeneric/sibling selectorを
-広げずexact source routeへpriorityを与える。runner productionは`34/67087`、
-path/content hashは
-`72481975abab5250f3577a7643af4b5aa64f7c941be1aed4a2e1cbc726d1e55a` /
-`18e9921fd68c2401869334223de100549ed92ed0a806e37cd0da5f7110c015bf`。
-raw syntax/resolver objectはprivateのままで、syntax-free inputだけがcheckerを
-crossする。proof/acceptance/fact/IR/VC/Task-263 structure ownerは移動しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
+
 ## Checker Task 249S no-runner boundary
 
-prerequisiteはlater implementation commitでchecker `source_type.rs`だけを変更し、
-ほかは同期design文書だけである。`mizar-test` production/Cargo target/route/fixture
-のmoveはない。Task-263 implementationがprivate exact consumer/corpus pairを別途
-所有する。
-
 Completion evidence: [central Task-249S historical contract](../../task_contracts/ja/249S.md#completion-evidence)。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 263 frozen runner boundary
 
-future private `type_elaboration/source_structure_definition.rs` leaf 1件が
-exact-source selection、Surface/shell/resolver authentication、Task-249S input、
-checker call、private test hooksを所有する。phase facadeはbounded registrationと
-pre-gap dispatchだけを所有する。raw syntaxはchecker productionへ渡らず、checker
-semantic validationはrunnerへ移らない。
-
-private test leaf 1件がfrozen runner tests 4件を所有する。existing definition
-production leaves/generic gapはsibling routeのままで、later implementationは新規active
-case 1件に伴うshared repository-count assertionだけを更新できる。
-docs prerequisiteはrunner production `34/67087`とpath/content hashを不変に保つ。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 263 active runner boundary
 
-new private production leafは836 lines、paired test leafは218 lines。bounded facade/root
-registrationはraw syntaxをrunner内に保ち、checkerへsyntax-free inputだけを渡す。
-既存definition/statement test leaves 4件はshared global count oracleだけを変更し、route
-behaviorは不変である。runner productionは`35/67939`、path/content hashは
-`4218936ff3ee3baaceb7c0723307ad266d722d0a2473e8b7f82e11c75aeb2b6e` /
-`a543608c5075ffed97141626ebbf8d952a847051a34d6782097329b44aa1d09e`。
-generic mixed gap/sibling production routeは不変である。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 264R no-runner module boundary
 
-`mizar-test` source/test/manifest/Cargo targetは変更しない。resolver unit-test-only deltaは
-runner facade/private routeを越えない。runner productionは`35/67939`と上記hash、
-metadata/lint inventoryは`137`/`14`のまま。Task 248Pも別にfreezeされない限り
-no-runnerとし、後続bounded consumerはChecker Task 264のみが追加できる。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 264R implemented no-runner boundary
 
-exact implementation diffに`mizar-test`、fixture、sidecar、expectation、trace pathはない。
-lint/metadata `14/137`、full workspace testはPASSし、plan/parse/declaration/type/proof hashは
-frozen値を保存する。runner ownership/module layout変更はない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 248P frozen no-runner boundary
 
-frozen implementation scopeに`mizar-test` pathはない。runner productionは35 paths /
-67,939 lines、path/content hash
-`4218936ff3ee3baaceb7c0723307ad266d722d0a2473e8b7f82e11c75aeb2b6e` /
-`a543608c5075ffed97141626ebbf8d952a847051a34d6782097329b44aa1d09e`、
-library/lint/metadataは`528/14/137`のまま。later bounded module changeはTask 264がownする。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 248P implemented no-runner boundary
 
-completed diffに`mizar-test`/corpus pathはない。runner productionと`35/67939`のpath/
-content inventoryはbyte-identical、library/lint/metadata inventoryも`528/14/137`。
-Task 264前にfacade/route/module ownership changeはない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 264 frozen runner boundary
 
-Raw source/Surface/shell/resolverはmizar-test privateに残り、syntax-free inputと
-lower handoffだけがcheckerへcrossする。New routeはtype_elaboration private、tests
-はone include leafで、discovery/expectation schemaは不変である。Task249PIがlower
-compositionを先にownし、Task264だけがroute/facade/dispatch/count、two pairs、one
-trace rowを後で追加する。Parser/resolver/Task259/proof runner/inactive coherenceは
-変更しない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 264 implemented runner module boundary
 
-runnerはprivate production leaf 1件とincluded test leaf 1件だけを追加する。current
-affected sizeは`runner.rs` 2717、`runner/type_elaboration.rs` 881、
-`runner/type_elaboration/source_property_implementation.rs` 1460、
-`runner/tests.rs` 59、
-`runner/tests/type_elaboration/source_property_implementation.rs` 258 line。
-complete production selectionは`36/69417`、path/content hashは
-`38a20909d1f89aa2a4c325fb47126cc911bb943b7fe1190dc668713f64ad49e2` /
-`72cc9036654639dff5933dced07e79ec6132696b5f92eca5e0149085f4651d91`。
-Cargo edge、public route API、expectation-schema owner、proof runner、parser/resolver
-moduleは変更しない。raw-source/Surface consumerはこのrouteだけで、checkerへは
-syntax-free handoffだけを渡す。
-
-Core Task33I264はexisting private Task264 assertion leafだけを258 lineからexactly 2 testで
-699 lineへ拡張し、全production fileと`36/69417` production selectionを不変にする。Core
-associationはstandalone/test-onlyで、final leafは31,668 bytes、SHA-256
-`e45ac5bdbcbbab3fb0eeb4a281058dc2bad8330235db6590b432b76cb69c3d48`である。
-
-Core Task34I264もsame private leaf内に留まり、exactly two testsを追加するprojectである。
-Module/include/production path/facade route/Cargo edgeは追加しない。Final leaf size/hashは
-1,017 line / 44,370 bytes、SHA-256
-`23ad08e3ac46e36ee34121cee49873b90f796fd50a18ad632aeca032598e79b6`。
-
-Core Task IR264はsame private leafのexisting positive assertion 2件だけにauthenticated
-definition-owner projectionを追加する。Test/module/include/production path/facade route/Cargo
-edgeは追加しない。Final leafは1,022 line / 44,699 bytes、SHA-256
-`e584e3a36d8c8911d4e5f49209128cb35e81d0c93d254419476b93557a86fdca`。
-Runner pathは`CoreDefinition` row/property bodyをconstructしない。
-
-Core Task34D264はsame positive assertionへtyped domain/registry checkだけを追加する。
-Test/module/include/production path/facade route/Cargo edge/fixture/snapshotは追加しない。
-Final leaf size/hashはtask contractへpost-source measurementとして記録し、production
-ownership/selectionは不変。
-
-Checker Task264Dもsame existing private Task264 leafのassertionだけを変更する。
-Runner producer、public harness API、fixture/expectation/trace/metadata、dispatch、
-snapshot、Cargo graph、downstream Core routeはexcludeしたままである。
-
-Core Task33P264はsame private Task264 leafへtest 2件だけを追加する。Existing checker/Core
-APIを呼び、production path/facade route/public harness API/fixture/metadata/Cargo edge/
-snapshot/downstream ownerを追加しない。
-
-Core Task35E264はsame private Task264 leafへtest 2件だけを追加する。Existing branded
-handoffをcombineしてimmutable seedをinspectするだけで、production path/generic lowering
-route/facade/public harness API/fixture/metadata/Cargo edge/snapshot/downstream ownerなし。
-
-Core Task35L264はsame private leafへtest 2件だけを追加する。Specialized Core producerを
-callしてimmutable unattached table/mapをinspectするだけで、module/include/production
-path/generic lowering route/facade/public harness API/fixture/metadata/Cargo edge/snapshot/
-downstream ownerなし。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 269A frozen dormant runner boundary
 
-`runner/type_elaboration`下private leaf 1件とincluded test leaf 1件がrunnerの
-complete write scope。sibling Task-258B3N helperとresolver
-`LocalTermBinding`をreuseでき、checkerへ越えるのはsyntax-free handoffだけ。
-facade detail key、active dispatch branch、Cargo edge、expectation/trace owner、
-proof runner、parser/resolver変更はない。
-
-docsはrunner `532`/`36/69417`を保存する。implementationは`536`とproduction
-path +1をprojectし、exact line/hashを再測定する。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 269A implemented dormant runner boundary
 
-implemented write scopeは`runner/type_elaboration.rs` 887 lines、new private
-production leaf 306 lines、`runner/tests.rs` 60 lines、new included test leaf
-517 linesだけ。production selectionは`37/69729`、path/content hashは
-`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d` /
-`69e29f18eef446981a5eb059ab2373a1a0df12a02f744f365b4ff6fe68b7cca7`。
-routeはprivate/dormantのまま、raw syntax/resolver valueはrunner内に残り、
-syntax-free payloadだけがcheckerへcrossする。active dispatch、facade detail
-key、corpus artifact、trace/expectation owner、Cargo edge、proof runnerは不変。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 269B module-boundary no-op
 
-current runner baselineは`37/69729`。Task269Bはexisting private proof-local leafと
-existing test includeだけを変更し、module/path/facade/Cargo/detail key/dispatch/
-corpus/trace ownerを追加しない。Surface authenticationはrunner、syntax-free
-handoffだけcheckerへ渡す。production path 37不変、line/contentはremeasure。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 269B implemented module-boundary no-op
 
-existing private proof-local production leafとincluded test leafだけを変更した。
-module、path、facade、export、dependency、Cargo entry、detail key、public dispatch、
-corpus owner、trace ownerは追加しない。runner productionは`37/69872`、path/
-content hashは
-`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d` /
-`1cdc1720e687890e9007664a2140a10194b7637add9b8eb589ee92d9cce3a771`。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 269CP frozen boundary
 
-module/production pathは追加しない。implementation filesはexisting source-
-statement production leaf、test-only re-export facade `type_elaboration.rs`、`runner.rs`
-test-only root facade import、proof-local runner test fileだけ。
-production pathsは37、line/content hashを再測定し、testsは`536 -> 540`。
-checker/parser/resolver/fixture/metadata/trace/Cargo fileはtarget外。
-
-completed four-file implementationはmodule/pathを追加しない。exact production
-inventoryはpaths/lines `37/71194`、path/content SHA-256
-`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d` /
-`4dcfc69a867dea5c12457d94825493a8a48e4fd5ac7b91d86412371ac25f6b03`。
-libraryは540 tests、raw/normalized list SHA-256
-`8b9a2b9ea4aad3c6ed0b6eae32a0285d6a9fe1b5389dcc31ebc7adb872317522` /
-`a8955748da86930f3e2165637e170d68c77756cbc03f3ff38b3f8de0d21cbc50`。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 269C frozen runner boundary
 
-existing proof-local production/test leafとtest-only facade 2件がrunner scope全体。new
-module/production pathは0、implementation前productionは`37/71194`、path/content hash
-`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d` /
-`4dcfc69a867dea5c12457d94825493a8a48e4fd5ac7b91d86412371ac25f6b03`。
-libraryは`540 -> 544`。raw syntaxはrunner-private、frozen syntax-free binding inputだけ
-checkerへcross。active dispatch/Cargo/corpus/trace/parser/resolver/source-type ownerは不変。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 269C implemented runner boundary
 
-freeze済みrunner 4 filesだけを変更しmodule/production pathは追加しない。productionは
-`37/71412`、path hash
-`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d`
-不変、content hashは
-`bf8c5a242bdc3e8a6809583ef1813138afbb246e41612413d7a7783631bc3cd6`。
-libraryは`544`、raw/normalized hashは
-`fa69bfaa53fb75a2a6ec62b1ac7faf8fc5e5a12693a3840e0e31439eafa156db` /
-`717a16f30326b9878949c7158be81eff5f7769c32ceeb19e23de0e569eb7ab4c`。
-全excluded owner/active boundaryは不変。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 269CT frozen runner boundary
 
-later implementationは`runner/type_elaboration/source_proof_local_declaration.rs`、
-`runner/type_elaboration.rs`、`runner.rs`、existing proof-local test leafだけをown。
-production path 37、dormant test 4件だけ追加。dispatch、metadata、artifact、parser/resolver、
-Cargo、semantic ownerはscope外。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 269CT implemented runner boundary
 
-frozen runner 4 filesだけを変更する。productionは37 paths / 71,647 lines、path/
-content hashは
-`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d` /
-`0f8f5926b9bee23c92d1f05e9cc9e85b4c0561b543e9e0a1e4c825f43b6c5798`。
-routeはprivate/dormantのままで、全excluded ownerはunchanged。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 269GP frozen runner boundary
 
-module/path追加なし。later implementationはexisting
-`runner/type_elaboration/source_statement.rs`、test-only facade 2件、proof-local test
-fileだけ。tests 4件で`548 -> 552`、production paths 37。checker/parser/resolver、
-public dispatch、fixture、trace、metadata、Cargo、semantic ownerはscope外。
-repeated source/docs/final-quality reviewは**NO FINDINGS**で、このboundaryをconfirm。
-
-implementationはexactlyその4 files内で完了。path追加なし、runner productionは
-`37/72916`、libraryは552。facade 2段は`#[cfg(test)]`、producerはrunner-private/
-dormantのままで、全excluded module/consumerはbyteまたはbehavior不変。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 269GS documentation boundary
 
-本reconciliationはspecification/derived recordだけ。runner productionは37 paths、全test-
-only facade/private 269GP APIは不変で、dispatch/corpus/trace boundaryは移動しない。
-Task269Gが最初に許可されるbinding consumer。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 269G runner boundary
 
-existing proof-local leaf、test-only facade 2段、existing test leafだけを変更し、lower
-producer fileはimmutable。raw source/AST/resolverはrunner-owned、syntax-free handoffだけが
-checkerへcross。new path/public route/active dispatch/Cargo edge/trace ownerなし。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 269G implemented runner boundary
 
-frozen runner 4 filesだけを変更し、module/production path追加なし。productionは
-`37/73118`、path hashは
-`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d`不変、content hashは
-`2cae769737fdee4560ab1d1bca81f10d900ff8a1d9824aba720806f84e802711`。
-libraryは`556`、raw/normalized hashは
-`194b2884a9d933823e0d06b24460cd510fd9d16fbd6823b9e13584779acd1f03` /
-`728a5b688c19acc42d66a9c2f5c13ad67d795949ec88a2d877b917c9607d80e8`。
-excluded ownership/active boundaryは全て不変。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 277A Frozen Runner Boundary
 
-[central Task 277A contract](../../task_contracts/ja/277A.md) はimplemented cfg-test
-source-template leaf、type-elaboration facade、test leaf、test module registrationだけを
-permitし、`runner.rs`はexcludeする。runnerはparser nodeをselectしてTypedArenaをbuildする
-だけで、checkerがsole producer/Typed/Resolved ownerである。public dispatch/artifact/
-diagnostic/fixture/expectation/trace/metadata/semantic routeはboundary外。
-runner libraryは`608`、raw-list SHA-256
-`1025494e7948e8997a522178b0e8f409effee7c350e8527d32412863af73e3d6`。
-independent review/final quality re-reviewは**NO FINDINGS**、全9 hard gateはscore
-capなしの有効な`100/100`でPASS。exact staging/cached-diff reviewもPASSした。
-implementation commit `b67b028e07337ff5b72422bc8f16fb8f187b5c06`の直後、read-only
-post-implementation checkpointは
-`HEAD=b67b028e07337ff5b72422bc8f16fb8f187b5c06`、clean worktree、
-`origin/main...HEAD=0/1`、unchanged protected
-`stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4`をobserveした。Task 277Aはcomplete、
-umbrella Task 277はpartialのままで、successorはseparately frozen/reviewedでなければ
-ならない。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Resolver Task 277R1 test module boundary
 
-implemented mizar-test change は `src/runner/tests.rs` の test registration と new private
-`src/runner/tests/type_elaboration/template_parameter_identity.rs` leaf に限定する。existing
-frontend/parser と resolver API で immutable seed を observe するだけで、production runner
-module/route/dispatcher/detail key/checker handoff/Typed-Resolved output/fixture stage/metadata/
-trace owner を追加または変更しない。identity transport の唯一の production owner は resolver
-`names.rs` のままである。final test-only scopeはexact 2 pathsで、production runnerは
-unchanged path/content hashの38 paths / 80,090 linesのまま。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 277B-L Private Association Probe
 
-[Task 277B-L](../../task_contracts/ja/277B-L.md) はmizar-testのprivate direct test leafと
-`tests.rs` registrationだけをimplementした。existing frontend/parser output、complete resolver R1 data、
-standalone checker producerをconsumeするが、runner module、production route、facade、dispatcher、
-detail key、checker slot install、Cargo edge、fixture/sidecar change、metadata/trace owner、
-diagnostic、semantic publicationは追加しない。production runnerはfrozen hashのprotected
-38 paths / 80090 linesのまま。leafは249 lines /
-`5fb342d357fb8cb92bd88278c019b276741cd1d6edb255e16e4f231f578dfe04`、registrationは`tests.rs` 63 /
-`8873ea62bf642a8287eeacbfdaea06eccd0d917a17be9cd54a7764b0b6bea295`。test sufficiency/
-implementation reviewはcanonical `Identifier` prefix-spoof fix後に**NO FINDINGS**。source/documentation、
-bilingual、boundary re-reviewも**NO FINDINGS**。full verification/protected-surface checkはPASS。
-checker containment repair後のfinding-specific final-quality re-reviewは**NO FINDINGS**。全9 hard
-gateはscore capなしvalid `100/100`（`20/20/15/15/10/10/5/5`）でPASS。exact staging/
-cached-diff review、task-only commit、post-implementation proof、fresh successor inventoryはcentral
-[historical checkpoint](../../task_contracts/ja/277B-L.md#post-implementation-checkpoint)でclosedし、
-successorはselectしない。Task 277Bはnot ready/semantic credit zero。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 269GT frozen runner boundary
 
-変更可能なのは
-`crates/mizar-test/src/runner/type_elaboration/source_proof_local_declaration.rs`、
-`crates/mizar-test/src/runner/type_elaboration.rs`、
-`crates/mizar-test/src/runner.rs`、
-`crates/mizar-test/src/runner/tests/type_elaboration/source_proof_local_declaration.rs`だけ。
-facade 2段はtest-only。production paths 37、lower owner
-`crates/mizar-test/src/runner/type_elaboration/source_statement.rs`はimmutable。
-new module/public route/dispatch/Cargo/corpus/trace ownerなし。
-
 Completion evidence: [central Task-269GT historical contract](../../task_contracts/ja/269GT.md#completion-evidence)。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 269GUP frozen runner boundary
 
-exact scopeは`source_statement.rs`、`source_proof_local_declaration.rs`、test facade 2、test leaf 1。
-前者がlower profile、後者がreserve-to-bindingをownし`source_term.rs`はexcluded。new file/module/
-Cargo/parser/resolver/dispatch/active edgeなし。baseline `37/73351`、path/module fixed、content再測定。
 Completion evidence: [central Task-269GUP historical contract](../../task_contracts/ja/269GUP.md#completion-evidence)。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 269GUPT runner ownership boundary
 
-owned runner filesは`type_elaboration/source_proof_local_declaration.rs`、`type_elaboration.rs`、`runner.rs`、existing proof-local test leafだけ。`source_statement.rs`とactive runner/metadata/CLI ownerはexclude。facade 2 hopsはtest-onlyで、新module path/Cargo target/dispatch/public resultなし。
-
 Completion evidence: [central Task-269GUPT historical contract](../../task_contracts/ja/269GUPT.md#completion-evidence)。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 269GU runner ownership boundary
 
-ownerは`type_elaboration/source_proof_local_declaration.rs`、
-`type_elaboration.rs`、`runner.rs`、existing proof-local test leafだけ。
-`source_statement.rs`、active dispatch/result、Cargo、fixture/sidecar/
-expectation/trace/metadata/diagnostic/CLI ownerはexclude。productionは37 paths、
-facade 2件はtest-only。
-
 Completion evidence: [central Task-269GU historical contract](../../task_contracts/ja/269GU.md#completion-evidence)。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 269GCP frozen runner boundary
 
-implementation ownerはexact `runner.rs`、`runner/type_elaboration.rs`、
-`runner/type_elaboration/source_statement.rs`、matching test module。
-public dispatch、metadata、discovery、expectation、fixture、Cargo、他runner familyは
-excluded。productionは37 paths、line/content hashはimplementation後remeasure。
-
 Completion evidence: [central Task-269GCP historical contract](../../task_contracts/ja/269GCP.md#completion-evidence)。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 269GC frozen runner boundary
 
-`source_statement.rs`はunchanged sole GCP lower owner。proof-local consumerは
-getter/reserve extractionだけを読みsyntax-free checker inputを作り、outputは
-`crate::runner`外へ出さない。dispatch/TestCase/artifact/metadata/Cargo/
-diagnostic/sibling route不変。validation/Typed-final replayはchecker owner。
-
 Completion evidence: [central Task-269GC historical contract](../../task_contracts/ja/269GC.md#completion-evidence)。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 269GCT frozen runner boundary
 
-existing proof-local runner leaf、private re-export facades 2、existing test leafだけ。
-leafはGC/GCP getterを読みsyntax-free input/arenaを作りchecker validationをinvoke、
-condition subtree/identityを再構築しない。outputは`pub(in crate::runner)`、public
-dispatchなし。`source_statement.rs`/fixture/sidecar/expectation/trace/metadata/
-Cargo/diagnostic/sibling routeはimmutable。
-
 Completion evidence: [central Task-269GCT historical contract](../../task_contracts/ja/269GCT.md#completion-evidence)。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 269GCU frozen runner module boundary
 
-existing proof-local production/test leaf、facade、`runner.rs` private
-re-exportだけを変更可。checkerがsole validator/owner。generic route、parser/
-resolver/lower、dispatch、fixture/expectation/metadata/diagnostic/Cargo/artifactは
-boundary外。
-
 Completion evidence: [central Task-269GCU historical contract](../../task_contracts/ja/269GCU.md#completion-evidence)。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 269SDP runner boundary
 
-checker plan記載のproduction source-statement leaf、private
-type-elaboration/root facade、proof-local test leafだけを変更可能とする。
-production proof-local runner leafは除外する。public command/checker API/
-artifact ownerは境界外。
-
 Completion evidence: [central Task-269SDP historical contract](../../task_contracts/ja/269SDP.md#completion-evidence)。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 269SDC frozen module boundary
 
-runnerは`type_elaboration/source_proof_local_declaration.rs`/
-`type_elaboration.rs`/`runner.rs`/existing test leaf、checkerはfrozen 3 owner
-filesを書く。checker `source_term.rs`はcfg-test reciprocal-owner sentinelだけ
-拡張しproduction ownerは不変。`source_statement.rs`/parser/resolver/
-`binding_env.rs`/other source type-term/public runner schema/dispatch/Cargo/canonical artifacts/
-metadata/downstream cratesはexclude。lower extraction、syntax-free binding、
-Typed/final ownershipを既存moduleに維持する。
-
 Completion evidence: [central Task-269SDC historical contract](../../task_contracts/ja/269SDC.md#completion-evidence)。
+本文は英語正本へ移管: [../en/module_boundary_audit.md](../en/module_boundary_audit.md) / [archive](../../archive/mizar_test_boundary_audit_waves.md).
+
