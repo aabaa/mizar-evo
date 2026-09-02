@@ -1,6 +1,12 @@
 # mizar-checker TODO
 
 > Canonical language: English. Japanese companion: [../ja/todo.md](../ja/todo.md).
+> Compacted 2026-09-02 (batch CPT-02, rules in
+> [../../documentation_compaction_rules.md](../../documentation_compaction_rules.md)):
+> completed task bodies and closed addenda-section bodies moved verbatim to
+> [../../archive/checker_todo_sections.md](../../archive/checker_todo_sections.md).
+> Every heading, every registered ledger redirect line, and every section
+> with open work remains below.
 
 ## Status Legend
 
@@ -94,529 +100,48 @@ Keep `cargo test -p mizar-checker` green after each task (see
 ### Wave 1: type checking (phase 6)
 
 1. **Crate scaffold and lint-policy guard.** [x]
-   - Add the `mizar-checker` workspace member depending on `mizar-session`
-     and `mizar-resolve`; add `tests/lint_policy.rs` mirroring the
-     `mizar-frontend` guard.
-   - Tests: lint-policy guard passes; workspace builds.
-   - Deps: `mizar-resolve` task 5. Spec: architecture 04.
-   - Completed by task 1: the crate scaffold, minimal crate root, dependency
-     boundary, and lint-policy guard are in place; no checker semantics or
-     public APIs beyond the crate boundary were introduced.
-
 2. **Spec: `typed_ast.md`.** [x]
-   - Write the `TypedAst` data-shape spec (English and Japanese, no code):
-     node arena, `TypeTable`, `TypeFactTable`, `CoercionTable`,
-     `InitialObligation` with `InitialObligationId` (never `VcId`), and the
-     partial-typing-after-error contract.
-   - Deps: 1. Spec: architecture 04 "Typed AST",
-     [01.ir_layers.md](../../architecture/en/01.ir_layers.md).
-   - Completed by task 2: `typed_ast.md` now defines the logical data shape,
-     local context snapshots, table/status invariants, `InitialObligationId`
-     boundary, partial-typing recovery, task-3 test obligations, and deferred
-     arena-representation decision.
-
 3. **Implement `typed_ast` data shapes.** [x]
-   - Implement the arena and tables per task 2, resolving the arena
-     representation decision, plus a deterministic debug rendering.
-   - Tests: id determinism; table round-trips; rendering stability.
-   - Deps: 2. Spec: `typed_ast.md`.
-   - Completed by task 3: `src/typed_ast.rs` implements dense ids, the
-     homogeneous `TypedNodeKind` arena, local context snapshots, typed/fact/
-     coercion/obligation/diagnostic tables, validation, and
-     `typed-ast-debug-v1` rendering. Unit tests cover determinism, table
-     round-trips, context/status invariants, proof-boundary guards, and stable
-     rendering.
-
 4. **Spec: `binding_env.md`.** [x]
-   - Write the binding/context spec (English and Japanese, no code): layered
-     local type contexts over `SymbolEnv` (module, block, binding layers;
-     architecture 04 Step 1) and checker-side bound-variable handling
-     consistent with architecture 16 (binder identity, no capture).
-   - Deps: 1. Spec: architecture 04 "Step 1",
-     [16.substitution_and_binding.md](../../architecture/en/16.substitution_and_binding.md).
-   - Completed by task 4: `binding_env.md` now defines the checker-owned
-     binding/context boundary, layered context graph, binding identities,
-     lookup order, reserved-variable handling, closure metadata expectations,
-     diagnostics, deterministic rendering, task-5 test obligations, and
-     external dependency gaps.
-
 5. **Binding environment and context build.** [x]
-   - Implement context construction over `SymbolEnv` and `ResolvedAst`
-     bindings per task 4.
-   - Tests: lookup order across layers; reserved-variable contexts; binder
-     scoping fixtures; deterministic iteration.
-   - Deps: 3, 4, `mizar-resolve` task 20. Spec: `binding_env.md`.
-   - Completed by task 5: `src/binding_env.rs` implements the checker-owned
-     binding-env data layer, validation, module-shell construction over
-     `ResolvedAst` plus `SymbolEnv`, local lookup over explicit binding
-     payloads, resolver `NameRefEntry::resolution()` fallback, deterministic
-     `binding-env-debug-v1` rendering, and external-gap diagnostics for
-     resolver/source-walk payloads that are not currently exposed.
-
 6. **Spec: `type_checker.md`.** [x]
-   - Write the checking/inference spec (English and Japanese, no code) with
-     named sections the implementation tasks cite: type-expression
-     normalization (types as normalized predicates, Step 2), declaration and
-     local-binding checking (Step 3), term/formula inference (Step 4),
-     coercion candidates and initial obligations, type facts, and
-     partial-typing recovery.
-   - Deps: 4. Spec: architecture 04 "Step 2"-"Step 4",
-     [03.type_system.md](../../../spec/en/03.type_system.md),
-     [08.type_inference.md](../../../spec/en/08.type_inference.md),
-     [13.term_expression.md](../../../spec/en/13.term_expression.md).
-   - Completed by task 6: `type_checker.md` now defines the phase-6 boundary,
-     normalized type model, task 7 normalization, task 8 declaration/local
-     binding checking, task 9 term/formula inference, task 10 coercion and
-     initial-obligation behavior, task 11 fact queries, partial recovery,
-     deterministic rendering expectations, and external/deferred gates.
-
 7. **Type-expression normalization.** [x]
-   - Implement normalization of surface type expressions into canonical
-     predicate form (attribute order, `non`, radix-type handling).
-   - Tests: attribute-order canonicalization; idempotent normalization.
-   - Deps: 5, 6. Spec: `type_checker.md` (normalization section).
-   - Completed by task 7: `src/type_checker.rs` implements
-     `TypeNormalizationOutput` with a task-local `NormalizedTypeTable`,
-     checker-owned type-expression payload normalization, deterministic type
-     ids/debug rendering, explicit mode-expansion provider support, `TypeEntry`
-     emission, degraded diagnostics for missing explicit mode-expansion provider
-     payloads, and unsupported-payload recovery. Resolver/source-walk site
-     extraction and full signature payloads remain external dependencies.
-
 8. **Declaration and local-binding checking.** [x]
-   - Check declarations and local bindings (`let`, `reserve`, `set`, …)
-     against normalized types; diagnose illegal declarations; keep partial
-     output after errors.
-   - Tests: per-binding fixtures; diagnostics carry binding ranges.
-   - Deps: 7. Spec: `type_checker.md` (declaration section).
-   - Completed by task 8: `DeclarationChecker` accepts checker-owned
-     declaration/context payloads over `BindingEnv`, attaches normalized types
-     to binding declaration sites, builds local type-context snapshots, records
-     checked-declaration assumption facts, drops invalid/degraded assumption
-     payloads with diagnostics, preserves partial output after illegal
-     declarations, and
-     emits deferred diagnostics for missing RHS/body/reserve/evidence payloads
-     without walking raw syntax or fabricating task-10 obligations.
-
 9. **Term and formula type inference.** [x]
-   - Infer types for terms and formulas into `TypeTable`, leaving overload
-     roots open where candidates remain (architecture 04 "Overload Candidate
-     Filtering Is Allowed, Root Selection Is Deferred").
-   - Tests: inference fixtures per term/formula kind the parser produces;
-     partially inferred results on type errors.
-   - Deps: 8. Spec: `type_checker.md` (inference section).
-   - Completed by task 9: `TermFormulaChecker` accepts checker-owned
-     term/formula payloads, records per-term `TypeEntry`s, checked-formula
-     well-formedness, task-local inference facts, deterministic open candidate
-     sets, expected-type constraints, and partial/error/skipped recovery
-     without final overload selection, raw syntax walking, `CoercionTable`
-     emission, or `InitialObligation` fabrication.
-
 10. **Coercion candidates, sethood, non-emptiness, and narrowing obligations.** [x]
-    - Record widening/narrowing/`qua` coercion candidates in `CoercionTable`
-      and emit sethood/non-emptiness/narrowing `InitialObligation`s.
-    - Tests: candidate sets per coercion kind; obligations carry
-      `InitialObligationId` and source ranges. Include fail fixtures for
-      missing sethood/non-emptiness evidence and invalid `qua` narrowing.
-    - Deps: 9. Spec: `type_checker.md` (coercion/obligation section).
-    - Completed by task 10: `CoercionObligationChecker` accepts checker-owned
-      coercion and initial-obligation payloads, records widening/source-`qua`/
-      narrowing candidates, creates sethood/non-emptiness/narrowing
-      `InitialObligation`s with deterministic local ids and source ranges,
-      preserves input fact ids for supporting facts, appends obligation-backed
-      facts, and leaves missing inheritance/summary/cluster/sethood/
-      non-emptiness/proof-query inputs as external dependency gaps rather than
-      assigning `VcId`s, discharging obligations, or fabricating inserted views.
-
 11. **Type-fact recording and queries.** [x]
-    - Implement fact recording during inference and the deterministic query
-      API later used by registration and overload waves.
-    - Tests: fact provenance; query determinism; no fact duplication.
-    - Deps: 9, 10. Spec: `type_checker.md` (type-facts section).
-    - Completed by task 11: `TypeFactQueryEngine` answers deterministic
-      point queries over existing checker fact tables, respects local
-      assumption visibility through optional `LocalTypeContextTable`, returns
-      explicit `Satisfied` / `Missing` / `Contradicted` statuses, reports
-      contradiction diagnostics without mutating facts, preserves provenance
-      for ordering/explanation rather than point-query matching, and leaves
-      statement/proof assumption, theorem acceptance, and phase-7 trace facts
-      as MC-G019 external dependency gaps.
-
 12. **Corpus runner at stage `type_elaboration`.** [x]
-    - Wire a stage `type_elaboration` external-gap fail case through the
-      harness with a `spec_trace.toml` entry; defer real task 7-11 semantic
-      pass/fail seeds until source-to-checker payload extraction exists.
-    - Deps: 10, 11. Spec: [staged_model.md](../../mizar-test/en/staged_model.md).
-    - Completed by task 12 as a boundary-preserving runner: the active
-      `type-elaboration` harness command runs `.miz` cases through frontend
-      parsing and resolver symbol collection, then reports MC-G020
-      `type_elaboration.external_dependency.ast_payload_extraction` until an
-      AST-wide source-to-checker payload extraction API exists. Real task 7-11
-      semantic pass/fail `.miz` assertions are deferred rather than accepted
-      through fabricated checker payloads.
 
 ### Wave 2: cluster and registration resolution (phase 7)
 
 13. **Spec: `registration_resolution.md`.** [x]
-    - Write the registration spec (English and Japanese, no code): pending
-      versus activated databases, existential gating, reduction rewrites
-      with provenance, validation obligations (architecture 04 Steps 5-6).
-    - Deps: 2. Spec: architecture 04 "Registration Databases",
-      [17.clusters_and_registrations.md](../../../spec/en/17.clusters_and_registrations.md).
-    - Completed by task 13: `registration_resolution.md` now defines the
-      phase-7 boundary, pending/activated registration database split,
-      validation and `InitialObligationId` rules, existential gating, cluster
-      closure, reduction provenance, deterministic diagnostics/recovery,
-      planned tests for tasks 14 and 16-20, and MC-G021 external/deferred
-      payload gaps without adding source behavior.
-
 14. **Registration index.** [x]
-    - Implement the pending/activated registration databases over
-      `SymbolEnv` registration declarations.
-    - Tests: pending entries never fire; activation moves entries
-      deterministically; per-source contribution tracking.
-    - Deps: 11, 13, `mizar-resolve` task 21 (registration increment). Spec:
-      `registration_resolution.md`.
-    - Completed by task 14: `RegistrationDatabase` builds checker-owned
-      pending/activated/rejected tables from resolver registration origins,
-      preserves origin/visibility/export/contribution metadata, records
-      MC-G021 external-gap pending records, rejects malformed and invalid
-      activation inputs, accepts only full caller-supplied activation payloads,
-      keeps pending/rejected entries from contributing to inference, and
-      renders deterministic checker-owned ordering without parsing opaque
-      resolver shells.
-
 15. **Spec: `cluster_trace.md`.** [x]
-    - Write the `ResolutionTrace` spec (English and Japanese, no code) as a
-      refinement of the canonical schema: cluster steps, reduction steps,
-      antecedent facts, audit keys, deterministic traversal, and replay cost
-      bounds.
-    - Deps: 13. Spec:
-      [17.cluster_trace_format.md](../../architecture/en/17.cluster_trace_format.md).
-    - Completed by task 15: `cluster_trace.md` refines the canonical
-      architecture-17 schema without forking it, fixes checker-local
-      cluster/reduction step ownership, antecedent fact references, audit
-      keys, deterministic traversal, replay-cost bounds, diagnostics, and
-      planned tests for tasks 16-18. Source behavior remains deferred to task
-      16, and real semantic payloads remain gated by MC-G021.
-
 16. **Cluster resolution closure with trace recording.** [x]
-    - Implement attribute propagation to closure (architecture 04 Step 5)
-      with deterministic traversal, recording every application into
-      `ResolutionTrace`.
-    - Tests: closure fixtures; traces replay to the same derived facts;
-      deterministic application order; subtype-compatible conditional
-      clusters; pending/rejected/unaccepted registrations do not fire.
-    - Deps: 14, 15. Spec: `cluster_trace.md`, `registration_resolution.md`.
-    - Completed by task 16: `cluster_trace` exposes a checker-owned cluster
-      closure data layer over explicit `ClusterRuleInput`/`ClusterFactInput`
-      payloads and task-14 activated registrations. It records replayable
-      cluster steps, derived closure facts with trace provenance, deterministic
-      traversal profiles, and checker-local diagnostics without reductions,
-      artifact emission, `TypeFactTable` mutation, or fabricated resolver-shell
-      semantics.
-
 17. **Cluster loop detection and bounded saturation.** [x]
-    - Detect cluster loops and emit bounded-saturation diagnostics instead of
-      diverging (architecture 17 "Cluster Loop Detection").
-    - Tests: loop fixtures terminate with stable diagnostics; bound is
-      configuration-visible; contradictory derivations are fatal and do not
-      export degraded verified facts.
-    - Deps: 16. Spec: [17.cluster_trace_format.md](../../architecture/en/17.cluster_trace_format.md).
-    - Completed by task 17: cluster closure now tracks fact ancestry/depth,
-      diagnoses direct and indirect loops, enforces depth and generated-fact
-      bounds with traversal profile/cache-key visibility, reports explicit
-      conflict-fingerprint contradictions as incomplete closure results, and
-      avoids inserting rejected degraded facts. Source-derived `TypeFactTable`
-      contradiction checks and artifact/cache integration remain deferred.
-
 18. **Reduction applications.** [x]
-    - Implement reduction rewrites (redex paths, substitutions, guard
-      evidence) with full provenance recorded into `ResolutionTrace`.
-    - Tests: redex path correctness; guard evidence required; source redex,
-      target term, rule FQN, rule-view fingerprint, selection key,
-      enclosing-term fingerprint, and source provenance recorded; `such` side
-      conditions are applicability-only; pending/rejected/unaccepted
-      reductions do not rewrite; invalid substitutions and mismatched
-      strategy-audit keys are diagnosed; replayable traces.
-    - Deps: 16. Spec: `registration_resolution.md` (reduction section),
-      architecture 17 "Reduction Step".
-    - Completed by task 18: `ReductionTraceBuilder` records replayable
-      reduction steps over explicit payloads, preserves architecture-17
-      provenance fields, validates active reduction registrations, rule-view
-      fingerprints, substitutions, guard evidence, and strategy-audit keys, and
-      treats `such` guards as applicability-only evidence. Raw syntax matching,
-      resolver-shell parsing, artifact/cache integration, and source-derived
-      reduction extraction remain deferred.
-
 19. **Pending-registration validation and activation gating.** [x]
-    - Validate pending registration declarations (architecture 04 Step 6),
-      emit their obligations, and implement the interim activation-gating
-      policy; record the decision here and at the top level.
-    - Tests: invalid registrations diagnosed; kind-specific validation covers
-      existential, conditional, functorial, and reduction patterns, including
-      reduction free-variable/occurrence/orientation/source-provenance checks;
-      unverified registrations never affect inference; policy-admitted
-      activation requires accepted verifier status from a later proof/artifact
-      input.
-    - Deps: 17, 18. Spec: `registration_resolution.md`.
-    - Completed by task 19: `RegistrationValidationInput` validates explicit
-      checker-ready pending payloads, emits checker-local
-      `InitialObligationId`s, keeps validated records pending with
-      `inference=false`, rejects recovered origins and malformed kind-specific
-      payloads, enforces fixed spec-17.6.4 reduction size/variable rules, and
-      rejects activation inputs whose verifier/artifact status is missing or
-      rejected. Source extraction, accepted-status production/import, artifact
-      reuse, and active `.miz` semantic fixtures remain deferred.
-
 20. **Existential gating of attributed type use.** [x]
-    - Enforce that attributed types are usable only where existential
-      registrations justify non-emptiness (architecture 04 "Existential
-      Registrations Gate Attributed Type Use").
-    - Tests: missing-existential fixtures fail with stable diagnostics;
-      pending/rejected/unaccepted existential registrations do not satisfy
-      gates; activated gates require visible guards and do not seed verified
-      facts after degraded recovery.
-    - Deps: 19. Spec: `registration_resolution.md`,
-      [17.clusters_and_registrations.md](../../../spec/en/17.clusters_and_registrations.md).
-    - Completed by task 20: `ExistentialGateOutput` evaluates explicit
-      checker-owned gate payloads against activated existential registrations,
-      binds candidates to accepted validation kind plus
-      pattern/correctness/evidence/fingerprint records, requires visible
-      consumable guard fact evidence, matches the full accepted attributed-type
-      pattern, applies deterministic result precedence, and ensures only
-      satisfied normal gates may seed verified facts. Source extraction,
-      artifact reuse, accepted-status production, and active `.miz` gate
-      fixtures remain deferred.
 
 ### Wave 3: overload resolution (phase 8)
 
 21. **Spec: `overload_resolution.md`.** [x]
-    - Write the overload spec (English and Japanese, no code) with named
-      sections: site/candidate collection with provenance, template
-      expansion, viability over recorded facts, specificity preorder
-      (per-site graphs, no global DAG), root selection and refinement joins,
-      `qua` view insertion (widening only, multiple-inheritance ambiguity),
-      and failed-site preservation (architecture 05).
-    - Deps: 2. Spec: architecture 05,
-      [19.overload_resolution.md](../../../spec/en/19.overload_resolution.md),
-      [18.templates.md](../../../spec/en/18.templates.md).
-    - Completed by task 21: `overload_resolution.md` now defines the
-      checker-local phase-8 boundary, explicit site/candidate payloads,
-      template expansion, viability over recorded facts, per-site specificity
-      graphs, root selection, refinement joins, widening-only inserted `qua`
-      views, failed-site preservation, diagnostics, determinism, planned task
-      coverage for tasks 22-26, and MC-G027 test/deferred/external gaps. No
-      code was added.
-
 22. **Candidate site collection.** [x]
-    - Collect explicit overload site and candidate payloads carrying
-      `TypedAst` site refs and resolver symbol ids after scope/visibility
-      filtering.
-    - Tests: site coverage per application form; provenance retained;
-      deterministic candidate order.
-    - Deps: 11, 21. Spec: `overload_resolution.md` (sites section).
-    - Completed by task 22: `src/overload_resolution.rs` exposes
-      checker-owned `OverloadCollectionOutput::collect` over explicit site and
-      candidate payloads. It assigns deterministic local site/candidate ids,
-      preserves site and candidate provenance, source-written `qua`, template,
-      and coherence metadata, diagnoses duplicate site keys and missing
-      candidate-site links while retaining rejected input provenance, defers
-      unsupported roles with stable diagnostics, and preserves already
-      scope/visibility-filtered candidate sets without
-      scanning `SymbolEnv`, walking raw syntax, expanding templates, checking
-      viability, selecting roots, or projecting `ResolvedTypedAst`.
-
 23. **Template expansion.** [x]
-    - Expand template candidates into concrete candidates ahead of ordinary
-      candidate ordering; record exclusion reasons for non-expandable
-      templates.
-    - Tests: expansion fixtures; constrained-template evidence cases;
-      exclusions carry reasons.
-    - Deps: 22, `mizar-parser` task 31. Spec: `overload_resolution.md`
-      (templates section).
-    - Completed by task 23: `TemplateExpansionOutput::expand` validates only
-      explicit `TemplateCandidatePayload` metadata retained by task 22. It
-      copies non-template candidates, instantiates successful templates into
-      concrete candidates with `CandidateOrigin::TemplateDerived`, records
-      substitutions and `TemplateExpansionTable` rows, preserves skipped
-      template candidates with stable rejection/deferred diagnostics, and
-      covers explicit arguments, omitted inference payloads, accepted/missing/
-      deferred constraints, source-`qua` widening/narrowing status,
-      non-template priority, unsupported/deferred candidates, and deterministic
-      rendering without cluster expansion, fresh fact inference, viability,
-      specificity, root selection, or view insertion.
-
 24. **Viability filtering.** [x]
-    - Filter candidates by viability using recorded type facts only — no new
-      inference (architecture 05 "Viability Uses Type Facts, Not New
-      Inference").
-    - Tests: viability fixtures; consumable versus pending/degraded/rejected
-      fact evidence; rejection reasons preserved for diagnostics.
-    - Deps: 23. Spec: `overload_resolution.md` (viability section).
-    - Completed by task 24: `CandidateViabilityOutput::filter` consumes
-      `TemplateExpansionOutput` and explicit checker-owned viability payloads
-      keyed by concrete candidate id. It emits only fully viable candidates,
-      records decision rows for every candidate, preserves accepted exact,
-      consumable fact, widening, and source-`qua` view plans, rejects
-      pending/degraded/rejected/out-of-scope/missing/narrowing evidence with
-      stable diagnostics, blocks ambiguous or externally deferred payloads, and
-      avoids new type inference, fact derivation, cluster firing, root
-      selection, or view insertion.
-
 25. **Specificity graph construction.** [x]
-    - Build per-site specificity graphs over viable candidates.
-    - Tests: ordering fixtures; incomparable pairs stay incomparable;
-      deterministic graph rendering.
-    - Deps: 24. Spec: `overload_resolution.md` (specificity section).
-    - Completed by task 25: `SpecificityGraphOutput::build` consumes
-      `CandidateViabilityOutput` and explicit checker-owned pairwise
-      comparison payloads keyed by viable candidate ids. It emits one graph per
-      site, one node per viable concrete candidate, comparison rows for same-
-      site pairs, directed edges only for accepted at-least-as-specific
-      relations, explicit incomparable rows without edges, and stable
-      diagnostics for missing, duplicate, unknown, and cross-site comparison
-      payloads. It does not derive facts, inspect result types for ordering,
-      apply root-selection tie-breakers, join refinements, or insert views.
-
 26. **Root selection, refinement joins, and view insertion.** [x]
-    - Select overload roots, join coherent refinement groups, insert `qua`
-      views, and preserve failed sites explicitly (architecture 05 Step 5).
-    - Tests: selection fixtures including strongest-type, attribute-union, and
-      incompatible refinement joins; ambiguity diagnostics with candidate
-      lists; missing/duplicate/unknown/blocked payload diagnostics; missing or
-      ambiguous ordinary-root candidate diagnostics; deterministic selection
-      rendering; failed sites never become valid output.
-    - Deps: 25. Spec: `overload_resolution.md` (selection/views sections).
-    - Completed by task 26: `OverloadSelectionOutput::resolve` consumes
-      `SpecificityGraphOutput` and explicit checker-owned selection payloads.
-      It selects a unique maximal non-redefinition ordinary root candidate from
-      per-site graphs, records `NoMatch`, `Ambiguous`,
-      `IncompatibleRefinementJoin`, and blocked sites as failed outputs,
-      validates same-root redefinition payloads with accepted coherence,
-      accepts strongest-result and attribute-union exposed result metadata only
-      after root selection, records accepted widening/source-`qua` inserted views,
-      and rejects non-selected refinements, missing payloads, narrowing/missing
-      view evidence, or blocked specificity graphs without fabricating success
-      or applying additional root-selection tie-breakers.
-
 27. **Spec: `resolved_typed_ast.md`.** [x]
-    - Write the `ResolvedTypedAst` data-shape spec (English and Japanese, no
-      code): final types, `OverloadResolutionTable`,
-      `CoercionInsertionTable`, `ClusterFactTable`, expression metadata.
-    - Deps: 21. Spec: [01.ir_layers.md](../../architecture/en/01.ir_layers.md),
-      architecture 05 "Step 6".
-    - Completed by task 27: `resolved_typed_ast.md` defines the final
-      source-shaped semantic AST boundary, node and expression metadata tables,
-      overload resolution projection, coercion insertion metadata, cluster fact
-      references/provenance preservation, failed-site preservation, deterministic rendering
-      expectations, task-28 planned tests, and deferred source-extraction /
-      artifact gaps without code.
-
 28. **`ResolvedTypedAst` assembly.** [x]
-    - Assemble the final source-shaped semantic AST with expression metadata
-      for LSP and artifacts, plus a deterministic debug rendering.
-    - Tests: assembly fixtures; metadata lookup by `ExprId`; rendering
-      stability.
-    - Deps: 26, 27. Spec: `resolved_typed_ast.md`.
-    - Completed by task 28: `ResolvedTypedAst::assemble` projects explicit
-      checker-owned typed AST, cluster fact, overload
-      collection/template/viability/specificity, and selection outputs into
-      source-shaped resolved nodes, expression metadata, collection/expanded/
-      viable candidate summaries, template expansion summaries, viability
-      decisions, specificity graph summaries, overload records, inserted
-      coercions, diagnostics, and deterministic rendering while preserving
-      failed sites and keeping source extraction, artifacts, public diagnostic
-      codes, and active `.miz` fixtures deferred.
 
 ### Hardening and cross-cutting follow-ups
 
 29. **Deferred corpus obligations at stages `formula_statement` and `advanced_semantics`.** [x]
-    - Record deferred registration/overload corpus obligations (clusters,
-      reductions, ambiguity, refinement joins) with `spec_trace.toml` entries;
-      active 40/60 pass/fail growth remains future work.
-    - Record the review-audit advanced-semantics negative obligations as
-      deferred: witness leakage from `now`/`proof` blocks, unmet
-      `deffunc`/`defpred` guards, missing sethood for comprehensions, and
-      invalid `qua` narrowing.
-    - Deps: 20, 28. Spec: [staged_model.md](../../mizar-test/en/staged_model.md).
-    - Completed by task 29 as a deferred corpus-record task: `spec_trace.toml`
-      now records deferred formula/statement, cluster/reduction,
-      overload/refinement, and review-audit negative obligations with concrete
-      MC-G019/MC-G020/MC-G021/MC-G023/MC-G027 and runner blockers. No active
-      `.miz` fixtures were added because `mizar-test` has no active
-      `formula_statement` / `advanced_semantics` runner and mizar-checker still
-      lacks the source-to-checker semantic payload extraction needed for those
-      cases.
-
 30. **Determinism suite.** [x]
-    - Property coverage that identical inputs produce identical types,
-      facts, traces, candidate orders, and diagnostics.
-    - Deps: 28. Spec: [20.test_strategy.md](../../architecture/en/20.test_strategy.md).
-    - Completed by task 30: `crates/mizar-checker/src/determinism_suite.rs`
-      adds checker-owned Rust regressions for exact same-input reruns and
-      canonicalized equivalent-input permutations across type normalization,
-      type-fact contradiction queries, cluster closure traces, overload
-      collection/template/viability/specificity/selection outputs, and final
-      `ResolvedTypedAst::assemble` projection. No active `.miz` fixtures were
-      added because stage runners and source-to-checker payload extraction
-      remain deferred under the existing external gaps.
-
 31. **Public-enum forward-compatibility policy.** [x]
-    - Apply the `mizar-frontend` task-25 procedure to each public enum;
-      record decisions in the owning module specs.
-    - Deps: 28. Spec: all module specs.
-    - Completed by task 31: every current checker-owned public enum is
-      classified as a downstream forward-compatible API surface that must
-      remain `#[non_exhaustive]`. Each owning EN/JA module spec records a
-      `Public Enum Policy` table and no-exhaustive-exceptions statement, and
-      `tests/lint_policy.rs` guards future source/spec drift for public enum
-      attributes and policy rows.
-
 32. **Source/spec correspondence audit.** [x]
-    - Trace every public API and promised behavior in the module specs to
-      implementation and tests; record gaps as follow-up tasks.
-    - Deps: 31. Spec: all module specs and this TODO.
-    - Completed by task 32: [source_spec_audit.md](./source_spec_audit.md)
-      inventories every current checker `pub mod` export, top-level public
-      item, and public `dense_id!` / `string_key!` newtype, then traces module
-      behavior promises to implementation, Rust tests, or explicit MC-G
-      `external_dependency_gap` / `test_gap` / `deferred` rows.
-      `tests/lint_policy.rs` guards that inventory and gap reconciliation. No
-      source/API behavior, `.miz` fixture, or expectation changed in this audit
-      task.
-
 33. **Bilingual documentation sync audit.** [x]
-    - Compare each English canonical document under
-      `doc/design/mizar-checker/en/` with its Japanese companion and
-      synchronize content.
-    - Deps: 32. Spec: repository documentation policy.
-    - Completed by task 33: [bilingual_sync_audit.md](./bilingual_sync_audit.md)
-      inventories every current English/Japanese checker design document pair,
-      records companion links and comparison basis, records `none` sync debt
-      for each pair, and `tests/lint_policy.rs` guards future pair inventory
-      drift.
-
 34. **Module-boundary refactor gate.** [x]
-    - Before treating the crate as ready for downstream consumers, audit the
-      source layout for oversized files, mixed responsibilities, and private
-      helpers that should be split along the module table and spec boundaries.
-      Split any review-bottleneck implementation files into private modules
-      without changing public APIs, diagnostics, deterministic renderings,
-      artifact-facing schemas, or consumer-visible behavior.
-    - After any split, update this module table/source paths as needed and
-      re-run the source/spec and bilingual documentation audit scopes for the
-      moved APIs. Do not mix behavior cleanup or API exposure into the move;
-      those require their own spec tasks.
-    - Deps: 33. Spec: this TODO,
-      [internal 07](../../internal/en/07.crate_module_layout.md), all module
-      specs.
-    - Completed by task 34: [module_boundary_audit.md](./module_boundary_audit.md)
-      inventories every current checker Rust source/test-support file with
-      line count, boundary label, owning specification, split decision, and
-      hard-gate status. No behavior-neutral split is required; large cohesive
-      files are monitored ergonomics notes only, and `tests/lint_policy.rs`
-      guards future source-layout audit drift.
 
 ### Wave 4: semantic-audit follow-ups (2026-07-03)
 
@@ -650,386 +175,19 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
 | corpus seeds | task 49 activates the 16 audit fixtures plus the task-35 constructor-property seed, task-36 duplicate-coverage seed, task-37 ordinary/template-derived equivalent-root seed, task-38 functorial-`for` guard seed, task-39 property-overlap coherence seed, and task-44 omitted-`reconsider`/ambiguous-redefinition-target seeds when the required runners, parser support, declaration-symbol support, and source-to-checker payload extraction land; Resolver Task 31 solely activates the task-37 same-return signature-conflict seed through `declaration_symbol`, and task 49 only reconciles/deduplicates that member with the exact 24-fixture set |
 
 35. **Spec decision: constructor property arguments vs extensionality (SSA-001).** [x]
-    - Resolve the critical §5.5.1/§5.8.4/§5.8.5 inconsistency. Recommended
-      resolution 1: constructors accept fields only; property values always
-      come from §7.4.1 property implementations. Update spec 05 and 07
-      (English and Japanese, same change) and reconcile with the
-      exact-instance extensionality text already landed by the template audit
-      (spec 05 §5.8.5, commit `cef7e109`).
-    - Acceptance: the spec states exactly one source for property values; a
-      reject-first `.miz` seed pins the rejected constructor-property form
-      with a sidecar and `spec_trace.toml` entry; no axiom family in §5.8 can
-      derive `b1 = b2` for distinct property arguments.
-    - Verify: `cargo test -p mizar-test`; corpus JSON/TOML validity.
-    - Deps: none (first of the spec wave). Refs: SSA-001;
-      [template_encoding_audit.md](../../mizar-core/en/template_encoding_audit.md) F1.
-    - Completed by task 35: spec 05 now makes default constructors
-      fields-only and removes property projection axioms; spec 07 states that
-      property implementations are the sole property-value source. Added
-      `fail_structure_constructor_property_arg_001` as an inactive
-      `advanced_semantics` reject-first seed and traceability rows
-      `spec.en.05.structures.constructor_fields_only.semantic` and
-      `spec.en.07.modes.property_implementation.not_constructor_source.semantic`.
-      No checker/core source semantics changed.
-
 36. **Spec decision: structure member identity, upcast paths, acyclicity (SSA-002, SSA-011, SSA-012).** [x]
-    - Define diamond member identity as the root declaration reached by the
-      `from` chain (or record a superior rule); require the child member type
-      to be `⊑` every parent's member type with per-parent coherence
-      obligations; state whether §19.2.2 path uniqueness is syntactic or
-      semantic; add an explicit inheritance-acyclicity rule and diagnostic to
-      §5.3. Update spec 05 and 19 (English and Japanese, same change) and
-      keep the rules consistent with the reduct-view encoding (`view_{D→B}`)
-      landed in §5.8.3/§13.8.7.
-    - Acceptance: existing seeds
-      `fail_structure_diamond_member_type_conflict_001`,
-      `fail_structure_inherit_uncovered_member_001`,
-      `fail_structure_inherit_cycle_001`,
-      `fail_overload_inheritance_path_ambiguity_001` remain valid under the
-      decided rule (revise sidecar notes only if the decision changes their
-      rationale); renamed-member identity cases have a decided outcome.
-    - Verify: `cargo test -p mizar-test`.
-    - Deps: 35. Refs: SSA-002, SSA-011, SSA-012; template audit F1.
-    - Completed by task 36: spec 05 now defines inherited member identity as
-      root declaration plus inheritance path/view, requires exact member
-      coverage and per-parent type-inclusion obligations discharged by the
-      existing `coherence` block, keeps renamed same-root paths as distinct
-      views, and names `structures.inherit.cycle` for acyclicity failures.
-      Spec 19 now states that implicit upcast path uniqueness is syntactic over
-      resolved `inherit` declaration paths. Added
-      `fail_structure_inherit_duplicate_member_coverage_001` as an inactive
-      duplicate-coverage seed; no renamed-view reject seed was added because
-      renamed-view exposure remains valid positive behavior. Existing
-      structure/overload seeds and the template view-leak seed remain the other
-      guards. No checker/core source semantics changed.
-
 37. **Spec decision: overload tie-break and tie ambiguity (SSA-003, SSA-010, SSA-016, SSA-019).** [x]
-    - Fix §19.6.1 Cases 2-3 against §19.4.3: either add explicit
-      constraint-strictness and non-template-beats-template rules, or keep
-      pure `⊑` selection and correct the case outcomes. Extend §19.4.4 to "no
-      unique maximal root" (covers equally specific distinct roots); extend
-      the §19.1 conflict rule to identical-signature declarations regardless
-      of return type; reword §19.2.3 antisymmetry to closure-equivalence
-      classes; drop the triplicated §19.6.1 sentence. Update architecture 05's
-      tie-breaker list and `overload_resolution.md` in the same change.
-    - Acceptance: §19.6.1 examples and §19.4.3/§19.4.4 rules agree; a
-      tie-ambiguity `.miz` seed joins
-      `fail_resolve_same_signature_return_conflict_001` with sidecar and
-      trace entries.
-    - Verify: `cargo test -p mizar-test`.
-    - Deps: none. Refs: SSA-003, SSA-010, SSA-016, SSA-019.
-    - Completed by task 37: spec 19 now keeps Phase B overload selection on
-      instantiated concrete parameter vectors under the normal `⊑` preorder;
-      template declared constraint strictness is not a tie-breaker,
-      non-template priority applies only to mutually equivalent concrete
-      vectors, return type remains excluded, and ambiguity is any nonempty
-      maximal-root set with more than one distinct root. Ordinary definitions
-      with identical argument signatures are declaration conflicts regardless
-      of return type, and
-      §19.6.1 examples now match those rules. Architecture 05 and
-      `overload_resolution.md` were synchronized. Added inactive seeds
-      `fail_overload_equivalent_roots_ambiguity_001`,
-      `fail_overload_template_equivalent_roots_ambiguity_001`, and
-      `fail_resolve_same_signature_same_return_conflict_001`; the last stays
-      inactive until resolver declaration-symbol support grows beyond the
-      current different-return diagnostic. Mizar-core task 26 / template-audit
-      F7 records the separate Phase A omitted-template inference determinism
-      rule. No checker/core/resolver source semantics changed.
-
 38. **Spec decision: functorial cluster `for T` semantics (SSA-004).** [x]
-    - Specify the applicability-guard reading (registration fires where the
-      result's known normalized type is the full `for` type expression, or a
-      subtype of it, mirroring §17.7.2) and add `is_T(F(args))` premises to
-      the coherence obligation; update the §17.9.3 encoding tables so
-      `for T` is no longer dropped. Spec 17 English and Japanese in the same
-      change.
-    - Acceptance: every §17.9.3 row involving `for T` shows the guard; a
-      reject-first seed pins a functorial registration applied outside its
-      `for` type.
-    - Verify: `cargo test -p mizar-test`.
-    - Deps: none. Refs: SSA-004.
-    - Completed by task 38: spec 17 now defines a functorial cluster's
-      trailing `for` type expression as an applicability guard over the full
-      known normalized result type, including parameters and attributes. The
-      coherence obligation and §17.9.3/§17.9.6 encodings include the
-      result-type guard as a premise instead of dropping it. Added inactive
-      `advanced_semantics` seed
-      `fail_cluster_functorial_for_guard_001` plus traceability row
-      `spec.en.17.clusters.functorial_for_guard.semantic`; the seed pins that
-      the registration itself can remain valid while the consequent attribute
-      is unavailable at same-radix use sites that lack the guarded attribute.
-      Spec 16's proof-obligation summary and spec 23's registration-node
-      discussion were synchronized with the guarded functorial obligation and
-      now defer the detailed encoding to Chapter 17. No checker/core source
-      semantics changed.
-
 39. **Spec decision: property-implementation coherence (SSA-005).** [x]
-    - Require any two `property S.p means/equals` implementations with
-      overlapping domains to be related by a coherence obligation, or
-      restrict each property to one implementation per `inherit`-connected
-      mode family; update spec 07 §7.4.1/§7.8.2 (English and Japanese).
-    - Acceptance: the chosen rule names the obligation form or the
-      restriction diagnostic; a reject-first seed pins the uncovered overlap.
-    - Verify: `cargo test -p mizar-test`.
-    - Deps: 35 (property-value source must be settled first). Refs: SSA-005.
-    - Completed by task 39: spec 07 now requires overlapping
-      implementations of the same struct property to carry an accepted
-      `coherence` correctness condition. The grammar admits an optional
-      `coherence` block after property `means` existence/uniqueness and after
-      property `equals`, but the block is semantically mandatory for overlaps;
-      spec 16 and Appendix A were synchronized. Added inactive seed
-      `fail_mode_property_overlap_missing_coherence_001` and traceability row
-      `spec.en.07.modes.property_implementation.coherence.semantic`, plus
-      deferred parser row `spec.en.07.modes.property_implementation.parser`.
-      No checker/core source semantics changed.
-
 40. **Spec contract: registration activation timing (SSA-006).** [x]
-    - Keep §17.1 item-ordered activation as the language contract and state
-      explicitly that correctness-condition acceptance may be asynchronous:
-      an implementation may hold a module pending but must not reject a use
-      site that a completed verification pass would accept. Record in
-      `registration_resolution.md` that the task-19 interim policy is a
-      conservative approximation to be lifted when `mizar-vc`/`mizar-proof`
-      integration lands.
-    - Acceptance: spec 17 (en+ja) states the asynchronous-acceptance
-      contract; `registration_resolution.md` (en+ja) names the interim policy
-      as such; `fail_mode_existential_after_declaration_001` remains the
-      user-visible ordering error.
-    - Verify: `cargo test -p mizar-test`.
-    - Deps: none. Refs: SSA-006, architecture 04.
-    - Completed by task 40: spec 17.1 keeps item-ordered activation as the
-      language contract and states that correctness acceptance may arrive
-      asynchronously from proof/kernel/artifact phases. Architecture 04 and
-      `registration_resolution.md` now name task 19's no-accepted-input
-      behavior as an interim conservative approximation, not a final rejection
-      policy for later source items that a completed pass would accept. The
-      existing inactive seed `fail_mode_existential_after_declaration_001` now
-      traces the negative non-retroactive slice through
-      `spec.en.17.clusters.registration_activation_timing.semantic`; positive
-      accepted-local activation remains deferred on MC-G020/MC-G021/MC-G025/
-      MC-G026. No checker/core source semantics changed.
-
 41. **Spec clarifications: closure termination, contradiction site, `attr(args)` (SSA-007, SSA-008, SSA-020).** [x]
-    - State in §17.7.1 that closure termination follows from the restricted
-      adjective grammar and that extending adjectives to term arguments
-      requires a new termination argument; specify closure-time detection of
-      contradictory derived attributes as a fatal `cluster` diagnostic and
-      reword §17.7.3's ATP-time mention; resolve §3.3/§6.2/§17.10
-      `attr(args)`: either define its declaration/registration story or
-      remove it from `attribute_ref` (removal is recommended — admitting it
-      into clusters breaks the termination argument). Spec 03, 06, 17
-      English and Japanese in the same change.
-    - Acceptance: termination argument is stated as load-bearing;
-      `fail_cluster_contradictory_consequent_001` maps to the closure-time
-      diagnostic; `attribute_ref` grammar and declaration grammar agree.
-    - Verify: `cargo test -p mizar-test`.
-    - Deps: none. Refs: SSA-007, SSA-008, SSA-020.
-    - Completed by task 41: spec 17.7.1 and spec 19.2.1 now make the
-      restricted no-argument cluster `adjective` grammar the load-bearing
-      termination premise, and architecture 04 treats saturation bounds as
-      defensive failure diagnostics rather than successful truncated
-      semantics. Spec 17.7.3 now specifies closure-time fatal `cluster`
-      diagnostics for contradictory derived attributes, including the static
-      contradictory-consequent seed. Spec 03/06/Appendix A define
-      `attribute_name(args)` as a use-site application of a declared
-      parameterized attribute while excluding argument lists from cluster
-      registration adjectives. Updated traceability with
-      `spec.en.17.clusters.restricted_adjective_grammar.parser`. No
-      checker/core source semantics changed.
-
 42. **Spec clarification: reduction determinism signature (SSA-009).** [x]
-    - Restate §17.6.4 normalization determinism as a function of (term,
-      in-scope rules, discharged side-condition set); define combined
-      specificity as pattern subsumption first, then position-wise guard
-      comparison, remaining mixed cases incomparable with FQN tie-break.
-      Spec 17 English and Japanese; mirror in
-      `registration_resolution.md` (reduction section).
-    - Acceptance: the determinism statement's inputs match the matching
-      row's dependencies; task-18 behavior (`such` guards
-      applicability-only) is derivable from the spec text.
-    - Verify: `cargo test -p mizar-test`.
-    - Deps: none. Refs: SSA-009.
-    - Completed in task 42: spec 17 now defines reduction normalization as a
-      deterministic function of the term, in-scope activated reduction rules,
-      and discharged side-condition set. `such` guards are applicability-only
-      evidence, not specificity inputs. Rule selection is pattern-first,
-      guard-second with position-wise §19.2.3 comparison and FQN tie-break for
-      equal, mixed, or incomparable cases. `registration_resolution.md` mirrors
-      the rule. No checker/core source semantics changed.
-
 43. **Spec clarification: sethood for dependent modes and built-in inhabitation (SSA-013, SSA-014).** [x]
-    - Give the parameterized sethood obligation form
-      (`∀params. ∃S. ∀x. (is_T(x, params) → x ∈ S)`) in §7.8.1 and state
-      that §13.4.2 comprehension gates check sethood at the instantiated
-      parameters; reconcile §7.8 vs §17.3.4 on unattributed bases and add
-      the built-in inhabitation table (`object`, `set`, struct radixes).
-      Coordinate with the template-actual inhabitation gate added by the
-      template audit (§17.3.4). Spec 07, 13, 17 English and Japanese.
-      Ch18 may also be synchronized where it references the gate.
-    - Acceptance: the checker's existential gate (task 20) has a decidable
-      rule for every base-type shape; sethood export status (module
-      interface or not) is stated.
-    - Verify: `cargo test -p mizar-test`.
-    - Deps: none. Refs: SSA-013, SSA-014; template audit F2.
-    - Completed in task 43: spec 07 now gives guarded parameterized
-      existence and sethood obligations, and states exported sethood is a
-      module-interface semantic fact whose witness term is not exported. Spec
-      13 checks sethood at the resolved mode and normalized argument tuple.
-      Spec 17 adds the inhabitation table for attributed existential
-      registrations, built-in `object`/`set`, accepted modes, bare structure
-      radixes via constructor witnesses over inhabited fields, and bare schema
-      type parameters inside template bodies via §18.10.2. Spec 18 type
-      actuals use the same table. Existing inactive sethood,
-      existential, and template seeds keep their rejection intent; positive
-      source-derived coverage remains deferred. No checker/core source
-      semantics changed.
-
 44. **Spec clarification: `reconsider` discharge and ambiguous redefinition target (SSA-015, SSA-017).** [x]
-    - State that omitted `reconsider` justification is legal iff the
-      narrowing obligation is discharged by proof-free widening,
-      inheritance/view, cluster-closure, or already recorded local type facts,
-      otherwise a diagnostic requests a justification (§8.2); name an
-      "ambiguous redefinition target" diagnostic for `redefine` without
-      `coherence with` when several originals qualify (§19.4.1). Spec 08 and
-      19 English and Japanese.
-    - Acceptance: both behaviors have named diagnostics and one reject-first
-      seed each.
-    - Verify: `cargo test -p mizar-test`.
-    - Deps: 37 (shares chapter 19 edits). Refs: SSA-015, SSA-017.
-    - Completed in task 44: spec 04/08/15/Appendix A now agree that omitted
-      `reconsider` justification is syntax-admissible, while spec 08/22 gate
-      it to proof-free widening/inheritance/cluster-closure/local-fact
-      discharge and otherwise require `type.narrowing_requires_proof`; the same
-      grammar update makes proof-block `reconsider` explicit. Spec
-      19/22 now name `resolve.ambiguous_redefinition_target` for omitted
-      `coherence with` when several visible earlier roots are strictly
-      sharpened; declaration/import order and return type do not choose. Two
-      inactive advanced-semantics seeds pin the decisions. Existing parser
-      omitted-justification and proof-block behavior remains a deferred parser task-47
-      `source_drift` / `test_expectation_drift`; no checker/core source
-      semantics changed.
-
 45. **Checker alignment: overload tie-break implementation.** [x]
-    - Align `overload_resolution.md` and the wave-3 implementation (tasks
-      23-26 surfaces: template expansion priority, specificity comparisons,
-      root selection) with the task-37 decision; add Rust regressions for the
-      decided Case 2/3 outcomes and the tie-ambiguity rule.
-    - Also align declaration-time `redefine`-family target inference with
-      task 44: omitted `coherence with` may infer a target only when exactly
-      one visible earlier ordinary root of the same symbol kind and arity is
-      strictly sharpened. Multiple qualifying roots must preserve a failed
-      record/diagnostic instead of choosing by declaration order, import order,
-      or return type.
-    - Acceptance: `cargo test -p mizar-checker` covers the decided outcomes;
-      no undocumented tie-breaker or omitted-redefinition-target chooser remains
-      in code.
-    - Verify: `cargo test -p mizar-checker`,
-      `cargo clippy -p mizar-checker --all-targets -- -D warnings`.
-    - Deps: 37, 44. Refs: SSA-003, SSA-010, SSA-017; architecture 05.
-    - Completed in task 45: `overload_resolution.rs` now has explicit-payload
-      regressions for the task-37 Case 2/3 outcomes: equivalent distinct
-      template-derived roots remain ambiguous, encoded non-template priority
-      and strictly-more-specific template edges select the intended root, and
-      an unencoded ordinary/template-derived equivalence tie stays ambiguous.
-      Same-root accepted redefinition metadata likewise cannot break a
-      distinct-root tie. `overload_resolution.md`, the checker plan/audits,
-      and the top-level coverage audit now state that omitted `coherence with`
-      target diagnostics are declaration-checking/source-extraction producer
-      behavior; this data layer accepts only already-bound redefinition
-      payloads and preserves missing/deferred/rejected producer records. The
-      inactive `.miz` overload/redefinition seeds and deferred traceability rows
-      remain unchanged under MC-G027/MC-G030.
-
 46. **Checker alignment: closure contradiction and termination rules.** [x]
-    - Encode the task-41/42 decisions in `cluster_trace.md` and
-      `registration_resolution.md` (en+ja) and align the task 16-18
-      implementation: closure-time contradiction as fatal diagnostic
-      (severity per §17.7.3), grammar-based termination note beside the
-      defensive saturation bound, corrected reduction-determinism signature.
-    - Acceptance: module specs cite the new spec text; existing determinism
-      suite (task 30) extended for side-condition-set dependence.
-    - Verify: `cargo test -p mizar-checker`,
-      `cargo clippy -p mizar-checker --all-targets -- -D warnings`.
-    - Deps: 41, 42. Refs: SSA-007, SSA-008, SSA-009.
-    - Completed in task 46: `cluster_trace.rs` now asserts that explicit
-      closure contradictions produce the checker-local contradiction class with
-      error severity, fatal recovery, incomplete closure status, and no
-      degraded export for the contradictory generated fact. The determinism
-      suite now records an explicit-payload reduction trace snapshot proving
-      that equivalent discharged guard order is canonical, changing the
-      discharged `such` evidence changes the trace identity, and the
-      strategy-audit key remains unchanged and free of `such` specificity.
-      `cluster_trace.md`, `registration_resolution.md`, the checker
-      plan/audits, and the top-level coverage audit now cite the task-41/42
-      spec decisions. Source-derived normalization results, source-derived
-      cluster contradiction extraction, artifact/cache replay, and active
-      `.miz` semantic fixtures remain deferred under MC-G020/MC-G021/MC-G023/
-      MC-G030.
-
 47. **Checker alignment: existential gate and activation contract.** [x]
-    - Align the task-20 existential gate with the task-43 built-in
-      inhabitation table and parameterized sethood form, and record the
-      task-40 activation contract in `registration_resolution.md` as the
-      target behavior the interim policy approximates.
-    - Also align omitted `reconsider` justification handling with task 44:
-      no proof search and no implicit `by`; proof-free widening, unique
-      inheritance/view evidence, active cluster closure, or already recorded
-      local type facts must discharge every target obligation, otherwise the
-      failed site reports `type.narrowing_requires_proof`.
-    - Acceptance: gate behavior for `mode M is set`, built-ins, and struct
-      radixes matches the decided table with Rust regressions, and omitted
-      `reconsider` keeps the semantic E0102 gate without parser-only rejection.
-    - Verify: `cargo test -p mizar-checker`,
-      `cargo clippy -p mizar-checker --all-targets -- -D warnings`.
-    - Deps: 40, 43, 44. Refs: SSA-006, SSA-013, SSA-014, SSA-015.
-    - Completed in task 47: `registration_resolution.rs` now accepts
-      explicit base-shape inhabitation evidence only for unattributed exact
-      pattern matches, with built-in `object`/`set`, accepted mode tuple,
-      zero-field or fully guarded structure constructor, and schema type
-      parameter coverage. Attributed gates still require active existential
-      candidates; hidden, non-consumable, incomplete, or mismatched guard
-      evidence blocks or rejects the gate without seeding verified facts.
-      `type_checker.rs` now distinguishes explicit from omitted narrowing
-      requests, accepts omitted `reconsider` only when supplied consumable
-      proof-free evidence already discharges the target, and reports
-      `type.narrowing_requires_proof` without creating an implicit obligation
-      otherwise. `registration_resolution.md`, `type_checker.md`, the checker
-      plan/audits, and the top-level coverage audit record the task-40/43/44
-      contracts. Source-derived base-shape extraction, positive accepted-local
-      activation, source-derived omitted-`reconsider` parser/extraction
-      coverage, artifacts, and active `.miz` fixtures remain deferred under
-      MC-G018/MC-G020/MC-G021/MC-G025/MC-G026/MC-G030.
-
 48. **Reserve source declaration producer seam.** [x]
-    - Promote the existing reserve-only builtin declaration bridge into a
-      checker-owned, syntax-free producer seam in `type_checker`: consume
-      upstream-extracted source/module identity, reserve source range, binding
-      spelling/range, and bare builtin `set`/`object` type-expression
-      spelling/range/head; build the checker-owned `BindingEnv` and
-      `DeclarationCheckingOutput`; expose deterministic typed-site ids for the
-      active `mizar-test` runner to continue assembling `TypedAst`,
-      `ResolvedTypedAst`, summary-readiness, and binder-only core context
-      checks.
-    - Acceptance: `mizar-checker` keeps no direct `mizar-syntax` dependency;
-      non-builtin declarations, attributes, unsupported mode/structure
-      payloads outside promoted diagnostic slices, terms, formulas, coercions,
-      overload evidence, facts, proof skeletons,
-      CoreIr/ControlFlowIr/VC/proof payloads, and new active `.miz` coverage
-      remain deferred under MC-G020; active `type-elaboration` results stay
-      byte-stable.
-    - Verify: `cargo test -p mizar-checker`, `cargo test -p mizar-test`.
-    - Deps: task 47; external source families remain MC-G020. Refs:
-      Step 5 source-derived semantic bridge; mizar-test task 10.
-    - Completed in task 48: `type_checker.rs` now exposes
-      `SourceReserveDeclarationBridge`, `SourceReserveBindingInput`, and
-      `SourceReserveDeclarationHandoff` for the supported reserve-only builtin
-      slice. `mizar-test` still owns real `.miz` AST extraction and lower-stage
-      runner gating, then delegates checker handoff production through this
-      seam before its existing `TypedAst`/`ResolvedTypedAst`/core readiness
-      assertions. No `.miz` expectations, public diagnostic codes,
-      CoreIr/ControlFlowIr/VC/proof rows, or broader semantic payload families
-      were promoted.
-
 49. **Audit-corpus activation and task-29 record revision.** [ ]
     - When the `advanced_semantics`/`formula_statement` runners,
       property-implementation parser support, and source-to-checker payload
@@ -1063,3093 +221,186 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
       "Adversarial Corpus".
 
 50. **Source-derived attributed reserve evidence-gap bridge.** [x]
-    - Extend the task-48 reserve source declaration seam just far enough to
-      accept source-derived attribute chains on builtin `set`/`object` reserve
-      type expressions when the attribute symbol is already present in the
-      resolver `SymbolEnv`.
-    - Acceptance: same-module source-derived attributes are preserved in
-      checker-owned `TypeExpressionInput` and normalized by declaration
-      checking; attributed reserve declarations remain active fail cases with
-      `checker.declaration.deferred.evidence_query` until a real existential
-      registration/evidence-query seam exists. Imported attribute symbols,
-      non-builtin heads, unsupported mode/structure payloads outside promoted
-      diagnostic slices, terms, formulas, proof
-      skeletons, CoreIr/ControlFlowIr/VC/proof payloads, and successful
-      attributed declarations remain deferred under MC-G020/MC-G021/MC-G026.
-    - Verify: `cargo test -p mizar-checker`, `cargo test -p mizar-test`.
-    - Deps: task 48; external evidence remains MC-G021/MC-G026. Refs:
-      Step 5 source-derived semantic bridge; mizar-test task 10;
-      spec 03 type expressions; spec 17 existential gates.
-    - Completed in task 50: `type_checker.rs` now accepts source-derived
-      attribute payloads on the syntax-free reserve bridge and marks those
-      declarations with `MissingEvidenceQuery` rather than fabricating
-      existential evidence. `mizar-test` adds an active same-module attributed
-      reserve fail fixture that reaches the checker diagnostic, while the
-      existing import-backed attributed reserve fixture remains on the broader
-      extraction gap until imported symbols enter the active runner `SymbolEnv`.
-
 51. **Source-derived local mode reserve expansion-gap bridge.** [x]
-    - Extend the task-48 reserve source declaration seam just far enough to
-      accept source-derived reserve type heads that resolve to a unique
-      same-module `LocalSource` mode symbol with no type arguments or source
-      attributes.
-    - Acceptance: the checker-owned bridge validates that symbol heads are
-      exact `SymbolKind::Mode` entries from the current module's local source,
-      then declaration checking reaches the existing
-      `checker.type.external.mode_expansion_payload` diagnostic because real
-      mode-expansion payload extraction is not implemented. Imported modes,
-      structures, mode arguments, unresolved/ambiguous heads, mode expansion
-      extraction, terms, formulas, CoreIr/ControlFlowIr/VC/proof payloads, and
-      successful local-mode reserve declarations remain deferred under MC-G020.
-    - Verify: `cargo test -p mizar-checker`, `cargo test -p mizar-test`.
-    - Deps: task 48; external mode expansion remains MC-G014/MC-G020. Refs:
-      Step 5 source-derived semantic bridge; mizar-test task 10; spec 03 type
-      expressions; spec 07 modes; spec 17 accepted-mode inhabitation evidence.
-    - Completed in task 51: `type_checker.rs` validates local source-backed
-      mode heads on the syntax-free reserve bridge and preserves the existing
-      missing mode-expansion diagnostic rather than unfolding from raw syntax.
-      `mizar-test` adds an active same-module local-mode reserve fail fixture,
-      while imported modes and argument-bearing mode heads remain on the
-      broader extraction gap.
-
 52. **Source-derived local structure reserve evidence-gap bridge.** [x]
-    - Extend the task-48 reserve source declaration seam just far enough to
-      accept source-derived reserve type heads that resolve to a unique
-      same-module `LocalSource` structure symbol with no type arguments or
-      source attributes.
-    - Acceptance: the checker-owned bridge validates that symbol heads are
-      exact `SymbolKind::Structure` entries from the current module's local
-      source, marks those reserved-variable declarations with
-      `MissingEvidenceQuery`, and reaches
-      `checker.declaration.deferred.evidence_query` because real
-      base-shape/constructor-witness evidence extraction is not implemented.
-      Imported structures, structure arguments, attributed structure heads
-      beyond the later promoted task-53 diagnostic slice, successful
-      local-structure reserve declarations, structure field/default payload
-      extraction, CoreIr/ControlFlowIr/VC/proof payloads, and broader semantic
-      pass coverage remain deferred under MC-G020/MC-G026.
-    - Verify: `cargo test -p mizar-checker`, `cargo test -p mizar-test`.
-    - Deps: task 48; external base-shape evidence remains MC-G020/MC-G026.
-      Refs: Step 5 source-derived semantic bridge; mizar-test task 10; spec 03
-      type expressions; spec 05 structures; spec 17 base-shape inhabitation
-      evidence.
-    - Completed in task 52: `type_checker.rs` validates local source-backed
-      structure heads on the syntax-free reserve bridge and preserves the
-      missing evidence-query diagnostic rather than inferring structure
-      inhabitation from a symbol. `mizar-test` adds an active same-module
-      local-structure reserve fail fixture with a real field-bearing local
-      `struct`, while imported structures and argument-bearing structure heads
-      remain on the broader extraction gap.
-
 53. **Source-derived attributed local structure reserve evidence-gap bridge.** [x]
-    - Extend the task-48 reserve source declaration seam just far enough to
-      accept source-derived no-argument attribute payloads attached to a unique
-      same-module `LocalSource` structure reserve head with no type arguments.
-    - Acceptance: the checker-owned bridge validates exact local
-      `SymbolKind::Structure` provenance for the symbol head, keeps attributed
-      local mode heads outside the later task-54 diagnostic slice on the broader
-      extraction gap, marks the attributed
-      local-structure reserved-variable declaration with
-      `MissingEvidenceQuery`, and reaches
-      `checker.declaration.deferred.evidence_query` because real existential
-      evidence for the full normalized attributed type is not implemented.
-      Imported attributes or structures, attribute arguments, qualified
-      attribute disambiguation, structure arguments, successful attributed
-      structure reserve declarations, structure field/default/base-shape
-      extraction, CoreIr/ControlFlowIr/VC/proof payloads, and broader semantic
-      pass coverage remain deferred under MC-G020/MC-G026.
-    - Verify: `cargo test -p mizar-checker`, `cargo test -p mizar-test`.
-    - Deps: tasks 48, 50, and 52; external full attributed-type existential
-      evidence remains MC-G020/MC-G026. Refs: Step 5 source-derived semantic
-      bridge; mizar-test task 10; spec 03 type expressions; spec 05
-      structures; spec 17 existential and base-shape inhabitation evidence.
-    - Completed in task 53: `type_checker.rs` admits same-module source
-      attributes only for local structure heads on the syntax-free reserve
-      bridge, while task 54 later owns the attributed local-mode diagnostic
-      slice.
-      `mizar-test` adds an active same-module attributed local-structure
-      reserve fail fixture and keeps imported/argument-bearing forms on the
-      broader extraction gap.
-
 54. **Source-derived attributed local mode reserve expansion-gap bridge.** [x]
-    - Extend the task-48 reserve source declaration seam just far enough to
-      accept source-derived no-argument attribute payloads attached to a unique
-      same-module `LocalSource` mode reserve head with no type arguments.
-    - Acceptance: the checker-owned bridge validates exact local
-      `SymbolKind::Mode` provenance for the symbol head, preserves the
-      same-module source-derived attributes, does not attach
-      `MissingEvidenceQuery` before a real mode expansion exists, and reaches
-      `checker.type.external.mode_expansion_payload` because real
-      mode-expansion payload extraction is not implemented. Imported
-      attributes or modes, attribute arguments, qualified attribute
-      disambiguation, mode arguments, successful attributed mode reserve
-      declarations, real mode expansion, accepted-mode/base evidence,
-      existential evidence for the fully expanded attributed type,
-      CoreIr/ControlFlowIr/VC/proof payloads, and broader semantic pass
-      coverage remain deferred under MC-G014/MC-G020/MC-G026.
-    - Verify: `cargo test -p mizar-checker`, `cargo test -p mizar-test`.
-    - Deps: tasks 48, 50, and 51; external mode-expansion and existential
-      evidence remain MC-G014/MC-G020/MC-G026. Refs: Step 5 source-derived
-      semantic bridge; mizar-test task 10; spec 03 type expressions; spec 07
-      modes; spec 17 existential and accepted-mode inhabitation evidence.
-    - Completed in task 54: `type_checker.rs` admits same-module source
-      attributes for local mode heads on the syntax-free reserve bridge without
-      treating the missing existential evidence as an evidence-query diagnostic.
-      `mizar-test` adds an active same-module attributed local-mode reserve fail
-      fixture and keeps imported/argument-bearing forms on the broader
-      extraction gap.
-
 55. **Source-derived bare local mode expansion bridge.** [x]
-    - Extend the active type-elaboration source bridge just far enough to
-      produce a real `ModeExpansion` for bare reserve uses of a unique
-      same-module `LocalSource` no-argument mode definition whose unrecovered
-      source definition precedes the reserve use, has no definition-local
-      parameter/assumption context, and has a bare builtin `set` / `object`
-      RHS.
-    - Acceptance: the runner extracts the expansion from `SurfaceAst` and
-      passes it through the checker-owned syntax-free reserve seam; the
-      resulting bare local-mode reserve declaration is an active pass case
-      through `BindingEnv`, `DeclarationChecker`, `TypedAst`,
-      `ResolvedTypedAst`, summary-readiness, and binder-only `CoreContext`.
-      The runner withholds mode expansions for attributed local-mode reserve
-      uses, mixed attributed/bare local-mode sources, attributed mode RHSs,
-      imported/argument-bearing/parameterized/contextual modes, unresolved or
-      ambiguous heads, and non-reserve declarations. Those families remain on
-      the existing missing-expansion or broader extraction gaps.
-    - Verify: `cargo test -p mizar-checker`, `cargo test -p mizar-test`.
-    - Deps: tasks 48, 51, and 54; broader mode expansion and existential
-      evidence remain MC-G014/MC-G020/MC-G026. Refs: Step 5 source-derived
-      semantic bridge; mizar-test task 10; spec 03 type expressions; spec 07
-      modes; spec 17 base-shape inhabitation evidence.
-    - Completed in task 55: `mizar-test` extracts a real AST-derived
-      `ModeExpansion` for the narrow bare local-mode reserve slice and the
-      checker source reserve seam accepts explicit mode-expansion payloads
-      without fabricating evidence. A new active pass fixture covers the local
-      mode expansion bridge, while attributed/mixed/attributed-RHS cases stay
-      fail-closed on missing expansion or evidence gaps.
-
 56. **Source-derived local mode expansion chain bridge.** [x]
-    - Extend the task-55 bridge just far enough to produce real chained
-      `ModeExpansion` payloads when a same-module bare local-mode reserve head
-      expands to a preceding same-module no-argument local mode whose own
-      preceding source definition has an accepted bare builtin `set` /
-      `object` RHS expansion.
-    - Acceptance: the runner inserts both source-derived expansions before the
-      checker-owned reserve seam, active pass fixtures cover `B -> A -> set`
-      and `B -> A -> object`, and an active fail fixture proves an attributed
-      dependency withholds the whole chain and reaches the missing
-      mode-expansion diagnostic. Forward references, ambiguous/imported/cyclic
-      dependencies, partial chains without an accepted dependency expansion,
-      attributed uses/RHSs, arguments, parameterized/contextual definitions,
-      CoreIr/ControlFlowIr/VC/proof payloads, and broader semantic pass
-      coverage remain deferred.
-    - Verify: `cargo test -p mizar-test`, `cargo test -p mizar-checker`.
-    - Deps: tasks 48, 51, 54, and 55. Broader mode expansion and existential
-      evidence remain MC-G014/MC-G020/MC-G026. Refs: Step 5 source-derived
-      semantic bridge; mizar-test task 10; spec 03 type expressions; spec 07
-      modes; spec 17 base-shape inhabitation evidence.
-    - Completed in task 56: `mizar-test` extracts the narrow one-edge
-      source-derived local-mode expansion chain, adds active pass coverage for
-      `B -> A -> set` and `B -> A -> object`, and keeps attributed dependency
-      chains fail-closed on the checker missing mode-expansion diagnostic
-      without promoting CoreIr, ControlFlowIr, VC, or proof payloads.
-
 57. **Source-derived local mode structure-RHS evidence-gap bridge.** [x]
-    - Extend the task-55 bridge just far enough to produce a real
-      `ModeExpansion` payload when a same-module bare local-mode reserve head
-      expands to a preceding same-module no-argument local structure head.
-      The checker must consume that expansion, then fail closed on missing
-      structure base-shape/constructor-witness evidence.
-    - Acceptance: checker unit coverage proves `Mode -> LocalStruct` consumes
-      the real `ModeExpansion`, does not emit
-      `checker.type.external.mode_expansion_payload`, marks the declaration
-      partial with `MissingEvidenceQuery`, and exports no verified facts.
-      Runner unit coverage proves same-module local structure RHS extraction
-      is accepted as a terminal expansion payload. One active
-      `type_elaboration` fail fixture covers the real `.miz` source path with
-      `type_elaboration.checker.checker.declaration.deferred.evidence_query`.
-      Imported, argument-bearing, attributed, ambiguous, cyclic, and
-      forward-reference structure RHSs remain outside the slice.
-    - Verify: `cargo test -p mizar-test`, `cargo test -p mizar-checker`.
-    - Deps: tasks 48, 52, and 55. Structure base-shape evidence and broader
-      mode expansion remain MC-G020/MC-G026. Refs: Step 5 source-derived
-      semantic bridge; mizar-test task 10; spec 03 type expressions; spec 05
-      structures; spec 07 modes; spec 17 base-shape inhabitation evidence.
-    - Completed in task 57: `mizar-test` extracts a real AST-derived
-      local-mode expansion whose RHS is a same-module local structure head,
-      and `mizar-checker` routes the expanded reserve declaration to the
-      existing missing evidence-query diagnostic rather than the missing
-      expansion-payload diagnostic. Positive structure acceptance,
-      base-shape/constructor-witness extraction, imported/argument-bearing/
-      attributed structure RHSs, CoreIr, ControlFlowIr, VC, proof payloads,
-      and broader semantic pass coverage remain deferred.
-
 58. **Source-derived local mode attributed-builtin RHS evidence-gap bridge.** [x]
-    - Extend the task-55 bridge just far enough to produce a real
-      `ModeExpansion` payload when a same-module bare local-mode reserve head
-      expands to a preceding same-module no-argument local mode whose RHS is an
-      attributed bare builtin `set` / `object` type.
-    - Acceptance: checker unit coverage proves `Mode -> marked set` consumes
-      the real `ModeExpansion`, does not emit
-      `checker.type.external.mode_expansion_payload`, preserves the normalized
-      attribute, marks the declaration partial with `MissingEvidenceQuery`, and
-      exports no verified facts. Runner unit coverage proves direct attributed
-      builtin RHS extraction is accepted as a terminal expansion payload while
-      chain dependencies ending in attributed RHSs remain withheld. The
-      existing active `type_elaboration` attributed-RHS fail fixture is updated
-      to cover the real `.miz` source path with
-      `type_elaboration.checker.checker.declaration.deferred.evidence_query`.
-      Attributed reserve heads, mixed attributed/bare reserve uses, imported or
-      argument-bearing attributes/modes, attributed local structure RHSs, chain
-      promotion through attributed RHSs, successful attributed-mode
-      declarations, and existential evidence remain outside the slice.
-    - Verify: `cargo test -p mizar-test`, `cargo test -p mizar-checker`.
-    - Deps: tasks 48, 50, 54, and 55. Full attributed-type existential
-      evidence and broader mode expansion remain MC-G020/MC-G026. Refs: Step 5
-      source-derived semantic bridge; mizar-test task 10; spec 03 type
-      expressions; spec 07 modes; spec 17 attributed-type evidence.
-    - Completed in task 58: `mizar-test` extracts a real AST-derived
-      local-mode expansion whose RHS is an attributed builtin head, and
-      `mizar-checker` routes the expanded reserve declaration to the existing
-      missing evidence-query diagnostic rather than the missing
-      expansion-payload diagnostic. Positive attributed-type acceptance,
-      existential evidence extraction, attributed reserve heads,
-      attributed-RHS chains, CoreIr, ControlFlowIr, VC, proof payloads, and
-      broader semantic pass coverage remain deferred.
-
 59. **Source-derived attributed local mode reserve evidence-gap bridge.** [x]
-    - Extend the task-55 bridge just far enough to produce a real
-      `ModeExpansion` payload for a same-module attributed local-mode reserve
-      head when its unique preceding same-module no-argument mode definition
-      has a direct bare builtin `set` / `object` RHS and the same mode is not
-      also used as a bare reserve head in the same bridge input.
-    - Acceptance: checker unit coverage proves `marked Mode` with a real
-      `Mode -> set` expansion no longer emits
-      `checker.type.external.mode_expansion_payload`, preserves the normalized
-      attribute, marks the declaration partial with `MissingEvidenceQuery`,
-      and exports no verified facts. Runner unit coverage proves the single
-      attributed local-mode reserve use receives the real direct bare-builtin
-      expansion while mixed bare/attributed uses of the same mode still
-      withhold expansion. The existing active `type_elaboration` attributed
-      local-mode reserve fixture is updated to cover the real `.miz` source
-      path with
-      `type_elaboration.checker.checker.declaration.deferred.evidence_query`.
-      Mixed bare/attributed reserve uses, imported or argument-bearing
-      attributes/modes, attributed dependencies, chains, structure RHSs,
-      attributed RHSs, successful attributed-mode declarations, and
-      existential evidence remain outside the slice.
-    - Verify: `cargo test -p mizar-test`, `cargo test -p mizar-checker`.
-    - Deps: tasks 48, 50, 54, and 55. Full attributed-type existential
-      evidence and broader mode expansion remain MC-G020/MC-G026. Refs: Step 5
-      source-derived semantic bridge; mizar-test task 10; spec 03 type
-      expressions; spec 07 modes; spec 17 attributed-type evidence.
-    - Completed in task 59: `mizar-test` extracts a real AST-derived direct
-      bare-builtin local-mode expansion for a same-module attributed reserve
-      head when the same mode has no mixed bare reserve use, and
-      `mizar-checker` routes the expanded attributed reserve declaration to
-      the existing missing evidence-query diagnostic rather than the missing
-      expansion-payload diagnostic. Positive attributed-type acceptance,
-      existential evidence extraction, mixed attributed/bare uses, attributed
-      dependencies or chains, CoreIr, ControlFlowIr, VC, proof payloads, and
-      broader semantic pass coverage remain deferred.
-
 60. **Source-derived attributed local mode structure-RHS evidence-gap bridge.** [x]
-    - Extend the task-57 structure-RHS bridge just far enough to produce a real
-      `ModeExpansion` payload for a same-module attributed local-mode reserve
-      head when its mode definition is unique, unrecovered, preceding,
-      no-argument, free of definition-local context, and has a direct
-      same-module local structure RHS whose unique unrecovered structure
-      definition precedes the mode definition. The same mode must not also be
-      used as a bare reserve head in the same bridge input.
-    - Acceptance: checker unit coverage proves `marked Mode` with a real
-      `Mode -> LocalStruct` expansion no longer emits
-      `checker.type.external.mode_expansion_payload`, preserves the normalized
-      attribute, marks the declaration partial with `MissingEvidenceQuery`,
-      and exports no verified facts. Runner unit coverage proves the single
-      attributed local-mode reserve use receives the real direct structure-RHS
-      expansion while mixed bare/attributed uses of the same mode, attributed
-      structure-RHS chains, and cached direct structure-RHS dependencies still
-      withhold expansion. A new active `type_elaboration` fail fixture covers
-      the real `.miz` source path with
-      `type_elaboration.checker.checker.declaration.deferred.evidence_query`;
-      additional active fail fixtures cover the mixed structure-RHS and
-      attributed structure-RHS chain exclusions with the missing-expansion
-      diagnostic.
-      Imported or argument-bearing attributes/modes/structures, dependencies,
-      chains, attributed structure RHSs, attributed-builtin RHSs, successful
-      attributed or structure declarations, and base-shape/existential evidence
-      remain outside the slice.
-    - Verify: `cargo test -p mizar-test`, `cargo test -p mizar-checker`.
-    - Deps: tasks 48, 50, 52, 53, 57, and 59. Structure base-shape evidence,
-      full attributed-type existential evidence, and broader mode expansion
-      remain MC-G020/MC-G026. Refs: Step 5 source-derived semantic bridge;
-      mizar-test task 10; spec 03 type expressions; spec 05 structures; spec
-      06 attributes; spec 07 modes; spec 17 attributed-type evidence.
-    - Completed in task 60: `mizar-test` extracts a real AST-derived direct
-      local-structure RHS expansion for a same-module attributed reserve head
-      when the same mode has no mixed bare reserve use, and `mizar-checker`
-      routes the expanded attributed reserve declaration to the existing
-      missing evidence-query diagnostic rather than the missing expansion-
-      payload diagnostic. Positive attributed/structure acceptance, base-
-      shape/constructor-witness extraction, existential evidence extraction,
-      mixed attributed/bare uses, dependencies or chains, CoreIr, ControlFlowIr,
-      VC, proof payloads, and broader semantic pass coverage remain deferred.
-
 61. **Source-derived attributed local mode attributed-builtin-RHS evidence-gap bridge.** [x]
-    - Extend the task-58 attributed-builtin RHS bridge just far enough to
-      produce a real `ModeExpansion` payload for a same-module attributed
-      local-mode reserve head when its mode definition is unique, unrecovered,
-      preceding, no-argument, free of definition-local context, and has a
-      direct attributed builtin `set` / `object` RHS. The same mode must not
-      also be used as a bare reserve head in the same bridge input.
-    - Acceptance: checker unit coverage proves `marked Mode` with a real
-      `Mode -> marked set` expansion no longer emits
-      `checker.type.external.mode_expansion_payload`, preserves normalized
-      attributes from the reserve head and the RHS, marks the declaration
-      partial with `MissingEvidenceQuery`, and exports no verified facts.
-      Runner unit coverage proves the single attributed local-mode reserve use
-      receives the real direct attributed-builtin RHS expansion while mixed
-      bare/attributed uses of the same mode and attributed dependency chains
-      ending in attributed RHSs still withhold expansion. A new active
-      `type_elaboration` fail fixture covers the real `.miz` source path with
-      `type_elaboration.checker.checker.declaration.deferred.evidence_query`;
-      additional active fail fixtures cover the mixed attributed-RHS and
-      attributed-RHS chain exclusions with the missing-expansion diagnostic.
-      Imported or argument-bearing attributes/modes, dependencies, chains,
-      structure RHSs, attributed structure RHSs, successful attributed
-      declarations, existential evidence extraction, and CoreIr/ControlFlowIr/
-      VC/proof payloads remain outside the slice.
-    - Verify: `cargo test -p mizar-test`, `cargo test -p mizar-checker`.
-    - Deps: tasks 48, 50, 54, 55, 58, and 59. Full attributed-type
-      existential evidence and broader mode expansion remain MC-G020/MC-G026.
-      Refs: Step 5 source-derived semantic bridge; mizar-test task 10; spec 03
-      type expressions; spec 06 attributes; spec 07 modes; spec 17
-      attributed-type evidence.
-    - Completed in task 61: `mizar-test` extracts a real AST-derived direct
-      attributed-builtin RHS expansion for a same-module attributed reserve
-      head when the same mode has no mixed bare reserve use, and
-      `mizar-checker` routes the expanded attributed reserve declaration to the
-      existing missing evidence-query diagnostic rather than the missing
-      expansion-payload diagnostic. Positive attributed acceptance, existential
-      evidence extraction, mixed attributed/bare uses, dependencies or chains,
-      CoreIr, ControlFlowIr, VC, proof payloads, and broader semantic pass
-      coverage remain deferred.
-
 62. **Add source-derived local mode structure-RHS chain evidence-gap bridge.** [x]
-    - Extend the task-56 chain producer only for a bare same-module
-      local-mode reserve head `A` whose unique unrecovered no-argument
-      preceding mode definition is `A is B`, where `B` is a unique unrecovered
-      no-argument same-module local mode whose own preceding definition is
-      `B is LocalStruct`. The unique unrecovered same-module local structure
-      definition must precede `B`; `B` must precede `A`; `A` must precede the
-      reserve use; both mode definitions must be free of definition-local
-      context.
-    - Acceptance: runner unit coverage proves both real source-derived
-      `B -> LocalStruct` and `A -> B` expansion payloads are extracted from the
-      same `SurfaceAst`; cached direct structure-RHS payloads may feed this
-      one-edge chain, but deeper chains remain withheld. A new active
-      `type_elaboration` fail fixture covers the real `.miz` source path and
-      reaches `type_elaboration.checker.checker.declaration.deferred.evidence_query`
-      rather than `checker.type.external.mode_expansion_payload`. The checker
-      emits no verified facts and positive structure acceptance remains
-      deferred.
-    - Verify: `cargo test -p mizar-test`, `cargo test -p mizar-checker`.
-    - Deps: tasks 48, 52, 56, and 57. Structure base-shape/
-      constructor-witness evidence and broader mode expansion remain
-      MC-G020/MC-G026. Refs: Step 5 source-derived semantic bridge;
-      mizar-test task 10; spec 03 type expressions; spec 05 structures;
-      spec 07 modes; spec 17 evidence.
-    - Completed in task 62: `mizar-test` extracts a real AST-derived
-      one-edge bare local-mode chain ending in a same-module local structure
-      RHS, and `mizar-checker` routes the expanded reserve declaration to the
-      existing missing evidence-query diagnostic. Imported/ambiguous symbols,
-      arguments, contextual or parameterized definitions, attributed roots,
-      attributed or deeper chains, positive structure acceptance, CoreIr,
-      ControlFlowIr, VC, proof payloads, and broader semantic pass coverage
-      remain deferred.
-
 63. **Add source-derived local mode attributed-builtin-RHS chain evidence-gap bridge.** [x]
-    - Extend the task-56 chain producer only for a bare same-module
-      local-mode reserve head `A` whose unique unrecovered no-argument
-      preceding mode definition is `A is B`, where `B` is a unique unrecovered
-      no-argument same-module local mode whose own preceding definition has a
-      direct attributed builtin `set` / `object` RHS. `B` must precede `A`;
-      `A` must precede the reserve use; both mode definitions must be free of
-      definition-local context; and all RHS attributes must resolve to
-      argument-free same-module attribute symbols.
-    - Acceptance: runner unit coverage proves both real source-derived
-      `B -> marked set` and `A -> B` expansion payloads are extracted from the
-      same `SurfaceAst`; cached direct attributed-builtin-RHS payloads may feed
-      this one-edge chain, but deeper chains and attributed roots remain
-      withheld. A new active `type_elaboration` fail fixture covers the real
-      `.miz` source path and reaches
-      `type_elaboration.checker.checker.declaration.deferred.evidence_query`
-      rather than `checker.type.external.mode_expansion_payload`. The checker
-      emits no verified facts and positive attributed-type acceptance remains
-      deferred.
-    - Verify: `cargo test -p mizar-test`, `cargo test -p mizar-checker`.
-    - Deps: tasks 48, 50, 56, 58, and 61. Full attributed-type existential
-      evidence and broader mode expansion remain MC-G020/MC-G026. Refs: Step 5
-      source-derived semantic bridge; mizar-test task 10; spec 03 type
-      expressions; spec 06 attributes; spec 07 modes; spec 17 evidence.
-    - Completed in task 63: `mizar-test` extracts a real AST-derived
-      one-edge bare local-mode chain ending in an attributed builtin RHS, and
-      `mizar-checker` routes the expanded reserve declaration to the existing
-      missing evidence-query diagnostic. Imported/ambiguous symbols, attribute
-      or mode arguments, contextual or parameterized definitions, attributed
-      roots, attributed or deeper chains, positive attributed-type acceptance,
-      CoreIr, ControlFlowIr, VC, proof payloads, and broader semantic pass
-      coverage remain deferred.
-
 64. **Add source-derived attributed local mode bare-builtin chain evidence-gap bridge.** [x]
-    - Extend the task-59 attributed-root producer only for `reserve z for
-      marked A` where `A` is a unique unrecovered no-argument same-module mode
-      whose preceding definition is `A is B`, `B` is a unique unrecovered
-      no-argument same-module mode whose preceding definition has a direct bare
-      builtin `set` / `object` RHS, `B` precedes `A`, `A` precedes the reserve
-      use, both mode definitions are free of definition-local context, `A` is
-      not also used as a bare reserve head in the same bridge input, and `B` is
-      not used as an attributed reserve head in the same bridge input.
-    - Acceptance: runner unit coverage proves both real source-derived
-      `B -> set` and `A -> B` expansion payloads plus the attributed reserve
-      head are extracted from the same `SurfaceAst`; cached direct bare-builtin
-      dependency payloads may feed this one-edge attributed-root chain, but
-      deeper chains, attributed dependencies, mixed bare/attributed use of
-      `A`, and attributed roots whose dependency terminates in a local
-      structure RHS or attributed builtin RHS remain withheld. A new active
-      `type_elaboration` fail fixture covers the real `.miz` source path and
-      reaches `type_elaboration.checker.checker.declaration.deferred.evidence_query`
-      rather than `checker.type.external.mode_expansion_payload`. The checker
-      emits no verified facts and positive attributed-type acceptance remains
-      deferred.
-    - Verify: `cargo test -p mizar-test`, `cargo test -p mizar-checker`.
-    - Deps: tasks 48, 50, 55, 56, and 59. Full attributed-type existential
-      evidence and broader mode expansion remain MC-G020/MC-G026. Refs: Step 5
-      source-derived semantic bridge; mizar-test task 10; spec 03 type
-      expressions; spec 06 attributes; spec 07 modes; spec 17 evidence.
-
 65. **Add source-derived attributed local mode structure-RHS chain evidence-gap bridge.** [x]
-    - Extend the task-64 attributed-root chain producer only for `reserve z for
-      marked A` where `A is B`, `B is LocalStruct`, `LocalStruct` is a unique
-      unrecovered same-module structure definition preceding `B`, both mode
-      definitions are unique, unrecovered, same-module, no-argument, and free of
-      definition-local context, source order is `LocalStruct -> B -> A -> reserve`,
-      `A` is not also used as a bare reserve head, and `B` is not used as an
-      attributed reserve head in the same bridge input.
-    - Acceptance: runner unit coverage proves both real source-derived
-      `B -> LocalStruct` and `A -> B` expansion payloads plus the attributed
-      reserve head are extracted from the same `SurfaceAst`; cached direct
-      structure-RHS dependency payloads may feed this one-edge attributed-root
-      chain, but attributed-builtin terminal dependencies, deeper chains,
-      attributed dependencies, mixed bare/attributed `A`, imported/ambiguous
-      symbols, arguments, and contextual/parameterized/recovered definitions
-      remain withheld. The existing active structure-RHS chain `.miz` fixture
-      must move from `checker.type.external.mode_expansion_payload` to
-      `type_elaboration.checker.checker.declaration.deferred.evidence_query`.
-      The checker emits no verified facts and positive structure/attributed-type
-      acceptance remains deferred.
-    - Verify: `cargo test -p mizar-test`, `cargo test -p mizar-checker`.
-    - Deps: tasks 48, 50, 56, 60, 62, and 64. Structure base-shape /
-      constructor-witness evidence, full attributed-type existential evidence,
-      and broader mode expansion remain MC-G020/MC-G026. Refs: Step 5
-      source-derived semantic bridge; mizar-test task 10; spec 03 type
-      expressions; spec 05 structures; spec 06 attributes; spec 07 modes;
-      spec 17 evidence.
-
 66. **Add source-derived attributed local mode attributed-builtin-RHS chain evidence-gap bridge.** [x]
-    - Extend the task-64/task-65 attributed-root chain producer only for
-      `reserve z for marked A` where `A is B`, `B is marked set` or
-      `B is marked object`, RHS attributes resolve to argument-free same-module
-      attribute symbols, both mode definitions are unique, unrecovered,
-      same-module, no-argument, and free of definition-local context, source
-      order is `B -> A -> reserve`, `A` is not also used as a bare reserve head,
-      and `B` is not used as an attributed reserve head in the same bridge input.
-    - Acceptance: runner unit coverage proves both real source-derived
-      `B -> marked set/object` and `A -> B` expansion payloads plus the
-      attributed reserve head are extracted from the same `SurfaceAst`; mixed
-      roots, attributed dependencies, deeper chains, imported/ambiguous symbols,
-      attribute or mode arguments, and contextual/parameterized/recovered
-      definitions remain withheld. The existing active attributed-RHS chain
-      `.miz` fixture must move from `checker.type.external.mode_expansion_payload`
-      to `type_elaboration.checker.checker.declaration.deferred.evidence_query`.
-      The checker emits no verified facts and positive attributed-type
-      acceptance remains deferred.
-    - Verify: `cargo test -p mizar-test`, `cargo test -p mizar-checker`.
-    - Deps: tasks 48, 50, 56, 61, 63, and 64. Full attributed-type existential
-      evidence and broader mode expansion remain MC-G020/MC-G026. Refs: Step 5
-      source-derived semantic bridge; mizar-test task 10; spec 03 type
-      expressions; spec 06 attributes; spec 07 modes; spec 17 evidence.
-
 67. **Add source-derived structure-qualified attribute gap boundary.** [x]
-    - Add an active `type_elaboration` boundary fixture for a same-module
-      structure-qualified attribute reference in a reserve type expression,
-      for example `LocalStruct.marked LocalStruct`.
-    - Acceptance: the active runner proves the real `.miz` source path is
-      parser/resolver executable but remains on
-      `type_elaboration.external_dependency.ast_payload_extraction` because the
-      checker-owned attribute payload does not yet carry structure-qualifier or
-      attribute-owner provenance. The bridge must not rewrite the reference to
-      an unqualified attribute payload, infer positive attributed-structure
-      acceptance, or fabricate existential/evidence, CoreIr, ControlFlowIr, VC,
-      or proof payloads.
-    - Verify: `cargo test -p mizar-test`, `cargo test -p mizar-checker`.
-    - Deps: tasks 48, 50, 52, and 53. Qualified-attribute provenance,
-      attribute-owner resolution, full attributed-type existential evidence,
-      and broader attribute extraction remain MC-G020/MC-G026. Refs: Step 5
-      source-derived semantic bridge; mizar-test task 10; spec 03 type
-      expressions; spec 05 structures; spec 06 attributes.
-
 68. **Add source-derived argument-bearing mode reserve gap boundary.** [x]
-    - Add an active `type_elaboration` boundary fixture for a reserve type
-      expression whose same-module local mode head has `of` type arguments,
-      for example `Element of a`.
-    - Acceptance: the active runner proves the real `.miz` source path is
-      parser/resolver executable but remains on
-      `type_elaboration.external_dependency.ast_payload_extraction` because the
-      checker-owned reserve source bridge does not yet carry real
-      type-argument or term-argument provenance. The boundary must not claim
-      mode-argument payload extraction, arity matching, mode expansion,
-      positive type elaboration, or CoreIr/ControlFlowIr/VC/proof payloads.
-    - Verify: `cargo test -p mizar-test`, `cargo test -p mizar-checker`.
-    - Deps: tasks 48, 51, and 55. Type-argument and term-argument provenance,
-      argument-bearing mode expansion, arity checking, positive acceptance,
-      and broader mode extraction remain MC-G020/MC-G014. Refs: Step 5
-      source-derived semantic bridge; mizar-test task 10; spec 03 type
-      expressions; spec 07 modes.
-
 69. **Add source-derived argument-bearing structure reserve gap boundary.** [x]
-    - Add an active `type_elaboration` boundary fixture for a reserve type
-      expression whose same-module local structure declaration has an `of`
-      parameter surface and whose reserve head has `of` type arguments, for
-      example `LocalStruct of a`.
-    - Acceptance: the active runner proves the real `.miz` source path is
-      parser/resolver executable but remains on
-      `type_elaboration.external_dependency.ast_payload_extraction` because the
-      checker-owned reserve source bridge does not yet carry real
-      type-argument or term-argument provenance. The boundary must not claim
-      structure-argument payload extraction, arity matching, base-shape or
-      constructor-witness evidence, positive structure type elaboration, or
-      CoreIr/ControlFlowIr/VC/proof payloads.
-    - Verify: `cargo test -p mizar-test`, `cargo test -p mizar-checker`.
-    - Deps: tasks 48, 52, and 68. Type-argument and term-argument provenance,
-      argument-bearing structure payloads, base-shape evidence, arity checking,
-      positive acceptance, and broader structure extraction remain MC-G020.
-      Refs: Step 5 source-derived semantic bridge; mizar-test task 10; spec 03
-      type expressions; spec 05 structures.
-
 70. **Add source-derived bracket-form local mode reserve gap boundary.** [x]
-    - Add an active `type_elaboration` boundary fixture for source containing a
-      same-module bracket-parameter mode declaration and a bracket-form reserve
-      type head, for example `Family[set]`.
-    - Acceptance: the active runner proves the real `.miz` source path is
-      parser/resolver executable but remains on
-      `type_elaboration.external_dependency.ast_payload_extraction` before
-      bracket type-argument payload extraction or mode-head resolution because
-      the checker-owned reserve source bridge does not yet carry real bracket
-      type-argument or `qua`-argument provenance. The boundary must not claim
-      bracket payload extraction, arity matching, mode expansion, positive type
-      elaboration, or CoreIr/ControlFlowIr/VC/proof payloads.
-    - Verify: `cargo test -p mizar-test`, `cargo test -p mizar-checker`.
-    - Deps: tasks 48, 51, and 68. Bracket `type_arg_list` provenance,
-      `qua`-argument lowering, mode-head resolution with arguments, arity
-      checking, positive acceptance, and broader mode extraction remain
-      MC-G020/MC-G014. Refs: Step 5 source-derived semantic bridge; mizar-test
-      task 10; spec 03 type expressions; spec 07 modes.
-
 71. **Add source-derived bracket-form local structure reserve gap boundary.** [x]
-    - Add an active `type_elaboration` boundary fixture for source containing a
-      same-module bracket-parameter structure declaration and a bracket-form
-      reserve type head, for example `LocalStruct[set]`.
-    - Acceptance: the active runner proves the real `.miz` source path is
-      parser/resolver executable but remains on
-      `type_elaboration.external_dependency.ast_payload_extraction` before
-      bracket type-argument payload extraction or structure-head resolution
-      because the checker-owned reserve source bridge does not yet carry real
-      bracket type-argument or `qua`-argument provenance. The boundary must not
-      claim bracket payload extraction, arity matching, base-shape or
-      constructor-witness evidence, positive structure type elaboration, or
-      CoreIr/ControlFlowIr/VC/proof payloads.
-    - Verify: `cargo test -p mizar-test`, `cargo test -p mizar-checker`.
-    - Deps: tasks 48, 52, and 69. Bracket `type_arg_list` provenance,
-      `qua`-argument lowering, structure-head resolution with arguments, arity
-      checking, positive structure acceptance, and broader structure extraction
-      remain MC-G020/MC-G014. Refs: Step 5 source-derived semantic bridge;
-      mizar-test task 10; spec 03 type expressions; spec 05 structures.
-
 72. **Add source-derived two-edge bare local mode chain bridge.** [x]
-    - Extend the task-56 pass producer only for bare same-module no-argument
-      local-mode chains `Outer -> Middle -> Base -> set` / `object`.
-    - Acceptance: the active runner extracts all three real `ModeExpansion`
-      payloads from unique unrecovered same-module mode definitions in source
-      order, with no definition-local context, no attributes, and no arguments,
-      then the reserve declaration follows the existing `TypedAst`,
-      `ResolvedTypedAst`, summary-readiness, and binder-only `CoreContext`
-      preparation path. Cold and cached three-edge local-mode chains remained on
-      `type_elaboration.checker.checker.type.external.mode_expansion_payload`
-      so the two-edge cap could not silently broaden; task 73 later promoted
-      the same seam to three edges, and task 74 later replaced the temporary
-      depth guard with the AST-bounded structural rule.
-    - Verify: `cargo test -p mizar-test`, `cargo test -p mizar-checker`.
-    - Deps: tasks 48, 55, and 56. Attributed roots or dependencies,
-      structure/attributed-builtin terminals beyond the existing one-edge
-      diagnostic slices, imported/argument-bearing/parameterized/contextual/
-      ambiguous/cyclic/forward-reference definitions, chains outside task 74's
-      structural guards, CoreIr, ControlFlowIr, VC, proof payloads, and broader
-      mode extraction remain MC-G020/MC-G014. Refs: Step 5 source-derived
-      semantic bridge; mizar-test task 10; spec 03 type expressions; spec 07
-      modes.
-
 73. **Add source-derived three-edge bare local mode chain bridge.** [x]
-    - Extend the task-72 pass producer only for bare same-module no-argument
-      local-mode chains `Outer -> Middle -> Inner -> Base -> set` / `object`.
-    - Acceptance: the active runner extracts all four real `ModeExpansion`
-      payloads from unique unrecovered same-module mode definitions in source
-      order, with no definition-local context, no attributes, and no arguments,
-      then the reserve declaration follows the existing `TypedAst`,
-      `ResolvedTypedAst`, summary-readiness, and binder-only `CoreContext`
-      preparation path. Cold and cached four-edge local-mode chains remained on
-      `type_elaboration.checker.checker.type.external.mode_expansion_payload`
-      for task 73; task 74 later replaced that temporary depth guard with the
-      AST-bounded structural rule.
-    - Verify: `cargo test -p mizar-test`, `cargo test -p mizar-checker`.
-    - Deps: tasks 48, 55, 56, and 72. Attributed roots or dependencies,
-      structure/attributed-builtin terminals beyond the existing one-edge
-      diagnostic slices, imported/argument-bearing/parameterized/contextual/
-      ambiguous/cyclic/forward-reference definitions, chains outside task 74's
-      structural guards, CoreIr, ControlFlowIr, VC, proof payloads, and broader
-      mode extraction remain MC-G020/MC-G014. Refs: Step 5 source-derived
-      semantic bridge; mizar-test task 10; spec 03 type expressions; spec 07
-      modes.
-
 74. **Add source-derived structural bare local mode chain bridge.** [x]
-    - Replace the task-73 semantic chain-depth cap with a structural rule for
-      bare same-module no-argument local-mode chains ending in builtin `set` /
-      `object`.
-    - Acceptance: the active runner extracts real `ModeExpansion` payloads for
-      every link in an AST-bounded acyclic local-mode chain when each mode
-      definition is unique, unrecovered, same-module, no-argument,
-      definition-local-context-free, source-preceding, argument-free, and
-      attribute-free, and the terminal RHS is exactly builtin `set` / `object`.
-      The producer carries an AST-derived traversal budget equal to the number
-      of source mode definitions, so resource safety is structural rather than
-      a semantic chain-length limit. Four-edge, cached four-edge,
-      object-terminal, and long-chain active pass fixtures continue through
-      the existing `TypedAst`, `ResolvedTypedAst`, summary-readiness, and
-      binder-only `CoreContext` preparation path without promoting CoreIr,
-      ControlFlowIr, VC, or proof payloads. Chains that violate the structural
-      guards remain fail-closed.
-    - Verify: `cargo test -p mizar-test`, `cargo test -p mizar-checker`.
-    - Deps: tasks 48, 55, 56, 72, and 73. Attributed roots or dependencies,
-      structure/attributed-builtin terminals beyond the existing one-edge
-      diagnostic slices, imported/argument-bearing/parameterized/contextual/
-      ambiguous/cyclic/forward-reference definitions, structure or attributed
-      evidence, CoreIr, ControlFlowIr, VC, proof payloads, and broader mode
-      extraction remain MC-G020/MC-G014. Refs: Step 5 source-derived semantic
-      bridge; mizar-test task 10; spec 03 type expressions; spec 07 modes;
-      spec 17 base-shape inhabitation.
-
 75. **Add source-derived local mode forward-reference active-range boundary.** [x]
-    - Add active fail coverage for a reserve head that names a later
-      same-module local mode declaration before that declaration item is
-      active.
-    - Acceptance: the active type-elaboration runner reports
-      `type_elaboration.lower_stage.frontend:malformed_type_expression`
-      before checker handoff, does not fabricate a `ModeExpansion` from the
-      future declaration, and does not promote a successful reserve
-      declaration, CoreIr, ControlFlowIr, VC, or proof payload. Forward
-      reference acceptance remains forbidden by the Chapter 2/11 active-range
-      rules.
-    - Verify: `cargo test -p mizar-test`, `cargo test -p mizar-checker`.
-    - Deps: tasks 48, 55, and 74. Refs: Step 5 source-derived semantic
-      bridge; mizar-test task 10; spec 02 active range; spec 07 modes; spec 11
-      symbol management.
-
 76. **Add source-derived local structure forward-reference active-range boundary.** [x]
-    - Add active fail coverage for a reserve head that names a later
-      same-module local structure declaration before that declaration item is
-      active.
-    - Acceptance: the active type-elaboration runner reports
-      `type_elaboration.lower_stage.frontend:malformed_type_expression`
-      before checker handoff, does not fabricate a structure type-head payload
-      from the future declaration, and does not promote a successful reserve
-      declaration, base-shape/constructor-witness evidence query, CoreIr,
-      ControlFlowIr, VC, or proof payload. Forward reference acceptance remains
-      forbidden by the Chapter 2/11 active-range rules.
-    - Verify: `cargo test -p mizar-test`, `cargo test -p mizar-checker`.
-    - Deps: tasks 48, 52, and 75. Refs: Step 5 source-derived semantic
-      bridge; mizar-test task 10; spec 02 active range; spec 05 structures;
-      spec 11 symbol management.
-
 77. **Add source-derived local attribute forward-reference active-range boundary.** [x]
-    - Add active fail coverage for a reserve type that uses a later same-module
-      local attribute declaration before that declaration item is active.
-    - Acceptance: the active type-elaboration runner reports
-      `type_elaboration.lower_stage.frontend:malformed_type_expression`
-      before checker handoff, does not fabricate an `AttributeInput` from the
-      future declaration, and does not promote a successful reserve
-      declaration, attributed-type evidence query, CoreIr, ControlFlowIr, VC,
-      or proof payload. Forward reference acceptance remains forbidden by the
-      Chapter 2/11 active-range rules.
-    - Verify: `cargo test -p mizar-test`, `cargo test -p mizar-checker`.
-    - Deps: tasks 48, 50, 75, and 76. Refs: Step 5 source-derived semantic
-      bridge; mizar-test task 10; spec 02 active range; spec 06 attributes;
-      spec 11 symbol management.
-
 78. **Add source-derived imported structure reserve extraction-gap boundary.** [x]
-    - Add active fail coverage for a reserve type whose head is an imported
-      structure symbol supplied by the existing `parser.type_fixtures` import
-      summary.
-    - Acceptance: the active type-elaboration runner reports
-      `type_elaboration.external_dependency.ast_payload_extraction`, does not
-      fabricate imported structure provenance, structure type-head payloads,
-      base-shape/constructor-witness evidence, or positive structure
-      elaboration, and does not promote CoreIr, ControlFlowIr, VC, or proof
-      payloads. The fixture is diagnostic boundary coverage only.
-    - Verify: `cargo test -p mizar-test`, `cargo test -p mizar-checker`.
-    - Deps: tasks 48, 52, and 69. Refs: Step 5 source-derived semantic bridge;
-      mizar-test task 10; spec 03 type expressions; spec 05 structures; spec
-      11 symbol management; spec 12 modules and namespaces.
-
 79. **Add source-derived imported mode reserve extraction-gap boundary.** [x]
-    - Add active fail coverage for a reserve type whose head is an imported
-      mode symbol supplied by the existing `parser.type_fixtures` import
-      summary.
-    - Acceptance: the active type-elaboration runner reports
-      `type_elaboration.external_dependency.ast_payload_extraction`, does not
-      fabricate imported mode provenance, mode type-head payloads,
-      `ModeExpansion` payloads, positive mode elaboration, or broader imported
-      mode semantics, and does not promote CoreIr, ControlFlowIr, VC, or proof
-      payloads. The fixture is diagnostic boundary coverage only and only
-      refines traceability for the generic non-builtin imported-mode gap.
-      Task 82 supersedes only the documented `TypeCaseMode`
-      provenance/type-head slice.
-    - Verify: `cargo test -p mizar-test`, `cargo test -p mizar-checker`.
-    - Deps: tasks 48, 51, 55, and 78. Refs: Step 5 source-derived semantic
-      bridge; mizar-test task 10; spec 03 type expressions; spec 07 modes; spec
-      11 symbol management; spec 12 modules and namespaces.
-
 80. **Add source-derived imported attribute reserve extraction-gap boundary.** [x]
-    - Add active fail coverage for a reserve type whose attribute is an imported
-      attribute symbol supplied by the existing `parser.type_fixtures` import
-      summary.
-    - Acceptance: before tasks 84, 85, and 116, the active type-elaboration runner
-      reported `type_elaboration.external_dependency.ast_payload_extraction`.
-      After task 84 supersedes the documented `TypeCaseAttr` portion and task
-      85 supersedes the negative `empty`/builtin-`set` portion, and task 116
-      supersedes the positive `empty`/builtin-`set` portion, broader imported
-      attributes outside those bridges still must not fabricate imported
-      attribute provenance, `AttributeInput` payloads, attributed-type evidence,
-      positive attributed type elaboration, or broader imported attribute
-      semantics, and must not promote CoreIr, ControlFlowIr, VC, or proof
-      payloads. The task remains historical diagnostic boundary coverage for
-      the generic import-backed attributed reserve gap.
-    - Verify: `cargo test -p mizar-test`, `cargo test -p mizar-checker`.
-    - Deps: tasks 48, 50, 67, 78, and 79. Refs: Step 5 source-derived semantic
-      bridge; mizar-test task 10; spec 03 type expressions; spec 06 attributes;
-      spec 11 symbol management; spec 12 modules and namespaces.
-
 81. **Add source-derived argument-bearing local attribute reserve extraction-gap boundary.** [x]
-    - Add active fail coverage for a same-module parameterized attribute
-      declared with `param_prefix` syntax and used through the Chapter 3/6
-      `attribute_name(args)` application form in a reserve type expression.
-    - Acceptance: the active type-elaboration runner reports
-      `type_elaboration.external_dependency.ast_payload_extraction`, does not
-      fabricate term-argument provenance, checker `AttributeInput` argument
-      payloads, attributed-type evidence, positive attributed type elaboration,
-      or broader parameterized attribute semantics, and does not promote
-      CoreIr, ControlFlowIr, VC, or proof payloads. The fixture is diagnostic
-      boundary coverage only and only proves that the real source lexer/parser
-      producer seam and resolver declaration-symbol suffix projection can carry
-      the parameterized local attribute surface to the checker-owned extraction
-      boundary.
-    - Verify: `cargo test -p mizar-test`, `cargo test -p mizar-checker`,
-      `cargo test -p mizar-lexer`, `cargo test -p mizar-frontend`,
-      `cargo test -p mizar-parser`.
-    - Deps: tasks 48, 50, 67, and 77. Refs: Step 5 source-derived semantic
-      bridge; mizar-test task 10; spec 02 lexical structure; spec 03 type
-      expressions; spec 06 attributes; spec 11 symbol management;
-      mizar-lexer disambiguator design;
-      mizar-resolve symbol projection design.
-
 82. **Add source-derived imported mode reserve provenance bridge.** [x]
-    - Promote the task-79 imported-mode reserve boundary just far enough for
-      the active `type_elaboration` runner to pass the real
-      `parser.type_fixtures` import-summary `ImportedSource` mode symbol as a
-      checker `TypeHeadInput`.
-    - Acceptance: the checker reserve bridge validates that the imported mode
-      symbol is visible through `SymbolEnv`, has `SymbolKind::Mode`, and is
-      backed by an `ImportedSource` contribution rather than local source.
-      The runner no longer reports
-      `type_elaboration.external_dependency.ast_payload_extraction` for
-      `TypeCaseMode`; it reaches
-      `type_elaboration.checker.checker.type.external.mode_expansion_payload`
-      because real imported mode-definition/module-summary expansion payloads
-      are not available. The task must not synthesize imported module AST
-      extraction, `ModeExpansion` payloads, arity checking, positive mode
-      elaboration, CoreIr, ControlFlowIr, VC, or proof payloads, and it must
-      leave imported structures, imported attributes, arguments, brackets,
-      qualified attributes, and imported evidence on their existing gaps.
-    - Verify: `cargo test -p mizar-test`, `cargo test -p mizar-checker`.
-    - Deps: tasks 48, 51, 55, 78, and 79. Refs: Step 5 source-derived
-      semantic bridge; mizar-test task 10; spec 03 type expressions; spec 07
-      modes; spec 11 symbol management; spec 12 modules and namespaces.
-
 83. **Add source-derived imported structure reserve provenance bridge.** [x]
-    - Promote the task-78 imported-structure reserve boundary just far enough
-      for the active `type_elaboration` runner to pass the documented
-      `parser.type_fixtures` import-summary `R` structure symbol as a checker
-      `TypeHeadInput`.
-    - Acceptance: the checker reserve bridge validates that `R` is visible
-      through `SymbolEnv`, has `SymbolKind::Structure`, and is backed by an
-      `ImportedSource` contribution from `parser.type_fixtures`. The runner no
-      longer reports `type_elaboration.external_dependency.ast_payload_extraction`
-      for `R`; it reaches
-      `type_elaboration.checker.checker.declaration.deferred.evidence_query`
-      because imported module AST extraction and base-shape/constructor-witness
-      evidence are not available. The task must not synthesize imported module
-      AST extraction, base-shape/constructor-witness evidence, positive
-      structure elaboration, CoreIr, ControlFlowIr, VC, or proof payloads, and
-      it must leave generic imported structures outside the later task-97
-      `TypeCaseStruct` slice, imported attributes, arguments, brackets,
-      qualified attributes, and imported evidence on their existing gaps.
-    - Verify: `cargo test -p mizar-test`, `cargo test -p mizar-checker`.
-    - Deps: tasks 48, 52, 76, 78, and 82. Refs: Step 5 source-derived
-      semantic bridge; mizar-test task 10; spec 03 type expressions; spec 05
-      structures; spec 11 symbol management; spec 12 modules and namespaces.
-
 84. **Add source-derived imported attribute reserve provenance bridge.** [x]
-    - Promote the task-80 imported-attribute reserve boundary just far enough
-      for the active `type_elaboration` runner to pass the documented
-      `parser.type_fixtures` import-summary `TypeCaseAttr` attribute symbol as
-      a checker `AttributeInput` on builtin `set`.
-    - Acceptance: the checker reserve bridge validates that `TypeCaseAttr` is
-      visible through `SymbolEnv`, has `SymbolKind::Attribute`, and is backed by
-      an `ImportedSource` contribution from `parser.type_fixtures`. The runner
-      no longer reports `type_elaboration.external_dependency.ast_payload_extraction`
-      for `TypeCaseAttr set`; it reaches
-      `type_elaboration.checker.checker.declaration.deferred.evidence_query`
-      because imported module AST extraction and attributed-type
-      existential/evidence payloads are not available. The task must not
-      synthesize imported module AST extraction, attributed-type evidence,
-      positive attributed type elaboration, CoreIr, ControlFlowIr, VC, or proof
-      payloads, and it must leave generic imported attributes such as `empty`,
-      structure-qualified owner provenance, arguments, brackets, qualified
-      attributes, and imported evidence on their existing gaps.
-    - Verify: `cargo test -p mizar-test`, `cargo test -p mizar-checker`.
-    - Deps: tasks 48, 50, 67, 80, and 83. Refs: Step 5 source-derived
-      semantic bridge; mizar-test task 10; spec 03 type expressions; spec 06
-      attributes; spec 11 symbol management; spec 12 modules and namespaces.
-
 85. **Add source-derived imported non-empty attribute reserve provenance bridge.** [x]
-    - Promote the existing task-80 imported-attribute reserve boundary just far
-      enough for the active `type_elaboration` runner to pass the documented
-      `parser.type_fixtures` import-summary `empty` attribute symbol as a
-      negative checker `AttributeInput` on builtin `set` for `non empty set`.
-    - Acceptance: the checker reserve bridge validates that `empty` is visible
-      through `SymbolEnv`, has `SymbolKind::Attribute`, is backed by an
-      `ImportedSource` contribution from `parser.type_fixtures`, has negative
-      polarity, and is attached to builtin `set`. The existing
-      `fail_type_elaboration_attributed_reserve_gap_001` fixture no longer
-      reports `type_elaboration.external_dependency.ast_payload_extraction`;
-      it reaches
-      `type_elaboration.checker.checker.declaration.deferred.evidence_query`
-      because imported module AST extraction and attributed-type
-      existential/evidence payloads are not available. The task must not
-      synthesize imported module AST extraction, attributed-type evidence,
-      positive `empty set` elaboration, imported `empty` on non-`set` heads,
-      CoreIr, ControlFlowIr, VC, or proof payloads. Task 116 supersedes the
-      positive `empty set` sidecar; this task leaves `non empty object`,
-      attribute arguments, qualified owner provenance, and broader imported
-      attributes on their existing gaps.
-    - Verify: `cargo test -p mizar-test`, `cargo test -p mizar-checker`.
-    - Deps: tasks 48, 50, 80, and 84. Refs: Step 5 source-derived semantic
-      bridge; mizar-test task 10; spec 03 type expressions; spec 06
-      attributes; spec 11 symbol management; spec 12 modules and namespaces.
-
 86. **Add source-derived theorem formula extraction-gap boundary.** [x]
-    - Add a dedicated active `type_elaboration` boundary for a formula-only
-      theorem source such as `theorem FormulaPayloadBoundary: thesis;`.
-    - Historical acceptance: parser and resolver execute the source, then the
-      active runner reports `type_elaboration.external_dependency.ast_payload_extraction`
-      because checker-owned theorem/formula payload extraction, local proof
-      contexts, recorded facts, theorem acceptance, CoreIr, ControlFlowIr, VC,
-      proof payloads, and the `formula_statement` runner are not available.
-      Task 115 supersedes only this exact formula-only theorem source by
-      passing the source-derived `thesis` formula constant site/range to the
-      checker as a recovery `FormulaInput`. The historical task must not be
-      read as broader formula payload extraction, theorem acceptance, facts,
-      proof skeletons, or downstream semantic payloads.
-    - Verify: `cargo test -p mizar-test`.
-    - Deps: task 48. Refs: Step 5 source-derived semantic bridge; mizar-test
-      task 10; spec 14 formulas; spec 16 theorems and proofs.
-
 115. **Add exact source-derived formula statement recovery checker bridge.** [x]
-    - Supersede task 86 only for the exact unrecovered source
-      `theorem FormulaPayloadBoundary: thesis;`.
-    - Acceptance: parser and resolver execute the source; the active runner
-      validates that the module contains exactly one theorem item with one
-      `FormulaExpression` child containing direct `FormulaConstant(Thesis)`
-      token text `thesis`, then passes that source site/range as a checker
-      recovery `FormulaInput` with the source-derived formula-constant site.
-      Task 117 supersedes this recovery marker by giving the same source a real
-      `FormulaKind::Thesis` payload while preserving the missing-formula
-      fail-closed diagnostic.
-    - The task must not fabricate formula constant semantics, child-formula
-      graph payloads, theorem acceptance, facts, proof skeleton/context/
-      statement payloads, `formula_statement`, CoreIr, ControlFlowIr, VC, or
-      proof payloads. Non-exact shapes, including proof blocks and additional
-      items, remain on `type_elaboration.external_dependency.ast_payload_extraction`.
-    - Verify: `cargo test -p mizar-test`.
-    - Deps: tasks 86 and 112. Refs: Step 5 source-derived semantic bridge;
-      mizar-test task 10; spec 14 formulas; spec 16 theorems and proofs.
-
 116. **Add source-derived imported positive empty attribute reserve provenance bridge.** [x]
-    - Promote the existing task-80 positive imported-attribute reserve boundary
-      just far enough for the active `type_elaboration` runner to pass the
-      documented `parser.type_fixtures` import-summary `empty` attribute symbol
-      as a positive checker `AttributeInput` on builtin `set` for `empty set`.
-    - Acceptance: the checker reserve bridge validates that `empty` is visible
-      through `SymbolEnv`, has `SymbolKind::Attribute`, is backed by an
-      `ImportedSource` contribution from `parser.type_fixtures`, has positive
-      polarity, and is attached to builtin `set`. The existing
-      `fail_type_elaboration_imported_empty_positive_gap_001` fixture no
-      longer reports `type_elaboration.external_dependency.ast_payload_extraction`;
-      it reaches
-      `type_elaboration.checker.checker.declaration.deferred.evidence_query`
-      because imported module AST extraction and attributed-type
-      existential/evidence payloads are not available. The task must not
-      synthesize imported module AST extraction, attributed-type evidence,
-      positive attributed-type acceptance, imported `empty` on non-`set` heads,
-      CoreIr, ControlFlowIr, VC, or proof payloads, and it must leave
-      Task 171 later supersedes the exact `non empty object` sidecar only;
-      attribute arguments, qualified owner provenance, and broader imported
-      attributes remain on their existing gaps.
-    - Verify: `cargo test -p mizar-test`, `cargo test -p mizar-checker`.
-    - Deps: tasks 48, 50, 80, 84, and 85. Refs: Step 5 source-derived semantic
-      bridge; mizar-test task 10; spec 03 type expressions; spec 06
-      attributes; spec 11 symbol management; spec 12 modules and namespaces.
-
 171. **Add source-derived imported negative empty object reserve provenance bridge.** [x]
-    - Promote only the existing
-      `fail_type_elaboration_imported_empty_object_gap_001` source containing
-      `import parser.type_fixtures; reserve x for non empty object;`.
-    - Acceptance: parser and resolver supply the real imported `empty`
-      `SymbolKind::Attribute` with `ImportedSource` provenance; the source
-      extractor preserves negative polarity and builtin `object`; the
-      checker-owned reserve bridge accepts that exact provenance/polarity/head
-      combination and passes one negative `AttributeInput` to declaration
-      checking; the active case then fails closed on
-      `type_elaboration.checker.checker.declaration.deferred.evidence_query`.
-      Positive `empty object`, imported attributes on symbol heads, attribute
-      admissibility/evidence, accepted attributed types, imported module AST
-      extraction, CoreIr, ControlFlowIr, VC, and proof payloads remain deferred.
-    - Verify: `cargo test -p mizar-checker`, `cargo test -p mizar-test`; final
-      workspace verification.
-    - Deps: tasks 48, 50, 80, 84, 85, and 116. Refs: Step 5 source-derived
-      semantic bridge; mizar-test task 10; spec 03 type expressions; spec 06
-      attributes; spec 11 symbol management; spec 12 modules and namespaces.
-
 117. **Add source-derived formula constant kind checker bridge.** [x]
-    - Supersede task 115 for the exact unrecovered
-      `theorem FormulaPayloadBoundary: thesis;` source by passing the
-      source-derived formula constant as `FormulaKind::Thesis`, not the generic
-      unsupported recovery kind.
-    - Extend task 112 only for the exact unrecovered
-      `FormulaConnectiveQuantifierPayloadBoundary: contradiction implies for x
-      being set holds not contradiction` theorem source by passing both real
-      `contradiction` constant sites/ranges as `FormulaKind::Contradiction`
-      payloads alongside the existing implication, quantifier, and negation
-      shell payloads.
-    - Acceptance: parser and resolver execute the sources; the active runner
-      validates the exact supported AST shapes, passes source-derived checker
-      formula constant payloads to `TermFormulaChecker`, and still fails closed
-      on `type_elaboration.checker.checker.formula.external.formula_payload`
-      plus the existing quantifier payload diagnostic for the connective case.
-    - The task must not fabricate formula constant semantic truth values,
-      child-formula graph links, quantifier binder/context payloads, formula
-      checking, facts, theorem acceptance, proof skeleton/context/statement
-      payloads, `formula_statement`, CoreIr, ControlFlowIr, VC, or proof
-      payloads. Non-exact shapes remain on
-      `type_elaboration.external_dependency.ast_payload_extraction`.
-    - Verify: `cargo test -p mizar-checker`, `cargo test -p mizar-test`.
-    - Deps: tasks 86, 99, 112, and 115. Refs: Step 5 source-derived semantic
-      bridge; mizar-test task 10; spec 14 formulas; spec 16 theorems and
-      proofs.
-
 118. **Tighten builtin binary theorem exact-token guard.** [x]
-    - Repair the source-derived producer guard for the shared task 106/107/108
-      builtin-binary numeral theorem bridge. The active runner now selects an
-      equality, inequality, or membership config only when the theorem item has
-      the exact direct token slice `theorem <label> : ;`, not merely because the
-      label appears among additional theorem tokens.
-    - Acceptance: the existing exact active `.miz` sidecars and checker
-      term/formula handoff payloads remain unchanged; status-prefixed or
-      otherwise extra-token builtin-binary theorem shapes stay on
-      `type_elaboration.external_dependency.ast_payload_extraction`.
-    - This task must not broaden labels, operators, literals, or accepted
-      theorem surfaces, and must not fabricate numeric type payloads, formula
-      checking, facts, theorem acceptance, `formula_statement`, CoreIr,
-      ControlFlowIr, VC, or proof payloads. It adds no new active sidecar or
-      spec coverage credit, so `doc/design/spec_coverage_audit.md` is
-      unchanged.
-    - Verify: `cargo test -p mizar-test`.
-    - Deps: tasks 106, 107, and 108. Refs: Step 5 source-derived semantic
-      bridge; mizar-test task 10; spec 13 term expressions; spec 14 formulas;
-      spec 16 theorems and proofs.
-
 119. **Add exact source-derived reserved-variable equality checker bridge.** [x]
-    - Promote only the exact unrecovered source
-      `reserve x for set; theorem ReservedVariableEqualityPayloadBoundary: x = x;`.
-    - Acceptance: parser and resolver execute the source; the runner reuses the
-      real reserve declaration handoff, resolves both identifier terms through
-      checker-owned `BindingEnv::lookup`, projects the written builtin `set`
-      reserve type into distinct result/expected-type role sites, and passes two
-      variable `TermInput`s plus one equality `FormulaInput` to
-      `TermFormulaChecker`. Both terms are `Inferred`, the formula is `Checked`,
-      and the active type-elaboration pass case has no diagnostics or facts.
-    - `Checked` is limited to type/well-formedness. The task must not fabricate
-      implicit universal-closure nodes, equality facts/truth, theorem
-      acceptance, proof skeletons, `formula_statement`, CoreIr, ControlFlowIr,
-      VC, or proof payloads. Non-exact sources remain on the payload-extraction
-      gap.
-    - Verify: `cargo test -p mizar-test`; final workspace verification.
-    - Deps: tasks 20, 48, 106, and 118. Refs: Step 5 source-derived semantic
-      bridge; mizar-test task 10; spec 04 reserved variables; spec 13 term
-      expressions; spec 14 formulas; spec 16 theorems and proofs.
-
 120. **Add exact source-derived reserved-variable membership checker bridge.** [x]
-    - Promote only the exact unrecovered source
-      `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
-    - Acceptance: reuse task 119's real reserve handoff and independent
-      source-order `BindingEnv` lookups; pass two known builtin-`set` variable
-      result payloads, the right operand's single expected-`set` payload, and a
-      membership `FormulaInput` to `TermFormulaChecker`. Require two `Inferred`
-      terms, one no-fact `Checked` membership, exact three role owners, empty
-      candidate/deferred/diagnostic output, a task-specific invalid-payload key,
-      and a real frontend/resolver active-sidecar payload test.
-    - `Checked` is type/well-formedness only. Do not fabricate membership
-      truth/facts, implicit closure, theorem acceptance, `formula_statement`,
-      proof, CoreIr, ControlFlowIr, or VC payloads. Non-exact sources remain on
-      the extraction gap.
-    - Verify: `cargo test -p mizar-test`; final workspace verification.
-    - Deps: tasks 108, 119. Refs: Step 5; mizar-test task 10; spec 04, 13, 14,
-      and 16.
-
 121. **Add exact source-derived reserved-variable inequality checker bridge.** [x]
-    - Promote only `reserve x for set; theorem ReservedVariableInequalityPayloadBoundary: x <> x;`.
-    - Reuse the shared real lookup/type producer for two linked result and two
-      expected roles, two `Inferred` terms, and one fact-free pre-desugaring
-      `Checked` inequality. Guard it with a task-specific invalid key, near-miss
-      matrix, and real frontend/resolver payload test.
-    - Do not claim inequality desugaring/truth/facts, implicit closure, theorem
-      acceptance, proof, CoreIr, ControlFlowIr, or VC.
-    - Deps: tasks 107, 119, 120. Verify mizar-test and full workspace.
-
 122. **Add checker reflexive type-assertion admissibility and its exact reserved-variable source bridge.** [x]
-    - Repair `TermFormulaChecker` so type assertions require one ready subject
-      and one asserted type, accept normalized identity only as the currently
-      supported reflexive reachability case, and defer known non-identical types
-      on `checker.formula.external.type_assertion_reachability_payload`.
-    - Promote only
-      `reserve x for set; theorem ReservedVariableTypeAssertionPayloadBoundary: x is set;`
-      by combining task 119's real reserve lookup/result producer with task
-      109's formula-side asserted-type AST producer. Preserve both
-      pre-normalization inputs and validate their independent source anchors.
-    - Require one `Inferred` variable and one fact-free `Checked` type assertion;
-      keep general reachability/widening/`qua`, attributes, truth/facts,
-      implicit closure, theorem acceptance, `formula_statement`, proof, CoreIr,
-      ControlFlowIr, and VC deferred.
-    - Deps: tasks 109, 119. Verify mizar-checker, mizar-test, and full workspace.
-
 123. **Add exact source-derived distinct reserved-variable equality checker bridge.** [x]
-    - Add a spec-derived active pass fixture for only
-      `reserve x, y for set; theorem DistinctReservedVariableEqualityPayloadBoundary: x = y;`.
-    - Acceptance: parser and resolver execute the source; the runner reuses the
-      real multi-reserve declaration handoff, preserves two distinct checker
-      binding identities whose source type ranges both point to the one written
-      `set` type, and resolves `x` and `y` independently through source-order
-      `BindingEnv::lookup` sites. Operand-specific result and expected-type role
-      inputs must reach two `Inferred` variable terms and one no-fact `Checked`
-      equality without candidates, deferred reasons, or diagnostics.
-    - Add production invariant validation, a near-miss matrix, and a real
-      frontend/resolver active-sidecar payload test. Existing expectations must
-      not be rebaselined; the new pass expectation is derived from spec 4.3,
-      13.1.1, 14.5.2, and the theorem declaration contract.
-    - This task credits only exact distinct-binding type/well-formedness. It
-      must not fabricate implicit universal-closure or quantifier-order nodes,
-      equality truth/facts, theorem acceptance, `formula_statement`, proof,
-      CoreIr, ControlFlowIr, or VC payloads. Non-exact multi-binding sources
-      remain on the extraction gap.
-    - Update the Chapters 4, 13, 14, and 16 rows in
-      `doc/design/spec_coverage_audit.md`; no checker source-layout inventory
-      update is required unless `crates/mizar-checker/src/` changes.
-    - Deps: tasks 20 and 119. Verify mizar-test and the full workspace.
-
 124. **Add exact source-derived multiple-reserve-declaration equality checker bridge.** [x]
-    - Add a spec-derived active pass fixture for only
-      `reserve x for set; reserve y for set; theorem MultipleReserveDeclarationEqualityPayloadBoundary: x = y;`.
-    - Acceptance: parser and resolver execute both reserve declarations and the
-      theorem; the runner reuses the real two-binding handoff, preserves
-      `BindingId(0)` / `BindingId(1)`, derives use ordinals after both source
-      bindings, and retains distinct written type ranges in operand-specific
-      pre-normalization result and expected `TypeExpressionInput`s.
-    - Semantic builtin `set` may intern to one `NormalizedTypeId` whose source
-      is the deterministic canonical representative. Validate both original
-      inputs before normalization; do not require or fabricate duplicate
-      normalized nodes merely to attach both source ranges.
-    - Require two `Inferred` variable terms and one fact-free `Checked`
-      equality, production invariant validation, a task-specific invalid key,
-      a near-miss matrix, and a real frontend/resolver sidecar test. Existing
-      expectations must not be rebaselined.
-    - Credit exact multiple-declaration type/well-formedness only. Do not
-      materialize implicit closure/order, equality truth/facts, theorem
-      acceptance, `formula_statement`, proof, CoreIr, ControlFlowIr, or VC.
-    - Update Chapters 4, 13, 14, and 16 in the spec coverage audit. No checker
-      source-layout update is required unless `crates/mizar-checker/src/`
-      changes.
-    - Deps: tasks 20, 119, and 123. Verify mizar-test and the full workspace.
-
 125. **Add exact source-derived heterogeneous-reserve membership checker bridge.** [x]
-    - Add a spec-derived active pass fixture for only
-      `reserve x for object; reserve y for set; theorem HeterogeneousReserveMembershipPayloadBoundary: x in y;`.
-    - Acceptance: parser and resolver execute both reserve declarations and the
-      theorem; the runner reuses the real mixed-builtin two-binding handoff,
-      preserves `BindingId(0)` / `BindingId(1)` and source-derived lookup
-      ordinals, and retains both distinct written type ranges in a left
-      `object` result input, right `set` result input, and right expected-`set`
-      input.
-    - Require exactly two normalized semantic identities: the right result and
-      expected inputs must share the `set` identity, while the left `object`
-      identity remains distinct. Each normalized source representative must be
-      derived from its original written input; do not collapse the two types or
-      fabricate duplicate semantic nodes.
-    - Require two `Inferred` variable terms, one fact-free `Checked` membership,
-      production invariant validation, a task-specific invalid key, an exact
-      near-miss matrix, and a real frontend/resolver sidecar test. Existing
-      expectations must not be rebaselined.
-    - Credit exact heterogeneous membership type/well-formedness only. Do not
-      materialize membership truth/facts, object/set coercion evidence,
-      implicit closure/order, theorem acceptance, `formula_statement`, proof,
-      CoreIr, ControlFlowIr, or VC.
-    - Update Chapters 3, 4, 13, 14, and 16 in the spec coverage audit. No
-      checker source-layout update is required unless `crates/mizar-checker/src/`
-      changes.
-    - Deps: tasks 20, 120, and 124. Verify mizar-test and the full workspace.
-
 126. **Add exact direct-local-mode reserved-variable equality checker bridge.** [x]
-    - Add a spec-derived active pass fixture containing exactly one unique,
-      unrecovered, source-preceding no-argument local mode definition with bare
-      builtin `set` RHS, `reserve x` for that mode, and
-      `theorem LocalModeReservedVariableEqualityPayloadBoundary: x = x;`.
-    - Acceptance: reuse the task-55 real AST-derived `ModeExpansion`, preserve
-      the local-mode symbol/range in all four pre-normalization result/expected
-      inputs, and construct `TermFormulaChecker` with the extracted expansion.
-      Both source-order lookups resolve `BindingId(0)` and the checker normalizes
-      every role to one builtin-`set` identity.
-    - Require two `Inferred` variables, one fact-free `Checked` equality,
-      production invariant validation, a task-specific invalid key, near misses
-      for every withheld mode-definition family, and a real frontend/resolver
-      sidecar test. Existing expectations must not be rebaselined.
-    - Credit only the exact mode-backed identifier equality type/well-formedness
-      slice. Do not credit mode definition declaration checking, accepted mode
-      status or inhabitation evidence, broader/chained modes, closure/order,
-      truth/facts, theorem acceptance, `formula_statement`, proof, CoreIr,
-      ControlFlowIr, or VC.
-    - Update Chapters 4, 7, 13, 14, and 16 in the spec coverage audit. No checker
-      source-layout update is required unless `crates/mizar-checker/src/` changes.
-    - Deps: tasks 55 and 119. Verify mizar-test and the full workspace.
-
 127. **Add exact one-edge local-mode-chain reserved-variable equality checker bridge.** [x]
-    - Add a spec-derived active pass fixture with exactly two separate unique,
-      unrecovered, source-preceding, no-argument mode definitions
-      `BaseModeFormula -> set` and `ChainModeFormula -> BaseModeFormula`, one
-      `reserve x for ChainModeFormula`, and theorem
-      `ChainedLocalModeReservedVariableEqualityPayloadBoundary: x = x;`.
-    - Acceptance: reuse both real task-56 AST-derived `ModeExpansion` entries,
-      retain the outer `ChainModeFormula` symbol/range in all four raw
-      result/expected inputs, and recursively normalize every role to one
-      builtin-`set` identity whose canonical source is the terminal `set` RHS.
-      Both source-order lookups must resolve `BindingId(0)`.
-    - Require two `Inferred` variables, one fact-free `Checked` equality,
-      production invariant validation, a task-specific invalid key, an exact
-      withheld-family near-miss matrix, and a real frontend/resolver sidecar.
-      Existing expectations must not be rebaselined.
-    - Credit only this exact one-edge-chain identifier equality
-      type/well-formedness slice. Keep mode declaration checking/acceptance,
-      inhabitation evidence, object terminals, longer-chain formulas,
-      closure/order, truth/facts, theorem acceptance, `formula_statement`, proof,
-      CoreIr, ControlFlowIr, and VC deferred.
-    - Update Chapters 4, 7, 13, 14, and 16 in the spec coverage audit. No checker
-      source-layout update is required unless `crates/mizar-checker/src/` changes.
-    - Deps: tasks 56 and 126. Verify mizar-test and the full workspace.
-
 128. **Add exact direct local-object-mode reserved-variable equality checker bridge.** [x]
-    - Add a spec-derived active pass fixture with exactly one unique,
-      unrecovered, source-preceding, no-argument definition
-      `mode LocalObjectModeDef: LocalObjectMode is object;`, one
-      `reserve x for LocalObjectMode`, and theorem
-      `LocalObjectModeReservedVariableEqualityPayloadBoundary: x = x;`.
-    - Acceptance: reuse the real task-55 AST-derived object `ModeExpansion`,
-      retain `LocalObjectMode` symbol/range in all four raw result/expected
-      inputs, normalize every role to one builtin-`object` identity whose
-      canonical source is the real RHS, and resolve both uses to `BindingId(0)`.
-    - Require two `Inferred` variables, one fact-free `Checked` equality,
-      production validation, task invalid key, withheld-family near misses, and
-      a real frontend/resolver sidecar. Do not rebaseline existing expectations.
-    - Credit only this exact direct object-mode equality type/well-formedness
-      slice. Keep mode declaration checking/acceptance, inhabitation evidence,
-      closure/order, truth/facts, theorem acceptance, `formula_statement`, proof,
-      CoreIr, ControlFlowIr, and VC deferred.
-    - Update Chapters 3, 4, 7, 13, 14, and 16 in the spec coverage audit. No
-      checker source-layout update is required unless checker source changes.
-    - Deps: tasks 55 and 126. Verify mizar-test and the full workspace.
-
 129. **Add exact one-edge local-object-mode-chain reserved-variable equality checker bridge.** [x]
-    - Add a spec-derived active pass fixture that reuses task 56's exact
-      `BaseObjectMode -> object` and `ChainObjectMode -> BaseObjectMode`
-      definition blocks, one `reserve z for ChainObjectMode`, and theorem
-      `ChainedLocalObjectModeReservedVariableEqualityPayloadBoundary: z = z;`.
-    - Acceptance: retain `ChainObjectMode` symbol/range in all four raw
-      result/expected inputs, consume both real expansions, normalize every role
-      to one builtin-`object` identity whose canonical source is the terminal
-      RHS, and resolve both uses to `BindingId(0)`.
-    - Require two `Inferred` variables, one fact-free `Checked` equality,
-      production validation, invalid-link corruption, withheld-family near
-      misses, and a real frontend/resolver sidecar. Do not rebaseline existing
-      expectations.
-    - Credit only this exact one-edge object-terminal equality
-      type/well-formedness slice. Keep mode declaration acceptance/inhabitation,
-      closure/order, truth/facts, theorem acceptance, `formula_statement`, proof,
-      CoreIr, ControlFlowIr, and VC deferred.
-    - Update Chapters 3, 4, 7, 13, 14, and 16 in the spec coverage audit. No
-      checker source-layout update is required unless checker source changes.
-    - Deps: tasks 56, 127, and 128. Verify mizar-test and the full workspace.
-
 130. **Add exact direct-local-mode reserved-variable inequality checker bridge.** [x]
-    - Add the spec-derived active pass source with exact bare-set
-      `LocalModeInequality`, one reserve, and `x <> x` theorem.
-    - Preserve four raw mode-headed result/expected inputs, consume the one real
-      expansion, anchor one builtin-set identity at the RHS, resolve both uses
-      to `BindingId(0)`, and require a fact-free pre-desugaring `Checked`
-      inequality. Exact/near-miss/corruption and real-sidecar guards are required.
-    - Keep declaration acceptance/inhabitation, desugaring, closure/order,
-      truth/facts, theorem acceptance, proof/Core/ControlFlow/VC deferred.
-    - Update Chapters 4, 7, 13, 14, and 16. Deps: tasks 55 and 121.
-
 131. **Add exact direct-local-object-mode reserved-variable inequality checker bridge.** [x]
-    - Add the spec-derived active pass source with exact bare-object
-      `LocalObjectModeInequality`, one reserve, and `x <> x` theorem.
-    - Preserve four raw object-mode-headed result/expected inputs, consume the
-      one real expansion, anchor one builtin-object identity at the RHS,
-      resolve both uses to `BindingId(0)`, and require a fact-free
-      pre-desugaring `Checked` inequality. Exact/near-miss/corruption and
-      real-sidecar guards are required.
-    - Keep mode declaration acceptance/inhabitation, desugaring, closure/order,
-      truth/facts, theorem acceptance, proof/Core/ControlFlow/VC deferred.
-    - Update Chapters 3, 4, 7, 13, 14, and 16. Deps: tasks 55, 121, 128, and 130.
-
 132. **Add exact one-edge local-mode-chain reserved-variable inequality checker bridge.** [x]
-    - Add the spec-derived active pass source with exact
-      `ChainModeInequality -> BaseModeInequality -> set`, one outer reserve, and
-      `x <> x` theorem.
-    - Preserve four raw outer-mode result/expected inputs, consume both real
-      expansions, anchor one builtin-set identity at the terminal RHS, resolve
-      both uses to `BindingId(0)`, and require a fact-free pre-desugaring
-      `Checked` inequality. Exact/near-miss/link-corruption and real-sidecar
-      guards are required.
-    - Keep mode declaration acceptance/inhabitation, object/direct/longer
-      shapes, desugaring, closure/order, truth/facts, theorem acceptance,
-      proof/Core/ControlFlow/VC deferred.
-    - Update Chapters 4, 7, 13, 14, and 16. Deps: tasks 56, 121, 127, and 130.
-
 133. **Add exact one-edge local-object-mode-chain reserved-variable inequality checker bridge.** [x]
-    - Add only the spec-derived `ChainObjectModeInequality -> BaseObjectModeInequality -> object`, one outer reserve, and `z <> z` theorem source.
-    - Preserve four raw outer-mode inputs and `BindingId(0)`, consume both real expansions, anchor one terminal-RHS builtin-object identity, and require two `Inferred` terms plus one fact-free pre-desugaring `Checked` inequality. Exact, link-corruption, withheld-family near-miss, and real-sidecar guards are required.
-    - Keep declaration acceptance/inhabitation, desugaring, closure/order, truth/facts, theorem acceptance, proof/Core/ControlFlow/VC deferred.
-    - Update Chapters 3, 4, 7, 13, 14, and 16. Deps: tasks 121, 129, and 131.
-
 134. **Add exact two-edge local-mode-chain reserved-variable equality checker bridge.** [x]
-    - Add only the spec-derived `OuterTwoEdgeModeEquality -> MiddleTwoEdgeModeEquality -> BaseTwoEdgeModeEquality -> set`, one outer reserve, and `z = z` theorem source.
-    - Preserve four raw outer-mode inputs and `BindingId(0)`, consume all three real expansions, anchor one terminal-RHS builtin-set identity, and require two `Inferred` terms plus one fact-free `Checked` equality. Exact, link-corruption, withheld-family near-miss, and real-sidecar guards are required.
-    - Keep declaration acceptance/inhabitation, implicit closure/order, truth/facts, theorem acceptance, proof/Core/ControlFlow/VC deferred.
-    - Update Chapters 4, 7, 13, 14, and 16. Deps: tasks 72 and 127.
-
 135. **Add exact two-edge local-object-mode-chain reserved-variable equality checker bridge.** [x]
-    - Add only the spec-derived `OuterTwoEdgeObjectModeEquality -> MiddleTwoEdgeObjectModeEquality -> BaseTwoEdgeObjectModeEquality -> object`, one outer reserve, and `z = z` theorem source.
-    - Preserve four raw outer-mode inputs and `BindingId(0)`, consume all three real expansions, anchor one terminal-RHS builtin-object identity, and require two `Inferred` terms plus one fact-free `Checked` equality. Exact, link-corruption, withheld-family near-miss, and real-sidecar guards are required.
-    - Keep declaration acceptance/inhabitation, implicit closure/order, truth/facts, theorem acceptance, proof/Core/ControlFlow/VC deferred.
-    - Update Chapters 3, 4, 7, 13, 14, and 16. Deps: tasks 72 and 134.
-
 136. **Add exact two-edge local-mode-chain reserved-variable inequality checker bridge.** [x]
-    - Add only the spec-derived `OuterTwoEdgeModeInequality -> MiddleTwoEdgeModeInequality -> BaseTwoEdgeModeInequality -> set`, one outer reserve, and `z <> z` theorem source.
-    - Preserve four raw outer-mode inputs and `BindingId(0)`, consume all three real expansions, anchor one terminal-RHS builtin-set identity, and require two `Inferred` terms plus one fact-free pre-desugaring `Checked` inequality. Exact, link-corruption, withheld-family near-miss, and real-sidecar guards are required.
-    - Keep mode declaration acceptance/inhabitation, inequality desugaring, implicit closure/order, truth/facts, theorem acceptance, proof/Core/ControlFlow/VC deferred.
-    - Update Chapters 4, 7, 13, 14, and 16. Deps: tasks 72 and 132.
-
 137. **Add exact two-edge local-object-mode-chain reserved-variable inequality checker bridge.** [x]
-    - Add only the spec-derived `OuterTwoEdgeObjectModeInequality -> MiddleTwoEdgeObjectModeInequality -> BaseTwoEdgeObjectModeInequality -> object`, one outer reserve, and `z <> z` theorem source.
-    - Preserve four raw outer-mode inputs and `BindingId(0)`, consume all three real expansions, anchor one terminal-RHS builtin-object identity, and require two `Inferred` terms plus one fact-free pre-desugaring `Checked` inequality. Exact, link-corruption, withheld-family near-miss, and real-sidecar guards are required.
-    - Keep declaration acceptance/inhabitation, inequality desugaring, implicit closure/order, truth/facts, theorem acceptance, proof/Core/ControlFlow/VC deferred.
-    - Update Chapters 3, 4, 7, 13, 14, and 16. Deps: tasks 72 and 133.
-
 138. **Add exact direct-local-mode reserved-variable normalized-reflexive type assertion checker bridge.** [x]
-    - Add only the spec-derived `LocalModeTypeAssertion -> set`, one reserve of that mode, and `x is set` theorem source.
-    - Preserve the raw local-mode subject and independent formula-side builtin-set asserted-type inputs plus `BindingId(0)`, consume the one real expansion, anchor one terminal-RHS builtin-set identity, and require one `Inferred` term plus one fact-free `Checked` type assertion. Exact, expansion-corruption, withheld-family near-miss, and real-sidecar guards are required.
-    - Keep mode declaration acceptance/inhabitation, formula-side local-mode asserted heads, general reachability/widening/`qua`, truth/facts, theorem acceptance, proof/Core/ControlFlow/VC deferred.
-    - Update Chapters 3, 4, 7, 13, 14, and 16. Deps: tasks 55 and 122.
-
 139. **Add exact direct-local-mode left reserved-variable membership checker bridge.** [x]
-    - Add only the spec-derived `LocalModeMembership -> set`, ordered reserves `x` for that mode and `y` for explicit `set`, and `x in y` theorem source.
-    - Preserve the raw local-mode left result and independent right result/expected-set inputs plus `BindingId(0/1)`, consume the one real expansion, anchor one terminal-RHS builtin-set identity, and require two `Inferred` terms plus one fact-free `Checked` membership with only the right expected constraint. Exact, expansion/right-expected corruption, withheld-family near-miss, and real-sidecar guards are required.
-    - Keep mode declaration acceptance/inhabitation, membership truth/facts, implicit closure/order, theorem acceptance, proof/Core/ControlFlow/VC deferred.
-    - Update Chapters 4, 7, 13, 14, and 16. Deps: tasks 55, 120, and 125.
-
 140. **Add exact direct-local-object-mode left reserved-variable membership checker bridge.** [x]
-    - Add only the spec-derived `LocalObjectModeMembership -> object`, ordered reserves `x` for that mode and `y` for explicit `set`, and `x in y` theorem source.
-    - Preserve the raw local-object-mode left result and independent right result/expected-set inputs plus `BindingId(0/1)`, consume the one real expansion, retain distinct terminal-RHS builtin-object and explicit-reserve builtin-set identities, and require two `Inferred` terms plus one fact-free `Checked` membership with only the right expected constraint. Exact, expansion/right-expected corruption, withheld-family near-miss, and real-sidecar guards are required.
-    - Keep mode declaration acceptance/inhabitation, membership truth/facts, object/set coercion, implicit closure/order, theorem acceptance, proof/Core/ControlFlow/VC deferred.
-    - Update Chapters 3, 4, 7, 13, 14, and 16. Deps: tasks 55, 125, and 139.
-
 141. **Add exact one-edge local-mode-chain left reserved-variable membership checker bridge.** [x]
-    - Add only the spec-derived `ChainModeMembership -> BaseModeMembership -> set`, ordered reserves `x` for the outer mode and `y` for explicit `set`, and `x in y` theorem source.
-    - Preserve the raw outer-mode left result and independent right result/expected-set inputs plus `BindingId(0/1)`, consume both real expansions, anchor one terminal-RHS builtin-set identity, and require two `Inferred` terms plus one fact-free `Checked` membership with only the right expected constraint. Exact, independent chain-link/right-expected corruption, withheld-family near-miss, and real-sidecar guards are required.
-    - Keep mode declaration acceptance/inhabitation, membership truth/facts, implicit closure/order, theorem acceptance, proof/Core/ControlFlow/VC deferred.
-    - Update Chapters 4, 7, 13, 14, and 16. Deps: tasks 56, 125, and 139.
-
 142. **Add exact one-edge local-object-mode-chain left reserved-variable membership checker bridge.** [x]
-    - Add only the spec-derived `ChainObjectModeMembership -> BaseObjectModeMembership -> object`, ordered reserves `x` for the outer mode and `y` for explicit `set`, and `x in y` theorem source.
-    - Preserve the raw outer-mode left result and independent right result/expected-set inputs plus `BindingId(0/1)`, consume both real expansions, retain distinct terminal-RHS builtin-object and explicit-reserve builtin-set identities, and require two `Inferred` terms plus one fact-free `Checked` membership with only the right expected constraint. Exact, independent chain-link/right-expected corruption, withheld-family near-miss, and real-sidecar guards are required.
-    - Keep mode declaration acceptance/inhabitation, membership truth/facts, object/set coercion, implicit closure/order, theorem acceptance, proof/Core/ControlFlow/VC deferred.
-    - Update Chapters 3, 4, 7, 13, 14, and 16. Deps: tasks 56, 125, 140, and 141.
-
 143. **Add exact two-edge local-mode-chain left reserved-variable membership checker bridge.** [x]
-    - Add only the spec-derived `OuterTwoEdgeModeMembership -> MiddleTwoEdgeModeMembership -> BaseTwoEdgeModeMembership -> set`, ordered reserves `x` for the outer mode and `y` for explicit `set`, and `x in y` theorem source.
-    - Preserve the raw outer-mode left result and independent right result/expected-set inputs plus `BindingId(0/1)`, consume all three real expansions, anchor one terminal-RHS builtin-set identity, and require two `Inferred` terms plus one fact-free `Checked` membership with only the right expected constraint. Exact, independent three-link/right-expected corruption, withheld-family near-miss, and real-sidecar guards are required.
-    - Keep mode declaration acceptance/inhabitation, membership truth/facts, implicit closure/order, theorem acceptance, proof/Core/ControlFlow/VC deferred.
-    - Update Chapters 4, 7, 13, 14, and 16. Deps: tasks 72, 125, 139, and 141.
-
 144. **Add exact two-edge local-object-mode-chain left reserved-variable membership checker bridge.** [x]
-    - Add only the spec-derived `OuterTwoEdgeObjectModeMembership -> MiddleTwoEdgeObjectModeMembership -> BaseTwoEdgeObjectModeMembership -> object`, ordered reserves `x` for the outer mode and `y` for explicit `set`, and `x in y` theorem source.
-    - Preserve the raw outer-mode left result and independent right result/expected-set inputs plus `BindingId(0/1)`, consume all three real expansions, and require distinct terminal-RHS builtin-object and explicit-reserve builtin-set identities, two `Inferred` terms, and one fact-free `Checked` membership with only the right expected constraint. Exact, independent three-link/right-expected corruption, withheld-family near-miss, and real-sidecar guards are required.
-    - Keep mode declaration acceptance/inhabitation, membership truth/facts, object/set coercion, implicit closure/order, theorem acceptance, proof/Core/ControlFlow/VC deferred.
-    - Update Chapters 3, 4, 7, 13, 14, and 16. Deps: tasks 72, 125, 140, 142, and 143.
-
 145. **Add exact direct local-object-mode reserved-variable normalized-reflexive type assertion checker bridge.** [x]
-    - Add only the spec-derived `LocalObjectModeTypeAssertion -> object`, one reserve `x` for that mode, and `x is object` theorem source.
-    - Preserve the raw local-mode subject result and independently formula-anchored builtin-object asserted type, require `BindingId(0)` and source-order use ordinal 1, consume the one real expansion, and normalize both inputs to one terminal-RHS builtin-object identity before one `Inferred` term and one fact-free `Checked` type assertion. Exact, definition/expansion corruption, withheld-family near-miss, and real-sidecar guards are required.
-    - Keep mode declaration acceptance/inhabitation, formula-side local-mode asserted heads, general reachability/widening/`qua`, object/set coercion, truth/facts, implicit closure/order, theorem acceptance, proof/Core/ControlFlow/VC deferred.
-    - Update Chapters 3, 4, 7, 13, 14, and 16. Deps: tasks 55, 122, and 138.
-
 146. **Add exact one-edge local-mode-chain reserved-variable normalized-reflexive type assertion checker bridge.** [x]
-    - Add only the spec-derived `ChainModeTypeAssertion -> BaseModeTypeAssertion -> set`, one reserve `x` for the outer mode, and `x is set` theorem source.
-    - Preserve the raw outer-mode subject result and independently formula-anchored builtin-set asserted type, require `BindingId(0)` and source-order use ordinal 1, consume both real expansions, and recursively normalize both inputs to one terminal-RHS builtin-set identity before one `Inferred` term and one fact-free `Checked` type assertion. Exact, independent definition/expansion corruption, withheld-family near-miss, and real-sidecar guards are required.
-    - Keep mode declaration acceptance/inhabitation, formula-side local-mode asserted heads, general reachability/widening/`qua`, truth/facts, implicit closure/order, theorem acceptance, proof/Core/ControlFlow/VC deferred.
-    - Update Chapters 3, 4, 7, 13, 14, and 16. Deps: tasks 56, 122, and 138.
-
 147. **Add exact one-edge local-object-mode-chain reserved-variable normalized-reflexive type assertion checker bridge.** [x]
-    - Add only the spec-derived `ChainObjectModeTypeAssertion -> BaseObjectModeTypeAssertion -> object`, one reserve `x` for the outer mode, and `x is object` theorem source.
-    - Preserve the raw outer-mode subject result and independently formula-anchored builtin-object asserted type, require `BindingId(0)` and source-order use ordinal 1, consume both real expansions, and recursively normalize both inputs to one terminal-RHS builtin-object identity before one `Inferred` term and one fact-free `Checked` type assertion. Exact, independent definition/expansion corruption, withheld-family near-miss, and real-sidecar guards are required.
-    - Keep mode declaration acceptance/inhabitation, formula-side local-mode asserted heads, general reachability/widening/`qua`, object/set coercion, truth/facts, implicit closure/order, theorem acceptance, proof/Core/ControlFlow/VC deferred.
-    - Update Chapters 3, 4, 7, 13, 14, and 16. Deps: tasks 56, 122, 145, and 146.
-
 148. **Add exact two-edge local-mode-chain reserved-variable normalized-reflexive type assertion checker bridge.** [x]
-    - Add only the spec-derived `OuterTwoEdgeModeTypeAssertion -> MiddleTwoEdgeModeTypeAssertion -> BaseTwoEdgeModeTypeAssertion -> set`, one reserve `x` for the outer mode, and `x is set` theorem source.
-    - Preserve the raw outer-mode subject result and independently formula-anchored builtin-set asserted type, require `BindingId(0)` and source-order use ordinal 1, consume all three real expansions, and recursively normalize both inputs to one terminal-RHS builtin-set identity before one `Inferred` term and one fact-free `Checked` type assertion. Exact, independent definition/expansion corruption, withheld-family near-miss, and real-sidecar guards are required.
-    - Keep mode declaration acceptance/inhabitation, formula-side local-mode asserted heads, general reachability/widening/`qua`, truth/facts, implicit closure/order, theorem acceptance, proof/Core/ControlFlow/VC deferred.
-    - Update Chapters 3, 4, 7, 13, 14, and 16. Deps: tasks 72, 122, 146, and 147.
-
 149. **Add exact two-edge local-object-mode-chain reserved-variable normalized-reflexive type assertion checker bridge.** [x]
-    - Add only the spec-derived `OuterTwoEdgeObjectModeTypeAssertion -> MiddleTwoEdgeObjectModeTypeAssertion -> BaseTwoEdgeObjectModeTypeAssertion -> object`, one reserve `x` for the outer mode, and `x is object` theorem source.
-    - Preserve the raw outer-mode subject result and independently formula-anchored builtin-object asserted type, require `BindingId(0)` and source-order use ordinal 1, consume all three real expansions, and recursively normalize both inputs to one terminal-RHS builtin-object identity before one `Inferred` term and one fact-free `Checked` type assertion. Exact, independent definition/expansion corruption, withheld-family near-miss, and real-sidecar guards are required.
-    - Keep mode declaration acceptance/inhabitation, formula-side local-mode asserted heads, general reachability/widening/`qua`, object/set coercion, truth/facts, implicit closure/order, theorem acceptance, proof/Core/ControlFlow/VC deferred.
-    - Update Chapters 3, 4, 7, 13, 14, and 16. Deps: tasks 72, 122, 145, 147, and 148.
-
 150. **Add exact three-edge local-mode-chain reserved-variable normalized-reflexive type assertion checker bridge.** [x]
-    - Add only the spec-derived `OuterThreeEdgeModeTypeAssertion -> MiddleThreeEdgeModeTypeAssertion -> InnerThreeEdgeModeTypeAssertion -> BaseThreeEdgeModeTypeAssertion -> set`, one reserve `x` for the outer mode, and `x is set` theorem source.
-    - Preserve the raw outer-mode subject result and independently formula-anchored builtin-set asserted type, require `BindingId(0)` and source-order use ordinal 1, consume all four real expansions, and recursively normalize both inputs to one terminal-RHS builtin-set identity before one `Inferred` term and one fact-free `Checked` type assertion. Exact, independent definition/radix/expansion corruption, withheld-family near-miss, and real-sidecar guards are required.
-    - Keep mode declaration acceptance/inhabitation, formula-side local-mode asserted heads, general reachability/widening/`qua`, truth/facts, implicit closure/order, theorem acceptance, proof/Core/ControlFlow/VC deferred.
-    - Update Chapters 3, 4, 7, 13, 14, and 16. Deps: tasks 73, 122, 148, and 149.
-
 151. **Add exact three-edge local-object-mode-chain reserved-variable normalized-reflexive type assertion checker bridge.** [x]
-    - Add only the spec-derived `OuterThreeEdgeObjectModeTypeAssertion -> MiddleThreeEdgeObjectModeTypeAssertion -> InnerThreeEdgeObjectModeTypeAssertion -> BaseThreeEdgeObjectModeTypeAssertion -> object`, one reserve `x` for the outer mode, and `x is object` theorem source.
-    - Preserve the raw outer-mode subject result and independently formula-anchored builtin-object asserted type, require `BindingId(0)` and source-order use ordinal 1, consume all four real expansions, and recursively normalize both inputs to one terminal-RHS builtin-object identity before one `Inferred` term and one fact-free `Checked` type assertion. Exact, independent definition/radix/expansion corruption, withheld-family near-miss, and real-sidecar guards are required.
-    - Keep mode declaration acceptance/inhabitation, formula-side local-mode asserted heads, general reachability/widening/`qua`, object/set coercion, truth/facts, implicit closure/order, theorem acceptance, proof/Core/ControlFlow/VC deferred.
-    - Update Chapters 3, 4, 7, 13, 14, and 16. Deps: tasks 73, 122, 149, and 150.
-
 152. **Add exact four-edge local-mode-chain reserved-variable normalized-reflexive type assertion checker bridge.** [x]
-    - Add only the spec-derived `TooDeepFourEdgeModeTypeAssertion -> OuterFourEdgeModeTypeAssertion -> MiddleFourEdgeModeTypeAssertion -> InnerFourEdgeModeTypeAssertion -> BaseFourEdgeModeTypeAssertion -> set`, one reserve `x` for the outermost mode, and `x is set` theorem source.
-    - Preserve the raw outermost-mode subject result and independently formula-anchored builtin-set asserted type, require `BindingId(0)` and source-order use ordinal 1, consume all five real expansions, and recursively normalize both inputs to one terminal-RHS builtin-set identity before one `Inferred` term and one fact-free `Checked` type assertion. Exact, independent definition/radix/expansion corruption, withheld-family near-miss, and real-sidecar guards are required.
-    - Keep mode declaration acceptance/inhabitation, formula-side local-mode asserted heads, general reachability/widening/`qua`, truth/facts, implicit closure/order, theorem acceptance, proof/Core/ControlFlow/VC deferred.
-    - Update Chapters 3, 4, 7, 13, 14, and 16. Deps: tasks 74, 122, 150, and 151.
-
 153. **Add exact four-edge local-object-mode-chain reserved-variable normalized-reflexive type assertion checker bridge.** [x]
-    - Add only the spec-derived `TooDeepFourEdgeObjectModeTypeAssertion -> OuterFourEdgeObjectModeTypeAssertion -> MiddleFourEdgeObjectModeTypeAssertion -> InnerFourEdgeObjectModeTypeAssertion -> BaseFourEdgeObjectModeTypeAssertion -> object`, one reserve `x` for the outermost mode, and `x is object` theorem source.
-    - Preserve the raw outermost-mode subject result and independently formula-anchored builtin-object asserted type, require `BindingId(0)` and source-order use ordinal 1, consume all five real expansions, and recursively normalize both inputs to one terminal-RHS builtin-object identity before one `Inferred` term and one fact-free `Checked` type assertion. Exact, independent definition/radix/expansion corruption, withheld-family near-miss, and real-sidecar guards are required.
-    - Keep mode declaration acceptance/inhabitation, formula-side local-mode asserted heads, general reachability/widening/`qua`, object/set coercion, truth/facts, implicit closure/order, theorem acceptance, proof/Core/ControlFlow/VC deferred.
-    - Update Chapters 3, 4, 7, 13, 14, and 16. Deps: tasks 74, 122, 151, and 152.
-
 154. **Add exact three-edge local-mode-chain reserved-variable equality checker bridge.** [x]
-    - Add only the spec-derived `OuterThreeEdgeModeEquality -> MiddleThreeEdgeModeEquality -> InnerThreeEdgeModeEquality -> BaseThreeEdgeModeEquality -> set`, one reserve `z` for the outer mode, and `z = z` theorem source.
-    - Preserve all four raw outer-mode result/expected inputs, resolve both operands independently to `BindingId(0)` at source-order ordinals 1 and 2, consume all four real expansions, and recursively normalize every role to one terminal-RHS builtin-set identity before two `Inferred` variables and one fact/deferred-free `Checked` equality. Exact independent definition/radix/expansion corruption, withheld-family near-miss, and real-sidecar guards are required.
-    - Keep mode declaration acceptance/inhabitation, equality truth/facts, implicit closure/order, theorem acceptance, proof/Core/ControlFlow/VC deferred.
-    - Update Chapters 4, 7, 13, 14, and 16. Deps: tasks 73 and 134.
-
 155. **Add exact three-edge local-object-mode-chain reserved-variable equality checker bridge.** [x]
-    - Add only the spec-derived `OuterThreeEdgeObjectModeEquality -> MiddleThreeEdgeObjectModeEquality -> InnerThreeEdgeObjectModeEquality -> BaseThreeEdgeObjectModeEquality -> object`, one reserve `z` for the outer mode, and `z = z` theorem source.
-    - Preserve all four raw outer-mode result/expected inputs, resolve both operands independently to `BindingId(0)` at source-order ordinals 1 and 2, consume all four real expansions, and recursively normalize every role to one terminal-RHS builtin-object identity before two `Inferred` variables and one fact/deferred-free `Checked` equality. Exact independent definition/radix/expansion corruption, withheld-family near-miss, and real-sidecar guards are required.
-    - Keep mode declaration acceptance/inhabitation, object/set coercion, equality truth/facts, implicit closure/order, theorem acceptance, proof/Core/ControlFlow/VC deferred.
-    - Update Chapters 4, 7, 13, 14, and 16. Deps: tasks 73 and 135.
-
 156. **Add exact three-edge local-mode-chain reserved-variable inequality checker bridge.** [x]
-    - Add only the spec-derived `OuterThreeEdgeModeInequality -> MiddleThreeEdgeModeInequality -> InnerThreeEdgeModeInequality -> BaseThreeEdgeModeInequality -> set`, one reserve `z` for the outer mode, and `z <> z` theorem source.
-    - Preserve all four raw outer-mode result/expected inputs, resolve both operands independently to `BindingId(0)` at source-order ordinals 1 and 2, consume all four real expansions, and recursively normalize every role to one terminal-RHS builtin-set identity before two `Inferred` variables and one fact/deferred-free pre-desugaring `Checked` inequality. Exact independent definition/radix/expansion corruption, withheld-family near-miss, and real-sidecar guards are required.
-    - Keep mode declaration acceptance/inhabitation, inequality desugaring, truth/facts, implicit closure/order, theorem acceptance, proof/Core/ControlFlow/VC deferred.
-    - Update Chapters 4, 7, 13, 14, and 16. Deps: tasks 73 and 136.
-
 157. **Add exact three-edge local-object-mode-chain reserved-variable inequality checker bridge.** [x]
-    - Add only the spec-derived `OuterThreeEdgeObjectModeInequality -> MiddleThreeEdgeObjectModeInequality -> InnerThreeEdgeObjectModeInequality -> BaseThreeEdgeObjectModeInequality -> object`, one reserve `z` for the outer mode, and `z <> z` theorem source.
-    - Preserve all four raw outer-mode result/expected inputs, resolve both operands independently to `BindingId(0)` at source-order ordinals 1 and 2, consume all four real expansions, and recursively normalize every role to one terminal-RHS builtin-object identity before two `Inferred` variables and one fact/deferred-free pre-desugaring `Checked` inequality. Exact independent definition/radix/expansion corruption, withheld-family near-miss, and real-sidecar guards are required.
-    - Keep mode declaration acceptance/inhabitation, object/set coercion, inequality desugaring, truth/facts, implicit closure/order, theorem acceptance, proof/Core/ControlFlow/VC deferred.
-    - Update Chapters 4, 7, 13, 14, and 16. Deps: tasks 73 and 137.
-
 158. **Add exact three-edge local-mode-chain left reserved-variable membership checker bridge.** [x]
-    - Add only the spec-derived `OuterThreeEdgeModeMembership -> MiddleThreeEdgeModeMembership -> InnerThreeEdgeModeMembership -> BaseThreeEdgeModeMembership -> set`, ordered reserves `x` for the outer mode and `y` for explicit `set`, and `x in y` theorem source.
-    - Preserve the raw outer-mode left result and independent explicit-set right result/sole expected input, resolve to `BindingId(0/1)` at source-order ordinals 2/3, consume all four real expansions, and normalize all three roles to one terminal-RHS builtin-set identity before two `Inferred` variables and one fact/deferred-free `Checked` membership. Exactly one right-owned constraint and no left expected type are required.
-    - Reject every non-exact definition/radix/expansion, reserve, formula, terminal, chain depth, recovery, context, parameter, argument, cycle, and extra-item shape. Keep declaration acceptance/inhabitation, membership truth/facts, closure/order, theorem/proof/Core/VC, object-terminal behavior, and broader shapes deferred.
-    - Add the spec-derived active `.miz`, expectation, trace row, unit/near-miss/corruption tests, real frontend/resolver sidecar, metadata, bilingual docs, and coverage audit updates. Update Chapters 4, 7, 13, 14, and 16. Deps: tasks 73 and 143.
-
 159. **Add exact distinct-binding shared-reserve membership checker bridge.** [x]
-    - Add only `reserve x, y for set; theorem DistinctReservedVariableMembershipPayloadBoundary: x in y;`.
-    - Preserve one written set range across `BindingId(0/1)` at ordinals 2/3 and the left-result/right-result/right-expected roles; require no left expected input, one normalized builtin-set identity, two `Inferred` variables, and one fact/deferred-free `Checked` membership with one right-owned constraint.
-    - Reject non-exact reserve/formula and matched-output corruption. Keep truth/facts, closure/order, theorem/proof/Core/ControlFlow/VC, separate declarations, and broader shapes deferred.
-    - Added fixture/expectation/trace, unit/near-miss/corruption/real-sidecar tests, metadata, bilingual docs, and audit updates. The active runner now contains 110 cases. Updated Chapters 4, 13, 14, and 16. Deps: tasks 120, 123, and 125.
-
 160. **Add exact distinct-binding shared-reserve inequality checker bridge.** [x]
-    - Add only `reserve x, y for set; theorem DistinctReservedVariableInequalityPayloadBoundary: x <> y;`.
-    - Preserve one written set range across `BindingId(0/1)` at ordinals 2/3 and both result/expected role pairs; require one normalized builtin-set identity, two `Inferred` variables, and one fact/deferred-free pre-desugaring `Checked` inequality with two ordered operand-owned constraints.
-    - Reject non-exact reserve/formula shapes, route collisions, and matched-output corruption. Keep desugaring/truth/facts, closure/order, theorem/proof/Core/ControlFlow/VC, separate declarations, and broader shapes deferred.
-    - Added production routing, unit/near-miss/corruption/real-sidecar tests, metadata, bilingual docs, and audit updates for the fixture/expectation/trace contract. The active runner now contains 111 cases. Chapters 4, 13, 14, and 16. Deps: tasks 121 and 123.
-
 161. **Add exact multiple-reserve-declaration inequality checker bridge.** [x]
-    - Add only `reserve x for set; reserve y for set; theorem MultipleReserveDeclarationInequalityPayloadBoundary: x <> y;`.
-    - Preserve distinct written ranges across `BindingId(0/1)` at ordinals 2/3 and both result/expected pairs while interning one canonical builtin-set identity anchored at the earlier x range; require two `Inferred` variables and one fact/deferred-free pre-desugaring `Checked` inequality with two ordered constraints.
-    - Reject non-exact declaration order/shapes, formulas, route collisions, and matched-output corruption. Keep desugaring/truth/facts, closure/order, theorem/proof/Core/ControlFlow/VC, shared ranges, and broader shapes deferred.
-    - Added production routing, unit/near-miss/corruption/real-sidecar tests, metadata, bilingual docs, and audits for the source/trace contract. Active runner now contains 112 cases. Chapters 4, 13, 14, and 16. Deps: tasks 124 and 160.
-
 162. **Add exact multiple-reserve-declaration membership checker bridge.** [x]
-    - Add only `reserve x for set; reserve y for set; theorem MultipleReserveDeclarationMembershipPayloadBoundary: x in y;`.
-    - Preserve distinct written ranges across `BindingId(0/1)` at ordinals 2/3: the first on the left result and the second on the right result plus sole right expected input, with no left expected input. Intern one earlier-x-anchored canonical builtin-set identity and require two `Inferred` variables plus one fact/deferred-free `Checked` membership with exactly one right-owned constraint.
-    - Reject non-exact declaration order/shapes, formulas, route collisions, and matched-output corruption. Keep membership truth/facts, closure/order, theorem/proof/Core/ControlFlow/VC, shared ranges, and broader shapes deferred.
-    - Added production routing, unit/near-miss/corruption/real-sidecar tests, metadata, bilingual docs, and audits for the fixture/expectation/trace contract. Active runner now contains 113 cases. Chapters 4, 13, 14, and 16. Deps: tasks 120, 124, and 159.
-
 87. **Add source-derived term formula extraction-gap boundary.** [x]
-    - Add a dedicated active `type_elaboration` boundary for a theorem formula
-      containing source terms, such as
-      `theorem TermFormulaPayloadBoundary: 1 = 1;`.
-    - Acceptance: parser and resolver execute the source, then the active runner
-      originally reports `type_elaboration.external_dependency.ast_payload_extraction`.
-      Task 106 supersedes this exact builtin equality slice by extracting real
-      checker term/formula payloads while still failing closed on missing
-      numeric type payloads and partial formula checking.
-    - Verify: `cargo test -p mizar-test`.
-    - Deps: task 86. Refs: Step 5 source-derived semantic bridge; mizar-test
-      task 10; spec 13 term expressions; spec 14 formulas; spec 16 theorems and
-      proofs.
-
 88. **Add source-derived proof skeleton extraction-gap boundary.** [x]
-    - Add a dedicated active `type_elaboration` boundary for a theorem with a
-      proof block and conclusion statement, such as
-      `theorem ProofSkeletonPayloadBoundary: thesis proof thus thesis; end;`.
-    - Acceptance: parser and resolver execute the source, then the active runner
-      reports `type_elaboration.external_dependency.ast_payload_extraction`
-      because checker-owned proof skeleton payload extraction, local proof
-      context, formula payload extraction, recorded facts, theorem acceptance,
-      CoreIr, ControlFlowIr, VC, proof payloads, and the `formula_statement`
-      runner are not available. The task must not fabricate proof skeleton
-      payloads, formula payloads, local facts, theorem acceptance, or downstream
-      semantic payloads.
-    - Verify: `cargo test -p mizar-test`.
-    - Deps: task 87. Refs: Step 5 source-derived semantic bridge; mizar-test
-      task 10; spec 14 formulas; spec 15 statements; spec 16 theorems and
-      proofs.
-
 89. **Add source-derived statement proof extraction-gap boundary.** [x]
-    - Add a dedicated active `type_elaboration` boundary for a theorem proof
-      containing statement-level proof justifications, such as labeled
-      `A: thesis proof ... end;` and final `thus thesis proof ... end;`
-      proof blocks.
-    - Acceptance: parser and resolver execute the source, then the active
-      runner reports `type_elaboration.external_dependency.ast_payload_extraction`
-      because checker-owned statement proof payload extraction, nested proof
-      skeleton payloads, local proof context, formula payload extraction,
-      label-reference semantic checking, recorded facts, theorem acceptance,
-      CoreIr, ControlFlowIr, VC, proof payloads, and the `formula_statement`
-      runner are not available. The task must not fabricate statement proof
-      payloads, proof skeleton payloads, formula payloads, local facts, theorem
-      acceptance, or downstream semantic payloads.
-    - Verify: `cargo test -p mizar-test`.
-    - Deps: task 88. Refs: Step 5 source-derived semantic bridge; mizar-test
-      task 10; spec 14 formulas; spec 15 statements; spec 16 theorems and
-      proofs.
-
 90. **Add source-derived predicate/functor definition extraction-gap boundary.** [x]
-    - Add a dedicated active `type_elaboration` boundary for a definition block
-      containing a predicate definition and a functor definition.
-    - Acceptance: parser and resolver execute the source, then the active
-      runner reports `type_elaboration.external_dependency.ast_payload_extraction`
-      because checker-owned predicate/functor definition declaration payload
-      extraction, definition-local contexts, definiens formula/term payloads,
-      overload payloads, recorded facts, CoreIr, ControlFlowIr, VC, proof
-      payloads, and the `formula_statement` runner are not available. The task
-      must not fabricate definition payloads, formula/term body payloads,
-      overload payloads, facts, or downstream semantic payloads.
-    - Verify: `cargo test -p mizar-test`.
-    - Deps: task 89. Refs: Step 5 source-derived semantic bridge; mizar-test
-      task 10; spec 09 predicate definitions; spec 10 functor definitions.
-
 91. **Add source-derived attribute definition extraction-gap boundary.** [x]
-    - Add a dedicated active `type_elaboration` boundary for a definition block
-      containing an attribute definition.
-    - Acceptance: parser and resolver execute the source, then the active
-      runner reports `type_elaboration.external_dependency.ast_payload_extraction`
-      because checker-owned attribute definition declaration payload extraction,
-      definition-local contexts, formula-definiens payloads, attributed-type
-      evidence, recorded facts, CoreIr, ControlFlowIr, VC, proof payloads, and
-      the `formula_statement` runner are not available. The task must not
-      fabricate definition payloads, formula body payloads, evidence, facts, or
-      downstream semantic payloads.
-    - Verify: `cargo test -p mizar-test`.
-    - Deps: task 90. Refs: Step 5 source-derived semantic bridge; mizar-test
-      task 10; spec 06 attribute definitions.
-
 92. **Add source-derived mode/structure definition extraction-gap boundary.** [x]
-    - Add a dedicated active `type_elaboration` boundary for a definition block
-      containing a structure definition and a mode definition.
-    - Acceptance: parser and resolver execute the source, then the active
-      runner reports `type_elaboration.external_dependency.ast_payload_extraction`
-      because checker-owned mode/structure definition declaration payload
-      extraction, mode expansion, structure base-shape/constructor/selector
-      evidence, definition-local contexts, recorded facts, CoreIr, ControlFlowIr,
-      VC, proof payloads, and the `formula_statement` runner are not available.
-      The task must not fabricate definition payloads, mode-expansion payloads,
-      structure evidence, facts, or downstream semantic payloads.
-    - Verify: `cargo test -p mizar-test`.
-    - Deps: task 91. Refs: Step 5 source-derived semantic bridge; mizar-test
-      task 10; spec 05 structures; spec 07 mode definitions.
-
 93. **Add source-derived proof-local declaration extraction-gap boundary.** [x]
-    - Add a dedicated active `type_elaboration` boundary for a theorem proof
-      containing `let`, `given`, `consider`, `set`, and `reconsider`
-      statements.
-    - Acceptance: parser and resolver execute the source, then the active
-      runner reports `type_elaboration.external_dependency.ast_payload_extraction`
-      because checker-owned proof-local declaration payload extraction, local
-      proof context, formula/term payloads, RHS term inference, reconsider
-      coercion/obligation evidence, recorded facts, CoreIr, ControlFlowIr, VC,
-      proof payloads, and the `formula_statement` runner are not available. The
-      task must not fabricate proof-local declaration payloads, formula/term
-      payloads, local facts, theorem acceptance, or downstream semantic
-      payloads.
-    - Verify: `cargo test -p mizar-test`.
-    - Deps: task 92. Refs: Step 5 source-derived semantic bridge; mizar-test
-      task 10; spec 15 statements; spec 16 theorems and proofs.
-
 94. **Add source-derived proof-local inline definition extraction-gap boundary.** [x]
-    - Add a dedicated active `type_elaboration` boundary for a theorem proof
-      containing proof-local `deffunc` and `defpred` statements.
-    - Acceptance: parser and resolver execute the source, then the active
-      runner reports `type_elaboration.external_dependency.ast_payload_extraction`
-      because checker-owned inline definition formal/body payload extraction,
-      local abbreviation expansion, term/formula body payloads, guard evidence,
-      recorded facts, theorem acceptance, CoreIr, ControlFlowIr, VC, proof
-      payloads, and the `formula_statement` runner are not available. The task must not fabricate
-      inline definition payloads, local abbreviation expansion, term/formula
-      body payloads, facts, theorem acceptance, or downstream semantic payloads.
-    - Verify: `cargo test -p mizar-test`.
-    - Deps: task 93. Refs: Step 5 source-derived semantic bridge; mizar-test
-      task 10; spec 15 statements.
-
 95. **Add source-derived registration block extraction-gap boundary.** [x]
-    - Add a dedicated active `type_elaboration` boundary for a top-level
-      `registration` block containing existential and conditional clusters.
-    - Acceptance: parser and resolver execute the source, then the active
-      runner reports `type_elaboration.external_dependency.ast_payload_extraction`
-      because checker-owned registration-item payload extraction,
-      correctness-condition/proof-obligation payloads, accepted
-      activation/evidence status, cluster/reduction semantics, recorded facts,
-      CoreIr, ControlFlowIr, VC, proof payloads, and the `formula_statement` /
-      `advanced_semantics` runners are not available. The task must not
-      fabricate registration payloads, activation status, cluster/reduction
-      facts, Chapter 17 semantic coverage, or downstream semantic payloads.
-    - Verify: `cargo test -p mizar-test`.
-    - Deps: task 94. Refs: Step 5 source-derived semantic bridge; mizar-test
-      task 10; spec 17 clusters and registrations.
-
 96. **Add source-derived redefinition/notation extraction-gap boundary.** [x]
-    - Add a dedicated active `type_elaboration` boundary for top-level and
-      definition-local synonym/antonym aliases plus attribute, predicate, and
-      functor redefinition declarations.
-    - Acceptance: parser and resolver execute the source, then the active
-      runner reports `type_elaboration.external_dependency.ast_payload_extraction`
-      because checker-owned redefinition payload extraction, notation alias
-      relation payloads, target inference, coherence proof-obligation payloads,
-      overload candidate payloads, recorded facts, CoreIr, ControlFlowIr, VC,
-      proof payloads, and the `formula_statement` / `advanced_semantics`
-      runners are not available. The task must not fabricate alias semantics,
-      redefinition payloads, overload facts, Chapter 11 alias semantic
-      resolution, Chapter 19 overload/redefinition semantic coverage, or
-      downstream semantic payloads.
-    - Verify: `cargo test -p mizar-test`.
-    - Deps: task 95. Refs: Step 5 source-derived semantic bridge; mizar-test
-      task 10; spec 11 symbol management; spec 19 overload resolution.
-
 97. **Add source-derived imported TypeCaseStruct reserve provenance bridge.** [x]
-    - Promote the task-78 imported-structure reserve boundary just far enough
-      for the active `type_elaboration` runner to pass the documented
-      `parser.type_fixtures` import-summary `TypeCaseStruct` structure symbol
-      as a checker `TypeHeadInput`.
-    - Acceptance: the checker reserve bridge validates that `TypeCaseStruct`
-      is visible through `SymbolEnv`, has `SymbolKind::Structure`, and is
-      backed by an `ImportedSource` contribution from `parser.type_fixtures`.
-      The runner no longer reports
-      `type_elaboration.external_dependency.ast_payload_extraction` for
-      `TypeCaseStruct`; it reaches
-      `type_elaboration.checker.checker.declaration.deferred.evidence_query`
-      because imported module AST extraction and base-shape/constructor-witness
-      evidence are not available. The task must not synthesize imported module
-      AST extraction, base-shape/constructor-witness evidence, positive
-      structure elaboration, CoreIr, ControlFlowIr, VC, or proof payloads, and
-      it must leave other generic imported structures, imported attributes,
-      arguments, brackets, qualified attributes, and imported evidence on their
-      existing gaps.
-    - Verify: `cargo test -p mizar-test`, `cargo test -p mizar-checker`.
-    - Deps: tasks 48, 52, 76, 78, and 83. Refs: Step 5 source-derived
-      semantic bridge; mizar-test task 10; spec 03 type expressions; spec 05
-      structures; spec 11 symbol management; spec 12 modules and namespaces.
-
 98. **Add source-derived imported predicate/functor term-formula extraction-gap boundary.** [x]
-    - Historical boundary: add a dedicated active `type_elaboration` boundary
-      for a theorem formula that imports `parser.type_fixtures` and uses
-      documented imported predicate/functor surfaces such as `divides` and
-      `++`.
-    - Task 110 supersedes the exact
-      `ImportedPredicateFunctorPayloadBoundary: 1 divides (1 ++ 2)` source by
-      passing real checker numeral, imported functor-application, and
-      predicate-application payloads before failing on missing
-      numeric/signature payloads and partial formula checking. Task 98 remains
-      historical for the parser/resolver-executable extraction-gap boundary
-      and must not be read as imported module AST extraction, semantic
-      predicate/functor signatures, term inference, formula checking, recorded
-      facts, theorem acceptance, CoreIr, ControlFlowIr, VC, proof payloads, or
-      `formula_statement` runner support.
-    - Verify: `cargo test -p mizar-test`.
-    - Deps: tasks 86 and 87. Refs: Step 5 source-derived semantic bridge;
-      mizar-test task 10; spec 11 symbol management; spec 12 modules and
-      namespaces; spec 13 term expressions; spec 14 formulas; spec 16 theorems
-      and proofs.
-
 99. **Add source-derived formula connective/quantifier extraction-gap boundary.** [x]
-    - Add a dedicated active `type_elaboration` boundary for a theorem formula
-      using Chapter 14 connective and quantifier surfaces, such as implication,
-      universal quantification, and negation.
-    - Acceptance: parser and resolver execute the source, then the active
-      runner reports `type_elaboration.external_dependency.ast_payload_extraction`
-      because checker-owned formula payload extraction, quantifier
-      binder/context payloads, formula checking, recorded facts, theorem
-      acceptance, CoreIr, ControlFlowIr, VC, proof payloads, and the
-      `formula_statement` runner are not available. The task must not fabricate
-      formula payloads, quantifier binder/context payloads, facts, theorem
-      acceptance, or downstream semantic payloads.
-    - Verify: `cargo test -p mizar-test`.
-    - Deps: tasks 86, 87, and 98. Refs: Step 5 source-derived semantic bridge;
-      mizar-test task 10; spec 14 formulas; spec 16 theorems and proofs.
-
 112. **Add exact source-derived formula connective/quantifier shell checker bridge.** [x]
-    - Supersede task 99 only for the exact unrecovered
-      `FormulaConnectiveQuantifierPayloadBoundary: contradiction implies for x
-      being set holds not contradiction` theorem source.
-    - Acceptance: parser and resolver execute the source, the runner extracts
-      real source sites/ranges for implication, universal quantification, and
-      negation shells, passes those checker `FormulaInput`s to
-      `TermFormulaChecker`, and fails closed on missing formula/quantifier
-      payloads. Task 117 later supersedes only the two exact contradiction
-      constants in this source as real formula constant kind payloads. The
-      bridge must not fabricate child-formula links, binder/context payloads,
-      formula facts/checking, theorem acceptance, `formula_statement`, CoreIr,
-      ControlFlowIr, VC, or proof payloads.
-    - Verify: `cargo test -p mizar-test`.
-    - Deps: tasks 86, 99, 106, 110, and 111. Refs: Step 5 source-derived
-      semantic bridge; mizar-test task 10; spec 14 formulas; spec 16 theorems
-      and proofs.
-
 100. **Add source-derived builtin membership formula extraction-gap boundary.** [x]
-    - Add a dedicated active `type_elaboration` boundary for a theorem formula
-      using the Chapter 14 builtin membership predicate with Chapter 13 numeral
-      term operands.
-    - Acceptance: parser and resolver execute the source. Task 108 supersedes
-      this exact sidecar by passing real checker term/formula payloads and
-      reporting missing numeric type payload plus partial formula checking. The
-      task must not fabricate numeric type payloads, membership operand
-      expected-type construction/checking, facts, theorem acceptance,
-      `formula_statement`, CoreIr, ControlFlowIr, VC, proof payloads, or
-      downstream semantic payloads.
-    - Verify: `cargo test -p mizar-test`.
-    - Deps: tasks 86, 87, and 98. Refs: Step 5 source-derived semantic bridge;
-      mizar-test task 10; spec 13 term expressions; spec 14 formulas; spec 16
-      theorems and proofs.
-
 101. **Add source-derived builtin inequality formula extraction-gap boundary.** [x]
-    - Add a dedicated active `type_elaboration` boundary for a theorem formula
-      using the Chapter 14 builtin inequality predicate with Chapter 13 numeral
-      term operands.
-    - Acceptance: parser and resolver execute the source. Task 107 supersedes
-      this exact sidecar by passing real checker term/formula payloads and
-      reporting missing numeric type payload plus partial formula checking. The
-      task must not fabricate numeric type payloads, inequality
-      desugaring/equality semantic checking, facts, theorem acceptance,
-      `formula_statement`, CoreIr, ControlFlowIr, VC, proof payloads, or
-      downstream semantic payloads.
-    - Verify: `cargo test -p mizar-test`.
-    - Deps: tasks 86, 87, 98, and 100. Refs: Step 5 source-derived semantic
-      bridge; mizar-test task 10; spec 13 term expressions; spec 14 formulas;
-      spec 16 theorems and proofs.
-
 102. **Add source-derived builtin type assertion formula extraction-gap boundary.** [x]
-    - Add a dedicated active `type_elaboration` boundary for a theorem formula
-      using the Chapter 14 builtin type-assertion form with a Chapter 13
-      numeral term.
-    - Task 109 supersedes only the exact builtin `set` theorem source with
-      source-derived checker `TermInput`, `FormulaInput`, and asserted
-      `TypeExpressionInput` payloads before failing closed on missing numeric
-      type payloads and partial formula checking. Broader asserted type payload
-      extraction, type-assertion semantic checking, recorded facts, theorem
-      acceptance, CoreIr, ControlFlowIr, VC, proof payloads, and the
-      `formula_statement` runner remain unavailable. The tasks must not
-      fabricate type-assertion facts, theorem acceptance, or downstream
-      semantic payloads.
-    - Verify: `cargo test -p mizar-test`.
-    - Deps: tasks 86, 87, 98, 100, and 101. Refs: Step 5 source-derived
-      semantic bridge; mizar-test task 10; spec 13 term expressions; spec 14
-      formulas; spec 16 theorems and proofs.
-
 103. **Add source-derived imported attribute assertion formula extraction-gap boundary.** [x]
-    - Add a dedicated active `type_elaboration` boundary for a theorem formula
-      importing `parser.type_fixtures` and using its documented `empty`
-      attribute in the Chapter 14 attribute-assertion form with a Chapter 13
-      numeral subject.
-    - Acceptance: parser and resolver execute the source, then the active
-      runner reports `type_elaboration.external_dependency.ast_payload_extraction`
-      because checker-owned term/formula payload extraction, imported attribute
-      assertion attribute-chain/provenance payload extraction, term inference,
-      attribute admissibility/semantic checking, formula checking, recorded
-      facts, theorem acceptance, CoreIr, ControlFlowIr, VC, proof payloads, and
-      the `formula_statement` runner are not available. The task must not
-      fabricate term/formula payloads, imported attribute assertion payloads,
-      imported module AST extraction, theorem acceptance, or downstream semantic
-      payloads.
-    - Verify: `cargo test -p mizar-test`.
-    - Deps: tasks 86, 87, 98, 100, 101, and 102. Refs: Step 5 source-derived
-      semantic bridge; mizar-test task 10; spec 06 attributes; spec 11 symbol
-      management; spec 12 modules and namespaces; spec 13 term expressions;
-      spec 14 formulas; spec 16 theorems and proofs.
-
 104. **Add source-derived attribute-level non-empty imported attribute assertion formula extraction-gap boundary.** [x]
-    - Add a dedicated active `type_elaboration` boundary for a theorem formula
-      importing `parser.type_fixtures` and using its documented `empty`
-      attribute as an attribute-level `non empty` assertion in the Chapter 14
-      attribute-assertion form with a Chapter 13 numeral subject.
-    - Acceptance: parser and resolver execute the source, then the active
-      runner reports `type_elaboration.external_dependency.ast_payload_extraction`
-      because checker-owned term/formula payload extraction, imported
-      attribute-level non-empty assertion attribute-chain/provenance payload
-      extraction, term inference, negated attribute admissibility/semantic
-      checking, formula checking, recorded facts, theorem acceptance, CoreIr,
-      ControlFlowIr, VC, proof payloads, and the `formula_statement` runner are
-      not available. The task must not fabricate term/formula payloads, imported
-      attribute-level non-empty assertion payloads, imported module AST
-      extraction, theorem acceptance, or downstream semantic payloads.
-      Task 114 supersedes only the exact
-      `ImportedNonEmptyAttributeAssertionPayloadBoundary: 1 is non empty`
-      source with a real checker term/formula handoff.
-    - Verify: `cargo test -p mizar-test`.
-    - Deps: tasks 86, 87, 98, 100, 101, 102, and 103. Refs: Step 5
-      source-derived semantic bridge; mizar-test task 10; spec 06 attributes;
-      spec 11 symbol management; spec 12 modules and namespaces; spec 13 term
-      expressions; spec 14 formulas; spec 16 theorems and proofs.
-
 114. **Add exact source-derived attribute-level non-empty imported attribute assertion theorem checker bridge.** [x]
-    - Supersede task 104 only for the exact active source
-      `import parser.type_fixtures; theorem ImportedNonEmptyAttributeAssertionPayloadBoundary: 1 is non empty;`.
-    - Acceptance: parser and resolver execute the source; the active runner
-      validates the direct `non` surface and imported `empty` provenance,
-      extracts one source-derived numeral `TermInput` and one
-      attribute-assertion `FormulaInput`, and `TermFormulaChecker` reports
-      missing numeric type payload, missing formula/attribute semantic payload,
-      and partial formula checking. The task must not fabricate imported module
-      AST extraction, negated attribute-chain semantic payloads,
-      theorem-formula `AttributeInput` payloads, negated attribute
-      admissibility/semantic checking, formula checking, theorem acceptance,
-      `formula_statement`, CoreIr, ControlFlowIr, VC, or proof payloads.
-    - Verify: `cargo test -p mizar-test`.
-    - Deps: tasks 86, 87, 98, 100, 101, 102, 103, and 104. Refs: Step 5
-      source-derived semantic bridge; mizar-test task 10; spec 06 attributes;
-      spec 11 symbol management; spec 12 modules and namespaces; spec 13 term
-      expressions; spec 14 formulas; spec 16 theorems and proofs.
-
 105. **Add source-derived set-enumeration formula extraction-gap boundary.** [x]
-    - Add a dedicated active `type_elaboration` boundary for a theorem formula
-      using Chapter 13 set-enumeration term operands with Chapter 14 builtin
-      equality.
-    - Historical acceptance: parser and resolver execute the source, then the active
-      runner reports `type_elaboration.external_dependency.ast_payload_extraction`
-      because checker-owned set-enumeration term payload extraction,
-      term/formula payload extraction, term inference, equality/formula
-      checking, recorded facts, theorem acceptance, CoreIr, ControlFlowIr, VC,
-      proof payloads, and the `formula_statement` runner are not available.
-      The task must not fabricate set-enumeration payloads, term/formula
-      payloads, theorem acceptance, or downstream semantic payloads.
-      Task 111 supersedes only the exact `{1, 2} = {1, 2}` source with a real
-      checker term/formula handoff.
-    - Verify: `cargo test -p mizar-test`.
-    - Deps: tasks 86, 87, 98, 100, 101, 102, 103, and 104. Refs: Step 5
-      source-derived semantic bridge; mizar-test task 10; spec 13 term
-      expressions; spec 14 formulas; spec 16 theorems and proofs.
-
 111. **Add exact source-derived set-enumeration theorem checker bridge.** [x]
-    - Supersede task 105 only for the exact active source
-      `theorem SetEnumerationPayloadBoundary: {1, 2} = {1, 2};`.
-    - Acceptance: parser and resolver execute the source; the active runner
-      extracts the four source-derived numeral item terms, two
-      set-enumeration `TermInput`s, and one builtin equality `FormulaInput`
-      from the AST; `TermFormulaChecker` then reports missing numeric type
-      payloads, missing set-enumeration result-type payloads, and
-      partial formula checking. The task must not fabricate result types,
-      equality facts/checking, theorem acceptance, `formula_statement`,
-      CoreIr, ControlFlowIr, VC, or proof payloads.
-    - Verify: `cargo test -p mizar-test`; final workspace verification.
-    - Deps: tasks 105, 106, 107, 108, 109, and 110. Refs: Step 5
-      source-derived semantic bridge; mizar-test task 10; spec 13 term
-      expressions; spec 14 formulas; spec 16 theorems and proofs.
-
 106. **Add source-derived builtin equality theorem term/formula checker bridge.** [x]
-    - Promote only the unrecovered
-      `TheoremItem -> FormulaExpression -> BuiltinPredicateApplication("=")`
-      source shape with exactly two structural Chapter 13 `NumeralTerm`
-      operands.
-    - Acceptance: the active runner builds a real module-shell checker binding
-      context, passes two source-derived `TermInput`s and one equality
-      `FormulaInput` to `TermFormulaChecker`, and fails closed on
-      `type_elaboration.checker.checker.term.external.numeric_type_payload` plus
-      `type_elaboration.checker.checker.formula.term.partial`. The task must not
-      fabricate numeric type payloads, equality facts/checking, theorem
-      acceptance, `formula_statement` runner support, or downstream semantic
-      payloads, and it must not promote membership, inequality, type assertion,
-      imported, set-enumeration, connective/quantifier, or proof theorem
-      surfaces.
-    - Verify: `cargo test -p mizar-test --test metadata`.
-    - Deps: tasks 86 and 87. Refs: Step 5 source-derived semantic bridge;
-      mizar-test task 10; spec 13 term expressions; spec 14 formulas; spec 16
-      theorems and proofs.
-
 108. **Add source-derived builtin membership theorem term/formula checker bridge.** [x]
-    - Promote only the unrecovered
-      `TheoremItem -> FormulaExpression -> BuiltinPredicateApplication("in")`
-      source shape with label `BuiltinMembershipPayloadBoundary` and exactly two
-      structural Chapter 13 `NumeralTerm` operands spelling `1` and `1`.
-    - Acceptance: the active runner builds a real module-shell checker binding
-      context, passes two source-derived `TermInput`s and one membership
-      `FormulaInput` to `TermFormulaChecker`, and fails closed on
-      `type_elaboration.checker.checker.term.external.numeric_type_payload` plus
-      `type_elaboration.checker.checker.formula.term.partial`. The task must not
-      fabricate numeric type payloads, membership operand expected types,
-      membership facts, theorem acceptance, `formula_statement` runner support,
-      or downstream semantic payloads, and it must not promote equality,
-      inequality, type assertion, imported, set-enumeration, connective/
-      quantifier, or proof theorem surfaces.
-    - Verify: `cargo test -p mizar-test --test metadata`.
-    - Deps: tasks 86, 87, 98, and 100. Refs: Step 5 source-derived semantic
-      bridge; mizar-test task 10; spec 13 term expressions; spec 14 formulas;
-      spec 16 theorems and proofs.
-
 110. **Add source-derived imported predicate/functor theorem checker bridge.** [x]
-    - Promote only the exact source importing `parser.type_fixtures` and using
-      `theorem ImportedPredicateFunctorPayloadBoundary: 1 divides (1 ++ 2);`.
-    - Acceptance: the active runner validates imported `divides` and `++`
-      resolver provenance, passes source-derived numeral terms, the imported
-      functor-application term, and the predicate-application formula to
-      `TermFormulaChecker`, and fails closed on missing numeric/signature
-      payloads plus partial formula checking. The task must not fabricate
-      imported module AST extraction, semantic predicate/functor signatures,
-      term inference, formula checking, facts, theorem acceptance,
-      `formula_statement`, or downstream semantic payloads.
-    - Verify: `cargo test -p mizar-test --test metadata`.
-    - Deps: tasks 86, 87, and 98. Refs: Step 5 source-derived semantic bridge;
-      mizar-test task 10; spec 11 symbol management; spec 12 modules and
-      namespaces; spec 13 term expressions; spec 14 formulas; spec 16 theorems
-      and proofs.
-
 163. **Add exact three-edge local-object-mode membership checker bridge.** [x]
-    - Promote only the spec-derived four-definition object-terminal chain,
-      ordered outer-mode/set reserves, and exact `x in y` theorem label recorded
-      in the crate plan and test-first fixture.
-    - Acceptance: preserve four real expansions, raw left and explicit-set
-      right provenance, `BindingId(0/1)` at ordinals 2/3, two normalized
-      identities, no left expected type, two inferred terms, and one fact-free
-      checked membership with exactly one right-owned constraint. Add exact,
-      corruption, near-miss, and real frontend/resolver tests; do not fabricate
-      coercion, truth, closure, theorem, proof, CoreIr, ControlFlowIr, or VC.
-    - Verify: `cargo test -p mizar-test` plus workspace Rust verification.
-    - Deps: tasks 73, 144, 151, 155, and 157. Refs: Step 5; mizar-test task 10;
-      specs 3, 4, 7, 13, 14.5.3, and 16.
-
 164. **Add exact four-edge local-mode membership checker bridge.** [x]
-    - Promote only the spec-derived five-definition set-terminal chain,
-      ordered outermost-mode/set reserves, and exact `x in y` theorem label
-      recorded in the crate plan and test-first fixture.
-    - Acceptance: preserve all five real expansions, raw left and explicit-set
-      right provenance, `BindingId(0/1)` at ordinals 2/3, one terminal-set-RHS
-      normalized identity, no left expected type, two inferred terms, and one
-      fact-free checked membership with exactly one right-owned constraint. Add
-      exact, corruption, near-miss, and real frontend/resolver tests; do not
-      fabricate truth, closure, theorem, proof, CoreIr, ControlFlowIr, or VC.
-    - Verify: `cargo test -p mizar-test` plus workspace Rust verification.
-    - Deps: tasks 74, 152, and 158. Refs: Step 5; mizar-test task 10; specs 4,
-      7, 13, 14.5.3, and 16.
-
 165. **Add exact four-edge local-object-mode membership checker bridge.** [x]
-    - Promote only the spec-derived five-definition object-terminal chain,
-      ordered outermost-mode/set reserves, and exact `x in y` theorem label
-      recorded in the crate plan and test-first fixture.
-    - Acceptance: preserve all five real expansions, raw left and explicit-set
-      right provenance, `BindingId(0/1)` at ordinals 2/3, distinct terminal-
-      object-RHS and explicit-set normalized identities, no left expected type,
-      two inferred terms, and one fact-free checked membership with exactly one
-      right-owned constraint. Add exact, corruption, near-miss, and real
-      frontend/resolver tests; do not fabricate object/set coercion, truth,
-      closure, theorem, proof, CoreIr, ControlFlowIr, or VC.
-    - Verify: `cargo test -p mizar-test` plus workspace Rust verification.
-    - Deps: tasks 74, 153, and 163. Refs: Step 5; mizar-test task 10; specs 3,
-      4, 7, 13, 14.5.3, and 16.
-
 166. **Add exact four-edge local-mode equality checker bridge.** [x]
-    - Promote only the spec-derived five-definition set-terminal chain, one
-      outermost-mode reserve, and exact `z = z` theorem label recorded in the
-      crate plan and test-first fixture.
-    - Acceptance: preserve all five real expansions, four raw result/expected
-      inputs, `BindingId(0)` at ordinals 1/2, one terminal-set-RHS normalized
-      identity, two inferred terms, and one fact/deferred-free checked equality.
-      Add exact, corruption, near-miss, and real frontend/resolver tests; do not
-      fabricate declaration acceptance, truth, closure, theorem, proof, CoreIr,
-      ControlFlowIr, or VC.
-    - Verify: `cargo test -p mizar-test` plus workspace Rust verification.
-    - Deps: tasks 74, 152, and 154. Refs: Step 5; mizar-test task 10; specs 4,
-      7, 13, 14.5.2, and 16.
-
 167. **Add exact four-edge local-object-mode equality checker bridge.** [x]
-    - Promote only the spec-derived five-definition object-terminal chain, one
-      outermost-mode reserve, and exact `z = z` theorem label recorded in the
-      crate plan and test-first fixture.
-    - Acceptance: preserve all five real expansions, four raw result/expected
-      inputs, `BindingId(0)` at ordinals 1/2, one terminal-object-RHS normalized
-      identity, two inferred terms, one fact/deferred-free checked equality,
-      and two ordered operand-owned expected constraints. Add exact,
-      corruption, near-miss, and real frontend/resolver tests; do not fabricate
-      declaration acceptance, object/set coercion, truth, closure, theorem,
-      proof, CoreIr, ControlFlowIr, or VC.
-    - Verify: `cargo test -p mizar-test` plus workspace Rust verification.
-    - Deps: tasks 74, 153, and 155. Refs: Step 5; mizar-test task 10; specs 3,
-      4, 7, 13, 14.5.2, and 16.
-
 168. **Add exact four-edge local-mode inequality checker bridge.** [x]
-    - Promote only the spec-derived five-definition set-terminal chain, one
-      outermost-mode reserve, and exact `z <> z` theorem label.
-    - Acceptance: preserve five real expansions, four raw result/expected
-      inputs, ordinal 1/2 `BindingId(0)`, one terminal-set-RHS identity, two
-      inferred terms, one fact/deferred-free pre-desugaring checked inequality,
-      and two ordered operand-owned constraints. Add exact/corruption/near-miss/
-      real sidecar tests; do not fabricate desugaring, truth, declaration
-      acceptance, closure, theorem, proof, CoreIr, ControlFlowIr, or VC.
-    - Verify: `cargo test -p mizar-test` plus workspace Rust verification.
-    - Deps: tasks 74, 152, and 156. Refs: Step 5; mizar-test task 10; specs 4,
-      7, 13, 14.5.2, and 16.
-
 169. **Add exact four-edge local-object-mode inequality checker bridge.** [x]
-    - Promote only the spec-derived five-definition object-terminal chain, one
-      outermost-mode reserve, and exact `z <> z` theorem label.
-    - Acceptance: preserve five real expansions, four raw result/expected
-      inputs, ordinal 1/2 `BindingId(0)`, one terminal-object-RHS identity, two
-      inferred terms, one fact/deferred-free pre-desugaring checked inequality,
-      and two ordered operand-owned constraints without object/set coercion.
-      Add exact/corruption/near-miss/real-sidecar tests; do not fabricate
-      desugaring, truth, declaration acceptance, closure, theorem, proof,
-      CoreIr, ControlFlowIr, or VC.
-    - Verify: `cargo test -p mizar-test` plus workspace Rust verification.
-    - Deps: tasks 74, 153, and 157. Refs: Step 5; mizar-test task 10; specs 3,
-      4, 7, 13, 14.5.2, and 16.
-
 172. **Add exact local-mode long-chain equality checker bridge.** [x]
-    - Promote only the spec-derived seven-definition set-terminal chain already
-      exercised by task 74, one `ChainMode6` reserve, and the exact `z = z`
-      theorem label recorded in the test-first fixture.
-    - Acceptance: preserve seven real AST-derived expansions, four raw
-      `ChainMode6` result/expected inputs, `BindingId(0)` at ordinals 1/2, one
-      terminal-`BaseMode`-RHS builtin-set identity, two inferred terms, one
-      fact/deferred-free checked equality, and two ordered operand-owned
-      expected constraints. Add exact, corruption, near-miss, and real
-      frontend/resolver tests; do not fabricate declaration acceptance, truth,
-      closure, theorem, proof, general unbounded semantics, CoreIr,
-      ControlFlowIr, or VC.
-    - Verify: `cargo test -p mizar-test` plus workspace Rust verification.
-    - Deps: tasks 74 and 166. Refs: Step 5; mizar-test task 10; specs 4, 7,
-      13, 14.5.2, and 16.
-
 173. **Add exact local-mode long-chain inequality checker bridge.** [x]
-    - Promote only the task-74 seven-definition set-terminal chain, one
-      `ChainMode6` reserve, and the exact `z <> z` theorem label from the
-      test-first fixture through task 168's real inequality consumer.
-    - Acceptance: preserve seven real expansions, four raw `ChainMode6`
-      result/expected inputs, ordinal 1/2 `BindingId(0)`, one terminal-
-      `BaseMode`-RHS builtin-set identity, two inferred terms, one fact/
-      deferred-free pre-desugaring checked inequality, and two ordered operand-
-      owned expected constraints. Require full exact/near-miss/corruption/real-
-      sidecar guards; do not fabricate desugaring, truth, acceptance, closure,
-      theorem/proof/CoreIr/ControlFlowIr/VC, or general unbounded semantics.
-    - Verify: `cargo test -p mizar-test` plus workspace Rust verification.
-    - Deps: tasks 74 and 168. Refs: Step 5; mizar-test task 10; specs 4, 7,
-      13, 14.5.2, and 16.
-
 174. **Add exact local-mode long-chain membership checker bridge.** [x]
-    - Promote only the task-74 seven-definition set-terminal chain, ordered
-      reserves `x` for `ChainMode6` and `y` for explicit `set`, and the exact
-      `x in y` theorem label from the test-first fixture through task 164's real
-      membership consumer.
-    - Acceptance: preserve seven real expansions, raw `ChainMode6` left and
-      independent explicit-set right result/sole right expected inputs,
-      ordinal 2/3 `BindingId(0/1)`, one terminal-`BaseMode`-RHS builtin-set
-      identity, no left expected input, two inferred terms, one fact/deferred-
-      free checked membership, and exactly one right-owned constraint. Require
-      full exact/near-miss/corruption/real-sidecar guards; do not fabricate
-      truth/facts, acceptance, closure, theorem/proof/CoreIr/ControlFlowIr/VC,
-      or general unbounded semantics.
-    - Verify: `cargo test -p mizar-test` plus workspace Rust verification.
-    - Deps: tasks 74 and 164. Refs: Step 5; mizar-test task 10; specs 4, 7,
-      13, 14.5.3, and 16.
-
 175. **Add exact local-mode long-chain type assertion checker bridge.** [x]
-    - Promote only the task-74 seven-definition set-terminal chain, one
-      `ChainMode6` reserve, and the exact `x is set` theorem label from the
-      test-first fixture through task 152's real normalized-reflexive type-
-      assertion consumer.
-    - Acceptance: preserve seven real expansions, raw `ChainMode6` subject and
-      independent formula-side builtin-set asserted inputs, ordinal 1
-      `BindingId(0)`, one terminal-`BaseMode`-RHS builtin-set identity, one
-      inferred term, and one fact/deferred-free checked type assertion without
-      general reachability. Require full exact/near-miss/corruption/real-
-      sidecar guards; do not fabricate widening/`qua`, truth/facts, acceptance,
-      closure, theorem/proof/CoreIr/ControlFlowIr/VC, or general unbounded
-      semantics.
-    - Verify: `cargo test -p mizar-test` plus workspace Rust verification.
-    - Deps: tasks 74 and 152. Refs: Step 5; mizar-test task 10; specs 3, 4, 7,
-      13, 14.2.3, and 16.
-
 176. **Add exact local-object-mode long-chain equality checker bridge.** [x]
-    - Promote only the Task 74 AST-bounded seven-definition object-terminal
-      chain, one `ChainObjectMode6` reserve, and the exact `z = z` theorem
-      label from the test-first fixture through Task 167's real object-
-      normalizing equality consumer.
-    - Acceptance: preserve seven real expansions, four raw
-      `ChainObjectMode6` result/expected inputs, ordinal 1/2 `BindingId(0)`,
-      one terminal-`BaseObjectMode`-RHS builtin-object identity, two inferred
-      terms, one fact/deferred-free checked equality, and two ordered operand-
-      owned constraints without object/set coercion. Require full exact/near-
-      miss/corruption/real-sidecar guards; do not fabricate truth/facts,
-      acceptance, closure, theorem/proof/CoreIr/ControlFlowIr/VC, or general
-      unbounded semantics.
-    - Verify: `cargo test -p mizar-test` plus workspace Rust verification.
-    - Deps: tasks 74 and 167. Refs: Step 5; mizar-test task 10; specs 3, 4, 7,
-      13, 14.5.2, and 16.
-
 177. **Add exact local-object-mode long-chain inequality checker bridge.** [x]
-    - Promote only the Task 74 AST-bounded seven-definition object-terminal
-      chain, one `ChainObjectMode6` reserve, and the exact `z <> z` theorem
-      label from the test-first fixture through Task 169's real object-
-      normalizing pre-desugaring inequality consumer.
-    - Acceptance: preserve seven real expansions, four raw
-      `ChainObjectMode6` result/expected inputs, ordinal 1/2 `BindingId(0)`,
-      one terminal-`BaseObjectMode`-RHS builtin-object identity, two inferred
-      terms, one fact/deferred-free pre-desugaring checked inequality, and two
-      ordered operand-owned constraints without object/set coercion. Require
-      full exact/near-miss/corruption/real-sidecar guards; do not fabricate
-      inequality desugaring, truth/facts, acceptance, closure, theorem/proof/
-      CoreIr/ControlFlowIr/VC, or general unbounded semantics.
-    - Verify: `cargo test -p mizar-test` plus workspace Rust verification.
-    - Deps: tasks 74 and 169. Refs: Step 5; mizar-test task 10; specs 3, 4, 7,
-      13, 14.5.2, and 16.
-
 178. **Add exact local-object-mode long-chain membership checker bridge.** [x]
-    - Promote only the Task 74 AST-bounded seven-definition object-terminal
-      chain, ordered reserves `x` for `ChainObjectMode6` and `y` for explicit
-      `set`, and the exact `x in y` theorem label from the test-first fixture
-      through Task 165's real object-left/set-right membership consumer.
-    - Acceptance: preserve seven real expansions, the raw `ChainObjectMode6`
-      left result and independent explicit-set right result/sole right expected
-      input, ordinal 2/3 `BindingId(0/1)`, distinct terminal-
-      `BaseObjectMode`-RHS builtin-object and explicit-set identities, no left
-      expected input, two inferred terms, one fact/deferred-free checked
-      membership, and exactly one right-owned constraint without object/set
-      coercion. Require full exact/near-miss/corruption/real-sidecar guards; do
-      not fabricate truth/facts, acceptance, closure, theorem/proof/CoreIr/
-      ControlFlowIr/VC, or general unbounded semantics.
-    - Verify: `cargo test -p mizar-test` plus workspace Rust verification.
-    - Deps: tasks 74 and 165. Refs: Step 5; mizar-test task 10; specs 3, 4, 7,
-      13, 14.5.3, and 16.
-
 179. **Add exact local-object-mode long-chain type assertion checker bridge.** [x]
-    - Promote only the Task 74 AST-bounded seven-definition object-terminal
-      chain, one `ChainObjectMode6` reserve, and the exact `x is object` theorem
-      label from the test-first fixture through Task 153's real object-
-      normalizing type-assertion consumer.
-    - Acceptance: preserve seven real expansions, the raw `ChainObjectMode6`
-      subject result and independent formula-side builtin-object asserted
-      input, ordinal 1 `BindingId(0)`, one terminal-`BaseObjectMode`-RHS
-      builtin-object identity, one inferred term, and one fact/deferred-free
-      normalized-reflexive checked type assertion without general reachability
-      or object/set coercion. Require full exact/near-miss/corruption/real-
-      sidecar guards; do not fabricate widening/`qua`, truth/facts, acceptance,
-      closure, theorem/proof/CoreIr/ControlFlowIr/VC, or general unbounded
-      semantics.
-    - Verify: `cargo test -p mizar-test` plus workspace Rust verification.
-    - Deps: tasks 74, 153, and 175. Refs: Step 5; mizar-test task 10; specs 3,
-      4, 7, 13, 14.2.3, and 16.
-
 180. **Add exact source-derived contradiction formula-constant checker bridge.** [x]
-    - Promote only `theorem SourceDerivedContradictionConstantBoundary:
-      contradiction;` through a new standalone exact leaf extractor to the
-      existing `FormulaKind::Contradiction` consumer.
-    - Acceptance: preserve the real leaf site/range and module-root context and
-      record one checked formula with no terms, asserted type, expected
-      constraints, candidates, facts, deferred reasons, or diagnostics. Require
-      exact/near-miss/corruption/real-sidecar guards and keep Task 112/117
-      composite and thesis behavior unchanged. Do not claim truth/fact
-      publication, theorem acceptance, proof-goal closure, implicit closure or
-      child graphs, `formula_statement`, proof, CoreIr, ControlFlowIr, or VC.
-    - Verify: `cargo test -p mizar-test` plus workspace Rust verification.
-    - Deps: tasks 112, 115, and 117. Refs: Step 5; mizar-test task 10; specs 14
-      and 16.
-
 181. **Repair exact imported attributed-reserve routing.** [x]
-    - Repair the `source_undocumented_behavior` found after task 180: the
-      generic reserve extractor currently admits imported fixture attributes
-      beyond the five documented task-84/85/116/171 source shapes.
-    - Acceptance: if a reserve binding carries a `parser.type_fixtures`
-      imported attribute, require no unrelated top-level item and either one
-      exact single-binding source (positive `TypeCaseAttr set`, positive
-      `empty set`, negative `empty set`, or negative `empty object`) or the
-      already-traced ordered mixed source `reserve x for set; reserve y for non
-      empty set;`. Each attributed binding must have one argument-free
-      attribute. Keep those five existing `.miz` expectations unchanged.
-      Duplicate/mixed attributes, wrong polarity/head, and multiple bindings or
-      items outside the exact mixed source stay on the source extraction gap.
-      Add source-shaped unit regressions before the repair and do not promote
-      positive `empty object` or any evidence/acceptance semantics.
-    - Verify: `cargo test -p mizar-test` plus workspace Rust verification.
-    - Deps: tasks 84, 85, 116, and 171. Refs: Step 5; mizar-test task 10;
-      specs 3, 6, 11, 12, and 17.
-
 182. **Add exact formula-side local-mode asserted-head checker bridge.** [x]
-    - Add the minimal spec-derived source role not covered by the existing
-      type-assertion matrix: an exact definition block containing `mode
-      LocalModeAssertedHeadDef: LocalModeAssertedHead is set;`, one reserve for
-      that mode, and an exact theorem asserting the same local mode rather than
-      a builtin head.
-    - Acceptance: for `LocalModeAssertedHeadPayloadBoundary: x is
-      LocalModeAssertedHead;`, preserve the raw reserve-subject type and the
-      independent formula-side asserted `TypeExpressionInput` with distinct
-      source sites/ranges but the same resolved local-mode symbol. Consume one
-      real AST-derived expansion, resolve ordinal 1 to `BindingId(0)`, intern
-      three known type entries to one terminal-definition-RHS builtin-set
-      identity, and record one inferred variable plus one fact/deferred-free
-      normalized-reflexive checked type assertion without general reachability.
-      Require exact/near-miss/corruption/real-sidecar guards. Keep builtin,
-      other-mode, attributed, argument-bearing, object-terminal, chained,
-      recovered, and broader source shapes deferred; do not claim declaration
-      acceptance/inhabitation, widening/`qua`, truth/facts, theorem acceptance,
-      proof/CoreIr/ControlFlowIr/VC, or general semantics.
-    - Verify: `cargo test -p mizar-test` plus workspace Rust verification.
-    - Deps: tasks 55, 122, and 138. Refs: Step 5; mizar-test task 10; specs 3,
-      4, 7, 13, 14, and 16.
-
 183. **Add exact object-terminal formula-side local-mode asserted-head checker bridge.** [x]
-    - Close the direct object-terminal sibling of task 182 with one exact
-      definition block containing `mode LocalObjectModeAssertedHeadDef:
-      LocalObjectModeAssertedHead is object;`, one reserve for that mode, and
-      `LocalObjectModeAssertedHeadPayloadBoundary: x is
-      LocalObjectModeAssertedHead;`.
-    - Acceptance: preserve independent raw reserve-subject and formula-side
-      asserted inputs with distinct sites/ranges and the same resolved mode
-      symbol. Consume one real AST-derived object-terminal expansion, resolve
-      ordinal 1 to `BindingId(0)`, intern three known type entries to one
-      definition-RHS-anchored builtin-object identity, and record one inferred
-      variable plus one fact/deferred-free normalized-reflexive checked type
-      assertion without general reachability or object/set coercion. Require
-      exact/near-miss/corruption/real-sidecar guards. Keep builtin, other-mode,
-      attributed, argument-bearing, chained, recovered, and broader source
-      shapes deferred. The exact direct set-terminal sibling remains credited
-      through task 182; task 183 adds no new set-terminal credit. Do not claim
-      declaration acceptance/inhabitation, truth/facts, theorem acceptance,
-      proof/CoreIr/
-      ControlFlowIr/VC, or general semantics.
-    - Verify: `cargo test -p mizar-test` plus workspace Rust verification.
-    - Deps: tasks 55, 145, and 182. Refs: Step 5; mizar-test task 10; specs 3,
-      4, 7, 13, 14, and 16.
-
 184. **Add exact one-edge formula-side local-mode asserted-head checker bridge.** [x]
-    - Close only the set-terminal same-outer-mode one-edge chain composed from
-      two ordered definition blocks containing `mode BaseModeAssertedHeadDef:
-      BaseModeAssertedHead is set;` and `mode ChainModeAssertedHeadDef:
-      ChainModeAssertedHead is BaseModeAssertedHead;`, one reserve for
-      `ChainModeAssertedHead`, and
-      `ChainedLocalModeAssertedHeadPayloadBoundary: x is
-      ChainModeAssertedHead;`.
-    - Acceptance: preserve independent raw reserve-subject and formula-side
-      asserted inputs with distinct sites/ranges and the same resolved outer
-      mode symbol. Consume both real AST-derived expansions, resolve ordinal 1
-      to `BindingId(0)`, intern three known type entries to one terminal-base-
-      definition-RHS builtin-set identity, and record one inferred variable
-      plus one fact/deferred-free normalized-reflexive checked type assertion
-      without general reachability, widening, or `qua`. Require exact/near-
-      miss/corruption/real-sidecar guards. Keep direct, object-terminal, deeper,
-      attributed, argument-bearing, imported, recovered, and other asserted-
-      head shapes outside this task; do not claim declaration acceptance/
-      inhabitation, truth/facts, theorem acceptance, closure/order, proof/
-      CoreIr/ControlFlowIr/VC, or general chain semantics.
-    - Verify: `cargo test -p mizar-test` plus workspace Rust verification.
-    - Deps: tasks 56, 146, and 182. Refs: Step 5; mizar-test task 10; specs 3,
-      4, 7, 13, 14, and 16.
-
 185. **Add exact one-edge object-terminal formula-side local-mode asserted-head checker bridge.** [x]
-    - Close only the object-terminal same-outer-mode one-edge chain composed
-      from two ordered definition blocks containing `mode
-      BaseObjectModeAssertedHeadDef: BaseObjectModeAssertedHead is object;` and
-      `mode ChainObjectModeAssertedHeadDef: ChainObjectModeAssertedHead is
-      BaseObjectModeAssertedHead;`, one reserve for `ChainObjectModeAssertedHead`,
-      and `ChainedLocalObjectModeAssertedHeadPayloadBoundary: x is
-      ChainObjectModeAssertedHead;`.
-    - Acceptance: preserve independent raw reserve-subject and formula-side
-      asserted inputs with distinct sites/ranges and the same resolved outer
-      mode symbol. Consume both real AST-derived expansions, resolve ordinal 1
-      to `BindingId(0)`, intern three known type entries to one terminal-base-
-      definition-RHS builtin-object identity, and record one inferred variable
-      plus one fact/deferred-free normalized-reflexive checked type assertion
-      without general reachability, widening, `qua`, or object/set coercion.
-      Require exact/near-miss/corruption/real-sidecar guards and five shared
-      trace backlinks plus one dedicated row; raise the active runner from 132
-      to 133. Keep set-terminal, direct, deeper, attributed, argument-bearing,
-      imported, recovered, and other asserted-head shapes outside this task; do
-      not claim declaration/attribute acceptance, broader term/formula or child-
-      graph semantics, truth/facts, theorem acceptance, closure/order, proof/
-      CoreIr/ControlFlowIr/VC, or general chain semantics. No module layout
-      update is required.
-    - Verify: `cargo test -p mizar-test` plus workspace Rust verification.
-    - Deps: tasks 56, 147, 183, and 184. Refs: Step 5; mizar-test task 10;
-      specs 3, 4, 7, 13, 14, and 16.
-
 186. **Add exact two-edge formula-side local-mode asserted-head checker bridge.** [x]
-    - Close only three ordered definitions: `BaseTwoEdgeModeAssertedHead` is
-      `set`, `MiddleTwoEdgeModeAssertedHead` is `BaseTwoEdgeModeAssertedHead`,
-      and `OuterTwoEdgeModeAssertedHead` is `MiddleTwoEdgeModeAssertedHead`;
-      reserve `x` for the outer mode and check only
-      `TwoEdgeLocalModeAssertedHeadPayloadBoundary: x is
-      OuterTwoEdgeModeAssertedHead;`.
-    - Acceptance: retain distinct reserve/asserted sites and ranges for the
-      same outer symbol, consume three real expansions, resolve ordinal 1 to
-      `BindingId(0)`, normalize three known entries to one terminal-base-RHS
-      builtin-set identity, and produce one `Inferred` term plus one fact/
-      deferred-free normalized-reflexive `Checked` assertion without
-      reachability, widening, or `qua`. Require exact/near-miss/corruption/
-      real-sidecar guards, including imported/ambiguous provenance; raise
-      active runner 133 to 134 with five shared and one dedicated trace row.
-      Keep object/deeper/imported semantics, declarations/attributes, broader
-      terms/formulas/child graphs, truth/facts, proof/Core/ControlFlow/VC, and
-      general chain semantics deferred. No module layout update is required.
-    - Verify: `cargo test -p mizar-test` plus workspace Rust verification.
-    - Deps: tasks 72, 148, 184, and 185. Refs: Step 5; mizar-test task 10;
-      specs 3, 4, 7, 13, 14, and 16.
-
 187. **Add exact two-edge object-terminal formula-side local-mode asserted-head checker bridge.** [x]
-    - Close only three ordered definitions: `mode
-      BaseTwoEdgeObjectModeAssertedHeadDef: BaseTwoEdgeObjectModeAssertedHead is
-      object;`, `mode MiddleTwoEdgeObjectModeAssertedHeadDef:
-      MiddleTwoEdgeObjectModeAssertedHead is BaseTwoEdgeObjectModeAssertedHead;`,
-      and `mode OuterTwoEdgeObjectModeAssertedHeadDef:
-      OuterTwoEdgeObjectModeAssertedHead is MiddleTwoEdgeObjectModeAssertedHead;`.
-      Reserve `x` for the outer mode and check only
-      `TwoEdgeLocalObjectModeAssertedHeadPayloadBoundary: x is
-      OuterTwoEdgeObjectModeAssertedHead;`.
-    - Acceptance: retain distinct raw subject/asserted sites and ranges for the
-      same local outer symbol, consume exactly three real expansions, resolve
-      ordinal 1 to `BindingId(0)`, normalize three known entries to one terminal-
-      base-definition-RHS builtin-object identity, and produce one `Inferred`
-      term plus one fact/deferred-free normalized-reflexive `Checked` assertion
-      with no expected constraints, reachability, widening, `qua`, or object/set
-      coercion. Exact/near-miss/corruption/real-sidecar guards include
-      wrong labels, attributed/argument-bearing formula-side asserted heads,
-      imported Base/Middle/Outer, imported/ambiguous asserted provenance,
-      collapsed provenance, and `BuiltinSet` output corruption. Five shared and
-      one dedicated trace row protect active runner 135. Keep
-      positive imported semantics, declarations/attributes, broader terms/
-      formulas/child graphs, truth/facts, implicit closure/order, theorem
-      acceptance, proof/Core/ControlFlow/VC, and general chain semantics
-      deferred. Step 5 remains active; Steps 6/7 remain
-      deferred. No module layout update is required.
-    - Verify: `cargo test -p mizar-test` plus workspace Rust verification.
-    - Deps: tasks 72, 149, 185, and 186. Refs: Step 5; mizar-test task 10;
-      specs 3, 4, 7, 13, 14, and 16.
-
 188. **Add exact builtin-object reserved-variable equality checker bridge.** [x]
-    - Close only `reserve x for object; theorem
-      ReservedObjectVariableEqualityPayloadBoundary: x = x;` by reusing the
-      real builtin-object reserve handoff and reserved-variable equality
-      checker consumer.
-    - Acceptance: resolve source-order uses at ordinals 1/2 to `BindingId(0)`;
-      preserve four distinct operand result/expected role sites on the one
-      written `object` range; intern one canonical builtin-object identity;
-      produce two `Inferred` variables, two ordered expected constraints, and
-      one fact/deferred-free `Checked` equality. Require exact/near-miss,
-      matched-output, canonical-source, `BuiltinSet` corruption, route-order,
-      and real frontend/resolver-sidecar guards. Add one spec-derived active
-      pass fixture with five shared and one dedicated trace backlink, raising
-      active runner 135 to 136 without changing existing expectations.
-    - Classification: `test_gap`, narrow `source_drift`, and `design_drift`;
-      no `spec_gap`. Keep object/set coercion, general/non-reflexive object
-      equality, truth/facts, closure/order, theorem acceptance, proof/Core/
-      ControlFlow/VC, and broader source shapes deferred. Step 5 remains
-      active; Steps 6/7 remain deferred. No module layout update is required.
-    - Verify: `cargo test -p mizar-test` plus workspace Rust verification.
-    - Deps: tasks 48, 119, 125, and 128. Refs: Step 5; mizar-test task 10; specs 3,
-      4, 13, 14, and 16.
-
 189. **Add exact builtin-object reserved-variable type-assertion checker bridge.** [x]
-    - Close only `reserve x for object; theorem
-      ReservedObjectVariableTypeAssertionPayloadBoundary: x is object;` by
-      reusing the real builtin-object reserve handoff and normalized-reflexive
-      type-assertion checker consumer.
-    - Acceptance: resolve the source-order subject at ordinal 1 to
-      `BindingId(0)`; preserve distinct reserve-subject result and formula-side
-      asserted sites/ranges; intern one canonical builtin-object identity
-      anchored at the written reserve type; produce one `Inferred` variable,
-      three known type entries, zero expected constraints, and one fact/
-      deferred-free `Checked` assertion. Require exact/near-miss,
-      matched-output, canonical-source, `BuiltinSet` corruption, route-order,
-      and real frontend/resolver-sidecar guards. Add one spec-derived active
-      pass fixture with five shared and one dedicated trace backlink, raising
-      active runner 136 to 137 without changing existing expectations.
-    - Classification: `test_gap`, narrow `source_drift`, and `design_drift`;
-      no `spec_gap`. Keep reachability/widening/`qua`, object/set coercion,
-      truth/facts, closure/order, theorem acceptance, proof/Core/ControlFlow/
-      VC, and broader source shapes deferred. Step 5 remains active; Steps 6/7
-      remain deferred. No module layout update was required.
-    - Verify: `cargo test -p mizar-test` plus workspace Rust verification.
-    - Deps: tasks 48, 122, 125, 145, and 188. Refs: Step 5; mizar-test task
-      10; specs 3, 4, 13, 14, and 16.
-
 190. **Add exact builtin-object reserved-variable inequality checker bridge.** [x]
-    - Close only `reserve x for object; theorem
-      ReservedObjectVariableInequalityPayloadBoundary: x <> x;` by reusing
-      the real builtin-object reserve handoff and pre-desugaring inequality
-      checker consumer.
-    - Acceptance: resolve source-order uses at ordinals 1/2 to `BindingId(0)`;
-      preserve four distinct operand result/expected role sites on the one
-      written `object` range; intern one canonical builtin-object identity;
-      produce two `Inferred` variables, six known type entries, two ordered
-      expected constraints, and one fact/candidate/diagnostic/deferred-free
-      `Checked` inequality. Require exact/near-miss, matched-output,
-      canonical-source, `BuiltinSet` corruption, route-order, and real
-      frontend/resolver-sidecar guards. Add one spec-derived active pass
-      fixture with five shared and one dedicated trace backlink, raising
-      active runner 137 to 138 without changing existing expectations.
-    - Classification: `test_gap`, narrow `source_drift`, and `design_drift`;
-      no `spec_gap`. Keep inequality desugaring/equality truth, object/set
-      coercion, facts, closure/order, theorem acceptance, proof/Core/
-      ControlFlow/VC, and broader source shapes deferred. Step 5 remains
-      active; Steps 6/7 remain deferred. No checker source or module-layout
-      change was required.
-    - Verify: `cargo test -p mizar-test` plus workspace Rust verification.
-    - Deps: tasks 48, 121, 125, 128, and 188. Refs: Step 5; mizar-test task
-      10; specs 3, 4, 13, 14, and 16.
-
 191. **Add exact distinct-binding shared-builtin-object equality checker bridge.** [x]
-    - Close only `reserve x, y for object; theorem
-      DistinctReservedObjectVariableEqualityPayloadBoundary: x = y;` by
-      composing the real one-item/two-binding shared-range reserve producer
-      with the real builtin-object equality consumer.
-    - Acceptance: resolve source-order uses at ordinals 2/3 to
-      `BindingId(0/1)`; preserve one shared written `object` range across both
-      bindings and four distinct operand result/expected role sites; intern
-      one canonical builtin-object identity anchored at that reserve range;
-      produce two `Inferred` variables, six known type entries, two ordered
-      operand-owned expected constraints, and one fact/candidate/diagnostic/
-      deferred-free `Checked` equality. Require exact/near-miss,
-      matched-output, canonical-source, `BuiltinSet` corruption, route-order,
-      and real frontend/resolver-sidecar guards. Add one test-first active pass
-      fixture with five shared and one dedicated trace backlink, raising the
-      active runner from 138 to 139 without changing existing expectations.
-    - Classification: `test_gap`, narrow `source_drift`, and `design_drift`;
-      no `spec_gap`. Keep equality truth, object/set coercion, facts, implicit
-      closure/order, declaration/theorem acceptance, proof/Core/ControlFlow/
-      VC, and broader distinct-object source shapes deferred. Step 5 remains
-      active; Steps 6/7 remain deferred. No checker source or module-layout
-      change was required.
-    - Verify: `cargo test -p mizar-test` plus workspace Rust verification.
-    - Deps: tasks 48, 123, 125, and 188. Refs: Step 5; mizar-test task 10;
-      specs 3, 4, 13, 14, and 16.
-
 192. **Add exact distinct-binding shared-builtin-object inequality checker bridge.** [x]
-    - Close only `reserve x, y for object; theorem
-      DistinctReservedObjectVariableInequalityPayloadBoundary: x <> y;` by
-      composing the real one-item/two-binding shared-range builtin-object
-      producer with the real pre-desugaring inequality consumer.
-    - Acceptance: resolve source-order uses at ordinals 2/3 to
-      `BindingId(0/1)`; preserve one shared written `object` range across both
-      bindings and four distinct operand result/expected role sites; intern
-      one canonical builtin-object identity anchored at that reserve range;
-      produce two `Inferred` variables, six known type entries, two ordered
-      operand-owned expected constraints, and one fact/candidate/diagnostic/
-      deferred-free `Checked` inequality. Require exact/near-miss,
-      matched-output, canonical-source, `BuiltinSet` corruption, route-order,
-      and real frontend/resolver-sidecar guards. Add one test-first active pass
-      fixture with five shared and one dedicated trace backlink, raising the
-      active runner from 139 to 140 without changing existing expectations.
-    - Classification: `test_gap`, narrow `source_drift`, and `design_drift`;
-      no `spec_gap`. Keep inequality desugaring/equality truth, object/set
-      coercion, facts, implicit closure/order, declaration/theorem acceptance,
-      proof/Core/ControlFlow/VC, and broader distinct-object source shapes
-      deferred. Step 5 remains active; Steps 6/7 remain deferred. No checker
-      source or module-layout change was required.
-    - Verify: `cargo test -p mizar-test` plus workspace Rust verification.
-    - Deps: tasks 48, 121, 123, 160, 190, and 191. Refs: Step 5; mizar-test
-      task 10; specs 3, 4, 13, 14, and 16.
-
 193. **Add exact multiple-reserve-declaration builtin-object equality checker bridge.** [x]
-    - Close only `reserve x for object; reserve y for object; theorem
-      MultipleObjectReserveDeclarationEqualityPayloadBoundary: x = y;` by
-      composing Task 124's real two-item/two-binding/distinct-written-range
-      reserve producer with the real builtin-object equality consumer.
-    - Acceptance: resolve source-order uses at ordinals 2/3 to
-      `BindingId(0/1)`; retain the two distinct written `object` ranges in four
-      distinct operand result/expected role sites; intern one canonical
-      builtin-object identity anchored at the earlier `x` reserve range;
-      produce two `Inferred` variables, six known type entries, two ordered
-      operand-owned expected constraints, and one fact/candidate/diagnostic/
-      deferred-free `Checked` equality. Require exact structural/provenance
-      near misses, matched-output and canonical-source corruption probes,
-      `BuiltinSet` corruption, route-order isolation, and a real frontend/
-      resolver sidecar. Add one test-first active pass fixture with five shared
-      and one dedicated trace backlink, raising the active runner from 140 to
-      141 without changing existing expectations.
-    - Classification: `test_gap`, narrow `source_drift`, and `design_drift`;
-      no `spec_gap`. Keep equality truth, object/set coercion, facts, implicit
-      closure/order, declaration/theorem acceptance, proof/Core/ControlFlow/
-      VC, shared-range and broader multiple-reserve source shapes deferred.
-      Step 5 remains active; Steps 6/7 remain deferred. No checker source or
-      module-layout change was required.
-    - Verify: `cargo test -p mizar-test` plus workspace Rust verification.
-    - Deps: tasks 48, 119, 124, 188, and 191. Refs: Step 5; mizar-test task
-      10; specs 3, 4, 13, 14, and 16.
-
 194. **Add exact multiple-reserve-declaration builtin-object inequality checker bridge.** [x]
-    - Close only `reserve x for object; reserve y for object; theorem
-      MultipleObjectReserveDeclarationInequalityPayloadBoundary: x <> y;` by
-      composing Task 193's ordered two-item/two-binding/distinct-object-range
-      producer with the real pre-desugaring builtin-object inequality consumer.
-    - Acceptance: resolve ordinals 2/3 to `BindingId(0/1)`; retain the two
-      source-ordered distinct written `object` ranges in four distinct raw
-      result/expected role sites; intern one builtin-object identity anchored at
-      the earlier `x` range; produce two `Inferred` variables, six known type
-      entries, two ordered operand-owned constraints, and one fact/candidate/
-      diagnostic/deferred-free pre-desugaring `Checked` inequality. Require
-      exact structural/provenance near misses, binding/ordinal/range/role/head/
-      raw-source/canonical-source/expected-input/module corruption, route
-      isolation, positive immutable-output checks, and a real frontend/resolver
-      sidecar. Add one test-first active pass fixture with five shared and one
-      dedicated backlink, raising active runner 141 to 142, cases 356 to 357,
-      and requirements 320 to 321 without changing existing expectations.
-    - Classification: `test_gap`, narrow `source_drift`, and `design_drift`;
-      no `spec_gap`. Keep inequality desugaring/equality truth, object/set
-      coercion, facts, closure/order, declaration/theorem acceptance, proof/
-      Core/ControlFlow/VC, shared-range shapes, and broader reserve shapes
-      deferred. Step 5 remains active; Steps 6/7 remain deferred. No checker
-      source or module-layout change was required.
-    - Verify: `cargo test -p mizar-test` plus workspace Rust verification.
-    - Deps: tasks 48, 121, 124, 161, 190, 192, and 193. Refs: Step 5;
-      mizar-test task 10; specs 3, 4, 13, 14, and 16.
-
 195. **Add exact three-edge formula-side local-mode asserted-head checker bridge.** [x]
-    - Close only four ordered local mode definitions `BaseThreeEdgeModeAssertedHead
-      -> set`, `InnerThreeEdgeModeAssertedHead -> BaseThreeEdgeModeAssertedHead`,
-      `MiddleThreeEdgeModeAssertedHead -> InnerThreeEdgeModeAssertedHead`, and
-      `OuterThreeEdgeModeAssertedHead -> MiddleThreeEdgeModeAssertedHead`, one
-      `reserve x for OuterThreeEdgeModeAssertedHead`, and theorem
-      `ThreeEdgeLocalModeAssertedHeadPayloadBoundary: x is
-      OuterThreeEdgeModeAssertedHead;` by composing Task 73's four-expansion
-      producer with Task 186's same-outer formula-side asserted-head consumer.
-    - Acceptance: retain distinct raw reserve-subject and formula-side asserted
-      sites/ranges for the same resolved outer mode symbol; consume exactly four
-      real AST-derived expansions; resolve ordinal 1 to `BindingId(0)`; normalize
-      three known type entries to one canonical builtin-set identity anchored at
-      the base definition RHS; and record one `Inferred` variable plus one fact/
-      candidate/diagnostic/deferred-free normalized-reflexive `Checked`
-      `TypeAssertion` with no expected constraints or general reachability.
-      Require exact structural/provenance near misses, independent expansion/
-      binding/ordinal/head/spelling/range/canonical-source corruption, route
-      isolation, positive immutable-output checks, and a real frontend/resolver
-      sidecar. Add one test-first active pass fixture with five shared and one
-      dedicated backlink, raising active runner 142 to 143, cases 357 to 358,
-      and requirements 321 to 322 without changing existing expectations.
-    - Classification: `test_gap`, narrow `source_drift`, and `design_drift`;
-      no `spec_gap`. Keep object-terminal/deeper/imported/attributed/argument-
-      bearing/other asserted-head shapes, reachability/widening/`qua`, mode
-      declaration acceptance/inhabitation, assertion truth/facts, implicit
-      closure/order, theorem acceptance, broader term/formula/child-graph
-      semantics, proof/Core/ControlFlow/VC, and general chain semantics
-      deferred. Step 5 remains active; Steps 6/7 remain deferred. No checker
-      source or module-layout change was required.
-    - Verify: `cargo test -p mizar-test` plus workspace Rust verification.
-    - Deps: tasks 73, 150, 182, and 186. Refs: Step 5; mizar-test task 10;
-      specs 3, 4, 7, 13, 14, and 16.
-
 196. **Add exact three-edge object-terminal formula-side local-mode asserted-head checker bridge.** [x]
-    - Close only four ordered local mode definitions
-      `BaseThreeEdgeObjectModeAssertedHead -> object`,
-      `InnerThreeEdgeObjectModeAssertedHead -> BaseThreeEdgeObjectModeAssertedHead`,
-      `MiddleThreeEdgeObjectModeAssertedHead -> InnerThreeEdgeObjectModeAssertedHead`,
-      and `OuterThreeEdgeObjectModeAssertedHead ->
-      MiddleThreeEdgeObjectModeAssertedHead`, one `reserve x for
-      OuterThreeEdgeObjectModeAssertedHead`, and theorem
-      `ThreeEdgeLocalObjectModeAssertedHeadPayloadBoundary: x is
-      OuterThreeEdgeObjectModeAssertedHead;` by composing Task 73/151's real
-      four-expansion object-terminal producer with Task 187's same-outer
-      formula-side asserted-head consumer.
-    - Acceptance: retain distinct raw reserve-subject and formula-side asserted
-      sites/ranges for the same resolved outer mode symbol; consume exactly four
-      real AST-derived expansions; resolve ordinal 1 to `BindingId(0)`;
-      normalize three known type entries to one canonical builtin-object
-      identity anchored at the base definition RHS; and record one `Inferred`
-      variable plus one fact/candidate/diagnostic/deferred-free normalized-
-      reflexive `Checked` `TypeAssertion` with no expected constraints,
-      general reachability, or object/set coercion. Require exact structural/
-      provenance near misses, independent expansion/binding/ordinal/head/
-      spelling/range/canonical-source corruption, route isolation, positive
-      immutable-output checks, and a real frontend/resolver sidecar. Add one
-      test-first active pass fixture with five shared and one dedicated
-      backlink, raising active runner 143 to 144, cases 358 to 359, and
-      requirements 322 to 323 without changing existing expectations.
-    - Classification: `test_gap`, narrow `source_drift`, and `design_drift`;
-      no `spec_gap`. Keep deeper/imported/attributed/argument-bearing/other
-      asserted-head shapes, reachability/widening/`qua`, mode declaration
-      acceptance/inhabitation, assertion truth/facts, implicit closure/order,
-      theorem acceptance, broader term/formula/child-graph semantics, proof/
-      Core/ControlFlow/VC, and general chain semantics deferred. Step 5 remains
-      active; Steps 6/7 remain deferred. No checker source or module-layout
-      change was required.
-    - Verify: `cargo test -p mizar-test` plus workspace Rust verification.
-    - Deps: tasks 73, 151, 187, and 195. Refs: Step 5; mizar-test task 10;
-      specs 3, 4, 7, 13, 14, and 16.
-
 197. **Add exact four-edge formula-side local-mode asserted-head checker bridge.** [x]
-    - Close only five ordered local mode definitions
-      `BaseFourEdgeModeAssertedHead -> set`,
-      `InnerFourEdgeModeAssertedHead -> BaseFourEdgeModeAssertedHead`,
-      `MiddleFourEdgeModeAssertedHead -> InnerFourEdgeModeAssertedHead`,
-      `OuterFourEdgeModeAssertedHead -> MiddleFourEdgeModeAssertedHead`, and
-      `TooDeepFourEdgeModeAssertedHead -> OuterFourEdgeModeAssertedHead`, one
-      `reserve x for TooDeepFourEdgeModeAssertedHead`, and theorem
-      `FourEdgeLocalModeAssertedHeadPayloadBoundary: x is
-      TooDeepFourEdgeModeAssertedHead;` by composing Task 74/152's real five-
-      expansion set-terminal producer with Task 186/195's same-outer formula-
-      side asserted-head consumer.
-    - Acceptance: retain distinct raw reserve-subject and formula-side asserted
-      sites/ranges for the same resolved outermost mode symbol; consume exactly
-      five real AST-derived expansions; resolve ordinal 1 to `BindingId(0)`;
-      normalize three known type entries to one canonical builtin-set identity
-      anchored at the base definition RHS; and record one `Inferred` variable
-      plus one fact/candidate/diagnostic/deferred-free normalized-reflexive
-      `Checked` `TypeAssertion` with no expected constraints or general
-      reachability. Require exact structural/provenance near misses including
-      unrelated local/imported/ambiguous asserted heads, independent expansion/
-      binding/ordinal/head/spelling/range/canonical-source corruption, route
-      isolation, positive immutable-output checks, and a real frontend/resolver
-      sidecar. Add one test-first active pass fixture with five shared and one
-      dedicated backlink, raising active runner 144 to 145, cases 359 to 360,
-      and requirements 323 to 324 without changing existing expectations.
-    - Classification: `test_gap`, narrow `source_drift`, and `design_drift`;
-      no `spec_gap`. Keep object-terminal/other-depth/imported/attributed/
-      argument-bearing/other asserted-head shapes, reachability/widening/`qua`,
-      mode declaration acceptance/inhabitation, assertion truth/facts, implicit
-      closure/order, theorem acceptance, broader term/formula/child-graph
-      semantics, proof/Core/ControlFlow/VC, and general chain semantics
-      deferred. Step 5 remains active; Steps 6/7 remain deferred. No checker
-      source or module-layout change was required.
-    - Verify: `cargo test -p mizar-test` plus workspace Rust verification.
-    - Deps: tasks 74, 152, 186, and 195. Refs: Step 5; mizar-test task 10;
-      specs 3, 4, 7, 13, 14, and 16.
-
 198. **Add exact four-edge object-terminal formula-side local-mode asserted-head checker bridge.** [x]
-    - Close only five ordered local mode definitions
-      `BaseFourEdgeObjectModeAssertedHead -> object`,
-      `InnerFourEdgeObjectModeAssertedHead -> BaseFourEdgeObjectModeAssertedHead`,
-      `MiddleFourEdgeObjectModeAssertedHead -> InnerFourEdgeObjectModeAssertedHead`,
-      `OuterFourEdgeObjectModeAssertedHead -> MiddleFourEdgeObjectModeAssertedHead`,
-      and `TooDeepFourEdgeObjectModeAssertedHead ->
-      OuterFourEdgeObjectModeAssertedHead`, one `reserve x for
-      TooDeepFourEdgeObjectModeAssertedHead`, and theorem
-      `FourEdgeLocalObjectModeAssertedHeadPayloadBoundary: x is
-      TooDeepFourEdgeObjectModeAssertedHead;` by composing Task 74/153's real
-      five-expansion object-terminal producer with Task 187/196's same-
-      outermost formula-side asserted-head consumer.
-    - Acceptance: retain distinct raw reserve-subject and formula-side asserted
-      sites/ranges for the same resolved outermost mode symbol; consume exactly
-      five real AST-derived expansions; resolve ordinal 1 to `BindingId(0)`;
-      normalize three known type entries to one canonical builtin-object
-      identity anchored at the base definition RHS; and record one `Inferred`
-      variable plus one fact/candidate/diagnostic/deferred-free normalized-
-      reflexive `Checked` `TypeAssertion` with no expected constraints,
-      general reachability, or object/set coercion. Require exact structural/
-      provenance near misses including full reorder, connected deeper, and
-      unrelated local/imported/ambiguous asserted heads; independent expansion/
-      binding/ordinal/head/spelling/range/canonical-source corruption; route
-      isolation; positive immutable-output checks; and a real frontend/resolver
-      sidecar. Add one test-first active pass fixture with five shared and one
-      dedicated backlink, raising active runner 145 to 146, cases 360 to 361,
-      and requirements 324 to 325 without changing existing expectations.
-    - Classification: `test_gap`, narrow `source_drift`, and `design_drift`;
-      no `spec_gap`. Keep set-terminal/other-depth/imported/attributed/argument-
-      bearing/other asserted-head shapes, reachability/widening/`qua`, mode
-      declaration acceptance/inhabitation, assertion truth/facts, implicit
-      closure/order, theorem acceptance, broader term/formula/child-graph
-      semantics, proof/Core/ControlFlow/VC, and general chain semantics
-      deferred. Step 5 remains active; Steps 6/7 remain deferred. No checker
-      source or module-layout change was required.
-    - Verify: `cargo test -p mizar-test` plus workspace Rust verification.
-    - Deps: tasks 74, 153, 187, 196, and 197. Refs: Step 5; mizar-test task
-      10; specs 3, 4, 7, 13, 14, and 16.
-
 199. **Add exact seven-expansion set-terminal formula-side local-mode asserted-head checker bridge.** [x]
-    - Close only the existing seven ordered bare local mode definitions
-      `ChainMode6 -> ChainMode5 -> ChainMode4 -> ChainMode3 -> ChainMode2 ->
-      ChainMode1 -> BaseMode -> set`, one `reserve x for ChainMode6`, and theorem
-      `LongLocalModeAssertedHeadPayloadBoundary: x is ChainMode6;` by composing
-      Task 74/175's real seven-expansion set-terminal producer with Task 186/
-      195/197's same-symbol formula-side asserted-head consumer.
-    - Acceptance: retain distinct raw reserve-subject and formula-side asserted
-      sites/ranges for the same resolved `ChainMode6` symbol; consume exactly
-      seven real AST-derived expansions; resolve ordinal 1 to `BindingId(0)`;
-      normalize three known type entries to one canonical builtin-set identity
-      anchored at the `BaseModeDef` RHS; and record one `Inferred` variable plus
-      one fact/candidate/diagnostic/deferred-free normalized-reflexive `Checked`
-      `TypeAssertion` with no expected constraints or general reachability.
-      Require full reverse, a truly connected eighth edge, exact structural/
-      provenance near misses, independent seven-expansion/binding/ordinal/head/
-      spelling/site/range/canonical-source corruption, route isolation,
-      immutable-output checks, and a real frontend/resolver sidecar. Add one
-      test-first active pass fixture with five shared and one dedicated
-      backlink, raising active runner 146 to 147, cases 361 to 362, and
-      requirements 325 to 326 without changing existing expectations.
-    - Classification: `test_gap`, narrow `source_drift`, and `design_drift`;
-      no `spec_gap`. Keep object-terminal/other-depth/imported/attributed/
-      argument-bearing/other asserted heads, reachability/widening/`qua`, mode
-      declaration acceptance/inhabitation, assertion truth/facts, implicit
-      closure/order, theorem acceptance, broader term/formula/child-graph
-      semantics, proof/Core/ControlFlow/VC, and general unbounded chain
-      semantics deferred. Step 5 remains active; Steps 6/7 remain deferred. No
-      checker source or module-layout change was required.
-    - Verify: `cargo test -p mizar-test` plus workspace Rust verification.
-    - Deps: tasks 74, 175, 186, 195, and 197. Refs: Step 5; mizar-test task 10;
-      specs 3, 4, 7, 13, 14, and 16.
-
 200. **Add exact seven-expansion object-terminal formula-side local-mode asserted-head checker bridge.** [x]
-    - Close only the existing seven ordered bare local object-mode definitions
-      `ChainObjectMode6 -> ChainObjectMode5 -> ChainObjectMode4 ->
-      ChainObjectMode3 -> ChainObjectMode2 -> ChainObjectMode1 ->
-      BaseObjectMode -> object`, one `reserve x for ChainObjectMode6`, and
-      theorem `LongLocalObjectModeAssertedHeadPayloadBoundary: x is
-      ChainObjectMode6;` by composing Task 74/179's real seven-expansion object-
-      terminal producer with Tasks 187/196/198's same-symbol formula-side
-      asserted-head consumer and Task 199's depth-matched set-terminal sibling.
-    - Acceptance: retain distinct raw reserve-subject and formula-side asserted
-      sites/ranges for the same resolved `ChainObjectMode6` symbol; consume
-      exactly seven real AST-derived expansions; resolve ordinal 1 to
-      `BindingId(0)`; normalize three known type entries to one canonical
-      builtin-object identity anchored at the `BaseObjectModeDef` RHS; and
-      record one `Inferred` variable plus one fact/candidate/diagnostic/
-      deferred-free normalized-reflexive `Checked` `TypeAssertion` with no
-      expected constraints, general reachability, or object/set coercion.
-      Require full reverse, a truly connected eighth edge, exact structural/
-      provenance near misses, independent seven-expansion/binding/ordinal/head/
-      spelling/site/range/canonical-source corruption, route isolation,
-      immutable-output checks, and a real frontend/resolver sidecar. Add one
-      test-first active pass fixture with five shared and one dedicated
-      backlink, raising active runner 147 to 148, cases 362 to 363, and
-      requirements 326 to 327 without changing existing expectations.
-    - Classification: `test_gap`, narrow `source_drift`, and `design_drift`;
-      no `spec_gap`. Keep set-terminal/other-depth/imported/attributed/argument-
-      bearing/other asserted heads, reachability/widening/`qua`, mode
-      declaration acceptance/inhabitation, assertion truth/facts, implicit
-      closure/order, theorem acceptance, broader term/formula/child-graph
-      semantics, proof/Core/ControlFlow/VC, and general unbounded chain
-      semantics deferred. Step 5 remains active; Steps 6/7 remain deferred. No
-      checker source or module-layout change was required.
-    - Verify: `cargo test -p mizar-test` plus workspace Rust verification.
-    - Deps: tasks 74, 179, 187, 196, 198, and 199. Refs: Step 5; mizar-test task
-      10; specs 3, 4, 7, 13, 14, and 16.
-
 201. **Add exact one-edge formula-side immediate-radix local-mode asserted-head checker bridge.** [x]
-    - Close only `mode BaseModeRadixAssertedHeadDef: BaseModeRadixAssertedHead
-      is set;`, `mode OuterModeRadixAssertedHeadDef: OuterModeRadixAssertedHead
-      is BaseModeRadixAssertedHead;`, one reserve of the outer mode, and
-      `ChainedLocalModeRadixAssertedHeadPayloadBoundary: x is
-      BaseModeRadixAssertedHead;` by composing Tasks 56/146's real two-
-      expansion normalized type handoff with Task 184's formula-side local-mode
-      asserted-head consumer.
-    - Acceptance: add an explicit asserted-head relation that leaves existing
-      builtin asserted-type routes unchanged, keeps existing same-mode asserted-
-      head routes same-mode, and admits only this exact immediate-radix edge.
-      Preserve
-      distinct raw subject/asserted sites, ranges, and resolved symbols; consume
-      exactly two real expansions; resolve ordinal 1 to `BindingId(0)`;
-      normalize three known entries to one Base definition RHS-anchored builtin-
-      set identity; and record one `Inferred` variable plus one fact/candidate/
-      diagnostic/deferred-free normalized-reflexive `Checked` `TypeAssertion`
-      with zero expected constraints. Require exact structural/provenance near
-      misses, independent expansion/binding/ordinal/head/spelling/site/range/
-      immediate-edge/canonical corruption, Task 146/184 route isolation,
-      immutable-output checks, and a real frontend/resolver sidecar. Add one
-      test-first active pass fixture with five shared and one dedicated backlink,
-      raising active runner 148 to 149, cases 363 to 364, and requirements 327 to
-      328 without changing existing expectations.
-    - Classification: `test_gap`, narrow `source_drift`, and `design_drift`; no
-      `spec_gap`. Keep object-terminal/deeper/unrelated/imported/attributed/
-      argument-bearing asserted heads, general reachability/widening/`qua`, mode
-      declaration acceptance/inhabitation, assertion truth/facts, implicit
-      closure/order, theorem acceptance, broader term/formula/child-graph
-      semantics, proof/Core/ControlFlow/VC, and general chain semantics deferred.
-      Step 5 remains active; Steps 6/7 remain deferred. No checker source or
-      module-layout change is expected.
-    - Verify: `cargo test -p mizar-test` plus workspace Rust verification.
-    - Deps: tasks 56, 146, and 184. Refs: Step 5; mizar-test task 10; specs 3,
-      4, 7, 13, 14, and 16.
-
 202. **Add exact one-edge object-terminal formula-side immediate-radix local-mode asserted-head checker bridge.** [x]
-    - Close only `mode BaseObjectModeRadixAssertedHeadDef:
-      BaseObjectModeRadixAssertedHead is object;`, `mode
-      OuterObjectModeRadixAssertedHeadDef: OuterObjectModeRadixAssertedHead is
-      BaseObjectModeRadixAssertedHead;`, one reserve of the outer mode, and
-      `ChainedLocalObjectModeRadixAssertedHeadPayloadBoundary: x is
-      BaseObjectModeRadixAssertedHead;` by composing Tasks 56/147's real two-
-      expansion object-normalization handoff, Task 185's object formula-side
-      local asserted-head consumer, and Task 201's immediate-radix relation.
-    - Acceptance: preserve every existing builtin, same-mode, and set-terminal
-      immediate-radix route; admit only this exact object-terminal config.
-      Preserve distinct raw Outer/Base sites, ranges, and resolved symbols;
-      consume exactly two real expansions; resolve ordinal 1 to `BindingId(0)`;
-      normalize three known entries to one Base definition RHS-anchored
-      builtin-object identity; and record one `Inferred` variable plus one fact/
-      candidate/diagnostic/deferred-free normalized-reflexive `Checked`
-      `TypeAssertion` with zero expected constraints and no object/set coercion.
-      Require exact structural/provenance near misses, independent expansion/
-      binding/ordinal/head/spelling/site/range/immediate-edge/`BuiltinSet`/
-      canonical corruption, Tasks 147/185/201 route isolation, immutable-output
-      checks, and a real frontend/resolver sidecar. Add one test-first active
-      pass fixture with five shared and one dedicated backlink, raising active
-      runner 149 to 150, cases 364 to 365, and requirements 328 to 329 without
-      changing existing expectations.
-    - Classification: `test_gap`, narrow `source_drift`, and `design_drift`; no
-      `spec_gap`. Keep additional set-terminal shapes beyond Task 201, deeper/
-      unrelated/imported/attributed/argument-bearing asserted heads, general
-      reachability/widening/`qua`, mode
-      declaration acceptance/inhabitation, assertion truth/facts, implicit
-      closure/order, theorem acceptance, broader term/formula/child-graph
-      semantics, proof/Core/ControlFlow/VC, and general chain semantics deferred.
-      Step 5 remains active; Steps 6/7 remain deferred. No checker source or
-      module-layout change was required.
-    - Verify: `cargo test -p mizar-test` plus workspace Rust verification.
-    - Deps: tasks 56, 147, 185, and 201. Refs: Step 5; mizar-test task 10; specs
-      3, 4, 7, 13, 14, and 16.
-
 203. **Add exact two-edge set-terminal formula-side immediate-radix local-mode asserted-head checker bridge.** [x]
-    - Close only `mode BaseTwoEdgeModeRadixAssertedHeadDef:
-      BaseTwoEdgeModeRadixAssertedHead is set;`, `mode
-      MiddleTwoEdgeModeRadixAssertedHeadDef: MiddleTwoEdgeModeRadixAssertedHead
-      is BaseTwoEdgeModeRadixAssertedHead;`, `mode
-      OuterTwoEdgeModeRadixAssertedHeadDef: OuterTwoEdgeModeRadixAssertedHead is
-      MiddleTwoEdgeModeRadixAssertedHead;`, `reserve x for
-      OuterTwoEdgeModeRadixAssertedHead`, and
-      `TwoEdgeLocalModeRadixAssertedHeadPayloadBoundary: x is
-      MiddleTwoEdgeModeRadixAssertedHead` by
-      composing Task 72's real three-expansion set-terminal producer, Task
-      186's depth-matched formula consumer, and Task 201's unchanged closed
-      immediate-radix relation.
-    - Acceptance: preserve every existing builtin, same-mode, one-edge
-      immediate-radix, object-terminal, and same-Outer route; admit only this
-      exact Outer-to-Middle config. Preserve distinct raw Outer/Middle sites,
-      ranges, and resolved symbols; require the asserted symbol to equal the
-      outer expansion's immediate radix head; consume exactly three real
-      expansions; resolve ordinal 1 to `BindingId(0)`; normalize three known
-      entries to one Base-definition-RHS builtin-set identity; and record one
-      `Inferred` variable plus one fact/candidate/diagnostic/deferred-free
-      normalized-reflexive `Checked` `TypeAssertion` with zero expected
-      constraints. Require exact structural/provenance near misses, independent
-      expansion/binding/ordinal/head/spelling/site/range/immediate-edge/
-      `BuiltinObject`/canonical corruption, Tasks 72/186/201/202 route
-      isolation, immutable-output checks, and a real frontend/resolver sidecar.
-      Add one test-first active pass fixture with five shared and one dedicated
-      backlink, raising active runner 150 to 151, cases 365 to 366, and
-      requirements 329 to 330 without changing existing expectations.
-    - Classification: `test_gap`, narrow `source_drift`, and `design_drift`; no
-      `spec_gap`. Keep assertion of Base across two links, the object-terminal
-      sibling, other depths, imported/attributed/argument-bearing asserted
-      heads, general reachability/widening/`qua`, mode declaration acceptance/
-      inhabitation, assertion truth/facts, implicit closure/order, theorem
-      acceptance, broader term/formula/child-graph semantics, proof/Core/
-      ControlFlow/VC, and general chain semantics deferred. Step 5 remains
-      active; Steps 6/7 remain deferred. No checker source or module-layout
-      change was required.
-    - Verify: `cargo test -p mizar-test` plus workspace Rust verification.
-    - Deps: tasks 72, 186, 201, and 202. Refs: Step 5; mizar-test task 10;
-      specs 3, 4, 7, 13, 14, and 16.
-
 204. **Add exact two-edge object-terminal formula-side immediate-radix local-mode asserted-head checker bridge.** [x]
-    - Close only `mode BaseTwoEdgeObjectModeRadixAssertedHeadDef: BaseTwoEdgeObjectModeRadixAssertedHead is object;`, `mode MiddleTwoEdgeObjectModeRadixAssertedHeadDef: MiddleTwoEdgeObjectModeRadixAssertedHead is BaseTwoEdgeObjectModeRadixAssertedHead;`, `mode OuterTwoEdgeObjectModeRadixAssertedHeadDef: OuterTwoEdgeObjectModeRadixAssertedHead is MiddleTwoEdgeObjectModeRadixAssertedHead;`, `reserve x for OuterTwoEdgeObjectModeRadixAssertedHead`, and `TwoEdgeLocalObjectModeRadixAssertedHeadPayloadBoundary: x is MiddleTwoEdgeObjectModeRadixAssertedHead` by composing Task 72's real object-terminal three-expansion producer, Task 187's formula consumer, and Tasks 202/203's unchanged closed immediate-radix relation.
-    - Preserve distinct raw Outer subject and Middle asserted symbols/sites/ranges, require the asserted symbol to be the real immediate radix of the outer expansion, resolve ordinal 1 to `BindingId(0)`, consume exactly three expansions, normalize three known entries to one Base-definition-RHS builtin-object identity, and record one `Inferred` variable plus one fact/candidate/diagnostic/deferred-free normalized-reflexive `Checked` `TypeAssertion` with zero expected constraints and no object/set coercion. Task 72 owns producer integration. Require bidirectional route isolation against Tasks 189/145/147/149/187/202 and set-terminal Tasks 148/186/203, all nonidentity definition orders, exact structural/provenance near misses, independent expansion/binding/ordinal/head/spelling/site/range/immediate-edge/`BuiltinSet`/canonical corruption, immutable output, and a real frontend/resolver sidecar. Add one test-first active fixture with five shared and one dedicated backlink, raising active runner 151 to 152, cases 366 to 367, and requirements 330 to 331 without changing existing expectations.
-    - Classification: `test_gap`, narrow `source_drift`, and `design_drift`; no `spec_gap`. Keep assertion of Base across two links, other depths, imported/attributed/argument-bearing asserted heads, general reachability/widening/`qua`, mode declaration acceptance/inhabitation, assertion truth/facts, closure/order, theorem acceptance, broader term/formula/child-graph semantics, proof/Core/ControlFlow/VC, and general chain semantics deferred. Step 5 remains active; Steps 6/7 remain deferred. No checker source or module-layout change was required.
-    - Verify: `cargo test -p mizar-test` plus workspace Rust verification.
-    - Deps: tasks 72, 187, 202, and 203. Refs: Step 5; mizar-test task 10; specs 3, 4, 7, 13, 14, and 16.
-
 205. **Add exact three-edge set-terminal formula-side immediate-radix local-mode asserted-head checker bridge.** [x]
-    - Close only four ordered definitions `BaseThreeEdgeModeRadixAssertedHead -> set`, `InnerThreeEdgeModeRadixAssertedHead -> BaseThreeEdgeModeRadixAssertedHead`, `MiddleThreeEdgeModeRadixAssertedHead -> InnerThreeEdgeModeRadixAssertedHead`, and `OuterThreeEdgeModeRadixAssertedHead -> MiddleThreeEdgeModeRadixAssertedHead`, `reserve x for OuterThreeEdgeModeRadixAssertedHead`, and `ThreeEdgeLocalModeRadixAssertedHeadPayloadBoundary: x is MiddleThreeEdgeModeRadixAssertedHead` by composing Task 73's real four-expansion producer, Task 195's formula consumer, and the unchanged closed immediate-radix relation from Tasks 201/203/204.
-    - Preserve distinct raw Outer subject and Middle asserted symbols/sites/ranges, require the asserted symbol to be the real immediate radix of the outer expansion, resolve ordinal 1 to `BindingId(0)`, consume exactly four expansions, normalize three known entries to one Base-definition-RHS builtin-set identity, and record one `Inferred` variable plus one fact/candidate/diagnostic/deferred-free normalized-reflexive `Checked` `TypeAssertion` with zero expected constraints. Task 73 owns producer integration. Require bidirectional route isolation against set Tasks 122/138/146/148/150/195/201/203 and object Tasks 189/145/147/149/151/196/202/204, every nonidentity definition order, exact structural/provenance near misses, independent expansion/binding/ordinal/head/spelling/site/range/immediate-edge/`BuiltinObject`/canonical corruption, immutable output, and a real frontend/resolver sidecar. Add one test-first active fixture with five shared and one dedicated backlink, raising active runner 152 to 153, cases 367 to 368, and requirements 331 to 332 without changing existing expectations.
-    - Classification: `test_gap`, narrow `source_drift`, and `design_drift`; no `spec_gap`. Keep multi-hop Inner/Base assertions, the matching object sibling, other depths, imported/attributed/argument-bearing asserted heads, general reachability/widening/`qua`, mode declaration acceptance/inhabitation, assertion truth/facts, closure/order, theorem acceptance, broader term/formula/child-graph semantics, proof/Core/ControlFlow/VC, and general chain semantics deferred. Step 5 remains active; Steps 6/7 remain deferred. No checker source or module-layout change was required.
-    - Verify: `cargo test -p mizar-test` plus workspace Rust verification.
-    - Deps: tasks 73, 195, 201, 203, and 204. Refs: Step 5; mizar-test task 10; specs 3, 4, 7, 13, 14, and 16.
-
 206. **Add exact three-edge object-terminal formula-side immediate-radix local-mode asserted-head checker bridge.** [x]
-    - Close only four ordered definitions `BaseThreeEdgeObjectModeRadixAssertedHead -> object`, `InnerThreeEdgeObjectModeRadixAssertedHead -> BaseThreeEdgeObjectModeRadixAssertedHead`, `MiddleThreeEdgeObjectModeRadixAssertedHead -> InnerThreeEdgeObjectModeRadixAssertedHead`, and `OuterThreeEdgeObjectModeRadixAssertedHead -> MiddleThreeEdgeObjectModeRadixAssertedHead`, `reserve x for OuterThreeEdgeObjectModeRadixAssertedHead`, and `ThreeEdgeLocalObjectModeRadixAssertedHeadPayloadBoundary: x is MiddleThreeEdgeObjectModeRadixAssertedHead` by composing Task 73's real four-expansion object producer, Task 196's formula consumer, and the unchanged closed immediate-radix relation from Tasks 201/204/205.
-    - Preserve distinct raw Outer subject and Middle asserted symbols/sites/ranges, require the asserted symbol to be the real immediate radix of the outer expansion, resolve ordinal 1 to `BindingId(0)`, consume exactly four expansions, normalize three known entries to one Base-definition-RHS builtin-object identity, and record one `Inferred` variable plus one fact/candidate/diagnostic/deferred-free normalized-reflexive `Checked` `TypeAssertion` with zero expected constraints and no object/set coercion. Task 73 owns producer integration. Require bidirectional route isolation against set Tasks 122/138/146/148/150/195/201/203/205 and object Tasks 189/145/147/149/151/196/202/204, all 23 nonidentity definition orders, exact structural/provenance near misses, per-definition missing/duplicate/label/spelling/radix probes, independent expansion/binding/ordinal/head/spelling/site/range/immediate-edge/internal-link/`BuiltinSet`/canonical corruption, immutable output, and a real frontend/resolver sidecar. Add one test-first active fixture with five shared and one dedicated backlink, raising active runner 153 to 154, cases 368 to 369, and requirements 332 to 333 without changing existing expectations.
-    - Classification: `test_gap`, narrow `source_drift`, and `design_drift`; no `spec_gap`. Keep multi-hop Inner/Base assertions, other depths, imported/attributed/argument-bearing asserted heads, general reachability/widening/`qua`, mode declaration acceptance/inhabitation, assertion truth/facts, closure/order, theorem acceptance, broader term/formula/child-graph semantics, proof/Core/ControlFlow/VC, and general chain semantics deferred. Step 5 remains active; Steps 6/7 remain deferred. No checker source or module-layout change was required.
-    - Verify: `cargo test -p mizar-test` plus workspace Rust verification.
-    - Deps: tasks 73, 196, 201, 204, and 205. Refs: Step 5; mizar-test task 10; specs 3, 4, 7, 13, 14, and 16.
-
 207. **Add exact four-edge set-terminal formula-side immediate-radix local-mode asserted-head checker bridge.** [x]
-    - Close only five ordered definitions `BaseFourEdgeModeRadixAssertedHead -> set`, `InnerFourEdgeModeRadixAssertedHead -> BaseFourEdgeModeRadixAssertedHead`, `MiddleFourEdgeModeRadixAssertedHead -> InnerFourEdgeModeRadixAssertedHead`, `OuterFourEdgeModeRadixAssertedHead -> MiddleFourEdgeModeRadixAssertedHead`, and `TooDeepFourEdgeModeRadixAssertedHead -> OuterFourEdgeModeRadixAssertedHead`, `reserve x for TooDeepFourEdgeModeRadixAssertedHead`, and `FourEdgeLocalModeRadixAssertedHeadPayloadBoundary: x is OuterFourEdgeModeRadixAssertedHead` by composing Task 74's real five-expansion set producer, Task 197's formula consumer, and the unchanged closed immediate-radix relation from Tasks 201/203/205/206.
-    - Preserve distinct raw TooDeep subject and Outer asserted symbols/sites/ranges, require the asserted symbol to be the real immediate radix of the binding expansion, resolve ordinal 1 to `BindingId(0)`, consume exactly five expansions, normalize three known entries to one Base-definition-RHS builtin-set identity, and record one `Inferred` variable plus one fact/candidate/diagnostic/deferred-free normalized-reflexive `Checked` `TypeAssertion` with zero expected constraints. Task 74 owns producer integration. Require bidirectional route isolation against set Tasks 122/138/146/148/150/152/197/201/203/205 and object Tasks 189/145/147/149/151/153/198/202/204/206, all 119 nonidentity definition orders, exact structural/provenance near misses, per-definition missing/duplicate/label/spelling/radix probes, independent expansion/binding/ordinal/head/spelling/site/range/immediate-edge/internal-link/`BuiltinObject`/canonical corruption, immutable output, and a real frontend/resolver sidecar. Add one test-first active fixture with five shared and one dedicated backlink, raising active runner 154 to 155, cases 369 to 370, and requirements 333 to 334 without changing existing expectations.
-    - Classification: `test_gap`, narrow `source_drift`, and `design_drift`; no `spec_gap`. Keep multi-hop Middle/Inner/Base assertions, the matching object sibling, other depths, imported/attributed/argument-bearing asserted heads, general reachability/widening/`qua`, mode declaration acceptance/inhabitation, assertion truth/facts, closure/order, theorem acceptance, broader term/formula/child-graph semantics, proof/Core/ControlFlow/VC, and general chain semantics deferred. Step 5 remains active; Steps 6/7 remain deferred. No checker source or module-layout change was required.
-    - Verify: `cargo test -p mizar-test` plus workspace Rust verification.
-    - Deps: tasks 74, 197, 201, 203, 205, and 206. Refs: Step 5; mizar-test task 10; specs 3, 4, 7, 13, 14, and 16.
-
 208. **Add exact four-edge object-terminal formula-side immediate-radix local-mode asserted-head checker bridge.** [x]
-    - Close only five ordered definitions `BaseFourEdgeObjectModeRadixAssertedHead -> object`, `InnerFourEdgeObjectModeRadixAssertedHead -> BaseFourEdgeObjectModeRadixAssertedHead`, `MiddleFourEdgeObjectModeRadixAssertedHead -> InnerFourEdgeObjectModeRadixAssertedHead`, `OuterFourEdgeObjectModeRadixAssertedHead -> MiddleFourEdgeObjectModeRadixAssertedHead`, and `TooDeepFourEdgeObjectModeRadixAssertedHead -> OuterFourEdgeObjectModeRadixAssertedHead`, `reserve x for TooDeepFourEdgeObjectModeRadixAssertedHead`, and `FourEdgeLocalObjectModeRadixAssertedHeadPayloadBoundary: x is OuterFourEdgeObjectModeRadixAssertedHead` by composing Task 74/153's real five-expansion object producer, Task 198's formula consumer, and the unchanged closed immediate-radix relation from Tasks 202/204/206/207.
-    - Preserve distinct raw TooDeep subject and Outer asserted symbols/sites/ranges, require the asserted symbol to be the real immediate radix of the binding expansion, resolve ordinal 1 to `BindingId(0)`, consume exactly five expansions, normalize three known entries to one Base-definition-RHS builtin-object identity, and record one `Inferred` variable plus one fact/candidate/diagnostic/deferred-free normalized-reflexive `Checked` `TypeAssertion` with zero expected constraints and no object/set coercion. Task 74 owns producer integration. Require bidirectional route isolation against set Tasks 122/138/146/148/150/152/197/201/203/205/207 and object Tasks 189/145/147/149/151/153/198/202/204/206, all 119 nonidentity definition orders; exact structural/provenance near misses; per-definition missing/duplicate/label/spelling/radix/recovery/context/parameter/argument/attribute probes; non-exact reserve binding/type and an extra reserve; non-exact formula label/subject/negation/status/recovery and an extra item; asserted same-TooDeep, multi-hop Middle/Inner/Base, builtin `object`/`set`, local Other, argument-bearing, and attributed heads; a connected sixth-edge rejection; an unrelated-import positive control; imported and ambiguous substitutions for each of all five mode symbols; removal of each of all five expansions; independent expansion-payload/binding/ordinal/head/spelling/site/range/immediate-edge/internal-link/`BuiltinSet`/canonical corruption; immutable output, and a real frontend/resolver sidecar. Add one test-first active fixture with five shared and one dedicated backlink, raising active runner 155 to 156, cases 370 to 371, and requirements 334 to 335 without changing existing expectations.
-    - Classification: `test_gap`, narrow `source_drift`, and `design_drift`; no `spec_gap`. Keep multi-hop Middle/Inner/Base assertions, other depths, imported/attributed/argument-bearing asserted heads, general reachability/widening/`qua`, mode declaration acceptance/inhabitation, assertion truth/facts, closure/order, theorem acceptance, broader term/formula/child-graph semantics, proof/Core/ControlFlow/VC, and general chain semantics deferred. Step 5 remains active; Steps 6/7 remain deferred. No checker source or module-layout change was required.
-    - Verify: `cargo test -p mizar-test` plus workspace Rust verification.
-    - Deps: tasks 74, 153, 198, 202, 204, 206, and 207. Refs: Step 5; mizar-test task 10; specs 3, 4, 7, 13, 14, and 16.
-
 209. **Add exact seven-expansion set-terminal formula-side immediate-radix local-mode asserted-head checker bridge.** [x]
-    - Close only the ordered `BaseMode -> set`, `ChainMode1 -> BaseMode`, through `ChainMode6 -> ChainMode5` definitions, `reserve x for ChainMode6`, and `LongLocalModeRadixAssertedHeadPayloadBoundary: x is ChainMode5` by composing Task 74's real seven-expansion producer, Task 199's formula consumer, and the unchanged closed immediate-radix relation. Task 175 supplies the existing builtin asserted-type sibling/owner route and reusable output guards; it is not the expansion producer.
-    - Preserve distinct ChainMode6-subject and ChainMode5-asserted symbols/sites/ranges; require the real immediate edge; resolve ordinal 1 to `BindingId(0)`; consume seven expansions; normalize three known entries to one BaseModeDef-RHS builtin-set identity; and produce one inferred variable and one zero-constraint/fact/candidate/diagnostic/deferred checked assertion. Require all 5,039 nonidentity orders; for each definition, missing/duplicate/label/spelling/radix/recovery/contextual/parameterized/argument-bearing/attributed probes; non-exact reserve binding/type and an extra reserve; formula label/subject/negation/status/recovery/extra-item probes; same `ChainMode6`, multi-hop `ChainMode4` through `BaseMode`, builtin `set`/`object`, local-other, argument-bearing, and attributed asserted heads; a connected eighth edge; an unrelated-import positive; imported/ambiguous substitution for each of seven symbols; removal of each expansion; independent binding/ordinal/head/spelling/site/range/immediate-edge/internal-link/`BuiltinObject`/canonical corruption; immutable output; a real sidecar; and bidirectional isolation against all 34 pre-existing type-assertion owner routes. Add one test-first fixture with five shared plus one dedicated backlink, raising active runner 156 to 157, cases 371 to 372, and requirements 335 to 336 without changing existing expectations.
-    - Classification: `test_gap`, narrow `source_drift`, and `design_drift`; no `spec_gap`. Keep multi-hop ChainMode4 through BaseMode assertions, the object sibling, imported positive expansion, attributed/argument-bearing heads, general reachability/widening/`qua`, declaration/theorem acceptance, truth/facts, proof/Core/ControlFlow/VC, and broader semantics deferred. Step 5 remains active; Steps 6/7 remain deferred. No checker source or module-layout change was required.
-    - Verify: `cargo test -p mizar-test` plus workspace Rust verification.
-    - Deps: tasks 74, 175, 199, 201, 203, 205, 207, and 208. Refs: Step 5; mizar-test task 10; specs 3, 4, 7, 13, 14, and 16.
-
 210. **Add exact seven-expansion object-terminal formula-side immediate-radix local-mode asserted-head checker bridge.** [x]
-    - Close only the ordered `BaseObjectMode -> object`, `ChainObjectMode1 -> BaseObjectMode`, through `ChainObjectMode6 -> ChainObjectMode5` definitions, `reserve x for ChainObjectMode6`, and `LongLocalObjectModeRadixAssertedHeadPayloadBoundary: x is ChainObjectMode5` by composing Task 74's real seven-expansion object producer, Task 200's formula consumer, and the unchanged closed immediate-radix relation. Task 179 supplies the builtin-object asserted-type sibling and reusable output guards; Task 209 supplies the set-terminal immediate-radix sibling.
-    - Preserve distinct ChainObjectMode6-subject and ChainObjectMode5-asserted symbols/sites/ranges; require the real immediate edge; resolve ordinal 1 to `BindingId(0)`; consume seven expansions; normalize three known entries to one BaseObjectModeDef-RHS builtin-object identity; and produce one inferred variable and one zero-constraint/fact/candidate/diagnostic/deferred checked assertion without object/set coercion. Require all 5,039 nonidentity orders; for each definition, missing/duplicate/label/spelling/radix/recovery/contextual/parameterized/argument-bearing/attributed probes; non-exact reserve binding/type, ChainObjectMode5/local-other/multi-binding reserves, and an extra reserve; formula label/subject/negation/status/recovery/extra-item probes; same `ChainObjectMode6`, multi-hop `ChainObjectMode4` through `BaseObjectMode`, builtin `object`/`set`, local-other, argument-bearing, and attributed asserted heads; a connected eighth edge; an unrelated-import positive; imported/ambiguous substitution for each of seven symbols; removal of each expansion; independent binding/ordinal/head/spelling/site/range/immediate-edge/internal-link/`BuiltinSet`/canonical corruption; immutable output; a real sidecar; and bidirectional isolation against all 35 pre-existing type-assertion owner routes. Add one test-first fixture with five shared plus one dedicated backlink, raising active runner 157 to 158, cases 372 to 373, and requirements 336 to 337 without changing existing expectations.
-    - Classification: `test_gap`, narrow `source_drift`, and `design_drift`; no `spec_gap`. Keep multi-hop ChainObjectMode4 through BaseObjectMode assertions, imported positive expansion, attributed/argument-bearing heads, general reachability/widening/`qua`, object/set coercion, declaration/theorem acceptance, truth/facts, proof/Core/ControlFlow/VC, and broader semantics deferred. Step 5 remains active; Steps 6/7 remain deferred. No checker source or module-layout change was required.
-    - Verify: `cargo test -p mizar-test` plus workspace Rust verification.
-    - Deps: tasks 74, 179, 200, 202, 204, 206, 208, and 209. Refs: Step 5; mizar-test task 10; specs 3, 4, 7, 13, 14, and 16.
-
 211. **Add exact two-edge set-terminal formula-side two-hop local-mode asserted-head checker bridge.** [x]
-    - Close only `BaseTwoHopModeAssertedHead -> set`, `MiddleTwoHopModeAssertedHead -> BaseTwoHopModeAssertedHead`, `OuterTwoHopModeAssertedHead -> MiddleTwoHopModeAssertedHead`, `reserve x for OuterTwoHopModeAssertedHead`, and `TwoEdgeLocalModeTwoHopAssertedHeadPayloadBoundary: x is BaseTwoHopModeAssertedHead`. Compose Task 72's three real AST-derived expansions with the existing reserved-variable type-assertion producer/consumer and a new separate closed two-link relation.
-    - Require the relation to validate the real bare Outer-to-Middle and Middle-to-Base expansion edges explicitly with three pairwise-distinct resolved symbols, plus the exact Base-to-builtin-set terminal; generic terminal traversal alone is not relation evidence. Preserve distinct raw Outer-subject and Base-asserted symbols/sites/ranges, ordinal 1 / `BindingId(0)`, three expansions, three known entries normalizing to one Base-definition-RHS builtin-set identity, one inferred variable, and one zero-constraint/fact/candidate/diagnostic/deferred checked assertion. Cover all five nonidentity definition orders; per-definition missing/duplicate/label/spelling/radix/recovery/context/parameter/argument/attribute cases; non-exact reserve/formula/extra-item cases; same-Outer/immediate-Middle/builtin/local-other/object/deeper/argument-bearing/attributed asserted heads; unrelated-import positive and imported/ambiguous substitutions for all three symbols; removal and independent corruption of every expansion, both internal edges, terminal, binding, ordinal, subject/asserted head/spelling/site/range, and canonical source; immutable output; a real frontend/resolver sidecar; and bidirectional isolation against all 36 existing type-assertion owner routes. Add one test-first active fixture with five shared plus one dedicated backlink, raising active runner 158 to 159, cases 373 to 374, and requirements 337 to 338 without changing existing expectations.
-    - Classification: `test_gap`, narrow `source_drift`, and `design_drift`; no `spec_gap`. Keep the object-terminal sibling, other distances, imported-positive/attributed/argument-bearing asserted heads, general reachability/widening/`qua`, mode declaration acceptance/inhabitation, assertion truth/facts, closure/order, theorem acceptance, broader term/formula/child-graph semantics, proof/Core/ControlFlow/VC, and general chain semantics deferred. Step 5 remains active; Steps 6/7 remain deferred. No checker source or module-layout change was required.
-    - Verify: `cargo test -p mizar-test` plus workspace Rust verification.
-    - Deps: tasks 72, 148, 186, and 203. Refs: Step 5; mizar-test task 10; specs 3, 4, 7, 13, 14, and 16.
-
 212. **Add exact two-edge object-terminal formula-side two-hop local-mode asserted-head checker bridge.** [x]
-    - Close only `BaseTwoHopObjectModeAssertedHead -> object`, `MiddleTwoHopObjectModeAssertedHead -> BaseTwoHopObjectModeAssertedHead`, `OuterTwoHopObjectModeAssertedHead -> MiddleTwoHopObjectModeAssertedHead`, `reserve x for OuterTwoHopObjectModeAssertedHead`, and `TwoEdgeLocalObjectModeTwoHopAssertedHeadPayloadBoundary: x is BaseTwoHopObjectModeAssertedHead`. Compose Task 72's three real object-terminal AST-derived expansions with the existing reserved-variable type-assertion producer/consumer and Task 211's closed two-link relation.
-    - Require the relation to validate the real bare Outer-to-Middle and Middle-to-Base expansion edges explicitly with three pairwise-distinct resolved symbols, plus the exact Base-to-builtin-object terminal; generic terminal traversal alone is not relation evidence. Preserve distinct raw Outer-subject and Base-asserted symbols/sites/ranges, ordinal 1 / `BindingId(0)`, three expansions, three known entries normalizing to one Base-definition-RHS builtin-object identity, one inferred variable, and one zero-constraint/fact/candidate/diagnostic/deferred checked assertion without object/set coercion. Cover all five nonidentity definition orders; per-definition missing/duplicate/label/spelling/radix/recovery/context/parameter/argument/attribute cases; non-exact reserve/formula/extra-item cases; same-Outer/immediate-Middle/builtin-object/builtin-set/local-other/deeper/argument-bearing/attributed asserted heads; unrelated-import positive and imported/ambiguous substitutions for all three symbols; removal and independent corruption of every expansion, both internal edges, terminal, binding, ordinal, subject/asserted head/spelling/site/range, `BuiltinSet`, and canonical source; immutable output; a real frontend/resolver sidecar; and bidirectional isolation against all 37 existing type-assertion owner routes. Add one test-first active fixture with five shared plus one dedicated backlink, raising active runner 159 to 160, cases 374 to 375, and requirements 338 to 339 without changing existing expectations.
-    - Classification: `test_gap`, narrow `source_drift`, and `design_drift`; no `spec_gap`. Keep other distances, imported-positive/attributed/argument-bearing asserted heads, general reachability/widening/`qua`, object/set coercion, mode declaration acceptance/inhabitation, assertion truth/facts, closure/order, theorem acceptance, broader term/formula/child-graph semantics, proof/Core/ControlFlow/VC, and general chain semantics deferred. Step 5 remains active; Steps 6/7 remain deferred. No checker source or module-layout change was required.
-    - Verify: `cargo test -p mizar-test` plus workspace Rust verification.
-    - Deps: tasks 72, 149, 187, 204, and 211. Refs: Step 5; mizar-test task 10; specs 3, 4, 7, 13, 14, and 16.
-
 213. **Add exact three-edge set-terminal formula-side two-hop local-mode asserted-head checker bridge.** [x]
-    - Close only four ordered definitions `BaseThreeEdgeModeTwoHopAssertedHead -> set`, `InnerThreeEdgeModeTwoHopAssertedHead -> BaseThreeEdgeModeTwoHopAssertedHead`, `MiddleThreeEdgeModeTwoHopAssertedHead -> InnerThreeEdgeModeTwoHopAssertedHead`, and `OuterThreeEdgeModeTwoHopAssertedHead -> MiddleThreeEdgeModeTwoHopAssertedHead`, one Outer reserve, and `ThreeEdgeLocalModeTwoHopAssertedHeadPayloadBoundary: x is InnerThreeEdgeModeTwoHopAssertedHead`. Compose Task 73's four real AST-derived expansions with Task 195's formula/checker consumer and the closed two-link relation from Task 211.
-    - Preserve the relation's explicit pairwise-distinct Outer-to-Middle and Middle-to-Inner links; validate the remaining Inner-to-Base-to-set tail only through terminal normalization, never as relation evidence. Preserve distinct raw Outer-subject and Inner-asserted symbols/sites/ranges, ordinal 1 / `BindingId(0)`, four expansions, three known entries normalizing to one Base-definition-RHS builtin-set identity, one inferred variable, and one zero-constraint/fact/candidate/diagnostic/deferred checked assertion. Cover all 23 nonidentity definition orders; every definition's missing/duplicate/label/spelling/radix/recovery/context/parameter/argument/attribute variants; non-exact reserve/formula/extra-item and same/immediate/full-distance/builtin/object/local-other/deeper asserted heads; unrelated-import positive and imported/ambiguous substitutions for all four symbols; removal and independent corruption of every expansion, both relation links, the tail link, terminal, binding, ordinal, raw subject/asserted head/spelling/site/range, and canonical source; immutable output; a real frontend/resolver sidecar; focused Tasks 211/212 regressions; and bidirectional isolation against all 38 existing type-assertion owner routes. Add one test-first active fixture with five shared plus one dedicated backlink, raising active runner 160 to 161, cases 375 to 376, requirements 339 to 340, and type-elaboration coverage 207/195 to 208/196 without changing existing expectations.
-    - Classification: `test_gap`, narrow `source_drift`, and `design_drift`; no `spec_gap`. Keep the object sibling, Base/full-distance assertion, deeper/imported-positive/attributed/argument-bearing asserted heads, general reachability/widening/`qua`, mode declaration acceptance/inhabitation, assertion truth/facts, closure/order, theorem acceptance, broader term/formula/child-graph semantics, proof/Core/ControlFlow/VC, and general chain semantics deferred. Step 5 remains active; Steps 6/7 remain deferred. No checker source or module-layout change was required.
-    - Verify: `cargo test -p mizar-test` plus workspace Rust verification.
-    - Deps: tasks 73, 195, 205, 211, and 212. Refs: Step 5; mizar-test task 10; specs 3, 4, 7, 13, 14, and 16.
-
 214. **Add exact three-edge object-terminal formula-side two-hop local-mode asserted-head checker bridge.** [x]
-    - Close only four ordered definitions `BaseThreeEdgeObjectModeTwoHopAssertedHead -> object`, `InnerThreeEdgeObjectModeTwoHopAssertedHead -> BaseThreeEdgeObjectModeTwoHopAssertedHead`, `MiddleThreeEdgeObjectModeTwoHopAssertedHead -> InnerThreeEdgeObjectModeTwoHopAssertedHead`, and `OuterThreeEdgeObjectModeTwoHopAssertedHead -> MiddleThreeEdgeObjectModeTwoHopAssertedHead`, one Outer reserve, and `ThreeEdgeLocalObjectModeTwoHopAssertedHeadPayloadBoundary: x is InnerThreeEdgeObjectModeTwoHopAssertedHead`. Compose Task 73's four real AST-derived object expansions with Task 196's formula/checker consumer and the unchanged closed two-link relation used by Tasks 211-213.
-    - Preserve the relation's explicit pairwise-distinct Outer-to-Middle and Middle-to-Inner links; validate the remaining Inner-to-Base-to-object tail only through terminal normalization, never as relation evidence. Preserve distinct raw Outer-subject and Inner-asserted symbols/sites/ranges, ordinal 1 / `BindingId(0)`, four expansions, three known entries normalizing to one Base-definition-RHS builtin-object identity, one inferred variable, and one zero-constraint/fact/candidate/diagnostic/deferred checked assertion without object/set coercion. Cover all 23 nonidentity definition orders; every definition's missing/duplicate/label/spelling/radix/recovery/context/parameter/argument/attribute variants; non-exact reserve/formula/extra-item and same/immediate/full-distance/builtin-object/builtin-set/local-other/deeper asserted heads; unrelated-import positive and imported/ambiguous substitutions for all four symbols; removal and independent corruption of every expansion, both relation links, the tail link, terminal, binding, ordinal, raw subject/asserted head/spelling/site/range, `BuiltinSet`, and canonical source; immutable output; a real frontend/resolver sidecar; focused Tasks 211/212/213 regressions; and bidirectional isolation against all 39 existing type-assertion owner routes. Add one test-first active fixture with five shared plus one dedicated backlink, raising active runner 161 to 162, cases 376 to 377, requirements 340 to 341, type-elaboration coverage 208/196 to 209/197, and pass/fail 192/184 to 193/184 without changing existing expectations.
-    - Classification: `test_gap`, narrow `source_drift`, and `design_drift`; no `spec_gap`. Keep Base/full-distance assertion, deeper/imported-positive/attributed/argument-bearing asserted heads, general reachability/widening/`qua`, mode declaration acceptance/inhabitation, assertion truth/facts, closure/order, theorem acceptance, broader term/formula/child-graph semantics, proof/Core/ControlFlow/VC, object/set coercion, and general chain semantics deferred. Step 5 remains active; Steps 6/7 remain deferred. No checker source or module-layout change was required.
-    - Verify: `cargo test -p mizar-test` plus workspace Rust verification.
-    - Deps: tasks 73, 196, 206, 211, 212, and 213. Refs: Step 5; mizar-test task 10; specs 3, 4, 7, 13, 14, and 16.
-
 215. **Add exact four-edge set-terminal formula-side two-hop local-mode asserted-head checker bridge.** [x]
-    - Close only five ordered definitions `BaseFourEdgeModeTwoHopAssertedHead -> set`, `InnerFourEdgeModeTwoHopAssertedHead -> BaseFourEdgeModeTwoHopAssertedHead`, `MiddleFourEdgeModeTwoHopAssertedHead -> InnerFourEdgeModeTwoHopAssertedHead`, `OuterFourEdgeModeTwoHopAssertedHead -> MiddleFourEdgeModeTwoHopAssertedHead`, and `TooDeepFourEdgeModeTwoHopAssertedHead -> OuterFourEdgeModeTwoHopAssertedHead`, one TooDeep reserve, and `FourEdgeLocalModeTwoHopAssertedHeadPayloadBoundary: x is MiddleFourEdgeModeTwoHopAssertedHead`. Compose Task 74's five real AST-derived set expansions with Task 197's formula/checker consumer and the byte-for-byte unchanged `BindingTwoHopRadix` relation used by Tasks 211-214.
-    - Preserve the relation's pairwise-distinct explicit TooDeep-to-Outer and Outer-to-Middle links; validate the remaining Middle-to-Inner-to-Base-to-set tail only through terminal normalization, never as relation evidence. Preserve distinct raw TooDeep-subject and Middle-asserted symbols/sites/ranges, ordinal 1 / `BindingId(0)`, five expansions, three known entries normalizing to one Base-definition-RHS builtin-set identity, one inferred variable, and one zero-constraint/fact/candidate/diagnostic/deferred checked assertion. Cover all 119 nonidentity definition orders; every definition's missing/duplicate/label/spelling/radix/recovery/context/parameter/argument/attribute variants; non-exact reserve/formula/extra-item and same/immediate/three-hop/full-distance/builtin/local-other/deeper asserted heads; unrelated-import positive and imported/ambiguous substitutions for all five symbols; removal and independent corruption of every expansion, both relation links, every terminal-tail link, terminal, binding, ordinal, raw subject/asserted head/spelling/site/range, `BuiltinObject`, and canonical source; immutable output; a real frontend/resolver sidecar; focused Tasks 211/212/213/214 regressions; and bidirectional isolation against all 40 existing type-assertion owner routes. Add one test-first active fixture with five shared plus one dedicated backlink, raising active runner 162 to 163, cases 377 to 378, requirements 341 to 342, type-elaboration coverage 209/197 to 210/198, and pass/fail 193/184 to 194/184 without changing existing expectations.
-    - Classification: `test_gap`, narrow `source_drift`, and `design_drift`; no `spec_gap`. Keep the object sibling, three-hop Inner/full-distance Base assertions, deeper/imported-positive/attributed/argument-bearing asserted heads, general reachability/widening/`qua`, mode declaration acceptance/inhabitation, assertion truth/facts, closure/order, theorem acceptance, broader term/formula/child-graph semantics, proof/Core/ControlFlow/VC, and general chain semantics deferred. Step 5 remains active; Steps 6/7 remain deferred. No checker source or module-layout change was required.
-    - Verify: `cargo test -p mizar-test` plus workspace Rust verification.
-    - Deps: tasks 74, 197, 207, 211, 212, 213, and 214. Refs: Step 5; mizar-test task 10; specs 3, 4, 7, 13, 14, and 16.
-
 216. **Add exact four-edge object-terminal formula-side two-hop local-mode asserted-head checker bridge.** [x]
-    - Close only five ordered definitions `BaseFourEdgeObjectModeTwoHopAssertedHead -> object`, `InnerFourEdgeObjectModeTwoHopAssertedHead -> BaseFourEdgeObjectModeTwoHopAssertedHead`, `MiddleFourEdgeObjectModeTwoHopAssertedHead -> InnerFourEdgeObjectModeTwoHopAssertedHead`, `OuterFourEdgeObjectModeTwoHopAssertedHead -> MiddleFourEdgeObjectModeTwoHopAssertedHead`, and `TooDeepFourEdgeObjectModeTwoHopAssertedHead -> OuterFourEdgeObjectModeTwoHopAssertedHead`, one TooDeep reserve, and `FourEdgeLocalObjectModeTwoHopAssertedHeadPayloadBoundary: x is MiddleFourEdgeObjectModeTwoHopAssertedHead`. Compose Task 74's five real AST-derived object expansions with Task 198's formula/checker consumer and the byte-for-byte unchanged `BindingTwoHopRadix` relation used by Tasks 211-215.
-    - Preserve the relation's pairwise-distinct explicit TooDeep-to-Outer and Outer-to-Middle links; validate the remaining Middle-to-Inner-to-Base-to-object tail only through terminal normalization, never as relation evidence. Preserve distinct raw TooDeep-subject and Middle-asserted symbols/sites/ranges, ordinal 1 / `BindingId(0)`, five expansions, three known entries normalizing to one Base-definition-RHS builtin-object identity, one inferred variable, and one zero-constraint/fact/candidate/diagnostic/deferred checked assertion without object/set coercion. Cover all 119 nonidentity definition orders; every definition's missing/duplicate/label/spelling/radix/recovery/context/parameter/argument/attribute variants; non-exact reserve/formula/extra-item and same/immediate/three-hop/full-distance/builtin/local-other/deeper asserted heads; unrelated-import positive and imported/ambiguous substitutions for all five symbols; removal and independent corruption of every expansion, both relation links, every terminal-tail link, terminal, binding, ordinal, raw subject/asserted head/spelling/site/range, `BuiltinSet`, and canonical source; immutable output; a real frontend/resolver sidecar; focused Tasks 211-215 regressions; and bidirectional isolation against all 41 existing type-assertion owner routes. Add one test-first active fixture with five shared plus one dedicated backlink, raising active runner 163 to 164, cases 378 to 379, requirements 342 to 343, type-elaboration coverage 210/198 to 211/199, and pass/fail 194/184 to 195/184 without changing existing expectations.
-    - Classification: `test_gap`, narrow `source_drift`, and `design_drift`; no `spec_gap`. Keep three-hop Inner/full-distance Base assertions, deeper/imported-positive/attributed/argument-bearing asserted heads, general reachability/widening/`qua`, mode declaration acceptance/inhabitation, assertion truth/facts, closure/order, theorem acceptance, broader term/formula/child-graph semantics, proof/Core/ControlFlow/VC, object/set coercion, and general chain semantics deferred. Step 5 remains active; Steps 6/7 remain deferred. No checker source or module-layout change was required.
-    - Verify: `cargo test -p mizar-test` plus workspace Rust verification.
-    - Deps: tasks 74, 198, 208, 211, 212, 213, 214, and 215. Refs: Step 5; mizar-test task 10; specs 3, 4, 7, 13, 14, and 16.
-
 217. **Add exact three-edge set-terminal formula-side three-hop local-mode asserted-head checker bridge.** [x]
-    - Close only four ordered definitions `BaseThreeEdgeModeThreeHopAssertedHead -> set`, `InnerThreeEdgeModeThreeHopAssertedHead -> BaseThreeEdgeModeThreeHopAssertedHead`, `MiddleThreeEdgeModeThreeHopAssertedHead -> InnerThreeEdgeModeThreeHopAssertedHead`, and `OuterThreeEdgeModeThreeHopAssertedHead -> MiddleThreeEdgeModeThreeHopAssertedHead`, one Outer reserve, and `ThreeEdgeLocalModeThreeHopAssertedHeadPayloadBoundary: x is BaseThreeEdgeModeThreeHopAssertedHead`. Compose Task 73's four real AST-derived set expansions with Task 195's formula/checker consumer. Add a closed `BindingThreeHopRadix` relation that validates pairwise-distinct Outer-to-Middle, Middle-to-Inner, and Inner-to-Base links directly; Base-to-set is terminal-normalization evidence only, never generic relation evidence. Do not change `BindingTwoHopRadix` or any existing expectation.
-    - Preserve distinct raw Outer-subject and Base-asserted symbols/sites/ranges, ordinal 1 / `BindingId(0)`, exactly four real expansions, three known entries normalizing to one Base-definition-RHS builtin-set identity, one inferred variable, and one zero-constraint/fact/candidate/diagnostic/deferred checked assertion. Cover all 23 nonidentity definition orders; every definition's missing/duplicate/label/spelling/radix/recovery/context/parameter/argument/attribute variants; non-exact reserve/formula/extra-item and same/immediate/two-hop/builtin/local-other/deeper asserted heads; unrelated-import positive and imported/ambiguous substitutions for all four symbols; removal and independent corruption of every expansion, all three relation links, terminal, binding, ordinal, raw subject/asserted head/spelling/site/range, `BuiltinObject`, and canonical source; immutable output; a real frontend/resolver sidecar; focused Tasks 211-216 regressions; and bidirectional isolation against all 42 existing type-assertion owner routes. Add one test-first active fixture with five shared plus one dedicated backlink, raising active runner 164 to 165, cases 379 to 380, requirements 343 to 344, type-elaboration coverage 211/199 to 212/200, and pass/fail 195/184 to 196/184 without changing existing expectations.
-    - Classification: `test_gap`, narrow `source_drift`, and `design_drift`; no `spec_gap`. Keep the object sibling, four-edge/long-chain three-hop and full-distance assertions, imported-positive/attributed/argument-bearing heads, generic reachability/widening/`qua`, mode declaration acceptance/inhabitation, assertion truth/facts, closure/order, theorem acceptance, broader term/formula/child-graph semantics, proof/CoreIr/ControlFlowIr/VC, object/set coercion, and downstream payloads deferred. Step 5 remains active; Steps 6/7 remain deferred. No checker source or module-layout change was required.
-    - Verify: focused Task 217 and Tasks 211-216 regressions, `cargo test -p mizar-test`, `cargo test -p mizar-checker`, and workspace Rust verification.
-    - Deps: tasks 73, 195, and 211-216. Refs: Step 5; mizar-test task 10; specs 3, 4, 7, 13, 14, and 16.
-
 218. **Add exact three-edge object-terminal formula-side three-hop local-mode asserted-head checker bridge.** [x]
-    - Closed only four ordered definitions `BaseThreeEdgeObjectModeThreeHopAssertedHead -> object`, `InnerThreeEdgeObjectModeThreeHopAssertedHead -> BaseThreeEdgeObjectModeThreeHopAssertedHead`, `MiddleThreeEdgeObjectModeThreeHopAssertedHead -> InnerThreeEdgeObjectModeThreeHopAssertedHead`, and `OuterThreeEdgeObjectModeThreeHopAssertedHead -> MiddleThreeEdgeObjectModeThreeHopAssertedHead`, one Outer reserve, and `ThreeEdgeLocalObjectModeThreeHopAssertedHeadPayloadBoundary: x is BaseThreeEdgeObjectModeThreeHopAssertedHead`. Composes Task 73's four real AST-derived object expansions with Task 196's formula/checker consumer and the byte-for-byte unchanged `BindingThreeHopRadix` relation from Task 217. Validates pairwise-distinct Outer-to-Middle, Middle-to-Inner, and Inner-to-Base links directly; Base-to-object is terminal-normalization evidence only, never generic relation evidence. Existing expectations did not change.
-    - Preserves distinct raw Outer-subject and Base-asserted symbols/sites/ranges, ordinal 1 / `BindingId(0)`, exactly four real expansions, three known entries normalizing to one Base-definition-RHS builtin-object identity, one inferred variable, and one zero-constraint/fact/candidate/diagnostic/deferred checked assertion without object/set coercion. Covers all 23 nonidentity definition orders; every definition's missing/duplicate/label/spelling/radix/recovery/context/parameter/argument/attribute variants; non-exact reserve/formula/extra-item and same/immediate/two-hop/builtin/local-other/deeper asserted heads; unrelated-import positive and imported/ambiguous substitutions for all four symbols; removal and independent corruption of every expansion, all three relation links, terminal, binding, ordinal, raw subject/asserted head/spelling/site/range, `BuiltinSet`, and canonical source; immutable output; a real frontend/resolver sidecar; focused Tasks 211-217 regressions; and bidirectional isolation against all 43 existing type-assertion owner routes. One test-first active fixture with five shared plus one dedicated backlink raised active runner 165 to 166, cases 380 to 381, requirements 344 to 345, type-elaboration coverage 212/200 to 213/201, and pass/fail 196/184 to 197/184 without changing existing expectations.
-    - Classification: `test_gap`, narrow `source_drift`, and `design_drift`; no `spec_gap`. Four-edge/long-chain three-hop and full-distance assertions, imported-positive/attributed/argument-bearing heads, generic reachability/widening/`qua`, mode declaration acceptance/inhabitation, assertion truth/facts, closure/order, theorem acceptance, broader term/formula/child-graph semantics, proof/CoreIr/ControlFlowIr/VC, object/set coercion, and downstream payloads remain deferred. Step 5 remains active; Steps 6/7 remain deferred. No checker source or module-layout change was required.
-    - Verify: focused Task 218 and Tasks 211-217 regressions, `cargo test -p mizar-test`, `cargo test -p mizar-checker`, and workspace Rust verification.
-    - Deps: tasks 73, 196, 211-217. Refs: Step 5; mizar-test task 10; specs 3, 4, 7, 13, 14, and 16.
-
 219. [x] **Bridge the exact four-edge set-terminal three-hop asserted head.**
-    - Closed only five ordered definitions `BaseFourEdgeModeThreeHopAssertedHead -> set`, `InnerFourEdgeModeThreeHopAssertedHead -> BaseFourEdgeModeThreeHopAssertedHead`, `MiddleFourEdgeModeThreeHopAssertedHead -> InnerFourEdgeModeThreeHopAssertedHead`, `OuterFourEdgeModeThreeHopAssertedHead -> MiddleFourEdgeModeThreeHopAssertedHead`, and `TooDeepFourEdgeModeThreeHopAssertedHead -> OuterFourEdgeModeThreeHopAssertedHead`, one TooDeep reserve, and `FourEdgeLocalModeThreeHopAssertedHeadPayloadBoundary: x is InnerFourEdgeModeThreeHopAssertedHead`. Composes Task 74's five real AST-derived set expansions with Task 197's formula/checker consumer and the byte-for-byte unchanged `BindingThreeHopRadix` relation from Task 217.
-    - Validates the pairwise-distinct TooDeep-to-Outer, Outer-to-Middle, and Middle-to-Inner links directly; the Inner-to-Base-to-set tail is terminal-normalization evidence only. Preserves distinct raw TooDeep/Inner symbol/site/range provenance, ordinal 1 / `BindingId(0)`, five real expansions, one Base-definition-RHS builtin-set identity, one inferred variable, and one zero-constraint/fact/candidate/diagnostic/deferred checked assertion. Covers all 119 nonidentity orders, the finite definition/reserve/formula/provenance/corruption matrix with separate guards for an unconnected unsupported deeper asserted head and an actual connected sixth-definition/sixth-edge asserted head, immutable output, a real sidecar, focused Task 207 and Tasks 211-218 regressions, and bidirectional isolation against all 44 prior type-assertion owner routes.
-    - Classification: `test_gap`, narrow `source_drift`, `design_drift`, no `spec_gap`. The object sibling, Base full-distance assertion, imported-positive/attributed/argument-bearing heads, generic reachability/widening/`qua`, acceptance, truth/facts, proof/CoreIr/ControlFlowIr/VC, and downstream payloads remain deferred. Step 5 remains active; Steps 6/7 remain deferred. No checker source/module-layout change was required.
-    - Verify focused Tasks 207, 219, and 211-218 regressions, `cargo test -p mizar-test`, `cargo test -p mizar-checker`, and workspace Rust verification.
-    - Dependencies: Tasks 74, 197, 207, and 211-218. References: Step 5, mizar-test task 10, specs 3, 4, 7, 13, 14, and 16.
-
 220. [x] **Bridge the exact four-edge object-terminal three-hop asserted head.**
-    - Closed only five ordered definitions `BaseFourEdgeObjectModeThreeHopAssertedHead -> object`, `InnerFourEdgeObjectModeThreeHopAssertedHead -> BaseFourEdgeObjectModeThreeHopAssertedHead`, `MiddleFourEdgeObjectModeThreeHopAssertedHead -> InnerFourEdgeObjectModeThreeHopAssertedHead`, `OuterFourEdgeObjectModeThreeHopAssertedHead -> MiddleFourEdgeObjectModeThreeHopAssertedHead`, and `TooDeepFourEdgeObjectModeThreeHopAssertedHead -> OuterFourEdgeObjectModeThreeHopAssertedHead`, one TooDeep reserve, and `FourEdgeLocalObjectModeThreeHopAssertedHeadPayloadBoundary: x is InnerFourEdgeObjectModeThreeHopAssertedHead`. Composes Task 74's five real AST-derived object expansions with Task 198's formula/checker consumer, Task 208's immediate-edge sibling guard, and the byte-for-byte unchanged `BindingThreeHopRadix` relation from Task 217.
-    - Directly validates the pairwise-distinct TooDeep-to-Outer, Outer-to-Middle, and Middle-to-Inner links; keeps the Inner-to-Base-to-object tail as terminal-normalization evidence only. Preserves distinct raw TooDeep/Inner symbol/site/range provenance, ordinal 1 / `BindingId(0)`, five real expansions, one Base-definition-RHS builtin-object identity, one inferred variable, and one zero-constraint/fact/candidate/diagnostic/deferred checked assertion without object/set coercion. Covers all 119 nonidentity orders, the finite definition/reserve/formula/provenance/corruption matrix with separate guards for an unconnected unsupported deeper asserted head and an actual connected sixth-definition/sixth-edge asserted head, immutable output, a real sidecar, focused Tasks 208 and 211-219 regressions, and bidirectional isolation against all 45 prior type-assertion owner routes.
-    - Classification: `test_gap`, narrow `source_drift`, `design_drift`, no `spec_gap`. The Base full-distance assertion, imported-positive/attributed/argument-bearing heads, generic reachability/widening/`qua`, acceptance, truth/facts, proof/CoreIr/ControlFlowIr/VC, object/set coercion, and downstream payloads remain deferred. Step 5 remains active; Steps 6/7 remain deferred. No checker source/module-layout change was required.
-    - One active fixture with five shared plus one dedicated backlink raised active runner 167 to 168, cases 382 to 383, requirements 346 to 347, type-elaboration coverage 214/202 to 215/203, and pass/fail 198/184 to 199/184 without changing existing expectations.
-    - Verification passed for focused Task 220, Tasks 208 and 211-219 regressions, `cargo test -p mizar-test`, `cargo test -p mizar-checker`, `cargo fmt --check`, `cargo clippy --all-targets --all-features -- -D warnings`, `cargo test`, and `git diff --check`.
-    - Dependencies: Tasks 74, 198, 208, and 211-219. References: Step 5, mizar-test task 10, specs 3, 4, 7, 13, 14, and 16.
-
 221. [x] **Bridge the exact four-edge set-terminal full-distance four-hop asserted head.**
-    - Add only five ordered definitions `BaseFourEdgeModeFourHopAssertedHead -> set`, `InnerFourEdgeModeFourHopAssertedHead -> BaseFourEdgeModeFourHopAssertedHead`, `MiddleFourEdgeModeFourHopAssertedHead -> InnerFourEdgeModeFourHopAssertedHead`, `OuterFourEdgeModeFourHopAssertedHead -> MiddleFourEdgeModeFourHopAssertedHead`, and `TooDeepFourEdgeModeFourHopAssertedHead -> OuterFourEdgeModeFourHopAssertedHead`, one TooDeep reserve, and `FourEdgeLocalModeFourHopAssertedHeadPayloadBoundary: x is BaseFourEdgeModeFourHopAssertedHead`. Compose Task 74's five real AST-derived set expansions with Task 197's formula/checker consumer.
-    - Add a closed `BindingFourHopRadix` that directly validates pairwise-distinct TooDeep-to-Outer, Outer-to-Middle, Middle-to-Inner, and Inner-to-Base links; keep Base-to-set as terminal-normalization evidence only. Preserve distinct raw TooDeep/Base symbol/site/range provenance, ordinal 1 / `BindingId(0)`, five real expansions, one Base-definition-RHS builtin-set identity, one inferred variable, and one zero-constraint/fact/candidate/diagnostic/deferred checked assertion.
-    - Test all 119 nonidentity definition orders; each definition's missing/duplicate/label/spelling/radix/recovery/contextual/parameterized/argument-bearing/attributed variants; exact reserve/formula/head restrictions; all-five-symbol imported/ambiguous rejection plus an unrelated-import positive; every expansion removal; independent binding/ordinal/head/spelling/site/range/four-link/terminal/`BuiltinObject`/canonical corruption; independent unconnected-deeper and connected-sixth-definition/fifth-link guards; immutable output; a real sidecar; focused Task 207 and Tasks 211-220 regressions; and bidirectional isolation against all 46 prior type-assertion owner routes.
-    - Classification: `test_gap`, narrow `source_drift`, `design_drift`, no `spec_gap`. The object sibling, longer chains, imported-positive definitions, attributed/argument-bearing heads, generic reachability/widening/`qua`, acceptance, truth/facts, proof/CoreIr/ControlFlowIr/VC, and downstream payloads remain deferred. Step 5 remains active; Steps 6/7 remain deferred.
-    - The active fixture and six backlinks account for active runner 169, 384 cases, 348 requirements, type-elaboration coverage 216/204, and pass/fail 200/184 without changing existing expectations. Relevant crate verification passed; no checker source or module-layout change was required.
-    - Dependencies: Tasks 74, 197, 207, and 211-220. References: Step 5, mizar-test task 10, specs 3, 4, 7, 13, 14, and 16.
-
 222. [x] **Bridge the exact four-edge object-terminal full-distance four-hop asserted head.**
-    - Added only five ordered definitions `BaseFourEdgeObjectModeFourHopAssertedHead -> object`, `InnerFourEdgeObjectModeFourHopAssertedHead -> BaseFourEdgeObjectModeFourHopAssertedHead`, `MiddleFourEdgeObjectModeFourHopAssertedHead -> InnerFourEdgeObjectModeFourHopAssertedHead`, `OuterFourEdgeObjectModeFourHopAssertedHead -> MiddleFourEdgeObjectModeFourHopAssertedHead`, and `TooDeepFourEdgeObjectModeFourHopAssertedHead -> OuterFourEdgeObjectModeFourHopAssertedHead`, one TooDeep reserve, and `FourEdgeLocalObjectModeFourHopAssertedHeadPayloadBoundary: x is BaseFourEdgeObjectModeFourHopAssertedHead`. The route composes Task 74's five real AST-derived object expansions with Task 198's formula/checker consumer and reuses Task 221's closed `BindingFourHopRadix` byte-for-byte.
-    - Directly validate pairwise-distinct TooDeep-to-Outer, Outer-to-Middle, Middle-to-Inner, and Inner-to-Base links; keep Base-to-object as terminal-normalization evidence only. Preserve distinct raw TooDeep/Base symbol/site/range provenance, ordinal 1 / `BindingId(0)`, five real expansions, one Base-definition-RHS builtin-object identity, one inferred variable, and one zero-constraint/fact/candidate/diagnostic/deferred checked assertion without object/set coercion.
-    - Test all 119 nonidentity definition orders; each definition's missing/duplicate/label/spelling/radix/recovery/contextual/parameterized/argument-bearing/attributed variants; exact reserve/formula/head restrictions; all-five-symbol imported/ambiguous rejection plus an unrelated-import positive; every expansion removal; independent binding/ordinal/head/spelling/site/range/four-link/terminal/`BuiltinSet`/canonical corruption; independent unconnected-deeper and connected-sixth-definition/fifth-link guards; immutable output; a real sidecar; focused Task 208 and Tasks 211-221 regressions; and bidirectional isolation against all 47 prior type-assertion owner routes.
-    - Classification: `test_gap`, narrow `source_drift`, `design_drift`, no `spec_gap`. Longer chains, imported-positive definitions, attributed/argument-bearing heads, generic reachability/widening/`qua`, object/set coercion, acceptance, truth/facts, proof/CoreIr/ControlFlowIr/VC, and downstream payloads remain deferred. Step 5 remains active; Steps 6/7 remain deferred.
-    - The active fixture and six backlinks account for active runner 170, 385 cases, 349 requirements, type-elaboration coverage 217/205, and pass/fail 201/184 without changing existing expectations. Relevant-crate and workspace verification passed. No checker source or module-layout change was required.
-    - Dependencies: Tasks 74, 198, 208, and 211-221. References: Step 5, mizar-test task 10, specs 3, 4, 7, 13, 14, and 16.
-
 223. [x] **Bridge the exact transparent single-parenthesized reserved-variable equality.**
-    - Add only `reserve x for set;` and `ParenthesizedReservedVariableEqualityPayloadBoundary: (x) = x;`. Compose the real parser `ParenthesizedTerm` with Task 119's reserve extraction, `BindingEnv` lookup, builtin-set projection, and equality consumer; leave the direct/direct Task 119 route unchanged.
-    - Validate exactly one unrecovered left wrapper with direct `(` / `)` tokens, one nested `TermExpression`, and one identifier `TermReference`; require a direct right `x`. Preserve distinct wrapper/inner/right sites and ranges in source payload metadata, resolve inner/right references at ordinals 1/2 to `BindingId(0)`, and transparently lower the wrapper by reusing the inner reference's real reserve-derived type/value. Do not emit an independent parenthesis type, axiom, fact, FOL node, or fabricated child payload.
-    - Test exact frontend/resolver sidecar behavior; direct/right/both/nested/empty/non-identifier/recovered/malformed wrapper rejection; non-exact reserve/theorem/label/operator/operand rejection; independent wrapper/inner/right site/range, binding, ordinal, spelling, head, and result/expected-type corruption; matched output; immutable output; and bidirectional isolation against all 52 prior reserved-variable binary-formula owner routes.
-    - Classification: `test_gap`, narrow `source_drift`, `design_drift`, no `spec_gap`. Arbitrary nesting and operands, general precedence, formula parenthesization, closure/order materialization, equality truth/facts, theorem acceptance, proof/CoreIr/ControlFlowIr/VC, child graphs, and broader term/formula semantics remain deferred. Step 5 remains active; Steps 6/7 remain deferred.
-    - The active fixture and five backlinks account for active runner 171, 386 cases, 350 requirements, type-elaboration coverage 218/206, and pass/fail 202/184 without changing existing expectations. Focused, relevant-crate, and workspace verification passed. No checker source or module-layout change was required.
-    - Dependencies: Tasks 9 and 119. References: Step 5, mizar-test task 10, specs 4, 13, 14, and 16.
-
 224. [x] **Bridge the exact seven-expansion set-terminal two-hop asserted head.**
-    - Add only the seven ordered bare `BaseMode -> set` through `ChainMode6 -> ChainMode5` definitions, one `ChainMode6` reserve, and `LongLocalModeTwoHopAssertedHeadPayloadBoundary: x is ChainMode4`. Compose Task 74's real expansion producer, Task 199's formula/checker consumer, and Task 211's byte-for-byte unchanged `BindingTwoHopRadix`; use Task 209 only as the immediate-edge sibling regression.
-    - Directly validate the pairwise-distinct `ChainMode6 -> ChainMode5 -> ChainMode4` links. Treat `ChainMode4 -> ChainMode3 -> ChainMode2 -> ChainMode1 -> BaseMode -> set` only as cycle-safe terminal-normalization evidence. Preserve distinct subject/asserted provenance, ordinal 1 / `BindingId(0)`, seven real expansions, one BaseModeDef-RHS `BuiltinSet`, one inferred variable, and one zero-constraint/fact/candidate/diagnostic/deferred checked assertion.
-    - Test all 5,039 nonidentity orders; every finite definition/reserve/formula/head/provenance/removal/corruption variant; both relation links, every tail link, terminal, canonical anchor, binding/ordinal/site/range; connected eighth-edge rejection; unrelated-import positive; immutable output; a real sidecar; focused relation siblings; and bidirectional isolation against all 48 prior type-assertion owners.
-    - Classification: `test_gap`, narrow `source_drift`, `design_drift`, no `spec_gap`. Object-terminal, imported-positive definitions, attributed/argument-bearing heads, generic reachability/widening/`qua`, acceptance, truth/facts, proof/CoreIr/ControlFlowIr/VC, and broader semantics remain deferred. Step 5 remains active; Steps 6/7 remain deferred.
-    - The test-first fixture and six backlinks account for active runner 172, 387 cases, 351 requirements, type-elaboration 219/207, and pass/fail 203/184 without changing existing expectations. Focused, relevant-crate, and workspace verification passed. No checker source or module-layout change was required.
-    - Dependencies: Tasks 74, 199, 209, and 211. References: Step 5, mizar-test task 10, specs 3, 4, 7, 13, 14, and 16.
-
 225. [x] **Bridge the exact seven-expansion object-terminal two-hop asserted head.**
-    - Add only the seven ordered bare `BaseObjectMode -> object` through `ChainObjectMode6 -> ChainObjectMode5` definitions, one `ChainObjectMode6` reserve, and `LongLocalObjectModeTwoHopAssertedHeadPayloadBoundary: x is ChainObjectMode4`. Compose Task 74's real object expansion producer, Task 200's formula/checker consumer, and Task 211's byte-for-byte unchanged `BindingTwoHopRadix`; use Task 210 as the immediate-edge sibling and Task 224 as the set-terminal two-hop sibling.
-    - Directly validate the pairwise-distinct `ChainObjectMode6 -> ChainObjectMode5 -> ChainObjectMode4` links. Treat `ChainObjectMode4 -> ChainObjectMode3 -> ChainObjectMode2 -> ChainObjectMode1 -> BaseObjectMode -> object` only as cycle-safe terminal-normalization evidence. Preserve distinct subject/asserted provenance, ordinal 1 / `BindingId(0)`, seven real expansions, one BaseObjectModeDef-RHS `BuiltinObject`, one inferred variable, and one zero-constraint/fact/candidate/diagnostic/deferred checked assertion without object/set coercion.
-    - Test all 5,039 nonidentity orders; every finite definition/reserve/formula/head/provenance/removal/corruption variant; both relation links, every tail link, terminal, canonical anchor, binding/ordinal/site/range; connected eighth-edge rejection; unrelated-import positive; immutable output; a real sidecar; focused relation siblings; and bidirectional isolation against all 49 prior type-assertion owners.
-    - Classification: `test_gap`, narrow `source_drift`, `design_drift`, no `spec_gap`. Set-terminal variants beyond Task 224, imported-positive definitions, attributed/argument-bearing heads, generic reachability/widening/`qua`, acceptance, truth/facts, proof/CoreIr/ControlFlowIr/VC, and broader semantics remain deferred. Step 5 remains active; Steps 6/7 remain deferred.
-    - The test-first fixture and six backlinks account for active runner 173, 388 cases, 352 requirements, type-elaboration 220/208, and pass/fail 204/184 without changing existing expectations. Focused, relevant-crate, and workspace verification passed. No checker source or module-layout change was required.
-    - Dependencies: Tasks 74, 200, 210, 211, and 224. References: Step 5, mizar-test task 10, specs 3, 4, 7, 13, 14, and 16.
-
 226. [x] **Bridge the exact seven-expansion set-terminal three-hop asserted head.**
-    - Add only the seven ordered bare `BaseMode -> set` through `ChainMode6 -> ChainMode5` definitions, one `ChainMode6` reserve, and `LongLocalModeThreeHopAssertedHeadPayloadBoundary: x is ChainMode3`. Compose Task 74's real expansion producer, Task 199's formula/checker consumer, and the byte-for-byte unchanged `BindingThreeHopRadix`; use Tasks 209/224 and 217/219 as shorter-distance and three-hop siblings.
-    - Directly validate the pairwise-distinct `ChainMode6 -> ChainMode5 -> ChainMode4 -> ChainMode3` links. Treat `ChainMode3 -> ChainMode2 -> ChainMode1 -> BaseMode -> set` only as cycle-safe terminal-normalization evidence. Preserve distinct subject/asserted provenance, ordinal 1 / `BindingId(0)`, seven real expansions, one BaseModeDef-RHS `BuiltinSet`, one inferred variable, and one zero-constraint/fact/candidate/diagnostic/deferred checked assertion.
-    - Test all 5,039 nonidentity orders; every finite definition/reserve/formula/head/provenance/removal/corruption variant; all three relation links, every tail link, terminal, canonical anchor, binding/ordinal/site/range; connected eighth-edge rejection; unrelated-import positive; immutable output; a real sidecar; focused siblings; and bidirectional isolation against all 50 prior type-assertion owners.
-    - Classification: `test_gap`, narrow `source_drift`, `design_drift`, no `spec_gap`. Object-terminal, imported-positive definitions, attributed/argument-bearing heads, generic reachability/widening/`qua`, acceptance, truth/facts, proof/CoreIr/ControlFlowIr/VC, and broader semantics remain deferred. Step 5 remains active; Steps 6/7 remain deferred.
-    - The test-first fixture and six backlinks account for active runner 174, 389 cases, 353 requirements, type-elaboration 221/209, and pass/fail 205/184 without changing existing expectations. Focused, relevant-crate, and workspace verification passed. No checker source or module-layout change was required.
-    - Dependencies: Tasks 74, 199, 209, 217, 219, and 224. References: Step 5, mizar-test task 10, specs 3, 4, 7, 13, 14, and 16.
-
 227. [x] **Bridge the exact seven-expansion object-terminal three-hop asserted head.**
-    - Add only the seven ordered bare `BaseObjectMode -> object` through `ChainObjectMode6 -> ChainObjectMode5` definitions, one `ChainObjectMode6` reserve, and `LongLocalObjectModeThreeHopAssertedHeadPayloadBoundary: x is ChainObjectMode3`. Compose Task 74's real object expansion producer, Task 200's formula/checker consumer, and the byte-for-byte unchanged `BindingThreeHopRadix`; use Tasks 210/225, 217/220, and 226 as shorter-distance and terminal siblings.
-    - Directly validate the pairwise-distinct `ChainObjectMode6 -> ChainObjectMode5 -> ChainObjectMode4 -> ChainObjectMode3` links. Treat `ChainObjectMode3 -> ChainObjectMode2 -> ChainObjectMode1 -> BaseObjectMode -> object` only as cycle-safe terminal-normalization evidence. Preserve distinct subject/asserted provenance, ordinal 1 / `BindingId(0)`, seven real expansions, one BaseObjectModeDef-RHS `BuiltinObject`, one inferred variable, and one zero-constraint/fact/candidate/diagnostic/deferred checked assertion without object/set coercion.
-    - Test all 5,039 nonidentity orders; every finite definition/reserve/formula/head/provenance/removal/corruption variant; all three relation links, every tail link, terminal, canonical anchor, binding/ordinal/site/range; connected eighth-edge rejection; unrelated-import positive; immutable output; a real sidecar; focused siblings; and bidirectional isolation against all 51 prior type-assertion owners.
-    - Classification: `test_gap`, narrow `source_drift`, `design_drift`, no `spec_gap`. Imported-positive definitions, attributed/argument-bearing heads, generic reachability/widening/`qua`, acceptance, truth/facts, proof/CoreIr/ControlFlowIr/VC, and broader semantics remain deferred. Step 5 remains active; Steps 6/7 remain deferred.
-    - The test-first fixture and six backlinks account for active runner 175, 390 cases, 354 requirements, type-elaboration 222/210, and pass/fail 206/184 without changing existing expectations. Focused, relevant-crate, and workspace verification passed. No checker source or module-layout change was required.
-    - Dependencies: Tasks 74, 200, 210, 217, 220, 225, and 226. References: Step 5, mizar-test task 10, specs 3, 4, 7, 13, 14, and 16.
-
 228. [x] **Bridge the exact seven-expansion set-terminal four-hop asserted head.**
-    - Added only the seven ordered bare `BaseMode -> set` through `ChainMode6 -> ChainMode5` definitions, one `ChainMode6` reserve, and `LongLocalModeFourHopAssertedHeadPayloadBoundary: x is ChainMode2`. The route composes Task 74's real expansion producer, Task 199's formula/checker consumer, and the byte-for-byte unchanged `BindingFourHopRadix`; Tasks 221/222, 224/226, and 227 remain relation, shorter-distance, and terminal siblings.
-    - Directly validates the pairwise-distinct `ChainMode6 -> ChainMode5 -> ChainMode4 -> ChainMode3 -> ChainMode2` links. It treats `ChainMode2 -> ChainMode1 -> BaseMode -> set` only as cycle-safe terminal-normalization evidence and preserves distinct subject/asserted provenance, ordinal 1 / `BindingId(0)`, seven real expansions, one BaseModeDef-RHS `BuiltinSet`, one inferred variable, and one zero-constraint/fact/candidate/diagnostic/deferred checked assertion.
-    - Tests all 5,039 nonidentity orders; every finite definition/reserve/formula/head/provenance/removal/corruption variant; all four relation links, every tail link, terminal, canonical anchor, binding/ordinal/site/range; connected fifth-hop rejection; unrelated-import positive; immutable output; a real sidecar; focused siblings; and bidirectional isolation against all 52 prior type-assertion owners.
-    - Classification: `test_gap`, narrow `source_drift`, `design_drift`, no `spec_gap`. Object-terminal, imported-positive definitions, attributed/argument-bearing heads, generic reachability/widening/`qua`, acceptance, truth/facts, proof/CoreIr/ControlFlowIr/VC, and broader semantics remain deferred. Step 5 remains active; Steps 6/7 remain deferred.
-    - The test-first fixture and six backlinks account for active runner 176, 391 cases, 355 requirements, type-elaboration 223/211, and pass/fail 207/184 without changing existing expectations. Focused, relevant-crate, and workspace verification passed. No checker source or module-layout change was required.
-    - Dependencies: Tasks 74, 199, 221, 224, 226, and 227. References: Step 5, mizar-test task 10, specs 3, 4, 7, 13, 14, and 16.
-
 229. [x] **Bridge the exact seven-expansion object-terminal four-hop asserted head.**
-    - Added only the seven ordered bare `BaseObjectMode -> object` through `ChainObjectMode6 -> ChainObjectMode5` definitions, one `ChainObjectMode6` reserve, and `LongLocalObjectModeFourHopAssertedHeadPayloadBoundary: x is ChainObjectMode2`. The route composes Task 74's real object expansion producer, Task 200's formula/checker consumer, and the byte-for-byte unchanged `BindingFourHopRadix`; Tasks 221/222, 225/227, and 228 remain relation, shorter-distance, and terminal siblings.
-    - Directly validates the pairwise-distinct `ChainObjectMode6 -> ChainObjectMode5 -> ChainObjectMode4 -> ChainObjectMode3 -> ChainObjectMode2` links. It treats `ChainObjectMode2 -> ChainObjectMode1 -> BaseObjectMode -> object` only as cycle-safe terminal-normalization evidence and preserves distinct subject/asserted provenance, ordinal 1 / `BindingId(0)`, seven real expansions, one BaseObjectModeDef-RHS `BuiltinObject`, one inferred variable, and one zero-constraint/fact/candidate/diagnostic/deferred checked assertion without object/set coercion.
-    - Tests all 5,039 nonidentity orders; every finite definition/reserve/formula/head/provenance/removal/corruption variant; all four relation links, every tail link, terminal, canonical anchor, binding/ordinal/site/range; connected fifth-hop rejection; unrelated-import positive; immutable output; a real sidecar; focused siblings; and bidirectional isolation against all 53 prior type-assertion owners.
-    - Classification: `test_gap`, narrow `source_drift`, `design_drift`, no `spec_gap`. Imported-positive definitions, attributed/argument-bearing heads, generic reachability/widening/`qua`, acceptance, truth/facts, proof/CoreIr/ControlFlowIr/VC, and broader semantics remain deferred. Step 5 remains active; Steps 6/7 remain deferred.
-    - The test-first fixture and six backlinks account for active runner 177, 392 cases, 356 requirements, type-elaboration 224/212, and pass/fail 208/184 without changing existing expectations. Focused, relevant-crate, and workspace verification passed. No checker source or module-layout change was required.
-    - Dependencies: Tasks 74, 200, 221, 222, 225, 227, and 228. References: Step 5, mizar-test task 10, specs 3, 4, 7, 13, 14, and 16.
-
 230. [x] **Bridge the exact seven-expansion set-terminal five-hop asserted head.**
-    - Added only the seven ordered bare `BaseMode -> set` through `ChainMode6 -> ChainMode5` definitions, one `ChainMode6` reserve, and `LongLocalModeFiveHopAssertedHeadPayloadBoundary: x is ChainMode1`. The route composes Task 74's real expansion producer with Task 199's real formula/checker consumer and a new closed `BindingFiveHopRadix`; Tasks 224/226/228 and Task 229 remain shorter-distance and terminal guards.
-    - Directly validates the pairwise-distinct `ChainMode6 -> ChainMode5 -> ChainMode4 -> ChainMode3 -> ChainMode2 -> ChainMode1` links. It treats `ChainMode1 -> BaseMode -> set` only as cycle-safe terminal-normalization evidence and preserves distinct subject/asserted provenance, ordinal 1 / `BindingId(0)`, seven real expansions, one BaseModeDef-RHS `BuiltinSet`, one inferred variable, and one zero-constraint/fact/candidate/diagnostic/deferred checked assertion.
-    - Tests all 5,039 nonidentity orders; the finite definition/reserve/formula/head/provenance/removal/corruption matrix; all five relation links and every tail/terminal/canonical/binding/source property; connected sixth-hop rejection; unrelated-import positive; immutable output; a real sidecar; focused siblings; and bidirectional isolation against all 54 prior type-assertion owners.
-    - Classification: `test_gap`, narrow `source_drift`, `design_drift`, no `spec_gap`. Object-terminal five-hop, imported-positive definitions, attributed/argument-bearing heads, generic reachability/widening/`qua`, acceptance, truth/facts, proof/CoreIr/ControlFlowIr/VC, and broader semantics remain deferred. Step 5 remains active; Steps 6/7 remain deferred.
-    - The test-first fixture and six backlinks account for active runner 178, 393 cases, 357 requirements, type-elaboration 225/213, and pass/fail 209/184 without changing existing expectations. Focused, relevant-crate, and workspace verification passed. No checker source or module-layout change was required.
-    - Dependencies: Tasks 74, 199, 221, 224, 226, 228, and 229. References: Step 5, mizar-test task 10, specs 3, 4, 7, 13, 14, and 16.
-
 231. [x] **Bridge the exact seven-expansion object-terminal five-hop asserted head.**
-    - The completed route adds only the seven ordered bare `BaseObjectMode -> object` through `ChainObjectMode6 -> ChainObjectMode5` definitions, one `ChainObjectMode6` reserve, and `LongLocalObjectModeFiveHopAssertedHeadPayloadBoundary: x is ChainObjectMode1`. It composes Task 74's real object expansion producer with Task 200's real formula/checker consumer and Task 230's byte-for-byte unchanged closed `BindingFiveHopRadix`; Tasks 229/230 remain shorter-distance and terminal guards.
-    - The active route directly validates the pairwise-distinct `ChainObjectMode6 -> ChainObjectMode5 -> ChainObjectMode4 -> ChainObjectMode3 -> ChainObjectMode2 -> ChainObjectMode1` links. It treats `ChainObjectMode1 -> BaseObjectMode -> object` only as cycle-safe terminal-normalization evidence and preserves distinct subject/asserted provenance, ordinal 1 / `BindingId(0)`, seven real expansions, one BaseObjectModeDef-RHS `BuiltinObject`, one inferred variable, and one zero-constraint/fact/candidate/diagnostic/deferred checked assertion without object/set coercion.
-    - The completed finite test contract covers all 5,039 nonidentity orders; the finite definition/reserve/formula/head/provenance/removal/corruption matrix; all five relation links and every tail/terminal/canonical/binding/source property; connected sixth-hop rejection; unrelated-import positive; immutable output; a real sidecar; focused siblings; and bidirectional isolation against all 55 prior type-assertion owners.
-    - Classification: `test_gap`, narrow `source_drift`, `design_drift`, no `spec_gap`. Imported-positive definitions, attributed/argument-bearing heads, generic reachability/widening/`qua`, acceptance, truth/facts, proof/CoreIr/ControlFlowIr/VC, and broader semantics remain deferred. Step 5 remains active; Steps 6/7 remain deferred.
-    - The fixture and six backlinks account for active runner 179, 394 cases, 358 requirements, type-elaboration 226/214, and pass/fail 210/184 without changing existing expectations. Focused, relevant-crate, and workspace verification passed. No checker source or module-layout change was required.
-    - Dependencies: Tasks 74, 200, 229, and 230. References: Step 5, mizar-test task 10, specs 3, 4, 7, 13, 14, and 16.
-
 233. [x] **Bridge the exact parenthesized builtin-object reserved-variable equality.**
-    - Added only `reserve x for object; theorem ParenthesizedReservedObjectVariableEqualityPayloadBoundary: (x) = x;`, composing Task 223's real `ParenthesizedTerm` producer with Task 188's real object reserve/BindingEnv/equality consumer.
-    - Parameterized only the private parenthesized extraction/output assertion path by an exact static config. Task 223 still rejects object reserves, Task 188 still rejects parenthesized operands, and the new public route owns only their exact intersection.
-    - Preserves independent wrapper/inner/right sites and ranges, ordinal 1/2 lookup to `BindingId(0)`, one canonical `BuiltinObject`, two inferred variables, two ordered expected constraints, and one checked equality without object/set coercion or an independent wrapper type/value.
-    - Tests the finite structural/provenance/lookup/type/matched-output corruption matrix, immutable output, a real frontend/resolver sidecar, and bidirectional isolation against all 53 prior binary-formula owners.
-    - Classification: `test_gap`, narrow `source_drift`, `design_drift`, no `spec_gap`. Arbitrary parentheses/operands/precedence, formula grouping, closure/order, truth/facts, acceptance, proof/CoreIr/ControlFlowIr/VC, child graphs, and broader semantics remain deferred. Step 5 remains active; Steps 6/7 remain deferred.
-    - The test-first fixture and six backlinks account for active runner 180, 395 cases, 359 requirements, type-elaboration 227/215, and pass/fail 211/184 without changing existing expectations. No checker source or module-layout change was required.
-    - Dependencies: Tasks 9, 119, 188, and 223. References: Step 5, mizar-test task 10, specs 3, 4, 13, 14, and 16.
-
 234. [x] **Bridge the exact seven-expansion set-terminal full-distance six-hop asserted head.**
-    - Add only the seven ordered bare `BaseMode -> set` through `ChainMode6 -> ChainMode5` definitions, one `ChainMode6` reserve, and `LongLocalModeSixHopAssertedHeadPayloadBoundary: x is BaseMode`. Compose Task 74's real expansion producer with Task 199's real formula/checker consumer.
-    - Add a closed `BindingSixHopRadix` relation that directly validates all six pairwise-distinct links through `BaseMode`; use `BaseMode -> set` only for terminal normalization. Preserve distinct subject/asserted provenance, ordinal 1 / `BindingId(0)`, seven real expansions, one BaseModeDef-RHS `BuiltinSet`, one inferred variable, and one zero-constraint/fact/candidate/diagnostic/deferred checked assertion.
-    - Test all 5,039 nonidentity orders, the finite definition/reserve/formula/head/provenance/removal/corruption matrix, immutable output, a real sidecar, focused siblings, and bidirectional isolation against all 56 prior type-assertion owners.
-    - Classification: `test_gap`, narrow `source_drift`, `design_drift`, no `spec_gap`. Object-terminal six-hop, imported-positive/attributed/argument-bearing heads, generic reachability/widening/`qua`, acceptance, truth/facts, proof/CoreIr/ControlFlowIr/VC, child graphs, and broader semantics remain deferred. Step 5 remains active; Steps 6/7 remain deferred.
-    - The test-first fixture and six backlinks account for active runner 181, 396 cases, 360 requirements, type-elaboration 228/216, and pass/fail 212/184 without changing existing expectations. No checker source or module-layout change was required.
-    - Dependencies: Tasks 74, 199, 230, and 231. References: Step 5, mizar-test task 10, specs 3, 4, 7, 13, 14, and 16.
-
 236. [x] **Bridge the exact seven-expansion object-terminal full-distance six-hop asserted head.**
-    - Add only the seven ordered bare `BaseObjectMode -> object` through `ChainObjectMode6 -> ChainObjectMode5` definitions, one `ChainObjectMode6` reserve, and `LongLocalObjectModeSixHopAssertedHeadPayloadBoundary: x is BaseObjectMode`. Compose Task 74's real object expansion producer with Task 200's real formula/checker consumer.
-    - Reuse the closed `BindingSixHopRadix` byte-for-byte and directly validate all six pairwise-distinct links through `BaseObjectMode`; use `BaseObjectMode -> object` only for terminal normalization. Preserve distinct subject/asserted provenance, ordinal 1 / `BindingId(0)`, seven real expansions, one BaseObjectModeDef-RHS `BuiltinObject`, one inferred variable, and one zero-constraint/fact/candidate/diagnostic/deferred checked assertion without object/set coercion.
-    - Test all 5,039 nonidentity orders, the finite definition/reserve/formula/head/provenance/removal/corruption matrix, immutable output, a real sidecar, focused siblings, and bidirectional isolation against all 57 prior type-assertion owners.
-    - Classification: `test_gap`, narrow `source_drift`, `design_drift`, no `spec_gap`. Imported-positive/attributed/argument-bearing heads, generic reachability/widening/`qua`, acceptance, truth/facts, proof/CoreIr/ControlFlowIr/VC, child graphs, and broader semantics remain deferred. Step 5 remains active; Steps 6/7 remain deferred.
-    - The test-first fixture and six backlinks account for active runner 182, 397 cases, 361 requirements, type-elaboration 229/217, and pass/fail 213/184 without changing existing expectations. No checker source or module-layout change was required.
-    - Dependencies: Tasks 74, 200, 231, and 234. References: Step 5, mizar-test task 10, specs 3, 4, 7, 13, 14, and 16.
 
 ## Recommended Verification
 
@@ -4185,162 +436,32 @@ Check the task off here once tests pass.
 
 ## Task 241 Active Addendum
 
-- [x] Compose Task 223's exact real single-left `ParenthesizedTerm` producer
-  with Task 121's real builtin-set inequality consumer for only `(x) <> x`.
-  Preserve independent wrapper/inner/right provenance, ordinal 1/2
-  `BindingId(0)` lookup, one canonical `BuiltinSet`, two inferred terms, two
-  ordered expected constraints, and one fact/candidate/diagnostic/deferred-free
-  checked inequality. Keep private shared helpers binary-formula-generic while
-  retaining closed equality/object wrappers.
-- [x] Protect the route with exact, near-miss, corruption, immutable-output,
-  active-sidecar, focused equality regression, and all-54-prior-owner
-  bidirectional isolation tests. Active runner/counts are 183, 398/362,
-  type-elaboration 230/218, and pass/fail 214/184.
-- Classification: `test_gap`, narrow `source_drift`, `design_drift`, no
-  `spec_gap`. Parenthesized membership, imported/other parenthesized variants,
-  desugaring/truth, acceptance, proof/CoreIr/ControlFlowIr/VC, and downstream
-  payloads receive no Task 241 credit. Step 5 remains active; Steps 6/7 remain
-  deferred. No checker source/API/module-layout update is required.
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Task 242 Active Addendum
 
-- [x] Compose Task 233's exact real builtin-object single-left
-  `ParenthesizedTerm` producer with Task 190's real object inequality consumer
-  for only `(x) <> x`. Preserve independent wrapper/inner/right provenance,
-  ordinal 1/2 `BindingId(0)` lookup, one canonical `BuiltinObject`, two inferred
-  terms, six type entries, two ordered expected constraints, and one fact/
-  candidate/diagnostic/deferred-free checked inequality without object/set
-  coercion or an independent wrapper semantic node.
-- [x] Add only a unique key/config and closed wrappers/route after Task 233;
-  retain the preceding Task 188 route, the shared private binary-formula helper,
-  and Tasks 190/223/233/241 ownership unchanged. Protect all 55 prior owners
-  bidirectionally, exact/near-miss/provenance/corruption, immutable output,
-  focused regressions, and a real sidecar.
-- [x] Synchronize runner 184, 399/363, type-elaboration 231/219, and pass/fail
-  215/184. Parenthesized membership and active imported provenance are outside
-  Task 242 credit; missing imported expansion/evidence/signature payloads and
-  proof/CoreIr/ControlFlowIr/VC remain deferred. Step 5 remains active; Steps
-  6/7 remain deferred. No checker source/API/module-layout update is required.
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Task 243 Active Addendum
 
-- [x] Compose Task 223's exact real builtin-set single-left `ParenthesizedTerm`
-  producer with Task 120's real membership consumer for only `(x) in x`.
-  Preserve independent wrapper/inner/right provenance, ordinal 1/2
-  `BindingId(0)` lookup, one canonical `BuiltinSet`, two inferred terms, five
-  type entries, no left expected input, the unchanged direct-right producer's
-  sole expected-set constraint, and one checked membership without an
-  independent wrapper semantic node.
-- [x] Add only a unique key/config and closed wrappers/route after Task 241 while
-  retaining the preceding Task 188 route and Tasks 120/223/233/241/242 ownership.
-  Protect all 56 prior owners bidirectionally, exact/near-miss/provenance/
-  corruption including unexpected-left/wrong-right/missing-right expected input,
-  immutable output, focused regressions, and a real sidecar.
-- [x] Synchronize runner 185, 400/364, type-elaboration 232/220, and pass/fail
-  216/184. Discharge the extraction gap only for this exact source. Object-left/
-  set-right parenthesized membership and active imported provenance are outside
-  Task 243 credit; missing imported expansion/evidence/signature payloads and
-  proof/CoreIr/ControlFlowIr/VC remain deferred. Step 5 remains active; Steps
-  6/7 remain deferred. No checker source/API/module-layout update is required.
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Task 244 Active Addendum
 
-- [x] Add the exact two-reserve source-derived intent `reserve x for object;
-  reserve y for set; theorem
-  ParenthesizedHeterogeneousReserveMembershipPayloadBoundary: (x) in y;` from
-  Chapters 03/04/13/14/16 and the existing Task 125 direct membership intent.
-- [x] Generalize the private parenthesized binary extractor only through a
-  finite config: exact reserve count, ordered spelling/type arrays, operand
-  binding indices, and shared/distinct written type-range policy. Preserve the
-  five existing parenthesized configs unchanged.
-- [x] Preserve ordinals 2/3, `BindingId(0/1)`, distinct written object/set
-  identities, two inferred terms, five type entries, no left expected input,
-  one right expected-set constraint, and a fact/candidate/diagnostic/deferred-
-  free checked membership without coercion or wrapper semantics.
-- [x] Guard exact/near-miss/corruption/provenance behavior, immutable output,
-  all 57 prior binary owners, Tasks 120/125/223/233/241/242/243, one real
-  imported-mode-gap diagnostic fixture, and one real frontend/resolver sidecar.
-- [x] Synchronize five shared backlinks plus one dedicated trace row and runner/
-  metadata counts: active 186, cases/requirements 401/365, type 233/221,
-  pass/fail 217/184.
-- [x] Give no Task 244 credit to other parenthesized shapes or imported-positive
-  provenance. Missing imported expansion/evidence/signature payloads and proof/
-  CoreIr/ControlFlowIr/VC remain deferred. Step 5 remains active; Steps 6/7
-  remain deferred. No checker source/API/module-layout update is required.
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Task 245 Active Addendum
 
-- [x] Add only the exact Chapter 04/13/14/16-derived source `reserve x for set;
-  theorem RightParenthesizedReservedVariableMembershipPayloadBoundary: x in
-  (x);` and its dedicated active route.
-- [x] Retain explicit `Left` for all six earlier configs and add a private
-  `Right` side plus a Task-245-only key/config/role namespace. Preserve ordinal
-  1/2 lookups to `BindingId(0)`, one canonical `BuiltinSet`, two inferred terms,
-  five type entries, and the right-inner-owned sole expected-set constraint.
-- [x] Guard side/config/range/role/expected-input corruption, Task-243 cross-
-  route rejection, immutable output, mismatched modules, all 58 prior binary
-  owners bidirectionally, the six left routes, Task 120, and a real sidecar.
-- [x] Synchronize runner 187, plan 402/366, type 234/222, and pass/fail 218/184
-  with four shared plus one dedicated backlink. Other shapes receive no credit;
-  imported expansion/evidence/signature and proof/CoreIr/ControlFlowIr/VC remain
-  deferred. Step 5 remains active; Steps 6/7 remain deferred. No checker source/
-  API/module-layout update was required.
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Task 246 Active Addendum
 
-- [x] Add only the exact three-definition set-terminal chain with `reserve z for
-  OuterTwoEdgeModeEquality` and `(z) = z`, using a Task-246-only key/config/role
-  namespace and a Left transparent wrapper.
-- [x] Admit mode-definition nodes only for nonempty-mode parenthesized configs;
-  preserve all old empty-mode routes, three expansions, four raw Outer inputs,
-  ordinal 1/2 `BindingId(0)`, six entries, two constraints, and one clean
-  equality without wrapper-owned output.
-- [x] Guard all five definition orders, finite definition/wrapper/reserve/
-  payload corruption, Tasks 134/223 cross-rejection, immutable/module behavior,
-  59 prior owners bidirectionally, and a real sidecar.
-- [x] Synchronize runner 188, plan 403/367, type 235/223, pass/fail 219/184,
-  five shared plus one dedicated backlink. Step 5 remains active; Steps 6/7
-  remain deferred; broader and downstream semantics receive no credit.
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Tasks 266-268 Final Checker Handoff Queue
 
-- [x] **Task 266: exact Task-180 statement-semantic projection.** Extend
-  checker-owned `ResolvedTypedAst` with a syntax-free final projection linking
-  exactly one resolver theorem owner to exactly one existing checked
-  `FormulaKind::Contradiction`. Preserve owner/formula identity, state, source
-  ranges, and provenance; reject missing, duplicate, reordered, recovered, or
-  mismatched rows. `mizar-test` owns AST extraction and exact active-runner
-  assertions. Reuse the existing source/expectation unchanged. Do not publish
-  truth/facts, accept the theorem, add proof/terminal-goal/Core/VC payloads,
-  broaden formula shapes, or promote a runner stage. Deps: mizar-test Task 265
-  and checker Task 180. Specs: 14/16.
-- [x] **Task 267: omitted-justification proof-handoff contract.** Docs-only:
-  define the checker-owned pending-auto-proof status, proof skeleton, explicit
-  terminal-goal payload, source/provenance links, malformed/missing behavior,
-  and exact core mapping for an ordinary theorem without a written
-  justification. Do not implement code, infer from raw syntax in core, run
-  proof search, or equate omission with acceptance. Deps: Task 266. Specs:
-  15/16; architecture 06.
-  Complete: explicit `Unmodified`/`Omitted` intent produces one distinct
-  `PendingAutomaticProof`, one direct terminal node, and one terminal row at
-  `proof/0`; the exact future core mapping is atomic and non-accepting.
-- [x] **Task 268: implement the accepted Task-267 producer.** Extend only the
-  exact Task-180 final handoff and fail closed on missing, duplicate, reordered,
-  corrupt, or owner/formula/proof-mismatched data. Cover deterministic nonempty
-  debug rendering of all three proof tables and byte-stable empty rendering.
-  Theorem acceptance,
-  discharge, Core/VC generation, broader proof forms, expectation changes, and
-  Steps 6/7 remain forbidden. Deps: Task 267.
-  Preserve independently validated Public/Exported resolver facts on
-  `CheckedStatementOwner`, cross-check them against the proof-intent row, and
-  test authenticated-owner and row corruption independently.
-  Complete: the exact all-or-none producer, authenticated-owner validation,
-  private output postvalidation, corruption matrix, deterministic nonempty
-  rendering, and captured byte-identical empty rendering are implemented.
-  Core Task 31 is next; acceptance, Core/VC, broader proofs, and Steps 6/7
-  remain deferred.
-
 Completion evidence: [central Task-247 historical contract](../../task_contracts/en/247.md#completion-evidence).
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Tasks 248-264 And 269-279 STEP 5 Source-Payload Producer Queue
 
@@ -4559,225 +680,43 @@ implementation commit does not satisfy a producer task.
 
 ## Task 257B2 Frozen-Contract Addendum
 
-- [x] Freeze the exact 166-byte explicit-universal source containing fixed and
-  repeated conjunction/disjunction, `iff`, and six executable groupings.
-- [x] Freeze parser ranges/tokens, the third `8/6/1/1/1/7/9` composite
-  profile, Task-252 `16/0/16`, Task-256 `8/0/0/0/0/0/16/16`, and
-  composition `8/0`.
-- [x] Freeze new composite kinds, same-family and atomic-edge roles, real
-  wrapper validation, profile partition, installation/final ownership,
-  corruption/isolation tests, trace impact, and semantic deferrals.
-- [x] Keep this prerequisite documentation-only at 415/381, 247/235,
-  225/190, active 101/5/194/1, 306/338 library tests, and 29 production
-  paths / 31,374 lines.
-- [x] Implement only this frozen Task 257B2 slice in a separate logical task
-  after fresh parser/resolver and baseline preflight.
-- [x] Verify exact `16/0/16`, `8/0/0/0/0/0/16/16`,
-  `8/6/1/1/1/7/9`, and `8/0` profiles, fail-closed tests, final ownership,
-  corpus `416/382`, and all semantic deferrals.
-- [x] Freeze Task 257B3 as the next dependency-ordered formula slice before
-  changing its production source or test intent.
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Task 257B3 Frozen-Contract Addendum
 
-- [x] Freeze the exact 138-byte reserve/restricted-universal/existential/
-  nested-implicit-universal source and final-LF SHA-256.
-- [x] Freeze the Task-48 one-reserve base, explicit Task-248 exclusion,
-  four contexts/bindings with empty capture, reserve-default provenance, and
-  inner-`r` shadow.
-- [x] Freeze exact Task-252 `6/6/0`, Task-256
-  `3/0/0/0/0/0/6/6`, Task-257B3 `3/0/1/3/3/2/6`, and composition
-  `3/6` profiles, row order, associations, and `body_edge` compatibility.
-- [x] Freeze parser/resolver preflight facts, complete corruption/isolation/
-  install tests, one sidecar/trace projection, audit impact, and semantic
-  deferrals.
-- [x] Keep this prerequisite documentation-only at corpus `416/382`, type
-  `248/236`, pass/fail `226/190`, active `101/5/195/1`, libraries
-  `312/343`, and 29 paths / 32,064 lines.
-- [x] Implement only this frozen B3 slice after fresh preflight, in a separate
-  logical task and commit.
-- [x] Verify exact `4/4/0`, `6/6/0`, `3/0/0/0/0/0/6/6`,
-  `3/0/1/3/3/2/6`, and `3/6` profiles, fail-closed installation/final
-  ownership, corpus `417/383`, and all semantic deferrals.
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Task 257C1 Frozen-Contract Addendum
 
-- [x] Freeze the exact 107-byte imported-predicate chain and final-LF hash,
-  parser/resolver ranges, two same-symbol imported heads, and exact private
-  selector/subtree exclusion.
-- [x] Freeze Task-252 `3/0/3` and extended Task-256
-  `1/0/2/2/2/0/0/3/2`, including two segment rows, `does not` token
-  provenance, and one shared `PredicateChainBoundary` edge.
-- [x] Freeze the public segment schema, legacy empty-segment compatibility,
-  validation/debug/final ownership, complete corruption/isolation tests, one
-  exact sidecar/trace projection, and semantic deferrals.
-- [x] Keep this prerequisite documentation-only at corpus `417/383`, type
-  `249/237`, pass/fail `227/190`, active `101/5/196/1`, libraries
-  `319/349`, and 29 paths / 32,809 lines.
-- [x] Implement only this frozen C1 slice after fresh preflight, with measured
-  corpus `418/384`, type `250/238`, pass/fail `228/190`, and active type
-  `197`.
-- [x] Verify `322/353` library tests, the exact source/near-miss/corruption
-  matrices, shared-boundary ownership, covered trace row, and all semantic
-  deferrals.
-- [x] Freeze the separate Task-255 condition-bearing-comprehension transport
-  prerequisite next.
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Checker Task 255C1 Frozen-Contract Ledger
 
-- [x] Freeze the valid 191-byte source/hash, exact parser ranges, imported
-  `++` provenance, and loaded-source/final-LF guards.
-- [x] Freeze the seven-table public API/debug contract, colon and direct
-  condition-wrapper arena anchors,
-  Task-252 `4/0/4`, Task-253 `1/0/1/2/2`, and Task-255
-  `1/0/1/1/1/1/2`.
-- [x] Freeze condition-subtree lower-family exclusion, the reusable private
-  Task-253 seam, 16 compatibility literals, atomic install/clone, and tests.
-- [x] Classify the missing contract as `design_drift`, implementation as
-  bounded `source_drift`/`test_gap`, and origin drift as report-only
-  `repo_metadata_conflict`; no blocking `spec_gap` remains.
-- [x] Preserve production, fixtures, sidecars, trace metadata/count,
-  executable coverage, counts, and hashes at the Task-257C1 baseline.
-- [x] Implement Task 255C1 as a separate logical task after fresh
-  parser/resolver/API and count/hash preflight. The exact route publishes the
-  frozen `4/0/4 -> 1/0/1/2/2 -> 1/0/1/1/1/1/2` chain, recursive condition
-  boundary, one fixture/sidecar/trace row, `419/385`, `251/239`, `228/191`,
-  active `101/5/198/1`, and `326/357` checker/runner tests without semantic
-  promotion.
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Checker Task 257C2 Frozen-Contract Ledger
 
-- [x] Freeze the unchanged 191-byte source/hash, direct condition-wrapper to
-  inner equality relation, exact ranges, built-in equality identity, and
-  imported `++` provenance exclusion.
-- [x] Freeze Task-252 `4/0/4`, Task-253 `1/0/1/2/2`, Task-255
-  `1/0/1/1/1/1/2`, Task-256 `1/0/0/0/0/0/0/2/2`, and one
-  condition-formula association.
-- [x] Freeze a dedicated immutable handoff/producer/table, four dependency
-  fingerprints, deterministic debug, typed/resolved ownership, validation,
-  rollback, and compatibility boundary without changing Task-257B APIs.
-- [x] Freeze reuse of the existing fixture/sidecar, one future trace row,
-  exact test matrices, unchanged 419-case/pass-fail/active counts, projected
-  plan `419/386` and type `252/240`, semantic deferrals, and audit impact.
-- [x] Classify the missing contract as `design_drift`, implementation as
-  bounded `source_drift`/`test_gap`, the committed Task-256
-  condition-container rejection as a separate authority-backed
-  `source_drift`, the stale Task-255C1 umbrella checkbox as resolved
-  `design_drift`, and origin drift as report-only `repo_metadata_conflict`.
-- [x] Freeze, review, and commit the separate Task-256C1
-  condition-container compatibility documentation prerequisite.
-- [x] Implement and verify Task-256C1 in its own commit with both install
-  orders and strict arbitrary-overlap rejection.
-- [x] Implement only Task 257C2 after Task-256C1 and fresh
-  parser/resolver/API, both-install-order, count/test-list/production/CLI-hash
-  preflight, in a separate logical task and commit.
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Checker Task 256C1 Frozen-Contract Ledger
 
-- [x] Freeze Chapter-13/14 authority, the unchanged 191-byte source/hash,
-  exact `139..184` condition container and `177..182` equality, and the
-  checker-local/future Task-257C2 consumers.
-- [x] Freeze the only admitted relation: Task-255 comprehension condition 0
-  directly contains distinct Task-256 equality 0 with equal range/spelling,
-  normal recovery, equality/owner-term context, exact profiles, and no
-  fabricated condition context.
-- [x] Preserve public APIs, all tables/IDs/errors/debug bytes,
-  `set_term_fingerprint() == None`, disjoint and formula-contains-set cases,
-  and strict arbitrary/substituted/copied/stale/wrong-context/non-direct overlap
-  rejection.
-- [x] Freeze both `TypedAst` installation orders, atomic rollback/replay,
-  independently valid near misses that fail only when paired with exact
-  `SetTermDependencyMismatch`, exactly three checker tests, projected
-  libraries `329/357`, no runner or trace change, and all semantic deferrals.
-- [x] Classify the frozen pre-implementation two-order rejection as
-  authority-backed `source_drift`, the missing contract as resolved
-  `design_drift`, tests as
-  `test_gap`, and origin divergence as report-only
-  `repo_metadata_conflict`; no blocking `spec_gap` remains.
-- [x] Keep this prerequisite documentation-only at plan `419/385`, type
-  `251/239`, pass/fail `228/191`, active `101/5/198/1`, libraries `326/357`,
-  and unchanged production/test-list/CLI hashes.
-- [x] Implement only Task 256C1 after this documentation commit and fresh
-  preflight, then review, verify, and commit it separately.
-- [x] Return to Task 257C2 implementation only after Task 256C1 passes both
-  installation orders and fresh inventory.
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Checker Task 256C1 Implementation Ledger
 
-- [x] Close the bounded private `source_drift` with an ID-independent
-  authenticated condition-container predicate in
-  `source_atomic_formula.rs`; add no public row, edge, fingerprint, error,
-  debug field, or `TypedAst` production edit.
-- [x] Authenticate only a normal `Equality` whose equal-range/equal-spelling
-  Task-255 condition is owned by the overlapping `Comprehension`, whose
-  context matches that owner, and whose distinct site is the condition
-  site's direct arena child.
-- [x] Add exactly three checker tests for the exact `4/0/4`,
-  `1/0/1/2/2`, `1/0/1/1/1/1/2`, and
-  `1/0/0/0/0/0/0/2/2` profiles, validation-only optional set context,
-  `set_term_fingerprint() == None`, both install orders, rollback/replay,
-  corruption, and preservation.
-- [x] Measure checker/mizar-test libraries `329/357`; keep plan `419/385`,
-  type `251/239`, pass/fail `228/191`, active `101/5/198/1`,
-  warnings/errors `23/0`, runner production, trace, fixture, sidecar,
-  expectation, and CLI outputs unchanged.
-- [x] Retain all semantic deferrals and coverage credit. At the Task-256C1
-  exit, Task 257C2 became the next dependency-ready logical task only after
-  this implementation commit and fresh inventory.
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Checker Task 257C2 Implementation Ledger
 
-- [x] Publish the dedicated condition-to-atomic handoff, dense table/ID,
-  four exact dependency fingerprints, deterministic debug, and dedicated
-  typed/resolved error and ownership without changing Task-257B APIs.
-- [x] Reuse the exact Task-255C1 selector, imported Task-253 seam, and
-  same-arena Task-256 equality builder while preserving all lower IDs/sites
-  and the existing definition-intake detail.
-- [x] Pass three checker and four runner tests for exact publication,
-  corruption, both lower install orders, reciprocal A/B/C2 exclusion, near
-  misses, isolation, rollback/replay, and final clone.
-- [x] Add only the reciprocal sidecar reference/note and one covered trace
-  row; keep the 191-byte `.miz`, outcome, phase, detail, and diagnostic
-  payload unchanged.
-- [x] Measure plan `419/386`, type `252/240`, pass/fail `228/191`, active
-  `101/5/198/1`, warnings/errors `23/0`, libraries `332/361`, and the
-  29-path / 34,064-line runner manifest.
-- [x] Preserve all frozen semantic deferrals.
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Checker Task 257C3 Frozen-Contract Ledger
 
-- [x] Preserve the existing 107-byte Task-257C1 source/hash, exact ranges,
-  imported `divides` provenance, Task-252 `3/0/3`, and Task-256
-  `1/0/2/2/2/0/0/3/2`.
-- [x] Freeze one `formula=0, left_segment=0, right_segment=1, boundary=1`
-  conjunction row and one `formula=0, segment=1` negation row.
-- [x] Freeze primary/atomic fingerprints, shared-boundary and negative-token
-  reauthentication, deterministic debug/accessors, and fail-closed errors.
-- [x] Freeze typed/resolved one-shot ownership, clone preservation, and
-  reciprocal A/B/C2/C3 exclusion in every installation order.
-- [x] Freeze reuse of the existing sidecar with only one future reciprocal
-  reference/note and one covered trace row; add no fixture or semantic change.
-- [x] Preserve baseline `419/386`, type `252/240`, pass/fail `228/191`,
-  active `101/5/198/1`, warnings/errors `23/0`, libraries `332/361`, and
-  runner production 29 paths / 34,064 lines.
-- [x] Keep signature/applicability, overload selection, conjunction/negation
-  truth, facts/results, theorem acceptance, proof, IR/VC, broader chains,
-  and Steps 6/7 deferred.
-- [x] Implement Task 257C3 only after this documentation commit and fresh
-  parser/resolver/lower-API/count/hash preflight.
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Checker Task 257C3 Implementation Ledger
 
-- [x] Publish only the frozen `1/1` composition after exact Task-252/256
-  authentication; keep every lower row and semantic deferral unchanged.
-- [x] Install, revalidate, debug-project, and clone-preserve the optional
-  handoff with mutation-sensitive coverage of all six A/B/C2/C3 directions.
-- [x] Route the unchanged 107-byte fixture before the lower C1 consumer and
-  keep typed/resolved semantic tables empty.
-- [x] Add exactly three checker and four runner tests, one covered trace row,
-  and only the ordered reciprocal reference/note in the existing sidecar.
-- [x] Measure plan/type `419/387` / `253/241`, libraries `335/365`, and the
-  29-path / 34,290-line runner manifest; preserve all frozen CLI outcomes.
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Checker Task 258B3 Frozen-Contract Ledger
 
@@ -4845,730 +784,120 @@ Completion evidence: [central Task-258B3N historical contract](../../task_contra
 
 ## Checker Task 258B3M1 Documentation Ledger
 
-- [x] Freeze canonical authority, exact consumer bytes/hash, complete
-  56-node parser identity, theorem-only resolver provenance, and subtree
-  exclusions.
-- [x] Freeze Task-48/252/256/base profiles and exact two-witness/one-name
-  syntax table without publishing a `BindingId` or semantic effect.
-- [x] Freeze public-API no-op, debug compatibility, fail-closed validation
-  precedence, paired typed/final ownership, and exact four/five tests.
-- [x] Preserve canonical specs, existing `.miz`, fixtures, expectations,
-  sidecars, trace status/count, active routes, source/tests, lists, counts,
-  and hashes.
-- [x] Update follow-up ownership in EN/JA plans/audits: B3M2 is next after
-  B3M1 implementation and remains before B4.
-
 Completion evidence: [central Task-258B3M1 historical contract](../../task_contracts/en/258B3M1.md#completion-evidence).
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Checker Task 258B3M2A Documentation Ledger
 
-- [x] Freeze canonical authority, the exact 107-byte source/hash, complete
-  49-node/root-48 unrecovered arena, theorem resolver provenance, and zero
-  frontend diagnostics after the lexer prerequisite.
-- [x] Freeze Task-48 `2/1/0`, Task-252 `5/4/1`, Task-256
-  `2/0/0/0/0/0/0/4/4`, base `1/2/2/2/2`, witness/name `1/0`, numeral
-  request ownership, source partition `[0,1,2]`, and subtree exclusions.
-- [x] Freeze public-API no-op, prior debug compatibility, validation
-  precedence, paired typed/final ownership, exact four/five compound tests,
-  replay/rollback, and empty semantics.
-- [x] Preserve canonical specs, existing `.miz`, fixtures, expectations,
-  sidecars, trace status/count, active routes, source/tests, lists, counts,
-  and hashes; retain B3M2B before B4.
-
 Completion evidence: [central Task-258B3M2A historical contract](../../task_contracts/en/258B3M2A.md#completion-evidence).
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Checker Task 258B3M2B1 Frozen-Contract Ledger
 
-- [x] Split broad B3M2B into exact parenthesized B3M2B1 and remaining
-  authority-valid B3M2B2; restrict future `it` to valid `means` contexts.
-- [x] Freeze the final-LF 113-byte/hash source, 53-node/root-52 arena, exact
-  theorem/resolver provenance, and zero frontend diagnostics.
-- [x] Freeze Task-48 `2/1/0`, five roots versus Task-252 `6/5/0`,
-  parenthesized term 2 / child term 3, refs `0/1/2/3/4 ->
-  0/1/3/4/5`, and scopes `[]/[]/[0]/[0]/[0]`.
-- [x] Freeze Task-256 pairs `[0,1]` / `[4,5]`, exclusion of `2/3`, base
-  `1/2/2/2/2`, input-fact refs `[0,1]` / `[3,4]`, witness/name `1/0`, and
-  source partition `[0,1,2]`.
-- [x] Freeze no public API/binding/semantics, checker/runner tests 4/5,
-  unchanged `362/399` baseline, coverage `deferred`/`tests = []`, and
-  B3M2B2-before-B4.
-- [x] After the dedicated docs commit and fresh preflight, implement only
-  B3M2B1, measure libraries `366/404`, then retain B3M2B2.
-
 Completion evidence: [central Task-258B3M2B1 historical contract](../../task_contracts/en/258B3M2B1.md#completion-evidence).
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Checker Task 258B3M2B2A Frozen-Contract Ledger
 
-- [x] Split broad B3M2B2 into exact `take ((x));` B3M2B2A and remaining
-  application/structure/selector/update/set/choice/other B3M2B2B.
-- [x] Freeze final-LF 121-byte/hash identity, zero diagnostics, all 57
-  nodes/root 56, and the exact theorem-only resolver provenance.
-- [x] Freeze Task-48 `2/1/0`, five roots versus Task-252 `7/5/0`, the
-  outer/inner/variable chain `2 -> 3 -> 4`, and references to
-  `0/1/4/5/6`.
-- [x] Freeze Task-256 pairs `[0,1]` / `[5,6]`, exclusion of the whole
-  `2/3/4` witness subtree, base `1/2/2/2/2`, and witness/name `1/0`.
-- [x] Freeze no public API/binding/semantics/active/trace change, exactly
-  four checker and five runner future tests, unchanged `366/404`
-  baselines, and B3M2B2B-before-B4.
-
 Completion evidence: [central Task-258B3M2B2A historical contract](../../task_contracts/en/258B3M2B2A.md#completion-evidence).
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Checker Task 258B3M2B2B1P Frozen Lower-Prerequisite Ledger
 
-- [x] Decompose broad B3M2B2B dependency-first into private Task-253
-  proof-context seam B1P, exact application-witness B1A, and later
-  Task-253/254/255/other slices.
-- [x] Freeze the motivating final-LF 143-byte/hash source, zero
-  diagnostics, 63-node/root-62 identity, and projected proof-context-1
-  Task-48 `2/1/0`, Task-252 `6/4/2`, Task-253 `1/0/1/2/2`.
-- [x] Preserve the legacy context-0 helper/output; add only a private
-  explicit-context Task-253 reuse entry point with no checker API or
-  statement consumer change.
-- [x] Freeze exactly two runner compound tests for context/provenance/form
-  fail-close, replay, and legacy byte compatibility.
-- [x] Preserve canonical artifacts, active routes, fixtures, expectations,
-  sidecars, trace status/count, coverage credit, tests, counts, and hashes;
-  retain B1P implementation before B1A.
-
 Completion evidence: [central Task-258B3M2B2B1P historical contract](../../task_contracts/en/258B3M2B2B1P.md#completion-evidence).
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Checker Task 258B3M2B2B1A Frozen-Contract Ledger
 
-- [x] Freeze the canonical Chapter 13/15/16 authority and exact final-LF
-  143-byte/hash source, zero diagnostics, 63 nodes/root 62, resolver theorem
-  owner, and imported `parser.type_fixtures::++` provenance.
-- [x] Freeze Task-48 `2/1/0`, Task-252 `6/4/2`, Task-253 `1/0/1/2/2`,
-  Task-256 equality-only exclusion, base statement `1/2/2/2/2`, and one
-  unnamed `Application(0)` witness/no names.
-- [x] Freeze node `48 -> 47 -> 46` containment without a wrapper/primary
-  duplicate and make the witness handoff the sole Task-253 consumer.
-- [x] Freeze the `Application` target, optional application fingerprint,
-  legacy-compatible builder/debug bytes, dedicated application-aware
-  producer, and atomic typed/final three-handoff installation.
-- [x] Freeze exactly four checker and five runner compound tests, unchanged
-  `370/411` and 30-path/39,857-line baselines, no active/canonical/fixture/
-  expectation/sidecar/trace/semantic change, and coverage
-  `deferred`/`tests = []`.
-- [x] After the dedicated documentation commit and fresh preflight,
-  implement only B3M2B2B1A and measure libraries `374/416`.
-
 Completion evidence: [central Task-258B3M2B2B1A historical contract](../../task_contracts/en/258B3M2B2B1A.md#completion-evidence).
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Checker Task 258B3M2B2B1B1P Frozen-Prerequisite Ledger
 
-- [x] Select the exact final-LF 158-byte/67-node `take (1 ++ 2);` source
-  before every Task-254/255 witness shape.
-- [x] Freeze Task-48 `2/1/0`, Task-252 `6/4/2`, and wrapped Task-253
-  `1/1/1/2/2` in proof context 1 with exact imported `++` provenance.
-- [x] Freeze wrapper node 50 around application node 48 as Task-253
-  containment only; keep `Application(0)` as the later witness target.
-- [x] Freeze one private wrapper-aware reuse sibling, legacy unwrapped byte
-  compatibility, and exactly two future runner compound tests.
-- [x] Freeze exhaustive 158-byte and 67-node selector isolation, every
-  successful lower row field, dormant-route exclusion, and empty upper
-  tables.
-- [x] Freeze selector/Task-252/Task-253/typed-install failure precedence,
-  atomic rollback/replay, and separate legacy context-0/context-1 hashes.
-- [x] Preserve production/tests, canonical artifacts, active routes,
-  fixtures, expectations, sidecars, trace status/count, public APIs,
-  semantic ownership, libraries `374/416`, and all measured hashes.
-- [x] Commit this documentation prerequisite alone, fresh-inventory, then
-  implement only B1B1P before freezing the B1B1 statement consumer.
-
 Completion evidence: [central Task-258B3M2B2B1B1P historical contract](../../task_contracts/en/258B3M2B2B1B1P.md#completion-evidence).
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Checker Task 258B3M2B2B1B1 Frozen-Contract Ledger
 
-- [x] Fresh-inventory the final-LF 158-byte/67-node `take (1 ++ 2);`
-  source and canonical Chapter 13/15/16 plus parser-fixture authority.
-- [x] Freeze the exact local theorem owner/contribution/label bundle and
-  imported `parser.type_fixtures::++#12` provenance.
-- [x] Freeze Task-48 `2/1/0`, Task-252 `6/4/2`, wrapped Task-253
-  `1/1/1/2/2`, equality-only Task-256, base `1/2/2/2/2`, and one unnamed
-  `Application(0)` witness/no names.
-- [x] Freeze take 53 -> witness 52 -> unowned 51 -> wrapper 50 -> unowned
-  49 -> application 48; wrapper 0 remains Task-253 containment, not a
-  witness target.
-- [x] Reuse the existing public B1A schema and atomic installer; require one
-  explicit crate-private B1B1 profile and keep B1A byte/API compatibility.
-- [x] Freeze exact validation precedence, atomic rollback/replay/final
-  revalidation, four checker and five runner named tests, all bytes/nodes,
-  resolver substitutions, near-miss matrix, family/active isolation, and
-  empty semantic outputs.
-- [x] Preserve production/tests, canonical specs, `.miz`, fixtures,
-  expectations, sidecars, trace status/count, public/active routes, semantic
-  owners, libraries `374/418`, and all measured hashes.
-- [x] Commit this documentation prerequisite alone, fresh-inventory, then
-  implement only B1B1.
-
 Completion evidence: [central Task-258B3M2B2B1B1 historical contract](../../task_contracts/en/258B3M2B2B1B1.md#completion-evidence).
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Checker Task 258B3M2B2B2P Frozen-Prerequisite Ledger
 
-- [x] Freeze the final-LF 172-byte/76-node source, SHA-256, exact theorem,
-  proof, take/witness, constructor/root/member/numeral/conclusion/formula
-  nodes, and containment.
-- [x] Freeze Task-48 `2/1/0`, Task-252 `6/4/2`, and exact Task-254
-  `1/0/1/2/0/2/6` rows and imported `TypeCaseStruct#5` provenance.
-- [x] Freeze the owned-kind map to constructor 59 and assignment members
-  20/24 only; keep root 52 unowned; distinguish Task-252 private extraction
-  roots 54/57 from its published `source.term.numeral` sites 53/56, leaving
-  54/57 arena-unowned.
-- [x] Freeze two future runner tests and no checker test for all bytes/nodes,
-  provenance/substitution/precedence, replay, legacy output, and empty upper
-  families.
-- [x] Exclude §5.7 selector semantics to B2B, witness ownership to B2A, and
-  update/`FieldUpdate` to B2C; preserve all semantic/proof/goal/type
-  deferrals and existing Task-254 credit.
-- [x] Preserve `378/423`, all counts/hashes, public/active/fixture/
-  expectation/sidecar/trace artifacts, and classify the selected gap as
-  `design_drift`.
-- [x] After no-findings documentation review, hard gates, quality at least
-  90/100, and dedicated docs commit, fresh-inventory and implement B2P only.
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Checker Task 258B3M2B2B2P Implementation Ledger
 
-- [x] Implement the exact production-private owned-kind selector and
-  existing-context/shared-Task-252 Task-254 reuse seam.
-- [x] Pass the two frozen runner tests; inventories are `378/425`.
-- [x] Close `source_drift`, `test_gap`, and completion `design_drift`.
-- [x] Preserve checker/public/active/fixture/expectation/sidecar/trace and
-  semantic boundaries; publish no Task-258 statement/witness row.
-- [x] Remeasure runner sizes, manifests, and test-list hashes; keep B2A next.
-- [x] Complete the final read-only quality review with no findings, every
-  hard gate passing, and a valid score of `98/100`.
-- [x] After commit and fresh inventory, freeze B2A as a separate
-  documentation task.
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Checker Task 258B3M2B2B2A Frozen-Contract Ledger
 
-- [x] Distinguish Task `258B3M2B2B2A` from historical `258B3M2B2A` and
-  freeze the exact 172-byte/76-node constructor-witness source.
-- [x] Freeze Task-48/252/254/256 lower rows, Task-258 base `1/2/2/2/2`,
-  witness/name `1/0`, ownership, subtree exclusions, and both resolver roots.
-- [x] Freeze additive structure target/fingerprint/builder/atomic installer
-  APIs while preserving every legacy/application debug and installer path.
-- [x] Freeze four checker and five runner tests, exact validation precedence,
-  rollback/replay/final clone, family/active isolation, and empty semantics.
-- [x] Preserve canonical/test/fixture/expectation/sidecar/trace/active
-  artifacts, formula trace `deferred` / `tests = []`, and all counts/hashes.
-- [x] Complete no-findings specification review and every documentation hard
-  gate with a valid final quality score of `98/100`.
-- [x] After the dedicated docs commit, fresh-inventory and implement B2A
-  only.
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Checker Task 258B3M2B2B2A Implementation Ledger
 
-- [x] Implement the structure target/fingerprint/builder and atomic
-  typed/final installation for the exact frozen profile.
-- [x] Implement the bounded runner consumer through the existing B2P seam
-  and pass the exact four checker/five runner tests.
-- [x] Close bounded B2A `source_drift` and `test_gap`; preserve all B2B/B2C
-  and semantic deferrals.
-- [x] Record tests `382/430`, module/manifests, and test-list hashes; keep
-  trace `deferred` / `tests = []` without credit.
-- [x] Complete no-findings test-sufficiency, implementation, and
-  source/documentation consistency reviews.
-- [x] Pass focused checker/runner `4/4` and `5/5`, `cargo fmt --all
-  --check`, all-target/all-feature Clippy with warnings denied, and
-  `cargo test -q` with libraries `382/430` and lint policies `15/14`.
-- [x] Pass all five CLIs at exit zero with 23 warnings / zero errors and
-  unchanged counts/hashes; leave manifests/test lists and forbidden
-  artifacts unchanged and `stash@{0}` untouched.
-- [x] Complete final read-only quality review with all nine hard gates
-  passing and a valid score of `98/100`.
-- [x] Commit this logical task as `7613d50d`, verify clean metadata/stash
-  invariants, and fresh-inventory the next dependency.
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Checker Task 258B3M2B2B2BP Frozen-Contract Ledger
 
-- [x] Select B2BP as the private Task-254 selector reuse prerequisite before
-  B2B and freeze the 171-byte/79-node exact source/parser identity.
-- [x] Freeze Task-48 `2/1/0`, Task-252 `6/4/2`, and Task-254
-  `2/0/1/3/0/3/9`, including provenance, ownership, edges, requests,
-  malformed selector, and subtree exclusions.
-- [x] Freeze only runner-private selector site/owned-kind/context-handoff
-  siblings; exclude checker APIs, Task-256/258, active routes, diagnostics,
-  statement installation, and semantics.
-- [x] Freeze exactly two runner tests and zero checker tests, including
-  corruption, precedence, replay, constructor compatibility, excluded
-  selector shapes, and empty upper tables.
-- [x] Preserve specs, `.miz`, fixtures, expectations, sidecars, trace
-  `deferred` / `tests = []`, Task-254 credit, and all baselines/hashes.
-- [x] Complete no-findings specification and source/documentation reviews
-  plus all documentation verification.
-- [x] Record externally created docs commit `6f84d4eb` as a report-only
-  `repo_metadata_conflict`; do not amend, revert, fetch, push, or touch the
-  stash.
-- [x] Freeze Task `258B3M2B2B2BPC1` as the docs-only correction that limits
-  B2BP to imported constructor/root provenance and defers local theorem
-  owner/label provenance to B2B; repeat all three reviews to no findings.
-- [x] Pass the BPC1 final read-only quality review with no findings, all nine
-  hard gates, and a valid score of `98/100`.
-- [x] Commit only the correction, verify clean/stash invariants, and
-  fresh-inventory B2BP implementation only.
-- [x] After the separate B2BP implementation commit, return to B2B frozen
-  consumer documentation.
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Checker Task 258B3M2B2B2BP Implementation Ledger
 
-- [x] Implement the exact production-private selector site, owned-kind map,
-  and proof-context handoff in the frozen four runner files.
-- [x] Pass the two exact runner tests, including malformed diagnostic
-  code/range and stale-fingerprint clean replay.
-- [x] Close bounded `source_drift` and `test_gap`; test-sufficiency and
-  implementation reviews report no findings.
-- [x] Preserve checker/public/active/spec/fixture/expectation/sidecar/trace
-  and semantic boundaries; publish no Task-256/258 row.
-- [x] Record libraries `382/432`, current module sizes, production/test-list
-  hashes, and unchanged five CLI counts/hashes.
-- [x] Complete source/documentation consistency with no findings and pass
-  final quality review with all nine hard gates and a valid `98/100`.
-- [x] Create one implementation commit, then fresh-inventory B2B
-  documentation.
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Checker Task 258B3M2B2B2B Frozen-Contract Ledger
 
-- [x] Freeze the exact 171-byte selector-witness source, parser nodes,
-  malformed recovery, resolver provenance, lower Task-48/252/254/256 rows,
-  and ownership/subtree exclusions.
-- [x] Freeze the Task-258 base `1/2/2/2/2`, witness `1/0`, target
-  `Structure(0)`, selector-base `Structure(1)`, and the exact B2A/B2B
-  sibling boundary.
-- [x] Freeze exact checker/runner consumers, implementation file scopes,
-  four checker tests, five runner tests, validation precedence, family
-  isolation, and semantic/B2C deferrals.
-- [x] Record baseline library/projection counts, module sizes, production and
-  test-list hashes, CLI counts/hashes, and unchanged coverage-credit impact.
-- [x] Complete specification, test-sufficiency, implementation-boundary,
-  and source/documentation reviews with no findings; pass all nine final
-  quality hard gates with a valid `98/100`.
-- [x] Commit this documentation prerequisite alone as `4d2fb2b6` and verify
-  clean worktree, ahead count, and untouched stash.
-- [x] Fresh-inventory Task 258B3M2B2B2B implementation after that commit.
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Checker Task 258B3M2B2B2B Implementation Ledger
 
-- [x] Implement the exact frozen B2B profile in the eight authorized files,
-  with one unnamed witness targeting selector `Structure(0)`.
-- [x] Preserve Task-48/252/254/256 and Task-258 base rows, selector base
-  `Structure(1)`, Task-256 ownership `51/70`, and unowned containers
-  `52/71`.
-- [x] Enumerate B2A/B2B as exact fail-closed typed/final siblings and reject
-  generic structure admission, hybrids, stale fingerprints, and partial or
-  repeated bundles atomically.
-- [x] Add the frozen four checker/five runner tests; the four checker tests
-  and focused runner matrix pass.
-- [x] Close bounded `source_drift`, `test_gap`, and `design_drift`; preserve
-  public, semantic/proof/goal, corpus active-route, fixture, expectation,
-  sidecar, and trace-credit boundaries.
-- [x] Record libraries `386/437`, checker sizes
-  `29941/4830/7244/5036`, the 23-path / 124,016-line production manifest,
-  and checker production/test-list hashes.
-- [x] Complete specification/dependency, test-sufficiency, and
-  implementation reviews with no findings.
-- [x] Complete source/documentation consistency review with no findings.
-- [x] Run broad final verification and confirm every count/hash gate.
-- [x] Complete final read-only quality review with every hard gate passing
-  and a valid score of at least `90/100`.
-- [x] Commit this implementation as logical commit `8311502c`, verify clean
-  worktree, ahead-three origin metadata, and untouched stash, then
-  fresh-inventory the B2CP prerequisite before B2C.
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Checker Task 258B3M2B2B2CP Frozen-Prerequisite Ledger
 
-- [x] Establish B2CP as the missing private Task-254 update reuse seam before
-  the later B2C statement consumer.
-- [x] Freeze the exact final-LF 181-byte/hash, 86-node/root-85 source and
-  180-byte missing-value recovery profile.
-- [x] Freeze Task-48 `2/1/0`, Task-252 `7/4/3`, Task-254
-  `2/0/1/3/1/4/9`, imported `TypeCaseStruct#5` provenance, ownership, and
-  subtree exclusions.
-- [x] Freeze only four runner implementation files, exactly two runner
-  tests, zero checker tests, and no public/active/semantic surface.
-- [x] Freeze tests
-  `task258b3m2b2b2cp_structure_update_proof_context_reuse_is_exact` and
-  `task258b3m2b2b2cp_structure_update_corruption_replay_and_prior_sibling_compatibility_fail_closed`,
-  including exact B2P constructor/B2BP selector compatibility.
-- [x] Preserve canonical artifacts, fixtures, expectations, sidecars, trace
-  status/count/credit, libraries `386/437`, and all baseline hashes.
-- [x] Complete repeated specification/dependency, test-sufficiency,
-  implementation-boundary, and source/documentation reviews with no
-  findings; pass every documentation verification and hard gate.
-- [x] Record concurrent docs commit `817bb92b` as report-only
-  `repo_metadata_conflict`; the restored `spec_gap` label invalidated hard
-  gates 1/9 and the recorded `98/100`.
-- [x] Complete CPC1 repeated no-findings reviews, pass all nine hard gates,
-  and obtain valid final quality `98/100`; explicitly justify live broad
-  reruns blocked by the unrelated incomplete source diff.
-- [x] Commit docs-only correction `258B3M2B2B2CPC1` separately as
-  `ee267d9c`.
-- [x] Fresh-inventory and implement only the private dormant B2CP seam;
-  pass exactly its two frozen tests and close `design_drift`,
-  `source_drift`, and `test_gap`.
-- [x] Complete final test-sufficiency and implementation re-reviews with no
-  findings.
-- [x] Pass `cargo fmt --check`, workspace Clippy with warnings denied,
-  `cargo test`, focused B2CP `2/2`, and every count/hash gate.
-- [x] Synchronize implementation-completion metrics and narrative-only
-  audit impact without specification/corpus/trace-credit changes.
-- [x] Complete final source/documentation review with no findings.
-- [x] Pass independent final quality with no findings, all nine hard gates,
-  and a valid `98/100`.
-- [x] Pass the staged-diff audit and create dedicated B2CP implementation
-  commit `b146f0f72dceac2233c9d679b7820e264974b227`; verify clean worktree,
-  ahead-six branch, and unchanged stash.
-- [x] Fresh-inventory B2C after the B2CP commit.
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Checker Task 258B3M2B2B2C Frozen-Contract Ledger
 
-- [x] Freeze the exact 181-byte/hash, zero-diagnostic 86-node/root-85 source
-  and 180-byte malformed missing-value profile.
-- [x] Freeze Task-48 `2/1/0`, Task-252 `7/4/3`, Task-254
-  `2/0/1/3/1/4/9`, Task-256 `2/0/0/0/0/0/0/4/4`, Task-258 base
-  `1/2/2/2/2`, and witness `1/0`.
-- [x] Freeze local theorem/label and imported `TypeCaseStruct#5` provenance,
-  exact ownership, unowned containers, and the directed cross-family graph.
-- [x] Freeze reuse of unchanged public structure-witness APIs and private
-  B2CP seam, exactly eight implementation files, four checker tests, and five
-  runner tests.
-- [x] Preserve documentation-only scope, baseline `386/439`, implementation
-  projection `390/444`, all production/test-list/CLI hashes and counts, and
-  narrative-only `deferred`, `tests = []` trace status.
-- [x] Classify the missing contract/stale status as `design_drift`, future
-  implementation as bounded `source_drift`, and nine tests as `test_gap`;
-  record no `spec_gap`, boundary, expectation, or semantic issue.
-- [x] Complete specification/dependency review with no findings.
-- [x] Complete test-sufficiency review with no findings.
-- [x] Complete implementation-boundary review with no findings.
-- [x] Complete source/documentation consistency review with no findings.
-- [x] Run documentation verification and all required count/hash gates.
-- [x] Complete final read-only quality review with every hard gate passing
-  and a valid score of `98/100`.
-- [x] Commit the B2C documentation prerequisite separately as
-  `d6076cc757ce675d1b46a720b4f00805923d3c70`.
-- [x] Fresh-inventory and implement only the frozen B2C contract.
-
 Completion evidence: [central Task-258B3M2B2B2C historical contract](../../task_contracts/en/258B3M2B2B2C.md#completion-evidence).
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Checker Task 258B3M2B2B3P Frozen-Contract Ledger
 
-- [x] Close B2C at commit `e8373c683448e524cb98edde83fdf8de83a125cd`
-  with clean post-commit invariants and untouched stash.
-- [x] Freeze the exact 117-byte/hash, zero-diagnostic 57-node/root-56 source
-  and complete significant kind/range/containment map.
-- [x] Freeze local resolver provenance, Task-48 `2/1/0`, Task-252 `6/4/2`,
-  Task-255 `1/0/0/0/0/2/1`, and empty Tasks 253/254/256/258.
-- [x] Freeze Task-252 ownership of `30/32/36/38/44/46`, Task-255 ownership
-  of 40, and unowned term/statement/proof/theorem containers.
-- [x] Freeze exactly four private runner implementation files, two compound
-  runner tests, explicit proof-context reuse, and byte-identical context-0
-  legacy behavior.
-- [x] Freeze the two tests as exhaustive over all 117 bytes/final-LF
-  variants, all 57 node fields/root, complete resolver and Task-48/252/255
-  fields, exact owner partitions, precedence/stale replay/atomic clone
-  behavior, empty adjacent/semantic outputs, and the three literal Task-111
-  legacy debug hashes.
-- [x] Keep checker source/tests/API and upper B3A witness edge separate.
-- [x] Exclude every semantic result, sethood/element unification,
-  existential/proof/goal/theorem behavior, adjacent term form, imported
-  behavior, Task 253/254/256/258, B4, and B5.
-- [x] Preserve documentation-only scope, baseline `390/444`, projection
-  `390/446`, all production/test-list/CLI counts and hashes, and deliberate
-  trace no-op.
-- [x] Classify missing contract as `design_drift`, future private seam as
-  `source_drift`, and two tests as `test_gap`; record no other disagreement.
-- [x] Complete specification review with **NO FINDINGS**.
-- [x] Complete documentation review/repeat with **NO FINDINGS**.
-- [x] Complete test-sufficiency review with **NO FINDINGS**.
-- [x] Complete implementation-boundary review with **NO FINDINGS**.
-- [x] Complete source/documentation consistency review with
-  **NO FINDINGS**.
-- [x] Pass source/hash, lint `15/14`, library `390/444`, production/test-list,
-  five-CLI-hash, exact-26-doc scope, diff-check, and trace-no-op verification.
-- [x] Complete final quality with **NO FINDINGS**, all nine hard gates PASS,
-  and valid `98/100` (`20/20/15/14/10/10/5/4`).
-- [x] Audit the task-only docs diff and commit the B3P prerequisite as
-  `285a1f11c310bb313c4c6b4feae914eb11f74754`.
-- [x] Verify clean post-commit invariants, unchanged stash, and fresh-
-  inventory B3P implementation.
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Checker Task 258B3M2B2B3P Implementation-Closure Ledger
 
-- [x] Record frozen-contract prerequisite commit
-  `285a1f11c310bb313c4c6b4feae914eb11f74754`.
-- [x] Implement exactly four existing runner files with the `pub(super)`
-  explicit-context sibling and context-0 delegate; preserve all three
-  literal Task-111 hashes.
-- [x] Add exactly two B3P tests covering 117 bytes/LF, 57 nodes, resolver
-  `63`, binding `39`, Task-252/255 rows, fingerprint-only dependency absence,
-  stale precedence, immediate replay, clones, and isolation.
-- [x] Close B3P `source_drift` and `test_gap`; keep checker/public/active,
-  canonical, fixture, expectation, sidecar, and trace artifacts unchanged.
-- [x] Complete test-sufficiency review with **NO FINDINGS**.
-- [x] Complete implementation review with **NO FINDINGS**.
-- [x] Pass focused `2/2`, runner library `446/446`, formatting, package
-  all-target/all-feature Clippy with `-D warnings`, and diff check.
-- [x] Record current checker/runner counts and production/test-list/CLI
-  hashes; keep the trace TOML a deliberate no-op.
-- [x] Complete repeated source/documentation consistency and
-  documentation/boundary reviews with **NO FINDINGS**.
-- [x] Pass lint-policy `15/14`, metadata `137`, focused `2/2`, runner
-  library `446/446`, formatting, workspace-wide warnings-denied Clippy and
-  tests, five CLI/count/hash, current manifest/test-list hash, exact-30-file
-  scope, and diff-check gates.
-- [x] Complete final read-only quality review with **NO FINDINGS**, all nine
-  hard gates PASS, and valid `98/100`
-  (`20/20/15/14/10/10/5/4`).
-- [x] Audit/stage and create dedicated B3P implementation commit
-  `abbfedfc2cdbaa97d8294893859da8cd350ad9a8`.
-- [x] Verify clean post-commit HEAD, ahead-10 origin metadata, untouched
-  stash `f65cf4a13752ec380710814a9ac6392ccb9d75d4`, and fresh-inventory
-  upper B3A.
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Checker Task 258B3M2B2B3A Frozen-Contract Ledger
 
-- [x] Close B3P as commit
-  `abbfedfc2cdbaa97d8294893859da8cd350ad9a8`, verify clean/ahead-10/
-  untouched-stash invariants, and transfer ownership to B3A.
-- [x] Freeze Chapters 4/13/15/16 authority, existing parser/failure
-  artifacts, B3P evidence, and Tasks 48/252/255/256/258 patterns.
-- [x] Freeze `117` bytes/`57` nodes, resolver label/owner provenance, lower
-  tables, one witness/zero names, partition/graph, and source-only intent.
-- [x] Freeze additive API/debug compatibility, seven implementation files,
-  four checker plus five runner tests, precedence, and semantic deferrals.
-- [x] Record `design_drift`/`source_drift`/`test_gap`, no blocking
-  disagreement, trace `deferred`, `tests = []`, unchanged Task-111/255
-  credit, and exact current/projected counts/hashes.
-- [x] Complete specification review with **NO FINDINGS**.
-- [x] Complete documentation review/repeat, test-sufficiency review, and
-  implementation/API boundary repeat with **NO FINDINGS**.
-- [x] Pass source/count/hash, lint/library, five-CLI, exact-32 scope,
-  diff-check, and trace-no-op verification.
-- [x] Complete source/docs consistency and documentation/boundary reviews
-  with **NO FINDINGS**.
-- [x] Complete final quality with **NO FINDINGS**, all nine hard gates PASS,
-  and valid `98/100` (`20/20/15/14/10/10/5/4`).
-- [x] Create the dedicated B3A documentation-only commit
-  `f4ff45964d97b31b6c328381120ba8ede080a2b1`.
-- [x] Verify clean post-commit ahead-11/behind-0 metadata, unchanged stash
-  `f65cf4a13752ec380710814a9ac6392ccb9d75d4`, and fresh B3A
-  implementation inventory.
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Checker Task 258B3M2B2B3A Implementation Ledger
 
-- [x] Close prerequisite commit
-  `f4ff45964d97b31b6c328381120ba8ede080a2b1` and its clean
-  ahead-11/behind-0, unchanged-stash, fresh-inventory gates.
-- [x] Implement only the exact three checker plus four runner files and
-  preserve both `source_set_term.rs` owners and every authority artifact.
-- [x] Add the exact set-witness API, set-only fingerprint tuple, atomic
-  typed installation, final revalidation/clone, and four checker plus five
-  runner tests while preserving semantic deferrals and trace no-credit.
-- [x] Complete specification, test-sufficiency, and implementation reviews
-  with **NO FINDINGS**.
-- [x] Pass focused/package tests, formatting, targeted Clippy, five CLI,
-  final count/hash manifests, and diff checks.
-- [x] Complete the second source/documentation consistency repeat with
-  **NO FINDINGS**.
-- [x] Complete the final documentation/boundary reread with
-  **NO FINDINGS**.
-- [x] Pass parent final verification: focused checker `4` plus runner `5`;
-  checker package `394` plus lint-policy `15`; mizar-test package `451`,
-  layout `3`, lint-policy `14`, metadata `137`, public-enum `2`, snapshot
-  `21`; format; workspace Clippy/tests; five CLI counts/hashes; production
-  manifests/test lists; diff check; and exact `39`-file scope.
-- [x] Complete independent final read-only quality review with
-  **NO FINDINGS**: all nine hard gates PASS with no score cap, valid
-  `98/100` (`20/20/15/14/10/10/5/4`), and the stated residual deferrals
-  unchanged.
-- [x] Create dedicated implementation commit
-  `a147bad88f1963c504f796051ba0b855eca71d07`.
-- [x] Verify clean ahead-12/behind-0 implementation post-commit invariants
-  and unchanged stash.
-- [x] Complete fresh next-task inventory and select B3B empty enumeration.
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Checker Task 258B3M2B2B3B Frozen-Contract Ledger
 
-- [x] Close B3A at `a147bad88f1963c504f796051ba0b855eca71d07`
-  with clean ahead-12/behind-0 state and unchanged stash.
-- [x] Resolve empty-enumeration versus choice ordering as nonblocking
-  task-decomposition `design_drift`; select the dependency-minimal zero-edge
-  enumeration and retain every other set/choice/B3 sibling for post-
-  implementation fresh inventory.
-- [x] Freeze final-LF 118-byte/hash identity, zero diagnostics, all 50
-  normal nodes/root 49, and exact local theorem/label provenance.
-- [x] Freeze Task-48 `2/1/0`, Task-252 `4/4/0`, empty Tasks 253/254,
-  Task-255 `1/0/0/0/0/0/1`, Task-256
-  `2/0/0/0/0/0/0/4/4`, Task-258 base `1/2/2/2/2`, and witness `1/0`.
-- [x] Freeze ownership, the zero-child Task-255 boundary, the sole
-  witness-to-SetTerm edge, resolver provenance, and complete subtree
-  exclusion.
-- [x] Reuse the B3A SetTerm API and exact seven future implementation
-  files; forbid Task-255 source changes and all authority artifacts.
-- [x] Freeze exactly four checker and five runner tests, baseline `394/451`,
-  projection `398/456`, current production/test/CLI hashes, and trace
-  `deferred`, `tests = []` no-op.
-- [x] Preserve the inactive template fixture's existing semantic intent and
-  credit; do not modify its source, expectation, or trace row.
-- [x] Complete specification/documentation review with **NO FINDINGS**.
-- [x] Complete test-sufficiency and implementation-boundary reviews with no
-  findings.
-- [x] Complete source/documentation consistency review with **NO FINDINGS**.
-- [x] Pass exact source/count/hash/scope/diff/trace-no-op verification.
-- [x] Complete final quality review with **NO FINDINGS**, all nine hard
-  gates PASS, no score cap, and valid `98/100`
-  (`20/20/15/14/10/10/5/4`).
-- [x] Create the dedicated B3B documentation-only commit
-  `080e6824d843655986079f5d5fc41abe06b0fbd6`.
-- [x] Verify clean ahead-13/behind-0 post-commit state, unchanged stash
-  `f65cf4a13752ec380710814a9ac6392ccb9d75d4`, and fresh-inventory B3B
-  implementation selection.
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Checker Task 258B3M2B2B3B Implementation Ledger
 
-- [x] Close prerequisite commit
-  `080e6824d843655986079f5d5fc41abe06b0fbd6` and its clean
-  ahead-13/behind-0, unchanged-stash, fresh-inventory gates.
-- [x] Implement only the exact three checker plus four runner source files,
-  reusing the B3A SetTerm API and preserving every authority artifact.
-- [x] Add the exact private zero-edge profile and existing four checker plus
-  five runner tests without public, error, debug, dependency, semantic, or
-  trace changes.
-- [x] Remediate all three medium test gaps inside the existing tests:
-  eight resolver mutations, bidirectional family orders, and non-vacuous
-  zero-edge corruption.
-- [x] Remediate the additional B3B-specific currently mutable
-  Task-48/252/255 mutation/replay gap with exact `32/55/23` matrices.
-- [x] Before that bounded follow-up, pass focused checker `4/4`, runner
-  `5/5`, checker/runner libraries
-  `398/456`, formatting, diff checks, five CLIs, and workspace Clippy.
-- [x] Complete independent full implementation repeat with
-  **NO FINDINGS**.
-- [x] Add post-auth injection plus stage-prefix/non-generic-guard
-  assertions and complete all test-sufficiency repeats with
-  **NO FINDINGS**.
-- [x] Complete final implementation repeat with **NO FINDINGS**.
-- [x] Remeasure affected runner counts/content/test hashes.
-- [x] Rerun focused tests, libraries `398/456`, format/diff, workspace
-  Clippy with warnings denied, `cargo test -q`, and five CLI verification.
-- [x] Complete source/documentation consistency repeat with
-  **NO FINDINGS** after the two `design_drift` wording fixes.
-- [x] Complete independent final documentation/boundary review with
-  **NO FINDINGS**.
-- [x] Complete independent final read-only quality review with
-  **NO FINDINGS**, all nine hard gates PASS, no score cap, and valid
-  `98/100` (`20/20/15/14/10/10/5/4`).
-- [x] Stage exactly `39` task files and inspect the cached diff.
-- [x] Create dedicated implementation commit
-  `dbbf5f6a2b0bd58d8434fb4687f7bfad398ca4bc`.
-- [x] Verify clean ahead-14/behind-0 implementation post-commit invariants
-  and unchanged stash.
-- [x] Complete fresh next-task inventory and select B3C choice witness.
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Checker Task 258B3M2B2B3C Frozen-Contract Ledger
 
-- [x] Close B3B at
-  `dbbf5f6a2b0bd58d8434fb4687f7bfad398ca4bc`, clean
-  ahead-14/behind-0, with unchanged stash.
-- [x] Select choice before comprehension/`qua` as the dependency-minimal
-  prepared Task-255 sibling; classify missing contract/route/tests as
-  `design_drift`/`source_drift`/`test_gap`.
-- [x] Freeze final-LF `110`-byte/hash source, zero diagnostics, all `52`
-  nodes/root `51`, resolver owner/label provenance, and exact sites.
-- [x] Freeze Task-48 `2/1/0`, Task-252 `4/4/0`, empty Tasks 253/254,
-  Task-255 `1/0/0/1/0/0/2`, Task-256
-  `2/0/0/0/0/0/0/4/4`, Task-258 base `1/2/2/2/2`, and witness `1/0`.
-- [x] Freeze exact ownership/unowned partition, complete graph, zero
-  Task-255 child edge, and choice/witness subtree exclusions.
-- [x] Reuse B3A/B3B SetTerm APIs and exact seven future source consumers;
-  forbid both `source_set_term.rs` owners and every authority artifact.
-- [x] Freeze exact four checker plus five runner names and exhaustive
-  byte/LF, `52 x 4`+root, resolver, `32/55/39/72/62/21`,
-  zero-edge, family-order, replay/rollback/clone matrices.
-- [x] Preserve the parser/Task-255 fixture, expectation, active intent, and
-  trace credit; keep formula-statement trace `deferred`, `tests = []`.
-- [x] Remediate initial medium ownership/subtree `design_drift` and
-  exact-matrix `test_gap`; repeat specification review **NO FINDINGS**.
-- [x] Complete final documentation consistency/boundary review with
-  **NO FINDINGS**.
-- [x] Pass exact source/count/hash/scope/diff/trace-no-op verification,
-  crate tests, formatting, workspace Clippy/tests, and all five CLIs.
-- [x] Complete independent final read-only quality review with
-  **NO FINDINGS**, all nine hard gates PASS, no score cap, and valid
-  `98/100` (`20/20/15/14/10/10/5/4`).
-- [x] Stage only the synchronized documentation scope and inspect cached
-  diff.
-- [x] Create dedicated B3C documentation-only commit
-  `ea48ffc4fa586ac6d0813cd23a6b1d9b571087b2`.
-- [x] Verify clean ahead-15/behind-0 post-commit/stash invariants and
-  fresh-inventory B3C
-  implementation.
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Checker Task 258B3M2B2B3C Implementation Ledger
 
-- [x] Close prerequisite
-  `ea48ffc4fa586ac6d0813cd23a6b1d9b571087b2`, clean
-  ahead-15/behind-0, with stash fingerprint `f65cf4a...` unchanged.
-- [x] Confirm no lower-stage prerequisite and implement only the frozen
-  checker 3 + runner 4 source consumers.
-- [x] Preserve both `source_set_term.rs` owners, public APIs/errors/debug,
-  dependencies, authority artifacts, semantics, and every existing
-  active-corpus route/outcome while adding only the frozen private dormant
-  exact selector branch.
-- [x] Implement exact checker 4 + runner 5 tests for the 110-byte,
-  52-node/root-51 choice witness and `32/55/39/72/62/21` matrices.
-- [x] Remediate two medium `test_gap` findings with resolver replay, exact
-  upper stage prefixes, and generic-guard rejection.
-- [x] Remediate the B3A-hard-coded B3C `source_drift`/`test_gap` while
-  preserving both enumeration siblings.
-- [x] Complete repeated test-sufficiency and implementation reviews with
-  **NO FINDINGS**.
-- [x] Pass focused checker `4/4`, runner `5/5`, runner library `461`, and
-  formatting checks.
-- [x] Record exact final checker/runner counts, sizes, production/test-list
-  hashes, unchanged five CLI hashes, and deliberate trace no-op.
-- [x] Complete workspace Clippy/tests and final count/hash reruns.
-- [x] Complete final source/documentation consistency and independent
-  quality reviews.
-- [x] Stage exact 39 synchronized task files and inspect cached diff.
-- [x] Create implementation commit
-  `7988a50934656ff90b31e06b883225f86196103b`.
-- [x] Verify clean ahead-1/behind-0 post-commit state and unchanged stash;
-  report the external origin movement as `repo_metadata_conflict` only.
-- [x] Fresh-inventory and select B3D qua witness.
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Checker Task 258B3M2B2B3D Frozen-Contract Ledger
 
-- [x] Close B3C at
-  `7988a50934656ff90b31e06b883225f86196103b` with clean worktree,
-  ahead-1/behind-0 current origin state, and unchanged stash.
-- [x] Resolve comprehension-versus-`qua` task-decomposition
-  `design_drift`; select the strictly smaller qua profile.
-- [x] Freeze final-LF `109`-byte/hash, 24-token, 54-node/root-53 source,
-  exact sites, and local resolver owner/label provenance.
-- [x] Freeze Task-48 `2/1/0`, Task-252 `5/4/1`, empty Tasks 253/254,
-  Task-255 `1/0/0/1/0/1/2`, Task-256
-  `2/0/0/0/0/0/0/4/4`, Task-258 `1/2/2/2/2`, and witness `1/0`.
-- [x] Freeze exact ownership/unowned partition, complete graph,
-  `QuaBase -> Primary(2)`, and witness-to-SetTerm edge.
-- [x] Reuse existing SetTerm APIs and exact seven future source consumers;
-  forbid both `source_set_term.rs` owners and all authority artifacts.
-- [x] Freeze four checker/five runner test names and exhaustive
-  byte/LF, `54 x 4`+root, resolver, `32/70/44/72/62/21`,
-  family-order, replay/rollback/clone matrices.
-- [x] Preserve parser/Task-255 fixtures, expectations, sidecars, trace
-  status/count/tests, active behavior, and semantic deferrals.
-- [x] Complete repeated specification, test-sufficiency, implementation-
-  boundary, and source/documentation consistency reviews with no findings.
-- [x] Pass documentation-only count/hash/scope/no-op verification.
-- [x] Complete final read-only quality review with all hard gates and valid
-  score `>=90/100`.
-- [x] Stage only the synchronized 32-document scope and create prerequisite
-  commit `43af562c2cb84e72658cee059abbe7543ee73fe7`.
-- [x] Verify clean ahead-2/behind-0 post-commit state, unchanged stash
-  fingerprint `f65cf4a13752ec...`, and fresh-inventory B3D implementation.
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Checker Task 258B3M2B2B3D Implementation Ledger
 
@@ -5605,379 +934,56 @@ Completion evidence: [central Task-258B3M2B2B2C historical contract](../../task_
 
 ## Checker Task 258B3M2B2B3E Frozen-Contract Ledger
 
-- [x] Close B3D implementation in
-  `08a7d1e3d8c4b3b439325a16e1e139df4a1c18ed`, verify clean
-  ahead-3/behind-0 state, and preserve stash fingerprint
-  `f65cf4a13752ec...`.
-- [x] Fresh-inventory the sole remaining Task-255 set-family sibling and
-  select condition-free independent comprehension before B4.
-- [x] Freeze final-LF 139-byte/hash, 28-token, 60-node/root-59 source,
-  exact sites, and local theorem/label resolver provenance.
-- [x] Freeze Task-48 `2/1/0`, Task-252 `5/4/1`, empty 253/254,
-  Task-255 `1/0/1/1/0/1/2`, Task-256
-  `2/0/0/0/0/0/0/4/4`, Task-258 `1/2/2/2/2`, and
-  witness `1/0`.
-- [x] Freeze corrected ownership with Task-255 `{16,40,41,43}` and
-  generator segment `42` unowned.
-- [x] Freeze checker four/runner five tests,
-  `32/70/53/72/62/21` matrices, and all 120 five-family orders.
-- [x] Confirm no lower-stage prerequisite; preserve generator binding/capture,
-  sethood/result typing, proof semantics, B4/B5, and active coverage as
-  explicit deferrals.
-- [x] Limit future implementation to the exact seven private consumers and
-  forbid both Task-255 owners plus all authority/trace/public/semantic
-  surfaces.
-- [x] Complete repeated documentation reviews with **NO FINDINGS**.
-- [x] Pass documentation-only source/count/hash/scope/no-op verification.
-- [x] Pass independent final quality with all nine hard gates and valid
-  score `>=90/100`.
-- [x] Create the 32-document prerequisite commit
-  `8075000bf79be3fdea6b22f366fb6d9e59781fe7`.
-- [x] Verify clean post-commit/stash invariants and fresh-inventory B3E
-  implementation.
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Checker Task 258B3M2B2B3E Implementation Ledger
 
-- [x] Implement only the exact checker three plus runner four consumers;
-  preserve both `source_set_term.rs` owners.
-- [x] Add the exact four checker/five runner tests and
-  `32/70/53/72/62/21` matrices.
-- [x] Use coherent successful same-provenance Task-255 handoffs for all
-  post-auth zero/multiple/type-site/condition/nested/generator-reference
-  negatives, with repeated failure and clean replay.
-- [x] Complete independent test-sufficiency and implementation re-reviews
-  with **NO FINDINGS**.
-- [x] Pass focused checker `4/4`, runner `5/5`, checker library `410`, and
-  runner library `471`.
-- [x] Record final module counts, production/test-list hashes, unchanged
-  authority/corpus/trace/active/semantic boundaries, and public-API no-op.
-- [x] Complete source/documentation, bilingual, and boundary consistency
-  re-review with **NO FINDINGS** after three `design_drift` corrections.
-- [x] Complete independent final quality with **NO FINDINGS**, all nine hard
-  gates PASS, no cap, and valid `100/100`
-  (`20/20/15/15/10/10/5/5`).
-- [x] Pass focused/package tests, formatting, full workspace Clippy, root
-  workspace tests, five CLIs, count/hash/scope/forbidden/stash gates.
-- [x] Stage the exact implementation scope and inspect the cached diff.
-- [x] Create B3E implementation commit
-  `e4479691db3b0a8785bb16e94d386bd71a394274`.
-- [x] Verify clean ahead-5/behind-0 post-commit state, unchanged stash
-  fingerprint `f65cf4a13752ec...`, and fresh-inventory Task 258B4A.
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Checker Task 258B4A Documentation Prerequisite
 
-- [x] Decompose B4 into B4A explicit-universal, B4B connective/grouping,
-  and B4C restricted/existential/nested roots; retain B5 visibility.
-- [x] Audit canonical formula/theorem authority, parser/resolver fixtures,
-  and Tasks 252/256/257 public APIs with no lower-stage prerequisite.
-- [x] Classify active 79-byte fixture reuse as `test_expectation_drift` and
-  freeze the distinct private 80-byte/double-LF source and hash.
-- [x] Freeze 26 nodes/root 25, resolver contribution 0/origin `[2,0]`,
-  lower `2/2/0`, `1/0/0/0/0/0/2/2`, `1/0/1/1/1/0/2`,
-  `1/2`, `2/1/4`, and upper `1/1/1/0/1`.
-- [x] Freeze `Composite(0)`, zero input facts, optional lower fingerprints,
-  dedicated producer, paired typed installer, and final revalidation.
-- [x] Freeze exact eight future source consumers (three checker/five runner),
-  the sole crate-private Task-257B1 helper visibility seam, four checker/five
-  runner tests, near-miss matrices, cross-family edges, semantic deferrals,
-  and narrative-only audit/trace no-op.
-- [x] Complete repeated specification/documentation review with
-  **NO FINDINGS**.
-- [x] Pass documentation-only scope, forbidden-artifact, count/hash, CLI,
-  crate/workspace, and stash verification.
-- [x] Complete independent final quality with all nine hard gates and valid
-  score `>=90/100`.
-- [x] Stage only the synchronized documentation scope and inspect cached
-  diff.
-- [x] Create dedicated B4A documentation prerequisite commit
-  `9da1ac13e811c78359d8d64e740832b2a30dae24`.
-- [x] Verify clean ahead-6/behind-0 post-commit state, unchanged stash
-  fingerprint, and fresh-inventory B4A
-  implementation.
-
 Completion evidence: [central Task-258B4A historical contract](../../task_contracts/en/258B4A.md#completion-evidence).
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Checker Task 258B4B Documentation Prerequisite
 
-- [x] Select only the Task-257B2 connective/grouping root; retain B4C and B5.
-- [x] Classify active 166-byte upper-route reuse as
-  `test_expectation_drift` and freeze the private 167-byte/double-LF source,
-  hash, 124 Surface nodes/root 123, and resolver contribution 0/origin
-  `[2,0]`.
-- [x] Freeze lower `16/0/16`,
-  `8/0/0/0/0/0/0/16/16`, `8/6/1/1/1/7/9`, `8/0`, binding `2/1/4`,
-  rootless 124-node arena, and exact 42/1/81 ownership partition.
-- [x] Freeze upper `1/1/1/0/1`, both `Composite(0)` edges, zero input facts,
-  statement spelling/context, resolver provenance, and subtree exclusions.
-- [x] Reuse the B4A public API/debug grammar, freeze only seven future
-  consumers and four checker/five runner tests, and forbid every lower
-  owner, source-formula-composition helper, corpus, sidecar, and trace edit.
-- [x] Freeze cross-family/profile isolation, error precedence, semantic
-  deferrals, baseline/projection, narrative-only audit impact, and exit
-  criteria.
-- [x] Complete repeated specification/documentation review with
-  **NO FINDINGS**.
-- [x] Pass documentation-only scope, forbidden-artifact, count/hash, CLI,
-  crate/workspace, and stash verification.
-- [x] Complete independent final quality with all nine hard gates and valid
-  score `>=90/100`.
-- [x] Stage only synchronized Task-258B4B documentation and inspect cached
-  diff.
-- [x] Create one dedicated B4B documentation prerequisite commit
-  `b8a7b8257a682f7c88de943ceaa35b67c0585bc4`.
-- [x] Verify clean ahead-8/behind-0 post-commit state, unchanged stash
-  fingerprint, and fresh-inventory B4B
-  implementation.
-
 Completion evidence: [central Task-258B4B historical contract](../../task_contracts/en/258B4B.md#completion-evidence).
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Checker Task 258B4C Documentation Prerequisite
 
-- [x] Select only Task-257B3 restricted-universal, existential, nested, and
-  implicit-reserve roots; retain B5.
-- [x] Classify active 138-byte upper-route reuse as
-  `test_expectation_drift` and freeze the private 139-byte/double-LF source
-  with hash
-  `36e5a68a92451590644951838a9af8926212bd78f88d1f90563f12b650b161c1`.
-- [x] Freeze Surface 66/root 65, theorem 62 at `19..137`, label 6 at
-  `27..65`, outer composite 60 at `67..136`, raw resolver `1/0/1/1/0`
-  with origin `[2,1]`/contribution 0 anchored `0..18`, and enriched
-  `1/1/1/1/0`.
-- [x] Freeze lower binding `4/4/0`, primary `6/6/0`, atomic
-  `3/0/0/0/0/0/0/6/6`, composite `3/0/1/3/3/2/6`, composition
-  `3/6`, exact 24 lower-owned sites, one upper theorem site, and 41 unowned
-  sites.
-- [x] Freeze upper `1/1/1/0/1`, context visibility `[0]`, zero input
-  facts, both `Composite(0)` links, and telemetry
-  `2/2/[2,2,4,4,4,4]`.
-- [x] Classify the one-LF-only Task-257B3 selector as bounded
-  `source_drift` and require a separate lower-stage prerequisite before the
-  B4C upper implementation.
-- [x] Bound that prerequisite to runner `type_elaboration/source_formula.rs`
-  plus `runner/tests/type_elaboration/source_formula_composition.rs`: admit
-  exact 138/139-byte routes, reject zero/three LF, and keep production
-  `source_formula_composition.rs` unchanged.
-- [x] Freeze the later upper scope to the same seven consumers as B4B,
-  exact B1/B4A, B2/B4B, B3/B4C pairing, unchanged public API/debug/error,
-  authority/trace no-op, subtree exclusion, semantic deferrals, audit
-  narrative-only effect, tests, baseline impact, and exit criteria.
-- [x] Complete repeated specification/documentation review with
-  **NO FINDINGS**.
-- [x] Pass documentation-only scope, forbidden-artifact, count/hash, CLI,
-  crate/workspace, diff, and stash verification.
-- [x] Complete independent final quality with **NO FINDINGS**, all nine hard
-  gates PASS, no cap, and valid `100/100`
-  (`20/20/15/15/10/10/5/5`).
-- [x] Stage only synchronized Task-258B4C documentation, inspect the cached
-  diff, and create dedicated prerequisite commit
-  `3c723316ae632a867d29e8f4fc36348be30df202`.
-- [x] Verify clean post-commit/stash invariants and fresh-inventory the
-  mandatory lower-stage prerequisite.
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Checker Task 258B4C Lower-Stage Prerequisite Ledger
 
-- [x] Reinventory authority, exact 138/139-byte routes, selector ownership,
-  tests, counts, hashes, and the clean documentation commit.
-- [x] Review the prerequisite specification to **NO FINDINGS**.
-- [x] Change only the frozen runner selector and its composition test owner;
-  do not change production `source_formula_composition.rs`.
-- [x] Review test sufficiency, implementation, and source/document
-  consistency separately to **NO FINDINGS**.
-- [x] Pass focused/package/workspace, formatting, Clippy, CLI, count/hash,
-  scope, forbidden-artifact, audit-no-op, and stash gates.
-- [x] Complete independent final quality at `>=90/100`, stage only the two
-  files, inspect cached diff, and create dedicated prerequisite commit
-  `42356f38ed0e679d7b878caf0e647c6aa8148d82`.
-- [x] Verify clean post-commit/stash invariants and fresh-inventory B4C
-  upper implementation.
-
 Completion evidence: [central Task-258B4C historical contract](../../task_contracts/en/258B4C.md#completion-evidence).
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Checker Task 258B5A Frozen-Contract Documentation Prerequisite
 
-- [x] Classify stale B4C ledgers and unsafe B5 aggregation as
-  `design_drift`; classify absent imported/confinement active routes as
-  bounded `test_gap`; classify the absent B5A implementation as bounded
-  `source_drift` owned by the immediate next task.
-- [x] Freeze the exact 185-byte source/hash, 93-node/root-92 frontend,
-  resolver, Binding/252/256/258 base/reference rows, and 20/73 ownership.
-- [x] Freeze proof label scope `[0]`, descendant citation scope `[0,1]`,
-  local-only provenance, exact seven consumers, four checker tests, and five
-  runner tests.
-- [x] Split later B5B imported-public and B5C negative-confinement work;
-  preserve all semantic, public API, corpus, expectation, sidecar, and trace
-  boundaries.
-- [x] Complete independent specification/documentation, test-sufficiency,
-  source/documentation boundary, and bilingual reviews with **NO FINDINGS**.
-- [x] Reproduce checker/runner/workspace tests, fmt, Clippy, five CLIs,
-  exact 32-document scope, all counts/hashes, authority no-ops, and
-  repository/stash invariants.
-- [x] Complete repeated independent final quality with **NO FINDINGS**, all
-  nine hard gates PASS, no cap, and valid `100/100`
-  (`20/20/15/15/10/10/5/5`).
-- [x] Stage only synchronized B5A documentation, create prerequisite commit
-  `59021f764f146d669f84877042f0512882c9c5ff`, verify post-commit
-  invariants, and fresh-inventory implementation.
-
 Completion evidence: [central Task-258B5A historical contract](../../task_contracts/en/258B5A.md#completion-evidence).
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Checker Task 258B5B Frozen-Contract Documentation Prerequisite
 
-- [x] Correct stale B5A post-commit ledger state and classify missing frozen
-  B5B/API ownership as `design_drift`, missing opt-in imported-label
-  population as lower-owned `source_drift`, and missing active B5B corpus as
-  bounded `test_gap`.
-- [x] Freeze the exact 146-byte source/hash, 57-node/root-56 frontend and
-  resolver identities, raw `1/0/1/1/0`, opt-in `8/1/1/3/1`, lower
-  profiles, upper `1/2/2/2/2 + 0/1`, and `8/49` ownership.
-- [x] Freeze the separate two-file lower prerequisite, one opt-in
-  public/exported theorem label, exact two lower tests, and unchanged
-  default augmentation route.
-- [x] Freeze `SourceStatementCitationTarget::{Local, Imported}`,
-  `SimpleImported`, zero local-label rows, imported projection/debug branch,
-  exact seven upper consumers, four checker tests, and five runner tests.
-- [x] Preserve B5C and semantic deferrals plus all specification, fixture,
-  expectation, sidecar, trace status/count/backlink/credit, active-outcome,
-  and public runner-schema boundaries.
-- [x] Complete independent specification/documentation, test-contract,
-  source/documentation boundary, and bilingual reviews with **NO FINDINGS**.
-- [x] Reproduce focused/crate/workspace tests, formatting, Clippy, five
-  CLIs, exact count/hash/scope, authority no-op, repository-state, and stash
-  gates.
-- [x] Complete independent final quality with **NO FINDINGS**, all nine hard
-  gates PASS, no cap, and valid `100/100`
-  (`20/20/15/15/10/10/5/5`).
-- [x] Stage only synchronized B5B documentation and create prerequisite
-  commit `141dc44a757555e8d4837756515e1577f672348b`; verify post-commit
-  invariants and fresh-inventory the mandatory lower-stage prerequisite.
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Checker Task 258B5B Lower-Stage Prerequisite
 
-- [x] After the documentation commit, change only
-  `crates/mizar-test/src/runner/import_fixtures.rs` and the existing
-  statement test leaf.
-- [x] Add the crate-private opt-in `Ref` label augmentation without changing
-  normal augmentation or its existing callers; pass the exact two frozen
-  lower tests and all protocol gates in separate commit
-  `46dd9db56ced2fcc57799420de9d5fed06f284f5`.
-
 Completion evidence: [central Task-258B5B historical contract](../../task_contracts/en/258B5B.md#completion-evidence).
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Checker Task 258B5C Frozen-Contract Documentation Prerequisite
 
-- [x] Classify the absent production proof-label source walk as medium
-  `source_drift` and potential `boundary_violation`, the placeholder/stale
-  status as `design_drift`, absent active fixtures as `test_gap`, and the
-  unspecified public resolver diagnostic code as low deferred `spec_gap`.
-- [x] Freeze the exact 173/197-byte sources and hashes, normal
-  61/root-60 and 71/root-70 Surface identities, label/citation ranges,
-  proof scopes `[0]`, `[0,0]`, `[0,1]`, and source-statement ordinals.
-- [x] Record the known-absent structural Surface-to-resolved provider as an
-  authorized resolver prerequisite, not a conditional after collection.
-- [x] Freeze R-032A `SurfaceResolvedArena` lowering/accessors, same-index
-  structural invariants, fail-closed validation/overflow errors, dedicated
-  `resolved_ast.rs` / `resolved_ast/tests.rs` ownership, the sole
-  `tests/lint_policy.rs` R-026 `SurfaceResolvedArenaError` owning-spec entry,
-  and tests.
-- [x] Classify the preflight two-Rust-file omission as High `design_drift`
-  with no semantic `spec_gap`; require a separate synchronized docs-only
-  correction, fresh inventory, then the exact three-Rust-file R-032A
-  implementation.
-- [x] Freeze R-032B exact `Result`-returning collector API, narrow source
-  inclusion/exclusion, generic theorem-root scopes, completion visibility
-  ordinal 3, exact origin paths, exact `labels.rs` / `labels/tests.rs`
-  ownership, the sole `tests/lint_policy.rs` R-026
-  `ProofLabelSourceCollectionError` / `labels.md` owning-spec decision, and
-  positive/negative/provenance/cross-theorem tests.
-- [x] Freeze same-`'a` ast/resolved storage, validation-only module, owned
-  namespace/contribution, `Self` return, `SurfaceNodeId` state/key/overflow
-  errors, module-global one-based ordinals, `ConclusionStatement` chain, and
-  canonical `proof-step-v1` identity.
-- [x] Freeze the effective seven-task dependency order: S-026 documentation,
-  S-026 implementation, R-032A lint-policy documentation correction, R-032A
-  implementation, R-032B lint-policy documentation correction, R-032B
-  implementation, then active declaration-symbol fixtures/runner/trace.
-- [x] Freeze the two future fixture/sidecar contracts, detail key
-  `declaration_symbol.label.proof_scope_confinement`, empty public
-  diagnostic codes, two trace ids, and future count impact.
-- [x] Freeze source-byte-plus-normal-AST runner selection, exact shared
-  resolver/contribution-0 authentication, separate private input/confinement
-  details, expectation-copy guards, and measured 48-file docs scope.
-- [x] Exclude checker profile/DTO/reference/citation rows, binding contexts,
-  keyed semantic label-resolution results, typed/final installation, every
-  cross-family edge, and all semantic output.
-- [x] Complete independent specification, test-contract, boundary,
-  source/documentation, and bilingual reviews with **NO FINDINGS**.
-- [x] Reproduce the unchanged focused/crate/workspace, formatting, Clippy,
-  five-CLI, count/hash, forbidden-artifact, repository-state, and stash
-  gates.
-- [x] Complete independent final quality with all nine hard gates PASS and
-  a valid score of at least `90/100`.
-- [x] Stage only synchronized B5C design documentation, create one
-  prerequisite commit, verify post-commit invariants, and fresh-inventory
-  the `mizar-resolve` R-032A prerequisite.
-- [x] Freeze R-032B's exact
-  `Root -> CompilationUnit -> ItemList -> direct TheoremItem -> direct
-  ProofBlock` upper chain, exact-one normal Root/CompilationUnit children,
-  direct-normal theorem scanning, no ordinal/no descent for excluded forms,
-  and positive-edge plus missing/additional/wrong/direct-relocation/
-  `VisibleItem`/mixed-list tests.
-- [x] Freeze runner authentication of env/module, derived namespace, exact
-  one id-0 LocalSource record/source id, and every projection provenance
-  field, with the complete independent input-only mutation matrix.
-- [x] Preserve source-bytes-plus-normal-AST selection, expectation
-  non-selection, empty public codes, and the exact 48-file scope.
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## B5C R-032A Preflight Overlay
 
-- [x] Complete the separate mizar-syntax S-026 frozen-documentation commit.
-- [x] Complete the separate S-026 implementation with its exact dense accessor
-  and passing review/verification gates.
-- [x] After its dedicated commit, fresh-inventory R-032A and identify the
-  mandatory R-026 enum-decision owner omission as High `design_drift`.
-- [x] Complete the separate R-032A lint-policy docs correction through
-  findings-free reviews, full verification, and valid `100/100` final quality.
-- [x] Complete its post-commit invariant check and fresh inventory before
-  R-032A implementation.
-- [x] Complete the exact resolver R-032A implementation without changing any
-  checker consumer or B5C artifact; R-032B is the next lower prerequisite.
-- [x] Preserve all frozen checker consumers, B5C fixtures/expectations/trace,
-  public diagnostics, and semantic deferrals while the lower prerequisite
-  lands.
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## B5C R-032B Lint-Policy Preflight Overlay
 
-- [x] After the R-032A dedicated commit, fresh-inventory R-032B and identify
-  the mandatory R-026 enum-decision owner omission as High `design_drift`,
-  with no semantic `spec_gap` or `test_gap`.
-- [x] Freeze the current docs-only correction to exactly 31 design files:
-  eight paired resolver families, four paired checker families, three paired
-  `mizar-test` families, and the global design TODO.
-- [x] Complete the separate R-032B lint-policy documentation correction
-  through findings-free reviews, full verification, a dedicated commit, and
-  post-commit fresh inventory before R-032B implementation.
-- [x] Implement R-032B only after that correction in exactly
-  `crates/mizar-resolve/src/labels.rs`,
-  `crates/mizar-resolve/src/labels/tests.rs`, and
-  `crates/mizar-resolve/tests/lint_policy.rs`, where the last file receives
-  only the R-026 `ProofLabelSourceCollectionError` / `labels.md` owning-spec
-  decision.
-- [x] Fix the initial and fresh test gaps plus every implementation finding;
-  complete final fresh test-sufficiency, implementation, and
-  source/documentation rereviews with **NO FINDINGS**; and pass all
-  focused/full/count/hash/scope verification gates. No checker consumer or
-  B5C artifact is added by this lower task.
-- [x] Complete independent final quality with **NO FINDINGS**, all nine hard
-  gates PASS, no score cap, and valid `100/100`
-  (`20/20/15/15/10/10/5/5`).
-- [x] Complete task-only restaging/cached-diff review and the dedicated
-  R-032B commit
-  `b3a7e79a6b60db2974e911c69bb56ff5f4609064`, then verify post-commit
-  invariant/fresh inventory.
-- [x] Preserve all frozen checker consumers, B5C
-  fixtures/expectations/trace, public diagnostic codes, semantics, and
-  `spec_coverage_audit.md`; no mapping, owner, deferral, or coverage-credit
-  change occurs.
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Checker Task 258B5C Active Implementation
 
@@ -5997,762 +1003,132 @@ Completion evidence: [central Task-258B5B historical contract](../../task_contra
 
 ## Checker Task 259 Frozen-Contract Documentation Prerequisite
 
-- [x] Close active B5C at
-  `33ac57e96f048dc40559565f54369cac854409a7`, verify clean post-commit
-  invariants and protected-stash identity, and select Task 259 by fresh
-  canonical/API inventory.
-- [x] Freeze the exact 165-byte/final-LF pass source and SHA-256, 71-row
-  frontend identity, three-shell/two-projection resolver profile, exact
-  ranges, and source-order/same-block predicate/property association.
-- [x] Freeze five syntax-free dense tables with exact `1/2/1/1/1`
-  cardinality, Task-248/249/252/256 fingerprints, absent
-  Tasks-253--255/257/258 families, and immutable typed/final installation.
-- [x] Freeze exactly one pending
-  `PredicatePropertyCorrectness` obligation with empty assumptions and
-  opaque deterministic goal/provenance; preserve the guard separately and
-  defer its FOL property-VC composition.
-- [x] Preserve the property proof subtree for Task 272 without consuming it
-  in Task 259; do not move it to Task 258 or treat the computation
-  justification as accepted/discharged.
-- [x] Classify the current Task-248 exact-profile rejection as bounded
-  `source_drift`/dependency `design_drift`; prohibit private `BindingEnv`
-  reconstruction and require separate Task-248 profile-extension
-  documentation and implementation commits before Task 259 implementation.
-- [x] Freeze the future pass sidecar/trace intent and test/corruption/
-  installation/determinism matrices while preserving the mixed
-  predicate-plus-functor Task-260 gap unchanged.
-- [x] Complete repeated findings-free documentation, test-contract,
-  implementation-boundary, and source/documentation reviews; full
-  docs/count/hash verification; and independent final quality with all nine
-  hard gates PASS and valid `100/100`.
-- [x] Complete the task-only commit
-  `d5294b8f4be46a420bbdfa2fc4062384be983ce0` and post-commit fresh
-  inventory.
-- [x] Fresh-inventory the separate Task-248 two-parameter profile-extension
-  documentation prerequisite before implementation.
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Checker Task 248 Two-Parameter Profile-Extension Documentation Prerequisite
 
-- [x] Preserve implemented Profile A exactly, including its one shadow link,
-  recovered-empty branch, active route, public errors, and debug grammar.
-- [x] Freeze normal-only Profile B: one top-level definition shell, no
-  reserve, ordered direct `x`/`y` parameters and bare `set` ranges, scope
-  `[0]`, dense bindings `0/1`, and no shadow.
-- [x] Freeze syntax-free checker validation, real shell provenance, the
-  private shared-`TypedArena` extractor, exact `1/2/2/2/2/2/0` tables, and
-  total guard/predicate/property/justification subtree exclusion.
-- [x] Classify `design_drift`, bounded `source_drift`, and `test_gap`;
-  prohibit Task-259-private binding reconstruction and preserve every
-  semantic deferral.
-- [x] Freeze exactly five later Rust files and four runner tests, projected
-  runner `504 -> 508`, unchanged corpus/CLI/trace metadata, and fresh-hash
-  requirements.
-- [x] Complete findings-free documentation/test-boundary/source-consistency
-  reviews and full docs-only focused/crate/workspace/count/hash verification.
-- [x] Complete independent final quality with **NO FINDINGS**, all nine hard
-  gates PASS, no score cap, and valid `100/100`
-  (`20/20/15/15/10/10/5/5`).
-- [x] Complete exact-scope staging, one dedicated documentation commit
-  `f9b47375acc18acebf56a69f5d8a7edec539c2be`, and
-  clean/stash-invariant post-commit inventory.
-- [x] Fresh-inventory and implement the separate Task-248 extension in one
-  logical task/commit
-  `ca54135f36c9fecfc02c2b8120ec4e63e8c6ca36`, then return to Task 259
-  implementation.
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Checker Task 259 Frozen-Contract Correction Prerequisite
 
-- [x] Reclassify the pre-implementation findings as nonblocking
-  `design_drift`: missing public-enum/lint consumer policy, implicit immutable
-  output/debug ABI, and stale Task-248 closure state.
-- [x] Freeze the exact five output row fields/getters, five immutable table
-  APIs, four complete dependency fingerprints, handoff/producer surface, and
-  complete line-family debug grammar in synchronized EN/JA.
-- [x] Freeze `lib.rs`, typed/final, obligation serializers, lint policy,
-  runner facades/new route/new test leaf, metadata count assertions, one
-  fixture/sidecar/trace row, and derived audit records as exact future
-  consumers.
-- [x] Record Task-248 commits `f9b47375` / `ca54135f`, Profile-B readiness,
-  runner `508`, current production/test-list hashes, and Task-259
-  implementation as the next dependency-ready task.
-- [x] Repeat specification/documentation review to no findings and complete
-  docs-only verification without changing production source, fixtures,
-  sidecars, expectations, trace status/count, or Cargo metadata.
-- [x] Stage only the correction documents, create dedicated commit
-  `e202dd70bf4e97ddb53c1275b49e667b6a77f7a0`, and verify its clean
-  post-commit state, `main` one commit ahead of `origin/main`, and unchanged
-  protected stash `f65cf4a13752ec380710814a9ac6392ccb9d75d4` before
-  fresh-inventorying Task-259 implementation.
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Checker Task 259 Active Implementation
 
-- [x] Implement the exact public predicate-definition module, five dense
-  `1/2/1/1/1` tables, baseline-preserving projection, and one pending
-  `PredicatePropertyCorrectness` obligation.
-- [x] Install the handoff and complete obligation table atomically in typed and
-  final owners, with no second final input/getter and no fact, proof, VC,
-  acceptance, or Task-260 ownership.
-- [x] Activate only the exact 165-byte pass artifact, same-stem sidecar, and
-  one covered trace backlink through the private
-  Task-248 -> 249 -> 252 -> 256 -> 259 runner route.
-- [x] Keep production checker source syntax-free by placing the five named
-  unit tests in private non-integration test support, without weakening
-  lint policy or adding a public resolver test API.
-- [x] Classify and correct only two independently discovered source-statement
-  active-count assertions as bounded `test_expectation_drift` plus
-  `design_drift`; preserve both empty-selection isolation assertions.
-- [x] Reproduce focused checker `5/5`, focused runner `4/4`, checker `435`,
-  runner `512`, resolver `144`, syntax `59`, metadata `137`, formatting,
-  checker/runner Clippy, `422/390`, `229/193`, `101/7/199/1`, type `254/242`,
-  and warnings/errors `23/0`.
-- [x] Complete the final independent test-sufficiency, implementation, and
-  source/documentation-consistency reviews with no findings; pass all nine
-  hard gates with an uncapped final quality score of `100/100`.
-- [x] Stage only Task-259 files, create dedicated implementation commit
-  `b61be7e567b92d31b3544b86e5c7a68537625743`, verify clean repository/
-  protected-stash invariants, and fresh-inventory Task 260 as next.
-
 Completion evidence: [central Task-260 historical contract](../../task_contracts/en/260.md#completion-evidence).
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Checker Task 249R Definition-Return Documentation Prerequisite
 
-- [x] Classify the impossible Task-260 `4/4/0` binding-linked profile as
-  nonblocking `design_drift` plus lower `source_drift`, and forbid fabricated
-  bindings as a `boundary_violation`.
-- [x] Freeze Chapter 10 §§10.1/10.5 authority, Task 260 as sole consumer,
-  exact additive ABI/debug grammar, `2/4/0/2` oracle, typed/final ownership,
-  four tests, exclusions, semantic deferrals, audit impact, and exit criteria.
-- [x] Repeat review-only specification audit to **NO FINDINGS** and complete
-  docs-only verification with executable/count/hash invariants and all nine
-  hard gates.
-- [x] Commit only the synchronized Task-249R documents as
-  `b292b8002f9656c4ab2a6c3b606743b1bda7d551` and fresh-inventory the
-  separate implementation.
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Checker Task 249R Active Implementation
 
-- [x] Implement only the independent definition-return table and producer in
-  `source_type.rs`, preserving Task-249 application cardinality and all legacy
-  empty-table bytes.
-- [x] Add exactly the four frozen checker tests and close the initial review
-  gaps within that matrix; repeat test-sufficiency and full implementation
-  review to **NO FINDINGS**.
-- [x] Reproduce checker `439`, runner/resolver/syntax `512/144/59`, metadata
-  `137`, all five unchanged CLI counts/hashes, checker production
-  `24/148143`, and the fresh checker test-list/content hashes.
-- [x] Pass focused/module/crate tests, lint policy, formatting, full
-  warnings-denied Clippy, unconstrained full workspace tests, and diff checks.
-- [x] Correct one Medium and one Low wording-only `design_drift` and repeat
-  source/documentation consistency review to **NO FINDINGS**.
-- [x] Complete final read-only quality with **NO FINDINGS**, all nine hard
-  gates PASS, no score cap, and `100/100`
-  (`20/20/15/15/10/10/5/5`).
-- [x] Complete exact staging, dedicated implementation commit
-  `c233bfdff8317a1f4ffdd5750e62a29ee6e69b2f`, clean/stash post-commit
-  inventory, and automatic return to Task 260.
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Checker Task 260 Active Implementation
 
-- [x] Implement the syntax-free five-table `2/2/1/2/2` producer, exact lower
-  fingerprints, resolver provenance, two pending functor obligations, and
-  one-shot Typed/final ownership without changing Task-259 behavior.
-- [x] Implement the private exact-source runner, one new pass sidecar, one
-  reciprocal covered trace row, and all six `199 -> 200` active-count
-  consumers without rebaselining an existing artifact.
-- [x] Keep optional application/structure/set targets validation-only and
-  semantically deferred; publish no goal composition, proof/discharge,
-  acceptance, facts/axioms, overload semantics, IR, or VC.
-- [x] Expand the frozen five checker/four runner tests until repeated
-  test-sufficiency review reports **NO FINDINGS**; complete full implementation
-  review with **NO FINDINGS**.
-- [x] Reproduce focused `5/5` and `4/4`, libraries `444/516/144/59`, checker
-  lint `15/15`, metadata `137`, CLIs `423/391`, `230/193`,
-  `101/7/200/1`, type `255/243`, and warnings/errors `23/0`.
-- [x] Measure checker `25/150547` and runner `32/64711` production plus the
-  `444/516/144/59` raw/normalized test-list hashes and all five CLI hashes.
-- [x] Finish source/documentation consistency with **NO FINDINGS** and pass
-  full workspace verification, including fmt, warnings-deny Clippy, tests,
-  metadata, all five CLIs, count/hash reproduction, and whitespace checks.
-- [x] Pass all nine final hard gates with **NO FINDINGS**, quality `100/100`,
-  and no score cap.
-- [x] Complete exact staging, commit
-  `c83e424a485a24dd0f00ddea687903a235d85850`, clean/stash post-commit
-  invariants, and fresh-inventory Task 261 selection.
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Checker Task 261 Frozen-Contract Documentation Prerequisite
 
-- [x] Select Task 261 from clean post-Task-260 inventory; classify the origin
-  reference difference as report-only `repo_metadata_conflict`, the missing
-  contract as `design_drift`, implementation as `source_drift`, and consumer
-  as `test_gap`.
-- [x] Freeze Chapter 6/16 authority and the exact 116-byte/final-LF source,
-  SHA-256 `ffd4954aad628d7946aaf7afb1b472a6bdfca7bce5ba0cf09f5b284c9dda07bf`,
-  45-row/root-44 Surface oracle, and exact resolver profile.
-- [x] Freeze lower Tasks 248/249/252/256 at
-  `1/2/2/2/2/2/0`, `2/2/0`, `2/2/0`, and
-  `1/0/0/0/0/0/0/2/2`; require no lower-stage edit and keep every other
-  lower family absent.
-- [x] Freeze syntax-free definition/parameter/subject/definiens tables at
-  `1/2/1/1`, resolver provenance, all fingerprints, unchanged obligations,
-  one-shot Typed/final ownership, Task-259/260 isolation, debug, and failure
-  ordering.
-- [x] Freeze the spec-derived pass pair, sole future covered trace backlink,
-  five checker/four runner tests, projected count deltas, write scope, audit
-  impact, semantic deferrals, and exit criteria.
-- [x] Preserve `doc/spec`, all existing `.miz`/expectations/sidecars, trace
-  count/status, production, tests, CLIs, and recorded hashes in the docs
-  prerequisite.
-- [x] Repeat specification review to **NO FINDINGS**, pass all docs gates,
-  commit prerequisite `209c32fc2ec547ceedd32f1052345ae2fc5b0451`, verify
-  post-commit invariants, and return to Task 261 implementation.
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Checker Task 261 Implementation
 
-- [x] Add the exact four-table producer, one-shot Typed/final ownership,
-  strict obligation preservation, and Task-259/260 isolation.
-- [x] Add the sole pass pair/covered trace row and private exact runner with
-  shell-41 and valid-but-stale context-site authentication.
-- [x] Close checker `5/5`, runner `4/4`, test-sufficiency, and full
-  implementation re-reviews with **NO FINDINGS**.
-- [x] Reproduce `449/520/144/59`, metadata `137`, `424/392`, `231/193`,
-  `101/7/201/1`, type `256/244`, warnings/errors `23/0`, and all hashes.
-- [x] Complete source/docs consistency with **NO FINDINGS** and pass the full
-  shared verification matrix, including exact count/hash reproduction.
-- [x] Pass all nine final hard gates with **NO FINDINGS**, no score cap, and
-  quality `100/100`.
-- [x] Complete exact staging/commit/post-commit as
-  `b1782bfc06388410229f07ee193a5febe0bf525e` and fresh Task 262 selection.
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Checker Task 262 Frozen-Contract Documentation Prerequisite
 
-- [x] Fresh-inventory Chapter 7 and Chapter 16 authority, mode parser/resolver
-  fixtures, mixed gap/sidecar/trace, public Tasks 248--261, all baselines,
-  clean HEAD/origin delta, and protected stash.
-- [x] Classify the missing contract as `design_drift`, producer as
-  `source_drift`, consumer as `test_gap`, and origin difference as report-only
-  `repo_metadata_conflict`; find no blocking `spec_gap`, then classify the
-  binding-linked Task-249 RHS mismatch as mandatory lower `source_drift` and
-  fabricated third binding as `boundary_violation`.
-- [x] Freeze exact 141-byte source/hash, all 54 AST rows, two-shell resolver
-  provenance, parameter/context/application/RHS association, and lower
-  post-Task-249M profiles Task 248 `1/2/2/2/2/2/0`, Task-249 base `2/3/0`,
-  and one standalone mode-RHS row.
-- [x] Freeze six dense tables at `1/2/1/1/1/1`, two fingerprints, unresolved
-  RHS-inhabitation request, one pending existing-kind `Sethood` row, exact
-  Typed/final ownership, Tasks-259--261 isolation, debug, and failure ordering.
-- [x] Freeze absence of assume/equals/means/return/formula payloads, all
-  ParamGuard/proof/discharge/acceptance/fact/IR/VC deferrals, subtree
-  exclusions, tests, projected counts, audit impact, write scope, and exit
-  criteria.
-- [x] Preserve production, all existing fixtures/sidecars/expectations, trace
-  count/status, CLIs, lists, manifests, and hashes in this docs prerequisite.
-- [x] Repeat specification review to **NO FINDINGS**, pass all docs hard gates
-  at uncapped `100/100`, and commit only this upper frozen-contract
-  prerequisite as `8c3fa20acef42477d38a66ddddec42dacced0863`.
-- [x] Fresh-inventory and freeze the exact Task-249M standalone mode-RHS ABI,
-  `2/3/0/0/1` profile, validation/debug contract, tests, exclusions, and scope.
-- [x] Complete Task-249M findings-free reviews, unchanged docs gates, exact
-  staging, dedicated documentation commit, and clean post-commit inventory.
-- [x] Implement the frozen Task-249M API and four tests; complete its reviews,
-  verification, exact staging, and separate commit before Task 262.
-- [x] Return to and implement only Task 262: exact six-table producer, pending
-  `Sethood` suffix, Typed/final transaction, private runner, pass pair, trace,
-  audits, focused tests, and projected counts are complete.
-- [x] Complete repeated final reviews with **NO FINDINGS**, all nine hard gates
-  at uncapped quality `100/100`, and exact Task-262 commit readiness; then
-  fresh-inventory Task 263+ without semantic spillover.
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Checker Task 263 Preflight Lower Prerequisite
 
-- [x] Select the Chapter-5 structure/inheritance/constructor-definition intake
-  after fresh Task-262 post-commit inventory.
-- [x] Detect and classify false cross-structure selector duplicates as lower
-  resolver `source_drift`, with paired `design_drift` and `test_gap`.
-- [x] Freeze separate resolver Task 263R; change no checker source, corpus,
-  trace status/count, or structure semantics in its docs prerequisite.
-- [x] Complete Task-263R documentation as separate commit
-  `34692ee222d5465750f061da82fe878566a1557c` with fresh inventory before the
-  lower implementation.
-- [x] Implement only the frozen resolver two-file correction and complete its
-  test-sufficiency and implementation reviews with **NO FINDINGS**.
-- [x] Complete its consistency/full/final gates with **NO FINDINGS**, all nine
-  hard gates PASS, no score cap, and valid `100/100`.
-- [x] Complete the dedicated implementation commit and clean fresh inventory;
-  then return to freeze Task 263.
-  Commit `997457dd3189030aa3b137b568ce82fed456fe1e`; fresh inventory confirmed
-  `origin/main...HEAD = 0/7` and protected-stash invariance.
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Checker Task 249S Standalone Structure-Member Type Prerequisite
 
-- [x] Fresh-inventory Task 263 after Task-263R and classify the missing
-  member-type owner as `source_drift`, the contract as `design_drift`, tests as
-  `test_gap`, and fabricated/reused owners as `boundary_violation`.
-- [x] Freeze Chapter-5 authority, the exact 320-byte source/hash, four
-  member/type/head rows, and standalone `0/4/0/0/0/4` profile.
-- [x] Freeze the additive public ABI, five errors and precedence, debug bytes,
-  Typed/final ownership, sibling isolation, tests, counts, exclusions, audit
-  impact, and two-commit exit in synchronized EN/JA documents.
-- [x] Repeat specification review to **NO FINDINGS** and pass docs-only
-  formatting, Clippy, full workspace test, five-CLI, count/hash, scope, and
-  whitespace verification.
-- [x] Complete final read-only quality with **NO FINDINGS**, all nine hard
-  gates PASS, no score cap, and valid `100/100`.
-- [x] Stage only synchronized documents, commit, and verify clean post-commit
-  inventory. Documentation commit
-  `274917ab21cf436411d7b7d308bd676f4b444a67`; clean inventory reported
-  `origin/main...HEAD = 0/8` and protected-stash invariance.
-- [x] Fresh-inventory and implement the exact `0/4/0/0/0/4` handoff and four
-  checker tests; close
-  test-sufficiency and implementation reviews with **NO FINDINGS**.
-- [x] Complete source/documentation and final quality gates, exact staging,
-  dedicated implementation commit, and clean fresh inventory; then resume
-  Task 263. Implementation commit
-  `93d64c33eb4234793f7e6f9d95516a366464dd9b`; all nine gates passed at
-  uncapped `100/100`, fresh inventory reported `origin/main...HEAD = 0/9`,
-  and the protected stash remained invariant.
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Checker Task 263 Structure-Definition Intake
 
-- [x] Fresh-inventory the canonical plan/TODO/audits, Chapter 5 and bounded
-  Chapters 13/16/19 authority, exact parser/resolver source, active mixed gap,
-  Task-249S lower handoff, public APIs, counts, CLIs, and hashes.
-- [x] Confirm Task-263R and Task-249S are committed and the exact source is
-  dependency-ready with `75/10/8/8/0` frontend/resolver and
-  `0/4/0/0/0/4` source-type profiles.
-- [x] Freeze exact source/hash, parameter/context absence, `2/4/1/2/0` rows,
-  constructor/selector ownership, root/path/view coverage, resolver
-  provenance, lower fingerprint, and identical-type zero-coherence result.
-- [x] Freeze the unchanged arbitrary obligation baseline, no new kind or
-  goal/guard, Typed/final one-shot ownership, Task-259--262 isolation, private
-  runner, subtree exclusions, tests, count/hash impact, deferrals, scope, and
-  exit criteria in synchronized EN/JA documents.
-- [x] Repeat review-only specification and source/documentation audits to **NO
-  FINDINGS** and pass all docs hard gates at uncapped `100/100`; preserve the
-  exact docs-only commit target for parent-owned staging and commit.
-- [x] Fresh-inventory after docs commit
-  `1fe0b156f312628f0997261ef6a8c8de251a15c8`; implement only the frozen Task-263
-  producer/ownership/private runner/pass pair/trace row and synchronized
-  implementation audits.
-- [x] Complete test-sufficiency, implementation, source/documentation, and final
-  quality reviews with **NO FINDINGS**; all nine gates PASS with no score cap
-  at `100/100`, and all verification passes. Complete Task-263 implementation
-  commit `f11a517e91433b461447522eff06cd85e6187063` and clean fresh inventory,
-  then continue automatically to Task 264+.
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Checker Task 264 Lower-Prerequisite Sequence
 
-- [x] Fresh-inventory Task 264 and classify the dropped parser-represented
-  property-implementation shell as lower `source_drift`, missing contracts as
-  `design_drift`, regressions as `test_gap`, and identity fabrication as
-  `boundary_violation`; confirm no blocking `spec_gap`.
-- [x] Freeze resolver Task 264R as a docs-first, context-only shell intake with
-  exact four-file/two-test scope and no checker/corpus/trace impact.
-- [x] Complete Task 264R documentation commit
-  `b1ed8ea19f8845d8c54f795a7375d4add4af237d`, fresh inventory, and the exact
-  lower implementation commit
-  `db8c39e31678d6b8a1f0900a5368c3b95c7162b5`; clean fresh inventory and
-  protected-stash invariance are confirmed.
-- [x] Fresh-inventory and freeze separate checker Task 248P binding-context
-  admission as closed Profile C without property semantics or runner credit.
-- [x] Complete findings-free Task 248P docs reviews and all nine hard gates at
-  uncapped `100/100`; preserve the exact 32-document staging target.
-- [x] Complete exact docs commit
-  `1e3fa789ce335b900fca4ac6ef5ad56b40cb5f24`, fresh inventory, and the
-  separate one-file/two-test implementation with findings-free test and
-  implementation reviews.
-- [x] Complete source/documentation and final quality reviews with **NO
-  FINDINGS**, all nine gates PASS at uncapped `100/100`, and all required
-  verification/count/hash gates PASS.
-- [x] Freeze Task 264's exact property payload contract and preserve
-  Task 259 separation plus all authority-limited semantic deferrals.
-- [x] Freeze Task 264 means/equals exact sources and hashes, 85/56-row ASTs,
-  resolver/property provenance, parameter/context, declared return lookup,
-  lower owners/fingerprints, means-only `it`, absent `assume` guard, five-table
-  ABI, obligations, Typed/Resolved ownership, tests, counts, deferrals, and
-  exit criteria in synchronized EN/JA.
-- [x] Classify the combined parameter/member source-type gap as separate lower
-  `source_drift` and freeze Task 249PI as the mandatory next prerequisite; do
-  not mix its implementation into Task 264.
-- [x] Repeat Task-264 specification/boundary/source-doc reviews to **NO
-  FINDINGS** and pass all nine docs-only hard gates at uncapped `100/100`.
-- [x] Stage only the synchronized 32-document target, commit it as
-  `4c3f74b053d31cae45b8af3fc478498b4a112768`, and fresh-inventory Task 249PI.
-- [x] After Task-249PI docs/implementation commits, return automatically to
-  Task 264 and implement only its frozen checker/runner transport.
-- [x] Complete Task-264 reviews, all nine gates, and exact count/hash
-  verification; preserve the task-only target for the parent-owned commit.
-- [x] After that commit, confirm clean fresh inventory and continue
-  automatically to the next dependency-ready task.
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Checker Task 249PI Property-Type Composition Prerequisite
 
-- [x] Fresh-inventory committed Task-264 docs, clean worktree, report-only
-  origin divergence, protected stash, exact sources/ASTs, lower APIs, and
-  dependency readiness.
-- [x] Classify the missing combined source-type handoff as lower
-  `source_drift`/`design_drift`/canonical-derived `test_gap`, with no blocking
-  `spec_gap`.
-- [x] Freeze exact `1/3/0/0/0/2` means/equals profiles, sites/ranges,
-  authenticated structure head, additive extension API/errors/precedence,
-  debug/Typed/final ownership, exclusions, four tests, count impact, and exit.
-- [x] Repeat specification/boundary reviews to **NO FINDINGS** and pass all
-  docs hard gates at valid uncapped `100/100`.
-- [x] Commit the exact synchronized Task-249PI design records as
-  `7e194bb3d7dd01454958b8d319b8c48cf478896a`.
-- [x] Fresh-inventory and implement only Task 249PI in `source_type.rs`; test
-  sufficiency and implementation reviews are **NO FINDINGS**, and full
-  verification passes after synchronizing the measured module inventory.
-- [x] Complete source/documentation review with **NO FINDINGS** and final
-  quality with all nine hard gates PASS, no score cap, and `100/100`.
-- [x] Commit the reviewed checker-only Task-249PI implementation as
-  `73a34f94c7d46d7c0698b09a43ab3e1f00bb07a7` and return automatically to
-  frozen Task 264 without adding property
-  semantics, runner/corpus changes, or adjacent lower work to Task 249PI.
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Checker Task 269A Named-Witness Binding Slice
 
-- [x] Fresh-inventory committed Task 264, clean worktree, report-only origin
-  divergence, unchanged protected stash, canonical authorities, broad gap
-  fixture/trace, and Tasks 248--258 public APIs; select only Task 269A.
-- [x] Freeze the exact 107-byte Task-258B3N source, 51-node arena, resolver
-  `LocalTermBinding`, `2/1/0 -> 2/2/0` binding transition, witness/name/RHS
-  links, five fingerprints, debug grammar, Typed/final ownership, private
-  dormant consumer, exclusions, eight tests, count/hash impact, deferrals,
-  and exit criteria in synchronized EN/JA documents.
-- [x] Repeat review-only specification and source/documentation audits to
-  **NO FINDINGS** and pass all nine docs-only hard gates at uncapped 90/100 or
-  better.
-- [x] Stage and commit only the Task-269A documentation prerequisite as
-  `1360a9c0517eacbc67bbf2351db57e81eef03bfc`; verify zero production,
-  fixture, sidecar, expectation, trace, metadata, or CLI change and
-  fresh-inventory the frozen implementation.
-- [x] Implement only the frozen producer, one-shot Typed/final owner, private
-  dormant consumer, and exact four checker plus four runner tests.
-- [x] Repeat test, implementation, source/docs, and final quality reviews to
-  **NO FINDINGS**; pass all verification/count/hash gates and commit the
-  implementation as `f548ceb9f1acbeca72919809f2a1db84da213982`.
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Checker Task 269B Mixed-Witness Binding Increment
 
-- [x] Fresh-inventory Task-258B3M1 lower/public APIs, canonical authority,
-  Task-269A commit, clean worktree, origin/stash state, and select only B3M1.
-- [x] Freeze the exact 113-byte/56-node source, `2/1/0 -> 2/2/0` transition,
-  one declaration over witness/name/RHS `0/0/2`, immutable unnamed witness 1,
-  five fingerprints, API no-op, tests, exclusions, impact, and exit criteria.
-- [x] Review and commit only the synchronized EN/JA documentation prerequisite;
-  the repeated specification review is NO FINDINGS and all nine docs-only hard
-  gates PASS without a score cap at `100/100`.
-- [x] Fresh-preflight and implement only the frozen B3M1 increment, including
-  direct unnamed-row non-binding assertions and all-field/cross-profile
-  fail-closed coverage within the existing eight compound tests.
-- [x] Complete all reviews/hard gates/verification and commit Task 269B as
-  `afd54a37ce4022929bdaf60be519ac4adbdd9b8e`; post-commit inventory is clean,
-  origin divergence is report-only, and the protected stash is unchanged.
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Checker Task 269CP Isolated Proof-`let` Lower Prerequisite
 
-- [x] Fresh-inventory canonical authority, broad read-only gap artifacts,
-  parser/resolver shape, Task-269A/B APIs, repository metadata, and select only
-  269CP before later-use/capture or checker let binding.
-- [x] Freeze the exact 100-byte source/hash, 51-node/root-50 Surface profile,
-  resolver theorem provenance, let/segment/name/bare-set sites, scope/ordinal/
-  local row, fingerprints, exclusions, four tests, zero-credit impact, and
-  exit criteria in synchronized EN/JA.
-- [x] Repeat specification review to **NO FINDINGS**, pass all nine docs-only
-  gates, and commit only the documentation prerequisite.
-- [x] Fresh-preflight and implement only the runner-private lower projection;
-  checker/public API, BindingEnv, Typed/final owners, corpus, and trace remain
-  unchanged.
-- [x] Complete independent reviews to **NO FINDINGS**, verification, and all
-  nine final gates without a score cap at `100/100`; authorize the exact
-  task-only commit and then fresh-inventory binding-only Task 269C
-  automatically, retaining a missing type site and separate source-type
-  admission.
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Checker Task 269C Binding-Only Proof-`let` Transaction
 
-- [x] Fresh-inventory canonical Chapters 4/15/16, broad proof-local gap,
-  Task-269CP lower output, reserve bridge, BindingEnv, and Typed/final APIs;
-  select only binding-only 269C.
-- [x] Freeze exact syntax-free input/output, base `1/1/0`, final `2/2/0`, one
-  `LetBinding` row with missing type, lookup/debug/fingerprint ownership,
-  seven-file scope, eight tests, exclusions, counts/hashes, audit impact, and
-  exit in synchronized EN/JA.
-- [x] Repeat specification review to **NO FINDINGS** and pass all nine docs-
-  only hard gates without a score cap at `100/100`.
-- [x] Stage and commit only the documentation prerequisite as
-  `e3bc93c36577e7e250efab8cfc11d9b9695c3953`, then run fresh implementation
-  preflight.
-- [x] Fresh-preflight and implement only the exact seven-file binding
-  transaction; keep source-type admission and use/capture separate.
-- [x] Complete independent test/implementation/source-doc/final reviews,
-  verification, all nine final gates, task-only commit
-  `399dc44b2a4400f9eeb1b651d1ddd0bbc7a09f6a`, and fresh inventory.
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Checker Task 269CT Proof-`let` Source-Type Prerequisite
 
-- [x] Fresh-inventory Task-269CP/C profiles, canonical Chapters 4/8/15/16,
-  Task-249 APIs, ownership, corpus/trace, counts/hashes, origin, and protected
-  stash; select only Task 269CT before later use/capture.
-- [x] Freeze the two-binding type overlay, source-type `2/2/0/0/0/0`,
-  three-node arena, API/error/debug/fingerprints, Typed/final owner, dormant
-  runner, seven-file scope, eight tests, zero-credit audit impact, exclusions,
-  projected counts, and exit criteria in EN/JA.
-- [x] Repeat specification review to **NO FINDINGS** and synchronize the
-  frozen contract and verification ledgers.
-- [x] Complete independent source/docs and final quality review with **NO
-  FINDINGS**, all nine hard gates PASS, and an uncapped `100/100` score.
-- [x] Stage and commit only the documentation prerequisite as
-  `b1c91b1b42391ca205b709b47444f3f2e748a799`.
-- [x] Fresh-preflight and implement only Task 269CT in the frozen seven Rust
-  files; repeat test-sufficiency and implementation review to **NO FINDINGS**.
-- [x] Complete source/docs and final quality review with **NO FINDINGS**, all
-  nine gates uncapped at `100/100`, and full verification.
-- [x] Create exact implementation commit
-  `c60361977f6c4d832cf4217b85bd9b458c902848`, then continue fresh inventory.
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Checker Task 269GP Proof-`given` Lower Prerequisite
 
-- [x] Confirm Task-269CT commit/clean inventory, canonical authority, exact
-  parser/resolver measurements, report-only origin divergence, protected
-  stash, and dependency readiness; select only 269GP before Task 270.
-- [x] Freeze exact source/Surface/shell/resolver/output/debug fingerprints,
-  subtree exclusions, binding-shaped field prohibition, four tests/files,
-  zero active credit, count/hash impact, semantic deferrals, and exit criteria
-  in EN/JA; record the Chapter-4/16 scope contradiction blocking 269G/269GT.
-- [x] Repeat specification review to **NO FINDINGS** and pass docs-only
-  verification with frozen counts/hashes.
-- [x] Complete source/docs and final-quality review with **NO FINDINGS** and
-  pass all nine docs-only hard gates uncapped at `100/100`.
-- [x] Stage exactly the 40 synchronized design files and create docs commit
-  `97a75fd9bf6a791055f236b3e3b4bb07b8d3d7c3`.
-- [x] After fresh preflight implement only the four frozen runner files; fix
-  review findings and repeat test-sufficiency and implementation review to
-  **NO FINDINGS**.
-- [x] Complete source/docs and final-quality review with **NO FINDINGS**, full
-  verification, and all nine hard gates uncapped at `100/100`.
-- [x] Complete exact staging and the implementation commit; fresh inventory is
-  clean and reports the human-owned scope contradiction instead of selecting
-  269G.
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Checker Task 269GS Canonical `given` Scope Reconciliation
 
-- [x] Fresh-inventory clean HEAD/origin/stash, paired Chapters 4/15/16,
-  existing parser/diagnostic fixtures, trace rows, 269GP lower output, and
-  absent checker consumer.
-- [x] Freeze the human-approved rule: each `given` variable binds its `such
-  that` occurrences and remains visible to subsequent statements through the
-  innermost enclosing proof/reasoning block, inherits into nested children
-  unless shadowed, and does not escape to parent or sibling blocks.
-- [x] Keep label scope unchanged and defer condition/fact, existential/Skolem,
-  goal, proof, discharge, acceptance, IR, and VC semantics.
-- [x] Freeze the exact 46-file Markdown write scope, parser and broad-gap
-  source/sidecar paths and SHA-256 values, byte-identical trace hash, library/
-  production/list/CLI/count baselines, zero audit credit, and Task-269G
-  `test_gap`/`source_drift` ownership.
-- [x] Repeat specification review to **NO FINDINGS** and pass all docs-only
-  verification/count/hash/hard-gate checks at uncapped `100/100`.
-- [x] Stage and commit only the synchronized 269GS documentation, then fresh-
-  inventory binding-only Task 269G automatically.
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Checker Task 269G Proof-`given` Binding Consumer
 
-- [x] Fresh-inventory Task-269GS authority, immutable 269GP lower output,
-  reserve base, binding/Typed/Resolved APIs, tests, counts, and hashes.
-- [x] Freeze exact `GivenWitness` ABI, `1/1/0 -> 2/2/0` transaction, lookup/
-  inheritance/shadow/restoration matrix, error precedence, debug grammar,
-  Typed/final ownership, Task-269GT boundary, eight-file implementation scope,
-  eight focused tests, audit impact, baselines, and exit gates.
-- [x] Repeat specification review to **NO FINDINGS** and pass all docs-only
-  verification/count/hash gates at uncapped `>=90/100`.
-- [x] Commit only the synchronized 40-file documentation prerequisite as
-  `1672486e7c7923e56d9019404bc9c75ffa119f96`; fresh-preflight and implement
-  only the frozen Task 269G slice.
-- [x] Test/implementation/source-doc/final reviews are **NO FINDINGS**, all
-  verification and nine gates pass uncapped at `100/100`; exact implementation
-  commit `4f65bc4d50ab950c6976a4b3f3cb4bc0948b27c1` is clean and Task 269GT is
-  fresh-inventoried.
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Checker Task 269GT Proof-`given` Source-Type Consumer
 
-- [x] Fresh-inventory canonical Chapters 4/8/15/16, immutable 269GP lower,
-  committed 269G binding, 269CT source-type model, public APIs, focused tests,
-  baselines, origin divergence, and protected stash; select only 269GT.
-- [x] Freeze the exact Given-type composite/error ABI, `Missing ->
-  Source(84..87)` overlay, `2/2/0/0/0/0` type payload, three-node arena,
-  fingerprints, Typed/final/private runner ownership, seven-file scope, eight
-  tests, zero-credit audit impact, semantic exclusions, and exit gates.
-- [x] Repeat specification review to **NO FINDINGS** and pass all docs-only
-  verification/count/hash gates at uncapped `>=90/100`.
-- [x] Commit only the synchronized 40-file documentation prerequisite as
-  `35bc97b92ce075226105e8fcd4c1e43c8621995c`; fresh-preflight and implement
-  only the frozen Task 269GT slice.
-- [x] Repeat test/implementation/source-doc/final reviews to **NO FINDINGS**,
-  pass full verification and all nine gates, commit exact implementation plus
-  synchronized records, then fresh-inventory later-use/capture or Task 270.
-
 Completion evidence: [central Task-269GT historical contract](../../task_contracts/en/269GT.md#completion-evidence).
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Checker Task 269GUP Proof-`given` Use-profile Binding Prerequisite
 
-- [x] Fresh-inventory clean Task-269GT, Chapters 4/15/16, immutable 269GP/G/GT
-  APIs, exact parser/resolver measurements, baselines, origin divergence, and
-  protected stash; select the missing 128-byte sibling binding profile before
-  Task 269GUPT, 269GU, capture, or Task 270.
-- [x] Classify the missing exact sibling profile as `test_gap`, its absent
-  binding handoff as `source_drift`, stale status/ownership text as
-  `design_drift`, and either binding reconstruction in `source_type.rs` or a
-  resolver use-ID table as prohibited `boundary_violation`; no blocking
-  `spec_gap` remains.
-- [x] Freeze the exact 128-byte/54-node profile, unique private lower output,
-  new-source binding identity and `1/1/0 -> 2/2/0` transition, lookup matrix,
-  public binding ABI/errors/debug, exact six-file scope, eight tests,
-  zero-credit impact, exclusions, the 42-file docs stage set, and exit gates.
-- [x] Specification review is **NO FINDINGS**, the docs-only verification and
-  hard gates are complete, and the 42 synchronized Markdown files are committed
-  as documentation prerequisite `ae03ae0772fe98532dbd68164c8a1fc4f4172e7e`.
-- [x] Task 269GUP and all exact reviews are complete with **NO FINDINGS**;
-  all nine hard gates pass uncapped at `100/100`. Finish exact staging and the
-  single implementation commit, then fresh-inventory Task 269GUPT. Source
-  type, term/use, Typed/final, and capture remain absent.
 Completion evidence: [central Task-269GUP historical contract](../../task_contracts/en/269GUP.md#completion-evidence).
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Checker Task 269GUPT Source-Type Prerequisite
 
-- [x] Fresh-inventory clean GUP commit, canonical Chapters 3/4/8/15/16, exact 128-byte/54-node lower profile, public GUP binding handoff, old GT type pattern, baselines, origin divergence, and protected stash.
-- [x] Classify absent composite/tests as `source_drift`/`test_gap`, stale task status as `design_drift`, prohibited binding reconstruction or semantic publication as `boundary_violation`, and origin `0/7` as report-only `repo_metadata_conflict`; no blocking `spec_gap`.
-- [x] Freeze exact by-value dependency, binding-1 `Source(84..87)` overlay, `2/2/0/0/0/0` source type, distinct three-node arena, public ABI/errors/debug, Typed/Resolved ownership, private runner, seven-file/eight-test scope, 40 docs, zero credit, baselines, deferrals, and exit.
-- [x] Specification and source/docs reviews are **NO FINDINGS** and docs-only hard gates pass `9/9` at an uncapped `100/100`.
-- [x] Stage exactly 40 Markdown files and commit the documentation prerequisite.
-- [x] Fresh-preflight and implementation of Task 269GUPT are complete; test,
-  implementation, and source/docs reviews are **NO FINDINGS**, and all nine
-  hard gates pass uncapped at `100/100`.
-- [x] Exact staging and the separate implementation commit
-  `c529245138b6d40be65c590ba701fef4f4ea0881` are complete; clean fresh
-  inventory selects Task 269GU. Capture and Task 270 remain deferred.
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Checker Task 269GU Later-use Term/Reference Prerequisite
 
-- [x] Fresh-inventory committed GUPT HEAD, canonical Chapters 3/4/8/13/15/16,
-  exact 128-byte/54-node source, GUP/GUPT APIs, baselines, origin divergence,
-  and protected stash; select GU only.
-- [x] Classify the absent composite/tests as `source_drift`/`test_gap`, stale
-  status as `design_drift`, generic admission or semantics as
-  `boundary_violation`, and origin `0/9` as report-only
-  `repo_metadata_conflict`; no blocking `spec_gap`.
-- [x] Freeze exact GUPT dependency, `2/2/0` occurrence/reference payload,
-  profile-scoped Given admission, six-node arena, public ABI/errors/debug,
-  boxed Typed/final owner, private runner, seven files/eight tests, 42 docs,
-  zero active credit, baselines, deferrals, and exit.
-- [x] Complete specification review to **NO FINDINGS**, docs-only hard gates,
-  exact 42-file staging, and prerequisite commit
-  `5f61e125eddeaf2a6defeb2419436a2f37396421`.
-- [x] Fresh-preflight and implement GU only; test-sufficiency and implementation
-  reviews are **NO FINDINGS**, exact counts/hashes are recorded, and excluded
-  artifacts remain unchanged.
-- [x] Source/docs and final-quality reviews are **NO FINDINGS**; all nine hard
-  gates pass uncapped at `100/100`, including complete verification.
-- [x] Exact staging and separate implementation commit
-  `998dc104957d47e2707f4a8292d2002f1c5beb2d` are complete; clean fresh
-  inventory selects Task 269GCP. Task 270 remains separate.
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Checker Task 269GCP Given-condition Lower Prerequisite
 
-- [x] Confirm clean committed GU HEAD, origin/stash state, canonical given-
-  condition authority, current fixtures/trace, exact lower APIs, and baselines.
-- [x] Resolve review disagreement by selecting condition occurrence before
-  descendant/capture/export; classify missing profile/tests as
-  `source_drift`/`test_gap`, stale records as `design_drift`, and origin `0/11`
-  as report-only `repo_metadata_conflict`.
-- [x] Freeze the exact 134-byte/54-node source, hashes, shell/resolver profile,
-  private lower/debug ABI, mutations, four runner files/tests, zero-credit
-  impact, exclusions, successor chain, and exit criteria in EN/JA.
-- [x] Repeat specification review to **NO FINDINGS**, pass docs-only hard gates,
-  stage only synchronized Markdown, and commit the documentation prerequisite
-  as `db907a789dc01ba65ed8fdcc001e568e4f03cf49`.
-- [x] Fresh-preflight and implement only GCP in the frozen four files/four
-  tests; preserve every canonical artifact, public route, and semantic owner.
-- [x] Finish source/docs and final-quality reviews to **NO FINDINGS**, full
-  verification, and all nine hard gates uncapped at `100/100`.
-- [x] Complete exact staging and dedicated implementation commit
-  `59eb7de68d83901375883a2a6249796afc6a0de3`, then fresh-inventory Task 269GC.
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Checker Task 269GC Given-condition Binding Consumer
 
-- [x] Fresh-inventory clean GCP commit, canonical scope rule, exact GCP lower,
-  G/GUP boundaries, baselines, origin divergence, and protected stash; select
-  only GC.
-- [x] Classify missing producer/tests as `source_drift`/`test_gap`, absent
-  contract as `design_drift`, forbidden semantic/higher-owner changes as
-  `boundary_violation`, and origin `0/13` as report-only
-  `repo_metadata_conflict`; no blocking `spec_gap`.
-- [x] Freeze distinct public binding ABI, exact GCP dependency, `1/1/0 ->
-  2/2/0`, canonical block lookup matrix, Typed/Resolved/private runner owners,
-  seven files/eight tests, zero credit, 42 docs, baselines, deferrals, and exit.
-- [x] Repeat specification review to **NO FINDINGS**, pass docs-only hard gates
-  uncapped at `100/100`, and commit exact synchronized Markdown as
-  `dd053c86dab322508a15823de1c4afd268c2d35a`.
-- [x] Fresh-preflight and implement only the frozen seven-file/eight-test GC;
-  test-sufficiency and implementation reviews end **NO FINDINGS**.
-- [x] Finish source/docs consistency and final-quality reviews, workspace-wide
-  final gates, exact implementation commit
-  `8181ae8fc8af0c7028254ad30147b417fbf84611`, and fresh-inventory Task
-  269GCT automatically.
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Checker Task 269GCT Given-condition Source-Type Consumer
 
-- [x] Fresh-inventory clean GC commit, canonical typed-witness authority, exact
-  GC/GCP dependencies, GT/GUPT public patterns, baselines, origin divergence,
-  and protected stash; select only GCT.
-- [x] Classify missing type family/tests as `source_drift`/`test_gap`, absent
-  contract and stale GC status as `design_drift`, forbidden semantic/artifact/
-  runner ownership as `boundary_violation`, and origin `0/15` as report-only
-  `repo_metadata_conflict`; no blocking `spec_gap`.
-- [x] Freeze the distinct by-value public composite, exact `2/2/0` type overlay,
-  two source-type rows, three-node arena, fingerprints, Typed/Resolved/private
-  runner owners, seven files/eight tests, zero credit, deferrals, and exit in
-  synchronized EN/JA.
-- [x] Repeat specification review to **NO FINDINGS**, pass all measured
-  docs-only verification gates, complete uncapped final quality with all nine
-  gates PASS at `100/100`, and commit the exact documentation prerequisite as
-  `b43081161b31fcc4bc23ac2fd42c5c42e772ab78`.
-- [x] Fresh-preflight and exact GCT implementation are present;
-  test-sufficiency, implementation, and source/docs reviews report **NO
-  FINDINGS**, and focused plus full verification passes.
-- [x] Complete final-quality review with **NO FINDINGS**, all nine gates PASS,
-  no score cap, and `100/100`.
-- [x] Stage the exact task files, commit separately as
-  `d6fb0ed28ced4d4706a1793b3aedd2a20eea0749`, and fresh-inventory Task 269GCU
-  automatically.
-
 Completion evidence: [central Task-269GCT historical contract](../../task_contracts/en/269GCT.md#completion-evidence).
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Checker Task 269GCU Given-condition Term/reference Consumer
 
-- [x] Fresh-inventory clean GCT commit, canonical block-scope authority, exact
-  GCP/GC/GCT dependencies, GU public patterns, baselines, origin divergence,
-  and protected stash; select only GCU.
-- [x] Classify the missing exact ABI as `design_drift`, absent consumer as
-  `source_drift`, and missing focused matrix as `test_gap`; confirm no
-  blocking `spec_gap` or lower-stage defect.
-- [x] Freeze by-value GCT composition, two occurrence/reference rows, private
-  GCU binding profile, six-node arena, fingerprints, Typed/Resolved ownership,
-  private runner route, seven files/eight tests, zero credit, exclusions, and
-  exit criteria in synchronized EN/JA documentation.
-- [x] Repeat review-only specification and synchronization audits to **NO
-  FINDINGS** and pass all nine docs-only gates uncapped at `100/100`.
-- [x] Stage exactly 42 Markdown files and create documentation prerequisite
-  commit `15f47a837bc2f52d4cd30e8a4dcb86c16f2961d3`.
-- [x] Fresh-preflight and implement only the frozen seven-file/eight-test GCU.
-- [x] Repeat test-sufficiency and implementation reviews to **NO FINDINGS**.
-- [x] Complete source/docs review to **NO FINDINGS**.
-- [x] Complete final-quality review with all nine gates PASS, no score cap,
-  `100/100`, and full verification.
-- [x] Complete exact staging, task-only implementation commit
-  `f984ae683419944493c07723e9950a9101a46502`, and automatic next-task
-  inventory.
-
 Completion evidence: [central Task-269GCU historical contract](../../task_contracts/en/269GCU.md#completion-evidence).
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Checker Task 269SDP Descendant/Set Lower Prerequisite
 
@@ -6781,330 +1157,68 @@ Completion evidence: [central Task-269SDP historical contract](../../task_contra
 
 ## Checker Task 269SDC Descendant Context/Binding Prerequisite
 
-- [x] Verify clean SDP commit `2ba1ee910aea4939abc26b64a96a113e80c01306`,
-  current origin `0/1` report-only `repo_metadata_conflict`, and unchanged
-  protected stash.
-- [x] Classify missing contract/API/tests as `design_drift`, `source_drift`,
-  and `test_gap`; keep the Set `spec_gap` nonblocking only for SDC and blocking
-  for `z`/`q` closure/capture.
-- [x] Freeze exact lower dependency, public ABI/error/debug, `3/2/0`
-  BindingEnv and lookup matrix, Typed/Resolved ownership, seven primary files
-  plus one cfg-test ownership-support file/eight tests, reciprocal ten-owner
-  exclusion, baselines, semantic deferrals, and exit criteria.
-- [x] Repeat specification and bilingual reviews to **NO FINDINGS**, pass all
-  nine docs gates uncapped at `>=90/100`, stage exactly 42 Markdown files, and
-  create the documentation prerequisite commit.
-- [x] Fresh-preflight SDP/parser/resolver/count/hash, then implement SDC only.
-- [x] Complete separate test, implementation, source/docs, and final-quality
-  reviews, full verification, exact implementation commit, and fresh
-  successor selection.
-
 Completion evidence: [central Task-269SDC historical contract](../../task_contracts/en/269SDC.md#completion-evidence).
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Task 269SDT
 
-Implemented: the exact Given descendant source-type slice and its dormant
-runner consumer are complete under the
-[central contract](../../task_contracts/en/269SDT.md). Descendant occurrence
-and all `z`/`q` closure/capture semantics remain later work; the successor is
-selected only from fresh post-commit inventory.
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Task 269SDU Descendant Given Occurrence/Reference
 
-- [x] Complete the synchronized documentation prerequisite and review gates for
-  the [central contract](../../task_contracts/en/269SDU.md).
-- [x] Implement only the frozen source-term, Typed/Resolved, and private
-  runner route with four checker and four private runner tests.
-- [x] Preserve zero executable credit, no active route, and the blocked
-  `z`/`q` closure/capture boundary; verification and independent reviews pass,
-  final quality passes all nine gates at `100/100`, and implementation commit
-  `3bddc5fd6383226bbb66d7d5757e7b77f80678d9` plus clean post-commit inventory
-  are complete. No semantic successor is assigned here.
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Task 277A Direct Parser-Origin Template Transport
 
-- [x] Prepare the paired [central contract](../../task_contracts/en/277A.md),
-  owner links, Task Index rows, and documentation-only review surface.
-- [x] Implement only the frozen neutral transport and eight `task277a_` tests;
-  preserve targetless raw suffix meaning, inactive routing, and all no-impact
-  exclusions.
-- [x] Complete independent reviews with **NO FINDINGS** and pass full workspace
-  tests, both lint suites, metadata, formatting, Clippy, five CLI replays, and
-  protected/count/hash verification.
-- [x] Complete final quality re-review with **NO FINDINGS**; all nine hard
-  gates PASS without a score cap at valid `100/100`
-  (`20/20/15/15/10/10/5/5`).
-- [x] Complete exact staging/cached-diff review and task-only implementation
-  commit `b67b028e07337ff5b72422bc8f16fb8f187b5c06`. Immediately after that
-  commit, the read-only post-implementation checkpoint observed
-  `HEAD=b67b028e07337ff5b72422bc8f16fb8f187b5c06`, a clean worktree,
-  `origin/main...HEAD=0/1`, and unchanged protected
-  `stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4`. Task 277A is complete while
-  umbrella Task 277 remains partial; any successor must be separately frozen
-  and reviewed.
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Task 277B-L Template Type-Parameter Association
 
-- [x] Implemented the frozen [277B-L contract](../../task_contracts/en/277B-L.md)
-  standalone producer in its exact five-path Rust boundary.
-- [x] Preserved the new-module-only boundary; did not extend 277A,
-  Typed/Resolved installation, resolver, production runner, Cargo, or canonical
-  specification/test/trace/coverage artifacts.
-- [x] Proved the four checker and one private real-fixture test, structural
-  validation precedence, deterministic non-mutating handoff, exact count/hash
-  gates, and no semantic/active-route/coverage effect.
-- [x] Test-sufficiency review: **NO FINDINGS**. Implementation review: **NO
-  FINDINGS** after the canonical-`Identifier` prefix-spoof fix.
-- [x] Source/documentation re-review after the EN/JA CLI-tense fix, bilingual
-  review, boundary review, and full verification: **NO FINDINGS** / PASS.
-- [x] Complete finding-specific final-quality re-review at **NO FINDINGS**;
-  all nine hard gates PASS uncapped at valid `100/100`
-  (`20/20/15/15/10/10/5/5`).
-- [x] Exact staging/cached-diff review, task-only commit, post-implementation
-  proof, and fresh successor inventory are closed in the central
-  [historical checkpoint](../../task_contracts/en/277B-L.md#post-implementation-checkpoint).
-  No successor is selected; Task 277B remains not ready with zero semantic credit.
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Task 277C Fraenkel Structural Composition
 
-- [x] Freeze the canonical [277C contract](../../task_contracts/en/CHECKER-FRAENKEL-TEMPLATE-STRUCTURAL-277C.md),
-  EN/JA owner links, exact neutral ABI, protected hashes, and implementation
-  boundary as a docs-only prerequisite.
-- [x] Implement only the contract's three Rust paths and exact `4 + 1` tests,
-  preserving the no-R1-direct/no-install/no-production/no-semantic/no-credit
-  boundary. Focused/package verification passed and independent test-sufficiency
-  and implementation reviews report **NO FINDINGS**. Parent-owned broad workspace
-  verification also passed.
-- [x] Complete independent source/documentation final re-review and bilingual and
-  boundary reviews at **NO FINDINGS**.
-- [x] Complete independent final-quality review at **NO FINDINGS**: all nine hard
-  gates pass uncapped at valid `100/100` (`20/20/15/15/10/10/5/5`).
-- [x] Exact staging/cached review, task-only implementation commit, post-commit
-  proof, and fresh successor inventory are closed in the language-local [central
-  historical checkpoint](../../task_contracts/en/CHECKER-FRAENKEL-TEMPLATE-STRUCTURAL-277C.md#historical-immediate-post-implementation-checkpoint).
-  No successor is selected; Task 277B remains not ready with zero semantic credit.
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Task 257C4A Fraenkel generator binding context
 
-- [x] Implement only the frozen C4A contract in `binding_env.rs` and
-  `source_formula_composition.rs`, with its four exact checker tests and no
-  semantic expansion.
-- [x] Revalidate R2/277C/TypedAst full-field dependencies atomically and expose
-  only the opaque binding-context handoff; C4B owns any later use/capture map.
-- [x] Keep F5, expectations, trace, coverage, diagnostics, production route,
-  and Task-277B readiness unchanged.
-- [x] Pass the exact four checker tests, 550-test checker library, formatting,
-  package/full-workspace Clippy, and implementation/test reviews with no findings.
-- [x] Pass full workspace tests, both lint policies, metadata `137/137`, and
-  all five frozen-hash CLI replays with expected 23 warnings / zero errors.
-- [x] Complete source/documentation and bilingual/boundary reviews at **NO
-  FINDINGS** after repairing the one Low stale-tense wording.
-- [x] Complete final-quality review at **NO FINDINGS**, with all `9/9` hard
-  gates passing at valid uncapped `100/100` (`20/20/15/15/10/10/5/5`).
-- [x] Complete the historical pre-commit exact staging/cached review over 28
-  paths (4 Rust / 24 docs), one new private leaf, no unstaged paths, cached
-  check PASS, and `2435/101` stat.
-- [x] Complete the task-only commit, immediate post-commit proof, and accepted
-  fresh successor inventory at the language-local [historical
-  checkpoint](../../task_contracts/en/CHECKER-FRAENKEL-GENERATOR-BINDING-257C4A.md#historical-immediate-post-implementation-checkpoint).
-  C4B is authority-ready in principle but remains unselected and requires a
-  separately frozen post-closure documentation prerequisite; Task 277B remains
-  not ready with zero semantic credit.
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Task 257C4B Fraenkel generator bound-use transport
 
-- [x] Freeze the separate EN/JA [C4B contract](../../task_contracts/en/CHECKER-FRAENKEL-GENERATOR-BOUND-USE-257C4B.md), exact public ABI, full C4A
-  snapshot validation, three-row F5 oracle, error precedence, test matrix,
-  protected no-op decision, and exact future three-Rust-path boundary.
-- [x] After the docs-only commit and clean fresh preflight, implement only the
-  dedicated bound-use row/table/handoff in `source_formula_composition.rs`.
-- [x] Add exactly the four named checker tests and preserve `550 -> 554`; add
-  no Task-252 term/reference, role copy, capture, semantic owner, install, or
-  route.
-- [x] Pass focused `4 + 1`, checker `554/554`, mizar-test `614/614`, format,
-  package Clippy, diff checks, and independent implementation/test-sufficiency
-  reviews at **NO FINDINGS** after repairing retained structural/`TypedAst`
-  corruption coverage in the existing test.
-- [x] Pass both 15-test policy lint suites and the completion-document diff
-  check.
-- [x] Pass full-workspace Clippy/tests, metadata `137/137`, public-enum `2/2`,
-  and five unchanged CLI replays with 23 warnings / 0 errors.
-- [x] Complete final source-doc and independent bilingual/boundary reviews at
-  **NO FINDINGS** after the sole Low baseline/current wording repair; preserve
-  the exact scope/hash checks.
-- [x] Record exact final Rust measurements, raw-list hashes, and checker
-  production `32/193758` / content hash in the central contract while leaving
-  all four Task Index plans unchanged.
-- [x] Complete final-quality at **NO FINDINGS**, all `9/9` hard gates PASS,
-  and valid uncapped `100/100` (`20/20/15/15/10/10/5/5`).
-- [x] Complete exact staging/cached review over 23 paths (3 Rust / 20 docs),
-  one new private leaf, zero unstaged paths at review time, cached diff check
-  PASS, and cached stat `1096/123`.
-- [x] Close the task-only implementation commit, immediate post-commit proof,
-  and accepted fresh semantic STOP at the language-local [historical
-  checkpoint](../../task_contracts/en/CHECKER-FRAENKEL-GENERATOR-BOUND-USE-257C4B.md#historical-immediate-post-implementation-checkpoint),
-  selecting no successor.
-- [x] Keep actual capture separately deferred and Task 277B not ready with
-  zero semantic credit throughout.
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Task 257C4C0 nested Fraenkel capture test intent
 
-- [x] Freeze the paired [C4C0 contract](../../task_contracts/en/TEST-FRAENKEL-NESTED-CAPTURE-257C4C0.md),
-  exact 124-byte source, inactive pass sidecar, sole trace row, protected
-  boundaries, counts/hashes, review gates, and model handoff.
-- [x] Add the frozen `.miz`, inactive sidecar, sole trace row, required
-  `spec_coverage_audit.md` Chapter-13 delta, exact 16 completion records, and
-  four private count-guard repairs, with zero capture and Task-277B executable/
-  semantic credit.
-- [x] Record the measured post-change metadata, five-CLI outputs, and final
-  trace/audit counts and hashes in the central contract.
-- [x] Close the task-only artifact commit, immediate post-commit proof, and
-  accepted fresh-inventory disposition at the language-local [historical
-  checkpoint](../../task_contracts/en/TEST-FRAENKEL-NESTED-CAPTURE-257C4C0.md#historical-immediate-post-artifact-checkpoint).
-  Fresh inventory ends in a human-owned blocking `spec_gap` STOP until test
-  intent or language-specification authority supplies the missing rule; no
-  lower or capture implementation is selected here.
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Task 257C4C1 explicit-import lexical admission
 
-- [x] Freeze the paired [C4C1 contract](../../task_contracts/en/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md),
-  exact 140-byte crate-local support module, ordered two-shape summary, repaired
-  164-byte C4C0 source, historical 124-byte/six-diagnostic isolation baseline,
-  exact seven implementation paths, and four existing-leaf test names.
-- [x] After the task-only docs commit, implement only frontend lexical/parser
-  admission through `ParseOnlyImportProvider`; keep resolver augmentation and
-  every checker/capture/semantic owner unchanged.
-- [x] Update the inactive sidecar note, existing trace-row note, and Chapter-
-  13 audit mapping without adding a row, active tag, route, diagnostic
-  credit, semantic credit, or Task-277B readiness.
-- [x] Complete the focused/full verification and independent test and
-  implementation reviews recorded in the contract's [precommit completion
-  checkpoint](../../task_contracts/en/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md#precommit-implementation-completion-checkpoint).
-- [x] Complete independent source-documentation consistency and
-  bilingual/boundary reviews with **NO FINDINGS**, as recorded in the canonical
-  [checkpoint](../../task_contracts/en/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md#precommit-implementation-completion-checkpoint).
-- [x] Complete independent final-quality review with **NO FINDINGS**, `9/9`
-  hard gates passing, and a valid `100/100`, as recorded in the canonical
-  [checkpoint](../../task_contracts/en/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md#precommit-implementation-completion-checkpoint).
-- [x] Complete exact staging/cached review with **NO FINDINGS**, as recorded at
-  the historical review-time [checkpoint](../../task_contracts/en/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md#precommit-implementation-completion-checkpoint).
-- [x] Close the task-only commit, post-commit proof, and accepted fresh-
-  inventory **STOP** at the language-local [historical postimplementation
-  checkpoint](../../task_contracts/en/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md#historical-immediate-postimplementation-pre-closure-checkpoint).
-  Do not select capture/resolver semantics, Task-252, or Task-277B work here.
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Task 257C4C3 nested binder/mapper-use transport
 
-- [x] Freeze the paired [C4C3 contract](../../task_contracts/en/CHECKER-FRAENKEL-NESTED-BINDER-USE-257C4C3.md)
-  from the human Task-257C owner decision and clean post-C4C2 inventory.
-- [x] Complete independent specification/contract and bilingual/boundary
-  reviews with **NO FINDINGS** after repairing the exact debug/error ABI,
-  duplicate audit addendum, and implementation-tense findings.
-- [x] Implement only the exact one-row C4C2 resolver-to-typed identity handoff
-  and the five frozen tests; do not add Task-252, capture, semantic, install,
-  route, diagnostic, or credit state.
-- [x] Complete all test, implementation, source/docs/API, bilingual/boundary,
-  hard-gate, quality, staging, commit, and clean fresh-inventory gates. The
-  implementation commit and accepted dependency STOP are recorded in the
-  language-local [postcommit checkpoint](../../task_contracts/en/CHECKER-FRAENKEL-NESTED-BINDER-USE-257C4C3.md#postcommit-proof-and-fresh-successor-inventory).
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Task 257C4C4 nested mapper primary transport
 
-- [x] Classify the specialized forward-written Task-252 profile as
-  `design_drift`, its exact regressions as a `test_gap`, and freeze the paired
-  [C4C4 contract](../../task_contracts/en/CHECKER-FRAENKEL-NESTED-MAPPER-PRIMARY-257C4C4.md).
-- [x] Complete independent specification/API and bilingual/boundary reviews
-  with **NO FINDINGS**.
-- [x] Implement only the C4C3-dependent outer-x binding projection and exact
-  Task-252 `1/1/0` mapper primary plus five frozen tests. Preserve generic
-  source-order rejection and add no capture, semantic, install, route,
-  diagnostic, or credit state.
-- [x] Complete source/docs and final-quality reviews, all hard gates, the
-  task-only commit, clean
-  postcommit proof, and fresh readiness inventory; then stop per the user's
-  one-task instruction even if a successor is ready.
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Task 257C4C5 nested capture-identity receipt
 
-- [x] Freeze the human owner/oracle decision in the paired
-  [C4C5 contract](../../task_contracts/en/CHECKER-FRAENKEL-NESTED-CAPTURE-IDENTITY-257C4C5.md)
-  and complete independent specification/equivalence and bilingual/boundary
-  reviews with **NO FINDINGS**.
-- [x] Implement only the exactly-one immutable Task-257C association receipt,
-  C4C4 complete-validation seam, four checker tests, and one private imported-
-  fixture probe.
-- [x] Preserve empty C4C4 captured state and add no Task-255 dependency,
-  Typed/Resolved installation, semantic capture, Core/GeneratedOrigin output,
-  active route, diagnostic, coverage credit, or Task-277B readiness.
-- [x] Complete source/documentation and final-quality reviews, all verification
-  gates, task-only commit, and clean postcommit proof.
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Task 257C4C6 nested capture-identity installation
 
-- [x] Freeze the human-selected boxed Typed/Resolved destination, exact final-
-  typed owner authentication, public getter/installer/error surface, mutual-
-  exclusion matrix, syntax-only final clone, and zero-semantic boundary in the
-  paired [C4C6 contract](../../task_contracts/en/CHECKER-FRAENKEL-NESTED-CAPTURE-IDENTITY-INSTALLATION-257C4C6.md).
-- [x] Complete independent specification/equivalence and bilingual/boundary/API
-  reviews with no blocking or high findings.
-- [x] Implement only the frozen checker receipt destination and seven private
-  tests; preserve C4C4 empty captured state and add no Core/GeneratedOrigin,
-  active route, diagnostic, coverage credit, or Task-277B readiness.
-- [x] Complete implementation/test/source-documentation re-reviews and all
-  focused, package, workspace, metadata, formatting, and protected checks.
-- [x] Complete final-quality `9/9` hard-gate scoring at an uncapped `100/100`.
-- [x] Complete exact staging, task-only implementation commit
-  `b17cbfe5dad0bcb11502b4c7feef814df6adf8fb`, clean postcommit proof, and the
-  [fresh successor inventory](../../task_contracts/en/CHECKER-FRAENKEL-NESTED-CAPTURE-IDENTITY-INSTALLATION-257C4C6.md#postcommit-proof-and-fresh-successor-inventory).
-  The inventory selects no successor: the exact checker-final-projection to
-  Core-33/Core-35 join, snapshot-local Core identity map, generalized
-  parameter/argument order, and corruption oracle require a separate human
-  decision. Task 277B remains not-ready and zero-credit.
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Task 257C4C7 two-capture prerequisite
 
-- [x] Accept checker Task-257C as the sole future complete Core-ID-free
-  projection owner, private authenticated declaration/source order as a
-  non-semantic convention, Core-33 mapping ownership, and Core-35 lowering/
-  GeneratedOrigin ownership.
-- [x] Freeze and independently review the paired [C4C7 contract](../../task_contracts/en/TEST-FRAENKEL-NESTED-MULTI-CAPTURE-257C4C7.md).
-- [x] Add only the exact inactive two-capture `.miz`/sidecar/backlink/audit and
-  mechanical metadata-count guards; preserve C4C2--C4C6 and all production
-  code.
-- [x] Complete all pre-final reviews and focused/full verification without
-  granting active or Task-277B credit.
-- [x] Complete final-quality scoring at `9/9`, valid uncapped `100/100`.
-- [x] Complete task-only commit and clean postcommit proof. Fresh inventory
-  defers checker C4C8 and uniquely selects the exact no-new-public-API resolver
-  prerequisite C4C8R; Task 277B remains not-ready/zero-credit.
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Task 257C4C8 normalized nested capture graph
 
-- [x] Freeze the standalone normalized graph owner, exact five-table family,
-  `3/1/0/2/2` cardinality, resolver-identity association, private order, and
-  default-deny precedence in the paired
-  [C4C8 contract](../../task_contracts/en/CHECKER-FRAENKEL-NESTED-MULTI-CAPTURE-GRAPH-257C4C8.md).
-- [x] Implement only the frozen `source_formula_composition` graph family and
-  its four checker tests; the exact public-enum policy entry is now recorded.
-- [x] Add only the existing private imported-fixture probe and assert the exact
-  normalized graph, replay, local-`z` exclusion, and zero-credit boundary.
-- [x] Preserve C4C4 captured state, C4C6 Typed/Resolved receipt ownership,
-  resolver identity domains, Core 33/34/35 and `GeneratedOrigin` ownership,
-  active routes, diagnostics, semantics, and Task 277B zero credit.
-- [x] Complete independent implementation and test-sufficiency reviews with
-  **NO FINDINGS** after repair; focused `4 + 1`, Clippy, formatting, and diff
-  checks pass.
-- [x] Complete source/documentation/API and bilingual/boundary
-  finding-specific re-reviews after documentation repairs.
-- [x] Complete broad/full verification and protected count/hash checks.
-- [x] Complete final-quality review with **NO FINDINGS**, all nine hard gates
-  PASS, and a valid uncapped `100/100`.
-- [x] Complete exact 15-path staging, task-only implementation commit
-  `c7595b60e7784728967cfbac9b02522f7290c942`, clean postcommit proof, and the
-  fresh successor inventory recorded in the paired contract. No semantic
-  successor is selected; the user accepts only the documentation-only Core-33
-  prerequisite direction, whose exact contract requires fresh inventory.
-  Task 277B remains not-ready/zero-credit.
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Task 33C opaque capture-graph owner receipt
 
@@ -7126,36 +1240,9 @@ selected only from fresh post-commit inventory.
 
 ## Task 264C property carrier identity transport
 
-- [x] Classify the missing Task264 same-source carrier/member handoff as
-  `source_drift` plus bounded `test_gap`, with no `spec_gap`.
-- [x] Freeze the one-value, twelve-getter public API and zero-semantic boundary
-  in the paired [Task264C contract](../../task_contracts/en/CHECKER-SOURCE-PROPERTY-CARRIER-IDENTITY-264C.md).
-- [x] Complete independent pre-source specification/API and bilingual/boundary
-  reviews with no blocking findings.
-- [x] Implement exact structure/field/property retention, v2 deterministic
-  debug, and construction/replay default-deny assertions in the existing five
-  checker and four private runner tests.
-- [x] Complete post-source test, implementation, source/documentation/API, and
-  bilingual/boundary reviews plus focused/package/workspace verification.
-- [x] Complete final quality scoring with **NO FINDINGS**, all nine hard gates
-  PASS, and a valid uncapped `100/100` after repairing the exact EN/JA owner
-  API/debug blocks and stable contract links.
-- [x] Complete the exact twenty-path task-only commit; perform its clean
-  postcommit proof and fresh same-source Core-33 inventory immediately after
-  creating the commit, without amending the completed Task264C record.
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
 ## Task 264D equals selector identity association
 
-- [x] Classify the missing typed `M.carrier` occurrence-to-field-symbol edge as
-  bounded `source_drift`/`test_gap`, with no `spec_gap`.
-- [x] Freeze the separate by-value equals-only handoff and default-deny API in
-  the paired [Task264D contract](../../task_contracts/en/CHECKER-SOURCE-PROPERTY-EQUALS-SELECTOR-IDENTITY-264D.md).
-- [x] Complete independent pre-source specification/API and bilingual/boundary
-  reviews with no blocking findings.
-- [x] Implement the exact association and focused checker/private Task264 tests
-  without changing the existing owner API/debug or protected artifacts.
-- [x] Complete all post-source reviews and hard gates with **NO FINDINGS**,
-  `9/9` PASS, and valid uncapped `100/100`.
-- [x] Prepare the exact task-only commit; record clean postcommit proof and the
-  fresh parameter/Core-variable prerequisite inventory in the operational
-  handoff rather than the self-referential task commit.
+Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
+
