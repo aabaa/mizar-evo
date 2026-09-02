@@ -116,9 +116,12 @@ Before editing, classify disagreements as `spec_gap`, `test_gap`,
 `test_expectation_drift`, `boundary_violation`, or `repo_metadata_conflict`.
 Report `repo_metadata_conflict` only; do not repair it automatically.
 
-Crate-wide autonomous work is complete only when all hard gates in the protocol
-pass and a read-only review assigns a quality score of at least 90/100. A score
-is invalid if any hard gate fails.
+Crate-wide autonomous work is complete only when the gates for its declared
+tier pass (see Gate Tiering in the protocol): full-tier work needs all hard
+gates plus a read-only quality score of at least 90/100 (a score is invalid if
+any hard gate fails); zero-credit structural transport may use the documented
+light tier, with one-way promotion to full gates the moment the task gains
+semantic credit or touches a protected surface.
 
 ## Agent Delegation
 
@@ -253,12 +256,14 @@ If a command cannot be run, explain why in the final response and describe the r
 Follow the repository documentation policy:
 
 - English documentation is canonical.
-- When updating bilingual documentation, keep the English canonical document and Japanese companion document synchronized in the same change.
+- Bilingual EN/JA maintenance is mandatory only for `doc/spec/{en,ja}` and `doc/design/architecture/{en,ja}` (language-scope decision, user-approved 2026-09-01).
+- When updating documentation in those bilingual areas, keep the English canonical document and Japanese companion document synchronized in the same change.
 - For language specifications, update matching files under `doc/spec/en/` and `doc/spec/ja/`.
 - For architecture specifications, update matching files under `doc/design/architecture/en/` and `doc/design/architecture/ja/`.
-- For component design documents, update matching files under paired `doc/design/<component>/en/` and `doc/design/<component>/ja/` directories when both exist.
+- Status, audit, process, roadmap, and archive documents elsewhere under `doc/design/` are English-only; where a Japanese companion path exists or a bilingual crate-tree layout expects one, add or keep a pointer stub linking the canonical English file (precedent: `doc/design/mizar-test/ja/semantic_bridge_corpus_map.md`; scope details in `doc/design/documentation_compaction_rules.md`).
+- Module design documents under paired `doc/design/<component>/en/` and `doc/design/<component>/ja/` directories keep their current pairing: update matching files when both exist.
 - Keep file names aligned across language directories whenever possible.
-- If an English document changes but the Japanese companion cannot be updated in the same change, explicitly note the reason and mark the Japanese document as needing synchronization.
+- If an English document in a bilingual area changes but the Japanese companion cannot be updated in the same change, explicitly note the reason and mark the Japanese document as needing synchronization.
 - When adding a new English documentation file in a bilingual area, add the corresponding Japanese companion or a clearly marked Japanese placeholder that links to the canonical English file.
 
 ### Canonical Task Contracts And Minimal Deltas

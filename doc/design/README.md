@@ -178,6 +178,15 @@ See
 [autonomous_crate_development.md](./autonomous_crate_development.md#canonical-task-contracts)
 for required fields, single-owner rules, review packets, and migration policy.
 
+## 5. Frozen Archives (`archive/`)
+
+Frozen historical logs — completed-task narratives, superseded audit waves,
+closed checklists kept only as evidence — live under `doc/design/archive/`,
+moved verbatim from their source documents with a dated header. Archive files
+are English-only, never extended, and never sequencing authority; the live
+document keeps a one-line pointer. Rules and the migration inventory:
+[documentation_compaction_rules.md](./documentation_compaction_rules.md).
+
 ## Focused Design Document Template
 
 For a focused design document, use this structure when it fits:

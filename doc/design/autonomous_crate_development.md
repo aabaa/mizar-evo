@@ -375,10 +375,63 @@ Use a finding-specific follow-up review after fixes. Any authority ambiguity,
 semantic choice, public-API expansion, lower-stage change, or soundness issue
 returns to the parent agent at the user's requested reasoning setting.
 
+## Gate Tiering
+
+Ceremony is tiered by what a task can put at risk (September 2026 audit 2).
+The tier is declared in the task contract (or, for light-tier work without a
+contract, in the commit message) before implementation starts.
+
+### Full gates (default)
+
+The full ceremony — the nine hard gates below, the independent multi-stage
+reviews, frozen-doc prerequisite commits where the task class requires them,
+and the ≥90/100 quality score — applies to every task that is, or touches, a
+trust-boundary or semantic-credit change. That includes any change to:
+language behavior or `doc/spec`; `.miz` tests, expectations, trace status, or
+coverage/semantic credit; production Rust behavior, diagnostics, parser
+recovery, or public API of a semantic authority; soundness or fail-closed
+boundaries; or activation of a previously inactive case. When the tier is
+ambiguous, the task is full-gate.
+
+### Light gates (zero-credit structural transport)
+
+A task qualifies for the light tier only when it moves, links, archives,
+re-indexes, or re-formats existing text or metadata without changing any
+behavior, test intent, expectation, trace status, or semantic/coverage
+credit. Examples: documentation compaction batches under
+[documentation_compaction_rules.md](./documentation_compaction_rules.md),
+archive splits of frozen logs, pointer-stub conversions, mechanical ledger
+updates, and link/fragment repairs.
+
+Light-tier requirements (all mandatory):
+
+1. the authority order is untouched: no edit to `doc/spec`, `.miz` sources,
+   expectations, `spec_trace` rows/status, or production Rust behavior;
+2. every removed or moved fact retains exactly one live owner (single-owner
+   rule), with language-local redirects where the rulebook requires them;
+3. one independent equivalence review (single pass; re-review only on
+   findings) instead of the multi-stage review sequence;
+4. required verification commands pass (at minimum `cargo test` for changes
+   the doc/ledger lints cover, plus the local link/fragment checks);
+5. a task-only commit with the tier named in the contract or commit body.
+
+Not required in the light tier: the nine-gate ceremony, frozen-doc
+prerequisite commits, the quality-score evaluation, and per-document review
+repetition to "NO FINDINGS".
+
+### One-way promotion rule
+
+Tiering is monotonic toward safety. The moment a task gains semantic credit
+or touches a protected surface — however small — it is promoted to full
+gates for its entire remaining scope, including work already done under the
+light tier, which must be re-reviewed at the full tier. A full-gate task is
+never demoted mid-task, and a light-tier declaration never authorizes the
+protected edits listed above.
+
 ## Crate Exit Gates
 
-A crate-wide autonomous development task is complete only when all hard gates
-pass:
+A crate-wide autonomous development task (full tier) is complete only when
+all hard gates pass:
 
 1. no blocking/high specification inconsistency remains
 2. no source behavior remains that is absent from `doc/spec` and tests
@@ -400,7 +453,8 @@ deferred with a reason.
 ## Quality Score
 
 After hard gates pass, a read-only review agent should assign a crate quality
-score out of 100. The crate is complete only if:
+score out of 100. The score applies to full-tier work; a light-tier task (see
+Gate Tiering) requires its single equivalence review instead of a score. The crate is complete only if:
 
 ```text
 hard gates pass
