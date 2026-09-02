@@ -741,3 +741,8 @@ S-025 exit status と S-021 policy-triggered rustdoc deferral はそのまま保
       task は R-032A。
     - independent final quality は **NO FINDINGS**。9 hard gates は全PASS、
       cap なしの valid `100/100`（`20/20/15/15/10/10/5/5`）。
+
+## Step 5 frontend gap closure
+
+- [ ] 5A.1 / G5 — frozen full-gate contract:
+  [STEP5A1-G5-QUA-STRUCTURE](../../task_contracts/ja/STEP5A1-G5-QUA-STRUCTURE.md)。

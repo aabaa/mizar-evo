@@ -780,3 +780,8 @@ remain intact.
     - Independent final quality reports **NO FINDINGS**; all nine hard gates
       PASS with no cap at valid `100/100`
       (`20/20/15/15/10/10/5/5`).
+
+## Step 5 frontend gap closure
+
+- [ ] 5A.1 / G5 — follow the frozen full-gate contract
+  [STEP5A1-G5-QUA-STRUCTURE](../../task_contracts/en/STEP5A1-G5-QUA-STRUCTURE.md).
