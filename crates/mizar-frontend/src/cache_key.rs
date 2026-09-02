@@ -27,7 +27,7 @@ pub const ACTIVE_LEXICAL_ENVIRONMENT_CACHE_KEY_VERSION: &str =
 pub const PARSER_LEXING_PLAN_CACHE_KEY_VERSION: &str =
     "mizar-frontend/parser-lexing-plan/position-sensitive-v1";
 /// Version tag for token-stream cache keys.
-pub const TOKEN_STREAM_CACHE_KEY_VERSION: &str = "mizar-frontend/token-stream-cache-key/v1";
+pub const TOKEN_STREAM_CACHE_KEY_VERSION: &str = "mizar-frontend/token-stream-cache-key/v2";
 /// Version tag for surface-AST cache keys.
 pub const SURFACE_AST_CACHE_KEY_VERSION: &str = "mizar-frontend/surface-ast-cache-key/v1";
 
@@ -399,7 +399,8 @@ fn finish_hash(hasher: blake3::Hasher) -> Hash {
 mod tests {
     use super::{
         ActiveLexicalEnvironmentCacheKey, ParserLexingPlanCacheKey, PreprocessedSourceCacheKey,
-        SourceUnitCacheKey, SurfaceAstCacheKey, TokenStreamCacheKey, parser_inputs_hash,
+        SourceUnitCacheKey, SurfaceAstCacheKey, TOKEN_STREAM_CACHE_KEY_VERSION,
+        TokenStreamCacheKey, parser_inputs_hash,
     };
     use crate::lexical_env::LexicalEnvironmentFingerprint;
     use crate::lexing::{
@@ -523,6 +524,24 @@ mod tests {
                 &parser_inputs(Edition::new("2026")),
             )
         );
+    }
+
+    #[test]
+    fn token_stream_cache_key_version_is_bumped_for_declaration_site_symbols() {
+        assert_eq!(
+            TOKEN_STREAM_CACHE_KEY_VERSION,
+            "mizar-frontend/token-stream-cache-key/v2"
+        );
+
+        let mut current = TokenStreamCacheKey::new(
+            &preprocessed("func F: X \\+\\ Y -> set equals X;\n"),
+            LexicalEnvironmentFingerprint::new(7),
+            ParserLexContext::general(),
+            ParserLexingPlanCacheKey::current(),
+        );
+        let current_hash = current.stable_hash();
+        current.version = Arc::from("mizar-frontend/token-stream-cache-key/v1");
+        assert_ne!(current_hash, current.stable_hash());
     }
 
     #[test]

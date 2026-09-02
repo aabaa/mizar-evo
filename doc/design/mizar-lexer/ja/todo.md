@@ -7,7 +7,7 @@
 
 ## Ordered Task List
 
-1. [ ] **Step 5A.3 / G2** — active。詳細は
+1. [x] **Step 5A.3 / G2** — complete。詳細は
    [task contract](../../task_contracts/ja/STEP5A3-G2-SYMBOLIC-USER-SYMBOLS.md)。
 
 ## Completed Tasks

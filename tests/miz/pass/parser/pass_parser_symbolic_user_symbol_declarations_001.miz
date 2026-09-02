@@ -1,0 +1,12 @@
+definition
+  let X, Y be set;
+  func SlashJoinDef: X \+\ Y -> set equals X;
+  coherence proof thus thesis; end;
+  func AngleJoinDef: X <+> Y -> set equals X;
+  coherence proof thus thesis; end;
+  pred SubsetLikeDef: X <<= Y means X = Y;
+end;
+
+theorem SlashJoinUse: for X, Y being set holds X \+\ Y = X by Ref;
+theorem AngleJoinUse: for X, Y being set holds X <+> Y = X by Ref;
+theorem SubsetLikeUse: for X, Y being set holds X <<= Y by Ref;

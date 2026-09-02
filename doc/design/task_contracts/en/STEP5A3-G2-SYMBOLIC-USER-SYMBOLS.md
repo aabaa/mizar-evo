@@ -10,7 +10,7 @@ Owning plans: [mizar-lexer](../../mizar-lexer/en/00.crate_plan.md) and
 
 | Field | Value |
 |---|---|
-| Status | Frozen; pre-implementation |
+| Status | Completed; full gates passed |
 | Tier | Full: production tokenization, parser-visible behavior, token-cache identity, and test-first `.miz` |
 | Owner / consumers | `mizar-lexer` owns final disambiguation; `mizar-frontend` owns the token-cache namespace; `mizar-parser` consumes the result |
 | Dependencies | Step 5A frozen order selects 5A.3 after completed 5A.2; no semantic dependency |
@@ -103,3 +103,20 @@ focused lexer/frontend/parse-only checks; metadata/link/ledger lints; format,
 warnings-denied workspace Clippy, and full tests. Exit requires 9/9 hard gates,
 a valid read-only score of at least 90/100, exact task-only staging, local
 commit, clean postcommit proof, and fresh selection of 5A.4/G3.
+
+## Completion evidence
+
+The three immutable G2 ledger sources and the new declaration-site regression
+parse without diagnostics. The active parse-only corpus is 104/104; repository
+metadata is 553 cases / 499 requirements with 23 expected warnings. Independent
+specification, boundary, test-sufficiency, implementation, and source/docs/API
+reviews reported no findings after the recorded test-manifest repair.
+
+Focused lexer and frontend tests, metadata (139/139), lint policy (15/15), the
+repository plan, `cargo fmt --check`, warnings-denied workspace Clippy, and full
+`cargo test` pass. All 9 hard gates pass. Protected oracle activation, trace
+states, the audit-1 gap ledger, coverage audit, and archive remain unchanged;
+the trace delta is limited to the two append-only parse-stage backlinks frozen
+above. The independent read-only quality score is 100/100. Residual G3/G4/G6/
+G7/G9 behavior and semantic activation remain deferred to their named tasks;
+no G2 residual remains.

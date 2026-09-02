@@ -1630,6 +1630,7 @@ tests = [
   "tests/miz/pass/parser/pass_parser_predicate_definitions_001.expect.toml",
   "tests/miz/fail/parser/fail_parser_predicate_definitions_recovery_001.expect.toml",
   "tests/miz/pass/parser/pass_parser_local_notation_activation_001.expect.toml",
+  "tests/miz/pass/parser/pass_parser_symbolic_user_symbol_declarations_001.expect.toml",
 ]
 
 [[requirement]]
@@ -1741,6 +1742,7 @@ tests = [
   "tests/miz/pass/parser/pass_parser_functor_definitions_001.expect.toml",
   "tests/miz/fail/parser/fail_parser_functor_definitions_recovery_001.expect.toml",
   "tests/miz/pass/parser/pass_parser_local_notation_activation_001.expect.toml",
+  "tests/miz/pass/parser/pass_parser_symbolic_user_symbol_declarations_001.expect.toml",
 ]
 
 [[requirement]]

@@ -2,8 +2,8 @@
 
 > 正本は英語です。英語版: [../en/cache_key.md](../en/cache_key.md)。
 
-状態: task 19 で実装済み。task 20 の parser lexing plan と、source-position-aware
-operator metadata に合わせて更新済み。
+状態: task 19 で実装済み。task 20 の parser lexing plan、source-position-aware
+operator metadata、および Step 5A.3 declaration-site symbolic tokenization に合わせて更新済み。
 
 ## 目的
 
@@ -152,6 +152,8 @@ FrontendDependencyFootprint
 
 `TokenStreamCacheKey` は lexical hash、アクティブ字句環境 fingerprint、現在の default `ParserLexContext`、parser-assisted lexing plan key を組み合わせる。task 20 の plan key は、plan version、default context、位置別の各 lexical byte range とその `ParserLexContext` を記録する。string-required range や user-symbol kind filter が変わると、version string が同じでも tokenization は無効化される。これは token sequence と diagnostics の content key であり、range-faithful artifact key 全体ではない。source-spanned token を再利用する driver は、正確な source range が重要な場合、source-version または source-map identity と合成する必要がある。
 
+`TOKEN_STREAM_CACHE_KEY_VERSION` は `mizar-frontend/token-stream-cache-key/v2` である。同じ source と imported environment でも、句読点形のローカル Functor/Predicate 宣言の正確な宣言開始位置で異なる token stream が生成され得るため、token-stream namespace を v2 へ進める。parser seam version は AST cache key の所有であり、ここでは変更しない。
+
 `SurfaceAstCacheKey` は token-stream content hash、parser seam cache version、parser-input hash、edition を組み合わせる。Parser seam は `ParserSeam::cache_key_version` により version を公開する。`parser_inputs_hash` は、token stream が不変でも AST shape を変え得るため、edition、string-required context、operator fixity entries を含む。各 fixity entry hash は spelling、fixity kind、precedence、その metadata が有効になる source byte offset、fixity kind が infix の場合の associativity を含む。parser-facing operator metadata は選択済み overload root ではなく spelling 単位の notation に付くため、symbol id は hash しない。
 
 `TokenStream` reuse には lexical hash、active lexical environment fingerprint、imported lexical-summary fingerprint、parser lexing plan / filter hash、関連する lexer/schema version の一致が必要である。bundle/source-level reuse では、token と AST entry を検討する前に互換な language edition が必要である。`SurfaceAst` reuse には token stream hash、parser version、parser input hash、range-aware operator view hash、edition の一致が必要である。
@@ -201,3 +203,7 @@ central [JA contract](../../task_contracts/ja/STEP5A2-G1-LOCAL-NOTATION.md) は�
 already-valid fixity input に対する prefix template AST semantics が変わるため、
 v3 から v4 への invalidation を要求する。local default metadata も既存の parser-input
 hash に入るが、cache-key structure と storage policy は変更しない。
+
+## Step 5A.3 Declaration-Site Symbolic User Symbols
+
+[central contract](../../task_contracts/ja/STEP5A3-G2-SYMBOLIC-USER-SYMBOLS.md) は、ローカルな句読点形 Functor/Predicate の宣言開始位置で token stream が変わり得るため、token-stream namespace を v1 から v2 へ進めることを要求する。parser seam は v4 のままであり、AST cache-key の shape と storage policy は変更しない。

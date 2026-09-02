@@ -2,8 +2,9 @@
 
 > Canonical language: English. Japanese companion: [../ja/cache_key.md](../ja/cache_key.md).
 
-Status: implemented by task 19, updated for the task-20 parser lexing plan, and
-updated for source-position-aware operator metadata.
+Status: implemented by task 19, updated for the task-20 parser lexing plan,
+source-position-aware operator metadata, and Step 5A.3 declaration-site
+symbolic tokenization.
 
 ## Purpose
 
@@ -178,6 +179,11 @@ sequence and diagnostics, not a complete range-faithful artifact key; a driver
 that reuses source-spanned tokens must compose it with source-version or
 source-map identity when exact source ranges matter.
 
+`TOKEN_STREAM_CACHE_KEY_VERSION` is `mizar-frontend/token-stream-cache-key/v2`.
+The bump separates token streams that differ because punctuation-shaped local
+Functor/Predicate declarations are admitted at their exact declaration starts;
+the parser seam version remains owned by the AST cache key.
+
 `SurfaceAstCacheKey` combines the token-stream content hash, parser seam cache
 version, parser-input hash, and edition. Parser seams expose their version
 through `ParserSeam::cache_key_version`. `parser_inputs_hash` includes edition,
@@ -261,3 +267,11 @@ requires v3-to-v4 invalidation because prefix template parsing changes AST
 semantics for an already valid fixity input. Local default metadata also enters
 the existing parser-input hash; cache-key structure and storage policy do not
 change.
+
+## Step 5A.3 Declaration-Site Symbolic User Symbols
+
+The [central contract](../../task_contracts/en/STEP5A3-G2-SYMBOLIC-USER-SYMBOLS.md)
+requires the token-stream namespace to advance from v1 to v2 because the same
+source and imported environment can now produce a different token stream at
+local punctuation-shaped Functor/Predicate declaration starts. The parser seam
+remains v4; no AST cache-key shape or storage policy changes.

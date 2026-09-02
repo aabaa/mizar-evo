@@ -1,0 +1,15 @@
+schema_version = 1
+id = "pass_parser_symbolic_user_symbol_declarations_001"
+kind = "pass"
+stage = "parse_only"
+domain = "parser.symbolic_user_symbols"
+source = "pass_parser_symbolic_user_symbol_declarations_001.miz"
+expected_outcome = "pass"
+expected_phase = "parse"
+tags = ["active_parse_only"]
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.09.predicate_definitions.parser",
+  "spec.en.10.functor_definitions.parser",
+]
+notes = "Step 5A.3/G2 parse-only coverage for two symbolic infix functor declarations and one symbolic infix predicate declaration plus their later uses."

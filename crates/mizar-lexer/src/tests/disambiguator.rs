@@ -449,6 +449,166 @@ fn disambiguator_filters_same_spelling_overloads_by_parser_kind_context() {
     assert!(mode_stream.diagnostics.is_empty());
 }
 
+fn disambiguate_local_source(
+    source: &str,
+    context: ParserLexContext,
+) -> (crate::LocalLexicalDeclarations, crate::TokenStream) {
+    let raw = scan_raw(source).expect("source should raw scan");
+    let locals = collect_local_lexical_declarations(&raw, module_id("current"));
+    let env = build_lexical_environment(&[], &[]).expect("environment should build");
+    let skeleton = build_scope_skeleton(&raw);
+    let stream = disambiguate_with_local_declarations(&raw, &env, &locals, &context, &skeleton);
+    (locals, stream)
+}
+
+#[test]
+fn disambiguator_admits_punctuation_declarations_at_exact_sites() {
+    let source = concat!(
+        "func SlashDef: X \\+\\ Y -> set equals X;\n",
+        "func AngleDef: X <+> Y -> set equals X;\n",
+        "pred ShiftDef: X <<= Y means X = Y;\n",
+        "func PairDef: X [: Y -> set equals X;\n",
+        "X \\+\\ Y; X <+> Y; X <<= Y; X [: Y;"
+    );
+    let (locals, stream) = disambiguate_local_source(source, ParserLexContext::general());
+
+    for (spelling, kind) in [
+        ("\\+\\", UserSymbolKind::Functor),
+        ("<+>", UserSymbolKind::Functor),
+        ("<<=", UserSymbolKind::Predicate),
+        ("[:", UserSymbolKind::Functor),
+    ] {
+        let occurrences = stream
+            .tokens
+            .iter()
+            .filter(|token| token.lexeme == spelling)
+            .collect::<Vec<_>>();
+        assert_eq!(occurrences.len(), 2, "{spelling:?}");
+        assert!(
+            occurrences
+                .iter()
+                .all(|token| token.kind == TokenKind::UserSymbol)
+        );
+        let declaration = locals
+            .user_symbols
+            .iter()
+            .find(|declaration| declaration.spelling == spelling)
+            .expect("symbol declaration should be collected");
+        assert_eq!(occurrences[0].span.start, declaration.declared_at.start);
+        assert_eq!(
+            locals
+                .user_symbols
+                .iter()
+                .filter(|declaration| declaration.spelling == spelling)
+                .map(|declaration| declaration.kind)
+                .collect::<Vec<_>>(),
+            vec![kind]
+        );
+    }
+    assert!(stream.diagnostics.is_empty(), "{:#?}", stream.diagnostics);
+}
+
+#[test]
+fn disambiguator_keeps_identifier_shaped_declaration_as_identifier() {
+    let source = "func CallDef: f(X) -> set equals X; f(X);";
+    let (_, stream) = disambiguate_local_source(source, ParserLexContext::general());
+
+    assert_eq!(
+        stream
+            .tokens
+            .iter()
+            .filter(|token| token.lexeme == "f")
+            .map(|token| token.kind)
+            .collect::<Vec<_>>(),
+        vec![TokenKind::Identifier, TokenKind::UserSymbol]
+    );
+    assert!(stream.diagnostics.is_empty(), "{:#?}", stream.diagnostics);
+}
+
+#[test]
+fn disambiguator_does_not_admit_forward_or_self_use_of_declaration_symbol() {
+    let source = concat!(
+        "X \\+\\ Y;\n",
+        "func SlashDef: X \\+\\ Y -> set equals X \\+\\ Y;\n",
+        "X \\+\\ Y;"
+    );
+    let (_, stream) = disambiguate_local_source(source, ParserLexContext::general());
+
+    let symbol_positions = source
+        .match_indices("\\+\\")
+        .map(|(position, _)| position)
+        .collect::<Vec<_>>();
+    assert_eq!(symbol_positions.len(), 4);
+    assert_eq!(
+        symbol_positions
+            .iter()
+            .map(|position| {
+                stream
+                    .tokens
+                    .iter()
+                    .find(|token| token.span.start == *position)
+                    .expect("each spelling should produce a token at its start")
+                    .kind
+            })
+            .collect::<Vec<_>>(),
+        vec![
+            TokenKind::ErrorRecovery,
+            TokenKind::UserSymbol,
+            TokenKind::ErrorRecovery,
+            TokenKind::UserSymbol,
+        ]
+    );
+    for position in [symbol_positions[0], symbol_positions[2]] {
+        assert!(stream.diagnostics.iter().any(|diagnostic| {
+            diagnostic.code == LexDiagnosticCode::NoValidTokenCandidate
+                && diagnostic.span.start == position
+        }));
+    }
+}
+
+#[test]
+fn disambiguator_filters_declaration_kind_without_weakening_reserved_controls() {
+    let source = concat!(
+        "func SlashDef: X \\+\\ Y -> set equals X;\n",
+        "func BadEquals: X = Y -> set equals X;\n",
+        "func BadAnnotation: X @[ Y -> set equals X;"
+    );
+    let context = ParserLexContext::general()
+        .with_user_symbol_kinds(UserSymbolKindSet::only(UserSymbolKind::Predicate));
+    let (locals, stream) = disambiguate_local_source(source, context);
+
+    let symbol_position = source
+        .find("\\+\\")
+        .expect("declaration symbol should exist");
+    let token = stream
+        .tokens
+        .iter()
+        .find(|token| token.span.start == symbol_position)
+        .expect("declaration symbol token should exist");
+    assert_eq!(token.kind, TokenKind::ErrorRecovery);
+    assert_eq!(
+        stream
+            .diagnostics
+            .iter()
+            .find(|diagnostic| diagnostic.span.start == symbol_position)
+            .map(|diagnostic| diagnostic.code),
+        Some(LexDiagnosticCode::ParserContextRejectedCandidate)
+    );
+    assert_eq!(locals.user_symbols.len(), 1);
+    assert!(
+        stream
+            .tokens
+            .iter()
+            .any(|token| token.kind == TokenKind::ReservedSymbol && token.lexeme == "=")
+    );
+    assert!(
+        stream
+            .tokens
+            .iter()
+            .any(|token| token.kind == TokenKind::ReservedSymbol && token.lexeme == "@[")
+    );
+}
+
 #[test]
 fn disambiguator_recognizes_strings_only_when_required() {
     let env = build_lexical_environment(&[], &[]).expect("environment should build");

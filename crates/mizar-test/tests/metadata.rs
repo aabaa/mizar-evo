@@ -5751,6 +5751,7 @@ fn repository_parse_only_cases_separate_active_runner_seeds_from_future_metadata
             "pass_parser_set_comprehensions_001",
             "pass_parser_simple_statements_001",
             "pass_parser_structures_001",
+            "pass_parser_symbolic_user_symbol_declarations_001",
             "pass_parser_template_arguments_001",
             "pass_parser_template_references_001",
             "pass_parser_theorems_proofs_001",
@@ -5937,6 +5938,9 @@ fn repository_parse_only_cases_separate_active_runner_seeds_from_future_metadata
             PathBuf::from(
                 "tests/miz/pass/parser/pass_parser_local_notation_activation_001.expect.toml"
             ),
+            PathBuf::from(
+                "tests/miz/pass/parser/pass_parser_symbolic_user_symbol_declarations_001.expect.toml"
+            ),
         ]
     );
 
@@ -5956,6 +5960,9 @@ fn repository_parse_only_cases_separate_active_runner_seeds_from_future_metadata
             ),
             PathBuf::from(
                 "tests/miz/pass/parser/pass_parser_local_notation_activation_001.expect.toml"
+            ),
+            PathBuf::from(
+                "tests/miz/pass/parser/pass_parser_symbolic_user_symbol_declarations_001.expect.toml"
             ),
         ]
     );
@@ -6230,8 +6237,8 @@ fn repository_parse_only_runner_executes_active_minimal_parser_seeds() {
     let report = run_parse_only_corpus(&config).unwrap();
 
     assert_eq!(report.error_count(), 0, "{:#?}", report.diagnostics);
-    assert_eq!(report.results.len(), 103);
-    assert_eq!(report.passed_count(), 103);
+    assert_eq!(report.results.len(), 104);
+    assert_eq!(report.passed_count(), 104);
     assert_eq!(report.failed_count(), 0);
     assert!(report.results.iter().any(|result| {
         result.id.0 == "pass_parser_algorithm_control_flow_001"
@@ -6246,6 +6253,10 @@ fn repository_parse_only_runner_executes_active_minimal_parser_seeds() {
     }));
     assert!(report.results.iter().any(|result| {
         result.id.0 == "pass_parser_algorithms_claims_001"
+            && result.actual_diagnostic_codes.is_empty()
+    }));
+    assert!(report.results.iter().any(|result| {
+        result.id.0 == "pass_parser_symbolic_user_symbol_declarations_001"
             && result.actual_diagnostic_codes.is_empty()
     }));
     assert!(report.results.iter().any(|result| {
@@ -6931,6 +6942,38 @@ fn step5a2_gap_ledger_selects_exact_g1_inventory_shape() {
     }
 
     assert_eq!((g1_rows, g1_only, g1_g2, g1_g6), (20, 17, 2, 1));
+}
+
+#[test]
+fn step5a3_gap_ledger_selects_exact_g2_inventory_shape() {
+    let path = repository_config()
+        .workspace_root
+        .join("tests/coverage/audit1_frontend_gaps.tsv");
+    let input = fs::read_to_string(path).unwrap();
+    let mut lines = input.lines();
+    assert_eq!(lines.next(), Some("source\tgaps"));
+
+    let mut g2_rows = 0;
+    let mut g1_g2 = 0;
+    let mut g2_only = 0;
+    for line in lines {
+        let (source, gaps) = line
+            .split_once('\t')
+            .expect("gap-ledger rows must contain exactly one tab-separated gap field");
+        assert!(!source.is_empty());
+        assert!(!gaps.contains('\t'));
+        if !gaps.split(',').any(|gap| gap == "G2") {
+            continue;
+        }
+        g2_rows += 1;
+        match gaps {
+            "G1,G2" => g1_g2 += 1,
+            "G2" => g2_only += 1,
+            other => panic!("unexpected G2 overlap classification: {other}"),
+        }
+    }
+
+    assert_eq!((g2_rows, g1_g2, g2_only), (3, 2, 1));
 }
 
 #[test]
@@ -9528,8 +9571,8 @@ fn parse_only_cli_reports_active_runner_summary() {
         String::from_utf8_lossy(&output.stderr)
     );
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("parse-only cases: 103"));
-    assert!(stdout.contains("passed: 103"));
+    assert!(stdout.contains("parse-only cases: 104"));
+    assert!(stdout.contains("passed: 104"));
     assert!(stdout.contains("failed: 0"));
 }
 

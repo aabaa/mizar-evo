@@ -860,12 +860,24 @@ impl<'a> Disambiguator<'a> {
         cursor: usize,
     ) -> Vec<UserSymbolCandidate> {
         let position = raw_token.span.start + cursor;
-        self.lexical_env.longest_user_symbol_at_position(
+        let active = self.lexical_env.longest_user_symbol_at_position(
             &raw_token.lexeme,
             cursor,
             position,
             self.local_declarations,
-        )
+        );
+        let declaration_site = self
+            .local_declarations
+            .declared_user_symbols_starting_at(&raw_token.lexeme, cursor, position)
+            .into_iter()
+            .filter(|candidate| {
+                matches!(
+                    candidate.kind,
+                    UserSymbolKind::Functor | UserSymbolKind::Predicate
+                ) && !is_identifier(&candidate.spelling)
+            })
+            .collect();
+        merge_same_length_user_symbol_candidates(active, declaration_site)
     }
 
     fn declared_attribute_candidates_at(

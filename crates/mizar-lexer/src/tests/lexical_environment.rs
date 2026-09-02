@@ -386,7 +386,7 @@ fn local_declaration_prepass_activates_symbols_only_after_declaring_item() {
             .collect::<Vec<_>>(),
         vec![
             TokenKind::ErrorRecovery,
-            TokenKind::ErrorRecovery,
+            TokenKind::UserSymbol,
             TokenKind::UserSymbol
         ]
     );
