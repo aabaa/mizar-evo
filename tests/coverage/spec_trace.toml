@@ -2453,6 +2453,7 @@ required = true
 coverage = "pass_and_fail"
 tests = [
   "tests/miz/pass/parser/pass_parser_qua_terms_001.expect.toml",
+  "tests/miz/pass/parser/pass_parser_qua_structure_type_001.expect.toml",
   "tests/miz/fail/parser/fail_parser_qua_missing_type_001.expect.toml",
 ]
 

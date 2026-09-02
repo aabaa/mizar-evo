@@ -783,5 +783,5 @@ remain intact.
 
 ## Step 5 frontend gap closure
 
-- [ ] 5A.1 / G5 — follow the frozen full-gate contract
+- [x] 5A.1 / G5 — completed under the full-gate contract
   [STEP5A1-G5-QUA-STRUCTURE](../../task_contracts/en/STEP5A1-G5-QUA-STRUCTURE.md).

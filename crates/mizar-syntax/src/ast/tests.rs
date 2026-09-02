@@ -4085,10 +4085,107 @@ fn builder_rejects_token_sharing_between_multiple_structural_parents() {
     let root = builder.add_node(
         SurfaceNodeKind::Root,
         range(source_id, 0, 1),
-        vec![token, left_expression, right_expression],
+        vec![token, left_expression],
     );
 
-    let _ = builder.finish(Some(root), Some(left_expression));
+    let _ = builder.finish(Some(root), Some(right_expression));
+}
+
+#[test]
+fn builder_allows_sharing_from_outside_selected_graph() {
+    let source_id = source_id(64);
+    let mut builder = SurfaceAstBuilder::new(source_id);
+    let token = builder.add_token(SurfaceTokenKind::Identifier, "x", range(source_id, 0, 1));
+    let selected = builder.add_node(
+        SurfaceNodeKind::TermExpression,
+        range(source_id, 0, 1),
+        vec![token],
+    );
+    let disconnected = builder.add_node(
+        SurfaceNodeKind::TermReference,
+        range(source_id, 0, 1),
+        vec![token],
+    );
+    let root = builder.add_node(
+        SurfaceNodeKind::Root,
+        range(source_id, 0, 1),
+        vec![token, selected],
+    );
+
+    let ast = builder.finish(Some(root), Some(selected));
+
+    assert!(ast.node(sid(disconnected)).is_some());
+    assert_eq!(ast.rowan_root().to_string(), "x");
+}
+
+#[test]
+fn builder_rejects_rootless_shared_children() {
+    let build = |source_id| {
+        let mut builder = SurfaceAstBuilder::new(source_id);
+        let token = builder.add_token(SurfaceTokenKind::Identifier, "x", range(source_id, 0, 1));
+        let expression = builder.add_node(
+            SurfaceNodeKind::TermExpression,
+            range(source_id, 0, 1),
+            vec![token],
+        );
+        builder.add_node(
+            SurfaceNodeKind::TermReference,
+            range(source_id, 0, 1),
+            vec![token],
+        );
+        (builder, expression)
+    };
+
+    let (builder, _) = build(source_id(65));
+    assert!(std::panic::catch_unwind(|| builder.finish(None, None)).is_err());
+
+    let (builder, expression) = build(source_id(66));
+    assert!(std::panic::catch_unwind(|| builder.finish(None, Some(expression))).is_err());
+}
+
+#[test]
+#[should_panic(expected = "structural root child")]
+fn builder_rejects_nested_structural_root_child() {
+    let source_id = source_id(67);
+    let mut builder = SurfaceAstBuilder::new(source_id);
+    let token = builder.add_token(SurfaceTokenKind::Identifier, "x", range(source_id, 0, 1));
+    let nested = builder.add_node(
+        SurfaceNodeKind::TermExpression,
+        range(source_id, 0, 1),
+        vec![token],
+    );
+    let parent = builder.add_node(
+        SurfaceNodeKind::ParenthesizedTerm,
+        range(source_id, 0, 1),
+        vec![nested],
+    );
+    let root = builder.add_node(
+        SurfaceNodeKind::Root,
+        range(source_id, 0, 1),
+        vec![token, nested, parent],
+    );
+
+    let _ = builder.finish(Some(root), Some(parent));
+}
+
+#[test]
+#[should_panic(expected = "cannot be shared by multiple non-root parents")]
+fn builder_rejects_duplicate_selected_parent_child_edges() {
+    let source_id = source_id(68);
+    let mut builder = SurfaceAstBuilder::new(source_id);
+    let token = builder.add_token(SurfaceTokenKind::Identifier, "x", range(source_id, 0, 1));
+    let expression = builder.add_node(
+        SurfaceNodeKind::TermExpression,
+        range(source_id, 0, 1),
+        vec![token, token],
+    );
+    let root = builder.add_node(
+        SurfaceNodeKind::Root,
+        range(source_id, 0, 1),
+        vec![token, expression],
+    );
+
+    let _ = builder.finish(Some(root), Some(expression));
 }
 
 fn scrambled_trivia(source_id: SourceId) -> SurfaceTriviaBuilder {

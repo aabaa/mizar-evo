@@ -1,0 +1,14 @@
+schema_version = 1
+id = "pass_parser_qua_structure_type_001"
+kind = "pass"
+stage = "parse_only"
+domain = "parser.qua_terms"
+source = "pass_parser_qua_structure_type_001.miz"
+expected_outcome = "pass"
+expected_phase = "parse"
+diagnostic_codes = []
+tags = ["active_parse_only"]
+spec_refs = [
+  "spec.en.13.qua_qualification.parser",
+]
+notes = "Active Step 5A.1/G5 parse-only regression: a structure type head after `qua` must build a source-shaped SurfaceAst without sharing a child across selected-tree parents or panicking; semantic narrowing remains deferred to the inactive 5C.7 oracle."

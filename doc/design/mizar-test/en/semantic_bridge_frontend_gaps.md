@@ -23,7 +23,7 @@ be closed by weakening the corpus expectations.
 | G2 | medium | Symbolic user-symbol spellings (`<<=`, `\\+\\`, `<+>`) are unlexable even at their own declaration site (`Lexer(NoValidTokenCandidate)`), although spec A.2 admits any ASCII-graphic spelling except `@`. |
 | G3 | medium | The `then` statement-linking prefix is rejected, although A.15 admits `[then] linkable_statement`; `hence`/`thus ... by` parse cleanly. |
 | G4 | medium | `synonym`/`antonym` notation declarations fail to parse even with identifier spellings on both patterns. |
-| G5 | **critical (crash)** | `term qua <structure type>` panics the SurfaceAstBuilder: `node cannot be shared by multiple non-root parents`. `qua` to builtin types parses. Minimal reproducer below. |
+| G5 | closed by 5A.1 | Root-reachable AST validation removes the `term qua <structure type>` SurfaceAstBuilder panic; see the [task contract](../../task_contracts/en/STEP5A1-G5-QUA-STRUCTURE.md). Semantic activation remains owned by 5C. |
 | G6 | medium | Argument-bearing local dependent-mode use (`QMode of A`) fails in binder/type positions although the declaration parses (imported argument-bearing modes are handled by the existing task-68 boundary). |
 | G7 | low (worked around) | Empty justifications are accepted for `existence;`/`uniqueness;` but rejected (`malformed_justification`) for `coherence;`, `symmetry;`, `reducibility;`, `sethood;`, against A.15. The corpus works around it with explicit proof blocks; the inconsistency still needs an owner decision. |
 | G9 | medium | Pattern positions naming an already-active notation spelling (redefine pred, second definition of the same spelling, synonym original pattern) fail to parse. |
@@ -80,10 +80,10 @@ end;
 
 Machine-readable copy:
 [`tests/coverage/audit1_frontend_gaps.tsv`](../../../../tests/coverage/audit1_frontend_gaps.tsv).
-These sources stay committed as inactive oracle seeds; they parse-fail (or
-crash) today and become syntax regression material for the gap-closure
-tasks. Corpus-wide tooling must not assume every committed `.miz` parses
-until G1-G9 close (G5 in particular panics).
+These sources stay committed as inactive oracle seeds. The ledger records the
+audit-time blocking gaps; closure evidence belongs to the linked Step 5A task
+contracts. Corpus-wide tooling must not assume every committed `.miz` parses
+until the remaining frontend gaps close.
 
 | Source | Gaps |
 |---|---|

@@ -744,5 +744,5 @@ S-025 exit status と S-021 policy-triggered rustdoc deferral はそのまま保
 
 ## Step 5 frontend gap closure
 
-- [ ] 5A.1 / G5 — frozen full-gate contract:
+- [x] 5A.1 / G5 — completed under the frozen full-gate contract:
   [STEP5A1-G5-QUA-STRUCTURE](../../task_contracts/ja/STEP5A1-G5-QUA-STRUCTURE.md)。

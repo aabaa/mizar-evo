@@ -9,12 +9,13 @@ Owning plan: [mizar-syntax](../../mizar-syntax/en/00.crate_plan.md).
 
 | Field | Value |
 |---|---|
-| Status | Ready; freeze precedes test/source edits |
+| Status | Complete; implementation commit contains this contract state |
 | Tier | Full: production syntax trust path plus test-first `.miz` |
 | Owner / consumers | `mizar-syntax::SurfaceAstBuilder::finish` / parser, frontend, parse-only runner |
 | Dependencies | None; Step 5A frozen order selects 5A.1 first |
 | Authority | [§13.6](../../../spec/en/13.term_expression.md#136-type-qualification-qua), Appendix [A.3](../../../spec/en/appendix_a.grammar_summary.md#a3-type-expressions)/[A.13](../../../spec/en/appendix_a.grammar_summary.md#a13-term-expressions), [Step 5A](../../todo.md#step-5a--frontend-gap-closure--) |
 | Classification | `source_drift`, `test_gap`, bounded `design_drift`; no `spec_gap` |
+| Semantic-credit throughput | `0 tasks/week`; 5A.1 closes a parse blocker but activates no semantic oracle |
 
 The recorded [G5 reproducer](../../mizar-test/en/semantic_bridge_frontend_gaps.md#minimal-reproducers)
 is valid syntax. The builder currently counts a root-unreachable speculative
@@ -66,6 +67,11 @@ The implementation commit is limited to:
 ```text
 crates/mizar-syntax/src/ast.rs
 crates/mizar-syntax/src/ast/tests.rs
+crates/mizar-test/src/runner/tests/type_elaboration/source_attribute_definition.rs
+crates/mizar-test/src/runner/tests/type_elaboration/source_functor_definition.rs
+crates/mizar-test/src/runner/tests/type_elaboration/source_mode_definition.rs
+crates/mizar-test/src/runner/tests/type_elaboration/source_property_implementation.rs
+crates/mizar-test/tests/metadata.rs
 tests/miz/pass/parser/pass_parser_qua_structure_type_001.miz
 tests/miz/pass/parser/pass_parser_qua_structure_type_001.expect.toml
 tests/coverage/spec_trace.toml
@@ -84,6 +90,14 @@ trace status/coverage, diagnostics, parser/frontend/lexer production, public
 API, Cargo metadata, or `doc/design/archive/`. Do not activate the two audit-1
 semantic cases; owners remain 5C.7/5C.6. Coverage-audit impact is explicitly
 none because the parse requirement is already covered.
+
+The four listed private runner-test edits only advance their exact repository
+plan-size assertion from `550/499` to the frozen `551/499` delta and pass/fail
+mix from `307/243` to `308/243`; their active-stage tuple advances only the
+parse-only member from `101` to `102`. Route, selection, semantic-output, and
+expectation assertions stay unchanged. The metadata integration test makes the
+same `101` to `102` count change, inserts the exact new active id in sorted
+order, and asserts its diagnostic-free execution; no admission rule changes.
 
 ## Gates, baseline, and exit
 
@@ -105,8 +119,18 @@ Protected activation/gap-ledger/coverage-audit/archive-manifest hashes are
 `9e75f8ea0f7a1ca81a88f47811f21a264803b16fb3101327caaed7c0925af285`,
 and `934df58f26b3ea1903f9c476452055d7755001fa9e5786293c959e863da72160`.
 
-Exit: the active byte-equivalent G5 fixture parses clean without panic. The
-current synonym source has no `qua` and remains G4-blocked until 5A.5; 5A.1
-discharges only its mapped G5 dependency. No inactive semantic case becomes an
-active oracle. Completion evidence and final hashes replace this paragraph;
-fresh inventory then selects 5A.2/G1.
+## Current gate result
+
+The byte-equivalent G5 fixture parses clean in the `102/102` parse-only run;
+syntax (`63` library tests), parser (`231`), frontend (`134`), and mizar-test
+library (`652`) tests pass. Independent specification, boundary,
+test-sufficiency, implementation, and source/documentation reviews have no
+in-scope blocking finding. Workspace Clippy with warnings denied passes.
+
+The inherited non-semantic checker-inventory and formatting gate drift was
+repaired separately by `DOC-CHECKER-LIVE-INVENTORY-GATE-REPAIR`. Full
+`cargo test`, `cargo fmt --check`, and workspace warnings-denied Clippy pass.
+All nine hard gates pass; independent read-only review and the parent accept a
+valid `100/100`. The current synonym source remains G4-blocked until 5A.5.
+Protected activation, gap ledger, coverage audit, and archive hashes remain at
+their frozen values; no inactive semantic oracle or trace status changed.

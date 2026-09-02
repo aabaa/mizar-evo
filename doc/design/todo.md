@@ -94,7 +94,7 @@ is its task 1). "Next work" points into the
 |---|---|---|---|---|
 | mizar-session | Source identity, source maps, source loading, build snapshots, retention | [x] complete | — | [todo](./mizar-session/en/todo.md) |
 | mizar-lexer | Raw scan, scope skeletons, lexical environments, token disambiguation | [x] complete | Step 5A.2/5A.3 (G1 support, G2 symbolic spellings) | [todo](./mizar-lexer/en/todo.md) |
-| mizar-syntax | Rowan-backed `SurfaceAst`, trivia, recovery, typed views | [x] historical milestone plus parser Tasks 48/46 increments and S-026 dense views complete | Step 5A.1 (G5 `qua` crash fix); S-021 remains the sole deferred syntax task | [todo](./mizar-syntax/en/todo.md) |
+| mizar-syntax | Rowan-backed `SurfaceAst`, trivia, recovery, typed views | [x] historical milestone plus parser Tasks 48/46 increments, S-026 dense views, and Step 5A.1 complete | S-021 remains the sole deferred syntax task | [todo](./mizar-syntax/en/todo.md) |
 | mizar-parser | Grammar, Pratt parsing, syntax recovery, parse-only corpus | [x] Tasks 1-48 plus bounded `PARSER-RECOVERY-B1B1P-P1` complete; historical post-Task-46 score 99/100 | Step 5A.4-5A.7 (G3/G4/G6/G9); no inferred Task 49; human-owned P-265-47D remains separate | [todo](./mizar-parser/en/todo.md) |
 | mizar-frontend | Source loading and phase 1-3 orchestration | [x] prior milestone plus `PARSER-RECOVERY-B1B1P-P1-FE` regression complete | Step 5A.2 (G1 same-module notation activation) with mizar-lexer | [todo](./mizar-frontend/en/todo.md) |
 | mizar-resolve | Module graph, namespaces, symbols, labels, signatures | [~] complete through task 29, Checker Task 263R, and Task 264R implementation | Preserve Task-264R shell/no-symbol boundary through Checker Tasks 248P/264 | [todo](./mizar-resolve/en/todo.md) |
@@ -335,8 +335,8 @@ binding each of the 120 inactive oracle pairs to its owner task below. Tests
 are binding per the AGENTS.md authority order: no oracle case may be
 activated, and no gap closed, by matching expectations to current behavior.
 Corpus-wide tooling must not assume every committed `.miz` parses until
-tasks 5A.1 (G5) and 5A.2 (G1) close: 29 committed spec-correct sources
-parse-fail today and the G5 reproducer panics the SurfaceAstBuilder.
+task 5A.2 (G1) closes. Step 5A.1's completion evidence is owned by its
+[task contract](./task_contracts/en/STEP5A1-G5-QUA-STRUCTURE.md).
 
 **Completed micro-task record.** The 2026 micro-slice narrative for
 completed tasks 16-264/269\*/C4C\* that previously filled this section is a
@@ -387,13 +387,14 @@ activation targets recorded per case in the activation-map ledger. The 29
 blocked sources are the immediate regression corpus; their expectations
 stay binding and must not be weakened.
 
-1. [ ] **5A.1 (G5, critical crash)** — `mizar-syntax`: fix the
+1. [x] **5A.1 (G5, critical crash)** — `mizar-syntax`: fixed the
    SurfaceAstBuilder panic (`node cannot be shared by multiple non-root
    parents`) on `term qua <structure type>`; `qua` to builtin types
    already parses. Minimal reproducer in the gap inventory. Unblocks
    `fail_type_elaboration_term_qua_invalid_narrowing_001` and (with 5A.5)
    `pass_type_elaboration_synonym_functor_001`. Deps: none. Full gates
-   (crash on the syntax trust path).
+   (crash on the syntax trust path). Evidence:
+   [STEP5A1-G5-QUA-STRUCTURE](./task_contracts/en/STEP5A1-G5-QUA-STRUCTURE.md).
 2. [ ] **5A.2 (G1, high)** — `mizar-frontend` with `mizar-lexer`:
    activate locally declared functor/predicate notation symbols
    (identifier or symbolic spelling) for same-module term/formula use

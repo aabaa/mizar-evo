@@ -1316,8 +1316,12 @@ builder id は 1 つの builder instance に局所的である。別 builder 由
 root、expression-root id は無効である。`add_node` は通常の structural node だけを
 作る。token node は `add_token` または `add_recovered_token`、recovery node は
 `add_recovery` で作らなければならない。`finish` は、任意の root と expression
-root が存在すること、また non-root の structural parent が child subtree を共有
-していないことを検証する。
+root が存在することを検証する。root がある場合、raw child-edge の一意性は
+root-reachable graph と expression-root-reachable graph の和で検査する。両方の外側の
+node は rowan に投影されない speculative compatibility edge を保持してよい。root が
+ない場合は arena 全体を検査する。shared child、duplicate child entry、別の selected
+parent に nest された structural root child は引き続き拒否する。unit test はこの
+disconnected allowance と3つの fail-closed case を固定する。
 
 構築中、parser 基盤は `node_kind` や `node_range` のような typed builder accessor
 を通じて、すでに送出した builder node を検査してよい。これらの accessor は parser

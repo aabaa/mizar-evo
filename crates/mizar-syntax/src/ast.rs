@@ -961,7 +961,7 @@ impl SurfaceAstBuilder {
     ) -> SurfaceAst {
         self.assert_existing_optional_id(root, "root");
         self.assert_existing_optional_id(expression_root, "expression root");
-        self.assert_tree_shaped_except_root_listing(root);
+        self.assert_tree_shaped_except_root_listing(root, expression_root);
         let nodes = self
             .nodes
             .into_iter()
@@ -1012,10 +1012,37 @@ impl SurfaceAstBuilder {
         );
     }
 
-    fn assert_tree_shaped_except_root_listing(&self, root: Option<SurfaceBuilderNodeId>) {
+    fn assert_tree_shaped_except_root_listing(
+        &self,
+        root: Option<SurfaceBuilderNodeId>,
+        expression_root: Option<SurfaceBuilderNodeId>,
+    ) {
         let mut non_root_parent_counts = vec![0_u8; self.nodes.len()];
+        let mut reachable = vec![false; self.nodes.len()];
+        let mut pending = Vec::new();
+        if let Some(root) = root {
+            pending.push(root.index());
+            if let Some(expression_root) = expression_root {
+                pending.push(expression_root.index());
+            }
+        }
+        while let Some(parent_index) = pending.pop() {
+            if reachable[parent_index] {
+                continue;
+            }
+            reachable[parent_index] = true;
+            pending.extend(
+                self.nodes[parent_index]
+                    .children
+                    .iter()
+                    .map(|child| child.index()),
+            );
+        }
         for (parent_index, node) in self.nodes.iter().enumerate() {
-            if Some(SurfaceBuilderNodeId::new(parent_index, self.builder_id)) == root {
+            if root.is_some()
+                && (!reachable[parent_index]
+                    || Some(SurfaceBuilderNodeId::new(parent_index, self.builder_id)) == root)
+            {
                 continue;
             }
             for child in &node.children {

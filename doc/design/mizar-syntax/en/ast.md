@@ -1389,8 +1389,13 @@ Builder ids are local to one builder instance. A child, root, or expression-root
 id from another builder is invalid. `add_node` creates ordinary structural nodes
 only; token nodes must be created with `add_token` or `add_recovered_token`, and
 recovery nodes with `add_recovery`. `finish` verifies that the optional root and
-expression root exist and that non-root structural parents do not share child
-subtrees.
+expression root exist. With a root, raw child-edge uniqueness is checked over
+the union of the root-reachable and expression-root-reachable graphs; nodes
+outside both may retain speculative compatibility edges because rowan does not
+project them. Without a root, the whole arena is checked. Shared children,
+duplicate child entries, and structural root children nested under another
+selected parent remain rejected. Unit tests pin the disconnected allowance and
+all three fail-closed cases.
 
 During construction, parser infrastructure may inspect already-emitted builder
 nodes through typed builder accessors such as `node_kind` and `node_range`.

@@ -5741,6 +5741,7 @@ fn repository_parse_only_cases_separate_active_runner_seeds_from_future_metadata
             "pass_parser_primary_terms_001",
             "pass_parser_property_clauses_001",
             "pass_parser_property_implementations_001",
+            "pass_parser_qua_structure_type_001",
             "pass_parser_qua_terms_001",
             "pass_parser_reconsider_tails_001",
             "pass_parser_redefinition_notation_001",
@@ -6210,8 +6211,8 @@ fn repository_parse_only_runner_executes_active_minimal_parser_seeds() {
     let report = run_parse_only_corpus(&config).unwrap();
 
     assert_eq!(report.error_count(), 0, "{:#?}", report.diagnostics);
-    assert_eq!(report.results.len(), 101);
-    assert_eq!(report.passed_count(), 101);
+    assert_eq!(report.results.len(), 102);
+    assert_eq!(report.passed_count(), 102);
     assert_eq!(report.failed_count(), 0);
     assert!(report.results.iter().any(|result| {
         result.id.0 == "pass_parser_algorithm_control_flow_001"
@@ -6845,6 +6846,10 @@ fn repository_parse_only_runner_executes_active_minimal_parser_seeds() {
     }));
     assert!(report.results.iter().any(|result| {
         result.id.0 == "pass_parser_primary_terms_001" && result.actual_diagnostic_codes.is_empty()
+    }));
+    assert!(report.results.iter().any(|result| {
+        result.id.0 == "pass_parser_qua_structure_type_001"
+            && result.actual_diagnostic_codes.is_empty()
     }));
     assert!(report.results.iter().any(|result| {
         result.id.0 == "pass_parser_qua_terms_001" && result.actual_diagnostic_codes.is_empty()
@@ -9466,8 +9471,8 @@ fn parse_only_cli_reports_active_runner_summary() {
         String::from_utf8_lossy(&output.stderr)
     );
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("parse-only cases: 101"));
-    assert!(stdout.contains("passed: 101"));
+    assert!(stdout.contains("parse-only cases: 102"));
+    assert!(stdout.contains("passed: 102"));
     assert!(stdout.contains("failed: 0"));
 }
 

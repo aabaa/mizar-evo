@@ -1,0 +1,11 @@
+definition
+  struct QuaBox where
+    field d -> set;
+  end;
+end;
+
+theorem QuaBad1: for X being set holds (X qua QuaBox) = X
+proof
+  let X be set;
+  thus (X qua QuaBox) = X;
+end;
