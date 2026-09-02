@@ -2,6 +2,14 @@
 
 > Canonical language: English:
 > [../en/source_spec_audit.md](../en/source_spec_audit.md).
+> 2026-09-02 圧縮（batch CPT-08、規則は
+> [../../documentation_compaction_rules.md](../../documentation_compaction_rules.md)）:
+> ステータス文書の言語方針（2026-09-01 承認）に基づき、タスク別監査
+> セクション本文の正本は英語版および英語アーカイブ
+> [../../archive/checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md)
+> に一本化した。以下には全 H2 見出しと登録済み redirect 行が残る。
+> 各タスクの詳細の正本は [../../task_contracts/ja/](../../task_contracts/ja/)
+> 配下の対応契約文書。
 
 task 32 は task 31 後の checker public surface と仕様上の約束を監査する。
 source behavior、`.miz` fixture、expectation、public API は変更しない。
@@ -10,72 +18,27 @@ source behavior、`.miz` fixture、expectation、public API は変更しない�
 
 ## Task 257C4A Fraenkel generator source-spec audit
 
-[C4A contract](../../task_contracts/ja/CHECKER-FRAENKEL-GENERATOR-BINDING-257C4A.md)は`design_drift`、`source_drift`、Rust `test_gap`のclosureをrecordする。
-canonical Ch.13 §13.4と§§13.4.2/13.4.4/13.8.6がbound generator/capture-later authority、Ch.18 §18.10.2はsethood verdictを供給しない。
-F5/expectation/traceはimmutable。`spec_gap`、fixture/expectation/trace/coverage credit変更はない。`doc/design/spec_coverage_audit.md`はowner/traceability/semantic coverage不変なのでunchanged。Task277Bはnot-ready/zero credit。broad workspace verificationはPASS。sole Low EN stale `Future Rust path` wordingを`Prerequisite Rust path`へrepair後、independent source-doc reviewは**NO FINDINGS**。
-final-qualityは**NO FINDINGS**、全`9/9` hard gates PASS、valid uncapped `100/100`（`20/20/15/15/10/10/5/5`）。historical pre-commit exact staging/cached reviewはPASS。task-only commit/immediate post-commit proof/accepted fresh-inventory dispositionはlanguage-local [historical checkpoint](../../task_contracts/ja/CHECKER-FRAENKEL-GENERATOR-BINDING-257C4A.md#historical-immediate-post-implementation-checkpoint)でclosed。C4Bはunselectedでseparate post-closure docs prerequisite freezeが必要。Task277Bはnot-ready/zero creditのまま。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 257C4B Fraenkel generator bound-use classification
 
-[C4B contract](../../task_contracts/ja/CHECKER-FRAENKEL-GENERATOR-BOUND-USE-257C4B.md)はmissing separate derived transport recordの`design_drift`をcloseし、completed exact-three-path implementationがbounded `source_drift`/Rust `test_gap`をcloseする。canonical Ch.13 §13.4 umbrella（§§13.4.2/13.4.4/13.8.6）、Ch.18 §18.10.2、Architecture 16、immutable F5、completed C4Aがbound identity/normalized 3-use relationを決めており、`spec_gap`/new semantic test intentなし。
-
-F5にnested-comprehension outer-generator useがないためactual capture coverageはseparate `test_gap`。C4BはTask252 occurrence/capture/formula/type/sethood/diagnostic/verdict/install/route/trace/expectation/creditを追加しない。Task277Bは`MC-G020`/`MC-G021`未解消でnot-ready/zero credit。`doc/design/spec_coverage_audit.md`はmapping/trace/follow-up/deferred rationale/semantic coverage不変のexplicit no-op。schema-v2 ledgerもunchangedでlegacy evidence/anchor migrationなし。
-
-Implementation/test-sufficiency reviewは**NO FINDINGS**。focused `4 + 1`、package library `554/554`/`614/614`、format、package/full-workspace Clippy、full workspace tests（metadata/public-enum suiteを含む）、unchanged 5 CLI replay、diff checkはPASS。sole Low baseline/current wording repair後、final source-doc reviewとindependent bilingual/boundary reviewも**NO FINDINGS**。final-qualityも**NO FINDINGS**、全`9/9` hard gate PASS、valid uncapped `100/100`（`20/20/15/15/10/10/5/5`）。exact 23-path staging/cached reviewもPASS。task-only commit/immediate post-commit proof/accepted fresh semantic STOPはlanguage-local [historical checkpoint](../../task_contracts/ja/CHECKER-FRAENKEL-GENERATOR-BOUND-USE-257C4B.md#historical-immediate-post-implementation-checkpoint)でclosedし、successorはselectしない。coverage audit/schema-v2 no-op decisionはcompleted transportでも不変。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 257C4C7 Two-capture Test Intent
 
-Canonical Chapter 13 §§13.4.3、13.4.4、13.8.6から、inner Fraenkel mapperが
-exact 2件のfree resolved outer-generator identityを参照し、自身のgeneratorがlocalに
-留まるoracleを導出できる。Paired [C4C7 contract](../../task_contracts/ja/TEST-FRAENKEL-NESTED-MULTI-CAPTURE-257C4C7.md)は
-この`test_gap`を閉じるinactive positive oracle 1件をfreezeする。Capture
-membership/cardinalityだけをassertしorderはassertしない。Generalized checker
-projection/corruption coverageは`design_drift`/`test_gap`、display-name/numeric-ID
-joinは`boundary_violation`、observable orderは`spec_gap`のまま。Spec、existing
-test、diagnostic、active route、semantic result、Task277B creditは変更しない。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 257C4C8 Normalized Graph Completed Zero-Credit Mapping
 
-Frozen [C4C8 contract](../../task_contracts/ja/CHECKER-FRAENKEL-NESTED-MULTI-CAPTURE-GRAPH-257C4C8.md)はcompleted
-checker correspondenceをrecordする。`source_formula_composition`がexact
-generator/mapper/predicate/capture/occurrence shape `3/1/0/2/2`を持つstandalone
-syntax-free、Core-ID-free normalized graphのsole ownerである。5 dense ID、10 row/table
-item、handoff/error/producer family、`#[non_exhaustive]` graph errorを実装し、public-enum
-inventoryは`8 -> 9`となった。Bounded implementationとchecker/private-fixture `test_gap`はclosedである。
-
-Correspondence:
-
-| Requirement | Source and owner | Tests | Status |
-|---|---|---|---|
-| Resolver identity、provenance、private order、exact cardinality、default-deny precedenceをsemantic activationなしで保持するstandalone normalized graph。 | `source_formula_composition.rs`の5 `SourceNestedFraenkelCaptureGraph*Id` type、5 row/table pair、`SourceNestedFraenkelCaptureGraphHandoff`、`SourceNestedFraenkelCaptureGraphError`、`SourceNestedFraenkelCaptureGraphProducer`。Task-257C checkerがsole owner。 | checker test 4件とexisting imported-fixture probe。 | 実装済み。Occurrence node/range provenanceはremaining occurrence associationより先に検証し、defensive recheckも許可する。 |
-
-このcompleted mappingはTyped/Resolved slot、C4C4 captured-state
-変更、Core 33/34/35または`GeneratedOrigin` payload、semantic/active route、diagnostic、
-Task277B creditを与えない。C4C7 history、trace/expectation/status、Chapter 13
-`partial` coverageも変更しない。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 33C Frozen Zero-Credit Graph-Owner Correspondence
 
-Paired [Task33C contract](../../task_contracts/ja/CHECKER-FRAENKEL-CAPTURE-GRAPH-OWNER-33C.md)は
-unchanged C4C8 graphとunchanged Task33R resolver ownerをpairするchecker-owned scalar receipt
-1件を選択する。Implemented public familyは`source_formula_composition.rs`のhandoff 1件、non-
-exhaustive error 1件、producer 1件で、current public-enum inventoryは`10`
-（pre-task baselineは`9`）。Cross-owner
-association keyはexact resolver equalityとresolved definition-block/functor identityだけ。
-
-Implementationはderived `design_drift`とRust/private-probe `test_gap`だけをcloseする。New
-language requirement、fixture、trace row、expectation、diagnostic、semantic coverage、active
-routeは作らない。Chapter 13は`partial`、Typed/Resolved/Core install、parameter/argument order、
-`GeneratedOrigin`、actual semantics、Task277Bはdeferred/zero-credit。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 269SDU Implemented Zero-Credit Mapping
 
-[central Task-269SDU contract](../../task_contracts/ja/269SDU.md) はChapters 4、13、
-15、16に対するderived owner/test route 1件を実装する。inherited proof-local Given
-bindingはexact descendant `y@118..119`だけからreferenceされる。実装済みsource-term、
-Typed/Resolved、private-runner ownerはexecutable/semantic creditを追加しない。existing
-fixture/expectation/trace/requirement-count/diagnostic statusはauthoritativeかつ不変で、
-`z`/`q` binding/closure/captureはChapter-4/15 `set` `spec_gap`によりblockedのまま。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## 範囲と方法
 
@@ -203,5838 +166,735 @@ ControlFlowIr、VC payload、proof evidence の AST-wide source-to-checker gap �
 
 ## Task 277C frozen source/specification mapping
 
-canonical [277C contract](../../task_contracts/ja/CHECKER-FRAENKEL-TEMPLATE-STRUCTURAL-277C.md) は、
-completeしたtemplate association handoff、Fraenkel generator collection、existing `TypedAst`の
-completeしたneutral/zero-semantic compositionをrecordする。public composition
-ID/row/table/handoff/error/producer family、ordered fail-closed revalidation、exact F5
-node/ordinal profile、five-test matrixはcentral contractが一度だけownする。本recordはlanguage
-behaviorをderiveせず、Task 277B readiness/coverage creditをclaimしない。既存spec、F5
-fixture/expectation/trace、diagnostic、source ownerは不変で、broad verificationはPASS、final
-source/documentation re-reviewは**NO FINDINGS**。independent bilingual/boundary reviewも**NO FINDINGS**で、
-final-quality reviewも**NO FINDINGS**、全9 hard gateはscore capなしvalid `100/100`
-（`20/20/15/15/10/10/5/5`）でPASS。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Crate Module Exports
 
-`src/lib.rs` は次の checker-owned module だけを export する:
-
-- `binding_env`
-- `cluster_trace`
-- `overload_resolution`
-- `registration_resolution`
-- `resolved_typed_ast`
-- `source_atomic_formula`
-- `source_attribute_definition`
-- `source_composite_formula`
-- `source_formula_composition`
-- `source_functor_definition`
-- `source_property_implementation`
-- `source_mode_definition`
-- `source_predicate_definition`
-- `source_context`
-- `source_attribute`
-- `source_evidence`
-- `source_application`
-- `source_set_term`
-- `source_statement`
-- `source_proof_local_declaration`
-- `source_structure`
-- `source_structure_definition`
-- `source_template`
-- `source_template_type_parameter_association`
-- `source_term`
-- `source_type`
-- `type_checker`
-- `typed_ast`
-
-根拠: `tests/lint_policy.rs` の
-`checker_public_semantic_api_matches_documented_modules` がこの list を検査し、
-全physical production source fileがdirect `mizar-syntax` importを持たないこと、
-Task-259 syntax fixtureを既存test-only dependencyを使うnon-integration
-test-support child moduleへ限定すること、Task-259 lint exceptionなしで
-resolver/session dependency boundaryを保つこともguardしている。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Public Surface Inventory
 
-### `typed_ast`
-
-生成 public newtype:
-
-- `TypedNodeId`, `LocalTypeContextId`, `TypeEntryId`, `NormalizedTypeId`,
-  `OpenCandidateSetId`, `TypeFactId`, `CoercionId`, `InitialObligationId`,
-  `TypeDiagnosticId`
-- `TypedNodeKind`, `TypeRole`, `TypePredicateRef`, `TypeRuleId`,
-  `TypeAssumptionId`, `BuiltinRuleId`, `ResolutionStepId`,
-  `InitialObligationGoal`, `InitialObligationProvenance`
-
-literal top-level public item:
-
-- `TypedAst`, `TypedAstParts`, `TypedNode`, `TypedNodeLinks`, `TypingState`,
-  `NodeRecoveryState`, `TypedArena`, `TypedArenaBuilder`,
-  `TypedArenaError`, `TypedSiteRef`, `TypedSubjectRef`, `LocalTypeContext`,
-  `LocalTypeContextDraft`, `LocalTypeContextTable`, `TypeContextLayer`,
-  `BindingTypeRef`, `ContextRecoveryState`, `TypeEntry`, `TypeEntryDraft`,
-  `TypeTable`, `TypeStatus`, `TypeEntryActual`, `TypeProvenance`,
-  `TypeFact`, `TypeFactDraft`, `TypeFactTable`, `Polarity`,
-  `FactProvenance`, `FactStatus`, `CoercionEntry`, `CoercionDraft`,
-  `CoercionTable`, `CoercionKind`, `CoercionStatus`, `CoercionProvenance`,
-  `InitialObligation`, `InitialObligationDraft`, `InitialObligationTable`,
-  `InitialObligationKind`, `InitialObligationStatus`, `TypeDiagnostic`,
-  `TypeDiagnosticDraft`, `TypeDiagnosticTable`, `TypeDiagnosticClass`,
-  `TypeDiagnosticSeverity`, `DiagnosticRecoveryState`, `SourceRangeKey`,
-  `TypedAstError`
-
-対応:
-
-| 仕様上の約束 | source 根拠 | test 根拠 | 状態 |
-|---|---|---|---|
-| source-shaped typed AST root が node、context、type、fact、coercion、obligation、diagnostic side table を保持する。 | `TypedAst`, `TypedAstParts`, accessor/debug method in `src/typed_ast.rs`. | `arena_ids_are_dense_and_debug_rendering_is_stable`, `public_data_shapes_do_not_expose_proof_or_final_overload_fields`. | checker-owned data shape として実装済み。 |
-| dense local id、arena validation、parent/child integrity。 | `TypedArena`, `TypedArenaBuilder`, `TypedArenaError`, generated dense ids. | `arena_validation_rejects_invalid_references_and_cycles`. | 実装済み。 |
-| immutable local context snapshot と visible fact discipline。 | `LocalTypeContextTable`, `LocalTypeContextDraft`, `BindingTypeRef`, context recovery/status enum. | `local_context_snapshots_validate_parent_chain_and_visibility`, `context_validation_enforces_assumed_fact_visibility`. | 実装済み。 |
-| type/fact/coercion/initial-obligation/diagnostic table は id と deterministic order を保持する。 | `TypeTable`, `TypeFactTable`, `CoercionTable`, `InitialObligationTable`, `TypeDiagnosticTable`. | `tables_round_trip_ids_and_deduplicate_facts`, `canonical_queries_are_deterministic`, `coercion_ordering_and_provenance_are_stable`. | 実装済み。 |
-| partial typing と handoff boundary が明示される。 | `TypeStatus`, `FactStatus`, `CoercionStatus`, `InitialObligationStatus`, recovery enum. | `status_variants_preserve_partial_typing_and_handoff_boundaries`, validation rejection tests. | 実装済み。 |
-| public enum は forward-compatible。 | public enum の `#[non_exhaustive]`。 | `checker_public_enums_are_forward_compatible_and_documented`. | task 31 で guard 済み。 |
-
-### `binding_env`
-
-生成 public newtype:
-
-- `BindingContextId`, `BindingId`, `BindingDiagnosticId`
-
-literal top-level public item:
-
-- `BindingEnv`, `BindingEnvParts`, `BindingContextTable`,
-  `BindingContext`, `BindingContextDraft`, `BindingContextOwner`,
-  `BindingContextLayer`, `BindingContextRecovery`, `BindingTable`,
-  `BindingEntry`, `BindingDraft`, `BindingKind`, `BinderIdentity`,
-  `BindingTypeSite`, `BindingStatus`, `BindingRecoveryState`,
-  `CapturedFreeVariables`, `BindingDiagnosticTable`, `BindingDiagnostic`,
-  `BindingDiagnosticDraft`, `BindingDiagnosticClass`,
-  `BindingDiagnosticSeverity`, `BindingDiagnosticRecovery`,
-  `BindingLookupSite`, `BindingLookupResult`, `BindingEnvError`
-
-対応:
-
-| 仕様上の約束 | source 根拠 | test 根拠 | 状態 |
-|---|---|---|---|
-| Binding environment は resolver-boundary data layer であり、raw syntax walker ではない。 | `BindingEnv::try_new`, `BindingEnvParts`, resolver `SymbolEnv` inputs. | `public_module_shell_signature_stays_on_resolver_shell_boundary`, `module_shell_records_external_gaps_and_debug_rendering_is_stable`. | 実装済み。missing extraction は MC-G011。 |
-| Context graph は parent、layer、ownership、recovery を検証する。 | `BindingContextTable`, `BindingContextDraft`, owner/layer/recovery enum. | `context_layers_and_validation_cover_parent_chain_and_recovery`, `validation_rejects_invalid_ranges_and_diagnostic_links`. | 実装済み。 |
-| Lookup は deterministic、visibility-scoped、forward-reference aware。 | `BindingLookupSite`, `BindingLookupResult`, binding lookup methods. | lookup shadowing/ambiguity/tie-break/resolver-fallback tests. | explicit payload について実装済み。 |
-| reserved variable、binder identity、closure metadata、diagnostic、rendering は stable。 | `BindingKind`, `BinderIdentity`, `CapturedFreeVariables`, diagnostic table/classes. | reserved/binder identity/diagnostic/canonical rendering tests. | 実装済み。full closure replay は deferred。 |
-| public enum は forward-compatible。 | public enum の `#[non_exhaustive]`。 | `checker_public_enums_are_forward_compatible_and_documented`. | task 31 で guard 済み。 |
-
-### `source_context`
-
-生成 public newtype:
-
-- `SourceItemId`, `SourceDeclarationId`
-
-literal top-level public item:
-
-- `SourceBindingContextInput`, `SourceItemInput`, `SourceItemRole`,
-  `SourceItemVisibility`, `SourceItemRecovery`, `SourceBindingContextOwner`,
-  `SourceBindingSiteInput`, `SourceBindingSiteRole`,
-  `SourceBindingContextBuild`, `SourceBindingContextProjection`,
-  `SourceBindingContextIncomplete`, `SourceBindingContextHandoff`,
-  `SourceItemTable`, `SourceItem`, `SourceDeclarationTable`,
-  `SourceDeclaration`, `SourceContextLinkTable`, `SourceContextLink`,
-  `SourceBindingContextProducer`, `SourceContextError`
-
-対応:
-
-| 仕様上の約束 | source 根拠 | test 根拠 | 状態 |
-|---|---|---|---|
-| syntax-free source-item/binding-site projectionが実opaque resolver shellとsource orderを保持する。 | `SourceBindingContextInput`, `SourceItemInput`, `SourceBindingSiteInput`. | real Task 248 fixture、route isolation、corruption matrix assertion。 | exact Task 248 transactionについて実装済み。 |
-| complete constructionは単一immutable checker-owned binding/context handoffをpublishする。 | `SourceBindingContextProducer`, `SourceBindingContextHandoff`, source/declaration/context-link table。 | projection equality、lookup、shadow link、`TypedAst`/`ResolvedTypedAst` preservation assertion。 | atomicに実装済み。 |
-| recovered-emptyはincomplete、corrupt/partial/cross-linked inputはpublishせずrejectする。 | `SourceBindingContextBuild`, `SourceBindingContextIncomplete`, `SourceContextError`; `TypedAst` exact handoff validation。 | real-shell corruption/recovery/atomicity matrix。 | frozen branchについて実装済み。 |
-| public enum は forward-compatible。 | public enum の `#[non_exhaustive]`。 | `checker_public_enums_are_forward_compatible_and_documented`. | exhaustive exceptionなしでguard済み。 |
-
-bounded gap: broader canonical item/binder familyはexisting MC-G011/MC-G016
-follow-up ownerのdeferred `test_gap`/`source_drift`に残る。same-identifier
-re-reservationのreplacement/duplicate semanticsだけがnonblocking `spec_gap`である。
-source term use-site lookup、Tasks 249+/269+ payloadもTask 248 authority外に残る。
-
-### `source_attribute`
-
-生成 public newtype:
-
-- `SourceAttributeChainId`, `SourceAttributeId`,
-  `SourceAttributeQualifierId`, `SourceAttributeArgumentGroupId`,
-  `SourceAttributeArgumentId`
-
-literal top-level public item:
-
-- `SourceAttributeHandoffInput`, `SourceAttributeChainInput`,
-  `SourceAttributeInput`, `SourceAttributePolarityInput`,
-  `SourceAttributeQualifierInput`, `SourceAttributeArgumentGroupKind`,
-  `SourceAttributePrefixForm`, `SourceAttributeArgumentGroupInput`,
-  `SourceAttributeActualKind`, `SourceAttributeArgumentInput`,
-  `SourceAttributeHandoff`, `SourceAttributeChainTable`,
-  `SourceAttributeTable`, `SourceAttributeQualifierTable`,
-  `SourceAttributeArgumentGroupTable`, `SourceAttributeArgumentTable`,
-  `SourceAttributeChain`, `SourceAttribute`, `SourceAttributeQualifier`,
-  `SourceAttributeArgumentGroup`, `SourceAttributeArgument`,
-  `SourceAttributeProducer`, `SourceAttributeError`
-
-対応:
-
-| 仕様上の約束 | source根拠 | test根拠 | 状態 |
-|---|---|---|---|
-| syntax-free flat tableがnonempty source attribute chain、written polarity/`non`、qualifier、argument-group punctuation、actual order、semantic provenanceを保持する。 | `SourceAttributeHandoffInput`、dense id 5件、immutable table 5件、`src/source_attribute.rs`のrow accessor。 | exact Task-81/67/84/85 real-route cardinality/field assertionとsynthetic multi-attribute/prefix extractor probe。 | frozen Task 250 transactionについて実装済み。 |
-| Task-249 source-type expression ownershipとresolver binding/symbol/contribution identityをpublish前にauthenticateする。 | `SourceAttributeProducer::build`が`SourceTypeApplicationHandoff`、`BindingEnv`、`SymbolEnv`、`TypedArena`をconsumeする。 | producer environment/ownership/symbol-kind/visibility/contribution/site-range corruption assertion。 | transactionalに実装済み。 |
-| parent link、dense order、punctuation independence、source containmentはfail closedで、partial handoffをpublishしない。 | `SourceAttributeError`とproducerのchain/attribute/qualifier/group/actual validator。 | dangling/forward/order/punctuation/range/recovery corruptionとatomic-failure assertion。 | sort/repairなしで実装済み。 |
-| `TypedAst`がresultを所有し、`ResolvedTypedAst`はclone-preserveだけを行う。 | optional `SourceAttributeHandoff` fieldとborrowed getter。 | immutable final-preservation/deterministic debug assertion。 | 実装済み。legacy empty debug byteはconditionalに維持。 |
-| public enumはforward-compatible。 | public enum 5件すべての`#[non_exhaustive]`。 | `checker_public_enums_are_forward_compatible_and_documented`。 | exhaustive exceptionなしでguard。 |
-
-bounded gap: このhandoffがpublishするのはraw source-written payloadだけである。
-attribute arity/admissibility/owner compatibility、term binding/type/result、
-normalized instance、evidence request/result、cluster fact/truth/closure、
-accepted declaration/fact/proof、downstream IRはTasks 251+または既存explicit
-ownerに残る。legacy `type_checker::AttributeInput`は変更せず別のままである。
-
-### `source_type`
-
-生成 public newtype:
-
-- `SourceTypeApplicationId`, `SourceTypeExpressionId`,
-  `SourceTypeArgumentId`, `SourceTypeDefinitionReturnId`,
-  `SourceTypeModeRhsId`, `SourceTypeStructureMemberId`
-
-literal top-level public item:
-
-- `SourceTypeHandoffInput`, `SourceTypeApplicationInput`,
-  `SourceTypeDefinitionReturnExtensionInput`,
-  `SourceTypeDefinitionReturnInput`,
-  `SourceTypeModeRhsExtensionInput`, `SourceTypeModeRhsInput`,
-  `SourceTypeStructureMemberHandoffInput`,
-  `SourceTypeStructureMemberInput`,
-  `SourceTypeExpressionInput`, `SourceTypeArgumentInput`,
-  `SourceTypeApplicationForm`, `SourceTypeHead`, `SourceTypeArgument`,
-  `SourceTypeApplicationHandoff`, `SourceTypeApplicationTable`,
-  `SourceTypeApplication`, `SourceTypeExpressionTable`,
-  `SourceTypeDefinitionReturnTable`, `SourceTypeDefinitionReturn`,
-  `SourceTypeModeRhsTable`, `SourceTypeModeRhs`,
-  `SourceTypeStructureMemberTable`, `SourceTypeStructureMember`,
-  `SourceTypeExpression`, `SourceTypeArgumentTable`,
-  `SourceTypeArgumentRow`, `SourceTypeProducer`,
-  `SourceTypeDefinitionReturnProducer`, `SourceTypeModeRhsProducer`,
-  `SourceTypeStructureMemberProducer`, `SourceProofLocalLetTypeHandoff`,
-  `SourceProofLocalLetTypeProducer`, `SourceProofLocalLetTypeError`,
-  `SourceProofLocalGivenTypeHandoff`, `SourceProofLocalGivenTypeProducer`,
-  `SourceProofLocalGivenTypeError`, `SourceProofLocalGivenUseTypeHandoff`,
-  `SourceProofLocalGivenUseTypeProducer`, `SourceProofLocalGivenUseTypeError`,
-  `SourceProofLocalGivenConditionTypeHandoff`,
-  `SourceProofLocalGivenConditionTypeProducer`,
-  `SourceProofLocalGivenConditionTypeError`,
-  `SourceProofLocalGivenDescendantTypeHandoff`,
-  `SourceProofLocalGivenDescendantTypeProducer`,
-  `SourceProofLocalGivenDescendantTypeError`,
-  `SourceTypeError`
-
-対応:
-
-| 仕様上の約束 | source根拠 | test根拠 | 状態 |
-|---|---|---|---|
-| syntax-free flat tableがouter binding link、recursive written type expression/head、ordered term/type/`qua` argumentを保持する。 | `SourceTypeHandoffInput`、dense id、`src/source_type.rs`のimmutable table 3件。 | exact broad 10/13/6 real runner oracle、Task-248 2/2/0 co-consumer。 | Task 249について実装済み。 |
-| bindingとreal `DeclarationShell` ownership、symbol/contribution import closure/visibility、arena site/range/recoveryをpublish前にauthenticateする。 | `SourceTypeProducer::build`とinstallation validation。 | producer corruption matrix、real local/imported head、import-target mismatch。 | transactionalに実装済み。 |
-| graph order/ownership/containment/non-overlapとdeterministic provenanceをfail closedにする。 | `SourceTypeError`、iterative graph/range/provenance validation、deterministic debug。 | dangling/cycle/multiple-parent/forward/duplicate/wrong-form/range/provenance/deep-chain test。 | sort/recursion/repairなしで実装済み。 |
-| independent definition return typeをbinding applicationを捏造せずexact two-binding baseへextendする。 | `SourceTypeDefinitionReturnProducer`、immutable owner row 2件、appended root 2/3、one-shot/install validation。 | exact Task-249R extension/corruption/arena/Typed-final test 4件。 | Task 249Rで実装済み。combined profileは`2/4/0/2`。 |
-| standalone mode RHSをthird applicationの捻造やdefinition-return semanticsのreuseなしにexact two-binding baseへextendする。 | `SourceTypeModeRhsProducer`、immutable owner row 1件、appended root 2、frozen precedence、one-shot/install validation。 | exact Task-249M extension/corruption/arena/Typed-final test 4件。 | Task 249Mで実装済み。combined profileは`2/3/0/0/1`。 |
-| standalone structure-member typeをfabricated binding applicationやreturn/RHS family reuseなしにbuildする。 | `SourceTypeStructureMemberProducer`、immutable owner row/root 4件、exact precedence、arena/install validation。 | exact Task-249S profile/corruption/arena/Typed-final test 4件。 | Task 249Sで実装済み。standalone profileは`0/4/0/0/0/4`。 |
-| exact proof-local `let` composition 1件がTask-269C missing type siteだけをupgradeしdependencyをunchanged preserveする。 | `SourceProofLocalLetTypeHandoff`、`SourceProofLocalLetTypeProducer`、`SourceProofLocalLetTypeError`。 | checker 4件/runner dormant 4件のexact/corruption/ownership/isolation test。 | Task 269CTで実装済み、active/semantic credit zero。 |
-| exact proof-local `given` composition 1件がTask-269G witness type siteだけをupgradeしdependencyをunchanged preserveする。 | `SourceProofLocalGivenTypeHandoff`、`SourceProofLocalGivenTypeProducer`、`SourceProofLocalGivenTypeError`。 | checker 4件/runner dormant 4件のexact/corruption/ownership/isolation test。 | Task 269GTで実装済み、active/semantic credit zero。 |
-| exact proof-local `given` use-profile composition 1件がTask-269GUP envをcopyしbinding 1のsource typeだけをupgradeしてdependencyをunchanged preserveする。 | `SourceProofLocalGivenUseTypeHandoff`、`SourceProofLocalGivenUseTypeProducer`、`SourceProofLocalGivenUseTypeError`。 | checker 4件/runner dormant 4件のexact/corruption/ownership/isolation test。 | Task 269GUPTで実装済み、active/semantic credit zero。 |
-| exact proof-local descendant composition 1件がcomplete Task-269SDC handoffをconsumeし、binding 1のwritten source typeだけをupgradeしてstandalone SDC ownerをatomicに置換する。 | `SourceProofLocalGivenDescendantTypeHandoff`、`SourceProofLocalGivenDescendantTypeProducer`、`SourceProofLocalGivenDescendantTypeError`。 | checker 4件/runner dormant 4件のexact/corruption/ownership/isolation test。 | Task 269SDTで実装済み、active/semantic credit zero。 |
-| `TypedAst`がresultを所有し、`ResolvedTypedAst`はcloneだけする。 | optional `SourceTypeApplicationHandoff` fieldとborrowed getter。 | immutable final preservation/repeated-run assertion。 | 実装済み。legacy empty debug byteはconditionalに維持。 |
-| public enumはforward-compatible。 | public enumの`#[non_exhaustive]`。 | `checker_public_enums_are_forward_compatible_and_documented`。 | exhaustive exceptionなしでguard。 |
-
-bounded gap: Tasks 249/249R/249M/249Sがpublishするのはsource-type input、
-definition-return owner link、standalone mode-RHS owner link 1件、standalone
-structure-member type owner link 4件だけである。expansion、
-normalization、evidence、term/`qua` selection、accepted fact/declaration/proof、
-descendant occurrence/capture、downstream IRはexplicit later ownerに残る。
-
-### `source_evidence`
-
-生成 public newtype:
-
-- `SourceEvidenceRequestId`, `SourceEvidenceResponseId`
-
-literal top-level public item:
-
-- `SourceEvidenceResponseKey`, `SourceEvidenceHandoffInput`,
-  `SourceEvidenceRequestInput`, `SourceEvidenceResponseInput`,
-  `SourceEvidenceRequestKind`, `SourceEvidenceInputState`,
-  `SourceEvidenceRequestOrigin`, `SourceEvidenceResponseDisposition`,
-  `SourceEvidenceResponsePayload`, `SourceEvidenceResponseProvenance`,
-  `SourceEvidenceRecovery`, `SourceEvidenceDependencyRecord`,
-  `SourceEvidenceDependencyCatalog`, `SourceEvidenceHandoff`,
-  `SourceEvidenceRequestTable`, `SourceEvidenceRequest`,
-  `SourceEvidenceResponseTable`, `SourceEvidenceResponse`,
-  `SourceEvidenceError`, `SourceEvidenceProducer`
-
-対応:
-
-| 仕様上の約束 | source根拠 | test根拠 | 状態 |
-|---|---|---|---|
-| syntax-free dense transactionがsemantic acceptanceをclaimせずsource-derived requestとauthenticated dependency referenceを保持する。 | `src/source_evidence.rs`の`SourceEvidenceHandoffInput`、request/response table、transport-state/dependency DTO。 | exact 3-route 10-request runner oracleとchecker four-state/table test。 | Task 251について実装済み。 |
-| Task-249 application/expression、optional Task-250 chain、symbol kind、source/module、owner/site/range/application ordinal/recoveryをpublish前にauthenticateする。 | `SourceEvidenceProducer::build`がupstream handoff 2件、`SymbolEnv`、`TypeFactTable`、dependency catalogをconsumeする。 | association、distinct application/chain ordinal、symbol/source/module、missing/duplicate、field corruption test。 | transactionalに実装済み。 |
-| response cardinality、catalog association、disposition/payload compatibility、fact existence、existential-gate owner/range/recovery/guard factをfail closedにする。 | `SourceEvidenceError`とrequest/response/catalog/payload validator。 | state/cardinality、key reuse/cross/stale、fact、gate、atomic-failure test。 | fallback/repairなしで実装済み。 |
-| `TypedAst`がimmutable handoffをownし、`ResolvedTypedAst`はclone-preserveだけを行う。 | optional `SourceEvidenceHandoff` field、validated installer、borrowed getter。 | production-runner ownership、replacement rejection、clone equality、deterministic debug assertion。 | 実装済み。legacy empty outputは不変。 |
-| public enumはforward-compatible。 | public Task-251 enumの`#[non_exhaustive]`。 | `checker_public_enums_are_forward_compatible_and_documented`。 | exhaustive exceptionなしでguard。 |
-
-bounded gap: Task 251がtransportするのはexact mode/structure/attributed
-evidence requestとauthenticated dependency inputだけである。evidence
-interpretation、fact creation/acceptance、gate evaluation、inheritance/coercion
-selection、accepted registration/artifact publication、downstream IRは実装しない。
-それらはTasks 252+とexplicit ownerに残る。
-
-### `source_template`
-
-生成 public newtype:
-
-- `SourceTemplateParameterId`、`SourceTemplateLociId`、
-  `SourceTemplateLocusId`、`SourceTemplateArgumentsId`、
-  `SourceTemplateArgumentId`
-
-literal top-level public item:
-
-- `SourceTemplateHandoffInput`、`SourceTemplateParameterInput`、
-  `SourceTemplateLociInput`、`SourceTemplateLocusInput`、
-  `SourceTemplateArgumentsInput`、`SourceTemplateArgumentInput`、
-  `SourceTemplateRecovery`、`SourceTemplateParentKind`、
-  `SourceTemplateParameterKind`、`SourceTemplateParameterTable`、
-  `SourceTemplateParameter`、`SourceTemplateLociTable`、
-  `SourceTemplateLoci`、`SourceTemplateLocusTable`、`SourceTemplateLocus`、
-  `SourceTemplateArgumentsTable`、`SourceTemplateArguments`、
-  `SourceTemplateArgumentTable`、`SourceTemplateArgument`、
-  `SourceTemplateHandoff`、`SourceTemplateError`、`SourceTemplateProducer`
-
-対応:
-
-| 仕様上の約束 | source根拠 | test根拠 | 状態 |
-|---|---|---|---|
-| Chapter 18のdirect parameter/loci/argument syntaxをtarget/theorem semanticsなしでtransportする。 | `src/source_template.rs`のimplemented five-table input/handoff API。 | checker 4件/private real-frontend runner 4件。 | Task 277A向けに`b67b028e07337ff5b72422bc8f16fb8f187b5c06`でcommitted/complete。 |
-| parent/child TypedArena adjacency、dense order、range、recovery、duplicate-site ruleをfail closedにする。 | `SourceTemplateProducer::build`とcrate-private installation validation。 | exact/corrupted parent/group/order/environment test。 | repair/sortなしでtransactionalにimplement済み。 |
-| Typed/final ownerがsemantic profileを変えずneutral slot 1件をpreserveする。 | `TypedAst::with_source_template`と`ResolvedTypedAst::source_template`。 | duplicate install、final replay、deterministic clone、semantic-isolation test。 | coexistent parser-origin evidenceとしてimplement済み。 |
-| public surface/enumをdocumentしforward-compatibleに保つ。 | five ID、six input aggregate、four data/error enum、five row/table pair、handoff/producer。public enumは全てnon-exhaustive。 | public-enum/source-spec-audit lint policy。 | exhaustive/syntax-dependency exceptionなしでimplement済み。 |
-
-bounded gap: Task 277Aはresolved template target、formal-to-actual association、
-actual kind、substitution request/result、scheme/theorem role、algorithm role、guard、
-inference、compatibility、verdict、diagnostic、active route、coverage creditをpublishしない。
-later Task-277 sliceとTask 278が別途authorized decisionをretainする。
-
-### `source_template_type_parameter_association`
-
-生成 public newtype:
-
-- `SourceTemplateTypeParameterAssociationId`、
-  `SourceTemplateFraenkelStructuralCompositionId`
-
-literal top-level public item:
-
-- `SourceTemplateTypeParameterAssociation`、
-  `SourceTemplateTypeParameterAssociationTable`、
-  `SourceTemplateTypeParameterAssociationHandoff`、
-  `SourceTemplateTypeParameterAssociationError`、
-  `SourceTemplateTypeParameterAssociationProducer`、
-  `SourceTemplateFraenkelStructuralComposition`、
-  `SourceTemplateFraenkelStructuralCompositionTable`、
-  `SourceTemplateFraenkelStructuralCompositionHandoff`、
-  `SourceTemplateFraenkelStructuralCompositionError`、
-  `SourceTemplateFraenkelStructuralCompositionProducer`
-
-対応:
-
-| 仕様上の約束 | source根拠 | test根拠 | 状態 |
-|---|---|---|---|
-| resolver-owned template type-parameter linkをimmutable、dense、zero-semantic typed-node association tableへtransportする。 | `src/source_template_type_parameter_association.rs`の`SourceTemplateTypeParameterAssociationProducer::build`、association ID/row/table/handoff family、deterministic `debug_text()`。 | `task277bl_maps_exact_resolver_association_to_typed_nodes`、`task277bl_rebuilds_deterministically_without_mutating_typed_ast`、`task277bl_real_fixture_builds_exact_template_type_parameter_association`。 | Task 277B-Lとして実装済み。Task 277B semantic creditはない。 |
-| 5 resolver identityは各exactly one typed nodeにmatchし、kindは`DefinitionBlockItem`、`TemplateParameter`、binder/generator identifier双方のcanonical `Identifier`、`TypeHead`である。 | exact `resolved_node` scan、normal-recovery、exact-kind predicate、range anchor/equality/containment、direct-edge validation。 | missing/ambiguous、all-site kind/recovery、forged Identifier-category、anchor/range/containment、edge-corruption matrix。 | `InvalidAssociation`でfail closed。dense-ID cast/spelling/range inferenceなし。 |
-| source/module mismatchを区別しpublic enum evolutionをforward-compatibleに保つ。 | `EnvironmentMismatch`と`#[non_exhaustive] SourceTemplateTypeParameterAssociationError`。 | environment mismatch matrixと`checker_public_enums_are_forward_compatible_and_documented`。 | 実装済み。exhaustive exceptionなし。 |
-| composition public familyがcomplete template associationとcomplete Fraenkel generator bindingをexact typed structural identityでjoinする。 | `src/source_template_type_parameter_association.rs`の`SourceTemplateFraenkelStructuralCompositionId`、row/table/handoff、error、producer。 | `task277c_composes_exact_template_fraenkel_structural_handoff`とprivate F5 composition probe。 | neutral transportとして実装済み。Task 277B semantic creditなし。 |
-| structural compositionがenvironment、association、binding、use、completed mappingをfixed fail-closed orderでrevalidateする。 | `SourceTemplateFraenkelStructuralCompositionProducer::build`とexact typed-node/provenance validator。 | environment/ambiguityとrecovery/kind/range/edge/provenance corruption matrix。 | zip、inference、reorder、partial handoffなしで実装済み。 |
-| composition errorはforward-compatibleのまま。 | `#[non_exhaustive] SourceTemplateFraenkelStructuralCompositionError`。 | `checker_public_enums_are_forward_compatible_and_documented`とfour direct producer test。 | 実装済み。exhaustive exceptionなし。 |
-
-bounded gap: これらneutral handoffはTyped/Resolved slot、type/sethood、formal-to-actual
-substitution、diagnostic、active route、verdictをinstall/interpetしない。Task 277Bはnot readyで
-semantic creditはzeroのままである。
-
-### `source_term`
-
-生成 public newtype:
-
-- `SourcePrimaryTermId`, `SourcePrimaryTermReferenceId`,
-  `SourceNumericTypeRequestId`
-
-literal top-level public item:
-
-- `SourcePrimaryTermHandoffInput`, `SourcePrimaryTermInput`,
-  `SourcePrimaryTermReferenceInput`, `SourceNumericTypeRequestInput`,
-  `SourcePrimaryTermKind`, `SourcePrimaryTermRole`,
-  `SourcePrimaryTermReferenceRole`, `SourcePrimaryTermRecovery`,
-  `SourcePrimaryTermHandoff`, `SourcePrimaryTermTable`, `SourcePrimaryTerm`,
-  `SourcePrimaryTermReferenceTable`, `SourcePrimaryTermReference`,
-  `SourceNumericTypeRequestTable`, `SourceNumericTypeRequest`,
-  `SourcePrimaryTermError`, `SourcePrimaryTermProducer`,
-  `SourceProofLocalGivenUseTermHandoff`,
-  `SourceProofLocalGivenUseTermProducer`,
-  `SourceProofLocalGivenUseTermError`,
-  `SourceProofLocalGivenConditionUseTermHandoff`,
-  `SourceProofLocalGivenConditionUseTermProducer`,
-  `SourceProofLocalGivenConditionUseTermError`,
-  `SourceProofLocalGivenDescendantUseTermHandoff`,
-  `SourceProofLocalGivenDescendantUseTermProducer`,
-  `SourceProofLocalGivenDescendantUseTermError`,
-  `SourceNestedFraenkelMapperPrimaryHandoff`,
-  `SourceNestedFraenkelMapperPrimaryError`,
-  `SourceNestedFraenkelMapperPrimaryProducer`
-
-対応:
-
-| 仕様上の約束 | source根拠 | test根拠 | 状態 |
-|---|---|---|---|
-| syntax-free three-table transactionがsemantic resultを作らずprimary-term occurrence、authenticated binding reference、unresolved numeric-type requestを保持する。 | `src/source_term.rs`の`SourcePrimaryTermHandoffInput`とimmutable term/reference/request table。 | exact 3-route 7/4/2 runner oracleとevery-kind checker test。 | Task 252について実装済み。 |
-| typed site/range/kind/recovery、canonical lexer-identifier vocabulary/spelling、context、dense pre-order、parent closure、reference/request cardinality、numeric associationをfail closedにする。 | `SourcePrimaryTermProducer::build`がraw syntaxをimportせず`mizar_lexer::is_identifier`をreuseし、complete transactionを`TypedArena`と`BindingEnv`に対してvalidateする。 | site/range/kind/recovery/context、identifier shape/reserved-word rejection、graph、cardinality、request、corruption test。 | sort/repairなしでtransactionalに実装済み。 |
-| scopeとbinding-event ordinalはproducer-derivedであり、exact `BindingEnv::lookup` local winnerを要求する。 | reference constructionがcontext scopeをcloneし、preceding completed binding rowをcountし、exact duplicate-priority groupを保持し、すべてのnon-local resultをrejectする。 | shadow-winner、forward、ambiguous、missing-scope、unresolved、wrong-winner、ordinal test。 | `Resolver`をstructurally unreachableとして実装済み。 |
-| exact proof-local `given` use-profile composition 1件がauthenticated GUPT dependencyからlater `y` variable reference 2件だけをtransportする。 | `SourceProofLocalGivenUseTermHandoff`、`SourceProofLocalGivenUseTermProducer`、`SourceProofLocalGivenUseTermError`。 | checker 4件/runner dormant 4件のexact/corruption/ownership/isolation test。 | Task 269GUで実装済み、active/semantic credit zero。 |
-| exact proof-local `given` condition composition 1件がauthenticated GCT dependencyからown-conditionの`y` variable reference 2件だけをtransportする。 | `SourceProofLocalGivenConditionUseTermHandoff`、`SourceProofLocalGivenConditionUseTermProducer`、`SourceProofLocalGivenConditionUseTermError`。 | checker 4件/runner dormant 4件のexact/corruption/ownership/isolation test。 | Task 269GCUで実装済み、active/semantic credit zero。 |
-| exact proof-local descendant composition 1件がcomplete SDT handoffをconsumeし、`y@118..119`だけを`term 0 -> binding 1`としてtransportしてstandalone SDT ownershipをatomicに置換する。 | `SourceProofLocalGivenDescendantUseTermHandoff`、`SourceProofLocalGivenDescendantUseTermProducer`、`SourceProofLocalGivenDescendantUseTermError`。 | checker 4件/runner dormant 4件のexact/corruption/ownership/isolation test。 | Task 269SDUで実装済み、active/semantic credit zero。 |
-| Exact C4C3-dependent nested-Fraenkel transaction 1件がmapper `x@94..95`をdistinct outer binderをselectするTask252 variable primary 1件へprojectし、generic source-order rejectionをrelaxしない。 | `SourceNestedFraenkelMapperPrimaryHandoff`、`SourceNestedFraenkelMapperPrimaryProducer`、private exact binding/profile/arena construction、crate-private complete C4C3 revalidation seam。 | Checker exact 4件とprivate real imported-fixture 1件が`3/1/0` binding、one-node arena、`1/1/0` source term、dependency/default-deny corruption、lookup ordinal、generic isolationをcoverする。 | Task257C4C4でimplementation済み、active/semantic credit zero、installationなし。 |
-| `TypedAst`がimmutable handoffをownし、`ResolvedTypedAst`はclone-preserveだけを行う。 | optional `SourcePrimaryTermHandoff` field、validated installer、borrowed getter。 | production-runner ownership、replacement rejection、clone equality、deterministic replay assertion。 | 実装済み。semantic typed/fact/downstream tableは不変。 |
-| public enumはforward-compatible。 | `SourceNestedFraenkelMapperPrimaryError`を含むpublic Task252 enumすべての`#[non_exhaustive]`。 | `checker_public_enums_are_forward_compatible_and_documented`。 | exhaustive exceptionなしでguard。 |
-
-bounded gap: Task 252がtransportするのはfrozen five-kind primary-term sourceと
-numeric requestだけである。application/other term family、cross-family parent
-edge、numeric result、real current-definition-result ownership、real
-local-constant binding production、formula graph、accepted fact/declaration/
-proof、downstream IRはTasks 253+、260、264、269とexplicit ownerに残る。
-
-### `source_application`
-
-生成 public newtype:
-
-- `SourceFunctorApplicationId`, `SourceFunctorWrapperId`,
-  `SourceFunctorCandidateId`, `SourceFunctorArgumentId`,
-  `SourceFunctorTypeRequestId`
-
-literal top-level public item:
-
-- `SourceFunctorApplicationHandoffInput`, `SourceFunctorApplicationInput`,
-  `SourceFunctorWrapperInput`, `SourceFunctorCandidateInput`,
-  `SourceFunctorArgumentInput`, `SourceFunctorTypeRequestInput`,
-  `SourceFunctorApplicationKind`, `SourceFunctorApplicationRecovery`,
-  `SourceFunctorApplicationForm`, `SourceFunctorHeadSite`,
-  `SourceFunctorArgumentTarget`, `SourceFunctorTypeRequestKind`,
-  `SourceFunctorApplicationHandoff`, `SourceFunctorApplicationTable`,
-  `SourceFunctorWrapperTable`, `SourceFunctorCandidateTable`,
-  `SourceFunctorArgumentTable`, `SourceFunctorTypeRequestTable`,
-  `SourceFunctorApplication`, `SourceFunctorWrapper`,
-  `SourceFunctorCandidate`, `SourceFunctorArgument`,
-  `SourceFunctorTypeRequest`, `SourceFunctorApplicationProducer`,
-  `SourceFunctorApplicationError`
-
-対応:
-
-| 仕様上の約束 | source根拠 | test根拠 | 状態 |
-|---|---|---|---|
-| syntax-free five-table transactionがwinner選択やsemantic result作成なしにsymbolic/inline application shape、transparent wrapper、individual functor reference、ordered Task-252/253 argument edge、unresolved requestをtransportする。 | `src/source_application.rs`の`SourceFunctorApplicationHandoffInput`とimmutable table。 | exact real 2/1/2/3/4 aggregate、all-form、inline-schema test。 | Task 253について実装済み。 |
-| dense pre-order、arena/context/range/recovery、form/spelling、wrapper nesting、root-only primary ownership、nested single ownership、candidate provenance、request associationをfail closedにする。 | `SourceFunctorApplicationProducer::build`がcomplete transactionを`SymbolEnv`、`BindingEnv`、Task-252、`TypedArena`に対してvalidateする。 | full corruption matrix、nested/wrapped/degraded/candidate-subset test、template/mixed whole-subtree isolation。 | sort/inference/repair/partial publicationなしでtransactionalに実装済み。 |
-| Task-252 dependency identityはproducer-derived exact `debug_text()` fingerprintを使う。 | handoffは`primary_term_fingerprint`だけを保持し、`TypedAst`/`ResolvedTypedAst`がfingerprintと全primary edgeをrevalidateする。 | install-order、replacement、equivalent clone、non-equivalent substitution、final-preservation test。 | primary ownership重複なしで実装済み。 |
-| public enumはforward-compatible。 | public Task-253 enumすべての`#[non_exhaustive]`。 | `checker_public_enums_are_forward_compatible_and_documented`。 | exhaustive exceptionなしでguard。 |
-
-bounded gap: Task 253はinline identity/formal/body/capture/substitution/result、
-direct template transport、candidate collection/applicability/viability/ranking/
-winner、functor-definition semantics、later term/formula family、accepted
-fact/declaration/proof、downstream IRを所有しない。これらはTasks 254+、260、
-270、277、278とexplicit ownerに残る。
-
-### `source_atomic_formula`
-
-generated public newtype:
-
-- `SourceAtomicFormulaId`、`SourceAtomicWrapperId`、
-  `SourcePredicateSegmentId`、`SourcePredicateHeadId`、
-  `SourcePredicateCandidateId`、
-  `SourceAssertionTypeSiteId`、`SourceAssertionAttributeId`、
-  `SourceAtomicEdgeId`、`SourceAtomicRequestId`
-
-literal top-level public item:
-
-- `SourceAtomicFormulaHandoffInput`、`SourceAtomicFormulaInput`、
-  `SourceAtomicWrapperInput`、`SourcePredicateSegmentInput`、
-  `SourcePredicateHeadInput`、
-  `SourcePredicateCandidateInput`、`SourceAssertionTypeSiteInput`、
-  `SourceAssertionAttributeInput`、`SourceAtomicEdgeInput`、
-  `SourceAtomicRequestInput`、`SourceAtomicFormulaKind`、
-  `SourceAtomicFormulaRecovery`、`SourceAssertionTypeHead`、
-  `SourceAssertionAttributePolarityInput`、
-  `SourcePredicateSegmentPolarityInput`、`SourceAtomicEdgeRole`、
-  `SourceAtomicTermTarget`、`SourceAtomicRequestKind`、
-  `SourceAtomicFormulaHandoff`、`SourceAtomicFormulaTable`、
-  `SourceAtomicWrapperTable`、`SourcePredicateSegmentTable`、
-  `SourcePredicateHeadTable`、
-  `SourcePredicateCandidateTable`、`SourceAssertionTypeSiteTable`、
-  `SourceAssertionAttributeTable`、`SourceAtomicEdgeTable`、
-  `SourceAtomicRequestTable`、`SourceAtomicFormula`、`SourceAtomicWrapper`、
-  `SourcePredicateSegment`、`SourcePredicateHead`、
-  `SourcePredicateCandidate`、
-  `SourceAssertionTypeSite`、`SourceAssertionAttribute`、`SourceAtomicEdge`、
-  `SourceAtomicRequest`、`SourceAtomicFormulaProducer`、
-  `SourceAtomicFormulaError`
-
-対応:
-
-| spec promise | source evidence | test evidence | status |
-|---|---|---|---|
-| syntax-free dense table 9個がatomic formula、wrapper、predicate segment/provenance、asserted type、assertion attribute、nearest-family edge、unresolved requestを保持する。 | `src/source_atomic_formula.rs`のpublic input、immutable row/table。 | exact Task-256 `8/0/0/1/1/1/2/13/11` aggregate、Task-257C1 `1/0/2/2/2/0/0/3/2`、checker shape test。 | Tasks 256/257C1でimplemented。 |
-| Task-252/253/254/255 nearest-family ownershipとconditional fingerprintをatomicにvalidateする。 | `SourceAtomicFormulaProducer::build`とprivate install validation。 | same-arena real composition、cross-family producer probe、corruption/install test。 | transactionalにimplemented。 |
-| resolver provenance、canonical spelling、arena key、row cardinality/order、request associationをfail closedにする。 | producer validationと`SourceAtomicFormulaError`。 | predicate/attribute provenance、wrapper、request、spelling、mutation matrix。 | partial publicationなしでimplemented。 |
-| `TypedAst`がhandoff 1件をownし、`ResolvedTypedAst`がrevalidate後にclone-preserveする。 | `with_source_atomic_formula`、later lower-family revalidation、resolved assembly。 | replacement/install-order、final clone equality、deterministic replay。 | Implemented。 |
-| public enumはforward-compatibleである。 | 全public enumの`#[non_exhaustive]`。 | `checker_public_enums_are_forward_compatible_and_documented`。 | guarded。exhaustive exceptionなし。 |
-
-bounded gap: predicate-chain/formula-operator ownershipはTask 257、overload
-selection、asserted-type reachability、attribute admissibility/truth、formula
-fact/result、theorem acceptance、proof、downstream IRは本module外である。
-
-### `source_attribute_definition`
-
-generated public newtype:
-
-- `SourceAttributeDefinitionId`、`SourceAttributeParameterId`、
-  `SourceAttributeSubjectId`、`SourceAttributeDefiniensId`
-
-literal top-level public item:
-
-- `SourceAttributeDefinitionHandoffInput`、`SourceAttributeDefinitionInput`、
-  `SourceAttributeParameterInput`、`SourceAttributeSubjectInput`、
-  `SourceAttributeDefiniensInput`
-- `SourceAttributeDefinitionRecovery`
-- `SourceAttributeDefinition`、`SourceAttributeParameter`、
-  `SourceAttributeSubject`、`SourceAttributeDefiniens`
-- `SourceAttributeDefinitionTable`、`SourceAttributeParameterTable`、
-  `SourceAttributeSubjectTable`、`SourceAttributeDefiniensTable`
-- `SourceAttributeDefinitionHandoff`、`SourceAttributeDefinitionError`、
-  `SourceAttributeDefinitionProducer`
-
-対応:
-
-| spec promise | source evidence | test evidence | status |
-|---|---|---|---|
-| immutable syntax-free table 4件がordinary attribute definition 1件、ordered parameter 2件、subject binding 1件、atomic-formula definiens 1件を保持する。 | `src/source_attribute_definition.rs`のpublic input/row/dense id/table/getter。 | exact checker 5 testsとactive runner consumer。 | exact `1/2/1/1`としてimplemented。 |
-| resolver identityとexact Task-248/249/252/256 ownershipをshell-41 context ownership/fingerprint込みでauthenticateする。 | `SourceAttributeDefinitionProducer::build`とinstallation revalidation。 | resolver/lower/fingerprint、preflight-invalid/valid-but-stale context-site corruption。 | transactional/fail-closedにimplemented。 |
-| Typed/final ownershipはone-shotで、obligation tableをread/writeせずcompleteにpreserveし、Task-259/260 mixをrejectする。 | `TypedAst::with_source_attribute_definition`と`ResolvedTypedAst::source_attribute_definition`。 | non-empty baseline、rollback、both-family installer/final isolation、clone/replay。 | obligation projectionなしでimplemented。 |
-| public surface/enumはdocumented/forward-compatibleである。 | 上記4 id、5 input aggregate、recovery、4 row/table、handoff、error、producer。public enum 2件はnon-exhaustive。 | public-enum/source-spec-audit lint policy。 | syntax-dependency exceptionなしでguard。 |
-
-bounded gap: formula meaning/equivalence、definition correctness、acceptance、
-fact/axiom publication、attribute application、redefinition/coherence、proof、
-Core/CFG/VC、mixed definition-family acceptance、broader shapeは本module外である。
-
-### `source_functor_definition`
-
-generated public newtype:
-
-- `SourceFunctorDefinitionId`、`SourceFunctorParameterId`、
-  `SourceFunctorGuardId`、`SourceFunctorDefiniensId`、
-  `SourceFunctorCorrectnessId`
-
-literal top-level public item:
-
-- `SourceFunctorDefinitionHandoffInput`、`SourceFunctorDefinitionInput`、
-  `SourceFunctorParameterInput`、`SourceFunctorGuardInput`、
-  `SourceFunctorDefiniensInput`、`SourceFunctorCorrectnessInput`
-- `SourceFunctorDefinitionStyle`、`SourceFunctorDefiniensTarget`、
-  `SourceFunctorCorrectnessKind`、`SourceFunctorDefinitionRecovery`
-- `SourceFunctorDefinition`、`SourceFunctorParameter`、`SourceFunctorGuard`、
-  `SourceFunctorDefiniens`、`SourceFunctorCorrectness`
-- `SourceFunctorDefinitionTable`、`SourceFunctorParameterTable`、
-  `SourceFunctorGuardTable`、`SourceFunctorDefiniensTable`、
-  `SourceFunctorCorrectnessTable`
-- `SourceFunctorDefinitionHandoff`、`SourceFunctorDefinitionProjection`、
-  `SourceFunctorDefinitionError`、`SourceFunctorDefinitionProducer`
-
-対応:
-
-| spec promise | source evidence | test evidence | status |
-|---|---|---|---|
-| immutable syntax-free table 5個がfunctor definition 2件、shared parameter 2件、guard 1件、different ownerのdefiniens 2件、explicit correctness clause 2件を保持する。 | `src/source_functor_definition.rs`のpublic input/row/dense id/table/getter。 | `task_260_exact_functor_definition_payload_and_pending_obligations`とindependent row/field corruption coverage。 | exact `2/2/1/2/2`としてimplemented。 |
-| producerはresolver identityとexact Task-248/249+249R/252/256 fingerprintをauthenticateし、retained baselineへexistence/uniqueness obligationを各1件appendする。 | `SourceFunctorDefinitionProducer::build`、projection、fail-closed error category。 | dependency/optional lower/arena/every obligation field corruption matrix。 | sorting/repair/semantic goal compositionなしでimplemented。 |
-| Typed/final ownerはhandoffとcomplete obligation tableをatomicにpublish/clone-preserveしTask 259をisolateする。 | `TypedAst::with_source_functor_definition`と`ResolvedTypedAst::source_functor_definition`。 | transactional installation、final clone/debug/predicate-isolation test。 | mutually exclusive Task-260 transactionとしてimplemented。 |
-| public surface/enumはdocumented/forward-compatibleである。 | 上記5 ID、6 input aggregate、4 data enum、5 row/table、handoff、projection、error、producer。全public enumはnon-exhaustive。 | public-enum/source-spec-audit lint policy。 | syntax-dependency exceptionなしでguard。 |
-
-bounded gap: parameter/guard/return-type goal composition、FOL correctness、
-proof/justification verification、discharge、definition acceptance、activation、
-fact/axiom、call/overload、conditional definiens、mixed predicate/functor
-acceptance、Core/CFG/VCは本module外である。
-
-### `source_property_implementation`
-
-generated public newtype:
-
-- `SourcePropertyImplementationId`、`SourcePropertyParameterId`、
-  `SourcePropertyTargetId`、`SourcePropertyDefiniensId`、
-  `SourcePropertyCorrectnessId`
-
-literal top-level public item:
-
-- `SourcePropertyImplementationHandoffInput`、
-  `SourcePropertyImplementationInput`、`SourcePropertyParameterInput`、
-  `SourcePropertyTargetInput`、`SourcePropertyDefiniensInput`、
-  `SourcePropertyCorrectnessInput`
-- `SourcePropertyImplementationStyle`、`SourcePropertyDefiniensTarget`、
-  `SourcePropertyCorrectnessKind`、`SourcePropertyImplementationRecovery`
-- `SourcePropertyImplementation`、`SourcePropertyParameter`、
-  `SourcePropertyTarget`、`SourcePropertyDefiniens`、`SourcePropertyCorrectness`
-- `SourcePropertyImplementationTable`、`SourcePropertyParameterTable`、
-  `SourcePropertyTargetTable`、`SourcePropertyDefiniensTable`、
-  `SourcePropertyCorrectnessTable`
-- `SourcePropertyCarrierIdentity`、`SourcePropertyImplementationHandoff`、
-  `SourcePropertyImplementationProjection`、
-  `SourcePropertyImplementationError`、
-  `SourcePropertyImplementationProducer`
-- `SourcePropertyEqualsSelectorAssociation`、
-  `SourcePropertyEqualsSelectorIdentityHandoff`、
-  `SourcePropertyEqualsSelectorIdentityError`、
-  `SourcePropertyEqualsSelectorIdentityProducer`
-
-対応:
-
-| spec promise | source evidence | test evidence | status |
-|---|---|---|---|
-| immutable syntax-free table 5個がexact struct-property implementation、parameter、resolver-backed target、definiens、profile-dependent correctness rowを保持する。 | `src/source_property_implementation.rs`のpublic input/row/dense ID/table/getter。 | exact equals/means checker testとreal-source runner consumer 2件。 | means `1/1/1/1/2`、equals `1/1/1/1/0`としてimplemented。 |
-| producerはTask248P/249PI/252/254/256 lower owner、3件のexact carrier/member resolver identity、declared return row、typed arena、complete fingerprintをauthenticateする。 | `SourcePropertyCarrierIdentity`、`SourcePropertyImplementationProducer::build`、replay validation、fail-closed error。 | independent row/lower/resolver/carrier-identity/return/fingerprint/arena corruption test。 | syntax parsing/semantic goal compositionなしでimplemented。 |
-| Meansはretained baselineへPending existence/uniquenessをappendしEqualsはzero、Typed/final ownerはatomic install/replayする。 | projection、`TypedAst::with_source_property_implementation`、final getter。 | nonempty-baseline transaction、orphan/extra rejection、deterministic replay、Task259 isolation。 | mutually exclusive Task264 ownership。 |
-| public surface/enumはdocumented/forward-compatibleである。 | 上記5 ID、6 input、4 data enum、5 row/table、carrier identity、equals-selector association/handoff、projection、error群、producer群。全public enumはnon-exhaustive。 | public-enum/source-spec-audit lint policy。 | production syntax-dependency exceptionなしでguard。 |
-
-bounded gap: goal/guard/return/definiens composition、`it` substitution、proof/
-justification verification、discharge、acceptance、fact/axiom、property-value
-lookup、overlap/coherence、call/result typing、conditional profile、Core/CFG/VCは
-本module外である。
-
-### `source_mode_definition`
-
-generated public newtype:
-
-- `SourceModeDefinitionId`、`SourceModeParameterId`、
-  `SourceModeApplicationId`、`SourceModeExpansionId`、
-  `SourceModeInhabitationRequestId`、`SourceModePropertyId`
-
-literal top-level public item:
-
-- `SourceModeDefinitionHandoffInput`、`SourceModeDefinitionInput`、
-  `SourceModeParameterInput`、`SourceModeApplicationInput`、
-  `SourceModeExpansionInput`、`SourceModeInhabitationRequestInput`、
-  `SourceModePropertyInput`
-- `SourceModeInhabitationRequestKind`、`SourceModePropertyKind`、
-  `SourceModeDefinitionRecovery`
-- `SourceModeDefinition`、`SourceModeParameter`、`SourceModeApplication`、
-  `SourceModeExpansion`、`SourceModeInhabitationRequest`、`SourceModeProperty`
-- `SourceModeDefinitionTable`、`SourceModeParameterTable`、
-  `SourceModeApplicationTable`、`SourceModeExpansionTable`、
-  `SourceModeInhabitationRequestTable`、`SourceModePropertyTable`
-- `SourceModeDefinitionHandoff`、`SourceModeDefinitionProjection`、
-  `SourceModeDefinitionError`、`SourceModeDefinitionProducer`
-
-対応:
-
-| spec promise | source evidence | test evidence | status |
-|---|---|---|---|
-| immutable syntax-free table 6件がordinary mode definition 1件、parameter 2件、bracket application 1件、RHS expansion 1件、unresolved inhabitation request 1件、explicit sethood property 1件を保持する。 | `src/source_mode_definition.rs`のpublic input/row/dense id/table/getter。 | checker test 5件とsole exact runner consumer。 | exact `1/2/1/1/1/1`でimplemented。 |
-| resolver identityとexact Task-248/249/249M lower fingerprintをauthenticateし、retained baselineへPending Sethood row 1件をappendする。 | `SourceModeDefinitionProducer::build`、projection、installation validation。 | independent source/resolver/lower/link/cardinality/obligation corruption matrix。 | evidence responseなしでtransactional/fail-closed。 |
-| Typed/final ownerはhandoffとcomplete obligation tableをatomicにpublish/clone-preserveしmixed Tasks 259--262をrejectする。 | `TypedAst::with_source_mode_definition`と`ResolvedTypedAst::source_mode_definition`。 | both-order sibling isolation、rollback、final corruption、clone/debug test。 | mutually exclusive Task-262 ownershipとしてimplemented。 |
-| public surface/enumはdocumented/forward-compatibleである。 | 上記6 ID、7 input aggregate、3 data enum、6 row/table、handoff、projection、error、producer。全public enumはnon-exhaustive。 | public-enum/source-spec-audit lint policy。 | syntax-dependency exceptionなしでguard。 |
-
-bounded gap: RHS evidence result、goal/guard/FOL composition、proof、discharge、
-acceptance、fact/axiom、use-site application/redefinition、registration、
-Core/CFG/VC、mixed definition semantics、structure definitionは本module外である。
-
-### `source_structure_definition`
-
-generated public newtype:
-
-- `SourceStructureDefinitionId`、`SourceStructureMemberId`、
-  `SourceStructureInheritanceId`、`SourceStructureMappingId`、
-  `SourceStructureCoherenceRequestId`
-
-literal top-level public item:
-
-- `SourceStructureDefinitionHandoffInput`、`SourceStructureDefinitionInput`、
-  `SourceStructureMemberInput`、`SourceStructureInheritanceInput`、
-  `SourceStructureMappingInput`
-- `SourceStructureMemberKind`、`SourceStructureCoherenceRequestKind`、
-  `SourceStructureDefinitionRecovery`
-- `SourceStructureDefinition`、`SourceStructureMember`、
-  `SourceStructureInheritance`、`SourceStructureMapping`、
-  `SourceStructureCoherenceRequest`
-- `SourceStructureDefinitionTable`、`SourceStructureMemberTable`、
-  `SourceStructureInheritanceTable`、`SourceStructureMappingTable`、
-  `SourceStructureCoherenceRequestTable`
-- `SourceStructureDefinitionHandoff`、`SourceStructureDefinitionProjection`、
-  `SourceStructureDefinitionError`、`SourceStructureDefinitionProducer`
-
-対応:
-
-| spec promise | source evidence | test evidence | status |
-|---|---|---|---|
-| immutable syntax-free table 5件がzero-parameter structure 2件、field/property member 4件、direct inheritance 1件、root/path/view mapping 2件、derived coherence request 0件を保持する。 | `src/source_structure_definition.rs`のpublic input/row/dense id/table/getter。 | checker test 5件とsole exact runner consumer。 | exact `2/4/1/2/0`でimplemented。 |
-| resolver identityとexact Task-249S lower fingerprintをauthenticateし、arbitrary initial-obligation baselineをbyte-identicalに保つ。 | `SourceStructureDefinitionProducer::build`、private baseline snapshot、projection、installation validation。 | resolver/origin/lower/coverage/coherence/obligation/arena corruptionとcompound precedence matrix。 | goal/obligationを発明せずtransactional/fail-closed。 |
-| Typed/final ownerはhandoffをatomicにpublish/clone-preserveしmixed Tasks 259--263をrejectする。 | `TypedAst::with_source_structure_definition`と`ResolvedTypedAst::source_structure_definition`。 | one-shot/reverse-order sibling isolation/rollback/final corruption/clone/debug test。 | mutually exclusive Task-263 ownershipとしてimplemented。 |
-| public surface/enumはdocumented/forward-compatibleである。 | 上記5 ID、5 input aggregate、3 data enum、5 row/table、handoff、projection、error、producer。全public enumはnon-exhaustive。 | public-enum/source-spec-audit lint policy。 | syntax-dependency exceptionなしでguard。 |
-
-bounded gap: parameter/default、multiple parent/diamond/cycle、rename/narrow、
-nonidentical coherence goal/obligation、use-site path choice、constructor/selector/
-update semantics、Task-264 property implementation、acceptance/fact/proof/Core/
-CFG/VC、mixed-definition semanticsは本module外である。
-
-### `source_predicate_definition`
-
-generated public newtype:
-
-- `SourcePredicateDefinitionId`、`SourcePredicateParameterId`、
-  `SourcePredicateGuardId`、`SourcePredicatePropertyId`、
-  `SourcePredicateCorrectnessId`
-
-literal top-level public item:
-
-- `SourcePredicateDefinitionHandoffInput`、
-  `SourcePredicateDefinitionInput`、`SourcePredicateParameterInput`、
-  `SourcePredicateGuardInput`、`SourcePredicatePropertyInput`、
-  `SourcePredicateCorrectnessInput`
-- `SourcePredicatePropertyKind`、`SourcePredicateDefinitionRecovery`
-- `SourcePredicateDefinition`、`SourcePredicateParameter`、
-  `SourcePredicateGuard`、`SourcePredicateProperty`、
-  `SourcePredicateCorrectness`
-- `SourcePredicateDefinitionTable`、`SourcePredicateParameterTable`、
-  `SourcePredicateGuardTable`、`SourcePredicatePropertyTable`、
-  `SourcePredicateCorrectnessTable`
-- `SourcePredicateDefinitionHandoff`、
-  `SourcePredicateDefinitionProjection`、
-  `SourcePredicateDefinitionError`、`SourcePredicateDefinitionProducer`
-
-対応:
-
-| spec promise | source evidence | test evidence | status |
-|---|---|---|---|
-| syntax-free immutable table 5個がpredicate 1件、ordered parameter 2件、guard 1件、symmetry property 1件、correctness link 1件を保持する。 | `src/source_predicate_definition.rs`のpublic input、row、dense id、table、getter。 | `task_259_exact_predicate_definition_payload_and_pending_obligation`、independent row/field corruption coverage。 | exact `1/2/1/1/1`としてimplemented。 |
-| producerはresolver identityとexact Task-248/249/252/256 fingerprintをauthenticateし、retained baselineへpending correctness obligation 1件をappendする。 | `SourcePredicateDefinitionProducer::build`、`SourcePredicateDefinitionProjection`、fail-closed error category。 | dependency/obligation corruption、nonempty-baseline transactional test。 | sorting、repair、partial publicationなしでimplemented。 |
-| typed/final ownerはhandoffとcomplete obligation tableをatomicにpublishしclone-preserveする。 | `TypedAst::with_source_predicate_definition`と`ResolvedTypedAst::source_predicate_definition`。 | transactional installation、final clone/debug/family-isolation test。 | second input/public final obligation-table getterなしでimplemented。 |
-| public surfaceとenumはdocumented/forward-compatibleである。 | 上記5 dense id、6 input aggregate、2 data enum、5 row/table、handoff、projection、error、producer。全public enumはnon-exhaustive。 | `checker_public_enums_are_forward_compatible_and_documented`、`checker_source_spec_audit_covers_public_surface_and_gaps`。 | Task-259 lint exceptionなしでguard。 |
-
-bounded gap: guard-to-symmetry FOL construction、justification proof、
-discharge、fact/axiom、accepted definition、VC/IR、mixed predicate/functor
-acceptanceは本module外である。Task 260のseparate functor-only transactionは
-本moduleをextendしない。
-
-### `source_composite_formula`
-
-生成 public newtype:
-
-- `SourceCompositeFormulaId`, `SourceFormulaWrapperId`,
-  `SourceFormulaRootId`, `SourceQuantifierBinderId`,
-  `SourceBinderTypeSiteId`, `SourceFormulaEdgeId`,
-  `SourceFormulaRequestId`
-
-literal top-level public item:
-
-- `SourceCompositeFormulaHandoffInput`, `SourceCompositeFormulaInput`,
-  `SourceFormulaWrapperInput`, `SourceFormulaRootInput`,
-  `SourceQuantifierBinderInput`, `SourceBinderTypeSiteInput`,
-  `SourceFormulaEdgeInput`, `SourceFormulaRequestInput`,
-  `SourceCompositeFormulaKind`, `SourceCompositeFormulaRecovery`,
-  `SourceFormulaRootOwnership`, `SourceBinderTypeHead`,
-  `SourceFormulaEdgeRole`, `SourceFormulaRequestKind`,
-  `SourceCompositeFormulaHandoff`, `SourceCompositeFormulaTable`,
-  `SourceFormulaWrapperTable`, `SourceFormulaRootTable`,
-  `SourceQuantifierBinderTable`, `SourceBinderTypeSiteTable`,
-  `SourceFormulaEdgeTable`, `SourceFormulaRequestTable`,
-  `SourceCompositeFormula`, `SourceFormulaWrapper`, `SourceFormulaRoot`,
-  `SourceQuantifierBinder`, `SourceBinderTypeSite`, `SourceFormulaEdge`,
-  `SourceFormulaRequest`, `SourceCompositeFormulaProducer`,
-  `SourceCompositeFormulaError`.
-
-対応:
-
-| specification promise | source evidence | test evidence | status |
-|---|---|---|---|
-| 7件のsyntax-free dense tableがexact composite tree、reserved wrapper table、root、binder、written binder type、child role、unresolved requestを保持する。現在acceptするTask-257A/257B1 profileはいずれもwrapper table emptyを要求し、実行可能なparenthesized occurrenceはTask 257B2へdeferする。 | `src/source_composite_formula.rs`のpublic input/immutable row/table。 | exact real `5/0/1/1/1/4/6`、exact B1 `1/0/1/1/1/0/2`、full literal debug、wrapper/third-profile rejection、corruption test。 | Task 257A/257B1としてimplementedし、parenthesized occurrenceはdeferred。 |
-| 同じimmutable inputがexact `1/0/4` module shellをsource-derived `2/1/4` environmentへextendする。 | `SourceCompositeFormulaProducer::extend_bindings`、`BindingContextOwner::SourceFormula`、`build`。 | binder identity、context transition、diagnostic prefix、stale environment、arena-key test。 | transactionalにimplemented。 |
-| `TypedAst`がhandoff 1件をownしてTask-248 coexistenceをrejectし、`ResolvedTypedAst`がrevalidate後clone-preserveする。 | `with_source_composite_formula`、accessor、resolved assembly。 | one-shot、preinstalled-source-context、final clone equality、deterministic replay、legacy debug test。 | raw-source rebuildなしでimplemented。 |
-| public enumはforward-compatible。 | 全public Task-257A enumの`#[non_exhaustive]`。 | `checker_public_enums_are_forward_compatible_and_documented`。 | exhaustive exceptionなしでguard。 |
-
-bounded gap: semantic connective/quantifier evaluation、他connective/quantifier
-form、bound use/capture、predicate chain、conditioned comprehension、theorem
-owner/acceptance、proof、fact、downstream IRはTasks 257B/257C/258以降に残る。
-
-### `source_formula_composition`
-
-生成public newtype:
-
-- `SourceFormulaAtomicEdgeId`、`SourceQuantifierBoundUseId`、
-  `SourceConditionFormulaEdgeId`、`SourcePredicateChainConjunctionId`、
-  `SourcePredicateChainNegationId`、
-  `SourceFraenkelGeneratorBindingContextId`、
-  `SourceFraenkelGeneratorUsePositionId`、
-  `SourceFraenkelGeneratorBoundUseId`、
-  `SourceNestedFraenkelBinderUseId`、
-  `SourceNestedFraenkelCaptureIdentityId`、
-  `SourceNestedFraenkelCaptureGraphGeneratorId`、
-  `SourceNestedFraenkelCaptureGraphMapperId`、
-  `SourceNestedFraenkelCaptureGraphPredicateId`、
-  `SourceNestedFraenkelCaptureGraphCaptureId`、
-  `SourceNestedFraenkelCaptureGraphOccurrenceId`
-
-literal top-level public item:
-
-- `SourceFormulaCompositionHandoffInput`,
-  `SourceFormulaAtomicEdgeInput`, `SourceQuantifierBoundUseInput`,
-  `SourceConditionFormulaCompositionHandoffInput`、
-  `SourceConditionFormulaEdgeInput`、
-  `SourcePredicateChainCompositionHandoffInput`、
-  `SourcePredicateChainConjunctionInput`、
-  `SourcePredicateChainNegationInput`、
-  `SourceFormulaAtomicEdgeRole`, `SourceFormulaCompositionHandoff`,
-  `SourceConditionFormulaCompositionHandoff`、
-  `SourcePredicateChainCompositionHandoff`、
-  `SourceFormulaAtomicEdgeTable`, `SourceQuantifierBoundUseTable`,
-  `SourceConditionFormulaEdgeTable`、
-  `SourcePredicateChainConjunctionTable`、
-  `SourcePredicateChainNegationTable`、
-  `SourceFormulaAtomicEdge`、`SourceQuantifierBoundUse`、
-  `SourceConditionFormulaEdge`、`SourcePredicateChainConjunction`、
-  `SourcePredicateChainNegation`、`SourceFormulaCompositionProducer`、
-  `SourceConditionFormulaCompositionProducer`、
-  `SourcePredicateChainCompositionProducer`、
-  `SourceFormulaCompositionError`、
-  `SourceConditionFormulaCompositionError`、
-  `SourcePredicateChainCompositionError`、
-  `SourceFraenkelGeneratorBindingContext`、
-  `SourceFraenkelGeneratorBindingContextTable`、
-  `SourceFraenkelGeneratorUsePosition`、
-  `SourceFraenkelGeneratorUsePositionTable`、
-  `SourceFraenkelGeneratorBindingContextError`、
-  `SourceFraenkelGeneratorBindingContextHandoff`、
-  `SourceFraenkelGeneratorBindingContextProducer`、
-  `SourceFraenkelGeneratorBoundUse`、
-  `SourceFraenkelGeneratorBoundUseTable`、
-  `SourceFraenkelGeneratorBoundUseError`、
-  `SourceFraenkelGeneratorBoundUseHandoff`、
-  `SourceFraenkelGeneratorBoundUseProducer`、
-  `SourceNestedFraenkelBinderUse`、
-  `SourceNestedFraenkelBinderUseTable`、
-  `SourceNestedFraenkelBinderUseError`、
-  `SourceNestedFraenkelBinderUseHandoff`、
-  `SourceNestedFraenkelBinderUseProducer`、
-  `SourceNestedFraenkelCaptureIdentity`、
-  `SourceNestedFraenkelCaptureIdentityTable`、
-  `SourceNestedFraenkelCaptureIdentityError`、
-  `SourceNestedFraenkelCaptureIdentityHandoff`、
-  `SourceNestedFraenkelCaptureIdentityProducer`、
-  `SourceNestedFraenkelCaptureGraphGenerator`、
-  `SourceNestedFraenkelCaptureGraphGeneratorTable`、
-  `SourceNestedFraenkelCaptureGraphMapper`、
-  `SourceNestedFraenkelCaptureGraphMapperTable`、
-  `SourceNestedFraenkelCaptureGraphPredicate`、
-  `SourceNestedFraenkelCaptureGraphPredicateTable`、
-  `SourceNestedFraenkelCaptureGraphCapture`、
-  `SourceNestedFraenkelCaptureGraphCaptureTable`、
-  `SourceNestedFraenkelCaptureGraphOccurrence`、
-  `SourceNestedFraenkelCaptureGraphOccurrenceTable`、
-  `SourceNestedFraenkelCaptureGraphHandoff`、
-  `SourceNestedFraenkelCaptureGraphError`、
-  `SourceNestedFraenkelCaptureGraphProducer`、
-  `SourceNestedFraenkelCaptureGraphOwnerHandoff`、
-  `SourceNestedFraenkelCaptureGraphOwnerError`、
-  `SourceNestedFraenkelCaptureGraphOwnerProducer`。
-
-対応:
-
-| specification promise | source evidence | test evidence | status |
-|---|---|---|---|
-| syntax-free dense table 5件がexact composite-to-atomic/binder-use、condition-to-formula、predicate-segment conjunction、segment-negation associationを保持する。 | `src/source_formula_composition.rs`のpublic input/immutable row/table。 | exact Task-257B1/B2/B3、C2 `1`、C3 `1/1` transaction、literal debug、independent field/association corruption test。 | Task 257C3までimplemented。 |
-| 各transactionはexact Task-252/253/255/256/257 lower dependencyだけをone arenaでfingerprint/revalidateする。 | public producer 3件、immutable owned fingerprint、exact private profile validator。 | coherent wrong profile、dependency substitution、cross-source、order、lookup-winner、containment、stale arena/fingerprint、validation-precedence test。 | transactionalにimplemented。 |
-| B-family combined ownership、C2 condition ownership、C3 predicate-chain ownershipはatomicにpublishされ、frozen範囲でmutually exclusive、final assemblyまでclone-preserveされる。 | `TypedAst` installer/getter、`ResolvedTypedAst` revalidation。 | legacy/combined partition、Task-248/A/B/C2/C3 exclusion、rollback/replay、debug order、final clone test。 | intermediate AST stateなしでimplemented。 |
-| C4Aはexact opaque R2/277C/`TypedAst` snapshot上のbinding-context tableとnormalized-use-position tableをownする。 | C4A ID 2件、row/table 2組、handoff/error/producer。 | exact C4A checker test 4件とprivate F5 probe。 | term/reference/capture/semantic installなしでimplemented。 |
-| C4BはC4A position 3件を`BindingEnv::lookup`でone checker-local bindingへmapしone dense tableをpublishする。 | `SourceFraenkelGeneratorBoundUseId`、row/table/handoff/error/producer。 | exact C4B checker test 4件とprivate F5 bound-use probe。 | full retained C4A validation/zero semantic creditでimplemented。 |
-| C4C3はexact C4C2 nested two-binding/one-mapper-use relationをretained normal `TypedAst`へauthenticateし、immutable binder/use identity row 1件をpublishする。 | `SourceNestedFraenkelBinderUseId`、row/table/handoff/error/producer、private retained dependency validator。 | exact C4C3 checker test 4件とprivate real imported-fixture probe。 | Task252 occurrence/semantic capture/install/route/coverage creditなしでimplemented。 |
-| C4C5はcomplete C4C4 mapper transactionをby-value consume/retainし、inner owner/mapper/reference/checker bindingからresolver identityへのimmutable receipt 1件をpublishする。 | `SourceNestedFraenkelCaptureIdentityId`、row/table/handoff/two-variant error/producer、complete C4C4 revalidation seam。 | exact C4C5 checker test 4件とprivate real imported-fixture probe 1件が全row field/cardinality/precedence/display/replay/empty captured stateをcoverする。 | Task255 dependency、Typed/Resolved install、semantic capture、Core origin、route、diagnostic、coverage creditなしでimplemented。 |
-| C4C6はcomplete C4C5 receiptをexact authenticated immutable Typed/Resolved destinationへcapture semanticsなしでinstallする。 | Crate-private retained-typed validation、boxed AST owner、one-shot Typed installer、borrowed Typed/Resolved getter、final clone replay。 | Exact checker test 6件とprivate real imported-fixture installation probe 1件がexact owner equality、recursion rejection、semantic-table exclusion、mutual exclusion、debug/clone stability、final-input contamination、empty captured stateをcoverする。 | Implemented。Core/order/route/diagnostic/coverage creditなし。 |
-| C4C8はretained C4C8R resolver snapshot上にexact `3/1/0/2/2` generator/mapper/predicate/capture/occurrence cardinalityを持つstandalone immutable normalized graphをownする。 | Graph ID 5件、row/table pair 5組、handoff、`#[non_exhaustive]` error、producer、private complete validator。 | Exact checker test 4件とprivate real imported-fixture probe 1件がAPI shape、identity link、provenance-first precedence、default-deny corruption、replay、local-`z` exclusionをcoverする。 | Typed/Resolved slot、semantic capture、Core/GeneratedOrigin payload、route、diagnostic、coverage creditなしでimplemented。 |
-| Task33Cはunchanged C4C8 graph 1件をexact Task33R containing-functor ownerへretained-resolver equality/resolved owner identityでpairする。 | Scalar `SourceNestedFraenkelCaptureGraphOwnerHandoff`、3-variant non-exhaustive error、producer、private complete validator。 | Exact checker 4件 + private real-fixture 1件がAPI/debug、precedence、association corruption、replay、stale/display-independent pairing、zero-semantic isolationをcoverする。 | Implemented。Table/id、Typed/Resolved/Core install、order、GeneratedOrigin、route、diagnostic、coverage creditなし。 |
-| public enumはforward-compatible。 | public enum 10件すべての`#[non_exhaustive]`。 | `checker_public_enums_are_forward_compatible_and_documented`。 | exhaustive exceptionなしでguard。 |
-
-bounded gap: connective/quantifier/predicate truth、signature applicability、
-overload selection、formula fact/result、implicit theorem closure/acceptance、
-proof、downstream IRはTask 258以降に残る。
-
-### `source_statement`
-
-generated public newtype:
-
-- `SourceTheoremOwnerId`、`SourceStatementId`、`SourceStatementContextId`、
-  `SourceStatementInputFactId`、`SourceStatementCandidateFactId`
-
-literal top-level public item:
-
-- `SourceStatementHandoffInput`、`SourceTheoremOwnerInput`、
-  `SourceStatementInput`、`SourceStatementContextInput`、
-  `SourceStatementInputFactInput`、`SourceStatementCandidateFactInput`
-- `SourceTheoremRole`、`SourceTheoremStatus`、`SourceStatementKind`、
-  `SourceStatementRecovery`、`SourceStatementFormulaTarget`、
-  `SourceStatementInputFactKind`、`SourceStatementCandidateFactKind`
-- `SourceStatementHandoff`、`SourceTheoremOwnerTable`、
-  `SourceStatementTable`、`SourceStatementContextTable`、
-  `SourceStatementInputFactTable`、`SourceStatementCandidateFactTable`、
-  `SourceTheoremOwner`、`SourceStatement`、`SourceStatementContext`、
-  `SourceStatementInputFact`、`SourceStatementCandidateFact`、
-  `SourceStatementProducer`、`SourceStatementError`
-
-対応:
-
-| specification promise | source evidence | test evidence | status |
-|---|---|---|---|
-| syntax-free dense table 5件がexact theorem owner、statement shell、visibility context、reserved-type-guard input、unverified candidateを保持する。 | `src/source_statement.rs`のpublic input/row/table/handoff type。 | checker exact tests 3件とreal frontend/resolver runner tests 4件。 | Task 258Aとしてimplemented。 |
-| resolver、Task-48 binding、Task-252/256 fingerprint、arena topology、direct formula wrapperをfail-closedにrevalidateする。 | `SourceStatementProducer::build`、immutable authenticated contribution/environment、typed/final installer。 | resolver/lower/binding/ordinal/fingerprint/subtree/coexistence corruption/replay matrix。 | transactionalにimplemented。 |
-| theorem truth、accepted fact、proof、existing semantic tableをpublishしない。 | candidate kindはunverified、typed/final semantic coexistence guardはoutput前にreject。 | checker/runnerのempty-output/semantic-coexistence test。 | transportだけとしてimplemented。 |
-| public enumはforward-compatible。 | public enum 7件の`#[non_exhaustive]`。 | `checker_public_enums_are_forward_compatible_and_documented`。 | exhaustive exceptionなしでguard。 |
-
-bounded gap: broader statement/local citation/nested contextはTask 258B、
-acceptance/proof-local behavior/justification semanticsはTasks 269–272。
-
-### `source_proof_local_declaration`
-
-generated public newtype:
-
-- `SourceProofLocalDeclarationId`
-- `SourceProofLocalLetBindingId`
-- `SourceProofLocalGivenBindingId`
-
-literal top-level public item:
-
-- `SourceProofLocalDeclarationHandoffInput`、
-  `SourceProofLocalDeclarationInput`、`SourceProofLocalDeclarationKind`、
-  `SourceProofLocalDeclarationRecovery`
-- `SourceProofLocalDeclaration`、`SourceProofLocalDeclarationTable`、
-  `SourceProofLocalDeclarationHandoff`、
-  `SourceProofLocalDeclarationProducer`、
-  `SourceProofLocalDeclarationError`
-- `SourceProofLocalLetBindingHandoffInput`、
-  `SourceProofLocalLetBindingRecovery`、`SourceProofLocalLetBinding`、
-  `SourceProofLocalLetBindingTable`、`SourceProofLocalLetBindingHandoff`、
-  `SourceProofLocalLetBindingProducer`、`SourceProofLocalLetBindingError`
-- `SourceProofLocalGivenBindingHandoffInput`、
-  `SourceProofLocalGivenBindingRecovery`、`SourceProofLocalGivenBinding`、
-  `SourceProofLocalGivenBindingTable`、`SourceProofLocalGivenBindingHandoff`、
-  `SourceProofLocalGivenBindingProducer`、`SourceProofLocalGivenBindingError`
-- `SourceProofLocalGivenUseBindingHandoffInput`、
-  `SourceProofLocalGivenUseBindingHandoff`、
-  `SourceProofLocalGivenUseBindingProducer`、
-  `SourceProofLocalGivenUseBindingError`
-- `SourceProofLocalGivenConditionBindingHandoffInput`、
-  `SourceProofLocalGivenConditionBindingHandoff`、
-  `SourceProofLocalGivenConditionBindingProducer`、
-  `SourceProofLocalGivenConditionBindingError`
-- `SourceProofLocalGivenDescendantBindingHandoffInput`、
-  `SourceProofLocalGivenDescendantBindingHandoff`、
-  `SourceProofLocalGivenDescendantBindingProducer`、
-  `SourceProofLocalGivenDescendantBindingError`
-
-対応:
-
-| specification promise | source evidence | test evidence | status |
-|---|---|---|---|
-| immutable syntax-free row 1件がexact Task-258B3N named witness、name、RHS primary term、proof context、resolver-local declaration、checker bindingをlinkする。 | `src/source_proof_local_declaration.rs`のpublic input/row/dense ID/table/handoff type。 | checker exact construction/lookup/debug testとprivate real-frontend runner test。 | `NamedWitness` row 1件としてimplemented。 |
-| producerはsource/module identity、Task-258B3N statement/witness/primary fingerprint、typed node全51件、complete base-to-final binding transitionをauthenticateする。 | `SourceProofLocalDeclarationProducer::build`、retained fingerprint 5件、fail-closed validation category。 | transaction/dependency/row/resolver/all-node/fingerprint corruption matrix。 | syntax parsingなしでtransactionalにimplemented。 |
-| Typed/final ownerはoptional handoffをatomicにpublish/replay/clone-preserveし、全semantic tableをemptyに保つ。 | `TypedAst::with_source_proof_local_declaration`とread-only ownership getter 2件。 | one-shot/orphan/stale/sibling/final-replay/empty-semantics checker/runner test。 | dormant Task-269A definition-site sliceとしてimplemented。 |
-| public enumはforward-compatible。 | kind/recovery/errorの`#[non_exhaustive]`。 | public-enum/source-spec-audit lint policy。 | exhaustive exceptionなしでguard。 |
-| exact proof-`let` profileはreserve-only baseへmissing-type `LetBinding` 1件をappendし、semantic publicationなしでatomic preserveする。 | public `SourceProofLocalLetBinding*` input/row/table/handoff/producer/error typeとTyped/final ownership。 | checker 4件とprivate runner 4件のTask-269C tests。 | zero-credit binding transportとしてimplemented。 |
-| exact proof-`given` profileはreserve-only baseへmissing-type `GivenWitness` 1件をappendし、canonical block-local lookupを保ち、semantic publicationなしでatomic preserveする。 | public `SourceProofLocalGivenBinding*` input/row/table/handoff/producer/error type、`BindingKind::GivenWitness`、Typed/final ownership。 | inherited/shadowed/restored/parent-excluded/sibling-excluded lookupを含むchecker 4件とprivate runner 4件のTask-269G tests。 | zero-credit binding transportとしてimplemented。source-type admissionはTask 269GTに残る。 |
-| distinct proof-`given` later-use sourceは、occurrence/semantic rowをpublishせず、自身のtransactionで同じblock-local binding lifetimeを再構築する。 | public `SourceProofLocalGivenUseBindingHandoffInput`、`SourceProofLocalGivenUseBindingHandoff`、`SourceProofLocalGivenUseBindingProducer`、`SourceProofLocalGivenUseBindingError`と再利用するdense Given row/table/recovery ABI。 | exact source identity、corruption precedence、lookup inheritance/shadow/restoration/exclusion、zero semantic effectを覆うchecker 4件・private runner 4件のTask-269GUP tests。 | Task 269GUPT向けzero-credit dormant binding prerequisiteとしてimplemented。 |
-| declaration-condition sourceがtype/occurrence/condition/proof semanticsをpublishせずcanonical own-condition/innermost-block witness lifetimeをinstallする。 | public `SourceProofLocalGivenConditionBindingHandoffInput`、`SourceProofLocalGivenConditionBindingHandoff`、`SourceProofLocalGivenConditionBindingProducer`、`SourceProofLocalGivenConditionBindingError`、independent theorem identity、reused Given row/table/recovery ABI。 | coherent identity corruption、precedence、lookup inheritance/shadow/restoration/exclusion、atomic ownership、zero semantic effectを覆うchecker/runner各4 Task269GC tests。 | Task269GCT向けzero-credit binding prerequisiteとしてimplemented。 |
-| descendant sourceがtype/occurrence/Set binding/capture/proof semanticsをpublishせずouter Given witnessとinherited child context 1件をinstallし、parent/proof sibling/owner終了後をexcludeする。 | public `SourceProofLocalGivenDescendantBindingHandoffInput`、`SourceProofLocalGivenDescendantBindingHandoff`、`SourceProofLocalGivenDescendantBindingProducer`、`SourceProofLocalGivenDescendantBindingError`、exact Task-269SDP replay、reused Given row/table/recovery ABI。 | 全input/replay field、exact precedence、descendant lookup/shadow/restoration/exclusion、全owner atomicity、zero semantic effectを覆うchecker/runner各4 Task269SDC tests。 | zero-credit descendant binding/context transportとしてimplemented。 |
-
-bounded gap: later-use resolution/capture replay、他のproof-local declaration
-form、witness typing、existential matching、goal substitution、proof/discharge/
-acceptance、fact、Core/CFG/VC、public runner activationはTask 269B+とTasks
-270–272に残る。
-
-### `source_set_term`
-
-generated public newtype:
-
-- `SourceSetTermId`、`SourceSetWrapperId`、`SourceSetGeneratorId`、
-  `SourceSetTypeSiteId`、`SourceSetConditionId`、`SourceSetEdgeId`、
-  `SourceSetRequestId`
-
-literal top-level public item:
-
-- `SourceSetTermHandoffInput`、`SourceSetTermInput`、
-  `SourceSetWrapperInput`、`SourceSetGeneratorInput`、
-  `SourceSetTypeSiteInput`、`SourceSetConditionInput`、`SourceSetEdgeInput`、
-  `SourceSetRequestInput`、`SourceSetTermKind`、
-  `SourceSetTermRecovery`、`SourceSetTypeOwner`、`SourceSetTypeRole`、
-  `SourceSetTypeHead`、`SourceSetEdgeRole`、`SourceSetTarget`、
-  `SourceSetRequestKind`、`SourceSetTermHandoff`、`SourceSetTermTable`、
-  `SourceSetWrapperTable`、`SourceSetGeneratorTable`、
-  `SourceSetTypeSiteTable`、`SourceSetConditionTable`、`SourceSetEdgeTable`、
-  `SourceSetRequestTable`、
-  `SourceSetTerm`、`SourceSetWrapper`、`SourceSetGenerator`、
-  `SourceSetTypeSite`、`SourceSetCondition`、`SourceSetEdge`、
-  `SourceSetRequest`、
-  `SourceSetTermProducer`、`SourceSetTermError`
-
-対応:
-
-| spec promise | source evidence | test evidence | status |
-|---|---|---|---|
-| syntax-free dense table 7個がset/choice/`qua` term、wrapper、written generator、bare target site、written comprehension condition、ordered child、unresolved requestを保持する。 | `SourceSetTermHandoffInput`、dense ID/table 7個、`src/source_set_term.rs`のread-only row。 | exact legacy 4/0/1/3/0/4/7、Task-255C1 1/0/1/1/1/1/2 transaction、Task-252/253 dependency oracle、synthetic shape matrix。 | Tasks 255/255C1でimplemented。 |
-| Task-252/253/254/255 nearest-family ownershipとconditional dependency fingerprintをatomicにauthenticateする。 | `SourceSetTermProducer::build`、private install validation、immutable fingerprint。 | cross-family root、unrelated/targeted/missing/mismatch、overlap、install-order test。 | transactionalにimplemented。 |
-| canonical spelling、arena key、recovery、context、row association/cardinality/order、condition-subtree exclusion、request ownershipをfail closedにする。 | producer validationと`SourceSetTermError`。 | producer/extractor corruption、copied/out-of-range condition dependency、degraded-transport matrix。 | partial publicationなしでimplemented。 |
-| `TypedAst`がhandoff 1件をownし、`ResolvedTypedAst`がrevalidate後にclone-preserveする。 | `with_source_set_term`、later Task-253/254 revalidation、resolved assembly。 | one-shot install、later-owner reject、final clone equality、deterministic replay。 | Implemented。 |
-| public enumはforward-compatibleである。 | 全public enumの`#[non_exhaustive]`。 | `checker_public_enums_are_forward_compatible_and_documented`。 | guarded。exhaustive exceptionなし。 |
-
-bounded gap: comprehension binder identity/captureはTask 257、condition
-formulaはTasks 256-257に残す。semantic result type、sethood/nonemptiness/
-widening、choice stability/witness、`qua` reduct、fact/acceptance/proof/
-downstream IRは本module外である。
-
-### `source_structure`
-
-generated public newtype:
-
-- `SourceStructureTermId`、`SourceStructureWrapperId`、
-  `SourceStructureRootId`、`SourceStructureMemberId`、`SourceFieldUpdateId`、
-  `SourceStructureEdgeId`、`SourceStructureRequestId`
-
-literal top-level public item:
-
-- `SourceStructureHandoffInput`、`SourceStructureTermInput`、
-  `SourceStructureWrapperInput`、`SourceStructureRootInput`、
-  `SourceStructureMemberInput`、`SourceFieldUpdateInput`、
-  `SourceStructureEdgeInput`、`SourceStructureRequestInput`、
-  `SourceStructureTermKind`、`SourceStructureRecovery`、
-  `SourceStructureMemberRole`、`SourceStructureEdgeRole`、
-  `SourceStructureTarget`、`SourceStructureRequestKind`、
-  `SourceStructureHandoff`、
-  `SourceStructureTermTable`、`SourceStructureTerm`、
-  `SourceStructureWrapperTable`、`SourceStructureWrapper`、
-  `SourceStructureRootTable`、`SourceStructureRoot`、
-  `SourceStructureMemberTable`、`SourceStructureMember`、
-  `SourceFieldUpdateTable`、`SourceFieldUpdate`、
-  `SourceStructureEdgeTable`、`SourceStructureEdge`、
-  `SourceStructureRequestTable`、`SourceStructureRequest`、
-  `SourceStructureProducer`、`SourceStructureError`
-
-対応:
-
-| 仕様上の約束 | source根拠 | test根拠 | 状態 |
-|---|---|---|---|
-| syntax-free seven-table transactionがsemantic field/member/view decisionなしにconstructor/selector/functional-update source shapeをtransportする。 | `src/source_structure.rs`のinputとimmutable table。 | exact real 5/0/3/9/2/10/26 + Task-252 8/0/8 oracleとsynthetic family test。 | Task 254について実装済み。 |
-| dense preorder、exact arena key 5個、member/FieldUpdate/wrapper ownership、resolver Structure provenance、child containment、request、Task-253 root-only compositionをfail closedする。 | `SourceStructureProducer::build`が`SymbolEnv`、`BindingEnv`、Task 252、optional Task 253、`TypedArena`を検証する。 | provenance/ownership/key substitution/child family/corruption/exclusion全matrix。 | sort/inference/repair/partial publicationなしにtransactional実装。 |
-| Task-252とconditional Task-253 dependency identityはexact producer-derived debug fingerprintを使う。 | `TypedAst`/`ResolvedTypedAst`がfingerprint/cross-family root/arena siteをrevalidateする。 | `None`両branch、target root付き`Some`、mismatch/missing reject、replacement、clone preservation。 | cross-family duplicate ownershipなしに実装。 |
-| public enumはforward-compatible。 | Task-254 public enumすべてに`#[non_exhaustive]`。 | `checker_public_enums_are_forward_compatible_and_documented`。 | exhaustive exceptionなしでguard済み。 |
-
-bounded gap: Task 254はstructure-definition acceptance、field/property identity、
-inheritance view、constructor coverage/default/type checking、selector/update
-semantics、fact、later term/formula family、proof、downstream IRをownしない。
-Tasks 255+/263-264とexplicit ownerに残す。
-
-### `type_checker`
-
-literal top-level public item:
-
-- `TypeNormalizationOutput`, `TypeNormalizer`, `DeclarationCheckingOutput`,
-  `DeclarationChecker`, `TermFormulaInferenceOutput`, `TermFormulaChecker`,
-  `TermFormulaInferenceError`, `CheckedStatementOwner`, `StatementOwnerError`,
-  `CoercionCheckingOutput`, `CoercionObligationChecker`, `CoercionInput`,
-  `CoercionRequestKind`, `CoercionJustification`, `CoercionEvidence`,
-  `CoercionDeferredReason`, `InitialObligationInput`, `InitialRequirementKind`,
-  `TypeFactQueryEngine`, `TypeFactQuery`, `TypeFactQueryOutput`,
-  `TypeFactQueryStatus`, `TermInput`, `TermKind`, `TermReference`,
-  `TermDeferredReason`, `FormulaInput`, `FormulaKind`,
-  `FormulaDeferredReason`, `ExpectedTypeInput`, `FormulaFactInput`,
-  `OpenCandidateInput`, `CandidateIdentity`, `OpenCandidateSetTable`,
-  `OpenCandidateSet`, `OpenCandidate`, `CandidateSetKind`,
-  `CandidateSetStatus`, `CandidateStatus`, `CheckedTermTable`,
-  `CheckedTermId`, `CheckedTerm`, `TermStatus`, `CheckedFormulaTable`,
-  `CheckedFormulaId`, `CheckedFormula`, `FormulaStatus`,
-  `ExpectedTypeConstraint`, `DeclarationContextInput`, `DeclarationInput`,
-  `DeclarationKind`, `ReservedDefaultPayload`,
-  `DeclarationDeferredReason`, `DeclarationAssumptionInput`,
-  `CheckedDeclarationTable`, `CheckedDeclarationId`,
-  `CheckedDeclaration`, `DeclarationStatus`,
-  `SourceReserveDeclarationBridge`, `SourceReserveBindingInput`,
-  `SourceReserveDeclarationHandoff`, `TypeExpressionInput`,
-  `TypeHeadInput`, `AttributeInput`, `AttributePolarity`, `ModeExpansion`,
-  `NormalizedTypeTable`, `NormalizedType`, `TypeHeadRef`,
-  `TypeHeadErrorKind`, `AttributeSet`, `AttributeInstance`, `TypeSource`,
-  `NormalizedTypeStatus`, `SourceRangeKey`
-
-対応:
-
-| 仕様上の約束 | source 根拠 | test 根拠 | 状態 |
-|---|---|---|---|
-| Type-expression normalization は mode、attribute、arity、unsupported input の degraded state を canonicalize し、cluster repair を行わない。 | `TypeNormalizer`, `TypeNormalizationOutput`, `TypeExpressionInput`, `ModeExpansion`, normalized type tables. | attribute/order/builtin/mode-expansion/degraded-head tests. | explicit payload について実装済み。MC-G014 は残る。 |
-| Declaration checking は explicit declaration と binding context を消費し、partial output を保持する。 | `DeclarationChecker`, `DeclarationCheckingOutput`, declaration input/status tables. | declaration deterministic/invalid/constrained/set/attributed/reconsider tests. | explicit payload について実装済み。MC-G016 は残る。 |
-| reserve-only source-derived producer seam は syntax-free な reserve payload を消費し、raw syntax を import せず checker-owned binding/declaration handoff data を構築する。 | `SourceReserveDeclarationBridge`, `SourceReserveBindingInput`, `SourceReserveDeclarationHandoff`. | `source_reserve_declaration_bridge_builds_checker_owned_handoff`, `source_reserve_declaration_bridge_validates_local_symbol_heads_and_mismatched_inputs`, active `mizar-test` type-elaboration runner regressions. | successful bare builtin `set` / `object` reserve declaration、builtin `set` / `object` に終端する accepted same-module bare local-mode chain、および MC-G020 に記録された active diagnostic reserve/type-head boundary について実装済み。task 82 は imported-mode slice を拡張し、documented `parser.type_fixtures` の imported `TypeCaseMode` head が `ImportedSource` provenance 付き checker type-head payload になり、その後 missing imported `ModeExpansion` payload だけで fail closed する。task 83 は imported-structure slice を documented structure `R` に限って拡張し、imported `SymbolKind::Structure` head が checker type-head payload になり、その後 missing structure-evidence query だけで fail closed する。task 97 は同じ slice を documented structure `TypeCaseStruct` に適用する。task 84 は imported-attribute slice を documented `TypeCaseAttr` に限って拡張し、imported `SymbolKind::Attribute` が builtin `set` 上の checker `AttributeInput` payload になり、その後 missing attributed-type evidence query だけで fail closed する。task 85 は imported-attribute slice を documented negative `empty` over builtin `set` に限って拡張し、imported `SymbolKind::Attribute` が negative checker `AttributeInput` payload になり、その後 missing attributed-type evidence query だけで fail closed する。task 116 は documented positive `empty` over builtin `set` に同じ slice を適用し、positive checker `AttributeInput` payload として同じ missing attributed-type evidence query で fail closed する。`R` / `TypeCaseStruct` を超える imported structure、`TypeCaseAttr` と task-85/task-116 `empty`/builtin-`set` を超える imported attribute、imported mode expansion、imported module AST extraction、より広い AST-wide extraction は MC-G020 のまま。 |
-| Term/formula inference は checked table、expected constraint、open candidate、fact、recovery を記録し、type assertion は normalized identity を受理して non-reflexive reachability payload 欠落で fail closed する。 | `TermFormulaChecker`, term/formula input and checked tables, `FormulaDeferredReason::MissingTypeAssertionReachabilityPayload`. | term/formula/recovery tests、`type_assertion_requires_reflexive_or_external_reachability_payload`。 | explicit payload は reflexive type-assertion admissibility まで実装済み。general widening/`qua` reachability は MC-G017/MC-G019/external のまま。 |
-| Coercion と initial obligation は `VcId` や fabricated evidence なしで記録される。 | `CoercionObligationChecker`, `CoercionInput`, `InitialObligationInput`, justification/evidence/deferred enum. | coercion deterministic/missing evidence/alternate candidate tests; task 47 omitted-`reconsider` proof-free/requires-proof tests。 | explicit payload について実装済み。source-derived coercion/reconsider extraction について MC-G018/MC-G020 は残る。 |
-| Fact query は deterministic、visibility-scoped、non-mutating。 | `TypeFactQueryEngine`, `TypeFactQueryOutput`, `TypeFactQueryStatus`. | deterministic/provenance/visibility/contradiction tests. | 実装済み。 |
-| public enum は forward-compatible。 | public enum の `#[non_exhaustive]`。 | `checker_public_enums_are_forward_compatible_and_documented`. | task 31 で guard 済み。 |
-
-Task 75 addendum: active `mizar-test` type-elaboration runner は、後続
-same-module local mode declaration を earlier reserve head から参照する
-source-derived case について、
-`type_elaboration.lower_stage.frontend:malformed_type_expression` を
-観測する。これは Chapter 2/11 の active-range/no-forward-reference 境界だけを
-credit し、future declaration から checker `ModeExpansion` payload を作ること、
-CoreIr/ControlFlowIr/VC/proof payload coverage を主張することはしない。
-forward-reference acceptance は active-range rule で forbidden として
-lower-stage rejection だけで cover する。
-
-Task 76 addendum: active `mizar-test` type-elaboration runner は、後続
-same-module local structure declaration を earlier reserve head から参照する
-source-derived case について、同じ
-`type_elaboration.lower_stage.frontend:malformed_type_expression` を観測する。
-これは Chapter 2/5/11 の active-range/no-forward-reference 境界と structure
-syntax/type-head surface だけを credit し、future declaration から checker
-structure type-head payload、base-shape evidence query、constructor-witness
-evidence query、CoreIr/ControlFlowIr/VC/proof payload coverage を主張しない。
-
-Task 77 addendum: active `mizar-test` type-elaboration runner は、後続
-same-module local attribute declaration を earlier reserve type expression から
-使う source-derived case について、同じ
-`type_elaboration.lower_stage.frontend:malformed_type_expression` を観測する。
-これは Chapter 2/6/11 の active-range/no-forward-reference 境界と attribute
-syntax/use surface だけを credit し、future declaration から checker
-`AttributeInput` extraction、attributed-type evidence query、CoreIr、
-ControlFlowIr、VC、proof payload coverage を主張しない。
-
-Task 78 addendum: task 83 より前の active `mizar-test` type-elaboration runner
-は、documented `parser.type_fixtures` import summary 由来の structure symbol を
-持つ source-derived reserve head について
-`type_elaboration.external_dependency.ast_payload_extraction` を観測した。task 83
-は `R` imported provenance/type-head coverage についてこの boundary を上書きし、
-task 97 は `TypeCaseStruct` imported provenance/type-head coverage について同じ boundary
-を上書きする。task-83 / task-97 bridge 外の imported structure は deferred とする。これは
-import summary を real imported module AST extraction と扱わず、base-shape /
-constructor-witness evidence、positive structure type elaboration、CoreIr、
-ControlFlowIr、VC、proof payload coverage を主張しない。
-
-Task 83/task 97 addendum: active `mizar-test` type-elaboration runner は
-documented `parser.type_fixtures` imported structure symbol `R` と
-`TypeCaseStruct` を real `ImportedSource` checker type head として観測し、
-`type_elaboration.checker.checker.declaration.deferred.evidence_query` を報告する。
-これは imported structure provenance と type-head payload extraction だけを
-credit し、imported module AST extraction、base-shape / constructor-witness
-evidence、positive imported structure elaboration、CoreIr、ControlFlowIr、VC、
-proof payload coverage は credit しない。
-
-Task 79 addendum: task 82 より前の active `mizar-test` type-elaboration runner
-は、documented `parser.type_fixtures` import summary 由来の mode symbol を持つ
-source-derived reserve head について
-`type_elaboration.external_dependency.ast_payload_extraction` を観測した。task 82
-は `TypeCaseMode` imported provenance/type-head coverage だけについてこの
-boundary を上書きする。task-82 bridge 外の imported mode は引き続き Chapter
-3/7/11/12 の imported-mode reserve-head diagnostic boundary だけを credit する。
-これは import summary を real imported module AST extraction と扱わず、
-`ModeExpansion` payload、positive mode elaboration、CoreIr、ControlFlowIr、VC、
-proof payload coverage を主張しない。
-
-Task 80 addendum: task 84 / task 85 / task 116 / task 171 より前の active `mizar-test`
-type-elaboration runner は、documented `parser.type_fixtures` import summary
-由来の attribute symbol を持つ source-derived reserve type について
-`type_elaboration.external_dependency.ast_payload_extraction` を観測した。task 84
-は `TypeCaseAttr` imported provenance と `AttributeInput` payload coverage だけ、
-task 85 は negative `empty`/builtin-`set` fixture だけについてこの boundary を
-上書きし、task 116 は positive `empty`/builtin-`set` fixture だけについてこの
-boundary を上書きし、task 171 は negative `empty`/builtin-`object` fixture だけに
-ついてこの boundary を上書きする。task-84 / task-85 / task-116 / task-171 bridge 外の imported attribute は、source-derived
-fixture と payload producer が存在するまで deferred とする。これは
-import summary を real imported module AST extraction と扱わず、attributed-type
-evidence、positive attributed type elaboration、CoreIr、ControlFlowIr、VC、
-proof payload coverage を主張しない。positive `empty object` と symbol head 上の
-imported attribute は active fixture credit のない deferred extraction gap に残る。
-
-Task 84 addendum: active `mizar-test` type-elaboration runner は documented
-`parser.type_fixtures` imported attribute symbol `TypeCaseAttr` を builtin `set`
-上の real `ImportedSource` checker `AttributeInput` として観測し、
-`type_elaboration.checker.checker.declaration.deferred.evidence_query` を報告する。
-これは imported attribute provenance と argument-free `AttributeInput` payload
-extraction だけを credit し、imported module AST extraction、attributed-type
-existential/evidence payload、positive imported attributed type elaboration、
-`empty` のような generic imported attribute、structure-qualified attribute
-owner provenance、attribute argument、CoreIr、ControlFlowIr、VC、proof payload
-coverage は credit しない。
-
-Task 85 addendum: active `mizar-test` type-elaboration runner は documented
-`parser.type_fixtures` imported attribute symbol `empty` を、既存 `non empty set`
-fixture について builtin `set` 上の real `ImportedSource` negative checker
-`AttributeInput` として観測し、
-`type_elaboration.checker.checker.declaration.deferred.evidence_query` を報告する。
-これはその fixture の imported attribute provenance と argument-free negative
-`AttributeInput` payload extraction だけを credit し、imported module AST extraction、
-attributed-type existential/evidence payload、positive `empty object`、symbol head
-上の imported attribute、broader imported attribute、structure-qualified attribute
-owner provenance、attribute argument、CoreIr、ControlFlowIr、VC、proof payload
-coverage は credit しない。
-Task 116 addendum: active `mizar-test` type-elaboration runner は documented
-`parser.type_fixtures` imported attribute symbol `empty` を、既存 `empty set`
-fixture について builtin `set` 上の real `ImportedSource` positive checker
-`AttributeInput` として観測し、
-`type_elaboration.checker.checker.declaration.deferred.evidence_query` を報告する。
-これはその fixture の imported attribute provenance と argument-free positive
-`AttributeInput` payload extraction だけを credit し、imported module AST extraction、
-attributed-type existential/evidence payload、positive attributed-type acceptance、
-positive `empty object`、symbol head 上の imported attribute、broader imported attribute、
-structure-qualified attribute owner provenance、attribute argument、CoreIr、
-ControlFlowIr、VC、proof payload coverage は credit しない。
-Task 171 addendum: active runner は同じ imported `empty` symbol を、既存
-`non empty object` fixture について builtin `object` 上の real
-`ImportedSource` negative checker `AttributeInput` として観測し、同じ evidence-
-query diagnostic を報告する。credit するのは exact imported provenance、negative
-polarity、argument-free checker handoff だけである。positive `empty object`、
-symbol head 上の imported attribute、imported module AST extraction、attributed-
-type admissibility/evidence または acceptance、downstream payload は credit しない。
-
-Task 181 current-state repair: tasks 84、85、116、171 が共有する source route は、
-credit 済み source shape 5 件、すなわち exact single-binding fixture 4 件と exact
-ordered mixed reserve fixture だけを受理する。real `parser.type_fixtures`
-imported attribute は exact import/item layout、spelling、head、polarity、argument
-なしを要求し、missing/wrong/duplicate import、duplicate/mixed attribute、broader
-binding/item/order shape、definition、recovery node は extraction gap に残す。
-既存 expectation と runner count 129 は変えない。この repair は
-`source_undocumented_behavior` を閉じるが、positive `empty object`、attribute
-evidence/acceptance、imported module AST extraction、downstream payload は昇格しない。
-
-Task 86 / task 115 / task 117 addendum: task 86 は
-`theorem FormulaPayloadBoundary: thesis;` という formula-only theorem source を
-parser / resolver 実行後の source-derived theorem/formula boundary として記録する。
-task 115 はこの exact source だけを supersede し、source-derived `thesis` formula
-constant site/range を checker recovery `FormulaInput` として渡す。task 117 は
-同じ exact source を real `FormulaKind::Thesis` payload に進め、missing formula
-payload で fail closed する。これは exact formula-constant kind handoff だけを
-credit し、formula constant semantic checking、child-formula graph payload、
-local proof context、recorded fact、theorem acceptance、dedicated
-`formula_statement` runner、CoreIr、ControlFlowIr、VC、proof payload coverage は
-主張しない。
-
-Task 119 MC-G020 current-state override: exact active source
-`reserve x for set; theorem ReservedVariableEqualityPayloadBoundary: x = x;`
-は real reserve declaration handoff と source-derived identifier-term / equality
-payload を組み合わせる。2 つの use ordinal は reserve binding range と両
-identifier range の順序から独立に導出し、checker-owned `BindingEnv` は各 use を
-別々に解決する。記述された builtin `set` type は distinct source-anchored role
-owner を通じて 2 つの term result type と 2 つの equality expected-type
-constraint を供給する。production runner は 2 つの `Inferred` variable term、
-type/well-formedness だけを表す 1 つの `Checked` equality、exact normalized type
-source range/spelling/head、empty candidate/fact/deferred/diagnostic output を要求し、
-payload drift は stable
-`type_elaboration.checker.reserved_variable_equality.invalid_payload` key を報告する。
-unit test は active sidecar の real frontend/resolver AST に対して同じ assertion を
-反復する。これは MC-G020 の generic term/formula gap wording をその exact slice
-だけについて override する。implicit universal-closure node、equality truth/fact、
-theorem acceptance、`formula_statement` runner、proof skeleton、CoreIr、
-ControlFlowIr、VC、broader source extraction は credit しない。
-
-Task 120 MC-G020 current-state override: exact active membership source
-`reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`
-は task 119 の real binding/use event ordinal と independent lookup を再利用する。
-既存 API が要求する checker-owned membership payload、すなわち 2 つの known
-source-derived `set` variable result、右 operand の 1 つの expected-`set` role、
-1 つの no-fact `Checked` membership formula だけを追加する。production
-invariant、task-specific invalid-payload key、real frontend/resolver sidecar test が
-slice を guard する。membership truth/fact、implicit closure、theorem acceptance、
-proof、CoreIr、ControlFlowIr、VC、broader source extraction は credit しない。
-
-Task 121 MC-G020 current-state override: exact reserved-variable inequality
-source は real binding/use producer を共有し、2 linked result role と 2 linked
-expected role を fact-free pre-desugaring `Checked` inequality に渡す。production
-invariant と real sidecar payload test が guard する。expected type shape の根拠は
-checker-owned API coverage と task 119 であり、task 107 の partial numeral bridge
-ではない。desugaring/truth/fact、implicit closure、theorem acceptance、proof、
-CoreIr、ControlFlowIr、VC、broader extraction は open のままである。
-
-Task 122 MC-G020 current-state override: exact reserved-variable type assertion
-source は task 119 の real reserve lookup/result producer と task 109 の
-formula-side asserted builtin-`set` AST producer を結合する。checker は exactly
-one ready subject と one asserted type を要求し、normalized reflexive identity
-だけで `Checked` を維持し、known non-identical type は widening を捏造せず
-`checker.formula.external.type_assertion_reachability_payload` で fail closed する。
-source runner は normalization 前の 2 input と distinct source anchor を独立検証し、
-1 `Inferred` variable と 1 fact-free `Checked` type assertion を要求する。general
-reachability/widening/`qua`、attribute、truth/fact、implicit closure、theorem
-acceptance、proof、CoreIr、ControlFlowIr、VC、broader extraction は open のままである。
-
-Task 123 MC-G020 current-state override: exact distinct reserved-variable
-equality source は、既存の real multi-reserve declaration producer と task 119 の
-equality consumer を結合する。記述された builtin `set` range 1 個が 2 個の
-source binding を裏付けるが、source-order lookup は operand ごとの
-result/expected role が fact-free `Checked` equality に到達する前に `x` と `y`
-を distinct checker binding id に解決する。production invariant、near-miss
-matrix、real frontend/resolver sidecar が exact bridge を guard する。これは
-classified `test_gap` / `source_drift` / `design_drift` を exact distinct-binding
-type/well-formedness についてだけ閉じる。implicit closure/order node、equality
-truth/fact、theorem acceptance、broader source shape、proof、CoreIr、
-ControlFlowIr、VC は open のままである。
-
-Task 124 MC-G020 current-state override: exact multiple-reserve-declaration
-equality source は同じ real declaration、binding、lookup、term、formula consumer
-を再利用しつつ、2 個の記述上の builtin `set` range を operand ごとの 4 個すべての
-pre-normalization result/expected input に distinct に保持する。checker はこれらの
-semantically equal input を、deterministic な最初の source representative を持つ
-1 `NormalizedTypeId` に intern するが、その representative は original input の
-provenance を置き換えない。production invariant、exact near-miss matrix、real
-frontend/resolver sidecar がこの `test_gap` / `source_drift` / `design_drift` repair
-を guard する。implicit closure/order、truth/fact、theorem acceptance、broader
-source、proof、CoreIr、ControlFlowIr、VC は open のままである。
-
-Task 125 MC-G020 current-state override: exact heterogeneous-reserve membership
-source は既存の real mixed-builtin reserve producer と task 120 の right-expected-type
-membership consumer を結合する。runner は 2 distinct declaration range と binding
-id にわたり、左 `object` result input と右 `set` result/expected input を保持する。
-checker は 2 semantic identity を生成し、右の両 role は `set` を共有する。
-production invariant は identity partition と deterministic な type ごとの source
-representative を検証する。これは classified `test_gap` / `source_drift` /
-`design_drift` を exact type/well-formedness slice についてだけ閉じる。membership
-truth/fact、object/set coercion evidence、closure/order、theorem acceptance、broader
-source、proof、CoreIr、ControlFlowIr、VC は open のままである。
-
-Task 126 MC-G020 current-state override: exact direct-local-mode equality source
-は task 55 の real AST-derived bare-set expansion と task 119 の equality consumer
-を結合する。4 raw input は local-mode provenance を保持し、checker は expansion を
-消費して 1 builtin-set identity、2 `Inferred` term、1 fact-free `Checked` equality
-を記録する。mode declaration checking/acceptance、inhabitation evidence、broader
-mode、closure/order、truth/fact、theorem acceptance、proof、CoreIr、ControlFlowIr、
-VC は open のままである。
-
-Task 127 MC-G020 current-state override: exact one-edge local-mode-chain equality
-source は task 56 の real AST-derived expansion 2 個と task 126 の equality consumer
-を結合する。4 raw input は outer-mode provenance を保持し、checker は両 link を
-recursively 消費して real terminal `set` RHS に anchor された 1 builtin-set
-identity、2 `Inferred` term、1 fact-free `Checked` equality を記録する。mode
-declaration checking/acceptance、inhabitation evidence、object terminal、
-longer-chain formula、closure/order、truth/fact、theorem acceptance、proof、CoreIr、
-ControlFlowIr、VC は open のままである。
-
-Task 128 MC-G020 current-state override: exact direct local-object-mode equality
-source は task 55 の real AST-derived `LocalObjectMode -> object` expansion と task
-126 の equality consumer を結合する。4 raw input は object-mode provenance を保持し、
-checker は real expansion を消費して real `object` RHS に anchor された 1
-builtin-object identity、2 `Inferred` term、1 fact-free `Checked` equality を記録する。
-exact production guard、invalid-expansion corruption、withheld-family near miss、
-real sidecar が route を guard する。mode declaration checking/acceptance、
-inhabitation evidence、broader object-mode formula、closure/order、truth/fact、
-theorem acceptance、proof、CoreIr、ControlFlowIr、VC は open のままである。
-
-Task 130 MC-G020 current-state override: exact direct local-mode inequality は
-task 55 の real `LocalModeInequality -> set` expansion と task 121 の
-pre-desugaring consumer を結合する。4 raw input は mode provenance を保持し、
-real RHS 起点の builtin-set identity 1 個、2 `Inferred` term、1 fact-free
-`Checked` inequality を得る。declaration acceptance/inhabitation、desugaring、
-closure/order、truth/fact、theorem acceptance、proof/Core/VC は open のままである。
-
-Task 131 MC-G020 current-state override: exact direct local-object-mode
-inequality は task 55 の real `LocalObjectModeInequality -> object` expansion と
-task 121/130 の pre-desugaring consumer を結合する。4 raw input は object-mode
-provenance を保持し、real RHS 起点の builtin-object identity 1 個、2
-`Inferred` term、1 fact-free `Checked` inequality を得る。mode declaration
-acceptance/inhabitation、desugaring、closure/order、truth/fact、theorem
-acceptance、proof/Core/VC は open のままである。
-
-Task 132 MC-G020 current-state override: exact one-edge set-terminal mode-chain
-inequality は task 56/127 の real AST-derived expansion 2 個と task 121/130 の
-pre-desugaring inequality consumer を結合する。4 raw input は outer-mode
-provenance を保持し、recursive normalization は terminal RHS に 1 builtin-set
-identity を anchor して 2 `Inferred` term と 1 fact-free `Checked` inequality を
-生成する。declaration acceptance/inhabitation、object terminal、direct/longer
-chain、desugaring、closure/order、truth/fact、theorem acceptance、proof、CoreIr、
-ControlFlowIr、VC は open のままである。
-
-Task 133 MC-G020 current-state override: exact one-edge object-terminal
-mode-chain inequality は task 129 の real AST-derived expansion 2 個と task 131
-の pre-desugaring builtin-object inequality consumer を結合する。4 raw input は
-outer-mode provenance を保持し、recursive normalization は terminal RHS に 1
-builtin-object identity を anchor して 2 `Inferred` term と 1 fact-free
-`Checked` inequality を生成する。declaration acceptance/inhabitation、
-set-terminal、direct/longer chain、desugaring、closure/order、truth/fact、theorem
-acceptance、proof、CoreIr、ControlFlowIr、VC は open のままである。
-
-Task 134 MC-G020 current-state override: exact two-edge set-terminal mode-chain
-equality は task 72 の real AST-derived expansion 3 個と task 127 の equality
-consumer を結合する。4 raw input は outer-mode provenance を保持し、recursive
-normalization は terminal RHS に 1 builtin-set identity を anchor して 2
-`Inferred` term と 1 fact-free `Checked` equality を生成する。declaration
-acceptance/inhabitation、object terminal、direct/one-edge/longer chain、implicit
-closure/order、truth/fact、theorem acceptance、proof、CoreIr、ControlFlowIr、VC は
-open のままである。
-
-Task 135 MC-G020 current-state override: exact two-edge object-terminal
-mode-chain equality は task 72 の real AST-derived expansion 3 個と task 134 の
-equality consumer および builtin-object terminal support を結合する。4 raw input
-は outer-mode provenance を保持し、recursive normalization は terminal RHS に 1
-builtin-object identity を anchor して 2 `Inferred` term と 1 fact-free `Checked`
-equality を生成する。declaration acceptance/inhabitation、task 134 を超える
-set-terminal sibling semantics、direct/one-edge/longer chain、implicit
-closure/order、truth/fact、theorem acceptance、proof、CoreIr、ControlFlowIr、VC は
-open のままである。
-
-Task 136 MC-G020 current-state override: exact two-edge set-terminal
-mode-chain inequality は task 72 の real AST-derived expansion 3 個と task 132 の
-pre-desugaring inequality consumer を結合する。4 raw input は outer-mode
-provenance を保持し、recursive normalization は terminal RHS に 1 builtin-set
-identity を anchor して 2 `Inferred` term と 1 fact-free pre-desugaring `Checked`
-inequality を生成する。mode declaration acceptance/inhabitation、object
-terminal、direct/one-edge/longer chain、inequality desugaring、implicit
-closure/order、truth/fact、theorem acceptance、proof、CoreIr、ControlFlowIr、VC は
-open のままである。
-
-Task 137 MC-G020 current-state override: exact two-edge object-terminal
-mode-chain inequality は task 72 の real AST-derived expansion 3 個と task 133 の
-builtin-object pre-desugaring inequality consumer を結合する。4 raw input は
-outer-mode provenance を保持し、recursive normalization は terminal RHS に 1
-builtin-object identity を anchor して 2 `Inferred` term と 1 fact-free
-pre-desugaring `Checked` inequality を生成する。declaration
-acceptance/inhabitation、set terminal、direct/one-edge/longer chain、inequality
-desugaring、implicit closure/order、truth/fact、theorem acceptance、proof、CoreIr、
-ControlFlowIr、VC は open のままである。
-
-Task 138 MC-G020 current-state override: exact direct set-terminal local-mode
-reserved-variable type assertion は task 55 の real AST-derived
-`LocalModeTypeAssertion -> set` expansion と task 122 の normalized-reflexive
-type-assertion consumer を結合する。raw subject は local-mode provenance、asserted
-builtin `set` は独立した formula source を保持し、real expansion 1 本が両 type を
-terminal-RHS builtin-set identity 1 個へ normalize してから、1 `Inferred` term と
-1 fact-free `Checked` type assertion を記録する。mode declaration
-acceptance/inhabitation、formula-side local-mode asserted head、general
-reachability/widening/`qua`、truth/fact、theorem acceptance、proof、CoreIr、
-ControlFlowIr、VC は open のままである。
-
-Task 139 MC-G020 current-state override: exact direct set-terminal local-mode
-left membership は task 55 の real AST-derived
-`LocalModeMembership -> set` expansion、task 120 の right-only expected-set
-membership consumer、task 125 の two-binding distinct-source form を結合する。
-raw left result は local-mode provenance、独立した right result と sole
-expected-set input は explicit reserve provenance を保持する。real expansion 1 本が
-left role を normalize し、right builtin-set role は直接 normalize され、3 role
-すべてが terminal-RHS builtin-set identity 1 個へ intern してから、2 `Inferred`
-term と 1 fact-free `Checked` membership を記録する。mode declaration
-acceptance/inhabitation、membership truth/fact、implicit closure/order、theorem
-acceptance、proof、CoreIr、ControlFlowIr、VC は open のままである。
-
-Task 140 MC-G020 current-state override: exact direct object-terminal
-local-mode left membership は task 55 の real AST-derived
-`LocalObjectModeMembership -> object` expansion と task 125 の right-only
-expected-set / two-binding distinct-source membership consumer を結合する。raw
-left result は local object-mode provenance、独立した right result と sole
-expected-set input は explicit reserve provenance を保持する。real expansion 1
-本が left role を terminal-RHS builtin-object identity へ normalize し、right
-builtin-set role は distinct explicit-reserve-anchored identity へ直接 normalize
-する。2 `Inferred` term と 1 fact-free `Checked` membership を、right-owned
-constraint 1 個だけ、left expected type なしで記録する。mode declaration
-acceptance/inhabitation、membership truth/fact、object/set coercion、implicit
-closure/order、theorem acceptance、proof、CoreIr、ControlFlowIr、VC は open の
-ままである。
-
-Task 141 MC-G020 current-state override: exact one-edge set-terminal
-local-mode-chain left membership は task 56 の real AST-derived
-`ChainModeMembership -> BaseModeMembership -> set` expansion 2 本と task 139
-の right-only expected-set / two-binding membership consumer を結合する。raw
-left result は outer-mode provenance、独立した right result と sole expected-set
-input は explicit reserve provenance を保持する。real expansion 2 本が left role
-を recursive に normalize し、right builtin-set role は直接 normalize され、3
-role すべてが terminal-RHS builtin-set identity 1 個へ intern する。right-owned
-constraint 1 個だけ、left expected type なしで 2 `Inferred` term と 1 fact-free
-`Checked` membership を記録する。mode declaration acceptance/inhabitation、
-membership truth/fact、implicit closure/order、theorem acceptance、proof、
-CoreIr、ControlFlowIr、VC は open のままである。
-
-Task 142 MC-G020 current-state override: exact one-edge object-terminal
-local-mode-chain left membership は task 56 の real AST-derived
-`ChainObjectModeMembership -> BaseObjectModeMembership -> object` expansion 2
-本と task 125 / 140 / 141 の right-only expected-set / two-binding membership
-consumer を結合する。raw left result は outer-mode provenance、独立した right
-result と sole expected-set input は explicit reserve provenance を保持する。real
-expansion 2 本が left role を terminal-RHS builtin-object identity 1 個へ recursive
-に normalize し、right builtin-set role は distinct explicit-reserve-anchored
-identity 1 個へ直接 normalize される。right-owned constraint 1 個だけ、left
-expected type なしで 2 `Inferred` term と 1 fact-free `Checked` membership を
-記録する。mode declaration acceptance/inhabitation、membership truth/fact、
-object/set coercion、implicit closure/order、theorem acceptance、proof、CoreIr、
-ControlFlowIr、VC は open のままである。
-
-Task 129 MC-G020 current-state override: exact one-edge object-terminal
-mode-chain equality は task 56 の real AST-derived expansion 2 個と task 127/128 の
-equality / builtin-object consumer を結合する。4 raw input は outer-mode provenance
-を保持し、recursive normalization は terminal RHS に 1 builtin-object identity を
-anchor して 2 `Inferred` term と 1 fact-free `Checked` equality を生成する。
-declaration acceptance/inhabitation、longer chain、closure/order、truth/fact、
-theorem acceptance、proof、CoreIr、ControlFlowIr、VC は open のままである。
-
-Task 143 MC-G020 current-state override: exact two-edge set-terminal
-local-mode-chain left membership は task 72 の real AST-derived expansion 3 本
-`OuterTwoEdgeModeMembership -> MiddleTwoEdgeModeMembership -> BaseTwoEdgeModeMembership -> set`
-と、task 125 / 139 / 141 の right-only expected-set two-binding membership
-consumer を compose する。raw left result は outer-mode provenance、独立した
-right result と sole expected-set input は explicit reserve provenance を保持する。
-real expansion 3 本が left を再帰的に normalize し、right builtin-set role は
-直接 normalize され、3 role すべてが terminal-RHS builtin-set identity 1 個へ
-intern する。right-owned constraint 1 個だけ、left expected type なしで 2
-`Inferred` term と 1 fact-free `Checked` membership を記録する。mode
-declaration acceptance/inhabitation、membership truth/fact、implicit
-closure/order、theorem acceptance、proof、CoreIr、ControlFlowIr、VC は open の
-ままである。
-
-Task 144 MC-G020 current-state override: exact two-edge object-terminal
-local-mode-chain left membership は task 72 の real AST-derived expansion 3 本
-`OuterTwoEdgeObjectModeMembership -> MiddleTwoEdgeObjectModeMembership -> BaseTwoEdgeObjectModeMembership -> object`
-と、tasks 125 / 140 / 142 / 143 の right-only expected-set two-binding
-membership consumer を compose する。raw left result は outer-mode provenance、
-独立した right result と sole expected-set input は explicit reserve provenance
-を保持する。real expansion 3 本が left を terminal-RHS builtin-object identity
-へ再帰的に normalize し、right role は distinct explicit-reserve builtin-set
-identity へ直接 normalize される。right-owned constraint 1 個だけ、left
-expected type なし、object/set coercion なしで 2 `Inferred` term と 1
-fact-free `Checked` membership を記録する。mode declaration acceptance/
-inhabitation、membership truth/fact、implicit closure/order、theorem
-acceptance、proof、CoreIr、ControlFlowIr、VC は open のままである。
-
-Task 145 MC-G020 current-state override: exact direct object-terminal
-local-mode reserved-variable type assertion は task 55 の real AST-derived
-`LocalObjectModeTypeAssertion -> object` expansion と tasks 122 / 138 の
-identifier-result / 独立した formula-anchored asserted-type consumer を compose
-する。raw subject result は written local-mode provenance、asserted builtin
-`object` は独立した formula source node を保持する。real expansion 1 本が両
-input を definition RHS を canonical source とする builtin-object identity 1
-個へ normalize してから、1 `Inferred` term と 1 fact-free `Checked` type
-assertion を記録する。この exact slice は `BindingId(0)` と source-order use
-ordinal 1 を要求し、non-exact definition、reserve、formula、expansion payload
-は fail closed する。mode declaration acceptance/inhabitation、formula-side
-local-mode asserted-head extraction、general reachability/widening/`qua`、
-object/set coercion、truth/fact、implicit closure/order、theorem acceptance、
-proof、CoreIr、ControlFlowIr、VC は open のままである。
-
-Task 146 MC-G020 current-state override: exact one-edge set-terminal
-local-mode-chain reserved-variable type assertion は task 56 の real
-AST-derived `ChainModeTypeAssertion -> BaseModeTypeAssertion -> set` expansion
-2 本と、tasks 122 / 138 の identifier-result / 独立した formula-anchored
-asserted-type consumer を compose する。raw subject result は written outer-mode
-provenance、asserted builtin `set` は独立した formula source node を保持する。
-real expansion 2 本が subject と asserted input を terminal definition RHS を
-canonical source とする builtin-set identity 1 個へ再帰的に normalize して
-から、1 `Inferred` term と 1 fact-free `Checked` type assertion を記録する。
-この exact slice は `BindingId(0)` と source-order use ordinal 1 を要求し、
-non-exact definition、reserve、formula、各 expansion payload は fail closed
-する。mode declaration acceptance/inhabitation、formula-side local-mode
-asserted-head extraction、general reachability/widening/`qua`、truth/fact、
-implicit closure/order、theorem acceptance、proof、CoreIr、ControlFlowIr、VC は
-open のままである。
-
-Task 147 MC-G020 current-state override: exact one-edge object-terminal local-
-mode-chain reserved-variable type assertion は task 56 の real AST-derived
-`ChainObjectModeTypeAssertion -> BaseObjectModeTypeAssertion -> object`
-expansion 2 本と、tasks 122 / 145 / 146 の identifier-result / 独立した formula-
-anchored asserted-type consumer を compose する。raw subject result は written
-outer-mode provenance、asserted builtin `object` は独立した formula source node
-を保持する。real expansion 2 本が subject と asserted input を terminal
-definition RHS を canonical source とする builtin-object identity 1 個へ再帰的に
-normalize してから、1 `Inferred` term と 1 fact-free `Checked` type assertion
-を記録する。この exact slice は `BindingId(0)` と source-order use ordinal 1
-を要求し、non-exact definition、reserve、formula、各 expansion payload は fail
-closed する。mode declaration acceptance/inhabitation、formula-side local-mode
-asserted-head extraction、general reachability/widening/`qua`、object/set
-coercion、truth/fact、implicit closure/order、theorem acceptance、proof、CoreIr、
-ControlFlowIr、VC は open のままである。
-
-Task 148 MC-G020 current-state override: exact two-edge set-terminal local-mode-chain
-reserved-variable type assertion は task 72 の real AST-derived
-`OuterTwoEdgeModeTypeAssertion -> MiddleTwoEdgeModeTypeAssertion -> BaseTwoEdgeModeTypeAssertion -> set`
-expansion 3 本と、tasks 122 / 146 / 147 の identifier-result / 独立した formula-
-anchored asserted-type consumer を compose する。raw subject result は written
-outer-mode provenance、asserted builtin `set` は独立した formula source node
-を保持する。real expansion 3 本が subject と asserted input
-を terminal definition RHS を canonical source とする builtin-set identity 1
-個へ再帰的に normalize してから、1 `Inferred` term と 1 fact-free `Checked`
-type assertion を記録する。この exact slice は `BindingId(0)` と source-order
-use ordinal 1 を要求し、non-exact definition、reserve、formula、各 expansion
-payload は fail closed する。mode declaration acceptance/inhabitation、formula-
-side local-mode asserted-head extraction、general reachability/widening/`qua`、
-truth/fact、implicit closure/order、theorem acceptance、proof、CoreIr、
-ControlFlowIr、VC は open のままである。
-
-Task 149 MC-G020 current-state override: exact two-edge object-terminal
-local-mode-chain reserved-variable type assertion は task 72 の real AST-derived
-`OuterTwoEdgeObjectModeTypeAssertion -> MiddleTwoEdgeObjectModeTypeAssertion -> BaseTwoEdgeObjectModeTypeAssertion -> object`
-expansion 3 本と、tasks 122 / 145 / 147 / 148 の identifier-result / 独立した
-formula-anchored asserted-type consumer を compose する。raw subject
-result は written outer-mode provenance、asserted builtin `object` は独立した
-formula source node を保持する。real expansion 3 本が両 input を terminal
-definition RHS を canonical source とする builtin-object identity 1 個へ再帰的に
-normalize してから、1 `Inferred` term と 1 fact-free `Checked` type assertion
-を記録する。この exact slice は `BindingId(0)` と source-order use ordinal 1 を
-要求し、non-exact definition、reserve、formula、各 expansion payload は fail
-closed する。分類は `test_gap`、`source_drift`、`design_drift` であり、
-`spec_gap` ではない。mode declaration acceptance/inhabitation、formula-side
-local-mode asserted-head extraction、general reachability/widening/`qua`、
-object/set coercion、truth/fact、implicit closure/order、theorem acceptance、
-proof、CoreIr、ControlFlowIr、VC は open のままである。production route と
-real frontend/resolver sidecar が exact active slice を guard する。
-
-Task 150 MC-G020 current-state override: exact three-edge set-terminal local-mode-
-chain reserved-variable type assertion は task 73 の real AST-derived
-`OuterThreeEdgeModeTypeAssertion -> MiddleThreeEdgeModeTypeAssertion -> InnerThreeEdgeModeTypeAssertion -> BaseThreeEdgeModeTypeAssertion -> set`
-expansion 4 本と、tasks 122 / 148 / 149 の identifier-result / 独立した formula-
-anchored asserted-type consumer を compose する。raw subject result は written
-outer-mode provenance、asserted builtin `set` は独立した formula source node
-を保持しなければならない。real expansion 4 本が両 input を terminal
-definition RHS を canonical source とする builtin-set identity 1 個へ再帰的に
-normalize してから、1 `Inferred` term と 1 fact-free `Checked` type assertion
-を記録する。この exact slice は `BindingId(0)` と source-order use ordinal 1
-を要求し、non-exact definition、reserve、formula、各 expansion payload は
-fail closed しなければならない。分類は `test_gap`、`source_drift`、
-`design_drift` であり、`spec_gap` ではない。mode declaration acceptance/
-inhabitation、formula-side local-mode asserted-head extraction、general
-reachability/widening/`qua`、truth/fact、implicit closure/order、theorem
-acceptance、proof、CoreIr、ControlFlowIr、VC は open のままである。
-production route と real frontend/resolver sidecar が exact active slice を
-guard する。
-
-Task 151 MC-G020 current-state override: exact three-edge object-terminal local-mode-
-chain reserved-variable type assertion は task 73 の real AST-derived
-`OuterThreeEdgeObjectModeTypeAssertion -> MiddleThreeEdgeObjectModeTypeAssertion -> InnerThreeEdgeObjectModeTypeAssertion -> BaseThreeEdgeObjectModeTypeAssertion -> object`
-expansion 4 本と、tasks 122 / 149 / 150 の identifier-result / 独立した formula-
-anchored asserted-type consumer を compose する。raw subject result は written
-outer-mode provenance、asserted builtin `object` は独立した formula source node
-を保持しなければならない。real expansion 4 本が両 input を terminal
-definition RHS を canonical source とする builtin-object identity 1 個へ再帰的に
-normalize してから、1 `Inferred` term と 1 fact-free `Checked` type assertion
-を記録する。この exact slice は `BindingId(0)` と source-order use ordinal 1
-を要求し、non-exact definition、reserve、formula、各 expansion payload は fail
-closed しなければならない。分類は `test_gap`、`source_drift`、
-`design_drift` であり、`spec_gap` ではない。mode declaration acceptance/
-inhabitation、formula-side local-mode asserted-head extraction、general
-reachability/widening/`qua`、object/set coercion、truth/fact、implicit closure/
-order、theorem acceptance、proof、CoreIr、ControlFlowIr、VC は open のままである。
-production route と real frontend/resolver sidecar が exact active slice を
-guard する。
-
-Task 152 MC-G020 current-state override: exact four-edge set-terminal local-mode-chain
-reserved-variable type assertion は task 74 の real AST-derived
-`TooDeepFourEdgeModeTypeAssertion -> OuterFourEdgeModeTypeAssertion -> MiddleFourEdgeModeTypeAssertion -> InnerFourEdgeModeTypeAssertion -> BaseFourEdgeModeTypeAssertion -> set`
-expansion 5 本と、tasks 122 / 150 / 151 の identifier-result および独立した
-formula-anchored asserted-type consumer を composition する。raw subject result
-は written outermost-mode provenance、asserted builtin `set` は独立した formula
-source node を保持する。expansion 5 本が両 input を terminal definition RHS を
-canonical source とする builtin-set identity 1 個へ再帰的に normalize してから
-1 `Inferred` term と 1 fact-free `Checked` type assertion を記録する。この exact
-slice は `BindingId(0)` と source-order use ordinal 1 を要求し、non-exact
-definition、reserve、formula、各 expansion payload は fail closed する。分類は
-`test_gap`、`source_drift`、`design_drift` であり、`spec_gap` ではない。mode
-declaration acceptance/inhabitation、formula-side local-mode asserted-head
-extraction、general reachability/widening/`qua`、truth/fact、implicit closure/
-order、theorem acceptance、proof、CoreIr、ControlFlowIr、VC は open のままで
-ある。production route と real frontend/resolver sidecar が exact active slice
-を guard する。
-
-Task 153 MC-G020 current-state override: exact four-edge object-terminal local-mode-
-chain reserved-variable type assertion は task 74 の real AST-derived
-`TooDeepFourEdgeObjectModeTypeAssertion -> OuterFourEdgeObjectModeTypeAssertion -> MiddleFourEdgeObjectModeTypeAssertion -> InnerFourEdgeObjectModeTypeAssertion -> BaseFourEdgeObjectModeTypeAssertion -> object`
-expansion 5 本と、tasks 122/151/152 の identifier-result および独立した formula-
-side asserted-type consumer を合成する。raw subject result は written
-outermost-mode provenance を保持し、asserted builtin `object` は独立した formula
-source node を保持する。全 expansion は両 input を terminal definition RHS に
-canonical anchor された builtin-object identity 1 個へ再帰的に normalize し、1
-`Inferred` term と 1 fact-free `Checked` type assertion を記録する。この exact
-slice は `BindingId(0)` と source-order use ordinal 1 を要求し、non-exact
-definition/reserve/formula または expansion payload 5 本のいずれかで fail closed
-とする。分類は `test_gap`、`source_drift`、`design_drift` で `spec_gap` ではない。
-declaration acceptance/inhabitation、formula-side local asserted-head、general
-reachability/widening/`qua`、object/set coercion、truth/fact、closure/order、
-theorem acceptance、proof/Core/ControlFlow/VC は open のままである。production
-route と real sidecar が exact active slice を guard し、active count は 104 件で
-ある。
-
-Task 154 MC-G020 implementation specification: exact three-edge set-terminal
-local-mode-chain reserved-variable equality は task 73 の real AST-derived
-`OuterThreeEdgeModeEquality -> MiddleThreeEdgeModeEquality -> InnerThreeEdgeModeEquality -> BaseThreeEdgeModeEquality -> set`
-expansion 4 本と task 134 の equality consumer を合成する。raw result/expected
-input 4 個は written outer-mode provenance を保持し、両 operand は ordinal 1、2
-で `BindingId(0)` へ解決し、全 role は terminal-RHS builtin-set identity 1 個へ
-normalize されてから 2 `Inferred` term と 1 fact/deferred-free `Checked`
-equality を記録する。exact definition/radix/expansion corruption、withheld-
-family near miss、real frontend/resolver sidecar を必須とする。分類は
-`test_gap`、`source_drift`、`design_drift` であり `spec_gap` ではない。mode
-declaration acceptance/inhabitation、equality truth/fact、closure/order、theorem
-acceptance、proof/Core/ControlFlow/VC は open のままである。fixture、expectation、
-trace row、production route、full near-miss/corruption matrix、real frontend/
-resolver sidecar が exact slice を guard し、active count は 105 件である。
-
-Task 155 MC-G020 implementation specification: exact three-edge object-terminal
-local-mode-chain reserved-variable equality は task 73 の real AST-derived
-`OuterThreeEdgeObjectModeEquality -> MiddleThreeEdgeObjectModeEquality -> InnerThreeEdgeObjectModeEquality -> BaseThreeEdgeObjectModeEquality -> object`
-expansion 4 本と task 135 の equality consumer を合成する。raw result/expected
-input 4 個は written outer-mode provenance を保持し、両 operand は ordinal 1、2
-で `BindingId(0)` へ解決し、全 role は terminal-RHS builtin-object identity 1 個
-へ normalize されてから 2 `Inferred` term と 1 fact/deferred-free `Checked`
-equality を記録する。exact definition/radix/expansion corruption、withheld-
-family near miss、real frontend/resolver sidecar を必須とする。分類は
-`test_gap`、`source_drift`、`design_drift` であり `spec_gap` ではない。mode
-declaration acceptance/inhabitation、object/set coercion、equality truth/fact、
-closure/order、theorem acceptance、proof/Core/ControlFlow/VC は open のままで
-ある。fixture、expectation、trace row、production route、full near-miss/
-corruption matrix、real frontend/resolver sidecar が exact slice を guard し、
-active count は 106 件である。
-
-Task 156 MC-G020 implementation specification: exact three-edge set-terminal
-local-mode-chain reserved-variable inequality は task 73 の real AST-derived
-`OuterThreeEdgeModeInequality -> MiddleThreeEdgeModeInequality -> InnerThreeEdgeModeInequality -> BaseThreeEdgeModeInequality -> set`
-expansion 4 本と task 136 の pre-desugaring inequality consumer を合成する。
-raw result/expected input 4 個は written outer-mode provenance を保持し、両
-operand は ordinal 1、2 で `BindingId(0)` へ解決し、全 role は terminal-RHS
-builtin-set identity 1 個へ normalize されてから 2 `Inferred` term と 1 fact/
-deferred-free pre-desugaring `Checked` inequality を記録する。exact definition/
-radix/expansion corruption、withheld-family near miss、real frontend/resolver
-sidecar を必須とする。分類は `test_gap`、`source_drift`、`design_drift` であり
-`spec_gap` ではない。mode declaration acceptance/inhabitation、inequality
-desugaring、truth/fact、closure/order、theorem acceptance、proof/Core/
-ControlFlow/VC は open のままである。fixture、expectation、trace row、
-production route、full near-miss/corruption matrix、real frontend/resolver
-sidecar が exact slice を guard し、active count は 107 件である。
-
-Task 157 MC-G020 implementation specification: exact three-edge object-terminal
-local-mode-chain reserved-variable inequality は task 73 の real AST-derived
-`OuterThreeEdgeObjectModeInequality -> MiddleThreeEdgeObjectModeInequality -> InnerThreeEdgeObjectModeInequality -> BaseThreeEdgeObjectModeInequality -> object`
-expansion 4 本と task 137 の builtin-object pre-desugaring inequality consumer
-を合成する。raw result/expected input 4 個は written outer-mode provenance を
-保持し、両 operand は ordinal 1、2 で `BindingId(0)` へ解決し、全 role は
-terminal-RHS builtin-object identity 1 個へ normalize されてから 2 `Inferred`
-term と 1 fact/deferred-free pre-desugaring `Checked` inequality を記録する。
-exact definition/radix/expansion corruption、withheld-family near miss、real
-frontend/resolver sidecar を必須とする。分類は `test_gap`、`source_drift`、
-`design_drift` であり `spec_gap` ではない。mode declaration acceptance/
-inhabitation、object/set coercion、inequality desugaring、truth/fact、closure/
-order、theorem acceptance、proof/Core/ControlFlow/VC は open のままである。
-fixture、expectation、trace row、production route、full near-miss/corruption
-matrix、real frontend/resolver sidecar が exact slice を guard し、active count
-は 108 件である。
-
-Task 158 MC-G020 implementation specification: exact three-edge set-terminal
-local-mode-chain left reserved-variable membership は task 73 の real AST-
-derived
-`OuterThreeEdgeModeMembership -> MiddleThreeEdgeModeMembership -> InnerThreeEdgeModeMembership -> BaseThreeEdgeModeMembership -> set`
-expansion 4 本と task 143 の two-binding right-only expected-set membership
-consumer を compose する。raw left result は outer-mode provenance、独立した
-right result と sole expected input は explicit-set reserve provenance を保持し、
-left expected input は持たない。operand は source-order ordinal 2/3 で
-`BindingId(0/1)` へ解決し、全 4 expansion は 3 role を terminal-RHS builtin-
-set identity 1 個へ normalize してから 2 `Inferred` term と exactly one right-
-owned constraint を持つ 1 fact/deferred-free `Checked` membership を記録する。
-independent definition/radix/expansion corruption、withheld-family near miss、
-real frontend/resolver sidecar を必須とする。分類は `test_gap`、
-`source_drift`、`design_drift` であり `spec_gap` ではない。mode declaration
-acceptance/inhabitation、membership truth/fact、implicit closure/order、theorem
-acceptance、proof/Core/ControlFlow/VC、object-terminal behavior、broader depth
-は open のままである。fixture、expectation、trace row、production route、
-full near-miss/corruption matrix、real frontend/resolver sidecar が exact slice
-を guard し、active count は 109 件である。
-
-Task 159 MC-G020 current-state override: exact distinct-binding shared-
-reserve membership は task 123 の one-item/two-binding/shared-range producer と
-tasks 120/125 の right-only expected-set membership consumer を compose する。
-`x/y` は ordinal 2/3 で `BindingId(0/1)` へ解決され、left result、right result、
-sole right expected input は written set range 1 個を保持し、left expected input
-はなく、3 role は builtin-set identity 1 個へ normalize してから 2 `Inferred`
-term と right-owned constraint 1 個を持つ 1 fact/deferred-free `Checked`
-membership を記録する。分類は `test_gap`、`source_drift`、`design_drift` で
-`spec_gap` ではない。truth/fact、closure/order、theorem acceptance、proof/Core/
-ControlFlow/VC、separate declaration、broader shape は open のままである。
-fixture/expectation/trace row、production route、full near-miss/corruption
-matrix、real sidecar が exact slice を guard するため active count は 110 件である。
-
-Task 160 MC-G020 current-state override: exact distinct-binding shared-reserve
-inequality は task 123 の one-item/two-binding/shared-range producer と task 121 の
-pre-desugaring inequality consumer を compose する。`x/y` は ordinal 2/3 で
-`BindingId(0/1)` へ解決され、両 binding と left/right result/expected role 4 個は
-written set range 1 個を保持して shared-source builtin-set identity 1 個へ
-normalize してから、2 `Inferred` term と 2 ordered operand-owned constraint を
-持つ 1 fact/deferred-free `Checked` inequality を記録しなければならない。分類は
-`test_gap`、`source_drift`、`design_drift` であり `spec_gap` ではない。
-desugaring/truth/fact、closure/order、theorem acceptance、proof/Core/ControlFlow/VC、
-separate declaration、broader shape は open のままである。test-first fixture/
-expectation/trace contract、production route、near-miss/corruption guard、real
-sidecar が exact slice を保護するため active count は 111 件である。
-
-Task 161 MC-G020 current-state override: exact multiple-reserve-declaration
-inequality は task 124 の two-item/two-binding/distinct-written-range producer と
-task 160 の pre-desugaring inequality consumer を compose する。`x/y` は ordinal
-2/3 で `BindingId(0/1)` へ解決され、各 operand の result/expected role は固有の
-written set range を保持しながら全 4 role を earlier `x` range に canonical anchor
-された builtin-set identity 1 個へ normalize し、2 `Inferred` term と 2 ordered
-constraint を持つ 1 fact/deferred-free `Checked` inequality を記録しなければならない。
-分類は `test_gap`、`source_drift`、`design_drift` であり `spec_gap` ではない。
-desugaring/truth/fact、closure/order、theorem acceptance、proof/Core/ControlFlow/VC、
-shared range、broader shape は open のままである。source/trace contract、production
-route、near-miss/corruption guard、real sidecar が exact slice を保護するため active
-count は 112 件である。
-
-Task 162 MC-G020 current-state override: exact multiple-reserve-declaration
-membership は task 124 の two-item/two-binding/distinct-written-range producer と
-task 120/159 の right-only expected-set membership consumer を compose する。
-`x/y` は ordinal 2/3 で `BindingId(0/1)` へ解決され、left result は first written
-set range、right result と sole right expected input は second range を保持し、left
-expected input は持たない。3 role は earlier `x` range に canonical anchor された
-builtin-set identity 1 個へ normalize してから、2 `Inferred` term と exactly one
-right-owned constraint を持つ 1 fact/deferred-free `Checked` membership を記録する。
-分類は `test_gap`、`source_drift`、`design_drift` であり `spec_gap` ではない。
-membership truth/fact、closure/order、theorem acceptance、proof/Core/ControlFlow/
-VC、shared range、broader shape は open のままである。fixture/expectation/trace
-contract、production routing、near-miss/corruption guard、real sidecar が exact
-slice を保護するため active count は 113 件である。
-
-Task 163 MC-G020 current-state override: exact three-edge local-object-mode-chain
-left membership を `spec_gap` ではなく `test_gap`、`source_drift`、
-`design_drift` と分類する。Chapter 3、4、7、13、14.5.3、16 は test-first
-source を直接支える。task 73/151/155/157 は real four-expansion object-terminal
-producer、task 144 は real object-left/set-right membership consumer を提供する。
-実装は ordinal 2/3 の `BindingId(0/1)`、raw outer-mode left
-result、独立した explicit-set right result / sole right expected input、no left
-expected input、distinct terminal-object-RHS / explicit-set identity、2
-`Inferred` term、exactly one right-owned constraint を持つ 1 fact/deferred-free
-`Checked` membership を保持しなければならない。truth/fact、object/set
-coercion、closure/order、theorem acceptance、proof/Core/ControlFlow/VC、他の
-depth、broader shape は open のままである。production routing、near-miss/
-corruption guard、real frontend/resolver sidecar が active runner 114 を保護する。
-
-Task 164 MC-G020 current-state override: exact four-edge set-terminal
-local-mode-chain left membership を `spec_gap` ではなく `test_gap`、
-`source_drift`、`design_drift` と分類する。Chapter 4、7、13、14.5.3、16
-が test-first source を直接支え、task 74/152 が real five-expansion producer、
-task 158 が real set-left/set-right membership consumer を提供する。contract
-は ordinal 2/3 の `BindingId(0/1)`、raw outermost-mode left provenance、独立
-した explicit-set right result/sole expected provenance、no left expected
-input、source-derived expansion 5 本、terminal-set-RHS identity 1 個、2
-`Inferred` term、exactly one right-owned constraint を持つ 1 fact/deferred-free
-`Checked` membership を要求する。truth/fact、closure/order、theorem
-acceptance、proof/Core/ControlFlow/VC、object-terminal behavior、他 depth、
-broader shape は open のままである。fixture/expectation、6 trace backlink、
-exact route、corruption/near-miss coverage、real sidecar が active runner 115
-を保護する。
-
-Task 165 MC-G020 current-state override: exact four-edge object-terminal local-
-mode-chain left membership を `spec_gap` ではなく `test_gap`、`source_drift`、
-`design_drift` と分類する。Chapter 3、4、7、13、14.5.3、16 が test-first
-source を直接支える。task 74/153 が real five-expansion object-terminal
-producer、task 163 が real object-left/set-right membership consumer を提供
-する。exact contract は ordinal 2/3 の `BindingId(0/1)`、raw outermost-mode
-left provenance、独立した explicit-set right result / sole expected provenance、
-no left expected input、source-derived expansion 5 本、distinct terminal-
-object-RHS / explicit-set identity、2 `Inferred` term、exactly one right-owned
-constraint を持つ 1 fact/deferred-free `Checked` membership を保持する。
-truth/fact、object/set coercion、closure/order、theorem acceptance、proof/Core/
-ControlFlow/VC、他 depth、broader shape は open のままとする。fixture、
-expectation、trace backlink 6 件、exact production route、corruption/near-miss
-coverage、real frontend/resolver sidecar が active runner 116 を保護する。
-
-Task 166 MC-G020 current-state override: exact four-edge set-terminal
-local-mode-chain equality を `spec_gap` ではなく `test_gap`、`source_drift`、
-`design_drift` と分類する。Chapter 4、7、13、14.5.2、16 が test-first source
-を支え、task 74/152 が real five-expansion producer、task 154 が equality
-consumer を提供する。exact contract は ordinal 1/2 の `BindingId(0)`、raw
-outermost-mode result/expected input 4 個、source-derived expansion 5 本、
-terminal-set-RHS identity 1 個、2 `Inferred` term、1 fact/deferred-free
-`Checked` equality、ordered operand-owned expected constraint 2 個を保持する。
-fixture、trace backlink 6 件、exact production route、corruption matrix、real
-frontend/resolver sidecar が active runner 117 を保護する。declaration acceptance/inhabitation、
-truth/fact、closure/order、theorem acceptance、proof/Core/ControlFlow/VC、
-object-terminal behavior、他 depth、broader shape は open のままである。
-
-Task 167 MC-G020 current-state override: exact four-edge object-terminal
-local-mode-chain equality を `spec_gap` ではなく `test_gap`、`source_drift`、
-`design_drift` と分類する。Chapter 3、4、7、13、14.5.2、16 が test-first
-source を支え、tasks 74/153 が real five-expansion producer、task 155 が
-equality consumer を提供する。exact contract は ordinal 1/2 の
-`BindingId(0)`、raw outermost-mode result/expected input 4 個、source-derived
-expansion 5 本、terminal-object-RHS identity 1 個、2 `Inferred` term、1 fact/
-deferred-free `Checked` equality、ordered operand-owned expected constraint 2
-個を object/set coercion なしで保持する。fixture、trace backlink 6 件、
-production route、full corruption matrix、real frontend/resolver sidecar が
-active runner 118 を保護する。declaration
-acceptance/inhabitation、truth/fact、closure/order、theorem acceptance、proof/
-Core/ControlFlow/VC、set-terminal behavior、他 depth、broader shape は open の
-ままである。
-
-Task 168 MC-G020 current-state override: exact four-edge set-terminal local-mode-chain
-inequality を `spec_gap` ではなく `test_gap`、`source_drift`、`design_drift`
-と分類する。Chapter 4、7、13、14.5.2、16 が test-first source を支え、
-tasks 74/152 が real five-expansion producer、task 156 が pre-desugaring
-inequality consumer を提供する。exact contract は ordinal 1/2 の
-`BindingId(0)`、raw outermost-mode result/expected input 4 個、source-derived
-expansion 5 本、terminal-set-RHS identity 1 個、2 `Inferred` term、1 fact/
-deferred-free pre-desugaring `Checked` inequality、ordered operand-owned
-expected constraint 2 個を保持する。fixture、trace backlink 6 件、production
-routing、full corruption coverage、real sidecar が active runner 119 を保護する。
-declaration acceptance/inhabitation、desugaring/truth/
-fact、closure/order、theorem acceptance、proof/Core/ControlFlow/VC、object-
-terminal behavior、他 depth、broader shape は open のままである。
-
-Task 169 MC-G020 current-state override: exact four-edge object-terminal local-mode-chain
-inequality を `spec_gap` ではなく `test_gap`、`source_drift`、`design_drift`
-と分類する。Chapter 3、4、7、13、14.5.2、16 が test-first source を支え、
-tasks 74/153 が real five-expansion producer、task 157 が pre-desugaring
-inequality consumer を提供する。exact contract は ordinal 1/2 の
-`BindingId(0)`、raw outermost-mode result/expected input 4 個、source-derived
-expansion 5 本、terminal-object-RHS identity 1 個、2 `Inferred` term、1 fact/
-deferred-free pre-desugaring `Checked` inequality、ordered operand-owned
-expected constraint 2 個を object/set coercion なしで保持する。fixture、trace
-backlink 6 件、production routing、full corruption coverage、real sidecar が
-active runner 120 を保護する。declaration acceptance/
-inhabitation、desugaring/truth/fact、closure/order、theorem acceptance、proof/
-Core/ControlFlow/VC、set-terminal behavior、他 depth、broader shape は open の
-ままである。
-
-Task 172 MC-G020 current-state override: exact set-terminal local-mode long-chain
-reserved-variable equality を `spec_gap` ではなく `test_gap`、`source_drift`、
-`design_drift` と分類する。Chapter 4、7、13、14.5.2、16 が test-first source
-を支え、task 74 が active long-chain fixture で既に実行する real seven-
-expansion producer、task 166 が equality consumer を提供する。contract は
-ordinal 1/2 の `BindingId(0)`、raw `ChainMode6` result/expected input 4 個、
-source-derived expansion 7 本、terminal `BaseMode` RHS の builtin-set identity
-1 個、2 `Inferred` term、1 fact/deferred-free `Checked` equality、ordered
-operand-owned expected constraint 2 個を保持する。exact source routing、full
-near-miss / corruption coverage、real frontend/resolver sidecar が active
-runner 121 を保護する。
-declaration acceptance/inhabitation、truth/fact、closure/order、theorem
-acceptance、proof/Core/ControlFlow/VC payload、imported/attributed/argument-
-bearing または別 chain shape、general unbounded semantics は open のままで
-ある。
-
-Task 173 MC-G020 current-state override: exact set-terminal local-mode long-chain
-inequality を `spec_gap` ではなく `test_gap`、`source_drift`、`design_drift`
-と分類する。Chapter 4、7、13、14.5.2、16 が source を支え、task 74 が real
-expansion 7 本、task 168 が real pre-desugaring inequality consumer を提供する。
-raw `ChainMode6` role 4 個、ordinal 1/2 の `BindingId(0)`、terminal `BaseMode`
-RHS identity 1 個、2 `Inferred` term、1 fact/deferred-free checked inequality、
-ordered constraint 2 個を保持する。exact routing、full guard、real sidecar が
-active runner 122 を保護する。desugaring/truth/fact、acceptance、closure/order、theorem/proof/
-Core/ControlFlow/VC、別 chain、general semantics は open のままである。
-
-Task 174 MC-G020 current-state override: exact set-terminal local-mode long-chain left
-reserved-variable membership を `spec_gap` ではなく `test_gap`、
-`source_drift`、`design_drift` と分類する。Chapter 4、7、13、14.5.3、16 が
-test-first source を支え、task 74 が real seven-expansion producer、task 164 が
-right-only expected-set membership consumer を提供する。raw `ChainMode6` left
-result、独立した explicit-set right result と sole right expected input、ordinal
-2/3 の `BindingId(0/1)`、terminal `BaseMode` RHS identity 1 個、left expected
-input なし、2 `Inferred` term、1 fact/deferred-free checked membership、right-
-owned constraint 1 個を保持する。exact routing、membership-specific corruption
-test、shared full structural guard、real sidecar が active runner 123 を保護する。
-membership truth/fact、acceptance、closure/order、theorem/proof/Core/
-ControlFlow/VC、別 chain、general semantics は open のままである。
-
-Task 175 MC-G020 current-state override: exact set-terminal local-mode long-chain
-reserved-variable type assertion を `spec_gap` ではなく `test_gap`、
-`source_drift`、`design_drift` と分類する。Chapter 3、4、7、13、14.2.3、16 が
-test-first source を支え、task 74 が real seven-expansion producer、task 152 が
-normalized-reflexive type-assertion consumer を提供する。raw `ChainMode6`
-subject result、独立した formula-side builtin-set asserted input、ordinal 1 の
-`BindingId(0)`、terminal `BaseMode` RHS identity 1 個、1 `Inferred` term、general
-reachability を用いない 1 fact/deferred-free checked type assertion を保持する。
-exact production route、task 172 の shared structural guard、type-assertion-
-specific corruption test、real frontend/resolver sidecar が active runner 124 を
-保護する。widening/`qua`、assertion truth/fact、acceptance、closure/order、theorem/proof/
-Core/ControlFlow/VC、別 chain、general semantics は open のままである。
-
-Task 176 MC-G020 current-state override: exact builtin-object-terminal local-mode
-long-chain reserved-variable equality を `spec_gap` ではなく `test_gap`、
-`source_drift`、`design_drift` と分類する。Chapter 3、4、7、13、14.5.2、16 が
-test-first source を支え、task 74 が real AST-bounded object-terminal chain
-producer、task 167 が object-normalizing equality consumer を提供する。raw
-`ChainObjectMode6` result/expected input 4 個、ordinal 1/2 の `BindingId(0)`、
-real expansion 7 本、terminal `BaseObjectMode` RHS identity 1 個、2 `Inferred`
-term、1 fact/deferred-free checked equality、ordered constraint 2 個を object/set
-coercion なしで保持する。exact production route、task 172 の shared structural
-guard、object-specific
-corruption test、real frontend/resolver sidecar が active runner 125 を保護する。
-truth/fact、acceptance、closure/order、theorem/proof/
-Core/ControlFlow/VC、別 chain、general semantics は open のままである。
-
-Task 177 MC-G020 current-state override: exact builtin-object-terminal local-mode
-long-chain reserved-variable inequality を `spec_gap` ではなく `test_gap`、
-`source_drift`、`design_drift` と分類する。Chapter 3、4、7、13、14.5.2、16 が
-test-first source を支え、task 74 が real AST-bounded object-terminal chain
-producer、task 169 が object-normalizing pre-desugaring inequality consumer を
-提供する。raw `ChainObjectMode6` result/expected input 4 個、ordinal 1/2 の
-`BindingId(0)`、real expansion 7 本、terminal `BaseObjectMode` RHS identity 1 個、
-2 `Inferred` term、1 fact/deferred-free checked inequality、ordered constraint 2
-個を object/set coercion なしで保持する。exact production route、task 172 の
-shared structural guard、object-specific corruption test、real frontend/resolver
-sidecar が active runner 126 を保護する。desugaring、truth/fact、
-acceptance、closure/order、theorem/proof/Core/ControlFlow/VC、別 chain、general
-semantics は open のままである。
-
-Task 178 MC-G020 current-state override: exact builtin-object-terminal local-mode
-long-chain left reserved-variable membership を `spec_gap` ではなく `test_gap`、
-`source_drift`、`design_drift` と分類する。Chapter 3、4、7、13、14.5.3、16 が
-test-first source を支え、task 74 が real AST-bounded object-terminal chain
-producer、task 165 が object-left/set-right membership consumer を提供する。raw
-`ChainObjectMode6` left result、独立した explicit-set right result/sole expected
-input、ordinal 2/3 の `BindingId(0/1)`、real expansion 7 本、distinct terminal-
-object-RHS と explicit-set identity、left expected input なし、2 `Inferred`
-term、1 fact/deferred-free checked membership、right-owned constraint 1 個を
-object/set coercion なしで保持する。exact route、task 172 shared guard、
-membership/object-specific corruption test、real sidecar が active runner 127 を
-保護する。truth/fact、acceptance、closure/order、theorem/proof/
-Core/ControlFlow/VC、別 chain、general semantics は open のままである。
-
-Task 179 MC-G020 current-state override: exact builtin-object-terminal local-mode
-long-chain reserved-variable normalized-reflexive type assertion を `spec_gap`
-ではなく `test_gap`、`source_drift`、`design_drift` と分類する。Chapter 3、4、
-7、13、14.2.3、16 が test-first source を支え、task 74 が real AST-bounded
-object-terminal chain producer、task 153 が object-normalizing type-assertion
-consumer、task 175 が seven-expansion sibling guard pattern を提供する。raw
-`ChainObjectMode6` subject result、独立した formula-side builtin-object asserted
-input、ordinal 1 の `BindingId(0)`、real expansion 7 本、terminal-object-RHS
-identity 1 個、1 `Inferred` term、general reachability と object/set coercion を
-用いない 1 fact/deferred-free normalized-reflexive checked type assertion を
-保持する。exact route、task 172 shared guard、task 153 の real object consumer/
-source near miss、builtin-set asserted head または raw subject provenance
-corruption を reject するよう task 175 から適応した matched-output guard、real
-sidecar が active runner 128 を保護する。widening/`qua`、truth/fact、acceptance、closure/order、theorem/proof/
-Core/ControlFlow/VC、別 chain、general semantics は open のままである。
-
-Task 180 MC-G020 current-state override: exact standalone
-`SourceDerivedContradictionConstantBoundary: contradiction` leaf を `spec_gap`
-ではなく `test_gap`、`source_drift`、`design_drift` と分類する。Chapter 14、16
-は leaf と theorem slot を直接支える。新規 exact standalone extractor は既存
-contradiction-kind mapping と theorem-shape validation pattern を再利用し、real
-leaf site/range を module-root context で deferred reason なしに既存 checker
-consumer へ渡す。term/type/constraint/candidate/fact/deferred/diagnostic payload
-が空の 1 checked formula に type/well-formedness credit を与える。exact/near-
-miss/corruption と real-sidecar guard が active runner 129 を保護する。
-falsehood/fact publication、theorem acceptance、proof-goal closure、implicit
-closure/child graph、`formula_statement`、proof、CoreIr、ControlFlowIr、VC は
-open のままである。
-
-Task 182 MC-G020 current-state override: exact direct formula-side local-mode
-asserted head は `spec_gap` ではなく `test_gap`、narrow `source_drift`、
-`design_drift` を閉じる。Chapter 3、4、7、13、14.2.3、16 は `mode
-LocalModeAssertedHeadDef: LocalModeAssertedHead is set;` を含む exact definition
-block と test-first source を直接支える。task 55 は
-real direct bare-mode expansion producer、tasks 122/138 は normalized-reflexive
-type-assertion consumer と direct local-mode subject route を提供する。exact source
-は同じ resolved mode 向けの独立した reserve-subject と formula-side asserted raw
-input、real expansion 1 個、ordinal 1 の `BindingId(0)`、terminal-RHS builtin-set
-identity 1 個へ intern する known type entry 3 個、1 inferred term、general
-reachability を用いない 1 fact/deferred-free checked formula を保持する。
-exact/near-miss/corruption、production-route、real sidecar guard が active runner
-130 を保護する。mode declaration acceptance/
-inhabitation、widening/`qua`、truth/fact、theorem/proof/Core/ControlFlow/VC、
-他 asserted head/chain、general semantics は open のままである。
-
-Task 183 MC-G020 current-state override: exact direct object-terminal formula-
-side local-mode asserted head は `spec_gap` ではなく `test_gap`、narrow
-`source_drift`、`design_drift` を閉じる。Chapter 3、4、7、13、14.2.3、16 は `mode
-LocalObjectModeAssertedHeadDef: LocalObjectModeAssertedHead is object;` を持つ
-exact source を直接支える。task 55 は real bare-object mode expansion、tasks
-145/182 は normalized object consumer と same-symbol formula-side asserted-head
-producer を提供する。exact route は独立した raw reserve-subject/formula-side
-asserted input、real expansion 1 個、ordinal 1 の `BindingId(0)`、terminal-RHS
-builtin-object identity 1 個へ intern する known type entry 3 個、1 inferred term、
-general reachability と object/set coercion を用いない 1 fact/deferred-free checked
-formula を保持する。exact/near-miss/corruption、production-route、real sidecar
-guard が active runner 131 を保護する。
-declaration acceptance/inhabitation、truth/fact、theorem/proof/Core/ControlFlow/
-VC、他 asserted head/chain、general semantics は open のままである。
-
-Task 184 MC-G020 current-state override: exact one-edge set-terminal same-outer-mode
-asserted head は `spec_gap` ではなく `test_gap`、narrow `source_drift`、
-`design_drift` である。Chapter 3、4、7、13、14.2.3、16 は
-`mode BaseModeAssertedHeadDef: BaseModeAssertedHead is set;` と `mode
-ChainModeAssertedHeadDef: ChainModeAssertedHead is BaseModeAssertedHead;` を
-含む ordered definition block 2 個、outer-mode reserve 1 個、
-`ChainedLocalModeAssertedHeadPayloadBoundary: x is ChainModeAssertedHead;`
-から成る test-first source を直接支える。task 56 は real one-edge expansion
-producer、tasks 146/182 は normalized set consumer と same-symbol formula-side
-asserted-head producer を提供する。exact route は同じ outer symbol 向けの独立した
-raw reserve-subject/formula-side asserted input、real expansion 2 個、ordinal 1 の
-`BindingId(0)`、terminal base-definition-RHS builtin-set identity 1 個へ intern
-する known type entry 3 個、1 inferred term、general reachability を用いない
-1 fact/deferred-free checked formula を保持する。exact/near-miss/corruption、
-production-route、real sidecar guard が active runner 132 を保護する。
-declaration acceptance/inhabitation、widening/`qua`、truth/fact、closure/order、
-theorem/proof/Core/ControlFlow/VC、object/deeper/他 asserted head、general chain
-semantics は open のままである。
-
-Task 185 MC-G020 current-state override: exact one-edge object-terminal same-outer-mode
-asserted head を `spec_gap` ではなく `test_gap`、narrow `source_drift`、
-`design_drift` と分類する。Chapter 3、4、7、13、14.2.3、16 は `mode
-BaseObjectModeAssertedHeadDef: BaseObjectModeAssertedHead is object;` と `mode
-ChainObjectModeAssertedHeadDef: ChainObjectModeAssertedHead is
-BaseObjectModeAssertedHead;` を含む ordered definition block 2 個、outer-mode
-reserve 1 個、`ChainedLocalObjectModeAssertedHeadPayloadBoundary: x is
-ChainObjectModeAssertedHead;` から成る test-first source を直接支える。task 56
-は real one-edge expansion producer、tasks 147/183/184 は normalized object
-consumer と same-symbol recursive formula-side asserted-head seam を提供する。
-exact route は同じ outer symbol 向けの独立した raw reserve-subject/formula-side
-asserted input、real expansion 2 個、ordinal 1 の `BindingId(0)`、terminal base-
-definition-RHS builtin-object identity 1 個へ intern する known type entry 3 個、
-1 inferred term、general reachability、widening、`qua`、object/set coercion を
-用いない 1 fact/deferred-free checked formula を保持する。exact/near-miss/
-corruption、production-route、real sidecar guard が active runner 133 を保護する。
-shared trace backlink 5 個と dedicated row 1 個が exact credit を担う。imported
-provenance、declaration/attribute acceptance、
-broader term/formula、child graph、theorem/proof/Core/ControlFlow/VC、deeper/他
-asserted head、general chain semantics は open のままである。module layout 更新は
-不要である。
-
-Task 186 MC-G020 current-state override: exact two-edge set-terminal same-outer-
-mode asserted head を `spec_gap` ではなく `test_gap`、narrow `source_drift`、
-`design_drift` と分類する。Chapter 3、4、7、13、14.2.3、16 は `mode
-BaseTwoEdgeModeAssertedHeadDef: BaseTwoEdgeModeAssertedHead is set;`、`mode
-MiddleTwoEdgeModeAssertedHeadDef: MiddleTwoEdgeModeAssertedHead is
-BaseTwoEdgeModeAssertedHead;`、`mode OuterTwoEdgeModeAssertedHeadDef:
-OuterTwoEdgeModeAssertedHead is MiddleTwoEdgeModeAssertedHead;` を含む ordered
-definition block 3 個、`OuterTwoEdgeModeAssertedHead` の reserve 1 個、
-`TwoEdgeLocalModeAssertedHeadPayloadBoundary: x is
-OuterTwoEdgeModeAssertedHead;` を直接支える。task 72 は real two-edge expansion
-producer、tasks 148/184 は normalized set consumer と same-symbol formula-side
-asserted-head seam、task 185 は object-terminal sibling guard を提供する。exact
-route は同じ resolved outer symbol 向けの distinct raw reserve-subject/formula-
-side asserted site/range、real expansion 3 個、ordinal 1 の `BindingId(0)`、terminal
-`BaseTwoEdgeModeAssertedHead` definition RHS builtin-set identity 1 個へ intern
-する known type entry 3 個、reachability、widening、`qua` を用いない 1
-`Inferred` term と 1 fact/deferred-free normalized-reflexive `Checked` formula を
-保持しなければならない。exact/near-miss/corruption、production-route、real
-frontend/resolver-sidecar guard は各 missing expansion、wrong link/terminal/order/
-depth、duplicate、forward/recovered/contextual/parameterized/argument-bearing/
-attributed definition、direct/one-edge/deeper/object-terminal shape、non-exact
-reserve/formula、wrong subject、builtin/base/middle/other/attributed/argument-
-bearing asserted head、imported/ambiguous provenance、recovery、extra item、
-collapsed provenance、builtin-object output corruption を reject する。shared
-trace backlink 5 個と dedicated row 1 個が existing expectation を rebaseline
-せず active runner 134 を保護する。object-terminal/deeper/
-imported asserted head、declaration/attribute acceptance、broader term/formula/
-child graph、truth/fact、theorem/proof/Core/ControlFlow/VC、general chain
-semantics は open のままである。module layout 更新は不要である。
-
-Task 187 MC-G020 current-state override: exact two-edge object-terminal same-outer-
-mode asserted head を `spec_gap` ではなく `test_gap`、narrow `source_drift`、
-`design_drift` と分類する。Chapter 3、4、7、13、14.2.3、16 は ordered
-definition `mode BaseTwoEdgeObjectModeAssertedHeadDef:
-BaseTwoEdgeObjectModeAssertedHead is object;`、`mode
-MiddleTwoEdgeObjectModeAssertedHeadDef: MiddleTwoEdgeObjectModeAssertedHead is
-BaseTwoEdgeObjectModeAssertedHead;`、`mode OuterTwoEdgeObjectModeAssertedHeadDef:
-OuterTwoEdgeObjectModeAssertedHead is MiddleTwoEdgeObjectModeAssertedHead;`、
-outer-mode reserve 1 個、`TwoEdgeLocalObjectModeAssertedHeadPayloadBoundary: x is
-OuterTwoEdgeObjectModeAssertedHead;` を支える。tasks 72/149 は real object-
-terminal producer/consumer、tasks 185/186 は same-symbol asserted-head route
-pattern を提供する。exact route は同じ local outer symbol 向けの distinct raw
-subject/asserted site/range、real expansion 3 個、ordinal 1 の `BindingId(0)`、
-terminal base-definition-RHS builtin-object identity 1 個へ intern する known
-entry 3 個、expected constraint、reachability、widening、`qua`、object/set
-coercion を持たない 1 `Inferred` term と 1 fact/deferred-free normalized-
-reflexive `Checked` assertion を保持する。exact/near-miss/
-corruption、production-route、real frontend/resolver-sidecar guard は missing/
-wrong/duplicate/reordered/forward/recovered/contextual/parameterized/argument-
-bearing/attributed link または wrong label、set-terminal/direct/one-edge/deeper
-shape、builtin/base/middle/other asserted head および attributed/argument-bearing
-formula-side asserted head、imported Base/Middle/Outer と imported/ambiguous
-asserted provenance、extra/collapsed provenance、`BuiltinSet` output corruption
-を reject する。shared trace backlink 5 個と dedicated row 1 個により active
-runner 135 を保護する。positive imported semantics、declaration/attribute
-acceptance、broader term/formula/child graph、truth/fact、implicit closure/order、
-theorem acceptance、proof/Core/ControlFlow/VC、general chain semantics は open
-のままである。Step 5 は active、
-Steps 6/7 は deferred のまま。module layout 更新は不要である。
-
-Task 188 MC-G020 current-state override: exact builtin-object same-binding
-equality を `spec_gap` ではなく `test_gap`、narrow `source_drift`、
-`design_drift` と分類する。Chapter 3、4、13、14.5.2、16 は `reserve x for
-object; theorem ReservedObjectVariableEqualityPayloadBoundary: x = x;` を直接
-支える。tasks 48/125 は real builtin-object reserve handoff、task 119 は exact
-same-binding equality route/builder、task 128 は real builtin-object normalization
-consumer を提供する。route は ordinal 1/2 を `BindingId(0)` に解決し、written
-`object` range 1 個上の distinct result/expected role site 4 個、canonical
-builtin-object identity 1 個、`Inferred` variable 2 個、ordered expected constraint
-2 個、fact/deferred-free `Checked` equality 1 個を保持しなければならない。
-exact/near-miss、matched-output、canonical-source、`BuiltinSet` corruption、
-route-order、real frontend/resolver-sidecar guard を必須とする。shared trace
-backlink 5 個 + dedicated row 1 個により既存 expectation を変更せず active runner
-136 を保護する。object/set coercion、general/non-reflexive object
-equality、truth/fact、implicit closure/order、theorem acceptance、proof/Core/
-ControlFlow/VC、broader source shape は open のままである。Step 5 は active、
-Steps 6/7 は deferred のまま。module layout 更新は不要である。
-
-Task 189 MC-G020 current-state override: exact builtin-object same-binding
-normalized-reflexive type assertion を `spec_gap` ではなく `test_gap`、narrow
-`source_drift`、`design_drift` と分類する。Chapter 3、4、13、14.2.3、16 は
-`reserve x for object; theorem
-ReservedObjectVariableTypeAssertionPayloadBoundary: x is object;` を直接支える。
-tasks 48/125/188 は real builtin-object reserve handoff、task 122 は exact one-
-subject assertion route/builder、task 145 は real builtin-object normalization
-consumer を提供する。route は ordinal 1 を `BindingId(0)` に解決し、distinct
-reserve-subject result/formula-side asserted site/range、written reserve type を
-anchor とする canonical builtin-object identity 1 個、`Inferred` variable 1 個、
-known type entry 3 個、expected constraint 0 個、fact/deferred-free `Checked`
-assertion 1 個を保持しなければならない。exact/near-miss、matched-output、
-canonical-source、`BuiltinSet` corruption、route-order、real frontend/resolver-
-sidecar guard を必須とする。shared trace backlink 5 個 + dedicated row 1 個により
-既存 expectation を変更せず active runner 137 を保護する。
-reachability/widening/`qua`、object/set coercion、truth/fact、implicit closure/
-order、theorem acceptance、proof/Core/ControlFlow/VC、broader source shape は open
-のままである。Step 5 は active、Steps 6/7 は deferred のまま。module layout
-更新は不要であった。
-
-Task 190 MC-G020 current-state override: exact builtin-object same-binding inequality
-は `test_gap`、narrow `source_drift`、`design_drift` であり、`spec_gap` ではない。
-Chapters 3、4、13、14.5.2、16 は `reserve x for object; theorem
-ReservedObjectVariableInequalityPayloadBoundary: x <> x;` を直接 support する。
-Tasks 48/125/188 は real builtin-object reserve handoff と canonical
-normalization producer を提供し、Task 121 は real exact same-binding pre-
-desugaring inequality consumer を提供する。Task 128 も builtin-object
-normalization consumer を独立に実証する。route は ordinal 1/2 を
-`BindingId(0)` へ解決し、written `object` range 1 個上の distinct result/
-expected role site 4 個を保持し、canonical builtin-object identity 1 個へ
-intern し、`Inferred` variable 2 個、known type entry 6 個、ordered expected
-constraint 2 個、fact/candidate/diagnostic/deferred-free `Checked` inequality
-1 個を記録しなければならない。exact/near-miss、matched-output、canonical-
-source、`BuiltinSet` corruption、route-order、real frontend/resolver-sidecar
-guard を備える。shared trace backlink 5 個 + dedicated row 1 個により、
-既存 expectation を変更せず active runner 138 を保護する。inequality
-desugaring/equality truth、object/set coercion、fact、implicit closure/order、
-theorem acceptance、proof/Core/ControlFlow/VC、broader source shape は open の
-ままである。Step 5 は active、Steps 6/7 は deferred のまま。checker source
-または module layout 更新は不要であった。
-
-Task 191 MC-G020 current-state override: exact distinct-binding shared-
-builtin-object equality は `test_gap`、narrow `source_drift`、
-`design_drift` であり、`spec_gap` ではない。Chapters 3、4、13、14.5.2、
-16 は `reserve x, y for object; theorem
-DistinctReservedObjectVariableEqualityPayloadBoundary: x = y;` を直接
-support する。task 123 は real one-item/two-binding shared-written-range
-producer を提供し、tasks 48/125/188 は real builtin-object reserve、
-normalization、equality consumer を提供する。route は ordinal 2/3 を
-`BindingId(0/1)` に解決し、両 binding と distinct result/expected role site
-4 個に shared written `object` range 1 個を保持し、その reserve range を
-anchor とする canonical builtin-object identity 1 個、`Inferred` variable
-2 個、known type entry 6 個、operand-owned ordered expected constraint 2 個、
-fact/candidate/diagnostic/deferred-free `Checked` equality 1 個を記録しなければ
-ならない。exact/near-miss、matched-output、canonical-source、`BuiltinSet`
-corruption、route-order、real frontend/resolver sidecar を備える。shared
-trace backlink 5 個 + dedicated row 1 個により既存 expectation を変更せず
-active runner 139 を保護する。equality truth、object/set coercion、
-fact、implicit closure/order、theorem acceptance、proof/Core/ControlFlow/VC、
-broader distinct-object source shape は open のままである。Step 5 は active、
-Steps 6/7 は deferred のまま。checker source または module-layout change は
-不要であった。
-
-Task 192 MC-G020 current-state override: exact distinct-binding shared-
-builtin-object inequality は `test_gap`、narrow `source_drift`、
-`design_drift` であり、`spec_gap` ではない。Chapters 3、4、13、14.5.2、
-16 は `reserve x, y for object; theorem
-DistinctReservedObjectVariableInequalityPayloadBoundary: x <> y;` を直接
-support する。tasks 123/191 は real one-item/two-binding shared-written-range
-builtin-object producer を提供し、tasks 121/160/190 は real pre-desugaring
-inequality consumer を提供する。route は ordinal 2/3 を `BindingId(0/1)` に
-解決し、両 binding と distinct result/expected role site 4 個に shared written
-`object` range 1 個を保持し、その reserve range を anchor とする canonical
-builtin-object identity 1 個、`Inferred` variable 2 個、known type entry 6 個、
-operand-owned ordered expected constraint 2 個、fact/candidate/diagnostic/
-deferred-free `Checked` inequality 1 個を記録する。shared trace backlink 5 個 +
-dedicated row 1 個により既存 expectation を変更せず active runner 140 を
-保護する。exact/near-miss、matched-output、canonical-source、`BuiltinSet`
-corruption、route-order、real frontend/resolver sidecar が contract を guard する。
-inequality desugaring/equality truth、object/set coercion、fact、implicit closure/order、
-theorem acceptance、proof/Core/ControlFlow/VC、broader distinct-object source
-shape は open のままである。Step 5 は active、Steps 6/7 は deferred のまま。
-checker source または module-layout change は不要であった。
-
-Task 193 MC-G020 current-state override: exact multiple-reserve-declaration
-builtin-object equality は `test_gap`、narrow `source_drift`、
-`design_drift` であり、`spec_gap` ではない。Chapters 3、4、13、14.5.2、
-16 は `reserve x for object; reserve y for object; theorem
-MultipleObjectReserveDeclarationEqualityPayloadBoundary: x = y;` を直接
-support する。Task 124 は real two-item/two-binding/distinct-written-range
-producer を提供し、tasks 188/191 は real builtin-object equality consumer を
-提供する。route は ordinal 2/3 を `BindingId(0/1)` に解決し、distinct written
-`object` range 2 個を distinct result/expected role site 4 個に保持し、先行する
-`x` reserve range を anchor とする canonical builtin-object identity 1 個、
-`Inferred` variable 2 個、known type entry 6 個、operand-owned ordered expected
-constraint 2 個、fact/candidate/diagnostic/deferred-free `Checked` equality 1 個を
-記録する。shared trace backlink 5 個 + dedicated row 1 個により既存 expectation
-を変更せず active runner 141 を保護する。exact structural/provenance near
-miss、matched-output、canonical-source、`BuiltinSet` corruption、route
-isolation、real frontend/resolver sidecar が contract を guard する。equality
-truth、object/set coercion、fact、implicit closure/order、theorem acceptance、
-proof/Core/ControlFlow/VC、shared-range shape、broader multiple-reserve object
-shape は open のままである。Step 5 は active、Steps 6/7 は deferred のまま。
-checker source または module-layout change は不要であった。
-
-Task 194 MC-G020 current-state override: exact multiple-reserve-declaration
-builtin-object inequality は `test_gap`、narrow `source_drift`、
-`design_drift` であり、`spec_gap` ではない。Chapters 3、4、13、14.5.2、
-16 は `reserve x for object; reserve y for object; theorem
-MultipleObjectReserveDeclarationInequalityPayloadBoundary: x <> y;` を直接
-support する。Task 193 は real ordered two-item/two-binding/distinct-written-
-object-range producer を提供し、tasks 190/192 は real pre-desugaring builtin-
-object inequality consumer を提供する。route は ordinal 2/3 を
-`BindingId(0/1)` に解決し、binding ごとの written `object` range 2 個を
-distinct raw result/expected role 4 個に保持し、先行する `x` range を anchor
-とする canonical builtin-object identity 1 個、`Inferred` variable 2 個、known
-type entry 6 個、operand-owned ordered expected constraint 2 個、fact/candidate/
-diagnostic/deferred-free `Checked` inequality 1 個を記録する。shared backlink 5
-個 + dedicated row 1 個により既存 expectation を変更せず active runner 142 を
-保護する。exact structural/provenance near miss、raw/canonical-source その他の
-corruption probe、route isolation、immutable-output check、real frontend/
-resolver sidecar が contract を guard する。inequality desugaring/equality
-truth、object/set coercion、fact、implicit closure/order、theorem acceptance、
-proof/Core/ControlFlow/VC、shared-range shape、broader multiple-reserve object
-shape は open のままである。Step 5 は active、Steps 6/7 は deferred のまま。
-checker source または module-layout change は不要であった。
-
-Task 195 MC-G020 current-state override: exact three-edge set-terminal same-
-outer-mode asserted head は `test_gap`、narrow `source_drift`、`design_drift`
-であり、`spec_gap` ではない。Chapters 3、4、7、13、14.2.3、16 は ordered
-mode definition 4 個 `Outer -> Middle -> Inner -> Base -> set`、`reserve x for
-OuterThreeEdgeModeAssertedHead`、`ThreeEdgeLocalModeAssertedHeadPayloadBoundary:
-x is OuterThreeEdgeModeAssertedHead;` を直接 support する。Task 73 は real
-four-expansion producer、Task 150 は同じ深さの subject-side normalization、Task
-186 は same-symbol formula-side asserted-head consumer を提供する。exact route
-は outer symbol の distinct raw subject/asserted site/range を保持し、ordinal 1
-を `BindingId(0)` に解決し、AST-derived expansion 4 個を消費し、known type
-entry 3 個を base-definition-RHS anchor の `BuiltinSet` identity 1 個へ
-normalize し、expected constraint 0 個、`Inferred` variable 1 個、fact/
-candidate/diagnostic/deferred-free normalized-reflexive `Checked` type assertion
-1 個を記録する。shared backlink 5 個 + dedicated row 1 個により既存
-expectation を変更せず active runner 143 を保護する。structural/provenance
-near miss は unrelated local、imported、ambiguous asserted head を含み、
-corruption、immutable-output、route-isolation、real frontend/resolver sidecar
-guard が contract を完成させる。object-terminal/deeper/imported/attributed/
-argument-bearing/other asserted head、reachability/widening/`qua`、declaration/
-theorem acceptance、truth/fact、closure/order、broader term/formula/child-graph
-semantics、proof/Core/ControlFlow/VC、general chain semantics は open のままで
-ある。Step 5 は active、Steps 6/7 は deferred のまま。checker source または
-module-layout change は不要であった。
-
-Task 196 MC-G020 current-state override: exact three-edge object-terminal same-
-outer-mode asserted head は `test_gap`、narrow `source_drift`、`design_drift`
-であり、`spec_gap` ではない。Chapters 3、4、7、13、14.2.3、16 は ordered
-mode definition 4 個 `Outer -> Middle -> Inner -> Base -> object`、`reserve x
-for OuterThreeEdgeObjectModeAssertedHead`、
-`ThreeEdgeLocalObjectModeAssertedHeadPayloadBoundary: x is
-OuterThreeEdgeObjectModeAssertedHead;` を直接 support する。Tasks 73/151 は real
-four-expansion object-terminal producer、Task 187 は same-symbol formula-side
-asserted-head consumer、Task 195 は depth-matched set sibling を提供する。exact
-route は outer symbol の distinct raw subject/asserted site/range を保持し、
-ordinal 1 を `BindingId(0)` に解決し、AST-derived expansion 4 個を消費し、
-known type entry 3 個を base-definition-RHS anchor の `BuiltinObject` identity 1
-個へ normalize し、expected constraint 0 個、`Inferred` variable 1 個、fact/
-candidate/diagnostic/deferred-free normalized-reflexive `Checked` type assertion
-1 個を object/set coercion なしで記録する。shared backlink 5 個 + dedicated
-row 1 個により既存 expectation を変更せず active runner 144 を保護する。
-structural/provenance near miss は unrelated local、imported、ambiguous asserted
-head を含み、`BuiltinSet`/canonical-source corruption、immutable-output、route-
-isolation、real frontend/resolver sidecar guard が contract を完成させる。
-deeper/imported/attributed/argument-bearing/other asserted head、reachability/
-widening/`qua`、declaration/theorem acceptance、truth/fact、closure/order、
-broader term/formula/child-graph semantics、proof/Core/ControlFlow/VC、general
-chain semantics は open のままである。Step 5 は active、Steps 6/7 は deferred
-のまま。checker source または module-layout change は不要であった。
-
-Task 197 MC-G020 current-state override: exact four-edge set-terminal same-
-outermost-mode asserted head は `test_gap`、narrow `source_drift`、
-`design_drift` であり、`spec_gap` ではない。Chapters 3、4、7、13、14.2.3、
-16 は ordered mode definition 5 個 `TooDeep -> Outer -> Middle -> Inner ->
-Base -> set`、`reserve x for TooDeepFourEdgeModeAssertedHead`、
-`FourEdgeLocalModeAssertedHeadPayloadBoundary: x is
-TooDeepFourEdgeModeAssertedHead;` を直接 support する。Tasks 74/152 は real
-five-expansion set-terminal producer、Tasks 186/195 は same-symbol formula-
-side asserted-head consumer を提供する。exact route は outermost symbol の
-distinct raw subject/asserted site/range を保持し、ordinal 1 を `BindingId(0)`
-に解決し、AST-derived expansion 5 個を消費し、known type entry 3 個を base-
-definition-RHS anchor の `BuiltinSet` identity 1 個へ normalize し、expected
-constraint 0 個、`Inferred` variable 1 個、fact/candidate/diagnostic/deferred-
-free normalized-reflexive `Checked` type assertion 1 個を記録する。shared
-backlink 5 個 + dedicated row 1 個により既存 expectation を変更せず 360
-cases / 324 requirements 内の active runner 145 を保護する。full reorder、
-connected deeper-chain、structural/provenance、unrelated local/imported/
-ambiguous asserted-head、mutable corruption、immutable-output、route-
-isolation、real frontend/resolver sidecar guard が contract を完成させる。
-object-terminal/other-depth/imported/attributed/argument-bearing/other asserted
-head、reachability/widening/`qua`、declaration/theorem acceptance、truth/fact、
-closure/order、broader term/formula/child-graph semantics、proof/Core/
-ControlFlow/VC、general chain semantics は open のままである。Step 5 は
-active、Steps 6/7 は deferred のまま。checker source または module-layout
-change は不要であった。
-
-Task 198 MC-G020 current-state override: exact four-edge object-terminal same-
-outermost-mode asserted head は `test_gap`、narrow `source_drift`、
-`design_drift` であり、`spec_gap` ではない。Chapters 3、4、7、13、14.2.3、
-16 は ordered mode definition 5 個 `TooDeep -> Outer -> Middle -> Inner ->
-Base -> object`、`reserve x for TooDeepFourEdgeObjectModeAssertedHead`、
-`FourEdgeLocalObjectModeAssertedHeadPayloadBoundary: x is
-TooDeepFourEdgeObjectModeAssertedHead;` を直接 support する。Tasks 74/153 は
-real five-expansion object-terminal producer、Tasks 187/196 は same-symbol
-formula-side asserted-head consumer を提供する。exact route は outermost
-symbol の distinct raw subject/asserted site/range を保持し、ordinal 1 を
-`BindingId(0)` に解決し、AST-derived expansion 5 個を消費し、known type
-entry 3 個を base-definition-RHS anchor の `BuiltinObject` identity 1 個へ
-normalize し、expected constraint 0 個、`Inferred` variable 1 個、fact/
-candidate/diagnostic/deferred-free normalized-reflexive `Checked` type assertion
-1 個を object/set coercion なしで記録する。shared backlink 5 個 + dedicated
-row 1 個により既存 expectation を変更せず 361 cases / 325 requirements 内の
-active runner 146 を保護する。full reorder、connected deeper-chain、
-structural/provenance、unrelated local/imported/ambiguous asserted-head、mutable
-corruption、immutable-output、route-isolation、real frontend/resolver sidecar
-guard が contract を完成させる。set-terminal/other-depth/imported/attributed/
-argument-bearing/other asserted head、reachability/widening/`qua`、declaration/
-theorem acceptance、truth/fact、closure/order、broader term/formula/child-graph
-semantics、proof/Core/ControlFlow/VC、general chain semantics は open のまま
-である。Step 5 は active、Steps 6/7 は deferred のまま。checker source
-または module-layout change は不要であった。
-
-Task 199 MC-G020 current-state override: exact seven-expansion set-terminal
-same-`ChainMode6` asserted head は `test_gap`、narrow `source_drift`、
-`design_drift` であり、`spec_gap` ではない。Chapters 3、4、7、13、14.2.3、16
-は `BaseMode -> set`、`ChainMode1 -> BaseMode` から `ChainMode6 -> ChainMode5`
-までの ordered local link 6 個、`reserve x for ChainMode6`、
-`LongLocalModeAssertedHeadPayloadBoundary: x is ChainMode6;` を直接 support
-する。Tasks 74/175 は real seven-expansion set-terminal producer、Tasks 186/
-195/197 は same-symbol formula-side asserted-head consumer を提供する。exact
-route は `ChainMode6` の distinct raw subject/asserted site/range を保持し、
-ordinal 1 を `BindingId(0)` に解決し、AST-derived expansion 7 個を消費し、
-known type entry 3 個を `BaseModeDef` RHS anchor の `BuiltinSet` identity 1 個
-へ normalize し、expected constraint 0 個、`Inferred` variable 1 個、fact/
-candidate/diagnostic/deferred-free normalized-reflexive `Checked` type assertion
-1 個を記録する。shared backlink 5 個 + dedicated row 1 個により既存
-expectation を変更せず 362 cases / 326 requirements 内の active runner 147 を
-保護する。per-link removal/reorder、complete reverse order、connected eighth-
-link、structural/provenance、unrelated local/imported/ambiguous asserted-head、
-mutable corruption、immutable-output、route-isolation、real frontend/resolver
-sidecar guard が contract を完成させる。object-terminal/other-depth/imported/
-attributed/argument-bearing/other asserted head、reachability/widening/`qua`、
-declaration/theorem acceptance、truth/fact、closure/order、broader term/formula/
-child-graph semantics、proof/Core/ControlFlow/VC、general unbounded chain
-semantics は open のままである。Step 5 は active、Steps 6/7 は deferred の
-まま。checker source または module-layout change は不要であった。
-
-Task 200 MC-G020 current-state override: exact seven-expansion object-terminal
-same-`ChainObjectMode6` asserted head は `test_gap`、narrow `source_drift`、
-`design_drift` であり、`spec_gap` ではない。Chapters 3、4、7、13、14.2.3、
-16 は `BaseObjectMode -> object`、`ChainObjectMode6 -> ChainObjectMode5` まで
-の ordered local link 6 個、`reserve x for ChainObjectMode6`、
-`LongLocalObjectModeAssertedHeadPayloadBoundary: x is ChainObjectMode6;` を
-直接 support する。Tasks 74/179 は real seven-expansion object-terminal
-producer、Tasks 187/196/198 は same-symbol formula-side asserted-head consumer
-を提供する。exact route は `ChainObjectMode6` の distinct raw subject/
-asserted site/range を保持し、ordinal 1 を `BindingId(0)` に解決し、AST-
-derived expansion 7 個を消費し、known type entry 3 個を
-`BaseObjectModeDef` RHS anchor の `BuiltinObject` identity 1 個へ normalize
-し、expected constraint 0 個、`Inferred` variable 1 個、fact/candidate/
-diagnostic/deferred-free normalized-reflexive `Checked` type assertion 1 個を
-object/set coercion なしで記録する。shared backlink 5 個 + dedicated row 1
-個により既存 expectation を変更せず 363 cases / 327 requirements 内の
-active runner 148 を保護する。per-link removal/reorder、complete reverse
-order、connected eighth-link、structural/provenance、unrelated local/imported/
-ambiguous asserted-head、mutable corruption、immutable-output、route-isolation、
-real frontend/resolver sidecar guard が contract を完成させる。set-terminal/
-other-depth/imported/attributed/argument-bearing/other asserted head、
-reachability/widening/`qua`、declaration/theorem acceptance、truth/fact、
-closure/order、broader term/formula/child-graph semantics、proof/Core/
-ControlFlow/VC、general unbounded chain semantics は open のままである。
-Step 5 は active、Steps 6/7 は deferred のまま。checker source または
-module-layout change は不要であった。
-
-Task 106 addendum: active `mizar-test` type-elaboration runner は task-87 の generic
-boundary のうち `theorem TermFormulaPayloadBoundary: 1 = 1;` を supersede する。
-unrecovered builtin equality theorem shape かつ structural Chapter 13 numeral
-operand が 2 つだけの場合に限り、runner は real module-shell checker binding
-context を作り、source-derived checker `TermInput` と equality `FormulaInput`
-payload を `TermFormulaChecker` に渡す。その後 missing numeric type payload と
-partial formula checking で fail closed する。numeric type payload extraction、
-equality semantic checking、recorded fact、theorem acceptance、dedicated
-`formula_statement` runner、CoreIr、ControlFlowIr、VC、proof payload coverage は
-主張しない。
-
-Task 110 addendum: active `mizar-test` type-elaboration runner は
-`theorem ImportedPredicateFunctorPayloadBoundary: 1 divides (1 ++ 2);` という
-imported predicate/functor theorem formula source について task 98 を supersede
-する。parser / resolver 実行後に `parser.type_fixtures` の `divides` / `++`
-imported provenance を検証し、source-derived checker term/formula payload を
-渡してから、missing numeric type payload、missing functor signature payload、
-missing predicate signature payload、partial formula checking を報告する。これは
-Chapter 11、12、13、14、16 の exact imported predicate/functor checker bridge
-だけを credit する。imported module AST extraction、semantic predicate/functor
-signature、term inference、formula checking、recorded fact、theorem acceptance、
-dedicated `formula_statement` runner、CoreIr、ControlFlowIr、VC、proof payload
-coverage は主張しない。
-
-Task 100 addendum: active `mizar-test` type-elaboration runner は当初
-`theorem BuiltinMembershipPayloadBoundary: 1 in 1;` という builtin membership
-theorem formula source を parser / resolver 実行後に
-`type_elaboration.external_dependency.ast_payload_extraction` として観測した。
-task 108 はこの exact source を supersede し、real source-derived checker
-`TermInput` / `FormulaInput` payload を渡して
-`type_elaboration.checker.checker.term.external.numeric_type_payload` と
-`type_elaboration.checker.checker.formula.term.partial` を報告する。これは
-Chapter 13、14、16 の narrow source-derived builtin membership term/formula
-checker bridge だけを credit する。numeric type payload extraction、membership
-operand expected-type construction/checking、recorded fact、theorem acceptance、
-dedicated `formula_statement` runner、CoreIr、ControlFlowIr、VC、proof payload
-coverage は主張しない。
-
-Task 107 addendum: active `mizar-test` type-elaboration runner は task-101
-generic boundary の exact builtin inequality theorem formula source
-`theorem BuiltinInequalityPayloadBoundary: 1 <> 2;` を supersede する。parser /
-resolver 実行後、runner は real source-derived checker `TermInput` /
-`FormulaInput` payload を渡し、
-`type_elaboration.checker.checker.term.external.numeric_type_payload` と
-`type_elaboration.checker.checker.formula.term.partial` を報告する。これは Chapter
-13、14、16 の narrow source-derived builtin inequality term/formula checker
-bridge だけを credit する。numeric type payload extraction、inequality
-desugaring または equality semantic checking、recorded fact、theorem acceptance、
-dedicated `formula_statement` runner、CoreIr、ControlFlowIr、VC、proof payload
-coverage は主張しない。
-
-Task 109 addendum: active `mizar-test` type-elaboration runner は
-`theorem BuiltinTypeAssertionPayloadBoundary: 1 is set;` という exact builtin
-type-assertion theorem formula source を parser / resolver 実行後に観測し、
-source-derived checker `TermInput`、`FormulaInput`、asserted builtin `set`
-`TypeExpressionInput` payload を渡してから missing numeric type payload と
-partial formula checking で fail closed する。これは Chapter 3、13、14、16 の
-exact source-derived builtin type-assertion bridge だけを credit する。より広い
-asserted type payload extraction、type-assertion semantic checking、recorded
-fact、theorem acceptance、dedicated `formula_statement` runner、CoreIr、
-ControlFlowIr、VC、proof payload coverage は主張しない。
-
-Task 113 addendum: active `mizar-test` type-elaboration runner は
-`import parser.type_fixtures; theorem ImportedAttributeAssertionPayloadBoundary: 1 is empty;`
-という exact imported attribute assertion theorem formula source について task 103 を
-supersede する。parser / resolver 実行後に imported `empty` provenance を検証し、
-source-derived numeral と attribute-assertion checker payload を渡し、missing
-numeric type payload、missing formula / attribute semantic payload、partial formula
-checking で fail closed する。これは Chapter 6、11、12、13、14、16 の exact
-source-derived imported attribute assertion checker handoff だけを credit する。
-imported module AST extraction、theorem formula 向け checker `AttributeInput`
-payload extraction、attribute-chain semantic payload extraction、term inference、
-attribute admissibility/semantic checking、formula checking、recorded fact、
-theorem acceptance、dedicated `formula_statement` runner、CoreIr、ControlFlowIr、
-VC、proof payload coverage は主張しない。
-
-Task 114 addendum: active `mizar-test` type-elaboration runner は
-`import parser.type_fixtures; theorem ImportedNonEmptyAttributeAssertionPayloadBoundary: 1 is non empty;`
-という exact attribute-level `non empty` imported attribute assertion theorem
-formula source について task 104 を supersede する。parser / resolver 実行後に
-direct `non` surface と imported `empty` provenance を検証し、source-derived
-numeral と attribute-assertion checker payload を渡してから missing numeric type
-payload、missing formula / attribute semantic payload、partial formula checking
-で fail closed する。これは Chapter 6、11、12、13、14、16 の exact
-source-derived attribute-level `non empty` imported attribute assertion checker
-handoff だけを credit する。imported module AST extraction、theorem formula 向け
-checker `AttributeInput` payload extraction、negated attribute-chain semantic
-payload extraction、term inference、negated attribute admissibility/semantic
-checking、formula checking、recorded fact、theorem acceptance、dedicated
-`formula_statement` runner、CoreIr、ControlFlowIr、VC、proof payload coverage は
-主張しない。
-
-Task 111 addendum: active `mizar-test` type-elaboration runner は task 105 のうち
-exact set-enumeration theorem formula source
-`theorem SetEnumerationPayloadBoundary: {1, 2} = {1, 2};` だけを supersede する。
-parser / resolver 実行後に、4 つの numeral item term、2 つの
-set-enumeration term、builtin equality formula の real source-derived checker
-payload を渡し、missing numeric type payload、missing set-enumeration
-result-type payload、partial formula checking を報告する。これは Chapter
-13、14、16 の exact checker handoff だけを credit する。broader
-set-enumeration term extraction、term inference、equality/formula checking、
-recorded fact、theorem acceptance、dedicated `formula_statement` runner、CoreIr、
-ControlFlowIr、VC、proof payload coverage は主張しない。
-
-Task 112 addendum: active `mizar-test` type-elaboration runner は task 99 のうち
-exact formula connective / quantifier theorem source
-`theorem FormulaConnectiveQuantifierPayloadBoundary: contradiction implies for x being set holds not contradiction;`
-だけを supersede する。parser / resolver 実行後に implication、quantified
-formula、negation の real source-derived checker `FormulaInput` shell を渡し、
-missing formula payload と missing quantifier payload を報告する。これは Chapter
-14 と 16 の exact checker shell handoff だけを credit する。task 117 はその
-source 内の 2 つの exact source-derived `contradiction` constant だけを
-`FormulaKind::Contradiction` payload に進め、同じ missing formula payload
-diagnostic に留める。formula constant semantic truth value、child-formula graph
-payload、quantifier binder/context payload、formula checking、recorded fact、
-theorem acceptance、dedicated `formula_statement` runner、CoreIr、ControlFlowIr、
-VC、proof payload coverage は主張しない。
-
-Task 88 addendum: active `mizar-test` type-elaboration runner は
-`theorem ProofSkeletonPayloadBoundary: thesis proof thus thesis; end;` という
-proof-block theorem source を parser / resolver 実行後に観測し、
-`type_elaboration.external_dependency.ast_payload_extraction` を報告する。これは
-Chapter 15 conclusion statement と Chapter 16 proof block の source-derived
-proof-block / proof-skeleton extraction-gap boundary だけを credit する。checker
-proof skeleton payload extraction、local proof context、formula payload extraction、
-recorded fact、theorem acceptance、dedicated `formula_statement` runner、CoreIr、
-ControlFlowIr、VC、proof payload coverage は主張しない。
-
-Task 90 addendum: active `mizar-test` type-elaboration runner は predicate
-definition と functor definition を含む definition block を parser / resolver
-実行後に観測し、`type_elaboration.external_dependency.ast_payload_extraction`
-を報告する。これは Chapter 9 predicate definitions と Chapter 10 functor
-definitions の source-derived predicate/functor definition extraction-gap
-boundary だけを credit する。checker definition declaration payload extraction、
-definition-local context、definiens formula/term payload extraction、overload
-payload、recorded fact、dedicated `formula_statement` runner、CoreIr、
-ControlFlowIr、VC、proof payload coverage は主張しない。
-
-Task 91 addendum: active `mizar-test` type-elaboration runner は attribute
-definition を parser / resolver 実行後に観測し、
-`type_elaboration.external_dependency.ast_payload_extraction` を報告する。
-これは Chapter 6 attribute definitions の source-derived attribute
-definition extraction-gap boundary だけを credit する。checker attribute
-definition declaration payload extraction、definition-local context、
-formula-definiens payload extraction、attributed-type evidence、recorded fact、
-dedicated `formula_statement` runner、CoreIr、ControlFlowIr、VC、proof
-payload coverage は主張しない。
-
-Task 92 addendum: active `mizar-test` type-elaboration runner は mode definition
-と structure definition を parser / resolver 実行後に観測し、
-`type_elaboration.external_dependency.ast_payload_extraction` を報告する。
-これは Chapter 5 と Chapter 7 の source-derived mode/structure definition
-extraction-gap boundary だけを credit する。checker mode/structure definition
-declaration payload extraction、mode expansion、structure base-shape /
-constructor / selector evidence、definition-local context、recorded fact、
-dedicated `formula_statement` runner、CoreIr、ControlFlowIr、VC、proof payload
-coverage は主張しない。
-
-Task 93 addendum: active `mizar-test` type-elaboration runner は theorem proof
-内の proof-local `let`、`given`、`consider`、`set`、`reconsider` statement を
-parser / resolver 実行後に観測し、
-`type_elaboration.external_dependency.ast_payload_extraction` を報告する。
-これは Chapter 15 と Chapter 16 の source-derived proof-local declaration
-extraction-gap boundary だけを credit する。checker proof-local declaration
-payload extraction、local proof context、formula / term payload extraction、
-RHS term inference、reconsider coercion / obligation evidence、recorded fact、
-theorem acceptance、dedicated `formula_statement` runner、CoreIr、
-ControlFlowIr、VC、proof payload coverage は主張しない。
-
-Task 94 addendum: active `mizar-test` type-elaboration runner は theorem proof
-内の proof-local `deffunc` と `defpred` inline definition を parser / resolver
-実行後に観測し、`type_elaboration.external_dependency.ast_payload_extraction`
-を報告する。これは Chapter 15 の source-derived proof-local inline definition
-extraction-gap boundary だけを credit する。checker inline definition
-formal/body payload extraction、local abbreviation expansion、term / formula
-body payload extraction、guard evidence、recorded fact、theorem acceptance、dedicated
-`formula_statement` runner、CoreIr、ControlFlowIr、VC、proof payload coverage は
-主張しない。
-
-Task 95 addendum: active `mizar-test` type-elaboration runner は existential
-cluster と conditional cluster を含む top-level registration block を parser /
-resolver 実行後に観測し、`type_elaboration.external_dependency.ast_payload_extraction`
-を報告する。これは Chapter 17 の source-derived registration-block
-extraction-gap boundary だけを credit する。checker registration-item payload
-extraction、correctness-condition / proof-obligation payload、accepted
-activation / evidence status、cluster / reduction semantics、recorded fact、
-Chapter 17 semantic cluster / reduction row、dedicated `formula_statement` または
-`advanced_semantics` runner、CoreIr、ControlFlowIr、VC、proof payload coverage は
-主張しない。
-
-Task 96 addendum: active `mizar-test` type-elaboration runner は top-level と
-definition-local の synonym / antonym alias、および attribute、predicate、
-functor redefinition declaration を parser / resolver 実行後に観測し、
-`type_elaboration.external_dependency.ast_payload_extraction` を報告する。これは
-Chapter 11 / 19 の source-derived redefinition / notation extraction-gap
-boundary だけを credit する。checker redefinition payload extraction、notation
-alias relation payload、redefinition target inference、coherence
-proof-obligation payload、overload candidate payload、recorded fact、Chapter 11
-alias semantic resolution、Chapter 19 overload / redefinition semantics、
-dedicated `formula_statement` または `advanced_semantics` runner、CoreIr、
-ControlFlowIr、VC、proof payload coverage は主張しない。
-
-### `registration_resolution`
-
-生成 public newtype:
-
-- `CheckerRegistrationId`, `RejectedRegistrationId`,
-  `RegistrationDiagnosticId`, `ExistentialGateId`
-- `RegistrationTriggerKey`, `RegistrationLabelKey`,
-  `RegistrationPatternKey`, `RegistrationParameterKey`,
-  `AcceptedCorrectnessKey`, `ActivationEvidenceKey`,
-  `RegistrationFingerprint`, `RegistrationTypeKey`,
-  `RegistrationAttributeKey`, `RegistrationFunctorKey`,
-  `RegistrationTermKey`, `RegistrationVariableKey`,
-  `ExistentialGateGuardKey`
-
-literal top-level public item:
-
-- `RegistrationDatabase`, `PendingRegistration`, `PendingRegistrationTable`,
-  `RegistrationPatternStatus`, `PendingRegistrationStatus`,
-  `ActivatedRegistration`, `ActivatedRegistrationIndex`,
-  `RejectedRegistration`, `RejectedRegistrationTable`,
-  `RejectedRegistrationReason`, `RegistrationSource`, `ResolverTargetShell`,
-  `RegistrationValidationKind`, `RegistrationValidationInput`,
-  `RegistrationValidationPattern`, `RegistrationTermPattern`,
-  `RegistrationVariableOccurrence`, `RegistrationValidationParameter`,
-  `RegistrationReferencedSymbolRole`, `RegistrationReferencedSymbol`,
-  `ActivationInput`, `ActivationVerifierStatus`, `ExistentialGateInput`,
-  `ExistentialGateCandidate`, `ExistentialGateBaseEvidence`,
-  `ExistentialGateBaseEvidenceKind`, `ExistentialGateBaseEvidenceCoverage`,
-  `ExistentialGateGuardEvidence`,
-  `ExistentialGateRecovery`, `ExistentialGateOutput`,
-  `ExistentialGateResult`, `ExistentialGateStatus`,
-  `RegistrationDiagnostic`, `RegistrationDiagnosticDraft`,
-  `RegistrationDiagnosticTable`, `RegistrationDiagnosticClass`,
-  `RegistrationDiagnosticSeverity`, `RegistrationDiagnosticRecovery`
-
-対応:
-
-| 仕様上の約束 | source 根拠 | test 根拠 | 状態 |
-|---|---|---|---|
-| Pending/activated registration database は resolver origin を保持し、不完全 payload を activate しない。 | `RegistrationDatabase`, pending/activated/rejected tables and source records. | pending/activation/source/invalid activation tests. | 実装済み。MC-G021 は残る。 |
-| Validation は obligation を emit し、kind-specific payload を検証し、accepted verifier/artifact status で activation を gate する。 | `RegistrationValidationInput`, validation pattern/parameter/reference types, `ActivationInput`. | validation/invalid/routing/reduction-size/accepted-unaccepted activation tests. | explicit payload について実装済み。MC-G025 は残る。 |
-| Existential gate は accepted activation、visible guard、exact pattern/base-evidence match、base-shape coverage、deterministic recovery を要求する。 | `ExistentialGateInput`, candidates, base evidence, guard evidence, output/result/status types. | missing/inactive/pending/unaccepted/accepted/rejected/degraded existential tests; task 47 base-object/set、accepted-mode、structure-field、schema-parameter evidence tests。 | explicit payload について実装済み。MC-G026 は残る。 |
-| Diagnostic と deterministic rendering は stable。 | `RegistrationDiagnosticTable` and diagnostic classes/recovery. | debug rendering and validation diagnostic tests. | 実装済み。public diagnostic code は MC-G005。 |
-| public enum は forward-compatible。 | public enum の `#[non_exhaustive]`。 | `checker_public_enums_are_forward_compatible_and_documented`. | task 31 で guard 済み。 |
-
-### `cluster_trace`
-
-生成 public newtype:
-
-- `ClusterFactId`, `ClusterStepId`, `ReductionStepId`,
-  `ClusterDiagnosticId`
-- `ClusterFactFingerprint`, `ClusterTypeFingerprint`,
-  `ClusterAttributeFingerprint`, `ClusterRuleFingerprint`,
-  `ClusterAuditKey`, `ClusterOrderingVersion`, `ClusterTraversalCacheKey`,
-  `ReductionFingerprint`, `ReductionRuleFqn`, `ReductionTermFingerprint`,
-  `ReductionRedexPath`, `ReductionBindingKey`, `ReductionGuardKey`,
-  `ReductionGuardEvidenceKey`, `ReductionRuleViewFingerprint`,
-  `ReductionSelectionKey`, `ReductionStrategyAuditKey`
-
-literal top-level public item:
-
-- `ClusterClosureOutput`, `ClusterClosureStatus`, `ReductionTraceOutput`,
-  `ClusterTraceBuilder`, `ReductionTraceBuilder`, `ClusterTraversalConfig`,
-  `ResolutionTrace`, `ResolutionTraceStep`, `ClusterStep`,
-  `ReductionStep`, `ClusterAntecedentRef`, `ClusterTraversalProfile`,
-  `ClusterReplayReport`, `ClusterReplayStatus`, `ClusterFactInput`,
-  `ClusterRuleInput`, `ClusterRuleDraft`, `ReductionInput`,
-  `ReductionDraft`, `ReductionBinding`, `ReductionGuardKind`,
-  `ReductionGuardRequirement`, `ReductionGuardEvidenceRef`,
-  `ClusterRuleKind`, `ClusterFact`, `ClusterFactDraft`,
-  `ClusterFactTable`, `ClusterFactProvenance`, `ClusterDiagnostic`,
-  `ClusterDiagnosticDraft`, `ClusterDiagnosticTable`,
-  `ClusterDiagnosticClass`, `ClusterDiagnosticSeverity`,
-  `ClusterDiagnosticRecovery`
-
-対応:
-
-| 仕様上の約束 | source 根拠 | test 根拠 | 状態 |
-|---|---|---|---|
-| Cluster closure は replayable deterministic cluster step と derived fact を記録する。 | `ClusterTraceBuilder`, `ClusterClosureOutput`, `ResolutionTrace`, `ClusterStep`, `ClusterFactTable`. | closure/inactive/order/conditional/subtype/transitive/mismatch/rejected/duplicate tests. | explicit payload について実装済み。MC-G023 は残る。 |
-| Saturation bound、loop、explicit contradiction は silent truncation でなく visible failure。 | `ClusterTraversalConfig`, `ClusterTraversalProfile`, `ClusterClosureStatus`, diagnostics. | loop/bound/zero-antecedent/contradiction tests; task 46 class/severity/recovery assertion。 | explicit payload について実装済み。 |
-| Replay は active registration fingerprint を再検証する。 | `ResolutionTrace::replay`, `ClusterReplayReport`, `ClusterReplayStatus`. | `replay_revalidates_active_registration_fingerprint`, `active_pattern_fallback_must_match_rule_fingerprint`. | 実装済み。 |
-| Reduction step は architecture 17 provenance、guard evidence、strategy audit key を保持する。 | `ReductionTraceBuilder`, `ReductionTraceOutput`, `ReductionStep`, reduction input/guard types. | reduction provenance/inactive/rejected/invalid/`such` guard tests; task 46 discharged-side-condition trace identity determinism coverage。 | explicit payload について実装済み。source-derived rewrite extraction と normalization-result dependence は MC-G023。 |
-| public enum は forward-compatible。 | public enum の `#[non_exhaustive]`。 | `checker_public_enums_are_forward_compatible_and_documented`. | task 31 で guard 済み。 |
-
-### `overload_resolution`
-
-生成 public newtype:
-
-- `OverloadSiteId`, `OverloadCandidateId`, `OverloadDiagnosticId`,
-  `TemplateExpansionId`, `CandidateViabilityId`, `SpecificityGraphId`,
-  `SpecificityComparisonId`, `SpecificityEdgeId`, `OverloadResultId`,
-  `InsertedViewId`
-- `OverloadSiteKey`, `OverloadNameKey`,
-  `OverloadDiagnosticMessageKey`, `CandidateProvenanceKey`,
-  `TemplateInstantiationKey`, `TemplateParameterKey`, `QuaPathKey`,
-  `ViabilityEvidenceKey`, `SpecificityReasonKey`, `SelectionReasonKey`,
-  `InsertedViewReasonKey`
-
-literal top-level public item:
-
-- `OverloadCollectionOutput`, `TemplateExpansionOutput`,
-  `CandidateViabilityOutput`, `SpecificityGraphOutput`,
-  `OverloadSelectionOutput`, `OverloadSiteInput`, `SourceQuaView`,
-  `OverloadSiteKind`, `UnsupportedOverloadRole`, `OverloadSiteRecovery`,
-  `OverloadCandidateInput`, `CandidateDeclarationKind`, `CandidateOrigin`,
-  `CoherenceStatus`, `TemplateCandidatePayload`, `TemplateArgument`,
-  `TemplateQuaStatus`, `TemplateArgumentInference`,
-  `TemplateConstraintEvidence`, `TemplateConstraintEvidenceStatus`,
-  `CandidateProvenance`, `CandidateScope`, `OverloadSite`,
-  `OverloadSiteStatus`, `OverloadSiteTable`, `OverloadCandidate`,
-  `OverloadCandidateStatus`, `OverloadCandidateTable`,
-  `TemplateExpansion`, `TemplateExpansionTable`, `TemplateSubstitution`,
-  `TemplateSubstitutionSource`, `TemplateExpansionStatus`,
-  `TemplateExpansionFailure`, `CandidateViabilityInput`,
-  `ArgumentViabilityEvidence`, `ViabilityFactStatus`,
-  `ViabilityCoercionKind`, `ViabilityCoercionStatus`,
-  `CandidateViability`, `CandidateViabilityTable`,
-  `CandidateViabilityStatus`, `ArgumentViewPlan`, `ArgumentViewKind`,
-  `CandidateRejection`, `CandidateRejectionReason`,
-  `CandidateBlockedReason`, `CandidateBlockedReasonKind`,
-  `SpecificityComparisonInput`, `SpecificityComparisonStatus`,
-  `SpecificityBlockedReasonKind`, `SpecificityGraph`,
-  `SpecificityGraphTable`, `SpecificityNode`, `SpecificityComparison`,
-  `SpecificityComparisonOutcome`, `SpecificityEdge`,
-  `SpecificityFailureReason`, `OverloadSiteResolutionInput`,
-  `RefinementJoinPayload`, `RefinementJoinStatus`,
-  `RefinementJoinFailure`, `ExposedResultPayload`,
-  `ExposedResultSource`, `InsertedViewInput`, `InsertedViewKind`,
-  `InsertedViewStatus`, `OverloadResult`, `OverloadResultTable`,
-  `OverloadResultStatus`, `OverloadBlockedReason`, `InsertedView`,
-  `InsertedViewTable`, `OverloadDiagnostic`, `OverloadDiagnosticDraft`,
-  `OverloadDiagnosticProvenance`, `OverloadDiagnosticTable`,
-  `OverloadDiagnosticClass`, `OverloadDiagnosticSeverity`,
-  `OverloadDiagnosticRecovery`
-
-対応:
-
-| 仕様上の約束 | source 根拠 | test 根拠 | 状態 |
-|---|---|---|---|
-| Site/candidate collection は resolver-filtered input、source `qua`、provenance、supported role、stable ordering を保持する。 | `OverloadCollectionOutput::collect`, site/candidate input and table types. | collection/filter/order/provenance/template/source-`qua`/unsupported/duplicate tests. | explicit payload について実装済み。MC-G027 は残る。 |
-| Template expansion は explicit template/inference/constraint payload を使い、rejected/deferred case を保持する。 | `TemplateExpansionOutput::expand`, template payload/substitution/constraint types. | expansion/omitted/constraint/source-`qua`/diagnostic/deferred tests. | explicit payload について実装済み。MC-G006/MC-G027 は残る。 |
-| Viability は recorded evidence を消費し、新規 fact derivation、registration firing、root selection をしない。 | `CandidateViabilityOutput::filter`, viability evidence/status/rejection/block/view-plan types. | exact/source-`qua`/non-consumable/narrowing/missing/deferred/remap tests. | 実装済み。 |
-| Specificity は explicit comparison から per-site graph を作り、ordinary root ordering に return type を使わない。 | `SpecificityGraphOutput::build`, graph/node/comparison/edge types. | graph/equivalence/return-type/empty/blocked/missing tests; task 45 encoded non-template/template priority comparison。 | 実装済み。 |
-| Selection は unique maximal ordinary root を選択し、accepted refinement を join し、widening/source-`qua` view を記録し、failure を保持する。 | `OverloadSelectionOutput::resolve`, result/view/refinement/exposed-result types. | selection/no-match/ambiguity/missing/redefinition/refinement/invalid/deterministic tests; task 45 equivalent-template ambiguity、encoded priority、unencoded tie、redefinition-metadata tie tests。 | explicit payload について実装済み。`coherence with` 省略 target inference は MC-G027/MC-G030 の下で upstream producer obligation のままであり、rejected omitted-target declaration は active candidate としてこの API に到達してはならない。 |
-| public enum は forward-compatible。 | public enum の `#[non_exhaustive]`。 | `checker_public_enums_are_forward_compatible_and_documented`. | task 31 で guard 済み。 |
-
-### `resolved_typed_ast`
-
-生成 public newtype:
-
-- `ResolvedTypedNodeId`, `ExpressionMetadataId`, `OverloadResolutionId`,
-  `CoercionInsertionId`, `ResolvedTypedDiagnosticId`, `StatementSemanticId`,
-  `StatementProofIntentId`, `CheckedProofId`, `CheckedProofNodeId`,
-  `CheckedTerminalGoalId`
-- `ExprId`, `SourceNodeRole`
-
-literal top-level public item:
-
-- `ResolvedTypedAst`, `ResolvedTypedAstInputs`, `ExpressionMetadataInput`,
-  `ResolvedNodeKindHint`, `ResolvedNodeKindHintKind`, `ResolvedTypedArena`,
-  `ResolvedTypedNode`, `ResolvedTypedNodeKind`, `ResolvedNodeRecovery`,
-  `ResolvedNodeRecoveryReason`, `ExpressionMetadata`,
-  `ExpressionMetadataTable`, `OverloadCandidateSummary`,
-  `OverloadCandidateSummaryTable`, `TemplateExpansionSummary`,
-  `TemplateExpansionSummaryTable`, `CandidateViabilitySummary`,
-  `CandidateViabilitySummaryTable`, `ResolvedSpecificityComparison`,
-  `ResolvedSpecificityGraph`, `ResolvedSpecificityGraphTable`,
-  `OverloadResolutionRecord`, `OverloadResolutionStatus`,
-  `OverloadResolutionTable`, `CoercionInsertion`,
-  `CoercionInsertionSource`, `CoercionInsertionTable`,
-  `ResolvedTypedDiagnostic`, `ResolvedTypedDiagnosticSource`,
-  `ResolvedTypedDiagnosticSeverity`, `ResolvedTypedDiagnosticTable`,
-  `CandidateSummaryNamespace`, `StatementSemanticInputs`,
-  `StatementSemanticInput`, `StatementSemantic`, `StatementSemanticTable`,
-  `StatementProofInputs`, `StatementProofIntentInput`,
-  `TheoremPolicyIntent`, `TheoremJustificationIntent`, `CheckedProofStatus`,
-  `CheckedProofNodeKind`, `CheckedCitation`, `CheckedProofLabel`,
-  `CheckedProof`, `CheckedProofTable`, `CheckedProofNode`,
-  `CheckedProofNodeTable`, `CheckedTerminalGoal`, `CheckedTerminalGoalTable`,
-  `ResolvedTypedAstError`
-
-対応:
-
-| 仕様上の約束 | source 根拠 | test 根拠 | 状態 |
-|---|---|---|---|
-| Final source-shaped projection は typed AST node、expression metadata、overload summary、cluster fact、diagnostic を保持する。 | `ResolvedTypedAst::assemble`, `ResolvedTypedAstInputs`, arena/metadata/summary/table types. | assembly/template/candidate/diagnostic remap tests. | explicit predecessor output について実装済み。source extraction/artifact は MC-G027。 |
-| Failed overload site と failed node は success に書き換えられず可視のまま残る。 | `OverloadResolutionStatus`, recovery/reason enum, result and diagnostic tables. | failed-site/failed-selection/validation rejection tests. | 実装済み。 |
-| exact Task-180 omitted-justification intentはauthenticated pending proof/direct terminal goalをatomicに生成する。 | `StatementProofInputs`、`CheckedProofTable`、`CheckedProofNodeTable`、`CheckedTerminalGoalTable`、private postvalidation。 | exact statement/proof projection、owner visibility、corruption、deterministic nonempty、captured empty-rendering test。 | Task-180 singletonだけ実装。broader proofはTask 247、Core loweringはCore Task 31。 |
-| Inserted coercion は source と widening/source-`qua` evidence だけを記録する。 | `CoercionInsertion`, `CoercionInsertionSource`, `CoercionInsertionTable`. | assembly and validation tests, upstream invalid-view tests. | explicit input について実装済み。 |
-| deterministic debug projection は equivalent input order を canonicalize する。 | deterministic table iteration and `debug_text`. | `deterministic_debug_text_canonicalizes_equivalent_input_orderings`, task-30 determinism suite. | 実装済み。 |
-| public enum は forward-compatible。 | public enum の `#[non_exhaustive]`。 | `checker_public_enums_are_forward_compatible_and_documented`. | task 31 で guard 済み。 |
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Cross-Cutting Test And Policy Evidence
 
-| 根拠 | coverage |
-|---|---|
-| `crates/mizar-checker/tests/lint_policy.rs` | workspace lint opt-in、dependency boundary、no direct syntax import、documented public module、explicit overload/resolved-AST boundary guard、public enum forward-compatibility policy、source/spec audit の public-surface と MC-G reconciliation guard、bilingual documentation sync の pair-inventory / companion-link guard、module-boundary source-layout guard、documented `allow` exception。 |
-| `crates/mizar-checker/src/determinism_suite.rs` | type normalization、fact query、cluster closure、reduction trace discharged-side-condition identity、overload pipeline、final `ResolvedTypedAst` projection の cross-module deterministic rerun と equivalent-order permutation。 |
-| 各 source module の unit tests | 実装済み checker seam に対する task-local behavior tests。source-to-checker extraction と後続 semantic corpus runner が存在するまで、これが active executable coverage。 |
-| `tests/coverage/spec_trace.toml` deferred rows | formula/statement、cluster/reduction、overload/refinement、review-audit semantic corpus obligation を active fixture と偽らずに記録する。 |
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Gap Reconciliation
 
-task 32 は implementation と test evidence なしに gap を閉じない。crate-plan の
-MC-G row はすべて次のように照合する。
-
-| ID | Classification | task 32 audit disposition |
-|---|---|---|
-| MC-G002 | `test_gap` | real semantic `.miz` coverage について active。source-to-checker extraction が入るまで Rust tests と deferred traceability で mitigated。 |
-| MC-G003 | `design_drift` plus deferred external gate | 歴史的 wording drift は修復済み。accepted proof/artifact status は MC-G025 で表現する。 |
-| MC-G004 | `source_drift` / `external_dependency_gap` planning gate | 現在 code における checker-source drift ではない。artifact producer/reuse integration は task-scoped cross-crate dependency のまま。checker は schema を invent しない。 |
-| MC-G005 | `spec_gap` / `external_dependency_gap` | active。public checker diagnostic code-space は未割当。module は crate-local diagnostic class と stable message/detail key を使う。 |
-| MC-G006 | `source_drift` / `external_dependency_gap` | parser/syntax template/scheme role について active。overload code は unsupported role を fabricate せず defer する。 |
-| MC-G007 | `design_drift` | checker crate plan と module spec で解決済み。task 32 で architecture-file rename は不要。 |
-| MC-G009 | `repo_metadata_conflict` | report-only sentinel。task 32 で metadata conflict は観測していない。 |
-| MC-G011 | `external_dependency_gap` | AST-wide local binding extraction、use-site scope/ordinal payload、reserve payload、closure payload、syntax-free `ResolvedAst` fixture について active。 |
-| MC-G014 | `external_dependency_gap` | AST-wide type-expression payload、mode/radix/attribute expansion payload、arity payload について active。 |
-| MC-G016 | `external_dependency_gap` | declaration/type-site table、reserve default、RHS/body payload、evidence query について active。 |
-| MC-G017 | `external_dependency_gap` | term/formula payload table、built-in numeric payload、candidate signature、structure/selector payload、source `qua` evidence、sethood/non-emptiness evidence について active。 |
-| MC-G018 | `external_dependency_gap` | coercion request table、dependency-summary fact、inheritance graph、cluster evidence、sethood/non-emptiness evidence、proof-query result について active。 |
-| MC-G019 | `external_dependency_gap` | statement/proof assumption、theorem acceptance payload、phase-7 trace fact payload について active。 |
-| MC-G020 | `external_dependency_gap` / `deferred` | task 7-11 と後続 consumer の semantic pass fixture を妨げる source-to-checker extraction blocker として active。task 16 から task 81 までは reserve-only source-derived checker bridge を段階的に構築し、builtin reserve / type-expression payload は `TypedAst` と `ResolvedTypedAst` まで到達し、builtin `set` / `object` に終端する supported same-module bare local-mode expansion family は pass できる一方、local structure / attribute / argument / bracket / forward-reference / historical task-80 imported-attribute boundary は fabricated evidence なしの active diagnostic に留める。task 82 は task-79 imported mode source を一段進め、documented `parser.type_fixtures` 由来の imported `SymbolKind::Mode` を checker type-head payload として渡し、checker が `ImportedSource` provenance を検証してから missing imported `ModeExpansion` payload で fail closed する。task 83 は documented `parser.type_fixtures` imported structure `R` source を一段進め、checker が `ImportedSource` provenance を検証してから missing base-shape / constructor-witness evidence で fail closed する。task 97 は documented `TypeCaseStruct` source を同じ real checker type-head boundary と missing evidence query に進める。task 84 は documented `parser.type_fixtures` imported attribute `TypeCaseAttr` source を一段進め、checker が `ImportedSource` provenance を検証してから missing attributed-type existential/evidence payload で fail closed する。task 85 は既存 `non empty set` source を一段進め、builtin `set` 上の real imported negative `empty` checker `AttributeInput` payload として渡し、missing attributed-type existential/evidence payload で fail closed する。task 116 は既存 `empty set` source を一段進め、builtin `set` 上の real imported positive `empty` checker `AttributeInput` payload として渡し、同じ missing attributed-type existential/evidence payload で fail closed する一方、`non empty object` runner sidecar は extraction-gap boundary に残す。task 86 は parser / resolver 実行後の formula-only theorem source を active boundary として記録し、task 117 は task 115 を exact `FormulaPayloadBoundary: thesis` source について supersede し、source-derived `thesis` formula constant を real `FormulaKind::Thesis` checker payload として渡して missing formula payload で fail closed するが、formula constant checking、theorem acceptance、recorded fact、proof context、`formula_statement` runner は主張しない。task 106 は exact builtin equality theorem source について real source-derived checker `TermInput` と equality `FormulaInput` payload を `TermFormulaChecker` に渡し、missing numeric type payload と partial formula checking で fail closed するが、equality semantic checking、recorded fact、theorem acceptance、`formula_statement` runner は主張しない。task 110 は task 98 の exact imported predicate/functor theorem source を supersede し、imported `divides`/`++` provenance を検証して real source-derived numeral、imported functor-application、predicate-application checker payload を `TermFormulaChecker` に渡し、missing numeric/signature payload と partial formula checking で fail closed するが、semantic predicate/functor signature、term inference、formula checking、recorded fact、theorem acceptance、`formula_statement` runner は主張しない。task 108 は exact builtin membership theorem source について real source-derived checker `TermInput` と membership `FormulaInput` payload を `TermFormulaChecker` に渡し、missing numeric type payload と partial formula checking で fail closed するが、membership operand expected-type construction/checking、recorded fact、theorem acceptance、`formula_statement` runner は主張しない。task 107 は exact builtin inequality theorem source について real source-derived checker `TermInput` と inequality `FormulaInput` payload を `TermFormulaChecker` に渡し、missing numeric type payload と partial formula checking で fail closed するが、inequality desugaring または equality semantic checking、recorded fact、theorem acceptance、`formula_statement` runner は主張しない。task 109 は exact builtin type-assertion theorem source について real source-derived checker `TermInput`、type-assertion `FormulaInput`、asserted builtin `set` `TypeExpressionInput` を `TermFormulaChecker` に渡し、missing numeric type payload と partial formula checking で fail closed するが、broader asserted type payload、type-assertion semantic checking、recorded fact、theorem acceptance、`formula_statement` runner は主張しない。task 113 は exact imported attribute assertion theorem formula について task 103 を supersede し、imported `empty` provenance を検証して source-derived checker term/formula payload を渡し、missing numeric type payload、missing formula / attribute semantic payload、partial formula checking で fail closed するが、imported module AST extraction、theorem formula 向け checker `AttributeInput` payload extraction、attribute-chain semantic payload extraction、term inference、attribute admissibility/semantic checking、formula checking、recorded fact、theorem acceptance、`formula_statement` runner は主張しない。task 114 は exact attribute-level non-empty imported attribute assertion theorem formula について task 104 を supersede し、direct `non` surface と imported `empty` provenance を検証して source-derived checker term/formula payload を渡し、missing numeric type payload、missing formula / attribute semantic payload、partial formula checking で fail closed するが、imported module AST extraction、theorem formula 向け checker `AttributeInput` payload extraction、negated attribute-chain semantic payload、term inference、negated attribute admissibility/semantic checking、formula checking、recorded fact、theorem acceptance、`formula_statement` runner は主張しない。task 111 は task 105 の exact set-enumeration theorem formula source だけを supersede し、source-derived numeral item term、set-enumeration term、builtin equality formula checker payload を `TermFormulaChecker` に渡して missing numeric/result-type payload と partial formula checking で fail closed するが、broader set-enumeration result-type payload extraction、term inference、equality/formula checking、recorded fact、theorem acceptance、`formula_statement` runner は主張しない。task 112 は task 99 の exact formula connective/quantifier theorem formula surface だけを supersede し、parser / resolver 実行後に real checker formula shell payload を渡して missing formula/quantifier payload で fail closed し、task 117 は同じ exact source の 2 つの `contradiction` constants を real `FormulaKind::Contradiction` payload に進めるが、formula constant semantic truth value、child-formula graph payload、quantifier binder/context payload、formula checking、recorded fact、theorem acceptance、`formula_statement` runner は主張しない。task 180 は別に exact standalone `SourceDerivedContradictionConstantBoundary: contradiction` leaf を type/well-formedness だけの 1 `Checked` `FormulaKind::Contradiction` として check し、truth/fact publication または theorem/proof/downstream credit を主張しない。task 88 は parser / resolver 実行後の proof-block theorem source を同じ active extraction-gap boundary として記録し、proof skeleton payload、local proof context、formula payload、recorded fact、theorem acceptance、`formula_statement` runner は主張しない。task 89 は parser / resolver 実行後の statement-level proof-justification theorem source を同じ active extraction-gap boundary として記録し、statement proof payload、nested proof skeleton payload、local proof context、formula payload、label-reference semantic checking、recorded fact、theorem acceptance、`formula_statement` runner は主張しない。task 90 は parser / resolver 実行後の predicate/functor definition source を active extraction-gap boundary として記録し、definition declaration payload、definition-local context、definiens formula/term payload、overload payload、recorded fact、`formula_statement` runner は主張しない。task 91 は parser / resolver 実行後の attribute definition source を active extraction-gap boundary として記録し、attribute definition declaration payload、definition-local context、formula-definiens payload、attributed-type evidence、recorded fact、`formula_statement` runner は主張しない。task 92 は parser / resolver 実行後の mode/structure definition source を同じ active extraction-gap boundary として記録し、mode/structure definition declaration payload、mode expansion、structure base-shape / constructor / selector evidence、definition-local context、recorded fact、`formula_statement` runner は主張しない。task 93 は parser / resolver 実行後の proof-local declaration statement source を同じ active extraction-gap boundary として記録し、proof-local declaration payload、local proof context、formula / term payload、RHS term inference、reconsider coercion / obligation evidence、recorded fact、theorem acceptance、`formula_statement` runner は主張しない。task 94 は parser / resolver 実行後の proof-local inline definition source を同じ active extraction-gap boundary として記録し、inline definition formal/body payload、local abbreviation expansion、term / formula body payload、guard evidence、recorded fact、theorem acceptance、`formula_statement` runner は主張しない。task 95 は parser / resolver 実行後の registration block source を同じ active extraction-gap boundary として記録し、registration-item payload、correctness-condition / proof-obligation payload、accepted activation / evidence status、cluster / reduction semantics、recorded fact、Chapter 17 semantic row、`formula_statement` / `advanced_semantics` runner は主張しない。task 96 は parser / resolver 実行後の redefinition/notation source を同じ active extraction-gap boundary として記録し、redefinition payload、notation alias relation payload、target inference、coherence proof-obligation payload、overload candidate payload、Chapter 11 alias semantic resolution、Chapter 19 overload/redefinition semantics、`formula_statement` / `advanced_semantics` runner は主張しない。より広い non-builtin declaration（task 96 の redefinition/notation extraction-gap boundary を超えるもの）、task 84 `TypeCaseAttr` provenance / `AttributeInput` bridge、task 85 negative `empty`/builtin-`set` bridge、task 116 positive `empty`/builtin-`set` bridge を超える imported attribute、task 83 `R` と task 97 `TypeCaseStruct` provenance/type-head bridge を超える imported structure、task 82 provenance/type-head bridge を超える imported mode expansion、attribute argument、qualified attribute qualifier / owner provenance、mode / structure argument、bracket `type_arg_list` と `qua`-argument provenance、term-argument provenance、structure base-shape / full attributed-type existential evidence、broader / attributed / argument-bearing / parameterized / contextual / ambiguous / cyclic mode expansion、task-106/task-107/task-108/task-109/task-110/task-111/task-112/task-113/task-114/task-117/task-180 exact leaf を超える numeric/signature/result-type payload と equality/inequality/membership/type-assertion/imported predicate-functor/set-enumeration semantic checking および task-112/task-117 を超える formula child/binder semantics、task-110/task-111/task-112/task-113/task-114/task-117 checker bridge、task-180 exact leaf、task-105/task-88/task-89 extraction-gap boundary を超える term / formula / proof skeleton、task-93 extraction-gap boundary を超える proof-local declaration payload、task-94 extraction-gap boundary を超える inline definition payload、task-95 extraction-gap boundary を超える registration payload / correctness-condition / activation payload、task-96 extraction-gap boundary を超える redefinition/notation payload、coercion、overload、recorded fact、CoreIr、ControlFlowIr、VC、proof payload extraction は未解決のまま。 |
-| MC-G021 | `external_dependency_gap` / `deferred` | registration payload、accepted-status、source extraction blocker として active。registration code は explicit payload seam のみ消費する。 |
-| MC-G023 | `test_gap` / `external_dependency_gap` / `deferred` | source-derived cluster/reduction fixture、artifact/cache integration、source-derived normalization-result dependence、real trace extraction について active。task 46 は explicit-payload fatal contradiction と reduction trace-identity seam だけを cover する。 |
-| MC-G025 | `external_dependency_gap` / `deferred` | accepted registration status の proof/artifact production または import について active。 |
-| MC-G026 | `test_gap` / `external_dependency_gap` / `deferred` | source-derived existential gate case、artifact reuse、accepted-status integration について active。 |
-| MC-G027 | `test_gap` / `external_dependency_gap` / `deferred` | source-derived overload payload、`coherence with` 省略 target diagnostic production、diagnostic code allocation、artifact emission/reuse、semantic fixture について active。task 45 は explicit-payload Rust regression だけを追加し、source-derived seed は inactive のままにする。 |
-| MC-G030 | `test_gap` / `external_dependency_gap` / `deferred` | `formula_statement` と `advanced_semantics` runner/tag support、および source payload extraction について active。 |
-
-Resolved setup-history row は closed のまま: MC-G001、MC-G010、MC-G012、
-MC-G013、MC-G015、MC-G022、MC-G024、MC-G028、MC-G029 は task commit を持ち、
-この audit で再オープンされた source/spec mismatch はない。
-
-Task 171 current-state override: gap row の、`non empty object` sidecar が
-extraction gap に残るという旧記述は supersede される。exact negative imported
-`empty`/builtin-`object` source は checker evidence-query diagnostic に到達する。
-positive `empty object`、symbol head 上の imported attribute、imported module AST
-extraction、attribute evidence/acceptance、downstream payload は deferred のまま。
-
-Task 181 current-state override: imported attributed-reserve routing は credit
-済み task-84/85/116/171 source shape 5 件だけを許す exact guard を持つ。
-corpus、expectation、traceability、runner count、semantic-coverage row は変更せず、
-broader imported attributed-reserve shape は記録済み extraction gap のままである。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 32 Classification
 
-| Class | Evidence | Action |
-|---|---|---|
-| `spec_gap` | この audit は新しい language behavior や checker diagnostic code allocation を導入しない。MC-G005 が public diagnostic-code gap のまま。 | task 32 では public code を追加しない。 |
-| `test_gap` | active `.miz` semantic fixture coverage は MC-G002/MC-G023/MC-G026/MC-G027/MC-G030 により deferred のまま。 | Rust task-local coverage と deferred traceability を維持し、pass fixture を fabricate しない。 |
-| `design_drift` | blocking drift は観測していない。歴史的 MC-G003/MC-G007 drift は crate plan/module specs で解決済み。 | この audit record 以外の design repair はない。 |
-| `source_drift` | 実装済み explicit-payload API は owning module spec と矛盾しない。 | source 変更なし。 |
-| `source_undocumented_behavior` | top-level public item は上記 module inventory 外に存在しない。 | future public item は module spec と本 audit を更新するか、該当箇所では lint policy により捕捉される必要がある。 |
-| `external_dependency_gap` | source extraction、accepted proof/artifact status、public diagnostic code、artifact emission/reuse、後続 semantic runner は現在の checker input の外。 | deferred row と follow-up task を維持し、stub は作らない。 |
-| `deferred` | formula/statement、cluster/reduction、overload/refinement、audit-negative corpus obligation は記録済みだが inactive。 | owning extraction/runner/artifact task が入った後にだけ再訪する。 |
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Completion Decision
 
-task 32 は、この English audit と Japanese companion、crate plan / todo update、
-lint-policy audit guard が同じ commit に含まれた時点で完了する。この audit は
-単体では crate completion を主張しない。task 33、task 34、closeout task は
-bilingual synchronization audit、module-boundary refactor gate、crate exit report を
-すでに記録している。
-
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 201 MC-G020 current-state override
 
-Task 201 は exact one-edge set-terminal immediate-radix asserted-head seam を `test_gap`、narrow `source_drift`、`design_drift` と分類し、`spec_gap` とはしない。Chapters 3、4、7、13、14.2.3、16 は local definition 2 個、outer reserve、identifier subject、Base asserted type、theorem を直接 support する。Tasks 56/146 は real expansion 2 個、Task 184 は formula consumer を提供する。closed asserted-head relation は builtin/same-mode route を不変に保ち、resolved outer-to-base immediate edge だけを受理する。
-
-active route は distinct Outer/Base symbol/site/range を保持し、ordinal 1 を `BindingId(0)` に解決し、known entry 3 個を Base-definition-RHS `BuiltinSet` 1 個へ normalize し、expected constraint 0 個、`Inferred` variable 1 個、fact/candidate/diagnostic/deferred-free `Checked` assertion 1 個を記録する。shared backlink 5 個 + dedicated row 1 個が既存 expectation を変更せず、364 cases / 328 requirements 内の active runner 149 を保護する。exact structural/provenance、corruption、immutable-output、Task 146/184 isolation、real sidecar guard は executable である。broader asserted head/semantics、proof/CoreIr/ControlFlowIr/VC、general chain は deferred のままとする。Step 5 は active、Steps 6/7 は deferred のままである。checker source または module-layout change は不要であった。
-
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 202 MC-G020 current-state override
 
-Task 202 は exact object-terminal immediate-radix asserted-head seam を `test_gap`、narrow `source_drift`、`design_drift` と分類し、`spec_gap` とはしない。Tasks 56/147 は real object expansion 2 個、Task 185 は object formula consumer、Task 201 は変更しない immediate-radix relation を提供する。active route は distinct Outer/Base provenance を保持し、ordinal 1 を `BindingId(0)` に解決し、known entry 3 個を Base-definition-RHS `BuiltinObject` 1 個へ normalize し、`Inferred` variable 1 個と constraint/fact/candidate/diagnostic/deferred 0 個の `Checked` assertion 1 個を object/set coercion なしで記録する。shared backlink 5 個 + dedicated row 1 個が 365 cases / 329 requirements 内の active runner 150 を保護する。exact/corruption、immutable-output、real Tasks 147/185/201 isolation、sidecar guard は executable である。broader semantics と downstream payload は deferred のままとする。Step 5 は active、Steps 6/7 は deferred のままである。checker source または module-layout change は不要であった。
-
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 203 MC-G020 current-state override
 
-Task 203 は exact two-edge set-terminal immediate-radix asserted-head seam を `test_gap`、narrow `source_drift`、`design_drift` と分類し、`spec_gap` とはしない。Task 72 は real source-derived expansion 3 個、Task 186 は formula consumer、Tasks 201/202 は変更しない immediate-radix relation を提供する。active route は distinct Outer/Middle provenance を保持し、ordinal 1 を `BindingId(0)` に解決し、expansion 3 個を消費し、known entry 3 個を Base-definition-RHS `BuiltinSet` 1 個へ normalize し、`Inferred` variable 1 個と constraint/fact/candidate/diagnostic/deferred 0 個の `Checked` assertion 1 個を記録する。shared backlink 5 個 + dedicated row 1 個が既存 expectation を変更せず、366 cases / 330 requirements 内の active runner 151 を保護する。exact/corruption/immutable-output coverage、全 definition-order/duplicate/spelling/imported/ambiguous/deeper near miss、real Tasks 122/148/149/186/187/201/202 isolation、real sidecar は executable である。two-hop Base assertion、object sibling、broader semantics、downstream payload は deferred のままとする。Step 5 は active、Steps 6/7 は deferred のままである。checker source または module-layout change は不要であった。
-
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 204 MC-G020 current-state override
 
-Task 204 は exact two-edge object-terminal immediate-radix asserted-head seam を `test_gap`、narrow `source_drift`、`design_drift` と分類し、`spec_gap` とはしない。Task 72 は real source-derived object expansion 3 個、Task 187 は formula consumer、Tasks 202/203 は変更しない immediate-radix relation を提供する。active route は distinct Outer/Middle provenance を保持し、ordinal 1 を `BindingId(0)` に解決し、expansion 3 個を消費し、known entry 3 個を Base-definition-RHS `BuiltinObject` 1 個へ normalize し、`Inferred` variable 1 個と constraint/fact/candidate/diagnostic/deferred 0 個の `Checked` assertion 1 個を object/set coercion なしで記録する。shared backlink 5 個 + dedicated row 1 個が既存 expectation を変更せず、367 cases / 331 requirements 内の active runner 152 を保護する。exact/corruption/immutable-output coverage、全 definition order と duplicate/spelling/imported/ambiguous/deeper near miss、real Tasks 189/145/147/149/187/202 および set Tasks 148/186/203 isolation、real sidecar は executable である。two-hop Base assertion、broader semantics、downstream payload は deferred のままとする。Step 5 は active、Steps 6/7 は deferred のままである。checker source または module-layout change は不要であった。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 205 MC-G020 current-state override
 
-Task 205 は exact three-edge set-terminal immediate-radix asserted-head seam を `test_gap`、narrow `source_drift`、`design_drift` と分類し、`spec_gap` とはしない。Task 73 は real source-derived set-terminal expansion 4 個、Task 195 は formula consumer、Tasks 201/203/204 は変更しない immediate-radix relation を提供する。active route は distinct Outer/Middle provenance を保持し、ordinal 1 を `BindingId(0)` に解決し、expansion 4 個を消費し、known entry 3 個を Base-definition-RHS `BuiltinSet` 1 個へ normalize し、`Inferred` variable 1 個と constraint/fact/candidate/diagnostic/deferred 0 個の `Checked` assertion 1 個を記録する。shared backlink 5 個 + dedicated row 1 個が既存 expectation を変更せず、368 cases / 332 requirements 内の active runner 153 を保護する。exact/corruption/immutable-output coverage、全 23 nonidentity definition order、missing/duplicate/label/spelling/radix と imported/ambiguous/deeper/multi-hop near miss、set Tasks 122/138/146/148/150/195/201/203 および object Tasks 189/145/147/149/151/196/202/204 との bidirectional isolation、real sidecar は executable である。multi-hop Inner/Base assertion、matching object sibling、broader semantics、downstream payload は deferred のままとする。Step 5 は active、Steps 6/7 は deferred のままである。checker source または module-layout change は不要であった。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 206 MC-G020 current-state override
 
-Task 206 は exact three-edge object-terminal immediate-radix asserted-head seam を `test_gap`、narrow `source_drift`、`design_drift` と分類し、`spec_gap` とはしない。Task 73 は real source-derived object-terminal expansion 4 個、Task 196 は formula consumer、Tasks 201/204/205 は変更しない immediate-radix relation を提供する。active route は distinct Outer/Middle provenance を保持し、ordinal 1 を `BindingId(0)` に解決し、expansion 4 個を消費し、known entry 3 個を Base-definition-RHS `BuiltinObject` 1 個へ normalize し、`Inferred` variable 1 個と constraint/fact/candidate/diagnostic/deferred 0 個の `Checked` assertion 1 個を object/set coercion なしで記録する。shared backlink 5 個 + dedicated row 1 個が既存 expectation を変更せず、369 cases / 333 requirements 内の active runner 154 を保護する。exact/corruption/immutable-output coverage、全 23 nonidentity definition order、各 definition の missing/duplicate/label/spelling/radix と imported/ambiguous/deeper/multi-hop/local-other near miss、set Tasks 122/138/146/148/150/195/201/203/205 および object Tasks 189/145/147/149/151/196/202/204 との bidirectional isolation、real sidecar は executable である。multi-hop Inner/Base assertion、broader semantics、downstream payload は deferred のままとする。Step 5 は active、Steps 6/7 は deferred のままである。checker source または module-layout change は不要であった。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 207 MC-G020 current-state override
 
-Task 207 は exact four-edge set-terminal immediate-radix asserted-head seam を `test_gap`、narrow `source_drift`、`design_drift` と分類し、`spec_gap` とはしない。Task 74 は real source-derived set-terminal expansion 5 個、Task 197 は formula consumer、Tasks 201/203/205/206 は変更しない immediate-radix relation を提供する。active route は distinct TooDeep/Outer provenance を保持し、ordinal 1 を `BindingId(0)` に解決し、expansion 5 個を消費し、known entry 3 個を Base-definition-RHS `BuiltinSet` 1 個へ normalize し、`Inferred` variable 1 個と constraint/fact/candidate/diagnostic/deferred 0 個の `Checked` assertion 1 個を記録する。shared backlink 5 個 + dedicated row 1 個が既存 expectation を変更せず、370 cases / 334 requirements 内の active runner 155 を保護する。exact/corruption/immutable-output coverage、全 119 nonidentity definition order、全 per-definition/asserted-head near miss、全 symbol の imported/ambiguous check、declared owner route 20 件との bidirectional isolation、real sidecar は executable である。multi-hop Middle/Inner/Base assertion、matching object sibling、broader semantics、downstream payload は deferred のままとする。Step 5 は active、Steps 6/7 は deferred のままである。checker source または module-layout change は不要であった。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 208 MC-G020 current-state override
 
-Task 208 は exact four-edge object-terminal immediate-radix asserted-head seam を `test_gap`、narrow `source_drift`、`design_drift` と分類し、`spec_gap` とはしない。Tasks 74/153 は real source-derived object-terminal expansion 5 個、Task 198 は formula consumer、Tasks 202/204/206/207 は変更しない immediate-radix relation を提供する。active route は distinct TooDeep/Outer provenance を保持し、ordinal 1 を `BindingId(0)` に解決し、expansion 5 個を消費し、known entry 3 個を Base-definition-RHS `BuiltinObject` 1 個へ normalize し、`Inferred` variable 1 個と constraint/fact/candidate/diagnostic/deferred 0 個の `Checked` assertion 1 個を object/set coercion なしで記録する。shared backlink 5 個 + dedicated row 1 個が既存 expectation を変更せず、371 cases / 335 requirements 内の active runner 156 を保護する。exact/corruption/immutable-output coverage、全 119 order、全 source/provenance near miss、owner route 21 件との bidirectional isolation、real sidecar は executable である。multi-hop Middle/Inner/Base assertion、broader semantics、downstream payload は deferred のままとする。Step 5 は active、Steps 6/7 は deferred のままである。checker source または module-layout change は不要であった。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## task 209 MC-G020 current-state override
 
-Task 209 は exact seven-expansion set-terminal immediate-radix asserted-head seam を `test_gap`、narrow `source_drift`、`design_drift` と分類し、`spec_gap` とはしない。specs 03/04/07/13/14/16 が直接支え、Task 74 は real source-derived expansion 7 個、Task 199 は formula consumer、Task 175 は builtin sibling/guard、closed relation は exact immediate edge を提供する。active route は distinct ChainMode6/ChainMode5 provenance を保持し、ordinal 1 を `BindingId(0)` に解決し、known entry 3 個を BaseModeDef-RHS `BuiltinSet` 1 個へ normalize し、`Inferred` variable 1 個と constraint/fact/candidate/diagnostic/deferred 0 個の `Checked` assertion 1 個を記録する。shared 5 + dedicated 1 backlink が既存 expectation を変更せず、372 cases / 336 requirements 内の active runner 157 を保護する。全 5,039 nonidentity order、finite source/provenance/corruption matrix、Task 209 実装前の owner route 34 件、immutable output、real sidecar は executable である。multi-hop、broader semantics、downstream payload は deferred のままとする。Step 5 は active、Steps 6/7 は deferred である。checker source/module-layout change は不要であった。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## task 210 MC-G020 current-state override
 
-Task 210 は exact seven-expansion object-terminal immediate-radix asserted-head seam を `test_gap`、narrow `source_drift`、`design_drift` と分類し、`spec_gap` とはしない。specs 03/04/07/13/14/16 が直接支え、Task 74 は real source-derived object-terminal expansion 7 個、Task 200 は formula consumer、Task 179 は builtin-object sibling/guard、Task 209 は set-terminal sibling、closed relation は exact immediate edge を提供する。active route は distinct ChainObjectMode6/ChainObjectMode5 provenance を保持し、ordinal 1 を `BindingId(0)` に解決し、known entry 3 個を BaseObjectModeDef-RHS `BuiltinObject` 1 個へ normalize し、object/set coercion なしで `Inferred` variable 1 個と constraint/fact/candidate/diagnostic/deferred 0 個の `Checked` assertion 1 個を記録する。shared 5 + dedicated 1 backlink が既存 expectation を変更せず、373 cases / 337 requirements 内の active runner 158 を保護する。全 5,039 nonidentity order、finite source/provenance/corruption matrix、Task 210 実装前の owner route 35 件、immutable output、real sidecar は executable である。multi-hop、broader semantics、downstream payload は deferred のままとする。Step 5 は active、Steps 6/7 は deferred である。checker source/module-layout change は不要であった。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## task 211 MC-G020 current-state override
 
-Task 211 は exact two-edge set-terminal two-hop asserted-head seam を `test_gap`、narrow `source_drift`、`design_drift` と分類し、`spec_gap` とはしない。specs 03/04/07/13/14/16 が直接支え、Task 72 は real source-derived expansion 3 個、Tasks 148/186/203 は既存 formula/checker seam と sibling guard を提供する。独立 closed relation は pairwise-distinct symbol を持つ actual bare Outer-to-Middle/Middle-to-Base link 2 本と exact Base-to-set terminal を検証し、generic terminal traversal だけを relation evidence にしない。active route は distinct Outer/Base provenance を保持し、ordinal 1 を `BindingId(0)` に解決し、known entry 3 個を Base-definition-RHS `BuiltinSet` 1 個へ normalize し、`Inferred` variable 1 個と constraint/fact/candidate/diagnostic/deferred 0 個の `Checked` assertion 1 個を記録する。shared 5 + dedicated 1 backlink が既存 expectation を変更せず、374 cases / 338 requirements 内の active runner 159 を保護する。全5 nonidentity order、finite structural/provenance/corruption matrix、既存 owner route 36 件、immutable output、real sidecar は executable である。object sibling、他 distance、broader semantics、downstream payload は deferred のままとする。Step 5 は active、Steps 6/7 は deferred である。checker source/module-layout change は不要であった。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## task 212 MC-G020 current-state override
 
-Task 212 は exact two-edge object-terminal two-hop asserted-head seam を `test_gap`、narrow `source_drift`、`design_drift` と分類し、`spec_gap` とはしない。specs 03/04/07/13/14/16 が直接支え、Task 72 は real source-derived object expansion 3 個、Tasks 149/187/204/211 は既存 formula/checker seam、object sibling、closed two-link relation を提供する。relation は pairwise-distinct symbol を持つ actual bare Outer-to-Middle/Middle-to-Base link 2 本と exact Base-to-object terminal を検証し、generic terminal traversal だけを relation evidence にしない。active route は distinct Outer/Base provenance を保持し、ordinal 1 を `BindingId(0)` に解決し、known entry 3 個を Base-definition-RHS `BuiltinObject` 1 個へ normalize し、object/set coercion なしで `Inferred` variable 1 個と constraint/fact/candidate/diagnostic/deferred 0 個の `Checked` assertion 1 個を記録する。shared 5 + dedicated 1 backlink が既存 expectation を変更せず、375 cases / 339 requirements 内の active runner 160 を保護する。全5 nonidentity order、finite structural/provenance/corruption matrix、既存 owner route 37 件、immutable output、real sidecar は executable である。他 distance、broader semantics、object/set coercion、downstream payload は deferred のままとする。Step 5 は active、Steps 6/7 は deferred である。checker source/module-layout change は不要であった。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## task 213 MC-G020 current-state override
 
-Task 213 は exact three-edge set-terminal two-hop asserted-head seam を `test_gap`、narrow `source_drift`、`design_drift` と分類し、`spec_gap` とはしない。specs 03/04/07/13/14/16 が直接支え、Task 73 は real source-derived expansion 4 個、Tasks 195/205/211/212 は formula/checker seam、immediate-edge sibling、closed two-link relation、object-terminal guard を提供する。refine した relation は pairwise-distinct な Outer-to-Middle/Middle-to-Inner bare link を直接検証し、Inner-to-Base-to-set tail は cycle-safe terminal normalization だけで検証して relation reachability を確立しない。active route は distinct Outer/Inner provenance を保持し、ordinal 1 を `BindingId(0)` に解決し、known entry 3 個を Base-definition-RHS `BuiltinSet` 1 個へ normalize し、`Inferred` variable 1 個と constraint/fact/candidate/diagnostic/deferred 0 個の `Checked` assertion 1 個を記録する。shared 5 + dedicated 1 backlink が既存 expectation を変更せず、376 cases / 340 requirements 内の active runner 161 と type-elaboration coverage 208/196 を保護する。全23 nonidentity order、finite structural/provenance/corruption matrix、Task 211/212 focused regression、既存 owner route 38 件、immutable output、real sidecar は executable である。object sibling、full-distance と broader semantics、downstream payload は deferred のままとする。Step 5 は active、Steps 6/7 は deferred である。checker source/module-layout change は不要であった。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## task 214 MC-G020 current-state override
 
-Task 214 は exact three-edge object-terminal two-hop asserted-head seam を `test_gap`、narrow `source_drift`、`design_drift` と分類し、`spec_gap` とはしない。specs 03/04/07/13/14/16 が直接支え、Task 73 は real source-derived object expansion 4 個、Tasks 196/206/211/212/213 は formula/checker seam、immediate-edge sibling、変更しない closed two-link relation、set-terminal guard を提供する。relation は pairwise-distinct な Outer-to-Middle/Middle-to-Inner bare link を直接検証し、Inner-to-Base-to-object tail は terminal normalization だけで検証して relation reachability を確立しない。active route は distinct Outer/Inner provenance を保持し、ordinal 1 を `BindingId(0)` に解決し、known entry 3 個を Base-definition-RHS `BuiltinObject` 1 個へ normalize し、object/set coercion なしで `Inferred` variable 1 個と constraint/fact/candidate/diagnostic/deferred 0 個の `Checked` assertion 1 個を記録する。shared 5 + dedicated 1 backlink が既存 expectation を変更せず、377 cases / 341 requirements 内の active runner 162、type-elaboration coverage 209/197、pass/fail 193/184 を保護する。全23 nonidentity order、finite structural/provenance/corruption matrix、Task 211/212/213 focused regression、既存 owner route 39 件、immutable output、real sidecar は executable である。full-distance と broader semantics、downstream payload は deferred のままとする。Step 5 は active、Steps 6/7 は deferred である。checker source/module-layout change は不要であった。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## task 215 MC-G020 current-state override
 
-Task 215 は exact four-edge set-terminal two-hop asserted-head seam を `test_gap`、narrow `source_drift`、`design_drift` と分類し、`spec_gap` とはしない。specs 03/04/07/13/14/16 が直接支え、Task 74 は real source-derived set expansion 5 個、Task 197 は formula/checker consumer、Task 207 は immediate-edge sibling、Tasks 211-214 は変更しない closed two-link relation を提供する。relation は pairwise-distinct な TooDeep-to-Outer/Outer-to-Middle bare link を直接検証し、Middle-to-Inner-to-Base-to-set tail は terminal normalization だけで検証して relation reachability を確立しない。active route は distinct TooDeep/Middle provenance を保持し、ordinal 1 を `BindingId(0)` に解決し、known entry 3 個を Base-definition-RHS `BuiltinSet` 1 個へ normalize し、object/set coercion なしで `Inferred` variable 1 個と constraint/fact/candidate/diagnostic/deferred 0 個の `Checked` assertion 1 個を記録する。shared 5 + dedicated 1 backlink が既存 expectation を変更せず、378 cases / 342 requirements 内の active runner 163、type-elaboration coverage 210/198、pass/fail 194/184 を保護する。全119 nonidentity order、finite structural/provenance/corruption matrix、Tasks 211-214 focused regression、既存 owner route 40 件、immutable output、real sidecar は executable である。object sibling、three-hop/full-distance と broader semantics、downstream payload は deferred のままとする。Step 5 は active、Steps 6/7 は deferred である。checker source/module-layout change は不要であった。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## task 216 MC-G020 current-state override
 
-Task 216 は exact four-edge object-terminal two-hop asserted-head seam を `test_gap`、narrow `source_drift`、`design_drift` と分類し、`spec_gap` とはしない。specs 03/04/07/13/14/16 が直接支え、Task 74 は real source-derived object expansion 5 個、Task 198 は formula/checker consumer、Task 208 は immediate-edge sibling、Tasks 211-215 は byte-for-byte 変更しない closed two-link relation を提供する。relation は pairwise-distinct な TooDeep-to-Outer/Outer-to-Middle bare link を直接検証し、Middle-to-Inner-to-Base-to-object tail は terminal normalization だけで検証して relation reachability を確立しない。active route は distinct TooDeep/Middle provenance を保持し、ordinal 1 を `BindingId(0)` に解決し、known entry 3 個を Base-definition-RHS `BuiltinObject` 1 個へ normalize し、object/set coercion なしで `Inferred` variable 1 個と constraint/fact/candidate/diagnostic/deferred 0 個の `Checked` assertion 1 個を記録する。shared 5 + dedicated 1 backlink が既存 expectation を変更せず、379 cases / 343 requirements 内の active runner 164、type-elaboration coverage 211/199、pass/fail 195/184 を保護する。全119 nonidentity order、finite structural/provenance/corruption matrix、Tasks 211-215 focused regression、既存 owner route 41 件、immutable output、real sidecar は executable である。three-hop/full-distance と broader semantics、downstream payload は deferred のままとする。Step 5 は active、Steps 6/7 は deferred である。checker source/module-layout change は不要であった。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## task 217 MC-G020 current-state override
 
-Task 217 は exact three-edge set-terminal full-distance three-hop asserted-head seam を `test_gap`、narrow `source_drift`、`design_drift` と分類し、`spec_gap` とはしない。specs 03/04/07/13/14/16 が直接支え、Task 73 は real source-derived expansion 4 個、Task 195 は formula/checker consumer、Tasks 211-216 は shorter-distance/terminal-sibling guard を提供する。新しい closed relation は pairwise-distinct な Outer-to-Middle/Middle-to-Inner/Inner-to-Base bare link を直接検証し、Base-to-set は terminal normalization のみで relation reachability を確立しない。active route は distinct Outer/Base provenance を保持し、ordinal 1 を `BindingId(0)` に解決し、known entry 3 個を Base-definition-RHS `BuiltinSet` 1 個へ normalize し、`Inferred` variable 1 個と constraint/fact/candidate/diagnostic/deferred 0 個の `Checked` assertion 1 個を記録する。shared 5 + dedicated 1 backlink が既存 expectation を変更せず、380 cases / 344 requirements 内の active runner 165、type-elaboration coverage 212/200、pass/fail 196/184 を保護する。全23 nonidentity order、finite structural/provenance/corruption matrix、Tasks 211-216 focused regression、既存 owner route 42 件、immutable output、real sidecar は executable である。object sibling、他 depth、broader semantics、downstream payload は deferred のままとする。Step 5 は active、Steps 6/7 は deferred である。checker source/module-layout change は不要であった。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## task 218 MC-G020 current-state override
 
-Task 218 は exact three-edge object-terminal full-distance three-hop asserted-head seam を `test_gap`、narrow `source_drift`、`design_drift` と分類し、`spec_gap` とはしない。specs 03/04/07/13/14/16 が直接支え、Task 73 は real source-derived object expansion 4 個、Task 196 は formula/checker consumer、Tasks 211-217 は shorter-distance/terminal-sibling guard と byte-for-byte 変更しない `BindingThreeHopRadix` を提供する。active route は pairwise-distinct な Outer-to-Middle/Middle-to-Inner/Inner-to-Base bare link を直接検証し、Base-to-object は terminal normalization のみに使い relation reachability を確立しない。distinct Outer/Base provenance を保持し、ordinal 1 を `BindingId(0)` に解決し、known entry 3 個を Base-definition-RHS `BuiltinObject` 1 個へ normalize し、object/set coercion なしで `Inferred` variable 1 個と constraint/fact/candidate/diagnostic/deferred 0 個の `Checked` assertion 1 個を記録する。shared 5 + dedicated 1 backlink は既存 expectation を変更せず、381 cases / 345 requirements 内の active runner 166、type-elaboration coverage 213/201、pass/fail 197/184 を計上する。全23 nonidentity order、finite structural/provenance/corruption matrix、Tasks 211-217 focused regression、既存 owner route 43 件、immutable output、real sidecar は executable である。他 depth、broader semantics、downstream payload は deferred のままとする。Step 5 は active、Steps 6/7 は deferred である。checker source/module-layout change は不要であった。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## task 219 MC-G020 current-state override
 
-Task 219 は exact four-edge set-terminal three-hop asserted-head seam を `test_gap`、narrow `source_drift`、`design_drift` と分類し、`spec_gap` とはしない。specs 03/04/07/13/14/16 が直接支え、Task 74 は real source-derived set expansion 5 個、Task 197 は formula/checker consumer、Task 207 は four-edge immediate-edge sibling guard、Tasks 211-218 は shorter-distance/terminal-sibling guard と byte-for-byte 変更しない `BindingThreeHopRadix` を提供する。active route は pairwise-distinct な TooDeep-to-Outer/Outer-to-Middle/Middle-to-Inner bare link を直接検証し、Inner-to-Base-to-set tail は terminal normalization のみに使って relation reachability を確立しない。distinct TooDeep/Inner provenance、ordinal 1 / `BindingId(0)`、Base-definition-RHS `BuiltinSet` 1 個へ normalize する known entry 3 個、`Inferred` variable 1 個、constraint/fact/candidate/diagnostic/deferred 0 個の `Checked` assertion 1 個を保持する。shared 5 + dedicated 1 backlink は既存 expectation を変更せず、382 cases / 346 requirements 内の active runner 167、type-elaboration coverage 214/202、pass/fail 198/184 を計上する。全119 nonidentity order、unconnected unsupported deeper asserted head と actual connected sixth-definition/sixth-edge asserted head の独立 guard を含む finite structural/provenance/corruption matrix、Tasks 207 と 211-218 focused regression、既存 owner route 44 件、immutable output、real sidecar は executable である。object sibling、Base full-distance assertion、broader semantics、downstream payload は deferred のままとする。Step 5 は active、Steps 6/7 は deferred である。checker source/module-layout change は不要であった。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## task 220 MC-G020 current-state override
 
-Task 220 は exact four-edge object-terminal three-hop asserted-head seam を `test_gap`、narrow `source_drift`、`design_drift` と分類し、`spec_gap` とはしない。specs 03/04/07/13/14/16 が直接支え、Task 74 は real source-derived object expansion 5 個、Task 198 は formula/checker consumer、Task 208 は four-edge immediate-edge sibling guard、Tasks 211-219 は shorter-distance/terminal-sibling guard と byte-for-byte 変更しない `BindingThreeHopRadix` を提供する。active route は pairwise-distinct な TooDeep-to-Outer/Outer-to-Middle/Middle-to-Inner bare link を直接検証し、Inner-to-Base-to-object tail は terminal normalization のみに使って relation reachability を確立しない。distinct TooDeep/Inner provenance、ordinal 1 / `BindingId(0)`、Base-definition-RHS `BuiltinObject` 1 個へ normalize する known entry 3 個、`Inferred` variable 1 個、object/set coercion なしの constraint/fact/candidate/diagnostic/deferred 0 個の `Checked` assertion 1 個を保持する。shared 5 + dedicated 1 backlink は既存 expectation を変更せず、383 cases / 347 requirements 内の active runner 168、type-elaboration coverage 215/203、pass/fail 199/184 を計上する。全119 nonidentity order、unconnected unsupported deeper asserted head と actual connected sixth-definition/sixth-edge asserted head の独立 guard を含む finite structural/provenance/corruption matrix、Tasks 208 と 211-219 focused regression、既存 owner route 45 件、immutable output、real sidecar は executable である。Base full-distance assertion、broader semantics、downstream payload は deferred のままとする。Step 5 は active、Steps 6/7 は deferred である。checker source/module-layout change は不要であった。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## task 221 MC-G020 active override
 
-Task 221 は exact four-edge set-terminal full-distance four-hop asserted-head seam を `test_gap`、narrow `source_drift`、`design_drift` と分類し、`spec_gap` とはしない。specs 03/04/07/13/14/16 が直接支え、Task 74 は real source-derived set expansion 5 個、Task 197 は formula/checker consumer を供給する。active closed `BindingFourHopRadix` は pairwise-distinct な TooDeep-to-Outer/Outer-to-Middle/Middle-to-Inner/Inner-to-Base bare link を直接検証し、Base-to-set は terminal normalization のみに保つ。route は distinct TooDeep/Base provenance、ordinal 1 / `BindingId(0)`、Base-definition-RHS `BuiltinSet` 1 個、`Inferred` variable 1 個、constraint/fact/candidate/diagnostic/deferred 0 個の `Checked` assertion 1 個を保持する。backlink 6 件、全119 nonidentity order、unconnected-deeper と actual connected fifth-link の独立 guard を含む exhaustive finite structural/provenance/corruption coverage、Task 207 と Tasks 211-220 focused regression、先行 owner route 46 件、immutable output、real sidecar が active runner 169 を保護する。plan は 384 cases、348 requirements、type-elaboration coverage 216/204、pass/fail 200/184 を持つ。object sibling、longer chain、imported-positive definition、attributed/argument-bearing behavior、general reachability、broader semantics、downstream payload は deferred のままとする。Step 5 は active、Steps 6/7 は deferred のままであり、checker source/module-layout change は不要であった。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## task 222 MC-G020 active override
 
-Task 222 は exact four-edge object-terminal full-distance four-hop asserted-head seam を `test_gap`、narrow `source_drift`、`design_drift` と分類し、`spec_gap` とはしない。specs 03/04/07/13/14/16 が直接支え、Task 74 は real source-derived object expansion 5 個、Task 198 は formula/checker consumer を供給する。変更しない closed `BindingFourHopRadix` は pairwise-distinct な TooDeep-to-Outer/Outer-to-Middle/Middle-to-Inner/Inner-to-Base bare link を直接検証し、Base-to-object は terminal normalization のみに保つ。active route は distinct TooDeep/Base provenance、ordinal 1 / `BindingId(0)`、Base-definition-RHS `BuiltinObject` 1 個、`Inferred` variable 1 個、constraint/fact/candidate/diagnostic/deferred 0 個の `Checked` assertion 1 個を object/set coercion なしで保持する。backlink 6 件、全119 nonidentity order、unconnected-deeper と actual connected fifth-link の独立 guard を含む exhaustive finite structural/provenance/corruption coverage、Task 208 と Tasks 211-221 focused regression、先行 owner route 47 件、immutable output、real sidecar が active runner 170 を保護する。active corpus は 385 cases、349 requirements、type-elaboration coverage 217/205、pass/fail 201/184 を持つ。relevant-crate と workspace verification は成功した。longer chain、imported-positive definition、attributed/argument-bearing behavior、general reachability、broader semantics、downstream payload は deferred のままとする。Step 5 は active、Steps 6/7 は deferred のままであり、checker source/module-layout change は不要であった。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## task 223 MC-G020 active override
 
-Task 223 は exact single-left-parenthesized reserved-variable equality seam を `test_gap`、narrow `source_drift`、`design_drift` と分類し、`spec_gap` とはしない。specs 04/13/14/16 は、free reserved theorem identifier が real reserve type を得ること、parenthesization が inner expression の型を保持して FOL encoding を変えないこと、equality が term 2 個を消費することを直接規定する。real parser は `ParenthesizedTerm` を生成し、Task 119 は reserve extraction、`BindingEnv` lookup、equality consumer を供給する。active source route は exact `TermExpression -> ParenthesizedTerm -> TermExpression -> TermReference` structure を検証し、独立 wrapper/inner/right provenance を保持し、inner/right `x` を ordinal 1/2 で `BindingId(0)` へ解決して、parenthesis 独自 type/child graph/axiom/fact/FOL node を捏造せず inner reference の reserve-derived builtin-set type/value を透明に再利用する。finite matrix は direct/right/both/nested/non-identifier/recovered variant を reject し、matched output/source corruption、immutable output、先行 reserved-variable binary-formula owner 52 件との双方向 isolation、real sidecar を保護する。backlink 5 件は 386 cases / 350 requirements、type-elaboration coverage 218/206、pass/fail 202/184 内の active runner 171 を計上する。focused、relevant-crate、workspace verification は成功した。arbitrary nesting/operand/precedence、formula grouping、closure materialization、truth/fact、acceptance、proof/IR/VC、broader child semantics は deferred のままとする。Step 5 は active、Steps 6/7 は deferred のままであり、checker source/module-layout change は不要であった。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## task 224 MC-G020 active override
 
-Task 224 は exact seven-expansion set-terminal two-hop asserted-head seam を `test_gap`、narrow `source_drift`、`design_drift` と分類し、`spec_gap` とはしない。specs 03/04/07/13/14/16 は mode unfolding、reserved theorem-variable typing、assertion reachability を直接支える。Task 74 は real expansion 7 個、Task 199 は real formula/checker consumer、Task 211 は変更しない closed `BindingTwoHopRadix` を供給し、Task 209 は immediate-edge sibling のみである。active route は pairwise-distinct `ChainMode6 -> ChainMode5 -> ChainMode4` を直接検証し、残る tail は terminal normalization のみに使い、distinct source provenance、ordinal 1 / `BindingId(0)`、BaseModeDef-RHS `BuiltinSet` 1 個、inferred variable 1 個、constraint/fact/candidate/diagnostic/deferred 0 個の checked assertion 1 個を保持する。backlink 6 件、全5,039 order finite matrix、先行 owner 48 件、immutable output、real sidecar は 387 cases / 351 requirements、type-elaboration 219/207 内の active runner 172 を保護する。focused、relevant-crate、workspace verification は成功した。broader semantics/downstream payload は deferred、Step 5 は active、Steps 6/7 は deferred のままとする。checker source/module-layout change は不要であった。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 225 MC-G020 active override
 
-Task 225 は exact seven-expansion object-terminal two-hop asserted-head seam を `test_gap`、narrow `source_drift`、`design_drift` と分類し、`spec_gap` とはしない。specs 03/04/07/13/14/16 は mode unfolding、reserved theorem-variable typing、assertion reachability を直接支える。Task 74 は real object expansion 7 個、Task 200 は real formula/checker consumer、Task 211 は変更しない closed `BindingTwoHopRadix` を供給し、Task 210 は immediate-edge sibling、Task 224 は set-terminal two-hop sibling である。active route は pairwise-distinct `ChainObjectMode6 -> ChainObjectMode5 -> ChainObjectMode4` を直接検証し、残る tail は object-terminal normalization のみに使い、distinct source provenance、ordinal 1 / `BindingId(0)`、BaseObjectModeDef-RHS `BuiltinObject` 1 個、inferred variable 1 個、object/set coercion なしの constraint/fact/candidate/diagnostic/deferred 0 個の checked assertion 1 個を保持する。backlink 6 件、全5,039 order finite matrix、先行 owner 49 件、immutable output、real sidecar は 388 cases / 352 requirements、type-elaboration 220/208 内の active runner 173 を保護する。focused、relevant-crate、workspace verification は成功した。broader semantics/downstream payload は deferred、Step 5 は active、Steps 6/7 は deferred のままとし、checker source/module-layout change は不要であった。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 226 MC-G020 active override
 
-Task 226 は exact seven-expansion set-terminal three-hop asserted-head seam を `test_gap`、narrow `source_drift`、`design_drift` と分類し、`spec_gap` とはしない。specs 03/04/07/13/14/16 は mode unfolding、reserved theorem-variable typing、assertion reachability を直接支える。Task 74 は real set expansion 7 個、Task 199 は real formula/checker consumer、Task 217 は変更しない closed `BindingThreeHopRadix` を供給する。Task 219 は set-terminal three-hop longer-tail sibling、Tasks 209/224 は immediate/two-hop long-chain sibling である。active route は pairwise-distinct `ChainMode6 -> ChainMode5 -> ChainMode4 -> ChainMode3` を直接検証し、残る tail は set-terminal normalization のみに使い、distinct source provenance、ordinal 1 / `BindingId(0)`、BaseModeDef-RHS `BuiltinSet` 1 個、inferred variable 1 個、constraint/fact/candidate/diagnostic/deferred 0 個の checked assertion 1 個を保持する。backlink 6 件、全5,039 order finite matrix、先行 owner 50 件、immutable output、real sidecar は 389 cases / 353 requirements、type-elaboration 221/209 内の active runner 174 を保護する。focused、relevant-crate、workspace verification は成功した。object sibling、broader semantics、downstream payload は deferred、Step 5 は active、Steps 6/7 は deferred のままとし、checker source/module-layout change は不要であった。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 227 MC-G020 active override
 
-Task 227 は exact seven-expansion object-terminal three-hop asserted-head seam を `test_gap`、narrow `source_drift`、`design_drift` と分類し、`spec_gap` とはしない。specs 03/04/07/13/14/16 は mode unfolding、reserved theorem-variable typing、assertion reachability を直接支える。Task 74 は real object expansion 7 個、Task 200 は real formula/checker consumer、Task 217 は変更しない closed `BindingThreeHopRadix` を供給する。Task 220 は object-terminal three-hop longer-tail sibling、Task 226 は depth-matched set sibling、Tasks 210/225 は immediate/two-hop object long-chain sibling である。active route は pairwise-distinct `ChainObjectMode6 -> ChainObjectMode5 -> ChainObjectMode4 -> ChainObjectMode3` を直接検証し、残る tail は object-terminal normalization のみに使い、distinct source provenance、ordinal 1 / `BindingId(0)`、BaseObjectModeDef-RHS `BuiltinObject` 1 個、inferred variable 1 個、object/set coercion なしの constraint/fact/candidate/diagnostic/deferred 0 個の checked assertion 1 個を保持する。backlink 6 件、全5,039 order finite matrix、先行 owner 51 件、immutable output、focused sibling、real sidecar は 390 cases / 354 requirements、type-elaboration 222/210 内の active runner 175 を保護する。focused、relevant-crate、workspace verification は成功した。broader semantics と downstream payload は deferred、Step 5 は active、Steps 6/7 は deferred のままとし、checker source/module-layout change は不要であった。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 228 MC-G020 active override
 
-Task 228 は exact seven-expansion set-terminal four-hop asserted-head seam を `test_gap`、narrow `source_drift`、`design_drift` と分類し、`spec_gap` とはしない。specs 03/04/07/13/14/16 は mode unfolding、reserved theorem-variable typing、assertion reachability を直接支える。Task 74 は real set expansion 7 個、Task 199 は real formula/checker consumer、Task 221 は変更しない closed `BindingFourHopRadix` を供給する。Tasks 224/226 は two/three-hop long-chain sibling、Task 222 は object-terminal relation sibling、Task 227 は latest terminal sibling である。active route は pairwise-distinct `ChainMode6 -> ChainMode5 -> ChainMode4 -> ChainMode3 -> ChainMode2` を直接検証し、残る tail は set-terminal normalization のみに使い、distinct source provenance、ordinal 1 / `BindingId(0)`、BaseModeDef-RHS `BuiltinSet` 1 個、inferred variable 1 個、constraint/fact/candidate/diagnostic/deferred 0 個の checked assertion 1 個を保持する。backlink 6 件、全5,039 order finite matrix、先行 owner 52 件、immutable output、focused sibling、real sidecar は 391 cases / 355 requirements、type-elaboration 223/211 内の active runner 176 を保護する。focused、relevant-crate、workspace verification は成功した。broader semantics と downstream payload は deferred、Step 5 は active、Steps 6/7 は deferred のままとし、checker source/module-layout change は不要であった。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 229 MC-G020 active override
 
-Task 229 は exact seven-expansion object-terminal four-hop asserted-head seam を `test_gap`、narrow `source_drift`、`design_drift` と分類し、`spec_gap` とはしない。specs 03/04/07/13/14/16 は object-rooted mode unfolding、reserved theorem-variable typing、assertion reachability を直接支える。Task 74 は real object expansion 7 個、Task 200 は real formula/checker consumer、Task 221 は変更しない closed `BindingFourHopRadix` を供給する。Tasks 225/227 は two/three-hop object long-chain sibling、Task 222 は object-terminal relation sibling、Task 228 は depth-matched set sibling である。active route は pairwise-distinct `ChainObjectMode6 -> ChainObjectMode5 -> ChainObjectMode4 -> ChainObjectMode3 -> ChainObjectMode2` を直接検証し、残る tail は object-terminal normalization のみに使い、distinct source provenance、ordinal 1 / `BindingId(0)`、BaseObjectModeDef-RHS `BuiltinObject` 1 個、inferred variable 1 個、object/set coercion なしの constraint/fact/candidate/diagnostic/deferred 0 個の checked assertion 1 個を保持する。backlink 6 件、全5,039 order finite matrix、先行 owner 53 件、immutable output、focused sibling、real sidecar は 392 cases / 356 requirements、type-elaboration 224/212 内の active runner 177 を保護する。focused、relevant-crate、workspace verification は成功した。broader semantics と downstream payload は deferred、Step 5 は active、Steps 6/7 は deferred のままとし、checker source/module-layout change は不要であった。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 230 MC-G020 active override
 
-Task 230 は exact seven-expansion set-terminal five-hop asserted-head seam を `test_gap`、narrow `source_drift`、`design_drift` と分類し、`spec_gap` とはしない。specs 03/04/07/13/14/16 は mode unfolding、reserved theorem-variable typing、assertion reachability を直接支える。Task 74 は real set expansion 7 個、Task 199 は real formula/checker consumer を供給する。新規 closed `BindingFiveHopRadix` は pairwise-distinct `ChainMode6 -> ChainMode5 -> ChainMode4 -> ChainMode3 -> ChainMode2 -> ChainMode1` を直接検証し、`ChainMode1 -> BaseMode -> set` は terminal-normalization evidence のみに使う。active route は distinct source provenance、ordinal 1 / `BindingId(0)`、BaseModeDef-RHS `BuiltinSet` 1 個、inferred variable 1 個、constraint/fact/candidate/diagnostic/deferred 0 個の checked assertion 1 個を保持する。backlink 6 件、全5,039 order finite matrix、先行 owner 54 件、immutable output、focused sibling、real sidecar は 393 cases / 357 requirements、type-elaboration 225/213、pass/fail 209/184 内の active runner 178 を既存 expectation の変更なしで保護する。focused、relevant-crate、workspace verification は成功した。object-terminal five-hop、broader semantics、downstream payload は deferred、Step 5 は active、Steps 6/7 は deferred のままとし、checker source/module-layout change は不要であった。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 231 MC-G020 active override
 
-Task 231 は exact seven-expansion object-terminal five-hop asserted-head seam を `test_gap`、narrow `source_drift`、`design_drift` と分類し、`spec_gap` とはしない。specs 03/04/07/13/14/16 は object-rooted mode unfolding、reserved theorem-variable typing、assertion reachability を直接支える。Task 74 は real object expansion 7 個、Task 200 は real formula/checker consumer、Task 230 は byte-for-byte unchanged closed `BindingFiveHopRadix` を供給する。active route は pairwise-distinct `ChainObjectMode6 -> ChainObjectMode5 -> ChainObjectMode4 -> ChainObjectMode3 -> ChainObjectMode2 -> ChainObjectMode1` を直接検証し、`ChainObjectMode1 -> BaseObjectMode -> object` は terminal-normalization evidence のみに使う。distinct source provenance、ordinal 1 / `BindingId(0)`、BaseObjectModeDef-RHS `BuiltinObject` 1 個、inferred variable 1 個、object/set coercion なしの constraint/fact/candidate/diagnostic/deferred 0 個の checked assertion 1 個を保持する。backlink 6 件、全5,039 order finite matrix、先行 owner 55 件、immutable output、focused sibling、real sidecar は 394 cases / 358 requirements、type-elaboration 226/214、pass/fail 210/184 内の active runner 179 を既存 expectation の変更なしで保護する。focused、relevant-crate、workspace verification は成功した。imported-positive definition、broader semantics、downstream payload は deferred、Step 5 は active、Steps 6/7 は deferred のままとし、checker source/module-layout change は不要であった。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 233 MC-G020 active override
 
-Task 233 は exact single-left-parenthesized builtin-object reserved-variable equality seam を `test_gap`、narrow `source_drift`、`design_drift` と分類し、`spec_gap` とはしない。specs 03/04/13/14/16 は builtin `object`、reserved theorem-variable typing、追加 FOL meaning のない parenthesized type preservation、equality operand、theorem syntax を直接支える。Task 223 は real unrecovered single-left `ParenthesizedTerm` producer、Task 188 は real object reserve/BindingEnv/equality consumer を供給する。credit は exact `reserve x for object; theorem ParenthesizedReservedObjectVariableEqualityPayloadBoundary: (x) = x;` source、独立 wrapper/inner/right provenance、ordinal 1/2 の `BindingId(0)` lookup、canonical `BuiltinObject` 1 個、inferred term 2 個、ordered expected constraint 2 個、object/set coercion と独立 wrapper payload のない checked equality 1 個に限定する。backlink 6 件、finite exact/near-miss/provenance/corruption matrix、先行 binary-formula owner 53 件との bidirectional isolation、immutable output、real sidecar は 395 cases / 359 requirements、type-elaboration 227/215、pass/fail 211/184 内の active runner 180 を保護する。arbitrary parenthesization/operand、formula grouping、closure/order、equality truth/fact、acceptance、child graph、proof/CoreIr/ControlFlowIr/VC、downstream payload は deferred、Step 5 は active、Steps 6/7 は deferred のままとする。checker source/module-layout change は不要であった。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 234 MC-G020 active override
 
-Task 234 は exact seven-expansion set-terminal full-distance six-hop asserted-head seam を `test_gap`、narrow `source_drift`、`design_drift` と分類し、`spec_gap` とはしない。specs 03/04/07/13/14/16 は mode unfolding、reserved theorem-variable typing、assertion reachability を直接支える。Task 74 は real set expansion 7 個、Task 199 は real formula/checker consumer を供給する。新規 closed `BindingSixHopRadix` は pairwise-distinct `ChainMode6 -> ChainMode5 -> ChainMode4 -> ChainMode3 -> ChainMode2 -> ChainMode1 -> BaseMode` を直接検証し、`BaseMode -> set` は terminal-normalization evidence のみに使う。credit は distinct source provenance、ordinal 1 / `BindingId(0)`、BaseModeDef-RHS `BuiltinSet` 1 個、inferred variable 1 個、constraint/fact/candidate/diagnostic/deferred 0 個の checked assertion 1 個に限定する。backlink 6 件、全5,039 order finite matrix、先行 owner 56 件、immutable output、focused sibling、real sidecar は既存 expectation を変更せず 396 cases / 360 requirements、type-elaboration 228/216、pass/fail 212/184 内の active runner 181 を保護する。object-terminal six-hop、imported-positive definition、broader semantics、downstream payload は deferred、Step 5 は active、Steps 6/7 は deferred。checker source/module-layout change は不要であった。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 236 MC-G020 active override
 
-Task 236 は exact seven-expansion object-terminal full-distance six-hop asserted-head seam を `test_gap`、narrow `source_drift`、`design_drift` と分類し、`spec_gap` とはしない。specs 03/04/07/13/14/16 は mode unfolding、reserved theorem-variable typing、assertion reachability を直接支える。Task 74 は real object expansion 7 個、Task 200 は real formula/checker consumer を供給する。unchanged closed `BindingSixHopRadix` は pairwise-distinct `ChainObjectMode6 -> ChainObjectMode5 -> ChainObjectMode4 -> ChainObjectMode3 -> ChainObjectMode2 -> ChainObjectMode1 -> BaseObjectMode` を直接検証し、`BaseObjectMode -> object` は terminal-normalization evidence のみに使う。credit は distinct source provenance、ordinal 1 / `BindingId(0)`、BaseObjectModeDef-RHS `BuiltinObject` 1 個、inferred variable 1 個、constraint/fact/candidate/diagnostic/deferred 0 個で object/set coercion のない checked assertion 1 個に限定する。backlink 6 件、全5,039 order finite matrix、先行 owner 57 件、immutable output、focused sibling、real sidecar は既存 expectation を変更せず 397 cases / 361 requirements、type-elaboration 229/217、pass/fail 213/184 内の active runner 182 を保護する。imported-positive definition、broader semantics、downstream payload は deferred、Step 5 は active、Steps 6/7 は deferred。checker source/module-layout change は不要であった。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 241 MC-G020 Active Override
 
-Task 241 は exact single-left-parenthesized builtin-set inequality seam を
-`test_gap`、narrow `source_drift`、`design_drift` と分類し、`spec_gap` とは
-しない。Chapter 04/13/14/16 は reserved theorem-variable typing、
-type-preserving/FOL-transparent parenthesis、builtin `<>`、theorem formula を
-直接支える。Task 223 は real wrapper producer、Task 121 は real inequality
-consumer を供給する。credit は exact source、独立した wrapper/inner/right
-provenance、ordinal 1/2 の `BindingId(0)` lookup、canonical `BuiltinSet` 1 個、
-inferred term 2 個、ordered expected constraint 2 個、独立 wrapper payload の
-ない checked inequality 1 個に限定する。shared 4 + dedicated 1 backlink、
-parenthesized membership と builtin-object near miss を含む finite matrix、
-先行 owner 54 件との bidirectional isolation、immutable output、real sidecar
-は active runner 183、398 cases / 362 requirements、type-elaboration 230/218、
-pass/fail 214/184 を保護する。既存 fixture/expectation は rebaseline しない。
-parenthesized membership、imported/other parenthesized variant、inequality
-desugaring/truth、acceptance、proof/CoreIr/ControlFlowIr/VC、downstream payload
-は Task 241 の credit 外。Step 5 は active、Steps 6/7 は deferred。checker
-source/API/module-layout change は不要であった。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 242 MC-G020 Active Override
 
-Task 242 は exact single-left-parenthesized builtin-object inequality seam を
-`test_gap`、narrow `source_drift`、`design_drift` と分類し、`spec_gap` とは
-しない。Chapter 03/04/13/14/16 は builtin `object`、reserved theorem-variable
-typing、type/FOL-transparent parenthesis、atomic `<>`、theorem formula を直接
-支える。Task 233 は real wrapper producer、Task 190 は real object inequality
-consumer を供給する。credit は exact source、独立した wrapper/inner/right
-provenance、ordinal 1/2 の `BindingId(0)` lookup、canonical `BuiltinObject` 1
-個、inferred term 2 個、type entry 6 個、ordered expected constraint 2 個、
-checked inequality 1 個、独立 wrapper payload/object-set coercion なしに限定
-する。shared 5 + dedicated 1 backlink、finite matrix、先行 owner 55 件との
-bidirectional isolation、immutable output、focused regression、real sidecar は
-active runner 184、399 cases / 363 requirements、type-elaboration 231/219、
-pass/fail 215/184 を既存 expectation の rebaseline なしで保護する。
-parenthesized membership と active imported provenance は globally deferred
-ではなく Task 242 credit 外。未成立 imported expansion/evidence/signature
-payload、proof/CoreIr/ControlFlowIr/VC、broader dependency のみ deferred。
-Step 5 は active、Steps 6/7 は deferred。checker source/API/module-layout
-change は不要であった。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 243 MC-G020 Active Override
 
-Task 243 は exact single-left-parenthesized builtin-set membership seam を
-`test_gap`、narrow `source_drift`、`design_drift` と分類し、`spec_gap` とは
-しない。Chapter 04/13/14/16 は reserved theorem-variable typing、type/FOL-
-transparent parenthesis、atomic membership、theorem formula を直接支える。
-Task 223 は real wrapper producer、Task 120 は変更しない direct-right
-expected-set producer を含む real membership consumer を供給する。credit は
-exact source、独立 wrapper/inner/right provenance、ordinal 1/2 の
-`BindingId(0)` lookup、written-set-anchored canonical `BuiltinSet` 1 個、inferred
-term 2 個、type entry 5 個、left expected input 0 個、right-owned expected-set
-constraint 1 個、独立 wrapper payload のない checked membership 1 個に限定
-する。shared 4 + dedicated 1 backlink、finite matrix、先行 owner 56 件との
-bidirectional isolation、immutable output、focused regression、real sidecar は
-active runner 185、400 cases / 364 requirements、type-elaboration 232/220、
-pass/fail 216/184 を既存 expectation の rebaseline なしで保護する。旧
-parenthesized-membership extraction gap の解除はこの exact source だけ。
-object-left/set-right parenthesized membership と active imported provenance は
-Task 243 credit 外。未成立 imported expansion/evidence/signature payload、
-proof/CoreIr/ControlFlowIr/VC、broader dependency は deferred。Step 5 は
-active、Steps 6/7 は deferred。checker source/API/module-layout change は不要
-であった。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 244 MC-G020 Active Override
 
-Task 244 は exact two-reserve single-left-parenthesized heterogeneous membership
-seam を `test_gap` + narrow `source_drift` + `design_drift` と分類する。
-`spec_gap` ではない。authority source は `reserve x for object; reserve y for
-set; theorem ParenthesizedHeterogeneousReserveMembershipPayloadBoundary: (x) in
-y;` であり、Chapters 03/04/13/14/16 と既存 Task 125 intent から導く。
-
-real Task 233 wrapper producer を Task 125 の real two-binding consumer へ接続
-する。finite config-driven private helper が exact ordered reserve/binding
-matrix、operand index、shared/distinct written type-range policy を検査し、
-従来5 config を維持する。payload は ordinal 2/3、distinct `BindingId(0/1)`、
-written range に anchor された object/set identity 2件、inferred term 2件、
-type entry 5件、right-only expected-set constraint、coercion/wrapper semantics
-なしの checked membership を保持する。57-owner isolation、real imported-gap
-diagnostic guard、real frontend/resolver sidecar が override を限定する。
-
-trace は shared backlink 5件と dedicated requirement 1件を追加する。active
-runner は186、metadata は401/365、type は233/221、pass/fail は217/184。
-Task 244 credit は exact source だけ。その他 parenthesized shape と imported-
-positive provenance は credit 外。未成立 imported expansion/evidence/signature
-payload、proof/CoreIr/ControlFlowIr/VC、broader dependency は deferred。Step 5
-は active、Steps 6/7 は deferred。checker source/API/module-layout change は
-不要。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 245 MC-G020 Active Override
 
-Task 245 は exact `x in (x)` builtin-set membership seam を `test_gap`、narrow
-`source_drift`、`design_drift` と分類する。`spec_gap` ではない。Chapters
-04/13/14/16、real right-side wrapper producer、Task 120 real consumer が根拠。
-credit は explicit `Right` side/config、distinct wrapper/left/right-inner/
-formula provenance、ordinal 1/2 の双方 `BindingId(0)`、written-set
-`BuiltinSet` 1件、inferred term 2件、type entry 5件、right-inner-owned sole
-expected constraint、wrapper semantics なしの checked membership に限定する。
-
-side/config/range/expected corruption、Task-243 cross-route rejection、既存
-owner 58件の双方向、Left route 6件、real sidecar が override を限定する。
-runner 187、plan 402/366、type 234/222、pass/fail 218/184、shared 4 + dedicated
-1 backlink を expectation rebaseline なしで同期。その他 shape/imported-
-positive provenance は credit 外、未成立 imported/proof/downstream payload は
-deferred。Step 5 は active、Steps 6/7 は deferred。checker source/API/module-
-layout change は不要。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 246 MC-G020 Active Override
 
-Task 246 は exact 3-definition set-terminal chain と single-left-parenthesized
-equality の交差だけを `test_gap`、narrow `source_drift`、`design_drift` とし、
-`spec_gap` とはしない。Chapters 04/07/13/14/16 と primary Tasks 134/223 が
-intent を直接支える。route は pairwise-distinct Base/Middle/Outer provenance、
-wrapper/inner-left/direct-right/formula site、real expansion 3件、raw Outer
-input 4件、ordinal 1/2 の `BindingId(0)`、terminal-RHS `BuiltinSet` 1件、
-inferred term 2件、entry 6件、ordered constraint 2件、clean checked equality
-1件を保持し、wrapper semantics を生成しない。conditional node admission と
-finite matrix により旧 empty-mode config は closed のまま。runner 188、
-metadata 403/367、type 235/223、pass/fail 219/184、shared 5 + dedicated 1。
-imported/attributed/argument-bearing、他 side/nesting/depth、acceptance、truth/
-facts、child graph、proof/IR/VC は credit 外または deferred。Step 5 active、
-Steps 6/7 deferred。
-
-Task 265 follow-up ownership override: joint Task 266はexact Task-180 final
-`ResolvedTypedAst` theorem-owner-to-checked-contradiction projectionだけを所有する。
-Task 267はomitted-justification proof/terminal-goal representationを別に決定し、
-Task 268がaccepted checker producerを実装する。Checker Task 247はその他全
-AST-wide/Task-49 payload family decompositionを所有し、core Task 32のexhaustive
-remaining-family decompositionへ渡す。Core/VC、truth/fact、
-theorem acceptance、broader semantic creditはdeferredで、current coverage/status/
-testは不変。
-
-Task 266 implementation addendum: `type_checker` は documented
-`TermFormulaInferenceError`、`CheckedStatementOwner`、`StatementOwnerError`
-surface を公開し、formula range/recovery と source/module identity を保持して
-exact real local theorem owner を validate する。`resolved_typed_ast` は
-`StatementSemanticId`、`StatementSemanticInputs`、`StatementSemanticInput`、
-`StatementSemantic`、`StatementSemanticTable` を公開し、exact singleton
-three-node owner/formula projection を validate する。owner/formula mismatch、
-recovery、duplicate、omission、order、range、provenance、module/source corruption
-は fail closed。unit/active-runner/corruption/determinism coverage を持つ。
-raw-syntax dependency、truth/fact、acceptance、proof、Core、CFG、VC、fixture、
-expectation、trace-status の変更はない。
-
-Task 267 target-contract addendum: current sourceにはproof tableがまだないため、
-これはimplementation creditではなくaccepted `design_drift` repairである。
-Task 268は`resolved_typed_ast.md`記載のexact syntax-free
-`Unmodified`/`Omitted` inputとsingleton `PendingAutomaticProof`/direct-terminal
-outputを所有する。Task-266 real formula-site identityとcompact formula nodeは
-distinctのまま、`proof/0`、empty context/citations、atomic failureを固定した。
-Core Task 31がfuture exact non-accepting projectionを所有する。Task 267はcurrent
-public API/test/fixture/expectation/trace status/semantic coverageを変更しない。
-Task 268 targetはexisting validated `CheckedStatementOwner`もauthenticated
-resolver Public/Exported fact保持へ拡張し、proof assemblyがduplicated row constantを
-trustしないようにする。これはtarget stateでありcurrent API/implementation
-creditではないというTask 267時点の記録であり、次のTask-268 addendumがその
-historical stateを更新する。
-
-Task 268 implementation addendum: target stateはexact Task-180 sourceに対する
-current checker APIとunit/runner coverageになった。checkerはauthenticated
-Public/Exported owner factを保持し、explicit `Unmodified`/`Omitted` singleton
-intentだけを受理して、`PendingAutomaticProof`付きproof/direct-terminal-node/
-terminal-goal tableをall-or-noneでpublishする。private postvalidationとcorruption
-testはcardinality、dense identity/order、provenance/range/recovery、status/root、
-cross-reference、empty citation/context、absent label、`proof/0`をcoverする。
-broader proof familyはTask 247 ownershipのまま。acceptance、fact、Core/CFG/VC
-payload、existing fixture/expectation、trace statusは不変で、Core Task 31が次の
-exact consumerである。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 247 remaining-family ownership reconciliation
 
-Task 247は広いfuture-owner wordingを
-[payload_family_decomposition.md](./payload_family_decomposition.md)のaccepted
-graphへ置換する。current public-surface correspondence/implementation creditは
-変更しない。
-
-| Gap | accepted owner/gate |
-|---|---|
-| MC-G002 | `MT10-FS`、`MT10-AS`、既存Task 49。 |
-| MC-G004 | 未命名external artifact/schema owner gate。schema捏造なし。 |
-| MC-G005 | 既存nonblocking `spec_gap`: 未命名public diagnostic registry/consumer-adoption gate。stable internal detail keyのみ。 |
-| MC-G006 | Task 277 direct-role sliceとblocked未命名parser/syntax/resolver scheme-role gate。 |
-| MC-G011 | Tasks 248/257-258/269-270/272。 |
-| MC-G014 | Tasks 249-251/262-264。 |
-| MC-G016 | Tasks 248-251/258-264/269-273。 |
-| MC-G017 | Tasks 252-264。 |
-| MC-G018 | Tasks 251/254-255/263/271/278。evidence resultはexternal input。 |
-| MC-G019 | Tasks 258/272と`MT10-FS`。accepted theorem factなし。 |
-| MC-G020 | 全Tasks 248-264/269-279 producerとpairedなTask-10 consumerのsource extraction。 |
-| MC-G021 | Task 273とblocked-reserved accepted-status Task 274。 |
-| MC-G023 | Tasks 275-276と`MT10-AS`。 |
-| MC-G025 | blocked-reserved Task 274。canonical accepted verifier/artifact producer/schema未命名。 |
-| MC-G026 | Task 251 request/referenceとTask 274 accepted-status gate。 |
-| MC-G027 | Tasks 277-279と`MT10-AS`。 |
-| MC-G030 | `MT10-FS`、`MT10-AS`、Task 49。 |
-
-各producerは適用可能な`TypedAst`/`ResolvedTypedAst` tableへのtransactional
-projectionと実Task-10 assertionを所有し、未消費DTOではcloseしない。correctness
-producerはcorrectness-condition identity、`InitialObligationId`、source anchor
-inputを保持するが`VcId`割当/discharge claimをしない。Task 49はexact 24-fixture
-setの23件をactivateして24件全体をreconcile/deduplicateし、same-return memberは
-resolver Task 31が`declaration_symbol`でsole activationする。active different-return conflict、
-capture-avoidance row、escape/guard row、無関係template seedをbundleへ黙って
-二重計上しない。
-
-disagreement classは`design_drift`、`source_drift`、`test_gap`、parser-Task-47
-`test_expectation_drift`。MC-G005の既存nonblocking `spec_gap`は残るが、新しい
-payload-family `spec_gap`、`source_undocumented_behavior`、現在の
-`boundary_violation`、`repo_metadata_conflict`はない。existing trace status/tests/
-source/fixture/expectation/coverage creditは不変。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 248 current-state addendum
 
-最初のbounded MC-G011/MC-G016 producer/consumer sliceは実行可能になった。
-`SourceBindingContextProducer`はsyntax-free resolver-shell/binding projectionだけを
-consumeし、source-item、declaration、`BindingEnv`、local-context linkを
-transactionalに`TypedAst`/`ResolvedTypedAst`へpublishする。exact active
-reserve-plus-definition-parameter fixtureはsource order、same-spelling distinct
-identity、structural shadowingを証明する。Task-248 `test_gap`と2つの
-`source_drift`はこのsliceだけrepair済みである。term-use selection、composite binder、
-statement/proof context、closure capture、proof-local declarationはTasks
-252/257/258/269/270/272に残るため、MC-G011/MC-G016全体はpartialのままである。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 249 frozen-contract audit addendum
 
-fresh inventoryはnext executable source-type sliceをChapters 03/05/07/08/12/18、
-Appendix A、MC-G014/MC-G016/MC-G020配下のTask 249へassignした。paired crate
-planはexact ten-reserve-root consumer、Task-248 two-row dependency regression、
-syntax-free table/validation contract、future single trace row、
-post-implementation count oracleを固定した。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 249 implementation audit addendum
 
-frozen producerはpublic syntax-free `source_type` moduleとprivate runner leaf
-1件として実装済みである。broad real consumerはexact 10/13/6 tableをpublishして
-runner-owned dependency detailで停止する。unchanged Task-248 fixtureはactual
-checker-owned binding environmentからexact 2/2/0 tableをco-installする。
-`TypedAst`が両handoffを所有し、`ResolvedTypedAst`はcloneだけする。
-
-selected `test_gap`、`source_drift`、`design_drift`はこのbounded input-handoff
-sliceについてのみcloseした。existing Tasks 68-71とTask-248 source/sidecar/trace
-artifactはbyte-identicalである。new bounded diagnostic trace rowによりplan
-411/372、type 238/226、pass/fail 224/187、active type 190、warnings unchangedを
-計上する。MC-G014/MC-G016/MC-G020全体はpartialのままで、normalization、
-evidence、term/`qua` selection、definition semantics、accepted fact/proof、
-downstream IRにcreditしない。implementation reviewでimport-closureとgenerated
-declarationの`source_drift`、recursive public-input graphの
-`boundary_violation`を検出しrepairした。未解消の`spec_gap`、
-`source_undocumented_behavior`、`test_expectation_drift`、
-`boundary_violation`、`repo_metadata_conflict`はない。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 260 active public-surface audit
 
-`source_functor_definition`はdocumented exported moduleとしてimplementedである。
-five dense ID/table family、immutable row getter、handoff fingerprint、projection、
-producer、target/style/correctness/recovery enum、typed/final accessorは
-`source_functor_definition.md`と一致する。new `InitialObligationKind` 2 variantは
-checker serializer 3件すべてでexhaustiveにrenderされる。lint policyはmodule
-spec、crate export、public semantic surface、non-exhaustive enum policy、syntax-free
-boundary、allow rationale、current `2237`-line inventoryをauthenticateする。
-
-checker test 5件は全public field/getterとactual producer/final validation pathを
-coverする。public methodはcomposed logical goal、discharge、accepted definition、
-symbol activation、fact、IR/VCを作らない。implemented surfaceがcloseするのはfrozen
-Task-260 `source_drift`だけで、semantic deferralはlater task ownerに残る。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 249R definition-return audit addendum
 
-Task-260 preflightはexisting Task-249 binding/application cardinalityが正しく、
-不変であることを示す。return typeをextra application 2件としてencodeすると
-binding捏造になるため禁止する。Task 249Rが追加するのは
-`SourceTypeDefinitionReturnId`、extension input/row/table/producer、handoffの
-`definition_returns` getter、non-exhaustive error variant 8件、`source_type.md`
-のfrozen debug rowだけである。active profileはapplications/expressions/
-arguments/definition returns `2/4/0/2`。docsはbounded `design_drift`だけをclose
-した。separate implementationはrecorded `source_drift`とfour-test `test_gap`を
-closeした。trace credit/language-semantic coverageは変更せず、Task 249Rは
-representation provenanceだけをpublishし、Task 260がsole consumerである。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 260 Pre-Implementation Classification
 
-Chapter 10 §§10.1--10.6とChapter 16 §§16.6.1/16.7.2はequals/means intakeと
-Pending existence/uniqueness分類に十分です。missing producerはbounded
-`source_drift`、missing exact 262-byte consumerは`test_gap`です。previously
-absent exact API/ledger、inconsistent cross-family install-order claim、
-incomplete serializer scope、stale Task-259 post-commit stateは本prerequisiteで
-repairした`design_drift`です。
-
-blocking `spec_gap`はありません。guard/parameter/returnからgoalへのinternal
-compositionはfully specifiedでないためinventせずsemantic deferralにします。
-existing sourceにundocumented Task-260 semanticsはなく、expectationを変更しません。
-origin mismatchだけをreport-only `repo_metadata_conflict`としsafe fileはidentify
-可能です。
-
-repaired boundaryはexact public signature/debug/obligation key、serializer 3件、
-Task-259/260 mutual exclusionをfreezeします。Task-259 sourceは変更せずmixed
-coexistenceはdeferredのままです。
-
-`source_functor_definition.md`はfuture module owning specificationです。public
-surfaceはdense ID 5、input aggregate 6、immutable row/table各5、handoff、
-projection、producer、`#[non_exhaustive]` enum 5件（style/target/correctness/
-recovery/error）です。implementationはmoduleを`lib.rs`へ追加し、全literal
-declarationを本auditのmodule-spec/crate-export/public-surface inventoryへ追加します。
-同じlogical taskで`tests/lint_policy.rs`のdocumented-module/public-enum/
-source-spec-audit allowlist 3件へmoduleを追加します。existing production
-syntax-boundary scanにTask-specific exceptionは追加しません。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 259 active public-surface result
 
-`source_predicate_definition`はexport済みで、上記public-surface inventoryは全
-generated dense id/literal public declarationをenumerateする。public enum 3個は全て
-`#[non_exhaustive]`で、immutable rowはgetterをexposeするがcaller-supplied
-derived origin/fingerprint/allocated obligation idは公開しない。
-`tests/lint_policy.rs`はowning module spec、crate export、public enum policy、
-exact source-spec declaration、production no-syntax boundaryをTask-specific exceptionなしで
-coverする。
-
-owning moduleはexact definition/parameter/guard/property/correctness cardinality
-`1/2/1/1/1`をproduceし、Task-248/249/252/256 dependencyをvalidateしてretained
-baselineへpending property-correctness obligation 1件をappendする。typed installationは
-one-shot/transactional、final assemblyはsecond inputを受けず、obligation-table、
-fact、proof、VC、axiom、acceptance getterをpublishしない。
-
-previous expected `source_drift`、`test_gap`、public-policy `design_drift`は
-implementationでcloseした。test-only syntax consumerはexternal non-integration child
-support moduleにconfineし、candidate `boundary_violation`をcloseした。stale
-active-count consumer 2件の`198 -> 199`はbounded `test_expectation_drift`
-plus write-scope `design_drift`で、semantic selection intentは不変である。later
-`origin/main` movementはreport-only `repo_metadata_conflict`であり、
-source/spec disagreementではない。
-
-guard-conditioned FOL construction、proof/discharge、acceptance、fact、axiom、
-VC/IR、Task 272 justification ownership、mixed Task-260 routingはexplicitly deferredの
-まま。final source/documentation reviewはno findingsで完了し、quality reviewは
-全9 hard gateをPASSしてscore capなしの`100/100`である。commit/post-commit gateは残る。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 250 frozen-contract audit addendum
 
-fresh inventoryはnext executable raw source-attribute sliceをChapters
-03/06/11/12、Chapter-17 restricted-adjective boundary、MC-G014/MC-G020配下の
-Task 250へassignした。paired crate planはflat chain/polarity/qualifier/group/
-actual handoff、exact Task-67/81/84/85 consumer/cardinality、immutable final
-ownership、legacy `AttributeInput` coexistence、runner outcome、trace
-progression、synthetic prefix/order extractor coverage、corruption/determinism
-testを固定した。
-
-このprerequisiteがrepairするのは`design_drift`だけである。implementationまで、
-executable handoff不在は`test_gap`、incomplete chain/qualifier/argument/
-provenance/final-handoff seamは`source_drift`のまま。Task 250はwritten prefix/
-argument-list formを保持し、そのcanonical semantic equivalence、arity/type
-checking、admissibility、evidence、truthをlater ownerへpositiveにdeferする。
-current source、fixture、expectation、trace row/status、plan 411/372、type
-238/226、pass/fail 224/187、active type 190、warnings/errors 23/0、全hashは不変。
-blocking `spec_gap`、`source_undocumented_behavior`、current
-`test_expectation_drift`、`boundary_violation`、`repo_metadata_conflict`はない。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 250 implementation audit addendum
 
-public `source_attribute` moduleはfrozen five-table syntax-free handoffを実装し、
-`TypedAst`/`ResolvedTypedAst`はsyntax dependencyを追加せず保持する。exact real
-route 4件、synthetic prefix extractor、producer corruption matrix、
-deterministic rendering、immutable final-handoff assertionはbounded
-`test_gap`とraw chain/qualification/argument/provenance `source_drift`をcloseする。
-new exact covered trace rowが変えるのはplan/type coverageだけで411/373・
-239/227となる。semantic attribute instance、evidence、accepted
-fact/declaration/proof、downstream IRへのcreditは与えず、これらのgapはTasks
-251+とexisting ownerに残る。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 251 frozen-contract audit addendum
 
-fresh inventoryはnext executable evidence-request transport sliceをChapters
-03/05-08/13/17/19とMC-G016/MC-G018/MC-G026配下のTask 251へassignした。paired
-crate planはdense syntax-free request/response-reference table 2件、transport-only state
-4件、later `ExistentialGateInput` association用opaque attributed request
-identity、immutable `TypedAst`/`ResolvedTypedAst` ownership、exact corruption
-boundary、representative Task-249-broad + Task-84/85 selectorをfreezeする。
-
-exact current oracleはmode-expansion 5、structure-inhabitation 3、attributed
-2のrequest 10件。real
-responseは全件missingでdependency referenceはpublishしない。requested/rejected/
-supplied stateはreal `.miz` extraction後に同じproduction Task-10 pathへだけinject
-し、final handoffまでassertする。suppliedはreference arrivalだけを意味し、later
-semantic ownerがreferent/statusを独立にvalidateする。imported symbol shellを
-evidenceとして扱わない。
-
-このdocs prerequisiteがcloseするのは`design_drift`だけである。implementation
-までexecutable absenceは`test_gap`、request/reference/final-handoff seamは
-`source_drift`のまま。current source/fixture/expectation/trace row/status/coverage
-credit、plan 411/373、type 239/227、pass/fail 224/187、active
-parse/declaration/type/proof 101/5/190/1、warnings/errors 23/0、全hashは不変。
-blocking `spec_gap`、`source_undocumented_behavior`、current
-`test_expectation_drift`、`boundary_violation`、`repo_metadata_conflict`はない。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 252 frozen-contract audit addendum
 
-fresh inventoryはmissing exact primary-term contractを`design_drift`、
-syntax-free producer/final handoff欠落を`source_drift`、producer/corruption
-coverageとreal constant/`it` composition欠落を`test_gap`と分類する。Chapter 04/
-13はbinding category、`it` role、numeral、transparent parenthesisを既に定義し、
-blocking `spec_gap`はない。current `source_undocumented_behavior`、
-`test_expectation_drift`、`boundary_violation`、`repo_metadata_conflict`もない。
-
-paired crate planはpublic 3-table source-only modelとexisting numeral equality、
-reserved-variable equality、parenthesized reserved-variable equality consumerを
-freezeする。future aggregate oracleはterm 7/reference 4/numeric request 2である。
-parenthesisはsource child edgeだけを保持し、semantic term/type entry/fact/axiom/
-FOL nodeを追加しない。numeric requestはresult/factをpublishしない。
-
-constant/`it` schema validationはTask 252で意図的にsyntheticとする。real
-`LocalAbbreviation` productionはTask 269、real `func ... means`/`property ...
-means` current-result owner/typeはTasks 260/264がretainし、Task 252はdependencyを
-guessしない。このprerequisiteはsource/fixture/expectation/trace row/status/
-count/hash/executable coverageを変更しない。current baselineはplan 411/374、
-type 240/228、pass/fail 224/187、active parse/declaration/type/proof
-101/5/190/1、warnings/errors 23/0。implementationだけがbounded covered
-requirementを追加し、no-new-case oracle 411/375、241/229へ進める。
-
-MC-G017/MC-G020はpartialのままである。Tasks 253-260/264/269がapplication、
-other term、formula、definition、real local binding、semantic resultをretainする。
-numeric type selection、theorem fact、accepted fact/declaration/proof、downstream
-IR、Steps 6/7はTask-252 prerequisite creditを得ない。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 252 contract-correction audit addendum
 
-implementation inventoryでpost-freeze `design_drift` 1件が見つかった。reference
-useをbinding declarationと同じordinal streamへ数えるruleは、useがlater
-declarationより前にあるときTask 248のbinding-table
-`visible_after_ordinal` semanticsと両立しない。同ruleはsame-priority duplicate
-binding groupも不可能にし、要求済みのreachable `Ambiguous` rejectionをtest
-できなかった。
-
-corrected contractはdeclaration range endがreference start以前であるbinding
-rowだけを数える。previous referenceはordinalを進めない。normal declaration
-groupはsource orderを保ち、dense binding id/index位置のrow 1件を持つ。exact
-consecutive duplicate-priority groupはspelling/kind/owner context/
-`BinderIdentity`/declaration rangeを共有し、group final dense row indexを
-visibility ordinalとして使う。`BindingEnv::lookup`が`Ambiguous`としてreject
-するまでこのgroupを保持する。
-`BindingLookupSite::new`はresolver payloadを持たないため、このproducer pathで
-`Resolver`はstructurally unreachableであり、reachableな全non-local resultは
-引き続きrejectする。
-
-correction commit時、このchangeはspecification、`.miz`、expectation、trace
-row/status、owner、deferred boundary、source、test、count、hash、coverage creditを
-変更しなかった。remaining executable absenceは`source_drift`/`test_gap`の
-ままだったが、下記implementation addendumがそのstatusをsupersedeする。
-`spec_gap`、
-`source_undocumented_behavior`、`test_expectation_drift`、
-`boundary_violation`、`repo_metadata_conflict`は発生していない。Task-251
-baselineとTask-252 implementation oracleは不変である。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 252 implementation audit addendum
 
-public syntax-free producer、exact private three-route consumer、immutable
-`TypedAst` ownership、clone-only `ResolvedTypedAst` preservationがcorrected
-Task-252 contractを実装した。real aggregateはterm 7 row、authenticated binding
-reference 4 row、unresolved numeric-type request 2 rowである。synthetic
-constant、`it`、nested-parenthesis、mixed-family probeはcorpus creditやsemantic
-acceptanceを追加せずfrozen dependency boundaryをexerciseする。
-
-implementationはbounded primary-term producer/final-handoff `source_drift`と
-producer/corruption `test_gap`をcloseし、earlier `design_drift`はresolvedのまま
-である。MC-G017/MC-G020はpartialのままであり、application/other term family、
-numeric result、formula/definition semantics、real local binding/current-result
-owner、accepted fact/declaration/proof、downstream IR、Steps 6/7はexplicit owner
-に残る。blocking `spec_gap`、`source_undocumented_behavior`、
-`test_expectation_drift`、`boundary_violation`、`repo_metadata_conflict`は
-foundされなかった。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 253 frozen-contract audit addendum
 
-fresh inventoryはabsent exact functor-application contractを`design_drift`、
-absent syntax-free producer/final handoffを`source_drift`、module-local real
-consumerとproducer/corruption/final-handoff coverageの欠落を`test_gap`に分類する。
-Chapters 10、13 §13.2、15 §15.2.3、19と明示的な人間判断で十分であり、blocking
-`spec_gap`はない。current `source_undocumented_behavior`、
-`test_expectation_drift`、`boundary_violation`、`repo_metadata_conflict`もない。
-
-paired crate planはapplication、transparent wrapper、個別認証resolver functor reference、
-ordered argument edge、unresolved type requestの5 tableをfreezeする。candidate rowは
-form/arity associationやexhaustive/viable overload setの認証ではなく、
-applicability/collection/ranking/winnerはTask 278に残す。argument edgeはTask-252
-root primary IDまたはTask-253 nested-application
-IDを参照し重複所有しない。Task 252はmixed-family parenthesisを除外するため、
-`(1 ++ 2)`のcross-family transparent originはTask 253が所有し、第2のTask-252
-primary rowは作らない。
-
-exact future real selectorは既存imported
-`fail_type_elaboration_imported_predicate_functor_gap_001`と新規spec-derived
-`fail_type_elaboration_local_functor_application_gap_001`である。future aggregate
-Task-253 oracleはapplication/wrapper/candidate/argument/request = 2/1/2/3/4、
-Task-252 sliceはprimary term/binding reference/numeric request = 3/1/2である。
-新routeは同じdefinition blockで完了した最初のfunctorを後続functorのdefiniensから
-使い、actualは外側のreserveではなくTask-248が認証するinner
-`DefinitionParameter`である。
-inline applicationはsynthetic source-shape/schema coverageだけで、callee identity、
-formal、capture、body、guard、result、substitutionはTask 270に残す。template
-applicationはwhole-subtreeで除外し、direct role/actual/guard/request transportは
-Task 277、ordinary/template candidate collection/selectionはTask 278に残す。
-
-本prerequisiteはfollow-up ownership/deferred rationaleを変えるためcoverage auditを
-更新するが、executable coverage/source/fixture/expectation/trace row/status/count/hashは
-変更しない。current baselineはplan 411/375、type 241/229、pass/fail 224/187、
-active parse/declaration/type/proof 101/5/190/1、warnings/errors 23/0、
-library test 291、production 23 paths / 24,120 linesのままである。implementation
-だけがbounded diagnostic requirement 1件とfail case 1件を追加でき、予測oracleは
-412/376、242/230、224/188、active type 191で、fresh計測を要求する。
-
-MC-G017/MC-G020はpartialのままである。semantic signature/result/type、overload
-selection、definition/formula semantics、inline closure/substitution、template、
-other term family、accepted fact/declaration/proof、downstream IR、Tasks 254+、
-Steps 6/7はTask-253 prerequisite creditを受けない。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Step 5 Checker Task 254 frozen-contract audit
 
-canonical Chapter 5 §§5.3-5.5/5.7、Chapter 13 §13.3、existing
-constructor/selector/update parser fixture、declaration-symbol resolver fixture、
-Tasks 248-253 public APIは、bounded source-structure transport prerequisiteを
-supportする。paired crate planはseven syntax-free tableとfuture exact consumer
-term/wrapper/root/member/`FieldUpdate`/edge/request = 5/0/3/9/2/10/26、
-co-installed Task-252 8/0/8、Task-253 rowなしをfreezeする。exact sourceはlocal
-two-field structureと、construction/selector access/functional updateを使う
-functor definiens 3件である。
-
-constructor rootだけをexact resolver symbol/contribution/definitionまたはimport
-provenanceでauthenticateする。current resolver projectionはcompleteな
-root-to-member/inheritance-view associationを公開しないため、member spellingは
-source occurrenceのままである。nested update pathはsegment chainで、各parser
-`FieldUpdate`は独立semantic termを持たないassociation containerである。
-repeated label/pathはvalidityを決めずsource orderで保存する。cross-family edgeは
-Task-252 root、same-context Task-253 root application、後続same-context Task-254
-rowをconsumeする。root applicationは別のTask-253 application argument edgeから
-targetにされておらず、nested applicationはTask 254がmultiply ownせずrejectする。
-reverse Task-253-to-structure compositionはwhole-subtree excludedのままである。
-
-inventoryはmissing frozen designを`design_drift`、producer/final handoff欠落を
-`source_drift`、exact consumer/corruption/final-ownership coverage欠落を
-`test_gap`と分類する。blocking `spec_gap`、`source_undocumented_behavior`、
-`test_expectation_drift`、current `boundary_violation`はない。supplied
-one-commit-ahead noteに対する実測origin差0/0はreport-only
-`repo_metadata_conflict`で、safe commit targetは一意、metadataを修復しない。
-
-本prerequisiteはfollow-up ownership/deferred-coverage rationaleを変更するため
-coverage auditを更新するが、production source、fixture、sidecar、trace
-row/status/count、executable credit、test list、production manifestは変更しない。
-baselineはplan 412/376、type 242/230、pass/fail 224/188、active
-parse/declaration/type/proof 101/5/191/1、warnings/errors 23/0、library test 303、
-production 24 paths / 25,607 linesである。implementationだけがbounded
-requirement 1件とfail case 1件を追加でき、413/377、243/231、224/189、active
-type 192をprojectするがfresh measurementを要求する。MC-G017/MC-G018はpartial、
-全structure member/view/coverage/semantic decisionはTask 263、Tasks 255+と
-Steps 6/7はprerequisite creditなしである。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Step 5 Checker Task 254 implementation audit
 
-syntax-free public producer、exact private consumer、immutable `TypedAst`
-ownership、revalidate後にclone-preserveする`ResolvedTypedAst` handoffはfrozen
-Task-254 transportを実装した。real aggregateは5/0/3/9/2/10/26、Task-252は
-8/0/8、Task-253 rowはない。synthetic/corruption testはTask-253 root-only
-composition、unrelated-handoff preservation、conditional fingerprint、nested
-Task-254 ownership、arena-key class 5個、exact direct written-child partitionと
-`FieldUpdate` spelling、Task-253 argument-primary exclusion、reverse containment、
-両install順、resolver provenance、atomicity、determinism、final ownershipを
-coverする。
-
-implementationはbounded `source_drift`、`test_gap`、implementation時に見つかった
-generated-context `boundary_violation`をcloseした。後者はTask-248 declaration
-shellと`SourceBindingContextProducer`を再利用してrepairした。review時の
-direct-child association `source_drift`、cross-family install-order
-`boundary_violation`、およびderived `design_drift`はexhaustive range ownership、
-exact spelling、bidirectional install validationでclosedした。prerequisite
-`design_drift`もclosedのままで、blocking `spec_gap`、
-`source_undocumented_behavior`、`test_expectation_drift`はない。
-MC-G017/MC-G018はpartialであり、member/view/coverageとstructure semanticsは
-Task 263、later term familyはTasks 255+、Steps 6/7はunpromotedのままである。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Step 5 Checker Task 255 frozen-contract audit
 
-canonical Chapters 4/7/8/13/17/21はbounded source-only Task-255 transactionに
-十分である。exact real sourceは`{1, 2}`、
-`{3 where candidate255 is set}`、`the set`、`4 qua set`のlocal functor
-definiens 4個を持つ。comprehensionはconditionなしでmapperがgeneratorを参照
-しないため、binder identityやformula graphを捏造しない。
-
-frozen public contractはsyntax-free table 6個、exact
-term/wrapper/generator/type-site/edge/request 4/0/1/3/4/7、composed Task-252
-4/0/4である。bare target siteはTask 255がownし、Task-249 declaration
-applicationとして偽装しない。Task-253/254 dependencyはoptional/root-only/
-one-way fingerprintで、real routeは両方使わない。requestはresult/sethood/
-nonemptiness/widening intentだけを保持し、response/type/fact/coercion/acceptanceを
-publishしない。Task 251のtype-application-only evidence originをextendせず、
-term-origin conversionは別frozen workに残す。
-
-canonical planは全row field/kind別cardinality、wrapper nesting/spelling、
-request-to-generator/type-site association、maximal-effective-range ownership
-partitionを固定する。Task-253/254が既ownするTask-252 primary、Task-254が既ownする
-Task-253 applicationをTask-255が再targetしない。later Task-253/254 installは
-installed Task-255 handoffをrevalidateする。
-
-missing contractは`design_drift`、absent producerとlater generator
-binding/captureはbounded `source_drift`、producer/corruption/final-handoff
-coverageは`test_gap`である。blocking `spec_gap`、
-`source_undocumented_behavior`、`test_expectation_drift`、current
-`boundary_violation`はない。initial origin差はreport-only
-`repo_metadata_conflict`のままである。
-
-comprehension binding identity/captureはTask 257、condition formula edgeは
-Tasks 256-257、semantic sethood/choice/`qua`はChapter-7/8/17/21 ownerに残す。
-本prerequisiteはproduction source、fixture、expectation、trace row/status/count、
-coverage、count/hashを変更しない。baseline 413/377、243/231、224/189、
-101/5/192/1、312 tests、25 paths / 27,317 linesは不変である。
-future sidecarはChapter-10 functor-definition payload gap、Chapter-13
-term-expression gap、broad checker extraction gap、exact predicate/functor
-definition gap、新規bounded Task-255 rowの5件へreciprocalにmapする。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Step 5 Checker Task 255 implementation audit
 
-public 6-table `source_set_term` producerとprivate exact consumerはfrozen
-source-only sliceを実装した。Task-252 primary occurrenceとoptional Task-253/254
-rootをduplicate ownershipなしでauthenticateし、nested Task-255 rowは
-nearest-family childに残す。conditional dependency fingerprint、later-install
-revalidation 2経路、one-shot `TypedAst` ownership、clone-preserving
-`ResolvedTypedAst` assemblyはfail-closedである。
-
-exact real sidecarは4/0/1/3/4/7 + Task-252 4/0/4をproduceし、real
-Task-253/254 fingerprintはない。新規bounded covered rowと既存row 4件は
-prerequisiteでfreezeしたreciprocal reference 5件を持つ。plan/coverage/
-pass-fail/active runner countは414/378、244/232、224/190、101/5/193/1、
-warnings 23/errors 0である。
-
-implementation reviewはrecursive extractor orderingの`source_drift`を検出した。
-inner comprehension generatorがouter ownerのgeneratorより先にemitされていた。
-generator rowをterm/ordinal順にsortし、type-site rowを独立にwritten source順へ
-remapすることでlanguage/test intentを変えず修復した。producer/install/
-extractor/exclusion/corruption matrix後、bounded `source_drift`/`test_gap`は
-closedである。blocking `spec_gap`、`source_undocumented_behavior`、
-`test_expectation_drift`、surviving `boundary_violation`はない。
-
-MC-G017/MC-G020はpartialのままである。generator binding/captureはTask 257、
-condition formulaはTasks 256-257に残し、semantic sethood/choice/`qua`、
-accepted fact/proof、Core/CFG/VC、Steps 6/7へcreditを与えない。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Step 5 Checker Task 256 frozen-contract audit
 
-committed Task-255 producer直後のfresh inventoryはTask 256をselectする。
-canonical Chapters 9/14はatomic predicate/equality/inequality/membership/
-type-assertion/attribute-assertionのsource identityを要求するが、truth、theorem
-acceptance、overload winnerをauthorizeしない。Chapters 3/6/13/19とTasks
-248/252-255がbounded type/attribute/term/resolver ownershipを与える。
-
-review targetはpublic syntax-free 8-table transaction 1個である。既存active fail
-fixture 8件のreal aggregateは`8/0/1/1/1/2/13/11`、Task-252
-`16/0/16`、Task-253 `1/1/1/2/2`、Task-255 `2/0/0/0/4/2`で、
-Task-254 targetはない。exact row schema、request association、arena key、
-canonical spelling、nearest-family term ownership、conditional fingerprint、
-later installer revalidation、immutable final AST preservationをfreezeする。
-
-formula-owned bare type/simple attributeはTask-249/250 declaration-linked rowの
-aliasではない。predicate candidateはexhaustive/selected overload setではなく
-individually authenticated referenceである。requestはoperand/signature/
-reachability/admissibilityのunresolved input intentだけを保持する。predicate
-chain、formula negation/composition、inline/template、general type graph、
-qualified/argument-bearing attribute、semantic fact/truth、conditioned
-comprehensionをexplicitly excludeする。
-
-missing contractはrepaired `design_drift`、absent producer/final handoffはbounded
-`source_drift`、producer/corruption/install-order/exclusion/final ownership
-coverageは`test_gap`のままである。blocking `spec_gap`、
-`source_undocumented_behavior`、`test_expectation_drift`、current
-`boundary_violation`はない。origin差はreport-only
-`repo_metadata_conflict`のままである。
-
-本prerequisiteはproduction source、fixture、`.miz`、sidecar/expectation、
-trace row/status/count、coverage、count/hashを変更しない。baselineは
-414/378、244/232、224/190、101/5/193/1、320 tests、26 paths /
-29,138 linesである。separate implementationは既存sidecar 8件にbounded
-covered row 1件を追加でき、case/outcome/detail不変のまま414/379、
-245/233をprojectする。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Step 5 Checker Task 256 implementation audit
 
-public 8-table `source_atomic_formula` producerとprivate exact consumerはfrozen
-source-only sliceを実装した。checkerはraw syntaxをacceptせず、resolver identityと
-Task-252/253/254/255 dependencyを再authenticateし、nearest-family ownershipを
-再導出し、install/later dependency revalidationをfail-closeしてone-shot handoffを
-`ResolvedTypedAst`へclone-preserveする。
-
-unchanged route 8件はexact `8/0/1/1/1/2/13/11`とfrozen Task-252/253/255
-co-oracleをproduceし、既存semantic detail ownerをすべて維持する。new covered
-row/reciprocal referenceはcase/outcome/phase/detail/tag/`.miz` byteを変更せず
-414/379、245/233へ到達する。review済みproducer/extractor/real/synthetic/
-corruption/install/exclusion/final-ownership matrixがbounded `source_drift`と
-`test_gap`をcloseする。
-
-blocking `spec_gap`、`source_undocumented_behavior`、
-`test_expectation_drift`、surviving `boundary_violation`はない。origin差は
-report-only `repo_metadata_conflict`のままである。MC-G017/MC-G020はpartial、
-frozen later semantic/formula ownerとSteps 6/7へnew creditを与えない。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Step 5 Checker Task 257A frozen-contract audit
 
-fresh inventoryは最初のTask-257 incrementをunchanged
-`fail_type_elaboration_formula_connective_quantifier_gap_001` sourceへboundする。
-Chapter 14はexact implication/universal/negation/contradiction source tree、
-Chapter 4はexplicit scoped binding identity 1件、Chapters 3.3-3.4はbare `set`
-type siteをauthorizeする。Chapter 16.2はenclosing theorem syntaxだけを供給し、
-theorem ownership、formula semantics、proof/fact/acceptanceを推測しない。
-
-frozen public transactionはdense table 7個とexact real aggregate
-`5/0/1/1/1/4/6`を持つ。unassigned formula root 1件、source-role child edge
-4件、source-derived quantifier binder/body context 1件、binder-owned type site
-1件、unresolved input request 6件を保持する。extended binding environmentは
-exact `2/1/4`で、universal-body edgeだけがcontext 1へ遷移する。private
-raw-syntax ownerは`mizar-test`のままで、final checker handoffはsyntax-freeで
-ある。
-
-missing contractはrepaired `design_drift`である。absent public producer、
-source-derived environment extension、final handoffはbounded `source_drift`、
-producer/binder/context/corruption/install/exclusion/final-ownership coverageは
-`test_gap`のままである。blocking `spec_gap`、
-`source_undocumented_behavior`、`test_expectation_drift`、current
-`boundary_violation`はない。origin差はreport-only `repo_metadata_conflict`の
-ままである。
-
-本prerequisiteはproduction source、fixture、`.miz`、sidecar/expectation、
-trace row/status/count、executable coverage、count/hashを変更しない。baselineは
-plan/type 414/379、245/233、pass/fail 224/190、active 101/5/193/1、
-checker/mizar-test 287/328 tests、private production 27 paths / 30,154 linesで
-ある。separate implementationはcovered row
-`spec.en.checker.type_elaboration.source_composite_formula_payload` 1件を追加でき、
-case countとexisting outcome/detailを変えず414/380、246/234をprojectする。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Step 5 Checker Task 257A implementation audit
 
-public seven-table `source_composite_formula` producerとprivate exact consumerが
-frozen source-only sliceをimplementする。checkerはraw syntaxをacceptせず、
-exact normal `1/0/4` baseをvalidateし、source-derived `2/1/4` environmentを
-atomicにcreate/ownしてformula tree、binder、written type、edge、request、
-arena vocabularyをauthenticateし、one-shot handoffを`ResolvedTypedAst`まで
-clone-preserveする。
-
-unchanged real routeは`5/0/1/1/1/4/6`をproduceし、既存2 semantic detail
-keyを維持して他active type-elaboration caseをadmitしない。implementation
-preflightは`design_drift` 1件をcorrectした。frozen documentはsynthetic
-builder offsetをreal unchanged 115-byte `.miz`より1 byte後へ転記していた。
-real parser offsetは`52..113`、`52..65`、`74..113`、`78..89`、`78..79`、
-`86..89`、`96..113`、`100..113`である。parser/fixtureは変更していない。
-sidecar outcome/detail vectorとtest intentは不変で、reciprocal Task-257A
-`spec_refs` entry/transport noteだけを追加した。
-
-producer、full literal debug oracle、environment/arena/table corruption
-matrix、wrapper boundary、one-shot/Task-248 coexistence rejection、selector
-isolation、unchanged semantic route、final ownership testがbounded
-`source_drift`/`test_gap`をcloseする。new covered row/reciprocal referenceは
-case/outcome/phase/detail/tag/`.miz` byteを変えず414/380、246/234へ到達する。
-
-blocking `spec_gap`、`source_undocumented_behavior`、
-`test_expectation_drift`、surviving `boundary_violation`はない。origin差は
-report-only `repo_metadata_conflict`のままである。Tasks 257B/257C/258が
-broader formula semantics、bound-use/capture、predicate-chain/comprehension
-composition、statement ownershipをretainする。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Checker Task 257B1 frozen-contract audit
 
-post-Task-257A fresh auditによりdependency-ready bounded sliceを1件確認した。
-Chapter 4 §§4.1/4.5/4.6とChapter 14
-§§14.4.1/14.4.4/14.5.2/14.7.5からlanguage intentを変更せずexact
-explicit-universal/equality/bound-use sourceをderiveできる。parser fixtureは
-grammarを示すが、active type-elaboration fixtureはquantified bound
-occurrenceをtransportしない。
-
-classification:
-
-- `design_drift`: Task-257B subtask/cross-family composition contract欠落。
-- `test_gap`: binder-selected body occurrenceのexact type consumer欠落。
-- `source_drift`: 第2 exact composite profile、formula-to-atomic child edge、
-  formula-side bound-use handoff欠落。
-- blocking `spec_gap`、`source_undocumented_behavior`、
-  `test_expectation_drift`、`boundary_violation`なし。
-- initial origin differenceはreport-only `repo_metadata_conflict`。
-
-Task 257B1はexplicit one-binder/one-equality dependency seamだけをcloseする。
-Task 257B2/B3、Task 257C、semantic truth、implicit closure、theorem acceptance、
-proof、downstream IRはopen。documentation prerequisiteはtrace status/coverage
-countを変更しない。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Checker Task 257B1 Implementation Audit
 
-exact pass consumer、第2 composite profile、Task-252/256 composition、combined
-installation、immutable final handoffはfrozen source-only boundaryを実装済みである。
-public checker surfaceはsyntax-freeのまま、raw parser nodeはprivate runnerだけが
-保持する。bound use 2件はTask-252 occurrence ownership/
-`BindingEntry::captured`を変更せずbody context 1のbinding 0をauthenticateする。
-
-new covered trace rowはnew pass sidecarだけにmapし、Chapter-4/14、
-Task-252/256/257A rowはstatus不変のreciprocal noteだけを受ける。bounded
-`source_drift`/`test_gap`はcloseし、blocking `spec_gap`、
-`source_undocumented_behavior`、`test_expectation_drift`、
-`boundary_violation`は残らない。broader connective/grouping transportは
-Task 257B2に残る。
-
-### Task 257B2 frozen source-spec classification
-
-Chapter 14と既存parser fixtureはexact fixed/repeated conjunction/disjunction、
-non-associative `iff`、parenthesized grouping treeに十分なauthorityを与える。
-Chapter 4は変更しないexplicit binder scope、Tasks 252/256/257A/B1は必要な
-public occurrence/composition ownerを与える。missing frozen contractは
-`design_drift`、第3 exact profile/final ownershipの欠落はbounded
-`source_drift`、exact pass consumer/matrixの欠落は`test_gap`。blocking
-`spec_gap`はない。
-
-documentation prerequisiteはexecutable artifactを変えない。general
-alpha-equivalence/repetition expansion、connective truth、別precedence tree、
-binder shape、predicate chain、theorem acceptance、downstream IRを明示除外し、
-`source_undocumented_behavior`、`test_expectation_drift`、accepted
-`boundary_violation`を導入しない。origin差はreport-only
-`repo_metadata_conflict`のまま。
-
-### Task 257B2 implementation classification
-
-従来の`source_drift`/`test_gap`はexact third-profile producer、real pass
-fixture、covered trace row、checker corruption/profile tests、runner
-selector/near-miss testsでcloseした。`spec_gap`、`design_drift`、
-`source_undocumented_behavior`、`test_expectation_drift`、
-`boundary_violation`は残らない。origin差はreport-only
-`repo_metadata_conflict`のまま。
-
-### Task 257B3 frozen-contract classification
-
-Chapter 4/14とparser quantifier fixtureはexact restricted/existential/nested/
-implicit-reserve syntaxとlexical binding intentを完全にauthorizeする。missing
-contractは`design_drift`、absent fourth profile、Task-48-derived nested
-environment、reserve provenance、owning-edge association、final ownershipは
-bounded `source_drift`、missing 138-byte pass consumer/matrixは`test_gap`。
-blocking `spec_gap`、`test_expectation_drift`、
-`source_undocumented_behavior`、accepted `boundary_violation`はない。
-
-Task 248は明示的にextend/installしない。そのexact profileはreserve-plus-theorem
-inputを表せない。Task 48がlower-stage changeなしでone-reserve baseを供給する。
-truth、witness、restriction discharge、implicit closure、capture result、
-theorem acceptance、proof、IRはdeferred。origin差はreport-only
-`repo_metadata_conflict`のまま。
-
-implementationはexact source consumerとimmutable handoffによりbounded B3
-`source_drift`/`test_gap`をcloseした。source behaviorに合わせたcanonical
-spec、existing `.miz`、expectationの変更はない。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 257C1 predicate-chain segment classification
 
-Chapters 9/11/14とexisting user-predicate parser/resolver fixturesはadjacent
-split、`does not` token provenance、共通imported predicate identityをauthorize
-する。従来missingだったsyntax-free segment contract/decompositionは
-`design_drift`で、本prerequisiteがcloseする。absent public Task-256
-extensionはbounded `source_drift`、absent exact 107-byte consumer/matrixは
-`test_gap`である。
-
-blocking `spec_gap`、`source_undocumented_behavior`、
-`test_expectation_drift`、accepted `boundary_violation`はない。mixed built-in
-chain、recovered input、predicate applicability/selection、semantic
-conjunction/negation、conditioned comprehensionはexclude/deferする。origin差は
-report-only `repo_metadata_conflict`のまま。
-
-implementationはfrozen contractに対するTask-257C1 `source_drift` /
-`test_gap`を閉じた。preceding docs commitが`design_drift`を閉じ、上記の
-他classification/semantic deferralは不変。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 255C1 condition-bearing-comprehension classification
 
-Chapters 10、13、14とparser comprehension fixturesはexact valid zero-locus
-definition、imported mapper、colon、equality-condition shapeを完全にauthorize
-する。欠けた7番目のtableとcondition-aware ownership partitionは
-`design_drift`であり、ここでcloseする。producer、reusable Task-253 seam、
-installation、clone preservationの欠落はbounded `source_drift`、exact fail
-consumer/matrixの欠落は`test_gap`である。
-
-frozen Task-252 `4/0/4` handoffはmapper/condition operandsを保持するが、
-いずれのcondition operandにもTask-255 ownershipを与えない。colon/direct
-`FormulaExpression` wrapperはTask-255 arena anchorを持ち、inner atomic
-formula nodeはTask 256へdeferする。blockingな`spec_gap`、
-`source_undocumented_behavior`、`test_expectation_drift`、accepted
-`boundary_violation`は残らない。external origin差はreport-only
-`repo_metadata_conflict`である。
-
-implementationはclassified Task-255C1 `source_drift` / `test_gap`をcloseした。
-第7 public table、recursive condition boundary、reusable Task-253 seam、exact
-fixture/sidecar/trace row、full matrixが存在する。prerequisiteが既に
-`design_drift`をcloseしている。semantic deferralとreport-only
-`repo_metadata_conflict`は不変である。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 257C2 condition-formula association classification
 
-Chapters 10 §10.1、13 §§13.4/13.4.2、14 §§14.2/14.5.2/14.8はexact direct
-equality conditionをauthorizeするが、truth/binding/capture/definition
-acceptanceはauthorizeしない。Tasks 252/253/255C1は全term/application/
-comprehension/condition wrapper/provenance occurrenceを既にownし、Task 256は
-syntax-free equality/operand schemaを持つ。missing association contractは
-`design_drift`で、本prerequisiteがcloseする。dedicated handoff/final
-projectionの欠落はbounded `source_drift`、exact consumer/corruption matrixの
-欠落は`test_gap`。frozen pre-Task-256C1 preflightは当時のcommitted Task-256
-range validatorも別のauthority-backed `source_drift`にclassifyした。
-Chapter-13-authorized condition-container relationを両installation orderで
-rejectしたためである。separate documentation/implementationのTask 256C1は
-完了し、このauthenticated containmentだけをadmitしunrelated overlap
-rejectionを保持する。Task 257C2 implementationはlower-stage repairではなく、
-fresh post-commit preflightをpassしてbounded `source_drift`/`test_gap`を
-closeした。
-
-existing `doc/spec`、`.miz`、outcome、phase、diagnostic detail、semantic
-ownerは変更しない。reciprocal covered row 1件にexisting sidecarを
-reuseすることはbounded transport traceabilityで、implementation-derived
-expectation rebaselineではない。blocking `spec_gap`、
-`source_undocumented_behavior`、`test_expectation_drift`、
-`boundary_violation`は残らず、origin divergenceはreport-only
-`repo_metadata_conflict`。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 256C1 condition-container compatibility classification
 
-Chapter 13 §§13.4/13.4.2はoptional formulaをcomprehension内部に置き、
-Chapter 14 §§14.2/14.5.2/14.8はexact `3 = 4` conditionをbuilt-in atomic
-equalityとする。committed 191-byte fixtureとTask-255C1/256 schemaはinverse
-containing-set/direct-equality range relationをauthorizeするため、両installation
-orderでのrejectはbounded authority-backed `source_drift`。missing narrow
-ruleは`design_drift`で本prerequisiteがcloseし、missing order/corruption
-checkは`test_gap`。
-
-contractはdirect childがequal-range/equal-spelling、normally recovered
-Task-256 equalityで、enclosing termとsame contextのauthenticated Task-255
-comprehension conditionだけをadmitする。set containmentをgeneralizeせず
-fingerprintを追加せず、他formula formを推測しない。blocking `spec_gap`、
-`source_undocumented_behavior`、
-`test_expectation_drift`、`boundary_violation`はない。existing `.miz`、
-expectation、sidecar、trace status/count、coverage creditは不変。origin
-divergenceはreport-only `repo_metadata_conflict`。
-
-test contractはfamily-local validityとnew relationを区別する。applicableな
-各wrong relationはTask 255/Task 256で個別validateした後だけ、pair時に
-`SetTermDependencyMismatch`でfailする。substituted optional validation
-context、no publication/replay、explicit absent set fingerprintも別途coverする。
-
-### Task 256C1 implementation classification
-
-bounded authority-backed `source_drift`/`test_gap`はprivate exact relation
-predicate、effective no-wrapper guard、両installation order、complete
-3-test corruption/preservation matrixでcloseした。`design_drift`は
-prerequisiteでclose済み。specification、existing `.miz`、expectation、trace
-status、coverage credit、semantic owner、public schemaは変更していない。全
-semantic deferralとreport-only `repo_metadata_conflict`は不変。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 257C3 frozen surface audit
 
-future source-backed public surfaceはcanonical crate planで完全に命名済み:
-predicate-chain composition input/handoff/producer/error family 1件、dense
-row/table/ID family 2件、exact accessor、lower fingerprint 2件、stable debug、
-typed/resolved ownership、reciprocal exclusion。本documentation commitでは
-実装しない。authority/test/future trace row/semantic exclusionは明示され、
-blocking `spec_gap`/unowned public behaviorは残らない。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 257C3 implementation classification
 
-dedicated checker transaction、exact private runner consumer、
-mutation-sensitive checker/runner matrixがbounded `source_drift`/`test_gap`を
-closeし、`design_drift`はprerequisiteでclose済み。existing fixture/semantic
-expectationは不変で、authorized existing-sidecar reference/single covered
-trace rowがplanned traceability deltaをcloseする。blocking `spec_gap`、
-`source_undocumented_behavior`、`test_expectation_drift`、
-`boundary_violation`は残らない。origin divergenceはreport-only
-`repo_metadata_conflict`のまま。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 257C4C0 nested Fraenkel capture test intent
 
-Canonical [C4C0 contract](../../task_contracts/ja/TEST-FRAENKEL-NESTED-CAPTURE-257C4C0.md)は
-C4B successor STOPが要求したChapter 13 §13.4.4 test-first oracleのimplemented
-ownerである。Nested `Element of NAT` sourceではinner mapper `x`がresolved identityで
-outer generator `x`を参照し、inner generatorはdistinct `y`である。本prerequisiteは
-freezeしたderived test intentに続き、implemented source/inactive sidecar/sole trace
-row/Chapter-13 coverage-audit mappingがcapture `test_gap`をinactive intentとして
-closeする。
-
-Exact sourceは現在parser diagnostic 6件、first `Element` `67..74`であり、lower
-lexical/import admissionは`source_drift`のまま。builtin-`set`/local-lookalikeは
-禁止。Capture、Task252 ownership、`CapturedFreeVariables`、type/sethood/request/
-verdict/diagnostic/install/route、Task277B creditは不変。New trace rowはcovered/
-required/pass test intentだが、executable/semantic creditを与えない。
-
-Final source-doc/boundary reviewは**NO FINDINGS**。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 257C4C1 explicit-import lexical admission
 
-Canonical [C4C1 contract](../../task_contracts/ja/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md)は
-inactive C4C0 oracleに対するuser-authorized lower repairをfreezeする。Canonical
-Chapter 2 §2.10、Chapter 3 §3.3、Chapter 7 §7.2、Chapter 10 §10.1、
-Chapter 11 §§11.2.1/11.2.4、Chapter 12 §§12.3/12.5、Chapter 13
-§§13.4.2/13.4.4/13.8.6はone explicit import、one public mode shape、one
-public functor shape、unchanged nested-capture intentをauthorizeする。
-
-C4C1がcloseするのは6-diagnostic frontend lexical-admission `source_drift`、
-dedicated support-module `test_gap`、private-provider `design_drift`だけ。
-Checker Rust/public API、resolver imported identity、Task252 term/use、binding/
-capture、type/sethood/formula semantics、Typed/Resolved install、route、Task277B
-creditは不変。Existing trace row/sidecarはinactive zero-creditで、audit deltaは
-blocker closureだけをrecordしsemantic coverageをexpandしない。
-
-Exact seven-path implementationはこのclassified gaps 3件をcloseし、contractの
-[precommit completion checkpoint](../../task_contracts/ja/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md#precommit-implementation-completion-checkpoint)に
-recordしたfocused/package/metadata/full-workspace/lint/format/Clippy/CLI checksをPASS。
-Independent test/implementation reviewは**NO FINDINGS**、source-doc consistency
-とbilingual/boundaryのindependent reviewも**NO FINDINGS**。
-Independent final-quality reviewも**NO FINDINGS**であり、canonical [precommit
-completion checkpoint](../../task_contracts/ja/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md#precommit-implementation-completion-checkpoint)にrecordする。
-同historical review-time checkpointにrecordしたexact staging/cached reviewも
-**NO FINDINGS**。
-Task-only commit、post-commit proof、accepted fresh-inventory STOPはlanguage-local
-[historical postimplementation checkpoint](../../task_contracts/ja/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md#historical-immediate-postimplementation-pre-closure-checkpoint)でclosed。
-Capture/resolver-semantic、Task252、Task277B successorはselectせず、Task277Bは
-not-ready/zero creditのまま。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258A frozen surface audit
 
-Chapter 4 §§4.3/4.7.1、Chapter 14 §14.5.2、Chapter 15
-§§15.8/15.10、Chapter 16 §§16.1/16.2/16.7.1/16.9は、exact
-reserved-variable theorem shell、implicit-closure input、equality
-candidate、theorem owner、unmodified status、omitted-justification boundary、
-verification-before-publication exclusionを十分にauthorizeする。既存
-parser/resolver fixtureとTasks 248–253 public APIはtruth/proof/acceptance
-semanticsを付与せず、executable lower input/provenance viewを確立する。
-
-不足していたsyntax-free owner/statement/context/input/candidate contractは
-`design_drift`で、本documentation prerequisiteによりclosed。
-prerequisite時点ではplanned `source_statement` module/producer、typed/final
-installation、dormant exact-source bridgeがbounded `source_drift`、
-checker/runner matrixが`test_gap`だった。下記implementation auditで両分類を
-closeした。blocking `spec_gap`、`source_undocumented_behavior`、
-`test_expectation_drift`、accepted `boundary_violation`はない。現行Task-248
-exact handoffはreserve-plus-theorem transactionを表せず、extend/fabricateせず
-明示的にexcludeする。origin divergenceはreport-only
-`repo_metadata_conflict`のまま。
-
-then-future public surfaceは`source_statement.md`でfully namedされ、five dense
-ID/table、immutable input/output row、producer signature、semantic boundary用
-non-exhaustive enum 7件、row-local failure、aggregate precedence、
-owned BindingEnv/fingerprint、Task-252/256 dependency fingerprint、
-asymmetric production plus named test-only Task-248 exclusion、stable debug
-schemaを含む。
-pre-implementation module-export/public-surface inventoryではabsentだったが、
-current inventoryは上記に含める。
-既存deferred `spec.en.checker.formula_statement.source_payloads` rowはempty
-test listを保ち、本prerequisiteではstatus/count/fixture/sidecar/expectation/
-coverageを変更しない。broader statement formはTask 258BとTasks 269–272が
-所有する。
-
 Completion evidence: [central Task-258A historical contract](../../task_contracts/ja/258A.md#completion-evidence)。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B1 frozen surface audit
 
-fresh inventoryはproof semanticsを1 transport taskへ割り当てず、old Task-258B
-umbrellaを分解する。Chapter 4 §§4.3/4.6/4.7.1、Chapter 14 §14.5.2、
-Chapter 15 §§15.4.1/15.8.1–15.8.2/15.10/15.12、Chapter 16
-§§16.1–16.2/16.4.1–16.4.2/16.5.1/16.7.1–16.7.3/16.8/16.9はexact
-nested equality statement、proof-block nesting、conclusion shell、
-proof-step label、backward local citationをauthorizeする。existing parser
-theorem/proof fixture、Task-89 proof-gap fixture、resolver label tests、
-Tasks 48/252/256/258A APIがexecutable provenanceを提供するが、proposition
-acceptance、justification meaning、proof goal、theorem publicationは
-authorizeしない。
-
-exact 139-byte source/hash、parser range、`3/1/0 -> 8/8/0 ->
-4/0/0/0/0/0/0/8/8 -> 1/4/4/4/4 + 1/1` transaction、4 row/contextに
-わたるstatement-kind variant 3件、proof-step label 1件、simple local
-citation 1件、public reference-handoff API、retained 77-node/root-76
-`ResolvedAst`とprojection/reference/result replay、typed/final
-installation、subtree exclusion、semantic deferralは
-`source_statement.md`でfully namedされる。`LabelResolutionResult`がproof
-scope/visibility-source ordinalをintentionalにomitするためresolver input保持は
-必須で、label node 12/reference node 68はsame-index typed arenaに対して
-authenticateされ、unauthenticated rowはchecker boundaryをcrossしない。
-
-不足していたdecomposition/contractは`design_drift`で、本documentation
-prerequisiteによりclosed。absent extended base profile、reference handoff、
-combined installer、exact dormant runner bridgeはbounded `source_drift`、
-absent checker/runner matrixは`test_gap`。blocking `spec_gap`、
-`source_undocumented_behavior`、`test_expectation_drift`、
-`boundary_violation`はなく、upstream metadataにもunresolved
-`repo_metadata_conflict`はない。
-
-Task 258B2+はassumption、witness、composite root、broader label visibilityを
-保持する。Tasks 269–272はlocal-binding meaning、closure/capture/
-substitution、`reconsider`、skeleton、justification、goal、acceptanceを保持。
-したがってdeferred
-`spec.en.checker.formula_statement.source_payloads` trace rowは`tests = []`を
-保つ。本prerequisiteはcoverage auditのfollow-up ownershipだけを変更し、trace
-metadata、coverage credit、fixture、sidecar、expectation、executable source、
-count、hashは変更しない。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B1 implementation audit
 
-frozen Task-258B1 `source_drift`/`test_gap`はsyntax-free statement/reference
-handoff、atomic typed/final ownership、exact dormant real-frontend runner
-bridge、checker 4本、runner 5本でclosedとなった。language/test intentは変更せず、
-`doc/spec`、既存`.miz`、expectation、sidecar、trace TOML row/statusを編集しない。
-
-`spec.en.checker.formula_statement.source_payloads`はaccepted fact、proof、
-justification meaning、theorem resultをpublishしないため`tests = []`でdeferred
-のまま。coverage ownershipはTask 258B2+とTasks 269–272を指す。これは
-traceability count変更なしの意図的な`spec_coverage_audit.md` updateである。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B2 frozen-contract audit
 
-次のdependency-ready sliceはTask 258B2+から、`source_statement.md`でfreeze
-したexact 113-byte single-assumption theoremへ狭める。Chapters 15.3.1、
-15.4.1、15.8.2、15.10がtheorem、unlabeled assumption、direct conclusion、
-proof shellをauthoriseし、Chapters 13–14とreserve ruleがequality termと
-visible `x`をauthoriseする。既存parser/resolver fixtureはlanguage/test intentを
-変えず、measured range/provenanceを確立する。
-
-missing frozen contractは`design_drift`。未実装のsyntax-free producer/
-consumer routeはbounded `source_drift`、checker 4本/runner 5本のtestは
-bounded `test_gap`。blocking `spec_gap`、`source_undocumented_behavior`、
-`test_expectation_drift`、`boundary_violation`、unresolved
-`repo_metadata_conflict`はない。Task 258B2はsource intentだけをtransportし、
-assumptionをpremiseとしてacceptせずtruthも確立しない。trace rowは
-`tests = []`でdeferredを維持するため、本documentation prerequisiteはcoverage
-creditを得ず、fixture、sidecar、expectation、trace status/count、source、
-test list/hashを変更しない。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B2 implementation audit
 
-implementationはfrozen contractが特定したbounded `source_drift`/`test_gap`
-だけをcloseする。assumption occurrenceを`UnverifiedProposition`として
-transportし、Chapter-15 proof effectは実装しない。`spec_gap`、
-`source_undocumented_behavior`、`test_expectation_drift`、
-`boundary_violation`、`repo_metadata_conflict`はない。B3–B5とTasks
-269–272がdeferred behaviorのclassified ownerであり続ける。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3 authority audit
 
-canonical §15.4.4はunnamed `take x;` syntax、§15.11.5はlater
-existential/type/substitution effectをauthorizeする。Chapters 4、13、14と
-active parser fixtureはreserved `x` term/equality shellをauthorizeする。
-measured witness occurrenceのtransportはsupportするが、equality goalへの
-application、theorem acceptance、obligation publicationはauthorizeしない。
-
-formula-only base + direct-`BindingContextId` witness companionが最小の
-syntax-free contractである。dense base conclusionのsource ordinal 2は
-global orderに必要で、`[0,1,2]` paired validationがinformation lossを防ぐ。
-absent contractは`design_drift`、future codeはbounded `source_drift`、
-testsは`test_gap`。blocking `spec_gap`、undocumented behavior、
-expectation drift、boundary violation、metadata conflictはない。
-
-remaining §15.4.4 transport shapeにはexplicit follow-up ownerがある。
-Tasks 258B3N/MがB3後/B4前のnamed/multiple/other witness-term transportを
-保持し、abbreviation/substitution/left-to-right goal effectはTasks
-269–272が保持する。
-
-Task 258B3 implementationはclassified bounded `source_drift`/`test_gap`
-だけをcloseする。canonical requirement/trace creditを変更しないため、既存
-`deferred` / `tests = []` rowが引き続きcorrect。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3N authority audit
 
-§§15.4.4/15.11.5と§4.4.3およびexisting parser fixtureはmeasured
-`take y = x;` syntaxとname occurrenceをauthorizeする。B3Nでのbinding
-publication、abbreviation application、existential matching、obligation、
-substitution、proof acceptanceはauthorizeしない。missing exact table
-contractはresolved `design_drift`、future source/testsはbounded
-`source_drift`/`test_gap`である。blocking protocol disagreementはなく、
-formula-statement rowは`deferred` / `tests = []`を維持する。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3M1 implementation audit
 
-frozen `source_drift`/`test_gap`はexact syntax transportとchecker/runner
-tests 4/5本でcloseした。canonical language behavior、既存`.miz`、
-expectation、trace status/count、coverage creditは変更しない。remaining
-`spec_gap`、`design_drift`、`source_undocumented_behavior`、
-`test_expectation_drift`、`boundary_violation`、
-`repo_metadata_conflict`はなく、formula-statement rowは
-`deferred` / `tests = []`を維持する。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3N 実装監査
 
-classified bounded `source_drift` / `test_gap`はcanonical semantic changeなしで
-closeした。implementationはmeasured name occurrenceだけをtransportし、
-binding、abbreviation、existential、obligation、substitution、proof、
-theorem-status deferralを全て維持する。`spec_gap`、expectation drift、
-boundary violation、undocumented behavior、metadata conflictは導入せず、
-formula-statement rowは`deferred` / `tests = []`のままである。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3M1 authority audit
 
-Chapter 15はordered comma-separated named/unnamed witness syntaxを
-authorizeし、Chapter 16は`take`のlater existential skeletonを定め、既存
-parser fixture/testsはmixed two-witness shapeを既に確立する。これらは
-B3M1でのbinding publication、abbreviation replay、binder matching、
-obligation、substitution、proof acceptance、non-primary term shapeを
-authorizeしない。broad B3Mをexact B3M1とfuture B3M2へsplitして
-`design_drift`を解消し、future code/testsはbounded
-`source_drift`/`test_gap`。`spec_gap`、undocumented behavior、expectation
-drift、boundary violation、metadata conflict、lower-stage prerequisiteは
-ない。formula-statement rowは`deferred` / `tests = []`を維持する。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3M2A authority audit
 
-canonical Chapter 15 §15.4.4はunnamed `take 101;`を明示し、Chapter 13
-§§13.1/13.1.4/13.9は`101`をprimary numeral termとし、Chapter 4 §4.4.3は
-unnamed witnessがlocal nameを導入しないとする。Chapter 16 §16.3.3 item 5
-は後続existential skeletonだけを与える。existing parser fixtureはwitness
-syntaxを確立し、completed lexer prerequisite後のreal frontendは
-zero-diagnostic 49-node arenaを生成する。これらはtype selection、
-existential matching、substitution、remaining goal、proof acceptance、
-B3M2B term shapeをauthorizeしない。
-
-exact syntax tableのfreezeで`design_drift`を解消し、future private
-code/testsはbounded `source_drift`/`test_gap`。blocking `spec_gap`、
-`source_undocumented_behavior`、`test_expectation_drift`、
-`boundary_violation`はない。外部`origin/main`移動はreport-only
-`repo_metadata_conflict`でtask ownershipを曖昧にしない。
-formula-statement rowは`deferred` / `tests = []`を維持してcoverage creditを
-得ない。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3M2A implementation audit
 
-implementationはauthority-derived unnamed-numeral syntax transportだけを
-realizeする。runnerはexact raw source/resolver provenanceをauthenticateし、
-private checker profileはその49-node arenaとsyntax-free
-Task-48/252/256/base tables、dense reference mapping、
-Task-252 numeric request、`1 witness / 0 names`をauthenticateし、checker
-4本 / runner 5本のtestsでbounded `source_drift`/`test_gap`を閉じた。
-canonical spec、existing `.miz`、expectation、fixture、sidecar、trace
-metadata、public API、binding、semantic ownerは変更していない。したがって
-formula-statement rowは`deferred` / `tests = []`、coverage creditなしを
-維持する。B3M2Bがnext authority slice。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3M2B1 authority audit
 
-Chapter 15 §15.4.4は`take term_expression`、Chapter 4 §4.4.3はunnamed
-witnessがlocal nameを導入しないこと、Chapter 13
-§§13.1.3/13.8.8/13.9はtype-preservingで独立FOL nodeを追加しない
-parenthesized primaryをauthorizeする。Chapter 15 §15.11.5はlater witness
-obligation/substitutionを保持する。exact existing consumersは
-`tests/miz/pass/parser/pass_parser_simple_statements_001.miz`とその
-expectation、および
-`tests/miz/pass/types/pass_type_elaboration_parenthesized_reserved_variable_equality_001.miz`、
-そのexisting expectation、covered
-`spec.en.checker.type_elaboration.source_primary_term_payload` trace row。
-これらはartifactを変更せずexact dormant cross-family transportをauthorize
-するが、proof acceptance/B3M2B2 shapeはauthorizeしない。
-
-public lower consumersはTask 248
-`SourceBindingContextHandoff`、Task 249
-`SourceTypeApplicationHandoff`、Task 250
-`SourceAttributeHandoff`、Task 251
-`SourceEvidenceHandoff`、Task 252
-`SourcePrimaryTermHandoff` /
-`SourcePrimaryTermKind::Parenthesized` /
-`SourcePrimaryTermInput::parent`、Task 253
-`SourceFunctorApplicationHandoff`。Task 254
-`SourceStructureHandoff`はnext excluded family。B3M2B1はTask-248 contextと
-Task-252 wrapper/inner/reference/parent edgeをreuseし、Tasks
-249–251/253–254はempty/excluded。fresh frontendはfinal-LF 113-byte
-source、SHA-256
-`f09815b49d1b4598218f656a366ef73ec0dffd1f581a1018f07aa2ebcf410bf2`、
-53 unrecovered nodes/root 52、diagnostics 0。
-
-broad B3M2B umbrellaは`design_drift`で、本prerequisiteがexact B3M2B1 /
-remaining B3M2B2へresolveする。future private wrapper-aware productionは
-bounded `source_drift`、four/five compound matricesは`test_gap`。
-blocking `spec_gap`、`source_undocumented_behavior`、
-`test_expectation_drift`、language/crate `boundary_violation`なし。
-review-only writerによるdocs duplicateは`repo_metadata_conflict`ではなく
-operational `boundary_violation`であり、parentがrepository metadataを
-変更せずtask-owned documentationをreconcileした。formula-statement rowは
-`deferred`, `tests = []`、creditなし。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3M2B1 implementation audit
 
-private checker/runner implementationはfrozen `source_drift`/`test_gap`だけを
-closeした。public API、canonical specification、existing `.miz`、
-expectation、sidecar、trace metadata/status/count、active route、semantic
-ownerは不変。checker 4本 / runner 5本がexact transportをexerciseするが、
-formula-statement rowは`deferred`, `tests = []`でcreditなし。B3M2B2が
-remaining authority-valid witness termsを保持する。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3M2B2A frozen-ownership audit
 
-canonical Chapters 4/13/15/16はrecursive/type-preserving nested
-parenthesesをone unnamed `take` witnessとしてauthorizeし、existential
-introductionをdownstreamに保持して、このsyntax transport boundaryでは
-name/semantic effectを追加しない。fresh inventoryはbroad
-B3M2B2をexact `take ((x));` B3M2B2Aとremaining B3M2B2Bへresolveする。
-121-byte/57-node contract、Task-252 `7/5/0` chain `2 -> 3 -> 4`、
-Task-256 complete-chain exclusion、base `1/2/2/2/2`、witness/name
-`1/0`はexisting public APIを使う。
-
-docs prerequisiteはbroad umbrellaの`design_drift`をcloseする。future
-private code/testsはbounded `source_drift`/`test_gap`。`spec_gap`、
-`source_undocumented_behavior`、`test_expectation_drift`、
-language/crate `boundary_violation`、lower-stage defectなし。separateな
-operational `boundary_violation`として、review-only agentsがno-write
-scopeに反してoverlapping same-task authority referencesを書いた。parentは
-task-owned contentだけをindependently reconcileし、commit targetは
-unambiguousで、`repo_metadata_conflict`ではない。spec、`.miz`、
-expectation、fixture、sidecar、trace metadata/status/count、active、
-production/test sourceは変更しない。formula-statement rowは`deferred`,
-`tests = []`、creditなし。follow-up ownershipだけをB3M2B2から
-B3M2B2A/Bへ変更する。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3M2B2A implementation audit
 
-frozen source-derived ownershipをchecker 4 / runner 5 testsでexecutableに
-した。bounded B3M2B2A `source_drift`/`test_gap`だけをcloseし、
-`spec_gap`、test-intent change、lower-stage repair、新規boundary
-violationはない。spec、existing `.miz`、fixture、expectation、sidecar、
-trace row/status/count、active routeは変更しない。
-`spec.en.checker.formula_statement.source_payloads`は`deferred`,
-`tests = []`、coverage creditなし。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3M2B2B1P frozen lower-prerequisite audit
 
-authorityは`take` statement内のdormant imported-infix termを認めるが、B1Pは
-private Task-253 proof-context reuse seamだけをclaimする。143-byte sourceと
-projected Task-48/252/253 profileはreal consumerを確立するが、Task-258
-outputはimplementしない。missing decompositionは`design_drift`、missing
-context-1 private routeはbounded `source_drift`、不足するcompound tests
-2件は`test_gap`。blocking `spec_gap`、undocumented semantic behavior、
-expectation drift、crate boundary violationなし。
-
-audit row `spec.en.checker.formula_statement.source_payloads`は
-`deferred`, `tests = []`、backlink/coverage creditなし。B1Pはspecification、
-`.miz`、fixture、expectation、sidecar、trace row/status/count、active route、
-public API、semantic ownerを変更しない。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3M2B2B1P implementation audit
 
-documented private seamとtestsちょうど2件を実装し、bounded
-`source_drift`/`test_gap`をcloseした。reviewでは`spec_gap`、
-`source_undocumented_behavior`、`test_expectation_drift`、
-`boundary_violation`、`repo_metadata_conflict`なし。canonical
-specification、`.miz`、fixture、expectation、sidecar、active route、
-public API、semantic ownerは変更しない。
-
-formula-statement audit rowは引き続き`deferred`, `tests = []`で、
-backlink/coverage creditなし。B1Pはlower-stage infrastructureだけで、
-exact Task-258 application-witness consumerはB1Aに残る。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3M2B2B1A frozen-contract audit
 
-Chapters 13/15/16は`1 ++ 2`がsymbolic infix termで、`take`が
-`term_expression` witnessを受けることを既に規定する。既存parser/
-resolver fixtureが`parser.type_fixtures::++`をauthenticateし、B1Pがexact
-proof-context Task-253 handoffをauthenticateする。従って`spec_gap`/
-unsafe test-intent decisionなし。
-
-missing exact ownership descriptionは`design_drift`。future production/
-testsはbounded `source_drift`/`test_gap`。`source_undocumented_behavior`、
-`test_expectation_drift`、`boundary_violation`、blocking
-`repo_metadata_conflict`なし。このdocs taskはfollow-up ownershipだけを
-変更し、formula-statement rowはsemantic/proof result/active `.miz`を
-追加しないため`deferred`, `tests = []`、backlink/creditなし。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3M2B2B1A implementation audit result
 
-bounded `source_drift`/`test_gap`はcloseした。exact 143-byte/63-node
-imported-infix sourceはfully authenticated Task-48/252/253/256
-dependencies、atomic typed publication、final clone revalidationを通じて
-syntax-free `Application(0)` witness 1件へ到達する。checker 4/runner 5
-compound testsがexact identity、全loaded-source byte、reparsed near miss、
-resolver/lower provenance、validation precedence、family order、rollback、
-replay、empty semantic outputsをcoverする。
-
-これはdormant transport-only implementationのままである。canonical
-spec、`.miz`、fixtures、expectations、sidecars、active routes、
-`tests/coverage/spec_trace.toml`は不変。従って
-`spec.en.checker.formula_statement.source_payloads`は`deferred`,
-`tests = []`、backlink/executable creditなし。semantic typing、proof、
-substitution、goal ownershipはdeferred。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3M2B2B1B1P frozen-prerequisite audit
 
-Chapters 13, 15, 16、parser operator-term fixture、parser `take` fixture、
-imported `++` resolver summaryは、exact parenthesized application shapeを
-既にauthorizeする。`spec_gap`もunsafe test-intent decisionもない。
-missing B1B1 decompositionとprivate wrapped proof-context seamは
-`design_drift`。future seamとrunner testsちょうど2件はbounded
-`source_drift`と`test_gap`。
-
-B1B1PはTask-258 rowもactive coverageも追加しない。canonical specs、
-`.miz`、fixtures、expectations、sidecars、active routes、public checker
-APIs、trace metadataは不変。従って
-`spec.en.checker.formula_statement.source_payloads` rowは`deferred`、
-`tests = []`、backlink/creditなしのまま。
-`source_undocumented_behavior`、`test_expectation_drift`、
-`boundary_violation`、`repo_metadata_conflict`はない。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3M2B2B1B1P implementation audit
 
-bounded `source_drift`、Rust `test_gap`、paired `design_drift`はclosed。
-productionはfrozen exact resolver provenanceをenforceし、Rust tests 2件は
-same-source substitutions、parser-derived diagnostic/node matrix、全frozen
-empty upper familiesをcoverする。implementation evidenceだけを追加し、
-canonical specs、`.miz`、expectations、sidecars、trace row/status/count、
-`deferred` status、backlinks、executable coverage creditは不変。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3M2B2B1B1 frozen-contract audit
 
-Chapter 13 parenthesized symbolic infix terms、Chapter 15 `take`
-`term_expression`、Chapter 16 proof-skeleton requirementsの合成はexact
-158-byte sourceをauthorizeする。existing `.miz` fixturesはparenthesized
-operator termと`take` grammarを別々にcoverするが、proof validity、
-witness type checking、substitution、goal dischargeをauthorizeしない。
-
-missing paired B1B1 design contractは`design_drift`、absent private
-consumerはbounded `source_drift`、checker 4/runner 5 testsは`test_gap`。
-blocking `spec_gap`/unsafe test intentなし。trace row
-`spec.en.checker.formula_statement.source_payloads`は`deferred`、
-`tests = []`、backlink/executable coverage creditなしのまま。canonical
-specs、existing `.miz`、expectations、sidecars、trace status/count、
-active casesはこのprerequisiteで不変。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3M2B2B1B1 implementation audit
 
-spec-derived private consumerとtests 9件により`source_drift`、`test_gap`、
-completion `design_drift`はclosed、reviewsはfindingsなし。これはdormant
-design/test evidenceだけ。trace row
-`spec.en.checker.formula_statement.source_payloads`は`deferred`、
-`tests = []`、backlink/coverage creditなしのまま。canonical specs、
-`.miz`、fixtures、expectations、sidecars、active casesは不変で、
-semantic/proof/goal/type substitutionはdeferしたまま。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3M2B2B2P frozen-prerequisite audit
 
-Chapters 5 §5.5、13 §§13.3/13.3.1、15 §§15.4.4/15.11.5、16
-§§16.3.3/16.7.3とexisting primary-term/simple-statement/
-local-structure-gap artifactsはexact constructor-shaped proof syntaxと
-imported provenanceをauthorizeする。Chapter 5 §5.7 selector authorityは
-explicit future B2B exclusionとしてだけ記録し、B2P constructor semanticsを
-authorizeしない。
-
-missing lower-reuse contractはselected `design_drift`、future private
-implementationは`source_drift`、runner tests 2件は`test_gap`。blocking
-`spec_gap`、unsafe test intent、undocumented-source behavior、expectation
-drift、boundary violation、metadata conflictはない。formula-statement
-trace rowは`deferred`、`tests = []`、backlink/creditなし、existing
-Task-254 diagnostic creditは不変。canonical specs、`.miz`、fixtures、
-expectations、sidecars、trace metadata/counts、active routes、semantic/
-proof/goal/type behaviorは変更しない。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3M2B2B2P implementation audit
 
-implemented private lower seamとpassing runner tests 2件がbounded
-`source_drift`、`test_gap`、completion `design_drift`をcloseした。
-これはdormant design/test evidenceだけで、formula-statement trace rowは
-`deferred`、`tests = []`、backlink/coverage creditなし。existing Task-254
-diagnostic creditは不変。canonical specs、`.miz`、fixtures、
-expectations、sidecars、active routes、全semantic/proof/goal behaviorは
-変更していない。
-
-これはimplementation evidenceだけで、trace/audit status/count、
-backlink、executable creditは変更しない。final read-only quality reviewは
-全hard gate PASS、findingsなし、valid score `98/100`。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3M2B2B2A frozen-contract audit
 
-Chapters 5 §5.5、13 §§13.3/13.3.1、15 §§15.4.4/15.11.5、16
-§§16.3.3/16.7.3とexisting parser/resolver/structure-gap artifactsはexact
-constructor-witness occurrence/provenanceをauthorizeするが、structure
-semantics/proof acceptanceはauthorizeしない。missing contractは
-`design_drift`、future source/testsはbounded `source_drift`/`test_gap`で、
-blocking `spec_gap`/unsafe intentなし。
-
-formula-statement trace rowは`deferred`、`tests = []`、backlink/creditなし。
-canonical specs、`.miz`、fixtures、expectations、sidecars、trace metadata/
-counts、active routes、Task-254 diagnostic credit、semantic/proof/goal
-behaviorはunchanged。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3M2B2B2A implementation audit
 
-exact checker/runner implementationとchecker 4/runner 5 testsがbounded B2A
-`source_drift`/`test_gap`をcloseした。additive public API、fingerprint
-matrix、witness-to-structure ownership、validation precedence、atomic typed
-publication、final clone behaviorはfrozen contractと一致する。B2B selector、
-B2C functional update/`FieldUpdate`、structure/proof semanticsはdeferred。
-
-このaudit updateはnarrative source/test follow-upだけ。formula-statement
-rowは`deferred`、`tests = []`、backlink/status/count change/coverage credit
-なし。canonical specs、`.miz`、fixtures、expectations、sidecars、active
-routes、Task-254 diagnostic creditはunchanged。implementation-phase
-reviewsはfindingsなし、全verification gatesはPASS。final read-only
-reviewは全9 hard gates PASS、valid `98/100`。commit `7613d50d`とfresh
-inventoryはcomplete。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3M2B2B2BP frozen-contract audit
 
-post-B2A inventoryはmissing private proof-context Task-254 selector reuse
-contractを`design_drift`、future runner seamをbounded `source_drift`、two
-testsを`test_gap`にclassifyする。`spec_gap`、undocumented behavior、
-expectation drift、boundary violationなし。
-clean inventory後に現れたconcurrent same-task EN draftはnonblockingな
-report-only `repo_metadata_conflict`。safe task-owned commit targetは
-identifiableで、metadata repairは行わない。
-
-authorityは171-byte/79-node syntax/provenance、Task-48 `2/1/0`、
-Task-252 `6/4/2`、Task-254 `2/0/1/3/0/3/9`だけをsupportする。
-Task-256/258、checker/public API、diagnostic、active route、semantic output
-はauthorizeしない。formula-statement coverageは`deferred`、
-`tests = []`、backlink/status/count/creditなし、Task-254 diagnostic credit
-はunchanged。B2B/B2Cとselector semanticsはfollow-up。
-
-repeated specification/source-documentation consistency reviewsはfindings
-なし。全verification gatesはPASS、final read-only reviewは全9 hard gates
-PASS、valid `98/100`。このclosureはtrace row/status/count/backlink/test
-list/executable creditを変更しない。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3M2B2B2BP implementation audit
 
-bounded `source_drift`と`test_gap`はproduction-private selector seamと
-exact runner tests 2件でcloseした。implementationはfrozen imported
-provenance、lower tables、ownership、failure precedence、semantic
-exclusionsをpreserveする。`spec_gap`、undocumented behavior、expectation
-drift、boundary violationはない。final review中にexternal same-task
-writerがTask-48/252 mutation matricesをexpandし、initial no-op mutationを
-fixし、frozen direct B2P compatibility hashesを追加した。先行する
-external docs commit `6f84d4eb`とcorrection commit `a782606c`は
-report-only historyのまま。local HEADが`a782606c`でunchangedの間に、
-dirty task-owned scopeは4 filesから32 filesへexpandし、
-`origin/main...HEAD`はahead-fourから`0/0`へ移動した。これは
-nonblocking、report-only `repo_metadata_conflict`。final task-owned
-targetは引き続き明確で、metadata repair、revert、fetch、push、stash
-actionは行わない。
-
-canonical specification、`.miz`、fixture、expectation、sidecar、trace
-row/status/count/backlink、Task-254 diagnostic credit、active routeは
-変更しない。formula-statement coverageは`deferred`、`tests = []`のまま。
-B2B/B2Cとselector identity/type/proof semanticsはdeferred。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3M2B2B2B frozen-contract audit
 
-fresh post-B2BP inventoryはmissing direct-selector witness contractを
-`design_drift`、future bounded implementationを`source_drift`、exact
-checker tests 4件/runner tests 5件を`test_gap`にclassifyする。reviewで
-pre-existing same-task draftが2 formula node kindsをreverseしたことも
-foundした。Task 256がownするのは`BuiltinPredicateApplication` nodes
-51/70で、`FormulaExpression` containers 52/71はarena-unowned。この
-content errorは`design_drift`。draftが外部から現れた事実は
-nonblocking/report-only `repo_metadata_conflict`で、safe targetは
-unambiguous、metadata repairは行わない。blocking `spec_gap`、unsafe
-test intent、undocumented source behavior、expectation drift、boundary
-violationはない。
-
-Chapters 5 §§5.5/5.7、13 §§13.3–13.3.2、15
-§§15.4.4/15.11.5、16 §§16.3.3/16.7.3、unchanged parser/resolver
-fixtures、Tasks 48/248–258はsyntax/provenance transportとunnamed witness
-target 1件だけをauthorizeする。exact 171-byte/79-node sourceはTask-48
-`2/1/0`、Task-252 `6/4/2`、completed B2BP Task-254
-`2/0/1/3/0/3/9`、Task-256 equality-only
-`2/0/0/0/0/0/0/4/4`、Task-258 base `1/2/2/2/2`、witness `1/0`を
-composeする。new edgeはwitness 0からselector `Structure(0)`だけ。
-constructor `Structure(1)`、members、roots、primaries、applications、
-transparent containersはexcludeする。
-
-existing `Structure` target、structure fingerprint、
-`build_with_structure`、atomic typed/final installerをreuseしpublic APIは
-追加しない。B2C update/`FieldUpdate`、selector
-identity/type/result/call/chain、witness obligation/substitution、
-proof/goal/theorem acceptance、active routes、diagnostics、semanticsは
-deferred。canonical specs、existing `.miz`、fixtures、expectations、
-sidecars、trace metadataはunchanged。
-`spec.en.checker.formula_statement.source_payloads`は`deferred`、
-`tests = []`、Task-254 diagnostic creditは不変。
-
-specification、test-sufficiency、implementation-boundary、
-source/documentation consistency reviewsはすべてfindingsなし。fresh
-verificationは全documentation gatesをPASSし、final read-only quality
-reviewは全9 hard gates PASS、valid `98/100`。openなのはdedicated
-documentation commitと直後のfresh B2B implementation inventoryだけ。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3M2B2B2B implementation audit
 
-exact 8-file checker/runner implementationとchecker 4/runner 5 testsが
-bounded B2B `source_drift`、`test_gap`、`design_drift`をcloseした。
-frozen Task-48/252/254/256とTask-258 base tablesをpreserveし、unnamed
-`Structure(0)` selector witnessを1件installし、selector base
-`Structure(1)`をretainし、B2A/B2B typed/final validationをexact
-fail-closed siblingsのままにする。Task 256はnodes `51/70`をownし、
-`52/71`はunowned。
-
-このnarrative audit updateはcanonical specification、`.miz`、fixture、
-expectation、sidecar、trace row/status/count/backlink、Task-254 diagnostic credit、
-corpus active route、public API、semantic/proof/goal ownershipを変更
-しない。formula-statement coverageは`deferred`、`tests = []`のまま。
-specification/dependency、test-sufficiency、implementation、
-source/documentation consistency reviewsはfindingsなしで、broad final
-verificationもPASS。final qualityも全9 hard gatesをvalid `98/100`で
-PASS。implementation commit `8311502c`とfresh inventoryはcomplete。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3M2B2B2CP specification audit
 
-Chapter 13 §13.3.3のspecific grammar/immutability、Chapter 5の
-constructor/selector context、Chapter 15/16の`take` placement、active
-selector/update parser fixtureとmissing-value/missing-close failures、
-existing Task-254 structure-term fixtureにより、canonical artifactsを
-変更せずexact B2CP transport intentをderiveできる。
-
-fresh inventoryはmedium `design_drift`を1件発見した。roadmapはB2Cを
-directにnameしたが、proof-context reuse seamはconstructor/selector
-だけ。B2CPがdependency boundaryとstale B2B commit handoffをcloseする。
-absent private seamはbounded
-`source_drift`、tests 2件は`test_gap`。
-
-Chapter 13 §13.3.3とcomplete postfix grammarをactive parser fixturesと
-共に読むとexact shapeはunambiguous。local `structure_expression`
-shorthandはnarrower helper summaryで、complete postfix productionを
-overrideしない。missingなbehavior/choiceはなく、blocking/nonblocking
-いずれの`spec_gap`もない。canonical specはeditしない。unsafe test
-intent、`source_undocumented_behavior`、`test_expectation_drift`、
-`boundary_violation`はない。earlier/parallel write-owner overlapは
-nonblocking/report-only `repo_metadata_conflict`のまま、safe commit
-targetはexactで、repository metadataはrepairしない。
-
-docs taskはsyntax/provenanceだけをfreezeする。`doc/spec`、`.miz`、
-fixture、expectation、sidecar、trace row/status/count/backlink、active
-route、public API、diagnostic credit、semantic ownerは変更なし。
-formula-statement rowは`deferred`、`tests = []`、Task-254 diagnostic
-creditもunchanged。
-
-Task 254はnodes `69/65/30/20/24/68`、Task 252はpublished sites
-`51/53/59/62/66/73/75`をretainする。Task 256がlater ownするのは
-nodes `55/77`だけで、containers `56/78`はunowned、update subtree全体
-をexcludeする。B2CPはTask-256/258 rowをpublishせず、B2Cだけがlater
-take/witness nodes `72/71`とwitness-to-`Structure(0)` edgeをownできる。
-
-concurrent commit `817bb92b`はno-`spec_gap` adjudication後にrejected
-low/nonblocking `spec_gap` classificationをrestoreした。later quality
-reviewはhigh `design_drift`を発見し、hard gates 1/9はFAIL、
-`98/100` assertionはinvalid。docs-only Task `258B3M2B2B2CPC1`は
-canonical spec/source/tests/trace/count/hash/coverage creditを変更せず、
-passages 6箇所をcorrectする。repeated specification/dependency、
-test-sufficiency、implementation-boundary、source/documentation reviewsは
-findingsなし。docs diff check/checker lintはPASSし、unrelated incomplete
-source workがlive runner/workspace rerunをblockする間はidentical HEAD
-executable broad verificationをauthorityにする。全9 hard gatesがPASSし、
-final read-only qualityはvalid `98/100`。残るのはdedicated correction
-commitとfresh implementation inventoryだけ。
-
 Completion evidence: [central Task-258B3M2B2B2CP historical contract](../../task_contracts/ja/258B3M2B2B2CP.md#completion-evidence)。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3M2B2B2C specification audit
 
-post-commit inventoryはChapters 5 §§5.5/5.7、13
-§§13.3/13.3.1/13.3.3/13.9 complete postfix grammar、Chapter14 equality、
-15 §§15.4.1/15.4.4/15.11.5、16 §§16.2/16.3.3/16.7.3、existing
-parser/resolver/Task254 fixtures、completed Tasks48/252/254/256/
-B2A/B2B/B2CPからB2C source-only witness contractをderiveする。
-§13.3.3/complete postfix grammarがexact functional-update surface
-shapeを明確にauthorizeし、narrower local helperはnormative gapではない。
-
-authorityはoccurrence/provenance/ownership/one witness targetだけ。
-goal `x = x`の`take`はexistential matching、obligation、substitution、
-proof/goal/theorem acceptanceをestablishしない。blocking/nonblocking
-`spec_gap`、`boundary_violation`、expectation drift、unsafe intent、
-undocumented behaviorなし。missing contract/stale post-B2CP ledgerは
-`design_drift`、future codeはbounded `source_drift`、4+5 testsは
-`test_gap`。
-
-design docsのみ変更。canonical spec、`.miz`、fixture、expectation、
-sidecar、trace、public/active、semanticはunchanged。formula rowは
-`deferred`、`tests = []`、audit impactはnarrative-only。4 independent
-reviewsはfindingsなしで、complete documentation/count/hash verificationも
-PASS。independent final qualityはfindingsなし、全9 hard gates PASS、valid
-`98/100`。commitとfresh implementation inventoryはopen。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3M2B2B2C implementation audit update
 
-prerequisite commit `d6076cc757ce675d1b46a720b4f00805923d3c70`とfresh
-inventoryはcomplete。exact eight-file source transactionはfrozen contractが
-authorizeするsyntax-free source occurrence、resolver provenance、ownership、
-directed witness-to-update targetだけをimplementする。checker 4件/runner
-5件のtestsはPASSし、final test-sufficiency/implementation reviewsは
-findingsなし。bounded `source_drift`/`test_gap`をcloseした。
-
-`spec_gap`、`source_undocumented_behavior`、`test_expectation_drift`、
-`boundary_violation`はない。canonical spec、existing `.miz`、fixtures、
-expectations、sidecars、trace、public/active surfaces、semanticsはunchanged。
-formula rowは`deferred`, `tests = []`、coverage auditはnarrative-only。
-final source/docs re-review、broad verification、quality、commit、
-post-commit inventoryはpending。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3M2B2B2C broad verification audit update
 
-fmt、workspace Clippy、checker `390+15`、runner
-`444+3+14+137+2+21`、full workspace tests、focused `4/4`/`5/5`、
-sibling `12/12`/`21/21` suitesはPASS。CLI counts/hashesとfresh
-production/test inventoriesはpaired crate plansと一致する。canonical
-spec、`.miz`、fixtures、expectations、sidecars、trace、public/active
-surfaces、semanticsはunchanged。independent final source/docs/quality
-reviews、commit、post-commit inventoryはpending。
-
 Completion evidence: [central Task-258B3M2B2B2C historical contract](../../task_contracts/ja/258B3M2B2B2C.md#completion-evidence)。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3M2B2B2C post-commitとTask 258B3M2B2B3P specification audit
 
-B2Cは`e8373c683448e524cb98edde83fdf8de83a125cd`としてcommit済み。
-post-commit inventoryはclean、ahead 8/behind 0、
-`stash@{0}` object `f65cf4a13752ec380710814a9ac6392ccb9d75d4`
-unchanged。no-findings reviews、全9 hard gates PASS、valid `98/100`がfinal。
-
-canonical Chapter 13 §13.4.1/complete term grammar、Chapter 15 §15.4.4、
-Chapter 4 witness syntax、Chapter 16 theorem/proof syntax、existing
-`pass_parser_simple_statements_001`、Task-255 `{1,2}` evidenceはexact B3P
-parser/resolver/lower-table contractをauthorizeするが、statement witness
-edge/semantic resultはauthorizeしない。exact 117-byte、57-node/root-56
-profileとlower Task-48 `2/1/0`、Task-252 `6/4/2`、Task-255
-`1/0/0/0/0/2/1` tablesはcrate plan/set-term designにcompleteにrecord。
-Tasks253/254/256/258はempty。
-
-specification reviewは**NO FINDINGS**。missing/stale B3P designは
-`design_drift`、future private explicit-context seamはbounded
-`source_drift`、2 testsは`test_gap`。`spec_gap`、
-`source_undocumented_behavior`、`test_expectation_drift`、
-`boundary_violation`、current `repo_metadata_conflict`はない。このdocs
-prerequisiteはcanonical/executable artifactを変更しない。formula-statement
-trace rowは`deferred`, `tests = []`、Task-255 covered creditはunchangedで、
-trace TOMLはdeliberately no edit。
-
-corrected contractはTask255 term/`EnumerationElement` edge/request/
-fingerprint全fieldsをfreezeし、同じ2 testsにsource bytes、node fields、
-resolver/lower fields、ownership、precedence/replay/clones、empty
-adjacent/semantic outputs、independent Task111 literal hashes 3件をexhaust
-させる。documentation re-review/qualityはpending。
-
 Completion evidence: [central Task-258B3M2B2B3P historical contract](../../task_contracts/ja/258B3M2B2B3P.md#completion-evidence)。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3M2B2B3P final quality audit
 
-final qualityは**NO FINDINGS**、全9 hard gates PASS、valid `98/100`。
-内訳はspecification `20`、tests `20`、traceability `15`、
-implementation readiness `14`、documentation `10`、boundary discipline
-`10`、verification `5`、handoff `4`。pendingはstage/commit、
-post-commit、fresh implementation inventoryだけ。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3M2B2B3P implementation source/specification status
 
-canonical authorityを変更せず、prerequisite
-`285a1f11c310bb313c4c6b4feae914eb11f74754`からexact 4 runner files/
-2 testsをderiveし、B3P `source_drift`/`test_gap`をclosedした。
-test-sufficiency/implementation reviewsは**NO FINDINGS**。`spec_gap`、
-undocumented semantics、expectation drift、boundary violation、
-checker/public/active-route changeはない。
-
-evidenceはproof-context-1 Task-255 enumeration transport、exhaustive
-source/node/resolver/Task-48/Task-252/Task-255 corruption/replay、
-fingerprint-only absence、literal legacy hashesに限定。
-`spec.en.checker.formula_statement.source_payloads`は`deferred`、
-`tests = []`、Task-255 credit unchanged、`spec_trace.toml`はdeliberate
-no-op。next dependency ownershipはupper B3Aへtransfer。
-
-focused/library/fmt/package-Clippy、lint-policy `15/14`、metadata `137`は
-PASS。source/docs consistency repeatとdocumentation/boundary repeatは
-**NO FINDINGS**、workspace Clippy/tests、5 CLI/current manifest/test-list
-hashes、diff、exact30 scopeもPASS。independent final qualityは
-**NO FINDINGS**、全9 hard gates PASS、valid `98/100`
-（`20/20/15/14/10/10/5/4`）。pendingはcommit/post-commit、fresh B3A
-inventoryだけ。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3M2B2B3A frozen source/specification audit
 
-Chapters4/13/15/16、parser pass、unchanged formula-gap failure
-expectation/trace、B3P lower tests、Tasks48/252/255/256/258は
-`take { 1 , 2 }`から`SetTerm(0)`へのexact transportだけをauthorize。
-goal `x = x`はnon-existentialで、witness semantics、goal progress、
-proof validity、theorem acceptanceはauthorizeしない。
-
-stale/missing docsは`design_drift`、missing API/installers/consumerは
-`source_drift`、missing checker4+runner5 testsは`test_gap`。
-`spec_gap`、`source_undocumented_behavior`、`test_expectation_drift`、
-`boundary_violation`、`repo_metadata_conflict`なし。trace rowは
-`deferred`, `tests = []`、Task-111/255 credit unchanged。spec/`.miz`/
-fixture/expectation/sidecar/trace editなし、auditはnarrative ownershipのみ。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3M2B2B3A implementation source/specification closure
 
-bounded implementationはexact additive APIとchecker4+runner5 testsにより
-record済み`source_drift`/`test_gap`をcloseする。independent
-specification/test-sufficiency/implementation reviewsは**NO FINDINGS**で、
-new disagreement classなし。`doc/spec`、`.miz`、expectation、sidecar、
-`tests/coverage/spec_trace.toml`はunchanged。trace rowは`deferred`、
-`tests = []`、Task-111/255 credit unchanged。2回目のsource/documentation
-consistency repeatとfinal documentation/boundary rereadは
-**NO FINDINGS**で、crate plans記載のparent final verificationはexact
-`39`-file scopeを含めPASS。independent final read-only quality reviewは
-**NO FINDINGS**。全9 hard gates PASS、score capなし、valid `98/100`
-（`20/20/15/14/10/10/5/4`）。記載済みsemantic/coverage deferralsは
-unchanged residual risk。pendingはdedicated implementation commit、
-postcommit invariant verification、fresh next-task inventoryだけ。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3M2B2B3B source-spec audit
 
-Sections 13.4.1、15.4.4、16.3.3は`{}`をunnamed `take` termとして
-authorizeする。B3Bはempty-set typing、existential discharge、proof
-acceptanceをclaimせず、そのsyntaxをexisting Task-255 SetTerm targetへ
-transportする。exact existing `.miz` occurrenceはreinterpretまたはcredit
-せず、expectationはtemplate-signature rejectionのままである。missing
-upper documentationは`design_drift`、future exact profile/testsは
-`source_drift`/`test_gap`。specification/expectation driftはない。
-
-repeatしたsource/documentation consistency reviewは**NO FINDINGS**。
-canonical authority、dormant fixture intent、deferred trace row、全
-forbidden artifactsはunchanged。exact source/count/hash/no-op
-verificationと全9 hard gatesはPASSし、final qualityはvalid `98/100`。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3M2B2B3B implementation authority closure
 
-implementationはSections 13.4.1、15.4.4、16.3.3とfrozen
-parser/resolver/Task-255 transport authorityだけをmaterializeした。
-existing `.miz`、fixture、expectation、sidecar、trace rowは変更せず、
-empty-set typing、existential matching、proof/theorem acceptanceをclaim
-しない。initial 3 `test_gap`とlower-field matrix gapはexact 9 tests内で
-closeし、post-auth injectionとstage-prefix/non-generic-guard assertions後の
-全test-sufficiency repeatsとfinal implementation repeatは
-**NO FINDINGS**。blocking `spec_gap`またはtest-intent changeはない。
-source/documentation consistency repeatはauthority/trace/
-`source_set_term` no-opをindependently confirmして**NO FINDINGS**。final
-documentation/boundary reviewとindependent qualityも**NO FINDINGS**。
-全9 protocol hard gates PASS、score capなし、valid `98/100`
-（`20/20/15/14/10/10/5/4`）である。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3M2B2B3C authority audit
 
-Specs 13.5/4.4.3/15.4.4/16.3.3とexisting parser/Task-255 fixturesは
-exact dormant `take the set;` source transportをauthorizeするが、
-nonemptiness discharge、stable generated choice symbol、existential
-matching、substitution、proof acceptanceはauthorizeしない。したがって
-spec/`.miz`/expectation/sidecar/trace rowは編集せず、
-`spec.en.checker.formula_statement.source_payloads`は`deferred`,
-`tests = []`、existing Task-255 coverageもunchanged。repeat specification
-reviewは**NO FINDINGS**。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3M2B2B3C implementation source/spec closure
 
-prerequisite `ea48ffc4fa586ac6d0813cd23a6b1d9b571087b2`はspec-derived
-choice-witness contractをfreezeした。implementationはprivate statement
-consumer 7件とexact checker 4/runner 5 testsだけを変更し、110-byte/
-52-node source、Task-255 `1/0/0/1/0/0/2`、exact ownership、empty
-semanticsをlanguage behavior/test intent変更なしにtransportする。
-
-implementationはbounded `source_drift`/`test_gap`をcloseする。medium test
-gap 2件とB3A-hard-coded source/test finding 1件はremediateし、repeat
-test/implementation reviewsは**NO FINDINGS**。`spec_gap`、
-`source_undocumented_behavior`、`test_expectation_drift`、
-`boundary_violation`、`repo_metadata_conflict`はない。formula-statement
-trace rowは`deferred`, `tests = []`のまま、Task-111/255 credit、全trace
-count/backlink、全semantic deferralはunchanged。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3M2B2B3D authority audit
 
-Specs 13.6、4.4.3、15.4.4、16.3.3、existing qua parser fixture、
-exact Task-255 `4 qua set` source/expectation/traceがfrozen
-source-transport sliceをauthorizeする。exact sourceはlanguage behaviorを
-追加せず、`qua` reachability、inheritance/cluster widening、overload、
-coercion、typing、witness、proof、theorem semanticsをclaimしない。
-missing upper contract/route/testsは`design_drift`/future
-`source_drift`/`test_gap`、task-selection disagreementはclosed
-`design_drift`である。blocking `spec_gap`、undocumented behavior、
-expectation drift、boundary violationはない。origin movementはreport-only
-`repo_metadata_conflict`のままである。
-
-repeated authority/source/documentation reviewは**NO FINDINGS**。exact
-forbidden diffsは0、trace blobはunchangedで、5 metadata CLIsと全
-count/hash gatesはfrozen no-op baselineを再現した。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3M2B2B3D implementation authority closure
 
-implementationはSpecs 13.6/4.4.3/15.4.4/16.3.3、existing qua parser、
-Task-255 `4 qua set` source/expectation/traceがauthorizeするsyntax-free
-transportだけをrealizeする。specification、`.miz`、expectation、sidecar、
-trace row/status/count/tests、active resultは変更していない。
-`spec.en.checker.formula_statement.source_payloads`は`deferred`,
-`tests = []`、Task-255 covered rowはunchanged。
-
-frozen checker 4 + runner 5 testsと`32/70/44/72/62/21` matricesに対する
-test-sufficiency reviewは**NO FINDINGS**。Qua reachability/widening、
-type-view、typing、overload/coercion、witness/proof/theorem acceptance、
-Core/CFG/VCなど全semantic deferralsを保持する。independent implementation
-reviewも**NO FINDINGS**。stale review stateのMedium `design_drift`と
-24-order/EN qua-edge wordingのLow 2件を同期修正後、final
-source/documentation consistency、bilingual、boundary reviewsも
-**NO FINDINGS**。full workspace testsと5 CLI/count/hash rerunsを含むfinal
-verificationはPASS。
-
-independent final read-only quality reviewは**NO FINDINGS**。全9 hard
-gates PASS、score capなし、valid `100/100`
-（`20/20/15/15/10/10/5/5`）。metadata CLI warnings/errors `23/0`と
-large repeated-test diff review volumeはauthority/trace creditを変えない
-nonblocking residual。staging/cached diff、commit、post-commit/fresh-next
-だけがpending。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3M2B2B3E authority audit
 
-canonical `doc/spec/en/13.term_expression.md`はset comprehension grammarの
-conditionをoptional `[ ":" formula ]`とし、condition omittedの
-all-elements formを明示する。`doc/spec/en/15.statements.md`の`take`は
-任意の`term_expression`をadmitする。active parser fixture
-`tests/miz/pass/parser/pass_parser_set_comprehensions_001.miz`はomitted/
-present conditionsを既にcoverし、Task-255 active source
-`tests/miz/fail/types/fail_type_elaboration_local_set_choice_qua_term_gap_001.miz`
-はexact `{3 where candidate255 is set}`を既に保持する。
-
-したがってB3E exact final-LF `139` bytes/hash
-`b3b12979a119c859c3e563eb1aa47fa4601045a686c5a09460ee72873bf7a29d`、
-`28` tokens、`60` nodes/root `59`はexisting authorityからderiveできる。
-Task-255 profile `1/0/1/1/0/1/2`、generator/type sites
-`16/40/41`、`SetComprehension(43)`、condition 0件、
-`ComprehensionMapper -> Primary(2)`、ordered
-`GeneratorSethood`/`ResultType`もexisting lower contractと一致する。
-generator segment `42`はunownedである。
-
-generator binding/capture/name resolutionを実装しないことはTask-255の
-明示的deferralであり、`source_undocumented_behavior`またはlower defectでは
-ない。documentation-only contractの欠落は`design_drift`、future exact
-private consumer/testの欠落はbounded `source_drift`/`test_gap`である。
-blocking `spec_gap`、`boundary_violation`、
-`test_expectation_drift`はない。既存specification、`.miz`、
-expectations、sidecars、`tests/coverage/spec_trace.toml`のstatus/count/
-tests、active diagnostic/coverage creditは変更しない。
-`doc/design/spec_coverage_audit.md`はtrace/creditを昇格させない
-narrative-only ownership sectionだけを追加する。pre-document authority
-selection reviewとparser/lower preflightはownership correction後にblocking
-findingなしでcloseした。current documentation repeat、test-sufficiency、
-implementation-boundary、source/documentation/bilingual consistencyも
-corrections後に**NO FINDINGS**で、verificationはPASSした。independent
-final qualityも**NO FINDINGS**、全9 hard gates PASS、valid
-`100/100`である。staging/commit、post-commitだけがpendingである。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3M2B2B3E implementation source/spec inventory
 
-exact seven private consumersはauthority-derived condition-free
-comprehension witnessだけを実装する。existing public DTO/installerをreuseし、
-public API、spec、`.miz`、expectation、sidecar、trace、active diagnostic、
-semantic intentはunchanged。post-auth negativeはsame provenance上の
-successful coherent Task-255 handoffを使う。
-
-test-sufficiency/implementation re-reviewは**NO FINDINGS**で、exact dormant
-consumerの`source_drift`/`test_gap`をcloseする。`spec_gap`、
-`source_undocumented_behavior`、`test_expectation_drift`、
-`boundary_violation`はない。binding/capture、condition、sethood/type、
-proof、B4/B5、active coverageはdeferred。
-
-3件のbounded `design_drift`修正後、final source/docs、bilingual、
-boundary consistencyは**NO FINDINGS**である。complete parent verification
-はPASSした。independent final qualityは**NO FINDINGS**、全9 gates PASS、
-capなし、valid `100/100`。staging/post-commit gatesはimplementation
-commit `e4479691db3b0a8785bb16e94d386bd71a394274`でcloseし、fresh
-inventoryはTask 258B4Aをselectした。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B4A authority audit
 
-canonical formula authority Chapter 14 §§14.1、14.4、14.5.2、14.5.4、
-theorem authority Chapter 16 §§16.2、16.7.1、existing parser/resolver
-behavior、Tasks 252/256/257/258 public handoffは、semantic decisionなしで
-syntax-free B4A root associationをsupportする。active one-LF Task-257B1
-fixtureはexpectationがtheorem ownershipをdeferし、formula-statement trace
-rowもdistinct future sourceを要求するためreuseできない。private two-LF
-sourceはexact lower AST/resolver provenanceを保ちながらこの
-`test_expectation_drift`を解消する。
-
-missing B4A designは`design_drift`、future upper API/routeとtest workはbounded
-`source_drift` / `test_gap`である。blocking `spec_gap`、
-`source_undocumented_behavior`、`boundary_violation`はなく、lower-stage
-prerequisiteはauthorizeもrequireもしない。classified correction後の
-repeated specification/documentation reviewは**NO FINDINGS**である。
-independent final qualityは全9 hard gatesをcapなし、valid `100/100`で
-PASSした。remainingはstaging、commit、post-commit inventoryだけである。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B4A implementation authority result
 
-implementationは§§14.1/14.4/14.5.2/14.5.4と§§16.2/16.7.1を
-source-identity/statement-to-composite transportとしてだけfollowする。
-exact private parser/resolver routeをauthenticateし、Task-252/256/257 public
-handoffをreuseする。active 79-byte fixtureはlower-only negativeのままなので、
-earlier `test_expectation_drift`はintentを変更せず解消される。bounded
-`source_drift` / `test_gap`はeight authorized consumersとnine exact testsで
-closeした。new `spec_gap`、`boundary_violation`、undocumented semantic
-behaviorはない。truth、theorem acceptance、proof、facts、later root
-familiesはdeferredのままである。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B4B authority audit
 
-Chapter 14 §§14.1、14.3.1-14.3.2、14.3.4、14.4.1、14.4.4、
-14.5.2、14.5.4、14.6、14.7.3-14.7.5、14.8、Chapter 13
-§13.1.4、Chapter 4 §§4.1/4.5/4.6、Chapter 16
-§§16.1/16.2/16.7.1はfrozen source shapesとtheorem
-role/status/ownershipをauthorizeするが、connective truth、repetition
-expansion、formula checking、theorem acceptanceはauthorizeしない。parser
-connectives fixturesとcomplete Task-257B2 lower contractがexecutable
-syntax/source-transport intentを供給する。
-
-active 166-byte sidecarとcovered trace rowはtheorem ownershipを明示的に
-deferし、upper reuseは`test_expectation_drift`である。distinct private
-167-byte/hash routeはauthority artifactを編集せずそのconflictを解消する。
-missing B4B documentationは`design_drift`、future exact
-selector/allowlistと9 testsはbounded `source_drift` / `test_gap`である。
-source driftにはcardinality-only B4A profile predicateとB4A-hardcoded
-typed/final call sitesを含み、implementationはそのambiguityをexact
-B4A/B4B statement identityとmatched B1/B2 lower profile dispatchへ置き換え
-なければならない。external origin movementはreport-only
-`repo_metadata_conflict`のままである。blocking `spec_gap`、
-`source_undocumented_behavior`、`boundary_violation`、authority-less
-lower-stage repairはない。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B4B implementation authority result
 
-documentation prerequisite
-`b8a7b8257a682f7c88de943ceaa35b67c0585bc4`後のimplementationは、
-frozen private 167-byte sourceだけをupper statement consumerとして
-authenticateする。raw resolverはlabel-freeのまま検査され、checker
-handoff前にexactly one matching theorem labelをenrichして
-`1/1/1/1/0`とする。Task-257B2 lower transaction、rootless 124-node
-arena、`42/1/81` ownership、upper `1/1/1/0/1`、両`Composite(0)`を
-authorityどおりにpreserveする。
-
-B1/B4AとB2/B4B以外のpairing、active 166-byte sourceのupper route、
-truth/repetition expansion、formula result/fact、theorem acceptance/proofは
-rejectまたはdeferされる。bounded `source_drift` / `test_gap`はexact
-seven consumersとchecker 4/runner 5 testsでcloseした。separate
-test-sufficiency/implementation reviewsは**NO FINDINGS**で、新しい
-`spec_gap`、`test_expectation_drift`、`boundary_violation`、
-`source_undocumented_behavior`はない。corpus/expectation/sidecar/trace
-および`doc/design/spec_coverage_audit.md`はcoverage status/owner/
-backlink不変のためno-opである。final source/documentation、
-bilingual、boundary consistency reviewsも**NO FINDINGS**である。
-focused `4/4 + 5/5`、full offline workspace tests、format、warnings denied
-Clippy、5 CLI、count/hash、exact scope、audit no-op、forbidden-artifact、
-stash gatesはPASSした。independent final qualityは**NO FINDINGS**、
-全9 hard gates PASS、capなし、valid `100/100`
-（`20/20/15/15/10/10/5/5`）である。staging/cached-diff review、
-implementation commit、post-commit inventory、B4C selectionはpendingで
-ある。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B4C authority audit
 
-Task 258B4B implementation commit
-`752c17ae7d552d5268d1028612b8174e480b6f3e`後のinventoryはclean、
-ahead-1/behind-0、protected stash unchangedである。origin relationship
-changeはreport-only `repo_metadata_conflict`で、commit targetは
-unambiguousである。
-
-canonical Chapter 4 §§4.1/4.3/4.5/4.6/4.7.1、Chapter 14
-§§14.1/14.4/14.5.2/14.5.4/14.7.5/14.8、Chapter 16
-§§16.1/16.2/16.7.1はrestricted-universal、existential、
-nested-quantifier、reserve-default、labeled theorem source transportを
-authorizeするが、quantifier truth、restriction discharge、existential
-witness success、capture semantics、implicit theorem closure、facts、
-theorem acceptance、proof、IR resultをauthorizeしない。
-
-active 138-byte Task-257B3 fixtureのexpectation/trace rowはtheorem
-ownershipをexplicitly deferするため、upper reuseは
-`test_expectation_drift`である。B4Cはisolated 139-byte/double-LF source、
-hash `36e5a68a92451590644951838a9af8926212bd78f88d1f90563f12b650b161c1`
-をfreezeし、syntax/resolver/lower tablesは同一である。missing B4C designは
-`design_drift`、future upper implementation/testsはbounded
-`source_drift`/`test_gap`である。
-
-fresh inventoryはlower selector compatibility defectも検出した。
-Task-257B3 runner selectorは同じauthority-derived parse/resolver/lower
-contractを持つ139-byte siblingを認識しない。これはsemantic decisionでは
-なくbounded `source_drift`である。authorityは
-`type_elaboration/source_formula.rs`とcomposition test ownerだけの
-mandatory separate lower-stage prerequisiteに十分である。exact one/two
-final LFをacceptしzero/threeをrejectし、production
-`source_formula_composition.rs`、authority artifacts、lower tablesは
-unchangedとする。
-
-そのseparate commit後のB4C upper workはB4Bと同じconsumers 7件、exact
-B3/B4C pairing、upper `1/1/1/0/1`、input facts 0、private telemetry
-`2/2/[2,2,4,4,4,4]`だけである。blocking `spec_gap`、
-`source_undocumented_behavior`、`boundary_violation`はない。
-specification review、verification、quality、documentation commitは
-pendingである。
-
 Completion evidence: [central Task-258B4C historical contract](../../task_contracts/ja/258B4C.md#completion-evidence)。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B4C Implementation Authority Result
 
-documentation prerequisite `3c723316ae632a867d29e8f4fc36348be30df202`
-と lower prerequisite `42356f38ed0e679d7b878caf0e647c6aa8148d82` が、
-順序付き2 prerequisite を close した。exact 139-byte private route は既に
-authorized な Task-257B3 nested-quantifier source payload を syntax-free
-B4C theorem root へ transport する。language rule と test intent は推測して
-いない。active 138-byte route は lower-only のままで、specification、
-`.miz`、expectation、sidecar、trace artifact はすべて変更しない。
-
-実装済み `24/1/41`、upper `1/1/1/0/1`、`[0]`、empty input-fact、
-`Composite(0)`、provenance、telemetry boundary が classified
-`source_drift` と `test_gap` を close した。independent test-sufficiency と
-implementation review は **NO FINDINGS**。truth、restriction discharge、
-witness semantics、closure、fact、acceptance、proof、IR は deferred のまま
-なので、`doc/design/spec_coverage_audit.md` の status/count/backlink edit は
-不要である。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B5A frozen authority audit
 
-Chapters 4/11/14/15/16はreserved-variable equality、inward local-scope
-visibility、labeled proof step、nested proof blocks、simple local citationを
-authorizeする。unchanged positive parser fixtureはtwo-descendant-proof
-source shape、unchanged type-elaboration gap fixtureはexisting
-checker-boundary intentを保持し、resolver confinement testはscope prefix
-`[0] -> [0,1]`をauthenticateする。
-
-reviewはstale B4C ledgerとformer undivided B5 descriptionを
-`design_drift`、missing imported-public/active confinement coverageをB5B/B5C
-owned bounded `test_gap`と分類する。blocking `spec_gap`、
-`source_undocumented_behavior`、`test_expectation_drift`、
-`boundary_violation`、current `repo_metadata_conflict`はない。B5Aはlanguage
-rule/test intentを変更せず、specification、existing `.miz`、expectation、
-sidecar、trace artifactをeditしない。
-absent seven-consumer B5A implementationはbounded `source_drift`であり、
-immediate next implementation taskへ意図的にdeferする。
-
 Completion evidence: [central Task-258B5A historical contract](../../task_contracts/ja/258B5A.md#completion-evidence)。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B5A implementation authority result
 
-documentation prerequisite
-`59021f764f146d669f84877042f0512882c9c5ff`はexact
-ancestor-label/descendant-citation transactionをfreezeする。seven private
-consumersはそのauthorized 185-byte sourceだけをexisting parser、resolver
-provenance、BindingEnv、Task-252、Task-256、Task-258 boundary経由でtransport
-する。language ruleをinferせずtest intentを変更せず、bounded B5A
-`source_drift`をcloseする。
-
-implementationはfrozen Rust mutation matrixだけを追加する。B5B imported
-public visibilityとB5C active inner-to-outer/sibling confinementはseparate
-task ownedのbounded `test_gap`のまま。specification、existing `.miz`、
-expectation、sidecar、trace metadata、public API、diagnostic、fact、
-accepted statement、proof、goal、downstream IRはunchanged。
-requirement `spec.en.checker.formula_statement.source_payloads`はactive test
-mapping/coverage creditなしの`deferred`を維持する。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B5B frozen authority result
 
-Chapters 11, 15, 16はvisible imported public theoremへのsimple citationを
-authorizeする。existing parser fixturesはsimple-citation/imported-`Ref`
-syntaxをindependently authenticateし、resolver label tests、artifact
-exported-label schema、module-summary-reuse loweringはderived provenanceを
-authenticateする。active B5B coverageではない。
-
-missing frozen B5B/API ownershipは`design_drift`、missing opt-in imported
-label populationはbounded lower-stage `source_drift`、missing active B5B
-corpusはbounded `test_gap`。blocking `spec_gap`、
-`source_undocumented_behavior`、`test_expectation_drift`、
-`boundary_violation`、current `repo_metadata_conflict`はない。
-
-documentationはone private 146-byte route、separate two-file lower
-prerequisite、later seven-consumer upper implementationをfreezeし、language/
-test intentを変更しない。B5Cと全citation proof/justification semanticsは
-deferred。
-requirement `spec.en.checker.formula_statement.source_payloads`は
-`deferred`、`tests = []`のまま。specification、existing `.miz`、
-expectation、sidecar、trace metadata、status/count/backlink、coverage
-creditはno-op。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B5B implementation authority result
 
-documentation commit `141dc44a757555e8d4837756515e1577f672348b`が
-authority-derived contractをfreezeした。lower commit
-`46dd9db56ced2fcc57799420de9d5fed06f284f5`はnormal augmentation routeを
-変えずbounded opt-in imported-label `source_drift`をcloseした。current
-seven-consumer upper implementationはbounded private-route `source_drift`と
-implementation-level `test_gap`をcloseし、four checker/five upper runner
-testsがexact imported public theorem citation/negative matrixをauthenticate。
-
-このclosureはactive corpus/trace coverageを作らない。human-reviewed
-active `.miz` B5B mapping不在はbroader bounded `test_gap`のままで、B5Cも
-separate。Chapters 11, 15, 16、existing parser/resolver fixtures、
-artifact schema、Tasks 248–258B5A APIがauthorityであり、sourceから
-language/test intentを推測しない。
-
-specification、existing `.miz`、expectation、sidecar、
-`tests/coverage/spec_trace.toml`、trace status/count/backlink、coverage
-creditはdeliberate no-op。したがって
-`spec.en.checker.formula_statement.source_payloads`は`deferred`、
-`tests = []`のまま。`doc/design/spec_coverage_audit.md`はnarrative-only
-implementation closureを受けるが、trace status/count/backlink/owner/
-coverage-credit fieldは変更しない。
-blocking `spec_gap`、`source_undocumented_behavior`、
-`test_expectation_drift`、`boundary_violation`、
-`repo_metadata_conflict`はなく、このlogical taskがrepairするstale
-implementation-status proseは`design_drift`。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B5C frozen authority result
 
-`doc/spec/en/15.statements.md` section 15.10と
-`doc/spec/en/16.theorems_and_proofs.md` sections 16.4.2、16.5.1はboth
-active negativeをauthorizeする。proof-step labelはenclosing reasoning
-block localで、citationがearlier propositionを使えるのはlexical declaring
-proof scopeまたはそのdescendantだけであり、inner-to-enclosing/sibling
-citationは禁止。Chapter 11 section 11.2はordinary symbolのcontextual
-authorityで、proof-label ruleではない。
-
-fresh inventoryではmissing production source walkをmedium `source_drift`、
-runnerでimplementした場合のpotential `boundary_violation`、stale B5C/B5B
-design statusをmedium `design_drift`、absent active fixtureをmedium
-`test_gap`とclassifyする。unspecified public resolver diagnostic codeはlow
-deferred `spec_gap`だが、frozen internal key
-`declaration_symbol.label.proof_scope_confinement`とempty public
-diagnostic-code listによりnonblocking。current `boundary_violation`、
-`source_undocumented_behavior`、`test_expectation_drift`、
-`repo_metadata_conflict`はない。
-
-このdocumentation commitはauthority artifact/coverage stateを変更しない。
-R-032A structural loweringとR-032B proof-label collectionが別commitで
-two active declaration-symbol fixture/trace requirementに先行する。
-exact lifetime/error/ordinal/subtree/provenance contractはlinked resolver
-documentsのderived contractで、source-byte-plus-normal-AST runner
-selectionとprivate input/confinement detailはlanguage ruleを追加しない。
-そのlater active taskだけがcases `419 -> 421`、requirements
-`387 -> 389`、failures `191 -> 193`、active declaration cases `5 -> 7`
-を変更できる。type requirementsは`253/241`のまま、R-G007はpartial
-closureのみ、
-`spec.en.checker.formula_statement.source_payloads`は`tests = []`の
-`deferred`を維持する。
-
-frozen lower default-deny table/provenance authenticationはspecification
-rule/coverage creditを追加しない。前者はexact
-`Root -> CompilationUnit -> ItemList -> direct TheoremItem -> direct
-ProofBlock`、Root/CompilationUnit exact-one normal structural child、
-direct-normal theorem scanから始まり、supported-statement edgeとexact
-simple-reference identifier chainだけを
-admitし、全other formはno-ordinal/no-descent。後者はenv/module、derived
-namespace、exact one id-0 LocalSource record/source id、全projection fieldを
-validateする。全independent corruptionは`proof_scope_input`で、
-confinement/public diagnosticではない。exact 48-file scopeはunchanged。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B5C active coverage result
 
-current taskはfrozen fail fixture 2件によりexact
-`spec.en.15.statements.proof_label_scope_confinement`と
-`spec.en.16.theorems_and_proofs.labels.proof_scope_confinement`をactive化する。
-これはChapter 15 §15.10/Chapter 16 §§16.4.2/16.5.1からderiveし、specification
-またはexisting fixture/expectationを変更しない。
-
-private runnerはresolver provenance/unresolved outcomeをconsumeし、checker
-semantic installationはexcludedのまま。pre-existing
-`mizar-test/tests/metadata.rs` count assertionは
-`test_expectation_drift`/`design_drift`として見つかったadditional mechanical
-consumer（`5 -> 7`）。requirement
-`spec.en.checker.formula_statement.source_payloads`は`tests = []`の
-`deferred`を維持し、全non-confinement R-G007 familyもdeferredのまま。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 259 Frozen Authority Audit
 
-Chapter 9はtyped predicate parameter、pre-definition `assume` guard、
-ordinary `means` definiens、explicit predicate propertyをauthorizeする。
-Section 9.5はordinary predicateにexistence/uniqueness conditionがなく、
-各explicit propertyがproof obligationを作ると規定する。Chapter 16
-Section 16.6はgeneral correctness-condition boundaryを与える。これは
-transport-only pass caseとexactly one pending symmetry-property obligation
-に十分なauthorityである。
-
-authorityはpre-definition guardをsymmetry FOL verification conditionへ
-composeする方法を規定しない。これはlater semantic constructionに対する
-nonblocking `spec_gap`であり、goalをinventするauthorityではない。Task 259
-はguard/propertyをseparately transportし、obligation assumptionsをemptyに
-保ち、opaque goal/provenance identityを使う。proof、discharge、VC
-construction、accepted-definition publicationはdeferredのままである。
-
-fresh lower inspectionはmissing predicate-definition handoffを
-`source_drift`、missing real consumer/corruption coverageを`test_gap`、
-previously broad Task-259 proseとcurrent Task-248 profile mismatchを
-`design_drift`に分類する。parser/resolver source shapeはadequateである。
-blocking canonical contradiction、unsafe test-intent inference、
-`test_expectation_drift`、`boundary_violation`、
-`repo_metadata_conflict`はない。
-
-このdocumentation prerequisiteはnarrative ownershipだけを追加する。
-specification、`.miz`、sidecar、expectation、trace row、mapping、backlink、
-status、count、coverage creditを変更しない。existing Chapter-9 diagnostic
-gapとmixed predicate-plus-functor gapは不変で、後者はTask 260を引き続き
-必要とする。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 248 Two-Parameter Profile-Extension Authority Audit
 
-Chapters 4/9/18とAppendix Aはone shared block scope内のtwo ordered leading
-definition parameterを認可する。従ってdistinct `x`/`y` declarationはdistinct
-identityを作り、outer/module bindingがないため互いをshadowしない。dense idと
-source-order predecessor linkはrepresentation invariantでありnew language
-semanticsではない。
-
-previous Profile-A-only designは`design_drift`、hard-coded
-two-item/one-shadow validationとabsent real-source helperはbounded
-`source_drift`、missing focused Profile-B Rust testは`test_gap`である。
-same-name re-reservation `spec_gap`は無関係のまま。blocking authority conflict、
-unsafe test-intent inference、current `boundary_violation`、
-`source_undocumented_behavior`、`test_expectation_drift`、
-`repo_metadata_conflict`はない。
-
-checkerはsyntax-freeのままでbuiltin `set`をinspectせず、private runnerがexact
-direct `x`/`y` parameter subtree、range、real definition shell、shared-arena
-siteをauthenticateする。later predicate/guard/property/proof meaningはすべて
-excludeする。本docs-only taskはdesign mapping/follow-up ownershipをnarrativeに
-変更するだけでexecutable coverageを与えず、
-`tests/coverage/spec_trace.toml`をbyte-unchangedに保つ。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 259 Corrected Future Public-Surface Audit
 
-`source_predicate_definition.md`はfuture public
-`source_predicate_definition`のowning module specificationである。five dense
-ID、six input aggregate、five immutable output row/table、handoff/projection、
-producer、three `#[non_exhaustive]` enumをfreezeする。その`Public Enum
-Policy`は`SourcePredicatePropertyKind`、
-`SourcePredicateDefinitionRecovery`、
-`SourcePredicateDefinitionError`をclassifyし、exhaustive exceptionを持たない。
-
-implementationは同じlogical task内で、このmoduleを`lib.rs`、本auditの
-module-spec/crate-export/public-surface inventory、
-`tests/lint_policy.rs`の3 allowlistへ追加しなければならない。public row
-surfaceはread-onlyであり、derived `SemanticOrigin`、4 lower debug
-fingerprint、allocated `InitialObligationId`をcallerはsupplyできない。typed
-installationはsole Task-259 publication pathで、final assemblyはtyped-owned
-cloneだけを受ける。
-
-fresh post-`ca54135f` reviewはmissing current moduleをexpected
-`source_drift`、absent executable consumerを`test_gap`、implicit future
-API/policyとstale prerequisite recordを本documentation correctionがrepairする
-`design_drift`にclassifyする。blocking `spec_gap`、
-`source_undocumented_behavior`、`test_expectation_drift`、
-`boundary_violation`、`repo_metadata_conflict`はない。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 261 Frozen Future Public-Surface Audit
 
-`source_attribute_definition.md`はfuture public
-`source_attribute_definition` moduleをownする。four dense ID、five input
-aggregate、four immutable row/table family、typed handoff、producer、
-recovery/error enumをfreezeする。future public enumはすべて
-`#[non_exhaustive]`であり、implementationは同じlogical task内でmodule、
-export、public surface、enum policy、lint-policy inventoryへ追加しなければ
-ならない。
-
-future public rowはread-onlyのままである。callerはderived
-`SemanticOrigin`、four lower-stage debug fingerprint、allocated IDをsupply
-できない。Typed-AST installationはsole publication pathであり、resolved
-final assemblyはtyped-owned cloneだけを受ける。通常のChapter-6 attribute
-definitionはinitial-obligation rowを生成しない。producer/installerはobligation
-tableをreceive/inspect/compare/projectせず、installationはtableをstructurally
-unchangedにretainする。このboundaryはformula
-meaning、equivalence、acceptance、facts、proof、Core、CFG、VC semanticsを
-追加しない。
-
-fresh Task-261 inventoryはabsent moduleをexpected `source_drift`、absent exact
-executable consumerを`test_gap`、previously implicit contractをこの
-prerequisiteがrepairする`design_drift`にclassifyする。blocking `spec_gap`、
-authority conflict、unsafe lower-stage edit、`source_undocumented_behavior`、
-`test_expectation_drift`、`boundary_violation`はない。measured origin-reference差は
-report-only `repo_metadata_conflict`だが、本public surfaceを変更せずsafe task-only
-commit targetを曖昧にしない。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 261 Active Public-Surface Result
 
-`source_attribute_definition`はexport済みで、上記inventoryが4 generated idと
-全literal public declarationを列挙する。public enum 2件はnon-exhaustiveである。
-exact producer、typed/final owner、private runnerがfrozen `source_drift`/`test_gap`
-を閉じ、obligation row/semantic resultは追加しない。source/spec、public-enum、
-module-layout、syntax-boundary、adjacent allow-rationale lintがactive surfaceをguard
-する。prior `repo_metadata_conflict`はreport-onlyのままである。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 262 frozen future public-surface audit
 
-[`source_mode_definition.md`](./source_mode_definition.md)はfuture public
-`source_mode_definition` moduleをownする。dense ID 6個、input aggregate 7個、
-immutable row/table family 6個、handoff/projection/producer、recovery/request/
-property/error enumをfreezeする。future public enumはすべて
-`#[non_exhaustive]`で、implementationはmodule export、literal public
-inventory、enum policy、source-spec、syntax-boundary、module-layout、adjacent-
-allow lint inventoryを同期する。
-
-callerはderived origin/fingerprint/allocated ID/obligation ID/evidence
-response/acceptance/fact/proof/VCを供給できない。projectionがbaseline
-compare-and-swapとexisting-kind `Sethood` row 1個のappendをownし、RHS requestは
-unresolvedのままである。TypedAstだけがpublication pathで、final assemblyは
-clone-preserve/revalidateしmixed Tasks 259--262をrejectする。
-
-fresh inventoryはmissing upper contractを`design_drift`、absent Task-262
-moduleを`source_drift`、absent exact consumerを`test_gap`と分類する。
-specification reviewはadditional lower `source_drift`も発見した。Task 249に
-standalone mode-RHS ownerがなく、binding-linked application 3個目のfabricationは
-`boundary_violation`になる。canonical Chapter 7はchecker-only Task 249Mを別途
-freeze/implementするのに十分なためblocking `spec_gap`ではないが、Task 262
-implementationはprerequisite landまでblockedである。authority conflict、
-`source_undocumented_behavior`、`test_expectation_drift`はない。measured origin差は
-report-only `repo_metadata_conflict`でsafe task-only commit targetは識別可能である。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 249M frozen future public-surface audit
 
-Task 249Mはexisting public `source_type` moduleへ`SourceTypeModeRhsId`、extension/
-input、immutable row/table、handoff getter、producer、non-exhaustive
-`SourceTypeError` variant 7件をfuture追加する。mode-RHS owner不在は
-`source_drift`、exact tests不在はcanonical-derived prospective `test_gap`。
-public enum class/syntax boundary/current source creditは追加しない。
-implementationはliteral public inventoryとexisting enum/source-spec lintを同期する。
-
 Completion evidence: [central Task-249M historical contract](../../task_contracts/ja/249M.md#completion-evidence)。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 262 active source audit
 
-public syntax-free `source_mode_definition` moduleがfrozen upper
-`source_drift`をcloseし、checker test 5件とexact private consumerがcanonical由来の
-`test_gap`をcloseする。non-empty dense table 6件、resolver/lower fingerprint、
-unresolved inhabitation request 1件、linked Pending `Sethood` row 1件がactiveで
-ある。public enum/source-spec/documentation/syntax-boundary lint inventoryはmoduleを
-含む。syntax dependency、evidence result、proof、acceptance、fact、IR、VC、
-structure-definition creditは導入しない。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
+
 ## Task 249S frozen future public-surface audit
 
-fresh Task-263 preflightはstandalone structure-member type owner欠落を
-`source_drift`、canonical由来corruption/ownership test 4件を`test_gap`、
-fabricated bindingまたはdefinition-return/mode-RHS family reuseを
-`boundary_violation`に分類する。Chapter 5は十分でblocking `spec_gap`はない。
-
-Task 249Sは`source_type.md`でfreezeしたpublic dense ID、input、immutable
-row/table、handoff getter、producer、non-exhaustive error 5件を追加する。exact
-profileは`0/4/0/0/0/4`。new public enum type、syntax dependency、normalized type、
-diagnostic、obligation、semantic result、runner、corpus、trace creditは追加せず、
-existing non-exhaustive public `SourceTypeError`へvariant 5件をappendする。
-implementation時にliteral public/source-spec lint inventoryを同期する。
-
 Completion evidence: [central Task-249S historical contract](../../task_contracts/ja/249S.md#completion-evidence)。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 263 frozen source/API audit
 
-fresh inventoryにexisting `source_structure_definition` production ownerはない。
-exact sourceはcommitted Task 263R後にparser/resolver cleanとなり、4 written member
-typesはcommitted Task 249S後だけrepresentableである。これはupper checker
-`source_drift`、paired `design_drift`、canonical由来runner `test_gap`で、
-`spec_gap`ではない。
-
-new canonical designはRust edit前にfuture public surface全体をfreezeする。dense ID
-5種、caller input row 4 families、non-exhaustive enum 3種、derived coherence tableを
-含むimmutable table 5種、projection/error/producer、Typed/final getterとone
-transactional installerである。active profileは`2/4/1/2/0`、parameter/context
-absent、propertyはconstructor vector外、両mappingはauthenticated identical bare
-`set`、arbitrary obligation baseline unchangedである。goal/guard/obligation kind/
-diagnostic/acceptance/proof/fact/Core/CFG/VC surfaceはauthorizeしない。
-
-docs prerequisiteはsource/APIを追加せず、checker production `27/156019`、tests
-`462`を保つ。implementation inventoryはseparate docs commitとfresh dependency
-preflight後だけ追加できる。
-
-future handoffはgetter/stable-debug serializationなしのprivate immutable baseline-
-obligation snapshotを持ち、Typed/final equalityでsame-length mutationを拒否する。
-public `debug_text()`はexact line grammar/profile/escaping/list/empty-coherence/final
-LFまでfreezeする。checker tests 2/3はsingle-faultだけでなくcompound adjacent-
-category/cross-row precedenceを所有する。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 263 active source/API result
 
-public syntax-free `source_structure_definition` module、上記literal inventory、
-checker test 5件、exact private consumerがfrozen `source_drift`/`test_gap`をcloseする。
-public enum 4件はnon-exhaustiveで、module export/source-spec/module-layout/syntax-
-boundary/allow-rationale lint inventoryはactive。profileはexact `2/4/1/2/0`で、
-undocumented semantic/diagnostic surfaceはない。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 264R source/specification audit
 
-canonical Chapters 5/7/13とParser Task 48はrepresented property-implementation context
-shellをauthorizeするが、resolver identity/checker payloadは認可しない。dropped shellは
-lower `source_drift`、shell/identity-stability design欠落は`design_drift`、resolver
-regression 2件は`test_gap`、selector/property-clause/redefinition/registration identity流用は
-`boundary_violation`。Chapter 16はnew lower proof semanticsを与えない。frozen correctionは
-existing semantic sibling path、contribution anchor/effect、checker/corpus/trace stateを保存する。
-Task 248P/264はopenのままで、undocumented checker semantic surface/coverage creditはない。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 264R implemented source/specification status
 
-lower resolver `source_drift`、`design_drift`、canonical由来`test_gap`をchecker source/
-language behavior変更なしでcloseした。Chapter 7 property payload/provenance、means/equals、
-means-only `it`、referenced return type、definiens、initial obligation、全semantic deferralは
-Tasks 248P/264でopenのままで、checker/executable coverage creditを追加しない。
-
 Completion evidence: [central Task-248P historical contract](../../task_contracts/ja/248P.md#completion-evidence)。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 248P implemented source/specification status
 
-classified checker `source_drift`、`design_drift`、canonical-derived `test_gap`はexact
-Profile-C implementation/tests 2件でcloseした。specification/expectation/repository-
-metadata repairやexecutable coverage creditは追加しない。property identity/payload、
-return type、definiens、initial obligation、proof/acceptance/fact、real runner consumerは
-Task 264でexplicitly openのままである。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 264 frozen source/specification status
 
-Chapters5/7/13/16はbounded means/equals transport、means-only `it`、declared
-property return、existence+uniqueness対zero obligationをauthorizeする。Missing
-checker producer=`source_drift`、missing ABI=`design_drift`、two consumers=
-`test_gap`、Task249S composition=separate Task249PI `source_drift`で、blocking
-`spec_gap`はない。Shellからidentity、bodyからreturn、ad-hoc guard/FOL、inactive
-coherence、proof/acceptance/fact/IR/VCをinfer/publishするのは禁止boundaryである。
-Implementation後public inventoryはcanonical module docの5 IDs/tables、enums、
-handoff/projection/producer、typed/final getters、serializer literalsをexactに列挙する。
-
 Completion evidence: [central Task-249PI historical contract](../../task_contracts/ja/249PI.md#completion-evidence)。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 249PI implemented source/specification audit
 
-classified lower `source_drift`、paired `design_drift`、4-test `test_gap`はexact
-frozen transportでclosed。bounded test gapとorphan-installation gap修正後、test/
-implementation再reviewは**NO FINDINGS**。spec/corpus/trace/semantic creditは変えず、
-Task264が全frozen semantic responsibilityを保持する。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 264 implemented source/specification audit
 
-public syntax-free `source_property_implementation` moduleはfrozen five-table
-equals/means transport、exact resolver targetとdeclared return-row association、
-complete lower fingerprint、means-only Pending existence/uniqueness intakeを
-実装する。Typed/final ownerはTasks 259--263とmutually exclusiveで、proof、
-discharge、acceptance、fact、formula result、diagnostic、Core IR、control-flow IR、
-VCをpublishしない。
-
-canonical由来pass fixture 2件とcovered trace row 1件がTask264 `test_gap`をcloseし、
-exact checker testsがconstruction/corruption/transactional installation/replay/
-orphan-extra obligation/Task259 isolation gapをcloseする。Parameter declaration
-anchorとEquals selector-member ownershipの修正はderived designを既存frozen
-Task248P/254 public APIへ整合させる。`doc/spec`、existing `.miz`、existing
-expectation intentは変更せず、このbounded transactionにblocking `spec_gap`はない。
-
-### Task264C public carrier-identity receipt
-
-Paired
-[Task264C contract](../../task_contracts/ja/CHECKER-SOURCE-PROPERTY-CARRIER-IDENTITY-264C.md)
-はpublic source inventoryに`SourcePropertyCarrierIdentity`と
-`SourcePropertyImplementationHandoff::carrier_identity()`を追加する。Private fieldと
-role-specific getterはexact `Task264Carrier`、`carrier`、`marker`のwhole symbol/
-definition/contribution/normal originを保持する。Existing producerはexact `3/3/1`
-resolver envからderiveし、final replayはparameter type head/target rowに照合する。
-New enum/error/producer input/Typed・Resolved slot/diagnostic/semantic output/coverage claimを
-持たないadditive syntax-free fail-closed transportである。
-
 Completion evidence: [central Task-269A historical contract](../../task_contracts/ja/269A.md#completion-evidence)。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 269A implemented source/specification audit
 
-public syntax-free module/private dormant consumerはclassified definition-site
-`source_drift`、`design_drift`、8-test gapだけをcloseする。全lower identity、
-source/arena byte、resolver-local provenance、fingerprint、binding-order behaviorは
-canonical由来frozen contractに一致する。specification、existing test intent、trace
-credit、diagnostic、deferred typing/proof/goal/fact/IR behaviorは変更せず、blocking
-`spec_gap`/boundary violationを導入しない。
-
-### Task 269B frozen B3M1 source audit
-
-| specification promise | source evidence | test intent | status |
-|---|---|---|---|
-| exact mixed listのnamed witnessだけがlocal bindingを導入しunnamed siblingは導入しない。 | frozen Task-258B3M1 witness rows `0/1`上のexisting Task-269A API。 | existing checker/runner compound testsをB3M1/mutation/profile isolationへexpand。 | frozen、implementation pending。 |
-| goal semanticsなしでsource order/scopeをauthenticateする。 | resolver-local `y@[0],84..85,visible-after=1`、fingerprint5件、56-node replay。 | definition-site/later lookup、all-node/fingerprint/cross-profile reject。 | frozen、type/goal/proof/capture deferred。 |
-
-public API、spec/corpus/trace、coverage、diagnostic、audit ownerを変更しないため
-`spec_coverage_audit.md`はintentional no-op。
-
 Completion evidence: [central Task-269B historical contract](../../task_contracts/ja/269B.md#completion-evidence)。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 269CP source/spec classification
 
-synchronized exact isolated proof-`let` lower contractは`design_drift`をcloseする。
-bounded runner-private implementationが`source_drift`を、canonical-derived
-tests 4件がselected `test_gap`をcloseした。実装はfrozen exact
-source/Surface/shell/resolver/local projectionだけをauthenticateし、checker semantic
-effectは0。later-use/captureはreadyでなく
-external source-payload gapのまま。existing spec/fixture/expectation/traceはread-only
-で、coverage auditはownershipだけを変更しcreditは0。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 269C source/spec classification
 
-Chapters 4/15/16はselected proof-local binding/scopeだけをauthorizeする。frozen syntax-
-free checker/runner transactionがbounded `source_drift`を、checker/runner tests各4件が
-bounded `test_gap`をcloseする。missing source-type admissionとresolver-wide later-use/
-captureはseparate `source_drift`。`doc/spec`、`.miz`、expectation、trace status、
-diagnostic、proof/semantic intentは不変でbroad diagnostic fixtureへpositive creditは0。
-
-implementationはclassified binding `source_drift`と8-test `test_gap`だけをcloseする。
-canonical artifactはbyte-identicalで、source-type、real use/capture、全proof/
-diagnostic semanticsはnew source behaviorから推測せずopenのまま。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 269CT source/API audit
 
-canonical Chapters 4/8/15/16がexact written proof-`let` type transportをauthorizeする。
-new public ownerは`SourceProofLocalLetTypeHandoff` / `Producer` / non-exhaustive `Error`と
-boxed Typed/final getter/installer。generic `SourceTypeProducer`とTask-269C API behaviorは不変。
-implementation/test gap 8件はbounded `source_drift` / `test_gap`、semantic/active coverageはdefer。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 269CT implemented source/API audit
 
-bounded `source_drift`とtest 8件の`test_gap`をfrozen Rust 7 filesだけで閉じた。public
-additionはdocumented struct field order、producer signature、non-exhaustive error 4 variant/
-display order、Typed/final getter/installerに一致。generic Task-249 behaviorとTask-269C bytesは
-unchanged。final-input review findingは`boundary_violation`で、Task-specific empty-node-hint
-predicate/regression修正後**NO FINDINGS**。canonical/active artifact変更なし。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 269GP source/API audit
 
-canonical Chapters 4/15/16とmeasured parser/resolver dataはexact private proof-`given`
-syntax-lower projectionをsupportする。missing contract/source/testsは`design_drift`/
-bounded `source_drift`/`test_gap`。Chapter 4 §4.6.1とChapter 16
-§§16.3.3/16.4.2のbinding scope矛盾はblocking `spec_gap`で、269GPからexcludeしhuman
-canonical reviewがownする。checker API、canonical artifact、trace status、active
-result変更なし。Task269は未完了でTask270はgated。
-repeated source/docs/final-quality reviewは**NO FINDINGS**、narrowed taskはhard gate
-9件をscore capなし`100/100`でPASS。
-
-exact runner projection/test 4件を実装し、bounded `source_drift`/`test_gap`をclose。
-canonical source/test intentとchecker public APIは不変。scope矛盾は未解決のままで、
-269GP implementation commit後も269G/269GTだけをblockする。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 269GS source/API audit
 
-human-approved canonical editが`given` lifetime `spec_gap`をdocumentationでresolve。existing
-parser syntax/269GP runner-private projectionはcompatible。checkerに
-`SourceProofLocalGiven` binding consumer/public APIがないことはnext Task269G
-`source_drift`、existing fixtureがlater witness useを実行しないことは`test_gap`。269GSでは
-source/test artifact変更なし。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 269G source/spec delta
 
-planned sourceはTask269GP lowerから`GivenWitness` `BindingEnv` row 1件を構成し、その
-handoffをotherwise-empty Typed/final profileがownする。semantic/node tableと全sibling handoffは
-emptyのまま、exact lookup matrixがcanonical block lifetimeをcover。source typeはTask269GT、
-condition/fact/proof/active use extractionはdefer。existing canonical artifact rebaselineなし。
-
-implementationはこのbinding `source_drift`と8-test `test_gap`だけをcloseした。public Given
-family、`BindingKind::GivenWitness`、Typed/Resolved ownershipはfrozen contract/canonical block
-scopeに一致。canonical artifactはbyte-identicalで、source type、active use/capture、全condition/
-fact/proof semanticはsource behaviorから推測せずopenのまま。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 277A Frozen Source/Specification Mapping
 
-[central Task 277A contract](../../task_contracts/ja/277A.md) はTemplates Chapter 18の
-direct parser-origin Parameter/Loci/Locus/Arguments/Argument grammar roleだけを
-syntax-free/targetless transport profileへmapする。exact fixtureはscheme/theorem source
-role、algorithm、pred/func schema parameterを持たない。implemented durable owner/source
-producer/focused testはbounded `design_drift`/`source_drift`/`test_gap`をcloseし、矛盾する
-algorithm wordingはdeferred `spec_gap`のまま。expectation/coverage statusは変えず、
-targetless/no-impact boundaryを維持する。
-
-current public surfaceは上記`source_template`にinventory済み。module/export、
-public-surface、public enum 4件はpaired current inventoryとchecker
-`tests/lint_policy.rs`に存在する。このpolicy-only ninth Rust pathはbehavior/test countを
-追加しない。independent review/final quality re-reviewは**NO FINDINGS**、全9 hard
-gateはscore capなしの有効な`100/100`でPASS。exact staging/cached-diff reviewもPASSした。
-implementation commit `b67b028e07337ff5b72422bc8f16fb8f187b5c06`の直後、read-only
-post-implementation checkpointは
-`HEAD=b67b028e07337ff5b72422bc8f16fb8f187b5c06`、clean worktree、
-`origin/main...HEAD=0/1`、unchanged protected
-`stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4`をobserveした。Task 277Aはcomplete、
-umbrella Task 277はpartialのままで、successorはseparately frozen/reviewedでなければ
-ならない。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 277B-L Implemented Source/Specification Mapping
 
-[Task 277B-L contract](../../task_contracts/ja/277B-L.md) はcompleteした resolver
-`TemplateTypeParameterSourceCollection` からexisting `TypedAst` へのchecker-only structural
-bridgeのcompletionをrecordする。former `design_drift`、`source_drift`、Rust `test_gap`はclosedし、
-Templates/term-expression ruleを新規deriveしないため`spec_gap`はない。standalone
-owner は [source_template_type_parameter_association](./source_template_type_parameter_association.md#task-277b-l-template-type-parameter-association) で、277A `source_template` ではない。
-
-implemented producerはR1 binding identityをnormal/exact/range-anchored typed nodeとdirect
-structural edgeに対してvalidateし、immutable zero-semantic association tableをyieldする。
-Typed/Resolved stateをinstallせず、type/sethoodをinterpretせず、diagnostic/active routeを
-変更せず、Task 277Bをreadyにしない。したがってspecification coverage、traceability、
-`spec_coverage_audit.md` にowned-state deltaはない。
-
-`src/lib.rs`は`source_template_type_parameter_association`をexportし、checker lint policyは
-対応するpublic-enum module、source/spec module、public-API path、`lib.rs` public-module
-allowlist entryを持つ。したがって上記current crate-export list/public-surface inventoryはexact。
-test-sufficiency reviewは**NO FINDINGS**、implementation reviewはcanonical `Identifier` prefix-spoof
-fix後に**NO FINDINGS**。source/documentation re-reviewはEN/JA CLI tense fix後に**NO FINDINGS**、
-bilingual/boundary reviewも**NO FINDINGS**。focused/lint/library、package/workspace Clippy、full test、
-format/diff、metadata、CLI、protected-surface gateは全てPASS。identifier-within-type-head containment
-repair後のfinding-specific final-quality re-reviewは**NO FINDINGS**。全9 hard gateはscore capなし
-valid `100/100`（`20/20/15/15/10/10/5/5`）でPASS。exact staging/cached-diff review、task-only
-commit、post-implementation proof、fresh successor inventoryはcentral [historical checkpoint](../../task_contracts/ja/277B-L.md#post-implementation-checkpoint)でclosedし、successorはselectしない。
-Task 277Bはnot ready、semantic
-creditはzeroのままである。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 269GT source/API delta
 
-documentation-prerequisite commit
-`35bc97b92ce075226105e8fcd4c1e43c8621995c`時点のsourceには
-`SourceProofLocalGivenType*` family/Given-type Typed/final ownerがなく、implementation-owned
-`source_drift`だった。frozen planはhandoff/producer/non-exhaustive error、Typed getter/
-installer、Resolved getter、private exact binding profile。下のimplementation statusはcanonical/
-active artifactをrebaselineせず、そのclosureを記録する。
-
 Completion evidence: [central Task-269GT historical contract](../../task_contracts/ja/269GT.md#completion-evidence)。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 269GUP frozen source/API delta
 
-blocking `spec_gap`なし。exact sibling binding profileは`test_gap`、private lower/public binding
-family不在は`source_drift`、stale owner/statusは`design_drift`。`source_type.rs`でのbinding再構築/
-resolver-use tableは`boundary_violation`。lower/public binding family/8 testsだけをfreezeし、
-direct GP/G/GT不変、GUPT/GU absent。
 Completion evidence: [central Task-269GUP historical contract](../../task_contracts/ja/269GUP.md#completion-evidence)。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 269GUPT frozen source/spec mapping
 
-Chapter 3/4/8/15/16とexact GUP source/lower/bindingはdeclared `set` source typeだけをrequireし、semantic publicationはrequireしない。planned public coverageは`SourceProofLocalGivenUseTypeHandoff`/`Producer`/`Error`、checker/runner各4 tests。implementationまではfrozen `source_drift`/`test_gap`で、canonical spec、`.miz`、expectation、trace、active creditは変更しない。
-
 Completion evidence: [central Task-269GUPT historical contract](../../task_contracts/ja/269GUPT.md#completion-evidence)。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 269GU source/spec mapping凍結
 
-canonical Chapters 4/13/15/16とexact GUP/GUPT artifactはlater `y` variable
-reference 2件だけをauthorizeし、enclosing formula semanticsはauthorizeしない。
-planned public coverageはGU handoff/producer/non-exhaustive errorとchecker/runner
-各4 test。implementationまではbounded `source_drift`/`test_gap`。canonical spec、
-`.miz`、expectation、trace、metadata、diagnostic、CLI、active creditは不変。
-
 Completion evidence: [central Task-269GU historical contract](../../task_contracts/ja/269GU.md#completion-evidence)。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 269GCP frozen source/spec mapping
 
-Chapters 4/15/16はGiven witnessが自身の`such that` occurrenceをbindすると明記。
-existing canonical fixtureに該当useがないため、canonical-derived private exact
-profileはbounded `source_drift`/`test_gap`でspec変更ではない。GCPはsource/
-Surface/shell/theorem provenance/declaration-type rangeだけをauthenticateし、
-condition termはGCUまでunowned。`.miz`/expectation/trace/diagnostic/dispatch/
-coverage statusは不変。
-
 Completion evidence: [central Task-269GCP historical contract](../../task_contracts/ja/269GCP.md#completion-evidence)。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 269GC frozen source/spec mapping
 
-Spec 4.6.1、15.3.3、15.10、16.3.3、16.4.2をexact GCP-derived binding
-transaction/scope matrixへmap。focused private testでclassified gapを閉じ、existing
-.miz/sidecar/expectation/traceは不変。written typeはGCT、condition occurrenceは
-GCU。condition/fact/proof semantics/active creditなし。
-
 Completion evidence: [central Task-269GC historical contract](../../task_contracts/ja/269GC.md#completion-evidence)。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 269GCT frozen source/spec mapping
 
-canonical soft typing/`given` ruleをexact `set@90..93`からwitness binding 1へmapし
-GC identity/lookupを保持。distinct public family、common source-type table、
-Typed/final boxed owner、focused Rust tests 8件だけがderived consumer。existing
-`.miz`/sidecar/expectation/trace/metadata/diagnostic/dispatch/creditは不変。missing
-family/testは`source_drift`/`test_gap`、frozen mappingが`design_drift`をrepair。
-condition occurrence/semanticsはGCU/later、blocking `spec_gap`なし。
-
 Completion evidence: [central Task-269GCT historical contract](../../task_contracts/ja/269GCT.md#completion-evidence)。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 269GCU frozen source/specification mapping
 
-Chapters 4/13/15/16は`y@107..108`/`y@111..112`をblock-local witness
-`82..83`へmapする。exact GCTがbinding1/resolver provenanceを供給し、GCUは
-2 variable/reference rowsとownerだけを追加。missing family/testsは
-`source_drift`/`test_gap`、本docsは`design_drift`をcloseし、blocking
-`spec_gap`なし。全wider semantics/active creditはdefer。
-
 Completion evidence: [central Task-269GCU historical contract](../../task_contracts/ja/269GCU.md#completion-evidence)。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 269SDP source/spec mapping
 
-| canonical requirement | frozen evidence | status |
-|---|---|---|
-| Given descendant scope、now/set/reference syntax | exact 180-byte source、68-node Surface、Given/now/two-Set ranges、private 4 tests | syntax-only implemented、bounded `design_drift`/`source_drift`/`test_gap`はclosed、active credit 0 |
-
-Ch.4/15の`set` effect矛盾を選択せず、capture/closureをblockしたままにする。
-
 Completion evidence: [central Task-269SDP historical contract](../../task_contracts/ja/269SDP.md#completion-evidence)。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 269SDC frozen source/specification audit
 
-post-SDP inventoryはmissing exact descendant contractを`design_drift`、
-producer/Typed/Resolved/private runner欠如を`source_drift`、exact
-child-context tests欠如を`test_gap`とする。Specs 4.6.1、
-15.3.3/15.6.1/15.10、16.3.3/16.4.1--16.4.3は`1/1/0 -> 3/2/0`、
-inherited `y`、parent/sibling exclusionの
-安全なtest intentを与える。Ch.4/15 Set conflictはSDCにはnonblocking、
-LocalAbbreviation/captureにはblockingな`spec_gap`。既存`.miz`/
-expectation/trace/coverage status/diagnosticは不変で、新fixtureは不要。
-
 Completion evidence: [central Task-269SDC historical contract](../../task_contracts/ja/269SDC.md#completion-evidence)。
+本文は英語正本へ移管: [../en/source_spec_audit.md](../en/source_spec_audit.md) / [archive](../../archive/checker_source_spec_audit_sections.md).
 
-### Task264D equals selector identity receipt
-
-[Task264D contract](../../task_contracts/ja/CHECKER-SOURCE-PROPERTY-EQUALS-SELECTOR-IDENTITY-264D.md)
-はexact equals lower graphとresolver-authenticated whole `carrier` field symbol間の
-checker `source_drift`だけをcloseする。Chapter 7はdirect-term equals form、existing
-Task264 `.miz`は`M.carrier`をownする。Construction-only explicit `SymbolEnv`がbounded
-resultをauthenticateし、3 complete handoffとprivate scalar associationがreplay用に
-preserveする。Semantic/trace/metadata/coverage creditは追加しない。
