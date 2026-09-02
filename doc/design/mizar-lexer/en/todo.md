@@ -7,7 +7,8 @@ language-spec synchronization.
 
 ## Ordered Task List
 
-All non-deferred lexer-owned tasks are complete.
+1. [ ] **Step 5A.3 / G2** — active; see the
+   [task contract](../../task_contracts/en/STEP5A3-G2-SYMBOLIC-USER-SYMBOLS.md).
 
 ## Completed Tasks
 

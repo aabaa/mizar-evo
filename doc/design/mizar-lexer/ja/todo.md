@@ -7,7 +7,8 @@
 
 ## Ordered Task List
 
-non-deferred lexer-owned task はすべて完了しています。
+1. [ ] **Step 5A.3 / G2** — active。詳細は
+   [task contract](../../task_contracts/ja/STEP5A3-G2-SYMBOLIC-USER-SYMBOLS.md)。
 
 ## Completed Tasks
 
