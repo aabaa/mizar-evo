@@ -1,5 +1,14 @@
 # Module-Boundary Audit: mizar-test Runner
 
+> Compacted 2026-09-02 (batch CPT-05, rules in
+> [../../documentation_compaction_rules.md](../../documentation_compaction_rules.md)):
+> the per-task boundary-audit sections moved
+> verbatim to
+> [../../archive/mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md);
+> every heading, registered ledger redirect line, and the pinned Task
+> Index stay below. The authoritative per-task detail is the paired
+> task contract under [../../task_contracts/en/](../../task_contracts/en/).
+
 Task 277A completion-state evidence: the new private production leaf (315
 lines), test-only facade (977), test leaf (313), and test registry (61)
 implement the dormant targetless route. The test leaf physical SHA-256 is
@@ -14,13417 +23,1779 @@ coverage boundary changes; the route remains zero-credit.
 
 ## Checker Task 257C4A frozen module boundary
 
-The completed [C4A contract](../../task_contracts/en/CHECKER-FRAENKEL-GENERATOR-BINDING-257C4A.md)
-implements mizar-test changes only in `runner/tests.rs` and one new private
-type-elaboration leaf. The leaf consumes the checker handoff; it cannot create
-or normalize a missing lower dependency. Public runner schemas, dispatch,
-production checker paths, Cargo, fixtures, expectations, trace/coverage,
-metadata, diagnostics, active stages, and downstream crates remain excluded.
-The measured two-path test-only boundary is 66/156 lines with no production
-inventory change. Independent implementation/test reviews report no findings;
-broad workspace verification passes and the independent bilingual/boundary
-review reports **NO FINDINGS**. Final-quality is **NO FINDINGS**; all `9/9`
-hard gates pass at valid uncapped
-`100/100` (`20/20/15/15/10/10/5/5`). The historical pre-commit staging/cached
-review passed over
-28 paths (4 Rust and 24 documentation paths), including one new private leaf,
-with no unstaged paths at review time; cached diff check passed at 2435
-insertions / 101 deletions. The task-only commit, immediate post-commit proof,
-and accepted fresh-inventory disposition are closed in the language-local
-[historical checkpoint](../../task_contracts/en/CHECKER-FRAENKEL-GENERATOR-BINDING-257C4A.md#historical-immediate-post-implementation-checkpoint).
-C4B remains unselected and requires a separately frozen post-closure
-documentation prerequisite; Task 277B remains not ready with zero semantic
-credit.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 257C4B frozen module boundary
 
-The completed [C4B contract](../../task_contracts/en/CHECKER-FRAENKEL-GENERATOR-BOUND-USE-257C4B.md)
-keeps mizar-test changes to `runner/tests.rs` and one new private
-type-elaboration leaf. The leaf consumes the checker C4B API through the
-existing inactive F5 test construction and cannot create, repair, normalize,
-or publish a missing checker dependency. Mizar-test production remains 38
-paths / 80090 lines with unchanged hashes.
-
-Public runner schemas, dispatch, active stages, Cargo, fixtures, expectations,
-trace/coverage, metadata, diagnostics, semantic verdicts, production checker
-paths, and downstream crates are excluded. The exact test-only delta is one
-include and one test (`613 -> 614`): the registry is 67 lines /
-`94bc44e8ba47ca568670adeec74d20f6738b3fc337da2422871095137040e8c4`
-and the leaf is 121 lines /
-`bea54489cf0c85d3026f950d080a0ffc609719fda28520b9e7b2f59d5fc162bc`.
-The focused/private and `614/614` library checks pass; independent
-implementation/test reviews are **NO FINDINGS**. Independent bilingual and
-boundary review is **NO FINDINGS** after the sole Low baseline/current wording
-repair. Final-quality is **NO FINDINGS**; all `9/9` hard gates pass at valid
-uncapped `100/100` (`20/20/15/15/10/10/5/5`). Exact 23-path staging/cached
-review also passes. The task-only commit, immediate post-commit proof, and
-accepted fresh semantic STOP are closed at the language-local [historical
-checkpoint](../../task_contracts/en/CHECKER-FRAENKEL-GENERATOR-BOUND-USE-257C4B.md#historical-immediate-post-implementation-checkpoint).
-No production-boundary expansion or successor is selected.
-Full-workspace Clippy/tests,
-metadata/public-enum suites, and five unchanged CLI replays pass without a
-production-boundary change. Task 277B remains not ready and zero-credit.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Resolver Task 277R2 Test Module Boundary
 
-[Task 277R2](../../task_contracts/en/RESOLVE-FRAENKEL-GENERATOR-VAR-277R2.md)
-changes only test registration in `src/runner/tests.rs` and one new private
-`src/runner/tests/type_elaboration/fraenkel_generator_variable_identity.rs`
-leaf. It consumes existing parser/frontend and resolver APIs to observe the
-immutable F5 seed. It does not add or alter a production runner module, route,
-dispatcher, facade, detail key, checker handoff, Typed/Resolved output, Cargo
-edge, fixture stage, metadata/trace owner, diagnostic, or semantic publication.
-Production runner remains the protected 38-path / 80,090-line inventory. The
-implemented test-only boundary has passed the exact fixture test and focused
-verification; final independent boundary review reports **NO FINDINGS**.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 277C Frozen Module Boundary
 
-The [277C contract](../../task_contracts/en/CHECKER-FRAENKEL-TEMPLATE-STRUCTURAL-277C.md)
-gives mizar-test only the completed inactive private F5 probe and its `tests.rs`
-registration. It consumes checker composition output through a direct private test;
-it neither creates production plumbing nor changes fixtures, expectations,
-traceability, coverage, diagnostics, Typed/Resolved installation, or active dispatch.
-The existing F5 parse/lower helpers and mizar-test 38-path / 80090-line production
-baseline remain protected. Broad verification passes and the independent boundary
-review reports **NO FINDINGS**; final-quality review also reports **NO FINDINGS**
-with all nine hard gates passing uncapped at valid `100/100`
-(`20/20/15/15/10/10/5/5`).
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 257B1 Formula-Composition Current-State Addendum
 
-Task 257B1 adds one cohesive 540-line private
-`source_formula_composition.rs` consumer leaf, a 326-line private runner test
-leaf, and a bounded extraction extension to the 2,848-line
-`source_formula.rs`. Raw `SurfaceAst` traversal remains private; the checker
-receives only syntax-free Task-252/256/257 and `1/2` composition inputs.
-`runner.rs` is 2,455 lines and the type-elaboration facade is 654 lines.
-
-The measured coverage boundary is plan `415/381`, type-elaboration
-`247/235`, pass/fail `225/190`, active parse/declaration/type/proof
-`101/5/194/1`, and warnings/errors `23/0`. The only new corpus consumer is
-the exact 79-byte pass fixture. The production manifest is 29 paths / 31,374
-lines with path/content hashes
-`ee27e3796008fdd180ad8fdfbedfd5b370cb76a0d0f87356487bc82cc5a8f9f6` /
-`8b101e3a0a94fcac1dcfd385d311b31d07f6e9f29cbc47b39f42fb51ac71f0ca`.
-The 338-test raw/normalized list hashes are
-`2900152f79beca3c1046343b3cce4d559093efb552fc2930b8356760b91c8734` /
-`3ed20d0a843900cc540c30821532a971a89ca15269307be7de5cebb0dfae7d94`.
-The plan/parse/declaration/type/proof CLI hashes are
-`73e71d3a40136e1ae4c47db6e3a296a5370b3bcd461e3b60da36b3b3f8157aab`,
-`a8a7aa639d2ebc65eddc923c7e9369ea5637d50e935f808600f446da1bfbda56`,
-`210055108c257ff65c6f45fb654c82e506653ec4617b68d111893bb3aa1da5a8`,
-`142837a7bd9df3bdda1ec49ffa3fb5a9da46ced96cdd310b58c10d1b2b2457ef`,
-and `ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 257C3 Frozen Boundary Recheck
 
-No production path or line changes in this prerequisite. The future complete
-route keeps loaded-source traversal and resolver selection in
-`source_formula.rs`, reuses the lower Task-252/256 builder in
-`source_atomic_formula.rs`, and places only complete-route orchestration in
-`source_formula_composition.rs`; tests remain in their paired leaves. The
-cohesive manifest stays 29 paths / 34,064 lines with path/content hashes
-`ee27e3796008fdd180ad8fdfbedfd5b370cb76a0d0f87356487bc82cc5a8f9f6` /
-`c153fa786ac5efcbd72d51441cbdfb52d30c8fcd2947134cb8c10cf9fa389127`.
-No split is required.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 257C3 Implementation Boundary Recheck
 
-No production path was added. The public dispatcher remains 2,475 lines and
-the private type-elaboration facade 665. The reused atomic lower owner is
-1,068 lines; the composition owner is 1,853 lines and now owns the bounded
-C3 input/installation route. Its paired test leaf is 2,528 test-only lines.
-The 29-path production layout remains cohesive at 34,290 lines with
-path/content hashes
-`ee27e3796008fdd180ad8fdfbedfd5b370cb76a0d0f87356487bc82cc5a8f9f6` /
-`ac85812af57234cbd1af88de729da4b7fe438dc22efe23dd234f3cd10967ca2c`.
-
-The runner library has 365 tests with raw/normalized hashes
-`8194474d60e02ce0c96e69b69957cd0133147b996e3b7cb0acad6ea11b7afd5b` /
-`517ae63c0c7335c1b5c763119e9664c5d6efa3defa7265b7f1fed21e6ea964c3`.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 257C2 Implementation Boundary Recheck
 
-Task 257C2 adds no production path. The complete exact route remains in the
-existing `source_formula_composition.rs` leaf, now 1,632 lines; the public
-dispatcher is 2,472 lines and the type-elaboration facade is 662 lines. The
-paired formula-composition test leaf is 2,011 test-only lines. Loaded-source
-selection, resolver provenance, same-arena lower composition, atomic
-equality construction, condition association, and diagnostic preservation
-remain behavior-coupled, so no split is warranted.
-
-The production manifest is 29 paths / 34,064 lines with path/content hashes
-`ee27e3796008fdd180ad8fdfbedfd5b370cb76a0d0f87356487bc82cc5a8f9f6` /
-`c153fa786ac5efcbd72d51441cbdfb52d30c8fcd2947134cb8c10cf9fa389127`.
-The 361-test raw/normalized list hashes are
-`ca64354eba9a6b54f7a7d83f505e8116379069d61bfb58021642e1864bc14d8b` /
-`0a3d92a16403d01e7642e2a2dfeee60cbae096ec373f85dafddd61ac4ef28c57`.
-Plan/parse/declaration/type/proof CLI hashes are
-`403c09c44638d8d309f41288076c8ee84ddf74b6452fd38d9587b8c876824614`,
-`a8a7aa639d2ebc65eddc923c7e9369ea5637d50e935f808600f446da1bfbda56`,
-`210055108c257ff65c6f45fb654c82e506653ec4617b68d111893bb3aa1da5a8`,
-`f87a743b914d2d51d6b9a8dbcf3c8d93bbc1403b44907fd85123a1865f84edd5`,
-and `ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 256C1 Frozen Boundary Recheck
 
-No mizar-test production or test owner changes. The manifest remains 29
-paths / 33,725 lines, the library remains 357 tests, and the production,
-test-list, and five CLI hashes in the latest Task-255C1 boundary recheck
-remain authoritative. The implemented compatibility predicate and its three
-tests belong solely to `mizar-checker/src/source_atomic_formula.rs`; both
-checker installation orders pass. At this historical C1 exit the frozen
-Task-257C2 runner route remained deferred; the later C2 implementation is
-recorded above. This task changed no runner-owned artifact.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 257C2 Frozen Boundary
 
-No production path or line changes in this prerequisite. The future complete
-route remains in the existing private formula-composition leaf and reuses
-bounded seams from the source-set, source-application, and atomic-formula
-leaves. Raw traversal and resolver work remain in `mizar-test`; the checker
-receives only syntax-free handoffs. The current 29-path/33,725-line manifest,
-357-test list, and all recorded hashes remain the documentation baseline.
-Separate Task 256C1 completed in the checker atomic-formula owner without
-changing this runner leaf. The later Task-257C2 implementation passed fresh
-preflight and extended the existing cohesive leaf without adding a path.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 257A Source-Composite-Formula Current-State Addendum
 
-Checker Task 257A adds one cohesive private `source_composite_formula`
-consumer leaf and a bounded extension to the existing `source_formula`
-extractor record. Raw `SurfaceAst` traversal remains private; the checker
-receives only the syntax-free seven-table transaction and resolver-shaped
-binder identity. `runner.rs` remains top-level orchestration at 2,447 lines.
-The 646-line type-elaboration facade dispatches to twenty-one private leaves;
-`source_formula.rs` is 2,684 lines and the new owner is 451 lines.
-
-The production manifest is 28 paths / 30,654 lines. Its sorted path hash is
-`425c41292c569afecfc30961c59b3b1a9b7fd5844c4ab1141968b62382ecf0b1`,
-and its ordered content-manifest hash is
-`e31dee03e0a14c21f6a5811d6bdcec91479794efea24548e1c76f89f24ad8b1f`.
-The only new production path is the private source-composite-formula leaf.
-
-The bounded trace row produces plan 414/380, type-elaboration 246/234,
-pass/fail 224/190, active parse/declaration/type/proof 101/5/193/1, and
-warnings/errors 23/0. The plan/parse/declaration/type/proof stdout hashes are
-`88c1c276cae2d5d927a43c94f4032a297ea7daa02c8f90a9f893ec45064ace8c`,
-`a8a7aa639d2ebc65eddc923c7e9369ea5637d50e935f808600f446da1bfbda56`,
-`210055108c257ff65c6f45fb654c82e506653ec4617b68d111893bb3aa1da5a8`,
-`afccc76e9714da9ae79eb4b1dbc60dde0ec339301ae0cb17a2ecc4b43d2d4eb8`,
-and `ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`.
-The library has 333 tests; its raw/normalized sorted-list hashes are
-`588d513b32f8ded332c86303d17d63a9e828fb6c76d8ba1f8ac31d23b48c6c24` /
-`727a1d54aa967f3973338956dae9269945730e6abe32b572a198d71377aea53b`.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 253 Source-Application Current-State Addendum
 
-Checker Task 253 adds one cohesive private `source_application` consumer and
-extractor leaf. Raw `SurfaceAst` traversal remains private; the checker
-receives only syntax-free application, wrapper, candidate, argument, and
-request tables. `runner.rs` remains facade/top-level orchestration only at
-2,412 lines. The 614-line type-elaboration facade dispatches to seventeen
-private leaves; `source_term.rs` is 777 lines after exposing only the bounded
-raw-term parts needed by the sibling leaf, and the new owner is 1,309 lines.
-
-The production manifest is 24 paths / 25,607 lines. Its sorted path hash is
-`5cc36b8a2ee72572003893d975a81ffa356d0790674b05d85d6f99f7e45ffca0`,
-and its ordered content-manifest hash is
-`b9b6c678e129e543e3e5047d6c053db2a45616f286927ce9a1fe0433dc0b62a8`.
-The only new production path is the private source-application leaf.
-
-The exact increment produces plan 412/376, type-elaboration coverage 242/230,
-pass/fail 224/188, and parse/declaration/type/proof admissions 101/5/191/1
-with warnings/errors 23/0. The five plan/parse/declaration/type/proof CLI
-stdout hashes are
-`3a7f500e120a799dd7fbd9e639920096d71e2087a4aaac0ff99e1a3775eed9c5`,
-`a8a7aa639d2ebc65eddc923c7e9369ea5637d50e935f808600f446da1bfbda56`,
-`210055108c257ff65c6f45fb654c82e506653ec4617b68d111893bb3aa1da5a8`,
-`c17f55bc5e85429f1d4abb5913d255a31c7747b1559090c427769eb13cb05b59`,
-and `ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`.
-Library tests become 303; the raw/normalized sorted-list hashes are
-`a81f44fb92196ce486e10e6cfc0901cd611159968dea43d13191df19a3c253b8` /
-`1a621c560a525cac18fac4a1ec4efa0f27986a60e0da40eb5701fe4325ac4cdd`.
-Tasks 254+, 260, 270, 277-278, and Steps 6/7 remain unpromoted.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 252 Source-Term Current-State Addendum
 
-Checker Task 252 adds one cohesive private `source_term` consumer/extractor
-leaf. Raw `SurfaceAst` traversal remains private; the checker receives only
-syntax-free term/reference/request input. `runner.rs` remains facade/top-level
-orchestration only at 2,400 lines. The 605-line type-elaboration facade
-dispatches to sixteen private leaves, and the new owner is 620 lines.
-
-The production manifest is 23 paths / 24,120 lines. Its sorted path hash is
-`562224fc62e93a256f5d3891e3a466a45ec23c24055e3a9f3f83848a0672a16b`,
-and its ordered content-manifest hash is
-`8a4b76e37a8a6921ed89e98372ccb037cd64ed583ac0bbe26466924ef0c4b028`.
-The only new production path is the private source-term leaf.
-
-The exact increment produces plan 411/375, type-elaboration coverage 241/229,
-pass/fail 224/187, and parse/declaration/type/proof admissions 101/5/190/1
-with warnings/errors 23/0. The five plan/parse/declaration/type/proof CLI
-stdout hashes are
-`abb786efba14d64f1e64086be3b2092691ed12555fcfac8a5875dd6f41b84924`,
-`a8a7aa639d2ebc65eddc923c7e9369ea5637d50e935f808600f446da1bfbda56`,
-`210055108c257ff65c6f45fb654c82e506653ec4617b68d111893bb3aa1da5a8`,
-`7a7aad76e29124d085c5bf2787660b7a2c8b377e27db3a1e6c98f6e60616e2c8`,
-and `ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`.
-Library tests become 291; the raw/normalized sorted-list hashes are
-`d46edefebc54a2f2f170cbfce8143ed036fa7ce339ebb3a746d89b55293931e5` /
-`f7b5babbf33e1e3e3afe4c49018744a4a0fe42968fd2e5edc411eb7bc49fc0a6`.
-Task 253 and later dependency-paced producers remain open; Tasks 260/264/269
-and Steps 6/7 remain unpromoted.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 251 Source-Evidence Current-State Addendum
 
-Checker Task 251 adds one cohesive private `source_evidence` consumer leaf.
-Raw `SurfaceAst` traversal remains in the existing source-type and
-source-attribute leaves; the new leaf owns only exact request association,
-dependency-input dispatch, checker publication, and outcome projection.
-`runner.rs` remains facade/top-level orchestration only at 2,393 lines. The
-599-line type-elaboration facade dispatches to fifteen private leaves; the new
-owner is 283 lines and the narrowly reusable source-attribute owner is 1,586
-lines.
-
-The production manifest is 22 paths / 23,487 lines. Its sorted path hash is
-`e51258a0b4c0d0fe40f6f8b6be9eeede276eb3de261cc2c2d48585b47dcf47f2`,
-and its ordered content-manifest hash is
-`17bc79a43b70f61f20e7d9829643d63725e6699cc277d3ea46bd5e22370df1b2`.
-The only new production path is the private source-evidence leaf.
-
-The exact increment produces plan 411/374, type-elaboration coverage 240/228,
-pass/fail 224/187, and parse/declaration/type/proof admissions 101/5/190/1
-with warnings/errors 23/0. The five plan/parse/declaration/type/proof CLI
-stdout hashes are
-`39840ba2adea76a2a3f801bd4c31fb7a6c2681de94bc2aebfc17476372673fb9`,
-`a8a7aa639d2ebc65eddc923c7e9369ea5637d50e935f808600f446da1bfbda56`,
-`210055108c257ff65c6f45fb654c82e506653ec4617b68d111893bb3aa1da5a8`,
-`7a7aad76e29124d085c5bf2787660b7a2c8b377e27db3a1e6c98f6e60616e2c8`,
-and `ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`.
-Library tests become 287; the raw/normalized sorted-list hashes are
-`c62c9a1634e74a576577339ee3e96e9263a1cbf98d4c6127b73b4526c91b88f2` /
-`eba9d6dd386275c2e11c9e4b825668b1ae885fefde079414e27e0c9d77e20f49`.
-Task 252 and later dependency-paced producers remain open; Steps 6/7 remain
-deferred.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 250 Source-Attribute Current-State Addendum
 
-Checker Task 250 adds one cohesive private `source_attribute` consumer leaf.
-Raw `SurfaceAst` traversal remains in `mizar-test`; the leaf passes only
-syntax-free chain/attribute/qualifier/group/actual tables into
-`mizar-checker`. `runner.rs` remains facade/top-level orchestration only at
-2,390 lines. The 593-line type-elaboration facade now dispatches to fourteen
-private leaves, including the new 1,575-line owner.
-
-The production manifest is 21 paths / 23,184 lines. Its sorted path hash is
-`bd42d60f45e40526a785a6ebcc0df910b99f33a8a8b19371f678070b51bac1d6`,
-and its ordered content-manifest hash is
-`d1421834a7c7613150634735c47aa2700ddf17a7ca2ffebd94f596664ee3a8eb`.
-The only new production path is the private source-attribute leaf.
-
-The exact increment produces plan 411/373, type-elaboration coverage 239/227,
-pass/fail 224/187, and parse/declaration/type/proof admissions 101/5/190/1
-with warnings/errors 23/0. The five plan/parse/declaration/type/proof CLI
-stdout hashes are
-`f50c4cac37451b794e81ca39a7a8392182e6f1720d538dfcbcafd8a030716ca7`,
-`a8a7aa639d2ebc65eddc923c7e9369ea5637d50e935f808600f446da1bfbda56`,
-`210055108c257ff65c6f45fb654c82e506653ec4617b68d111893bb3aa1da5a8`,
-`7a7aad76e29124d085c5bf2787660b7a2c8b377e27db3a1e6c98f6e60616e2c8`,
-and `ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`.
-Library tests become 283; the raw/normalized sorted-list hashes are
-`7299131f5b6fb342bb58a90afa4398df94ddd0ad7add0a6e06ef279bcd580157` /
-`ea186ced8875648729bd84d0c1204c8b642765de33507ee184110ee1a66c8fbd`.
-Tasks 251+/269+ and Steps 6/7 remain deferred.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 249 Source-Type Current-State Addendum
 
-Checker Task 249 adds one cohesive private `source_type` consumer leaf. Raw
-`SurfaceAst` traversal remains in `mizar-test`; the new leaf passes only dense,
-syntax-free application/expression/head/argument tables into
-`mizar-checker`. `runner.rs` remains facade/top-level orchestration only at
-2,387 lines. The 589-line type-elaboration facade now dispatches to thirteen
-private leaves, including the new 793-line owner. The existing
-`source_context.rs` leaf grows to 591 lines only to install the Task-248 2/2/0
-dependency co-consumer, and `checker_handoff.rs` grows to 1,297 lines only to
-keep legacy empty handoff construction explicit.
-
-The production manifest is 20 paths / 21,598 lines. Its sorted path hash is
-`be25d20f70bf838897d4cc7ba84cd52b32b98b925eb2a1ff7a30a79942600746`,
-and its ordered content-manifest hash is
-`31757cf5e206b324c8ae625b9328e5e8759d9778bc397ff6deda0726fa89dad3`.
-The only new production path is the private source-type leaf.
-
-The exact increment produces plan 411/372, type-elaboration coverage 238/226,
-pass/fail 224/187, and parse/declaration/type/proof admissions 101/5/190/1
-with warnings/errors 23/0. The five CLI hashes are
-`89261c4ba01276dbb8d262952e99aa91017e138aa8a22c644494274d7524b355`,
-`a8a7aa639d2ebc65eddc923c7e9369ea5637d50e935f808600f446da1bfbda56`,
-`210055108c257ff65c6f45fb654c82e506653ec4617b68d111893bb3aa1da5a8`,
-`7a7aad76e29124d085c5bf2787660b7a2c8b377e27db3a1e6c98f6e60616e2c8`,
-and `ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`.
-Library tests become 279; the raw/normalized sorted-list hashes are
-`6644c709efb5e728388b3f35ede61e4bc9866f2582d899803545084ab86c800f` /
-`30fbeb816c9e9ab98b0f5ef36779e9f99332766fcfd7b43d76199e32edf0e2a3`.
-Tasks 250+, 269+, and Steps 6/7 remain deferred.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 248 Source/Binding-Context Current-State Addendum
 
-Checker Task 248 adds one cohesive private semantic consumer rather than
-reopening MT-AUDIT-022. Raw `SurfaceAst` inspection and resolver-shell matching
-remain in `mizar-test`; the new
-`src/runner/type_elaboration/source_context.rs` leaf projects only the
-syntax-free input accepted by `mizar-checker`. `runner.rs` remains the
-facade/top-level orchestrator at 2,382 lines. The 585-line type-elaboration
-facade now dispatches to twelve private leaves, including the new 509-line
-owner. `shared.rs` retains the resolver shell set, and `checker_handoff.rs`
-provides the generic empty-later-payload assembly seam.
-
-The production manifest is therefore 19 paths / 20,651 lines. Its sorted path
-hash is
-`e723ef5a2a0648afec15052b7733265aadd93ffbb45d83e7af5c2fb9e3178b61`,
-and its ordered content-manifest hash is
-`24b7d3963a0a7e0e7085dec24a08c9618cfe5ad1d8d26cd2da981b905017c182`.
-The only new production path is the private source-context leaf.
-
-The exact active increment produces plan 410/371, type-elaboration coverage
-237/225, pass/fail 224/186, and parse/declaration/type/proof admissions
-101/5/189/1 with warnings/errors 23/0. The five CLI hashes are
-`ce8cc33b2c14c1790a66281c889f448487d0da9c8109a92775ea61c4344b9213`,
-`a8a7aa639d2ebc65eddc923c7e9369ea5637d50e935f808600f446da1bfbda56`,
-`210055108c257ff65c6f45fb654c82e506653ec4617b68d111893bb3aa1da5a8`,
-`f3f27bc5e0d45c3d34c120a1d6985e4f3ddf9e528eec49fb8a9d2a2848b937f9`,
-and `ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`.
-Library tests become 277; the raw/normalized sorted-list hashes are
-`15656abf9fc369b9849727ee03bca8c3f9cbc0da066a894fd5e81dcb6159ac88` /
-`3094579dfa683c362ce2846c2329cee25ca039de30e7e3109e52a75bf733099a`.
-No route for Task 249 or any later producer is admitted, and Steps 6/7 remain
-deferred.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Parser Task 46 Parse-Only Current-State Addendum
 
-Task 46 changes no `mizar-test` production path or production source line. Its
-runner admission, exact trace backlink, count assertions, reserved-word audit,
-and real-runner checks live in test metadata only. The existing facade/private
-leaf boundary therefore remains unchanged.
-
-The production manifest remains 18 paths / 20,088 lines with path/content
-hashes `63e4e770b0d10872415548410d417071c1901f3ffa5aea964a81d2dbbc572ed0` /
-`7e5adca22db2b73f94f04c406f10788f2cd49ba48109bb105a3fd076c339d560`.
-`runner.rs` remains the facade/top-level orchestrator and the 11 private leaves
-remain unchanged. Library tests remain 276; raw/normalized test-list hashes
-remain `967495e78e1068f592e64834ea3ffb9eac9c25692ea5cbd4f11006a679c66590` /
-`1be4ae09188b27a40814adc6597de4806dabb13bcac019b294154e1455072adf`.
-Active counts are plan 409/370, parse/declaration/type/proof 101/5/188/1,
-parse coverage 44/44, pass/fail 223/186, and warnings/errors 23/0. The five CLI
-hashes are `9b1e3058bde355163b1153339250647633beef9920456615cf6661c4140a93cf`,
-`a8a7aa639d2ebc65eddc923c7e9369ea5637d50e935f808600f446da1bfbda56`,
-`210055108c257ff65c6f45fb654c82e506653ec4617b68d111893bb3aa1da5a8`,
-`1dadbeabb219f5853c713ad53aa1cc7cd720a0e80abd7f882e9e0a5ea7802625`,
-and `ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`.
-
-> Canonical language: English. Japanese companion:
-> [../ja/module_boundary_audit.md](../ja/module_boundary_audit.md).
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 248 Gate
 
-Task 248 audits the active-runner implementation before any source move. The
-maintenance series repairs a `design_drift` in source layout and reviewability;
-it does not change Mizar language behavior, runner admission, public APIs,
-diagnostics, detail keys, payloads, ordering, expectation meaning, or
-traceability credit.
-
-The authority order remains `doc/spec/en` > `.miz` tests > `spec_trace.toml` >
-expectations > design > source. Chapters 03, 04, 07, 13, 14, and 16 and their
-existing executable intent remain inputs to the runner, not targets of this
-refactor. [harness.md](./harness.md), [minimal_crate.md](./minimal_crate.md),
-[expectation_schema.md](./expectation_schema.md), and
-[internal 07](../../internal/en/07.crate_module_layout.md) define the derived
-harness and ownership boundaries.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Baseline
 
-At Task 248 inventory:
-
-- `src/runner.rs` has 111,262 lines;
-- the pre-test prefix ends at line 17,142 and contains the public runner
-  facade, private phase helpers, and 137 `#[cfg(test)]` helper attributes;
-- one private `mod tests` begins at line 17,143 and occupies about 94,120
-  lines;
-- the private module contains 272 `#[test]` attributes: 244 at its direct
-  scope and 28 in existing nested task modules;
-- its direct tests comprise one parse-only import-provider test and
-  type-elaboration source-extraction, payload, fixture, corruption, and
-  cross-owner isolation families;
-- declaration-symbol runner tests are integration-owned by
-  `tests/metadata.rs`; no private declaration-symbol test exists to move;
-- the active type-elaboration runner has 188 cases, the metadata plan has
-  403 cases / 367 requirements, type-elaboration coverage is 235 / 223,
-  pass/fail is 219 / 184, and the unit-test count is 272.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 249 Move Result
 
-Task 249 replaced the inline module with private `#[cfg(test)]`,
-`#[rustfmt::skip] mod tests;` and moved its body byte-for-byte to
-`src/runner/tests.rs`. The formatter guard prevents the newly top-level test
-imports and body from being reordered or reflowed during this move-only task.
-The runner file is now 17,144 lines and the test module is 94,118 lines. The
-exact extracted body hash is
-`ab658ad10bcbb2d415778f6289cbb9ae2bed48e21c19b5496fa8f676309d3b69`;
-the sorted 272-test list remained
-`5e41e4dbfcc303322c246a612de61926a628957a168589b45864d0a5070bb07e`.
-Module privacy, qualified test names, public API, active-runner counts,
-diagnostics, payloads, ordering, and fail-closed behavior are unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 250 Move Result
 
-Task 250 root-included `src/runner/tests/support.rs` without a wrapper module.
-The 6,546-line fragment contains the 17 import groups and the contiguous shared
-environment, fixture-specification, AST-builder, corruption, range, and id
-support: 201 non-test functions and 24 type/constant items. Its exact moved
-hash is
-`b880b4605345b1156f125292134d62aff91a32799b5f5834fe7d2a1e5de068a8`.
-The retained 87,572 lines remained byte-identical with hash
-`197f2d6dc31da2130674954667383bb9aec502a613f3e5b1c33bf0299ea2959b`;
-the resulting 87,574-line `tests.rs` hash is
-`7d85a8ecd4dffcb0475afc53693e581af661ccbb01b44eab974e030abb046a66`.
-All 272 tests remain in `runner::tests` with the same sorted-name hash.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 251 Move Result
 
-Task 251 root-included `src/runner/tests/parse_only.rs` without a wrapper
-module. The byte-identical 111-line fragment contains only
-`parse_only_provider_resolves_every_stub_and_deduplicates_fixture_summaries`
-and has hash
-`3cddce85155b72597cfc4c2ea5841dbf3fe5f88d0c8123d98ba9cb958f90a3a8`.
-The retained 87,463 lines, including the separator blank, remained
-byte-identical with hash
-`010f86378bca27c0620998c0de0242d6376fb8b3c37c002d0ca430fb01f7e35c`;
-the resulting 87,464-line `tests.rs` hash is
-`16480c65416a611c732153360775f10180f609b012027b0a0a970cff1f5a3d84`.
-The fully qualified test name and sorted 272-test list are unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 252 Move Result
 
-Task 252 root-included
-`src/runner/tests/type_elaboration/source_extraction.rs` without a wrapper
-module. The byte-identical 3,680-line fragment contains the three baseline
-reserve extraction, local-mode expansion-chain extraction, and real
-declaration-checked `ResolvedTypedAst` handoff tests. Its hash is
-`aa9a16c3ed36439ac8c5a4756e3818d6e5f0abd7e076e2e2df8b46487e88c358`.
-The retained 83,784 lines, including the separator before Task 253, remained
-byte-identical with hash
-`2d9ef7d8369c4d654af3bd91598d306c8a9777c9d0981454ce9396095c8a6d79`;
-the resulting 83,785-line `tests.rs` hash is
-`16f3d6ceb1e75655ea39825f0294896393e676d0a7391bb2a409e14b3b904d22`.
-All three fully qualified names and the sorted 272-test list are unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 253A Move Result
 
-Task 253A root-included
-`src/runner/tests/type_elaboration/reserved_binary.rs` without a wrapper
-module. The byte-identical 9,982-line fragment contains the leading 23
-baseline reserved-variable and binary-formula bridge tests, including the
-audited Task 189 and Task 246 ownership exceptions. Its hash is
-`88f1a793e139ea808c823fd68956d0dc9863735905ae3fb34e214efa86a11d8e`.
-The retained 73,803 lines, including the separator before Task 254, remained
-byte-identical with hash
-`faf592952a4c871b840b6a1cbbb977ca3f1bbddc98def4f99d54c1a900fdcb06`;
-the resulting 73,804-line `tests.rs` hash is
-`97d05a3dc35774246af301ad7b4dc6601d2ab85ca669bebfdbcfa140767d150f`.
-All 23 fully qualified names, their original order position, and both the
-canonical raw and secondary normalized 272-test list hashes are unchanged.
-Task 253 remains pending until Task 253B.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 254 Move Result
 
-Task 254 root-included
-`src/runner/tests/type_elaboration/mode_chain.rs` without a wrapper module.
-The byte-identical 10,232-line fragment contains the 26 audited non-long-chain
-local-mode/object-mode tests. Its hash is
-`2989031d64871c726f325a5d5bd2ebb4ed4b9a078b83bab3c4f04f456cf3225f`.
-The retained 63,572 lines, including the separator before Task 253B, remained
-byte-identical with hash
-`6725980d7842af5c398f58139ce371ac64d8912ba744f4417ac20c88165d5d81`;
-the resulting 63,573-line `tests.rs` hash is
-`7e5d0f5735c551be19ac13b2dc96732bf4a9f3cd7088317beb22c760e0d03b68`.
-All 26 fully qualified names, their original order position, the Task 253B
-boundary, and both 272-test list hashes are unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 253B Move Result
 
-Task 253B root-included
-`src/runner/tests/type_elaboration/reserved_direct.rs` without a wrapper
-module. The byte-identical 284-line fragment contains the two audited direct
-reserved-variable membership and inequality tests. Its hash is
-`c65a5f27463950979368bc702e36f42fa0398884029cff450b54b31095f30e4e`.
-The retained 63,289 lines, including the separator before Task 255, remained
-byte-identical with hash
-`fffe06106cca615e370bb4c2da222da5a4bc21a264cadb5ae8c2d79ed7fdbcce`;
-the resulting 63,290-line `tests.rs` hash is
-`c90905d94abd1a43c0d65d4abffe8bc970262eee2d64e22da1db4024d614bbf4`.
-Both fully qualified names, their original order position, the Task 255
-boundary, and both 272-test list hashes are unchanged. Parent Task 253 is
-complete.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 255A Move Result
 
-Task 255A root-included
-`src/runner/tests/type_elaboration/asserted_head_base.rs` without a wrapper
-module. The byte-identical 6,653-line fragment contains the 12 audited leading
-source tests and both dedicated Task 205 isolation helpers. Its hash is
-`9ecea3c52ae64b83d6d5de9b825307f31c7d331e3ba29d78bb69cd931709d020`.
-The retained 56,637 lines, including the separator before Task 255B, remained
-byte-identical with hash
-`d9f772962e590f49d188ca1d0cbe8cf5863b7dd84bb9e73606f878f33036007a`;
-the resulting 56,638-line `tests.rs` hash is
-`535968a53524b3741d9adeed0ee6e42f2e4c45184af285a2bae077810b3bd682`.
-All 12 fully qualified names, helper ownership, their original order position,
-the Task 255B boundary, and both 272-test list hashes are unchanged. Parent
-Task 255 remains pending.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 255B Move Result
 
-Task 255B root-included
-`src/runner/tests/type_elaboration/asserted_head_four_edge_radix.rs` without a
-wrapper module. The byte-identical 3,303-line fragment contains the two audited
-four-edge radix source tests and four dedicated Task 208/207 helper functions.
-Its hash is
-`5fcc4240fff400bda08e3d6678a61f3db444f0a8c6c055802d7ba7bea961092e`.
-The retained 53,335 lines, including the separator before Task 255C, remained
-byte-identical with hash
-`16d36bc1978973931a673a7620c569c70b021fe4ed210e19540a0ee8fa7c7d9d`;
-the resulting 53,336-line `tests.rs` hash is
-`78594f98a92a30445d251cf0fb394e5537ecab73cf9b8e9c67c357e4a0135389`.
-Both fully qualified names, all four helper owners, their original order
-position, the Task 255C boundary, and both 272-test list hashes are unchanged.
-Parent Task 255 remains pending.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 255C Move Result
 
-Task 255C root-included
-`src/runner/tests/type_elaboration/asserted_head_three_edge_object_radix.rs`
-without a wrapper module. The byte-identical 1,278-line fragment contains the
-one audited three-edge object-radix source test and its two dedicated Task 206
-helper functions. Its hash is
-`c5c1b04ab663fe3557e24c86b551352d6d1c54c5511870ba224edb7538f95442`.
-The retained 52,058 lines, including the separator before Task 255D, remained
-byte-identical with hash
-`e841b80390d879d910bfc50a34547ef56b8b2ab40c6c4b9681e8b07f707dc12b`;
-the resulting 52,059-line `tests.rs` hash is
-`23caa0585a96be2db997295fccad436de5bfefdbe033fdd4516ca8e30dacea9f`.
-The fully qualified name, both helper owners, original order position, Task
-255D boundary, and both 272-test list hashes are unchanged. Parent Task 255
-remains pending.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 255D Move Result
 
-Task 255D root-included
-`src/runner/tests/type_elaboration/asserted_head_two_edge_object_radix.rs`
-without a wrapper module. The byte-identical 1,046-line fragment contains the
-one audited two-edge object-radix source test and its dedicated Task 204 helper
-function. Its hash is
-`e20a04ba33ffc1f344da0aa990795576b7096eb6a016a69d730d0d29377349f4`.
-The retained 51,013 lines, including the separator before Task 255E, remained
-byte-identical with hash
-`16d6ec2333861ac9d78d3694efe76a71bb9a9830f16def60c4a425fb7da63dc7`;
-the resulting 51,014-line `tests.rs` hash is
-`68bf3cf08b26a449f46aee00d7fe8f716d1663ac9aeb7005b311f4f7c6c15906`.
-The fully qualified name, helper owner, original order position, Task 255E
-boundary, and both 272-test list hashes are unchanged. Parent Task 255 remains
-pending.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 255E Move Result
 
-Task 255E root-included
-`src/runner/tests/type_elaboration/asserted_head_type_assertion.rs` without a
-wrapper module. The byte-identical 7,649-line fragment contains the final 16
-audited non-long-chain type-assertion/asserted-head source tests and no helper
-functions. Its hash is
-`27bb8b3f17cabfce79ec9e32e390fbad3c9356c845dab4c7fb53dfd9f3b5160a`.
-The retained 43,365 lines, including the separator before the first active
-fixture, remained byte-identical with hash
-`b0465c9378a8f0151e0c58ba4986876f3de163ceb5918b7ceb49db4462b6d1c3`;
-the resulting 43,366-line `tests.rs` hash is
-`75fc0ff2b4a48362a1184185ea1315c0d8dab90b9b5a9b45a3fafe13b14d7278`.
-All 16 fully qualified names, their original order positions, assertions, the
-following active-fixture boundary, and both 272-test list hashes are unchanged.
-Parent Task 255 is complete.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 256 Move Result
 
-Task 256 root-included `src/runner/tests/type_elaboration/long_chain.rs`
-without a wrapper module. The byte-identical 20,977-line fragment contains all
-44 audited long-chain source/active seven-expansion tests. Its 12
-`next_permutation` functions remain nested test-local finite guards; no
-module-level helper or unrelated item moved. The fragment hash is
-`c4bcb161ac7bbb03593beff0fd55c6fbf8bc1960618a92263d127856e709d8b0`.
-The retained 22,389 lines remained byte-identical with hash
-`d737b5160458533039c7535423cffa03265deacb719d167e486897a612d7afbf`;
-the resulting 22,390-line `tests.rs` hash is
-`603263b325a00d45a41ec3087dafab05ab4ebe448fe3be70a7c0d107f907df8d`.
-All 44 fully qualified names, original order positions, finite guards,
-assertions, and both 272-test list hashes are unchanged. The preceding
-four-edge equality test and following four-edge inequality test remain in
-`tests.rs`, and Task 257's nested Task 216-222 modules remain outside the
-fragment. Task 256 is complete; Task 257 is next.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 257A Move Result
 
-Fresh Task 257 inventory divides the remaining 141 tests into eight contiguous,
-order-preserving families. Task 257A has 18 binary-route tests; Task 257B has
-three builtin-object reserve fixtures; Task 257C isolates the one standalone
-Task 180 contradiction formula-constant fixture under its dedicated trace
-intent; Task 257D has 11 distinct/multiple/heterogeneous reserve fixtures;
-Task 257E has 26 mode-chain fixtures; Task 257F has 35 active
-reserve/asserted-head/type-assertion fixtures plus four interleaved owner-route
-isolation guards; Task 257G has three source-gap/equality tests; and Task 257H
-has nine root source/active bridge fixtures, three root synthetic/route-
-isolation tests, plus 28 tests nested in the existing Task 216-222 modules.
-The eight counts total the remaining 113 root and 28 nested tests. Parent Task
-257 remains pending through 257H.
-
-Task 257A root-included
-`src/runner/tests/type_elaboration/binary_route_fixtures.rs` without a wrapper
-module. The byte-identical 2,960-line fragment contains the 18 audited
-binary/parenthesized active-fixture and route-isolation tests and no
-module-level helper or unrelated item. Its hash is
-`b00af949465486166f8a5d012dce6b02345aad29b2e576c4b574cf1c6ea23eee`.
-The retained 19,430 lines, including the separator before Task 257B, remained
-byte-identical with hash
-`d07c5006c01b8975342d95a5fff8c447106c38e8754ddaac2f87be442c7d07a5`;
-the resulting 19,431-line `tests.rs` hash is
-`e2f877ddf29c6f9e2e22225e97ff4294d7e27affda04145f78a950e567022e5e`.
-All 18 fully qualified names, original order positions, assertions, the Task
-257B boundary, and both 272-test list hashes are unchanged. Task 257A is
-complete; parent Task 257 remains pending.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 257B Move Result
 
-Task 257B root-included
-`src/runner/tests/type_elaboration/reserve_object_fixtures.rs` without a
-wrapper module. The byte-identical 156-line fragment contains only the three
-audited Task 188/190/189 builtin-object reserve equality, inequality, and
-type-assertion active fixtures. Its hash is
-`9cfb91fad7f537fbe790ac8e8206e383b0068a8bdcb14158c554219702d9446f`.
-The retained 19,275 lines, including the separator before Task 257C, remained
-byte-identical with hash
-`c4459d3170895c98e4d6018ae491adce8889f12351a9a4b834c8669e84eb285d`;
-the resulting 19,276-line `tests.rs` hash is
-`509d784ce5f2b23c98675fdfcb74324dfede166204067c8c3bdd0a1339ba6d18`.
-All three fully qualified names, original order positions, assertions, and
-both 272-test list hashes are unchanged. The Task 180 contradiction fixture
-remains in `tests.rs` as the first Task 257C item. Task 257B is complete;
-parent Task 257 remains pending.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 257C Move Result
 
-Task 257C root-included
-`src/runner/tests/type_elaboration/formula_constant_fixture.rs` without a
-wrapper module. The byte-identical 53-line fragment contains only the audited
-Task 180 standalone contradiction active fixture and its exact checked
-`FormulaKind::Contradiction` payload assertions. Its hash is
-`986b9120d84a487093c4ce3392a11eba03d65441cfb66d09ec9c34bc72dc03c5`.
-The retained 19,223 lines, including the separator before Task 257D, remained
-byte-identical with hash
-`e271687874a614c317a3d0a6a7ff3da5b1081235c9ec18233ddefc91167122a0`;
-the resulting 19,224-line `tests.rs` hash is
-`a8140de0a533cb4e2f3d4093155d14f188abcef707094a2b10fe5dda469958ad`.
-The fully qualified name, original order position, assertions, both
-reserve-family boundaries, and both 272-test list hashes are unchanged. Task
-257C is complete; Task 257D is next and parent Task 257 remains pending.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 257D Move Result
 
-Task 257D root-included
-`src/runner/tests/type_elaboration/reserve_fixtures.rs` without a wrapper
-module. The byte-identical 739-line fragment contains the 11 audited distinct,
-multiple-declaration, and heterogeneous reserve active fixtures and no
-module-level helper or unrelated item. Its hash is
-`24b4811f26418afe9de5efbf0cf3d7ea54be329ddf1255f89bafc38546301b40`.
-The retained 18,485 lines, including the separator before Task 257E, remained
-byte-identical with hash
-`5dfbf14737caf47e36f7a0c6bb6a1cab58bea8d608da41c0d74cf1fd58eeda4f`;
-the resulting 18,486-line `tests.rs` hash is
-`4e40491533df5102655f803e899c032d20adbcaf4c68c6e4980867da87849cf0`.
-All 11 fully qualified names, original order positions, assertions, the Task
-257E mode-chain boundary, and both 272-test list hashes are unchanged. Task
-257D is complete; parent Task 257 remains pending.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 257E Move Result
 
-Task 257E root-included
-`src/runner/tests/type_elaboration/mode_chain_fixtures.rs` without a wrapper
-module. The byte-identical 1,578-line fragment contains the 26 audited
-non-long-chain local-mode/object-mode active membership, equality, and
-inequality fixtures and no helper or unrelated item. Its hash is
-`9e3c1a6e11b01dc257982002379d884f9de24ec5093982d7604e9a988dc2e593`.
-The retained 16,908 lines, including the separator before Task 257F, remained
-byte-identical with hash
-`dd144c50d0b24adfc690e99f160e5ab73362f6b972107ac71ff6bed0513a3774`;
-the resulting 16,909-line `tests.rs` hash is
-`cacc1dd5a5fcd2e14526bac47e277d900b0c0f9b56c6cc1bee2b7ea2e7229c3f`.
-All 26 fully qualified names, original order positions, assertions, the Task
-257F boundary, and both 272-test list hashes are unchanged. Task 257E is
-complete; parent Task 257 remains pending.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 257F Move Result
 
-Task 257F root-included
-`src/runner/tests/type_elaboration/asserted_head_fixtures.rs` without a wrapper
-module. The byte-identical 3,374-line fragment contains 35 audited active
-reserve/asserted-head/type-assertion fixtures plus the four interleaved
-two-hop owner-route isolation guards. It contains no helper, unrelated item,
-or long-chain test. Its hash is
-`19623c52e34c57fc664f01370139ce253a834513c47fe0f6b7b2563f7684bf26`.
-The retained 13,535 lines, including the separator before Task 257G, remained
-byte-identical with hash
-`4c19658998190c21cbd8a72efa112e29659664d55a7c5b3040ef54ec7cbbb3e8`;
-the resulting 13,536-line `tests.rs` hash is
-`9e3bb0de8742d0371e4e686815ba70337b8c278a1e26799069baef8758e093ec`.
-All 39 fully qualified names, original order positions, expansion/payload and
-prior-owner rejection assertions, the Task 257G boundary, and both 272-test
-list hashes are unchanged. Task 257F is complete; parent Task 257 remains
-pending.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 257G Move Result
 
-Task 257G root-included
-`src/runner/tests/type_elaboration/source_gap_and_equality.rs` without a
-wrapper module. The byte-identical 2,923-line fragment contains only the
-source-reserve gap/evidence fail-closed test and the four-edge local-mode
-equality source/active pair. Its hash is
-`7726ee451322c547406da5c5b3800be2527685df41ca2de4dc60d47644164487`.
-The retained 10,613 lines remained byte-identical with hash
-`2ebb32f99fa9001d0a5d303deb5f477a369074b54b3b71ba2ea690aa3f38e49c`;
-the resulting 10,614-line `tests.rs` hash is
-`b1a22962fefb7a2cc54aa37ff5f601c9995bce432d78fa499cfca8e6c35423bf`.
-All three fully qualified names, original order positions, detail-key and
-fail-closed assertions, the immediately following `long_chain.rs` include,
-Task 257H start, and both 272-test list hashes are unchanged. Task 257G is
-complete; parent Task 257 remains pending.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 257H Move Result
 
-Task 257H root-included
-`src/runner/tests/type_elaboration/remaining_bridges_and_nested_isolation.rs`
-without a wrapper module. The byte-identical 10,578-line fragment contains
-the final nine root source/active bridge fixtures, three root synthetic or
-route-isolation tests, and all 28 tests inside the existing seven Task
-216-222 modules. Its hash is
-`96a64963bc06ec3f6f076d00296ebb48450611fb6a512d5f16283c2999e43d50`.
-The retained 36 lines remained byte-identical with hash
-`a3cba5854fc315b6c9c3dd20be2fdeaf7a5e972cb7a626299d2dcb2bb6c56f06`;
-the resulting 37-line `tests.rs` hash is
-`0e9b7e861a13fe593435ee8169c28658b5290f054789a3e2f73b896fa2b39061`.
-All 40 fully qualified names, original order positions, seven nested module
-names, bridge and isolation assertions, and both canonical 272-test list
-hashes are unchanged. Task 257H and parent Task 257 are complete; the private
-test layout is stable, and Task 258 is next.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 258 Move Result
 
-Task 258 created the private `src/runner/shared.rs` owner and moved the two
-cohesive source/frontend staging fragments out of `runner.rs`. The original
-30-line frontend-execution/result fragment had hash
-`7d03c8561f87b95d5b777beba830998f44c0cd1cbe72a245c29573a64fa1b0f6`;
-the original 89-line package/root/path/snapshot fragment had hash
-`34fd4b86829394b95f5ae3125c5bf2f010b0ca0357254ea93446e50e7f384672`.
-The resulting 138-line `shared.rs`, including its direct dependency imports,
-has hash
-`11a52bf7fb0e729ac680df33dfa4b7fd65b9fdd922ee9aca6e9ba4a96d7f8f56`,
-and `runner.rs` has 17,022 lines with hash
-`dde9e23dfb8092be02f3b1139b59dbfddcbb8e55c0c21eac7ad70e1f1fcbda04`.
-Only `run_frontend`, `FrontendRun` and its fields, root normalization, and the
-shared module-path projection use parent-only `pub(super)` visibility;
-package preparation, cleanup, temp naming, and snapshot identity remain
-private to `shared.rs`. Direct imports keep the owner independent of the
-facade namespace; the explicitly imported parent-owned
-`ParseOnlyImportProvider` is the sole temporary parent dependency until Task
-261 rather than being generalized or moved early. Public surface hash
-`0cb48ae8ac2ccdf14595112df24b8a4c083a989a631580e9044707aa514a267e`,
-all four CLI byte hashes, both 272-test list hashes, counts, payloads,
-diagnostics, ordering, and fail-closed behavior are unchanged. Task 258 is
-complete; Task 259 is next.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 259 Move Result
 
-Task 259 created the private `src/runner/parse_only.rs` owner and moved the
-three cohesive parse-only fragments out of `runner.rs`. The original 51-line
-case-execution fragment had hash
-`6ff68ec8610c9e5ded44f69369850e11d7adfbaf1685f540398fd465d58f4361`;
-the original 24-line failure-projection fragment had hash
-`2504fbeae49d240c8897f50f00303124ab7c0c3d4bde56393a316dc2419d4275`;
-the original 32-line Surface-AST snapshot comparison fragment had hash
-`e8e1698aa3af9e86e80baf03f799af89490782e3202c20ab22a58011f6d65176`.
-The resulting 121-line `parse_only.rs`, including direct dependency imports,
-has hash
-`d1c1dd0f0c322f3bd4a6e829e66bf6aeaf0dc01b46d60dd177a7fe8e4619ae5a`,
-and `runner.rs` has 16,913 lines with hash
-`5579a126eccfbbb937e36149d74a940e146619254c1bb8301dca57d191cdfec9`.
-Only the case runner and failure projection use parent-only `pub(super)`
-visibility; snapshot comparison remains private. The owner calls sibling
-`shared::run_frontend` directly and keeps only
-`assertion_diagnostic_codes` and `frontend_error_code` as explicit temporary
-parent diagnostic dependencies until Task 263. The fixture import provider
-and its adapters remain in `runner.rs` for Task 261; no fixture ownership moved
-early. Public surface hash
-`0cb48ae8ac2ccdf14595112df24b8a4c083a989a631580e9044707aa514a267e`,
-all four CLI byte hashes, both 272-test list hashes, counts, payloads,
-diagnostics, ordering, and fail-closed behavior are unchanged. Task 259 is
-complete; Task 260 is next.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 260A Move Result
 
-Fresh Task 260 review split the original production-helper task into two
-independent ownership moves: Task 260A for the cross-phase resolver collection
-leaf and Task 260B for its declaration-symbol caller. Task 260A moved the
-shared leaf first. The original 29-line `ResolverSymbolCollection` and
-shell/projection/collection fragment had hash
-`b7f13156c77bfc75d5f6a4f1682fe752b4fe9dfd12b3c7c0cd3913cef44458e0`;
-the original 18-line resolver module-id and diagnostic projection fragment had
-hash
-`d1bed7b1c59ab13e997a72ed492fdfdabf38466a9921c0254be64934846e1c61`;
-the original 9-line diagnostic-class key fragment had hash
-`363ae1321d663c1d597cdf033c449fe0226c87672e2eefd3bf92b819458cb0e0`.
-The resulting 203-line `shared.rs` has hash
-`0cd2eb09c043e564470b4003a34dfc4f9e89cb695b1d2df1404b76dd7e8bc299`,
-and `runner.rs` has 16,851 lines with hash
-`72340a9aeca93ec338375b8bfc51beeb47a2499325faf452733c3e1dec48bbab`.
-Only `resolver_symbol_collection`, its result type, and the three result fields
-used by the existing declaration and type consumers have parent-only
-`pub(super)` visibility; module identity and diagnostic projection remain
-private to `shared.rs`. Neither caller moved or changed. Public surface hash
-`0cb48ae8ac2ccdf14595112df24b8a4c083a989a631580e9044707aa514a267e`,
-all four CLI byte hashes, both 272-test list hashes, counts, payloads,
-diagnostics, ordering, and fail-closed behavior are unchanged. Task 260A is
-complete; Task 260B is next.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 260B Move Result
 
-Task 260B created the private `src/runner/declaration_symbol.rs` owner after
-Task 260A had moved its shared resolver prerequisite. The original 37-line
-case-execution fragment had hash
-`b58aebc17cd350c5107775b9027d78037b32e0bb1d72782e101746dd6c2d318f`;
-the original 36-line observation fragment had hash
-`8e9bb3e70c1368aa1882bf623b13664ea12129ffc9f6f44a079148f5eee29631`;
-the original 125-line payload encoding, classification, and expected-value
-projection fragment had hash
-`02df2d29157e2469ca8139178dec9cabd199d25fdfa554749d999556b2b05376`;
-the original 19-line failure-diagnostic fragment had hash
-`3b366648f438663e7412c2e567bb307ff7245b92739f9bbed38a16fd8862573e`.
-The resulting 231-line `declaration_symbol.rs`, including direct dependency
-imports, has hash
-`cf29e362d3109fc8a45e366c8abaa9f98baae7329f83c3556fe8452ec3347232`,
-and `runner.rs` has 16,632 lines with hash
-`a6e9d547d68e18e1de2d22ce4393552cf760e8f6b8081fe608f8ffdcab67005d`.
-Only the case runner and failure projection use parent-only `pub(super)`
-visibility; observation, payload encoding, classification, and expected-value
-projection remain private. The owner consumes `shared::run_frontend` and
-`shared::resolver_symbol_collection` directly. Its sole temporary parent
-dependency, `frontend_detail_keys`, retains plain private visibility because a
-child module can access its parent's private item; Task 263 will move the
-common diagnostic family. Existing `tests/metadata.rs` integration ownership
-is unchanged. Public surface hash
-`0cb48ae8ac2ccdf14595112df24b8a4c083a989a631580e9044707aa514a267e`,
-all four CLI byte hashes, both 272-test list hashes, counts, payloads,
-diagnostics, ordering, and fail-closed behavior are unchanged. Tasks 260A-260B
-are complete; Task 261 is next.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 261 Move Result
 
-Task 261 created the private `src/runner/import_fixtures.rs` owner and moved
-the two families that share the single `parser.type_fixtures` vocabulary. The
-original 161-line type-elaboration import-summary adapter fragment had hash
-`98d9ebc8ff104583bca469f66a89c5f90dfd91085f811012fc06d173b6224d8b`;
-the original 167-line lexical-summary provider and 15-symbol vocabulary
-fragment had hash
-`3097dc061f34ef0d08482aa785f7827b38b17a8b15dbc8f9fc0e7ca876a49c34`.
-The resulting 349-line `import_fixtures.rs`, including direct dependency
-imports, has hash
-`bb2d10572184600c2121ae680ff936586a8b525eaea7e2a358f1d3b4305bc04d`,
-and `runner.rs` has 16,293 lines with hash
-`5e878da91e11b7d69709e94dfc9ad851e298fe7b46ed111c174696c2e2b12363`.
-Only `ParseOnlyImportProvider`, the type import-summary adapter entry, and the
-module-path projection still consumed by a Task 262 parent caller use
-parent-only `pub(super)` visibility; vocabulary, environment cloning, imported
-module discovery, and symbol-kind mapping remain private. The parent keeps
-private aliases so `shared.rs` and existing test support retain their imports
-without test edits. Stub order/span identity, per-module deduplication,
-fingerprints, the exact 15-symbol kind/arity/operator/rank order, resolver
-symbol/provenance order, and diagnostics are unchanged. Public surface hash
-`0cb48ae8ac2ccdf14595112df24b8a4c083a989a631580e9044707aa514a267e`,
-all four CLI byte hashes, both 272-test list hashes, counts, payloads,
-diagnostics, ordering, and fail-closed behavior are unchanged. Task 261 is
-complete; Task 262 is next.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 262A Move Result
 
-Fresh Task 262 inventory found a shared source-AST leaf that must precede both
-the reserve and formula extractor owners. Task 262A created the private
-`src/runner/type_elaboration.rs` phase facade and private
-`src/runner/type_elaboration/source_ast.rs` leaf, then moved the exact
-compilation-item-list recognizer, structural-child projection, direct-token
-projection, checker-site projection, and recursive recovery predicate. Their
-original fragment hashes were, in that order,
-`84bf7a706ff2295e0087484fda11f210a6f363f4bfa386567004b1b291abcb1b`,
-`5684a8ad7fa11893580921465265d7343a6cd1d9824ad5a9b9b6443153380981`,
-`3c7621566d18a891f2390be433cf292ee67affcebbc2ea591ee09ffddb1bc5d3`,
-`a12398685131398da0a9a3a0200d1b7e988be6d1e12ea7dc6a9fe9019eab7bb4`,
-and
-`9aa975ae84b5bed868095e19969b5db18f59a113d96963f21656f2358fb87326`.
-The resulting 63-line `source_ast.rs` has hash
-`e785097028171a78e3f8764618ac4bced422756b4c1a985e72de3138ae46a1ed`;
-the 6-line facade has hash
-`a5d786f3fce6b7d6b5661918e4fb46a3116b41f33fe307adebed4ddefe2e3efa`;
-and the 16,240-line `runner.rs` has hash
-`01990093ec8ac5b2360bf174e8b1d13b21550f599c3b51ab3fd0e02725762bd9`.
-Rust does not permit a child `pub(super)` item to be re-exported to its
-grandparent, so the leaf functions use the explicit runner-subtree-only
-`pub(in crate::runner)` scope while the private phase facade re-exports them
-with `pub(super)`. Private `runner.rs` aliases preserve every production and
-test caller. Function bodies, traversal and filtering order, recovery
-recursion, typed-site identity, exact-shape rejection, and fail-closed behavior
-are unchanged. Task 262A is complete; parent Task 262 remains open for the
-remaining bounded source-extraction families.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 262B Move Result
 
-Fresh inventory after Task 262A found two additional AST-only projections
-shared by the formula and reserve extractors. Task 262B moved the preorder
-node-kind collector, including its private recursive helper, and the exact
-qualified-symbol spelling projection into `source_ast.rs`. Their original
-fragment hashes were
-`e06bf8e9c5252a3bfefea3ff16804414fe813cbc903cd0afcdfd0d237a1185c5`
-and
-`8ab94eafe97e9b28c7a236efd3071834b36ba02a2fce1988d721123f19272f7e`.
-The resulting 113-line `source_ast.rs` has hash
-`d9bff4c1c4bbeb2bd988502db2bff2a7370dbf9b61d7e817e6e82077878da78a`;
-the 6-line facade has hash
-`f89edc2b2dcd2065c9445aae9a7b05084750d7689f8a2029c4e78050a7c797c9`;
-and the 16,193-line `runner.rs` has hash
-`fea5c857a73a6f7429c2517b187b354fa321c0e6be14ffd64922eb10d57c42d0`.
-The two caller-facing functions retain runner-subtree-only
-`pub(in crate::runner)` visibility through parent-only facade re-exports; the
-recursive collector remains private to `source_ast.rs`. Traversal order,
-token/path validation, spelling assembly, every caller, and every test import
-are unchanged. Visible-symbol resolution, source-text assembly, range merging,
-and reserve/mode extraction remain in `runner.rs` for Task 262C. Task 262B is
-complete; parent Task 262 remains open.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 262C Move Result
 
-Fresh inventory after Task 262B isolated the reserve type-expression and
-symbol-projection family from declaration segmentation and mode expansion.
-Task 262C created the private
-`src/runner/type_elaboration/source_reserve.rs` leaf and moved the
-`SourceTypeExpression` transport, exact builtin/symbol type-expression
-projection, visible attribute/type-head resolution, local/imported-fixture
-admission, and recursive source-text assembly. The original 8-line transport
-fragment had hash
-`6b95aec82269efe807537832e551e0bac37480cb653ad02cd3492e7ccd304afe`;
-the original 266-line type-expression/resolution fragment had hash
-`918d2e22b0c18555cc0bffe1c2721f1563bc22427e7902959e7b7dcb56328f0e`;
-and the original 89-line provenance/source-text fragment had hash
-`8b06c6b116d5f420a40a645a274516051052a56908a2974c3e25efa43af80e2a`.
-The resulting 370-line `source_reserve.rs`, including direct dependency
-imports, has hash
-`16b9a05842b3db5c22468d9674526bd7efc6739572d933ebf57e6ba0b69e34fb`;
-the 14-line facade has hash
-`e768f927bbf7263a7930f2ae73dcc8787b4df29f019f9f81ed50ec799f5d1f9d`;
-and the 15,834-line `runner.rs` has hash
-`0574cd3bbdbf4df09c02a2a9be07af07b9732c5dc1d5036feb9919641c3a6007`.
-The transport, its four fields, and the extraction entry retain
-runner-subtree-only visibility through parent-only facade re-exports. The two
-visible resolver entries use test-only facade and runner aliases because only
-the existing private preservation tests call them from outside the leaf.
-Three helpers still consumed by the retained Task 262E
-declaration/mode callers—`source_reserve_symbol_head_kind`,
-`is_imported_fixture_reserve_attribute`, and
-`imported_fixture_reserve_attribute_spelling`—use the same temporary scope;
-Task 262E must narrow them when those callers move. All other type-head,
-attribute, admission, and source-text helpers remain leaf-private. Exact AST
-shape and recovery rejection, local-before-imported ambiguity handling,
-symbol kind/provenance admission, attribute polarity/order, spelling/range,
-and fail-closed behavior are unchanged. Formula-only resolution, range merge,
-reserve declaration segmentation, and local-mode traversal/expansion remain
-in `runner.rs` for Task 262E and later bounded inventory. Task 262C is complete;
-parent Task 262 remains open.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 262D Move Result
 
-Fresh dependency inventory found that the exact `parser.type_fixtures`
-import-item recognizer was shared by two formula callers and the retained
-reserve caller. Task 262D moved this common source-AST prerequisite to
-`src/runner/type_elaboration/source_ast.rs` before moving the reserve family.
-The original 28-line fragment had hash
-`d137915a4bac8d6922ea86d34975b07004b4cef389a5ea9d008fb955f3f83bdc`.
-The resulting 147-line `source_ast.rs` has hash
-`baf131e5f82846df2286ad68c6e8bad9d2642af2ce530f7b8c7362900ef2aa9e`;
-the 15-line facade has hash
-`10db1015db9d0a653f511ffaa5a48a2a708b9c1b3d254a194894f44430ff384f`;
-and the 15,803-line `runner.rs` has hash
-`4dfc36f6f8f204b705688c5762d42281be949ce7c7eae2751e12d1aeb84c13d6`.
-The unchanged 370-line `source_reserve.rs` retains hash
-`16b9a05842b3db5c22468d9674526bd7efc6739572d933ebf57e6ba0b69e34fb`.
-`source_ast` directly consumes `import_fixtures::module_path_spelling`, which
-stays in the fixture owner with runner-subtree visibility; no child-to-parent
-runner helper dependency remains. The recognizer uses runner-subtree-only
-`pub(in crate::runner)` visibility, a parent-only facade re-export, and a
-private `runner.rs` alias for all three callers. Apart from that visibility and
-rustfmt signature wrapping, its body is unchanged. Import-item/alias/path
-cardinality, direct-token filtering, recovery rejection, exact module spelling,
-caller order, and fail-closed behavior are unchanged. Task 262D is complete;
-parent Task 262 remains open and Task 262E is next.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 262E Pre-Move Inventory and Specification
 
-Fresh inventory classifies the remaining reserve-family placement in
-`runner.rs` as `design_drift`: the exact source-derived declaration and
-local-mode payload producer is cohesive with the existing private
-`type_elaboration/source_reserve.rs` owner, while its current parent placement
-does not express that ownership. No language, test, expectation, trace, or
-metadata disagreement was found. The move consists of the contiguous 1,074-line
-fragment from `SourceReserveExtraction` through
-`extract_builtin_reserve_segment`, whose hash is
-`31f8e27a1835ea31e6d65ff67acbfa8fcc040fc588df7f24453ff848e0bd690b`,
-plus the separate 10-line `merge_optional_range` helper, whose hash is
-`aa186a9105816e62352473111ffe3b9958a332086e9d1fc459c024fbc2cfac5c`.
-
-The move preserves one runner-subtree transport boundary:
-`SourceReserveExtraction` and its `bridge`/`mode_expansions` fields, including
-the existing test-only accessors. It also preserves four runner-subtree helper
-boundaries: `extract_builtin_source_reserve_declarations`,
-`extract_builtin_source_reserve_declarations_after_node_guard`,
-`source_mode_symbol_spelling`, and `mode_definition_pattern_spelling`. The
-private phase facade re-exports only those five boundary items to its parent,
-and `runner.rs` keeps private aliases for unchanged callers. All other moved
-items become or remain leaf-private. The three Task 262C temporary helpers
-`source_reserve_symbol_head_kind`,
-`is_imported_fixture_reserve_attribute`, and
-`imported_fixture_reserve_attribute_spelling` become leaf-private once their
-remaining callers move.
-
-`source_reserve` will consume the common source-AST projections directly,
-including the Task 262D fixture-import recognizer, and will continue to consume
-its own Task 262C type-expression/symbol projections without a child-to-parent
-dependency. `SourceReserveHandoff`, `source_module_binding_env`, formula-only
-imported term/formula resolution, checker handoff/validation, and later
-orchestration stay in `runner.rs`. The preservation matrix is exact AST/import
-shape, node allowlist, recovery rejection, traversal budget/order, dependency
-and provenance admission, attribute polarity/order, spelling/range, payload
-contents, diagnostics/detail keys, and fail-closed behavior. This task changes
-no test body or name, public API, spec/trace/expectation artifact, harness count,
-or specification-coverage credit.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 262E Move Result
 
-Task 262E moved both inventoried fragments into the existing private
-`src/runner/type_elaboration/source_reserve.rs` owner. After rustfmt and the
-minimal import/visibility adjustments, `runner.rs` is 14,718 lines with hash
-`f38352151d71474b676fb3c2a50e313c33f6de6dad5a09097c28aa9de729ce62`;
-the 16-line phase facade has hash
-`07c19a11381d002cd3a6503470df6e1e63d09a2b435350608b1cc8fe1724a50a`;
-and the 1,474-line `source_reserve.rs` has hash
-`88cf0cf08de2e61b2e6342aacc36ee01e20e00606d0c51f4bf7b5c64495253db`.
-The unchanged 147-line `source_ast.rs` retains hash
-`baf131e5f82846df2286ad68c6e8bad9d2642af2ce530f7b8c7362900ef2aa9e`.
-
-The extraction transport, its two fields/test-only accessors, the two
-extraction entries, and the two spelling helpers use runner-subtree visibility,
-parent-only facade re-exports, and private `runner.rs` aliases. The three
-temporary Task 262C helpers are now leaf-private. `source_reserve` consumes the
-common source-AST primitives and fixture-import recognizer directly; no
-child-to-parent source dependency was introduced. `SourceReserveHandoff`, the
-module binding environment, formula-only imported symbol resolver, checker
-handoff/validation, and orchestration remain in `runner.rs`.
-
-The moved declaration/import gates, node allowlist, recovery checks, traversal
-budget, dependency ordering, expansion provenance, segment/range assembly, and
-fail-closed branches are unchanged apart from required visibility and rustfmt
-wrapping. All 272 unit tests pass, and the sorted raw and normalized test-list
-hashes remain `5e41e4dbfcc303322c246a612de61926a628957a168589b45864d0a5070bb07e`
-and `c0c2b80f8b4e6c84cd25d77573fda722c4d1846fed168cd4a478781cdb42775e`.
-Task 262E is complete. Parent Task 262 remains open for fresh inventory of the
-remaining formula-extraction families; no `spec_coverage_audit.md` update is
-required because behavior, tests, trace credit, and owner crate are unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 262F Pre-Move Inventory and Specification
 
-Fresh inventory classifies the first remaining formula-family placement as the
-same `design_drift`: the exact standalone formula-constant AST projection is a
-cohesive private source-extraction leaf, while its transport, extraction, and
-node policy are split across `runner.rs`. Task 262F creates private
-`src/runner/type_elaboration/source_formula.rs` and moves only three fragments:
-the 6-line `SourceFormulaStatement` transport with hash
-`8ab3f277e5a8e0dabe1caacf76e5f54d81804c3619209bf94ac88ed01ebbc5e7`,
-the 84-line `thesis`/`contradiction` entry and common exact extractor family
-with hash
-`eb1927127ca995ad3e9f090cb04aaf2b0326aac240b58dcbc14cfb731666061c`,
-and the 12-line dedicated theorem-node allowlist with hash
-`acc01a4adb0ee02529a2fce8d8f0772c944f1b606f108bbde4e4096cc143c840`.
-
-The transport and its two fields use runner-subtree-only visibility so callers
-can consume the inferred return payload without a type alias. The two
-extraction entries use runner-subtree-only visibility, parent-only facade
-re-exports, and private `runner.rs` aliases. The common exact extractor and node
-allowlist remain leaf-private. The new leaf directly consumes the existing common source-AST
-token, structural-child, recovery, node-kind, and site projections. The real
-consumers—`source_formula_statement_output`,
-`source_contradiction_formula_output`, their detail-key paths, the module
-binding environment, and checker inference—remain in `runner.rs` with unchanged
-caller bodies.
-
-This is a move-only task. It preserves exact theorem label/token/cardinality,
-formula-expression/constant kind and spelling, recovery and node rejection,
-real AST site/range, `FormulaKind`, deferred reason, checker output, diagnostic
-and detail-key ordering, and fail-closed behavior. Reserved-variable/binary,
-builtin/imported formula, set-enumeration, connective/quantifier extraction,
-formula semantics, child graphs, theorem acceptance, facts, proof, CoreIr,
-ControlFlowIr, and VC are excluded. Existing exact, near-miss, corruption,
-active-fixture, detail-key, and route-isolation tests are the preservation
-matrix; no spec/test/trace/expectation or specification-coverage credit changes.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 262F Move Result
 
-Task 262F created the private
-`src/runner/type_elaboration/source_formula.rs` leaf and moved all three
-inventoried fragments. After rustfmt and minimal visibility/import adjustment,
-`runner.rs` is 14,615 lines with hash
-`b0d19f08a642b8b29e0f6c74e063b35909c3a9fbac30f9c1ee713de9fefa57f2`;
-the 20-line phase facade has hash
-`59f458f5336f60be419c9d8e86b4a2dbed8f01dcc7ddc087cc437a25e72f3e7a`;
-and the new 116-line leaf has hash
-`d13b2ca47ad8c1580f38f363fac79881b304bcc5425e557ec7bdc6bd7a8264c2`.
-The unchanged 147-line `source_ast.rs` and 1,474-line `source_reserve.rs`
-retain hashes
-`baf131e5f82846df2286ad68c6e8bad9d2642af2ce530f7b8c7362900ef2aa9e`
-and `88cf0cf08de2e61b2e6342aacc36ee01e20e00606d0c51f4bf7b5c64495253db`.
-
-The transport and fields remain runner-subtree-visible only through the two
-entry return types; the compiler-confirmed minimal facade/private alias surface
-contains the two entries only. The common exact extractor and node allowlist
-are leaf-private, and the leaf depends directly on `source_ast`. Both checker
-consumer bodies, their detail-key paths, and the module binding environment
-remain in `runner.rs`. Apart from required visibility, imports, and rustfmt
-wrapping, the three moved bodies are unchanged.
-
-All 272 unit tests pass. The sorted raw and normalized test-list hashes remain
-`5e41e4dbfcc303322c246a612de61926a628957a168589b45864d0a5070bb07e`
-and `c0c2b80f8b4e6c84cd25d77573fda722c4d1846fed168cd4a478781cdb42775e`.
-Task 262F is complete; parent Task 262 remains open for fresh inventory of the
-remaining reserved/binary, builtin/imported, enumeration, and
-connective/quantifier formula families. No `spec_coverage_audit.md` update is
-required because behavior, tests, trace credit, and owner crate are unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 262G Pre-Move Inventory and Specification
 
-Fresh inventory classifies the shared exact numeral projection as the same
-`design_drift`. Its three AST-only helpers are formula-source policy but remain
-in `runner.rs`. The 47-line contiguous fragment has hash
-`b415692ed2ee250be1bd4b66bfe90d21cc5cb444124eb249cca8890d1d488631`.
-`exact_numeral_term_operand` has seven retained call sites across the builtin
-binary, builtin type-assertion, imported predicate/functor, imported attribute,
-and set-enumeration extractors. `exact_numeral_term_node_or_expression` has two
-retained call sites in the imported infix-functor projection, and the common
-`exact_numeral_term_node` recognizer is called only by the other two helpers.
-The connective/quantifier and standalone constant families do not consume this
-prerequisite.
-
-Task 262G moves only that fragment into the existing private
-`src/runner/type_elaboration/source_formula.rs` leaf. The operand and
-node-or-expression entries receive runner-subtree-only visibility, parent-only
-facade re-exports, and private `runner.rs` aliases; the numeral-node recognizer
-remains leaf-private. The leaf continues to consume `SurfaceAst`,
-`SurfaceNodeId`, `SurfaceNodeKind`, `SourceRange`, and the existing common
-source-AST token, structural-child, and recovery projections. All five caller
-families, their transports/configuration, resolver use, node allowlists,
-checker consumers, detail keys, diagnostics, and failure assembly remain in
-`runner.rs` with unchanged bodies.
-
-This is a move-only prerequisite. It preserves exact `TermExpression` wrapper
-and single-child cardinality, recovery rejection, `NumeralTerm` kind, direct
-token spelling (`1`/`2` as requested by each caller), empty structural-child
-requirement, returned real node identity/range, caller order, and fail-closed
-behavior. The existing spec-derived `.miz` sources, trace/expectation rows,
-exact/near-miss/corruption matrices, active fixtures, and bidirectional route
-isolation form the preservation matrix. No test-first addition is appropriate,
-and no spec, test, trace, expectation, API, public surface, or
-`spec_coverage_audit.md` change is permitted. Formula-family moves, helper
-renaming/deduplication/generalization, semantic payload changes, theorem
-acceptance, facts, proof, CoreIr, ControlFlowIr, and VC are excluded.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 262G Move Result
 
-Task 262G moved the inventoried three-helper fragment into the existing private
-`source_formula.rs` leaf. After stripping the required visibility qualifiers,
-the moved 47 lines retain the original hash
-`b415692ed2ee250be1bd4b66bfe90d21cc5cb444124eb249cca8890d1d488631`.
-`runner.rs` is now 14,569 lines with hash
-`f3858539557d392e1d85fcf98bbfac615ef2564c1b3b9475c522994e7a6d94d4`;
-the 21-line phase facade has hash
-`702a81c671cc435d8dd1c1c4e1444070823372340308e319eeaf8790a0fcb8db`;
-and the 165-line source-formula leaf has hash
-`ffbb81c4b76339f26c23423785e1139260d92426b6b56fc9295c0065635ab3f6`.
-The unchanged 147-line source-AST and 1,474-line source-reserve leaves retain
-hashes `baf131e5f82846df2286ad68c6e8bad9d2642af2ce530f7b8c7362900ef2aa9e`
-and `88cf0cf08de2e61b2e6342aacc36ee01e20e00606d0c51f4bf7b5c64495253db`.
-
-The exact numeral-node recognizer is leaf-private. Only the operand and
-node-or-expression entries cross the parent-only facade, and all seven plus
-two retained caller sites remain in `runner.rs` in their original order. The
-caller bodies, transports/configuration, resolver dependencies, node
-allowlists, checker consumers, detail keys, diagnostics, and failure assembly
-are unchanged. Focused preservation and all 188 active type cases pass. All
-272 unit tests and the relevant-crate suite pass; the sorted raw and normalized
-test-list hashes remain
-`5e41e4dbfcc303322c246a612de61926a628957a168589b45864d0a5070bb07e`
-and `c0c2b80f8b4e6c84cd25d77573fda722c4d1846fed168cd4a478781cdb42775e`.
-
-Task 262G is complete. Parent Task 262 remains open for fresh bounded inventory
-of the remaining reserved/binary, builtin/imported, enumeration, and
-connective/quantifier formula families. No `spec_coverage_audit.md` update is
-required because behavior, tests, trace credit, and owner crate are unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 262H Pre-Move Inventory and Specification
 
-Fresh inventory classifies the builtin equality/inequality/membership formula
-family as the same `design_drift`. Three cohesive fragments remain separated in
-`runner.rs`: the 43-line config and source transport with hash
-`cd7bf9a595ba8d6b73c1cafa567da306092c1953e92e9695c3bf67c5c653336d`,
-the 84-line exact extractor with hash
-`ce691c4917fc00c8b4fe0799f02f8e252e4cf005d3a3a1082ae01c8c0e35bc3c`,
-and the 17-line dedicated node allowlist with hash
-`979560644d3d5827e2abbb016d2b5ea5da22a21cf71f3c35feca89404f3b29d8`.
-The three configs map only `TermFormulaPayloadBoundary`,
-`BuiltinInequalityPayloadBoundary`, and `BuiltinMembershipPayloadBoundary` to
-their exact operator, numeral spellings, and `FormulaKind`. The production
-extractor has one caller in `source_builtin_binary_term_formula_detail_keys`.
-The private preservation matrix also reads the config constant and its label,
-left, operator, and right fields to reject status-prefixed near misses.
-
-Task 262H moves only those three fragments into the existing private
-`source_formula.rs` leaf. The source transport and its fields, extraction entry,
-config type, four test-consumed config fields, and config constant receive
-runner-subtree-only visibility. The config's `formula_kind` field, extractor
-implementation, and node allowlist remain leaf-private where possible. The
-facade exposes the extraction entry unconditionally, while the config constant
-uses `#[cfg(test)]` on both its facade re-export and `runner.rs` import. The
-inferred transport/config types require no parent aliases. The leaf imports
-`FormulaKind` directly and consumes its existing local exact-numeral helper plus
-the common source-AST token, structural-child, recovery, node-kind, and site
-projections. The production checker/detail consumer and private test code stay
-byte-for-byte in `runner.rs` and its test subtree.
-
-Task 262H remains a move-only task. It preserves the three-entry config order and values,
-exact theorem labels/tokens/cardinality, single formula-expression and two-term
-shape, operator and numeral spelling, recovery/node rejection, real AST
-site/range, formula kind, checker payload/detail-key ordering, and fail-closed
-behavior. The canonical `.miz` sources and their spec/trace/expectation intent,
-the Task 262H0-strengthened exact/near-miss/corruption matrix, all three active
-cases, and route isolation are the preservation matrix. Task 262H itself adds
-no tests and makes no spec, trace, expectation, public API, or
-`spec_coverage_audit.md` change. Config edits, renaming/deduplication/generalization,
-reserved-variable formulas, builtin type assertion,
-imported/enumeration/connective formulas, checker/detail movement, semantic
-checking, facts, theorem acceptance, proof, CoreIr, ControlFlowIr, and VC are
-excluded.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 262H0 Test-Gap Inventory and Specification
 
-The Task 262H test-sufficiency review classified one independent `test_gap`
-before the production move. Existing tests prove the three active sources reach
-the expected fail-closed detail keys and reject status, wrong-label, wrong
-operator, wrong-right-numeral, and extra-root cases. They do not directly assert
-the extracted formula/left/right sites and ranges, each config's resulting
-`FormulaKind`, or three-entry config order. They also omit wrong-left-numeral,
-recovered theorem/formula, duplicate theorem, duplicate formula-expression,
-and extra operand cardinality rejection. A move could therefore corrupt source
-provenance or config mapping while retaining the same final detail keys.
-
-Task 262H0 is a test-only repair before Task 262H. Extend the existing
-`source_reserve_bridge_reports_gap_or_evidence_detail_for_unsupported_shapes`
-test rather than adding a new test: enumerate the three configs in canonical
-order, assert their exact label/left/operator/right values, extract each exact
-payload, and compare `FormulaKind`, formula/operand `TypedSiteRef`, and hard
-source-derived ranges. Add bounded synthetic builder states for recovered label
-and operator tokens, duplicate theorem, duplicate formula expression, and extra
-term expression, plus a wrong-left case for every config; every case must fail
-at the existing payload-extraction boundary. Test support may add only the
-minimal corruption flags/builders needed by this matrix.
-
-No production source, `.miz`, expectation, trace, spec, public API, diagnostic,
-payload behavior, test name, or test count changes in Task 262H0. Existing
-behavior is the test subject, not new intent; assertions may only strengthen.
-The focused test, all 272 unit tests and unchanged list hashes, all 188 active
-type cases, relevant-crate tests, workspace fmt/Clippy/tests, and diff check are
-required. This test-only task commits separately before the move-only Task
-262H. No `spec_coverage_audit.md` update is required because coverage credit,
-owner crate, and authority artifacts remain unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 262H0 Test Repair Result
 
-Task 262H0 strengthened the existing test without adding or renaming any test.
-The canonical config loop now fixes all three entries in order, their exact
-label/left/operator/right values, resulting `FormulaKind`, and independently
-computed formula/operand ranges and matching real AST sites. Every config also
-has a wrong-left rejection. Five bounded corruptions cover recovered theorem
-label, recovered formula operator, duplicate theorem, duplicate formula
-expression, and extra operand cardinality. The synthetic duplicate/extra nodes
-use independently owned allowlisted node kinds, so each case reaches the
-intended extractor cardinality branch rather than an earlier node-policy guard.
-
-The default and status-bearing builders preserve their prior exact token kinds,
-text, child order, ranges, offsets, and root construction. Only the private test
-subtree imports the production extractor. `support.rs` is now 6,655 lines with
-hash `5db1b0dc66f8149050d04f3f487c7e9efb201b990e871e8766cafbfca77b7d97`;
-`source_gap_and_equality.rs` is 3,067 lines with hash
-`0178a217c935d42d4f229a30e3875989ac1aa9ae6bcd56057e931b7b05d7660a`.
-Production source, `.miz`, spec, trace, expectation, public API, diagnostics,
-payload behavior, test names, and test count are unchanged.
-
-The focused test and all 272 unit tests pass, all 188 active type cases pass,
-and the raw/normalized test-list hashes remain
-`5e41e4dbfcc303322c246a612de61926a628957a168589b45864d0a5070bb07e`
-and `c0c2b80f8b4e6c84cd25d77573fda722c4d1846fed168cd4a478781cdb42775e`.
-Task 262H0 is complete; Task 262H subsequently completed the production move.
-No `spec_coverage_audit.md` update is required because test intent, coverage
-credit, and owner crate are unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 262H Move Result
 
-Task 262H moved the three inventoried builtin-binary fragments into the existing
-private `source_formula.rs` leaf. Review normalization confirms that the
-config/transport, extractor, and allowlist bodies are identical to HEAD after
-removing only required runner-subtree visibility and rustfmt whitespace. The
-three config entries retain their exact order, labels, operators, numeral
-spellings, and `FormulaKind` values.
-
-`runner.rs` is now 14,430 lines with hash
-`c0f358ac368f31c560f204df8e89e8885144366c9871f288a0306fa84e2ae981`;
-the 24-line phase facade has hash
-`d3b9de31b1bf6c2b68d4bafd088c7b88addab6db083a5b5adff93e581f1981d4`;
-and the 310-line source-formula leaf has hash
-`32978c9783b913439e9f8e94d326789c13aefff4d5e8326c669cb1a7d9745d6c`.
-The unchanged 147-line source-AST and 1,474-line source-reserve leaves retain
-hashes `baf131e5f82846df2286ad68c6e8bad9d2642af2ce530f7b8c7362900ef2aa9e`
-and `88cf0cf08de2e61b2e6342aacc36ee01e20e00606d0c51f4bf7b5c64495253db`.
-
-The extraction entry crosses the private facade unconditionally. The config
-constant crosses only under `#[cfg(test)]`; the config type and its four
-test-consumed fields have runner-subtree visibility, while its `formula_kind`
-and the node allowlist remain leaf-private. The inferred transport and fields
-are runner-subtree-visible without a facade type alias. The production
-detail/checker caller and all H0 test/support code remain byte-for-byte
-unchanged. All 272 unit tests and relevant-crate tests pass, all 188 active type
-cases pass, and the raw/normalized test-list hashes remain
-`5e41e4dbfcc303322c246a612de61926a628957a168589b45864d0a5070bb07e`
-and `c0c2b80f8b4e6c84cd25d77573fda722c4d1846fed168cd4a478781cdb42775e`.
-
-Task 262H is complete. Parent Task 262 remains open for fresh bounded inventory
-of the reserved-variable/binary, builtin type-assertion, imported,
-set-enumeration, and connective/quantifier formula families. No
-`spec_coverage_audit.md` update is required because behavior, authority,
-coverage credit, and owner crate are unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 262I Pre-Move Inventory and Specification
 
-Fresh inventory at clean HEAD `628b3272` isolates the builtin type-assertion
-formula family as three contiguous `runner.rs` fragments:
-
-- the 8-line `SourceBuiltinTypeAssertionFormula` transport at lines
-  1,649-1,656, hash
-  `88bc334c400dd92327d5fdc25e90efef1560cc097f5f2ecd6a5a822883082da4`;
-- the 82-line `extract_source_builtin_type_assertion_formula` entry at lines
-  12,988-13,069, hash
-  `c4d2a3911147e0ceefdb6d4f0b767e19ea829cc66e8f52d67fb5c146e2b3540d`;
-- the 16-line dedicated node allowlist at lines 13,686-13,701, hash
-  `1e7c125594df441e775eac25259e0dd5c3a1081896ac461a5c441fb53748a844`.
-
-The family implements the exact source-derived slice for Chapter 14.2.3's
-type-assertion shape and the active
-`fail_type_elaboration_builtin_type_assertion_formula_gap_001.miz` sidecar. Its
-trace and expectation require the real numeral term, type-assertion formula,
-and builtin-set type payload before fail-closed numeric-type and partial-formula
-diagnostics. The production checker/detail caller remains in `runner.rs`.
-
-Task 262I moves only these three fragments into the existing private
-`source_formula.rs` leaf. The extractor directly consumes
-`SourceTypeExpression` and `extract_builtin_source_type_expression` from the
-existing lower-level `source_reserve.rs` leaf. This establishes the acyclic
-`source_formula -> source_reserve` projection dependency; `source_reserve` has
-no reverse dependency. The extraction entry crosses the phase facade
-unconditionally. The inferred transport and all six consumed fields need only
-runner-subtree visibility, the allowlist remains leaf-private, and no config,
-test-only re-export, or facade type alias is needed.
-
-Task 262I is move-only: theorem label/tokens, recovery policy, structural
-cardinality, numeral spelling, asserted builtin-set constraints, payload sites
-and ranges, checker outputs, detail keys, ordering, and fail-closed behavior
-must not change. There is no helper rename, deduplication, generalization,
-semantic edit, or test rewrite. The exact active source, trace, expectation,
-Task 262I0 matrix, route-isolation cases, 188 active type cases, and 272-test
-list are the preservation oracle. No `spec_coverage_audit.md` update is required
-because coverage credit, owner crate, and deferred status remain unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 262I0 Test-Gap Inventory and Specification
 
-The Task 262I test-sufficiency review found an independent `test_gap` that must
-be repaired before the production move. The existing positive unit test checks
-checker kind/status and compares formula/subject sites and asserted range back
-to values from the same extraction payload. It does not independently fix the
-formula, subject, and asserted-type `TypedSiteRef`s or their source ranges, and
-does not directly assert `payload.asserted_type_site` or the payload-level
-builtin-set spelling, head, and empty attributes.
-
-The negative matrix already rejects a wrong label, status prefix, wrong numeral,
-builtin `object`, attributed `set`, and extra reserve/root content. It does not
-exercise recovery on the exact theorem label or `is` token, duplicate theorem
-or formula-expression nodes, an extra formula child, negation/wrong direct
-formula tokens, or an extra assertion operand. These branches guard the exact
-recovery, singleton, token, and two-operand contract that Task 262I must
-preserve.
-
-Task 262I0 is a test-only repair. Extend the existing shared synthetic builder
-with a bounded builtin type-assertion corruption shape, and strengthen the
-existing `source_reserve_bridge_reports_gap_or_evidence_detail_for_unsupported_shapes`
-test. Independently derive the expected source offsets from the fixed theorem
-label, numeral, `is`, and `set` spellings; assert source/node kind plus exact
-site/range for formula, subject, and asserted type; assert payload spelling,
-head, attributes, and checker handoff; and require every recovery/duplicate/
-token/cardinality corruption to return no extraction and the unchanged payload
-extraction-gap detail key.
-
-Task 262I0 adds no test and changes no production source, `.miz`, expectation,
-trace, specification, public API, diagnostic, payload behavior, test name, or
-test count. It must be a separate commit before move-only Task 262I. This
-repairs preservation coverage only, so `spec_coverage_audit.md` remains
-unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 262I0 Test Repair Result
 
-Task 262I0 strengthened the existing test without adding or renaming any test.
-The positive matrix now derives formula, numeral-subject, and asserted-type
-ranges from the exact label, subject, `is`, and `set` spellings; selects each
-expected site independently by node kind and range; and fixes every extraction
-payload field. It also fixes the checker type-entry cardinality at two, requires
-exactly one asserted-type entry owned by the asserted-type site, requires the
-subject term entry to retain the subject site, and anchors the checked formula
-and normalized asserted type to the independent source expectations.
-
-The bounded corruption builder adds only default-off recovery, duplicate,
-token-shape, and structural-cardinality controls. The existing negative matrix
-now verifies recovered exact label, recovered `is`, duplicate theorem,
-duplicate formula expression, extra formula child, negation, and extra
-assertion operand cases. Every case returns no extraction and the unchanged
-`type_elaboration.external_dependency.ast_payload_extraction` detail key.
-
-`support.rs` is 6,765 lines with hash
-`757e507c998c0a0acdc6334b3d9ea1c68a0dbe9b87bb0eb623fca93e49942b4b`;
-`source_gap_and_equality.rs` is 3,250 lines with hash
-`ed70cdc2536d6f44362c56b303cedee4ac0c666809abc4c1189b283963ce4b90`.
-Production source, `.miz`, specification, trace, expectation, public API,
-diagnostics, payload behavior, test names, and test count are unchanged.
-
-The focused test, all relevant-crate tests, all 272 unit tests, all 188 active
-type cases, formatting, all-target/all-feature Clippy, and workspace tests pass.
-Plan/count remains 403/367, type coverage 235/223, pass/fail 219/184, and the
-raw/normalized test-list and four CLI hashes remain unchanged. Task 262I0 is
-complete, and move-only Task 262I subsequently completed the production move.
-No `spec_coverage_audit.md` update is required because behavior, test intent,
-coverage credit, and owner crate are unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 262I Move Result
 
-Task 262I moved the three inventoried builtin type-assertion fragments into the
-existing private `source_formula.rs` leaf. Review normalization confirms that
-the transport, extractor, and allowlist bodies are byte-equivalent to HEAD
-`1b113e8b` after removing only the required runner-subtree visibility. The
-strengthened Task 262I0 test/support files and every production checker/detail
-consumer remain byte-for-byte unchanged.
-
-`runner.rs` is now 14,320 lines with hash
-`7d347e8a932ec5a4115540a6e6822b0ee23a6e41e919300ec56c04e5511303e4`;
-the 24-line phase facade has hash
-`61b5b82055f4f726d3b5209e2e6b57a176d0acaac5fbef9e1614780490306270`;
-and the 423-line source-formula leaf has hash
-`a055d6e2220961f5445bbf4b5394b2ffc72738160dbd228af399e267241ec43d`.
-The unchanged 147-line source-AST and 1,474-line source-reserve leaves retain
-hashes `baf131e5f82846df2286ad68c6e8bad9d2642af2ce530f7b8c7362900ef2aa9e`
-and `88cf0cf08de2e61b2e6342aacc36ee01e20e00606d0c51f4bf7b5c64495253db`.
-
-The extraction entry crosses the private phase facade unconditionally. The
-inferred transport and all six runner-consumed fields use runner-subtree
-visibility without a facade type alias, while the dedicated allowlist remains
-leaf-private. `source_formula` now directly consumes the existing
-`SourceTypeExpression` and builtin type-expression projection from
-`source_reserve`; there is no reverse import, so the dependency remains
-acyclic. Checker payload construction, detail rendering, route ordering, and
-top-level orchestration stay in `runner.rs`.
-
-The focused preservation test, all relevant-crate tests, all 272 unit tests,
-and all 188 active type cases pass. Plan/count remains 403/367, type coverage
-235/223, pass/fail 219/184, and the raw/normalized test-list plus four CLI
-hashes are unchanged. Formatting, all-target/all-feature Clippy, workspace
-tests, and diff cleanliness also pass. Task 262I is complete. It changes no
-behavior, authority, coverage credit, owner crate, or deferred status, so
-`spec_coverage_audit.md` remains unchanged. Parent Task 262 remains open for a
-fresh bounded inventory of the remaining formula families.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Tasks 262J1-J2 Pre-Move Inventory and Specification
 
-Fresh inventory at clean HEAD `fdce5d8a` isolates the imported
-predicate/functor formula work into five `runner.rs` fragments:
-
-- the 15-line transport at lines 1,648-1,662, hash
-  `474b345cfa983e95fcce895a08a56c89a51bd1d3b8cf542b0fbacb16c42fe76e`;
-- the 127-line family extractor at lines 12,978-13,104, hash
-  `6b967aff4d407f448cd8fd72aac205e88824c327f0048bb325786ef9a73e8bd4`;
-- the 61-line exact infix transport/helper at lines 13,486-13,546, hash
-  `9b6b8d4f5fd417f6654f4232448514a279f006309c1308219514024bee4421b2`;
-- the 23-line dedicated allowlist at lines 13,593-13,615, hash
-  `2daf39d17bde7186fe4a7fff4ad7fe6270ffc7a71e6ec1bdb44dbc2ba03fdafa`;
-- the 43-line shared imported symbol resolver/provenance pair at lines
-  13,706-13,748, hash
-  `fc4914d1c4a557f1401db035032c22e84430faf0ac9355b8d3a1cf3716761955`.
-
-The exact active sidecar is governed by imported visibility/conflict semantics,
-import-prelude semantics, the parenthesized infix term surface, and predicate
-application syntax. It supplies real imported `divides` predicate and `++`
-functor symbols, three numeral sites, one infix functor site, and one predicate
-formula before failing closed on missing numeric/signature/predicate-signature
-payloads and partial formula checking.
-
-The shared resolver has three callers: predicate and functor resolution in this
-family plus the retained imported-attribute extractor. Task 262J1 therefore
-moves only that resolver/provenance pair first. The resolver entry receives
-runner-subtree visibility and an unconditional parent-facade alias; the
-provenance predicate remains leaf-private, and all callers remain unchanged.
-
-After J1, Task 262J2 moves only the transport, exact family extractor, exact
-infix projection, and dedicated allowlist. The extractor crosses the facade
-unconditionally. The transport and all 12 fields use runner-subtree visibility
-without a facade type alias; the infix transport/helper and allowlist remain
-leaf-private. Checker/detail/orchestration callers and the imported-attribute
-family remain in `runner.rs`. Both tasks are move-only and forbid renaming,
-deduplication, generalization, accepted-shape or symbol-admission changes,
-operator metadata changes, diagnostics/detail/order changes, tests, and
-authority edits. The dependency direction remains acyclic through
-`source_formula -> source_ast` plus the existing `source_formula ->
-source_reserve` edge.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 262J0 Test-Gap Inventory and Specification
 
-The J1/J2 test-sufficiency review found an independent `test_gap`. The current
-positive matrix finds checker terms and formulas through extractor-returned
-sites and checks imported symbols only by module path. It does not independently
-fix the formula, outer numeral, infix term, or both infix operand sites/ranges,
-all 12 transport fields, exact symbol kind/spelling/module/contribution
-provenance, or checker ordering.
-
-The existing negative matrix covers 12 source near-misses and six symbol-env
-cases but lacks direct extractor assertions plus bounded recovery, duplicate,
-predicate segment/head cardinality, parenthesized/infix cardinality, and
-imported-contribution provenance corruption. Task 262J0 is a test-only repair:
-extend the existing builder/environment support with default-off bounded
-corruption controls, strengthen the existing test with independently derived
-source expectations and exact checker handoff/order, and require every negative
-case to return no extraction plus the unchanged extraction-gap detail key.
-
-Task 262J0 adds no test and changes no production source, `.miz`, expectation,
-trace, specification, public API, diagnostics, payload behavior, test name, or
-test count. It is a separate commit before move-only J1/J2. Coverage credit,
-owner crate, follow-up ownership, and deferred rationale remain unchanged, so
-`spec_coverage_audit.md` remains unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 262J0 Test Repair Result
 
-Task 262J0 strengthened the existing imported predicate/functor test without
-adding or renaming a test. The positive matrix now derives the formula, outer
-numeral, infix term, both infix operands, and predicate formula sites and
-ranges independently from the source spellings. It fixes all 12 extraction
-transport fields, exact imported predicate/functor kind, spelling, module, and
-contribution provenance, the checker term order, and the checked formula/term
-site handoff.
-
-The default-off bounded corruption builder covers recovered label/functor,
-duplicate theorem/formula, formula/segment/head cardinality, parenthesized and
-infix cardinality, and imported-contribution provenance. The 12 existing source
-near misses, 11 structural corruptions, six existing symbol-environment cases,
-and the isolated local-contribution case all return no direct extraction and
-the unchanged `type_elaboration.external_dependency.ast_payload_extraction`
-detail key.
-
-`support.rs` is 6,943 lines with hash
-`68e90fa32900462fbeac2065209d183762d85e4e32ddbe16d261680d564eed98`;
-`source_gap_and_equality.rs` is 3,525 lines with hash
-`69e2a9f82e83d95247f5ec1d88244b38a071db1a09bcae34ed4772401b35924d`.
-Production source, `.miz`, specification, trace, expectation, public API,
-diagnostics, payload behavior, test names, and test count are unchanged.
-
-The focused test, relevant-crate tests, all 272 unit tests, and all 188 active
-type cases pass. Plan/count remains 403/367, type coverage 235/223, pass/fail
-219/184, and the raw/normalized test-list plus four CLI hashes are unchanged.
-Formatting, all-target/all-feature Clippy, workspace tests, and diff cleanliness
-also pass. Task 262J0 is complete and move-only Task 262J1 is next. No
-`spec_coverage_audit.md` update is required because behavior, test intent,
-coverage credit, owner crate, and deferred status are unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 262J1 Move Result
 
-Task 262J1 moved only the inventoried shared imported formula symbol
-resolver/provenance pair into the existing private `source_formula.rs` leaf.
-After removing the required `pub(in crate::runner)` visibility from the resolver
-entry, the 43-line moved body retains baseline hash
-`fc4914d1c4a557f1401db035032c22e84430faf0ac9355b8d3a1cf3716761955`.
-The predicate, functor, and imported-attribute caller bodies and their order are
-unchanged.
-
-Only the resolver entry crosses the private phase facade through an
-unconditional parent-only alias; its provenance predicate remains leaf-private.
-`ContributionKind` and `NamespacePath` moved with the implementation while
-runner-owned `SymbolEnv`, `SymbolKind`, and `ResolverSymbolId` uses remain in
-`runner.rs`. The existing `source_formula -> source_ast` and `source_formula ->
-source_reserve` dependencies stay acyclic, with no reverse edge.
-
-`runner.rs` is now 14,277 lines with hash
-`8d4e3ec02e275e3a5e69f3599285270cc176496b52321af72e29e063ca10fade`;
-the 25-line phase facade has hash
-`a969e263beb6eee47cbd111ff3efc25ef71122af1e7c7a8ae32a63c5c75dbd25`;
-and the 467-line source-formula leaf has hash
-`eb6ef963457cf16625e00b03fc81795ff89772e253f5c0b3a45a7c592e324bcf`.
-Tests, authority artifacts, checker/detail consumers, public API, diagnostics,
-payloads, ordering, and fail-closed behavior are unchanged.
-
-The focused preservation test, relevant-crate tests, all 272 unit tests, and all
-188 active type cases pass. Plan/count remains 403/367, type coverage 235/223,
-pass/fail 219/184, and the raw/normalized test-list plus four CLI hashes are
-unchanged. Formatting, all-target/all-feature Clippy, workspace tests, and diff
-cleanliness also pass. Task 262J1 is complete and move-only Task 262J2 is next.
-No `spec_coverage_audit.md` update is required because behavior, authority,
-coverage credit, owner crate, and deferred status are unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 262J2 Move Result
 
-Task 262J2 moved only the four inventoried imported predicate/functor fragments
-into the existing private `source_formula.rs` leaf. After removing only the
-required runner-subtree visibility, the 15-line transport, 127-line extractor,
-61-line exact infix projection, and 23-line allowlist retain baseline hashes
-`474b345cfa983e95fcce895a08a56c89a51bd1d3b8cf542b0fbacb16c42fe76e`,
-`6b967aff4d407f448cd8fd72aac205e88824c327f0048bb325786ef9a73e8bd4`,
-`9b6b8d4f5fd417f6654f4232448514a279f006309c1308219514024bee4421b2`,
-and `2daf39d17bde7186fe4a7fff4ad7fe6270ffc7a71e6ec1bdb44dbc2ba03fdafa`.
-
-Only the extractor crosses the private phase facade unconditionally. The
-transport and all 12 fields use runner-subtree visibility without a facade type
-alias, while the exact infix transport/helper and dedicated allowlist remain
-leaf-private. The checker/detail/orchestration caller and the imported-attribute
-family remain unchanged in `runner.rs`; the moved extractor reuses Task 262J1's
-leaf-owned resolver and direct source-AST projections. The now-unused
-`exact_numeral_term_node_or_expression` facade and runner aliases were removed
-after its sole external caller moved into the leaf; its implementation and
-visibility are unchanged.
-
-`runner.rs` is now 14,047 lines with hash
-`9e47a64eedd35ae7e66629bdfefdaa39a86389d5002925af3887a2b7282222d0`;
-the 25-line phase facade has hash
-`2fad12f17b75a9ec51e97132846fbe926abeeeffb9f8c32eb78df93d0eab1330`;
-and the 698-line source-formula leaf has hash
-`a4d3fbe9708eade5d3b6ca3db965f3fd119aff8723c30d6ed6fbf9ccd982f049`.
-Tests, authority artifacts, public API, diagnostics, payloads, ordering,
-accepted shapes, and fail-closed behavior are unchanged.
-
-The focused preservation test, relevant-crate tests, all 272 unit tests, and all
-188 active type cases pass. Plan/count remains 403/367, type coverage 235/223,
-pass/fail 219/184, and the raw/normalized test-list plus four CLI hashes are
-unchanged. Formatting, all-target/all-feature Clippy, workspace tests, and diff
-cleanliness also pass. Task 262J2 is complete; parent Task 262 remains open for
-fresh bounded inventory of the remaining formula families. No
-`spec_coverage_audit.md` update is required because behavior, authority,
-coverage credit, owner crate, and deferred status are unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Tasks 262K0-K Pre-Move Inventory and Specification
 
-Fresh inventory at clean HEAD `9625d0a1` isolates the exact imported attribute
-assertion family in three `runner.rs` fragments:
-
-- the 8-line five-field transport at lines 1,649-1,656, hash
-  `f6b78fea06f451c61eac5286ea41b8f85e33bfa80d4b392cfd68d65e9117f5ca`;
-- the 141-line exact `empty`/`non empty` two-entry and shared-shape extractor at
-  lines 12,963-13,103, hash
-  `a7aa82e3b3a97cbdcf2b7506920bda40cf7d4ddeef2feb5a1124c5d7e3b93c05`;
-- the 21-line dedicated node allowlist at lines 13,388-13,408, hash
-  `3f13f99cd6fe64cd8baddceefdeed904e4b118d2132c6cecd06a2fe7187f0e76`.
-
-The exact active bridges distinguish positive `empty` from attribute-level
-`non empty`; the latter is not formula-level negation. Both import
-`parser.type_fixtures`, require the imported `empty` attribute, pass one real
-source-derived numeral and one attribute-assertion formula to the checker, and
-then fail closed on missing numeric and formula/attribute semantic payloads.
-Chapter 14 and the canonical harness preserve that polarity boundary and keep
-broader attribute semantics deferred.
-
-Task 262K moves only these three fragments after K0. Both exact extractor
-entries use runner-subtree visibility and unconditional parent-facade aliases;
-the shared-shape extractor and allowlist remain leaf-private. The transport and
-all five fields use runner-subtree visibility. The transport also crosses the
-facade through a parent-only type re-export because the retained checker helper
-names it as an argument; this avoids changing or duplicating that consumer.
-Checker/detail/orchestration consumers stay in `runner.rs`. The moved family
-reuses the leaf-owned imported-symbol resolver, exact numeral projection, and
-source-AST projections. After their last external caller moves, K also removes
-only the obsolete runner/facade aliases for `exact_compilation_item_list`,
-`is_exact_parser_type_fixtures_import`, `qualified_symbol_spelling`, and
-`resolve_imported_fixture_term_formula_symbol`, plus the runner-only
-`SymbolKind` import. The leaf implementations and visibility remain unchanged.
-No new reverse dependency is introduced.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 262K0 Test-Gap Inventory and Specification
 
-The K test-sufficiency review found an independent `test_gap`. Both current
-positive matrices locate checker terms/formulas through extractor-returned
-sites and check imported provenance only by module path. They do not
-independently fix formula/subject sites and ranges, all five transport fields,
-exact `AttributeRef` polarity, symbol kind/spelling/module/contribution
-provenance, or singleton checker ordering and formula-to-subject handoff.
-
-Existing source and environment near misses assert only the rendered gap
-detail. They lack direct extractor rejection, recovery, duplicate theorem or
-formula expression, formula/assertion/attribute-chain/attribute-ref/qualified-
-symbol/numeral cardinality corruption, duplicate or mismatched `non`, and an
-isolated imported-contribution-kind corruption. Task 262K0 is a test-only
-repair: add default-off family-specific corruption controls to existing support
-and strengthen the existing test for both variants with independently derived
-source expectations, exact provenance/order, direct `None`, and the unchanged
-`type_elaboration.external_dependency.ast_payload_extraction` detail key.
-
-Task 262K0 adds no test and changes no production source, `.miz`, expectation,
-trace, specification, public API, diagnostic, payload behavior, test name, or
-test count. It is a separate commit before move-only K. Coverage credit, owner
-crate, follow-up ownership, and deferred rationale remain unchanged, so
-`spec_coverage_audit.md` remains unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 262K0 Test Repair Result
 
-Task 262K0 strengthened both existing imported attribute assertion variants
-without adding or renaming a test. Each positive matrix now derives formula and
-subject ranges from the exact source spellings, selects the `IsAssertion` and
-`NumeralTerm` sites independently, fixes all five transport fields, checks
-direct `AttributeRef` polarity (`[]` versus `["non"]`), and fixes exact imported
-attribute kind, spelling, module, and contribution provenance. Singleton checker
-term/formula order and formula-to-subject handoff are anchored to those
-independent sites.
-
-The default-off bounded builder covers recovered label and attribute symbol,
-duplicate theorem and formula expression, formula/assertion/attribute-chain/
-attribute-ref/qualified-symbol/numeral cardinality, and unexpected or duplicate
-`non` for both variants. Every existing source/environment near miss and all 22
-corruption cases return no direct extraction plus the unchanged
-`type_elaboration.external_dependency.ast_payload_extraction` detail key. A
-shared boolean environment builder proves an otherwise-identical ImportedSource
-control extracts before its LocalSource contribution twin rejects.
-
-`support.rs` is 7,146 lines with hash
-`46340ae9aa4ac03b7e5e458a515814bea4db86de177625c97b57762d894a8025`;
-`source_gap_and_equality.rs` is 3,974 lines with hash
-`101fb755532276a12ce2202f297c318ad77249eab9aa27ce2670fe59e08ab47c`.
-Production source, `.miz`, specification, trace, expectation, public API,
-diagnostics, payload behavior, test names, and test count are unchanged.
-
-The focused test, relevant-crate tests, all 272 unit tests, and all 188 active
-type cases pass. Plan/count remains 403/367, type coverage 235/223, pass/fail
-219/184, and the raw/normalized test-list plus four CLI hashes are unchanged.
-Formatting, all-target/all-feature Clippy, workspace tests, and diff cleanliness
-also pass. Task 262K0 is complete and move-only Task 262K is next. No
-`spec_coverage_audit.md` update is required because behavior, test intent,
-coverage credit, owner crate, and deferred status are unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 262K Move Result
 
-Task 262K moved only the three inventoried imported attribute assertion
-fragments into the existing private `source_formula.rs` leaf. After removing
-only the required runner-subtree visibility, the 8-line transport, 141-line
-two-entry/shared extractor, and 21-line allowlist retain baseline hashes
-`f6b78fea06f451c61eac5286ea41b8f85e33bfa80d4b392cfd68d65e9117f5ca`,
-`a7aa82e3b3a97cbdcf2b7506920bda40cf7d4ddeef2feb5a1124c5d7e3b93c05`,
-and `3f13f99cd6fe64cd8baddceefdeed904e4b118d2132c6cecd06a2fe7187f0e76`.
-
-Both exact extractor entries cross the private phase facade unconditionally;
-the shared shape extractor and allowlist remain leaf-private. The transport and
-all five fields use runner-subtree visibility, and the transport has one
-parent-only type re-export because the unchanged checker helper names it as an
-argument. Checker/detail/orchestration consumers and their order remain
-byte-identical in `runner.rs`.
-
-The moved family directly reuses the leaf-owned imported-symbol resolver, exact
-numeral projection, and source-AST projections. After their final external
-caller moved, only the obsolete facade/runner aliases for
-`exact_compilation_item_list`, `is_exact_parser_type_fixtures_import`,
-`qualified_symbol_spelling`, and `resolve_imported_fixture_term_formula_symbol`,
-plus runner's unused `SymbolKind` import, were removed. Leaf implementations
-and visibility remain unchanged; dependencies stay acyclic.
-
-`runner.rs` is now 13,874 lines with hash
-`d03812923d461dc718cb4236ee5568dfa03ac07e3bfb0f5995627d46f345b2c6`;
-the 26-line phase facade has hash
-`8e5b39254a2ca468d62db55d3ba7a69bdfaea5248881d5a5c62ca8d3eed526dd`;
-and the 871-line source-formula leaf has hash
-`f1a6888ca7c10bfbf1a8a868261e34d31fa74003512250cdbe5b117e018f19de`.
-Tests, authority artifacts, public API, diagnostics, payloads, polarity,
-ordering, accepted shapes, and fail-closed behavior are unchanged.
-
-The focused preservation test, relevant-crate tests, all 272 unit tests, and all
-188 active type cases pass. Plan/count remains 403/367, type coverage 235/223,
-pass/fail 219/184, and the raw/normalized test-list plus four CLI hashes are
-unchanged. Formatting, all-target/all-feature Clippy, workspace tests, and diff
-cleanliness also pass. Task 262K is complete; parent Task 262 remains open for
-fresh bounded inventory of remaining formula families. No
-`spec_coverage_audit.md` update is required because behavior, authority,
-coverage credit, owner crate, and deferred status are unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Tasks 262L0-L Pre-Move Inventory and Specification
 
-Fresh inventory at clean HEAD `be7a2c6e` isolates the exact set-enumeration
-formula family in four `runner.rs` fragments:
-
-- the 11-line eight-field transport at lines 1,649-1,659, hash
-  `5aa3f3e859cc0313f935e80011ef7be4e05299a0763f97de572eccc500fd71c8`;
-- the 57-line exact extractor at lines 12,954-13,010, hash
-  `f05ab26f14f3d28e2f721575ca7a53c74fae9dfeebb0779906fd0a6d45b7fc99`;
-- the 43-line private exact-set transport and projection at lines
-  13,148-13,190, hash
-  `45c155d6556740807b395b0e1a8114094db074ac6768ee7d892b7e0eb2d26036`;
-- the 15-line dedicated node allowlist at lines 13,237-13,251, hash
-  `461650cdedc2f56cdf072e95e1ef0243bc7be1a3c7323e0628c652ad562b6dd1`.
-
-The exact active bridge recognizes only
-`SetEnumerationPayloadBoundary: {1, 2} = {1, 2}`, projects four real numeral
-items, two set-enumeration terms, and one equality formula from the source AST,
-and then fails closed on missing numeric type payloads, missing set result-type
-payloads, and partial formula checking. Canonical Chapter 13, the exact `.miz`,
-trace row, expectation, and harness agree; broader set-enumeration extraction
-and semantics remain deferred.
-
-Task 262L moves only these four fragments after L0. The eight-field transport
-and its fields use runner-subtree visibility, and only the exact extraction
-entry receives an unconditional parent-facade alias. The exact-set transport,
-projection helper, and allowlist remain leaf-private. The checker/detail
-consumer `source_set_enumeration_formula_output` stays byte-identical in
-`runner.rs`; because that consumer does not name the transport type, no facade
-type re-export is required. The moved family directly reuses the leaf-owned
-exact numeral and source-AST projections and introduces no reverse dependency.
-After the last external exact-numeral caller moves, L removes only the obsolete
-`exact_numeral_term_operand` facade alias and runner import while leaving its
-leaf implementation and visibility unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 262L0 Test-Gap Inventory and Specification
 
-The L test-sufficiency review found an independent `test_gap`. The positive
-matrix already independently fixes the eight transport fields, but merges the
-left/right item vectors, locates all six checker terms with unordered search,
-and compares formula handoff through extractor-returned sites. It therefore
-does not independently fix 2+2 item grouping, both exact punctuation triples,
-the deterministic six-term checker-output order, exact corresponding term-kind
-order, or the formula's independently derived site and `[left_set, right_set]`
-handoff.
-
-The existing near-miss matrix checks only the rendered extraction-gap detail,
-does not call the extractor directly, and couples two left item mismatches.
-It lacks isolated four-position numeral near misses and allowlisted corruption
-for formula-expression/formula/operand, term-wrapper/set/item, punctuation,
-and numeral-child kind or cardinality guards. Task 262L0 is a test-only repair:
-add default-off family-specific corruption controls to existing support and
-strengthen the existing test with independent grouping/punctuation/order
-expectations, direct `None`, and the unchanged
-`type_elaboration.external_dependency.ast_payload_extraction` detail key.
-
-Task 262L0 adds no test and changes no production source, `.miz`, expectation,
-trace, specification, public API, diagnostic, payload behavior, test name, or
-test count. It is a separate commit before move-only L. Coverage credit, owner
-crate, follow-up ownership, and deferred rationale remain unchanged, so
-`spec_coverage_audit.md` remains unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 262L0 Test Repair Result
 
-Task 262L0 strengthened the existing exact set-enumeration matrix without
-adding or renaming a test. The positive path now fixes the separate 2+2 item
-groups and both punctuation triples, and anchors the deterministic six-site
-and six-kind checker output plus the equality formula's site and ordered set
-terms to independently derived source sites. All eight transport fields remain
-independently fixed.
-
-The four item-spelling near misses now isolate left-first, left-second,
-right-first, and right-second positions. Every existing source near miss calls
-the extractor directly before checking the unchanged gap detail. Eleven
-default-off, allowlisted corruption variants independently cover formula-
-expression cardinality/kind, formula child/kind/operand cardinality, term-
-wrapper kind/cardinality, set kind/punctuation/item cardinality, and numeral-
-child cardinality; each returns no direct extraction plus the unchanged
-`type_elaboration.external_dependency.ast_payload_extraction` detail key.
-
-`support.rs` is 7,330 lines with hash
-`451611d56191b98685fc27fd9a87eec36090f7b1dba11aa3a7a7f8e8d9e801e6`;
-`source_gap_and_equality.rs` is 4,079 lines with hash
-`e1836ed29e9b6593970047b5e68f746def70cbd86f9fd98b11aad7841459afb7`.
-Production source, `.miz`, specification, trace, expectation, public API,
-diagnostics, payload behavior, test names, and test count are unchanged.
-
-The focused test, relevant-crate tests, all 272 unit tests, and all 188 active
-type cases pass. Plan/count remains 403/367, type coverage 235/223, pass/fail
-219/184, and the raw/normalized test-list plus four CLI hashes are unchanged.
-Formatting, all-target/all-feature Clippy, workspace tests, and diff cleanliness
-also pass. Task 262L0 is complete and move-only Task 262L is next. No
-`spec_coverage_audit.md` update is required because behavior, test intent,
-coverage credit, owner crate, and deferred status are unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 262L Move Result
 
-Task 262L moved only the four inventoried set-enumeration fragments into the
-existing private `source_formula.rs` leaf. After normalizing only required
-runner-subtree visibility and the wrapped public extraction signature, the
-11-line transport, 57-line extractor, 43-line exact-set projection, and 15-line
-allowlist retain baseline hashes
-`5aa3f3e859cc0313f935e80011ef7be4e05299a0763f97de572eccc500fd71c8`,
-`f05ab26f14f3d28e2f721575ca7a53c74fae9dfeebb0779906fd0a6d45b7fc99`,
-`45c155d6556740807b395b0e1a8114094db074ac6768ee7d892b7e0eb2d26036`,
-and `461650cdedc2f56cdf072e95e1ef0243bc7be1a3c7323e0628c652ad562b6dd1`
-respectively.
-
-The transport and all eight fields use runner-subtree visibility; only the
-exact extractor crosses the phase facade. The exact-set transport, helper, and
-allowlist remain leaf-private, and no transport type alias was added. The
-retained `source_set_enumeration_formula_output` checker/detail consumer remains
-byte-identical to HEAD with hash `710f25b9f406aad51eeb99c105abd79f9477e0c18b60ea3f27124a1b81330355`.
-After its final external caller moved, only the obsolete
-`exact_numeral_term_operand` facade alias and runner import were removed; the
-leaf implementation, visibility, and body are unchanged.
-
-`runner.rs` is now 13,744 lines with hash
-`2fa77cd1126d591f37c13e2e7c0fb2522a3e9a269ecb81dbb26f86ffcd93f234`;
-the 25-line phase facade has hash
-`8aca34293b02fad31567ec4b3d2865e8c8fac95c333d060718885d462c19b8af`;
-and the 1,003-line source-formula leaf has hash
-`4bbe60d38ca7af3a320ab97c8b4f6e2aa61abd50dc41c68c6431e0fb7684af01`.
-Tests, authority artifacts, public API, diagnostics, payloads, ordering,
-accepted shapes, and fail-closed behavior are unchanged.
-
-The focused preservation test, relevant-crate tests, all 272 unit tests, and
-all 188 active type cases pass. Plan/count remains 403/367, type coverage
-235/223, pass/fail 219/184, and the raw/normalized test-list plus four CLI
-hashes are unchanged. Formatting, all-target/all-feature Clippy, workspace
-tests, and diff cleanliness also pass. Task 262L is complete; parent Task 262
-remains open for fresh bounded inventory of the remaining formula families. No
-`spec_coverage_audit.md` update is required because behavior, authority,
-coverage credit, owner crate, and deferred status are unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Tasks 262M0-M Pre-Move Inventory and Specification
 
-Fresh inventory at clean HEAD `334b83e2` isolates the exact formula
-connective/quantifier family in three `runner.rs` fragments:
-
-- the 13-line ten-field transport at lines 1,649-1,661, hash
-  `98f4a9a771cebc18faa43d1b266dd78f931f00a7d9435c7f6606cfd807a6e424`;
-- the 135-line exact extractor at lines 12,942-13,076, hash
-  `a64080512c757a0a8f85357ec5a086285d7139257bd816bdbb85a5ae19bcd56f`;
-- the 18-line dedicated node allowlist at lines 13,123-13,140, hash
-  `80c39e182da04f34e2598f0670fcba4c17785dbea34373ef7d7847e3488cce1f`.
-
-The exact active bridge recognizes only a contradiction premise implying a
-universal `set`-typed binder whose body is a negated contradiction. It projects
-two contradiction constants plus implication, quantified, and negation shells
-from the real source AST, then fails closed on missing formula and quantifier
-payloads. Canonical Chapter 14, the exact `.miz`, trace row, expectation, and
-harness agree; broader connective, binder, child-formula, and theorem semantics
-remain deferred.
-
-Task 262M moves only these three fragments after M0. The ten-field transport
-and its fields use runner-subtree visibility, and only the exact extraction
-entry receives an unconditional parent-facade alias. The allowlist remains
-leaf-private. The checker/detail consumer
-`source_formula_connective_quantifier_output` stays byte-identical in
-`runner.rs`; because it does not name the transport type, no facade type
-re-export is required. The moved extractor directly reuses the leaf-owned
-source-AST projections and `source_reserve` builtin type-expression projection,
-so dependency direction remains acyclic. After the move, remove only the now-
-unused production runner imports `SurfaceFormulaConnective`,
-`SurfaceFormulaConstant`, `SurfaceFormulaPrefixOperator`, and
-`SurfaceQuantifierKind`; test-support imports are independent. Retain
-`extract_builtin_source_type_expression`, `TypeHeadInput`, and all source-AST
-facade aliases because other runner callers still require them.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 262M0 Test-Gap Inventory and Specification
 
-The M test-sufficiency review found an independent `test_gap`. The positive
-matrix independently fixes all ten transport fields and the five shell states,
-but locates checker formulas with unordered searches through extractor-returned
-sites. It does not fix deterministic five-site/five-kind output order or the
-complete diagnostic provenance: only the two contradiction-constant formula
-diagnostics are source-anchored, while implication, quantified, and negation
-diagnostic key/range pairs are not checked. Binder segment/type-expression/head
-shape and direct `x being` / `set` tokens also lack independent assertions.
-
-The existing near-miss matrix checks only the rendered extraction-gap detail
-and does not call the extractor directly. It lacks allowlisted corruption for
-formula-expression, implication/repetition/token/operands, premise constant,
-universal token/children, binder segment/token/children, negation token/children,
-body constant, and recovered inner nodes. An attributed-set binder is a separate
-non-allowlisted near miss because its `AttributeChain`, `QualifiedSymbol`, and
-`PathSegment` nodes necessarily fail the current family allowlist; M0 must not
-widen that production boundary or claim to isolate the later attributes-empty
-guard. Task 262M0 is a test-only repair: add default-off family-specific
-allowlisted corruption controls to existing support, add that separate
-attributed-set near miss, and strengthen the existing test with independent
-binder, output-order/state, diagnostic key/range, direct `None`, and unchanged
-`type_elaboration.external_dependency.ast_payload_extraction` detail-key
-assertions. The default-off corruptions must preserve the family allowlist and
-preceding guards so each rejection remains isolated.
-
-Task 262M0 adds no test and changes no production source, `.miz`, expectation,
-trace, specification, public API, diagnostic, payload behavior, test name, or
-test count. It is a separate commit before move-only M. Coverage credit, owner
-crate, follow-up ownership, and deferred rationale remain unchanged, so
-`spec_coverage_audit.md` remains unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 262M0 Test Repair Result
 
-Task 262M0 strengthened the existing exact connective/quantifier matrix without
-adding or renaming a test. The positive path now fixes the binder segment,
-type-expression, and type-head ranges plus direct `x`, `being`, and `set`
-tokens. All ten transport fields remain independently anchored. The observed
-deterministic checker order is fixed as body contradiction, negation,
-quantified shell, implication, then premise contradiction, with exact site,
-kind, context, partial status, and deferred reason for all five entries. The
-four formula-payload and one quantifier-payload diagnostic key/range pairs are
-fixed as a complete multiset.
-
-Every existing connective/quantifier near miss now asserts direct extractor
-rejection before the unchanged detail key. The attributed-set binder is kept as
-an explicit non-allowlisted near miss without widening production or claiming
-the later attributes-empty guard. Eighteen default-off, allowlisted corruptions
-independently cover theorem/formula-expression shape, implication repetition/
-token/operands, premise kind/token, universal token/children, binder segment
-kind/token/children, negation token/children, body kind/token, and descendant
-recovery. Each returns no direct extraction plus the unchanged
-`type_elaboration.external_dependency.ast_payload_extraction` detail key.
-
-`support.rs` is 7,551 lines with hash
-`7315c2d22d5d0e7dbf27c2086e34f3177e6b1fba6c57f3e9db0cd51660081af0`;
-`source_gap_and_equality.rs` is 4,260 lines with hash
-`dd39dcbaf71644d6e6a9d0035fb9d838925e6d2db0892b58009c53e495fe6369`.
-Production source, `.miz`, specification, trace, expectation, public API,
-diagnostics, payload behavior, test names, and test count are unchanged.
-
-The focused test, relevant-crate tests, all 272 unit tests, and all 188 active
-type cases pass. Plan/count remains 403/367, type coverage 235/223, pass/fail
-219/184, and the raw/normalized test-list plus four CLI hashes are unchanged.
-Formatting, all-target/all-feature Clippy, workspace tests, and diff cleanliness
-also pass. Task 262M0 is complete and move-only Task 262M is next. No
-`spec_coverage_audit.md` update is required because behavior, test intent,
-coverage credit, owner crate, and deferred status are unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 262M Move Result
 
-Task 262M moved only the three inventoried formula connective/quantifier
-fragments into the existing private `source_formula.rs` leaf. After removing
-only required runner-subtree visibility, the 13-line transport, 135-line
-extractor, and 18-line allowlist retain baseline hashes
-`98f4a9a771cebc18faa43d1b266dd78f931f00a7d9435c7f6606cfd807a6e424`,
-`a64080512c757a0a8f85357ec5a086285d7139257bd816bdbb85a5ae19bcd56f`,
-and `80c39e182da04f34e2598f0670fcba4c17785dbea34373ef7d7847e3488cce1f`.
-
-The transport and all ten fields use runner-subtree visibility; only the exact
-extractor crosses the phase facade, no transport type alias was added, and the
-allowlist remains leaf-private. The retained
-`source_formula_connective_quantifier_output` checker/detail consumer remains
-byte-identical to HEAD with hash
-`7bc5d0899674fda17899b4c78463ac1d83e9ed8ad99196a4b0bb2eaf11f844f0`.
-Only the four now-unused production runner syntax-enum imports were removed;
-test support, `TypeHeadInput`, the builtin type-expression extractor, and all
-still-used source-AST facade aliases remain unchanged. Dependency direction is
-acyclic.
-
-`runner.rs` is now 13,573 lines with hash
-`1ea8e97e9f87e92bbcdd5b9e17e8a1d829b46f34f14c1a53d983529ece9ce58f`;
-the 26-line phase facade has hash
-`1eb16a6815df883433ef6de6e7814cba7102e5962c8b5425ac875caba0c5fb69`;
-and the 1,173-line source-formula leaf has hash
-`d418905106d5b6313fe62644c4145c83428c056880f2f9b2d74cc2eb2d00760d`.
-Tests, authority artifacts, public API, diagnostics, payloads, ordering,
-accepted shapes, and fail-closed behavior are unchanged.
-
-The focused preservation test, relevant-crate tests, all 272 unit tests, and
-all 188 active type cases pass. Plan/count remains 403/367, type coverage
-235/223, pass/fail 219/184, and the raw/normalized test-list plus four CLI
-hashes are unchanged. Formatting, all-target/all-feature Clippy, workspace
-tests, and diff cleanliness also pass. Task 262M is complete; parent Task 262
-remains open for fresh bounded inventory of the remaining formula families. No
-`spec_coverage_audit.md` update is required because behavior, authority,
-coverage credit, owner crate, and deferred status are unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Tasks 262N0-262Q Fresh Reserved-Variable Formula Inventory
 
-Fresh inventory after Task 262M classifies the remaining source-formula code
-as one shared reserved-variable source model/substrate followed by three
-bounded extraction owners: direct binary, parenthesized binary, and type
-assertion. Checker-output transports, builders, validators, detail keys, and
-diagnostics remain Task 263 work. Concrete configs and their thin named route
-wrappers stay paired in `runner.rs` until a later inventory can move them
-without coupling source extraction to the result-role and invalid-detail-key
-contracts consumed by Task 263.
-
-The shared source substrate comprises the reserved-variable config/model type
-definitions and schemas (not the concrete config values/statics), builtin/mode
-projection predicates, asserted-head relation check, exact
-mode-definition/expansion checks, the shared identifier operand projection,
-and source-use ordinal calculation. The single-parenthesized operand projection
-and the three family-specific node allowlists stay with their generic cores in
-Tasks 262P and 262O-262Q respectively. The first candidate family range ending
-at `runner.rs:12974` was rejected by review because it included the opening of
-`source_module_binding_env`; the clean overall reserved-variable helper and
-allowlist region ends at line 12969, with each task selecting only its assigned
-subfragments. The projection predicates cannot move before their model type
-definitions because that would invert ownership back toward runner-owned
-source configuration. Task 262N therefore moves those definitions and the
-shared substrate together, with only the aliases still required by retained
-validators exposed parent-only. Concrete config values/statics and their thin
-named wrappers remain paired in `runner.rs` pending later inventory at the Task
-263 contract boundary.
-
-Independent test review found a bounded `test_gap` before that move. The
-existing exact equality bridge proves real checker handoff and many detail-key
-failures, but it does not independently lock every config field, the formula
-and two operand sites/ranges, direct extractor rejection for its existing
-near-miss matrix, or allowlisted expression/predicate/term kind and cardinality
-corruptions. Task 262N0 is test-only: strengthen the existing equality test and
-its default-off private AST builder with those preservation assertions. It
-adds no test and changes no production source, `.miz`, expectation, trace,
-specification, public API, behavior, or coverage credit. Task 262N follows only
-after N0 review and verification. Tasks 262O, 262P, and 262Q then move the
-direct-binary, parenthesized-binary, and type-assertion source cores
-respectively, with a fresh test-sufficiency review before 262Q.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 262N0 Test Repair Result
 
-Task 262N0 strengthened the existing exact reserved-variable equality test
-without adding or renaming a test. It now independently derives and fixes the
-formula plus both operand sites/ranges from the AST, fixes every binary config
-field, directly rejects all 13 retained near misses, and rejects 16 default-off
-corruptions. The corruption matrix independently covers formula-expression and
-predicate kind/cardinality, left/right term-expression and reference
-kind/cardinality, and left/right/operator recovery. The default path retains
-the prior node/token sequence, kinds, ranges, order, and IDs.
-
-No production source, `.miz`, expectation, trace, specification, API,
-diagnostic, payload, ordering, or coverage artifact changed. The focused exact
-test, all 272 unit tests, all 188 active type cases, relevant-crate tests, and
-workspace tests pass. Plan/count remains 403/367, type coverage 235/223, and
-pass/fail 219/184. The raw/normalized test-list and four CLI hashes remain
-unchanged. Formatting, all-target/all-feature Clippy, and diff cleanliness also
-pass. Task 262N0 is complete and move-only Task 262N is next. No
-`spec_coverage_audit.md` update is required because authority, behavior,
-coverage credit, owner crate, and deferred status are unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 262N Pre-Move Inventory and Specification
 
-Task 262N moves exactly four source-substrate fragments from `runner.rs` into
-the existing private `type_elaboration/source_formula.rs` leaf:
-
-- 136 lines of reserved-variable config/model type definitions and methods,
-  hash `2c3ebcfe343f60ddae3bb2124f4f15f942c0f8236f54b42954ed4453766e2ac1`;
-- 562 lines of builtin/mode projection predicates, asserted-head relation
-  checking, and terminal-mode traversal, hash
-  `ffe1ae491ff3b7548171410a840e4ea6ea5edbdf69cee595b6c18b74e4612da6`;
-- 115 lines of exact mode-definition/expansion checks plus the shared direct
-  identifier operand projection, hash
-  `eb5d150c267e2f7e3a1259ecb75b7e985caab81aba973be0b71ed15522d8cfcb`;
-- 50 lines of source binding/use ordinal validation, hash
-  `4bdef09433003048b6b439f7dd2ee3bc154fa8c3cc63082aedae7a8bcb44b3a0`.
-
-The 863 moved lines are byte-preserved except for the minimum
-`pub(in crate::runner)` visibility needed by retained concrete configs,
-validators, and later generic cores. `source_mode_expansion_for_spelling`
-stays leaf-private. The phase facade re-exports only the moved model schemas
-and helpers that `runner.rs` still consumes. Task 262N does not move or edit
-concrete config values/statics, thin named wrappers, source transports,
-generic extractors, the single-parenthesized operand projection, family
-allowlists, checker/output transports or bodies, detail keys, or diagnostics.
-No rename, deduplication, generalization, or semantic cleanup is permitted.
-
-Completion requires normalized moved-fragment equivalence after stripping the
-visibility-only prefixes; the strengthened N0 test; all direct,
-parenthesized, asserted-head, type-assertion, long-chain, and cross-owner
-isolation tests; unchanged 272-name raw/normalized test lists; all 188 active
-type cases; unchanged plan/count, coverage, pass/fail, and four CLI hashes;
-formatting, Clippy, relevant-crate/workspace tests, diff cleanliness; and a
-no-findings review for visibility, dependency direction, behavior, and paired
-source/docs consistency.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 262N Move Result
 
-Task 262N moved only the four inventoried reserved-variable source-substrate
-fragments into the existing private `source_formula.rs` leaf. After stripping
-the runner-scoped visibility qualifiers, the model, predicate, mode/identifier,
-and ordinal fragments retain hashes `2c3ebcfe343f60dd...`,
-`ffe1ae491ff3b754...`, `eb5d150c267e2f7...`, and
-`4bdef09433003048...` respectively. Review narrowed `spelling` and
-`input_head` back to leaf-private; `source_mode_expansion_for_spelling` also
-remains leaf-private. All other runner-scoped types, fields, methods, helpers,
-and facade aliases have retained consumers. The production facade no longer
-aliases the two reserve spelling projections that only the formula leaf uses;
-the one spelling helper still consumed by private tests is exposed only under
-`#[cfg(test)]`.
-
-Concrete config values/statics and thin named wrappers, source transports,
-generic direct/parenthesized/type-assertion cores, the single-parenthesized
-operand projection, all three family allowlists, checker/output transports and
-bodies, detail keys, and diagnostics remain in `runner.rs`. The dependency
-direction is acyclic: `source_formula` depends on the sibling source-AST and
-source-reserve leaves, and retained runner code consumes it only through the
-35-line phase facade.
-
-The resulting `runner.rs` has 12,717 lines and hash
-`2a20df9e786bac81e30a60fdd1824b44fc87dbd38eeb20ba97bdeb3862a0a33a`;
-the 35-line facade has hash
-`65d8c6a8bbd1421f827888d9444502c41ae7f2e7e69c1eb15928ea34f347b2e2`;
-and the 2,044-line source-formula leaf has hash
-`8fabf38e9dea88b7fc1387508ce21a6d29080659af1148fb694c2da74c8aae49`.
-The focused N0 test, all 272 unit tests, relevant-crate tests, workspace tests,
-and all 188 active type cases pass. Plan/count remains 403/367, type coverage
-235/223, pass/fail 219/184, and the raw/normalized test-list plus four CLI
-hashes are unchanged. Formatting, all-target/all-feature Clippy, and diff
-cleanliness also pass. Task 262N is complete and Task 262O is next. No
-`spec_coverage_audit.md` update is required because authority, behavior,
-coverage credit, owner crate, and deferred status are unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 262O Pre-Move Inventory and Specification
 
-Task 262O moves exactly three direct reserved-variable binary source-core
-fragments from `runner.rs` into the existing private `source_formula.rs` leaf:
-
-- the 16-line source transport, hash
-  `d7c400d8c6c6d101c40159a3f76b910a27113a6f9092c4b6672ef4bd1e41a303`;
-- the 126-line generic direct-binary extractor, hash
-  `9f7e12badc208e4a7686bcabffb0da648748b9be7b672a2706f846690c42f4c3`;
-- the 19-line direct-binary node allowlist, hash
-  `8b6d0b2e43a4346121e3b571246210b16d487a635a618c5ff66eeefe05fb1a77`.
-
-The 161 lines move with normalized equivalence after adding only the minimum
-runner-scoped visibility. The source transport and extractor remain consumed
-by retained named route wrappers and checker/output validators. The binary
-allowlist temporarily receives a parent-only alias because the retained
-parenthesized allowlist delegates to it; Task 262P must remove that alias when
-the parenthesized core moves. Task 262O adds the direct reserve-extraction
-dependency to the formula leaf but does not move concrete configs/wrappers,
-the parenthesized or type-assertion transports/cores/allowlists, the
-single-parenthesized operand projection, checker/output transports or bodies,
-detail keys, or diagnostics.
-
-Task 262N0 plus the existing direct binary route/source/corruption/isolation
-matrix is sufficient; no new test is required. Completion requires all three
-normalized hashes, minimal visibility, preserved fail-closed shape/order and
-payload provenance, unchanged 272-name lists and 188 active cases, unchanged
-plan/count/coverage/pass-fail/CLI hashes, full Rust verification, diff
-cleanliness, and no-findings implementation/source-doc review. No rename,
-deduplication, generalization, or semantic cleanup is permitted.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 262O Move Result
 
-Task 262O moved only the three inventoried direct reserved-variable binary
-source-core fragments into the existing private `source_formula.rs` leaf. The
-transport and extractor retain their original hashes after stripping the added
-runner-scoped visibility. The allowlist retains its original hash after the
-same visibility normalization and undoing only rustfmt's signature wrapping.
-The formula leaf now directly consumes the sibling reserve-extraction entry;
-the phase facade exposes the transport, extractor, and temporarily the binary
-allowlist to their retained runner consumers. The latter alias is used only by
-the retained parenthesized allowlist and must disappear with Task 262P.
-
-The resulting `runner.rs` has 12,558 lines and hash
-`25eff814585b074fc137f87f8da8172dadef3aa02b703bab1b35b5287156c920`;
-the 38-line facade has hash
-`5083cf8a6bcc49144c0f8f594b1a1a4d30007a1d4c2da840b8bda136c0d2dce4`;
-and the 2,209-line source-formula leaf has hash
-`88132f00f4f925c9293142310660b495e688f6a1d65659e88ec1dcc51ea83c14`.
-Concrete configs/wrappers, the parenthesized and type-assertion
-transports/cores/allowlists, the single-parenthesized operand projection, and
-checker/output/detail/diagnostic code remain in `runner.rs` unchanged.
-
-All 272 unit tests and 188 active type cases pass. Plan/count remains 403/367,
-type coverage 235/223, and pass/fail 219/184. The raw/normalized test-list and
-four CLI hashes remain unchanged. Formatting, all-target/all-feature Clippy,
-workspace tests, and diff cleanliness pass. Task 262O is complete and Task
-262P is next. No `spec_coverage_audit.md` update is required because authority,
-behavior, coverage credit, owner crate, and deferred status are unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 262P Pre-Move Inventory and Specification
 
-Task 262P moves exactly four parenthesized reserved-variable binary source-core
-fragments from `runner.rs` into the existing private `source_formula.rs` leaf:
-
-- the 13-line source-side wrapper enum and transport, hash
-  `9574d330441d576284cfabaadcb9963efb1bf4ff441a1c88bff631a68706ab00`;
-- the 184-line generic parenthesized extractor, hash
-  `a252111f84228774ed187e4bfc22ddaa4f297171f7f23dad4e16e0971745f080`;
-- the 52-line exact single-parenthesized identifier projection, hash
-  `b776ca58fb0873f1bb050d15b9ab90a878b02809f980a00c6f05433ceb57cab2`;
-- the 6-line parenthesized node allowlist, hash
-  `c45e2f1d15cd1dfc503df711dd58615291f909faff37433d49bca8a741f71157`.
-
-The 255 lines move with normalized equivalence after adding only the minimum
-runner-scoped visibility to the enum, source transport and its four retained
-consumer fields, and generic extractor. The single-parenthesized projection
-and parenthesized allowlist become leaf-private. Moving the latter eliminates
-Task 262O's temporary facade alias and runner import for the direct-binary
-allowlist and narrows that direct allowlist itself back to leaf-private
-visibility. The formula leaf retains its acyclic dependencies on the common
-source-AST and sibling reserve-extraction leaves.
-
-All eight named route wrappers, concrete configs, source-output transport,
-checker/output conversion and validation, detail keys, diagnostics, and tests
-remain in `runner.rs` unchanged. The existing exact left/right-parenthesized
-active slices plus their direct source, wrapper/range/provenance corruption,
-near-miss, cross-route isolation, immutable-output, and real frontend/resolver
-sidecar coverage are sufficient; no test-only prerequisite or new test is
-required. Completion requires all four normalized hashes, removal of the
-temporary allowlist alias and visibility, preserved wrapper side/site/range and
-inner operand ordering, unchanged fail-closed behavior and 272-name/188-active
-inventories, unchanged plan/count/coverage/pass-fail/CLI hashes, full Rust
-verification, diff cleanliness, and no-findings implementation/source-doc
-review. No rename, deduplication, generalization, semantic cleanup, or
-checker/output movement is permitted.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 262P Move Result
 
-Task 262P moved only the four inventoried parenthesized reserved-variable
-binary source-core fragments into the existing private `source_formula.rs`
-leaf. After stripping the added runner-scoped visibility, the enum/transport
-and generic extractor retain hashes `9574d330...` and `a252111f...`; the
-leaf-private single-parenthesized projection and allowlist retain hashes
-`b776ca58...` and `c45e2f1d...` exactly. The direct-binary and parenthesized
-allowlists are both leaf-private. Task 262O's temporary facade alias, runner
-import, and direct-allowlist visibility are gone.
-
-The resulting `runner.rs` has 12,300 lines and hash
-`563bb974845d95da52e723f1c3e853b79beb55c02e283e1cd10707589d1e5b70`;
-the 39-line facade has hash
-`5082a9a6a52c72ed8c95482b425823161bad64b5d75cfb8f14b4143110745c6f`;
-and the 2,466-line source-formula leaf has hash
-`a09c2c1d757f00c3e27ddb993d78f5aeed06dd08ef0f20aa27c7b080334c9c28`.
-All eight named wrappers/configs, output transport, checker conversion and
-validation, detail keys, diagnostics, and tests remain in `runner.rs`; only
-the now-unused `SurfaceNodeId` import was removed with the moved helpers.
-
-All 272 unit tests and 188 active type cases pass. Plan/count remains 403/367,
-type coverage 235/223, and pass/fail 219/184. The raw/normalized test-list and
-four CLI hashes remain unchanged. Formatting, all-target/all-feature Clippy,
-workspace tests, and diff cleanliness pass. Task 262P is complete and Task
-262Q is next. No `spec_coverage_audit.md` update is required because authority,
-behavior, coverage credit, owner crate, and deferred status are unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 262Q Pre-Move Inventory and Specification
 
-Fresh test-sufficiency and source inventory identifies exactly three remaining
-reserved-variable type-assertion source-core fragments for Task 262Q:
-
-- the 13-line source transport, hash
-  `1a8d06350de32059528b6af1240457874a323a24cb17cbedce128f560c50b00e`;
-- the 121-line generic type-assertion extractor, hash
-  `9334dbda0d88f8efbd75a7597471f08777df7f651761c132af4672034bcdf89e`;
-- the 18-line type-assertion node allowlist, hash
-  `2fd9587c78d740ffa0893baac5dfc18031ff43296e76bfa69819c2e2ba6b41d1`.
-
-The 152 lines move from `runner.rs` into the existing private
-`source_formula.rs` leaf with normalized equivalence. Only the source transport
-and its ten fields plus the generic extractor receive runner-scoped visibility;
-the allowlist remains leaf-private. The move uses only the formula leaf's
-existing common source-AST, source-reserve, mode-expansion, and exact identifier
-dependencies, so dependency direction remains acyclic.
-
-All 58 concrete configs and named route wrappers, source-output transport,
-checker/output conversion and validation, detail keys, diagnostics, and tests
-remain in `runner.rs` unchanged. Existing base/object, local-mode, asserted-head,
-two-through-six-hop, long-chain, exact/near-miss, source/range/ordinal/head/
-provenance corruption, immutable-output, cross-route isolation, and real
-frontend/resolver coverage includes 58 paired active `.miz` slices and 137
-matching unit-test names. Fresh review must confirm that this matrix is
-sufficient before implementation; if it finds a bounded preservation gap, a
-separate test-only prerequisite task and commit must precede 262Q.
-
-Completion requires all three normalized hashes, minimum visibility, preserved
-accepted shape and exact asserted-head relation, unchanged fail-closed behavior
-and 272-name/188-active inventories, unchanged plan/count/coverage/pass-fail/
-CLI hashes, full Rust verification, diff cleanliness, and no-findings
-implementation/source-doc review. No chain generalization, config/wrapper
-split, rename, deduplication, semantic cleanup, or checker/output movement is
-permitted.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 262Q0 Test Repair Specification
 
-The required fresh review classified a bounded `test_gap` before Task 262Q.
-The existing base reserved-variable type-assertion test reaches the real source
-extractor and checker handoff from a synthetic AST, but does not independently
-fix all ten source transport fields and config identity, observes its 15 near
-misses only through aggregate detail keys, and does not feed four already
-modeled structural corruptions through the identifier-subject generic
-extractor. The broader active family supplies the real frontend/resolver
-sidecars, but another extraction route could still mask a generic-core
-regression after the move.
-
-Task 262Q0 is test-only. It makes the existing private identifier type-assertion
-AST builder's corruption argument available through a default-off wrapper and
-strengthens only
-`source_reserved_variable_type_assertion_bridge_checks_reflexive_admissibility`.
-The positive assertions must independently derive the formula, subject, and
-asserted-type sites/ranges from the AST; fix the exact config identity and every
-config field; and fix the reserve, spelling, ordinal, asserted type, and
-distinct-range payload. Every existing near miss must directly return `None`
-from the named extractor before also producing the aggregate extraction-gap
-key. Four bounded identifier-route corruptions—recovered `is`, duplicate
-formula expression, extra formula child, and extra assertion operand—must have
-the same direct and aggregate rejection assertions.
-
-Q0 adds no test and changes no production source, `.miz`, expectation, trace,
-specification, public API, behavior, diagnostic, or coverage credit. Test name
-and count hashes, active cases, repository counts, and CLI output must remain
-unchanged. Task 262Q may proceed only after Q0 review and full verification.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 262Q0 Test Repair Result
 
-Task 262Q0 strengthened only the existing base reflexive-admissibility test and
-its private default-off AST builder. The test now derives and fixes all ten
-source transport fields from the AST, fixes all nine config values through the
-named extractor route, and fixes the reserve payload, spelling, ordinal,
-asserted type, and distinct source ranges. All 15 existing near misses now
-directly reject through the named extractor before the aggregate gap check.
-Recovered `is`, duplicate formula expression, extra formula child, and extra
-assertion operand corruptions receive the same direct and aggregate rejection.
-
-No production source, `.miz`, expectation, trace, specification, public API,
-behavior, diagnostic, coverage credit, test name, or test count changed. All
-272 unit tests and 188 active type cases pass. Plan/count remains 403/367, type
-coverage 235/223, and pass/fail 219/184. The raw/normalized test-list and four
-CLI hashes remain unchanged. Formatting, all-target/all-feature Clippy,
-workspace tests, and diff cleanliness pass. Task 262Q0 is complete and
-move-only Task 262Q is next. No `spec_coverage_audit.md` update is required
-because authority, behavior, coverage credit, owner crate, and deferred status
-are unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 262Q Move Result
 
-Task 262Q moved only the three inventoried reserved-variable type-assertion
-source-core fragments into the existing private `source_formula.rs` leaf.
-After stripping the added runner-scoped visibility, the transport and generic
-extractor retain hashes `1a8d0635...` and `9334dbda...`; the leaf-private
-allowlist retains hash `2fd9587c...` exactly. The transport, its ten fields, and
-the generic extractor alone are runner-scoped. All 58 concrete configs and
-named wrappers plus output/checker/validation/detail/diagnostic code remain in
-`runner.rs` unchanged.
-
-The resulting `runner.rs` has 12,144 lines and hash
-`0454931d868a11b6cdfd90b845b8b091f2cd636add4fc8fb6c7aaf43a64cd6e4`;
-the 40-line facade has hash
-`a9f7b768ad32e6c51337f3b764db5243a80fc6cf2c16a7d97e57d1e99ef3a770`;
-and the 2,621-line source-formula leaf has hash
-`a7ffd9dad1e60a7e7890e494e9abc5bafb38e2f9cb11f62d14a03f617fe32b21`.
-Imports and facade aliases made obsolete by the moved core were removed. Six
-aliases retained solely for private tests are now explicitly `#[cfg(test)]`,
-including the reserve-extraction guard entry used by its direct unit test.
-
-All 272 unit tests and 188 active type cases pass. Plan/count remains 403/367,
-type coverage 235/223, and pass/fail 219/184. The raw/normalized test-list and
-four CLI hashes remain unchanged. Formatting, all-target/all-feature Clippy,
-workspace tests, and diff cleanliness pass. Task 262Q is complete and Task 263
-is next. No `spec_coverage_audit.md` update is required because authority,
-behavior, coverage credit, owner crate, and deferred status are unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263A Pre-Move Inventory and Specification
 
-Fresh Task 263 inventory classifies the retained checker-handoff substrate as
-the first acyclic bounded family. The exact `runner.rs:11542-12047` fragment is
-506 lines with hash
-`95532967e13e1ab39b4ebc23c3403ffe15e57b5a73bda2810d915ccf170175f0`.
-It starts at `source_module_binding_env` and ends at
-`typing_for_type_entry`. It owns the empty module binding environment, the
-`SourceReserveHandoff` transport, reserve declaration-to-`TypedAst` and
-`ResolvedTypedAst` assembly, handoff validation, bounded Core context
-readiness checks, and the test-only complete handoff entry.
-
-Task 263A mechanically moves this fragment to new private
-`type_elaboration/checker_handoff.rs`. The leaf depends only on checker, Core,
-resolver, session, and syntax inputs, plus the sibling `SourceReserveExtraction`
-transport for its test-only entry. It does not reference a concrete route
-config, named source extractor, detail key, expected-output projection,
-failure diagnostic, or top-level orchestration. This establishes the acyclic
-direction `source_reserve -> checker_handoff -> retained checker/output and
-orchestration consumers` before later Task 263 families move.
-
-While those consumers remain in `runner.rs`, runner-scoped visibility is
-limited to `source_module_binding_env`, `SourceReserveHandoff` and its four
-fields, `assemble_source_reserve_checker_handoff`,
-`assert_source_reserve_handoff`,
-`assert_source_reserve_core_summary_readiness`, and
-`assert_source_reserve_core_context_readiness`. The test-only
-`assemble_source_checker_handoff` is exposed only under `#[cfg(test)]`.
-Resolved/typed assembly and type-entry projection helpers remain leaf-private.
-
-This is move-only `design_drift`; there is no test prerequisite. The existing
-direct handoff test in `source_extraction.rs`, generic output validators and
-corruption matrices, all 272 unit tests, and all 188 active type cases form the
-preservation matrix. Configs, named wrappers, source extraction, payloads,
-detail keys, diagnostics, ordering, fail-closed behavior, public API, tests,
-and authority artifacts must not change. `spec_coverage_audit.md` remains
-unchanged because behavior, coverage credit, owner crate, and deferred status
-do not change.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263A Move Result
 
-Task 263A moved the inventoried checker-handoff substrate to the new private
-`type_elaboration/checker_handoff.rs` leaf. After stripping only the reviewed
-runner-scoped visibility and restoring the former separator newline, the moved
-fragment retains exact hash `95532967e13e1ab39b4ebc23c3403ffe15e57b5a73bda2810d915ccf170175f0`.
-No body, control-flow branch, validation string, payload, or ordering changed.
-The resolved/typed assembly and type-entry helpers remain leaf-private; the
-complete handoff entry and its sibling source-reserve dependency remain
-`#[cfg(test)]` only.
-
-The resulting `runner.rs` has 11,617 lines and hash
-`4c0aa87165f31fe66816666f1fc33f47b64643e7d644d30db21e8e8f4eb4ed8b`;
-the 46-line phase facade has hash
-`daf8415255a5af402436c792414c5fd635b32c5cf397deaff051efbfb16d7ece`;
-and the 550-line checker-handoff leaf has hash
-`a7cf9bcd076dbc68098ddecbab6c58eca988ecdd8ea378324bad44a32cf5288b`.
-Only moved-only imports were removed from `runner.rs`. The existing
-`SourceReserveDeclarationBridge` test namespace alias remains explicitly
-`#[cfg(test)]` for the unchanged corruption tests.
-
-The direct handoff test, all 272 unit tests, and all 188 active type cases pass.
-Plan/count remains 403/367, type coverage 235/223, and pass/fail 219/184. The
-raw/normalized test-list hashes and all four CLI byte hashes remain unchanged.
-Formatting, all-target/all-feature Clippy, workspace tests, and diff cleanliness
-pass. Task 263A is complete; fresh Task 263 inventory selects the next bounded
-family. `spec_coverage_audit.md` remains unchanged because authority, behavior,
-coverage credit, owner crate, and deferred status are unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263B Pre-Move Inventory and Specification
 
-Fresh inventory selects the common frontend diagnostic projection as the next
-acyclic bounded family. It consists of three exact `runner.rs` fragments: the
-one-line recovery-tag constant at line 78, the seven-line
-`frontend_detail_keys` fragment at lines 794-800 with hash
-`394797911f19bd3904b4f66d8beed648d418bec9c6f172218f7e8912d21d2038`, and
-the 41-line diagnostic-code/assertion/error fragment at lines 11528-11568 with
-hash `ea3f9ffb0862e0a37575de150b82a3d654000778e87fa5abd0d9d41a40ff50a3`.
-The recovery-tag hash in full is
-`381e1d7f0e9ab985a0ce5436a8b6e19f63ca169da43f54c35fcfb42d68972b04`.
-Their source-order
-concatenation is 49 lines with hash
-`0a4d80ff40dbf1d936ea0f5a965047e1a5f3a961812ede65deca56a8866a4ba5`.
-
-Task 263B mechanically moves those fragments into existing private
-`runner/shared.rs`, which already owns `FrontendRun` and directly imports
-`FrontendDiagnostic` and `TestCase`; its frontend import adds `DiagnosticCode`.
-The recovery tag and
-`frontend_diagnostic_code` remain leaf-private. Only `frontend_detail_keys`,
-`assertion_diagnostic_codes`, and `frontend_error_code` become parent-only
-entries. Parse-only and declaration-symbol import their shared sibling
-entries directly; `runner.rs` imports the shared detail-key entry for the
-retained type consumer and removes its now-unused `DiagnosticCode` and
-`FrontendDiagnostic` imports. This establishes `shared frontend/diagnostic projection -> phase
-consumers` without a child-to-parent or checker dependency.
-
-This is move-only `design_drift`; there is no Task 263B0 test prerequisite.
-The active parse matrix including recovery-tag cases, declaration/type
-lower-stage cases, active-runner byte-stability and repository execution tests,
-and all four CLI projections already preserve code mapping, key prefixes,
-ordering, and fallback behavior. No test, expectation, public API, diagnostic,
-payload, source behavior, or authority artifact may change. No source file is
-added, so the paired Source Inventory file list is unchanged.
-`spec_coverage_audit.md` remains unchanged because coverage credit, owner crate,
-and deferred status do not change.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263B Move Result
 
-Task 263B moved the exact common frontend diagnostic family into existing
-private `shared.rs`. After removing the three reviewed `pub(super)` modifiers,
-folding whitespace, and normalizing rustfmt's optional trailing signature
-commas, the old and moved families both hash to
-`f7b793a4a93ec14cb24869c5de1e8b87ad35c79012185308c7ebaaf06d2f994b`.
-The recovery tag and fallback mapper remain leaf-private. Parse-only and
-declaration-symbol now import their shared entries directly; the retained type
-consumer imports only `frontend_detail_keys` through the runner owner.
-
-The resulting `runner.rs` has 11,566 lines and hash
-`6cc0b8a7a70f4298761df02f1d8be755ba22416625cffd8e8fcf6d8660dc5f59`;
-the 260-line `shared.rs` has hash
-`1c5f780fbb0df10faf8f363594e5b19fbd7eb19abc852ece67308559141689b8`.
-No diagnostic string, match arm, syntax/non-syntax branch, iteration order,
-prefix, wildcard fallback, or frontend-error formatting changed.
-
-All 272 unit tests and all 96 parse, four declaration-symbol, and 188
-type-elaboration active cases pass. Plan/count remains 403/367, type coverage
-235/223, and pass/fail 219/184. The raw/normalized test-list hashes and four
-CLI byte hashes remain unchanged. Formatting, all-target/all-feature Clippy,
-workspace tests, and diff cleanliness pass. Task 263B is complete; fresh Task
-263 inventory selects the next bounded family. No Source Inventory or
-`spec_coverage_audit.md` change is required because files, authority, behavior,
-coverage credit, owner crate, and deferred status are unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263C Pre-Move Inventory and Specification
 
-Fresh inventory selects the exact 24-line expected-result/failure-projection
-family at `runner.rs:11512-11535`. It contains
-`expected_type_elaboration_detail_keys` and
-`type_elaboration_failure_diagnostic` and has raw hash
-`b9efaec531ff58c52d028b413f8ea644640a5f0aeccaf57da3682cd7c5d1317c`.
-Its only direct dependencies are `TestCase`, `ValidationDiagnostic`, and the
-stable public `TypeElaborationCaseResult` DTO.
-
-Task 263C mechanically moves the family into new private
-`type_elaboration/result.rs`. Both functions become parent-only entries through
-the type-elaboration facade; there are no other exports. The leaf's dependency
-on the stable runner result DTO is an explicit facade-contract edge. The
-payload-list-over-stable-key precedence, failure code/key/text, expected/actual
-formatting, and vector order remain exact.
-
-`run_type_elaboration_case` stays in `runner.rs` for this task because it still
-depends on the large retained actual-detail dispatcher. Moving it now would
-create a result-leaf-to-parent-private reverse edge or mix the later detail and
-output families. Generic output validators also remain pending because their
-current output/config/source-helper dependency graph requires a separate
-bounded inventory.
-
-This is move-only `design_drift`; there is no Task 263C0 prerequisite. Stable-
-detail fallback tests, all 188 active type cases, repository/CLI byte-stability,
-and normalized exact-body equivalence preserve result matching and failure
-assembly. No test, expectation, diagnostic, API, payload, behavior, or authority
-artifact may change. The new source path must be added to the paired Source
-Inventory with the move. `spec_coverage_audit.md` remains unchanged because
-coverage credit, owner crate, and deferred status do not change.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263C Move Result
 
-Task 263C moved the exact 24-line expected-result/failure-projection family
-into new private `type_elaboration/result.rs`. After removing only the two
-required `pub(in crate::runner)` visibility qualifiers, the old and moved
-bodies both hash to
-`b9efaec531ff58c52d028b413f8ea644640a5f0aeccaf57da3682cd7c5d1317c`.
-The facade exposes exactly those two entries parent-only. Case execution and
-the actual-detail dispatcher remain in `runner.rs`, so the move introduces no
-reverse dependency and changes no public API.
-
-The resulting `runner.rs` has 11,541 lines and hash
-`2e6bc713114f726af47de08d7ceb622f9d0f79282d00994be458f7f35e0c435e`;
-the 50-line `type_elaboration.rs` facade has hash
-`44634b3b24f645bbb49ea66c1569cf251c8f11db505c94de252877e9112c02cc`;
-the new 29-line `result.rs` has hash
-`608b458dd0d7491d7af1d6ef9261e468ec548b39966ecfa8acbc81bd8b7bd4c2`.
-Payload-list precedence, stable-key fallback, failure code/key/text,
-expected/actual formatting, vector order, and fail-closed caller flow are
-unchanged.
-
-All 272 unit tests and all 96 parse, four declaration-symbol, and 188
-type-elaboration active cases pass. Plan/count remains 403/367, type coverage
-235/223, and pass/fail 219/184. The raw/normalized test-list hashes and four
-CLI byte hashes remain unchanged. The paired Source Inventory now includes the
-new leaf. Task 263C is complete; fresh Task 263 inventory selects the next
-bounded validation/detail family. No `spec_coverage_audit.md` change is
-required because authority, behavior, coverage credit, owner crate, and
-deferred status are unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263D Pre-Move Inventory and Specification
 
-Fresh inventory selects the type-elaboration active-admission family as four
-exact fragments: the one-line `ACTIVE_TYPE_ELABORATION_TAG` constant
-(`4629969fa68b61384e96b345b2a646d786b6f843ca5ad128fa17723d473d68ac`),
-the 13-line runnable predicate
-(`5303e0c27405121d8aeefb7c6e2163dfcd288419c44b6e44779b1df4e0a41c9d`),
-the six-line tag predicate
-(`c91740986c91df19297de24f8c6f7441fed4886de246e18c65b5361e4a1fdd5b`),
-and the 30-line gate validator
-(`b0cb1652b4046473ce2bc12285ac09a69411c08d32b6a7144a501a9f27818945`).
-Concatenated in source order, the exact 50 lines hash to
-`937c032b2504225dbe5e79f5526545d969929afbd8dbfc9c09faf4cc5ad7a429`.
-
-Task 263D mechanically moves this family into new private
-`type_elaboration/admission.rs`. The tag constant and tag predicate remain
-leaf-private. Only `is_active_type_elaboration` and
-`validate_active_type_elaboration_tags` become parent-only entries through the
-type-elaboration facade. The public `active_type_elaboration_cases` iterator
-and corpus-level orchestration remain in `runner.rs`. Direct dependencies are
-only `ValidationDiagnostic`, `ExpectedOutcome`, `PipelinePhase`, `TestCase`,
-`TestPlan`, and `Stage`; the leaf has no source, checker, output, or parent DTO
-dependency.
-
-This is move-only `design_drift`; there is no Task 263D0 prerequisite. Existing
-non-type, wrong-phase, and public-diagnostic-code gate tests directly preserve
-the gate branches, diagnostic codes, and silent-skip rejection. Normalized
-exact-body equivalence plus repository/report/CLI byte-stability preserve
-detail keys, text, ordering, and iteration behavior across all 188 active
-cases. No test, expectation,
-diagnostic, API, payload, behavior, or authority artifact may change. The new
-source path must be added to the paired Source Inventory with the move.
-`spec_coverage_audit.md` remains unchanged because coverage credit, owner
-crate, and deferred status do not change.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263D Move Result
 
-Task 263D moved the exact four-fragment 50-line type active-admission family
-into new private `type_elaboration/admission.rs`. After removing only the two
-required `pub(in crate::runner)` visibility qualifiers, folding ASCII
-whitespace, and normalizing only rustfmt's trailing `TestPlan` signature comma,
-the old and moved families both hash to
-`ea1a50947f895bcbc5bcca417432b3860369174677ea9b8b4b7626ca651157c4`.
-The tag constant and tag predicate remain leaf-private; the facade exposes
-exactly the runnable predicate and gate validator parent-only. The public
-iterator and corpus orchestration remain in `runner.rs`.
-
-The resulting `runner.rs` has 11,490 lines and hash
-`5d58dcfe62d1d724a731f5421ad6547d7e8e7757581297efe7b6a000adec2230`;
-the 52-line `type_elaboration.rs` facade has hash
-`b06293cc471453df1bb373a53b51cbba2d8b3991ec5206c5b0ecd719047839e7`;
-the new 60-line `admission.rs` has hash
-`b5261a23dae29eb656ba6f414a622a4cc40501dabd0fcf457fedf53b23aba150`.
-Admission branches, diagnostic codes/keys/text, per-case diagnostic ordering,
-and silent-skip rejection are unchanged.
-
-All three focused gate tests, all 272 unit tests, and all 96 parse, four
-declaration-symbol, and 188 type-elaboration active cases pass. Plan/count
-remains 403/367, type coverage 235/223, and pass/fail 219/184. The
-raw/normalized test-list hashes and four CLI byte hashes remain unchanged. The
-paired Source Inventory includes the new leaf. Task 263D is complete; fresh
-Task 263 inventory selects the next bounded validation/detail family. No
-`spec_coverage_audit.md` change is required because authority, behavior,
-coverage credit, owner crate, and deferred status are unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263E Pre-Move Inventory and Specification
 
-Fresh dependency inventory selects the exact contiguous 33-line checker-output
-transport substrate at `runner.rs:5361-5393`: the binary-formula,
-parenthesized-binary-formula, and type-assertion output structs with 22 fields.
-The raw family hash is
-`e5da36674f0779384d90fa35a7f42ee209dfbca2049efe76b2893c0b36705ce0`.
-These are real transports with 153 production/test type references and 346
-named output/validator test references, not an empty or synthetic owner.
-
-Task 263E mechanically moves only these three transports into new private
-`type_elaboration/output.rs`. The three types and their 22 fields receive the
-minimum `pub(in crate::runner)` visibility required by retained builders,
-validators, named output helpers, and the existing corruption tests; the
-type-elaboration facade re-exports only the three types parent-only. Direct
-dependencies are the sibling source payload transports and checker handoff,
-plus checker/session typed inputs and inference output. Builders, validators,
-detail projections, named wrappers, configs, and all call sites remain in
-`runner.rs` for separate bounded tasks.
-
-This is a move-only `design_drift` prerequisite for later output-owner tasks;
-there is no Task 263E0 prerequisite. Existing field-level payload and
-corruption matrices plus normalized exact-body equivalence preserve every
-field, type, order, and debug shape. The 272-test list, all 188 active cases,
-repository/report/CLI byte-stability, and full gates preserve API, payload,
-diagnostic, ordering, and fail-closed behavior. No test, expectation, semantic
-helper, source behavior, or authority artifact may change. The new source path
-must be added to the paired Source Inventory with the move.
-`spec_coverage_audit.md` remains unchanged because coverage credit, owner
-crate, and deferred status do not change.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263E Move Result
 
-Task 263E moved the exact 33-line three-transport checker-output substrate
-into new private `type_elaboration/output.rs`. After removing only the 25
-required `pub(in crate::runner)` qualifiers from the three types and 22 fields,
-the moved lines 11-43 reproduce the original raw hash byte-for-byte:
-`e5da36674f0779384d90fa35a7f42ee209dfbca2049efe76b2893c0b36705ce0`.
-The facade re-exports exactly the three transports parent-only. Builders,
-validators, detail projections, named wrappers, configs, and call sites remain
-in `runner.rs`; only the now-unused parent `SourceRange` and
-`SourceReserveHandoff` imports were removed.
-
-The resulting `runner.rs` has 11,457 lines and hash
-`d43d0f6a62cff726fffc88ebe2452932371626a71a9e13aa9bae09eb8168708e`;
-the 57-line `type_elaboration.rs` facade has hash
-`0c068fd8a7bca6f7d0194e06cda9723eb0bfe8d39b1bc3d3c6553c5a6cb61c86`;
-the new 43-line `output.rs` has hash
-`bb056c40bdafeb2d3f60821da8cf4fa908045b16dc0230defbff85bc27bdb350`.
-Derives, field types and order, debug shape, payloads, and fail-closed behavior
-are unchanged.
-
-The four focused output tests, all 272 unit tests, and all 96 parse, four
-declaration-symbol, and 188 type-elaboration active cases pass. Plan/count
-remains 403/367, type coverage 235/223, and pass/fail 219/184. The
-raw/normalized test-list hashes and four CLI byte hashes remain unchanged. The
-paired Source Inventory includes the new leaf. Task 263E is complete; fresh
-Task 263 inventory selects the next bounded builder/validator/detail family.
-No `spec_coverage_audit.md` change is required because authority, behavior,
-coverage credit, owner crate, and deferred status are unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263F Pre-Move Inventory and Specification
 
-Fresh dependency inventory selects the three contiguous checker-output
-builders at `runner.rs:8441-8701` (261 lines, hash
-`cb4396e080d9f31f79e57feebfd5de5badad92f3aedfdf358b0eb277eb416b25`)
-and their sole 16-line `source_reserved_type_projection` helper at
-`runner.rs:9473-9488` (hash
-`c450e8588af637f3f3a8dc04f522ef988dc470a54b4d005001c4ba5f102f33b0`).
-Concatenated in source order, the exact 277-line producer family hashes to
-`b4939bbe52118a6b6e1d268bff26c6fa11e2994e14e0bb0b4e7215e94a41efaa`.
-
-Task 263F mechanically moves this family into the existing private
-`type_elaboration/output.rs` transport owner. The type-assertion, binary-
-formula, and parenthesized-binary builder entries become parent-only through
-the type-elaboration facade; the projection helper remains leaf-private. Their
-direct dependencies are the Task 263E output transports, sibling source
-payload/config transports, sibling checker-handoff assembly, resolver symbols,
-and checker binding/type/formula input APIs. The family has no dependency on
-retained validators, detail projections, named wrappers, active orchestration,
-or public result DTOs.
-
-This is move-only `design_drift`; there is no Task 263F0 prerequisite. Existing
-source-output, field-provenance, lookup-ordinal, checker-payload, corruption,
-and active fixture matrices already execute all three builders and their
-fail-closed branches. Exact-body equivalence plus 272-test, 188-active-case,
-repository/report/CLI byte-stability, and full gates preserve construction
-order, error strings, source ranges, binding identities, inputs, payloads, and
-failure boundaries. No test, expectation, validator, detail key, config,
-semantic behavior, or authority artifact may change. The Source Inventory is
-unchanged because the existing `output.rs` owner is extended.
-`spec_coverage_audit.md` remains unchanged because coverage credit, owner
-crate, and deferred status do not change.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263F Move Result
 
-Task 263F moved the exact three-builder and sole projection-helper producer
-family into existing private `type_elaboration/output.rs`. After removing only
-the three required `pub(in crate::runner)` builder qualifiers, moved lines
-51-311 retain hash
-`cb4396e080d9f31f79e57feebfd5de5badad92f3aedfdf358b0eb277eb416b25`;
-the private helper at lines 313-328 retains hash
-`c450e8588af637f3f3a8dc04f522ef988dc470a54b4d005001c4ba5f102f33b0`;
-their source-order combination retains
-`b4939bbe52118a6b6e1d268bff26c6fa11e2994e14e0bb0b4e7215e94a41efaa`.
-The facade exposes exactly the three builders parent-only. Validators, detail
-projections, named wrappers, configs, and call sites remain in `runner.rs`.
-
-The resulting `runner.rs` has 11,180 lines and hash
-`cfefc3b316fe7d9ff33153475ed42540fcf8605a16ad11132f4380c7ca0350a7`;
-the 60-line `type_elaboration.rs` facade has hash
-`c673946fddb223a2ae566073205bffaac56ce34ccbb393ae0e755ad6d5c15658`;
-the 328-line `output.rs` has hash
-`41a151db0d3e6fc4ba45c04989e1bbf577cfc4a8ae55ba9d570998794c90bbcd`.
-Construction order, error text, source ranges, binding identities, checker
-inputs, payloads, and fail-closed flow are unchanged.
-
-The four focused builder tests, all 272 unit tests, and all 96 parse, four
-declaration-symbol, and 188 type-elaboration active cases pass. One initial
-full-crate run encountered a transient unrelated missing `/tmp` fixture path;
-the exact failing route-isolation test and the full crate rerun both pass.
-Plan/count remains 403/367, type coverage 235/223, and pass/fail 219/184. The
-raw/normalized test-list hashes and four CLI byte hashes remain unchanged.
-Task 263F is complete; fresh Task 263 inventory selects the next bounded
-validator/detail family. Source Inventory and `spec_coverage_audit.md` remain
-unchanged because no path, authority, behavior, coverage credit, owner crate,
-or deferred status changed.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263G Pre-Move Inventory and Specification
 
-Fresh dependency inventory selects the exact type-assertion output validator
-and its private role-entry helper at `runner.rs:8443-8656` (214 lines, hash
-`17ad7203816094ef55580f9356388510e6164cdc2f4a38412639d496db1b623c`),
-plus the shared normalized-builtin-type predicate at `runner.rs:9197-9211`
-(15 lines, hash
-`c1e417207bcc04654fdeb3fee13a00985a5aff63181298d1b65d149d3d6f15aa`).
-Concatenated in source order, the exact 229-line family hashes to
-`b6557af65c99430f112772b665c36a3545bdb39f48541e1c817f06eadfc0b10f`.
-
-Task 263G mechanically moves this family into existing private
-`type_elaboration/output.rs`. The type-assertion validator becomes
-parent-only, its role-entry helper remains leaf-private, and the normalized-
-type predicate is temporarily parent-only because the retained binary-formula
-validator has two existing call sites. The family depends only on the Task
-263E/F output and checker-handoff owners, exact source-formula predicates, and
-checker typed-output APIs. Binary and parenthesized validators, detail-key
-projection, named wrappers, configs, call sites, and orchestration remain in
-`runner.rs`.
-
-This is move-only `design_drift`; there is no Task 263G0 prerequisite. The
-production detail-result path and 212 direct validator assertions across ten
-existing test modules cover exact success, provenance, lookup ordinal,
-checker counts and identities, canonical source, corruption rejection,
-route isolation, and fail-closed behavior. Exact-body equivalence plus the
-272-test, 188-active-case, repository/report/CLI byte-stability, and full gates
-must preserve every error string, comparison, ordering decision, detail key,
-payload, and failure boundary. No test, expectation, config, wrapper,
-validator logic, semantic behavior, or authority artifact may change. Source
-Inventory and `spec_coverage_audit.md` remain unchanged because the existing
-`output.rs` path is extended without changing coverage credit, owner crate, or
-deferred status.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263G Move Result
 
-Task 263G moved the exact type-assertion validator, private role-entry helper,
-and shared normalized-type predicate into existing private
-`type_elaboration/output.rs`. After removing only the two required
-`pub(in crate::runner)` qualifiers, moved lines 337-550 retain hash
-`17ad7203816094ef55580f9356388510e6164cdc2f4a38412639d496db1b623c`,
-lines 552-566 retain hash
-`c1e417207bcc04654fdeb3fee13a00985a5aff63181298d1b65d149d3d6f15aa`,
-and their source-order combination retains
-`b6557af65c99430f112772b665c36a3545bdb39f48541e1c817f06eadfc0b10f`.
-The facade exposes only the validator and temporarily shared predicate
-parent-only; the role helper remains leaf-private. The retained binary
-validator still has exactly its two original predicate calls.
-
-The resulting `runner.rs` has 10,948 lines and hash
-`97247c5bedcee1baebaec2f5caae2d332dea5de246e18671992db4ddbc64e2aa`;
-the 61-line `type_elaboration.rs` facade has hash
-`c36560ef2972e383d2a0d59aa1021fb8341d0bfbf8c79ebded0e1dbc16d2df0c`;
-the 566-line `output.rs` has hash
-`01c75f7906b759308c9c52f36768dbd46b1d3f8fd462507bc448f538601224d5`.
-Every validation branch, error string, comparison, checker lookup, normalized-
-type identity check, canonical-source check, and fail-closed return is
-unchanged.
-
-All 47 focused type-assertion tests, all 272 unit tests, and all 96 parse, four
-declaration-symbol, and 188 type-elaboration active cases pass. Plan/count
-remains 403/367, type coverage 235/223, and pass/fail 219/184. The 272-line
-raw/normalized test-list hashes and four CLI byte hashes remain unchanged.
-Task 263G is complete; fresh Task 263 inventory selects the next bounded
-binary/parenthesized-validator or detail family. Source Inventory and
-`spec_coverage_audit.md` remain unchanged because no path, authority,
-behavior, coverage credit, owner crate, or deferred status changed.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263H Pre-Move Inventory and Specification
 
-Fresh dependency inventory selects the exact binary-formula output validator
-at `runner.rs:8442-8779` (338 lines, hash
-`528876adb6cda98d2030df317d2589733799917682f9bdcf0d04f1333ff46ddf`),
-its source-type projection predicate at `runner.rs:8937-8953` (17 lines, hash
-`4317df8d93687b6357cc2f5943cd4c1b248fc69e2092c02586588c00bfa40170`),
-and its type-entry validator at `runner.rs:8955-8979` (25 lines, hash
-`135354e0b3aa68dbd5435a869134722b2617b0e65faea16810ff9a3ad657f43e`).
-Concatenated in source order, the exact 380-line family hashes to
-`76fcab1f8c068b9b0ee0bd552b106e9a23cce794e7ff0f9134120e2285de7836`.
-
-Task 263H mechanically moves this family into existing private
-`type_elaboration/output.rs`. The binary validator becomes parent-only for the
-retained production detail and parenthesized-validator consumers; both helper
-predicates remain leaf-private. Its two calls to the Task 263G normalized-type
-predicate move with it, so that predicate narrows from temporary parent-only
-to leaf-private and disappears from the facade. Parenthesized validators,
-detail projection, named wrappers, configs, call sites, and orchestration
-remain in `runner.rs`.
-
-This is move-only `design_drift`; there is no Task 263H0 prerequisite. The
-production detail path, retained parenthesized consumer, and 104 direct
-validator assertions across eleven existing test modules cover exact success,
-binding/provenance/ordinal identity, expected/result constraints, checker
-counts and order, semantic type sharing, canonical sources, corruption
-rejection, route isolation, and fail-closed behavior. Exact-body equivalence
-plus the 272-test, 188-active-case, repository/report/CLI byte-stability, and
-full gates must preserve every error string, comparison, ordering decision,
-detail key, payload, and failure boundary. No test, expectation, config,
-wrapper, validator logic, semantic behavior, or authority artifact may
-change. Source Inventory and `spec_coverage_audit.md` remain unchanged because
-the existing `output.rs` path is extended without changing coverage credit,
-owner crate, or deferred status.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263H Move Result
 
-Task 263H moved the exact binary-formula validator and its two private helpers
-into existing private `type_elaboration/output.rs`. After removing only the
-required validator `pub(in crate::runner)` qualifier, moved lines 570-907
-retain hash
-`528876adb6cda98d2030df317d2589733799917682f9bdcf0d04f1333ff46ddf`,
-lines 909-925 retain hash
-`4317df8d93687b6357cc2f5943cd4c1b248fc69e2092c02586588c00bfa40170`,
-lines 927-951 retain hash
-`135354e0b3aa68dbd5435a869134722b2617b0e65faea16810ff9a3ad657f43e`,
-and their source-order combination retains
-`76fcab1f8c068b9b0ee0bd552b106e9a23cce794e7ff0f9134120e2285de7836`.
-Only the validator is parent-only. Both helpers and the normalized-type
-predicate are leaf-private; the temporary normalized predicate facade alias
-is gone. Parenthesized validators, detail projections, configs, wrappers, and
-call sites remain in `runner.rs`.
-
-The resulting `runner.rs` has 10,558 lines and hash
-`2440c1f2cce788ed4f58437338124639f36327b88572105b4b3a80c4e4679446`;
-the 62-line `type_elaboration.rs` facade has hash
-`1ff372989d8ccce83ce68645ac054e245ec4c85f90cf1c2919fb56fac3c8216f`;
-the 951-line `output.rs` has hash
-`2fe4650c4be3c5560ab991278dcc701e32581c75b8ab7429c90d95ccc86a9689`.
-Every validation branch, error string, collection order, lookup, expected and
-result constraint, semantic identity check, canonical-source choice, and
-fail-closed return is unchanged.
-
-All 123 focused reserved-variable tests, all 272 unit tests, and all 96 parse,
-four declaration-symbol, and 188 type-elaboration active cases pass.
-Plan/count remains 403/367, type coverage 235/223, and pass/fail 219/184. The
-272-line raw/normalized test-list hashes and four CLI byte hashes remain
-unchanged. Task 263H is complete; fresh Task 263 inventory selects the next
-bounded parenthesized-validator or detail family. Source Inventory and
-`spec_coverage_audit.md` remain unchanged because no path, authority,
-behavior, coverage credit, owner crate, or deferred status changed.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263I Pre-Move Inventory and Specification
 
-Fresh dependency inventory selects only the config-independent shared
-parenthesized-binary validator core at `runner.rs:8523-8589` (67 lines, hash
-`2de635a7524ac3734edb15c9d953dab6fc73b4800f5d3804866c0cffba7e5d88`).
-It is the sole parenthesized wrapper/range/typed-output isolation predicate
-and calls the Task 263H binary validator directly.
-
-Task 263I mechanically moves this exact core into existing private
-`type_elaboration/output.rs` with one parent-only entry for the retained eight
-named test wrappers and production detail consumer. Concrete configs, named
-validators, detail projection, output wrappers, call sites, and orchestration
-remain in `runner.rs`; moving them together would cross the config-independent
-core boundary.
-
-This is move-only `design_drift`; there is no Task 263I0 prerequisite. The
-eight named wrappers have 16 direct assertions across two existing test
-modules, while the active/report detail path exercises the production
-consumer. Those tests cover left/right wrapper sides, config identity, source
-and copied wrapper site/range equality, distinct typed sites, source-id/range
-containment, exclusion from terms/type entries/formulas, corruption rejection,
-route isolation, and fail-closed behavior. Exact-body equivalence plus the
-272-test, 188-active-case, repository/report/CLI byte-stability, and full gates
-must preserve every error string, comparison, ordering decision, detail key,
-payload, and failure boundary. No test, expectation, config, wrapper logic,
-semantic behavior, or authority artifact may change. Source Inventory and
-`spec_coverage_audit.md` remain unchanged because the existing `output.rs`
-path is extended without changing coverage credit, owner crate, or deferred
-status.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263I Move Result
 
-Task 263I moved only the exact config-independent parenthesized-binary
-validator core into existing private `type_elaboration/output.rs`. After
-removing the required `pub(in crate::runner)` qualifier, moved lines 954-1020
-retain hash
-`2de635a7524ac3734edb15c9d953dab6fc73b4800f5d3804866c0cffba7e5d88`.
-The facade exposes this one validator parent-only. All eight named validators,
-concrete configs, detail projections, output wrappers, and call sites remain
-in `runner.rs`; the leaf imports only the generic config type.
-
-The resulting `runner.rs` has 10,491 lines and hash
-`3d75554d7cc1c45b5cdbab06ce27a30bd660cb01a4cd5e9311157442c5a43205`;
-the 63-line `type_elaboration.rs` facade has hash
-`dfd15b3390d53dd6c84decf0babb117077e53ce400b4325126757faff3061453`;
-the 1,020-line `output.rs` has hash
-`0c18a5d1244da77a85d73368d622dda2699b95463b015e980cd98604b79a6a16`.
-Wrapper-side selection, pointer identity, source/copy site and range checks,
-containment, typed-output exclusion, error text, and fail-closed return are
-unchanged.
-
-All 25 focused parenthesized tests, all 272 unit tests, and all 96 parse, four
-declaration-symbol, and 188 type-elaboration active cases pass. Plan/count
-remains 403/367, type coverage 235/223, and pass/fail 219/184. The 272-line
-raw/normalized test-list hashes and four CLI byte hashes remain unchanged.
-Task 263I is complete; fresh Task 263 inventory selects the next bounded
-detail or config/named-wrapper family. Source Inventory and
-`spec_coverage_audit.md` remain unchanged because no path, authority,
-behavior, coverage credit, owner crate, or deferred status changed.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263J Pre-Move Inventory and Specification
 
-Fresh dependency inventory selects the exact type-assertion result/detail core
-at `runner.rs:6973-7018` (46 lines, hash
-`3d4f7e8ce9ff1b60d0960e33fb8e1689fb4862a1730cf3144137e720db053fb8`).
-The public-to-parent result projection has 125 existing consumers; its output
-diagnostic collector is used only inside the selected core.
-
-Task 263J mechanically moves this family into existing private
-`type_elaboration/output.rs`. The result projection becomes parent-only for
-retained named detail wrappers; the collector remains leaf-private beside the
-Task 263G validator and output transport. Binary and parenthesized detail
-cores, configs, named wrappers, output wrappers, call sites, and orchestration
-remain in `runner.rs`.
-
-This is move-only `design_drift`; there is no Task 263J0 prerequisite. Existing
-direct matrices across eight test modules plus active/report consumers cover
-validator-first rejection, invalid-key fallback, binding/declaration/formula
-diagnostic collection, checker prefixing, canonical iteration, sort/dedup,
-empty success, corruption rejection, and fail-closed behavior. Exact-body
-equivalence plus the 272-test, 188-active-case, repository/report/CLI byte-
-stability, and full gates must preserve every key, fallback, ordering decision,
-payload, and failure boundary. No test, expectation, config, wrapper logic,
-semantic behavior, or authority artifact may change. Source Inventory and
-`spec_coverage_audit.md` remain unchanged because the existing `output.rs`
-path is extended without changing coverage credit, owner crate, or deferred
-status.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263J Move Result
 
-Task 263J moved only the exact type-assertion result/detail core into existing
-private `type_elaboration/output.rs`. After removing the required
-`pub(in crate::runner)` qualifier, moved lines 536-581 retain hash
-`3d4f7e8ce9ff1b60d0960e33fb8e1689fb4862a1730cf3144137e720db053fb8`.
-The result projection is parent-only and the diagnostic collector is
-leaf-private. The facade and runner now gate the direct validator/output type
-aliases test-only because production detail consumers use only the result
-projection. Binary/parenthesized detail, configs, named/output wrappers, and
-call sites remain in `runner.rs`.
-
-The resulting `runner.rs` has 10,444 lines and hash
-`66bda6fe475617e30298b8dfb9384b92d55a033a23ee11726ada2e8ba9e6a8c2`;
-the 68-line `type_elaboration.rs` facade has hash
-`5a2412bfbf81a7505ccc03d68a12266a9ce5ec238247ed2c583c5cf08666ec4a`;
-the 1,067-line `output.rs` has hash
-`0afb49bbd16b8eb320e70d6997818302290cf1352fefe0b2c7ad3a3a2e9be1df`.
-Validator-first rejection, fallback selection, diagnostic sources and prefix,
-canonical iteration, sort/dedup, empty success, and fail-closed behavior are
-unchanged.
-
-All 47 focused type-assertion tests, all 272 unit tests, and all 96 parse, four
-declaration-symbol, and 188 type-elaboration active cases pass. Plan/count
-remains 403/367, type coverage 235/223, and pass/fail 219/184. The 272-line
-raw/normalized test-list hashes and four CLI byte hashes remain unchanged.
-Task 263J is complete; fresh Task 263 inventory selects the next bounded
-binary/parenthesized detail or config/named-wrapper family. Source Inventory
-and `spec_coverage_audit.md` remain unchanged because no path, authority,
-behavior, coverage credit, owner crate, or deferred status changed.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263K Pre-Move Inventory and Specification
 
-Fresh dependency inventory selects the exact binary-formula result/detail core
-at `runner.rs:6973-7008` (36 lines, hash
-`be8659f6d1bd22caba5270f0ea180521a90375e8b37c8f1a7b9e8f0cb4068b37`).
-The result projection has 52 retained production consumers. Its diagnostic
-collector is also consumed by the retained shared parenthesized-detail core.
-Six test modules contain 145 direct references to the two entries, excluding
-the two shared-support imports.
-
-Task 263K mechanically moves only these two functions into the existing
-private `type_elaboration/output.rs`. Both entries become parent-only because
-retained runner consumers still call them. Once the production collector moves
-beside its binary validator, the facade and runner gate the direct validator
-and output-type aliases test-only. Parenthesized detail, every config and
-named/output wrapper, and all call sites remain in `runner.rs`.
-
-This is move-only `design_drift`; there is no Task 263K0 prerequisite. Existing
-direct result/output matrices cover validator-first rejection, configured
-invalid-key fallback, declaration and formula diagnostic sources, checker-key
-prefixing, canonical iteration, sort/dedup, and empty success. The preservation
-matrix is exact function-body equivalence after removing required visibility,
-unchanged stable keys and diagnostic payload order, unchanged 272-test raw and
-normalized lists, unchanged 188 active type cases and plan/count bytes, and no
-`.miz`, expectation, trace, spec, API, config, wrapper, or call-site edits.
-
-The authority inventory finds no canonical contradiction: `doc/spec/en`, the
-existing `.miz` corpus, `spec_trace.toml`, and expectations retain their prior
-intent; `harness.md` and `expectation_schema.md` continue to define the active
-runner and deterministic detail contract; source is only the derived layout
-being repaired. Source Inventory and `spec_coverage_audit.md` remain unchanged
-because the existing `output.rs` path, authority, behavior, credit, owner crate,
-and deferred status do not change.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263K Move Result
 
-Task 263K moved only the exact binary-formula result/detail core into existing
-private `type_elaboration/output.rs`. After removing the two required
-`pub(in crate::runner)` qualifiers, moved lines 957-992 retain hash
-`be8659f6d1bd22caba5270f0ea180521a90375e8b37c8f1a7b9e8f0cb4068b37`.
-Both projections are parent-only. The first non-test crate build identified
-that the direct binary output-type alias, as well as the validator alias, had
-become test-only; the paired inventory was refined and both facade/runner
-aliases are now `#[cfg(test)]`. Parenthesized detail, every config and
-named/output wrapper, and all call sites remain in `runner.rs`.
-
-The resulting `runner.rs` has 10,411 lines and hash
-`bc7d9d3dc7536c8311eb9b7c5c6131657114ad1b3bdc2f5a3b13149642ccc1b3`;
-the 69-line `type_elaboration.rs` facade has hash
-`3411dfac21ea4872bdbea24466a64c7cdaafc27c54828b397913f483ed00e2e7`;
-the 1,104-line `output.rs` has hash
-`94a0aa92cacfacf2ef32bc0b5b8e336f7340c19a3bcc4ef505052e568b3b69e9`.
-Builder-error fallback, validator-first rejection, configured invalid-key
-fallback, declaration/formula diagnostic sources, checker-key prefix,
-canonical iteration, sort/dedup, empty success, and fail-closed behavior are
-unchanged.
-
-All four focused source-reserved-variable tests, all 272 unit tests, relevant
-crate integration tests, and all 96 parse, four declaration-symbol, and 188
-type-elaboration active cases pass. Plan/count remains 403/367, type coverage
-235/223, pass/fail 219/184, and warnings/errors 23/0. The raw/normalized test-
-list hashes and four CLI byte hashes remain unchanged. Formatting,
-all-target/all-feature Clippy with warnings denied, workspace tests, and diff
-cleanliness pass. Task 263K is complete; fresh Task 263 inventory selects the
-next bounded parenthesized-detail or config/named-wrapper family. Source
-Inventory and `spec_coverage_audit.md` remain unchanged because no path,
-authority, behavior, coverage credit, owner crate, or deferred status changed.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263L Pre-Move Inventory and Specification
 
-Fresh dependency inventory selects the exact shared parenthesized-binary
-output-detail core at `runner.rs:7065-7080` (16 lines, hash
-`700b2283f7a6ea7b61c97ec59a27166404a72eccdce8f8e7aa7c681dd9003e47`).
-Its sole production caller is the retained payload-detail wrapper serving all
-eight parenthesized active routes. Eight retained test-only named wrappers call
-the same core, with 26 direct assertions in `reserved_binary.rs`.
-
-Task 263L mechanically moves only this shared core into the existing private
-`type_elaboration/output.rs`. It becomes parent-only for the retained payload
-and named-wrapper callers. Once it is beside the parenthesized validator, the
-facade and runner gate the direct parenthesized validator/output-type aliases
-and direct binary detail-collector alias test-only. The payload-detail wrapper,
-all eight configs, all named detail/validator/output wrappers, and every call
-site remain in `runner.rs`.
-
-This is move-only `design_drift`; there is no Task 263L0 prerequisite. Existing
-active and direct matrices cover builder fallback at the retained caller,
-validator-first wrapper rejection, configured invalid-key fallback, nested
-binary diagnostic projection, left/right wrapper identity, and fail-closed
-behavior. The preservation matrix is exact function-body equivalence after
-removing required visibility, unchanged 272-test raw and normalized lists,
-unchanged active and CLI bytes, and no `.miz`, expectation, trace, spec, API,
-config, wrapper, payload-detail, or call-site edits.
-
-The authority inventory finds no canonical contradiction. The existing
-`output.rs` path and owner are unchanged, and authority, behavior, coverage
-credit, and deferred status do not change, so Source Inventory and
-`spec_coverage_audit.md` remain unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263L Move Result
 
-Task 263L moved only the exact shared parenthesized-binary output-detail core
-into existing private `type_elaboration/output.rs`. After removing the required
-`pub(in crate::runner)` qualifier, moved lines 1106-1121 retain hash
-`700b2283f7a6ea7b61c97ec59a27166404a72eccdce8f8e7aa7c681dd9003e47`.
-The shared core is parent-only. The first non-test build identified that the
-direct binary detail-collector alias also became test-only once the
-parenthesized core moved; the paired inventory was refined, and that alias plus
-the direct parenthesized validator/output-type aliases are now `#[cfg(test)]`.
-The payload-detail wrapper, eight configs, named detail/validator/output
-wrappers, and all call sites remain in `runner.rs`.
-
-The resulting `runner.rs` has 10,395 lines and hash
-`46338bc436d6fac02ed5ecd33ef454bed44e4ea8ed55427723e0781be0fadd44`;
-the 70-line `type_elaboration.rs` facade has hash
-`720cecb3656838d7b2362db0c8c37a5fbc836d9e5b40e7713aa418ebe42b2576`;
-the 1,121-line `output.rs` has hash
-`c07eec9a8e118462998ac9d99e0c983ed140bf1197c3bfd3125a0ed2a34c70c3`.
-Builder fallback remains in the retained caller, while validator-first
-rejection, configured fallback, nested binary detail projection, left/right
-wrapper identity, and fail-closed behavior are unchanged in the moved core.
-
-All 25 focused parenthesized tests, all 272 unit tests, relevant crate
-integration tests, and all 96 parse, four declaration-symbol, and 188 type-
-elaboration active cases pass. Plan/count remains 403/367, type coverage
-235/223, pass/fail 219/184, and warnings/errors 23/0. The raw/normalized test-
-list hashes and four CLI byte hashes remain unchanged. Formatting,
-all-target/all-feature Clippy with warnings denied, workspace tests, and diff
-cleanliness pass. Task 263L is complete; fresh Task 263 inventory selects the
-remaining payload-detail or config/named-wrapper family. Source Inventory and
-`spec_coverage_audit.md` remain unchanged because no path, authority, behavior,
-coverage credit, owner crate, or deferred status changed.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263M Pre-Move Inventory and Specification
 
-Fresh dependency inventory selects the exact parenthesized-binary payload-
-detail wrapper at `runner.rs:5508-5524` (17 lines, hash
-`5807184d2ce9cfa8f7fb5a9be4d8401b8a538a335f28d07768a251840a169605`).
-Eight production route wrappers and eight direct assertions in
-`reserved_binary.rs` call this entry.
-
-Task 263M mechanically moves only this wrapper into the existing private
-`type_elaboration/output.rs`. It becomes parent-only for the retained route and
-test callers. The builder and shared output-detail core become leaf-internal for
-production, so their facade and runner aliases become test-only. All eight
-configs, named route/detail/validator/output wrappers, named extractors, and
-every call site remain in `runner.rs`.
-
-This is move-only `design_drift`; there is no Task 263M0 prerequisite. Existing
-active and direct matrices cover builder-error fallback, configured invalid-key
-selection, validator-first rejection, nested binary diagnostics, side identity,
-and fail-closed behavior. The preservation matrix is exact function-body
-equivalence after removing required visibility, unchanged 272-test lists and
-active/CLI bytes, and no `.miz`, expectation, trace, spec, API, config, wrapper,
-extractor, or call-site edits.
-
-The authority inventory finds no canonical contradiction. The existing
-`output.rs` path and owner are unchanged, and authority, behavior, coverage
-credit, and deferred status do not change, so Source Inventory and
-`spec_coverage_audit.md` remain unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263M Move Result
 
-Task 263M moved only the exact parenthesized-binary payload-detail wrapper into
-existing private `type_elaboration/output.rs`. After removing the required
-`pub(in crate::runner)` qualifier, moved lines 1123-1139 retain hash
-`5807184d2ce9cfa8f7fb5a9be4d8401b8a538a335f28d07768a251840a169605`.
-The wrapper is parent-only. The direct parenthesized builder and shared-detail
-aliases are now test-only, while the configs, named route/detail/validator/
-output wrappers, named extractors, and all call sites remain in `runner.rs`.
-
-The resulting `runner.rs` has 10,377 lines and hash
-`ee5ce9753442a91cea9642c32941f0bda71f05c956ad13b49d36d90d17639e35`;
-the 71-line `type_elaboration.rs` facade has hash
-`62bd63a6aaaac7fbf83f8783b90bfa4546dfab99308b4ff420fd66803ebc9678`;
-the 1,139-line `output.rs` has hash
-`55fd0eae01f417d011a3800d532f65eed1a2fd76d60d7387e9630fe3d9c92e57`.
-Builder-error fallback, configured invalid-key selection, success delegation,
-nested binary diagnostics, side identity, and fail-closed behavior are
-unchanged.
-
-All 25 focused parenthesized tests, all 272 unit tests, relevant crate
-integration tests, and all 96 parse, four declaration-symbol, and 188 type-
-elaboration active cases pass. Plan/count remains 403/367, type coverage
-235/223, pass/fail 219/184, and warnings/errors 23/0. The raw/normalized test-
-list hashes and four CLI byte hashes remain unchanged. Formatting,
-all-target/all-feature Clippy with warnings denied, workspace tests, and diff
-cleanliness pass. Task 263M is complete; fresh Task 263 inventory selects the
-remaining config/named-wrapper family. Source Inventory and
-`spec_coverage_audit.md` remain unchanged because no path, authority, behavior,
-coverage credit, owner crate, or deferred status changed.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263N Pre-Move Inventory and Specification
 
-Fresh dependency inventory selects a cohesive private parenthesized route
-owner made of seven exact `runner.rs` fragments: invalid keys at 220-235 (16
-lines, `f0a67ec1...`), eight configs at 3099-3298 (200, `d374247d...`), eight
-production detail routes at 5374-5506 (133, `683e4c79...`), test-only named
-detail wrappers at 6960-7046 (87, `08f628be...`), output wrappers at 7058-7142
-(85, `9139389e...`), validator wrappers at 8322-8408 (87, `87d26ecb...`), and
-eight source extractors at 8819-8930 (112, `95dce665...`). Total: 720 lines.
-
-Task 263N mechanically moves only those fragments into new private
-`type_elaboration/parenthesized_routes.rs`. Keeping configs with thin source,
-detail, and test wrappers avoids reverse source/output ownership. Only the
-eight production detail routes cross the normal phase facade; configs and
-test-consumed wrappers/extractors cross under `#[cfg(test)]`. No call site,
-name, config value, key, payload, ordering, fallback, or fail-closed behavior
-changes. Existing active routes and parenthesized matrices in
-`reserved_binary.rs` and `binary_route_fixtures.rs` are the preservation oracle.
-
-This is move-only `design_drift`; no N0 is needed. The new real source path
-must be added to the paired Source Inventory with the move and is already
-listed in the paired target layout, while
-`spec_coverage_audit.md` remains unchanged because authority, behavior,
-coverage credit, owner crate, and deferred status do not change.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263N Move Result
 
-The seven moved fragments retain their exact normalized hashes
-`f0a67ec1...`, `d374247d...`, `683e4c79...`, `08f628be...`, `9139389e...`,
-`87d26ecb...`, and `95dce665...`; their combined normalized hash is
-`93a45180...`. The new 745-line private owner has raw hash `490cc42b...`,
-while `runner.rs` is 9,721 lines with raw hash `9cb5f972...`. Invalid-key
-constants remain leaf-private. Existing runner test names resolve through
-config-derived test-only aliases, and configs, 24 named test wrappers, and
-eight extractors cross only the test facade. The normal facade exposes only
-the eight production detail routes.
-
-All 25 focused parenthesized tests and all 272 crate unit tests pass. The raw
-and normalized 272-name list hashes, four CLI byte hashes, active counts
-96/4/188, plan 403/367, type coverage 235/223, pass/fail 219/184, and 23
-warnings/zero errors remain unchanged. Formatting, all-target/all-feature
-Clippy with warnings denied, workspace tests, and diff cleanliness pass. Task
-263N is complete; fresh Task 263 inventory returns to the remaining
-non-parenthesized route-owner families. The paired Source Inventory now lists
-the new real path, while `spec_coverage_audit.md` remains unchanged because no
-authority, behavior, coverage credit, owner crate, or deferred status changed.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263O Pre-Move Inventory and Specification
 
-Fresh dependency inventory selects the leading direct-binary owner: reserved-
-variable equality; reserved-object-variable equality and inequality; distinct
-reserved-object-variable equality and inequality; distinct reserved-variable
-equality, membership, and inequality; and heterogeneous reserve membership.
-The owner is eight exact `runner.rs` fragments: six invalid keys at 150-161
-(12 lines, `d3c61a92...`), three invalid keys at 287-292 (6,
-`6c3ab931...`), the first five configs at 3131-3244 (114, `aca11227...`),
-three distinct configs at 3287-3359 (73, `7febfe4a...`), the heterogeneous
-config at 3484-3507 (24, `abe7d7f1...`), nine production detail routes at
-5214-5322 (109, `3d564030...`), nine test-only output wrappers at 6678-6768
-(91, `475ab5d7...`), and nine source extractors at 8262-8378 (117,
-`5499a8cb...`). Total: 546 lines; combined hash `f2271cc0...`.
-
-Task 263O mechanically moves only those fragments into new private
-`type_elaboration/binary_routes.rs`. The leaf directly consumes the existing
-`source_formula` config/extractor substrate and `output` builder/detail core;
-neither sibling depends on the new leaf, so the dependency remains acyclic.
-Only the nine production detail routes cross the normal phase facade. Configs,
-test-consumed outputs, and extractors cross under `#[cfg(test)]`; invalid-key
-constants remain leaf-private while config-derived runner test aliases retain
-their existing names and values. No call site, name, config value, key,
-payload, ordering, fallback, or fail-closed behavior changes.
-
-The existing 187 direct occurrences—162 output/extractor references plus 25
-invalid-key references—across `reserved_binary.rs`,
-`binary_route_fixtures.rs`, `reserve_fixtures.rs`,
-`reserve_object_fixtures.rs`, and shared test support cover source exactness,
-checker payloads, invalid-key fallback, active real fixtures, and route
-isolation. Therefore this is move-only `design_drift` and no O0 test task is
-needed. The new real path must be added to the paired Source Inventory and
-target layout with the move. `spec_coverage_audit.md` remains unchanged because
-authority, behavior, coverage credit, owner crate, and deferred status do not
-change. Forbidden changes are route-set expansion, direct-family regrouping,
-config/key/role edits, wrapper generalization, assertion weakening, test or
-expectation edits, and movement of later binary/type-assertion/formula routes.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263O Move Result
 
-The eight moved fragments retain the original raw hashes `d3c61a92...`,
-`6c3ab931...`, `aca11227...`, `7febfe4a...`, `abe7d7f1...`, `3d564030...`,
-`475ab5d7...`, and `5499a8cb...` as their pre-move oracle. After removing only
-required runner visibility and formatting whitespace, every old/new fragment
-pair is token-identical and the combined normalized hash is `86bf7cad...`.
-The new 559-line private owner has raw hash `c4546956...`, while `runner.rs` is
-9,234 lines with raw hash `8a55c57d...`. Invalid-key constants remain leaf-
-private. Existing runner test names resolve through config-derived test-only
-aliases, and configs, nine test output wrappers, and nine extractors cross only
-the test facade. The normal facade exposes only the nine production detail
-routes.
-
-All selected-family focused filters and all 272 crate unit tests pass. The raw
-and normalized 272-name list hashes, four CLI byte hashes, active counts
-96/4/188, plan 403/367, type coverage 235/223, pass/fail 219/184, and 23
-warnings/zero errors remain unchanged. Formatting, all-target/all-feature
-Clippy with warnings denied, workspace tests, and diff cleanliness pass. Task
-263O is complete; fresh Task 263 inventory returns to the later direct-binary
-route-owner families. The paired Source Inventory and target layout list the
-new real path, while `spec_coverage_audit.md` remains unchanged because no
-authority, behavior, coverage credit, owner crate, or deferred status changed.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263P Pre-Move Inventory and Specification
 
-Fresh dependency inventory selects the five multiple-reserve declaration
-binary routes: set equality, set inequality, set membership, object equality,
-and object inequality. They form five exact `runner.rs` fragments: invalid
-keys at 324-333 (10 lines, `c1091c1b...`), five configs at 3214-3337 (124,
-`85224887...`), five production detail routes at 5522-5583 (62,
-`518d4e55...`), five test-only output wrappers at 6805-6856 (52,
-`1af7a5ab...`), and five source extractors at 8360-8424 (65,
-`55bb8ec4...`). Total: 313 lines; combined hash `790eba84...`.
-
-Task 263P mechanically appends only those fragments to existing private
-`type_elaboration/binary_routes.rs`. The dependency remains the Task 263O
-acyclic graph to `source_formula` and `output`. Only the five production detail
-routes cross the normal phase facade. Configs, test-consumed outputs, and
-extractors cross under `#[cfg(test)]`; invalid-key constants remain leaf-private
-while config-derived runner test aliases retain their existing names and
-values. No call site, name, config value, key, payload, ordering, fallback, or
-fail-closed behavior changes.
-
-The existing 104 direct occurrences—96 output/extractor references plus eight
-invalid-key references—across `reserved_binary.rs`,
-`binary_route_fixtures.rs`, `reserve_fixtures.rs`, and shared test support
-cover source exactness, checker payloads, invalid-key fallback, active real
-fixtures, and route isolation. Therefore this is move-only `design_drift` and
-no P0 test task is needed. No new source path is introduced; the paired target
-layout records the expanded owner. `spec_coverage_audit.md` remains unchanged
-because authority, behavior, coverage credit, owner crate, and deferred status
-do not change. Forbidden changes are route-set expansion, config/key/role
-edits, wrapper generalization, assertion weakening, test or expectation edits,
-and movement of base, mode-chain, type-assertion, or formula routes.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263P Move Result
 
-The five moved fragments retain the corrected original raw hashes
-`c1091c1b...`, `85224887...`, `518d4e55...`, `1af7a5ab...`, and
-`55bb8ec4...` as their pre-move oracle. Initial compile-mode verification found
-that the draft 6805-6857 output range incorrectly included the next unmoved
-route's `#[cfg(test)]`; the range was corrected to 6805-6856 before completion,
-the attribute was restored to that route, and the first moved extractor was
-restored to normal leaf visibility. After removing only required runner
-visibility and formatting whitespace, every corrected old/new fragment pair is
-token-identical and the combined normalized hash is `340d2658...`.
-
-The expanded 872-line private owner has raw hash `883042d7...`, while
-`runner.rs` is 8,956 lines with raw hash `48ba9d05...`. Invalid-key constants
-remain leaf-private. Existing runner test names resolve through config-derived
-test-only aliases, and configs, five test output wrappers, and five extractors
-cross only the test facade. The normal facade adds only the five production
-detail routes; the phase still owns nine private leaves.
-
-All ten focused multiple-reserve tests and all 272 crate unit tests pass. The
-raw and normalized 272-name list hashes, four CLI byte hashes, active counts
-96/4/188, plan 403/367, type coverage 235/223, pass/fail 219/184, and 23
-warnings/zero errors remain unchanged. Formatting, all-target/all-feature
-Clippy with warnings denied, workspace tests, and diff cleanliness pass. Task
-263P is complete; fresh Task 263 inventory returns to the remaining base and
-mode-chain binary route-owner families. No new source path was introduced and
-`spec_coverage_audit.md` remains unchanged because no authority, behavior,
-coverage credit, owner crate, or deferred status changed.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263Q Pre-Move Inventory and Specification
 
-Fresh dependency inventory selects the base reserved-variable membership and
-inequality binary routes. They form five exact `runner.rs` fragments: invalid
-keys at 361-364 (4 lines, `5d41a022...`), two configs at 3197-3238 (42,
-`aa8213c1...`), two production detail routes at 5423-5446 (24,
-`81da3344...`), two test-only output wrappers at 6644-6663 (20,
-`ae5f0131...`), and two source extractors at 8147-8172 (26,
-`1b44be5a...`). Total: 116 lines; combined hash `ec7a766a...`.
-
-Task 263Q mechanically appends only those fragments to existing private
-`type_elaboration/binary_routes.rs`. The dependency remains the Tasks
-263O-263P acyclic graph to `source_formula` and `output`. Only the two
-production detail routes cross the normal phase facade. Configs, test-consumed
-outputs, and extractors cross under `#[cfg(test)]`; invalid-key constants remain
-leaf-private while config-derived runner test aliases retain their existing
-names and values. No call site, name, config value, key, payload, ordering,
-fallback, or fail-closed behavior changes.
-
-The existing 38 direct occurrences—34 output/extractor references plus four
-invalid-key references—across `reserved_direct.rs`, `reserved_binary.rs`,
-`binary_route_fixtures.rs`, `asserted_head_fixtures.rs`, and shared test
-support cover source exactness, checker payloads, invalid-key fallback, active
-real fixtures, and route isolation. Therefore this is move-only `design_drift`
-and no Q0 test task is needed. No new source path is introduced; the paired
-target layout records the expanded owner. `spec_coverage_audit.md` remains
-unchanged because authority, behavior, coverage credit, owner crate, and
-deferred status do not change. Forbidden changes are route-set expansion,
-config/key/role edits, wrapper generalization, assertion weakening, test or
-expectation edits, and movement of mode-chain, type-assertion, or formula
-routes.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263Q Move Result
 
-Task 263Q moved only the five approved fragments totaling 116 lines into the
-existing private `type_elaboration/binary_routes.rs`, preserving original raw
-hashes `5d41a022...`, `aa8213c1...`, `81da3344...`, `ae5f0131...`, and
-`1b44be5a...` as the pre-move oracle. After removing only required runner
-visibility and formatting whitespace, every old/new fragment pair is
-token-identical and the combined normalized hash is `e8c45cf1...`. The next
-type-assertion output attribute/body and the next extractor remain in
-`runner.rs`; no later route crossed the boundary.
-
-The expanded 988-line private owner has raw hash `087967cc...`, while
-`runner.rs` is 8,851 lines with raw hash `a039be76...`. Invalid-key constants
-remain leaf-private. Existing runner test names resolve through config-derived
-test-only aliases, and configs, two test output wrappers, and two extractors
-cross only the test facade. The normal facade adds only the two production
-detail routes; the phase still owns nine private leaves and its dependency
-graph remains acyclic.
-
-The two focused membership/inequality filters pass with 33 and 31 tests,
-respectively, and all 272 crate unit tests pass. The raw and normalized
-272-name list hashes, four CLI byte hashes, active counts 96/4/188, plan
-403/367, type coverage 235/223, pass/fail 219/184, and 23 warnings/zero errors
-remain unchanged. Formatting, all-target/all-feature Clippy with warnings
-denied, workspace tests, and diff cleanliness pass. Task 263Q is complete;
-fresh Task 263 inventory returns to the remaining mode-chain binary route-owner
-families. No new source path was introduced and `spec_coverage_audit.md`
-remains unchanged because no authority, behavior, coverage credit, owner
-crate, or deferred status changed.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263R Pre-Move Inventory and Specification
 
-Fresh dependency inventory selects the direct local-mode membership, equality,
-and inequality binary routes as the next bounded family. They form ten exact
-`runner.rs` fragments: the membership invalid key at 255-256 (2 lines,
-`c4db5ce6...`), equality/inequality invalid keys at 276-279 (4,
-`70a954f2...`), membership config at 3204-3231 (28, `77ebd7a7...`),
-equality/inequality configs at 3626-3675 (50, `81a2369d...`), membership
-production detail route at 4910-4920 (11, `6545f96f...`), equality/inequality
-detail routes at 5043-5065 (23, `74305b0b...`), membership test-only output at
-6179-6187 (9, `a0c62cc0...`), equality/inequality test-only outputs at
-6292-6310 (19, `0367ba53...`), membership extractor at 7600-7611 (12,
-`508569dd...`), and equality/inequality extractors at 7730-7754 (25,
-`c1e52d0c...`). Total: 183 lines; combined raw hash `16bcea2e...`.
-
-Task 263R mechanically appends only those fragments to existing private
-`type_elaboration/binary_routes.rs`. The leaf continues to depend only on the
-existing `source_formula` and `output` owners. Only the three production detail
-routes cross the normal phase facade. Configs, test-consumed outputs, and
-extractors cross under `#[cfg(test)]`; invalid-key constants remain
-leaf-private while config-derived runner test aliases retain their existing
-names and values. No call site, name, config value, mode-definition chain, key,
-payload, ordering, fallback, or fail-closed behavior changes.
-
-The existing 52 direct test occurrences across `support.rs`,
-`binary_route_fixtures.rs`, `mode_chain.rs`, and `mode_chain_fixtures.rs` cover
-exact real source expansion, checker payloads, invalid-key fallback, active
-fixtures, and route isolation. The three active `.miz`/expectation pairs and
-their covered trace requirements directly preserve the canonical reserved
-variable plus atomic equality/inequality/membership intent and the exact
-source-derived checker seam. Therefore this is move-only `design_drift` and no
-R0 test task is needed. No new source path is introduced; the paired target
-layout records the expanded owner. `spec_coverage_audit.md` remains unchanged
-because authority, behavior, coverage credit, owner crate, and deferred status
-do not change. Forbidden changes are route-set expansion, config/key/role/mode
-edits, wrapper generalization, assertion weakening, test or expectation edits,
-and movement of object-mode, deeper-chain, type-assertion, or formula routes.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263R Move Result
 
-Task 263R moved only the ten approved fragments totaling 183 lines into the
-existing private `type_elaboration/binary_routes.rs`, preserving original raw
-hashes `c4db5ce6...`, `70a954f2...`, `77ebd7a7...`, `81a2369d...`,
-`6545f96f...`, `74305b0b...`, `a0c62cc0...`, `0367ba53...`,
-`508569dd...`, and `c1e52d0c...` as the pre-move oracle. After removing only
-required runner visibility and formatting whitespace, every old/new fragment
-pair is token-identical and the combined normalized hash is `be8e0e9b...`.
-Adjacent chained membership, local-object inequality, and every deeper-chain
-config, route, output attribute/body, and extractor remain in `runner.rs`.
-
-The expanded 1,181-line private owner has raw hash `70feaa70...`, while
-`runner.rs` is 8,681 lines with raw hash `7131c8b7...`. Invalid-key constants
-remain leaf-private. Existing runner test names resolve through config-derived
-test-only aliases, and configs, three test output wrappers, and three
-extractors cross only the test facade. The normal facade adds only the three
-production detail routes; the phase still owns nine private leaves and its
-dependency graph remains acyclic.
-
-The focused membership/equality/inequality filters pass with 10, 12, and 10
-tests, respectively, and all 272 crate unit tests pass. The raw and normalized
-272-name list hashes, four CLI byte hashes, active counts 96/4/188, plan
-403/367, type coverage 235/223, pass/fail 219/184, and 23 warnings/zero errors
-remain unchanged. Formatting, all-target/all-feature Clippy with warnings
-denied, workspace tests, and diff cleanliness pass. Task 263R is complete;
-fresh Task 263 inventory returns to the remaining object-mode and deeper-chain
-binary route-owner families. No new source path was introduced and
-`spec_coverage_audit.md` remains unchanged because no authority, behavior,
-coverage credit, owner crate, or deferred status changed.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263S Pre-Move Inventory and Specification
 
-Fresh dependency inventory selects the direct local-object-mode membership,
-equality, and inequality binary routes as the next bounded family. They form
-ten exact `runner.rs` fragments: membership/inequality invalid keys at 293-296
-(4 lines, `0c2d5a85...`), the equality invalid key at 383-384 (2,
-`759fc61a...`), membership/inequality configs at 3583-3636 (54,
-`bf587e0d...`), the equality config at 4819-4843 (25, `ff4ef313...`),
-membership/inequality production detail routes at 4953-4977 (25,
-`08141211...`), the equality detail route at 5274-5285 (12, `7c4207cd...`),
-membership/inequality test-only outputs at 6170-6190 (21, `d67627c1...`), the
-equality test-only output at 6443-6452 (10, `1b1d490e...`),
-membership/inequality extractors at 7573-7597 (25, `889aa420...`), and the
-equality extractor at 7885-7896 (12, `3cfd12b2...`). Total: 190 lines;
-combined raw hash `3e39b474...`.
-
-Task 263S mechanically appends only those fragments to existing private
-`type_elaboration/binary_routes.rs`. The leaf continues to depend only on the
-existing `source_formula` and `output` owners. Only the three production detail
-routes cross the normal phase facade. Configs, test-consumed outputs, and
-extractors cross under `#[cfg(test)]`; invalid-key constants remain
-leaf-private while config-derived runner test aliases retain their existing
-names and values. No call site, name, config value, mode-definition chain, key,
-payload, ordering, fallback, or fail-closed behavior changes.
-
-The existing 52 direct test occurrences—44 output/extractor references plus
-eight invalid-key references—across `support.rs`, `binary_route_fixtures.rs`,
-`mode_chain.rs`, and `mode_chain_fixtures.rs` cover exact real source
-expansion, checker payloads, invalid-key fallback, active fixtures, and route
-isolation. The three active `.miz`/expectation pairs and their covered trace
-requirements directly preserve the canonical reserved variable plus atomic
-equality/inequality/membership intent and the exact source-derived checker
-seam. Therefore this is move-only `design_drift` and no S0 test task is needed.
-No new source path is introduced; the paired target layout records the
-expanded owner. `spec_coverage_audit.md` remains unchanged because authority,
-behavior, coverage credit, owner crate, and deferred status do not change.
-Forbidden changes are route-set expansion, config/key/role/mode edits, wrapper
-generalization, assertion weakening, test or expectation edits, and movement
-of chained/deeper-chain, type-assertion, or formula routes.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263S Move Result
 
-Task 263S moved only the ten approved fragments totaling 190 lines into the
-existing private `type_elaboration/binary_routes.rs`, preserving original raw
-hashes `0c2d5a85...`, `759fc61a...`, `bf587e0d...`, `ff4ef313...`,
-`08141211...`, `7c4207cd...`, `d67627c1...`, `1b1d490e...`,
-`889aa420...`, and `3cfd12b2...` as the pre-move oracle. After removing only
-required runner visibility and formatting whitespace, every old/new fragment
-pair is token-identical and the combined normalized hash is `e0590337...`.
-Adjacent chained families and the next type-assertion detail, output
-attribute/body, and extractor remain in `runner.rs`.
-
-The expanded 1,380-line private owner has raw hash `2b7e1aef...`, while
-`runner.rs` is 8,504 lines with raw hash `f5080dee...`. Invalid-key constants
-remain leaf-private. Existing runner test names resolve through config-derived
-test-only aliases, and configs, three test output wrappers, and three
-extractors cross only the test facade. The normal facade adds only the three
-production detail routes; the phase still owns nine private leaves and its
-dependency graph remains acyclic.
-
-The focused membership/equality/inequality filters each pass 10 tests, and all
-272 crate unit tests pass. The raw and normalized 272-name list hashes, four
-CLI byte hashes, active counts 96/4/188, plan 403/367, type coverage 235/223,
-pass/fail 219/184, and 23 warnings/zero errors remain unchanged. Formatting,
-all-target/all-feature Clippy with warnings denied, workspace tests, and diff
-cleanliness pass. Task 263S is complete; fresh Task 263 inventory returns to
-the remaining chained and deeper-chain binary route-owner families. No new
-source path was introduced and `spec_coverage_audit.md` remains unchanged
-because no authority, behavior, coverage credit, owner crate, or deferred
-status changed.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263T Pre-Move Inventory and Specification
 
-Fresh dependency inventory selects the chained local-mode membership,
-equality, and inequality binary routes as the next bounded family. They form
-fourteen exact `runner.rs` fragments: the membership invalid key at 297-298 (2
-lines, `3547f56d...`), equality/inequality invalid keys at 314-317 (4,
-`a33a4243...`), membership/equality/inequality configs at 3234-3268 (35,
-`9266cead...`), 3598-3629 (32, `ff54a0ed...`), and 4672-4703 (32,
-`b624f397...`), the three production detail routes at 4779-4790 (12,
-`77d10775...`), 4887-4898 (12, `fd4ddd74...`), and 5142-5153 (12,
-`603f4e69...`), the three test-only outputs at 5973-5982 (10,
-`5214fdac...`), 6065-6074 (10, `e26f53b0...`), and 6282-6291 (10,
-`dd43dd7a...`), and the three source extractors at 7331-7342 (12,
-`77c8abb7...`), 7435-7446 (12, `54f042db...`), and 7682-7693 (12,
-`92c2a218...`). Total: 207 lines; combined raw hash `dd7a8b0c...`.
-
-Task 263T mechanically appends only those fragments to existing private
-`type_elaboration/binary_routes.rs`. The leaf continues to depend only on the
-existing `source_formula` and `output` owners. Only the three production detail
-routes cross the normal phase facade. Configs, test-consumed outputs, and
-extractors cross under `#[cfg(test)]`; invalid-key constants remain
-leaf-private while config-derived runner test aliases retain their existing
-names and values. No call site, name, config value, two-definition chain, key,
-payload, ordering, fallback, or fail-closed behavior changes.
-
-The existing 50 direct test occurrences—43 output/extractor references plus
-seven invalid-key references—across `support.rs`, `binary_route_fixtures.rs`,
-`mode_chain.rs`, and `mode_chain_fixtures.rs` cover exact real two-expansion
-source chains, checker payloads, invalid-key fallback, active fixtures, and
-route isolation. The three active `.miz`/expectation pairs and their covered
-trace requirements preserve the canonical reserved-variable atomic-formula
-intent and exact source-derived checker seam. Therefore this is move-only
-`design_drift` and no T0 test task is needed. No new source path is introduced;
-the paired target layout records the expanded owner. `spec_coverage_audit.md`
-remains unchanged because authority, behavior, coverage credit, owner crate,
-and deferred status do not change. Forbidden changes are route-set expansion,
-config/key/role/mode edits, chain generalization, assertion weakening, test or
-expectation edits, and movement of chained object-mode, deeper-chain,
-type-assertion, or formula routes.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263T Move Result
 
-Task 263T moved only the fourteen approved fragments totaling 207 lines into
-the existing private `type_elaboration/binary_routes.rs`, preserving original
-raw hashes `3547f56d...`, `a33a4243...`, `9266cead...`, `ff54a0ed...`,
-`b624f397...`, `77d10775...`, `fd4ddd74...`, `603f4e69...`,
-`5214fdac...`, `e26f53b0...`, `dd43dd7a...`, `77c8abb7...`,
-`54f042db...`, and `92c2a218...` as the pre-move oracle. After removing only
-required runner visibility and formatting whitespace, every old/new fragment
-pair is token-identical and the combined normalized hash is `aa98a27d...`.
-Adjacent chained-object, two-/three-/deeper-edge, type-assertion, and other
-route families remain in `runner.rs`.
-
-The expanded 1,600-line private owner has raw hash `03d9236d...`, while
-`runner.rs` is 8,306 lines with raw hash `3f73039e...`. Invalid-key constants
-remain leaf-private. Existing runner test names resolve through config-derived
-test-only aliases, and configs, three test output wrappers, and three
-extractors cross only the test facade. The normal facade adds only the three
-production detail routes; the phase still owns nine private leaves and its
-dependency graph remains acyclic.
-
-The focused membership/equality/inequality filters each pass two tests, and all
-272 crate unit tests pass. The raw and normalized 272-name list hashes, four
-CLI byte hashes, active counts 96/4/188, plan 403/367, type coverage 235/223,
-pass/fail 219/184, and 23 warnings/zero errors remain unchanged. Formatting,
-all-target/all-feature Clippy with warnings denied, workspace tests, and diff
-cleanliness pass. Task 263T is complete; fresh Task 263 inventory returns to
-the remaining chained object-mode and deeper-chain binary route-owner
-families. No new source path was introduced and `spec_coverage_audit.md`
-remains unchanged because no authority, behavior, coverage credit, owner
-crate, or deferred status changed.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263U Pre-Move Inventory and Specification
 
-Fresh dependency inventory selects the chained local-object-mode membership,
-equality, and inequality binary routes as the next bounded family. They form
-nine exact `runner.rs` fragments: all three invalid keys at 331-338 (8 lines,
-`972beff3...`), the membership config at 3537-3575 (39, `71bb150f...`), the
-equality/inequality configs at 4618-4690 (73, `32f853aa...`), the membership
-production detail route at 4773-4785 (13, `84c8bd3d...`), equality/inequality
-detail routes at 5029-5054 (26, `4fc8b564...`), the membership test-only
-output at 5916-5926 (11, `5b884de2...`), equality/inequality test-only outputs
-at 6134-6155 (22, `7c165117...`), the membership extractor at 7250-7261 (12,
-`c84f51e1...`), and equality/inequality extractors at 7497-7521 (25,
-`2240a58d...`). Total: 229 lines; combined raw hash `ae0066dd...`.
-
-Task 263U mechanically appends only those fragments to existing private
-`type_elaboration/binary_routes.rs`. The leaf continues to depend only on the
-existing `source_formula` and `output` owners. Only the three production detail
-routes cross the normal phase facade. Configs, test-consumed outputs, and
-extractors cross under `#[cfg(test)]`; invalid-key constants remain
-leaf-private while config-derived runner test aliases retain their existing
-names and values. No call site, name, config value, two-definition object
-chain, key, payload, ordering, fallback, or fail-closed behavior changes.
-
-The existing 48 direct test occurrences—41 output/extractor references plus
-seven invalid-key references—across `support.rs`, `binary_route_fixtures.rs`,
-`mode_chain.rs`, and `mode_chain_fixtures.rs` cover exact real two-expansion
-object-mode source chains, checker payloads, invalid-key fallback, active
-fixtures, and route isolation. The three active `.miz`/expectation pairs and
-their covered trace requirements preserve the canonical reserved-variable
-atomic-formula intent and exact source-derived checker seam. Therefore this is
-move-only `design_drift` and no U0 test task is needed. No new source path is
-introduced; the paired target layout records the expanded owner.
-`spec_coverage_audit.md` remains unchanged because authority, behavior,
-coverage credit, owner crate, and deferred status do not change. Forbidden
-changes are route-set expansion, config/key/role/mode edits, chain
-generalization, assertion weakening, test or expectation edits, and movement
-of deeper-chain, type-assertion, or formula routes.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263U Move Result
 
-Task 263U moved only the nine approved fragments totaling 229 lines into the
-existing private `type_elaboration/binary_routes.rs`, preserving original raw
-hashes `972beff3...`, `71bb150f...`, `32f853aa...`, `84c8bd3d...`,
-`4fc8b564...`, `5b884de2...`, `7c165117...`, `c84f51e1...`, and
-`2240a58d...` as the pre-move oracle. After removing only required runner
-visibility and formatting whitespace, every old/new fragment pair is token-
-identical and the combined normalized hash is `a6b1bb6b...`. Adjacent two-/
-three-/four-edge, long/deeper-chain, type-assertion, formula, and other route
-families remain in `runner.rs`.
-
-The expanded 1,838-line private owner has raw hash `4e4c0125...`, while
-`runner.rs` is 8,090 lines with raw hash `687c85be...`; the 235-line phase
-facade has raw hash `8980cdd9...`. Invalid-key constants remain leaf-private.
-Existing runner test names resolve through config-derived test-only aliases,
-and configs, three test output wrappers, and three extractors cross only the
-test facade. The normal facade adds only the three production detail routes;
-the phase still owns nine private leaves and its dependency graph remains
-acyclic.
-
-The focused membership/equality/inequality filters each pass two tests, and all
-272 crate unit tests pass. The raw and normalized 272-name list hashes, four
-CLI byte hashes, active counts 96/4/188, plan 403/367, type coverage 235/223,
-pass/fail 219/184, and 23 warnings/zero errors remain unchanged. Formatting,
-all-target/all-feature Clippy with warnings denied, workspace tests, and diff
-cleanliness pass. Task 263U is complete; fresh Task 263 inventory returns to
-the deeper-chain binary route-owner families. No new source path was
-introduced and `spec_coverage_audit.md` remains unchanged because no authority,
-behavior, coverage credit, owner crate, or deferred status changed.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263V Pre-Move Inventory and Specification
 
-Fresh dependency inventory selects the two-edge local-mode membership,
-equality, and inequality binary routes as the next bounded family. They form
-fifteen exact `runner.rs` fragments: membership/equality/inequality invalid
-keys at 339-340 (2 lines, `f02fb8e4...`), 352-353 (2, `ac20181b...`), and
-422-423 (2, `a40e0c6f...`); the three configs at 3262-3301 (40,
-`54b49166...`), 3550-3586 (37, `0694dde7...`), and 4469-4505 (37,
-`30030132...`); the three production detail routes at 4591-4602 (12,
-`bc4a798e...`), 4672-4683 (12, `b6bb868b...`), and 4874-4885 (12,
-`815c915b...`); the three test-only outputs at 5705-5714 (10,
-`d4bb53d3...`), 5774-5783 (10, `65190120...`), and 5946-5955 (10,
-`99a8c9c1...`); and the three source extractors at 6995-7006 (12,
-`a17900f5...`), 7073-7084 (12, `f77cfcd9...`), and 7268-7279 (12,
-`fbe87d76...`). Total: 222 lines; combined raw hash `f680fb91...`.
-
-Task 263V mechanically appends only those fragments to existing private
-`type_elaboration/binary_routes.rs`. The leaf continues to depend only on the
-existing `source_formula` and `output` owners. Only the three production detail
-routes cross the normal phase facade. Configs, test-consumed outputs, and
-extractors cross under `#[cfg(test)]`; invalid-key constants remain leaf-
-private while config-derived runner test aliases retain their existing names
-and values. No call site, name, config value, exact three-definition chain,
-key, payload, ordering, fallback, or fail-closed behavior changes.
-
-The existing 54 direct test occurrences—46 output/extractor references, seven
-invalid-key references, and one config reference—across `support.rs`,
-`binary_route_fixtures.rs`, `mode_chain.rs`, `mode_chain_fixtures.rs`, and
-`reserved_binary.rs` cover exact real three-expansion source chains, checker
-payloads, invalid-key fallback, active fixtures, cross-route isolation, and the
-direct/parenthesized owner boundary. The three active `.miz`/expectation pairs
-and their covered trace requirements preserve the canonical reserved-variable
-atomic-formula intent and exact source-derived checker seam. Therefore this is
-move-only `design_drift` and no V0 test task is needed. No new source path is
-introduced; the paired target layout records the expanded owner.
-`spec_coverage_audit.md` remains unchanged because authority, behavior,
-coverage credit, owner crate, and deferred status do not change. Forbidden
-changes are route-set expansion, config/key/role/mode edits, chain
-generalization, assertion weakening, test or expectation edits, and movement
-of the object-mode, three-/four-edge, long-chain, type-assertion, or formula
-routes.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263V Move Result
 
-Task 263V moved only the fifteen approved fragments totaling 222 lines into
-the existing private `type_elaboration/binary_routes.rs`, preserving original
-raw hashes `f02fb8e4...`, `ac20181b...`, `a40e0c6f...`, `54b49166...`,
-`0694dde7...`, `30030132...`, `bc4a798e...`, `b6bb868b...`,
-`815c915b...`, `d4bb53d3...`, `65190120...`, `99a8c9c1...`,
-`a17900f5...`, `f77cfcd9...`, and `fbe87d76...` as the pre-move oracle.
-After removing only required runner visibility and formatting whitespace,
-every old/new fragment pair is token-identical and the combined normalized
-hash is `53865bd6...`. Adjacent object-mode, three-/four-edge, long-chain,
-type-assertion, formula, and other route families remain in `runner.rs`.
-
-The expanded 2,073-line private owner has raw hash `024f1b74...`, while
-`runner.rs` is 7,877 lines with raw hash `e609ff69...`; the 247-line phase
-facade has raw hash `8d12176a...`. Invalid-key constants remain leaf-private.
-Existing runner test names and the retained direct parenthesized corruption
-consumer resolve through config-derived test-only aliases. Configs, three test
-output wrappers, and three extractors cross only the test facade. The normal
-facade adds only the three production detail routes; the phase still owns nine
-private leaves and its dependency graph remains acyclic.
-
-The focused membership/equality/inequality filters pass two, four, and two
-tests respectively, including both parenthesized boundary tests, and all 272
-crate unit tests pass. The raw and normalized 272-name list hashes, four CLI
-byte hashes, active counts 96/4/188, plan 403/367, type coverage 235/223,
-pass/fail 219/184, and 23 warnings/zero errors remain unchanged. Formatting,
-all-target/all-feature Clippy with warnings denied, workspace tests, and diff
-cleanliness pass. Task 263V is complete; fresh Task 263 inventory returns to
-the two-edge object-mode and remaining three-/four-edge and long-chain binary
-route-owner families. No new source path was introduced and
-`spec_coverage_audit.md` remains unchanged because no authority, behavior,
-coverage credit, owner crate, or deferred status changed.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263W Pre-Move Inventory and Specification
 
-Fresh dependency inventory selects the two-edge local-object-mode membership,
-equality, and inequality binary routes as the next bounded family. They form
-eleven exact `runner.rs` fragments: the membership invalid key at 369-370 (2
-lines, `d572e286...`) and inequality/equality invalid keys at 439-442 (4,
-`d571dc2e...`); the three configs at 3479-3522 (44, `2f964b21...`),
-4405-4447 (43, `9438d880...`), and 4449-4487 (39, `246a2852...`);
-the membership production detail route at 4543-4555 (13, `7277fccf...`) and
-inequality/equality detail routes at 4746-4771 (26, `041e760f...`); the
-membership test-only output at 5610-5620 (11, `1231694c...`) and inequality/
-equality test-only outputs at 5783-5804 (22, `2d5ae89e...`); and the membership
-extractor at 6873-6884 (12, `82ab31ea...`) and inequality/equality extractors at
-7068-7092 (25, `63fa9c8a...`). Total: 241 lines; combined raw hash
-`a57c6acd...`.
-
-Task 263W mechanically appends only those fragments to existing private
-`type_elaboration/binary_routes.rs`. The leaf continues to depend only on the
-existing `source_formula` and `output` owners. Only the three production detail
-routes cross the normal phase facade. Configs, test-consumed outputs, and
-extractors cross under `#[cfg(test)]`; invalid-key constants remain leaf-
-private while config-derived runner test aliases retain their existing names
-and values. No call site, name, config value, exact three-definition object
-chain, key, payload, ordering, fallback, or fail-closed behavior changes.
-
-The existing 50 direct test occurrences—43 output/extractor references plus
-seven invalid-key references—across `support.rs`,
-`binary_route_fixtures.rs`, `mode_chain.rs`, and `mode_chain_fixtures.rs`
-cover exact real three-expansion object-mode source chains, checker payloads,
-invalid-key fallback, active fixtures, cross-route isolation, and the object/
-set identity boundary. The three active `.miz`/expectation pairs and their
-covered trace requirements preserve the canonical reserved-variable atomic-
-formula intent and exact source-derived checker seam. Therefore this is move-
-only `design_drift` and no W0 test task is needed. No new source path is
-introduced; the paired target layout records the expanded owner.
-`spec_coverage_audit.md` remains unchanged because authority, behavior,
-coverage credit, owner crate, and deferred status do not change. Forbidden
-changes are route-set expansion, config/key/role/mode edits, chain
-generalization, object/set coercion, assertion weakening, test or expectation
-edits, and movement of the three-/four-edge, long-chain, type-assertion, or
-formula routes.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263W Move Result
 
-Task 263W moved only the eleven approved fragments totaling 241 lines into the
-existing private `type_elaboration/binary_routes.rs`, preserving original raw
-hashes `d572e286...`, `d571dc2e...`, `2f964b21...`, `9438d880...`,
-`246a2852...`, `7277fccf...`, `041e760f...`, `1231694c...`,
-`2d5ae89e...`, `82ab31ea...`, and `63fa9c8a...` as the pre-move oracle.
-After removing only required runner visibility and formatting whitespace,
-every old/new fragment pair is token-identical and the combined normalized
-hash is `0e58ae98...`. Adjacent three-/four-edge, long-chain, type-assertion,
-formula, and other route families remain in `runner.rs`.
-
-The expanded 2,324-line private owner has raw hash `9ef34cf7...`, while
-`runner.rs` is 7,649 lines with raw hash `394ebbe8...`; the 259-line phase
-facade has raw hash `361f6e9c...`. Invalid-key constants remain leaf-private.
-Existing runner test names resolve through config-derived test-only aliases,
-and configs, three test output wrappers, and three extractors cross only the
-test facade. The normal facade adds only the three production detail routes;
-the phase still owns nine private leaves and its dependency graph remains
-acyclic.
-
-The focused membership/equality/inequality filters each pass two tests, and all
-272 crate unit tests pass. The raw and normalized 272-name list hashes, four
-CLI byte hashes, active counts 96/4/188, plan 403/367, type coverage 235/223,
-pass/fail 219/184, and 23 warnings/zero errors remain unchanged. Formatting,
-all-target/all-feature Clippy with warnings denied, workspace tests, and diff
-cleanliness pass. Task 263W is complete; fresh Task 263 inventory returns to
-the remaining three-/four-edge and long-chain binary route-owner families. No
-new source path was introduced and `spec_coverage_audit.md` remains unchanged
-because no authority, behavior, coverage credit, owner crate, or deferred
-status changed.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263X Pre-Move Inventory and Specification
 
-Fresh dependency inventory selects the three-edge local-mode membership,
-equality, and inequality binary routes as the next bounded family. They form
-fifteen exact `runner.rs` fragments: invalid keys at 382-384 (3 lines,
-`3d3783b9...`), 391-392 (2, `24d4d6cc...`), and 454-456 (3,
-`57a14811...`); configs at 3293-3337 (45, `9d05006c...`), 3495-3536
-(42, `86200198...`), and 4284-4325 (42, `8163a029...`); production detail
-routes at 4376-4387 (12, `11980a6b...`), 4430-4441 (12, `09665060...`),
-and 4592-4603 (12, `7f640564...`); test-only outputs at 5410-5420 (11,
-`0973c2cd...`), 5456-5466 (11, `3b6b99b8...`), and 5594-5604 (11,
-`063e707f...`); and extractors at 6632-6643 (12, `a9540df8...`),
-6684-6695 (12, `127e3811...`), and 6840-6851 (12, `00752953...`). Total:
-242 lines; combined raw hash `4af1d41e...` and whitespace-normalized pre-move
-hash `1cb58abe...`.
-
-Task 263X mechanically appends only those fragments to existing private
-`type_elaboration/binary_routes.rs`. The leaf continues to depend only on the
-existing `source_formula` and `output` owners. Only the three production detail
-routes cross the normal phase facade. Configs, test-consumed outputs, and
-extractors cross under `#[cfg(test)]`; invalid-key constants remain leaf-
-private while config-derived runner test aliases retain their existing names
-and values. No call site, name, config value, exact four-expansion set-terminal
-chain, key, payload, ordering, fallback, or fail-closed behavior changes.
-
-Canonical `doc/spec/en` requires top-level reserves to supply the default type
-and implicit theorem closure, modes to expose their radix type during type
-inference, and `=`, `<>`, and `in` to remain single built-in atomic formulas.
-The three active `.miz`/expectation pairs and their covered trace requirements
-instantiate that intent through the real source AST, resolver environment,
-four mode expansions, and checker output. The existing 50 direct test symbol
-references—43 output/extractor references and seven invalid-key references—
-across `support.rs`, `binary_route_fixtures.rs`, `mode_chain.rs`, and
-`mode_chain_fixtures.rs` protect the exact payload, source provenance,
-invalid-key fallback, active fixtures, and cross-route isolation. Therefore
-this is move-only `design_drift` and no X0 test task is needed. No new source
-path is introduced; the paired target layout records the expanded owner.
-`spec_coverage_audit.md` remains unchanged because authority, behavior,
-coverage credit, owner crate, and deferred status do not change. Forbidden
-changes are route-set expansion, config/key/role/mode edits, chain
-generalization, object/set coercion, assertion weakening, test or expectation
-edits, and movement of the adjacent object-mode, four-edge, long-chain,
-type-assertion, or formula routes.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263X Move Result
 
-Task 263X moved only the fifteen approved fragments totaling 242 lines into
-the existing private `type_elaboration/binary_routes.rs`, preserving original
-raw hashes `3d3783b9...`, `24d4d6cc...`, `57a14811...`, `9d05006c...`,
-`86200198...`, `8163a029...`, `11980a6b...`, `09665060...`,
-`7f640564...`, `0973c2cd...`, `3b6b99b8...`, `063e707f...`,
-`a9540df8...`, `127e3811...`, and `00752953...` as the pre-move oracle.
-After removing only required runner visibility and formatting whitespace,
-every old/new fragment pair is token-identical and the combined normalized
-hash is `1cb58abe...`. Adjacent three-edge object-mode, four-edge, long-chain,
-type-assertion, formula, and other route families remain in `runner.rs`.
-
-The expanded 2,578-line private owner has raw hash `75d75cb7...`, while
-`runner.rs` is 7,419 lines with raw hash `68c7c44d...`; the 271-line phase
-facade has raw hash `7934071f...`. Invalid-key constants remain leaf-private.
-Existing runner test names resolve through config-derived test-only aliases,
-and configs, three test output wrappers, and three extractors cross only the
-test facade. The normal facade adds only the three production detail routes;
-the phase still owns nine private leaves and its dependency graph remains
-acyclic.
-
-The focused membership/equality/inequality filters each pass two tests, and all
-272 crate unit tests pass. The raw and normalized 272-name list hashes, four
-CLI byte hashes, active counts 96/4/188, plan 403/367, type coverage 235/223,
-pass/fail 219/184, and 23 warnings/zero errors remain unchanged. Formatting,
-all-target/all-feature Clippy with warnings denied, workspace tests, and diff
-cleanliness pass. Task 263X is complete; fresh Task 263 inventory returns to
-the three-edge object-mode, four-edge, and long-chain binary route-owner
-families. No new source path was introduced and `spec_coverage_audit.md`
-remains unchanged because no authority, behavior, coverage credit, owner
-crate, or deferred status changed.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263Y Pre-Move Inventory and Specification
 
-Fresh dependency inventory selects the three-edge local-object-mode
-membership, equality, and inequality binary routes as the next bounded family.
-They form eleven exact `runner.rs` fragments: the membership invalid key at
-407-408 (2 lines, `280af2bf...`) and equality/inequality invalid keys at
-468-471 (4, `9c823dee...`); the three configs at 3412-3460 (49,
-`dfaab518...`), 4163-4206 (44, `e9d7705a...`), and 4208-4255 (48,
-`a9e040ec...`); the membership production detail route at 4284-4296 (13,
-`78cef703...`) and equality/inequality detail routes at 4433-4459 (27,
-`014d3897...`); the membership test-only output at 5275-5285 (11,
-`dd7e079e...`) and equality/inequality test-only outputs at 5402-5424 (23,
-`60f64f3d...`); and the membership extractor at 6467-6478 (12,
-`44e666e7...`) and equality/inequality extractors at 6610-6634 (25,
-`d868202c...`). Total: 258 lines; combined raw hash `21918677...` and
-whitespace-normalized pre-move hash `ad754ac3...`.
-
-Task 263Y mechanically appends only those fragments to existing private
-`type_elaboration/binary_routes.rs`. The leaf continues to depend only on the
-existing `source_formula` and `output` owners. Only the three production detail
-routes cross the normal phase facade. Configs, test-consumed outputs, and
-extractors cross under `#[cfg(test)]`; invalid-key constants remain leaf-
-private while config-derived runner test aliases retain their existing names
-and values. No call site, name, config value, exact four-expansion object-
-terminal chain, key, payload, ordering, fallback, or fail-closed behavior
-changes.
-
-The canonical reserve/mode/built-in atomic-formula requirements inventoried
-for Task 263X apply unchanged. The three active `.miz`/expectation pairs and
-their covered trace requirements instantiate them through the real source AST,
-resolver environment, four object-mode expansions, and checker output. The
-existing 50 direct test symbol references—43 output/extractor references and
-seven invalid-key references—across `support.rs`,
-`binary_route_fixtures.rs`, `mode_chain.rs`, and `mode_chain_fixtures.rs`
-protect the exact payload, source provenance, invalid-key fallback, active
-fixtures, cross-route isolation, and object/set identity boundary. Therefore
-this is move-only `design_drift` and no Y0 test task is needed. No new source
-path is introduced; the paired target layout records the expanded owner.
-`spec_coverage_audit.md` remains unchanged because authority, behavior,
-coverage credit, owner crate, and deferred status do not change. Forbidden
-changes are route-set expansion, config/key/role/mode edits, chain
-generalization, object/set coercion, assertion weakening, test or expectation
-edits, and movement of the adjacent four-edge, long-chain, type-assertion, or
-formula routes.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263Y Move Result
 
-Task 263Y moved only the eleven approved fragments totaling 258 lines into the
-existing private `type_elaboration/binary_routes.rs`, preserving original raw
-hashes `280af2bf...`, `9c823dee...`, `dfaab518...`, `e9d7705a...`,
-`a9e040ec...`, `78cef703...`, `014d3897...`, `dd7e079e...`,
-`60f64f3d...`, `44e666e7...`, and `d868202c...` as the pre-move oracle.
-After removing only required runner visibility and formatting whitespace,
-every old/new fragment pair is token-identical and the combined normalized
-hash is `ad754ac3...`. Adjacent four-edge, long-chain, type-assertion, formula,
-and other route families remain in `runner.rs`.
-
-The expanded 2,847-line private owner has raw hash `1e4fc792...`, while
-`runner.rs` is 7,173 lines with raw hash `51cb7b50...`; the 283-line phase
-facade has raw hash `a2b84b11...`. Invalid-key constants remain leaf-private.
-Existing runner test names resolve through config-derived test-only aliases,
-and configs, three test output wrappers, and three extractors cross only the
-test facade. The normal facade adds only the three production detail routes;
-the phase still owns nine private leaves and its dependency graph remains
-acyclic.
-
-The focused membership/equality/inequality filters each pass two tests, and all
-272 crate unit tests pass. The raw and normalized 272-name list hashes, four
-CLI byte hashes, active counts 96/4/188, plan 403/367, type coverage 235/223,
-pass/fail 219/184, and 23 warnings/zero errors remain unchanged. Formatting,
-all-target/all-feature Clippy with warnings denied, workspace tests, and diff
-cleanliness pass. Task 263Y is complete; fresh Task 263 inventory returns to
-the four-edge and long-chain binary route-owner families. No new source path
-was introduced and `spec_coverage_audit.md` remains unchanged because no
-authority, behavior, coverage credit, owner crate, or deferred status changed.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263Z Pre-Move Inventory and Specification
 
-Fresh dependency inventory selects the four-edge local-mode membership,
-equality, and inequality binary routes as the next bounded family. They form
-fifteen exact `runner.rs` fragments: invalid keys at 424-425 (2 lines,
-`8f324bb2...`), 428-429 (2, `29c5996b...`), and 481-482 (2,
-`25ab8aa5...`); configs at 3321-3370 (50, `bbe09f99...`), 3427-3473
-(47, `7688c6b6...`), and 3976-4022 (47, `2b8d6ce0...`); production detail
-routes at 4128-4139 (12, `5ecba726...`), 4155-4166 (12,
-`1153ec2e...`), and 4249-4260 (12, `d8f7be05...`); test-only outputs at
-5081-5090 (10, `9b36914d...`), 5104-5113 (10, `b06499a8...`), and
-5184-5193 (10, `fd3deb01...`); and extractors at 6234-6245 (12,
-`032d0570...`), 6260-6271 (12, `31eae655...`), and 6351-6362 (12,
-`8ae80c4f...`). Total: 252 lines; combined raw hash `139c5d9b...` and
-whitespace-normalized pre-move hash `e1865620...`.
-
-Task 263Z mechanically appends only those fragments to existing private
-`type_elaboration/binary_routes.rs`. The leaf continues to depend only on the
-existing `source_formula` and `output` owners. Only the three production detail
-routes cross the normal phase facade. Configs, test-consumed outputs, and
-extractors cross under `#[cfg(test)]`; invalid-key constants remain leaf-
-private while config-derived runner test aliases retain their existing names
-and values. No call site, name, config value, exact five-expansion set-terminal
-chain, key, payload, ordering, fallback, or fail-closed behavior changes.
-
-The canonical reserve/mode/built-in atomic-formula requirements apply
-unchanged. The three active `.miz`/expectation pairs and their covered trace
-requirements instantiate them through the real source AST, resolver
-environment, five set-terminal mode expansions, and checker output. The
-existing 56 direct test symbol references—47 output/extractor references and
-nine invalid-key references—across `support.rs`,
-`binary_route_fixtures.rs`, `mode_chain.rs`, `mode_chain_fixtures.rs`,
-`remaining_bridges_and_nested_isolation.rs`, and
-`source_gap_and_equality.rs` protect the exact payload, source provenance,
-invalid-key fallback, active fixtures, and cross-route isolation. Therefore
-this is move-only `design_drift` and no Z0 test task is needed. No new source
-path is introduced; the paired target layout records the expanded owner.
-`spec_coverage_audit.md` remains unchanged because authority, behavior,
-coverage credit, owner crate, and deferred status do not change. Forbidden
-changes are route-set expansion, config/key/role/mode edits, chain
-generalization, object/set coercion, assertion weakening, test or expectation
-edits, and movement of the adjacent four-edge object-mode, long-chain,
-type-assertion, or formula routes.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263Z Move Result
 
-Task 263Z moved only the fifteen approved fragments totaling 252 lines into
-the existing private `type_elaboration/binary_routes.rs`, preserving original
-raw hashes `8f324bb2...`, `29c5996b...`, `25ab8aa5...`, `bbe09f99...`,
-`7688c6b6...`, `2b8d6ce0...`, `5ecba726...`, `1153ec2e...`,
-`d8f7be05...`, `9b36914d...`, `b06499a8...`, `fd3deb01...`,
-`032d0570...`, `31eae655...`, and `8ae80c4f...` as the pre-move oracle.
-After removing only required runner visibility and formatting whitespace,
-every old/new fragment pair is token-identical and the combined normalized
-hash is `e1865620...`. Adjacent four-edge object-mode, long-chain,
-type-assertion, formula, and other route families remain in `runner.rs`.
-
-The expanded 3,114-line private owner has raw hash `73de594a...`, while
-`runner.rs` is 6,930 lines with raw hash `fb4a4a2b...`; the 295-line phase
-facade has raw hash `f0ed4b4e...`. Invalid-key constants remain leaf-private.
-Existing runner test names resolve through config-derived test-only aliases,
-and configs, three test output wrappers, and three extractors cross only the
-test facade. The normal facade adds only the three production detail routes;
-the phase still owns nine private leaves and its dependency graph remains
-acyclic.
-
-The focused membership/equality/inequality filters each pass two tests, and all
-272 crate unit tests pass. The raw and normalized 272-name list hashes, four
-CLI byte hashes, active counts 96/4/188, plan 403/367, type coverage 235/223,
-pass/fail 219/184, and 23 warnings/zero errors remain unchanged. Formatting,
-all-target/all-feature Clippy with warnings denied, workspace tests, and diff
-cleanliness pass. Task 263Z is complete; fresh Task 263 inventory returns to
-the four-edge object-mode and long-chain binary route-owner families. No new
-source path was introduced and `spec_coverage_audit.md` remains unchanged
-because no authority, behavior, coverage credit, owner crate, or deferred
-status changed.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZA Pre-Move Inventory and Specification
 
-Fresh dependency inventory selects the four-edge local-object-mode membership,
-equality, and inequality binary routes as the next bounded family. They form
-eleven exact `runner.rs` fragments: the membership invalid key at 445-446
-(2 lines, `7ff1e465...`) and paired equality/inequality keys at 498-501 (4,
-`e096a1f5...`); configs at 3336-3389 (54, `d2cd8eea...`), 3892-3940 (49,
-`51430aa3...`), and 3942-3994 (53, `1b676067...`); production detail routes at
-3996-4008 (13, `11986cb6...`) and 4091-4117 (27, `538b9ee7...`); test-only
-outputs at 4910-4920 (11, `3f508c4d...`) and 4991-5013 (23,
-`3523e34b...`); and extractors at 6030-6041 (12, `d3f59d9a...`) and 6121-6145
-(25, `2f6a0d86...`). Total: 273 lines; combined raw hash `39ad5285...` and
-whitespace-normalized pre-move hash `594c1e49...`.
-
-Task 263ZA mechanically appends only those fragments to existing private
-`type_elaboration/binary_routes.rs`. The leaf continues to depend only on the
-existing `source_formula` and `output` owners. Only the three production detail
-routes cross the normal phase facade. Configs, test-consumed outputs, and
-extractors cross under `#[cfg(test)]`; invalid-key constants remain leaf-private
-while config-derived runner test aliases retain their existing names and
-values. No call site, name, config value, exact five-expansion object-terminal
-chain, key, payload, ordering, fallback, or fail-closed behavior changes.
-
-The canonical reserve/mode/built-in atomic-formula requirements apply
-unchanged. The three active `.miz`/expectation pairs and their covered trace
-requirements instantiate them through the real source AST, resolver
-environment, five object-terminal mode expansions, and checker output. The
-existing 56 direct test symbol references—47 output/extractor references and
-nine invalid-key references—across `support.rs`, `binary_route_fixtures.rs`,
-`mode_chain.rs`, `mode_chain_fixtures.rs`, and
-`remaining_bridges_and_nested_isolation.rs` protect the exact payload, source
-provenance, invalid-key fallback, active fixtures, and cross-route isolation.
-Therefore this is move-only `design_drift` and no ZA0 test task is needed. No
-new source path is introduced; the paired target layout records the expanded
-owner. `spec_coverage_audit.md` remains unchanged because authority, behavior,
-coverage credit, owner crate, and deferred status do not change. Forbidden
-changes are route-set expansion, config/key/role/mode edits, chain
-generalization, object/set coercion, assertion weakening, test or expectation
-edits, and movement of the adjacent long-chain, type-assertion, or formula
-routes.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZA Move Result
 
-Task 263ZA moved only the eleven approved fragments totaling 273 lines into
-the existing private `type_elaboration/binary_routes.rs`, preserving original
-raw hashes `7ff1e465...`, `e096a1f5...`, `d2cd8eea...`, `51430aa3...`,
-`1b676067...`, `11986cb6...`, `538b9ee7...`, `3f508c4d...`, `3523e34b...`,
-`d3f59d9a...`, and `2f6a0d86...` as the pre-move oracle. After removing only
-required runner visibility and formatting whitespace, every old/new fragment
-pair is token-identical and the combined normalized hash is `594c1e49...`.
-Adjacent long-chain, type-assertion, formula, and other route families remain
-in `runner.rs`.
-
-The expanded 3,398-line private owner has raw hash `8fd56903...`, while
-`runner.rs` is 6,669 lines with raw hash `6f8b9737...`; the 307-line phase
-facade has raw hash `59ae62b4...`. Invalid-key constants remain leaf-private.
-Existing runner test names resolve through config-derived test-only aliases,
-and configs, three test output wrappers, and three extractors cross only the
-test facade. The normal facade adds only the three production detail routes;
-the phase still owns nine private leaves and its dependency graph remains
-acyclic.
-
-The focused membership/equality/inequality filters each pass two tests, and all
-272 crate unit tests pass. The raw and normalized 272-name list hashes, four
-CLI byte hashes, active counts 96/4/188, plan 403/367, type coverage 235/223,
-pass/fail 219/184, and 23 warnings/zero errors remain unchanged. Formatting,
-all-target/all-feature Clippy with warnings denied, workspace tests, and diff
-cleanliness pass. Task 263ZA is complete; fresh Task 263 inventory returns to
-the long-chain binary route-owner families. No new source path was introduced
-and `spec_coverage_audit.md` remains unchanged because no authority, behavior,
-coverage credit, owner crate, or deferred status changed.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZB Pre-Move Inventory and Specification
 
-Fresh dependency inventory finds that the long-chain binary routes cannot move
-independently yet: the set-terminal and object-terminal seven-expansion tables
-each feed eleven retained production configs—three binary, one reserved-variable
-type-assertion, and seven asserted-head routes. Moving either table with only a
-binary family would introduce a child-to-parent dependency or mix route
-families. Task 263ZB therefore selects the two shared definition tables as a
-bounded prerequisite owner: `runner.rs` 3351-3387 (37 lines, `b9ef5e33...`) and
-3411-3447 (37, `23d65f84...`). Total: 74 lines; combined raw hash
-`3941ea98...` and whitespace-normalized pre-move hash `ab85b7ea...`.
-
-Task 263ZB mechanically moves only those tables to a new nonempty private
-`type_elaboration/long_chain_config.rs` leaf. The leaf depends only on the
-existing `source_formula` config types. The phase facade temporarily exposes
-exactly the two tables to the 22 retained `runner.rs` production consumers;
-later long-chain route-owner tasks import the sibling directly and shrink that
-facade surface. Names, table order, labels, spellings, builtin terminals,
-radices, cardinality, and every consumer remain unchanged. No binary,
-type-assertion, asserted-head, detail, output, extractor, dispatch, or test item
-moves in this task.
-
-Canonical mode/radix and reserve/formula requirements apply unchanged. The 44
-unit tests in the cohesive long-chain owner, 23 active `.miz`/expectation pairs,
-and the active metadata integration test exercise both exact seven-expansion
-tables through every binary, type-assertion, and asserted-head consumer. This is
-move-only `design_drift`; no ZB0 test task is needed. The paired source layout
-adds the real shared owner. `spec_coverage_audit.md` remains unchanged because
-authority, behavior, coverage credit, owner crate, and deferred status do not
-change. Forbidden changes are table deduplication/generalization, spelling or
-radix edits, accepted-shape expansion, assertion weakening, test/expectation
-edits, and movement of any consumer route.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZB Move Result
 
-Task 263ZB moved only the two approved definition-table fragments totaling 74
-lines into new private `type_elaboration/long_chain_config.rs`, preserving raw
-hashes `b9ef5e33...` and `23d65f84...` as the pre-move oracle. After removing
-only required runner visibility and formatting whitespace, both old/new table
-pairs are token-identical and the combined normalized hash is `ab85b7ea...`.
-All 22 binary, type-assertion, and asserted-head config consumers remain in
-`runner.rs` with unchanged values and order.
-
-The new real owner is 82 lines with raw hash `3b0e2638...`, while `runner.rs` is
-6,594 lines with raw hash `5f8c17de...`; the 311-line phase facade has raw hash
-`453068d3...`. The leaf imports only the three existing `source_formula` config
-types, exports exactly the two tables with runner-only visibility, and adds no
-public API. The phase facade temporarily re-exports those tables to retained
-production consumers; dependencies remain acyclic.
-
-All 44 focused long-chain unit tests and the focused metadata integration test
-pass, as do all 272 crate unit tests. The raw and normalized 272-name list
-hashes, four CLI byte hashes, active counts 96/4/188, plan 403/367, type
-coverage 235/223, pass/fail 219/184, and 23 warnings/zero errors remain
-unchanged. Formatting, all-target/all-feature Clippy with warnings denied,
-workspace tests, and diff cleanliness pass. Task 263ZB is complete; fresh Task
-263 inventory can now split the local-mode and local-object-mode long-chain
-binary route families through sibling dependencies. `spec_coverage_audit.md`
-remains unchanged because no authority, behavior, coverage credit, owner crate,
-or deferred status changed.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZC Pre-Move Inventory and Specification
 
-Fresh dependency inventory selects the local-mode long-chain membership,
-equality, and inequality binary routes as the next bounded family now that Task
-263ZB owns their shared table. They form fifteen exact `runner.rs` fragments:
-invalid keys at 467-468 (2 lines, `18b60fd0...`), 475-477 (3,
-`1a844717...`), and 478-480 (3, `ed156484...`); configs at 3352-3372 (21,
-`387e7f5e...`), 3449-3469 (21, `684fa9a6...`), and 3471-3494 (24,
-`745185c5...`); production detail routes at 3777-3788 (12, `8a480a24...`),
-3832-3843 (12, `1567378c...`), and 3845-3856 (12, `d8c1184a...`); test-only
-outputs at 4649-4658 (10, `6ed554fb...`), 4696-4705 (10, `2b4ffa33...`), and
-4707-4716 (10, `58399ffd...`); and extractors at 5733-5744 (12,
-`543bd8cd...`), 5785-5796 (12, `d1365809...`), and 5798-5809 (12,
-`5baa8351...`). Total: 176 lines; combined raw hash `076d8561...` and
-whitespace-normalized pre-move hash `8859b993...`.
-
-Task 263ZC mechanically appends only those fragments to existing private
-`type_elaboration/binary_routes.rs`, importing the shared set-terminal table
-directly from sibling `long_chain_config`. Only the three production detail
-routes cross the normal phase facade. Configs, test-consumed outputs, and
-extractors cross under `#[cfg(test)]`; invalid-key constants remain leaf-private
-while config-derived runner test aliases retain their existing names and
-values. No call site, name, config value, exact seven-expansion set-terminal
-chain, key, payload, ordering, fallback, or fail-closed behavior changes.
-
-Canonical reserve/mode/built-in atomic-formula requirements apply unchanged.
-The three active `.miz`/expectation pairs and their covered trace requirements
-exercise the real source AST, resolver environment, seven set-terminal mode
-expansions, and checker output. Existing direct test symbol references total 54
-(48 output/extractor and six invalid-key references) across `support.rs`,
-`binary_route_fixtures.rs`, and `long_chain.rs`, protecting exact payload,
-source provenance, invalid-key fallback, active fixtures, and cross-route
-isolation. Therefore this is move-only `design_drift` and no ZC0 test task is
-needed. `spec_coverage_audit.md` remains unchanged because authority, behavior,
-coverage credit, owner crate, and deferred status do not change. Forbidden
-changes are route-set expansion, config/key/role/mode edits, chain
-generalization, object/set coercion, assertion weakening, test/expectation
-edits, and movement of adjacent local-object-mode, type-assertion, asserted-head,
-or formula routes.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZC Move Result
 
-Task 263ZC moved only the fifteen approved fragments totaling 176 lines into
-the existing private `type_elaboration/binary_routes.rs`, preserving original
-raw hashes `18b60fd0...`, `1a844717...`, `ed156484...`, `387e7f5e...`,
-`684fa9a6...`, `745185c5...`, `8a480a24...`, `1567378c...`, `d8c1184a...`,
-`6ed554fb...`, `2b4ffa33...`, `58399ffd...`, `543bd8cd...`, `d1365809...`,
-and `5baa8351...` as the pre-move oracle. After removing only required runner
-visibility and formatting whitespace, every old/new fragment pair is
-token-identical and the combined normalized hash is `8859b993...`. Adjacent
-local-object-mode, type-assertion, asserted-head, formula, and other route
-families remain in `runner.rs`.
-
-The expanded 3,590-line private owner has raw hash `6f8f8c73...`, while
-`runner.rs` is 6,427 lines with raw hash `d1f5b9bb...`; the 323-line phase facade
-has raw hash `2e757879...`. `long_chain_config.rs` remains 82 lines with hash
-`3b0e2638...`. Invalid-key constants remain leaf-private; configs, three test
-output wrappers, and three extractors cross only the test facade. The normal
-facade adds only three production detail routes, and `binary_routes` imports
-the shared set-terminal table directly from its sibling.
-
-The focused membership/equality/inequality filters each pass two tests, and all
-272 crate unit tests pass. The raw and normalized 272-name list hashes, four
-CLI byte hashes, active counts 96/4/188, plan 403/367, type coverage 235/223,
-pass/fail 219/184, and 23 warnings/zero errors remain unchanged. Formatting,
-all-target/all-feature Clippy with warnings denied, workspace tests, and diff
-cleanliness pass. Task 263ZC is complete; fresh Task 263 inventory returns to
-the local-object-mode long-chain binary route family. `spec_coverage_audit.md`
-remains unchanged because no authority, behavior, coverage credit, owner crate,
-or deferred status changed.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZD Pre-Move Inventory and Specification
 
-Fresh dependency inventory selects the local-object-mode long-chain
-membership, equality, and inequality binary routes as the next bounded family.
-They form fifteen exact `runner.rs` fragments: invalid keys at 488-489 (2
-lines, `c9abd07e...`), 490-491 (2, `76c6badc...`), and 492-493 (2,
-`274e8231...`); configs at 3365-3385 (21, `da89ee91...`), 3387-3411 (25,
-`24c13cf8...`), and 3413-3438 (26, `9bbfb507...`); production detail routes at
-3721-3733 (13, `a3646c63...`), 3735-3747 (13, `ebfd9b1f...`), and 3749-3761
-(13, `c392ea7b...`); test-only outputs at 4554-4564 (11, `29d99bb5...`),
-4566-4576 (11, `432ad380...`), and 4578-4588 (11, `c1e39c32...`); and
-extractors at 5605-5616 (12, `591afb95...`), 5618-5629 (12, `f1750caf...`),
-and 5631-5642 (12, `cd31b66d...`). Total: 186 lines; combined raw hash
-`073769aa...` and whitespace-normalized pre-move hash `de18e68c...`.
-
-Task 263ZD mechanically appends only those fragments to existing private
-`type_elaboration/binary_routes.rs`, importing the shared object-terminal table
-directly from sibling `long_chain_config`. Only the three production detail
-routes cross the normal phase facade. Configs, test-consumed outputs, and
-extractors cross under `#[cfg(test)]`; invalid-key constants remain
-leaf-private while config-derived runner test aliases retain their existing
-names and values. No call site, name, config value, exact seven-expansion
-object-terminal chain, key, payload, ordering, fallback, or fail-closed
-behavior changes.
-
-Canonical reserve/mode/built-in atomic-formula requirements apply unchanged.
-The three active `.miz`/expectation pairs and their covered trace requirements
-exercise the real source AST, resolver environment, seven object-terminal mode
-expansions, and checker output. Existing direct test symbol references total 55
-(49 output/extractor and six invalid-key references) across `support.rs`,
-`binary_route_fixtures.rs`, and `long_chain.rs`, protecting exact payload,
-source provenance, invalid-key fallback, active fixtures, and cross-route
-isolation. Therefore this is move-only `design_drift` and no ZD0 test task is
-needed. `spec_coverage_audit.md` remains unchanged because authority, behavior,
-coverage credit, owner crate, and deferred status do not change. Forbidden
-changes are route-set expansion, config/key/role/mode edits, chain
-generalization, object/set coercion, assertion weakening, test/expectation
-edits, and movement of adjacent type-assertion, asserted-head, or formula
-routes.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZD Move Result
 
-Task 263ZD moved only the fifteen approved fragments totaling 186 lines into
-the existing private `type_elaboration/binary_routes.rs`, preserving original
-raw hashes `c9abd07e...`, `76c6badc...`, `274e8231...`, `da89ee91...`,
-`24c13cf8...`, `9bbfb507...`, `a3646c63...`, `ebfd9b1f...`, `c392ea7b...`,
-`29d99bb5...`, `432ad380...`, `c1e39c32...`, `591afb95...`, `f1750caf...`,
-and `cd31b66d...` as the pre-move oracle. After removing only required runner
-visibility and formatting whitespace, every old/new fragment pair is
-token-identical and the combined normalized hash is `de18e68c...`. Adjacent
-type-assertion, asserted-head, formula, and other route families remain in
-`runner.rs`.
-
-The expanded 3,791-line private owner has raw hash `3ce5e2f4...`, while
-`runner.rs` is 6,246 lines with raw hash `e10f439e...`; the 333-line phase
-facade has raw hash `e94c8b71...`. `long_chain_config.rs` remains 82 lines with
-hash `3b0e2638...`. Invalid-key constants remain leaf-private; configs, three
-test output wrappers, and three extractors cross only the test facade. The
-normal facade adds only three production detail routes, and `binary_routes`
-imports the shared object-terminal table directly from its sibling. Required
-import cleanup only narrows generic binary source/output helpers that no longer
-have a production consumer in `runner.rs`; the two binary source types remain
-available normally for the production `output.rs` sibling.
-
-The focused membership/equality/inequality filters each pass two tests, and all
-272 crate unit tests pass. The raw and normalized 272-name list hashes, four
-CLI byte hashes, active counts 96/4/188, plan 403/367, type coverage 235/223,
-pass/fail 219/184, and 23 warnings/zero errors remain unchanged. Formatting,
-all-target/all-feature Clippy with warnings denied, workspace tests, and diff
-cleanliness pass. Task 263ZD is complete; fresh Task 263 inventory returns to
-the remaining long-chain type-assertion/asserted-head route families.
-`spec_coverage_audit.md` remains unchanged because no authority, behavior,
-coverage credit, owner crate, or deferred status changed.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZE Pre-Move Inventory and Specification
 
-Fresh dependency inventory selects only the local-mode long-chain reserved-
-variable type-assertion route as the first bounded owner for a private
-`type_elaboration/type_assertion_routes.rs` leaf. It forms five exact
-`runner.rs` fragments: the invalid key at 505-506 (2 lines, `74d62809...`),
-config at 3376-3388 (13, `e0f14b5b...`), production detail route at 4185-4198
-(14, `79da5ff1...`), test-only output at 4860-4870 (11, `83d3b15e...`), and
-extractor at 5970-5981 (12, `a9c40c0d...`). Total: 52 lines; combined raw hash
-`5e321346...` and whitespace-normalized pre-move hash `2f3d7241...`.
-
-Task 263ZE mechanically moves only those fragments into the new private leaf,
-which imports the shared set-terminal table directly from sibling
-`long_chain_config`. Only the production detail route crosses the normal phase
-facade. The config, test-consumed output, and extractor cross under
-`#[cfg(test)]`; the invalid-key constant remains leaf-private while a
-config-derived runner test alias retains its existing name and value. No call
-site, name, config value, exact seven-expansion set-terminal chain, asserted
-builtin head, key, payload, ordering, fallback, or fail-closed behavior changes.
-
-Canonical reserve/mode/type-assertion requirements apply unchanged. The one
-active `.miz`/expectation pair and covered trace requirement exercise the real
-source AST, resolver environment, seven set-terminal mode expansions, asserted
-builtin-set head, and checker output. Existing direct test symbol references
-total 69 across `support.rs`, `asserted_head_base.rs`, `long_chain.rs`, and
-`remaining_bridges_and_nested_isolation.rs`, protecting exact payload, source
-provenance, invalid-key fallback, active fixture, and cross-route isolation.
-Therefore this is move-only `design_drift` and no ZE0 test task is needed.
-`spec_coverage_audit.md` remains unchanged because authority, behavior,
-coverage credit, owner crate, and deferred status do not change. Forbidden
-changes are config/key/role/mode edits, chain or asserted-head generalization,
-object/set coercion, assertion weakening, test/expectation edits, and movement
-of any asserted-head or local-object-mode route.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZE Move Result
 
-Task 263ZE moved only the five approved fragments totaling 52 lines into new
-private `type_elaboration/type_assertion_routes.rs`, preserving original raw
-hashes `74d62809...`, `e0f14b5b...`, `79da5ff1...`, `83d3b15e...`, and
-`a9c40c0d...` as the pre-move oracle. After removing only required runner
-visibility and formatting whitespace, every old/new fragment pair is token-
-identical and the combined normalized hash is `2f3d7241...`. Every asserted-
-head route and the adjacent local-object-mode type-assertion route remain in
-`runner.rs`.
-
-The new 73-line private owner has raw hash `36549372...`; `runner.rs` is 6,197
-lines with raw hash `a2c5aa11...`; and the 341-line phase facade has raw hash
-`2d6c1c85...`. The unchanged 82-line `long_chain_config.rs` retains hash
-`3b0e2638...`. The invalid-key constant remains leaf-private; the config,
-test-consumed output, and extractor cross only the test facade. The normal
-facade adds only the production detail route, and the owner imports the shared
-set-terminal table directly from its sibling. The runner's test alias derives
-the unchanged key from the moved config.
-
-The focused filter passes two tests and all 272 crate unit tests pass. The raw
-and normalized 272-name list hashes, four CLI byte hashes, active counts
-96/4/188, plan 403/367, type coverage 235/223, pass/fail 219/184, and 23
-warnings/zero errors remain unchanged. Formatting, all-target/all-feature
-Clippy with warnings denied, workspace tests, diff cleanliness, and review-
-only checks pass. Task 263ZE is complete; fresh Task 263 inventory returns to
-the remaining long-chain asserted-head and local-object-mode type-assertion
-route families. `spec_coverage_audit.md` remains unchanged because no
-authority, behavior, coverage credit, owner crate, or deferred status changed.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZF Pre-Move Inventory and Specification
 
-Fresh authority, test, trace, expectation, design, source, and real-consumer
-inventory selects only the local-mode long-chain same-`ChainMode6` asserted-
-head route as the next bounded addition to private
-`type_elaboration/type_assertion_routes.rs`. It forms five exact `runner.rs`
-fragments: the invalid key at 512-513 (2 lines, `e4633687...`), config at
-3381-3393 (13, `1f16fdb8...`), production detail route at 4176-4187 (12,
-`a027a240...`), test-only output at 4836-4844 (9, `42f4bfc7...`), and extractor
-at 5934-5945 (12, `6b1f2ecb...`). Total: 48 lines; combined raw hash
-`85282759...` and whitespace-normalized pre-move hash `5ed24905...`.
-
-Task 263ZF mechanically moves only those fragments into the existing private
-owner, which already imports the shared set-terminal table directly from
-sibling `long_chain_config`. Only the production detail route crosses the
-normal phase facade. The config, test-consumed output, and extractor cross
-under `#[cfg(test)]`; the invalid-key constant remains leaf-private while a
-config-derived runner test alias retains its existing name and value. No call
-site, name, config value, exact seven-expansion set-terminal chain, same-mode
-asserted-head relation, key, payload, ordering, fallback, or fail-closed
-behavior changes.
-
-Canonical reserved-theorem-variable and static type-assertion requirements
-apply unchanged. The one active `.miz`/expectation pair and its dedicated
-covered checker requirement exercise real source AST/resolver data, seven
-set-terminal expansions, independent reserve/asserted `ChainMode6` source
-sites, and real checker output. The four private test files retain 94 family-
-name occurrences (`asserted_head_base.rs` 3, `asserted_head_fixtures.rs` 4,
-`long_chain.rs` 70, and `remaining_bridges_and_nested_isolation.rs` 17),
-protecting the exact payload, provenance, key fallback, active fixture,
-corruption matrix, and cross-route isolation. Therefore this is move-only
-`design_drift` and no ZF0 test task is needed. `spec_coverage_audit.md` remains
-unchanged because authority, behavior, coverage credit, owner crate, and
-deferred status do not change. Forbidden changes are config/key/role/mode
-edits, asserted-head generalization, radix/multi-hop/local-object-mode route
-moves, object/set coercion, assertion weakening, and test/expectation edits.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZF Move Result
 
-Task 263ZF moved only the five approved fragments totaling 48 lines into the
-existing private `type_elaboration/type_assertion_routes.rs`, preserving
-original raw hashes `e4633687...`, `1f16fdb8...`, `a027a240...`, `42f4bfc7...`,
-and `6b1f2ecb...` as the pre-move oracle. After removing only required runner
-visibility and formatting whitespace, every old/new fragment pair is token-
-identical and the combined normalized hash is `5ed24905...`. Every radix,
-multi-hop, local-object-mode, and other adjacent route remains in `runner.rs`.
-
-The expanded 125-line private owner has raw hash `e3d046a9...`; `runner.rs` is
-6,152 lines with raw hash `dd4cb898...`; and the 347-line phase facade has raw
-hash `737c890e...`. The unchanged 82-line `long_chain_config.rs` retains hash
-`3b0e2638...`. The invalid-key constant remains leaf-private; the config,
-test-consumed output, and extractor cross only the test facade. The normal
-facade adds only the production detail route, the owner retains its direct
-sibling table import, and the runner's test alias derives the unchanged key
-from the moved config. Production dispatch order and call identity are
-unchanged.
-
-The focused filter passes two tests and all 272 crate unit tests pass. The raw
-and normalized 272-name list hashes, four CLI byte hashes, active counts
-96/4/188, plan 403/367, type coverage 235/223, pass/fail 219/184, and 23
-warnings/zero errors remain unchanged. Formatting, all-target/all-feature
-Clippy with warnings denied, workspace tests, diff cleanliness, and review-
-only checks pass. Task 263ZF is complete; fresh Task 263 inventory returns to
-the radix, multi-hop, and local-object-mode long-chain asserted-head routes.
-`spec_coverage_audit.md` remains unchanged because no authority, behavior,
-coverage credit, owner crate, or deferred status changed.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZG Pre-Move Inventory and Specification
 
-Fresh authority, test, trace, expectation, design, source, and real-consumer
-inventory selects only the local-mode long-chain immediate-radix asserted-head
-route as the next bounded addition to private
-`type_elaboration/type_assertion_routes.rs`. It forms five exact `runner.rs`
-fragments: the invalid key at 519-520 (2 lines, `1c51cc95...`), config at
-3386-3400 (15, `f573f4d7...`), production detail route at 4167-4178 (12,
-`59f89066...`), test-only output at 4814-4822 (9, `66381eab...`), and extractor
-at 5902-5913 (12, `c58a33b1...`). Total: 50 lines; combined raw hash
-`9de63d06...` and whitespace-normalized pre-move hash `bfcb5927...`.
-
-Task 263ZG mechanically moves only those fragments into the existing private
-owner, which already imports the shared set-terminal table directly from
-sibling `long_chain_config`. Only the production detail route crosses the
-normal phase facade. The config, test-consumed output, and extractor cross
-under `#[cfg(test)]`; the invalid-key constant remains leaf-private while a
-config-derived runner test alias retains its existing name and value. No call
-site, name, config value, exact seven-expansion set-terminal chain, immediate
-`ChainMode6 -> ChainMode5` relation, key, payload, ordering, fallback, or fail-
-closed behavior changes.
-
-Canonical reserved-theorem-variable and static type-assertion requirements
-apply unchanged. The one active `.miz`/expectation pair and its dedicated
-covered Task 209 checker requirement exercise real source AST/resolver data,
-seven set-terminal expansions, distinct reserve `ChainMode6` and asserted
-`ChainMode5` source sites, the immediate bare radix edge, and real checker
-output. The five private test files retain 73 family-name occurrences
-(`support.rs` 1, `asserted_head_base.rs` 3, `asserted_head_fixtures.rs` 4,
-`long_chain.rs` 48, and `remaining_bridges_and_nested_isolation.rs` 17),
-protecting the exact payload, provenance, all-order corruption matrix, key
-fallback, active fixture, and cross-route isolation. Therefore this is move-
-only `design_drift` and no ZG0 test task is needed. `spec_coverage_audit.md`
-remains unchanged because authority, behavior, coverage credit, owner crate,
-and deferred status do not change. Forbidden changes are config/key/role/mode
-edits, relation or chain generalization, same-mode/multi-hop/local-object-mode
-route moves, object/set coercion, assertion weakening, and test/expectation
-edits.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZG Move Result
 
-Task 263ZG moved only the five approved fragments totaling 50 lines into the
-existing private `type_elaboration/type_assertion_routes.rs`, preserving
-original raw hashes `1c51cc95...`, `f573f4d7...`, `59f89066...`, `66381eab...`,
-and `c58a33b1...` as the pre-move oracle. After removing only required runner
-visibility and formatting whitespace, every old/new fragment pair is token-
-identical and the combined normalized hash is `bfcb5927...`. Every multi-hop,
-local-object-mode, and other adjacent route remains in `runner.rs`.
-
-The expanded 180-line private owner has raw hash `0a99d34d...`; `runner.rs` is
-6,105 lines with raw hash `dd4c9b2a...`; and the 351-line phase facade has raw
-hash `7e16d5dc...`. The unchanged 82-line `long_chain_config.rs` retains hash
-`3b0e2638...`. The invalid-key constant remains leaf-private; the config,
-test-consumed output, and extractor cross only the test facade. The normal
-facade adds only the production detail route, the owner retains its direct
-sibling table import, and the runner's test alias derives the unchanged key
-from the moved config. Production dispatch order, the exact immediate radix
-relation, and call identity are unchanged.
-
-The focused filter passes two tests and all 272 crate unit tests pass. The raw
-and normalized 272-name list hashes, four CLI byte hashes, active counts
-96/4/188, plan 403/367, type coverage 235/223, pass/fail 219/184, and 23
-warnings/zero errors remain unchanged. Formatting, all-target/all-feature
-Clippy with warnings denied, workspace tests, diff cleanliness, and review-
-only checks pass. Task 263ZG is complete; fresh Task 263 inventory returns to
-the multi-hop and local-object-mode long-chain asserted-head routes.
-`spec_coverage_audit.md` remains unchanged because no authority, behavior,
-coverage credit, owner crate, or deferred status changed.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZH Pre-Move Inventory and Specification
 
-Fresh authority, test, trace, expectation, design, source, and real-consumer
-inventory selects only the local-mode long-chain two-hop asserted-head route as
-the next bounded addition to private `type_elaboration/type_assertion_routes.rs`.
-It forms five exact `runner.rs` fragments: the invalid key at 526-527 (2 lines,
-`99d058e8...`), config at 3391-3406 (16, `2691b2e7...`), production detail route
-at 4156-4167 (12, `15b0a146...`), test-only output at 4790-4798 (9,
-`032f065d...`), and extractor at 5868-5879 (12, `c645fca8...`). Total: 51 lines;
-combined raw hash `a9e3c846...` and whitespace-normalized pre-move hash
-`b22e9463...`.
-
-Task 263ZH mechanically moves only those fragments into the existing private
-owner, retaining its direct sibling `long_chain_config` dependency. Only the
-production detail route crosses the normal phase facade. The config, test-
-consumed output, and extractor cross under `#[cfg(test)]`; the invalid-key
-constant remains leaf-private while a config-derived runner test alias retains
-its existing name and value. No call site, name, config value, exact seven-
-expansion set-terminal chain, two-hop `ChainMode6 -> ChainMode5 -> ChainMode4`
-relation, key, payload, ordering, fallback, or fail-closed behavior changes.
-
-Canonical reserved-theorem-variable and static type-assertion requirements
-apply unchanged. The one active `.miz`/expectation pair and its dedicated
-covered Task 224 checker requirement exercise real source AST/resolver data,
-seven set-terminal expansions, distinct reserve `ChainMode6` and asserted
-`ChainMode4` source sites, the two exact bare relation edges, and real checker
-output. `long_chain.rs` retains all 50 family-name occurrences protecting exact
-payload, provenance, all-order corruption, key fallback, active fixture, and
-cross-route isolation. Therefore this is move-only `design_drift` and no ZH0
-test task is needed. `spec_coverage_audit.md` remains unchanged because
-authority, behavior, coverage credit, owner crate, and deferred status do not
-change. Forbidden changes are config/key/role/mode edits, relation or chain
-generalization, immediate/deeper-hop/local-object-mode route moves, object/set
-coercion, assertion weakening, and test/expectation edits.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZH Move Result
 
-Task 263ZH moved only the five approved fragments totaling 51 lines into the
-existing private `type_elaboration/type_assertion_routes.rs`, preserving
-original raw hashes `99d058e8...`, `2691b2e7...`, `15b0a146...`, `032f065d...`,
-and `c645fca8...` as the pre-move oracle. After removing only required runner
-visibility and formatting whitespace, every old/new fragment pair is token-
-identical and the combined normalized hash is `b22e9463...`. The previously
-moved immediate-radix route remains unchanged in `type_assertion_routes.rs`;
-every deeper-hop, local-object-mode, and other adjacent route remains in
-`runner.rs`.
-
-The expanded private owner is 236 lines with raw hash `ce9630bc...`;
-`runner.rs` is 6,057 lines with raw hash `d9c02f6a...`, and the phase facade is
-355 lines with raw hash `c74a5326...`. The unchanged 82-line
-`long_chain_config.rs` retains hash `3b0e2638...`. The invalid-key constant is
-leaf-private; config, test-consumed output, and extractor cross only the test
-facade, while the normal facade adds only the production detail route. The
-owner retains its direct sibling table import, the runner test alias derives
-the unchanged key from the moved config, and production dispatch order, exact
-two-hop relation, and call identity are unchanged.
-
-The focused two tests and all 272 crate unit tests pass. Raw/normalized
-272-name list hashes, four CLI byte hashes, active counts 96/4/188, plan
-403/367, type coverage 235/223, pass/fail 219/184, and 23 warnings/zero errors
-remain unchanged. Formatting, all-target/all-feature Clippy with warnings
-denied, workspace tests, diff cleanliness, and review-only checks pass. Task
-263ZH is complete; fresh Task 263 inventory returns to the deeper-hop and
-local-object-mode long-chain asserted-head routes. `spec_coverage_audit.md`
-remains unchanged because no authority, behavior, coverage credit, owner
-crate, or deferred status changed.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZI Pre-Move Inventory and Specification
 
-Fresh authority, test, trace, expectation, design, source, API, and real-
-producer/consumer inventory selects only the local-mode long-chain three-hop
-asserted-head route as the next bounded addition to private
-`type_elaboration/type_assertion_routes.rs`. It forms five exact `runner.rs`
-fragments: the invalid key at 533-534 (2 lines, `6265db24...`), config at
-3396-3412 (17, `84937c90...`), production detail route at 4144-4156 (13,
-`6393cffc...`), test-only output at 4765-4774 (10, `ee67b1d6...`), and extractor
-at 5833-5844 (12, `bda2d7a2...`). Total: 54 lines; combined raw hash
-`32c6f854...` and whitespace-normalized pre-move hash `0082cb9f...`.
-
-Task 263ZI mechanically moves only those fragments into the existing private
-owner, retaining its direct sibling `long_chain_config` dependency. Only the
-production detail route crosses the normal phase facade. The config, test-
-consumed output, and extractor cross under `#[cfg(test)]`; the invalid-key
-constant remains leaf-private while a config-derived runner test alias retains
-its existing name and value. No public API or call site, name, config value,
-exact seven-expansion set-terminal chain, three-hop
-`ChainMode6 -> ChainMode5 -> ChainMode4 -> ChainMode3` relation, key, payload,
-ordering, fallback, or fail-closed behavior changes.
-
-Canonical reserved-theorem-variable and static type-assertion requirements
-apply unchanged. The one active `.miz`/expectation pair and its dedicated
-covered Task 226 checker requirement exercise real source AST/resolver data,
-seven set-terminal expansions, distinct reserve `ChainMode6` and asserted
-`ChainMode3` source sites, the three exact bare relation edges, and real
-checker output. `long_chain.rs` retains all 42 family-name occurrences
-protecting exact payload, provenance, all-order corruption, key fallback,
-active fixture, and cross-route isolation. Therefore this is move-only
-`design_drift` and no ZI0 test task is needed. `spec_coverage_audit.md` remains
-unchanged because authority, behavior, coverage credit, owner crate, and
-deferred status do not change. Forbidden changes are config/key/role/mode
-edits, relation or chain generalization, immediate/two-hop/four-or-deeper/
-local-object-mode route moves, object/set coercion, assertion weakening, and
-test/expectation edits.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZI Move Result
 
-Task 263ZI moved only the five approved fragments totaling 54 lines into the
-existing private `type_elaboration/type_assertion_routes.rs`, preserving
-original raw hashes `6265db24...`, `84937c90...`, `6393cffc...`, `ee67b1d6...`,
-and `bda2d7a2...` as the pre-move oracle. After removing only required runner
-visibility and formatting whitespace, every old/new fragment pair is token-
-identical and the combined normalized hash is `0082cb9f...`. The previously
-moved immediate/two-hop routes remain unchanged in `type_assertion_routes.rs`;
-every four-or-deeper, local-object-mode, and other adjacent route remains in
-`runner.rs`.
-
-The expanded private owner is 295 lines with raw hash `f6dbf168...`;
-`runner.rs` is 6,006 lines with raw hash `48b37dfe...`, and the phase facade is
-359 lines with raw hash `b44f5910...`. The unchanged 82-line
-`long_chain_config.rs` retains hash `3b0e2638...`. The invalid-key constant is
-leaf-private; config, test-consumed output, and extractor cross only the test
-facade, while the normal facade adds only the production detail route. The
-owner retains its direct sibling table import, the runner test alias derives
-the unchanged key from the moved config, and production dispatch order, exact
-three-hop relation, and call identity are unchanged.
-
-The focused two tests and all 272 crate unit tests pass. Raw/normalized
-272-name list hashes, four CLI byte hashes, active counts 96/4/188, plan
-403/367, type coverage 235/223, pass/fail 219/184, and 23 warnings/zero errors
-remain unchanged. Formatting, all-target/all-feature Clippy with warnings
-denied, workspace tests, diff cleanliness, and review-only checks pass. Task
-263ZI is complete; fresh Task 263 inventory returns to the four-or-deeper and
-local-object-mode long-chain asserted-head routes. `spec_coverage_audit.md`
-remains unchanged because no authority, behavior, coverage credit, owner
-crate, or deferred status changed.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZJ Pre-Move Inventory and Specification
 
-Fresh authority, test, trace, expectation, design, source, API, and real-
-producer/consumer inventory selects only the local-mode long-chain four-hop
-asserted-head route as the next bounded addition to private
-`type_elaboration/type_assertion_routes.rs`. It forms five exact `runner.rs`
-fragments: the invalid key at 540-541 (2 lines, `4b7810fc...`), config at
-3401-3418 (18, `f6832e47...`), production detail route at 4131-4143 (13,
-`4d5e0688...`), test-only output at 4738-4747 (10, `2066549a...`), and extractor
-at 5795-5806 (12, `150e478c...`). Total: 55 lines; combined raw hash
-`9a44e3fb...` and whitespace-normalized pre-move hash `23488d36...`.
-
-Task 263ZJ mechanically moves only those fragments into the existing private
-owner, retaining its direct sibling `long_chain_config` dependency. Only the
-production detail route crosses the normal phase facade. The config, test-
-consumed output, and extractor cross under `#[cfg(test)]`; the invalid-key
-constant remains leaf-private while a config-derived runner test alias retains
-its existing name and value. No public API or call site, name, config value,
-exact seven-expansion set-terminal chain, four-hop
-`ChainMode6 -> ChainMode5 -> ChainMode4 -> ChainMode3 -> ChainMode2` relation,
-key, payload, ordering, fallback, or fail-closed behavior changes.
-
-Canonical reserved-theorem-variable and static type-assertion requirements
-apply unchanged. The one active `.miz`/expectation pair and its dedicated
-covered Task 228 checker requirement exercise real source AST/resolver data,
-seven set-terminal expansions, distinct reserve `ChainMode6` and asserted
-`ChainMode2` source sites, the four exact bare relation edges, and real checker
-output. `long_chain.rs` retains all 34 family-name occurrences protecting
-exact payload, provenance, all-order corruption, key fallback, active fixture,
-and cross-route isolation. Therefore this is move-only `design_drift` and no
-ZJ0 test task is needed. `spec_coverage_audit.md` remains unchanged because
-authority, behavior, coverage credit, owner crate, and deferred status do not
-change. Forbidden changes are config/key/role/mode edits, relation or chain
-generalization, immediate/two/three/five/six-hop/local-object-mode route moves,
-object/set coercion, assertion weakening, and test/expectation edits.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZJ Move Result
 
-Task 263ZJ moved only the five approved fragments totaling 55 lines into the
-existing private `type_elaboration/type_assertion_routes.rs`, preserving
-original raw hashes `4b7810fc...`, `f6832e47...`, `4d5e0688...`, `2066549a...`,
-and `150e478c...` as the pre-move oracle. After removing only required runner
-visibility and formatting whitespace, every old/new fragment pair is token-
-identical and the combined normalized hash is `23488d36...`. The previously
-moved immediate/two/three-hop routes remain unchanged in
-`type_assertion_routes.rs`; every five/six-hop, local-object-mode, and other
-adjacent route remains in `runner.rs`.
-
-The expanded private owner is 355 lines with raw hash `7dc607a4...`;
-`runner.rs` is 5,954 lines with raw hash `db5857bd...`, and the phase facade is
-363 lines with raw hash `51a3b0d4...`. The unchanged 82-line
-`long_chain_config.rs` retains hash `3b0e2638...`. The invalid-key constant is
-leaf-private; config, test-consumed output, and extractor cross only the test
-facade, while the normal facade adds only the production detail route. The
-owner retains its direct sibling table import, the runner test alias derives
-the unchanged key from the moved config, and production dispatch order, exact
-four-hop relation, and call identity are unchanged.
-
-The focused two tests and all 272 crate unit tests pass. Raw/normalized
-272-name list hashes, four CLI byte hashes, active counts 96/4/188, plan
-403/367, type coverage 235/223, pass/fail 219/184, and 23 warnings/zero errors
-remain unchanged. Formatting, all-target/all-feature Clippy with warnings
-denied, workspace tests, diff cleanliness, and review-only checks pass. Task
-263ZJ is complete; fresh Task 263 inventory returns to the five/six-hop and
-local-object-mode long-chain asserted-head routes. `spec_coverage_audit.md`
-remains unchanged because no authority, behavior, coverage credit, owner
-crate, or deferred status changed.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZK Pre-Move Inventory and Specification
 
-Fresh authority, test, trace, expectation, design, source, API, and real-
-producer/consumer inventory selects only the local-mode long-chain five-hop
-asserted-head route as the next bounded addition to private
-`type_elaboration/type_assertion_routes.rs`. It forms five exact `runner.rs`
-fragments: the invalid key at 547-548 (2 lines, `1d5a5452...`), config at
-3406-3424 (19, `abf23b93...`), production detail route at 4117-4129 (13,
-`448393c6...`), test-only output at 4710-4719 (10, `81db1ea3...`), and extractor
-at 5756-5767 (12, `432bb0d3...`). Total: 56 lines; combined raw hash
-`cacef95c...` and whitespace-normalized pre-move hash `2266a3d0...`.
-
-Task 263ZK mechanically moves only those fragments into the existing private
-owner, retaining its direct sibling `long_chain_config` dependency. Only the
-production detail route crosses the normal phase facade. The config, test-
-consumed output, and extractor cross under `#[cfg(test)]`; the invalid-key
-constant remains leaf-private while a config-derived runner test alias retains
-its existing name and value. No public API or call site, name, config value,
-exact seven-expansion set-terminal chain, five-hop
-`ChainMode6 -> ChainMode5 -> ChainMode4 -> ChainMode3 -> ChainMode2 ->
-ChainMode1` relation, key, payload, ordering, fallback, or fail-closed behavior
-changes.
-
-Canonical reserved-theorem-variable and static type-assertion requirements
-apply unchanged. The one active `.miz`/expectation pair and its dedicated
-covered Task 230 checker requirement exercise real source AST/resolver data,
-seven set-terminal expansions, distinct reserve `ChainMode6` and asserted
-`ChainMode1` source sites, the five exact bare relation edges, and real checker
-output. `long_chain.rs` retains all 25 snake-case family-name occurrences protecting exact
-payload, provenance, all-order corruption, key fallback, active fixture, and
-cross-route isolation. Therefore this is move-only `design_drift` and no ZK0
-test task is needed. `spec_coverage_audit.md` remains unchanged because
-authority, behavior, coverage credit, owner crate, and deferred status do not
-change. Forbidden changes are config/key/role/mode edits, relation or chain
-generalization, immediate/two/three/four/six-hop/local-object-mode route moves,
-object/set coercion, assertion weakening, and test/expectation edits.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZK Move Result
 
-Task 263ZK moved only the five approved fragments totaling 56 lines into the
-existing private `type_elaboration/type_assertion_routes.rs`, preserving
-original raw hashes `1d5a5452...`, `abf23b93...`, `448393c6...`, `81db1ea3...`,
-and `432bb0d3...` as the pre-move oracle. After removing only required runner
-visibility and formatting whitespace, every old/new fragment pair is token-
-identical and the combined normalized hash is `2266a3d0...`. The previously
-moved immediate/two/three/four-hop routes remain unchanged in
-`type_assertion_routes.rs`; the six-hop, every local-object-mode, and every
-other adjacent route remains in `runner.rs`.
-
-The expanded private owner is 416 lines with raw hash `2395aed6...`;
-`runner.rs` is 5,901 lines with raw hash `bbe6b7f2...`, and the phase facade is
-367 lines with raw hash `9ca398f8...`. The unchanged 82-line
-`long_chain_config.rs` retains hash `3b0e2638...`. The invalid-key constant is
-leaf-private; config, test-consumed output, and extractor cross only the test
-facade, while the normal facade adds only the production detail route. The
-owner retains its direct sibling table import, the runner test alias derives
-the unchanged key from the moved config, and production dispatch order, exact
-five-hop relation, call identity, and terminal fail-closed fallback are
-unchanged.
-
-The focused two tests and all 272 crate unit tests pass. Raw/normalized
-272-name list hashes, four CLI byte hashes, active counts 96/4/188, plan
-403/367, type coverage 235/223, pass/fail 219/184, and 23 warnings/zero errors
-remain unchanged. Formatting, all-target/all-feature Clippy with warnings
-denied, workspace tests, diff cleanliness, and review-only checks pass. Task
-263ZK is complete; fresh Task 263 inventory returns to the six-hop and local-
-object-mode long-chain asserted-head routes. `spec_coverage_audit.md` remains
-unchanged because no authority, behavior, coverage credit, owner crate, or
-deferred status changed.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZL Pre-Move Inventory and Specification
 
-Fresh authority, test, trace, expectation, design, source, API, and real-
-producer/consumer inventory selects only the local-mode long-chain six-hop
-asserted-head route as the next bounded addition to private
-`type_elaboration/type_assertion_routes.rs`. It forms five exact `runner.rs`
-fragments: the invalid key at 554-555 (2 lines, `ec22ef78...`), config at
-3411-3430 (20, `582d2c60...`), production detail route at 4102-4113 (12,
-`f8349031...`), test-only output at 4681-4689 (9, `aa261362...`), and extractor
-at 5716-5727 (12, `575ead8d...`). Total: 55 lines; combined raw hash
-`7f677c2e...` and whitespace-normalized pre-move hash `b8fba0fe...`.
-
-Task 263ZL mechanically moves only those fragments into the existing private
-owner, retaining its direct sibling `long_chain_config` dependency. Only the
-production detail route crosses the normal phase facade. The config, test-
-consumed output, and extractor cross under `#[cfg(test)]`; the invalid-key
-constant remains leaf-private while a config-derived runner test alias retains
-its existing name and value. No public API or call site, name, config value,
-exact seven-expansion set-terminal chain, full-distance six-hop
-`ChainMode6 -> ChainMode5 -> ChainMode4 -> ChainMode3 -> ChainMode2 ->
-ChainMode1 -> BaseMode` relation, key, payload, ordering, fallback, or fail-
-closed behavior changes.
-
-Canonical reserved-theorem-variable and static type-assertion requirements
-apply unchanged. The one active `.miz`/expectation pair and its dedicated
-covered Task 234 checker requirement exercise real source AST/resolver data,
-seven set-terminal expansions, distinct reserve `ChainMode6` and asserted
-`BaseMode` source sites, the six exact bare relation edges, and real checker
-output. `long_chain.rs` retains all 18 snake-case family-name occurrences plus
-the all-5,039-order finite corruption matrix, all 56 prior-owner isolation,
-immutable output, key fallback, active fixture, and real sidecar. Therefore
-this is move-only `design_drift` and no ZL0 test task is needed.
-`spec_coverage_audit.md` remains unchanged because authority, behavior,
-coverage credit, owner crate, and deferred status do not change. Forbidden
-changes are config/key/role/mode edits, relation or chain generalization,
-same-mode/immediate/two/three/four/five-hop/local-object-mode route moves,
-object/set coercion, assertion weakening, and test/expectation edits.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZL Move Result
 
-Task 263ZL moved only the five approved fragments totaling 55 lines into the
-existing private `type_elaboration/type_assertion_routes.rs`, preserving
-original raw hashes `ec22ef78...`, `582d2c60...`, `f8349031...`, `aa261362...`,
-and `575ead8d...` as the pre-move oracle. After removing only required runner
-visibility and formatting whitespace, every old/new fragment pair is token-
-identical and the combined normalized hash is `b8fba0fe...`. All previously
-moved local-mode routes remain unchanged in `type_assertion_routes.rs`; every
-local-object-mode and other adjacent route remains in `runner.rs`.
-
-The expanded private owner is 476 lines with raw hash `095eab00...`;
-`runner.rs` is 5,849 lines with raw hash `952a1d7f...`, and the phase facade is
-369 lines with raw hash `2b473071...`. The unchanged 82-line
-`long_chain_config.rs` retains hash `3b0e2638...`. The invalid-key constant is
-leaf-private; config, test-consumed output, and extractor cross only the test
-facade, while the normal facade adds only the production detail route. The
-owner retains its direct sibling table import, the runner test alias derives
-the unchanged key from the moved config, and production dispatch order, exact
-six-hop relation, call identity, and terminal fail-closed fallback are
-unchanged.
-
-The first focused compile correctly failed because the move removed the last
-`runner.rs` consumer of `SOURCE_LOCAL_MODE_LONG_CHAIN_DEFINITIONS`. The repair
-removed only that stale runner import and phase-facade re-export. Direct sibling
-consumers in `binary_routes.rs` and `type_assertion_routes.rs` remain, while the
-local-object table stays exposed for retained runner consumers. The focused two
-tests then pass, as do all 272 crate unit tests. Raw/normalized 272-name list
-hashes, four CLI byte hashes, active counts 96/4/188, plan 403/367, type
-coverage 235/223, pass/fail 219/184, and 23 warnings/zero errors remain
-unchanged. Formatting, all-target/all-feature Clippy with warnings denied,
-workspace tests, diff cleanliness, and review-only checks pass. Task 263ZL is
-complete; fresh Task 263 inventory returns only to the local-object-mode long-
-chain asserted-head routes. `spec_coverage_audit.md` remains unchanged because
-no authority, behavior, coverage credit, owner crate, or deferred status
-changed.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZM Pre-Move Inventory and Specification
 
-Fresh authority, test, trace, expectation, design, source, API, and real-
-producer/consumer inventory selects only the local-object-mode long-chain six-
-hop asserted-head route as the next bounded addition to private
-`type_elaboration/type_assertion_routes.rs`. It forms five exact `runner.rs`
-fragments: the invalid key at 561-563 (3 lines, `ac31b964...`), config at
-3416-3435 (20, `56bf0820...`), production detail route at 4086-4098 (13,
-`8011c4b0...`), test-only output at 4652-4661 (10, `b24222d0...`), and extractor
-at 5677-5688 (12, `dc57ecdb...`). Total: 58 lines; combined raw hash
-`770ab2db...` and whitespace-normalized pre-move hash `a489a76f...`.
-
-Task 263ZM mechanically moves only those fragments into the existing private
-owner, adding its direct sibling `long_chain_config` local-object table
-dependency. Only the production detail route crosses the normal phase facade.
-The config, test-consumed output, and extractor cross under `#[cfg(test)]`; the
-invalid-key constant remains leaf-private while a config-derived runner test
-alias retains its existing name and value. No public API or call site, name,
-config value, exact seven-expansion object-terminal chain, full-distance six-
-hop `ChainObjectMode6 -> ChainObjectMode5 -> ChainObjectMode4 ->
-ChainObjectMode3 -> ChainObjectMode2 -> ChainObjectMode1 -> BaseObjectMode`
-relation, key, payload, ordering, fallback, or fail-closed behavior changes.
-
-Canonical reserved-theorem-variable and static type-assertion requirements
-apply unchanged. The one active `.miz`/expectation pair and its dedicated
-covered Task 236 checker requirement exercise real source AST/resolver data,
-seven object-terminal expansions, distinct reserve `ChainObjectMode6` and
-asserted `BaseObjectMode` source sites, the six exact bare relation edges, and
-real checker output without object/set coercion. `long_chain.rs` retains all 14
-snake-case family-name occurrences plus the all-5,039-order finite corruption
-matrix, all 57 prior-owner isolation, immutable output, key fallback, active
-fixture, and real sidecar. Therefore this is move-only `design_drift` and no
-ZM0 test task is needed. `spec_coverage_audit.md` remains unchanged because
-authority, behavior, coverage credit, owner crate, and deferred status do not
-change. Forbidden changes are config/key/role/mode edits, relation or chain
-generalization, local-mode or other local-object-mode route moves, object/set
-coercion, assertion weakening, and test/expectation edits.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZM Move Result
 
-Task 263ZM moved only the five approved fragments totaling 58 lines into the
-existing private `type_elaboration/type_assertion_routes.rs`, preserving
-original raw hashes `ac31b964...`, `56bf0820...`, `8011c4b0...`, `b24222d0...`,
-and `dc57ecdb...` as the pre-move oracle. After removing only required runner
-visibility and formatting whitespace, every old/new fragment pair is token-
-identical and the combined normalized hash is `a489a76f...`. All previously
-moved local-mode routes remain unchanged in `type_assertion_routes.rs`; every
-other local-object-mode and adjacent route remains in `runner.rs`.
-
-The expanded private owner is 541 lines with raw hash `04c02f75...`;
-`runner.rs` is 5,794 lines with raw hash `721574ab...`, and the phase facade is
-373 lines with raw hash `bf96abb3...`. The unchanged 82-line
-`long_chain_config.rs` retains hash `3b0e2638...`. The invalid-key constant is
-leaf-private; config, test-consumed output, and extractor cross only the test
-facade, while the normal facade adds only the production detail route. The
-owner imports the object-terminal table directly from its sibling, the runner
-test alias derives the unchanged key from the moved config, and production
-dispatch order, exact object-terminal six-hop relation, call identity, and
-terminal fail-closed fallback are unchanged.
-
-The focused two tests, all 272 crate unit tests, and the full relevant-crate
-suite pass. Raw/normalized 272-name list hashes, four CLI byte hashes, active
-counts 96/4/188, plan 403/367, type coverage 235/223, pass/fail 219/184, and 23
-warnings/zero errors remain unchanged. Formatting, all-target/all-feature
-Clippy with warnings denied, workspace tests, diff cleanliness, and review-
-only checks pass. Task 263ZM is complete; fresh Task 263 inventory returns to
-the remaining local-object-mode long-chain asserted-head routes.
-`spec_coverage_audit.md` remains unchanged because no authority, behavior,
-coverage credit, owner crate, or deferred status changed.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZN Pre-Move Inventory and Specification
 
-Fresh authority, test, trace, expectation, design, source, API, and real-
-producer/consumer inventory selects only the local-object-mode long-chain five-
-hop asserted-head route as the next bounded addition to private
-`type_elaboration/type_assertion_routes.rs`. It forms five exact `runner.rs`
-fragments: the invalid key at 568-570 (3 lines, `fde751f2...`), config at
-3420-3438 (19, `a2e917f5...`), production detail route at 4069-4081 (13,
-`b4e0cd1e...`), test-only output at 4621-4630 (10, `9c0fa75e...`), and extractor
-at 5635-5646 (12, `4be72697...`). Total: 57 lines; combined raw hash
-`a1e6e85b...` and whitespace-normalized pre-move hash `66a0a9c1...`.
-
-Task 263ZN mechanically moves only those fragments into the existing private
-owner, retaining its direct sibling `long_chain_config` object-table
-dependency. Only the production detail route crosses the normal phase facade.
-The config, test-consumed output, and extractor cross under `#[cfg(test)]`; the
-invalid-key constant remains leaf-private while a config-derived runner test
-alias retains its existing name and value. No public API or call site, name,
-config value, exact seven-expansion object-terminal chain, five-hop
-`ChainObjectMode6 -> ChainObjectMode5 -> ChainObjectMode4 ->
-ChainObjectMode3 -> ChainObjectMode2 -> ChainObjectMode1` relation, terminal-
-only `ChainObjectMode1 -> BaseObjectMode -> object` normalization, key,
-payload, ordering, fallback, or fail-closed behavior changes.
-
-Canonical reserved-theorem-variable and static type-assertion requirements
-apply unchanged. The one active `.miz`/expectation pair and its dedicated
-covered Task 231 checker requirement exercise real source AST/resolver data,
-seven object-terminal expansions, distinct reserve `ChainObjectMode6` and
-asserted `ChainObjectMode1` source sites, the five exact bare relation edges,
-and real checker output without object/set coercion. `long_chain.rs` retains all
-22 snake-case family-name occurrences plus the all-5,039-order finite
-corruption matrix, all 55 prior-owner isolation, immutable output, key
-fallback, active fixture, and real sidecar. Therefore this is move-only
-`design_drift` and no ZN0 test task is needed. `spec_coverage_audit.md` remains
-unchanged because authority, behavior, coverage credit, owner crate, and
-deferred status do not change. Forbidden changes are config/key/role/mode
-edits, relation or chain generalization, local-mode or other local-object-mode
-route moves, object/set coercion, assertion weakening, and test/expectation
-edits.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZN Move Result
 
-Task 263ZN moved only the five approved fragments totaling 57 lines into the
-existing private `type_elaboration/type_assertion_routes.rs`, preserving
-original raw hashes `fde751f2...`, `a2e917f5...`, `b4e0cd1e...`, `9c0fa75e...`,
-and `4be72697...` as the pre-move oracle. After removing only required runner
-visibility and formatting whitespace, every old/new fragment pair is token-
-identical and the combined normalized hash is `66a0a9c1...`. All previously
-moved local-mode and local-object-mode six-hop routes remain unchanged in
-`type_assertion_routes.rs`; every other local-object-mode and adjacent route
-remains in `runner.rs`.
-
-The expanded private owner is 603 lines with raw hash `e9fb3b88...`;
-`runner.rs` is 5,740 lines with raw hash `e35165d1...`, and the phase facade is
-377 lines with raw hash `946dcebe...`. The unchanged 82-line
-`long_chain_config.rs` retains hash `3b0e2638...`. The invalid-key constant is
-leaf-private; config, test-consumed output, and extractor cross only the test
-facade, while the normal facade adds only the production detail route. The
-owner retains its direct object-terminal table import, the runner test alias
-derives the unchanged key from the moved config, and production dispatch order,
-exact object-terminal five-hop relation, call identity, and terminal fail-
-closed fallback are unchanged.
-
-The focused two tests, all 272 crate unit tests, and the full relevant-crate
-suite pass. Raw/normalized 272-name list hashes, four CLI byte hashes, active
-counts 96/4/188, plan 403/367, type coverage 235/223, pass/fail 219/184, and 23
-warnings/zero errors remain unchanged. Formatting, all-target/all-feature
-Clippy with warnings denied, workspace tests, diff cleanliness, and review-
-only checks pass. Task 263ZN is complete; fresh Task 263 inventory returns to
-the remaining local-object-mode long-chain asserted-head routes.
-`spec_coverage_audit.md` remains unchanged because no authority, behavior,
-coverage credit, owner crate, or deferred status changed.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZO Pre-Move Inventory and Specification
 
-Fresh authority, test, trace, expectation, design, source, API, and real-
-producer/consumer inventory selects only the local-object-mode long-chain four-
-hop asserted-head route as the next bounded addition to private
-`type_elaboration/type_assertion_routes.rs`. It forms five exact `runner.rs`
-fragments: the invalid key at 575-577 (3 lines, `c73a1ed8...`), config at
-3475-3492 (18, `aa4574ef...`), production detail route at 4095-4107 (13,
-`be90c9c8...`), test-only output at 4624-4633 (10, `b09aa3cd...`), and extractor
-at 5633-5644 (12, `e89973e7...`). Total: 56 lines; combined raw hash
-`2a5cb09a...` and whitespace-normalized pre-move hash `9452ed92...`.
-
-Task 263ZO mechanically moves only those fragments into the existing private
-owner, retaining its direct sibling `long_chain_config` object-table
-dependency. Only the production detail route crosses the normal phase facade.
-The config, test-consumed output, and extractor cross under `#[cfg(test)]`; the
-invalid-key constant remains leaf-private while a config-derived runner test
-alias retains its existing name and value. No public API or call site, name,
-config value, exact seven-expansion object-terminal chain, four-hop
-`ChainObjectMode6 -> ChainObjectMode5 -> ChainObjectMode4 ->
-ChainObjectMode3 -> ChainObjectMode2` relation, terminal-only `ChainObjectMode2
--> ChainObjectMode1 -> BaseObjectMode -> object` normalization, key, payload,
-ordering, fallback, or fail-closed behavior changes.
-
-Canonical reserved-theorem-variable and static type-assertion requirements
-apply unchanged. The one active `.miz`/expectation pair and its dedicated
-covered Task 229 checker requirement exercise real source AST/resolver data,
-seven object-terminal expansions, distinct reserve `ChainObjectMode6` and
-asserted `ChainObjectMode2` source sites, the four exact bare relation edges,
-and real checker output without object/set coercion. `long_chain.rs` retains all
-28 snake-case family-name occurrences plus the all-5,039-order finite
-corruption matrix, all 53 prior-owner isolation, immutable output, key
-fallback, active fixture, and real sidecar. Therefore this is move-only
-`design_drift` and no ZO0 test task is needed. `spec_coverage_audit.md` remains
-unchanged because authority, behavior, coverage credit, owner crate, and
-deferred status do not change. Forbidden changes are config/key/role/mode
-edits, relation or chain generalization, local-mode or other local-object-mode
-route moves, object/set coercion, assertion weakening, and test/expectation
-edits.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZO Move Result
 
-Task 263ZO moved only the five approved fragments totaling 56 lines into the
-existing private `type_elaboration/type_assertion_routes.rs`, preserving
-original raw hashes `c73a1ed8...`, `aa4574ef...`, `be90c9c8...`, `b09aa3cd...`,
-and `e89973e7...` as the pre-move oracle. After removing only required runner
-visibility and formatting whitespace, every old/new fragment pair is token-
-identical and the combined normalized hash is `9452ed92...`. All previously
-moved local-mode and local-object-mode six-/five-hop routes remain unchanged in
-`type_assertion_routes.rs`; every other local-object-mode and adjacent route
-remains in `runner.rs`.
-
-The expanded private owner is 664 lines with raw hash `9da1dffd...`;
-`runner.rs` is 5,687 lines with raw hash `eb33ccce...`, and the phase facade is
-381 lines with raw hash `4ca061cc...`. The unchanged 82-line
-`long_chain_config.rs` retains hash `3b0e2638...`. The invalid-key constant is
-leaf-private; config, test-consumed output, and extractor cross only the test
-facade, while the normal facade adds only the production detail route. The
-owner retains its direct object-terminal table import, the runner test alias
-derives the unchanged key from the moved config, and production dispatch order,
-exact object-terminal four-hop relation, call identity, and terminal fail-
-closed fallback are unchanged.
-
-The focused two tests, all 272 crate unit tests, and the full relevant-crate
-suite pass. Raw/normalized 272-name list hashes, four CLI byte hashes, active
-counts 96/4/188, plan 403/367, type coverage 235/223, pass/fail 219/184, and 23
-warnings/zero errors remain unchanged. Formatting, all-target/all-feature
-Clippy with warnings denied, workspace tests, diff cleanliness, and review-
-only implementation checks pass. Task 263ZO is complete; fresh Task 263
-inventory returns to the remaining local-object-mode long-chain asserted-head
-routes. `spec_coverage_audit.md` remains unchanged because no authority,
-behavior, coverage credit, owner crate, or deferred status changed.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZP Pre-Move Inventory and Specification
 
-Fresh authority, test, trace, expectation, design, source, API, and real-
-producer/consumer inventory selects only the local-object-mode long-chain
-three-hop asserted-head route as the next bounded addition to private
-`type_elaboration/type_assertion_routes.rs`. It forms five exact `runner.rs`
-fragments: the invalid key at 587-589 (3 lines, `787cf360...`), config at
-3461-3477 (17, `94ceb3f4...`), production detail route at 4066-4078 (13,
-`94b06181...`), test-only output at 4584-4593 (10, `bd960eb3...`), and extractor
-at 5580-5591 (12, `45e07c6a...`). Total: 55 lines; combined raw hash
-`4af642ff...` and whitespace-normalized pre-move hash `ecc4d42e...`.
-
-Task 263ZP mechanically moves only those fragments into the existing private
-owner, retaining its direct sibling `long_chain_config` object-table
-dependency. Only the production detail route crosses the normal phase facade.
-The config, test-consumed output, and extractor cross under `#[cfg(test)]`; the
-invalid-key constant remains leaf-private while a config-derived runner test
-alias retains its existing name and value. No public API or call site, name,
-config value, exact seven-expansion object-terminal chain, three-hop
-`ChainObjectMode6 -> ChainObjectMode5 -> ChainObjectMode4 ->
-ChainObjectMode3` relation, terminal-only `ChainObjectMode3 -> ChainObjectMode2
--> ChainObjectMode1 -> BaseObjectMode -> object` normalization, key, payload,
-ordering, fallback, or fail-closed behavior changes.
-
-Canonical reserved-theorem-variable and static type-assertion requirements
-apply unchanged. The one active `.miz`/expectation pair and its dedicated
-covered Task 227 checker requirement exercise real source AST/resolver data,
-seven object-terminal expansions, distinct reserve `ChainObjectMode6` and
-asserted `ChainObjectMode3` source sites, the three exact bare relation edges,
-and real checker output without object/set coercion. `long_chain.rs` retains all
-36 snake-case family-name occurrences plus the all-5,039-order finite
-corruption matrix, all 51 prior-owner isolation, immutable output, key
-fallback, active fixture, and real sidecar. Therefore this is move-only
-`design_drift` and no ZP0 test task is needed. `spec_coverage_audit.md` remains
-unchanged because authority, behavior, coverage credit, owner crate, and
-deferred status do not change. Forbidden changes are config/key/role/mode
-edits, relation or chain generalization, local-mode or other local-object-mode
-route moves, object/set coercion, assertion weakening, and test/expectation
-edits.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZP Move Result
 
-Task 263ZP moved only the five approved fragments totaling 55 lines into the
-existing private `type_elaboration/type_assertion_routes.rs`, preserving
-original raw hashes `787cf360...`, `94ceb3f4...`, `94b06181...`, `bd960eb3...`,
-and `45e07c6a...` as the pre-move oracle. After removing only required runner
-visibility and formatting whitespace, every old/new fragment pair is token-
-identical and the combined normalized hash is `ecc4d42e...`. All previously
-moved local-mode and local-object-mode six-/five-/four-hop routes remain
-unchanged in `type_assertion_routes.rs`; every other local-object-mode and
-adjacent route remains in `runner.rs`.
-
-The expanded private owner is 724 lines with raw hash `a3e7d1be...`;
-`runner.rs` is 5,635 lines with raw hash `aea9e1af...`, and the phase facade is
-385 lines with raw hash `76309099...`. The unchanged 82-line
-`long_chain_config.rs` retains hash `3b0e2638...`. The invalid-key constant is
-leaf-private; config, test-consumed output, and extractor cross only the test
-facade, while the normal facade adds only the production detail route. The
-owner retains its direct object-terminal table import, the runner test alias
-derives the unchanged key from the moved config, and production dispatch order,
-exact object-terminal three-hop relation, call identity, and terminal fail-
-closed fallback are unchanged.
-
-The focused two tests, all 272 crate unit tests, and the full relevant-crate
-suite pass. Raw/normalized 272-name list hashes, four CLI byte hashes, active
-counts 96/4/188, plan 403/367, type coverage 235/223, pass/fail 219/184, and 23
-warnings/zero errors remain unchanged. Formatting, all-target/all-feature
-Clippy with warnings denied, workspace tests, diff cleanliness, and review-
-only implementation checks pass. Task 263ZP is complete; fresh Task 263
-inventory returns to the remaining local-object-mode long-chain asserted-head
-routes. `spec_coverage_audit.md` remains unchanged because no authority,
-behavior, coverage credit, owner crate, or deferred status changed.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZQ Pre-Move Inventory and Specification
 
-Fresh authority, test, trace, expectation, design, source, API, and real-
-producer/consumer inventory selects only the local-object-mode long-chain two-
-hop asserted-head route as the next bounded addition to private
-`type_elaboration/type_assertion_routes.rs`. It forms five exact `runner.rs`
-fragments: the invalid key at 588-590 (3 lines, `afb54f75...`), config at
-3448-3463 (16, `96edc075...`), production detail route at 4038-4050 (13,
-`e88f6a56...`), test-only output at 4545-4554 (10, `d8d67f83...`), and extractor
-at 5528-5539 (12, `09ea9384...`). Total: 54 lines; combined raw hash
-`87f3069b...` and whitespace-normalized pre-move hash `18f90f83...`.
-
-Task 263ZQ mechanically moves only those fragments into the existing private
-owner, retaining its direct sibling `long_chain_config` object-table
-dependency. Only the production detail route crosses the normal phase facade.
-The config, test-consumed output, and extractor cross under `#[cfg(test)]`; the
-invalid-key constant remains leaf-private while a config-derived runner test
-alias retains its existing name and value. No public API or call site, name,
-config value, exact seven-expansion object-terminal chain, two-hop
-`ChainObjectMode6 -> ChainObjectMode5 -> ChainObjectMode4` relation, terminal-
-only `ChainObjectMode4 -> ChainObjectMode3 -> ChainObjectMode2 ->
-ChainObjectMode1 -> BaseObjectMode -> object` normalization, key, payload,
-ordering, fallback, or fail-closed behavior changes.
-
-Canonical reserved-theorem-variable and static type-assertion requirements
-apply unchanged. The one active `.miz`/expectation pair and its dedicated
-covered Task 225 checker requirement exercise real source AST/resolver data,
-seven object-terminal expansions, distinct reserve `ChainObjectMode6` and
-asserted `ChainObjectMode4` source sites, the two exact bare relation edges,
-and real checker output without object/set coercion. `long_chain.rs` retains all
-44 snake-case family-name occurrences plus the all-5,039-order finite
-corruption matrix, all 49 prior-owner isolation, immutable output, key
-fallback, active fixture, and real sidecar. Therefore this is move-only
-`design_drift` and no ZQ0 test task is needed. `spec_coverage_audit.md` remains
-unchanged because authority, behavior, coverage credit, owner crate, and
-deferred status do not change. Forbidden changes are config/key/role/mode
-edits, relation or chain generalization, local-mode or other local-object-mode
-route moves, object/set coercion, assertion weakening, and test/expectation
-edits.
-
-`spec_coverage_audit.md` remains unchanged for Tasks 262N0-262Q because these
-tasks preserve authority, behavior, coverage credit, owner crate, and deferred
-status. Forbidden changes are accepted-shape expansion, route generalization,
-config or result-role edits, payload/detail/diagnostic/order changes,
-assertion weakening, test deletion or ignore, and checker/output movement.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZQ Move Result
 
-Task 263ZQ moved only the five approved fragments totaling 54 lines into the
-existing private `type_elaboration/type_assertion_routes.rs`, preserving
-original raw hashes `afb54f75...`, `96edc075...`, `e88f6a56...`, `d8d67f83...`,
-and `09ea9384...` as the pre-move oracle. After removing only required runner
-visibility and formatting whitespace, every old/new fragment pair is token-
-identical and the combined normalized hash is `18f90f83...`. All previously
-moved local-mode and local-object-mode six-/five-/four-/three-hop routes remain
-unchanged in `type_assertion_routes.rs`; every other local-object-mode and
-adjacent route remains in `runner.rs`.
-
-The expanded private owner is 783 lines with raw hash `4d72d185...`;
-`runner.rs` is 5,584 lines with raw hash `44a2b129...`, and the phase facade is
-389 lines with raw hash `32d06bf1...`. The unchanged 82-line
-`long_chain_config.rs` retains hash `3b0e2638...`. The invalid-key constant is
-leaf-private; config, test-consumed output, and extractor cross only the test
-facade, while the normal facade adds only the production detail route. The
-owner retains its direct object-terminal table import, the runner test alias
-derives the unchanged key from the moved config, and production dispatch order,
-exact object-terminal two-hop relation, call identity, and terminal fail-closed
-fallback are unchanged.
-
-The focused two tests, all 272 crate unit tests, and the full relevant-crate
-suite pass. Raw/normalized 272-name list hashes, four CLI byte hashes, active
-counts 96/4/188, plan 403/367, type coverage 235/223, pass/fail 219/184, and 23
-warnings/zero errors remain unchanged. Formatting, all-target/all-feature
-Clippy with warnings denied, workspace tests, diff cleanliness, and review-
-only implementation checks pass. Task 263ZQ is complete; fresh Task 263
-inventory returns to the remaining local-object-mode long-chain asserted-head
-routes. `spec_coverage_audit.md` remains unchanged because no authority,
-behavior, coverage credit, owner crate, or deferred status changed.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZR Pre-Move Inventory and Specification
 
-Fresh authority, test, trace, expectation, design, source, API, and real-
-producer/consumer inventory selects only the local-object-mode long-chain
-immediate-radix asserted-head route as the next bounded addition to private
-`type_elaboration/type_assertion_routes.rs`. It forms five exact `runner.rs`
-fragments: the invalid key at 590-591 (2 lines, `85c28a03...`), config at
-3436-3450 (15, `9c530a6d...`), production detail route at 4011-4023 (13,
-`6906e0c0...`), test-only output at 4507-4516 (10, `56abaa93...`), and extractor
-at 5477-5488 (12, `e0e40074...`). Total: 52 lines; combined raw hash
-`a0b3d996...` and whitespace-normalized pre-move hash `a533b453...`.
-
-Task 263ZR mechanically moves only those fragments into the existing private
-owner, retaining its direct sibling `long_chain_config` object-table
-dependency. Only the production detail route crosses the normal phase facade.
-The config, test-consumed output, and extractor cross under `#[cfg(test)]`; the
-invalid-key constant remains leaf-private while a config-derived runner test
-alias retains its existing name and value. No public API or call site, name,
-config value, exact seven-expansion object-terminal chain, immediate
-`ChainObjectMode6 -> ChainObjectMode5` relation, terminal-only
-`ChainObjectMode5 -> ChainObjectMode4 -> ChainObjectMode3 -> ChainObjectMode2
--> ChainObjectMode1 -> BaseObjectMode -> object` normalization, key, payload,
-ordering, fallback, or fail-closed behavior changes.
-
-Canonical reserved-theorem-variable and static type-assertion requirements
-apply unchanged. The one active `.miz`/expectation pair and its dedicated
-covered Task 210 checker requirement exercise real source AST/resolver data,
-seven object-terminal expansions, distinct reserve `ChainObjectMode6` and
-asserted `ChainObjectMode5` source sites, the exact bare immediate relation
-edge, and real checker output without object/set coercion. `long_chain.rs`
-retains all 43 snake-case family-name occurrences plus the all-5,039-order
-finite corruption matrix, all 35 pre-existing owner isolation, immutable
-output, key fallback, active fixture, and real sidecar. Therefore this is move-
-only `design_drift` and no ZR0 test task is needed. `spec_coverage_audit.md`
-remains unchanged because authority, behavior, coverage credit, owner crate,
-and deferred status do not change. Forbidden changes are config/key/role/mode
-edits, relation or chain generalization, local-mode or other local-object-mode
-route moves, object/set coercion, assertion weakening, and test/expectation
-edits.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZR Move Result
 
-Task 263ZR moved only the five approved fragments totaling 52 lines into the
-existing private `type_elaboration/type_assertion_routes.rs`, preserving
-original raw hashes `85c28a03...`, `9c530a6d...`, `6906e0c0...`, `56abaa93...`,
-and `e0e40074...` as the pre-move oracle. After removing only required runner
-visibility and formatting whitespace, every old/new fragment pair is token-
-identical and the combined normalized hash is `a533b453...`. All previously
-moved local-mode and local-object-mode multi-hop routes remain unchanged in
-`type_assertion_routes.rs`; every other local-object-mode and adjacent route
-remains in `runner.rs`.
-
-The expanded private owner is 840 lines with raw hash `820ebd92...`;
-`runner.rs` is 5,535 lines with raw hash `710da0a6...`, and the phase facade is
-393 lines with raw hash `21abdde1...`. The unchanged 82-line
-`long_chain_config.rs` retains hash `3b0e2638...`. The invalid-key constant is
-leaf-private; config, test-consumed output, and extractor cross only the test
-facade, while the normal facade adds only the production detail route. The
-owner retains its direct object-terminal table import, the runner test alias
-derives the unchanged key from the moved config, and production dispatch order,
-exact object-terminal immediate-radix relation, call identity, and terminal
-fail-closed fallback are unchanged.
-
-The focused two tests, all 272 crate unit tests, and the full relevant-crate
-suite pass. Raw/normalized 272-name list hashes, four CLI byte hashes, active
-counts 96/4/188, plan 403/367, type coverage 235/223, pass/fail 219/184, and 23
-warnings/zero errors remain unchanged. Formatting, all-target/all-feature
-Clippy with warnings denied, workspace tests, diff cleanliness, and review-
-only implementation checks pass. Task 263ZR is complete; fresh Task 263
-inventory returns to the remaining local-object-mode long-chain asserted-head
-routes. `spec_coverage_audit.md` remains unchanged because no authority,
-behavior, coverage credit, owner crate, or deferred status changed.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZS Pre-Move Inventory and Specification
 
-Fresh authority, test, trace, expectation, design, source, API, and real-
-producer/consumer inventory selects only the local-object-mode long-chain same-
-mode asserted-head route as the next bounded addition to private
-`type_elaboration/type_assertion_routes.rs`. It forms five exact `runner.rs`
-fragments: the invalid key at 603-604 (2 lines, `f61c9584...`), config at
-3441-3455 (15, `99a3d76e...`), production detail route at 4000-4011 (12,
-`e9a8a538...`), test-only output at 4482-4490 (9, `4cc05280...`), and extractor
-at 5441-5452 (12, `306510d5...`). Total: 50 lines; combined raw hash
-`7a22a451...` and whitespace-normalized pre-move hash `3d08750b...`.
-
-Task 263ZS mechanically moves only those fragments into the existing private
-owner. Only the production detail route crosses the normal phase facade. The
-config, test-consumed output, and extractor cross under `#[cfg(test)]`; the
-invalid-key constant remains leaf-private while a config-derived runner test
-alias retains its existing name and value. No public API or call site, name,
-config value, exact seven-expansion object-terminal chain, same-symbol
-`ChainObjectMode6` relation, terminal object normalization, key, payload,
-ordering, fallback, or fail-closed behavior changes.
-
-Canonical reserved-theorem-variable and static type-assertion requirements
-apply unchanged. The active `.miz`/expectation pair and covered Task 200 checker
-requirement exercise real source AST/resolver data, distinct reserve/asserted
-sites resolving to the same `ChainObjectMode6` symbol, seven object-terminal
-expansions, and real checker output without general reachability, widening,
-`qua`, or object/set coercion. `long_chain.rs` retains all 61 snake-case family-
-name occurrences, full-reverse and connected-deeper rejection, the exact
-structural/provenance/corruption and immutable-output guards, active fixture,
-and real sidecar. Therefore this is move-only `design_drift` and no ZS0 test
-task is needed. `spec_coverage_audit.md` remains unchanged because authority,
-behavior, coverage credit, owner crate, and deferred status do not change.
-Forbidden changes are config/key/role/mode edits, relation or chain
-generalization, other route moves, object/set coercion, assertion weakening,
-and test/expectation edits.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZS Move Result
 
-Task 263ZS moved only the five approved fragments totaling 50 lines into the
-existing private `type_elaboration/type_assertion_routes.rs`, preserving
-original raw hashes `f61c9584...`, `99a3d76e...`, `e9a8a538...`, `4cc05280...`,
-and `306510d5...` as the pre-move oracle. After removing only required runner
-visibility and formatting whitespace, every old/new fragment pair is token-
-identical and the combined normalized hash is `3d08750b...`. All previously
-moved local-mode and local-object-mode routes remain unchanged in
-`type_assertion_routes.rs`; every other local-object-mode and adjacent route
-remains in `runner.rs`.
-
-The expanded private owner is 895 lines with raw hash `1905d645...`;
-`runner.rs` is 5,488 lines with raw hash `b893a626...`, and the phase facade is
-397 lines with raw hash `3135dcb0...`. The unchanged 82-line
-`long_chain_config.rs` retains hash `3b0e2638...`. The invalid-key constant is
-leaf-private; config, test-consumed output, and extractor cross only the test
-facade, while the normal facade adds only the production detail route. The
-owner retains its direct object-terminal table import, the runner test alias
-derives the unchanged key from the moved config, and production dispatch order,
-exact object-terminal same-mode relation, call identity, terminal object
-normalization, and fail-closed fallback are unchanged.
-
-The focused two tests, all 272 crate unit tests, and the full relevant-crate
-suite pass. Raw/normalized 272-name list hashes, four CLI byte hashes, active
-counts 96/4/188, plan 403/367, type coverage 235/223, pass/fail 219/184, and 23
-warnings/zero errors remain unchanged. Formatting, all-target/all-feature
-Clippy with warnings denied, workspace tests, diff cleanliness, and review-only
-implementation checks pass. Task 263ZS is complete; fresh Task 263 inventory
-returns to the remaining local-object-mode long-chain asserted-head routes.
-`spec_coverage_audit.md` remains unchanged because no authority, behavior,
-coverage credit, owner crate, or deferred status changed.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZT Pre-Move Inventory and Specification
 
-Fresh authority, test, trace, expectation, design, source, API, and real-
-producer/consumer inventory selects only the local-object-mode long-chain
-reserved-variable builtin type-assertion route as the next bounded addition to
-private `type_elaboration/type_assertion_routes.rs`. It forms five exact
-`runner.rs` fragments: the invalid key at 610-611 (2 lines, `78b08029...`),
-config at 3446-3459 (14, `b61e1cfe...`), production detail route at 3989-4002
-(14, `1d970933...`), test-only output at 4459-4468 (10, `9b8192d2...`), and
-extractor at 5407-5418 (12, `ee3fefe6...`). Total: 52 lines; combined raw hash
-`7dc2d7ba...` and whitespace-normalized pre-move hash `a5a24f13...`.
-
-Task 263ZT mechanically moves only those fragments into the existing private
-owner, which imports the shared object-terminal table directly from sibling
-`long_chain_config`. Only the production detail route crosses the normal phase
-facade. The config, test-consumed output, and extractor cross under
-`#[cfg(test)]`; the invalid-key constant remains leaf-private while a config-
-derived runner test alias retains its existing name and value. No public API or
-call site, name, config value, exact seven-expansion object-terminal chain,
-builtin-object asserted head, key, payload, ordering, fallback, or fail-closed
-behavior changes.
-
-Canonical reserved-theorem-variable and static type-assertion requirements
-apply unchanged. The active `.miz`/expectation pair and covered Task 179 checker
-requirement exercise real source AST/resolver data, a `ChainObjectMode6`
-reserved subject, an independent formula-side builtin `object` input, seven
-object-terminal expansions, terminal builtin-object normalization, and real
-checker output without general reachability, widening, `qua`, or object/set
-coercion. `long_chain.rs` retains all 62 snake-case family-name occurrences,
-exact structural/provenance/removal/corruption guards, immutable-output and
-route-isolation coverage, active fixture, and real sidecar. The two focused
-source/active tests pass before the move. Therefore this is move-only
-`design_drift` and no ZT0 test task is needed. `spec_coverage_audit.md` remains
-unchanged because authority, behavior, coverage credit, owner crate, and
-deferred status do not change. Forbidden changes are config/key/role/mode
-edits, chain or asserted-head generalization, other route moves, object/set
-coercion, assertion weakening, and test/expectation edits.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZT Move Result
 
-Task 263ZT moved only the five approved fragments totaling 52 lines into the
-existing private `type_elaboration/type_assertion_routes.rs`, preserving
-original raw hashes `78b08029...`, `b61e1cfe...`, `1d970933...`, `9b8192d2...`,
-and `ee3fefe6...` as the pre-move oracle. After removing only required runner
-visibility and formatting whitespace, every old/new fragment pair is token-
-identical and the combined normalized hash is `a5a24f13...`. All previously
-moved type-assertion/asserted-head routes remain unchanged in the owner; every
-other route remains in `runner.rs`.
-
-The expanded private owner is 953 lines with raw hash `701e2c3f...`;
-`runner.rs` is 5,437 lines with raw hash `9a1ea949...`, and the phase facade is
-400 lines with raw hash `08cc2834...`. The unchanged 82-line
-`long_chain_config.rs` retains hash `3b0e2638...`. The invalid-key constant is
-leaf-private; config, test-consumed output, and extractor cross only the test
-facade, while the normal facade adds only the production detail route. The
-owner retains its direct object-terminal table import, and the now-stale runner
-table import and phase-facade re-export were removed. The runner test alias
-derives the unchanged key from the moved config; production dispatch order,
-exact seven-expansion builtin-object relation, call identity, terminal object
-normalization, and fail-closed fallback are unchanged.
-
-The focused source/active tests, all 272 crate unit tests, the full relevant-
-crate suite, and workspace tests pass. Raw/normalized 272-name list hashes,
-four CLI byte hashes, active counts 96/4/188, plan 403/367, type coverage
-235/223, pass/fail 219/184, and 23 warnings/zero errors remain unchanged.
-Formatting, all-target/all-feature Clippy with warnings denied, diff
-cleanliness, and review-only implementation checks pass. Task 263ZT is
-complete; fresh Task 263 inventory returns to the remaining local-object-mode
-type-assertion/asserted-head/formula route families. `spec_coverage_audit.md`
-remains unchanged because no authority, behavior, coverage credit, owner
-crate, or deferred status changed.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZU Pre-Move Inventory and Specification
 
-Fresh authority, test, trace, expectation, design, source, API, and real-
-producer/consumer inventory selects only the direct local-object-mode reserved-
-variable builtin type-assertion route as the next bounded addition to private
-`type_elaboration/type_assertion_routes.rs`. It forms five exact `runner.rs`
-fragments: the invalid key at 705-707 (3 lines, `807489f0...`), config at
-3432-3448 (17, `fc5e75dc...`), production detail route at 4007-4018 (12,
-`f80bea53...`), test-only output at 4456-4464 (9, `eed40e5a...`), and extractor
-at 5395-5406 (12, `ac4e4e34...`). Total: 53 lines; combined raw hash
-`2eeb8849...` and whitespace-normalized pre-move hash `e62fac61...`.
-
-Task 263ZU mechanically moves only those fragments into the existing private
-owner. Only the production detail route crosses the normal phase facade. The
-config, test-consumed output, and extractor cross under `#[cfg(test)]`; the
-invalid-key constant remains leaf-private while a config-derived runner test
-alias retains its existing name and value. No public API or call site, name,
-config value, exact direct object-terminal expansion, builtin-object asserted
-head, key, payload, ordering, fallback, or fail-closed behavior changes.
-
-Canonical reserved-theorem-variable and static type-assertion requirements
-apply unchanged. The active `.miz`/expectation pair and covered Task 145 checker
-requirement exercise real source AST/resolver data, one exact bare
-`LocalObjectModeTypeAssertion -> object` definition, a reserved subject, an
-independent formula-side builtin `object` input, terminal builtin-object
-normalization, `BindingId(0)` at ordinal 1, and real checker output without
-general reachability, widening, `qua`, or object/set coercion. Existing tests
-retain 65 direct extractor/output/invalid-key references across eight support,
-source, active-fixture, long-chain, and isolation files, with exact source,
-definition-label, expansion-corruption, immutable-output, active real sidecar,
-and cross-route guards. The focused source/active tests pass before the move.
-Therefore this is move-only `design_drift` and no ZU0 test task is needed.
-`spec_coverage_audit.md` remains unchanged because authority, behavior,
-coverage credit, owner crate, and deferred status do not change. Forbidden
-changes are config/key/role/mode edits, route or asserted-head generalization,
-other route moves, object/set coercion, assertion weakening, and test/
-expectation edits.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZU Move Result
 
-Task 263ZU moved only the five approved fragments totaling 53 lines into the
-existing private `type_elaboration/type_assertion_routes.rs`, preserving
-original raw hashes `807489f0...`, `fc5e75dc...`, `f80bea53...`, `eed40e5a...`,
-and `ac4e4e34...` as the pre-move oracle. After removing only required runner
-visibility and formatting whitespace, every old/new fragment pair is token-
-identical and the combined normalized hash is `e62fac61...`. All previously
-moved routes remain unchanged in the owner; every other type-assertion and
-asserted-head route remains in `runner.rs`.
-
-The expanded private owner is 1,013 lines with raw hash `511425dc...`;
-`runner.rs` is 5,386 lines with raw hash `6b33f91a...`, and the phase facade is
-404 lines with raw hash `2120f54a...`. The invalid-key constant is leaf-private;
-config, test-consumed output, and extractor cross only the test facade, while
-the normal facade adds only the production detail route. The owner adds only
-the mode-definition/radix imports required by the moved inline definition.
-The runner test alias derives the unchanged key from the moved config;
-production dispatch order, exact one-expansion builtin-object relation, call
-identity, terminal object normalization, and fail-closed fallback are
-unchanged.
-
-The focused source/active tests, all 272 crate unit tests, the full relevant-
-crate suite, and workspace tests pass. Raw/normalized 272-name list hashes,
-four CLI byte hashes, active counts 96/4/188, plan 403/367, type coverage
-235/223, pass/fail 219/184, and 23 warnings/zero errors remain unchanged.
-Formatting, all-target/all-feature Clippy with warnings denied, diff
-cleanliness, and review-only implementation checks pass. Task 263ZU is
-complete; fresh Task 263 inventory returns to the remaining local-object-mode
-type-assertion/asserted-head/formula route families. `spec_coverage_audit.md`
-remains unchanged because no authority, behavior, coverage credit, owner
-crate, or deferred status changed.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZV Pre-Move Inventory and Specification
 
-Fresh authority, test, trace, expectation, design, source, API, and real-
-producer/consumer inventory selects only the chained local-object-mode
-reserved-variable builtin type-assertion route as the next bounded addition to
-private `type_elaboration/type_assertion_routes.rs`. It forms five exact
-`runner.rs` fragments: the invalid key at 693-695 (3 lines, `98c1b75c...`),
-config at 3183-3209 (27, `7a694885...`), production detail route at 3890-3903
-(14, `479515b0...`), test-only output at 4346-4356 (11, `afd6acbb...`), and
-extractor at 5266-5277 (12, `b751e7be...`). Total: 67 lines; combined raw hash
-`13f33de7...` and whitespace-normalized pre-move hash `92f527a2...`.
-
-Task 263ZV mechanically moves only those fragments into the existing private
-owner. Only the production detail route crosses the normal phase facade. The
-config, test-consumed output, and extractor cross under `#[cfg(test)]`; the
-invalid-key constant remains leaf-private while a config-derived runner test
-alias retains its existing name and value. No public API or call site, name,
-config value, exact two-expansion object-terminal chain, builtin-object
-asserted head, key, payload, ordering, fallback, or fail-closed behavior
-changes.
-
-Canonical builtin-type, reserved-theorem-variable, mode-chain, and static
-type-assertion requirements apply unchanged. The active `.miz`/expectation
-pair and covered Task 147 checker requirement exercise real source AST/resolver
-data, exact `ChainObjectModeTypeAssertion -> BaseObjectModeTypeAssertion ->
-object` definitions, a reserved subject, an independent formula-side builtin
-`object` input, terminal builtin-object normalization, `BindingId(0)` at
-subject ordinal 1, and real checker output without general reachability,
-widening, `qua`, or object/set coercion. Existing tests retain 67 direct
-extractor/output/invalid-key references across nine support, source, active-
-fixture, long-chain, and isolation files, with exact source, definition-label,
-both-expansion corruption, immutable-output, active real sidecar, and cross-
-route guards. The focused source/active tests pass before the move. Therefore
-this is move-only `design_drift` and no ZV0 test task is needed.
-`spec_coverage_audit.md` remains unchanged because authority, behavior,
-coverage credit, owner crate, and deferred status do not change. Forbidden
-changes are config/key/role/mode edits, route or asserted-head generalization,
-other route moves, object/set coercion, assertion weakening, and test/
-expectation edits.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZV Move Result
 
-Task 263ZV moved only the five approved fragments totaling 67 lines into the
-existing private `type_elaboration/type_assertion_routes.rs`, preserving
-original raw hashes `98c1b75c...`, `7a694885...`, `479515b0...`, `afd6acbb...`,
-and `b751e7be...` as the pre-move oracle. After removing only required runner
-visibility and formatting whitespace, every old/new fragment pair is token-
-identical, the combined raw hash is `13f33de7...`, and the combined normalized
-hash is `92f527a2...`. All previously moved routes remain unchanged in the
-owner; every other type-assertion and asserted-head route remains in
-`runner.rs`.
-
-The expanded private owner is 1,085 lines with raw hash `41caa325...`;
-`runner.rs` is 5,323 lines with raw hash `b51bfae1...`, and the phase facade is
-408 lines with raw hash `3bd1f0cd...`. The invalid-key constant is leaf-
-private; config, test-consumed output, and extractor cross only the test
-facade, while the normal facade adds only the production detail route. The
-runner test alias derives the unchanged key from the moved config; production
-dispatch position, exact two-expansion builtin-object relation, call identity,
-terminal object normalization, and fail-closed fallback are unchanged.
-
-The focused source/active tests, all 272 crate unit tests, the full relevant-
-crate suite, and workspace tests pass. Raw/normalized 272-name list hashes,
-four CLI byte hashes, active counts 96/4/188, plan 403/367, type coverage
-235/223, pass/fail 219/184, and 23 warnings/zero errors remain unchanged.
-Formatting, all-target/all-feature Clippy with warnings denied, diff
-cleanliness, and review-only implementation checks pass. Task 263ZV is
-complete; fresh Task 263 inventory returns to the remaining local-object-mode
-type-assertion/asserted-head/formula route families. `spec_coverage_audit.md`
-remains unchanged because no authority, behavior, coverage credit, owner
-crate, or deferred status changed.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZW Pre-Move Inventory and Specification
 
-Fresh authority, test, trace, expectation, design, source, API, and real-
-producer/consumer inventory selects only the two-edge local-object-mode
-reserved-variable builtin type-assertion route as the next bounded addition to
-private `type_elaboration/type_assertion_routes.rs`. It forms five exact
-`runner.rs` fragments: the invalid key at 704-705 (2 lines, `1c780da5...`),
-config at 3218-3249 (32, `977e0e8e...`), production detail route at 3881-3894
-(14, `05bdafd9...`), test-only output at 4319-4329 (11, `e1765982...`), and
-extractor at 5229-5240 (12, `c241f489...`). Total: 71 lines; combined raw hash
-`b4862644...` and whitespace-normalized pre-move hash `f87b44d4...`.
-
-Task 263ZW mechanically moves only those fragments into the existing private
-owner. Only the production detail route crosses the normal phase facade. The
-config, test-consumed output, and extractor cross under `#[cfg(test)]`; the
-invalid-key constant remains leaf-private while a config-derived runner test
-alias retains its existing name and value. No public API or call site, name,
-config value, exact three-expansion object-terminal chain, builtin-object
-asserted head, key, payload, ordering, fallback, or fail-closed behavior
-changes.
-
-Canonical builtin-type, reserved-theorem-variable, mode-chain, and static
-type-assertion requirements apply unchanged. The active `.miz`/expectation
-pair and covered Task 149 checker requirement exercise real source AST/resolver
-data, exact `OuterTwoEdgeObjectModeTypeAssertion ->
-MiddleTwoEdgeObjectModeTypeAssertion -> BaseTwoEdgeObjectModeTypeAssertion ->
-object` definitions, a reserved subject, an independent formula-side builtin
-`object` input, terminal builtin-object normalization, `BindingId(0)` at
-subject ordinal 1, and real checker output without general reachability,
-widening, `qua`, or object/set coercion. Existing tests retain 67 direct
-extractor/output/invalid-key references across nine support, source, active-
-fixture, long-chain, and isolation files, with exact source, definition-label,
-all-three-expansion corruption, immutable-output, active real sidecar, and
-cross-route guards. The focused source/active tests pass before the move.
-Therefore this is move-only `design_drift` and no ZW0 test task is needed.
-`spec_coverage_audit.md` remains unchanged because authority, behavior,
-coverage credit, owner crate, and deferred status do not change. Forbidden
-changes are config/key/role/mode edits, route or asserted-head generalization,
-other route moves, object/set coercion, assertion weakening, and test/
-expectation edits.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZW Move Result
 
-Task 263ZW moved only the five approved fragments totaling 71 lines into the
-existing private `type_elaboration/type_assertion_routes.rs`, preserving
-original raw hashes `1c780da5...`, `977e0e8e...`, `05bdafd9...`, `e1765982...`,
-and `c241f489...` as the pre-move oracle. After removing only required runner
-visibility and formatting whitespace, every old/new fragment pair is token-
-identical, the combined raw hash is `b4862644...`, and the combined normalized
-hash is `f87b44d4...`. All previously moved routes remain unchanged in the
-owner; every other type-assertion and asserted-head route remains in
-`runner.rs`.
-
-The expanded private owner is 1,161 lines with raw hash `869e95b0...`;
-`runner.rs` is 5,256 lines with raw hash `5189e88c...`, and the phase facade is
-412 lines with raw hash `c1f79141...`. The invalid-key constant is leaf-
-private; config, test-consumed output, and extractor cross only the test
-facade, while the normal facade adds only the production detail route. The
-runner test alias derives the unchanged key from the moved config; production
-dispatch position, exact three-expansion builtin-object relation, call
-identity, terminal object normalization, and fail-closed fallback are
-unchanged.
-
-The focused source/active tests, all 272 crate unit tests, the full relevant-
-crate suite, and workspace tests pass. Raw/normalized 272-name list hashes,
-four CLI byte hashes, active counts 96/4/188, plan 403/367, type coverage
-235/223, pass/fail 219/184, and 23 warnings/zero errors remain unchanged.
-Formatting, all-target/all-feature Clippy with warnings denied, diff
-cleanliness, and review-only implementation checks pass. Task 263ZW is
-complete; fresh Task 263 inventory returns to the remaining local-object-mode
-type-assertion/asserted-head/formula route families. `spec_coverage_audit.md`
-remains unchanged because no authority, behavior, coverage credit, owner
-crate, or deferred status changed.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZX Pre-Move Inventory and Specification
 
-Fresh authority, test, trace, expectation, design, source, API, and real-
-producer/consumer inventory selects only the three-edge local-object-mode
-reserved-variable builtin type-assertion route as the next bounded addition to
-private `type_elaboration/type_assertion_routes.rs`. It forms five exact
-`runner.rs` fragments: the invalid key at 714-715 (2 lines, `c2f2ffca...`),
-config at 3259-3301 (43, `b9016704...`), production detail route at 3869-3882
-(14, `1f9c6902...`), test-only output at 4289-4299 (11, `0e10026b...`), and
-extractor at 5188-5199 (12, `f273cd7a...`). Total: 82 lines; combined raw hash
-`236c4a64...` and whitespace-normalized pre-move hash `f0d95b00...`.
-
-Task 263ZX mechanically moves only those fragments into the existing private
-owner. Only the production detail route crosses the normal phase facade. The
-config, test-consumed output, and extractor cross under `#[cfg(test)]`; the
-invalid-key constant remains leaf-private while a config-derived runner test
-alias retains its existing name and value. No public API or call site, name,
-config value, exact four-expansion object-terminal chain, builtin-object
-asserted head, key, payload, ordering, fallback, or fail-closed behavior
-changes.
-
-Canonical builtin-type, reserved-theorem-variable, mode-chain, and static
-type-assertion requirements apply unchanged. The active `.miz`/expectation
-pair and covered Task 151 checker requirement exercise real source AST/resolver
-data, exact `OuterThreeEdgeObjectModeTypeAssertion ->
-MiddleThreeEdgeObjectModeTypeAssertion -> InnerThreeEdgeObjectModeTypeAssertion
--> BaseThreeEdgeObjectModeTypeAssertion -> object` definitions, a reserved
-subject, an independent formula-side builtin `object` input, terminal builtin-
-object normalization, `BindingId(0)` at subject ordinal 1, and real checker
-output without general reachability, widening, `qua`, or object/set coercion.
-Existing tests retain 64 direct extractor/output/invalid-key references across
-eight support, source, active-fixture, long-chain, and isolation files, with
-exact source, definition-label, all-four-expansion corruption, immutable-
-output, active real sidecar, and cross-route guards. The focused source/active
-tests pass before the move. Therefore this is move-only `design_drift` and no
-ZX0 test task is needed. `spec_coverage_audit.md` remains unchanged because
-authority, behavior, coverage credit, owner crate, and deferred status do not
-change. Forbidden changes are config/key/role/mode edits, route or asserted-
-head generalization, other route moves, object/set coercion, assertion
-weakening, and test/expectation edits.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZX Move Result
 
-Task 263ZX moved only the five approved fragments totaling 82 lines into the
-existing private `type_elaboration/type_assertion_routes.rs`, preserving
-original raw hashes `c2f2ffca...`, `b9016704...`, `1f9c6902...`, `0e10026b...`,
-and `f273cd7a...` as the pre-move oracle. After removing only required runner
-visibility and formatting whitespace, every old/new fragment pair is token-
-identical, the combined raw hash is `236c4a64...`, and the combined normalized
-hash is `f0d95b00...`. All previously moved routes remain unchanged in the
-owner; every other type-assertion and asserted-head route remains in
-`runner.rs`.
-
-The expanded private owner is 1,248 lines with raw hash `53b13b9b...`;
-`runner.rs` is 5,178 lines with raw hash `39377f32...`, and the phase facade is
-416 lines with raw hash `3a713a42...`. The invalid-key constant is leaf-
-private; config, test-consumed output, and extractor cross only the test
-facade, while the normal facade adds only the production detail route. The
-runner test alias derives the unchanged key from the moved config; production
-dispatch position, exact four-expansion builtin-object relation, call
-identity, terminal object normalization, and fail-closed fallback are
-unchanged.
-
-The focused source/active tests, all 272 crate unit tests, the full relevant-
-crate suite, and workspace tests pass. Raw/normalized 272-name list hashes,
-four CLI byte hashes, active counts 96/4/188, plan 403/367, type coverage
-235/223, pass/fail 219/184, and 23 warnings/zero errors remain unchanged.
-Formatting, all-target/all-feature Clippy with warnings denied, diff
-cleanliness, and review-only implementation checks pass. Task 263ZX is
-complete; fresh Task 263 inventory returns to the remaining local-object-mode
-type-assertion/asserted-head/formula route families. `spec_coverage_audit.md`
-remains unchanged because no authority, behavior, coverage credit, owner
-crate, or deferred status changed.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZY Pre-Move Inventory and Specification
 
-Fresh authority, test, trace, expectation, design, source, API, and real-
-producer/consumer inventory selects only the four-edge local-object-mode
-reserved-variable builtin type-assertion route as the next bounded addition to
-private `type_elaboration/type_assertion_routes.rs`. It forms five exact
-`runner.rs` fragments: the invalid key at 724-725 (2 lines, `38ec55aa...`),
-config at 3305-3346 (42, `e665b971...`), production detail route at 3845-3858
-(14, `547d8019...`), test-only output at 4247-4257 (11, `e36b7f6d...`), and
-extractor at 5136-5147 (12, `1ee94ac5...`). Total: 81 lines; combined raw hash
-`f0a97fef...` and whitespace-normalized pre-move hash `135373d6...`.
-
-Task 263ZY mechanically moves only those fragments into the existing private
-owner. Only the production detail route crosses the normal phase facade. The
-config, test-consumed output, and extractor cross under `#[cfg(test)]`; the
-invalid-key constant remains leaf-private while a config-derived runner test
-alias retains its existing name and value. No public API or call site, name,
-config value, exact five-expansion object-terminal chain, builtin-object
-asserted head, key, payload, ordering, fallback, or fail-closed behavior
-changes.
-
-Canonical builtin-type, reserved-theorem-variable, mode-chain, and static
-type-assertion requirements apply unchanged. The active `.miz`/expectation
-pair and covered Task 153 checker requirement exercise real source AST/resolver
-data, exact `TooDeepFourEdgeObjectModeTypeAssertion ->
-OuterFourEdgeObjectModeTypeAssertion -> MiddleFourEdgeObjectModeTypeAssertion
--> InnerFourEdgeObjectModeTypeAssertion ->
-BaseFourEdgeObjectModeTypeAssertion -> object` definitions, a reserved
-subject, an independent formula-side builtin `object` input, terminal builtin-
-object normalization, `BindingId(0)` at subject ordinal 1, and real checker
-output without general reachability, widening, `qua`, or object/set coercion.
-Existing tests retain 60 direct extractor/output/invalid-key references across
-seven support, source, active-fixture, long-chain, and isolation files, with
-exact source, definition-label, all-five-expansion corruption, immutable-
-output, active real sidecar, and cross-route guards. The focused source/active
-tests pass before the move. Therefore this is move-only `design_drift` and no
-ZY0 test task is needed. `spec_coverage_audit.md` remains unchanged because
-authority, behavior, coverage credit, owner crate, and deferred status do not
-change. Forbidden changes are config/key/role/mode edits, route or asserted-
-head generalization, other route moves, object/set coercion, assertion
-weakening, and test/expectation edits.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZY Move Result
 
-Task 263ZY moved only the five approved fragments totaling 81 lines into the
-existing private `type_elaboration/type_assertion_routes.rs`, preserving
-original raw hashes `38ec55aa...`, `e665b971...`, `547d8019...`, `e36b7f6d...`,
-and `1ee94ac5...` as the pre-move oracle. After removing only required runner
-visibility and formatting whitespace, every old/new fragment pair is token-
-identical, the combined raw hash is `f0a97fef...`, and the combined normalized
-hash is `135373d6...`. All previously moved routes remain unchanged in the
-owner; every other type-assertion and asserted-head route remains in
-`runner.rs`.
-
-The expanded private owner is 1,334 lines with raw hash `defe8960...`;
-`runner.rs` is 5,101 lines with raw hash `c337cb04...`, and the phase facade is
-420 lines with raw hash `62b82681...`. The invalid-key constant is leaf-
-private; config, test-consumed output, and extractor cross only the test
-facade, while the normal facade adds only the production detail route. The
-runner test alias derives the unchanged key from the moved config; production
-dispatch position, exact five-expansion builtin-object relation, call
-identity, terminal object normalization, and fail-closed fallback are
-unchanged.
-
-The focused source/active tests, all 272 crate unit tests, the full relevant-
-crate suite, and workspace tests pass. Raw/normalized 272-name list hashes,
-four CLI byte hashes, active counts 96/4/188, plan 403/367, type coverage
-235/223, pass/fail 219/184, and 23 warnings/zero errors remain unchanged.
-Formatting, all-target/all-feature Clippy with warnings denied, diff
-cleanliness, and review-only implementation checks pass. Task 263ZY is
-complete; fresh Task 263 inventory returns to the remaining local-object-mode
-type-assertion/asserted-head/formula route families. `spec_coverage_audit.md`
-remains unchanged because no authority, behavior, coverage credit, owner
-crate, or deferred status changed.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZ Pre-Move Inventory and Specification
 
-Fresh authority, test, trace, expectation, design, source, API, and real-
-producer/consumer inventory selects only the direct local-object-mode same-
-mode asserted-head route as the next bounded addition to private
-`type_elaboration/type_assertion_routes.rs`. It forms five exact `runner.rs`
-fragments: the invalid key at 644-645 (2 lines, `7e20cddf...`), config at
-2040-2059 (20, `315d6705...`), production detail route at 3362-3373 (12,
-`98767002...`), test-only output at 3848-3856 (9, `5faad673...`), and extractor
-at 4643-4654 (12, `e4a9dc46...`). Total: 55 lines; combined raw hash
-`2f87f6dd...` and whitespace-normalized pre-move hash `e5a22380...`.
-
-Task 263ZZ mechanically moves only those fragments into the existing private
-owner. Only the production detail route crosses the normal phase facade. The
-config, test-consumed output, and extractor cross under `#[cfg(test)]`; the
-invalid-key constant remains leaf-private while a config-derived runner test
-alias retains its existing name and value. No public API or call site, name,
-config value, exact one-expansion object-terminal same-mode relation, key,
-payload, ordering, fallback, or fail-closed behavior changes.
-
-Canonical builtin-type, reserved-theorem-variable, mode-expansion, and static
-type-assertion requirements apply unchanged. The active `.miz`/expectation
-pair and covered Task 183 checker requirement exercise real source AST/resolver
-data, exact `LocalObjectModeAssertedHead -> object` definition, a reserved
-subject, an independent formula-side reference to the same local mode, terminal
-builtin-object normalization, `BindingId(0)` at subject ordinal 1, and real
-checker output without general reachability, widening, `qua`, or object/set
-coercion. Existing tests retain 60 direct extractor/output/invalid-key
-references across five support, source, active-fixture, long-chain, and
-isolation files, with exact source, definition-label/radix, corruption and
-near-miss coverage, immutable output, active real sidecar, and cross-route
-guards. The focused source/active tests pass before the move. Therefore this
-is move-only `design_drift` and no ZZ0 test task is needed.
-`spec_coverage_audit.md` remains unchanged because authority, behavior,
-coverage credit, owner crate, and deferred status do not change. Forbidden
-changes are config/key/role/mode edits, route or asserted-head generalization,
-other route moves, object/set coercion, assertion weakening, and test/
-expectation edits.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZ Move Result
 
-Task 263ZZ moved only the five approved fragments totaling 55 lines into the
-existing private `type_elaboration/type_assertion_routes.rs` owner. The
-invalid-key fragment remains leaf-private; the config, output, and extractor
-remain test-only facade imports; and only the production detail route crosses
-the normal phase facade. The config-derived runner test alias retains the same
-name and value.
-
-After removing the required `pub(in crate::runner)` visibility from the moved
-fragments, every old/new fragment pair retains its exact raw hash:
-`7e20cddf...`, `315d6705...`, `98767002...`, `5faad673...`, and
-`e4a9dc46...`. Their combined raw hash remains `2f87f6dd...`, and the combined
-whitespace-normalized hash remains `e5a22380...`. The item-scoped
-`#[rustfmt::skip]` immediately above the moved config is outside this 55-line
-oracle and only preserves the original multiline trailing-comma token form
-under the owner's indentation; it has no runtime effect.
-
-The post-move owner is 1,395 lines with SHA-256 `5db40505...`; `runner.rs` is
-5,049 lines with `7ace5217...`; and the phase facade is 424 lines with
-`639de742...`. The focused source and active-fixture tests, the 272-unit-test
-crate suite, raw and normalized test-list hashes, and all four CLI report
-hashes remain unchanged. Review-only test-sufficiency, implementation, and
-source/documentation consistency checks have no finding; full workspace
-format, Clippy, test, and diff gates pass. No API,
-name, test, expectation, trace, diagnostic, key, payload, ordering, fallback,
-or fail-closed behavior changed. `spec_coverage_audit.md` remains unchanged
-because no authority, behavior, coverage credit, owner crate, or deferred
-status changed.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZA Pre-Move Inventory and Specification
 
-Fresh authority, test, trace, expectation, design, source, API, and real-
-producer/consumer inventory selects only the chained local-object-mode same-
-mode asserted-head route as the next bounded addition to private
-`type_elaboration/type_assertion_routes.rs`. It forms five exact `runner.rs`
-fragments: the invalid key at 697-698 (2 lines, `87ab7a13...`), config at
-2903-2930 (28, `84bcf48a...`), production detail route at 3631-3642 (12,
-`fcc6d9c8...`), test-only output at 4041-4049 (9, `f108ebaa...`), and extractor
-at 4877-4888 (12, `f34d5bec...`). Total: 63 lines; combined raw hash
-`c19bc3a5...` and whitespace-normalized pre-move hash `43acc3c2...`.
-
-Task 263ZZA mechanically moves only those fragments into the existing private
-owner. Only the production detail route crosses the normal phase facade. The
-config, test-consumed output, and extractor cross under `#[cfg(test)]`; the
-invalid-key constant remains leaf-private while a config-derived runner test
-alias retains its existing name and value. No public API or call site, name,
-config value, exact two-expansion object-terminal same-mode relation, key,
-payload, ordering, fallback, or fail-closed behavior changes.
-
-Canonical mode unfolding, builtin-object, reserved-theorem-variable, and
-static type-assertion requirements apply unchanged. The active `.miz`/
-expectation pair and covered Task 185 checker requirement exercise two ordered
-real source-derived definitions, `BaseObjectModeAssertedHead -> object` and
-`ChainObjectModeAssertedHead -> BaseObjectModeAssertedHead`, a reserved subject,
-and an independent formula-side reference to the same outer mode. The route
-retains distinct source sites/ranges, consumes exactly two expansions,
-normalizes three known type entries to the terminal base-definition-RHS
-builtin-object identity, resolves subject ordinal 1 to `BindingId(0)`, and
-produces one inferred variable plus one fact/deferred-free checked type
-assertion without general reachability, widening, `qua`, or object/set
-coercion. Existing tests retain 63 direct extractor/output/invalid-key
-references across six support, source, active-fixture, long-chain, and
-isolation test files; including six definitions/internal calls in `runner.rs`,
-the pre-move repository has 69 occurrences across seven source-and-test files.
-The tests provide exact source, expansion, definition-label/radix,
-corruption, near-miss, immutable-output, real-sidecar, and cross-route guards.
-Both focused source and active-fixture tests pass before the move. Therefore
-this is move-only `design_drift`; no ZZA0 test task is needed.
-`spec_coverage_audit.md` remains unchanged because authority, behavior,
-coverage credit, owner crate, and deferred status do not change. Forbidden
-changes are config/key/role/mode edits, route or asserted-head generalization,
-other route moves, object/set coercion, assertion weakening, and test/
-expectation edits.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZA Move Result
 
-Task 263ZZA moved only the five approved fragments totaling 63 lines into the
-existing private `type_elaboration/type_assertion_routes.rs` owner. The
-invalid-key fragment remains leaf-private; the config, output, and extractor
-remain test-only facade imports; and only the production detail route crosses
-the normal phase facade. The config-derived runner test alias retains the same
-name and value.
-
-After removing the required `pub(in crate::runner)` visibility from the moved
-fragments, every old/new fragment pair retains its exact raw hash:
-`87ab7a13...`, `84bcf48a...`, `fcc6d9c8...`, `f108ebaa...`, and
-`f34d5bec...`. Their combined raw hash remains `c19bc3a5...`, and the combined
-whitespace-normalized hash remains `43acc3c2...`. The item-scoped
-`#[rustfmt::skip]` immediately above the moved config is outside this 63-line
-oracle and only preserves the original config token layout after adding the
-required owner visibility; it has no runtime effect.
-
-The post-move owner is 1,464 lines with SHA-256 `366eff9a...`; `runner.rs` is
-4,989 lines with `9c01b80f...`; and the phase facade is 428 lines with
-`03cff9d4...`. Both focused tests, the 272-unit-test crate suite, raw and
-normalized test-list hashes, and all four CLI report hashes remain unchanged.
-Review-only implementation and test-sufficiency checks found no source or test
-issue; their sole completion-state documentation finding is repaired by this
-paired update. Full workspace format, Clippy, test, and diff gates pass. No
-API, name, test, expectation, trace, diagnostic, key, payload, ordering,
-fallback, or fail-closed behavior changed. `spec_coverage_audit.md` remains
-unchanged because no authority, behavior, coverage credit, owner crate, or
-deferred status changed.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZB Pre-Move Inventory and Specification
 
-Fresh authority, test, trace, expectation, design, source, API, and real-
-producer/consumer inventory selects only the chained local-object-mode
-immediate-radix asserted-head route as the next bounded addition to private
-`type_elaboration/type_assertion_routes.rs`. It forms five exact `runner.rs`
-fragments: the invalid key at 659-660 (2 lines, `9c789614...`), config at
-2105-2132 (28, `dd489077...`), production detail route at 3348-3360 (13,
-`fbf581af...`), test-only output at 3802-3811 (10, `16c15d04...`), and
-extractor at 4583-4594 (12, `a452ccd2...`). Total: 65 lines; combined raw hash
-`350810f3...` and whitespace-normalized pre-move hash `606b46b8...`.
-
-Task 263ZZB mechanically moves only those fragments into the existing private
-owner. Only the production detail route crosses the normal phase facade. The
-config, test-consumed output, and extractor cross under `#[cfg(test)]`; the
-invalid-key constant remains leaf-private while a config-derived runner test
-alias retains its existing name and value. No public API or call site, name,
-config value, exact two-expansion object-terminal immediate-radix relation,
-key, payload, ordering, fallback, or fail-closed behavior changes.
-
-Canonical mode unfolding, builtin-object, reserved-theorem-variable, and
-static type-assertion requirements apply unchanged. The active `.miz`/
-expectation pair and covered Task 202 checker requirement exercise two ordered
-real source-derived definitions, `BaseObjectModeRadixAssertedHead -> object`
-and `OuterObjectModeRadixAssertedHead -> BaseObjectModeRadixAssertedHead`, an
-outer-mode reserved subject, and an independent formula-side reference to the
-outer expansion's immediate radix. The route retains distinct outer/base
-symbols and source sites/ranges, consumes exactly two expansions, normalizes
-three known type entries to the terminal base-definition-RHS builtin-object
-identity, resolves subject ordinal 1 to `BindingId(0)`, and produces one
-inferred variable plus one fact/candidate/diagnostic/deferred-free checked type
-assertion with zero expected constraints and without general reachability,
-widening, `qua`, or object/set coercion. Existing tests retain 73 direct
-extractor/output/invalid-key references across nine test files; including six
-definitions/internal calls in `runner.rs`, the pre-move repository has 79
-occurrences across ten source-and-test files. Exact source, expansion,
-definition-label/radix, relation, corruption, near-miss, immutable-output,
-real-sidecar, and cross-route guards are present. Both focused source and
-active-fixture tests pass before the move. Therefore this is move-only
-`design_drift`; no ZZB0 test task is needed. `spec_coverage_audit.md` remains
-unchanged because authority, behavior, coverage credit, owner crate, and
-deferred status do not change. Forbidden changes are config/key/role/mode/
-relation edits, route or asserted-head generalization, other route moves,
-object/set coercion, assertion weakening, and test/expectation edits.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZB Move Result
 
-Task 263ZZB moved only the five approved fragments totaling 65 lines into the
-existing private `type_elaboration/type_assertion_routes.rs` owner. The
-invalid-key fragment remains leaf-private; the config, output, and extractor
-remain test-only facade imports; and only the production detail route crosses
-the normal phase facade. The config-derived runner test alias retains the same
-name and value.
-
-After removing the required `pub(in crate::runner)` visibility from the moved
-fragments, every old/new fragment pair retains its exact raw hash:
-`9c789614...`, `dd489077...`, `fbf581af...`, `16c15d04...`, and
-`a452ccd2...`. Their combined raw hash remains `350810f3...`, and the combined
-whitespace-normalized hash remains `606b46b8...`. The item-scoped
-`#[rustfmt::skip]` immediately above the moved config is outside this 65-line
-oracle and only preserves the original config token layout after adding the
-required owner visibility; it has no runtime effect.
-
-The post-move owner is 1,535 lines with SHA-256 `7ae4fa4d...`; `runner.rs` is
-4,927 lines with `171aa7c4...`; and the phase facade is 432 lines with
-`dfa5b65a...`. Both focused tests, the 272-unit-test crate suite, raw and
-normalized test-list hashes, and all four CLI report hashes remain unchanged.
-Review-only implementation and test-sufficiency checks found no source or test
-issue; their sole completion-state documentation finding is repaired by this
-paired update. Full workspace format, Clippy, test, and diff gates pass. No
-API, name, relation, test, expectation, trace, diagnostic, key, payload,
-ordering, fallback, or fail-closed behavior changed. `spec_coverage_audit.md`
-remains unchanged because no authority, behavior, coverage credit, owner
-crate, or deferred status changed.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZC Pre-Move Inventory and Specification
 
-Fresh authority, test, trace, expectation, design, source, API, and real-
-producer/consumer inventory selects only the two-edge local-object-mode same-
-mode asserted-head route as the next bounded addition to private
-`type_elaboration/type_assertion_routes.rs`. It forms five exact `runner.rs`
-fragments: the invalid key at 719-720 (2 lines, `cc5d93c2...`), config at
-3083-3115 (33, `74710488...`), production detail route at 3634-3645 (12,
-`c487e895...`), test-only output at 4005-4013 (9, `33561a0b...`), and extractor
-at 4833-4844 (12, `694b6312...`). Total: 68 lines; combined raw hash
-`d3f42ec4...` and whitespace-normalized pre-move hash `38599f34...`.
-
-Task 263ZZC mechanically moves only those fragments into the existing private
-owner. The orchestration call and its dispatch order stay in `runner.rs`. Only
-the production detail route crosses the normal phase facade. The config, test-
-consumed output, and extractor cross under `#[cfg(test)]`; the invalid-key
-constant remains leaf-private while a config-derived runner test alias retains
-its existing name and value. No public API or call site, helper name, config
-value, exact three-expansion object-terminal same-mode relation, key, payload,
-ordering, fallback, or fail-closed behavior changes.
-
-Canonical mode unfolding, builtin-object, reserved-theorem-variable, and
-static type-assertion requirements apply unchanged. The active `.miz`/
-expectation pair and covered Task 187 checker requirement exercise three
-ordered real source-derived definitions, `BaseTwoEdgeObjectModeAssertedHead ->
-object`, `MiddleTwoEdgeObjectModeAssertedHead ->
-BaseTwoEdgeObjectModeAssertedHead`, and `OuterTwoEdgeObjectModeAssertedHead ->
-MiddleTwoEdgeObjectModeAssertedHead`, with independent reserve-side and formula-
-side references to the same outer symbol at distinct sites/ranges. The route
-consumes exactly three expansions, normalizes three known type entries to the
-terminal base-definition-RHS builtin-object identity, resolves subject ordinal
-1 to `BindingId(0)`, and produces one inferred variable plus one fact/
-candidate/diagnostic/deferred-free checked type assertion with zero expected
-constraints and without general reachability, widening, `qua`, or object/set
-coercion. Existing tests retain 66 direct symbol references across seven test
-files; including ten definitions/internal calls in `runner.rs`, the pre-move
-repository has 76 occurrences across eight source-and-test files. Exact source,
-expansion, definition-label/radix, relation, corruption, near-miss, immutable-
-output, real-sidecar, and cross-route guards are present. Both focused source
-and active-fixture tests pass before the move. Therefore this is move-only
-`design_drift`; no ZZC0 test task is needed. `spec_coverage_audit.md` remains
-unchanged because authority, behavior, coverage credit, owner crate, and
-deferred status do not change. Forbidden changes are config/key/role/mode/
-relation edits, route or asserted-head generalization, other route moves,
-object/set coercion, assertion weakening, and test/expectation edits.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZC Move Result
 
-Task 263ZZC moved only the five approved fragments totaling 68 lines into the
-existing private `type_elaboration/type_assertion_routes.rs` owner. The
-orchestration call remains in place and byte/order-stable. The invalid-key
-fragment remains leaf-private; the config, output, and extractor remain test-
-only facade imports; and only the production detail route crosses the normal
-phase facade. The config-derived runner test alias retains the same name and
-value.
-
-After removing the required `pub(in crate::runner)` visibility from the moved
-fragments, every old/new fragment pair retains its exact raw hash:
-`cc5d93c2...`, `74710488...`, `c487e895...`, `33561a0b...`, and
-`694b6312...`. Their combined raw hash remains `d3f42ec4...`, and the combined
-whitespace-normalized hash remains `38599f34...`. The item-scoped
-`#[rustfmt::skip]` immediately above the moved config is outside this 68-line
-oracle and only preserves the original config token layout after adding the
-required owner visibility; it has no runtime effect.
-
-The post-move owner is 1,609 lines with SHA-256 `2ebb1d54...`; `runner.rs` is
-4,862 lines with `a05d72b2...`; and the phase facade is 436 lines with
-`1b892834...`. Both focused tests, the 272-unit-test crate suite, raw hash
-`5e41e4db...` and normalized hash `c0c2b80f...` for the test list, and all four
-CLI report hashes remain unchanged. Review-only implementation and test-
-sufficiency checks found no finding. Full workspace format, Clippy, test, and
-diff gates pass. No API, name, relation, test, expectation, trace, diagnostic,
-key, payload, ordering, fallback, or fail-closed behavior changed.
-`spec_coverage_audit.md` remains unchanged because no authority, behavior,
-coverage credit, owner crate, or deferred status changed.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZD Pre-Move Inventory and Specification
 
-Fresh authority, test, trace, expectation, design, source, API, and real-
-producer/consumer inventory selects only the two-edge local-object-mode
-immediate-radix asserted-head route as the next bounded addition to private
-`type_elaboration/type_assertion_routes.rs`. It forms five exact `runner.rs`
-fragments: the invalid key at 700-701 (2 lines, `d4a69d79...`), config at
-2679-2713 (35, `8325c905...`), production detail route at 3472-3484 (13,
-`44b42bc2...`), test-only output at 3860-3869 (10, `c910581b...`), and
-extractor at 4651-4662 (12, `dfb26d72...`). Total: 72 lines; combined raw hash
-`10087773...` and whitespace-normalized pre-move hash `d24a1e53...`.
-
-Task 263ZZD mechanically moves only those fragments into the existing private
-owner. The orchestration call and dispatch order stay in `runner.rs`. Only the
-production detail route crosses the normal phase facade. The config, test-
-consumed output, and extractor cross under `#[cfg(test)]`; the invalid-key
-constant remains leaf-private while a config-derived runner test alias retains
-its existing name and value. No public API or call site, helper name, config
-value, exact three-expansion object-terminal immediate-radix relation, key,
-payload, ordering, fallback, or fail-closed behavior changes.
-
-Canonical mode unfolding, builtin-object, reserved-theorem-variable, and
-static type-assertion requirements apply unchanged. The active `.miz`/
-expectation pair and covered Task 204 checker requirement exercise three
-ordered real source-derived definitions: `BaseTwoEdgeObjectModeRadixAssertedHead
--> object`, `MiddleTwoEdgeObjectModeRadixAssertedHead ->
-BaseTwoEdgeObjectModeRadixAssertedHead`, and
-`OuterTwoEdgeObjectModeRadixAssertedHead ->
-MiddleTwoEdgeObjectModeRadixAssertedHead`. The reserve subject retains the
-outer symbol while the formula-side asserted type independently resolves the
-middle symbol at a distinct site/range and must equal the outer expansion's
-immediate radix. The route consumes exactly three expansions, normalizes three
-known type entries to the terminal base-definition-RHS builtin-object identity,
-resolves subject ordinal 1 to `BindingId(0)`, and produces one inferred
-variable plus one fact/candidate/diagnostic/deferred-free checked type
-assertion with zero expected constraints and without two-hop/general
-reachability, widening, `qua`, or object/set coercion. Existing tests retain 75
-direct symbol references across eight test files; including ten definitions/
-internal calls in `runner.rs`, the pre-move repository has 85 occurrences
-across nine source-and-test files. Exact source, expansion, definition-label/
-radix, relation, corruption, near-miss, immutable-output, real-sidecar, and
-cross-route guards are present. Both focused source and active-fixture tests
-pass before the move. Therefore this is move-only `design_drift`; no ZZD0 test
-task is needed. `spec_coverage_audit.md` remains unchanged because authority,
-behavior, coverage credit, owner crate, and deferred status do not change.
-Forbidden changes are config/key/role/mode/relation edits, route or asserted-
-head generalization, other route moves, object/set coercion, assertion
-weakening, and test/expectation edits.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZD Move Result
 
-Task 263ZZD moved only the five approved fragments totaling 72 lines into the
-existing private `type_elaboration/type_assertion_routes.rs` owner. The
-orchestration call remains in place and byte/order-stable. The invalid-key
-fragment remains leaf-private; the config, output, and extractor remain test-
-only facade imports; and only the production detail route crosses the normal
-phase facade. The config-derived runner test alias retains the same name and
-value.
-
-After removing the required `pub(in crate::runner)` visibility from the moved
-fragments, every old/new fragment pair retains its exact raw hash:
-`d4a69d79...`, `8325c905...`, `44b42bc2...`, `c910581b...`, and
-`dfb26d72...`. Their combined raw hash remains `10087773...`, and the combined
-whitespace-normalized hash remains `d24a1e53...`. The item-scoped
-`#[rustfmt::skip]` immediately above the moved config is outside this 72-line
-oracle and only preserves the original config token layout after adding the
-required owner visibility; it has no runtime effect.
-
-The post-move owner is 1,687 lines with SHA-256 `4a98420b...`; `runner.rs` is
-4,793 lines with `e3c01671...`; and the phase facade is 440 lines with
-`d3243e97...`. Both focused tests, the 272-unit-test crate suite, raw hash
-`5e41e4db...` and normalized hash `c0c2b80f...` for the test list, and all four
-CLI report hashes remain unchanged. Review-only implementation and test-
-sufficiency checks found no finding. Full workspace format, Clippy, test, and
-diff gates pass. No API, name, relation, test, expectation, trace, diagnostic,
-key, payload, ordering, fallback, or fail-closed behavior changed.
-`spec_coverage_audit.md` remains unchanged because no authority, behavior,
-coverage credit, owner crate, or deferred status changed.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZE Pre-Move Inventory and Specification
 
-Fresh authority, test, trace, expectation, design, source, API, and real-
-producer/consumer inventory selects only the two-edge local-object-mode two-
-hop asserted-head route as the next bounded addition to private
-`type_elaboration/type_assertion_routes.rs`. It forms five exact `runner.rs`
-fragments: the invalid key at 678-679 (2 lines, `a8adcfca...`), config at
-2185-2218 (34, `de8ce647...`), production detail route at 3290-3302 (13,
-`77f965e5...`), test-only output at 3697-3706 (10, `23463041...`), and
-extractor at 4452-4463 (12, `71947b90...`). Total: 71 lines; combined raw hash
-`55b319a2...` and whitespace-normalized pre-move hash `af5eb98a...`.
-
-Task 263ZZE mechanically moves only those fragments into the existing private
-owner. The orchestration call and dispatch order stay in `runner.rs`. Only the
-production detail route crosses the normal phase facade. The config, test-
-consumed output, and extractor cross under `#[cfg(test)]`; the invalid-key
-constant remains leaf-private while a config-derived runner test alias retains
-its existing name and value. No public API or call site, helper name, config
-value, exact three-expansion object-terminal two-hop relation, key, payload,
-ordering, fallback, or fail-closed behavior changes.
-
-Canonical mode unfolding, builtin-object, reserved-theorem-variable, and
-static type-assertion requirements apply unchanged. The active `.miz`/
-expectation pair and covered Task 212 checker requirement exercise three
-ordered real source-derived definitions: `BaseTwoHopObjectModeAssertedHead ->
-object`, `MiddleTwoHopObjectModeAssertedHead ->
-BaseTwoHopObjectModeAssertedHead`, and `OuterTwoHopObjectModeAssertedHead ->
-MiddleTwoHopObjectModeAssertedHead`. Independent raw reserve-subject Outer and
-formula-side asserted Base inputs retain distinct symbols/sites/ranges. The
-closed `BindingTwoHopRadix` relation explicitly validates the pairwise-distinct
-Outer-to-Middle and Middle-to-Base bare links rather than treating generic
-terminal traversal as relation evidence. The route consumes exactly three
-expansions, normalizes three known type entries to the terminal base-definition-
-RHS builtin-object identity, resolves subject ordinal 1 to `BindingId(0)`, and
-produces one inferred variable plus one fact/candidate/diagnostic/deferred-free
-checked type assertion with zero expected constraints and without general
-reachability, widening, `qua`, or object/set coercion. Existing tests retain 40
-direct symbol references across five test files; including ten definitions/
-internal calls in `runner.rs`, the pre-move repository has 50 occurrences
-across six source-and-test files. All five nonidentity definition orders,
-structural/provenance/corruption guards, 37-owner isolation, immutable output,
-and a real frontend/resolver sidecar are present. Both focused source and
-active-fixture tests pass before the move. Therefore this is move-only
-`design_drift`; no ZZE0 test task is needed. `spec_coverage_audit.md` remains
-unchanged because authority, behavior, coverage credit, owner crate, and
-deferred status do not change. Forbidden changes are config/key/role/mode/
-relation edits, route or asserted-head generalization, other route moves,
-object/set coercion, assertion weakening, and test/expectation edits.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZE Move Result
 
-Task 263ZZE moved only the five approved fragments totaling 71 lines into the
-existing private `type_elaboration/type_assertion_routes.rs` owner. The
-orchestration call remains in place and byte/order-stable. The invalid-key
-fragment remains leaf-private; the config, output, and extractor remain test-
-only facade imports; and only the production detail route crosses the normal
-phase facade. The config-derived runner test alias retains the same name and
-value.
-
-After removing the required `pub(in crate::runner)` visibility from the moved
-fragments, every old/new fragment pair retains its exact raw hash:
-`a8adcfca...`, `de8ce647...`, `77f965e5...`, `23463041...`, and
-`71947b90...`. Their combined raw hash remains `55b319a2...`, and the combined
-whitespace-normalized hash remains `af5eb98a...`. The item-scoped
-`#[rustfmt::skip]` immediately above the moved config is outside this 71-line
-oracle and only preserves the original config token layout after adding the
-required owner visibility; it has no runtime effect.
-
-The post-move owner is 1,764 lines with SHA-256 `35de4952...`; `runner.rs` is
-4,724 lines with `e62ee9af...`; and the phase facade is 444 lines with
-`edc843d9...`. Both focused tests, the 272-unit-test crate suite, raw hash
-`5e41e4db...` and normalized hash `c0c2b80f...` for the test list, and all four
-CLI report hashes remain unchanged. Review-only implementation and test-
-sufficiency checks found no source or test finding; their completion-doc drift
-finding was repaired in the paired English/Japanese documents. Full workspace
-format, Clippy, test, and diff gates pass. No API, name, relation, test,
-expectation, trace, diagnostic, key, payload, ordering, fallback, or fail-
-closed behavior changed. `spec_coverage_audit.md` remains unchanged because no
-authority, behavior, coverage credit, owner crate, or deferred status changed.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZF Pre-Move Inventory and Specification
 
-Fresh authority, test, trace, expectation, design, source, API, and real-
-producer/consumer inventory selects only the three-edge local-object-mode two-
-hop asserted-head route as the next bounded addition to private
-`type_elaboration/type_assertion_routes.rs`. It forms five exact `runner.rs`
-fragments: the invalid key at 686-688 (3 lines, `1992a9ee...`), config at
-2227-2271 (45, `92b10e49...`), production detail route at 3272-3284 (13,
-`1b9c1049...`), test-only output at 3662-3671 (10, `36138905...`), and
-extractor at 4409-4420 (12, `bc67d644...`). Total: 83 lines; combined raw hash
-`e7cc3312...` and whitespace-normalized pre-move hash `44bf94d5...`.
-
-Task 263ZZF mechanically moves only those fragments into the existing private
-owner. The orchestration call and dispatch order stay in `runner.rs`. Only the
-production detail route crosses the normal phase facade. The config, test-
-consumed output, and extractor cross under `#[cfg(test)]`; the invalid-key
-constant remains leaf-private while a config-derived runner test alias retains
-its existing name and value. No public API or call site, helper name, config
-value, exact four-expansion object-terminal two-hop relation, key, payload,
-ordering, fallback, or fail-closed behavior changes.
-
-Canonical mode unfolding, builtin-object, reserved-theorem-variable, and
-static type-assertion requirements apply unchanged. The active `.miz`/
-expectation pair and covered Task 214 checker requirement exercise four
-ordered real source-derived definitions: `BaseThreeEdgeObjectModeTwoHopAssertedHead
--> object`, `InnerThreeEdgeObjectModeTwoHopAssertedHead ->
-BaseThreeEdgeObjectModeTwoHopAssertedHead`,
-`MiddleThreeEdgeObjectModeTwoHopAssertedHead ->
-InnerThreeEdgeObjectModeTwoHopAssertedHead`, and
-`OuterThreeEdgeObjectModeTwoHopAssertedHead ->
-MiddleThreeEdgeObjectModeTwoHopAssertedHead`. Independent raw reserve-subject
-Outer and formula-side asserted Inner inputs retain distinct symbols/sites/
-ranges. The closed `BindingTwoHopRadix` relation explicitly validates the
-pairwise-distinct Outer-to-Middle and Middle-to-Inner bare links; the remaining
-Inner-to-Base-to-object tail is terminal-normalization evidence only, never
-generic relation evidence. The route consumes exactly four expansions,
-normalizes three known type entries to the terminal base-definition-RHS
-builtin-object identity, resolves subject ordinal 1 to `BindingId(0)`, and
-produces one inferred variable plus one fact/candidate/diagnostic/deferred-free
-checked type assertion with zero expected constraints and without general
-reachability, widening, `qua`, or object/set coercion. Existing tests retain 39
-direct symbol references across four test files; including ten definitions/
-internal calls in `runner.rs`, the pre-move repository has 49 occurrences
-across five source-and-test files. All 23 nonidentity definition orders,
-structural/provenance/corruption guards, 39-owner isolation, immutable output,
-and a real frontend/resolver sidecar are present. Both focused source and
-active-fixture tests pass before the move. Therefore this is move-only
-`design_drift`; no ZZF0 test task is needed. `spec_coverage_audit.md` remains
-unchanged because authority, behavior, coverage credit, owner crate, and
-deferred status do not change. Forbidden changes are config/key/role/mode/
-relation edits, route or asserted-head generalization, other route moves,
-object/set coercion, assertion weakening, and test/expectation edits.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZF Move Result
 
-Task 263ZZF moved only the five approved fragments totaling 83 lines into the
-existing private `type_elaboration/type_assertion_routes.rs` owner. The
-orchestration call remains in place and byte/order-stable. The invalid-key
-fragment remains leaf-private; the config, output, and extractor remain test-
-only facade imports; and only the production detail route crosses the normal
-phase facade. The config-derived runner test alias retains the same name and
-value.
-
-After removing the required `pub(in crate::runner)` visibility from the moved
-fragments, every old/new fragment pair retains its exact raw hash:
-`1992a9ee...`, `92b10e49...`, `1b9c1049...`, `36138905...`, and
-`bc67d644...`. Their combined raw hash remains `e7cc3312...`, and the combined
-whitespace-normalized hash remains `44bf94d5...`. The item-scoped
-`#[rustfmt::skip]` immediately above the moved config is outside this 83-line
-oracle and only preserves the original config token layout after adding the
-required owner visibility; it has no runtime effect.
-
-The post-move owner is 1,853 lines with SHA-256 `cc72d6a6...`; `runner.rs` is
-4,644 lines with `5136a010...`; and the phase facade is 448 lines with
-`6de8b48e...`. Both focused tests, the 272-unit-test crate suite, raw hash
-`5e41e4db...` and normalized hash `c0c2b80f...` for the test list, and all four
-CLI report hashes remain unchanged. Review-only implementation and test-
-sufficiency checks found no source or test finding; their completion-doc drift
-finding was repaired in the paired English/Japanese documents. Full workspace
-format, Clippy, test, and diff gates pass. No API, name, relation, test,
-expectation, trace, diagnostic, key, payload, ordering, fallback, or fail-
-closed behavior changed. `spec_coverage_audit.md` remains unchanged because no
-authority, behavior, coverage credit, owner crate, or deferred status changed.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZG Pre-Move Inventory and Specification
 
-Fresh authority, test, trace, expectation, design, source, API, and real-
-producer/consumer inventory selects only the four-edge local-object-mode two-
-hop asserted-head route as the next bounded addition to private
-`type_elaboration/type_assertion_routes.rs`. It forms five exact `runner.rs`
-fragments: the invalid key at 695-696 (2 lines, `875cc99e...`), config at
-2274-2325 (52, `21f37ed8...`), production detail route at 3243-3255 (13,
-`c38d179a...`), test-only output at 3616-3625 (10, `3acc53a2...`), and
-extractor at 4355-4366 (12, `1ff744db...`). Total: 89 lines; combined raw hash
-`c786476b...` and whitespace-normalized pre-move hash `70b18cc8...`.
-
-Task 263ZZG mechanically moves only those fragments into the existing private
-owner. The orchestration call and dispatch order stay in `runner.rs`. Only the
-production detail route crosses the normal phase facade. The config, test-
-consumed output, and extractor cross under `#[cfg(test)]`; the invalid-key
-constant remains leaf-private while a config-derived runner test alias retains
-its existing name and value. No public API or call site, helper name, config
-value, exact five-expansion object-terminal two-hop relation, key, payload,
-ordering, fallback, or fail-closed behavior changes.
-
-Canonical mode unfolding, builtin-object, reserved-theorem-variable, and
-static type-assertion requirements apply unchanged. The active `.miz`/
-expectation pair and covered Task 216 checker requirement exercise five
-ordered real source-derived definitions: `BaseFourEdgeObjectModeTwoHopAssertedHead
--> object`, `InnerFourEdgeObjectModeTwoHopAssertedHead ->
-BaseFourEdgeObjectModeTwoHopAssertedHead`,
-`MiddleFourEdgeObjectModeTwoHopAssertedHead ->
-InnerFourEdgeObjectModeTwoHopAssertedHead`,
-`OuterFourEdgeObjectModeTwoHopAssertedHead ->
-MiddleFourEdgeObjectModeTwoHopAssertedHead`, and
-`TooDeepFourEdgeObjectModeTwoHopAssertedHead ->
-OuterFourEdgeObjectModeTwoHopAssertedHead`. Independent raw reserve-subject
-TooDeep and formula-side asserted Middle inputs retain distinct symbols/sites/
-ranges. The closed `BindingTwoHopRadix` relation explicitly validates the
-pairwise-distinct TooDeep-to-Outer and Outer-to-Middle bare links; the remaining
-Middle-to-Inner-to-Base-to-object tail is terminal-normalization evidence only,
-never generic relation evidence. The route consumes exactly five expansions,
-normalizes three known type entries to the terminal base-definition-RHS
-builtin-object identity, resolves subject ordinal 1 to `BindingId(0)`, and
-produces one inferred variable plus one fact/candidate/diagnostic/deferred-free
-checked type assertion with zero expected constraints and without general
-reachability, widening, `qua`, or object/set coercion. Existing tests retain 37
-direct symbol references across three test files; including ten definitions/
-internal calls in `runner.rs`, the pre-move repository has 47 occurrences
-across four source-and-test files. All 119 nonidentity definition orders,
-structural/provenance/corruption guards, 41-owner isolation, immutable output,
-and a real frontend/resolver sidecar are present. Both focused source and
-active-fixture tests pass before the move. Therefore this is move-only
-`design_drift`; no ZZG0 test task is needed. `spec_coverage_audit.md` remains
-unchanged because authority, behavior, coverage credit, owner crate, and
-deferred status do not change. Forbidden changes are config/key/role/mode/
-relation edits, route or asserted-head generalization, other route moves,
-object/set coercion, assertion weakening, and test/expectation edits.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZG Move Result
 
-Task 263ZZG moved only the five approved fragments totaling 89 lines into the
-existing private `type_elaboration/type_assertion_routes.rs` owner. The
-orchestration call remains in place and byte/order-stable. The invalid-key
-fragment remains leaf-private; the config, output, and extractor remain test-
-only facade imports; and only the production detail route crosses the normal
-phase facade. The config-derived runner test alias retains the same name and
-value.
-
-After removing the required `pub(in crate::runner)` visibility from the moved
-fragments, every old/new fragment pair retains its exact raw hash:
-`875cc99e...`, `21f37ed8...`, `c38d179a...`, `3acc53a2...`, and
-`1ff744db...`. Their combined raw hash remains `c786476b...`, and the combined
-whitespace-normalized hash remains `70b18cc8...`. The item-scoped
-`#[rustfmt::skip]` immediately above the moved config is outside this 89-line
-oracle and only preserves the original config token layout after adding the
-required owner visibility; it has no runtime effect.
-
-The post-move owner is 1,948 lines with SHA-256 `1ffac900...`; `runner.rs` is
-4,558 lines with `cc6c99ea...`; and the phase facade is 452 lines with
-`0058287b...`. Both focused tests, the 272-unit-test crate suite, raw hash
-`5e41e4db...` and normalized hash `c0c2b80f...` for the test list, and all four
-CLI report hashes remain unchanged. Review-only implementation and test-
-sufficiency checks found no source or test finding; their completion-doc drift
-finding was repaired in the paired English/Japanese documents. Full workspace
-format, Clippy, test, and diff gates pass. No API, name, relation, test,
-expectation, trace, diagnostic, key, payload, ordering, fallback, or fail-
-closed behavior changed. `spec_coverage_audit.md` remains unchanged because no
-authority, behavior, coverage credit, owner crate, or deferred status changed.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZH Pre-Move Inventory and Specification
 
-Fresh authority, test, trace, expectation, design, source, API, and real-
-producer/consumer inventory selects only the three-edge local-object-mode
-three-hop asserted-head route as the next bounded addition to private
-`type_elaboration/type_assertion_routes.rs`. It forms five exact `runner.rs`
-fragments: the invalid key at 704-706 (3 lines, `200f40ee...`), config at
-2318-2363 (46, `45c230ab...`), production detail route at 3209-3221 (13,
-`43a51871...`), test-only output at 3565-3574 (10, `0bf5b9ec...`), and
-extractor at 4295-4306 (12, `7a10d6e3...`). Total: 84 lines; combined raw hash
-`da6e9082...` and whitespace-normalized pre-move hash `2858ac57...`.
-
-Task 263ZZH mechanically moves only those fragments into the existing private
-owner. The orchestration call and dispatch order stay in `runner.rs`. Only the
-production detail route crosses the normal phase facade. The config, test-
-consumed output, and extractor cross under `#[cfg(test)]`; the invalid-key
-constant remains leaf-private while a config-derived runner test alias retains
-its existing name and value. No public API or call site, helper name, config
-value, exact four-expansion object-terminal three-hop relation, key, payload,
-ordering, fallback, or fail-closed behavior changes.
-
-Canonical mode unfolding, builtin-object, reserved-theorem-variable, and
-static type-assertion requirements apply unchanged. The active `.miz`/
-expectation pair and covered Task 218 checker requirement exercise four ordered
-real source-derived definitions: `BaseThreeEdgeObjectModeThreeHopAssertedHead
--> object`, `InnerThreeEdgeObjectModeThreeHopAssertedHead ->
-BaseThreeEdgeObjectModeThreeHopAssertedHead`,
-`MiddleThreeEdgeObjectModeThreeHopAssertedHead ->
-InnerThreeEdgeObjectModeThreeHopAssertedHead`, and
-`OuterThreeEdgeObjectModeThreeHopAssertedHead ->
-MiddleThreeEdgeObjectModeThreeHopAssertedHead`. Independent raw reserve-subject
-Outer and formula-side asserted Base inputs retain distinct symbols/sites/
-ranges. The closed `BindingThreeHopRadix` relation explicitly validates the
-pairwise-distinct Outer-to-Middle, Middle-to-Inner, and Inner-to-Base bare
-links; Base-to-object is terminal-normalization evidence only, never generic
-relation evidence. The route consumes exactly four expansions, normalizes
-three known type entries to the base-definition-RHS builtin-object identity,
-resolves subject ordinal 1 to `BindingId(0)`, and produces one inferred
-variable plus one fact/candidate/diagnostic/deferred-free checked type assertion
-with zero expected constraints and without general reachability, widening,
-`qua`, or object/set coercion. Existing tests retain 35 direct symbol references
-across three test files; including ten definitions/internal calls in
-`runner.rs`, the pre-move repository has 45 occurrences across four source-and-
-test files. All 23 nonidentity definition orders, structural/provenance/
-corruption guards, 43-owner isolation, immutable output, and a real frontend/
-resolver sidecar are present. Both focused source and active-fixture tests pass
-before the move. Therefore this is move-only `design_drift`; no ZZH0 test task
-is needed. `spec_coverage_audit.md` remains unchanged because authority,
-behavior, coverage credit, owner crate, and deferred status do not change.
-Forbidden changes are config/key/role/mode/relation edits, route or asserted-
-head generalization, other route moves, object/set coercion, assertion
-weakening, and test/expectation edits.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZH Move Result
 
-Task 263ZZH moved only the five approved fragments totaling 84 lines into the
-existing private `type_elaboration/type_assertion_routes.rs` owner. The
-orchestration call remains in place and byte/order-stable. The invalid-key
-fragment remains leaf-private; the config, output, and extractor remain test-
-only facade imports; and only the production detail route crosses the normal
-phase facade. The config-derived runner test alias retains the same name and
-value.
-
-After removing the required `pub(in crate::runner)` visibility from the moved
-fragments, every old/new fragment pair retains its exact raw hash:
-`200f40ee...`, `45c230ab...`, `43a51871...`, `0bf5b9ec...`, and
-`7a10d6e3...`. Their combined raw hash remains `da6e9082...`, and the combined
-whitespace-normalized hash remains `2858ac57...`. The item-scoped
-`#[rustfmt::skip]` immediately above the moved config is outside this 84-line
-oracle and only preserves the original config token layout after adding the
-required owner visibility; it has no runtime effect.
-
-The post-move owner is 2,038 lines with SHA-256 `839ec141...`; `runner.rs` is
-4,477 lines with `caefe049...`; and the phase facade is 456 lines with
-`e6fb91cd...`. Both focused tests, the 272-unit-test crate suite, raw hash
-`5e41e4db...` and normalized hash `c0c2b80f...` for the test list, and all four
-CLI report hashes remain unchanged. Review-only implementation and test-
-sufficiency checks found no source or test finding; their completion-doc drift
-finding was repaired in the paired English/Japanese documents. Full workspace
-format, Clippy, test, and diff gates pass. No API, name, relation, test,
-expectation, trace, diagnostic, key, payload, ordering, fallback, or fail-
-closed behavior changed. `spec_coverage_audit.md` remains unchanged because no
-authority, behavior, coverage credit, owner crate, or deferred status changed.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZI Pre-Move Inventory and Specification
 
-Fresh authority, test, trace, expectation, design, source, API, and real-
-producer/consumer inventory selects only the four-edge local-object-mode
-three-hop asserted-head route as the next bounded addition to private
-`type_elaboration/type_assertion_routes.rs`. It forms five exact `runner.rs`
-fragments: the invalid key at 718-720 (3 lines, `edb310ad...`), config at
-2366-2418 (53, `d0731bdf...`), production detail route at 3180-3192 (13,
-`e3a909cd...`), test-only output at 3519-3528 (10, `ca4a50d5...`), and
-extractor at 4240-4251 (12, `e1ef45a6...`). Total: 91 lines; combined raw hash
-`532110f6...` and whitespace-normalized pre-move hash `5b0b96fa...`.
-
-Task 263ZZI mechanically moves only those fragments into the existing private
-owner. The orchestration call and dispatch order stay in `runner.rs`. Only the
-production detail route crosses the normal phase facade. The config, test-
-consumed output, and extractor cross under `#[cfg(test)]`; the invalid-key
-constant remains leaf-private while a config-derived runner test alias retains
-its existing name and value. No public API or call site, helper name, config
-value, exact five-expansion object-terminal three-hop relation, key, payload,
-ordering, fallback, or fail-closed behavior changes.
-
-Canonical mode unfolding, builtin-object, reserved-theorem-variable, and
-static type-assertion requirements apply unchanged. The active `.miz`/
-expectation pair and covered Task 220 checker requirement exercise five ordered
-real source-derived definitions: `BaseFourEdgeObjectModeThreeHopAssertedHead
--> object`, `InnerFourEdgeObjectModeThreeHopAssertedHead ->
-BaseFourEdgeObjectModeThreeHopAssertedHead`,
-`MiddleFourEdgeObjectModeThreeHopAssertedHead ->
-InnerFourEdgeObjectModeThreeHopAssertedHead`,
-`OuterFourEdgeObjectModeThreeHopAssertedHead ->
-MiddleFourEdgeObjectModeThreeHopAssertedHead`, and
-`TooDeepFourEdgeObjectModeThreeHopAssertedHead ->
-OuterFourEdgeObjectModeThreeHopAssertedHead`. Independent raw reserve-subject
-TooDeep and formula-side asserted Inner inputs retain distinct symbols/sites/
-ranges. The closed `BindingThreeHopRadix` relation explicitly validates the
-pairwise-distinct TooDeep-to-Outer, Outer-to-Middle, and Middle-to-Inner bare
-links; Inner-to-Base-to-object is terminal-normalization evidence only, never
-generic relation evidence. The route consumes exactly five expansions,
-normalizes three known type entries to the base-definition-RHS builtin-object
-identity, resolves subject ordinal 1 to `BindingId(0)`, and produces one
-inferred variable plus one fact/candidate/diagnostic/deferred-free checked type
-assertion with zero expected constraints and without general reachability,
-widening, `qua`, or object/set coercion. Existing tests retain 33 direct symbol
-references across three test files; including ten definitions/internal calls
-in `runner.rs`, the pre-move repository has 43 occurrences across four source-
-and-test files. All 119 nonidentity definition orders, separate unconnected-
-deeper and connected sixth-edge guards, structural/provenance/corruption
-guards, 45-owner isolation, focused Tasks 208 and 211-219 regressions,
-immutable output, and a real frontend/resolver sidecar are present. Both
-focused active-fixture and synthetic-exactness tests pass before the move.
-Therefore this is move-only `design_drift`; no ZZI0 test task is needed.
-`spec_coverage_audit.md` remains unchanged because authority, behavior,
-coverage credit, owner crate, and deferred status do not change. Forbidden
-changes are config/key/role/mode/relation edits, route or asserted-head
-generalization, other route moves, object/set coercion, assertion weakening,
-and test/expectation edits.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZI Move Result
 
-Task 263ZZI moved only the five approved fragments totaling 91 lines into the
-existing private `type_elaboration/type_assertion_routes.rs` owner. The
-orchestration call remains in place and byte/order-stable. The invalid-key
-fragment remains leaf-private; the config, output, and extractor remain test-
-only facade imports; and only the production detail route crosses the normal
-phase facade. The config-derived runner test alias retains the same name and
-value.
-
-After removing the required `pub(in crate::runner)` visibility from the moved
-fragments, every old/new fragment pair retains its exact raw hash:
-`edb310ad...`, `d0731bdf...`, `e3a909cd...`, `ca4a50d5...`, and
-`e1ef45a6...`. Their combined raw hash remains `532110f6...`, and the combined
-whitespace-normalized hash remains `5b0b96fa...`. The item-scoped
-`#[rustfmt::skip]` immediately above the moved config is outside this 91-line
-oracle and only preserves the original config token layout after adding the
-required owner visibility; it has no runtime effect.
-
-The post-move owner is 2,135 lines with SHA-256 `009a2787...`; `runner.rs` is
-4,389 lines with `ef501d02...`; and the phase facade is 460 lines with
-`791d0685...`. Both focused tests, the 272-unit-test crate suite, raw hash
-`5e41e4db...` and normalized hash `c0c2b80f...` for the test list, and all four
-CLI report hashes remain unchanged. Review-only implementation and test-
-sufficiency checks found no source or test finding; their completion-doc drift
-finding was repaired in the paired English/Japanese documents. Full workspace
-format, Clippy, test, and diff gates pass. No API, name, relation, test,
-expectation, trace, diagnostic, key, payload, ordering, fallback, or fail-
-closed behavior changed. `spec_coverage_audit.md` remains unchanged because no
-authority, behavior, coverage credit, owner crate, or deferred status changed.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZJ Pre-Move Inventory and Specification
 
-Fresh authority, test, trace, expectation, design, source, API, and real-
-producer/consumer inventory selects only the four-edge local-object-mode four-
-hop asserted-head route as the next bounded addition to private
-`type_elaboration/type_assertion_routes.rs`. It forms five exact `runner.rs`
-fragments: the invalid key at 719-721 (3 lines, `74c201e4...`), config at
-2415-2468 (54, `11d9b1e0...`), production detail route at 3143-3155 (13,
-`106f10db...`), test-only output including its attached `#[cfg(test)]` at
-3465-3474 (10, `58454b88...`), and extractor at 4178-4189 (12,
-`d18d2fca...`). Total: 92 lines; combined raw hash `a6b73ffc...` and
-whitespace-normalized pre-move hash `61f5421e...`.
-
-Task 263ZZJ mechanically moves only those fragments into the existing private
-owner. The orchestration call and dispatch order stay in `runner.rs`. Only the
-production detail route crosses the normal phase facade. The config, test-
-consumed output, and extractor cross under `#[cfg(test)]`; the invalid-key
-constant remains leaf-private while a config-derived runner test alias retains
-its existing name and value. No public API or call site, helper name, config
-value, exact five-expansion object-terminal four-hop relation, key, payload,
-ordering, fallback, or fail-closed behavior changes.
-
-Canonical reserved-variable closure, mode unfolding, builtin-object, and
-static type-assertion requirements apply unchanged. The active `.miz`/
-expectation pair and covered Task 222 checker requirement exercise five ordered
-real source-derived definitions: `BaseFourEdgeObjectModeFourHopAssertedHead ->
-object`, `InnerFourEdgeObjectModeFourHopAssertedHead ->
-BaseFourEdgeObjectModeFourHopAssertedHead`,
-`MiddleFourEdgeObjectModeFourHopAssertedHead ->
-InnerFourEdgeObjectModeFourHopAssertedHead`,
-`OuterFourEdgeObjectModeFourHopAssertedHead ->
-MiddleFourEdgeObjectModeFourHopAssertedHead`, and
-`TooDeepFourEdgeObjectModeFourHopAssertedHead ->
-OuterFourEdgeObjectModeFourHopAssertedHead`. Independent raw reserve-subject
-TooDeep and formula-side asserted Base inputs retain distinct symbols/sites/
-ranges. The closed `BindingFourHopRadix` relation explicitly validates the
-pairwise-distinct TooDeep-to-Outer, Outer-to-Middle, Middle-to-Inner, and Inner-
-to-Base bare links; Base-to-object is terminal-normalization evidence only,
-never generic relation evidence. The route consumes exactly five expansions,
-normalizes three known type entries to the base-definition-RHS builtin-object
-identity, resolves subject ordinal 1 to `BindingId(0)`, and produces one
-inferred variable plus one fact/candidate/diagnostic/deferred-free checked type
-assertion with zero expected constraints and without general reachability,
-widening, `qua`, or object/set coercion. Existing tests retain 31 direct symbol
-references across three test files; including ten definitions/internal calls
-in `runner.rs`, the pre-move repository has 41 occurrences across four source-
-and-test files. All 119 nonidentity definition orders, separate unconnected-
-deeper and connected sixth-definition/fifth-link guards, structural/
-provenance/corruption guards, 47-owner isolation, focused Task 208 and Tasks
-211-221 regressions, immutable output, and a real frontend/resolver sidecar are
-present. Both focused active-fixture and synthetic-exactness tests pass before
-the move. Therefore this is move-only `design_drift`; no ZZJ0 test task is
-needed. `spec_coverage_audit.md` remains unchanged because authority, behavior,
-coverage credit, owner crate, and deferred status do not change. Forbidden
-changes are config/key/role/mode/relation edits, route or asserted-head
-generalization, other route moves, object/set coercion, assertion weakening,
-and test/expectation edits.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZJ Move Result
 
-Task 263ZZJ moved only the five approved fragments totaling 92 lines into the
-existing private `type_elaboration/type_assertion_routes.rs` owner. The
-orchestration call remains in place and byte/order-stable. The invalid-key
-fragment remains leaf-private; the config, output, and extractor remain test-
-only facade imports; and only the production detail route crosses the normal
-phase facade. The config-derived runner test alias retains the same name and
-value.
-
-After removing the required `pub(in crate::runner)` visibility from the moved
-fragments, every old/new fragment pair retains its exact raw hash:
-`74c201e4...`, `11d9b1e0...`, `106f10db...`, `58454b88...`, and
-`d18d2fca...`. Their combined raw hash remains `a6b73ffc...`, and the combined
-whitespace-normalized hash remains `61f5421e...`. The output fragment's
-attached `#[cfg(test)]` is inside the 92-line oracle and preserves test-only
-visibility. The item-scoped `#[rustfmt::skip]` immediately above the moved
-config is outside this oracle and only preserves the original config token
-layout after adding the required owner visibility; it has no runtime effect.
-
-The post-move owner is 2,233 lines with SHA-256 `407a215c...`; `runner.rs` is
-4,300 lines with `de2a5351...`; and the phase facade is 464 lines with
-`a1424de3...`. Both focused tests, the 272-unit-test crate suite, raw hash
-`5e41e4db...` and normalized hash `c0c2b80f...` for the test list, and all four
-CLI report hashes remain unchanged. The pre-implementation review's semantic
-`#[cfg(test)]` boundary finding was repaired before the move. Full workspace
-format, Clippy, test, and diff gates pass. No API, name, relation, test,
-expectation, trace, diagnostic, key, payload, ordering, fallback, or fail-
-closed behavior changed. `spec_coverage_audit.md` remains unchanged because no
-authority, behavior, coverage credit, owner crate, or deferred status changed.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZK Pre-Move Inventory and Specification
 
-Fresh authority, test, trace, expectation, design, source, API, and real-
-producer/consumer inventory selects only the three-edge local-object-mode
-immediate-radix asserted-head route as the next bounded addition to private
-`type_elaboration/type_assertion_routes.rs`. It is the next physical unowned
-local-object route after Task 263ZZJ and forms five exact `runner.rs` fragments:
-the invalid key at 734-735 (2 lines, `65bca3b2...`), config at 2456-2499 (44,
-`736e409a...`), production detail route at 3105-3117 (13, `dd971d62...`), test-
-only output including its attached `#[cfg(test)]` at 3410-3419 (10,
-`0d343a10...`), and extractor at 4115-4126 (12, `fc9ad737...`). Total: 81
-lines; combined raw hash `92ee1ca1...` and whitespace-normalized pre-move hash
-`07df31bc...`.
-
-Task 263ZZK mechanically moves only those fragments into the existing private
-owner. The orchestration call and dispatch order stay in `runner.rs`. Only the
-production detail route crosses the normal phase facade. The config, test-
-consumed output, and extractor cross under `#[cfg(test)]`; the invalid-key
-constant remains leaf-private while a config-derived runner test alias retains
-its existing name and value. No public API or call site, helper name, config
-value, exact four-expansion object-terminal immediate-radix relation, key,
-payload, ordering, fallback, or fail-closed behavior changes.
-
-Canonical reserved-variable closure, mode unfolding, builtin-object, and
-static type-assertion requirements apply unchanged. The active `.miz`/
-expectation pair and covered Task 206 checker requirement exercise four ordered
-real source-derived definitions: `BaseThreeEdgeObjectModeRadixAssertedHead ->
-object`, `InnerThreeEdgeObjectModeRadixAssertedHead ->
-BaseThreeEdgeObjectModeRadixAssertedHead`,
-`MiddleThreeEdgeObjectModeRadixAssertedHead ->
-InnerThreeEdgeObjectModeRadixAssertedHead`, and
-`OuterThreeEdgeObjectModeRadixAssertedHead ->
-MiddleThreeEdgeObjectModeRadixAssertedHead`. Independent raw reserve-subject
-Outer and formula-side asserted Middle inputs retain distinct symbols/sites/
-ranges. The closed `BindingImmediateRadix` relation validates only the exact
-Outer-to-Middle bare link; Middle-to-Inner-to-Base-to-object is terminal-
-normalization evidence only, never multi-hop or generic reachability evidence.
-The route consumes exactly four expansions, normalizes three known type entries
-to the base-definition-RHS builtin-object identity, resolves subject ordinal 1
-to `BindingId(0)`, and produces one inferred variable plus one fact/candidate/
-diagnostic/deferred-free checked type assertion with zero expected constraints
-and without widening, `qua`, or object/set coercion. Existing tests retain 61
-direct symbol references across seven test files; including ten definitions/
-internal calls in `runner.rs`, the pre-move repository has 71 occurrences
-across eight source-and-test files. All 23 nonidentity definition orders, exact
-structural/provenance/corruption and per-definition near-miss guards, the
-documented Task 206 bidirectional owner isolation plus all later cross-owner
-regressions, immutable output, and a real frontend/resolver sidecar are
-present. Both focused exhaustive-source and active-fixture tests pass before
-the move. Therefore this is move-only `design_drift`; no ZZK0 test task is
-needed. `spec_coverage_audit.md` remains unchanged because authority, behavior,
-coverage credit, owner crate, and deferred status do not change. Forbidden
-changes are config/key/role/mode/relation edits, route or asserted-head
-generalization, other route moves, object/set coercion, assertion weakening,
-and test/expectation edits.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZK Move Result
 
-Task 263ZZK moved only the five approved fragments totaling 81 lines into the
-existing private `type_elaboration/type_assertion_routes.rs` owner. The
-orchestration call and dispatch order remain in place and byte/order-stable.
-The invalid-key fragment remains leaf-private; the config, output, and
-extractor remain test-only facade consumers; and only the production detail
-route crosses the normal facade. The output's attached `#[cfg(test)]` remains
-inside the preservation oracle, while the formatting control remains outside
-it.
-
-After stripping only the required `pub(in crate::runner)` visibility, the five
-post-move fragments retain their original hashes `65bca3b2...`, `736e409a...`,
-`dd971d62...`, `0d343a10...`, and `fc9ad737...`; the combined raw hash remains
-`92ee1ca1...`, and the pre-recorded normalized oracle remains `07df31bc...`.
-The resulting source inventory is 4,222 lines / `cfd9724b...` for `runner.rs`,
-468 / `5982f427...` for the phase facade, and 2,320 / `2f59862b...` for the
-route owner.
-
-Both focused route tests and all 272 crate unit tests pass. The raw and
-normalized discovered-test hashes remain `5e41e4db...` and `c0c2b80f...`; the
-plan, parse-only, declaration-symbol, and type-elaboration CLI hashes remain
-`f3424007...`, `57d0fba9...`, `08b00a9f...`, and `1dadbeab...`. Formatting,
-Clippy with denied warnings, workspace tests, and diff checks pass. No API,
-test name, diagnostic, detail key, payload, ordering, fail-closed behavior,
-authority, coverage credit, owner crate, or deferred status changed.
-`spec_coverage_audit.md` therefore remains unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZL Pre-Move Inventory and Specification
 
-Fresh authority, test, trace, expectation, design, source, API, and real-
-producer/consumer inventory selects only the four-edge local-object-mode
-immediate-radix asserted-head route as the next bounded addition to private
-`type_elaboration/type_assertion_routes.rs`. It is the next physical unowned
-local-object route after Task 263ZZK and forms five exact `runner.rs` fragments:
-the invalid key at 743-744 (2 lines, `64203412...`), config at 2503-2551 (49,
-`b5026b6d...`), production detail route at 3078-3090 (13, `f9452a31...`), test-
-only output including its attached `#[cfg(test)]` at 3366-3375 (10,
-`873600da...`), and extractor at 4063-4074 (12, `2327bfa0...`). Total: 86
-lines; combined raw hash `ca2003e8...` and whitespace-normalized pre-move hash
-`f9a8696a...`.
-
-Task 263ZZL mechanically moves only those fragments into the existing private
-owner. The orchestration call and dispatch order stay in `runner.rs`. Only the
-production detail route crosses the normal phase facade. The config, test-
-consumed output, and extractor cross under `#[cfg(test)]`; the invalid-key
-constant remains leaf-private while a config-derived runner test alias retains
-its existing name and value. A formatting-control attribute may be added
-outside the preservation oracle solely to prevent mechanical line wrapping.
-No public API or call site, helper name, config value, exact five-expansion
-object-terminal immediate-radix relation, key, payload, ordering, fallback, or
-fail-closed behavior changes.
-
-Canonical reserved-variable closure, mode unfolding, builtin-object, and
-static type-assertion requirements apply unchanged. The active `.miz`/
-expectation pair and covered Task 208 checker requirement exercise five ordered
-real source-derived definitions: Base to object, Inner to Base, Middle to
-Inner, Outer to Middle, and TooDeep to Outer. Independent raw reserve-subject
-TooDeep and formula-side asserted Outer inputs retain distinct symbols/sites/
-ranges. The closed `BindingImmediateRadix` relation validates only the exact
-TooDeep-to-Outer bare link; Outer-to-Middle-to-Inner-to-Base-to-object is
-terminal-normalization evidence only, never multi-hop or generic reachability
-evidence. The route consumes exactly five expansions, normalizes three known
-type entries to the Base-definition-RHS builtin-object identity, resolves
-subject ordinal 1 to `BindingId(0)`, and produces one inferred variable plus
-one fact/candidate/diagnostic/deferred-free checked type assertion with zero
-expected constraints and without widening, `qua`, or object/set coercion.
-
-Existing tests retain 90 direct symbol references across six test files;
-including eleven definitions/internal calls in `runner.rs`, the pre-move
-repository has 101 occurrences across seven source-and-test files. All 119
-nonidentity definition orders, every per-definition structural near miss,
-exact reserve/formula/provenance/corruption guards, an unrelated-import
-positive, the documented Task 208 bidirectional 21-owner isolation plus all
-later cross-owner regressions, immutable output, and a real frontend/resolver
-sidecar are present. Both focused exhaustive-source and active-fixture tests
-pass before the move. Therefore this is move-only `design_drift`; no ZZL0 test
-task is needed. `spec_coverage_audit.md` remains unchanged because authority,
-behavior, coverage credit, owner crate, and deferred status do not change.
-Forbidden changes are config/key/role/mode/relation edits, route or asserted-
-head generalization, other route moves, object/set coercion, assertion
-weakening, and test/expectation edits.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZL Move Result
 
-Task 263ZZL moved only the five approved fragments totaling 86 lines into the
-existing private `type_elaboration/type_assertion_routes.rs` owner. The
-orchestration call and dispatch order remain in place and byte/order-stable.
-The invalid-key fragment remains leaf-private; the config, output, and
-extractor remain test-only facade consumers; and only the production detail
-route crosses the normal facade. The output's attached `#[cfg(test)]` remains
-inside the preservation oracle, while the formatting control remains outside
-it.
-
-After stripping only the required `pub(in crate::runner)` visibility, the five
-post-move fragments retain their original hashes `64203412...`, `b5026b6d...`,
-`f9452a31...`, `873600da...`, and `2327bfa0...`; the combined raw hash remains
-`ca2003e8...`, and the whitespace-normalized hash remains `f9a8696a...`. The
-resulting source inventory is 4,139 lines / `a579a85b...` for `runner.rs`, 472 /
-`e112d13f...` for the phase facade, and 2,412 / `639fe1e3...` for the route
-owner.
-
-Both focused route tests and all 272 crate unit tests pass. The raw and
-normalized discovered-test hashes remain `5e41e4db...` and `c0c2b80f...`; the
-plan, parse-only, declaration-symbol, and type-elaboration CLI hashes remain
-`f3424007...`, `57d0fba9...`, `08b00a9f...`, and `1dadbeab...`. Formatting,
-Clippy with denied warnings, workspace tests, and diff checks pass. No API,
-test name, diagnostic, detail key, payload, ordering, fail-closed behavior,
-authority, coverage credit, owner crate, or deferred status changed.
-`spec_coverage_audit.md` therefore remains unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZM Pre-Move Inventory and Specification
 
-Fresh authority, test, trace, expectation, design, source, API, and real-
-producer/consumer inventory selects only the four-edge local-object-mode same-
-mode asserted-head route as the next bounded addition to private
-`type_elaboration/type_assertion_routes.rs`. It is the next physical unowned
-local-object route after Task 263ZZL and forms five exact `runner.rs` fragments:
-the invalid key at 759-760 (2 lines, `add00c27...`), config at 2624-2666 (43,
-`505227af...`), production detail route at 3072-3083 (12, `36a66d9e...`), test-
-only output including its attached `#[cfg(test)]` at 3337-3345 (9,
-`5db69ba1...`), and extractor at 4032-4043 (12, `39cf9bb6...`). Total: 78
-lines; combined raw hash `78c7de49...` and whitespace-normalized pre-move hash
-`57e5b178...`.
-
-Task 263ZZM mechanically moves only those fragments into the existing private
-owner. The orchestration call and dispatch order stay in `runner.rs`. Only the
-production detail route crosses the normal phase facade. The config, test-
-consumed output, and extractor cross under `#[cfg(test)]`; the invalid-key
-constant remains leaf-private while a config-derived runner test alias retains
-its existing name and value. A formatting-control attribute may be added
-outside the preservation oracle solely to prevent mechanical line wrapping.
-No public API or call site, helper name, config value, exact five-expansion
-object-terminal same-mode relation, key, payload, ordering, fallback, or fail-
-closed behavior changes.
-
-Canonical reserved-variable closure, mode unfolding, builtin-object, and
-static type-assertion requirements apply unchanged. The active `.miz`/
-expectation pair and covered Task 198 checker requirement exercise five ordered
-real source-derived definitions: Base to object, Inner to Base, Middle to
-Inner, Outer to Middle, and TooDeep to Outer. Independent raw reserve-subject
-and formula-side asserted inputs retain distinct sites/ranges while resolving
-to the same TooDeep symbol. The closed `SameMode` relation validates only that
-exact outermost identity; the TooDeep-to-Outer-to-Middle-to-Inner-to-Base-to-
-object chain is terminal-normalization evidence, never reachability evidence.
-The route consumes exactly five expansions, normalizes three known type entries
-to the Base-definition-RHS builtin-object identity, resolves subject ordinal 1
-to `BindingId(0)`, and produces one inferred variable plus one fact/candidate/
-diagnostic/deferred-free checked type assertion with zero expected constraints
-and without widening, `qua`, or object/set coercion.
-
-Existing tests retain 90 direct symbol references across six test files;
-including eleven definitions/internal calls in `runner.rs`, the pre-move
-repository has 101 occurrences across seven source-and-test files. The exact
-route, a reversed-definition-order near miss, structural/provenance/connected-
-deeper/corruption guards, unrelated-local/imported/ambiguous rejection, route
-isolation plus later cross-owner regressions, immutable output, and a real
-frontend/resolver sidecar are present. Both focused source and active-fixture
-tests pass before the move. Therefore this is move-only
-`design_drift`; no ZZM0 test task is needed. `spec_coverage_audit.md` remains
-unchanged because authority, behavior, coverage credit, owner crate, and
-deferred status do not change. Forbidden changes are config/key/role/mode/
-relation edits, route or asserted-head generalization, other route moves,
-object/set coercion, assertion weakening, and test/expectation edits.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZM Move Result
 
-Task 263ZZM moved only the five approved fragments totaling 78 lines into the
-existing private `type_elaboration/type_assertion_routes.rs` owner. The
-orchestration call and dispatch order remain in place and byte/order-stable.
-The invalid-key fragment remains leaf-private; the config, output, and
-extractor remain test-only facade consumers; and only the production detail
-route crosses the normal facade. The output's attached `#[cfg(test)]` remains
-inside the preservation oracle, while the formatting control remains outside
-it.
-
-After stripping only the required `pub(in crate::runner)` visibility, the five
-post-move fragments retain their original hashes `add00c27...`, `505227af...`,
-`36a66d9e...`, `5db69ba1...`, and `39cf9bb6...`; the combined raw hash remains
-`78c7de49...`, and the whitespace-normalized hash remains `57e5b178...`. The
-resulting source inventory is 4,064 lines / `3f936d4b...` for `runner.rs`, 476 /
-`fac3321e...` for the phase facade, and 2,496 / `7417a532...` for the route
-owner.
-
-Both focused route tests and all 272 crate unit tests pass. The raw and
-normalized discovered-test hashes remain `5e41e4db...` and `c0c2b80f...`; the
-plan, parse-only, declaration-symbol, and type-elaboration CLI hashes remain
-`f3424007...`, `57d0fba9...`, `08b00a9f...`, and `1dadbeab...`. Formatting,
-Clippy with denied warnings, workspace tests, and diff checks pass. No API,
-test name, diagnostic, detail key, payload, ordering, fail-closed behavior,
-authority, coverage credit, owner crate, or deferred status changed.
-`spec_coverage_audit.md` therefore remains unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZN Pre-Move Inventory and Specification
 
-Fresh authority, test, trace, expectation, design, source, API, and real-
-producer/consumer inventory selects only the three-edge local-object-mode
-same-mode asserted-head route as the next bounded addition to private
-`type_elaboration/type_assertion_routes.rs`. It is the sole remaining physical
-local-object-mode asserted-head route after Task 263ZZM and forms five exact
-`runner.rs` fragments: the invalid key at 766-767 (2 lines, `6e51f2c0...`),
-config at 2629-2666 (38, `de329e8b...`), production detail route at 3033-3044
-(12, `f63419c2...`), test-only output including its attached `#[cfg(test)]` at
-3285-3293 (9, `122526ab...`), and extractor at 3970-3981 (12,
-`38ea6cf4...`). Total: 73 lines; combined raw hash `6f192ef1...` and whitespace-
-normalized pre-move hash `1cbaff18...`.
-
-Task 263ZZN mechanically moves only those fragments into the existing private
-owner. The orchestration call and dispatch order stay in `runner.rs`. Only the
-production detail route crosses the normal phase facade. The config, test-
-consumed output, and extractor cross under `#[cfg(test)]`; the invalid-key
-constant remains leaf-private while a config-derived runner test alias retains
-its existing name and value. A formatting-control attribute may be added
-outside the preservation oracle solely to prevent mechanical line wrapping.
-No public API or call site, helper name, config value, exact four-expansion
-object-terminal same-mode relation, key, payload, ordering, fallback, or fail-
-closed behavior changes.
-
-Canonical reserved-variable closure, mode unfolding, builtin-object, and
-static type-assertion requirements apply unchanged. The active `.miz`/
-expectation pair and covered Task 196 checker requirement exercise four ordered
-real source-derived definitions: Base to object, Inner to Base, Middle to
-Inner, and Outer to Middle. Independent raw reserve-subject and formula-side
-asserted inputs retain distinct sites/ranges while resolving to the same Outer
-symbol. The closed `SameMode` relation validates only that exact outermost
-identity; the Outer-to-Middle-to-Inner-to-Base-to-object chain is terminal-
-normalization evidence, never reachability evidence. The route consumes
-exactly four expansions, normalizes three known type entries to the Base-
-definition-RHS builtin-object identity, resolves subject ordinal 1 to
-`BindingId(0)`, and produces one inferred variable and one checked type
-assertion with zero expected constraints, facts, candidates, diagnostics, or
-deferred reasons and without widening, `qua`, or object/set coercion.
-
-Existing tests retain 99 direct symbol references across eight test files;
-including eleven definitions/internal calls in `runner.rs`, the pre-move
-repository has 110 occurrences across nine source-and-test files. The exact
-route, a reversed-definition-order near miss, per-definition missing/label/
-recovery guards, finite radix/shape/provenance/corruption guards, unrelated-
-local/imported/ambiguous rejection, route isolation plus later cross-owner
-regressions, immutable output, and a real frontend/resolver sidecar are
-present. Both focused source and active-fixture tests pass before the move.
-Therefore this is move-only `design_drift`; no ZZN0 test task is needed.
-`spec_coverage_audit.md` remains unchanged because authority, behavior,
-coverage credit, owner crate, and deferred status do not change. Forbidden
-changes are config/key/role/mode/relation edits, route or asserted-head
-generalization, other route moves, object/set coercion, assertion weakening,
-and test/expectation edits.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZN Move Result
 
-Task 263ZZN moved only the five approved fragments totaling 73 lines into the
-existing private `type_elaboration/type_assertion_routes.rs` owner. The
-orchestration call and dispatch order remain in place and byte/order-stable.
-The invalid-key fragment remains leaf-private; the config, output, and
-extractor remain test-only facade consumers; and only the production detail
-route crosses the normal facade. The output's attached `#[cfg(test)]` remains
-inside the preservation oracle, while the formatting control remains outside
-it.
-
-After stripping only the required `pub(in crate::runner)` visibility, the five
-post-move fragments retain their original hashes `6e51f2c0...`, `de329e8b...`,
-`f63419c2...`, `122526ab...`, and `38ea6cf4...`; the combined raw hash remains
-`6f192ef1...`, and the whitespace-normalized hash remains `1cbaff18...`. The
-resulting source inventory is 3,994 lines / `65dfa58a...` for `runner.rs`, 480 /
-`ea7f945d...` for the phase facade, and 2,575 / `d117131d...` for the route
-owner.
-
-Both focused route tests and all 272 crate unit tests pass. The raw and
-normalized discovered-test hashes remain `5e41e4db...` and `c0c2b80f...`; the
-plan, parse-only, declaration-symbol, and type-elaboration CLI hashes remain
-`f3424007...`, `57d0fba9...`, `08b00a9f...`, and `1dadbeab...`. Formatting,
-Clippy with denied warnings, workspace tests, and diff checks pass. No API,
-test name, diagnostic, detail key, payload, ordering, fail-closed behavior,
-authority, coverage credit, owner crate, or deferred status changed.
-`spec_coverage_audit.md` therefore remains unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZO Pre-Move Inventory and Specification
 
-Fresh authority, test, trace, expectation, design, source, API, and real-
-producer/consumer inventory selects only the direct local-mode same-mode
-asserted-head route as the next bounded addition to private
-`type_elaboration/type_assertion_routes.rs`. It is the first remaining physical
-local-mode asserted-head route after Task 263ZZN completed the local-object-
-mode asserted-head family. It forms five exact `runner.rs` fragments: the
-invalid key at 701-702 (2 lines, `a98d34ff...`), config at 2091-2108 (18,
-`ee053f39...`), production detail route at 2802-2813 (12, `bf8b4ec4...`),
-test-only output including its attached `#[cfg(test)]` at 3086-3094 (9,
-`0f7575ab...`), and extractor at 3718-3729 (12, `9d1d5ace...`). Total: 53
-lines; combined raw hash `8e438726...` and whitespace-normalized pre-move hash
-`1cd18da9...`.
-
-Task 263ZZO mechanically moves only those fragments into the existing private
-owner. The orchestration call and dispatch order stay in `runner.rs`. Only the
-production detail route crosses the normal phase facade. The config, test-
-consumed output, and extractor cross under `#[cfg(test)]`; the invalid-key
-constant remains leaf-private while a config-derived runner test alias retains
-its existing name and value. A formatting-control attribute may be added
-outside the preservation oracle solely to prevent mechanical line wrapping.
-No public API or call site, helper name, config value, exact one-expansion set-
-terminal same-mode relation, key, payload, ordering, fallback, or fail-closed
-behavior changes.
-
-Canonical reserved-variable closure, mode unfolding, builtin-set, and static
-type-assertion requirements apply unchanged. The active `.miz`/expectation pair
-and covered Task 182 checker requirement exercise one real source-derived
-definition from `LocalModeAssertedHead` to `set`, reserve `x` for that mode, and
-assert `x is LocalModeAssertedHead`. Independent raw reserve-subject and formula-
-side asserted inputs retain distinct sites/ranges while resolving to the same
-mode symbol. The closed `SameMode` relation validates only that exact symbol
-identity; the one mode-to-set expansion is terminal-normalization evidence,
-never general reachability evidence. The route consumes exactly one expansion,
-normalizes three known type entries to the definition-RHS builtin-set identity,
-resolves subject ordinal 1 to `BindingId(0)`, and produces one inferred variable
-and one checked type assertion with zero expected constraints, facts,
-candidates, diagnostics, or deferred reasons and without widening or `qua`.
-
-Existing tests retain 59 direct symbol references across five test files;
-including ten definitions/internal calls in `runner.rs`, the pre-move repository
-has 69 occurrences across six source-and-test files. The exact route; finite
-wrong-terminal, attributed, contextual, parameterized, recovered, missing,
-duplicate, label, order, reserve, asserted-head, subject, and corruption guards;
-unrelated/imported/ambiguous rejection; route isolation plus later cross-owner
-regressions; immutable output; and a real frontend/resolver sidecar are present.
-Both focused source and active-fixture tests pass before the move. Therefore
-this is move-only `design_drift`; no ZZO0 test task is needed.
-`spec_coverage_audit.md` remains unchanged because authority, behavior,
-coverage credit, owner crate, and deferred status do not change. Forbidden
-changes are config/key/role/mode/relation edits, route or asserted-head
-generalization, other route moves, assertion weakening, and test/expectation
-edits.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZO Move Result
 
-Task 263ZZO moved only the five approved fragments totaling 53 lines into the
-existing private `type_elaboration/type_assertion_routes.rs` owner. The
-orchestration call and dispatch order remain in place and byte/order-stable.
-The invalid-key fragment remains leaf-private; the config, output, and
-extractor remain test-only facade consumers; and only the production detail
-route crosses the normal facade. The output's attached `#[cfg(test)]` remains
-inside the preservation oracle, while the formatting control remains outside
-it.
-
-After stripping only the required `pub(in crate::runner)` visibility, the five
-post-move fragments retain their original hashes `a98d34ff...`, `ee053f39...`,
-`bf8b4ec4...`, `0f7575ab...`, and `9d1d5ace...`; the combined raw hash remains
-`8e438726...`, and the whitespace-normalized hash remains `1cd18da9...`. The
-resulting source inventory is 3,941 lines / `54b944e7...` for `runner.rs`, 481 /
-`7547111b...` for the phase facade, and 2,634 / `0b25856f...` for the route
-owner.
-
-Both focused route tests and all 272 crate unit tests pass. The raw and
-normalized discovered-test hashes remain `5e41e4db...` and `c0c2b80f...`; the
-plan, parse-only, declaration-symbol, and type-elaboration CLI hashes remain
-`f3424007...`, `57d0fba9...`, `08b00a9f...`, and `1dadbeab...`. Formatting,
-Clippy with denied warnings, workspace tests, and diff checks pass. No API,
-test name, diagnostic, detail key, payload, ordering, fail-closed behavior,
-authority, coverage credit, owner crate, or deferred status changed.
-`spec_coverage_audit.md` therefore remains unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZP Pre-Move Inventory and Specification
 
-Fresh authority, test, trace, expectation, design, source, API, and real-
-producer/consumer inventory selects only the chained local-mode same-mode
-asserted-head route as the next bounded addition to private
-`type_elaboration/type_assertion_routes.rs`. Its immediate-radix sibling stays
-in `runner.rs`. The route forms five exact `runner.rs` fragments: the invalid
-key at 708-709 (2 lines, `e9e51f4b...`), config at 2093-2119 (27,
-`0fe975ea...`), production detail route at 2785-2796 (12, `81a2621e...`),
-test-only output including its attached `#[cfg(test)]` at 3056-3064 (9,
-`d5504bc0...`), and extractor at 3678-3689 (12, `06cb3e8d...`). Total: 62
-lines; combined raw hash `5bb9fafa...` and whitespace-normalized pre-move hash
-`05989d8d...`.
-
-Task 263ZZP mechanically moves only those fragments into the existing private
-owner. The orchestration call and dispatch order stay in `runner.rs`. Only the
-production detail route crosses the normal phase facade. The config, test-
-consumed output, and extractor cross under `#[cfg(test)]`; the invalid-key
-constant remains leaf-private while a config-derived runner test alias retains
-its existing name and value. A formatting-control attribute may be added
-outside the preservation oracle solely to prevent mechanical line wrapping.
-No public API or call site, helper name, config value, exact two-expansion set-
-terminal same-mode relation, key, payload, ordering, fallback, or fail-closed
-behavior changes.
-
-Canonical reserved-variable closure, mode unfolding, builtin-set, and static
-type-assertion requirements apply unchanged. The active `.miz`/expectation pair
-and covered Task 184 checker requirement exercise two ordered real source-
-derived definitions: Base to set and Chain to Base, reserve `x` for Chain, and
-assert `x is Chain`. Independent raw reserve-subject and formula-side asserted
-inputs retain distinct sites/ranges while resolving to the same Chain symbol.
-The closed `SameMode` relation validates only that exact outer identity; the
-Chain-to-Base-to-set path is terminal-normalization evidence, never general
-reachability evidence. The route consumes exactly two expansions, normalizes
-three known type entries to the Base-definition-RHS builtin-set identity,
-resolves subject ordinal 1 to `BindingId(0)`, and produces one inferred variable
-and one checked type assertion with zero expected constraints, facts,
-candidates, diagnostics, or deferred reasons and without widening or `qua`.
-
-Existing tests retain 61 direct symbol references across five test files;
-including ten definitions/internal calls in `runner.rs`, the pre-move repository
-has 71 occurrences across six source-and-test files. Exact, finite wrong-link/
-terminal/order/depth and asserted-head/attribute/argument/recovery/extra-item/
-provenance/corruption guards, unrelated/imported/ambiguous rejection, route
-isolation plus later cross-owner regressions, immutable output, and a real
-frontend/resolver sidecar are present. Both focused source and active-fixture
-tests pass before the move. Therefore this is move-only `design_drift`; no ZZP0
-test task is needed. `spec_coverage_audit.md` remains unchanged because
-authority, behavior, coverage credit, owner crate, and deferred status do not
-change. Forbidden changes are config/key/role/mode/relation edits, route or
-asserted-head generalization, immediate-radix or other route moves, assertion
-weakening, and test/expectation edits.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZP Move Result
 
-Task 263ZZP moved only the five approved fragments totaling 62 lines into the
-existing private `type_elaboration/type_assertion_routes.rs` owner. The
-orchestration call and dispatch order remain in place and byte/order-stable.
-The invalid-key fragment remains leaf-private; the config, output, and
-extractor remain test-only facade consumers; and only the production detail
-route crosses the normal facade. The output's attached `#[cfg(test)]` remains
-inside the preservation oracle, while the formatting control remains outside
-it. The immediate-radix sibling remains entirely in `runner.rs`.
-
-After stripping only the required `pub(in crate::runner)` visibility, the five
-post-move fragments retain their original hashes `e9e51f4b...`, `0fe975ea...`,
-`81a2621e...`, `d5504bc0...`, and `06cb3e8d...`; the combined raw hash remains
-`5bb9fafa...`, and the whitespace-normalized hash remains `05989d8d...`. The
-resulting source inventory is 3,881 lines / `5be84fd5...` for `runner.rs`, 485 /
-`8d494019...` for the phase facade, and 2,702 / `2d965979...` for the route
-owner.
-
-Both focused route tests and all 272 crate unit tests pass. The raw and
-normalized discovered-test hashes remain `5e41e4db...` and `c0c2b80f...`; the
-plan, parse-only, declaration-symbol, and type-elaboration CLI hashes remain
-`f3424007...`, `57d0fba9...`, `08b00a9f...`, and `1dadbeab...`. Formatting,
-Clippy with denied warnings, workspace tests, and diff checks pass. No API,
-test name, diagnostic, detail key, payload, ordering, fail-closed behavior,
-authority, coverage credit, owner crate, or deferred status changed.
-`spec_coverage_audit.md` therefore remains unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZQ Pre-Move Inventory and Specification
 
-Fresh authority, test, trace, expectation, design, source, API, and real-
-producer/consumer inventory selects only the chained local-mode immediate-
-radix asserted-head route as the next bounded addition to private
-`type_elaboration/type_assertion_routes.rs`. Its two-edge sibling stays in
-`runner.rs`. The route forms five exact `runner.rs` fragments: the invalid key
-at 714-715 (2 lines, `a51d057c...`), config at 2097-2122 (26,
-`817c0b69...`), production detail route at 2761-2772 (12, `800eb7fa...`),
-test-only output including its attached `#[cfg(test)]` at 3019-3027 (9,
-`ce1ccdd...`), and extractor at 3631-3642 (12, `8ef8b75d...`). Total: 61
-lines; combined raw hash `f7295f7f...` and whitespace-normalized pre-move hash
-`65c8051c...`.
-
-Task 263ZZQ mechanically moves only those fragments into the existing private
-owner. The orchestration call and dispatch order stay in `runner.rs`. Only the
-production detail route crosses the normal phase facade. The config, test-
-consumed output, and extractor cross under `#[cfg(test)]`; the invalid-key
-constant remains leaf-private while a config-derived runner test alias retains
-its existing name and value. A formatting-control attribute may be added
-outside the preservation oracle solely to prevent mechanical line wrapping.
-No public API or call site, helper name, config value, exact two-expansion set-
-terminal immediate-radix relation, key, payload, ordering, fallback, or fail-
-closed behavior changes.
-
-Canonical reserved-variable closure, mode unfolding, builtin-set, and static
-type-assertion requirements apply unchanged. The active `.miz`/expectation pair
-and covered Task 201 checker requirement exercise two ordered real source-
-derived definitions: Base to set and Outer to Base, reserve `x` for Outer, and
-assert `x is Base`. Independent raw Outer reserve-subject and Base formula-side
-asserted inputs retain distinct sites/ranges and symbol identities. The closed
-`BindingImmediateRadix` relation validates only the exact Outer-to-Base edge;
-the Base-to-set path is terminal-normalization evidence, never general
-reachability evidence. The route consumes exactly two expansions, normalizes
-three known type entries to the Base-definition-RHS builtin-set identity,
-resolves subject ordinal 1 to `BindingId(0)`, and produces one inferred
-variable and one checked type assertion with zero expected constraints, facts,
-candidates, diagnostics, or deferred reasons and without widening or `qua`.
-
-Existing tests retain 70 direct symbol references across eight test files;
-including ten definitions/internal calls in `runner.rs`, the pre-move
-repository has 80 occurrences across nine source-and-test files. Exact finite
-structural/provenance/corruption guards, Task 146/184 route isolation, immutable
-output, unrelated/imported/attribute/argument/deeper-path rejection, and a real
-frontend/resolver sidecar are present. Both focused source and active-fixture
-tests pass before the move. Therefore this is move-only `design_drift`; no
-ZZQ0 test task is needed. `spec_coverage_audit.md` remains unchanged because
-authority, behavior, coverage credit, owner crate, and deferred status do not
-change. Forbidden changes are config/key/role/mode/relation edits, route or
-asserted-head generalization, two-edge or other route moves, assertion
-weakening, and test/expectation edits.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZQ Move Result
 
-Task 263ZZQ moved only the five approved fragments totaling 61 lines into the
-existing private `type_elaboration/type_assertion_routes.rs` owner. The
-orchestration call and dispatch order remain in place and byte/order-stable.
-The invalid-key fragment remains leaf-private; the config, output, and
-extractor remain test-only facade consumers; and only the production detail
-route crosses the normal facade. The output's attached `#[cfg(test)]` remains
-inside the preservation oracle, while the formatting control remains outside
-it. The two-edge sibling remains entirely in `runner.rs`.
-
-After stripping only the required `pub(in crate::runner)` visibility, the five
-post-move fragments retain their original full hashes `a51d057c030ded012c8d8a612c20343986bddd3b9ce936e36f3e7438e86f7387`,
-`817c0b69aa8eb396a1adba42e8f77d9e5304cb14f12976010059133c29fb106c`,
-`800eb7faa34d3032e5ef81a93436e0d84c1a6cdeaa2e5b477b1d132554bc43b4`,
-`ce1ccddcfadfe0fa2a01b46300fd9d581cc6b73a265e1377f14d656bbf238350`,
-and `8ef8b75deeb62a06e983aaca5a933f8f67f30f1744faf37774a499b90d9c7e63`;
-the combined raw hash remains
-`f7295f7fbcfe8ff362ec958fc716a40b19e4f6b1bdb6da7e28c16a5e1b01a526`,
-and the whitespace-normalized hash remains
-`65c8051ce27d689c2a5c1ff8222a21e81485bbd8888be6c656f07460e004d130`.
-The resulting source inventory is 3,823 lines /
-`304d92e741373a8d327a54c2717a21f818595a0c7990a84da48acfcc32e41f4b`
-for `runner.rs`, 489 /
-`8112e7a69ac5b03464c5812e8dfec0e53a4fa34170195f20bc4b32f6d8f218b7`
-for the phase facade, and 2,769 /
-`52eece2e87355254462dbbcd85650efa0492d72982a352f0917ae797447f1aa2`
-for the route owner.
-
-Both focused route tests and all 272 crate unit tests pass. The raw and
-normalized discovered-test hashes remain `5e41e4db...` and `c0c2b80f...`; the
-plan, parse-only, declaration-symbol, and type-elaboration CLI hashes remain
-`f3424007...`, `57d0fba9...`, `08b00a9f...`, and `1dadbeab...`. The known plan
-diagnostics remain 23 warnings and zero errors. No API, test name, diagnostic,
-detail key, payload, ordering, fail-closed behavior, authority, coverage credit,
-owner crate, or deferred status changed. `spec_coverage_audit.md` therefore
-remains unchanged. Formatting, Clippy with denied warnings, workspace tests,
-and diff checks pass.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZR Pre-Move Inventory and Specification
 
-Fresh authority, test, trace, expectation, design, source, API, and real-
-producer/consumer inventory selects only the two-edge local-mode immediate-
-radix asserted-head route as the next bounded addition to private
-`type_elaboration/type_assertion_routes.rs`. Its two-hop sibling stays in
-`runner.rs`. The route forms five exact `runner.rs` fragments: the invalid key
-at 724-725 (2 lines, `ffaf7791...`), config at 2102-2132 (31,
-`7c857e90...`), production detail route at 2739-2750 (12, `7f65e0c8...`),
-test-only output including its attached `#[cfg(test)]` at 2984-2992 (9,
-`324ff080...`), and extractor at 3586-3597 (12, `a2162d71...`). Total: 66
-lines; combined raw hash `f29621c1...` and whitespace-normalized pre-move hash
-`cb75bb40...`.
-
-Task 263ZZR mechanically moves only those fragments into the existing private
-owner. The orchestration call and dispatch order stay in `runner.rs`. Only the
-production detail route crosses the normal phase facade. The config, test-
-consumed output, and extractor cross under `#[cfg(test)]`; the invalid-key
-constant remains leaf-private while a config-derived runner test alias retains
-its existing name and value. A formatting-control attribute may be added
-outside the preservation oracle solely to prevent mechanical line wrapping.
-No public API or call site, helper name, config value, exact three-expansion
-set-terminal immediate-radix relation, key, payload, ordering, fallback, or
-fail-closed behavior changes.
-
-Canonical reserved-variable closure, mode unfolding, builtin-set, and static
-type-assertion requirements apply unchanged. The active `.miz`/expectation pair
-and covered Task 203 checker requirement exercise three ordered real source-
-derived definitions: Base to set, Middle to Base, and Outer to Middle, reserve
-`x` for Outer, and assert `x is Middle`. Independent raw Outer reserve-subject
-and Middle formula-side asserted inputs retain distinct sites/ranges and symbol
-identities. The closed `BindingImmediateRadix` relation validates only the exact
-Outer-to-Middle edge; asserting Base across both links remains rejected. The
-route consumes exactly three expansions, normalizes three known type entries to
-the Base-definition-RHS builtin-set identity, resolves subject ordinal 1 to
-`BindingId(0)`, and produces one inferred variable and one checked type
-assertion with zero expected constraints, facts, candidates, diagnostics, or
-deferred reasons and without two-hop reachability, widening, or `qua`.
-
-Existing tests retain 75 direct symbol references across eight test files;
-including ten definitions/internal calls in `runner.rs`, the pre-move
-repository has 85 occurrences across nine source-and-test files. Exact finite
-structural/provenance/corruption guards, all nonidentity definition reorderings,
-duplicate/spelling/imported/ambiguous/deeper near misses, Tasks 122/148/149/186/
-187/201/202 route isolation, immutable output, and a real frontend/resolver
-sidecar are present. Both focused source and active-fixture tests pass before
-the move. Therefore this is move-only `design_drift`; no ZZR0 test task is
-needed. `spec_coverage_audit.md` remains unchanged because authority, behavior,
-coverage credit, owner crate, and deferred status do not change. Forbidden
-changes are config/key/role/mode/relation edits, route or asserted-head
-generalization, two-hop or other route moves, assertion weakening, and test/
-expectation edits.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZR Move Result
 
-Task 263ZZR moved only the five approved fragments totaling 66 lines into the
-existing private `type_elaboration/type_assertion_routes.rs` owner. The
-orchestration call and dispatch order remain in place and byte/order-stable.
-The invalid-key fragment remains leaf-private; the config, output, and
-extractor remain test-only facade consumers; and only the production detail
-route crosses the normal facade. The output's attached `#[cfg(test)]` remains
-inside the preservation oracle, while the formatting control remains outside
-it. The two-hop sibling remains entirely in `runner.rs`.
-
-After stripping only the required `pub(in crate::runner)` visibility, the five
-post-move fragments retain their original full hashes
-`ffaf7791b98c7e4060bee444591c780e42a647c69334d4991298dc09b8e65047`,
-`7c857e904821d620d2c7ab5e9fb3a698fa32acdc1b33172c7a2afd30e3af5202`,
-`7f65e0c8e7e720f62b02e55505430c4519db502de64a1d8db4eed454fe2fdf0d`,
-`324ff080387cbc939f469f467350f67963aa69fdcefbffc3d9ef2cc5d59a1212`,
-and `a2162d716bbfc77184f9d6865e7a3d60567adf0b86c499645aa5b44065afdc97`;
-the combined raw hash remains
-`f29621c10d4cf43314489b48011a94be66cf9725bb5c2e570756eb42cd29b7ac`,
-and the whitespace-normalized hash remains
-`cb75bb4045b6c68b94973965264b9c3bed614cefa5eadff490f462224a16da89`.
-The resulting source inventory is 3,760 lines /
-`4b63c419c740043eca744958ae5def8c37ac45beeed0744cb46abe9c64945473`
-for `runner.rs`, 493 /
-`fe99192692c32a8ede826c1f22fdf35702372a541bf9d7502bfd3f1b70fe7810`
-for the phase facade, and 2,841 /
-`8ea62f4be5549413ef9e8e88f83540f04468797cb8fe100b53655008bf6d3916`
-for the route owner.
-
-Both focused route tests and all 272 crate unit tests pass. The raw and
-normalized discovered-test hashes remain `5e41e4db...` and `c0c2b80f...`; the
-plan, parse-only, declaration-symbol, and type-elaboration CLI hashes remain
-`f3424007...`, `57d0fba9...`, `08b00a9f...`, and `1dadbeab...`. The known plan
-diagnostics remain 23 warnings and zero errors. No API, test name, diagnostic,
-detail key, payload, ordering, fail-closed behavior, authority, coverage credit,
-owner crate, or deferred status changed. `spec_coverage_audit.md` therefore
-remains unchanged. Formatting, Clippy with denied warnings, workspace tests,
-and diff checks pass.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZS Pre-Move Inventory and Specification
 
-Fresh authority, test, trace, expectation, design, source, API, and real-
-producer/consumer inventory selects only the two-edge local-mode two-hop
-asserted-head route as the next bounded addition to private
-`type_elaboration/type_assertion_routes.rs`. Its three-edge sibling stays in
-`runner.rs`. The route forms five exact `runner.rs` fragments: the invalid key
-at 731-732 (2 lines, `8d2918fd...`), config at 2107-2138 (32,
-`01b0aa7b...`), production detail route at 2712-2723 (12, `f02f7c58...`),
-test-only output including its attached `#[cfg(test)]` at 2944-2952 (9,
-`aab9fed7...`), and extractor at 3536-3547 (12, `d6310ee0...`). Total: 67
-lines; combined raw hash `4cde8b0b...` and whitespace-normalized pre-move hash
-`4fdcb694...`.
-
-Task 263ZZS mechanically moves only those fragments into the existing private
-owner. The orchestration call and dispatch order stay in `runner.rs`. Only the
-production detail route crosses the normal phase facade. The config, test-
-consumed output, and extractor cross under `#[cfg(test)]`; the invalid-key
-constant remains leaf-private while a config-derived runner test alias retains
-its existing name and value. A formatting-control attribute may be added
-outside the preservation oracle solely to prevent mechanical line wrapping.
-No public API or call site, helper name, config value, exact three-expansion
-set-terminal two-hop relation, key, payload, ordering, fallback, or fail-closed
-behavior changes.
-
-Canonical reserved-variable closure, mode unfolding, builtin-set, and static
-type-assertion requirements apply unchanged. The active `.miz`/expectation pair
-and covered Task 211 checker requirement exercise three ordered real source-
-derived definitions: Base to set, Middle to Base, and Outer to Middle, reserve
-`x` for Outer, and assert `x is Base`. Independent raw Outer reserve-subject and
-Base formula-side asserted inputs retain distinct sites/ranges and symbol
-identities. The closed `BindingTwoHopRadix` relation directly validates the
-exact pairwise-distinct Outer-to-Middle and Middle-to-Base links; Base-to-set is
-terminal-normalization evidence only, never relation or generic-reachability
-evidence. The route consumes exactly three expansions, normalizes three known
-type entries to the Base-definition-RHS builtin-set identity, resolves subject
-ordinal 1 to `BindingId(0)`, and produces one inferred variable and one checked
-type assertion with zero expected constraints, facts, candidates, diagnostics,
-or deferred reasons and without widening or `qua`.
-
-Existing tests retain 41 direct symbol references across five test files;
-including ten definitions/internal calls in `runner.rs`, the pre-move
-repository has 51 occurrences across six source-and-test files. All five
-nonidentity definition orders, the finite structural/provenance/corruption
-matrix, bidirectional isolation against all 36 prior owners, immutable output,
-and a real frontend/resolver sidecar are present. Both focused source and
-active-fixture tests pass before the move. Therefore this is move-only
-`design_drift`; no ZZS0 test task is needed. `spec_coverage_audit.md` remains
-unchanged because authority, behavior, coverage credit, owner crate, and
-deferred status do not change. Forbidden changes are config/key/role/mode/
-relation edits, route or asserted-head generalization, three-edge or other
-route moves, assertion weakening, and test/expectation edits.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZS Move Result
 
-Task 263ZZS moved only the five approved fragments totaling 67 lines into the
-existing private `type_elaboration/type_assertion_routes.rs` owner. The
-orchestration call and dispatch order remain in place and byte/order-stable.
-The invalid-key fragment remains leaf-private; the config, output, and
-extractor remain test-only facade consumers; and only the production detail
-route crosses the normal facade. The output's attached `#[cfg(test)]` remains
-inside the preservation oracle, while the formatting control remains outside
-it. The three-edge sibling remains entirely in `runner.rs`.
-
-After stripping only the required `pub(in crate::runner)` visibility, the five
-post-move fragments retain their original full hashes
-`8d2918fd07d267b734abc49b056aa25adb4b86d307d759feebcf58054a5514c0`,
-`01b0aa7b66802966e5cddf4211b9b7499d7fcc56b7629da74dc99e004198176a`,
-`f02f7c58560bfe2f85ad34870743c146c7741285295a1f09b14f18462b67294f`,
-`aab9fed70f5268ca84a32ac81052097acb85ae2ae5347c8cd4106695e79db70c`,
-and `d6310ee09776eaf6a40f6adba664495f3d4aa0d7f506a9fc6512153e3e24b2ea`;
-the combined raw hash remains
-`4cde8b0b625452fb495678a12b69342da2c5f11902ed87706006f4519d91bb06`,
-and the whitespace-normalized hash remains
-`4fdcb694321ddf165efe08201b14b7e989f51db8beea99fb4418fbf30fd47ec4`.
-The resulting source inventory is 3,696 lines /
-`07491a7d598ffd38a3499ed4d8b061319c354c585297106a604f1808a6ee5a47`
-for `runner.rs`, 497 /
-`982a872450403dfbc9c4f50c8abec129410fa5e8d4a08cd2e77bfb6b6238232e`
-for the phase facade, and 2,914 /
-`50fa21592dfde166747c7e812063f49a554def5f317c62f10d9c303c8c1b2c84`
-for the route owner.
-
-Both focused route tests and all 272 crate unit tests pass. The raw and
-normalized discovered-test hashes remain `5e41e4db...` and `c0c2b80f...`; the
-plan, parse-only, declaration-symbol, and type-elaboration CLI hashes remain
-`f3424007...`, `57d0fba9...`, `08b00a9f...`, and `1dadbeab...`. The known plan
-diagnostics remain 23 warnings and zero errors. No API, test name, diagnostic,
-detail key, payload, ordering, fail-closed behavior, authority, coverage credit,
-owner crate, or deferred status changed. `spec_coverage_audit.md` therefore
-remains unchanged. Final formatting, Clippy with denied warnings, workspace
-tests, and diff checks all pass.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZT Pre-Move Inventory and Specification
 
-Fresh authority, test, trace, expectation, design, source, API, and real-
-producer/consumer inventory selects only the three-edge local-mode two-hop
-asserted-head route as the next bounded addition to private
-`type_elaboration/type_assertion_routes.rs`. Its four-edge sibling stays in
-`runner.rs`. The route forms five exact `runner.rs` fragments: the invalid key
-at 741-742 (2 lines, `11960978...`), config at 2112-2148 (37,
-`57d4c156...`), production detail route at 2684-2695 (12, `5f7cf50e...`),
-test-only output including its attached `#[cfg(test)]` at 2903-2911 (9,
-`ffa4ec43...`), and extractor at 3485-3496 (12, `2fbf279a...`). Total: 72
-lines; combined raw hash `659b786b...` and whitespace-normalized pre-move hash
-`4d663162...`.
-
-Task 263ZZT mechanically moves only those fragments into the existing private
-owner. The orchestration call and dispatch order stay in `runner.rs`. Only the
-production detail route crosses the normal phase facade. The config, test-
-consumed output, and extractor cross under `#[cfg(test)]`; the invalid-key
-constant remains leaf-private while a config-derived runner test alias retains
-its existing name and value. A formatting-control attribute may be added
-outside the preservation oracle solely to prevent mechanical line wrapping.
-No public API or call site, helper name, config value, exact four-expansion
-set-terminal two-hop relation, key, payload, ordering, fallback, or fail-closed
-behavior changes.
-
-Canonical reserved-variable closure, mode unfolding, builtin-set, and static
-type-assertion requirements apply unchanged. The active `.miz`/expectation pair
-and covered Task 213 checker requirement exercise four ordered real source-
-derived definitions: Base to set, Inner to Base, Middle to Inner, and Outer to
-Middle, reserve `x` for Outer, and assert `x is Inner`. Independent raw Outer
-reserve-subject and Inner formula-side asserted inputs retain distinct sites/
-ranges and symbol identities. The closed `BindingTwoHopRadix` relation directly
-validates the exact pairwise-distinct Outer-to-Middle and Middle-to-Inner links;
-the Inner-to-Base-to-set tail is terminal-normalization evidence only, never
-relation or generic-reachability evidence. The route consumes exactly four
-expansions, normalizes three known type entries to the Base-definition-RHS
-builtin-set identity, resolves subject ordinal 1 to `BindingId(0)`, and produces
-one inferred variable and one checked type assertion with zero expected
-constraints, facts, candidates, diagnostics, or deferred reasons and without
-widening or `qua`.
-
-Existing tests retain 70 direct symbol references across five test files;
-including eleven definitions/internal calls in `runner.rs`, the pre-move
-repository has 81 occurrences across six source-and-test files. All 23
-nonidentity definition orders, the finite structural/provenance/corruption
-matrix, focused Task 211/212 regressions, bidirectional isolation against all
-38 prior owners, immutable output, and a real frontend/resolver sidecar are
-present. Both focused source and active-fixture tests pass before the move.
-Therefore this is move-only `design_drift`; no ZZT0 test task is needed.
-`spec_coverage_audit.md` remains unchanged because authority, behavior,
-coverage credit, owner crate, and deferred status do not change. Forbidden
-changes are config/key/role/mode/relation edits, route or asserted-head
-generalization, four-edge or other route moves, assertion weakening, and test/
-expectation edits.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZT Move Result
 
-Task 263ZZT moved only the five approved fragments totaling 72 lines into the
-existing private `type_elaboration/type_assertion_routes.rs` owner. The
-orchestration call and dispatch order remain in place and byte/order-stable.
-The invalid-key fragment remains leaf-private; the config, output, and
-extractor remain test-only facade consumers; and only the production detail
-route crosses the normal facade. The output's attached `#[cfg(test)]` remains
-inside the preservation oracle, while the formatting control remains outside
-it. The four-edge sibling remains entirely in `runner.rs`.
-
-After stripping only the required `pub(in crate::runner)` visibility, the five
-post-move fragments retain their original full hashes
-`1196097899e5dfe2596a13b901a0550dd9864f013a9fd820bd2815120991a714`,
-`57d4c156e7d782096b45903309b56a9471490bee7675946f1c931cf02185067d`,
-`5f7cf50ea3b8f7b69748023434b10911c56f095468fe6da1393b683579829cfd`,
-`ffa4ec439ddda912122b0115f009f5c7534a9311357d5c85a39fa5b1586baa40`,
-and `2fbf279ae0a789b4e3551dcff455ff5bc0da29f10f5a8d995c095e993986d5de`;
-the combined raw hash remains
-`659b786b5d67157b7ce8e6b600caa615fe9e2d29a12724c18f633bd96719ac12`,
-and the whitespace-normalized hash remains
-`4d66316234a0245f58fef1aadccedc4ba1f7b7d3c92f6d8af48bf0e37cbc12be`.
-The resulting source inventory is 3,627 lines /
-`09770cb8a04b5f5bfdc9f86c830177d345e04f421ea72a658f7b04bfc042f2e9`
-for `runner.rs`, 501 /
-`d32757edb47813337a101aff07e27ea86d82c0c47a7c86624a34bd61eb8350d8`
-for the phase facade, and 2,992 /
-`375a27a4dc0ce6a14d8c4a7cf74674cb6858f2de86e1c3f561cf3060da4db867`
-for the route owner.
-
-Both focused route tests and all 272 crate unit tests pass. The raw and
-normalized discovered-test hashes remain `5e41e4db...` and `c0c2b80f...`; the
-plan, parse-only, declaration-symbol, and type-elaboration CLI hashes remain
-`f3424007...`, `57d0fba9...`, `08b00a9f...`, and `1dadbeab...`. The known plan
-diagnostics remain 23 warnings and zero errors. No API, test name, diagnostic,
-detail key, payload, ordering, fail-closed behavior, authority, coverage credit,
-owner crate, or deferred status changed. `spec_coverage_audit.md` therefore
-remains unchanged. Final formatting, Clippy with denied warnings, workspace
-tests, and diff checks all pass.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZU Pre-Move Inventory and Specification
 
-Fresh authority, test, trace, expectation, design, source, API, and real-
-producer/consumer inventory selects only the four-edge local-mode two-hop
-asserted-head route as the next bounded addition to private
-`type_elaboration/type_assertion_routes.rs`. Three-hop and all other routes stay
-in `runner.rs`. The route forms five exact `runner.rs` fragments: the invalid
-key at 751-752 (2 lines, `7cbfd828...`), config at 2117-2158 (42,
-`21bb0f84...`), production detail route at 2651-2662 (12, `2a80a99a...`),
-test-only output including its attached `#[cfg(test)]` at 2857-2865 (9,
-`dd1655c7...`), and extractor at 3429-3440 (12, `d040986a...`). Total: 77
-lines; combined raw hash `1a66c98d...` and whitespace-normalized pre-move hash
-`e6798044...`.
-
-Task 263ZZU mechanically moves only those fragments into the existing private
-owner. The orchestration call and dispatch order stay in `runner.rs`. Only the
-production detail route crosses the normal phase facade. The config, test-
-consumed output, and extractor cross under `#[cfg(test)]`; the invalid-key
-constant remains leaf-private while a config-derived runner test alias retains
-its existing name and value. A formatting-control attribute may be added
-outside the preservation oracle solely to prevent mechanical line wrapping.
-No public API or call site, helper name, config value, exact five-expansion
-set-terminal two-hop relation, key, payload, ordering, fallback, or fail-closed
-behavior changes.
-
-Canonical reserved-variable closure, mode unfolding, builtin-set, and static
-type-assertion requirements apply unchanged. The active `.miz`/expectation pair
-and covered Task 215 checker requirement exercise five ordered real source-
-derived definitions: Base to set, Inner to Base, Middle to Inner, Outer to
-Middle, and TooDeep to Outer, reserve `x` for TooDeep, and assert `x is Middle`.
-Independent raw TooDeep reserve-subject and Middle formula-side asserted inputs
-retain distinct sites/ranges and symbol identities. The closed
-`BindingTwoHopRadix` relation directly validates the exact pairwise-distinct
-TooDeep-to-Outer and Outer-to-Middle links; the Middle-to-Inner-to-Base-to-set
-tail is terminal-normalization evidence only, never relation or generic-
-reachability evidence. The route consumes exactly five expansions, normalizes
-three known type entries to the Base-definition-RHS builtin-set identity,
-resolves subject ordinal 1 to `BindingId(0)`, and produces one inferred variable
-and one checked type assertion with zero expected constraints, facts,
-candidates, diagnostics, or deferred reasons and without widening or `qua`.
-
-Existing tests retain 68 direct symbol references across three test files;
-including eleven definitions/internal calls in `runner.rs`, the pre-move
-repository has 79 occurrences across four source-and-test files. All 119
-nonidentity definition orders, the finite structural/provenance/corruption
-matrix, focused Task 211/212/213/214 regressions, bidirectional isolation
-against all 40 prior owners, immutable output, and a real frontend/resolver
-sidecar are present. Both focused source and active-fixture tests pass before
-the move. Therefore this is move-only `design_drift`; no ZZU0 test task is
-needed. `spec_coverage_audit.md` remains unchanged because authority, behavior,
-coverage credit, owner crate, and deferred status do not change. Forbidden
-changes are config/key/role/mode/relation edits, route or asserted-head
-generalization, three-hop or other route moves, assertion weakening, and test/
-expectation edits.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZU Move Result
 
-Task 263ZZU moved only the five approved fragments totaling 77 lines into the
-existing private `type_elaboration/type_assertion_routes.rs` owner. The
-orchestration call and dispatch order remain in place and byte/order-stable.
-The invalid-key fragment remains leaf-private; the config, output, and
-extractor remain test-only facade consumers; and only the production detail
-route crosses the normal facade. The output's attached `#[cfg(test)]` remains
-inside the preservation oracle, while the formatting control remains outside
-it. All three-hop and other routes remain entirely in `runner.rs`.
-
-After stripping only the required `pub(in crate::runner)` visibility, the five
-post-move fragments retain their original full hashes
-`7cbfd8281192a366a86fd611075a4662fc74cddd59627ac65256d06444177394`,
-`21bb0f848078ea625f2c8421576df5ae8e2cbc705ab60056279290607e0c2a88`,
-`2a80a99a130369e40dae020f775688198f3cea5514637d192d0e9f570733a62d`,
-`dd1655c7a49683901a4149d7d40d9a1973e13fc3b6a51082e3f83ff333425b97`,
-and `d040986a36f7593ad3c036ec2fca600e7c96ee435c4ce9b83cacbd04676c5c2c`;
-the combined raw hash remains
-`1a66c98de0cd41f13135edfa328bf9fac021caf6bafdc3cec69d6aa7b06f50d2`,
-and the whitespace-normalized hash remains
-`e67980444da7019a4c1d3f8b5d2a2e065eba3fa597b2de864c2da12d59afe06d`.
-The resulting source inventory is 3,553 lines /
-`6412b0b19d5dc38ffd2ccf77f1e6b080ed6e8abff82439c8b7ab844545566533`
-for `runner.rs`, 505 /
-`9e296f31dc18487bc479fcd74aa0457bbd78797269ff73b1bb622fa61a2df704`
-for the phase facade, and 3,075 /
-`2e1e2c5a65ac2a98755d5e45a9fe67d92a2e61a87da351dc7b4d4e60d04bddfc`
-for the route owner.
-
-Both focused route tests and all 272 crate unit tests pass. The raw and
-normalized discovered-test hashes remain `5e41e4db...` and `c0c2b80f...`; the
-plan, parse-only, declaration-symbol, and type-elaboration CLI hashes remain
-`f3424007...`, `57d0fba9...`, `08b00a9f...`, and `1dadbeab...`. The known plan
-diagnostics remain 23 warnings and zero errors. No API, test name, diagnostic,
-detail key, payload, ordering, fail-closed behavior, authority, coverage credit,
-owner crate, or deferred status changed. `spec_coverage_audit.md` therefore
-remains unchanged. Final formatting, Clippy with denied warnings, workspace
-tests, and diff checks all pass.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZV Pre-Move Inventory and Specification
 
-Fresh authority, test, trace, expectation, design, source, API, and real-
-producer/consumer inventory selects only the three-edge local-mode three-hop
-asserted-head route as the next bounded addition to private
-`type_elaboration/type_assertion_routes.rs`. Four-edge and all other routes stay
-in `runner.rs`. The route forms five exact `runner.rs` fragments: the invalid
-key at 761-762 (2 lines, `52589423...`), config at 2122-2159 (38,
-`ee987ab6...`), production detail route at 2613-2625 (13, `c0b9a874...`),
-test-only output including its attached `#[cfg(test)]` at 2806-2815 (10,
-`bba2a5bc...`), and extractor at 3368-3379 (12, `d4b6df24...`). Total: 75
-lines; combined raw hash `9f03f366...` and whitespace-normalized pre-move hash
-`2f166f1c...`.
-
-Task 263ZZV mechanically moves only those fragments into the existing private
-owner. The orchestration call and dispatch order stay in `runner.rs`. Only the
-production detail route crosses the normal phase facade. The config, test-
-consumed output, and extractor cross under `#[cfg(test)]`; the invalid-key
-constant remains leaf-private while a config-derived runner test alias retains
-its existing name and value. A formatting-control attribute may be added
-outside the preservation oracle solely to prevent mechanical line wrapping.
-No public API or call site, helper name, config value, exact four-expansion set-
-terminal three-hop relation, key, payload, ordering, fallback, or fail-closed
-behavior changes.
-
-Canonical reserved-variable closure, mode unfolding, builtin-set, and static
-type-assertion requirements apply unchanged. The active `.miz`/expectation pair
-and covered Task 217 checker requirement exercise four ordered real source-
-derived definitions: Base to set, Inner to Base, Middle to Inner, and Outer to
-Middle, reserve `x` for Outer, and assert `x is Base`. Independent raw Outer
-reserve-subject and Base formula-side asserted inputs retain distinct sites/
-ranges and symbol identities. The closed `BindingThreeHopRadix` relation
-directly validates the exact pairwise-distinct Outer-to-Middle, Middle-to-Inner,
-and Inner-to-Base links; Base-to-set is terminal-normalization evidence only,
-never relation or generic-reachability evidence. The route consumes exactly
-four expansions, normalizes three known type entries to the Base-definition-RHS
-builtin-set identity, resolves subject ordinal 1 to `BindingId(0)`, and produces
-one inferred variable and one checked type assertion with zero expected
-constraints, facts, candidates, diagnostics, or deferred reasons and without
-widening or `qua`.
-
-Existing tests retain 58 direct symbol references across three test files;
-including ten definitions/internal calls in `runner.rs`, the pre-move repository
-has 68 occurrences across four source-and-test files. All 23 nonidentity
-definition orders, the finite structural/provenance/corruption matrix, focused
-Tasks 211-216 regressions, bidirectional isolation against all 42 prior owners,
-immutable output, and a real frontend/resolver sidecar are present. All four
-focused Task 217 route tests pass before the move. Therefore this is move-only
-`design_drift`; no ZZV0 test task is needed. `spec_coverage_audit.md` remains
-unchanged because authority, behavior, coverage credit, owner crate, and
-deferred status do not change. Forbidden changes are config/key/role/mode/
-relation edits, route or asserted-head generalization, four-edge or other route
-moves, assertion weakening, and test/expectation edits.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZV Move Result
 
-Task 263ZZV moved only the five approved fragments totaling 75 lines into the
-existing private `type_elaboration/type_assertion_routes.rs` owner. The
-orchestration call and dispatch order remain in place and byte/order-stable.
-The invalid-key fragment remains leaf-private; the config, output, and
-extractor remain test-only facade consumers; and only the production detail
-route crosses the normal facade. The output's attached `#[cfg(test)]` remains
-inside the preservation oracle, while the formatting control remains outside
-it. The four-edge sibling and every other route remain entirely in `runner.rs`.
-
-After stripping only the required `pub(in crate::runner)` visibility, the five
-post-move fragments retain their original full hashes
-`525894235f29ad4842e56b8d99d9565588a2dc7d665023c93f6ec3b5ba4caf69`,
-`ee987ab6d6e9f64384af68a43d424af3e1f608b780929ddb4668fe1d9f500abc`,
-`c0b9a8740402c5e6cc1504dca6698ca53b8c06100b3a98ada6be7052db8fcec1`,
-`bba2a5bc9d79f347e5f8e5bd7177098af3806fa4fb4de4a3da71c5d9693bad7e`,
-and `d4b6df2405aa27f3bcec229a8211d8dd66714ff67100dc65f7de2b0eb5d24282`;
-the combined raw hash remains
-`9f03f366868ef6e707a7d6da47150732cceb108854fdfde33b85a2f1b8f9b2e6`,
-and the whitespace-normalized hash remains
-`2f166f1ce1d5d6024293627259f2541cff256aa628b17fa128d2c6356ef5e011`.
-The resulting source inventory is 3,481 lines /
-`33006b730ffa29bc4e3cf8600931c85f3b92c0f080bc26e8c0d9f40ff08094bd`
-for `runner.rs`, 509 /
-`d64bddb6f026148229aa28b442a858429949cc08fe29ebd91f058253d6594bec`
-for the phase facade, and 3,156 /
-`68f11d2563cf5cb9bd379c49d2799d52feb9ef53caa1a1cc49527f4b2543e89f`
-for the route owner.
-
-All four focused Task 217 route tests and all 272 crate unit tests pass. The raw
-and normalized discovered-test hashes remain `5e41e4db...` and `c0c2b80f...`;
-the plan, parse-only, declaration-symbol, and type-elaboration CLI hashes remain
-`f3424007...`, `57d0fba9...`, `08b00a9f...`, and `1dadbeab...`. Active counts
-remain 96, 4, and 188; plan/count remains 403/367, type-elaboration coverage
-235/223, and pass/fail 219/184. The known plan diagnostics remain 23 warnings
-and zero errors. No API, test name, diagnostic, detail key, payload, ordering,
-fail-closed behavior, authority, coverage credit, owner crate, or deferred
-status changed. `spec_coverage_audit.md` therefore remains unchanged. Final
-formatting, Clippy with denied warnings, workspace tests, and diff checks all
-pass.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZW Pre-Move Inventory and Specification
 
-Fresh authority, test, trace, expectation, design, source, API, and real-
-producer/consumer inventory selects only the four-edge local-mode three-hop
-asserted-head route as the next bounded addition to private
-`type_elaboration/type_assertion_routes.rs`. Four-hop and all other routes stay
-in `runner.rs`. The route forms five exact `runner.rs` fragments: the invalid
-key at 771-772 (2 lines, `849b87cb...`), config at 2127-2169 (43,
-`9432f71c...`), production detail route at 2579-2591 (13, `5bb3dca1...`),
-test-only output including its attached `#[cfg(test)]` at 2758-2767 (10,
-`6f2dd038...`), and extractor at 3309-3320 (12, `b42e30cb...`). Total: 80
-lines; combined raw hash `367e7f81...` and whitespace-normalized pre-move hash
-`30f3f31c...`.
-
-Task 263ZZW mechanically moves only those fragments into the existing private
-owner. The orchestration call and dispatch order stay in `runner.rs`. Only the
-production detail route crosses the normal phase facade. The config, test-
-consumed output, and extractor cross under `#[cfg(test)]`; the invalid-key
-constant remains leaf-private while a config-derived runner test alias retains
-its existing name and value. A formatting-control attribute may be added
-outside the preservation oracle solely to prevent mechanical line wrapping.
-No public API or call site, helper name, config value, exact five-expansion set-
-terminal three-hop relation, key, payload, ordering, fallback, or fail-closed
-behavior changes.
-
-Canonical reserved-variable closure, mode unfolding, builtin-set, and static
-type-assertion requirements apply unchanged. The active `.miz`/expectation pair
-and covered Task 219 checker requirement exercise five ordered real source-
-derived definitions: Base to set, Inner to Base, Middle to Inner, Outer to
-Middle, and TooDeep to Outer, reserve `x` for TooDeep, and assert `x is Inner`.
-Independent raw TooDeep reserve-subject and Inner formula-side asserted inputs
-retain distinct sites/ranges and symbol identities. The closed
-`BindingThreeHopRadix` relation directly validates the exact pairwise-distinct
-TooDeep-to-Outer, Outer-to-Middle, and Middle-to-Inner links; the Inner-to-Base-
-to-set tail is terminal-normalization evidence only, never relation or generic-
-reachability evidence. The route consumes exactly five expansions, normalizes
-three known type entries to the Base-definition-RHS builtin-set identity,
-resolves subject ordinal 1 to `BindingId(0)`, and produces one inferred variable
-and one checked type assertion with zero expected constraints, facts,
-candidates, diagnostics, or deferred reasons and without widening or `qua`.
-
-Existing tests retain 52 direct symbol references across three test files;
-including ten definitions/internal calls in `runner.rs`, the pre-move repository
-has 62 occurrences across four source-and-test files. All 119 nonidentity
-definition orders, the finite structural/provenance/corruption matrix including
-separate unconnected-unsupported and connected-sixth-edge guards, focused Task
-207 and Tasks 211-218 regressions, bidirectional isolation against all 44 prior
-owners, immutable output, and a real frontend/resolver sidecar are present. All
-four focused Task 219 route tests pass before the move. Therefore this is move-
-only `design_drift`; no ZZW0 test task is needed. `spec_coverage_audit.md`
-remains unchanged because authority, behavior, coverage credit, owner crate,
-and deferred status do not change. Forbidden changes are config/key/role/mode/
-relation edits, route or asserted-head generalization, four-hop or other route
-moves, assertion weakening, and test/expectation edits.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZW Move Result
 
-Task 263ZZW moved only the five approved fragments totaling 80 lines into the
-existing private `type_elaboration/type_assertion_routes.rs` owner. The
-orchestration call and dispatch order remain in place and byte/order-stable.
-The invalid-key fragment remains leaf-private; the config, output, and
-extractor remain test-only facade consumers; and only the production detail
-route crosses the normal facade. The output's attached `#[cfg(test)]` remains
-inside the preservation oracle, while the formatting control remains outside
-it. The four-hop sibling and every other route remain entirely in `runner.rs`.
-
-After stripping only the required `pub(in crate::runner)` visibility, the five
-post-move fragments retain their original full hashes
-`849b87cbe3f5da657170767074ed640a315b93ac32b91593828090a209a963ed`,
-`9432f71c19f39099ddee2cc4423cd2fd4831d18aa5b2416a3781ea92fcd499cb`,
-`5bb3dca141ef889f7772e1c49d70f2f89b7a62b131b8bea3a1203c7bd5520bbc`,
-`6f2dd038f5818ef7a370602710a9b4357902826d6340c2d47919d66027690314`,
-and `b42e30cb6e8b538e4353c29154e3308ec0f0bd67dce215aa1a95ae9ba12fcc4f`;
-the combined raw hash remains
-`367e7f814dd82f82e9c059284a9ac409912b0b6e270867310d908bf8b082734d`,
-and the whitespace-normalized hash remains
-`30f3f31c67a68d6a65059658bab7e0903f7aabb83a2508b584a6b59e5490ca1c`.
-The resulting source inventory is 3,404 lines /
-`a03d945ce965ab88ddadf54afe6b56ba009606ff6610a23321a71847a2a4fe5e`
-for `runner.rs`, 513 /
-`0e910a7c56ac99b5b6724dac1c008edebdb1cdaa462baab5f74ef59c4fdda633`
-for the phase facade, and 3,242 /
-`2b504e7059e47c0a8368d12a699e67184f31a566578571fb1e62505d530788be`
-for the route owner.
-
-All four focused Task 219 route tests and all 272 crate unit tests pass. The raw
-and normalized discovered-test hashes remain `5e41e4db...` and `c0c2b80f...`;
-the plan, parse-only, declaration-symbol, and type-elaboration CLI hashes remain
-`f3424007...`, `57d0fba9...`, `08b00a9f...`, and `1dadbeab...`. Active counts
-remain 96, 4, and 188; plan/count remains 403/367, type-elaboration coverage
-235/223, and pass/fail 219/184. The known plan diagnostics remain 23 warnings
-and zero errors. No API, test name, diagnostic, detail key, payload, ordering,
-fail-closed behavior, authority, coverage credit, owner crate, or deferred
-status changed. `spec_coverage_audit.md` therefore remains unchanged. Final
-formatting, Clippy with denied warnings, workspace tests, and diff checks all
-pass.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZX Pre-Move Inventory and Specification
 
-Fresh authority, test, trace, expectation, design, source, API, and real-
-producer/consumer inventory selects only the four-edge local-mode four-hop
-asserted-head route as the next bounded addition to private
-`type_elaboration/type_assertion_routes.rs`. Every other route stays in
-`runner.rs`. The route forms five exact `runner.rs` fragments: the invalid key
-at 778-779 (2 lines, `28fd6209...`), config at 2132-2175 (44,
-`7c55b77c...`), production detail route at 2540-2551 (12, `167ffe4e...`),
-test-only output including its attached `#[cfg(test)]` at 2705-2713 (9,
-`659160a3...`), and extractor at 3245-3256 (12, `f9ec6b6c...`). Total: 79
-lines; combined raw hash `a2e855b4...` and whitespace-normalized pre-move hash
-`9d179fc9...`.
-
-Task 263ZZX mechanically moves only those fragments into the existing private
-owner. Orchestration and dispatch stay in `runner.rs`. Only the production
-detail route crosses the normal phase facade. Config, test-consumed output, and
-extractor cross under `#[cfg(test)]`; the invalid key remains leaf-private and
-a config-derived runner test alias retains its name/value. Formatting control
-may be added outside the oracle only to prevent mechanical wrapping. No API,
-call site, helper name, config, five-expansion set-terminal four-hop relation,
-key, payload, ordering, fallback, or fail-closed behavior changes.
-
-The active Task 221 authority slice contains Base-to-set, Inner-to-Base,
-Middle-to-Inner, Outer-to-Middle, and TooDeep-to-Outer real definitions,
-reserves `x` for TooDeep, and asserts `x is Base`. The closed
-`BindingFourHopRadix` directly validates pairwise-distinct TooDeep-to-Outer,
-Outer-to-Middle, Middle-to-Inner, and Inner-to-Base links; Base-to-set is only
-terminal-normalization evidence. Exactly five expansions normalize three known
-entries to the Base-definition-RHS builtin-set identity, resolve ordinal 1 to
-`BindingId(0)`, and produce one inferred variable plus one checked assertion
-with zero constraints/facts/candidates/diagnostics/deferred and no widening or
-`qua`.
-
-Tests retain 46 direct symbol references across three files; ten runner
-definitions/internal calls make 56 occurrences across four source/test files.
-All 119 nonidentity orders, separate unconnected-deeper and connected fifth-
-link guards, the finite structural/provenance/corruption matrix, focused Task
-207 and Tasks 211-220 regressions, bidirectional isolation against 46 prior
-owners, immutable output, and a real frontend/resolver sidecar are present. All
-four focused Task 221 tests pass pre-move. This is move-only `design_drift`; no
-ZZX0 test task is needed and `spec_coverage_audit.md` remains unchanged.
-Rename/dedup/generalization, other route moves, relation/semantic changes,
-assertion weakening, and test/expectation edits are forbidden.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZX Move Result
 
-Task 263ZZX moved only the approved five fragments totaling 79 lines into the
-existing private `type_elaboration/type_assertion_routes.rs` owner. The key
-remains leaf-private; config/output/extractor remain test-only facade consumers;
-only detail crosses normally; orchestration/order and every other route remain
-in `runner.rs`. The attached `#[cfg(test)]` stays inside the oracle and
-formatting control outside it.
-
-After stripping only `pub(in crate::runner)`, the five full hashes remain
-`28fd620939967df3cd3223c7b535c4e401cb2bdff5013bc75ecc627ceda0ca48`,
-`7c55b77c29767a98841fff67095bff121ac3186793bb45a2e32fc1cb7312cde1`,
-`167ffe4e617475a864572ec341c4f78c590ee3258b087cb2b2330aeafed334b2`,
-`659160a32410c18277e53527dc12e70e79da9fa3d9e82902d59270ac5501253a`,
-and `f9ec6b6ca6fbf091308ae2fffa9edb6ddb4911547023963bffb1cb6a3ff61cb5`;
-combined raw remains
-`a2e855b48b2412159b64abea387c6ca431aa8d185856f94c81e3819d347de2c5`
-and normalized remains
-`9d179fc9c571a7fe7d9f789f0617396a55f3b67614e724a222fc86d681bf4ac8`.
-The resulting inventory is `runner.rs` 3,328 /
-`0f638d02ea6c3fe71d52fd60394663c3504aff770cfe60613525b3393ebafc3f`,
-facade 517 / `0b2fce4f3cf61a8e2a6f54034b6aee561c4a1ed6090b38b0519197a3b6171358`,
-and owner 3,327 /
-`b90548eb7421450603363f22c025cba7447a1a4b34f4f35163d00b9df5ffc9c6`.
-
-Focused Task 221 tests and all 272 crate tests pass. Test-list and four CLI
-hashes/counts retain the canonical values: 96/4/188, 403/367, 235/223,
-219/184, and 23 warnings/zero errors. API/test names/diagnostics/keys/payload/
-ordering/fail-closed behavior/authority/coverage/deferred state are unchanged;
-`spec_coverage_audit.md` remains unchanged. Final fmt, denied-warning Clippy,
-workspace tests, and diff checks all pass.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZY Pre-Move Inventory and Specification
 
-Fresh authority, test, trace, expectation, design, source, API, and real-
-producer/consumer inventory selects only the direct builtin-set reserved-
-variable type-assertion route as the next bounded addition to private
-`type_elaboration/type_assertion_routes.rs`. Every sibling stays in
-`runner.rs`. The route forms five exact `runner.rs` fragments: the invalid key
-at 733-734 (2 lines, `6b36b357...`), config at 2092-2103 (12,
-`02b33fa3...`), production detail route at 2462-2473 (12,
-`6e8cc816...`), test-only output including its attached `#[cfg(test)]` at
-2622-2630 (9, `b3fc8a49...`), and extractor at 3143-3154 (12,
-`4b1129d2...`). Total: 47 lines; combined raw hash `98bbfb38...` and
-whitespace-normalized pre-move hash `bdc0d6f0...`.
-
-Task 263ZZY mechanically moves only those fragments into the existing private
-owner. Orchestration and dispatch stay in `runner.rs`. Only the production
-detail route crosses the normal phase facade. Config, test-consumed output,
-and extractor cross under `#[cfg(test)]`; the invalid key remains leaf-private.
-No API, call site, helper name, config, key, payload, ordering, fallback, or
-fail-closed behavior changes. The builtin-object, local-mode, chained, other
-type-assertion/asserted-head, and formula families remain in place.
-
-The active Task 122 authority slice is exactly `reserve x for set; theorem
-ReservedVariableTypeAssertionPayloadBoundary: x is set;`. The reserve-derived
-subject result and independently formula-anchored asserted type retain their
-distinct source sites/ranges, then normalize to the same builtin-set identity.
-The checker admits only reflexive normalized identity, emits one inferred
-reserved-variable term and one fact/deferred-free checked type assertion, and
-does not introduce reachability, widening, theorem acceptance, proof, CoreIr,
-ControlFlowIr, or VC behavior.
-
-Tests retain 68 direct route-symbol references across seven files; ten runner
-definitions/internal calls make 78 occurrences across eight source/test files.
-The Task 122 source exactness/corruption matrix, real active fixture, later-
-owner rejection guards, immutable output, and frontend/resolver sidecar are
-present. Both focused Task 122 tests pass pre-move. This is move-only
-`design_drift`; no ZZY0 test task is needed and
-`spec_coverage_audit.md` remains unchanged. Rename/dedup/generalization,
-object/local-mode or other route moves, reachability/widening changes, and
-test/expectation/trace/spec edits are forbidden. The paired Source Layout
-Inventory now records the existing owner path, correcting the path-list drift
-without changing an owner, coverage credit, or deferred rationale.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZY Move Result
 
-Task 263ZZY moved only the approved five fragments totaling 47 lines into the
-existing private `type_elaboration/type_assertion_routes.rs` owner. The key is
-leaf-private; a config-derived test-only alias retains the runner test name and
-value. Only detail crosses the normal facade, while config, output, and
-extractor cross under `cfg(test)`. Orchestration, dispatch, every sibling, and
-all call sites remain in place. The `rustfmt::skip` control added outside the
-oracle preserves the original config spelling.
-
-After stripping only `pub(in crate::runner)`, the five full hashes remain
-`6b36b357845d4ce902067d1e25cb52c98411238de9af6d0b2c0071aede48fbeb`,
-`02b33fa38ebe9f563733ffd045760551258785a30e030f80879b3fe220e372d5`,
-`6e8cc816bb6a5cda91475d9e0140d1ffa407a926ab2f18e44a290fb7e0cf2507`,
-`b3fc8a4910475ec4a70373953c9d4a33b3fb3c0fe1098d0c37038cb543a7e918`,
-and `4b1129d21114397128d06e5d934954eee73bdc6c21b1aee2949e9743e43e59e2`;
-combined raw remains
-`98bbfb383958957dc65e5aca16ebf456ed20bbe764c7b2033df60da54b0d95e7`
-and normalized remains
-`bdc0d6f0b5e215ecf80d778f196a935230733d1c873dd0dbb2d9aedcdd13ff3f`.
-The resulting inventory is `runner.rs` 3,284 /
-`0c207e843bfa37202b67c808e5dfc6307cfeec629ba02e099e07bab6b282a7ea`,
-facade 521 /
-`5bee5ded1da24d71c85e4c04b3ba2e5e49e2727d30cc4fbd394116682e05ff13`,
-and owner 3,380 /
-`8d9e0c45349fc51e34bf85bc70cbc9978ceba4de3a05e8748b535bc0f6412853`.
-
-Both focused Task 122 tests and all 272 crate tests pass. The raw/normalized
-test-list hashes remain `5e41e4db...`/`c0c2b80f...`; the plan, parse-only,
-declaration-symbol, and type-elaboration CLI hashes remain `f3424007...`,
-`57d0fba9...`, `08b00a9f...`, and `1dadbeab...`. Active counts remain
-96/4/188; plan/count remains 403/367, type coverage 235/223, pass/fail
-219/184, and diagnostics 23 warnings/zero errors. API, test names, diagnostics,
-keys, payload, ordering, fail-closed behavior, authority, coverage, and
-deferred state are unchanged; `spec_coverage_audit.md` remains unchanged.
-Final formatting, denied-warning Clippy, workspace tests, and diff checks pass.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZ Pre-Move Inventory and Specification
 
-Fresh authority, test, trace, expectation, design, source, API, and real-
-producer/consumer inventory selects only the shared term/formula diagnostic-
-key projection as the next bounded production-helper move. The exact
-`runner.rs` fragment is `term_formula_output_detail_keys` at 2825-2834: 10
-lines with raw hash
-`70bede8293d57a58a1a9360c80b775c126dbdadd5fb776308da45138e9822458`
-and whitespace-normalized hash
-`b7a0eb7327dc52681a911edddd4235644a8bb5463def99c7aefa9784b11ab010`.
-It is consumed by the nine remaining formula-detail wrappers at 2722, 2731,
-2767, 2776, 2785, 2794, 2804, 2813, and 2822. The dependency-first private
-owner is existing `type_elaboration/output.rs`, which already owns the
-`TermFormulaInferenceOutput` transport/build/validation surface.
-
-Task 263ZZZ mechanically moves only that one fragment. The helper crosses the
-private phase facade with `pub(in crate::runner)` visibility solely for those
-nine existing parent consumers. The output algorithm remains exact: traverse
-checker diagnostics in canonical order, prefix each unchanged `message_key`
-with `type_elaboration.checker.`, sort the rendered keys, deduplicate them, and
-return the resulting vector. No wrapper, producer, dispatch call, output
-payload, or test helper moves in this task.
-
-The authority slice is the deterministic detail-key and diagnostic projection
-contract in `harness.md` and `expectation_schema.md`, together with the exact
-formula-gap expectations and direct ordered-key assertions in
-`runner/tests/type_elaboration/source_gap_and_equality.rs`. Those assertions
-exercise all represented formula diagnostic families, while the active
-contradiction fixture exercises the empty-key path. The 272-test raw and
-normalized list oracles plus all four CLI stdout hashes cover discovery and
-end-to-end byte stability. Test sufficiency is therefore adequate for this
-move-only `design_drift`; no ZZZ0 prerequisite test is needed.
-
-Changing the prefix, message-key source, canonical traversal, sorting,
-deduplication, key text/order, diagnostics, payloads, fail-closed behavior, any
-consumer body, test/expectation/trace/spec intent, or deferred state is
-forbidden. `spec_coverage_audit.md` remains unchanged because this task changes
-no specification coverage, design mapping, follow-up owner, trace credit, or
-deferred rationale.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZ Move Result
 
-Task 263ZZZ moved only the approved 10-line helper into existing private
-`type_elaboration/output.rs`. The function crosses the phase facade with
-`pub(in crate::runner)` and `pub(super)` only for its nine unchanged parent
-consumers. The `#[rustfmt::skip]` control is outside the oracle and preserves
-the original one-line signature. After stripping only
-`pub(in crate::runner)`, the moved fragment remains byte-identical with raw
-hash
-`70bede8293d57a58a1a9360c80b775c126dbdadd5fb776308da45138e9822458`
-and whitespace-normalized hash
-`b7a0eb7327dc52681a911edddd4235644a8bb5463def99c7aefa9784b11ab010`.
-The resulting inventory is `runner.rs` 3,274 /
-`794d9602195c9b8791fe2d94da31af4bb2461e41fd15b98b67b1d3a7fc00e4e2`,
-the 521-line phase facade /
-`e42f8fd2db3ea725c080b71631ae2fe71d3200193a8177363b4d9aa7152b8b27`,
-and `output.rs` 1,153 /
-`7f107a2cae8166ebf0cb53e8ae0f0ac93d7ce5c0e44e231ee16ed823b1e0c7b3`.
-
-The focused formula-gap ordered-key test and active contradiction empty-key
-test pass. All 272 crate unit tests pass, and the raw/normalized test-list
-hashes remain
-`5e41e4dbfcc303322c246a612de61926a628957a168589b45864d0a5070bb07e`
-and
-`c0c2b80f8b4e6c84cd25d77573fda722c4d1846fed168cd4a478781cdb42775e`.
-The plan, parse-only, declaration-symbol, and type-elaboration CLI hashes remain
-`f34240072564dfafacf7b0d914a8204037bbfc042dea375326ae757774f63759`,
-`57d0fba9be95644890b80bfa4ec2cd992e47bb8ad4b67c130f5194ea73aa0273`,
-`08b00a9f6fe70d94fe2c1b2bdebbdb5603bcee39bf3ceb460abe53f403bba7b5`,
-and
-`1dadbeabb219f5853c713ad53aa1cc7cd720a0e80abd7f882e9e0a5ea7802625`.
-Counts remain 96/4/188, 403/367, 235/223, and 219/184 with 23 warnings and
-zero errors. Formatting, denied-warning Clippy, crate/workspace tests, and diff
-checks pass. The test-sufficiency and implementation reviews report no
-findings. No API, consumer body, key, prefix, diagnostic, payload, ordering,
-fail-closed behavior, coverage, or deferred state changed;
-`spec_coverage_audit.md` remains unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZA Pre-Move Inventory and Specification
 
-Fresh authority, test, trace, expectation, design, source, API, and real-
-producer/consumer inventory selects only the direct builtin-object reserved-
-variable type-assertion route as the next bounded production-helper move. The
-exact `runner.rs` fragments are the 2-line invalid-payload key at 736-737
-(`e630bf42051e415b283e6f9e474ee0feb3f539353cf9c30368cbaa4c04301651`),
-13-line config at 2098-2110
-(`45b1e08f72600db7dd53595a2a1048bf721a7c86d11913d33dfa19c149020002`),
-11-line production detail route at 2455-2465
-(`c443614d0a8881b56b84f98bac97c6709d349d5b6b0d008436f6dcd4f699bd99`),
-9-line test output including its attached `cfg(test)` at 2602-2610
-(`c8c3cbbcf40138ce6b11fb03020af6622f5f0164aa352643d8a2f023a51721de`),
-and 12-line extractor at 3102-3113
-(`e85819f4d61def169da12ed7055983ab03b06fd3789cef046c548d76544cb849`).
-The exact five-fragment/47-line combined raw hash is
-`07e79516d8355781d8c49ed5cb63777a21d975ae3c78c98235614880d0ddaf5b`
-and its whitespace-normalized hash is
-`4dc680bc043727f08f782ef329669c7aa7a5b5211d12ccc2332211905c050dd3`.
-There are 70 direct route-symbol references across nine test files and 81
-source-and-test occurrences across ten files. The dependency-first owner is
-existing private `type_elaboration/type_assertion_routes.rs`.
-
-Task 263ZZZA mechanically moves only those five fragments. The invalid key is
-leaf-private; the production detail route alone crosses the private phase
-facade normally, while the config, output, and extractor cross only under
-`cfg(test)`. A config-derived test alias may expose the invalid key without
-creating a second source of truth. Current inventory is `runner.rs` 3,274 /
-`794d9602195c9b8791fe2d94da31af4bb2461e41fd15b98b67b1d3a7fc00e4e2`,
-the 521-line phase facade /
-`e42f8fd2db3ea725c080b71631ae2fe71d3200193a8177363b4d9aa7152b8b27`,
-and the 3,380-line route owner /
-`8d9e0c45349fc51e34bf85bc70cbc9978ceba4de3a05e8748b535bc0f6412853`.
-
-The authority slice is the Task 189 exact source
-`reserve x for object; theorem ReservedObjectVariableTypeAssertionPayloadBoundary: x is object;`
-and its source-derived payload contract in canonical `harness.md`, traced by
-`spec.en.checker.type_elaboration.reserved_object_variable_type_assertion_source_bridge`
-to the active fixture and expectation. The route preserves ordinal one to
-`BindingId(0)`, distinct reserve-subject and formula-side asserted-object
-sites/ranges, raw `BuiltinObject` on both sides, one reserve-anchored normalized
-object identity, one inferred term, three known-type entries, no expected
-constraints, and one fact/deferred-free checked `TypeAssertion`. The direct
-source bridge/output tests and active-fixture payload test fix both the exact
-transport and real-checker result; the 272-test raw/normalized list oracles and
-four CLI stdout hashes cover discovery and end-to-end byte stability. Test
-sufficiency is therefore adequate for this move-only `design_drift`; no
-ZZZA0 prerequisite test is needed.
-
-Renaming, deduplication, generalization, moving the builtin-set, local-mode,
-chained, or other sibling routes, changing reachability, widening, `qua`,
-object/set coercion, truth/facts/closure/order/theorem acceptance, proof,
-CoreIr, ControlFlowIr, verification-condition behavior, API, test names,
-expectations, diagnostics, keys, payloads, ordering, fail-closed behavior,
-coverage, trace/spec intent, or deferred state is forbidden.
-`spec_coverage_audit.md` remains unchanged because this task changes no
-specification coverage, design mapping, follow-up owner, trace credit, or
-deferred rationale.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZA Move Result
 
-Task 263ZZZA moved only the approved five-fragment/47-line direct builtin-
-object reserved-variable type-assertion route into existing private
-`type_elaboration/type_assertion_routes.rs`. The invalid-payload key is leaf-
-private; only the production detail route crosses the phase facade normally,
-while the config, output, and extractor cross under `cfg(test)`. The retained
-runner test key is derived from the moved config. The `#[rustfmt::skip]`
-control is outside the config oracle and preserves its original layout.
-
-After stripping only `pub(in crate::runner)`, the moved fragments retain raw
-hashes
-`e630bf42051e415b283e6f9e474ee0feb3f539353cf9c30368cbaa4c04301651`,
-`45b1e08f72600db7dd53595a2a1048bf721a7c86d11913d33dfa19c149020002`,
-`c443614d0a8881b56b84f98bac97c6709d349d5b6b0d008436f6dcd4f699bd99`,
-`c8c3cbbcf40138ce6b11fb03020af6622f5f0164aa352643d8a2f023a51721de`,
-and
-`e85819f4d61def169da12ed7055983ab03b06fd3789cef046c548d76544cb849`.
-The combined raw hash remains
-`07e79516d8355781d8c49ed5cb63777a21d975ae3c78c98235614880d0ddaf5b`
-and the whitespace-normalized hash remains
-`4dc680bc043727f08f782ef329669c7aa7a5b5211d12ccc2332211905c050dd3`.
-The resulting inventory is `runner.rs` 3,230 /
-`94706f70852b1f4207151cfc7d6b50ced43908f9fd81510ab77bee85b29fb96c`,
-the 525-line phase facade /
-`75ac599add4469dcc5dd68e8d00c600c07c600d049e5511e46a2507d974d8acc`,
-and the 3,433-line route owner /
-`2aaf52d1865df538d2c1ae19c038dc3ee1e5a241c8706797ef4db9e6e95549ff`.
-
-The exact source bridge and active-fixture real-checker tests pass. All 272
-crate unit tests pass, and the raw/normalized test-list hashes remain
-`5e41e4dbfcc303322c246a612de61926a628957a168589b45864d0a5070bb07e`
-and
-`c0c2b80f8b4e6c84cd25d77573fda722c4d1846fed168cd4a478781cdb42775e`.
-The plan, parse-only, declaration-symbol, and type-elaboration CLI hashes
-remain
-`f34240072564dfafacf7b0d914a8204037bbfc042dea375326ae757774f63759`,
-`57d0fba9be95644890b80bfa4ec2cd992e47bb8ad4b67c130f5194ea73aa0273`,
-`08b00a9f6fe70d94fe2c1b2bdebbdb5603bcee39bf3ceb460abe53f403bba7b5`,
-and
-`1dadbeabb219f5853c713ad53aa1cc7cd720a0e80abd7f882e9e0a5ea7802625`.
-Counts remain 96/4/188, 403/367, 235/223, and 219/184 with 23 warnings and
-zero errors. Formatting, denied-warning Clippy, crate/workspace tests, and diff
-checks pass. Specification, test-sufficiency, and implementation reviews
-report no findings. No sibling route, behavior, API, test name, expectation,
-diagnostic, key, payload, ordering, fail-closed behavior, coverage, or deferred
-state changed; `spec_coverage_audit.md` remains unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZB Pre-Move Inventory and Specification
 
-Fresh authority, test, trace, expectation, design, source, API, and real-
-producer/consumer inventory compares every remaining production-helper family
-and selects only the standalone contradiction formula output/detail pair. It
-is the smallest cohesive family: 28 lines, below the 30-line formula-statement
-pair and the 52-line smallest remaining route family. The exact `runner.rs`
-fragments are the 8-line `source_contradiction_formula_detail_keys` at
-2695-2702 with raw hash
-`491f8ae31131b146fb4743641a909a82aa3777dfcd1611064548a51a11e842e7`
-and the 20-line `source_contradiction_formula_output` at 2818-2837 with raw
-hash
-`72b129ff0f1413b0bc1ca8ece6cf3e46365317d5ac3901a2aa92c21011748de9`.
-Their combined raw hash is
-`61ca02cac3608f02e5c1048df0ef1d34d8bb94db0f6b9750cf091fd0aa49fde1`
-and whitespace-normalized hash is
-`7688d6cefe9529a3406799b7742093485859195498aa31a66fc95782b62b2e88`.
-The two route symbols have seven occurrences across `runner.rs` and three test
-files. The dependency-first owner is existing private
-`type_elaboration/output.rs`, which already owns the shared term/formula
-diagnostic-key projection and checker-output transport/build/validation logic.
-
-Task 263ZZZB mechanically moves only those two fragments. The production
-detail entry crosses the private phase facade normally. The output producer is
-used internally by that detail entry and crosses the facade only under
-`cfg(test)` for its existing direct consumers. Required owner imports are
-limited to the existing source extractor, module-binding-env producer, AST and
-resolver identifiers, and checker context type; no reverse dependency is
-introduced. Current inventory is `runner.rs` 3,230 /
-`94706f70852b1f4207151cfc7d6b50ced43908f9fd81510ab77bee85b29fb96c`,
-the 525-line phase facade /
-`75ac599add4469dcc5dd68e8d00c600c07c600d049e5511e46a2507d974d8acc`,
-and `output.rs` 1,153 /
-`7f107a2cae8166ebf0cb53e8ae0f0ac93d7ce5c0e44e231ee16ed823b1e0c7b3`.
-
-The authority slice is Task 180's exact source
-`theorem SourceDerivedContradictionConstantBoundary: contradiction;`, the
-canonical source-derived payload contract in `harness.md`, and requirement
-`spec.en.checker.type_elaboration.contradiction_formula_constant_source_bridge`
-traced to its active fixture and expectation. The producer must preserve the
-real formula leaf site/range and module-root `BindingContextId(0)`, pass exactly
-one `FormulaKind::Contradiction` to the checker, and return one `Checked`
-formula with no terms, asserted type, expected constraints, candidates, facts,
-deferred reasons, or diagnostics. The exact bridge test covers provenance,
-shape, status, empty payload surfaces, and ordered detail output; the active-
-fixture test covers real frontend/resolver discovery and checker payload. The
-existing near-miss matrix remains fail-closed. The 272-test raw/normalized list
-oracles and four CLI stdout hashes cover discovery and end-to-end byte
-stability. Test sufficiency is therefore adequate for this move-only
-`design_drift`; no ZZZB0 prerequisite test is needed.
-
-Changing `FormulaKind`, adding a deferred reason, truth/fact publication,
-theorem acceptance, proof-goal closure, child graphs, `formula_statement`,
-proof, CoreIr, ControlFlowIr, verification conditions, extractor shape,
-diagnostics, keys, payloads, ordering, fail-closed behavior, API, test names,
-expectations, trace/spec intent, coverage, deferred state, another formula
-family, or any route sibling is forbidden. `spec_coverage_audit.md` remains
-unchanged because this task changes no specification coverage, design mapping,
-follow-up owner, trace credit, or deferred rationale.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZB Move Result
 
-Task 263ZZZB moved only the approved two-fragment/28-line standalone
-contradiction formula output/detail family into existing private
-`type_elaboration/output.rs`. The detail entry crosses the phase facade
-normally. The output producer remains available through the facade only under
-`cfg(test)`, as does its source extractor; the owner imports both the extractor
-and module-binding-env producer directly without a reverse dependency. The
-initial compile check identified and removed the now-unused normal parent
-extractor import by narrowing its existing parent consumers to `cfg(test)`.
-
-After stripping only `pub(in crate::runner)`, the 8-line detail fragment retains
-raw hash
-`491f8ae31131b146fb4743641a909a82aa3777dfcd1611064548a51a11e842e7`,
-the 20-line output retains raw hash
-`72b129ff0f1413b0bc1ca8ece6cf3e46365317d5ac3901a2aa92c21011748de9`,
-their combined raw hash remains
-`61ca02cac3608f02e5c1048df0ef1d34d8bb94db0f6b9750cf091fd0aa49fde1`,
-and the whitespace-normalized hash remains
-`7688d6cefe9529a3406799b7742093485859195498aa31a66fc95782b62b2e88`.
-The resulting inventory is `runner.rs` 3,202 /
-`282cfbec687307a0b623abecc811cf08781ee03f65a5164e15bf64b35c0a8104`,
-the 524-line phase facade /
-`7e058025d3b96135576841a2f2749a256eb95747dead1d3f8e477b8bf984262c`,
-and `output.rs` 1,188 /
-`40c93a2a65a1b7b0feb05d616dedfe8bf1b9851d59ad302053bfe44bd31fc590`.
-
-The exact source-gap/detail test and active-fixture real-checker test pass. All
-272 crate unit tests pass, and the raw/normalized test-list hashes remain
-`5e41e4dbfcc303322c246a612de61926a628957a168589b45864d0a5070bb07e`
-and
-`c0c2b80f8b4e6c84cd25d77573fda722c4d1846fed168cd4a478781cdb42775e`.
-The plan, parse-only, declaration-symbol, and type-elaboration CLI hashes remain
-`f34240072564dfafacf7b0d914a8204037bbfc042dea375326ae757774f63759`,
-`57d0fba9be95644890b80bfa4ec2cd992e47bb8ad4b67c130f5194ea73aa0273`,
-`08b00a9f6fe70d94fe2c1b2bdebbdb5603bcee39bf3ceb460abe53f403bba7b5`,
-and
-`1dadbeabb219f5853c713ad53aa1cc7cd720a0e80abd7f882e9e0a5ea7802625`.
-Counts remain 96/4/188, 403/367, 235/223, and 219/184 with 23 warnings and
-zero errors. Formatting, denied-warning Clippy, crate/workspace tests, and diff
-checks pass. Specification review ended with no findings after correcting the
-fresh-inventory comparator from 53 to 52 lines; test-sufficiency and
-implementation reviews report no findings. No sibling, behavior, API, test
-name, expectation, diagnostic, key, payload, ordering, fail-closed behavior,
-coverage, or deferred state changed; `spec_coverage_audit.md` remains
-unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZC Pre-Move Inventory and Specification
 
-Fresh authority, test, trace, expectation, design, source, API, and real-
-producer/consumer inventory selects only the formula-statement output/detail
-pair as the next smallest dependency-closed production family. Its 30 lines
-are below the 52-line smallest remaining route family; smaller detail wrappers
-whose producers still depend on retained parent helpers are not independently
-cohesive moves. The exact `runner.rs` fragments are the 8-line
-`source_formula_statement_detail_keys` at 2688-2695 with raw hash
-`b506c3cbe5350c6c9f0ca30bba6c69bd06c9027347f62a64cd3eebe4ae0247cf`
-and the 22-line `source_formula_statement_output` at 2788-2809 with raw hash
-`f88816b3bc16629234533e49bd7919fc3b70106a51b8ded0f339da9aad006924`.
-Their combined raw hash is
-`04555b8fb3e6711cf72edd047466247fc7df6a137cc5c7d455d906da32ab976f`
-and whitespace-normalized hash is
-`9f35d8fa9b7da983779d5b0aef41022bcfe74bb8e111b5189bdd6d1d0d3ef389`.
-The two route symbols have six occurrences across `runner.rs` and two test
-files. The dependency-first owner is existing private
-`type_elaboration/output.rs`.
-
-Task 263ZZZC mechanically moves only those two fragments. The production
-detail entry crosses the private phase facade normally. The output producer is
-used internally by that detail entry and crosses the facade only under
-`cfg(test)` for its existing direct consumer. Its source extractor likewise
-becomes test-only at the facade after the owner imports it directly. Required
-owner changes are limited to `FormulaDeferredReason` and that extractor; the
-AST, resolver, checker context, module-binding-env producer, and shared detail
-projection dependencies were established by Task 263ZZZB. No reverse
-dependency is introduced. Current inventory is `runner.rs` 3,202 /
-`282cfbec687307a0b623abecc811cf08781ee03f65a5164e15bf64b35c0a8104`,
-the 524-line phase facade /
-`7e058025d3b96135576841a2f2749a256eb95747dead1d3f8e477b8bf984262c`,
-and `output.rs` 1,188 /
-`40c93a2a65a1b7b0feb05d616dedfe8bf1b9851d59ad302053bfe44bd31fc590`.
-
-The authority slice is Task 117's exact source
-`theorem FormulaPayloadBoundary: thesis;`, canonical `harness.md`, and traced
-requirement
-`spec.en.checker.type_elaboration.payload_extraction.formula_statement_gap`
-with its active fail fixture and expectation. The producer must preserve the
-real thesis site/range and module-root `BindingContextId(0)`, pass exactly one
-`FormulaKind::Thesis`, and retain one `Partial` formula with no terms or facts,
-exactly one `MissingFormulaPayload` deferred reason, and the unchanged
-`checker.formula.external.formula_payload` diagnostic anchored to the thesis
-range. The direct bridge test fixes extraction, checker payload, diagnostic
-range/key, and detail ordering; the active CLI fixture plus raw/normalized
-272-test and four CLI hash oracles protect discovery and end-to-end byte
-stability. Existing non-exact formula-only shapes remain fail-closed. Test
-sufficiency is adequate for this move-only `design_drift`; no ZZZC0 prerequisite
-test is needed.
-
-Changing `FormulaKind`, status, deferred reason, diagnostic key/range/order,
-formula constant semantics, child graphs, theorem acceptance, facts, proof,
-CoreIr, ControlFlowIr, verification conditions, `formula_statement` execution,
-extractor shape, API, test names, expectations, trace/spec intent, coverage,
-deferred state, another formula family, or any route is forbidden.
-`spec_coverage_audit.md` remains unchanged because this task changes no
-specification coverage, design mapping, follow-up owner, trace credit, or
-deferred rationale.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZC Move Result
 
-Task 263ZZZC moved only the approved two-fragment/30-line formula-statement
-output/detail family into existing private `type_elaboration/output.rs`. The
-detail entry crosses the phase facade normally. The output producer remains
-available through the facade only under `cfg(test)`, as does its source
-extractor; the owner imports the extractor directly without a reverse
-dependency.
-
-After stripping only `pub(in crate::runner)`, the 8-line detail fragment retains
-raw hash
-`b506c3cbe5350c6c9f0ca30bba6c69bd06c9027347f62a64cd3eebe4ae0247cf`,
-the 22-line output retains raw hash
-`f88816b3bc16629234533e49bd7919fc3b70106a51b8ded0f339da9aad006924`,
-their combined raw hash remains
-`04555b8fb3e6711cf72edd047466247fc7df6a137cc5c7d455d906da32ab976f`,
-and the whitespace-normalized hash remains
-`9f35d8fa9b7da983779d5b0aef41022bcfe74bb8e111b5189bdd6d1d0d3ef389`.
-The resulting inventory is `runner.rs` 3,170 /
-`507fcea5e8aa70be4e5e83e1379058182b11f4a5b5b43e613568c4247adf6398`,
-the 527-line phase facade /
-`d53e5c1bc06f6c5b685e65687a60cb0b993560bd65369aadd1086649d6687ed5`,
-and `output.rs` 1,221 /
-`e491d6614e715c3a51872bc8f0224ac759e02a5506c5f976949deeb03c581710`.
-
-The exact source-gap/detail test passes. All 272 crate unit tests pass, and the
-raw/normalized test-list hashes remain
-`5e41e4dbfcc303322c246a612de61926a628957a168589b45864d0a5070bb07e`
-and
-`c0c2b80f8b4e6c84cd25d77573fda722c4d1846fed168cd4a478781cdb42775e`.
-The plan, parse-only, declaration-symbol, and type-elaboration CLI hashes remain
-`f34240072564dfafacf7b0d914a8204037bbfc042dea375326ae757774f63759`,
-`57d0fba9be95644890b80bfa4ec2cd992e47bb8ad4b67c130f5194ea73aa0273`,
-`08b00a9f6fe70d94fe2c1b2bdebbdb5603bcee39bf3ceb460abe53f403bba7b5`,
-and
-`1dadbeabb219f5853c713ad53aa1cc7cd720a0e80abd7f882e9e0a5ea7802625`.
-Counts remain 96/4/188, 403/367, 235/223, and 219/184 with 23 warnings and
-zero errors. Formatting, denied-warning Clippy, crate/workspace tests, and diff
-checks pass. Specification, test-sufficiency, and implementation reviews report
-no findings. No sibling, behavior, API, test name, expectation, diagnostic,
-key, payload, ordering, fail-closed behavior, coverage, or deferred state
-changed; `spec_coverage_audit.md` remains unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZD Pre-Move Inventory and Specification
 
-Fresh authority, test, trace, expectation, design, source, API, and real-
-producer/consumer inventory selects only the inline builtin-binary term/formula
-checker/detail producer as the next smallest dependency-closed production
-family. Its 35 lines are below the 43-line builtin type-assertion formula pair
-and the 52-line smallest remaining route family. Smaller formula detail
-wrappers depend on retained output producers and are not independently
-cohesive moves. The exact `runner.rs` fragment is
-`source_builtin_binary_term_formula_detail_keys` at 2688-2722 with raw hash
-`6fa5f283dcfafb2d72a6250cae873f881d759ea06e29060d7624d91f58d51c7a`
-and whitespace-normalized hash
-`4dc99d61d81d6798efcaaa90667f7b8ff11976df7b776590ba6da04576ad540c`.
-The production symbol has two occurrences in `runner.rs`; its extractor has
-eight occurrences across five source/test files. The dependency-first owner is
-existing private `type_elaboration/output.rs`.
-
-Task 263ZZZD mechanically moves only that fragment. The production detail
-entry crosses the private phase facade normally. Its source extractor becomes
-test-only at the facade after the owner imports it directly. The owner already
-has every other AST, resolver, checker context/input, module-binding-env, and
-detail-projection dependency, so the extractor is the only required owner
-import and no reverse dependency is introduced. Current inventory is
-`runner.rs` 3,170 /
-`507fcea5e8aa70be4e5e83e1379058182b11f4a5b5b43e613568c4247adf6398`,
-the 527-line phase facade /
-`d53e5c1bc06f6c5b685e65687a60cb0b993560bd65369aadd1086649d6687ed5`,
-and `output.rs` 1,221 /
-`e491d6614e715c3a51872bc8f0224ac759e02a5506c5f976949deeb03c581710`.
-
-The authority slice is Tasks 106, 107, and 108: exact sources
-`theorem TermFormulaPayloadBoundary: 1 = 1;`,
-`theorem BuiltinInequalityPayloadBoundary: 1 <> 2;`, and
-`theorem BuiltinMembershipPayloadBoundary: 1 in 1;`; canonical `harness.md`;
-and traced requirements
-`spec.en.checker.type_elaboration.payload_extraction.term_formula_gap`,
-`spec.en.checker.type_elaboration.payload_extraction.builtin_inequality_formula_gap`,
-and
-`spec.en.checker.type_elaboration.payload_extraction.builtin_membership_formula_gap`
-with their three active fail fixtures and expectations. The producer must
-preserve the real left/right numeral and formula sites/ranges, module-root
-`BindingContextId(0)`, exactly two ordered `TermKind::Numeral` inputs, exactly
-one source-selected equality/inequality/membership `FormulaInput`, and its
-ordered `[left, right]` term references. All three cases remain fail-closed on
-partial formula checking and absent numeric type payloads with the exact
-ordered/deduplicated detail keys
-`type_elaboration.checker.checker.formula.term.partial` then
-`type_elaboration.checker.checker.term.external.numeric_type_payload`.
-
-The direct source-gap/detail matrix fixes all three configs, extractor
-provenance, source-selected formula kinds, ordered term payloads, result keys,
-and a bounded near-miss matrix. The three active CLI fixtures plus raw/
-normalized 272-test and four CLI hash oracles protect discovery and end-to-end
-byte stability. Test sufficiency is adequate for this move-only `design_drift`;
-no ZZZD0 prerequisite test is needed.
-
-Changing term/formula kinds, sites, ranges, order, references, binding context,
-checker invocation, numeric type or expected-type synthesis, facts, theorem
-acceptance, proof, CoreIr, ControlFlowIr, verification conditions,
-`formula_statement` execution, extractor configs/shapes, diagnostics, keys,
-payloads, ordering/deduplication, fail-closed behavior, API, test names,
-expectations, trace/spec intent, coverage, deferred state, another formula
-family, or any route is forbidden. `spec_coverage_audit.md` remains unchanged
-because this task changes no specification coverage, design mapping, follow-up
-owner, trace credit, or deferred rationale.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZD Move Result
 
-Task 263ZZZD moved only the approved 35-line inline builtin-binary term/formula
-checker/detail producer into existing private `type_elaboration/output.rs`.
-The detail entry crosses the phase facade normally. Its source extractor
-crosses the facade only under `cfg(test)` after the owner imports it directly;
-no reverse dependency was introduced. The initial focused compile identified
-the retained production dispatch's missing normal root import, which was added
-through the existing facade without changing the moved body or visibility.
-
-After stripping only `pub(in crate::runner)`, the fragment retains raw hash
-`6fa5f283dcfafb2d72a6250cae873f881d759ea06e29060d7624d91f58d51c7a`
-and whitespace-normalized hash
-`4dc99d61d81d6798efcaaa90667f7b8ff11976df7b776590ba6da04576ad540c`.
-The resulting inventory is `runner.rs` 3,134 /
-`07834113d2bc34800bfcef767b8de749d7682110db7a2b2dced4678a17e2919d`,
-the 528-line phase facade /
-`12ce472f8653de4294400d66b8fe83aad5c61a6c225f6f48876086433bfa9c93`,
-and `output.rs` 1,258 /
-`dca5e89e28034e8efa5779f803cbcc36d5e8f88898554eb2b70133fb20a8e843`.
-
-The exact three-config source-gap/detail test passes. All 272 crate unit tests
-pass, and the raw/normalized test-list hashes remain
-`5e41e4dbfcc303322c246a612de61926a628957a168589b45864d0a5070bb07e`
-and
-`c0c2b80f8b4e6c84cd25d77573fda722c4d1846fed168cd4a478781cdb42775e`.
-The plan, parse-only, declaration-symbol, and type-elaboration CLI hashes remain
-`f34240072564dfafacf7b0d914a8204037bbfc042dea375326ae757774f63759`,
-`57d0fba9be95644890b80bfa4ec2cd992e47bb8ad4b67c130f5194ea73aa0273`,
-`08b00a9f6fe70d94fe2c1b2bdebbdb5603bcee39bf3ceb460abe53f403bba7b5`,
-and
-`1dadbeabb219f5853c713ad53aa1cc7cd720a0e80abd7f882e9e0a5ea7802625`.
-Counts remain 96/4/188, 403/367, 235/223, and 219/184 with 23 warnings and
-zero errors. Formatting, denied-warning Clippy, crate/workspace tests, and diff
-checks pass. Specification, test-sufficiency, and implementation reviews report
-no findings. No sibling, behavior, API, test name, expectation, diagnostic,
-key, payload, ordering, fail-closed behavior, coverage, or deferred state
-changed; `spec_coverage_audit.md` remains unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZE Pre-Move Inventory and Specification
 
-Fresh authority, test, trace, expectation, design, source, API, and real-
-producer/consumer inventory selects only the builtin type-assertion formula
-output/detail pair as the next smallest dependency-closed production family.
-Its 43 lines are below the 52-line smallest remaining route family; smaller
-detail wrappers depend on retained output producers. The exact `runner.rs`
-fragments are the 8-line
-`source_builtin_type_assertion_formula_detail_keys` at 2688-2695 with raw hash
-`cd9a4e9816cd559d41d680fa964c88bedbaa3cf505df9578e54f55238948bd12`
-and the 35-line `source_builtin_type_assertion_formula_output` at 2743-2777
-with raw hash
-`d98347da1d3b2cb41653c7c26c61a1f3dded18e20c59e31e3ad2b0600a56e706`.
-Their combined raw hash is
-`45ab1786afd01b4c30d4aa964a11684163e601dd1f9f59c3e58404ddb02b3656`
-and whitespace-normalized hash is
-`f75c410adfa7afb1f3a3af075d7a2ad911ab467328a541a541b463d525894853`.
-The two production symbols have six occurrences across three source/test
-files; the extractor has seven occurrences across five files. The owner is
-existing private `type_elaboration/output.rs`.
-
-Task 263ZZZE mechanically moves only those two fragments. The detail entry
-crosses the private phase facade normally. Output and extractor cross only
-under `cfg(test)` after the owner imports the extractor directly. Every other
-dependency already belongs to the owner, and no reverse dependency is
-introduced. Current inventory is `runner.rs` 3,134 /
-`07834113d2bc34800bfcef767b8de749d7682110db7a2b2dced4678a17e2919d`,
-the 528-line phase facade /
-`12ce472f8653de4294400d66b8fe83aad5c61a6c225f6f48876086433bfa9c93`,
-and `output.rs` 1,258 /
-`dca5e89e28034e8efa5779f803cbcc36d5e8f88898554eb2b70133fb20a8e843`.
-
-The authority slice is Task 109's exact source
-`theorem BuiltinTypeAssertionPayloadBoundary: 1 is set;`, canonical
-`harness.md`, and requirement
-`spec.en.checker.type_elaboration.payload_extraction.builtin_type_assertion_formula_gap`
-with its active fail fixture and expectation. Preserve the real formula,
-subject, and asserted-type sites/ranges, module-root `BindingContextId(0)`, one
-`TermKind::Numeral`, one `FormulaKind::TypeAssertion` with that term, and the
-source-derived builtin-set `TypeExpressionInput` including spelling, head, and
-empty attributes. Checker output remains one partial term, one partial formula,
-two type entries, one normalized builtin-set asserted type, and the exact
-ordered/deduplicated partial-formula then numeric-type-payload keys. No numeric
-type payload, broader asserted type, semantic fact, or theorem acceptance is
-synthesized.
-
-The direct source/detail/output matrix fixes extractor provenance, type-entry
-ownership, term/formula kind/status/site/reference, and normalized asserted
-type, while its bounded near-miss matrix protects fail-closed extraction. The
-active fixture and raw/normalized 272-test/four-CLI hashes protect end-to-end
-behavior. Test sufficiency is adequate for this move-only `design_drift`; no
-ZZZE0 prerequisite is needed.
-
-Changing any site, range, kind, status, input/reference order, asserted-type
-payload, type-entry ownership, normalized type, binding context, diagnostics,
-keys, ordering/deduplication, fail-closed behavior, API, test/expectation/trace,
-coverage, deferred state, semantic facts, theorem acceptance, proof,
-`formula_statement`, CoreIr, ControlFlowIr, verification conditions, another
-formula family, or any route is forbidden. `spec_coverage_audit.md` remains
-unchanged because no coverage mapping, owner, credit, or deferred rationale
-changes.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZE Move Result
 
-Task 263ZZZE moved only the approved two-fragment/43-line builtin type-
-assertion formula output/detail family into existing private
-`type_elaboration/output.rs`. Detail crosses normally; output and extractor
-cross only under `cfg(test)`. The owner imports the extractor directly without
-a reverse dependency. The initial focused compile removed the now-unused
-normal parent `TypeExpressionInput` import after its last parent use moved.
-
-After stripping only `pub(in crate::runner)`, the detail/output raw hashes remain
-`cd9a4e9816cd559d41d680fa964c88bedbaa3cf505df9578e54f55238948bd12`
-and
-`d98347da1d3b2cb41653c7c26c61a1f3dded18e20c59e31e3ad2b0600a56e706`,
-combined raw remains
-`45ab1786afd01b4c30d4aa964a11684163e601dd1f9f59c3e58404ddb02b3656`,
-and normalized remains
-`f75c410adfa7afb1f3a3af075d7a2ad911ab467328a541a541b463d525894853`.
-The resulting inventory is `runner.rs` 3,092 /
-`42494a32f694f0508a06500796c66bf6a7df0c1f49a2ba4f8591393a5a38a876`,
-the 529-line facade /
-`78cf264f9d0b1b5c917b3051210f7653861f7600f5a768d368fc67432174c31a`,
-and `output.rs` 1,303 /
-`fdc30d1225f9f69848e4547e73f8449e828aae74d481d45bb2c600a7d7897182`.
-
-The exact source/detail/output test and all 272 crate unit tests pass. Raw/
-normalized test-list hashes remain
-`5e41e4dbfcc303322c246a612de61926a628957a168589b45864d0a5070bb07e`
-and
-`c0c2b80f8b4e6c84cd25d77573fda722c4d1846fed168cd4a478781cdb42775e`.
-Plan, parse-only, declaration-symbol, and type-elaboration CLI hashes remain
-`f34240072564dfafacf7b0d914a8204037bbfc042dea375326ae757774f63759`,
-`57d0fba9be95644890b80bfa4ec2cd992e47bb8ad4b67c130f5194ea73aa0273`,
-`08b00a9f6fe70d94fe2c1b2bdebbdb5603bcee39bf3ceb460abe53f403bba7b5`,
-and
-`1dadbeabb219f5853c713ad53aa1cc7cd720a0e80abd7f882e9e0a5ea7802625`.
-Counts remain 96/4/188, 403/367, 235/223, 219/184, 23 warnings, and zero
-errors. Format, denied-warning Clippy, crate/workspace tests, and diff checks
-pass. Specification, test-sufficiency, and implementation reviews report no
-findings. All semantics, API, tests, expectations, diagnostics, payloads,
-ordering, fail-closed behavior, coverage, and deferred state are unchanged;
-`spec_coverage_audit.md` remains unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZF Pre-Move Inventory and Specification
 
-Fresh authority, test, trace, expectation, design, source, API, and consumer
-inventory selects only the direct local-mode reserved-variable type-assertion
-route as the next smallest dependency-closed family. Its exact five fragments
-and raw hashes are: 2-line invalid key at 751-752 /
-`5258078239e26a500115f93efe79673660eed4e5393b040d694da65d50926bbe`;
-17-line config at 2108-2124 /
-`fb192c60053aea989229b3f6c78ea1a4574464cec5472fef1990ed586d7663ed`;
-12-line detail at 2451-2462 /
-`30364f80e7a71e0520da44d3ff5a607b59cd645bd4a36ac80e9be0a3056a3cbb`;
-9-line test output at 2586-2594 /
-`9236dc4164607d724b30ffa036be776a60e085752de41749b58695cc3863541a`;
-and 12-line extractor at 2933-2944 /
-`0d85e18b5c130a9a750071beaa12c22b2366d8027ff2a07741dfc632a6c8df8f`.
-Combined raw is
-`a70def231fb553cc658af48d2f08ee8ede14dea212008c6ed91d9250f6691238`
-and normalized is
-`686d1ab2f69c79156f55442fdf485873a2bcf74d7194cf407a99fa4d91a37903`.
-The five symbols have 73 occurrences across `runner.rs` and seven test files.
-Existing private `type_elaboration/type_assertion_routes.rs` is the owner.
-
-Move only those 52 lines. Keep the invalid key leaf-private and retain its root
-test name via a config-derived `cfg(test)` alias. Detail crosses normally;
-config, output, and extractor cross the phase facade only under `cfg(test)`.
-No reverse dependency or sibling move is allowed. Current inventory is
-`runner.rs` 3,092 /
-`42494a32f694f0508a06500796c66bf6a7df0c1f49a2ba4f8591393a5a38a876`,
-facade 529 /
-`78cf264f9d0b1b5c917b3051210f7653861f7600f5a768d368fc67432174c31a`,
-and `type_assertion_routes.rs` 3,433 /
-`2aaf52d1865df538d2c1ae19c038dc3ee1e5a241c8706797ef4db9e6e95549ff`.
-
-The authority is Task 138's exact source: one bare-set local-mode definition,
-`reserve x for LocalModeTypeAssertion;`, and
-`theorem LocalModeReservedVariableTypeAssertionPayloadBoundary: x is set;`,
-canonical `harness.md`, and traced requirement
-`spec.en.checker.type_elaboration.local_mode_reserved_variable_type_assertion_source_bridge`
-with its active pass fixture/expectation. Preserve the raw local-mode subject
-and independent builtin-set asserted input, one real expansion, ordinal 1 /
-`BindingId(0)`, terminal-definition-RHS builtin-set normalization, one
-`Inferred` variable, and one fact/deferred-free `Checked` type assertion. The
-direct exact/output/corruption matrix and seven-file isolation references cover
-provenance, output validation, immutable failure projection, near misses, and
-fail-closed boundaries. Existing coverage is sufficient; no ZZZF0 test is
-needed.
-
-Changing config, source shape/provenance, expansion, normalization, binding,
-status, facts, diagnostics/key/order, general reachability/widening/`qua`, mode
-declaration semantics, theorem/proof/downstream payloads, API, test names,
-expectations, trace intent, coverage/deferred state, another route, or any
-formula family is forbidden. `spec_coverage_audit.md` remains unchanged because
-owner path, coverage mapping, trace credit, and deferred rationale do not
-change.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZF Move Result
 
-Task 263ZZZF moved only the approved five-fragment/52-line direct local-mode
-reserved-variable type-assertion route into existing private
-`type_elaboration/type_assertion_routes.rs`. The invalid-payload key remains
-leaf-private; its root test name is a config-derived `cfg(test)` alias. Detail
-crosses normally, while config, output, and extractor cross only under
-`cfg(test)`. No reverse dependency or sibling move was introduced.
-
-After stripping only `pub(in crate::runner)`, the five raw hashes remain
-`5258078239e26a500115f93efe79673660eed4e5393b040d694da65d50926bbe`,
-`fb192c60053aea989229b3f6c78ea1a4574464cec5472fef1990ed586d7663ed`,
-`30364f80e7a71e0520da44d3ff5a607b59cd645bd4a36ac80e9be0a3056a3cbb`,
-`9236dc4164607d724b30ffa036be776a60e085752de41749b58695cc3863541a`,
-and
-`0d85e18b5c130a9a750071beaa12c22b2366d8027ff2a07741dfc632a6c8df8f`.
-Combined raw remains
-`a70def231fb553cc658af48d2f08ee8ede14dea212008c6ed91d9250f6691238`
-and normalized remains
-`686d1ab2f69c79156f55442fdf485873a2bcf74d7194cf407a99fa4d91a37903`.
-The resulting inventory is `runner.rs` 3,043 /
-`6753a749bc418fe0d419c8477bd41d3c6544f45abe7d877666f67a0b8f8bc786`,
-the 533-line facade /
-`dd9d067be513353ee5dd8aa3cf8dde22a925b6fbdcf918394cc5c93e10f264c0`,
-and `type_assertion_routes.rs` 3,490 /
-`7cab1a47e130a9cd4a200c58c3af72dc131e52ebb4a5c90ac6aaa24e8c9b5481`.
-
-The exact source test and all 272 crate unit tests pass. Raw/normalized
-test-list hashes remain
-`5e41e4dbfcc303322c246a612de61926a628957a168589b45864d0a5070bb07e`
-and
-`c0c2b80f8b4e6c84cd25d77573fda722c4d1846fed168cd4a478781cdb42775e`.
-Plan, parse-only, declaration-symbol, and type-elaboration CLI hashes remain
-`f34240072564dfafacf7b0d914a8204037bbfc042dea375326ae757774f63759`,
-`57d0fba9be95644890b80bfa4ec2cd992e47bb8ad4b67c130f5194ea73aa0273`,
-`08b00a9f6fe70d94fe2c1b2bdebbdb5603bcee39bf3ceb460abe53f403bba7b5`,
-and
-`1dadbeabb219f5853c713ad53aa1cc7cd720a0e80abd7f882e9e0a5ea7802625`.
-Counts remain 96/4/188, 403/367, 235/223, 219/184, 23 warnings, and zero
-errors. Format, denied-warning Clippy, crate/workspace tests, and diff checks
-pass. After one specification-review documentation-owner correction, repeated
-specification review, test-sufficiency review, and implementation review report
-no findings. All semantics, API, tests, expectations, diagnostics, keys,
-payloads, ordering, fail-closed behavior, coverage, and deferred state are
-unchanged; `spec_coverage_audit.md` remains unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZG Pre-Move Inventory and Specification
 
-Fresh authority, test, trace, expectation, design, source, API, and consumer
-inventory, corrected after the first specification review, selects only the
-shared imported-attribute assertion checker-output core as the next smallest
-dependency-closed production helper. The exact 29-line
-`source_imported_attribute_assertion_formula_output_from_payload` at 2770-2798
-has raw hash
-`5783af1eb43f6211f6fc16274b2c005d5c953e0b062e3c5df29974626c0c11b1`
-and whitespace-normalized hash
-`7f559eb4a72bae9ef777f02c4435dcaf3bea89719dcf180bd7401e47208d051a`.
-It has exactly three occurrences in `runner.rs`: the definition and the two
-positive/attribute-level-negative wrapper consumers. Existing private
-`type_elaboration/output.rs` is the dependency-first owner.
-
-Move only those 29 lines. The helper crosses the private phase facade through
-one normal parent-only entry because both wrappers remain production-owned by
-`runner.rs`. The owner imports `SourceImportedAttributeAssertionFormula`
-directly from sibling `source_formula.rs`, without a reverse dependency. Both
-wrapper/extractor/detail families and every other formula/route sibling remain
-in place. Current inventory is `runner.rs` 3,043 /
-`6753a749bc418fe0d419c8477bd41d3c6544f45abe7d877666f67a0b8f8bc786`,
-facade 533 /
-`dd9d067be513353ee5dd8aa3cf8dde22a925b6fbdcf918394cc5c93e10f264c0`,
-and `output.rs` 1,303 /
-`fdc30d1225f9f69848e4547e73f8449e828aae74d481d45bb2c600a7d7897182`.
-
-The authority slice is canonical `doc/spec/en/14.formulas.md` §14.2.4 and its
-attribute-level `non` distinction, Tasks 113/114 in canonical `harness.md`, the
-two exact active sources `ImportedAttributeAssertionPayloadBoundary: 1 is
-empty` and `ImportedNonEmptyAttributeAssertionPayloadBoundary: 1 is non empty`,
-their expectations, and traced requirements ending in
-`imported_attribute_assertion_formula_gap` and
-`imported_non_empty_attribute_assertion_formula_gap`. Preserve the extracted
-payload selected by each retained wrapper, binding context zero, one source-
-derived numeral `TermInput`, one `AttributeAssertion` `FormulaInput` that
-references that subject site, and the exact `MissingFormulaPayload` deferred
-reason. Preserve the imported `empty` symbol provenance in the payload without
-synthesizing `AttributeInput` or attribute-chain semantics, the three exact
-sorted/deduplicated diagnostic keys, partial term/formula status, empty facts,
-and no theorem acceptance, proof, CoreIr, ControlFlowIr, or VC payload.
-
-The direct exact source/output matrix in
-`source_reserve_bridge_reports_gap_or_evidence_detail_for_unsupported_shapes`,
-its bounded near-miss/corruption and cross-family isolation matrices, and the
-two active fixtures/expectations cover positive and attribute-level-negative
-payload provenance, checker status, diagnostics, and fail-closed boundaries.
-Coverage is sufficient; no ZZZG0 test is needed. Changing either wrapper or
-extractor, input/site/range/order, kind/status/reference, diagnostic content/
-order/deduplication, deferred/fact state, attribute-chain or admissibility
-semantics, API, test names, expectations, trace intent, coverage/deferred state,
-another formula family, or any route is forbidden.
-`spec_coverage_audit.md` remains unchanged because coverage mapping, owner
-crate, trace credit, follow-up ownership, and deferred rationale do not change.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZG Move Result
 
-Task 263ZZZG moved only the approved 29-line shared imported-attribute
-assertion checker-output core into existing private
-`type_elaboration/output.rs`. The owner imports its payload type directly from
-sibling `source_formula.rs`; one normal parent-only entry crosses the phase
-facade. Both positive and attribute-level-negative wrappers remain token-
-identical in `runner.rs`; no extractor, detail wrapper, sibling formula family,
-or route moved.
-
-After stripping only `pub(in crate::runner)`, raw hash remains
-`5783af1eb43f6211f6fc16274b2c005d5c953e0b062e3c5df29974626c0c11b1`
-and whitespace-normalized hash remains
-`7f559eb4a72bae9ef777f02c4435dcaf3bea89719dcf180bd7401e47208d051a`.
-The resulting inventory is `runner.rs` 3,013 /
-`290e5457611677dcd3f8dce1e45291e103a5897c6efa4e75eefdfd2c3692ce9c`,
-the 534-line facade /
-`ccd6b359d80bb8302a049d08872a0614b9fa5b34e101e2a3b202970bdf5afede`,
-and `output.rs` 1,334 /
-`e3658b209b728054d73a0668bd19cc6acc34e71daa5309609094c880eca3771c`.
-
-The exact shared positive/negative source test and all 272 crate unit tests
-pass. Raw/normalized test-list hashes remain
-`5e41e4dbfcc303322c246a612de61926a628957a168589b45864d0a5070bb07e`
-and
-`c0c2b80f8b4e6c84cd25d77573fda722c4d1846fed168cd4a478781cdb42775e`.
-Plan, parse-only, declaration-symbol, and type-elaboration CLI hashes remain
-`f34240072564dfafacf7b0d914a8204037bbfc042dea375326ae757774f63759`,
-`57d0fba9be95644890b80bfa4ec2cd992e47bb8ad4b67c130f5194ea73aa0273`,
-`08b00a9f6fe70d94fe2c1b2bdebbdb5603bcee39bf3ceb460abe53f403bba7b5`,
-and
-`1dadbeabb219f5853c713ad53aa1cc7cd720a0e80abd7f882e9e0a5ea7802625`.
-Counts remain 96/4/188, 403/367, 235/223, 219/184, 23 warnings, and zero
-errors. Format, denied-warning Clippy, crate/workspace tests, and diff checks
-pass. The initial specification review found and corrected the smaller-family
-inventory; repeated specification review, test-sufficiency review, and full
-implementation review then reported no findings. Semantics, API, test names,
-expectations, diagnostics, payloads, ordering, deferred/fact state, fail-closed
-behavior, coverage, and deferred roadmap state are unchanged;
-`spec_coverage_audit.md` remains unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZH Pre-Move Inventory and Specification
 
-Fresh authority, test, trace, expectation, design, source, API, and consumer
-inventory selects only the positive imported-attribute assertion output
-wrapper as the next smallest dependency-closed helper. The exact 8-line
-`source_imported_attribute_assertion_formula_output` at 2751-2758 has raw hash
-`7ebeefb4b8836105930a4c2e4bbdd2aa6aa4394ba2da06fccbdf5640a80e86ea`
-and whitespace-normalized hash
-`6edf9b88d571e9bb3a61ffe343f0b1214123b817e90e07eb4ff0eaee733f374a`.
-It has four occurrences across `runner.rs`, test support, and the direct source
-test; its extractor has ten occurrences across five source/test files. Existing
-private `type_elaboration/output.rs`, which already owns the shared core, is
-the dependency-first owner.
-
-Move only those eight lines. The wrapper crosses the private phase facade
-through one normal parent-only entry because its detail wrapper remains a
-production consumer in `runner.rs`. The owner imports the positive extractor
-directly from sibling `source_formula.rs`. The detail wrapper, attribute-level-
-negative wrapper/extractor, shared core, and every other formula/route sibling
-remain in place. Current inventory is `runner.rs` 3,013 /
-`290e5457611677dcd3f8dce1e45291e103a5897c6efa4e75eefdfd2c3692ce9c`,
-facade 534 /
-`ccd6b359d80bb8302a049d08872a0614b9fa5b34e101e2a3b202970bdf5afede`,
-and `output.rs` 1,334 /
-`e3658b209b728054d73a0668bd19cc6acc34e71daa5309609094c880eca3771c`.
-
-The authority slice is canonical `doc/spec/en/14.formulas.md` §14.2.4, Task
-113 in canonical `harness.md`, exact active source
-`ImportedAttributeAssertionPayloadBoundary: 1 is empty`, its expectation, and
-traced requirement ending in `imported_attribute_assertion_formula_gap`.
-Preserve selection of only the exact positive extractor with borrowed module
-identity, then unchanged forwarding of its source-derived numeral subject,
-formula site/range, and imported `empty` symbol provenance to the shared core.
-Preserve the resulting one partial numeral, one partial `AttributeAssertion`
-formula with `MissingFormulaPayload`, exact three diagnostic keys, empty facts,
-and fail-closed rejection of `non empty`, local/wrong/ambiguous contribution,
-and every structural near miss. No attribute semantics or payload is
-synthesized.
-
-The direct Task113 source/output assertions, bounded near-miss/corruption and
-cross-family isolation matrices, and active fixture/expectation cover wrapper
-selection, forwarding, status, diagnostics, and fail-closed behavior. Coverage
-is sufficient; no ZZZH0 test is needed. Changing the detail/non-empty wrapper,
-either extractor, shared core, module borrowing, payload fields, diagnostics,
-deferred/fact state, attribute semantics, API, test names, expectations, trace
-intent, coverage/deferred state, another formula family, or any route is
-forbidden. `spec_coverage_audit.md` remains unchanged because coverage mapping,
-owner crate, trace credit, follow-up ownership, and deferred rationale do not
-change.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZH Move Result
 
-Task 263ZZZH moved only the approved 8-line positive imported-attribute
-assertion output wrapper into existing private `type_elaboration/output.rs`.
-The owner imports the positive extractor directly from sibling
-`source_formula.rs`; the extractor's facade/root access narrowed to `cfg(test)`.
-One normal parent-only wrapper entry serves the retained production detail
-consumer. The detail wrapper, attribute-level-negative family, shared core,
-and every formula/route sibling remain in place.
-
-After stripping only `pub(in crate::runner)`, raw hash remains
-`7ebeefb4b8836105930a4c2e4bbdd2aa6aa4394ba2da06fccbdf5640a80e86ea`
-and whitespace-normalized hash remains
-`6edf9b88d571e9bb3a61ffe343f0b1214123b817e90e07eb4ff0eaee733f374a`.
-The resulting inventory is `runner.rs` 3,005 /
-`ddc45011dd3665744f7d4051c1247818d928fd68a6f12b5b2981481d5e3e15b1`,
-the 533-line facade /
-`fd6e79a6b6b1e6ea95b1232cbf7c3d7afc8a52749b779c947b65b23113b7c2e9`,
-and `output.rs` 1,343 /
-`da64c29064810e686662fa3c9097a23ef996c27aeb2f2ee84b2f012a6a39baf2`.
-
-The exact Task113 source/output test and all 272 crate unit tests pass. Raw/
-normalized test-list hashes remain
-`5e41e4dbfcc303322c246a612de61926a628957a168589b45864d0a5070bb07e`
-and
-`c0c2b80f8b4e6c84cd25d77573fda722c4d1846fed168cd4a478781cdb42775e`.
-Plan, parse-only, declaration-symbol, and type-elaboration CLI hashes remain
-`f34240072564dfafacf7b0d914a8204037bbfc042dea375326ae757774f63759`,
-`57d0fba9be95644890b80bfa4ec2cd992e47bb8ad4b67c130f5194ea73aa0273`,
-`08b00a9f6fe70d94fe2c1b2bdebbdb5603bcee39bf3ceb460abe53f403bba7b5`,
-and
-`1dadbeabb219f5853c713ad53aa1cc7cd720a0e80abd7f882e9e0a5ea7802625`.
-Counts remain 96/4/188, 403/367, 235/223, 219/184, 23 warnings, and zero
-errors. Format, denied-warning Clippy, crate/workspace tests, and diff checks
-pass. Specification, test-sufficiency, and full implementation reviews report
-no findings. Semantics, API, test names, expectations, diagnostics, payloads,
-ordering, deferred/fact state, fail-closed behavior, coverage, and deferred
-roadmap state are unchanged; `spec_coverage_audit.md` remains unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZI Pre-Move Inventory and Specification
 
-Fresh authority/test/trace/expectation/design/source/API/consumer inventory
-selects only the positive imported-attribute assertion detail wrapper as the
-next smallest dependency-closed helper. The exact 8-line
-`source_imported_attribute_assertion_formula_detail_keys` at 2665-2672 has raw
-hash
-`65736030fe1aa501026b840718949fb558da9048e4f21dffc05abd8dd1e9492f`
-and whitespace-normalized hash
-`d38e2d1b16bd412dee1bce1d281f89e610678c0bd3a786406d377b0956334d41`.
-It has two occurrences in `runner.rs`: definition and production dispatch.
-Existing private `type_elaboration/output.rs` already owns both dependencies.
-
-Move only those eight lines. Detail crosses normally. The now test-only output
-wrapper and positive extractor cross the facade/root only under `cfg(test)`;
-the owner calls both directly. The shared core, non-empty family, and every
-other formula/route sibling remain in place. Current inventory is `runner.rs`
-3,005 / `ddc45011dd3665744f7d4051c1247818d928fd68a6f12b5b2981481d5e3e15b1`,
-facade 533 / `fd6e79a6b6b1e6ea95b1232cbf7c3d7afc8a52749b779c947b65b23113b7c2e9`,
-and `output.rs` 1,343 /
-`da64c29064810e686662fa3c9097a23ef996c27aeb2f2ee84b2f012a6a39baf2`.
-
-Authority remains canonical §14.2.4, Task113, the exact `1 is empty` source,
-expectation, and trace requirement. Preserve wrapper selection/output and the
-shared canonical term/formula diagnostic traversal, prefixing, sorting, and
-deduplication, yielding the same three keys. The direct Task113 output/detail
-assertions, near-miss/corruption/isolation matrices, and active fixture cover
-the boundary; no ZZZI0 test is needed. Changing output/core/non-empty wrapper,
-either extractor, payload/status/diagnostics/order, deferred/fact state,
-attribute semantics, API/test/expectation/trace, coverage/deferred state,
-another formula family, or any route is forbidden. `spec_coverage_audit.md`
-remains unchanged because no coverage, owner, credit, follow-up, or deferred
-rationale changes.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZI Move Result
 
-Task 263ZZZI moved only the approved 8-line positive imported-attribute
-assertion detail wrapper into existing private `type_elaboration/output.rs`.
-Detail crosses normally; the positive output wrapper and extractor now cross
-only under `cfg(test)`. The owner calls them directly. The shared core,
-non-empty family, and every sibling remain in place.
-
-After stripping only `pub(in crate::runner)`, raw hash remains
-`65736030fe1aa501026b840718949fb558da9048e4f21dffc05abd8dd1e9492f`
-and whitespace-normalized hash remains
-`d38e2d1b16bd412dee1bce1d281f89e610678c0bd3a786406d377b0956334d41`.
-The resulting inventory is `runner.rs` 2,997 /
-`82a93e8d090f5cbc33f585f0f3cfde6bdb2c9b7466a08470f0c4490403db0799`,
-facade 534 /
-`4f4b829567e2462ee03e4e00a5f8a3fb9d8a38088680b00e6304ceb84069e5c2`,
-and `output.rs` 1,352 /
-`eb6b831e6fda03b56cc02d6241bbf2ac5f36c1e1328c5ea31a1b0aa55459b425`.
-
-The focused Task113 test and all 272 unit tests pass. Raw/normalized test-list
-hashes remain `5e41e4dbfcc303322c246a612de61926a628957a168589b45864d0a5070bb07e`
-and `c0c2b80f8b4e6c84cd25d77573fda722c4d1846fed168cd4a478781cdb42775e`.
-The four CLI hashes remain `f34240072564dfafacf7b0d914a8204037bbfc042dea375326ae757774f63759`,
-`57d0fba9be95644890b80bfa4ec2cd992e47bb8ad4b67c130f5194ea73aa0273`,
-`08b00a9f6fe70d94fe2c1b2bdebbdb5603bcee39bf3ceb460abe53f403bba7b5`,
-and `1dadbeabb219f5853c713ad53aa1cc7cd720a0e80abd7f882e9e0a5ea7802625`.
-Counts remain 96/4/188, 403/367, 235/223, 219/184, 23 warnings, zero errors.
-Format, denied-warning Clippy, crate/workspace tests, and diff checks pass. All
-three reviews report no findings. Semantics, API, diagnostics, payloads,
-ordering, deferred/fact state, fail-closed behavior, coverage, and roadmap are
-unchanged; `spec_coverage_audit.md` remains unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZJ Pre-Move Inventory and Specification
 
-Fresh authority/test/trace/expectation/design/source/API/consumer inventory
-selects only the attribute-level-negative imported-attribute assertion output
-wrapper as the next smallest dependency-closed helper. The exact 9-line
-`source_imported_non_empty_attribute_assertion_formula_output` at 2744-2752 has
-raw hash
-`1377322d6f1efcf71977d932b23156d6cc9aae510c1a9c07489a1a6637bc321f`
-and whitespace-normalized hash
-`74b44431416683b547202eab73f5946c899ae88859c1865064f2867bbe200d3a`.
-It has four occurrences across `runner.rs` and two test files: its definition,
-the retained production detail consumer, one direct Task114 output matrix, and
-the test-support import. Existing private `type_elaboration/output.rs` already
-owns the shared checker-output core; `source_formula.rs` owns the exact
-extractor.
-
-Move only those nine lines into existing private
-`type_elaboration/output.rs`. The wrapper crosses the phase facade and runner
-root normally while its retained production detail consumer remains in
-`runner.rs`. The owner imports the exact extractor directly from
-`source_formula.rs`; it additionally crosses the facade/root only under
-`cfg(test)` for retained direct tests. Keep the detail wrapper, set-enumeration
-family, and every other formula/route sibling in place. Current
-inventory is `runner.rs` 2,997 /
-`82a93e8d090f5cbc33f585f0f3cfde6bdb2c9b7466a08470f0c4490403db0799`,
-facade 534 /
-`4f4b829567e2462ee03e4e00a5f8a3fb9d8a38088680b00e6304ceb84069e5c2`,
-and `output.rs` 1,352 /
-`eb6b831e6fda03b56cc02d6241bbf2ac5f36c1e1328c5ea31a1b0aa55459b425`.
-
-Authority remains canonical Chapter 6 attribute negation/composition and
-§14.2.4, Task114's exact `1 is non empty` source, its expectation, and its trace
-requirement. Preserve direct-`non` extractor selection, imported `empty`
-provenance, unchanged payload forwarding into the shared checker core, and the
-same three ordered/deduplicated diagnostic keys. The existing Task114 source/
-output/detail assertions, bounded near-miss/corruption/isolation matrix, active
-fixture, and full byte/hash oracles sufficiently cover the boundary; no
-ZZZJ0 test is needed. Changing the detail wrapper, shared core, either positive
-wrapper, extractor behavior, input/module/payload/status/diagnostics/order,
-deferred/fact state, attribute semantics, API/test name/expectation/trace,
-coverage/deferred state, another formula family, or any route is forbidden.
-`spec_coverage_audit.md` remains unchanged because no coverage, owner, credit,
-follow-up, or deferred rationale changes.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZJ Move Result
 
-Task 263ZZZJ moved only the approved 9-line attribute-level-negative imported-
-attribute assertion output wrapper into existing private
-`type_elaboration/output.rs`. The wrapper crosses normally for its retained
-production detail consumer; the exact extractor crosses the facade/root only
-under `cfg(test)`. The shared core no longer crosses the facade/root. The
-detail wrapper, set-enumeration family, and every sibling remain in place.
-
-After stripping only `pub(in crate::runner)`, raw hash remains
-`1377322d6f1efcf71977d932b23156d6cc9aae510c1a9c07489a1a6637bc321f`
-and whitespace-normalized hash remains
-`74b44431416683b547202eab73f5946c899ae88859c1865064f2867bbe200d3a`.
-The resulting inventory is `runner.rs` 2,987 /
-`70078201c777fb75e581e769934a7266f11b5b945b9896e76161c86f78a0fe90`,
-facade 534 /
-`cf2d6f775fccdf1e2efb7c27bd4e7409348d0cf8f83a109850fa02c5c330a278`,
-and `output.rs` 1,363 /
-`5855ec61dd781ad8cfa1e82f4b440420627d9bc04388000fc548c988878498bf`.
-
-The focused Task114 test and all 272 unit tests pass. Raw/normalized test-list
-hashes remain `5e41e4dbfcc303322c246a612de61926a628957a168589b45864d0a5070bb07e`
-and `c0c2b80f8b4e6c84cd25d77573fda722c4d1846fed168cd4a478781cdb42775e`.
-The four CLI hashes remain `f34240072564dfafacf7b0d914a8204037bbfc042dea375326ae757774f63759`,
-`57d0fba9be95644890b80bfa4ec2cd992e47bb8ad4b67c130f5194ea73aa0273`,
-`08b00a9f6fe70d94fe2c1b2bdebbdb5603bcee39bf3ceb460abe53f403bba7b5`,
-and `1dadbeabb219f5853c713ad53aa1cc7cd720a0e80abd7f882e9e0a5ea7802625`.
-Counts remain 96/4/188, 403/367, 235/223, 219/184, 23 warnings, and zero
-errors. Format, denied-warning Clippy, crate/workspace tests, and diff checks
-pass. Final specification, test-sufficiency, implementation, and source/
-documentation consistency reviews report no findings. Semantics, API, test
-names, expectations, diagnostics, payloads, ordering, deferred/fact state,
-fail-closed behavior, coverage, and roadmap are unchanged;
-`spec_coverage_audit.md` remains unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZK Pre-Move Inventory and Specification
 
-Fresh authority/test/trace/expectation/design/source/API/consumer inventory
-selects only the attribute-level-negative imported-attribute assertion detail
-wrapper as the next smallest dependency-closed helper. The exact 9-line
-`source_imported_non_empty_attribute_assertion_formula_detail_keys` at
-2666-2674 has raw hash
-`db8b9053883cfacd797222d2844c8cf761a401ca5d19278cdb1512f795b529c8`
-and whitespace-normalized hash
-`c46e5fbe9775604cf3d2c60ce76841bd4b9471963b00a2111142af5a726144b3`.
-It has exactly two occurrences in `runner.rs`: definition and production
-dispatch. Existing private `type_elaboration/output.rs` already owns its output
-wrapper and canonical diagnostic-key dependency.
-
-Move only those nine lines into existing private
-`type_elaboration/output.rs`. Detail crosses the phase facade/root normally.
-The output wrapper then crosses only under `cfg(test)` for the retained direct
-Task114 matrix; the exact extractor likewise crosses the facade/root only under
-`cfg(test)`, while the owner imports it directly. Keep the set-enumeration
-family and every other formula/route sibling in place. Current inventory is
-`runner.rs` 2,987 /
-`70078201c777fb75e581e769934a7266f11b5b945b9896e76161c86f78a0fe90`,
-facade 534 /
-`cf2d6f775fccdf1e2efb7c27bd4e7409348d0cf8f83a109850fa02c5c330a278`,
-and `output.rs` 1,363 /
-`5855ec61dd781ad8cfa1e82f4b440420627d9bc04388000fc548c988878498bf`.
-
-Authority remains canonical Chapter 6 attribute negation/composition and
-§14.2.4, Task114's exact `1 is non empty` source, its expectation, and its trace
-requirement. Preserve exact output-to-canonical-key projection and the same
-three ordered/deduplicated diagnostics. The existing Task114 source/output/
-detail assertions, bounded near-miss/corruption/isolation matrix, active
-fixture, and full byte/hash oracles sufficiently cover the boundary; no
-ZZZK0 test is needed. Changing output/core/positive wrappers, either extractor,
-payload/status/diagnostics/order, deferred/fact state, attribute semantics,
-API/test name/expectation/trace, coverage/deferred state, another formula
-family, or any route is forbidden. `spec_coverage_audit.md` remains unchanged
-because no coverage, owner, credit, follow-up, or deferred rationale changes.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZK Move Result
 
-Task 263ZZZK moved only the approved 9-line attribute-level-negative imported-
-attribute assertion detail wrapper into existing private
-`type_elaboration/output.rs`. Detail crosses normally; the output wrapper and
-exact extractor cross the facade/root only under `cfg(test)`, while the owner
-imports the extractor directly. The set-enumeration family and every sibling
-remain in place.
-
-After stripping only `pub(in crate::runner)`, raw hash remains
-`db8b9053883cfacd797222d2844c8cf761a401ca5d19278cdb1512f795b529c8`
-and whitespace-normalized hash remains
-`c46e5fbe9775604cf3d2c60ce76841bd4b9471963b00a2111142af5a726144b3`.
-The resulting inventory is `runner.rs` 2,978 /
-`375964fe40c9f0a9716beb7aa27f24433e95be4cb4953856ff37024dc6f7da22`,
-facade 535 /
-`4133ab105202a928dec81c59833cfcf2d7291b4dab4946ea33b3e43039e84e6b`,
-and `output.rs` 1,373 /
-`573ddc0bb6c421cb0ed4e1501d644eb938222282fa8c787fc7cc6556b7110274`.
-
-The focused Task114 test and all 272 unit tests pass. Raw/normalized test-list
-hashes remain `5e41e4dbfcc303322c246a612de61926a628957a168589b45864d0a5070bb07e`
-and `c0c2b80f8b4e6c84cd25d77573fda722c4d1846fed168cd4a478781cdb42775e`.
-The four CLI hashes remain `f34240072564dfafacf7b0d914a8204037bbfc042dea375326ae757774f63759`,
-`57d0fba9be95644890b80bfa4ec2cd992e47bb8ad4b67c130f5194ea73aa0273`,
-`08b00a9f6fe70d94fe2c1b2bdebbdb5603bcee39bf3ceb460abe53f403bba7b5`,
-and `1dadbeabb219f5853c713ad53aa1cc7cd720a0e80abd7f882e9e0a5ea7802625`.
-Counts remain 96/4/188, 403/367, 235/223, 219/184, 23 warnings, and zero
-errors. Format, denied-warning Clippy, crate/workspace tests, and diff checks
-pass. Final specification, test-sufficiency, implementation, and source/
-documentation consistency reviews report no findings. Semantics, API, test
-names, expectations, diagnostics, payloads, ordering, deferred/fact state,
-fail-closed behavior, coverage, and roadmap are unchanged;
-`spec_coverage_audit.md` remains unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZL Pre-Move Inventory and Specification
 
-Fresh authority/test/trace/expectation/design/source/API/consumer inventory
-selects the set-enumeration checker-output producer as the next smallest
-dependency-closed family. The exact 43-line
-`source_set_enumeration_formula_output` at 2735-2777 has raw hash
-`710f25b9f406aad51eeb99c105abd79f9477e0c18b60ea3f27124a1b81330355`
-and whitespace-normalized hash
-`8ce0c819e585f6a8c9c2dd98a4d34799d31d2fff3db34264b33e8f3c947c8cb2`.
-It has four occurrences across `runner.rs` and two test files: definition, the
-retained production detail consumer, one direct Task111 output matrix, and the
-test-support import. Existing private `type_elaboration/output.rs` already owns
-the checker types, binding-environment projection, and diagnostic-key helper;
-`source_formula.rs` owns the exact extractor.
-
-Move only those 43 lines into existing private `type_elaboration/output.rs`.
-The producer crosses the phase facade/root normally for its retained detail
-consumer and direct tests. The owner imports the exact extractor directly from
-`source_formula.rs`; it additionally crosses the facade/root only under
-`cfg(test)` for retained direct extraction tests. Keep the detail wrapper,
-imported-predicate/connective-quantifier families, and every route sibling in
-place.
-Current inventory is `runner.rs` 2,978 /
-`375964fe40c9f0a9716beb7aa27f24433e95be4cb4953856ff37024dc6f7da22`,
-facade 535 /
-`4133ab105202a928dec81c59833cfcf2d7291b4dab4946ea33b3e43039e84e6b`,
-and `output.rs` 1,373 /
-`573ddc0bb6c421cb0ed4e1501d644eb938222282fa8c787fc7cc6556b7110274`.
-
-Authority remains canonical Chapters 13 and 14, Task111's exact
-`{1, 2} = {1, 2}` source, its expectation, and its trace requirement. Preserve
-four ordered numeral-item inputs followed by the left and right set-enumeration
-inputs, equality over the two set sites, binding context zero, exact diagnostic
-order/deduplication, and empty fact state. The existing Task111 source/output/
-detail assertions plus bounded near-miss, corruption, and isolation matrices
-sufficiently cover the
-boundary; no ZZZL0 test is needed. Changing the detail wrapper, extractor,
-term/formula input count/order/kind/site/range, binding context,
-payload/status/diagnostics, deferred/fact state, API/test name/expectation/
-trace, coverage/deferred state, another formula family, or any route is
-forbidden. `spec_coverage_audit.md` remains unchanged because no coverage,
-owner, credit, follow-up, or deferred rationale changes.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZL Move Result
 
-Task 263ZZZL moved only the approved 43-line set-enumeration checker-output
-producer into existing private `type_elaboration/output.rs`. The producer
-crosses normally for its retained production detail consumer and direct tests;
-the exact extractor crosses the facade/root only under `cfg(test)`, while the
-owner imports it directly. The detail wrapper, imported-predicate/connective-
-quantifier families, and every sibling remain in place.
-
-After stripping only `pub(in crate::runner)`, raw hash remains
-`710f25b9f406aad51eeb99c105abd79f9477e0c18b60ea3f27124a1b81330355`
-and whitespace-normalized hash remains
-`8ce0c819e585f6a8c9c2dd98a4d34799d31d2fff3db34264b33e8f3c947c8cb2`.
-The resulting inventory is `runner.rs` 2,935 /
-`a2a26271930816da1aae265c7e08a2f67e7d4f0ced0acd6dcf032d99afd389fd`,
-facade 536 /
-`b3ae2356a62c72c1652eb237f94013b7c69c8ac3e0b0bd7d9703680b901ba044`,
-and `output.rs` 1,418 /
-`17411f0eb48ac5493767e43bf739e83a8804ab9aaafee4ac82260f9af37e9a01`.
-
-The focused Task111 matrix and all 272 unit tests pass. Raw/normalized
-test-list hashes remain
-`5e41e4dbfcc303322c246a612de61926a628957a168589b45864d0a5070bb07e`
-and `c0c2b80f8b4e6c84cd25d77573fda722c4d1846fed168cd4a478781cdb42775e`.
-The four CLI hashes remain
-`f34240072564dfafacf7b0d914a8204037bbfc042dea375326ae757774f63759`,
-`57d0fba9be95644890b80bfa4ec2cd992e47bb8ad4b67c130f5194ea73aa0273`,
-`08b00a9f6fe70d94fe2c1b2bdebbdb5603bcee39bf3ceb460abe53f403bba7b5`,
-and `1dadbeabb219f5853c713ad53aa1cc7cd720a0e80abd7f882e9e0a5ea7802625`.
-Counts remain 96/4/188, 403/367, 235/223, 219/184, 23 warnings, and zero
-errors. Format, denied-warning Clippy, crate/workspace tests, and diff checks
-pass. Final specification, test-sufficiency, implementation, and source/
-documentation consistency reviews report no findings. Semantics, API, test
-names, expectations, diagnostics, payloads, ordering, deferred/fact state,
-fail-closed behavior, coverage, and roadmap are unchanged;
-`spec_coverage_audit.md` remains unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZM Pre-Move Inventory and Specification
 
-Fresh authority/test/trace/expectation/design/source/API/consumer inventory
-selects only the set-enumeration formula detail wrapper as the next smallest
-dependency-closed production helper. The exact 8-line
-`source_set_enumeration_formula_detail_keys` at 2668-2675 has raw hash
-`f74ec9f6bafcb821a63055a3af3915fd94c2a343b95b7f8717912b33e0504f8b`
-and whitespace-normalized hash
-`267c53605f17e3e1622ab28d6a063a2e6f17659927e9600afb28b9b9a2eb385e`.
-It has exactly two occurrences in `runner.rs`: definition and production
-dispatch. Existing private `type_elaboration/output.rs` already owns its output
-producer and canonical diagnostic-key projection.
-
-Move only those eight lines into existing private
-`type_elaboration/output.rs`. Detail crosses the phase facade/root normally.
-The output producer crosses the facade/root only under `cfg(test)` for the
-direct Task111 matrix; the exact extractor remains a direct owner import and
-likewise crosses the facade/root only under `cfg(test)`. Keep the imported-
-predicate/connective-quantifier
-families and every route sibling in place. Current inventory is `runner.rs`
-2,935 /
-`a2a26271930816da1aae265c7e08a2f67e7d4f0ced0acd6dcf032d99afd389fd`,
-facade 536 /
-`b3ae2356a62c72c1652eb237f94013b7c69c8ac3e0b0bd7d9703680b901ba044`,
-and `output.rs` 1,418 /
-`17411f0eb48ac5493767e43bf739e83a8804ab9aaafee4ac82260f9af37e9a01`.
-
-Authority remains canonical Chapters 13 and 14, Task111's exact
-`{1, 2} = {1, 2}` source, its expectation, and its trace requirement. Preserve
-the exact output-to-canonical-key projection and the same three ordered,
-deduplicated diagnostics. The existing Task111 source/output/detail assertions
-plus bounded near-miss, corruption, and isolation matrices sufficiently cover
-the boundary; no ZZZM0 test is needed. Changing the output producer, extractor,
-term/formula inputs, context, payload/status/diagnostics/order, deferred/fact
-state, API/test name/expectation/trace, coverage/deferred state, another formula
-family, or any route is forbidden. `spec_coverage_audit.md` remains unchanged
-because no coverage, owner, credit, follow-up, or deferred rationale changes.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZM Move Result
 
-Task 263ZZZM moved only the approved 8-line set-enumeration formula detail
-wrapper into existing private `type_elaboration/output.rs`. Detail crosses
-normally; the output producer and exact extractor cross the facade/root only
-under `cfg(test)`, while the owner imports the extractor directly. The
-imported-predicate/connective-quantifier families and every sibling remain in
-place.
-
-After stripping only `pub(in crate::runner)`, raw hash remains
-`f74ec9f6bafcb821a63055a3af3915fd94c2a343b95b7f8717912b33e0504f8b`
-and whitespace-normalized hash remains
-`267c53605f17e3e1622ab28d6a063a2e6f17659927e9600afb28b9b9a2eb385e`.
-The resulting inventory is `runner.rs` 2,927 /
-`6187ce68d51fde79b686029e92131f83dad94ccb230452149554ca8c814c5cd5`,
-facade 536 /
-`ce7c6c7a1b598bc9eb56546329a607c7cb8b6254eb9dbceabedded947e79dffb`,
-and `output.rs` 1,427 /
-`e08a86cdce43198d45db57fb23897a782999dd433b7c915d12e5dc22bbc4638f`.
-
-The focused Task111 matrix and all 272 unit tests pass. Raw/normalized
-test-list hashes remain
-`5e41e4dbfcc303322c246a612de61926a628957a168589b45864d0a5070bb07e`
-and `c0c2b80f8b4e6c84cd25d77573fda722c4d1846fed168cd4a478781cdb42775e`.
-The four CLI hashes remain
-`f34240072564dfafacf7b0d914a8204037bbfc042dea375326ae757774f63759`,
-`57d0fba9be95644890b80bfa4ec2cd992e47bb8ad4b67c130f5194ea73aa0273`,
-`08b00a9f6fe70d94fe2c1b2bdebbdb5603bcee39bf3ceb460abe53f403bba7b5`,
-and `1dadbeabb219f5853c713ad53aa1cc7cd720a0e80abd7f882e9e0a5ea7802625`.
-Counts remain 96/4/188, 403/367, 235/223, 219/184, 23 warnings, and zero
-errors. Format, denied-warning Clippy, crate/workspace tests, and diff checks
-pass. Final specification, test-sufficiency, implementation, and source/
-documentation consistency reviews report no findings. Semantics, API, test
-names, expectations, diagnostics, payloads, ordering, deferred/fact state,
-fail-closed behavior, coverage, and roadmap are unchanged;
-`spec_coverage_audit.md` remains unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZN Pre-Move Inventory and Specification
 
-Fresh authority/test/trace/expectation/design/source/API/consumer inventory
-selects the imported predicate/functor checker-output producer as the next
-smallest dependency-closed family. The exact 49-line
-`source_imported_predicate_functor_formula_output` at 2678-2726 has raw hash
-`f6cd24d9727310205ecf6bccd2ef8d305dda6151aeb1830a56281f04609b2f2c`
-and whitespace-normalized hash
-`85be481df55ca82de1bea0199a3062596d24942e95114105a5c8f875d556ceac`.
-It has four occurrences across `runner.rs` and two test files: definition, the
-retained production detail consumer, one direct Task110 output matrix, and the
-test-support import. Existing private `type_elaboration/output.rs` already owns
-the checker input/output types, binding-environment projection, and canonical
-diagnostic-key helper; `source_formula.rs` owns the exact extractor.
-
-Move only those 49 lines into existing private
-`type_elaboration/output.rs`. The producer crosses the phase facade/root
-normally for its retained detail consumer and direct tests. The owner imports
-the exact extractor directly from `source_formula.rs`; extractor access then
-crosses the facade/root only under `cfg(test)` for retained direct extraction
-tests. Keep the detail wrapper, connective-quantifier family, and every route
-sibling in place. Current inventory is `runner.rs` 2,927 /
-`6187ce68d51fde79b686029e92131f83dad94ccb230452149554ca8c814c5cd5`,
-facade 536 /
-`ce7c6c7a1b598bc9eb56546329a607c7cb8b6254eb9dbceabedded947e79dffb`,
-and `output.rs` 1,427 /
-`e08a86cdce43198d45db57fb23897a782999dd433b7c915d12e5dc22bbc4638f`.
-
-Authority remains canonical Chapters 11, 12, 13, 14, and 16, Task110's exact
-`1 divides (1 ++ 2)` imported source, its expectation, and its trace
-requirement. Preserve three ordered numeral inputs followed by the imported
-functor-application input with its symbol reference, the predicate-application
-formula over the left numeral and functor sites, both imported-symbol
-provenances, binding context zero, exact diagnostic order/deduplication, and
-empty fact state. Existing Task110 source/output/detail assertions plus bounded
-near-miss, corruption, provenance, and isolation matrices sufficiently cover
-the boundary; no ZZZN0 test is needed. Changing the detail wrapper, extractor,
-term/formula input count/order/kind/site/range/reference, symbol provenance,
-binding context, payload/status/diagnostics, deferred/fact state, API/test
-name/expectation/trace, coverage/deferred state, another formula family, or any
-route is forbidden. `spec_coverage_audit.md` remains unchanged because no
-coverage, owner, credit, follow-up, or deferred rationale changes.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZN Move Result
 
-Task 263ZZZN moved only the approved 49-line imported predicate/functor
-checker-output producer into existing private `type_elaboration/output.rs`.
-The producer crosses normally for its retained production detail consumer and
-direct tests; the exact extractor crosses the facade/root only under
-`cfg(test)`, while the owner imports it directly. The detail wrapper,
-connective-quantifier family, and every sibling remain in place.
-
-After stripping only `pub(in crate::runner)`, raw hash remains
-`f6cd24d9727310205ecf6bccd2ef8d305dda6151aeb1830a56281f04609b2f2c`
-and whitespace-normalized hash remains
-`85be481df55ca82de1bea0199a3062596d24942e95114105a5c8f875d556ceac`.
-The resulting inventory is `runner.rs` 2,877 /
-`82a02705035ed776ea7d56dd8a5c46deae83aa159f1675ee804d573c7d68c4cb`,
-facade 536 /
-`13e44ae1df6ebd80d7d1ec24d8ebb4fbbdf9cf2adade14272d6c65b1a5da4119`,
-and `output.rs` 1,477 /
-`840b57f9d0dfc67113458795a772c2817d512926ec88bf5e91016b2212e3d746`.
-
-The focused Task110 matrix and all 272 unit tests pass. Raw/normalized
-test-list hashes remain
-`5e41e4dbfcc303322c246a612de61926a628957a168589b45864d0a5070bb07e`
-and `c0c2b80f8b4e6c84cd25d77573fda722c4d1846fed168cd4a478781cdb42775e`.
-The four CLI hashes remain
-`f34240072564dfafacf7b0d914a8204037bbfc042dea375326ae757774f63759`,
-`57d0fba9be95644890b80bfa4ec2cd992e47bb8ad4b67c130f5194ea73aa0273`,
-`08b00a9f6fe70d94fe2c1b2bdebbdb5603bcee39bf3ceb460abe53f403bba7b5`,
-and `1dadbeabb219f5853c713ad53aa1cc7cd720a0e80abd7f882e9e0a5ea7802625`.
-Counts remain 96/4/188, 403/367, 235/223, 219/184, 23 warnings, and zero
-errors. Format, denied-warning Clippy, crate/workspace tests, and diff checks
-pass. Final specification, test-sufficiency, implementation, and source/
-documentation consistency reviews report no findings. Semantics, API, test
-names, expectations, diagnostics, payloads, ordering, deferred/fact state,
-fail-closed behavior, coverage, and roadmap are unchanged;
-`spec_coverage_audit.md` remains unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZO Pre-Move Inventory and Specification
 
-Fresh authority/test/trace/expectation/design/source/API/consumer inventory
-selects only the imported predicate/functor formula detail wrapper as the next
-smallest dependency-closed production helper. The exact 8-line
-`source_imported_predicate_functor_formula_detail_keys` at 2660-2667 has raw
-hash `eec832831f01a1c9f0e21d1f81eef4632794bb6d0f09b995771539a4ee3624ed`
-and whitespace-normalized hash
-`a8de584e21d4efcb7ed4248bd822b1badeceaeeba839069ee1873c5bdff192d5`.
-It has exactly two occurrences in `runner.rs`: definition and production
-dispatch. Existing private `type_elaboration/output.rs` already owns its output
-producer and canonical diagnostic-key projection.
-
-Move only those eight lines into existing private
-`type_elaboration/output.rs`. Detail crosses the phase facade/root normally.
-The output producer crosses the facade/root only under `cfg(test)` for the
-direct Task110 matrix; the exact extractor remains a direct owner import and
-likewise crosses the facade/root only under `cfg(test)`. Keep the connective-
-quantifier family and every route sibling in place. Current inventory is
-`runner.rs` 2,877 /
-`82a02705035ed776ea7d56dd8a5c46deae83aa159f1675ee804d573c7d68c4cb`,
-facade 536 /
-`13e44ae1df6ebd80d7d1ec24d8ebb4fbbdf9cf2adade14272d6c65b1a5da4119`,
-and `output.rs` 1,477 /
-`840b57f9d0dfc67113458795a772c2817d512926ec88bf5e91016b2212e3d746`.
-
-Authority remains canonical Chapters 11, 12, 13, 14, and 16, Task110's exact
-`1 divides (1 ++ 2)` imported source, its expectation, and its trace
-requirement. Preserve the exact output-to-canonical-key projection and the same
-four ordered, deduplicated diagnostics. Existing Task110 source/output/detail
-assertions plus bounded near-miss, corruption, provenance, and isolation
-matrices sufficiently cover the boundary; no ZZZO0 test is needed. Changing
-the output producer, extractor, term/formula inputs, symbol provenance,
-context, payload/status/diagnostics/order, deferred/fact state, API/test
-name/expectation/trace, coverage/deferred state, another formula family, or any
-route is forbidden. `spec_coverage_audit.md` remains unchanged because no
-coverage, owner, credit, follow-up, or deferred rationale changes.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZO Move Result
 
-Task 263ZZZO moved only the approved 8-line imported predicate/functor formula
-detail wrapper into existing private `type_elaboration/output.rs`. Detail
-crosses normally; the output producer and exact extractor cross the facade/root
-only under `cfg(test)`, while the owner imports the extractor directly. The
-connective-quantifier family and every sibling remain in place.
-
-After stripping only `pub(in crate::runner)`, raw hash remains
-`eec832831f01a1c9f0e21d1f81eef4632794bb6d0f09b995771539a4ee3624ed`
-and whitespace-normalized hash remains
-`a8de584e21d4efcb7ed4248bd822b1badeceaeeba839069ee1873c5bdff192d5`.
-The resulting inventory is `runner.rs` 2,870 /
-`162eef438a976cd427b820d42544ab7661ef7486712d7b67f43dbe45e9275dc0`,
-facade 537 /
-`47df7ebca6bd19644654314b07dfdfb7b4eb5a4170555f634d99be643af165e6`,
-and `output.rs` 1,486 /
-`3e0a1870cce557958c008e0ade5cf10d4f2e9c4ad7910800e11f4f3ceb8e8921`.
-
-The focused Task110 matrix and all 272 unit tests pass. Raw/normalized
-test-list hashes remain
-`5e41e4dbfcc303322c246a612de61926a628957a168589b45864d0a5070bb07e`
-and `c0c2b80f8b4e6c84cd25d77573fda722c4d1846fed168cd4a478781cdb42775e`.
-The four CLI hashes remain
-`f34240072564dfafacf7b0d914a8204037bbfc042dea375326ae757774f63759`,
-`57d0fba9be95644890b80bfa4ec2cd992e47bb8ad4b67c130f5194ea73aa0273`,
-`08b00a9f6fe70d94fe2c1b2bdebbdb5603bcee39bf3ceb460abe53f403bba7b5`,
-and `1dadbeabb219f5853c713ad53aa1cc7cd720a0e80abd7f882e9e0a5ea7802625`.
-Counts remain 96/4/188, 403/367, 235/223, 219/184, 23 warnings, and zero
-errors. Format, denied-warning Clippy, crate/workspace tests, and diff checks
-pass. Final specification, test-sufficiency, implementation, and source/
-documentation consistency reviews report no findings. Semantics, API, test
-names, expectations, diagnostics, payloads, ordering, deferred/fact state,
-fail-closed behavior, coverage, and roadmap are unchanged;
-`spec_coverage_audit.md` remains unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZP Pre-Move Inventory and Specification
 
-Fresh authority/test/trace/expectation/design/source/API/consumer inventory
-selects the formula connective/quantifier checker-output producer as the next
-smallest dependency-closed family. The exact 52-line
-`source_formula_connective_quantifier_output` at 2671-2722 has raw hash
-`7bc5d0899674fda17899b4c78463ac1d83e9ed8ad99196a4b0bb2eaf11f844f0`
-and whitespace-normalized hash
-`48917fea48ed055b8419855622005eae3670216beb527dfa38cca502a5d31907`.
-It has four occurrences across `runner.rs` and two test files: definition, the
-retained production detail consumer, one direct Task112/117 output matrix, and
-the test-support import. Existing private `type_elaboration/output.rs` already
-owns checker types, binding-environment projection, and canonical diagnostic-
-key rendering; `source_formula.rs` owns the exact extractor.
-
-Move only those 52 lines into existing private
-`type_elaboration/output.rs`. The producer crosses the phase facade/root
-normally for its retained detail consumer and direct tests. The owner imports
-the exact extractor directly from `source_formula.rs`; extractor access then
-crosses the facade/root only under `cfg(test)`. Keep the detail wrapper and
-every route sibling in place. Current inventory is `runner.rs` 2,870 /
-`162eef438a976cd427b820d42544ab7661ef7486712d7b67f43dbe45e9275dc0`,
-facade 537 /
-`47df7ebca6bd19644654314b07dfdfb7b4eb5a4170555f634d99be643af165e6`,
-and `output.rs` 1,486 /
-`3e0a1870cce557958c008e0ade5cf10d4f2e9c4ad7910800e11f4f3ceb8e8921`.
-
-Authority remains canonical Chapters 14 and 16, Tasks112/117's exact
-`contradiction implies for x being set holds not contradiction` source, its
-expectation, and its trace requirement. Preserve the five ordered formula
-inputs (premise contradiction, implication, universal quantification,
-negation, body contradiction), their exact sites/ranges/kinds, empty term
-inputs, binding context zero, `MissingFormulaPayload` versus
-`MissingQuantifierPayload` deferred reasons, exact diagnostic order/
-deduplication, and empty fact state. Existing Tasks112/117 source/output/detail
-assertions plus bounded near-miss, corruption, and isolation matrices
-sufficiently cover the boundary; no ZZZP0 test is needed. Changing the detail
-wrapper, extractor, formula input count/order/kind/site/range/deferred reasons,
-context, payload/status/diagnostics, facts, API/test name/expectation/trace,
-coverage/deferred state, another formula family, or any route is forbidden.
-`spec_coverage_audit.md` remains unchanged because no coverage, owner, credit,
-follow-up, or deferred rationale changes.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZP Move Result
 
-Task 263ZZZP moved only the approved 52-line formula connective/quantifier
-checker-output producer into existing private `type_elaboration/output.rs`.
-The producer crosses normally for its retained production detail consumer and
-direct tests; the exact extractor crosses the facade/root only under
-`cfg(test)`, while the owner imports it directly. The detail wrapper and every
-sibling route remain in place.
-
-After stripping only `pub(in crate::runner)`, raw hash remains
-`7bc5d0899674fda17899b4c78463ac1d83e9ed8ad99196a4b0bb2eaf11f844f0`
-and whitespace-normalized hash remains
-`48917fea48ed055b8419855622005eae3670216beb527dfa38cca502a5d31907`.
-The resulting inventory is `runner.rs` 2,814 /
-`b92f1f17161eaf7f8280e21604b5595201b0ba436e571ac4e7fa5cb8810a79af`,
-facade 538 /
-`2a35f57235aeb687971fdbc602c21ee4a9c0acc9ffee662c396aa22afcc27982`,
-and `output.rs` 1,540 /
-`9e122ecc7dd4677eaaf09f572832096b17c62305e8b80d60b6e09bac0b82c766`.
-
-The focused Tasks112/117 matrix and all 272 unit tests pass. Raw/normalized
-test-list hashes remain
-`5e41e4dbfcc303322c246a612de61926a628957a168589b45864d0a5070bb07e`
-and `c0c2b80f8b4e6c84cd25d77573fda722c4d1846fed168cd4a478781cdb42775e`.
-The four CLI hashes remain
-`f34240072564dfafacf7b0d914a8204037bbfc042dea375326ae757774f63759`,
-`57d0fba9be95644890b80bfa4ec2cd992e47bb8ad4b67c130f5194ea73aa0273`,
-`08b00a9f6fe70d94fe2c1b2bdebbdb5603bcee39bf3ceb460abe53f403bba7b5`,
-and `1dadbeabb219f5853c713ad53aa1cc7cd720a0e80abd7f882e9e0a5ea7802625`.
-Counts remain 96/4/188, 403/367, 235/223, 219/184, 23 warnings, and zero
-errors. Format, denied-warning Clippy, crate/workspace tests, and diff checks
-pass. Final specification, test-sufficiency, implementation, and source/
-documentation consistency reviews report no findings. Semantics, API, test
-names, expectations, diagnostics, payloads, ordering, deferred/fact state,
-fail-closed behavior, coverage, and roadmap are unchanged;
-`spec_coverage_audit.md` remains unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZQ Pre-Move Inventory and Specification
 
-Fresh inventory selects only the 8-line
-`source_formula_connective_quantifier_detail_keys` at 2659-2666 as the next
-smallest dependency-closed production helper. Its raw hash is
-`8ae5c6cda6bfa84dfb8c12794c02744a11f7d9ff331e7bfed5c8e2fac8e87de7`
-and whitespace-normalized hash is
-`96cb8e88e9645baf665e690951c2d03439d04196b8b3b9e73e785c6fbd2dd86d`.
-It has exactly two `runner.rs` occurrences: definition and production dispatch;
-private `output.rs` already owns its producer and canonical key projection.
-
-Move only those eight lines into `output.rs`. Detail crosses normally; output
-and extractor cross the facade/root only under `cfg(test)`, with the extractor
-imported directly by the owner. Keep every route sibling in place. Current
-inventory is `runner.rs` 2,814 /
-`b92f1f17161eaf7f8280e21604b5595201b0ba436e571ac4e7fa5cb8810a79af`,
-facade 538 / `2a35f57235aeb687971fdbc602c21ee4a9c0acc9ffee662c396aa22afcc27982`,
-and `output.rs` 1,540 /
-`9e122ecc7dd4677eaaf09f572832096b17c62305e8b80d60b6e09bac0b82c766`.
-Authority remains canonical Chapters 14/16 and Tasks112/117's exact source,
-expectation, and trace. Preserve exact output-to-key projection and the same two
-ordered/deduplicated diagnostics. Existing exact, near-miss, corruption, and
-isolation coverage is sufficient; no ZZZQ0 test is needed. Output/extractor,
-payload/status/diagnostics/order/deferred/facts, semantic/test/expectation/
-trace/coverage changes, sibling moves, and route changes are forbidden.
-`spec_coverage_audit.md` remains unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZQ Move Result
 
-Task 263ZZZQ moved only the approved 8-line formula connective/quantifier
-detail wrapper into existing private `type_elaboration/output.rs`. The detail
-crosses the facade/root normally for production dispatch; its producer and
-extractor now cross only under `cfg(test)`, while the owner imports the
-extractor directly. Every sibling route remains in place. The obsolete
-canonical-key facade/root crossing was removed because no parent-owned
-production consumer remains.
-
-After stripping only `pub(in crate::runner)`, raw hash remains
-`8ae5c6cda6bfa84dfb8c12794c02744a11f7d9ff331e7bfed5c8e2fac8e87de7`
-and whitespace-normalized hash remains
-`96cb8e88e9645baf665e690951c2d03439d04196b8b3b9e73e785c6fbd2dd86d`.
-The resulting inventory is `runner.rs` 2,805 /
-`a040da9ecd2f64aa7387c10973676fc9d78c589041c9bc55b03acfe8860e9a14`,
-facade 538 /
-`ecca05c63e4807334dd4ef9ac82436b85f11931cdf1217a575d791eab2d413aa`,
-and `output.rs` 1,549 /
-`579474efbddf3c85d337be053d83c45bd9beceedecc0c0758314b9c94652d6d1`.
-
-The focused Tasks112/117 matrix and all 272 unit tests pass. Raw/normalized
-test-list hashes remain
-`5e41e4dbfcc303322c246a612de61926a628957a168589b45864d0a5070bb07e`
-and `c0c2b80f8b4e6c84cd25d77573fda722c4d1846fed168cd4a478781cdb42775e`.
-The four CLI hashes remain
-`f34240072564dfafacf7b0d914a8204037bbfc042dea375326ae757774f63759`,
-`57d0fba9be95644890b80bfa4ec2cd992e47bb8ad4b67c130f5194ea73aa0273`,
-`08b00a9f6fe70d94fe2c1b2bdebbdb5603bcee39bf3ceb460abe53f403bba7b5`,
-and `1dadbeabb219f5853c713ad53aa1cc7cd720a0e80abd7f882e9e0a5ea7802625`.
-Counts remain 96/4/188, 403/367, 235/223, 219/184, 23 warnings, and zero
-errors. Format, denied-warning Clippy, crate/workspace tests, and diff checks
-pass. Specification, test-sufficiency, implementation, and source/
-documentation consistency reviews report no findings. Semantics, API, test
-names, expectations, diagnostics, payloads, ordering, deferred/fact state,
-fail-closed behavior, coverage, and roadmap are unchanged;
-`spec_coverage_audit.md` remains unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZR Pre-Move Inventory and Specification
 
-Fresh inventory compares all nine production-helper route families still in
-`runner.rs` and selects the chained local-mode reserved-variable type-
-assertion route as the smallest dependency-closed family. Its five exact
-fragments are the invalid key at 847-849 (3 lines,
-`3212882d7df523a3ff28fd6c31f18b90f0f5ece6ce022b99798505f953937d36`),
-config at 2312-2335 (24,
-`b8171beaf084d7ee5e227f3db564761772d2f96fe35f7c04b4047a9689b4d035`),
-production detail at 2507-2519 (13,
-`0b2e08b229c12ba5960f3c7d9a844e7d3af33c930980032183d20b70c63c16db`),
-test-only output including its attached `#[cfg(test)]` at 2614-2623 (10,
-`06dea4867a4ec086386550c3e51946ad4c56e74d41c45327ebe40fea3215cc7c`),
-and extractor at 2724-2735 (12,
-`7f9033fb21b29d95791524f906de68941afad052518c1545bd8c8d343347d749`).
-Total is 62 lines; combined raw hash is
-`ff9708ab2017614e37fb5cdc865428380a42f30fb93e51feacf34e19a2979554`
-and whitespace-normalized hash is
-`7e0c913b86d5f3af83b85d76a210c981116eaa1aaca4b0fb899227c844e4eae7`.
-The family has 75 symbol occurrences across nine source/test files. Current
-inventory is `runner.rs` 2,805 /
-`a040da9ecd2f64aa7387c10973676fc9d78c589041c9bc55b03acfe8860e9a14`,
-facade 538 /
-`ecca05c63e4807334dd4ef9ac82436b85f11931cdf1217a575d791eab2d413aa`,
-and `type_assertion_routes.rs` 3,490 /
-`7cab1a47e130a9cd4a200c58c3af72dc131e52ebb4a5c90ac6aaa24e8c9b5481`.
-
-Task 263ZZZR mechanically moves only those five fragments into existing
-private `type_elaboration/type_assertion_routes.rs`. The invalid key becomes
-leaf-private; a config-derived test alias retains its runner name and value.
-Only the production detail route crosses the phase facade normally. Config,
-test output, and extractor cross only under `cfg(test)`. Orchestration,
-dispatch, and every sibling route stay in `runner.rs`. Formatting control may
-be added outside the oracle solely to retain token-identical fragments.
-
-Authority is canonical Chapters 3, 4, 13, 14, and 16 plus Task 146's exact
-`.miz` source, expectation, trace requirement, and checker-boundary tests. The
-route retains Base-to-set and Chain-to-Base real definitions, reserves `x` for
-`ChainModeTypeAssertion`, and checks the independent formula-side builtin
-`set` assertion. Both expansions recursively normalize the subject to the
-terminal definition-RHS builtin-set identity; the checker resolves ordinal 1
-to `BindingId(0)` and emits one inferred variable and one checked, fact-free,
-deferred-free type assertion. Existing exact-source, real-fixture, corruption,
-near-miss, and cross-owner isolation matrices sufficiently cover the move; no
-ZZZR0 test is needed.
-
-Changing any key, label, spelling, mode definition, relation, source range,
-normalization/provenance, binding identity, asserted input, result role,
-payload, diagnostic, ordering, fallback, fail-closed behavior, API/test name,
-expectation/trace, coverage/deferred state, sibling route, or semantic behavior
-is forbidden. This is move-only `design_drift`; no coverage owner, credit,
-follow-up, or deferred rationale changes, so `spec_coverage_audit.md` remains
-unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZR Move Result
 
-Task 263ZZZR moved only the approved five fragments totaling 62 lines into
-existing private `type_elaboration/type_assertion_routes.rs`. The invalid key
-is leaf-private; the config-derived runner alias retains its name/value under
-`cfg(test)`. Only detail crosses normally; config, output, and extractor cross
-the facade/root only under `cfg(test)`. Orchestration, dispatch, and every
-sibling route remain in place. The oracle-external `#[rustfmt::skip]` preserves
-the config fragment without changing it.
-
-After stripping only `pub(in crate::runner)`, the five raw hashes remain
-`3212882d7df523a3ff28fd6c31f18b90f0f5ece6ce022b99798505f953937d36`,
-`b8171beaf084d7ee5e227f3db564761772d2f96fe35f7c04b4047a9689b4d035`,
-`0b2e08b229c12ba5960f3c7d9a844e7d3af33c930980032183d20b70c63c16db`,
-`06dea4867a4ec086386550c3e51946ad4c56e74d41c45327ebe40fea3215cc7c`,
-and `7f9033fb21b29d95791524f906de68941afad052518c1545bd8c8d343347d749`.
-Combined raw remains
-`ff9708ab2017614e37fb5cdc865428380a42f30fb93e51feacf34e19a2979554`
-and normalized remains
-`7e0c913b86d5f3af83b85d76a210c981116eaa1aaca4b0fb899227c844e4eae7`.
-The resulting inventory is `runner.rs` 2,746 /
-`f07576500f26d941a94660165c2e2a5f517935d1b3cc5a52cf54b5b402af930d`,
-facade 542 /
-`3f616815d12c1ffd36db25f5e54deca93702d0c9284dee29a9cd7f384f8759f1`,
-and `type_assertion_routes.rs` 3,558 /
-`52399cb11873a05b493edd0cb37468841f864abc3e6dc29865a98e62d3e745d3`.
-
-Both focused Task 146 tests and all 272 unit tests pass. Raw/normalized
-test-list hashes remain
-`5e41e4dbfcc303322c246a612de61926a628957a168589b45864d0a5070bb07e`
-and `c0c2b80f8b4e6c84cd25d77573fda722c4d1846fed168cd4a478781cdb42775e`.
-The four CLI hashes remain
-`f34240072564dfafacf7b0d914a8204037bbfc042dea375326ae757774f63759`,
-`57d0fba9be95644890b80bfa4ec2cd992e47bb8ad4b67c130f5194ea73aa0273`,
-`08b00a9f6fe70d94fe2c1b2bdebbdb5603bcee39bf3ceb460abe53f403bba7b5`,
-and `1dadbeabb219f5853c713ad53aa1cc7cd720a0e80abd7f882e9e0a5ea7802625`.
-Counts remain 96/4/188, 403/367, 235/223, 219/184, 23 warnings, and zero
-errors. Format, denied-warning Clippy, crate/workspace tests, and diff checks
-pass. Specification, test-sufficiency, implementation, and source/
-documentation consistency reviews report no findings. Semantics, API, test
-names, expectations, diagnostics, keys, payloads, ordering, fail-closed
-behavior, coverage/deferred state, and roadmap are unchanged;
-`spec_coverage_audit.md` remains unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZS Pre-Move Inventory and Specification
 
-Fresh inventory compares the eight production-helper route families still in
-`runner.rs` and selects the two-edge local-mode reserved-variable builtin type-
-assertion route as the smallest dependency-closed family. Its five exact
-fragments are the invalid key at 858-860 (3 lines,
-`56c165de564a32cd1559a791a4a6e1cf60daa4b7f1961c7b65cf3631344df47d`),
-config at 2316-2344 (29,
-`30e2876adc14fcc02ab960bb96abfef2c08ff4a25fa2857fb63173596c7538f8`),
-production detail at 2486-2498 (13,
-`2a936496e968833d2904979677825d3200c62b54e4849fbdff89650497f35e55`),
-test-only output including `#[cfg(test)]` at 2579-2588 (10,
-`8b43240b093e4356da67380159df1b7efb4c344de710de512f9bffbb85b179a5`),
-and extractor at 2678-2689 (12,
-`eaac2cdc665ec73b319e203e6cdee774d006b1df880a3f5c1ddea718663ff580`).
-Total is 67 lines; combined raw hash is
-`2b643569345812daea3b6c6a258da0f81f8e607e761eb34c4ca1c1b1073e09fe`
-and whitespace-normalized hash is
-`3290e481e8eb72f44db244db1dd58638dd60060f10499ee315ea0d92e381864c`.
-The family has 77 symbol occurrences across ten source/test files. Current
-inventory is `runner.rs` 2,746 /
-`f07576500f26d941a94660165c2e2a5f517935d1b3cc5a52cf54b5b402af930d`,
-facade 542 /
-`3f616815d12c1ffd36db25f5e54deca93702d0c9284dee29a9cd7f384f8759f1`,
-and `type_assertion_routes.rs` 3,558 /
-`52399cb11873a05b493edd0cb37468841f864abc3e6dc29865a98e62d3e745d3`.
-
-Task 263ZZZS moves only those five fragments into existing private
-`type_elaboration/type_assertion_routes.rs`. The key becomes leaf-private and
-a config-derived test alias retains its runner name/value. Only detail crosses
-normally; config, output, and extractor cross only under `cfg(test)`. Every
-sibling, dispatch, and orchestration route remains in `runner.rs`; oracle-
-external formatting control may preserve token identity.
-
-Authority is canonical Chapters 3, 4, 13, 14, and 16 plus Task 148's exact
-`.miz` source, expectation, trace requirement, and checker-boundary tests.
-Preserve the Base-to-set, Middle-to-Base, and Outer-to-Middle definitions; raw
-Outer subject plus independent formula-side builtin-set input/sites/ranges;
-ordinal 1 and `BindingId(0)`; three real expansions normalized to the terminal
-definition-RHS builtin-set identity; and one inferred variable plus one
-checked, fact/deferred-free type assertion without general reachability.
-Existing exact, fixture, corruption, near-miss, and cross-owner isolation
-matrices are sufficient; no ZZZS0 test is needed.
-
-Key/config/label/spelling/definition/relation/range/normalization/provenance/
-binding/input/result/payload/diagnostic/order/fallback/fail-closed/API/test/
-expectation/trace/coverage/deferred, semantic, sibling, or route changes are
-forbidden. This is move-only `design_drift`; `spec_coverage_audit.md` remains
-unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZS Move Result
 
-After the specification review corrected the initial candidate to the actual
-minimum family, Task 263ZZZS moved only the approved five fragments totaling
-67 lines into existing private
-`type_elaboration/type_assertion_routes.rs`. The key is leaf-private; only the
-production detail route crosses normally, while config, output, and extractor
-cross the facade/root only under `cfg(test)`. The runner retains a test-only
-config-derived key alias. Every sibling route, production dispatch site, and
-top-level orchestration path remains in place. The oracle-external
-`#[rustfmt::skip]` preserves the config fragment without changing it.
-
-After stripping only `pub(in crate::runner)`, the five raw hashes remain
-`56c165de564a32cd1559a791a4a6e1cf60daa4b7f1961c7b65cf3631344df47d`,
-`30e2876adc14fcc02ab960bb96abfef2c08ff4a25fa2857fb63173596c7538f8`,
-`2a936496e968833d2904979677825d3200c62b54e4849fbdff89650497f35e55`,
-`8b43240b093e4356da67380159df1b7efb4c344de710de512f9bffbb85b179a5`,
-and `eaac2cdc665ec73b319e203e6cdee774d006b1df880a3f5c1ddea718663ff580`.
-Combined raw remains
-`2b643569345812daea3b6c6a258da0f81f8e607e761eb34c4ca1c1b1073e09fe`
-and normalized remains
-`3290e481e8eb72f44db244db1dd58638dd60060f10499ee315ea0d92e381864c`.
-The resulting inventory is `runner.rs` 2,682 /
-`604ce1fda2733caca8eab4284477bc0808b3d436336e7fdcb05d15d6c318b719`,
-facade 546 /
-`55beab14b00b144083ac21a3b5161c2a0dd10fa85ac3e11253a0af7bbd2a5b45`,
-and `type_assertion_routes.rs` 3,631 /
-`e80710b069e6b65e31573837a8970dc69a33e33da57e8aecd3e1db20dfd3fa11`.
-
-Both focused Task 148 tests and all 272 unit tests pass. Raw/normalized
-test-list hashes remain
-`5e41e4dbfcc303322c246a612de61926a628957a168589b45864d0a5070bb07e`
-and `c0c2b80f8b4e6c84cd25d77573fda722c4d1846fed168cd4a478781cdb42775e`.
-The four CLI hashes remain
-`f34240072564dfafacf7b0d914a8204037bbfc042dea375326ae757774f63759`,
-`57d0fba9be95644890b80bfa4ec2cd992e47bb8ad4b67c130f5194ea73aa0273`,
-`08b00a9f6fe70d94fe2c1b2bdebbdb5603bcee39bf3ceb460abe53f403bba7b5`,
-and `1dadbeabb219f5853c713ad53aa1cc7cd720a0e80abd7f882e9e0a5ea7802625`.
-Counts remain 96/4/188, 403/367, 235/223, 219/184, 23 warnings, and zero
-errors. Format, denied-warning Clippy, crate/workspace tests, and diff checks
-pass. Specification, test-sufficiency, implementation, and source/documentation
-consistency reviews report no findings. Semantics, API, test names,
-expectations, diagnostics, keys,
-payloads, ordering, fail-closed behavior, coverage/deferred state, and roadmap
-are unchanged; `spec_coverage_audit.md` remains unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZT Pre-Move Inventory and Specification
 
-Fresh inventory compares the seven production-helper route families remaining
-in `runner.rs` and selects the Task 186 two-edge local-mode same-mode
-asserted-head route as the smallest dependency-closed family at 67 lines; the
-next candidate is 71 lines. Its five exact fragments are the invalid key at
-840-841 (2 lines,
-`0ea970fb21dd8ba2848c0c55025d443116fe708b979771c86d018fe0b2b07377`),
-config at 2204-2235 (32,
-`403b2813cbaeb22bd3af7f8d1410d7bbfeab02f5de49e9d3913a6350deca002f`),
-production detail at 2421-2432 (12,
-`ea7028ee7f3a8231a76281251ab7a70be84e4318da262bb8f4ef42698970f1e6`),
-test-only output including `#[cfg(test)]` at 2509-2517 (9,
-`be6b32fb5b4dbfa69fac9adf2412e1a0a5e406f20127c5c4d23469f885210742`),
-and extractor at 2588-2599 (12,
-`d8815f2dc9f2ebac5959e88245742b65436863cfdddc794187ab8e3245bad0a8`).
-Combined raw hash is
-`86ed5b9099827f75934806bd701d4f2b5f77b8fa897ea8acb8e95d650c468bd2`
-and whitespace-normalized hash is
-`1e886d0c36f4f822c5fed3679be655a7720f0fabfb3ab7a3bf7fe12ca055ae2e`.
-The family has 76 symbol occurrences across eight source/test files. Current
-inventory is `runner.rs` 2,682 /
-`604ce1fda2733caca8eab4284477bc0808b3d436336e7fdcb05d15d6c318b719`,
-facade 546 /
-`55beab14b00b144083ac21a3b5161c2a0dd10fa85ac3e11253a0af7bbd2a5b45`,
-and `type_assertion_routes.rs` 3,631 /
-`e80710b069e6b65e31573837a8970dc69a33e33da57e8aecd3e1db20dfd3fa11`.
-
-Task 263ZZZT moves only those five fragments into existing private
-`type_elaboration/type_assertion_routes.rs`. The key becomes leaf-private and
-a config-derived test alias retains its runner name/value. Only detail crosses
-normally; config, output, and extractor cross only under `cfg(test)`. Every
-sibling, dispatch, and orchestration route remains in `runner.rs`; oracle-
-external formatting control may preserve token identity.
-
-Authority is canonical Chapters 3, 4, 13, 14, and 16 plus Task 186's exact
-`.miz` source, expectation, trace requirement, and checker-boundary tests.
-Preserve the Base-to-set, Middle-to-Base, and Outer-to-Middle definitions; raw
-Outer subject plus independent formula-side same-Outer asserted input with
-distinct sites/ranges; ordinal 1 and `BindingId(0)`; three real expansions and
-three known type entries normalized to the terminal Base-definition-RHS
-builtin-set identity; and one inferred variable plus one checked,
-fact/deferred-free type assertion without general reachability, widening, or
-qua. Existing exact, fixture, corruption, near-miss, and cross-owner isolation
-matrices are sufficient; no ZZZT0 test is needed.
-
-Key/config/label/spelling/definition/relation/range/normalization/provenance/
-binding/input/result/payload/diagnostic/order/fallback/fail-closed/API/test/
-expectation/trace/coverage/deferred, semantic, sibling, or route changes are
-forbidden. This is move-only `design_drift`; `spec_coverage_audit.md` remains
-unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZT Move Result
 
-Task 263ZZZT moved only the approved five fragments totaling 67 lines into
-existing private `type_elaboration/type_assertion_routes.rs`. The key is
-leaf-private; only the production detail route crosses normally, while config,
-output, and extractor cross the facade/root only under `cfg(test)`. The runner
-retains a test-only config-derived key alias. Every sibling route, production
-dispatch site, and top-level orchestration path remains in place. The oracle-
-external `#[rustfmt::skip]` preserves the config fragment without changing it.
-
-After stripping only `pub(in crate::runner)`, the five raw hashes remain
-`0ea970fb21dd8ba2848c0c55025d443116fe708b979771c86d018fe0b2b07377`,
-`403b2813cbaeb22bd3af7f8d1410d7bbfeab02f5de49e9d3913a6350deca002f`,
-`ea7028ee7f3a8231a76281251ab7a70be84e4318da262bb8f4ef42698970f1e6`,
-`be6b32fb5b4dbfa69fac9adf2412e1a0a5e406f20127c5c4d23469f885210742`,
-and `d8815f2dc9f2ebac5959e88245742b65436863cfdddc794187ab8e3245bad0a8`.
-Combined raw remains
-`86ed5b9099827f75934806bd701d4f2b5f77b8fa897ea8acb8e95d650c468bd2`
-and normalized remains
-`1e886d0c36f4f822c5fed3679be655a7720f0fabfb3ab7a3bf7fe12ca055ae2e`.
-The resulting inventory is `runner.rs` 2,618 /
-`0a9124014367e84c55676d73bee25a0755cae0a60380ae1b1ee5eeae748c494e`,
-facade 550 /
-`ab1232c8f0ef2685f440ef0f324b266a878c6ebfb4198a3ddd817851cba04717`,
-and `type_assertion_routes.rs` 3,704 /
-`d4d9ca8b16153faa7442dc3d3c4406c86e081b7024ff00484806dd46c2f41c67`.
-
-Both focused Task 186 tests and all 272 unit tests pass. Raw/normalized
-test-list hashes remain
-`5e41e4dbfcc303322c246a612de61926a628957a168589b45864d0a5070bb07e`
-and `c0c2b80f8b4e6c84cd25d77573fda722c4d1846fed168cd4a478781cdb42775e`.
-The four CLI hashes remain
-`f34240072564dfafacf7b0d914a8204037bbfc042dea375326ae757774f63759`,
-`57d0fba9be95644890b80bfa4ec2cd992e47bb8ad4b67c130f5194ea73aa0273`,
-`08b00a9f6fe70d94fe2c1b2bdebbdb5603bcee39bf3ceb460abe53f403bba7b5`,
-and `1dadbeabb219f5853c713ad53aa1cc7cd720a0e80abd7f882e9e0a5ea7802625`.
-Counts remain 96/4/188, 403/367, 235/223, 219/184, 23 warnings, and zero
-errors. Format, denied-warning Clippy, crate/workspace tests, and diff checks
-pass. Specification, test-sufficiency, implementation, and source/documentation
-consistency reviews report no findings. Semantics, API, test names,
-expectations, diagnostics, keys, payloads, ordering,
-fail-closed behavior, coverage/deferred state, and roadmap are unchanged;
-`spec_coverage_audit.md` remains unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZU Pre-Move Inventory and Specification
 
-Fresh inventory compares the six production-helper route families remaining
-in `runner.rs` and selects the Task 205 three-edge local-mode immediate-radix
-asserted-head route as the smallest dependency-closed family at 71 lines; the
-next candidates are 73 lines. Its five exact fragments are the invalid key at
-831-832 (2 lines,
-`1e00a7374e8dc254e9b620970ef6928750e10be5af74ce82cb0d2a9a8961df67`),
-config at 2130-2165 (36,
-`407a8ee8d60299b04a287db6e0a5e4bb0b7c3c6c5a45017d821f2d276a7ae5aa`),
-production detail at 2367-2378 (12,
-`cdf63a5611563eab8aad5c888a6af6dcd21f34066e4d29f5d2559cfc0cf4c351`),
-test-only output including `#[cfg(test)]` at 2448-2456 (9,
-`d96f13607b5ef7dfaf59e1a22c076d84a4dcaf93611d9e2effbb7c336ab59516`),
-and extractor at 2511-2522 (12,
-`374c7e6030afa70bd4a0697186e05faa6289ec5c184ce71980e36056d57230a8`).
-Combined raw hash is
-`69f927e13c371443d047469621be0f44a3cb21fafc4bdcba5408ab377f68a00c`
-and whitespace-normalized hash is
-`f577f162e6dc8789121b6d257db52533813e4268ece665378fe6f81126c98a31`.
-The family has 73 symbol occurrences across eight source/test files. Current
-inventory is `runner.rs` 2,618 /
-`0a9124014367e84c55676d73bee25a0755cae0a60380ae1b1ee5eeae748c494e`,
-facade 550 /
-`ab1232c8f0ef2685f440ef0f324b266a878c6ebfb4198a3ddd817851cba04717`,
-and `type_assertion_routes.rs` 3,704 /
-`d4d9ca8b16153faa7442dc3d3c4406c86e081b7024ff00484806dd46c2f41c67`.
-
-Task 263ZZZU moves only those five fragments into existing private
-`type_elaboration/type_assertion_routes.rs`. The key becomes leaf-private and
-a config-derived test alias retains its runner name/value. Only detail crosses
-normally; config, output, and extractor cross only under `cfg(test)`. Every
-sibling, dispatch, and orchestration route remains in `runner.rs`; oracle-
-external formatting control may preserve token identity.
-
-Authority is canonical Chapters 3, 4, 13, 14, and 16 plus Task 205's exact
-`.miz` source, expectation, trace requirement, and checker-boundary tests.
-Preserve Base-to-set, Inner-to-Base, Middle-to-Inner, and Outer-to-Middle
-definitions; the raw Outer subject and independent formula-side Middle
-immediate-radix asserted input with distinct symbols/sites/ranges; ordinal 1
-and `BindingId(0)`; four real expansions and three known type entries normalized
-to the terminal Base-definition-RHS builtin-set identity; and one inferred
-variable plus one zero-constraint/fact/candidate/diagnostic/deferred checked
-type assertion without multi-hop or general reachability, widening, or qua.
-Existing exact, fixture, corruption, near-miss, and cross-owner isolation
-matrices are sufficient; no ZZZU0 test is needed.
-
-Key/config/label/spelling/definition/relation/range/normalization/provenance/
-binding/input/result/payload/diagnostic/order/fallback/fail-closed/API/test/
-expectation/trace/coverage/deferred, semantic, sibling, or route changes are
-forbidden. This is move-only `design_drift`; `spec_coverage_audit.md` remains
-unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZU Move Result
 
-Task 263ZZZU moved only the approved five fragments totaling 71 lines into
-existing private `type_elaboration/type_assertion_routes.rs`. The key is
-leaf-private; only the production detail route crosses normally, while config,
-output, and extractor cross the facade/root only under `cfg(test)`. The runner
-retains a test-only config-derived key alias. Every sibling route, production
-dispatch site, and top-level orchestration path remains in place. The oracle-
-external `#[rustfmt::skip]` preserves the config fragment without changing it.
-
-After stripping only `pub(in crate::runner)`, the five raw hashes remain
-`1e00a7374e8dc254e9b620970ef6928750e10be5af74ce82cb0d2a9a8961df67`,
-`407a8ee8d60299b04a287db6e0a5e4bb0b7c3c6c5a45017d821f2d276a7ae5aa`,
-`cdf63a5611563eab8aad5c888a6af6dcd21f34066e4d29f5d2559cfc0cf4c351`,
-`d96f13607b5ef7dfaf59e1a22c076d84a4dcaf93611d9e2effbb7c336ab59516`,
-and `374c7e6030afa70bd4a0697186e05faa6289ec5c184ce71980e36056d57230a8`.
-Combined raw remains
-`69f927e13c371443d047469621be0f44a3cb21fafc4bdcba5408ab377f68a00c`
-and normalized remains
-`f577f162e6dc8789121b6d257db52533813e4268ece665378fe6f81126c98a31`.
-The resulting inventory is `runner.rs` 2,549 /
-`e5fc7f7de5984ad599d5d5584d65aa68eaa1fb6339051c2fcc459d1cc8f0f70d`,
-facade 554 /
-`6e6580f488de9252b1e8d90a5bf63ababe0a6cdfa63592c4a79bcd0dd4aa6b7b`,
-and `type_assertion_routes.rs` 3,781 /
-`d0d3ca99cd4496cb48f3fd741fcbf91ff5a71575eb8384842dec459f35744760`.
-
-Both focused Task 205 tests and all 272 unit tests pass. Raw/normalized
-test-list hashes remain
-`5e41e4dbfcc303322c246a612de61926a628957a168589b45864d0a5070bb07e`
-and `c0c2b80f8b4e6c84cd25d77573fda722c4d1846fed168cd4a478781cdb42775e`.
-The four CLI hashes remain
-`f34240072564dfafacf7b0d914a8204037bbfc042dea375326ae757774f63759`,
-`57d0fba9be95644890b80bfa4ec2cd992e47bb8ad4b67c130f5194ea73aa0273`,
-`08b00a9f6fe70d94fe2c1b2bdebbdb5603bcee39bf3ceb460abe53f403bba7b5`,
-and `1dadbeabb219f5853c713ad53aa1cc7cd720a0e80abd7f882e9e0a5ea7802625`.
-Counts remain 96/4/188, 403/367, 235/223, 219/184, 23 warnings, and zero
-errors. Format, denied-warning Clippy, crate/workspace tests, and diff checks
-pass. Specification, test-sufficiency, implementation, and source/documentation
-consistency reviews report no findings. Semantics, API, test names,
-expectations, diagnostics, keys,
-payloads, ordering,
-fail-closed behavior, coverage/deferred state, and roadmap are unchanged;
-`spec_coverage_audit.md` remains unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZV Pre-Move Inventory and Specification
 
-Fresh inventory compares the five production-helper route families remaining
-in `runner.rs`. Two are tied at 73 lines; Task 263ZZZV selects the Task 150
-three-edge local-mode reserved-variable builtin type-assertion route because
-its 74 occurrences across nine source/test files are the smaller consumer
-surface than the tied same-mode family's 78 occurrences. Its five exact
-fragments are the invalid key at 878-879 (2 lines,
-`1923c716329281623dde1ab207d3448b24bdc526ba0c52a2897c6ff2a7e316d2`),
-config at 2259-2292 (34,
-`bdb8dcb192a3b24d568c3b9f6bfc9aa206c2e05ac4018860dae051b552441d8e`),
-production detail at 2373-2386 (14,
-`78da43fb497ee476060355b7aec8fd7d8bfd1e33634a15d2ad2ee1b8e9e17107`),
-test-only output including `#[cfg(test)]` at 2432-2442 (11,
-`2ff24b4e08659ef570c05cca919b26b4fd847b5786e3a72a02e9bb1ff0430796`),
-and extractor at 2494-2505 (12,
-`3dd8dbbb9871a4939253068e7e68ab8f050de59c12fe01ca2689c9de6a932a12`).
-Combined raw hash is
-`0e62d61b172fc59782b9bb804aa30ebc13ed15e88b7aa042dd5cee4c4fff1c65`
-and whitespace-normalized hash is
-`1b0e79a0e90229105af5dac89fa575cb0843ca2155662f2d3400b678f44bd14d`.
-Current inventory is `runner.rs` 2,549 /
-`e5fc7f7de5984ad599d5d5584d65aa68eaa1fb6339051c2fcc459d1cc8f0f70d`,
-facade 554 /
-`6e6580f488de9252b1e8d90a5bf63ababe0a6cdfa63592c4a79bcd0dd4aa6b7b`,
-and `type_assertion_routes.rs` 3,781 /
-`d0d3ca99cd4496cb48f3fd741fcbf91ff5a71575eb8384842dec459f35744760`.
-
-Task 263ZZZV moves only those five fragments into existing private
-`type_elaboration/type_assertion_routes.rs`. The key becomes leaf-private and
-a config-derived test alias retains its runner name/value. Only detail crosses
-normally; config, output, and extractor cross only under `cfg(test)`. Every
-sibling, dispatch, and orchestration route remains in `runner.rs`; oracle-
-external formatting control may preserve token identity.
-
-Authority is canonical Chapters 3, 4, 13, 14, and 16 plus Task 150's exact
-`.miz` source, expectation, trace requirement, and checker-boundary tests.
-Preserve Base-to-set, Inner-to-Base, Middle-to-Inner, and Outer-to-Middle
-definitions; the raw Outer subject plus independent formula-side builtin-set
-input with distinct sites/ranges; ordinal 1 and `BindingId(0)`; four real
-expansions normalized to the terminal Base-definition-RHS builtin-set identity;
-and one inferred variable plus one zero-constraint/fact/candidate/diagnostic/
-deferred checked type assertion without general reachability, widening, or
-qua. Existing exact, fixture, corruption, near-miss, and cross-owner isolation
-matrices are sufficient; no ZZZV0 test is needed.
-
-Key/config/label/spelling/definition/relation/range/normalization/provenance/
-binding/input/result/payload/diagnostic/order/fallback/fail-closed/API/test/
-expectation/trace/coverage/deferred, semantic, sibling, or route changes are
-forbidden. This is move-only `design_drift`; `spec_coverage_audit.md` remains
-unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZV Move Result
 
-Task 263ZZZV moved only the approved five fragments totaling 73 lines into
-existing private `type_elaboration/type_assertion_routes.rs`. The key is
-leaf-private; only the production detail route crosses normally, while config,
-output, and extractor cross the facade/root only under `cfg(test)`. The runner
-retains a test-only config-derived key alias. Every sibling route, production
-dispatch site, and top-level orchestration path remains in place. The oracle-
-external `#[rustfmt::skip]` preserves the config fragment without changing it.
-
-After stripping only `pub(in crate::runner)`, the five raw hashes remain
-`1923c716329281623dde1ab207d3448b24bdc526ba0c52a2897c6ff2a7e316d2`,
-`bdb8dcb192a3b24d568c3b9f6bfc9aa206c2e05ac4018860dae051b552441d8e`,
-`78da43fb497ee476060355b7aec8fd7d8bfd1e33634a15d2ad2ee1b8e9e17107`,
-`2ff24b4e08659ef570c05cca919b26b4fd847b5786e3a72a02e9bb1ff0430796`,
-and `3dd8dbbb9871a4939253068e7e68ab8f050de59c12fe01ca2689c9de6a932a12`.
-Combined raw remains
-`0e62d61b172fc59782b9bb804aa30ebc13ed15e88b7aa042dd5cee4c4fff1c65`
-and normalized remains
-`1b0e79a0e90229105af5dac89fa575cb0843ca2155662f2d3400b678f44bd14d`.
-The resulting inventory is `runner.rs` 2,479 /
-`de85a8e7885c3077262391085e7f5f8c1ce7a4709c9edbcdc5aff746feaa315c`,
-facade 558 /
-`336054f759b96e091f6a223c155a8b61281794fe11ba3c461ad96fec62beae50`,
-and `type_assertion_routes.rs` 3,860 /
-`1225ba0d4b83da43421ab15c13bf324035c8a9a908f99b7e29d674c43a511517`.
-
-Both focused Task 150 tests and all 272 unit tests pass. Raw/normalized
-test-list hashes remain
-`5e41e4dbfcc303322c246a612de61926a628957a168589b45864d0a5070bb07e`
-and `c0c2b80f8b4e6c84cd25d77573fda722c4d1846fed168cd4a478781cdb42775e`.
-The four CLI hashes remain
-`f34240072564dfafacf7b0d914a8204037bbfc042dea375326ae757774f63759`,
-`57d0fba9be95644890b80bfa4ec2cd992e47bb8ad4b67c130f5194ea73aa0273`,
-`08b00a9f6fe70d94fe2c1b2bdebbdb5603bcee39bf3ceb460abe53f403bba7b5`,
-and `1dadbeabb219f5853c713ad53aa1cc7cd720a0e80abd7f882e9e0a5ea7802625`.
-Counts remain 96/4/188, 403/367, 235/223, 219/184, 23 warnings, and zero
-errors. Format, denied-warning Clippy, crate/workspace tests, and diff checks
-pass. Specification, test-sufficiency, implementation, and source/documentation
-consistency reviews report no findings. Semantics, API, test names,
-expectations, diagnostics, keys,
-payloads, ordering,
-fail-closed behavior, coverage/deferred state, and roadmap are unchanged;
-`spec_coverage_audit.md` remains unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZW Pre-Move Inventory and Specification
 
-Fresh inventory compares the four production-helper route families remaining
-in `runner.rs`. Task 263ZZZW selects the smallest: Task 195's exact three-edge
-local-mode same-mode asserted-head route, totaling 73 lines and 78 occurrences
-across nine source/test files. Its five exact fragments are the invalid key at
-855-856 (2 lines,
-`793a12fe49e493d7a5140578f499266a8ba1d645f491caa6e3f64b3def6d86bd`),
-config at 2181-2218 (38,
-`232a724164a5383eaa302b60439fb02a7bd88629cd9256b7d53c6646565a5171`),
-production detail at 2317-2328 (12,
-`80dcfe7b995c1f78df8767282e5e9b96c8be8c5cf6d1abc2d439f42ec2f2d7fa`),
-test-only output including `#[cfg(test)]` at 2367-2375 (9,
-`f96e29daa2ba09e66b21d1fd7e60b3ec1691c6da292984381324177bd9e7161d`),
-and extractor at 2411-2422 (12,
-`3f7a7a4b1d7071e270c0dec24265cc9f2b1db84fab2128058661c3a352af375c`).
-Combined raw hash is
-`97a9c9fddcdd42bf0ddfc37272f8cb0dd64a838112ce3381ad04abe80c27c17f`
-and whitespace-normalized hash is
-`c06eb209e4852ed82f4a4d06600d06d9bb3d658ef4b8f9eefcec32d5beab0707`.
-Current inventory is `runner.rs` 2,479 /
-`de85a8e7885c3077262391085e7f5f8c1ce7a4709c9edbcdc5aff746feaa315c`,
-facade 558 /
-`336054f759b96e091f6a223c155a8b61281794fe11ba3c461ad96fec62beae50`,
-and `type_assertion_routes.rs` 3,860 /
-`1225ba0d4b83da43421ab15c13bf324035c8a9a908f99b7e29d674c43a511517`.
-
-Task 263ZZZW moves only those five fragments into existing private
-`type_elaboration/type_assertion_routes.rs`. The key becomes leaf-private and
-a config-derived test alias retains its runner name/value. Only detail crosses
-normally; config, output, and extractor cross only under `cfg(test)`. Every
-sibling, dispatch, and orchestration route remains in `runner.rs`; oracle-
-external formatting control may preserve token identity.
-
-Authority is canonical Chapters 3, 4, 13, 14, and 16 plus Task 195's exact
-`.miz` source, expectation, trace requirement, and checker-boundary tests.
-Preserve Base-to-set, Inner-to-Base, Middle-to-Inner, and Outer-to-Middle
-definitions; independent raw reserve-subject and formula-side asserted inputs
-for the same Outer symbol at distinct sites/ranges; ordinal 1 and
-`BindingId(0)`; four real expansions with all three known entries normalized
-to the terminal Base-definition-RHS builtin-set identity; and one inferred
-variable plus one zero-constraint/fact/candidate/diagnostic/deferred checked
-type assertion without general reachability, widening, or qua. Existing exact,
-fixture, corruption, near-miss, and cross-owner isolation matrices are
-sufficient; no ZZZW0 test is needed.
-
-Key/config/label/spelling/definition/relation/range/normalization/provenance/
-binding/input/result/payload/diagnostic/order/fallback/fail-closed/API/test/
-expectation/trace/coverage/deferred, semantic, sibling, or route changes are
-forbidden. This is move-only `design_drift`; `spec_coverage_audit.md` remains
-unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZW Move Result
 
-Task 263ZZZW moved only the approved five fragments totaling 73 lines into
-existing private `type_elaboration/type_assertion_routes.rs`. The key is
-leaf-private; only the production detail route crosses normally, while config,
-output, and extractor cross the facade/root only under `cfg(test)`. The runner
-retains a test-only config-derived key alias. Every sibling route, production
-dispatch site, and top-level orchestration path remains in place. The oracle-
-external `#[rustfmt::skip]` preserves the config fragment without changing it.
-
-After stripping only `pub(in crate::runner)`, the five raw hashes remain
-`793a12fe49e493d7a5140578f499266a8ba1d645f491caa6e3f64b3def6d86bd`,
-`232a724164a5383eaa302b60439fb02a7bd88629cd9256b7d53c6646565a5171`,
-`80dcfe7b995c1f78df8767282e5e9b96c8be8c5cf6d1abc2d439f42ec2f2d7fa`,
-`f96e29daa2ba09e66b21d1fd7e60b3ec1691c6da292984381324177bd9e7161d`,
-and `3f7a7a4b1d7071e270c0dec24265cc9f2b1db84fab2128058661c3a352af375c`.
-Combined raw remains
-`97a9c9fddcdd42bf0ddfc37272f8cb0dd64a838112ce3381ad04abe80c27c17f`
-and normalized remains
-`c06eb209e4852ed82f4a4d06600d06d9bb3d658ef4b8f9eefcec32d5beab0707`.
-The resulting inventory is `runner.rs` 2,408 /
-`f350b189c49f0b31f16a1c3eb939be565f734301f1a3961456ffe8b5e48d75f9`,
-facade 562 /
-`486242212ba208bbf20aa408fd64c7c230ba595da840572a07cb2f767c31107e`,
-and `type_assertion_routes.rs` 3,939 /
-`864c9a450d568d8a4e6fb428c46285ac876d203e9197ab91e35e45c8242a8260`.
-Expected forwarding changes the five-symbol inventory from 78 occurrences
-across nine source/test files to 88 across eleven source/facade/test files.
-
-Both focused Task 195 tests and all 272 unit tests pass. Raw/normalized
-test-list hashes remain
-`5e41e4dbfcc303322c246a612de61926a628957a168589b45864d0a5070bb07e`
-and `c0c2b80f8b4e6c84cd25d77573fda722c4d1846fed168cd4a478781cdb42775e`.
-The four CLI hashes remain
-`f34240072564dfafacf7b0d914a8204037bbfc042dea375326ae757774f63759`,
-`57d0fba9be95644890b80bfa4ec2cd992e47bb8ad4b67c130f5194ea73aa0273`,
-`08b00a9f6fe70d94fe2c1b2bdebbdb5603bcee39bf3ceb460abe53f403bba7b5`,
-and `1dadbeabb219f5853c713ad53aa1cc7cd720a0e80abd7f882e9e0a5ea7802625`.
-Counts remain 96/4/188, 403/367, 235/223, 219/184, 23 warnings, and zero
-errors. Format, denied-warning Clippy, crate/workspace tests, and diff checks
-pass. Specification, test-sufficiency, implementation, and source/documentation
-consistency reviews report no findings. Semantics, API, test names,
-expectations, diagnostics, keys, payloads, ordering, fail-closed behavior,
-coverage/deferred state, and roadmap are unchanged; `spec_coverage_audit.md`
-remains unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZX Pre-Move Inventory and Specification
 
-Fresh inventory compares the three production-helper route families remaining
-in `runner.rs`; they total 76, 76, and 78 lines. Task 263ZZZX selects Task 207's
-exact four-edge local-mode immediate-radix asserted-head route from the 76-line
-minimum tie because its 69-occurrence consumer surface is smaller than the
-other route's 70 occurrences across source/test files.
-Its five exact fragments are the invalid key at 847-848 (2 lines,
-`e7453ea087d66a9320ec79d81ca900032513edec79f178f2be2c6815d8cedf80`),
-config at 2143-2183 (41,
-`bef2ef3f2e222141c69d50a69f65dd40dd460721e5fad64c1d1e93b6934a8f43`),
-production detail at 2269-2280 (12,
-`c7f1cb9a5af1c9a558f78e62dd4201959502e352a8153a8dde97fd808cf6fe5c`),
-test-only output including `#[cfg(test)]` at 2309-2317 (9,
-`1f3c94b9916f9851f2f59f7fa100545d97e421f38609da2de4bf5e097377df8f`),
-and extractor at 2340-2351 (12,
-`df53c8a5465503c75c75514f41af49d403ef31e374bdb47baeaf2a5ad997671f`).
-Combined raw hash is
-`3a0ccd25abacf096552cee7b415d01e00fd72800450e2a6a8fc0e0abbbf0f8a8`
-and whitespace-normalized hash is
-`9365ee9d43fe31f3378a558490023236e8a0676545b1b372c12d1a6aad890544`.
-Current inventory is `runner.rs` 2,408 /
-`f350b189c49f0b31f16a1c3eb939be565f734301f1a3961456ffe8b5e48d75f9`,
-facade 562 /
-`486242212ba208bbf20aa408fd64c7c230ba595da840572a07cb2f767c31107e`,
-and `type_assertion_routes.rs` 3,939 /
-`864c9a450d568d8a4e6fb428c46285ac876d203e9197ab91e35e45c8242a8260`.
-
-Task 263ZZZX moves only those five fragments into existing private
-`type_elaboration/type_assertion_routes.rs`. The key becomes leaf-private and
-a config-derived test alias retains its runner name/value. Only detail crosses
-normally; config, output, and extractor cross only under `cfg(test)`. Every
-sibling, dispatch, and orchestration route remains in `runner.rs`; oracle-
-external formatting control may preserve token identity.
-
-Authority is canonical Chapters 3, 4, 13, 14, and 16 plus Task 207's exact
-`.miz` source, expectation, trace requirement, and checker-boundary tests.
-Preserve Base-to-set, Inner-to-Base, Middle-to-Inner, Outer-to-Middle, and
-TooDeep-to-Outer definitions; independent raw TooDeep reserve-subject and
-Outer formula-side asserted inputs at distinct sites/ranges; ordinal 1 and
-`BindingId(0)`; five real expansions with all three known entries normalized
-to the terminal Base-definition-RHS builtin-set identity; and one inferred
-variable plus one zero-constraint/fact/candidate/diagnostic/deferred checked
-type assertion. The asserted head is exactly the binding's immediate radix;
-multi-hop/general reachability, widening, and qua remain absent. Existing exact,
-all-119-order, fixture, corruption, near-miss, and cross-owner isolation
-matrices are sufficient; no ZZZX0 test is needed.
-
-Key/config/label/spelling/definition/relation/range/normalization/provenance/
-binding/input/result/payload/diagnostic/order/fallback/fail-closed/API/test/
-expectation/trace/coverage/deferred, semantic, sibling, or route changes are
-forbidden. This is move-only `design_drift`; `spec_coverage_audit.md` remains
-unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZX Move Result
 
-Task 263ZZZX moved only the approved five fragments totaling 76 lines into
-existing private `type_elaboration/type_assertion_routes.rs`. The key is
-leaf-private; only the production detail route crosses normally, while config,
-output, and extractor cross the facade/root only under `cfg(test)`. The runner
-retains a test-only config-derived key alias. Every sibling route, production
-dispatch site, and top-level orchestration path remains in place. The oracle-
-external `#[rustfmt::skip]` preserves the config fragment without changing it.
-
-After stripping only `pub(in crate::runner)`, the five raw hashes remain
-`e7453ea087d66a9320ec79d81ca900032513edec79f178f2be2c6815d8cedf80`,
-`bef2ef3f2e222141c69d50a69f65dd40dd460721e5fad64c1d1e93b6934a8f43`,
-`c7f1cb9a5af1c9a558f78e62dd4201959502e352a8153a8dde97fd808cf6fe5c`,
-`1f3c94b9916f9851f2f59f7fa100545d97e421f38609da2de4bf5e097377df8f`,
-and `df53c8a5465503c75c75514f41af49d403ef31e374bdb47baeaf2a5ad997671f`.
-Combined raw remains
-`3a0ccd25abacf096552cee7b415d01e00fd72800450e2a6a8fc0e0abbbf0f8a8`
-and normalized remains
-`9365ee9d43fe31f3378a558490023236e8a0676545b1b372c12d1a6aad890544`.
-The resulting inventory is `runner.rs` 2,335 /
-`eac1a1f196a938dbcd49105756d91dabea88a3c974e3a1c058b68f7f8e32cb23`,
-facade 566 /
-`22abf42b79d785366a70792e458a7bbdaee03251792c4a394d73851ff560ff29`,
-and `type_assertion_routes.rs` 4,021 /
-`6005a0cb3ca53355f6469bb1ce7cd782df8a991f34f393e288f7eb077143e309`.
-Expected forwarding changes the five-symbol inventory from 69 occurrences
-across seven source/test files to 79 across nine source/facade/test files.
-
-Both focused Task 207 tests and all 272 unit tests pass. Raw/normalized
-test-list hashes remain
-`5e41e4dbfcc303322c246a612de61926a628957a168589b45864d0a5070bb07e`
-and `c0c2b80f8b4e6c84cd25d77573fda722c4d1846fed168cd4a478781cdb42775e`.
-The four CLI hashes remain
-`f34240072564dfafacf7b0d914a8204037bbfc042dea375326ae757774f63759`,
-`57d0fba9be95644890b80bfa4ec2cd992e47bb8ad4b67c130f5194ea73aa0273`,
-`08b00a9f6fe70d94fe2c1b2bdebbdb5603bcee39bf3ceb460abe53f403bba7b5`,
-and `1dadbeabb219f5853c713ad53aa1cc7cd720a0e80abd7f882e9e0a5ea7802625`.
-Counts remain 96/4/188, 403/367, 235/223, 219/184, 23 warnings, and zero
-errors. Format, denied-warning Clippy, crate/workspace tests, and diff checks
-pass. Specification, test-sufficiency, implementation, and source/documentation
-consistency reviews report no findings. Semantics, API, test names,
-expectations, diagnostics, keys, payloads, ordering, fail-closed behavior,
-coverage/deferred state, and roadmap are unchanged; `spec_coverage_audit.md`
-remains unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZY Pre-Move Inventory and Specification
 
-Corrected fresh inventory compares the two production-helper route families
-remaining in `runner.rs`; they total 76 and 78 lines. Task 263ZZZY selects the
-unique minimum: Task 152's exact four-edge local-mode reserved-variable builtin
-type-assertion route, totaling 76 lines and 70 occurrences across eight
-source/test files. Its five exact fragments are the invalid key at 898-899 (2
-lines,
-`a67174987a91290cb0d66b13f740b4ace6a303fac18ffd9dc5977e0c0c5536b5`),
-config at 2192-2230 (39,
-`0b402f826dc0c24e3382f6ad0140bb500574bf830657d3da506006bd3b3a8a07`),
-production detail at 2245-2257 (13,
-`82a05ef79e82c1cda1a770970cd9bab4880c5e0ccfa863ab85c2197e7f617a07`),
-test-only output including `#[cfg(test)]` at 2269-2278 (10,
-`27a25fd70008218df86bec216e8f3fd08926ac2b25da664a3535602f7d6a4996`),
-and extractor at 2293-2304 (12,
-`fa1061836f967115b098e0328b8a810a407098c3a41ff72203ce5072afe7383e`).
-Combined raw hash is
-`e0fa5934cd53044681debcec2664948f21dc15b24ffa0b563c6cf4b82ecfa698`
-and whitespace-normalized hash is
-`dab9d154332071fd501038ab375bdfd2b9c1a2f1c71b92093de0e5bf37c5179f`.
-Current inventory is `runner.rs` 2,335 /
-`eac1a1f196a938dbcd49105756d91dabea88a3c974e3a1c058b68f7f8e32cb23`,
-facade 566 /
-`22abf42b79d785366a70792e458a7bbdaee03251792c4a394d73851ff560ff29`,
-and `type_assertion_routes.rs` 4,021 /
-`6005a0cb3ca53355f6469bb1ce7cd782df8a991f34f393e288f7eb077143e309`.
-
-Task 263ZZZY moves only those five fragments into existing private
-`type_elaboration/type_assertion_routes.rs`. The key becomes leaf-private and
-a config-derived test alias retains its runner name/value. Only detail crosses
-normally; config, output, and extractor cross only under `cfg(test)`. Every
-sibling, dispatch, and orchestration route remains in `runner.rs`; oracle-
-external formatting control may preserve token identity.
-
-Authority is canonical Chapters 3, 4, 13, 14, and 16 plus Task 152's exact
-`.miz` source, expectation, trace requirement, and checker-boundary tests.
-Preserve Base-to-set, Inner-to-Base, Middle-to-Inner, Outer-to-Middle, and
-TooDeep-to-Outer definitions; independent raw TooDeep reserve-subject and
-formula-side builtin-set inputs at distinct sites/ranges; ordinal 1 and
-`BindingId(0)`; five real expansions with subject and asserted inputs normalized
-to the terminal Base-definition-RHS builtin-set identity; and one inferred
-variable plus one zero-constraint/fact/candidate/diagnostic/deferred checked
-type assertion. The asserted relation remains exactly builtin identity;
-general reachability, widening, qua, and formula-side local-mode asserted heads
-remain absent. Existing exact, fixture, corruption, near-miss, long-chain, and
-cross-owner isolation matrices are sufficient; no ZZZY0 test is needed.
-
-Key/config/label/spelling/definition/relation/range/normalization/provenance/
-binding/input/result/payload/diagnostic/order/fallback/fail-closed/API/test/
-expectation/trace/coverage/deferred, semantic, sibling, or route changes are
-forbidden. This is move-only `design_drift`; `spec_coverage_audit.md` remains
-unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZY Move Result
 
-Task 263ZZZY moved only the approved five fragments totaling 76 lines into
-existing private `type_elaboration/type_assertion_routes.rs`. The key is
-leaf-private; only the production detail route crosses normally, while config,
-output, and extractor cross the facade/root only under `cfg(test)`. The runner
-retains a test-only config-derived key alias. Every sibling route, production
-dispatch site, and top-level orchestration path remains in place. The oracle-
-external `#[rustfmt::skip]` preserves the config fragment without changing it.
-
-After stripping only `pub(in crate::runner)`, the five raw hashes remain
-`a67174987a91290cb0d66b13f740b4ace6a303fac18ffd9dc5977e0c0c5536b5`,
-`0b402f826dc0c24e3382f6ad0140bb500574bf830657d3da506006bd3b3a8a07`,
-`82a05ef79e82c1cda1a770970cd9bab4880c5e0ccfa863ab85c2197e7f617a07`,
-`27a25fd70008218df86bec216e8f3fd08926ac2b25da664a3535602f7d6a4996`,
-and `fa1061836f967115b098e0328b8a810a407098c3a41ff72203ce5072afe7383e`.
-Combined raw remains
-`e0fa5934cd53044681debcec2664948f21dc15b24ffa0b563c6cf4b82ecfa698`
-and normalized remains
-`dab9d154332071fd501038ab375bdfd2b9c1a2f1c71b92093de0e5bf37c5179f`.
-The resulting inventory is `runner.rs` 2,262 /
-`1eb119b58ddab93e6069e442005e9610ddb6062fdfda6f70661f4ea4ae9ae4c0`,
-facade 570 /
-`bf7b0f78e0a168ead0349491fa469bfa3909b674fd23eaa77cecb63d81dbb33a`,
-and `type_assertion_routes.rs` 4,103 /
-`4aecdd97b07d9362f4b64367d954835e2942387937972803bdb4b8833acc6755`.
-Expected forwarding changes the five-symbol inventory from 70 occurrences
-across eight source/test files to 80 across ten source/facade/test files.
-
-Both focused Task 152 tests and all 272 unit tests pass. Raw/normalized
-test-list hashes remain
-`5e41e4dbfcc303322c246a612de61926a628957a168589b45864d0a5070bb07e`
-and `c0c2b80f8b4e6c84cd25d77573fda722c4d1846fed168cd4a478781cdb42775e`.
-The four CLI hashes remain
-`f34240072564dfafacf7b0d914a8204037bbfc042dea375326ae757774f63759`,
-`57d0fba9be95644890b80bfa4ec2cd992e47bb8ad4b67c130f5194ea73aa0273`,
-`08b00a9f6fe70d94fe2c1b2bdebbdb5603bcee39bf3ceb460abe53f403bba7b5`,
-and `1dadbeabb219f5853c713ad53aa1cc7cd720a0e80abd7f882e9e0a5ea7802625`.
-Counts remain 96/4/188, 403/367, 235/223, 219/184, 23 warnings, and zero
-errors. Format, denied-warning Clippy, crate/workspace tests, and diff checks
-pass. Specification, test-sufficiency, implementation, and source/documentation
-consistency reviews report no findings. Semantics, API, test names,
-expectations, diagnostics, keys, payloads, ordering, fail-closed behavior,
-coverage/deferred state, and roadmap are unchanged; `spec_coverage_audit.md`
-remains unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZZ Pre-Move Inventory and Specification
 
-Fresh inventory finds one production-helper route family remaining in
-`runner.rs`. Task 263ZZZZ selects Task 197's exact four-edge local-mode
-same-mode asserted-head route, totaling 78 lines and 76 occurrences across
-seven source/test files. Its five exact fragments are the invalid key at
-870-871 (2 lines,
-`459337d900d146bfe68c5bcb861528e904a65e87b7ab06004b331627b8b71e13`),
-config at 2153-2195 (43,
-`709bab1418e8e92020109ecbf1a759e6c857c6b2af40c72b07468c7e732be123`),
-production detail at 2197-2208 (12,
-`3a6c2c3022ac1eb4605949aed093a0b9b42826abf1701a2b6f2769dc628d00ff`),
-test-only output including `#[cfg(test)]` at 2210-2218 (9,
-`e0555cf69fe52610104a23d39b191bfed9cd87404303b4bf7c81011a6f5b1cfd`),
-and extractor at 2220-2231 (12,
-`47161633cb33b57fca71d3e62c7946ee40e8aad78c19d8247d066b38f25e0965`).
-Combined raw hash is
-`cfde493b9baed229b7df3bc7e8d36c1b06bd10de4a25cf452fd24f7cf72e88ee`
-and whitespace-normalized hash is
-`02035a2bc932b51253afdbace34c1f1e73d19b5d54e5550f746176b5d95226eb`.
-Current inventory is `runner.rs` 2,262 /
-`1eb119b58ddab93e6069e442005e9610ddb6062fdfda6f70661f4ea4ae9ae4c0`,
-facade 570 /
-`bf7b0f78e0a168ead0349491fa469bfa3909b674fd23eaa77cecb63d81dbb33a`,
-and `type_assertion_routes.rs` 4,103 /
-`4aecdd97b07d9362f4b64367d954835e2942387937972803bdb4b8833acc6755`.
-
-Task 263ZZZZ moves only those five fragments into existing private
-`type_elaboration/type_assertion_routes.rs`. The key becomes leaf-private and
-a config-derived test alias retains its runner name/value. Only detail crosses
-normally; config, output, and extractor cross only under `cfg(test)`. Every
-dispatch and orchestration route remains in `runner.rs`; oracle-external
-formatting control may preserve token identity.
-
-Authority is canonical Chapters 4, 13, 14, and 16 plus Task 197's exact `.miz`
-source, expectation, trace requirement, and checker-boundary tests. Preserve
-Base-to-set, Inner-to-Base, Middle-to-Inner, Outer-to-Middle, and TooDeep-to-
-Outer definitions; independent raw reserve-subject and formula-side asserted
-inputs for the same TooDeep symbol at distinct sites/ranges; ordinal 1 and
-`BindingId(0)`; five real expansions with all three known entries normalized
-to the terminal Base-definition-RHS builtin-set identity; and one inferred
-variable plus one zero-constraint/fact/candidate/diagnostic/deferred checked
-type assertion. The asserted relation remains exact same-mode identity;
-general reachability, widening, and qua remain absent. Existing exact, fixture,
-corruption, near-miss, long-chain, and cross-owner isolation matrices are
-sufficient; no ZZZZ0 test is needed.
-
-Key/config/label/spelling/definition/relation/range/normalization/provenance/
-binding/input/result/payload/diagnostic/order/fallback/fail-closed/API/test/
-expectation/trace/coverage/deferred, semantic, dispatch, or route changes are
-forbidden. This is move-only `design_drift`; `spec_coverage_audit.md` remains
-unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 263ZZZZ Move Result
 
-Task 263ZZZZ moved only the approved five fragments totaling 78 lines into
-existing private `type_elaboration/type_assertion_routes.rs`. The key is
-leaf-private; only the production detail route crosses normally, while config,
-output, and extractor cross the facade/root only under `cfg(test)`. The runner
-retains a test-only config-derived key alias. The final visibility cleanup
-removes only newly unused normal route/model/builder crossings while retaining
-test compatibility under `cfg(test)` and direct private-module dependencies.
-The production dispatch site and top-level orchestration paths remain in place;
-oracle-external `#[rustfmt::skip]` preserves the config fragment unchanged.
-
-After stripping only `pub(in crate::runner)`, the five raw hashes remain
-`459337d900d146bfe68c5bcb861528e904a65e87b7ab06004b331627b8b71e13`,
-`709bab1418e8e92020109ecbf1a759e6c857c6b2af40c72b07468c7e732be123`,
-`3a6c2c3022ac1eb4605949aed093a0b9b42826abf1701a2b6f2769dc628d00ff`,
-`e0555cf69fe52610104a23d39b191bfed9cd87404303b4bf7c81011a6f5b1cfd`,
-and `47161633cb33b57fca71d3e62c7946ee40e8aad78c19d8247d066b38f25e0965`.
-Combined raw remains
-`cfde493b9baed229b7df3bc7e8d36c1b06bd10de4a25cf452fd24f7cf72e88ee`
-and normalized remains
-`02035a2bc932b51253afdbace34c1f1e73d19b5d54e5550f746176b5d95226eb`.
-The resulting inventory is `runner.rs` 2,185 /
-`e1f8b5ef40e441f26a3601e07c435c72afd60c2ebb8687170211d9a874a003b1`,
-facade 573 /
-`e541b3870f1d0a01d43adfb5957781927408a153a48b6a2e043171a5ea252ad6`,
-and `type_assertion_routes.rs` 4,187 /
-`cf0a242ec346ba7bea87dfc82c41545358ea2d33dada3c379acaf2819d85bcf4`.
-Expected forwarding changes the five-symbol inventory from 76 occurrences
-across seven source/test files to 86 across nine source/facade/test files.
-
-Both focused Task 197 tests and all 272 unit tests pass. Raw/normalized
-test-list hashes remain
-`5e41e4dbfcc303322c246a612de61926a628957a168589b45864d0a5070bb07e`
-and `c0c2b80f8b4e6c84cd25d77573fda722c4d1846fed168cd4a478781cdb42775e`.
-The four CLI hashes remain
-`f34240072564dfafacf7b0d914a8204037bbfc042dea375326ae757774f63759`,
-`57d0fba9be95644890b80bfa4ec2cd992e47bb8ad4b67c130f5194ea73aa0273`,
-`08b00a9f6fe70d94fe2c1b2bdebbdb5603bcee39bf3ceb460abe53f403bba7b5`,
-and `1dadbeabb219f5853c713ad53aa1cc7cd720a0e80abd7f882e9e0a5ea7802625`.
-Counts remain 96/4/188, 403/367, 235/223, 219/184, 23 warnings, and zero
-errors. Format, denied-warning Clippy, crate/workspace tests, and diff checks
-pass. Specification, test-sufficiency, implementation, and source/documentation
-consistency reviews report no findings. Semantics, API, test names,
-expectations, diagnostics, keys, payloads, ordering, fail-closed behavior,
-coverage/deferred state, and roadmap are unchanged; `spec_coverage_audit.md`
-remains unchanged. Fresh production-helper inventory finds no route/config/
-extractor/output family in `runner.rs`; its sole private `source_*` function is
-the top-level `source_type_elaboration_detail_keys` dispatch chain. Task 263 is
-complete, and the series advances to the separate Task 264 closeout.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 264 Closeout Inventory And Specification
 
-Task 264 is a documentation-only closeout governed by the Task 264 row in the
-canonical English crate plan and todo, this audit's exit criteria, and the
-unchanged higher authority in `doc/spec/en/`, existing `.miz` tests,
-traceability metadata, and expectations. Its target fragments are only the
-paired English/Japanese crate-plan inventory and task rows, todo entry, harness
-source-path table, and this module-boundary ownership/exit audit. Their
-consumers are architecture reviewers and the next fresh Step 5 inventory; no
-source visibility or runtime consumer changes.
-
-At clean HEAD `f8bd2e0d499517316e4bfdaa7b462804339e3fc3`, the final source oracles
-are:
-
-- `src/runner.rs`: 2,185 lines and
-  `e1f8b5ef40e441f26a3601e07c435c72afd60c2ebb8687170211d9a874a003b1`;
-- `src/runner/type_elaboration.rs`: 573 lines and
-  `e541b3870f1d0a01d43adfb5957781927408a153a48b6a2e043171a5ea252ad6`;
-- `src/runner/type_elaboration/type_assertion_routes.rs`: 4,187 lines and
-  `cf0a242ec346ba7bea87dfc82c41545358ea2d33dada3c379acaf2819d85bcf4`;
-- 17 production runner paths and 18,952 total production lines. The paths shown
-  in the harness table are crate-relative; the hash input is the corresponding
-  repository-relative path list with the `crates/mizar-test/` prefix. From the
-  repository root, sort the tracked paths selected from
-  `crates/mizar-test/src/runner.rs` and `crates/mizar-test/src/runner`, excluding
-  `tests.rs` and every path below `tests/`. The SHA-256 of that exact sorted
-  newline-delimited list is
-  `b36d96fed3207b415c95de27be11ade57654c6573a2f0637aa2d0a3d56aca01d`.
-  Passing those same repository-relative paths in order to `sha256sum`, then
-  hashing the resulting ordered output lines, yields
-  `62d30627cddba5ec67279de0c0cea571baf6144602d52fa01896649e1d4a0ea0`.
-
-`runner.rs` production ownership is limited to public reports/statuses,
-`run_*` corpus orchestration, public active-case iterators, parse/declaration
-admission helpers, type-case execution, and top-level detail dispatch. Its
-large route aliases and derived keys are test-only; it owns no production
-route config, extractor, output builder, or detail wrapper. The private
-type-elaboration facade declares exactly eleven private leaves. The sole
-private production `source_*` function in `runner.rs` is the top-level
-`source_type_elaboration_detail_keys` dispatch chain.
-
-The forbidden scope is every production/test source, `doc/spec`, `.miz`,
-expectation, and traceability edit; semantic cleanup; API, test-name,
-diagnostic, key, payload, ordering, fail-closed, coverage, or deferred-state
-change; and promotion of Steps 6/7. No new test is justified for this
-documentation-only task. The existing ownership/isolation tests plus focused
-lint-policy, format, denied-warning Clippy, crate/workspace tests, four CLI
-oracles, raw/normalized test-list hashes, source path/content manifests, and
-diff checks are sufficient. The review-only specification audit reported no
-findings before implementation.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Current Ownership
 
-This compact Task 264 table is the canonical final state. The cumulative table
-that follows is retained only as the historical per-move ledger.
-
-| Current area | Final owner and boundary |
-|---|---|
-| Public runner surface | `src/runner.rs` owns public reports/statuses, `run_*` corpus orchestration, public active iterators, parse/declaration admission, type-case execution, and top-level detail dispatch only. |
-| Shared staging | Private `shared.rs` owns cross-phase source/frontend/resolver staging; private `import_fixtures.rs` owns fixture summary adapters. |
-| Parse and declaration phases | Private `parse_only.rs` and `declaration_symbol.rs` own their case execution, observations, payload/failure projection, and phase-specific helpers. |
-| Type-elaboration facade | Private `type_elaboration.rs` dispatches to exactly eleven private leaves and exposes only the minimum parent/test seams. |
-| Type source owners | Private `source_ast.rs`, `source_formula.rs`, and `source_reserve.rs` own common exact source projection; route-specific extractors are colocated with `binary_routes.rs`, `parenthesized_routes.rs`, or `type_assertion_routes.rs`. |
-| Type checker/result owners | Private `checker_handoff.rs`, `admission.rs`, `result.rs`, and `output.rs` own checker assembly, admission, stable failure/result projection, validation, checker output, detail keys, and diagnostics. |
-| Type route/config owners | Private `binary_routes.rs`, `parenthesized_routes.rs`, `type_assertion_routes.rs`, and `long_chain_config.rs` own all route configs, extractors, output/detail wrappers, and shared long-chain tables. |
-| Tests | `runner/tests.rs`, `runner/tests/`, and existing integration tests retain every discovered name, nesting boundary, and owner-isolation matrix. |
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Ownership Guards
 
-- The sorted production path list has exactly 17 entries and the path/content
-  hashes recorded above; the paired harness table enumerates all entries.
-- `type_elaboration.rs` has exactly eleven private `mod` declarations. No leaf
-  is public outside the runner implementation.
-- Production `runner.rs` has no route config, source extractor, output builder,
-  or detail-wrapper definition. Test compatibility aliases remain behind
-  `cfg(test)`.
-- The public API, 272-name discovered unit-test list, four CLI bytes, and every
-  count/hash in the preservation matrix are immutable closeout oracles.
-- Any later ownership change requires a new nonempty canonical task; Task 264
-  does not authorize semantic cleanup or a Steps 6/7 promotion.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Historical Cumulative Ownership Ledger
 
-Rows whose cumulative task range ends at 263ZZX are the retained historical
-base. The explicit 263ZZY through 263ZZZZ delta rows record how the
-type-assertion and diagnostic-detail ownership surfaces reached the final
-Task 264 state above; statements about siblings that then remained in
-`runner.rs` describe their respective move-time snapshots.
-
-| Current area | Responsibility | Dependency direction | Audit decision |
-|---|---|---|---|
-| public report/result/status types and `run_*_corpus` functions | Stable public runner facade and corpus-level orchestration | plan/discovery to phase execution | Keep in `runner.rs`. |
-| source/frontend and resolver staging | Source package preparation and cleanup, root/path/snapshot identity, frontend execution/result transport, common frontend diagnostic projection, and resolver shell/projection/symbol collection | shared by parse, declaration-symbol, and type-elaboration as applicable | Frontend staging moved in Task 258, declaration/type resolver collection in Task 260A, and common frontend diagnostic projection in Task 263B to private `shared.rs` with minimal parent-only visibility. |
-| active-case admission and stable failure assembly | Tag/phase gates, expected-output matching, and deterministic failure diagnostics | phase-specific facade-to-owner transition | Tasks 259 and 260B moved parse-only and declaration case/failure boundaries. Task 263C moved type expected-key/failure projection to private `type_elaboration/result.rs`, and Task 263D moved type tag/runnable/gate admission to private `type_elaboration/admission.rs`; type case execution and actual-detail dispatch remain in `runner.rs` for fresh Task 263 inventory. |
-| parse-only execution | Surface-AST snapshots and parse-only failure projection | shared frontend to parse-only result | Moved in Task 259 to private `parse_only.rs` with minimal parent-only visibility. |
-| fixture import provider | Parser fixture lexical summaries and type import-summary adapters | parser/frontend seams shared by active phases | Moved in Task 261 to private `import_fixtures.rs`; later phases retain the same provider and adapter paths. |
-| declaration-symbol observation | Consume the shared resolver result and assemble deterministic payload, expected-value, and failure projections | shared resolver output to declaration-symbol result | Moved in Task 260B to private `declaration_symbol.rs`; existing integration tests remain in `tests/metadata.rs`. |
-| type-elaboration admission/execution | Lower-stage fail-closed gates and checker/core handoff dispatch | resolver output to source bridge | Task 263A moved generic checker-handoff assembly/validation to private `checker_handoff.rs`, Task 263C moved expected-key/failure projection to private `result.rs`, Task 263D moved active admission to private `admission.rs`, Tasks 263E-263F moved checker-output transports/builders, Tasks 263G-263I moved type-assertion/binary/shared-parenthesized validation, Tasks 263J-263M moved type-assertion/binary/parenthesized detail and payload-detail cores to private `output.rs`, Task 263N moved the cohesive parenthesized route owner to private `parenthesized_routes.rs`, Tasks 263O-263ZD moved the leading through both long-chain binary route owners to private `binary_routes.rs`, Task 263ZB moved the two shared long-chain definition tables to private `long_chain_config.rs`, and Tasks 263ZE-263ZZW started the type-assertion/asserted-head route owner through the direct, chained, two-edge, three-edge, four-edge, and long-chain builtin reserved-variable type assertions plus the direct, chained, two-edge, three-edge, and four-edge same-mode, and the chained, two-edge, three-edge, and four-edge immediate-radix, two-edge, three-edge, and four-edge two-hop, the three-edge and four-edge three-hop, the four-edge four-hop, and long-chain same-mode, immediate-radix, six-, five-, four-, three-, and two-hop object-terminal routes, plus the direct and chained local-mode same-mode, chained and two-edge local-mode immediate-radix, two-edge, three-edge, and four-edge local-mode two-hop, and three-edge and four-edge local-mode three-hop asserted-head routes; top-level case execution, dispatch, remaining local-mode type-assertion/asserted-head/formula configs and named wrappers, and other output consumers remain in `runner.rs`. The phase facade owns eleven private leaves. |
-| source extraction | Exact source-shape recognition and real AST/resolver payload construction | syntax/resolver inputs to checker inputs | Tasks 262A-262B moved common source-AST primitives/projections and Task 262D moved the shared exact fixture-import projection to private `type_elaboration/source_ast.rs`; Tasks 262C/262E moved reserve type-expression/symbol projection, declaration segmentation, and local-mode expansion to private `type_elaboration/source_reserve.rs`; Tasks 262F-262Q moved standalone formula constants, shared exact numerals, builtin binary and type-assertion formulas, the shared imported-formula symbol resolver/provenance pair, imported predicate/functor, imported attribute assertion, set-enumeration, connective/quantifier families, and the shared, direct-binary, parenthesized, and type-assertion reserved-variable source substrate to private `type_elaboration/source_formula.rs`. Formula source extraction is complete; Tasks 263N-263ZZW colocated named extractors through both long-chain binary route families, all local-mode long-chain type-assertion/asserted-head routes, and the local-object-mode direct/chained/two-edge/three-edge/four-edge/long-chain builtin reserved-variable type assertions plus the direct, chained, two-edge, three-edge, and four-edge same-mode, and the chained, two-edge, three-edge, and four-edge immediate-radix, two-edge, three-edge, and four-edge two-hop, the three-edge and four-edge three-hop, the four-edge four-hop, and long-chain same-mode, immediate-radix, six-, five-, four-, three-, and two-hop routes with their owners, plus the direct and chained local-mode same-mode, chained and two-edge local-mode immediate-radix, two-edge, three-edge, and four-edge local-mode two-hop, and three-edge and four-edge local-mode three-hop routes, while remaining local-mode type-assertion/asserted-head/formula route configs/wrappers plus checker/output consumers stay in `runner.rs` for Task 263 inventory. |
-| payload validation and detail-key rendering | Exact checker/core output validation, expected/actual matching, deterministic keys, diagnostics | source bridge output to runner result | Tasks 263E-263I moved the three shared output transports/builders plus type-assertion/binary/shared-parenthesized validators and private helpers to private `type_elaboration/output.rs`; Tasks 263J-263M moved the type-assertion, binary, and shared parenthesized result/detail plus payload-detail cores there too; Tasks 263N-263ZZW moved the parenthesized through both long-chain binary configs, all local-mode long-chain type-assertion/asserted-head configs, and the local-object-mode direct/chained/two-edge/three-edge/four-edge/long-chain builtin reserved-variable type assertions plus the direct, chained, two-edge, three-edge, and four-edge same-mode, and the chained, two-edge, three-edge, and four-edge immediate-radix, two-edge, three-edge, and four-edge two-hop, the three-edge and four-edge three-hop, the four-edge four-hop, and long-chain same-mode, immediate-radix, six-, five-, four-, three-, and two-hop configs and named detail/output wrappers to their route leaves, together with the direct and chained local-mode same-mode plus chained and two-edge local-mode immediate-radix, two-edge, three-edge, and four-edge local-mode two-hop, and three-edge and four-edge local-mode three-hop configs and wrappers. Remaining local-mode type-assertion/asserted-head/formula named wrappers/configs remain bounded work. No key or ordering edits. |
-| Task 263ZZX four-hop ownership delta | The exact four-edge local-mode four-hop config, extractor, detail, and test output now extend the admission/execution, source-extraction, and payload-rendering rows above through Task 263ZZX. | real source/checker route to facade consumers | Owned by private `type_assertion_routes.rs`; only detail crosses normally, config/output/extractor cross under `cfg(test)`, and every other route remains in `runner.rs`. |
-| Task 263ZZY direct builtin-set type-assertion ownership delta | The exact direct reserved-variable config, extractor, detail, and test output extend the admission/execution, source-extraction, and payload-rendering rows above through Task 263ZZY. | real source/checker route to facade consumers | Owned by private `type_assertion_routes.rs`; the key is leaf-private, only detail crosses normally, config/output/extractor cross under `cfg(test)`, and every sibling remains in `runner.rs`. |
-| Task 263ZZZ shared diagnostic-key projection ownership delta | The exact canonical diagnostic-message-key prefix/sort/dedup helper extends the payload-rendering row above without moving any consumer wrapper. | checker term/formula diagnostics to nine facade-owned formula detail wrappers | Owned by private `output.rs`; one parent-only entry crosses the phase facade and every wrapper remains in `runner.rs`. |
-| Task 263ZZZA direct builtin-object type-assertion ownership delta | The exact direct reserved-object-variable config, extractor, detail, and test output extend the admission/execution, source-extraction, and payload-rendering rows above through Task 263ZZZA. | real source/checker route to facade consumers | Owned by private `type_assertion_routes.rs`; the key is leaf-private, only detail crosses normally, config/output/extractor cross under `cfg(test)`, and every sibling remains in `runner.rs`. |
-| Task 263ZZZB contradiction output/detail ownership delta | The exact standalone contradiction checker producer and deterministic detail projection extend the payload-rendering row above through Task 263ZZZB. | real source leaf through checker output to facade detail/test consumers | Owned by private `output.rs`; detail crosses normally, output and its extractor cross the facade only under `cfg(test)`, and every other formula family remains in `runner.rs`. |
-| Task 263ZZZC formula-statement output/detail ownership delta | The exact formula-statement checker producer and deterministic detail projection extend the payload-rendering row above through Task 263ZZZC. | real source thesis through checker output to facade detail/test consumers | Owned by private `output.rs`; detail crosses normally, output and its extractor cross the facade only under `cfg(test)`, and every other formula family remains in `runner.rs`. |
-| Task 263ZZZD builtin-binary term/formula detail ownership delta | The exact inline two-term checker producer and deterministic detail projection extend the payload-rendering row above through Task 263ZZZD. | real source numerals and builtin formula through checker output to facade detail consumer | Owned by private `output.rs`; detail crosses normally, its extractor crosses the facade only under `cfg(test)`, and every other formula family remains in `runner.rs`. |
-| Task 263ZZZE builtin type-assertion formula ownership delta | The exact asserted-type checker producer and deterministic detail projection extend the payload-rendering row above through Task 263ZZZE. | real source numeral/formula/type through checker output to facade detail/test consumers | Owned by private `output.rs`; detail crosses normally, output/extractor only under `cfg(test)`, and every other formula family remains in `runner.rs`. |
-| Task 263ZZZF direct local-mode reserved-variable type-assertion ownership delta | The exact config, extractor, detail, test output, and leaf-private key extend the admission/execution, source-extraction, and payload-rendering rows above through Task 263ZZZF. | real local-mode source/checker route to facade consumers | Owned by private `type_assertion_routes.rs`; only detail crosses normally, config/output/extractor and the config-derived key alias cross under `cfg(test)`, and every sibling remains in `runner.rs`. |
-| Task 263ZZZG shared imported-attribute output-core ownership delta | The exact shared checker producer extends the payload-rendering row above through Task 263ZZZG while retaining both positive/attribute-level-negative wrappers. | wrapper-selected imported-attribute source payload to checker output | Owned by private `output.rs`; one normal parent-only entry crosses the facade, the payload type is imported directly from `source_formula.rs`, and every wrapper/sibling remains in `runner.rs`. |
-| Task 263ZZZH positive imported-attribute output-wrapper ownership delta | The exact positive extractor-to-core wrapper extends the payload-rendering row above through Task 263ZZZH while retaining its detail consumer. | exact positive source extraction to shared checker core | Owned by private `output.rs`; one normal parent-only wrapper entry crosses the facade, extractor access crosses only under `cfg(test)`, and the detail/non-empty families remain in `runner.rs`. |
-| Task 263ZZZI positive imported-attribute detail ownership delta | The exact output-to-canonical-key wrapper extends payload rendering through Task 263ZZZI. | positive checker output to production detail dispatch | Owned by private `output.rs`; detail crosses normally, output/extractor only under `cfg(test)`, and the non-empty family remains in `runner.rs`. |
-| Task 263ZZZJ attribute-level-negative imported-attribute output ownership delta | The exact direct-`non` extractor-to-core wrapper extends payload rendering through Task 263ZZZJ. | exact attribute-level-negative source extraction to shared checker core | Owned by private `output.rs`; the wrapper crosses normally for its retained detail consumer, extractor access crosses the facade/root only under `cfg(test)`, the shared core no longer crosses, and the detail/set-enumeration families remain in `runner.rs`. |
-| Task 263ZZZK attribute-level-negative imported-attribute detail ownership delta | The exact output-to-canonical-key wrapper extends payload rendering through Task 263ZZZK. | attribute-level-negative checker output to production detail dispatch | Owned by private `output.rs`; detail crosses normally, output/extractor cross the facade/root only under `cfg(test)`, and the set-enumeration family remains in `runner.rs`. |
-| Task 263ZZZL set-enumeration output ownership delta | The exact four-numeral/two-set equality checker producer extends payload rendering through Task 263ZZZL. | exact set-enumeration source extraction to checker output | Owned by private `output.rs`; the producer crosses normally for its retained detail/direct tests, extractor access crosses the facade/root only under `cfg(test)`, and the detail/imported-predicate/connective families remain in `runner.rs`. |
-| Task 263ZZZM set-enumeration detail ownership delta | The exact output-to-canonical-key wrapper extends payload rendering through Task 263ZZZM. | set-enumeration checker output to production detail dispatch | Owned by private `output.rs`; detail crosses normally, output/extractor cross the facade/root only under `cfg(test)`, and the imported-predicate/connective families remain in `runner.rs`. |
-| Task 263ZZZN imported predicate/functor output ownership delta | The exact imported-symbol checker producer extends payload rendering through Task 263ZZZN. | exact imported predicate/functor source extraction to checker output | Owned by private `output.rs`; producer crosses normally for retained detail/direct tests, extractor crosses the facade/root only under `cfg(test)`, and detail/connective families remain in `runner.rs`. |
-| Task 263ZZZO imported predicate/functor detail ownership delta | The exact output-to-canonical-key wrapper extends payload rendering through Task 263ZZZO. | imported predicate/functor checker output to production detail dispatch | Owned by private `output.rs`; detail crosses normally, output/extractor cross the facade/root only under `cfg(test)`, and the connective family remains in `runner.rs`. |
-| Task 263ZZZP formula connective/quantifier output ownership delta | The exact five-shell checker producer extends payload rendering through Task 263ZZZP. | exact connective/quantifier source extraction to checker output | Owned by private `output.rs`; producer crosses normally for retained detail/direct tests, extractor crosses the facade/root only under `cfg(test)`, and detail remains in `runner.rs`. |
-| Task 263ZZZQ formula connective/quantifier detail ownership delta | The exact output-to-key wrapper extends payload rendering through Task 263ZZZQ. | connective/quantifier checker output to production detail dispatch | Owned by private `output.rs`; detail crosses normally and output/extractor cross only under `cfg(test)`. |
-| Task 263ZZZR chained local-mode type-assertion ownership delta | The exact key/config/extractor/detail/test-output route extends admission/execution, source extraction, and payload rendering through Task 263ZZZR. | real chained local-mode source/checker route to facade consumers | Owned by private `type_assertion_routes.rs`; the key is leaf-private, only detail crosses normally, config/output/extractor and the config-derived alias cross under `cfg(test)`, and every sibling remains in `runner.rs`. |
-| Task 263ZZZS two-edge local-mode type-assertion ownership delta | The exact key/config/extractor/detail/test-output route extends admission/execution, source extraction, and payload rendering through Task 263ZZZS. | real two-edge local-mode source/checker route to facade consumers | Owned by private `type_assertion_routes.rs`; the key is leaf-private, only detail crosses normally, config/output/extractor and the config-derived alias cross under `cfg(test)`, and every sibling remains in `runner.rs`. |
-| Task 263ZZZT two-edge local-mode same-mode ownership delta | The exact key/config/extractor/detail/test-output route extends admission/execution, source extraction, and payload rendering through Task 263ZZZT. | real two-edge local-mode same-Outer source/checker route to facade consumers | Owned by private `type_assertion_routes.rs`; the key is leaf-private, only detail crosses normally, config/output/extractor and the config-derived alias cross under `cfg(test)`, and every sibling remains in `runner.rs`. |
-| Task 263ZZZU three-edge local-mode immediate-radix ownership delta | The exact key/config/extractor/detail/test-output route extends admission/execution, source extraction, and payload rendering through Task 263ZZZU. | real three-edge local-mode Outer-to-Middle source/checker route to facade consumers | Owned by private `type_assertion_routes.rs`; the key is leaf-private, only detail crosses normally, config/output/extractor and the config-derived alias cross under `cfg(test)`, and every sibling remains in `runner.rs`. |
-| Task 263ZZZV three-edge local-mode builtin type-assertion ownership delta | The exact key/config/extractor/detail/test-output route extends admission/execution, source extraction, and payload rendering through Task 263ZZZV. | real three-edge local-mode source/checker route to facade consumers | Owned by private `type_assertion_routes.rs`; the key is leaf-private, only detail crosses normally, config/output/extractor and the config-derived alias cross under `cfg(test)`, and every sibling remains in `runner.rs`. |
-| Task 263ZZZW three-edge local-mode same-mode ownership delta | The exact key/config/extractor/detail/test-output route extends admission/execution, source extraction, and payload rendering through Task 263ZZZW. | real three-edge local-mode same-Outer source/checker route to facade consumers | Owned by private `type_assertion_routes.rs`; the key is leaf-private, only detail crosses normally, config/output/extractor and the config-derived alias cross under `cfg(test)`, and every sibling remains in `runner.rs`. |
-| Task 263ZZZX four-edge local-mode immediate-radix ownership delta | The exact key/config/extractor/detail/test-output route extends admission/execution, source extraction, and payload rendering through Task 263ZZZX. | real four-edge local-mode TooDeep-to-Outer source/checker route to facade consumers | Owned by private `type_assertion_routes.rs`; the key is leaf-private, only detail crosses normally, config/output/extractor and the config-derived alias cross under `cfg(test)`, and every sibling remains in `runner.rs`. |
-| Task 263ZZZY four-edge local-mode builtin type-assertion ownership delta | The exact key/config/extractor/detail/test-output route extends admission/execution, source extraction, and payload rendering through Task 263ZZZY. | real four-edge local-mode builtin-set source/checker route to facade consumers | Owned by private `type_assertion_routes.rs`; the key is leaf-private, only detail crosses normally, config/output/extractor and the config-derived alias cross under `cfg(test)`, and every sibling remains in `runner.rs`. |
-| Task 263ZZZZ four-edge local-mode same-mode ownership delta | The exact key/config/extractor/detail/test-output route completes source-route ownership through Task 263ZZZZ. | real four-edge local-mode same-TooDeep source/checker route to facade consumers | Owned by private `type_assertion_routes.rs`; the key is leaf-private, only detail crosses normally, config/output/extractor and the config-derived alias cross under `cfg(test)`, and `runner.rs` retains only top-level detail dispatch. |
-| fixture builders and corruption probes | AST/env/sidecar builders and finite negative matrices | test support to private production seams | Private test support/fragments only. |
-| cross-owner isolation tests | Bidirectional route rejection and immutable/module guards | all supported source-bridge owners | Keep intact and move as a cohesive fragment. |
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Dependency Map
 
-The permitted dependency direction is:
-
-```text
-public runner facade
-  -> parse-only owner
-     -> shared plan/admission/source/frontend/diagnostic staging
-        -> fixture/import-summary owner (lexical provider)
-  -> declaration-symbol owner
-     -> shared plan/admission/source/frontend/diagnostic/resolver staging
-        -> fixture/import-summary owner (lexical provider)
-  -> type-elaboration owner
-     -> active tag, runnable-admission, and gate validation
-     -> shared plan/admission/source/frontend/diagnostic/resolver staging
-        -> fixture/import-summary owner (lexical provider)
-     -> fixture/import-summary owner (resolver adapter)
-     -> source extraction
-        -> common source-AST primitives
-           -> fixture/import-summary owner (module-path projection)
-        -> reserve type-expression, declaration, and local-mode projection
-        -> standalone formula-constant, shared exact numeral, builtin binary/type-assertion,
-           shared imported-symbol, imported predicate/functor, imported attribute,
-           set-enumeration, connective/quantifier, and shared/direct-binary/
-           parenthesized/type-assertion reserved-variable source projections
-     -> checker-handoff assembly and readiness validation
-     -> checker-output transports, builders, validation, and type-assertion detail projection
-     -> expected-result and failure projection
-     -> checker/core payload validation and deterministic actual-detail keys
-
-private runner::tests
-  -> shared test support and fixture builders
-  -> the same private phase seams
-```
-
-Leaf helpers move before their callers. Phase modules may depend on shared
-staging, but parse-only and declaration-symbol must not depend on checker/core
-payload validation. Metadata `plan` remains payload-free.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Historical Target Source Layout Ledger
 
-This table preserves the ordered target and delta history used by Tasks
-249-263. The compact current-ownership table and paired harness source-path
-table above are canonical after Task 264. No empty or synthetic owner module
-was created.
-
-| Target path | Ownership |
-|---|---|
-| `src/runner.rs` | Public facade, public report/result/status types, public active-case iterators, and top-level corpus orchestration only. |
-| `src/runner/shared.rs` | Private source package preparation, frontend execution, common frontend diagnostic projection, admission support, and genuinely cross-phase helpers. |
-| `src/runner/parse_only.rs` | Parse-only case execution, snapshots, and parse-only failure projection. |
-| `src/runner/declaration_symbol.rs` | Declaration-symbol case execution, resolver observation, payload keys, and failure projection. |
-| `src/runner/import_fixtures.rs` | Existing parser fixture summaries/adapters used by active phases. |
-| `src/runner/type_elaboration.rs` and `src/runner/type_elaboration/` | Type-elaboration orchestration plus private source-extraction, checker-handoff, and payload-validation/detail/diagnostic leaves. |
-| `src/runner/type_elaboration/binary_routes.rs` | Leading, multiple-reserve declaration, base membership/inequality, direct local-mode, direct local-object-mode, chained local-mode, chained local-object-mode, two-edge local-mode, two-edge local-object-mode, three-edge local-mode, three-edge local-object-mode, four-edge local-mode, four-edge local-object-mode, and both local-mode/local-object-mode long-chain membership/equality/inequality binary configs plus thin source/detail/test route wrappers. |
-| `src/runner/type_elaboration/long_chain_config.rs` | Shared exact set-terminal and object-terminal seven-expansion definition tables used by long-chain binary, type-assertion, and asserted-head routes. |
-| `src/runner/type_elaboration/type_assertion_routes.rs` | Active owner for reserved-variable type-assertion/asserted-head configs plus thin source/detail/test route wrappers; Tasks 263ZE-263ZZW own all local-mode long-chain builtin, same-mode, immediate-radix, two-hop, three-hop, four-hop, five-hop, and six-hop routes, the direct and chained local-mode same-mode plus chained and two-edge local-mode immediate-radix, two-edge, three-edge, and four-edge local-mode two-hop, and three-edge and four-edge local-mode three-hop asserted-head routes, plus the local-object-mode direct/chained/two-edge/three-edge/four-edge/long-chain builtin reserved-variable type assertions and the direct, chained, two-edge, three-edge, and four-edge same-mode, the chained, two-edge, three-edge, and four-edge immediate-radix, two-edge, three-edge, and four-edge two-hop, the three-edge and four-edge three-hop, the four-edge four-hop, and long-chain same-mode, immediate-radix, six-, five-, four-, three-, and two-hop asserted-head routes. |
-| `src/runner/type_elaboration/parenthesized_routes.rs` | Cohesive parenthesized reserved-variable configs plus thin source/detail/test route wrappers. |
-| `src/runner/type_elaboration/type_assertion_routes.rs` Task 263ZZX delta | Adds the exact four-edge local-mode four-hop asserted-head config/extractor/detail/test-output route to the preceding cumulative owner row. |
-| `src/runner/type_elaboration/type_assertion_routes.rs` Task 263ZZY delta | Adds the exact direct builtin-set reserved-variable type-assertion config/extractor/detail/test-output route to the preceding cumulative owner rows. |
-| `src/runner/type_elaboration/output.rs` Task 263ZZZ delta | Adds the exact shared term/formula diagnostic-key projection; nine formula wrappers remain in `runner.rs`. |
-| `src/runner/type_elaboration/type_assertion_routes.rs` Task 263ZZZA delta | Adds the exact direct builtin-object reserved-variable type-assertion config/extractor/detail/test-output route to the preceding cumulative owner rows. |
-| `src/runner/type_elaboration/output.rs` Task 263ZZZB delta | Adds the exact standalone contradiction checker-output producer and detail wrapper; every other formula family remains in `runner.rs`. |
-| `src/runner/type_elaboration/output.rs` Task 263ZZZC delta | Adds the exact formula-statement checker-output producer and detail wrapper; every other formula family remains in `runner.rs`. |
-| `src/runner/type_elaboration/output.rs` Task 263ZZZD delta | Adds the exact inline builtin-binary term/formula checker/detail producer; every other formula family remains in `runner.rs`. |
-| `src/runner/type_elaboration/output.rs` Task 263ZZZE delta | Adds the exact builtin type-assertion formula checker-output/detail family; every other formula family remains in `runner.rs`. |
-| `src/runner/type_elaboration/type_assertion_routes.rs` Task 263ZZZF delta | Adds the exact direct local-mode reserved-variable type-assertion route; every sibling route and formula family remains in `runner.rs`. |
-| `src/runner/type_elaboration/output.rs` Task 263ZZZG delta | Adds the exact shared imported-attribute assertion checker-output core; both wrappers and every sibling formula family remain in `runner.rs`. |
-| `src/runner/type_elaboration/output.rs` Task 263ZZZH delta | Adds the exact positive imported-attribute assertion output wrapper; its detail consumer, the non-empty family, and every sibling remain in `runner.rs`. |
-| `src/runner/type_elaboration/output.rs` Task 263ZZZI delta | Adds the exact positive imported-attribute assertion detail wrapper; the non-empty family and every sibling remain in `runner.rs`. |
-| `src/runner/type_elaboration/output.rs` Task 263ZZZJ delta | Adds the exact attribute-level-negative imported-attribute assertion output wrapper; its detail consumer, the set-enumeration family, and every sibling remain in `runner.rs`. |
-| `src/runner/type_elaboration/output.rs` Task 263ZZZK delta | Adds the exact attribute-level-negative imported-attribute assertion detail wrapper; the set-enumeration family and every sibling remain in `runner.rs`. |
-| `src/runner/type_elaboration/output.rs` Task 263ZZZL delta | Adds the exact set-enumeration checker-output producer; its detail consumer, imported-predicate/connective families, and every sibling remain in `runner.rs`. |
-| `src/runner/type_elaboration/output.rs` Task 263ZZZM delta | Adds the exact set-enumeration detail wrapper, narrows output/extractor facade crossings to `cfg(test)`, and leaves imported-predicate/connective families and every sibling in `runner.rs`. |
-| `src/runner/type_elaboration/output.rs` Task 263ZZZN delta | Adds the exact imported predicate/functor checker-output producer; its detail consumer, connective family, and every sibling remain in `runner.rs`. |
-| `src/runner/type_elaboration/output.rs` Task 263ZZZO delta | Adds the exact imported predicate/functor detail wrapper, narrows output/extractor facade crossings to `cfg(test)`, and leaves the connective family and every sibling in `runner.rs`. |
-| `src/runner/type_elaboration/output.rs` Task 263ZZZP delta | Adds the exact formula connective/quantifier checker-output producer; its detail consumer and every sibling remain in `runner.rs`. |
-| `src/runner/type_elaboration/output.rs` Task 263ZZZQ delta | Adds the exact connective/quantifier detail wrapper, narrows output/extractor crossings to `cfg(test)`, and removes obsolete canonical-key facade/root imports. |
-| `src/runner/type_elaboration/type_assertion_routes.rs` Task 263ZZZR delta | Adds the exact chained local-mode reserved-variable type-assertion config/extractor/detail/test-output route; every sibling remains in `runner.rs`. |
-| `src/runner/type_elaboration/type_assertion_routes.rs` Task 263ZZZS delta | Adds the exact two-edge local-mode reserved-variable builtin type-assertion config/extractor/detail/test-output route; every sibling remains in `runner.rs`. |
-| `src/runner/type_elaboration/type_assertion_routes.rs` Task 263ZZZT delta | Adds the exact two-edge local-mode same-mode asserted-head config/extractor/detail/test-output route; every sibling remains in `runner.rs`. |
-| `src/runner/type_elaboration/type_assertion_routes.rs` Task 263ZZZU delta | Adds the exact three-edge local-mode immediate-radix asserted-head config/extractor/detail/test-output route; every sibling remains in `runner.rs`. |
-| `src/runner/type_elaboration/type_assertion_routes.rs` Task 263ZZZV delta | Adds the exact three-edge local-mode reserved-variable builtin type-assertion config/extractor/detail/test-output route; every sibling remains in `runner.rs`. |
-| `src/runner/type_elaboration/type_assertion_routes.rs` Task 263ZZZW delta | Adds the exact three-edge local-mode same-mode asserted-head config/extractor/detail/test-output route; every sibling remains in `runner.rs`. |
-| `src/runner/type_elaboration/type_assertion_routes.rs` Task 263ZZZX delta | Adds the exact four-edge local-mode immediate-radix asserted-head config/extractor/detail/test-output route; every sibling remains in `runner.rs`. |
-| `src/runner/type_elaboration/type_assertion_routes.rs` Task 263ZZZY delta | Adds the exact four-edge local-mode reserved-variable builtin type-assertion config/extractor/detail/test-output route; every sibling remains in `runner.rs`. |
-| `src/runner/type_elaboration/type_assertion_routes.rs` Task 263ZZZZ delta | Adds the final exact four-edge local-mode same-mode asserted-head config/extractor/detail/test-output route; `runner.rs` retains only top-level detail dispatch. |
-| `src/runner/tests.rs` | The single private `runner::tests` module and root-level `include!` declarations. |
-| `src/runner/tests/support.rs` | Shared test imports, builders, environments, ids, and corruption helpers. |
-| `src/runner/tests/parse_only.rs` | The nonempty parse-only private test family. |
-| `src/runner/tests/type_elaboration/*.rs` | Nonempty cohesive source-extraction, reserved/binary, mode-chain, asserted-head, long-chain, and isolation families. |
-| `tests/metadata.rs` | Existing declaration-symbol integration-test owner; unchanged unless a later independent nonempty move is justified. |
-
-Test fragments are included directly at the root of `runner::tests`, without a
-new wrapper module. This preserves existing qualified test names, including the
-already nested Task 216-222 module names. A child-module split is forbidden
-when it would change the discovered test list.
-
-Fresh Task 253 inventory splits the reserved/binary owner into two physical,
-order-preserving fragments around the Task 254 mode-chain block. Task 253A is
-the leading 23-test baseline reserve/binary block. It retains Task 189's
-reserved-object type-assertion test because that test is embedded in and owns
-the baseline reserved-object bridge boundary; it also retains Task 246's
-parenthesized two-edge local-mode equality because that test belongs to the
-parenthesized binary route. These classifications do not transfer either test
-to the broader asserted-head or mode-chain families. Task 253 remains pending
-after 253A: Task 254 moves the intervening local-mode/object-mode chain block,
-then Task 253B moves the following direct reserved-variable membership and
-inequality tests. Task 255 begins with the direct reserved-variable
-type-assertion test. This sequence preserves source and discovery order.
-
-Fresh Task 254 inventory fixes that intervening block at 26 complete tests:
-the non-long-chain direct-through-four-edge set/object membership, equality,
-and inequality families. It contains no long-chain test or non-test helper/item.
-The separator after the block is retained, and Task 253B begins immediately
-after it. Task 254 moves only this contiguous block to
-`src/runner/tests/type_elaboration/mode_chain.rs`.
-
-Fresh Task 253B inventory fixes the next block at two complete direct
-reserved-variable tests: membership and inequality. It contains no non-test
-helper/item. The following separator is retained, and Task 255 begins with the
-direct reserved-variable type-assertion test immediately after it. Task 253B
-moves only this 284-line block to
-`src/runner/tests/type_elaboration/reserved_direct.rs`; completing that move
-completes parent Task 253.
-
-Fresh Task 255 inventory splits the non-long-chain type-assertion/asserted-head
-source family into five physical, order-preserving blocks. Task 255A contains
-6,653 lines: 12 leading source tests through the three-edge set-side radix
-owner plus the two dedicated Task 205 isolation helpers that only those tests
-consume. Task 255B contains 3,303 lines: the two four-edge set/object radix
-tests plus their dedicated Task 208/207 helpers. Task 255C and Task 255D keep
-the single three-edge and two-edge object-radix source tests with their
-dedicated Task 206 and Task 204 helpers, respectively. Task 255E contains the
-final 16 contiguous source tests and stops before the active-fixture block.
-Each separator between these blocks remains in `tests.rs`. These dedicated
-helper items move with their owner tests; standalone active-fixture and
-cross-owner-isolation tests remain for later fresh inventory. No Task 255
-subtask includes a long-chain test. Parent Task 255 remains pending through
-Task 255E.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Ordered Move Tasks
 
-| Task | Bounded action |
-|---|---|
-| 248 | Add this paired audit, update the paired crate plan, and establish the preservation matrix. No source move. |
-| 249 | Complete: mechanically moved the complete inline private `mod tests` body to `src/runner/tests.rs`. |
-| 250 | Complete: moved nonempty shared test support into a root-included support fragment. |
-| 251 | Complete: moved the nonempty parse-only private test family into a root-included fragment. |
-| 252 | Complete: moved the baseline type-elaboration source-extraction and real handoff tests. |
-| 253A | Complete: moved the leading 23-test baseline reserved-variable/binary-formula block; Task 253 remains pending. |
-| 254 | Complete: moved the 26-test non-long-chain local-mode/object-mode chain bridge block, retaining the following Task 253B boundary. |
-| 253B | Complete: moved the two direct reserved-variable membership and inequality tests to `reserved_direct.rs`, retained the following Task 255 boundary, and completed Task 253. |
-| 255A | Complete: moved the leading 12 type-assertion/asserted-head source tests and their two dedicated Task 205 helpers to `asserted_head_base.rs`. |
-| 255B | Complete: moved the two four-edge radix source tests and dedicated Task 208/207 helpers to `asserted_head_four_edge_radix.rs`. |
-| 255C | Complete: moved the three-edge object-radix source test and dedicated Task 206 helpers. |
-| 255D | Complete: moved the two-edge object-radix source test and dedicated Task 204 helper. |
-| 255E | Complete: moved the final 16 non-long-chain source tests, retained the active-fixture boundary, and completed Task 255. |
-| 256 | Complete: moved all 44 long-chain source/active bridge tests and their 12 test-local finite guards to `long_chain.rs`, retaining both adjacent four-edge boundaries. |
-| 257 | Complete: moved all eight inventoried remaining fixture, bridge-gap, corruption, and isolation families through Task 257H. |
-| 257A | Complete: moved the leading 18 binary/parenthesized fixture and route-isolation tests to `binary_route_fixtures.rs`, retaining the Task 257B separator. |
-| 257B | Complete: moved the three builtin-object reserve active fixtures to `reserve_object_fixtures.rs`, retaining the Task 257C separator. |
-| 257C | Complete: moved only the Task 180 standalone contradiction fixture to `formula_constant_fixture.rs`, retaining both reserve-family boundaries. |
-| 257D | Complete: moved the 11 distinct/multiple/heterogeneous reserve fixtures to `reserve_fixtures.rs`, retaining the Task 257E separator. |
-| 257E | Complete: moved the 26 non-long-chain active mode-chain fixture tests to `mode_chain_fixtures.rs`, retaining the Task 257F separator. |
-| 257F | Complete: moved the 35 active reserve/asserted-head/type-assertion fixtures plus four interleaved owner-route isolation guards to `asserted_head_fixtures.rs`, retaining the Task 257G separator. |
-| 257G | Complete: moved the three source-gap/four-edge-equality tests to `source_gap_and_equality.rs`, retaining the immediate long-chain include and Task 257H boundary. |
-| 257H | Complete: moved the final nine root bridge fixtures, three root isolation tests, and 28 nested tests to `remaining_bridges_and_nested_isolation.rs` while retaining Task 216-222 modules; completed Task 257. |
-| 258 | Complete: moved shared source/frontend staging helpers to private `shared.rs` after the test layout stabilized. |
-| 259 | Complete: moved parse-only case execution, Surface-AST snapshot comparison, and failure projection to private `parse_only.rs`. |
-| 260A | Complete: moved the cross-phase resolver shell/projection/symbol collection leaf to private `shared.rs` before its declaration and type callers. |
-| 260B | Complete: moved existing declaration-symbol case/observation/payload/expectation/failure helpers to private `declaration_symbol.rs`; integration tests stayed in place. |
-| 261 | Complete: moved the lexical provider, exact fixture vocabulary, and type import-summary adapter to private `import_fixtures.rs`. |
-| 262 | Complete through Tasks 262N0-262Q: moved every inventoried type-elaboration formula source-extraction leaf; checker/output consumers remain Task 263 work. |
-| 262A | Complete: moved the five common exact source-AST primitives behind the private type-elaboration phase facade. |
-| 262B | Complete: moved shared node-kind traversal and qualified-symbol spelling projections into the common source-AST leaf. |
-| 262C | Complete: moved reserve type-expression, visible symbol/admission, and source-text projection into the private source-reserve leaf; retained declaration/mode callers for Task 262E. |
-| 262D | Complete: moved the shared exact `parser.type_fixtures` import-item AST projection to the common source-AST leaf before its formula and reserve callers. |
-| 262E | Complete: moved the bounded reserve declaration-segmentation and local-mode traversal/expansion family, retained handoff/formula ownership, and narrowed the three temporary Task 262C helpers. |
-| 262F | Complete: moved only the standalone `thesis`/`contradiction` formula-constant transport, exact extractor, and dedicated node allowlist into the new private source-formula leaf, with facade aliases for only the two entries. |
-| 262G | Complete: moved only the shared three-helper exact numeral AST projection into the private source-formula leaf while retaining all five caller families in `runner.rs`. |
-| 262H0 | Complete: strengthened the existing builtin-binary unit matrix for config order, payload provenance, recovery, duplicate, and cardinality preservation without changing production or test count. |
-| 262H | Complete: moved only the builtin equality/inequality/membership config, source transport, exact extractor, and dedicated allowlist into the private source-formula leaf. |
-| 262I0 | Complete: strengthened the existing builtin type-assertion unit matrix for independently derived payload/checker provenance, recovery, duplicate, token-shape, and cardinality preservation without changing production or test count. |
-| 262I | Complete: moved only the builtin type-assertion transport, exact extractor, and dedicated allowlist into the private source-formula leaf. |
-| 262J0 | Complete: strengthened the existing imported predicate/functor matrix for independent payload/checker/import provenance plus recovery, duplicate, and structural-cardinality preservation without changing production or test count. |
-| 262J1 | Complete: moved only the shared imported formula symbol resolver/provenance pair into the private source-formula leaf with all three callers unchanged. |
-| 262J2 | Complete: moved only the imported predicate/functor transport, exact extractor, exact infix projection, and dedicated allowlist into the private source-formula leaf. |
-| 262K0 | Complete: strengthened both existing imported attribute assertion variants for independent five-field payload/provenance/order preservation and bounded direct-rejection corruption coverage without changing production or test count. |
-| 262K | Complete: moved only the imported attribute assertion transport, two-entry/shared extractor, and dedicated allowlist into the private source-formula leaf. |
-| 262L0 | Complete: strengthened the existing exact set-enumeration matrix for independent eight-field grouping/punctuation/order preservation and bounded direct-rejection corruption coverage without changing production or test count. |
-| 262L | Complete: moved only the set-enumeration transport, exact extractor, exact-set projection, and dedicated allowlist into the private source-formula leaf. |
-| 262M0 | Complete: strengthened the existing exact connective/quantifier matrix for independent ten-field binder/output/diagnostic preservation and bounded direct-rejection corruption coverage without changing production or test count. |
-| 262M | Complete: moved only the connective/quantifier transport, exact extractor, and dedicated allowlist into the private source-formula leaf. |
-| 262N0 | Complete: strengthened the existing exact reserved-variable equality matrix for all config fields, independently derived formula/operand provenance, direct near-miss rejection, and 16 bounded default-off corruptions without changing production or test count. |
-| 262N | Complete: moved the four normalized shared reserved-variable config/model, predicate, mode/identifier, and ordinal substrate fragments with minimal runner-scoped visibility. |
-| 262O | Complete: moved only the direct reserved-variable binary source transport, generic extractor, and family allowlist into the private source-formula leaf; the temporary allowlist alias remains solely for Task 262P's retained parenthesized family. |
-| 262P | Complete: moved only the parenthesized reserved-variable source enum/transport, generic extractor, single-parenthesized operand projection, and family allowlist; both binary allowlists are now leaf-private. |
-| 262Q0 | Complete: strengthened the existing base reserved-variable type-assertion test for all ten source fields, exact config, direct rejection of all 15 near misses, and four bounded structural corruptions without changing test count or production. |
-| 262Q | Complete: moved only the reserved-variable type-assertion source transport, generic extractor, and family allowlist after Q0; retained all 58 configs/wrappers and checker/output consumers. |
-| 263 | Complete: moved checker-handoff, payload-validation, detail-key, expected-output, failure-diagnostic, and all source-route production-helper families in bounded dependency order; `runner.rs` retains facade/top-level orchestration only. |
-| 263A | Complete: moved the exact 506-line checker-handoff substrate to private `type_elaboration/checker_handoff.rs` with minimal runner-scoped visibility. |
-| 263B | Complete: moved the exact 49-line common frontend diagnostic projection into existing private `shared.rs` with three parent-only entries. |
-| 263C | Complete: moved the exact 24-line expected-result/failure-projection family into private `type_elaboration/result.rs` with two parent-only entries and exact-body/byte-stability preservation. |
-| 263D | Complete: moved the exact four-fragment 50-line type active-admission gate into private `type_elaboration/admission.rs` with two parent-only entries and exact-body/byte-stability preservation. |
-| 263E | Complete: moved the exact 33-line three-transport checker-output substrate into private `type_elaboration/output.rs` with runner-scoped field visibility and exact-body/byte-stability preservation. |
-| 263F | Complete: moved the exact 277-line three-builder/output-projection producer family into existing private `type_elaboration/output.rs` with three parent-only builder entries and exact-body/byte-stability preservation. |
-| 263G | Complete: moved only the exact 229-line type-assertion validator/private role helper/shared normalized-type predicate family into existing private `type_elaboration/output.rs`; validator and temporarily shared predicate are parent-only, the role helper is leaf-private, and all preservation gates pass. |
-| 263H | Complete: moved only the exact 380-line binary-formula validator/source-projection/type-entry-helper family into existing private `type_elaboration/output.rs`; only the validator is parent-only, all helpers are leaf-private, and all preservation gates pass. |
-| 263I | Complete: moved only the exact 67-line config-independent parenthesized-binary validator core into existing private `type_elaboration/output.rs` with one parent-only entry; all configs, named wrappers, detail, and call sites remain retained, and all preservation gates pass. |
-| 263J | Complete: moved only the exact 46-line type-assertion result/detail core into existing private `type_elaboration/output.rs`; result projection is parent-only, collector leaf-private, direct validator/output aliases test-only, and all preservation gates pass. |
-| 263K | Complete: moved only the exact 36-line binary-formula result/detail core into existing private `type_elaboration/output.rs`; both entries are parent-only, direct validator/output aliases test-only, all parenthesized/config/wrapper/call-site work retained, and all preservation gates pass. |
-| 263L | Complete: moved only the exact 16-line shared parenthesized-binary output-detail core into existing private `type_elaboration/output.rs`; shared core parent-only, direct parenthesized validator/output and binary detail-collector aliases test-only, all payload/config/wrapper/call-site work retained, and all preservation gates pass. |
-| 263M | Complete: moved only the exact 17-line parenthesized-binary payload-detail wrapper into existing private `type_elaboration/output.rs`; wrapper parent-only, direct builder/shared-detail aliases test-only, all config/named-wrapper/extractor/call-site work retained, and all preservation gates pass. |
-| 263N | Complete: moved only the exact seven-fragment/720-line parenthesized config/named-route family into new private `type_elaboration/parenthesized_routes.rs`; normal facade exposes eight detail routes, the test facade exposes only retained test consumers, and all preservation gates pass. |
-| 263O | Complete: moved only the exact eight-fragment/546-line leading direct-binary route family into new private `type_elaboration/binary_routes.rs`; normal facade exposes nine detail routes, test facade exposes only retained test consumers, and all preservation gates pass. |
-| 263P | Complete: moved only the corrected exact five-fragment/313-line multiple-reserve declaration binary route family into existing private `type_elaboration/binary_routes.rs`; normal facade exposes five detail routes, test facade exposes only retained test consumers, and all preservation gates pass. |
-| 263Q | Complete: moved only the exact five-fragment/116-line base reserved-variable membership/inequality route family into existing private `type_elaboration/binary_routes.rs`; normal facade exposes two detail routes, test facade exposes only retained test consumers, and all preservation gates pass. |
-| 263R | Complete: moved only the exact ten-fragment/183-line direct local-mode membership/equality/inequality route family into existing private `type_elaboration/binary_routes.rs`; normal facade exposes three detail routes, test facade exposes only retained test consumers, and all preservation gates pass. |
-| 263S | Complete: moved only the exact ten-fragment/190-line direct local-object-mode membership/equality/inequality route family into existing private `type_elaboration/binary_routes.rs`; normal facade exposes three detail routes, test facade exposes only retained test consumers, and all preservation gates pass. |
-| 263T | Complete: moved only the exact fourteen-fragment/207-line chained local-mode membership/equality/inequality route family into existing private `type_elaboration/binary_routes.rs`; normal facade exposes three detail routes, test facade exposes only retained test consumers, and all preservation gates pass. |
-| 263U | Complete: moved only the exact nine-fragment/229-line chained local-object-mode membership/equality/inequality route family into existing private `type_elaboration/binary_routes.rs`; normal facade exposes three detail routes and test facade exposes only retained test consumers. |
-| 263V | Complete: moved only the exact fifteen-fragment/222-line two-edge local-mode membership/equality/inequality route family into existing private `type_elaboration/binary_routes.rs`; normal facade exposes three detail routes and test facade exposes only retained test consumers. |
-| 263W | Complete: moved only the exact eleven-fragment/241-line two-edge local-object-mode membership/equality/inequality route family into existing private `type_elaboration/binary_routes.rs`; normal facade exposes three detail routes and test facade exposes only retained test consumers. |
-| 263X | Complete: moved only the exact fifteen-fragment/242-line three-edge local-mode membership/equality/inequality route family into existing private `type_elaboration/binary_routes.rs`; normal facade exposes three detail routes and test facade exposes only retained test consumers. |
-| 263Y | Complete: moved only the exact eleven-fragment/258-line three-edge local-object-mode membership/equality/inequality route family into existing private `type_elaboration/binary_routes.rs`; normal facade exposes three detail routes and test facade exposes only retained test consumers. |
-| 263Z | Complete: moved only the exact fifteen-fragment/252-line four-edge local-mode membership/equality/inequality route family into existing private `type_elaboration/binary_routes.rs`; normal facade exposes three detail routes and test facade exposes only retained test consumers. |
-| 263ZA | Complete: moved only the exact eleven-fragment/273-line four-edge local-object-mode membership/equality/inequality route family into existing private `type_elaboration/binary_routes.rs`; normal facade exposes three detail routes, test facade exposes only retained test consumers, and all preservation gates pass. |
-| 263ZB | Complete prerequisite: moved only the exact two-fragment/74-line shared long-chain seven-expansion tables to new private `type_elaboration/long_chain_config.rs`; all 22 consumer configs/routes remain in place and all preservation gates pass. |
-| 263ZC | Complete: moved only the exact fifteen-fragment/176-line local-mode long-chain membership/equality/inequality route family into existing private `type_elaboration/binary_routes.rs`; sibling table import and all preservation gates pass. |
-| 263ZD | Complete: moved only the exact fifteen-fragment/186-line local-object-mode long-chain membership/equality/inequality route family into existing private `type_elaboration/binary_routes.rs`; sibling table import and all preservation gates pass. |
-| 263ZE | Complete: moved only the exact five-fragment/52-line local-mode long-chain reserved-variable type-assertion route into new private `type_elaboration/type_assertion_routes.rs`; every asserted-head and local-object-mode route remains in place and all preservation gates pass. |
-| 263ZF | Complete: moved only the exact five-fragment/48-line local-mode long-chain same-mode asserted-head route into existing private `type_elaboration/type_assertion_routes.rs`; every radix, multi-hop, and local-object-mode route remains in place and all preservation gates pass. |
-| 263ZG | Complete: moved only the exact five-fragment/50-line local-mode long-chain immediate-radix asserted-head route into existing private `type_elaboration/type_assertion_routes.rs`; every multi-hop and local-object-mode route remains in place and all preservation gates pass. |
-| 263ZH | Complete: moved only the exact five-fragment/51-line local-mode long-chain two-hop asserted-head route into existing private `type_elaboration/type_assertion_routes.rs`; every deeper-hop and local-object-mode route remains in place and all preservation gates pass. |
-| 263ZI | Complete: moved only the exact five-fragment/54-line local-mode long-chain three-hop asserted-head route into existing private `type_elaboration/type_assertion_routes.rs`; every four-or-deeper and local-object-mode route remains in place and all preservation gates pass. |
-| 263ZJ | Complete: moved only the exact five-fragment/55-line local-mode long-chain four-hop asserted-head route into existing private `type_elaboration/type_assertion_routes.rs`; every five/six-hop and local-object-mode route remains in place and all preservation gates pass. |
-| 263ZK | Complete: moved only the exact five-fragment/56-line local-mode long-chain five-hop asserted-head route into existing private `type_elaboration/type_assertion_routes.rs`; every six-hop and local-object-mode route remains in place and all preservation gates pass. |
-| 263ZL | Complete: moved only the exact five-fragment/55-line local-mode long-chain six-hop asserted-head route into existing private `type_elaboration/type_assertion_routes.rs`; every local-object-mode route remains in place and all preservation gates pass. |
-| 263ZM | Complete: moved only the exact five-fragment/58-line local-object-mode long-chain six-hop asserted-head route into existing private `type_elaboration/type_assertion_routes.rs`; every other local-object-mode route remains in place and all preservation gates pass. |
-| 263ZN | Complete: moved only the exact five-fragment/57-line local-object-mode long-chain five-hop asserted-head route into existing private `type_elaboration/type_assertion_routes.rs`; every other local-object-mode route remains in place and all preservation gates pass. |
-| 263ZO | Complete: moved only the exact five-fragment/56-line local-object-mode long-chain four-hop asserted-head route into existing private `type_elaboration/type_assertion_routes.rs`; every other local-object-mode route remains in place and all preservation gates pass. |
-| 263ZP | Complete: moved only the exact five-fragment/55-line local-object-mode long-chain three-hop asserted-head route into existing private `type_elaboration/type_assertion_routes.rs`; every other local-object-mode route remains in place and all preservation gates pass. |
-| 263ZQ | Complete: moved only the exact five-fragment/54-line local-object-mode long-chain two-hop asserted-head route into existing private `type_elaboration/type_assertion_routes.rs`; every other local-object-mode route remains in place. |
-| 263ZR | Complete: moved only the exact five-fragment/52-line local-object-mode long-chain immediate-radix asserted-head route into existing private `type_elaboration/type_assertion_routes.rs`; every other local-object-mode route remains in place. |
-| 263ZS | Complete: moved only the exact five-fragment/50-line local-object-mode long-chain same-mode asserted-head route into existing private `type_elaboration/type_assertion_routes.rs`; every other local-object-mode route remains in place. |
-| 263ZT | Complete: moved only the exact five-fragment/52-line local-object-mode long-chain reserved-variable builtin type-assertion route into existing private `type_elaboration/type_assertion_routes.rs`; every other route remains in place. |
-| 263ZU | Complete: moved only the exact five-fragment/53-line direct local-object-mode reserved-variable builtin type-assertion route into existing private `type_elaboration/type_assertion_routes.rs`; every other route remains in place. |
-| 263ZV | Complete: moved only the exact five-fragment/67-line chained local-object-mode reserved-variable builtin type-assertion route into existing private `type_elaboration/type_assertion_routes.rs`; every other route remains in place. |
-| 263ZW | Complete: moved only the exact five-fragment/71-line two-edge local-object-mode reserved-variable builtin type-assertion route into existing private `type_elaboration/type_assertion_routes.rs`; every other route remains in place. |
-| 263ZX | Complete: moved only the exact five-fragment/82-line three-edge local-object-mode reserved-variable builtin type-assertion route into existing private `type_elaboration/type_assertion_routes.rs`; every other route remains in place. |
-| 263ZY | Complete: moved only the exact five-fragment/81-line four-edge local-object-mode reserved-variable builtin type-assertion route into existing private `type_elaboration/type_assertion_routes.rs`; every other route remains in place. |
-| 263ZZ | Complete: moved only the exact five-fragment/55-line direct local-object-mode same-mode asserted-head route into existing private `type_elaboration/type_assertion_routes.rs`; every other route remains in place. |
-| 263ZZA | Complete: moved only the exact five-fragment/63-line chained local-object-mode same-mode asserted-head route into existing private `type_elaboration/type_assertion_routes.rs`; every other route remains in place. |
-| 263ZZB | Complete: moved only the exact five-fragment/65-line chained local-object-mode immediate-radix asserted-head route into existing private `type_elaboration/type_assertion_routes.rs`; every other route remains in place. |
-| 263ZZC | Complete: moved only the exact five-fragment/68-line two-edge local-object-mode same-mode asserted-head route into existing private `type_elaboration/type_assertion_routes.rs`; every other route remains in place. |
-| 263ZZD | Complete: moved only the exact five-fragment/72-line two-edge local-object-mode immediate-radix asserted-head route into existing private `type_elaboration/type_assertion_routes.rs`; every other route remains in place. |
-| 263ZZE | Complete: moved only the exact five-fragment/71-line two-edge local-object-mode two-hop asserted-head route into existing private `type_elaboration/type_assertion_routes.rs`; every other route remains in place. |
-| 263ZZF | Complete: moved only the exact five-fragment/83-line three-edge local-object-mode two-hop asserted-head route into existing private `type_elaboration/type_assertion_routes.rs`; every other route remains in place. |
-| 263ZZG | Complete: moved only the exact five-fragment/89-line four-edge local-object-mode two-hop asserted-head route into existing private `type_elaboration/type_assertion_routes.rs`; every other route remains in place. |
-| 263ZZH | Complete: moved only the exact five-fragment/84-line three-edge local-object-mode three-hop asserted-head route into existing private `type_elaboration/type_assertion_routes.rs`; every other route remains in place. |
-| 263ZZI | Complete: moved only the exact five-fragment/91-line four-edge local-object-mode three-hop asserted-head route into existing private `type_elaboration/type_assertion_routes.rs`; every other route remains in place. |
-| 263ZZJ | Complete: moved only the exact five-fragment/92-line four-edge local-object-mode four-hop asserted-head route into existing private `type_elaboration/type_assertion_routes.rs`; every other route remains in place. |
-| 263ZZK | Complete: moved only the exact five-fragment/81-line three-edge local-object-mode immediate-radix asserted-head route into existing private `type_elaboration/type_assertion_routes.rs`; every other route remains in place. |
-| 263ZZL | Complete: moved only the exact five-fragment/86-line four-edge local-object-mode immediate-radix asserted-head route into existing private `type_elaboration/type_assertion_routes.rs`; every other route remains in place. |
-| 263ZZM | Complete: moved only the exact five-fragment/78-line four-edge local-object-mode same-mode asserted-head route into existing private `type_elaboration/type_assertion_routes.rs`; every other route remains in place. |
-| 263ZZN | Complete: moved only the exact five-fragment/73-line three-edge local-object-mode same-mode asserted-head route into existing private `type_elaboration/type_assertion_routes.rs`; every other route remains in place. |
-| 263ZZO | Complete: moved only the exact five-fragment/53-line direct local-mode same-mode asserted-head route into existing private `type_elaboration/type_assertion_routes.rs`; every other route remains in place. |
-| 263ZZP | Complete: moved only the exact five-fragment/62-line chained local-mode same-mode asserted-head route into existing private `type_elaboration/type_assertion_routes.rs`; its immediate-radix sibling and every other route remain in place. |
-| 263ZZQ | Complete: moved only the exact five-fragment/61-line chained local-mode immediate-radix asserted-head route into existing private `type_elaboration/type_assertion_routes.rs`; its two-edge sibling and every other route remain in place. |
-| 263ZZR | Complete: moved only the exact five-fragment/66-line two-edge local-mode immediate-radix asserted-head route into existing private `type_elaboration/type_assertion_routes.rs`; its two-hop sibling and every other route remain in place. |
-| 263ZZS | Complete: moved only the exact five-fragment/67-line two-edge local-mode two-hop asserted-head route into existing private `type_elaboration/type_assertion_routes.rs`; its three-edge sibling and every other route remain in place. |
-| 263ZZT | Complete: moved only the exact five-fragment/72-line three-edge local-mode two-hop asserted-head route into existing private `type_elaboration/type_assertion_routes.rs`; its four-edge sibling and every other route remain in place. |
-| 263ZZU | Complete: moved only the exact five-fragment/77-line four-edge local-mode two-hop asserted-head route into existing private `type_elaboration/type_assertion_routes.rs`; all three-hop and other routes remain in place. |
-| 263ZZV | Complete: moved only the exact five-fragment/75-line three-edge local-mode three-hop asserted-head route into existing private `type_elaboration/type_assertion_routes.rs`; every four-edge and other route remains in place. |
-| 263ZZW | Complete: moved only the exact five-fragment/80-line four-edge local-mode three-hop asserted-head route into existing private `type_elaboration/type_assertion_routes.rs`; every four-hop and other route remains in place. |
-| 263ZZX | Complete: moved only the exact five-fragment/79-line four-edge local-mode four-hop asserted-head route into existing private `type_elaboration/type_assertion_routes.rs`; every other route remains in place. |
-| 263ZZY | Complete: moved only the exact five-fragment/47-line direct builtin-set reserved-variable type-assertion route into existing private `type_elaboration/type_assertion_routes.rs`; every builtin-object, local-mode, chained, and other route remains in place. |
-| 263ZZZ | Complete: moved only the exact 10-line shared term/formula diagnostic-key projection into existing private `type_elaboration/output.rs`; all nine parent wrappers and every other production helper remain in place. |
-| 263ZZZA | Complete: moved only the exact five-fragment/47-line direct builtin-object reserved-variable type-assertion route into existing private `type_elaboration/type_assertion_routes.rs`; every builtin-set, local-mode, chained, and other route remains in place. |
-| 263ZZZB | Complete: moved only the exact two-fragment/28-line standalone contradiction formula output/detail family into existing private `type_elaboration/output.rs`; every other formula family and route remains in place. |
-| 263ZZZC | Complete: moved only the exact two-fragment/30-line formula-statement output/detail family into existing private `type_elaboration/output.rs`; every other formula family and route remains in place. |
-| 263ZZZD | Complete: moved only the exact 35-line inline builtin-binary term/formula checker/detail producer into existing private `type_elaboration/output.rs`; every other formula family and route remains in place. |
-| 263ZZZE | Complete: moved only the exact two-fragment/43-line builtin type-assertion formula output/detail family into existing private `type_elaboration/output.rs`; every other formula family and route remains in place. |
-| 263ZZZF | Complete: moved only the exact five-fragment/52-line direct local-mode reserved-variable type-assertion route into existing private `type_elaboration/type_assertion_routes.rs`; every other route and formula family remains in place. |
-| 263ZZZG | Complete after one corrected inventory: moved only the exact 29-line shared imported-attribute assertion checker-output core into existing private `type_elaboration/output.rs`; both wrappers and every other formula family/route remain in place. |
-| 263ZZZH | Complete: moved only the exact 8-line positive imported-attribute assertion output wrapper into existing private `type_elaboration/output.rs`; its detail wrapper, the non-empty family, and every other formula/route remain in place. |
-| 263ZZZI | Complete: moved only the exact 8-line positive imported-attribute assertion detail wrapper into existing private `type_elaboration/output.rs`; the non-empty family and every other formula/route remain in place. |
-| 263ZZZJ | Complete: moved only the exact 9-line attribute-level-negative imported-attribute assertion output wrapper into existing private `type_elaboration/output.rs`; its detail wrapper and every other formula/route remain in place. |
-| 263ZZZK | Complete: moved only the exact 9-line attribute-level-negative imported-attribute assertion detail wrapper into existing private `type_elaboration/output.rs`; the set-enumeration family and every other formula/route remain in place. |
-| 263ZZZL | Complete after corrected inventory: moved only the exact 43-line set-enumeration checker-output producer into existing private `type_elaboration/output.rs`; its detail wrapper and every other formula/route remain in place. |
-| 263ZZZM | Complete: moved only the exact 8-line set-enumeration formula detail wrapper into existing private `type_elaboration/output.rs`; its output/extractor now cross the facade/root only under `cfg(test)`, and every other formula/route remains in place. |
-| 263ZZZN | Complete: moved only the exact 49-line imported predicate/functor checker-output producer into existing private `type_elaboration/output.rs`; its detail wrapper and every other formula/route remain in place. |
-| 263ZZZO | Complete: moved only the exact 8-line imported predicate/functor formula detail wrapper into existing private `type_elaboration/output.rs`; output/extractor now cross the facade/root only under `cfg(test)`, and every other formula/route remains in place. |
-| 263ZZZP | Complete: moved only the exact 52-line formula connective/quantifier checker-output producer into existing private `type_elaboration/output.rs`; its detail wrapper and every other route remain in place. |
-| 263ZZZQ | Complete: moved only the exact 8-line formula connective/quantifier detail wrapper into private `output.rs`; output/extractor now cross only under `cfg(test)`, and every route remains in place. |
-| 263ZZZR | Complete: moved only the exact five-fragment/62-line chained local-mode reserved-variable type-assertion route into private `type_elaboration/type_assertion_routes.rs`; every sibling remains in place. |
-| 263ZZZS | Complete: moved only the exact five-fragment/67-line two-edge local-mode reserved-variable builtin type-assertion route into private `type_elaboration/type_assertion_routes.rs`; every sibling remains in place. |
-| 263ZZZT | Complete: moved only the exact five-fragment/67-line two-edge local-mode same-mode asserted-head route into private `type_elaboration/type_assertion_routes.rs`; every sibling remains in place. |
-| 263ZZZU | Complete: moved only the exact five-fragment/71-line three-edge local-mode immediate-radix asserted-head route into private `type_elaboration/type_assertion_routes.rs`; every sibling remains in place. |
-| 263ZZZV | Complete: moved only the exact five-fragment/73-line three-edge local-mode reserved-variable builtin type-assertion route into private `type_elaboration/type_assertion_routes.rs`; every sibling remains in place. |
-| 263ZZZW | Complete: moved only the exact five-fragment/73-line three-edge local-mode same-mode asserted-head route into private `type_elaboration/type_assertion_routes.rs`; every sibling remains in place. |
-| 263ZZZX | Complete: moved only the exact five-fragment/76-line four-edge local-mode immediate-radix asserted-head route into private `type_elaboration/type_assertion_routes.rs`; every sibling remains in place. |
-| 263ZZZY | Complete: moved only the exact five-fragment/76-line four-edge local-mode reserved-variable builtin type-assertion route into private `type_elaboration/type_assertion_routes.rs`; every sibling remains in place. |
-| 263ZZZZ | Complete: moved only the final exact five-fragment/78-line four-edge local-mode same-mode asserted-head route into private `type_elaboration/type_assertion_routes.rs`; `runner.rs` retains only top-level detail dispatch. |
-| 264 | Complete: closed out paired source-layout inventories, path tables, todo/plan state, and ownership guards; fresh canonical Step 5 inventory found no next nonempty task. |
-
-Every listed source-moving task must be nonempty. If fresh inventory requires a
-smaller family, add a bounded subtask before editing; never create a no-op
-commit.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Preservation Matrix
 
-| Surface | Required invariant |
-|---|---|
-| public API | `mizar_test::runner` re-exports, signatures, enum attributes, and CLI behavior are unchanged. |
-| tests | Function names, fully qualified discovered names, nested module names, discovery order/set, and all 272 tests are unchanged. |
-| corpus/trace | Active runner 188, plan 403/367, type 235/223, pass/fail 219/184, backlinks, requirements, and expectation meaning are unchanged. |
-| diagnostics | Codes, stable detail keys, fallback keys, text, source identity, and ordering are byte-for-byte unchanged. |
-| payloads | Keys, values, shapes, provenance, source ranges, binding identities, deterministic ordering, and immutable outputs are unchanged. |
-| fail-closed behavior | Unsupported, malformed, ambiguous, imported-gap, evidence-gap, and lower-stage cases continue to reject at the same boundary. |
-| authority | No `doc/spec`, `.miz`, expectation, or traceability edit is allowed merely to accommodate a move. |
-
-Before and after each move, capture and compare the exact sorted test lines
-from `cargo test -p mizar-test --lib -- --list` in addition to running the
-tests. The canonical raw-list oracle, including the `: test` suffix, has 272
-lines and hash
-`5e41e4dbfcc303322c246a612de61926a628957a168589b45864d0a5070bb07e`.
-The suffix-stripped normalized-name list is only a secondary oracle; its hash
-before Task 253A is
-`c0c2b80f8b4e6c84cd25d77573fda722c4d1846fed168cd4a478781cdb42775e`.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Classification And Coverage-Audit Impact
 
-| Class | Result |
-|---|---|
-| `design_drift` | Repaired: Tasks 249-264 expose the phase and ownership review boundaries without changing behavior. MT-AUDIT-022 is closed. |
-| `test_gap` | Tasks 262H0, 262I0, 262J0, 262K0, 262L0, 262M0, 262N0, and 262Q0 repair bounded preservation-matrix gaps before their corresponding move-only tasks; no behavior or coverage credit changes. |
-| `spec_gap`, `source_drift`, `test_expectation_drift` | None introduced or repaired by this series. |
-| `source_undocumented_behavior`, `boundary_violation` | No new finding; existing runner behavior remains governed by the paired harness plan and higher authorities. |
-| `repo_metadata_conflict` | None found. |
-
-`doc/design/spec_coverage_audit.md` remains unchanged. The series changes no
-specification chapter coverage, design mapping, traceability status, owner
-crate, follow-up ownership, or deferred rationale.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Per-Task Review And Verification
 
-Each source move requires review-only checks for visibility drift,
-test-discovery drift, owner-boundary drift, source/documentation inconsistency,
-and accidental behavior change. Required commands are:
-
-```text
-cargo test -p mizar-test
-cargo run -q -p mizar-test -- plan --tests-root tests --manifest tests/coverage/spec_trace.toml
-cargo run -q -p mizar-test -- parse-only --tests-root tests --manifest tests/coverage/spec_trace.toml
-cargo run -q -p mizar-test -- declaration-symbol --tests-root tests --manifest tests/coverage/spec_trace.toml
-cargo run -q -p mizar-test -- type-elaboration --tests-root tests --manifest tests/coverage/spec_trace.toml
-cargo fmt --check
-cargo clippy --all-targets --all-features -- -D warnings
-cargo test
-git diff --check
-```
-
-The active CLI preservation counts are parse-only 96, declaration-symbol 4,
-and type-elaboration 188.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Exit Criteria
 
-Task 264 satisfies the exit criteria: `runner.rs` is limited to the public
-facade and top-level orchestration; every private owner has minimal visibility;
-the preservation matrix passes; paired source-layout, crate-plan, todo, harness
-path-table, bilingual, and ownership-guard documentation is synchronized; and
-all required verification is green. Counts remain 96/4/188, 403/367, 235/223,
-219/184, 23 warnings, zero errors, and 272 unit tests. The plan, parse-only,
-declaration-symbol, and type-elaboration CLI stdout hashes are respectively
-`f34240072564dfafacf7b0d914a8204037bbfc042dea375326ae757774f63759`,
-`57d0fba9be95644890b80bfa4ec2cd992e47bb8ad4b67c130f5194ea73aa0273`,
-`08b00a9f6fe70d94fe2c1b2bdebbdb5603bcee39bf3ceb460abe53f403bba7b5`,
-and `1dadbeabb219f5853c713ad53aa1cc7cd720a0e80abd7f882e9e0a5ea7802625`;
-the raw/normalized test-list hashes remain
-`5e41e4dbfcc303322c246a612de61926a628957a168589b45864d0a5070bb07e`
-and `c0c2b80f8b4e6c84cd25d77573fda722c4d1846fed168cd4a478781cdb42775e`.
-Specification, test-sufficiency, implementation,
-and source/documentation consistency reviews end with no findings.
-`spec_coverage_audit.md` remains unchanged. Fresh canonical todo inventory has
-no next nonempty Step 5 task; Steps 6 and 7 remain deferred until their existing
-dependency gates are met.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 265 Authority-Only Current-State Addendum
 
-The Task-264 statement above remains the correct historical result of its
-fresh inventory. Task 265 is later human-authorized, docs/traceability-only
-work and supersedes only the absence of a next task: the canonical roadmap now
-opens Tasks 266-268 and the named owner/decomposition tasks. It does not reopen
-the completed module-boundary series or change the 17-path/18,952-line layout,
-private leaves, counts, hashes, source ownership, tests, expectations, or
-coverage. The next executable task is Task 266; Steps 6/7 remain deferred.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 266 Current-State Addendum
 
-Task 266 is a semantic handoff task inside the existing ownership layout, not a
-module split. The production manifest remains the same 17 paths with path hash
-`b36d96fed3207b415c95de27be11ade57654c6573a2f0637aa2d0a3d56aca01d`;
-it now totals 19,262 lines and has content-manifest hash
-`e920dbaef82c7192d5b451ed1ab9d4a5766f2abc82b4f5314ae9ed7bb6a47825`.
-Changed production owners are `runner.rs` 2,188 lines,
-`type_elaboration.rs` 577, `checker_handoff.rs` 856, `output.rs` 1,538,
-and `source_formula.rs` 2,629. `runner.rs` remains facade/top-level
-orchestration only and the facade still declares eleven private leaves.
-
-The exact Task-180 route retains the real formula site/range/recovery, uses the
-real theorem surface site to validate the resolver-owner range, and carries
-resolver-owner, typed-tree, and final checker identities. Synthetic input with no real
-theorem owner remains fail-closed. No `.miz`, expectation, stage, test name,
-CLI byte, trace status, or broader ownership changes. The next authorized task
-is Task 267; Steps 6/7 remain deferred.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 267 Current-State Addendum
 
-Task 267 is documentation-only and changes no production owner, visibility,
-path, line count, or hash. It fixes the exact Task-268 input/output authority:
-`mizar-test` classifies the absent theorem annotation and justification and
-emits explicit `Unmodified`/`Omitted` intent; checker/core never reconstruct
-that intent. The target is one atomic `PendingAutomaticProof`, direct terminal
-goal, empty context/citations, and local path `proof/0`, followed later by the
-exact non-accepting Core Task-31 projection. Production remains 17 paths and
-19,262 lines with path hash `b36d96fe...` and content hash `e920dbae...`; all
-runner/count/CLI/test-list hashes are unchanged. Task 268 is the next
-executable task; Core Task 31 remains gated and Steps 6/7 stay deferred.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 268 Current-State Addendum
 
-Task 268 changes behavior inside the same source-extraction and checker-handoff
-owners; it does not split or add a production path. `source_formula.rs`
-classifies only the exact unannotated, unjustified, proof-block-free Task-180
-theorem and `checker_handoff.rs` constructs and asserts its explicit syntax-free
-proof intent and checker tables. `runner.rs` remains facade/top-level
-orchestration only, and the facade still declares eleven private leaves.
-
-The production manifest remains 17 paths with path hash
-`b36d96fed3207b415c95de27be11ade57654c6573a2f0637aa2d0a3d56aca01d`.
-It now totals 19,581 lines with content-manifest hash
-`888cd8a0cadc7e0f96d803f3629c8f97f3771c0e9ffd26e57639e5b8dede6d46`;
-`checker_handoff.rs` is 1,153 lines and `source_formula.rs` is 2,651 lines.
-The other production owners and visibility boundaries are unchanged. Existing
-`.miz`, expectations, trace status/test list, active runner/counts, and four CLI
-bytes remain unchanged. Core Task 31 is now executable; Steps 6/7 remain
-deferred.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Core Task 31 / Task-10 Consumer Current-State Addendum
 
-Core Task 31 changes behavior inside the existing top-level orchestration,
-type-elaboration output, and result-projection owners; it adds no production
-path or private leaf. `runner.rs` remains facade/top-level orchestration only,
-and the type-elaboration facade still declares eleven private leaves. The exact
-Task-180 output owner calls the borrowed core adapter twice; top-level
-orchestration performs the singular verify-only baseline comparison; the
-result leaf gives snapshot failures their stable diagnostic identity.
-
-The production manifest remains 17 paths with path hash
-`b36d96fed3207b415c95de27be11ade57654c6573a2f0637aa2d0a3d56aca01d`.
-It now totals 19,803 lines with content-manifest hash
-`5f9e716169964a861b71576957c05e2dc2538b5e0ff9d1025ef51a4bea6aa306`;
-`runner.rs` is 2,266 lines, `type_elaboration.rs` 578,
-`checker_handoff.rs` 1,259, `output.rs` 1,566,
-and `result.rs` 38. Active
-parse/declaration/type counts remain 96/4/188 and the 272-test name list is
-unchanged. The plan intentionally becomes 403/368 and type coverage 236/224
-because of the new exact snapshot requirement; pass/fail stays 219/184. The
-existing `.miz`, pass outcome, phase, diagnostics, and broader trace rows stay
-unchanged. All non-Task-180 CoreIr/ControlFlowIr families remain deferred;
-Steps 6/7 are not promoted.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## VC Task 31 / Task-10 Consumer Current-State Addendum
 
-VC Task 31 adds one bounded production path,
-`src/runner/proof_verification.rs`, without reopening the completed move-only
-series. Production now has 18 paths and 20,085 lines. `runner.rs` is 2,372
-lines and remains facade/top-level orchestration only; the new 170-line leaf
-owns exact admission, source-to-VC execution, deterministic rerun, snapshot
-comparison, and failure projection. The type-elaboration facade still has
-eleven private leaves; only its reusable exact CoreIr export changes one line,
-and `output.rs` is 1,571 lines.
-
-The sorted production path hash is
-`63e4e770b0d10872415548410d417071c1901f3ffa5aea964a81d2dbbc572ed0` and
-the ordered content-manifest hash is
-`a7745e222032a5b6dfeda5ec7a90888c569270134d316166914c959a1684c14c`.
-
-The new runner is a cohesive semantic consumer, not an oversized-route split
-or ownership leak. Its public report/iterator/orchestration remain in
-`runner.rs`; exact implementation stays private. Active counts are now
-parse/declaration/type/proof 96/4/188/1, plan 404/369, proof coverage 4/1,
-pass/fail 220/184, and mizar-test library tests 276. Broad proof-verification
-and VC 32-55 remain outside this leaf; Steps 6/7 are not promoted.
-
-The plan/parse/declaration/type/proof CLI hashes are respectively
-`572873f4f678d446b5b383c3a466bd657df218590b088f1d32b10a98c87ce6ae`,
-`57d0fba9be95644890b80bfa4ec2cd992e47bb8ad4b67c130f5194ea73aa0273`,
-`08b00a9f6fe70d94fe2c1b2bdebbdb5603bcee39bf3ceb460abe53f403bba7b5`,
-`1dadbeabb219f5853c713ad53aa1cc7cd720a0e80abd7f882e9e0a5ea7802625`,
-and `ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`.
-The raw/normalized 276-test-list hashes are
-`967495e78e1068f592e64834ea3ffb9eac9c25692ea5cbd4f11006a679c66590` /
-`1be4ae09188b27a40814adc6597de4806dabb13bcac019b294154e1455072adf`.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Resolver R-031 Declaration-Symbol Current-State Addendum
 
-R-031 changes behavior within the existing ownership layout and adds no path.
-The private cross-phase `shared.rs` owner grows from 260 to 263 lines solely to
-map the appended resolver internal class to its exact declaration-symbol key;
-`runner.rs` remains a 2,372-line facade/top-level orchestrator and
-`declaration_symbol.rs` remains the 231-line private case/report owner. The
-production manifest remains 18 paths and now totals 20,088 lines. Its sorted
-path hash remains
-`63e4e770b0d10872415548410d417071c1901f3ffa5aea964a81d2dbbc572ed0`;
-the ordered content-manifest hash is
-`7e5adca22db2b73f94f04c406f10788f2cd49ba48109bb105a3fd076c339d560`.
-
-Active counts are parse/declaration/type/proof 96/5/188/1, plan 404/369,
-declaration coverage 10/5, pass/fail 220/184, warnings/errors 23/0, and
-mizar-test library tests 276. The plan/parse/declaration/type/proof CLI stdout
-hashes are respectively
-`69cf3aa717ec5c85b15b613a16faf75efeaf476737677aa5aecc98ea016f763e`,
-`57d0fba9be95644890b80bfa4ec2cd992e47bb8ad4b67c130f5194ea73aa0273`,
-`210055108c257ff65c6f45fb654c82e506653ec4617b68d111893bb3aa1da5a8`,
-`1dadbeabb219f5853c713ad53aa1cc7cd720a0e80abd7f882e9e0a5ea7802625`,
-and `ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`.
-The raw/normalized 276-test-list hashes remain
-`967495e78e1068f592e64834ea3ffb9eac9c25692ea5cbd4f11006a679c66590` /
-`1be4ae09188b27a40814adc6597de4806dabb13bcac019b294154e1455072adf`.
-Only plan and declaration-symbol bytes change; parse, type, proof, test-list,
-path, facade/leaf ownership, and Steps 6/7 status remain stable.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Parser Task 47 Parse-Only Current-State Addendum
 
-Task 47 changes no `mizar-test` production path or source line. The production
-manifest remains 18 paths / 20,088 lines, path hash
-`63e4e770b0d10872415548410d417071c1901f3ffa5aea964a81d2dbbc572ed0`,
-and ordered content hash
-`7e5adca22db2b73f94f04c406f10788f2cd49ba48109bb105a3fd076c339d560`.
-`runner.rs` remains the 2,372-line facade/top-level orchestrator, and the
-private-leaf ownership remains unchanged.
-
-Active counts are parse/declaration/type/proof 97/5/188/1, plan 405/369,
-parse coverage 43/42, pass/fail 221/184, warnings/errors 23/0, and mizar-test
-library tests 276. Plan/parse/declaration/type/proof stdout hashes are
-`b23ef45284bbdde020431ec1f8a2b6a92c27940b4f5c0ca5117a6b5331d653ab`,
-`b824094f5bb4b57fb0cd976d669034aa5a3b294eaa8dc40264d8fb5bf3e48959`,
-`210055108c257ff65c6f45fb654c82e506653ec4617b68d111893bb3aa1da5a8`,
-`1dadbeabb219f5853c713ad53aa1cc7cd720a0e80abd7f882e9e0a5ea7802625`,
-and `ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`.
-Raw/normalized test-list hashes remain
-`967495e78e1068f592e64834ea3ffb9eac9c25692ea5cbd4f11006a679c66590` /
-`1be4ae09188b27a40814adc6597de4806dabb13bcac019b294154e1455072adf`.
-Only plan and parse bytes change; production ownership and Steps 6/7 remain
-stable.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Parser Task 48 Parse-Only Current-State Addendum
 
-Task 48 changes no `mizar-test` production path or source line. The production
-manifest remains 18 paths / 20,088 lines, with path hash
-`63e4e770b0d10872415548410d417071c1901f3ffa5aea964a81d2dbbc572ed0`
-and ordered content hash
-`7e5adca22db2b73f94f04c406f10788f2cd49ba48109bb105a3fd076c339d560`.
-`runner.rs` remains the facade/top-level orchestrator and private-leaf
-ownership is unchanged.
-
-Active counts are parse/declaration/type/proof 99/5/188/1, plan 407/369,
-pass/fail 222/185, warnings/errors 23/0, and mizar-test library tests 276. The
-raw/normalized 276-test-list hashes remain
-`967495e78e1068f592e64834ea3ffb9eac9c25692ea5cbd4f11006a679c66590` /
-`1be4ae09188b27a40814adc6597de4806dabb13bcac019b294154e1455072adf`.
-The five plan/parse/declaration/type/proof CLI hashes are
-`2957a40b91a4cf64206301b4bf91d1c42ecdac2a564b70af370d2e52333ab57b`,
-`c9dcbcef79e727f31720d46532febe5a20e02a7710cf691e49d89fcfb69bccfa`,
-`210055108c257ff65c6f45fb654c82e506653ec4617b68d111893bb3aa1da5a8`,
-`1dadbeabb219f5853c713ad53aa1cc7cd720a0e80abd7f882e9e0a5ea7802625`,
-and `ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`.
-Only plan/parse corpus bytes change. Declaration/type/proof ownership,
-production layout, the inactive semantic Task-39 seed, and Steps 6/7 remain
-stable; the new credit is parser/syntax-only.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 254 Current-Layout Addendum
 
-Task 254 adds one private production leaf,
-`src/runner/type_elaboration/source_structure.rs` (1,689 lines), and one
-test-only leaf (1,716 lines). `runner.rs` is 2,424 lines and remains the public
-facade/top-level dispatcher; `type_elaboration.rs` is a 623-line private
-facade. Raw structure syntax, declaration-shell intake, Task-248 context
-projection, Task-252 composition, checker input assembly, and frozen outcome
-projection remain behavior-coupled in the new private leaf.
-
-The production manifest is 25 paths / 27,317 lines. The sorted path hash is
-`e81c3b08ff6f6e7159bac50543fda701a2f41724ecc825d2556f964bc6286d44`;
-the ordered content-manifest hash is
-`3046ae270e7d2c72a1ed4f96fcbc6cbcc87aa494ae883a6e31e192ccf16d7b12`.
-Active parse/declaration/type/proof counts are 101/5/192/1, plan is 413/377,
-type coverage is 243/231, pass/fail is 224/189, and warnings/errors are 23/0.
-The raw/normalized 312-test-list hashes are
-`b7f56668669bbc4b5f5b1ab30440032dc67ec202ef5d087d08ce6fa51b9949dd` /
-`09acdf12c4cd034ea3c2a049d1f03c631d35b176db8e488f530d1cf16a4c9bf1`.
-The plan/parse/declaration/type/proof CLI hashes are
-`c42674aa6b6ad222a2b3f4b5c4154f553e06bd66738589436caf112d06659bb7`,
-`a8a7aa639d2ebc65eddc923c7e9369ea5637d50e935f808600f446da1bfbda56`,
-`210055108c257ff65c6f45fb654c82e506653ec4617b68d111893bb3aa1da5a8`,
-`0a7225c92a91e96264bec5172948ea82fc7d6be771fc05d0c3f83c615713648c`,
-and `ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`.
-Task 263 semantics and Steps 6/7 remain outside this layout increment.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 255 Current-Layout Addendum
 
-Task 255 adds one private production leaf,
-`src/runner/type_elaboration/source_set_term.rs` (1,804 lines), and one
-test-only leaf (1,224 lines). `runner.rs` remains the 2,433-line public
-facade/top-level dispatcher and `type_elaboration.rs` the 631-line private
-facade. Raw set/comprehension/choice/`qua` syntax, Task-248 context reuse,
-Task-252 composition, recursive generator/type-site normalization, checker
-input assembly, and frozen outcome projection remain behavior-coupled in the
-private leaf.
-
-The production manifest is 26 paths / 29,138 lines. The sorted path hash is
-`fa5d6e533d6c7c953d77f4146929f91d04443d5a9247b8867f8ee50e9ac64bbe`;
-the ordered content-manifest hash is
-`4e8cfc6772d8e791f51c35fb2ffe22279b9d5c0c0fadf370ec1ce64a3efa7ba1`.
-Active parse/declaration/type/proof counts are 101/5/193/1, plan is 414/378,
-type coverage is 244/232, pass/fail is 224/190, and warnings/errors are 23/0.
-The raw/normalized 320-test-list hashes are
-`41b639004b41102aca6d03882510bd37c1b19d6a6e04d36f10a1037d0aeab16a` /
-`62e2ed916bdd13657f0214e46865105166bd1c1ca08ec8587db612de184fc4ec`.
-The plan/parse/declaration/type/proof CLI hashes are
-`ae998fc21eb147ebe43f9db180970d883d928d7bfc307ceea431dcec5c4f2f3f`,
-`a8a7aa639d2ebc65eddc923c7e9369ea5637d50e935f808600f446da1bfbda56`,
-`210055108c257ff65c6f45fb654c82e506653ec4617b68d111893bb3aa1da5a8`,
-`afccc76e9714da9ae79eb4b1dbc60dde0ec339301ae0cb17a2ecc4b43d2d4eb8`,
-and `ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`.
-Tasks 256-257 and all semantic set/choice/`qua` decisions remain outside
-this layout increment.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 256 Current-Layout Addendum
 
-Task 256 adds one private production leaf,
-`src/runner/type_elaboration/source_atomic_formula.rs` (894 lines), and one
-test-only leaf (902 lines). `runner.rs` remains the 2,439-line public
-facade/top-level dispatcher and `type_elaboration.rs` the 638-line private
-facade. Raw atomic-formula selection, complete same-arena Task-252 union,
-narrow Task-253/255 helper composition, resolver/source provenance
-projection, checker input assembly, and unchanged semantic outcome projection
-remain behavior-coupled in the private leaf.
-
-The production manifest is 27 paths / 30,154 lines. The sorted path hash is
-`0cae4e1f347b2ff3b8eb08afb8ad01aaeba42c98628875fbea08659dfdb28322`;
-the ordered content-manifest hash is
-`f3242ccb13c43aedb38a713bcc1d166bf631444f6a75b5067428da9ca5793557`.
-Active parse/declaration/type/proof counts remain 101/5/193/1, plan is
-414/379, type coverage is 245/233, pass/fail is 224/190, and
-warnings/errors are 23/0. The raw/normalized 328-test-list hashes are
-`95ce3ccf81eea2bd206d99dbbe470f86cfbc3ff6abc9d0490adff195fa928a81` /
-`e6b78257a4939145e5ee40a394b1f22c68149a0e4f190a0d4ce9057ffe0ed72e`.
-The plan/parse/declaration/type/proof CLI hashes are
-`5fa9ea19ce4cf201117c7d3c7d228449297020df4b61198c212449b6c2615906`,
-`a8a7aa639d2ebc65eddc923c7e9369ea5637d50e935f808600f446da1bfbda56`,
-`210055108c257ff65c6f45fb654c82e506653ec4617b68d111893bb3aa1da5a8`,
-`afccc76e9714da9ae79eb4b1dbc60dde0ec339301ae0cb17a2ecc4b43d2d4eb8`,
-and `ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`.
-Task 257 and every deferred semantic formula decision remain outside this
-layout increment.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 257B2 Boundary Recheck
 
-No production path was added. The new selector/payload stays in
-`type_elaboration/source_formula.rs`, while arena construction and producer
-sequencing stay in the existing `source_formula_composition.rs` leaf. Tests
-remain in its paired test leaf. The resulting manifest is 29 paths / 32,064
-lines; no further split is warranted for this bounded second consumer.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 257B3 Boundary Recheck
 
-No production path was added. The B3 payload/extractor remains in
-`source_formula.rs`, producer sequencing remains in
-`source_formula_composition.rs`, and tests remain in the paired test leaf.
-`runner.rs` remains the 2,462-line public facade, `type_elaboration.rs` the
-657-line private facade, `source_formula.rs` is 3,500 lines, and
-`source_formula_composition.rs` is 1,311 lines; the paired test leaf is 1,452
-test-only lines. The existing 29-path layout remains cohesive at 32,809
-production lines. Its path/content hashes are
-`ee27e3796008fdd180ad8fdfbedfd5b370cb76a0d0f87356487bc82cc5a8f9f6` /
-`2e0b08093af337b154a278646cd61218b0bedbc5e9505f07744e81eccd9692f8`.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 257C1 Boundary Recheck
 
-No production path was added. Exact predicate-chain extraction remains in
-`source_formula.rs` (3,690 lines); Task-252 assembly and Task-256 input
-construction remain in `source_atomic_formula.rs` (1,069 lines); the public
-dispatcher and private facade remain `runner.rs` (2,467) and
-`type_elaboration.rs` (659). The paired atomic-formula test leaf is 1,458
-test-only lines. These ownership boundaries remain cohesive.
-
-The production manifest remains 29 paths / 33,184 lines with path/content
-hashes
-`ee27e3796008fdd180ad8fdfbedfd5b370cb76a0d0f87356487bc82cc5a8f9f6` /
-`60799e517f7a59ae9485e3b1fd4a3843a4fc9b2e927d0ed6d1d953ece799bdbd`.
-The library has 353 tests with raw/normalized hashes
-`61f3ae8d76f3f3425d41abad07b095c44a632e3444449efd229681369cb72497` /
-`b729bc119ad536dbded0c2d41ffefe44fc40d78a7a2c05d20154349f76dac557`.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 255C1 Boundary Recheck
 
-No production path was added. The public dispatcher is 2,469 lines, the
-private type-elaboration facade 660, the bounded reusable Task-253 owner
-`source_application.rs` 1,518, and the conditioned-comprehension owner
-`source_set_term.rs` 2,242. The paired source-set test leaf is 1,772
-test-only lines. Raw traversal, resolver selection, dependency composition,
-and exact selector guards remain cohesive in those private owners.
-
-The production manifest remains 29 paths and grows to 33,725 lines. Its
-path/content hashes are
-`ee27e3796008fdd180ad8fdfbedfd5b370cb76a0d0f87356487bc82cc5a8f9f6` /
-`c039f32b8d4401feca775189573ffe8b965394eaf56570e93443f05ad4000fca`.
-The library has 357 tests with raw/normalized hashes
-`7565cbb0c853433363420a0ea825adca4cebd627c67396951dfb68c5ee84c132` /
-`d4af543f0f14fe274e89fc8f4d92e4b38f3d73d75057bcdaeb1ec868b6b01f9c`.
-Plan/parse/declaration/type/proof CLI hashes are
-`c38c1e4f4572702034b2600d60b6fa0efaf3fa92143ce164da04cfbe74bbb1a0`,
-`a8a7aa639d2ebc65eddc923c7e9369ea5637d50e935f808600f446da1bfbda56`,
-`210055108c257ff65c6f45fb654c82e506653ec4617b68d111893bb3aa1da5a8`,
-`f87a743b914d2d51d6b9a8dbcf3c8d93bbc1403b44907fd85123a1865f84edd5`,
-and `ccf3d2d4d0a3755e00989d97af369a7c560302f76798d0a185d57ec3891e8450`.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 257C4C1 crate-local testdata boundary
 
-The [C4C1 contract](../../task_contracts/en/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md)
-owns exactly one file under `crates/mizar-test/tests/testdata/parser/`, one
-private provider branch in `runner/import_fixtures.rs`, and four tests in the
-existing `runner/tests/parse_only.rs`. The support file is outside `tests/miz`
-and the production source manifest, has no sidecar, and cannot be discovered as
-an ordinary corpus payload. Tests associate and cross-validate the physical
-evidence file with the synthetic module; the provider recognizes only the
-logical module id. This admits no package, MML, or implicit-prelude behavior.
-
-Frontend/parser/resolver/checker public APIs, the resolver augmentation
-allowlist, Cargo, `tests.rs`, new leaves, public runner routes, and downstream
-semantic owners are excluded.
-
-The implemented exact seven-path slice respects this boundary: only the
-crate-private provider/discovery seam and existing test leaf changed in Rust,
-and the support file remains testdata-only. The focused and full verification
-evidence is centralized in the contract's [precommit completion
-checkpoint](../../task_contracts/en/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md#precommit-implementation-completion-checkpoint);
-independent source-documentation consistency and bilingual/boundary reviews
-ended with **NO FINDINGS**.
-Independent final-quality review also ended with **NO FINDINGS** and is linked
-through the canonical [precommit completion
-checkpoint](../../task_contracts/en/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md#precommit-implementation-completion-checkpoint).
-The exact staging/cached review recorded at that historical review-time
-checkpoint also ended with **NO FINDINGS**.
-The task-only commit, post-commit proof, and accepted fresh-inventory STOP are
-closed at the language-local [historical postimplementation
-checkpoint](../../task_contracts/en/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md#historical-immediate-postimplementation-pre-closure-checkpoint),
-with no boundary expansion or semantic successor.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 258A Frozen-Contract Boundary
 
-This documentation prerequisite adds no runner source path and leaves the
-29-path / 34,290-line production manifest and all hashes unchanged. The
-future exact `MT10-FS` selector is frozen as one dedicated private
-`source_statement.rs` leaf below the existing type-elaboration facade. It
-will own only raw statement selection and syntax-free input assembly; the
-checker owns validation and immutable publication. The planned leaf is
-cohesive, does not justify a pre-implementation split, and must not absorb
-proof, acceptance, trace, fixture, or active-corpus ownership.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 258A Implementation Boundary Recheck
 
-The planned private production leaf is now 642 lines and its paired
-test-only leaf 883 lines. It cohesively owns exact loaded-source and AST
-selection, resolver label projection, Task-48/252/256 input assembly, and
-the dormant checker transaction. `runner.rs` remains the 2,489-line public
-facade and `type_elaboration.rs` the 674-line private facade. No proof,
-acceptance, fixture, sidecar, trace, or active-corpus ownership entered the
-leaf, so no further split is warranted.
-
-Production is 30 paths / 34,955 lines with path/content hashes
-`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
-`dd399648aecadf2e7a63f685ad87577b7ebae9a9064fbfaba429a07d25ed9912`.
-The library has 369 tests with raw/normalized hashes
-`c5764bb1600242fe44db8c44b9c6bb18f39203a0de9ff60e301cbc6f172037f6` /
-`1fd27b9bff190f95ac23d6de714a919a192fb0b7830aa3c98f960d4224c084aa`.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 258B1 Implementation Boundary Recheck
 
-The existing private `type_elaboration/source_statement.rs` owner grows to
-1,499 lines and remains cohesive: it owns only the exact Task-258A/B1 source
-selection, resolver projection/replay, binding/lower assembly, and immutable
-statement publication. `source_term.rs` is 817 lines after adding the
-per-context root helper, the private facade is 676 lines, `runner.rs` remains
-2,489 lines, and the paired statement test leaf is 2,145 lines. No new module
-or split is justified by the frozen one-source transaction.
-
-Production topology remains 30 paths / 35,854 lines. Its path/content hashes
-are
-`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
-`f2d133e6fc42bd62058e95c274944aa03d80e9f8f2b5a0394a4d11e58ec3a66e`.
-The library has 374 tests with raw/normalized hashes
-`e8b5f54f219f8aa091014557c38ff8018d229ffbbc01cfa449bdc215826ca105` /
-`99e6b7199e007707d1b4074b7079885e58378c4900a6811a7e1eb6cc02f9a2bf`.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 258B2 Planned Boundary
 
-This documentation prerequisite adds no production module and leaves the
-30-path / 35,854-line manifest and hashes unchanged. The planned exact B2
-route belongs in the existing private
-`type_elaboration/source_statement.rs` leaf alongside Task 258A/B1 because
-it shares source selection, resolver authentication, lower-stage assembly,
-and immutable statement publication. Raw syntax remains private and checker
-modules retain syntax-free ownership. No new dependency direction or
-semantic owner is introduced, so no split is justified before implementation.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 258B2 Implemented Boundary
 
-The existing boundary is preserved: `runner.rs` 2,491 lines and the
-678-line facade expose a private 2,120-line statement leaf; the 2,884-line
-test leaf owns raw parser/resolver assertions. The 30-path production
-topology is unchanged. The checker receives only syntax-free handoffs and
-authenticated provenance, so no new module, dependency direction, or
-semantic owner is justified.
-
-### Task 258B3 Frozen Boundary Result
-
-The existing private statement leaf remains the sole raw-parser/resolver
-owner and may add the exact B3 selector, lower bridge, and paired assembly.
-The existing facade and `runner.rs` only preserve selector precedence; the
-existing statement test leaf owns all raw kind/parity and mutation checks.
-No new runner module or production path is justified.
-
-The checker receives only source/module IDs, syntax-free typed sites,
-fingerprinted base/primary handoffs, dense witness data, and authenticated
-theorem/binding provenance. This prerequisite leaves production topology at
-30 paths / 36,479 lines and line baselines `2120/678/2491/2884` unchanged.
-
-### Task 258B3 Implemented Boundary
-
-The planned boundary is preserved. The existing statement production leaf
-is 2,806 lines, the private facade 681, `runner.rs` 2,495, and the paired
-test leaf 4,291. Production remains 30 paths / 37,172 lines with unchanged
-path hash
-`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275`
-and content hash
-`adfc81c21e69a91b194161525856aa40eb0e3ea76facfc2146dcb00b473ab3c2`.
-No new module, dependency direction, or semantic owner was introduced.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 258B3N Planned Consumer Boundary
 
-The named-witness selector, assembly, and five compound tests remain in the
-existing `type_elaboration/source_statement.rs` production/test owners.
-Production topology stays 30 paths; this documentation prerequisite leaves
-all 37,172 production lines and hashes unchanged. No new semantic route or
-dependency direction is authorized.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 258B3N Consumer Boundary Result
 
-The implementation remains in the existing statement leaf, its two
-facades, runner root, and statement test leaf. Production topology remains
-30 paths; sizes are `3183/684/2498` production lines and 5,799 test-leaf
-lines. No new module, public harness route, external detail key, dependency
-direction, or semantic owner was added.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 258B3M1 Planned Consumer Boundary
 
-The exact selector, extraction, lower assembly, and five tests remain in
-the existing `type_elaboration/source_statement.rs` production/test leaves
-and existing facades/root. Production topology stays 30 paths. This
-documentation task leaves statement leaf/facade/root/test sizes
-`3183/684/2498/5799` and the 37,555-line production manifest unchanged.
-No public route, external key, module split, dependency direction, or
-semantic owner is authorized.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 258B3M1 Consumer Boundary Result
 
-The implementation stays within the planned statement production/test
-leaves and existing facades/root. Production topology remains 30 paths;
-statement leaf/facade/root/test sizes are `3724/688/2501/7246`, and the
-production manifest is 38,103 lines. Raw parser/resolver objects remain
-runner-private, the checker receives only syntax-free authenticated tables,
-and no public route, mutation API, external key, module split, dependency
-direction, or semantic owner was added.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 258B3M2A Planned Consumer Boundary
 
-The exact numeral selector, raw parser/resolver authentication, lower-table
-assembly, and five tests stay in the existing
-`type_elaboration/source_statement.rs` production/test leaves and existing
-facades/root. The checker receives only syntax-free authenticated tables;
-Task-252 numeral/numeric-request ownership is reused rather than duplicated.
-Production topology remains 30 paths. This documentation task leaves
-statement leaf/facade/root/test sizes `3724/688/2501/7246` and the
-38,103-line production manifest unchanged. No public route, external key,
-mutation API, module split, dependency direction, binding, or semantic
-owner is authorized.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 258B3M2A Consumer Boundary Result
 
-The implementation remains in the existing statement production/test leaves,
-facades, and runner root. Raw parser/resolver objects remain runner-private;
-the checker receives only syntax-free authenticated tables and reuses the
-Task-252 numeral/request ownership. Production topology remains 30 paths;
-statement leaf/facade/root/test sizes are `4185/691/2505/8611`, and the
-production manifest is 38,571 lines. No public route, external key, mutation
-API, module split, dependency direction, binding, or semantic owner was added.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 258B3M2B1 Planned Runner Boundary
 
-The docs-only prerequisite adds no source module. Future private work stays
-in `type_elaboration/source_statement.rs`, its facade/root dispatch, and the
-existing statement test leaf. Raw parser/resolver identities remain
-runner-private; only syntax-free Task-48/252/256/base/witness tables cross
-to the checker. The private consumer must separate five extraction roots
-from six primary rows. Topology remains 30 production paths and 38,571
-lines; sizes remain `4185/691/2505/8611`. No public route, key, mutation
-API, module split, dependency direction, binding, or semantic owner is
-planned.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 258B3M2B1 Implemented Runner Boundary
 
-The implementation remains inside the private statement leaf, private
-type-elaboration facade, root dispatch imports, and statement/application
-test support. Raw parser/resolver values remain runner-private; only exact
-syntax-free handoffs enter the checker. The five-root/six-primary split,
-zero-diagnostic assertion, and Tasks 253–255 bidirectional isolation are
-test-owned. Statement leaf/facade/root/test sizes are
-`4676/695/2508/9902`; production is 30 paths / 39,069 lines. No public
-route/key/mutation API, module split, crate edge, dependency direction,
-binding, active route, or semantic owner changed.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 258B3M2B2A Frozen Runner Boundary
 
-The future dormant selector stays in the existing statement leaf and
-facades/root, with tests in the paired statement/application support leaf.
-Raw parser/resolver values remain private; only exact Task-48/252/256/base/
-witness handoffs cross to the checker. The five-root/seven-primary split,
-zero-diagnostic assertion, both wrapper links, and bidirectional family
-isolation are test-owned. This prerequisite changes no source, module,
-public route/key, crate edge, dependency direction, binding, active route,
-or semantic owner; measured runner sizes and 30-path/39,069-line production
-baseline remain unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 258B3M2B2A Implemented Runner Boundary
 
-The implementation remains inside the private statement leaf, the existing
-type-elaboration facade/root dispatch, and the statement test leaf. The
-leaf/facade/root/test sizes are `5188/699/2513/11234`; the unchanged
-30-path production manifest totals 39,590 lines with path/content hashes
-`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
-`291da8a26e90f75e7f54e221314c1fcb9ebba375c238a07b02a161f7af6dfe66`.
-No public route/key, module split, crate edge, dependency direction, active
-route, binding, or semantic owner changed.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 258B3M2B2B1P Frozen Module Boundary
 
-The existing cohesive
-`runner/type_elaboration/source_application.rs` leaf owns the private
-context-aware Task-253 reuse entry point and two tests. No new module,
-public re-export, checker dependency, statement-leaf extraction duplicate,
-or crate edge is authorized. The legacy context-0 entry point remains the
-compatibility owner for existing consumers.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 258B3M2B2B1P Implemented Module Boundary
 
-Implementation stays in the existing private
-`type_elaboration/source_application.rs` leaf, its private facade/root
-imports, and the paired test leaf. No module or production path was added.
-The Task-253 leaf/facade/root/test sizes are
-`1782/701/2514/2799`; the 30-path production manifest totals 39,857
-lines. Its sorted path/content hashes are
-`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
-`cab6ee03a37966c3ac2661202601aec62969d9270cad73496eb5d61309df3f3c`.
-Raw/normalized 411-test hashes are
-`14e796901abe489acbf8fb6e348e38a02ce5f19de2b36a0803a483cb53858d58` /
-`eadc56309093afd96427c0d26d0c252a7d20cb8fa0c289d983b265098b1ae2ea`.
-No public re-export, checker dependency, statement extraction, active
-route, binding, or semantic owner changed.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 258B3M2B2B1A Frozen Module Boundary
 
-The future write scope is restricted to the existing private
-`type_elaboration::source_statement` consumer and its test module plus the
-facade/root registration needed for five library tests. It calls the existing
-private B1P context-aware helper in `source_application`; no extractor,
-candidate, argument, or request logic moves or duplicates. The checker owns
-the additive public witness target/fingerprint and atomic installation.
-
-The docs task itself changes no Rust module. Baselines remain 30 production
-paths / 39,857 lines with path/content hashes
-`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
-`cab6ee03a37966c3ac2661202601aec62969d9270cad73496eb5d61309df3f3c`
-and 411-test hashes
-`14e796901abe489acbf8fb6e348e38a02ce5f19de2b36a0803a483cb53858d58` /
-`eadc56309093afd96427c0d26d0c252a7d20cb8fa0c289d983b265098b1ae2ea`.
-No public route, active dispatch, fixture, expectation, sidecar, trace,
-binding, or semantic owner changes.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 258B3M2B2B1A Implementation Boundary
 
-The implementation remains in the existing private
-`type_elaboration/source_statement.rs` leaf, its facade/root dispatch, and
-the paired statement test leaf. Raw parser/resolver objects remain
-runner-private; only authenticated syntax-free Task-48/252/253/256/base/
-witness handoffs cross into the checker. Statement leaf/facade/root/test
-sizes are `5618/706/2520/11945`; the unchanged production manifest is
-30 paths / 40,298 lines with path/content hashes
-`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
-`201868442e6a9b6c20188a9f4ed9a65698d12a595cfef1ddd082071b9f090b41`.
-No module split, dependency direction, public/active route, fixture,
-expectation, sidecar, trace, binding, or semantic owner changed.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 258B3M2B2B1B1P Frozen Module Boundary
 
-The later implementation write scope is restricted to the existing private
-`runner/type_elaboration/source_application.rs` leaf, its private
-facade/root imports if required, and
-`runner/tests/type_elaboration/source_application.rs`. No module or
-production path may be added. The statement leaf is a consumer only after a
-later B1B1 frozen contract and must remain unchanged in B1B1P.
-
-The docs task changes no Rust module. Baselines are Task-253
-leaf/facade/root/test `1782/706/2520/2799`, 416 runner tests, and 30
-production paths / 40,298 lines with path/content hashes
-`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
-`201868442e6a9b6c20188a9f4ed9a65698d12a595cfef1ddd082071b9f090b41`.
-No public re-export, checker dependency, active route, fixture, trace,
-binding, or semantic owner changes.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 258B3M2B2B1B1P Implemented Module Boundary
 
-Implementation is confined to the existing private
-`runner/type_elaboration/source_application.rs` leaf, its private
-facade/root imports, and the paired source-application test leaf. No module,
-production path, checker dependency, public re-export, statement consumer,
-or active route was added. Leaf/facade/root/test sizes are
-`2652/708/2523/3727`; the production manifest remains 30 paths and now
-totals 41,173 lines. Sorted path/content hashes are
-`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
-`ec189d8b9cf1004ae720be75b33365d2348897e34f780fa202f9f3d03a336f66`;
-raw/normalized 418-test hashes are
-`becc23c77b37b858edca581d11e396efc431f1f47f4cc80d859d6d06d1f19c37` /
-`66089f0f420203a4cf24c182315b77ce58775ce35c50285041823bcc0700248b`.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 258B3M2B2B1B1 Frozen Module Boundary
 
-The existing source-statement leaf owns the new private B1B1 selector and
-calls the existing wrapped source-application seam. The source-application
-leaf changes later only to remove the helper's dead-code allowance; its
-public surface and tests do not change. Existing facade/root modules expose
-the dormant consumer internally without a new public dispatch or detail
-key. The checker changes later only in private statement/typed/final profile
-enumeration.
-
-No new module, crate dependency, checker public API, active fixture route,
-trace/expectation/sidecar owner, or semantic dependency is introduced.
-Baseline sizes `5618/2652/708/2523/11945/3727` and all hashes are measured
-documentation invariants for this prerequisite.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 258B3M2B2B1B1 Implemented Module Boundary
 
-Implementation stayed in the existing statement/application leaves,
-type-elaboration facade, root orchestration, and statement-test leaf. Final
-sizes are `5962/2638/713/2528/13381/3727`; production is 30 paths / 41,513
-lines with unchanged path hash and content hash
-`02ee5d2ab4a49effb70cd758eb540af5945a38dbf8b76688eef36c9ca2c1e2ed`.
-No new module, dependency, public/active route, source-application test, trace
-owner, or semantic boundary was introduced.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 258B3M2B2B2P Frozen Module Boundary
 
-The later B2P implementation write scope is restricted to the existing
-private `runner/type_elaboration/source_structure.rs` leaf, its private
-facade/root imports, and
-`runner/tests/type_elaboration/source_structure.rs`. It may add one
-exact-source owned-kind selector and one existing-context/shared-source-term
-parts reuse seam only. No module or production path may be added.
-
-The source-statement leaf remains unchanged: B2P publishes no Task-258
-statement or witness and adds no checker API or co-installation path. Raw
-surface nodes and resolver projections stay runner-private; only the
-syntax-free Task-48/252/254 handoffs cross the checker boundary through the
-existing public Task-254 producer.
-
-The documentation baseline is checker/runner tests `378/423`.
-Source-structure leaf/facade/root/test sizes are `1689/713/2528/1716`.
-Production remains 30 paths / 41,513 lines with path/content hashes
-`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
-`02ee5d2ab4a49effb70cd758eb540af5945a38dbf8b76688eef36c9ca2c1e2ed`;
-runner raw/normalized test hashes are
-`fa026adf9ebc5bdf7aa3f00ea84f88ffd8f620dbc9af47ee896952b3c4e7ab88` /
-`56a661b2d79b6f866008df3684e263feeca5ef069d5e1ea097e6c3404095872d`.
-Implementation projects 425 runner tests and must remeasure every changed
-size and hash.
-
-No crate dependency, public re-export, active route, fixture, expectation,
-sidecar, trace owner, semantic dependency, statement consumer, or checker
-test is authorized.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 258B3M2B2B2P Implemented Module Boundary
 
-Implementation stayed within the four frozen files: the existing
-source-structure leaf, private facade/root imports, and source-structure test
-leaf. No production path, dependency, public re-export, active route,
-statement consumer, checker API/test, or semantic boundary was added.
-Final sizes are `2857/715/2531/2991`; production remains 30 paths and is
-42,686 lines with unchanged path hash and content hash
-`d15292becaa5aac33c23a559aff7085ee8cb9116e44a034b80148a7d65acb155`.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 258B3M2B2B2A Frozen Runner Boundary
 
-The future implementation is confined to the existing private
-`runner/type_elaboration/source_statement.rs` leaf, its private facade/root
-registration, and `runner/tests/type_elaboration/source_statement.rs`, plus
-the mechanically limited `source_structure.rs` allowance below.
-It consumes the existing B2P `source_structure` seam and Task-48/252/254/256
-and Task-258 base producers; it does not duplicate or move them. Raw parser
-and resolver projections remain runner-private. Only authenticated syntax-free
-handoffs cross into the checker.
-
-The `source_structure.rs` extractor and row construction remain unchanged;
-the only permitted edit in that leaf is removal of its B2P-only dead-code
-allowance if the new consumer makes the existing private seam live. It may
-not gain public visibility or a second extractor.
-
-The checker alone owns the additive `Structure` witness target, structure
-fingerprint, full structure-aware builder, full atomic
-structure/statement/witness installer, validation, debug rendering, and
-final projection; exact API names/signatures remain those frozen in the
-canonical checker plan. No new runner module, production path, crate
-dependency, public re-export, active route, fixture, sidecar, expectation,
-trace owner, binding owner, or semantic dependency is authorized.
-Documentation baselines remain tests `378/425`; statement/structure/facade/
-root/statement-test/structure-test sizes are
-`5962/2857/715/2531/13381/2991`. Production remains 30 paths / 42,686 lines
-with path/content hashes
-`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
-`d15292becaa5aac33c23a559aff7085ee8cb9116e44a034b80148a7d65acb155`;
-raw/normalized runner-test hashes are
-`b78230532c45f58ba96e70810d9613d96098ab0ec975a7317c7d6d0a548956ab` /
-`97e68290a6b5a3e81373084293461eda85ab0c508d7ce3002e988ebf27806c38`.
-Implementation projects `382/430` tests and must remeasure every changed
-size/count/hash.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 258B3M2B2B2A Implemented Runner Boundary
 
-Implementation stayed in the existing private source-statement leaf,
-facade/root registration, and statement test leaf. The source-structure leaf
-changed only by removing the B2P-only dead-code allowance after the private
-seam became live; its extractor, visibility, and rows remain unchanged. No
-module, production path, dependency, public re-export, active route,
-fixture, sidecar, expectation, trace owner, or semantic owner was added.
-
-Final statement/structure/facade/root/statement-test sizes are
-`6414/2843/720/2537/15058`. The 30-path production layout is 43,135 lines
-with path/content hashes
-`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
-`26debcb7201bdd49828bfd06b2bcee7e775867462f8f6003755f4f8676dd4869`;
-runner test-list hashes are
-`da5ef4a681303797f208849dc15bd76e545bedf23319ed634c16b00fa9a60d55` /
-`7fe2eb9d8e8f7a920e8eb2043a60bc9eed61cfa2081cce27f84a57b6af4ccf3b`.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 258B3M2B2B2BP Frozen Runner Boundary
 
-B2BP stays within the existing `type_elaboration/source_structure.rs`
-private leaf, its facade/root test visibility, and
-`tests/type_elaboration/source_structure.rs`. It may add one private site
-shape and two private exact selector reuse functions; it adds no module,
-production path, dependency, public re-export, active route, or checker
-surface. The statement leaf and checker typed/final modules are not owners.
-
-Current sizes are statement/structure/facade/root/statement-test/
-structure-test `6414/2843/720/2537/15058/2991`. Production remains 30
-paths / 43,135 lines with path/content hashes
-`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
-`26debcb7201bdd49828bfd06b2bcee7e775867462f8f6003755f4f8676dd4869`.
-The implementation may grow existing owners only and projects runner tests
-`432`.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 258B3M2B2B2BP Runner Boundary Completion
 
-The implementation remains inside the frozen four existing files and adds
-no module, production path, dependency, public re-export, active route, or
-checker surface. Final statement/structure/facade/root/statement-test/
-structure-test sizes are `6414/4514/722/2538/15058/4315`. The 30-path
-production layout is 44,809 lines with path/content hashes
-`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
-`6a0586185a5959f842f914e869e70d53b75fa08298661295e52919b205ad16c0`.
-The runner test list is 432 with raw/normalized hashes
-`913a06523e707dacff403dc14ccaeef92d3f23ae6a4084d213b5a991e82bdfd6` /
-`a00cadb8916d53cd541f90e654a2beb0fc1596d94482d741dc15214aa27e0ba6`.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 258B3M2B2B2B Frozen Runner Boundary
 
-Runner implementation is limited to five existing files:
-`type_elaboration/source_statement.rs` consumes the private B2BP seam,
-`type_elaboration/source_structure.rs` may remove only obsolete B2BP
-`dead_code` allowances, `type_elaboration.rs` and `runner.rs` expose the
-existing production-private path internally, and
-`tests/type_elaboration/source_statement.rs` owns the five exact tests.
-The checker's separate owners are only `source_statement.rs`,
-`typed_ast.rs`, and `resolved_typed_ast.rs`.
-
-No module, production path, dependency, public re-export, active runner
-route, fixture, sidecar, expectation, trace entry, or debug grammar may be
-added. Current runner sizes are statement/structure/facade/root/
-statement-test/structure-test `6414/4514/722/2538/15058/4315`;
-production remains 30 paths / 44,809 lines with path/content hashes
-`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
-`6a0586185a5959f842f914e869e70d53b75fa08298661295e52919b205ad16c0`.
-The implementation projects checker/runner tests from `382/432` to
-`386/437` without changing canonical or active artifacts.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 258B3M2B2B2B Implemented Runner Boundary
 
-The implementation remains exactly within the frozen eight files: checker
-`source_statement.rs`, `typed_ast.rs`, and `resolved_typed_ast.rs`, plus
-runner `type_elaboration/source_statement.rs`,
-`type_elaboration/source_structure.rs`, `type_elaboration.rs`, `runner.rs`,
-and `tests/type_elaboration/source_statement.rs`. The source-statement leaf
-consumes only the authorized B2BP owned-kind/handoff seams; the
-source-structure leaf removes obsolete future-consumer allowances without
-changing extraction, visibility, or row ownership.
-
-No module, production path, dependency, public re-export, active route,
-fixture, sidecar, expectation, trace entry, debug grammar, or semantic owner
-was added. Final runner statement/structure/facade/root/statement-test/
-structure-test sizes are `6826/4506/728/2543/17120/4315`. The 30-path
-production layout contains 45,224 lines with path/content hashes
-`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
-`8c46908c8a53b3c4e0746455de938aae0b086fdf550f6cea1da59acf25a10b96`.
-The runner test list is `437` with raw/normalized hashes
-`51c77289004113121e7b89ff17af9f528558366df28237bb76f13adbb3ce53a7` /
-`2302d4f14b055539b7b35a4e27f70bced41d8c717246a99abf9400b7024227eb`.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 258B3M2B2B2CP Frozen Runner Boundary
 
-B2B commit `8311502c` is complete and fresh clean inventory inserts B2CP
-before B2C.
-
-B2CP may change only four existing runner files:
-`type_elaboration/source_structure.rs`, `type_elaboration.rs`, `runner.rs`,
-and `tests/type_elaboration/source_structure.rs`. The source-structure leaf
-owns exact-source selection, imported-root/owned-kind authentication, and
-the proof-context Task-254 reuse seam; the facade/root expose only private
-production and test plumbing; the test leaf owns exactly two tests.
-
-The only new private siblings are `ImportedStructureUpdateSite`,
-`imported_structure_update_owned_node_kinds`, and
-`imported_structure_update_handoff_in_context`. They expose the exact
-Task-254 update/`FieldUpdate` lower bytes to the future B2C consumer without
-owning Task-256/258, statement/witness installation, or semantic results.
-
-Checker source, source-statement modules/tests, public re-exports, active
-dispatch, dependencies, fixtures, expectations, sidecars, trace metadata,
-new modules/production paths, debug grammar, and semantic owners are
-outside scope. Functional-copy/update evaluation, type/result identity,
-proof acceptance, goals, and IR remain deferred. Current runner sizes remain
-`6826/4506/728/2543/17120/4315`; production remains 30 paths / 45,224
-lines with path/content hashes
-`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
-`8c46908c8a53b3c4e0746455de938aae0b086fdf550f6cea1da59acf25a10b96`.
-Raw/normalized runner test-list hashes remain
-`51c77289004113121e7b89ff17af9f528558366df28237bb76f13adbb3ce53a7` /
-`2302d4f14b055539b7b35a4e27f70bced41d8c717246a99abf9400b7024227eb`.
-Implementation projects only the runner library from 437 to 439. All four
-pre-commit reviews had no findings, but concurrent commit `817bb92b`
-restored a rejected `spec_gap` classification outside this module table.
-The later quality review invalidated its hard-gate/`98/100` claims.
-Docs-only correction Task `258B3M2B2B2CPC1` changes no module boundary;
-repeated reviews now have no findings, all nine hard gates pass, and final
-quality is a valid `98/100` with live broad reruns explicitly justified as
-blocked by unrelated incomplete source work. Only a dedicated correction
-commit and fresh implementation inventory remain pending.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 258B3M2B2B2CP Implemented Runner Boundary
 
-CPC1 correction commit `ee267d9c` is complete. B2CP now changes exactly the
-four frozen runner files and no others, adding only private dormant update
-selection/authentication/handoff plumbing and exactly two passing tests.
-The prerequisite `design_drift`, bounded `source_drift`, and `test_gap`
-are closed; final test-sufficiency and implementation re-reviews have no
-findings. Checker source/public API, active dispatch, dependencies,
-fixtures, expectations, sidecars, trace metadata, production paths, and
-semantic owners remain untouched.
-
-The final runner sizes are `6826/6065/730/2546/17120/5848`; production is
-30 paths / 46,788 lines with path/content hashes
-`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
-`bbcc55ab769fb5b725de83a27ae13243000a1610a12064907c06187417e45b5f`.
-Checker/runner libraries are `386/439`, and raw/normalized runner
-test-list hashes are
-`ea3e854c1b741ab4b642000df6610a15e521f0849b39e7480820ca86680a1d0e` /
-`11e6de35b422b913c235d8193fb2629da5aff39d1cf251af1c6cec2824301c8d`.
-Checker/corpus/CLI hashes remain unchanged.
-
-The formula row remains `deferred`, `tests = []`; audit impact is
-narrative-only. B2C/public/active and semantic/proof/goal/IR deferrals are
-unchanged. Concurrent ownership remains a report-only
-`repo_metadata_conflict`; no metadata repair is made. Broad formatting,
-Clippy, tests, and every count/hash gate pass. The final
-source/documentation re-review has no findings. Independent final quality
-has no findings, all nine hard gates PASS, and valid `98/100`. B2CP
-implementation commit `b146f0f72dceac2233c9d679b7820e264974b227` is
-complete; clean B2C fresh inventory owns the next step.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 258B3M2B2B2C Frozen Runner Boundary
 
-B2CP implementation commit
-`b146f0f72dceac2233c9d679b7820e264974b227` is complete; clean fresh
-inventory selects B2C. The future implementation is frozen to eight
-existing files.
-
-Checker-owned files are `crates/mizar-checker/src/source_statement.rs`,
-`crates/mizar-checker/src/typed_ast.rs`, and
-`crates/mizar-checker/src/resolved_typed_ast.rs`. Runner-owned files are
-`crates/mizar-test/src/runner/type_elaboration/source_statement.rs`,
-`type_elaboration/source_structure.rs` for obsolete B2CP allowance cleanup
-only, `type_elaboration.rs`, `runner.rs`, and
-`tests/type_elaboration/source_statement.rs`.
-
-The statement leaf consumes existing private B2CP
-`ImportedStructureUpdateSite`, owned-kind, and proof-context handoff seams
-unchanged. Checker files add only the private B2C profile enumeration and
-typed/final validation authorized by existing APIs. Checker files own
-exactly four tests and the runner test leaf owns exactly five.
-
-No module, production path, dependency, public re-export/API, active
-dispatch, fixture, expectation, sidecar, trace metadata, debug grammar, or
-semantic owner is added. Task 252/254/256 stay with existing owners;
-Task-258 base owns theorem/conclusion 82/80 and B2C owns only
-take/witness 72/71 plus witness-to-`Structure(0)`.
-
-Checker/runner libraries are `386/439`, projected as `390/444`. Runner
-statement/structure/facade/root/statement-test/structure-test sizes remain
-`6826/6065/730/2546/17120/5848`; production stays 30 paths / 46,788 lines
-with hashes
-`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
-`bbcc55ab769fb5b725de83a27ae13243000a1610a12064907c06187417e45b5f`
-and test-list hashes
-`ea3e854c1b741ab4b642000df6610a15e521f0849b39e7480820ca86680a1d0e` /
-`11e6de35b422b913c235d8193fb2629da5aff39d1cf251af1c6cec2824301c8d`.
-
-Checker statement/typed/final/structure sizes remain
-`29941/4830/7244/5036`; its 23-path / 124,016-line production hashes stay
-`c2eea2db9187c48dd830a010eff37f09b90467f9012a9fe6b3ac669b6d1dac42` /
-`df0c806d8adf6283b2ac3341e11bab62a0f11ef216d48729852e98c40079d7d1`
-and test-list hashes stay
-`c95eabdba15da88712434600fa5a855d1f0d5e356381608d65395d0502ca2920` /
-`48e755cf92b832f0f516c27fecdc41e6812784ab2946b4a10932756d71de482e`.
-All four independent reviews have no findings and complete
-documentation/count/hash verification passes. Independent final quality has
-no findings, all nine hard gates PASS, and the valid score is `98/100`. The
-dedicated documentation commit and implementation inventory remain open.
-
 Completion evidence: [central Task-258B3M2B2B2C historical contract](../../task_contracts/en/258B3M2B2B2C.md#completion-evidence).
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 258B3M2B2B2C Broad Runner-Boundary Verification
 
-Format, workspace Clippy, both crate and policy suites, full workspace tests,
-focused `4/4` and `5/5`, and sibling `12/12` and `21/21` suites pass with
-unchanged counts and hashes. No runner module, dependency, path, public,
-active-route, or semantic boundary changes. Independent final consistency/
-quality, commit, and post-commit gates remain pending.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 258B3M2B2B2C Final Runner-Boundary Review Status
 
-Independent final source/documentation consistency and final quality both
-report **NO FINDINGS**. All nine hard gates PASS and the valid score is
-`98/100`; exact module-boundary evidence remains unchanged. Only cached-diff/
-staging audit, implementation commit, and post-commit inventory/fresh-next-
-task gates remain pending.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 258B3M2B2B3P Frozen Runner Boundary
 
-B2C is closed at `e8373c683448e524cb98edde83fdf8de83a125cd`; clean
-post-commit inventory selects B3P. Its future write scope is exactly four
-existing runner files:
-
-- `crates/mizar-test/src/runner/type_elaboration/source_set_term.rs`
-- `crates/mizar-test/src/runner/type_elaboration.rs`
-- `crates/mizar-test/src/runner.rs`
-- `crates/mizar-test/src/runner/tests/type_elaboration/source_set_term.rs`
-
-The production leaf owns a private explicit-context sibling only. The facade
-and root may expose it only along the existing private/test-only pattern, and
-the test leaf owns exactly two compound tests. The context-0 helper and
-legacy output must remain byte-identical.
-
-No checker file, module, dependency, path, public re-export/API, active
-dispatch, fixture, expectation, sidecar, trace metadata, diagnostic owner,
-Task-256/258 table, upper B3A witness owner, semantic owner, or adjacent
-term-form owner is added. This boundary is bounded `source_drift` plus
-`test_gap`, not authorization for a module split.
-
-The two tests remain in that one leaf but must exhaust every 117-byte/LF
-variant, 57-node and resolver/lower-table field, owner partition,
-precedence/replay/rollback/clone and empty-family output. They assert the
-three independent Task-111 legacy hashes literally; no additional test or
-file is authorized.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 258B3M2B2B3P Documentation Review Status
 
-Specification/documentation, test-sufficiency, implementation-boundary, and
-source/documentation consistency reviews report **NO FINDINGS**. Scope,
-source/hash, lint/library, production/test-list/CLI hash, diff, and trace
-no-op verification pass. The four-file boundary is frozen; future
-implementation `source_drift`/`test_gap` remains planned. Final quality,
-commit, post-commit, and fresh inventory are pending.
-
 Completion evidence: [central Task-258B3M2B2B3P historical contract](../../task_contracts/en/258B3M2B2B3P.md#completion-evidence).
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 258B3M2B2B3P Implemented Runner Boundary
 
-Prerequisite `285a1f11c310bb313c4c6b4feae914eb11f74754` is implemented
-without expanding the frozen boundary: exactly the four existing runner
-files changed, no new file/path/dependency/module/public API or active route
-was added, and no checker source changed. The only production seam is the
-`pub(super)` explicit-context sibling plus the preserved context-0 delegate;
-exactly two tests remain in the existing set-term test leaf.
-
-Runner production remains `30` paths and is now `49472` lines, with
-unchanged path hash
-`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275`
-and content hash
-`814290d6a53b9dfb6061cb301d7728eff3a7c78e1e87a1d0bd5d75839bbc9a5a`.
-Test-sufficiency, implementation, source/documentation consistency repeat,
-and documentation/boundary repeat are **NO FINDINGS**. Lint-policy `15/14`,
-metadata `137`, focused/library/fmt, workspace Clippy/tests, five CLI/current
-manifest/test-list hashes, diff check, and exact 30-file scope PASS.
-Independent final quality reports **NO FINDINGS**; all nine hard gates PASS
-with valid `98/100` (`20/20/15/14/10/10/5/4`). Only commit/post-commit and
-fresh B3A inventory remain pending.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 258B3M2B2B3A Frozen Runner Boundary
 
-The later runner edit set is exactly existing
-`type_elaboration/source_statement.rs`, `type_elaboration.rs`, `runner.rs`,
-and `runner/tests/type_elaboration/source_statement.rs`. It consumes
-unchanged B3P `source_set_term_output_with_source_term_in_context`; runner
-`type_elaboration/source_set_term.rs` is explicitly forbidden. No file,
-module, dependency, route, fixture, expectation, sidecar, trace, diagnostic,
-or corpus change is allowed.
-
-The paired checker edit set is exactly `source_statement.rs`, `typed_ast.rs`,
-and `resolved_typed_ast.rs`, for seven files total. The prerequisite itself
-changes exactly `32` design docs. This boundary publishes one witness/zero
-names and source transport only, with all semantic/proof/goal surfaces empty.
-Independent documentation/boundary and source/documentation consistency
-repeats report **NO FINDINGS**; final quality reports **NO FINDINGS**, all
-nine hard gates PASS, valid `98/100`. Only the documentation-only commit and
-post-commit/fresh implementation inventory remain.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 258B3M2B2B3A Implementation Boundary Closure
 
-No production path was added. The bounded runner owners are
-`source_statement.rs` `8305`, set-term leaf `4517`, type-elaboration facade
-`752`, root `2567`, statement test leaf `21241`, and unchanged set-term test
-leaf `2528` lines. Production remains `30` paths / `50559` lines with
-path/content hashes
-`98f3b264a59fed5b08c3e8f20e7ca58ff54efaa154eab16a7572a69ce923f275` /
-`bc8c3d7e56ffc14608bc6e69863859a44487b19137bb8b90938878ec6c73ca4f`.
-The runner test library is `451`, with raw/normalized list hashes
-`a1e31aaa7919f1efe500dcdc7a194211026674e6f2a07bb9fd3bae8e0d538a07` /
-`5a6a65168298e2a398eac59df50d3cf75dad65a9905e5f0116b54cbe05b7fb18`.
-
-The implementation changes only the frozen four runner files and paired
-three checker files; both set-term source owners, topology, visibility, and
-dependencies remain unchanged. Implementation review reports
-**NO FINDINGS** and targeted boundary checks pass. The second
-source/documentation consistency repeat and final documentation/boundary
-reread also report **NO FINDINGS**; parent final verification listed in the
-crate plans passes, including exact `39`-file scope. Independent final
-read-only quality review reports **NO FINDINGS**. All nine hard gates PASS
-with no score cap; the valid score is `98/100`
-(`20/20/15/14/10/10/5/4`). The stated semantic and coverage deferrals
-remain unchanged as residual risk. Only the dedicated implementation
-commit, post-commit invariant verification, and fresh next-task inventory
-remain pending.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 258B3M2B2B3B Runner Boundary Audit
 
-The future runner edit owns only
-`type_elaboration/source_statement.rs`, its two facade/root modules, and
-the statement runner test module. The generic Task-255 explicit-context
-helper is a read-only dependency. Parser/resolver crates, set-term owners,
-active corpus/metadata, expectations, sidecars, trace rows, and
-semantic/proof/goal runners are out of scope. This boundary permits exact
-source transport tests without changing language behavior or test intent.
-
-Repeated boundary and implementation-scope reviews report **NO FINDINGS**.
-The exact-32 documentation-only scope, unchanged forbidden paths, and all
-nine hard gates PASS; independent final quality is valid `98/100`.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 258B3M2B2B3B Implemented Runner Boundary
 
-Only the frozen four runner owners changed. The generic Task-255 producer,
-parser/resolver, active corpus and metadata, expectations, sidecars, trace
-rows, semantic/proof/goal runners, B4, and B5 remain unchanged. The route
-is private and dormant; no public API, error, debug grammar, dependency, or
-active-discovery boundary moved. The additional lower-field test-gap
-remediation remains within the already authorized runner statement
-source/test owners. Final measured sizes are statement `9423`, unchanged
-set leaf `4517`, facade `766`, root `2581`, statement tests `22384`, and
-unchanged set tests `2528`. All test-sufficiency repeats and the final
-implementation repeat are **NO FINDINGS**; workspace verification passes.
-Source/documentation consistency repeat independently confirms exact
-scope, metrics/hashes, authority, trace, and lower-owner no-ops and reports
-**NO FINDINGS**. Final documentation/boundary and independent quality
-reviews are **NO FINDINGS**, all hard gates PASS, valid `98/100`.
-Cached-diff/staging, commit, post-commit, and fresh inventory remain
-pending.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 258B3M2B2B3C Documentation Boundary
 
-This task is docs-only. Future runner ownership is exactly four files:
-`type_elaboration/source_statement.rs`, `type_elaboration.rs`, `runner.rs`,
-and `tests/type_elaboration/source_statement.rs`; checker ownership is three
-paired files. `source_set_term.rs`, fixtures, expectations, trace metadata,
-active routing, public APIs, and semantics remain outside the boundary.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 258B3M2B2B3C Implemented Runner Boundary
 
-Only the frozen four runner owners and paired three checker owners changed.
-The generic Task-255 producer, parser/resolver, active corpus/metadata,
-expectations, sidecars, trace rows, and semantic/proof/goal runners remain
-unchanged. The private dormant route adds no public API, error/debug,
-dependency, or active discovery surface.
-
-Final runner sizes are statement `10305`, unchanged set leaf `4517`,
-facade `779`, root `2595`, statement tests `23583`, and unchanged set tests
-`2528`; production remains 30 paths and is now 52,614 lines. Bounded finding
-remediation remained within the authorized source/test owners, and repeated
-test/implementation reviews report **NO FINDINGS**. Final documentation/
-boundary and independent quality reviews also report **NO FINDINGS**; all
-nine hard gates PASS at valid `98/100`.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 258B3M2B2B3D Documentation Boundary
 
-The future change remains within the existing four runner statement/facade/
-root/test consumers and paired three checker owners. The generic set-term
-leaf, parser/resolver/binding modules, active dispatcher, corpus metadata,
-and semantic phases remain unchanged. Current sizes/manifests stay exactly
-at the B3C closure baseline; no split or ownership transfer is authorized.
-
-Final measurements reproduce all six frozen runner file sizes,
-`30/52614`, and both production hashes. Focused, package, formatting,
-Clippy, and workspace verification pass without touching a forbidden owner.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 258B3M2B2B3D Implemented Runner Boundary Inventory
 
-Only runner `type_elaboration/source_statement.rs`,
-`type_elaboration.rs`, `runner.rs`, and
-`tests/type_elaboration/source_statement.rs`, plus the paired three checker
-owners, change. Final runner sizes are
-`11266/4517/793/2609/24769/2528`; production remains 30 paths/53,603
-lines with the unchanged path hash. The generic set-term leaf remains 4,517
-lines.
-
-Parser/resolver/binding modules, both Task-255 leaves, active dispatcher and
-corpus metadata, public APIs/errors/debug/dependencies, fixtures/
-expectations/sidecars/trace, and semantic phases remain unchanged. The exact
-test matrices stay within the authorized statement test owner and
-test-sufficiency and independent implementation reviews report
-**NO FINDINGS**. Repeated source/documentation and boundary review also
-reports **NO FINDINGS** after the three bounded documentation corrections.
-Both packages, formatting, full Clippy, workspace tests, five CLIs, and
-count/hash reruns PASS without changing the boundary. Independent final
-read-only quality review reports **NO FINDINGS**; all nine hard gates PASS
-with no cap at valid `100/100` (`20/20/15/15/10/10/5/5`). Only exact
-staging/cached-diff review, implementation commit, and
-post-commit/fresh-next-task gates remain pending.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 258B3M2B2B3E Documentation Boundary
 
-B3E adds no runner module or dependency. The future route is confined to the
-existing statement leaf, type-elaboration facade, root runner, and statement
-test module. The set-term leaf/test owners are read-only dependencies.
-Production, public enums/errors/keys, parser/resolver/binding ownership,
-corpus artifacts, trace, and active behavior do not change in this
-documentation prerequisite.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 258B3M2B2B3E Implemented Runner Boundary Inventory
 
-Only the frozen four runner and paired three checker owners change. Final
-runner sizes are `12206/4517/807/2623/26141/2528`; production remains
-30 paths/54,571 lines and the set-term leaf/test remain `4517/2528`.
-Parser/resolver/binding, Task-255 leaves, active/corpus/public/error/debug/
-dependency/trace/semantic owners remain unchanged. Reviews report
-**NO FINDINGS**; no split or transfer is required. Final consistency after
-the three design corrections and independent quality both report
-**NO FINDINGS**; complete verification and all nine gates PASS at valid
-`100/100`. Staging and post-commit gates subsequently closed in
-implementation commit `e4479691db3b0a8785bb16e94d386bd71a394274`;
-fresh inventory selected Task 258B4A.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 258B4A Runner Boundary Freeze
 
-The future runner write scope is exactly
-`type_elaboration/source_formula_composition.rs`,
-`type_elaboration/source_statement.rs`, `type_elaboration.rs`, `runner.rs`,
-and `runner/tests/type_elaboration/source_statement.rs`. The first changes
-only the existing production helper visibility to `pub(in crate::runner)`;
-the other four own the private selector, stage wiring, and five tests. No
-lower row/signature/debug/selector/behavior, parser/resolver/binding owner,
-corpus artifact, public runner schema, or trace owner changes, and no split
-or ownership transfer is needed.
-
-Fresh read-only documentation boundary review reports **NO FINDINGS**. The
-single visibility seam exposes an existing validated handoff only and does
-not move lower ownership; implementation boundary review remains a separate
-later task.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 258B4A Implemented Runner Boundary
 
-The exact five runner owners now measure `1,853`, `12,737`, `810`, `2,627`,
-and `27,349` lines. The first contains only the frozen crate-private
-visibility change; the other four own selector, orchestration, and tests.
-Runner production totals 30 paths/55,109 lines. No public runner enum,
-error, key, dependency, parser/resolver/binding owner, lower row, corpus
-artifact, trace owner, or semantic phase changed. Independent
-implementation review reports **NO FINDINGS** and no ownership transfer or
-module split is required.
-
-Final source/documentation and boundary consistency reports **NO FINDINGS**
-after the bounded documentation corrections. Complete verification PASSes.
-Independent final quality reports **NO FINDINGS**, all nine hard gates PASS,
-and valid `100/100`; only staging, commit, and post-commit inventory remain.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 258B4B Runner Boundary Freeze
 
-The runner may change only `type_elaboration/source_statement.rs`, its
-test-only facade re-exports in `type_elaboration.rs` and `runner.rs`, and the
-existing statement test leaf. The Task-257B2 output helper is already
-crate-private from B4A; `source_formula_composition.rs` and every lower
-extractor/producer are explicit no-ops. Checker ownership is confined to its
-three existing statement/typed/final consumers.
-
-Corpus, expectations, sidecars, trace, parser/resolver/binding modules,
-public runner API, and semantic phases are outside scope. This separation
-preserves lower source occurrence ownership and makes the 167-byte dormant
-upper route independently removable. Repeated read-only boundary and
-source/documentation consistency review reports **NO FINDINGS**.
-Implementation boundary review remains a separate later task.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 258B4B Implemented Runner Boundary
 
-Implementation changes only runner
-`type_elaboration/source_statement.rs`, `type_elaboration.rs`, `runner.rs`,
-and `runner/tests/type_elaboration/source_statement.rs`, plus the frozen
-three checker consumers. Their runner sizes are `13,629`, `814`, `2,629`,
-and `28,408` lines. `source_formula_composition.rs` remains an explicit
-1,853-line no-op. Checker owners measure `46,466`, `5,004`, and `7,350`;
-there are exactly seven changed source files.
-
-The change reuses the existing Task-257B2 handoff without moving lower
-ownership, adds no public facade/API, and preserves every parser, resolver,
-binding, corpus, expectation, sidecar, trace, and semantic owner. Separate
-implementation review reports **NO FINDINGS**. Final read-only
-boundary/source-documentation and bilingual review repeats also report
-**NO FINDINGS**. Broad verification, exact count/hash reproduction,
-seven-file scope, audit no-op, and unchanged-stash gates pass. Independent
-final quality reports **NO FINDINGS**; all nine hard gates PASS with no cap
-at valid `100/100` (`20/20/15/15/10/10/5/5`). Exact staging/cached-diff
-review, the implementation commit, post-commit invariants, and fresh-B4C
-inventory remain pending.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 258B4C Runner Boundary Freeze
 
-B4B boundary closure is implementation commit
-`752c17ae7d552d5268d1028612b8174e480b6f3e`, followed by a clean
-ahead-1/behind-0 inventory and unchanged stash. B4C requires two strictly
-ordered, independently reviewed and committed boundaries.
-
-The first is a lower-stage prerequisite whose entire write scope is
-`crates/mizar-test/src/runner/type_elaboration/source_formula.rs` and
-`crates/mizar-test/src/runner/tests/type_elaboration/source_formula_composition.rs`.
-It may only broaden the existing exact Task-257B3 source guard from the
-active 138-byte/one-LF spelling to the exact union of that spelling and the
-private 139-byte/two-LF spelling. Zero and three trailing LFs remain
-rejected. Production
-`crates/mizar-test/src/runner/type_elaboration/source_formula_composition.rs`,
-all checker files, fixtures, sidecars, expectations, trace, and public or
-semantic owners are no-ops. Its test count is measured in fresh inventory,
-not projected here.
-
-Only after that commit and another fresh inventory may the B4C upper task
-write the same seven owners as B4B: checker
-`source_statement.rs`, `typed_ast.rs`, and `resolved_typed_ast.rs`; runner
-`source_statement.rs`, test-only facades `type_elaboration.rs` and
-`runner.rs`, and the statement test leaf. Those owners may add only the
-private 139-byte B4C selector, exact resolver enrichment, lower-handoff
-validation, upper `1/1/1/0/1` rows, `24/1/41` ownership, telemetry
-`2/2/[2,2,4,4,4,4]`, and four-checker/five-runner tests.
-
-The lower profiles `4/4/0`, `6/6/0`, `3/0/0/0/0/0/0/6/6`,
-`3/0/1/3/3/2/6`, and `3/6` retain their existing owner crates.
-Parser/resolver/binding modules, production lower composition, public API,
-active/corpus/expectation/sidecar/trace/coverage owners, diagnostics, and
-semantic/proof phases remain outside both write scopes. B5 remains deferred;
-no module split or ownership transfer is authorized.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 258B4C Documentation Boundary Review
 
-Repeated boundary and source/documentation review reports **NO FINDINGS**
-after assigning raw authentication to the runner selector/statement producer
-and keeping checker installers at handoff/fingerprint/arena validation.
-Exact docs-only scope, future two-file then seven-file separation, forbidden
-no-ops, verification, counts/hashes, and stash invariance PASS. Independent
-final quality reports **NO FINDINGS**, all nine hard gates PASS, no cap, and
-valid `100/100`; only staging, commit, and post-commit gates remain.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 258B4C Implemented Runner Boundary
 
-The runner change is confined to `type_elaboration/source_statement.rs`
-(`14,479` lines), its test-only facades `type_elaboration.rs` (`820`) and
-`runner.rs` (`2,635`), and the statement test leaf (`29,948`), plus the
-three frozen checker consumers. Production lower composition remains
-unchanged at `1,853` lines.
-
-The route reuses Task-257B3 ownership without moving parser, resolver,
-binding, or lower semantics. It adds no public facade, corpus artifact,
-expectation, sidecar, trace mapping, diagnostic, or semantic result.
-Independent test-sufficiency and implementation reviews report **NO
-FINDINGS**; no module split or ownership transfer is required.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 258B5A Frozen Runner Boundary
 
-The future runner change is confined to private statement production in
-`type_elaboration/source_statement.rs`, re-exports in
-`type_elaboration.rs` and `runner.rs`, and the existing statement test leaf,
-plus the three frozen checker consumers. Parser, resolver, BindingEnv,
-Task-252/256 producer modules, other lower families, CLI/public harness,
-corpus, expectations, sidecars, trace metadata, and semantics are no-ops.
-
-The route consumes existing resolver scope-prefix evidence rather than
-implementing name resolution in the runner. B5B imported summaries and B5C
-negative diagnostics are excluded. Exact 20/73 ownership prevents moving
-label, citation, proof-block, or wrapper nodes into checker-owned syntax-free
-tables.
-
 Completion evidence: [central Task-258B5A historical contract](../../task_contracts/en/258B5A.md#completion-evidence).
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 258B5A Implemented Runner Boundary
 
-Runner implementation is confined to
-`type_elaboration/source_statement.rs`, its private facades
-`type_elaboration.rs` and `runner.rs`, and the existing statement test leaf,
-plus the three checker consumers. It adds only the exact private route,
-mutation seams, and test-only facades needed to authenticate the frozen
-source/resolver/lower/upper transaction.
-
-Parser, resolver, BindingEnv, Task-252/256 producer modules, sibling lower
-families, CLI/public harness, corpus, expectations, sidecars, trace metadata,
-and semantics remain unchanged. Exact `20/73` ownership prevents any label,
-citation, proof-block, or wrapper node from moving into a syntax-free owner.
-B5B/B5C remain excluded; no public facade, module split, or ownership
-transfer is introduced.
-
-Post-format runner owners measure
-`type_elaboration/source_statement.rs=15927`,
-`type_elaboration.rs=826`, `runner.rs=2642`, and the statement test leaf
-`32282`; the production boundary remains 30 paths and 58333 lines. These
-measurements do not change the ownership decision.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 258B5B Frozen Three-Commit Boundary
 
-The documentation prerequisite owns design only. The mandatory lower-stage
-prerequisite then owns exactly
-`crates/mizar-test/src/runner/import_fixtures.rs` and the statement test
-leaf, adds one crate-private opt-in imported `Ref` label helper, and leaves
-normal import augmentation and every checker file unchanged.
-
-Only after that separate commit may the upper task change the same three
-checker and four runner consumers as B5A. The upper producer owns exact
-source/Surface/import/resolver/lower authentication and constructs
-`1/2/2/2/2 + 0/1`. Checker source-statement APIs own
-`SourceStatementCitationTarget::{Local, Imported}`, `SimpleImported`,
-imported projection validation, immutable installation, and final clone
-revalidation. Runner facades remain test-only; the public runner/CLI schema
-does not change.
-
-Parser, resolver, artifact, BindingEnv, Tasks 252/256, fixtures,
-expectations, sidecars, trace metadata, active behavior, B5C, semantics,
-proof, and downstream IR remain outside all three write scopes.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 258B5B Implemented Runner Boundary
 
-The lower prerequisite is committed separately as `46dd9db5`; upper
-implementation changes only the frozen three checker and four runner Rust
-consumers. Required EN/JA plans, ledgers, component documents, audits, and
-this module-boundary result are derived implementation outputs, not an
-expansion of the seven-consumer code boundary.
-
-The runner adds exact-source opt-in, construction, mutation seams, and tests
-inside the existing `source_statement` leaf/facades. It does not move parser,
-resolver, imported-summary, BindingEnv, Task-252/256, public harness/CLI,
-trace, or semantic ownership. The `8/49` partition leaves all other 49
-Surface nodes as provenance, so no module split or ownership transfer is
-required.
-
-Post-format owner sizes are
-`type_elaboration/source_statement.rs=17256`,
-`type_elaboration.rs=834`, `runner.rs=2658`, and the statement test leaf
-`34915`. Production remains 30 paths/59745 lines. These measured increases
-are cohesive with the existing private runner owner and do not alter the
-boundary decision.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 258B5C Frozen Resolver/Runner Boundary
 
-Resolver R-032A exclusively owns the structural Surface-to-resolved map.
-`SurfaceResolvedArena::lower(&SurfaceAst, &ModuleId)` returns a validated,
-one-to-one same-index arena or `SurfaceResolvedArenaError`; its total
-accessors and `validate_against` fail closed on wrong source/module/shape/
-node, stale state, recovery/root mismatch, and checked structural-path
-overflow, including `ResolutionStateMismatch` and
-`ReferenceKeyMismatch`. All node/child payloads are `SurfaceNodeId`. Its
-later write scope is exactly `resolved_ast.rs`, `resolved_ast/tests.rs`, and
-the sole `tests/lint_policy.rs` R-026 owning-spec entry for
-`SurfaceResolvedArenaError`.
-
-Proof scope, ordinal, and label provenance derivation belongs exclusively to
-resolver R-032B. Exact `impl<'a> ProofLabelSourceCollector<'a>::new` borrows
-ast/resolved under `'a`, treats module as validation-only/not stored, owns
-namespace/contribution, and returns `Result<Self, ...>`; `collect(&self)`
-returns the collection. The public non-exhaustive error wraps the arena
-error and its checked scope/path overflow nodes are `SurfaceNodeId`.
-`projections()` and `references()` expose the result. Its implementation write
-scope is exactly `labels.rs`, `labels/tests.rs`, and
-`tests/lint_policy.rs`, with the last file limited to the sole
-`ProofLabelSourceCollectionError` / `labels.md` R-026 owning-spec decision.
-Neither collector nor runner may fabricate a resolved node, scope component,
-ordinal, or origin.
-
-The later `mizar-test` owner is only the private declaration-symbol consumer:
-`runner/declaration_symbol.rs`, `runner/tests.rs`, and new
-`runner/tests/declaration_symbol.rs`. It invokes R-032A validation, R-032B
-collection, and `LabelResolver`, authenticates the exact unresolved result,
-and maps that result to
-`declaration_symbol.label.proof_scope_confinement`. It does not walk proof
-topology, assign scope components or statement ordinals, construct origins,
-or reimplement visibility.
-
-The consumer branch is source-byte-plus-normal-AST selected, never metadata
-selected. Shared resolver output must prove env/module, namespace derivation,
-and exact single local-source contribution/source-id/id-0 provenance.
-Corruption maps only to `proof_scope_input`; authenticated unresolved
-confinement alone maps to `proof_scope_confinement`.
-
-Checker source-statement, resolved/typed installation, statement/citation
-DTOs, parser/frontend production, public runner/CLI API, and type/proof/
-Core/CFG/VC owners are excluded. In particular, checker
-`SourceStatementReferenceHandoff` rejects unresolved input and cannot consume
-either negative. The structural map is a known R-032A prerequisite, not a
-conditional runner concern.
-
-The committed B5C frozen-contract task owned exactly 48 paired/global design
-files. The S-026 documentation prerequisite owned exactly 45 design files, and
-its separate implementation owns exactly 25 files: two dense syntax Rust
-files, 12 paired syntax design files, four paired resolver design files, two
-paired checker TODO files, four paired `mizar-test` design files, and the
-global design TODO. R-032A then owns its separate exact three-Rust-file
-implementation commit. R-032B has a separate lint-policy docs correction and
-then its exact three-Rust-file implementation commit. The active B5C task owns only the two
-new fixture/sidecar pairs, two trace rows, three runner files, and synchronized
-derived documents. This effective seven-task split avoids the inventoried
-potential `boundary_violation`; no module split or ownership transfer is
-authorized.
-
-The added R-032A lint-policy owner corrects High `design_drift` discovered in
-implementation preflight; it is not a semantic `spec_gap` and adds no runtime
-or runner ownership. A separate synchronized documentation commit must land
-before fresh inventory and that implementation.
-
-R-032B preflight independently classifies its omitted mandatory R-026
-enum-decision owner as High `design_drift`, not a semantic `spec_gap`. Its
-separate synchronized correction owns exactly 31 design files and changes no
-source, behavior, fixture, expectation, sidecar, trace/status/count/coverage,
-public diagnostic code, Cargo metadata, or active runner. The coverage audit
-is an intentional no-op. After that correction and fresh inventory, only the
-exact three Rust owners above may change for R-032B implementation.
-
-R-032B exclusively owns the exact
-`Root -> CompilationUnit -> ItemList -> direct TheoremItem -> direct
-ProofBlock` upper chain, the remaining closed Surface edge allowlist, and its
-positive-edge, forbidden-relocation, and mixed-reference-list tests. Root and
-CompilationUnit each require exactly one normal structural child; ItemList
-scans only direct normal theorem children and skips/no-descends all others.
-Upper negatives cover missing/additional/wrong children, direct Root/
-Compilation theorem relocation, and `VisibleItem` wrapping. Default-denied
-formula/token/wrapper, unsupported/recovered/malformed,
-qualified/grouped/bulk, and template nodes receive neither an ordinal nor
-descent. The runner consumes the result but never broadens that table.
-
-The runner boundary authenticates `env.module_id() == resolver.module`,
-module-path-derived namespace, exactly one id-0 LocalSource contribution
-with matching record module and public `ast.source_id`, and every
-projection's module/namespace/contribution. Independent mutations of the
-environment module; projection module/namespace/contribution; contribution
-zero/multiple cardinality, id, `ImportedSource`/`Summary`/`Builtin` kind,
-record module, and LocalSource source id all map only to
-`declaration_symbol.label.proof_scope_input`. They never map to confinement
-or a public code. Selection remains source-bytes-plus-normal-AST only.
-
-S-026 owns only dense syntax views and cannot select or execute the runner.
-R-032A/R-032B remain resolver owners; active B5C remains the later mizar-test
-consumer. Separate commits preserve all three boundaries.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 258B5C Implemented Boundary Result
 
-The R-032A and R-032B prerequisites are committed, with R-032B at
-`b3a7e79a6b60db2974e911c69bb56ff5f4609064`. B5C changes only the private
-`mizar-test` declaration-symbol consumer, its tests, two new fixture/sidecar
-pairs, two trace rows, and synchronized derived records. It consumes the
-resolver-owned structural arena, label projections, reference candidates,
-and resolution result without broadening their ownership.
-
-The only frozen-scope correction is the existing
-`crates/mizar-test/tests/metadata.rs` count consumer: four summary assertions
-must move from `5` to the already-authorized `7`. This closes
-`test_expectation_drift` and `design_drift`; it adds no runtime owner.
-
-No checker handoff accepts either unresolved reference. Parser/frontend,
-resolver, checker, public harness/CLI schema, type/proof/Core/CFG/VC, and
-semantic-result owners are unchanged. The boundary review therefore records
-no ownership transfer or `boundary_violation`.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 259 Frozen Consumer Boundary
 
-`mizar-test` owns only exact source/AST selection and extraction of
-syntax-free Task-259 input from parser/resolver observations. It must reuse
-the extended Task-248 `SourceBindingContextHandoff`, which owns the
-authenticated `BindingEnv`, and the real Task-249/252/256 handoffs. It may
-not reconstruct bindings, infer predicate arity from empty
-resolver parameter shells, reinterpret the generic property projection,
-create obligation semantics, or publish proof/fact/VC results.
-
-The checker owns all five immutable tables, dependency-fingerprint
-validation, obligation insertion, and atomic typed/final installation.
-Task 272 retains property-justification proof ownership. The public runner
-facade, CLI schema, diagnostics, parser, resolver, and mixed Task-260 route
-remain unchanged by this documentation prerequisite.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 248 Two-Parameter Lower Boundary
 
-The runner owns source-shaped authentication only. Its private helper accepts
-the Task-259-selected definition node, real resolver state, and caller-owned
-shared-arena sites, then delegates syntax-free construction to the checker.
-It returns neither a route output nor a typed/final owner. The checker remains
-the sole `BindingEnv` and handoff owner.
-
-The current active Profile-A function is not widened or reused as a selector.
-Task 259 later owns whole-source dispatch and arena composition; Tasks
-249/252/256 and 272 retain their existing payload/proof boundaries. This
-separate lower commit prevents a runner- or Task-259-owned binding
-reconstruction.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 259 Corrected Consumer Boundary
 
-The completed Task-248 helper remains the sole runner bridge to the
-checker-owned definition-parameter `BindingEnv`; Task 259 cannot reconstruct
-or replace it. The new private Task-259 leaf owns only raw exact-source,
-same-block sibling, resolver, and subtree authentication plus shared-arena
-composition. All five immutable tables, fingerprints, obligation allocation,
-and typed/final installation remain checker-owned.
-
-`runner.rs` adds only an earlier exact-route dispatch. The parent
-`type_elaboration.rs`, test include, and metadata count assertions are
-mechanical consumers; the public runner API, CLI schema, diagnostics, and
-expectation selection do not change. The one new sidecar selects by normal
-source route, never by expected outcome. Mixed Task 260 and proof Task 272
-ownership remain unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 259 Active Consumer Boundary
 
-`src/runner/type_elaboration/source_predicate_definition.rs` is the sole new
-private runner owner. It authenticates the exact 165-byte source, dense
-71-row surface profile, direct definition-block siblings, raw predicate
-resolver identity, and excluded pattern/label/justification descendants. It
-then composes, over one caller-owned arena, the existing Task-248 Profile-B
-projection, Task 249 `2/2/0`, Task 252 `4/4/0`, Task 256
-`2/0/0/0/0/0/0/4/4`, and Task 259 `1/2/1/1/1` plus one pending obligation.
-It does not reconstruct checker-owned `BindingEnv` data, own semantic
-predicate/property proof decisions, or dispatch the mixed Task-260 route.
-
-`src/runner/type_elaboration.rs` declares the child, `src/runner.rs` invokes
-its narrow transport selector before the generic type-gap fallback, and
-`src/runner/tests.rs` includes the one four-test leaf. The only existing test
-edit outside that leaf is the independently reviewed `198 -> 199` active-type
-count in two source-statement selection tests; both empty-selection checks
-are unchanged. The fixture/sidecar/trace addition is metadata ownership, not
-new semantic ownership.
-
-The checker unit-test body lives under an external non-integration
-`tests/support` child module. That test-only boundary may use the already
-declared syntax dev-dependency to construct opaque resolver shells; it adds
-no physical production import, lint exception, public resolver helper, or
-runner-owned semantic identity. This closes the candidate
-`boundary_violation`; no unresolved boundary finding remains in the current
-implementation scope.
-
-Fresh final source-review values are checker producer/test-support
-`1794`/`1974` lines and runner production/test leaves `1233`/`517`. Checker
-production is `24/147030`, path/content
-`022586d6096dfa2eb05d6b0b9e91bf6dea71e5fc0a036f54a3bb462c7af16ac5` /
-`14ab798c611d954f9ea346367547240e58e9c5d0e04ec8a4ae68e2f20b71860b`;
-runner is `31/63248`,
-`0d6edf22a94efd3497423f427accaf34341d223f4339a0adf9c4a7a523271e89` /
-`a9abe9fcbc4a9b04e84fcb6402e13b95cdcd71e7ed2952dbf1a8fb2e1b551a9f`.
-Final boundary review ended with no findings, and the quality review passed
-all nine hard gates with an uncapped `100/100`; commit/post-commit gates remain.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 260 Frozen Consumer Boundary
 
-Task 260 will add one narrow private functor-definition transport route under
-`src/runner/type_elaboration/`. The runner owns exact source/surface/resolver
-authentication and composition of the already frozen lower-stage public APIs;
-the checker owns the syntax-free Task-260 extractor, table validation,
-fingerprints, pending initial obligations, and transactional installation.
-Raw syntax types remain private to the runner. The checker gains no syntax
-dependency and uses only its existing resolver/session dependencies.
-
-The implementation write boundary is limited to the Task-260 checker module
-and test support; `lib.rs`, typed/final owners, the `typed_ast.rs`,
-`type_checker.rs`, and `registration_resolution.rs` exhaustive serializers,
-and lint policy; the Task-260 runner leaf and declarations; one new pass
-fixture/sidecar; the reciprocal trace row; and six mechanical active-count
-consumers. Existing Task-259 predicate code and artifacts are read-only except
-for isolation tests. Proof/discharge/acceptance/fact/VC ownership and every
-computation-justification subtree remain excluded for a later owner.
-
-The current production inventories remain checker `24/147030` with
-path/content hashes
-`022586d6096dfa2eb05d6b0b9e91bf6dea71e5fc0a036f54a3bb462c7af16ac5` /
-`14ab798c611d954f9ea346367547240e58e9c5d0e04ec8a4ae68e2f20b71860b`
-and runner `31/63248` with hashes
-`0d6edf22a94efd3497423f427accaf34341d223f4339a0adf9c4a7a523271e89` /
-`a9abe9fcbc4a9b04e84fcb6402e13b95cdcd71e7ed2952dbf1a8fb2e1b551a9f`.
-This documentation prerequisite changes none of those values.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 249R No-Runner Boundary
 
-Task 249R is wholly checker-owned. It adds no private route, facade, selector,
-fixture, sidecar, trace backlink, test, count assertion, or production byte in
-`mizar-test`. The frozen Task-260 route later consumes the checker-produced
-combined `2/4/0/2` handoff and must reject rather than invent a return-type
-binding. All runner inventories and hashes remain unchanged in both Task-249R
-commits.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 260 Active Runner Boundary
 
-Task 260 adds exactly one private production leaf at
-`runner/type_elaboration/source_functor_definition.rs` (`1446` lines) and one
-paired test leaf (`1674` lines), plus bounded facade/root registration. The
-leaf keeps raw SurfaceAst and resolver environment/projection/symbol/
-definition/contribution authentication private and passes only syntax-free
-lower IDs, sites, ranges, contexts, spellings, and fingerprints to the
-checker. The route does not generalize or modify the Task-259 helper.
-
-Runner production is `32/64711` with path/content hashes
-`17c6979703afa2b6a7e98209741d655ac5f3d3355479221cc97bea88bff7e78a` /
-`5e3d216f76df2d97d776fb1dc702dccdcb26349b6d9a6297b6bc534e85c12792`.
-The new leaf is cohesive because source/profile selection, mutation ownership,
-lower composition, and checker output validation share the same exact frozen
-oracle. Proof, acceptance, facts, IR, and VC remain outside this boundary.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 261 Frozen Runner Boundary
 
-Task 261 will add exactly one private production leaf at
-`runner/type_elaboration/source_attribute_definition.rs` and one paired test
-leaf, plus bounded facade/root registration. The runner exclusively owns the
-exact 116-byte source check, 45-row Surface oracle, resolver environment/
-projection/symbol/definition/contribution authentication, raw-subtree
-exclusions, and composition of lower Tasks 248/249/252/256. It passes only
-syntax-free IDs, sites, ranges, contexts, spellings, and fingerprints to the
-checker producer.
-
-The future leaf is separate from the Task-259 predicate and Task-260 functor
-routes and cannot broaden their selectors or mutation matrices. It publishes
-one definition, two parameters, one subject, and one definiens, while leaving
-the initial-obligation table byte-identical. Formula meaning, equivalence,
-acceptance, facts, proof, Core, CFG, and VC remain outside this boundary. This
-docs prerequisite creates no production/test inventory row or measured line
-count; implementation must fresh-measure them.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 261 Active Runner Boundary
 
-The implemented private producer/test leaves are `1224/1113` lines. The
-producer alone owns literal source/Surface/resolver selection and lower
-composition; the checker receives syntax-free inputs only. A separate
-valid-but-stale node-42 context mutation reaches the checker consumer, while
-the node-44 mutation remains a Task-248 preflight failure. Runner production
-is `33/65952` with hashes recorded in the crate plan. The pass sidecar and
-trace row activate exact transport credit only; all semantic exclusions above
-remain unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 262 Frozen Runner Boundary
 
-Task 262 will add one private production leaf at
-`runner/type_elaboration/source_mode_definition.rs` and one paired test leaf,
-plus bounded facade/root registration. The runner exclusively owns the exact
-141-byte source/final-LF check, literal 54-row Surface oracle, two-shell
-resolver authentication, raw-subtree exclusions, and post-prerequisite lower
-Task-248/249/249M composition. It passes only syntax-free IDs, associations, anchors, contexts,
-spellings, and fingerprints to the checker.
-
-The leaf cannot land until checker-only Task 249M adds and freezes the
-standalone mode-RHS row consumed through the Task-249 handoff. The runner does
-not implement that lower owner or fabricate a binding-linked application.
-
-The leaf is isolated from Tasks 259--261 and precedes, but does not supersede,
-the mixed mode/structure gap route. It cannot answer the RHS request, execute
-the computation justification, or publish acceptance, expansion/sethood facts,
-proof, Core, CFG, or VC. This prerequisite creates no production/test inventory
-row or measured line count; implementation must fresh-measure them.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 249M No-Runner Boundary
 
-Task 249M changes only checker `source_type.rs` and synchronized documents.
-The existing runner tree stays `33/65952` with its recorded hashes; no facade,
-leaf, selector, mutation, output, fixture, or trace consumer is authorized.
-Task 262 remains the sole owner of the later runner and corpus delta.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 249M Active Boundary No-Op
 
-Implementation changed only checker `source_type.rs` plus synchronized design
-records. Runner production remains `33/65952` with path/content hashes
-`f24ae3f53e283dd81fbc61961c57dcb3456473390073e25955c37840e374fcd1` /
-`c4ceb938ae7cc1bfcbf87e95ec654f3a275eff6351eba80a354eeea4a6dafd74`.
-No runner API, file, test, fixture, or trace row was added.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 262 Active Runner Boundary
 
-The new private production leaf
-`runner/type_elaboration/source_mode_definition.rs` has `1118` lines and its
-paired test leaf has `1242` lines. Bounded facade/root registration gives the
-exact source route precedence without broadening any generic or sibling
-selector. Runner production is `34/67087`; path/content hashes are
-`72481975abab5250f3577a7643af4b5aa64f7c941be1aed4a2e1cbc726d1e55a` /
-`18e9921fd68c2401869334223de100549ed92ed0a806e37cd0da5f7110c015bf`.
-Raw syntax/resolver objects remain wholly private; only syntax-free inputs
-cross into the checker. No proof, acceptance, fact, IR, VC, or Task-263
-structure owner moved.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
+
 ## Checker Task 249S No-Runner Boundary
 
-The prerequisite changes only checker `source_type.rs` in its later
-implementation commit plus synchronized design documents. No `mizar-test`
-production file, Cargo target, route, or fixture moves. Task-263 implementation
-will separately own its private exact consumer and corpus pair.
-
 Completion evidence: [central Task-249S historical contract](../../task_contracts/en/249S.md#completion-evidence).
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 263 Frozen Runner Boundary
 
-One future private `type_elaboration/source_structure_definition.rs` leaf owns
-exact-source selection, Surface/shell/resolver authentication, Task-249S input
-construction, checker call, and private test hooks. The phase facade owns only
-bounded registration and pre-gap dispatch. Raw syntax never crosses into
-checker production; checker semantic validation never moves into the runner.
-
-One private test leaf owns the four frozen runner tests. Existing definition
-production leaves and the generic gap remain sibling routes; the later
-implementation may update only their shared repository-count assertions for
-the one new active case. The docs prerequisite leaves runner production
-`34/67087` and its path/content hashes unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 263 Active Runner Boundary
 
-The new private production leaf has 836 lines and the paired test leaf has 218
-lines. Bounded facade/root registration preserves raw syntax inside the runner
-and passes only syntax-free inputs to the checker. The four pre-existing
-definition/statement test leaves change only shared global count oracles;
-their route behavior is unchanged. Runner production is `35/67939` with
-path/content hashes
-`4218936ff3ee3baaceb7c0723307ad266d722d0a2473e8b7f82e11c75aeb2b6e` /
-`a543608c5075ffed97141626ebbf8d952a847051a34d6782097329b44aa1d09e`.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 269B implemented module-boundary no-op
 
-Only the existing private proof-local production leaf and its included test
-leaf changed. No module, path, facade, export, dependency, Cargo entry, detail
-key, public dispatch, corpus owner, or trace owner was added. Runner production
-is `37/69872`; path/content hashes are
-`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d` /
-`1cdc1720e687890e9007664a2140a10194b7637add9b8eb589ee92d9cce3a771`.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 269B module-boundary no-op
 
-The current runner baseline is `37/69729`. Task 269B changes only the existing
-private proof-local leaf and its existing test include; it adds no module,
-path, facade symbol, Cargo edge, detail key, dispatch arm, or corpus/trace
-owner. Surface authentication remains private runner work and only the
-syntax-free handoff crosses into checker. Production path count remains 37;
-lines/content are remeasured after implementation.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 269A Frozen Dormant Runner Boundary
 
-One private leaf under `runner/type_elaboration` and one included test leaf
-are the complete runner write scope. The leaf may reuse sibling Task-258B3N
-helpers and resolver `LocalTermBinding`; only syntax-free handoffs cross to
-`mizar-checker`. There is no facade detail key, active dispatch branch, Cargo
-edge, expectation/trace owner, proof runner, or parser/resolver modification.
-
-Docs preserve runner `532` and `36/69417`. Implementation projects `536` and
-one additional production path; exact lines and hashes are remeasured.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 269A Implemented Dormant Runner Boundary
 
-The implemented write scope is exactly `runner/type_elaboration.rs` 887 lines,
-the new private production leaf 306 lines, `runner/tests.rs` 60 lines, and the
-new included test leaf 517 lines. The production selection is `37/69729`, with
-path/content hashes
-`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d` /
-`69e29f18eef446981a5eb059ab2373a1a0df12a02f744f365b4ff6fe68b7cca7`.
-The route remains private and dormant; raw syntax/resolver values stay in the
-runner and only syntax-free payloads cross to the checker. No active dispatch,
-facade detail key, corpus artifact, trace/expectation owner, Cargo edge, or
-proof runner changed.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 264 Implemented Runner Module Boundary
 
-The runner adds exactly one private production leaf and one included test
-leaf. Current affected sizes are `runner.rs` 2717,
-`runner/type_elaboration.rs` 881,
-`runner/type_elaboration/source_property_implementation.rs` 1460,
-`runner/tests.rs` 59, and
-`runner/tests/type_elaboration/source_property_implementation.rs` 258 lines.
-The complete production selection is `36/69417`, with path/content hashes
-`38a20909d1f89aa2a4c325fb47126cc911bb943b7fe1190dc668713f64ad49e2` /
-`72cc9036654639dff5933dced07e79ec6132696b5f92eca5e0149085f4651d91`.
-No Cargo edge, public route API, expectation-schema owner, proof runner, or
-parser/resolver module changed. The route remains the sole raw-source/Surface
-consumer and passes only syntax-free handoffs into the checker.
-The generic mixed gap and sibling production routes are unchanged.
-
-Core Task33I264 changes only the existing private Task264 assertion leaf,
-growing it from 258 to 699 lines with exactly two tests while leaving every
-production file and the `36/69417` production selection unchanged. The Core
-association is standalone and test-only; the final leaf is 31,668 bytes with
-SHA-256 `e45ac5bdbcbbab3fb0eeb4a281058dc2bad8330235db6590b432b76cb69c3d48`.
-
-Core Task34I264 remains in that same private leaf and projects exactly two
-additional tests. It adds no module, include, production path, facade route, or
-Cargo edge. The final leaf is 1,017 lines / 44,370 bytes with SHA-256
-`23ad08e3ac46e36ee34121cee49873b90f796fd50a18ad632aeca032598e79b6`.
-
-Core Task IR264 extends only the two existing positive assertions in that
-private leaf with the authenticated definition-owner projection. It adds no
-test, module, include, production path, facade route, or Cargo edge. The final
-leaf is 1,022 lines / 44,699 bytes with SHA-256
-`e584e3a36d8c8911d4e5f49209128cb35e81d0c93d254419476b93557a86fdca`.
-No runner path constructs a `CoreDefinition` row or property body.
-
-Core Task34D264 extends those same positive assertions with typed domain and
-registry checks. It adds no test, module, include, production path, facade
-route, Cargo edge, fixture, or snapshot. The final leaf size/hash is recorded
-as a post-source measurement in the task contract; production ownership and
-selection remain unchanged.
-
-Checker Task264D likewise changes assertions only in this existing private
-Task264 leaf. The runner producer, public harness API, fixture/expectation/
-trace/metadata files, dispatch, snapshots, Cargo graph, and downstream Core
-route remain excluded.
-
-Core Task33P264 adds only two tests in that same private Task264 leaf. It calls
-existing checker/Core APIs and adds no production path, facade route, public
-harness API, fixture, metadata, Cargo edge, snapshot, or downstream owner.
-
-Core Task35E264 adds only two more tests in that same private Task264 leaf. It
-combines existing branded handoffs and inspects immutable seeds; no production
-path, generic lowering route, facade/public harness API, fixture, metadata,
-Cargo edge, snapshot, or downstream owner is added.
-
-Core Task35L264 adds only two further tests in the same private leaf. It calls
-the specialized Core producer and inspects immutable unattached tables/maps;
-no module, include, production path, generic lowering route, facade/public
-harness API, fixture, metadata, Cargo edge, snapshot, or downstream owner is
-added.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 264R No-Runner Module Boundary
 
-No `mizar-test` source, test, manifest, or Cargo target changes. The resolver
-unit-test-only delta does not cross the runner facade or any private route.
-Runner production remains `35/67939` with the hashes above; metadata and lint
-inventories remain `137` and `14`. Task 248P is also no-runner unless separately
-frozen otherwise; Checker Task 264 alone may later add a bounded consumer.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 264R Implemented No-Runner Boundary
 
-The exact implementation diff contains no `mizar-test`, fixture, sidecar,
-expectation, or trace path. Lint/metadata pass `14/137`, full workspace tests
-pass, and plan/parse/declaration/type/proof hashes remain frozen. There is no
-runner ownership or module-layout change.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 248P Frozen No-Runner Boundary
 
-The frozen implementation scope contains no `mizar-test` path. Runner
-production stays 35 paths / 67,939 lines with path/content hashes
-`4218936ff3ee3baaceb7c0723307ad266d722d0a2473e8b7f82e11c75aeb2b6e` /
-`a543608c5075ffed97141626ebbf8d952a847051a34d6782097329b44aa1d09e`;
-library/lint/metadata remain `528/14/137`. Task 264 owns any later bounded
-module change.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 248P Implemented No-Runner Boundary
 
-The completed diff contains no `mizar-test` or corpus path. Runner production
-and its `35/67939` path/content inventory remain byte-identical, with library,
-lint, and metadata inventories still `528/14/137`. No facade, route, or module
-ownership changes before Task 264.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 264 Frozen Runner Boundary
 
-Raw source, Surface AST, declaration shells, and resolver environments stay
-inside `mizar-test`. Only syntax-free input and existing lower handoffs cross
-to the new checker module. The new route is private under
-`runner/type_elaboration`; its tests live in one included leaf. Public corpus
-discovery and expectation schemas are unchanged.
-
-Task-249PI owns the missing lower type composition first. Task 264 may then add
-one route module plus facade/dispatch/count wiring, two fixture/sidecar pairs,
-and one trace row. It cannot change parser/resolver, Task-259 routes, proof
-runner ownership, or the inactive coherence case.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 249PI No-Runner Module Boundary
 
-The prerequisite changes only checker `source_type.rs` and synchronized
-design records. `mizar-test` adds no leaf, facade import, selector, dispatch,
-test module, production line, or Cargo dependency. Runner library/production
-remain `528` and `35/67939` with their exact existing hashes. The frozen Task
-264 route remains absent until the checker-only implementation and fresh
-inventory complete.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 249PI Implemented No-Runner Boundary
 
-The implementation changes no `mizar-test` file or module. Runner production
-remains `35/67939`, with path/content hashes
-`4218936ff3ee3baaceb7c0723307ad266d722d0a2473e8b7f82e11c75aeb2b6e` /
-`a543608c5075ffed97141626ebbf8d952a847051a34d6782097329b44aa1d09e`.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 269CP Frozen Boundary
 
-No module or production path is added. The only permitted implementation
-files are the existing source-statement production leaf, the test-only
-re-export facade `type_elaboration.rs`, the test-only root facade import in
-`runner.rs`, and the proof-local runner test file. Production remains 37 paths; line/content
-hashes are remeasured. Four tests project library count `536 -> 540`. No
-checker, parser, resolver, fixture, metadata, trace, or Cargo file is in the
-implementation target.
-
-The completed four-file implementation adds no module or path. The exact
-production inventory is 37 paths / 71,194 lines with path/content SHA-256
-`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d` /
-`4dcfc69a867dea5c12457d94825493a8a48e4fd5ac7b91d86412371ac25f6b03`.
-The library is 540 tests with raw/normalized list SHA-256
-`8b9a2b9ea4aad3c6ed0b6eae32a0285d6a9fe1b5389dcc31ebc7adb872317522` /
-`a8955748da86930f3e2165637e170d68c77756cbc03f3ff38b3f8de0d21cbc50`.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 269C frozen runner boundary
 
-The existing proof-local production/test leaves and two test-only facades are
-the entire runner scope. No module or production path is added; production
-stays `37/71194` before implementation with path/content hashes
-`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d` /
-`4dcfc69a867dea5c12457d94825493a8a48e4fd5ac7b91d86412371ac25f6b03`.
-Library tests project `540 -> 544`. Raw syntax remains runner-private and only
-the frozen syntax-free binding input crosses to checker; active dispatch,
-Cargo, corpus, trace, parser/resolver, and source-type ownership do not change.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 269C Implemented Runner Boundary
 
-Exactly the frozen four runner files change and no module or production path
-is added. Production is `37/71412`; path hash remains
-`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d`
-and content hash becomes
-`bf8c5a242bdc3e8a6809583ef1813138afbb246e41612413d7a7783631bc3cd6`.
-The library is `544`, with raw/normalized hashes
-`fa69bfaa53fb75a2a6ec62b1ac7faf8fc5e5a12693a3840e0e31439eafa156db` /
-`717a16f30326b9878949c7158be81eff5f7769c32ceeb19e23de0e569eb7ab4c`.
-All excluded ownership and active boundaries remain unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 269CT Frozen Runner Boundary
 
-Later implementation owns exactly
-`runner/type_elaboration/source_proof_local_declaration.rs`,
-`runner/type_elaboration.rs`, `runner.rs`, and the existing proof-local test
-leaf. Production remains 37 paths and projects only four new dormant tests.
-Dispatch, metadata, artifacts, parser/resolver, Cargo, and all semantic owners
-remain outside the boundary.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 269CT Implemented Runner Boundary
 
-Only the four frozen runner files change. Production stays 37 paths and now
-measures 71,647 lines with path/content hashes
-`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d` /
-`0f8f5926b9bee23c92d1f05e9cc9e85b4c0561b543e9e0a1e4c825f43b6c5798`.
-The route remains private and dormant; all excluded owners remain unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 269GP Frozen Runner Boundary
 
-No module or path is added. The only later implementation files are existing
-`runner/type_elaboration/source_statement.rs`, both test-only facade hops, and
-the proof-local runner test file. Four tests project `548 -> 552`; production
-remains 37 paths. Checker/parser/resolver, public dispatch, fixtures, trace,
-metadata, Cargo, and semantic owners remain outside the boundary.
-Repeated source/docs and final-quality reviews report **NO FINDINGS** and
-confirm this exact boundary.
-
-Implementation is complete inside exactly those four files. No path was added;
-runner production is `37/72916` and the library is `552`. The two facade hops
-remain `#[cfg(test)]`, the producer remains runner-private and dormant, and
-all excluded modules and consumers remain byte- or behavior-unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 269GS Documentation Boundary
 
-This reconciliation touches specifications and derived records only. Runner
-production remains 37 paths, all test-only facades and private 269GP APIs are
-unchanged, and no dispatch/corpus/trace boundary moves. Task 269G remains the
-first permitted binding consumer.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 269G Runner Boundary
 
-Only the existing proof-local runner leaf, two test-only facades, and existing
-test leaf change. The lower producer file is immutable. Raw source/AST/resolver
-data remains runner-owned; only the syntax-free handoff crosses to checker.
-No new path, public route, active dispatch, Cargo edge, or trace owner appears.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 269G Implemented Runner Boundary
 
-Exactly the frozen four runner files change and no module or production path is
-added. Production is `37/73118`; the path hash remains
-`1f9e2c9c6589412d832eb92015d913c1b2e0f1309cba9c5c991e08b04d67a73d`
-and the content hash is
-`2cae769737fdee4560ab1d1bca81f10d900ff8a1d9824aba720806f84e802711`.
-The library is `556`, with raw/normalized hashes
-`194b2884a9d933823e0d06b24460cd510fd9d16fbd6823b9e13584779acd1f03` /
-`728a5b688c19acc42d66a9c2f5c13ad67d795949ec88a2d877b917c9607d80e8`.
-All excluded ownership and active boundaries remain unchanged.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 277A Frozen Runner Boundary
 
-The [central Task 277A contract](../../task_contracts/en/277A.md) permits only
-the implemented cfg-test source-template leaf, type-elaboration facade, test leaf, and
-test module registration. `runner.rs` is excluded. The runner selects parser
-nodes and builds a TypedArena only; checker remains the sole producer and
-Typed/Resolved owner. Public dispatch, artifacts, diagnostics, fixtures,
-expectations, trace, metadata, and semantic routes remain outside the boundary.
-Runner library state is `608` with raw-list SHA-256
-`1025494e7948e8997a522178b0e8f409effee7c350e8527d32412863af73e3d6`.
-Independent reviews and final-quality re-review report **NO FINDINGS**; all
-nine hard gates PASS without a score cap at valid `100/100`. Exact staging/
-cached-diff review passed. Immediately after implementation commit
-`b67b028e07337ff5b72422bc8f16fb8f187b5c06`, the read-only post-implementation
-checkpoint observed `HEAD=b67b028e07337ff5b72422bc8f16fb8f187b5c06`, a clean
-worktree, `origin/main...HEAD=0/1`, and unchanged protected
-`stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4`. Task 277A is
-complete while umbrella Task 277 remains partial; any successor must be
-separately frozen and reviewed.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Resolver Task 277R1 Test Module Boundary
 
-The implemented mizar-test change is limited to test registration in
-`src/runner/tests.rs` and the new private
-`src/runner/tests/type_elaboration/template_parameter_identity.rs` leaf. It
-uses existing frontend/parser and resolver APIs to observe the immutable seed;
-it does not add or alter a production runner module, route, dispatcher, detail
-key, checker handoff, Typed/Resolved output, fixture stage, metadata, or trace
-owner. Resolver `names.rs` remains the only production owner of the identity
-transport.
-The final test-only scope is exactly these two paths; production runner remains
-38 paths / 80,090 lines with unchanged path/content hashes.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 277B-L Private Association Probe
 
-[Task 277B-L](../../task_contracts/en/277B-L.md) implemented only a private direct
-test leaf and `tests.rs` registration in mizar-test. It consumes existing
-frontend/parser output, completed resolver R1 data, and the standalone checker
-producer without adding a runner module, production route, facade, dispatcher,
-detail key, checker slot installation, Cargo edge, fixture/sidecar change,
-metadata/trace owner, diagnostic, or semantic publication. The production
-runner remains the protected 38 paths / 80090 lines with its frozen hashes.
-The leaf is 249 lines / `5fb342d357fb8cb92bd88278c019b276741cd1d6edb255e16e4f231f578dfe04`
-and registration is `tests.rs` 63 / `8873ea62bf642a8287eeacbfdaea06eccd0d917a17be9cd54a7764b0b6bea295`.
-Test sufficiency and implementation review are **NO FINDINGS** after the
-canonical-`Identifier` prefix-spoof fix; source/documentation, bilingual, and
-boundary re-reviews are **NO FINDINGS**. Full verification and protected-surface
-checks pass. Finding-specific final-quality re-review after the checker
-containment repair is **NO FINDINGS**; all nine hard gates PASS uncapped at
-valid `100/100` (`20/20/15/15/10/10/5/5`). Exact staging/cached-diff review,
-task-only commit, post-implementation proof, and fresh successor inventory are
-closed in the central [historical checkpoint](../../task_contracts/en/277B-L.md#post-implementation-checkpoint); no successor
-is selected. Task 277B remains not ready with zero semantic credit.
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 269GT Frozen Runner Boundary
 
-Only
-`crates/mizar-test/src/runner/type_elaboration/source_proof_local_declaration.rs`,
-`crates/mizar-test/src/runner/type_elaboration.rs`,
-`crates/mizar-test/src/runner.rs`, and
-`crates/mizar-test/src/runner/tests/type_elaboration/source_proof_local_declaration.rs`
-may change; both facade hops remain test-only. Production paths stay 37 and
-`crates/mizar-test/src/runner/type_elaboration/source_statement.rs` is the
-immutable lower owner. No new module, public route, dispatch edge, Cargo
-dependency, corpus artifact, or trace owner appears.
-
 Completion evidence: [central Task-269GT historical contract](../../task_contracts/en/269GT.md#completion-evidence).
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Checker Task 269GUP Frozen Runner Boundary
 
-The exact runner scope is `source_statement.rs`,
-`source_proof_local_declaration.rs`, two existing test-only facade files, and
-one existing test leaf. The first owns the exact lower profile and the second
-reserve-to-binding composition. `source_term.rs` is excluded. No file/module/
-Cargo/parser/resolver/public-dispatch/active edge is added. Production baseline
-is `37/73351`; path/module inventory stays fixed and changed content is
-remeasured after implementation.
 Completion evidence: [central Task-269GUP historical contract](../../task_contracts/en/269GUP.md#completion-evidence).
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 269GUPT Runner Ownership Boundary
 
-Owned runner files are exactly `type_elaboration/source_proof_local_declaration.rs`, `type_elaboration.rs`, `runner.rs`, and the existing proof-local test leaf. `source_statement.rs` and every active runner/metadata/CLI owner are excluded. The two facade hops are test-only; no new module path, Cargo target, dispatch branch, or public result field is permitted.
-
 Completion evidence: [central Task-269GUPT historical contract](../../task_contracts/en/269GUPT.md#completion-evidence).
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 269GU Runner Ownership Boundary
 
-Owned runner files are exactly
-`type_elaboration/source_proof_local_declaration.rs`, `type_elaboration.rs`,
-`runner.rs`, and the existing proof-local test leaf. `source_statement.rs`,
-active dispatch/result owners, Cargo, fixtures, sidecars, expectations,
-trace, metadata, diagnostics, and CLI owners are excluded. Production remains
-37 paths; the two facade hops stay test-only.
-
 Completion evidence: [central Task-269GU historical contract](../../task_contracts/en/269GU.md#completion-evidence).
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 269GCP Frozen Runner Boundary
 
-Implementation ownership is exactly `runner.rs`, `runner/type_elaboration.rs`,
-`runner/type_elaboration/source_statement.rs`, and the matching runner test
-module. Public dispatch, metadata, discovery, expectations, fixtures, Cargo,
-and all other runner families are excluded. Production stays 37 paths; line
-and content hashes are remeasured after implementation.
-
 Completion evidence: [central Task-269GCP historical contract](../../task_contracts/en/269GCP.md#completion-evidence).
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 269GC Frozen Runner Boundary
 
-`source_statement.rs` remains the sole GCP lower owner and is unchanged. The
-proof-local runner consumer reads only GCP getters and reserve extraction,
-constructs syntax-free checker input, and never exposes the output beyond
-`crate::runner`. Public dispatch, `TestCase`, artifacts, metadata, Cargo,
-diagnostics, and every sibling route remain unchanged. Checker owns validation
-and Typed/final replay.
-
 Completion evidence: [central Task-269GC historical contract](../../task_contracts/en/269GC.md#completion-evidence).
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 269GCT Frozen Runner Boundary
 
-Only the existing proof-local runner leaf, its two private re-export facades,
-and the existing proof-local test leaf may change. The leaf reads immutable
-GC/GCP getters, constructs syntax-free source-type input/arena, and invokes
-checker-owned validation; it does not inspect condition subtrees or recreate
-binding identity. Output remains `pub(in crate::runner)` and absent from public
-dispatch. `source_statement.rs`, fixtures, sidecars, expectations, trace,
-metadata, Cargo, diagnostics, and every sibling route are immutable.
-
 Completion evidence: [central Task-269GCT historical contract](../../task_contracts/en/269GCT.md#completion-evidence).
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 269GCU Frozen Runner Module Boundary
 
-Only the existing proof-local production/test leaves, type-elaboration facade,
-and `runner.rs` private re-export may change. The checker remains sole
-validator and owner. Generic runner routes, parser/resolver/lower producers,
-public dispatch, fixtures, expectations, metadata, diagnostics, Cargo, and
-artifacts remain outside the boundary.
-
 Completion evidence: [central Task-269GCU historical contract](../../task_contracts/en/269GCU.md#completion-evidence).
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 269SDP Runner Boundary
 
-Only the existing production source-statement leaf, private
-type-elaboration/root facades, and proof-local test leaf listed in the checker
-plan may change. The production proof-local runner leaf is excluded. No public
-command, checker API, fixture, sidecar, metadata, expectation, or trace owner
-crosses the boundary.
-
 Completion evidence: [central Task-269SDP historical contract](../../task_contracts/en/269SDP.md#completion-evidence).
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
 
 ## Task 269SDC Frozen Module Boundary
 
-Runner writes only `type_elaboration/source_proof_local_declaration.rs`,
-`type_elaboration.rs`, `runner.rs`, and the existing proof-local test leaf;
-checker writes the three frozen owner files. `source_statement.rs`, parser,
-resolver, and `binding_env.rs` are unchanged. Checker `source_term.rs` receives
-only a cfg-test reciprocal-owner sentinel extension; its production owner is
-unchanged. Other source type/term owners, public runner schemas,
-dispatch, Cargo, canonical artifacts, metadata, and downstream crates are
-excluded. This keeps lower extraction, syntax-free binding production, and
-Typed/final ownership in their established modules.
-
 Completion evidence: [central Task-269SDC historical contract](../../task_contracts/en/269SDC.md#completion-evidence).
+Details archived: [mizar_test_boundary_audit_waves.md](../../archive/mizar_test_boundary_audit_waves.md).
+
