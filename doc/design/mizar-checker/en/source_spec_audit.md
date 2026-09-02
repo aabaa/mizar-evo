@@ -2,6 +2,13 @@
 
 > Canonical language: English. Japanese companion:
 > [../ja/source_spec_audit.md](../ja/source_spec_audit.md).
+> Compacted 2026-09-02 (batch CPT-08, rules in
+> [../../documentation_compaction_rules.md](../../documentation_compaction_rules.md)):
+> the per-task audit-section bodies moved verbatim to
+> [../../archive/checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md);
+> every heading and registered ledger redirect line stay below. The
+> authoritative per-task detail is the paired task contract under
+> [../../task_contracts/en/](../../task_contracts/en/).
 
 Task 32 audits the checker public surface and promised behavior after task 31.
 It does not change source behavior, `.miz` fixtures, expectations, or public
@@ -11,123 +18,27 @@ current implementation convenience as normative.
 
 ## Task 257C4A Fraenkel generator source-spec audit
 
-The [C4A contract](../../task_contracts/en/CHECKER-FRAENKEL-GENERATOR-BINDING-257C4A.md)
-records the completed `design_drift`, `source_drift`, and Rust `test_gap`
-closure. Canonical Chapter 13 §13.4 and
-§§13.4.2, 13.4.4, and 13.8.6 supply the bound-generator/capture-later
-authority; Chapter 18 §18.10.2 expressly does not supply a sethood verdict.
-F5 and its expectation/trace are immutable. There is no `spec_gap`, fixture change,
-expectation change, trace change, or coverage credit.
-`doc/design/spec_coverage_audit.md` remains unchanged because owner,
-traceability, and semantic coverage status do not move. Task 277B remains not
-ready with zero credit. Broad workspace verification passes; independent
-source/documentation review reports **NO FINDINGS** after the sole Low stale
-`Future Rust path` wording was repaired to `Prerequisite Rust path`.
-Final-quality review is **NO FINDINGS**; all `9/9` hard gates pass at valid
-uncapped `100/100` (`20/20/15/15/10/10/5/5`). The historical pre-commit
-staging/cached review passed. The task-only commit, immediate post-commit proof,
-and accepted fresh-
-inventory disposition are closed in the language-local [historical
-checkpoint](../../task_contracts/en/CHECKER-FRAENKEL-GENERATOR-BINDING-257C4A.md#historical-immediate-post-implementation-checkpoint).
-C4B remains unselected and requires a separately frozen post-closure
-documentation prerequisite; Task 277B remains not ready with zero semantic
-credit.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 257C4B Fraenkel generator bound-use classification
 
-The [C4B contract](../../task_contracts/en/CHECKER-FRAENKEL-GENERATOR-BOUND-USE-257C4B.md)
-closes the `design_drift` of the missing separate derived bound-use transport
-record. The completed exact-three-path implementation closes the bounded
-`source_drift` and Rust `test_gap`. Canonical Chapter 13 §13.4, especially
-§§13.4.2, 13.4.4, and 13.8.6, Chapter 18 §18.10.2, Architecture 16, immutable
-F5, and completed C4A already determine the bound identity and normalized
-three-use relation; there is no `spec_gap` and no new semantic test intent.
-
-F5 still has no nested-comprehension outer-generator use, so actual capture
-coverage remains a separate `test_gap`. C4B adds no Task-252 occurrence,
-capture, formula/type/sethood decision, diagnostic, semantic verdict,
-installation, route, trace, expectation, or coverage credit. Task 277B remains
-not ready with zero credit while `MC-G020` and `MC-G021` remain open.
-`doc/design/spec_coverage_audit.md` is an explicit no-op because specification
-mapping, traceability, follow-up ownership, deferred rationale, and semantic
-coverage status do not change. The schema-v2 compaction ledger is also
-unchanged; this task migrates no historical evidence or legacy anchor.
-Independent implementation and test-sufficiency reviews are **NO FINDINGS**;
-focused `4 + 1`, package libraries `554/554` and `614/614`, formatting,
-package/full-workspace Clippy, full workspace tests including metadata/public-
-enum suites, five unchanged CLI replays, and diff checks pass.
-Final source/documentation review and independent bilingual/boundary review
-are **NO FINDINGS** after the sole Low baseline/current wording repair.
-Final-quality is **NO FINDINGS**; all `9/9` hard gates pass at valid uncapped
-`100/100` (`20/20/15/15/10/10/5/5`). The exact 23-path staging/cached review
-also passes. The task-only commit, immediate post-commit proof, and accepted
-fresh semantic STOP are closed at the language-local [historical
-checkpoint](../../task_contracts/en/CHECKER-FRAENKEL-GENERATOR-BOUND-USE-257C4B.md#historical-immediate-post-implementation-checkpoint).
-No successor is selected. The completed transport does not change the explicit
-coverage-audit or schema-v2 no-op decision.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 257C4C7 Two-capture Test Intent
 
-Canonical Chapter 13 §§13.4.3, 13.4.4, and 13.8.6 jointly derive an inner
-Fraenkel mapper with exactly two free resolved outer-generator identities while
-its own generator stays local. The paired [C4C7 contract](../../task_contracts/en/TEST-FRAENKEL-NESTED-MULTI-CAPTURE-257C4C7.md)
-freezes one inactive positive oracle for that `test_gap`. It asserts capture
-membership/cardinality, not ordering. Generalized checker projection and
-corruption coverage remain `design_drift`/`test_gap`; display-name or numeric-ID
-joins are a `boundary_violation`, and observable ordering would be a
-`spec_gap`. No specification, existing test, diagnostic, active route,
-semantic result, or Task-277B credit changes.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 257C4C8 Normalized Graph Completed Zero-Credit Mapping
 
-The frozen [C4C8 contract](../../task_contracts/en/CHECKER-FRAENKEL-NESTED-MULTI-CAPTURE-GRAPH-257C4C8.md)
-records the completed checker correspondence: `source_formula_composition` is
-the sole owner of a standalone syntax-free, Core-ID-free normalized graph with
-exact generator/mapper/predicate/capture/occurrence shape `3/1/0/2/2`. The
-five dense IDs, ten row/table items, handoff/error/producer family, and
-`#[non_exhaustive]` graph error are implemented; the public-enum inventory is
-now `8 -> 9`. The bounded implementation and checker/private-fixture
-`test_gap` are closed.
-
-Correspondence:
-
-| Requirement | Source and owner | Tests | Status |
-|---|---|---|---|
-| Standalone normalized graph preserves resolver identity, provenance, private order, exact cardinality, and default-deny precedence without semantic activation. | Five `SourceNestedFraenkelCaptureGraph*Id` types, five row/table pairs, `SourceNestedFraenkelCaptureGraphHandoff`, `SourceNestedFraenkelCaptureGraphError`, and `SourceNestedFraenkelCaptureGraphProducer` in `source_formula_composition.rs`; checker Task-257C is sole owner. | Four checker tests and the existing imported-fixture probe. | Implemented; occurrence node/range provenance is checked before remaining occurrence association, with defensive rechecks allowed. |
-
-This completed mapping grants no Typed/Resolved slot,
-C4C4 captured-state change, Core 33/34/35 or `GeneratedOrigin` payload,
-semantic or active route, diagnostic, or Task-277B credit. C4C7 history,
-trace/expectation/status, and Chapter 13 `partial` coverage remain unchanged.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 33C Frozen Zero-Credit Graph-Owner Correspondence
 
-The paired [Task33C contract](../../task_contracts/en/CHECKER-FRAENKEL-CAPTURE-GRAPH-OWNER-33C.md)
-selects one checker-owned scalar receipt pairing the unchanged C4C8 graph with
-the unchanged Task33R resolver owner. The implemented public family is one
-handoff, one non-exhaustive error, and one producer in
-`source_formula_composition.rs`; the current public-enum inventory is `10`
-(from the pre-task baseline of `9`).
-Exact resolver equality and resolved definition-block/functor identities are
-the only cross-owner association keys.
-
-Implementation closes only derived `design_drift` and Rust/private-probe
-`test_gap`. It creates no new language requirement, fixture, trace row,
-expectation, diagnostic, semantic coverage, or active route. Chapter 13 remains
-`partial`; Typed/Resolved/Core installation, parameter/argument order,
-`GeneratedOrigin`, actual semantics, and Task277B remain deferred and zero-
-credit.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 269SDU Implemented Zero-Credit Mapping
 
-The [central Task-269SDU contract](../../task_contracts/en/269SDU.md) implements one
-derived owner/test route for Chapters 4, 13, 15, and 16: the inherited
-proof-local Given binding is referenced only by exact descendant
-`y@118..119`. The implemented source-term, Typed/Resolved, and private-runner
-owners add no executable or semantic credit. Existing fixture, expectation,
-trace, requirement-count, and diagnostic status remain authoritative and
-unchanged; `z`/`q` binding, closure, and capture stay blocked by the
-Chapter-4/15 `set` `spec_gap`.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Scope And Method
 
@@ -276,6129 +187,735 @@ rejection.
 
 ## Task 277C Frozen Source/Specification Mapping
 
-The canonical [277C contract](../../task_contracts/en/CHECKER-FRAENKEL-TEMPLATE-STRUCTURAL-277C.md)
-records the completed neutral, zero-semantic composition of the completed template
-association handoff, completed Fraenkel generator collection, and existing
-`TypedAst`. The public composition ID/row/table/handoff/error/producer family,
-ordered fail-closed revalidation, exact F5 node/ordinal profile, and five-test
-matrix are owned once by that contract. This record neither derives language
-behavior nor claims Task 277B readiness or coverage credit. Existing specs,
-F5 fixture/expectation/trace, diagnostics, and source owners remain unchanged;
-broad verification passes and the final source/documentation re-review reports
-**NO FINDINGS**. The independent bilingual/boundary reviews also report **NO
-FINDINGS**; final-quality review is **NO FINDINGS** with all nine hard gates
-passing uncapped at valid `100/100` (`20/20/15/15/10/10/5/5`).
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Crate Module Exports
 
-`src/lib.rs` exports exactly these checker-owned modules:
-
-- `binding_env`
-- `cluster_trace`
-- `overload_resolution`
-- `registration_resolution`
-- `resolved_typed_ast`
-- `source_atomic_formula`
-- `source_attribute_definition`
-- `source_composite_formula`
-- `source_formula_composition`
-- `source_functor_definition`
-- `source_property_implementation`
-- `source_mode_definition`
-- `source_predicate_definition`
-- `source_context`
-- `source_attribute`
-- `source_evidence`
-- `source_application`
-- `source_set_term`
-- `source_statement`
-- `source_proof_local_declaration`
-- `source_structure`
-- `source_structure_definition`
-- `source_template`
-- `source_template_type_parameter_association`
-- `source_term`
-- `source_type`
-- `type_checker`
-- `typed_ast`
-
-Evidence: `tests/lint_policy.rs` checks this list through
-`checker_public_semantic_api_matches_documented_modules`, keeps every physical
-production source file off direct `mizar-syntax` imports, confines the
-Task-259 syntax fixture to a non-integration test-support child module using
-the existing test-only dependency, and preserves resolver/session dependency
-boundaries without a Task-259 lint exception.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Public Surface Inventory
 
-### `typed_ast`
-
-Generated public newtypes:
-
-- `TypedNodeId`, `LocalTypeContextId`, `TypeEntryId`, `NormalizedTypeId`,
-  `OpenCandidateSetId`, `TypeFactId`, `CoercionId`, `InitialObligationId`,
-  `TypeDiagnosticId`
-- `TypedNodeKind`, `TypeRole`, `TypePredicateRef`, `TypeRuleId`,
-  `TypeAssumptionId`, `BuiltinRuleId`, `ResolutionStepId`,
-  `InitialObligationGoal`, `InitialObligationProvenance`
-
-Literal top-level public items:
-
-- `TypedAst`, `TypedAstParts`, `TypedNode`, `TypedNodeLinks`, `TypingState`,
-  `NodeRecoveryState`, `TypedArena`, `TypedArenaBuilder`,
-  `TypedArenaError`, `TypedSiteRef`, `TypedSubjectRef`, `LocalTypeContext`,
-  `LocalTypeContextDraft`, `LocalTypeContextTable`, `TypeContextLayer`,
-  `BindingTypeRef`, `ContextRecoveryState`, `TypeEntry`, `TypeEntryDraft`,
-  `TypeTable`, `TypeStatus`, `TypeEntryActual`, `TypeProvenance`,
-  `TypeFact`, `TypeFactDraft`, `TypeFactTable`, `Polarity`,
-  `FactProvenance`, `FactStatus`, `CoercionEntry`, `CoercionDraft`,
-  `CoercionTable`, `CoercionKind`, `CoercionStatus`, `CoercionProvenance`,
-  `InitialObligation`, `InitialObligationDraft`, `InitialObligationTable`,
-  `InitialObligationKind`, `InitialObligationStatus`, `TypeDiagnostic`,
-  `TypeDiagnosticDraft`, `TypeDiagnosticTable`, `TypeDiagnosticClass`,
-  `TypeDiagnosticSeverity`, `DiagnosticRecoveryState`, `SourceRangeKey`,
-  `TypedAstError`
-
-Correspondence:
-
-| Spec promise | Source evidence | Test evidence | Status |
-|---|---|---|---|
-| Source-shaped typed AST root with node, context, type, fact, coercion, obligation, and diagnostic side tables. | `TypedAst`, `TypedAstParts`, and accessor/debug methods in `src/typed_ast.rs`. | `arena_ids_are_dense_and_debug_rendering_is_stable`, `public_data_shapes_do_not_expose_proof_or_final_overload_fields`. | Implemented for checker-owned data shapes. |
-| Dense local ids, arena validation, and parent/child integrity. | `TypedArena`, `TypedArenaBuilder`, `TypedArenaError`, generated dense ids. | `arena_validation_rejects_invalid_references_and_cycles`. | Implemented. |
-| Immutable local context snapshots and visible fact discipline. | `LocalTypeContextTable`, `LocalTypeContextDraft`, `BindingTypeRef`, context recovery/status enums. | `local_context_snapshots_validate_parent_chain_and_visibility`, `context_validation_enforces_assumed_fact_visibility`. | Implemented. |
-| Type, fact, coercion, initial-obligation, and diagnostic tables preserve ids and deterministic order. | `TypeTable`, `TypeFactTable`, `CoercionTable`, `InitialObligationTable`, `TypeDiagnosticTable`. | `tables_round_trip_ids_and_deduplicate_facts`, `canonical_queries_are_deterministic`, `coercion_ordering_and_provenance_are_stable`. | Implemented. |
-| Partial typing and handoff boundaries are explicit. | `TypeStatus`, `FactStatus`, `CoercionStatus`, `InitialObligationStatus`, recovery enums. | `status_variants_preserve_partial_typing_and_handoff_boundaries`, validation rejection tests. | Implemented. |
-| Public enums are forward-compatible. | `#[non_exhaustive]` on public enums. | `checker_public_enums_are_forward_compatible_and_documented`. | Guarded by task 31. |
-
-### `binding_env`
-
-Generated public newtypes:
-
-- `BindingContextId`, `BindingId`, `BindingDiagnosticId`
-
-Literal top-level public items:
-
-- `BindingEnv`, `BindingEnvParts`, `BindingContextTable`,
-  `BindingContext`, `BindingContextDraft`, `BindingContextOwner`,
-  `BindingContextLayer`, `BindingContextRecovery`, `BindingTable`,
-  `BindingEntry`, `BindingDraft`, `BindingKind`, `BinderIdentity`,
-  `BindingTypeSite`, `BindingStatus`, `BindingRecoveryState`,
-  `CapturedFreeVariables`, `BindingDiagnosticTable`, `BindingDiagnostic`,
-  `BindingDiagnosticDraft`, `BindingDiagnosticClass`,
-  `BindingDiagnosticSeverity`, `BindingDiagnosticRecovery`,
-  `BindingLookupSite`, `BindingLookupResult`, `BindingEnvError`
-
-Correspondence:
-
-| Spec promise | Source evidence | Test evidence | Status |
-|---|---|---|---|
-| Binding environment is a resolver-boundary data layer, not a raw syntax walker. | `BindingEnv::try_new`, `BindingEnvParts`, resolver `SymbolEnv` inputs. | `public_module_shell_signature_stays_on_resolver_shell_boundary`, `module_shell_records_external_gaps_and_debug_rendering_is_stable`. | Implemented; missing extraction remains MC-G011. |
-| Context graph validates parents, layers, ownership, and recovery. | `BindingContextTable`, `BindingContextDraft`, owner/layer/recovery enums. | `context_layers_and_validation_cover_parent_chain_and_recovery`, `validation_rejects_invalid_ranges_and_diagnostic_links`. | Implemented. |
-| Lookup is deterministic, visibility-scoped, and forward-reference aware. | `BindingLookupSite`, `BindingLookupResult`, binding lookup methods. | `lookup_uses_deepest_scope_shadowing_and_blocks_forward_reference`, `lookup_handles_ambiguity_missing_payload_and_visible_boundaries`, `lookup_tie_breaks_same_scope_by_later_declaration_range`, `lookup_falls_back_to_resolver_resolution_without_global_lookup`. | Implemented for explicit payloads. |
-| Reserved variables, binder identity, closure metadata, diagnostics, and rendering are stable. | `BindingKind`, `BinderIdentity`, `CapturedFreeVariables`, diagnostic table/classes. | `reserved_variables_are_visible_and_local_binders_shadow_them`, `binder_identity_and_closure_metadata_are_stable`, `diagnostics_cover_duplicate_unsupported_and_external_gap_states`, `canonical_iteration_and_name_resolution_rendering_are_deterministic`. | Implemented; full closure replay remains deferred. |
-| Public enums are forward-compatible. | `#[non_exhaustive]` on public enums. | `checker_public_enums_are_forward_compatible_and_documented`. | Guarded by task 31. |
-
-### `source_context`
-
-Generated public newtypes:
-
-- `SourceItemId`, `SourceDeclarationId`
-
-Literal top-level public items:
-
-- `SourceBindingContextInput`, `SourceItemInput`, `SourceItemRole`,
-  `SourceItemVisibility`, `SourceItemRecovery`, `SourceBindingContextOwner`,
-  `SourceBindingSiteInput`, `SourceBindingSiteRole`,
-  `SourceBindingContextBuild`, `SourceBindingContextProjection`,
-  `SourceBindingContextIncomplete`, `SourceBindingContextHandoff`,
-  `SourceItemTable`, `SourceItem`, `SourceDeclarationTable`,
-  `SourceDeclaration`, `SourceContextLinkTable`, `SourceContextLink`,
-  `SourceBindingContextProducer`, `SourceContextError`
-
-Correspondence:
-
-| Spec promise | Source evidence | Test evidence | Status |
-|---|---|---|---|
-| Syntax-free source-item and binding-site projections retain real opaque resolver shells and source order. | `SourceBindingContextInput`, `SourceItemInput`, `SourceBindingSiteInput`. | Real Task 248 fixture plus route-isolation and corruption matrix assertions. | Implemented for the exact Task 248 transaction. |
-| Complete construction publishes one immutable checker-owned binding/context handoff. | `SourceBindingContextProducer`, `SourceBindingContextHandoff`, source/declaration/context-link tables. | Projection equality, lookup, shadow-link, and `TypedAst`/`ResolvedTypedAst` preservation assertions. | Implemented atomically. |
-| Recovered-empty input is incomplete; corrupt, partial, and cross-linked input is rejected without publication. | `SourceBindingContextBuild`, `SourceBindingContextIncomplete`, `SourceContextError`; `TypedAst` exact handoff validation. | Real-shell corruption/recovery/atomicity matrix. | Implemented for the frozen branch. |
-| Public enums are forward-compatible. | `#[non_exhaustive]` on public enums. | `checker_public_enums_are_forward_compatible_and_documented`. | Guarded; no exhaustive exception. |
-
-Bounded gaps: broader canonical item/binder families remain deferred
-`test_gap`/`source_drift` under the existing MC-G011/MC-G016 follow-up owners;
-only same-identifier re-reservation replacement/duplicate semantics remain a
-nonblocking `spec_gap`. Source term use-site lookup and all Tasks 249+/269+
-payloads also remain outside this module's Task 248 authority.
-
-### `source_attribute`
-
-Generated public newtypes:
-
-- `SourceAttributeChainId`, `SourceAttributeId`,
-  `SourceAttributeQualifierId`, `SourceAttributeArgumentGroupId`,
-  `SourceAttributeArgumentId`
-
-Literal top-level public items:
-
-- `SourceAttributeHandoffInput`, `SourceAttributeChainInput`,
-  `SourceAttributeInput`, `SourceAttributePolarityInput`,
-  `SourceAttributeQualifierInput`, `SourceAttributeArgumentGroupKind`,
-  `SourceAttributePrefixForm`, `SourceAttributeArgumentGroupInput`,
-  `SourceAttributeActualKind`, `SourceAttributeArgumentInput`,
-  `SourceAttributeHandoff`, `SourceAttributeChainTable`,
-  `SourceAttributeTable`, `SourceAttributeQualifierTable`,
-  `SourceAttributeArgumentGroupTable`, `SourceAttributeArgumentTable`,
-  `SourceAttributeChain`, `SourceAttribute`, `SourceAttributeQualifier`,
-  `SourceAttributeArgumentGroup`, `SourceAttributeArgument`,
-  `SourceAttributeProducer`, `SourceAttributeError`
-
-Correspondence:
-
-| Spec promise | Source evidence | Test evidence | Status |
-|---|---|---|---|
-| Syntax-free flat tables retain nonempty source attribute chains, written polarity and `non`, qualifiers, argument-group punctuation, actual order, and semantic provenance. | `SourceAttributeHandoffInput`, five dense ids, five immutable tables, and row accessors in `src/source_attribute.rs`. | Exact Task-81/67/84/85 real-route cardinality and field assertions plus the synthetic multi-attribute/prefix extractor probe. | Implemented for the frozen Task 250 transaction. |
-| Task-249 source-type expression ownership and resolver binding/symbol/contribution identity are authenticated before publication. | `SourceAttributeProducer::build` consumes `SourceTypeApplicationHandoff`, `BindingEnv`, `SymbolEnv`, and `TypedArena`. | Producer environment, ownership, symbol-kind, visibility, contribution, and site/range corruption assertions. | Implemented transactionally. |
-| Parent links, dense order, punctuation independence, and source containment are fail-closed and no partial handoff is published. | `SourceAttributeError` and the producer's chain/attribute/qualifier/group/actual validators. | Dangling/forward/order/punctuation/range/recovery corruption and atomic-failure assertions. | Implemented without sorting or repair. |
-| `TypedAst` owns the result and `ResolvedTypedAst` only clone-preserves it. | Optional `SourceAttributeHandoff` field and borrowed getters. | Immutable final-preservation and deterministic debug assertions. | Implemented; legacy empty debug bytes remain conditional. |
-| Public enums are forward-compatible. | `#[non_exhaustive]` on all five public enums. | `checker_public_enums_are_forward_compatible_and_documented`. | Guarded; no exhaustive exception. |
-
-Bounded gaps: this handoff publishes raw source-written payload only. Attribute
-arity/admissibility/owner compatibility, term binding/type/result, normalized
-instances, evidence requests/results, cluster facts/truth/closure, accepted
-declarations/facts/proofs, and downstream IR remain with Tasks 251+ or their
-existing explicit owners. The legacy `type_checker::AttributeInput` is
-unchanged and separate.
-
-### `source_type`
-
-Generated public newtypes:
-
-- `SourceTypeApplicationId`, `SourceTypeExpressionId`,
-  `SourceTypeArgumentId`, `SourceTypeDefinitionReturnId`,
-  `SourceTypeModeRhsId`, `SourceTypeStructureMemberId`
-
-Literal top-level public items:
-
-- `SourceTypeHandoffInput`, `SourceTypeApplicationInput`,
-  `SourceTypeDefinitionReturnExtensionInput`,
-  `SourceTypeDefinitionReturnInput`,
-  `SourceTypeModeRhsExtensionInput`, `SourceTypeModeRhsInput`,
-  `SourceTypeStructureMemberHandoffInput`,
-  `SourceTypeStructureMemberInput`,
-  `SourceTypeExpressionInput`, `SourceTypeArgumentInput`,
-  `SourceTypeApplicationForm`, `SourceTypeHead`, `SourceTypeArgument`,
-  `SourceTypeApplicationHandoff`, `SourceTypeApplicationTable`,
-  `SourceTypeApplication`, `SourceTypeExpressionTable`,
-  `SourceTypeDefinitionReturnTable`, `SourceTypeDefinitionReturn`,
-  `SourceTypeModeRhsTable`, `SourceTypeModeRhs`,
-  `SourceTypeStructureMemberTable`, `SourceTypeStructureMember`,
-  `SourceTypeExpression`, `SourceTypeArgumentTable`,
-  `SourceTypeArgumentRow`, `SourceTypeProducer`,
-  `SourceTypeDefinitionReturnProducer`, `SourceTypeModeRhsProducer`,
-  `SourceTypeStructureMemberProducer`, `SourceProofLocalLetTypeHandoff`,
-  `SourceProofLocalLetTypeProducer`, `SourceProofLocalLetTypeError`,
-  `SourceProofLocalGivenTypeHandoff`, `SourceProofLocalGivenTypeProducer`,
-  `SourceProofLocalGivenTypeError`, `SourceProofLocalGivenUseTypeHandoff`,
-  `SourceProofLocalGivenUseTypeProducer`, `SourceProofLocalGivenUseTypeError`,
-  `SourceProofLocalGivenConditionTypeHandoff`,
-  `SourceProofLocalGivenConditionTypeProducer`,
-  `SourceProofLocalGivenConditionTypeError`,
-  `SourceProofLocalGivenDescendantTypeHandoff`,
-  `SourceProofLocalGivenDescendantTypeProducer`,
-  `SourceProofLocalGivenDescendantTypeError`,
-  `SourceTypeError`
-
-Correspondence:
-
-| Spec promise | Source evidence | Test evidence | Status |
-|---|---|---|---|
-| Syntax-free flat tables retain outer binding links, recursive written type expressions/heads, and ordered term/type/`qua` arguments. | `SourceTypeHandoffInput`, dense ids and three immutable tables in `src/source_type.rs`. | Exact broad 10/13/6 real runner oracle and Task-248 2/2/0 co-consumer. | Implemented for Task 249. |
-| Binding and real `DeclarationShell` ownership, symbol/contribution import closure/visibility, and arena site/range/recovery are authenticated before publication. | `SourceTypeProducer::build` and installation validation. | Producer corruption matrix plus real local/imported heads and import-target mismatch. | Implemented transactionally. |
-| Graph order, ownership, containment, non-overlap, and deterministic provenance are fail-closed. | `SourceTypeError`, iterative graph/range/provenance validation and deterministic debug rendering. | Dangling/cycle/multiple-parent/forward/duplicate/wrong-form/range/provenance and deep-chain tests. | Implemented without sorting, recursion, or repair. |
-| Independent definition return types extend the exact two-binding base without fabricating binding applications. | `SourceTypeDefinitionReturnProducer`, two immutable owner rows, appended roots 2/3, one-shot and installation validation. | Four exact Task-249R extension/corruption/arena/Typed-final tests. | Implemented for Task 249R; combined profile is `2/4/0/2`. |
-| A standalone mode RHS extends its exact two-binding base without fabricating a third application or reusing definition-return semantics. | `SourceTypeModeRhsProducer`, one immutable owner row, appended root 2, frozen precedence, one-shot and installation validation. | Four exact Task-249M extension/corruption/arena/Typed-final tests. | Implemented for Task 249M; combined profile is `2/3/0/0/1`. |
-| Standalone structure-member types build without fabricated binding applications or reuse of the return/RHS families. | `SourceTypeStructureMemberProducer`, four immutable owner rows/roots, exact precedence, arena and installation validation. | Four exact Task-249S profile/corruption/arena/Typed-final tests. | Implemented for Task 249S; standalone profile is `0/4/0/0/0/4`. |
-| One exact proof-local `let` composition upgrades only the Task-269C missing type site and preserves its dependency unchanged. | `SourceProofLocalLetTypeHandoff`, `SourceProofLocalLetTypeProducer`, and `SourceProofLocalLetTypeError`. | Four checker and four dormant-runner exact/corruption/ownership/isolation tests. | Implemented for Task 269CT with zero active/semantic credit. |
-| One exact proof-local `given` composition upgrades only the Task-269G witness type site and preserves its dependency unchanged. | `SourceProofLocalGivenTypeHandoff`, `SourceProofLocalGivenTypeProducer`, and `SourceProofLocalGivenTypeError`. | Four checker and four dormant-runner exact/corruption/ownership/isolation tests. | Implemented for Task 269GT with zero active/semantic credit. |
-| One exact proof-local `given` use-profile composition copies the Task-269GUP environment, upgrades only binding 1's source type, and preserves its dependency unchanged. | `SourceProofLocalGivenUseTypeHandoff`, `SourceProofLocalGivenUseTypeProducer`, and `SourceProofLocalGivenUseTypeError`. | Four checker and four dormant-runner exact/corruption/ownership/isolation tests. | Implemented for Task 269GUPT with zero active/semantic credit. |
-| One exact proof-local descendant composition consumes the complete Task-269SDC handoff, upgrades only binding 1's written source type, and atomically replaces the standalone SDC owner. | `SourceProofLocalGivenDescendantTypeHandoff`, `SourceProofLocalGivenDescendantTypeProducer`, and `SourceProofLocalGivenDescendantTypeError`. | Four checker and four dormant-runner exact/corruption/ownership/isolation tests. | Implemented for Task 269SDT with zero active/semantic credit. |
-| `TypedAst` owns the result and `ResolvedTypedAst` only clones it. | Optional `SourceTypeApplicationHandoff` field and borrowed getters. | Immutable final-preservation and repeated-run assertions. | Implemented; empty legacy debug bytes remain conditional. |
-| Public enums are forward-compatible. | `#[non_exhaustive]` on public enums. | `checker_public_enums_are_forward_compatible_and_documented`. | Guarded; no exhaustive exception. |
-
-Bounded gaps: Tasks 249/249R/249M/249S publish source-type inputs,
-definition-return owner links, one standalone mode-RHS owner link, and four
-standalone structure-member type owner links only. Expansion,
-normalization, evidence, term/`qua` selection, accepted facts/declarations/
-proofs, descendant occurrence/capture, and downstream IR remain with their
-explicit later owners.
-
-### `source_evidence`
-
-Generated public newtypes:
-
-- `SourceEvidenceRequestId`, `SourceEvidenceResponseId`
-
-Literal top-level public items:
-
-- `SourceEvidenceResponseKey`, `SourceEvidenceHandoffInput`,
-  `SourceEvidenceRequestInput`, `SourceEvidenceResponseInput`,
-  `SourceEvidenceRequestKind`, `SourceEvidenceInputState`,
-  `SourceEvidenceRequestOrigin`, `SourceEvidenceResponseDisposition`,
-  `SourceEvidenceResponsePayload`, `SourceEvidenceResponseProvenance`,
-  `SourceEvidenceRecovery`, `SourceEvidenceDependencyRecord`,
-  `SourceEvidenceDependencyCatalog`, `SourceEvidenceHandoff`,
-  `SourceEvidenceRequestTable`, `SourceEvidenceRequest`,
-  `SourceEvidenceResponseTable`, `SourceEvidenceResponse`,
-  `SourceEvidenceError`, `SourceEvidenceProducer`
-
-Correspondence:
-
-| Specification promise | Source evidence | Test evidence | Status |
-|---|---|---|---|
-| A syntax-free dense transaction retains source-derived requests and authenticated dependency references without claiming semantic acceptance. | `SourceEvidenceHandoffInput`, request/response tables, transport-state and dependency DTOs in `src/source_evidence.rs`. | Exact three-route 10-request runner oracle and checker four-state/table tests. | Implemented for Task 251. |
-| Task-249 application/expression identity, optional Task-250 chain identity, symbol kind, source/module, owner/site/range/application ordinal, and recovery are authenticated before publication. | `SourceEvidenceProducer::build` consumes both upstream handoffs, `SymbolEnv`, `TypeFactTable`, and the dependency catalog. | Association, distinct application/chain ordinal, symbol/source/module, missing/duplicate, and field-corruption tests. | Implemented transactionally. |
-| Response cardinality, catalog association, disposition/payload compatibility, fact existence, and existential-gate owner/range/recovery/guard facts fail closed. | `SourceEvidenceError` and request/response/catalog/payload validators. | State/cardinality, key reuse/cross/stale, fact, gate, and atomic-failure tests. | Implemented without fallback or repair. |
-| `TypedAst` owns the immutable handoff and `ResolvedTypedAst` only clone-preserves it. | Optional `SourceEvidenceHandoff` field, validated installer, and borrowed getters. | Production-runner ownership, replacement rejection, clone equality, and deterministic debug assertions. | Implemented; legacy empty output remains unchanged. |
-| Public enums remain forward-compatible. | `#[non_exhaustive]` on the public Task-251 enums. | `checker_public_enums_are_forward_compatible_and_documented`. | Guarded; no exhaustive exception. |
-
-Bounded gaps: Task 251 transports only the exact mode, structure, and
-attributed evidence requests and authenticated dependency inputs. It does not
-interpret evidence, create or accept facts, evaluate gates, select
-inheritance/coercion, publish accepted registrations/artifacts, or create
-downstream IR. Those behaviors remain with Tasks 252+ and their explicit
-owners.
-
-### `source_template`
-
-Generated public newtypes:
-
-- `SourceTemplateParameterId`, `SourceTemplateLociId`,
-  `SourceTemplateLocusId`, `SourceTemplateArgumentsId`,
-  `SourceTemplateArgumentId`
-
-Literal top-level public items:
-
-- `SourceTemplateHandoffInput`, `SourceTemplateParameterInput`,
-  `SourceTemplateLociInput`, `SourceTemplateLocusInput`,
-  `SourceTemplateArgumentsInput`, `SourceTemplateArgumentInput`,
-  `SourceTemplateRecovery`, `SourceTemplateParentKind`,
-  `SourceTemplateParameterKind`, `SourceTemplateParameterTable`,
-  `SourceTemplateParameter`, `SourceTemplateLociTable`,
-  `SourceTemplateLoci`, `SourceTemplateLocusTable`, `SourceTemplateLocus`,
-  `SourceTemplateArgumentsTable`, `SourceTemplateArguments`,
-  `SourceTemplateArgumentTable`, `SourceTemplateArgument`,
-  `SourceTemplateHandoff`, `SourceTemplateError`, `SourceTemplateProducer`
-
-Correspondence:
-
-| Specification promise | Source evidence | Test evidence | Status |
-|---|---|---|---|
-| Chapter 18 direct parameter/loci/argument syntax is transported without target or theorem semantics. | Implemented five-table input/handoff API in `src/source_template.rs`. | Four checker and four private real-frontend runner tests. | Committed and complete for Task 277A in `b67b028e07337ff5b72422bc8f16fb8f187b5c06`. |
-| Parent/child TypedArena adjacency, dense order, range, recovery, and duplicate-site rules fail closed. | `SourceTemplateProducer::build` and crate-private installation validation. | Exact and corrupted parent/group/order/environment tests. | Implemented transactionally; no repair or sorting. |
-| Typed/final owners preserve one neutral slot without changing semantic profiles. | `TypedAst::with_source_template` and `ResolvedTypedAst::source_template`. | Duplicate install, final replay, deterministic clone, and semantic-isolation tests. | Implemented as coexistent parser-origin evidence. |
-| Public surface and enums remain documented and forward-compatible. | Five IDs, six input aggregates, four data/error enums, five row/table pairs, handoff, and producer above; every public enum is non-exhaustive. | Public-enum and source/spec-audit lint policies. | Implemented with no exhaustive or syntax-dependency exception. |
-
-Bounded gaps: Task 277A does not publish a resolved template target,
-formal-to-actual association, actual kind, substitution request/result,
-scheme/theorem role, algorithm role, guard, inference, compatibility, verdict,
-diagnostic, active route, or coverage credit. Later Task-277 slices and Task 278
-retain those separately authorized decisions.
-
-### `source_template_type_parameter_association`
-
-Generated public newtypes:
-
-- `SourceTemplateTypeParameterAssociationId`,
-  `SourceTemplateFraenkelStructuralCompositionId`
-
-Literal top-level public items:
-
-- `SourceTemplateTypeParameterAssociation`,
-  `SourceTemplateTypeParameterAssociationTable`,
-  `SourceTemplateTypeParameterAssociationHandoff`,
-  `SourceTemplateTypeParameterAssociationError`,
-  `SourceTemplateTypeParameterAssociationProducer`,
-  `SourceTemplateFraenkelStructuralComposition`,
-  `SourceTemplateFraenkelStructuralCompositionTable`,
-  `SourceTemplateFraenkelStructuralCompositionHandoff`,
-  `SourceTemplateFraenkelStructuralCompositionError`,
-  `SourceTemplateFraenkelStructuralCompositionProducer`
-
-Correspondence:
-
-| Specification promise | Source evidence | Test evidence | Status |
-|---|---|---|---|
-| Resolver-owned template type-parameter links transport to an immutable, dense, zero-semantic typed-node association table. | `SourceTemplateTypeParameterAssociationProducer::build`, the association ID/row/table/handoff family, and deterministic `debug_text()` in `src/source_template_type_parameter_association.rs`. | `task277bl_maps_exact_resolver_association_to_typed_nodes`, `task277bl_rebuilds_deterministically_without_mutating_typed_ast`, and `task277bl_real_fixture_builds_exact_template_type_parameter_association`. | Implemented for Task 277B-L; no Task 277B semantic credit. |
-| Each of the five resolver identities matches exactly one typed node; the required kinds are `DefinitionBlockItem`, `TemplateParameter`, canonical `Identifier` for both binder and generator identifier, and `TypeHead`. | Exact `resolved_node` scan, normal-recovery check, exact-kind predicate, range anchors/equality/containment, and direct-edge validation. | Missing/ambiguous, all-site kind/recovery, forged identifier-category, anchor/range/containment, and edge-corruption matrix. | Fail closed with `InvalidAssociation`; no dense-ID cast or spelling/range inference. |
-| Source/module mismatch is distinguished and public enum evolution stays forward-compatible. | `EnvironmentMismatch` plus `#[non_exhaustive] SourceTemplateTypeParameterAssociationError`. | Environment mismatch matrix and `checker_public_enums_are_forward_compatible_and_documented`. | Implemented; no exhaustive exception. |
-| The composition public family joins each completed template association with one completed Fraenkel generator binding through exact typed structural identity. | `SourceTemplateFraenkelStructuralCompositionId`, row/table/handoff, error, and producer in `src/source_template_type_parameter_association.rs`. | `task277c_composes_exact_template_fraenkel_structural_handoff` and the private F5 composition probe. | Implemented as neutral transport; no Task 277B semantic credit. |
-| Structural composition revalidates environment, association, binding, uses, and completed mapping in fixed fail-closed order. | `SourceTemplateFraenkelStructuralCompositionProducer::build` and its exact typed-node/provenance validators. | Environment/ambiguity and recovery/kind/range/edge/provenance corruption matrices. | Implemented without zipping, inference, reordering, or partial handoff. |
-| Composition errors remain forward-compatible. | `#[non_exhaustive] SourceTemplateFraenkelStructuralCompositionError`. | `checker_public_enums_are_forward_compatible_and_documented` and the four direct producer tests. | Implemented; no exhaustive exception. |
-
-Bounded gaps: these neutral handoffs neither install a Typed/Resolved slot nor
-interpret a type, sethood, formal-to-actual substitution, diagnostic, active
-route, or verdict. Task 277B remains not ready with zero semantic credit.
-
-### `source_term`
-
-Generated public newtypes:
-
-- `SourcePrimaryTermId`, `SourcePrimaryTermReferenceId`,
-  `SourceNumericTypeRequestId`
-
-Literal top-level public items:
-
-- `SourcePrimaryTermHandoffInput`, `SourcePrimaryTermInput`,
-  `SourcePrimaryTermReferenceInput`, `SourceNumericTypeRequestInput`,
-  `SourcePrimaryTermKind`, `SourcePrimaryTermRole`,
-  `SourcePrimaryTermReferenceRole`, `SourcePrimaryTermRecovery`,
-  `SourcePrimaryTermHandoff`, `SourcePrimaryTermTable`, `SourcePrimaryTerm`,
-  `SourcePrimaryTermReferenceTable`, `SourcePrimaryTermReference`,
-  `SourceNumericTypeRequestTable`, `SourceNumericTypeRequest`,
-  `SourcePrimaryTermError`, `SourcePrimaryTermProducer`,
-  `SourceProofLocalGivenUseTermHandoff`,
-  `SourceProofLocalGivenUseTermProducer`,
-  `SourceProofLocalGivenUseTermError`,
-  `SourceProofLocalGivenConditionUseTermHandoff`,
-  `SourceProofLocalGivenConditionUseTermProducer`,
-  `SourceProofLocalGivenConditionUseTermError`,
-  `SourceProofLocalGivenDescendantUseTermHandoff`,
-  `SourceProofLocalGivenDescendantUseTermProducer`,
-  `SourceProofLocalGivenDescendantUseTermError`,
-  `SourceNestedFraenkelMapperPrimaryHandoff`,
-  `SourceNestedFraenkelMapperPrimaryError`,
-  `SourceNestedFraenkelMapperPrimaryProducer`
-
-Correspondence:
-
-| Specification promise | Source evidence | Test evidence | Status |
-|---|---|---|---|
-| A syntax-free three-table transaction retains primary-term occurrences, authenticated binding references, and unresolved numeric-type requests without creating semantic results. | `SourcePrimaryTermHandoffInput` and the immutable term/reference/request tables in `src/source_term.rs`. | Exact three-route 7/4/2 runner oracle plus every-kind checker tests. | Implemented for Task 252. |
-| Typed site/range/kind/recovery, canonical lexer-identifier vocabulary and spelling, context, dense pre-order, parent closure, reference/request cardinality, and numeric association fail closed. | `SourcePrimaryTermProducer::build` validates the complete transaction against `TypedArena` and `BindingEnv` and reuses `mizar_lexer::is_identifier` without importing raw syntax. | Site/range/kind/recovery/context, identifier shape/reserved-word rejection, graph, cardinality, request, and corruption tests. | Implemented transactionally without sorting or repair. |
-| Scope and binding-event ordinal are producer-derived, and the exact `BindingEnv::lookup` local winner is required. | Reference construction clones context scope, counts preceding completed binding rows, preserves exact duplicate-priority groups, and rejects every non-local result. | Shadow-winner, forward, ambiguous, missing-scope, unresolved, wrong-winner, and ordinal tests. | Implemented with `Resolver` structurally unreachable. |
-| One exact proof-local `given` use-profile composition transports only the two later `y` variable references from the authenticated GUPT dependency. | `SourceProofLocalGivenUseTermHandoff`, `SourceProofLocalGivenUseTermProducer`, and `SourceProofLocalGivenUseTermError`. | Four checker and four dormant-runner exact/corruption/ownership/isolation tests. | Implemented for Task 269GU with zero active/semantic credit. |
-| One exact proof-local `given` condition composition transports only the two own-condition `y` variable references from the authenticated GCT dependency. | `SourceProofLocalGivenConditionUseTermHandoff`, `SourceProofLocalGivenConditionUseTermProducer`, and `SourceProofLocalGivenConditionUseTermError`. | Four checker and four dormant-runner exact/corruption/ownership/isolation tests. | Implemented for Task 269GCU with zero active/semantic credit. |
-| One exact proof-local descendant composition consumes the complete SDT handoff and transports only `y@118..119` as `term 0 -> binding 1`, atomically replacing standalone SDT ownership. | `SourceProofLocalGivenDescendantUseTermHandoff`, `SourceProofLocalGivenDescendantUseTermProducer`, and `SourceProofLocalGivenDescendantUseTermError`. | Four checker and four dormant-runner exact/corruption/ownership/isolation tests. | Implemented for Task 269SDU with zero active/semantic credit. |
-| One exact C4C3-dependent nested-Fraenkel transaction projects mapper `x@94..95` as one Task-252 variable primary selecting the distinct outer binder, without relaxing generic source-order rejection. | `SourceNestedFraenkelMapperPrimaryHandoff`, `SourceNestedFraenkelMapperPrimaryProducer`, private exact binding/profile/arena construction, and the crate-private complete C4C3 revalidation seam. | Four exact checker tests plus one private real imported-fixture regression cover `3/1/0` binding state, one arena node, `1/1/0` source-term state, dependency/default-deny corruption, lookup ordinals, and generic isolation. | Implemented for Task 257C4C4 with zero active/semantic credit and no installation. |
-| `TypedAst` owns the immutable handoff and `ResolvedTypedAst` only clone-preserves it. | Optional `SourcePrimaryTermHandoff` field, validated installer, and borrowed getters. | Production-runner ownership, replacement rejection, clone equality, and deterministic replay assertions. | Implemented; semantic typed/fact/downstream tables remain unchanged. |
-| Public enums remain forward-compatible. | `#[non_exhaustive]` on all public Task-252 enums, including `SourceNestedFraenkelMapperPrimaryError`. | `checker_public_enums_are_forward_compatible_and_documented`. | Guarded; no exhaustive exception. |
-
-Bounded gaps: Task 252 transports only the five frozen primary-term source
-kinds and numeric requests. Applications and other term families, cross-family
-parent edges, numeric results, real current-definition-result ownership, real
-local-constant binding production, formula graphs, accepted facts/
-declarations/proofs, and downstream IR remain with Tasks 253+, 260, 264, 269,
-and their explicit owners.
-
-### `source_application`
-
-Generated public newtypes:
-
-- `SourceFunctorApplicationId`, `SourceFunctorWrapperId`,
-  `SourceFunctorCandidateId`, `SourceFunctorArgumentId`,
-  `SourceFunctorTypeRequestId`
-
-Literal top-level public items:
-
-- `SourceFunctorApplicationHandoffInput`, `SourceFunctorApplicationInput`,
-  `SourceFunctorWrapperInput`, `SourceFunctorCandidateInput`,
-  `SourceFunctorArgumentInput`, `SourceFunctorTypeRequestInput`,
-  `SourceFunctorApplicationKind`, `SourceFunctorApplicationRecovery`,
-  `SourceFunctorApplicationForm`, `SourceFunctorHeadSite`,
-  `SourceFunctorArgumentTarget`, `SourceFunctorTypeRequestKind`,
-  `SourceFunctorApplicationHandoff`, `SourceFunctorApplicationTable`,
-  `SourceFunctorWrapperTable`, `SourceFunctorCandidateTable`,
-  `SourceFunctorArgumentTable`, `SourceFunctorTypeRequestTable`,
-  `SourceFunctorApplication`, `SourceFunctorWrapper`,
-  `SourceFunctorCandidate`, `SourceFunctorArgument`,
-  `SourceFunctorTypeRequest`, `SourceFunctorApplicationProducer`,
-  `SourceFunctorApplicationError`
-
-Correspondence:
-
-| Specification promise | Source evidence | Test evidence | Status |
-|---|---|---|---|
-| A syntax-free five-table transaction transports symbolic/inline application shape, transparent wrappers, individual functor references, ordered Task-252/253 argument edges, and unresolved requests without selecting a winner or creating semantic results. | `SourceFunctorApplicationHandoffInput` and immutable tables in `src/source_application.rs`. | Exact real 2/1/2/3/4 aggregate plus all-form and inline-schema tests. | Implemented for Task 253. |
-| Dense pre-order, arena/context/range/recovery, form/spelling, wrapper nesting, root-only primary ownership, nested single ownership, candidate provenance, and request association fail closed. | `SourceFunctorApplicationProducer::build` validates the complete transaction against `SymbolEnv`, `BindingEnv`, Task-252, and `TypedArena`. | Full corruption matrix, nested/wrapped/degraded/candidate-subset tests, and template/mixed whole-subtree isolation. | Implemented transactionally without sorting, inference, repair, or partial publication. |
-| Task-252 dependency identity uses the exact producer-derived `debug_text()` fingerprint. | The handoff stores only `primary_term_fingerprint`; `TypedAst` and `ResolvedTypedAst` revalidate it and every primary edge. | Install-order, replacement, equivalent-clone, non-equivalent substitution, and final-preservation tests. | Implemented without duplicate primary ownership. |
-| Public enums remain forward-compatible. | `#[non_exhaustive]` on all public Task-253 enums. | `checker_public_enums_are_forward_compatible_and_documented`. | Guarded; no exhaustive exception. |
-
-Bounded gaps: Task 253 does not own inline identity/formals/body/capture/
-substitution/result, direct template transport, candidate collection/
-applicability/viability/ranking/winner, functor-definition semantics, later
-term/formula families, accepted facts/declarations/proofs, or downstream IR.
-Those remain with Tasks 254+, 260, 270, 277, 278, and their explicit owners.
-
-### `source_atomic_formula`
-
-Generated public newtypes:
-
-- `SourceAtomicFormulaId`, `SourceAtomicWrapperId`,
-  `SourcePredicateSegmentId`, `SourcePredicateHeadId`,
-  `SourcePredicateCandidateId`,
-  `SourceAssertionTypeSiteId`, `SourceAssertionAttributeId`,
-  `SourceAtomicEdgeId`, `SourceAtomicRequestId`
-
-Literal top-level public items:
-
-- `SourceAtomicFormulaHandoffInput`, `SourceAtomicFormulaInput`,
-  `SourceAtomicWrapperInput`, `SourcePredicateSegmentInput`,
-  `SourcePredicateHeadInput`,
-  `SourcePredicateCandidateInput`, `SourceAssertionTypeSiteInput`,
-  `SourceAssertionAttributeInput`, `SourceAtomicEdgeInput`,
-  `SourceAtomicRequestInput`, `SourceAtomicFormulaKind`,
-  `SourceAtomicFormulaRecovery`, `SourceAssertionTypeHead`,
-  `SourceAssertionAttributePolarityInput`,
-  `SourcePredicateSegmentPolarityInput`, `SourceAtomicEdgeRole`,
-  `SourceAtomicTermTarget`, `SourceAtomicRequestKind`,
-  `SourceAtomicFormulaHandoff`, `SourceAtomicFormulaTable`,
-  `SourceAtomicWrapperTable`, `SourcePredicateSegmentTable`,
-  `SourcePredicateHeadTable`,
-  `SourcePredicateCandidateTable`, `SourceAssertionTypeSiteTable`,
-  `SourceAssertionAttributeTable`, `SourceAtomicEdgeTable`,
-  `SourceAtomicRequestTable`, `SourceAtomicFormula`, `SourceAtomicWrapper`,
-  `SourcePredicateSegment`, `SourcePredicateHead`,
-  `SourcePredicateCandidate`,
-  `SourceAssertionTypeSite`, `SourceAssertionAttribute`, `SourceAtomicEdge`,
-  `SourceAtomicRequest`, `SourceAtomicFormulaProducer`,
-  `SourceAtomicFormulaError`.
-
-Correspondence:
-
-| Specification promise | Source evidence | Test evidence | Status |
-|---|---|---|---|
-| Nine syntax-free dense tables retain atomic formulas, wrappers, predicate segments/provenance, asserted types, assertion attributes, nearest-family edges, and unresolved requests. | Public inputs, immutable rows, and tables in `src/source_atomic_formula.rs`. | Exact Task-256 `8/0/0/1/1/1/2/13/11` aggregate, Task-257C1 `1/0/2/2/2/0/0/3/2`, and checker shape tests. | Implemented for Tasks 256/257C1. |
-| Task-252/253/254/255 nearest-family ownership and conditional fingerprints validate atomically. | `SourceAtomicFormulaProducer::build` and private installation validation. | Same-arena real composition, cross-family producer probes, corruption, and installation tests. | Implemented transactionally. |
-| Resolver provenance, canonical spelling, arena keys, row cardinality/order, and request association fail closed. | Producer validation and `SourceAtomicFormulaError`. | Predicate/attribute provenance, wrapper, request, spelling, and mutation matrices. | Implemented without partial publication. |
-| `TypedAst` owns one handoff and `ResolvedTypedAst` revalidates then clone-preserves it. | `with_source_atomic_formula`, later lower-family revalidation, and resolved assembly. | Replacement/install-order checks, final clone equality, and deterministic replay. | Implemented. |
-| Public enums are forward-compatible. | `#[non_exhaustive]` on every public enum. | `checker_public_enums_are_forward_compatible_and_documented`. | Guarded; no exhaustive exception. |
-
-Bounded gaps: predicate-chain and formula-operator ownership stays with Task
-257; overload selection, asserted-type reachability, attribute admissibility
-and truth, formula facts/results, theorem acceptance, proofs, and downstream
-IR remain outside this module.
-
-### `source_attribute_definition`
-
-Generated public newtypes:
-
-- `SourceAttributeDefinitionId`, `SourceAttributeParameterId`,
-  `SourceAttributeSubjectId`, `SourceAttributeDefiniensId`
-
-Literal top-level public items:
-
-- `SourceAttributeDefinitionHandoffInput`, `SourceAttributeDefinitionInput`,
-  `SourceAttributeParameterInput`, `SourceAttributeSubjectInput`,
-  `SourceAttributeDefiniensInput`
-- `SourceAttributeDefinitionRecovery`
-- `SourceAttributeDefinition`, `SourceAttributeParameter`,
-  `SourceAttributeSubject`, `SourceAttributeDefiniens`
-- `SourceAttributeDefinitionTable`, `SourceAttributeParameterTable`,
-  `SourceAttributeSubjectTable`, `SourceAttributeDefiniensTable`
-- `SourceAttributeDefinitionHandoff`, `SourceAttributeDefinitionError`,
-  `SourceAttributeDefinitionProducer`
-
-Correspondence:
-
-| Specification promise | Source evidence | Test evidence | Status |
-|---|---|---|---|
-| Four immutable syntax-free tables retain one ordinary attribute definition, two ordered parameters, one subject binding, and one atomic-formula definiens. | Public inputs, rows, dense ids, tables, and getters in `src/source_attribute_definition.rs`. | Five exact checker tests and the active runner consumer. | Implemented as exact `1/2/1/1`. |
-| Resolver identity and exact Task-248/249/252/256 ownership are authenticated, including shell-41 context ownership and four complete debug fingerprints. | `SourceAttributeDefinitionProducer::build` and installation revalidation. | Resolver/lower/fingerprint plus preflight-invalid and valid-but-stale context-site corruption. | Implemented transactionally and fail closed. |
-| Typed/final ownership is one-shot, preserves the complete obligation table without reading or writing it, and rejects Task-259/260 mixtures. | `TypedAst::with_source_attribute_definition` and `ResolvedTypedAst::source_attribute_definition`. | Non-empty baseline, rollback, both-family installer/final isolation, clone, and replay tests. | Implemented without an obligation projection. |
-| Public surface and enums remain documented and forward-compatible. | Four ids, five input aggregates, recovery, four rows/tables, handoff, error, and producer above; both public enums are non-exhaustive. | Public-enum and source/spec-audit lint policies. | Guarded with no syntax-dependency exception. |
-
-Bounded gaps: formula meaning/equivalence, definition correctness,
-acceptance, fact/axiom publication, attribute application, redefinition and
-coherence, proof, Core/CFG/VC, mixed definition-family acceptance, and broader
-attribute-definition shapes remain outside this module.
-
-### `source_functor_definition`
-
-Generated public newtypes:
-
-- `SourceFunctorDefinitionId`, `SourceFunctorParameterId`,
-  `SourceFunctorGuardId`, `SourceFunctorDefiniensId`,
-  `SourceFunctorCorrectnessId`
-
-Literal top-level public items:
-
-- `SourceFunctorDefinitionHandoffInput`, `SourceFunctorDefinitionInput`,
-  `SourceFunctorParameterInput`, `SourceFunctorGuardInput`,
-  `SourceFunctorDefiniensInput`, `SourceFunctorCorrectnessInput`
-- `SourceFunctorDefinitionStyle`, `SourceFunctorDefiniensTarget`,
-  `SourceFunctorCorrectnessKind`, `SourceFunctorDefinitionRecovery`
-- `SourceFunctorDefinition`, `SourceFunctorParameter`, `SourceFunctorGuard`,
-  `SourceFunctorDefiniens`, `SourceFunctorCorrectness`
-- `SourceFunctorDefinitionTable`, `SourceFunctorParameterTable`,
-  `SourceFunctorGuardTable`, `SourceFunctorDefiniensTable`,
-  `SourceFunctorCorrectnessTable`
-- `SourceFunctorDefinitionHandoff`, `SourceFunctorDefinitionProjection`,
-  `SourceFunctorDefinitionError`, `SourceFunctorDefinitionProducer`
-
-Correspondence:
-
-| Specification promise | Source evidence | Test evidence | Status |
-|---|---|---|---|
-| Five immutable syntax-free tables retain two functor definitions, two shared parameters, one guard, two differently owned definientia, and two explicit correctness clauses. | Public inputs, rows, dense ids, tables, and getters in `src/source_functor_definition.rs`. | `task_260_exact_functor_definition_payload_and_pending_obligations` plus independent row/field corruption coverage. | Implemented as exact `2/2/1/2/2`. |
-| The producer authenticates resolver identity and exact Task-248/249+249R/252/256 fingerprints while appending one existence and one uniqueness obligation to a retained baseline. | `SourceFunctorDefinitionProducer::build`, projection, and fail-closed error categories. | Dependency, optional-lower, arena, and every-obligation-field corruption matrix. | Implemented without sorting, repair, or semantic goal composition. |
-| Typed/final owners publish and clone-preserve the handoff plus complete obligation table atomically and isolate Task 259. | `TypedAst::with_source_functor_definition` and `ResolvedTypedAst::source_functor_definition`. | Transactional installation and final clone/debug/predicate-isolation tests. | Implemented as a mutually exclusive Task-260 transaction. |
-| Public surface and enums remain documented and forward-compatible. | Five ids, six input aggregates, four data enums, five rows/tables, handoff, projection, error, and producer above; every public enum is non-exhaustive. | Public-enum and source/spec-audit lint policies. | Guarded with no syntax-dependency exception. |
-
-Bounded gaps: parameter/guard/return-type goal composition, FOL correctness,
-proof or justification verification, discharge, definition acceptance,
-activation, facts/axioms, calls/overloads, conditional definientia, mixed
-predicate/functor acceptance, and Core/CFG/VC remain outside this module.
-
-### `source_property_implementation`
-
-Generated public newtypes:
-
-- `SourcePropertyImplementationId`, `SourcePropertyParameterId`,
-  `SourcePropertyTargetId`, `SourcePropertyDefiniensId`,
-  `SourcePropertyCorrectnessId`
-
-Literal top-level public items:
-
-- `SourcePropertyImplementationHandoffInput`,
-  `SourcePropertyImplementationInput`, `SourcePropertyParameterInput`,
-  `SourcePropertyTargetInput`, `SourcePropertyDefiniensInput`,
-  `SourcePropertyCorrectnessInput`
-- `SourcePropertyImplementationStyle`, `SourcePropertyDefiniensTarget`,
-  `SourcePropertyCorrectnessKind`, `SourcePropertyImplementationRecovery`
-- `SourcePropertyImplementation`, `SourcePropertyParameter`,
-  `SourcePropertyTarget`, `SourcePropertyDefiniens`, `SourcePropertyCorrectness`
-- `SourcePropertyImplementationTable`, `SourcePropertyParameterTable`,
-  `SourcePropertyTargetTable`, `SourcePropertyDefiniensTable`,
-  `SourcePropertyCorrectnessTable`
-- `SourcePropertyCarrierIdentity`, `SourcePropertyImplementationHandoff`,
-  `SourcePropertyImplementationProjection`,
-  `SourcePropertyImplementationError`,
-  `SourcePropertyImplementationProducer`
-- `SourcePropertyEqualsSelectorAssociation`,
-  `SourcePropertyEqualsSelectorIdentityHandoff`,
-  `SourcePropertyEqualsSelectorIdentityError`,
-  `SourcePropertyEqualsSelectorIdentityProducer`
-
-Correspondence:
-
-| Specification promise | Source evidence | Test evidence | Status |
-|---|---|---|---|
-| Five immutable syntax-free tables retain one exact struct-property implementation, parameter, resolver-backed target, definiens, and profile-dependent correctness rows. | Public inputs, rows, dense IDs, tables, and getters in `src/source_property_implementation.rs`. | Exact equals/means checker test plus the two real-source runner consumers. | Implemented as `1/1/1/1/2` means or `1/1/1/1/0` equals. |
-| The producer authenticates Task-248P/249PI/252/254/256 lower owners, all three exact carrier/member resolver identities, declared return row, typed arena, and complete fingerprints. | `SourcePropertyCarrierIdentity`, `SourcePropertyImplementationProducer::build`, replay validation, and fail-closed errors. | Independent row/lower/resolver/carrier-identity/return/fingerprint/arena corruption tests. | Implemented without syntax parsing or semantic goal composition. |
-| Means appends Pending existence/uniqueness rows to a retained baseline while equals appends zero; Typed/final owners install and replay atomically. | Projection, `TypedAst::with_source_property_implementation`, and final getter. | Nonempty-baseline transaction, orphan/extra rejection, deterministic replay, and Task-259 isolation. | Mutually exclusive Task-264 ownership. |
-| Public surface and enums remain documented and forward-compatible. | Five IDs, six inputs, four data enums, five rows/tables, carrier identity, equals-selector association/handoff, projection, errors, and producers above; every public enum is non-exhaustive. | Public-enum and source/spec-audit lint policies. | Guarded with no production syntax-dependency exception. |
-
-Bounded gaps: goal/guard/return/definiens composition, `it` substitution,
-proof/justification verification, discharge, acceptance, facts/axioms,
-property-value lookup, overlap/coherence, calls/result typing, conditional
-profiles, and Core/CFG/VC remain outside this module.
-
-### `source_mode_definition`
-
-Generated public newtypes:
-
-- `SourceModeDefinitionId`, `SourceModeParameterId`,
-  `SourceModeApplicationId`, `SourceModeExpansionId`,
-  `SourceModeInhabitationRequestId`, `SourceModePropertyId`
-
-Literal top-level public items:
-
-- `SourceModeDefinitionHandoffInput`, `SourceModeDefinitionInput`,
-  `SourceModeParameterInput`, `SourceModeApplicationInput`,
-  `SourceModeExpansionInput`, `SourceModeInhabitationRequestInput`,
-  `SourceModePropertyInput`
-- `SourceModeInhabitationRequestKind`, `SourceModePropertyKind`,
-  `SourceModeDefinitionRecovery`
-- `SourceModeDefinition`, `SourceModeParameter`, `SourceModeApplication`,
-  `SourceModeExpansion`, `SourceModeInhabitationRequest`, `SourceModeProperty`
-- `SourceModeDefinitionTable`, `SourceModeParameterTable`,
-  `SourceModeApplicationTable`, `SourceModeExpansionTable`,
-  `SourceModeInhabitationRequestTable`, `SourceModePropertyTable`
-- `SourceModeDefinitionHandoff`, `SourceModeDefinitionProjection`,
-  `SourceModeDefinitionError`, `SourceModeDefinitionProducer`
-
-Correspondence:
-
-| Specification promise | Source evidence | Test evidence | Status |
-|---|---|---|---|
-| Six immutable syntax-free tables retain one ordinary mode definition, two parameters, one bracket application, one RHS expansion, one unresolved inhabitation request, and one explicit sethood property. | Public inputs, rows, dense ids, tables, and getters in `src/source_mode_definition.rs`. | Five checker tests and the sole exact runner consumer. | Implemented as exact `1/2/1/1/1/1`. |
-| Resolver identity and exact Task-248/249/249M lower fingerprints are authenticated while one Pending Sethood row is appended to the retained baseline. | `SourceModeDefinitionProducer::build`, projection, and installation validation. | Independent source/resolver/lower/link/cardinality/obligation corruption matrices. | Transactional and fail closed without an evidence response. |
-| Typed/final owners publish and clone-preserve the handoff plus complete obligation table atomically and reject mixed Tasks 259--262. | `TypedAst::with_source_mode_definition` and `ResolvedTypedAst::source_mode_definition`. | Both-order sibling isolation, rollback, final corruption, clone, and debug tests. | Implemented as mutually exclusive Task-262 ownership. |
-| Public surface and enums remain documented and forward-compatible. | Six ids, seven input aggregates, three data enums, six rows/tables, handoff, projection, error, and producer above; every public enum is non-exhaustive. | Public-enum and source/spec-audit lint policies. | Guarded with no syntax-dependency exception. |
-
-Bounded gaps: RHS evidence result, goal/guard/FOL composition, proof,
-discharge, acceptance, facts/axioms, use-site application/redefinition,
-registration, Core/CFG/VC, mixed definition semantics, and structure
-definitions remain outside this module.
-
-### `source_structure_definition`
-
-Generated public newtypes:
-
-- `SourceStructureDefinitionId`, `SourceStructureMemberId`,
-  `SourceStructureInheritanceId`, `SourceStructureMappingId`,
-  `SourceStructureCoherenceRequestId`
-
-Literal top-level public items:
-
-- `SourceStructureDefinitionHandoffInput`, `SourceStructureDefinitionInput`,
-  `SourceStructureMemberInput`, `SourceStructureInheritanceInput`,
-  `SourceStructureMappingInput`
-- `SourceStructureMemberKind`, `SourceStructureCoherenceRequestKind`,
-  `SourceStructureDefinitionRecovery`
-- `SourceStructureDefinition`, `SourceStructureMember`,
-  `SourceStructureInheritance`, `SourceStructureMapping`,
-  `SourceStructureCoherenceRequest`
-- `SourceStructureDefinitionTable`, `SourceStructureMemberTable`,
-  `SourceStructureInheritanceTable`, `SourceStructureMappingTable`,
-  `SourceStructureCoherenceRequestTable`
-- `SourceStructureDefinitionHandoff`, `SourceStructureDefinitionProjection`,
-  `SourceStructureDefinitionError`, `SourceStructureDefinitionProducer`
-
-Correspondence:
-
-| Specification promise | Source evidence | Test evidence | Status |
-|---|---|---|---|
-| Five immutable syntax-free tables retain two zero-parameter structures, four field/property members, one direct inheritance, two root/path/view mappings, and zero derived coherence requests. | Public inputs, rows, dense ids, tables, and getters in `src/source_structure_definition.rs`. | Five checker tests and the sole exact runner consumer. | Implemented as exact `2/4/1/2/0`. |
-| Resolver identity and the exact Task-249S lower fingerprint are authenticated while the arbitrary initial-obligation baseline remains byte-identical. | `SourceStructureDefinitionProducer::build`, private baseline snapshot, projection, and installation validation. | Resolver/origin/lower/coverage/coherence/obligation/arena corruption and compound precedence matrices. | Transactional and fail closed without inventing a goal or obligation. |
-| Typed/final owners publish and clone-preserve the handoff atomically and reject mixed Tasks 259--263. | `TypedAst::with_source_structure_definition` and `ResolvedTypedAst::source_structure_definition`. | One-shot, reverse-order sibling isolation, rollback, final corruption, clone, and debug tests. | Implemented as mutually exclusive Task-263 ownership. |
-| Public surface and enums remain documented and forward-compatible. | Five ids, five input aggregates, three data enums, five rows/tables, handoff, projection, error, and producer above; every public enum is non-exhaustive. | Public-enum and source/spec-audit lint policies. | Guarded with no syntax-dependency exception. |
-
-Bounded gaps: parameters/defaults; multiple parents, diamonds, and cycles;
-renaming or narrowing; nonidentical coherence goals/obligations; use-site path
-choice; constructor/selector/update semantics; Task-264 property
-implementation; acceptance, facts, proofs, Core/CFG/VC, and mixed-definition
-semantics remain outside this module.
-
-### `source_predicate_definition`
-
-Generated public newtypes:
-
-- `SourcePredicateDefinitionId`, `SourcePredicateParameterId`,
-  `SourcePredicateGuardId`, `SourcePredicatePropertyId`,
-  `SourcePredicateCorrectnessId`
-
-Literal top-level public items:
-
-- `SourcePredicateDefinitionHandoffInput`,
-  `SourcePredicateDefinitionInput`, `SourcePredicateParameterInput`,
-  `SourcePredicateGuardInput`, `SourcePredicatePropertyInput`,
-  `SourcePredicateCorrectnessInput`
-- `SourcePredicatePropertyKind`, `SourcePredicateDefinitionRecovery`
-- `SourcePredicateDefinition`, `SourcePredicateParameter`,
-  `SourcePredicateGuard`, `SourcePredicateProperty`,
-  `SourcePredicateCorrectness`
-- `SourcePredicateDefinitionTable`, `SourcePredicateParameterTable`,
-  `SourcePredicateGuardTable`, `SourcePredicatePropertyTable`,
-  `SourcePredicateCorrectnessTable`
-- `SourcePredicateDefinitionHandoff`,
-  `SourcePredicateDefinitionProjection`,
-  `SourcePredicateDefinitionError`, `SourcePredicateDefinitionProducer`
-
-Correspondence:
-
-| Specification promise | Source evidence | Test evidence | Status |
-|---|---|---|---|
-| Five syntax-free immutable tables retain one predicate, two ordered parameters, one guard, one symmetry property, and one correctness link. | Public inputs, rows, dense ids, tables, and getters in `src/source_predicate_definition.rs`. | `task_259_exact_predicate_definition_payload_and_pending_obligation`, independent row/field corruption coverage. | Implemented as exact `1/2/1/1/1`. |
-| The producer authenticates resolver identity and exact Task-248/249/252/256 fingerprints while appending one pending correctness obligation to a retained baseline. | `SourcePredicateDefinitionProducer::build`, `SourcePredicateDefinitionProjection`, and fail-closed error categories. | Dependency/obligation corruption and nonempty-baseline transactional tests. | Implemented without sorting, repair, or partial publication. |
-| Typed and final owners publish and clone-preserve the handoff plus complete obligation table atomically. | `TypedAst::with_source_predicate_definition` and `ResolvedTypedAst::source_predicate_definition`. | Transactional installation and final clone/debug/family-isolation tests. | Implemented with no second input or public final obligation-table getter. |
-| The public surface and enums remain documented and forward-compatible. | Five dense ids, six input aggregates, two data enums, five rows/tables, handoff, projection, error, and producer above; all public enums are non-exhaustive. | `checker_public_enums_are_forward_compatible_and_documented`, `checker_source_spec_audit_covers_public_surface_and_gaps`. | Guarded with no Task-259 lint exception. |
-
-Bounded gaps: guard-to-symmetry FOL construction, justification proof,
-discharge, facts/axioms, accepted definitions, VC/IR, and mixed
-predicate/functor acceptance remain outside this module. Task 260's separate
-functor-only transaction does not extend this module.
-
-### `source_composite_formula`
-
-Generated public newtypes:
-
-- `SourceCompositeFormulaId`, `SourceFormulaWrapperId`,
-  `SourceFormulaRootId`, `SourceQuantifierBinderId`,
-  `SourceBinderTypeSiteId`, `SourceFormulaEdgeId`,
-  `SourceFormulaRequestId`
-
-Literal top-level public items:
-
-- `SourceCompositeFormulaHandoffInput`, `SourceCompositeFormulaInput`,
-  `SourceFormulaWrapperInput`, `SourceFormulaRootInput`,
-  `SourceQuantifierBinderInput`, `SourceBinderTypeSiteInput`,
-  `SourceFormulaEdgeInput`, `SourceFormulaRequestInput`,
-  `SourceCompositeFormulaKind`, `SourceCompositeFormulaRecovery`,
-  `SourceFormulaRootOwnership`, `SourceBinderTypeHead`,
-  `SourceFormulaEdgeRole`, `SourceFormulaRequestKind`,
-  `SourceCompositeFormulaHandoff`, `SourceCompositeFormulaTable`,
-  `SourceFormulaWrapperTable`, `SourceFormulaRootTable`,
-  `SourceQuantifierBinderTable`, `SourceBinderTypeSiteTable`,
-  `SourceFormulaEdgeTable`, `SourceFormulaRequestTable`,
-  `SourceCompositeFormula`, `SourceFormulaWrapper`, `SourceFormulaRoot`,
-  `SourceQuantifierBinder`, `SourceBinderTypeSite`, `SourceFormulaEdge`,
-  `SourceFormulaRequest`, `SourceCompositeFormulaProducer`,
-  `SourceCompositeFormulaError`.
-
-Correspondence:
-
-| Specification promise | Source evidence | Test evidence | Status |
-|---|---|---|---|
-| Seven syntax-free dense tables retain the exact composite tree, reserved wrapper table, root, binder, written binder type, child roles, and unresolved requests. Both currently admitted Task-257A/257B1 profiles require the wrapper table to be empty; executable parenthesized occurrences are deferred to Task 257B2. | Public inputs, immutable rows, and tables in `src/source_composite_formula.rs`. | Exact real `5/0/1/1/1/4/6`, exact B1 `1/0/1/1/1/0/2`, full literal debug, wrapper/third-profile rejection, and corruption tests. | Implemented for Tasks 257A/257B1 with parenthesized occurrences deferred. |
-| The same immutable input extends the exact `1/0/4` module shell to the source-derived `2/1/4` environment. | `SourceCompositeFormulaProducer::extend_bindings`, `BindingContextOwner::SourceFormula`, and `build`. | Binder identity, context transition, diagnostic prefix, stale environment, and arena-key tests. | Implemented transactionally. |
-| `TypedAst` owns one handoff, rejects Task-248 coexistence, and `ResolvedTypedAst` revalidates then clone-preserves it. | `with_source_composite_formula`, accessors, and resolved assembly. | One-shot, preinstalled-source-context, final clone equality, deterministic replay, and legacy debug tests. | Implemented without raw-source rebuilding. |
-| Public enums remain forward-compatible. | `#[non_exhaustive]` on all public Task-257A enums. | `checker_public_enums_are_forward_compatible_and_documented`. | Guarded; no exhaustive exception. |
-
-Bounded gaps: semantic connective/quantifier evaluation, other connectives
-and quantifier forms, bound uses/capture, predicate chains, conditioned
-comprehensions, theorem ownership/acceptance, proofs, facts, and downstream
-IR remain with Tasks 257B/257C/258 and later owners.
-
-### `source_formula_composition`
-
-Generated public newtypes:
-
-- `SourceFormulaAtomicEdgeId`, `SourceQuantifierBoundUseId`,
-  `SourceConditionFormulaEdgeId`, `SourcePredicateChainConjunctionId`,
-  `SourcePredicateChainNegationId`,
-  `SourceFraenkelGeneratorBindingContextId`,
-  `SourceFraenkelGeneratorUsePositionId`,
-  `SourceFraenkelGeneratorBoundUseId`,
-  `SourceNestedFraenkelBinderUseId`,
-  `SourceNestedFraenkelCaptureIdentityId`,
-  `SourceNestedFraenkelCaptureGraphGeneratorId`,
-  `SourceNestedFraenkelCaptureGraphMapperId`,
-  `SourceNestedFraenkelCaptureGraphPredicateId`,
-  `SourceNestedFraenkelCaptureGraphCaptureId`,
-  `SourceNestedFraenkelCaptureGraphOccurrenceId`
-
-Literal top-level public items:
-
-- `SourceFormulaCompositionHandoffInput`,
-  `SourceFormulaAtomicEdgeInput`, `SourceQuantifierBoundUseInput`,
-  `SourceConditionFormulaCompositionHandoffInput`,
-  `SourceConditionFormulaEdgeInput`,
-  `SourcePredicateChainCompositionHandoffInput`,
-  `SourcePredicateChainConjunctionInput`,
-  `SourcePredicateChainNegationInput`,
-  `SourceFormulaAtomicEdgeRole`, `SourceFormulaCompositionHandoff`,
-  `SourceConditionFormulaCompositionHandoff`,
-  `SourcePredicateChainCompositionHandoff`,
-  `SourceFormulaAtomicEdgeTable`, `SourceQuantifierBoundUseTable`,
-  `SourceConditionFormulaEdgeTable`,
-  `SourcePredicateChainConjunctionTable`,
-  `SourcePredicateChainNegationTable`,
-  `SourceFormulaAtomicEdge`, `SourceQuantifierBoundUse`,
-  `SourceConditionFormulaEdge`, `SourcePredicateChainConjunction`,
-  `SourcePredicateChainNegation`, `SourceFormulaCompositionProducer`,
-  `SourceConditionFormulaCompositionProducer`,
-  `SourcePredicateChainCompositionProducer`,
-  `SourceFormulaCompositionError`,
-  `SourceConditionFormulaCompositionError`,
-  `SourcePredicateChainCompositionError`,
-  `SourceFraenkelGeneratorBindingContext`,
-  `SourceFraenkelGeneratorBindingContextTable`,
-  `SourceFraenkelGeneratorUsePosition`,
-  `SourceFraenkelGeneratorUsePositionTable`,
-  `SourceFraenkelGeneratorBindingContextError`,
-  `SourceFraenkelGeneratorBindingContextHandoff`,
-  `SourceFraenkelGeneratorBindingContextProducer`,
-  `SourceFraenkelGeneratorBoundUse`,
-  `SourceFraenkelGeneratorBoundUseTable`,
-  `SourceFraenkelGeneratorBoundUseError`,
-  `SourceFraenkelGeneratorBoundUseHandoff`,
-  `SourceFraenkelGeneratorBoundUseProducer`,
-  `SourceNestedFraenkelBinderUse`,
-  `SourceNestedFraenkelBinderUseTable`,
-  `SourceNestedFraenkelBinderUseError`,
-  `SourceNestedFraenkelBinderUseHandoff`,
-  `SourceNestedFraenkelBinderUseProducer`,
-  `SourceNestedFraenkelCaptureIdentity`,
-  `SourceNestedFraenkelCaptureIdentityTable`,
-  `SourceNestedFraenkelCaptureIdentityError`,
-  `SourceNestedFraenkelCaptureIdentityHandoff`,
-  `SourceNestedFraenkelCaptureIdentityProducer`,
-  `SourceNestedFraenkelCaptureGraphGenerator`,
-  `SourceNestedFraenkelCaptureGraphGeneratorTable`,
-  `SourceNestedFraenkelCaptureGraphMapper`,
-  `SourceNestedFraenkelCaptureGraphMapperTable`,
-  `SourceNestedFraenkelCaptureGraphPredicate`,
-  `SourceNestedFraenkelCaptureGraphPredicateTable`,
-  `SourceNestedFraenkelCaptureGraphCapture`,
-  `SourceNestedFraenkelCaptureGraphCaptureTable`,
-  `SourceNestedFraenkelCaptureGraphOccurrence`,
-  `SourceNestedFraenkelCaptureGraphOccurrenceTable`,
-  `SourceNestedFraenkelCaptureGraphHandoff`,
-  `SourceNestedFraenkelCaptureGraphError`,
-  `SourceNestedFraenkelCaptureGraphProducer`,
-  `SourceNestedFraenkelCaptureGraphOwnerHandoff`,
-  `SourceNestedFraenkelCaptureGraphOwnerError`,
-  `SourceNestedFraenkelCaptureGraphOwnerProducer`.
-
-Correspondence:
-
-| Specification promise | Source evidence | Test evidence | Status |
-|---|---|---|---|
-| Five syntax-free dense tables retain the exact composite-to-atomic/binder-use, condition-to-formula, predicate-segment conjunction, and segment-negation associations. | Public inputs, immutable rows, and tables in `src/source_formula_composition.rs`. | Exact Task-257B1/B2/B3, C2 `1`, and C3 `1/1` transactions, literal debug, and independent field/association corruption tests. | Implemented through Task 257C3. |
-| Every transaction fingerprints and revalidates only its exact Task-252/253/255/256/257 lower dependencies in one arena. | The three public producers, immutable owned fingerprints, and exact private profile validators. | Coherent wrong profiles, dependency substitution, cross-source, ordering, lookup-winner, containment, stale-arena/fingerprint, and validation-precedence tests. | Implemented transactionally. |
-| B-family combined ownership, C2 condition ownership, and C3 predicate-chain ownership publish atomically, are mutually exclusive where frozen, and clone-preserve through final assembly. | `TypedAst` installers/getters and `ResolvedTypedAst` revalidation. | Legacy/combined partition, Task-248/A/B/C2/C3 exclusions, rollback/replay, debug order, and final clone tests. | Implemented without an intermediate AST state. |
-| C4A owns one binding-context table and one normalized-use-position table over the exact opaque R2/277C/`TypedAst` snapshot. | `SourceFraenkelGeneratorBindingContextId`, `SourceFraenkelGeneratorUsePositionId`, both row/table pairs, handoff, error, and producer. | The four exact C4A checker tests and private F5 probe. | Implemented without term/reference, capture, or semantic installation. |
-| C4B maps exactly the three C4A positions through `BindingEnv::lookup` to the one checker-local binding and publishes one dense table. | `SourceFraenkelGeneratorBoundUseId`, row/table/handoff, error, and producer. | The four exact C4B checker tests and private F5 bound-use probe. | Implemented with full retained C4A validation and zero semantic credit. |
-| C4C3 authenticates the exact C4C2 nested two-binding/one-mapper-use relation against a retained normal `TypedAst` and publishes one immutable binder/use identity row. | `SourceNestedFraenkelBinderUseId`, row/table/handoff, error, producer, and private retained dependency validator. | The four exact C4C3 checker tests and private real imported-fixture probe. | Implemented with no Task-252 occurrence, semantic capture, installation, route, or coverage credit. |
-| C4C5 consumes and retains the complete C4C4 mapper transaction by value and publishes one immutable inner-owner/mapper/reference/checker-binding-to-resolver-identity receipt. | `SourceNestedFraenkelCaptureIdentityId`, row/table/handoff, two-variant error, producer, and complete C4C4 revalidation seam. | Four exact C4C5 checker tests and one private real imported-fixture probe cover every row field, cardinality, precedence, display strings, replay, and empty captured state. | Implemented with no Task-255 dependency, Typed/Resolved installation, semantic capture, Core origin, route, diagnostic, or coverage credit. |
-| C4C6 installs the complete C4C5 receipt into exact authenticated immutable Typed/Resolved destinations without capture semantics. | Crate-private retained-typed validation, boxed AST owners, one-shot Typed installer, borrowed Typed/Resolved getters, and final clone replay. | Six exact checker tests plus one private real imported-fixture installation probe cover exact owner equality, recursion rejection, semantic-table exclusion, mutual exclusion, debug/clone stability, final-input contamination, and empty captured state. | Implemented. No Core/order/route/diagnostic/coverage credit. |
-| C4C8 owns one standalone immutable normalized graph with exact `3/1/0/2/2` generator/mapper/predicate/capture/occurrence cardinality over the retained C4C8R resolver snapshot. | Five graph IDs, five row/table pairs, handoff, `#[non_exhaustive]` error, producer, and private complete validator. | Four exact checker tests and one private real imported-fixture probe cover API shape, identity links, provenance-first precedence, default-deny corruption, replay, and local-`z` exclusion. | Implemented with no Typed/Resolved slot, semantic capture, Core/GeneratedOrigin payload, route, diagnostic, or coverage credit. |
-| Task33C pairs exactly one unchanged C4C8 graph with its exact Task33R containing-functor owner through retained-resolver equality and resolved owner identities. | Scalar `SourceNestedFraenkelCaptureGraphOwnerHandoff`, three-variant non-exhaustive error, producer, and private complete validator. | Four exact checker tests plus one private real-fixture probe cover API/debug, precedence, association corruption, replay, stale/display-independent pairing, and zero-semantic isolation. | Implemented; no table/id, Typed/Resolved/Core installation, order, GeneratedOrigin, route, diagnostic, or coverage credit. |
-| Public enums remain forward-compatible. | `#[non_exhaustive]` on all ten public enums. | `checker_public_enums_are_forward_compatible_and_documented`. | Guarded; no exhaustive exception. |
-
-Bounded gaps: connective/quantifier/predicate truth, signature applicability,
-overload selection, formula facts/results, implicit theorem closure and
-acceptance, proofs, and downstream IR remain with Task 258 and later owners.
-
-### `source_statement`
-
-Generated public newtypes:
-
-- `SourceTheoremOwnerId`, `SourceStatementId`, `SourceStatementContextId`,
-  `SourceStatementInputFactId`, `SourceStatementCandidateFactId`
-
-Literal top-level public items:
-
-- `SourceStatementHandoffInput`, `SourceTheoremOwnerInput`,
-  `SourceStatementInput`, `SourceStatementContextInput`,
-  `SourceStatementInputFactInput`, `SourceStatementCandidateFactInput`
-- `SourceTheoremRole`, `SourceTheoremStatus`, `SourceStatementKind`,
-  `SourceStatementRecovery`, `SourceStatementFormulaTarget`,
-  `SourceStatementInputFactKind`, `SourceStatementCandidateFactKind`
-- `SourceStatementHandoff`, `SourceTheoremOwnerTable`,
-  `SourceStatementTable`, `SourceStatementContextTable`,
-  `SourceStatementInputFactTable`, `SourceStatementCandidateFactTable`,
-  `SourceTheoremOwner`, `SourceStatement`, `SourceStatementContext`,
-  `SourceStatementInputFact`, `SourceStatementCandidateFact`,
-  `SourceStatementProducer`, `SourceStatementError`
-
-Correspondence:
-
-| Specification promise | Source evidence | Test evidence | Status |
-|---|---|---|---|
-| Five syntax-free dense tables retain the exact theorem owner, statement shell, visibility context, reserved-type-guard input, and unverified candidate. | Public input/row/table/handoff types in `src/source_statement.rs`. | Three exact checker tests plus four real frontend/resolver runner tests. | Implemented for Task 258A. |
-| Resolver, Task-48 binding, Task-252/256 fingerprints, arena topology, and direct formula wrapper are revalidated fail-closed. | `SourceStatementProducer::build`, immutable authenticated contribution/environment, and typed/final installers. | Resolver/lower/binding/ordinal/fingerprint/subtree/coexistence corruption and replay matrix. | Implemented transactionally. |
-| No theorem truth, accepted fact, proof, or existing semantic table is published. | Candidate kind remains unverified; typed/final semantic coexistence guards reject before output. | Empty-output and semantic-coexistence tests in checker and runner. | Implemented as transport only. |
-| Public enums remain forward-compatible. | `#[non_exhaustive]` on all seven public enums. | `checker_public_enums_are_forward_compatible_and_documented`. | Guarded; no exhaustive exception. |
-
-Bounded gaps: broader statements, local citations and nested contexts remain
-Task 258B; acceptance, proof-local behavior, and justification semantics
-remain Tasks 269–272.
-
-### `source_proof_local_declaration`
-
-Generated public newtypes:
-
-- `SourceProofLocalDeclarationId`
-- `SourceProofLocalLetBindingId`
-- `SourceProofLocalGivenBindingId`
-
-Literal top-level public items:
-
-- `SourceProofLocalDeclarationHandoffInput`,
-  `SourceProofLocalDeclarationInput`, `SourceProofLocalDeclarationKind`,
-  `SourceProofLocalDeclarationRecovery`
-- `SourceProofLocalDeclaration`, `SourceProofLocalDeclarationTable`,
-  `SourceProofLocalDeclarationHandoff`,
-  `SourceProofLocalDeclarationProducer`,
-  `SourceProofLocalDeclarationError`
-- `SourceProofLocalLetBindingHandoffInput`,
-  `SourceProofLocalLetBindingRecovery`, `SourceProofLocalLetBinding`,
-  `SourceProofLocalLetBindingTable`, `SourceProofLocalLetBindingHandoff`,
-  `SourceProofLocalLetBindingProducer`, `SourceProofLocalLetBindingError`
-- `SourceProofLocalGivenBindingHandoffInput`,
-  `SourceProofLocalGivenBindingRecovery`, `SourceProofLocalGivenBinding`,
-  `SourceProofLocalGivenBindingTable`, `SourceProofLocalGivenBindingHandoff`,
-  `SourceProofLocalGivenBindingProducer`, `SourceProofLocalGivenBindingError`
-- `SourceProofLocalGivenUseBindingHandoffInput`,
-  `SourceProofLocalGivenUseBindingHandoff`,
-  `SourceProofLocalGivenUseBindingProducer`,
-  `SourceProofLocalGivenUseBindingError`
-- `SourceProofLocalGivenConditionBindingHandoffInput`,
-  `SourceProofLocalGivenConditionBindingHandoff`,
-  `SourceProofLocalGivenConditionBindingProducer`,
-  `SourceProofLocalGivenConditionBindingError`
-- `SourceProofLocalGivenDescendantBindingHandoffInput`,
-  `SourceProofLocalGivenDescendantBindingHandoff`,
-  `SourceProofLocalGivenDescendantBindingProducer`,
-  `SourceProofLocalGivenDescendantBindingError`
-
-Correspondence:
-
-| Specification promise | Source evidence | Test evidence | Status |
-|---|---|---|---|
-| One immutable syntax-free row links the exact Task-258B3N named witness, name, RHS primary term, proof context, resolver-local declaration, and checker binding. | Public input, row, dense ID, table, and handoff types in `src/source_proof_local_declaration.rs`. | Exact checker construction/lookup/debug test and private real-frontend runner test. | Implemented as one `NamedWitness` row. |
-| The producer authenticates source/module identity, the Task-258B3N statement/witness/primary fingerprints, all 51 typed nodes, and the complete base-to-final binding transition. | `SourceProofLocalDeclarationProducer::build`, retained five fingerprints, and fail-closed validation categories. | Transaction/dependency/row/resolver/all-node/fingerprint corruption matrices. | Implemented transactionally without syntax parsing. |
-| Typed/final owners publish, replay, and clone-preserve the optional handoff atomically while all semantic tables remain empty. | `TypedAst::with_source_proof_local_declaration` and both read-only ownership getters. | One-shot/orphan/stale/sibling/final-replay and empty-semantics checker/runner tests. | Implemented as the dormant Task-269A definition-site slice. |
-| Public enums remain forward-compatible. | `#[non_exhaustive]` on kind, recovery, and error. | Public-enum and source/spec-audit lint policies. | Guarded; no exhaustive exception. |
-| The exact proof-`let` profile appends one missing-type `LetBinding` over the reserve-only base and is preserved atomically without semantic publication. | Public `SourceProofLocalLetBinding*` input/row/table/handoff/producer/error types and Typed/final ownership. | Four checker and four private runner Task-269C tests. | Implemented as zero-credit binding transport. |
-| The exact proof-`given` profile appends one missing-type `GivenWitness` over the reserve-only base, preserves canonical block-local lookup behavior, and is carried atomically without semantic publication. | Public `SourceProofLocalGivenBinding*` input/row/table/handoff/producer/error types, `BindingKind::GivenWitness`, and Typed/final ownership. | Four checker and four private runner Task-269G tests, including inherited, shadowed, restored, parent-excluded, and sibling-excluded lookup. | Implemented as zero-credit binding transport; source-type admission remains Task 269GT. |
-| The distinct proof-`given` later-use source rebuilds the same block-local binding lifetime in its own transaction without publishing any occurrence or semantic row. | Public `SourceProofLocalGivenUseBindingHandoffInput`, `SourceProofLocalGivenUseBindingHandoff`, `SourceProofLocalGivenUseBindingProducer`, and `SourceProofLocalGivenUseBindingError`; reused dense Given row/table/recovery ABI. | Four checker and four private runner Task-269GUP tests cover exact source identity, corruption precedence, lookup inheritance/shadow/restoration/exclusion, and zero semantic effect. | Implemented as zero-credit dormant binding prerequisite for Task 269GUPT. |
-| The declaration-condition source installs the canonical own-condition and innermost-block witness lifetime without publishing type, occurrence, condition, or proof semantics. | Public `SourceProofLocalGivenConditionBindingHandoffInput`, `SourceProofLocalGivenConditionBindingHandoff`, `SourceProofLocalGivenConditionBindingProducer`, and `SourceProofLocalGivenConditionBindingError`; independently reconstructed theorem identity and reused dense Given row/table/recovery ABI. | Four checker and four private runner Task-269GC tests cover coherent identity corruption, validation precedence, lookup inheritance/shadow/restoration/exclusion, atomic ownership, and zero semantic effect. | Implemented as zero-credit binding prerequisite for Task 269GCT. |
-| The descendant source installs the outer Given witness and one inherited child context while excluding parent, proof siblings, and post-owner positions without publishing type, occurrence, Set binding, capture, or proof semantics. | Public `SourceProofLocalGivenDescendantBindingHandoffInput`, `SourceProofLocalGivenDescendantBindingHandoff`, `SourceProofLocalGivenDescendantBindingProducer`, and `SourceProofLocalGivenDescendantBindingError`; exact Task-269SDP replay and reused Given row/table/recovery ABI. | Four checker and four private runner Task-269SDC tests cover every input/replay field, exact precedence, descendant lookup/shadow/restoration/exclusion, all-owner atomicity, and zero semantic effect. | Implemented as zero-credit descendant binding/context transport. |
-
-Bounded gaps: later-use resolution and capture replay, other proof-local
-declaration forms, witness typing, existential matching, goal substitution,
-proof/discharge/acceptance, facts, Core/CFG/VC, and public runner activation
-remain with Task 269B+ and Tasks 270–272.
-
-### `source_set_term`
-
-Generated public newtypes:
-
-- `SourceSetTermId`, `SourceSetWrapperId`, `SourceSetGeneratorId`,
-  `SourceSetTypeSiteId`, `SourceSetConditionId`, `SourceSetEdgeId`,
-  `SourceSetRequestId`
-
-Literal top-level public items:
-
-- `SourceSetTermHandoffInput`, `SourceSetTermInput`,
-  `SourceSetWrapperInput`, `SourceSetGeneratorInput`,
-  `SourceSetTypeSiteInput`, `SourceSetConditionInput`, `SourceSetEdgeInput`,
-  `SourceSetRequestInput`, `SourceSetTermKind`,
-  `SourceSetTermRecovery`, `SourceSetTypeOwner`, `SourceSetTypeRole`,
-  `SourceSetTypeHead`, `SourceSetEdgeRole`, `SourceSetTarget`,
-  `SourceSetRequestKind`, `SourceSetTermHandoff`, `SourceSetTermTable`,
-  `SourceSetWrapperTable`, `SourceSetGeneratorTable`,
-  `SourceSetTypeSiteTable`, `SourceSetConditionTable`, `SourceSetEdgeTable`,
-  `SourceSetRequestTable`,
-  `SourceSetTerm`, `SourceSetWrapper`, `SourceSetGenerator`,
-  `SourceSetTypeSite`, `SourceSetCondition`, `SourceSetEdge`, `SourceSetRequest`,
-  `SourceSetTermProducer`, `SourceSetTermError`
-
-Correspondence:
-
-| Spec promise | Source evidence | Test evidence | Status |
-|---|---|---|---|
-| Seven syntax-free dense tables retain set/choice/`qua` terms, wrappers, written generators, bare target sites, written comprehension conditions, ordered children, and unresolved requests. | `SourceSetTermHandoffInput`, seven dense IDs/tables, and read-only rows in `src/source_set_term.rs`. | Exact legacy 4/0/1/3/0/4/7 and Task-255C1 1/0/1/1/1/1/2 transactions plus Task-252/253 dependency oracles and synthetic shape matrices. | Implemented for Tasks 255 and 255C1. |
-| Task-252/253/254/255 nearest-family ownership and conditional dependency fingerprints are authenticated atomically. | `SourceSetTermProducer::build`, private installation validation, and immutable fingerprints. | Cross-family root, unrelated/targeted/missing/mismatch, overlap, and install-order tests. | Implemented transactionally. |
-| Canonical spelling, arena keys, recovery, contexts, row association/cardinality/order, condition-subtree exclusion, and request ownership fail closed. | Producer validation and `SourceSetTermError`. | Producer/extractor corruption, copied/out-of-range condition dependency, and degraded-transport matrices. | Implemented without partial publication. |
-| `TypedAst` owns one handoff and `ResolvedTypedAst` revalidates then clone-preserves it. | `with_source_set_term`, later Task-253/254 revalidation, and resolved assembly. | One-shot installation, later-owner rejection, final clone equality, and deterministic replay. | Implemented. |
-| Public enums are forward-compatible. | `#[non_exhaustive]` on all public enums. | `checker_public_enums_are_forward_compatible_and_documented`. | Guarded; no exhaustive exception. |
-
-Bounded gaps: Task 257 retains comprehension binder identity/capture,
-Tasks 256-257 retain condition formulas, and semantic result typing,
-sethood/nonemptiness/widening, choice stability/witnesses, `qua` reducts,
-facts, acceptance, proofs, and downstream IR remain outside this module.
-
-### `source_structure`
-
-Generated public newtypes:
-
-- `SourceStructureTermId`, `SourceStructureWrapperId`,
-  `SourceStructureRootId`, `SourceStructureMemberId`, `SourceFieldUpdateId`,
-  `SourceStructureEdgeId`, `SourceStructureRequestId`
-
-Literal top-level public items:
-
-- `SourceStructureHandoffInput`, `SourceStructureTermInput`,
-  `SourceStructureWrapperInput`, `SourceStructureRootInput`,
-  `SourceStructureMemberInput`, `SourceFieldUpdateInput`,
-  `SourceStructureEdgeInput`, `SourceStructureRequestInput`,
-  `SourceStructureTermKind`, `SourceStructureRecovery`,
-  `SourceStructureMemberRole`, `SourceStructureEdgeRole`,
-  `SourceStructureTarget`, `SourceStructureRequestKind`,
-  `SourceStructureHandoff`,
-  `SourceStructureTermTable`, `SourceStructureTerm`,
-  `SourceStructureWrapperTable`, `SourceStructureWrapper`,
-  `SourceStructureRootTable`, `SourceStructureRoot`,
-  `SourceStructureMemberTable`, `SourceStructureMember`,
-  `SourceFieldUpdateTable`, `SourceFieldUpdate`,
-  `SourceStructureEdgeTable`, `SourceStructureEdge`,
-  `SourceStructureRequestTable`, `SourceStructureRequest`,
-  `SourceStructureProducer`, `SourceStructureError`
-
-Correspondence:
-
-| Specification promise | Source evidence | Test evidence | Status |
-|---|---|---|---|
-| A syntax-free seven-table transaction transports constructor, selector, and functional-update source shape without semantic field/member/view decisions. | `SourceStructureHandoffInput` and immutable tables in `src/source_structure.rs`. | Exact real 5/0/3/9/2/10/26 plus Task-252 8/0/8 oracle and synthetic family tests. | Implemented for Task 254. |
-| Dense preorder, five exact arena keys, member/FieldUpdate/wrapper ownership, resolver Structure provenance, child containment, requests, and Task-253 root-only composition fail closed. | `SourceStructureProducer::build` validates against `SymbolEnv`, `BindingEnv`, Task 252, optional Task 253, and `TypedArena`. | Full provenance, ownership, key-substitution, child-family, corruption, and exclusion matrix. | Implemented transactionally without sorting, inference, repair, or partial publication. |
-| Task-252 and conditional Task-253 dependency identities use exact producer-derived debug fingerprints. | `TypedAst` and `ResolvedTypedAst` revalidate fingerprints, cross-family roots, and arena sites. | Both `None` branches, targeted-root `Some`, mismatch/missing rejection, replacement, and clone preservation. | Implemented without duplicate cross-family ownership. |
-| Public enums remain forward-compatible. | `#[non_exhaustive]` on all public Task-254 enums. | `checker_public_enums_are_forward_compatible_and_documented`. | Guarded; no exhaustive exception. |
-
-Bounded gaps: Task 254 does not own structure-definition acceptance,
-field/property identity, inheritance views, constructor coverage/default/type
-checking, selector or update semantics, facts, later term/formula families,
-proofs, or downstream IR. Those remain with Tasks 255+, 263-264, and their
-explicit owners.
-
-### `type_checker`
-
-Literal top-level public items:
-
-- `TypeNormalizationOutput`, `TypeNormalizer`, `DeclarationCheckingOutput`,
-  `DeclarationChecker`, `TermFormulaInferenceOutput`, `TermFormulaChecker`,
-  `TermFormulaInferenceError`, `CheckedStatementOwner`, `StatementOwnerError`,
-  `CoercionCheckingOutput`, `CoercionObligationChecker`, `CoercionInput`,
-  `CoercionRequestKind`, `CoercionJustification`, `CoercionEvidence`,
-  `CoercionDeferredReason`, `InitialObligationInput`, `InitialRequirementKind`,
-  `TypeFactQueryEngine`, `TypeFactQuery`, `TypeFactQueryOutput`,
-  `TypeFactQueryStatus`, `TermInput`, `TermKind`, `TermReference`,
-  `TermDeferredReason`, `FormulaInput`, `FormulaKind`,
-  `FormulaDeferredReason`, `ExpectedTypeInput`, `FormulaFactInput`,
-  `OpenCandidateInput`, `CandidateIdentity`, `OpenCandidateSetTable`,
-  `OpenCandidateSet`, `OpenCandidate`, `CandidateSetKind`,
-  `CandidateSetStatus`, `CandidateStatus`, `CheckedTermTable`,
-  `CheckedTermId`, `CheckedTerm`, `TermStatus`, `CheckedFormulaTable`,
-  `CheckedFormulaId`, `CheckedFormula`, `FormulaStatus`,
-  `ExpectedTypeConstraint`, `DeclarationContextInput`, `DeclarationInput`,
-  `DeclarationKind`, `ReservedDefaultPayload`,
-  `DeclarationDeferredReason`, `DeclarationAssumptionInput`,
-  `CheckedDeclarationTable`, `CheckedDeclarationId`,
-  `CheckedDeclaration`, `DeclarationStatus`,
-  `SourceReserveDeclarationBridge`, `SourceReserveBindingInput`,
-  `SourceReserveDeclarationHandoff`, `TypeExpressionInput`,
-  `TypeHeadInput`, `AttributeInput`, `AttributePolarity`, `ModeExpansion`,
-  `NormalizedTypeTable`, `NormalizedType`, `TypeHeadRef`,
-  `TypeHeadErrorKind`, `AttributeSet`, `AttributeInstance`, `TypeSource`,
-  `NormalizedTypeStatus`, `SourceRangeKey`
-
-Correspondence:
-
-| Spec promise | Source evidence | Test evidence | Status |
-|---|---|---|---|
-| Type-expression normalization canonicalizes modes, attributes, arity, and degraded unsupported input without cluster repair. | `TypeNormalizer`, `TypeNormalizationOutput`, `TypeExpressionInput`, `ModeExpansion`, normalized type tables. | `attributes_are_sorted_deduplicated_and_contradictions_are_diagnosed`, `attribute_arguments_and_duplicate_ranges_are_canonicalized`, `equivalent_inputs_have_order_independent_debug_rendering`, `builtins_structures_and_recursive_arguments_have_deterministic_ids`, mode-expansion and degraded-head tests. | Implemented for explicit payloads; MC-G014 remains for source extraction/provider payloads. |
-| Declaration checking consumes explicit declarations and binding contexts while preserving partial output. | `DeclarationChecker`, `DeclarationCheckingOutput`, declaration input/status tables. | `declarations_attach_types_and_context_snapshots_are_deterministic`, `invalid_declarations_keep_partial_output_and_deterministic_diagnostics`, constrained/set/attributed/reconsider tests. | Implemented for explicit payloads; MC-G016 remains. |
-| The reserve-only source-derived producer seam consumes syntax-free reserve payloads and builds checker-owned binding/declaration handoff data without importing raw syntax. | `SourceReserveDeclarationBridge`, `SourceReserveBindingInput`, `SourceReserveDeclarationHandoff`. | `source_reserve_declaration_bridge_builds_checker_owned_handoff`, `source_reserve_declaration_bridge_validates_local_symbol_heads_and_mismatched_inputs`, active `mizar-test` type-elaboration runner regressions. | Implemented for successful bare builtin `set`/`object` reserve declarations, accepted same-module bare local-mode chains ending in builtin `set` / `object`, and the active diagnostic reserve/type-head boundaries recorded under MC-G020. Task 82 extends the imported-mode slice: the documented `parser.type_fixtures` imported `TypeCaseMode` head with `ImportedSource` provenance becomes a checker type-head payload and then fails closed only at the missing imported `ModeExpansion` payload. Task 83 extends the imported-structure slice only for documented structure `R`: the imported `SymbolKind::Structure` head becomes a checker type-head payload and then fails closed only at the missing structure-evidence query. Task 97 applies the same slice to documented structure `TypeCaseStruct`. Task 84 extends the imported-attribute slice only for documented `TypeCaseAttr`: the imported `SymbolKind::Attribute` becomes a checker `AttributeInput` payload on builtin `set` and then fails closed only at the missing attributed-type evidence query. Task 85 extends the imported-attribute slice only for documented negative `empty` over builtin `set`: the imported `SymbolKind::Attribute` becomes a negative checker `AttributeInput` payload and then fails closed only at the missing attributed-type evidence query. Task 116 extends the matching positive `empty` over builtin `set` slice to the same checker evidence-query diagnostic. Imported structures beyond `R`/`TypeCaseStruct`, imported attributes beyond `TypeCaseAttr` and task-85/task-116 `empty`/builtin-`set`, imported mode expansion, imported module AST extraction, and broader AST-wide extraction remain MC-G020. |
-| Term and formula inference records checked tables, expected constraints, open candidates, facts, and recovery; type assertions accept normalized identity and fail closed on missing non-reflexive reachability payloads. | `TermFormulaChecker`, term/formula input and checked tables, `FormulaDeferredReason::MissingTypeAssertionReachabilityPayload`. | `term_inference_covers_term_kinds_and_open_candidates_deterministically`, `formula_inference_records_expected_constraints_facts_and_open_candidates`, `type_assertion_requires_reflexive_or_external_reachability_payload`, `term_formula_recovery_keeps_partial_entries_without_successful_types`. | Implemented for explicit payloads only through reflexive type-assertion admissibility; general widening/`qua` reachability remains MC-G017/MC-G019/external. |
-| Coercion and initial obligations are recorded without assigning `VcId`s or fabricating evidence. | `CoercionObligationChecker`, `CoercionInput`, `InitialObligationInput`, justification/evidence/deferred enums. | `coercion_checker_records_candidates_and_initial_obligations_deterministically`, `coercion_checker_blocks_missing_evidence_and_invalid_qua_without_fabrication`, `coercion_checker_preserves_alternate_same_site_kind_candidates`, task 47 omitted-`reconsider` proof-free/requires-proof tests. | Implemented for explicit payloads; MC-G018/MC-G020 remain for source-derived coercion/reconsider extraction. |
-| Fact queries are deterministic, visibility-scoped, and non-mutating. | `TypeFactQueryEngine`, `TypeFactQueryOutput`, `TypeFactQueryStatus`. | `type_fact_queries_are_deterministic_and_ignore_provenance_for_matching`, `type_fact_queries_respect_assumption_visibility_and_context_absence`, `type_fact_queries_report_contradictions_without_mutating_facts`. | Implemented. |
-| Public enums are forward-compatible. | `#[non_exhaustive]` on public enums. | `checker_public_enums_are_forward_compatible_and_documented`. | Guarded by task 31. |
-
-Task 77 addendum: the active `mizar-test` type-elaboration runner observes a
-source-derived reserve type expression that uses a later same-module local
-attribute declaration and reports
-`type_elaboration.lower_stage.frontend:malformed_type_expression` before checker
-handoff. This credits only the Chapter 2/6/11
-active-range/no-forward-reference boundary and the attribute syntax/use surface;
-it does not claim checker `AttributeInput` extraction, attributed-type evidence
-queries, CoreIr, ControlFlowIr, VC, or proof coverage.
-
-Task 78 addendum: before task 83, the active `mizar-test` type-elaboration
-runner observed a source-derived reserve head whose structure symbol comes from
-the documented `parser.type_fixtures` import summary and reported
-`type_elaboration.external_dependency.ast_payload_extraction`. Task 83
-supersedes that boundary for `R` imported provenance/type-head coverage, and
-task 97 supersedes it for `TypeCaseStruct` imported provenance/type-head
-coverage. Imported structures outside those bridges remain deferred. This does not treat the import summary as real
-imported module AST extraction and does not claim base-shape or
-constructor-witness evidence, positive structure type elaboration, CoreIr,
-ControlFlowIr, VC, or proof coverage.
-
-Task 83/task 97 addendum: the active `mizar-test` type-elaboration runner
-observes the documented `parser.type_fixtures` imported structure symbols `R`
-and `TypeCaseStruct` as real `ImportedSource` checker type heads and reports
-`type_elaboration.checker.checker.declaration.deferred.evidence_query`. This
-credits imported structure provenance and type-head payload extraction only,
-not imported module AST extraction, base-shape/constructor-witness evidence,
-positive imported structure elaboration, CoreIr, ControlFlowIr, VC, or proof
-coverage.
-
-Task 79 addendum: before task 82, the active `mizar-test` type-elaboration
-runner observed a source-derived reserve head whose mode symbol comes from the
-documented `parser.type_fixtures` import summary and reported
-`type_elaboration.external_dependency.ast_payload_extraction`. Task 82
-supersedes that boundary only for `TypeCaseMode` imported provenance/type-head
-coverage; imported modes outside that bridge still credit only the Chapter
-3/7/11/12 imported-mode reserve-head diagnostic boundary. This does not treat
-the import summary as real imported module AST extraction and does not claim
-`ModeExpansion` payloads, positive mode elaboration, CoreIr, ControlFlowIr, VC,
-or proof coverage.
-
-Task 80 addendum: before tasks 84, 85, 116, and 171, the active `mizar-test`
-type-elaboration runner observed source-derived reserve types whose attribute
-symbols come from the documented `parser.type_fixtures` import summary and
-reported `type_elaboration.external_dependency.ast_payload_extraction`. Task
-84 supersedes that boundary only for `TypeCaseAttr` imported provenance and
-`AttributeInput` payload coverage; task 85 supersedes it only for the negative
-`empty`/builtin-`set` fixture; task 116 supersedes it only for the positive
-`empty`/builtin-`set` fixture; task 171 supersedes it only for the negative
-`empty`/builtin-`object` fixture. Imported attributes outside those bridges are
-deferred until source-derived fixtures and payload producers exist. This does
-not treat the import summary as real imported module AST extraction and does
-not claim attributed-type evidence, positive attributed type elaboration,
-CoreIr, ControlFlowIr, VC, or proof coverage. Positive `empty object` and
-imported attributes on symbol heads remain deferred extraction gaps without
-active fixture credit.
-
-Task 84 addendum: the active `mizar-test` type-elaboration runner observes the
-documented `parser.type_fixtures` imported attribute symbol `TypeCaseAttr` as a
-real `ImportedSource` checker `AttributeInput` on builtin `set` and reports
-`type_elaboration.checker.checker.declaration.deferred.evidence_query`. This
-credits imported attribute provenance and no-argument `AttributeInput` payload
-extraction only, not imported module AST extraction, attributed-type
-existential/evidence payloads, positive imported attributed type elaboration,
-generic imported attributes such as `empty`, structure-qualified attribute
-owner provenance, attribute arguments, CoreIr, ControlFlowIr, VC, or proof
-coverage.
-
-Task 85 addendum: the active `mizar-test` type-elaboration runner observes the
-documented `parser.type_fixtures` imported attribute symbol `empty` as a real
-`ImportedSource` negative checker `AttributeInput` on builtin `set` for the
-existing `non empty set` fixture and reports
-`type_elaboration.checker.checker.declaration.deferred.evidence_query`. This
-credits imported attribute provenance and argument-free negative
-`AttributeInput` payload extraction only for that fixture, not imported module
-AST extraction, attributed-type existential/evidence payloads, imported
-positive `empty object`, imported attributes on symbol heads, broader imported attributes,
-structure-qualified attribute owner provenance, attribute arguments, CoreIr,
-ControlFlowIr, VC, or proof coverage.
-Task 116 addendum: the active `mizar-test` type-elaboration runner observes the
-documented `parser.type_fixtures` imported attribute symbol `empty` as a real
-`ImportedSource` positive checker `AttributeInput` on builtin `set` for the
-existing `empty set` fixture and reports
-`type_elaboration.checker.checker.declaration.deferred.evidence_query`. This
-credits imported attribute provenance and argument-free positive
-`AttributeInput` payload extraction only for that fixture, not imported module
-AST extraction, attributed-type existential/evidence payloads, positive
-`empty object`, imported attributes on symbol heads, broader imported attributes, structure-qualified attribute
-owner provenance, attribute arguments, positive attributed-type acceptance,
-CoreIr, ControlFlowIr, VC, or proof coverage.
-Task 171 addendum: the active runner observes the same imported `empty` symbol
-as a real `ImportedSource` negative checker `AttributeInput` on builtin
-`object` for the existing `non empty object` fixture and reports the same
-evidence-query diagnostic. This credits only exact imported provenance,
-negative polarity, and argument-free checker handoff. It does not credit
-positive `empty object`, imported attributes on symbol heads, imported module
-AST extraction, attributed-type admissibility/evidence or acceptance, or
-downstream payloads.
-
-Task 181 current-state repair: the source route shared by tasks 84, 85, 116,
-and 171 now admits only their five credited source shapes: four exact
-single-binding fixtures and the exact ordered mixed reserve fixture. A real
-`parser.type_fixtures` imported attribute requires the exact import/item
-layout, exact spelling, head and polarity, and no arguments; missing, wrong,
-or duplicate imports, duplicate or mixed attributes, broader binding/item/order
-shapes, definitions, and recovery nodes remain on the extraction gap. Existing
-expectations and runner count 129 are unchanged. This closes a
-`source_undocumented_behavior`; it does not promote positive `empty object`,
-attribute evidence or acceptance, imported module AST extraction, or downstream
-payloads.
-
-Task 86 / task 115 / task 117 addendum: task 86 records the formula-only theorem source
-`theorem FormulaPayloadBoundary: thesis;` after parser and resolver execution as
-the source-derived theorem/formula boundary. Task 115 supersedes only this exact
-source by passing the source-derived `thesis` formula constant site/range as a
-checker recovery `FormulaInput`. Task 117 supersedes that recovery marker by
-passing the same source as `FormulaKind::Thesis`, then failing closed on missing
-formula payload. This credits only exact formula-constant kind handoff; it does
-not claim formula constant semantic checking, child-formula graph payloads,
-local proof context, recorded facts, theorem acceptance, a dedicated
-`formula_statement` runner, CoreIr, ControlFlowIr, VC, or proof payload
-coverage.
-
-Task 119 MC-G020 current-state override: the exact active source
-`reserve x for set; theorem ReservedVariableEqualityPayloadBoundary: x = x;`
-now combines the real reserve declaration handoff with source-derived
-identifier-term and equality payloads. The two use ordinals are independently
-derived by ordering the reserve binding range and both identifier ranges, and
-the checker-owned `BindingEnv` resolves each use separately. The written
-builtin `set` type supplies the two term result types and two equality
-expected-type constraints through distinct source-anchored role owners. The
-production runner requires two `Inferred` variable terms, one type/well-formedness
-`Checked` equality, exact normalized type source range/spelling/head, and empty
-candidate/fact/deferred/diagnostic output; payload drift reports the stable
-`type_elaboration.checker.reserved_variable_equality.invalid_payload` key. A
-unit test repeats these assertions on the active sidecar's real
-frontend/resolver AST. This overrides MC-G020's generic term/formula gap wording
-only for that exact slice. It does not claim implicit universal-closure nodes,
-equality truth/facts, theorem acceptance, a `formula_statement` runner, proof
-skeletons, CoreIr, ControlFlowIr, VC, or broader source extraction.
-
-Task 120 MC-G020 current-state override: the exact active membership source
-`reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`
-reuses task 119's real binding/use event ordinals and independent lookups. It
-adds only the checker-owned membership payload demanded by existing APIs: two
-known source-derived `set` variable results, the right operand's one
-expected-`set` role, and one no-fact `Checked` membership formula. Production
-invariants, a task-specific invalid-payload key, and a real frontend/resolver
-sidecar test guard the slice. This does not credit membership truth/facts,
-implicit closure, theorem acceptance, proof, CoreIr, ControlFlowIr, VC, or
-broader source extraction.
-
-Task 121 MC-G020 current-state override: the exact reserved-variable inequality
-source shares the real binding/use producer and supplies two linked result and
-two linked expected roles to a fact-free pre-desugaring `Checked` inequality.
-Production invariants and a real sidecar payload test guard it. The expected
-type shape comes from checker-owned API coverage and task 119, not task 107's
-partial numeral bridge. Desugaring/truth/facts, implicit closure, theorem
-acceptance, proof, CoreIr, ControlFlowIr, VC, and broader extraction remain open.
-
-Task 122 MC-G020 current-state override: the exact reserved-variable type
-assertion source combines task 119's real reserve lookup/result producer with
-task 109's formula-side asserted builtin-`set` AST producer. The checker now
-requires exactly one ready subject and one asserted type, preserves `Checked`
-only for normalized reflexive identity, and fails known non-identical types
-closed on `checker.formula.external.type_assertion_reachability_payload` rather
-than fabricating widening. The source runner retains and independently validates
-both pre-normalization inputs and their distinct source anchors before requiring
-one `Inferred` variable and one fact-free `Checked` type assertion. General
-reachability/widening/`qua`, attributes, truth/facts, implicit closure, theorem
-acceptance, proof, CoreIr, ControlFlowIr, VC, and broader extraction remain open.
-
-Task 123 MC-G020 current-state override: the exact distinct reserved-variable
-equality source combines the existing real multi-reserve declaration producer
-with task 119's equality consumer. The one written builtin `set` range backs
-two source bindings, but source-order lookup resolves `x` and `y` to distinct
-checker binding ids before operand-specific result/expected roles reach a
-fact-free `Checked` equality. Production invariants, a near-miss matrix, and a
-real frontend/resolver sidecar guard the exact bridge. This closes the
-classified `test_gap` / `source_drift` / `design_drift` only for exact
-distinct-binding type/well-formedness. Implicit closure/order nodes, equality
-truth/facts, theorem acceptance, broader source shapes, proof, CoreIr,
-ControlFlowIr, and VC remain open.
-
-Task 124 MC-G020 current-state override: the exact multiple-reserve-declaration
-equality source reuses the same real declaration, binding, lookup, term, and
-formula consumers while keeping the two written builtin `set` ranges distinct
-in all four operand-specific pre-normalization result/expected inputs. The
-checker interns those semantically equal inputs to one `NormalizedTypeId` with
-the deterministic earliest source representative; that representative does not
-replace either original input's provenance. Production invariants, an exact
-near-miss matrix, and a real frontend/resolver sidecar guard this
-`test_gap` / `source_drift` / `design_drift` repair. Implicit closure/order,
-truth/facts, theorem acceptance, broader sources, proof, CoreIr, ControlFlowIr,
-and VC remain open.
-
-Task 125 MC-G020 current-state override: the exact heterogeneous-reserve
-membership source combines the existing real mixed-builtin reserve producer
-with task 120's right-expected-type membership consumer. The runner retains a
-left `object` result input and right `set` result/expected inputs across two
-distinct declaration ranges and binding ids. The checker produces two semantic
-identities, with both right roles sharing `set`; production invariants validate
-the identity partition and deterministic per-type source representatives. This
-closes only the classified `test_gap` / `source_drift` / `design_drift` for the
-exact type/well-formedness slice. Membership truth/facts, object/set coercion
-evidence, closure/order, theorem acceptance, broader sources, proof, CoreIr,
-ControlFlowIr, and VC remain open.
-
-Task 126 MC-G020 current-state override: the exact direct-local-mode equality
-source combines task 55's real AST-derived bare-set expansion with task 119's
-equality consumer. Four raw inputs retain local-mode provenance; the checker
-consumes the expansion and records one builtin-set identity, two `Inferred`
-terms, and one fact-free `Checked` equality. Mode declaration checking or
-acceptance, inhabitation evidence, broader modes, closure/order, truth/facts,
-theorem acceptance, proof, CoreIr, ControlFlowIr, and VC remain open.
-
-Task 127 MC-G020 current-state override: the exact one-edge local-mode-chain
-equality source combines task 56's two real AST-derived expansions with task
-126's equality consumer. Four raw inputs retain outer-mode provenance; the
-checker recursively consumes both links and records one terminal builtin-set
-identity anchored at the real `set` RHS, two `Inferred` terms, and one fact-free
-`Checked` equality. Mode declaration checking/acceptance, inhabitation evidence,
-object terminals, longer-chain formulas, closure/order, truth/facts, theorem
-acceptance, proof, CoreIr, ControlFlowIr, and VC remain open.
-
-Task 128 MC-G020 current-state override: the exact direct local-object-mode
-equality source combines task 55's real AST-derived `LocalObjectMode -> object`
-expansion with task 126's equality consumer. Four raw inputs retain object-mode
-provenance; the checker consumes the real expansion and records one
-builtin-object identity anchored at the real `object` RHS, two `Inferred`
-terms, and one fact-free `Checked` equality. Exact production guards,
-invalid-expansion corruption, withheld-family near misses, and a real sidecar
-guard the route. Mode declaration checking/acceptance, inhabitation evidence,
-broader object-mode formulas, closure/order, truth/facts, theorem acceptance,
-proof, CoreIr, ControlFlowIr, and VC remain open.
-
-Task 129 MC-G020 current-state override: the exact one-edge object-terminal
-mode-chain equality combines task 56's two real AST-derived expansions with
-task 127/128 equality and builtin-object consumers. Four raw inputs retain
-outer-mode provenance; recursive normalization anchors one builtin-object
-identity at the terminal RHS and yields two `Inferred` terms plus one fact-free
-`Checked` equality. Declaration acceptance/inhabitation, longer chains,
-closure/order, truth/facts, theorem acceptance, proof, CoreIr, ControlFlowIr,
-and VC remain open.
-
-Task 130 MC-G020 current-state override: exact direct local-mode inequality
-combines task 55's real `LocalModeInequality -> set` expansion with task 121's
-pre-desugaring consumer. Four raw inputs retain mode provenance; one normalized
-builtin-set identity is anchored at the real RHS; two `Inferred` terms and one
-fact-free `Checked` inequality result. Declaration acceptance/inhabitation,
-desugaring, closure/order, truth/facts, theorem acceptance, proof/Core/VC remain
-open.
-
-Task 131 MC-G020 current-state override: exact direct local-object-mode
-inequality combines task 55's real `LocalObjectModeInequality -> object`
-expansion with the task 121/130 pre-desugaring consumer. Four raw inputs retain
-object-mode provenance; one normalized builtin-object identity is anchored at
-the real RHS; two `Inferred` terms and one fact-free `Checked` inequality
-result. Mode declaration acceptance/inhabitation, desugaring, closure/order,
-truth/facts, theorem acceptance, proof/Core/VC remain open.
-
-Task 132 MC-G020 current-state override: exact one-edge set-terminal mode-chain
-inequality combines task 56/127's two real AST-derived expansions with task
-121/130's pre-desugaring inequality consumer. Four raw inputs retain outer-mode
-provenance; recursive normalization anchors one builtin-set identity at the
-terminal RHS and yields two `Inferred` terms plus one fact-free `Checked`
-inequality. Declaration acceptance/inhabitation, object terminals, direct or
-longer chains, desugaring, closure/order, truth/facts, theorem acceptance,
-proof, CoreIr, ControlFlowIr, and VC remain open.
-
-Task 133 MC-G020 current-state override: exact one-edge object-terminal
-mode-chain inequality composes task 129's two real AST-derived expansions with
-task 131's pre-desugaring builtin-object inequality consumer. Four raw inputs
-retain outer-mode provenance; recursive normalization anchors one
-terminal-RHS builtin-object identity and yields two `Inferred` terms plus one
-fact-free `Checked` inequality. Declaration acceptance/inhabitation,
-set-terminal, direct or longer chains, desugaring, closure/order, truth/facts,
-theorem acceptance, proof, CoreIr, ControlFlowIr, and VC remain open.
-
-Task 134 MC-G020 current-state override: exact two-edge set-terminal mode-chain
-equality composes task 72's three real AST-derived expansions with task 127's
-equality consumer. Four raw inputs retain outer-mode provenance; recursive
-normalization anchors one terminal-RHS builtin-set identity and yields two
-`Inferred` terms plus one fact-free `Checked` equality. Declaration
-acceptance/inhabitation, object terminals, direct, one-edge, or longer chains,
-implicit closure/order, truth/facts, theorem acceptance, proof, CoreIr,
-ControlFlowIr, and VC remain open.
-
-Task 135 MC-G020 current-state override: exact two-edge object-terminal
-mode-chain equality composes task 72's three real AST-derived expansions with
-task 134's equality consumer and builtin-object terminal support. Four raw
-inputs retain outer-mode provenance; recursive normalization anchors one
-terminal-RHS builtin-object identity and yields two `Inferred` terms plus one
-fact-free `Checked` equality. Declaration acceptance/inhabitation, set-terminal
-sibling semantics beyond task 134, direct, one-edge, or longer chains, implicit
-closure/order, truth/facts, theorem acceptance, proof, CoreIr, ControlFlowIr,
-and VC remain open.
-
-Task 136 MC-G020 current-state override: exact two-edge set-terminal
-mode-chain inequality composes task 72's three real AST-derived expansions with
-task 132's pre-desugaring inequality consumer. Four raw inputs retain outer-mode
-provenance; recursive normalization anchors one terminal-RHS builtin-set
-identity and yields two `Inferred` terms plus one fact-free pre-desugaring
-`Checked` inequality. Mode declaration acceptance/inhabitation, object
-terminals, direct, one-edge, or longer chains, inequality desugaring, implicit
-closure/order, truth/facts, theorem acceptance, proof, CoreIr, ControlFlowIr,
-and VC remain open.
-
-Task 137 MC-G020 current-state override: exact two-edge object-terminal
-mode-chain inequality composes task 72's three real AST-derived expansions with
-task 133's builtin-object pre-desugaring inequality consumer. Four raw inputs
-retain outer-mode provenance; recursive normalization anchors one terminal-RHS
-builtin-object identity and yields two `Inferred` terms plus one fact-free
-pre-desugaring `Checked` inequality. Declaration acceptance/inhabitation, set
-terminals, direct, one-edge, or longer chains, inequality desugaring, implicit
-closure/order, truth/facts, theorem acceptance, proof, CoreIr, ControlFlowIr,
-and VC remain open.
-
-Task 138 MC-G020 current-state override: the exact direct set-terminal
-local-mode reserved-variable type assertion composes task 55's real AST-derived
-`LocalModeTypeAssertion -> set` expansion with task 122's normalized-reflexive
-type-assertion consumer. The raw subject retains local-mode provenance, the
-asserted builtin `set` retains its independent formula source, and one real
-expansion normalizes both to one terminal-RHS builtin-set identity before one
-`Inferred` term and one fact-free `Checked` type assertion are recorded. Mode
-declaration acceptance/inhabitation, formula-side local-mode asserted heads,
-general reachability/widening/`qua`, truth/facts, theorem acceptance, proof,
-CoreIr, ControlFlowIr, and VC remain open.
-
-Task 139 MC-G020 current-state override: the exact direct set-terminal
-local-mode left membership composes task 55's real AST-derived
-`LocalModeMembership -> set` expansion with task 120's right-only expected-set
-membership consumer and task 125's two-binding distinct-source form. The raw
-left result retains local-mode provenance, while the independent right result
-and sole expected-set input retain their explicit reserve provenance. One real
-expansion normalizes the left role, the right builtin-set roles normalize
-directly, and all three intern to one terminal-RHS builtin-set identity before
-two `Inferred` terms and one fact-free `Checked` membership are recorded. Mode
-declaration acceptance/inhabitation, membership truth/facts, implicit
-closure/order, theorem acceptance, proof, CoreIr, ControlFlowIr, and VC remain
-open.
-
-Task 140 MC-G020 current-state override: the exact direct object-terminal
-local-mode left membership composes task 55's real AST-derived
-`LocalObjectModeMembership -> object` expansion with task 125's right-only
-expected-set, two-binding distinct-source membership consumer. The raw left
-result retains local object-mode provenance, while the independent right
-result and sole expected-set input retain their explicit reserve provenance.
-One real expansion normalizes the left role to a terminal-RHS builtin-object
-identity; the right builtin-set roles normalize directly to a distinct
-explicit-reserve-anchored identity. Two `Inferred` terms and one fact-free
-`Checked` membership are recorded with exactly one right-owned constraint and
-no left expected type. Mode declaration acceptance/inhabitation, membership
-truth/facts, object/set coercion, implicit closure/order, theorem acceptance,
-proof, CoreIr, ControlFlowIr, and VC remain open.
-
-Task 141 MC-G020 current-state override: the exact one-edge set-terminal
-local-mode-chain left membership composes task 56's two real AST-derived
-`ChainModeMembership -> BaseModeMembership -> set` expansions with task 139's
-right-only expected-set, two-binding membership consumer. The raw left result
-retains outer-mode provenance, while the independent right result and sole
-expected-set input retain explicit reserve provenance. Both real expansions
-recursively normalize the left role; the right builtin-set roles normalize
-directly, and all three intern to one terminal-RHS builtin-set identity. Two
-`Inferred` terms and one fact-free `Checked` membership are recorded with
-exactly one right-owned constraint and no left expected type. Mode declaration
-acceptance/inhabitation, membership truth/facts, implicit closure/order,
-theorem acceptance, proof, CoreIr, ControlFlowIr, and VC remain open.
-
-Task 142 MC-G020 current-state override: the exact one-edge object-terminal
-local-mode-chain left membership composes task 56's two real AST-derived
-`ChainObjectModeMembership -> BaseObjectModeMembership -> object` expansions
-with the right-only expected-set, two-binding membership consumer from tasks
-125, 140, and 141. The raw left result retains outer-mode provenance, while
-the independent right result and sole expected-set input retain explicit
-reserve provenance. Both real expansions recursively normalize the left role
-to one terminal-RHS builtin-object identity; the right builtin-set roles
-normalize directly to one distinct explicit-reserve-anchored identity. Two
-`Inferred` terms and one fact-free `Checked` membership are recorded with
-exactly one right-owned constraint and no left expected type. Mode declaration
-acceptance/inhabitation, membership truth/facts, object/set coercion, implicit
-closure/order, theorem acceptance, proof, CoreIr, ControlFlowIr, and VC remain
-open.
-
-Task 143 MC-G020 current-state override: the exact two-edge set-terminal
-local-mode-chain left membership composes task 72's three real AST-derived
-`OuterTwoEdgeModeMembership -> MiddleTwoEdgeModeMembership -> BaseTwoEdgeModeMembership -> set`
-expansions with the right-only expected-set, two-binding membership consumer
-from tasks 125, 139, and 141. The raw left result retains outer-mode
-provenance, while the independent right result and sole expected-set input
-retain explicit reserve provenance. All three real expansions recursively
-normalize the left; the right builtin-set roles normalize directly, and all
-three intern to one terminal-RHS builtin-set identity. Two `Inferred` terms
-and one fact-free `Checked` membership are recorded with exactly one
-right-owned constraint and no left expected type. Mode declaration
-acceptance/inhabitation, membership truth/facts, implicit closure/order,
-theorem acceptance, proof, CoreIr, ControlFlowIr, and VC remain open.
-
-Task 144 MC-G020 current-state override: the exact two-edge object-terminal
-local-mode-chain left membership composes task 72's three real AST-derived
-`OuterTwoEdgeObjectModeMembership -> MiddleTwoEdgeObjectModeMembership -> BaseTwoEdgeObjectModeMembership -> object`
-expansions with the right-only expected-set, two-binding membership consumer
-from tasks 125, 140, 142, and 143. The raw left result retains outer-mode
-provenance, while the independent right result and sole expected-set input
-retain explicit reserve provenance. All three real expansions recursively
-normalize the left to a terminal-RHS builtin-object identity; the right roles
-normalize directly to a distinct explicit-reserve builtin-set identity. Two
-`Inferred` terms and one fact-free `Checked` membership are recorded with
-exactly one right-owned constraint, no left expected type, and no object/set
-coercion. Mode declaration acceptance/inhabitation, membership truth/facts,
-implicit closure/order, theorem acceptance, proof, CoreIr, ControlFlowIr, and
-VC remain open.
-
-Task 145 MC-G020 current-state override: the exact direct object-terminal
-local-mode reserved-variable type assertion composes task 55's real
-AST-derived `LocalObjectModeTypeAssertion -> object` expansion with tasks 122
-and 138's identifier-result and independently formula-anchored asserted-type
-consumer. The raw subject result retains its written local-mode provenance,
-while the asserted builtin `object` retains its independent formula source
-node. The one real expansion normalizes both inputs to one builtin-object
-identity canonically anchored at the definition RHS before one `Inferred`
-term and one fact-free `Checked` type assertion are recorded. This exact slice
-requires `BindingId(0)` and source-order use ordinal 1 and fails closed on
-non-exact definitions, reserves, formulas, or expansion payloads. Mode
-declaration acceptance/inhabitation, formula-side local-mode asserted-head
-extraction, general reachability/widening/`qua`, object/set coercion,
-truth/facts, implicit closure/order, theorem acceptance, proof, CoreIr,
-ControlFlowIr, and VC remain open.
-
-Task 146 MC-G020 current-state override: the exact one-edge set-terminal
-local-mode-chain reserved-variable type assertion composes task 56's two real
-AST-derived `ChainModeTypeAssertion -> BaseModeTypeAssertion -> set`
-expansions with tasks 122 and 138's identifier-result and independently
-formula-anchored asserted-type consumer. The raw subject result retains its
-written outer-mode provenance, while the asserted builtin `set` retains its
-independent formula source node. Both real expansions recursively normalize
-the subject and asserted input to one builtin-set identity canonically anchored
-at the terminal definition RHS before one `Inferred` term and one fact-free
-`Checked` type assertion are recorded. This exact slice requires
-`BindingId(0)` and source-order use ordinal 1 and fails closed on non-exact
-definitions, reserves, formulas, or either expansion payload. Mode declaration
-acceptance/inhabitation, formula-side local-mode asserted-head extraction,
-general reachability/widening/`qua`, truth/facts, implicit closure/order,
-theorem acceptance, proof, CoreIr, ControlFlowIr, and VC remain open.
-
-Task 147 MC-G020 current-state override: the exact one-edge object-terminal
-local-mode-chain reserved-variable type assertion composes task 56's two real
-AST-derived
-`ChainObjectModeTypeAssertion -> BaseObjectModeTypeAssertion -> object`
-expansions with tasks 122, 145, and 146's identifier-result and independently
-formula-anchored asserted-type consumer. The raw subject result retains its
-written outer-mode provenance, while the asserted builtin `object` retains its
-independent formula source node. Both real expansions recursively normalize
-the subject and asserted input to one builtin-object identity canonically
-anchored at the terminal definition RHS before one `Inferred` term and one
-fact-free `Checked` type assertion are recorded. This exact slice requires
-`BindingId(0)` and source-order use ordinal 1 and fails closed on non-exact
-definitions, reserves, formulas, or either expansion payload. Mode declaration
-acceptance/inhabitation, formula-side local-mode asserted-head extraction,
-general reachability/widening/`qua`, object/set coercion, truth/facts, implicit
-closure/order, theorem acceptance, proof, CoreIr, ControlFlowIr, and VC remain
-open.
-
-Task 148 MC-G020 current-state override: the exact two-edge set-terminal local-
-mode-chain reserved-variable type assertion composes task 72's three real AST-
-derived
-`OuterTwoEdgeModeTypeAssertion -> MiddleTwoEdgeModeTypeAssertion -> BaseTwoEdgeModeTypeAssertion -> set`
-expansions with tasks 122, 146, and 147's identifier-result and independently
-formula-anchored asserted-type consumer. The raw subject result retains its
-written outer-mode provenance, while the asserted builtin `set` retains its
-independent formula source node. All three real expansions recursively
-normalize the subject and asserted input to one builtin-set identity
-canonically anchored at the terminal definition RHS before one `Inferred` term
-and one fact-free `Checked` type assertion are recorded. This exact slice
-requires `BindingId(0)` and source-order use ordinal 1 and fails closed on non-
-exact definitions, reserves, formulas, or any expansion payload. Mode
-declaration acceptance/inhabitation, formula-side local-mode asserted-head
-extraction, general reachability/widening/`qua`, truth/facts, implicit closure/
-order, theorem acceptance, proof, CoreIr, ControlFlowIr, and VC remain open.
-
-Task 149 MC-G020 current-state override: the exact two-edge object-
-terminal local-mode-chain reserved-variable type assertion composes task 72's
-three real AST-derived
-`OuterTwoEdgeObjectModeTypeAssertion -> MiddleTwoEdgeObjectModeTypeAssertion -> BaseTwoEdgeObjectModeTypeAssertion -> object`
-expansions with tasks 122, 145, 147, and 148's identifier-result and independently
-formula-anchored asserted-type consumer. The raw subject result retains
-its written outer-mode provenance, while the asserted builtin `object` retains
-its independent formula source node. All three expansions must recursively
-normalize both inputs to one builtin-object identity canonically anchored at
-the terminal definition RHS before one `Inferred` term and one fact-free
-`Checked` type assertion are recorded. This exact slice requires `BindingId(0)`
-and source-order use ordinal 1 and fails closed on non-exact definitions,
-reserves, formulas, or any of the three expansion payloads. The classified
-changes are `test_gap`, `source_drift`, and `design_drift`; there is no
-`spec_gap`. Mode declaration acceptance/inhabitation, formula-side local-mode
-asserted-head extraction, general reachability/widening/`qua`, object/set
-coercion, truth/facts, implicit closure/order, theorem acceptance, proof,
-CoreIr, ControlFlowIr, and VC remain open. The production route and real
-frontend/resolver sidecar now guard the exact active slice.
-
-Task 150 MC-G020 current-state override: the exact three-edge set-terminal local-
-mode-chain reserved-variable type assertion composes Task 73's four real AST-
-derived
-`OuterThreeEdgeModeTypeAssertion -> MiddleThreeEdgeModeTypeAssertion -> InnerThreeEdgeModeTypeAssertion -> BaseThreeEdgeModeTypeAssertion -> set`
-expansions with Tasks 122, 148, and 149's identifier-result and independently
-formula-anchored asserted-type consumer. The raw subject result must retain its
-written outer-mode provenance, while the asserted builtin `set` retains its
-independent formula source node. All four expansions must recursively normalize
-both inputs to one builtin-set identity canonically anchored at the terminal
-definition RHS before one `Inferred` term and one fact-free `Checked` type
-assertion are recorded. This exact slice requires `BindingId(0)` and source-
-order use ordinal 1 and must fail closed on non-exact definitions, reserves,
-formulas, or any of the four expansion payloads. The classified changes are
-`test_gap`, `source_drift`, and `design_drift`; there is no `spec_gap`. Mode
-declaration acceptance/inhabitation, formula-side local-mode asserted-head
-extraction, general reachability/widening/`qua`, truth/facts, implicit closure/
-order, theorem acceptance, proof, CoreIr, ControlFlowIr, and VC remain open.
-The production route and real frontend/resolver sidecar now guard the exact
-active slice.
-
-Task 151 MC-G020 current-state override: the exact three-edge object-terminal local-
-mode-chain reserved-variable type assertion composes Task 73's four real AST-
-derived
-`OuterThreeEdgeObjectModeTypeAssertion -> MiddleThreeEdgeObjectModeTypeAssertion -> InnerThreeEdgeObjectModeTypeAssertion -> BaseThreeEdgeObjectModeTypeAssertion -> object`
-expansions with Tasks 122, 149, and 150's identifier-result and independently
-formula-anchored asserted-type consumer. The raw subject result must retain its
-written outer-mode provenance, while the asserted builtin `object` retains its
-independent formula source node. All four expansions must recursively normalize
-both inputs to one builtin-object identity canonically anchored at the terminal
-definition RHS before one `Inferred` term and one fact-free `Checked` type
-assertion are recorded. This exact slice requires `BindingId(0)` and source-
-order use ordinal 1 and must fail closed on non-exact definitions, reserves,
-formulas, or any of the four expansion payloads. The classified changes are
-`test_gap`, `source_drift`, and `design_drift`; there is no `spec_gap`. Mode
-declaration acceptance/inhabitation, formula-side local-mode asserted-head
-extraction, general reachability/widening/`qua`, object/set coercion, truth/
-facts, implicit closure/order, theorem acceptance, proof, CoreIr, ControlFlowIr,
-and VC remain open.
-The production route and real frontend/resolver sidecar now guard the exact
-active slice.
-
-Task 152 MC-G020 current-state override: the exact four-edge set-terminal local-mode-
-chain reserved-variable type assertion composes Task 74's five real AST-derived
-`TooDeepFourEdgeModeTypeAssertion -> OuterFourEdgeModeTypeAssertion -> MiddleFourEdgeModeTypeAssertion -> InnerFourEdgeModeTypeAssertion -> BaseFourEdgeModeTypeAssertion -> set`
-expansions with Tasks 122, 150, and 151's identifier-result and independently
-formula-anchored asserted-type consumer. The raw subject result must retain its
-written outermost-mode provenance, while the asserted builtin `set` retains its
-independent formula source node. All five expansions must recursively normalize
-both inputs to one builtin-set identity canonically anchored at the terminal
-definition RHS before one `Inferred` term and one fact-free `Checked` type
-assertion are recorded. This exact slice requires `BindingId(0)` and source-
-order use ordinal 1 and must fail closed on non-exact definitions, reserves,
-formulas, or any of the five expansion payloads. The classified changes are
-`test_gap`, `source_drift`, and `design_drift`; there is no `spec_gap`. Mode
-declaration acceptance/inhabitation, formula-side local-mode asserted-head
-extraction, general reachability/widening/`qua`, truth/facts, implicit closure/
-order, theorem acceptance, proof, CoreIr, ControlFlowIr, and VC remain open.
-The production route and real frontend/resolver sidecar now guard the exact
-active slice.
-
-Task 153 MC-G020 current-state override: the exact four-edge object-terminal local-
-mode-chain reserved-variable type assertion composes Task 74's five real AST-
-derived
-`TooDeepFourEdgeObjectModeTypeAssertion -> OuterFourEdgeObjectModeTypeAssertion -> MiddleFourEdgeObjectModeTypeAssertion -> InnerFourEdgeObjectModeTypeAssertion -> BaseFourEdgeObjectModeTypeAssertion -> object`
-expansions with Tasks 122, 151, and 152's identifier-result and independently
-formula-anchored asserted-type consumer. The raw subject result must retain its
-written outermost-mode provenance, while the asserted builtin `object` retains
-its independent formula source node. All five expansions must recursively
-normalize both inputs to one builtin-object identity canonically anchored at
-the terminal definition RHS before one `Inferred` term and one fact-free
-`Checked` type assertion are recorded. This exact slice requires `BindingId(0)`
-and source-order use ordinal 1 and must fail closed on non-exact definitions,
-reserves, formulas, or any of the five expansion payloads. The classified
-changes are `test_gap`, `source_drift`, and `design_drift`; there is no
-`spec_gap`. Mode declaration acceptance/inhabitation, formula-side local-mode
-asserted-head extraction, general reachability/widening/`qua`, object/set
-coercion, truth/facts, implicit closure/order, theorem acceptance, proof,
-CoreIr, ControlFlowIr, and VC remain open. The production route and real
-frontend/resolver sidecar now guard the exact active slice, and the active count
-is 104.
-
-Task 154 MC-G020 implementation specification: the exact three-edge set-terminal
-local-mode-chain reserved-variable equality composes Task 73's four real
-AST-derived
-`OuterThreeEdgeModeEquality -> MiddleThreeEdgeModeEquality -> InnerThreeEdgeModeEquality -> BaseThreeEdgeModeEquality -> set`
-expansions with Task 134's equality consumer. Four raw result/expected inputs
-must retain the written outer-mode provenance, both operands must resolve to
-`BindingId(0)` with source-order ordinals 1 and 2, and all four expansions must
-recursively normalize every role to one terminal-RHS builtin-set identity
-before two `Inferred` terms and one fact/deferred-free `Checked` equality are
-recorded. Exact definition/radix/expansion corruption, withheld-family near
-misses, and a real frontend/resolver sidecar are required. The classified
-changes are `test_gap`, `source_drift`, and `design_drift`; there is no
-`spec_gap`. Mode declaration acceptance/inhabitation, equality truth/facts,
-implicit closure/order, theorem acceptance, proof, CoreIr, ControlFlowIr, and
-VC remain open. The fixture, expectation, trace row, production route, full
-near-miss/corruption matrix, and real frontend/resolver sidecar now guard the
-exact slice, so the active count is 105.
-
-Task 155 MC-G020 implementation specification: the exact three-edge object-
-terminal local-mode-chain reserved-variable equality composes Task 73's four
-real AST-derived
-`OuterThreeEdgeObjectModeEquality -> MiddleThreeEdgeObjectModeEquality -> InnerThreeEdgeObjectModeEquality -> BaseThreeEdgeObjectModeEquality -> object`
-expansions with Task 135's equality consumer. Four raw result/expected inputs
-must retain the written outer-mode provenance, both operands must resolve to
-`BindingId(0)` with source-order ordinals 1 and 2, and all four expansions must
-recursively normalize every role to one terminal-RHS builtin-object identity
-before two `Inferred` terms and one fact/deferred-free `Checked` equality are
-recorded. Exact definition/radix/expansion corruption, withheld-family near
-misses, and a real frontend/resolver sidecar are required. The classified
-changes are `test_gap`, `source_drift`, and `design_drift`; there is no
-`spec_gap`. Mode declaration acceptance/inhabitation, object/set coercion,
-equality truth/facts, implicit closure/order, theorem acceptance, proof,
-CoreIr, ControlFlowIr, and VC remain open. The fixture, expectation, trace row,
-production route, full near-miss/corruption matrix, and real frontend/resolver
-sidecar now guard the exact slice, so the active count is 106.
-
-Task 156 MC-G020 implementation specification: the exact three-edge set-
-terminal local-mode-chain reserved-variable inequality composes Task 73's four
-real AST-derived
-`OuterThreeEdgeModeInequality -> MiddleThreeEdgeModeInequality -> InnerThreeEdgeModeInequality -> BaseThreeEdgeModeInequality -> set`
-expansions with Task 136's pre-desugaring inequality consumer. Four raw result/
-expected inputs must retain the written outer-mode provenance, both operands
-must resolve to `BindingId(0)` with source-order ordinals 1 and 2, and all four
-expansions must recursively normalize every role to one terminal-RHS builtin-
-set identity before two `Inferred` terms and one fact/deferred-free pre-
-desugaring `Checked` inequality are recorded. Exact definition/radix/expansion
-corruption, withheld-family near misses, and a real frontend/resolver sidecar
-are required. The classified changes are `test_gap`, `source_drift`, and
-`design_drift`; there is no `spec_gap`. Mode declaration acceptance/
-inhabitation, inequality desugaring, truth/facts, implicit closure/order,
-theorem acceptance, proof, CoreIr, ControlFlowIr, and VC remain open. The
-fixture, expectation, trace row, production route, full near-miss/corruption
-matrix, and real frontend/resolver sidecar now guard the exact slice, so the
-active count is 107.
-
-Task 157 MC-G020 implementation specification: the exact three-edge object-
-terminal local-mode-chain reserved-variable inequality composes Task 73's four
-real AST-derived
-`OuterThreeEdgeObjectModeInequality -> MiddleThreeEdgeObjectModeInequality -> InnerThreeEdgeObjectModeInequality -> BaseThreeEdgeObjectModeInequality -> object`
-expansions with Task 137's builtin-object pre-desugaring inequality consumer.
-Four raw result/expected inputs must retain the written outer-mode provenance,
-both operands must resolve to `BindingId(0)` with source-order ordinals 1 and 2,
-and all four expansions must recursively normalize every role to one terminal-
-RHS builtin-object identity before two `Inferred` terms and one fact/deferred-
-free pre-desugaring `Checked` inequality are recorded. Exact definition/radix/
-expansion corruption, withheld-family near misses, and a real frontend/resolver
-sidecar are required. The classified changes are `test_gap`, `source_drift`,
-and `design_drift`; there is no `spec_gap`. Mode declaration acceptance/
-inhabitation, object/set coercion, inequality desugaring, truth/facts, implicit
-closure/order, theorem acceptance, proof, CoreIr, ControlFlowIr, and VC remain
-open. The fixture, expectation, trace row, production route, full near-miss/
-corruption matrix, and real frontend/resolver sidecar now guard the exact
-slice, so the active count is 108.
-
-Task 158 MC-G020 implementation specification: the exact three-edge set-
-terminal local-mode-chain left reserved-variable membership composes task 73's
-four real AST-derived
-`OuterThreeEdgeModeMembership -> MiddleThreeEdgeModeMembership -> InnerThreeEdgeModeMembership -> BaseThreeEdgeModeMembership -> set`
-expansions with task 143's two-binding, right-only expected-set membership
-consumer. The raw left result must retain outer-mode provenance; the independent
-right result and sole expected input must retain explicit-set reserve provenance,
-with no left expected input. Both operands resolve to `BindingId(0/1)` at
-source-order ordinals 2/3, and all four expansions normalize the three roles to
-one terminal-RHS builtin-set identity before two `Inferred` terms and one fact/
-deferred-free `Checked` membership with exactly one right-owned constraint.
-Independent definition/radix/expansion corruption, withheld-family near misses,
-and a real frontend/resolver sidecar are required. The classified changes are
-`test_gap`, `source_drift`, and `design_drift`; there is no `spec_gap`. Mode
-declaration acceptance/inhabitation, membership truth/facts, implicit closure/
-order, theorem acceptance, proof, CoreIr, ControlFlowIr, VC, object-terminal
-behavior, and broader depths remain open. The fixture, expectation, trace row,
-production route, full near-miss/corruption matrix, and real frontend/resolver
-sidecar now guard the exact slice, so the active count is 109.
-
-Task 159 MC-G020 current-state override: the exact distinct-binding
-shared-reserve membership composes task 123's one-item/two-binding/shared-range
-producer with tasks 120/125's right-only expected-set membership consumer.
-`x/y` resolve to `BindingId(0/1)` at ordinals 2/3; the left result, right
-result, and sole right expected input retain one written set range, no left
-expected input exists, and all three roles normalize to one builtin-set
-identity before two `Inferred` terms and one fact/deferred-free `Checked`
-membership with one right-owned constraint. Classification is `test_gap`,
-`source_drift`, and `design_drift`, not `spec_gap`. Truth/facts, closure/order,
-theorem acceptance, proof/Core/ControlFlow/VC, separate declarations, and
-broader shapes remain open. The fixture/expectation/trace row, production
-route, full near-miss/corruption matrix, and real sidecar now guard the exact
-slice, so the active count is 110.
-
-Task 160 MC-G020 current-state override: the exact distinct-binding shared-
-reserve inequality composes task 123's one-item/two-binding/shared-range
-producer with task 121's pre-desugaring inequality consumer. `x/y` must resolve
-to `BindingId(0/1)` at ordinals 2/3; both bindings and all four left/right
-result/expected roles must retain one written set range and normalize to one
-shared-source builtin-set identity before two `Inferred` terms and one fact/
-deferred-free `Checked` inequality with two ordered operand-owned constraints.
-Classification is `test_gap`, `source_drift`, and `design_drift`, not
-`spec_gap`. Desugaring/truth/facts, closure/order, theorem acceptance, proof/
-Core/ControlFlow/VC, separate declarations, and broader shapes remain open.
-The fixture/expectation/trace contract, production route, near-miss/corruption
-guards, and real sidecar now protect the exact slice, so the active count is
-111.
-
-Task 161 MC-G020 current-state override: the exact multiple-reserve-declaration
-inequality composes task 124's two-item/two-binding/distinct-written-range
-producer with task 160's pre-desugaring inequality consumer. `x/y` must resolve
-to `BindingId(0/1)` at ordinals 2/3; each operand's result/expected roles must
-retain its own written set range while all four normalize to one canonical
-builtin-set identity anchored at the earlier `x` range before two `Inferred`
-terms and one fact/deferred-free `Checked` inequality with two ordered
-constraints. Classification is `test_gap`, `source_drift`, and `design_drift`,
-not `spec_gap`. Desugaring/truth/facts, closure/order, theorem acceptance,
-proof/Core/ControlFlow/VC, shared ranges, and broader shapes remain open. The
-source/trace contract, production route, near-miss/corruption guards, and real
-sidecar now protect the exact slice, so the active count is 112.
-
-Task 162 MC-G020 current-state override: the exact multiple-reserve-
-declaration membership composes task 124's two-item/two-binding/distinct-
-written-range producer with tasks 120/159's right-only expected-set membership
-consumer. `x/y` must resolve to `BindingId(0/1)` at ordinals 2/3; the left
-result retains the first written set range, the right result and sole right
-expected input retain the second, and no left expected input exists. All three
-roles normalize to one canonical builtin-set identity anchored at the earlier
-`x` range before two `Inferred` terms and one fact/deferred-free `Checked`
-membership with exactly one right-owned constraint. Classification is
-`test_gap`, `source_drift`, and `design_drift`, not `spec_gap`. Membership truth/
-facts, closure/order, theorem acceptance, proof/Core/ControlFlow/VC, shared
-ranges, and broader shapes remain open. The fixture/expectation/trace contract,
-production routing, near-miss/corruption guards, and a real sidecar now protect
-the exact slice, so the active count is 113.
-
-Task 163 MC-G020 current-state override: classify the exact three-edge local-object-
-mode-chain left membership as `test_gap`, `source_drift`, and `design_drift`,
-not `spec_gap`. Chapters 3, 4, 7, 13, 14.5.3, and 16 directly support the
-test-first source. Tasks 73/151/155/157 provide the real four-expansion object-
-terminal producer, and task 144 provides the real object-left/set-right
-membership consumer. The implementation preserves `BindingId(0/1)`
-at ordinals 2/3, the raw outer-mode left result, independent explicit-set right
-result and sole right expected input, no left expected input, distinct terminal-
-object-RHS and explicit-set identities, two `Inferred` terms, and one fact/
-deferred-free `Checked` membership with exactly one right-owned constraint.
-Truth/facts, object/set coercion, closure/order, theorem acceptance, proof/Core/
-ControlFlow/VC, other depths, and broader shapes remain open. Production
-routing, near-miss/corruption guards, and a real frontend/resolver sidecar now
-protect active runner 114.
-
-Task 164 MC-G020 current-state override: classify the exact four-edge
-set-terminal local-mode-chain left membership as `test_gap`, `source_drift`,
-and `design_drift`, not `spec_gap`. Chapters 4, 7, 13, 14.5.3, and 16 directly
-support the test-first source. Tasks 74/152 provide the real five-expansion
-producer and task 158 provides the real set-left/set-right membership consumer.
-The exact contract preserves `BindingId(0/1)` at ordinals 2/3, raw outermost-
-mode left provenance, independent explicit-set right result/sole expected
-provenance, no left expected input, all five source-derived expansions, one
-terminal-set-RHS normalized identity, two `Inferred` terms, and one fact/
-deferred-free `Checked` membership with exactly one right-owned constraint.
-Truth/facts, closure/order, theorem acceptance, proof/Core/ControlFlow/VC,
-object-terminal behavior, other depths, and broader shapes remain open. The
-fixture, expectation, six trace backlinks, exact production route, corruption/
-near-miss coverage, and a real frontend/resolver sidecar now protect active
-runner 115.
-
-Task 165 MC-G020 current-state override: classify the exact four-edge object-
-terminal local-mode-chain left membership as `test_gap`, `source_drift`, and
-`design_drift`, not `spec_gap`. Chapters 3, 4, 7, 13, 14.5.3, and 16 directly
-support the test-first source. Tasks 74/153 provide the real five-expansion
-object-terminal producer and task 163 provides the real object-left/set-right
-membership consumer. The exact contract preserves `BindingId(0/1)` at ordinals
-2/3, raw outermost-mode left provenance, independent explicit-set right result/
-sole expected provenance, no left expected input, all five source-derived
-expansions, distinct terminal-object-RHS and explicit-set identities, two
-`Inferred` terms, and one fact/deferred-free `Checked` membership with exactly
-one right-owned constraint. Truth/facts, object/set coercion, closure/order,
-theorem acceptance, proof/Core/ControlFlow/VC, other depths, and broader shapes
-remain open. The fixture, expectation, six trace backlinks, exact production
-route, corruption/near-miss coverage, and a real frontend/resolver sidecar now
-protect active runner 116.
-
-Task 166 MC-G020 current-state override: classify the exact four-edge
-set-terminal local-mode-chain equality as `test_gap`, `source_drift`, and
-`design_drift`, not `spec_gap`. Chapters 4, 7, 13, 14.5.2, and 16 support the
-test-first source. Tasks 74/152 provide the real five-expansion producer and
-task 154 provides the equality consumer. The exact contract preserves
-`BindingId(0)` at ordinals 1/2, four raw outermost-mode result/expected inputs,
-all five source-derived expansions, one terminal-set-RHS identity, two
-`Inferred` terms, one fact/deferred-free `Checked` equality, and two ordered
-operand-owned expected constraints. The fixture, six trace backlinks, exact
-production route, corruption matrix, and real frontend/resolver sidecar now
-protect active runner 117.
-Declaration acceptance/inhabitation, truth/facts, closure/order, theorem
-acceptance, proof/Core/ControlFlow/VC, object-terminal behavior, other depths,
-and broader shapes remain open.
-
-Task 167 MC-G020 current-state override: classify the exact four-edge
-object-terminal local-mode-chain equality as `test_gap`, `source_drift`, and
-`design_drift`, not `spec_gap`. Chapters 3, 4, 7, 13, 14.5.2, and 16 support
-the test-first source. Tasks 74/153 provide the real five-expansion producer
-and task 155 provides the equality consumer. The exact contract must preserve
-`BindingId(0)` at ordinals 1/2, four raw outermost-mode result/expected inputs,
-all five source-derived expansions, one terminal-object-RHS identity, two
-`Inferred` terms, one fact/deferred-free `Checked` equality, and two ordered
-operand-owned expected constraints without object/set coercion. The fixture
-and six trace backlinks, production routing, the full corruption matrix, and
-the real frontend/resolver sidecar now protect active runner 118. Declaration
-acceptance/inhabitation, truth/facts,
-closure/order, theorem acceptance, proof/Core/ControlFlow/VC, set-terminal
-behavior, other depths, and broader shapes remain open.
-
-Task 168 MC-G020 current-state override: classify the exact four-edge
-set-terminal local-mode-chain inequality as `test_gap`, `source_drift`, and
-`design_drift`, not `spec_gap`. Chapters 4, 7, 13, 14.5.2, and 16 support the
-test-first source. Tasks 74/152 provide the real five-expansion producer and
-task 156 provides the pre-desugaring inequality consumer. Preserve
-`BindingId(0)` at ordinals 1/2, four raw outermost-mode result/expected inputs,
-all five source-derived expansions, one terminal-set-RHS identity, two
-`Inferred` terms, one fact/deferred-free pre-desugaring `Checked` inequality,
-and two ordered operand-owned expected constraints. The fixture, six trace
-backlinks, production routing, full corruption coverage, and a real sidecar
-now protect active runner 119. Declaration
-acceptance/inhabitation, desugaring/truth/facts, closure/order, theorem
-acceptance, proof/Core/ControlFlow/VC, object-terminal behavior, other depths,
-and broader shapes remain open.
-
-Task 169 MC-G020 current-state override: classify the exact four-edge
-object-terminal local-mode-chain inequality as `test_gap`, `source_drift`, and
-`design_drift`, not `spec_gap`. Chapters 3, 4, 7, 13, 14.5.2, and 16 support
-the test-first source. Tasks 74/153 provide the real five-expansion producer
-and task 157 provides the pre-desugaring inequality consumer. Preserve
-`BindingId(0)` at ordinals 1/2, four raw outermost-mode result/expected inputs,
-all five source-derived expansions, one terminal-object-RHS identity, two
-`Inferred` terms, one fact/deferred-free pre-desugaring `Checked` inequality,
-and two ordered operand-owned expected constraints without object/set
-coercion. The fixture, six trace backlinks, production routing, full corruption
-coverage, and a real sidecar now protect active runner 120. Declaration
-acceptance/inhabitation, desugaring/truth/facts,
-closure/order, theorem acceptance, proof/Core/ControlFlow/VC, set-terminal
-behavior, other depths, and broader shapes remain open.
-
-Task 172 MC-G020 current-state override: classify the exact set-terminal local-
-mode long-chain reserved-variable equality as `test_gap`, `source_drift`, and
-`design_drift`, not `spec_gap`. Chapters 4, 7, 13, 14.5.2, and 16 support the
-test-first source. Task 74 provides the real seven-expansion producer already
-exercised by the active long-chain fixture, and task 166 provides the equality
-consumer. The contract preserves `BindingId(0)` at ordinals 1/2, four raw
-`ChainMode6` result/expected inputs, all seven source-derived expansions, one
-terminal-`BaseMode`-RHS builtin-set identity, two `Inferred` terms, one fact/
-deferred-free `Checked` equality, and two ordered operand-owned expected
-constraints. Exact source routing, full near-miss and corruption coverage, and
-a real frontend/resolver sidecar now protect active runner 121. Declaration
-acceptance/inhabitation, truth/facts, closure/order, theorem acceptance, proof/Core/
-ControlFlow/VC payloads, imported/attributed/argument-bearing or other chain
-shapes, and general unbounded semantics remain open.
-
-Task 173 MC-G020 current-state override: classify the exact set-terminal local-
-mode long-chain inequality as `test_gap`, `source_drift`, and `design_drift`,
-not `spec_gap`. Chapters 4, 7, 13, 14.5.2, and 16 support the source; task 74
-provides seven real expansions and task 168 the real pre-desugaring inequality
-consumer. Preserve four raw `ChainMode6` roles, ordinal 1/2 `BindingId(0)`, one
-terminal-`BaseMode`-RHS identity, two `Inferred` terms, one fact/deferred-free
-checked inequality, and two ordered constraints. Exact routing, full guards,
-and a real sidecar now protect active runner 122. Desugaring/truth/facts, acceptance, closure/
-order, theorem/proof/Core/ControlFlow/VC, other chains, and general semantics
-remain open.
-
-Task 174 MC-G020 current-state override: classify the exact set-terminal local-mode
-long-chain left reserved-variable membership as `test_gap`, `source_drift`, and
-`design_drift`, not `spec_gap`. Chapters 4, 7, 13, 14.5.3, and 16 support the
-test-first source; task 74 provides the real seven-expansion producer and task
-164 the right-only expected-set membership consumer. Preserve a raw
-`ChainMode6` left result, independent explicit-set right result and sole right
-expected input, ordinal 2/3 `BindingId(0/1)`, one terminal-`BaseMode`-RHS
-identity, no left expected input, two `Inferred` terms, one fact/deferred-free
-checked membership, and exactly one right-owned constraint. Exact routing,
-membership-specific corruption tests, shared full structural guards, and a real
-sidecar now protect active runner 123. Membership truth/facts, acceptance,
-closure/order, theorem/proof/Core/ControlFlow/VC, other chains, and general
-semantics remain open.
-
-Task 175 MC-G020 current-state override: classify the exact set-terminal local-mode
-long-chain reserved-variable type assertion as `test_gap`, `source_drift`, and
-`design_drift`, not `spec_gap`. Chapters 3, 4, 7, 13, 14.2.3, and 16 support the
-test-first source; task 74 provides the real seven-expansion producer and task
-152 the normalized-reflexive type-assertion consumer. Preserve a raw
-`ChainMode6` subject result, independent formula-side builtin-set asserted
-input, ordinal 1 `BindingId(0)`, one terminal-`BaseMode`-RHS identity, one
-`Inferred` term, and one fact/deferred-free checked type assertion without
-general reachability. The exact production route, Task 172 shared structural
-guards, type-assertion-specific corruption tests, and real frontend/resolver
-sidecar protect active runner 124. Widening/`qua`, assertion truth/facts, acceptance,
-closure/order, theorem/proof/Core/ControlFlow/VC, other chains, and general
-semantics remain open.
-
-Task 176 MC-G020 current-state override: classify the exact builtin-object-terminal
-local-mode long-chain reserved-variable equality as `test_gap`, `source_drift`,
-and `design_drift`, not `spec_gap`. Chapters 3, 4, 7, 13, 14.5.2, and 16
-support the test-first source; Task 74 provides the real AST-bounded object-
-terminal chain producer and Task 167 the object-normalizing equality consumer.
-Preserve four raw `ChainObjectMode6` result/expected inputs, ordinal 1/2
-`BindingId(0)`, all seven real expansions, one terminal-`BaseObjectMode`-RHS
-identity, two `Inferred` terms, one fact/deferred-free checked equality, and two
-ordered constraints without object/set coercion. The exact production route,
-Task 172 shared structural guards, object-specific
-corruption tests, and real frontend/resolver sidecar protect active runner 125.
-Truth/facts, acceptance,
-closure/order, theorem/proof/Core/ControlFlow/VC, other chains, and general
-semantics remain open.
-
-Task 177 MC-G020 current-state override: classify the exact builtin-object-terminal
-local-mode long-chain reserved-variable inequality as `test_gap`, `source_drift`,
-and `design_drift`, not `spec_gap`. Chapters 3, 4, 7, 13, 14.5.2, and 16 support
-the test-first source; Task 74 provides the real AST-bounded object-terminal
-chain producer and Task 169 the object-normalizing pre-desugaring inequality
-consumer. Preserve four raw `ChainObjectMode6` result/expected inputs, ordinal
-1/2 `BindingId(0)`, all seven real expansions, one terminal-
-`BaseObjectMode`-RHS identity, two `Inferred` terms, one fact/deferred-free
-checked inequality, and two ordered constraints without object/set coercion.
-The exact production route, Task 172 shared structural guards, object-specific
-corruption tests, and real frontend/resolver sidecar protect active runner 126.
-Desugaring, truth/facts, acceptance, closure/order, theorem/proof/Core/
-ControlFlow/VC, other chains, and general semantics remain open.
-
-Task 178 MC-G020 current-state override: classify the exact builtin-object-terminal
-local-mode long-chain left reserved-variable membership as `test_gap`,
-`source_drift`, and `design_drift`, not `spec_gap`. Chapters 3, 4, 7, 13,
-14.5.3, and 16 support the test-first source; Task 74 provides the real AST-
-bounded object-terminal chain producer and Task 165 the object-left/set-right
-membership consumer. Preserve the raw `ChainObjectMode6` left result,
-independent explicit-set right result/sole expected input, ordinal 2/3
-`BindingId(0/1)`, all seven expansions, distinct terminal-object-RHS and
-explicit-set identities, no left expected input, two `Inferred` terms, one
-fact/deferred-free checked membership, and one right-owned constraint without
-object/set coercion. The exact route, Task 172 shared guards, membership/object-
-specific corruption tests, and real sidecar protect active runner 127.
-Truth/facts, acceptance, closure/order, theorem/proof/Core/ControlFlow/VC, other
-chains, and general semantics remain open.
-
-Task 179 MC-G020 current-state override: classify the exact builtin-object-terminal
-local-mode long-chain reserved-variable normalized-reflexive type assertion as
-`test_gap`, `source_drift`, and `design_drift`, not `spec_gap`. Chapters 3, 4,
-7, 13, 14.2.3, and 16 support the test-first source; Task 74 provides the real
-AST-bounded object-terminal chain producer and Task 153 the object-normalizing
-type-assertion consumer, while Task 175 supplies the seven-expansion sibling
-guard pattern. Preserve the raw `ChainObjectMode6` subject result, independent
-formula-side builtin-object asserted input, ordinal 1 `BindingId(0)`, all seven
-expansions, one terminal-object-RHS identity, one `Inferred` term, and one fact/
-deferred-free normalized-reflexive checked type assertion without general
-reachability or object/set coercion. The exact route, Task 172 shared guards,
-Task 153's real object consumer/source near misses, Task 175's matched-output
-guards adapted to reject a builtin-set asserted head or corrupted raw subject
-provenance, and a real sidecar protect active runner 128. Widening/`qua`, truth/facts,
-acceptance, closure/order, theorem/proof/Core/ControlFlow/VC, other chains, and
-general semantics remain open.
-
-Task 180 MC-G020 current-state override: classify the exact standalone
-`SourceDerivedContradictionConstantBoundary: contradiction` leaf as `test_gap`,
-`source_drift`, and `design_drift`, not `spec_gap`. Chapters 14 and 16 directly
-support the leaf and theorem slot. A new exact standalone extractor reuses the
-existing contradiction-kind mapping and theorem-shape validation pattern, then
-passes the real leaf site/range in module-root context to the existing checker
-consumer without a deferred reason. One checked formula with empty term/type/
-constraint/candidate/fact/deferred/diagnostic payload receives type/well-
-formedness credit. Exact/near-miss/corruption and real-sidecar guards protect
-active runner 129. Falsehood or fact publication, theorem acceptance, proof-
-goal closure, implicit closure/child graphs, `formula_statement`, proof,
-CoreIr, ControlFlowIr, and VC remain open.
-
-Task 182 MC-G020 current-state override: the exact direct formula-side local-
-mode asserted head closes `test_gap`, narrow `source_drift`, and `design_drift`,
-not `spec_gap`.
-Chapters 3, 4, 7, 13, 14.2.3, and 16 directly support the test-first source,
-including the exact definition block containing `mode LocalModeAssertedHeadDef:
-LocalModeAssertedHead is set;`.
-Task 55 supplies the real direct bare-mode expansion producer; Tasks 122 and
-138 supply the normalized-reflexive type-assertion consumer and direct local-
-mode subject route. The exact source preserves independent reserve-subject
-and formula-side asserted raw inputs for the same resolved mode, one real
-expansion, ordinal 1 `BindingId(0)`, three known type entries interned to one
-terminal-RHS builtin-set identity, one inferred term, and one fact/deferred-free
-checked formula without general reachability. Exact/near-miss/corruption,
-production-route, and real sidecar guards protect active runner 130. Mode
-declaration acceptance/inhabitation, widening/`qua`, truth/
-facts, theorem/proof/Core/ControlFlow/VC, other asserted heads/chains, and
-general semantics remain open.
-
-Task 183 MC-G020 current-state override: the exact direct object-terminal
-formula-side local-mode asserted head closes `test_gap`, narrow `source_drift`,
-and `design_drift`, not `spec_gap`. Chapters 3, 4, 7, 13, 14.2.3, and 16 directly
-support the exact source with `mode LocalObjectModeAssertedHeadDef:
-LocalObjectModeAssertedHead is object;`. Task 55 supplies the real bare-object
-mode expansion; Tasks 145 and 182 supply the normalized object consumer and
-same-symbol formula-side asserted-head producer. The exact route preserves
-independent raw reserve-subject and formula-side asserted inputs, one real
-expansion, ordinal 1 `BindingId(0)`, three known type entries interned to one
-terminal-RHS builtin-object identity, one inferred term, and one fact/deferred-
-free checked formula without general reachability or object/set coercion.
-Exact/near-miss/corruption, production-route, and real sidecar guards protect
-active runner 131. Declaration acceptance/
-inhabitation, truth/facts, theorem/proof/Core/ControlFlow/VC, other asserted
-heads/chains, and general semantics remain open.
-
-Task 184 MC-G020 current-state override: the exact one-edge set-terminal same-outer-
-mode asserted head is a `test_gap`, narrow `source_drift`, and `design_drift`,
-not a `spec_gap`. Chapters 3, 4, 7, 13, 14.2.3, and 16 directly support the
-test-first source: two ordered definition blocks with `mode
-BaseModeAssertedHeadDef: BaseModeAssertedHead is set;` and `mode
-ChainModeAssertedHeadDef: ChainModeAssertedHead is BaseModeAssertedHead;`, one
-outer-mode reserve, and
-`ChainedLocalModeAssertedHeadPayloadBoundary: x is
-ChainModeAssertedHead;`. Task 56 supplies the real one-edge expansion producer;
-Tasks 146 and 182 supply the normalized set consumer and same-symbol formula-
-side asserted-head producer. The exact route preserves independent raw
-reserve-subject and formula-side asserted inputs for the same outer symbol,
-both real expansions, ordinal 1 `BindingId(0)`, three known type entries
-interned to one terminal-base-definition-RHS builtin-set identity, one inferred
-term, and one fact/deferred-free checked formula without general reachability.
-Exact/near-miss/corruption, production-route, and real sidecar guards protect
-active runner 132. Declaration acceptance/inhabitation, widening/`qua`, truth/facts,
-closure/order, theorem/proof/Core/ControlFlow/VC, object/deeper/other asserted
-heads, and general chain semantics remain open.
-
-Task 185 MC-G020 current-state override: the exact one-edge object-terminal
-same-outer-mode asserted head is classified as `test_gap`, narrow
-`source_drift`, and `design_drift`, not `spec_gap`. Chapters 3, 4, 7, 13,
-14.2.3, and 16 support the source: two ordered definition blocks with `mode
-BaseObjectModeAssertedHeadDef: BaseObjectModeAssertedHead is object;` and `mode
-ChainObjectModeAssertedHeadDef: ChainObjectModeAssertedHead is
-BaseObjectModeAssertedHead;`, one outer-mode reserve, and
-`ChainedLocalObjectModeAssertedHeadPayloadBoundary: x is
-ChainObjectModeAssertedHead;`. Task 56 supplies the real one-edge expansion
-producer; Tasks 147, 183, and 184 supply the normalized object consumer and
-same-symbol recursive formula-side asserted-head seam. The exact route
-preserves independent raw reserve-subject and formula-side asserted inputs for
-the same outer symbol, both real expansions, ordinal 1 `BindingId(0)`, three
-known type entries interned to one terminal-base-definition-RHS builtin-object
-identity, one inferred term, and one fact/deferred-free checked formula without
-general reachability, widening, `qua`, or object/set coercion. Exact/near-miss/
-corruption, production-route, and real sidecar guards protect active runner
-133. Five shared trace backlinks plus one dedicated row carry the exact credit.
-Imported provenance, declaration/attribute acceptance, broader terms/
-formulas, child graphs, theorem/proof/Core/ControlFlow/VC, deeper/other asserted
-heads, and general chain semantics remain open. No module layout update is
-required.
-
-Task 186 MC-G020 current-state override: the exact two-edge set-terminal same-
-outer-mode asserted head is classified as `test_gap`, narrow `source_drift`,
-and `design_drift`, not `spec_gap`. Chapters 3, 4, 7, 13, 14.2.3, and 16
-directly support three ordered definition blocks containing `mode
-BaseTwoEdgeModeAssertedHeadDef: BaseTwoEdgeModeAssertedHead is set;`, `mode
-MiddleTwoEdgeModeAssertedHeadDef: MiddleTwoEdgeModeAssertedHead is
-BaseTwoEdgeModeAssertedHead;`, and `mode OuterTwoEdgeModeAssertedHeadDef:
-OuterTwoEdgeModeAssertedHead is MiddleTwoEdgeModeAssertedHead;`, one reserve of
-`OuterTwoEdgeModeAssertedHead`, and `TwoEdgeLocalModeAssertedHeadPayloadBoundary:
-x is OuterTwoEdgeModeAssertedHead;`. Task 72 supplies the real two-edge
-expansion producer; Tasks 148 and 184 supply the normalized set consumer and
-same-symbol formula-side asserted-head seam, while Task 185 supplies the
-object-terminal sibling guard. The exact route must preserve distinct raw
-reserve-subject and formula-side asserted sites/ranges for the same resolved
-outer symbol, consume three real expansions, resolve ordinal 1 to
-`BindingId(0)`, intern three known type entries to one terminal-
-`BaseTwoEdgeModeAssertedHead`-definition-RHS builtin-set identity, and record
-one `Inferred` term plus one fact/deferred-free normalized-reflexive `Checked`
-formula without reachability, widening, or `qua`. Exact/near-miss/corruption,
-production-route, and real frontend/resolver-sidecar guards must reject each
-missing expansion, wrong links/terminal/order/depth, duplicates, forward/
-recovered/contextual/parameterized/argument-bearing/attributed definitions,
-direct/one-edge/deeper/object-terminal shapes, non-exact reserves/formulas,
-wrong subjects, builtin/base/middle/other/attributed/argument-bearing asserted
-heads, imported or ambiguous provenance, recovery, extra items, collapsed
-provenance, and builtin-object output corruption. Five shared trace backlinks
-plus one dedicated row protect active runner 134 without rebaselining an
-existing expectation. Object-terminal/deeper/imported asserted
-heads, declaration/attribute acceptance, broader terms/formulas/child graphs,
-truth/facts, theorem/proof/Core/ControlFlow/VC, and general chain semantics
-remain open. No module layout update is required.
-
-Task 187 MC-G020 current-state override: the exact two-edge object-terminal same-
-outer-mode asserted head is `test_gap`, narrow `source_drift`, and
-`design_drift`, not `spec_gap`. Chapters 3, 4, 7, 13, 14.2.3, and 16 support
-three ordered definitions `mode BaseTwoEdgeObjectModeAssertedHeadDef:
-BaseTwoEdgeObjectModeAssertedHead is object;`, `mode
-MiddleTwoEdgeObjectModeAssertedHeadDef: MiddleTwoEdgeObjectModeAssertedHead is
-BaseTwoEdgeObjectModeAssertedHead;`, and `mode
-OuterTwoEdgeObjectModeAssertedHeadDef: OuterTwoEdgeObjectModeAssertedHead is
-MiddleTwoEdgeObjectModeAssertedHead;`, one
-outer-mode reserve, and `TwoEdgeLocalObjectModeAssertedHeadPayloadBoundary: x
-is OuterTwoEdgeObjectModeAssertedHead;`. Tasks 72/149 supply the real object-
-terminal producer/consumer and Tasks 185/186 supply the same-symbol asserted-
-head route pattern. The exact route preserves distinct raw subject/asserted
-sites and ranges for the same local outer symbol, consumes three real
-expansions, resolves ordinal 1 to `BindingId(0)`, interns three known entries to
-one terminal-base-definition-RHS builtin-object identity, and records one
-`Inferred` term plus one fact/deferred-free normalized-reflexive `Checked`
-assertion with no expected constraints, reachability, widening, `qua`, or
-object/set coercion. Exact/near-miss/corruption, production-route, and real
-frontend/resolver-sidecar guards reject missing/wrong/duplicate/reordered/
-forward/recovered/contextual/parameterized/argument-bearing/attributed links
-or wrong labels, set-terminal/direct/one-edge/deeper shapes, builtin/base/
-middle/other asserted heads plus attributed/argument-bearing formula-side
-asserted heads, imported Base/Middle/Outer and imported/ambiguous asserted provenance,
-extra/collapsed provenance, and `BuiltinSet` output corruption. Five shared
-trace backlinks plus one dedicated row protect active runner 135.
-Positive imported semantics, declaration/attribute acceptance, broader terms/
-formulas/child graphs, truth/facts, implicit closure/order, theorem acceptance,
-proof/Core/ControlFlow/VC, and general chain semantics remain open. Step 5
-stays active; Steps 6/7 stay
-deferred. No module layout update is required.
-
-Task 188 MC-G020 current-state override: exact builtin-object same-binding
-equality is `test_gap`, narrow `source_drift`, and `design_drift`, not
-`spec_gap`. Chapters 3, 4, 13, 14.5.2, and 16 directly support `reserve x for
-object; theorem ReservedObjectVariableEqualityPayloadBoundary: x = x;`. Tasks
-48/125 supply the real builtin-object reserve handoff, Task 119 supplies the
-exact same-binding equality route/builder, and Task 128 demonstrates the real
-builtin-object normalization consumer. The route must resolve ordinals 1/2 to
-`BindingId(0)`, preserve four distinct result/expected role sites on one
-written `object` range, intern one canonical builtin-object identity, and
-record two `Inferred` variables, two ordered expected constraints, and one
-fact/deferred-free `Checked` equality. Exact/near-miss, matched-output,
-canonical-source, `BuiltinSet` corruption, route-order, and real frontend/
-resolver-sidecar guards are required. Five shared trace backlinks plus one
-dedicated row protect active runner 136 without changing existing
-expectations. Object/set coercion, general/non-reflexive object
-equality, truth/facts, implicit closure/order, theorem acceptance, proof/Core/
-ControlFlow/VC, and broader source shapes remain open. Step 5 stays active;
-Steps 6/7 stay deferred. No module layout update is required.
-
-Task 189 MC-G020 current-state override: exact builtin-object same-binding
-normalized-reflexive type assertion is `test_gap`, narrow `source_drift`, and
-`design_drift`, not `spec_gap`. Chapters 3, 4, 13, 14.2.3, and 16 directly
-support `reserve x for object; theorem
-ReservedObjectVariableTypeAssertionPayloadBoundary: x is object;`. Tasks
-48/125/188 supply the real builtin-object reserve handoff, Task 122 supplies
-the exact one-subject assertion route/builder, and Task 145 demonstrates its
-real builtin-object normalization consumer. The route must resolve ordinal 1
-to `BindingId(0)`, preserve distinct reserve-subject result and formula-side
-asserted sites/ranges, intern one canonical builtin-object identity anchored at
-the written reserve type, and record one `Inferred` variable, three known type
-entries, zero expected constraints, and one fact/deferred-free `Checked`
-assertion. Exact/near-miss, matched-output, canonical-source, `BuiltinSet`
-corruption, route-order, and real frontend/resolver-sidecar guards are
-required. Five shared trace backlinks plus one dedicated row protect
-active runner 137 without changing existing expectations. Reachability/
-widening/`qua`, object/set coercion, truth/facts, implicit closure/order,
-theorem acceptance, proof/Core/ControlFlow/VC, and broader source shapes remain
-open. Step 5 stays active; Steps 6/7 stay deferred. No module layout update was
-required.
-
-Task 190 MC-G020 current-state override: exact builtin-object same-binding inequality
-is `test_gap`, narrow `source_drift`, and `design_drift`, not `spec_gap`.
-Chapters 3, 4, 13, 14.5.2, and 16 directly support `reserve x for object;
-theorem ReservedObjectVariableInequalityPayloadBoundary: x <> x;`. Tasks
-48/125/188 supply the real builtin-object reserve handoff and canonical
-normalization producer, while Task 121 supplies the real exact same-binding
-pre-desugaring inequality consumer; Task 128 independently demonstrates the
-builtin-object normalization consumer. The route must resolve ordinals 1/2 to
-`BindingId(0)`, preserve four distinct result/expected role sites on one
-written `object` range, intern one canonical builtin-object identity, and
-record two `Inferred` variables, six known type entries, two ordered expected
-constraints, and one fact/candidate/diagnostic/deferred-free `Checked`
-inequality. Exact/near-miss, matched-output, canonical-source, `BuiltinSet`
-corruption, route-order, and real frontend/resolver-sidecar guards are
-present. Five shared trace backlinks plus one dedicated row protect
-active runner 138 without changing existing expectations. Inequality
-desugaring/equality truth, object/set coercion, facts, implicit closure/order,
-theorem acceptance, proof/Core/ControlFlow/VC, and broader source shapes remain
-open. Step 5 stays active; Steps 6/7 stay deferred. No checker source or module
-layout update was required.
-
-Task 191 MC-G020 current-state override: exact distinct-binding shared-
-builtin-object equality is `test_gap`, narrow `source_drift`, and
-`design_drift`, not `spec_gap`. Chapters 3, 4, 13, 14.5.2, and 16 directly
-support `reserve x, y for object; theorem
-DistinctReservedObjectVariableEqualityPayloadBoundary: x = y;`. Task 123
-supplies the real one-item/two-binding shared-written-range producer, while
-Tasks 48/125/188 supply the real builtin-object reserve, normalization, and
-equality consumer. The route must resolve ordinals 2/3 to `BindingId(0/1)`,
-preserve one shared written `object` range across both bindings and four
-distinct result/expected role sites, intern one reserve-range-anchored
-canonical builtin-object identity, and record two `Inferred` variables, six
-known type entries, two ordered operand-owned expected constraints, and one
-fact/candidate/diagnostic/deferred-free `Checked` equality. Exact/near-miss,
-matched-output, canonical-source, `BuiltinSet` corruption, route-order, and a
-real frontend/resolver sidecar are present. Five shared trace backlinks plus
-one dedicated row protect active runner 139 without
-changing existing expectations. Equality truth, object/set coercion, facts,
-implicit closure/order, theorem acceptance, proof/Core/ControlFlow/VC, and
-broader distinct-object source shapes remain open. Step 5 stays active; Steps
-6/7 stay deferred. No checker source or module-layout change was required.
-
-Task 192 MC-G020 current-state override: exact distinct-binding shared-
-builtin-object inequality is `test_gap`, narrow `source_drift`, and
-`design_drift`, not `spec_gap`. Chapters 3, 4, 13, 14.5.2, and 16 directly
-support `reserve x, y for object; theorem
-DistinctReservedObjectVariableInequalityPayloadBoundary: x <> y;`. Tasks
-123/191 supply the real one-item/two-binding shared-written-range builtin-
-object producer, while tasks 121/160/190 supply the real pre-desugaring
-inequality consumer. The route resolves ordinals 2/3 to
-`BindingId(0/1)`, preserve one shared written `object` range across both
-bindings and four distinct result/expected role sites, intern one reserve-
-range-anchored canonical builtin-object identity, and record two `Inferred`
-variables, six known type entries, two ordered operand-owned expected
-constraints, and one fact/candidate/diagnostic/deferred-free `Checked`
-inequality. Five shared trace backlinks plus one dedicated row protect active
-runner 140 without changing existing expectations. Exact/near-miss, matched-
-output, canonical-source, `BuiltinSet` corruption, route-order, and a real
-frontend/resolver sidecar guard the contract. Inequality desugaring/equality truth, object/set
-coercion, facts, implicit closure/order, theorem acceptance, proof/Core/
-ControlFlow/VC, and broader distinct-object source shapes remain open. Step 5
-stays active; Steps 6/7 stay deferred. No checker source or module-layout
-change was required.
-
-Task 193 MC-G020 current-state override: exact multiple-reserve-declaration
-builtin-object equality is `test_gap`, narrow `source_drift`, and
-`design_drift`, not `spec_gap`. Chapters 3, 4, 13, 14.5.2, and 16 directly
-support `reserve x for object; reserve y for object; theorem
-MultipleObjectReserveDeclarationEqualityPayloadBoundary: x = y;`. Task 124
-supplies the real two-item/two-binding/distinct-written-range producer, while
-tasks 188/191 supply the real builtin-object equality consumer. The route
-resolves ordinals 2/3 to `BindingId(0/1)`, retains two distinct written
-`object` ranges across four distinct result/expected role sites, interns one
-canonical builtin-object identity anchored at the earlier `x` reserve range,
-and records two `Inferred` variables, six known type entries, two ordered
-operand-owned expected constraints, and one fact/candidate/diagnostic/
-deferred-free `Checked` equality. Five shared trace backlinks plus one
-dedicated row protect active runner 141 without changing existing
-expectations. Exact structural/provenance near misses, matched-output,
-canonical-source, `BuiltinSet` corruption, route isolation, and a real
-frontend/resolver sidecar guard the contract. Equality truth, object/set
-coercion, facts, implicit closure/order, theorem acceptance, proof/Core/
-ControlFlow/VC, shared-range shapes, and broader multiple-reserve object
-shapes remain open. Step 5 stays active; Steps 6/7 stay deferred. No checker
-source or module-layout change was required.
-
-Task 194 MC-G020 current-state override: exact multiple-reserve-declaration
-builtin-object inequality is a `test_gap`, narrow `source_drift`, and
-`design_drift`, not a `spec_gap`. Chapters 3, 4, 13, 14.5.2, and 16 directly
-support `reserve x for object; reserve y for object; theorem
-MultipleObjectReserveDeclarationInequalityPayloadBoundary: x <> y;`. Task 193
-provides the real ordered two-item/two-binding/distinct-written-object-range
-producer, while tasks 190/192 provide the real pre-desugaring builtin-object
-inequality consumer. The route resolves ordinals 2/3 to `BindingId(0/1)`,
-preserves two binding-owned written `object` ranges across four distinct raw
-result/expected roles, and records one earlier-`x`-range-anchored canonical
-builtin-object identity, two `Inferred` variables, six known type entries, two
-operand-owned ordered expected constraints, and one fact/candidate/diagnostic/
-deferred-free `Checked` inequality. Five shared backlinks plus one dedicated
-row protect active runner 142 without changing an existing expectation.
-Exact structural/provenance near misses, raw/canonical-source and other
-corruption probes, route isolation, immutable-output checks, and a real
-frontend/resolver sidecar guard the contract. Inequality desugaring/equality
-truth, object/set coercion, facts, implicit closure/order, theorem acceptance,
-proof/Core/ControlFlow/VC, shared-range shapes, and broader multiple-reserve
-object shapes remain open. Step 5 stays active; Steps 6/7 stay deferred. No
-checker source or module-layout change was required.
-
-Task 195 MC-G020 current-state override: the exact three-edge set-terminal
-same-outer-mode asserted head is a `test_gap`, narrow `source_drift`, and
-`design_drift`, not a `spec_gap`. Chapters 3, 4, 7, 13, 14.2.3, and 16 directly
-support four ordered mode definitions `Outer -> Middle -> Inner -> Base ->
-set`, `reserve x for OuterThreeEdgeModeAssertedHead`, and
-`ThreeEdgeLocalModeAssertedHeadPayloadBoundary: x is
-OuterThreeEdgeModeAssertedHead;`. Task 73 provides the real four-expansion
-producer, Task 150 demonstrates subject-side normalization over the same
-depth, and Task 186 provides the same-symbol formula-side asserted-head
-consumer. The exact route preserves distinct raw subject and asserted sites/
-ranges for the outer symbol, resolves ordinal 1 to `BindingId(0)`, consumes all
-four AST-derived expansions, normalizes three known type entries to one
-base-definition-RHS-anchored `BuiltinSet` identity, and records one `Inferred`
-variable plus one fact/candidate/diagnostic/deferred-free normalized-reflexive
-`Checked` type assertion with zero expected constraints. Five shared backlinks
-plus one dedicated row protect active runner 143 without changing an existing
-expectation. Structural/provenance near misses include unrelated local,
-imported, and ambiguous asserted heads; corruption, immutable-output, route-
-isolation, and real frontend/resolver sidecar guards complete the contract.
-Object-terminal/deeper/imported/attributed/argument-bearing/other asserted
-heads, reachability/widening/`qua`, declaration or theorem acceptance, truth/
-facts, closure/order, broader term/formula/child-graph semantics, proof/Core/
-ControlFlow/VC, and general chain semantics remain open. Step 5 stays active;
-Steps 6/7 stay deferred. No checker source or module-layout change was required.
-
-Task 196 MC-G020 current-state override: the exact three-edge object-terminal
-same-outer-mode asserted head is a `test_gap`, narrow `source_drift`, and
-`design_drift`, not a `spec_gap`. Chapters 3, 4, 7, 13, 14.2.3, and 16 directly
-support four ordered mode definitions `Outer -> Middle -> Inner -> Base ->
-object`, `reserve x for OuterThreeEdgeObjectModeAssertedHead`, and
-`ThreeEdgeLocalObjectModeAssertedHeadPayloadBoundary: x is
-OuterThreeEdgeObjectModeAssertedHead;`. Tasks 73/151 provide the real four-
-expansion object-terminal producer, while Task 187 provides the same-symbol
-formula-side asserted-head consumer and Task 195 provides the depth-matched
-set sibling. The exact route preserves distinct raw subject and asserted sites/
-ranges for the outer symbol, resolves ordinal 1 to `BindingId(0)`, consumes all
-four AST-derived expansions, normalizes three known type entries to one base-
-definition-RHS-anchored `BuiltinObject` identity, and records one `Inferred`
-variable plus one fact/candidate/diagnostic/deferred-free normalized-reflexive
-`Checked` type assertion with zero expected constraints and no object/set
-coercion. Five shared backlinks plus one dedicated row protect active runner
-144 without changing an existing expectation. Structural/provenance near
-misses include unrelated local, imported, and ambiguous asserted heads;
-`BuiltinSet` and canonical-source corruption, immutable-output, route-
-isolation, and real frontend/resolver sidecar guards complete the contract.
-Deeper/imported/attributed/argument-bearing/other asserted heads, reachability/
-widening/`qua`, declaration or theorem acceptance, truth/facts, closure/order,
-broader term/formula/child-graph semantics, proof/Core/ControlFlow/VC, and
-general chain semantics remain open. Step 5 stays active; Steps 6/7 stay
-deferred. No checker source or module-layout change was required.
-
-Task 197 MC-G020 current-state override: the exact four-edge set-terminal same-
-outermost-mode asserted head is a `test_gap`, narrow `source_drift`, and
-`design_drift`, not a `spec_gap`. Chapters 3, 4, 7, 13, 14.2.3, and 16 directly
-support five ordered mode definitions `TooDeep -> Outer -> Middle -> Inner ->
-Base -> set`, `reserve x for TooDeepFourEdgeModeAssertedHead`, and
-`FourEdgeLocalModeAssertedHeadPayloadBoundary: x is
-TooDeepFourEdgeModeAssertedHead;`. Tasks 74/152 provide the real five-expansion
-set-terminal producer, while Tasks 186/195 provide the same-symbol formula-side
-asserted-head consumer. The exact route preserves distinct raw subject and
-asserted sites/ranges for the outermost symbol, resolves ordinal 1 to
-`BindingId(0)`, consumes all five AST-derived expansions, normalizes three
-known type entries to one base-definition-RHS-anchored `BuiltinSet` identity,
-and records one `Inferred` variable plus one fact/candidate/diagnostic/deferred-
-free normalized-reflexive `Checked` type assertion with zero expected
-constraints. Five shared backlinks plus one dedicated row protect active
-runner 145 within 360 cases and 324 requirements without changing an existing
-expectation. Full reorder, connected deeper-chain, structural/provenance,
-unrelated local/imported/ambiguous asserted-head, mutable corruption,
-immutable-output, route-isolation, and real frontend/resolver sidecar guards
-complete the contract. Object-terminal/other-depth/imported/attributed/
-argument-bearing/other asserted heads, reachability/widening/`qua`, declaration
-or theorem acceptance, truth/facts, closure/order, broader term/formula/child-
-graph semantics, proof/Core/ControlFlow/VC, and general chain semantics remain
-open. Step 5 stays active; Steps 6/7 stay deferred. No checker source or module-
-layout change was required.
-
-Task 198 MC-G020 current-state override: the exact four-edge object-terminal
-same-outermost-mode asserted head is a `test_gap`, narrow `source_drift`, and
-`design_drift`, not a `spec_gap`. Chapters 3, 4, 7, 13, 14.2.3, and 16 directly
-support five ordered mode definitions `TooDeep -> Outer -> Middle -> Inner ->
-Base -> object`, `reserve x for TooDeepFourEdgeObjectModeAssertedHead`, and
-`FourEdgeLocalObjectModeAssertedHeadPayloadBoundary: x is
-TooDeepFourEdgeObjectModeAssertedHead;`. Tasks 74/153 provide the real five-
-expansion object-terminal producer, while Tasks 187/196 provide the same-symbol
-formula-side asserted-head consumer. The exact route preserves distinct raw
-subject and asserted sites/ranges for the outermost symbol, resolves ordinal 1
-to `BindingId(0)`, consumes all five AST-derived expansions, normalizes three
-known type entries to one base-definition-RHS-anchored `BuiltinObject`
-identity, and records one `Inferred` variable plus one fact/candidate/
-diagnostic/deferred-free normalized-reflexive `Checked` type assertion with
-zero expected constraints and no object/set coercion. Five shared backlinks
-plus one dedicated row protect active runner 146 within 361 cases and 325
-requirements without changing an existing expectation. Full reorder,
-connected deeper-chain, structural/provenance, unrelated local/imported/
-ambiguous asserted-head, mutable corruption, immutable-output, route-isolation,
-and real frontend/resolver sidecar guards complete the contract. Set-terminal/
-other-depth/imported/attributed/argument-bearing/other asserted heads,
-reachability/widening/`qua`, declaration or theorem acceptance, truth/facts,
-closure/order, broader term/formula/child-graph semantics, proof/Core/
-ControlFlow/VC, and general chain semantics remain open. Step 5 stays active;
-Steps 6/7 stay deferred. No checker source or module-layout change was required.
-
-Task 199 MC-G020 current-state override: the exact seven-expansion set-terminal
-same-`ChainMode6` asserted head is a `test_gap`, narrow `source_drift`, and
-`design_drift`, not a `spec_gap`. Chapters 3, 4, 7, 13, 14.2.3, and 16 directly
-support `BaseMode -> set`, the six ordered local links `ChainMode1 -> BaseMode`
-through `ChainMode6 -> ChainMode5`, `reserve x for ChainMode6`, and
-`LongLocalModeAssertedHeadPayloadBoundary: x is ChainMode6;`. Tasks 74/175
-provide the real seven-expansion set-terminal producer, while Tasks 186/195/197
-provide the same-symbol formula-side asserted-head consumer. The exact route
-preserves distinct raw subject and asserted sites/ranges for `ChainMode6`,
-resolves ordinal 1 to `BindingId(0)`, consumes all seven AST-derived
-expansions, normalizes three known type entries to one `BaseModeDef` RHS-
-anchored `BuiltinSet` identity, and records one `Inferred` variable plus one
-fact/candidate/diagnostic/deferred-free normalized-reflexive `Checked` type
-assertion with zero expected constraints. Five shared backlinks plus one
-dedicated row protect active runner 147 within 362 cases and 326 requirements
-without changing an existing expectation. Per-link removal/reorder, complete
-reverse order, connected eighth-link, structural/provenance, unrelated local/
-imported/ambiguous asserted-head, mutable corruption, immutable-output, route-
-isolation, and real frontend/resolver sidecar guards complete the contract.
-Object-terminal/other-depth/imported/attributed/argument-bearing/other asserted
-heads, reachability/widening/`qua`, declaration or theorem acceptance, truth/
-facts, closure/order, broader term/formula/child-graph semantics, proof/Core/
-ControlFlow/VC, and general unbounded chain semantics remain open. Step 5 stays
-active; Steps 6/7 stay deferred. No checker source or module-layout change was
-required.
-
-Task 200 MC-G020 current-state override: the exact seven-expansion object-
-terminal same-`ChainObjectMode6` asserted head is a `test_gap`, narrow
-`source_drift`, and `design_drift`, not a `spec_gap`. Chapters 3, 4, 7, 13,
-14.2.3, and 16 directly support `BaseObjectMode -> object`, the six ordered
-local links through `ChainObjectMode6 -> ChainObjectMode5`, `reserve x for
-ChainObjectMode6`, and `LongLocalObjectModeAssertedHeadPayloadBoundary: x is
-ChainObjectMode6;`. Tasks 74/179 provide the real seven-expansion object-
-terminal producer, while Tasks 187/196/198 provide the same-symbol formula-
-side asserted-head consumer. The exact route preserves distinct raw subject
-and asserted sites/ranges for `ChainObjectMode6`, resolves ordinal 1 to
-`BindingId(0)`, consumes all seven AST-derived expansions, normalizes three
-known type entries to one `BaseObjectModeDef` RHS-anchored `BuiltinObject`
-identity, and records one `Inferred` variable plus one fact/candidate/
-diagnostic/deferred-free normalized-reflexive `Checked` type assertion with
-zero expected constraints and no object/set coercion. Five shared backlinks
-plus one dedicated row protect active runner 148 within 363 cases and 327
-requirements without changing an existing expectation. Per-link removal/
-reorder, complete reverse order, connected eighth-link, structural/provenance,
-unrelated local/imported/ambiguous asserted-head, mutable corruption, immutable-
-output, route-isolation, and real frontend/resolver sidecar guards complete the
-contract. Set-terminal/other-depth/imported/attributed/argument-bearing/other
-asserted heads, reachability/widening/`qua`, declaration or theorem acceptance,
-truth/facts, closure/order, broader term/formula/child-graph semantics, proof/
-Core/ControlFlow/VC, and general unbounded chain semantics remain open. Step 5
-stays active; Steps 6/7 stay deferred. No checker source or module-layout
-change was required.
-
-Task 106 addendum: the active `mizar-test` type-elaboration runner supersedes
-the task-87 generic boundary for
-`theorem TermFormulaPayloadBoundary: 1 = 1;`. For only the unrecovered builtin
-equality theorem shape with exactly two structural Chapter 13 numeral operands,
-the runner now builds a real module-shell checker binding context and passes
-real source-derived checker `TermInput` and equality `FormulaInput` payloads to
-`TermFormulaChecker`. The source still fails closed on missing numeric type
-payloads and partial formula checking. This does not claim numeric type payload
-extraction, equality semantic checking, recorded facts, theorem acceptance, a
-dedicated `formula_statement` runner, CoreIr, ControlFlowIr, VC, or proof
-payload coverage.
-
-Task 110 addendum: the active `mizar-test` type-elaboration runner supersedes
-task 98 for the imported predicate/functor theorem formula source
-`theorem ImportedPredicateFunctorPayloadBoundary: 1 divides (1 ++ 2);`. After
-parser and resolver execution, it validates `parser.type_fixtures`
-`divides`/`++` imported provenance and passes source-derived checker
-term/formula payloads before reporting missing numeric type payload, missing
-functor signature payload, missing predicate signature payload, and partial
-formula checking. This credits only the exact imported predicate/functor
-checker bridge for Chapters 11, 12, 13, 14, and 16. It does not claim imported
-module AST extraction, semantic predicate/functor signatures, term inference,
-formula checking, recorded facts, theorem acceptance, a dedicated
-`formula_statement` runner, CoreIr, ControlFlowIr, VC, or proof payload
-coverage.
-
-Task 100 addendum: the active `mizar-test` type-elaboration runner originally
-observed the builtin membership theorem formula source
-`theorem BuiltinMembershipPayloadBoundary: 1 in 1;` after parser and resolver
-execution on `type_elaboration.external_dependency.ast_payload_extraction`.
-Task 108 supersedes that exact source by passing real source-derived checker
-`TermInput`/`FormulaInput` payloads and reporting
-`type_elaboration.checker.checker.term.external.numeric_type_payload` plus
-`type_elaboration.checker.checker.formula.term.partial`. This credits only the
-narrow source-derived builtin membership term/formula checker bridge for
-Chapters 13, 14, and 16. It does not claim numeric type payload extraction,
-membership operand expected-type construction/checking, recorded facts, theorem
-acceptance, a dedicated `formula_statement` runner, CoreIr, ControlFlowIr, VC,
-or proof payload coverage.
-
-Task 107 addendum: the active `mizar-test` type-elaboration runner supersedes
-the task-101 generic boundary for the exact builtin inequality theorem formula
-source `theorem BuiltinInequalityPayloadBoundary: 1 <> 2;`. After parser and
-resolver execution, the runner passes real source-derived checker
-`TermInput`/`FormulaInput` payloads and reports
-`type_elaboration.checker.checker.term.external.numeric_type_payload` plus
-`type_elaboration.checker.checker.formula.term.partial`. This credits only the
-narrow source-derived builtin inequality term/formula checker bridge for
-Chapters 13, 14, and 16. It does not claim numeric type payload extraction,
-inequality desugaring or equality semantic checking, recorded facts, theorem
-acceptance, a dedicated `formula_statement` runner, CoreIr, ControlFlowIr, VC,
-or proof payload coverage.
-
-Task 109 addendum: the active `mizar-test` type-elaboration runner observes the
-exact builtin type-assertion theorem formula source
-`theorem BuiltinTypeAssertionPayloadBoundary: 1 is set;` after parser and
-resolver execution, then passes source-derived checker `TermInput`,
-`FormulaInput`, and asserted builtin `set` `TypeExpressionInput` payloads before
-failing closed on missing numeric type payloads and partial formula checking.
-This credits only the exact source-derived builtin type-assertion bridge for
-Chapters 3, 13, 14, and 16. It does not claim broader asserted type payload
-extraction, type-assertion semantic checking, recorded facts, theorem
-acceptance, a dedicated `formula_statement` runner, CoreIr, ControlFlowIr, VC,
-or proof payload coverage.
-
-Task 113 addendum: the active `mizar-test` type-elaboration runner supersedes
-task 103 for the exact imported attribute assertion theorem formula source
-`import parser.type_fixtures; theorem ImportedAttributeAssertionPayloadBoundary: 1 is empty;`.
-After parser and resolver execution it validates imported `empty` provenance,
-passes source-derived numeral and attribute-assertion checker payloads, and
-fails closed on missing numeric type payload, missing formula/attribute
-semantic payload, and partial formula checking. This credits only the exact
-source-derived imported attribute assertion checker handoff for Chapters 6, 11,
-12, 13, 14, and 16. It does not claim imported module AST extraction,
-theorem-formula `AttributeInput` payload extraction, attribute-chain semantic
-payload extraction, term inference, attribute admissibility/semantic checking,
-formula checking, recorded facts, theorem acceptance, a dedicated
-`formula_statement` runner, CoreIr, ControlFlowIr, VC, or proof payload
-coverage.
-
-Task 114 addendum: the active `mizar-test` type-elaboration runner supersedes
-task 104 for the exact attribute-level `non empty` imported attribute
-assertion theorem formula source
-`import parser.type_fixtures; theorem ImportedNonEmptyAttributeAssertionPayloadBoundary: 1 is non empty;`.
-After parser and resolver execution it validates the direct `non` surface and
-imported `empty` provenance, passes source-derived numeral and
-attribute-assertion checker payloads, and fails closed on missing numeric type
-payload, missing formula/attribute semantic payload, and partial formula
-checking. This credits only the exact source-derived attribute-level
-`non empty` imported attribute assertion checker handoff for Chapters 6, 11,
-12, 13, 14, and 16. It does not claim imported module AST extraction,
-theorem-formula `AttributeInput` payload extraction, negated attribute-chain
-semantic payload extraction, term inference, negated attribute
-admissibility/semantic checking, formula checking, recorded facts, theorem
-acceptance, a dedicated `formula_statement` runner, CoreIr, ControlFlowIr, VC,
-or proof payload coverage.
-
-Task 111 addendum: the active `mizar-test` type-elaboration runner supersedes
-task 105 only for the exact set-enumeration theorem formula source
-`theorem SetEnumerationPayloadBoundary: {1, 2} = {1, 2};`. After parser and
-resolver execution it passes real source-derived checker payloads for the four
-numeral item terms, two set-enumeration terms, and builtin equality formula,
-then reports missing numeric type payloads, missing set-enumeration
-result-type payloads, and partial formula checking. This credits only
-that exact Chapters 13, 14, and 16 checker handoff. It does not claim broader
-set-enumeration term extraction, term inference, equality/formula checking,
-recorded facts, theorem acceptance, a dedicated `formula_statement` runner,
-CoreIr, ControlFlowIr, VC, or proof payload coverage.
-
-Task 112 addendum: the active `mizar-test` type-elaboration runner supersedes
-task 99 only for the exact formula connective/quantifier theorem source
-`theorem FormulaConnectiveQuantifierPayloadBoundary: contradiction implies for x
-being set holds not contradiction;`. After parser and resolver execution it
-passes real source-derived checker `FormulaInput` shells for the implication,
-quantified formula, and negation, then reports missing formula payloads and
-missing quantifier payloads. This credits only that exact Chapter 14 and 16
-checker shell handoff. Task 117 extends only the two exact source-derived
-`contradiction` constants as `FormulaKind::Contradiction` payloads before the
-same missing formula payload diagnostic. It does not claim formula constant
-semantic truth values, child-formula graph payloads, quantifier binder/context
-payloads, formula checking, recorded facts, theorem acceptance, a dedicated
-`formula_statement` runner, CoreIr, ControlFlowIr, VC, or proof payload
-coverage.
-
-Task 88 addendum: the active `mizar-test` type-elaboration runner observes the
-proof-block theorem source `theorem ProofSkeletonPayloadBoundary: thesis proof
-thus thesis; end;` after parser and resolver execution and reports
-`type_elaboration.external_dependency.ast_payload_extraction`. This credits only
-the source-derived proof-block/proof-skeleton extraction-gap boundary for
-Chapter 15 conclusion statements and Chapter 16 proof blocks. It does not claim
-checker proof skeleton payload extraction, local proof context, formula payload
-extraction, recorded facts, theorem acceptance, a dedicated `formula_statement`
-runner, CoreIr, ControlFlowIr, VC, or proof payload coverage.
-
-Task 90 addendum: the active `mizar-test` type-elaboration runner observes a
-definition block containing predicate and functor definitions after parser and
-resolver execution and reports
-`type_elaboration.external_dependency.ast_payload_extraction`. This credits only
-the source-derived predicate/functor definition extraction-gap boundary for
-Chapter 9 predicate definitions and Chapter 10 functor definitions. It does not
-claim checker definition declaration payload extraction, definition-local
-context, definiens formula/term payload extraction, overload payloads, recorded
-facts, a dedicated `formula_statement` runner, CoreIr, ControlFlowIr, VC, or
-proof payload coverage.
-
-Task 91 addendum: the active `mizar-test` type-elaboration runner observes an
-attribute definition after parser and resolver execution and reports
-`type_elaboration.external_dependency.ast_payload_extraction`. This credits only
-the source-derived attribute definition extraction-gap boundary for Chapter 6
-attribute definitions. It does not claim checker attribute definition
-declaration payload extraction, definition-local context, formula-definiens
-payload extraction, attributed-type evidence, recorded facts, a dedicated
-`formula_statement` runner, CoreIr, ControlFlowIr, VC, or proof payload
-coverage.
-
-Task 92 addendum: the active `mizar-test` type-elaboration runner observes
-mode and structure definitions after parser and resolver execution and reports
-`type_elaboration.external_dependency.ast_payload_extraction`. This credits only
-the source-derived mode/structure definition extraction-gap boundary for
-Chapters 5 and 7. It does not claim checker mode/structure definition
-declaration payload extraction, mode expansion, structure
-base-shape/constructor/selector evidence, definition-local context, recorded
-facts, a dedicated `formula_statement` runner, CoreIr, ControlFlowIr, VC, or
-proof payload coverage.
-
-Task 93 addendum: the active `mizar-test` type-elaboration runner observes
-proof-local `let`, `given`, `consider`, `set`, and `reconsider` statements
-inside a theorem proof after parser and resolver execution and reports
-`type_elaboration.external_dependency.ast_payload_extraction`. This credits only
-the source-derived proof-local declaration extraction-gap boundary for Chapters
-15 and 16. It does not claim checker proof-local declaration payload
-extraction, local proof context, formula/term payload extraction, RHS term
-inference, reconsider coercion/obligation evidence, recorded facts, theorem
-acceptance, a dedicated `formula_statement` runner, CoreIr, ControlFlowIr, VC,
-or proof payload coverage.
-
-Task 94 addendum: the active `mizar-test` type-elaboration runner observes
-proof-local `deffunc` and `defpred` inline definitions inside a theorem proof
-after parser and resolver execution and reports
-`type_elaboration.external_dependency.ast_payload_extraction`. This credits only
-the source-derived proof-local inline definition extraction-gap boundary for
-Chapter 15. It does not claim checker inline definition formal/body payload
-extraction, local abbreviation expansion, term/formula body payload extraction,
-guard evidence, recorded facts, theorem acceptance, a dedicated `formula_statement` runner, CoreIr,
-ControlFlowIr, VC, or proof payload coverage.
-
-Task 95 addendum: the active `mizar-test` type-elaboration runner observes a
-top-level registration block with existential and conditional clusters after
-parser and resolver execution and reports
-`type_elaboration.external_dependency.ast_payload_extraction`. This credits only
-the Chapter 17 source-derived registration-block extraction-gap boundary. It
-does not claim checker registration-item payload extraction,
-correctness-condition/proof-obligation payloads, accepted activation/evidence
-status, cluster/reduction semantics, recorded facts, semantic Chapter 17
-cluster/reduction rows, a dedicated `formula_statement` or
-`advanced_semantics` runner, CoreIr, ControlFlowIr, VC, or proof payload
-coverage.
-
-Task 96 addendum: the active `mizar-test` type-elaboration runner observes
-top-level and definition-local synonym/antonym aliases plus attribute,
-predicate, and functor redefinition declarations after parser and resolver
-execution and reports `type_elaboration.external_dependency.ast_payload_extraction`.
-This credits only the Chapter 11/19 source-derived redefinition/notation
-extraction-gap boundary. It does not claim checker redefinition payload
-extraction, notation alias relation payloads, redefinition target inference,
-coherence proof-obligation payloads, overload candidate payloads, recorded
-facts, Chapter 11 alias semantic resolution, Chapter 19 overload/redefinition
-semantics, a dedicated `formula_statement` or `advanced_semantics` runner,
-CoreIr, ControlFlowIr, VC, or proof payload coverage.
-
-### `registration_resolution`
-
-Generated public newtypes:
-
-- `CheckerRegistrationId`, `RejectedRegistrationId`,
-  `RegistrationDiagnosticId`, `ExistentialGateId`
-- `RegistrationTriggerKey`, `RegistrationLabelKey`,
-  `RegistrationPatternKey`, `RegistrationParameterKey`,
-  `AcceptedCorrectnessKey`, `ActivationEvidenceKey`,
-  `RegistrationFingerprint`, `RegistrationTypeKey`,
-  `RegistrationAttributeKey`, `RegistrationFunctorKey`,
-  `RegistrationTermKey`, `RegistrationVariableKey`,
-  `ExistentialGateGuardKey`
-
-Literal top-level public items:
-
-- `RegistrationDatabase`, `PendingRegistration`, `PendingRegistrationTable`,
-  `RegistrationPatternStatus`, `PendingRegistrationStatus`,
-  `ActivatedRegistration`, `ActivatedRegistrationIndex`,
-  `RejectedRegistration`, `RejectedRegistrationTable`,
-  `RejectedRegistrationReason`, `RegistrationSource`, `ResolverTargetShell`,
-  `RegistrationValidationKind`, `RegistrationValidationInput`,
-  `RegistrationValidationPattern`, `RegistrationTermPattern`,
-  `RegistrationVariableOccurrence`, `RegistrationValidationParameter`,
-  `RegistrationReferencedSymbolRole`, `RegistrationReferencedSymbol`,
-  `ActivationInput`, `ActivationVerifierStatus`, `ExistentialGateInput`,
-  `ExistentialGateCandidate`, `ExistentialGateBaseEvidence`,
-  `ExistentialGateBaseEvidenceKind`, `ExistentialGateBaseEvidenceCoverage`,
-  `ExistentialGateGuardEvidence`,
-  `ExistentialGateRecovery`, `ExistentialGateOutput`,
-  `ExistentialGateResult`, `ExistentialGateStatus`,
-  `RegistrationDiagnostic`, `RegistrationDiagnosticDraft`,
-  `RegistrationDiagnosticTable`, `RegistrationDiagnosticClass`,
-  `RegistrationDiagnosticSeverity`, `RegistrationDiagnosticRecovery`
-
-Correspondence:
-
-| Spec promise | Source evidence | Test evidence | Status |
-|---|---|---|---|
-| Pending and activated registration databases preserve resolver origins and never activate incomplete payloads. | `RegistrationDatabase`, pending/activated/rejected tables and source records. | `pending_entries_never_contribute_and_keep_external_gap_diagnostics`, `activation_moves_entries_into_deterministic_trigger_order`, `source_contributions_round_trip_through_all_tables`, invalid activation tests. | Implemented; MC-G021 remains for checker-ready source payloads. |
-| Validation emits obligations, validates kind-specific payloads, and gates activation on accepted verifier/artifact status. | `RegistrationValidationInput`, validation pattern/parameter/reference types, `ActivationInput`. | `validated_payloads_emit_pending_obligations_without_activation`, `kind_specific_validation_accepts_existential_conditional_functorial_and_reduction`, invalid validation/routing/reduction-size tests, accepted/unaccepted activation tests. | Implemented for explicit payloads; MC-G025 remains. |
-| Existential gates require accepted activations, visible guards, exact pattern/base-evidence matches, base-shape coverage, and deterministic recovery. | `ExistentialGateInput`, candidates, base evidence, guard evidence, output/result/status types. | missing/inactive/pending/unaccepted/accepted/rejected/degraded existential tests; task 47 base-object/set, accepted-mode, structure-field, and schema-parameter evidence tests. | Implemented for explicit payloads; MC-G026 remains for source/artifact integration. |
-| Diagnostics and deterministic rendering are stable. | `RegistrationDiagnosticTable` and diagnostic classes/recovery. | `debug_rendering_is_stable_and_ordered_by_checker_keys`, validation diagnostics tests. | Implemented; public diagnostic codes remain MC-G005. |
-| Public enums are forward-compatible. | `#[non_exhaustive]` on public enums. | `checker_public_enums_are_forward_compatible_and_documented`. | Guarded by task 31. |
-
-### `cluster_trace`
-
-Generated public newtypes:
-
-- `ClusterFactId`, `ClusterStepId`, `ReductionStepId`,
-  `ClusterDiagnosticId`
-- `ClusterFactFingerprint`, `ClusterTypeFingerprint`,
-  `ClusterAttributeFingerprint`, `ClusterRuleFingerprint`,
-  `ClusterAuditKey`, `ClusterOrderingVersion`, `ClusterTraversalCacheKey`,
-  `ReductionFingerprint`, `ReductionRuleFqn`, `ReductionTermFingerprint`,
-  `ReductionRedexPath`, `ReductionBindingKey`, `ReductionGuardKey`,
-  `ReductionGuardEvidenceKey`, `ReductionRuleViewFingerprint`,
-  `ReductionSelectionKey`, `ReductionStrategyAuditKey`
-
-Literal top-level public items:
-
-- `ClusterClosureOutput`, `ClusterClosureStatus`, `ReductionTraceOutput`,
-  `ClusterTraceBuilder`, `ReductionTraceBuilder`, `ClusterTraversalConfig`,
-  `ResolutionTrace`, `ResolutionTraceStep`, `ClusterStep`,
-  `ReductionStep`, `ClusterAntecedentRef`, `ClusterTraversalProfile`,
-  `ClusterReplayReport`, `ClusterReplayStatus`, `ClusterFactInput`,
-  `ClusterRuleInput`, `ClusterRuleDraft`, `ReductionInput`,
-  `ReductionDraft`, `ReductionBinding`, `ReductionGuardKind`,
-  `ReductionGuardRequirement`, `ReductionGuardEvidenceRef`,
-  `ClusterRuleKind`, `ClusterFact`, `ClusterFactDraft`,
-  `ClusterFactTable`, `ClusterFactProvenance`, `ClusterDiagnostic`,
-  `ClusterDiagnosticDraft`, `ClusterDiagnosticTable`,
-  `ClusterDiagnosticClass`, `ClusterDiagnosticSeverity`,
-  `ClusterDiagnosticRecovery`
-
-Correspondence:
-
-| Spec promise | Source evidence | Test evidence | Status |
-|---|---|---|---|
-| Cluster closure records replayable deterministic cluster steps and derived facts. | `ClusterTraceBuilder`, `ClusterClosureOutput`, `ResolutionTrace`, `ClusterStep`, `ClusterFactTable`. | closure, inactive/non-cluster, deterministic order, conditional, subtype, transitive, mismatch, rejected/recovered, duplicate fingerprint tests. | Implemented for explicit payloads; MC-G023 remains for source/artifact integration. |
-| Saturation bounds, loops, and explicit contradictions are visible failures rather than silent truncation. | `ClusterTraversalConfig`, `ClusterTraversalProfile`, `ClusterClosureStatus`, diagnostics. | direct/indirect loop, bound visibility, zero-antecedent depth, explicit contradiction tests; task 46 class/severity/recovery assertions. | Implemented for explicit payloads. |
-| Replay validates active registration fingerprints. | `ResolutionTrace::replay`, `ClusterReplayReport`, `ClusterReplayStatus`. | `replay_revalidates_active_registration_fingerprint`, `active_pattern_fallback_must_match_rule_fingerprint`. | Implemented. |
-| Reduction steps preserve architecture-17 provenance, guard evidence, and strategy audit keys. | `ReductionTraceBuilder`, `ReductionTraceOutput`, `ReductionStep`, reduction input/guard types. | reduction provenance, inactive/non-reduction, rejected/recovered, invalid payload, `such` guard tests, and task 46 discharged-side-condition trace identity determinism coverage. | Implemented for explicit payloads; source-derived rewrite extraction and normalization-result dependence remain MC-G023. |
-| Public enums are forward-compatible. | `#[non_exhaustive]` on public enums. | `checker_public_enums_are_forward_compatible_and_documented`. | Guarded by task 31. |
-
-### `overload_resolution`
-
-Generated public newtypes:
-
-- `OverloadSiteId`, `OverloadCandidateId`, `OverloadDiagnosticId`,
-  `TemplateExpansionId`, `CandidateViabilityId`, `SpecificityGraphId`,
-  `SpecificityComparisonId`, `SpecificityEdgeId`, `OverloadResultId`,
-  `InsertedViewId`
-- `OverloadSiteKey`, `OverloadNameKey`,
-  `OverloadDiagnosticMessageKey`, `CandidateProvenanceKey`,
-  `TemplateInstantiationKey`, `TemplateParameterKey`, `QuaPathKey`,
-  `ViabilityEvidenceKey`, `SpecificityReasonKey`, `SelectionReasonKey`,
-  `InsertedViewReasonKey`
-
-Literal top-level public items:
-
-- `OverloadCollectionOutput`, `TemplateExpansionOutput`,
-  `CandidateViabilityOutput`, `SpecificityGraphOutput`,
-  `OverloadSelectionOutput`, `OverloadSiteInput`, `SourceQuaView`,
-  `OverloadSiteKind`, `UnsupportedOverloadRole`, `OverloadSiteRecovery`,
-  `OverloadCandidateInput`, `CandidateDeclarationKind`, `CandidateOrigin`,
-  `CoherenceStatus`, `TemplateCandidatePayload`, `TemplateArgument`,
-  `TemplateQuaStatus`, `TemplateArgumentInference`,
-  `TemplateConstraintEvidence`, `TemplateConstraintEvidenceStatus`,
-  `CandidateProvenance`, `CandidateScope`, `OverloadSite`,
-  `OverloadSiteStatus`, `OverloadSiteTable`, `OverloadCandidate`,
-  `OverloadCandidateStatus`, `OverloadCandidateTable`,
-  `TemplateExpansion`, `TemplateExpansionTable`, `TemplateSubstitution`,
-  `TemplateSubstitutionSource`, `TemplateExpansionStatus`,
-  `TemplateExpansionFailure`, `CandidateViabilityInput`,
-  `ArgumentViabilityEvidence`, `ViabilityFactStatus`,
-  `ViabilityCoercionKind`, `ViabilityCoercionStatus`,
-  `CandidateViability`, `CandidateViabilityTable`,
-  `CandidateViabilityStatus`, `ArgumentViewPlan`, `ArgumentViewKind`,
-  `CandidateRejection`, `CandidateRejectionReason`,
-  `CandidateBlockedReason`, `CandidateBlockedReasonKind`,
-  `SpecificityComparisonInput`, `SpecificityComparisonStatus`,
-  `SpecificityBlockedReasonKind`, `SpecificityGraph`,
-  `SpecificityGraphTable`, `SpecificityNode`, `SpecificityComparison`,
-  `SpecificityComparisonOutcome`, `SpecificityEdge`,
-  `SpecificityFailureReason`, `OverloadSiteResolutionInput`,
-  `RefinementJoinPayload`, `RefinementJoinStatus`,
-  `RefinementJoinFailure`, `ExposedResultPayload`,
-  `ExposedResultSource`, `InsertedViewInput`, `InsertedViewKind`,
-  `InsertedViewStatus`, `OverloadResult`, `OverloadResultTable`,
-  `OverloadResultStatus`, `OverloadBlockedReason`, `InsertedView`,
-  `InsertedViewTable`, `OverloadDiagnostic`, `OverloadDiagnosticDraft`,
-  `OverloadDiagnosticProvenance`, `OverloadDiagnosticTable`,
-  `OverloadDiagnosticClass`, `OverloadDiagnosticSeverity`,
-  `OverloadDiagnosticRecovery`
-
-Correspondence:
-
-| Spec promise | Source evidence | Test evidence | Status |
-|---|---|---|---|
-| Site and candidate collection preserves resolver-filtered inputs, source `qua`, provenance, supported roles, and stable ordering. | `OverloadCollectionOutput::collect`, site/candidate input and table types. | collection, already-filtered, deterministic order, provenance tie-breaker, template/coherence retention, source-`qua`, unsupported role, duplicate/unknown site tests. | Implemented for explicit payloads; MC-G027 remains for source extraction and unsupported roles. |
-| Template expansion uses explicit template/inference/constraint payloads and preserves rejected/deferred cases. | `TemplateExpansionOutput::expand`, template payload/substitution/constraint types. | explicit expansion, omitted inference, constraint accepted/rejected/deferred, source-`qua` template, diagnostics remap, deferred template tests. | Implemented for explicit payloads; MC-G006 and MC-G027 remain. |
-| Viability consumes recorded evidence without deriving facts, firing registrations, or selecting roots. | `CandidateViabilityOutput::filter`, viability evidence/status/rejection/block/view-plan types. | exact/source-`qua`, non-consumable, narrowing/missing/ambiguous, deferred evidence, remap, duplicate/unknown viability tests. | Implemented. |
-| Specificity builds per-site graphs from explicit comparisons and never uses return types for ordinary root ordering. | `SpecificityGraphOutput::build`, graph/node/comparison/edge types. | graph edge/equivalence/incomparability, return-type-independent, empty graph, blocked comparison, missing/duplicate/unknown/cross-site tests; task 45 encoded non-template/template priority comparisons. | Implemented. |
-| Selection picks unique maximal ordinary roots, joins accepted refinements, records widening/source-`qua` views, and preserves failures. | `OverloadSelectionOutput::resolve`, result/view/refinement/exposed-result types. | root selection, no-match/ambiguity, missing/blocked payloads, redefinition priority, refinement join, invalid view, deterministic selection rendering tests; task 45 equivalent-template ambiguity, encoded priority, unencoded tie, and redefinition-metadata tie tests. | Implemented for explicit payloads; omitted `coherence with` target inference remains an upstream producer obligation under MC-G027/MC-G030, so rejected omitted-target declarations must not reach this API as active candidates. |
-| Public enums are forward-compatible. | `#[non_exhaustive]` on public enums. | `checker_public_enums_are_forward_compatible_and_documented`. | Guarded by task 31. |
-
-### `resolved_typed_ast`
-
-Generated public newtypes:
-
-- `ResolvedTypedNodeId`, `ExpressionMetadataId`, `OverloadResolutionId`,
-  `CoercionInsertionId`, `ResolvedTypedDiagnosticId`, `StatementSemanticId`,
-  `StatementProofIntentId`, `CheckedProofId`, `CheckedProofNodeId`,
-  `CheckedTerminalGoalId`
-- `ExprId`, `SourceNodeRole`
-
-Literal top-level public items:
-
-- `ResolvedTypedAst`, `ResolvedTypedAstInputs`, `ExpressionMetadataInput`,
-  `ResolvedNodeKindHint`, `ResolvedNodeKindHintKind`, `ResolvedTypedArena`,
-  `ResolvedTypedNode`, `ResolvedTypedNodeKind`, `ResolvedNodeRecovery`,
-  `ResolvedNodeRecoveryReason`, `ExpressionMetadata`,
-  `ExpressionMetadataTable`, `OverloadCandidateSummary`,
-  `OverloadCandidateSummaryTable`, `TemplateExpansionSummary`,
-  `TemplateExpansionSummaryTable`, `CandidateViabilitySummary`,
-  `CandidateViabilitySummaryTable`, `ResolvedSpecificityComparison`,
-  `ResolvedSpecificityGraph`, `ResolvedSpecificityGraphTable`,
-  `OverloadResolutionRecord`, `OverloadResolutionStatus`,
-  `OverloadResolutionTable`, `CoercionInsertion`,
-  `CoercionInsertionSource`, `CoercionInsertionTable`,
-  `ResolvedTypedDiagnostic`, `ResolvedTypedDiagnosticSource`,
-  `ResolvedTypedDiagnosticSeverity`, `ResolvedTypedDiagnosticTable`,
-  `CandidateSummaryNamespace`, `StatementSemanticInputs`,
-  `StatementSemanticInput`, `StatementSemantic`, `StatementSemanticTable`,
-  `StatementProofInputs`, `StatementProofIntentInput`,
-  `TheoremPolicyIntent`, `TheoremJustificationIntent`, `CheckedProofStatus`,
-  `CheckedProofNodeKind`, `CheckedCitation`, `CheckedProofLabel`,
-  `CheckedProof`, `CheckedProofTable`, `CheckedProofNode`,
-  `CheckedProofNodeTable`, `CheckedTerminalGoal`, `CheckedTerminalGoalTable`,
-  `ResolvedTypedAstError`
-
-Correspondence:
-
-| Spec promise | Source evidence | Test evidence | Status |
-|---|---|---|---|
-| Final source-shaped projection preserves typed AST nodes, expression metadata, overload summaries, cluster facts, and diagnostics. | `ResolvedTypedAst::assemble`, `ResolvedTypedAstInputs`, arena/metadata/summary/table types. | `assembly_preserves_source_shape_metadata_and_successful_overload_type`, template/candidate summary tests, diagnostic remap tests. | Implemented for explicit predecessor outputs; source extraction/artifacts remain MC-G027. |
-| Failed overload sites and failed nodes remain visible rather than being rewritten into success. | `OverloadResolutionStatus`, recovery/reason enums, result and diagnostic tables. | `failed_sites_do_not_insert_views_and_candidate_namespaces_are_distinct`, `failed_selection_statuses_preserve_failed_nodes_without_insertions`, validation rejection tests. | Implemented. |
-| Exact Task-180 omitted-justification intent produces an authenticated pending proof and direct terminal goal atomically. | `StatementProofInputs`, `CheckedProofTable`, `CheckedProofNodeTable`, `CheckedTerminalGoalTable`, private postvalidation. | exact statement/proof projection, owner visibility, corruption, deterministic nonempty, and captured empty-rendering tests. | Implemented only for the Task-180 singleton; broader proofs remain Task 247 and Core lowering remains Core Task 31. |
-| Inserted coercions record source and widening/source-`qua` evidence only. | `CoercionInsertion`, `CoercionInsertionSource`, `CoercionInsertionTable`. | assembly and validation tests, overload selection invalid view tests upstream. | Implemented for explicit inputs. |
-| Deterministic debug projection canonicalizes equivalent input ordering. | deterministic table iteration and `debug_text`. | `deterministic_debug_text_canonicalizes_equivalent_input_orderings`, task-30 determinism suite. | Implemented. |
-| Public enums are forward-compatible. | `#[non_exhaustive]` on public enums. | `checker_public_enums_are_forward_compatible_and_documented`. | Guarded by task 31. |
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Cross-Cutting Test And Policy Evidence
 
-| Evidence | Coverage |
-|---|---|
-| `crates/mizar-checker/tests/lint_policy.rs` | Workspace lint opt-in, dependency boundary, no direct syntax imports, documented public modules, explicit overload/resolved-AST boundary guards, public enum forward-compatibility policy, source/spec audit public-surface and MC-G reconciliation guard, bilingual documentation sync pair-inventory / companion-link guard, module-boundary source-layout guard, and documented `allow` exceptions. |
-| `crates/mizar-checker/src/determinism_suite.rs` | Cross-module deterministic reruns and equivalent-order permutations for type normalization, fact queries, cluster closure, reduction trace discharged-side-condition identity, overload pipeline, and final `ResolvedTypedAst` projection. |
-| Unit tests in each source module | Task-local behavior tests over explicit checker-owned payloads. These are the active executable coverage for implemented checker seams until source-to-checker extraction and later semantic corpus runners exist. |
-| `tests/coverage/spec_trace.toml` deferred rows | Records formula/statement, cluster/reduction, overload/refinement, and review-audit semantic corpus obligations without pretending they are active fixtures. |
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Gap Reconciliation
 
-Task 32 does not close gaps without implementation and test evidence. It
-reconciles all crate-plan MC-G rows as follows.
-
-| ID | Classification | Task-32 audit disposition |
-|---|---|---|
-| MC-G002 | `test_gap` | Still active for real semantic `.miz` coverage; mitigated by Rust tests and deferred traceability until source-to-checker extraction exists. |
-| MC-G003 | `design_drift` plus deferred external gate | Historical wording drift is repaired; accepted proof/artifact status remains represented by MC-G025. |
-| MC-G004 | `source_drift` / `external_dependency_gap` planning gate | Not checker-source drift in current code. Artifact producer/reuse integration remains a task-scoped cross-crate dependency; checker must not invent schemas. |
-| MC-G005 | `spec_gap` / `external_dependency_gap` | Active. Public checker diagnostic code-space is not allocated; modules keep crate-local diagnostic classes and stable message/detail keys. |
-| MC-G006 | `source_drift` / `external_dependency_gap` | Active for parser/syntax template/scheme roles; overload code defers unsupported roles rather than fabricating them. |
-| MC-G007 | `design_drift` | Resolved by the checker crate plan and module specs. No architecture-file rename is required for task 32. |
-| MC-G009 | `repo_metadata_conflict` | Report-only sentinel. No metadata conflict is observed in task 32. |
-| MC-G011 | `external_dependency_gap` | Active for AST-wide local binding extraction, use-site scope/ordinal payloads, reserve payloads, closure payloads, and syntax-free `ResolvedAst` fixtures. |
-| MC-G014 | `external_dependency_gap` | Active for AST-wide type-expression payloads, mode/radix/attribute expansion payloads, and arity payloads. |
-| MC-G016 | `external_dependency_gap` | Active for declaration/type-site tables, reserve defaults, RHS/body payloads, and evidence queries. |
-| MC-G017 | `external_dependency_gap` | Active for term/formula payload tables, built-in numeric payloads, candidate signatures, structure/selector payloads, source `qua` evidence, and sethood/non-emptiness evidence. |
-| MC-G018 | `external_dependency_gap` | Active for coercion request tables, dependency-summary facts, inheritance graphs, cluster evidence, sethood/non-emptiness evidence, and proof-query results. |
-| MC-G019 | `external_dependency_gap` | Active for statement/proof assumptions, theorem acceptance payloads, and phase-7 trace fact payloads. |
-| MC-G020 | `external_dependency_gap` / `deferred` | Active source-to-checker extraction blocker for semantic pass fixtures across tasks 7-11 and later consumers. The reserve-only builtin declaration slice now uses a checker-owned syntax-free producer seam for `BindingEnv`, `DeclarationInput`, and `DeclarationChecker` handoff data and reaches `TypedAst` and `ResolvedTypedAst` through the active runner for successful bare builtins, task-55 same-module no-argument local modes with real AST-derived bare-builtin RHS expansions, task-56 one-edge same-module local-mode chains whose dependency mode has that accepted builtin RHS expansion, and task-74 AST-bounded structural bare local-mode chains ending in builtin `set` / `object`. Active fail slices cover same-module attributed builtin reserves, same-module local modes outside the supported expansion families, local structures, attributed local structures/modes, structure-qualified attributes, argument-bearing and bracket-form local heads, forward-reference active-range rejections, and the historical task-80 imported attribute reserve boundary. Task 82 promotes the task-79 imported mode reserve source from the generic extraction-gap boundary to a real checker type-head payload by validating the documented `parser.type_fixtures` imported `SymbolKind::Mode` with `ImportedSource` provenance; it still fails closed on the missing imported `ModeExpansion` payload. Task 83 promotes the documented `parser.type_fixtures` imported structure `R` source from the generic extraction-gap boundary to a real checker type-head payload by validating `ImportedSource` provenance; it still fails closed on missing base-shape/constructor-witness evidence. Task 97 promotes the documented `TypeCaseStruct` source to the same real checker type-head boundary and missing evidence query. Task 84 promotes the documented `parser.type_fixtures` imported attribute `TypeCaseAttr` source from the generic extraction-gap boundary to a real checker `AttributeInput` payload by validating `ImportedSource` provenance; it still fails closed on missing attributed-type existential/evidence payloads. Task 85 promotes the existing `non empty set` source from the generic extraction-gap boundary to a real imported negative `empty` checker `AttributeInput` payload over builtin `set`; task 116 promotes the matching `empty set` source to a real imported positive `empty` checker `AttributeInput` payload over builtin `set`; both still fail closed on missing attributed-type existential/evidence payloads, while the `non empty object` runner sidecar remains on the extraction-gap boundary. Task 86 records a formula-only theorem source as an active boundary after parser/resolver execution, and task 117 supersedes task 115 for the exact `FormulaPayloadBoundary: thesis` source by passing the source-derived `thesis` formula constant as a real `FormulaKind::Thesis` checker payload before failing closed on missing formula payload, without claiming formula constant semantic checking, theorem acceptance, recorded facts, proof context, or a `formula_statement` runner. Task 106 supersedes task 87 for the exact builtin equality theorem source by passing real source-derived checker `TermInput` and equality `FormulaInput` payloads to `TermFormulaChecker`, then failing closed on missing numeric type payloads and partial formula checking without claiming equality semantic checking, recorded facts, theorem acceptance, or a `formula_statement` runner. Task 110 supersedes task 98 for the exact imported predicate/functor theorem source by validating imported `divides`/`++` provenance, passing real source-derived numeral, imported functor-application, and predicate-application checker payloads to `TermFormulaChecker`, then failing closed on missing numeric/signature payloads and partial formula checking without claiming semantic predicate/functor signatures, term inference, formula checking, recorded facts, theorem acceptance, or a `formula_statement` runner. Task 108 supersedes task 100 for the exact builtin membership theorem source by passing real source-derived checker `TermInput` and membership `FormulaInput` payloads to `TermFormulaChecker`, then failing closed on missing numeric type payloads and partial formula checking without claiming membership operand expected-type construction/checking, recorded facts, theorem acceptance, or a `formula_statement` runner. Task 107 supersedes task 101 for the exact builtin inequality theorem source by passing real source-derived checker `TermInput` and inequality `FormulaInput` payloads to `TermFormulaChecker`, then failing closed on missing numeric type payloads and partial formula checking without claiming inequality desugaring or equality semantic checking, recorded facts, theorem acceptance, or a `formula_statement` runner. Task 109 supersedes task 102 for the exact builtin type-assertion theorem source by passing real source-derived checker `TermInput`, type-assertion `FormulaInput`, and asserted builtin `set` `TypeExpressionInput` payloads to `TermFormulaChecker`, then failing closed on missing numeric type payloads and partial formula checking without claiming broader asserted-type payloads, type-assertion semantic checking, recorded facts, theorem acceptance, or a `formula_statement` runner. Task 113 supersedes task 103 for the exact imported attribute assertion theorem formula by validating imported `empty` provenance and passing source-derived checker term/formula payloads before missing numeric type, formula/attribute semantic payload, and partial-formula diagnostics; it does not claim imported module AST extraction, theorem-formula `AttributeInput` payload extraction, attribute-chain semantic payload extraction, term inference, attribute admissibility/semantic checking, formula checking, recorded facts, theorem acceptance, or a `formula_statement` runner. Task 114 supersedes task 104 for the exact attribute-level non-empty imported attribute assertion theorem formula by validating the direct `non` surface and imported `empty` provenance and passing source-derived checker term/formula payloads before missing numeric type, formula/attribute semantic payload, and partial-formula diagnostics; it does not claim imported module AST extraction, theorem-formula `AttributeInput` payload extraction, negated attribute-chain semantic payloads, term inference, negated attribute admissibility/semantic checking, formula checking, recorded facts, theorem acceptance, or a `formula_statement` runner. Task 111 supersedes task 105 for the exact set-enumeration theorem source by passing real checker term/formula payloads after parser/resolver execution, without claiming broader set-enumeration result-type payloads, term inference, equality/formula checking, recorded facts, theorem acceptance, or a `formula_statement` runner. Task 112 supersedes task 99 for the exact formula connective/quantifier theorem source by passing real checker formula shell payloads after parser/resolver execution, and task 117 extends only that exact source by passing both `contradiction` constants as real `FormulaKind::Contradiction` payloads; neither claims formula constant semantic truth values, child-formula graph payloads, quantifier binder/context payloads, formula checking, recorded facts, theorem acceptance, or a `formula_statement` runner. Task 180 separately checks the exact standalone `SourceDerivedContradictionConstantBoundary: contradiction` leaf as one `Checked` `FormulaKind::Contradiction` for type/well-formedness only, without truth/fact publication or theorem/proof/downstream credit. Task 88 records a proof-block theorem source as the same active extraction-gap boundary after parser/resolver execution, without claiming proof skeleton payloads, local proof context, formula payloads, recorded facts, theorem acceptance, or a `formula_statement` runner. Task 89 records statement-level proof-justification theorem sources as the same active extraction-gap boundary after parser/resolver execution, without claiming statement proof payloads, nested proof skeleton payloads, local proof context, formula payloads, label-reference semantic checking, recorded facts, theorem acceptance, or a `formula_statement` runner. Task 90 records predicate/functor definition sources as an active extraction-gap boundary after parser/resolver execution, without claiming definition declaration payloads, definition-local context, definiens formula/term payloads, overload payloads, recorded facts, or a `formula_statement` runner. Task 91 records attribute definition sources as the same active extraction-gap boundary after parser/resolver execution, without claiming attribute definition declaration payloads, definition-local context, formula-definiens payloads, attributed-type evidence, recorded facts, or a `formula_statement` runner. Task 92 records mode/structure definition sources as the same active extraction-gap boundary after parser/resolver execution, without claiming mode/structure definition declaration payloads, mode expansion, structure base-shape/constructor/selector evidence, definition-local context, recorded facts, or a `formula_statement` runner. Task 93 records proof-local declaration statement sources as the same active extraction-gap boundary after parser/resolver execution, without claiming proof-local declaration payloads, local proof context, formula/term payloads, RHS term inference, reconsider coercion/obligation evidence, recorded facts, theorem acceptance, or a `formula_statement` runner. Task 94 records proof-local inline definition sources as the same active extraction-gap boundary after parser/resolver execution, without claiming inline definition formal/body payloads, local abbreviation expansion, term/formula body payloads, guard evidence, recorded facts, theorem acceptance, or a `formula_statement` runner. Task 95 records registration block sources as the same active extraction-gap boundary after parser/resolver execution, without claiming registration-item payloads, correctness-condition/proof-obligation payloads, accepted activation/evidence status, cluster/reduction semantics, recorded facts, Chapter 17 semantic rows, or `formula_statement` / `advanced_semantics` runners. Task 96 records redefinition/notation sources as the same active extraction-gap boundary after parser/resolver execution, without claiming redefinition payloads, notation alias relation payloads, target inference, coherence proof-obligation payloads, overload candidate payloads, Chapter 11 alias semantic resolution, Chapter 19 overload/redefinition semantics, or `formula_statement` / `advanced_semantics` runners. Broader non-builtin declarations beyond task 96's redefinition/notation extraction-gap boundary, imported attributes beyond task 84's `TypeCaseAttr` provenance/`AttributeInput` bridge and tasks 85/116 `empty`/builtin-`set` bridges, imported structures beyond task 83's `R` and task 97's `TypeCaseStruct` provenance/type-head bridges, imported mode expansion beyond task 82's provenance/type-head bridge, attribute arguments, qualified attribute qualifier/owner provenance, mode/structure arguments, bracket `type_arg_list` and `qua`-argument provenance, term-argument provenance, structure base-shape/full attributed-type existential evidence, broader/attributed/argument-bearing/parameterized/contextual/ambiguous/cyclic mode expansion, definition payloads beyond task 92's mode/structure definition boundary, proof-local declaration payloads beyond task 93's extraction-gap boundary, inline definition payloads beyond task 94's extraction-gap boundary, registration-item/correctness/activation payloads beyond task 95's extraction-gap boundary, redefinition/notation payloads beyond task 96's extraction-gap boundary, numeric/signature/result-type payloads beyond tasks 106, 107, 108, 109, 110, 111, 112, 113, 114, 117, and Task 180 exact leaf plus equality/inequality/membership/type-assertion/imported predicate-functor/set-enumeration semantic checking and formula child/binder semantics beyond those exact bridges, and terms/formulas/proof skeletons beyond task-110, task-111, task-112, task-113, task-114, and task-117 checker bridges, the Task 180 exact leaf, and task-105/task-88/task-89 extraction-gap boundaries, coercions, overloads, recorded facts, CoreIr, ControlFlowIr, VC, and proof payload extraction remain open. |
-| MC-G021 | `external_dependency_gap` / `deferred` | Active registration payload/accepted-status/source extraction blocker; registration code consumes explicit payload seams only. |
-| MC-G023 | `test_gap` / `external_dependency_gap` / `deferred` | Active for source-derived cluster/reduction fixtures, artifact/cache integration, source-derived normalization-result dependence, and real trace extraction. Task 46 covers only the explicit-payload fatal contradiction and reduction trace-identity seam. |
-| MC-G025 | `external_dependency_gap` / `deferred` | Active for proof/artifact production or import of accepted registration status. |
-| MC-G026 | `test_gap` / `external_dependency_gap` / `deferred` | Active for source-derived existential gate cases, artifact reuse, and accepted-status integration. |
-| MC-G027 | `test_gap` / `external_dependency_gap` / `deferred` | Active for source-derived overload payloads, omitted `coherence with` target diagnostic production, diagnostics code allocation, artifact emission/reuse, and semantic fixtures. Task 45 adds only explicit-payload Rust regressions and keeps source-derived seeds inactive. |
-| MC-G030 | `test_gap` / `external_dependency_gap` / `deferred` | Active for `formula_statement` and `advanced_semantics` runner/tag support plus source payload extraction. |
-
-Resolved setup-history rows remain closed: MC-G001, MC-G010, MC-G012,
-MC-G013, MC-G015, MC-G022, MC-G024, MC-G028, and MC-G029 have task commits
-and no reopened source/spec mismatch in this audit.
-
-Task 171 current-state override: the gap row's earlier statement that the
-`non empty object` sidecar remains on the extraction gap is superseded. The
-exact negative imported `empty`/builtin-`object` source now reaches the checker
-evidence-query diagnostic; positive `empty object`, imported attributes on
-symbol heads, imported module AST extraction, attribute evidence/acceptance,
-and downstream payloads remain deferred.
-
-Task 181 current-state override: imported attributed-reserve routing is now
-guarded by the exact five already credited task-84/85/116/171 source shapes.
-No corpus, expectation, traceability, runner-count, or semantic-coverage row is
-changed; broader imported attributed-reserve shapes remain recorded extraction
-gaps.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 32 Classification
 
-| Class | Evidence | Action |
-|---|---|---|
-| `spec_gap` | No new language behavior or checker diagnostic code allocation is introduced by this audit. MC-G005 remains the public diagnostic-code gap. | Do not add public codes in task 32. |
-| `test_gap` | Active `.miz` semantic fixture coverage remains deferred by MC-G002/MC-G023/MC-G026/MC-G027/MC-G030. | Keep Rust task-local coverage and deferred traceability; do not fabricate pass fixtures. |
-| `design_drift` | No blocking drift observed. Historical MC-G003/MC-G007 drift is resolved in the crate plan/module specs. | No design repair beyond this audit record. |
-| `source_drift` | No implemented explicit-payload API contradicts its owning module spec. | No source changes. |
-| `source_undocumented_behavior` | No top-level public item is outside the module inventory above. | Future public items must update module specs and this audit or be caught by lint policy where applicable. |
-| `external_dependency_gap` | Source extraction, accepted proof/artifact status, public diagnostic codes, artifact emission/reuse, and later semantic runners remain outside current checker inputs. | Keep deferred rows and follow-up tasks; no stubs. |
-| `deferred` | Formula/statement, cluster/reduction, overload/refinement, and audit-negative corpus obligations are recorded but inactive. | Revisit only after the owning extraction/runner/artifact tasks land. |
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Completion Decision
 
-Task 32 is complete when this English audit and its Japanese companion are
-committed with the crate plan, todo updates, and the lint-policy audit guard.
-The audit does not claim crate completion by itself; tasks 33, 34, and the
-closeout task have since recorded the bilingual synchronization audit,
-module-boundary refactor gate, and crate exit report.
-
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 201 MC-G020 Current-State Override
 
-Task 201 classifies the exact one-edge set-terminal immediate-radix asserted-head seam as `test_gap`, narrow `source_drift`, and `design_drift`, not `spec_gap`. Chapters 3, 4, 7, 13, 14.2.3, and 16 directly support the two local definitions, outer reserve, identifier subject, Base asserted type, and theorem. Tasks 56/146 supply two real expansions and Task 184 supplies the formula consumer. The closed asserted-head relation leaves builtin and same-mode routes unchanged and accepts only the resolved outer-to-base immediate edge.
-
-The active route preserves distinct Outer/Base symbols, sites, and ranges; resolves ordinal 1 to `BindingId(0)`; normalizes three known entries to one Base-definition-RHS `BuiltinSet`; and records one `Inferred` variable plus one fact/candidate/diagnostic/deferred-free `Checked` assertion with zero expected constraints. Five shared backlinks plus one dedicated row protect active runner 149 within 364 cases and 328 requirements without changing existing expectations. Exact structural/provenance, corruption, immutable-output, Task 146/184 isolation, and real sidecar guards are executable. Broader asserted heads and semantics, proof/CoreIr/ControlFlowIr/VC, and general chains remain deferred. Step 5 remains active; Steps 6/7 remain deferred. No checker source or module-layout change was required.
-
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 202 MC-G020 Current-State Override
 
-Task 202 classifies the exact object-terminal immediate-radix asserted-head seam as `test_gap`, narrow `source_drift`, and `design_drift`, not `spec_gap`. Tasks 56/147 provide two real object expansions, Task 185 provides the object formula consumer, and Task 201 provides the unchanged immediate-radix relation. The active route preserves distinct Outer/Base provenance, resolves ordinal 1 to `BindingId(0)`, normalizes three known entries to one Base-definition-RHS `BuiltinObject`, and records one `Inferred` variable plus one zero-constraint/fact/candidate/diagnostic/deferred `Checked` assertion without object/set coercion. Five shared backlinks plus one dedicated row protect active runner 150 within 365 cases and 329 requirements. Exact/corruption, immutable-output, real Tasks 147/185/201 isolation, and sidecar guards are executable. Broader semantics and downstream payloads remain deferred. Step 5 remains active; Steps 6/7 remain deferred. No checker source or module-layout change was required.
-
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 203 MC-G020 Current-State Override
 
-Task 203 classifies the exact two-edge set-terminal immediate-radix asserted-head seam as `test_gap`, narrow `source_drift`, and `design_drift`, not `spec_gap`. Task 72 supplies three real source-derived expansions, Task 186 supplies the formula consumer, and Tasks 201/202 supply the unchanged immediate-radix relation. The active route preserves distinct Outer/Middle provenance, resolves ordinal 1 to `BindingId(0)`, consumes three expansions, normalizes three known entries to one Base-definition-RHS `BuiltinSet`, and records one `Inferred` variable plus one zero-constraint/fact/candidate/diagnostic/deferred `Checked` assertion. Five shared backlinks plus one dedicated row protect active runner 151 within 366 cases and 330 requirements without changing existing expectations. Exact/corruption/immutable-output coverage, all definition-order/duplicate/spelling/imported/ambiguous/deeper near misses, real Tasks 122/148/149/186/187/201/202 isolation, and a real sidecar are executable. Two-hop Base assertion, the object sibling, broader semantics, and downstream payloads remain deferred. Step 5 remains active; Steps 6/7 remain deferred. No checker source or module-layout change was required.
-
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 204 MC-G020 Current-State Override
 
-Task 204 classifies the exact two-edge object-terminal immediate-radix asserted-head seam as `test_gap`, narrow `source_drift`, and `design_drift`, not `spec_gap`. Task 72 supplies three real source-derived object expansions, Task 187 supplies the formula consumer, and Tasks 202/203 supply the unchanged immediate-radix relation. The active route preserves distinct Outer/Middle provenance, resolves ordinal 1 to `BindingId(0)`, consumes three expansions, normalizes three known entries to one Base-definition-RHS `BuiltinObject`, and records one `Inferred` variable plus one zero-constraint/fact/candidate/diagnostic/deferred `Checked` assertion without object/set coercion. Five shared backlinks plus one dedicated row protect active runner 152 within 367 cases and 331 requirements without changing existing expectations. Exact/corruption/immutable-output coverage, every definition order plus duplicate/spelling/imported/ambiguous/deeper near misses, real Tasks 189/145/147/149/187/202 and set Tasks 148/186/203 isolation, and a real sidecar are executable. Two-hop Base assertion, broader semantics, and downstream payloads remain deferred. Step 5 remains active; Steps 6/7 remain deferred. No checker source or module-layout change was required.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 205 MC-G020 Current-State Override
 
-Task 205 classifies the exact three-edge set-terminal immediate-radix asserted-head seam as `test_gap`, narrow `source_drift`, and `design_drift`, not `spec_gap`. Task 73 supplies four real source-derived set-terminal expansions, Task 195 supplies the formula consumer, and Tasks 201/203/204 supply the unchanged immediate-radix relation. The active route preserves distinct Outer/Middle provenance, resolves ordinal 1 to `BindingId(0)`, consumes four expansions, normalizes three known entries to one Base-definition-RHS `BuiltinSet`, and records one `Inferred` variable plus one zero-constraint/fact/candidate/diagnostic/deferred `Checked` assertion. Five shared backlinks plus one dedicated row protect active runner 153 within 368 cases and 332 requirements without changing existing expectations. Exact/corruption/immutable-output coverage, all 23 nonidentity definition orders, missing/duplicate/label/spelling/radix and imported/ambiguous/deeper/multi-hop near misses, bidirectional isolation against set Tasks 122/138/146/148/150/195/201/203 and object Tasks 189/145/147/149/151/196/202/204, and a real sidecar are executable. Multi-hop Inner/Base assertion, the matching object sibling, broader semantics, and downstream payloads remain deferred. Step 5 remains active; Steps 6/7 remain deferred. No checker source or module-layout change was required.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 206 MC-G020 Current-State Override
 
-Task 206 classifies the exact three-edge object-terminal immediate-radix asserted-head seam as `test_gap`, narrow `source_drift`, and `design_drift`, not `spec_gap`. Task 73 supplies four real source-derived object-terminal expansions, Task 196 supplies the formula consumer, and Tasks 201/204/205 supply the unchanged immediate-radix relation. The active route preserves distinct Outer/Middle provenance, resolves ordinal 1 to `BindingId(0)`, consumes four expansions, normalizes three known entries to one Base-definition-RHS `BuiltinObject`, and records one `Inferred` variable plus one zero-constraint/fact/candidate/diagnostic/deferred `Checked` assertion without object/set coercion. Five shared backlinks plus one dedicated row protect active runner 154 within 369 cases and 333 requirements without changing existing expectations. Exact/corruption/immutable-output coverage, all 23 nonidentity definition orders, per-definition missing/duplicate/label/spelling/radix and imported/ambiguous/deeper/multi-hop/local-other near misses, bidirectional isolation against set Tasks 122/138/146/148/150/195/201/203/205 and object Tasks 189/145/147/149/151/196/202/204, and a real sidecar are executable. Multi-hop Inner/Base assertion, broader semantics, and downstream payloads remain deferred. Step 5 remains active; Steps 6/7 remain deferred. No checker source or module-layout change was required.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 207 MC-G020 Current-State Override
 
-Task 207 classifies the exact four-edge set-terminal immediate-radix asserted-head seam as `test_gap`, narrow `source_drift`, and `design_drift`, not `spec_gap`. Task 74 supplies five real source-derived set-terminal expansions, Task 197 supplies the formula consumer, and Tasks 201/203/205/206 supply the unchanged immediate-radix relation. The active route preserves distinct TooDeep/Outer provenance, resolves ordinal 1 to `BindingId(0)`, consumes five expansions, normalizes three known entries to one Base-definition-RHS `BuiltinSet`, and records one `Inferred` variable plus one zero-constraint/fact/candidate/diagnostic/deferred `Checked` assertion. Five shared backlinks plus one dedicated row protect active runner 155 within 370 cases and 334 requirements without changing existing expectations. Exact/corruption/immutable-output coverage, all 119 nonidentity definition orders, every per-definition and asserted-head near miss, imported/ambiguous checks for all five symbols, bidirectional isolation against the 20 declared owner routes, and a real sidecar are executable. Multi-hop Middle/Inner/Base assertions, the matching object sibling, broader semantics, and downstream payloads remain deferred. Step 5 remains active; Steps 6/7 remain deferred. No checker source or module-layout change was required.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 208 MC-G020 Current-State Override
 
-Task 208 classifies the exact four-edge object-terminal immediate-radix asserted-head seam as `test_gap`, narrow `source_drift`, and `design_drift`, not `spec_gap`. Task 74/153 supplies five real source-derived object-terminal expansions, Task 198 supplies the formula consumer, and Tasks 202/204/206/207 supply the unchanged immediate-radix relation. The active route preserves distinct TooDeep/Outer provenance, resolves ordinal 1 to `BindingId(0)`, consumes five expansions, normalizes three known entries to one Base-definition-RHS `BuiltinObject`, and records one `Inferred` variable plus one zero-constraint/fact/candidate/diagnostic/deferred `Checked` assertion without object/set coercion. Five shared backlinks plus one dedicated row protect active runner 156 within 371 cases and 335 requirements without changing existing expectations. Exact/corruption/immutable-output coverage, all 119 orders, full source/provenance near misses, bidirectional isolation against 21 owner routes, and a real sidecar are executable. Multi-hop Middle/Inner/Base assertions, broader semantics, and downstream payloads remain deferred. Step 5 remains active; Steps 6/7 remain deferred. No checker source or module-layout change was required.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 209 MC-G020 Current-State Override
 
-Task 209 classifies the exact seven-expansion set-terminal immediate-radix asserted-head seam as `test_gap`, narrow `source_drift`, and `design_drift`, not `spec_gap`. Specs 03/04/07/13/14/16 directly support the slice; Task 74 supplies seven real source-derived expansions, Task 199 the formula consumer, Task 175 the builtin sibling/guards, and the closed relation the exact immediate edge. The active route preserves distinct ChainMode6/ChainMode5 provenance, resolves ordinal 1 to `BindingId(0)`, normalizes three known entries to one BaseModeDef-RHS `BuiltinSet`, and records one `Inferred` variable plus one zero-constraint/fact/candidate/diagnostic/deferred `Checked` assertion. Five shared plus one dedicated backlink protect active runner 157 within 372 cases and 336 requirements without changing existing expectations. All 5,039 nonidentity orders, the finite source/provenance/corruption matrix, all 34 pre-existing owner routes, immutable output, and a real sidecar are executable. Multi-hop, broader semantics, and downstream payloads remain deferred. Step 5 remains active; Steps 6/7 remain deferred. No checker source or module-layout change was required.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 210 MC-G020 Current-State Override
 
-Task 210 classifies the exact seven-expansion object-terminal immediate-radix asserted-head seam as `test_gap`, narrow `source_drift`, and `design_drift`, not `spec_gap`. Specs 03/04/07/13/14/16 directly support the slice; Task 74 supplies seven real source-derived object-terminal expansions, Task 200 the formula consumer, Task 179 the builtin-object sibling/guards, Task 209 the set-terminal sibling, and the closed relation the exact immediate edge. The active route preserves distinct ChainObjectMode6/ChainObjectMode5 provenance, resolves ordinal 1 to `BindingId(0)`, normalizes three known entries to one BaseObjectModeDef-RHS `BuiltinObject`, and records one `Inferred` variable plus one zero-constraint/fact/candidate/diagnostic/deferred `Checked` assertion without object/set coercion. Five shared plus one dedicated backlink protect active runner 158 within 373 cases and 337 requirements without changing existing expectations. All 5,039 nonidentity orders, the finite source/provenance/corruption matrix, all 35 pre-existing owner routes, immutable output, and a real sidecar are executable. Multi-hop, broader semantics, and downstream payloads remain deferred. Step 5 remains active; Steps 6/7 remain deferred. No checker source or module-layout change was required.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 211 MC-G020 Current-State Override
 
-Task 211 classifies the exact two-edge set-terminal two-hop asserted-head seam as `test_gap`, narrow `source_drift`, and `design_drift`, not `spec_gap`. Specs 03/04/07/13/14/16 directly support the slice; Task 72 supplies three real source-derived expansions and Tasks 148/186/203 supply the existing formula/checker seam and sibling guards. The separate closed relation validates both actual bare Outer-to-Middle and Middle-to-Base links with pairwise-distinct symbols plus the exact Base-to-set terminal, rather than using generic terminal traversal as relation evidence. The active route preserves distinct Outer/Base provenance, resolves ordinal 1 to `BindingId(0)`, normalizes three known entries to one Base-definition-RHS `BuiltinSet`, and records one `Inferred` variable plus one zero-constraint/fact/candidate/diagnostic/deferred `Checked` assertion. Five shared plus one dedicated backlink protect active runner 159 within 374 cases and 338 requirements without changing existing expectations. All five nonidentity orders, the finite structural/provenance/corruption matrix, all 36 prior owner routes, immutable output, and a real sidecar are executable. The object sibling, other distances, broader semantics, and downstream payloads remain deferred. Step 5 remains active; Steps 6/7 remain deferred. No checker source or module-layout change was required.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 212 MC-G020 Current-State Override
 
-Task 212 classifies the exact two-edge object-terminal two-hop asserted-head seam as `test_gap`, narrow `source_drift`, and `design_drift`, not `spec_gap`. Specs 03/04/07/13/14/16 directly support the slice; Task 72 supplies three real source-derived object expansions and Tasks 149/187/204/211 supply the existing formula/checker seam, object siblings, and closed two-link relation. The relation validates both actual bare Outer-to-Middle and Middle-to-Base links with pairwise-distinct symbols plus the exact Base-to-object terminal, rather than using generic terminal traversal as relation evidence. The active route preserves distinct Outer/Base provenance, resolves ordinal 1 to `BindingId(0)`, normalizes three known entries to one Base-definition-RHS `BuiltinObject`, and records one `Inferred` variable plus one zero-constraint/fact/candidate/diagnostic/deferred `Checked` assertion without object/set coercion. Five shared plus one dedicated backlink protect active runner 160 within 375 cases and 339 requirements without changing existing expectations. All five nonidentity orders, the finite structural/provenance/corruption matrix, all 37 prior owner routes, immutable output, and a real sidecar are executable. Other distances, broader semantics, object/set coercion, and downstream payloads remain deferred. Step 5 remains active; Steps 6/7 remain deferred. No checker source or module-layout change was required.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 213 MC-G020 Current-State Override
 
-Task 213 classifies the exact three-edge set-terminal two-hop asserted-head seam as `test_gap`, narrow `source_drift`, and `design_drift`, not `spec_gap`. Specs 03/04/07/13/14/16 directly support the slice; Task 73 supplies four real source-derived expansions and Tasks 195/205/211/212 supply the formula/checker seam, immediate-edge sibling, closed two-link relation, and object-terminal guard. The refined relation directly validates pairwise-distinct Outer-to-Middle and Middle-to-Inner bare links; the Inner-to-Base-to-set tail is validated only by cycle-safe terminal normalization and never establishes relation reachability. The active route preserves distinct Outer/Inner provenance, resolves ordinal 1 to `BindingId(0)`, normalizes three known entries to one Base-definition-RHS `BuiltinSet`, and records one `Inferred` variable plus one zero-constraint/fact/candidate/diagnostic/deferred `Checked` assertion. Five shared plus one dedicated backlink protect active runner 161 within 376 cases and 340 requirements, with type-elaboration coverage 208/196 and no existing expectation changes. All 23 nonidentity orders, the finite structural/provenance/corruption matrix, focused Task 211/212 regressions, all 38 prior owner routes, immutable output, and a real sidecar are executable. The object sibling, full-distance and broader semantics, and downstream payloads remain deferred. Step 5 remains active; Steps 6/7 remain deferred. No checker source or module-layout change was required.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 214 MC-G020 Current-State Override
 
-Task 214 classifies the exact three-edge object-terminal two-hop asserted-head seam as `test_gap`, narrow `source_drift`, and `design_drift`, not `spec_gap`. Specs 03/04/07/13/14/16 directly support the slice; Task 73 supplies four real source-derived object expansions and Tasks 196/206/211/212/213 supply the formula/checker seam, immediate-edge sibling, unchanged closed two-link relation, and set-terminal guard. The relation directly validates pairwise-distinct Outer-to-Middle and Middle-to-Inner bare links; the Inner-to-Base-to-object tail is terminal normalization only and never establishes relation reachability. The active route preserves distinct Outer/Inner provenance, resolves ordinal 1 to `BindingId(0)`, normalizes three known entries to one Base-definition-RHS `BuiltinObject`, and records one `Inferred` variable plus one zero-constraint/fact/candidate/diagnostic/deferred `Checked` assertion without object/set coercion. Five shared plus one dedicated backlink protect active runner 162 within 377 cases and 341 requirements, with type-elaboration coverage 209/197 and pass/fail 193/184, without existing expectation changes. All 23 nonidentity orders, the finite structural/provenance/corruption matrix, focused Task 211/212/213 regressions, all 39 prior owner routes, immutable output, and a real sidecar are executable. Full-distance and broader semantics and downstream payloads remain deferred. Step 5 remains active; Steps 6/7 remain deferred. No checker source or module-layout change was required.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 215 MC-G020 Current-State Override
 
-Task 215 classifies the exact four-edge set-terminal two-hop asserted-head seam as `test_gap`, narrow `source_drift`, and `design_drift`, not `spec_gap`. Specs 03/04/07/13/14/16 directly support the slice; Task 74 supplies five real source-derived set expansions, Task 197 supplies the formula/checker consumer, Task 207 supplies the immediate-edge sibling, and Tasks 211-214 protect the unchanged closed two-link relation. The relation directly validates the pairwise-distinct TooDeep-to-Outer and Outer-to-Middle bare links; the Middle-to-Inner-to-Base-to-set tail is terminal normalization only and never establishes relation reachability. The active route preserves distinct TooDeep/Middle provenance, resolves ordinal 1 to `BindingId(0)`, normalizes three known entries to one Base-definition-RHS `BuiltinSet`, and records one `Inferred` variable plus one zero-constraint/fact/candidate/diagnostic/deferred `Checked` assertion without object/set coercion. Five shared plus one dedicated backlink protect active runner 163 within 378 cases and 342 requirements, with type-elaboration coverage 210/198 and pass/fail 194/184, without existing expectation changes. All 119 nonidentity orders, the finite structural/provenance/corruption matrix, focused Tasks 211-214 regressions, all 40 prior owner routes, immutable output, and a real sidecar are executable. The object sibling, three-hop/full-distance and broader semantics, and downstream payloads remain deferred. Step 5 remains active; Steps 6/7 remain deferred. No checker source or module-layout change was required.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 216 MC-G020 Current-State Override
 
-Task 216 classifies the exact four-edge object-terminal two-hop asserted-head seam as `test_gap`, narrow `source_drift`, and `design_drift`, not `spec_gap`. Specs 03/04/07/13/14/16 directly support the slice; Task 74 supplies five real source-derived object expansions, Task 198 supplies the formula/checker consumer, Task 208 supplies the immediate-edge sibling, and Tasks 211-215 protect the byte-for-byte unchanged closed two-link relation. The relation directly validates the pairwise-distinct TooDeep-to-Outer and Outer-to-Middle bare links; the Middle-to-Inner-to-Base-to-object tail is terminal normalization only and never establishes relation reachability. The active route preserves distinct TooDeep/Middle provenance, resolves ordinal 1 to `BindingId(0)`, normalizes three known entries to one Base-definition-RHS `BuiltinObject`, and records one `Inferred` variable plus one zero-constraint/fact/candidate/diagnostic/deferred `Checked` assertion without object/set coercion. Five shared plus one dedicated backlink protect active runner 164 within 379 cases and 343 requirements, with type-elaboration coverage 211/199 and pass/fail 195/184, without existing expectation changes. All 119 nonidentity orders, the finite structural/provenance/corruption matrix, focused Tasks 211-215 regressions, all 41 prior owner routes, immutable output, and a real sidecar are executable. Three-hop/full-distance and broader semantics and downstream payloads remain deferred. Step 5 remains active; Steps 6/7 remain deferred. No checker source or module-layout change was required.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 217 MC-G020 Current-State Override
 
-Task 217 classifies the exact three-edge set-terminal full-distance three-hop asserted-head seam as `test_gap`, narrow `source_drift`, and `design_drift`, not `spec_gap`. Specs 03/04/07/13/14/16 directly support the slice; Task 73 supplies four real source-derived expansions, Task 195 supplies the formula/checker consumer, and Tasks 211-216 supply the shorter-distance and terminal-sibling guards. The new closed relation directly validates the pairwise-distinct Outer-to-Middle, Middle-to-Inner, and Inner-to-Base bare links; Base-to-set is terminal normalization only and never establishes relation reachability. The active route preserves distinct Outer/Base provenance, resolves ordinal 1 to `BindingId(0)`, normalizes three known entries to one Base-definition-RHS `BuiltinSet`, and records one `Inferred` variable plus one zero-constraint/fact/candidate/diagnostic/deferred `Checked` assertion. Five shared plus one dedicated backlink protect active runner 165 within 380 cases and 344 requirements, with type-elaboration coverage 212/200 and pass/fail 196/184, without existing expectation changes. All 23 nonidentity orders, the finite structural/provenance/corruption matrix, focused Tasks 211-216 regressions, all 42 prior owner routes, immutable output, and a real sidecar are executable. The object sibling, other depths, broader semantics, and downstream payloads remain deferred. Step 5 remains active; Steps 6/7 remain deferred. No checker source or module-layout change was required.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 218 MC-G020 Current-State Override
 
-Task 218 classifies the exact three-edge object-terminal full-distance three-hop asserted-head seam as `test_gap`, narrow `source_drift`, and `design_drift`, not `spec_gap`. Specs 03/04/07/13/14/16 directly support the slice; Task 73 supplies four real source-derived object expansions, Task 196 supplies the formula/checker consumer, and Tasks 211-217 supply shorter-distance and terminal-sibling guards plus the byte-for-byte unchanged `BindingThreeHopRadix`. The active route directly validates the pairwise-distinct Outer-to-Middle, Middle-to-Inner, and Inner-to-Base bare links; Base-to-object is terminal normalization only and never establishes relation reachability. It preserves distinct Outer/Base provenance, resolves ordinal 1 to `BindingId(0)`, normalizes three known entries to one Base-definition-RHS `BuiltinObject`, and records one `Inferred` variable plus one zero-constraint/fact/candidate/diagnostic/deferred `Checked` assertion without object/set coercion. Five shared plus one dedicated backlink account for active runner 166 within 381 cases and 345 requirements, with type-elaboration coverage 213/201 and pass/fail 197/184, without existing expectation changes. All 23 nonidentity orders, the finite structural/provenance/corruption matrix, focused Tasks 211-217 regressions, all 43 prior owner routes, immutable output, and a real sidecar are executable. Other depths, broader semantics, and downstream payloads remain deferred. Step 5 remains active; Steps 6/7 remain deferred. No checker source or module-layout change was required.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 219 MC-G020 Current-State Override
 
-Task 219 classifies the exact four-edge set-terminal three-hop asserted-head seam as `test_gap`, narrow `source_drift`, and `design_drift`, not `spec_gap`. Specs 03/04/07/13/14/16 directly support the slice; Task 74 supplies five real source-derived set expansions, Task 197 supplies the formula/checker consumer, Task 207 supplies the four-edge immediate-edge sibling guard, and Tasks 211-218 supply shorter-distance and terminal-sibling guards plus the byte-for-byte unchanged `BindingThreeHopRadix`. The active route directly validates the pairwise-distinct TooDeep-to-Outer, Outer-to-Middle, and Middle-to-Inner bare links; the Inner-to-Base-to-set tail is terminal normalization only and never establishes relation reachability. It preserves distinct TooDeep/Inner provenance, resolves ordinal 1 to `BindingId(0)`, normalizes three known entries to one Base-definition-RHS `BuiltinSet`, and records one `Inferred` variable plus one zero-constraint/fact/candidate/diagnostic/deferred `Checked` assertion. Five shared plus one dedicated backlink account for active runner 167 within 382 cases and 346 requirements, with type-elaboration coverage 214/202 and pass/fail 198/184, without existing expectation changes. All 119 nonidentity orders, the finite structural/provenance/corruption matrix with separate guards for an unconnected unsupported deeper asserted head and an actual connected sixth-definition/sixth-edge asserted head, focused Tasks 207 and 211-218 regressions, all 44 prior owner routes, immutable output, and a real sidecar are executable. The object sibling, Base full-distance assertion, broader semantics, and downstream payloads remain deferred. Step 5 remains active; Steps 6/7 remain deferred. No checker source or module-layout change was required.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 220 MC-G020 Current-State Override
 
-Task 220 classifies the exact four-edge object-terminal three-hop asserted-head seam as `test_gap`, narrow `source_drift`, and `design_drift`, not `spec_gap`. Specs 03/04/07/13/14/16 directly support the slice; Task 74 supplies five real source-derived object expansions, Task 198 supplies the formula/checker consumer, Task 208 supplies the four-edge immediate-edge sibling guard, and Tasks 211-219 supply shorter-distance and terminal-sibling guards plus the byte-for-byte unchanged `BindingThreeHopRadix`. The active route directly validates the pairwise-distinct TooDeep-to-Outer, Outer-to-Middle, and Middle-to-Inner bare links; the Inner-to-Base-to-object tail is terminal normalization only and never establishes relation reachability. It preserves distinct TooDeep/Inner provenance, resolves ordinal 1 to `BindingId(0)`, normalizes three known entries to one Base-definition-RHS `BuiltinObject`, and records one `Inferred` variable plus one zero-constraint/fact/candidate/diagnostic/deferred `Checked` assertion without object/set coercion. Five shared plus one dedicated backlink account for active runner 168 within 383 cases and 347 requirements, with type-elaboration coverage 215/203 and pass/fail 199/184, without existing expectation changes. All 119 nonidentity orders, the finite structural/provenance/corruption matrix with separate guards for an unconnected unsupported deeper asserted head and an actual connected sixth-definition/sixth-edge asserted head, focused Tasks 208 and 211-219 regressions, all 45 prior owner routes, immutable output, and a real sidecar are executable. The Base full-distance assertion, broader semantics, and downstream payloads remain deferred. Step 5 remains active; Steps 6/7 remain deferred. No checker source or module-layout change was required.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 221 MC-G020 Active Override
 
-Task 221 classifies the exact four-edge set-terminal full-distance four-hop asserted-head seam as `test_gap`, narrow `source_drift`, and `design_drift`, not `spec_gap`. Specs 03/04/07/13/14/16 directly support the slice; Task 74 supplies five real source-derived set expansions and Task 197 supplies the formula/checker consumer. The active closed `BindingFourHopRadix` validates the pairwise-distinct TooDeep-to-Outer, Outer-to-Middle, Middle-to-Inner, and Inner-to-Base bare links directly; Base-to-set remains terminal normalization only. The route preserves distinct TooDeep/Base provenance, ordinal 1 / `BindingId(0)`, one Base-definition-RHS `BuiltinSet`, one `Inferred` variable, and one zero-constraint/fact/candidate/diagnostic/deferred `Checked` assertion. Six backlinks, all 119 nonidentity orders, exhaustive finite structural/provenance/corruption coverage with independent unconnected-deeper and actual connected fifth-link guards, focused Task 207 and Tasks 211-220 regressions, all 46 prior owner routes, immutable output, and a real sidecar protect active runner 169. The plan has 384 cases, 348 requirements, type-elaboration coverage 216/204, and pass/fail 200/184. The object sibling, longer chains, imported-positive definitions, attributed/argument-bearing behavior, general reachability, broader semantics, and downstream payloads remain deferred. Step 5 stays active; Steps 6/7 stay deferred. No checker source or module-layout change was required.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 222 MC-G020 Active Override
 
-Task 222 classifies the exact four-edge object-terminal full-distance four-hop asserted-head seam as `test_gap`, narrow `source_drift`, and `design_drift`, not `spec_gap`. Specs 03/04/07/13/14/16 directly support the slice; Task 74 supplies five real source-derived object expansions and Task 198 supplies the formula/checker consumer. The unchanged closed `BindingFourHopRadix` validates the pairwise-distinct TooDeep-to-Outer, Outer-to-Middle, Middle-to-Inner, and Inner-to-Base bare links directly; Base-to-object remains terminal normalization only. The active route preserves distinct TooDeep/Base provenance, ordinal 1 / `BindingId(0)`, one Base-definition-RHS `BuiltinObject`, one `Inferred` variable, and one zero-constraint/fact/candidate/diagnostic/deferred `Checked` assertion without object/set coercion. Six backlinks, all 119 nonidentity orders, exhaustive finite structural/provenance/corruption coverage with independent unconnected-deeper and actual connected fifth-link guards, focused Task 208 and Tasks 211-221 regressions, all 47 prior owner routes, immutable output, and a real sidecar protect active runner 170. The active corpus has 385 cases, 349 requirements, type-elaboration coverage 217/205, and pass/fail 201/184. Relevant-crate and workspace verification passed. Longer chains, imported-positive definitions, attributed/argument-bearing behavior, general reachability, broader semantics, and downstream payloads remain deferred. Step 5 stays active; Steps 6/7 stay deferred. No checker source or module-layout change was required.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 223 MC-G020 Active Override
 
-Task 223 classifies the exact single-left-parenthesized reserved-variable equality seam as `test_gap`, narrow `source_drift`, and `design_drift`, not `spec_gap`. Specs 04/13/14/16 directly support the slice: a free reserved theorem identifier obtains its real reserve type, parenthesization preserves the inner expression's type and does not change FOL encoding, and equality consumes two terms. The real parser produces `ParenthesizedTerm`; Task 119 supplies reserve extraction, `BindingEnv` lookup, and the equality consumer. The active source route validates exact `TermExpression -> ParenthesizedTerm -> TermExpression -> TermReference` structure, preserves independent wrapper/inner/right provenance, resolves the inner and right `x` at ordinals 1/2 to `BindingId(0)`, and transparently reuses the inner reference's reserve-derived builtin-set type/value without inventing a parenthesis type, child graph, axiom, fact, or FOL node. The finite matrix rejects direct/right/both/nested/non-identifier/recovered variants, guards matched output and source corruption, keeps output immutable, isolates all 52 prior reserved-variable binary-formula owners bidirectionally, and uses a real sidecar. Five backlinks account for active runner 171 within 386 cases and 350 requirements, type-elaboration coverage 218/206, and pass/fail 202/184. Focused, relevant-crate, and workspace verification passed. Arbitrary nesting/operands/precedence, formula grouping, closure materialization, truth/facts, acceptance, proof/IR/VC, and broader child semantics remain deferred. Step 5 stays active; Steps 6/7 stay deferred. No checker source or module-layout change was required.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 224 MC-G020 Active Override
 
-Task 224 classifies the exact seven-expansion set-terminal two-hop asserted-head seam as `test_gap`, narrow `source_drift`, and `design_drift`, not `spec_gap`. Specs 03/04/07/13/14/16 directly support mode unfolding, reserved theorem-variable typing, and assertion reachability. Task 74 supplies seven real expansions, Task 199 the real formula/checker consumer, and Task 211 the unchanged closed `BindingTwoHopRadix`; Task 209 is only an immediate-edge sibling. The active route directly validates pairwise-distinct `ChainMode6 -> ChainMode5 -> ChainMode4`, reserves the remaining tail for terminal normalization, and preserves distinct source provenance, ordinal 1 / `BindingId(0)`, one BaseModeDef-RHS `BuiltinSet`, one inferred variable, and one checked assertion with no constraints/facts/candidates/diagnostics/deferred reasons. Six backlinks, the all-5,039-order finite matrix, all 48 prior owners, immutable output, and a real sidecar protect active runner 172 within 387 cases / 351 requirements and type-elaboration 219/207. Focused, relevant-crate, and workspace verification passed. Broader semantics and downstream payloads remain deferred; Step 5 stays active and Steps 6/7 stay deferred. No checker source or module-layout change was required.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 225 MC-G020 Active Override
 
-Task 225 classifies the exact seven-expansion object-terminal two-hop asserted-head seam as `test_gap`, narrow `source_drift`, and `design_drift`, not `spec_gap`. Specs 03/04/07/13/14/16 directly support mode unfolding, reserved theorem-variable typing, and assertion reachability. Task 74 supplies seven real object expansions, Task 200 the real formula/checker consumer, and Task 211 the unchanged closed `BindingTwoHopRadix`; Task 210 is the immediate-edge sibling and Task 224 the set-terminal two-hop sibling. The active route directly validates pairwise-distinct `ChainObjectMode6 -> ChainObjectMode5 -> ChainObjectMode4`, reserves the remaining tail for object-terminal normalization, and preserves distinct source provenance, ordinal 1 / `BindingId(0)`, one BaseObjectModeDef-RHS `BuiltinObject`, one inferred variable, and one checked assertion with no constraints/facts/candidates/diagnostics/deferred reasons or object/set coercion. Six backlinks, the all-5,039-order finite matrix, all 49 prior owners, immutable output, and a real sidecar protect active runner 173 within 388 cases / 352 requirements and type-elaboration 220/208. Focused, relevant-crate, and workspace verification passed. Broader semantics and downstream payloads remain deferred; Step 5 stays active and Steps 6/7 stay deferred. No checker source or module-layout change was required.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 226 MC-G020 Active Override
 
-Task 226 classifies the exact seven-expansion set-terminal three-hop asserted-head seam as `test_gap`, narrow `source_drift`, and `design_drift`, not `spec_gap`. Specs 03/04/07/13/14/16 directly support mode unfolding, reserved theorem-variable typing, and assertion reachability. Task 74 supplies seven real set expansions, Task 199 the real formula/checker consumer, and Task 217 the unchanged closed `BindingThreeHopRadix`; Task 219 is the set-terminal three-hop longer-tail sibling, while Tasks 209/224 are the immediate/two-hop long-chain siblings. The active route directly validates pairwise-distinct `ChainMode6 -> ChainMode5 -> ChainMode4 -> ChainMode3`, reserves the remaining tail for set-terminal normalization, and preserves distinct source provenance, ordinal 1 / `BindingId(0)`, one BaseModeDef-RHS `BuiltinSet`, one inferred variable, and one checked assertion with no constraints/facts/candidates/diagnostics/deferred reasons. Six backlinks, the all-5,039-order finite matrix, all 50 prior owners, immutable output, and a real sidecar protect active runner 174 within 389 cases / 353 requirements and type-elaboration 221/209. Focused, relevant-crate, and workspace verification passed. The object sibling, broader semantics, and downstream payloads remain deferred; Step 5 stays active and Steps 6/7 stay deferred. No checker source or module-layout change was required.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 227 MC-G020 Active Override
 
-Task 227 classifies the exact seven-expansion object-terminal three-hop asserted-head seam as `test_gap`, narrow `source_drift`, and `design_drift`, not `spec_gap`. Specs 03/04/07/13/14/16 directly support mode unfolding, reserved theorem-variable typing, and assertion reachability. Task 74 supplies seven real object expansions, Task 200 the real formula/checker consumer, and Task 217 the unchanged closed `BindingThreeHopRadix`; Task 220 is the object-terminal three-hop longer-tail sibling, Task 226 is the set-terminal depth-matched sibling, and Tasks 210/225 are the immediate/two-hop object long-chain siblings. The active route directly validates pairwise-distinct `ChainObjectMode6 -> ChainObjectMode5 -> ChainObjectMode4 -> ChainObjectMode3`, reserves the remaining tail for object-terminal normalization, and preserves distinct source provenance, ordinal 1 / `BindingId(0)`, one BaseObjectModeDef-RHS `BuiltinObject`, one inferred variable, and one checked assertion with no constraints/facts/candidates/diagnostics/deferred reasons or object/set coercion. Six backlinks, the all-5,039-order finite matrix, all 51 prior owners, immutable output, focused siblings, and a real sidecar protect active runner 175 within 390 cases / 354 requirements and type-elaboration 222/210. Focused, relevant-crate, and workspace verification passed. Broader semantics and downstream payloads remain deferred; Step 5 stays active and Steps 6/7 stay deferred. No checker source or module-layout change was required.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 228 MC-G020 Active Override
 
-Task 228 classifies the exact seven-expansion set-terminal four-hop asserted-head seam as `test_gap`, narrow `source_drift`, and `design_drift`, not `spec_gap`. Specs 03/04/07/13/14/16 directly support mode unfolding, reserved theorem-variable typing, and assertion reachability. Task 74 supplies seven real set expansions, Task 199 the real formula/checker consumer, and Task 221 the unchanged closed `BindingFourHopRadix`; Tasks 224/226 are the two/three-hop long-chain siblings, Task 222 the object-terminal relation sibling, and Task 227 the latest terminal sibling. The active route directly validates pairwise-distinct `ChainMode6 -> ChainMode5 -> ChainMode4 -> ChainMode3 -> ChainMode2`, reserves the remaining tail for set-terminal normalization, and preserves distinct source provenance, ordinal 1 / `BindingId(0)`, one BaseModeDef-RHS `BuiltinSet`, one inferred variable, and one checked assertion with no constraints/facts/candidates/diagnostics/deferred reasons. Six backlinks, the all-5,039-order finite matrix, all 52 prior owners, immutable output, focused siblings, and a real sidecar protect active runner 176 within 391 cases / 355 requirements and type-elaboration 223/211. Focused, relevant-crate, and workspace verification passed. Broader semantics and downstream payloads remain deferred; Step 5 stays active and Steps 6/7 stay deferred. No checker source or module-layout change was required.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 229 MC-G020 Active Override
 
-Task 229 classifies the exact seven-expansion object-terminal four-hop asserted-head seam as `test_gap`, narrow `source_drift`, and `design_drift`, not `spec_gap`. Specs 03/04/07/13/14/16 directly support object-rooted mode unfolding, reserved theorem-variable typing, and assertion reachability. Task 74 supplies seven real object expansions, Task 200 the real formula/checker consumer, and Task 221 the unchanged closed `BindingFourHopRadix`; Tasks 225/227 are the two/three-hop object long-chain siblings, Task 222 the object-terminal relation sibling, and Task 228 the depth-matched set sibling. The active route directly validates pairwise-distinct `ChainObjectMode6 -> ChainObjectMode5 -> ChainObjectMode4 -> ChainObjectMode3 -> ChainObjectMode2`, reserves the remaining tail for object-terminal normalization, and preserves distinct source provenance, ordinal 1 / `BindingId(0)`, one BaseObjectModeDef-RHS `BuiltinObject`, one inferred variable, and one checked assertion with no constraints/facts/candidates/diagnostics/deferred reasons or object/set coercion. Six backlinks, the all-5,039-order finite matrix, all 53 prior owners, immutable output, focused siblings, and a real sidecar protect active runner 177 within 392 cases / 356 requirements and type-elaboration 224/212. Focused, relevant-crate, and workspace verification passed. Broader semantics and downstream payloads remain deferred; Step 5 stays active and Steps 6/7 stay deferred. No checker source or module-layout change was required.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 230 MC-G020 Active Override
 
-Task 230 classifies the exact seven-expansion set-terminal five-hop asserted-head seam as `test_gap`, narrow `source_drift`, and `design_drift`, not `spec_gap`. Specs 03/04/07/13/14/16 directly support mode unfolding, reserved theorem-variable typing, and assertion reachability. Task 74 supplies seven real set expansions and Task 199 the real formula/checker consumer. The new closed `BindingFiveHopRadix` directly validates pairwise-distinct `ChainMode6 -> ChainMode5 -> ChainMode4 -> ChainMode3 -> ChainMode2 -> ChainMode1`; `ChainMode1 -> BaseMode -> set` remains terminal-normalization evidence only. The active route preserves distinct source provenance, ordinal 1 / `BindingId(0)`, one BaseModeDef-RHS `BuiltinSet`, one inferred variable, and one checked assertion with no constraints/facts/candidates/diagnostics/deferred reasons. Six backlinks, the all-5,039-order finite matrix, all 54 prior owners, immutable output, focused siblings, and a real sidecar protect active runner 178 within 393 cases / 357 requirements, type-elaboration 225/213, and pass/fail 209/184 without changing existing expectations. Focused, relevant-crate, and workspace verification passed. Object-terminal five-hop, broader semantics, and downstream payloads remain deferred; Step 5 stays active and Steps 6/7 stay deferred. No checker source or module-layout change was required.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 231 MC-G020 Active Override
 
-Task 231 classifies the exact seven-expansion object-terminal five-hop asserted-head seam as `test_gap`, narrow `source_drift`, and `design_drift`, not `spec_gap`. Specs 03/04/07/13/14/16 directly support object-rooted mode unfolding, reserved theorem-variable typing, and assertion reachability. Task 74 supplies seven real object expansions, Task 200 the real formula/checker consumer, and Task 230 the byte-for-byte unchanged closed `BindingFiveHopRadix`. The active route directly validates pairwise-distinct `ChainObjectMode6 -> ChainObjectMode5 -> ChainObjectMode4 -> ChainObjectMode3 -> ChainObjectMode2 -> ChainObjectMode1`; `ChainObjectMode1 -> BaseObjectMode -> object` remains terminal-normalization evidence only. It preserves distinct source provenance, ordinal 1 / `BindingId(0)`, one BaseObjectModeDef-RHS `BuiltinObject`, one inferred variable, and one checked assertion with no constraints/facts/candidates/diagnostics/deferred reasons or object/set coercion. Six backlinks, the all-5,039-order finite matrix, all 55 prior owners, immutable output, focused siblings, and a real sidecar protect active runner 179 within 394 cases / 358 requirements, type-elaboration 226/214, and pass/fail 210/184 without changing existing expectations. Focused, relevant-crate, and workspace verification passed. Imported-positive definitions, broader semantics, and downstream payloads remain deferred; Step 5 stays active and Steps 6/7 stay deferred. No checker source or module-layout change was required.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 233 MC-G020 Active Override
 
-Task 233 classifies the exact single-left-parenthesized builtin-object reserved-variable equality seam as `test_gap`, narrow `source_drift`, and `design_drift`, not `spec_gap`. Specs 03/04/13/14/16 directly support builtin `object`, reserved theorem-variable typing, parenthesized type preservation without added FOL meaning, equality operands, and theorem syntax. Task 223 supplies the real unrecovered single-left `ParenthesizedTerm` producer and Task 188 the real object reserve/BindingEnv/equality consumer. Credit is limited to the exact `reserve x for object; theorem ParenthesizedReservedObjectVariableEqualityPayloadBoundary: (x) = x;` source, independent wrapper/inner/right provenance, ordinal 1/2 `BindingId(0)` lookup, one canonical `BuiltinObject`, two inferred terms, two ordered expected constraints, and one checked equality without object/set coercion or an independent wrapper payload. Six backlinks, the finite exact/near-miss/provenance/corruption matrix, all 53 prior binary-formula owners bidirectionally, immutable output, and a real sidecar protect active runner 180 within 395 cases / 359 requirements, type-elaboration 227/215, and pass/fail 211/184. Arbitrary parenthesization/operands, formula grouping, closure/order, equality truth/facts, acceptance, child graphs, proof/CoreIr/ControlFlowIr/VC, and downstream payloads remain deferred; Step 5 stays active and Steps 6/7 stay deferred. No checker source or module-layout change was required.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 234 MC-G020 Active Override
 
-Task 234 classifies the exact seven-expansion set-terminal full-distance six-hop asserted-head seam as `test_gap`, narrow `source_drift`, and `design_drift`, not `spec_gap`. Specs 03/04/07/13/14/16 directly support mode unfolding, reserved theorem-variable typing, and assertion reachability. Task 74 supplies seven real set expansions and Task 199 the real formula/checker consumer. The new closed `BindingSixHopRadix` directly validates pairwise-distinct `ChainMode6 -> ChainMode5 -> ChainMode4 -> ChainMode3 -> ChainMode2 -> ChainMode1 -> BaseMode`; `BaseMode -> set` remains terminal-normalization evidence only. Credit is limited to distinct source provenance, ordinal 1 / `BindingId(0)`, one BaseModeDef-RHS `BuiltinSet`, one inferred variable, and one checked assertion with no constraints/facts/candidates/diagnostics/deferred reasons. Six backlinks, the all-5,039-order finite matrix, all 56 prior owners, immutable output, focused siblings, and a real sidecar protect active runner 181 within 396 cases / 360 requirements, type-elaboration 228/216, and pass/fail 212/184 without changing existing expectations. Object-terminal six-hop, imported-positive definitions, broader semantics, and downstream payloads remain deferred; Step 5 stays active and Steps 6/7 stay deferred. No checker source or module-layout change was required.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 236 MC-G020 Active Override
 
-Task 236 classifies the exact seven-expansion object-terminal full-distance six-hop asserted-head seam as `test_gap`, narrow `source_drift`, and `design_drift`, not `spec_gap`. Specs 03/04/07/13/14/16 directly support mode unfolding, reserved theorem-variable typing, and assertion reachability. Task 74 supplies seven real object expansions and Task 200 the real formula/checker consumer. The unchanged closed `BindingSixHopRadix` directly validates pairwise-distinct `ChainObjectMode6 -> ChainObjectMode5 -> ChainObjectMode4 -> ChainObjectMode3 -> ChainObjectMode2 -> ChainObjectMode1 -> BaseObjectMode`; `BaseObjectMode -> object` is terminal-normalization evidence only. Credit is limited to distinct source provenance, ordinal 1 / `BindingId(0)`, one BaseObjectModeDef-RHS `BuiltinObject`, one inferred variable, and one checked assertion with no constraints/facts/candidates/diagnostics/deferred reasons and no object/set coercion. Six backlinks, the all-5,039-order finite matrix, all 57 prior owners, immutable output, focused siblings, and a real sidecar protect active runner 182 within 397 cases / 361 requirements, type-elaboration 229/217, and pass/fail 213/184 without changing existing expectations. Imported-positive definitions, broader semantics, and downstream payloads remain deferred; Step 5 stays active and Steps 6/7 stay deferred. No checker source or module-layout change was required.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 241 MC-G020 Active Override
 
-Task 241 classifies the exact single-left-parenthesized builtin-set inequality
-seam as `test_gap`, narrow `source_drift`, and `design_drift`, not `spec_gap`.
-Chapters 04, 13, 14, and 16 directly support reserved theorem-variable typing,
-type-preserving/FOL-transparent parentheses, builtin `<>`, and the theorem
-formula. Task 223 supplies the real wrapper producer and Task 121 the real
-inequality consumer. Credit is limited to the exact source, independent wrapper/
-inner/right provenance, ordinal 1/2 `BindingId(0)` lookup, one canonical
-`BuiltinSet`, two inferred terms, two ordered expected constraints, and one
-checked inequality without an independent wrapper payload. Four shared plus one
-dedicated backlink, the finite matrix including parenthesized membership and
-builtin-object near misses, all 54 prior owners bidirectionally, immutable
-output, and a real sidecar protect active runner 183 within 398 cases / 362
-requirements, type-elaboration 230/218, and pass/fail 214/184. Existing fixtures
-and expectations were not rebaselined. Parenthesized membership, imported or
-other parenthesized variants, inequality desugaring/truth, acceptance, proof/
-CoreIr/ControlFlowIr/VC, and downstream payloads receive no Task 241 credit.
-Step 5 stays active; Steps 6/7 stay deferred. No checker source/API/module-layout
-change was required.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 242 MC-G020 Active Override
 
-Task 242 classifies the exact single-left-parenthesized builtin-object inequality
-seam as `test_gap`, narrow `source_drift`, and `design_drift`, not `spec_gap`.
-Chapters 03/04/13/14/16 directly support builtin `object`, reserved theorem-
-variable typing, type/FOL-transparent parentheses, atomic `<>`, and the theorem
-formula. Task 233 supplies the real wrapper producer and Task 190 the real object
-inequality consumer. Credit is limited to the exact source, independent wrapper/
-inner/right provenance, ordinal 1/2 `BindingId(0)` lookup, one canonical
-`BuiltinObject`, two inferred terms, six type entries, two ordered expected
-constraints, one checked inequality, and no independent wrapper payload or
-object/set coercion. Five shared plus one dedicated backlink, the finite matrix,
-all 55 prior owners bidirectionally, immutable output, focused regressions, and a
-real sidecar protect active runner 184 within 399 cases / 363 requirements,
-type-elaboration 231/219, and pass/fail 215/184 without rebaselining existing
-expectations. Parenthesized membership and active imported provenance remain
-outside Task 242 credit rather than globally deferred; only missing imported
-expansion/evidence/signature payloads, proof/CoreIr/ControlFlowIr/VC, and broader
-dependencies remain deferred. Step 5 stays active; Steps 6/7 stay deferred. No
-checker source/API/module-layout change was required.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 243 MC-G020 Active Override
 
-Task 243 classifies the exact single-left-parenthesized builtin-set membership
-seam as `test_gap`, narrow `source_drift`, and `design_drift`, not `spec_gap`.
-Chapters 04, 13, 14, and 16 directly support reserved theorem-variable typing,
-type/FOL-transparent parentheses, atomic membership, and the theorem formula.
-Task 223 supplies the real wrapper producer and Task 120 the real membership
-consumer, including its unchanged direct-right expected-set producer. Credit is
-limited to the exact source, independent wrapper/inner/right provenance, ordinal
-1/2 `BindingId(0)` lookup, one written-set-anchored canonical `BuiltinSet`, two
-inferred terms, five type entries, no left expected input, one right-owned
-expected-set constraint, one checked membership, and no independent wrapper
-payload. Four shared plus one dedicated backlink, the finite matrix, all 56
-prior owners bidirectionally, immutable output, focused regressions, and a real
-sidecar protect active runner 185 within 400 cases / 364 requirements, type-
-elaboration 232/220, and pass/fail 216/184 without rebaselining existing
-expectations. The former parenthesized-membership extraction gap is discharged
-only for this exact source. Object-left/set-right parenthesized membership and
-active imported provenance remain outside Task 243 credit; missing imported
-expansion/evidence/signature payloads, proof/CoreIr/ControlFlowIr/VC, and broader
-dependencies remain deferred. Step 5 stays active; Steps 6/7 stay deferred. No
-checker source/API/module-layout change was required.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 244 MC-G020 Active Override
 
-Task 244 classifies the exact two-reserve single-left-parenthesized
-heterogeneous membership seam as `test_gap` + narrow `source_drift` +
-`design_drift`, not `spec_gap`. The authoritative source is `reserve x for
-object; reserve y for set; theorem
-ParenthesizedHeterogeneousReserveMembershipPayloadBoundary: (x) in y;`, derived
-from Chapters 03/04/13/14/16 and the existing direct Task 125 intent.
-
-The real Task 233 wrapper producer now reaches Task 125's real two-binding
-consumer. A finite config-driven private helper validates the exact ordered
-reserve/binding matrix, selected operand indices, and shared/distinct written
-type-range policy while preserving all five earlier configs. The resulting
-payload keeps ordinals 2/3, distinct `BindingId(0/1)`, two written-range-anchored
-object/set identities, two inferred terms, five type entries, a right-only
-expected-set constraint, and one checked membership without coercion or wrapper
-semantics. A 57-owner isolation matrix, real imported-gap diagnostic guard, and
-real frontend/resolver sidecar bound the override.
-
-The trace adds five shared backlinks and one dedicated requirement. The active
-runner is 186; metadata is 401/365, type 233/221, and pass/fail 217/184. Only the
-exact source receives Task 244 credit. Other parenthesized shapes and imported
-positive provenance remain outside its credit; missing imported expansion/
-evidence/signature payloads, proof/CoreIr/ControlFlowIr/VC, and broader
-dependencies remain deferred. Step 5 stays active; Steps 6/7 stay deferred. No
-checker source/API/module-layout change is required.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 245 MC-G020 Active Override
 
-Task 245 classifies the exact `x in (x)` builtin-set membership seam as
-`test_gap`, narrow `source_drift`, and `design_drift`, not `spec_gap`. Chapters
-04/13/14/16 directly support the source, the parser supplies the real right-side
-`ParenthesizedTerm`, and Task 120 supplies the real membership/expected-set
-consumer. Credit is limited to explicit `Right` side identity, distinct wrapper/
-left/right-inner/formula provenance, ordinals 1/2 with both lookups resolving to
-`BindingId(0)`, one written-set `BuiltinSet`, two inferred terms, five type
-entries, no left expected input, one right-inner-owned expected constraint, and
-one checked membership without wrapper semantics.
-
-Side/config/range/expected-input corruption, matched Task-243 cross-route
-rejection, all 58 prior owners bidirectionally, six left-route regressions, and
-a real frontend/resolver sidecar bound the override. Active runner 187 and plan
-402/366, type 234/222, pass/fail 218/184 are traced by four shared plus one
-dedicated backlink without expectation rebaselining. Other shapes and imported-
-positive provenance receive no credit; missing imported expansion/evidence/
-signature, proof/CoreIr/ControlFlowIr/VC, and broader dependencies remain
-deferred. Step 5 stays active; Steps 6/7 stay deferred. No checker source/API/
-module-layout change was required.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 246 MC-G020 Active Override
 
-Task 246 classifies only the exact three-definition set-terminal chain plus
-single-left-parenthesized equality as `test_gap`, narrow `source_drift`, and
-`design_drift`, not `spec_gap`. Chapters 04/07/13/14/16 establish reserved
-theorem-variable typing, mode use, transparent term parentheses, atomic
-equality, and theorem syntax; Tasks 134 and 223 provide the closed primary test
-intent. The route retains pairwise-distinct Base/Middle/Outer provenance, one
-wrapper plus inner-left/direct-right sites, three real expansions, four raw
-Outer inputs, ordinal 1/2 `BindingId(0)` lookups, one terminal-RHS `BuiltinSet`,
-two inferred terms, six entries, two ordered constraints, and one clean checked
-equality without wrapper semantics. Conditional node admission and the finite
-matrix leave all old empty-mode configs closed. Runner 188 and metadata 403/367,
-type 235/223, pass/fail 219/184 are traced by five shared plus one dedicated row.
-Imported/attributed/argument-bearing modes, other sides/nesting/depths,
-declaration acceptance, truth/facts, child graphs, and proof/IR/VC remain
-uncredited or deferred. Step 5 is active; Steps 6/7 are deferred.
-
-Task 265 follow-up ownership override: joint Task 266 now owns only the exact
-Task-180 final `ResolvedTypedAst` theorem-owner-to-checked-contradiction
-projection. Task 267 separately decides omitted-justification proof/terminal-
-goal representation and Task 268 implements that accepted checker producer.
-Checker Task 247 owns exhaustive decomposition of all other AST-wide and Task-
-49 payload families and feeds core Task 32's exhaustive remaining-family
-decomposition. Core/VC, truth/facts, theorem acceptance, and broader
-semantic credit remain deferred; current coverage/status/tests are unchanged.
-
-Task 266 implementation addendum: `type_checker` now exposes the documented
-`TermFormulaInferenceError`, `CheckedStatementOwner`, and
-`StatementOwnerError` surfaces, preserves formula range/recovery and
-source/module identity, and validates the exact real local theorem owner.
-`resolved_typed_ast` exposes `StatementSemanticId`, `StatementSemanticInputs`,
-`StatementSemanticInput`, `StatementSemantic`, and `StatementSemanticTable` and
-validates the exact singleton three-node owner/formula projection. Owner and
-formula mismatch, recovery, duplication, omission, order, range, provenance,
-and module/source corruption fail closed. Unit, active-runner, corruption, and
-determinism coverage is present. No raw-syntax dependency, truth/fact,
-acceptance, proof, Core, CFG, VC, fixture, expectation, or trace-status change
-is introduced.
-
-Task 267 target-contract addendum: current source still has no proof tables,
-so this is an accepted `design_drift` repair rather than implementation credit.
-Task 268 owns the exact syntax-free `Unmodified`/`Omitted` input and singleton
-`PendingAutomaticProof`/direct-terminal output described by
-`resolved_typed_ast.md`. Task-266 real formula-site identity remains distinct
-from the compact formula node; `proof/0`, empty context/citations, and atomic
-failure are fixed. Core Task 31 owns the exact future non-accepting projection.
-No current public API, test, fixture, expectation, trace status, or semantic
-coverage changes in Task 267.
-Task 268's target also extends the existing validated `CheckedStatementOwner`
-with authenticated resolver Public/Exported facts so proof assembly never
-trusts duplicated row constants. This remains target state, not current API or
-implementation credit for Task 267; the following Task-268 addendum supersedes
-that historical state.
-
-Task 268 implementation addendum: the target state is now current checker API
-and unit/runner coverage for the exact Task-180 source. The checker preserves
-authenticated Public/Exported owner facts, accepts only the explicit
-`Unmodified`/`Omitted` singleton intent, and publishes all-or-none proof,
-direct-terminal-node, and terminal-goal tables with
-`PendingAutomaticProof`. Private postvalidation and corruption tests cover
-cardinality, dense identity/order, provenance/range/recovery, status/root,
-cross-references, empty citations/context, absent label, and `proof/0`.
-Broader proof families remain owned by Task 247. Acceptance, facts, Core/CFG/
-VC payloads, existing fixtures/expectations, and trace status remain unchanged;
-Core Task 31 is the next exact consumer.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 247 Remaining-Family Ownership Reconciliation
 
-Task 247 replaces the broad future-owner wording with the accepted graph in
-[payload_family_decomposition.md](./payload_family_decomposition.md). It does
-not change the current public-surface correspondence or implementation credit.
-
-| Gap | Accepted owner or gate |
-|---|---|
-| MC-G002 | `MT10-FS`, `MT10-AS`, and existing Task 49. |
-| MC-G004 | Unnamed external artifact/schema owner gate; no schema invention. |
-| MC-G005 | Existing nonblocking `spec_gap`: unnamed public diagnostic registry/consumer-adoption gate; stable internal detail keys only. |
-| MC-G006 | Task 277 direct-role slice plus a blocked unnamed parser/syntax/resolver scheme-role gate. |
-| MC-G011 | Tasks 248, 257-258, 269-270, and 272. |
-| MC-G014 | Tasks 249-251 and 262-264. |
-| MC-G016 | Tasks 248-251, 258-264, and 269-273. |
-| MC-G017 | Tasks 252-264. |
-| MC-G018 | Tasks 251, 254-255, 263, 271, and 278; evidence results remain external inputs. |
-| MC-G019 | Tasks 258 and 272 plus `MT10-FS`; no accepted theorem facts. |
-| MC-G020 | Source extraction in the Task-10 consumers paired with every Task 248-264 and 269-279 producer. |
-| MC-G021 | Task 273 plus blocked-reserved accepted-status Task 274. |
-| MC-G023 | Tasks 275-276 and `MT10-AS`. |
-| MC-G025 | Blocked-reserved Task 274; canonical accepted verifier/artifact producer and schema are unnamed. |
-| MC-G026 | Task 251 requests/references plus Task 274 accepted-status gate. |
-| MC-G027 | Tasks 277-279 and `MT10-AS`. |
-| MC-G030 | `MT10-FS`, `MT10-AS`, and Task 49. |
-
-Each producer owns a transactional projection through its applicable
-`TypedAst`/`ResolvedTypedAst` tables and a real Task-10 assertion; an
-unconsumed DTO cannot close a task. Correctness producers retain
-correctness-condition identity, `InitialObligationId`, and source anchor input
-but never allocate `VcId` or claim discharge. Task 49 activates 23 members and
-reconciles/deduplicates the exact 24-fixture set; resolver Task 31 solely
-activates the same-return member through `declaration_symbol`. The active
-different-return conflict, capture-
-avoidance row, escape/guard row, and unrelated template seeds are not silently
-double-counted into that bundle.
-
-The disagreement classes are `design_drift`, `source_drift`, `test_gap`, and
-the parser-Task-47 `test_expectation_drift`. MC-G005 retains its existing
-nonblocking `spec_gap`; no new payload-family `spec_gap`,
-`source_undocumented_behavior`, current `boundary_violation`, or
-`repo_metadata_conflict` was found. Existing trace status, tests, source,
-fixtures, expectations, and coverage credit remain unchanged.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 248 Current-State Addendum
 
-The first bounded MC-G011/MC-G016 producer/consumer slice is now executable.
-`SourceBindingContextProducer` consumes only syntax-free resolver-shell and
-binding projections and transactionally publishes source-item, declaration,
-`BindingEnv`, and local-context links through `TypedAst` and
-`ResolvedTypedAst`. The exact active reserve-plus-definition-parameter fixture
-proves source order, distinct same-spelling identities, and structural
-shadowing. This repairs the Task-248 `test_gap` and two `source_drift` seams
-only for that slice. Term-use selection, composite binders, statement/proof
-contexts, closure capture, and proof-local declarations remain with Tasks
-252/257/258/269/270/272, so MC-G011 and MC-G016 remain partial globally.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 249 Frozen-Contract Audit Addendum
 
-Fresh inventory assigns the next executable source-type slice to Task 249
-under Chapters 03, 05, 07, 08, 12, and 18 plus Appendix A and
-MC-G014/MC-G016/MC-G020. The paired crate plan now fixes the exact
-ten-reserve-root consumer, Task-248 two-row dependency regression,
-syntax-free table and validation contract, future single trace row, and
-post-implementation count oracles.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 249 Implementation Audit Addendum
 
-The frozen producer is now implemented as the public syntax-free
-`source_type` module and one private runner leaf. The broad real consumer
-publishes the exact 10/13/6 tables and stops at the runner-owned dependency
-detail; the unchanged Task-248 fixture co-installs its exact 2/2/0 table from
-the actual checker-owned binding environment. `TypedAst` owns both handoffs
-and `ResolvedTypedAst` only clones them.
-
-The implementation closes the selected `test_gap`, `source_drift`, and
-`design_drift` only for this bounded input-handoff slice. Existing Tasks 68-71
-and Task-248 source/sidecar/trace artifacts remain byte-identical. The new
-bounded diagnostic trace row accounts for plan 411/372, type 238/226,
-pass/fail 224/187, and active type 190 with warnings unchanged. MC-G014,
-MC-G016, and MC-G020 remain partial globally: normalization, evidence,
-term/`qua` selection, definition semantics, accepted facts/proofs, and
-downstream IR receive no credit. Implementation review found and repaired
-import-closure and generated-declaration `source_drift` plus recursive
-public-input graph `boundary_violation`. No unresolved `spec_gap`,
-`source_undocumented_behavior`, `test_expectation_drift`,
-`boundary_violation`, or `repo_metadata_conflict` remains.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 250 Frozen-Contract Audit Addendum
 
-Fresh inventory assigns the next executable raw source-attribute slice to
-Task 250 under Chapters 03, 06, 11, 12, and the Chapter-17
-restricted-adjective boundary plus MC-G014/MC-G020. The paired crate plan now
-fixes the flat chain/polarity/qualifier/group/actual handoff, exact Task-67/81/
-84/85 consumers and cardinalities, immutable final ownership, legacy
-`AttributeInput` coexistence, runner outcomes, trace progression, synthetic
-prefix/order extractor coverage, and corruption/determinism tests.
-
-This prerequisite repairs only `design_drift`. Until implementation, the
-absent executable handoff remains a `test_gap` and the incomplete
-chain/qualifier/argument/provenance/final-handoff seams remain `source_drift`.
-Task 250 preserves written prefix and argument-list forms while positively
-deferring their canonical semantic equivalence, arity/type checking,
-admissibility, evidence, and truth to later owners. Current source, fixtures,
-expectations, trace rows/status, plan 411/372, type 238/226, pass/fail 224/187,
-active type 190, warnings/errors 23/0, and all hashes remain unchanged. No
-blocking `spec_gap`, `source_undocumented_behavior`, current
-`test_expectation_drift`, `boundary_violation`, or `repo_metadata_conflict`
-was found.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 250 Implementation Audit Addendum
 
-The public `source_attribute` module now implements the frozen five-table
-syntax-free handoff, and `TypedAst`/`ResolvedTypedAst` preserve it without
-adding a syntax dependency. The exact four real routes, synthetic prefix
-extractor, producer corruption matrix, deterministic rendering, and immutable
-final-handoff assertions close the bounded `test_gap` and raw
-chain/qualification/argument/provenance `source_drift`. The new exact covered
-trace row changes plan/type coverage only to 411/373 and 239/227. No semantic
-attribute instance, evidence, accepted fact/declaration/proof, or downstream
-IR is credited; those gaps remain with Tasks 251+ and their existing owners.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 251 Frozen-Contract Audit Addendum
 
-Fresh inventory assigns the next executable evidence-request transport slice
-to Task 251 under Chapters 03, 05-08, 13, 17, and 19 plus
-MC-G016/MC-G018/MC-G026. The paired crate plan freezes two dense syntax-free
-request/response-reference tables, four transport-only states, an opaque attributed
-request identity for later `ExistentialGateInput` association, immutable
-`TypedAst`/`ResolvedTypedAst` ownership, exact corruption boundaries, and the
-representative Task-249-broad plus Task-84/85 selector.
-
-The exact current oracle is ten requests: five mode-expansion, three
-structure-inhabitation, and two
-attributed. Every real response is missing and no dependency reference is
-published. Requested/rejected/supplied states must be injected only after real
-`.miz` extraction into the same production Task-10 path and asserted through
-the final handoffs. Supplied means only reference arrival; later semantic
-owners independently validate the referent and status. Imported symbol shells
-are not evidence.
-
-This documentation prerequisite closes only `design_drift`. The executable
-absence remains `test_gap` and the request/reference/final-handoff seams remain
-`source_drift` until implementation. Current source, fixtures, expectations,
-trace rows/status, coverage credit, plan 411/373, type 239/227, pass/fail
-224/187, active parse/declaration/type/proof 101/5/190/1, warnings/errors 23/0,
-and all hashes remain unchanged. No blocking `spec_gap`,
-`source_undocumented_behavior`, current `test_expectation_drift`,
-`boundary_violation`, or `repo_metadata_conflict` was found.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 252 Frozen-Contract Audit Addendum
 
-Fresh inventory classifies the missing exact primary-term contract as
-`design_drift`, the absent syntax-free producer/final handoff as
-`source_drift`, and the missing producer/corruption coverage plus real
-constant/`it` composition as `test_gap`. Chapters 04 and 13 already define
-the required binding categories, `it` role, numerals, and transparent
-parentheses; no blocking `spec_gap` was found. There is no current
-`source_undocumented_behavior`, `test_expectation_drift`,
-`boundary_violation`, or `repo_metadata_conflict`.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 260 Active Public-Surface Audit
 
-`source_functor_definition` is now a documented exported module. Its five
-dense ID/table families, immutable row getters, handoff fingerprints,
-projection, producer, target/style/correctness/recovery enums, and typed/final
-accessors match `source_functor_definition.md`. Both new
-`InitialObligationKind` variants are rendered exhaustively by all three
-checker serializers. Lint policy authenticates the module spec, crate export,
-public semantic surface, non-exhaustive enum policy, syntax-free boundary,
-allow rationale, and the current `2237`-line inventory.
-
-Five checker tests cover every public field/getter and actual producer/final
-validation path. No public method constructs a composed logical goal,
-discharges an obligation, accepts a definition, activates a symbol, publishes
-a fact, or creates IR/VC output. The implemented surface therefore closes only
-the frozen Task-260 `source_drift`; all semantic deferrals remain owned by
-later tasks.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 249R Definition-Return Audit Addendum
 
-Task-260 preflight proves that the existing Task-249 binding/application
-cardinality is correct and must remain unchanged. Encoding return types as two
-extra applications would fabricate bindings and is forbidden. Task 249R adds
-only `SourceTypeDefinitionReturnId`, its extension input/row/table/producer,
-the `definition_returns` handoff getter, eight non-exhaustive error variants,
-and the frozen debug row documented in `source_type.md`. Its exact active
-profile is applications/expressions/arguments/definition returns `2/4/0/2`.
-The documentation commit closed bounded `design_drift`; the separate
-implementation now closes the recorded `source_drift` and four-test
-`test_gap`. No trace credit or language-semantic coverage changes: Task 249R
-publishes representation provenance only, and Task 260 remains its sole
-consumer.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 260 Pre-Implementation Classification
 
-Chapter 10 Sections 10.1--10.6 and Chapter 16 Sections 16.6.1/16.7.2 provide
-sufficient authority for syntax-free equals/means intake and pending
-existence/uniqueness classification. The missing Task-260 producer is bounded
-`source_drift`; the missing exact 262-byte consumer is `test_gap`. The
-previously absent exact API/ledger, inconsistent cross-family install-order
-claim, incomplete serializer scope, and stale Task-259 post-commit state were
-`design_drift` repaired by this prerequisite.
-
-There is no blocking `spec_gap`. The specification does not fully define the
-checker-internal guard/parameter/return-type-to-goal construction, so that is
-an explicit semantic deferral rather than invented behavior. Existing source
-implements no undocumented Task-260 semantics. Existing expectations are not
-changed. The measured origin mismatch is report-only
-`repo_metadata_conflict`; safe task files remain identifiable.
-
-The repaired boundary freezes exact public signatures/debug/obligation keys,
-all three enum serializers, and Task-259/260 mutual exclusion. It changes no
-Task-259 source and leaves mixed coexistence deferred.
-
-`source_functor_definition.md` is the owning future module specification. Its
-public surface is exactly five dense IDs, six input aggregates, five immutable
-rows and five tables, the handoff, projection, producer, and five
-`#[non_exhaustive]` enums (style, target, correctness kind, recovery, and
-error). Implementation must add the module to `lib.rs` and add every literal
-declaration to this audit's module-spec, crate-export, and public-surface
-inventories. In the same logical task, `tests/lint_policy.rs` must add the
-module to its documented-module, public-enum, and source/spec-audit allowlists.
-The existing production syntax-boundary scan needs no Task-specific exception.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 259 Active Public-Surface Result
 
-`source_predicate_definition` is now exported and the public-surface inventory
-above enumerates every generated dense id and literal public declaration. All
-three public enums are `#[non_exhaustive]`; immutable rows expose getters but
-no caller-supplied derived origin, fingerprint, or allocated obligation id.
-`tests/lint_policy.rs` covers the owning module spec, crate export, public
-enum policy, exact source-spec declarations, and the production no-syntax
-boundary without a Task-specific exception.
-
-The owning module produces exact definition/parameter/guard/property/
-correctness cardinalities `1/2/1/1/1`, validates the Task-248/249/252/256
-dependencies, and appends one pending property-correctness obligation to a
-retained baseline. Typed installation is one-shot and transactional; final
-assembly accepts no second input and publishes no obligation-table, fact,
-proof, VC, axiom, or acceptance getter.
-
-The previously expected `source_drift`, `test_gap`, and public-policy
-`design_drift` are closed in implementation. The test-only syntax consumer is
-confined to an external non-integration child support module, closing the
-candidate `boundary_violation`. Two stale `198 -> 199` active-count consumers
-are bounded `test_expectation_drift` plus write-scope `design_drift`; their
-semantic selection intent is unchanged. The later `origin/main` movement is
-a report-only `repo_metadata_conflict`, not a source/spec disagreement.
-
-Guard-conditioned FOL construction, proof/discharge, acceptance, facts,
-axioms, VC/IR, Task 272 justification ownership, and mixed Task-260 routing
-remain explicitly deferred. Final source/documentation review ended with no
-findings, and the quality review passed all nine hard gates with an uncapped
-`100/100`; commit/post-commit gates remain.
-
-The paired crate plan freezes the public three-table source-only model and the
-exact existing numeral-equality, reserved-variable-equality, and
-parenthesized-reserved-variable-equality consumers. Their aggregate future
-oracle is seven term rows, four binding-reference rows, and two numeric-type
-requests. Parentheses preserve a source child edge but add no semantic term,
-type entry, fact, axiom, or FOL node. Numeric requests publish no result or
-fact.
-
-Constant and `it` schema validation is synthetic in Task 252 by design.
-Task 269 retains real `LocalAbbreviation` production, and Tasks 260/264 retain
-real `func ... means`/`property ... means` current-result ownership/type. This prevents Task 252
-from guessing either dependency while still fixing the source payload
-vocabulary. The prerequisite changes no source, fixture, expectation, trace
-row/status, count, hash, or executable coverage; the current baseline remains
-plan 411/374, type 240/228, pass/fail 224/187, active
-parse/declaration/type/proof 101/5/190/1, and warnings/errors 23/0.
-Implementation alone may add the bounded covered requirement and reach the
-frozen no-new-case oracle 411/375 and 241/229.
-
-MC-G017 and MC-G020 remain partial. Tasks 253-260/264/269 and their explicit
-consumers retain applications, other term families, formulas, definitions,
-real local bindings, and semantic results. Numeric type selection, theorem
-facts, accepted facts/declarations/proofs, downstream IR, and Steps 6/7
-receive no Task-252 prerequisite credit.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 252 Contract-Correction Audit Addendum
 
-Implementation inventory found one post-freeze `design_drift`: counting
-reference uses in the same ordinal stream as binding declarations conflicts
-with Task 248's binding-table `visible_after_ordinal` semantics when a use
-precedes a later declaration. The same rule also made a same-priority
-duplicate binding group impossible, so the required reachable `Ambiguous`
-rejection could not be tested.
-
-The corrected contract counts only binding rows whose declaration ranges end
-no later than the reference start. Previous references do not advance that
-ordinal. Normal declaration groups remain source ordered and have one row at
-their dense binding id/index; an exact consecutive duplicate-priority group
-shares spelling, kind, owner context, `BinderIdentity`, and declaration range,
-and uses its final dense row index as the group's visibility ordinal. It is
-retained until `BindingEnv::lookup` rejects it as `Ambiguous`. Because
-`BindingLookupSite::new` carries no resolver payload, `Resolver` is
-structurally unreachable on this producer path; all reachable non-local
-results remain rejected.
-
-At the correction commit, this change affected no specification, `.miz`, expectation, trace
-row/status, owner, deferred boundary, source, test, count, hash, or coverage
-credit. The remaining executable absence was still `source_drift` and
-`test_gap`; the implementation addendum below supersedes those statuses. No
-`spec_gap`, `source_undocumented_behavior`,
-`test_expectation_drift`, `boundary_violation`, or `repo_metadata_conflict`
-was introduced. The Task-251 baseline and Task-252 implementation oracle
-remain unchanged.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 252 Implementation Audit Addendum
 
-The public syntax-free producer, exact private three-route consumer, immutable
-`TypedAst` ownership, and clone-only `ResolvedTypedAst` preservation now
-implement the corrected Task-252 contract. The real aggregate is seven term
-rows, four authenticated binding references, and two unresolved numeric-type
-requests. Synthetic constant, `it`, nested-parenthesis, and mixed-family
-probes exercise the frozen dependency boundaries without adding corpus credit
-or semantic acceptance.
-
-The implementation closes the bounded primary-term producer/final-handoff
-`source_drift` and producer/corruption `test_gap`; the earlier
-`design_drift` remains resolved. MC-G017 and MC-G020 remain partial because
-applications and other term families, numeric results, formula and definition
-semantics, real local bindings/current-result owners, accepted facts/
-declarations/proofs, downstream IR, and Steps 6/7 remain with their explicit
-owners. No blocking `spec_gap`, `source_undocumented_behavior`,
-`test_expectation_drift`, `boundary_violation`, or `repo_metadata_conflict`
-was found.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 253 Frozen-Contract Audit Addendum
 
-Fresh inventory classifies the absent exact functor-application contract as
-`design_drift`, the absent syntax-free producer/final handoff as
-`source_drift`, and the missing module-local real consumer plus producer,
-corruption, and final-handoff coverage as `test_gap`. Chapters 10, 13 §13.2,
-15 §15.2.3, and 19 plus the user's explicit boundary decision are sufficient;
-no blocking `spec_gap` was found. There is no current
-`source_undocumented_behavior`, `test_expectation_drift`,
-`boundary_violation`, or `repo_metadata_conflict`.
-
-The paired crate plan freezes five tables for applications, transparent
-wrappers/origins, individually authenticated resolver functor references,
-ordered argument
-edges, and unresolved type requests. Candidate rows are deliberately not an
-authenticated form/arity association or exhaustive/viable overload set; Task
-278 retains applicability, collection, ranking, and winner selection.
-Argument edges reference Task-252 root primary-term IDs or
-Task-253 nested-application IDs without duplicate ownership. Task 253 owns the
-cross-family transparent origin around `(1 ++ 2)` because Task 252 excludes
-mixed-family parentheses; it does not create a second Task-252 primary row.
-
-The exact future real selector is the existing imported
-`fail_type_elaboration_imported_predicate_functor_gap_001` plus the new
-spec-derived
-`fail_type_elaboration_local_functor_application_gap_001`. Their aggregate
-future Task-253 oracle is 2 applications / 1 wrapper / 2 candidates /
-3 arguments / 4 requests, with Task-252 slice 3 primary terms / 1 binding
-reference / 2 numeric requests. The new route uses a completed first functor
-from a later functor's definiens in the same definition block; its actual is
-the Task-248-authenticated inner `DefinitionParameter`, not the outer reserve.
-Inline applications receive synthetic source-shape/schema coverage only;
-Task 270 retains callee identity, formals, capture, body, guard, result, and
-substitution. Template applications remain excluded whole-subtree: Task 277
-retains direct role/actual/guard/request transport and Task 278 retains
-ordinary/template candidate collection and selection.
-
-This prerequisite changes follow-up ownership/deferred rationale and therefore
-updates the coverage audit, but changes no executable coverage, source,
-fixture, expectation, trace row/status, count, or hash. The current baseline
-remains plan 411/375, type 241/229, pass/fail 224/187, active
-parse/declaration/type/proof 101/5/190/1, warnings/errors 23/0, 291 library
-tests, and 23 production paths / 24,120 lines. Implementation alone may add
-one bounded diagnostic requirement and one fail case, with projected oracle
-412/376, 242/230, 224/188, and active type 191, subject to fresh measurement.
-
-MC-G017 and MC-G020 remain partial. Semantic signature/result/type, overload
-selection, definition/formula semantics, inline closure/substitution,
-templates, other term families, accepted facts/declarations/proofs,
-downstream IR, Tasks 254+, and Steps 6/7 receive no Task-253 prerequisite
-credit.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Step 5 Checker Task 254 Frozen-Contract Audit
 
-Canonical Chapter 5 Sections 5.3-5.5 and 5.7, Chapter 13 Section 13.3, the
-existing constructor/selector/update parser fixtures, the declaration-symbol
-resolver fixture, and Tasks 248-253 public APIs support one bounded
-source-structure transport prerequisite. The paired crate plan freezes seven
-syntax-free tables and the exact future consumer
-5 terms / 0 wrappers / 3 roots / 9 members / 2 `FieldUpdate` containers /
-10 edges / 26 requests, with co-installed Task-252 8/0/8 and no Task-253
-row. The exact source has one local two-field structure and three functor
-definientia exercising construction, selector access, and functional update.
-
-Only the constructor root is authenticated against exact resolver
-symbol/contribution/definition or import provenance. Member spellings remain
-source occurrences because current resolver projections do not expose a
-complete root-to-member/inheritance-view association. Nested update paths are
-segment chains; each parser `FieldUpdate` is an association container without
-an independent semantic term. Repeated labels and paths are retained in
-source order without deciding their validity. Cross-family edges consume
-Task-252 roots, same-context Task-253 root applications, or later
-same-context Task-254 rows. A root application is not targeted by another
-Task-253 application's argument edge; nested applications are rejected
-rather than multiply owned by Task 254. Reverse Task-253-to-structure
-composition remains whole-subtree excluded.
-
-This inventory classifies the missing frozen design as `design_drift`, the
-absent producer/final handoff as `source_drift`, and the absent exact consumer
-and corruption/final-ownership coverage as `test_gap`. No blocking
-`spec_gap`, `source_undocumented_behavior`, `test_expectation_drift`, or
-current `boundary_violation` was found. The measured 0/0 origin divergence
-from the supplied one-commit-ahead note is a report-only
-`repo_metadata_conflict`; the safe commit target remains unique and no
-metadata is repaired.
-
-This prerequisite changes follow-up ownership and deferred-coverage rationale,
-so the coverage audit is updated, but it changes no production source,
-fixture, sidecar, trace row/status/count, executable credit, test list, or
-production manifest. The baseline remains plan 412/376, type 242/230,
-pass/fail 224/188, active parse/declaration/type/proof 101/5/191/1,
-warnings/errors 23/0, 303 library tests, and 24 production paths /
-25,607 lines. Implementation alone may add one bounded requirement and one
-fail case, projecting 413/377, 243/231, 224/189, and active type 192, subject
-to fresh measurement. MC-G017/MC-G018 remain partial; Task 263 retains all
-structure member/view/coverage and semantic decisions, while Tasks 255+ and
-Steps 6/7 receive no prerequisite credit.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Step 5 Checker Task 254 Implementation Audit
 
-The syntax-free public producer, exact private consumer, immutable
-`TypedAst` ownership, and revalidated clone-preserving `ResolvedTypedAst`
-handoff now implement the frozen Task-254 transport. The real aggregate is
-5/0/3/9/2/10/26 with Task-252 8/0/8 and no Task-253 row. Synthetic and
-corruption tests cover Task-253 root-only composition, unrelated-handoff
-preservation, conditional fingerprints, nested Task-254 ownership, all five
-arena-key classes, exact direct written-child partitions and `FieldUpdate`
-spelling, Task-253 argument-primary exclusion, reverse containment and both
-installation orders, resolver provenance, atomicity, determinism, and final
-ownership.
-
-The implementation closes the bounded `source_drift`, `test_gap`, and the
-implementation-time generated-context `boundary_violation`; the latter was
-repaired by reusing Task-248 declaration shells and
-`SourceBindingContextProducer`. Review-time direct-child association
-`source_drift`, cross-family installation-order `boundary_violation`, and
-their derived `design_drift` were closed by exhaustive range ownership,
-exact spelling, and bidirectional installation validation. The prerequisite
-`design_drift` remains closed. No blocking `spec_gap`,
-`source_undocumented_behavior`, or
-`test_expectation_drift` was found. MC-G017/MC-G018 remain partial because
-Task 263 retains member/view/coverage and structure semantics, Tasks 255+
-retain later term families, and Steps 6/7 remain unpromoted.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Step 5 Checker Task 255 Frozen-Contract Audit
 
-Canonical Chapters 4, 7, 8, 13, 17, and 21 are sufficient for a bounded
-source-only Task-255 transaction. The exact real source has four local
-functor definientia: `{1, 2}`, `{3 where candidate255 is set}`, `the set`,
-and `4 qua set`. The comprehension has no condition and its mapper does not
-reference the generator, so the transaction requires neither a fabricated
-binder identity nor a premature formula graph.
-
-The frozen public contract has six syntax-free tables and exact
-term/wrapper/generator/type-site/edge/request counts 4/0/1/3/4/7, composed
-with Task-252 4/0/4. Bare target sites are owned by Task 255 and are not
-misrepresented as Task-249 declaration applications. Task-253/254
-dependencies are optional, root-only, one-way fingerprints; the real route
-uses neither. Requests preserve only result/sethood/nonemptiness/widening
-intent and publish no response, type, fact, coercion, or acceptance. They do
-not extend Task 251's type-application-only evidence origin; that term-origin
-conversion remains separately frozen work.
-
-The canonical plan fixes all row fields and per-kind cardinalities, wrapper
-nesting/spelling, exact request-to-generator/type-site associations, and a
-maximal-effective-range ownership partition. That partition prevents a
-Task-252 primary already owned by Task 253/254 or a Task-253 application
-already owned by Task 254 from becoming a second Task-255 target. Later
-Task-253/254 installation revalidates any installed Task-255 handoff.
-
-The missing frozen contract is `design_drift`; the absent producer and
-later generator binding/capture are bounded `source_drift`; exact
-producer/corruption/final-handoff coverage is `test_gap`. No blocking
-`spec_gap`, `source_undocumented_behavior`, `test_expectation_drift`, or
-current `boundary_violation` was found. The measured initial origin
-difference remains report-only `repo_metadata_conflict`.
-
-Task 257 retains comprehension binding identity/capture, Tasks 256-257 retain
-condition formula edges, and semantic sethood, choice, and `qua` behavior
-remain with their Chapter-7/8/17/21 owners. The prerequisite changes no
-production source, fixture, expectation, trace row/status/count, executable
-coverage, count, or hash. Baseline 413/377, 243/231, 224/189,
-101/5/192/1, 312 tests, and 25 paths / 27,317 lines remain unchanged.
-The future sidecar maps reciprocally to the Chapter-10 functor-definition
-payload gap, Chapter-13 term-expression gap, broad checker extraction gap,
-exact predicate/functor-definition gap, and new bounded Task-255 row.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Step 5 Checker Task 255 Implementation Audit
 
-The public six-table `source_set_term` producer and private exact consumer now
-implement the frozen source-only slice. Task-252 primary occurrences and
-optional Task-253/254 roots are authenticated without duplicate ownership;
-nested Task-255 rows remain nearest-family children. Conditional dependency
-fingerprints, both later-install revalidation paths, one-shot `TypedAst`
-ownership, and clone-preserving `ResolvedTypedAst` assembly are fail-closed.
-
-The exact real sidecar produces 4/0/1/3/4/7 plus Task-252 4/0/4 and no real
-Task-253/254 fingerprint. The new bounded covered row and four existing rows
-carry the five reciprocal references frozen by the prerequisite. Plan,
-coverage, pass/fail, and active runner counts are 414/378, 244/232, 224/190,
-and 101/5/193/1, with 23 warnings and zero errors.
-
-Implementation review exposed a recursive extractor ordering `source_drift`:
-an inner comprehension generator was initially emitted before its outer
-owner's generator. Sorting generator rows by term/ordinal while independently
-remapping type-site rows to written source order repaired the defect without
-changing language or test intent. The bounded `source_drift` and `test_gap`
-are closed after the producer/install/extractor/exclusion/corruption matrix.
-No blocking `spec_gap`, `source_undocumented_behavior`,
-`test_expectation_drift`, or surviving `boundary_violation` remains.
-
-MC-G017/MC-G020 remain partial. Task 257 retains generator binding/capture,
-Tasks 256-257 retain condition formulas, and semantic sethood, choice,
-`qua`, accepted fact/proof, Core/CFG/VC, and Steps 6/7 receive no credit.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Step 5 Checker Task 256 Frozen-Contract Audit
 
-Fresh inventory selects Task 256 after the committed Task-255 producer.
-Canonical Chapters 9 and 14 require atomic predicate, equality, inequality,
-membership, type-assertion, and attribute-assertion source identity, but do
-not authorize truth, theorem acceptance, or an overload winner. Chapters
-3/6/13/19 and Tasks 248/252-255 supply the bounded type, attribute, term, and
-resolver ownership rules.
-
-The reviewed target is one public syntax-free eight-table transaction. Its
-real aggregate across eight unchanged active fail fixtures is
-`8/0/1/1/1/2/13/11`, with Task-252 `16/0/16`, Task-253
-`1/1/1/2/2`, Task-255 `2/0/0/0/4/2`, and no Task-254 target. The contract
-freezes exact row schemas, request associations, arena keys, canonical
-spelling, nearest-family term ownership, conditional fingerprints, later
-installer revalidation, and final immutable AST preservation.
-
-Formula-owned bare type and simple attribute sites are not aliases for
-Task-249/250 declaration-linked rows. Predicate candidates are individually
-authenticated references rather than an exhaustive or selected overload set.
-Requests preserve only unresolved operand, signature, reachability, and
-admissibility input intent. Predicate chains, formula negation/composition,
-inline/template applications, general type graphs, qualified/argument-bearing
-attributes, semantic facts/truth, and conditioned comprehensions remain
-explicitly excluded.
-
-The missing contract is repaired `design_drift`; the absent producer and
-final handoff remain bounded `source_drift`; exact producer, corruption,
-install-order, exclusion, and final-ownership coverage remain `test_gap`.
-No blocking `spec_gap`, `source_undocumented_behavior`,
-`test_expectation_drift`, or current `boundary_violation` was found. The
-origin discrepancy remains report-only `repo_metadata_conflict`.
-
-This prerequisite changes no production source, fixture, `.miz`, sidecar,
-expectation, trace row/status/count, executable coverage, count, or hash.
-Baseline plan/type/pass-fail/active counts remain 414/378, 244/232, 224/190,
-and 101/5/193/1, with 320 tests and 26 paths / 29,138 lines. The separate
-implementation may add one bounded covered row over the eight existing
-sidecars, projecting 414/379 and 245/233 without changing case count or any
-outcome/detail field.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Step 5 Checker Task 256 Implementation Audit
 
-The public eight-table `source_atomic_formula` producer and private exact
-consumer implement the frozen source-only slice. The checker accepts no raw
-syntax, reauthenticates resolver identities and Task-252/253/254/255
-dependencies, rederives nearest-family ownership, fail-closes installation
-and later dependency revalidation, and clone-preserves the one-shot handoff
-through `ResolvedTypedAst`.
-
-The eight unchanged routes produce exactly `8/0/1/1/1/2/13/11` plus the
-frozen Task-252/253/255 co-oracles and preserve every prior semantic detail
-owner. The new covered row and reciprocal references reach 414/379 and
-245/233 without changing case count, outcome, phase, detail, tag, or `.miz`
-bytes. The reviewed producer/extractor/real/synthetic/corruption/install/
-exclusion/final-ownership matrix closes the bounded `source_drift` and
-`test_gap`.
-
-No blocking `spec_gap`, `source_undocumented_behavior`,
-`test_expectation_drift`, or surviving `boundary_violation` remains. The
-origin discrepancy stays report-only `repo_metadata_conflict`. MC-G017/
-MC-G020 remain partial, and the frozen later semantic/formula owners plus
-Steps 6/7 receive no new credit.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Step 5 Checker Task 257A Frozen-Contract Audit
 
-Fresh inventory bounds the first Task-257 increment to the unchanged
-`fail_type_elaboration_formula_connective_quantifier_gap_001` source. Chapter
-14 authorizes its exact implication/universal/negation/contradiction source
-tree, Chapter 4 authorizes one explicit scoped binding identity, Chapters
-3.3-3.4 own its bare `set` type site, and Chapter 16.2 supplies only the
-enclosing theorem syntax. Theorem ownership, formula semantics, proof, fact,
-and acceptance are not inferred.
-
-The frozen public transaction contains seven dense tables and the exact real
-aggregate `5/0/1/1/1/4/6`. It preserves one unassigned formula root, four
-source-role child edges, one source-derived quantifier binder and body
-context, one binder-owned type site, and six unresolved input requests. The
-extended binding environment is exactly `2/1/4`; only the universal-body edge
-crosses into context 1. The private raw-syntax owner remains `mizar-test`, and
-the final checker handoff is syntax-free.
-
-The missing contract is repaired `design_drift`. The absent public producer,
-source-derived environment extension, and final handoff remain bounded
-`source_drift`; producer, binder/context, corruption, installation,
-exclusion, and final-ownership coverage remain `test_gap`. No blocking
-`spec_gap`, `source_undocumented_behavior`, `test_expectation_drift`, or
-current `boundary_violation` was found. The origin discrepancy remains
-report-only `repo_metadata_conflict`.
-
-This prerequisite changes no production source, fixture, `.miz`, sidecar,
-expectation, trace row/status/count, executable coverage, count, or hash.
-Baseline plan/type/pass-fail/active counts remain 414/379, 245/233, 224/190,
-and 101/5/193/1, with checker/mizar-test 287/328 tests and 27 private
-production paths / 30,154 lines. A separate implementation may add the one
-covered row
-`spec.en.checker.type_elaboration.source_composite_formula_payload`,
-projecting 414/380 and 246/234 without changing case count or any existing
-outcome/detail field.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Step 5 Checker Task 257A Implementation Audit
 
-The public seven-table `source_composite_formula` producer and private exact
-consumer implement the frozen source-only slice. The checker accepts no raw
-syntax, validates the exact normal `1/0/4` base, atomically creates and owns
-the source-derived `2/1/4` environment, authenticates the formula tree,
-binder, written type, edges, requests, and arena vocabulary, and
-clone-preserves the one-shot handoff through `ResolvedTypedAst`.
-
-The unchanged real route produces `5/0/1/1/1/4/6`, preserves the existing
-two semantic detail keys, and admits no other active type-elaboration case.
-Implementation preflight corrected one `design_drift`: the frozen document
-had copied synthetic-builder offsets one byte later than the real unchanged
-115-byte `.miz`; real parser offsets are `52..113`, `52..65`, `74..113`,
-`78..89`, `78..79`, `86..89`, `96..113`, and `100..113`. Neither the parser,
-fixture, sidecar outcome/detail vector, nor test intent changed; the sidecar
-received only the reciprocal Task-257A `spec_refs` entry and transport note.
-
-The producer, full literal debug oracle, environment/arena/table corruption
-matrix, wrapper boundary, one-shot and Task-248 coexistence rejection,
-selector isolation, unchanged semantic route, and final ownership tests close
-the bounded `source_drift` and `test_gap`. The new covered row and reciprocal
-references reach 414/380 and 246/234 without changing case count, outcome,
-phase, detail, tag, or `.miz` bytes.
-
-No blocking `spec_gap`, `source_undocumented_behavior`,
-`test_expectation_drift`, or surviving `boundary_violation` remains. The
-origin discrepancy stays report-only `repo_metadata_conflict`. Tasks 257B,
-257C, and 258 retain all broader formula semantics, bound-use/capture,
-predicate-chain/comprehension composition, and statement ownership.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Checker Task 257B1 Frozen-Contract Audit
 
-Fresh post-Task-257A audit finds one dependency-ready bounded slice. Chapter 4
-§§4.1/4.5/4.6 and Chapter 14 §§14.4.1/14.4.4/14.5.2/14.7.5 are sufficient to
-derive the exact explicit-universal/equality/bound-use source without changing
-language intent. The parser fixture demonstrates the grammar, but no active
-type-elaboration fixture transports a quantified bound occurrence.
-
-Classification:
-
-- `design_drift`: no Task-257B subtask or cross-family composition contract;
-- `test_gap`: no exact type-elaboration consumer for binder-selected body
-  occurrences;
-- `source_drift`: no second exact composite profile, formula-to-atomic child
-  edge, or formula-side bound-use handoff;
-- no blocking `spec_gap`, `source_undocumented_behavior`,
-  `test_expectation_drift`, or `boundary_violation`;
-- the initial origin difference remains report-only
-  `repo_metadata_conflict`.
-
-Task 257B1 closes only the explicit one-binder, one-equality dependency seam.
-Task 257B2/B3, Task 257C, semantic truth, implicit closure, theorem
-acceptance, proof, and downstream IR remain open. This documentation
-prerequisite changes no trace status or coverage count.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Checker Task 257B1 Implementation Audit
 
-The exact pass consumer, second composite profile, Task-252/256 composition,
-combined installation, and immutable final handoff now implement the frozen
-source-only boundary. The public checker surface remains syntax-free and the
-private runner retains all raw parser nodes. Both bound uses authenticate
-binding 0 in body context 1 without changing Task-252 occurrence ownership or
-`BindingEntry::captured`.
-
-The new covered trace row maps only to the new pass sidecar, while Chapter-4,
-Chapter-14, Task-252, Task-256, and Task-257A rows receive reciprocal notes
-without status changes. This closes the bounded `source_drift` and `test_gap`;
-no blocking `spec_gap`, `source_undocumented_behavior`,
-`test_expectation_drift`, or `boundary_violation` remains. Task 257B2 retains
-broader connective/grouping transport.
-
-### Task 257B2 frozen source-spec classification
-
-Chapter 14 and the existing parser fixtures provide complete authority for the
-exact fixed/repeated conjunction/disjunction, non-associative `iff`, and
-parenthesized grouping tree. Chapter 4 supplies the unchanged explicit binder
-scope, while Tasks 252/256/257A/B1 supply the required public occurrence and
-composition owners. The missing frozen contract was `design_drift`; the absent
-third exact profiles/final ownership are bounded `source_drift`; and the
-absent exact pass consumer and matrices are `test_gap`. There is no blocking
-`spec_gap`.
-
-The documentation prerequisite changes no executable artifact. General
-alpha-equivalence/repetition expansion, connective truth, other precedence
-trees, binder forms, predicate chains, theorem acceptance, and downstream IR
-remain explicitly excluded, so no `source_undocumented_behavior`,
-`test_expectation_drift`, or accepted `boundary_violation` is introduced. The
-origin difference remains report-only `repo_metadata_conflict`.
-
-### Task 257B2 implementation classification
-
-The previously classified `source_drift` and `test_gap` are closed by the
-exact third-profile producers, real pass fixture, covered trace row, checker
-corruption/profile tests, and runner selector/near-miss tests. No `spec_gap`,
-`design_drift`, `source_undocumented_behavior`, `test_expectation_drift`, or
-`boundary_violation` remains. The origin difference is still a report-only
-`repo_metadata_conflict`.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 257C3 Frozen Surface Audit
 
-The future source-backed public surface is fully named in the canonical crate
-plan: one predicate-chain composition input/handoff/producer/error family,
-two dense row/table/ID families, exact accessors, two lower fingerprints,
-stable debug, typed/resolved ownership, and reciprocal exclusions. It is not
-implemented by this documentation commit. Authority, tests, one future trace
-row, and all semantic exclusions are explicit, so no blocking `spec_gap` or
-unowned public behavior remains.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 257C3 Implementation Classification
 
-The dedicated checker transaction, exact private runner consumer, and
-mutation-sensitive checker/runner matrices close the bounded `source_drift`
-and `test_gap`; the prerequisite already closed `design_drift`. The existing
-fixture and semantic expectation remain unchanged, while the authorized
-existing-sidecar reference and single covered trace row close the planned
-traceability delta. No blocking `spec_gap`,
-`source_undocumented_behavior`, `test_expectation_drift`, or
-`boundary_violation` remains. Origin divergence remains report-only
-`repo_metadata_conflict`.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 256C1 Condition-Container Compatibility Classification
 
-Chapter 13 §§13.4/13.4.2 puts the optional formula inside the comprehension,
-and Chapter 14 §§14.2/14.5.2/14.8 makes the exact `3 = 4` condition a
-built-in atomic equality. The committed 191-byte fixture and Task-255C1/256
-schemas therefore authorize the inverse containing-set/direct-equality range
-relation. Rejecting it in both installation orders is bounded
-authority-backed `source_drift`. The missing narrow rule is `design_drift`,
-closed by this prerequisite, and the missing order/corruption checks are
-`test_gap`.
-
-The contract admits only an authenticated Task-255 comprehension condition
-whose direct child is the equal-range/equal-spelling, normally recovered
-Task-256 equality in the same context as the enclosing term. It does not
-generalize set containment, add a fingerprint, or infer other formula forms.
-No blocking `spec_gap`,
-`source_undocumented_behavior`, `test_expectation_drift`, or
-`boundary_violation` remains. Existing `.miz`, expectation, sidecar, trace
-status/count, and coverage credit remain unchanged; origin divergence stays
-report-only `repo_metadata_conflict`.
-
-The test contract distinguishes family-local validity from the new relation:
-each applicable wrong relation must first validate independently in Task 255
-and Task 256, then fail only when paired with
-`SetTermDependencyMismatch`. It separately covers substituted optional
-validation context, no publication/replay, and the explicit absent set
-fingerprint.
-
-### Task 256C1 implementation classification
-
-The bounded authority-backed `source_drift` and `test_gap` are closed by the
-private exact relation predicate, effective no-wrapper guard, both
-installation orders, and complete three-test corruption/preservation matrix.
-The prerequisite already closed `design_drift`. No specification, existing
-`.miz`, expectation, trace status, coverage credit, semantic owner, or public
-schema changed. All semantic deferrals and the report-only
-`repo_metadata_conflict` remain unchanged.
-
-### Task 257B3 frozen-contract classification
-
-Chapters 4 and 14 plus the parser quantifier fixture fully authorize the exact
-restricted/existential/nested/implicit-reserve syntax and lexical binding
-intent. The missing contract is `design_drift`; the absent fourth profile,
-Task-48-derived nested environment, reserve provenance, owning-edge
-associations, and final ownership are bounded `source_drift`; the missing
-138-byte pass consumer and matrices are `test_gap`. There is no blocking
-`spec_gap`, `test_expectation_drift`, `source_undocumented_behavior`, or
-accepted `boundary_violation`.
-
-Task 248 is explicitly not extended or installed: its exact profile cannot
-represent reserve-plus-theorem input. Task 48 supplies the one-reserve base
-without a lower-stage change. Truth, witnesses, restriction discharge,
-implicit closure, capture results, theorem acceptance, proof, and IR remain
-deferred. The origin difference remains report-only
-`repo_metadata_conflict`.
-
-Implementation closes the bounded B3 `source_drift` and `test_gap` with the
-exact source consumer and immutable handoffs. No canonical specification,
-existing `.miz`, or expectation was changed to match source behavior.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 257C1 Predicate-Chain Segment Classification
 
-Chapters 9, 11, and 14 plus the existing user-predicate parser/resolver
-fixtures authorize the adjacent split, `does not` token provenance, and common
-imported predicate identity. The previously missing syntax-free segment
-contract/decomposition was `design_drift`, closed by this prerequisite. The
-absent public Task-256 extension is bounded `source_drift`; the absent exact
-107-byte consumer and matrices are `test_gap`.
-
-There is no blocking `spec_gap`, `source_undocumented_behavior`,
-`test_expectation_drift`, or accepted `boundary_violation`. Mixed built-in
-chains, recovered input, predicate applicability/selection, semantic
-conjunction/negation, and conditioned comprehensions are excluded or deferred.
-The origin difference remains report-only `repo_metadata_conflict`.
-
-Implementation closes the classified Task-257C1 `source_drift` and `test_gap`
-against the frozen contract. The prior documentation commit closed
-`design_drift`; all other classifications and semantic deferrals above remain
-unchanged.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 255C1 Condition-Bearing-Comprehension Classification
 
-Chapters 10, 13, and 14 plus the parser comprehension fixtures fully
-authorize the exact valid zero-locus definition, imported mapper, colon, and
-equality-condition shape. The missing seventh table and condition-aware
-ownership partition are `design_drift`, closed here. The absent producer,
-reusable Task-253 seam, installation, and clone preservation are bounded
-`source_drift`; the absent exact fail consumer and matrices are `test_gap`.
-
-The frozen `4/0/4` Task-252 handoff preserves both mapper and condition
-operands without granting Task-255 ownership of either operand. The colon and
-direct `FormulaExpression` wrapper have Task-255 arena anchors while the
-inner atomic formula node remains deferred to Task 256. No blocking
-`spec_gap`, `source_undocumented_behavior`,
-`test_expectation_drift`, or accepted `boundary_violation` remains. The
-external origin difference is report-only `repo_metadata_conflict`.
-
-Implementation closes the classified Task-255C1 `source_drift` and
-`test_gap`: the seventh public table, recursive condition boundary, reusable
-Task-253 seam, exact fixture/sidecar/trace row, and full matrices are present.
-The prerequisite already closed `design_drift`. The semantic deferrals and
-report-only `repo_metadata_conflict` remain unchanged.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 257C2 Condition-Formula Association Classification
 
-Chapters 10 §10.1, 13 §§13.4/13.4.2, and 14 §§14.2/14.5.2/14.8 authorize the
-exact direct equality condition without authorizing truth, binding, capture,
-or definition acceptance. Tasks 252/253/255C1 already own every term,
-application, comprehension, condition wrapper, and provenance occurrence;
-Task 256 already has the syntax-free equality/operand schema. The missing
-association contract is `design_drift`, closed by this prerequisite. The
-absent dedicated handoff/final projection is bounded `source_drift`, and the
-absent exact consumer/corruption matrix is `test_gap`. The frozen
-pre-Task-256C1 preflight also classified the then-committed Task-256 range
-validator as a separate authority-backed `source_drift`: it rejected the
-Chapter-13-authorized condition-container relation in both installation
-orders. The separately documented and implemented Task 256C1 now admits only
-that authenticated containment while preserving unrelated overlap rejection.
-Task 257C2 then passed fresh preflight and closed its bounded `source_drift`
-and `test_gap`; it was not a lower-stage repair.
-
-No existing `doc/spec`, `.miz`, outcome, phase, diagnostic detail, or semantic
-owner changes. Reusing the existing sidecar for the single reciprocal covered
-row is bounded transport traceability, not an implementation-derived
-expectation rebaseline. No blocking `spec_gap`,
-`source_undocumented_behavior`, `test_expectation_drift`, or
-`boundary_violation` remains; origin divergence is report-only
-`repo_metadata_conflict`.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 257C4C0 nested Fraenkel capture test intent
 
-The canonical [C4C0 contract](../../task_contracts/en/TEST-FRAENKEL-NESTED-CAPTURE-257C4C0.md)
-now owns the implemented Chapter 13 §13.4.4 test-first oracle required by the
-C4B successor stop. Its nested `Element of NAT` source makes the inner mapper
-`x` refer to the outer generator `x` by resolved identity while the inner
-generator is distinct `y`. The implemented source, inactive sidecar, sole trace
-row, and Chapter-13 coverage-audit mapping close the capture `test_gap` as
-inactive intent only.
-
-The exact source currently emits six parser diagnostics, first at `Element`
-`67..74`, so lower lexical/import admission remains `source_drift`. No builtin-
-`set` or local-lookalike substitute is authorized. Capture, Task-252 ownership,
-`CapturedFreeVariables`, type/sethood/request/verdict/diagnostic/install/route,
-and Task-277B credit remain unchanged. The new trace row is covered/required/
-pass test intent, but grants no executable or semantic credit.
-
-Final source-documentation and boundary review ended with **NO FINDINGS**.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 257C4C1 explicit-import lexical admission
 
-The canonical [C4C1 contract](../../task_contracts/en/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md)
-freezes the user-authorized lower repair for the inactive C4C0 oracle. Canonical
-Chapter 2 §2.10, Chapter 3 §3.3, Chapter 7 §7.2, Chapter 10 §10.1, Chapter 11
-§§11.2.1/11.2.4, Chapter 12 §§12.3/12.5, and Chapter 13
-§§13.4.2/13.4.4/13.8.6 authorize one explicit import, one public mode shape,
-one public functor shape, and the unchanged nested-capture intent.
-
-C4C1 closes only the six-diagnostic frontend lexical-admission `source_drift`,
-the dedicated support-module `test_gap`, and its private-provider
-`design_drift`. Checker Rust, public APIs, resolver imported identities,
-Task-252 terms/uses, binding/capture, type/sethood/formula semantics,
-Typed/Resolved installation, routing, and Task-277B credit remain unchanged.
-The existing trace row and sidecar remain inactive and zero-credit; the audit
-delta records blocker closure, not semantic coverage expansion.
-
-The exact seven-path implementation now closes those three classified gaps and
-passes the focused, package, metadata, full-workspace, lint, format, Clippy, and
-CLI checks recorded in the contract's [precommit completion
-checkpoint](../../task_contracts/en/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md#precommit-implementation-completion-checkpoint).
-Independent test and implementation reviews ended with **NO FINDINGS**;
-independent source-documentation consistency and bilingual/boundary reviews
-also ended with **NO FINDINGS**.
-The independent final-quality review ended with **NO FINDINGS** and is recorded
-in the canonical [precommit completion
-checkpoint](../../task_contracts/en/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md#precommit-implementation-completion-checkpoint).
-The exact staging/cached review recorded at that historical review-time
-checkpoint also ended with **NO FINDINGS**.
-The task-only commit, post-commit proof, and accepted fresh-inventory STOP are
-closed at the language-local [historical postimplementation
-checkpoint](../../task_contracts/en/TEST-FRAENKEL-NESTED-CAPTURE-LEXICAL-ADMISSION-257C4C1.md#historical-immediate-postimplementation-pre-closure-checkpoint).
-No capture/resolver-semantic, Task-252, or Task-277B successor is selected;
-Task 277B remains not ready and zero-credit.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258A Frozen Surface Audit
 
-Chapter 4 §§4.3 and 4.7.1, Chapter 14 §14.5.2, Chapter 15 §§15.8 and
-15.10, and Chapter 16 §§16.1, 16.2, 16.7.1, and 16.9 fully authorize the
-exact reserved-variable theorem shell, implicit-closure input, equality
-candidate, theorem owner, unmodified status, omitted-justification boundary,
-and verification-before-publication exclusion. The existing parser/resolver
-fixtures and Tasks 248–253 public APIs establish the executable lower inputs
-and provenance views without granting this task truth, proof, or acceptance
-semantics.
-
-The previously missing syntax-free owner/statement/context/input/candidate
-contract was `design_drift`, closed by this documentation prerequisite. At
-prerequisite time, the planned `source_statement` module, producer,
-typed/final installation, and dormant exact-source bridge were bounded
-`source_drift`; their checker and runner matrices were `test_gap`. The
-implementation audit below closes both classifications. There is no blocking `spec_gap`,
-`source_undocumented_behavior`, `test_expectation_drift`, or accepted
-`boundary_violation`. The current Task-248 exact handoff cannot represent the
-reserve-plus-theorem transaction and is explicitly excluded rather than
-extended or fabricated. The origin divergence remains report-only
-`repo_metadata_conflict`.
-
-The then-future public surface was fully named in `source_statement.md`, including
-five dense IDs/tables, immutable input and output rows, producer signature,
-seven non-exhaustive semantic-boundary enums, row-local failures, aggregate
-precedence, owned BindingEnv/fingerprint, Task-252/256 dependency
-fingerprints, asymmetric production plus named test-only Task-248 exclusion,
-and stable debug schema.
-It was intentionally absent from the pre-implementation module-export and
-public-surface inventory; the current inventory above includes it. The existing deferred
-`spec.en.checker.formula_statement.source_payloads` row keeps an empty test
-list and receives no status, count, fixture, sidecar, expectation, or
-coverage change in this prerequisite. Broader statement forms remain owned
-by Task 258B and Tasks 269–272.
-
 Completion evidence: [central Task-258A historical contract](../../task_contracts/en/258A.md#completion-evidence).
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B1 Frozen Surface Audit
 
-Fresh inventory decomposes the old Task-258B umbrella rather than assigning
-proof semantics to one transport task. Chapter 4 §§4.3, 4.6, and 4.7.1,
-Chapter 14 §14.5.2, Chapter 15 §§15.4.1, 15.8.1–15.8.2, 15.10, and 15.12,
-and Chapter 16 §§16.1–16.2, 16.4.1–16.4.2, 16.5.1, 16.7.1–16.7.3, 16.8,
-and 16.9 authorize the exact nested equality statements, proof-block
-nesting, conclusion shells, proof-step label, and backward local citation.
-Existing parser theorem/proof fixtures, the Task-89 proof-gap fixture,
-resolver label tests, and Tasks 48/252/256/258A APIs supply the executable
-provenance. They do not authorize proposition acceptance, justification
-meaning, proof goals, or theorem publication.
-
-The exact 139-byte source and hash, parser ranges, `3/1/0 -> 8/8/0 ->
-4/0/0/0/0/0/0/8/8 -> 1/4/4/4/4 + 1/1` transaction, three statement-kind
-variants across four rows/contexts, one proof-step label, one simple local
-citation, public reference-handoff API, retained 77-node/root-76
-`ResolvedAst` plus projection/reference/result replay, typed/final
-installation, subtree exclusions, and semantic deferrals are fully named in
-`source_statement.md`. Retaining the resolver inputs is required because
-`LabelResolutionResult` intentionally omits proof scope and
-visibility/source ordinals; label node 12 and reference node 68 are
-authenticated against the same-index typed arena, so no unauthenticated row
-crosses the checker boundary.
-
-The missing decomposition and contract were `design_drift`, closed by this
-documentation prerequisite. The absent extended base profile, reference
-handoff, combined installers, and exact dormant runner bridge are bounded
-`source_drift`; the absent checker/runner matrices are `test_gap`. No
-blocking `spec_gap`, `source_undocumented_behavior`,
-`test_expectation_drift`, or `boundary_violation` exists. The upstream
-metadata now leaves no unresolved `repo_metadata_conflict`.
-
-Task 258B2+ retains assumptions, witnesses, composite roots, and broader
-label visibility. Tasks 269–272 retain local-binding meaning,
-closure/capture/substitution, `reconsider`, skeleton, justification, goals,
-and acceptance. The deferred
-`spec.en.checker.formula_statement.source_payloads` trace row therefore
-keeps `tests = []`; this prerequisite changes only follow-up ownership in the
-coverage audit, not trace metadata, coverage credit, fixture, sidecar,
-expectation, executable source, count, or hash.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B1 Implementation Audit
 
-The frozen Task-258B1 source and test gaps are closed by the syntax-free
-statement/reference handoffs, atomic typed/final ownership, the exact dormant
-real-frontend runner bridge, four checker tests, and five runner tests. The
-implementation does not change language or test intent: no `doc/spec`,
-existing `.miz`, expectation, sidecar, or trace TOML row/status was edited.
-
-`spec.en.checker.formula_statement.source_payloads` remains deferred with
-`tests = []` because this slice publishes no accepted fact, proof,
-justification meaning, or theorem result. Coverage ownership now points to
-Task 258B2+ and Tasks 269–272. This is an intentional
-`spec_coverage_audit.md` update with no traceability-count change.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B2 Frozen-Contract Audit
 
-The next dependency-ready slice is narrowed from Task 258B2+ to the exact
-113-byte single-assumption theorem frozen in `source_statement.md`. Chapters
-15.3.1, 15.4.1, 15.8.2, and 15.10 authorize the theorem, unlabeled
-assumption, direct conclusion, and proof shell; Chapters 13–14 and the
-reserve rules authorize the equality terms and visible `x`. Existing
-parser/resolver fixtures establish the measured ranges and provenance
-without changing language or test intent.
-
-The missing frozen contract was `design_drift`. The not-yet-implemented
-syntax-free producer/consumer route is bounded `source_drift`, and its four
-checker plus five runner tests are a bounded `test_gap`. There is no blocking
-`spec_gap`, `source_undocumented_behavior`, `test_expectation_drift`,
-`boundary_violation`, or unresolved `repo_metadata_conflict`. Task 258B2
-transports source intent only; it does not accept the assumption as a premise
-or establish truth. The trace row remains deferred with `tests = []`, so this
-documentation prerequisite earns no coverage credit and changes no
-fixture, sidecar, expectation, trace status/count, source, test list, or hash.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B2 Implementation Audit
 
-The implementation closes only the bounded `source_drift` and `test_gap`
-identified by the frozen contract. It transports an assumption occurrence
-as `UnverifiedProposition` and does not implement the Chapter-15 proof
-effect. No `spec_gap`, `source_undocumented_behavior`,
-`test_expectation_drift`, `boundary_violation`, or
-`repo_metadata_conflict` is present. B3–B5 and Tasks 269–272 remain the
-classified owners of the deferred behavior.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3 Authority Audit
 
-Canonical §15.4.4 authorizes unnamed `take x;` syntax and §15.11.5 specifies
-its later existential/type/substitution effect. Chapters 4, 13, and 14 plus
-the active parser fixture authorize the reserved `x` term and equality
-shells. They support transport of the measured witness occurrence but do
-not authorize applying it to the equality goal, accepting a theorem, or
-publishing obligations.
-
-The formula-only base plus direct-`BindingContextId` witness companion is
-therefore the smallest syntax-free contract. Source ordinal 2 for the dense
-base conclusion is required by global order; `[0,1,2]` paired validation
-prevents information loss. The absent contract is `design_drift`, future
-code is bounded `source_drift`, and tests are `test_gap`. There is no
-blocking `spec_gap`, undocumented behavior, expectation drift, boundary
-violation, or metadata conflict.
-
-The remaining §15.4.4 transport shapes have explicit follow-up ownership:
-Tasks 258B3N/M retain named, multiple, and other witness-term transport
-after B3 and before Task 258B4. Their abbreviation/substitution and
-left-to-right goal effects remain with Tasks 269–272.
-
-Task 258B3 implementation closes only the classified bounded
-`source_drift`/`test_gap`. It changes no canonical requirement or trace
-credit, so the existing `deferred`, `tests = []` row remains correct.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3N Authority Audit
 
-Sections 15.4.4/15.11.5 and 4.4.3 plus the existing parser fixture authorize
-the measured `take y = x;` syntax and name occurrence. They do not authorize
-binding publication, abbreviation application, existential matching,
-obligations, substitution, or proof acceptance in B3N. The missing exact
-table contract is resolved `design_drift`; future source and tests are
-bounded `source_drift`/`test_gap`. No blocking protocol disagreement exists,
-and the formula-statement row remains deferred with `tests = []`.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3N Implementation Audit
 
-The classified bounded `source_drift` and `test_gap` are closed without a
-canonical semantic change. The implementation transports the measured
-name occurrence only and preserves every binding, abbreviation, existential,
-obligation, substitution, proof, and theorem-status deferral. No
-`spec_gap`, expectation drift, boundary violation, undocumented behavior,
-or metadata conflict was introduced; the formula-statement row remains
-deferred with `tests = []`.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3M1 Authority Audit
 
-Chapter 15 authorizes ordered comma-separated named/unnamed witness syntax,
-Chapter 16 assigns `take` its later existential skeleton, and the existing
-parser fixture/tests already establish the mixed two-witness shape. They do
-not authorize binding publication, abbreviation replay, binder matching,
-obligations, substitution, proof acceptance, or any non-primary term shape
-in B3M1. Splitting broad B3M into exact B3M1 plus future B3M2 resolves
-`design_drift`; future code/tests are bounded `source_drift`/`test_gap`.
-There is no `spec_gap`, undocumented behavior, expectation drift, boundary
-violation, metadata conflict, or lower-stage prerequisite. The
-formula-statement row remains deferred with `tests = []`.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3M1 Implementation Audit
 
-The frozen `source_drift` and `test_gap` are closed by exact syntax transport
-and four/five compound tests. The implementation changes no canonical
-language behavior, existing `.miz`, expectation, trace status/count, or
-coverage credit. There is no remaining `spec_gap`, `design_drift`,
-`source_undocumented_behavior`, `test_expectation_drift`,
-`boundary_violation`, or `repo_metadata_conflict`; the formula-statement
-row remains deferred with `tests = []`.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3M2A Authority Audit
 
-Canonical Chapter 15 §15.4.4 explicitly gives unnamed `take 101;`;
-Chapter 13 §§13.1/13.1.4/13.9 makes `101` a primary numeral term; Chapter
-4 §4.4.3 says an unnamed witness introduces no local name; and Chapter 16
-§16.3.3 item 5 supplies only the later existential skeleton. The existing
-parser fixture establishes witness syntax. The completed lexer
-prerequisite now yields a zero-diagnostic 49-node real frontend arena.
-These authorities do not authorize type selection, existential matching,
-substitution, remaining-goal construction, proof acceptance, or any B3M2B
-term shape.
-
-Freezing the exact syntax table resolves `design_drift`; future private
-code/tests are bounded `source_drift`/`test_gap`. There is no blocking
-`spec_gap`, `source_undocumented_behavior`, `test_expectation_drift`, or
-`boundary_violation`. The external `origin/main` movement is classified as
-report-only `repo_metadata_conflict` and does not obscure task ownership.
-The formula-statement row remains `deferred` with `tests = []` and gains no
-coverage credit.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3M2A Implementation Audit
 
-Implementation now realizes only the authority-derived unnamed-numeral
-syntax transport. The runner authenticates the exact raw source and resolver
-provenance; the private checker profile authenticates the resulting 49-node
-arena and syntax-free Task-48/252/256/base tables, dense
-reference mapping, Task-252 numeric request, and `1 witness / 0 names`;
-four checker and five runner tests close the bounded `source_drift` and
-`test_gap`. No canonical specification, existing `.miz`, expectation,
-fixture, sidecar, trace metadata, public API, binding, or semantic owner
-changed. The formula-statement row therefore remains `deferred` with
-`tests = []` and no coverage credit. B3M2B remains the next authority slice.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3M2B1 Authority Audit
 
-Canonical Chapter 15 §15.4.4 permits `take term_expression`; Chapter 4
-§4.4.3 says an unnamed witness introduces no local name; Chapter 13
-§§13.1.3, 13.8.8, and 13.9 make parentheses a primary-term wrapper that
-preserves the inner type and adds no FOL node. Chapter 15 §15.11.5 retains
-the later witness obligation and substitution. Exact existing consumers are
-`tests/miz/pass/parser/pass_parser_simple_statements_001.miz` and its
-expectation, plus
-`tests/miz/pass/types/pass_type_elaboration_parenthesized_reserved_variable_equality_001.miz`,
-its existing expectation, and the covered
-`spec.en.checker.type_elaboration.source_primary_term_payload` trace row.
-They jointly authorize the exact dormant cross-family transport without
-changing those artifacts, but not proof acceptance or any B3M2B2 shape.
-
-The public lower consumers remain
-`SourceBindingContextHandoff` (Task 248),
-`SourceTypeApplicationHandoff` (Task 249),
-`SourceAttributeHandoff` (Task 250),
-`SourceEvidenceHandoff` (Task 251),
-`SourcePrimaryTermHandoff` with
-`SourcePrimaryTermKind::Parenthesized` and
-`SourcePrimaryTermInput::parent` (Task 252), and
-`SourceFunctorApplicationHandoff` (Task 253). Task 254's
-`SourceStructureHandoff` is the next excluded family. B3M2B1 reuses the
-Task-248 context and Task-252 wrapper/inner/reference/parent edge; Tasks
-249–251 and 253–254 remain empty or excluded. The fresh frontend yields the
-final-LF 113-byte source,
-SHA-256
-`f09815b49d1b4598218f656a366ef73ec0dffd1f581a1018f07aa2ebcf410bf2`,
-53 unrecovered nodes/root 52, and zero diagnostics.
-
-The broad B3M2B umbrella was `design_drift`; this prerequisite resolves it
-as exact B3M2B1 plus remaining B3M2B2. Future private wrapper-aware
-production is bounded `source_drift`, and the four/five compound matrices
-close the `test_gap`. There is no blocking `spec_gap`,
-`source_undocumented_behavior`, `test_expectation_drift`, or language/crate
-`boundary_violation`. A review-only writer concurrently duplicating these
-documents was an operational `boundary_violation`, not a
-`repo_metadata_conflict`; the parent reconciled the task-owned documentation
-without changing repository metadata.
-The formula-statement row remains `deferred` with `tests = []` and receives
-no coverage credit.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3M2B1 Implementation Audit
 
-The private checker/runner implementation closes only the frozen
-`source_drift` and `test_gap`. It adds no public API and changes no
-canonical specification, existing `.miz`, expectation, sidecar, trace
-metadata/status/count, active route, or semantic owner. Four checker and
-five runner tests exercise the exact authenticated transport; the
-formula-statement row remains `deferred`, `tests = []`, with no coverage
-credit. B3M2B2 retains every remaining authority-valid witness term.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3M2B2A Frozen-Ownership Audit
 
-Canonical Chapters 4, 13, 15, and 16 support recursive, type-preserving
-nested parentheses as one unnamed `take` witness, retain existential
-introduction downstream, and assign no name or semantic effect at this
-syntax transport boundary. Fresh inventory resolves broad
-B3M2B2 into exact `take ((x));` B3M2B2A and remaining B3M2B2B.
-The 121-byte/57-node contract, Task-252 `7/5/0` nested chain
-`2 -> 3 -> 4`, Task-256 exclusion of the full chain, base
-`1/2/2/2/2`, and witness/name `1/0` use existing public APIs.
-
-This documentation prerequisite closes `design_drift` in the broad
-umbrella. Future private implementation and tests remain bounded
-`source_drift` and `test_gap`. There is no `spec_gap`,
-`source_undocumented_behavior`, `test_expectation_drift`,
-language/crate `boundary_violation`, or lower-stage defect. A separate
-operational `boundary_violation` occurred when review-only agents wrote
-overlapping same-task authority references despite no-write scopes. The
-parent independently reconciled only task-owned content; the commit target
-remains unambiguous, and this is not a `repo_metadata_conflict`. No canonical
-specification, `.miz`, expectation, fixture, sidecar,
-trace metadata/status/count, active route, or production/test source
-changes. The formula-statement row remains `deferred`, `tests = []`, with
-no coverage credit; only follow-up ownership changes from B3M2B2 to
-B3M2B2A/B.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3M2B2A Implementation Audit
 
-The frozen source-derived ownership is now executable through four checker
-and five runner tests. They close only the bounded B3M2B2A `source_drift`
-and `test_gap`; no `spec_gap`, test-intent change, lower-stage repair, or
-new boundary violation was required. No specification, existing `.miz`,
-fixture, expectation, sidecar, trace row/status/count, or active route
-changed. `spec.en.checker.formula_statement.source_payloads` therefore
-remains `deferred`, `tests = []`, with no coverage credit.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3M2B2B1P Frozen Lower-Prerequisite Audit
 
-Authority admits the dormant imported-infix term in a `take` statement, but
-B1P deliberately claims only a private Task-253 proof-context reuse seam.
-The 143-byte source and projected Task-48/252/253 profile establish the real
-consumer; no Task-258 output is implemented. The missing decomposition is
-`design_drift`, the missing context-1 private route is bounded
-`source_drift`, and its absent two compound tests are `test_gap`. There is
-no blocking `spec_gap`, undocumented semantic behavior, expectation drift,
-or crate boundary violation.
-
-The audit row `spec.en.checker.formula_statement.source_payloads` remains
-`deferred`, `tests = []`, without backlink or coverage credit. B1P changes
-no specification, `.miz`, fixture, expectation, sidecar, trace
-row/status/count, active route, public API, or semantic owner.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3M2B2B1P Implementation Audit
 
-The documented private seam and exactly two tests are implemented, closing
-the bounded `source_drift` and `test_gap`. Review found no `spec_gap`,
-`source_undocumented_behavior`, `test_expectation_drift`,
-`boundary_violation`, or `repo_metadata_conflict`. No canonical
-specification, `.miz`, fixture, expectation, sidecar, active route, public
-API, or semantic owner changed.
-
-The formula-statement audit row therefore remains `deferred`, `tests = []`,
-without backlink or coverage credit. B1P is lower-stage infrastructure
-only; the exact Task-258 application-witness consumer remains B1A.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3M2B2B1A Frozen-Contract Audit
 
-Chapters 13, 15, and 16 already specify that `1 ++ 2` is a symbolic infix
-term and that `take` accepts a `term_expression` witness. The existing
-parser/resolver fixture authenticates `parser.type_fixtures::++`; B1P
-authenticates the exact proof-context Task-253 handoff. Therefore no
-`spec_gap` or unsafe test-intent decision exists.
-
-The missing exact application-witness ownership description was
-`design_drift`. Future production and compound-test work is bounded
-`source_drift` and `test_gap`. No `source_undocumented_behavior`,
-`test_expectation_drift`, `boundary_violation`, or blocking
-`repo_metadata_conflict` is present. This docs task changes follow-up
-ownership only. The formula-statement row remains `deferred`, `tests = []`,
-with no backlink or coverage credit because no semantic formula/proof result
-or active `.miz` test is added.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3M2B2B1A Implementation Audit Result
 
-The bounded `source_drift` and `test_gap` are closed: the exact 143-byte,
-63-node imported-infix source now reaches one syntax-free
-`Application(0)` witness through fully authenticated Task-48/252/253/256
-dependencies, atomic typed publication, and final clone revalidation. Four
-checker and five runner compound tests cover exact identity, every loaded
-source byte, reparsed near misses, resolver/lower provenance, validation
-precedence, family order, rollback, replay, and empty semantic outputs.
-
-This remains a dormant transport-only implementation. Canonical specs,
-`.miz`, fixtures, expectations, sidecars, active routes, and
-`tests/coverage/spec_trace.toml` are unchanged. Therefore
-`spec.en.checker.formula_statement.source_payloads` remains `deferred`,
-`tests = []`, with no backlink or executable coverage credit. Semantic
-typing, proof, substitution, and goal ownership remain deferred.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3M2B2B1B1P Frozen-Prerequisite Audit
 
-Chapters 13, 15, and 16, the parser operator-term fixture, the parser `take`
-fixture, and the imported `++` resolver summary already authorize the exact
-parenthesized application shape. No `spec_gap` or unsafe test-intent decision
-exists. The missing B1B1 decomposition and private wrapped proof-context seam
-were `design_drift`; the future seam and exactly two runner tests are bounded
-`source_drift` and `test_gap`.
-
-B1B1P adds no Task-258 row and no active coverage. Canonical specs, `.miz`,
-fixtures, expectations, sidecars, active routes, public checker APIs, and
-trace metadata remain unchanged. The
-`spec.en.checker.formula_statement.source_payloads` row therefore stays
-`deferred`, `tests = []`, without backlink or credit. No
-`source_undocumented_behavior`, `test_expectation_drift`,
-`boundary_violation`, or `repo_metadata_conflict` is present.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3M2B2B1B1P Implementation Audit
 
-The bounded `source_drift`, Rust `test_gap`, and paired `design_drift` are
-closed. Production now enforces the frozen exact resolver provenance; the
-two Rust tests cover same-source substitutions, the parser-derived
-diagnostic/node matrix, and all frozen empty upper families. This adds
-implementation evidence only. Canonical specs, `.miz`, expectations,
-sidecars, trace row/status/count, `deferred` status, backlinks, and executable
-coverage credit remain unchanged.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3M2B2B1B1 Frozen-Contract Audit
 
-Chapter 13 parenthesized symbolic infix terms, Chapter 15 `take`
-`term_expression`, and Chapter 16 proof-skeleton requirements jointly
-authorize the exact 158-byte source. Existing `.miz` fixtures separately
-cover the parenthesized operator term and `take` grammar. They do not
-authorize proof validity, witness type checking, substitution, or goal
-discharge.
-
-The missing paired B1B1 design contract is `design_drift`; the absent
-private consumer is bounded `source_drift`; its four checker and five runner
-tests are `test_gap`. There is no blocking `spec_gap` or unsafe test intent.
-The trace row `spec.en.checker.formula_statement.source_payloads` remains
-`deferred`, `tests = []`, with no backlink or executable coverage credit.
-Canonical specs, existing `.miz`, expectations, sidecars, trace status/count,
-and active cases remain unchanged by this prerequisite.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3M2B2B1B1 Implementation Audit
 
-The spec-derived private consumer and its nine tests close `source_drift`,
-`test_gap`, and completion `design_drift`; reviews report no findings. This
-is dormant design/test evidence only. The trace row
-`spec.en.checker.formula_statement.source_payloads` remains `deferred`,
-`tests = []`, with no backlink or coverage credit. Canonical specs, `.miz`,
-fixtures, expectations, sidecars, and active cases are unchanged, while
-semantic/proof/goal/type substitution remains deferred.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3M2B2B2P Frozen-Prerequisite Audit
 
-Chapters 5 §5.5, 13 §§13.3/13.3.1, 15 §§15.4.4/15.11.5, and 16
-§§16.3.3/16.7.3 plus the existing primary-term, simple-statement, and
-local-structure-gap artifacts authorize the exact constructor-shaped proof
-syntax and imported provenance. Chapter 5 §5.7 selector authority is recorded
-only as an explicit future B2B exclusion; it does not authorize B2P
-constructor semantics.
-
-The missing lower-reuse contract is selected `design_drift`; its future
-private implementation is `source_drift` and its two runner tests are
-`test_gap`. There is no blocking `spec_gap`, unsafe test intent,
-undocumented-source behavior, expectation drift, boundary violation, or
-metadata conflict. The formula-statement trace row remains `deferred`,
-`tests = []`, with no backlink or credit, while existing Task-254 diagnostic
-credit is unchanged. Canonical specs, `.miz`, fixtures, expectations,
-sidecars, trace metadata/counts, active routes, and semantic/proof/goal/type
-behavior remain unchanged.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3M2B2B2P Implementation Audit
 
-The implemented private lower seam and its two passing runner tests close
-the bounded `source_drift`, `test_gap`, and completion `design_drift`.
-This remains dormant design/test evidence only. The formula-statement trace
-row stays `deferred`, `tests = []`, without backlink or coverage credit;
-existing Task-254 diagnostic credit is unchanged. Canonical specs, `.miz`,
-fixtures, expectations, sidecars, active routes, and all semantic/proof/goal
-behavior remain unchanged.
-
-This is implementation evidence only. No trace/audit status or count changes,
-backlinks, or executable credit are introduced. The final read-only quality
-review passed every hard gate with no findings and a valid score of `98/100`.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3M2B2B2A Frozen-Contract Audit
 
-Chapters 5 §5.5, 13 §§13.3/13.3.1, 15 §§15.4.4/15.11.5, and 16
-§§16.3.3/16.7.3 plus existing parser/resolver/structure-gap artifacts
-authorize the exact constructor-witness occurrence and provenance. They do
-not authorize structure semantics or proof acceptance. The missing contract
-is `design_drift`; future source and tests are bounded `source_drift` /
-`test_gap`, with no blocking `spec_gap` or unsafe test intent.
-
-The formula-statement trace row remains `deferred`, `tests = []`, with no
-backlink or credit. Canonical specs, `.miz`, fixtures, expectations,
-sidecars, trace metadata/counts, active routes, Task-254 diagnostic credit,
-and semantic/proof/goal behavior are unchanged.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3M2B2B2A Implementation Audit
 
-The exact checker/runner implementation and its four/five tests close the
-bounded B2A `source_drift` and `test_gap`. The additive public API,
-fingerprint matrix, witness-to-structure ownership, validation precedence,
-atomic typed publication, and final clone behavior match the frozen
-contract. B2B selector behavior, B2C functional update/`FieldUpdate`, and
-all structure/proof semantics remain deferred.
-
-This audit update is narrative source/test follow-up only. The
-formula-statement row remains `deferred`, `tests = []`, without backlink,
-status/count change, or coverage credit. Canonical specs, `.miz`, fixtures,
-expectations, sidecars, active routes, and Task-254 diagnostic credit remain
-unchanged. The implementation-phase reviews have no findings and all
-verification gates pass. The final read-only review passes all nine hard
-gates with a valid `98/100`; commit `7613d50d` and fresh inventory are
-complete.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3M2B2B2BP Frozen-Contract Audit
 
-Fresh post-B2A inventory classifies the missing private proof-context
-Task-254 selector reuse contract as `design_drift`. The future runner seam
-is bounded `source_drift`, and its two tests are `test_gap`. There is no
-`spec_gap`, undocumented behavior, expectation drift, or boundary violation.
-The concurrent same-task EN draft that appeared after clean inventory is a
-nonblocking, report-only `repo_metadata_conflict`; the safe task-owned
-commit target remains identifiable and no metadata repair is performed.
-
-Authority supports only the 171-byte/79-node syntax/provenance profile,
-Task-48 `2/1/0`, Task-252 `6/4/2`, and Task-254
-`2/0/1/3/0/3/9`. No Task-256/258, checker/public API, diagnostic, active
-route, or semantic output is authorized. Formula-statement coverage remains
-`deferred`, `tests = []`, without backlink/status/count/credit; Task-254
-diagnostic credit is unchanged. B2B/B2C and selector semantics remain
-follow-ups.
-
-Repeated specification and source/documentation consistency reviews report
-no findings. Every verification gate passes, and the final read-only review
-passes all nine hard gates with a valid `98/100`. This closure changes no
-trace row, status, count, backlink, test list, or executable credit.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3M2B2B2BP Implementation Audit
 
-The bounded `source_drift` and `test_gap` are closed by the production-private
-selector seam and exactly two runner tests. The implementation preserves the
-frozen imported provenance, lower tables, ownership, failure precedence, and
-semantic exclusions. No `spec_gap`, undocumented behavior, expectation
-drift, or boundary violation was found. During final review, an external
-same-task writer expanded the Task-48/252 mutation matrices, fixed their
-initial no-op mutation, and added the frozen direct B2P compatibility hashes;
-the earlier external docs commit `6f84d4eb` and correction commit
-`a782606c` remain report-only history. With local HEAD unchanged at
-`a782606c`, the dirty task-owned scope expanded from 4 to 32 files and
-`origin/main...HEAD` moved from ahead-four to `0/0`. This is a nonblocking,
-report-only `repo_metadata_conflict`. The final task-owned target remains
-unambiguous; no metadata repair, revert, fetch, push, or stash action is
-performed.
-
-This implementation changes no canonical specification, `.miz`, fixture,
-expectation, sidecar, trace row/status/count/backlink, Task-254 diagnostic
-credit, or active route. Formula-statement coverage stays `deferred`,
-`tests = []`; B2B/B2C and all selector identity/type/proof semantics remain
-deferred.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3M2B2B2B Frozen-Contract Audit
 
-Fresh post-B2BP inventory classifies the missing direct-selector witness
-contract as `design_drift`, its future bounded implementation as
-`source_drift`, and the exact four checker plus five runner tests as
-`test_gap`. Review also found a pre-existing same-task draft that reversed
-the two formula node kinds: Task 256 owns `BuiltinPredicateApplication`
-nodes 51/70, while `FormulaExpression` containers 52/71 are arena-unowned.
-That content error is `design_drift`. The external appearance of the draft
-is a nonblocking, report-only `repo_metadata_conflict`; the safe target is
-unambiguous and no metadata repair is performed. There is no blocking
-`spec_gap`, unsafe test intent, undocumented source behavior, expectation
-drift, or boundary violation.
-
-Chapters 5 §§5.5/5.7, 13 §§13.3–13.3.2, 15
-§§15.4.4/15.11.5, and 16 §§16.3.3/16.7.3, the unchanged parser/resolver
-fixtures, and Tasks 48/248–258 authorize only syntax/provenance transport
-and one directed unnamed witness target. The exact 171-byte/79-node source
-composes Task-48 `2/1/0`, Task-252 `6/4/2`, completed B2BP Task-254
-`2/0/1/3/0/3/9`, Task-256 equality-only
-`2/0/0/0/0/0/0/4/4`, Task-258 base `1/2/2/2/2`, and witness `1/0`.
-The only new edge is witness 0 to selector `Structure(0)`; constructor
-`Structure(1)`, members, roots, primaries, applications, and transparent
-containers are excluded.
-
-The task reuses the existing `Structure` target, structure fingerprint,
-`build_with_structure`, and atomic typed/final installer. It adds no public
-API. B2C update/`FieldUpdate`, selector identity/type/result/call/chain,
-witness obligations/substitution, proof/goal/theorem acceptance, active
-routes, diagnostics, and all semantics remain deferred. Canonical specs,
-existing `.miz`, fixtures, expectations, sidecars, and trace metadata stay
-unchanged. The row
-`spec.en.checker.formula_statement.source_payloads` remains `deferred`,
-`tests = []`; Task-254 diagnostic credit is unchanged.
-
-Specification, test-sufficiency, implementation-boundary, and
-source/documentation consistency reviews all end with no findings. Fresh
-verification passes every documentation gate, and the final read-only
-quality review passes all nine hard gates with a valid `98/100`. Only the
-dedicated documentation commit and immediate fresh B2B implementation
-inventory remain open.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3M2B2B2B Implementation Audit
 
-The exact eight-file checker/runner implementation and its four checker/five
-runner tests close the bounded B2B `source_drift`, `test_gap`, and
-`design_drift`. The implementation preserves the frozen
-Task-48/252/254/256 and Task-258 base tables, installs one unnamed
-`Structure(0)` selector witness, retains selector base `Structure(1)`, and
-keeps B2A/B2B typed/final validation as exact fail-closed siblings. Task 256
-owns nodes `51/70`; `52/71` remain unowned.
-
-This narrative audit update changes no canonical specification, `.miz`,
-fixture, expectation, sidecar, trace row/status/count/backlink, diagnostic
-credit for Task 254, corpus active route, public API, or
-semantic/proof/goal ownership.
-Formula-statement coverage remains `deferred`, `tests = []`. The
-specification/dependency, test-sufficiency, and implementation reviews have
-no findings. Source/documentation consistency and broad final verification
-now also pass. Final quality passes all nine hard gates with a valid
-`98/100`. Implementation commit `8311502c` and fresh inventory are complete.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3M2B2B2CP Specification Audit
 
-Specific Chapter 13 §13.3.3 grammar and immutability text, Chapter 5
-constructor/selector context, Chapter 15/16 `take` placement, the active
-selector/update parser fixture and its missing-value/missing-close failures,
-and the existing Task-254 structure-term fixture make the exact B2CP
-transport intent derivable without changing canonical artifacts.
-
-Fresh inventory finds one medium `design_drift`: the roadmap named B2C
-directly although only constructor and selector proof-context reuse seams
-exist. B2CP resolves that dependency boundary and closes the stale B2B
-commit handoff. The absent private seam is bounded `source_drift`; its two
-tests are `test_gap`.
-
-Chapter 13 §13.3.3 and the complete postfix grammar, read with the active
-parser fixtures, unambiguously authorize this exact shape. The local
-`structure_expression` shorthand is a narrower helper summary and does not
-override the complete postfix production. No required behavior or choice is
-absent, so there is no blocking or nonblocking `spec_gap`; canonical
-specification is not edited. There is no unsafe test intent,
-`source_undocumented_behavior`, `test_expectation_drift`, or
-`boundary_violation`. The earlier/parallel
-write-owner overlap remains a nonblocking, report-only
-`repo_metadata_conflict`; the safe commit target is exact and repository
-metadata is not repaired.
-
-This documentation task freezes syntax/provenance only. It changes no
-`doc/spec`, `.miz`, fixture, expectation, sidecar, trace row/status/count/
-backlink, active route, public API, diagnostic credit, or semantic owner.
-The formula-statement row remains `deferred`, `tests = []`, and Task-254
-diagnostic credit remains unchanged.
-
-Task 254 retains nodes `69/65/30/20/24/68`; Task 252 retains published
-sites `51/53/59/62/66/73/75`. Task 256 later owns only nodes `55/77`, with
-containers `56/78` unowned and the whole update subtree excluded. B2CP
-publishes no Task-256/258 row; B2C alone may later own take/witness nodes
-`72/71` and the witness-to-`Structure(0)` edge.
-
-Concurrent commit `817bb92b` restored the rejected low/nonblocking
-`spec_gap` classification after the no-`spec_gap` adjudication. The later
-quality review therefore found high `design_drift`; hard gates 1 and 9
-failed and its `98/100` assertion was invalid. Docs-only Task
-`258B3M2B2B2CPC1` corrects those six passages without changing canonical
-specification, source, tests, trace data, counts, hashes, or coverage credit.
-Repeated specification/dependency, test-sufficiency,
-implementation-boundary, and source/documentation reviews have no findings.
-The docs diff check and checker lint pass; identical HEAD executable broad
-verification remains authoritative while unrelated incomplete source work
-blocks live runner/workspace reruns. All nine hard gates pass and final
-read-only quality is a valid `98/100`. Only the dedicated correction commit
-and fresh implementation inventory remain.
-
 Completion evidence: [central Task-258B3M2B2B2CP historical contract](../../task_contracts/en/258B3M2B2B2CP.md#completion-evidence).
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3M2B2B2C Specification Audit
 
-Fresh post-commit inventory derives the B2C source-only witness contract from
-Chapters 5 §§5.5/5.7, 13 §§13.3/13.3.1/13.3.3/13.9 complete postfix
-grammar, Chapter 14 equality, 15 §§15.4.1/15.4.4/15.11.5, and 16
-§§16.2/16.3.3/16.7.3, together with existing parser/resolver/Task-254
-fixtures and completed Tasks 48/252/254/256/B2A/B2B/B2CP surfaces.
-§13.3.3 and the complete postfix grammar unambiguously authorize the exact
-functional-update shape; the narrower local `structure_expression` summary
-does not override them.
-
-The authority supports occurrence, provenance, exact ownership, and one
-witness-to-update target only. The goal is `x = x`, so `take` establishes no
-existential matching, obligation, substitution, proof, goal, or theorem
-acceptance. There is no blocking or nonblocking `spec_gap`,
-`boundary_violation`, expectation drift, unsafe test intent, or undocumented
-behavior. The absent frozen B2C contract and stale post-B2CP ledger were
-`design_drift`; future implementation is bounded `source_drift`; four
-checker and five runner tests are `test_gap`.
-
-This prerequisite edits design documents only. Canonical specification,
-`.miz`, fixtures, expectations, sidecars, trace data, public/active surfaces,
-and semantics remain unchanged. The formula row stays `deferred`,
-`tests = []`, with narrative-only audit impact. All four independent reviews
-have no findings and complete documentation/count/hash verification passes.
-Independent final quality has no findings, all nine hard gates PASS, and the
-valid score is `98/100`. The commit and fresh implementation inventory remain
-open.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3M2B2B2C Implementation Audit Update
 
-Prerequisite commit `d6076cc757ce675d1b46a720b4f00805923d3c70` and fresh
-inventory are complete. The exact eight-file source transaction implements
-only syntax-free source occurrence, resolver provenance, ownership, and the
-directed witness-to-update target authorized by the frozen contract. The four
-checker and five runner tests now pass; final test-sufficiency and
-implementation reviews have no findings. The bounded `source_drift` and
-`test_gap` are closed.
-
-There remains no `spec_gap`, `source_undocumented_behavior`,
-`test_expectation_drift`, or `boundary_violation`. Canonical specification,
-existing `.miz`, fixtures, expectations, sidecars, trace data, public/active
-surfaces, and semantic behavior remain unchanged. The formula row remains
-`deferred`, `tests = []`; the coverage-audit change is narrative-only. Final
-source/documentation re-review, broad verification, quality review, commit,
-and post-commit inventory are pending.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3M2B2B2C Broad Verification Audit Update
 
-Format, workspace Clippy, checker `390+15`, runner
-`444+3+14+137+2+21`, full workspace tests, focused `4/4` and `5/5`, and
-sibling `12/12` and `21/21` suites pass. The five CLI counts and hashes and
-fresh production/test inventories match the synchronized crate plans.
-Canonical specification, `.miz`, fixtures, expectations, sidecars, trace,
-public/active surfaces, and semantics remain unchanged. Independent final
-source/documentation and quality reviews, commit, and post-commit inventory
-remain pending.
-
 Completion evidence: [central Task-258B3M2B2B2C historical contract](../../task_contracts/en/258B3M2B2B2C.md#completion-evidence).
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3M2B2B2C Post-Commit and Task 258B3M2B2B3P Specification Audit
 
-B2C is committed as `e8373c683448e524cb98edde83fdf8de83a125cd`;
-post-commit inventory is clean, ahead eight/behind zero, and leaves
-`stash@{0}` object `f65cf4a13752ec380710814a9ac6392ccb9d75d4`
-unchanged. Its no-findings reviews, nine passing hard gates, and valid
-`98/100` remain final.
-
-Canonical Chapter 13 §13.4.1 and complete term grammar, Chapter 15 §15.4.4,
-Chapter 4 witness syntax, Chapter 16 theorem/proof syntax, existing
-`pass_parser_simple_statements_001`, and existing Task-255 `{1,2}` evidence
-authorize the exact B3P parser/resolver/lower-table contract. They do not
-authorize a statement witness edge or semantic result. The exact 117-byte,
-57-node/root-56 profile and the lower Task-48 `2/1/0`, Task-252 `6/4/2`,
-and Task-255 `1/0/0/0/0/2/1` tables are fully stated in the crate plan and
-set-term design. Tasks 253/254/256/258 are empty.
-
-Specification review reports **NO FINDINGS**. Missing/stale B3P design is
-`design_drift`; the future private explicit-context seam is bounded
-`source_drift`; two tests are `test_gap`. There is no `spec_gap`,
-`source_undocumented_behavior`, `test_expectation_drift`,
-`boundary_violation`, or current `repo_metadata_conflict`. This
-documentation prerequisite changes no canonical or executable artifact.
-The formula-statement trace row remains `deferred`, `tests = []`, and
-Task-255 covered credit remains unchanged; the trace TOML is deliberately
-not edited.
-
-The corrected contract freezes every Task-255 term/
-`EnumerationElement`-edge/request/fingerprint field and requires the same
-two tests to exhaust source bytes, node fields, resolver/lower fields,
-ownership, precedence/replay/clones, empty adjacent/semantic outputs, and
-the three independent Task-111 literal hashes. Documentation re-review and
-quality remain pending.
-
 Completion evidence: [central Task-258B3M2B2B3P historical contract](../../task_contracts/en/258B3M2B2B3P.md#completion-evidence).
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3M2B2B3P Final Quality Audit
 
-Final quality reports **NO FINDINGS**. All nine hard gates PASS and valid
-`98/100` is composed as specification `20`, tests `20`, traceability `15`,
-implementation readiness `14`, documentation `10`, boundary discipline
-`10`, verification `5`, and handoff `4`. Only stage/commit, post-commit,
-and fresh implementation inventory remain pending.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3M2B2B3P Implementation Source/Specification Status
 
-The implementation is derived without changing canonical authority from the
-contract committed as
-`285a1f11c310bb313c4c6b4feae914eb11f74754`. Exactly four runner files and
-two tests close the classified B3P `source_drift` and `test_gap`;
-test-sufficiency and implementation reviews report **NO FINDINGS**. No
-`spec_gap`, undocumented semantic behavior, expectation drift, boundary
-violation, checker/public change, or active-route change was introduced.
-
-The executable evidence remains transport-only: Task-255 enumeration reuse
-in proof context 1, exhaustive source/node/resolver/Task-48/Task-252/Task-255
-corruption and replay, fingerprint-only absence authentication, and literal
-legacy hashes. Requirement
-`spec.en.checker.formula_statement.source_payloads` remains `deferred` with
-`tests = []`; existing Task-255 credit is unchanged and
-`tests/coverage/spec_trace.toml` is a deliberate no-op. Narrative ownership
-now transfers the next dependency to upper B3A.
-
-Focused tests, runner library `446`, formatting, package Clippy, checker/
-mizar-test lint-policy `15/14`, and metadata `137` pass.
-Source/documentation consistency and documentation/boundary repeats report
-**NO FINDINGS**; workspace Clippy/tests, five CLI and current manifest/
-test-list hashes, diff check, and exact 30-file scope also PASS. Independent
-final quality reports **NO FINDINGS**; all nine hard gates PASS with valid
-`98/100` (`20/20/15/14/10/10/5/4`). Only commit/post-commit and fresh B3A
-inventory remain pending.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3M2B2B3A Frozen Source/Specification Audit
 
-Chapters 4/13/15/16, the parser pass, unchanged formula-gap failure
-expectation/trace, B3P lower tests, and Tasks 48/252/255/256/258 authorize
-only exact transport from `take { 1 , 2 }` to `SetTerm(0)`. The goal `x = x`
-is non-existential, so witness semantics, goal progress, proof validity, and
-theorem acceptance are not authorized.
-
-Stale/missing documentation is `design_drift`; missing API/installers/
-consumer is `source_drift`; missing four-plus-five tests is `test_gap`.
-There is no `spec_gap`, `source_undocumented_behavior`,
-`test_expectation_drift`, `boundary_violation`, or
-`repo_metadata_conflict`. The trace row remains `deferred`, `tests = []`;
-Task-111/255 credit is unchanged. No spec, `.miz`, fixture, expectation,
-sidecar, or trace edit is allowed; audit impact is narrative ownership only.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3M2B2B3A Implementation Source/Specification Closure
 
-The bounded implementation closes the recorded `source_drift` and
-`test_gap` with the exact additive API and four-plus-five tests. Independent
-specification, test-sufficiency, and implementation reviews report
-**NO FINDINGS**; no new disagreement class was found. `doc/spec`, `.miz`,
-expectations, sidecars, and `tests/coverage/spec_trace.toml` remain unchanged.
-The trace row stays `deferred`, `tests = []`, and Task-111/255 credit remains
-unchanged. The second source/documentation consistency repeat and final
-documentation/boundary reread report **NO FINDINGS**; parent final
-verification listed in the crate plans passes, including exact `39`-file
-scope. Independent final read-only quality review reports **NO FINDINGS**.
-All nine hard gates PASS with no score cap; the valid score is `98/100`
-(`20/20/15/14/10/10/5/4`). The stated semantic and coverage deferrals
-remain unchanged as residual risk. Only the dedicated implementation
-commit, post-commit invariant verification, and fresh next-task inventory
-remain pending.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3M2B2B3B Source-Spec Audit
 
-Sections 13.4.1, 15.4.4, and 16.3.3 authorize `{}` as an unnamed `take`
-term. B3B transports that syntax into an existing Task-255 SetTerm target
-without claiming empty-set typing, existential discharge, or proof
-acceptance. The exact existing `.miz` occurrence is not reinterpreted or
-credited; its expectation remains template-signature rejection. Missing
-upper documentation is `design_drift`, and the future exact profile/tests
-are `source_drift`/`test_gap`. No specification or expectation drift is
-found.
-
-Repeated source/documentation consistency review reports **NO FINDINGS**.
-The canonical authority, dormant fixture intent, deferred trace row, and
-all forbidden artifacts remain unchanged. Exact source/count/hash/no-op
-verification and all nine hard gates PASS; final quality is valid `98/100`.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3M2B2B3B Implementation Source/Specification Closure
 
-The bounded implementation closes the recorded `source_drift`. Three
-medium test-sufficiency `test_gap` findings were remediated inside the exact
-four-plus-five tests. Post-auth injection and stage-prefix/
-non-generic-guard assertions close the remaining lower-field matrix gap;
-all test-sufficiency repeats and the final implementation repeat report
-**NO FINDINGS**. No new disagreement class was found. `doc/spec`, `.miz`,
-expectations, fixtures, sidecars, and `tests/coverage/spec_trace.toml`
-remain unchanged.
-
-The formula-statement trace row stays `deferred`, `tests = []`, and
-Task-111/255 credit remains unchanged. Source/documentation consistency
-repeat reports **NO FINDINGS** after independently confirming the
-authority/trace/`source_set_term` no-ops. Final documentation/boundary and
-independent quality reviews report **NO FINDINGS**, all hard gates PASS,
-valid `98/100`; this section grants no semantic or coverage credit.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3M2B2B3C Authority Audit
 
-Specs 13.5, 4.4.3, 15.4.4, and 16.3.3 plus existing parser and Task-255
-fixtures authorize the exact dormant `take the set;` source transport.
-They do not authorize nonemptiness discharge, stable generated choice
-symbols, existential matching, substitution, or proof acceptance here.
-Accordingly, no specification, `.miz`, expectation, sidecar, or trace row is
-edited; `spec.en.checker.formula_statement.source_payloads` remains
-`deferred`, `tests = []`, and existing Task-255 coverage remains unchanged.
-The repeated specification review is **NO FINDINGS**.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3M2B2B3C Implementation Source/Spec Closure
 
-Prerequisite `ea48ffc4fa586ac6d0813cd23a6b1d9b571087b2` froze the
-spec-derived choice-witness contract. The implementation changes only the
-seven private statement consumers and exact four checker/five runner tests.
-It transports the 110-byte/52-node source, Task-255
-`1/0/0/1/0/0/2` profile, exact ownership, and empty semantics without
-altering specification behavior or test intent.
-
-The implementation closes bounded `source_drift` and `test_gap`. Two medium
-test gaps and one B3A-hard-coded source/test finding were remediated; repeated
-test and implementation reviews report **NO FINDINGS**. No `spec_gap`,
-`source_undocumented_behavior`, `test_expectation_drift`,
-`boundary_violation`, or `repo_metadata_conflict` exists. The formula-
-statement trace row remains `deferred`, `tests = []`; Task-111/255 credit,
-all trace counts/backlinks, and every semantic deferral remain unchanged.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3M2B2B3D Authority Audit
 
-Specs 13.6, 4.4.3, 15.4.4, and 16.3.3, the existing qua parser fixture, and
-the exact Task-255 `4 qua set` source/expectation/trace authorize the frozen
-source-transport slice. The exact source adds no language behavior and does
-not claim `qua` reachability, inheritance/cluster widening, overload,
-coercion, typing, witness, proof, or theorem semantics. Missing upper
-contract/route/tests are `design_drift`/future `source_drift`/`test_gap`;
-the task-selection disagreement is closed `design_drift`. No blocking
-`spec_gap`, undocumented behavior, expectation drift, or boundary violation.
-The origin movement remains report-only `repo_metadata_conflict`.
-
-Repeated authority/source/documentation review is **NO FINDINGS**. Exact
-forbidden diffs and the trace blob are zero/unchanged; the five metadata CLIs
-and all count/hash gates reproduce the frozen no-op baseline.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3M2B2B3D Implementation Source/Spec Inventory
 
-Prerequisite `43af562c2cb84e72658cee059abbe7543ee73fe7` froze the
-spec-derived qua-witness transport. The implementation changes only the
-seven private statement consumers and exact four checker/five runner tests,
-realizing the 109-byte/54-node source and
-`32/70/44/72/62/21` validation matrices without changing language or test
-intent. Test-sufficiency review reports **NO FINDINGS**.
-
-No specification, `.miz`, expectation, sidecar, trace row/status/count/
-backlink, active diagnostic, or semantic credit changes. The formula-
-statement row remains `deferred`, `tests = []`, and existing Task-255
-coverage remains unchanged. Qua reachability/widening, typing, overload/
-coercion, existential/substitution, proof/theorem acceptance, facts,
-Core/CFG/VC, comprehension, B4, and B5 remain deferred. Independent
-implementation review reports **NO FINDINGS**. Source/documentation,
-bilingual, and boundary consistency review also reports **NO FINDINGS**
-after the three bounded documentation corrections. Both packages,
-formatting, full Clippy, workspace tests, five CLIs, and count/hash reruns
-pass with the authority/trace no-op intact. Independent final read-only
-quality review reports **NO FINDINGS**; all nine hard gates PASS with no cap
-at valid `100/100` (`20/20/15/15/10/10/5/5`). Only exact
-staging/cached-diff review, implementation commit, and
-post-commit/fresh-next-task gates remain pending.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3M2B2B3E Authority Audit
 
-Chapter 13 §§13.4/13.4.2 authorize a set comprehension whose optional
-condition is omitted; Chapters 4, 15, and 16 authorize the unnamed
-`take term_expression;` proof-skeleton form. Existing parser coverage and
-the exact Task-255 fixture authorize `{3 where candidate255 is set}` without
-changing either artifact. The expectation explicitly defers generator
-binding/capture and sethood discharge. Independent review reports
-no blocking authority finding after the node-42 ownership correction: no
-blocking `spec_gap`, expectation drift, or boundary violation exists. The
-missing upper exact contract/consumer/matrices are `design_drift`,
-`source_drift`, and `test_gap`. Repeated specification/documentation,
-test-sufficiency, implementation-boundary, and
-source/documentation/bilingual/boundary reviews report **NO FINDINGS** after
-the classified documentation corrections. Verification passes with the
-authority/trace/coverage no-op intact. Independent final quality reports
-**NO FINDINGS**; all nine hard gates PASS with valid `100/100` and no cap.
-Only staging/commit and post-commit/fresh-implementation gates remain
-pending.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B3M2B2B3E Implementation Source/Spec Inventory
 
-The exact seven private consumers implement only the authority-derived
-condition-free comprehension witness contract. Existing public
-source-statement/set-term DTOs and installers are reused; no public checker
-API, specification, `.miz`, expectation, sidecar, trace row/status/count/
-backlink, active diagnostic, or semantic intent changes. Post-auth negatives
-use coherent successful Task-255 handoffs under the same provenance.
-
-Independent test-sufficiency and implementation re-reviews report
-**NO FINDINGS**. This closes the exact dormant consumer's `source_drift`
-and `test_gap`, without a `spec_gap`, `source_undocumented_behavior`,
-`test_expectation_drift`, or `boundary_violation`. Binding/capture,
-conditions, sethood/result typing, proof semantics, B4/B5, and active
-coverage remain deferred.
-
-After the three bounded `design_drift` corrections, final source/
-documentation, bilingual, and boundary consistency reports
-**NO FINDINGS**. Complete parent verification PASSes. Independent final
-quality reports **NO FINDINGS**, all nine hard gates PASS, valid `100/100`
-with no cap. Staging and post-commit gates subsequently closed in
-implementation commit `e4479691db3b0a8785bb16e94d386bd71a394274`;
-fresh inventory selected Task 258B4A.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B4A Authority Audit
 
-Canonical formula and theorem authority, existing parser/resolver behavior,
-and Tasks 252/256/257/258 public handoffs support the syntax-free B4A root
-association without a semantic decision. The active one-LF Task-257B1
-fixture cannot be reused because its expectation defers theorem ownership
-and the formula-statement trace row requires a distinct future source. The
-private two-LF source resolves this `test_expectation_drift` while preserving
-the exact lower AST and resolver provenance.
-
-The missing B4A design is `design_drift`; future upper API/route and test
-work is bounded `source_drift`/`test_gap`. No blocking `spec_gap`,
-`source_undocumented_behavior`, or `boundary_violation` remains, and no
-lower-stage prerequisite is authorized or required.
-
-Repeated specification/documentation review reports **NO FINDINGS** after
-the classified corrections. Independent final quality passes all nine hard
-gates with no cap at valid `100/100`; only staging, commit, and post-commit
-inventory remain.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B4A Implementation Authority Result
 
-The implementation follows §§14.1/14.4/14.5.2/14.5.4 and
-§§16.2/16.7.1 only as source-identity and statement-to-composite transport.
-It authenticates the exact private parser/resolver route and reuses the
-Task-252/256/257 public handoffs. The active 79-byte fixture remains a
-lower-only negative, so the earlier `test_expectation_drift` is resolved
-without modifying its intent. The bounded `source_drift` and `test_gap` are
-closed by the eight authorized consumers and nine exact tests. There is no
-new `spec_gap`, `boundary_violation`, or undocumented semantic behavior;
-truth, theorem acceptance, proof, facts, and later root families remain
-deferred.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B4B Authority Audit
 
-Chapter 14 §§14.1, 14.3.1-14.3.2, 14.3.4, 14.4.1,
-14.4.4, 14.5.2, 14.5.4, 14.6, 14.7.3-14.7.5, and 14.8,
-Chapter 13 §13.1.4, Chapter 4 §§4.1/4.5/4.6, and Chapter 16
-§§16.1/16.2/16.7.1 authorize the frozen source shapes and theorem
-role/status/ownership, but
-not connective truth, repetition expansion, formula checking, or theorem
-acceptance. Parser connectives fixtures and the complete Task-257B2 lower
-contract supply executable syntax and source-transport intent.
-
-The active 166-byte sidecar and covered trace row explicitly defer theorem
-ownership; upper reuse is `test_expectation_drift`. The distinct private
-167-byte/hash route resolves that conflict without editing authority
-artifacts. Missing B4B documentation is `design_drift`; the future exact
-selector/allowlist and nine tests are bounded `source_drift`/`test_gap`.
-The source drift includes the cardinality-only B4A profile predicate and its
-B4A-hardcoded typed/final call sites; implementation must replace that
-ambiguity with exact B4A/B4B statement identity plus matched B1/B2 lower
-profile dispatch.
-External origin movement remains report-only `repo_metadata_conflict`.
-There is no blocking `spec_gap`, `source_undocumented_behavior`,
-`boundary_violation`, or authority-less lower-stage repair.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B4B Implementation Authority Result
 
-Documentation prerequisite commit
-`b8a7b8257a682f7c88de943ceaa35b67c0585bc4` closed the frozen contract and
-was followed by a clean ahead-8/behind-0, unchanged-stash fresh inventory.
-The bounded `source_drift` and `test_gap` are now closed in exactly seven
-files and nine focused tests. The private 167-byte route retains label-free
-raw resolver provenance before runner enrichment to `1/1/1/1/0`; it reuses
-Task-257B2 lower ownership `42/1/81` in a rootless 124-node arena and adds
-only the upper `1/1/1/0/1` `Composite(0)` associations. Exact B1/A versus
-B2/B pairing and B4B telemetry `0/0/[]` prevent cardinality-only or
-cross-family selection.
-
-The active 166-byte source remains lower-only, and no specification,
-existing `.miz`, expectation, sidecar, trace row/status/count, public API,
-diagnostic, formula truth, theorem acceptance, proof, fact, or other
-semantic result changed. Separate test-sufficiency and implementation
-reviews report **NO FINDINGS**. Final source/documentation, bilingual, and
-boundary consistency reviews also report **NO FINDINGS**. Focused `4/4 +
-5/5`, full offline workspace tests, formatting, Clippy with warnings denied,
-five CLI, count/hash, exact-scope, audit-no-op, forbidden-artifact, and stash
-gates PASS. No blocking `spec_gap`, `source_undocumented_behavior`,
-`boundary_violation`, or authority-less lower-stage repair has appeared.
-Independent final quality reports **NO FINDINGS**; all nine hard gates PASS
-with no cap at valid `100/100` (`20/20/15/15/10/10/5/5`). Staging/cached-
-diff review, the implementation commit, post-commit inventory, and B4C
-selection remain pending.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B4C Authority Audit
 
-Task 258B4B implementation commit
-`752c17ae7d552d5268d1028612b8174e480b6f3e` is followed by a clean,
-ahead-1/behind-0 inventory with unchanged protected stash. The changed
-origin relationship is report-only `repo_metadata_conflict`; the commit
-target remains unambiguous.
-
-Canonical Chapter 4 §§4.1/4.3/4.5/4.6/4.7.1, Chapter 14
-§§14.1/14.4/14.5.2/14.5.4/14.7.5/14.8, and Chapter 16
-§§16.1/16.2/16.7.1 authorize restricted-universal, existential,
-nested-quantifier, reserve-default, and labeled theorem source transport.
-They do not authorize quantifier truth, restriction discharge, existential
-witness success, capture semantics, implicit theorem closure, facts,
-theorem acceptance, proof, or IR results.
-
-The active 138-byte Task-257B3 fixture and its expectation/trace row
-explicitly defer theorem ownership, so reusing it for an upper route is
-`test_expectation_drift`. B4C freezes an isolated 139-byte/double-LF source
-with hash
-`36e5a68a92451590644951838a9af8926212bd78f88d1f90563f12b650b161c1`;
-its syntax/resolver/lower tables are otherwise identical. Missing B4C design
-is `design_drift`, and the future upper implementation/tests are bounded
-`source_drift`/`test_gap`.
-
-Fresh inventory also finds a lower selector compatibility defect: the
-Task-257B3 runner selector recognizes only the active 138-byte form even
-though the isolated 139-byte sibling has the same authority-derived parse,
-resolver provenance, and lower contract. This is bounded `source_drift`,
-not a semantic decision. Authority is sufficient for one mandatory,
-separate lower-stage prerequisite limited to
-`type_elaboration/source_formula.rs` and its composition test owner. It
-must accept exactly one or two final LF bytes and reject zero or three;
-production `source_formula_composition.rs`, authority artifacts, and all
-lower tables remain unchanged.
-
-After that separate commit, B4C upper work is limited to the same seven
-consumers as B4B, exact B3/B4C pairing, upper `1/1/1/0/1`, no input facts,
-and private telemetry `2/2/[2,2,4,4,4,4]`. There is no blocking
-`spec_gap`, `source_undocumented_behavior`, or `boundary_violation`.
-Specification review, verification, quality, and documentation commit
-remain pending.
-
 Completion evidence: [central Task-258B4C historical contract](../../task_contracts/en/258B4C.md#completion-evidence).
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B4C Implementation Authority Result
 
-Documentation prerequisite `3c723316ae632a867d29e8f4fc36348be30df202`
-and lower prerequisite `42356f38ed0e679d7b878caf0e647c6aa8148d82`
-closed the two ordered prerequisites. The exact 139-byte private route now
-transports the already authorized Task-257B3 nested-quantifier source
-payload into a syntax-free B4C theorem root. No language rule or test intent
-was inferred: the active 138-byte route remains lower-only, and all
-specification, `.miz`, expectation, sidecar, and trace artifacts are
-unchanged.
-
-The implemented `24/1/41`, upper `1/1/1/0/1`, `[0]`, empty input-fact,
-`Composite(0)`, provenance, and telemetry boundaries close the classified
-`source_drift` and `test_gap`. Independent test-sufficiency and
-implementation reviews report **NO FINDINGS**. Truth, restriction
-discharge, witness semantics, closure, fact, acceptance, proof, and IR
-remain deferred; `doc/design/spec_coverage_audit.md` therefore requires no
-status/count/backlink edit.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B5A Frozen Authority Audit
 
-Chapters 4, 11, 14, 15, and 16 authorize the reserved-variable equalities,
-inward local-scope visibility, labeled proof step, nested proof blocks, and
-simple local citation. The unchanged positive parser fixture supplies the
-two-descendant-proof source shape; the unchanged type-elaboration gap fixture
-preserves its existing checker-boundary intent; and the resolver confinement
-test authenticates scope prefix `[0] -> [0,1]`.
-
-Review classifies stale B4C ledgers and the former undivided B5 description as
-`design_drift`. Missing imported-public and active confinement coverage is a
-bounded `test_gap` owned by B5B/B5C. There is no blocking `spec_gap`,
-`source_undocumented_behavior`, `test_expectation_drift`,
-`boundary_violation`, or current `repo_metadata_conflict`. B5A changes no
-language rule or test intent and may not edit specification, existing `.miz`,
-expectation, sidecar, or trace artifacts.
-The absent seven-consumer B5A implementation is bounded `source_drift`,
-intentionally left to the immediate next implementation task.
-
 Completion evidence: [central Task-258B5A historical contract](../../task_contracts/en/258B5A.md#completion-evidence).
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B5A Implementation Authority Result
 
-Documentation prerequisite
-`59021f764f146d669f84877042f0512882c9c5ff` freezes the exact
-ancestor-label/descendant-citation transaction. The seven private consumers
-now transport only that authorized 185-byte source through the existing
-parser, resolver provenance, BindingEnv, Task-252, Task-256, and Task-258
-boundaries. This closes the bounded B5A `source_drift` without inferring a
-language rule or changing test intent.
-
-The implementation adds only the frozen Rust mutation matrix. B5B imported
-public visibility and B5C active inner-to-outer/sibling confinement remain a
-bounded `test_gap` owned by separate tasks. Specifications, existing `.miz`,
-expectations, sidecars, trace metadata, public APIs, diagnostics, facts,
-accepted statements, proofs, goals, and downstream IR remain unchanged.
-Requirement `spec.en.checker.formula_statement.source_payloads` remains
-deferred with no active test mapping or coverage credit.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B5B Frozen Authority Result
 
-Chapters 11, 15, and 16 authorize a simple citation to a visible imported
-public theorem. Existing parser fixtures authenticate simple-citation and
-imported-`Ref` syntax independently; resolver label tests, artifact
-exported-label schema, and module-summary-reuse lowering authenticate the
-derived provenance. They do not constitute active B5B coverage.
-
-Missing frozen B5B/API ownership is `design_drift`; missing opt-in imported
-label population is bounded lower-stage `source_drift`; missing active B5B
-corpus is bounded `test_gap`. No blocking `spec_gap`,
-`source_undocumented_behavior`, `test_expectation_drift`,
-`boundary_violation`, or current `repo_metadata_conflict` was found.
-
-The documentation freezes one private 146-byte route, a separate two-file
-lower prerequisite, and a later seven-consumer upper implementation. It does
-not change language or test intent. B5C and all citation proof/justification
-semantics remain deferred. Requirement
-`spec.en.checker.formula_statement.source_payloads`
-therefore stays `deferred` with `tests = []`; specifications, existing
-`.miz`, expectations, sidecars, trace metadata, status/count/backlinks, and
-coverage credit are no-ops.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B5B Implementation Authority Result
 
-Documentation commit `141dc44a757555e8d4837756515e1577f672348b`
-froze the authority-derived contract. Lower commit
-`46dd9db56ced2fcc57799420de9d5fed06f284f5` closed the bounded
-opt-in imported-label `source_drift` without changing the normal
-augmentation route. The current seven-consumer upper implementation closes
-the bounded private-route `source_drift` and its implementation-level
-`test_gap`: four checker and five upper runner tests authenticate the exact
-imported public theorem citation and its negative matrix.
-
-This closure does not create active corpus or trace coverage. The absence of
-a human-reviewed active `.miz` B5B mapping remains a broader bounded
-`test_gap`, and B5C remains separate. Chapters 11, 15, and 16, the existing
-parser/resolver fixtures, artifact schema, and Tasks 248–258B5A APIs remain
-the authority; no language or test intent is inferred from source.
-
-Specifications, existing `.miz`, expectations, sidecars,
-`tests/coverage/spec_trace.toml`, trace status/count/backlinks, and coverage
-credit are deliberate no-ops. Accordingly
-`spec.en.checker.formula_statement.source_payloads` remains `deferred` with
-`tests = []`; `doc/design/spec_coverage_audit.md` receives narrative-only
-implementation closure without any trace status, count, backlink, owner, or
-coverage-credit field change.
-There is no blocking `spec_gap`, `source_undocumented_behavior`,
-`test_expectation_drift`, `boundary_violation`, or
-`repo_metadata_conflict`; the stale implementation-status prose repaired in
-this logical task was `design_drift`.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B5C Frozen Authority Result
 
-`doc/spec/en/15.statements.md` section 15.10 and
-`doc/spec/en/16.theorems_and_proofs.md` sections 16.4.2 and 16.5.1
-authorize both active negatives: proof-step labels are local to their
-enclosing reasoning block, and a citation may use an earlier proposition
-only from the lexical declaring proof scope or one of its descendants;
-inner-to-enclosing and sibling citations are forbidden. Chapter 11 section
-11.2 is contextual ordinary-symbol authority, not the proof-label rule.
-
-Fresh inventory classifies the missing production source walk as medium
-`source_drift` and a potential `boundary_violation` if implemented in the
-runner, stale B5C/B5B design status as medium `design_drift`, and absent
-active fixtures as medium `test_gap`. The unspecified public resolver
-diagnostic code is a low deferred `spec_gap`; the frozen internal key
-`declaration_symbol.label.proof_scope_confinement` and empty public
-diagnostic-code lists make it nonblocking. There is no current
-`boundary_violation`, `source_undocumented_behavior`,
-`test_expectation_drift`, or `repo_metadata_conflict`.
-
-This documentation commit changes no authority artifact or coverage state.
-R-032A structural lowering and R-032B proof-label collection must separately
-precede the two active declaration-symbol fixtures and trace requirements.
-Their exact lifetime/error/ordinal/subtree/provenance contracts remain
-derived in the linked resolver documents; source-byte-plus-normal-AST runner
-selection and the private input/confinement details add no language rule.
-Only that later active task may move cases `419 -> 421`,
-requirements `387 -> 389`, failures `191 -> 193`, and active declaration
-cases `5 -> 7`. Type requirements stay `253/241`, R-G007 closes only
-partially, and `spec.en.checker.formula_statement.source_payloads` remains
-`deferred` with `tests = []`.
-
-The frozen lower default-deny table and provenance authentication add no
-specification rule or coverage credit. The former starts with exact
-`Root -> CompilationUnit -> ItemList -> direct TheoremItem -> direct
-ProofBlock`, exact-one normal Root/CompilationUnit structural children, and
-direct-normal theorem scanning, then admits only the supported-statement
-edges and exact simple-reference
-identifier chain, with all other forms no-ordinal/no-descent; the latter
-validates env/module, derived namespace, exact one id-0 LocalSource record/
-source id, and every projection field. All independent corruptions are
-`proof_scope_input`, never confinement or public diagnostics. The exact
-48-file scope is unchanged.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 258B5C Active Coverage Result
 
-The current task activates exactly
-`spec.en.15.statements.proof_label_scope_confinement` and
-`spec.en.16.theorems_and_proofs.labels.proof_scope_confinement` with the two
-frozen fail fixtures. This is derived from Chapters 15 §15.10 and 16
-§§16.4.2/16.5.1 and does not alter either specification or any existing
-fixture/expectation.
-
-The private runner consumes resolver provenance and unresolved outcomes;
-checker semantic installation remains excluded. The pre-existing
-`mizar-test/tests/metadata.rs` count assertions are an additional mechanical
-consumer (`5 -> 7`) found as `test_expectation_drift`/`design_drift`.
-Requirement `spec.en.checker.formula_statement.source_payloads` remains
-`deferred` with `tests = []`, and all non-confinement R-G007 families remain
-deferred.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 259 Frozen Authority Audit
 
-Chapter 9 authorizes typed predicate parameters, pre-definition `assume`
-guards, ordinary `means` definientia, and explicit predicate properties.
-Section 9.5 states that an ordinary predicate has no existence/uniqueness
-condition and that every explicit property creates a proof obligation.
-Chapter 16 Section 16.6 supplies the general correctness-condition boundary.
-This is sufficient authority for a transport-only pass case and exactly one
-pending symmetry-property obligation.
-
-The authority does not specify how a pre-definition guard is composed into
-the symmetry FOL verification condition. That is a nonblocking `spec_gap`
-for later semantic construction, not authority to invent a goal. Task 259
-therefore transports the guard and property separately, keeps obligation
-assumptions empty, and uses opaque goal/provenance identities. Proof,
-discharge, VC construction, and accepted-definition publication remain
-deferred.
-
-Fresh lower inspection classifies the absent predicate-definition handoff
-as `source_drift`, the absent real consumer/corruption coverage as
-`test_gap`, and the previously broad Task-259 prose plus current Task-248
-profile mismatch as `design_drift`. The parser/resolver source shape is
-adequate. There is no blocking canonical contradiction, unsafe test-intent
-inference, `test_expectation_drift`, `boundary_violation`, or
-`repo_metadata_conflict`.
-
-This documentation prerequisite adds narrative ownership only. It changes
-no specification, `.miz`, sidecar, expectation, trace row, mapping,
-backlink, status, count, or coverage credit. The existing Chapter-9
-diagnostic gap and mixed predicate-plus-functor gap remain unchanged; the
-latter still requires Task 260.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 248 Two-Parameter Profile-Extension Authority Audit
 
-Chapters 4, 9, and 18 plus Appendix A authorize two ordered leading
-definition parameters in one shared block scope. Distinct `x` and `y`
-declarations therefore create distinct identities; with no outer/module
-binding, neither shadows another. Dense ids and source-order predecessor
-links are representation invariants, not new language semantics.
-
-The previous Profile-A-only design is `design_drift`; the hard-coded
-two-item/one-shadow validation and absent real-source helper are bounded
-`source_drift`; missing focused Profile-B Rust tests are `test_gap`. The
-same-name re-reservation `spec_gap` remains irrelevant. There is no blocking
-authority conflict, unsafe test-intent inference, current
-`boundary_violation`, `source_undocumented_behavior`,
-`test_expectation_drift`, or `repo_metadata_conflict`.
-
-The checker stays syntax-free and does not inspect builtin `set`; the private
-runner authenticates exact direct `x`/`y` parameter subtrees, ranges, real
-definition shell, and shared-arena sites. All later predicate/guard/property/
-proof meaning stays excluded. This docs-only task changes design mapping and
-follow-up ownership narratively but grants no executable coverage and leaves
-`tests/coverage/spec_trace.toml` byte-unchanged.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 259 Corrected Future Public-Surface Audit
 
-`source_predicate_definition.md` is the owning future module specification
-for public `source_predicate_definition`. It freezes five dense IDs, six
-input aggregates, five immutable output rows/tables, the handoff and projection,
-the producer, and three `#[non_exhaustive]` enums. Its `Public Enum Policy`
-classifies `SourcePredicatePropertyKind`,
-`SourcePredicateDefinitionRecovery`, and
-`SourcePredicateDefinitionError`, with no exhaustive exception.
-
-The implementation must add this module to `lib.rs`, this audit's module-spec,
-crate-export, and public-surface inventories, and all three allowlists in
-`tests/lint_policy.rs` in the same logical task. The public row surface is
-read-only; derived `SemanticOrigin`, four lower debug fingerprints, and the
-allocated `InitialObligationId` cannot be supplied by callers. Typed
-installation is the sole Task-259 publication path; final assembly receives
-only the typed-owned clone.
-
-Fresh post-`ca54135f` review classifies the missing current module as expected
-`source_drift` and the absent executable consumer as `test_gap`. The implicit
-future API/policy and stale prerequisite records are `design_drift` repaired
-by this documentation correction. There is no blocking `spec_gap`,
-`source_undocumented_behavior`, `test_expectation_drift`,
-`boundary_violation`, or `repo_metadata_conflict`.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 261 Frozen Future Public-Surface Audit
 
-`source_attribute_definition.md` owns the future public
-`source_attribute_definition` module. It freezes four dense IDs, five input
-aggregates, four immutable row/table families, the typed handoff, the producer,
-and recovery/error enums. Every future public enum is `#[non_exhaustive]`; the
-implementation must add the module, exports, public surface, enum policy, and
-lint-policy inventories in the same logical task.
-
-The future public rows remain read-only. Callers cannot supply the derived
-`SemanticOrigin`, four lower-stage debug fingerprints, or allocated IDs.
-Typed-AST installation is the sole publication path; resolved final assembly
-receives only the typed-owned clone. The ordinary Chapter-6 attribute
-definition creates no initial-obligation row. Its producer and installer do
-not receive, inspect, compare, or project the obligation table, so installation
-structurally retains that table unchanged. This boundary does not add
-formula meaning, equivalence, acceptance, facts, proof, Core, CFG, or VC
-semantics.
-
-Fresh Task-261 inventory classifies the absent module as expected
-`source_drift`, the absent exact executable consumer as `test_gap`, and the
-previously implicit contract as `design_drift` repaired by this prerequisite.
-There is no blocking `spec_gap`, authority conflict, unsafe lower-stage edit,
-`source_undocumented_behavior`, `test_expectation_drift`,
-or `boundary_violation`. The measured origin-reference difference is a
-report-only `repo_metadata_conflict`; it neither changes this public surface
-nor obscures the safe task-only commit target.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 261 Active Public-Surface Result
 
-`source_attribute_definition` is now exported and the public inventory above
-enumerates all four generated ids and every literal public declaration. Both
-public enums are non-exhaustive. The exact producer, typed/final owners, and
-private runner close the frozen `source_drift` and `test_gap` without adding
-an obligation row or semantic result. Source/spec, public-enum, module-layout,
-syntax-boundary, and adjacent-allow-rationale lint policies guard the active
-surface. The prior `repo_metadata_conflict` remains report-only.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 262 Frozen Future Public-Surface Audit
 
-[`source_mode_definition.md`](./source_mode_definition.md) owns the future
-public `source_mode_definition` module. It freezes six dense IDs, seven input
-aggregates, six immutable row/table families, the handoff/projection/producer,
-and recovery/request/property/error enums. Every future public enum is
-`#[non_exhaustive]`; implementation must synchronize module exports, literal
-public inventory, enum policy, source-spec, syntax-boundary, module-layout, and
-adjacent-allow lint inventories.
-
-Callers cannot supply derived origins, fingerprints, allocated IDs, obligation
-IDs, evidence responses, acceptance, facts, proofs, or VCs. The projection
-owns baseline compare-and-swap and appends one existing-kind `Sethood` row;
-the RHS request remains unresolved. TypedAst is the only publication path and
-final assembly clone-preserves/revalidates it while rejecting mixed Tasks
-259--262.
-
-Fresh inventory classifies the missing upper contract as `design_drift`, the
-absent Task-262 module as `source_drift`, and the absent exact consumer as
-`test_gap`. Specification review additionally found a lower `source_drift`:
-Task 249 has no standalone mode-RHS owner, and fabricating a third binding-
-linked application would be a `boundary_violation`. Canonical Chapter 7 is
-sufficient to freeze and implement checker-only Task 249M separately, so this
-is not a blocking `spec_gap`; Task 262 implementation remains blocked until
-that prerequisite lands. No authority conflict, `source_undocumented_behavior`,
-or `test_expectation_drift` exists. The measured origin difference is report-
-only `repo_metadata_conflict` and the safe task-only commit target remains
-identifiable.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 249M Frozen Future Public-Surface Audit
 
-Task 249M will add `SourceTypeModeRhsId`, extension/input, immutable row/table,
-handoff getter, producer, and seven non-exhaustive `SourceTypeError` variants
-inside the existing public `source_type` module. The mode-RHS owner is absent
-today (`source_drift`); the exact tests are prospective, canonical-derived
-`test_gap`. No public enum class is added, no syntax boundary changes, and no
-current source behavior is credited. Implementation must synchronize the
-literal public inventory and existing enum/source-spec lint policies.
-
 Completion evidence: [central Task-249M historical contract](../../task_contracts/en/249M.md#completion-evidence).
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 262 Active Source Audit
 
-The public syntax-free `source_mode_definition` module now closes the frozen
-upper `source_drift`, while its five checker tests and exact private consumer
-close the canonical-derived `test_gap`. Six non-empty dense tables, resolver
-and lower fingerprints, one unresolved inhabitation request, and one linked
-Pending `Sethood` row are active. Public enum, source-spec, documentation, and
-syntax-boundary lint inventories include the module. No syntax dependency,
-evidence result, proof, acceptance, fact, IR, VC, or structure-definition
-credit is introduced.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
+
 ## Task 249S Frozen Future Public-Surface Audit
 
-Fresh Task-263 preflight classifies the absent standalone structure-member
-type owner as `source_drift`, its four corruption/ownership tests as a
-canonical-derived `test_gap`, and every fabricated binding or reuse of the
-definition-return/mode-RHS families as `boundary_violation`. Chapter 5 is
-sufficient, so there is no blocking `spec_gap`.
-
-Task 249S will add the public dense ID, input, immutable row/table, handoff
-getter, producer, and five non-exhaustive error variants frozen in
-`source_type.md`. The exact profile is `0/4/0/0/0/4`. No new public enum type,
-syntax dependency, normalized type, diagnostic, obligation, semantic result,
-runner, corpus, or trace credit is added; five variants append to the existing
-non-exhaustive public `SourceTypeError`. The literal public/source-spec lint
-inventories must be synchronized when implementation lands.
-
 Completion evidence: [central Task-249S historical contract](../../task_contracts/en/249S.md#completion-evidence).
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 263 Frozen Source/API Audit
 
-Fresh inventory finds no existing `source_structure_definition` production
-owner. The exact source is parser/resolver clean only after committed Task
-263R, and its four written member types are represented only after committed
-Task 249S. This is an upper checker `source_drift`, paired `design_drift`, and
-canonical-derived runner `test_gap`, not a `spec_gap`.
-
-The new canonical design freezes the entire future public surface before any
-Rust edit: five dense IDs; four caller input row families; three
-non-exhaustive enums; five immutable tables including a derived coherence-
-request table; projection, error, and producer; Typed/final getters and one
-transactional installer. The exact active profile is `2/4/1/2/0`; parameters
-and context are absent, property selectors are excluded from constructor
-vectors, both mappings have authenticated identical bare-`set` types, and the
-arbitrary obligation baseline is unchanged. No goal, guard, obligation kind,
-diagnostic, acceptance, proof, fact, Core, CFG, or VC surface is authorized.
-
-This documentation prerequisite adds no source/API item and preserves checker
-production `27/156019` and tests `462`. Implementation inventory may be added
-only after the separate docs commit and fresh dependency preflight.
-
-The future handoff has one private immutable baseline-obligation snapshot with
-no getter or stable-debug serialization; Typed/final equality uses it to reject
-same-length mutation. Public `debug_text()` is nevertheless fully specified by
-an exact line grammar, profile line, escaping/list rules, empty-coherence
-representation, and final LF. Existing checker tests 2/3 own compound adjacent
-category and cross-row precedence, not only single-fault mutations.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 263 Active Source/API Result
 
-The public syntax-free `source_structure_definition` module, literal inventory
-above, five checker tests, and exact private consumer close the frozen
-`source_drift` and `test_gap`. All four public enums are non-exhaustive; the
-module export, source/spec, module-layout, syntax-boundary, and allow-rationale
-lint inventories are active. The profile is exactly `2/4/1/2/0`, with no
-undocumented semantic or diagnostic surface.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 264R Source/Specification Audit
 
-Canonical Chapters 5, 7, and 13 plus Parser Task 48 authorize a represented
-property-implementation context shell but no resolver identity or checker
-payload. The dropped shell is lower `source_drift`; absent shell/identity-
-stability design is `design_drift`; two resolver regressions are `test_gap`;
-reusing selector/property-clause/redefinition/registration identity is a
-`boundary_violation`. Chapter 16 supplies no new lower proof semantics. The
-frozen correction preserves existing semantic sibling paths, contribution
-anchor/effects, and all checker/corpus/trace state. Task 248P and Task 264 remain
-open, so there is no undocumented checker semantic surface or coverage credit.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 264R Implemented Source/Specification Status
 
-The lower resolver `source_drift`, `design_drift`, and canonical-derived
-`test_gap` are closed without changing checker source or language behavior.
-Chapter 7 property payload/provenance, means/equals, means-only `it`, referenced
-return type, definiens, initial obligations, and all semantic deferrals remain
-open under Tasks 248P/264; no checker or executable coverage credit is added.
-
 Completion evidence: [central Task-248P historical contract](../../task_contracts/en/248P.md#completion-evidence).
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 248P Implemented Source/Specification Status
 
-The classified checker `source_drift`, `design_drift`, and canonical-derived
-`test_gap` are closed by the exact Profile-C implementation and two tests.
-There is no specification, expectation, or repository-metadata repair and no
-new executable coverage credit. Property identity/payload, return type,
-definiens, initial obligations, proof/acceptance/facts, and the real runner
-consumer remain explicitly open under Task 264.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 264 Frozen Source/Specification Status
 
-Canonical Chapters 5/7/13/16 authorize the exact means/equals transport,
-means-only `it`, declared property return, and existence/uniqueness versus
-zero-obligation distinction. The missing checker producer is `source_drift`,
-the absent frozen ABI is `design_drift`, and the two exact active consumers are
-`test_gap`. Current Task-249S composition is a separate lower `source_drift`
-assigned to Task 249PI. No canonical contradiction or blocking `spec_gap`
-exists.
-
-Task 264 must not infer property identity from its context-only shell, infer a
-return from the body, invent an `assume` guard or FOL composition, activate the
-coherence seed, or publish proof/acceptance/facts/IR/VC. Those are explicit
-`boundary_violation` guards. The docs prerequisite changes no source or active
-coverage status.
-
-Public-surface inventory after implementation must include the five dense IDs,
-five input/row/table families, style/target/correctness/recovery/error enums,
-immutable handoff, projection, producer, typed/final getters, and the two new
-obligation-kind serializer literals exactly as frozen in the canonical module
-design.
-
 Completion evidence: [central Task-249PI historical contract](../../task_contracts/en/249PI.md#completion-evidence).
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 249PI Implemented Source/Specification Audit
 
-The classified lower `source_drift`, paired `design_drift`, and four-test
-`test_gap` are closed by the exact frozen transport. Repeated implementation
-and test reviews report **NO FINDINGS** after repairing the bounded test and
-orphan-installation gaps. No specification, corpus, trace, or semantic-credit
-change occurred; Task 264 retains every frozen semantic responsibility.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 264 Implemented Source/Specification Audit
 
-The public syntax-free `source_property_implementation` module implements the
-frozen five-table equals/means transport, exact resolver target and declared
-return-row association, complete lower fingerprints, and means-only Pending
-existence/uniqueness intake. Typed and final owners keep the transaction
-mutually exclusive from Tasks 259--263 and publish no proof, discharge,
-acceptance, fact, formula result, diagnostic, Core IR, control-flow IR, or VC.
-
-The two canonical-derived pass fixtures and one covered trace row close the
-classified Task-264 `test_gap`; exact checker tests close construction,
-corruption, transactional installation, replay, orphan/extra-obligation, and
-Task-259-isolation gaps. The parameter declaration anchor and equals selector
-member ownership corrections align derived design with the already-frozen
-Task-248P/254 public APIs. No `doc/spec`, pre-existing `.miz`, or pre-existing
-expectation intent changed, and no blocking `spec_gap` remains in this bounded
-transaction.
-
-### Task264C public carrier-identity receipt
-
-The paired
-[Task264C contract](../../task_contracts/en/CHECKER-SOURCE-PROPERTY-CARRIER-IDENTITY-264C.md)
-adds `SourcePropertyCarrierIdentity` and
-`SourcePropertyImplementationHandoff::carrier_identity()` to the public source
-inventory. The value has private fields and role-specific getters for the
-whole symbol, definition, contribution, and normal origin of exact
-`Task264Carrier`, `carrier`, and `marker`. The existing producer derives it
-from the exact `3/3/1` resolver environment and final replay validates it
-against the parameter type head and target row. This is additive,
-syntax-free, fail-closed transport with no new enum, error, producer input,
-Typed/Resolved slot, diagnostic, semantic output, or coverage claim.
-
 Completion evidence: [central Task-269A historical contract](../../task_contracts/en/269A.md#completion-evidence).
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 269A Implemented Source/Specification Audit
 
-The public syntax-free module and private dormant consumer close exactly the
-classified definition-site `source_drift`, `design_drift`, and eight-test gap.
-All lower identities, source/arena bytes, resolver-local provenance,
-fingerprints, and binding-order behavior match the canonical-derived frozen
-contract. No specification, existing test intent, trace credit, diagnostic,
-or deferred typing/proof/goal/fact/IR behavior changed; no blocking `spec_gap`
-or boundary violation is introduced.
-
-### Task 269B frozen B3M1 source audit
-
-| Specification promise | Source evidence | Test intent | Status |
-|---|---|---|---|
-| A named witness in the exact mixed list introduces one local binding while the unnamed sibling does not. | Existing Task-269A input/row/table/handoff API over frozen Task-258B3M1 witness rows `0/1`. | Existing checker/runner compound tests expand to exact B3M1 plus mutation and profile-isolation matrices. | Frozen; implementation pending. |
-| Source order and scope are authenticated without goal semantics. | Resolver-local `y@[0],84..85,visible-after=1`, five fingerprints, and 56-node replay. | Definition-site forward/later lookup plus all-node/fingerprint/cross-profile rejection. | Frozen; typing, goal, proof, and capture deferred. |
-
-No public API, spec/corpus/trace artifact, coverage credit, diagnostic, or
-audit-owner status changes. `spec_coverage_audit.md` therefore remains a
-deliberate no-op.
-
 Completion evidence: [central Task-269B historical contract](../../task_contracts/en/269B.md#completion-evidence).
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 269CP source/spec classification
 
-The synchronized exact isolated proof-`let` lower contract closes
-`design_drift`. The bounded runner-private implementation closes the selected
-`source_drift`, and its four canonical-derived tests close the selected
-`test_gap`. The implementation authenticates the frozen exact
-source/Surface/shell/resolver/local projection and remains checker-semantic
-no-op. Later-use/capture is not ready and remains an external source-
-payload gap. Existing specifications, fixtures, expectations, and trace
-metadata stay read-only; the coverage audit changes follow-up ownership only
-and grants no executable credit.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 269C source/spec classification
 
-Chapters 4, 15, and 16 authorize exactly the selected proof-local binding and
-scope. The frozen syntax-free checker/runner transaction closes bounded
-`source_drift`; four checker and four runner tests close its bounded
-`test_gap`. Missing source-type admission and resolver-wide later-use/capture
-remain separately classified `source_drift`. No `doc/spec`, `.miz`,
-expectation, trace status, diagnostic, proof, or semantic intent changes, and
-the broad diagnostic fixture receives no positive credit.
-
-Implementation closes exactly the classified binding `source_drift` and its
-eight-test `test_gap`. Canonical artifacts remain byte-identical; source-type,
-real use/capture, and all proof/diagnostic semantics remain open rather than
-being inferred from the new source behavior.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 269CT Source/API Audit
 
-Canonical Chapters 4/8/15/16 authorize the exact written proof-`let` type
-transport. New public owners are `SourceProofLocalLetTypeHandoff`,
-`SourceProofLocalLetTypeProducer`, and non-exhaustive
-`SourceProofLocalLetTypeError`, plus boxed Typed/final getters and installer.
-Generic `SourceTypeProducer` and Task-269C APIs remain behaviorally unchanged.
-The implementation gap and eight-test gap are bounded `source_drift` and
-`test_gap`; semantic and active coverage remain deferred.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 269CT Implemented Source/API Audit
 
-The bounded `source_drift` and eight-test `test_gap` are closed in exactly the
-frozen seven Rust files. Public additions match the documented struct field
-order, producer signature, non-exhaustive four-variant error/display order,
-and Typed/final getters/installer. Generic Task-249 behavior and Task-269C
-bytes remain unchanged. The final-input review finding was a
-`boundary_violation`; its Task-specific empty-node-hint predicate and regression
-are now reviewed **NO FINDINGS**. No canonical or active artifact changed.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 269GP Source/API Audit
 
-Canonical Chapters 4/15/16 and measured parser/resolver data support the exact
-private proof-`given` syntax-lower projection. Missing contract/source/tests
-are `design_drift`/bounded `source_drift`/`test_gap`. Chapter 4 Section 4.6.1
-and Chapter 16 Sections 16.3.3/16.4.2 conflict on binding scope, a blocking
-`spec_gap` explicitly excluded from 269GP and owned by human canonical review.
-No checker API, canonical test artifact, trace status, or active result
-changes. Task 269 remains open and Task 270 stays gated.
-Repeated source/docs and final-quality reviews report **NO FINDINGS**; the
-narrowed task passes all nine gates uncapped at `100/100`.
-
-The exact runner projection and four tests are now implemented, closing the
-bounded `source_drift` and `test_gap`. Canonical source/test intent and checker
-public API remain untouched. The scope contradiction is unchanged and still
-blocks only 269G/269GT after the 269GP implementation commit.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 269GS Source/API Audit
 
-The human-approved canonical edit resolves the `given` lifetime `spec_gap` in
-documentation. Existing parser syntax and the 269GP runner-private projection
-remain compatible. Checker has no `SourceProofLocalGiven` binding consumer or
-public API, classified as the next Task 269G `source_drift`; existing fixtures
-do not exercise later witness use, classified as a `test_gap`. No source or
-test artifact changes in 269GS.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 269G Source/Spec Delta
 
-The planned source maps the Task-269GP exact lower row to one `GivenWitness`
-`BindingEnv` row and preserves its handoff in otherwise-empty Typed/final
-profiles. Those profiles own the binding handoff while every semantic/node
-table and every sibling handoff remains empty. The exact lookup matrix covers
-the canonical block lifetime. Missing source type is Task 269GT; missing
-condition/fact/proof and active source-use extraction remain deferred. No
-existing canonical test artifact is rebaselined.
-
-Implementation closes exactly that binding `source_drift` and the eight-test
-`test_gap`. The public Given family, `BindingKind::GivenWitness`, and Typed/
-Resolved ownership match the frozen contract and canonical block scope.
-Canonical artifacts remain byte-identical; source type, active use/capture,
-and every condition/fact/proof semantic remain open rather than inferred from
-source behavior.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 277A Frozen Source/Specification Mapping
 
-The [central Task 277A contract](../../task_contracts/en/277A.md) maps only the
-direct parser-origin Parameter/Loci/Locus/Arguments/Argument grammar roles in
-Templates Chapter 18 to a syntax-free, targetless transport profile. The exact
-fixture has no scheme/theorem source role, no algorithm, and no pred/func
-schema parameter. The implemented durable owner, source producer, and focused
-tests close the bounded `design_drift`, `source_drift`, and `test_gap`; the contradictory
-algorithm wording remains deferred `spec_gap`. No expectation or coverage
-status changes.
-
-The current public surface is inventoried under `source_template` above. The
-module/export, public-surface, and four-public-enum entries are present in the
-paired current inventories and checker `tests/lint_policy.rs`; that policy-only
-ninth Rust path adds no behavior or test count. Independent reviews report
-**NO FINDINGS** and full verification passes. Final-quality re-review also
-reports **NO FINDINGS**; all nine hard gates PASS without a score cap at valid
-`100/100`. Exact staging/cached-diff review passed. Immediately after
-implementation commit `b67b028e07337ff5b72422bc8f16fb8f187b5c06`, the read-only
-post-implementation checkpoint observed
-`HEAD=b67b028e07337ff5b72422bc8f16fb8f187b5c06`, a clean worktree,
-`origin/main...HEAD=0/1`, and unchanged protected
-`stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4`. Task 277A is
-complete while umbrella Task 277 remains partial; any successor must be
-separately frozen and reviewed.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 277B-L Implemented Source/Specification Mapping
 
-The [Task 277B-L contract](../../task_contracts/en/277B-L.md) records the completed
-checker-only structural bridge from completed resolver
-`TemplateTypeParameterSourceCollection` to an existing `TypedAst`. It is
-the completed closure of the former `design_drift`, `source_drift`, and Rust
-`test_gap`, with no `spec_gap`: it does not derive a new Templates or
-term-expression rule. The standalone
-owner is [source_template_type_parameter_association](./source_template_type_parameter_association.md#task-277b-l-template-type-parameter-association), not 277A's `source_template`.
-
-The implemented producer validates R1 binding identity against normal, exact,
-range-anchored typed nodes and their direct structural edges, yielding an
-immutable zero-semantic association table. It does not install Typed/Resolved
-state, interpret type/sethood, issue a diagnostic, alter an active route, or
-make Task 277B ready. Specification coverage, traceability, and
-`spec_coverage_audit.md` therefore have no owned-state delta.
-
-`src/lib.rs` now exports `source_template_type_parameter_association`; checker
-lint policy contains the matching public-enum module, source/spec module,
-public-API-path, and `lib.rs` public-module allowlist entries. The current
-crate-export list and public-surface inventory above are therefore exact. The
-test-sufficiency review reports **NO FINDINGS**, and the implementation review
-reports **NO FINDINGS** after the canonical-`Identifier` prefix-spoof fix.
-Source/documentation re-review reports **NO FINDINGS** after the EN/JA CLI-tense
-fix; bilingual and boundary reviews report **NO FINDINGS**. All focused, lint,
-library, package/workspace Clippy, full-test, formatting/diff, metadata, CLI,
-and protected-surface gates pass. Finding-specific final-quality re-review after
-the identifier-within-type-head containment repair is **NO FINDINGS**; all nine
-hard gates PASS uncapped at valid `100/100` (`20/20/15/15/10/10/5/5`). Exact
-staging/cached-diff review, task-only commit, post-implementation proof, and
-fresh successor inventory are closed in the central [historical checkpoint](../../task_contracts/en/277B-L.md#post-implementation-checkpoint); no successor
-is selected. Task 277B remains not ready and receives
-zero semantic credit.
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 269GT Source/API Delta
 
-At documentation-prerequisite commit
-`35bc97b92ce075226105e8fcd4c1e43c8621995c`, source had no
-`SourceProofLocalGivenType*` family or Given-type Typed/final owner; that was
-the implementation-owned `source_drift`. The frozen plan comprised one
-handoff, producer, non-exhaustive error, Typed getter/installer, Resolved
-getter, and private exact binding profile. The implementation status below
-records its closure without rebaselining any canonical or active test
-artifact.
-
 Completion evidence: [central Task-269GT historical contract](../../task_contracts/en/269GT.md#completion-evidence).
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 269GUP Frozen Source/API Delta
 
-There is no blocking `spec_gap`. The exact sibling binding profile is a
-`test_gap`; its private lower/public binding family is bounded `source_drift`;
-stale ownership/status is `design_drift`. Reconstructing the binding in
-`source_type.rs` or adding a resolver-use table would be `boundary_violation`.
-The frozen lower route, public binding input/handoff/producer/error, and eight
-tests will close only GUP when implemented. Direct GP/G/GT APIs remain unchanged;
-GUPT/GU are absent.
 Completion evidence: [central Task-269GUP historical contract](../../task_contracts/en/269GUP.md#completion-evidence).
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 269GUPT Frozen Source/Specification Mapping
 
-Chapters 3/4/8/15/16 plus the exact GUP source/lower/binding artifacts require the declared `set` source type but no semantic publication. Planned public coverage is `SourceProofLocalGivenUseTypeHandoff`, `SourceProofLocalGivenUseTypeProducer`, and `SourceProofLocalGivenUseTypeError`, with four checker and four private runner tests. Until implementation, this is a frozen `source_drift`/`test_gap` contract; it changes no canonical specification, `.miz`, expectation, trace row, or active coverage credit.
-
 Completion evidence: [central Task-269GUPT historical contract](../../task_contracts/en/269GUPT.md#completion-evidence).
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 269GU Frozen Source/Specification Mapping
 
-Canonical Chapters 4/13/15/16 and the exact GUP/GUPT artifacts authorize the
-two later `y` variable references and no enclosing formula semantics. Planned
-public coverage is the GU handoff/producer/non-exhaustive error plus four
-checker and four private runner tests. Until implementation this is a bounded
-`source_drift`/`test_gap` contract. Canonical specification, `.miz`,
-expectations, trace, metadata, diagnostics, CLI behavior, and active coverage
-credit stay unchanged.
-
 Completion evidence: [central Task-269GU historical contract](../../task_contracts/en/269GU.md#completion-evidence).
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 269GCP Frozen Source/Specification Mapping
 
-Chapters 4/15/16 explicitly require a Given witness to bind its own `such
-that` occurrences. The existing canonical fixtures do not exercise such an
-occurrence, so the exact canonical-derived private profile is a bounded
-`source_drift`/`test_gap`, not a specification change. GCP authenticates only
-the source, Surface, shells, theorem provenance, and declaration/type ranges;
-condition terms remain unowned until GCU. No `.miz`, expectation, trace,
-diagnostic, dispatch, or coverage status changes.
-
 Completion evidence: [central Task-269GCP historical contract](../../task_contracts/en/269GCP.md#completion-evidence).
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 269GC Frozen Source/Specification Mapping
 
-Spec 4.6.1, 15.3.3, 15.10, 16.3.3, and 16.4.2 map to one exact GCP-derived
-binding transaction and lexical scope matrix. Existing `.miz`, sidecars,
-expectations, and trace rows remain unchanged because the focused private tests
-close the classified source/test gap without active corpus admission. GCT owns
-the written type and GCU owns the authenticated condition occurrences. No
-condition/fact/proof semantics or active coverage is credited.
-
 Completion evidence: [central Task-269GC historical contract](../../task_contracts/en/269GC.md#completion-evidence).
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 269GCT Frozen Source/Specification Mapping
 
-Canonical soft typing and `given` rules map the exact written `set@90..93` to
-witness binding 1 while preserving GC's block-local identity and lookup.
-`SourceProofLocalGivenConditionType{Handoff,Producer,Error}` plus the common
-source-type tables, Typed/final boxed owners, and eight focused Rust tests are
-the only derived consumers. Existing `.miz`, sidecars, expectations, trace,
-metadata, diagnostics, public dispatch, and active credit remain unchanged.
-The absent family/tests are classified `source_drift`/`test_gap`; this frozen
-mapping repairs `design_drift`. Condition occurrences and all semantic effects
-remain GCU-or-later work; there is no blocking `spec_gap`.
-
 Completion evidence: [central Task-269GCT historical contract](../../task_contracts/en/269GCT.md#completion-evidence).
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 269GCU Frozen Source/Specification Mapping
 
-Canonical Chapters 4/13/15/16 map `y@107..108` and `y@111..112` to the
-block-local witness declared at `82..83`. The exact GCT dependency supplies
-binding 1 and resolver provenance; GCU adds only two
-`VariableReference`/binding-reference rows and immutable ownership. Missing
-family/tests are `source_drift`/`test_gap`; this prerequisite repairs
-`design_drift`. There is no blocking `spec_gap`. Formula, label, fact,
-guard, proof, obligation, descendant/export/capture, active route, and semantic
-credit remain deferred.
-
 Completion evidence: [central Task-269GCU historical contract](../../task_contracts/en/269GCU.md#completion-evidence).
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 269SDP Frozen Source/Specification Mapping
 
-| Canonical requirement | Frozen source evidence | Owner/test | Status |
-|---|---|---|---|
-| Given is inherited by a descendant block; `now`, `set`, and bare references have defined syntax. | Exact 180-byte source; 68-node/root-67 Surface profile; ranges for Given, now, two Set/Equating/name/RHS subtrees. | Private runner lower output and four exhaustive tests. | Implemented syntax-only; the bounded `design_drift`/`source_drift`/`test_gap` are closed with no active credit. |
-
-Chapter 4 and Chapter 15 disagree on `set` effects. SDP does not choose a
-meaning; closure/capture remains blocked while context and occurrence can be
-separately inventoried.
-
 Completion evidence: [central Task-269SDP historical contract](../../task_contracts/en/269SDP.md#completion-evidence).
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
 ## Task 269SDC Frozen Source/Specification Audit
 
-Fresh post-SDP inventory classifies the absent exact descendant checker
-contract as `design_drift`, its missing producer/Typed/Resolved/private runner
-route as `source_drift`, and missing exact child-context tests as `test_gap`.
-Specs 4.6.1, 15.3.3/15.6.1/15.10, and 16.3.3/16.4.1--16.4.3 give sufficient
-test intent for `1/1/0 -> 3/2/0`, inherited `y`, and parent/sibling exclusion. The Chapter-4/
-15 Set conflict remains a nonblocking SDC `spec_gap` and a blocking
-LocalAbbreviation/capture gap. Existing `.miz`, expectations, trace rows,
-coverage status, and diagnostics remain authoritative and unchanged; no new
-fixture is required for this dormant exact-source consumer.
-
 Completion evidence: [central Task-269SDC historical contract](../../task_contracts/en/269SDC.md#completion-evidence).
+Details archived: [checker_source_spec_audit_sections.md](../../archive/checker_source_spec_audit_sections.md).
 
-### Task264D equals selector identity receipt
-
-The [Task264D contract](../../task_contracts/en/CHECKER-SOURCE-PROPERTY-EQUALS-SELECTOR-IDENTITY-264D.md)
-closes only the checker `source_drift` between the exact equals lower graph and
-the resolver-authenticated whole `carrier` field symbol. Chapter 7 owns the
-direct-term equals form; the existing Task264 `.miz` owns `M.carrier`. An
-explicit construction-only `SymbolEnv` authenticates the bounded result, while
-the three complete handoffs and private scalar association preserve it for
-replay. This adds no semantic, trace, metadata, or coverage credit.
