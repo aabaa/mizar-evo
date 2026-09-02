@@ -54,6 +54,7 @@ pub struct LocalUserSymbolDeclaration {
     pub export_rank: ExportRank,
     pub kind: UserSymbolKind,
     pub arity: UserSymbolArity,
+    pub operator: Option<ExportedOperatorMetadata>,
     pub declared_at: SourceSpan,
     pub activation_start: SourcePos,
 }
@@ -134,6 +135,7 @@ pub struct ExportedSymbolShape {
     pub export_rank: ExportRank,
     pub kind: UserSymbolKind,
     pub arity: UserSymbolArity,
+    pub operator: Option<ExportedOperatorMetadata>,
 }
 
 pub struct UserSymbolCandidate {
@@ -145,6 +147,7 @@ pub struct UserSymbolCandidate {
     pub export_rank: ExportRank,
     pub kind: UserSymbolKind,
     pub arity: UserSymbolArity,
+    pub operator: Option<ExportedOperatorMetadata>,
 }
 ```
 
@@ -215,6 +218,12 @@ pub struct UserSymbolCandidate {
   区切りではない各記号片を記録します。`foo-bar` のような連続したハイフン区切りの
   predicate / functor 記法は、隣接部分が単純な 1 文字 locus の `x-y` operator 形で
   ない場合、1 つの user-symbol 綴りとして記録します。
+- Step 5A.2 では、保守的な spelling fallback より先に、先行する definition の
+  `let` binding から locus を選びます。local prefix / postfix / infix functor pattern は、
+  完了した宣言と同時に source-position-sensitive な default parser metadata
+  （precedence 64、infix は non-associative）を公開し、template locus は term operand
+  配置から除外します。predicate、および functional / nullary / circumfix functor は
+  default Pratt entry を公開しません。
 - ローカルの `mode`、`attr`、`struct` 宣言について、この prepass は
   constructor-name 綴りだけを記録します。連続した読みやすいハイフン区切りの
   constructor 名は 1 つの綴りとして記録し、operator-like な記号名はローカルの

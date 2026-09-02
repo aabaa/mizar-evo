@@ -55,6 +55,7 @@ pub struct LocalUserSymbolDeclaration {
     pub export_rank: ExportRank,
     pub kind: UserSymbolKind,
     pub arity: UserSymbolArity,
+    pub operator: Option<ExportedOperatorMetadata>,
     pub declared_at: SourceSpan,
     pub activation_start: SourcePos,
 }
@@ -135,6 +136,7 @@ pub struct ExportedSymbolShape {
     pub export_rank: ExportRank,
     pub kind: UserSymbolKind,
     pub arity: UserSymbolArity,
+    pub operator: Option<ExportedOperatorMetadata>,
 }
 
 pub struct UserSymbolCandidate {
@@ -146,6 +148,7 @@ pub struct UserSymbolCandidate {
     pub export_rank: ExportRank,
     pub kind: UserSymbolKind,
     pub arity: UserSymbolArity,
+    pub operator: Option<ExportedOperatorMetadata>,
 }
 ```
 
@@ -227,6 +230,12 @@ Current implementation notes:
   circumfix notation pattern. Contiguous hyphenated predicate/functor notation
   such as `foo-bar` is recorded as one user-symbol spelling when the adjacent
   pieces are not the simple single-locus `x-y` operator shape.
+- Step 5A.2 selects loci from preceding definition `let` bindings before its
+  conservative spelling fallback. Local prefix, postfix, and infix functor
+  patterns publish their source-position-sensitive default parser metadata
+  (precedence 64; infix non-associative) with the completed declaration;
+  template loci are excluded from term-operand placement. Predicates and
+  functional, nullary, or circumfix functors publish no default Pratt entry.
 - For local `mode`, `attr`, and `struct` declarations, the prepass records
   only constructor-name spellings. Contiguous readable hyphenated constructor
   names are recorded as whole spellings, and operator-like symbolic names are

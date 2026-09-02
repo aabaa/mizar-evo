@@ -545,6 +545,11 @@ range に `DanglingOperator` を出し、partial left expression は表現した
 prefix operand 欠落時は prefix operator range に `DanglingOperator` を出し、
 `MissingTerm` operand を挿入して recoverable な `PrefixExpression` を保持する。
 
+Step 5A.2 では、供給された prefix-operator token の直後にある
+`TemplateArguments` を operator token と operand の間の child として保持する。
+local notation shape、default precedence、activation point の具体化は引き続き
+parser ではなく frontend / lexer producer が所有する。
+
 Task 12 の test は、parse-only fixture summary 由来の active-lexicon fixity derivation、
 prefix/postfix/infix surface node、left/right/non-associative grouping、dangling operator
 diagnostic、selector/update、application、parentheses、`qua` との相互作用、および

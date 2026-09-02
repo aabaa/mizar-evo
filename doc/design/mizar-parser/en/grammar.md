@@ -585,6 +585,11 @@ prefix operand emits `DanglingOperator` at the prefix operator range and keeps
 the represented `PrefixExpression` recoverable by inserting a `MissingTerm`
 operand.
 
+Step 5A.2 preserves an immediately following `TemplateArguments` child between
+a supplied prefix-operator token and its operand. The frontend/lexer producer,
+not the parser, remains responsible for materializing the local notation shape,
+default precedence, and activation point.
+
 Task 12 tests pin active-lexicon fixity derivation from parse-only fixture
 summaries, prefix/postfix/infix surface nodes, left/right/non-associative
 grouping, dangling operator diagnostics, interaction with selector/update,
