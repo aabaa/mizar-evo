@@ -1521,7 +1521,7 @@ mode_def_name          ::= constructor_name ;
 type_params            ::= ( "of" | "over" ) type_parameter_list
                          | "[" type_parameter_list "]" ;
 type_parameter_list    ::= identifier { "," identifier } ;
-mode_property          ::= "sethood" justification ";" ;
+mode_property          ::= "sethood" [ justification ] ";" ;
 ```
 
 `ModeDefinition` は `mode` keyword、label identifier または `MissingTerm`、
@@ -1543,9 +1543,9 @@ parameter list が意味的に dependent か、structure 上のものか、そ�
 mode body は、Chapter 7 の attribute-chain plus radix-type surface に task-8 の
 `TypeExpression` を再利用する。この表現は attribute chain と type head を syntactic に
 保持する。radix / mode / structure head の区別は resolver と semantic phase が所有する。
-`mode_property` は `sethood`、必須の general justification（`by`、
+`mode_property` は `sethood`、任意の明示的 general justification（`by`、
 `by computation(...)`、または `proof ... end`）、任意の recovery、property semicolon
-を所有する。mode definition の直後にない standalone `sethood` や他の property clause は
+を所有する。直後のsemicolonはjustification/recovery nodeを生成しない。mode definition の直後にない standalone `sethood` や他の property clause は
 この task の対象外であり、後続の property-content shape として保持される。
 
 Task 26 recovery は task-23 の definition-content synchronization を再利用する。
@@ -1554,8 +1554,8 @@ mode label 欠落と malformed mode pattern は `MalformedTermExpression` と
 `MissingTypeExpression` を使う。colon 欠落、`is` delimiter 欠落、malformed
 definition tail は、delimiter または tail preservation 用の既存 formula/term recovery
 diagnostic を使う。semicolon 欠落時は、`sethood`、次の definition-content start、
-`end`、または EOF で継続する。`by` / `proof` を持たない `sethood` property は
-`MalformedJustification` を出す。malformed property tail は property semicolon、
+`end`、または EOF で継続する。有効な`by` / `proof`でないnon-semicolon materialは
+`MalformedJustification`を出すが、bare `sethood;`は有効である。malformed property tail は property semicolon、
 次の definition-content start、`end`、または EOF まで skip してよい。
 
 Task 26 tests は、通常の canonical `is` mode definition、読みやすいハイフン区切りの
@@ -1591,7 +1591,7 @@ redefine_func          ::= "redefine" "func" label ":" func_pattern
                            ( "means" formula_definiens
                            | "equals" term_definiens ) ";"
                            coherence_tail ;
-coherence_tail         ::= "coherence" [ "with" label ] justification ";" ;
+coherence_tail         ::= "coherence" [ "with" label ] [ justification ] ";" ;
 
 notation_decl          ::= operator_decl | notation_alias_decl ;
 notation_alias_decl    ::= synonym_def | antonym_def ;
@@ -1621,9 +1621,10 @@ definition-local な `public` / `private` redefinition は、Appendix A の
 `[ visibility ] definitional_item` shape に合わせ、concrete redefinition node を既存の
 `VisibleItem` / `VisibilityMarker` wrapper で包んで表す。
 
-`CoherenceCondition` は `coherence`、任意の `with` と label identifier、必須の
+`CoherenceCondition` は `coherence`、任意の `with` と label identifier、任意の明示的
 general justification（`by` references、`by computation(...)`、または
-`proof ... end`）、任意の recovery、coherence semicolon を所有する。これは standalone
+`proof ... end`）、任意の recovery、coherence semicolon を所有する。直後のsemicolonは
+justification/recovery nodeを生成しない。これは standalone
 `CorrectnessCondition` として emit せず、redefinition の下に nest する。
 
 canonical spec には `redefine_attr`、`redefine_pred`、`redefine_func` production が
@@ -1653,13 +1654,13 @@ notation-pattern placeholder は、挿入 child が必要な場合に `Malformed
 `MalformedTypeExpression` と `MissingTypeExpression` を使う。colon、`is`、`->`、
 body keyword、`means` formula body、formula case、term-case condition、notation の
 `for`、必須 `coherence` keyword 欠落は、formula child が必要な場合は対応する
-inserted formula とともに `MalformedFormulaExpression` を使う。coherence justification
-の欠落または malformed syntax、`coherence with` 後の label 欠落は、
-placeholder proof step が必要な場合に `MalformedJustification` と `MissingProofStep` を
-使う。malformed tail は semicolon、`end`、次の definition-content start、top-level
+inserted formula とともに `MalformedFormulaExpression` を使う。malformedな
+non-semicolon coherence materialと`coherence with`後のlabel欠落は、placeholder proof
+stepが必要な場合に`MalformedJustification`と`MissingProofStep`を使う。bare coherenceは
+有効である。malformed tail は semicolon、`end`、次の definition-content start、top-level
 item boundary、または EOF まで skip してよい。
 
-Task 27 tests は、`coherence by ...;`、`coherence with Label by ...;`、
+Task 27 tests は、bare `coherence;`、bare `coherence with Label;`、`coherence by ...;`、
 proof-block coherence を伴う attribute / predicate / functor redefinition、必須 label slot
 と missing-label recovery を伴う predicate redefinition、`means` と `equals` の両方の functor redefinition、
 mode-like / attribute-like raw pattern を含む top-level と definition-local の
@@ -1685,28 +1686,30 @@ definition_content     ::= ... | property_item ;
 property_item          ::= pred_property | func_property | mode_property ;
 pred_property          ::= ( "symmetry" | "asymmetry" | "connectedness"
                            | "reflexivity" | "irreflexivity" )
-                           justification ";" ;
+                           [ justification ] ";" ;
 func_property          ::= ( "commutativity" | "idempotence"
                            | "involutiveness" | "projectivity" )
-                           justification ";" ;
-mode_property          ::= "sethood" justification ";" ;
+                           [ justification ] ";" ;
+mode_property          ::= "sethood" [ justification ] ";" ;
 ```
 
-`PropertyClause` は property keyword、存在する場合の必須 general justification
+`PropertyClause` は property keyword、任意の明示的 general justification
 （`by` references、`by computation(...)`、または `proof ... end`）、任意の recovery、
-存在する場合の property semicolon を所有する。`mode` definition 直後の `sethood` 句は
+存在する場合の property semicolon を所有する。直後のsemicolonはjustification/recovery
+nodeを生成しない。`mode` definition 直後の `sethood` 句は
 引き続き task-26 の `ModeProperty` として `ModeDefinition` に所有される。standalone の
 `sethood` property item は `PropertyClause` を使う。
 
-Task 28 recovery は definition-content synchronization を再利用する。property
-justification の欠落または malformed syntax は、proof placeholder が必要な場合に
-`MalformedJustification` と `MissingProofStep` を使う。malformed property tail は
+Task 28 recovery は definition-content synchronization を再利用する。malformedな
+non-semicolon property justificationは、proof placeholderが必要な場合に
+`MalformedJustification`と`MissingProofStep`を使う。bare property keyword + semicolonは
+有効である。malformed property tail は
 semicolon、`end`、次の definition-content start、top-level item boundary、または EOF まで
 skip してよい。property semicolon 欠落は `MissingSemicolon` を使い、別の property 句を
 含む後続 definition item を消費せずに継続する。
 
 Task 28 tests は、canonical predicate / functor property keyword 一式、standalone
-`sethood`、citation / computation / proof justification、task-26 の mode-attached
+`sethood`、omitted / citation / computation / proof justification、task-26 の mode-attached
 `ModeProperty` の保持、missing / malformed justification recovery、別 property item
 直前の missing semicolon recovery、active parse-only pass/fail corpus coverage、Chapter 7
 §7.8.1、Chapter 9 §9.5.1、Chapter 10 §10.6.1、Appendix A.12 への traceability を
@@ -1743,7 +1746,7 @@ field_redef            ::= "field" identifier [ "->" type_expression ]
                            "from" ( identifier | "it" ) ";" ;
 property_redef         ::= "property" identifier [ "->" type_expression ]
                            "from" identifier ";" ;
-inheritance_coherence  ::= "coherence" justification ";" ;
+inheritance_coherence  ::= "coherence" [ justification ] ";" ;
 ```
 
 `StructureDefinition` は `struct`、raw `StructurePattern`、`where`、1 個以上の
@@ -1769,8 +1772,9 @@ parent の structure-like reference と任意の raw type argument、または p
 token を保持し、structure / type identity は解決しない。`FieldRedefinition` と
 `PropertyRedefinition` は child member name、任意の narrowed `TypeExpression`、必須
 `from`、source member name（field だけ `from it` を許す）、member semicolon を所有する。
-任意の inheritance `coherence` は必須の general justification を所有し、task-27 の
-redefinition 専用 `with` label は受理しない。
+任意の inheritance `coherence` は任意の明示的 general justification を所有する。
+直後のsemicolonはjustification/recovery nodeを生成せず、task-27 のredefinition専用
+`with` label は受理しない。
 
 Task 29 recovery は `struct` と explicit `inherit` block 内の local member
 synchronization と、境界での definition-content synchronization を使う。空または
@@ -1778,8 +1782,8 @@ malformed な structure pattern、field / property name、inheritance target、f
 property redefinition name、malformed member tail は、inserted raw surface placeholder が
 必要な場合に `MalformedTermExpression` と `MissingTerm` を使う。member または
 redefinition type の欠落は `MalformedTypeExpression` と `MissingTypeExpression` を使う。
-inheritance coherence justification の欠落または malformed syntax は
-`MalformedJustification` と `MissingProofStep` を使う。`coherence with ...` は
+malformedなnon-semicolon inheritance coherence materialは
+`MalformedJustification`と`MissingProofStep`を使う。bare coherenceは有効であり、`coherence with ...` は
 inheritance では受理せず recovered syntax として扱う。member semicolon と外側
 semicolon の欠落は `MissingSemicolon` を使い、block closer 欠落は `MissingEnd` を使う。
 malformed member tail は semicolon、`field`、`property`、`coherence`、`end`、次の
@@ -1790,7 +1794,7 @@ scope skeleton も nested `struct ... end` と explicit `inherit ... where ... e
 
 Task 29 tests は、structure field / property、`of` / `over` / bracket parameter、
 field initializer、shorthand inheritance、`extends set` を含む explicit inheritance、
-field / property redefinition、citation と proof justification を伴う coherence、
+field / property redefinition、omitted / citation / proof justification を伴う coherence、
 definition-local visibility wrapper、name / type / semicolon 欠落、空の explicit
 `where` recovery、malformed coherence recovery、active parse-only pass/fail corpus
 coverage、Chapter 5 §5.2、§5.3、§5.3.1、§5.3.2、§5.6、Appendix A.5 / A.12 への
@@ -1821,13 +1825,13 @@ cluster_registration    ::= "cluster" label ":"
                              ( existential_cluster
                              | conditional_cluster
                              | functorial_cluster ) ;
-existential_cluster     ::= attributed_type ";" "existence" justification ";" ;
+existential_cluster     ::= attributed_type ";" "existence" [ justification ] ";" ;
 conditional_cluster     ::= registration_adjectives "->"
                              registration_consequent ";"
-                             "coherence" justification ";" ;
+                             "coherence" [ justification ] ";" ;
 functorial_cluster      ::= functorial_payload "->"
                              registration_consequent ";"
-                             "coherence" justification ";" ;
+                             "coherence" [ justification ] ";" ;
 registration_consequent ::= registration_adjectives "for" type_expression ;
 registration_adjectives ::= registration_adjective { registration_adjective } ;
 registration_adjective  ::= [ "non" ] [ param_prefix ] attribute_ref_name ;
@@ -1836,7 +1840,7 @@ functorial_payload      ::= application_term | operator_term
 
 reduction_registration  ::= "reduce" label ":" term_expression "to"
                              term_expression ";"
-                             "reducibility" justification ";" ;
+                             "reducibility" [ justification ] ";" ;
 ```
 
 `RegistrationBlockItem` は `registration`、source order の
@@ -1872,6 +1876,9 @@ right `TermExpression`、header semicolon、`reducibility` の
 `CorrectnessCondition` を所有する。reducibility proof replay と normal form equality は
 semantic / proof work に残る。
 
+各registration correctness conditionは明示的justificationを省略できる。直後の
+semicolonはjustification/recovery nodeを生成せず、proof obligationを後続phaseへ残す。
+
 definition-local な `public cluster`、`private cluster`、`public reduce`、
 `private reduce` は、concrete registration item を既存の `VisibleItem` /
 `VisibilityMarker` wrapper で包む。top-level の bare `cluster` / `reduce` item は引き続き
@@ -1880,7 +1887,7 @@ invalid であり、top-level registration は `registration ... end;` block の
 Task 30 recovery は registration-content synchronization を使う。malformed
 registration parameter、label / colon 欠落、antecedent / consequent adjective 欠落、
 unsupported functorial payload、argument-bearing registration adjective、target type
-欠落、correctness justification 欠落、header semicolon 欠落、registration block `end`
+欠落、malformedなnon-semicolon correctness material、header semicolon 欠落、registration block `end`
 欠落は、可能な限り後続の registration content を保持して recover する。frontend scope
 skeleton は `registration ... end` を認識し、target type の `for set` や `for T` を
 binder candidate として扱わないため、active parse-only case が spurious lexical scope
@@ -1888,10 +1895,10 @@ diagnostic を出さない。
 
 Task 30 tests は、registration-local `let`、parameterized registered type を含む
 existential cluster、conditional cluster、functorial application/operator/bracket
-cluster、compound reduction、proof / citation correctness condition、registration item の
+cluster、compound reduction、omitted / proof / citation correctness condition、registration item の
 definition-local visibility wrapper、malformed な definition-only `let T be type`
 parameter、label 欠落、antecedent 欠落、unsupported functorial payload、argument-bearing
-registration adjective、reducibility justification 欠落、registration block end 欠落、
+registration adjective、malformed reducibility tail、registration block end 欠落、
 active parse-only pass/fail corpus coverage、Chapter 17 §17.2〜17.6 と、annotation
 prefix を S-016/parser task 35 で別に覆う Appendix A.17 registration/cluster/reduction
 production への traceability を固定する必要がある。

@@ -1624,7 +1624,7 @@ mode_def_name          ::= constructor_name ;
 type_params            ::= ( "of" | "over" ) type_parameter_list
                          | "[" type_parameter_list "]" ;
 type_parameter_list    ::= identifier { "," identifier } ;
-mode_property          ::= "sethood" justification ";" ;
+mode_property          ::= "sethood" [ justification ] ";" ;
 ```
 
 `ModeDefinition` owns the `mode` keyword, label identifier or `MissingTerm`,
@@ -1649,9 +1649,10 @@ The mode body reuses task-8 `TypeExpression` for the Chapter 7
 attribute-chain plus radix-type surface. That representation preserves the
 attribute chain and type head syntactically; resolver and semantic phases own
 the distinction between radix, mode, and structure heads. A `mode_property`
-owns `sethood`, the required general justification (`by`,
+owns `sethood`, an optional explicit general justification (`by`,
 `by computation(...)`, or `proof ... end`), optional recovery, and the property
-semicolon. Standalone `sethood` or other property clauses that do not
+semicolon. An immediate semicolon creates no justification or recovery node.
+Standalone `sethood` or other property clauses that do not
 immediately follow a mode definition remain outside this task and are preserved
 as later property-content shapes.
 
@@ -1661,8 +1662,9 @@ mode labels and malformed mode patterns use `MalformedTermExpression` plus
 plus `MissingTypeExpression`. Missing colons, missing `is` delimiters, and
 malformed definition tails use the existing formula/term recovery diagnostics
 for delimiter or tail preservation. Missing semicolons continue at `sethood`,
-the next definition-content start, `end`, or EOF. A `sethood` property without
-`by`/`proof` emits `MalformedJustification`; malformed property tails may be
+the next definition-content start, `end`, or EOF. Non-semicolon material without
+a valid `by` / `proof` justification emits `MalformedJustification`; bare
+`sethood;` is valid. Malformed property tails may be
 skipped to the property semicolon, the next definition-content start, `end`, or
 EOF.
 
@@ -1701,7 +1703,7 @@ redefine_func          ::= "redefine" "func" label ":" func_pattern
                            ( "means" formula_definiens
                            | "equals" term_definiens ) ";"
                            coherence_tail ;
-coherence_tail         ::= "coherence" [ "with" label ] justification ";" ;
+coherence_tail         ::= "coherence" [ "with" label ] [ justification ] ";" ;
 
 notation_decl          ::= operator_decl | notation_alias_decl ;
 notation_alias_decl    ::= synonym_def | antonym_def ;
@@ -1732,8 +1734,10 @@ Definition-local `public` / `private` redefinitions use the existing
 node, matching Appendix A's `[ visibility ] definitional_item` shape.
 
 `CoherenceCondition` owns `coherence`, optional `with` plus a label identifier,
-a required general justification (`by` references, `by computation(...)`, or
-`proof ... end`), optional recovery, and the coherence semicolon. It is nested
+an optional explicit general justification (`by` references,
+`by computation(...)`, or `proof ... end`), optional recovery, and the
+coherence semicolon. An immediate semicolon creates no justification or
+recovery node. It is nested
 under the owning redefinition rather than emitted as a standalone
 `CorrectnessCondition`.
 
@@ -1768,15 +1772,15 @@ return types use `MalformedTypeExpression` plus `MissingTypeExpression`.
 Missing colons, `is`, `->`, body keywords, `means` formula bodies, formula
 cases, term-case conditions, notation `for`, and the mandatory `coherence`
 keyword use `MalformedFormulaExpression` plus the relevant inserted formula
-when a formula child is required. Missing or malformed coherence
-justifications, including `coherence with` without a label, use
-`MalformedJustification` plus `MissingProofStep` when a placeholder proof step
-is required. Malformed tails may be skipped to semicolon, `end`, the next
+when a formula child is required. Malformed non-semicolon coherence material
+and `coherence with` without a label use `MalformedJustification` plus
+`MissingProofStep` when a placeholder proof step is required; bare coherence
+is valid. Malformed tails may be skipped to semicolon, `end`, the next
 definition-content start, top-level item boundary, or EOF.
 
 Task 27 tests must pin: attribute, predicate, and functor redefinitions with
-`coherence by ...;`, `coherence with Label by ...;`, and proof-block
-coherence; predicate redefinitions with the required label slot and
+bare `coherence;`, bare `coherence with Label;`, `coherence by ...;`, and
+proof-block coherence; predicate redefinitions with the required label slot and
 missing-label recovery; functor redefinitions for both `means` and `equals`;
 top-level and definition-local `synonym` /
 `antonym` aliases, including mode-like and attribute-like raw patterns;
@@ -1802,30 +1806,32 @@ definition_content     ::= ... | property_item ;
 property_item          ::= pred_property | func_property | mode_property ;
 pred_property          ::= ( "symmetry" | "asymmetry" | "connectedness"
                            | "reflexivity" | "irreflexivity" )
-                           justification ";" ;
+                           [ justification ] ";" ;
 func_property          ::= ( "commutativity" | "idempotence"
                            | "involutiveness" | "projectivity" )
-                           justification ";" ;
-mode_property          ::= "sethood" justification ";" ;
+                           [ justification ] ";" ;
+mode_property          ::= "sethood" [ justification ] ";" ;
 ```
 
-`PropertyClause` owns the property keyword, a required general justification
-(`by` references, `by computation(...)`, or `proof ... end`) when present,
-optional recovery, and the property semicolon when present. A `sethood` clause
+`PropertyClause` owns the property keyword, an optional explicit general
+justification (`by` references, `by computation(...)`, or `proof ... end`),
+optional recovery, and the property semicolon when present. An immediate
+semicolon creates no justification or recovery node. A `sethood` clause
 immediately following a `mode` definition is still owned by the `ModeDefinition`
 as task-26 `ModeProperty`; standalone `sethood` property items use
 `PropertyClause`.
 
-Task 28 recovery reuses definition-content synchronization. Missing or
-malformed property justifications use `MalformedJustification` and
-`MissingProofStep` where an inserted proof placeholder is needed. Malformed
+Task 28 recovery reuses definition-content synchronization. Malformed
+non-semicolon property justifications use `MalformedJustification` and
+`MissingProofStep` where an inserted proof placeholder is needed; a bare
+property keyword followed by semicolon is valid. Malformed
 property tails may skip to a semicolon, `end`, the next definition-content
 start, a top-level item boundary, or EOF. Missing property semicolons use
 `MissingSemicolon` and continue without consuming a following definition item,
 including another property clause.
 
 Task 28 tests must pin: all canonical predicate and functor property keywords,
-standalone `sethood`, citation/computation/proof justifications, preservation
+standalone `sethood`, omitted/citation/computation/proof justifications, preservation
 of task-26 mode-attached `ModeProperty`, missing/malformed justification
 recovery, missing semicolon recovery before another property item, active
 parse-only pass/fail corpus coverage, and traceability to Chapter 7 §7.8.1,
@@ -1863,7 +1869,7 @@ field_redef            ::= "field" identifier [ "->" type_expression ]
                            "from" ( identifier | "it" ) ";" ;
 property_redef         ::= "property" identifier [ "->" type_expression ]
                            "from" identifier ";" ;
-inheritance_coherence  ::= "coherence" justification ";" ;
+inheritance_coherence  ::= "coherence" [ justification ] ";" ;
 ```
 
 `StructureDefinition` owns `struct`, a raw `StructurePattern`, `where`, one or
@@ -1891,8 +1897,9 @@ optional raw type arguments, or the parent-side `set` token, without resolving
 structure/type identities. `FieldRedefinition` and `PropertyRedefinition` own
 the child member name, optional narrowed `TypeExpression`, mandatory `from`,
 source member name (`field ... from it` is allowed only for fields), and member
-semicolon. Optional inheritance `coherence` owns a required general
-justification and does not accept task-27's redefinition-only `with` label.
+semicolon. Optional inheritance `coherence` owns an optional explicit general
+justification; an immediate semicolon creates no justification or recovery
+node. It does not accept task-27's redefinition-only `with` label.
 
 Task 29 recovery uses local member synchronization inside `struct` and
 explicit `inherit` blocks, plus definition-content synchronization at their
@@ -1900,9 +1907,9 @@ boundaries. Empty or malformed structure patterns, field/property names,
 inheritance targets, field/property redefinition names, and malformed member
 tails use `MalformedTermExpression` plus `MissingTerm` where an inserted raw
 surface placeholder is needed. Missing member or redefinition types use
-`MalformedTypeExpression` plus `MissingTypeExpression`. Missing or malformed
-inheritance coherence justifications use `MalformedJustification` plus
-`MissingProofStep`; `coherence with ...` is recovered rather than accepted for
+`MalformedTypeExpression` plus `MissingTypeExpression`. Malformed non-semicolon
+inheritance coherence material uses `MalformedJustification` plus
+`MissingProofStep`; bare coherence is valid, and `coherence with ...` is recovered rather than accepted for
 inheritance. Missing member semicolons and missing outer semicolons use
 `MissingSemicolon`; missing block closers use `MissingEnd`. Malformed member
 tails may skip to semicolon, `field`, `property`, `coherence`, `end`, the next
@@ -1914,7 +1921,7 @@ spurious unmatched `end` diagnostics before parsing.
 Task 29 tests must pin: structure fields and properties, `of` / `over` /
 bracket parameters, field initializers, shorthand inheritance, explicit
 inheritance including `extends set`, field/property redefinitions, coherence
-with citation and proof justifications, definition-local visibility wrappers,
+with omitted, citation, and proof justifications, definition-local visibility wrappers,
 missing names/types/semicolons, empty explicit `where` recovery, malformed
 coherence recovery, active parse-only pass/fail corpus coverage, and
 traceability to Chapter 5 §5.2, §5.3, §5.3.1, §5.3.2, §5.6, and Appendix A.5 /
@@ -1946,13 +1953,13 @@ cluster_registration    ::= "cluster" label ":"
                              ( existential_cluster
                              | conditional_cluster
                              | functorial_cluster ) ;
-existential_cluster     ::= attributed_type ";" "existence" justification ";" ;
+existential_cluster     ::= attributed_type ";" "existence" [ justification ] ";" ;
 conditional_cluster     ::= registration_adjectives "->"
                              registration_consequent ";"
-                             "coherence" justification ";" ;
+                             "coherence" [ justification ] ";" ;
 functorial_cluster      ::= functorial_payload "->"
                              registration_consequent ";"
-                             "coherence" justification ";" ;
+                             "coherence" [ justification ] ";" ;
 registration_consequent ::= registration_adjectives "for" type_expression ;
 registration_adjectives ::= registration_adjective { registration_adjective } ;
 registration_adjective  ::= [ "non" ] [ param_prefix ] attribute_ref_name ;
@@ -1961,7 +1968,7 @@ functorial_payload      ::= application_term | operator_term
 
 reduction_registration  ::= "reduce" label ":" term_expression "to"
                              term_expression ";"
-                             "reducibility" justification ";" ;
+                             "reducibility" [ justification ] ";" ;
 ```
 
 `RegistrationBlockItem` owns `registration`, source-ordered
@@ -1998,6 +2005,10 @@ cannot disambiguate them from single-adjective conditional registrations.
 `reducibility` `CorrectnessCondition`. Reducibility proof replay and equality
 of normal forms remain semantic/proof work.
 
+Each registration correctness condition may omit its explicit justification;
+an immediate semicolon creates no justification or recovery node while leaving
+the proof obligation to later phases.
+
 Definition-local `public cluster`, `private cluster`, `public reduce`, and
 `private reduce` use the existing `VisibleItem` / `VisibilityMarker` wrapper
 around the concrete registration item. Top-level bare `cluster` / `reduce`
@@ -2007,8 +2018,8 @@ items remain invalid; top-level registrations must appear inside a
 Task 30 recovery uses registration-content synchronization. Malformed
 registration parameters, missing labels or colons, missing antecedent or
 consequent adjectives, unsupported functorial payloads, argument-bearing
-registration adjectives, missing target types, missing correctness
-justifications, missing header semicolons, and missing block `end` delimiters
+registration adjectives, missing target types, malformed non-semicolon
+correctness material, missing header semicolons, and missing block `end` delimiters
 recover while preserving following registration content where possible. The
 frontend scope skeleton recognizes `registration ... end` and skips `for set`
 and identifier-shaped target-type occurrences such as `for T` as binder
@@ -2017,11 +2028,11 @@ diagnostics.
 
 Task 30 tests pin: registration-local `let`, existential clusters including
 parameterized registered types, conditional clusters, functorial
-application/operator/bracket clusters, compound reductions, proof and citation
-correctness conditions, definition-local visibility wrappers for registration
+application/operator/bracket clusters, compound reductions, omitted, proof,
+and citation correctness conditions, definition-local visibility wrappers for registration
 items, malformed definition-only `let T be type` parameters, missing labels,
 missing antecedents, unsupported functorial payloads, argument-bearing
-registration adjectives, missing reducibility justifications, missing
+registration adjectives, malformed reducibility tails, missing
 registration block ends, active parse-only pass/fail corpus coverage, and
 traceability to Chapter 17 §17.2-17.6 plus Appendix A.17
 registration/cluster/reduction productions, with annotation prefixes covered
