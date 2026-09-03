@@ -98,8 +98,8 @@ is its task 1). "Next work" points into the
 | mizar-parser | Grammar, Pratt parsing, syntax recovery, parse-only corpus | [x] Tasks 1-48 plus bounded `PARSER-RECOVERY-B1B1P-P1` and Step 5A.4-5A.8 complete | No inferred Task 49; human-owned P-265-47D remains separate | [todo](./mizar-parser/en/todo.md) |
 | mizar-frontend | Source loading and phase 1-3 orchestration | [x] prior milestone plus Step 5A.2/5A.3/5A.6/5A.8 increments | — | [todo](./mizar-frontend/en/todo.md) |
 | mizar-resolve | Module graph, namespaces, symbols, labels, signatures | [~] complete through task 29, Checker Task 263R, and Task 264R implementation | Preserve Task-264R shell/no-symbol boundary through Checker Tasks 248P/264 | [todo](./mizar-resolve/en/todo.md) |
-| mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] foundation complete through task 22; Tasks 265-268, Core-31, dormant [Task 269SDT](./task_contracts/en/269SDT.md), private [Task 269SDU](./task_contracts/en/269SDU.md), and the private zero-semantic nested-Fraenkel consumer chain through [C4C4](./task_contracts/en/CHECKER-FRAENKEL-NESTED-MAPPER-PRIMARY-257C4C4.md) are implemented | Complete the temporary design-evidence consolidation gate; active dispatch remains excluded; afterward re-inventory from C4C4 without presuming a successor | [todo](./mizar-test/en/todo.md) |
-| mizar-checker | Type checking, cluster/registration resolution, overload resolution | [~] explicit-payload milestone, source producers/consumers through [Task 269SDU](./task_contracts/en/269SDU.md), and zero-semantic nested-Fraenkel structural transport through [C4C4](./task_contracts/en/CHECKER-FRAENKEL-NESTED-MAPPER-PRIMARY-257C4C4.md) are implemented | Complete the temporary consolidation gate; the C4C4 semantic successor retains cross-owner `design_drift` and `test_gap`; `z`/`q` capture stays blocked on `set` reconciliation; Task 277B remains not-ready/zero-credit | [todo](./mizar-checker/en/todo.md) |
+| mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] foundation complete through task 22; Tasks 265-268, Core-31, dormant [Task 269SDT](./task_contracts/en/269SDT.md), private [Task 269SDU](./task_contracts/en/269SDU.md), and the committed zero-semantic nested-Fraenkel prerequisites are frozen; readiness is owned by [Step 5B.2](./task_contracts/en/STEP5B2-C4C4-READINESS-INVENTORY.md) | Start Step 5C.1 in activation-map order; active dispatch remains excluded until that task freezes and satisfies its own contract | [todo](./mizar-test/en/todo.md) |
+| mizar-checker | Type checking, cluster/registration resolution, overload resolution | [~] explicit-payload milestone, source producers/consumers through [Task 269SDU](./task_contracts/en/269SDU.md), and committed zero-semantic nested-Fraenkel prerequisites are frozen; readiness is owned by [Step 5B.2](./task_contracts/en/STEP5B2-C4C4-READINESS-INVENTORY.md) | Start Step 5C.1 in activation-map order; Task 277B remains not-ready/zero-credit | [todo](./mizar-checker/en/todo.md) |
 | mizar-core | Elaboration, binder-normalized core logic, control-flow preparation | [x] core/control-flow milestone, tasks 27-32 complete | step-5 Tasks 33-53 under the Task-32 graph | [todo](./mizar-core/en/todo.md) |
 | mizar-vc | VC IR, VC generation, deterministic pre-ATP discharge | [x] exact source-derived contradiction VC integration complete through task 31 | dependency-paced VC Tasks 32-55; VC 40/53 and S1 gates remain explicit | [todo](./mizar-vc/en/todo.md) |
 | mizar-kernel | Trusted certificate parsing and checking | [x] SAT-backed kernel milestone complete | step 4 task 35 resolved; task 32 parked; tasks 30-34 resolved | [todo](./mizar-kernel/en/todo.md) |
@@ -229,7 +229,7 @@ Implement the decisions from step 2 in checker and core. Depends on step 2.
 Exit: audited semantic corrections are implemented with their rejection
 corpora; the kernel soundness argument is re-checked against view terms.
 
-### Temporary gate — checker/test design-evidence consolidation [ ]
+### Temporary gate — checker/test design-evidence consolidation [x]
 
 Before selecting another Step 5 semantic task, complete the sequence below in
 one continuous autonomous thread. This gate does not reopen or reorder already
@@ -298,7 +298,7 @@ repository-wide or program-wide consolidation-completion claim.
    protected stash. This closeout means that no further currently authorized
    schema-2-safe migration is ready; it must not claim that all historical
    duplication in the repository has been removed.
-6. [ ] **Resume semantic readiness from the C4C4 postcommit proof.** Re-run the
+6. [x] **Resume semantic readiness from the C4C4 postcommit proof.** Re-run the
    authority-order inventory rather than carrying forward a presumed successor
    ID, API, or oracle. Any Task-255/source-set capture or generated-core bridge
    requires its own paired contract and uniquely owned dependencies before
@@ -438,10 +438,11 @@ stay binding and must not be weakened.
    product now has one live owner; completed point matrices are regression-only
    guards and create no new task. Light-tier evidence and unchanged protected
    boundaries: [STEP5B1-STRUCTURAL-RULE-CONSOLIDATION](./task_contracts/en/STEP5B1-STRUCTURAL-RULE-CONSOLIDATION.md).
-2. [ ] **5B.2** — complete item 6 of the temporary checker/test
+2. [x] **5B.2** — complete item 6 of the temporary checker/test
    design-evidence consolidation gate above (semantic readiness
    re-inventory from the C4C4 postcommit proof). It must finish before
-   the first 5C task is selected.
+   the first 5C task is selected. The fresh result and next owner are frozen in
+   [STEP5B2-C4C4-READINESS-INVENTORY](./task_contracts/en/STEP5B2-C4C4-READINESS-INVENTORY.md).
 3. [ ] **5B.3** — the Task-265 execution-authority list below is retained
    unchanged; its item 13 (checker task 49 fixture activation) is the
    sole open pre-audit activation task and is independent of the audit-1
