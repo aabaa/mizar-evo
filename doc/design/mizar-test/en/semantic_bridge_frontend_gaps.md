@@ -26,7 +26,7 @@ be closed by weakening the corpus expectations.
 | G5 | closed by 5A.1 | Root-reachable AST validation removes the `term qua <structure type>` SurfaceAstBuilder panic; see the [task contract](../../task_contracts/en/STEP5A1-G5-QUA-STRUCTURE.md). Semantic activation remains owned by 5C. |
 | G6 | closed by 5A.6 (2 ledger rows) | Argument-bearing local dependent-mode use now preserves enclosing type/formula tokens; see the [task contract](../../task_contracts/en/STEP5A6-G6-DEPENDENT-MODE-USE.md). Task 68's same-module reserve extraction and imported Tasks 79/82 remain unchanged. |
 | G7 | low (worked around) | Empty justifications are accepted for `existence;`/`uniqueness;` but rejected (`malformed_justification`) for `coherence;`, `symmetry;`, `reducibility;`, `sethood;`, against A.15. The corpus works around it with explicit proof blocks; the inconsistency still needs an owner decision. |
-| G9 | production closed; 5A.7 evidence pending | Dependencies 5A.2/5A.5 make already-active spellings parse in predicate redefinitions, second definitions, and synonym original patterns. Dedicated regression evidence is frozen in the [5A.7 contract](../../task_contracts/en/STEP5A7-G9-ACTIVE-PATTERN-SPELLINGS.md); semantic activation remains with 5C.5/5C.6. |
+| G9 | closed by 5A.7 (3 ledger rows) | Dependencies 5A.2/5A.5 make already-active spellings parse in predicate redefinitions, second definitions, and synonym original patterns; dedicated evidence is recorded in the [5A.7 contract](../../task_contracts/en/STEP5A7-G9-ACTIVE-PATTERN-SPELLINGS.md). Semantic activation remains with 5C.5/5C.6. |
 
 G8 (inline application use) is folded into G1.
 

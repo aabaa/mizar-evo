@@ -9,7 +9,7 @@ Owning plan: [mizar-parser](../../mizar-parser/en/00.crate_plan.md).
 
 | Field | Value |
 |---|---|
-| Status | In progress; contract frozen before test edits |
+| Status | Complete; hard gates 9/9 pass; final quality score 100/100 |
 | Tier | Full: test-first `.miz`, expectation metadata, and trace backlink |
 | Owner / consumers | `mizar-parser` owns syntactic pattern admission; `mizar-frontend` supplies position-sensitive local `UserSymbol` tokens; `mizar-test` runs the parse-only regression |
 | Dependencies | Completed 5A.2/G1 and 5A.5/G4; selected after completed 5A.6 by the frozen order |
@@ -104,4 +104,43 @@ stop with analysis, options, and a parent recommendation.
 
 ## Completion evidence
 
-Pending.
+The new 108th active parse-only case covers all three frozen G9 pattern
+positions. A real-frontend test runs the three byte-exact immutable G9 sources,
+proves their declaration-site `Identifier` becomes a later `UserSymbol`, and
+checks AST presence, empty diagnostics, v6 parser identity, and deterministic
+replay. No production or cache source changed.
+
+Independent specification/equivalence, boundary, implementation, test
+sufficiency, and source/docs/API reviews have no unresolved findings. The test
+review's four stale-count findings were repaired and re-reviewed. The coverage
+audit remains unchanged because no coverage status, owner, or deferred reason
+changed.
+
+Verification passed: focused G9 frontend and metadata tests; repository plan
+557 cases / 499 requirements / 314 pass / 243 fail / 0 errors / 23 pre-existing
+warnings; parse-only 108/108; `cargo fmt --all --check`; warnings-denied
+workspace Clippy; and full `cargo test` including doctests.
+
+| Hard gate | Result |
+|---|---|
+| 1. specification consistency | Pass: no `spec_gap`; independent review clear |
+| 2. documented/tested behavior | Pass: Chapters 9/11, Appendix A, and focused tests |
+| 3. milestone `.miz` coverage | Pass: one test-first active parse-only pair |
+| 4. expectation integrity | Pass: no existing expectation changed |
+| 5. design/source synchronization | Pass: existing owner rule remains exact |
+| 6. responsibility boundaries | Pass: tests only; semantics remain with 5C |
+| 7. coverage-audit disposition | Pass: explicit no-impact; audit byte-identical |
+| 8. verification | Pass: every required command completed |
+| 9. residual-risk classification | Pass: semantic activation remains with 5C.5/5C.6 |
+
+Existing G9 sources, expectations, and trace states are byte-unchanged; the
+sole trace delta is the authorized parse-only backlink. Activation map, gap
+ledger, coverage audit, and the 13-file archive retain their frozen hashes.
+Semantic-credit throughput remains `0 tasks/week`.
+
+Next handoff: stop at 5A.8/G7 for the required human specification decision.
+Parent Sol xhigh owns the option analysis and recommendation; no parser or spec
+edit may precede that decision.
+
+The read-only advisory score was 100/100 with no cap; parent Sol independently
+confirmed hard gates 9/9 and the final 100/100 score.

@@ -1,0 +1,27 @@
+definition
+  let X, Y be set;
+  pred Dup1Def: X duppred Y means X = Y;
+end;
+
+definition
+  let X, Y be set;
+  pred Dup2Def: X duppred Y means Y = X;
+end;
+
+definition
+  let X, Y be set;
+  pred EqvDef: X eqv Y means X = Y;
+end;
+
+definition
+  let X, Y be set;
+  redefine pred Eqv2Def: X eqv Y means Y = X;
+  coherence proof thus thesis; end;
+end;
+
+definition
+  let X, Y be set;
+  func SynBaseDef: X synbase2 Y -> set equals X;
+  coherence proof thus thesis; end;
+  synonym X synalias Y for X synbase2 Y;
+end;

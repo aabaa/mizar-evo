@@ -1044,6 +1044,88 @@ mod tests {
     }
 
     #[test]
+    fn step5a7_exact_g9_sources_parse_clean_through_frontend() {
+        const DUPLICATE_PREDICATE: &str = include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../tests/miz/fail/predicates/",
+            "fail_type_elaboration_pred_duplicate_same_signature_001.miz"
+        ));
+        const SYNONYM_LOCI_MISMATCH: &str = include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../tests/miz/fail/resolve/",
+            "fail_type_elaboration_synonym_loci_mismatch_001.miz"
+        ));
+        const REDEFINED_PREDICATE: &str = include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../tests/miz/pass/predicates/",
+            "pass_type_elaboration_pred_redefine_narrower_loci_001.miz"
+        ));
+        let fixture = PackageFixture::new();
+        let frontend = frontend_for_fixture(&fixture, MizarParserSeam);
+
+        for (relative, source, active_spelling) in [
+            (
+                "src/duplicate_predicate.miz",
+                DUPLICATE_PREDICATE,
+                "duppred",
+            ),
+            ("src/synonym_loci.miz", SYNONYM_LOCI_MISMATCH, "synbase2"),
+            ("src/redefined_predicate.miz", REDEFINED_PREDICATE, "eqv"),
+        ] {
+            fixture.write(relative, source);
+            let output = frontend
+                .run(
+                    fixture.request(relative),
+                    &InMemorySessionIdAllocator::new(),
+                )
+                .expect("the exact G9 source should run through the frontend");
+            let replay = frontend
+                .run(
+                    fixture.request(relative),
+                    &InMemorySessionIdAllocator::new(),
+                )
+                .expect("the exact G9 source should replay through the frontend");
+
+            assert!(
+                output.diagnostics.is_empty(),
+                "the exact G9 source {relative} should parse clean: {:#?}",
+                output.diagnostics
+            );
+            assert!(
+                output.ast.is_some(),
+                "the exact G9 source should keep an AST"
+            );
+            let spelling_tokens = output
+                .tokens
+                .tokens()
+                .iter()
+                .filter(|token| token.text.as_ref() == active_spelling)
+                .collect::<Vec<_>>();
+            assert_eq!(
+                spelling_tokens.len(),
+                2,
+                "the G9 spelling should occur once at declaration and once while active"
+            );
+            assert_eq!(spelling_tokens[0].kind, TokenKind::Identifier);
+            assert_eq!(spelling_tokens[1].kind, TokenKind::UserSymbol);
+            assert_eq!(
+                output
+                    .cache_keys
+                    .ast
+                    .as_ref()
+                    .expect("the exact G9 AST should have a cache key")
+                    .parser_version
+                    .version
+                    .as_ref(),
+                "mizar-parser/surface-ast-v6"
+            );
+            assert_eq!(output.ast, replay.ast);
+            assert_eq!(output.diagnostics, replay.diagnostics);
+            assert_eq!(output.cache_keys, replay.cache_keys);
+        }
+    }
+
+    #[test]
     fn real_parser_frontend_merges_nested_missing_end_and_uses_parser_v6_cache_key() {
         let fixture = PackageFixture::new();
         fixture.write(

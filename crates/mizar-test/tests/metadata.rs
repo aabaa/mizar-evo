@@ -5447,6 +5447,35 @@ fn repository_type_elaboration_runner_executes_active_source_derived_seeds() {
 fn repository_parse_only_cases_separate_active_runner_seeds_from_future_metadata() {
     let plan = repository_plan();
 
+    let active_pattern_pass = plan
+        .cases
+        .iter()
+        .find(|case| case.id.0 == "pass_parser_active_pattern_spellings_001")
+        .expect("active-pattern parse-only pass seed should be discovered");
+    assert_eq!(active_pattern_pass.expectation.kind, TestKind::Pass);
+    assert_eq!(active_pattern_pass.expectation.stage, Stage::ParseOnly);
+    assert_eq!(
+        active_pattern_pass.expectation.expected_outcome,
+        ExpectedOutcome::Pass
+    );
+    assert_eq!(
+        active_pattern_pass.expectation.expected_phase,
+        Some(PipelinePhase::Parse)
+    );
+    assert_eq!(
+        active_pattern_pass
+            .expectation
+            .spec_refs
+            .iter()
+            .map(|spec_ref| spec_ref.0.as_str())
+            .collect::<Vec<_>>(),
+        vec![REDEFINITION_NOTATION_REQUIREMENT_ID]
+    );
+    assert_eq!(
+        active_pattern_pass.expectation.tags,
+        vec!["active_parse_only".to_owned()]
+    );
+
     let dependent_mode_pass = plan
         .cases
         .iter()
@@ -5747,6 +5776,7 @@ fn repository_parse_only_cases_separate_active_runner_seeds_from_future_metadata
             "fail_parser_visibility_dangling_001",
             "fail_parser_visibility_duplicate_001",
             "fail_parser_visibility_invalid_target_001",
+            "pass_parser_active_pattern_spellings_001",
             "pass_parser_algorithm_control_flow_001",
             "pass_parser_algorithm_verification_001",
             "pass_parser_algorithms_claims_001",
@@ -6059,6 +6089,9 @@ fn repository_parse_only_cases_separate_active_runner_seeds_from_future_metadata
             PathBuf::from(
                 "tests/miz/pass/parser/pass_parser_notation_alias_activation_001.expect.toml"
             ),
+            PathBuf::from(
+                "tests/miz/pass/parser/pass_parser_active_pattern_spellings_001.expect.toml"
+            ),
         ]
     );
 
@@ -6296,9 +6329,13 @@ fn repository_parse_only_runner_executes_active_minimal_parser_seeds() {
     let report = run_parse_only_corpus(&config).unwrap();
 
     assert_eq!(report.error_count(), 0, "{:#?}", report.diagnostics);
-    assert_eq!(report.results.len(), 107);
-    assert_eq!(report.passed_count(), 107);
+    assert_eq!(report.results.len(), 108);
+    assert_eq!(report.passed_count(), 108);
     assert_eq!(report.failed_count(), 0);
+    assert!(report.results.iter().any(|result| {
+        result.id.0 == "pass_parser_active_pattern_spellings_001"
+            && result.actual_diagnostic_codes.is_empty()
+    }));
     assert!(report.results.iter().any(|result| {
         result.id.0 == "pass_parser_algorithm_control_flow_001"
             && result.actual_diagnostic_codes.is_empty()
@@ -9704,8 +9741,8 @@ fn parse_only_cli_reports_active_runner_summary() {
         String::from_utf8_lossy(&output.stderr)
     );
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("parse-only cases: 107"));
-    assert!(stdout.contains("passed: 107"));
+    assert!(stdout.contains("parse-only cases: 108"));
+    assert!(stdout.contains("passed: 108"));
     assert!(stdout.contains("failed: 0"));
 }
 

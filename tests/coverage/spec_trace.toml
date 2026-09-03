@@ -7150,6 +7150,7 @@ tests = [
   "tests/miz/pass/parser/pass_parser_redefinition_notation_001.expect.toml",
   "tests/miz/fail/parser/fail_parser_redefinition_notation_recovery_001.expect.toml",
   "tests/miz/pass/parser/pass_parser_notation_alias_activation_001.expect.toml",
+  "tests/miz/pass/parser/pass_parser_active_pattern_spellings_001.expect.toml",
 ]
 
 [[requirement]]
